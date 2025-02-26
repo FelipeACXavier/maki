@@ -1,0 +1,32 @@
+/* ====================================================== */
+/*                   Top level elements                   */
+/* ====================================================== */
+.left-panel {
+  max-width: 250px;
+  min-width: 100px;
+}
+
+.right-panel {
+  max-width: 250px;
+  min-width: 100px;
+}
+
+.canvas {
+}
+
+/* ====================================================== */
+/* ====================================================== */
+.element {
+  margin: 5px 0;
+  padding: 5px;
+  border-radius: 5px;
+}
+
+.menu-element {
+  background-color: goldenrod;
+}
+
+
+.canvas-element {
+  background-color: brown;
+}
