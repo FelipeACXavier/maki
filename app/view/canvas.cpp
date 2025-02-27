@@ -2,17 +2,23 @@
 
 #include <QGraphicsSceneDragDropEvent>
 #include <QMimeData>
+#include <QTimer>
+#include <QUuid>
 
 #include "logging.h"
+
+static const QString TMP_CONNECTION_ID = QStringLiteral("tmp_id");
+
+QString printPoint(const QPointF& point)
+{
+  return QStringLiteral("(%1, %2)").arg(point.x(), point.y());
+}
 
 Canvas::Canvas(QObject* parent)
     : QGraphicsScene(parent)
 {
   // setAcceptDrops(true);
   setProperty("class", QVariant(QStringLiteral("canvas")));
-
-  setSceneRect(0, 0, 800, 600);
-
   setBackgroundBrush(QBrush(QColor("#212121")));
 }
 
@@ -56,22 +62,18 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
       if (node->leftConnectionArea().contains(event->scenePos()))
       {
         m_startNode = node;
-        m_connection = new QGraphicsLineItem();
-        m_connection->setLine(QLineF(node->leftConnectionPoint(), event->scenePos()));
-        m_connection->setPen(QPen(Qt::white, 2));
-        addItem(m_connection);
+        m_connection = node->startConnection(node->leftConnectionPoint(), event->scenePos());
+        addItem(m_connection.get());
 
         return;  // Return early to avoid blocking default move behavior
       }
       else if (node->rightConnectionArea().contains(event->scenePos()))
       {
         m_startNode = node;
-        m_connection = new QGraphicsLineItem();
-        m_connection->setLine(QLineF(node->rightConnectionPoint(), event->scenePos()));
-        m_connection->setPen(QPen(Qt::white, 2));
-        addItem(m_connection);
+        m_connection = node->startConnection(node->rightConnectionPoint(), event->scenePos());
+        addItem(m_connection.get());
 
-        return;  // Return early to avoid blocking default move behavior
+        return;
       }
     }
   }
@@ -83,10 +85,7 @@ void Canvas::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
   if (m_connection)
   {
-    QPointF endPos = event->scenePos();
-    QPointF startPos = m_connection->line().p1();
-
-    m_connection->setLine(QLineF(startPos, endPos));
+    m_connection->move(TMP_CONNECTION_ID, event->scenePos());
   }
   else
   {
@@ -101,8 +100,6 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     if (event->button() == Qt::LeftButton)
     {
       QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
-      qInfo() << item->type();
-
       if (item && qgraphicsitem_cast<NodeItem*>(item) && item != m_startNode)
       {
         NodeItem* node = static_cast<NodeItem*>(item);
@@ -110,18 +107,18 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
         // Check if we are inside another connection point
         if (node->leftConnectionArea().contains(event->scenePos()))
         {
-          ConnectionItem* connection = new ConnectionItem(m_startNode, node);
-          addItem(connection);
+          m_connection->setEnd(node->Id(), node->leftConnectionPoint());
+          m_startNode->endConnection(m_connection);
+          node->addConnection(m_connection);
         }
         else if (node->rightConnectionArea().contains(event->scenePos()))
         {
-          ConnectionItem* connection = new ConnectionItem(m_startNode, node);
-          addItem(connection);
+          m_connection->setEnd(node->Id(), node->rightConnectionPoint());
+          m_startNode->endConnection(m_connection);
+          node->addConnection(m_connection);
         }
       }
 
-      // Always delete the connection once mouse is released
-      removeItem(m_connection);
       m_connection = nullptr;
     }
   }
@@ -133,11 +130,17 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 
 NodeItem::NodeItem(QGraphicsItem* parent)
     : QGraphicsItem(parent)
+    , mId(QUuid::createUuid().toString())
 {
-  setFlags(ItemIsMovable | ItemIsSelectable);
+  setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
   setCacheMode(DeviceCoordinateCache);
   setAcceptHoverEvents(true);
   setZValue(1);
+}
+
+QString NodeItem::Id() const
+{
+  return mId;
 }
 
 QRectF NodeItem::boundingRect() const
@@ -194,19 +197,65 @@ QRectF NodeItem::rightConnectionArea() const
   return QRectF(scenePos() + mRightPoint - QPointF(mRadius, mRadius), pos() + mRightPoint + QPointF(mRadius, mRadius));
 }
 
-ConnectionItem::ConnectionItem(NodeItem* startNode, NodeItem* endNode)
-    : QGraphicsLineItem()
-    , m_startNode(startNode)
-    , m_endNode(endNode)
+void NodeItem::addConnection(std::shared_ptr<ConnectionItem> connection)
 {
-  setPen(QPen(Qt::white, 2));  // Set line color and width
-  updateLine();
+  mInConnections.push_back(connection);
 }
 
-void ConnectionItem::updateLine()
+std::shared_ptr<ConnectionItem> NodeItem::startConnection(QPointF startPoint, QPointF endPoint)
 {
-  // Update the line to connect the two nodes
-  QPointF startPos = m_startNode->rightConnectionPoint();     // Right side of the start node
-  QPointF endPos = m_endNode->leftConnectionPoint();         // Left side of the end node
-  setLine(QLineF(startPos, endPos));  // Set the line between the two points
+  auto connection = std::make_shared<ConnectionItem>();
+  connection->setStart(Id(), startPoint);
+  connection->setEnd(TMP_CONNECTION_ID, endPoint);
+  return connection;
+}
+
+void NodeItem::endConnection(std::shared_ptr<ConnectionItem> connection)
+{
+  mOutConnections.push_back(connection);
+}
+
+void NodeItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
+{
+  QGraphicsItem::mouseMoveEvent(event);
+
+  for (auto& conn : mOutConnections)
+    conn->move(Id(), mRightPoint + scenePos());
+
+  for (auto& conn : mInConnections)
+    conn->move(Id(), mLeftPoint + scenePos());
+}
+
+ConnectionItem::ConnectionItem()
+    : QGraphicsLineItem()
+{
+  setPen(QPen(Qt::white, 2));  // Set line color and width
+}
+
+void ConnectionItem::setStart(QString id, QPointF point)
+{
+  mSrcId = id;
+  mSrcPoint = point;
+}
+
+void ConnectionItem::setEnd(QString id, QPointF point)
+{
+  mDstId = id;
+  mDstPoint = point;
+}
+
+void ConnectionItem::move(QString id, QPointF pos)
+{
+  if (id == mSrcId)
+  {
+    mSrcPoint = pos;
+    // LOG_INFO("Moving start to: (%f %f), (%f, %f)", mStartPoint.x(), mStartPoint.y(), mEndPoint.x(), mEndPoint.y());
+    setLine(QLineF(mSrcPoint, mDstPoint));
+  }
+  else if (id == mDstId)
+  {
+    mDstPoint = pos;
+    // LOG_INFO("Moving end to: (%f %f) (%f, %f)", mStartPoint.x(), mStartPoint.y(), mEndPoint.x(), mEndPoint.y());
+    setLine(QLineF(mSrcPoint, mDstPoint));
+  }
 }

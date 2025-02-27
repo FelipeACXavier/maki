@@ -34,7 +34,6 @@ VoidResult MainWindow::start()
 
   Canvas* canvas = new Canvas(mUI->graphicsView);
   mUI->graphicsView->setScene(canvas);
-  mUI->graphicsView->setAcceptDrops(true);
 
   loadElements();
 

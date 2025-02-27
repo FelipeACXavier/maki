@@ -40,7 +40,7 @@
         <string>left-panel</string>
        </property>
       </widget>
-      <widget class="QGraphicsView" name="graphicsView">
+      <widget class="CanvasView" name="graphicsView">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
          <horstretch>4</horstretch>
@@ -139,6 +139,13 @@
    <addaction name="menuHelp"/>
   </widget>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>CanvasView</class>
+   <extends>QGraphicsView</extends>
+   <header>view/canvas_view.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
