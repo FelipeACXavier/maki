@@ -2,17 +2,11 @@
 
 #include <QGraphicsSceneDragDropEvent>
 #include <QMimeData>
-#include <QTimer>
-#include <QUuid>
 
-#include "logging.h"
-
-static const QString TMP_CONNECTION_ID = QStringLiteral("tmp_id");
-
-QString printPoint(const QPointF& point)
-{
-  return QStringLiteral("(%1, %2)").arg(point.x(), point.y());
-}
+#include "app_configs.h"
+#include "connection.h"
+#include "node.h"
+#include "style_helpers.h"
 
 Canvas::Canvas(QObject* parent)
     : QGraphicsScene(parent)
@@ -20,6 +14,39 @@ Canvas::Canvas(QObject* parent)
   // setAcceptDrops(true);
   setProperty("class", QVariant(QStringLiteral("canvas")));
   setBackgroundBrush(QBrush(QColor("#212121")));
+}
+
+void Canvas::drawBackground(QPainter* painter, const QRectF& rect)
+{
+  const int gridSize = 20;  // Grid spacing
+
+  QPen lightPen(Qt::gray, 0.5, Qt::DotLine);
+  QPen darkPen(Qt::darkGray, 1, Qt::SolidLine);
+
+  painter->setPen(lightPen);
+
+  // Draw vertical grid lines
+  for (qreal x = std::floor(rect.left() / gridSize) * gridSize; x < rect.right(); x += gridSize)
+  {
+    painter->drawLine(QLineF(x, rect.top(), x, rect.bottom()));
+  }
+
+  // Draw horizontal grid lines
+  for (qreal y = std::floor(rect.top() / gridSize) * gridSize; y < rect.bottom(); y += gridSize)
+  {
+    painter->drawLine(QLineF(rect.left(), y, rect.right(), y));
+  }
+
+  // Draw thicker lines every 5 grid spaces (major grid)
+  painter->setPen(darkPen);
+  for (qreal x = std::floor(rect.left() / (gridSize * 5)) * (gridSize * 5); x < rect.right(); x += gridSize * 5)
+  {
+    painter->drawLine(QLineF(x, rect.top(), x, rect.bottom()));
+  }
+  for (qreal y = std::floor(rect.top() / (gridSize * 5)) * (gridSize * 5); y < rect.bottom(); y += gridSize * 5)
+  {
+    painter->drawLine(QLineF(rect.left(), y, rect.right(), y));
+  }
 }
 
 void Canvas::dragEnterEvent(QGraphicsSceneDragDropEvent* event)
@@ -40,7 +67,8 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
   {
     // Create and add a new node at the drop position
     NodeItem* node = new NodeItem();
-    node->setPos(event->scenePos() - node->topCorner());
+    node->setPos(snapToGrid(event->scenePos() - node->topCorner(), Savant::Config::GRID_SIZE));
+
     addItem(node);
 
     event->acceptProposedAction();
@@ -84,13 +112,9 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
 void Canvas::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
   if (m_connection)
-  {
-    m_connection->move(TMP_CONNECTION_ID, event->scenePos());
-  }
+    m_connection->move(Savant::Constants::TMP_CONNECTION_ID, event->scenePos());
   else
-  {
     QGraphicsScene::mouseMoveEvent(event);
-  }
 }
 
 void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
@@ -125,137 +149,5 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
   else
   {
     QGraphicsScene::mouseReleaseEvent(event);  // Allow normal item drop behavior
-  }
-}
-
-NodeItem::NodeItem(QGraphicsItem* parent)
-    : QGraphicsItem(parent)
-    , mId(QUuid::createUuid().toString())
-{
-  setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
-  setCacheMode(DeviceCoordinateCache);
-  setAcceptHoverEvents(true);
-  setZValue(1);
-}
-
-QString NodeItem::Id() const
-{
-  return mId;
-}
-
-QRectF NodeItem::boundingRect() const
-{
-  // The rectangle itself is limited by its left point and width, but because of the connection points we
-  // shift to the left and, therefore, need to double the radius for the "shift" to the right
-  //
-  // mLeft                 | ------------ |       mWidth
-  // mLeft - mRadius     | ------------ |         mWidth
-  // mLeft - mRadius     | -------------- |       mWidth + mRadius
-  // mLeft - mRadius     | ---------------- |     mWidth + 2 * mRadius
-  return QRectF(mLeft - mRadius, mTop, mWidth + 2 * mRadius, mHeight);
-}
-
-QPointF NodeItem::topCorner() const
-{
-  return QPointF(mWidth / 2, mHeight / 2);
-}
-
-void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget)
-{
-  Q_UNUSED(style);
-  Q_UNUSED(widget);
-
-  painter->setBrush(m_hovered ? Qt::red : Qt::lightGray);
-  painter->drawRect(mLeft, mTop, mWidth, mHeight);
-
-  // Left connection circle
-  painter->setBrush(Qt::red);
-  painter->drawEllipse(mLeftPoint, mRadius, mRadius);
-
-  // Right connection circle
-  painter->setBrush(Qt::green);
-  painter->drawEllipse(mRightPoint, mRadius, mRadius);
-}
-
-QPointF NodeItem::leftConnectionPoint() const
-{
-  return scenePos() + mLeftPoint;
-}
-
-QPointF NodeItem::rightConnectionPoint() const
-{
-  return scenePos() + mRightPoint;
-}
-
-QRectF NodeItem::leftConnectionArea() const
-{
-  return QRectF(scenePos() + mLeftPoint - QPointF(mRadius, mRadius), pos() + mLeftPoint + QPointF(mRadius, mRadius));
-}
-
-QRectF NodeItem::rightConnectionArea() const
-{
-  return QRectF(scenePos() + mRightPoint - QPointF(mRadius, mRadius), pos() + mRightPoint + QPointF(mRadius, mRadius));
-}
-
-void NodeItem::addConnection(std::shared_ptr<ConnectionItem> connection)
-{
-  mInConnections.push_back(connection);
-}
-
-std::shared_ptr<ConnectionItem> NodeItem::startConnection(QPointF startPoint, QPointF endPoint)
-{
-  auto connection = std::make_shared<ConnectionItem>();
-  connection->setStart(Id(), startPoint);
-  connection->setEnd(TMP_CONNECTION_ID, endPoint);
-  return connection;
-}
-
-void NodeItem::endConnection(std::shared_ptr<ConnectionItem> connection)
-{
-  mOutConnections.push_back(connection);
-}
-
-void NodeItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
-{
-  QGraphicsItem::mouseMoveEvent(event);
-
-  for (auto& conn : mOutConnections)
-    conn->move(Id(), mRightPoint + scenePos());
-
-  for (auto& conn : mInConnections)
-    conn->move(Id(), mLeftPoint + scenePos());
-}
-
-ConnectionItem::ConnectionItem()
-    : QGraphicsLineItem()
-{
-  setPen(QPen(Qt::white, 2));  // Set line color and width
-}
-
-void ConnectionItem::setStart(QString id, QPointF point)
-{
-  mSrcId = id;
-  mSrcPoint = point;
-}
-
-void ConnectionItem::setEnd(QString id, QPointF point)
-{
-  mDstId = id;
-  mDstPoint = point;
-}
-
-void ConnectionItem::move(QString id, QPointF pos)
-{
-  if (id == mSrcId)
-  {
-    mSrcPoint = pos;
-    // LOG_INFO("Moving start to: (%f %f), (%f, %f)", mStartPoint.x(), mStartPoint.y(), mEndPoint.x(), mEndPoint.y());
-    setLine(QLineF(mSrcPoint, mDstPoint));
-  }
-  else if (id == mDstId)
-  {
-    mDstPoint = pos;
-    // LOG_INFO("Moving end to: (%f %f) (%f, %f)", mStartPoint.x(), mStartPoint.y(), mEndPoint.x(), mEndPoint.y());
-    setLine(QLineF(mSrcPoint, mDstPoint));
   }
 }

@@ -94,13 +94,11 @@ VoidResult MainWindow::loadElementLibrary(const QString& name)
   return VoidResult();
 }
 
-
+// TODO(felaze): I dont think this is the place for this
 void MainWindow::startDrag() {
-  LOG_INFO("Pressed");
   QPushButton *button = qobject_cast<QPushButton *>(sender());
   if (!button) return;
 
-  LOG_INFO("Setting mime");
   QMimeData *mimeData = new QMimeData();
   mimeData->setData("application/x-node", QByteArray());
 

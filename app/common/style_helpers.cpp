@@ -13,3 +13,11 @@ void addClass(QWidget* widget, const QString& className)
 
   widget->setProperty(CLASS, QVariant(classList));
 }
+
+QPointF snapToGrid(const QPointF& point, const int gridSize)
+{
+  qreal snappedX = std::round(point.x() / gridSize) * gridSize;
+  qreal snappedY = std::round(point.y() / gridSize) * gridSize;
+
+  return QPointF(snappedX, snappedY);
+}
