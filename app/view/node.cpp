@@ -7,14 +7,15 @@
 #include "connection.h"
 #include "style_helpers.h"
 
-NodeItem::NodeItem(QGraphicsItem* parent)
+NodeItem::NodeItem(const QPointF& initialPosition, QGraphicsItem* parent)
     : QGraphicsItem(parent)
     , mId(QUuid::createUuid().toString())
 {
   setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
   setCacheMode(DeviceCoordinateCache);
   setAcceptHoverEvents(true);
-  setZValue(1);
+
+  setPos(snapToGrid(initialPosition - boundingRect().center(), Savant::Config::GRID_SIZE));
 }
 
 QString NodeItem::Id() const
@@ -32,11 +33,6 @@ QRectF NodeItem::boundingRect() const
   // mLeft - mRadius     | -------------- |       mWidth + mRadius
   // mLeft - mRadius     | ---------------- |     mWidth + 2 * mRadius
   return QRectF(mLeft - mRadius, mTop, mWidth + 2 * mRadius, mHeight);
-}
-
-QPointF NodeItem::topCorner() const
-{
-  return QPointF(mWidth / 2, mHeight / 2);
 }
 
 void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget)
@@ -97,16 +93,21 @@ void NodeItem::endConnection(std::shared_ptr<ConnectionItem> connection)
 void NodeItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
   QGraphicsItem::mouseMoveEvent(event);
+  updateConnections();
+}
 
+void NodeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
+{
+  setPos(snapToGrid(scenePos(), Savant::Config::GRID_SIZE));
+  updateConnections();
+  QGraphicsItem::mouseReleaseEvent(event);
+}
+
+void NodeItem::updateConnections()
+{
   for (auto& conn : mOutConnections)
     conn->move(Id(), mRightPoint + scenePos());
 
   for (auto& conn : mInConnections)
     conn->move(Id(), mLeftPoint + scenePos());
-}
-
-void NodeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
-  setPos(snapToGrid(scenePos(), Savant::Config::GRID_SIZE));  // Snap to the grid
-
-  QGraphicsItem::mouseReleaseEvent(event);
 }

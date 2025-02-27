@@ -6,7 +6,6 @@
 #include "app_configs.h"
 #include "connection.h"
 #include "node.h"
-#include "style_helpers.h"
 
 Canvas::Canvas(QObject* parent)
     : QGraphicsScene(parent)
@@ -65,12 +64,7 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
 {
   if (event->mimeData()->hasFormat("application/x-node"))
   {
-    // Create and add a new node at the drop position
-    NodeItem* node = new NodeItem();
-    node->setPos(snapToGrid(event->scenePos() - node->topCorner(), Savant::Config::GRID_SIZE));
-
-    addItem(node);
-
+    addItem(new NodeItem(event->scenePos()));
     event->acceptProposedAction();
   }
 }
@@ -83,28 +77,27 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
   // If the press is on the left or right connection point of a node, start drawing
   if (item && qgraphicsitem_cast<NodeItem*>(item))
   {
-    NodeItem* node = static_cast<NodeItem*>(item);
     if (event->button() == Qt::LeftButton)
     {
+      QPointF startPoint;
+      NodeItem* node = static_cast<NodeItem*>(item);
+
       // Check if the user clicked near the left or right connection point
       if (node->leftConnectionArea().contains(event->scenePos()))
-      {
-        m_startNode = node;
-        m_connection = node->startConnection(node->leftConnectionPoint(), event->scenePos());
-        addItem(m_connection.get());
-
-        return;  // Return early to avoid blocking default move behavior
-      }
+        startPoint = node->leftConnectionPoint();
       else if (node->rightConnectionArea().contains(event->scenePos()))
+        startPoint = node->rightConnectionPoint();
+
+      if (!startPoint.isNull())
       {
         m_startNode = node;
-        m_connection = node->startConnection(node->rightConnectionPoint(), event->scenePos());
+        m_connection = node->startConnection(startPoint, event->scenePos());
         addItem(m_connection.get());
-
         return;
       }
     }
   }
+
   // Otherwise, let the item move as usual
   QGraphicsScene::mousePressEvent(event);
 }
@@ -127,23 +120,24 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
       if (item && qgraphicsitem_cast<NodeItem*>(item) && item != m_startNode)
       {
         NodeItem* node = static_cast<NodeItem*>(item);
+        QPointF endPoint;
 
         // Check if we are inside another connection point
         if (node->leftConnectionArea().contains(event->scenePos()))
-        {
-          m_connection->setEnd(node->Id(), node->leftConnectionPoint());
-          m_startNode->endConnection(m_connection);
-          node->addConnection(m_connection);
-        }
+          endPoint = node->leftConnectionPoint();
         else if (node->rightConnectionArea().contains(event->scenePos()))
+          endPoint = node->rightConnectionPoint();
+
+        if (!endPoint.isNull())
         {
-          m_connection->setEnd(node->Id(), node->rightConnectionPoint());
+          m_connection->setEnd(node->Id(), endPoint);
           m_startNode->endConnection(m_connection);
           node->addConnection(m_connection);
         }
       }
 
       m_connection = nullptr;
+      m_startNode = nullptr;
     }
   }
   else

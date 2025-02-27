@@ -8,7 +8,7 @@ class ConnectionItem;
 class NodeItem : public QGraphicsItem
 {
 public:
-  NodeItem(QGraphicsItem* parent = nullptr);
+  NodeItem(const QPointF& initialPosition, QGraphicsItem* parent = nullptr);
 
   QString Id() const;
 
@@ -22,19 +22,17 @@ public:
   QRectF leftConnectionArea() const;
   QRectF rightConnectionArea() const;
 
-  QPointF topCorner() const;
-
   void addConnection(std::shared_ptr<ConnectionItem> connection);
   std::shared_ptr<ConnectionItem> startConnection(QPointF startPoint, QPointF endPoint);
   void endConnection(std::shared_ptr<ConnectionItem> connection);
-
-  // QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
 
 protected:
   void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
   void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
 
 private:
+const QString mId;
+
   const float mWidth = 100;
   const float mHeight = 50;
   const float mLeft = 0;
@@ -49,5 +47,5 @@ private:
   const QPointF mLeftPoint{mLeft, mHeight / 2};
   const QPointF mRightPoint{mWidth, mHeight / 2};
 
-  const QString mId;
+  void updateConnections();
 };

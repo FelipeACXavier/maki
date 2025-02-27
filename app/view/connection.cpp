@@ -2,10 +2,17 @@
 
 #include <QPen>
 
+static const qreal CONTROL_POINT_SHIFT = 100;
+
 ConnectionItem::ConnectionItem()
-    : QGraphicsLineItem()
+    : QGraphicsPathItem()
 {
-  setPen(QPen(Qt::white, 2));  // Set line color and width
+  // Make sure the connections are behind the nodes
+  setZValue(-1);
+
+  // Set line color and width
+  // TODO(felaze): make conigurable
+  setPen(QPen(Qt::white, 2));
 }
 
 void ConnectionItem::setStart(QString id, QPointF point)
@@ -23,15 +30,19 @@ void ConnectionItem::setEnd(QString id, QPointF point)
 void ConnectionItem::move(QString id, QPointF pos)
 {
   if (id == mSrcId)
-  {
     mSrcPoint = pos;
-    // LOG_INFO("Moving start to: (%f %f), (%f, %f)", mStartPoint.x(), mStartPoint.y(), mEndPoint.x(), mEndPoint.y());
-    setLine(QLineF(mSrcPoint, mDstPoint));
-  }
   else if (id == mDstId)
-  {
     mDstPoint = pos;
-    // LOG_INFO("Moving end to: (%f %f) (%f, %f)", mStartPoint.x(), mStartPoint.y(), mEndPoint.x(), mEndPoint.y());
-    setLine(QLineF(mSrcPoint, mDstPoint));
-  }
+  else
+    return;
+
+  // Control points for Bézier curve
+  QPointF control1(mSrcPoint.x() + CONTROL_POINT_SHIFT, mSrcPoint.y());
+  QPointF control2(mDstPoint.x() - CONTROL_POINT_SHIFT, mDstPoint.y());
+
+  QPainterPath path;
+  path.moveTo(mSrcPoint);
+  path.cubicTo(control1, control2, mDstPoint);
+
+  setPath(path);
 }
