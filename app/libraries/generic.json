@@ -1,0 +1,22 @@
+{
+  "name": "Generic",
+  "author": "",
+  "elements": [
+    {
+      "view" : {
+        "body": {
+          "shape": "",
+          "background": ""
+        },
+        "connectors": [
+          {
+            "x": 0,
+            "y": 0
+          }
+        ]
+      },
+      "behaviour" : {
+      }
+    }
+  ]
+}

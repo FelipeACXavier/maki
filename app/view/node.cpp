@@ -9,11 +9,10 @@
 #include "connection.h"
 #include "style_helpers.h"
 
-
 Connector::Connector(const QPointF& center, int radius, QGraphicsItem* parent)
-  : QGraphicsEllipseItem(QRectF(center - QPointF(radius, radius), center + QPointF(radius, radius)), parent)
-  , mId(QUuid::createUuid().toString())
-  , mCenter(center)
+    : QGraphicsEllipseItem(QRectF(center - QPointF(radius, radius), center + QPointF(radius, radius)), parent)
+    , mId(QUuid::createUuid().toString())
+    , mCenter(center)
 {
   setZValue(1);
   setBrush(Qt::blue);
@@ -38,7 +37,7 @@ QPointF Connector::center() const
 void Connector::updateConnections()
 {
   for (auto& conn : mConnections)
-     conn->move(Id(), center());
+    conn->move(Id(), center());
 }
 
 void Connector::addConnection(std::shared_ptr<ConnectionItem> connection)

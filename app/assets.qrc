@@ -1,5 +1,7 @@
 <RCC>
     <qresource prefix="/">
         <file>assets/style.css</file>
+        <file>assets/config.json</file>
+        <file>libraries/generic.json</file>
     </qresource>
 </RCC>

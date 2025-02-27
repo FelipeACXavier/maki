@@ -26,7 +26,7 @@ protected:
   void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
   void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
 
-  void drawBackground(QPainter *painter, const QRectF &rect) override;
+  void drawBackground(QPainter* painter, const QRectF& rect) override;
 
 private:
   // TODO(felaze): Move connection behaviour to a separate class

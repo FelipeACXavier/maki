@@ -7,6 +7,7 @@
 #include <QDir>
 #include <QMainWindow>
 #include <QStringLiteral>
+#include <nlohmann/json.hpp>
 
 #include "result.h"
 
@@ -29,9 +30,10 @@ public:
 
 private:
   std::unique_ptr<Ui::MainWindow> mUI;
+  nlohmann::json mConfig;
 
   VoidResult loadElements();
-  VoidResult loadElementLibrary(const QString& name);
+  VoidResult loadElementLibrary(const nlohmann::json& config);
 
   void startDrag();
 };

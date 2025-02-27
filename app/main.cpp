@@ -40,7 +40,13 @@ int main(int argc, char* argv[])
 
   file.close();
 
-  system.start();
+  auto started = system.start();
+  if (!started.IsSuccess())
+  {
+    LOG_ERROR("Failed to start main window: %s", started.ErrorMessage().c_str());
+    return -1;
+  }
+
   system.show();
 
   return app.exec();

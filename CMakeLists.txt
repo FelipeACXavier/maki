@@ -29,5 +29,5 @@ find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets
 qt_standard_project_setup(REQUIRES 6.8)
 
 # add_subdirectory(plugins)
-add_subdirectory(3rdparty/CppHelpers)
+add_subdirectory(3rdparty)
 add_subdirectory(app)

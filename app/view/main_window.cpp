@@ -1,14 +1,13 @@
 #include "main_window.h"
 
+#include <QDrag>
 #include <QLabel>
 #include <QListWidgetItem>
+#include <QMimeData>
 #include <QPushButton>
 #include <QString>
 #include <QVBoxLayout>
 #include <QWidget>
-#include <QPushButton>
-#include <QDrag>
-#include <QMimeData>
 
 #include "app_configs.h"
 #include "canvas.h"
@@ -33,6 +32,12 @@ VoidResult MainWindow::start()
 {
   LOG_INFO("Starting the main window");
 
+  QFile configFile(QStringLiteral(":/assets/config.json"));
+  if (!configFile.open(QFile::ReadOnly))
+    return VoidResult::Failed("Failed to open configuration");
+
+  mConfig = nlohmann::json::parse(configFile.readAll().toStdString());
+
   Canvas* canvas = new Canvas(mUI->graphicsView);
   mUI->graphicsView->setScene(canvas);
 
@@ -47,15 +52,38 @@ VoidResult MainWindow::loadElements()
 {
   LOG_INFO("Loading the elements");
 
-  for (int i = 0; i < 3; ++i)
-    RETURN_ON_FAILURE(loadElementLibrary(QStringLiteral("Library %1").arg(i)));
+  if (!mConfig.contains("libraries"))
+    return VoidResult::Failed("Not a single library was specified");
+
+  auto libraries = mConfig["libraries"];
+  if (!libraries.is_array())
+    return VoidResult::Failed("Libraries must be in a list in the format \"libraries\": []");
+
+  for (const auto& library : libraries)
+  {
+    QString libraryName = QString::fromStdString(library.template get<std::string>());
+
+    QFile libraryFile(QStringLiteral(":/libraries/%1.json").arg(libraryName));
+
+    if (!libraryFile.open(QFile::ReadOnly))
+      return VoidResult::Failed("Failed to open configuration");
+
+    auto libConfig = nlohmann::json::parse(libraryFile.readAll().toStdString());
+
+    RETURN_ON_FAILURE(loadElementLibrary(libConfig));
+  }
 
   return VoidResult();
 }
 
 // TODO(felaze): Get this from the configuration file and convert to function
-VoidResult MainWindow::loadElementLibrary(const QString& name)
+VoidResult MainWindow::loadElementLibrary(const nlohmann::json& config)
 {
+  if (!config.contains("name"))
+    return VoidResult::Failed("Libraries must have a name");
+
+  QString name = QString::fromStdString(config["name"].template get<std::string>());
+
   // Every library is added to a new item in the toolbox.
   // We load those dynamically on startup.
   QListWidget* listWidget = new QListWidget();
@@ -96,14 +124,16 @@ VoidResult MainWindow::loadElementLibrary(const QString& name)
 }
 
 // TODO(felaze): I dont think this is the place for this
-void MainWindow::startDrag() {
-  QPushButton *button = qobject_cast<QPushButton *>(sender());
-  if (!button) return;
+void MainWindow::startDrag()
+{
+  QPushButton* button = qobject_cast<QPushButton*>(sender());
+  if (!button)
+    return;
 
-  QMimeData *mimeData = new QMimeData();
+  QMimeData* mimeData = new QMimeData();
   mimeData->setData(Constants::TYPE_NODE, QByteArray());
 
-  QDrag *drag = new QDrag(button);
+  QDrag* drag = new QDrag(button);
   drag->setMimeData(mimeData);
 
   // Create a preview pixmap
@@ -120,7 +150,7 @@ void MainWindow::startDrag() {
   painter.end();
 
   drag->setPixmap(pixmap);
-  drag->setHotSpot(QPoint(50, 25)); // Center the preview on the cursor
+  drag->setHotSpot(QPoint(50, 25));  // Center the preview on the cursor
 
   drag->exec(Qt::CopyAction);
 }
