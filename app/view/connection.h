@@ -3,33 +3,22 @@
 #include <QGraphicsLineItem>
 #include <QGraphicsPathItem>
 
-// class ConnectionItem : public QGraphicsLineItem
-// {
-// public:
-//   ConnectionItem();
-
-//   void setStart(QString id, QPointF point);
-//   void setEnd(QString id, QPointF point);
-
-//   void move(QString id, QPointF pos);
-
-// private:
-//   QPointF mSrcPoint;
-//   QPointF mDstPoint;
-
-//   QString mSrcId;
-//   QString mDstId;
-// };
+#include "types.h"
 
 class ConnectionItem : public QGraphicsPathItem
 {
 public:
+  enum
+  {
+    Type = UserType + Type::CONNECTION
+  };
+
   ConnectionItem();
 
-  void setStart(QString id, QPointF point);
-  void setEnd(QString id, QPointF point);
+  void setStart(const QString& id, QPointF point);
+  void setEnd(const QString& id, QPointF point);
 
-  void move(QString id, QPointF pos);
+  void move(const QString& id, QPointF pos);
 
 private:
   QPointF mSrcPoint;

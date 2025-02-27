@@ -15,19 +15,19 @@ ConnectionItem::ConnectionItem()
   setPen(QPen(Qt::white, 2));
 }
 
-void ConnectionItem::setStart(QString id, QPointF point)
+void ConnectionItem::setStart(const QString& id, QPointF point)
 {
   mSrcId = id;
   mSrcPoint = point;
 }
 
-void ConnectionItem::setEnd(QString id, QPointF point)
+void ConnectionItem::setEnd(const QString& id, QPointF point)
 {
   mDstId = id;
   mDstPoint = point;
 }
 
-void ConnectionItem::move(QString id, QPointF pos)
+void ConnectionItem::move(const QString& id, QPointF pos)
 {
   if (id == mSrcId)
     mSrcPoint = pos;

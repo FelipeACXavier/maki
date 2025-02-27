@@ -9,6 +9,7 @@
 #include <QPainter>
 
 class NodeItem;
+class Connector;
 class ConnectionItem;
 
 class Canvas : public QGraphicsScene
@@ -28,6 +29,8 @@ protected:
   void drawBackground(QPainter *painter, const QRectF &rect) override;
 
 private:
-  NodeItem* m_startNode = nullptr;
-  std::shared_ptr<ConnectionItem> m_connection = nullptr;
+  // TODO(felaze): Move connection behaviour to a separate class
+  Connector* mConnector = nullptr;
+  Connector* mHoveredConnector = nullptr;
+  std::shared_ptr<ConnectionItem> mConnection = nullptr;
 };

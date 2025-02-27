@@ -13,9 +13,9 @@ using namespace Qt::StringLiterals;
 int main(int argc, char* argv[])
 {
   QApplication app(argc, argv);
-  QCoreApplication::setOrganizationName(Savant::Config::ORGANIZATION_NAME);
-  QCoreApplication::setApplicationName(Savant::Config::APPLICATION_NAME);
-  QCoreApplication::setApplicationVersion(Savant::Config::VERSION);
+  QCoreApplication::setOrganizationName(Config::ORGANIZATION_NAME);
+  QCoreApplication::setApplicationName(Config::APPLICATION_NAME);
+  QCoreApplication::setApplicationVersion(Config::VERSION);
 
   // QCommandLineParser parser;
   // parser.setApplicationDescription(

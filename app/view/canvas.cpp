@@ -50,98 +50,95 @@ void Canvas::drawBackground(QPainter* painter, const QRectF& rect)
 
 void Canvas::dragEnterEvent(QGraphicsSceneDragDropEvent* event)
 {
-  if (event->mimeData()->hasFormat("application/x-node"))
+  if (event->mimeData()->hasFormat(Constants::TYPE_NODE))
     event->acceptProposedAction();
 }
 
 void Canvas::dragMoveEvent(QGraphicsSceneDragDropEvent* event)
 {
-  if (event->mimeData()->hasFormat("application/x-node"))
+  if (event->mimeData()->hasFormat(Constants::TYPE_NODE))
     event->acceptProposedAction();
 }
 
 void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
 {
-  if (event->mimeData()->hasFormat("application/x-node"))
+  if (event->mimeData()->hasFormat(Constants::TYPE_NODE))
   {
     addItem(new NodeItem(event->scenePos()));
     event->acceptProposedAction();
   }
 }
 
-// Handle connecting two nodes
 void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
-  QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
-
   // If the press is on the left or right connection point of a node, start drawing
-  if (item && qgraphicsitem_cast<NodeItem*>(item))
+  if (event->button() == Qt::LeftButton)
   {
-    if (event->button() == Qt::LeftButton)
+    QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
+    if (item && item->type() == Connector::Type)
     {
-      QPointF startPoint;
-      NodeItem* node = static_cast<NodeItem*>(item);
+      Connector* connector = static_cast<Connector*>(item);
 
-      // Check if the user clicked near the left or right connection point
-      if (node->leftConnectionArea().contains(event->scenePos()))
-        startPoint = node->leftConnectionPoint();
-      else if (node->rightConnectionArea().contains(event->scenePos()))
-        startPoint = node->rightConnectionPoint();
+      mConnector = connector;
+      mConnection = std::make_shared<ConnectionItem>();
+      mConnection->setStart(connector->Id(), connector->center());
+      mConnection->setEnd(Constants::TMP_CONNECTION_ID, event->scenePos());
 
-      if (!startPoint.isNull())
-      {
-        m_startNode = node;
-        m_connection = node->startConnection(startPoint, event->scenePos());
-        addItem(m_connection.get());
-        return;
-      }
+      // connector->startConnection(event->scenePos());
+      addItem(mConnection.get());
+      return;
     }
   }
 
-  // Otherwise, let the item move as usual
   QGraphicsScene::mousePressEvent(event);
 }
 
 void Canvas::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
-  if (m_connection)
-    m_connection->move(Savant::Constants::TMP_CONNECTION_ID, event->scenePos());
-  else
-    QGraphicsScene::mouseMoveEvent(event);
+  if (mConnection)
+  {
+    // Find the nearest Connector while dragging
+    QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
+    if (item && item->type() == Connector::Type)
+    {
+      mHoveredConnector = dynamic_cast<Connector*>(item);
+      mHoveredConnector->setBrush(Qt::green);
+    }
+    else if (mHoveredConnector)
+    {
+      mHoveredConnector->setBrush(Qt::blue);
+      mHoveredConnector = nullptr;
+    }
+
+    mConnection->move(Constants::TMP_CONNECTION_ID, event->scenePos() - QPointF(5, 5));
+  }
+
+  QGraphicsScene::mouseMoveEvent(event);
 }
 
 void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
-  if (m_connection)
+  if (mConnection)
   {
     if (event->button() == Qt::LeftButton)
     {
       QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
-      if (item && qgraphicsitem_cast<NodeItem*>(item) && item != m_startNode)
+      if (item && item->type() == Connector::Type)
       {
-        NodeItem* node = static_cast<NodeItem*>(item);
-        QPointF endPoint;
-
-        // Check if we are inside another connection point
-        if (node->leftConnectionArea().contains(event->scenePos()))
-          endPoint = node->leftConnectionPoint();
-        else if (node->rightConnectionArea().contains(event->scenePos()))
-          endPoint = node->rightConnectionPoint();
-
-        if (!endPoint.isNull())
+        Connector* connector = static_cast<Connector*>(item);
+        if (connector != mConnector)
         {
-          m_connection->setEnd(node->Id(), endPoint);
-          m_startNode->endConnection(m_connection);
-          node->addConnection(m_connection);
+          mConnection->setEnd(connector->Id(), connector->center());
+
+          connector->addConnection(mConnection);
+          mConnector->addConnection(mConnection);
         }
       }
 
-      m_connection = nullptr;
-      m_startNode = nullptr;
+      mConnection = nullptr;
+      mConnector = nullptr;
     }
   }
-  else
-  {
-    QGraphicsScene::mouseReleaseEvent(event);  // Allow normal item drop behavior
-  }
+
+  QGraphicsScene::mouseReleaseEvent(event);  // Allow normal item drop behavior
 }

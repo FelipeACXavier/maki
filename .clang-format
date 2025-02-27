@@ -1,6 +1,7 @@
 BasedOnStyle: Google
 AccessModifierOffset: -2
 BreakBeforeBraces: Allman
+BraceWrapping:
 ColumnLimit: 0
 AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: false

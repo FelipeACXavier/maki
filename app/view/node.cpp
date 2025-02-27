@@ -1,5 +1,7 @@
 #include "node.h"
 
+#include <QGraphicsSceneHoverEvent>
+#include <QGraphicsSceneMouseEvent>
 #include <QPainter>
 #include <QUuid>
 
@@ -7,20 +9,86 @@
 #include "connection.h"
 #include "style_helpers.h"
 
+
+Connector::Connector(const QPointF& center, int radius, QGraphicsItem* parent)
+  : QGraphicsEllipseItem(QRectF(center - QPointF(radius, radius), center + QPointF(radius, radius)), parent)
+  , mId(QUuid::createUuid().toString())
+  , mCenter(center)
+{
+  setZValue(1);
+  setBrush(Qt::blue);
+  setAcceptHoverEvents(true);
+}
+
+QString Connector::Id() const
+{
+  return mId;
+}
+
+int Connector::type() const
+{
+  return Type;
+}
+
+QPointF Connector::center() const
+{
+  return scenePos() + mCenter;
+}
+
+void Connector::updateConnections()
+{
+  for (auto& conn : mConnections)
+     conn->move(Id(), center());
+}
+
+void Connector::addConnection(std::shared_ptr<ConnectionItem> connection)
+{
+  mConnections.push_back(connection);
+  updateConnections();
+}
+
+void Connector::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
+{
+  // Check if hovering over a connection point
+  if (contains(event->pos()))
+    setBrush(Qt::green);
+  else if (contains(event->pos()))
+    setBrush(Qt::green);
+
+  QGraphicsEllipseItem::hoverEnterEvent(event);
+}
+
+void Connector::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
+{
+  // Reset color when leaving the connection point
+  setBrush(Qt::blue);
+  setBrush(Qt::blue);
+
+  QGraphicsEllipseItem::hoverLeaveEvent(event);
+}
+
 NodeItem::NodeItem(const QPointF& initialPosition, QGraphicsItem* parent)
     : QGraphicsItem(parent)
     , mId(QUuid::createUuid().toString())
 {
   setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
   setCacheMode(DeviceCoordinateCache);
-  setAcceptHoverEvents(true);
 
-  setPos(snapToGrid(initialPosition - boundingRect().center(), Savant::Config::GRID_SIZE));
+  // Create connection points as ellipses
+  mConnectors.append(std::make_shared<Connector>(mLeftPoint, mRadius, this));
+  mConnectors.append(std::make_shared<Connector>(mRightPoint, mRadius, this));
+
+  setPos(snapToGrid(initialPosition - boundingRect().center(), Config::GRID_SIZE));
 }
 
 QString NodeItem::Id() const
 {
   return mId;
+}
+
+int NodeItem::type() const
+{
+  return Type;
 }
 
 QRectF NodeItem::boundingRect() const
@@ -72,42 +140,21 @@ QRectF NodeItem::rightConnectionArea() const
   return QRectF(scenePos() + mRightPoint - QPointF(mRadius, mRadius), pos() + mRightPoint + QPointF(mRadius, mRadius));
 }
 
-void NodeItem::addConnection(std::shared_ptr<ConnectionItem> connection)
-{
-  mInConnections.push_back(connection);
-}
-
-std::shared_ptr<ConnectionItem> NodeItem::startConnection(QPointF startPoint, QPointF endPoint)
-{
-  auto connection = std::make_shared<ConnectionItem>();
-  connection->setStart(Id(), startPoint);
-  connection->setEnd(Savant::Constants::TMP_CONNECTION_ID, endPoint);
-  return connection;
-}
-
-void NodeItem::endConnection(std::shared_ptr<ConnectionItem> connection)
-{
-  mOutConnections.push_back(connection);
-}
-
 void NodeItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
   QGraphicsItem::mouseMoveEvent(event);
-  updateConnections();
+  updateConnectors();
 }
 
 void NodeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
-  setPos(snapToGrid(scenePos(), Savant::Config::GRID_SIZE));
-  updateConnections();
+  setPos(snapToGrid(scenePos(), Config::GRID_SIZE));
+  updateConnectors();
   QGraphicsItem::mouseReleaseEvent(event);
 }
 
-void NodeItem::updateConnections()
+void NodeItem::updateConnectors()
 {
-  for (auto& conn : mOutConnections)
-    conn->move(Id(), mRightPoint + scenePos());
-
-  for (auto& conn : mInConnections)
-    conn->move(Id(), mLeftPoint + scenePos());
+  for (auto& connector : mConnectors)
+    connector->updateConnections();
 }

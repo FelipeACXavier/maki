@@ -10,6 +10,7 @@
 #include <QDrag>
 #include <QMimeData>
 
+#include "app_configs.h"
 #include "canvas.h"
 #include "logging.h"
 #include "ui_editor.h"
@@ -100,7 +101,7 @@ void MainWindow::startDrag() {
   if (!button) return;
 
   QMimeData *mimeData = new QMimeData();
-  mimeData->setData("application/x-node", QByteArray());
+  mimeData->setData(Constants::TYPE_NODE, QByteArray());
 
   QDrag *drag = new QDrag(button);
   drag->setMimeData(mimeData);
