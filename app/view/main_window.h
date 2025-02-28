@@ -8,6 +8,7 @@
 #include <QMainWindow>
 #include <QStringLiteral>
 
+#include "config_table.h"
 #include "json.h"
 #include "result.h"
 
@@ -29,8 +30,9 @@ public:
   VoidResult start();
 
 private:
-  std::unique_ptr<Ui::MainWindow> mUI;
   JSON mConfig;
+  std::unique_ptr<Ui::MainWindow> mUI;
+  std::shared_ptr<ConfigurationTable> mConfigTable;
 
   VoidResult loadElements();
   VoidResult loadElementLibrary(const JSON& config);

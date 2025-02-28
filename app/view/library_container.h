@@ -1,9 +1,9 @@
 #pragma once
 
 #include <QGraphicsView>
-#include <QJsonValueConstRef>
 #include <QToolBox>
 
+#include "elements/config.h"
 #include "result.h"
 
 class DraggableItem;
@@ -15,7 +15,7 @@ public:
 
   static LibraryContainer* create(const QString& name, QToolBox* parent);
 
-  VoidResult addNode(const QJsonValueConstRef& config);
+  VoidResult addNode(const QString& id, std::shared_ptr<NodeConfig> config);
 
 protected:
   void resizeEvent(QResizeEvent* event) override;

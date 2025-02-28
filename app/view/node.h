@@ -2,9 +2,9 @@
 
 #include <QGraphicsEllipseItem>
 #include <QGraphicsItem>
-#include <QPixmap>
 #include <memory>
 
+#include "elements/config.h"
 #include "types.h"
 
 class ConnectionItem;
@@ -47,7 +47,7 @@ public:
     Type = UserType + Type::NODE
   };
 
-  NodeItem(const QPointF& initialPosition, const QPixmap& map, QGraphicsItem* parent = nullptr);
+  NodeItem(const QPointF& initialPosition, const QPixmap& map, std::shared_ptr<NodeConfig> config, QGraphicsItem* parent = nullptr);
 
   QString Id() const;
 
@@ -56,13 +56,6 @@ public:
   QRectF boundingRect() const override;
   void paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*) override;
 
-  // Get the connection points
-  QPointF leftConnectionPoint() const;
-  QPointF rightConnectionPoint() const;
-
-  QRectF leftConnectionArea() const;
-  QRectF rightConnectionArea() const;
-
 protected:
   void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
   void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
@@ -70,20 +63,11 @@ protected:
 private:
   const QString mId;
 
-  const float mWidth = 100;
-  const float mHeight = 50;
-  const float mLeft = 0;
-  const float mTop = 0;
-  const float mRadius = 5;
-
   bool m_hovered{false};
+  std::shared_ptr<NodeConfig> mConfig;
 
-  QPixmap mPixmap;
   std::shared_ptr<QGraphicsPixmapItem> mPixmapItem;
   QVector<std::shared_ptr<Connector>> mConnectors;
-
-  const QPointF mLeftPoint{mLeft, mHeight / 2};
-  const QPointF mRightPoint{mWidth, mHeight / 2};
 
   void updateConnectors();
 };

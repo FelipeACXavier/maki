@@ -1,9 +1,9 @@
 #include "library_container.h"
 
 #include <QGraphicsScene>
-#include <QJsonObject>
 #include <QVBoxLayout>
 
+#include "elements/config.h"
 #include "elements/movable.h"
 
 static const int PADDING = 15;
@@ -39,24 +39,16 @@ LibraryContainer* LibraryContainer::create(const QString& name, QToolBox* parent
   return container;
 }
 
-VoidResult LibraryContainer::addNode(const QJsonValueConstRef& config)
+VoidResult LibraryContainer::addNode(const QString& id, std::shared_ptr<NodeConfig> config)
 {
-  if (!config.isObject())
-    return VoidResult::Failed("Invalid node format");
-
-  QJsonObject node = config.toObject();
-  if (!node.contains("name"))
-    return VoidResult::Failed("Nodes must contain a name");
-
   // Create Draggable Items
-  DraggableItem* item1 = new DraggableItem(node["name"].toString());
+  DraggableItem* item = new DraggableItem(id, config);
 
   // Center the item in the sidebar and make sure it is below the last item added
-  int x_center = 100;
-  item1->setPos(x_center, getYOfLastItem() + PADDING);
+  item->setPos(100, getYOfLastItem() + PADDING);
 
   // Add item to scene
-  scene()->addItem(item1);
+  scene()->addItem(item);
 
   return VoidResult();
 }
@@ -69,16 +61,13 @@ void LibraryContainer::resizeEvent(QResizeEvent* event)
 
 void LibraryContainer::adjustNodePositions()
 {
-  // Get the updated width of the sidebar
-  int viewWidth = viewport()->width();
-
   // Reposition each node in the scene to the center based on the new width
   for (QGraphicsItem* item : scene()->items())
   {
     if (item->type() != DraggableItem::Type)
       continue;
 
-    dynamic_cast<DraggableItem*>(item)->adjustWidth(viewWidth);
+    dynamic_cast<DraggableItem*>(item)->adjustWidth(viewport()->width());
   }
 }
 

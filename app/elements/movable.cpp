@@ -8,15 +8,19 @@
 
 #include "app_configs.h"
 
-DraggableItem::DraggableItem(const QString& text, QGraphicsItem* parent)
-    : QGraphicsRectItem(0, 0, 100, 50, parent)
+DraggableItem::DraggableItem(const QString& id, std::shared_ptr<NodeConfig> config, QGraphicsItem* parent)
+    : QGraphicsRectItem(parent)
+    , mId(id)
+    , mConfig(config)
 {
-  setAcceptDrops(false);
-  setBrush(Qt::lightGray);
-
   // Create the text item (for the label inside the rectangle)
-  mLabel = std::make_shared<QGraphicsTextItem>(text, this);
-  mLabel->setDefaultTextColor(Qt::black);
+  mLabel = std::make_shared<QGraphicsTextItem>(mConfig->name, this);
+
+  setPen(mConfig->body.borderColor);
+  setBrush(mConfig->body.backgroundColor);
+  setRect(0, 0, mConfig->body.width, mConfig->body.height);
+
+  mLabel->setDefaultTextColor(mConfig->body.textColor);
 
   updateLabelPosition();
 }
@@ -25,9 +29,33 @@ DraggableItem::~DraggableItem()
 {
 }
 
+QString DraggableItem::Id() const
+{
+  return mId;
+}
+
 int DraggableItem::type() const
 {
   return Type;
+}
+
+void DraggableItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
+{
+  // Set rounded corners by using a QRectF with the desired corner radius
+  painter->setPen(mConfig->body.borderColor);
+  painter->setBrush(mConfig->body.backgroundColor);
+
+  painter->setRenderHint(QPainter::Antialiasing, false);
+
+  painter->drawRoundedRect(rect(), 5, 5);  // 10 is the radius of the corners
+}
+
+// Override shape() to define the item's collision shape with rounded corners
+QPainterPath DraggableItem::shape() const
+{
+  QPainterPath path;
+  path.addRoundedRect(rect(), 10, 10);  // 10 is the corner radius
+  return path;
 }
 
 void DraggableItem::adjustWidth(int width)
@@ -59,11 +87,13 @@ void DraggableItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
   pixmap.fill(Qt::transparent);
 
   QPainter painter(&pixmap);
-  painter.setRenderHint(QPainter::Antialiasing);
+  painter.setRenderHint(QPainter::Antialiasing, false);
+  painter.setRenderHint(QPainter::TextAntialiasing, false);
 
   QStyleOptionGraphicsItem opt;
   paint(&painter, &opt);
 
+  painter.setPen(mLabel->defaultTextColor());
   painter.drawText(pixmap.rect(), Qt::AlignCenter, mLabel->toPlainText());
 
   // Serialize it so it is copied
@@ -75,6 +105,7 @@ void DraggableItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
   // Save data
   QMimeData* mimeData = new QMimeData();
   mimeData->setData(Constants::TYPE_NODE, QByteArray());
+  mimeData->setData(Constants::TYPE_NODE_ID, Id().toUtf8());
   mimeData->setData(Constants::TYPE_PIXMAP, pixmapData);
 
   // Create drag itself

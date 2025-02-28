@@ -66,19 +66,21 @@ void Connector::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
   QGraphicsEllipseItem::hoverLeaveEvent(event);
 }
 
-NodeItem::NodeItem(const QPointF& initialPosition, const QPixmap& map, QGraphicsItem* parent)
+NodeItem::NodeItem(const QPointF& initialPosition, const QPixmap& pixmap, std::shared_ptr<NodeConfig> config, QGraphicsItem* parent)
     : QGraphicsItem(parent)
     , mId(QUuid::createUuid().toString())
-    , mPixmap(map)
+    , mConfig(config)
 {
   setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
   setCacheMode(DeviceCoordinateCache);
 
-  // Create connection points as ellipses
-  mConnectors.append(std::make_shared<Connector>(mLeftPoint, mRadius, this));
-  mConnectors.append(std::make_shared<Connector>(mRightPoint, mRadius, this));
+  mPixmapItem = std::make_shared<QGraphicsPixmapItem>(pixmap, this);
 
-  mPixmapItem = std::make_shared<QGraphicsPixmapItem>(mPixmap, this);
+  for (const auto& connector : mConfig->connectors)
+    mConnectors.append(std::make_shared<Connector>(connector.getPosition(boundingRect()), Config::CONNECTOR_RADIUS, this));
+
+  // Create connection points as ellipses
+  // mConnectors.append(std::make_shared<Connector>(mRightPoint, Config::CONNECTOR_RADIUS, this));
 
   setPos(snapToGrid(initialPosition - boundingRect().center(), Config::GRID_SIZE));
 }
@@ -95,14 +97,6 @@ int NodeItem::type() const
 
 QRectF NodeItem::boundingRect() const
 {
-  // The rectangle itself is limited by its left point and width, but because of the connection points we
-  // shift to the left and, therefore, need to double the radius for the "shift" to the right
-  //
-  // mLeft                 | ------------ |       mWidth
-  // mLeft - mRadius     | ------------ |         mWidth
-  // mLeft - mRadius     | -------------- |       mWidth + mRadius
-  // mLeft - mRadius     | ---------------- |     mWidth + 2 * mRadius
-  // return QRectF(mLeft - mRadius, mTop, mWidth + 2 * mRadius, mHeight);
   return mPixmapItem->boundingRect();
 }
 
@@ -111,27 +105,7 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
   Q_UNUSED(style);
   Q_UNUSED(widget);
 
-  painter->drawPixmap(0, 0, mPixmap);
-}
-
-QPointF NodeItem::leftConnectionPoint() const
-{
-  return scenePos() + mLeftPoint;
-}
-
-QPointF NodeItem::rightConnectionPoint() const
-{
-  return scenePos() + mRightPoint;
-}
-
-QRectF NodeItem::leftConnectionArea() const
-{
-  return QRectF(scenePos() + mLeftPoint - QPointF(mRadius, mRadius), pos() + mLeftPoint + QPointF(mRadius, mRadius));
-}
-
-QRectF NodeItem::rightConnectionArea() const
-{
-  return QRectF(scenePos() + mRightPoint - QPointF(mRadius, mRadius), pos() + mRightPoint + QPointF(mRadius, mRadius));
+  painter->drawPixmap(0, 0, mPixmapItem->pixmap());
 }
 
 void NodeItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)

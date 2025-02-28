@@ -5,11 +5,15 @@
 #include <QMimeData>
 
 #include "app_configs.h"
+#include "config_table.h"
 #include "connection.h"
+#include "elements/config.h"
+#include "logging.h"
 #include "node.h"
 
-Canvas::Canvas(QObject* parent)
+Canvas::Canvas(std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
     : QGraphicsScene(parent)
+    , mConfigTable(configTable)
 {
   // setAcceptDrops(true);
   setProperty("class", QVariant(QStringLiteral("canvas")));
@@ -69,7 +73,16 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
     QByteArray pixmapData = event->mimeData()->data(Constants::TYPE_PIXMAP);
     pixmap.loadFromData(pixmapData, "PNG");
 
-    addItem(new NodeItem(event->scenePos(), pixmap));
+    QByteArray idData = event->mimeData()->data(Constants::TYPE_NODE_ID);
+    QString nodeId = QString(idData);
+    auto data = mConfigTable->get(nodeId);
+    if (data == nullptr)
+    {
+      LOG_ERROR("Added node with no configuration");
+      return;
+    }
+
+    addItem(new NodeItem(event->scenePos(), pixmap, data));
     event->acceptProposedAction();
 
     // Make sure we show that we are no longer dragging

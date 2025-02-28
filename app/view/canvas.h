@@ -11,11 +11,12 @@
 class NodeItem;
 class Connector;
 class ConnectionItem;
+class ConfigurationTable;
 
 class Canvas : public QGraphicsScene
 {
 public:
-  Canvas(QObject* parent = nullptr);
+  Canvas(std::shared_ptr<ConfigurationTable> configTable, QObject* parent = nullptr);
 
 protected:
   void dragEnterEvent(QGraphicsSceneDragDropEvent* event) override;
@@ -33,4 +34,6 @@ private:
   Connector* mConnector = nullptr;
   Connector* mHoveredConnector = nullptr;
   std::shared_ptr<ConnectionItem> mConnection = nullptr;
+
+  std::shared_ptr<ConfigurationTable> mConfigTable;
 };

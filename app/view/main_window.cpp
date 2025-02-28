@@ -40,8 +40,9 @@ VoidResult MainWindow::start()
     return VoidResult::Failed(configRead);
 
   mConfig = configRead.Value();
+  mConfigTable = std::make_unique<ConfigurationTable>();
 
-  Canvas* canvas = new Canvas(mUI->graphicsView);
+  Canvas* canvas = new Canvas(mConfigTable, mUI->graphicsView);
   mUI->graphicsView->setScene(canvas);
 
   loadElements();
@@ -61,6 +62,14 @@ VoidResult MainWindow::loadElements()
   auto libraries = mConfig["libraries"];
   if (!libraries.isArray())
     return VoidResult::Failed("Libraries must be in a list in the format \"libraries\": []");
+
+  mUI->splitter->widget(0)->setMinimumWidth(200);
+  mUI->splitter->widget(0)->setMaximumWidth(400);
+  mUI->splitter->widget(0)->setFixedWidth(200);
+
+  mUI->splitter->widget(2)->setMinimumWidth(200);
+  mUI->splitter->widget(2)->setMaximumWidth(600);
+  mUI->splitter->widget(2)->setFixedWidth(400);
 
   for (const auto& library : libraries.toArray())
   {
@@ -98,7 +107,20 @@ VoidResult MainWindow::loadElementLibrary(const JSON& config)
 
   // Every library has a bunch of elements, here we add them.
   for (const auto& value : nodes.toArray())
-    sidebarview->addNode(value);
+  {
+    if (!value.isObject())
+      return VoidResult::Failed("Invalid node format");
+
+    QJsonObject node = value.toObject();
+    if (!node.contains("name"))
+      return VoidResult::Failed("Nodes must contain a name");
+
+    auto config = std::make_shared<NodeConfig>(node);
+    auto id = QStringLiteral("%1::%2").arg(name, config->name);
+    sidebarview->addNode(id, config);
+
+    RETURN_ON_FAILURE(mConfigTable->add(id, config));
+  }
 
   return VoidResult();
 }
