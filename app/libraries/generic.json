@@ -3,7 +3,58 @@
   "author": "",
   "nodes": [
     {
-      "name" : "Start",
+      "name": "Start 0",
+      "body": {
+        "shape": "",
+        "textColor": "#FFFFFF",
+        "backgroundColor": "#3e86fa",
+        "borderColor": "#FFFFFF",
+        "width": 100,
+        "height": 50
+      },
+      "connectors": [
+        {
+          "position": "north"
+        }
+      ],
+      "behaviour": {}
+    },
+    {
+      "name": "Start 1",
+      "body": {
+        "shape": "",
+        "textColor": "#FFFFFF",
+        "backgroundColor": "#3e86fa",
+        "borderColor": "#FFFFFF",
+        "width": 100,
+        "height": 50
+      },
+      "connectors": [
+        {
+          "position": "south"
+        }
+      ],
+      "behaviour": {}
+    },
+    {
+      "name": "Start 2",
+      "body": {
+        "shape": "",
+        "textColor": "#FFFFFF",
+        "backgroundColor": "#3e86fa",
+        "borderColor": "#FFFFFF",
+        "width": 100,
+        "height": 50
+      },
+      "connectors": [
+        {
+          "position": "west"
+        }
+      ],
+      "behaviour": {}
+    },
+    {
+      "name": "Start 3",
       "body": {
         "shape": "",
         "textColor": "#FFFFFF",
@@ -17,8 +68,64 @@
           "position": "east"
         }
       ],
-      "behaviour" : {
-      }
+      "behaviour": {}
+    },
+    {
+      "name": "Start 4",
+      "body": {
+        "shape": "",
+        "textColor": "#FFFFFF",
+        "backgroundColor": "#3e86fa",
+        "borderColor": "#FFFFFF",
+        "width": 100,
+        "height": 50
+      },
+      "connectors": [
+        {
+          "position": "south east"
+        }
+      ],
+      "behaviour": {}
+    },
+    {
+      "name": "Start 5",
+      "body": {
+        "shape": "",
+        "textColor": "#FFFFFF",
+        "backgroundColor": "#3e86fa",
+        "borderColor": "#FFFFFF",
+        "width": 100,
+        "height": 50
+      },
+      "connectors": [
+        {
+          "position": "south west"
+        }
+      ],
+      "behaviour": {}
+    },
+    {
+      "name": "Start 6",
+      "body": {
+        "shape": "",
+        "textColor": "#FFFFFF",
+        "backgroundColor": "#3e86fa",
+        "borderColor": "#FFFFFF",
+        "width": 100,
+        "height": 50
+      },
+      "connectors": [
+        {
+          "position": "east north"
+        },
+        {
+          "position": "east"
+        },
+        {
+          "position": "east south"
+        }
+      ],
+      "behaviour": {}
     }
   ]
 }

@@ -30,12 +30,31 @@ QPointF ConnectorConfig::getPosition(const QRectF& bounds) const
 {
   if (position == "north")
     return QPointF(bounds.width() / 2, 0);
+  else if (position == "north west")
+    return QPointF(bounds.width() / 4, 0);
+  else if (position == "north east")
+    return QPointF(3 * bounds.width() / 4, 0);
+
   else if (position == "south")
     return QPointF(bounds.width() / 2, bounds.height());
+  else if (position == "south west")
+    return QPointF(bounds.width() / 4, bounds.height());
+  else if (position == "south east")
+    return QPointF(3 * bounds.width() / 4, bounds.height());
+
   else if (position == "east")
     return QPointF(bounds.width(), bounds.height() / 2);
+  else if (position == "east north")
+    return QPointF(bounds.width(), bounds.height() / 4);
+  else if (position == "east south")
+    return QPointF(bounds.width(), 3 * bounds.height() / 4);
+
   else if (position == "west")
     return QPointF(0, bounds.height() / 2);
+  else if (position == "west north")
+    return QPointF(0, bounds.height() / 4);
+  else if (position == "west south")
+    return QPointF(0, 3 * bounds.height() / 4);
 
   return QPointF(0, 0);
 }
