@@ -32,7 +32,6 @@ target_link_libraries(${APPLICATION_NAME} PRIVATE
     Qt6::Widgets
     libcommon
     libcpphelpers
-    nlohmann_json::nlohmann_json
 )
 
 # set(plugin_targets

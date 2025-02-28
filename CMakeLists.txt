@@ -15,7 +15,7 @@ add_compile_options(-O0)
 add_compile_options(-std=c++17)
 
 # Comment out to allow casting from literal string to QString
-add_compile_definitions(QT_NO_CAST_FROM_ASCII)
+# add_compile_definitions(QT_NO_CAST_FROM_ASCII)
 
 if (DEBUG)
   add_compile_options(-g)

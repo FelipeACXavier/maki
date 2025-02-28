@@ -1,6 +1,8 @@
 #include "main_window.h"
 
 #include <QDrag>
+#include <QJsonArray>
+#include <QJsonDocument>
 #include <QLabel>
 #include <QListWidgetItem>
 #include <QMimeData>
@@ -32,11 +34,11 @@ VoidResult MainWindow::start()
 {
   LOG_INFO("Starting the main window");
 
-  QFile configFile(QStringLiteral(":/assets/config.json"));
-  if (!configFile.open(QFile::ReadOnly))
-    return VoidResult::Failed("Failed to open configuration");
+  auto configRead = JSON::fromFile(":/assets/config.json");
+  if (!configRead.IsSuccess())
+    return VoidResult::Failed(configRead);
 
-  mConfig = nlohmann::json::parse(configFile.readAll().toStdString());
+  mConfig = configRead.Value();
 
   Canvas* canvas = new Canvas(mUI->graphicsView);
   mUI->graphicsView->setScene(canvas);
@@ -56,19 +58,18 @@ VoidResult MainWindow::loadElements()
     return VoidResult::Failed("Not a single library was specified");
 
   auto libraries = mConfig["libraries"];
-  if (!libraries.is_array())
+  if (!libraries.isArray())
     return VoidResult::Failed("Libraries must be in a list in the format \"libraries\": []");
 
-  for (const auto& library : libraries)
+  for (const auto& library : libraries.toArray())
   {
-    QString libraryName = QString::fromStdString(library.template get<std::string>());
+    QString fileName = QStringLiteral(":/libraries/%1.json").arg(library.toString());
 
-    QFile libraryFile(QStringLiteral(":/libraries/%1.json").arg(libraryName));
+    auto libRead = JSON::fromFile(fileName);
+    if (!libRead.IsSuccess())
+      return VoidResult::Failed(QStringLiteral("Failed to open configuration: %1").arg(fileName).toStdString());
 
-    if (!libraryFile.open(QFile::ReadOnly))
-      return VoidResult::Failed("Failed to open configuration");
-
-    auto libConfig = nlohmann::json::parse(libraryFile.readAll().toStdString());
+    auto libConfig = libRead.Value();
 
     RETURN_ON_FAILURE(loadElementLibrary(libConfig));
   }
@@ -77,12 +78,14 @@ VoidResult MainWindow::loadElements()
 }
 
 // TODO(felaze): Get this from the configuration file and convert to function
-VoidResult MainWindow::loadElementLibrary(const nlohmann::json& config)
+VoidResult MainWindow::loadElementLibrary(const JSON& config)
 {
   if (!config.contains("name"))
     return VoidResult::Failed("Libraries must have a name");
 
-  QString name = QString::fromStdString(config["name"].template get<std::string>());
+  QString name = config["name"].toString();
+
+  LOG_DEBUG("Loading library: %s", qPrintable(name));
 
   // Every library is added to a new item in the toolbox.
   // We load those dynamically on startup.

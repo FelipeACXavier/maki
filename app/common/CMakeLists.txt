@@ -20,6 +20,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::Core
     Qt6::Gui
     Qt6::Widgets
+    libcpphelpers
 )
 # target_include_directories(${PROJECT_NAME}
 #  PUBLIC

@@ -7,8 +7,8 @@
 #include <QDir>
 #include <QMainWindow>
 #include <QStringLiteral>
-#include <nlohmann/json.hpp>
 
+#include "json.h"
 #include "result.h"
 
 QT_BEGIN_NAMESPACE
@@ -30,10 +30,10 @@ public:
 
 private:
   std::unique_ptr<Ui::MainWindow> mUI;
-  nlohmann::json mConfig;
+  JSON mConfig;
 
   VoidResult loadElements();
-  VoidResult loadElementLibrary(const nlohmann::json& config);
+  VoidResult loadElementLibrary(const JSON& config);
 
   void startDrag();
 };
