@@ -17,4 +17,6 @@ namespace Constants
 {
 static const QString TMP_CONNECTION_ID = QStringLiteral("tmp_id");
 static const QString TYPE_NODE = QStringLiteral("application/x-node");
+static const QString TYPE_PIXMAP = QStringLiteral("application/x-pixmap");
+
 }  // namespace Constants

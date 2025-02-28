@@ -1,5 +1,6 @@
 #include "canvas.h"
 
+#include <QBuffer>
 #include <QGraphicsSceneDragDropEvent>
 #include <QMimeData>
 
@@ -64,8 +65,15 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
 {
   if (event->mimeData()->hasFormat(Constants::TYPE_NODE))
   {
-    addItem(new NodeItem(event->scenePos()));
+    QPixmap pixmap;
+    QByteArray pixmapData = event->mimeData()->data(Constants::TYPE_PIXMAP);
+    pixmap.loadFromData(pixmapData, "PNG");
+
+    addItem(new NodeItem(event->scenePos(), pixmap));
     event->acceptProposedAction();
+
+    // Make sure we show that we are no longer dragging
+    dynamic_cast<QGraphicsView*>(parent())->setCursor(Qt::ArrowCursor);
   }
 }
 

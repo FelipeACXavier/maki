@@ -1,8 +1,77 @@
 {
   "name": "Generic",
   "author": "",
-  "elements": [
+  "nodes": [
     {
+      "name" : "Start",
+      "view" : {
+        "body": {
+          "shape": "",
+          "background": ""
+        },
+        "connectors": [
+          {
+            "x": 0,
+            "y": 0
+          }
+        ]
+      },
+      "behaviour" : {
+      }
+    },
+    {
+      "name" : "End",
+      "view" : {
+        "body": {
+          "shape": "",
+          "background": ""
+        },
+        "connectors": [
+          {
+            "x": 0,
+            "y": 0
+          }
+        ]
+      },
+      "behaviour" : {
+      }
+    },
+    {
+      "name" : "Timed start",
+      "view" : {
+        "body": {
+          "shape": "",
+          "background": ""
+        },
+        "connectors": [
+          {
+            "x": 0,
+            "y": 0
+          }
+        ]
+      },
+      "behaviour" : {
+      }
+    },
+    {
+      "name" : "Action",
+      "view" : {
+        "body": {
+          "shape": "",
+          "background": ""
+        },
+        "connectors": [
+          {
+            "x": 0,
+            "y": 0
+          }
+        ]
+      },
+      "behaviour" : {
+      }
+    },
+    {
+      "name" : "Condition",
       "view" : {
         "body": {
           "shape": "",

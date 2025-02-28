@@ -13,6 +13,7 @@
 
 #include "app_configs.h"
 #include "canvas.h"
+#include "library_container.h"
 #include "logging.h"
 #include "ui_editor.h"
 
@@ -89,39 +90,15 @@ VoidResult MainWindow::loadElementLibrary(const JSON& config)
 
   // Every library is added to a new item in the toolbox.
   // We load those dynamically on startup.
-  QListWidget* listWidget = new QListWidget();
+  LibraryContainer* sidebarview = LibraryContainer::create(name, mUI->leftPanel);
 
-  QVBoxLayout* listLayout = new QVBoxLayout(listWidget);
-  listWidget->setLayout(listLayout);
-
-  mUI->leftPanel->addItem(listWidget, name);
+  auto nodes = config["nodes"];
+  if (!nodes.isArray())
+    return VoidResult::Failed("nodes must be in a list in the format \"nodes\": []");
 
   // Every library has a bunch of elements, here we add them.
-  for (int i = 0; i < 5; ++i)
-  {
-    // Create a custom widget
-    QWidget* widget = new QWidget;
-    widget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-
-    QVBoxLayout* layout = new QVBoxLayout(widget);
-    layout->setContentsMargins(5, 5, 5, 5);
-    layout->setAlignment(Qt::AlignCenter);
-
-    // TODO(felaze): Pass the element specific configurations
-    QPushButton* element = new QPushButton(QStringLiteral("Click Me"), widget);
-    connect(element, &QPushButton::pressed, this, &MainWindow::startDrag);
-
-    layout->addWidget(element);
-    widget->setLayout(layout);
-
-    QListWidgetItem* item = new QListWidgetItem(listWidget);
-
-    // Set the size hint to ensure proper display
-    item->setSizeHint(widget->sizeHint());
-
-    // Add the custom widget to the list
-    listWidget->setItemWidget(item, widget);
-  }
+  for (const auto& value : nodes.toArray())
+    sidebarview->addNode(value);
 
   return VoidResult();
 }

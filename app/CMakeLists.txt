@@ -14,6 +14,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 file(GLOB ELEMENT_FILES ${CMAKE_CURRENT_SOURCE_DIR}/elements/*.cpp)
 file(GLOB VIEW_FILES ${CMAKE_CURRENT_SOURCE_DIR}/view/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/view/*.ui)
 
+message("view files: ${VIEW_FILES}")
 qt_add_executable(${APPLICATION_NAME}
     main.cpp
     assets.qrc

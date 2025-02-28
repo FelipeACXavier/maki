@@ -1,29 +1,36 @@
 #pragma once
 
+#include <QGraphicsRectItem>
+#include <QGraphicsScene>
+#include <QGraphicsView>
 #include <QLabel>
 #include <QMimeData>
 #include <QString>
 #include <QWidget>
+#include <memory>
 
-// TODO(felaze): Now this is related to QLable but I am not sure if this is the best item to
-class MovableLabel : public QLabel
+#include "types.h"
+
+class DraggableItem : public QGraphicsRectItem
 {
-  Q_OBJECT
-
 public:
-  MovableLabel(const QString& text, QWidget* parent = nullptr);
+  enum
+  {
+    Type = UserType + Type::DRAGGABLE
+  };
+
+  DraggableItem(const QString& text, QGraphicsItem* parent = nullptr);
+  virtual ~DraggableItem();
+
+  int type() const override;
+  void adjustWidth(int width);
 
 protected:
-  void mousePressEvent(QMouseEvent* event) override;
-};
+  void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
 
-class DraggableLabel : public MovableLabel
-{
-  Q_OBJECT
+private:
+  std::shared_ptr<QGraphicsTextItem> mLabel;
+  std::shared_ptr<QGraphicsPixmapItem> mPixmap;
 
-public:
-  DraggableLabel(const QString& text, QWidget* parent = nullptr);
-
-protected:
-  void mousePressEvent(QMouseEvent* event) override;
+  void updateLabelPosition();
 };

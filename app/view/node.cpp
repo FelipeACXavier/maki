@@ -66,9 +66,10 @@ void Connector::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
   QGraphicsEllipseItem::hoverLeaveEvent(event);
 }
 
-NodeItem::NodeItem(const QPointF& initialPosition, QGraphicsItem* parent)
+NodeItem::NodeItem(const QPointF& initialPosition, const QPixmap& map, QGraphicsItem* parent)
     : QGraphicsItem(parent)
     , mId(QUuid::createUuid().toString())
+    , mPixmap(map)
 {
   setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
   setCacheMode(DeviceCoordinateCache);
@@ -76,6 +77,8 @@ NodeItem::NodeItem(const QPointF& initialPosition, QGraphicsItem* parent)
   // Create connection points as ellipses
   mConnectors.append(std::make_shared<Connector>(mLeftPoint, mRadius, this));
   mConnectors.append(std::make_shared<Connector>(mRightPoint, mRadius, this));
+
+  mPixmapItem = std::make_shared<QGraphicsPixmapItem>(mPixmap, this);
 
   setPos(snapToGrid(initialPosition - boundingRect().center(), Config::GRID_SIZE));
 }
@@ -99,7 +102,8 @@ QRectF NodeItem::boundingRect() const
   // mLeft - mRadius     | ------------ |         mWidth
   // mLeft - mRadius     | -------------- |       mWidth + mRadius
   // mLeft - mRadius     | ---------------- |     mWidth + 2 * mRadius
-  return QRectF(mLeft - mRadius, mTop, mWidth + 2 * mRadius, mHeight);
+  // return QRectF(mLeft - mRadius, mTop, mWidth + 2 * mRadius, mHeight);
+  return mPixmapItem->boundingRect();
 }
 
 void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget)
@@ -107,16 +111,7 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
   Q_UNUSED(style);
   Q_UNUSED(widget);
 
-  painter->setBrush(m_hovered ? Qt::red : Qt::lightGray);
-  painter->drawRect(mLeft, mTop, mWidth, mHeight);
-
-  // Left connection circle
-  painter->setBrush(Qt::red);
-  painter->drawEllipse(mLeftPoint, mRadius, mRadius);
-
-  // Right connection circle
-  painter->setBrush(Qt::green);
-  painter->drawEllipse(mRightPoint, mRadius, mRadius);
+  painter->drawPixmap(0, 0, mPixmap);
 }
 
 QPointF NodeItem::leftConnectionPoint() const

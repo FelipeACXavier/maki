@@ -2,6 +2,7 @@
 
 #include <QGraphicsEllipseItem>
 #include <QGraphicsItem>
+#include <QPixmap>
 #include <memory>
 
 #include "types.h"
@@ -46,7 +47,7 @@ public:
     Type = UserType + Type::NODE
   };
 
-  NodeItem(const QPointF& initialPosition, QGraphicsItem* parent = nullptr);
+  NodeItem(const QPointF& initialPosition, const QPixmap& map, QGraphicsItem* parent = nullptr);
 
   QString Id() const;
 
@@ -73,14 +74,13 @@ private:
   const float mHeight = 50;
   const float mLeft = 0;
   const float mTop = 0;
-  const float mRadius = 10;
+  const float mRadius = 5;
 
   bool m_hovered{false};
 
+  QPixmap mPixmap;
+  std::shared_ptr<QGraphicsPixmapItem> mPixmapItem;
   QVector<std::shared_ptr<Connector>> mConnectors;
-
-  // QVector<std::shared_ptr<ConnectionItem>> mInConnections;
-  // QVector<std::shared_ptr<ConnectionItem>> mOutConnections;
 
   const QPointF mLeftPoint{mLeft, mHeight / 2};
   const QPointF mRightPoint{mWidth, mHeight / 2};
