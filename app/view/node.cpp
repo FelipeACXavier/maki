@@ -65,9 +65,7 @@ void Connector::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
 {
   // Check if hovering over a connection point
   if (contains(event->pos()))
-    setBrush(Qt::green);
-  else if (contains(event->pos()))
-    setBrush(Qt::green);
+    updateColor(true);
 
   QGraphicsEllipseItem::hoverEnterEvent(event);
 }
@@ -75,10 +73,14 @@ void Connector::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
 void Connector::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 {
   // Reset color when leaving the connection point
-  setBrush(Qt::blue);
-  setBrush(Qt::blue);
+  updateColor(false);
 
   QGraphicsEllipseItem::hoverLeaveEvent(event);
+}
+
+void Connector::updateColor(bool accent)
+{
+  setBrush(accent ? Config::Colours::ACCENT : typeToColor(mConfig->type));
 }
 
 Qt::GlobalColor Connector::typeToColor(Types::ConnectorType type) const
@@ -137,6 +139,13 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
   Q_UNUSED(widget);
 
   painter->drawPixmap(0, 0, mPixmapItem->pixmap());
+
+  // If selected, draw an extra outline
+  if (isSelected())
+  {
+    painter->setPen(QPen(Config::Colours::ACCENT, 4));
+    painter->drawRect(mPixmapItem->boundingRect());
+  }
 }
 
 void NodeItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)

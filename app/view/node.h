@@ -31,6 +31,8 @@ public:
   void updateConnections();
   void addConnection(std::shared_ptr<ConnectionItem> connection);
 
+  void updateColor(bool accent);
+
 protected:
   void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
   void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;

@@ -46,6 +46,8 @@ public:
   int width = 100;
   int height = 50;
 
+  QString iconPath = "";
+
   friend QDataStream& operator<<(QDataStream& out, const BodyConfig& config);
   friend QDataStream& operator>>(QDataStream& in, BodyConfig& config);
 

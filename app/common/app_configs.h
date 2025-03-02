@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QColor>
 #include <QString>
 
 namespace Config
@@ -12,6 +13,17 @@ static const QString VERSION = QString("1.0.0"_L1);
 
 static const int GRID_SIZE = 20;
 static const int CONNECTOR_RADIUS = 5;
+
+// TODO(felaze): move to config
+namespace Colours
+{
+static const QColor BACKGROUND = "#264653";
+static const QColor FOREGROUND = "#2a9d8f";
+static const QColor MAIN = "#2a9d8f";
+static const QColor ACCENT = "#f4a261";
+static const QColor EXTRA_ACCENT = "#e76f51";
+};  // namespace Colours
+
 }  // namespace Config
 
 namespace Constants

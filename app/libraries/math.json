@@ -6,28 +6,29 @@
     {
       "name": "Addition",
       "body": {
-        "shape": "Rounded rectangle",
+        "shape": "ellipse",
         "textColor": "#FFFFFF",
-        "backgroundColor": "#3e86fa",
+        "backgroundColor": "#e9c46a",
         "borderColor": "#FFFFFF",
         "width": 50,
-        "height": 50
+        "height": 50,
+        "icon": ":math/addition.png"
       },
       "connectors": [
         {
           "id": "arg1",
           "type": "in",
-          "position": "east nort"
+          "position": "west north"
         },
         {
           "id": "arg2",
           "type": "in",
-          "position": "east south"
+          "position": "west south"
         },
         {
           "id": "output",
           "type": "out",
-          "position": "west"
+          "position": "east"
         }
       ],
       "behaviour": {
@@ -37,28 +38,29 @@
     {
       "name": "Subtraction",
       "body": {
-        "shape": "Rounded rectangle",
+        "shape": "ellipse",
         "textColor": "#FFFFFF",
-        "backgroundColor": "#3e86fa",
+        "backgroundColor": "#e9c46a",
         "borderColor": "#FFFFFF",
         "width": 50,
-        "height": 50
+        "height": 50,
+        "icon": ":math/subtraction.png"
       },
       "connectors": [
         {
           "id": "arg1",
           "type": "in",
-          "position": "east nort"
+          "position": "west north"
         },
         {
           "id": "arg2",
           "type": "in",
-          "position": "east south"
+          "position": "west south"
         },
         {
           "id": "output",
           "type": "out",
-          "position": "west"
+          "position": "east"
         }
       ],
       "behaviour": {
@@ -68,28 +70,29 @@
     {
       "name": "Multiplication",
       "body": {
-        "shape": "Rounded rectangle",
+        "shape": "ellipse",
         "textColor": "#FFFFFF",
-        "backgroundColor": "#3e86fa",
+        "backgroundColor": "#e9c46a",
         "borderColor": "#FFFFFF",
         "width": 50,
-        "height": 50
+        "height": 50,
+        "icon": ":math/multiplication.png"
       },
       "connectors": [
         {
           "id": "arg1",
           "type": "in",
-          "position": "east nort"
+          "position": "west north"
         },
         {
           "id": "arg2",
           "type": "in",
-          "position": "east south"
+          "position": "west south"
         },
         {
           "id": "output",
           "type": "out",
-          "position": "west"
+          "position": "east"
         }
       ],
       "behaviour": {
@@ -99,28 +102,29 @@
     {
       "name": "Division",
       "body": {
-        "shape": "Rounded rectangle",
+        "shape": "ellipse",
         "textColor": "#FFFFFF",
-        "backgroundColor": "#3e86fa",
+        "backgroundColor": "#e9c46a",
         "borderColor": "#FFFFFF",
         "width": 50,
-        "height": 50
+        "height": 50,
+        "icon": ":math/division.png"
       },
       "connectors": [
         {
           "id": "arg1",
           "type": "in",
-          "position": "east nort"
+          "position": "west north"
         },
         {
           "id": "arg2",
           "type": "in",
-          "position": "east south"
+          "position": "west south"
         },
         {
           "id": "output",
           "type": "out",
-          "position": "west"
+          "position": "east"
         }
       ],
       "behaviour": {

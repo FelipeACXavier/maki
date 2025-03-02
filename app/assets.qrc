@@ -4,5 +4,11 @@
         <file>assets/config.json</file>
         <file>libraries/generic.json</file>
         <file>libraries/math.json</file>
-    </qresource>
+      </qresource>
+      <qresource prefix="/math">
+         <file alias="addition.png">assets/icons/math/addition.png</file>
+         <file alias="subtraction.png">assets/icons/math/subtraction.png</file>
+         <file alias="multiplication.png">assets/icons/math/multiplication.png</file>
+         <file alias="division.png">assets/icons/math/division.png</file>
+      </qresource>
 </RCC>

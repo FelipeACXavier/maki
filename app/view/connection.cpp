@@ -8,6 +8,7 @@ ConnectionItem::ConnectionItem()
 {
   // Make sure the connections are behind the nodes
   setZValue(-1);
+  setFlags(QGraphicsItem::ItemIsSelectable);
 
   // Set line color and width
   // TODO(felaze): make configurable

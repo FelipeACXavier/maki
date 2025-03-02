@@ -42,8 +42,8 @@ private:
   const QRectF mBounds;
 
   // std::shared_ptr<QGraphicsItem> mShape;
+  std::shared_ptr<QPixmap> mPixmap;
   std::shared_ptr<QGraphicsTextItem> mLabel;
-  std::shared_ptr<QGraphicsPixmapItem> mPixmap;
 
   QRectF drawingBoarders() const;
   void updateLabelPosition();

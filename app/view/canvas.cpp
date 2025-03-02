@@ -129,11 +129,11 @@ void Canvas::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
     if (item && item->type() == Connector::Type)
     {
       mHoveredConnector = dynamic_cast<Connector*>(item);
-      mHoveredConnector->setBrush(Qt::green);
+      mHoveredConnector->updateColor(true);
     }
     else if (mHoveredConnector)
     {
-      mHoveredConnector->setBrush(Qt::blue);
+      mHoveredConnector->updateColor(false);
       mHoveredConnector = nullptr;
     }
 

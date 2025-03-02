@@ -14,9 +14,18 @@ DraggableItem::DraggableItem(const QString& id, std::shared_ptr<NodeConfig> conf
     , mConfig(config)
     , mBounds(0, 0, mConfig->body.width, mConfig->body.height)
 {
-  // Create the text item (for the label inside the rectangle)
-  mLabel = std::make_shared<QGraphicsTextItem>(mConfig->name, this);
-  mLabel->setDefaultTextColor(mConfig->body.textColor);
+  if (!mConfig->body.iconPath.isEmpty())
+  {
+    // Load icon
+    QPixmap icon(mConfig->body.iconPath);
+    mPixmap = std::make_shared<QPixmap>(icon.scaled(boundingRect().size().toSize() / 2, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+  }
+  else
+  {
+    // Create the text item (for the label inside the rectangle)
+    mLabel = std::make_shared<QGraphicsTextItem>(mConfig->name, this);
+    mLabel->setDefaultTextColor(mConfig->body.textColor);
+  }
 
   updateLabelPosition();
 }
@@ -64,6 +73,14 @@ void DraggableItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* opt
   else
   {
     painter->drawRoundedRect(drawingBoarders(), 5, 5);  // 10 is the radius of the corners
+  }
+
+  if (mPixmap)
+  {
+    QRectF rect = boundingRect();
+    QPointF center = rect.center();
+    QPointF topLeft = center - QPointF(mPixmap->width() / 2, mPixmap->height() / 2);
+    painter->drawPixmap(topLeft, *mPixmap);
   }
 }
 
@@ -142,8 +159,19 @@ void DraggableItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
   QStyleOptionGraphicsItem opt;
   paint(&painter, &opt);
 
-  painter.setPen(mLabel->defaultTextColor());
-  painter.drawText(pixmap.rect(), Qt::AlignCenter, mLabel->toPlainText());
+  if (mLabel)
+  {
+    painter.setPen(mLabel->defaultTextColor());
+    painter.drawText(pixmap.rect(), Qt::AlignCenter, mLabel->toPlainText());
+  }
+
+  if (mPixmap)
+  {
+    QRectF rect = boundingRect();
+    QPointF center = rect.center();
+    QPointF topLeft = center - QPointF(mPixmap->width() / 2, mPixmap->height() / 2);
+    painter.drawPixmap(topLeft, *mPixmap);
+  }
 
   // Serialize it so it is copied
   QByteArray pixmapData;

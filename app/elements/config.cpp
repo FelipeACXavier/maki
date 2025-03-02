@@ -140,6 +140,9 @@ BodyConfig::BodyConfig(const QJsonObject& object)
 
   if (object.contains("shape"))
     shape = toShape(object["shape"].toString());
+
+  if (object.contains("icon"))
+    iconPath = object["icon"].toString();
 }
 
 QDataStream& operator<<(QDataStream& out, const BodyConfig& config)
