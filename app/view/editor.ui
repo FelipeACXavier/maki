@@ -26,7 +26,7 @@
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
       </property>
-      <widget class="QToolBox" name="leftPanel">
+      <widget class="QTabWidget" name="leftPanel">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
          <horstretch>1</horstretch>
@@ -34,11 +34,36 @@
         </sizepolicy>
        </property>
        <property name="currentIndex">
-        <number>-1</number>
+        <number>1</number>
        </property>
-       <property name="class" stdset="0">
-        <string>left-panel</string>
-       </property>
+       <widget class="QWidget" name="structureElements">
+        <attribute name="title">
+         <string>Structure</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="verticalLayout">
+         <item>
+          <widget class="QToolBox" name="structureToolbox">
+           <property name="currentIndex">
+            <number>-1</number>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="behaviourElements">
+        <attribute name="title">
+         <string>Behaviour</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="verticalLayout_2">
+         <item>
+          <widget class="QToolBox" name="behaviourToolbox">
+           <property name="currentIndex">
+            <number>-1</number>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
       </widget>
       <widget class="CanvasView" name="graphicsView">
        <property name="sizePolicy">

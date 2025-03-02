@@ -10,7 +10,7 @@ class ConnectionItem : public QGraphicsPathItem
 public:
   enum
   {
-    Type = UserType + Type::CONNECTION
+    Type = UserType + Types::CONNECTION
   };
 
   ConnectionItem();

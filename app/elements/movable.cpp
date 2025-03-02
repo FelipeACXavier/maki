@@ -43,15 +43,15 @@ void DraggableItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* opt
 
   painter->setRenderHint(QPainter::Antialiasing, false);
 
-  if (mConfig->body.shape == Type::Shape::RECTANGLE)
+  if (mConfig->body.shape == Types::Shape::RECTANGLE)
   {
     painter->drawRect(drawingBoarders());
   }
-  else if (mConfig->body.shape == Type::Shape::ELLIPSE)
+  else if (mConfig->body.shape == Types::Shape::ELLIPSE)
   {
     painter->drawEllipse(drawingBoarders());
   }
-  else if (mConfig->body.shape == Type::Shape::DIAMOND)
+  else if (mConfig->body.shape == Types::Shape::DIAMOND)
   {
     QPolygonF diamond;
     diamond << QPointF(drawingBoarders().center().x(), drawingBoarders().top())     // Top
@@ -71,15 +71,15 @@ void DraggableItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* opt
 QPainterPath DraggableItem::shape() const
 {
   QPainterPath path;
-  if (mConfig->body.shape == Type::Shape::RECTANGLE)
+  if (mConfig->body.shape == Types::Shape::RECTANGLE)
   {
     path.addRect(boundingRect());
   }
-  else if (mConfig->body.shape == Type::Shape::ELLIPSE)
+  else if (mConfig->body.shape == Types::Shape::ELLIPSE)
   {
     path.addEllipse(boundingRect());
   }
-  else if (mConfig->body.shape == Type::Shape::DIAMOND)
+  else if (mConfig->body.shape == Types::Shape::DIAMOND)
   {
     QPolygonF diamond;
     diamond << QPointF(boundingRect().center().x(), boundingRect().top())     // Top

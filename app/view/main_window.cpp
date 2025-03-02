@@ -93,13 +93,17 @@ VoidResult MainWindow::loadElementLibrary(const JSON& config)
   if (!config.contains("name"))
     return VoidResult::Failed("Libraries must have a name");
 
+  if (!config.contains("type"))
+    return VoidResult::Failed("Libraries must have a type");
+
   QString name = config["name"].toString();
+  QString type = config["type"].toString();
 
   LOG_DEBUG("Loading library: %s", qPrintable(name));
 
   // Every library is added to a new item in the toolbox.
   // We load those dynamically on startup.
-  LibraryContainer* sidebarview = LibraryContainer::create(name, mUI->leftPanel);
+  LibraryContainer* sidebarview = LibraryContainer::create(name, type == "behaviour" ? mUI->behaviourToolbox : mUI->structureToolbox);
 
   auto nodes = config["nodes"];
   if (!nodes.isArray())

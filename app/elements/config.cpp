@@ -5,7 +5,7 @@
 #include <QRect>
 
 #include "app_configs.h"
-#include "logging.h"
+#include "string_helpers.h"
 
 ConnectorConfig::ConnectorConfig()
 {
@@ -13,8 +13,17 @@ ConnectorConfig::ConnectorConfig()
 
 ConnectorConfig::ConnectorConfig(const QJsonObject& object)
 {
+  if (object.contains("id"))
+    id = object["id"].toString();
+
   if (object.contains("position"))
-    position = object["position"].toString();
+  {
+    const auto config = object["position"].toString();
+    position = QString::fromStdString(ToLowerCase(config.toStdString(), 0, config.size()));
+  }
+
+  if (object.contains("type"))
+    type = fromString(object["type"].toString());
 }
 
 QDataStream& operator<<(QDataStream& out, const ConnectorConfig& config)
@@ -66,8 +75,6 @@ QPointF ConnectorConfig::getShift(const QString& config) const
 {
   auto pos = config.isEmpty() ? position : config;
 
-  LOG_DEBUG("Using pos: %s", qPrintable(pos));
-
   if (pos == "north" || pos == "north west" || pos == "north east")
     return QPointF(0, -Constants::CONTROL_POINT_SHIFT);
 
@@ -95,6 +102,19 @@ QPointF ConnectorConfig::getMirrorShift() const
     return getShift("west");
 
   return getShift("east");
+}
+
+Types::ConnectorType ConnectorConfig::fromString(const QString& config) const
+{
+  const auto type = QString::fromStdString(ToLowerCase(config.toStdString(), 0, config.size()));
+  if (config == "in")
+    return Types::ConnectorType::IN;
+  else if (config == "out")
+    return Types::ConnectorType::OUT;
+  else if (config == "inout")
+    return Types::ConnectorType::IN_AND_OUT;
+
+  return Types::ConnectorType::UNKNOWN;
 }
 
 BodyConfig::BodyConfig()
@@ -144,18 +164,21 @@ QDataStream& operator>>(QDataStream& in, BodyConfig& config)
   return in;
 }
 
-Type::Shape BodyConfig::toShape(const QString& config) const
+Types::Shape BodyConfig::toShape(const QString& config) const
 {
-  if (config == "Rectangle")
-    return Type::Shape::RECTANGLE;
-  else if (config == "Rounded rectangle")
-    return Type::Shape::ROUNDED_RECTANGLE;
-  else if (config == "Ellipse")
-    return Type::Shape::ELLIPSE;
-  else if (config == "Diamond")
-    return Type::Shape::DIAMOND;
+  // Make configuration a bit easier by making it case independent
+  const auto shape = QString::fromStdString(ToLowerCase(config.toStdString(), 0, config.size()));
 
-  return Type::Shape::ROUNDED_RECTANGLE;
+  if (shape == "rectangle")
+    return Types::Shape::RECTANGLE;
+  else if (shape == "rounded rectangle")
+    return Types::Shape::ROUNDED_RECTANGLE;
+  else if (shape == "ellipse")
+    return Types::Shape::ELLIPSE;
+  else if (shape == "diamond")
+    return Types::Shape::DIAMOND;
+
+  return Types::Shape::ROUNDED_RECTANGLE;
 }
 
 NodeConfig::NodeConfig(const QJsonObject& object)

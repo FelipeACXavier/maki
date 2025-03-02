@@ -1,0 +1,131 @@
+{
+  "name": "Math",
+  "type": "behaviour",
+  "author": "",
+  "nodes": [
+    {
+      "name": "Addition",
+      "body": {
+        "shape": "Rounded rectangle",
+        "textColor": "#FFFFFF",
+        "backgroundColor": "#3e86fa",
+        "borderColor": "#FFFFFF",
+        "width": 50,
+        "height": 50
+      },
+      "connectors": [
+        {
+          "id": "arg1",
+          "type": "in",
+          "position": "east nort"
+        },
+        {
+          "id": "arg2",
+          "type": "in",
+          "position": "east south"
+        },
+        {
+          "id": "output",
+          "type": "out",
+          "position": "west"
+        }
+      ],
+      "behaviour": {
+        "code": "return $connectors.arg1 + $connectors.arg2"
+      }
+    },
+    {
+      "name": "Subtraction",
+      "body": {
+        "shape": "Rounded rectangle",
+        "textColor": "#FFFFFF",
+        "backgroundColor": "#3e86fa",
+        "borderColor": "#FFFFFF",
+        "width": 50,
+        "height": 50
+      },
+      "connectors": [
+        {
+          "id": "arg1",
+          "type": "in",
+          "position": "east nort"
+        },
+        {
+          "id": "arg2",
+          "type": "in",
+          "position": "east south"
+        },
+        {
+          "id": "output",
+          "type": "out",
+          "position": "west"
+        }
+      ],
+      "behaviour": {
+        "code": "return $connectors.arg1 - $connectors.arg2"
+      }
+    },
+    {
+      "name": "Multiplication",
+      "body": {
+        "shape": "Rounded rectangle",
+        "textColor": "#FFFFFF",
+        "backgroundColor": "#3e86fa",
+        "borderColor": "#FFFFFF",
+        "width": 50,
+        "height": 50
+      },
+      "connectors": [
+        {
+          "id": "arg1",
+          "type": "in",
+          "position": "east nort"
+        },
+        {
+          "id": "arg2",
+          "type": "in",
+          "position": "east south"
+        },
+        {
+          "id": "output",
+          "type": "out",
+          "position": "west"
+        }
+      ],
+      "behaviour": {
+        "code": "return $connectors.arg1 * $connectors.arg2"
+      }
+    },
+    {
+      "name": "Division",
+      "body": {
+        "shape": "Rounded rectangle",
+        "textColor": "#FFFFFF",
+        "backgroundColor": "#3e86fa",
+        "borderColor": "#FFFFFF",
+        "width": 50,
+        "height": 50
+      },
+      "connectors": [
+        {
+          "id": "arg1",
+          "type": "in",
+          "position": "east nort"
+        },
+        {
+          "id": "arg2",
+          "type": "in",
+          "position": "east south"
+        },
+        {
+          "id": "output",
+          "type": "out",
+          "position": "west"
+        }
+      ],
+      "behaviour": {
+        "code": "return $connectors.arg1 / $connectors.arg2"
+      }
+    }
+  ]
+}

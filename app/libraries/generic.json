@@ -1,43 +1,108 @@
 {
   "name": "Generic",
+  "type": "behaviour",
   "author": "",
   "nodes": [
     {
-      "name": "Start 0",
-      "body": {
-        "shape": "Rectangle",
-        "textColor": "#FFFFFF",
-        "backgroundColor": "#3e86fa",
-        "borderColor": "#FFFFFF",
-        "width": 100,
-        "height": 50
-      },
-      "connectors": [
-        {
-          "position": "north"
-        }
-      ],
-      "behaviour": {}
-    },
-    {
-      "name": "Start 1",
+      "name": "Start",
       "body": {
         "shape": "Ellipse",
         "textColor": "#FFFFFF",
         "backgroundColor": "#3e86fa",
         "borderColor": "#FFFFFF",
-        "width": 100,
+        "width": 50,
         "height": 50
       },
       "connectors": [
         {
-          "position": "south"
+          "id": "output",
+          "type": "out",
+          "position": "east"
         }
       ],
       "behaviour": {}
     },
     {
-      "name": "Start 2",
+      "name": "End",
+      "body": {
+        "shape": "Ellipse",
+        "textColor": "#FFFFFF",
+        "backgroundColor": "#3e86fa",
+        "borderColor": "#FFFFFF",
+        "width": 50,
+        "height": 50
+      },
+      "connectors": [
+        {
+          "id": "input",
+          "type": "in",
+          "position": "west"
+        }
+      ],
+      "behaviour": {}
+    },
+    {
+      "name": "Condition",
+      "body": {
+        "shape": "Diamond",
+        "textColor": "#FFFFFF",
+        "backgroundColor": "#3e86fa",
+        "borderColor": "#FFFFFF",
+        "width": 100,
+        "height": 75
+      },
+      "properties": {
+        "inputType" : "input type",
+        "returnType" : "return type",
+        "condition" : "boolean expression"
+      },
+      "connectors": [
+        {
+          "id": "input",
+          "type": "in",
+          "position": "west"
+        },
+        {
+          "id": "true",
+          "type": "out",
+          "position": "east north"
+        },
+        {
+          "id": "false",
+          "type": "out",
+          "position": "east south"
+        }
+      ],
+      "behaviour": {
+        "code": "if ($properties.condition) return $connectors.true; else return $connectors.false;"
+      }
+    },
+    {
+      "name": "Call",
+      "body": {
+        "shape": "Rounded rectangle",
+        "textColor": "#FFFFFF",
+        "backgroundColor": "#3e86fa",
+        "borderColor": "#FFFFFF",
+        "width": 100,
+        "height": 50
+      },
+      "connectors": [
+        {
+          "id": "input",
+          "type": "in",
+          "position": "west"
+        },
+        {
+          "id": "output",
+          "type": "out",
+          "position": "east"
+        }
+      ],
+      "behaviour": {}
+    },
+    {
+      "name": "Action",
       "body": {
         "shape": "Rounded rectangle",
         "textColor": "#FFFFFF",
@@ -49,80 +114,9 @@
       "connectors": [
         {
           "position": "west"
-        }
-      ],
-      "behaviour": {}
-    },
-    {
-      "name": "Start 3",
-      "body": {
-        "shape": "Diamond",
-        "textColor": "#FFFFFF",
-        "backgroundColor": "#3e86fa",
-        "borderColor": "#FFFFFF",
-        "width": 100,
-        "height": 50
-      },
-      "connectors": [
-        {
-          "position": "east"
-        }
-      ],
-      "behaviour": {}
-    },
-    {
-      "name": "Start 4",
-      "body": {
-        "shape": "",
-        "textColor": "#FFFFFF",
-        "backgroundColor": "#3e86fa",
-        "borderColor": "#FFFFFF",
-        "width": 100,
-        "height": 50
-      },
-      "connectors": [
-        {
-          "position": "south east"
-        }
-      ],
-      "behaviour": {}
-    },
-    {
-      "name": "Start 5",
-      "body": {
-        "shape": "",
-        "textColor": "#FFFFFF",
-        "backgroundColor": "#3e86fa",
-        "borderColor": "#FFFFFF",
-        "width": 100,
-        "height": 50
-      },
-      "connectors": [
-        {
-          "position": "south west"
-        }
-      ],
-      "behaviour": {}
-    },
-    {
-      "name": "Start 6",
-      "body": {
-        "shape": "",
-        "textColor": "#FFFFFF",
-        "backgroundColor": "#3e86fa",
-        "borderColor": "#FFFFFF",
-        "width": 100,
-        "height": 50
-      },
-      "connectors": [
-        {
-          "position": "east north"
         },
         {
           "position": "east"
-        },
-        {
-          "position": "east south"
         }
       ],
       "behaviour": {}

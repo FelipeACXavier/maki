@@ -100,6 +100,10 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
     {
       Connector* connector = static_cast<Connector*>(item);
 
+      // Add error message
+      if (connector->connectorType() == Types::ConnectorType::IN)
+        return;
+
       mConnector = connector;
       mConnection = std::make_shared<ConnectionItem>();
 
@@ -149,6 +153,10 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
       if (item && item->type() == Connector::Type)
       {
         Connector* connector = static_cast<Connector*>(item);
+        // Add error message
+        if (connector->connectorType() == Types::ConnectorType::OUT)
+          return;
+
         if (connector != mConnector)
         {
           mConnection->setEnd(connector->Id(), connector->center(), connector->shift().first);

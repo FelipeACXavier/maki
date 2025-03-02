@@ -13,7 +13,9 @@ public:
   ConnectorConfig();
   ConnectorConfig(const QJsonObject& object);
 
+  QString id = "";
   QString position = "";
+  Types::ConnectorType type = Types::ConnectorType::UNKNOWN;
 
   QPointF getPosition(const QRectF& bounds) const;
   QPointF getShift(const QString& config = "") const;
@@ -21,6 +23,9 @@ public:
 
   friend QDataStream& operator<<(QDataStream& out, const ConnectorConfig& config);
   friend QDataStream& operator>>(QDataStream& in, ConnectorConfig& config);
+
+private:
+  Types::ConnectorType fromString(const QString& config) const;
 };
 
 QDataStream& operator<<(QDataStream& out, const ConnectorConfig& config);
@@ -32,7 +37,7 @@ public:
   BodyConfig();
   BodyConfig(const QJsonObject& object);
 
-  Type::Shape shape = Type::Shape::ROUNDED_RECTANGLE;
+  Types::Shape shape = Types::Shape::ROUNDED_RECTANGLE;
 
   QColor textColor = Qt::black;
   QColor backgroundColor = Qt::lightGray;
@@ -45,7 +50,7 @@ public:
   friend QDataStream& operator>>(QDataStream& in, BodyConfig& config);
 
 private:
-  Type::Shape toShape(const QString& config) const;
+  Types::Shape toShape(const QString& config) const;
 };
 
 QDataStream& operator<<(QDataStream& out, const BodyConfig& config);

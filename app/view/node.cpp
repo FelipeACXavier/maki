@@ -15,7 +15,7 @@ Connector::Connector(const ConnectorConfig& config, QGraphicsItem* parent)
     , mConfig(std::make_shared<ConnectorConfig>(config))
 {
   setZValue(1);
-  setBrush(Qt::blue);
+  setBrush(typeToColor(mConfig->type));
   setAcceptHoverEvents(true);
 
   const QPointF center = config.getPosition(parent->boundingRect());
@@ -32,6 +32,11 @@ QString Connector::Id() const
 int Connector::type() const
 {
   return Type;
+}
+
+Types::ConnectorType Connector::connectorType() const
+{
+  return mConfig->type;
 }
 
 QPointF Connector::center() const
@@ -74,6 +79,22 @@ void Connector::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
   setBrush(Qt::blue);
 
   QGraphicsEllipseItem::hoverLeaveEvent(event);
+}
+
+Qt::GlobalColor Connector::typeToColor(Types::ConnectorType type) const
+{
+  switch (type)
+  {
+    case Types::ConnectorType::IN:
+      return Qt::blue;
+    case Types::ConnectorType::OUT:
+      return Qt::yellow;
+    case Types::ConnectorType::IN_AND_OUT:
+      return Qt::green;
+    default:
+    case Types::ConnectorType::UNKNOWN:
+      return Qt::red;
+  }
 }
 
 NodeItem::NodeItem(const QPointF& initialPosition, const QPixmap& pixmap, std::shared_ptr<NodeConfig> config, QGraphicsItem* parent)
