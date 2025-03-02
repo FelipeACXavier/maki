@@ -9,17 +9,13 @@
 #include "app_configs.h"
 
 DraggableItem::DraggableItem(const QString& id, std::shared_ptr<NodeConfig> config, QGraphicsItem* parent)
-    : QGraphicsRectItem(parent)
+    : QGraphicsItem(parent)
     , mId(id)
     , mConfig(config)
+    , mBounds(0, 0, mConfig->body.width, mConfig->body.height)
 {
   // Create the text item (for the label inside the rectangle)
   mLabel = std::make_shared<QGraphicsTextItem>(mConfig->name, this);
-
-  setPen(mConfig->body.borderColor);
-  setBrush(mConfig->body.backgroundColor);
-  setRect(0, 0, mConfig->body.width, mConfig->body.height);
-
   mLabel->setDefaultTextColor(mConfig->body.textColor);
 
   updateLabelPosition();
@@ -47,20 +43,73 @@ void DraggableItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* opt
 
   painter->setRenderHint(QPainter::Antialiasing, false);
 
-  painter->drawRoundedRect(rect(), 5, 5);  // 10 is the radius of the corners
+  if (mConfig->body.shape == Type::Shape::RECTANGLE)
+  {
+    painter->drawRect(drawingBoarders());
+  }
+  else if (mConfig->body.shape == Type::Shape::ELLIPSE)
+  {
+    painter->drawEllipse(drawingBoarders());
+  }
+  else if (mConfig->body.shape == Type::Shape::DIAMOND)
+  {
+    QPolygonF diamond;
+    diamond << QPointF(drawingBoarders().center().x(), drawingBoarders().top())     // Top
+            << QPointF(drawingBoarders().right(), drawingBoarders().center().y())   // Right
+            << QPointF(drawingBoarders().center().x(), drawingBoarders().bottom())  // Bottom
+            << QPointF(drawingBoarders().left(), drawingBoarders().center().y());   // Left
+
+    painter->drawPolygon(diamond);
+  }
+  else
+  {
+    painter->drawRoundedRect(drawingBoarders(), 5, 5);  // 10 is the radius of the corners
+  }
 }
 
 // Override shape() to define the item's collision shape with rounded corners
 QPainterPath DraggableItem::shape() const
 {
   QPainterPath path;
-  path.addRoundedRect(rect(), 10, 10);  // 10 is the corner radius
+  if (mConfig->body.shape == Type::Shape::RECTANGLE)
+  {
+    path.addRect(boundingRect());
+  }
+  else if (mConfig->body.shape == Type::Shape::ELLIPSE)
+  {
+    path.addEllipse(boundingRect());
+  }
+  else if (mConfig->body.shape == Type::Shape::DIAMOND)
+  {
+    QPolygonF diamond;
+    diamond << QPointF(boundingRect().center().x(), boundingRect().top())     // Top
+            << QPointF(boundingRect().right(), boundingRect().center().y())   // Right
+            << QPointF(boundingRect().center().x(), boundingRect().bottom())  // Bottom
+            << QPointF(boundingRect().left(), boundingRect().center().y());   // Left
+
+    path.addPolygon(diamond);
+  }
+  else
+  {
+    path.addRoundedRect(boundingRect(), 10, 10);  // 10 is the corner radius
+  }
+
   return path;
+}
+
+QRectF DraggableItem::boundingRect() const
+{
+  return mBounds;
+}
+
+QRectF DraggableItem::drawingBoarders() const
+{
+  return boundingRect().adjusted(1, 1, -1, -1);
 }
 
 void DraggableItem::adjustWidth(int width)
 {
-  int centerX = (width - rect().width()) / 2;
+  int centerX = (width - boundingRect().width()) / 2;
   setPos(centerX, pos().y());
 
   updateLabelPosition();
@@ -74,8 +123,8 @@ void DraggableItem::updateLabelPosition()
   QRectF textBounds = mLabel->boundingRect();
 
   // Calculate centered position
-  qreal x = rect().center().x() - textBounds.width() / 2;
-  qreal y = rect().center().y() - textBounds.height() / 2;
+  qreal x = boundingRect().center().x() - textBounds.width() / 2;
+  qreal y = boundingRect().center().y() - textBounds.height() / 2;
 
   mLabel->setPos(x, y);
 }

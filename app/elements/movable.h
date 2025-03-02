@@ -13,7 +13,7 @@
 #include "config.h"
 #include "types.h"
 
-class DraggableItem : public QGraphicsRectItem
+class DraggableItem : public QGraphicsItem
 {
 public:
   enum
@@ -28,6 +28,7 @@ public:
   int type() const override;
   void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
   QPainterPath shape() const override;
+  QRectF boundingRect() const override;
 
   void adjustWidth(int width);
 
@@ -36,11 +37,14 @@ protected:
 
 private:
   const QString mId;
+  std::shared_ptr<NodeConfig> mConfig;
 
+  const QRectF mBounds;
+
+  // std::shared_ptr<QGraphicsItem> mShape;
   std::shared_ptr<QGraphicsTextItem> mLabel;
   std::shared_ptr<QGraphicsPixmapItem> mPixmap;
 
-  std::shared_ptr<NodeConfig> mConfig;
-
+  QRectF drawingBoarders() const;
   void updateLabelPosition();
 };

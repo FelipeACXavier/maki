@@ -5,14 +5,19 @@
 #include <QString>
 #include <QVector>
 
+#include "types.h"
+
 class ConnectorConfig
 {
 public:
   ConnectorConfig();
   ConnectorConfig(const QJsonObject& object);
 
-  QPointF getPosition(const QRectF& bounds) const;
   QString position = "";
+
+  QPointF getPosition(const QRectF& bounds) const;
+  QPointF getShift(const QString& config = "") const;
+  QPointF getMirrorShift() const;
 
   friend QDataStream& operator<<(QDataStream& out, const ConnectorConfig& config);
   friend QDataStream& operator>>(QDataStream& in, ConnectorConfig& config);
@@ -27,7 +32,8 @@ public:
   BodyConfig();
   BodyConfig(const QJsonObject& object);
 
-  QString shape = "Rectangle";
+  Type::Shape shape = Type::Shape::ROUNDED_RECTANGLE;
+
   QColor textColor = Qt::black;
   QColor backgroundColor = Qt::lightGray;
   QColor borderColor = Qt::black;
@@ -37,6 +43,9 @@ public:
 
   friend QDataStream& operator<<(QDataStream& out, const BodyConfig& config);
   friend QDataStream& operator>>(QDataStream& in, BodyConfig& config);
+
+private:
+  Type::Shape toShape(const QString& config) const;
 };
 
 QDataStream& operator<<(QDataStream& out, const BodyConfig& config);

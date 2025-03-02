@@ -4,6 +4,9 @@
 #include <QPoint>
 #include <QRect>
 
+#include "app_configs.h"
+#include "logging.h"
+
 ConnectorConfig::ConnectorConfig()
 {
 }
@@ -59,6 +62,41 @@ QPointF ConnectorConfig::getPosition(const QRectF& bounds) const
   return QPointF(0, 0);
 }
 
+QPointF ConnectorConfig::getShift(const QString& config) const
+{
+  auto pos = config.isEmpty() ? position : config;
+
+  LOG_DEBUG("Using pos: %s", qPrintable(pos));
+
+  if (pos == "north" || pos == "north west" || pos == "north east")
+    return QPointF(0, -Constants::CONTROL_POINT_SHIFT);
+
+  else if (pos == "south" || pos == "south west" || pos == "south east")
+    return QPointF(0, Constants::CONTROL_POINT_SHIFT);
+
+  else if (pos == "east" || pos == "east north" || pos == "east south")
+    return QPointF(Constants::CONTROL_POINT_SHIFT, 0);
+
+  else if (pos == "west" || pos == "west north" || pos == "west north")
+    return QPointF(-Constants::CONTROL_POINT_SHIFT, 0);
+
+  return QPointF(0, 0);
+}
+
+QPointF ConnectorConfig::getMirrorShift() const
+{
+  if (position == "north" || position == "north west" || position == "north east")
+    return getShift("south");
+
+  else if (position == "south" || position == "south west" || position == "south east")
+    return getShift("north");
+
+  else if (position == "east" || position == "east north" || position == "east south")
+    return getShift("west");
+
+  return getShift("east");
+}
+
 BodyConfig::BodyConfig()
 {
 }
@@ -79,6 +117,9 @@ BodyConfig::BodyConfig(const QJsonObject& object)
 
   if (object.contains("borderColor"))
     borderColor = QColor(object["borderColor"].toString());
+
+  if (object.contains("shape"))
+    shape = toShape(object["shape"].toString());
 }
 
 QDataStream& operator<<(QDataStream& out, const BodyConfig& config)
@@ -101,6 +142,20 @@ QDataStream& operator>>(QDataStream& in, BodyConfig& config)
   in >> config.width;
   in >> config.height;
   return in;
+}
+
+Type::Shape BodyConfig::toShape(const QString& config) const
+{
+  if (config == "Rectangle")
+    return Type::Shape::RECTANGLE;
+  else if (config == "Rounded rectangle")
+    return Type::Shape::ROUNDED_RECTANGLE;
+  else if (config == "Ellipse")
+    return Type::Shape::ELLIPSE;
+  else if (config == "Diamond")
+    return Type::Shape::DIAMOND;
+
+  return Type::Shape::ROUNDED_RECTANGLE;
 }
 
 NodeConfig::NodeConfig(const QJsonObject& object)

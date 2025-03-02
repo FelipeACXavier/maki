@@ -22,4 +22,5 @@ static const QString TYPE_PIXMAP = QStringLiteral("application/x-pixmap");
 static const QString TYPE_CONFIG = QStringLiteral("application/x-configuration");
 static const QString TYPE_NODE_ID = QStringLiteral("application/x-node-id");
 
+static const qreal CONTROL_POINT_SHIFT = 100;
 }  // namespace Constants

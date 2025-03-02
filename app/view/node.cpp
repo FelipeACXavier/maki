@@ -9,14 +9,19 @@
 #include "connection.h"
 #include "style_helpers.h"
 
-Connector::Connector(const QPointF& center, int radius, QGraphicsItem* parent)
-    : QGraphicsEllipseItem(QRectF(center - QPointF(radius, radius), center + QPointF(radius, radius)), parent)
+Connector::Connector(const ConnectorConfig& config, QGraphicsItem* parent)
+    : QGraphicsEllipseItem(parent)
     , mId(QUuid::createUuid().toString())
-    , mCenter(center)
+    , mConfig(std::make_shared<ConnectorConfig>(config))
 {
   setZValue(1);
   setBrush(Qt::blue);
   setAcceptHoverEvents(true);
+
+  const QPointF center = config.getPosition(parent->boundingRect());
+  const QPointF shift = QPointF(Config::CONNECTOR_RADIUS, Config::CONNECTOR_RADIUS);
+
+  setRect(QRectF(center - shift, center + shift));
 }
 
 QString Connector::Id() const
@@ -31,7 +36,12 @@ int Connector::type() const
 
 QPointF Connector::center() const
 {
-  return scenePos() + mCenter;
+  return scenePos() + mConfig->getPosition(parentItem()->boundingRect());
+}
+
+QPair<QPointF, QPointF> Connector::shift() const
+{
+  return QPair<QPointF, QPointF>(mConfig->getShift(), mConfig->getMirrorShift());
 }
 
 void Connector::updateConnections()
@@ -77,7 +87,7 @@ NodeItem::NodeItem(const QPointF& initialPosition, const QPixmap& pixmap, std::s
   mPixmapItem = std::make_shared<QGraphicsPixmapItem>(pixmap, this);
 
   for (const auto& connector : mConfig->connectors)
-    mConnectors.append(std::make_shared<Connector>(connector.getPosition(boundingRect()), Config::CONNECTOR_RADIUS, this));
+    mConnectors.append(std::make_shared<Connector>(connector, this));
 
   // Create connection points as ellipses
   // mConnectors.append(std::make_shared<Connector>(mRightPoint, Config::CONNECTOR_RADIUS, this));

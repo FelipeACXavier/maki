@@ -5,7 +5,7 @@
     {
       "name": "Start 0",
       "body": {
-        "shape": "",
+        "shape": "Rectangle",
         "textColor": "#FFFFFF",
         "backgroundColor": "#3e86fa",
         "borderColor": "#FFFFFF",
@@ -22,7 +22,7 @@
     {
       "name": "Start 1",
       "body": {
-        "shape": "",
+        "shape": "Ellipse",
         "textColor": "#FFFFFF",
         "backgroundColor": "#3e86fa",
         "borderColor": "#FFFFFF",
@@ -39,7 +39,7 @@
     {
       "name": "Start 2",
       "body": {
-        "shape": "",
+        "shape": "Rounded rectangle",
         "textColor": "#FFFFFF",
         "backgroundColor": "#3e86fa",
         "borderColor": "#FFFFFF",
@@ -56,7 +56,7 @@
     {
       "name": "Start 3",
       "body": {
-        "shape": "",
+        "shape": "Diamond",
         "textColor": "#FFFFFF",
         "backgroundColor": "#3e86fa",
         "borderColor": "#FFFFFF",

@@ -102,8 +102,10 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
 
       mConnector = connector;
       mConnection = std::make_shared<ConnectionItem>();
-      mConnection->setStart(connector->Id(), connector->center());
-      mConnection->setEnd(Constants::TMP_CONNECTION_ID, event->scenePos());
+
+      auto shifts = connector->shift();
+      mConnection->setStart(connector->Id(), connector->center(), shifts.first);
+      mConnection->setEnd(Constants::TMP_CONNECTION_ID, event->scenePos(), shifts.second);
 
       // connector->startConnection(event->scenePos());
       addItem(mConnection.get());
@@ -131,7 +133,7 @@ void Canvas::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
       mHoveredConnector = nullptr;
     }
 
-    mConnection->move(Constants::TMP_CONNECTION_ID, event->scenePos() - QPointF(5, 5));
+    mConnection->move(Constants::TMP_CONNECTION_ID, event->scenePos());
   }
 
   QGraphicsScene::mouseMoveEvent(event);
@@ -149,10 +151,10 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
         Connector* connector = static_cast<Connector*>(item);
         if (connector != mConnector)
         {
-          mConnection->setEnd(connector->Id(), connector->center());
-
+          mConnection->setEnd(connector->Id(), connector->center(), connector->shift().first);
           connector->addConnection(mConnection);
           mConnector->addConnection(mConnection);
+          mConnection->done();
         }
       }
 

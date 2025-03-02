@@ -19,11 +19,12 @@ public:
     Type = UserType + Type::CONNECTOR
   };
 
-  Connector(const QPointF& center, int radius, QGraphicsItem* parent = nullptr);
+  Connector(const ConnectorConfig& config, QGraphicsItem* parent);
 
   QString Id() const;
   int type() const override;
   QPointF center() const;
+  QPair<QPointF, QPointF> shift() const;
 
   void updateConnections();
   void addConnection(std::shared_ptr<ConnectionItem> connection);
@@ -34,8 +35,8 @@ protected:
 
 private:
   const QString mId;
-  QPointF mCenter;
 
+  std::shared_ptr<ConnectorConfig> mConfig;
   QVector<std::shared_ptr<ConnectionItem>> mConnections;
 };
 
