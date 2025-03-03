@@ -1,11 +1,32 @@
 BasedOnStyle: Google
 AccessModifierOffset: -2
-BreakBeforeBraces: Allman
-BraceWrapping:
 ColumnLimit: 0
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterEnum:              true
+  AfterClass:             true
+  AfterUnion:             true
+  BeforeElse:             true
+  AfterStruct:            true
+  AfterFunction:          true
+  AfterNamespace:         true
+  AfterCaseLabel:         true
+  SplitEmptyFunction:     true
+  SplitEmptyNamespace:    true
+  AfterObjCDeclaration:   true # Implementations (cpp files)
+  AfterControlStatement:  Always
+
+  BeforeCatch:            false
+  BeforeWhile:            false
+  IndentBraces:           false
+  BeforeLambdaBody:       false
+
+IndentWidth: 2
+PointerAlignment: Left
+AlignTrailingComments: true
+DerivePointerAlignment: false
+AllowShortLambdasOnASingleLine: false
 AllowShortFunctionsOnASingleLine: None
+BreakConstructorInitializers: BeforeComma
 AllowShortIfStatementsOnASingleLine: false
 ConstructorInitializerAllOnOneLineOrOnePerLine: false
-BreakConstructorInitializers: BeforeComma
-PointerAlignment: Left
-DerivePointerAlignment: false
