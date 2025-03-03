@@ -22,6 +22,7 @@
 #include "elements/node.h"
 #include "library_container.h"
 #include "logging.h"
+#include "string_helpers.h"
 #include "ui_editor.h"
 
 MainWindow::MainWindow(QWidget* parent)
@@ -168,9 +169,16 @@ void MainWindow::onNodeSelected(NodeItem* node)
     return;
   }
 
-  // LOG_DEBUG("Info message: %s", qPrintable(node->help().message));
+  QFont labelFont;
+  labelFont.setBold(true);
+  labelFont.setPointSize(12);
+
+  QFont propertyFont;
+  propertyFont.setPointSize(12);
+
   mUI->infoText->setText(node->help().message);
   mUI->infoText->setWordWrapMode(QTextOption::WrapMode::WordWrap);
+  mUI->infoText->setFont(propertyFont);
 
   // Clear the frame
   QVBoxLayout* layout =
@@ -198,7 +206,10 @@ void MainWindow::onNodeSelected(NodeItem* node)
   {
     LOG_DEBUG("Updating properties with %s of type %d", qPrintable(property.id), (int)property.type);
 
-    QLabel* nameLabel = new QLabel(property.id);
+    QString label = QString::fromStdString(ToUpperCase(property.id.toStdString(), 0, 1));
+    QLabel* nameLabel = new QLabel(label);
+
+    nameLabel->setFont(labelFont);
     layout->addWidget(nameLabel);
 
     if (property.type == Types::PropertyTypes::STRING)
@@ -216,6 +227,7 @@ void MainWindow::onNodeSelected(NodeItem* node)
         node->setProperty(property.id, text);
       });
 
+      widget->setFont(propertyFont);
       layout->addWidget(widget);
     }
     else if (property.type == Types::PropertyTypes::INTEGER)
@@ -240,6 +252,7 @@ void MainWindow::onNodeSelected(NodeItem* node)
           node->setProperty(property.id, newValue);
       });
 
+      widget->setFont(propertyFont);
       layout->addWidget(widget);
     }
     else if (property.type == Types::PropertyTypes::REAL)
@@ -264,6 +277,7 @@ void MainWindow::onNodeSelected(NodeItem* node)
           node->setProperty(property.id, newValue);
       });
 
+      widget->setFont(propertyFont);
       layout->addWidget(widget);
     }
     else if (property.type == Types::PropertyTypes::BOOLEAN)
@@ -281,6 +295,7 @@ void MainWindow::onNodeSelected(NodeItem* node)
         node->setProperty(property.id, state);
       });
 
+      widget->setFont(propertyFont);
       layout->addWidget(widget);
     }
     else if (property.type == Types::PropertyTypes::SELECT)
@@ -304,6 +319,7 @@ void MainWindow::onNodeSelected(NodeItem* node)
         node->setProperty(property.id, text);
       });
 
+      widget->setFont(propertyFont);
       layout->addWidget(widget);
     }
     else
