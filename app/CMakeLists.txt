@@ -15,7 +15,7 @@ file(GLOB ELEMENT_FILES ${CMAKE_CURRENT_SOURCE_DIR}/elements/*.cpp)
 file(GLOB VIEW_FILES ${CMAKE_CURRENT_SOURCE_DIR}/view/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/view/*.ui)
 file(GLOB COMPILER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/compiler/*.cpp)
 
-message("view files: ${VIEW_FILES}")
+# message("view files: ${VIEW_FILES}")
 qt_add_executable(${APPLICATION_NAME}
     main.cpp
     assets.qrc

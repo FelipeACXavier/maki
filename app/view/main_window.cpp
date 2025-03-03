@@ -19,9 +19,9 @@
 
 #include "app_configs.h"
 #include "canvas.h"
+#include "elements/node.h"
 #include "library_container.h"
 #include "logging.h"
-#include "node.h"
 #include "ui_editor.h"
 
 MainWindow::MainWindow(QWidget* parent)

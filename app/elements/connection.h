@@ -3,7 +3,7 @@
 #include <QGraphicsLineItem>
 #include <QGraphicsPathItem>
 
-#include "node.h"
+#include "elements/node.h"
 #include "types.h"
 
 class Connector;

@@ -1,9 +1,9 @@
 #include "generator.h"
 
+#include "elements/connection.h"
+#include "elements/connector.h"
+#include "elements/node.h"
 #include "logging.h"
-#include "view/connection.h"
-#include "view/connector.h"
-#include "view/node.h"
 
 Generator::Generator()
 {

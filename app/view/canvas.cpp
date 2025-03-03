@@ -6,11 +6,11 @@
 
 #include "app_configs.h"
 #include "config_table.h"
-#include "connection.h"
-#include "connector.h"
 #include "elements/config.h"
+#include "elements/connection.h"
+#include "elements/connector.h"
+#include "elements/node.h"
 #include "logging.h"
-#include "node.h"
 
 Canvas::Canvas(std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
     : QGraphicsScene(parent)
