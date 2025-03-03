@@ -117,6 +117,24 @@ Types::ConnectorType ConnectorConfig::fromString(const QString& config) const
   return Types::ConnectorType::UNKNOWN;
 }
 
+PropertiesConfig::PropertiesConfig()
+{
+}
+
+PropertiesConfig::PropertiesConfig(const QJsonObject& object)
+{
+}
+
+BehaviourConfig::BehaviourConfig()
+{
+}
+
+BehaviourConfig::BehaviourConfig(const QJsonObject& object)
+{
+  if (object.contains("code"))
+    code = object["code"].toString();
+}
+
 BodyConfig::BodyConfig()
 {
 }
@@ -143,6 +161,12 @@ BodyConfig::BodyConfig(const QJsonObject& object)
 
   if (object.contains("icon"))
     iconPath = object["icon"].toString();
+
+  if (object.contains("scale"))
+    iconScale = object["scale"].toDouble();
+
+  if (object.contains("z-index"))
+    zIndex = object["z-index"].toInt();
 }
 
 QDataStream& operator<<(QDataStream& out, const BodyConfig& config)
@@ -189,8 +213,15 @@ NodeConfig::NodeConfig(const QJsonObject& object)
   assert(object.contains("name"));
 
   name = object["name"].toString();
+
   if (object.contains("body"))
     body = BodyConfig(object["body"].toObject());
+
+  if (object.contains("properties"))
+    properties = PropertiesConfig(object["properties"].toObject());
+
+  if (object.contains("behaviour"))
+    behaviour = BehaviourConfig(object["behaviour"].toObject());
 
   for (const auto& connector : object["connectors"].toArray())
     connectors.push_back(ConnectorConfig(connector.toObject()));

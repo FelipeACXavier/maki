@@ -4,9 +4,13 @@
 #include <QDrag>
 #include <QDropEvent>
 #include <QGraphicsSceneMouseEvent>
+#include <QStyle>
 #include <QStyleOptionGraphicsItem>
 
 #include "app_configs.h"
+
+const qreal MAX_SIDEBAR_WIDTH = 100.0;
+const qreal MAX_SIDEBAR_HEIGHT = 100.0;
 
 DraggableItem::DraggableItem(const QString& id, std::shared_ptr<NodeConfig> config, QGraphicsItem* parent)
     : QGraphicsItem(parent)
@@ -14,11 +18,14 @@ DraggableItem::DraggableItem(const QString& id, std::shared_ptr<NodeConfig> conf
     , mConfig(config)
     , mBounds(0, 0, mConfig->body.width, mConfig->body.height)
 {
+  qreal scaleFactor = computeScaleFactor();
+  mScaledBounds = QRectF(0, 0, mConfig->body.width * scaleFactor, mConfig->body.height * scaleFactor);
+
   if (!mConfig->body.iconPath.isEmpty())
   {
     // Load icon
     QPixmap icon(mConfig->body.iconPath);
-    mPixmap = std::make_shared<QPixmap>(icon.scaled(boundingRect().size().toSize() / 2, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    mPixmap = std::make_shared<QPixmap>(icon.scaled(boundingRect().size().toSize() * mConfig->body.iconScale, Qt::KeepAspectRatio, Qt::SmoothTransformation));
   }
   else
   {
@@ -46,7 +53,8 @@ int DraggableItem::type() const
 
 void DraggableItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
-  // Set rounded corners by using a QRectF with the desired corner radius
+  QRectF bounds = drawingBorders((option && option->state == QStyle::State_Active) ? mBounds : boundingRect());
+
   painter->setPen(mConfig->body.borderColor);
   painter->setBrush(mConfig->body.backgroundColor);
 
@@ -54,31 +62,30 @@ void DraggableItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* opt
 
   if (mConfig->body.shape == Types::Shape::RECTANGLE)
   {
-    painter->drawRect(drawingBoarders());
+    painter->drawRect(bounds);
   }
   else if (mConfig->body.shape == Types::Shape::ELLIPSE)
   {
-    painter->drawEllipse(drawingBoarders());
+    painter->drawEllipse(bounds);
   }
   else if (mConfig->body.shape == Types::Shape::DIAMOND)
   {
     QPolygonF diamond;
-    diamond << QPointF(drawingBoarders().center().x(), drawingBoarders().top())     // Top
-            << QPointF(drawingBoarders().right(), drawingBoarders().center().y())   // Right
-            << QPointF(drawingBoarders().center().x(), drawingBoarders().bottom())  // Bottom
-            << QPointF(drawingBoarders().left(), drawingBoarders().center().y());   // Left
+    diamond << QPointF(bounds.center().x(), bounds.top())     // Top
+            << QPointF(bounds.right(), bounds.center().y())   // Right
+            << QPointF(bounds.center().x(), bounds.bottom())  // Bottom
+            << QPointF(bounds.left(), bounds.center().y());   // Left
 
     painter->drawPolygon(diamond);
   }
   else
   {
-    painter->drawRoundedRect(drawingBoarders(), 5, 5);  // 10 is the radius of the corners
+    painter->drawRoundedRect(bounds, 5, 5);  // 10 is the radius of the corners
   }
 
   if (mPixmap)
   {
-    QRectF rect = boundingRect();
-    QPointF center = rect.center();
+    QPointF center = bounds.center();
     QPointF topLeft = center - QPointF(mPixmap->width() / 2, mPixmap->height() / 2);
     painter->drawPixmap(topLeft, *mPixmap);
   }
@@ -116,12 +123,12 @@ QPainterPath DraggableItem::shape() const
 
 QRectF DraggableItem::boundingRect() const
 {
-  return mBounds;
+  return mScaledBounds;
 }
 
-QRectF DraggableItem::drawingBoarders() const
+QRectF DraggableItem::drawingBorders(const QRectF& input) const
 {
-  return boundingRect().adjusted(1, 1, -1, -1);
+  return input.adjusted(1, 1, -1, -1);
 }
 
 void DraggableItem::adjustWidth(int width)
@@ -149,7 +156,7 @@ void DraggableItem::updateLabelPosition()
 void DraggableItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
   // Get pixmap from this
-  QPixmap pixmap(boundingRect().size().toSize());
+  QPixmap pixmap(mBounds.size().toSize());
   pixmap.fill(Qt::transparent);
 
   QPainter painter(&pixmap);
@@ -157,7 +164,8 @@ void DraggableItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
   painter.setRenderHint(QPainter::TextAntialiasing, false);
 
   QStyleOptionGraphicsItem opt;
-  paint(&painter, &opt);
+  opt.state = QStyle::State_Active;
+  paint(&painter, &opt, nullptr);
 
   if (mLabel)
   {
@@ -167,7 +175,7 @@ void DraggableItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 
   if (mPixmap)
   {
-    QRectF rect = boundingRect();
+    QRectF rect = mBounds;
     QPointF center = rect.center();
     QPointF topLeft = center - QPointF(mPixmap->width() / 2, mPixmap->height() / 2);
     painter.drawPixmap(topLeft, *mPixmap);
@@ -189,9 +197,22 @@ void DraggableItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
   QDrag* drag = new QDrag(event->widget());
   drag->setMimeData(mimeData);
   drag->setPixmap(pixmap);
-  drag->setHotSpot(QPoint(boundingRect().width() / 2, boundingRect().height() / 2));
+  drag->setHotSpot(QPoint(mBounds.width() / 2, mBounds.height() / 2));
   drag->exec(Qt::MoveAction);
 
   // Nicety, let's make the cursor show a drag action
   setCursor(Qt::ClosedHandCursor);
+}
+
+qreal DraggableItem::computeScaleFactor() const
+{
+  qreal widthScale = (mConfig->body.width > MAX_SIDEBAR_WIDTH)
+                         ? MAX_SIDEBAR_WIDTH / mConfig->body.width
+                         : 1.0;
+
+  qreal heightScale = (mConfig->body.height > MAX_SIDEBAR_HEIGHT)
+                          ? MAX_SIDEBAR_HEIGHT / mConfig->body.height
+                          : 1.0;
+
+  return qMin(widthScale, heightScale);  // Use the smallest scale to maintain aspect ratio
 }

@@ -3,7 +3,10 @@
 #include <QGraphicsLineItem>
 #include <QGraphicsPathItem>
 
+#include "node.h"
 #include "types.h"
+
+class Connector;
 
 class ConnectionItem : public QGraphicsPathItem
 {
@@ -14,14 +17,23 @@ public:
   };
 
   ConnectionItem();
+  virtual ~ConnectionItem();
+
+  QString id() const;
 
   void setStart(const QString& id, const QPointF& point, const QPointF& controlShift);
   void setEnd(const QString& id, const QPointF& point, const QPointF& controlShift);
-  void done();
+  void done(Connector* source, Connector* destination);
+
+  Connector* source() const;
+  Connector* destination() const;
 
   void move(const QString& id, QPointF pos);
 
+  void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
+
 private:
+  const QString mId;
   bool mComplete;
 
   QPointF mSrcPoint;
@@ -29,6 +41,9 @@ private:
 
   QPointF mSrcShift;
   QPointF mDstShift;
+
+  Connector* mSource;
+  Connector* mDestination;
 
   QString mSrcId;
   QString mDstId;

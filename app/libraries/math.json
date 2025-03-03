@@ -12,7 +12,8 @@
         "borderColor": "#FFFFFF",
         "width": 50,
         "height": 50,
-        "icon": ":math/addition.png"
+        "icon": ":math/addition.png",
+        "scale": 0.5
       },
       "connectors": [
         {
@@ -44,7 +45,8 @@
         "borderColor": "#FFFFFF",
         "width": 50,
         "height": 50,
-        "icon": ":math/subtraction.png"
+        "icon": ":math/subtraction.png",
+        "scale": 0.5
       },
       "connectors": [
         {
@@ -76,7 +78,8 @@
         "borderColor": "#FFFFFF",
         "width": 50,
         "height": 50,
-        "icon": ":math/multiplication.png"
+        "icon": ":math/multiplication.png",
+        "scale": 0.5
       },
       "connectors": [
         {
@@ -108,7 +111,8 @@
         "borderColor": "#FFFFFF",
         "width": 50,
         "height": 50,
-        "icon": ":math/division.png"
+        "icon": ":math/division.png",
+        "scale": 0.5
       },
       "connectors": [
         {

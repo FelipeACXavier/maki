@@ -1,9 +1,14 @@
 #include "connection.h"
 
 #include <QPen>
+#include <QUuid>
+
+#include "app_configs.h"
+#include "connector.h"
 
 ConnectionItem::ConnectionItem()
     : QGraphicsPathItem()
+    , mId(QUuid::createUuid().toString())
     , mComplete(false)
 {
   // Make sure the connections are behind the nodes
@@ -13,6 +18,19 @@ ConnectionItem::ConnectionItem()
   // Set line color and width
   // TODO(felaze): make configurable
   setPen(QPen(Qt::white, 2));
+}
+
+ConnectionItem::~ConnectionItem()
+{
+  if (mSource)
+    mSource->removeConnection(this);
+  if (mDestination)
+    mDestination->removeConnection(this);
+}
+
+QString ConnectionItem::id() const
+{
+  return mId;
 }
 
 void ConnectionItem::setStart(const QString& id, const QPointF& point, const QPointF& controlShift)
@@ -29,13 +47,25 @@ void ConnectionItem::setEnd(const QString& id, const QPointF& point, const QPoin
   mDstShift = controlShift;
 }
 
-void ConnectionItem::done()
+void ConnectionItem::done(Connector* source, Connector* destination)
 {
   mComplete = true;
+  mSource = source;
+  mDestination = destination;
 
   // Make sure line is update with new control points
   move(mSrcId, mSrcPoint);
   move(mDstId, mDstPoint);
+}
+
+Connector* ConnectionItem::source() const
+{
+  return mSource;
+}
+
+Connector* ConnectionItem::destination() const
+{
+  return mDestination;
 }
 
 void ConnectionItem::move(const QString& id, QPointF pos)
@@ -57,4 +87,14 @@ void ConnectionItem::move(const QString& id, QPointF pos)
     path.lineTo(mDstPoint);
 
   setPath(path);
+}
+
+void ConnectionItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
+{
+  QGraphicsPathItem::paint(painter, option, widget);
+
+  if (isSelected())
+    setPen(QPen(Config::Colours::ACCENT, 2));
+  else
+    setPen(QPen(Qt::white, 2));
 }

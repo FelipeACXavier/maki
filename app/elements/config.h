@@ -31,6 +31,22 @@ private:
 QDataStream& operator<<(QDataStream& out, const ConnectorConfig& config);
 QDataStream& operator>>(QDataStream& in, ConnectorConfig& config);
 
+class PropertiesConfig
+{
+public:
+  PropertiesConfig();
+  PropertiesConfig(const QJsonObject& object);
+};
+
+class BehaviourConfig
+{
+public:
+  BehaviourConfig();
+  BehaviourConfig(const QJsonObject& object);
+
+  QString code = "";
+};
+
 class BodyConfig
 {
 public:
@@ -45,8 +61,10 @@ public:
 
   int width = 100;
   int height = 50;
+  int zIndex = 1;
 
   QString iconPath = "";
+  qreal iconScale = 1;
 
   friend QDataStream& operator<<(QDataStream& out, const BodyConfig& config);
   friend QDataStream& operator>>(QDataStream& in, BodyConfig& config);
@@ -65,7 +83,9 @@ public:
 
   QString name;
   BodyConfig body;
+  PropertiesConfig properties;
   QVector<ConnectorConfig> connectors;
+  BehaviourConfig behaviour;
 
   friend QDataStream& operator<<(QDataStream& out, const NodeConfig& config);
   friend QDataStream& operator>>(QDataStream& in, NodeConfig& config);

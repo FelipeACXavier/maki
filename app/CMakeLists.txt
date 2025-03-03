@@ -13,6 +13,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 # Get the source files in common and view
 file(GLOB ELEMENT_FILES ${CMAKE_CURRENT_SOURCE_DIR}/elements/*.cpp)
 file(GLOB VIEW_FILES ${CMAKE_CURRENT_SOURCE_DIR}/view/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/view/*.ui)
+file(GLOB COMPILER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/compiler/*.cpp)
 
 message("view files: ${VIEW_FILES}")
 qt_add_executable(${APPLICATION_NAME}
@@ -20,6 +21,7 @@ qt_add_executable(${APPLICATION_NAME}
     assets.qrc
     ${VIEW_FILES}
     ${ELEMENT_FILES}
+    ${COMPILER_FILES}
 )
 
 set_target_properties(${APPLICATION_NAME} PROPERTIES

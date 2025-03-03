@@ -23,4 +23,6 @@ protected:
 private:
   void adjustNodePositions();
   int getYOfLastItem() const;
+
+  void updateSceneSize();
 };

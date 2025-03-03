@@ -8,6 +8,7 @@
 #include <QMainWindow>
 #include <QStringLiteral>
 
+#include "compiler/generator.h"
 #include "config_table.h"
 #include "json.h"
 #include "result.h"
@@ -34,10 +35,14 @@ private:
   std::unique_ptr<Ui::MainWindow> mUI;
   std::shared_ptr<ConfigurationTable> mConfigTable;
 
+  std::shared_ptr<Generator> mGenerator;
+
   VoidResult loadElements();
   VoidResult loadElementLibrary(const JSON& config);
 
-  void startDrag();
+  // ================================================
+  // Actions
+  void onActionGenerate();
 };
 
 #endif  // MAINWINDOW_H

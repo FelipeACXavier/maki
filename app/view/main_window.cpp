@@ -25,6 +25,8 @@ MainWindow::MainWindow(QWidget* parent)
   // connect(ui->actionOpen, &QAction::triggered, this, &MainWindow::onActionOpenTriggered);
   // connect(ui->actionAbout, &QAction::triggered, this, &MainWindow::onActionAboutTriggered);
   // connect(ui->actionAboutQt, &QAction::triggered, this, &MainWindow::onActionAboutQtTriggered);
+
+  connect(mUI->actionGenerate, &QAction::triggered, this, &MainWindow::onActionGenerate);
 }
 
 MainWindow::~MainWindow()
@@ -44,6 +46,8 @@ VoidResult MainWindow::start()
 
   Canvas* canvas = new Canvas(mConfigTable, mUI->graphicsView);
   mUI->graphicsView->setScene(canvas);
+
+  mGenerator = std::make_shared<Generator>();
 
   loadElements();
 
@@ -129,34 +133,15 @@ VoidResult MainWindow::loadElementLibrary(const JSON& config)
   return VoidResult();
 }
 
-// TODO(felaze): I dont think this is the place for this
-void MainWindow::startDrag()
+void MainWindow::onActionGenerate()
 {
-  QPushButton* button = qobject_cast<QPushButton*>(sender());
-  if (!button)
-    return;
+  if (!mGenerator)
+    LOG_WARNING("No generator available");
 
-  QMimeData* mimeData = new QMimeData();
-  mimeData->setData(Constants::TYPE_NODE, QByteArray());
-
-  QDrag* drag = new QDrag(button);
-  drag->setMimeData(mimeData);
-
-  // Create a preview pixmap
-  QPixmap pixmap(100, 50);
-  pixmap.fill(Qt::transparent);
-
-  QPainter painter(&pixmap);
-  painter.setBrush(Qt::lightGray);
-  painter.drawRect(0, 0, 100, 50);
-  painter.setBrush(Qt::red);
-  painter.drawEllipse(-5, 20, 10, 10);
-  painter.setBrush(Qt::green);
-  painter.drawEllipse(95, 20, 10, 10);
-  painter.end();
-
-  drag->setPixmap(pixmap);
-  drag->setHotSpot(QPoint(50, 25));  // Center the preview on the cursor
-
-  drag->exec(Qt::CopyAction);
+  auto canvas = static_cast<Canvas*>(mUI->graphicsView->scene());
+  auto ret = mGenerator->generate(canvas);
+  if (!ret.IsSuccess())
+    LOG_ERROR("Generation failed: %s", ret.ErrorMessage().c_str());
+  else
+    LOG_INFO("Generation complete");
 }

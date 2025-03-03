@@ -7,6 +7,7 @@
 #include "app_configs.h"
 #include "config_table.h"
 #include "connection.h"
+#include "connector.h"
 #include "elements/config.h"
 #include "logging.h"
 #include "node.h"
@@ -105,14 +106,13 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
         return;
 
       mConnector = connector;
-      mConnection = std::make_shared<ConnectionItem>();
+      mConnection = new ConnectionItem();
 
       auto shifts = connector->shift();
       mConnection->setStart(connector->Id(), connector->center(), shifts.first);
       mConnection->setEnd(Constants::TMP_CONNECTION_ID, event->scenePos(), shifts.second);
 
-      // connector->startConnection(event->scenePos());
-      addItem(mConnection.get());
+      addItem(mConnection);
       return;
     }
   }
@@ -162,7 +162,8 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
           mConnection->setEnd(connector->Id(), connector->center(), connector->shift().first);
           connector->addConnection(mConnection);
           mConnector->addConnection(mConnection);
-          mConnection->done();
+
+          mConnection->done(mConnector, connector);
         }
       }
 
@@ -172,4 +173,17 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
   }
 
   QGraphicsScene::mouseReleaseEvent(event);  // Allow normal item drop behavior
+}
+
+void Canvas::keyPressEvent(QKeyEvent* event)
+{
+  if (event->key() == Qt::Key_Delete)
+  {
+    for (QGraphicsItem* item : selectedItems())
+      delete item;  // This removes the item from the scene and deletes it
+  }
+  else
+  {
+    QGraphicsScene::keyPressEvent(event);  // Forward event to base class
+  }
 }

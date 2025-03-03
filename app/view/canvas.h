@@ -29,11 +29,13 @@ protected:
 
   void drawBackground(QPainter* painter, const QRectF& rect) override;
 
+  void keyPressEvent(QKeyEvent* event) override;
+
 private:
   // TODO(felaze): Move connection behaviour to a separate class
   Connector* mConnector = nullptr;
   Connector* mHoveredConnector = nullptr;
-  std::shared_ptr<ConnectionItem> mConnection = nullptr;
+  ConnectionItem* mConnection = nullptr;
 
   std::shared_ptr<ConfigurationTable> mConfigTable;
 };

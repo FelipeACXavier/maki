@@ -7,44 +7,9 @@
 #include "elements/config.h"
 #include "types.h"
 
+class Connector;
 class ConnectionItem;
 class QGraphicsSceneMouseEvent;
-class QGraphicsSceneHoverEvent;
-
-class Connector : public QGraphicsEllipseItem
-{
-public:
-  enum
-  {
-    Type = UserType + Types::CONNECTOR
-  };
-
-  Connector(const ConnectorConfig& config, QGraphicsItem* parent);
-
-  QString Id() const;
-  int type() const override;
-  QPointF center() const;
-  QPair<QPointF, QPointF> shift() const;
-
-  Types::ConnectorType connectorType() const;
-
-  void updateConnections();
-  void addConnection(std::shared_ptr<ConnectionItem> connection);
-
-  void updateColor(bool accent);
-
-protected:
-  void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
-  void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
-
-private:
-  const QString mId;
-
-  std::shared_ptr<ConnectorConfig> mConfig;
-  QVector<std::shared_ptr<ConnectionItem>> mConnections;
-
-  Qt::GlobalColor typeToColor(Types::ConnectorType type) const;
-};
 
 class NodeItem : public QGraphicsItem
 {
@@ -55,13 +20,18 @@ public:
   };
 
   NodeItem(const QPointF& initialPosition, const QPixmap& map, std::shared_ptr<NodeConfig> config, QGraphicsItem* parent = nullptr);
+  virtual ~NodeItem();
 
   QString Id() const;
 
   int type() const override;
+  QString nodeType() const;
 
   QRectF boundingRect() const override;
   void paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*) override;
+
+  QVector<std::shared_ptr<Connector>> connectors() const;
+  QString behaviour() const;
 
 protected:
   void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;

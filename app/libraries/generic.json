@@ -4,6 +4,20 @@
   "author": "",
   "nodes": [
     {
+      "name": "Component",
+      "body": {
+        "shape": "Rectangle",
+        "textColor": "#FFFFFF",
+        "backgroundColor": "#202020",
+        "borderColor": "#FFFFFF",
+        "width": 500,
+        "height": 500,
+        "z-index": -2
+      },
+      "connectors": [],
+      "behaviour": {}
+    },
+    {
       "name": "Start",
       "body": {
         "shape": "Ellipse",
@@ -94,6 +108,9 @@
       ],
       "behaviour": {
         "code": "if ($properties.condition) return $connectors.true; else return $connectors.false;"
+      },
+      "help": {
+        "message": "Performs a conditional check on the given input and continues the flow based on the check."
       }
     },
     {
@@ -142,6 +159,157 @@
     },
     {
       "name": "Constant",
+      "body": {
+        "shape": "Reectangle",
+        "textColor": "#FFFFFF",
+        "backgroundColor": "#2a9d8f",
+        "borderColor": "#FFFFFF",
+        "width": 75,
+        "height": 75
+      },
+      "connectors": [
+        {
+          "id": "output",
+          "type": "out",
+          "position": "east"
+        }
+      ],
+      "behaviour": {}
+    },
+    {
+      "name": "Constant 1",
+      "body": {
+        "shape": "Reectangle",
+        "textColor": "#FFFFFF",
+        "backgroundColor": "#2a9d8f",
+        "borderColor": "#FFFFFF",
+        "width": 75,
+        "height": 75
+      },
+      "connectors": [
+        {
+          "id": "output",
+          "type": "out",
+          "position": "east"
+        }
+      ],
+      "behaviour": {}
+    },
+    {
+      "name": "Constant 2",
+      "body": {
+        "shape": "Reectangle",
+        "textColor": "#FFFFFF",
+        "backgroundColor": "#2a9d8f",
+        "borderColor": "#FFFFFF",
+        "width": 75,
+        "height": 75
+      },
+      "connectors": [
+        {
+          "id": "output",
+          "type": "out",
+          "position": "east"
+        }
+      ],
+      "behaviour": {}
+    },
+    {
+      "name": "Constant 3",
+      "body": {
+        "shape": "Reectangle",
+        "textColor": "#FFFFFF",
+        "backgroundColor": "#2a9d8f",
+        "borderColor": "#FFFFFF",
+        "width": 75,
+        "height": 75
+      },
+      "connectors": [
+        {
+          "id": "output",
+          "type": "out",
+          "position": "east"
+        }
+      ],
+      "behaviour": {}
+    },
+    {
+      "name": "Constant 4",
+      "body": {
+        "shape": "Reectangle",
+        "textColor": "#FFFFFF",
+        "backgroundColor": "#2a9d8f",
+        "borderColor": "#FFFFFF",
+        "width": 75,
+        "height": 75
+      },
+      "connectors": [
+        {
+          "id": "output",
+          "type": "out",
+          "position": "east"
+        }
+      ],
+      "behaviour": {}
+    },
+    {
+      "name": "Constant 5",
+      "body": {
+        "shape": "Reectangle",
+        "textColor": "#FFFFFF",
+        "backgroundColor": "#2a9d8f",
+        "borderColor": "#FFFFFF",
+        "width": 75,
+        "height": 75
+      },
+      "connectors": [
+        {
+          "id": "output",
+          "type": "out",
+          "position": "east"
+        }
+      ],
+      "behaviour": {}
+    },    {
+      "name": "Constant 6",
+      "body": {
+        "shape": "Reectangle",
+        "textColor": "#FFFFFF",
+        "backgroundColor": "#2a9d8f",
+        "borderColor": "#FFFFFF",
+        "width": 75,
+        "height": 75
+      },
+      "connectors": [
+        {
+          "id": "output",
+          "type": "out",
+          "position": "east"
+        }
+      ],
+      "behaviour": {}
+    },
+    {
+      "name": "Constant 7",
+      "body": {
+        "shape": "Reectangle",
+        "textColor": "#FFFFFF",
+        "backgroundColor": "#2a9d8f",
+        "borderColor": "#FFFFFF",
+        "width": 75,
+        "height": 75
+      },
+      "connectors": [
+        {
+          "id": "output",
+          "type": "out",
+          "position": "east"
+        }
+      ],
+      "behaviour": {}
+    },
+    {
+      "name": "Constant 8",
       "body": {
         "shape": "Reectangle",
         "textColor": "#FFFFFF",

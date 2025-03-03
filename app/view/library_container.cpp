@@ -11,6 +11,8 @@ static const int PADDING = 15;
 LibraryContainer::LibraryContainer(QGraphicsScene* scene)
     : QGraphicsView(scene)
 {
+  setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
 }
 
 LibraryContainer* LibraryContainer::create(const QString& name, QToolBox* parent)
@@ -39,6 +41,12 @@ LibraryContainer* LibraryContainer::create(const QString& name, QToolBox* parent
   return container;
 }
 
+void LibraryContainer::updateSceneSize()
+{
+  QRectF bounds = scene()->itemsBoundingRect();
+  scene()->setSceneRect(0, 0, width(), bounds.height() + 20);
+}
+
 VoidResult LibraryContainer::addNode(const QString& id, std::shared_ptr<NodeConfig> config)
 {
   // Create Draggable Items
@@ -49,6 +57,8 @@ VoidResult LibraryContainer::addNode(const QString& id, std::shared_ptr<NodeConf
 
   // Add item to scene
   scene()->addItem(item);
+
+  updateSceneSize();
 
   return VoidResult();
 }

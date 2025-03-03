@@ -40,11 +40,13 @@ private:
   std::shared_ptr<NodeConfig> mConfig;
 
   const QRectF mBounds;
+  QRectF mScaledBounds;
 
   // std::shared_ptr<QGraphicsItem> mShape;
   std::shared_ptr<QPixmap> mPixmap;
   std::shared_ptr<QGraphicsTextItem> mLabel;
 
-  QRectF drawingBoarders() const;
   void updateLabelPosition();
+  QRectF drawingBorders(const QRectF& input) const;
+  qreal computeScaleFactor() const;
 };
