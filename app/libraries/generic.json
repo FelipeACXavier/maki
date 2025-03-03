@@ -154,7 +154,7 @@
       }
     },
     {
-      "name": "Call",
+      "name": "Action",
       "body": {
         "shape": "Rounded rectangle",
         "textColor": "#FFFFFF",
@@ -163,6 +163,18 @@
         "width": 100,
         "height": 50
       },
+      "properties": [
+        {
+          "id": "name",
+          "type": "string",
+          "default": "Action"
+        },
+        {
+          "id": "call",
+          "type": "string",
+          "default": ""
+        }
+      ],
       "connectors": [
         {
           "id": "input",
@@ -178,26 +190,6 @@
       "behaviour": {}
     },
     {
-      "name": "Action",
-      "body": {
-        "shape": "Rounded rectangle",
-        "textColor": "#FFFFFF",
-        "backgroundColor": "#2a9d8f",
-        "borderColor": "#FFFFFF",
-        "width": 100,
-        "height": 50
-      },
-      "connectors": [
-        {
-          "position": "west"
-        },
-        {
-          "position": "east"
-        }
-      ],
-      "behaviour": {}
-    },
-    {
       "name": "Constant",
       "body": {
         "shape": "Reectangle",
@@ -207,158 +199,23 @@
         "width": 75,
         "height": 75
       },
-      "connectors": [
+      "properties": [
         {
-          "id": "output",
-          "type": "out",
-          "position": "east"
+          "id": "name",
+          "type": "string",
+          "default": "Constant"
+        },
+        {
+          "id": "type",
+          "type": "string",
+          "default": "integer"
+        },
+        {
+          "id": "value",
+          "type": "integer",
+          "default": 0
         }
       ],
-      "behaviour": {}
-    },
-    {
-      "name": "Constant 1",
-      "body": {
-        "shape": "Reectangle",
-        "textColor": "#FFFFFF",
-        "backgroundColor": "#2a9d8f",
-        "borderColor": "#FFFFFF",
-        "width": 75,
-        "height": 75
-      },
-      "connectors": [
-        {
-          "id": "output",
-          "type": "out",
-          "position": "east"
-        }
-      ],
-      "behaviour": {}
-    },
-    {
-      "name": "Constant 2",
-      "body": {
-        "shape": "Reectangle",
-        "textColor": "#FFFFFF",
-        "backgroundColor": "#2a9d8f",
-        "borderColor": "#FFFFFF",
-        "width": 75,
-        "height": 75
-      },
-      "connectors": [
-        {
-          "id": "output",
-          "type": "out",
-          "position": "east"
-        }
-      ],
-      "behaviour": {}
-    },
-    {
-      "name": "Constant 3",
-      "body": {
-        "shape": "Reectangle",
-        "textColor": "#FFFFFF",
-        "backgroundColor": "#2a9d8f",
-        "borderColor": "#FFFFFF",
-        "width": 75,
-        "height": 75
-      },
-      "connectors": [
-        {
-          "id": "output",
-          "type": "out",
-          "position": "east"
-        }
-      ],
-      "behaviour": {}
-    },
-    {
-      "name": "Constant 4",
-      "body": {
-        "shape": "Reectangle",
-        "textColor": "#FFFFFF",
-        "backgroundColor": "#2a9d8f",
-        "borderColor": "#FFFFFF",
-        "width": 75,
-        "height": 75
-      },
-      "connectors": [
-        {
-          "id": "output",
-          "type": "out",
-          "position": "east"
-        }
-      ],
-      "behaviour": {}
-    },
-    {
-      "name": "Constant 5",
-      "body": {
-        "shape": "Reectangle",
-        "textColor": "#FFFFFF",
-        "backgroundColor": "#2a9d8f",
-        "borderColor": "#FFFFFF",
-        "width": 75,
-        "height": 75
-      },
-      "connectors": [
-        {
-          "id": "output",
-          "type": "out",
-          "position": "east"
-        }
-      ],
-      "behaviour": {}
-    },
-    {
-      "name": "Constant 6",
-      "body": {
-        "shape": "Reectangle",
-        "textColor": "#FFFFFF",
-        "backgroundColor": "#2a9d8f",
-        "borderColor": "#FFFFFF",
-        "width": 75,
-        "height": 75
-      },
-      "connectors": [
-        {
-          "id": "output",
-          "type": "out",
-          "position": "east"
-        }
-      ],
-      "behaviour": {}
-    },
-    {
-      "name": "Constant 7",
-      "body": {
-        "shape": "Reectangle",
-        "textColor": "#FFFFFF",
-        "backgroundColor": "#2a9d8f",
-        "borderColor": "#FFFFFF",
-        "width": 75,
-        "height": 75
-      },
-      "connectors": [
-        {
-          "id": "output",
-          "type": "out",
-          "position": "east"
-        }
-      ],
-      "behaviour": {}
-    },
-    {
-      "name": "Constant 8",
-      "body": {
-        "shape": "Reectangle",
-        "textColor": "#FFFFFF",
-        "backgroundColor": "#2a9d8f",
-        "borderColor": "#FFFFFF",
-        "width": 75,
-        "height": 75
-      },
       "connectors": [
         {
           "id": "output",
