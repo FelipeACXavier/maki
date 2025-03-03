@@ -1,20 +1,27 @@
 #include "main_window.h"
 
+#include <QCheckBox>
+#include <QComboBox>
+#include <QDoubleValidator>
 #include <QDrag>
+#include <QIntValidator>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QLabel>
+#include <QLineEdit>
 #include <QListWidgetItem>
 #include <QMimeData>
 #include <QPushButton>
 #include <QString>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <cfloat>
 
 #include "app_configs.h"
 #include "canvas.h"
 #include "library_container.h"
 #include "logging.h"
+#include "node.h"
 #include "ui_editor.h"
 
 MainWindow::MainWindow(QWidget* parent)
@@ -22,11 +29,8 @@ MainWindow::MainWindow(QWidget* parent)
     , mUI(new Ui::MainWindow)
 {
   mUI->setupUi(this);
-  // connect(ui->actionOpen, &QAction::triggered, this, &MainWindow::onActionOpenTriggered);
-  // connect(ui->actionAbout, &QAction::triggered, this, &MainWindow::onActionAboutTriggered);
-  // connect(ui->actionAboutQt, &QAction::triggered, this, &MainWindow::onActionAboutQtTriggered);
-
-  connect(mUI->actionGenerate, &QAction::triggered, this, &MainWindow::onActionGenerate);
+  connect(mUI->actionGenerate, &QAction::triggered, this,
+          &MainWindow::onActionGenerate);
 }
 
 MainWindow::~MainWindow()
@@ -45,11 +49,12 @@ VoidResult MainWindow::start()
   mConfigTable = std::make_unique<ConfigurationTable>();
 
   Canvas* canvas = new Canvas(mConfigTable, mUI->graphicsView);
+  connect(canvas, &Canvas::nodeSelected, this, &MainWindow::onNodeSelected);
   mUI->graphicsView->setScene(canvas);
 
   mGenerator = std::make_shared<Generator>();
 
-  loadElements();
+  RETURN_ON_FAILURE(loadElements());
 
   LOG_INFO("Main window started");
 
@@ -65,7 +70,8 @@ VoidResult MainWindow::loadElements()
 
   auto libraries = mConfig["libraries"];
   if (!libraries.isArray())
-    return VoidResult::Failed("Libraries must be in a list in the format \"libraries\": []");
+    return VoidResult::Failed(
+        "Libraries must be in a list in the format \"libraries\": []");
 
   mUI->splitter->widget(0)->setMinimumWidth(200);
   mUI->splitter->widget(0)->setMaximumWidth(400);
@@ -81,7 +87,10 @@ VoidResult MainWindow::loadElements()
 
     auto libRead = JSON::fromFile(fileName);
     if (!libRead.IsSuccess())
-      return VoidResult::Failed(QStringLiteral("Failed to open configuration: %1").arg(fileName).toStdString());
+      return VoidResult::Failed(
+          QStringLiteral("Failed to open configuration: %1")
+              .arg(fileName)
+              .toStdString());
 
     auto libConfig = libRead.Value();
 
@@ -111,7 +120,8 @@ VoidResult MainWindow::loadElementLibrary(const JSON& config)
 
   auto nodes = config["nodes"];
   if (!nodes.isArray())
-    return VoidResult::Failed("nodes must be in a list in the format \"nodes\": []");
+    return VoidResult::Failed(
+        "nodes must be in a list in the format \"nodes\": []");
 
   // Every library has a bunch of elements, here we add them.
   for (const auto& value : nodes.toArray())
@@ -123,7 +133,11 @@ VoidResult MainWindow::loadElementLibrary(const JSON& config)
     if (!node.contains("name"))
       return VoidResult::Failed("Nodes must contain a name");
 
+    // Parse config and make sure it is valid before continuing
     auto config = std::make_shared<NodeConfig>(node);
+    if (!config->isValid())
+      return config->result();
+
     auto id = QStringLiteral("%1::%2").arg(name, config->name);
     sidebarview->addNode(id, config);
 
@@ -144,4 +158,160 @@ void MainWindow::onActionGenerate()
     LOG_ERROR("Generation failed: %s", ret.ErrorMessage().c_str());
   else
     LOG_INFO("Generation complete");
+}
+
+void MainWindow::onNodeSelected(NodeItem* node)
+{
+  if (!node)
+  {
+    LOG_WARNING("A node was selected but no node was provided");
+    return;
+  }
+
+  // LOG_DEBUG("Info message: %s", qPrintable(node->help().message));
+  mUI->infoText->setText(node->help().message);
+  mUI->infoText->setWordWrapMode(QTextOption::WrapMode::WordWrap);
+
+  // Clear the frame
+  QVBoxLayout* layout =
+      qobject_cast<QVBoxLayout*>(mUI->propertiesFrame->layout());
+  if (layout)
+  {
+    // Remove and delete all child widgets
+    while (QLayoutItem* item = layout->takeAt(0))
+    {
+      if (QWidget* widget = item->widget())
+        widget->deleteLater();
+
+      delete item;
+    }
+  }
+  else
+  {
+    // Ensure there is a layout
+    layout = new QVBoxLayout(mUI->propertiesFrame);
+    mUI->propertiesFrame->setLayout(layout);
+  }
+
+  // Add new widgets
+  for (const auto& property : node->properties())
+  {
+    LOG_DEBUG("Updating properties with %s of type %d", qPrintable(property.id), (int)property.type);
+
+    QLabel* nameLabel = new QLabel(property.id);
+    layout->addWidget(nameLabel);
+
+    if (property.type == Types::PropertyTypes::STRING)
+    {
+      QLineEdit* widget = new QLineEdit(mUI->propertiesFrame);
+      auto result = node->getProperty(property.id);
+      if (!result.IsSuccess())
+      {
+        LOG_WARNING("Failed to get default value: %s", result.ErrorMessage().c_str());
+        continue;
+      }
+
+      widget->setText(result.Value().toString());
+      connect(widget, &QLineEdit::textChanged, this, [=](const QString& text) {
+        node->setProperty(property.id, text);
+      });
+
+      layout->addWidget(widget);
+    }
+    else if (property.type == Types::PropertyTypes::INTEGER)
+    {
+      QLineEdit* widget = new QLineEdit(mUI->propertiesFrame);
+      QIntValidator* validator = new QIntValidator(INT32_MIN, INT32_MIN, widget);
+
+      auto result = node->getProperty(property.id);
+      if (!result.IsSuccess())
+      {
+        LOG_WARNING("Failed to get default value: %s", result.ErrorMessage().c_str());
+        continue;
+      }
+
+      widget->setText(result.Value().toString());
+      widget->setValidator(validator);
+
+      connect(widget, &QLineEdit::textChanged, this, [=](const QString& text) {
+        bool ok;
+        int newValue = text.toInt(&ok);
+        if (ok)
+          node->setProperty(property.id, newValue);
+      });
+
+      layout->addWidget(widget);
+    }
+    else if (property.type == Types::PropertyTypes::REAL)
+    {
+      QLineEdit* widget = new QLineEdit(mUI->propertiesFrame);
+      QDoubleValidator* validator = new QDoubleValidator(DBL_MIN, DBL_MAX, 6, widget);
+
+      auto result = node->getProperty(property.id);
+      if (!result.IsSuccess())
+      {
+        LOG_WARNING("Failed to get default value: %s", result.ErrorMessage().c_str());
+        continue;
+      }
+
+      widget->setText(result.Value().toString());
+      widget->setValidator(validator);
+
+      connect(widget, &QLineEdit::textChanged, this, [=](const QString& text) {
+        bool ok;
+        qreal newValue = text.toDouble(&ok);
+        if (ok)
+          node->setProperty(property.id, newValue);
+      });
+
+      layout->addWidget(widget);
+    }
+    else if (property.type == Types::PropertyTypes::BOOLEAN)
+    {
+      QCheckBox* widget = new QCheckBox(mUI->propertiesFrame);
+      auto result = node->getProperty(property.id);
+      if (!result.IsSuccess())
+      {
+        LOG_WARNING("Failed to get default value: %s", result.ErrorMessage().c_str());
+        continue;
+      }
+
+      widget->setChecked(result.Value().toBool());
+      connect(widget, &QCheckBox::checkStateChanged, this, [=](Qt::CheckState state) {
+        node->setProperty(property.id, state);
+      });
+
+      layout->addWidget(widget);
+    }
+    else if (property.type == Types::PropertyTypes::SELECT)
+    {
+      QComboBox* widget = new QComboBox(mUI->propertiesFrame);
+
+      auto options = property.options;
+      for (const auto& option : options)
+        widget->addItem(option.id);
+
+      auto result = node->getProperty(property.id);
+      if (!result.IsSuccess())
+      {
+        LOG_WARNING("Failed to get default value: %s", result.ErrorMessage().c_str());
+        continue;
+      }
+
+      LOG_INFO("Found default: %s", qPrintable(result.Value().toString()));
+      widget->setCurrentText(result.Value().toString());
+      connect(widget, &QComboBox::currentTextChanged, this, [=](const QString& text) {
+        node->setProperty(property.id, text);
+      });
+
+      layout->addWidget(widget);
+    }
+    else
+    {
+      LOG_WARNING("Property without a type, how is that possible?");
+      continue;
+    }
+  }
+
+  layout->addStretch();
 }

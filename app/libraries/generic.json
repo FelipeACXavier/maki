@@ -27,6 +27,28 @@
         "width": 50,
         "height": 50
       },
+      "properties": [
+        {
+          "id": "name",
+          "type": "string",
+          "default": "Start"
+        },
+        {
+          "id": "type",
+          "type": "select",
+          "default": "signal",
+          "options": [
+            {
+              "id": "signal",
+              "type": "string"
+            },
+            {
+              "id": "timed",
+              "type": "string"
+            }
+          ]
+        }
+      ],
       "connectors": [
         {
           "id": "output",
@@ -34,7 +56,10 @@
           "position": "east"
         }
       ],
-      "behaviour": {}
+      "behaviour": {},
+      "help": {
+        "message": "Start of a behavioural flow. This can be a reaction to an event or a timed action"
+      }
     },
     {
       "name": "End",
@@ -53,7 +78,10 @@
           "position": "west"
         }
       ],
-      "behaviour": {}
+      "behaviour": {},
+      "help": {
+        "message": "End of a happy behavioural flow. This must always be present in a flow"
+      }
     },
     {
       "name": "Error",
@@ -72,7 +100,10 @@
           "position": "west"
         }
       ],
-      "behaviour": {}
+      "behaviour": {},
+      "help": {
+        "message": "End of an errored behavioural flow. This indicates the flow of a bad behaviour."
+      }
     },
     {
       "name": "Condition",
@@ -84,11 +115,20 @@
         "width": 100,
         "height": 75
       },
-      "properties": {
-        "inputType" : "input type",
-        "returnType" : "return type",
-        "condition" : "boolean expression"
-      },
+      "properties": [
+        {
+          "id": "input type",
+          "type": "string"
+        },
+        {
+          "id": "return type",
+          "type": "string"
+        },
+        {
+          "id": "condition",
+          "type": "string"
+        }
+      ],
       "connectors": [
         {
           "id": "input",
@@ -270,7 +310,8 @@
         }
       ],
       "behaviour": {}
-    },    {
+    },
+    {
       "name": "Constant 6",
       "body": {
         "shape": "Reectangle",

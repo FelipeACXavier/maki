@@ -28,5 +28,15 @@ enum class ConnectorType
   IN_AND_OUT,
 };
 
+enum class PropertyTypes
+{
+  UNKNOWN = 0,
+  STRING,
+  INTEGER,
+  REAL,
+  BOOLEAN,
+  SELECT
+};
+
 typedef QJsonValueConstRef Config;
 }  // namespace Types

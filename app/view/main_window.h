@@ -30,6 +30,9 @@ public:
 
   VoidResult start();
 
+private slots:
+  void onNodeSelected(NodeItem* node);
+
 private:
   JSON mConfig;
   std::unique_ptr<Ui::MainWindow> mUI;

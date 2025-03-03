@@ -5,9 +5,27 @@
 #include <QString>
 #include <QVector>
 
+#include "result.h"
 #include "types.h"
 
-class ConnectorConfig
+class ConfigBase
+{
+public:
+  ConfigBase();
+  ConfigBase(ConfigBase& copy);
+  ConfigBase(const ConfigBase& copy);
+
+  virtual bool isValid() const;
+  VoidResult result() const;
+
+protected:
+  void setInvalid(const QString& message);
+
+private:
+  VoidResult mIsValid;
+};
+
+class ConnectorConfig : public ConfigBase
 {
 public:
   ConnectorConfig();
@@ -31,14 +49,25 @@ private:
 QDataStream& operator<<(QDataStream& out, const ConnectorConfig& config);
 QDataStream& operator>>(QDataStream& in, ConnectorConfig& config);
 
-class PropertiesConfig
+class PropertiesConfig : public ConfigBase
 {
 public:
   PropertiesConfig();
   PropertiesConfig(const QJsonObject& object);
+
+  QString id = "";
+  QVariant defaultValue;
+  QList<PropertiesConfig> options;
+  Types::PropertyTypes type = Types::PropertyTypes::UNKNOWN;
+
+  bool isValid() const override;
+
+private:
+  Types::PropertyTypes toType(const QString& input);
+  QVariant toDefault(const QJsonObject& object, Types::PropertyTypes objectType);
 };
 
-class BehaviourConfig
+class BehaviourConfig : public ConfigBase
 {
 public:
   BehaviourConfig();
@@ -47,7 +76,16 @@ public:
   QString code = "";
 };
 
-class BodyConfig
+class HelpConfig : public ConfigBase
+{
+public:
+  HelpConfig();
+  HelpConfig(const QJsonObject& object);
+
+  QString message = "";
+};
+
+class BodyConfig : public ConfigBase
 {
 public:
   BodyConfig();
@@ -76,16 +114,17 @@ private:
 QDataStream& operator<<(QDataStream& out, const BodyConfig& config);
 QDataStream& operator>>(QDataStream& in, BodyConfig& config);
 
-class NodeConfig
+class NodeConfig : public ConfigBase
 {
 public:
   NodeConfig(const QJsonObject& object);
 
   QString name;
   BodyConfig body;
-  PropertiesConfig properties;
-  QVector<ConnectorConfig> connectors;
+  HelpConfig help;
   BehaviourConfig behaviour;
+  QVector<ConnectorConfig> connectors;
+  QVector<PropertiesConfig> properties;
 
   friend QDataStream& operator<<(QDataStream& out, const NodeConfig& config);
   friend QDataStream& operator>>(QDataStream& in, NodeConfig& config);

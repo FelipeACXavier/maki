@@ -6,6 +6,7 @@
 
 #include "app_configs.h"
 #include "connector.h"
+#include "logging.h"
 #include "style_helpers.h"
 
 NodeItem::NodeItem(const QPointF& initialPosition, const QPixmap& pixmap, std::shared_ptr<NodeConfig> config, QGraphicsItem* parent)
@@ -22,8 +23,8 @@ NodeItem::NodeItem(const QPointF& initialPosition, const QPixmap& pixmap, std::s
   for (const auto& connector : mConfig->connectors)
     mConnectors.append(std::make_shared<Connector>(connector, this));
 
-  // Create connection points as ellipses
-  // mConnectors.append(std::make_shared<Connector>(mRightPoint, Config::CONNECTOR_RADIUS, this));
+  for (const auto& property : mConfig->properties)
+    mProperties[property.id] = property.defaultValue;
 
   setPos(snapToGrid(initialPosition - boundingRect().center(), Config::GRID_SIZE));
 }
@@ -32,7 +33,7 @@ NodeItem::~NodeItem()
 {
 }
 
-QString NodeItem::Id() const
+QString NodeItem::id() const
 {
   return mId;
 }
@@ -46,6 +47,14 @@ QString NodeItem::nodeType() const
 {
   // This should also contain the library to make it unique
   return mConfig->name;
+}
+
+VoidResult NodeItem::start()
+{
+  if (nodeSeletected)
+    nodeSeletected(this);
+
+  return VoidResult();
 }
 
 QRectF NodeItem::boundingRect() const
@@ -73,9 +82,42 @@ QVector<std::shared_ptr<Connector>> NodeItem::connectors() const
   return mConnectors;
 }
 
+QVector<PropertiesConfig> NodeItem::properties() const
+{
+  return mConfig->properties;
+}
+
+Result<QVariant> NodeItem::getProperty(const QString& key)
+{
+  if (mProperties.find(key) == mProperties.end())
+  {
+    LOG_WARNING("Tried to update property %s but it does not exist", qPrintable(key));
+    return Result<QVariant>::Failed("No property " + key.toStdString());
+  }
+
+  LOG_DEBUG("Getting property: %s", qPrintable(key));
+  return mProperties[key];
+}
+
+void NodeItem::setProperty(const QString& key, QVariant value)
+{
+  if (mProperties.find(key) == mProperties.end())
+  {
+    LOG_WARNING("Tried to update property %s but it does not exist", qPrintable(key));
+    return;
+  }
+
+  mProperties[key] = value;
+}
+
 QString NodeItem::behaviour() const
 {
   return mConfig->behaviour.code;
+}
+
+HelpConfig NodeItem::help() const
+{
+  return mConfig->help;
 }
 
 void NodeItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
@@ -86,6 +128,13 @@ void NodeItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 
 void NodeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
+  // Display information in the help menu
+  if (isSelected())
+  {
+    if (nodeSeletected)
+      nodeSeletected(this);
+  }
+
   setPos(snapToGrid(scenePos(), Config::GRID_SIZE));
   updateConnectors();
   QGraphicsItem::mouseReleaseEvent(event);

@@ -17,7 +17,7 @@ public:
   Connector(const ConnectorConfig& config, QGraphicsItem* parent);
   virtual ~Connector();
 
-  QString Id() const;
+  QString id() const;
   int type() const override;
 
   QPointF center() const;

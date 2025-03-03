@@ -24,7 +24,7 @@ public:
   DraggableItem(const QString& id, std::shared_ptr<NodeConfig> config, QGraphicsItem* parent = nullptr);
   virtual ~DraggableItem();
 
-  QString Id() const;
+  QString id() const;
   int type() const override;
   void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
   QPainterPath shape() const override;

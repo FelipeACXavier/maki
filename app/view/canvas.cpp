@@ -31,24 +31,28 @@ void Canvas::drawBackground(QPainter* painter, const QRectF& rect)
   painter->setPen(lightPen);
 
   // Draw vertical grid lines
-  for (qreal x = std::floor(rect.left() / gridSize) * gridSize; x < rect.right(); x += gridSize)
+  for (qreal x = std::floor(rect.left() / gridSize) * gridSize;
+       x < rect.right(); x += gridSize)
   {
     painter->drawLine(QLineF(x, rect.top(), x, rect.bottom()));
   }
 
   // Draw horizontal grid lines
-  for (qreal y = std::floor(rect.top() / gridSize) * gridSize; y < rect.bottom(); y += gridSize)
+  for (qreal y = std::floor(rect.top() / gridSize) * gridSize;
+       y < rect.bottom(); y += gridSize)
   {
     painter->drawLine(QLineF(rect.left(), y, rect.right(), y));
   }
 
   // Draw thicker lines every 5 grid spaces (major grid)
   painter->setPen(darkPen);
-  for (qreal x = std::floor(rect.left() / (gridSize * 5)) * (gridSize * 5); x < rect.right(); x += gridSize * 5)
+  for (qreal x = std::floor(rect.left() / (gridSize * 5)) * (gridSize * 5);
+       x < rect.right(); x += gridSize * 5)
   {
     painter->drawLine(QLineF(x, rect.top(), x, rect.bottom()));
   }
-  for (qreal y = std::floor(rect.top() / (gridSize * 5)) * (gridSize * 5); y < rect.bottom(); y += gridSize * 5)
+  for (qreal y = std::floor(rect.top() / (gridSize * 5)) * (gridSize * 5);
+       y < rect.bottom(); y += gridSize * 5)
   {
     painter->drawLine(QLineF(rect.left(), y, rect.right(), y));
   }
@@ -83,7 +87,14 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
       return;
     }
 
-    addItem(new NodeItem(event->scenePos(), pixmap, data));
+    auto node = new NodeItem(event->scenePos(), pixmap, data);
+    node->nodeSeletected = [this](NodeItem* item) {
+      onNodeSelected(item);
+    };
+
+    node->start();
+
+    addItem(node);
     event->acceptProposedAction();
 
     // Make sure we show that we are no longer dragging
@@ -93,7 +104,8 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
 
 void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
-  // If the press is on the left or right connection point of a node, start drawing
+  // If the press is on the left or right connection point of a node, start
+  // drawing
   if (event->button() == Qt::LeftButton)
   {
     QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
@@ -109,8 +121,9 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
       mConnection = new ConnectionItem();
 
       auto shifts = connector->shift();
-      mConnection->setStart(connector->Id(), connector->center(), shifts.first);
-      mConnection->setEnd(Constants::TMP_CONNECTION_ID, event->scenePos(), shifts.second);
+      mConnection->setStart(connector->id(), connector->center(), shifts.first);
+      mConnection->setEnd(Constants::TMP_CONNECTION_ID, event->scenePos(),
+                          shifts.second);
 
       addItem(mConnection);
       return;
@@ -159,16 +172,25 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 
         if (connector != mConnector)
         {
-          mConnection->setEnd(connector->Id(), connector->center(), connector->shift().first);
+          mConnection->setEnd(connector->id(), connector->center(),
+                              connector->shift().first);
           connector->addConnection(mConnection);
           mConnector->addConnection(mConnection);
 
           mConnection->done(mConnector, connector);
         }
       }
+      else
+      {
+        LOG_INFO("Deleting connection");
+        removeItem(mConnection);
+      }
 
+      LOG_INFO("Deleting connector");
       mConnection = nullptr;
       mConnector = nullptr;
+
+      LOG_INFO("Deleting done");
     }
   }
 
@@ -186,4 +208,9 @@ void Canvas::keyPressEvent(QKeyEvent* event)
   {
     QGraphicsScene::keyPressEvent(event);  // Forward event to base class
   }
+}
+
+void Canvas::onNodeSelected(NodeItem* item)
+{
+  emit nodeSelected(item);
 }

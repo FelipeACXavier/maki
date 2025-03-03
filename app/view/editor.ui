@@ -93,6 +93,12 @@
         <string>right-panel</string>
        </property>
        <widget class="QTabWidget" name="propertiesMenu">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+          <horstretch>1</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="class" stdset="0">
          <string>properties-menu</string>
         </property>
@@ -100,9 +106,27 @@
          <attribute name="title">
           <string>Properties</string>
          </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_4">
+          <item>
+           <widget class="QFrame" name="propertiesFrame">
+            <property name="frameShape">
+             <enum>QFrame::StyledPanel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Raised</enum>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </widget>
        </widget>
        <widget class="QTabWidget" name="helpMenu">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+          <horstretch>1</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="class" stdset="0">
          <string>help-menu</string>
         </property>
@@ -110,6 +134,11 @@
          <attribute name="title">
           <string>Info</string>
          </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_3">
+          <item>
+           <widget class="QTextBrowser" name="infoText"/>
+          </item>
+         </layout>
         </widget>
        </widget>
       </widget>

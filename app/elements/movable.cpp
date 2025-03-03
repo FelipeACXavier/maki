@@ -41,7 +41,7 @@ DraggableItem::~DraggableItem()
 {
 }
 
-QString DraggableItem::Id() const
+QString DraggableItem::id() const
 {
   return mId;
 }
@@ -190,7 +190,7 @@ void DraggableItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
   // Save data
   QMimeData* mimeData = new QMimeData();
   mimeData->setData(Constants::TYPE_NODE, QByteArray());
-  mimeData->setData(Constants::TYPE_NODE_ID, Id().toUtf8());
+  mimeData->setData(Constants::TYPE_NODE_ID, id().toUtf8());
   mimeData->setData(Constants::TYPE_PIXMAP, pixmapData);
 
   // Create drag itself

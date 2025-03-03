@@ -10,6 +10,8 @@ ConnectionItem::ConnectionItem()
     : QGraphicsPathItem()
     , mId(QUuid::createUuid().toString())
     , mComplete(false)
+    , mSource(nullptr)
+    , mDestination(nullptr)
 {
   // Make sure the connections are behind the nodes
   setZValue(-1);
@@ -22,9 +24,9 @@ ConnectionItem::ConnectionItem()
 
 ConnectionItem::~ConnectionItem()
 {
-  if (mSource)
+  if (mSource != nullptr)
     mSource->removeConnection(this);
-  if (mDestination)
+  if (mDestination != nullptr)
     mDestination->removeConnection(this);
 }
 

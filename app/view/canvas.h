@@ -15,6 +15,7 @@ class ConfigurationTable;
 
 class Canvas : public QGraphicsScene
 {
+  Q_OBJECT
 public:
   Canvas(std::shared_ptr<ConfigurationTable> configTable, QObject* parent = nullptr);
 
@@ -30,6 +31,12 @@ protected:
   void drawBackground(QPainter* painter, const QRectF& rect) override;
 
   void keyPressEvent(QKeyEvent* event) override;
+
+signals:
+  void nodeSelected(NodeItem* node);
+
+private slots:
+  void onNodeSelected(NodeItem* node);
 
 private:
   // TODO(felaze): Move connection behaviour to a separate class

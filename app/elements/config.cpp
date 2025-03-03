@@ -5,7 +5,37 @@
 #include <QRect>
 
 #include "app_configs.h"
+#include "logging.h"
 #include "string_helpers.h"
+
+ConfigBase::ConfigBase()
+{
+}
+
+ConfigBase::ConfigBase(ConfigBase& copy)
+    : mIsValid(copy.mIsValid)
+{
+}
+
+ConfigBase::ConfigBase(const ConfigBase& copy)
+    : mIsValid(copy.mIsValid)
+{
+}
+
+bool ConfigBase::isValid() const
+{
+  return mIsValid.IsSuccess();
+}
+
+void ConfigBase::setInvalid(const QString& message)
+{
+  mIsValid = VoidResult::Failed(message.toStdString());
+}
+
+VoidResult ConfigBase::result() const
+{
+  return mIsValid;
+}
 
 ConnectorConfig::ConnectorConfig()
 {
@@ -92,13 +122,16 @@ QPointF ConnectorConfig::getShift(const QString& config) const
 
 QPointF ConnectorConfig::getMirrorShift() const
 {
-  if (position == "north" || position == "north west" || position == "north east")
+  if (position == "north" || position == "north west" ||
+      position == "north east")
     return getShift("south");
 
-  else if (position == "south" || position == "south west" || position == "south east")
+  else if (position == "south" || position == "south west" ||
+           position == "south east")
     return getShift("north");
 
-  else if (position == "east" || position == "east north" || position == "east south")
+  else if (position == "east" || position == "east north" ||
+           position == "east south")
     return getShift("west");
 
   return getShift("east");
@@ -123,6 +156,86 @@ PropertiesConfig::PropertiesConfig()
 
 PropertiesConfig::PropertiesConfig(const QJsonObject& object)
 {
+  if (!object.contains("id"))
+  {
+    setInvalid("Missing id attribute in property");
+    return;
+  }
+
+  if (!object.contains("type"))
+  {
+    setInvalid("Missing type attribute in property");
+    return;
+  }
+
+  id = object["id"].toString();
+  type = toType(object["type"].toString());
+  if (type == Types::PropertyTypes::UNKNOWN)
+  {
+    setInvalid("Invalid property type: " + object["type"].toString() + " for " + id);
+    return;
+  }
+
+  // Set default later for easier comparison
+  defaultValue = toDefault(object, type);
+  if (!defaultValue.isValid())
+    setInvalid("Invalid default value for " + id);
+}
+
+QVariant PropertiesConfig::toDefault(const QJsonObject& object, Types::PropertyTypes objectType)
+{
+  if (objectType == Types::PropertyTypes::STRING)
+    return object.contains("default") ? object["default"].toString() : QVariant(QString(""));
+  else if (objectType == Types::PropertyTypes::INTEGER)
+    return object.contains("default") ? object["default"].toInt() : QVariant(qint32(0));
+  else if (objectType == Types::PropertyTypes::REAL)
+    return object.contains("default") ? object["default"].toDouble() : QVariant(qreal(0));
+  else if (objectType == Types::PropertyTypes::BOOLEAN)
+    return object.contains("default") ? object["default"].toBool() : QVariant(false);
+  else if (objectType == Types::PropertyTypes::SELECT)
+  {
+    if (!object.contains("options"))
+    {
+      setInvalid("Select type requires and \"options\" attribute");
+      return QVariant();
+    }
+
+    for (const auto& option : object["options"].toArray())
+    {
+      auto prop = PropertiesConfig(option.toObject());
+      options.push_back(PropertiesConfig(option.toObject()));
+    }
+
+    return toDefault(object, Types::PropertyTypes::STRING);
+  }
+
+  return QVariant();
+}
+
+Types::PropertyTypes PropertiesConfig::toType(const QString& config)
+{
+  const auto type = QString::fromStdString(ToLowerCase(config.toStdString(), 0, config.size()));
+  if (type == "string")
+    return Types::PropertyTypes::STRING;
+  else if (type == "integer")
+    return Types::PropertyTypes::INTEGER;
+  else if (type == "real")
+    return Types::PropertyTypes::REAL;
+  else if (type == "boolean")
+    return Types::PropertyTypes::BOOLEAN;
+  else if (type == "select")
+    return Types::PropertyTypes::SELECT;
+
+  return Types::PropertyTypes::UNKNOWN;
+}
+
+bool PropertiesConfig::isValid() const
+{
+  for (const auto& option : options)
+    if (!option.isValid())
+      return false;
+
+  return ConfigBase::isValid();
 }
 
 BehaviourConfig::BehaviourConfig()
@@ -133,6 +246,16 @@ BehaviourConfig::BehaviourConfig(const QJsonObject& object)
 {
   if (object.contains("code"))
     code = object["code"].toString();
+}
+
+HelpConfig::HelpConfig()
+{
+}
+
+HelpConfig::HelpConfig(const QJsonObject& object)
+{
+  if (object.contains("message"))
+    message = object["message"].toString();
 }
 
 BodyConfig::BodyConfig()
@@ -210,21 +333,58 @@ Types::Shape BodyConfig::toShape(const QString& config) const
 
 NodeConfig::NodeConfig(const QJsonObject& object)
 {
-  assert(object.contains("name"));
+  if (!object.contains("name"))
+  {
+    setInvalid("Object must contain a name");
+    return;
+  }
 
   name = object["name"].toString();
 
   if (object.contains("body"))
+  {
     body = BodyConfig(object["body"].toObject());
-
-  if (object.contains("properties"))
-    properties = PropertiesConfig(object["properties"].toObject());
+    if (!body.isValid())
+      setInvalid(QString::fromStdString(body.result().ErrorMessage()));
+  }
 
   if (object.contains("behaviour"))
+  {
     behaviour = BehaviourConfig(object["behaviour"].toObject());
+    if (!behaviour.isValid())
+      setInvalid(QString::fromStdString(behaviour.result().ErrorMessage()));
+  }
 
-  for (const auto& connector : object["connectors"].toArray())
-    connectors.push_back(ConnectorConfig(connector.toObject()));
+  if (object.contains("help"))
+  {
+    help = HelpConfig(object["help"].toObject());
+    if (!help.isValid())
+      setInvalid(QString::fromStdString(help.result().ErrorMessage()));
+  }
+
+  if (object.contains("properties"))
+  {
+    for (const auto& property : object["properties"].toArray())
+    {
+      auto prop = PropertiesConfig(property.toObject());
+      if (!prop.isValid())
+        setInvalid(QString::fromStdString(prop.result().ErrorMessage()));
+
+      properties.push_back(prop);
+    }
+  }
+
+  if (object.contains("connectors"))
+  {
+    for (const auto& connector : object["connectors"].toArray())
+    {
+      auto conn = ConnectorConfig(connector.toObject());
+      if (!conn.isValid())
+        setInvalid(QString::fromStdString(conn.result().ErrorMessage()));
+
+      connectors.push_back(conn);
+    }
+  }
 }
 
 QDataStream& operator<<(QDataStream& out, const NodeConfig& config)
@@ -243,7 +403,8 @@ QDataStream& operator>>(QDataStream& in, NodeConfig& config)
   return in;
 }
 
-QDataStream& operator<<(QDataStream& out, const QVector<ConnectorConfig>& connectors)
+QDataStream& operator<<(QDataStream& out,
+                        const QVector<ConnectorConfig>& connectors)
 {
   out << connectors.size();
   for (const auto& connector : connectors)

@@ -27,7 +27,7 @@ Connector::~Connector()
     delete item;
 }
 
-QString Connector::Id() const
+QString Connector::id() const
 {
   return mId;
 }
@@ -65,7 +65,7 @@ QPair<QPointF, QPointF> Connector::shift() const
 void Connector::updateConnections()
 {
   for (auto& conn : mConnections)
-    conn->move(Id(), center());
+    conn->move(id(), center());
 }
 
 void Connector::addConnection(ConnectionItem* connection)
@@ -76,8 +76,9 @@ void Connector::addConnection(ConnectionItem* connection)
 
 void Connector::removeConnection(ConnectionItem* connection)
 {
-  mConnections.removeIf([connection](ConnectionItem* item)
-                        { return item->id() == connection->id(); });
+  mConnections.removeIf([connection](ConnectionItem* item) {
+    return item->id() == connection->id();
+  });
 }
 
 void Connector::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
