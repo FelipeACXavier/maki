@@ -32,7 +32,7 @@
       "properties": [
         {
           "id": "color",
-          "type": "string",
+          "type": "color",
           "default": "#fcbf49"
         }
       ],

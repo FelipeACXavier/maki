@@ -174,8 +174,7 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 
         if (connector != mConnector)
         {
-          mConnection->setEnd(connector->id(), connector->center(),
-                              connector->shift().first);
+          mConnection->setEnd(connector->id(), connector->center(), connector->shift().first);
           connector->addConnection(mConnection);
           mConnector->addConnection(mConnection);
 

@@ -1,6 +1,7 @@
 #include "properties_menu.h"
 
 #include <QCheckBox>
+#include <QColorDialog>
 #include <QComboBox>
 #include <QDoubleValidator>
 #include <QHBoxLayout>
@@ -84,6 +85,8 @@ VoidResult PropertiesMenu::loadProperties(NodeItem* node)
       LOG_WARN_ON_FAILURE(loadPropertyBoolean(property, node));
     else if (property.type == Types::PropertyTypes::SELECT)
       LOG_WARN_ON_FAILURE(loadPropertySelect(property, node));
+    else if (property.type == Types::PropertyTypes::COLOR)
+      LOG_WARN_ON_FAILURE(loadPropertyColor(property, node));
     else
       LOG_WARNING("Property without a type, how is that possible?");
   }
@@ -137,6 +140,46 @@ VoidResult PropertiesMenu::loadPropertyReal(const PropertiesConfig& property, No
 
   widget->setFont(Fonts::Property);
   layout()->addWidget(widget);
+
+  return VoidResult();
+}
+
+VoidResult PropertiesMenu::loadPropertyColor(const PropertiesConfig& property, NodeItem* node)
+{
+  QWidget* holder = new QWidget(this);
+  QHBoxLayout* holderLayout = new QHBoxLayout(holder);
+  holder->setLayout(holderLayout);
+
+  QPushButton* widget = new QPushButton(this);
+  auto result = node->getProperty(property.id);
+  if (!result.IsSuccess())
+    return VoidResult::Failed("Failed to get default value: " + result.ErrorMessage());
+
+  QColor selectedColor = QColor::fromString(result.Value().toString());
+  QPalette palette;
+  palette.setColor(QPalette::Window, selectedColor);
+
+  QLabel* colorPreviewLabel = new QLabel(this);
+  colorPreviewLabel->setAutoFillBackground(true);
+  colorPreviewLabel->setPalette(palette);
+
+  connect(widget, &QPushButton::pressed, [=]() {
+    QColor color = QColorDialog::getColor(selectedColor, this, "Select Color");
+    QPalette newPalette;
+    newPalette.setColor(QPalette::Window, color);
+    colorPreviewLabel->setPalette(newPalette);
+
+    node->config()->body.backgroundColor = color;
+    node->setProperty(property.id, color.name());
+  });
+
+  widget->setText(result.Value().toString());
+  widget->setFont(Fonts::Property);
+
+  holderLayout->addWidget(colorPreviewLabel);
+  holderLayout->addWidget(widget);
+
+  layout()->addWidget(holder);
 
   return VoidResult();
 }

@@ -21,6 +21,7 @@ private:
   VoidResult loadProperties(NodeItem* node);
   VoidResult loadPropertyInt(const PropertiesConfig& property, NodeItem* node);
   VoidResult loadPropertyReal(const PropertiesConfig& property, NodeItem* node);
+  VoidResult loadPropertyColor(const PropertiesConfig& property, NodeItem* node);
   VoidResult loadPropertySelect(const PropertiesConfig& property, NodeItem* node);
   VoidResult loadPropertyString(const PropertiesConfig& property, NodeItem* node);
   VoidResult loadPropertyBoolean(const PropertiesConfig& property, NodeItem* node);

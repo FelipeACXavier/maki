@@ -119,6 +119,9 @@ void NodeItem::setProperty(const QString& key, QVariant value)
     return;
   }
 
+  // if (key == "color")
+  //   mConfig->body.backgroundColor = QColor::fromString(value.toString());
+
   mProperties[key] = value;
 }
 

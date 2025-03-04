@@ -37,7 +37,8 @@ enum class PropertyTypes
   REAL,
   BOOLEAN,
   SELECT,
-  LIST
+  LIST,
+  COLOR
 };
 
 enum class ControlTypes

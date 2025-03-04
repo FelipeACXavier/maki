@@ -5,7 +5,6 @@
 #include <QRect>
 
 #include "app_configs.h"
-#include "logging.h"
 #include "string_helpers.h"
 
 ConfigBase::ConfigBase()
@@ -247,9 +246,9 @@ QVariant PropertiesConfig::toDefault(const QJsonObject& object, Types::PropertyT
   else if (objectType == Types::PropertyTypes::BOOLEAN)
     return object.contains("default") ? object["default"].toBool() : QVariant(false);
   else if (objectType == Types::PropertyTypes::LIST)
-  {
     return object.contains("default") ? object["default"].toArray().toVariantList() : QVariantList();
-  }
+  else if (objectType == Types::PropertyTypes::COLOR)
+    return object.contains("default") ? object["default"].toString() : QVariant(QString("#050505"));
   else if (objectType == Types::PropertyTypes::SELECT)
   {
     if (!object.contains("options"))
@@ -285,6 +284,8 @@ Types::PropertyTypes PropertiesConfig::toType(const QString& config)
     return Types::PropertyTypes::SELECT;
   else if (type == "list")
     return Types::PropertyTypes::LIST;
+  else if (type == "color")
+    return Types::PropertyTypes::COLOR;
 
   return Types::PropertyTypes::UNKNOWN;
 }
