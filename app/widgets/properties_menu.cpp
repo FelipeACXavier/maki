@@ -21,6 +21,7 @@
 #include "app_configs.h"
 #include "dynamic_control.h"
 #include "elements/node.h"
+#include "json.h"
 #include "logging.h"
 #include "style_helpers.h"
 
@@ -283,16 +284,9 @@ VoidResult PropertiesMenu::loadControlAddField(const ControlsConfig& control, No
     }
 
     if (json["type"] == "list")
-    {
-      QStringList list = json["default"].toString().split(';');
-      QJsonArray array;
-      for (const auto& item : list)
-        array.push_back(item.trimmed());
+      json["default"] = JSON::toArray(json["default"], ',');
 
-      json["default"] = array;
-    }
-
-    LOG_INFO("Setting: %s %s %s", qPrintable(json["id"].toString()), qPrintable(json["default"].toString()), qPrintable(json["type"].toString()));
+    // LOG_INFO("Setting: %s %s %s", qPrintable(json["id"].toString()), qPrintable(json["default"].toString()), qPrintable(json["type"].toString()));
     LOG_ERROR_ON_FAILURE(node->setField(json["id"].toString(), json));
   });
 

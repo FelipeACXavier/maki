@@ -14,4 +14,6 @@ public:
   static Result<JSON> fromFile(const QString& filename);
 
   QString print() const;
+
+  static QJsonArray toArray(const QJsonValue& value, char separator);
 };
