@@ -49,6 +49,20 @@ private:
 QDataStream& operator<<(QDataStream& out, const ConnectorConfig& config);
 QDataStream& operator>>(QDataStream& in, ConnectorConfig& config);
 
+class ControlConfig : public ConfigBase
+{
+public:
+  ControlConfig();
+  ControlConfig(const QJsonObject& object);
+
+  QString id = "";
+  Types::ControlTypes type = Types::ControlTypes::UNKNOWN;
+  QString format = "";
+
+private:
+  Types::ControlTypes toType(const QString& config) const;
+};
+
 class ControlsConfig : public ConfigBase
 {
 public:

@@ -43,9 +43,13 @@ public:
 
   std::function<void(NodeItem* item)> nodeSeletected;
 
+  void onDelete();
+  void onProperties();
+
 protected:
   void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
   void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
+  void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
 
 private:
   QVector<std::shared_ptr<Connector>> mConnectors;

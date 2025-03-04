@@ -1,6 +1,9 @@
 #include "node.h"
 
+#include <QGraphicsScene>
 #include <QGraphicsSceneMouseEvent>
+#include <QMenu>
+#include <QObject>
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
 #include <QUuid>
@@ -135,6 +138,39 @@ void NodeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
   setPos(snapToGrid(scenePos(), Config::GRID_SIZE));
   updateConnectors();
   QGraphicsItem::mouseReleaseEvent(event);
+}
+
+void NodeItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
+{
+  // Create the menu
+  QMenu menu;
+
+  // Add actions to the menu
+  QAction* action1 = menu.addAction("Delete");
+  QAction* action2 = menu.addAction("Properties");
+
+  // Connect actions to their slots
+  QObject::connect(action1, &QAction::triggered, [this]() {
+    onDelete();
+  });
+  QObject::connect(action2, &QAction::triggered, [this]() {
+    onProperties();
+  });
+
+  // Execute the menu at the mouse cursor's position
+  menu.exec(event->screenPos());
+}
+
+void NodeItem::onDelete()
+{
+  // Handle the delete action, e.g., remove the item from the scene
+  scene()->removeItem(this);
+  delete this;
+}
+
+void NodeItem::onProperties()
+{
+  // Handle the properties action, e.g., show a dialog to edit properties
 }
 
 void NodeItem::updateConnectors()

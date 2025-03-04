@@ -108,7 +108,7 @@
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout_4">
           <item>
-           <widget class="QFrame" name="propertiesFrame">
+           <widget class="PropertiesMenu" name="propertiesFrame">
             <property name="frameShape">
              <enum>QFrame::StyledPanel</enum>
             </property>
@@ -225,6 +225,12 @@
    <class>CanvasView</class>
    <extends>QGraphicsView</extends>
    <header>system/canvas_view.h</header>
+  </customwidget>
+  <customwidget>
+   <class>PropertiesMenu</class>
+   <extends>QFrame</extends>
+   <header>widgets/properties_menu.h</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>

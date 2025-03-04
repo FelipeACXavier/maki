@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QColor>
+#include <QFont>
 #include <QString>
 
 namespace Config
@@ -36,3 +37,10 @@ static const QString TYPE_NODE_ID = QStringLiteral("application/x-node-id");
 
 static const qreal CONTROL_POINT_SHIFT = 100;
 }  // namespace Constants
+
+class Fonts
+{
+public:
+  static const QFont Property;
+  static const QFont Label;
+};

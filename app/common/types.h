@@ -42,6 +42,7 @@ enum class PropertyTypes
 enum class ControlTypes
 {
   UNKNOWN = 0,
+  ADD_FIELD,
   ADD_CONTROL,
   REMOVE_CONTROL,
 };

@@ -32,12 +32,7 @@
       "controls": [
         {
           "id": "Add",
-          "type": "add control",
-          "format": "$type$ text $name$ text"
-        },
-        {
-          "id": "Remove",
-          "type": "remove control"
+          "type": "add field"
         }
       ],
       "connectors": [],

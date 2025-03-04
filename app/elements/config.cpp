@@ -182,6 +182,8 @@ Types::ControlTypes ControlsConfig::toType(const QString& config) const
     return Types::ControlTypes::ADD_CONTROL;
   else if (type == "remove control")
     return Types::ControlTypes::REMOVE_CONTROL;
+  else if (type == "add field")
+    return Types::ControlTypes::ADD_FIELD;
 
   return Types::ControlTypes::UNKNOWN;
 }
