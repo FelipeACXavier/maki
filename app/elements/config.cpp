@@ -238,8 +238,6 @@ QString PropertiesConfig::typeToString() const
 
 QVariant PropertiesConfig::toDefault(const QJsonObject& object, Types::PropertyTypes objectType)
 {
-  LOG_INFO("Setting default of type: %d", (int)type);
-
   if (objectType == Types::PropertyTypes::STRING)
     return object.contains("default") ? object["default"].toString() : QVariant(QString(""));
   else if (objectType == Types::PropertyTypes::INTEGER)
@@ -250,18 +248,6 @@ QVariant PropertiesConfig::toDefault(const QJsonObject& object, Types::PropertyT
     return object.contains("default") ? object["default"].toBool() : QVariant(false);
   else if (objectType == Types::PropertyTypes::LIST)
   {
-    qDebug() << object;
-
-    if (object.contains("default"))
-    {
-      for (auto obj : object["default"].toArray())
-        LOG_INFO("Default: %s", qPrintable(obj.toString()));
-    }
-    else
-    {
-      LOG_WARNING("No default");
-    }
-
     return object.contains("default") ? object["default"].toArray().toVariantList() : QVariantList();
   }
   else if (objectType == Types::PropertyTypes::SELECT)

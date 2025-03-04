@@ -158,6 +158,8 @@ public:
   QVector<ConnectorConfig> connectors;
   QVector<PropertiesConfig> properties;
 
+  Types::LibraryTypes libraryType = Types::LibraryTypes::UNKNOWN;
+
   friend QDataStream& operator<<(QDataStream& out, const NodeConfig& config);
   friend QDataStream& operator>>(QDataStream& in, NodeConfig& config);
 };

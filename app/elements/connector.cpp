@@ -64,6 +64,11 @@ QPair<QPointF, QPointF> Connector::shift() const
 
 void Connector::updateConnections()
 {
+  const QPointF centerPoint = mConfig->getPosition(parentItem()->boundingRect());
+  const QPointF shift = QPointF(Config::CONNECTOR_RADIUS, Config::CONNECTOR_RADIUS);
+
+  setRect(QRectF(centerPoint - shift, centerPoint + shift));
+
   for (auto& conn : mConnections)
     conn->move(id(), center());
 }

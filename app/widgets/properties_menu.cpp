@@ -254,8 +254,12 @@ VoidResult PropertiesMenu::loadControlAddField(const ControlsConfig& control, No
     int newRow = model->rowCount();
     model->insertRow(newRow);
     model->setItem(newRow, 0, new QStandardItem(field.id));
-    model->setItem(newRow, 1, new QStandardItem(field.defaultValue.toString()));
     model->setItem(newRow, 2, new QStandardItem(field.typeToString()));
+
+    if (field.type == Types::PropertyTypes::LIST)
+      model->setItem(newRow, 1, new QStandardItem(JSON::fromArray(field.defaultValue.toList(), ',')));
+    else
+      model->setItem(newRow, 1, new QStandardItem(field.defaultValue.toString()));
   }
 
   QObject::connect(model, &QStandardItemModel::itemChanged, [=](QStandardItem* item) {

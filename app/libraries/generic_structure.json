@@ -29,6 +29,13 @@
         "height": 500,
         "z-index": -2
       },
+      "properties": [
+        {
+          "id": "color",
+          "type": "string",
+          "default": "#fcbf49"
+        }
+      ],
       "controls": [
         {
           "id": "Add",

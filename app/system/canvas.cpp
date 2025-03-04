@@ -16,7 +16,6 @@ Canvas::Canvas(std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
     : QGraphicsScene(parent)
     , mConfigTable(configTable)
 {
-  // setAcceptDrops(true);
   setProperty("class", QVariant(QStringLiteral("canvas")));
   setBackgroundBrush(QBrush(QColor("#212121")));
 }

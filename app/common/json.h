@@ -15,5 +15,6 @@ public:
 
   QString print() const;
 
+  static QString fromArray(const QVariantList& value, char separator);
   static QJsonArray toArray(const QJsonValue& value, char separator);
 };

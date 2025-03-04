@@ -6,8 +6,6 @@
 #include "elements/config.h"
 #include "result.h"
 
-class DraggableItem;
-
 class LibraryContainer : public QGraphicsView
 {
 public:

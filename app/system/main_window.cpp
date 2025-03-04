@@ -150,6 +150,9 @@ VoidResult MainWindow::loadElementLibrary(const JSON& config)
     if (!config->isValid())
       return config->result();
 
+    // Initialize the library type
+    config->libraryType = type == "behaviour" ? Types::LibraryTypes::BEHAVIOURAL : Types::LibraryTypes::STRUCTURAL;
+
     auto id = QStringLiteral("%1::%2").arg(name, config->name);
     sidebarview->addNode(id, config);
 

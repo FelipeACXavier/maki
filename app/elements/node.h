@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QBrush>
 #include <QGraphicsEllipseItem>
 #include <QGraphicsItem>
 #include <memory>
@@ -28,6 +29,7 @@ public:
 
   VoidResult start() override;
 
+  QRectF boundingRect() const override;
   QPainterPath shape() const override;
   void paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget) override;
 
@@ -52,6 +54,7 @@ public:
 
 protected:
   void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
+  void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
   void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
   void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
 
@@ -60,6 +63,9 @@ private:
 
   std::map<QString, QVariant> mProperties;
   QVector<PropertiesConfig> mFields;
+
+  bool mIsResizing{false};
+  QSizeF mSize;
 
   void updateConnectors();
 };

@@ -35,6 +35,18 @@ QString JSON::print() const
   return QJsonDocument(*this).toJson(QJsonDocument::Indented);
 }
 
+QString JSON::fromArray(const QVariantList& value, char separator)
+{
+  QString out;
+  for (const auto& v : value)
+    out += v.toString() + separator;
+
+  // Remove trailing separator
+  out.chop(1);
+
+  return out;
+}
+
 QJsonArray JSON::toArray(const QJsonValue& value, char separator)
 {
   QJsonArray array;

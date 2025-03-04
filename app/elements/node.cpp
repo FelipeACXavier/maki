@@ -15,9 +15,11 @@
 
 NodeItem::NodeItem(const QPointF& initialPosition, const QPixmap& pixmap, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
     : NodeBase(nodeConfig, parent)
+    , mSize(NodeBase::boundingRect().width(), NodeBase::boundingRect().height())
 {
   setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
   setCacheMode(DeviceCoordinateCache);
+  setAcceptDrops(config()->libraryType == Types::LibraryTypes::STRUCTURAL);
 
   // Add icon if it exists
   if (!pixmap.isNull())
@@ -57,6 +59,11 @@ VoidResult NodeItem::start()
     nodeSeletected(this);
 
   return NodeBase::start();
+}
+
+QRectF NodeItem::boundingRect() const
+{
+  return QRectF(0, 0, mSize.width(), mSize.height());
 }
 
 void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget)
@@ -159,12 +166,48 @@ HelpConfig NodeItem::help() const
 
 void NodeItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
-  QGraphicsItem::mouseMoveEvent(event);
+  if (mIsResizing && (event->modifiers() & Qt::ShiftModifier))
+  {
+    qreal aspectRatio = mSize.width() / mSize.height();  // Store aspect ratio
+
+    qreal newWidth = qMax(20.0, event->pos().x());  // Minimum width
+    qreal newHeight = newWidth / aspectRatio;       // Maintain aspect ratio
+
+    newWidth = qMax(20.0, newWidth);
+    newHeight = qMax(20.0, newHeight);
+
+    mSize.setWidth(qMax(20.0, newWidth));
+    mSize.setHeight(qMax(20.0, newHeight));
+
+    prepareGeometryChange();
+    update();
+  }
+  else
+  {
+    QGraphicsItem::mouseMoveEvent(event);
+  }
+
   updateConnectors();
+}
+
+void NodeItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
+{
+  if (config()->libraryType == Types::LibraryTypes::STRUCTURAL && event->modifiers() & Qt::ShiftModifier)
+  {
+    mIsResizing = true;
+    event->accept();
+  }
+  else
+  {
+    QGraphicsItem::mousePressEvent(event);
+  }
 }
 
 void NodeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
+  if (mIsResizing)
+    mIsResizing = false;
+
   // Display information in the help menu
   if (isSelected())
   {

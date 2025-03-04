@@ -48,5 +48,12 @@ enum class ControlTypes
   REMOVE_CONTROL,
 };
 
+enum class LibraryTypes
+{
+  UNKNOWN = 0,
+  STRUCTURAL,
+  BEHAVIOURAL
+};
+
 typedef QJsonValueConstRef Config;
 }  // namespace Types
