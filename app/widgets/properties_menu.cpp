@@ -4,11 +4,16 @@
 #include <QComboBox>
 #include <QDoubleValidator>
 #include <QHBoxLayout>
+#include <QHeaderView>
 #include <QIntValidator>
+#include <QJsonArray>
+#include <QJsonObject>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QStandardItemModel>
 #include <QString>
+#include <QTableWidget>
 #include <QVBoxLayout>
 #include <QWidget>
 #include <cfloat>
@@ -60,7 +65,7 @@ VoidResult PropertiesMenu::loadProperties(NodeItem* node)
 {
   for (const auto& property : node->properties())
   {
-    LOG_DEBUG("Updating properties with %s of type %d", qPrintable(property.id), (int)property.type);
+    // LOG_DEBUG("Updating properties with %s of type %d", qPrintable(property.id), (int)property.type);
 
     QString label = ToLabel(property.id);
     QLabel* nameLabel = new QLabel(label);
@@ -208,7 +213,7 @@ VoidResult PropertiesMenu::loadControls(NodeItem* node)
   for (const auto& control : node->controls())
   {
     if (control.type == Types::ControlTypes::ADD_FIELD)
-      LOG_WARN_ON_FAILURE(loadControlAddField(control, controls, controlLayout));
+      LOG_WARN_ON_FAILURE(loadControlAddField(control, node, controls, controlLayout));
     else
       LOG_WARNING("Unknown control type: %s", qPrintable(control.id));
   }
@@ -230,19 +235,81 @@ void PropertiesMenu::addDynamicWidget(QWidget* dynamicWidget, QWidget* parent)
   }
 }
 
-VoidResult PropertiesMenu::loadControlAddField(const ControlsConfig& control, QWidget* parent, QHBoxLayout* controlLayout)
+VoidResult PropertiesMenu::loadControlAddField(const ControlsConfig& control, NodeItem* node, QWidget* parent, QHBoxLayout* controlLayout)
 {
+  // Create table to hold new fields
+  QTableView* tableView = new QTableView(parent);
+  QStandardItemModel* model = new QStandardItemModel(0, 3);
+
+  model->setHorizontalHeaderItem(0, new QStandardItem("Name"));
+  model->setHorizontalHeaderItem(1, new QStandardItem("Value"));
+  model->setHorizontalHeaderItem(2, new QStandardItem("Type"));
+
+  tableView->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::EditKeyPressed);
+  tableView->setModel(model);
+
+  for (const auto& field : node->fields())
+  {
+    int newRow = model->rowCount();
+    model->insertRow(newRow);
+    model->setItem(newRow, 0, new QStandardItem(field.id));
+    model->setItem(newRow, 1, new QStandardItem(field.defaultValue.toString()));
+    model->setItem(newRow, 2, new QStandardItem(field.typeToString()));
+  }
+
+  QObject::connect(model, &QStandardItemModel::itemChanged, [=](QStandardItem* item) {
+    if (!item)
+      return;
+
+    QJsonObject json;
+
+    // TODO: clean this up and make the divider a configuration option
+    int row = item->row();
+    for (int i = 0; i < model->columnCount(); ++i)
+    {
+      if (!model->item(row, i))
+        return;
+
+      auto text = model->item(row, i)->text();
+      if (text.isNull() || text.isEmpty())
+        return;
+
+      if (i == 0)
+        json["id"] = text;
+      else if (i == 1)
+        json["default"] = text;
+      else
+        json["type"] = text;
+    }
+
+    if (json["type"] == "list")
+    {
+      QStringList list = json["default"].toString().split(';');
+      QJsonArray array;
+      for (const auto& item : list)
+        array.push_back(item.trimmed());
+
+      json["default"] = array;
+    }
+
+    LOG_INFO("Setting: %s %s %s", qPrintable(json["id"].toString()), qPrintable(json["default"].toString()), qPrintable(json["type"].toString()));
+    LOG_ERROR_ON_FAILURE(node->setField(json["id"].toString(), json));
+  });
+
   QPushButton* button = new QPushButton(parent);
 
   connect(button, &QPushButton::pressed, this, [=]() {
-    DynamicControl* addedControl = new DynamicControl(this);
-    addedControl->setup(control.type);
-
-    addDynamicWidget(addedControl, parent);
+    int newRow = model->rowCount();
+    model->insertRow(newRow);
+    model->setItem(newRow, 0, new QStandardItem(""));
+    model->setItem(newRow, 1, new QStandardItem(""));
+    model->setItem(newRow, 2, new QStandardItem(""));
   });
 
   button->setText(control.id);
   controlLayout->addWidget(button);
+
+  addDynamicWidget(tableView, parent);
 
   return VoidResult();
 }

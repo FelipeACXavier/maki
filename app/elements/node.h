@@ -36,10 +36,14 @@ public:
   QString behaviour() const;
   QVector<ControlsConfig> controls() const;
   QVector<PropertiesConfig> properties() const;
+  QVector<PropertiesConfig> fields() const;
   QVector<std::shared_ptr<Connector>> connectors() const;
 
   Result<QVariant> getProperty(const QString& key);
   void setProperty(const QString& key, QVariant value);
+
+  Result<PropertiesConfig> getField(const QString& key);
+  VoidResult setField(const QString& key, const QJsonObject& value);
 
   std::function<void(NodeItem* item)> nodeSeletected;
 
@@ -55,6 +59,7 @@ private:
   QVector<std::shared_ptr<Connector>> mConnectors;
 
   std::map<QString, QVariant> mProperties;
+  QVector<PropertiesConfig> mFields;
 
   void updateConnectors();
 };

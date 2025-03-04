@@ -82,6 +82,11 @@ QVector<PropertiesConfig> NodeItem::properties() const
   return config()->properties;
 }
 
+QVector<PropertiesConfig> NodeItem::fields() const
+{
+  return mFields;
+}
+
 QVector<ControlsConfig> NodeItem::controls() const
 {
   return config()->controls;
@@ -108,6 +113,38 @@ void NodeItem::setProperty(const QString& key, QVariant value)
   }
 
   mProperties[key] = value;
+}
+
+VoidResult NodeItem::setField(const QString& key, const QJsonObject& value)
+{
+  // Check if key exists
+  auto property = PropertiesConfig(value);
+  if (!property.isValid())
+    return property.result();
+
+  for (auto& field : mFields)
+  {
+    if (field.id != key)
+      continue;
+
+    field = property;
+    return VoidResult();
+  }
+
+  mFields.push_back(property);
+
+  return VoidResult();
+}
+
+Result<PropertiesConfig> NodeItem::getField(const QString& key)
+{
+  for (const auto& field : mFields)
+  {
+    if (field.id == key)
+      return field;
+  }
+
+  return Result<PropertiesConfig>::Failed("Field does not exist");
 }
 
 QString NodeItem::behaviour() const

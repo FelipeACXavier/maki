@@ -4,48 +4,34 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QMenu>
+#include <QStandardItemModel>
+#include <QTableView>
 
 #include "app_configs.h"
+#include "elements/node.h"
 
-DynamicControl::DynamicControl(QWidget* parent)
+DynamicControl::DynamicControl(Types::ControlTypes type, QWidget* parent)
     : QWidget(parent)
 {
   setContextMenuPolicy(Qt::CustomContextMenu);
   connect(this, &QWidget::customContextMenuRequested, this, &DynamicControl::onCustomContextMenuRequested);
 }
 
-VoidResult DynamicControl::setup(Types::ControlTypes type)
+VoidResult DynamicControl::setupAddField(NodeItem* node)
 {
-  if (type == Types::ControlTypes::ADD_FIELD)
-    return setupAddField();
+  QTableView* parent = qobject_cast<QTableView*>(parentWidget());
+  if (!parent)
+    return VoidResult::Failed("Parent is not a table");
 
-  return VoidResult::Failed("Unknown control type");
-}
+  QStandardItemModel* model = qobject_cast<QStandardItemModel*>(parent->model());
+  if (!parent)
+    return VoidResult::Failed("Table does not follow a standard item model");
 
-VoidResult DynamicControl::setupAddField()
-{
-  QHBoxLayout* addedControlLayout = new QHBoxLayout(this);
-  setLayout(addedControlLayout);
-
-  // Field type
-  QLabel* fieldType = new QLabel(this);
-  fieldType->setText("Type");
-  addedControlLayout->addWidget(fieldType);
-
-  QLineEdit* typeInput = new QLineEdit(this);
-  typeInput->setFont(Fonts::Property);
-  typeInput->setPlaceholderText("string");
-  addedControlLayout->addWidget(typeInput);
-
-  // Field name
-  QLabel* fieldName = new QLabel(this);
-  fieldName->setText("Name");
-  addedControlLayout->addWidget(fieldName);
-
-  QLineEdit* nameInput = new QLineEdit(this);
-  nameInput->setFont(Fonts::Property);
-  nameInput->setPlaceholderText("name");
-  addedControlLayout->addWidget(nameInput);
+  int newRow = model->rowCount();
+  model->insertRow(newRow);
+  model->setItem(newRow, 0, new QStandardItem("name"));
+  model->setItem(newRow, 1, new QStandardItem("value"));
+  model->setItem(newRow, 2, new QStandardItem("type"));
 
   return VoidResult();
 }

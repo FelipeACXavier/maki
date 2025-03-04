@@ -36,7 +36,8 @@ enum class PropertyTypes
   INTEGER,
   REAL,
   BOOLEAN,
-  SELECT
+  SELECT,
+  LIST
 };
 
 enum class ControlTypes

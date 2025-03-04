@@ -26,7 +26,7 @@ private:
   VoidResult loadPropertyBoolean(const PropertiesConfig& property, NodeItem* node);
 
   VoidResult loadControls(NodeItem* node);
-  VoidResult loadControlAddField(const ControlsConfig& control, QWidget* parent, QHBoxLayout* controlLayout);
+  VoidResult loadControlAddField(const ControlsConfig& control, NodeItem* node, QWidget* parent, QHBoxLayout* controlLayout);
 
   void addDynamicWidget(QWidget* control, QWidget* parent);
 };

@@ -5,17 +5,16 @@
 #include "result.h"
 #include "types.h"
 
+class NodeItem;
+
 class DynamicControl : public QWidget
 {
 public:
-  DynamicControl(QWidget* parent);
+  DynamicControl(Types::ControlTypes type, QWidget* parent);
 
-  VoidResult setup(Types::ControlTypes type);
+  VoidResult setupAddField(NodeItem* node);
 
 private slots:
   void onCustomContextMenuRequested(const QPoint& pos);
   void onRemoveRequested();
-
-private:
-  VoidResult setupAddField();
 };

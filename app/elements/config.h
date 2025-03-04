@@ -90,6 +90,8 @@ public:
 
   bool isValid() const override;
 
+  QString typeToString() const;
+
 private:
   Types::PropertyTypes toType(const QString& input);
   QVariant toDefault(const QJsonObject& object, Types::PropertyTypes objectType);
