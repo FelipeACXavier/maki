@@ -224,7 +224,7 @@
   <customwidget>
    <class>CanvasView</class>
    <extends>QGraphicsView</extends>
-   <header>view/canvas_view.h</header>
+   <header>system/canvas_view.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

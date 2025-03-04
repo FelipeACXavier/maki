@@ -150,6 +150,42 @@ Types::ConnectorType ConnectorConfig::fromString(const QString& config) const
   return Types::ConnectorType::UNKNOWN;
 }
 
+ControlsConfig::ControlsConfig()
+{
+}
+
+ControlsConfig::ControlsConfig(const QJsonObject& object)
+{
+  if (!object.contains("id"))
+  {
+    setInvalid("Missing id attribute in property");
+    return;
+  }
+
+  if (!object.contains("type"))
+  {
+    setInvalid("Missing type attribute in property");
+    return;
+  }
+
+  id = object["id"].toString();
+  type = toType(object["type"].toString());
+
+  if (object.contains("format"))
+    format = object["format"].toString();
+}
+
+Types::ControlTypes ControlsConfig::toType(const QString& config) const
+{
+  const auto type = QString::fromStdString(ToLowerCase(config.toStdString(), 0, config.size()));
+  if (type == "add control")
+    return Types::ControlTypes::ADD_CONTROL;
+  else if (type == "remove control")
+    return Types::ControlTypes::REMOVE_CONTROL;
+
+  return Types::ControlTypes::UNKNOWN;
+}
+
 PropertiesConfig::PropertiesConfig()
 {
 }
@@ -279,6 +315,9 @@ BodyConfig::BodyConfig(const QJsonObject& object)
   if (object.contains("borderColor"))
     borderColor = QColor(object["borderColor"].toString());
 
+  if (object.contains("borderRadius"))
+    borderRadius = object["borderRadius"].toInt();
+
   if (object.contains("shape"))
     shape = toShape(object["shape"].toString());
 
@@ -383,6 +422,18 @@ NodeConfig::NodeConfig(const QJsonObject& object)
         setInvalid(QString::fromStdString(conn.result().ErrorMessage()));
 
       connectors.push_back(conn);
+    }
+  }
+
+  if (object.contains("controls"))
+  {
+    for (const auto& control : object["controls"].toArray())
+    {
+      auto ctrl = ControlsConfig(control.toObject());
+      if (!ctrl.isValid())
+        setInvalid(QString::fromStdString(ctrl.result().ErrorMessage()));
+
+      controls.push_back(ctrl);
     }
   }
 }

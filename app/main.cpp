@@ -6,7 +6,7 @@
 
 #include "common/app_configs.h"
 #include "logging.h"
-#include "view/main_window.h"
+#include "system/main_window.h"
 
 using namespace Qt::StringLiterals;
 

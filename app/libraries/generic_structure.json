@@ -1,0 +1,47 @@
+{
+  "name": "Generic",
+  "type": "structure",
+  "author": "Felipe Xavier",
+  "nodes": [
+    {
+      "name": "Component",
+      "body": {
+        "shape": "Rectangle",
+        "textColor": "#FFFFFF",
+        "backgroundColor": "#202020",
+        "borderColor": "#FFFFFF",
+        "width": 1000,
+        "height": 1000,
+        "z-index": -2
+      },
+      "connectors": [],
+      "behaviour": {}
+    },
+    {
+      "name": "Data type",
+      "body": {
+        "shape": "rounded rectangle",
+        "textColor": "#FFFFFF",
+        "backgroundColor": "#fcbf49",
+        "borderColor": "#FFFFFF",
+        "borderRadius": 50,
+        "width": 500,
+        "height": 500,
+        "z-index": -2
+      },
+      "controls": [
+        {
+          "id": "Add",
+          "type": "add control",
+          "format": "$type$ text $name$ text"
+        },
+        {
+          "id": "Remove",
+          "type": "remove control"
+        }
+      ],
+      "connectors": [],
+      "behaviour": {}
+    }
+  ]
+}

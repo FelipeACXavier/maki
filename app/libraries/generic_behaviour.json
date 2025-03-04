@@ -1,22 +1,8 @@
 {
   "name": "Generic",
   "type": "behaviour",
-  "author": "",
+  "author": "Felipe Xavier",
   "nodes": [
-    {
-      "name": "Component",
-      "body": {
-        "shape": "Rectangle",
-        "textColor": "#FFFFFF",
-        "backgroundColor": "#202020",
-        "borderColor": "#FFFFFF",
-        "width": 500,
-        "height": 500,
-        "z-index": -2
-      },
-      "connectors": [],
-      "behaviour": {}
-    },
     {
       "name": "Start",
       "body": {

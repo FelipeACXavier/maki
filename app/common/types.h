@@ -39,5 +39,12 @@ enum class PropertyTypes
   SELECT
 };
 
+enum class ControlTypes
+{
+  UNKNOWN = 0,
+  ADD_CONTROL,
+  REMOVE_CONTROL,
+};
+
 typedef QJsonValueConstRef Config;
 }  // namespace Types

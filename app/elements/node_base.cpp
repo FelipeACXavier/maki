@@ -110,7 +110,7 @@ QPainterPath NodeBase::nodeShape(const QRectF& bounds) const
   }
   else
   {
-    path.addRoundedRect(bounds, 10, 10);  // 10 is the corner radius
+    path.addRoundedRect(bounds, config()->body.borderRadius, config()->body.borderRadius);  // 10 is the corner radius
   }
 
   return path;

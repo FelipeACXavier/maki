@@ -49,6 +49,20 @@ private:
 QDataStream& operator<<(QDataStream& out, const ConnectorConfig& config);
 QDataStream& operator>>(QDataStream& in, ConnectorConfig& config);
 
+class ControlsConfig : public ConfigBase
+{
+public:
+  ControlsConfig();
+  ControlsConfig(const QJsonObject& object);
+
+  QString id = "";
+  Types::ControlTypes type = Types::ControlTypes::UNKNOWN;
+  QString format = "";
+
+private:
+  Types::ControlTypes toType(const QString& config) const;
+};
+
 class PropertiesConfig : public ConfigBase
 {
 public:
@@ -100,6 +114,7 @@ public:
   int width = 100;
   int height = 50;
   int zIndex = 1;
+  int borderRadius = 10;
 
   QString iconPath = "";
   qreal iconScale = 1;
@@ -123,6 +138,7 @@ public:
   BodyConfig body;
   HelpConfig help;
   BehaviourConfig behaviour;
+  QVector<ControlsConfig> controls;
   QVector<ConnectorConfig> connectors;
   QVector<PropertiesConfig> properties;
 

@@ -34,6 +34,7 @@ public:
   HelpConfig help() const;
   QString nodeType() const;
   QString behaviour() const;
+  QVector<ControlsConfig> controls() const;
   QVector<PropertiesConfig> properties() const;
   QVector<std::shared_ptr<Connector>> connectors() const;
 

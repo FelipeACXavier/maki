@@ -2,7 +2,8 @@
     <qresource prefix="/">
         <file>assets/style.css</file>
         <file>assets/config.json</file>
-        <file>libraries/generic.json</file>
+        <file>libraries/generic_behaviour.json</file>
+        <file>libraries/generic_structure.json</file>
         <file>libraries/math.json</file>
       </qresource>
       <qresource prefix="/math">

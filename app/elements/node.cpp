@@ -79,6 +79,11 @@ QVector<PropertiesConfig> NodeItem::properties() const
   return config()->properties;
 }
 
+QVector<ControlsConfig> NodeItem::controls() const
+{
+  return config()->controls;
+}
+
 Result<QVariant> NodeItem::getProperty(const QString& key)
 {
   if (mProperties.find(key) == mProperties.end())

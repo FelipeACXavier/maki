@@ -1,7 +1,7 @@
 #pragma once
 
 #include "result.h"
-#include "view/canvas.h"
+#include "system/canvas.h"
 
 class Connector;
 

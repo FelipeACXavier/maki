@@ -23,6 +23,7 @@
 #include "library_container.h"
 #include "logging.h"
 #include "string_helpers.h"
+#include "style_helpers.h"
 #include "ui_editor.h"
 
 MainWindow::MainWindow(QWidget* parent)
@@ -76,11 +77,18 @@ VoidResult MainWindow::loadElements()
 
   mUI->splitter->widget(0)->setMinimumWidth(200);
   mUI->splitter->widget(0)->setMaximumWidth(400);
-  mUI->splitter->widget(0)->setFixedWidth(200);
+  // mUI->splitter->widget(0)->setFixedWidth(200);
 
   mUI->splitter->widget(2)->setMinimumWidth(200);
   mUI->splitter->widget(2)->setMaximumWidth(600);
-  mUI->splitter->widget(2)->setFixedWidth(400);
+  // mUI->splitter->widget(2)->setFixedWidth(400);
+
+  mUI->propertiesMenu->setMinimumHeight(400);
+  mUI->propertiesMenu->setMaximumHeight(800);
+
+  mUI->helpMenu->setMinimumHeight(200);
+  mUI->helpMenu->setMaximumHeight(800);
+  // mUI->helpMenu->setFixedHeight(400);
 
   for (const auto& library : libraries.toArray())
   {
@@ -97,6 +105,8 @@ VoidResult MainWindow::loadElements()
 
     RETURN_ON_FAILURE(loadElementLibrary(libConfig));
   }
+
+  mUI->leftPanel->setCurrentIndex(0);
 
   return VoidResult();
 }
@@ -181,8 +191,7 @@ void MainWindow::onNodeSelected(NodeItem* node)
   mUI->infoText->setFont(propertyFont);
 
   // Clear the frame
-  QVBoxLayout* layout =
-      qobject_cast<QVBoxLayout*>(mUI->propertiesFrame->layout());
+  QVBoxLayout* layout = qobject_cast<QVBoxLayout*>(mUI->propertiesFrame->layout());
   if (layout)
   {
     // Remove and delete all child widgets
@@ -330,4 +339,72 @@ void MainWindow::onNodeSelected(NodeItem* node)
   }
 
   layout->addStretch();
+
+  if (node->controls().size() < 0)
+    return;
+
+  QWidget* controls = new QWidget(mUI->propertiesFrame);
+  QHBoxLayout* controlLayout = new QHBoxLayout(controls);
+
+  controls->setLayout(controlLayout);
+  layout->addWidget(controls);
+
+  for (const auto& control : node->controls())
+  {
+    if (control.type == Types::ControlTypes::ADD_CONTROL)
+    {
+      QPushButton* button = new QPushButton(controls);
+
+      connect(button, &QPushButton::pressed, this, [=]() {
+        QWidget* addedControl = new QWidget(mUI->propertiesFrame);
+        QHBoxLayout* addedControlLayout = new QHBoxLayout(addedControl);
+        addedControl->setLayout(addedControlLayout);
+
+        auto format = Split(control.format.toStdString(), ' ');
+        for (const auto& item : format)
+        {
+          //"$type$ text $name$ text"
+          LOG_INFO("Item has format: %s", item.c_str());
+          if (item.front() == '$' && item.back() == '$')
+          {
+            LOG_INFO("Adding label: %s", item.c_str());
+            QLabel* label = new QLabel(addedControl);
+            const uint32_t idx = item.find_first_of('$') + 1;
+            const uint32_t size = item.find_last_of('$') - idx;
+            label->setText(ToLabel(item.substr(idx, size)));
+
+            addedControlLayout->addWidget(label);
+          }
+          else if (item == "text")
+          {
+            LOG_INFO("Adding line edit: %s", item.c_str());
+            QLineEdit* widget = new QLineEdit(addedControl);
+            widget->setFont(propertyFont);
+            addedControlLayout->addWidget(widget);
+          }
+        }
+        // Add the new control to the layout
+        for (int i = 0; i < layout->count(); ++i)
+        {
+          QWidget* widget = layout->itemAt(i)->widget();
+          if (widget != controls)
+            continue;
+
+          layout->insertWidget(i - 1, addedControl);
+          break;
+        }
+      });
+
+      button->setText(control.id);
+      controlLayout->addWidget(button);
+    }
+    else if (control.type == Types::ControlTypes::REMOVE_CONTROL)
+    {
+      QPushButton* button = new QPushButton(controls);
+      button->setText(control.id);
+      controlLayout->addWidget(button);
+    }
+  }
+
+  // layout->addStretch();
 }
