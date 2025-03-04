@@ -117,12 +117,9 @@
       },
       "properties": [
         {
-          "id": "input type",
-          "type": "string"
-        },
-        {
-          "id": "return type",
-          "type": "string"
+          "id": "name",
+          "type": "string",
+          "default": "Condition"
         },
         {
           "id": "condition",

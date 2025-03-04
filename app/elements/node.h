@@ -4,14 +4,15 @@
 #include <QGraphicsItem>
 #include <memory>
 
-#include "elements/config.h"
+#include "config.h"
+#include "node_base.h"
 #include "types.h"
 
 class Connector;
 class ConnectionItem;
 class QGraphicsSceneMouseEvent;
 
-class NodeItem : public QGraphicsItem
+class NodeItem : public NodeBase
 {
 public:
   enum
@@ -22,20 +23,19 @@ public:
   NodeItem(const QPointF& initialPosition, const QPixmap& map, std::shared_ptr<NodeConfig> config, QGraphicsItem* parent = nullptr);
   virtual ~NodeItem();
 
-  QString id() const;
+  // QString id() const;
   int type() const override;
-  QString nodeType() const;
 
-  VoidResult start();
+  VoidResult start() override;
 
-  QRectF boundingRect() const override;
-  void paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*) override;
-
-  QVector<std::shared_ptr<Connector>> connectors() const;
-  QString behaviour() const;
+  QPainterPath shape() const override;
+  void paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget) override;
 
   HelpConfig help() const;
+  QString nodeType() const;
+  QString behaviour() const;
   QVector<PropertiesConfig> properties() const;
+  QVector<std::shared_ptr<Connector>> connectors() const;
 
   Result<QVariant> getProperty(const QString& key);
   void setProperty(const QString& key, QVariant value);
@@ -47,12 +47,6 @@ protected:
   void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
 
 private:
-  const QString mId;
-  bool m_hovered{false};
-
-  std::shared_ptr<NodeConfig> mConfig;
-
-  std::shared_ptr<QGraphicsPixmapItem> mPixmapItem;
   QVector<std::shared_ptr<Connector>> mConnectors;
 
   std::map<QString, QVariant> mProperties;

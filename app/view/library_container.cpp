@@ -4,7 +4,7 @@
 #include <QVBoxLayout>
 
 #include "elements/config.h"
-#include "elements/movable.h"
+#include "elements/draggable.h"
 
 static const int PADDING = 15;
 

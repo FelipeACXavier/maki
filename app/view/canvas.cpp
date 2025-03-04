@@ -75,8 +75,11 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
   if (event->mimeData()->hasFormat(Constants::TYPE_NODE))
   {
     QPixmap pixmap;
-    QByteArray pixmapData = event->mimeData()->data(Constants::TYPE_PIXMAP);
-    pixmap.loadFromData(pixmapData, "PNG");
+    if (event->mimeData()->hasFormat(Constants::TYPE_PIXMAP))
+    {
+      QByteArray pixmapData = event->mimeData()->data(Constants::TYPE_PIXMAP);
+      pixmap.loadFromData(pixmapData, "PNG");
+    }
 
     QByteArray idData = event->mimeData()->data(Constants::TYPE_NODE_ID);
     QString nodeId = QString(idData);

@@ -2,6 +2,7 @@
 
 #include <QGraphicsSceneMouseEvent>
 #include <QPainter>
+#include <QStyleOptionGraphicsItem>
 #include <QUuid>
 
 #include "app_configs.h"
@@ -9,33 +10,31 @@
 #include "logging.h"
 #include "style_helpers.h"
 
-NodeItem::NodeItem(const QPointF& initialPosition, const QPixmap& pixmap, std::shared_ptr<NodeConfig> config, QGraphicsItem* parent)
-    : QGraphicsItem(parent)
-    , mId(QUuid::createUuid().toString())
-    , mConfig(config)
+NodeItem::NodeItem(const QPointF& initialPosition, const QPixmap& pixmap, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
+    : NodeBase(nodeConfig, parent)
 {
-  setZValue(mConfig->body.zIndex);
   setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
   setCacheMode(DeviceCoordinateCache);
 
-  mPixmapItem = std::make_shared<QGraphicsPixmapItem>(pixmap, this);
+  // Add icon if it exists
+  if (!pixmap.isNull())
+    setPixmap(pixmap);
+  else
+    setLabel(config()->name, config()->body.textColor);
 
-  for (const auto& connector : mConfig->connectors)
+  for (const auto& connector : config()->connectors)
     mConnectors.append(std::make_shared<Connector>(connector, this));
 
-  for (const auto& property : mConfig->properties)
+  for (const auto& property : config()->properties)
     mProperties[property.id] = property.defaultValue;
 
   setPos(snapToGrid(initialPosition - boundingRect().center(), Config::GRID_SIZE));
+
+  updateConnectors();
 }
 
 NodeItem::~NodeItem()
 {
-}
-
-QString NodeItem::id() const
-{
-  return mId;
 }
 
 int NodeItem::type() const
@@ -46,7 +45,7 @@ int NodeItem::type() const
 QString NodeItem::nodeType() const
 {
   // This should also contain the library to make it unique
-  return mConfig->name;
+  return config()->name;
 }
 
 VoidResult NodeItem::start()
@@ -54,27 +53,20 @@ VoidResult NodeItem::start()
   if (nodeSeletected)
     nodeSeletected(this);
 
-  return VoidResult();
-}
-
-QRectF NodeItem::boundingRect() const
-{
-  return mPixmapItem->boundingRect();
+  return NodeBase::start();
 }
 
 void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget)
 {
-  Q_UNUSED(style);
-  Q_UNUSED(widget);
+  NodeBase::paintNode(boundingRect(),
+                      config()->body.backgroundColor,
+                      isSelected() ? QPen(Config::Colours::ACCENT, 4) : QPen(config()->body.borderColor),
+                      painter);
+}
 
-  painter->drawPixmap(0, 0, mPixmapItem->pixmap());
-
-  // If selected, draw an extra outline
-  if (isSelected())
-  {
-    painter->setPen(QPen(Config::Colours::ACCENT, 4));
-    painter->drawRect(mPixmapItem->boundingRect());
-  }
+QPainterPath NodeItem::shape() const
+{
+  return NodeBase::nodeShape(boundingRect());
 }
 
 QVector<std::shared_ptr<Connector>> NodeItem::connectors() const
@@ -84,7 +76,7 @@ QVector<std::shared_ptr<Connector>> NodeItem::connectors() const
 
 QVector<PropertiesConfig> NodeItem::properties() const
 {
-  return mConfig->properties;
+  return config()->properties;
 }
 
 Result<QVariant> NodeItem::getProperty(const QString& key)
@@ -112,12 +104,12 @@ void NodeItem::setProperty(const QString& key, QVariant value)
 
 QString NodeItem::behaviour() const
 {
-  return mConfig->behaviour.code;
+  return config()->behaviour.code;
 }
 
 HelpConfig NodeItem::help() const
 {
-  return mConfig->help;
+  return config()->help;
 }
 
 void NodeItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
@@ -144,4 +136,6 @@ void NodeItem::updateConnectors()
 {
   for (auto& connector : mConnectors)
     connector->updateConnections();
+
+  updateLabelPosition();
 }
