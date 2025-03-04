@@ -19,7 +19,7 @@ public:
   virtual int type() const override;
 
   virtual VoidResult start();
-  virtual std::shared_ptr<NodeConfig> config();
+  virtual std::shared_ptr<NodeConfig> config() const;
 
   virtual QRectF boundingRect() const override;
   virtual QRectF scaledRect() const;

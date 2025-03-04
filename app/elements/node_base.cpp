@@ -34,7 +34,7 @@ VoidResult NodeBase::start()
   return VoidResult();
 }
 
-std::shared_ptr<NodeConfig> NodeBase::config()
+std::shared_ptr<NodeConfig> NodeBase::config() const
 {
   return mConfig;
 }
