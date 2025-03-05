@@ -14,37 +14,45 @@
 #include "logging.h"
 #include "style_helpers.h"
 
-NodeItem::NodeItem(const QPointF& initialPosition, const QPixmap& pixmap, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
-    : NodeBase(nodeConfig, parent)
-    , mParentNode(nullptr)
+NodeItem::NodeItem(const SaveInfo& info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
+    : NodeBase(info.nodeId, nodeConfig, parent)
     , mChildrenNodes({})
-    , mSize(NodeBase::boundingRect().width(), NodeBase::boundingRect().height())
+    , mSize(info.size)
 {
   setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
   setCacheMode(DeviceCoordinateCache);
   setAcceptDrops(config()->libraryType == Types::LibraryTypes::STRUCTURAL);
 
   // Add icon if it exists
-  if (!pixmap.isNull())
-    setPixmap(pixmap);
+  if (!info.pixmap.isNull())
+    setPixmap(info.pixmap);
   else
     setLabel(nodeType(), config()->body.textColor);
 
   for (const auto& connector : config()->connectors)
     mConnectors.append(std::make_shared<Connector>(connector, this));
 
-  for (const auto& property : config()->properties)
-    mProperties[property.id] = property.defaultValue;
+  if (info.properties.isEmpty())
+  {
+    for (const auto& property : config()->properties)
+      mProperties[property.id] = property.defaultValue;
+  }
+  else
+  {
+    mProperties = info.properties;
+  }
 
-  setPos(snapToGrid(initialPosition - boundingRect().center(), Config::GRID_SIZE));
+  if (!info.fields.isEmpty())
+    mFields = info.fields;
 
-  updateConnectors();
+  setParent(nullptr);
+  updatePosition(snapToGrid(initialPosition - boundingRect().center(), Config::GRID_SIZE));
 }
 
 NodeItem::~NodeItem()
 {
-  if (mParentNode)
-    mParentNode->childRemoved(this);
+  if (parentNode())
+    parentNode()->childRemoved(this);
 
   // Children are removed by the parent item, i.e., the canvas
 }
@@ -95,9 +103,14 @@ QVector<std::shared_ptr<Connector>> NodeItem::connectors() const
   return mConnectors;
 }
 
-QVector<PropertiesConfig> NodeItem::properties() const
+QVector<PropertiesConfig> NodeItem::configurationProperties() const
 {
   return config()->properties;
+}
+
+QMap<QString, QVariant> NodeItem::properties() const
+{
+  return mProperties;
 }
 
 QVector<PropertiesConfig> NodeItem::fields() const
@@ -115,7 +128,7 @@ Result<QVariant> NodeItem::getProperty(const QString& key) const
   if (mProperties.find(key) == mProperties.end())
     return Result<QVariant>::Failed("No property " + key.toStdString());
 
-  return mProperties.at(key);
+  return mProperties.value(key);
 }
 
 void NodeItem::setProperty(const QString& key, QVariant value)
@@ -173,6 +186,11 @@ void NodeItem::addChild(NodeItem* child)
   mChildrenNodes.push_back(child);
 }
 
+NodeItem* NodeItem::parentNode() const
+{
+  return mParentNode;
+}
+
 void NodeItem::setParent(NodeItem* parent)
 {
   mParentNode = parent;
@@ -197,16 +215,13 @@ void NodeItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
   if (mIsResizing && (event->modifiers() & Qt::ShiftModifier))
   {
-    qreal aspectRatio = mSize.width() / mSize.height();  // Store aspect ratio
+    qreal aspectRatio = mSize.width() / mSize.height();
 
-    qreal newWidth = qMax(20.0, event->pos().x());  // Minimum width
-    qreal newHeight = newWidth / aspectRatio;       // Maintain aspect ratio
+    qreal newWidth = qMax(Config::MINIMUM_NODE_SIZE, event->pos().x());
+    qreal newHeight = newWidth / aspectRatio;
 
-    newWidth = qMax(20.0, newWidth);
-    newHeight = qMax(20.0, newHeight);
-
-    mSize.setWidth(qMax(20.0, newWidth));
-    mSize.setHeight(qMax(20.0, newHeight));
+    mSize.setWidth(qMax(Config::MINIMUM_NODE_SIZE, qMax(Config::MINIMUM_NODE_SIZE, newWidth)));
+    mSize.setHeight(qMax(Config::MINIMUM_NODE_SIZE, qMax(Config::MINIMUM_NODE_SIZE, newHeight)));
 
     prepareGeometryChange();
     update();
@@ -216,7 +231,7 @@ void NodeItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
     QGraphicsItem::mouseMoveEvent(event);
   }
 
-  updateConnectors();
+  updatePosition(scenePos());
 }
 
 void NodeItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
@@ -248,9 +263,42 @@ void NodeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
       nodeSeletected(this);
   }
 
-  setPos(snapToGrid(scenePos(), Config::GRID_SIZE));
-  updateConnectors();
+  updatePosition(snapToGrid(scenePos(), Config::GRID_SIZE));
+
   QGraphicsItem::mouseReleaseEvent(event);
+}
+
+QVariant NodeItem::itemChange(GraphicsItemChange change, const QVariant& value)
+{
+  if (change == QGraphicsItem::ItemPositionChange)
+  {
+    QPointF newPos = value.toPointF();
+    if (parentNode() != nullptr)
+    {
+      // Ensure child stays inside parent's bounding box
+      // Clamp position inside parent
+      QRectF parentRect = parentNode()->mapRectToScene(parentNode()->boundingRect());
+      QRectF childRect = boundingRect();
+
+      newPos.setX(qBound(parentRect.left(), newPos.x(), parentRect.right() - childRect.width()));
+      newPos.setY(qBound(parentRect.top(), newPos.y(), parentRect.bottom() - childRect.height()));
+    }
+
+    // Move all children relatively
+    for (NodeItem* child : mChildrenNodes)
+    {
+      if (!child)
+        continue;
+
+      QPointF relativeOffset = child->pos() - pos();  // Maintain offset
+      child->updatePosition(newPos + relativeOffset);
+    }
+
+    if (parentNode())
+      return newPos;
+  }
+
+  return QGraphicsItem::itemChange(change, value);
 }
 
 void NodeItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
@@ -259,21 +307,38 @@ void NodeItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
   QMenu menu;
 
   // Add actions to the menu
-  QAction* action1 = menu.addAction("Delete");
-  QAction* action2 = menu.addAction("Properties");
+  QAction* deleteAction = menu.addAction("Delete");
+  QAction* propertiesAction = menu.addAction("Properties");
+  QAction* copyAction = menu.addAction("Copy");
 
   // Connect actions to their slots
-  QObject::connect(action1, &QAction::triggered, [this]() {
-    onDelete();
+  QObject::connect(deleteAction, &QAction::triggered, [this]() {
+    if (nodeDeleted)
+      nodeDeleted(this);
   });
-  QObject::connect(action2, &QAction::triggered, [this]() {
+  QObject::connect(propertiesAction, &QAction::triggered, [this]() {
     onProperties();
+  });
+  QObject::connect(copyAction, &QAction::triggered, [this]() {
+    if (nodeCopied)
+      nodeCopied(this);
   });
 
   // Execute the menu at the mouse cursor's position
   menu.exec(event->screenPos());
 }
 
+void NodeItem::updatePosition(const QPointF& position)
+{
+  setPos(position);
+
+  for (auto& connector : mConnectors)
+    connector->updateConnections();
+
+  updateLabelPosition();
+}
+
+// Slots
 void NodeItem::onDelete()
 {
   // Handle the delete action, e.g., remove the item from the scene
@@ -286,10 +351,15 @@ void NodeItem::onProperties()
   // Handle the properties action, e.g., show a dialog to edit properties
 }
 
-void NodeItem::updateConnectors()
+SaveInfo NodeItem::saveInfo() const
 {
-  for (auto& connector : mConnectors)
-    connector->updateConnections();
+  SaveInfo info;
+  info.position = pos();
+  info.fields = fields();
+  info.nodeId = nodeId();
+  info.pixmap = nodePixmap();
+  info.properties = properties();
+  info.size = mSize;
 
-  updateLabelPosition();
+  return info;
 }

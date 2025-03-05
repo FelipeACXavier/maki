@@ -1,5 +1,9 @@
 #include "canvas_view.h"
 
+#include <QShortcut>
+
+#include "canvas.h"
+
 #define VIEW_CENTER viewport()->rect().center()
 #define VIEW_WIDTH viewport()->rect().width()
 #define VIEW_HEIGHT viewport()->rect().height()
@@ -23,6 +27,15 @@ CanvasView::CanvasView(QWidget* parent)
 
   mPanButton = Qt::MiddleButton;
   mZoomKey = Qt::Key_Control;
+
+  new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_C), this, [this] {
+    if (scene())
+      dynamic_cast<Canvas*>(scene())->copySelectedItems();
+  });
+  new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_V), this, [this] {
+    if (scene())
+      dynamic_cast<Canvas*>(scene())->pasteCopiedItems();
+  });
 }
 
 qreal CanvasView::getScale() const

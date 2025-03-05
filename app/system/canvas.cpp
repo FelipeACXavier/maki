@@ -1,6 +1,7 @@
 #include "canvas.h"
 
 #include <QBuffer>
+#include <QClipboard>
 #include <QGraphicsSceneDragDropEvent>
 #include <QMimeData>
 
@@ -84,45 +85,16 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
         return;
     }
 
-    QPixmap pixmap;
-    if (event->mimeData()->hasFormat(Constants::TYPE_PIXMAP))
-    {
-      QByteArray pixmapData = event->mimeData()->data(Constants::TYPE_PIXMAP);
-      pixmap.loadFromData(pixmapData, "PNG");
-    }
+    QByteArray data = event->mimeData()->data(Constants::TYPE_NODE);
+    QDataStream stream(&data, QIODevice::ReadOnly);
 
-    QByteArray idData = event->mimeData()->data(Constants::TYPE_NODE_ID);
-    QString nodeId = QString(idData);
-    auto config = mConfigTable->get(nodeId);
-    if (config == nullptr)
-    {
-      LOG_ERROR("Added node with no configuration");
-      return;
-    }
+    SaveInfo info;
+    stream >> info;
 
-    // Behavioural nodes can only be dropped inside a structure
-    if (config->libraryType == Types::LibraryTypes::BEHAVIOURAL && parentNode == nullptr)
-    {
+    if (createNode(info, event->scenePos(), parentNode))
+      event->acceptProposedAction();
+    else
       event->ignore();
-      return;
-    }
-
-    auto node = new NodeItem(event->scenePos(), pixmap, config);
-    node->nodeSeletected = [this](NodeItem* item) {
-      onNodeSelected(item);
-    };
-
-    node->start();
-
-    if (parentNode != nullptr)
-    {
-      node->setParent(parentNode);
-      parentNode->addChild(node);
-    }
-
-    addItem(node);
-
-    event->acceptProposedAction();
 
     // Make sure we show that we are no longer dragging
     dynamic_cast<QGraphicsView*>(parent())->setCursor(Qt::ArrowCursor);
@@ -149,8 +121,7 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
 
       auto shifts = connector->shift();
       mConnection->setStart(connector->id(), connector->center(), shifts.first);
-      mConnection->setEnd(Constants::TMP_CONNECTION_ID, event->scenePos(),
-                          shifts.second);
+      mConnection->setEnd(Constants::TMP_CONNECTION_ID, event->scenePos(), shifts.second);
 
       addItem(mConnection);
       return;
@@ -208,15 +179,11 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
       }
       else
       {
-        LOG_INFO("Deleting connection");
         removeItem(mConnection);
       }
 
-      LOG_INFO("Deleting connector");
       mConnection = nullptr;
       mConnector = nullptr;
-
-      LOG_INFO("Deleting done");
     }
   }
 
@@ -253,4 +220,86 @@ void Canvas::keyPressEvent(QKeyEvent* event)
 void Canvas::onNodeSelected(NodeItem* item)
 {
   emit nodeSelected(item);
+}
+
+void Canvas::copySelectedItems()
+{
+  copiedNodes.clear();
+
+  for (QGraphicsItem* item : selectedItems())
+  {
+    if (item->type() != NodeItem::Type)
+      continue;
+
+    NodeItem* node = dynamic_cast<NodeItem*>(item);
+    if (!node)
+      continue;
+
+    copiedNodes.append(node->saveInfo());
+
+    // Make sure the item is not selected after copying
+    item->setSelected(false);
+  }
+}
+
+void Canvas::pasteCopiedItems()
+{
+  if (copiedNodes.isEmpty())
+    return;
+
+  QPointF mousePosition = parentView()->mapToScene(parentView()->mapFromGlobal(QCursor::pos()));
+
+  for (SaveInfo& info : copiedNodes)
+  {
+    NodeItem* parentNode = nullptr;
+    QGraphicsItem* item = itemAt(mousePosition, QTransform());
+    if (item && item->type() == NodeItem::Type)
+    {
+      parentNode = static_cast<NodeItem*>(item);
+
+      // Add error message
+      if (!parentNode->acceptDrops())
+        return;
+    }
+
+    createNode(info, mousePosition, parentNode);
+  }
+}
+
+QGraphicsView* Canvas::parentView() const
+{
+  return dynamic_cast<QGraphicsView*>(parent());
+}
+
+bool Canvas::createNode(const SaveInfo& info, const QPointF& position, NodeItem* parent)
+{
+  auto config = mConfigTable->get(info.nodeId);
+  if (config == nullptr)
+  {
+    LOG_WARNING("Added node with no configuration");
+    return false;
+  }
+
+  if (config->libraryType == Types::LibraryTypes::BEHAVIOURAL && parent == nullptr)
+  {
+    LOG_WARNING("Node must be inside a structural element");
+    return false;
+  }
+
+  NodeItem* node = new NodeItem(info, position, config);
+
+  node->nodeSeletected = [this](NodeItem* item) { onNodeSelected(item); };
+  node->nodeCopied = [this](NodeItem* /* item */) { copySelectedItems(); };
+
+  node->start();
+
+  if (parent != nullptr)
+  {
+    node->setParent(parent);
+    parent->addChild(node);
+  }
+
+  addItem(node);
+
+  return true;
 }

@@ -8,7 +8,9 @@
 #include <QMouseEvent>
 #include <QPainter>
 
-class NodeItem;
+#include "elements/node.h"
+#include "elements/save_info.h"
+
 class Connector;
 class ConnectionItem;
 class ConfigurationTable;
@@ -18,6 +20,9 @@ class Canvas : public QGraphicsScene
   Q_OBJECT
 public:
   Canvas(std::shared_ptr<ConfigurationTable> configTable, QObject* parent = nullptr);
+
+  void pasteCopiedItems();
+  void copySelectedItems();
 
 protected:
   void dragEnterEvent(QGraphicsSceneDragDropEvent* event) override;
@@ -44,5 +49,9 @@ private:
   Connector* mHoveredConnector = nullptr;
   ConnectionItem* mConnection = nullptr;
 
+  QList<SaveInfo> copiedNodes;
   std::shared_ptr<ConfigurationTable> mConfigTable;
+
+  QGraphicsView* parentView() const;
+  bool createNode(const SaveInfo& info, const QPointF& position, NodeItem* parent);
 };

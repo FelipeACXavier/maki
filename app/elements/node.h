@@ -1,12 +1,14 @@
 #pragma once
 
 #include <QBrush>
+#include <QDataStream>
 #include <QGraphicsEllipseItem>
 #include <QGraphicsItem>
 #include <memory>
 
 #include "config.h"
 #include "node_base.h"
+#include "save_info.h"
 #include "types.h"
 
 class Connector;
@@ -21,7 +23,8 @@ public:
     Type = UserType + Types::NODE
   };
 
-  NodeItem(const QPointF& initialPosition, const QPixmap& map, std::shared_ptr<NodeConfig> config, QGraphicsItem* parent = nullptr);
+  NodeItem(const SaveInfo& info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent = nullptr);
+
   virtual ~NodeItem();
 
   // QString id() const;
@@ -37,9 +40,10 @@ public:
   QString nodeType() const override;
   QString behaviour() const;
   QVector<ControlsConfig> controls() const;
-  QVector<PropertiesConfig> properties() const;
   QVector<PropertiesConfig> fields() const;
+  QMap<QString, QVariant> properties() const;
   QVector<std::shared_ptr<Connector>> connectors() const;
+  QVector<PropertiesConfig> configurationProperties() const;
 
   Result<QVariant> getProperty(const QString& key) const;
   void setProperty(const QString& key, QVariant value);
@@ -47,28 +51,38 @@ public:
   Result<PropertiesConfig> getField(const QString& key) const;
   VoidResult setField(const QString& key, const QJsonObject& value);
 
+  NodeItem* parentNode() const;
   QVector<NodeItem*> children() const;
+
   void addChild(NodeItem* child);
   void setParent(NodeItem* parent);
   void childRemoved(NodeItem* child);
 
+  std::function<void(NodeItem* item)> nodeCopied;
+  std::function<void(NodeItem* item)> nodeDeleted;
   std::function<void(NodeItem* item)> nodeSeletected;
 
   // "slots":
   void onDelete();
   void onProperties();
 
+  // Serialization functions
+  SaveInfo saveInfo() const;
+
+  friend QDataStream& operator<<(QDataStream& out, const NodeItem& config);
+  friend QDataStream& operator>>(QDataStream& in, NodeItem& config);
+
 protected:
   void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
   void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
   void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
   void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
+  QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
 
 private:
-  QVector<std::shared_ptr<Connector>> mConnectors;
-
-  std::map<QString, QVariant> mProperties;
   QVector<PropertiesConfig> mFields;
+  QMap<QString, QVariant> mProperties;
+  QVector<std::shared_ptr<Connector>> mConnectors;
 
   NodeItem* mParentNode;
   QVector<NodeItem*> mChildrenNodes;
@@ -76,5 +90,5 @@ private:
   bool mIsResizing{false};
   QSizeF mSize;
 
-  void updateConnectors();
+  void updatePosition(const QPointF& position);
 };

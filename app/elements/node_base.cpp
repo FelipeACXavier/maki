@@ -7,11 +7,12 @@
 const qreal MAX_WIDTH = 100.0;
 const qreal MAX_HEIGHT = 100.0;
 
-NodeBase::NodeBase(std::shared_ptr<NodeConfig> config, QGraphicsItem* parent)
+NodeBase::NodeBase(const QString& nodeId, std::shared_ptr<NodeConfig> config, QGraphicsItem* parent)
     : QGraphicsItem(parent)
     , mConfig(config)
     , mId(QUuid::createUuid().toString())
     , mBounds(0, 0, mConfig->body.width, mConfig->body.height)
+    , mNodeId(nodeId)
 {
   setZValue(mConfig->body.zIndex);
 
@@ -27,6 +28,11 @@ QString NodeBase::id() const
 int NodeBase::type() const
 {
   return Type;
+}
+
+QString NodeBase::nodeId() const
+{
+  return mNodeId;
 }
 
 QString NodeBase::nodeType() const
@@ -179,4 +185,12 @@ qreal NodeBase::computeScaleFactor() const
                           : 1.0;
 
   return qMin(widthScale, heightScale);  // Use the smallest scale to maintain aspect ratio
+}
+
+QPixmap NodeBase::nodePixmap() const
+{
+  if (mPixmapItem)
+    return mPixmapItem->pixmap();
+
+  return QPixmap();
 }

@@ -18,6 +18,9 @@ public:
   virtual bool isValid() const;
   VoidResult result() const;
 
+  friend QDataStream& operator<<(QDataStream& out, const ConfigBase& config);
+  friend QDataStream& operator>>(QDataStream& in, ConfigBase& config);
+
 protected:
   void setInvalid(const QString& message);
 
@@ -46,23 +49,6 @@ private:
   Types::ConnectorType fromString(const QString& config) const;
 };
 
-QDataStream& operator<<(QDataStream& out, const ConnectorConfig& config);
-QDataStream& operator>>(QDataStream& in, ConnectorConfig& config);
-
-class ControlConfig : public ConfigBase
-{
-public:
-  ControlConfig();
-  ControlConfig(const QJsonObject& object);
-
-  QString id = "";
-  Types::ControlTypes type = Types::ControlTypes::UNKNOWN;
-  QString format = "";
-
-private:
-  Types::ControlTypes toType(const QString& config) const;
-};
-
 class ControlsConfig : public ConfigBase
 {
 public:
@@ -72,6 +58,9 @@ public:
   QString id = "";
   Types::ControlTypes type = Types::ControlTypes::UNKNOWN;
   QString format = "";
+
+  friend QDataStream& operator<<(QDataStream& out, const ControlsConfig& config);
+  friend QDataStream& operator>>(QDataStream& in, ControlsConfig& config);
 
 private:
   Types::ControlTypes toType(const QString& config) const;
@@ -92,6 +81,9 @@ public:
 
   QString typeToString() const;
 
+  friend QDataStream& operator<<(QDataStream& out, const PropertiesConfig& config);
+  friend QDataStream& operator>>(QDataStream& in, PropertiesConfig& config);
+
 private:
   Types::PropertyTypes toType(const QString& input);
   QVariant toDefault(const QJsonObject& object, Types::PropertyTypes objectType);
@@ -104,6 +96,9 @@ public:
   BehaviourConfig(const QJsonObject& object);
 
   QString code = "";
+
+  friend QDataStream& operator<<(QDataStream& out, const BehaviourConfig& config);
+  friend QDataStream& operator>>(QDataStream& in, BehaviourConfig& config);
 };
 
 class HelpConfig : public ConfigBase
@@ -113,6 +108,9 @@ public:
   HelpConfig(const QJsonObject& object);
 
   QString message = "";
+
+  friend QDataStream& operator<<(QDataStream& out, const HelpConfig& config);
+  friend QDataStream& operator>>(QDataStream& in, HelpConfig& config);
 };
 
 class BodyConfig : public ConfigBase
@@ -142,12 +140,10 @@ private:
   Types::Shape toShape(const QString& config) const;
 };
 
-QDataStream& operator<<(QDataStream& out, const BodyConfig& config);
-QDataStream& operator>>(QDataStream& in, BodyConfig& config);
-
 class NodeConfig : public ConfigBase
 {
 public:
+  NodeConfig();
   NodeConfig(const QJsonObject& object);
 
   QString type;
@@ -163,3 +159,6 @@ public:
   friend QDataStream& operator<<(QDataStream& out, const NodeConfig& config);
   friend QDataStream& operator>>(QDataStream& in, NodeConfig& config);
 };
+
+QDataStream& operator<<(QDataStream& out, const VoidResult& config);
+QDataStream& operator>>(QDataStream& in, VoidResult& config);

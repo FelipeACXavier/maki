@@ -25,7 +25,6 @@ public:
   DraggableItem(const QString& id, std::shared_ptr<NodeConfig> config, QGraphicsItem* parent = nullptr);
   virtual ~DraggableItem();
 
-  QString nodeId() const;
   int type() const override;
   void adjustWidth(int width);
 
@@ -38,9 +37,6 @@ protected:
   void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
 
 private:
-  const QString mNodeId;
   std::shared_ptr<QPixmap> mPixmap;
   std::shared_ptr<QGraphicsTextItem> mLabel;
-
-  bool SerializeIcon(QByteArray* pixmapData) const;
 };

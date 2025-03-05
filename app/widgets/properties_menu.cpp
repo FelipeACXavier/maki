@@ -65,7 +65,7 @@ void PropertiesMenu::clear()
 
 VoidResult PropertiesMenu::loadProperties(NodeItem* node)
 {
-  for (const auto& property : node->properties())
+  for (const auto& property : node->configurationProperties())
   {
     // LOG_DEBUG("Updating properties with %s of type %d", qPrintable(property.id), (int)property.type);
 
@@ -356,3 +356,6 @@ VoidResult PropertiesMenu::loadControlAddField(const ControlsConfig& control, No
 
   return VoidResult();
 }
+
+// tableView->setContextMenuPolicy(Qt::CustomContextMenu);
+// connect(tableView, &QTableView::customContextMenuRequested, this, &YourClass::showContextMenu);

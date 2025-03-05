@@ -55,18 +55,6 @@ ConnectorConfig::ConnectorConfig(const QJsonObject& object)
     type = fromString(object["type"].toString());
 }
 
-QDataStream& operator<<(QDataStream& out, const ConnectorConfig& config)
-{
-  out << config.position;
-  return out;
-}
-
-QDataStream& operator>>(QDataStream& in, ConnectorConfig& config)
-{
-  in >> config.position;
-  return in;
-}
-
 QPointF ConnectorConfig::getPosition(const QRectF& bounds) const
 {
   if (position == "north")
@@ -356,28 +344,6 @@ BodyConfig::BodyConfig(const QJsonObject& object)
     zIndex = object["z-index"].toInt();
 }
 
-QDataStream& operator<<(QDataStream& out, const BodyConfig& config)
-{
-  out << config.shape;
-  out << config.textColor;
-  out << config.backgroundColor;
-  out << config.borderColor;
-  out << config.width;
-  out << config.height;
-  return out;
-}
-
-QDataStream& operator>>(QDataStream& in, BodyConfig& config)
-{
-  in >> config.shape;
-  in >> config.textColor;
-  in >> config.backgroundColor;
-  in >> config.borderColor;
-  in >> config.width;
-  in >> config.height;
-  return in;
-}
-
 Types::Shape BodyConfig::toShape(const QString& config) const
 {
   // Make configuration a bit easier by making it case independent
@@ -393,6 +359,10 @@ Types::Shape BodyConfig::toShape(const QString& config) const
     return Types::Shape::DIAMOND;
 
   return Types::Shape::ROUNDED_RECTANGLE;
+}
+
+NodeConfig::NodeConfig()
+{
 }
 
 NodeConfig::NodeConfig(const QJsonObject& object)
@@ -463,11 +433,19 @@ NodeConfig::NodeConfig(const QJsonObject& object)
   }
 }
 
+// ===========================================================================================================
+// NodeConfig
 QDataStream& operator<<(QDataStream& out, const NodeConfig& config)
 {
   out << config.type;
   out << config.body;
+  out << config.help;
+  out << config.behaviour;
+  out << config.controls;
   out << config.connectors;
+  out << config.properties;
+  out << config.libraryType;
+
   return out;
 }
 
@@ -475,30 +453,146 @@ QDataStream& operator>>(QDataStream& in, NodeConfig& config)
 {
   in >> config.type;
   in >> config.body;
+  in >> config.help;
+  in >> config.behaviour;
+  in >> config.controls;
   in >> config.connectors;
+  in >> config.properties;
+  in >> config.libraryType;
+
   return in;
 }
 
-QDataStream& operator<<(QDataStream& out,
-                        const QVector<ConnectorConfig>& connectors)
+// ===========================================================================================================
+// BodyConfig
+QDataStream& operator<<(QDataStream& out, const BodyConfig& config)
 {
-  out << connectors.size();
-  for (const auto& connector : connectors)
-    out << connector;
+  out << config.shape;
+  out << config.textColor;
+  out << config.backgroundColor;
+  out << config.borderColor;
+  out << config.width;
+  out << config.height;
+  out << config.zIndex;
+  out << config.borderRadius;
+  out << config.iconPath;
+  out << config.iconScale;
 
   return out;
 }
 
-QDataStream& operator>>(QDataStream& in, QVector<ConnectorConfig>& connectors)
+QDataStream& operator>>(QDataStream& in, BodyConfig& config)
 {
-  int size;
-  in >> size;
-  connectors.clear();
-  for (int i = 0; i < size; ++i)
-  {
-    ConnectorConfig connector;
-    in >> connector;
-    connectors.append(connector);
-  }
+  return in;
+}
+
+// ===========================================================================================================
+// HelpConfig
+QDataStream& operator<<(QDataStream& out, const HelpConfig& config)
+{
+  out << config.message;
+
+  return out;
+}
+
+QDataStream& operator>>(QDataStream& in, HelpConfig& config)
+{
+  return in;
+}
+
+// ===========================================================================================================
+// BehaviourConfig
+QDataStream& operator<<(QDataStream& out, const BehaviourConfig& config)
+{
+  out << config.code;
+
+  return out;
+}
+
+QDataStream& operator>>(QDataStream& in, BehaviourConfig& config)
+{
+  return in;
+}
+
+// ===========================================================================================================
+// PropertiesConfig
+QDataStream& operator<<(QDataStream& out, const PropertiesConfig& config)
+{
+  out << config.id;
+  out << config.defaultValue;
+  out << config.options;
+  out << config.type;
+
+  return out;
+}
+
+QDataStream& operator>>(QDataStream& in, PropertiesConfig& config)
+{
+  in >> config.id;
+  in >> config.defaultValue;
+  in >> config.options;
+  in >> config.type;
+
+  return in;
+}
+
+// ===========================================================================================================
+// ControlsConfig
+QDataStream& operator<<(QDataStream& out, const ControlsConfig& config)
+{
+  out << config.id;
+  out << config.type;
+  out << config.format;
+
+  return out;
+}
+
+QDataStream& operator>>(QDataStream& in, ControlsConfig& config)
+{
+  return in;
+}
+
+// ===========================================================================================================
+// ConnectorConfig
+QDataStream& operator<<(QDataStream& out, const ConnectorConfig& config)
+{
+  out << config.id;
+  out << config.position;
+  out << config.type;
+
+  return out;
+}
+
+QDataStream& operator>>(QDataStream& in, ConnectorConfig& config)
+{
+  return in;
+}
+
+// ===========================================================================================================
+// ConnectorConfig
+QDataStream& operator<<(QDataStream& out, const ConfigBase& config)
+{
+  out << config.result();
+
+  return out;
+}
+
+QDataStream& operator>>(QDataStream& in, ConfigBase& config)
+{
+  return in;
+}
+
+// ===========================================================================================================
+// ConnectorConfig
+QDataStream& operator<<(QDataStream& out, const VoidResult& config)
+{
+  if (!config.IsSuccess())
+    out << QString::fromStdString(config.ErrorMessage());
+
+  return out;
+}
+
+QDataStream& operator>>(QDataStream& in, VoidResult& config)
+{
   return in;
 }

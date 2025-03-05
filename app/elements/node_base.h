@@ -13,12 +13,15 @@ public:
   {
     Type = UserType + Types::BASE_NODE
   };
-  NodeBase(std::shared_ptr<NodeConfig> config, QGraphicsItem* parent);
+
+  NodeBase(const QString& nodeId, std::shared_ptr<NodeConfig> config, QGraphicsItem* parent);
 
   QString id() const;
   virtual int type() const override;
 
   virtual QString nodeType() const;
+
+  virtual QString nodeId() const;
 
   virtual VoidResult start();
   virtual std::shared_ptr<NodeConfig> config() const;
@@ -29,6 +32,8 @@ public:
 
   virtual QPainterPath nodeShape(const QRectF& bounds) const;
   void paintNode(const QRectF& bounds, const QColor& background, const QPen& text, QPainter* painter);
+
+  virtual QPixmap nodePixmap() const;
 
 protected:
   std::shared_ptr<NodeConfig> mConfig;
@@ -46,6 +51,8 @@ protected:
 private:
   const QString mId;
   const QRectF mBounds;
+  const QString mNodeId;
+
   QRectF mScaledBounds;
 
   qreal computeScaleFactor() const;

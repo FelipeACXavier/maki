@@ -8,10 +8,10 @@
 #include <QStyleOptionGraphicsItem>
 
 #include "app_configs.h"
+#include "save_info.h"
 
-DraggableItem::DraggableItem(const QString& id, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
-    : NodeBase(nodeConfig, parent)
-    , mNodeId(id)
+DraggableItem::DraggableItem(const QString& nodeId, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
+    : NodeBase(nodeId, nodeConfig, parent)
 {
   if (!config()->body.iconPath.isEmpty())
   {
@@ -24,11 +24,6 @@ DraggableItem::DraggableItem(const QString& id, std::shared_ptr<NodeConfig> node
 
 DraggableItem::~DraggableItem()
 {
-}
-
-QString DraggableItem::nodeId() const
-{
-  return mNodeId;
 }
 
 int DraggableItem::type() const
@@ -78,14 +73,17 @@ void DraggableItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
   paint(&painter, &opt, nullptr);
   paintLabel(&painter, pixmap.rect());
 
-  // Save data
-  QMimeData* mimeData = new QMimeData();
-  mimeData->setData(Constants::TYPE_NODE, QByteArray());
-  mimeData->setData(Constants::TYPE_NODE_ID, nodeId().toUtf8());
+  SaveInfo info;
+  info.nodeId = nodeId();
+  info.pixmap = nodePixmap();
+  info.size = QSize(config()->body.width, config()->body.height);
 
-  QByteArray pixmapData;
-  if (SerializeIcon(&pixmapData))
-    mimeData->setData(Constants::TYPE_PIXMAP, pixmapData);
+  QByteArray data;
+  QDataStream stream(&data, QIODevice::WriteOnly);
+  stream << info;
+
+  QMimeData* mimeData = new QMimeData();
+  mimeData->setData(Constants::TYPE_NODE, data);
 
   // Create drag itself
   QDrag* drag = new QDrag(event->widget());
@@ -96,26 +94,4 @@ void DraggableItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 
   // Nicety, let's make the cursor show a drag action
   setCursor(Qt::ClosedHandCursor);
-}
-
-bool DraggableItem::SerializeIcon(QByteArray* pixmapData) const
-{
-  if (!mPixmapItem)
-    return false;
-
-  // Get pixmap from the parent, i.e., not scaled
-  QPixmap iconPixmap(NodeBase::boundingRect().size().toSize());
-  iconPixmap.fill(Qt::transparent);
-
-  QPainter iconPainter(&iconPixmap);
-  iconPainter.setRenderHint(QPainter::Antialiasing, false);
-  iconPainter.setRenderHint(QPainter::TextAntialiasing, false);
-  paintPixmap(&iconPainter);
-
-  // Serialize it so it is copied
-  QBuffer buffer(pixmapData);
-  buffer.open(QIODevice::WriteOnly);
-  iconPixmap.save(&buffer, "PNG");
-
-  return true;
 }
