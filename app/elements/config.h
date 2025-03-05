@@ -150,7 +150,7 @@ class NodeConfig : public ConfigBase
 public:
   NodeConfig(const QJsonObject& object);
 
-  QString name;
+  QString type;
   BodyConfig body;
   HelpConfig help;
   BehaviourConfig behaviour;

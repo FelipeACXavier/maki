@@ -397,13 +397,13 @@ Types::Shape BodyConfig::toShape(const QString& config) const
 
 NodeConfig::NodeConfig(const QJsonObject& object)
 {
-  if (!object.contains("name"))
+  if (!object.contains("type"))
   {
-    setInvalid("Object must contain a name");
+    setInvalid("Object must contain a type");
     return;
   }
 
-  name = object["name"].toString();
+  type = object["type"].toString();
 
   if (object.contains("body"))
   {
@@ -465,7 +465,7 @@ NodeConfig::NodeConfig(const QJsonObject& object)
 
 QDataStream& operator<<(QDataStream& out, const NodeConfig& config)
 {
-  out << config.name;
+  out << config.type;
   out << config.body;
   out << config.connectors;
   return out;
@@ -473,7 +473,7 @@ QDataStream& operator<<(QDataStream& out, const NodeConfig& config)
 
 QDataStream& operator>>(QDataStream& in, NodeConfig& config)
 {
-  in >> config.name;
+  in >> config.type;
   in >> config.body;
   in >> config.connectors;
   return in;

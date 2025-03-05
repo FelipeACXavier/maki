@@ -29,6 +29,11 @@ int NodeBase::type() const
   return Type;
 }
 
+QString NodeBase::nodeType() const
+{
+  return config()->type;
+}
+
 VoidResult NodeBase::start()
 {
   return VoidResult();

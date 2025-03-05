@@ -34,17 +34,17 @@ public:
   void paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget) override;
 
   HelpConfig help() const;
-  QString nodeType() const;
+  QString nodeType() const override;
   QString behaviour() const;
   QVector<ControlsConfig> controls() const;
   QVector<PropertiesConfig> properties() const;
   QVector<PropertiesConfig> fields() const;
   QVector<std::shared_ptr<Connector>> connectors() const;
 
-  Result<QVariant> getProperty(const QString& key);
+  Result<QVariant> getProperty(const QString& key) const;
   void setProperty(const QString& key, QVariant value);
 
-  Result<PropertiesConfig> getField(const QString& key);
+  Result<PropertiesConfig> getField(const QString& key) const;
   VoidResult setField(const QString& key, const QJsonObject& value);
 
   QVector<NodeItem*> children() const;

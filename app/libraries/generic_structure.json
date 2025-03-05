@@ -4,7 +4,7 @@
   "author": "Felipe Xavier",
   "nodes": [
     {
-      "name": "Component",
+      "type": "Component",
       "body": {
         "shape": "Rectangle",
         "textColor": "#FFFFFF",
@@ -18,7 +18,7 @@
       "behaviour": {}
     },
     {
-      "name": "Data type",
+      "type": "Data type",
       "body": {
         "shape": "rounded rectangle",
         "textColor": "#FFFFFF",

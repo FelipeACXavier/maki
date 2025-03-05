@@ -1,19 +1,10 @@
 #include "main_window.h"
 
-#include <QCheckBox>
-#include <QComboBox>
-#include <QDoubleValidator>
 #include <QDrag>
-#include <QIntValidator>
 #include <QJsonArray>
 #include <QJsonDocument>
-#include <QLabel>
-#include <QLineEdit>
 #include <QListWidgetItem>
-#include <QMimeData>
-#include <QPushButton>
 #include <QString>
-#include <QVBoxLayout>
 #include <QWidget>
 #include <cfloat>
 
@@ -22,8 +13,6 @@
 #include "elements/node.h"
 #include "library_container.h"
 #include "logging.h"
-#include "string_helpers.h"
-#include "style_helpers.h"
 #include "ui_editor.h"
 #include "widgets/dynamic_control.h"
 
@@ -140,8 +129,6 @@ VoidResult MainWindow::loadElementLibrary(const JSON& config)
       return VoidResult::Failed("Invalid node format");
 
     QJsonObject node = value.toObject();
-    if (!node.contains("name"))
-      return VoidResult::Failed("Nodes must contain a name");
 
     // Parse config and make sure it is valid before continuing
     auto config = std::make_shared<NodeConfig>(node);
@@ -151,7 +138,7 @@ VoidResult MainWindow::loadElementLibrary(const JSON& config)
     // Initialize the library type
     config->libraryType = type == "behaviour" ? Types::LibraryTypes::BEHAVIOURAL : Types::LibraryTypes::STRUCTURAL;
 
-    auto id = QStringLiteral("%1::%2").arg(name, config->name);
+    auto id = QStringLiteral("%1::%2").arg(name, config->type);
     sidebarview->addNode(id, config);
 
     RETURN_ON_FAILURE(mConfigTable->add(id, config));

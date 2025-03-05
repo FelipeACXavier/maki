@@ -4,7 +4,7 @@
   "author": "Felipe Xavier",
   "nodes": [
     {
-      "name": "Start",
+      "type": "Start",
       "body": {
         "shape": "Ellipse",
         "textColor": "#FFFFFF",
@@ -15,7 +15,7 @@
       },
       "properties": [
         {
-          "id": "name",
+          "id": "type",
           "type": "string",
           "default": "Start"
         },
@@ -48,7 +48,7 @@
       }
     },
     {
-      "name": "End",
+      "type": "End",
       "body": {
         "shape": "Ellipse",
         "textColor": "#FFFFFF",
@@ -70,7 +70,7 @@
       }
     },
     {
-      "name": "Error",
+      "type": "Error",
       "body": {
         "shape": "Ellipse",
         "textColor": "#FFFFFF",
@@ -92,7 +92,7 @@
       }
     },
     {
-      "name": "Condition",
+      "type": "Condition",
       "body": {
         "shape": "Diamond",
         "textColor": "#FFFFFF",
@@ -103,7 +103,7 @@
       },
       "properties": [
         {
-          "id": "name",
+          "id": "type",
           "type": "string",
           "default": "Condition"
         },
@@ -137,7 +137,7 @@
       }
     },
     {
-      "name": "Action",
+      "type": "Action",
       "body": {
         "shape": "Rounded rectangle",
         "textColor": "#FFFFFF",
@@ -148,7 +148,7 @@
       },
       "properties": [
         {
-          "id": "name",
+          "id": "type",
           "type": "string",
           "default": "Action"
         },
@@ -173,7 +173,7 @@
       "behaviour": {}
     },
     {
-      "name": "Constant",
+      "type": "Constant",
       "body": {
         "shape": "Reectangle",
         "textColor": "#FFFFFF",
@@ -184,7 +184,7 @@
       },
       "properties": [
         {
-          "id": "name",
+          "id": "type",
           "type": "string",
           "default": "Constant"
         },

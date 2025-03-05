@@ -4,7 +4,7 @@
   "author": "",
   "nodes": [
     {
-      "name": "Addition",
+      "type": "Addition",
       "body": {
         "shape": "ellipse",
         "textColor": "#FFFFFF",
@@ -37,7 +37,7 @@
       }
     },
     {
-      "name": "Subtraction",
+      "type": "Subtraction",
       "body": {
         "shape": "ellipse",
         "textColor": "#FFFFFF",
@@ -70,7 +70,7 @@
       }
     },
     {
-      "name": "Multiplication",
+      "type": "Multiplication",
       "body": {
         "shape": "ellipse",
         "textColor": "#FFFFFF",
@@ -103,7 +103,7 @@
       }
     },
     {
-      "name": "Division",
+      "type": "Division",
       "body": {
         "shape": "ellipse",
         "textColor": "#FFFFFF",

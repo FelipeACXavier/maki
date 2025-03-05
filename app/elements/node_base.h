@@ -18,6 +18,8 @@ public:
   QString id() const;
   virtual int type() const override;
 
+  virtual QString nodeType() const;
+
   virtual VoidResult start();
   virtual std::shared_ptr<NodeConfig> config() const;
 

@@ -2,6 +2,7 @@
 
 #include <QGraphicsScene>
 #include <QGraphicsSceneMouseEvent>
+#include <QGraphicsView>
 #include <QMenu>
 #include <QObject>
 #include <QPainter>
@@ -27,7 +28,7 @@ NodeItem::NodeItem(const QPointF& initialPosition, const QPixmap& pixmap, std::s
   if (!pixmap.isNull())
     setPixmap(pixmap);
   else
-    setLabel(config()->name, config()->body.textColor);
+    setLabel(nodeType(), config()->body.textColor);
 
   for (const auto& connector : config()->connectors)
     mConnectors.append(std::make_shared<Connector>(connector, this));
@@ -56,7 +57,8 @@ int NodeItem::type() const
 QString NodeItem::nodeType() const
 {
   // This should also contain the library to make it unique
-  return config()->name;
+  auto ret = getProperty("type");
+  return ret ? ret.Value().toString() : config()->type;
 }
 
 VoidResult NodeItem::start()
@@ -108,12 +110,12 @@ QVector<ControlsConfig> NodeItem::controls() const
   return config()->controls;
 }
 
-Result<QVariant> NodeItem::getProperty(const QString& key)
+Result<QVariant> NodeItem::getProperty(const QString& key) const
 {
   if (mProperties.find(key) == mProperties.end())
     return Result<QVariant>::Failed("No property " + key.toStdString());
 
-  return mProperties[key];
+  return mProperties.at(key);
 }
 
 void NodeItem::setProperty(const QString& key, QVariant value)
@@ -150,7 +152,7 @@ VoidResult NodeItem::setField(const QString& key, const QJsonObject& value)
   return VoidResult();
 }
 
-Result<PropertiesConfig> NodeItem::getField(const QString& key)
+Result<PropertiesConfig> NodeItem::getField(const QString& key) const
 {
   for (const auto& field : mFields)
   {
@@ -222,6 +224,7 @@ void NodeItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
   if (config()->libraryType == Types::LibraryTypes::STRUCTURAL && event->modifiers() & Qt::ShiftModifier)
   {
     mIsResizing = true;
+    dynamic_cast<QGraphicsView*>(scene()->parent())->setCursor(Qt::SizeFDiagCursor);
     event->accept();
   }
   else
@@ -233,7 +236,10 @@ void NodeItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 void NodeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
   if (mIsResizing)
+  {
     mIsResizing = false;
+    dynamic_cast<QGraphicsView*>(scene()->parent())->setCursor(Qt::ArrowCursor);
+  }
 
   // Display information in the help menu
   if (isSelected())
