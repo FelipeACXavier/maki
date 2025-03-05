@@ -68,8 +68,11 @@ QRectF NodeItem::boundingRect() const
 
 void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget)
 {
+  auto color = getProperty("color");
+  auto background = color ? QColor::fromString(color.Value().toString()) : config()->body.backgroundColor;
+
   NodeBase::paintNode(boundingRect(),
-                      config()->body.backgroundColor,
+                      background,
                       isSelected() ? QPen(Config::Colours::ACCENT, 4) : QPen(config()->body.borderColor),
                       painter);
 }
@@ -119,10 +122,9 @@ void NodeItem::setProperty(const QString& key, QVariant value)
     return;
   }
 
-  // if (key == "color")
-  //   mConfig->body.backgroundColor = QColor::fromString(value.toString());
-
   mProperties[key] = value;
+
+  update();
 }
 
 VoidResult NodeItem::setField(const QString& key, const QJsonObject& value)

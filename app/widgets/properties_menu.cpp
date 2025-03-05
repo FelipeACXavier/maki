@@ -164,7 +164,7 @@ VoidResult PropertiesMenu::loadPropertyColor(const PropertiesConfig& property, N
   colorPreviewLabel->setPalette(palette);
 
   connect(widget, &QPushButton::pressed, [=]() {
-    QColor color = QColorDialog::getColor(selectedColor, this, "Select Color");
+    QColor color = QColorDialog::getColor(selectedColor, this, "Background Color");
     QPalette newPalette;
     newPalette.setColor(QPalette::Window, color);
     colorPreviewLabel->setPalette(newPalette);

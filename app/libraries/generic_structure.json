@@ -34,6 +34,11 @@
           "id": "color",
           "type": "color",
           "default": "#fcbf49"
+        },
+        {
+          "id": "type",
+          "type": "string",
+          "default": "Data type"
         }
       ],
       "controls": [
