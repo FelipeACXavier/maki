@@ -42,15 +42,10 @@ NodeItem::NodeItem(const QPointF& initialPosition, const QPixmap& pixmap, std::s
 
 NodeItem::~NodeItem()
 {
-  LOG_INFO("Calling destructor: %s", qPrintable(nodeType()));
-
   if (mParentNode)
-  {
-    LOG_INFO("Has parent: %s", qPrintable(mParentNode->nodeType()));
     mParentNode->childRemoved(this);
-  }
 
-  LOG_INFO("Destructor done: %s ", qPrintable(nodeType()));
+  // Children are removed by the parent item, i.e., the canvas
 }
 
 int NodeItem::type() const

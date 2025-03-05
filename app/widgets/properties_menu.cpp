@@ -289,6 +289,10 @@ VoidResult PropertiesMenu::loadControlAddField(const ControlsConfig& control, No
   model->setHorizontalHeaderItem(1, new QStandardItem("Value"));
   model->setHorizontalHeaderItem(2, new QStandardItem("Type"));
 
+  tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+
+  addDynamicWidget(tableView, parent);
+
   tableView->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::EditKeyPressed);
   tableView->setModel(model);
 
@@ -349,8 +353,6 @@ VoidResult PropertiesMenu::loadControlAddField(const ControlsConfig& control, No
 
   button->setText(control.id);
   controlLayout->addWidget(button);
-
-  addDynamicWidget(tableView, parent);
 
   return VoidResult();
 }
