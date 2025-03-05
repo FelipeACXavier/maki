@@ -197,18 +197,9 @@ void Canvas::keyPressEvent(QKeyEvent* event)
     for (QGraphicsItem* item : selectedItems())
     {
       if (item->type() == NodeItem::Type)
-      {
-        NodeItem* node = dynamic_cast<NodeItem*>(item);
-        const auto& children = node->children();
-        for (QGraphicsItem* child : children)
-        {
-          removeItem(child);
-          delete child;
-        }
-      }
-
-      removeItem(item);
-      delete item;  // This removes the item from the scene and deletes it
+        dynamic_cast<NodeItem*>(item)->onDelete();
+      else
+        delete item;
     }
   }
   else
@@ -290,6 +281,7 @@ bool Canvas::createNode(const SaveInfo& info, const QPointF& position, NodeItem*
 
   node->nodeSeletected = [this](NodeItem* item) { onNodeSelected(item); };
   node->nodeCopied = [this](NodeItem* /* item */) { copySelectedItems(); };
+  node->nodeDeleted = [this](NodeItem* item) { removeItem(item); };
 
   node->start();
 

@@ -25,7 +25,7 @@ IndentWidth: 2
 PointerAlignment: Left
 AlignTrailingComments: true
 DerivePointerAlignment: false
-AllowShortLambdasOnASingleLine: false
+AllowShortLambdasOnASingleLine: true
 AllowShortFunctionsOnASingleLine: None
 BreakConstructorInitializers: BeforeComma
 AllowShortIfStatementsOnASingleLine: false

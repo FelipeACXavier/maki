@@ -51,10 +51,6 @@ NodeItem::NodeItem(const SaveInfo& info, const QPointF& initialPosition, std::sh
 
 NodeItem::~NodeItem()
 {
-  if (parentNode())
-    parentNode()->childRemoved(this);
-
-  // Children are removed by the parent item, i.e., the canvas
 }
 
 int NodeItem::type() const
@@ -273,6 +269,7 @@ QVariant NodeItem::itemChange(GraphicsItemChange change, const QVariant& value)
   if (change == QGraphicsItem::ItemPositionChange)
   {
     QPointF newPos = value.toPointF();
+
     if (parentNode() != nullptr)
     {
       // Ensure child stays inside parent's bounding box
@@ -312,10 +309,7 @@ void NodeItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
   QAction* copyAction = menu.addAction("Copy");
 
   // Connect actions to their slots
-  QObject::connect(deleteAction, &QAction::triggered, [this]() {
-    if (nodeDeleted)
-      nodeDeleted(this);
-  });
+  QObject::connect(deleteAction, &QAction::triggered, [this]() { onDelete(); });
   QObject::connect(propertiesAction, &QAction::triggered, [this]() {
     onProperties();
   });
@@ -341,8 +335,18 @@ void NodeItem::updatePosition(const QPointF& position)
 // Slots
 void NodeItem::onDelete()
 {
-  // Handle the delete action, e.g., remove the item from the scene
-  scene()->removeItem(this);
+  // If the node has a parent, inform the parent about the deletion
+  if (parentNode())
+    parentNode()->childRemoved(this);
+
+  for (NodeItem* child : children())
+    child->onDelete();
+
+  // Remove the item from the scene
+  if (nodeDeleted)
+    nodeDeleted(this);
+
+  // Optionally delete the item
   delete this;
 }
 

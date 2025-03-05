@@ -127,6 +127,9 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
+        <property name="currentIndex">
+         <number>1</number>
+        </property>
         <property name="class" stdset="0">
          <string>help-menu</string>
         </property>
@@ -137,6 +140,16 @@
          <layout class="QVBoxLayout" name="verticalLayout_3">
           <item>
            <widget class="QTextBrowser" name="infoText"/>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="tab">
+         <attribute name="title">
+          <string>Log</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_5">
+          <item>
+           <widget class="QTextBrowser" name="logText"/>
           </item>
          </layout>
         </widget>
