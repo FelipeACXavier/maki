@@ -47,8 +47,14 @@ public:
   Result<PropertiesConfig> getField(const QString& key);
   VoidResult setField(const QString& key, const QJsonObject& value);
 
+  QVector<NodeItem*> children() const;
+  void addChild(NodeItem* child);
+  void setParent(NodeItem* parent);
+  void childRemoved(NodeItem* child);
+
   std::function<void(NodeItem* item)> nodeSeletected;
 
+  // "slots":
   void onDelete();
   void onProperties();
 
@@ -63,6 +69,9 @@ private:
 
   std::map<QString, QVariant> mProperties;
   QVector<PropertiesConfig> mFields;
+
+  NodeItem* mParentNode;
+  QVector<NodeItem*> mChildrenNodes;
 
   bool mIsResizing{false};
   QSizeF mSize;

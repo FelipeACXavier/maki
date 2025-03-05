@@ -73,6 +73,17 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
 {
   if (event->mimeData()->hasFormat(Constants::TYPE_NODE))
   {
+    NodeItem* parentNode = nullptr;
+    QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
+    if (item && item->type() == NodeItem::Type)
+    {
+      parentNode = static_cast<NodeItem*>(item);
+
+      // Add error message
+      if (!parentNode->acceptDrops())
+        return;
+    }
+
     QPixmap pixmap;
     if (event->mimeData()->hasFormat(Constants::TYPE_PIXMAP))
     {
@@ -82,21 +93,35 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
 
     QByteArray idData = event->mimeData()->data(Constants::TYPE_NODE_ID);
     QString nodeId = QString(idData);
-    auto data = mConfigTable->get(nodeId);
-    if (data == nullptr)
+    auto config = mConfigTable->get(nodeId);
+    if (config == nullptr)
     {
       LOG_ERROR("Added node with no configuration");
       return;
     }
 
-    auto node = new NodeItem(event->scenePos(), pixmap, data);
+    // Behavioural nodes can only be dropped inside a structure
+    if (config->libraryType == Types::LibraryTypes::BEHAVIOURAL && parentNode == nullptr)
+    {
+      event->ignore();
+      return;
+    }
+
+    auto node = new NodeItem(event->scenePos(), pixmap, config);
     node->nodeSeletected = [this](NodeItem* item) {
       onNodeSelected(item);
     };
 
     node->start();
 
+    if (parentNode != nullptr)
+    {
+      node->setParent(parentNode);
+      parentNode->addChild(node);
+    }
+
     addItem(node);
+
     event->acceptProposedAction();
 
     // Make sure we show that we are no longer dragging
@@ -203,7 +228,21 @@ void Canvas::keyPressEvent(QKeyEvent* event)
   if (event->key() == Qt::Key_Delete)
   {
     for (QGraphicsItem* item : selectedItems())
+    {
+      if (item->type() == NodeItem::Type)
+      {
+        NodeItem* node = dynamic_cast<NodeItem*>(item);
+        const auto& children = node->children();
+        for (QGraphicsItem* child : children)
+        {
+          removeItem(child);
+          delete child;
+        }
+      }
+
+      removeItem(item);
       delete item;  // This removes the item from the scene and deletes it
+    }
   }
   else
   {

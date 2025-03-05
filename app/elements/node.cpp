@@ -15,6 +15,8 @@
 
 NodeItem::NodeItem(const QPointF& initialPosition, const QPixmap& pixmap, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
     : NodeBase(nodeConfig, parent)
+    , mParentNode(nullptr)
+    , mChildrenNodes({})
     , mSize(NodeBase::boundingRect().width(), NodeBase::boundingRect().height())
 {
   setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
@@ -40,6 +42,15 @@ NodeItem::NodeItem(const QPointF& initialPosition, const QPixmap& pixmap, std::s
 
 NodeItem::~NodeItem()
 {
+  LOG_INFO("Calling destructor: %s", qPrintable(nodeType()));
+
+  if (mParentNode)
+  {
+    LOG_INFO("Has parent: %s", qPrintable(mParentNode->nodeType()));
+    mParentNode->childRemoved(this);
+  }
+
+  LOG_INFO("Destructor done: %s ", qPrintable(nodeType()));
 }
 
 int NodeItem::type() const
@@ -105,12 +116,8 @@ QVector<ControlsConfig> NodeItem::controls() const
 Result<QVariant> NodeItem::getProperty(const QString& key)
 {
   if (mProperties.find(key) == mProperties.end())
-  {
-    LOG_WARNING("Tried to update property %s but it does not exist", qPrintable(key));
     return Result<QVariant>::Failed("No property " + key.toStdString());
-  }
 
-  LOG_DEBUG("Getting property: %s", qPrintable(key));
   return mProperties[key];
 }
 
@@ -157,6 +164,26 @@ Result<PropertiesConfig> NodeItem::getField(const QString& key)
   }
 
   return Result<PropertiesConfig>::Failed("Field does not exist");
+}
+
+QVector<NodeItem*> NodeItem::children() const
+{
+  return mChildrenNodes;
+}
+
+void NodeItem::addChild(NodeItem* child)
+{
+  mChildrenNodes.push_back(child);
+}
+
+void NodeItem::setParent(NodeItem* parent)
+{
+  mParentNode = parent;
+}
+
+void NodeItem::childRemoved(NodeItem* child)
+{
+  mChildrenNodes.removeAll(child);
 }
 
 QString NodeItem::behaviour() const
