@@ -3,7 +3,7 @@
 #include <QGraphicsScene>
 #include <QVBoxLayout>
 
-#include "elements/config.h"
+#include "config.h"
 #include "elements/draggable.h"
 
 static const int PADDING = 15;

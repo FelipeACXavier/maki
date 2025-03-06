@@ -3,7 +3,7 @@
 #include <QGraphicsView>
 #include <QToolBox>
 
-#include "elements/config.h"
+#include "config.h"
 #include "result.h"
 
 class LibraryContainer : public QGraphicsView

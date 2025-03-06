@@ -4,6 +4,7 @@
 #include <QString>
 
 #include "config.h"
+#include "result.h"
 #include "types.h"
 
 class NodeBase : public QGraphicsItem

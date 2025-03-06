@@ -11,6 +11,7 @@
 #include "compiler/generator.h"
 #include "config_table.h"
 #include "json.h"
+#include "logging.h"
 #include "result.h"
 
 QT_BEGIN_NAMESPACE
@@ -47,6 +48,8 @@ private:
   std::shared_ptr<ConfigurationTable> mConfigTable;
 
   std::shared_ptr<Generator> mGenerator;
+
+  logging::LogLevel mLogLevel;
 
   Canvas* canvas() const;
   VoidResult loadElements();

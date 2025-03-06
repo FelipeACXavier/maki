@@ -5,28 +5,9 @@
 #include <QString>
 #include <QVector>
 
-#include "result.h"
+#include "config_base.h"
+#include "property_config.h"
 #include "types.h"
-
-class ConfigBase
-{
-public:
-  ConfigBase();
-  ConfigBase(ConfigBase& copy);
-  ConfigBase(const ConfigBase& copy);
-
-  virtual bool isValid() const;
-  VoidResult result() const;
-
-  friend QDataStream& operator<<(QDataStream& out, const ConfigBase& config);
-  friend QDataStream& operator>>(QDataStream& in, ConfigBase& config);
-
-protected:
-  void setInvalid(const QString& message);
-
-private:
-  VoidResult mIsValid;
-};
 
 class ConnectorConfig : public ConfigBase
 {
@@ -64,29 +45,6 @@ public:
 
 private:
   Types::ControlTypes toType(const QString& config) const;
-};
-
-class PropertiesConfig : public ConfigBase
-{
-public:
-  PropertiesConfig();
-  PropertiesConfig(const QJsonObject& object);
-
-  QString id = "";
-  QVariant defaultValue;
-  QList<PropertiesConfig> options;
-  Types::PropertyTypes type = Types::PropertyTypes::UNKNOWN;
-
-  bool isValid() const override;
-
-  QString typeToString() const;
-
-  friend QDataStream& operator<<(QDataStream& out, const PropertiesConfig& config);
-  friend QDataStream& operator>>(QDataStream& in, PropertiesConfig& config);
-
-private:
-  Types::PropertyTypes toType(const QString& input);
-  QVariant toDefault(const QJsonObject& object, Types::PropertyTypes objectType);
 };
 
 class BehaviourConfig : public ConfigBase
@@ -159,6 +117,3 @@ public:
   friend QDataStream& operator<<(QDataStream& out, const NodeConfig& config);
   friend QDataStream& operator>>(QDataStream& in, NodeConfig& config);
 };
-
-QDataStream& operator<<(QDataStream& out, const VoidResult& config);
-QDataStream& operator>>(QDataStream& in, VoidResult& config);

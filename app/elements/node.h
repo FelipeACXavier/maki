@@ -40,7 +40,7 @@ public:
   QString nodeType() const override;
   QString behaviour() const;
   QVector<ControlsConfig> controls() const;
-  QVector<PropertiesConfig> fields() const;
+  QVector<PropertiesConfig> fields() const override;
   QMap<QString, QVariant> properties() const override;
   QVector<std::shared_ptr<IConnector>> connectors() const override;
   QVector<PropertiesConfig> configurationProperties() const;
@@ -50,7 +50,7 @@ public:
   QVariant getProperty(const QString& key) const override;
   void setProperty(const QString& key, QVariant value);
 
-  Result<PropertiesConfig> getField(const QString& key) const;
+  PropertiesConfig getField(const QString& key) const override;
   VoidResult setField(const QString& key, const QJsonObject& value);
 
   INode* parentNode() const override;

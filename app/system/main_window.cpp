@@ -40,6 +40,9 @@ VoidResult MainWindow::start()
     if (!mUI->logText)
       return;
 
+    if (level > mLogLevel)
+      return;
+
     mUI->logText->append(toQT(ts, level, message));
 
     // Check if the number of lines exceeds the maximum limit
@@ -118,12 +121,10 @@ void MainWindow::bind()
           &MainWindow::onActionGenerate);
 
   // Setting actions =============================================================
-  connect(mUI->actionError, &QAction::triggered, [] { logging::gMinLogLevel = logging::LogLevel::Error; });
-  connect(mUI->actionWarning, &QAction::triggered, [] { logging::gMinLogLevel = logging::LogLevel::Warning; });
-  connect(mUI->actionInfo, &QAction::triggered, [] { logging::gMinLogLevel = logging::LogLevel::Info; });
-  connect(mUI->actionDebug, &QAction::triggered, [] { logging::gMinLogLevel = logging::LogLevel::Debugging; });
-
-  connect(mUI->actionDebug, &QAction::triggered, [] { logging::gMinLogLevel = logging::LogLevel::Debugging; });
+  connect(mUI->actionError, &QAction::triggered, [this] { mLogLevel = logging::LogLevel::Error; });
+  connect(mUI->actionWarning, &QAction::triggered, [this] { mLogLevel = logging::LogLevel::Warning; });
+  connect(mUI->actionInfo, &QAction::triggered, [this] { mLogLevel = logging::LogLevel::Info; });
+  connect(mUI->actionDebug, &QAction::triggered, [this] { mLogLevel = logging::LogLevel::Debugging; });
 
   // Internal actions =============================================================
   connect(canvas(), &Canvas::nodeSelected, this, &MainWindow::onNodeSelected);
@@ -199,7 +200,7 @@ VoidResult MainWindow::loadElementLibrary(const JSON& config)
     // Parse config and make sure it is valid before continuing
     auto config = std::make_shared<NodeConfig>(node);
     if (!config->isValid())
-      return config->result();
+      return VoidResult::Failed(config->errorMessage.toStdString());
 
     // Initialize the library type
     config->libraryType = type == "behaviour" ? Types::LibraryTypes::BEHAVIOURAL : Types::LibraryTypes::STRUCTURAL;

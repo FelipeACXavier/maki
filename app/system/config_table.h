@@ -3,7 +3,7 @@
 #include <QString>
 #include <map>
 
-#include "elements/config.h"
+#include "config.h"
 #include "result.h"
 
 class ConfigurationTable

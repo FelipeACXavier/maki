@@ -6,8 +6,8 @@
 #include <QMimeData>
 
 #include "app_configs.h"
+#include "config.h"
 #include "config_table.h"
-#include "elements/config.h"
 #include "elements/connection.h"
 #include "elements/connector.h"
 #include "elements/node.h"

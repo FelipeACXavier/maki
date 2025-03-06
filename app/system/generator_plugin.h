@@ -5,6 +5,8 @@
 #include <QObject>
 #include <QString>
 
+#include "inode.h"
+
 // Forward declaration to avoid exposing full NodeItem definition
 class NodeItem;
 
@@ -24,7 +26,7 @@ class GeneratorPlugin
 {
 public:
   virtual ~GeneratorPlugin() = default;
-  virtual QString generateCode(const QList<QGraphicsItem*>& nodes) = 0;
+  virtual QString generateCode(const QList<INode*>& nodes) = 0;
   virtual generator::Language supportedLanguage() const = 0;
   virtual QString languageName() const = 0;
 };

@@ -2,7 +2,7 @@
 
 #include <QFrame>
 
-#include "elements/config.h"
+#include "config.h"
 #include "result.h"
 
 class NodeItem;

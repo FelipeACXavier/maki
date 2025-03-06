@@ -162,7 +162,7 @@ VoidResult NodeItem::setField(const QString& key, const QJsonObject& value)
   // Check if key exists
   auto property = PropertiesConfig(value);
   if (!property.isValid())
-    return property.result();
+    return VoidResult::Failed(property.errorMessage.toStdString());
 
   for (auto& field : mFields)
   {
@@ -178,7 +178,7 @@ VoidResult NodeItem::setField(const QString& key, const QJsonObject& value)
   return VoidResult();
 }
 
-Result<PropertiesConfig> NodeItem::getField(const QString& key) const
+PropertiesConfig NodeItem::getField(const QString& key) const
 {
   for (const auto& field : mFields)
   {
@@ -186,7 +186,7 @@ Result<PropertiesConfig> NodeItem::getField(const QString& key) const
       return field;
   }
 
-  return Result<PropertiesConfig>::Failed("Field does not exist");
+  return PropertiesConfig();
 }
 
 QVector<INode*> NodeItem::children() const
