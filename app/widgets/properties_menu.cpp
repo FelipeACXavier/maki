@@ -11,6 +11,7 @@
 #include <QJsonObject>
 #include <QLabel>
 #include <QLineEdit>
+#include <QMenu>
 #include <QPushButton>
 #include <QStandardItemModel>
 #include <QString>
@@ -290,6 +291,7 @@ VoidResult PropertiesMenu::loadControlAddField(const ControlsConfig& control, No
   model->setHorizontalHeaderItem(2, new QStandardItem("Type"));
 
   tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+  tableView->setContextMenuPolicy(Qt::CustomContextMenu);
 
   addDynamicWidget(tableView, parent);
 
@@ -309,7 +311,7 @@ VoidResult PropertiesMenu::loadControlAddField(const ControlsConfig& control, No
       model->setItem(newRow, 1, new QStandardItem(field.defaultValue.toString()));
   }
 
-  QObject::connect(model, &QStandardItemModel::itemChanged, [=](QStandardItem* item) {
+  connect(model, &QStandardItemModel::itemChanged, [=](QStandardItem* item) {
     if (!item)
       return;
 
@@ -341,8 +343,11 @@ VoidResult PropertiesMenu::loadControlAddField(const ControlsConfig& control, No
     LOG_ERROR_ON_FAILURE(node->setField(json["id"].toString(), json));
   });
 
-  QPushButton* button = new QPushButton(parent);
+  connect(tableView, &QTableView::customContextMenuRequested, [this, tableView](const QPoint& pos) {
+    showContextMenu(tableView, pos);
+  });
 
+  QPushButton* button = new QPushButton(parent);
   connect(button, &QPushButton::pressed, this, [=]() {
     int newRow = model->rowCount();
     model->insertRow(newRow);
@@ -357,5 +362,17 @@ VoidResult PropertiesMenu::loadControlAddField(const ControlsConfig& control, No
   return VoidResult();
 }
 
-// tableView->setContextMenuPolicy(Qt::CustomContextMenu);
-// connect(tableView, &QTableView::customContextMenuRequested, this, &YourClass::showContextMenu);
+void PropertiesMenu::showContextMenu(QTableView* tableView, const QPoint& pos)
+{
+  // Get the index of the clicked row
+  QModelIndex index = tableView->indexAt(pos);
+  if (!index.isValid())
+    return;
+
+  QMenu contextMenu;
+  QAction* actionDelete = contextMenu.addAction("Delete");
+
+  connect(actionDelete, &QAction::triggered, this, [index, tableView] { tableView->model()->removeRow(index.row()); });
+
+  contextMenu.exec(tableView->viewport()->mapToGlobal(pos));
+}
