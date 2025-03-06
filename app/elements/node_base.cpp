@@ -2,15 +2,14 @@
 
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
-#include <QUuid>
 
 const qreal MAX_WIDTH = 100.0;
 const qreal MAX_HEIGHT = 100.0;
 
-NodeBase::NodeBase(const QString& nodeId, std::shared_ptr<NodeConfig> config, QGraphicsItem* parent)
+NodeBase::NodeBase(const QString& id, const QString& nodeId, std::shared_ptr<NodeConfig> config, QGraphicsItem* parent)
     : QGraphicsItem(parent)
     , mConfig(config)
-    , mId(QUuid::createUuid().toString())
+    , mId(id)
     , mBounds(0, 0, mConfig->body.width, mConfig->body.height)
     , mNodeId(nodeId)
 {

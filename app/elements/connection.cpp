@@ -82,6 +82,7 @@ void ConnectionItem::move(const QString& id, QPointF pos)
   // Control points for Bézier curve
   QPainterPath path;
   path.moveTo(mSrcPoint);
+
   if (mComplete)
     // Control points for Bézier curve
     path.cubicTo(mSrcPoint + mSrcShift, mDstPoint + mDstShift, mDstPoint);
@@ -99,4 +100,18 @@ void ConnectionItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
     setPen(QPen(Config::Colours::ACCENT, 2));
   else
     setPen(QPen(Qt::white, 2));
+}
+
+ConnectionSaveInfo ConnectionItem::saveInfo() const
+{
+  ConnectionSaveInfo info;
+  info.srcId = mSrcId;
+  info.srcPoint = mSrcPoint;
+  info.srcShift = mSrcShift;
+
+  info.dstId = mDstId;
+  info.dstPoint = mDstPoint;
+  info.dstShift = mDstShift;
+
+  return info;
 }

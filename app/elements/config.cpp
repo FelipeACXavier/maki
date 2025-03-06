@@ -7,6 +7,8 @@
 #include "app_configs.h"
 #include "string_helpers.h"
 
+Q_DECLARE_METATYPE(PropertiesConfig)
+
 ConfigBase::ConfigBase()
 {
 }

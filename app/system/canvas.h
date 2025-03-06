@@ -24,6 +24,8 @@ public:
   void pasteCopiedItems();
   void copySelectedItems();
 
+  VoidResult loadFromSave(const SaveInfo& info);
+
 protected:
   void dragEnterEvent(QGraphicsSceneDragDropEvent* event) override;
   void dragMoveEvent(QGraphicsSceneDragDropEvent* event) override;
@@ -49,9 +51,12 @@ private:
   Connector* mHoveredConnector = nullptr;
   ConnectionItem* mConnection = nullptr;
 
-  QList<SaveInfo> copiedNodes;
+  QList<NodeSaveInfo> copiedNodes;
   std::shared_ptr<ConfigurationTable> mConfigTable;
 
   QGraphicsView* parentView() const;
-  bool createNode(const SaveInfo& info, const QPointF& position, NodeItem* parent);
+  bool createNode(const NodeSaveInfo& info, const QPointF& position, NodeItem* parent);
+
+  NodeItem* findNodeWithId(const QString& id) const;
+  Connector* findConnectorWithId(const QString& id) const;
 };

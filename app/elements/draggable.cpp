@@ -6,12 +6,13 @@
 #include <QGraphicsSceneMouseEvent>
 #include <QStyle>
 #include <QStyleOptionGraphicsItem>
+#include <QUuid>
 
 #include "app_configs.h"
 #include "save_info.h"
 
 DraggableItem::DraggableItem(const QString& nodeId, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
-    : NodeBase(nodeId, nodeConfig, parent)
+    : NodeBase(QUuid::createUuid().toString(), nodeId, nodeConfig, parent)
 {
   if (!config()->body.iconPath.isEmpty())
   {
@@ -73,7 +74,7 @@ void DraggableItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
   paint(&painter, &opt, nullptr);
   paintLabel(&painter, pixmap.rect());
 
-  SaveInfo info;
+  NodeSaveInfo info;
   info.nodeId = nodeId();
   info.pixmap = nodePixmap();
   info.size = QSize(config()->body.width, config()->body.height);

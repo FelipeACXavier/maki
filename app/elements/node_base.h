@@ -14,7 +14,7 @@ public:
     Type = UserType + Types::BASE_NODE
   };
 
-  NodeBase(const QString& nodeId, std::shared_ptr<NodeConfig> config, QGraphicsItem* parent);
+  NodeBase(const QString& id, const QString& nodeId, std::shared_ptr<NodeConfig> config, QGraphicsItem* parent);
 
   QString id() const;
   virtual int type() const override;

@@ -23,7 +23,7 @@ public:
     Type = UserType + Types::NODE
   };
 
-  NodeItem(const SaveInfo& info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent = nullptr);
+  NodeItem(const QString& id, const NodeSaveInfo& info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent = nullptr);
 
   virtual ~NodeItem();
 
@@ -44,6 +44,8 @@ public:
   QMap<QString, QVariant> properties() const;
   QVector<std::shared_ptr<Connector>> connectors() const;
   QVector<PropertiesConfig> configurationProperties() const;
+
+  Types::LibraryTypes function() const;
 
   Result<QVariant> getProperty(const QString& key) const;
   void setProperty(const QString& key, QVariant value);
@@ -67,7 +69,7 @@ public:
   void onProperties();
 
   // Serialization functions
-  SaveInfo saveInfo() const;
+  NodeSaveInfo saveInfo() const;
 
   friend QDataStream& operator<<(QDataStream& out, const NodeItem& config);
   friend QDataStream& operator>>(QDataStream& in, NodeItem& config);

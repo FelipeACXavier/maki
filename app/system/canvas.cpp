@@ -88,7 +88,7 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
     QByteArray data = event->mimeData()->data(Constants::TYPE_NODE);
     QDataStream stream(&data, QIODevice::ReadOnly);
 
-    SaveInfo info;
+    NodeSaveInfo info;
     stream >> info;
 
     if (createNode(info, event->scenePos(), parentNode))
@@ -240,7 +240,7 @@ void Canvas::pasteCopiedItems()
 
   QPointF mousePosition = parentView()->mapToScene(parentView()->mapFromGlobal(QCursor::pos()));
 
-  for (SaveInfo& info : copiedNodes)
+  for (NodeSaveInfo& info : copiedNodes)
   {
     NodeItem* parentNode = nullptr;
     QGraphicsItem* item = itemAt(mousePosition, QTransform());
@@ -257,12 +257,58 @@ void Canvas::pasteCopiedItems()
   }
 }
 
+VoidResult Canvas::loadFromSave(const SaveInfo& info)
+{
+  // Clear the canvas before repopulating
+  clear();
+
+  for (const auto& node : info.structuralNodes)
+  {
+    LOG_DEBUG("Creating structural node %s with parent %s", qPrintable(node.id), qPrintable(node.parentId));
+    createNode(node, node.position, findNodeWithId(node.parentId));
+  }
+
+  for (const auto& node : info.behaviouralNodes)
+  {
+    LOG_DEBUG("Creating behavioral node %s with parent %s", qPrintable(node.id), qPrintable(node.parentId));
+    createNode(node, node.position, findNodeWithId(node.parentId));
+  }
+
+  for (const auto& conn : info.connections)
+  {
+    LOG_DEBUG("Creating connection with parents %s -> %s", qPrintable(conn.srcId), qPrintable(conn.dstId));
+
+    auto srcConn = findConnectorWithId(conn.srcId);
+    auto dstConn = findConnectorWithId(conn.dstId);
+
+    if (!srcConn || !dstConn)
+    {
+      LOG_WARNING("Could not find connectors");
+      continue;
+    }
+
+    auto connection = new ConnectionItem();
+
+    connection->setStart(conn.srcId, conn.srcPoint, conn.srcShift);
+    connection->setEnd(conn.dstId, conn.dstPoint, conn.dstShift);
+
+    srcConn->addConnection(connection);
+    dstConn->addConnection(connection);
+
+    connection->done(srcConn, dstConn);
+
+    addItem(connection);
+  }
+
+  return VoidResult();
+}
+
 QGraphicsView* Canvas::parentView() const
 {
   return dynamic_cast<QGraphicsView*>(parent());
 }
 
-bool Canvas::createNode(const SaveInfo& info, const QPointF& position, NodeItem* parent)
+bool Canvas::createNode(const NodeSaveInfo& info, const QPointF& position, NodeItem* parent)
 {
   auto config = mConfigTable->get(info.nodeId);
   if (config == nullptr)
@@ -277,13 +323,22 @@ bool Canvas::createNode(const SaveInfo& info, const QPointF& position, NodeItem*
     return false;
   }
 
-  NodeItem* node = new NodeItem(info, position, config);
+  // On drop, there is no info.id yet so we must assign a unique id to this node.
+  // When loading from a file, we need to retain the id
+  QString id = QUuid::createUuid().toString();
+  if (!info.id.isEmpty() && !info.id.isNull())
+    id = info.id;
+
+  NodeItem* node = new NodeItem(id, info, position, config);
 
   node->nodeSeletected = [this](NodeItem* item) { onNodeSelected(item); };
   node->nodeCopied = [this](NodeItem* /* item */) { copySelectedItems(); };
   node->nodeDeleted = [this](NodeItem* item) { removeItem(item); };
 
   node->start();
+
+  // When loading from save, we need to enforce the position
+  node->setPos(position);
 
   if (parent != nullptr)
   {
@@ -294,4 +349,34 @@ bool Canvas::createNode(const SaveInfo& info, const QPointF& position, NodeItem*
   addItem(node);
 
   return true;
+}
+
+NodeItem* Canvas::findNodeWithId(const QString& id) const
+{
+  for (const auto& item : items())
+  {
+    if (item->type() != NodeItem::Type)
+      continue;
+
+    auto node = static_cast<NodeItem*>(item);
+    if (node->id() == id)
+      return node;
+  }
+
+  return nullptr;
+}
+
+Connector* Canvas::findConnectorWithId(const QString& id) const
+{
+  for (const auto& item : items())
+  {
+    if (item->type() != Connector::Type)
+      continue;
+
+    auto connector = static_cast<Connector*>(item);
+    if (connector->id() == id)
+      return connector;
+  }
+
+  return nullptr;
 }

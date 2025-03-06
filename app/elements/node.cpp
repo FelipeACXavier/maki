@@ -14,8 +14,8 @@
 #include "logging.h"
 #include "style_helpers.h"
 
-NodeItem::NodeItem(const SaveInfo& info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
-    : NodeBase(info.nodeId, nodeConfig, parent)
+NodeItem::NodeItem(const QString& id, const NodeSaveInfo& info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
+    : NodeBase(id, info.nodeId, nodeConfig, parent)
     , mChildrenNodes({})
     , mSize(info.size)
 {
@@ -30,7 +30,19 @@ NodeItem::NodeItem(const SaveInfo& info, const QPointF& initialPosition, std::sh
     setLabel(nodeType(), config()->body.textColor);
 
   for (const auto& connector : config()->connectors)
-    mConnectors.append(std::make_shared<Connector>(connector, this));
+  {
+    QString connectorId = QUuid::createUuid().toString();
+    for (const auto& cfg : info.connectors)
+    {
+      if (connector.id != cfg.configId)
+        continue;
+
+      connectorId = cfg.connectorId;
+      break;
+    }
+
+    mConnectors.append(std::make_shared<Connector>(connector, connectorId, this));
+  }
 
   if (info.properties.isEmpty())
   {
@@ -56,6 +68,11 @@ NodeItem::~NodeItem()
 int NodeItem::type() const
 {
   return Type;
+}
+
+Types::LibraryTypes NodeItem::function() const
+{
+  return config()->libraryType;
 }
 
 QString NodeItem::nodeType() const
@@ -355,15 +372,22 @@ void NodeItem::onProperties()
   // Handle the properties action, e.g., show a dialog to edit properties
 }
 
-SaveInfo NodeItem::saveInfo() const
+NodeSaveInfo NodeItem::saveInfo() const
 {
-  SaveInfo info;
-  info.position = pos();
-  info.fields = fields();
+  NodeSaveInfo info;
+  info.id = id();
+  info.position = scenePos();
   info.nodeId = nodeId();
+  info.fields = fields();
   info.pixmap = nodePixmap();
   info.properties = properties();
   info.size = mSize;
+
+  for (const auto& connector : connectors())
+    info.connectors.push_back(connector->saveInfo());
+
+  if (parentNode())
+    info.parentId = parentNode()->id();
 
   return info;
 }

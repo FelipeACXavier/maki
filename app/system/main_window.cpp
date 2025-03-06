@@ -4,6 +4,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QListWidgetItem>
+#include <QShortcut>
 #include <QString>
 #include <QWidget>
 #include <cfloat>
@@ -13,6 +14,7 @@
 #include "elements/node.h"
 #include "library_container.h"
 #include "logging.h"
+#include "save_handler.h"
 #include "ui_editor.h"
 #include "widgets/dynamic_control.h"
 
@@ -23,6 +25,14 @@ MainWindow::MainWindow(QWidget* parent)
   mUI->setupUi(this);
   connect(mUI->actionGenerate, &QAction::triggered, this,
           &MainWindow::onActionGenerate);
+
+  connect(mUI->actionSave, &QAction::triggered, this,
+          &MainWindow::onActionSave);
+  mUI->actionSave->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_S));
+
+  connect(mUI->actionOpen, &QAction::triggered, this,
+          &MainWindow::onActionLoad);
+  mUI->actionOpen->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_O));
 }
 
 MainWindow::~MainWindow()
@@ -45,12 +55,18 @@ VoidResult MainWindow::start()
   mUI->graphicsView->setScene(canvas);
 
   mGenerator = std::make_shared<Generator>();
+  mSaveHandler = std::make_unique<SaveHandler>();
 
   RETURN_ON_FAILURE(loadElements());
 
   LOG_INFO("Main window started");
 
   return VoidResult();
+}
+
+Canvas* MainWindow::canvas() const
+{
+  return static_cast<Canvas*>(mUI->graphicsView->scene());
 }
 
 VoidResult MainWindow::loadElements()
@@ -152,12 +168,44 @@ void MainWindow::onActionGenerate()
   if (!mGenerator)
     LOG_WARNING("No generator available");
 
-  auto canvas = static_cast<Canvas*>(mUI->graphicsView->scene());
-  auto ret = mGenerator->generate(canvas);
+  auto ret = mGenerator->generate(canvas());
   if (!ret.IsSuccess())
     LOG_ERROR("Generation failed: %s", ret.ErrorMessage().c_str());
   else
     LOG_INFO("Generation complete");
+}
+
+void MainWindow::onActionSave()
+{
+  if (!mSaveHandler)
+  {
+    LOG_WARNING("System not initialized");
+    return;
+  }
+
+  mSaveHandler->setSaveFile("savefile.lcp");
+  mSaveHandler->save(canvas()->items());
+}
+
+void MainWindow::onActionLoad()
+{
+  if (!mSaveHandler)
+  {
+    LOG_WARNING("System not initialized");
+    return;
+  }
+
+  mSaveHandler->setSaveFile("savefile.lcp");
+  auto loaded = mSaveHandler->load();
+  if (!loaded.IsSuccess())
+  {
+    LOG_ERROR(loaded.ErrorMessage());
+    return;
+  }
+
+  // Repopulate the canvas
+  auto info = loaded.Value();
+  canvas()->loadFromSave(info);
 }
 
 void MainWindow::onNodeSelected(NodeItem* node)

@@ -10,11 +10,24 @@ Connector::Connector(const ConnectorConfig& config, QGraphicsItem* parent)
     , mId(QUuid::createUuid().toString())
     , mConfig(std::make_shared<ConnectorConfig>(config))
 {
+  initialize();
+}
+
+Connector::Connector(const ConnectorConfig& config, const QString& id, QGraphicsItem* parent)
+    : QGraphicsEllipseItem(parent)
+    , mId(id)
+    , mConfig(std::make_shared<ConnectorConfig>(config))
+{
+  initialize();
+}
+
+void Connector::initialize()
+{
   setZValue(2);
   setBrush(typeToColor(mConfig->type));
   setAcceptHoverEvents(true);
 
-  const QPointF center = config.getPosition(parent->boundingRect());
+  const QPointF center = mConfig->getPosition(parentItem()->boundingRect());
   const QPointF shift = QPointF(Config::CONNECTOR_RADIUS, Config::CONNECTOR_RADIUS);
 
   setRect(QRectF(center - shift, center + shift));
@@ -50,6 +63,30 @@ Types::ConnectorType Connector::connectorType() const
 QVector<ConnectionItem*> Connector::connections() const
 {
   return mConnections;
+}
+
+QVector<ConnectionItem*> Connector::connectionsFromThis() const
+{
+  QVector<ConnectionItem*> fromThis;
+  for (const auto& conn : connections())
+  {
+    if (conn->source()->id() == id())
+      fromThis.push_back(conn);
+  }
+
+  return fromThis;
+}
+
+QVector<ConnectionItem*> Connector::connectionsToThis() const
+{
+  QVector<ConnectionItem*> toThis;
+  for (const auto& conn : connections())
+  {
+    if (conn->destination()->id() == id())
+      toThis.push_back(conn);
+  }
+
+  return toThis;
 }
 
 QPointF Connector::center() const
@@ -122,4 +159,13 @@ Qt::GlobalColor Connector::typeToColor(Types::ConnectorType type) const
     case Types::ConnectorType::UNKNOWN:
       return Qt::red;
   }
+}
+
+ConnectorSaveInfo Connector::saveInfo() const
+{
+  ConnectorSaveInfo info;
+  info.connectorId = id();
+  info.configId = mConfig->id;
+
+  return info;
 }

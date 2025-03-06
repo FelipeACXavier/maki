@@ -20,6 +20,8 @@ class MainWindow;
 }
 QT_END_NAMESPACE
 
+class SaveHandler;
+
 class MainWindow : public QMainWindow
 {
   Q_OBJECT
@@ -36,15 +38,19 @@ private slots:
 private:
   JSON mConfig;
   std::unique_ptr<Ui::MainWindow> mUI;
+  std::unique_ptr<SaveHandler> mSaveHandler;
   std::shared_ptr<ConfigurationTable> mConfigTable;
 
   std::shared_ptr<Generator> mGenerator;
 
+  Canvas* canvas() const;
   VoidResult loadElements();
   VoidResult loadElementLibrary(const JSON& config);
 
   // ================================================
   // Actions
+  void onActionLoad();
+  void onActionSave();
   void onActionGenerate();
 };
 
