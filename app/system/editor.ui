@@ -200,7 +200,13 @@
      <addaction name="actionInfo"/>
      <addaction name="actionDebug"/>
     </widget>
+    <widget class="QMenu" name="menuGenerator">
+     <property name="title">
+      <string>Generator</string>
+     </property>
+    </widget>
     <addaction name="menuLog_level"/>
+    <addaction name="menuGenerator"/>
    </widget>
    <widget class="QMenu" name="menuWindow">
     <property name="title">
@@ -266,6 +272,11 @@
   <action name="actionDebug">
    <property name="text">
     <string>Debug</string>
+   </property>
+  </action>
+  <action name="actionCpp">
+   <property name="text">
+    <string>C++</string>
    </property>
   </action>
  </widget>

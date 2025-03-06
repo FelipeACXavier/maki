@@ -14,6 +14,7 @@
 #include "elements/node.h"
 #include "library_container.h"
 #include "logging.h"
+#include "plugin_manager.h"
 #include "save_handler.h"
 #include "style_helpers.h"
 #include "ui_editor.h"
@@ -63,6 +64,7 @@ VoidResult MainWindow::start()
 
   mGenerator = std::make_shared<Generator>();
   mSaveHandler = std::make_unique<SaveHandler>(this);
+  mPluginManager = std::make_unique<PluginManager>(this);
 
   startUI();
   bind();
@@ -90,6 +92,8 @@ void MainWindow::startUI()
 
   mUI->helpMenu->setMinimumHeight(200);
   mUI->helpMenu->setMaximumHeight(800);
+
+  mPluginManager->start(mUI->menuGenerator);
 }
 
 void MainWindow::bind()
@@ -119,8 +123,7 @@ void MainWindow::bind()
   connect(mUI->actionInfo, &QAction::triggered, [] { logging::gMinLogLevel = logging::LogLevel::Info; });
   connect(mUI->actionDebug, &QAction::triggered, [] { logging::gMinLogLevel = logging::LogLevel::Debugging; });
 
-  // Internal signals
-  connect(canvas(), &Canvas::nodeSelected, this, &MainWindow::onNodeSelected);
+  connect(mUI->actionDebug, &QAction::triggered, [] { logging::gMinLogLevel = logging::LogLevel::Debugging; });
 }
 
 Canvas* MainWindow::canvas() const
@@ -214,11 +217,7 @@ void MainWindow::onActionGenerate()
   if (!mGenerator)
     LOG_WARNING("No generator available");
 
-  auto ret = mGenerator->generate(canvas());
-  if (!ret.IsSuccess())
-    LOG_ERROR("Generation failed: %s", ret.ErrorMessage().c_str());
-  else
-    LOG_INFO("Generation complete");
+  mGenerator->generate(mPluginManager->currentPlugin(), canvas());
 }
 
 void MainWindow::onActionSave()

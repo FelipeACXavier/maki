@@ -1,0 +1,23 @@
+#pragma once
+
+#include <QWidget>
+
+#include "generator_plugin.h"
+
+class PluginManager : public QWidget
+{
+  Q_OBJECT
+public:
+  PluginManager(QWidget* parent = nullptr);
+
+  void start(QMenu* menu);
+
+  GeneratorPlugin* currentPlugin() const;
+  GeneratorPlugin* pluginByLanguage(generator::Language language) const;
+
+private:
+  GeneratorPlugin* mPlugin;
+  QVector<GeneratorPlugin*> mPlugins;
+
+  void setPlugin(GeneratorPlugin* plugin);
+};

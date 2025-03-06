@@ -21,6 +21,7 @@ class MainWindow;
 QT_END_NAMESPACE
 
 class SaveHandler;
+class PluginManager;
 
 class MainWindow : public QMainWindow
 {
@@ -42,6 +43,7 @@ private:
   JSON mConfig;
   std::unique_ptr<Ui::MainWindow> mUI;
   std::unique_ptr<SaveHandler> mSaveHandler;
+  std::unique_ptr<PluginManager> mPluginManager;
   std::shared_ptr<ConfigurationTable> mConfigTable;
 
   std::shared_ptr<Generator> mGenerator;

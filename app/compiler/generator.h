@@ -4,13 +4,14 @@
 #include "system/canvas.h"
 
 class Connector;
+class GeneratorPlugin;
 
 class Generator
 {
 public:
   Generator();
 
-  VoidResult generate(Canvas* canvas);
+  void generate(GeneratorPlugin* generator, Canvas* canvas);
 
 private:
   VoidResult generateFlow(const QGraphicsItem* item, Canvas* canvas);

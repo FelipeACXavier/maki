@@ -4,15 +4,19 @@
 #include "elements/connector.h"
 #include "elements/node.h"
 #include "logging.h"
+#include "system/generator_plugin.h"
 
 Generator::Generator()
 {
 }
 
-VoidResult Generator::generate(Canvas* canvas)
+void Generator::generate(GeneratorPlugin* generator, Canvas* canvas)
 {
   if (!canvas)
-    return VoidResult::Failed("No canvas provided");
+  {
+    LOG_ERROR("No canvas provided");
+    return;
+  }
 
   LOG_INFO("======================================");
   LOG_INFO("Starting generation");
@@ -22,12 +26,10 @@ VoidResult Generator::generate(Canvas* canvas)
   //    2. Define the functions
   //    3. Write the computations
   //    4. Connect the callbacks
-  for (const auto& item : canvas->items())
-  {
-    RETURN_ON_FAILURE(generateFlow(item, canvas));
-  }
-
-  return VoidResult();
+  QString text = generator->generateCode(canvas->items());
+  LOG_INFO("Generated code:");
+  LOG_INFO(text.toStdString());
+  LOG_INFO("======================================");
 }
 
 VoidResult Generator::generateFlow(const QGraphicsItem* item, Canvas* canvas)
