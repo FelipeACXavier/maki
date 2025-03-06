@@ -1,21 +1,28 @@
 #pragma once
 
 #include <QString>
+#include <QWidget>
 
 #include "elements/save_info.h"
 #include "result.h"
 
 class QGraphicsItem;
 
-class SaveHandler
+class SaveHandler : public QWidget
 {
+  Q_OBJECT
 public:
-  SaveHandler();
+  SaveHandler(QWidget* parent = nullptr);
 
-  void setSaveFile(const QString& filename);
-  void save(const QList<QGraphicsItem*>& items) const;
-  Result<SaveInfo> load() const;
+  void save(const QList<QGraphicsItem*>& items);
+  void saveToFile(const QList<QGraphicsItem*>& items);
+  void saveFileAs(const QList<QGraphicsItem*>& items);
+
+  Result<SaveInfo> load();
 
 private:
-  QString mSaveFile;
+  QString mLastDir;
+  QString mCurrentFile;
+
+  void storeFilename(const QString& fileName);
 };

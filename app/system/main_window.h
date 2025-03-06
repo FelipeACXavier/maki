@@ -51,6 +51,7 @@ private:
   // Actions
   void onActionLoad();
   void onActionSave();
+  void onActionSaveAs();
   void onActionGenerate();
 };
 

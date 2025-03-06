@@ -30,6 +30,10 @@ MainWindow::MainWindow(QWidget* parent)
           &MainWindow::onActionSave);
   mUI->actionSave->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_S));
 
+  connect(mUI->actionSave_As, &QAction::triggered, this,
+          &MainWindow::onActionSaveAs);
+  mUI->actionSave->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S));
+
   connect(mUI->actionOpen, &QAction::triggered, this,
           &MainWindow::onActionLoad);
   mUI->actionOpen->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_O));
@@ -183,8 +187,18 @@ void MainWindow::onActionSave()
     return;
   }
 
-  mSaveHandler->setSaveFile("savefile.lcp");
   mSaveHandler->save(canvas()->items());
+}
+
+void MainWindow::onActionSaveAs()
+{
+  if (!mSaveHandler)
+  {
+    LOG_WARNING("System not initialized");
+    return;
+  }
+
+  mSaveHandler->saveFileAs(canvas()->items());
 }
 
 void MainWindow::onActionLoad()
@@ -195,7 +209,6 @@ void MainWindow::onActionLoad()
     return;
   }
 
-  mSaveHandler->setSaveFile("savefile.lcp");
   auto loaded = mSaveHandler->load();
   if (!loaded.IsSuccess())
   {

@@ -2,6 +2,7 @@
 
 #include <QBuffer>
 #include <QFile>
+#include <QFileDialog>
 #include <QFileInfo>
 #include <QGraphicsItem>
 
@@ -10,16 +11,37 @@
 #include "elements/node.h"
 #include "logging.h"
 
-SaveHandler::SaveHandler()
+SaveHandler::SaveHandler(QWidget* parent)
+    : QWidget(parent)
+    , mLastDir(QDir::homePath())
+    , mCurrentFile("")
 {
 }
 
-void SaveHandler::setSaveFile(const QString& filename)
+void SaveHandler::save(const QList<QGraphicsItem*>& items)
 {
-  mSaveFile = filename;
+  if (mCurrentFile.isEmpty())
+  {
+    saveFileAs(items);
+  }
+  else
+    saveToFile(items);
 }
 
-void SaveHandler::save(const QList<QGraphicsItem*>& items) const
+void SaveHandler::saveFileAs(const QList<QGraphicsItem*>& items)
+{
+  auto fileName = QFileDialog::getSaveFileName(this,
+                                               tr("Save File"), mLastDir,
+                                               tr("All Files (*);;Low-Code platform (*.lcp)"));
+
+  if (fileName.isEmpty())
+    return;
+
+  storeFilename(fileName);
+  saveToFile(items);
+}
+
+void SaveHandler::saveToFile(const QList<QGraphicsItem*>& items)
 {
   SaveInfo info;
   for (const auto& item : items)
@@ -38,7 +60,7 @@ void SaveHandler::save(const QList<QGraphicsItem*>& items) const
     }
   }
 
-  QFile file(mSaveFile);
+  QFile file(mCurrentFile);
   if (!file.open(QIODevice::WriteOnly))
   {
     LOG_WARNING("Could not open file for writing: %s", qPrintable(file.errorString()));
@@ -54,22 +76,37 @@ void SaveHandler::save(const QList<QGraphicsItem*>& items) const
   file.close();
 }
 
-Result<SaveInfo> SaveHandler::load() const
+Result<SaveInfo> SaveHandler::load()
 {
+  QString fileName = QFileDialog::getOpenFileName(this,
+                                                  tr("Open File"), mLastDir,
+                                                  tr("All Files (*);;Low-Code platform (*.lcp)"));
+
+  storeFilename(fileName);
+
   SaveInfo info;
 
-  QFile file(mSaveFile);
+  QFile file(fileName);
   if (!file.open(QIODevice::ReadOnly))
     return Result<SaveInfo>::Failed("Failed to open file for reading: " + file.errorString().toStdString());
 
   QDataStream in(&file);
   in.setVersion(QDataStream::Qt_6_0);
 
-  in >> info.structuralNodes;
-  in >> info.behaviouralNodes;
-  in >> info.connections;
+  in >> info;
 
   file.close();
 
   return info;
+}
+
+void SaveHandler::storeFilename(const QString& fileName)
+{
+  if (fileName.isEmpty())
+    return;
+
+  mCurrentFile = fileName;
+
+  QFileInfo fileInfo(fileName);
+  mLastDir = fileInfo.absolutePath();  // Update the last directory to the current one
 }
