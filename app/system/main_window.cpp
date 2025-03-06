@@ -18,7 +18,6 @@
 #include "save_handler.h"
 #include "style_helpers.h"
 #include "ui_editor.h"
-#include "widgets/dynamic_control.h"
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
@@ -284,6 +283,7 @@ bool MainWindow::eventFilter(QObject* watched, QEvent* event)
   if (event->type() == QEvent::KeyPress)
   {
     QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
+    LOG_INFO("Event detected: %d", keyEvent->key());
     if (keyEvent->key() == Qt::Key_Delete)
     {
       // Forward the event to the QGraphicsView

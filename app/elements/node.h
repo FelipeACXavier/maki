@@ -52,6 +52,7 @@ public:
 
   PropertiesConfig getField(const QString& key) const override;
   VoidResult setField(const QString& key, const QJsonObject& value);
+  void removeField(const QString& key);
 
   INode* parentNode() const override;
   QVector<INode*> children() const override;

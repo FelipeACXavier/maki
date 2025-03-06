@@ -189,6 +189,18 @@ PropertiesConfig NodeItem::getField(const QString& key) const
   return PropertiesConfig();
 }
 
+void NodeItem::removeField(const QString& key)
+{
+  for (auto iter = mFields.begin(); iter < mFields.end(); ++iter)
+  {
+    if (iter->id != key)
+      continue;
+
+    mFields.erase(iter);
+    return;
+  }
+}
+
 QVector<INode*> NodeItem::children() const
 {
   return mChildrenNodes;

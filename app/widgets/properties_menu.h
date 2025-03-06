@@ -6,6 +6,7 @@
 #include "result.h"
 
 class NodeItem;
+class QTableView;
 class QHBoxLayout;
 
 class PropertiesMenu : public QFrame
@@ -30,4 +31,6 @@ private:
   VoidResult loadControlAddField(const ControlsConfig& control, NodeItem* node, QWidget* parent, QHBoxLayout* controlLayout);
 
   void addDynamicWidget(QWidget* control, QWidget* parent);
+
+  void showContextMenu(QTableView* tableView, NodeItem* node, const QPoint& pos);
 };
