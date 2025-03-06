@@ -53,7 +53,7 @@ VoidResult SaveHandler::saveToFile(const QList<QGraphicsItem*>& items)
 
       for (const auto& connector : node->connectors())
         for (const auto& conn : connector->connectionsFromThis())
-          info.connections.push_back(conn->saveInfo());
+          info.connections.push_back(static_cast<ConnectionItem*>(conn)->saveInfo());
     }
   }
 

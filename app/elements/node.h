@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "config.h"
+#include "inode.h"
 #include "node_base.h"
 #include "save_info.h"
 #include "types.h"
@@ -15,19 +16,18 @@ class Connector;
 class ConnectionItem;
 class QGraphicsSceneMouseEvent;
 
-class NodeItem : public NodeBase
+class NodeItem : public INode, public NodeBase
 {
 public:
   enum
   {
-    Type = UserType + Types::NODE
+    Type = Types::NODE
   };
 
   NodeItem(const QString& id, const NodeSaveInfo& info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent = nullptr);
 
   virtual ~NodeItem();
 
-  // QString id() const;
   int type() const override;
 
   VoidResult start() override;
@@ -41,20 +41,20 @@ public:
   QString behaviour() const;
   QVector<ControlsConfig> controls() const;
   QVector<PropertiesConfig> fields() const;
-  QMap<QString, QVariant> properties() const;
-  QVector<std::shared_ptr<Connector>> connectors() const;
+  QMap<QString, QVariant> properties() const override;
+  QVector<std::shared_ptr<IConnector>> connectors() const override;
   QVector<PropertiesConfig> configurationProperties() const;
 
-  Types::LibraryTypes function() const;
+  Types::LibraryTypes function() const override;
 
-  Result<QVariant> getProperty(const QString& key) const;
+  QVariant getProperty(const QString& key) const override;
   void setProperty(const QString& key, QVariant value);
 
   Result<PropertiesConfig> getField(const QString& key) const;
   VoidResult setField(const QString& key, const QJsonObject& value);
 
-  NodeItem* parentNode() const;
-  QVector<NodeItem*> children() const;
+  INode* parentNode() const override;
+  QVector<INode*> children() const override;
 
   void addChild(NodeItem* child);
   void setParent(NodeItem* parent);
@@ -84,10 +84,10 @@ protected:
 private:
   QVector<PropertiesConfig> mFields;
   QMap<QString, QVariant> mProperties;
-  QVector<std::shared_ptr<Connector>> mConnectors;
+  QVector<std::shared_ptr<IConnector>> mConnectors;
 
-  NodeItem* mParentNode;
-  QVector<NodeItem*> mChildrenNodes;
+  INode* mParentNode;
+  QVector<INode*> mChildrenNodes;
 
   bool mIsResizing{false};
   QSizeF mSize;

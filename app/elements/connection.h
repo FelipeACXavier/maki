@@ -4,30 +4,31 @@
 #include <QGraphicsPathItem>
 
 #include "elements/node.h"
+#include "inode.h"
 #include "types.h"
 
 class Connector;
 struct ConnectionSaveInfo;
 
-class ConnectionItem : public QGraphicsPathItem
+class ConnectionItem : public QGraphicsPathItem, public IConnection
 {
 public:
   enum
   {
-    Type = UserType + Types::CONNECTION
+    Type = Types::CONNECTION
   };
 
   ConnectionItem();
   virtual ~ConnectionItem();
 
-  QString id() const;
+  QString id() const override;
 
   void setStart(const QString& id, const QPointF& point, const QPointF& controlShift);
   void setEnd(const QString& id, const QPointF& point, const QPointF& controlShift);
   void done(Connector* source, Connector* destination);
 
-  Connector* source() const;
-  Connector* destination() const;
+  IConnector* source() const override;
+  IConnector* destination() const override;
 
   void move(const QString& id, QPointF pos);
 

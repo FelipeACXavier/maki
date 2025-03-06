@@ -19,7 +19,7 @@ class DraggableItem : public NodeBase
 public:
   enum
   {
-    Type = UserType + Types::DRAGGABLE
+    Type = Types::DRAGGABLE
   };
 
   DraggableItem(const QString& id, std::shared_ptr<NodeConfig> config, QGraphicsItem* parent = nullptr);

@@ -34,11 +34,6 @@ QString NodeBase::nodeId() const
   return mNodeId;
 }
 
-QString NodeBase::nodeType() const
-{
-  return config()->type;
-}
-
 VoidResult NodeBase::start()
 {
   return VoidResult();

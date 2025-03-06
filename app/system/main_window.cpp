@@ -124,6 +124,9 @@ void MainWindow::bind()
   connect(mUI->actionDebug, &QAction::triggered, [] { logging::gMinLogLevel = logging::LogLevel::Debugging; });
 
   connect(mUI->actionDebug, &QAction::triggered, [] { logging::gMinLogLevel = logging::LogLevel::Debugging; });
+
+  // Internal actions =============================================================
+  connect(canvas(), &Canvas::nodeSelected, this, &MainWindow::onNodeSelected);
 }
 
 Canvas* MainWindow::canvas() const
@@ -140,8 +143,7 @@ VoidResult MainWindow::loadElements()
 
   auto libraries = mConfig["libraries"];
   if (!libraries.isArray())
-    return VoidResult::Failed(
-        "Libraries must be in a list in the format \"libraries\": []");
+    return VoidResult::Failed("Libraries must be in a list in the format \"libraries\": []");
 
   for (const auto& library : libraries.toArray())
   {
@@ -164,7 +166,6 @@ VoidResult MainWindow::loadElements()
   return VoidResult();
 }
 
-// TODO(felaze): Get this from the configuration file and convert to function
 VoidResult MainWindow::loadElementLibrary(const JSON& config)
 {
   if (!config.contains("name"))

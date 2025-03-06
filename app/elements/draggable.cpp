@@ -20,7 +20,7 @@ DraggableItem::DraggableItem(const QString& nodeId, std::shared_ptr<NodeConfig> 
     setPixmap(icon.scaled(scaledRect().size().toSize() * config()->body.iconScale, Qt::KeepAspectRatio, Qt::SmoothTransformation));
   }
   else
-    setLabel(nodeType(), config()->body.textColor);
+    setLabel(config()->type, config()->body.textColor);
 }
 
 DraggableItem::~DraggableItem()

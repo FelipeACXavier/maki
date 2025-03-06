@@ -60,14 +60,14 @@ Types::ConnectorType Connector::connectorType() const
   return mConfig->type;
 }
 
-QVector<ConnectionItem*> Connector::connections() const
+QVector<IConnection*> Connector::connections() const
 {
   return mConnections;
 }
 
-QVector<ConnectionItem*> Connector::connectionsFromThis() const
+QVector<IConnection*> Connector::connectionsFromThis() const
 {
-  QVector<ConnectionItem*> fromThis;
+  QVector<IConnection*> fromThis;
   for (const auto& conn : connections())
   {
     if (conn->source()->id() == id())
@@ -77,9 +77,9 @@ QVector<ConnectionItem*> Connector::connectionsFromThis() const
   return fromThis;
 }
 
-QVector<ConnectionItem*> Connector::connectionsToThis() const
+QVector<IConnection*> Connector::connectionsToThis() const
 {
-  QVector<ConnectionItem*> toThis;
+  QVector<IConnection*> toThis;
   for (const auto& conn : connections())
   {
     if (conn->destination()->id() == id())
@@ -106,8 +106,8 @@ void Connector::updateConnections()
 
   setRect(QRectF(centerPoint - shift, centerPoint + shift));
 
-  for (auto& conn : mConnections)
-    conn->move(id(), center());
+  for (auto& conn : connections())
+    dynamic_cast<ConnectionItem*>(conn)->move(id(), center());
 }
 
 void Connector::addConnection(ConnectionItem* connection)
@@ -118,7 +118,7 @@ void Connector::addConnection(ConnectionItem* connection)
 
 void Connector::removeConnection(ConnectionItem* connection)
 {
-  mConnections.removeIf([connection](ConnectionItem* item) {
+  mConnections.removeIf([connection](IConnection* item) {
     return item->id() == connection->id();
   });
 }

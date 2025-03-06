@@ -60,12 +60,12 @@ void ConnectionItem::done(Connector* source, Connector* destination)
   move(mDstId, mDstPoint);
 }
 
-Connector* ConnectionItem::source() const
+IConnector* ConnectionItem::source() const
 {
   return mSource;
 }
 
-Connector* ConnectionItem::destination() const
+IConnector* ConnectionItem::destination() const
 {
   return mDestination;
 }

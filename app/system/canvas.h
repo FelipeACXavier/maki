@@ -42,9 +42,6 @@ protected:
 signals:
   void nodeSelected(NodeItem* node);
 
-private slots:
-  void onNodeSelected(NodeItem* node);
-
 private:
   // TODO(felaze): Move connection behaviour to a separate class
   Connector* mConnector = nullptr;

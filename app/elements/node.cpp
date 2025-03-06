@@ -27,7 +27,7 @@ NodeItem::NodeItem(const QString& id, const NodeSaveInfo& info, const QPointF& i
   if (!info.pixmap.isNull())
     setPixmap(info.pixmap);
   else
-    setLabel(nodeType(), config()->body.textColor);
+    setLabel(config()->type, config()->body.textColor);
 
   for (const auto& connector : config()->connectors)
   {
@@ -79,7 +79,7 @@ QString NodeItem::nodeType() const
 {
   // This should also contain the library to make it unique
   auto ret = getProperty("type");
-  return ret ? ret.Value().toString() : config()->type;
+  return ret.isValid() ? ret.toString() : config()->type;
 }
 
 VoidResult NodeItem::start()
@@ -98,7 +98,7 @@ QRectF NodeItem::boundingRect() const
 void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget)
 {
   auto color = getProperty("color");
-  auto background = color ? QColor::fromString(color.Value().toString()) : config()->body.backgroundColor;
+  auto background = color.isValid() ? QColor::fromString(color.toString()) : config()->body.backgroundColor;
 
   NodeBase::paintNode(boundingRect(),
                       background,
@@ -111,7 +111,7 @@ QPainterPath NodeItem::shape() const
   return NodeBase::nodeShape(boundingRect());
 }
 
-QVector<std::shared_ptr<Connector>> NodeItem::connectors() const
+QVector<std::shared_ptr<IConnector>> NodeItem::connectors() const
 {
   return mConnectors;
 }
@@ -136,10 +136,10 @@ QVector<ControlsConfig> NodeItem::controls() const
   return config()->controls;
 }
 
-Result<QVariant> NodeItem::getProperty(const QString& key) const
+QVariant NodeItem::getProperty(const QString& key) const
 {
   if (mProperties.find(key) == mProperties.end())
-    return Result<QVariant>::Failed("No property " + key.toStdString());
+    return QVariant();
 
   return mProperties.value(key);
 }
@@ -189,7 +189,7 @@ Result<PropertiesConfig> NodeItem::getField(const QString& key) const
   return Result<PropertiesConfig>::Failed("Field does not exist");
 }
 
-QVector<NodeItem*> NodeItem::children() const
+QVector<INode*> NodeItem::children() const
 {
   return mChildrenNodes;
 }
@@ -199,7 +199,7 @@ void NodeItem::addChild(NodeItem* child)
   mChildrenNodes.push_back(child);
 }
 
-NodeItem* NodeItem::parentNode() const
+INode* NodeItem::parentNode() const
 {
   return mParentNode;
 }
@@ -289,9 +289,11 @@ QVariant NodeItem::itemChange(GraphicsItemChange change, const QVariant& value)
 
     if (parentNode() != nullptr)
     {
+      auto parent = dynamic_cast<NodeItem*>(parentNode());
+
       // Ensure child stays inside parent's bounding box
       // Clamp position inside parent
-      QRectF parentRect = parentNode()->mapRectToScene(parentNode()->boundingRect());
+      QRectF parentRect = parent->mapRectToScene(parent->boundingRect());
       QRectF childRect = boundingRect();
 
       newPos.setX(qBound(parentRect.left(), newPos.x(), parentRect.right() - childRect.width()));
@@ -299,13 +301,15 @@ QVariant NodeItem::itemChange(GraphicsItemChange change, const QVariant& value)
     }
 
     // Move all children relatively
-    for (NodeItem* child : mChildrenNodes)
+    for (INode* child : children())
     {
       if (!child)
         continue;
 
-      QPointF relativeOffset = child->pos() - pos();  // Maintain offset
-      child->updatePosition(newPos + relativeOffset);
+      auto nodeChild = dynamic_cast<NodeItem*>(child);
+
+      QPointF relativeOffset = nodeChild->pos() - pos();  // Maintain offset
+      nodeChild->updatePosition(newPos + relativeOffset);
     }
 
     if (parentNode())
@@ -343,8 +347,8 @@ void NodeItem::updatePosition(const QPointF& position)
 {
   setPos(position);
 
-  for (auto& connector : mConnectors)
-    connector->updateConnections();
+  for (auto& connector : connectors())
+    std::dynamic_pointer_cast<Connector>(connector)->updateConnections();
 
   updateLabelPosition();
 }
@@ -354,10 +358,10 @@ void NodeItem::onDelete()
 {
   // If the node has a parent, inform the parent about the deletion
   if (parentNode())
-    parentNode()->childRemoved(this);
+    dynamic_cast<NodeItem*>(parentNode())->childRemoved(this);
 
-  for (NodeItem* child : children())
-    child->onDelete();
+  for (INode* child : children())
+    dynamic_cast<NodeItem*>(child)->onDelete();
 
   // Remove the item from the scene
   if (nodeDeleted)
@@ -384,10 +388,10 @@ NodeSaveInfo NodeItem::saveInfo() const
   info.size = mSize;
 
   for (const auto& connector : connectors())
-    info.connectors.push_back(connector->saveInfo());
+    info.connectors.push_back(std::dynamic_pointer_cast<Connector>(connector)->saveInfo());
 
   if (parentNode())
-    info.parentId = parentNode()->id();
+    info.parentId = dynamic_cast<NodeItem*>(parentNode())->id();
 
   return info;
 }

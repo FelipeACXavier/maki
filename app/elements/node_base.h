@@ -11,15 +11,13 @@ class NodeBase : public QGraphicsItem
 public:
   enum
   {
-    Type = UserType + Types::BASE_NODE
+    Type = Types::BASE_NODE
   };
 
   NodeBase(const QString& id, const QString& nodeId, std::shared_ptr<NodeConfig> config, QGraphicsItem* parent);
 
   QString id() const;
   virtual int type() const override;
-
-  virtual QString nodeType() const;
 
   virtual QString nodeId() const;
 

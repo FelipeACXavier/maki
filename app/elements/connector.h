@@ -3,33 +3,34 @@
 #include <QGraphicsEllipseItem>
 
 #include "connection.h"
+#include "inode.h"
 #include "save_info.h"
 
 class QGraphicsSceneHoverEvent;
 
-class Connector : public QGraphicsEllipseItem
+class Connector : public QGraphicsEllipseItem, public IConnector
 {
 public:
   enum
   {
-    Type = UserType + Types::CONNECTOR
+    Type = Types::CONNECTOR
   };
 
   Connector(const ConnectorConfig& config, QGraphicsItem* parent);
   Connector(const ConnectorConfig& config, const QString& id, QGraphicsItem* parent);
   virtual ~Connector();
 
-  QString id() const;
+  QString id() const override;
   int type() const override;
 
   QPointF center() const;
   QPair<QPointF, QPointF> shift() const;
 
   QString connectorId() const;
-  Types::ConnectorType connectorType() const;
-  QVector<ConnectionItem*> connections() const;
-  QVector<ConnectionItem*> connectionsFromThis() const;
-  QVector<ConnectionItem*> connectionsToThis() const;
+  Types::ConnectorType connectorType() const override;
+  QVector<IConnection*> connections() const override;
+  QVector<IConnection*> connectionsFromThis() const override;
+  QVector<IConnection*> connectionsToThis() const override;
 
   void updateConnections();
   void addConnection(ConnectionItem* connection);
@@ -47,7 +48,7 @@ private:
   const QString mId;
 
   std::shared_ptr<ConnectorConfig> mConfig;
-  QVector<ConnectionItem*> mConnections;
+  QVector<IConnection*> mConnections;
 
   Qt::GlobalColor typeToColor(Types::ConnectorType type) const;
   void initialize();

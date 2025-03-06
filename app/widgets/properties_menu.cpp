@@ -100,10 +100,10 @@ VoidResult PropertiesMenu::loadPropertyInt(const PropertiesConfig& property, Nod
   QIntValidator* validator = new QIntValidator(INT32_MIN, INT32_MIN, widget);
 
   auto result = node->getProperty(property.id);
-  if (!result.IsSuccess())
-    return VoidResult::Failed("Failed to get default value: " + result.ErrorMessage());
+  if (!result.isValid())
+    return VoidResult::Failed("Failed to get default value");
 
-  widget->setText(result.Value().toString());
+  widget->setText(result.toString());
   widget->setValidator(validator);
 
   connect(widget, &QLineEdit::textChanged, this, [=](const QString& text) {
@@ -125,10 +125,10 @@ VoidResult PropertiesMenu::loadPropertyReal(const PropertiesConfig& property, No
   QDoubleValidator* validator = new QDoubleValidator(DBL_MIN, DBL_MAX, 6, widget);
 
   auto result = node->getProperty(property.id);
-  if (!result.IsSuccess())
-    return VoidResult::Failed("Failed to get default value: " + result.ErrorMessage());
+  if (!result.isValid())
+    return VoidResult::Failed("Failed to get default value");
 
-  widget->setText(result.Value().toString());
+  widget->setText(result.toString());
   widget->setValidator(validator);
 
   connect(widget, &QLineEdit::textChanged, this, [=](const QString& text) {
@@ -152,10 +152,10 @@ VoidResult PropertiesMenu::loadPropertyColor(const PropertiesConfig& property, N
 
   QPushButton* widget = new QPushButton(this);
   auto result = node->getProperty(property.id);
-  if (!result.IsSuccess())
-    return VoidResult::Failed("Failed to get default value: " + result.ErrorMessage());
+  if (!result.isValid())
+    return VoidResult::Failed("Failed to get default value");
 
-  QColor selectedColor = QColor::fromString(result.Value().toString());
+  QColor selectedColor = QColor::fromString(result.toString());
   QPalette palette;
   palette.setColor(QPalette::Window, selectedColor);
 
@@ -173,7 +173,7 @@ VoidResult PropertiesMenu::loadPropertyColor(const PropertiesConfig& property, N
     node->setProperty(property.id, color.name());
   });
 
-  widget->setText(result.Value().toString());
+  widget->setText(result.toString());
   widget->setFont(Fonts::Property);
 
   holderLayout->addWidget(colorPreviewLabel);
@@ -193,10 +193,10 @@ VoidResult PropertiesMenu::loadPropertySelect(const PropertiesConfig& property, 
     widget->addItem(option.id);
 
   auto result = node->getProperty(property.id);
-  if (!result.IsSuccess())
-    return VoidResult::Failed("Failed to get default value: " + result.ErrorMessage());
+  if (!result.isValid())
+    return VoidResult::Failed("Failed to get default value");
 
-  widget->setCurrentText(result.Value().toString());
+  widget->setCurrentText(result.toString());
   connect(widget, &QComboBox::currentTextChanged, this, [=](const QString& text) {
     node->setProperty(property.id, text);
   });
@@ -211,10 +211,10 @@ VoidResult PropertiesMenu::loadPropertyString(const PropertiesConfig& property, 
 {
   QLineEdit* widget = new QLineEdit(this);
   auto result = node->getProperty(property.id);
-  if (!result.IsSuccess())
-    return VoidResult::Failed("Failed to get default value: " + result.ErrorMessage());
+  if (!result.isValid())
+    return VoidResult::Failed("Failed to get default value");
 
-  widget->setText(result.Value().toString());
+  widget->setText(result.toString());
   connect(widget, &QLineEdit::textChanged, this, [=](const QString& text) {
     node->setProperty(property.id, text);
   });
@@ -228,10 +228,10 @@ VoidResult PropertiesMenu::loadPropertyBoolean(const PropertiesConfig& property,
 {
   QCheckBox* widget = new QCheckBox(this);
   auto result = node->getProperty(property.id);
-  if (!result.IsSuccess())
-    return VoidResult::Failed("Failed to get default value: " + result.ErrorMessage());
+  if (!result.isValid())
+    return VoidResult::Failed("Failed to get default value");
 
-  widget->setChecked(result.Value().toBool());
+  widget->setChecked(result.toBool());
   connect(widget, &QCheckBox::checkStateChanged, this, [=](Qt::CheckState state) {
     node->setProperty(property.id, state);
   });

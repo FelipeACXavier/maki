@@ -56,6 +56,9 @@ void PluginManager::start(QMenu* menu)
 
     mPlugins.append(codeGen);
   }
+
+  // Set default plugin
+  setPlugin(mPlugins.front());
 }
 
 void PluginManager::setPlugin(GeneratorPlugin* plugin)

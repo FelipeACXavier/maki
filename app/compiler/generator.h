@@ -12,9 +12,4 @@ public:
   Generator();
 
   void generate(GeneratorPlugin* generator, Canvas* canvas);
-
-private:
-  VoidResult generateFlow(const QGraphicsItem* item, Canvas* canvas);
-  VoidResult generateConnector(const std::shared_ptr<Connector> item, Canvas* canvas);
-  VoidResult generateNode(const QGraphicsItem* item, Canvas* canvas);
 };

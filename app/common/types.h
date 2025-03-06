@@ -6,11 +6,11 @@
 
 namespace Types
 {
-static const int NODE = 1;
-static const int CONNECTOR = 2;
-static const int CONNECTION = 3;
-static const int DRAGGABLE = 4;
-static const int BASE_NODE = 5;
+static const int NODE = QGraphicsItem::UserType + 1;
+static const int CONNECTOR = QGraphicsItem::UserType + 2;
+static const int CONNECTION = QGraphicsItem::UserType + 3;
+static const int DRAGGABLE = QGraphicsItem::UserType + 4;
+static const int BASE_NODE = QGraphicsItem::UserType + 5;
 
 enum class Shape
 {

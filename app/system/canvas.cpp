@@ -208,11 +208,6 @@ void Canvas::keyPressEvent(QKeyEvent* event)
   }
 }
 
-void Canvas::onNodeSelected(NodeItem* item)
-{
-  emit nodeSelected(item);
-}
-
 void Canvas::copySelectedItems()
 {
   copiedNodes.clear();
@@ -331,7 +326,7 @@ bool Canvas::createNode(const NodeSaveInfo& info, const QPointF& position, NodeI
 
   NodeItem* node = new NodeItem(id, info, position, config);
 
-  node->nodeSeletected = [this](NodeItem* item) { onNodeSelected(item); };
+  node->nodeSeletected = [this](NodeItem* item) { emit nodeSelected(item); };
   node->nodeCopied = [this](NodeItem* /* item */) { copySelectedItems(); };
   node->nodeDeleted = [this](NodeItem* item) { removeItem(item); };
 
