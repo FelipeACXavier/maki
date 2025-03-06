@@ -14,15 +14,23 @@ class SaveHandler : public QWidget
 public:
   SaveHandler(QWidget* parent = nullptr);
 
-  void save(const QList<QGraphicsItem*>& items);
-  void saveToFile(const QList<QGraphicsItem*>& items);
-  void saveFileAs(const QList<QGraphicsItem*>& items);
+  VoidResult save(const QList<QGraphicsItem*>& items);
+  VoidResult saveToFile(const QList<QGraphicsItem*>& items);
+  VoidResult saveFileAs(const QList<QGraphicsItem*>& items);
 
   Result<SaveInfo> load();
+
+  enum class Function
+  {
+    SAVE,
+    LOAD
+  };
 
 private:
   QString mLastDir;
   QString mCurrentFile;
+
+  QString openAtCenter(Function save);
 
   void storeFilename(const QString& fileName);
 };

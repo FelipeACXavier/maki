@@ -32,6 +32,9 @@ public:
 
   VoidResult start();
 
+protected:
+  bool eventFilter(QObject* watched, QEvent* event) override;
+
 private slots:
   void onNodeSelected(NodeItem* node);
 
@@ -47,12 +50,16 @@ private:
   VoidResult loadElements();
   VoidResult loadElementLibrary(const JSON& config);
 
+  void bind();
+  void startUI();
+
   // ================================================
   // Actions
   void onActionLoad();
   void onActionSave();
   void onActionSaveAs();
   void onActionGenerate();
+  void onActionLogLevelChanged();
 };
 
 #endif  // MAINWINDOW_H

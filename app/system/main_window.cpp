@@ -24,20 +24,6 @@ MainWindow::MainWindow(QWidget* parent)
     , mUI(new Ui::MainWindow)
 {
   mUI->setupUi(this);
-  connect(mUI->actionGenerate, &QAction::triggered, this,
-          &MainWindow::onActionGenerate);
-
-  connect(mUI->actionSave, &QAction::triggered, this,
-          &MainWindow::onActionSave);
-  mUI->actionSave->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_S));
-
-  connect(mUI->actionSave_As, &QAction::triggered, this,
-          &MainWindow::onActionSaveAs);
-  mUI->actionSave->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S));
-
-  connect(mUI->actionOpen, &QAction::triggered, this,
-          &MainWindow::onActionLoad);
-  mUI->actionOpen->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_O));
 }
 
 MainWindow::~MainWindow()
@@ -66,8 +52,6 @@ VoidResult MainWindow::start()
     }
   };
 
-  LOG_INFO("Starting the main window");
-
   auto configRead = JSON::fromFile(":/assets/config.json");
   if (!configRead.IsSuccess())
     return VoidResult::Failed(configRead);
@@ -75,36 +59,25 @@ VoidResult MainWindow::start()
   mConfig = configRead.Value();
   mConfigTable = std::make_unique<ConfigurationTable>();
 
-  Canvas* canvas = new Canvas(mConfigTable, mUI->graphicsView);
-  connect(canvas, &Canvas::nodeSelected, this, &MainWindow::onNodeSelected);
-  mUI->graphicsView->setScene(canvas);
+  LOG_DEBUG("Starting the main window");
 
   mGenerator = std::make_shared<Generator>();
-  mSaveHandler = std::make_unique<SaveHandler>();
+  mSaveHandler = std::make_unique<SaveHandler>(this);
+
+  startUI();
+  bind();
 
   RETURN_ON_FAILURE(loadElements());
 
-  LOG_INFO("Main window started");
+  LOG_DEBUG("Main window started");
 
   return VoidResult();
 }
 
-Canvas* MainWindow::canvas() const
+void MainWindow::startUI()
 {
-  return static_cast<Canvas*>(mUI->graphicsView->scene());
-}
-
-VoidResult MainWindow::loadElements()
-{
-  LOG_INFO("Loading the elements");
-
-  if (!mConfig.contains("libraries"))
-    return VoidResult::Failed("Not a single library was specified");
-
-  auto libraries = mConfig["libraries"];
-  if (!libraries.isArray())
-    return VoidResult::Failed(
-        "Libraries must be in a list in the format \"libraries\": []");
+  Canvas* canvas = new Canvas(mConfigTable, mUI->graphicsView);
+  mUI->graphicsView->setScene(canvas);
 
   mUI->splitter->widget(0)->setMinimumWidth(200);
   mUI->splitter->widget(0)->setMaximumWidth(400);
@@ -117,7 +90,55 @@ VoidResult MainWindow::loadElements()
 
   mUI->helpMenu->setMinimumHeight(200);
   mUI->helpMenu->setMaximumHeight(800);
-  // mUI->helpMenu->setFixedHeight(400);
+}
+
+void MainWindow::bind()
+{
+  LOG_DEBUG("Binding UI callbacks");
+
+  // File actions =============================================================
+  connect(mUI->actionSave, &QAction::triggered, this,
+          &MainWindow::onActionSave);
+  mUI->actionSave->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_S));
+
+  connect(mUI->actionSave_As, &QAction::triggered, this,
+          &MainWindow::onActionSaveAs);
+  mUI->actionSave_As->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S));
+
+  connect(mUI->actionOpen, &QAction::triggered, this,
+          &MainWindow::onActionLoad);
+  mUI->actionOpen->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_O));
+
+  // Diagram actions =============================================================
+  connect(mUI->actionGenerate, &QAction::triggered, this,
+          &MainWindow::onActionGenerate);
+
+  // Setting actions =============================================================
+  connect(mUI->actionError, &QAction::triggered, [] { logging::gMinLogLevel = logging::LogLevel::Error; });
+  connect(mUI->actionWarning, &QAction::triggered, [] { logging::gMinLogLevel = logging::LogLevel::Warning; });
+  connect(mUI->actionInfo, &QAction::triggered, [] { logging::gMinLogLevel = logging::LogLevel::Info; });
+  connect(mUI->actionDebug, &QAction::triggered, [] { logging::gMinLogLevel = logging::LogLevel::Debugging; });
+
+  // Internal signals
+  connect(canvas(), &Canvas::nodeSelected, this, &MainWindow::onNodeSelected);
+}
+
+Canvas* MainWindow::canvas() const
+{
+  return static_cast<Canvas*>(mUI->graphicsView->scene());
+}
+
+VoidResult MainWindow::loadElements()
+{
+  LOG_DEBUG("Loading the elements");
+
+  if (!mConfig.contains("libraries"))
+    return VoidResult::Failed("Not a single library was specified");
+
+  auto libraries = mConfig["libraries"];
+  if (!libraries.isArray())
+    return VoidResult::Failed(
+        "Libraries must be in a list in the format \"libraries\": []");
 
   for (const auto& library : libraries.toArray())
   {
@@ -255,4 +276,23 @@ void MainWindow::onNodeSelected(NodeItem* node)
   mUI->infoText->setFont(Fonts::Property);
 
   LOG_WARN_ON_FAILURE(mUI->propertiesFrame->onNodeSelected(node));
+}
+
+bool MainWindow::eventFilter(QObject* watched, QEvent* event)
+{
+  if (event->type() == QEvent::KeyPress)
+  {
+    QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
+    if (keyEvent->key() == Qt::Key_Delete)
+    {
+      // Forward the event to the QGraphicsView
+      if (mUI->graphicsView->hasFocus())
+      {
+        QCoreApplication::sendEvent(mUI->graphicsView, keyEvent);
+        return true;
+      }
+    }
+  }
+
+  return QMainWindow::eventFilter(watched, event);
 }

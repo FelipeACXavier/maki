@@ -191,6 +191,16 @@
     <property name="title">
      <string>Settings</string>
     </property>
+    <widget class="QMenu" name="menuLog_level">
+     <property name="title">
+      <string>Log level</string>
+     </property>
+     <addaction name="actionError"/>
+     <addaction name="actionWarning"/>
+     <addaction name="actionInfo"/>
+     <addaction name="actionDebug"/>
+    </widget>
+    <addaction name="menuLog_level"/>
    </widget>
    <widget class="QMenu" name="menuWindow">
     <property name="title">
@@ -206,8 +216,8 @@
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
    <addaction name="menuView"/>
-   <addaction name="menuSettings"/>
    <addaction name="menuWindow"/>
+   <addaction name="menuSettings"/>
    <addaction name="menuHelp"/>
   </widget>
   <action name="actionNew">
@@ -236,6 +246,26 @@
   <action name="actionSave_As">
    <property name="text">
     <string>Save As</string>
+   </property>
+  </action>
+  <action name="actionError">
+   <property name="text">
+    <string>Error</string>
+   </property>
+  </action>
+  <action name="actionWarning">
+   <property name="text">
+    <string>Warning</string>
+   </property>
+  </action>
+  <action name="actionInfo">
+   <property name="text">
+    <string>Info</string>
+   </property>
+  </action>
+  <action name="actionDebug">
+   <property name="text">
+    <string>Debug</string>
    </property>
   </action>
  </widget>

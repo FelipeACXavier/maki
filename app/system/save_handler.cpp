@@ -10,6 +10,7 @@
 #include "elements/connector.h"
 #include "elements/node.h"
 #include "logging.h"
+#include "main_window.h"
 
 SaveHandler::SaveHandler(QWidget* parent)
     : QWidget(parent)
@@ -18,30 +19,26 @@ SaveHandler::SaveHandler(QWidget* parent)
 {
 }
 
-void SaveHandler::save(const QList<QGraphicsItem*>& items)
+VoidResult SaveHandler::save(const QList<QGraphicsItem*>& items)
 {
-  if (mCurrentFile.isEmpty())
-  {
-    saveFileAs(items);
-  }
-  else
-    saveToFile(items);
+  if (mCurrentFile.isEmpty() || mCurrentFile.isNull())
+    return saveFileAs(items);
+
+  return saveToFile(items);
 }
 
-void SaveHandler::saveFileAs(const QList<QGraphicsItem*>& items)
+VoidResult SaveHandler::saveFileAs(const QList<QGraphicsItem*>& items)
 {
-  auto fileName = QFileDialog::getSaveFileName(this,
-                                               tr("Save File"), mLastDir,
-                                               tr("All Files (*);;Low-Code platform (*.lcp)"));
+  QString fileName = openAtCenter(Function::SAVE);
 
   if (fileName.isEmpty())
-    return;
+    return VoidResult::Failed("File not set");
 
   storeFilename(fileName);
-  saveToFile(items);
+  return saveToFile(items);
 }
 
-void SaveHandler::saveToFile(const QList<QGraphicsItem*>& items)
+VoidResult SaveHandler::saveToFile(const QList<QGraphicsItem*>& items)
 {
   SaveInfo info;
   for (const auto& item : items)
@@ -62,10 +59,7 @@ void SaveHandler::saveToFile(const QList<QGraphicsItem*>& items)
 
   QFile file(mCurrentFile);
   if (!file.open(QIODevice::WriteOnly))
-  {
-    LOG_WARNING("Could not open file for writing: %s", qPrintable(file.errorString()));
-    return;
-  }
+    return VoidResult::Failed("Could not open file for writing: " + file.errorString().toStdString());
 
   QDataStream out(&file);
   out.setVersion(QDataStream::Qt_6_0);
@@ -74,13 +68,16 @@ void SaveHandler::saveToFile(const QList<QGraphicsItem*>& items)
 
   file.flush();
   file.close();
+
+  return VoidResult();
 }
 
 Result<SaveInfo> SaveHandler::load()
 {
-  QString fileName = QFileDialog::getOpenFileName(this,
-                                                  tr("Open File"), mLastDir,
-                                                  tr("All Files (*);;Low-Code platform (*.lcp)"));
+  QString fileName = openAtCenter(Function::LOAD);
+
+  if (fileName.isEmpty())
+    return Result<SaveInfo>::Failed("Not loading diagram");
 
   storeFilename(fileName);
 
@@ -109,4 +106,23 @@ void SaveHandler::storeFilename(const QString& fileName)
 
   QFileInfo fileInfo(fileName);
   mLastDir = fileInfo.absolutePath();  // Update the last directory to the current one
+}
+
+QString SaveHandler::openAtCenter(Function function)
+{
+  QFileDialog dialog(this);
+
+  QRect parentGeometry = dynamic_cast<QMainWindow*>(parent())->geometry();
+
+  // Calculate the center of the parent (main window)
+  int x = parentGeometry.left() + (parentGeometry.width() - dialog.width()) / 2;
+  int y = parentGeometry.top() + (parentGeometry.height() - dialog.height()) / 2;
+
+  // Set the position of the dialog to the center of the main window
+  dialog.move(x, y);
+
+  if (function == Function::SAVE)
+    return dialog.getSaveFileName(this, tr("Save diagram"), mLastDir, tr("All Files (*);;Low-Code platform (*.lcp)"));
+
+  return dialog.getOpenFileName(this, tr("Open diagram"), mLastDir, tr("All Files (*);;Low-Code platform (*.lcp)"));
 }
