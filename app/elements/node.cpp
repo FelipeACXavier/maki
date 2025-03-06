@@ -393,5 +393,8 @@ NodeSaveInfo NodeItem::saveInfo() const
   if (parentNode())
     info.parentId = dynamic_cast<NodeItem*>(parentNode())->id();
 
+  for (const auto& child : children())
+    info.children.push_back(child);
+
   return info;
 }

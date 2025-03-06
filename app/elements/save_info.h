@@ -8,6 +8,7 @@
 #include <QVector>
 
 #include "config.h"
+#include "inode.h"
 
 struct ConnectorSaveInfo
 {
@@ -32,6 +33,7 @@ struct NodeSaveInfo
   QVector<ConnectorSaveInfo> connectors;
 
   QString parentId = "";
+  QVector<INode*> children = {};
 
   NodeSaveInfo() = default;
 

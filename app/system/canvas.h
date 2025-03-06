@@ -52,7 +52,7 @@ private:
   std::shared_ptr<ConfigurationTable> mConfigTable;
 
   QGraphicsView* parentView() const;
-  bool createNode(const NodeSaveInfo& info, const QPointF& position, NodeItem* parent);
+  NodeItem* createNode(const NodeSaveInfo& info, const QPointF& position, NodeItem* parent);
 
   NodeItem* findNodeWithId(const QString& id) const;
   Connector* findConnectorWithId(const QString& id) const;

@@ -248,7 +248,18 @@ void Canvas::pasteCopiedItems()
         return;
     }
 
-    createNode(info, mousePosition, parentNode);
+    auto node = createNode(info, mousePosition, parentNode);
+
+    for (const auto& child : info.children)
+    {
+      auto childNode = dynamic_cast<NodeItem*>(child);
+      if (!childNode)
+        continue;
+
+      // Children's positions take into account the relative prosition to the parent
+      auto childInfo = childNode->saveInfo();
+      (void)createNode(childInfo, mousePosition - (info.position - childInfo.position), node);
+    }
   }
 }
 
@@ -260,13 +271,13 @@ VoidResult Canvas::loadFromSave(const SaveInfo& info)
   for (const auto& node : info.structuralNodes)
   {
     LOG_DEBUG("Creating structural node %s with parent %s", qPrintable(node.id), qPrintable(node.parentId));
-    createNode(node, node.position, findNodeWithId(node.parentId));
+    (void)createNode(node, node.position, findNodeWithId(node.parentId));
   }
 
   for (const auto& node : info.behaviouralNodes)
   {
     LOG_DEBUG("Creating behavioral node %s with parent %s", qPrintable(node.id), qPrintable(node.parentId));
-    createNode(node, node.position, findNodeWithId(node.parentId));
+    (void)createNode(node, node.position, findNodeWithId(node.parentId));
   }
 
   for (const auto& conn : info.connections)
@@ -303,19 +314,19 @@ QGraphicsView* Canvas::parentView() const
   return dynamic_cast<QGraphicsView*>(parent());
 }
 
-bool Canvas::createNode(const NodeSaveInfo& info, const QPointF& position, NodeItem* parent)
+NodeItem* Canvas::createNode(const NodeSaveInfo& info, const QPointF& position, NodeItem* parent)
 {
   auto config = mConfigTable->get(info.nodeId);
   if (config == nullptr)
   {
     LOG_WARNING("Added node with no configuration");
-    return false;
+    return nullptr;
   }
 
   if (config->libraryType == Types::LibraryTypes::BEHAVIOURAL && parent == nullptr)
   {
     LOG_WARNING("Node must be inside a structural element");
-    return false;
+    return nullptr;
   }
 
   // On drop, there is no info.id yet so we must assign a unique id to this node.
@@ -343,7 +354,7 @@ bool Canvas::createNode(const NodeSaveInfo& info, const QPointF& position, NodeI
 
   addItem(node);
 
-  return true;
+  return node;
 }
 
 NodeItem* Canvas::findNodeWithId(const QString& id) const
