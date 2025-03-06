@@ -33,3 +33,33 @@ QString ToLabel(const QString& str)
 {
   return QString::fromStdString(ToUpperCase(str.toStdString(), 0, 1));
 }
+
+QString timeToQT(struct timespec ts)
+{
+  const struct tm* time = localtime(&ts.tv_sec);
+  return QString::fromStdString(Format("%2d:%02d:%02d.%03ld", time->tm_hour, time->tm_min, time->tm_sec, ts.tv_nsec));
+}
+
+QString logLevelToQT(logging::LogLevel logLevel)
+{
+  switch (logLevel)
+  {
+    case logging::LogLevel::Error:
+      return QString("[<font color='red'>E</font>]");
+    case logging::LogLevel::Warning:
+      return QString("[<font color='yellow'>W</font>]");
+    case logging::LogLevel::Info:
+      return QString("[<font color='green'>I</font>]");
+    case logging::LogLevel::Debugging:
+      return QString("[<font color='cyan'>D</font>]");
+    case logging::LogLevel::Trace:
+      return QString("[<font color='blue'>T</font>]");
+    default:
+      return QString("[<font color='magenta'>U</font>]");
+  }
+}
+
+QString toQT(struct timespec ts, logging::LogLevel level, const std::string& message)
+{
+  return QStringLiteral("%1 %2: %3").arg(timeToQT(ts), logLevelToQT(level), QString::fromStdString(message));
+}

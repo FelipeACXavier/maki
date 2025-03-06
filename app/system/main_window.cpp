@@ -6,8 +6,8 @@
 #include <QListWidgetItem>
 #include <QShortcut>
 #include <QString>
+#include <QTextBlock>
 #include <QWidget>
-#include <cfloat>
 
 #include "app_configs.h"
 #include "canvas.h"
@@ -15,6 +15,7 @@
 #include "library_container.h"
 #include "logging.h"
 #include "save_handler.h"
+#include "style_helpers.h"
 #include "ui_editor.h"
 #include "widgets/dynamic_control.h"
 
@@ -45,6 +46,26 @@ MainWindow::~MainWindow()
 
 VoidResult MainWindow::start()
 {
+  // Bind the logging function
+  mUI->logText->setStyleSheet("QTextBrowser { font-family: monospace; }");
+
+  logging::gLogToStream = [this](struct timespec ts, logging::LogLevel level, const std::string& filename, const uint32_t& line, const std::string& message) {
+    if (!mUI->logText)
+      return;
+
+    mUI->logText->append(toQT(ts, level, message));
+
+    // Check if the number of lines exceeds the maximum limit
+    QTextDocument* doc = mUI->logText->document();
+    if (doc->blockCount() > 100)
+    {
+      // Remove the first block (top line) to limit the number of lines
+      QTextBlock block = doc->begin();
+      mUI->logText->textCursor().setPosition(block.position());
+      mUI->logText->textCursor().removeSelectedText();
+    }
+  };
+
   LOG_INFO("Starting the main window");
 
   auto configRead = JSON::fromFile(":/assets/config.json");
