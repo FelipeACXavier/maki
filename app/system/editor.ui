@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1586</width>
-    <height>1170</height>
+    <height>1162</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -99,16 +99,80 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
+        <property name="tabShape">
+         <enum>QTabWidget::Rounded</enum>
+        </property>
+        <property name="currentIndex">
+         <number>0</number>
+        </property>
+        <property name="usesScrollButtons">
+         <bool>false</bool>
+        </property>
+        <property name="documentMode">
+         <bool>false</bool>
+        </property>
         <property name="class" stdset="0">
          <string>properties-menu</string>
         </property>
         <widget class="QWidget" name="propertiesTab">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <attribute name="title">
           <string>Properties</string>
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout_4">
           <item>
            <widget class="PropertiesMenu" name="propertiesFrame">
+            <property name="frameShape">
+             <enum>QFrame::StyledPanel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Raised</enum>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="fieldsTab">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <attribute name="title">
+          <string>Fields</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_8">
+          <item>
+           <widget class="QFrame" name="frame">
+            <property name="frameShape">
+             <enum>QFrame::StyledPanel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Raised</enum>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="behaviourTab">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <attribute name="title">
+          <string>Behaviour</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_7">
+          <item>
+           <widget class="QFrame" name="frame_2">
             <property name="frameShape">
              <enum>QFrame::StyledPanel</enum>
             </property>
@@ -128,7 +192,10 @@
          </sizepolicy>
         </property>
         <property name="currentIndex">
-         <number>1</number>
+         <number>0</number>
+        </property>
+        <property name="documentMode">
+         <bool>false</bool>
         </property>
         <property name="class" stdset="0">
          <string>help-menu</string>
@@ -140,6 +207,22 @@
          <layout class="QVBoxLayout" name="verticalLayout_3">
           <item>
            <widget class="QTextBrowser" name="infoText"/>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="structureTab">
+         <attribute name="title">
+          <string>Tree</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_6">
+          <item>
+           <widget class="QTreeWidget" name="treeWidget">
+            <column>
+             <property name="text">
+              <string notr="true">1</string>
+             </property>
+            </column>
+           </widget>
           </item>
          </layout>
         </widget>

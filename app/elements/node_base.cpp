@@ -3,20 +3,22 @@
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
 
+#include "app_configs.h"
+
 const qreal MAX_WIDTH = 100.0;
 const qreal MAX_HEIGHT = 100.0;
 
-NodeBase::NodeBase(const QString& id, const QString& nodeId, std::shared_ptr<NodeConfig> config, QGraphicsItem* parent)
+NodeBase::NodeBase(const QString& id, const QString& nodeId, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
     : QGraphicsItem(parent)
-    , mConfig(config)
+    , mConfig(nodeConfig)
     , mId(id)
-    , mBounds(0, 0, mConfig->body.width, mConfig->body.height)
+    , mBounds(0, 0, config()->body.width, config()->body.height)
     , mNodeId(nodeId)
 {
-  setZValue(mConfig->body.zIndex);
+  setZValue(config()->body.zIndex);
 
   qreal scaleFactor = computeScaleFactor();
-  mScaledBounds = QRectF(0, 0, mConfig->body.width * scaleFactor, mConfig->body.height * scaleFactor);
+  mScaledBounds = QRectF(0, 0, config()->body.width * scaleFactor, config()->body.height * scaleFactor);
 }
 
 QString NodeBase::id() const
@@ -66,15 +68,15 @@ void NodeBase::paintNode(const QRectF& bounds, const QColor& background, const Q
   painter->setRenderHint(QPainter::Antialiasing, false);
 
   const auto drawingBounds = drawingRect(bounds);
-  if (mConfig->body.shape == Types::Shape::RECTANGLE)
+  if (config()->body.shape == Types::Shape::RECTANGLE)
   {
     painter->drawRect(drawingBounds);
   }
-  else if (mConfig->body.shape == Types::Shape::ELLIPSE)
+  else if (config()->body.shape == Types::Shape::ELLIPSE)
   {
     painter->drawEllipse(drawingBounds);
   }
-  else if (mConfig->body.shape == Types::Shape::DIAMOND)
+  else if (config()->body.shape == Types::Shape::DIAMOND)
   {
     QPolygonF diamond;
     diamond << QPointF(drawingBounds.center().x(), drawingBounds.top())     // Top
@@ -95,15 +97,15 @@ void NodeBase::paintNode(const QRectF& bounds, const QColor& background, const Q
 QPainterPath NodeBase::nodeShape(const QRectF& bounds) const
 {
   QPainterPath path;
-  if (mConfig->body.shape == Types::Shape::RECTANGLE)
+  if (config()->body.shape == Types::Shape::RECTANGLE)
   {
     path.addRect(bounds);
   }
-  else if (mConfig->body.shape == Types::Shape::ELLIPSE)
+  else if (config()->body.shape == Types::Shape::ELLIPSE)
   {
     path.addEllipse(bounds);
   }
-  else if (mConfig->body.shape == Types::Shape::DIAMOND)
+  else if (config()->body.shape == Types::Shape::DIAMOND)
   {
     QPolygonF diamond;
     diamond << QPointF(bounds.center().x(), bounds.top())     // Top
@@ -141,10 +143,19 @@ void NodeBase::paintPixmap(QPainter* painter) const
   painter->drawPixmap(topLeft, mPixmapItem->pixmap());
 }
 
-void NodeBase::setLabel(const QString& name, const QColor& color)
+void NodeBase::setLabel(const QString& name, const QColor& color, qreal zoomLevel)
 {
   mLabel = std::make_shared<QGraphicsTextItem>(name, this);
   mLabel->setDefaultTextColor(color);
+
+  // Set the base font size
+  QFont font = mLabel->font();
+
+  // Optionally, adjust the font size to be proportional to the zoom
+  font.setPointSize(Fonts::BaseSize / zoomLevel);
+
+  // Apply the scaled font to the label
+  mLabel->setFont(font);
 
   updateLabelPosition();
 }
@@ -170,12 +181,12 @@ void NodeBase::updateLabelPosition()
 
 qreal NodeBase::computeScaleFactor() const
 {
-  qreal widthScale = (mConfig->body.width > MAX_WIDTH)
-                         ? MAX_WIDTH / mConfig->body.width
+  qreal widthScale = (config()->body.width > MAX_WIDTH)
+                         ? MAX_WIDTH / config()->body.width
                          : 1.0;
 
-  qreal heightScale = (mConfig->body.height > MAX_HEIGHT)
-                          ? MAX_HEIGHT / mConfig->body.height
+  qreal heightScale = (config()->body.height > MAX_HEIGHT)
+                          ? MAX_HEIGHT / config()->body.height
                           : 1.0;
 
   return qMin(widthScale, heightScale);  // Use the smallest scale to maintain aspect ratio

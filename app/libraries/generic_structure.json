@@ -18,27 +18,72 @@
       "behaviour": {}
     },
     {
-      "type": "Data type",
+      "type": "Basic type",
+      "body": {
+        "shape": "rounded rectangle",
+        "textColor": "#FFFFFF",
+        "backgroundColor": "#f77f00",
+        "borderColor": "#FFFFFF",
+        "borderRadius": 50,
+        "width": 300,
+        "height": 300,
+        "z-index": -2
+      },
+      "properties": [
+        {
+          "id": "name",
+          "type": "string",
+          "default": "Basic type"
+        },
+        {
+          "id": "type",
+          "type": "string",
+          "default": ""
+        },
+        {
+          "id": "default value",
+          "type": "string",
+          "default": ""
+        },
+        {
+          "id": "color",
+          "type": "color",
+          "default": "#f77f00"
+        }
+      ]
+    },
+    {
+      "type": "Data object",
       "body": {
         "shape": "rounded rectangle",
         "textColor": "#FFFFFF",
         "backgroundColor": "#fcbf49",
         "borderColor": "#FFFFFF",
         "borderRadius": 50,
-        "width": 500,
-        "height": 500,
+        "width": 300,
+        "height": 300,
         "z-index": -2
       },
       "properties": [
         {
-          "id": "color",
-          "type": "color",
-          "default": "#fcbf49"
+          "id": "name",
+          "type": "string",
+          "default": "Data object"
         },
         {
           "id": "type",
           "type": "string",
-          "default": "Data type"
+          "default": "object"
+        },
+        {
+          "id": "default value",
+          "type": "string",
+          "default": ""
+        },
+        {
+          "id": "color",
+          "type": "color",
+          "default": "#fcbf49"
         }
       ],
       "controls": [

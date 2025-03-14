@@ -13,11 +13,13 @@
 #include "connector.h"
 #include "logging.h"
 #include "style_helpers.h"
+#include "system/canvas.h"
 
-NodeItem::NodeItem(const QString& id, const NodeSaveInfo& info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
+NodeItem::NodeItem(const QString& id, const NodeSaveInfo& info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig, qreal initialScale, QGraphicsItem* parent)
     : NodeBase(id, info.nodeId, nodeConfig, parent)
     , mChildrenNodes({})
-    , mSize(info.size)
+    , mSize(info.size / initialScale)
+    , mInitialScale(initialScale)
 {
   setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
   setCacheMode(DeviceCoordinateCache);
@@ -27,7 +29,7 @@ NodeItem::NodeItem(const QString& id, const NodeSaveInfo& info, const QPointF& i
   if (!info.pixmap.isNull())
     setPixmap(info.pixmap);
   else
-    setLabel(config()->type, config()->body.textColor);
+    setLabel(config()->type, config()->body.textColor, mInitialScale);
 
   for (const auto& connector : config()->connectors)
   {
@@ -100,9 +102,20 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
   auto color = getProperty("color");
   auto background = color.isValid() ? QColor::fromString(color.toString()) : config()->body.backgroundColor;
 
+  auto currentScale = static_cast<Canvas*>(scene())->getScale();
+
+  qreal zoomDifference = currentScale / mInitialScale;
+  qreal opacity = 1.0 / (zoomDifference * zoomDifference);
+
+  // Make sure opacity stays within valid range [0, 1]
+  setOpacity(qBound(0.0, opacity, 1.0));
+
+  setFlag(QGraphicsItem::ItemIsSelectable, opacity > Config::OPACITY_THRESHOLD);
+  setFlag(QGraphicsItem::ItemIsMovable, opacity > Config::OPACITY_THRESHOLD);
+
   NodeBase::paintNode(boundingRect(),
                       background,
-                      isSelected() ? QPen(Config::Colours::ACCENT, 4) : QPen(config()->body.borderColor),
+                      isSelected() ? QPen(Config::Colours::ACCENT, 4 / mInitialScale) : QPen(config()->body.borderColor, 1.0 / mInitialScale),
                       painter);
 }
 

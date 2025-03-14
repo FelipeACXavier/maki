@@ -11,6 +11,7 @@
 #include "elements/node.h"
 #include "elements/save_info.h"
 
+class CanvasView;
 class Connector;
 class ConnectionItem;
 class ConfigurationTable;
@@ -24,6 +25,7 @@ public:
   void pasteCopiedItems();
   void copySelectedItems();
 
+  qreal getScale() const;
   VoidResult loadFromSave(const SaveInfo& info);
 
 protected:
@@ -34,8 +36,6 @@ protected:
   void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
   void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
   void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
-
-  void drawBackground(QPainter* painter, const QRectF& rect) override;
 
   void keyPressEvent(QKeyEvent* event) override;
 
@@ -51,7 +51,7 @@ private:
   QList<NodeSaveInfo> copiedNodes;
   std::shared_ptr<ConfigurationTable> mConfigTable;
 
-  QGraphicsView* parentView() const;
+  CanvasView* parentView() const;
   NodeItem* createNode(const NodeSaveInfo& info, const QPointF& position, NodeItem* parent);
 
   NodeItem* findNodeWithId(const QString& id) const;

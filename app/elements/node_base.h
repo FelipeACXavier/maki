@@ -42,7 +42,7 @@ protected:
 
   virtual void updateLabelPosition();
   virtual void setPixmap(const QPixmap& pixmap);
-  virtual void setLabel(const QString& name, const QColor& color);
+  virtual void setLabel(const QString& name, const QColor& color, qreal zoomLevel);
 
   virtual void paintLabel(QPainter* painter, const QRectF& area) const;
   virtual void paintPixmap(QPainter* painter) const;

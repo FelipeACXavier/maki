@@ -86,8 +86,8 @@ void MainWindow::startUI()
   mUI->splitter->widget(0)->setMinimumWidth(200);
   mUI->splitter->widget(0)->setMaximumWidth(400);
 
-  mUI->splitter->widget(2)->setMinimumWidth(200);
-  mUI->splitter->widget(2)->setMaximumWidth(300);
+  mUI->splitter->widget(2)->setMinimumWidth(250);
+  mUI->splitter->widget(2)->setMaximumWidth(400);
 
   mUI->propertiesMenu->setMinimumHeight(400);
   mUI->propertiesMenu->setMaximumHeight(800);

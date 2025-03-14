@@ -6,6 +6,7 @@
 #include <QMimeData>
 
 #include "app_configs.h"
+#include "canvas_view.h"
 #include "config.h"
 #include "config_table.h"
 #include "elements/connection.h"
@@ -18,44 +19,7 @@ Canvas::Canvas(std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
     , mConfigTable(configTable)
 {
   setProperty("class", QVariant(QStringLiteral("canvas")));
-  setBackgroundBrush(QBrush(QColor("#212121")));
-}
-
-void Canvas::drawBackground(QPainter* painter, const QRectF& rect)
-{
-  const int gridSize = 20;  // Grid spacing
-
-  QPen lightPen(Qt::gray, 0.5, Qt::DotLine);
-  QPen darkPen(Qt::darkGray, 1, Qt::SolidLine);
-
-  painter->setPen(lightPen);
-
-  // Draw vertical grid lines
-  for (qreal x = std::floor(rect.left() / gridSize) * gridSize;
-       x < rect.right(); x += gridSize)
-  {
-    painter->drawLine(QLineF(x, rect.top(), x, rect.bottom()));
-  }
-
-  // Draw horizontal grid lines
-  for (qreal y = std::floor(rect.top() / gridSize) * gridSize;
-       y < rect.bottom(); y += gridSize)
-  {
-    painter->drawLine(QLineF(rect.left(), y, rect.right(), y));
-  }
-
-  // Draw thicker lines every 5 grid spaces (major grid)
-  painter->setPen(darkPen);
-  for (qreal x = std::floor(rect.left() / (gridSize * 5)) * (gridSize * 5);
-       x < rect.right(); x += gridSize * 5)
-  {
-    painter->drawLine(QLineF(x, rect.top(), x, rect.bottom()));
-  }
-  for (qreal y = std::floor(rect.top() / (gridSize * 5)) * (gridSize * 5);
-       y < rect.bottom(); y += gridSize * 5)
-  {
-    painter->drawLine(QLineF(rect.left(), y, rect.right(), y));
-  }
+  setBackgroundBrush(Qt::transparent);
 }
 
 void Canvas::dragEnterEvent(QGraphicsSceneDragDropEvent* event)
@@ -309,9 +273,9 @@ VoidResult Canvas::loadFromSave(const SaveInfo& info)
   return VoidResult();
 }
 
-QGraphicsView* Canvas::parentView() const
+CanvasView* Canvas::parentView() const
 {
-  return dynamic_cast<QGraphicsView*>(parent());
+  return static_cast<CanvasView*>(parent());
 }
 
 NodeItem* Canvas::createNode(const NodeSaveInfo& info, const QPointF& position, NodeItem* parent)
@@ -335,7 +299,7 @@ NodeItem* Canvas::createNode(const NodeSaveInfo& info, const QPointF& position, 
   if (!info.id.isEmpty() && !info.id.isNull())
     id = info.id;
 
-  NodeItem* node = new NodeItem(id, info, position, config);
+  NodeItem* node = new NodeItem(id, info, position, config, parentView()->getScale());
 
   node->nodeSeletected = [this](NodeItem* item) { emit nodeSelected(item); };
   node->nodeCopied = [this](NodeItem* /* item */) { copySelectedItems(); };
@@ -385,4 +349,9 @@ Connector* Canvas::findConnectorWithId(const QString& id) const
   }
 
   return nullptr;
+}
+
+qreal Canvas::getScale() const
+{
+  return parentView()->getScale();
 }

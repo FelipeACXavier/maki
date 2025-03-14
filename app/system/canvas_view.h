@@ -20,6 +20,8 @@ protected:
   void mouseReleaseEvent(QMouseEvent*) override;
   void wheelEvent(QWheelEvent*) override;
 
+  void drawBackground(QPainter* painter, const QRectF& rect) override;
+
 private:
   // Flags to determine if zooming or panning should be done.
   bool mDoMousePanning;

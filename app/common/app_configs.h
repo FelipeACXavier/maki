@@ -12,9 +12,10 @@ static const QString ORGANIZATION_NAME = QString("Savant"_L1);
 static const QString APPLICATION_NAME = QString("Low-Code Platform"_L1);
 static const QString VERSION = QString("1.0.0"_L1);
 
-static const qreal MINIMUM_NODE_SIZE = 50;
 static const int GRID_SIZE = 20;
 static const int CONNECTOR_RADIUS = 5;
+static const qreal MINIMUM_NODE_SIZE = 50;
+static const qreal OPACITY_THRESHOLD = 0.25;
 
 // TODO(felaze): move to config
 namespace Colours
@@ -44,4 +45,5 @@ class Fonts
 public:
   static const QFont Property;
   static const QFont Label;
+  static const int BaseSize = 10;
 };

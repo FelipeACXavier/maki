@@ -2,6 +2,7 @@
 
 #include <QShortcut>
 
+#include "app_configs.h"
 #include "canvas.h"
 
 #define VIEW_CENTER viewport()->rect().center()
@@ -13,6 +14,9 @@ CanvasView::CanvasView(QWidget* parent)
 {
   setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  // TODO(felaze): Evaluate the peformance impact of this
+  setViewportUpdateMode(ViewportUpdateMode::FullViewportUpdate);
+  setBackgroundBrush(QBrush(QColor("#212121")));
   setAcceptDrops(true);
 
   setMaxSize();
@@ -148,9 +152,36 @@ void CanvasView::pan(QPointF delta)
 
   // Have panning be anchored from the mouse.
   setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+
   QPoint newCenter(VIEW_WIDTH / 2 - delta.x(), VIEW_HEIGHT / 2 - delta.y());
   centerOn(mapToScene(newCenter));
 
   // For zooming to anchor from the view center.
   setTransformationAnchor(QGraphicsView::AnchorViewCenter);
+}
+
+void CanvasView::drawBackground(QPainter* painter, const QRectF& rect)
+{
+  painter->setRenderHint(QPainter::Antialiasing, false);
+
+  const qreal gridSize = Config::GRID_SIZE / getScale();
+
+  QPen lightPen(Qt::gray, 0.5, Qt::DotLine);
+
+  // Keep line thickness fixed
+  lightPen.setCosmetic(true);
+
+  // Draw thinner lines
+  qreal left = std::floor(rect.left() / gridSize) * gridSize;
+  qreal top = std::floor(rect.top() / gridSize) * gridSize;
+  qreal right = std::ceil(rect.right() / gridSize) * gridSize;
+  qreal bottom = std::ceil(rect.bottom() / gridSize) * gridSize;
+
+  painter->setPen(lightPen);
+  for (qreal x = left; x < right; x += gridSize)
+    painter->drawLine(QLineF(x, top, x, bottom));
+  for (qreal y = top; y < bottom; y += gridSize)
+    painter->drawLine(QLineF(left, y, right, y));
+
+  painter->setRenderHint(QPainter::Antialiasing, true);
 }
