@@ -18,8 +18,8 @@
 NodeItem::NodeItem(const QString& id, const NodeSaveInfo& info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig, qreal initialScale, QGraphicsItem* parent)
     : NodeBase(id, info.nodeId, nodeConfig, parent)
     , mChildrenNodes({})
-    , mSize(info.size / initialScale)
-    , mInitialScale(initialScale)
+    , mInitialScale(config()->libraryType == Types::LibraryTypes::STRUCTURAL ? initialScale : 1.0)
+    , mSize(info.size / mInitialScale)
 {
   setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
   setCacheMode(DeviceCoordinateCache);
@@ -27,7 +27,10 @@ NodeItem::NodeItem(const QString& id, const NodeSaveInfo& info, const QPointF& i
 
   // Add icon if it exists
   if (!info.pixmap.isNull())
-    setPixmap(info.pixmap);
+  {
+    QSize newSize = info.pixmap.size() / mInitialScale;
+    setPixmap(info.pixmap.scaled(newSize, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+  }
   else
     setLabel(config()->type, config()->body.textColor, mInitialScale);
 
@@ -104,7 +107,7 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
 
   auto currentScale = static_cast<Canvas*>(scene())->getScale();
 
-  qreal zoomDifference = currentScale / mInitialScale;
+  qreal zoomDifference = currentScale / (2 * mInitialScale);
   qreal opacity = 1.0 / (zoomDifference * zoomDifference);
 
   // Make sure opacity stays within valid range [0, 1]

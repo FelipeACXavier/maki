@@ -91,8 +91,8 @@ private:
   QVector<INode*> mChildrenNodes;
 
   bool mIsResizing{false};
-  QSizeF mSize;
   qreal mInitialScale;
+  QSizeF mSize;
 
   void updatePosition(const QPointF& position);
 };
