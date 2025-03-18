@@ -24,6 +24,7 @@
 
 PropertiesMenu::PropertiesMenu(QWidget* parent)
     : QFrame(parent)
+    , mCurrentNode("")
 {
   // Set widget layout
   QVBoxLayout* layout = new QVBoxLayout();
@@ -35,9 +36,23 @@ VoidResult PropertiesMenu::onNodeSelected(NodeItem* node)
   // Clear the frame
   clear();
 
+  mCurrentNode = node->id();
+
   RETURN_ON_FAILURE(loadProperties(node));
 
   static_cast<QVBoxLayout*>(layout())->addStretch();
+
+  return VoidResult();
+}
+
+VoidResult PropertiesMenu::onNodeRemoved(NodeItem* node)
+{
+  // Clear the frame
+  if (node->id() != mCurrentNode)
+    return VoidResult();
+
+  clear();
+  mCurrentNode.clear();
 
   return VoidResult();
 }

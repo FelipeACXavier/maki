@@ -41,7 +41,21 @@ VoidResult FieldsMenu::onNodeSelected(NodeItem* node)
   // Clear the frame
   clear();
 
+  mCurrentNode = node->id();
+
   RETURN_ON_FAILURE(loadControls(node));
+
+  return VoidResult();
+}
+
+VoidResult FieldsMenu::onNodeRemoved(NodeItem* node)
+{
+  // Clear the frame
+  if (node->id() != mCurrentNode)
+    return VoidResult();
+
+  clear();
+  mCurrentNode.clear();
 
   return VoidResult();
 }

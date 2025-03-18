@@ -1,5 +1,7 @@
 #include "tree_menu.h"
 
+#include <QMenu>
+
 #include "elements/node.h"
 #include "logging.h"
 
@@ -10,6 +12,10 @@ static const int ID_COLUMN = 2;
 TreeMenu::TreeMenu(QWidget* parent)
     : QTreeWidget(parent)
 {
+  setContextMenuPolicy(Qt::CustomContextMenu);
+
+  connect(this, &QTreeWidget::customContextMenuRequested, this, &TreeMenu::showContextMenu);
+  connect(this, &QTreeWidget::itemClicked, this, &TreeMenu::onItemClicked);
 }
 
 VoidResult TreeMenu::onNodeAdded(NodeItem* node)
@@ -43,6 +49,17 @@ VoidResult TreeMenu::onNodeRemoved(NodeItem* node)
     return VoidResult::Failed("The parent node is not on the tree");
 
   parentItem->removeChild(item);
+
+  return VoidResult();
+}
+
+VoidResult TreeMenu::onNodeModified(NodeItem* node)
+{
+  auto item = getItemById(node->id());
+  if (!item)
+    return VoidResult::Failed("Modified item is not in the tree");
+
+  populateItem(item, node);
 
   return VoidResult();
 }
@@ -88,4 +105,36 @@ QTreeWidgetItem* TreeMenu::getItemById(const QString& id)
   }
 
   return nullptr;
+}
+
+void TreeMenu::showContextMenu(const QPoint& pos)
+{
+  QTreeWidgetItem* selectedItem = itemAt(pos);
+  if (!selectedItem)
+    return;
+
+  QMenu contextMenu(this);
+  QAction* deleteAction = contextMenu.addAction("Delete Node");
+  QAction* renameAction = contextMenu.addAction("Rename Node");
+
+  QAction* selectedAction = contextMenu.exec(viewport()->mapToGlobal(pos));
+  if (selectedAction == deleteAction)
+  {
+    emit nodeRemoved(selectedItem->text(ID_COLUMN));
+  }
+  else if (selectedAction == renameAction)
+  {
+    // bool ok;
+    // QString newName = QInputDialog::getText(this, "Rename Node", "New Name:", QLineEdit::Normal, selectedItem->text(0), &ok);
+    // if (ok && !newName.isEmpty())
+    //   selectedItem->setText(0, newName);
+  }
+}
+
+void TreeMenu::onItemClicked(QTreeWidgetItem* item, int /* column */)
+{
+  if (!item)
+    return;
+
+  emit nodeSelected(item->text(ID_COLUMN));
 }

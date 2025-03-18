@@ -175,6 +175,9 @@ void NodeItem::setProperty(const QString& key, QVariant value)
 
   mProperties[key] = value;
 
+  if (nodeModified)
+    nodeModified(this);
+
   update();
 }
 
@@ -363,7 +366,7 @@ void NodeItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
   QAction* copyAction = menu.addAction("Copy");
 
   // Connect actions to their slots
-  QObject::connect(deleteAction, &QAction::triggered, [this]() { onDelete(); });
+  QObject::connect(deleteAction, &QAction::triggered, [this]() { deleteNode(); });
   QObject::connect(propertiesAction, &QAction::triggered, [this]() {
     onProperties();
   });
@@ -387,14 +390,14 @@ void NodeItem::updatePosition(const QPointF& position)
 }
 
 // Slots
-void NodeItem::onDelete()
+void NodeItem::deleteNode()
 {
   // If the node has a parent, inform the parent about the deletion
   if (parentNode())
     dynamic_cast<NodeItem*>(parentNode())->childRemoved(this);
 
   for (INode* child : children())
-    dynamic_cast<NodeItem*>(child)->onDelete();
+    dynamic_cast<NodeItem*>(child)->deleteNode();
 
   // Remove the item from the scene
   if (nodeDeleted)

@@ -134,6 +134,21 @@ void MainWindow::bind()
   connect(canvas(), &Canvas::nodeSelected, this, &MainWindow::onNodeSelected);
   connect(canvas(), &Canvas::nodeAdded, this, &MainWindow::onNodeAdded);
   connect(canvas(), &Canvas::nodeRemoved, this, &MainWindow::onNodeRemoved);
+  connect(canvas(), &Canvas::nodeModified, this, &MainWindow::onNodeModified);
+
+  connect(mUI->treeWidget, &TreeMenu::nodeRemoved, canvas(), &Canvas::onRemoveNode);
+  connect(mUI->treeWidget, &TreeMenu::nodeSelected, canvas(), &Canvas::onSelectNode);
+  connect(mUI->treeWidget, &TreeMenu::nodeRenamed, canvas(), &Canvas::onRenameNode);
+
+  // Shortcuts =============================================================
+  new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_C), this, [this] {
+    if (canvas())
+      canvas()->copySelectedItems();
+  });
+  new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_V), this, [this] {
+    if (canvas())
+      canvas()->pasteCopiedItems();
+  });
 }
 
 Canvas* MainWindow::canvas() const
@@ -317,6 +332,19 @@ void MainWindow::onNodeRemoved(NodeItem* node)
   }
 
   LOG_WARN_ON_FAILURE(mUI->treeWidget->onNodeRemoved(node));
+  LOG_WARN_ON_FAILURE(mUI->propertiesFrame->onNodeRemoved(node));
+  LOG_WARN_ON_FAILURE(mUI->fieldsFrame->onNodeRemoved(node));
+}
+
+void MainWindow::onNodeModified(NodeItem* node)
+{
+  if (!node)
+  {
+    LOG_WARNING("A node was removed but no node was provided");
+    return;
+  }
+
+  LOG_WARN_ON_FAILURE(mUI->treeWidget->onNodeModified(node));
 }
 
 bool MainWindow::eventFilter(QObject* watched, QEvent* event)

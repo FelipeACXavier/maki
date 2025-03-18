@@ -43,6 +43,12 @@ signals:
   void nodeSelected(NodeItem* node);
   void nodeAdded(NodeItem* node);
   void nodeRemoved(NodeItem* node);
+  void nodeModified(NodeItem* node);
+
+public slots:
+  void onRemoveNode(const QString& nodeId);
+  void onSelectNode(const QString& nodeId);
+  void onRenameNode(const QString& nodeId, const QString& name);
 
 private:
   // TODO(felaze): Move connection behaviour to a separate class

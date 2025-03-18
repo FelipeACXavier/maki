@@ -15,9 +15,11 @@ public:
   FieldsMenu(QWidget* parent);
 
   VoidResult onNodeSelected(NodeItem* node);
+  VoidResult onNodeRemoved(NodeItem* node);
 
 private:
   void clear();
+  QString mCurrentNode;
 
   VoidResult loadControls(NodeItem* node);
   VoidResult loadControlAddField(const ControlsConfig& control, NodeItem* node, QWidget* parent, QHBoxLayout* controlLayout);

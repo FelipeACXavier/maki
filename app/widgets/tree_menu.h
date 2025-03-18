@@ -9,15 +9,22 @@ class QTreeWidgetItem;
 
 class TreeMenu : public QTreeWidget
 {
+  Q_OBJECT
 public:
   TreeMenu(QWidget* parent);
 
   VoidResult onNodeAdded(NodeItem* node);
   VoidResult onNodeRemoved(NodeItem* node);
+  VoidResult onNodeModified(NodeItem* node);
 
 signals:
   void nodeSelected(const QString& nodeId);
   void nodeRemoved(const QString& nodeId);
+  void nodeRenamed(const QString& nodeId, const QString& name);
+
+private slots:
+  void showContextMenu(const QPoint& pos);
+  void onItemClicked(QTreeWidgetItem* item, int /* column */);
 
 private:
   VoidResult addRootNode(NodeItem* node);

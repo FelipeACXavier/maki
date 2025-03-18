@@ -62,12 +62,14 @@ public:
   void setParent(NodeItem* parent);
   void childRemoved(NodeItem* child);
 
+  // "signals":
   std::function<void(NodeItem* item)> nodeCopied;
   std::function<void(NodeItem* item)> nodeDeleted;
+  std::function<void(NodeItem* item)> nodeModified;
   std::function<void(NodeItem* item)> nodeSeletected;
 
   // "slots":
-  void onDelete();
+  void deleteNode();
   void onProperties();
 
   // Serialization functions

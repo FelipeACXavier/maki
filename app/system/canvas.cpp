@@ -161,7 +161,7 @@ void Canvas::keyPressEvent(QKeyEvent* event)
     for (QGraphicsItem* item : selectedItems())
     {
       if (item->type() == NodeItem::Type)
-        dynamic_cast<NodeItem*>(item)->onDelete();
+        dynamic_cast<NodeItem*>(item)->deleteNode();
       else
         delete item;
     }
@@ -302,6 +302,7 @@ NodeItem* Canvas::createNode(const NodeSaveInfo& info, const QPointF& position, 
   NodeItem* node = new NodeItem(id, info, position, config, parentView()->getScale());
 
   node->nodeSeletected = [this](NodeItem* item) { emit nodeSelected(item); };
+  node->nodeModified = [this](NodeItem* item) { emit nodeModified(item); };
   node->nodeCopied = [this](NodeItem* /* item */) { copySelectedItems(); };
   node->nodeDeleted = [this](NodeItem* item) {
     removeItem(item);
@@ -359,4 +360,25 @@ Connector* Canvas::findConnectorWithId(const QString& id) const
 qreal Canvas::getScale() const
 {
   return parentView()->getScale();
+}
+
+void Canvas::onRemoveNode(const QString& nodeId)
+{
+  auto node = findNodeWithId(nodeId);
+  if (node)
+    node->deleteNode();
+}
+
+void Canvas::onSelectNode(const QString& nodeId)
+{
+  auto node = findNodeWithId(nodeId);
+  if (node)
+    node->setSelected(true);
+}
+
+void Canvas::onRenameNode(const QString& nodeId, const QString& name)
+{
+  auto node = findNodeWithId(nodeId);
+  if (node)
+    node->setProperty("name", name);
 }

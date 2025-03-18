@@ -15,8 +15,11 @@ public:
   PropertiesMenu(QWidget* parent);
 
   VoidResult onNodeSelected(NodeItem* node);
+  VoidResult onNodeRemoved(NodeItem* node);
 
 private:
+  QString mCurrentNode;
+
   void clear();
 
   VoidResult loadProperties(NodeItem* node);

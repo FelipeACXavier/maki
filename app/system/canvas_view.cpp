@@ -31,15 +31,6 @@ CanvasView::CanvasView(QWidget* parent)
 
   mPanButton = Qt::MiddleButton;
   mZoomKey = Qt::Key_Control;
-
-  new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_C), this, [this] {
-    if (scene())
-      dynamic_cast<Canvas*>(scene())->copySelectedItems();
-  });
-  new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_V), this, [this] {
-    if (scene())
-      dynamic_cast<Canvas*>(scene())->pasteCopiedItems();
-  });
 }
 
 qreal CanvasView::getScale() const
