@@ -37,6 +37,7 @@ public:
   void paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget) override;
 
   HelpConfig help() const;
+  QString nodeName() const;
   QString nodeType() const override;
   QString behaviour() const;
   QVector<ControlsConfig> controls() const;

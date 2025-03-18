@@ -1,6 +1,6 @@
 {
   "name": "Math",
-  "type": "behaviour",
+  "type": "internal behaviour",
   "author": "",
   "nodes": [
     {
@@ -15,6 +15,13 @@
         "icon": ":math/addition.png",
         "scale": 0.5
       },
+      "properties": [
+        {
+          "id": "name",
+          "type": "string",
+          "default": "Addition"
+        }
+      ],
       "connectors": [
         {
           "id": "arg1",
@@ -48,6 +55,13 @@
         "icon": ":math/subtraction.png",
         "scale": 0.5
       },
+      "properties": [
+        {
+          "id": "name",
+          "type": "string",
+          "default": "Subtraction"
+        }
+      ],
       "connectors": [
         {
           "id": "arg1",
@@ -81,6 +95,13 @@
         "icon": ":math/multiplication.png",
         "scale": 0.5
       },
+      "properties": [
+        {
+          "id": "name",
+          "type": "string",
+          "default": "Multiplication"
+        }
+      ],
       "connectors": [
         {
           "id": "arg1",
@@ -114,6 +135,13 @@
         "icon": ":math/division.png",
         "scale": 0.5
       },
+      "properties": [
+        {
+          "id": "name",
+          "type": "string",
+          "default": "Division"
+        }
+      ],
       "connectors": [
         {
           "id": "arg1",

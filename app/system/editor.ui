@@ -50,13 +50,27 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="behaviourElements">
+       <widget class="QWidget" name="externalBehaviourElements">
         <attribute name="title">
-         <string>Behaviour</string>
+         <string>External behaviour</string>
         </attribute>
         <layout class="QVBoxLayout" name="verticalLayout_2">
          <item>
-          <widget class="QToolBox" name="behaviourToolbox">
+          <widget class="QToolBox" name="externalBehaviourToolbox">
+           <property name="currentIndex">
+            <number>-1</number>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="internalBehaviourElements">
+        <attribute name="title">
+         <string>Internal behaviour</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="verticalLayout_9">
+         <item>
+          <widget class="QToolBox" name="internalBehaviourToolbox">
            <property name="currentIndex">
             <number>-1</number>
            </property>
@@ -116,8 +130,8 @@
         </property>
         <widget class="QWidget" name="propertiesTab">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-           <horstretch>0</horstretch>
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>1</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
@@ -139,8 +153,8 @@
         </widget>
         <widget class="QWidget" name="fieldsTab">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-           <horstretch>0</horstretch>
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>1</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
@@ -149,7 +163,7 @@
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout_8">
           <item>
-           <widget class="QFrame" name="frame">
+           <widget class="FieldsMenu" name="fieldsFrame">
             <property name="frameShape">
              <enum>QFrame::StyledPanel</enum>
             </property>
@@ -162,8 +176,8 @@
         </widget>
         <widget class="QWidget" name="behaviourTab">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-           <horstretch>0</horstretch>
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>1</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
@@ -172,7 +186,7 @@
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout_7">
           <item>
-           <widget class="QFrame" name="frame_2">
+           <widget class="QFrame" name="behaviourFrame">
             <property name="frameShape">
              <enum>QFrame::StyledPanel</enum>
             </property>
@@ -192,7 +206,7 @@
          </sizepolicy>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>1</number>
         </property>
         <property name="documentMode">
          <bool>false</bool>
@@ -216,10 +230,35 @@
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout_6">
           <item>
-           <widget class="QTreeWidget" name="treeWidget">
+           <widget class="TreeMenu" name="treeWidget">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="autoFillBackground">
+             <bool>false</bool>
+            </property>
+            <property name="uniformRowHeights">
+             <bool>true</bool>
+            </property>
+            <property name="columnCount">
+             <number>3</number>
+            </property>
             <column>
              <property name="text">
-              <string notr="true">1</string>
+              <string notr="true">Name</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>Type</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>Id</string>
              </property>
             </column>
            </widget>
@@ -374,6 +413,17 @@
    <extends>QFrame</extends>
    <header>widgets/properties_menu.h</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>FieldsMenu</class>
+   <extends>QFrame</extends>
+   <header>widgets/fields_menu.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>TreeMenu</class>
+   <extends>QTreeWidget</extends>
+   <header>widgets/tree_menu.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

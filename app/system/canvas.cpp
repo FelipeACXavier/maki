@@ -287,9 +287,9 @@ NodeItem* Canvas::createNode(const NodeSaveInfo& info, const QPointF& position, 
     return nullptr;
   }
 
-  if (config->libraryType == Types::LibraryTypes::BEHAVIOURAL && parent == nullptr)
+  if (config->libraryType != Types::LibraryTypes::STRUCTURAL && parent == nullptr)
   {
-    LOG_WARNING("Node must be inside a structural element");
+    LOG_WARNING("Node %d must be inside a structural element", (int)config->libraryType);
     return nullptr;
   }
 
@@ -303,7 +303,10 @@ NodeItem* Canvas::createNode(const NodeSaveInfo& info, const QPointF& position, 
 
   node->nodeSeletected = [this](NodeItem* item) { emit nodeSelected(item); };
   node->nodeCopied = [this](NodeItem* /* item */) { copySelectedItems(); };
-  node->nodeDeleted = [this](NodeItem* item) { removeItem(item); };
+  node->nodeDeleted = [this](NodeItem* item) {
+    removeItem(item);
+    emit nodeRemoved(item);
+  };
 
   node->start();
 
@@ -317,6 +320,8 @@ NodeItem* Canvas::createNode(const NodeSaveInfo& info, const QPointF& position, 
   }
 
   addItem(node);
+
+  emit nodeAdded(node);
 
   return node;
 }

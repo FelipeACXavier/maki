@@ -14,8 +14,18 @@
         "height": 1000,
         "z-index": -2
       },
-      "connectors": [],
-      "behaviour": {}
+      "properties": [
+        {
+          "id": "name",
+          "type": "string",
+          "default": "Component"
+        },
+        {
+          "id": "color",
+          "type": "color",
+          "default": "#202020"
+        }
+      ]
     },
     {
       "type": "Basic type",
@@ -38,7 +48,7 @@
         {
           "id": "type",
           "type": "string",
-          "default": ""
+          "default": "Basic type"
         },
         {
           "id": "default value",
@@ -73,7 +83,7 @@
         {
           "id": "type",
           "type": "string",
-          "default": "object"
+          "default": "Data object"
         },
         {
           "id": "default value",

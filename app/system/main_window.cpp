@@ -73,6 +73,11 @@ VoidResult MainWindow::start()
 
   RETURN_ON_FAILURE(loadElements());
 
+  // Set initial tabs
+  mUI->leftPanel->setCurrentIndex(0);
+  mUI->helpMenu->setCurrentIndex(0);
+  mUI->propertiesMenu->setCurrentIndex(0);
+
   LOG_DEBUG("Main window started");
 
   return VoidResult();
@@ -127,6 +132,8 @@ void MainWindow::bind()
 
   // Internal actions =============================================================
   connect(canvas(), &Canvas::nodeSelected, this, &MainWindow::onNodeSelected);
+  connect(canvas(), &Canvas::nodeAdded, this, &MainWindow::onNodeAdded);
+  connect(canvas(), &Canvas::nodeRemoved, this, &MainWindow::onNodeRemoved);
 }
 
 Canvas* MainWindow::canvas() const
@@ -161,8 +168,6 @@ VoidResult MainWindow::loadElements()
     RETURN_ON_FAILURE(loadElementLibrary(libConfig));
   }
 
-  mUI->leftPanel->setCurrentIndex(0);
-
   return VoidResult();
 }
 
@@ -181,7 +186,15 @@ VoidResult MainWindow::loadElementLibrary(const JSON& config)
 
   // Every library is added to a new item in the toolbox.
   // We load those dynamically on startup.
-  LibraryContainer* sidebarview = LibraryContainer::create(name, type == "behaviour" ? mUI->behaviourToolbox : mUI->structureToolbox);
+  QToolBox* toolbox = nullptr;
+  if (type == "structure")
+    toolbox = mUI->structureToolbox;
+  else if (type == "internal behaviour")
+    toolbox = mUI->internalBehaviourToolbox;
+  else
+    toolbox = mUI->externalBehaviourToolbox;
+
+  LibraryContainer* sidebarview = LibraryContainer::create(name, toolbox);
 
   auto nodes = config["nodes"];
   if (!nodes.isArray())
@@ -202,7 +215,12 @@ VoidResult MainWindow::loadElementLibrary(const JSON& config)
       return VoidResult::Failed(config->errorMessage.toStdString());
 
     // Initialize the library type
-    config->libraryType = type == "behaviour" ? Types::LibraryTypes::BEHAVIOURAL : Types::LibraryTypes::STRUCTURAL;
+    if (type == "structure")
+      config->libraryType = Types::LibraryTypes::STRUCTURAL;
+    else if (type == "internal behaviour")
+      config->libraryType = Types::LibraryTypes::INTERNAL_BEHAVIOUR;
+    else
+      config->libraryType = Types::LibraryTypes::EXTERNAL_BEHAVIOUR;
 
     auto id = QStringLiteral("%1::%2").arg(name, config->type);
     sidebarview->addNode(id, config);
@@ -276,6 +294,29 @@ void MainWindow::onNodeSelected(NodeItem* node)
   mUI->infoText->setFont(Fonts::Property);
 
   LOG_WARN_ON_FAILURE(mUI->propertiesFrame->onNodeSelected(node));
+  LOG_WARN_ON_FAILURE(mUI->fieldsFrame->onNodeSelected(node));
+}
+
+void MainWindow::onNodeAdded(NodeItem* node)
+{
+  if (!node)
+  {
+    LOG_WARNING("A node was added but no node was provided");
+    return;
+  }
+
+  LOG_WARN_ON_FAILURE(mUI->treeWidget->onNodeAdded(node));
+}
+
+void MainWindow::onNodeRemoved(NodeItem* node)
+{
+  if (!node)
+  {
+    LOG_WARNING("A node was removed but no node was provided");
+    return;
+  }
+
+  LOG_WARN_ON_FAILURE(mUI->treeWidget->onNodeRemoved(node));
 }
 
 bool MainWindow::eventFilter(QObject* watched, QEvent* event)

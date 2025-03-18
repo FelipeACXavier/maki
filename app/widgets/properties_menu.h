@@ -26,11 +26,4 @@ private:
   VoidResult loadPropertySelect(const PropertiesConfig& property, NodeItem* node);
   VoidResult loadPropertyString(const PropertiesConfig& property, NodeItem* node);
   VoidResult loadPropertyBoolean(const PropertiesConfig& property, NodeItem* node);
-
-  VoidResult loadControls(NodeItem* node);
-  VoidResult loadControlAddField(const ControlsConfig& control, NodeItem* node, QWidget* parent, QHBoxLayout* controlLayout);
-
-  void addDynamicWidget(QWidget* control, QWidget* parent);
-
-  void showContextMenu(QTableView* tableView, NodeItem* node, const QPoint& pos);
 };

@@ -41,6 +41,8 @@ protected:
 
 signals:
   void nodeSelected(NodeItem* node);
+  void nodeAdded(NodeItem* node);
+  void nodeRemoved(NodeItem* node);
 
 private:
   // TODO(felaze): Move connection behaviour to a separate class

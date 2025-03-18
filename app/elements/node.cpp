@@ -80,11 +80,16 @@ Types::LibraryTypes NodeItem::function() const
   return config()->libraryType;
 }
 
+QString NodeItem::nodeName() const
+{
+  auto name = getProperty("name");
+  return name.toString();
+}
+
 QString NodeItem::nodeType() const
 {
   // This should also contain the library to make it unique
-  auto ret = getProperty("type");
-  return ret.isValid() ? ret.toString() : config()->type;
+  return config()->type;
 }
 
 VoidResult NodeItem::start()

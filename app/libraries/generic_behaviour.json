@@ -1,6 +1,6 @@
 {
   "name": "Generic",
-  "type": "behaviour",
+  "type": "internal behaviour",
   "author": "Felipe Xavier",
   "nodes": [
     {
@@ -15,7 +15,7 @@
       },
       "properties": [
         {
-          "id": "type",
+          "id": "name",
           "type": "string",
           "default": "Start"
         },
@@ -57,6 +57,18 @@
         "width": 50,
         "height": 50
       },
+      "properties": [
+        {
+          "id": "name",
+          "type": "string",
+          "default": "End"
+        },
+        {
+          "id": "type",
+          "type": "string",
+          "default": "End"
+        }
+      ],
       "connectors": [
         {
           "id": "input",
@@ -79,6 +91,18 @@
         "width": 50,
         "height": 50
       },
+      "properties": [
+        {
+          "id": "name",
+          "type": "string",
+          "default": "Error"
+        },
+        {
+          "id": "type",
+          "type": "string",
+          "default": "Error"
+        }
+      ],
       "connectors": [
         {
           "id": "input",
@@ -102,6 +126,11 @@
         "height": 75
       },
       "properties": [
+        {
+          "id": "name",
+          "type": "string",
+          "default": "Condition"
+        },
         {
           "id": "type",
           "type": "string",
@@ -148,6 +177,11 @@
       },
       "properties": [
         {
+          "id": "name",
+          "type": "string",
+          "default": "Action"
+        },
+        {
           "id": "type",
           "type": "string",
           "default": "Action"
@@ -183,6 +217,11 @@
         "height": 75
       },
       "properties": [
+        {
+          "id": "name",
+          "type": "string",
+          "default": "Constant"
+        },
         {
           "id": "type",
           "type": "string",

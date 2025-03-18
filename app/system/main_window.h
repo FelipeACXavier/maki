@@ -39,6 +39,8 @@ protected:
 
 private slots:
   void onNodeSelected(NodeItem* node);
+  void onNodeAdded(NodeItem* node);
+  void onNodeRemoved(NodeItem* node);
 
 private:
   JSON mConfig;
