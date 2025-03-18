@@ -276,7 +276,7 @@ void MainWindow::onActionSave()
     return;
   }
 
-  mSaveHandler->save(canvas()->items());
+  mSaveHandler->save(canvas());
 }
 
 void MainWindow::onActionSaveAs()
@@ -287,7 +287,7 @@ void MainWindow::onActionSaveAs()
     return;
   }
 
-  mSaveHandler->saveFileAs(canvas()->items());
+  mSaveHandler->saveFileAs(canvas());
 }
 
 void MainWindow::onActionLoad()
@@ -312,15 +312,12 @@ void MainWindow::onActionLoad()
 
 void MainWindow::onNodeSelected(NodeItem* node)
 {
-  if (!node)
+  if (node)
   {
-    LOG_WARNING("A node was selected but no node was provided");
-    return;
+    mUI->infoText->setText(node->help().message);
+    mUI->infoText->setWordWrapMode(QTextOption::WrapMode::WordWrap);
+    mUI->infoText->setFont(Fonts::Property);
   }
-
-  mUI->infoText->setText(node->help().message);
-  mUI->infoText->setWordWrapMode(QTextOption::WrapMode::WordWrap);
-  mUI->infoText->setFont(Fonts::Property);
 
   LOG_WARN_ON_FAILURE(mUI->propertiesFrame->onNodeSelected(node));
   LOG_WARN_ON_FAILURE(mUI->fieldsFrame->onNodeSelected(node));

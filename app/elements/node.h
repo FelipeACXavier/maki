@@ -24,7 +24,7 @@ public:
     Type = Types::NODE
   };
 
-  NodeItem(const QString& id, const NodeSaveInfo& info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig, qreal initialScale, QGraphicsItem* parent = nullptr);
+  NodeItem(const QString& id, const NodeSaveInfo& info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent = nullptr);
 
   virtual ~NodeItem();
 
@@ -98,7 +98,7 @@ private:
   QVector<INode*> mChildrenNodes;
 
   bool mIsResizing{false};
-  qreal mInitialScale;
+  qreal mBaseScale;
   QSizeF mSize;
 
   void updatePosition(const QPointF& position);

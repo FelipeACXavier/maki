@@ -38,6 +38,12 @@ qreal CanvasView::getScale() const
   return mScale;
 }
 
+void CanvasView::setScale(qreal scale)
+{
+  mScale = scale;
+  update();
+}
+
 void CanvasView::keyPressEvent(QKeyEvent* event)
 {
   qint32 key = event->key();

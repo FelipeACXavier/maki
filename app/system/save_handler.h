@@ -7,6 +7,7 @@
 #include "result.h"
 
 class QGraphicsItem;
+class Canvas;
 
 class SaveHandler : public QWidget
 {
@@ -14,9 +15,9 @@ class SaveHandler : public QWidget
 public:
   SaveHandler(QWidget* parent = nullptr);
 
-  VoidResult save(const QList<QGraphicsItem*>& items);
-  VoidResult saveToFile(const QList<QGraphicsItem*>& items);
-  VoidResult saveFileAs(const QList<QGraphicsItem*>& items);
+  VoidResult save(Canvas* canvas);
+  VoidResult saveToFile(Canvas* canvas);
+  VoidResult saveFileAs(Canvas* canvas);
 
   Result<SaveInfo> load();
 

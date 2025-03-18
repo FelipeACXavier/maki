@@ -171,7 +171,7 @@ void NodeBase::setLabelSize(qreal fontSize)
 
   // Set the base font size
   QFont font = mLabel->font();
-  font.setPointSizeF(fontSize);
+  font.setPointSizeF(qMin(Fonts::MaxSize, fontSize));
   mLabel->setFont(font);
   updateLabelPosition();
 }

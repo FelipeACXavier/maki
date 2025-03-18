@@ -29,6 +29,7 @@ QDataStream& operator<<(QDataStream& out, const NodeSaveInfo& info)
 {
   out << info.id;
   out << info.size;
+  out << info.scale;
   out << info.nodeId;
   out << info.fields;
   out << info.position;
@@ -50,6 +51,7 @@ QDataStream& operator>>(QDataStream& in, NodeSaveInfo& info)
 {
   in >> info.id;
   in >> info.size;
+  in >> info.scale;
   in >> info.nodeId;
   in >> info.fields;
   in >> info.position;
@@ -122,6 +124,22 @@ QDataStream& operator>>(QDataStream& in, SaveInfo& info)
   in >> info.structuralNodes;
   in >> info.behaviouralNodes;
   in >> info.connections;
+
+  return in;
+}
+
+QDataStream& operator<<(QDataStream& out, const CanvasSaveInfo& info)
+{
+  out << info.scale;
+  LOG_INFO("Saving scale: %f", info.scale);
+  return out;
+}
+
+QDataStream& operator>>(QDataStream& in, CanvasSaveInfo& info)
+{
+  in >> info.scale;
+
+  LOG_INFO("Loading scale: %f", info.scale);
 
   return in;
 }

@@ -36,6 +36,9 @@ VoidResult PropertiesMenu::onNodeSelected(NodeItem* node)
   // Clear the frame
   clear();
 
+  if (!node)
+    return VoidResult();
+
   mCurrentNode = node->id();
 
   RETURN_ON_FAILURE(loadProperties(node));
@@ -47,6 +50,9 @@ VoidResult PropertiesMenu::onNodeSelected(NodeItem* node)
 
 VoidResult PropertiesMenu::onNodeRemoved(NodeItem* node)
 {
+  if (!node)
+    return VoidResult();
+
   // Clear the frame
   if (node->id() != mCurrentNode)
     return VoidResult();

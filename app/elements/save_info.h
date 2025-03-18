@@ -28,6 +28,7 @@ struct NodeSaveInfo
   QPointF position{0, 0};
   QPixmap pixmap;
   QSizeF size{0, 0};
+  qreal scale{1.0};
   QVector<PropertiesConfig> fields;
   QMap<QString, QVariant> properties;
   QVector<ConnectorSaveInfo> connectors;
@@ -57,8 +58,17 @@ struct ConnectionSaveInfo
   friend QDataStream& operator>>(QDataStream& in, ConnectionSaveInfo& info);
 };
 
+struct CanvasSaveInfo
+{
+  qreal scale{1.0};
+
+  friend QDataStream& operator<<(QDataStream& out, const CanvasSaveInfo& info);
+  friend QDataStream& operator>>(QDataStream& in, CanvasSaveInfo& info);
+};
+
 struct SaveInfo
 {
+  CanvasSaveInfo canvasInfo;
   QVector<NodeSaveInfo> structuralNodes;
   QVector<NodeSaveInfo> behaviouralNodes;
   QVector<ConnectionSaveInfo> connections;

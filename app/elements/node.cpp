@@ -15,11 +15,11 @@
 #include "style_helpers.h"
 #include "system/canvas.h"
 
-NodeItem::NodeItem(const QString& id, const NodeSaveInfo& info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig, qreal initialScale, QGraphicsItem* parent)
-    : NodeBase(id, info.nodeId, nodeConfig, parent)
+NodeItem::NodeItem(const QString& nodeId, const NodeSaveInfo& info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
+    : NodeBase(nodeId, info.nodeId, nodeConfig, parent)
     , mChildrenNodes({})
-    , mInitialScale(config()->libraryType == Types::LibraryTypes::STRUCTURAL ? initialScale : 1.0)
-    , mSize(info.size / mInitialScale)
+    , mBaseScale(config()->libraryType == Types::LibraryTypes::STRUCTURAL ? info.scale : 1.0)
+    , mSize(info.size / baseScale())
 {
   setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
   setCacheMode(DeviceCoordinateCache);
@@ -56,14 +56,19 @@ NodeItem::NodeItem(const QString& id, const NodeSaveInfo& info, const QPointF& i
   // Add icon if it exists
   if (!info.pixmap.isNull())
   {
-    QSize newSize = info.pixmap.size() / mInitialScale;
+    QSize newSize = info.pixmap.size() / baseScale();
     setPixmap(info.pixmap.scaled(newSize, Qt::KeepAspectRatio, Qt::SmoothTransformation));
   }
   else
-    setLabel(getProperty("name").toString(), config()->body.textColor, Fonts::BaseSize / mInitialScale);
+  {
+    qreal labelSize = qMax(Fonts::BaseSize, mSize.width() / Fonts::BaseFactor);
+    setLabel(getProperty("name").toString(), config()->body.textColor, labelSize);
+  }
 
   setParent(nullptr);
   updatePosition(snapToGrid(initialPosition - boundingRect().center(), Config::GRID_SIZE));
+
+  LOG_DEBUG("%s created at: (%f, %f) with scale %f", qPrintable(id()), pos().x(), pos().y(), baseScale());
 }
 
 NodeItem::~NodeItem()
@@ -94,7 +99,7 @@ QString NodeItem::nodeType() const
 
 qreal NodeItem::baseScale() const
 {
-  return mInitialScale;
+  return mBaseScale;
 }
 
 VoidResult NodeItem::start()
@@ -117,18 +122,19 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
 
   auto currentScale = static_cast<Canvas*>(scene())->getScale();
 
-  qreal zoomDifference = currentScale / (2 * mInitialScale);
+  qreal zoomDifference = currentScale / (2 * baseScale());
   qreal opacity = 1.0 / (zoomDifference * zoomDifference);
 
+  // LOG_DEBUG("%s Setting opacity: %f %f %f", qPrintable(id()), opacity, currentScale, baseScale());
   // Make sure opacity stays within valid range [0, 1]
-  setOpacity(qBound(0.0, opacity, 1.0));
+  // setOpacity(qBound(0.0, opacity, 1.0));
 
-  setFlag(QGraphicsItem::ItemIsSelectable, opacity > Config::OPACITY_THRESHOLD);
-  setFlag(QGraphicsItem::ItemIsMovable, opacity > Config::OPACITY_THRESHOLD);
+  // setFlag(QGraphicsItem::ItemIsSelectable, opacity > Config::OPACITY_THRESHOLD);
+  // setFlag(QGraphicsItem::ItemIsMovable, opacity > Config::OPACITY_THRESHOLD);
 
   NodeBase::paintNode(boundingRect(),
                       background,
-                      isSelected() ? QPen(Config::Colours::ACCENT, 4 / mInitialScale) : QPen(config()->body.borderColor, 1.0 / mInitialScale),
+                      isSelected() ? QPen(Config::Colours::ACCENT, 4 / baseScale()) : QPen(config()->body.borderColor, 1.0 / baseScale()),
                       painter);
 }
 
@@ -277,6 +283,9 @@ void NodeItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
     qreal newWidth = qMax(Config::MINIMUM_NODE_SIZE, event->pos().x());
     qreal newHeight = newWidth / aspectRatio;
 
+    // Update the scale when the node is resized
+    mBaseScale = config()->body.width / newWidth;
+
     mSize.setWidth(qMax(Config::MINIMUM_NODE_SIZE, qMax(Config::MINIMUM_NODE_SIZE, newWidth)));
     mSize.setHeight(qMax(Config::MINIMUM_NODE_SIZE, qMax(Config::MINIMUM_NODE_SIZE, newHeight)));
 
@@ -372,12 +381,18 @@ void NodeItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
   QMenu menu;
 
   // Add actions to the menu
-  QAction* deleteAction = menu.addAction("Delete");
   QAction* propertiesAction = menu.addAction("Properties");
   QAction* copyAction = menu.addAction("Copy");
+  QAction* toggleLabelAction = menu.addAction("Toggle label");
+
+  menu.addSeparator();
+  QAction* deleteAction = menu.addAction("Delete");
 
   // Connect actions to their slots
   QObject::connect(deleteAction, &QAction::triggered, [this]() { deleteNode(); });
+  QObject::connect(toggleLabelAction, &QAction::triggered, [this]() {
+    mLabel->setVisible(!mLabel->isVisible());
+  });
   QObject::connect(propertiesAction, &QAction::triggered, [this]() {
     onProperties();
   });
@@ -432,7 +447,8 @@ NodeSaveInfo NodeItem::saveInfo() const
   info.fields = fields();
   info.pixmap = nodePixmap();
   info.properties = properties();
-  info.size = mSize;
+  info.size = QSize{config()->body.width, config()->body.height};
+  info.scale = baseScale();
 
   for (const auto& connector : connectors())
     info.connectors.push_back(std::dynamic_pointer_cast<Connector>(connector)->saveInfo());

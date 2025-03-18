@@ -6,6 +6,7 @@
 #include <QFileInfo>
 #include <QGraphicsItem>
 
+#include "canvas.h"
 #include "elements/connection.h"
 #include "elements/connector.h"
 #include "elements/node.h"
@@ -19,15 +20,15 @@ SaveHandler::SaveHandler(QWidget* parent)
 {
 }
 
-VoidResult SaveHandler::save(const QList<QGraphicsItem*>& items)
+VoidResult SaveHandler::save(Canvas* canvas)
 {
   if (mCurrentFile.isEmpty() || mCurrentFile.isNull())
-    return saveFileAs(items);
+    return saveFileAs(canvas);
 
-  return saveToFile(items);
+  return saveToFile(canvas);
 }
 
-VoidResult SaveHandler::saveFileAs(const QList<QGraphicsItem*>& items)
+VoidResult SaveHandler::saveFileAs(Canvas* canvas)
 {
   QString fileName = openAtCenter(Function::SAVE);
 
@@ -35,13 +36,15 @@ VoidResult SaveHandler::saveFileAs(const QList<QGraphicsItem*>& items)
     return VoidResult::Failed("File not set");
 
   storeFilename(fileName);
-  return saveToFile(items);
+  return saveToFile(canvas);
 }
 
-VoidResult SaveHandler::saveToFile(const QList<QGraphicsItem*>& items)
+VoidResult SaveHandler::saveToFile(Canvas* canvas)
 {
   SaveInfo info;
-  for (const auto& item : items)
+  info.canvasInfo.scale = canvas->getScale();
+
+  for (const auto& item : canvas->items())
   {
     if (item->type() == NodeItem::Type)
     {

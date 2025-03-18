@@ -54,6 +54,7 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
 
     NodeSaveInfo info;
     stream >> info;
+    info.scale = parentView()->getScale();
 
     if (createNode(info, event->scenePos(), parentNode))
       event->acceptProposedAction();
@@ -89,6 +90,10 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
 
       addItem(mConnection);
       return;
+    }
+    else if (!item)
+    {
+      emit nodeSelected(nullptr);
     }
   }
 
@@ -232,6 +237,8 @@ VoidResult Canvas::loadFromSave(const SaveInfo& info)
   // Clear the canvas before repopulating
   clear();
 
+  parentView()->setScale(info.canvasInfo.scale);
+
   for (const auto& node : info.structuralNodes)
   {
     LOG_DEBUG("Creating structural node %s with parent %s", qPrintable(node.id), qPrintable(node.parentId));
@@ -299,7 +306,7 @@ NodeItem* Canvas::createNode(const NodeSaveInfo& info, const QPointF& position, 
   if (!info.id.isEmpty() && !info.id.isNull())
     id = info.id;
 
-  NodeItem* node = new NodeItem(id, info, position, config, parentView()->getScale());
+  NodeItem* node = new NodeItem(id, info, position, config);
 
   node->nodeSeletected = [this](NodeItem* item) { emit nodeSelected(item); };
   node->nodeModified = [this](NodeItem* item) { emit nodeModified(item); };
