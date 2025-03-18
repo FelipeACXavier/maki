@@ -362,6 +362,18 @@ qreal Canvas::getScale() const
   return parentView()->getScale();
 }
 
+void Canvas::onFocusNode(const QString& nodeId)
+{
+  auto node = findNodeWithId(nodeId);
+  if (!node)
+    return;
+
+  parentView()->zoom(2 * node->baseScale() / parentView()->getScale());
+
+  // Center the node in the view
+  parentView()->centerOn(node);
+}
+
 void Canvas::onRemoveNode(const QString& nodeId)
 {
   auto node = findNodeWithId(nodeId);

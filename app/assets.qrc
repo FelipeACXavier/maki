@@ -12,4 +12,9 @@
          <file alias="multiplication.png">assets/icons/math/multiplication.png</file>
          <file alias="division.png">assets/icons/math/division.png</file>
       </qresource>
+      <qresource prefix="/icons">
+         <file alias="code-branch.svg">assets/icons/fontawesome/svgs/solid/code-branch.svg</file>
+         <file alias="cubes.svg">assets/icons/fontawesome/svgs/solid/cubes.svg</file>
+         <file alias="vector-square.svg">assets/icons/fontawesome/svgs/solid/vector-square.svg</file>
+      </qresource>
 </RCC>

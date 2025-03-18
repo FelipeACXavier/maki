@@ -1,5 +1,6 @@
 #include "tree_menu.h"
 
+#include <QInputDialog>
 #include <QMenu>
 
 #include "elements/node.h"
@@ -114,20 +115,25 @@ void TreeMenu::showContextMenu(const QPoint& pos)
     return;
 
   QMenu contextMenu(this);
-  QAction* deleteAction = contextMenu.addAction("Delete Node");
-  QAction* renameAction = contextMenu.addAction("Rename Node");
+  QAction* deleteAction = contextMenu.addAction("Delete");
+  // QAction* renameAction = contextMenu.addAction("Rename Node");
+  QAction* focusAction = contextMenu.addAction("Focus");
 
   QAction* selectedAction = contextMenu.exec(viewport()->mapToGlobal(pos));
   if (selectedAction == deleteAction)
   {
     emit nodeRemoved(selectedItem->text(ID_COLUMN));
   }
-  else if (selectedAction == renameAction)
+  // else if (selectedAction == renameAction)
+  // {
+  //   bool ok;
+  //   QString newName = QInputDialog::getText(this, "Rename Node", "New Name:", QLineEdit::Normal, selectedItem->text(NAME_COLUMN), &ok);
+  //   if (ok && !newName.isEmpty())
+  //     emit nodeRenamed(selectedItem->text(ID_COLUMN), newName);
+  // }
+  else if (selectedAction == focusAction)
   {
-    // bool ok;
-    // QString newName = QInputDialog::getText(this, "Rename Node", "New Name:", QLineEdit::Normal, selectedItem->text(0), &ok);
-    // if (ok && !newName.isEmpty())
-    //   selectedItem->setText(0, newName);
+    emit nodeFocused(selectedItem->text(ID_COLUMN));
   }
 }
 

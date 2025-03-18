@@ -11,6 +11,8 @@ public:
   CanvasView(QWidget* parent = nullptr);
   qreal getScale() const;
 
+  void zoom(float scaleFactor);
+
 protected:
   void keyPressEvent(QKeyEvent*) override;
   void keyReleaseEvent(QKeyEvent*) override;
@@ -37,7 +39,6 @@ private:
 
   void pan(QPointF delta);
 
-  void zoom(float scaleFactor);
   void zoomIn();
   void zoomOut();
   void resetZoom();

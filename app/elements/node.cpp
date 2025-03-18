@@ -92,6 +92,11 @@ QString NodeItem::nodeType() const
   return config()->type;
 }
 
+qreal NodeItem::baseScale() const
+{
+  return mInitialScale;
+}
+
 VoidResult NodeItem::start()
 {
   if (nodeSeletected)

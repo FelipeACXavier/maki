@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QIcon>
 #include <QString>
 #include <QWidget>
 
@@ -10,6 +11,8 @@ QPointF snapToGrid(const QPointF& point, const int gridSize);
 
 QString ToLabel(const QString& str);
 QString ToLabel(const std::string& str);
+
+QIcon addIconWithColor(const QString& path, const QColor& color);
 
 QString timeToQT(struct timespec ts);
 QString logLevelToQT(logging::LogLevel logLevel);

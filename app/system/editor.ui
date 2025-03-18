@@ -33,8 +33,26 @@
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
-       <property name="currentIndex">
+       <property name="focusPolicy">
+        <enum>Qt::TabFocus</enum>
+       </property>
+       <property name="toolTipDuration">
         <number>1</number>
+       </property>
+       <property name="layoutDirection">
+        <enum>Qt::LeftToRight</enum>
+       </property>
+       <property name="autoFillBackground">
+        <bool>true</bool>
+       </property>
+       <property name="tabPosition">
+        <enum>QTabWidget::West</enum>
+       </property>
+       <property name="currentIndex">
+        <number>0</number>
+       </property>
+       <property name="elideMode">
+        <enum>Qt::ElideRight</enum>
        </property>
        <widget class="QWidget" name="structureElements">
         <attribute name="title">
@@ -52,7 +70,7 @@
        </widget>
        <widget class="QWidget" name="externalBehaviourElements">
         <attribute name="title">
-         <string>External behaviour</string>
+         <string>External</string>
         </attribute>
         <layout class="QVBoxLayout" name="verticalLayout_2">
          <item>
@@ -66,7 +84,7 @@
        </widget>
        <widget class="QWidget" name="internalBehaviourElements">
         <attribute name="title">
-         <string>Internal behaviour</string>
+         <string>Internal</string>
         </attribute>
         <layout class="QVBoxLayout" name="verticalLayout_9">
          <item>
@@ -91,6 +109,9 @@
          <width>500</width>
          <height>0</height>
         </size>
+       </property>
+       <property name="focusPolicy">
+        <enum>Qt::ClickFocus</enum>
        </property>
       </widget>
       <widget class="QSplitter" name="rightPanel">

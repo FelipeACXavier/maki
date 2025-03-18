@@ -46,6 +46,7 @@ signals:
   void nodeModified(NodeItem* node);
 
 public slots:
+  void onFocusNode(const QString& nodeId);
   void onRemoveNode(const QString& nodeId);
   void onSelectNode(const QString& nodeId);
   void onRenameNode(const QString& nodeId, const QString& name);

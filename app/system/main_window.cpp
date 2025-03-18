@@ -89,7 +89,7 @@ void MainWindow::startUI()
   mUI->graphicsView->setScene(canvas);
 
   mUI->splitter->widget(0)->setMinimumWidth(200);
-  mUI->splitter->widget(0)->setMaximumWidth(400);
+  mUI->splitter->widget(0)->setMaximumWidth(300);
 
   mUI->splitter->widget(2)->setMinimumWidth(250);
   mUI->splitter->widget(2)->setMaximumWidth(400);
@@ -99,6 +99,19 @@ void MainWindow::startUI()
 
   mUI->helpMenu->setMinimumHeight(200);
   mUI->helpMenu->setMaximumHeight(800);
+
+  mUI->leftPanel->setTabIcon(0, addIconWithColor(":/icons/cubes.svg", Qt::white));
+  mUI->leftPanel->setTabToolTip(0, "Structure");
+  mUI->leftPanel->setTabText(0, "Structure");
+
+  mUI->leftPanel->setTabIcon(1, addIconWithColor(":/icons/vector-square.svg", Qt::white));
+  mUI->leftPanel->setTabToolTip(1, "Cross-component behaviour");
+  mUI->leftPanel->setTabText(1, "External");
+
+  mUI->leftPanel->setTabIcon(2, addIconWithColor(":/icons/code-branch.svg", Qt::white));
+  mUI->leftPanel->setTabToolTip(2, "Component behaviour");
+  mUI->leftPanel->setTabText(2, "Internal");
+  mUI->leftPanel->tabBar()->setExpanding(true);
 
   mPluginManager->start(mUI->menuGenerator);
 }
@@ -139,6 +152,7 @@ void MainWindow::bind()
   connect(mUI->treeWidget, &TreeMenu::nodeRemoved, canvas(), &Canvas::onRemoveNode);
   connect(mUI->treeWidget, &TreeMenu::nodeSelected, canvas(), &Canvas::onSelectNode);
   connect(mUI->treeWidget, &TreeMenu::nodeRenamed, canvas(), &Canvas::onRenameNode);
+  connect(mUI->treeWidget, &TreeMenu::nodeFocused, canvas(), &Canvas::onFocusNode);
 
   // Shortcuts =============================================================
   new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_C), this, [this] {

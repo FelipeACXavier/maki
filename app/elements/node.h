@@ -62,6 +62,8 @@ public:
   void setParent(NodeItem* parent);
   void childRemoved(NodeItem* child);
 
+  qreal baseScale() const;
+
   // "signals":
   std::function<void(NodeItem* item)> nodeCopied;
   std::function<void(NodeItem* item)> nodeDeleted;

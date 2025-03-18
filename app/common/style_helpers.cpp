@@ -1,5 +1,6 @@
 #include "style_helpers.h"
 
+#include <QPainter>
 #include <QStyle>
 #include <QVariant>
 
@@ -32,6 +33,16 @@ QString ToLabel(const std::string& str)
 QString ToLabel(const QString& str)
 {
   return QString::fromStdString(ToUpperCase(str.toStdString(), 0, 1));
+}
+
+QIcon addIconWithColor(const QString& path, const QColor& color)
+{
+  QPixmap pixmap(path);
+  QPainter painter(&pixmap);
+  painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
+  painter.fillRect(pixmap.rect(), color);
+  painter.end();
+  return QIcon(pixmap);
 }
 
 QString timeToQT(struct timespec ts)

@@ -18,6 +18,7 @@ public:
   VoidResult onNodeModified(NodeItem* node);
 
 signals:
+  void nodeFocused(const QString& nodeId);
   void nodeSelected(const QString& nodeId);
   void nodeRemoved(const QString& nodeId);
   void nodeRenamed(const QString& nodeId, const QString& name);
