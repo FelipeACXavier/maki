@@ -38,6 +38,11 @@ qreal CanvasView::getScale() const
   return mScale;
 }
 
+QPointF CanvasView::getCenter() const
+{
+  return mCenterPoint;
+}
+
 void CanvasView::setScale(qreal scale)
 {
   mScale = scale;
@@ -151,7 +156,8 @@ void CanvasView::pan(QPointF delta)
   setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
 
   QPoint newCenter(VIEW_WIDTH / 2 - delta.x(), VIEW_HEIGHT / 2 - delta.y());
-  centerOn(mapToScene(newCenter));
+  mCenterPoint = mapToScene(newCenter);
+  centerOn(mCenterPoint);
 
   // For zooming to anchor from the view center.
   setTransformationAnchor(QGraphicsView::AnchorViewCenter);

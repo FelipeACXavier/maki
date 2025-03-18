@@ -61,6 +61,7 @@ struct ConnectionSaveInfo
 struct CanvasSaveInfo
 {
   qreal scale{1.0};
+  QPointF center{0, 0};
 
   friend QDataStream& operator<<(QDataStream& out, const CanvasSaveInfo& info);
   friend QDataStream& operator>>(QDataStream& in, CanvasSaveInfo& info);

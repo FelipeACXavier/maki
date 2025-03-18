@@ -232,12 +232,32 @@ void Canvas::pasteCopiedItems()
   }
 }
 
+void Canvas::clearCanvas()
+{
+  QList<QGraphicsItem*> itemsList = items();
+  for (QGraphicsItem* item : itemsList)
+  {
+    if (item->type() == NodeItem::Type)
+    {
+      static_cast<NodeItem*>(item)->deleteNode();
+    }
+    else
+    {
+      removeItem(item);
+    }
+  }
+}
+
 VoidResult Canvas::loadFromSave(const SaveInfo& info)
 {
   // Clear the canvas before repopulating
-  clear();
+  clearCanvas();
 
+  // Reset canvas
+  // TODO(felaze): This should be moved to the CanvasView, something like parentView()->loadFromSave(info.canvasInfo);
+  parentView()->zoom(info.canvasInfo.scale / parentView()->getScale());
   parentView()->setScale(info.canvasInfo.scale);
+  parentView()->centerOn(info.canvasInfo.center);
 
   for (const auto& node : info.structuralNodes)
   {
@@ -367,6 +387,11 @@ Connector* Canvas::findConnectorWithId(const QString& id) const
 qreal Canvas::getScale() const
 {
   return parentView()->getScale();
+}
+
+QPointF Canvas::getCenter() const
+{
+  return parentView()->getCenter();
 }
 
 void Canvas::onFocusNode(const QString& nodeId)

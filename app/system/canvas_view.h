@@ -10,6 +10,7 @@ class CanvasView : public QGraphicsView
 public:
   CanvasView(QWidget* parent = nullptr);
   qreal getScale() const;
+  QPointF getCenter() const;
   void setScale(qreal scale);
 
   void zoom(float scaleFactor);
@@ -32,6 +33,7 @@ private:
 
   QPoint mLastMousePos;
   qreal mScale;
+  QPointF mCenterPoint;
 
   qreal mPanSpeed;
   qreal mZoomDelta;

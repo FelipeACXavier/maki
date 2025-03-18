@@ -26,6 +26,7 @@ public:
   void copySelectedItems();
 
   qreal getScale() const;
+  QPointF getCenter() const;
   VoidResult loadFromSave(const SaveInfo& info);
 
 protected:
@@ -59,6 +60,8 @@ private:
 
   QList<NodeSaveInfo> copiedNodes;
   std::shared_ptr<ConfigurationTable> mConfigTable;
+
+  void clearCanvas();
 
   CanvasView* parentView() const;
   NodeItem* createNode(const NodeSaveInfo& info, const QPointF& position, NodeItem* parent);

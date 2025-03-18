@@ -43,6 +43,7 @@ VoidResult SaveHandler::saveToFile(Canvas* canvas)
 {
   SaveInfo info;
   info.canvasInfo.scale = canvas->getScale();
+  info.canvasInfo.center = canvas->getCenter();
 
   for (const auto& item : canvas->items())
   {
