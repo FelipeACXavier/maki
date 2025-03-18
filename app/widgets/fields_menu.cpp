@@ -3,12 +3,14 @@
 #include <QHeaderView>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QLabel>
 #include <QMenu>
 #include <QPushButton>
 #include <QStandardItemModel>
 #include <QTableView>
 #include <QVBoxLayout>
 
+#include "app_configs.h"
 #include "elements/node.h"
 #include "json.h"
 #include "logging.h"
@@ -62,8 +64,16 @@ VoidResult FieldsMenu::onNodeRemoved(NodeItem* node)
 
 VoidResult FieldsMenu::loadControls(NodeItem* node)
 {
-  if (node->controls().size() < 0)
+  if (node->controls().size() < 1)
+  {
+    QLabel* nameLabel = new QLabel("Block has no fields", this);
+    nameLabel->setFont(Fonts::Property);
+
+    layout()->setAlignment(Qt::AlignCenter);
+    layout()->addWidget(nameLabel);
+
     return VoidResult();
+  }
 
   // Controls are placed in a new horizontal widget at the bottom of the properties menu
   QWidget* controls = new QWidget(this);

@@ -74,6 +74,17 @@ void PropertiesMenu::clear()
 
 VoidResult PropertiesMenu::loadProperties(NodeItem* node)
 {
+  if (node->configurationProperties().size() < 1)
+  {
+    QLabel* nameLabel = new QLabel("Block has no properties", this);
+    nameLabel->setFont(Fonts::Property);
+
+    layout()->setAlignment(Qt::AlignCenter);
+    layout()->addWidget(nameLabel);
+
+    return VoidResult();
+  }
+
   for (const auto& property : node->configurationProperties())
   {
     // LOG_DEBUG("Updating properties with %s of type %d", qPrintable(property.id), (int)property.type);
@@ -115,9 +126,9 @@ VoidResult PropertiesMenu::loadPropertyInt(const PropertiesConfig& property, Nod
   widget->setText(result.toString());
   widget->setValidator(validator);
 
-  connect(widget, &QLineEdit::textChanged, this, [=](const QString& text) {
+  connect(widget, &QLineEdit::returnPressed, this, [=]() {
     bool ok;
-    int newValue = text.toInt(&ok);
+    int newValue = widget->text().toInt(&ok);
     if (ok)
       node->setProperty(property.id, newValue);
   });
@@ -140,9 +151,9 @@ VoidResult PropertiesMenu::loadPropertyReal(const PropertiesConfig& property, No
   widget->setText(result.toString());
   widget->setValidator(validator);
 
-  connect(widget, &QLineEdit::textChanged, this, [=](const QString& text) {
+  connect(widget, &QLineEdit::returnPressed, this, [=]() {
     bool ok;
-    qreal newValue = text.toDouble(&ok);
+    qreal newValue = widget->text().toDouble(&ok);
     if (ok)
       node->setProperty(property.id, newValue);
   });
@@ -224,8 +235,8 @@ VoidResult PropertiesMenu::loadPropertyString(const PropertiesConfig& property, 
     return VoidResult::Failed("Failed to get default value");
 
   widget->setText(result.toString());
-  connect(widget, &QLineEdit::textChanged, this, [=](const QString& text) {
-    node->setProperty(property.id, text);
+  connect(widget, &QLineEdit::returnPressed, this, [=]() {
+    node->setProperty(property.id, widget->text());
   });
 
   widget->setFont(Fonts::Property);

@@ -25,15 +25,6 @@ NodeItem::NodeItem(const QString& id, const NodeSaveInfo& info, const QPointF& i
   setCacheMode(DeviceCoordinateCache);
   setAcceptDrops(config()->libraryType == Types::LibraryTypes::STRUCTURAL);
 
-  // Add icon if it exists
-  if (!info.pixmap.isNull())
-  {
-    QSize newSize = info.pixmap.size() / mInitialScale;
-    setPixmap(info.pixmap.scaled(newSize, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-  }
-  else
-    setLabel(config()->type, config()->body.textColor, mInitialScale);
-
   for (const auto& connector : config()->connectors)
   {
     QString connectorId = QUuid::createUuid().toString();
@@ -61,6 +52,15 @@ NodeItem::NodeItem(const QString& id, const NodeSaveInfo& info, const QPointF& i
 
   if (!info.fields.isEmpty())
     mFields = info.fields;
+
+  // Add icon if it exists
+  if (!info.pixmap.isNull())
+  {
+    QSize newSize = info.pixmap.size() / mInitialScale;
+    setPixmap(info.pixmap.scaled(newSize, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+  }
+  else
+    setLabel(getProperty("name").toString(), config()->body.textColor, Fonts::BaseSize / mInitialScale);
 
   setParent(nullptr);
   updatePosition(snapToGrid(initialPosition - boundingRect().center(), Config::GRID_SIZE));
@@ -180,6 +180,9 @@ void NodeItem::setProperty(const QString& key, QVariant value)
 
   mProperties[key] = value;
 
+  if (key == "name")
+    setLabelName(value.toString());
+
   if (nodeModified)
     nodeModified(this);
 
@@ -277,6 +280,9 @@ void NodeItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
     mSize.setWidth(qMax(Config::MINIMUM_NODE_SIZE, qMax(Config::MINIMUM_NODE_SIZE, newWidth)));
     mSize.setHeight(qMax(Config::MINIMUM_NODE_SIZE, qMax(Config::MINIMUM_NODE_SIZE, newHeight)));
 
+    qreal newFontSize = qMax(Fonts::BaseSize, mSize.width() / Fonts::BaseFactor);
+
+    setLabelSize(newFontSize);
     prepareGeometryChange();
     update();
   }

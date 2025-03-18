@@ -20,7 +20,7 @@
           "default": "Start"
         },
         {
-          "id": "type",
+          "id": "mode",
           "type": "select",
           "default": "signal",
           "options": [
@@ -62,11 +62,6 @@
           "id": "name",
           "type": "string",
           "default": "End"
-        },
-        {
-          "id": "type",
-          "type": "string",
-          "default": "End"
         }
       ],
       "connectors": [
@@ -96,11 +91,6 @@
           "id": "name",
           "type": "string",
           "default": "Error"
-        },
-        {
-          "id": "type",
-          "type": "string",
-          "default": "Error"
         }
       ],
       "connectors": [
@@ -128,11 +118,6 @@
       "properties": [
         {
           "id": "name",
-          "type": "string",
-          "default": "Condition"
-        },
-        {
-          "id": "type",
           "type": "string",
           "default": "Condition"
         },
@@ -181,11 +166,7 @@
           "type": "string",
           "default": "Action"
         },
-        {
-          "id": "type",
-          "type": "string",
-          "default": "Action"
-        },
+
         {
           "id": "call",
           "type": "string",
@@ -219,11 +200,6 @@
       "properties": [
         {
           "id": "name",
-          "type": "string",
-          "default": "Constant"
-        },
-        {
-          "id": "type",
           "type": "string",
           "default": "Constant"
         },

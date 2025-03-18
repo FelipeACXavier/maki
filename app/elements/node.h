@@ -55,6 +55,8 @@ public:
   VoidResult setField(const QString& key, const QJsonObject& value);
   void removeField(const QString& key);
 
+  void renameNode(const QString& name);
+
   INode* parentNode() const override;
   QVector<INode*> children() const override;
 

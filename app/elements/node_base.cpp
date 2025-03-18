@@ -2,6 +2,7 @@
 
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
+#include <QtGlobal>
 
 #include "app_configs.h"
 
@@ -143,20 +144,35 @@ void NodeBase::paintPixmap(QPainter* painter) const
   painter->drawPixmap(topLeft, mPixmapItem->pixmap());
 }
 
-void NodeBase::setLabel(const QString& name, const QColor& color, qreal zoomLevel)
+void NodeBase::setLabel(const QString& name, const QColor& color, qreal fontSize)
 {
-  mLabel = std::make_shared<QGraphicsTextItem>(name, this);
+  mLabel = std::make_shared<QGraphicsTextItem>(this);
   mLabel->setDefaultTextColor(color);
+
+  setLabelName(name);
+  setLabelSize(fontSize);
+
+  updateLabelPosition();
+}
+
+void NodeBase::setLabelName(const QString& name)
+{
+  if (!mLabel)
+    return;
+
+  mLabel->setPlainText(name);
+  updateLabelPosition();
+}
+
+void NodeBase::setLabelSize(qreal fontSize)
+{
+  if (!mLabel)
+    return;
 
   // Set the base font size
   QFont font = mLabel->font();
-
-  // Optionally, adjust the font size to be proportional to the zoom
-  font.setPointSize(Fonts::BaseSize / zoomLevel);
-
-  // Apply the scaled font to the label
+  font.setPointSizeF(fontSize);
   mLabel->setFont(font);
-
   updateLabelPosition();
 }
 

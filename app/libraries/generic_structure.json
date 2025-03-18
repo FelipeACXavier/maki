@@ -48,7 +48,7 @@
         {
           "id": "type",
           "type": "string",
-          "default": "Basic type"
+          "default": "string"
         },
         {
           "id": "default value",
@@ -77,11 +77,6 @@
       "properties": [
         {
           "id": "name",
-          "type": "string",
-          "default": "Data object"
-        },
-        {
-          "id": "type",
           "type": "string",
           "default": "Data object"
         },
