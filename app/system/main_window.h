@@ -38,7 +38,7 @@ protected:
   bool eventFilter(QObject* watched, QEvent* event) override;
 
 private slots:
-  void onNodeSelected(NodeItem* node);
+  void onNodeSelected(NodeItem* node, bool selected);
   void onNodeAdded(NodeItem* node);
   void onNodeRemoved(NodeItem* node);
   void onNodeModified(NodeItem* node);

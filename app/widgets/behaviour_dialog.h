@@ -2,6 +2,7 @@
 
 #include <QDialog>
 #include <QLineEdit>
+#include <QListWidget>
 
 class NodeItem;
 
@@ -15,6 +16,12 @@ public:
 
   QString getName() const;
 
+public slots:
+  void nodeSelected(NodeItem* node, bool selected);
+
 private:
   QLineEdit* mName;
+  QListWidget* mListWidget;
+
+  void populateNodeList();
 };

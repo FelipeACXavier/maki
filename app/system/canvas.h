@@ -44,7 +44,7 @@ protected:
   void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
 
 signals:
-  void nodeSelected(NodeItem* node);
+  void nodeSelected(NodeItem* node, bool selected);
   void nodeAdded(NodeItem* node);
   void nodeRemoved(NodeItem* node);
   void nodeModified(NodeItem* node);

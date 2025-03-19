@@ -8,9 +8,13 @@
 
 #include "app_configs.h"
 #include "elements/node.h"
+#include "logging.h"
+#include "system/canvas.h"
 
 BehaviourDialog::BehaviourDialog(const QString& title, QWidget* parent)
     : QDialog(parent)
+    , mName((nullptr))
+    , mListWidget(nullptr)
 {
   setWindowTitle(title);
 
@@ -37,14 +41,8 @@ void BehaviourDialog::setup(const QList<NodeItem*>& nodes)
   QLabel* startNodeLabel = new QLabel("Starting point:", this);
   layout()->addWidget(startNodeLabel);
 
-  // Add select widget with list of available nodes
-  QComboBox* widget = new QComboBox(this);
-
-  for (const auto& node : nodes)
-    widget->addItem(node->nodeName());
-
-  widget->setFont(Fonts::Property);
-  layout()->addWidget(widget);
+  mListWidget = new QListWidget(this);
+  layout()->addWidget(mListWidget);
 
   static_cast<QVBoxLayout*>(layout())->addStretch();
 
@@ -55,4 +53,27 @@ void BehaviourDialog::setup(const QList<NodeItem*>& nodes)
   // Connect buttons to appropriate slots
   connect(buttonBox, &QDialogButtonBox::accepted, this, &BehaviourDialog::accept);
   connect(buttonBox, &QDialogButtonBox::rejected, this, &BehaviourDialog::reject);
+}
+
+void BehaviourDialog::nodeSelected(NodeItem* node, bool selected)
+{
+  if (!mListWidget || !node)
+    return;
+
+  if (selected)
+  {
+    QListWidgetItem* listItem = new QListWidgetItem(node->nodeName(), mListWidget);
+    listItem->setData(Qt::UserRole, QVariant::fromValue(node->id()));
+  }
+  else
+  {
+    for (int i = 0; i < mListWidget->count(); ++i)
+    {
+      if (mListWidget->item(i)->data(Qt::UserRole).toString() == node->id())
+      {
+        mListWidget->takeItem(i);
+        break;
+      }
+    }
+  }
 }

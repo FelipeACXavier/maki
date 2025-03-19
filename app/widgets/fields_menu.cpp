@@ -38,12 +38,12 @@ void FieldsMenu::clear()
   }
 }
 
-VoidResult FieldsMenu::onNodeSelected(NodeItem* node)
+VoidResult FieldsMenu::onNodeSelected(NodeItem* node, bool selected)
 {
   // Clear the frame
   clear();
 
-  if (!node)
+  if (!node || !selected)
     return VoidResult();
 
   mCurrentNode = node->id();

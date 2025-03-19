@@ -10,9 +10,11 @@
 #include "behaviour_item.h"
 #include "elements/node.h"
 #include "logging.h"
+#include "system/canvas.h"
 
 BehaviourMenu::BehaviourMenu(QWidget* parent)
     : QFrame(parent)
+    , mCurrentDialog(nullptr)
 {
   // Set widget layout
   QVBoxLayout* layout = new QVBoxLayout();
@@ -21,8 +23,11 @@ BehaviourMenu::BehaviourMenu(QWidget* parent)
   setGlobalView();
 }
 
-VoidResult BehaviourMenu::onNodeSelected(NodeItem* node)
+VoidResult BehaviourMenu::onNodeSelected(NodeItem* node, bool selected)
 {
+  if (mCurrentDialog)
+    mCurrentDialog->nodeSelected(node, selected);
+
   return VoidResult();
 }
 
@@ -98,26 +103,46 @@ void BehaviourMenu::addBehaviour()
   auto nodes = mGetAvailableNodes();
 
   // Open the dialog
-  BehaviourDialog dialog("Add behaviour", this);
+  mCurrentDialog = new BehaviourDialog("Add behaviour", this);
 
-  dialog.setup(nodes);
+  mCurrentDialog->setup(nodes);
 
-  // Show the dialog as modal and check if the user clicked "OK"
-  if (dialog.exec() == QDialog::Accepted)
+  connect(mCurrentDialog, &QDialog::accepted, this, &BehaviourMenu::onDialogAccepted);
+  connect(mCurrentDialog, &QDialog::rejected, this, &BehaviourMenu::onDialogRejected);
+
+  mCurrentDialog->setAttribute(Qt::WA_DeleteOnClose);
+  mCurrentDialog->show();
+}
+
+void BehaviourMenu::onDialogAccepted()
+{
+  if (!mCurrentDialog)
+    return;
+
+  // Get the title entered by the user
+  QString title = mCurrentDialog->getName();
+
+  // If the title is not empty, add the item to the list
+  if (title.isEmpty())
   {
-    // Get the title entered by the user
-    QString title = dialog.getName();
-
-    // If the title is not empty, add the item to the list
-    if (title.isEmpty())
-    {
-      QMessageBox::warning(this, "Input Error", "Please enter a valid title.");
-      return;
-    }
-
-    BehaviourItem* behaviour = new BehaviourItem(title);
-    mBehaviourList->addItem(behaviour);
+    QMessageBox::warning(this, "Input Error", "Please enter a valid title.");
+    return;
   }
+
+  BehaviourItem* behaviour = new BehaviourItem(title);
+  mBehaviourList->addItem(behaviour);
+
+  // Add nodes to the behaviour item
+  // Create a sub-behaviour in each selected node
+
+  mCurrentDialog->close();
+  mCurrentDialog->deleteLater();
+}
+
+void BehaviourMenu::onDialogRejected()
+{
+  mCurrentDialog->close();
+  mCurrentDialog->deleteLater();
 }
 
 void BehaviourMenu::editBehaviour(QListWidgetItem* item)

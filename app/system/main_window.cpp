@@ -155,7 +155,9 @@ void MainWindow::bind()
   connect(mUI->treeWidget, &TreeMenu::nodeRenamed, canvas(), &Canvas::onRenameNode);
   connect(mUI->treeWidget, &TreeMenu::nodeFocused, canvas(), &Canvas::onFocusNode);
 
-  static_cast<BehaviourMenu*>(mUI->behaviourFrame)->mGetAvailableNodes = [this]() {
+  auto behaviourMenu = static_cast<BehaviourMenu*>(mUI->behaviourFrame);
+
+  behaviourMenu->mGetAvailableNodes = [this]() {
     return canvas()->availableNodes();
   };
 }
@@ -321,7 +323,7 @@ void MainWindow::onActionLoad()
   canvas()->loadFromSave(info);
 }
 
-void MainWindow::onNodeSelected(NodeItem* node)
+void MainWindow::onNodeSelected(NodeItem* node, bool selected)
 {
   if (node)
   {
@@ -330,9 +332,9 @@ void MainWindow::onNodeSelected(NodeItem* node)
     mUI->infoText->setFont(Fonts::Property);
   }
 
-  LOG_WARN_ON_FAILURE(mUI->propertiesFrame->onNodeSelected(node));
-  LOG_WARN_ON_FAILURE(mUI->fieldsFrame->onNodeSelected(node));
-  LOG_WARN_ON_FAILURE(mUI->behaviourFrame->onNodeSelected(node));
+  LOG_WARN_ON_FAILURE(mUI->propertiesFrame->onNodeSelected(node, selected));
+  LOG_WARN_ON_FAILURE(mUI->fieldsFrame->onNodeSelected(node, selected));
+  LOG_WARN_ON_FAILURE(mUI->behaviourFrame->onNodeSelected(node, selected));
 }
 
 void MainWindow::onNodeAdded(NodeItem* node)

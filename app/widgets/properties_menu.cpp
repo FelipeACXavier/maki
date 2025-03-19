@@ -31,12 +31,12 @@ PropertiesMenu::PropertiesMenu(QWidget* parent)
   setLayout(layout);
 }
 
-VoidResult PropertiesMenu::onNodeSelected(NodeItem* node)
+VoidResult PropertiesMenu::onNodeSelected(NodeItem* node, bool selected)
 {
   // Clear the frame
   clear();
 
-  if (!node)
+  if (!node || !selected)
     return VoidResult();
 
   mCurrentNode = node->id();

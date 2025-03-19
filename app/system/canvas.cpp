@@ -467,7 +467,7 @@ void Canvas::selectNode(NodeItem* node, bool select)
   if (node)
     node->setSelected(select);
 
-  emit nodeSelected(select ? node : nullptr);
+  emit nodeSelected(node, select);
 }
 
 void Canvas::clearSelectedNodes()

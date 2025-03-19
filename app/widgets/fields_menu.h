@@ -14,7 +14,7 @@ class FieldsMenu : public QFrame
 public:
   FieldsMenu(QWidget* parent);
 
-  VoidResult onNodeSelected(NodeItem* node);
+  VoidResult onNodeSelected(NodeItem* node, bool selected);
   VoidResult onNodeRemoved(NodeItem* node);
 
 private:

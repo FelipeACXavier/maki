@@ -14,7 +14,7 @@ class PropertiesMenu : public QFrame
 public:
   PropertiesMenu(QWidget* parent);
 
-  VoidResult onNodeSelected(NodeItem* node);
+  VoidResult onNodeSelected(NodeItem* node, bool selected);
   VoidResult onNodeRemoved(NodeItem* node);
 
 private:
