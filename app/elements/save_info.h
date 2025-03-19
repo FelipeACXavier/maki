@@ -34,7 +34,7 @@ struct NodeSaveInfo
   QVector<ConnectorSaveInfo> connectors;
 
   QString parentId = "";
-  QVector<INode*> children = {};
+  QVector<NodeSaveInfo> children = {};
 
   NodeSaveInfo() = default;
 

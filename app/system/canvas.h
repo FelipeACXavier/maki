@@ -24,6 +24,7 @@ public:
 
   void pasteCopiedItems();
   void copySelectedItems();
+  void deleteSelectedItems();
 
   qreal getScale() const;
   QPointF getCenter() const;
@@ -38,7 +39,7 @@ protected:
   void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
   void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
 
-  void keyPressEvent(QKeyEvent* event) override;
+  void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
 
 signals:
   void nodeSelected(NodeItem* node);

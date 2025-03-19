@@ -3,6 +3,7 @@
 #include <QBuffer>
 #include <QClipboard>
 #include <QGraphicsSceneDragDropEvent>
+#include <QMenu>
 #include <QMimeData>
 
 #include "app_configs.h"
@@ -159,27 +160,84 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
   QGraphicsScene::mouseReleaseEvent(event);  // Allow normal item drop behavior
 }
 
-void Canvas::keyPressEvent(QKeyEvent* event)
+void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 {
-  if (event->key() == Qt::Key_Delete)
-  {
+  QList<QGraphicsItem*> items = selectedItems();
+
+  // If right-clicking directly on a node and that is the only node, let it handle the event
+  // QGraphicsItem* clickedItem = itemAt(event->scenePos(), QTransform());
+  // if (items.size() < 2 && clickedItem && clickedItem->type() == NodeItem::Type)
+  // {
+  //   QGraphicsScene::contextMenuEvent(event);
+  //   return;
+  // }
+
+  // Create the menu
+  QMenu menu;
+
+  // Add actions to the menu
+  QAction* copyAction = menu.addAction("Copy");
+  copyAction->setEnabled(items.size() > 0);
+  QObject::connect(copyAction, &QAction::triggered, [this]() {
+    copySelectedItems();
+  });
+
+  QAction* pasteAction = menu.addAction("Paste");
+  pasteAction->setEnabled(copiedNodes.size() > 0);
+  QObject::connect(pasteAction, &QAction::triggered, [this]() {
+    pasteCopiedItems();
+  });
+  menu.addSeparator();
+
+  QAction* deleteAction = menu.addAction("Delete");
+  deleteAction->setEnabled(items.size() > 0);
+  QObject::connect(deleteAction, &QAction::triggered, [this]() {
+    deleteSelectedItems();
+  });
+
+  menu.addSeparator();
+
+  QAction* toggleLabelAction = menu.addAction("Toggle label");
+  toggleLabelAction->setEnabled(items.size() > 0);
+  QObject::connect(toggleLabelAction, &QAction::triggered, [this]() {
     for (QGraphicsItem* item : selectedItems())
     {
       if (item->type() == NodeItem::Type)
-        dynamic_cast<NodeItem*>(item)->deleteNode();
-      else
-        delete item;
+        dynamic_cast<NodeItem*>(item)->toggleLableVisibility();
     }
-  }
-  else
+  });
+
+  QMenu* alignMenu = new QMenu("Align");
+  QAction* alignHCenter = alignMenu->addAction("Align H center");
+  QAction* alignLeft = alignMenu->addAction("Align left");
+  QAction* alignRight = alignMenu->addAction("Align right");
+  QAction* alignVCenter = alignMenu->addAction("Align V center");
+  QAction* alignTop = alignMenu->addAction("Align top");
+  QAction* alignBottom = alignMenu->addAction("Align bottom");
+  alignMenu->setEnabled(items.size() > 1);
+
+  menu.addMenu(alignMenu);
+
+  // Execute the menu at the mouse cursor's position
+  menu.exec(event->screenPos());
+}
+
+void Canvas::deleteSelectedItems()
+{
+  for (QGraphicsItem* item : selectedItems())
   {
-    QGraphicsScene::keyPressEvent(event);  // Forward event to base class
+    if (item->type() == NodeItem::Type)
+      dynamic_cast<NodeItem*>(item)->deleteNode();
+    else
+      removeItem(item);
   }
 }
 
 void Canvas::copySelectedItems()
 {
   copiedNodes.clear();
+
+  QPointF mousePosition = parentView()->mapToScene(parentView()->mapFromGlobal(QCursor::pos()));
 
   for (QGraphicsItem* item : selectedItems())
   {
@@ -190,7 +248,11 @@ void Canvas::copySelectedItems()
     if (!node)
       continue;
 
-    copiedNodes.append(node->saveInfo());
+    // Save relative position
+    auto info = node->saveInfo();
+    info.position = mousePosition - info.position;
+
+    copiedNodes.append(info);
 
     // Make sure the item is not selected after copying
     item->setSelected(false);
@@ -217,18 +279,16 @@ void Canvas::pasteCopiedItems()
         return;
     }
 
-    auto node = createNode(info, mousePosition, parentNode);
+    auto node = createNode(info, mousePosition - info.position, parentNode);
 
-    for (const auto& child : info.children)
+    for (const auto& childInfo : info.children)
     {
-      auto childNode = dynamic_cast<NodeItem*>(child);
-      if (!childNode)
-        continue;
-
       // Children's positions take into account the relative prosition to the parent
-      auto childInfo = childNode->saveInfo();
-      (void)createNode(childInfo, mousePosition - (info.position - childInfo.position), node);
+      auto child = createNode(childInfo, node->scenePos() - childInfo.position, node);
+      child->setSelected(false);
     }
+
+    node->setSelected(false);
   }
 }
 
@@ -330,7 +390,6 @@ NodeItem* Canvas::createNode(const NodeSaveInfo& info, const QPointF& position, 
 
   node->nodeSeletected = [this](NodeItem* item) { emit nodeSelected(item); };
   node->nodeModified = [this](NodeItem* item) { emit nodeModified(item); };
-  node->nodeCopied = [this](NodeItem* /* item */) { copySelectedItems(); };
   node->nodeDeleted = [this](NodeItem* item) {
     removeItem(item);
     emit nodeRemoved(item);

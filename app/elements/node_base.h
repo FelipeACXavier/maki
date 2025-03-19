@@ -33,6 +33,7 @@ public:
   void paintNode(const QRectF& bounds, const QColor& background, const QPen& text, QPainter* painter);
 
   virtual QPixmap nodePixmap() const;
+  virtual void toggleLableVisibility();
 
 protected:
   std::shared_ptr<NodeConfig> mConfig;

@@ -163,6 +163,10 @@ void MainWindow::bind()
     if (canvas())
       canvas()->pasteCopiedItems();
   });
+  new QShortcut(QKeySequence(Qt::Key_Delete), this, [this] {
+    if (canvas())
+      canvas()->deleteSelectedItems();
+  });
 }
 
 Canvas* MainWindow::canvas() const

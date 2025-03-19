@@ -176,6 +176,14 @@ void NodeBase::setLabelSize(qreal fontSize)
   updateLabelPosition();
 }
 
+void NodeBase::toggleLableVisibility()
+{
+  if (!mLabel)
+    return;
+
+  mLabel->setVisible(!mLabel->isVisible());
+}
+
 void NodeBase::setPixmap(const QPixmap& pixmap)
 {
   mPixmapItem = std::make_shared<QGraphicsPixmapItem>(pixmap);

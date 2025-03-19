@@ -332,7 +332,7 @@ void NodeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
       nodeSeletected(this);
   }
 
-  updatePosition(snapToGrid(scenePos(), Config::GRID_SIZE));
+  updatePosition(snapToGrid(scenePos(), Config::GRID_SIZE / static_cast<Canvas*>(scene())->getScale()));
 
   QGraphicsItem::mouseReleaseEvent(event);
 }
@@ -373,36 +373,6 @@ QVariant NodeItem::itemChange(GraphicsItemChange change, const QVariant& value)
   }
 
   return QGraphicsItem::itemChange(change, value);
-}
-
-void NodeItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
-{
-  // Create the menu
-  QMenu menu;
-
-  // Add actions to the menu
-  QAction* propertiesAction = menu.addAction("Properties");
-  QAction* copyAction = menu.addAction("Copy");
-  QAction* toggleLabelAction = menu.addAction("Toggle label");
-
-  menu.addSeparator();
-  QAction* deleteAction = menu.addAction("Delete");
-
-  // Connect actions to their slots
-  QObject::connect(deleteAction, &QAction::triggered, [this]() { deleteNode(); });
-  QObject::connect(toggleLabelAction, &QAction::triggered, [this]() {
-    mLabel->setVisible(!mLabel->isVisible());
-  });
-  QObject::connect(propertiesAction, &QAction::triggered, [this]() {
-    onProperties();
-  });
-  QObject::connect(copyAction, &QAction::triggered, [this]() {
-    if (nodeCopied)
-      nodeCopied(this);
-  });
-
-  // Execute the menu at the mouse cursor's position
-  menu.exec(event->screenPos());
 }
 
 void NodeItem::updatePosition(const QPointF& position)
@@ -457,7 +427,12 @@ NodeSaveInfo NodeItem::saveInfo() const
     info.parentId = dynamic_cast<NodeItem*>(parentNode())->id();
 
   for (const auto& child : children())
-    info.children.push_back(child);
+  {
+    // Save position relative to parent
+    auto childInfo = static_cast<NodeItem*>(child)->saveInfo();
+    childInfo.position = scenePos() - childInfo.position;
+    info.children.push_back(childInfo);
+  }
 
   return info;
 }
