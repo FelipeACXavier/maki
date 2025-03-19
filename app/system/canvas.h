@@ -58,6 +58,7 @@ private:
   Connector* mConnector = nullptr;
   Connector* mHoveredConnector = nullptr;
   ConnectionItem* mConnection = nullptr;
+  QPointF mStartDragPosition;
 
   QList<NodeSaveInfo> copiedNodes;
   std::shared_ptr<ConfigurationTable> mConfigTable;
@@ -75,4 +76,7 @@ private:
   // TODO(felaze): Make this a separate class
   QMenu* createAlignMenu(const QList<QGraphicsItem*>& items);
   QMenu* createConnectionMenu(const QList<QGraphicsItem*>& items);
+
+  void clearSelectedNodes();
+  bool isModifierSet(QGraphicsSceneMouseEvent* event, Qt::KeyboardModifier modifier);
 };

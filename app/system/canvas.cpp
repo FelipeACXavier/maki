@@ -51,7 +51,7 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
     }
 
     // Make sure that no other nodes are selected before dropping
-    clearSelection();
+    clearSelectedNodes();
 
     QByteArray data = event->mimeData()->data(Constants::TYPE_NODE);
     QDataStream stream(&data, QIODevice::ReadOnly);
@@ -76,12 +76,19 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
   }
 }
 
+bool Canvas::isModifierSet(QGraphicsSceneMouseEvent* event, Qt::KeyboardModifier modifier)
+{
+  return (event->modifiers() & modifier) > 0;
+}
+
 void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
   // If the press is on the left or right connection point of a node, start
   // drawing
   if (event->button() == Qt::LeftButton)
   {
+    mStartDragPosition = event->scenePos();
+
     QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
     if (item && item->type() == Connector::Type)
     {
@@ -105,12 +112,23 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
     else if (item && item->type() == NodeItem::Type)
     {
       NodeItem* node = static_cast<NodeItem*>(item);
-      selectNode(node, true);
+      if (isModifierSet(event, Qt::ControlModifier))
+      {
+        selectNode(node, !node->isSelected());
+        return;
+      }
+      else
+      {
+        // We cannot clear if there are multiple nodes selected
+        if (selectedItems().size() < 2)
+          clearSelectedNodes();
+
+        selectNode(node, true);
+      }
     }
     else if (!item)
     {
-      selectNode(nullptr, false);
-      // emit nodeSelected(nullptr);
+      clearSelectedNodes();
     }
   }
 
@@ -172,6 +190,26 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
       mConnection = nullptr;
       mConnector = nullptr;
       parentView()->setDragMode(QGraphicsView::RubberBandDrag);
+    }
+  }
+  else
+  {
+    if (parentView()->dragMode() == QGraphicsView::RubberBandDrag && !isModifierSet(event, Qt::ControlModifier))
+    {
+      bool draggingFromRight = mStartDragPosition.x() > event->scenePos().x();
+
+      QPainterPath selectionPath = selectionArea();
+      QList<QGraphicsItem*> allSelectedItems = selectedItems();
+
+      for (QGraphicsItem* item : selectedItems())
+      {
+        QRectF itemBounds = item->sceneBoundingRect();
+        if ((draggingFromRight && !selectionPath.intersects(itemBounds)) ||
+            (!draggingFromRight && !selectionPath.contains(itemBounds)))
+        {
+          item->setSelected(false);
+        }
+      }
     }
   }
 
@@ -268,6 +306,8 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 
   // Define menu actions
   menu.addMenu(createConnectionMenu(items));
+
+  menu.addSection("Modifiers");
 
   QAction* copyAction = menu.addAction("Copy");
   copyAction->setEnabled(items.size() > 0);
@@ -394,6 +434,20 @@ void Canvas::selectNode(NodeItem* node, bool select)
     node->setSelected(select);
 
   emit nodeSelected(select ? node : nullptr);
+}
+
+void Canvas::clearSelectedNodes()
+{
+  for (QGraphicsItem* item : selectedItems())
+  {
+    if (item->type() == NodeItem::Type)
+    {
+      auto node = static_cast<NodeItem*>(item);
+      selectNode(node, false);
+    }
+  }
+
+  // clearSelection();
 }
 
 VoidResult Canvas::loadFromSave(const SaveInfo& info)

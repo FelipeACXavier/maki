@@ -124,10 +124,10 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
 
   // LOG_DEBUG("%s Setting opacity: %f %f %f", qPrintable(id()), opacity, currentScale, baseScale());
   // Make sure opacity stays within valid range [0, 1]
-  // setOpacity(qBound(0.0, opacity, 1.0));
+  setOpacity(qBound(0.0, opacity, 1.0));
 
-  // setFlag(QGraphicsItem::ItemIsSelectable, opacity > Config::OPACITY_THRESHOLD);
-  // setFlag(QGraphicsItem::ItemIsMovable, opacity > Config::OPACITY_THRESHOLD);
+  setFlag(QGraphicsItem::ItemIsSelectable, opacity > Config::OPACITY_THRESHOLD);
+  setFlag(QGraphicsItem::ItemIsMovable, opacity > Config::OPACITY_THRESHOLD);
 
   NodeBase::paintNode(boundingRect(),
                       background,
