@@ -70,4 +70,9 @@ private:
 
   NodeItem* findNodeWithId(const QString& id) const;
   Connector* findConnectorWithId(const QString& id) const;
+
+  // Context menu
+  // TODO(felaze): Make this a separate class
+  QMenu* createAlignMenu(const QList<QGraphicsItem*>& items);
+  QMenu* createConnectionMenu(const QList<QGraphicsItem*>& items);
 };

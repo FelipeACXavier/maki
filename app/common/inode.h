@@ -24,6 +24,7 @@ public:
   virtual ~IConnector() = default;
 
   virtual QString id() const = 0;
+  virtual QString connectorName() const = 0;
   virtual Types::ConnectorType connectorType() const = 0;
   virtual QVector<IConnection*> connections() const = 0;
   virtual QVector<IConnection*> connectionsFromThis() const = 0;

@@ -50,7 +50,7 @@ int Connector::type() const
   return Type;
 }
 
-QString Connector::connectorId() const
+QString Connector::connectorName() const
 {
   return mConfig->id;
 }

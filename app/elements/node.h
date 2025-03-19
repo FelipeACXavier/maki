@@ -99,4 +99,5 @@ private:
   QSizeF mSize;
 
   void updatePosition(const QPointF& position);
+  void updateExtrasPosition();
 };

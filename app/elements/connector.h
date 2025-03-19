@@ -26,7 +26,7 @@ public:
   QPointF center() const;
   QPair<QPointF, QPointF> shift() const;
 
-  QString connectorId() const;
+  QString connectorName() const override;
   Types::ConnectorType connectorType() const override;
   QVector<IConnection*> connections() const override;
   QVector<IConnection*> connectionsFromThis() const override;

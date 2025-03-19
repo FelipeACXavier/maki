@@ -99,6 +99,7 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
       mConnection->setEnd(Constants::TMP_CONNECTION_ID, event->scenePos(), shifts.second);
 
       addItem(mConnection);
+      parentView()->setDragMode(QGraphicsView::NoDrag);
       return;
     }
     else if (item && item->type() == NodeItem::Type)
@@ -149,17 +150,18 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
       if (item && item->type() == Connector::Type)
       {
         Connector* connector = static_cast<Connector*>(item);
-        // Add error message
-        if (connector->connectorType() == Types::ConnectorType::OUT)
-          return;
 
-        if (connector != mConnector)
+        if (connector->connectorType() != Types::ConnectorType::OUT && connector != mConnector)
         {
           mConnection->setEnd(connector->id(), connector->center(), connector->shift().first);
           connector->addConnection(mConnection);
           mConnector->addConnection(mConnection);
 
           mConnection->done(mConnector, connector);
+        }
+        else
+        {
+          LOG_WARNING("To create the connection, drop the connection on a valid connector");
         }
       }
       else
@@ -169,28 +171,104 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 
       mConnection = nullptr;
       mConnector = nullptr;
+      parentView()->setDragMode(QGraphicsView::RubberBandDrag);
     }
   }
 
   QGraphicsScene::mouseReleaseEvent(event);  // Allow normal item drop behavior
 }
 
+QMenu* Canvas::createConnectionMenu(const QList<QGraphicsItem*>& items)
+{
+  QMenu* connectMenu = new QMenu("Connect");
+  connectMenu->setEnabled(false);
+
+  if (items.size() != 2)
+    return connectMenu;
+
+  auto item1 = selectedItems().at(0);
+  auto item2 = selectedItems().at(1);
+
+  if (item1->type() != NodeItem::Type || item2->type() != NodeItem::Type)
+    return connectMenu;
+
+  auto node1 = static_cast<NodeItem*>(item1);
+  auto node2 = static_cast<NodeItem*>(item2);
+
+  for (auto& con1 : node1->connectors())
+  {
+    for (auto& con2 : node2->connectors())
+    {
+      Connector* start = nullptr;
+      Connector* end = nullptr;
+
+      if (con1->connectorType() == Types::ConnectorType::OUT &&
+          (con2->connectorType() == Types::ConnectorType::IN || con2->connectorType() == Types::ConnectorType::IN_AND_OUT))
+      {
+        start = static_cast<Connector*>(con1.get());
+        end = static_cast<Connector*>(con2.get());
+      }
+      else if (con1->connectorType() == Types::ConnectorType::IN &&
+               (con2->connectorType() == Types::ConnectorType::OUT || con2->connectorType() == Types::ConnectorType::IN_AND_OUT))
+      {
+        start = static_cast<Connector*>(con2.get());
+        end = static_cast<Connector*>(con1.get());
+      }
+      else
+      {
+        continue;
+      }
+
+      QAction* connectAction = connectMenu->addAction(QString("%1 -> %2").arg(start->connectorName(), end->connectorName()));
+      QObject::connect(connectAction, &QAction::triggered, [this, start, end]() {
+        assert(start && end);
+        auto connection = new ConnectionItem();
+
+        LOG_DEBUG("Connecting %s to %s", qPrintable(start->connectorName()), qPrintable(end->connectorName()));
+
+        connection->setStart(start->id(), start->center(), start->shift().first);
+        connection->setEnd(end->id(), end->center(), end->shift().first);
+
+        start->addConnection(connection);
+        end->addConnection(connection);
+
+        connection->done(start, end);
+
+        addItem(connection);
+      });
+    }
+  }
+
+  connectMenu->setEnabled(connectMenu->actions().size() > 0);
+
+  return connectMenu;
+}
+
+QMenu* Canvas::createAlignMenu(const QList<QGraphicsItem*>& items)
+{
+  QMenu* alignMenu = new QMenu("Align");
+
+  QAction* alignHCenter = alignMenu->addAction("Align H center");
+  QAction* alignLeft = alignMenu->addAction("Align left");
+  QAction* alignRight = alignMenu->addAction("Align right");
+  QAction* alignVCenter = alignMenu->addAction("Align V center");
+  QAction* alignTop = alignMenu->addAction("Align top");
+  QAction* alignBottom = alignMenu->addAction("Align bottom");
+
+  alignMenu->setEnabled(items.size() > 1);
+
+  return alignMenu;
+}
+
 void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 {
   QList<QGraphicsItem*> items = selectedItems();
 
-  // If right-clicking directly on a node and that is the only node, let it handle the event
-  // QGraphicsItem* clickedItem = itemAt(event->scenePos(), QTransform());
-  // if (items.size() < 2 && clickedItem && clickedItem->type() == NodeItem::Type)
-  // {
-  //   QGraphicsScene::contextMenuEvent(event);
-  //   return;
-  // }
-
-  // Create the menu
   QMenu menu;
 
-  // Add actions to the menu
+  // Define menu actions
+  menu.addMenu(createConnectionMenu(items));
+
   QAction* copyAction = menu.addAction("Copy");
   copyAction->setEnabled(items.size() > 0);
   QObject::connect(copyAction, &QAction::triggered, [this]() {
@@ -222,16 +300,7 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     }
   });
 
-  QMenu* alignMenu = new QMenu("Align");
-  QAction* alignHCenter = alignMenu->addAction("Align H center");
-  QAction* alignLeft = alignMenu->addAction("Align left");
-  QAction* alignRight = alignMenu->addAction("Align right");
-  QAction* alignVCenter = alignMenu->addAction("Align V center");
-  QAction* alignTop = alignMenu->addAction("Align top");
-  QAction* alignBottom = alignMenu->addAction("Align bottom");
-  alignMenu->setEnabled(items.size() > 1);
-
-  menu.addMenu(alignMenu);
+  menu.addMenu(createAlignMenu(items));
 
   // Execute the menu at the mouse cursor's position
   menu.exec(event->screenPos());

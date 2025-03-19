@@ -296,8 +296,6 @@ void NodeItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
   {
     QGraphicsItem::mouseMoveEvent(event);
   }
-
-  updatePosition(scenePos());
 }
 
 void NodeItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
@@ -358,6 +356,8 @@ QVariant NodeItem::itemChange(GraphicsItemChange change, const QVariant& value)
       nodeChild->updatePosition(newPos + relativeOffset);
     }
 
+    updateExtrasPosition();
+
     if (parentNode())
       return newPos;
   }
@@ -368,7 +368,11 @@ QVariant NodeItem::itemChange(GraphicsItemChange change, const QVariant& value)
 void NodeItem::updatePosition(const QPointF& position)
 {
   setPos(position);
+  updateExtrasPosition();
+}
 
+void NodeItem::updateExtrasPosition()
+{
   for (auto& connector : connectors())
     std::dynamic_pointer_cast<Connector>(connector)->updateConnections();
 
