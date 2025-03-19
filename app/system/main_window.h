@@ -59,6 +59,7 @@ private:
   VoidResult loadElementLibrary(const JSON& config);
 
   void bind();
+  void bindShortcuts();
   void startUI();
 
   // ================================================

@@ -70,6 +70,7 @@ VoidResult MainWindow::start()
 
   startUI();
   bind();
+  bindShortcuts();
 
   RETURN_ON_FAILURE(loadElements());
 
@@ -153,8 +154,10 @@ void MainWindow::bind()
   connect(mUI->treeWidget, &TreeMenu::nodeSelected, canvas(), &Canvas::onSelectNode);
   connect(mUI->treeWidget, &TreeMenu::nodeRenamed, canvas(), &Canvas::onRenameNode);
   connect(mUI->treeWidget, &TreeMenu::nodeFocused, canvas(), &Canvas::onFocusNode);
+}
 
-  // Shortcuts =============================================================
+void MainWindow::bindShortcuts()
+{
   new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_C), this, [this] {
     if (canvas())
       canvas()->copySelectedItems();

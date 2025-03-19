@@ -14,9 +14,13 @@ CanvasView::CanvasView(QWidget* parent)
 {
   setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
   // TODO(felaze): Evaluate the peformance impact of this
   setViewportUpdateMode(ViewportUpdateMode::FullViewportUpdate);
   setBackgroundBrush(QBrush(QColor("#212121")));
+
+  // TODO(felaze): Maybe we can make this custom
+  setDragMode(QGraphicsView::RubberBandDrag);
   setAcceptDrops(true);
 
   setMaxSize();

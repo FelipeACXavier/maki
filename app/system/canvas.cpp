@@ -50,6 +50,9 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
         return;
     }
 
+    // Make sure that no other nodes are selected before dropping
+    clearSelection();
+
     QByteArray data = event->mimeData()->data(Constants::TYPE_NODE);
     QDataStream stream(&data, QIODevice::ReadOnly);
 
@@ -57,10 +60,16 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
     stream >> info;
     info.scale = parentView()->getScale();
 
-    if (createNode(info, event->scenePos(), parentNode))
+    auto node = createNode(info, event->scenePos(), parentNode);
+    if (node)
+    {
+      selectNode(node, true);
       event->acceptProposedAction();
+    }
     else
+    {
       event->ignore();
+    }
 
     // Make sure we show that we are no longer dragging
     dynamic_cast<QGraphicsView*>(parent())->setCursor(Qt::ArrowCursor);
@@ -92,9 +101,15 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
       addItem(mConnection);
       return;
     }
+    else if (item && item->type() == NodeItem::Type)
+    {
+      NodeItem* node = static_cast<NodeItem*>(item);
+      selectNode(node, true);
+    }
     else if (!item)
     {
-      emit nodeSelected(nullptr);
+      selectNode(nullptr, false);
+      // emit nodeSelected(nullptr);
     }
   }
 
@@ -255,7 +270,7 @@ void Canvas::copySelectedItems()
     copiedNodes.append(info);
 
     // Make sure the item is not selected after copying
-    item->setSelected(false);
+    selectNode(node, false);
   }
 }
 
@@ -285,10 +300,10 @@ void Canvas::pasteCopiedItems()
     {
       // Children's positions take into account the relative prosition to the parent
       auto child = createNode(childInfo, node->scenePos() - childInfo.position, node);
-      child->setSelected(false);
+      selectNode(child, false);
     }
 
-    node->setSelected(false);
+    selectNode(node, false);
   }
 }
 
@@ -298,14 +313,18 @@ void Canvas::clearCanvas()
   for (QGraphicsItem* item : itemsList)
   {
     if (item->type() == NodeItem::Type)
-    {
       static_cast<NodeItem*>(item)->deleteNode();
-    }
     else
-    {
       removeItem(item);
-    }
   }
+}
+
+void Canvas::selectNode(NodeItem* node, bool select)
+{
+  if (node)
+    node->setSelected(select);
+
+  emit nodeSelected(select ? node : nullptr);
 }
 
 VoidResult Canvas::loadFromSave(const SaveInfo& info)
@@ -388,7 +407,6 @@ NodeItem* Canvas::createNode(const NodeSaveInfo& info, const QPointF& position, 
 
   NodeItem* node = new NodeItem(id, info, position, config);
 
-  node->nodeSeletected = [this](NodeItem* item) { emit nodeSelected(item); };
   node->nodeModified = [this](NodeItem* item) { emit nodeModified(item); };
   node->nodeDeleted = [this](NodeItem* item) {
     removeItem(item);
@@ -475,8 +493,7 @@ void Canvas::onRemoveNode(const QString& nodeId)
 void Canvas::onSelectNode(const QString& nodeId)
 {
   auto node = findNodeWithId(nodeId);
-  if (node)
-    node->setSelected(true);
+  selectNode(node, true);
 }
 
 void Canvas::onRenameNode(const QString& nodeId, const QString& name)

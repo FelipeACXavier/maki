@@ -104,9 +104,6 @@ qreal NodeItem::baseScale() const
 
 VoidResult NodeItem::start()
 {
-  if (nodeSeletected)
-    nodeSeletected(this);
-
   return NodeBase::start();
 }
 
@@ -323,13 +320,6 @@ void NodeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
   {
     mIsResizing = false;
     dynamic_cast<QGraphicsView*>(scene()->parent())->setCursor(Qt::ArrowCursor);
-  }
-
-  // Display information in the help menu
-  if (isSelected())
-  {
-    if (nodeSeletected)
-      nodeSeletected(this);
   }
 
   updatePosition(snapToGrid(scenePos(), Config::GRID_SIZE / static_cast<Canvas*>(scene())->getScale()));

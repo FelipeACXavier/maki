@@ -63,6 +63,7 @@ private:
   std::shared_ptr<ConfigurationTable> mConfigTable;
 
   void clearCanvas();
+  void selectNode(NodeItem* node, bool select);
 
   CanvasView* parentView() const;
   NodeItem* createNode(const NodeSaveInfo& info, const QPointF& position, NodeItem* parent);

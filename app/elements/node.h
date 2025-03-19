@@ -69,7 +69,6 @@ public:
   // "signals":
   std::function<void(NodeItem* item)> nodeDeleted;
   std::function<void(NodeItem* item)> nodeModified;
-  std::function<void(NodeItem* item)> nodeSeletected;
 
   // "slots":
   void deleteNode();
