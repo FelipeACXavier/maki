@@ -138,7 +138,7 @@
          <enum>QTabWidget::Rounded</enum>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>2</number>
         </property>
         <property name="usesScrollButtons">
          <bool>false</bool>
@@ -207,7 +207,7 @@
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout_7">
           <item>
-           <widget class="QFrame" name="behaviourFrame">
+           <widget class="BehaviourMenu" name="behaviourFrame">
             <property name="frameShape">
              <enum>QFrame::StyledPanel</enum>
             </property>
@@ -445,6 +445,12 @@
    <class>TreeMenu</class>
    <extends>QTreeWidget</extends>
    <header>widgets/tree_menu.h</header>
+  </customwidget>
+  <customwidget>
+   <class>BehaviourMenu</class>
+   <extends>QFrame</extends>
+   <header>widgets/behaviour_menu.h</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>

@@ -30,6 +30,8 @@ public:
   QPointF getCenter() const;
   VoidResult loadFromSave(const SaveInfo& info);
 
+  QList<NodeItem*> availableNodes();
+
 protected:
   void dragEnterEvent(QGraphicsSceneDragDropEvent* event) override;
   void dragMoveEvent(QGraphicsSceneDragDropEvent* event) override;
@@ -59,6 +61,9 @@ private:
   Connector* mHoveredConnector = nullptr;
   ConnectionItem* mConnection = nullptr;
   QPointF mStartDragPosition;
+
+  int mFrontZValue = 5;
+  int mBackZValue = -5;
 
   QList<NodeSaveInfo> copiedNodes;
   std::shared_ptr<ConfigurationTable> mConfigTable;

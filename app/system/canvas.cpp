@@ -23,6 +23,18 @@ Canvas::Canvas(std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
   setBackgroundBrush(Qt::transparent);
 }
 
+QList<NodeItem*> Canvas::availableNodes()
+{
+  QList<NodeItem*> nodes;
+  for (auto& item : items())
+  {
+    if (item->type() == NodeItem::Type)
+      nodes.push_back(static_cast<NodeItem*>(item));
+  }
+
+  return nodes;
+}
+
 void Canvas::dragEnterEvent(QGraphicsSceneDragDropEvent* event)
 {
   if (event->mimeData()->hasFormat(Constants::TYPE_NODE))
@@ -305,9 +317,13 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
   QMenu menu;
 
   // Define menu actions
+  // =============================================
+  menu.addSection("Creation");
+
   menu.addMenu(createConnectionMenu(items));
 
-  menu.addSection("Modifiers");
+  // =============================================
+  menu.addSection("Edit");
 
   QAction* copyAction = menu.addAction("Copy");
   copyAction->setEnabled(items.size() > 0);
@@ -320,7 +336,6 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
   QObject::connect(pasteAction, &QAction::triggered, [this]() {
     pasteCopiedItems();
   });
-  menu.addSeparator();
 
   QAction* deleteAction = menu.addAction("Delete");
   deleteAction->setEnabled(items.size() > 0);
@@ -328,7 +343,26 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     deleteSelectedItems();
   });
 
-  menu.addSeparator();
+  // =============================================
+  menu.addSection("Visual");
+
+  QAction* forwardAction = menu.addAction("To front");
+  forwardAction->setEnabled(items.size() > 0);
+  QObject::connect(forwardAction, &QAction::triggered, [this]() {
+    for (QGraphicsItem* item : selectedItems())
+      item->setZValue(mFrontZValue);
+
+    ++mFrontZValue;
+  });
+
+  QAction* backwardAction = menu.addAction("To back");
+  backwardAction->setEnabled(items.size() > 0);
+  QObject::connect(backwardAction, &QAction::triggered, [this]() {
+    for (QGraphicsItem* item : selectedItems())
+      item->setZValue(mBackZValue);
+
+    --mBackZValue;
+  });
 
   QAction* toggleLabelAction = menu.addAction("Toggle label");
   toggleLabelAction->setEnabled(items.size() > 0);

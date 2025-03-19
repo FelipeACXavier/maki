@@ -154,6 +154,10 @@ void MainWindow::bind()
   connect(mUI->treeWidget, &TreeMenu::nodeSelected, canvas(), &Canvas::onSelectNode);
   connect(mUI->treeWidget, &TreeMenu::nodeRenamed, canvas(), &Canvas::onRenameNode);
   connect(mUI->treeWidget, &TreeMenu::nodeFocused, canvas(), &Canvas::onFocusNode);
+
+  static_cast<BehaviourMenu*>(mUI->behaviourFrame)->mGetAvailableNodes = [this]() {
+    return canvas()->availableNodes();
+  };
 }
 
 void MainWindow::bindShortcuts()
@@ -328,6 +332,7 @@ void MainWindow::onNodeSelected(NodeItem* node)
 
   LOG_WARN_ON_FAILURE(mUI->propertiesFrame->onNodeSelected(node));
   LOG_WARN_ON_FAILURE(mUI->fieldsFrame->onNodeSelected(node));
+  LOG_WARN_ON_FAILURE(mUI->behaviourFrame->onNodeSelected(node));
 }
 
 void MainWindow::onNodeAdded(NodeItem* node)
@@ -352,6 +357,7 @@ void MainWindow::onNodeRemoved(NodeItem* node)
   LOG_WARN_ON_FAILURE(mUI->treeWidget->onNodeRemoved(node));
   LOG_WARN_ON_FAILURE(mUI->propertiesFrame->onNodeRemoved(node));
   LOG_WARN_ON_FAILURE(mUI->fieldsFrame->onNodeRemoved(node));
+  LOG_WARN_ON_FAILURE(mUI->behaviourFrame->onNodeRemoved(node));
 }
 
 void MainWindow::onNodeModified(NodeItem* node)
