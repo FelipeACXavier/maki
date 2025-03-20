@@ -162,6 +162,118 @@
       "behaviour": {
         "code": "return $connectors.arg1 / $connectors.arg2"
       }
+    },
+    {
+      "type": "And",
+      "body": {
+        "shape": "ellipse",
+        "textColor": "#FFFFFF",
+        "backgroundColor": "#e9c46a",
+        "borderColor": "#FFFFFF",
+        "width": 50,
+        "height": 50,
+        "scale": 0.5
+      },
+      "properties": [
+        {
+          "id": "name",
+          "type": "string",
+          "default": "And"
+        }
+      ],
+      "connectors": [
+        {
+          "id": "arg1",
+          "type": "in",
+          "position": "west north"
+        },
+        {
+          "id": "arg2",
+          "type": "in",
+          "position": "west south"
+        },
+        {
+          "id": "output",
+          "type": "out",
+          "position": "east"
+        }
+      ],
+      "behaviour": {
+        "code": "return $connectors.arg1 && $connectors.arg2"
+      }
+    },
+    {
+      "type": "Or",
+      "body": {
+        "shape": "ellipse",
+        "textColor": "#FFFFFF",
+        "backgroundColor": "#e9c46a",
+        "borderColor": "#FFFFFF",
+        "width": 50,
+        "height": 50,
+        "scale": 0.5
+      },
+      "properties": [
+        {
+          "id": "name",
+          "type": "string",
+          "default": "Or"
+        }
+      ],
+      "connectors": [
+        {
+          "id": "arg1",
+          "type": "in",
+          "position": "west north"
+        },
+        {
+          "id": "arg2",
+          "type": "in",
+          "position": "west south"
+        },
+        {
+          "id": "output",
+          "type": "out",
+          "position": "east"
+        }
+      ],
+      "behaviour": {
+        "code": "return $connectors.arg1 || $connectors.arg2"
+      }
+    },
+    {
+      "type": "Not",
+      "body": {
+        "shape": "ellipse",
+        "textColor": "#FFFFFF",
+        "backgroundColor": "#e9c46a",
+        "borderColor": "#FFFFFF",
+        "width": 50,
+        "height": 50,
+        "scale": 0.5
+      },
+      "properties": [
+        {
+          "id": "name",
+          "type": "string",
+          "default": "Not"
+        }
+      ],
+      "connectors": [
+        {
+          "id": "input",
+          "type": "in",
+          "position": "west"
+        },
+        {
+          "id": "output",
+          "type": "out",
+          "position": "east"
+        }
+      ],
+      "behaviour": {
+        "code": "return !$connectors.input"
+      }
     }
   ]
 }

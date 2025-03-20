@@ -43,7 +43,7 @@ VoidResult FieldsMenu::onNodeSelected(NodeItem* node, bool selected)
   // Clear the frame
   clear();
 
-  if (!node || !selected)
+  if (!node)
     return VoidResult();
 
   mCurrentNode = node->id();

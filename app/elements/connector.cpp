@@ -4,6 +4,7 @@
 #include <QGraphicsSceneHoverEvent>
 
 #include "app_configs.h"
+#include "logging.h"
 
 Connector::Connector(const ConnectorConfig& config, QGraphicsItem* parent)
     : QGraphicsEllipseItem(parent)
@@ -168,4 +169,13 @@ ConnectorSaveInfo Connector::saveInfo() const
   info.configId = mConfig->id;
 
   return info;
+}
+
+void Connector::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget)
+{
+  LOG_DEBUG("Setting opacity of %u connections to %f", connections().size(), opacity());
+  for (auto& connection : connections())
+    static_cast<ConnectionItem*>(connection)->setOpacity(opacity());
+
+  QGraphicsEllipseItem::paint(painter, style, widget);
 }

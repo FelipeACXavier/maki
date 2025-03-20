@@ -15,6 +15,20 @@
 #include "style_helpers.h"
 #include "system/canvas.h"
 
+static const qreal FADE_THRESHOLD = 1.0;
+
+static const qreal FADE_IN_BASE = 1000;
+static const qreal FADE_IN_START = 0.01;
+static const qreal FADE_IN_MULTIPLIER = 0.01;
+
+static const qreal FADE_OUT_BASE = 2000;
+static const qreal FADE_OUT_START = 2.0;
+static const qreal FADE_OUT_MULTIPLIER = 0.3;
+
+static const qreal LOG_TWO = log(2);
+static const qreal MIN_OPACITY = 0.01;
+static const qreal MAX_OPACITY = 1.0;
+
 NodeItem::NodeItem(const QString& nodeId, const NodeSaveInfo& info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
     : NodeBase(nodeId, info.nodeId, nodeConfig, parent)
     , mChildrenNodes({})
@@ -118,13 +132,41 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
   auto background = color.isValid() ? QColor::fromString(color.toString()) : config()->body.backgroundColor;
 
   auto currentScale = static_cast<Canvas*>(scene())->getScale();
+  qreal zoomRatio = currentScale / baseScale();
 
-  qreal zoomDifference = currentScale / (2 * baseScale());
-  qreal opacity = 1.0 / (zoomDifference * zoomDifference);
+  qreal originalSize = mSize.width();
+  qreal fullOpacityThreshold = FADE_THRESHOLD;
+  qreal fadeInThreshold = FADE_IN_START + qMax((FADE_IN_BASE / originalSize) * FADE_IN_MULTIPLIER, MIN_OPACITY);
+  qreal fadeOutThreshold = FADE_OUT_START * (MAX_OPACITY + (FADE_OUT_BASE / originalSize) * FADE_OUT_MULTIPLIER);
 
-  // LOG_DEBUG("%s Setting opacity: %f %f %f", qPrintable(id()), opacity, currentScale, baseScale());
-  // Make sure opacity stays within valid range [0, 1]
-  setOpacity(qBound(0.0, opacity, 1.0));
+  // Make smaller objects fade faster when zooming out and slower when zooming in.
+  qreal opacity = MAX_OPACITY;
+  if (zoomRatio < fadeInThreshold)
+  {
+    opacity = MIN_OPACITY;
+    LOG_DEBUG("%s fade limit: %.2f | %.2f | %.2f | %.2f", qPrintable(nodeName()), opacity, zoomRatio, fadeInThreshold, fadeOutThreshold);
+  }
+  else if (zoomRatio < fullOpacityThreshold)
+  {
+    qreal progress = (zoomRatio - fadeInThreshold) / (fullOpacityThreshold - fadeInThreshold);
+    // opacity = log(progress + 1) / LOG_TWO;
+    opacity = progress;
+    LOG_DEBUG("%s fade in: %.2f | %.2f | %.2f | %.2f", qPrintable(nodeName()), opacity, zoomRatio, fadeInThreshold, fadeOutThreshold);
+  }
+  else if (zoomRatio > fadeOutThreshold)
+  {
+    qreal progress = MAX_OPACITY - (zoomRatio - fadeOutThreshold) / (fadeOutThreshold - fullOpacityThreshold);
+    // opacity = log(progress + 1) / LOG_TWO;
+    opacity = progress;
+    LOG_DEBUG("%s fade out: %.2f | %.2f | %.2f | %.2f", qPrintable(nodeName()), opacity, zoomRatio, fadeInThreshold, fadeOutThreshold);
+  }
+
+  opacity = qBound(MIN_OPACITY, opacity, MAX_OPACITY);
+
+  setOpacity(opacity);
+
+  for (auto& connector : connectors())
+    std::static_pointer_cast<Connector>(connector)->setOpacity(opacity);
 
   setFlag(QGraphicsItem::ItemIsSelectable, opacity > Config::OPACITY_THRESHOLD);
   setFlag(QGraphicsItem::ItemIsMovable, opacity > Config::OPACITY_THRESHOLD);

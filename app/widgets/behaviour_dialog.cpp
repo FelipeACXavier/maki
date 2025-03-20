@@ -22,6 +22,7 @@ BehaviourDialog::BehaviourDialog(const QString& title, QWidget* parent)
   QVBoxLayout* layout = new QVBoxLayout(this);
   setLayout(layout);
 
+  // TODO(felaze): Make this dynamic
   resize(500, 400);
 }
 

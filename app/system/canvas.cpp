@@ -481,7 +481,9 @@ void Canvas::clearSelectedNodes()
     }
   }
 
-  // clearSelection();
+  clearSelection();
+
+  selectNode(nullptr, false);
 }
 
 VoidResult Canvas::loadFromSave(const SaveInfo& info)

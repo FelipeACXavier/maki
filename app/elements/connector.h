@@ -37,6 +37,7 @@ public:
   void removeConnection(ConnectionItem* connection);
 
   void updateColor(bool accent);
+  void paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget) override;
 
   ConnectorSaveInfo saveInfo() const;
 
