@@ -2,9 +2,11 @@
     <qresource prefix="/">
         <file>assets/style.css</file>
         <file>assets/config.json</file>
-        <file>libraries/generic_behaviour.json</file>
-        <file>libraries/generic_structure.json</file>
+        <file>libraries/generic.json</file>
         <file>libraries/math.json</file>
+        <file>libraries/grpc.json</file>
+        <file>libraries/ros2.json</file>
+        <file>libraries/serial.json</file>
       </qresource>
       <qresource prefix="/math">
          <file alias="addition.png">assets/icons/math/addition.png</file>

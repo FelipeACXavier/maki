@@ -1,7 +1,9 @@
 {
   "libraries": [
-    "generic_structure",
-    "generic_behaviour",
-    "math"
+    "generic",
+    "math",
+    "grpc",
+    "ros2",
+    "serial"
   ]
 }

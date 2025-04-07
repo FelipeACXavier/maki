@@ -53,7 +53,7 @@ VoidResult LibraryContainer::addNode(const QString& id, std::shared_ptr<NodeConf
   DraggableItem* item = new DraggableItem(id, config);
 
   // Center the item in the sidebar and make sure it is below the last item added
-  item->setPos(100, getYOfLastItem() + PADDING);
+  item->setPos(viewport()->width() / 2, getYOfLastItem() + PADDING);
 
   // Add item to scene
   scene()->addItem(item);

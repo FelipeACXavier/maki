@@ -198,7 +198,7 @@ void NodeBase::updateLabelPosition()
 
   // Calculate centered position
   qreal x = boundingRect().center().x() - textBounds.width() / 2;
-  qreal y = boundingRect().center().y() - textBounds.height() / 2;
+  qreal y = config()->libraryType == Types::LibraryTypes::STRUCTURAL ? boundingRect().top() + 2 : boundingRect().center().y() - textBounds.height() / 2;
 
   mLabel->setPos(x, y);
 }

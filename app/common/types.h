@@ -3,6 +3,7 @@
 #include <QGraphicsItem>
 #include <QJsonObject>
 #include <QJsonValueConstRef>
+#include <QString>
 
 namespace Types
 {
@@ -11,6 +12,8 @@ static const int CONNECTOR = QGraphicsItem::UserType + 2;
 static const int CONNECTION = QGraphicsItem::UserType + 3;
 static const int DRAGGABLE = QGraphicsItem::UserType + 4;
 static const int BASE_NODE = QGraphicsItem::UserType + 5;
+
+static const char* PIXMAP = "PNG";
 
 enum class Shape
 {

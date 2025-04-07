@@ -1,0 +1,356 @@
+{
+  "name": "Generic",
+  "author": "Felipe Xavier",
+  "libraries": [
+    {
+      "type": "structure",
+      "nodes": [
+        {
+          "type": "Component",
+          "body": {
+            "shape": "Rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#202020",
+            "borderColor": "#FFFFFF",
+            "width": 1000,
+            "height": 1000,
+            "z-index": -2
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Component"
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#202020"
+            }
+          ]
+        },
+        {
+          "type": "Basic type",
+          "body": {
+            "shape": "rounded rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#f77f00",
+            "borderColor": "#FFFFFF",
+            "borderRadius": 50,
+            "width": 300,
+            "height": 300,
+            "z-index": -2
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Basic type"
+            },
+            {
+              "id": "type",
+              "type": "string",
+              "default": "string"
+            },
+            {
+              "id": "default value",
+              "type": "string",
+              "default": ""
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#f77f00"
+            }
+          ]
+        },
+        {
+          "type": "Data object",
+          "body": {
+            "shape": "rounded rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#fcbf49",
+            "borderColor": "#FFFFFF",
+            "borderRadius": 50,
+            "width": 300,
+            "height": 300,
+            "z-index": -2
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Data object"
+            },
+            {
+              "id": "default value",
+              "type": "string",
+              "default": ""
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#fcbf49"
+            }
+          ],
+          "controls": [
+            {
+              "id": "Add",
+              "type": "add field"
+            }
+          ],
+          "connectors": [],
+          "behaviour": {}
+        },
+        {
+          "type": "Parallel",
+          "body": {
+            "shape": "Rounded rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#202020",
+            "borderColor": "#FFFFFF",
+            "width": 1000,
+            "height": 500,
+            "z-index": -2
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Parallel"
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#2E2E2E"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "internal behaviour",
+      "nodes": [
+        {
+          "type": "Start",
+          "body": {
+            "shape": "Ellipse",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#ffc300",
+            "borderColor": "#FFFFFF",
+            "width": 50,
+            "height": 50
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Start"
+            },
+            {
+              "id": "mode",
+              "type": "select",
+              "default": "signal",
+              "options": [
+                {
+                  "id": "signal",
+                  "type": "string"
+                },
+                {
+                  "id": "timed",
+                  "type": "string"
+                }
+              ]
+            }
+          ],
+          "connectors": [
+            {
+              "id": "output",
+              "type": "out",
+              "position": "east"
+            }
+          ],
+          "behaviour": {},
+          "help": {
+            "message": "Start of a behavioural flow. This can be a reaction to an event or a timed action"
+          }
+        },
+        {
+          "type": "End",
+          "body": {
+            "shape": "Ellipse",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#6a994e",
+            "borderColor": "#FFFFFF",
+            "width": 50,
+            "height": 50
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "End"
+            }
+          ],
+          "connectors": [
+            {
+              "id": "input",
+              "type": "in",
+              "position": "west"
+            }
+          ],
+          "behaviour": {},
+          "help": {
+            "message": "End of a happy behavioural flow. This must always be present in a flow"
+          }
+        },
+        {
+          "type": "Error",
+          "body": {
+            "shape": "Ellipse",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#bc4749",
+            "borderColor": "#FFFFFF",
+            "width": 50,
+            "height": 50
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Error"
+            }
+          ],
+          "connectors": [
+            {
+              "id": "input",
+              "type": "in",
+              "position": "west"
+            }
+          ],
+          "behaviour": {},
+          "help": {
+            "message": "End of an errored behavioural flow. This indicates the flow of a bad behaviour."
+          }
+        },
+        {
+          "type": "Condition",
+          "body": {
+            "shape": "Diamond",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#2a9d8f",
+            "borderColor": "#FFFFFF",
+            "width": 100,
+            "height": 75
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Condition"
+            },
+            {
+              "id": "condition",
+              "type": "string"
+            }
+          ],
+          "connectors": [
+            {
+              "id": "input",
+              "type": "in",
+              "position": "west"
+            },
+            {
+              "id": "true",
+              "type": "out",
+              "position": "east north"
+            },
+            {
+              "id": "false",
+              "type": "out",
+              "position": "east south"
+            }
+          ],
+          "behaviour": {
+            "code": "if ($properties.condition) return $connectors.true; else return $connectors.false;"
+          },
+          "help": {
+            "message": "Performs a conditional check on the given input and continues the flow based on the check."
+          }
+        },
+        {
+          "type": "Action",
+          "body": {
+            "shape": "Rounded rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#2a9d8f",
+            "borderColor": "#FFFFFF",
+            "width": 100,
+            "height": 50
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Action"
+            },
+            {
+              "id": "call",
+              "type": "string",
+              "default": ""
+            }
+          ],
+          "connectors": [
+            {
+              "id": "input",
+              "type": "in",
+              "position": "west"
+            },
+            {
+              "id": "output",
+              "type": "out",
+              "position": "east"
+            }
+          ],
+          "behaviour": {}
+        },
+        {
+          "type": "Constant",
+          "body": {
+            "shape": "Reectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#2a9d8f",
+            "borderColor": "#FFFFFF",
+            "width": 75,
+            "height": 75
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Constant"
+            },
+            {
+              "id": "type",
+              "type": "string",
+              "default": "integer"
+            },
+            {
+              "id": "value",
+              "type": "integer",
+              "default": 0
+            }
+          ],
+          "connectors": [
+            {
+              "id": "output",
+              "type": "out",
+              "position": "east"
+            }
+          ],
+          "behaviour": {}
+        }
+      ]
+    }
+  ]
+}

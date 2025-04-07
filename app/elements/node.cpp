@@ -82,7 +82,7 @@ NodeItem::NodeItem(const QString& nodeId, const NodeSaveInfo& info, const QPoint
   setParent(nullptr);
   updatePosition(snapToGrid(initialPosition - boundingRect().center(), Config::GRID_SIZE));
 
-  LOG_DEBUG("%s created at: (%f, %f) with scale %f", qPrintable(id()), pos().x(), pos().y(), baseScale());
+  LOG_DEBUG("%s created at: (%f, %f) with size (%f, %f) and scale %f", qPrintable(id()), pos().x(), pos().y(), mSize.width(), mSize.height(), baseScale());
 }
 
 NodeItem::~NodeItem()
@@ -144,32 +144,32 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
   if (zoomRatio < fadeInThreshold)
   {
     opacity = MIN_OPACITY;
-    LOG_DEBUG("%s fade limit: %.2f | %.2f | %.2f | %.2f", qPrintable(nodeName()), opacity, zoomRatio, fadeInThreshold, fadeOutThreshold);
+    //  LOG_DEBUG("%s fade limit: %.2f | %.2f | %.2f | %.2f", qPrintable(nodeName()), opacity, zoomRatio, fadeInThreshold, fadeOutThreshold);
   }
   else if (zoomRatio < fullOpacityThreshold)
   {
     qreal progress = (zoomRatio - fadeInThreshold) / (fullOpacityThreshold - fadeInThreshold);
     // opacity = log(progress + 1) / LOG_TWO;
     opacity = progress;
-    LOG_DEBUG("%s fade in: %.2f | %.2f | %.2f | %.2f", qPrintable(nodeName()), opacity, zoomRatio, fadeInThreshold, fadeOutThreshold);
+    //  LOG_DEBUG("%s fade in: %.2f | %.2f | %.2f | %.2f", qPrintable(nodeName()), opacity, zoomRatio, fadeInThreshold, fadeOutThreshold);
   }
   else if (zoomRatio > fadeOutThreshold)
   {
     qreal progress = MAX_OPACITY - (zoomRatio - fadeOutThreshold) / (fadeOutThreshold - fullOpacityThreshold);
-    // opacity = log(progress + 1) / LOG_TWO;
+    //   // opacity = log(progress + 1) / LOG_TWO;
     opacity = progress;
-    LOG_DEBUG("%s fade out: %.2f | %.2f | %.2f | %.2f", qPrintable(nodeName()), opacity, zoomRatio, fadeInThreshold, fadeOutThreshold);
+    //   LOG_DEBUG("%s fade out: %.2f | %.2f | %.2f | %.2f", qPrintable(nodeName()), opacity, zoomRatio, fadeInThreshold, fadeOutThreshold);
   }
 
-  opacity = qBound(MIN_OPACITY, opacity, MAX_OPACITY);
+  // opacity = qBound(MIN_OPACITY, opacity, MAX_OPACITY);
 
-  setOpacity(opacity);
+  // setOpacity(opacity);
 
-  for (auto& connector : connectors())
-    std::static_pointer_cast<Connector>(connector)->setOpacity(opacity);
+  // for (auto& connector : connectors())
+  //   std::static_pointer_cast<Connector>(connector)->setOpacity(opacity);
 
-  setFlag(QGraphicsItem::ItemIsSelectable, opacity > Config::OPACITY_THRESHOLD);
-  setFlag(QGraphicsItem::ItemIsMovable, opacity > Config::OPACITY_THRESHOLD);
+  // setFlag(QGraphicsItem::ItemIsSelectable, opacity > Config::OPACITY_THRESHOLD);
+  // setFlag(QGraphicsItem::ItemIsMovable, opacity > Config::OPACITY_THRESHOLD);
 
   NodeBase::paintNode(boundingRect(),
                       background,
@@ -317,16 +317,16 @@ void NodeItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
   if (mIsResizing && (event->modifiers() & Qt::ShiftModifier))
   {
-    qreal aspectRatio = mSize.width() / mSize.height();
+    // qreal aspectRatio = mSize.width() / mSize.height();
 
     qreal newWidth = qMax(Config::MINIMUM_NODE_SIZE, event->pos().x());
-    qreal newHeight = newWidth / aspectRatio;
+    qreal newHeight = qMax(Config::MINIMUM_NODE_SIZE, event->pos().y());  // newWidth / aspectRatio;
 
     // Update the scale when the node is resized
-    mBaseScale = config()->body.width / newWidth;
+    mBaseScale = qMax(config()->body.width / newWidth, config()->body.height / newHeight);
 
-    mSize.setWidth(qMax(Config::MINIMUM_NODE_SIZE, qMax(Config::MINIMUM_NODE_SIZE, newWidth)));
-    mSize.setHeight(qMax(Config::MINIMUM_NODE_SIZE, qMax(Config::MINIMUM_NODE_SIZE, newHeight)));
+    mSize.setWidth(newWidth);
+    mSize.setHeight(newHeight);
 
     qreal newFontSize = qMax(Fonts::BaseSize, mSize.width() / Fonts::BaseFactor);
 
@@ -435,7 +435,8 @@ void NodeItem::deleteNode()
   if (nodeDeleted)
     nodeDeleted(this);
 
-  // Optionally delete the item
+  setSelected(false);
+
   delete this;
 }
 
@@ -453,7 +454,7 @@ NodeSaveInfo NodeItem::saveInfo() const
   info.fields = fields();
   info.pixmap = nodePixmap();
   info.properties = properties();
-  info.size = QSize{config()->body.width, config()->body.height};
+  info.size = QSizeF{mSize.width() * mBaseScale, mSize.height() * mBaseScale};
   info.scale = baseScale();
 
   for (const auto& connector : connectors())

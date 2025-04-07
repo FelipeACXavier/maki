@@ -34,9 +34,6 @@ public:
 
   VoidResult start();
 
-protected:
-  bool eventFilter(QObject* watched, QEvent* event) override;
-
 private slots:
   void onNodeSelected(NodeItem* node, bool selected);
   void onNodeAdded(NodeItem* node);
@@ -56,7 +53,8 @@ private:
 
   Canvas* canvas() const;
   VoidResult loadElements();
-  VoidResult loadElementLibrary(const JSON& config);
+  VoidResult loadLibrary(const JSON& config);
+  VoidResult loadElementLibrary(const QString& name, const JSON& config);
 
   void bind();
   void bindShortcuts();

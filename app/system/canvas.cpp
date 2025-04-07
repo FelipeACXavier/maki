@@ -143,6 +143,10 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
       clearSelectedNodes();
     }
   }
+  else if (event->button() == Qt::MiddleButton)
+  {
+    parentView()->setDragMode(QGraphicsView::NoDrag);
+  }
 
   QGraphicsScene::mousePressEvent(event);
 }
@@ -172,6 +176,8 @@ void Canvas::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 
 void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
+  parentView()->setDragMode(QGraphicsView::RubberBandDrag);
+
   if (mConnection)
   {
     if (event->button() == Qt::LeftButton)
@@ -201,7 +207,6 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 
       mConnection = nullptr;
       mConnector = nullptr;
-      parentView()->setDragMode(QGraphicsView::RubberBandDrag);
     }
   }
   else
@@ -382,12 +387,39 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 
 void Canvas::deleteSelectedItems()
 {
-  for (QGraphicsItem* item : selectedItems())
+  QList<QGraphicsItem*> items = selectedItems();
+  QList<NodeItem*> nodesToDelete;
+  QList<QGraphicsItem*> connectionsToDelete;
+
+  for (QGraphicsItem* item : items)
   {
+    if (!item)
+      continue;
+
     if (item->type() == NodeItem::Type)
-      dynamic_cast<NodeItem*>(item)->deleteNode();
-    else
-      removeItem(item);
+    {
+      NodeItem* node = static_cast<NodeItem*>(item);
+      NodeItem* parent = static_cast<NodeItem*>(node->parentNode());
+
+      // Only delete if no parent OR parent is not selected
+      if (!parent || !parent->isSelected())
+        nodesToDelete.append(node);
+    }
+    else if (item->type() == ConnectionItem::Type)
+    {
+      connectionsToDelete.append(item);
+    }
+  }
+
+  // First delete nodes
+  for (NodeItem* node : nodesToDelete)
+    node->deleteNode();
+
+  // Then delete connections
+  for (QGraphicsItem* item : connectionsToDelete)
+  {
+    removeItem(item);
+    delete item;
   }
 }
 
@@ -408,6 +440,7 @@ void Canvas::copySelectedItems()
 
     // Save relative position
     auto info = node->saveInfo();
+    info.id = QString();
     info.position = mousePosition - info.position;
 
     copiedNodes.append(info);
@@ -455,10 +488,17 @@ void Canvas::clearCanvas()
   QList<QGraphicsItem*> itemsList = items();
   for (QGraphicsItem* item : itemsList)
   {
-    if (item->type() == NodeItem::Type)
-      static_cast<NodeItem*>(item)->deleteNode();
-    else
-      removeItem(item);
+    if (!item)
+      continue;
+
+    if (item->type() != NodeItem::Type)
+      continue;
+
+    NodeItem* node = static_cast<NodeItem*>(item);
+    if (node->parentNode())
+      continue;
+
+    node->deleteNode();
   }
 }
 

@@ -173,7 +173,6 @@ ConnectorSaveInfo Connector::saveInfo() const
 
 void Connector::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget)
 {
-  LOG_DEBUG("Setting opacity of %u connections to %f", connections().size(), opacity());
   for (auto& connection : connections())
     static_cast<ConnectionItem*>(connection)->setOpacity(opacity());
 

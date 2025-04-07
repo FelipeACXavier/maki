@@ -207,21 +207,39 @@ VoidResult MainWindow::loadElements()
 
     auto libConfig = libRead.Value();
 
-    RETURN_ON_FAILURE(loadElementLibrary(libConfig));
+    RETURN_ON_FAILURE(loadLibrary(libConfig));
   }
 
   return VoidResult();
 }
 
-VoidResult MainWindow::loadElementLibrary(const JSON& config)
+VoidResult MainWindow::loadLibrary(const JSON& config)
 {
   if (!config.contains("name"))
-    return VoidResult::Failed("Libraries must have a name");
+    return VoidResult::Failed("Packages must have a name");
 
+  if (!config.contains("libraries"))
+    return VoidResult::Failed("Packages must have libraries");
+
+  QString name = config["name"].toString();
+  auto libraries = config["libraries"].toArray();
+  for (const auto& value : libraries)
+  {
+    if (!value.isObject())
+      return VoidResult::Failed("Invalid library format");
+
+    QJsonObject library = value.toObject();
+    RETURN_ON_FAILURE(loadElementLibrary(name, library));
+  }
+
+  return VoidResult();
+}
+
+VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& config)
+{
   if (!config.contains("type"))
     return VoidResult::Failed("Libraries must have a type");
 
-  QString name = config["name"].toString();
   QString type = config["type"].toString();
 
   LOG_DEBUG("Loading library: %s", qPrintable(name));
@@ -371,24 +389,4 @@ void MainWindow::onNodeModified(NodeItem* node)
   }
 
   LOG_WARN_ON_FAILURE(mUI->treeWidget->onNodeModified(node));
-}
-
-bool MainWindow::eventFilter(QObject* watched, QEvent* event)
-{
-  if (event->type() == QEvent::KeyPress)
-  {
-    QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
-    LOG_INFO("Event detected: %d", keyEvent->key());
-    if (keyEvent->key() == Qt::Key_Delete)
-    {
-      // Forward the event to the QGraphicsView
-      if (mUI->graphicsView->hasFocus())
-      {
-        QCoreApplication::sendEvent(mUI->graphicsView, keyEvent);
-        return true;
-      }
-    }
-  }
-
-  return QMainWindow::eventFilter(watched, event);
 }

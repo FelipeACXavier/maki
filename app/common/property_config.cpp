@@ -2,6 +2,8 @@
 
 #include <QJsonArray>
 
+#include "keys.h"
+
 PropertiesConfig::PropertiesConfig()
     : isConfigValid(true)
     , errorMessage("")
@@ -93,7 +95,7 @@ Types::PropertyTypes PropertiesConfig::toType(const QString& config)
   const auto type = config;  // QString::fromStdString(ToLowerCase(config.toStdString(), 0, config.size()));
   if (type == "string")
     return Types::PropertyTypes::STRING;
-  else if (type == "integer")
+  else if (type == "integer" || type == "int")
     return Types::PropertyTypes::INTEGER;
   else if (type == "real")
     return Types::PropertyTypes::REAL;
@@ -124,8 +126,36 @@ void PropertiesConfig::setInvalid(const QString& message)
   errorMessage = message;
 }
 
-// ===========================================================================================================
-// PropertiesConfig
+QJsonObject PropertiesConfig::toJson() const
+{
+  QJsonObject data;
+  data[ConfigKeys::ID] = id;
+  data[ConfigKeys::DEFAULT] = defaultValue.toJsonObject();
+
+  QJsonArray optionArray;
+  for (const auto& opt : options)
+    optionArray.append(opt.toJson());
+
+  data[ConfigKeys::OPTIONS] = optionArray;
+  data[ConfigKeys::TYPE] = (int)type;
+
+  return data;
+}
+
+PropertiesConfig PropertiesConfig::fromJson(const QJsonObject& data)
+{
+  PropertiesConfig config;
+  config.id = data[ConfigKeys::ID].toString();
+  config.defaultValue = QJsonValue(data[ConfigKeys::DEFAULT]).toVariant();
+
+  for (const auto& value : data[ConfigKeys::OPTIONS].toArray())
+    config.options.append(fromJson(value.toObject()));
+
+  config.type = (Types::PropertyTypes)data[ConfigKeys::TYPE].toInt();
+
+  return config;
+}
+
 QDataStream& operator<<(QDataStream& out, const PropertiesConfig& config)
 {
   out << config.id;

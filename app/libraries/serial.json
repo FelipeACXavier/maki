@@ -1,0 +1,291 @@
+{
+  "name": "Serial",
+  "author": "Felipe Xavier",
+  "libraries": [
+    {
+      "type": "internal behaviour",
+      "nodes": [
+        {
+          "type": "Read I2C",
+          "body": {
+            "shape": "rounded rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#ffb703",
+            "borderColor": "#FFFFFF",
+            "borderRadius": 5,
+            "width": 100,
+            "height": 50,
+            "scale": 0.5
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Read I2C"
+            },
+            {
+              "id": "address",
+              "type": "string",
+              "default": ""
+            },
+            {
+              "id": "size",
+              "type": "string",
+              "default": ""
+            }
+          ],
+          "connectors": [
+            {
+              "id": "input",
+              "type": "in",
+              "position": "west"
+            },
+            {
+              "id": "output",
+              "type": "out",
+              "position": "east"
+            }
+          ]
+        },
+        {
+          "type": "Write I2C",
+          "body": {
+            "shape": "rounded rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#fb8500",
+            "borderColor": "#FFFFFF",
+            "borderRadius": 5,
+            "width": 100,
+            "height": 50,
+            "scale": 0.5
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Read I2C"
+            },
+            {
+              "id": "address",
+              "type": "string",
+              "default": ""
+            },
+            {
+              "id": "size",
+              "type": "string",
+              "default": ""
+            }
+          ],
+          "connectors": [
+            {
+              "id": "input",
+              "type": "in",
+              "position": "west"
+            },
+            {
+              "id": "output",
+              "type": "out",
+              "position": "east"
+            }
+          ]
+        },
+        {
+          "type": "Read Modbus",
+          "body": {
+            "shape": "rounded rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#8ecae6",
+            "borderColor": "#FFFFFF",
+            "borderRadius": 5,
+            "width": 100,
+            "height": 50,
+            "scale": 0.5
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Read Modbus"
+            },
+            {
+              "id": "address",
+              "type": "string",
+              "default": ""
+            },
+            {
+              "id": "size",
+              "type": "string",
+              "default": ""
+            },
+            {
+              "id": "function",
+              "type": "select",
+              "options": [
+                {
+                  "id": "read bit",
+                  "type": "string"
+                },
+                {
+                  "id": "read register",
+                  "type": "string"
+                }
+              ]
+            }
+          ],
+          "connectors": [
+            {
+              "id": "input",
+              "type": "in",
+              "position": "west"
+            },
+            {
+              "id": "output",
+              "type": "out",
+              "position": "east"
+            }
+          ]
+        },
+        {
+          "type": "Write Modbus",
+          "body": {
+            "shape": "rounded rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#219ebc",
+            "borderColor": "#FFFFFF",
+            "borderRadius": 5,
+            "width": 100,
+            "height": 50,
+            "scale": 0.5
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Write Modbus"
+            },
+            {
+              "id": "address",
+              "type": "string",
+              "default": ""
+            },
+            {
+              "id": "size",
+              "type": "string",
+              "default": ""
+            },
+            {
+              "id": "function",
+              "type": "select",
+              "options": [
+                {
+                  "id": "read bit",
+                  "type": "string"
+                },
+                {
+                  "id": "read register",
+                  "type": "string"
+                }
+              ]
+            }
+          ],
+          "connectors": [
+            {
+              "id": "input",
+              "type": "in",
+              "position": "west"
+            },
+            {
+              "id": "output",
+              "type": "out",
+              "position": "east"
+            }
+          ]
+        },
+        {
+          "type": "Read SPI",
+          "body": {
+            "shape": "rounded rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#83c5be",
+            "borderColor": "#FFFFFF",
+            "borderRadius": 5,
+            "width": 100,
+            "height": 50,
+            "scale": 0.5
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Read I2C"
+            },
+            {
+              "id": "address",
+              "type": "string",
+              "default": ""
+            },
+            {
+              "id": "size",
+              "type": "string",
+              "default": ""
+            }
+          ],
+          "connectors": [
+            {
+              "id": "input",
+              "type": "in",
+              "position": "west"
+            },
+            {
+              "id": "output",
+              "type": "out",
+              "position": "east"
+            }
+          ]
+        },
+        {
+          "type": "Write SPI",
+          "body": {
+            "shape": "rounded rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#006d77",
+            "borderColor": "#FFFFFF",
+            "borderRadius": 5,
+            "width": 100,
+            "height": 50,
+            "scale": 0.5
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Read I2C"
+            },
+            {
+              "id": "address",
+              "type": "string",
+              "default": ""
+            },
+            {
+              "id": "size",
+              "type": "string",
+              "default": ""
+            }
+          ],
+          "connectors": [
+            {
+              "id": "input",
+              "type": "in",
+              "position": "west"
+            },
+            {
+              "id": "output",
+              "type": "out",
+              "position": "east"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

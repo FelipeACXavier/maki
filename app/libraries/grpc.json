@@ -1,0 +1,271 @@
+{
+  "name": "GRPC",
+  "author": "Felipe Xavier",
+  "libraries": [
+    {
+      "type": "structure",
+      "nodes": [
+        {
+          "type": "Service",
+          "body": {
+            "shape": "Rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#202020",
+            "borderColor": "#FFFFFF",
+            "width": 500,
+            "height": 500,
+            "z-index": -2
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Service"
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#202020"
+            }
+          ],
+          "controls": [
+            {
+              "id": "Add",
+              "type": "add field"
+            }
+          ],
+          "help": {
+            "message": "Used to define a GRPC service\nMessages should be available before they are used in the service definition."
+          }
+        },
+        {
+          "type": "Message",
+          "body": {
+            "shape": "rounded rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#fcbf49",
+            "borderColor": "#FFFFFF",
+            "borderRadius": 50,
+            "width": 300,
+            "height": 300,
+            "z-index": -2
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Message"
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#fcbf49"
+            }
+          ],
+          "controls": [
+            {
+              "id": "Add",
+              "type": "add field"
+            }
+          ],
+          "help": {
+            "message": "Used to define a protobuf message to be used in a GRPC service"
+          }
+        }
+      ]
+    },
+    {
+      "type": "internal behaviour",
+      "nodes": [
+        {
+          "type": "Send",
+          "body": {
+            "shape": "rounded rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#e9c46a",
+            "borderColor": "#FFFFFF",
+            "borderRadius": 5,
+            "width": 100,
+            "height": 50,
+            "scale": 0.5
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Send"
+            },
+            {
+              "id": "service",
+              "type": "string",
+              "default": ""
+            },
+            {
+              "id": "method",
+              "type": "string",
+              "default": ""
+            },
+            {
+              "id": "message",
+              "type": "string",
+              "default": ""
+            }
+          ],
+          "connectors": [
+            {
+              "id": "input",
+              "type": "in",
+              "position": "west"
+            },
+            {
+              "id": "output",
+              "type": "out",
+              "position": "east"
+            }
+          ]
+        },
+        {
+          "type": "Receive",
+          "body": {
+            "shape": "rounded rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#e9c46a",
+            "borderColor": "#FFFFFF",
+            "borderRadius": 5,
+            "width": 100,
+            "height": 50,
+            "scale": 0.5
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Receive"
+            },
+            {
+              "id": "service",
+              "type": "string",
+              "default": ""
+            },
+            {
+              "id": "method",
+              "type": "string",
+              "default": ""
+            },
+            {
+              "id": "message",
+              "type": "string",
+              "default": ""
+            }
+          ],
+          "connectors": [
+            {
+              "id": "input",
+              "type": "in",
+              "position": "west"
+            },
+            {
+              "id": "output",
+              "type": "out",
+              "position": "east"
+            }
+          ]
+        },
+        {
+          "type": "Write",
+          "body": {
+            "shape": "rounded rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#e9c46a",
+            "borderColor": "#FFFFFF",
+            "borderRadius": 5,
+            "width": 100,
+            "height": 50,
+            "scale": 0.5
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Write"
+            },
+            {
+              "id": "service",
+              "type": "string",
+              "default": ""
+            },
+            {
+              "id": "method",
+              "type": "string",
+              "default": ""
+            },
+            {
+              "id": "message",
+              "type": "string",
+              "default": ""
+            }
+          ],
+          "connectors": [
+            {
+              "id": "input",
+              "type": "in",
+              "position": "west"
+            },
+            {
+              "id": "output",
+              "type": "out",
+              "position": "east"
+            }
+          ]
+        },
+        {
+          "type": "Read",
+          "body": {
+            "shape": "rounded rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#e9c46a",
+            "borderColor": "#FFFFFF",
+            "borderRadius": 5,
+            "width": 100,
+            "height": 50,
+            "scale": 0.5
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Read"
+            },
+            {
+              "id": "service",
+              "type": "string",
+              "default": ""
+            },
+            {
+              "id": "method",
+              "type": "string",
+              "default": ""
+            },
+            {
+              "id": "message",
+              "type": "string",
+              "default": ""
+            }
+          ],
+          "connectors": [
+            {
+              "id": "input",
+              "type": "in",
+              "position": "west"
+            },
+            {
+              "id": "output",
+              "type": "out",
+              "position": "east"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,6 +1,9 @@
 #pragma once
 
 #include <QJsonObject>
+#include <QPixmap>
+#include <QPointF>
+#include <QSizeF>
 
 #include "result.h"
 
@@ -17,4 +20,13 @@ public:
 
   static QString fromArray(const QVariantList& value, char separator);
   static QJsonArray toArray(const QJsonValue& value, char separator);
+
+  static QJsonObject fromPointF(const QPointF& value);
+  static QPointF toPointF(const QJsonObject& value);
+
+  static QJsonObject fromSizeF(const QSizeF& value);
+  static QSizeF toSizeF(const QJsonObject& value);
+
+  static QJsonObject fromPixmap(const QPixmap& value);
+  static QPixmap toPixmap(const QJsonObject& value);
 };

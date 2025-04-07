@@ -1,279 +1,283 @@
 {
   "name": "Math",
-  "type": "internal behaviour",
   "author": "",
-  "nodes": [
+  "libraries": [
     {
-      "type": "Addition",
-      "body": {
-        "shape": "ellipse",
-        "textColor": "#FFFFFF",
-        "backgroundColor": "#e9c46a",
-        "borderColor": "#FFFFFF",
-        "width": 50,
-        "height": 50,
-        "icon": ":math/addition.png",
-        "scale": 0.5
-      },
-      "properties": [
+      "type": "internal behaviour",
+      "nodes": [
         {
-          "id": "name",
-          "type": "string",
-          "default": "Addition"
-        }
-      ],
-      "connectors": [
-        {
-          "id": "arg1",
-          "type": "in",
-          "position": "west north"
+          "type": "Addition",
+          "body": {
+            "shape": "ellipse",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#e9c46a",
+            "borderColor": "#FFFFFF",
+            "width": 50,
+            "height": 50,
+            "icon": ":math/addition.png",
+            "scale": 0.5
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Addition"
+            }
+          ],
+          "connectors": [
+            {
+              "id": "arg1",
+              "type": "in",
+              "position": "west north"
+            },
+            {
+              "id": "arg2",
+              "type": "in",
+              "position": "west south"
+            },
+            {
+              "id": "output",
+              "type": "out",
+              "position": "east"
+            }
+          ],
+          "behaviour": {
+            "code": "return $connectors.arg1 + $connectors.arg2"
+          }
         },
         {
-          "id": "arg2",
-          "type": "in",
-          "position": "west south"
+          "type": "Subtraction",
+          "body": {
+            "shape": "ellipse",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#e9c46a",
+            "borderColor": "#FFFFFF",
+            "width": 50,
+            "height": 50,
+            "icon": ":math/subtraction.png",
+            "scale": 0.5
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Subtraction"
+            }
+          ],
+          "connectors": [
+            {
+              "id": "arg1",
+              "type": "in",
+              "position": "west north"
+            },
+            {
+              "id": "arg2",
+              "type": "in",
+              "position": "west south"
+            },
+            {
+              "id": "output",
+              "type": "out",
+              "position": "east"
+            }
+          ],
+          "behaviour": {
+            "code": "return $connectors.arg1 - $connectors.arg2"
+          }
         },
         {
-          "id": "output",
-          "type": "out",
-          "position": "east"
-        }
-      ],
-      "behaviour": {
-        "code": "return $connectors.arg1 + $connectors.arg2"
-      }
-    },
-    {
-      "type": "Subtraction",
-      "body": {
-        "shape": "ellipse",
-        "textColor": "#FFFFFF",
-        "backgroundColor": "#e9c46a",
-        "borderColor": "#FFFFFF",
-        "width": 50,
-        "height": 50,
-        "icon": ":math/subtraction.png",
-        "scale": 0.5
-      },
-      "properties": [
-        {
-          "id": "name",
-          "type": "string",
-          "default": "Subtraction"
-        }
-      ],
-      "connectors": [
-        {
-          "id": "arg1",
-          "type": "in",
-          "position": "west north"
+          "type": "Multiplication",
+          "body": {
+            "shape": "ellipse",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#e9c46a",
+            "borderColor": "#FFFFFF",
+            "width": 50,
+            "height": 50,
+            "icon": ":math/multiplication.png",
+            "scale": 0.5
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Multiplication"
+            }
+          ],
+          "connectors": [
+            {
+              "id": "arg1",
+              "type": "in",
+              "position": "west north"
+            },
+            {
+              "id": "arg2",
+              "type": "in",
+              "position": "west south"
+            },
+            {
+              "id": "output",
+              "type": "out",
+              "position": "east"
+            }
+          ],
+          "behaviour": {
+            "code": "return $connectors.arg1 * $connectors.arg2"
+          }
         },
         {
-          "id": "arg2",
-          "type": "in",
-          "position": "west south"
+          "type": "Division",
+          "body": {
+            "shape": "ellipse",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#e9c46a",
+            "borderColor": "#FFFFFF",
+            "width": 50,
+            "height": 50,
+            "icon": ":math/division.png",
+            "scale": 0.5
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Division"
+            }
+          ],
+          "connectors": [
+            {
+              "id": "arg1",
+              "type": "in",
+              "position": "west north"
+            },
+            {
+              "id": "arg2",
+              "type": "in",
+              "position": "west south"
+            },
+            {
+              "id": "output",
+              "type": "out",
+              "position": "east"
+            }
+          ],
+          "behaviour": {
+            "code": "return $connectors.arg1 / $connectors.arg2"
+          }
         },
         {
-          "id": "output",
-          "type": "out",
-          "position": "east"
-        }
-      ],
-      "behaviour": {
-        "code": "return $connectors.arg1 - $connectors.arg2"
-      }
-    },
-    {
-      "type": "Multiplication",
-      "body": {
-        "shape": "ellipse",
-        "textColor": "#FFFFFF",
-        "backgroundColor": "#e9c46a",
-        "borderColor": "#FFFFFF",
-        "width": 50,
-        "height": 50,
-        "icon": ":math/multiplication.png",
-        "scale": 0.5
-      },
-      "properties": [
-        {
-          "id": "name",
-          "type": "string",
-          "default": "Multiplication"
-        }
-      ],
-      "connectors": [
-        {
-          "id": "arg1",
-          "type": "in",
-          "position": "west north"
+          "type": "And",
+          "body": {
+            "shape": "ellipse",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#e9c46a",
+            "borderColor": "#FFFFFF",
+            "width": 50,
+            "height": 50,
+            "scale": 0.5
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "And"
+            }
+          ],
+          "connectors": [
+            {
+              "id": "arg1",
+              "type": "in",
+              "position": "west north"
+            },
+            {
+              "id": "arg2",
+              "type": "in",
+              "position": "west south"
+            },
+            {
+              "id": "output",
+              "type": "out",
+              "position": "east"
+            }
+          ],
+          "behaviour": {
+            "code": "return $connectors.arg1 && $connectors.arg2"
+          }
         },
         {
-          "id": "arg2",
-          "type": "in",
-          "position": "west south"
+          "type": "Or",
+          "body": {
+            "shape": "ellipse",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#e9c46a",
+            "borderColor": "#FFFFFF",
+            "width": 50,
+            "height": 50,
+            "scale": 0.5
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Or"
+            }
+          ],
+          "connectors": [
+            {
+              "id": "arg1",
+              "type": "in",
+              "position": "west north"
+            },
+            {
+              "id": "arg2",
+              "type": "in",
+              "position": "west south"
+            },
+            {
+              "id": "output",
+              "type": "out",
+              "position": "east"
+            }
+          ],
+          "behaviour": {
+            "code": "return $connectors.arg1 || $connectors.arg2"
+          }
         },
         {
-          "id": "output",
-          "type": "out",
-          "position": "east"
+          "type": "Not",
+          "body": {
+            "shape": "ellipse",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#e9c46a",
+            "borderColor": "#FFFFFF",
+            "width": 50,
+            "height": 50,
+            "scale": 0.5
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Not"
+            }
+          ],
+          "connectors": [
+            {
+              "id": "input",
+              "type": "in",
+              "position": "west"
+            },
+            {
+              "id": "output",
+              "type": "out",
+              "position": "east"
+            }
+          ],
+          "behaviour": {
+            "code": "return !$connectors.input"
+          }
         }
-      ],
-      "behaviour": {
-        "code": "return $connectors.arg1 * $connectors.arg2"
-      }
-    },
-    {
-      "type": "Division",
-      "body": {
-        "shape": "ellipse",
-        "textColor": "#FFFFFF",
-        "backgroundColor": "#e9c46a",
-        "borderColor": "#FFFFFF",
-        "width": 50,
-        "height": 50,
-        "icon": ":math/division.png",
-        "scale": 0.5
-      },
-      "properties": [
-        {
-          "id": "name",
-          "type": "string",
-          "default": "Division"
-        }
-      ],
-      "connectors": [
-        {
-          "id": "arg1",
-          "type": "in",
-          "position": "west north"
-        },
-        {
-          "id": "arg2",
-          "type": "in",
-          "position": "west south"
-        },
-        {
-          "id": "output",
-          "type": "out",
-          "position": "east"
-        }
-      ],
-      "behaviour": {
-        "code": "return $connectors.arg1 / $connectors.arg2"
-      }
-    },
-    {
-      "type": "And",
-      "body": {
-        "shape": "ellipse",
-        "textColor": "#FFFFFF",
-        "backgroundColor": "#e9c46a",
-        "borderColor": "#FFFFFF",
-        "width": 50,
-        "height": 50,
-        "scale": 0.5
-      },
-      "properties": [
-        {
-          "id": "name",
-          "type": "string",
-          "default": "And"
-        }
-      ],
-      "connectors": [
-        {
-          "id": "arg1",
-          "type": "in",
-          "position": "west north"
-        },
-        {
-          "id": "arg2",
-          "type": "in",
-          "position": "west south"
-        },
-        {
-          "id": "output",
-          "type": "out",
-          "position": "east"
-        }
-      ],
-      "behaviour": {
-        "code": "return $connectors.arg1 && $connectors.arg2"
-      }
-    },
-    {
-      "type": "Or",
-      "body": {
-        "shape": "ellipse",
-        "textColor": "#FFFFFF",
-        "backgroundColor": "#e9c46a",
-        "borderColor": "#FFFFFF",
-        "width": 50,
-        "height": 50,
-        "scale": 0.5
-      },
-      "properties": [
-        {
-          "id": "name",
-          "type": "string",
-          "default": "Or"
-        }
-      ],
-      "connectors": [
-        {
-          "id": "arg1",
-          "type": "in",
-          "position": "west north"
-        },
-        {
-          "id": "arg2",
-          "type": "in",
-          "position": "west south"
-        },
-        {
-          "id": "output",
-          "type": "out",
-          "position": "east"
-        }
-      ],
-      "behaviour": {
-        "code": "return $connectors.arg1 || $connectors.arg2"
-      }
-    },
-    {
-      "type": "Not",
-      "body": {
-        "shape": "ellipse",
-        "textColor": "#FFFFFF",
-        "backgroundColor": "#e9c46a",
-        "borderColor": "#FFFFFF",
-        "width": 50,
-        "height": 50,
-        "scale": 0.5
-      },
-      "properties": [
-        {
-          "id": "name",
-          "type": "string",
-          "default": "Not"
-        }
-      ],
-      "connectors": [
-        {
-          "id": "input",
-          "type": "in",
-          "position": "west"
-        },
-        {
-          "id": "output",
-          "type": "out",
-          "position": "east"
-        }
-      ],
-      "behaviour": {
-        "code": "return !$connectors.input"
-      }
+      ]
     }
   ]
 }

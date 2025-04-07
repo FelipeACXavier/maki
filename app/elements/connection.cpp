@@ -35,6 +35,11 @@ QString ConnectionItem::id() const
   return mId;
 }
 
+int ConnectionItem::type() const
+{
+  return Type;
+}
+
 void ConnectionItem::setStart(const QString& id, const QPointF& point, const QPointF& controlShift)
 {
   mSrcId = id;

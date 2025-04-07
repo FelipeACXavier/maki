@@ -22,6 +22,7 @@ public:
   virtual ~ConnectionItem();
 
   QString id() const override;
+  int type() const override;
 
   void setStart(const QString& id, const QPointF& point, const QPointF& controlShift);
   void setEnd(const QString& id, const QPointF& point, const QPointF& controlShift);

@@ -21,6 +21,9 @@ public:
   bool isValid() const;
   void setInvalid(const QString& message);
 
+  QJsonObject toJson() const;
+  static PropertiesConfig fromJson(const QJsonObject& data);
+
   friend QDataStream& operator<<(QDataStream& out, const PropertiesConfig& config);
   friend QDataStream& operator>>(QDataStream& in, PropertiesConfig& config);
 

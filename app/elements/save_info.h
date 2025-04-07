@@ -17,6 +17,9 @@ struct ConnectorSaveInfo
 
   ConnectorSaveInfo() = default;
 
+  QJsonObject toJson() const;
+  static ConnectorSaveInfo fromJson(const QJsonObject& data);
+
   friend QDataStream& operator<<(QDataStream& out, const ConnectorSaveInfo& info);
   friend QDataStream& operator>>(QDataStream& in, ConnectorSaveInfo& info);
 };
@@ -38,6 +41,9 @@ struct NodeSaveInfo
 
   NodeSaveInfo() = default;
 
+  QJsonObject toJson() const;
+  static NodeSaveInfo fromJson(const QJsonObject& data);
+
   friend QDataStream& operator<<(QDataStream& out, const NodeSaveInfo& info);
   friend QDataStream& operator>>(QDataStream& in, NodeSaveInfo& info);
 };
@@ -54,6 +60,9 @@ struct ConnectionSaveInfo
 
   ConnectionSaveInfo() = default;
 
+  QJsonObject toJson() const;
+  static ConnectionSaveInfo fromJson(const QJsonObject& data);
+
   friend QDataStream& operator<<(QDataStream& out, const ConnectionSaveInfo& info);
   friend QDataStream& operator>>(QDataStream& in, ConnectionSaveInfo& info);
 };
@@ -62,6 +71,9 @@ struct CanvasSaveInfo
 {
   qreal scale{1.0};
   QPointF center{0, 0};
+
+  QJsonObject toJson() const;
+  static CanvasSaveInfo fromJson(const QJsonObject& data);
 
   friend QDataStream& operator<<(QDataStream& out, const CanvasSaveInfo& info);
   friend QDataStream& operator>>(QDataStream& in, CanvasSaveInfo& info);
@@ -73,6 +85,9 @@ struct SaveInfo
   QVector<NodeSaveInfo> structuralNodes;
   QVector<NodeSaveInfo> behaviouralNodes;
   QVector<ConnectionSaveInfo> connections;
+
+  QJsonObject toJson() const;
+  static SaveInfo fromJson(const QJsonObject& data);
 
   friend QDataStream& operator<<(QDataStream& out, const SaveInfo& info);
   friend QDataStream& operator>>(QDataStream& in, SaveInfo& info);

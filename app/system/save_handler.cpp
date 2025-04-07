@@ -5,6 +5,7 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QGraphicsItem>
+#include <QJsonDocument>
 
 #include "canvas.h"
 #include "elements/connection.h"
@@ -65,10 +66,19 @@ VoidResult SaveHandler::saveToFile(Canvas* canvas)
   if (!file.open(QIODevice::WriteOnly))
     return VoidResult::Failed("Could not open file for writing: " + file.errorString().toStdString());
 
-  QDataStream out(&file);
-  out.setVersion(QDataStream::Qt_6_0);
-
-  out << info;
+  QFileInfo fileInfo(mCurrentFile);
+  QString extension = fileInfo.suffix();
+  if (fileInfo.suffix() == "json")
+  {
+    QJsonDocument document(info.toJson());
+    file.write(document.toJson());
+  }
+  else
+  {
+    QDataStream out(&file);
+    out.setVersion(QDataStream::Qt_6_0);
+    out << info;
+  }
 
   file.flush();
   file.close();
@@ -86,17 +96,28 @@ Result<SaveInfo> SaveHandler::load()
   storeFilename(fileName);
 
   SaveInfo info;
+  QFileInfo fileInfo(fileName);
+  QString extension = fileInfo.suffix();
+  if (fileInfo.suffix() == "json")
+  {
+    auto saveFile = JSON::fromFile(fileName);
+    if (!saveFile.IsSuccess())
+      return Result<SaveInfo>::Failed("Failed to open file for reading: " + saveFile.ErrorMessage());
 
-  QFile file(fileName);
-  if (!file.open(QIODevice::ReadOnly))
-    return Result<SaveInfo>::Failed("Failed to open file for reading: " + file.errorString().toStdString());
+    auto fileContents = saveFile.Value();
+    info = SaveInfo::fromJson(fileContents);
+  }
+  else
+  {
+    QFile file(fileName);
+    if (!file.open(QIODevice::ReadOnly))
+      return Result<SaveInfo>::Failed("Failed to open file for reading: " + file.errorString().toStdString());
 
-  QDataStream in(&file);
-  in.setVersion(QDataStream::Qt_6_0);
-
-  in >> info;
-
-  file.close();
+    QDataStream in(&file);
+    in.setVersion(QDataStream::Qt_6_0);
+    in >> info;
+    file.close();
+  }
 
   return info;
 }
