@@ -2,6 +2,7 @@
 
 #include <QIcon>
 #include <QString>
+#include <QVBoxLayout>
 #include <QWidget>
 
 #include "logging.h"
@@ -17,3 +18,5 @@ QIcon addIconWithColor(const QString& path, const QColor& color);
 QString timeToQT(struct timespec ts);
 QString logLevelToQT(logging::LogLevel logLevel);
 QString toQT(struct timespec ts, logging::LogLevel level, const std::string& message);
+
+void addDynamicWidget(QVBoxLayout* layout, QWidget* dynamicWidget, QWidget* parent);

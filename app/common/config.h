@@ -6,6 +6,7 @@
 #include <QVector>
 
 #include "config_base.h"
+#include "event_config.h"
 #include "property_config.h"
 #include "types.h"
 
@@ -111,6 +112,7 @@ public:
   QVector<ControlsConfig> controls;
   QVector<ConnectorConfig> connectors;
   QVector<PropertiesConfig> properties;
+  QVector<EventConfig> events;
 
   Types::LibraryTypes libraryType = Types::LibraryTypes::UNKNOWN;
 

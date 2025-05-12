@@ -16,9 +16,13 @@ static const QString POSITION = "position";
 static const QString PARENT_ID = "parentId";
 
 static const QString FIELDS = "fields";
+static const QString EVENTS = "events";
 static const QString OPTIONS = "options";
 static const QString CONNECTORS = "connectors";
 static const QString PROPERTIES = "properties";
+
+static const QString ARGUMENTS = "arguments";
+static const QString RETURN_TYPE = "returnType";
 
 static const QString X = "x";
 static const QString Y = "y";

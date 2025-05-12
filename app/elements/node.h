@@ -64,6 +64,9 @@ public:
   void addTransition(TransitionItem* transition);
   QPointF edgePointToward(const QPointF& targetScenePos) const;
 
+  void setEvent(int index, const EventConfig& event);
+  QVector<EventConfig> events() const;
+
   void addChild(NodeItem* child);
   void setParent(NodeItem* parent);
   void childRemoved(NodeItem* child);
@@ -92,6 +95,7 @@ protected:
 
 private:
   QVector<PropertiesConfig> mFields;
+  QVector<EventConfig> mEvents;
   QMap<QString, QVariant> mProperties;
   QVector<std::shared_ptr<IConnector>> mConnectors;
 

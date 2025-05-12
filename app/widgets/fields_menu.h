@@ -8,6 +8,8 @@
 class NodeItem;
 class QTableView;
 class QHBoxLayout;
+class EventDialog;
+class QStandardItemModel;
 
 class FieldsMenu : public QFrame
 {
@@ -20,10 +22,16 @@ public:
 private:
   void clear();
   QString mCurrentNode;
+  EventDialog* mCurrentDialog;
 
   VoidResult loadControls(NodeItem* node);
   VoidResult loadControlAddField(const ControlsConfig& control, NodeItem* node, QWidget* parent, QHBoxLayout* controlLayout);
+  VoidResult loadControlAddEvent(const ControlsConfig& control, NodeItem* node, QWidget* parent, QHBoxLayout* controlLayout);
 
-  void addDynamicWidget(QWidget* control, QWidget* parent);
   void showContextMenu(QTableView* tableView, NodeItem* node, const QPoint& pos);
+  void showEventContextMenu(QTableView* tableView, NodeItem* node, const QPoint& pos);
+
+  void editEvent(QTableView* tableView, NodeItem* node, const QModelIndex& index);
+
+  void addEventToTable(QStandardItemModel* model, int row, const EventConfig& event);
 };

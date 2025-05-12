@@ -292,6 +292,18 @@ NodeConfig::NodeConfig(const QJsonObject& object)
       controls.push_back(ctrl);
     }
   }
+
+  if (object.contains("events"))
+  {
+    for (const auto& control : object["events"].toArray())
+    {
+      auto ctrl = EventConfig(control.toObject());
+      if (!ctrl.isValid())
+        setInvalid(ctrl.errorMessage);
+
+      events.push_back(ctrl);
+    }
+  }
 }
 
 // ===========================================================================================================
@@ -306,6 +318,7 @@ QDataStream& operator<<(QDataStream& out, const NodeConfig& config)
   out << config.connectors;
   out << config.properties;
   out << config.libraryType;
+  out << config.events;
 
   return out;
 }
@@ -320,6 +333,7 @@ QDataStream& operator>>(QDataStream& in, NodeConfig& config)
   in >> config.connectors;
   in >> config.properties;
   in >> config.libraryType;
+  in >> config.events;
 
   return in;
 }

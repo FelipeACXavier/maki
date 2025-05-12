@@ -31,7 +31,11 @@ enum class ConnectorType
   IN,
   OUT,
   IN_AND_OUT,
+  END
 };
+
+ConnectorType StringToConnectorType(const QString& type);
+QString ConnectorTypeToString(ConnectorType type);
 
 enum class PropertyTypes
 {
@@ -42,8 +46,13 @@ enum class PropertyTypes
   BOOLEAN,
   SELECT,
   LIST,
-  COLOR
+  COLOR,
+  VOID,
+  END
 };
+
+PropertyTypes StringToPropertyTypes(const QString& type);
+QString PropertyTypesToString(PropertyTypes type);
 
 enum class ControlTypes
 {

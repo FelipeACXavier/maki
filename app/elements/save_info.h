@@ -33,6 +33,7 @@ struct NodeSaveInfo
   QSizeF size{0, 0};
   qreal scale{1.0};
   QVector<PropertiesConfig> fields;
+  QVector<EventConfig> events;
   QMap<QString, QVariant> properties;
   QVector<ConnectorSaveInfo> connectors;
 

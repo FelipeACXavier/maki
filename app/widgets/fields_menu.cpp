@@ -12,11 +12,14 @@
 
 #include "app_configs.h"
 #include "elements/node.h"
+#include "event_dialog.h"
 #include "json.h"
 #include "logging.h"
+#include "style_helpers.h"
 
 FieldsMenu::FieldsMenu(QWidget* parent)
     : QFrame(parent)
+    , mCurrentDialog(nullptr)
 {
   // Set widget layout
   QVBoxLayout* layout = new QVBoxLayout();
@@ -92,25 +95,13 @@ VoidResult FieldsMenu::loadControls(NodeItem* node)
   {
     if (control.type == Types::ControlTypes::ADD_FIELD)
       LOG_WARN_ON_FAILURE(loadControlAddField(control, node, controls, controlLayout));
+    else if (control.type == Types::ControlTypes::ADD_EVENT)
+      LOG_WARN_ON_FAILURE(loadControlAddEvent(control, node, controls, controlLayout));
     else
       LOG_WARNING("Unknown control type: %s", qPrintable(control.id));
   }
 
   return VoidResult();
-}
-
-void FieldsMenu::addDynamicWidget(QWidget* dynamicWidget, QWidget* parent)
-{
-  // Add dynamic widgets above the parent but below other widgets
-  for (int i = 0; i < layout()->count(); ++i)
-  {
-    QWidget* widget = layout()->itemAt(i)->widget();
-    if (widget != parent)
-      continue;
-
-    static_cast<QVBoxLayout*>(layout())->insertWidget(i - 1, dynamicWidget);
-    break;
-  }
 }
 
 VoidResult FieldsMenu::loadControlAddField(const ControlsConfig& control, NodeItem* node, QWidget* parent, QHBoxLayout* controlLayout)
@@ -126,7 +117,7 @@ VoidResult FieldsMenu::loadControlAddField(const ControlsConfig& control, NodeIt
   tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
   tableView->setContextMenuPolicy(Qt::CustomContextMenu);
 
-  addDynamicWidget(tableView, parent);
+  addDynamicWidget((QVBoxLayout*)layout(), tableView, parent);
 
   tableView->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::EditKeyPressed);
   tableView->setModel(model);
@@ -215,4 +206,134 @@ void FieldsMenu::showContextMenu(QTableView* tableView, NodeItem* node, const QP
   });
 
   contextMenu.exec(tableView->viewport()->mapToGlobal(pos));
+}
+
+VoidResult FieldsMenu::loadControlAddEvent(const ControlsConfig& control, NodeItem* node, QWidget* parent, QHBoxLayout* controlLayout)
+{
+  // Create table to hold new fields
+  QTableView* tableView = new QTableView(parent);
+  QStandardItemModel* model = new QStandardItemModel(0, 3);
+
+  model->setHorizontalHeaderItem(0, new QStandardItem("Name"));
+  model->setHorizontalHeaderItem(1, new QStandardItem("Type"));
+  model->setHorizontalHeaderItem(2, new QStandardItem("Return"));
+  model->setHorizontalHeaderItem(3, new QStandardItem("Argument"));
+
+  tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+  tableView->setContextMenuPolicy(Qt::CustomContextMenu);
+
+  addDynamicWidget((QVBoxLayout*)layout(), tableView, parent);
+
+  // We do not support editing values in the table directly. I want to avoid issues caused by a wrong click
+  // Instead, we open a dialog with a complete overview of the event.
+  // TODO(felaze): It would be nice to also show the nodes that trigger this event
+  tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+  tableView->setModel(model);
+
+  for (const auto& event : node->events())
+  {
+    int newRow = model->rowCount();
+    addEventToTable(model, newRow, event);
+  }
+
+  connect(tableView, &QTableView::customContextMenuRequested, [this, tableView, node](const QPoint& pos) {
+    showEventContextMenu(tableView, node, pos);
+  });
+
+  connect(tableView, &QTableView::doubleClicked, [this, tableView, node](const QModelIndex& index) {
+    editEvent(tableView, node, index);
+  });
+
+  QPushButton* button = new QPushButton(parent);
+  connect(button, &QPushButton::pressed, this, [=]() {
+    int newRow = model->rowCount();
+    model->insertRow(newRow);
+    model->setItem(newRow, 0, new QStandardItem(""));
+    model->setItem(newRow, 1, new QStandardItem(""));
+    model->setItem(newRow, 2, new QStandardItem(""));
+    model->setItem(newRow, 3, new QStandardItem(""));
+  });
+
+  button->setText(control.id);
+  controlLayout->addWidget(button);
+
+  return VoidResult();
+}
+
+void FieldsMenu::showEventContextMenu(QTableView* tableView, NodeItem* node, const QPoint& pos)
+{
+  // Get the index of the clicked row
+  QModelIndex index = tableView->indexAt(pos);
+  if (!index.isValid())
+    return;
+
+  QMenu contextMenu;
+  QAction* actionDelete = contextMenu.addAction("Delete");
+
+  int row = index.row();
+  connect(actionDelete, &QAction::triggered, this, [row, tableView, node] {
+    auto key = static_cast<QStandardItemModel*>(tableView->model())->item(row, 0);
+    if (key && !key->text().isNull())
+      node->removeField(key->text());
+
+    tableView->model()->removeRow(row);
+  });
+
+  contextMenu.exec(tableView->viewport()->mapToGlobal(pos));
+}
+
+void FieldsMenu::editEvent(QTableView* tableView, NodeItem* node, const QModelIndex& index)
+{
+  // Open the dialog
+  mCurrentDialog = new EventDialog("Edit event", this);
+
+  EventConfig config = index.row() < node->events().size() ? node->events().at(index.row()) : EventConfig();
+  mCurrentDialog->setup(config);
+
+  connect(mCurrentDialog, &QDialog::accepted, [this, tableView, node, index] {
+    int row = index.row();
+
+    EventConfig event;
+    event.id = mCurrentDialog->getName();
+    event.type = Types::StringToConnectorType(mCurrentDialog->getType());
+    event.returnType = Types::StringToPropertyTypes(mCurrentDialog->getReturnType());
+
+    auto model = mCurrentDialog->getArguments();
+    for (int i = 0; i < model->rowCount(); ++i)
+    {
+      PropertiesConfig property;
+      property.id = model->index(i, 0).data().toString();
+      property.type = Types::StringToPropertyTypes(model->index(i, 1).data().toString());
+      event.arguments.push_back(property);
+    }
+
+    addEventToTable((QStandardItemModel*)tableView->model(), row, event);
+
+    node->setEvent(row, event);
+  });
+  connect(mCurrentDialog, &QDialog::rejected, [this] {
+    mCurrentDialog->close();
+    mCurrentDialog->deleteLater();
+  });
+
+  mCurrentDialog->setAttribute(Qt::WA_DeleteOnClose);
+  mCurrentDialog->show();
+}
+
+void FieldsMenu::addEventToTable(QStandardItemModel* model, int row, const EventConfig& event)
+{
+  model->setItem(row, 0, new QStandardItem(event.id));
+  model->setItem(row, 1, new QStandardItem(Types::ConnectorTypeToString(event.type)));
+  model->setItem(row, 2, new QStandardItem(Types::PropertyTypesToString(event.returnType)));
+
+  if (event.arguments.isEmpty())
+    return;
+
+  QString args = "";
+  for (const auto& arg : event.arguments)
+    args += arg.id + ", ";
+
+  // Remove the trailing ", "
+  args.chop(2);
+  model->setItem(row, 3, new QStandardItem(args));
 }

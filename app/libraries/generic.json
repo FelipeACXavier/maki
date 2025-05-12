@@ -391,22 +391,22 @@
               "default": "State"
             }
           ],
-          "connectors": [
+          "events": [
             {
-              "id": "input",
-              "type": "in",
-              "position": "west"
-            },
-            {
-              "id": "output",
+              "id": "on error",
               "type": "out",
-              "position": "east"
+              "returnType": "void"
             }
           ],
+          "connectors": [],
           "controls": [
             {
-              "id": "Add",
+              "id": "Add field",
               "type": "add field"
+            },
+            {
+              "id": "Add event",
+              "type": "add event"
             }
           ],
           "behaviour": {},

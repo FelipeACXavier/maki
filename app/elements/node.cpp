@@ -68,6 +68,18 @@ NodeItem::NodeItem(const QString& nodeId, const NodeSaveInfo& info, const QPoint
   if (!info.fields.isEmpty())
     mFields = info.fields;
 
+  if (info.events.isEmpty())
+  {
+    for (const auto& event : config()->events)
+      mEvents.push_back(event);
+  }
+  else
+  {
+    mEvents = info.events;
+  }
+
+  LOG_INFO("Created node with %d events", mEvents.size());
+
   // Add icon if it exists
   if (!info.pixmap.isNull())
   {
@@ -203,6 +215,11 @@ QVector<PropertiesConfig> NodeItem::fields() const
   return mFields;
 }
 
+QVector<EventConfig> NodeItem::events() const
+{
+  return mEvents;
+}
+
 QVector<ControlsConfig> NodeItem::controls() const
 {
   return config()->controls;
@@ -277,6 +294,14 @@ void NodeItem::removeField(const QString& key)
     mFields.erase(iter);
     return;
   }
+}
+
+void NodeItem::setEvent(int index, const EventConfig& event)
+{
+  if (index < mEvents.size())
+    mEvents[index] = event;
+  else
+    mEvents.push_back(event);
 }
 
 QVector<INode*> NodeItem::children() const
@@ -456,6 +481,7 @@ NodeSaveInfo NodeItem::saveInfo() const
   info.position = scenePos();
   info.nodeId = nodeId();
   info.fields = fields();
+  info.events = events();
   info.pixmap = nodePixmap();
   info.properties = properties();
   info.size = QSizeF{mSize.width() * mBaseScale, mSize.height() * mBaseScale};

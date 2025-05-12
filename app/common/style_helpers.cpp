@@ -74,3 +74,17 @@ QString toQT(struct timespec ts, logging::LogLevel level, const std::string& mes
 {
   return QStringLiteral("%1 %2: %3").arg(timeToQT(ts), logLevelToQT(level), QString::fromStdString(message));
 }
+
+void addDynamicWidget(QVBoxLayout* layout, QWidget* dynamicWidget, QWidget* parent)
+{
+  // Add dynamic widgets above the parent but below other widgets
+  for (int i = 0; i < layout->count(); ++i)
+  {
+    QWidget* widget = layout->itemAt(i)->widget();
+    if (widget != parent)
+      continue;
+
+    layout->insertWidget(i - 1, dynamicWidget);
+    break;
+  }
+}

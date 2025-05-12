@@ -130,10 +130,8 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
     else if (item && (item->type() == NodeItem::Type || item->type() == QGraphicsTextItem::Type))
     {
       NodeItem* node = static_cast<NodeItem*>(item->type() == QGraphicsTextItem::Type ? item->parentItem() : item);
-      LOG_INFO("Clicked on node %s 0x%x", qPrintable(node->id()), event->modifiers());
       if (isModifierSet(event, Qt::AltModifier))
       {
-        LOG_INFO("Clicked on node with alt pressed");
         mNode = node;
         mTransition = new TransitionItem();
 
