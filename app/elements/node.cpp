@@ -38,6 +38,7 @@ NodeItem::NodeItem(const QString& nodeId, const NodeSaveInfo& info, const QPoint
   setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
   setCacheMode(DeviceCoordinateCache);
   setAcceptDrops(config()->libraryType == Types::LibraryTypes::STRUCTURAL);
+  setAcceptHoverEvents(config()->libraryType == Types::LibraryTypes::STRUCTURAL);
 
   for (const auto& connector : config()->connectors)
   {

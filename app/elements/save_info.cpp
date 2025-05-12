@@ -242,11 +242,11 @@ ConnectionSaveInfo ConnectionSaveInfo::fromJson(const QJsonObject& data)
 
   info.srcId = data[ConfigKeys::SOURCE][ConfigKeys::ID].toString();
   info.srcPoint = JSON::toPointF(data[ConfigKeys::SOURCE][ConfigKeys::POSITION].toObject());
-  info.srcShift = JSON::toPointF(data[ConfigKeys::SOURCE][ConfigKeys::ID].toObject());
+  info.srcShift = JSON::toPointF(data[ConfigKeys::SOURCE][ConfigKeys::SHIFT].toObject());
 
   info.dstId = data[ConfigKeys::DESTINATION][ConfigKeys::ID].toString();
   info.dstPoint = JSON::toPointF(data[ConfigKeys::DESTINATION][ConfigKeys::POSITION].toObject());
-  info.dstShift = JSON::toPointF(data[ConfigKeys::DESTINATION][ConfigKeys::ID].toObject());
+  info.dstShift = JSON::toPointF(data[ConfigKeys::DESTINATION][ConfigKeys::SHIFT].toObject());
 
   return info;
 }

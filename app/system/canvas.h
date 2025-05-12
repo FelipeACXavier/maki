@@ -7,6 +7,7 @@
 #include <QGraphicsView>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QTimer>
 
 #include "elements/node.h"
 #include "elements/save_info.h"
@@ -59,11 +60,14 @@ private:
   // TODO(felaze): Move connection behaviour to a separate class
   Connector* mConnector = nullptr;
   Connector* mHoveredConnector = nullptr;
+  NodeItem* mHoveredNode = nullptr;
   ConnectionItem* mConnection = nullptr;
   QPointF mStartDragPosition;
 
   int mFrontZValue = 5;
   int mBackZValue = -5;
+
+  QTimer* mHoverTimer;
 
   QList<NodeSaveInfo> copiedNodes;
   std::shared_ptr<ConfigurationTable> mConfigTable;

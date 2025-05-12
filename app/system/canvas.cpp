@@ -4,6 +4,7 @@
 #include <QClipboard>
 #include <QGraphicsSceneDragDropEvent>
 #include <QMenu>
+#include <QMessageBox>
 #include <QMimeData>
 
 #include "app_configs.h"
@@ -21,6 +22,9 @@ Canvas::Canvas(std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
 {
   setProperty("class", QVariant(QStringLiteral("canvas")));
   setBackgroundBrush(Qt::transparent);
+
+  mHoverTimer = new QTimer(this);
+  mHoverTimer->setSingleShot(true);
 }
 
 QList<NodeItem*> Canvas::availableNodes()
@@ -169,6 +173,84 @@ void Canvas::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
     }
 
     mConnection->move(Constants::TMP_CONNECTION_ID, event->scenePos());
+  }
+  else if (event->buttons() & Qt::LeftButton)
+  {
+    QList<QGraphicsItem*> draggedItems = selectedItems();
+
+    if (draggedItems.size() > 0)
+    {
+      // Check for collision or proximity with other nodes
+      QList<QGraphicsItem*> itemsUnder = items(event->scenePos(), Qt::IntersectsItemShape, Qt::DescendingOrder);
+
+      if (itemsUnder.size() > 1)
+      {
+        for (QGraphicsItem* target : itemsUnder)
+        {
+          if (draggedItems.contains(target) || target->type() != NodeItem::Type)
+            continue;
+
+          NodeItem* targetNode = static_cast<NodeItem*>(target);
+
+          if (mHoveredNode != targetNode)
+          {
+            mHoveredNode = targetNode;
+            mHoverTimer->stop();
+            mHoverTimer->disconnect();
+            connect(mHoverTimer, &QTimer::timeout, this, [=]() {
+              if (!mHoveredNode)
+                return;
+
+              if (!(QApplication::mouseButtons() & Qt::LeftButton))
+                return;
+
+              bool shouldAsk = false;
+              for (const auto& item : draggedItems)
+              {
+                if (item->type() != NodeItem::Type)
+                  continue;
+
+                auto node = static_cast<NodeItem*>(item);
+
+                if (node->parentNode() != mHoveredNode)
+                {
+                  shouldAsk = true;
+                  break;
+                }
+              }
+
+              if (!shouldAsk)
+                return;
+
+              if (QMessageBox::question(nullptr, "Make Child", "Make this node a child of the hovered node?") == QMessageBox::Yes)
+              {
+                for (const auto& item : draggedItems)
+                {
+                  if (item->type() != NodeItem::Type)
+                    continue;
+
+                  auto node = static_cast<NodeItem*>(item);
+                  if (node->parentNode())
+                    continue;
+
+                  // If item is a NodeItem and it has no parent, make this node the parent
+                  node->setParent(mHoveredNode);
+                  mHoveredNode->addChild(node);
+                }
+              }
+            });
+            mHoverTimer->start(1000);
+          }
+
+          break;
+        }
+      }
+      else if (mHoveredNode)
+      {
+        mHoverTimer->stop();
+        mHoveredNode = nullptr;
+      }
+    }
   }
 
   QGraphicsScene::mouseMoveEvent(event);

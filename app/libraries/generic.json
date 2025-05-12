@@ -125,6 +125,30 @@
               "default": "#2E2E2E"
             }
           ]
+        },
+        {
+          "type": "Interface",
+          "body": {
+            "shape": "Rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#DBB146",
+            "borderColor": "#FFFFFF",
+            "width": 500,
+            "height": 500,
+            "z-index": -2
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Interface"
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#DBB146"
+            }
+          ]
         }
       ]
     },
@@ -349,6 +373,46 @@
             }
           ],
           "behaviour": {}
+        },
+        {
+          "type": "State",
+          "body": {
+            "shape": "Ellipse",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#62A22A",
+            "borderColor": "#FFFFFF",
+            "width": 50,
+            "height": 50
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "State"
+            }
+          ],
+          "connectors": [
+            {
+              "id": "input",
+              "type": "in",
+              "position": "west"
+            },
+            {
+              "id": "output",
+              "type": "out",
+              "position": "east"
+            }
+          ],
+          "controls": [
+            {
+              "id": "Add",
+              "type": "add field"
+            }
+          ],
+          "behaviour": {},
+          "help": {
+            "message": "Represents a state in the system"
+          }
         }
       ]
     }
