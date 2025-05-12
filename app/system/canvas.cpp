@@ -14,6 +14,7 @@
 #include "elements/connection.h"
 #include "elements/connector.h"
 #include "elements/node.h"
+#include "elements/transition.h"
 #include "logging.h"
 
 Canvas::Canvas(std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
@@ -123,14 +124,31 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
 
       addItem(mConnection);
       parentView()->setDragMode(QGraphicsView::NoDrag);
+      event->accept();
       return;
     }
-    else if (item && item->type() == NodeItem::Type)
+    else if (item && (item->type() == NodeItem::Type || item->type() == QGraphicsTextItem::Type))
     {
-      NodeItem* node = static_cast<NodeItem*>(item);
-      if (isModifierSet(event, Qt::ControlModifier))
+      NodeItem* node = static_cast<NodeItem*>(item->type() == QGraphicsTextItem::Type ? item->parentItem() : item);
+      LOG_INFO("Clicked on node %s 0x%x", qPrintable(node->id()), event->modifiers());
+      if (isModifierSet(event, Qt::AltModifier))
+      {
+        LOG_INFO("Clicked on node with alt pressed");
+        mNode = node;
+        mTransition = new TransitionItem();
+
+        mTransition->setStart(node->id(), node->mapToScene(node->boundingRect().center()), {0, 0});
+        mTransition->setEnd(Constants::TMP_CONNECTION_ID, event->scenePos(), {0, 0});
+
+        addItem(mTransition);
+        parentView()->setDragMode(QGraphicsView::NoDrag);
+        event->accept();
+        return;
+      }
+      else if (isModifierSet(event, Qt::ControlModifier))
       {
         selectNode(node, !node->isSelected());
+        event->accept();
         return;
       }
       else
@@ -173,6 +191,10 @@ void Canvas::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
     }
 
     mConnection->move(Constants::TMP_CONNECTION_ID, event->scenePos());
+  }
+  else if (mTransition)
+  {
+    mTransition->move(Constants::TMP_CONNECTION_ID, event->scenePos());
   }
   else if (event->buttons() & Qt::LeftButton)
   {
@@ -289,6 +311,30 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 
       mConnection = nullptr;
       mConnector = nullptr;
+    }
+  }
+  else if (mTransition)
+  {
+    if (event->button() == Qt::LeftButton)
+    {
+      QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
+      if (item && (item->type() == NodeItem::Type || item->type() == QGraphicsTextItem::Type))
+      {
+        NodeItem* node = static_cast<NodeItem*>(item->type() == QGraphicsTextItem::Type ? item->parentItem() : item);
+
+        mTransition->setEnd(node->id(), node->mapToScene(node->boundingRect().center()), {0, 0});
+        node->addTransition(mTransition);
+        mNode->addTransition(mTransition);
+
+        mTransition->done(mNode, node);
+      }
+      else
+      {
+        removeItem(mTransition);
+      }
+
+      mTransition = nullptr;
+      mNode = nullptr;
     }
   }
   else

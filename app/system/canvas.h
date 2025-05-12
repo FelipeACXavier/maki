@@ -14,6 +14,7 @@
 
 class CanvasView;
 class Connector;
+class TransitionItem;
 class ConnectionItem;
 class ConfigurationTable;
 
@@ -62,6 +63,8 @@ private:
   Connector* mHoveredConnector = nullptr;
   NodeItem* mHoveredNode = nullptr;
   ConnectionItem* mConnection = nullptr;
+  TransitionItem* mTransition = nullptr;
+  NodeItem* mNode = nullptr;
   QPointF mStartDragPosition;
 
   int mFrontZValue = 5;

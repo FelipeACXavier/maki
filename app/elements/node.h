@@ -10,6 +10,7 @@
 #include "inode.h"
 #include "node_base.h"
 #include "save_info.h"
+#include "transition.h"
 #include "types.h"
 
 class Connector;
@@ -60,6 +61,9 @@ public:
   INode* parentNode() const override;
   QVector<INode*> children() const override;
 
+  void addTransition(TransitionItem* transition);
+  QPointF edgePointToward(const QPointF& targetScenePos) const;
+
   void addChild(NodeItem* child);
   void setParent(NodeItem* parent);
   void childRemoved(NodeItem* child);
@@ -90,6 +94,8 @@ private:
   QVector<PropertiesConfig> mFields;
   QMap<QString, QVariant> mProperties;
   QVector<std::shared_ptr<IConnector>> mConnectors;
+
+  QVector<TransitionItem*> mTransitions;
 
   INode* mParentNode;
   QVector<INode*> mChildrenNodes;

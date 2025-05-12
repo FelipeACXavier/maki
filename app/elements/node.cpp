@@ -419,6 +419,9 @@ void NodeItem::updateExtrasPosition()
   for (auto& connector : connectors())
     std::dynamic_pointer_cast<Connector>(connector)->updateConnections();
 
+  for (auto& transition : mTransitions)
+    transition->updatePath();
+
   updateLabelPosition();
 }
 
@@ -473,4 +476,23 @@ NodeSaveInfo NodeItem::saveInfo() const
   }
 
   return info;
+}
+
+void NodeItem::addTransition(TransitionItem* transition)
+{
+  mTransitions.push_back(transition);
+}
+
+QPointF NodeItem::edgePointToward(const QPointF& targetScenePos) const
+{
+  QPointF center = sceneBoundingRect().center();
+  QPointF dir = targetScenePos - center;
+
+  if (dir.manhattanLength() < 0.001)
+    return center;  // avoid divide by zero
+
+  // Normalise and scale
+  dir /= std::hypot(dir.x(), dir.y());  // same as dir.normalized() in QVector2D
+  qreal radius = boundingRect().width() / 2.0;
+  return center + dir * radius;
 }
