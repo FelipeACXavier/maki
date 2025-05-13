@@ -43,5 +43,6 @@ static const QString CANVAS = "canvas";
 static const QString STRUCTURAL = "structural";
 static const QString BEHAVIOURAL = "behavioural";
 static const QString CONNECTIONS = "connections";
+static const QString TRANSITIONS = "transitions";
 
 };  // namespace ConfigKeys

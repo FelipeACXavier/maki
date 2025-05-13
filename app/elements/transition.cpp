@@ -25,10 +25,10 @@ TransitionItem::TransitionItem()
 
 TransitionItem::~TransitionItem()
 {
-  // if (mSource != nullptr)
-  //   mSource->removeConnection(this);
-  // if (mDestination != nullptr)
-  //   mDestination->removeConnection(this);
+  if (mSource != nullptr)
+    mSource->removeTransition(this);
+  if (mDestination != nullptr)
+    mDestination->removeTransition(this);
 }
 
 QString TransitionItem::id() const
@@ -66,14 +66,14 @@ void TransitionItem::done(NodeItem* source, NodeItem* destination)
   move(mDstId, mDstPoint);
 }
 
-IConnector* TransitionItem::source() const
+NodeItem* TransitionItem::source() const
 {
-  return nullptr;
+  return mSource;
 }
 
-IConnector* TransitionItem::destination() const
+NodeItem* TransitionItem::destination() const
 {
-  return nullptr;
+  return mDestination;
 }
 
 void TransitionItem::move(const QString& id, QPointF pos)
@@ -123,9 +123,9 @@ void TransitionItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
   painter->drawPolygon(arrowHead);
 }
 
-ConnectionSaveInfo TransitionItem::saveInfo() const
+TransitionSaveInfo TransitionItem::saveInfo() const
 {
-  ConnectionSaveInfo info;
+  TransitionSaveInfo info;
   info.srcId = mSrcId;
   info.srcPoint = mSrcPoint;
   info.srcShift = mSrcShift;

@@ -100,6 +100,9 @@ NodeItem::NodeItem(const QString& nodeId, const NodeSaveInfo& info, const QPoint
 
 NodeItem::~NodeItem()
 {
+  auto copy = mTransitions;
+  for (auto& item : copy)
+    delete item;
 }
 
 int NodeItem::type() const
@@ -504,9 +507,22 @@ NodeSaveInfo NodeItem::saveInfo() const
   return info;
 }
 
+// TODO(Felaze): these should be in a separate class
+QVector<TransitionItem*> NodeItem::transitions() const
+{
+  return mTransitions;
+}
+
 void NodeItem::addTransition(TransitionItem* transition)
 {
   mTransitions.push_back(transition);
+}
+
+void NodeItem::removeTransition(TransitionItem* transition)
+{
+  mTransitions.removeIf([transition](TransitionItem* item) {
+    return item->id() == transition->id();
+  });
 }
 
 QPointF NodeItem::edgePointToward(const QPointF& targetScenePos) const

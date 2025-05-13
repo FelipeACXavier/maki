@@ -7,9 +7,9 @@
 #include "types.h"
 
 class NodeItem;
-struct ConnectionSaveInfo;
+struct TransitionSaveInfo;
 
-class TransitionItem : public QGraphicsPathItem, public IConnection
+class TransitionItem : public QGraphicsPathItem
 {
 public:
   enum
@@ -20,22 +20,22 @@ public:
   TransitionItem();
   virtual ~TransitionItem();
 
-  QString id() const override;
+  QString id() const;
   int type() const override;
 
   void setStart(const QString& id, const QPointF& point, const QPointF& controlShift);
   void setEnd(const QString& id, const QPointF& point, const QPointF& controlShift);
   void done(NodeItem* source, NodeItem* destination);
 
-  IConnector* source() const override;
-  IConnector* destination() const override;
+  NodeItem* source() const;
+  NodeItem* destination() const;
 
   void move(const QString& id, QPointF pos);
   void updatePath();
 
   void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
 
-  ConnectionSaveInfo saveInfo() const;
+  TransitionSaveInfo saveInfo() const;
 
 private:
   const QString mId;

@@ -535,6 +535,12 @@ void Canvas::deleteSelectedItems()
     {
       connectionsToDelete.append(item);
     }
+    else if (item->type() == TransitionItem::Type)
+    {
+      TransitionItem* transition = static_cast<TransitionItem*>(item);
+      if (!(transition->source() && transition->source()->isSelected()) && !(transition->destination() && transition->destination()->isSelected()))
+        connectionsToDelete.append(item);
+    }
   }
 
   // First delete nodes
@@ -695,6 +701,32 @@ VoidResult Canvas::loadFromSave(const SaveInfo& info)
 
     srcConn->addConnection(connection);
     dstConn->addConnection(connection);
+
+    connection->done(srcConn, dstConn);
+
+    addItem(connection);
+  }
+
+  for (const auto& conn : info.transitions)
+  {
+    LOG_DEBUG("Creating transitions with parents %s -> %s", qPrintable(conn.srcId), qPrintable(conn.dstId));
+
+    auto srcConn = findNodeWithId(conn.srcId);
+    auto dstConn = findNodeWithId(conn.dstId);
+
+    if (!srcConn || !dstConn)
+    {
+      LOG_WARNING("Could not find nodes");
+      continue;
+    }
+
+    auto connection = new TransitionItem();
+
+    connection->setStart(conn.srcId, conn.srcPoint, conn.srcShift);
+    connection->setEnd(conn.dstId, conn.dstPoint, conn.dstShift);
+
+    srcConn->addTransition(connection);
+    dstConn->addTransition(connection);
 
     connection->done(srcConn, dstConn);
 

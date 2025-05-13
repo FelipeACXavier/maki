@@ -61,7 +61,9 @@ public:
   INode* parentNode() const override;
   QVector<INode*> children() const override;
 
+  QVector<TransitionItem*> transitions() const;
   void addTransition(TransitionItem* transition);
+  void removeTransition(TransitionItem* transition);
   QPointF edgePointToward(const QPointF& targetScenePos) const;
 
   void setEvent(int index, const EventConfig& event);

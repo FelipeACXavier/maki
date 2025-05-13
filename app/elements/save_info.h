@@ -10,6 +10,25 @@
 #include "config.h"
 #include "inode.h"
 
+struct TransitionSaveInfo
+{
+  QString srcId = "";
+  QPointF srcPoint{0, 0};
+  QPointF srcShift{0, 0};
+
+  QString dstId = "";
+  QPointF dstPoint{0, 0};
+  QPointF dstShift{0, 0};
+
+  TransitionSaveInfo() = default;
+
+  QJsonObject toJson() const;
+  static TransitionSaveInfo fromJson(const QJsonObject& data);
+
+  friend QDataStream& operator<<(QDataStream& out, const TransitionSaveInfo& info);
+  friend QDataStream& operator>>(QDataStream& in, TransitionSaveInfo& info);
+};
+
 struct ConnectorSaveInfo
 {
   QString connectorId = "";
@@ -86,6 +105,7 @@ struct SaveInfo
   QVector<NodeSaveInfo> structuralNodes;
   QVector<NodeSaveInfo> behaviouralNodes;
   QVector<ConnectionSaveInfo> connections;
+  QVector<TransitionSaveInfo> transitions;
 
   QJsonObject toJson() const;
   static SaveInfo fromJson(const QJsonObject& data);

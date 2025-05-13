@@ -7,10 +7,73 @@
 #include "keys.h"
 #include "logging.h"
 
+Q_DECLARE_METATYPE(TransitionSaveInfo)
 Q_DECLARE_METATYPE(ConnectorSaveInfo)
 Q_DECLARE_METATYPE(ConnectionSaveInfo)
 Q_DECLARE_METATYPE(NodeSaveInfo)
 Q_DECLARE_METATYPE(SaveInfo)
+
+// ==========================================================================================================
+// TransitionSaveInfo
+QDataStream& operator<<(QDataStream& out, const TransitionSaveInfo& info)
+{
+  out << info.srcId;
+  out << info.srcPoint;
+  out << info.srcShift;
+
+  out << info.dstId;
+  out << info.dstPoint;
+  out << info.dstShift;
+
+  return out;
+}
+
+QDataStream& operator>>(QDataStream& in, TransitionSaveInfo& info)
+{
+  in >> info.srcId;
+  in >> info.srcPoint;
+  in >> info.srcShift;
+
+  in >> info.dstId;
+  in >> info.dstPoint;
+  in >> info.dstShift;
+
+  return in;
+}
+
+QJsonObject TransitionSaveInfo::toJson() const
+{
+  QJsonObject data;
+
+  QJsonObject source;
+  source[ConfigKeys::ID] = srcId;
+  source[ConfigKeys::POSITION] = JSON::fromPointF(srcPoint);
+  source[ConfigKeys::SHIFT] = JSON::fromPointF(srcShift);
+  data[ConfigKeys::SOURCE] = source;
+
+  QJsonObject destination;
+  destination[ConfigKeys::ID] = dstId;
+  destination[ConfigKeys::POSITION] = JSON::fromPointF(dstPoint);
+  destination[ConfigKeys::SHIFT] = JSON::fromPointF(dstShift);
+  data[ConfigKeys::DESTINATION] = destination;
+
+  return data;
+}
+
+TransitionSaveInfo TransitionSaveInfo::fromJson(const QJsonObject& data)
+{
+  TransitionSaveInfo info;
+
+  info.srcId = data[ConfigKeys::SOURCE][ConfigKeys::ID].toString();
+  info.srcPoint = JSON::toPointF(data[ConfigKeys::SOURCE][ConfigKeys::POSITION].toObject());
+  info.srcShift = JSON::toPointF(data[ConfigKeys::SOURCE][ConfigKeys::SHIFT].toObject());
+
+  info.dstId = data[ConfigKeys::DESTINATION][ConfigKeys::ID].toString();
+  info.dstPoint = JSON::toPointF(data[ConfigKeys::DESTINATION][ConfigKeys::POSITION].toObject());
+  info.dstShift = JSON::toPointF(data[ConfigKeys::DESTINATION][ConfigKeys::SHIFT].toObject());
+
+  return info;
+}
 
 // ==========================================================================================================
 // ConnectorSaveInfo
@@ -311,6 +374,7 @@ QDataStream& operator<<(QDataStream& out, const SaveInfo& info)
   out << info.structuralNodes;
   out << info.behaviouralNodes;
   out << info.connections;
+  out << info.transitions;
 
   return out;
 }
@@ -321,6 +385,7 @@ QDataStream& operator>>(QDataStream& in, SaveInfo& info)
   in >> info.structuralNodes;
   in >> info.behaviouralNodes;
   in >> info.connections;
+  in >> info.transitions;
 
   return in;
 }
@@ -343,12 +408,18 @@ QJsonObject SaveInfo::toJson() const
   for (const auto& node : connections)
     connectionArray.append(node.toJson());
 
+  QJsonArray transitionArray;
+  for (const auto& node : transitions)
+    transitionArray.append(node.toJson());
+
   if (structuralArray.size() > 0)
     data[ConfigKeys::STRUCTURAL] = structuralArray;
   if (behaviouralArray.size() > 0)
     data[ConfigKeys::BEHAVIOURAL] = behaviouralArray;
   if (connectionArray.size() > 0)
     data[ConfigKeys::CONNECTIONS] = connectionArray;
+  if (transitionArray.size() > 0)
+    data[ConfigKeys::TRANSITIONS] = transitionArray;
 
   return data;
 }
@@ -366,6 +437,9 @@ SaveInfo SaveInfo::fromJson(const QJsonObject& data)
 
   for (const auto& node : data[ConfigKeys::CONNECTIONS].toArray())
     info.connections.append(ConnectionSaveInfo::fromJson(node.toObject()));
+
+  for (const auto& node : data[ConfigKeys::TRANSITIONS].toArray())
+    info.transitions.append(TransitionSaveInfo::fromJson(node.toObject()));
 
   return info;
 }
