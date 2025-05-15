@@ -106,9 +106,12 @@ private:
   INode* mParentNode;
   QVector<INode*> mChildrenNodes;
 
-  bool mIsResizing{false};
   qreal mBaseScale;
-  QSizeF mSize;
+  QSizeF mSize{0, 0};
+
+  bool mIsResizing{false};
+  QPointF mResizeStartMousePos{0, 0};
+  QSizeF mResizeStartSize{0, 0};
 
   void updatePosition(const QPointF& position);
   void updateExtrasPosition();

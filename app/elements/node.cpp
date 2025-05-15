@@ -339,10 +339,9 @@ void NodeItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
   if (mIsResizing && (event->modifiers() & Qt::ShiftModifier))
   {
-    // qreal aspectRatio = mSize.width() / mSize.height();
-
-    qreal newWidth = qMax(Config::MINIMUM_NODE_SIZE, event->pos().x());
-    qreal newHeight = qMax(Config::MINIMUM_NODE_SIZE, event->pos().y());  // newWidth / aspectRatio;
+    QPointF delta = event->pos() - mResizeStartMousePos;
+    qreal newWidth = qMax(Config::MINIMUM_NODE_SIZE, mResizeStartSize.width() + delta.x());
+    qreal newHeight = qMax(Config::MINIMUM_NODE_SIZE, mResizeStartSize.height() + delta.y());
 
     // Update the scale when the node is resized
     mBaseScale = qMax(config()->body.width / newWidth, config()->body.height / newHeight);
@@ -367,6 +366,8 @@ void NodeItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
   if (config()->libraryType == Types::LibraryTypes::STRUCTURAL && event->modifiers() & Qt::ShiftModifier)
   {
     mIsResizing = true;
+    mResizeStartMousePos = event->pos();
+    mResizeStartSize = mSize;
     dynamic_cast<QGraphicsView*>(scene()->parent())->setCursor(Qt::SizeFDiagCursor);
     event->accept();
   }
