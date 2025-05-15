@@ -105,13 +105,13 @@ void MainWindow::startUI()
   mUI->leftPanel->setTabToolTip(0, "Structure");
   mUI->leftPanel->setTabText(0, "Structure");
 
-  mUI->leftPanel->setTabIcon(1, addIconWithColor(":/icons/vector-square.svg", Qt::white));
-  mUI->leftPanel->setTabToolTip(1, "Cross-component behaviour");
-  mUI->leftPanel->setTabText(1, "External");
+  // mUI->leftPanel->setTabIcon(1, addIconWithColor(":/icons/vector-square.svg", Qt::white));
+  // mUI->leftPanel->setTabToolTip(1, "Cross-component behaviour");
+  // mUI->leftPanel->setTabText(1, "External");
 
-  mUI->leftPanel->setTabIcon(2, addIconWithColor(":/icons/code-branch.svg", Qt::white));
-  mUI->leftPanel->setTabToolTip(2, "Component behaviour");
-  mUI->leftPanel->setTabText(2, "Internal");
+  mUI->leftPanel->setTabIcon(1, addIconWithColor(":/icons/code-branch.svg", Qt::white));
+  mUI->leftPanel->setTabToolTip(1, "Component behaviour");
+  mUI->leftPanel->setTabText(1, "Internal");
   mUI->leftPanel->tabBar()->setExpanding(true);
 
   mPluginManager->start(mUI->menuGenerator);
@@ -134,6 +134,10 @@ void MainWindow::bind()
           &MainWindow::onActionLoad);
   mUI->actionOpen->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_O));
 
+  connect(mUI->actionNew, &QAction::triggered, this,
+          &MainWindow::onActionNew);
+  mUI->actionNew->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_N));
+
   // Diagram actions =============================================================
   connect(mUI->actionGenerate, &QAction::triggered, this,
           &MainWindow::onActionGenerate);
@@ -150,16 +154,16 @@ void MainWindow::bind()
   connect(canvas(), &Canvas::nodeRemoved, this, &MainWindow::onNodeRemoved);
   connect(canvas(), &Canvas::nodeModified, this, &MainWindow::onNodeModified);
 
-  connect(mUI->treeWidget, &TreeMenu::nodeRemoved, canvas(), &Canvas::onRemoveNode);
-  connect(mUI->treeWidget, &TreeMenu::nodeSelected, canvas(), &Canvas::onSelectNode);
-  connect(mUI->treeWidget, &TreeMenu::nodeRenamed, canvas(), &Canvas::onRenameNode);
-  connect(mUI->treeWidget, &TreeMenu::nodeFocused, canvas(), &Canvas::onFocusNode);
+  connect(mUI->systemTree, &TreeMenu::nodeRemoved, canvas(), &Canvas::onRemoveNode);
+  connect(mUI->systemTree, &TreeMenu::nodeSelected, canvas(), &Canvas::onSelectNode);
+  connect(mUI->systemTree, &TreeMenu::nodeRenamed, canvas(), &Canvas::onRenameNode);
+  connect(mUI->systemTree, &TreeMenu::nodeFocused, canvas(), &Canvas::onFocusNode);
 
-  auto behaviourMenu = static_cast<BehaviourMenu*>(mUI->behaviourFrame);
+  // auto behaviourMenu = static_cast<BehaviourMenu*>(mUI->behaviourFrame);
 
-  behaviourMenu->mGetAvailableNodes = [this]() {
-    return canvas()->availableNodes();
-  };
+  // behaviourMenu->mGetAvailableNodes = [this]() {
+  //   return canvas()->availableNodes();
+  // };
 }
 
 void MainWindow::bindShortcuts()
@@ -249,10 +253,8 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
   QToolBox* toolbox = nullptr;
   if (type == "structure")
     toolbox = mUI->structureToolbox;
-  else if (type == "internal behaviour")
-    toolbox = mUI->internalBehaviourToolbox;
   else
-    toolbox = mUI->externalBehaviourToolbox;
+    toolbox = mUI->internalBehaviourToolbox;
 
   LibraryContainer* sidebarview = LibraryContainer::create(name, toolbox);
 
@@ -289,6 +291,13 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
   }
 
   return VoidResult();
+}
+
+void MainWindow::onActionNew()
+{
+  // Repopulate the canvas
+  SaveInfo emptySave;
+  canvas()->loadFromSave(emptySave);
 }
 
 void MainWindow::onActionGenerate()
@@ -352,7 +361,7 @@ void MainWindow::onNodeSelected(NodeItem* node, bool selected)
 
   LOG_WARN_ON_FAILURE(mUI->propertiesFrame->onNodeSelected(node, selected));
   LOG_WARN_ON_FAILURE(mUI->fieldsFrame->onNodeSelected(node, selected));
-  LOG_WARN_ON_FAILURE(mUI->behaviourFrame->onNodeSelected(node, selected));
+  // LOG_WARN_ON_FAILURE(mUI->behaviourFrame->onNodeSelected(node, selected));
 }
 
 void MainWindow::onNodeAdded(NodeItem* node)
@@ -363,7 +372,7 @@ void MainWindow::onNodeAdded(NodeItem* node)
     return;
   }
 
-  LOG_WARN_ON_FAILURE(mUI->treeWidget->onNodeAdded(node));
+  LOG_WARN_ON_FAILURE(mUI->systemTree->onNodeAdded(node));
 }
 
 void MainWindow::onNodeRemoved(NodeItem* node)
@@ -374,10 +383,10 @@ void MainWindow::onNodeRemoved(NodeItem* node)
     return;
   }
 
-  LOG_WARN_ON_FAILURE(mUI->treeWidget->onNodeRemoved(node));
+  LOG_WARN_ON_FAILURE(mUI->systemTree->onNodeRemoved(node));
   LOG_WARN_ON_FAILURE(mUI->propertiesFrame->onNodeRemoved(node));
   LOG_WARN_ON_FAILURE(mUI->fieldsFrame->onNodeRemoved(node));
-  LOG_WARN_ON_FAILURE(mUI->behaviourFrame->onNodeRemoved(node));
+  // LOG_WARN_ON_FAILURE(mUI->behaviourFrame->onNodeRemoved(node));
 }
 
 void MainWindow::onNodeModified(NodeItem* node)
@@ -388,5 +397,5 @@ void MainWindow::onNodeModified(NodeItem* node)
     return;
   }
 
-  LOG_WARN_ON_FAILURE(mUI->treeWidget->onNodeModified(node));
+  LOG_WARN_ON_FAILURE(mUI->systemTree->onNodeModified(node));
 }

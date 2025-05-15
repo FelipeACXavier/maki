@@ -533,7 +533,9 @@ void Canvas::deleteSelectedItems()
     }
     else if (item->type() == ConnectionItem::Type)
     {
-      connectionsToDelete.append(item);
+      ConnectionItem* transition = static_cast<ConnectionItem*>(item);
+      if (!(transition->source() && static_cast<Connector*>(transition->source())->isSelected()) && !(transition->destination() && static_cast<Connector*>(transition->destination())->isSelected()))
+        connectionsToDelete.append(item);
     }
     else if (item->type() == TransitionItem::Type)
     {
@@ -543,16 +545,16 @@ void Canvas::deleteSelectedItems()
     }
   }
 
-  // First delete nodes
-  for (NodeItem* node : nodesToDelete)
-    node->deleteNode();
-
-  // Then delete connections
+  // First delete the connections
   for (QGraphicsItem* item : connectionsToDelete)
   {
     removeItem(item);
     delete item;
   }
+
+  // Then delete the nodes
+  for (NodeItem* node : nodesToDelete)
+    node->deleteNode();
 }
 
 void Canvas::copySelectedItems()
@@ -574,6 +576,8 @@ void Canvas::copySelectedItems()
     auto info = node->saveInfo();
     info.id = QString();
     info.position = mousePosition - info.position;
+    for (auto& connector : info.connectors)
+      connector.connectorId = QString();
 
     copiedNodes.append(info);
 

@@ -148,6 +148,12 @@
               "type": "color",
               "default": "#DBB146"
             }
+          ],
+          "controls": [
+            {
+              "id": "Add event",
+              "type": "add event"
+            }
           ]
         }
       ]

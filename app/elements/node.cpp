@@ -21,7 +21,7 @@ static const qreal FADE_IN_BASE = 1000;
 static const qreal FADE_IN_START = 0.01;
 static const qreal FADE_IN_MULTIPLIER = 0.01;
 
-static const qreal FADE_OUT_BASE = 2000;
+static const qreal FADE_OUT_BASE = 4000;
 static const qreal FADE_OUT_START = 2.0;
 static const qreal FADE_OUT_MULTIPLIER = 0.3;
 
@@ -45,7 +45,7 @@ NodeItem::NodeItem(const QString& nodeId, const NodeSaveInfo& info, const QPoint
     QString connectorId = QUuid::createUuid().toString();
     for (const auto& cfg : info.connectors)
     {
-      if (connector.id != cfg.configId)
+      if (connector.id != cfg.configId || cfg.connectorId.isEmpty())
         continue;
 
       connectorId = cfg.connectorId;
@@ -77,8 +77,6 @@ NodeItem::NodeItem(const QString& nodeId, const NodeSaveInfo& info, const QPoint
   {
     mEvents = info.events;
   }
-
-  LOG_INFO("Created node with %d events", mEvents.size());
 
   // Add icon if it exists
   if (!info.pixmap.isNull())
@@ -147,35 +145,30 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
   auto color = getProperty("color");
   auto background = color.isValid() ? QColor::fromString(color.toString()) : config()->body.backgroundColor;
 
-  auto currentScale = static_cast<Canvas*>(scene())->getScale();
-  qreal zoomRatio = currentScale / baseScale();
+  // auto currentScale = static_cast<Canvas*>(scene())->getScale();
+  // qreal zoomRatio = currentScale / baseScale();
 
-  qreal originalSize = mSize.width();
-  qreal fullOpacityThreshold = FADE_THRESHOLD;
-  qreal fadeInThreshold = FADE_IN_START + qMax((FADE_IN_BASE / originalSize) * FADE_IN_MULTIPLIER, MIN_OPACITY);
-  qreal fadeOutThreshold = FADE_OUT_START * (MAX_OPACITY + (FADE_OUT_BASE / originalSize) * FADE_OUT_MULTIPLIER);
+  // qreal originalSize = mSize.width();
+  // qreal fullOpacityThreshold = FADE_THRESHOLD;
+  // qreal fadeInThreshold = FADE_IN_START + qMax((FADE_IN_BASE / originalSize) * FADE_IN_MULTIPLIER, MIN_OPACITY);
+  // qreal fadeOutThreshold = FADE_OUT_START * (MAX_OPACITY + (FADE_OUT_BASE / originalSize) * FADE_OUT_MULTIPLIER);
 
-  // Make smaller objects fade faster when zooming out and slower when zooming in.
-  qreal opacity = MAX_OPACITY;
-  if (zoomRatio < fadeInThreshold)
-  {
-    opacity = MIN_OPACITY;
-    //  LOG_DEBUG("%s fade limit: %.2f | %.2f | %.2f | %.2f", qPrintable(nodeName()), opacity, zoomRatio, fadeInThreshold, fadeOutThreshold);
-  }
-  else if (zoomRatio < fullOpacityThreshold)
-  {
-    qreal progress = (zoomRatio - fadeInThreshold) / (fullOpacityThreshold - fadeInThreshold);
-    // opacity = log(progress + 1) / LOG_TWO;
-    opacity = progress;
-    //  LOG_DEBUG("%s fade in: %.2f | %.2f | %.2f | %.2f", qPrintable(nodeName()), opacity, zoomRatio, fadeInThreshold, fadeOutThreshold);
-  }
-  else if (zoomRatio > fadeOutThreshold)
-  {
-    qreal progress = MAX_OPACITY - (zoomRatio - fadeOutThreshold) / (fadeOutThreshold - fullOpacityThreshold);
-    //   // opacity = log(progress + 1) / LOG_TWO;
-    opacity = progress;
-    //   LOG_DEBUG("%s fade out: %.2f | %.2f | %.2f | %.2f", qPrintable(nodeName()), opacity, zoomRatio, fadeInThreshold, fadeOutThreshold);
-  }
+  // // Make smaller objects fade faster when zooming out and slower when zooming in.
+  // qreal opacity = MAX_OPACITY;
+  // if (zoomRatio < fadeInThreshold)
+  // {
+  //   opacity = MIN_OPACITY;
+  // }
+  // else if (zoomRatio < fullOpacityThreshold)
+  // {
+  //   qreal progress = (zoomRatio - fadeInThreshold) / (fullOpacityThreshold - fadeInThreshold);
+  //   opacity = progress;
+  // }
+  // else if (zoomRatio > fadeOutThreshold)
+  // {
+  //   qreal progress = MAX_OPACITY - (zoomRatio - fadeOutThreshold) / (fadeOutThreshold - fullOpacityThreshold);
+  //   opacity = progress;
+  // }
 
   // opacity = qBound(MIN_OPACITY, opacity, MAX_OPACITY);
 
@@ -359,7 +352,7 @@ void NodeItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 
     qreal newFontSize = qMax(Fonts::BaseSize, mSize.width() / Fonts::BaseFactor);
 
-    setLabelSize(newFontSize);
+    setLabelSize(newFontSize, mSize);
     prepareGeometryChange();
     update();
   }

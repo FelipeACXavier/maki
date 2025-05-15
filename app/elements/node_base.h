@@ -45,7 +45,7 @@ protected:
   virtual void setPixmap(const QPixmap& pixmap);
   virtual void setLabel(const QString& name, const QColor& color, qreal fontSize);
   virtual void setLabelName(const QString& name);
-  virtual void setLabelSize(qreal fontSize);
+  virtual void setLabelSize(qreal fontSize, const QSizeF& boundingSize);
 
   virtual void paintLabel(QPainter* painter, const QRectF& area) const;
   virtual void paintPixmap(QPainter* painter) const;

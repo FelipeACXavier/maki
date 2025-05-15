@@ -2,9 +2,11 @@
 
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
+#include <QTextDocument>
 #include <QtGlobal>
 
 #include "app_configs.h"
+#include "logging.h"
 
 const qreal MAX_WIDTH = 100.0;
 const qreal MAX_HEIGHT = 100.0;
@@ -150,7 +152,7 @@ void NodeBase::setLabel(const QString& name, const QColor& color, qreal fontSize
   mLabel->setDefaultTextColor(color);
 
   setLabelName(name);
-  setLabelSize(fontSize);
+  setLabelSize(fontSize, {(double)config()->body.width, (double)config()->body.height});
 
   updateLabelPosition();
 }
@@ -164,7 +166,7 @@ void NodeBase::setLabelName(const QString& name)
   updateLabelPosition();
 }
 
-void NodeBase::setLabelSize(qreal fontSize)
+void NodeBase::setLabelSize(qreal fontSize, const QSizeF& boundingSize)
 {
   if (!mLabel)
     return;
@@ -173,7 +175,25 @@ void NodeBase::setLabelSize(qreal fontSize)
   QFont font = mLabel->font();
   font.setPointSizeF(qMin(Fonts::MaxSize, fontSize));
   mLabel->setFont(font);
+
+  mLabel->setTextWidth(boundingSize.width() - (boundingSize.width() * 0.2));
+  mLabel->document()->adjustSize();
+
   updateLabelPosition();
+}
+
+void NodeBase::updateLabelPosition()
+{
+  if (!mLabel)
+    return;
+
+  QRectF textBounds = mLabel->boundingRect();
+
+  // Calculate centered position
+  qreal x = boundingRect().center().x() - (textBounds.width() / 2);
+  qreal y = config()->libraryType == Types::LibraryTypes::STRUCTURAL ? boundingRect().top() + 2 : boundingRect().center().y() - (textBounds.height() / 2);
+
+  mLabel->setPos(x, y);
 }
 
 void NodeBase::toggleLableVisibility()
@@ -187,20 +207,6 @@ void NodeBase::toggleLableVisibility()
 void NodeBase::setPixmap(const QPixmap& pixmap)
 {
   mPixmapItem = std::make_shared<QGraphicsPixmapItem>(pixmap);
-}
-
-void NodeBase::updateLabelPosition()
-{
-  if (!mLabel)
-    return;
-
-  QRectF textBounds = mLabel->boundingRect();
-
-  // Calculate centered position
-  qreal x = boundingRect().center().x() - textBounds.width() / 2;
-  qreal y = config()->libraryType == Types::LibraryTypes::STRUCTURAL ? boundingRect().top() + 2 : boundingRect().center().y() - textBounds.height() / 2;
-
-  mLabel->setPos(x, y);
 }
 
 qreal NodeBase::computeScaleFactor() const

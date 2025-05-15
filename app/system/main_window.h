@@ -62,6 +62,7 @@ private:
 
   // ================================================
   // Actions
+  void onActionNew();
   void onActionLoad();
   void onActionSave();
   void onActionSaveAs();

@@ -49,7 +49,7 @@
         <enum>QTabWidget::West</enum>
        </property>
        <property name="currentIndex">
-        <number>1</number>
+        <number>0</number>
        </property>
        <property name="elideMode">
         <enum>Qt::ElideRight</enum>
@@ -61,6 +61,20 @@
         <layout class="QVBoxLayout" name="verticalLayout">
          <item>
           <widget class="QToolBox" name="structureToolbox">
+           <property name="currentIndex">
+            <number>-1</number>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="externalBehaviourElements">
+        <attribute name="title">
+         <string>External</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="verticalLayout_2">
+         <item>
+          <widget class="QToolBox" name="externalBehaviourToolbox">
            <property name="currentIndex">
             <number>-1</number>
            </property>
@@ -83,70 +97,22 @@
         </layout>
        </widget>
       </widget>
-      <widget class="QSplitter" name="centralPanel">
+      <widget class="CanvasView" name="graphicsView">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-         <horstretch>1</horstretch>
+        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+         <horstretch>4</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
-       <property name="orientation">
-        <enum>Qt::Vertical</enum>
+       <property name="minimumSize">
+        <size>
+         <width>500</width>
+         <height>0</height>
+        </size>
        </property>
-       <widget class="CanvasView" name="graphicsView">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-          <horstretch>4</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>500</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="focusPolicy">
-         <enum>Qt::ClickFocus</enum>
-        </property>
-       </widget>
-       <widget class="QTabWidget" name="bottomMenu">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-          <horstretch>1</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="currentIndex">
-         <number>0</number>
-        </property>
-        <property name="documentMode">
-         <bool>false</bool>
-        </property>
-        <property name="class" stdset="0">
-         <string>bottom-menu</string>
-        </property>
-        <widget class="QWidget" name="infoTab">
-         <attribute name="title">
-          <string>Info</string>
-         </attribute>
-         <layout class="QVBoxLayout" name="verticalLayout_6">
-          <item>
-           <widget class="QTextBrowser" name="infoText"/>
-          </item>
-         </layout>
-        </widget>
-        <widget class="QWidget" name="logTab">
-         <attribute name="title">
-          <string>Log</string>
-         </attribute>
-         <layout class="QVBoxLayout" name="verticalLayout_5">
-          <item>
-           <widget class="QTextBrowser" name="logText"/>
-          </item>
-         </layout>
-        </widget>
-       </widget>
+       <property name="focusPolicy">
+        <enum>Qt::ClickFocus</enum>
+       </property>
       </widget>
       <widget class="QSplitter" name="rightPanel">
        <property name="sizePolicy">
@@ -161,71 +127,6 @@
        <property name="class" stdset="0">
         <string>right-panel</string>
        </property>
-       <widget class="QTabWidget" name="helpMenu">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-          <horstretch>1</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="tabShape">
-         <enum>QTabWidget::Rounded</enum>
-        </property>
-        <property name="currentIndex">
-         <number>2</number>
-        </property>
-        <property name="elideMode">
-         <enum>Qt::ElideLeft</enum>
-        </property>
-        <property name="documentMode">
-         <bool>false</bool>
-        </property>
-        <property name="class" stdset="0">
-         <string>tree-menus</string>
-        </property>
-        <widget class="QWidget" name="systemTab">
-         <attribute name="title">
-          <string>System</string>
-         </attribute>
-         <layout class="QVBoxLayout" name="verticalLayout_3">
-          <item>
-           <widget class="TreeMenu" name="systemTree">
-            <column>
-             <property name="text">
-              <string notr="true">1</string>
-             </property>
-            </column>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-        <widget class="QWidget" name="flowTab">
-         <attribute name="title">
-          <string>Flow</string>
-         </attribute>
-         <layout class="QVBoxLayout" name="verticalLayout_2">
-          <item>
-           <widget class="QListView" name="flowList"/>
-          </item>
-         </layout>
-        </widget>
-        <widget class="QWidget" name="interfaceTab">
-         <attribute name="title">
-          <string>Interface</string>
-         </attribute>
-         <layout class="QVBoxLayout" name="verticalLayout_4">
-          <item>
-           <widget class="TreeMenu" name="interfaceTree">
-            <column>
-             <property name="text">
-              <string notr="true">1</string>
-             </property>
-            </column>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </widget>
        <widget class="QTabWidget" name="propertiesMenu">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -258,7 +159,7 @@
          <attribute name="title">
           <string>Properties</string>
          </attribute>
-         <layout class="QHBoxLayout" name="horizontalLayout_3">
+         <layout class="QVBoxLayout" name="verticalLayout_4">
           <item>
            <widget class="PropertiesMenu" name="propertiesFrame">
             <property name="frameShape">
@@ -314,6 +215,84 @@
              <enum>QFrame::Raised</enum>
             </property>
            </widget>
+          </item>
+         </layout>
+        </widget>
+       </widget>
+       <widget class="QTabWidget" name="helpMenu">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+          <horstretch>1</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="currentIndex">
+         <number>1</number>
+        </property>
+        <property name="documentMode">
+         <bool>false</bool>
+        </property>
+        <property name="class" stdset="0">
+         <string>help-menu</string>
+        </property>
+        <widget class="QWidget" name="infoTab">
+         <attribute name="title">
+          <string>Info</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_3">
+          <item>
+           <widget class="QTextBrowser" name="infoText"/>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="structureTab">
+         <attribute name="title">
+          <string>Tree</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_6">
+          <item>
+           <widget class="TreeMenu" name="treeWidget">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="autoFillBackground">
+             <bool>false</bool>
+            </property>
+            <property name="uniformRowHeights">
+             <bool>true</bool>
+            </property>
+            <property name="columnCount">
+             <number>3</number>
+            </property>
+            <column>
+             <property name="text">
+              <string notr="true">Name</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>Type</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>Id</string>
+             </property>
+            </column>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="tab">
+         <attribute name="title">
+          <string>Log</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_5">
+          <item>
+           <widget class="QTextBrowser" name="logText"/>
           </item>
          </layout>
         </widget>
