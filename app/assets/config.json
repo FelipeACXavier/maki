@@ -5,5 +5,31 @@
     "grpc",
     "ros2",
     "serial"
-  ]
+  ],
+  "layout": {
+    "leftPanel": {
+      "structurePanel": {
+
+      },
+      "behaviourPanel": {
+
+      }
+    },
+    "centralPanel": {
+      "canvas": {
+
+      },
+      "bottomPanel": {
+        "infoTab" : {
+
+        },
+        "logTab" : {
+
+        }
+      }
+    },
+    "rightPanel": {
+
+    }
+  }
 }

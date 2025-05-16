@@ -2,6 +2,8 @@
 
 #include <QMainWindow>
 
+#include "logging.h"
+
 class QWidget;
 class QSplitter;
 class QTabWidget;
@@ -14,6 +16,7 @@ class FieldsMenu;
 class BehaviourMenu;
 class QTextBrowser;
 class QToolBox;
+class QComboBox;
 
 class MainWindowlayout : public QMainWindow
 {
@@ -42,6 +45,7 @@ protected:
   QTabWidget* mBottomPanel;
   QTextBrowser* mInfoText;
   QTextBrowser* mLogText;
+  QComboBox* mLogLevelComboBox;
 
   // === Right Panel ===
   QSplitter* mRightPanel;
@@ -72,10 +76,6 @@ protected:
   QAction* mActionGenerate;
 
   // Settings menu
-  QAction* mActionSetErrorLevel;
-  QAction* mActionSetWarningLevel;
-  QAction* mActionSetInfoLevel;
-  QAction* mActionSetDebugLevel;
 
   // Help menu
 
@@ -84,9 +84,8 @@ private:
 
   void buildLeftPanel();
   void buildCentralPanel();
+  void buildLogTab();
   void buildRightPanel();
 
   void buildMenuBar();
-
-  // bool eventFilter(QObject* obj, QEvent* event);
 };

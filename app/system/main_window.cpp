@@ -1,5 +1,6 @@
 #include "main_window.h"
 
+#include <QComboBox>
 #include <QDrag>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -30,6 +31,8 @@ MainWindow::~MainWindow()
 
 VoidResult MainWindow::start()
 {
+  mLogLevel = logging::LogLevel::Debugging;
+
   logging::gLogToStream = [this](struct timespec ts, logging::LogLevel level, const std::string& filename, const uint32_t& line, const std::string& message) {
     if (!mLogText)
       return;
@@ -84,6 +87,9 @@ void MainWindow::startUI()
   Canvas* canvas = new Canvas(mConfigTable, mCanvasView);
   mCanvasView->setScene(canvas);
 
+  // Make sure the UI matches the internal state
+  mLogLevelComboBox->setCurrentIndex(static_cast<int>(mLogLevel));
+
   mPluginManager->start(mGeneratorMenu);
 }
 
@@ -108,10 +114,9 @@ void MainWindow::bind()
   connect(mActionGenerate, &QAction::triggered, this, &MainWindow::onActionGenerate);
 
   // Setting actions =============================================================
-  connect(mActionSetErrorLevel, &QAction::triggered, [this] { mLogLevel = logging::LogLevel::Error; });
-  connect(mActionSetWarningLevel, &QAction::triggered, [this] { mLogLevel = logging::LogLevel::Warning; });
-  connect(mActionSetInfoLevel, &QAction::triggered, [this] { mLogLevel = logging::LogLevel::Info; });
-  connect(mActionSetDebugLevel, &QAction::triggered, [this] { mLogLevel = logging::LogLevel::Debugging; });
+  connect(mLogLevelComboBox, &QComboBox::currentIndexChanged, this, [this](int index) {
+    mLogLevel = static_cast<logging::LogLevel>(index);
+  });
 
   // Internal actions =============================================================
   connect(canvas(), &Canvas::nodeSelected, this, &MainWindow::onNodeSelected);

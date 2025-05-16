@@ -45,6 +45,7 @@ class Fonts
 public:
   static const QFont Property;
   static const QFont Label;
+  static const QFont SmallTab;
   static constexpr float MaxSize = 10000.0;
   static constexpr float BaseSize = 10.0;
   static constexpr float BaseFactor = 20.0;

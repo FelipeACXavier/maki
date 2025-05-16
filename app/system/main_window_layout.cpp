@@ -2,16 +2,21 @@
 
 #include <QAction>
 #include <QApplication>
+#include <QComboBox>
 #include <QHBoxLayout>
+#include <QLabel>
 #include <QMenu>
 #include <QMenuBar>
 #include <QSplitter>
 #include <QTabWidget>
 #include <QTextBrowser>
+#include <QToolBar>
 #include <QToolBox>
+#include <QToolButton>
 #include <QVBoxLayout>
 
 // Custom widgets
+#include "app_configs.h"
 #include "style_helpers.h"
 #include "system/canvas_view.h"
 #include "widgets/behaviour_menu.h"
@@ -87,12 +92,13 @@ void MainWindowlayout::buildCentralPanel()
   mCentralSplitter->addWidget(mCanvasView);
 
   mBottomPanel = new QTabWidget();
+
+  // ===================================================================
+  // Info tab
   mInfoText = new QTextBrowser(mBottomPanel);
   mBottomPanel->addTab(mInfoText, tr("Info"));
 
-  mLogText = new QTextBrowser(mBottomPanel);
-  mLogText->setStyleSheet("QTextBrowser { font-family: monospace; }");
-  mBottomPanel->addTab(mLogText, tr("Log"));
+  buildLogTab();
 
   mCentralSplitter->addWidget(mBottomPanel);
 
@@ -167,19 +173,6 @@ void MainWindowlayout::buildMenuBar()
   window->addAction(mActionGenerate);
 
   QMenu* settings = mMenuBar->addMenu(tr("Settings"));
-  QMenu* logLevel = settings->addMenu(tr("Log level"));
-
-  mActionSetErrorLevel = new QAction(tr("Error"), this);
-  logLevel->addAction(mActionSetErrorLevel);
-
-  mActionSetWarningLevel = new QAction(tr("Warning"), this);
-  logLevel->addAction(mActionSetWarningLevel);
-
-  mActionSetInfoLevel = new QAction(tr("Info"), this);
-  logLevel->addAction(mActionSetInfoLevel);
-
-  mActionSetDebugLevel = new QAction(tr("Debug"), this);
-  logLevel->addAction(mActionSetDebugLevel);
 
   mGeneratorMenu = new QMenu(tr("Generator"));
   settings->addMenu(mGeneratorMenu);
@@ -187,6 +180,67 @@ void MainWindowlayout::buildMenuBar()
   QMenu* help = mMenuBar->addMenu(tr("Help"));
 
   setMenuBar(mMenuBar);
+}
+
+void MainWindowlayout::buildLogTab()
+{
+  QWidget* logContainer = new QWidget(mBottomPanel);
+  QVBoxLayout* logLayout = new QVBoxLayout(logContainer);
+  logLayout->setContentsMargins(2, 2, 2, 2);
+
+  // Toolbar
+  QToolBar* logToolBar = new QToolBar(logContainer);
+  logToolBar->setMaximumHeight(28);
+  logToolBar->setMovable(false);
+  logToolBar->setFloatable(false);
+  logToolBar->setFont(Fonts::SmallTab);
+
+  QWidget* group = new QWidget();
+  QHBoxLayout* layout = new QHBoxLayout(group);
+  layout->setContentsMargins(0, 0, 0, 0);
+  layout->setSpacing(8);
+
+  // =======================================================================================
+  // Clear button
+  QToolButton* clearButton = new QToolButton();
+  QAction* clearAction = new QAction(tr("Clear"), this);
+  clearButton->setDefaultAction(clearAction);
+
+  clearButton->setAutoRaise(true);
+  clearButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
+  clearButton->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred);
+  clearButton->setFont(Fonts::SmallTab);
+
+  connect(clearAction, &QAction::triggered, this, [this]() { mLogText->clear(); });
+
+  // =======================================================================================
+  // Log level selector
+  mLogLevelComboBox = new QComboBox(logToolBar);
+  mLogLevelComboBox->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+
+  mLogLevelComboBox->addItem(tr("Error"), QVariant::fromValue(logging::LogLevel::Error));
+  mLogLevelComboBox->addItem(tr("Warning"), QVariant::fromValue(logging::LogLevel::Warning));
+  mLogLevelComboBox->addItem(tr("Info"), QVariant::fromValue(logging::LogLevel::Info));
+  mLogLevelComboBox->addItem(tr("Debug"), QVariant::fromValue(logging::LogLevel::Debugging));
+
+  QLabel* levelLabel = new QLabel(tr("Log level"));
+  levelLabel->setContentsMargins(0, 0, 0, 0);
+  levelLabel->setAlignment(Qt::AlignVCenter);
+
+  layout->addWidget(levelLabel);
+  layout->addWidget(mLogLevelComboBox);
+  layout->addWidget(clearButton);
+
+  logToolBar->addWidget(group);
+
+  mLogText = new QTextBrowser(mBottomPanel);
+  mLogText->setStyleSheet("QTextBrowser { font-family: monospace; }");
+
+  // Assemble the complete tab
+  logLayout->addWidget(logToolBar);
+  logLayout->addWidget(mLogText);
+
+  mBottomPanel->addTab(logContainer, tr("Log"));
 }
 
 // bool MainWindowlayout::eventFilter(QObject* obj, QEvent* event)
