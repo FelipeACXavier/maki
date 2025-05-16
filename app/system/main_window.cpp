@@ -422,7 +422,7 @@ void MainWindow::closeCanvasTab()
 {
 }
 
-void MainWindow::onCreateNewFlow(NodeItem* /* node */)
+void MainWindow::onCreateNewFlow(NodeItem* node)
 {
   QInputDialog* dialog = new QInputDialog(this);
   dialog->setWindowTitle(tr("Flow name"));
@@ -457,7 +457,7 @@ void MainWindow::onCreateNewFlow(NodeItem* /* node */)
   mLeftPanel->setCurrentIndex(index);
 
   // Add a new flow to the FlowMenu
-  mFlowMenu->addComponentFlow(flowName);
+  mFlowMenu->addComponentFlow(node, flowName);
 
   // Add default start and end nodes to flow
 

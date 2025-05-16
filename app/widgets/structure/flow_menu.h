@@ -4,6 +4,8 @@
 
 #include "result.h"
 
+class NodeItem;
+
 class FlowMenu : public QTreeWidget
 {
   Q_OBJECT
@@ -11,7 +13,7 @@ public:
   FlowMenu(QWidget* parent);
 
   VoidResult addSystemFlow(const QString& flowName);
-  VoidResult addComponentFlow(const QString& flowName);
+  VoidResult addComponentFlow(NodeItem* node, const QString& flowName);
 
 signals:
   void flowSelected();
@@ -21,4 +23,6 @@ signals:
 private:
   QTreeWidgetItem* systemFlows();
   QTreeWidgetItem* componentFlows();
+
+  QTreeWidgetItem* getNodeById(const QString& id);
 };
