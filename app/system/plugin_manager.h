@@ -4,11 +4,11 @@
 
 #include "generator_plugin.h"
 
-class PluginManager : public QWidget
+class PluginManager : public QObject
 {
   Q_OBJECT
 public:
-  PluginManager(QWidget* parent = nullptr);
+  PluginManager();
 
   void start(QMenu* menu);
 

@@ -80,12 +80,13 @@ protected:
   // Help menu
 
 private:
-  void
-  buildMainWindow();
+  void buildMainWindow();
 
   void buildLeftPanel();
   void buildCentralPanel();
   void buildRightPanel();
 
   void buildMenuBar();
+
+  // bool eventFilter(QObject* obj, QEvent* event);
 };

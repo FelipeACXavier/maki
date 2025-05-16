@@ -1,6 +1,7 @@
 #include "main_window_layout.h"
 
 #include <QAction>
+#include <QApplication>
 #include <QHBoxLayout>
 #include <QMenu>
 #include <QMenuBar>
@@ -11,6 +12,7 @@
 #include <QVBoxLayout>
 
 // Custom widgets
+#include "style_helpers.h"
 #include "system/canvas_view.h"
 #include "widgets/behaviour_menu.h"
 #include "widgets/properties/fields_menu.h"
@@ -22,6 +24,7 @@ MainWindowlayout::MainWindowlayout(QWidget* parent)
     : QMainWindow(parent)
 {
   buildMainWindow();
+  // qApp->installEventFilter(this);
 }
 
 void MainWindowlayout::buildMainWindow()
@@ -47,17 +50,31 @@ void MainWindowlayout::buildMainWindow()
 void MainWindowlayout::buildLeftPanel()
 {
   mLeftPanel = new QTabWidget();
+  mLeftPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+  mLeftPanel->setMinimumWidth(220);
+  mLeftPanel->setMaximumWidth(300);
+
   mStructureTab = new QWidget();
   QVBoxLayout* structureLayout = new QVBoxLayout(mStructureTab);
   mStructureToolBox = new QToolBox(mStructureTab);
   structureLayout->addWidget(mStructureToolBox);
+  mStructureTab->setLayout(structureLayout);
   mLeftPanel->addTab(mStructureTab, tr("Structure"));
 
   mBehaviourTab = new QWidget();
   QVBoxLayout* behaviourLayout = new QVBoxLayout(mBehaviourTab);
   mBehaviourToolBox = new QToolBox(mBehaviourTab);
   behaviourLayout->addWidget(mBehaviourToolBox);
+  mBehaviourTab->setLayout(behaviourLayout);
   mLeftPanel->addTab(mBehaviourTab, tr("Behaviour"));
+
+  mLeftPanel->setTabIcon(0, addIconWithColor(":/icons/cubes.svg", Qt::white));
+  mLeftPanel->setTabToolTip(0, tr("Structure"));
+
+  mLeftPanel->setTabIcon(1, addIconWithColor(":/icons/code-branch.svg", Qt::white));
+  mLeftPanel->setTabToolTip(1, tr("Component behaviour"));
+
+  mLeftPanel->tabBar()->setExpanding(true);
 
   mMainSplitter->addWidget(mLeftPanel);
 }
@@ -85,9 +102,13 @@ void MainWindowlayout::buildCentralPanel()
 void MainWindowlayout::buildRightPanel()
 {
   mRightPanel = new QSplitter(Qt::Vertical);
+  mRightPanel->setMinimumWidth(250);
+  mRightPanel->setMaximumWidth(400);
 
   // Help Menu
   mNavigationTab = new QTabWidget();
+  mNavigationTab->setMinimumHeight(200);
+  mNavigationTab->setMaximumHeight(800);
 
   mSystemMenu = new TreeMenu(mNavigationTab);
   mNavigationTab->addTab(mSystemMenu, tr("System"));
@@ -100,6 +121,8 @@ void MainWindowlayout::buildRightPanel()
 
   // Properties Menu
   mPropertiesTab = new QTabWidget();
+  mPropertiesTab->setMinimumHeight(400);
+  mPropertiesTab->setMaximumHeight(800);
 
   mPropertiesMenu = new PropertiesMenu(mPropertiesTab);
   mPropertiesTab->addTab(mPropertiesMenu, tr("Properties"));
@@ -165,3 +188,36 @@ void MainWindowlayout::buildMenuBar()
 
   setMenuBar(mMenuBar);
 }
+
+// bool MainWindowlayout::eventFilter(QObject* obj, QEvent* event)
+// {
+//   if (event->type() == QEvent::MouseButtonPress)
+//   {
+//     QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+//     QPoint globalPos = mouseEvent->globalPos();
+
+//     QWidget* clickedWidget = QApplication::widgetAt(globalPos);
+//     if (clickedWidget)
+//     {
+//       qDebug() << "Clicked widget:" << clickedWidget->metaObject()->className()
+//                << "objectName:" << clickedWidget->objectName();
+//     }
+
+//     // Check if click lands inside tab 0 of mLeftPanel
+//     QTabBar* tabBar = mLeftPanel->tabBar();
+//     QRect tabRect = tabBar->tabRect(0);
+//     QPoint tabBarGlobalPos = tabBar->mapToGlobal(QPoint(0, 0));
+//     QRect tabGlobalRect(tabBarGlobalPos, tabRect.size());
+
+//     if (tabGlobalRect.contains(globalPos))
+//     {
+//       qDebug() << "CLICK WAS ON STRUCTURE TAB (tab 0)";
+//     }
+//     else
+//     {
+//       qDebug() << "Click was outside Structure tab";
+//     }
+//   }
+
+//   return QObject::eventFilter(obj, event);
+// }

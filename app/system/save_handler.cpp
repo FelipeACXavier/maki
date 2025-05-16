@@ -15,9 +15,10 @@
 #include "main_window.h"
 
 SaveHandler::SaveHandler(QWidget* parent)
-    : QWidget(parent)
+    : QObject()
     , mLastDir(QDir::homePath())
     , mCurrentFile("")
+    , mParentWidget(parent)
 {
 }
 
@@ -141,9 +142,9 @@ void SaveHandler::storeFilename(const QString& fileName)
 
 QString SaveHandler::openAtCenter(Function function)
 {
-  QFileDialog dialog(this);
+  QFileDialog dialog(mParentWidget);
 
-  QRect parentGeometry = dynamic_cast<QMainWindow*>(parent())->geometry();
+  QRect parentGeometry = mParentWidget->geometry();
 
   // Calculate the center of the parent (main window)
   int x = parentGeometry.left() + (parentGeometry.width() - dialog.width()) / 2;
@@ -153,7 +154,7 @@ QString SaveHandler::openAtCenter(Function function)
   dialog.move(x, y);
 
   if (function == Function::SAVE)
-    return dialog.getSaveFileName(this, tr("Save diagram"), mLastDir, tr("All Files (*);;Low-Code platform (*.lcp)"));
+    return dialog.getSaveFileName(mParentWidget, tr("Save diagram"), mLastDir, tr("All Files (*);;Low-Code platform (*.lcp)"));
 
-  return dialog.getOpenFileName(this, tr("Open diagram"), mLastDir, tr("All Files (*);;Low-Code platform (*.lcp)"));
+  return dialog.getOpenFileName(mParentWidget, tr("Open diagram"), mLastDir, tr("All Files (*);;Low-Code platform (*.lcp)"));
 }

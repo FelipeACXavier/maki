@@ -61,15 +61,13 @@ VoidResult MainWindow::start()
 
   mGenerator = std::make_shared<Generator>();
   mSaveHandler = std::make_unique<SaveHandler>(this);
-  mPluginManager = std::make_unique<PluginManager>(this);
+  mPluginManager = std::make_unique<PluginManager>();
 
   startUI();
   bind();
   bindShortcuts();
 
   RETURN_ON_FAILURE(loadElements());
-
-  return VoidResult();
 
   // Set initial tabs
   mLeftPanel->setCurrentIndex(0);
@@ -85,25 +83,6 @@ void MainWindow::startUI()
 {
   Canvas* canvas = new Canvas(mConfigTable, mCanvasView);
   mCanvasView->setScene(canvas);
-
-  mLeftPanel->setMinimumWidth(200);
-  mLeftPanel->setMaximumWidth(300);
-
-  mRightPanel->setMinimumWidth(250);
-  mRightPanel->setMaximumWidth(400);
-
-  mPropertiesTab->setMinimumHeight(400);
-  mPropertiesTab->setMaximumHeight(800);
-
-  mNavigationTab->setMinimumHeight(200);
-  mNavigationTab->setMaximumHeight(800);
-
-  mLeftPanel->setTabIcon(0, addIconWithColor(":/icons/cubes.svg", Qt::white));
-  mLeftPanel->setTabToolTip(0, "Structure");
-
-  mLeftPanel->setTabIcon(1, addIconWithColor(":/icons/code-branch.svg", Qt::white));
-  mLeftPanel->setTabToolTip(1, "Component behaviour");
-  mLeftPanel->tabBar()->setExpanding(true);
 
   mPluginManager->start(mGeneratorMenu);
 }

@@ -9,11 +9,11 @@
 class QGraphicsItem;
 class Canvas;
 
-class SaveHandler : public QWidget
+class SaveHandler : public QObject
 {
   Q_OBJECT
 public:
-  SaveHandler(QWidget* parent = nullptr);
+  SaveHandler(QWidget* parent);
 
   VoidResult save(Canvas* canvas);
   VoidResult saveToFile(Canvas* canvas);
@@ -30,6 +30,8 @@ public:
 private:
   QString mLastDir;
   QString mCurrentFile;
+
+  QWidget* mParentWidget;
 
   QString openAtCenter(Function save);
 

@@ -8,8 +8,8 @@
 #include "generator_plugin.h"
 #include "logging.h"
 
-PluginManager::PluginManager(QWidget* parent)
-    : QWidget(parent)
+PluginManager::PluginManager()
+    : QObject()
     , mPlugin{nullptr}
 {
 }
