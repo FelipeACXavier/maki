@@ -89,9 +89,29 @@ void MainWindowlayout::buildLeftPanel()
 void MainWindowlayout::buildCentralPanel()
 {
   mCentralSplitter = new QSplitter(Qt::Vertical);
-  mCanvasView = new CanvasView();
-  mCanvasView->setMinimumSize(500, 0);
-  mCentralSplitter->addWidget(mCanvasView);
+  mCanvasPanel = new QTabWidget();
+  mCanvasPanel->setTabsClosable(true);
+  mCanvasPanel->setMovable(true);
+
+  // mCanvasPanel->setStyleSheet(R"(
+  //   QTabBar::close-button {
+  //     image: url(:/icons/close.svg);      /* Use your own icon */
+  //     subcontrol-position: right;
+  //     margin: 4px;
+  //   }
+
+  //   QTabBar::close-button:hover {
+  //     image: url(:/icons/close-hover.svg);  /* Optional hover state */
+  //   }
+  // )");
+
+  CanvasView* canvasView = new CanvasView();
+  canvasView->setMinimumSize(500, 0);
+
+  mCanvasPanel->addTab(canvasView, "System");
+  mCanvasPanel->setCurrentWidget(canvasView);
+
+  mCentralSplitter->addWidget(mCanvasPanel);
 
   mBottomPanel = new QTabWidget();
 
@@ -133,6 +153,15 @@ void MainWindowlayout::buildRightPanel()
   mNavigationTab->addTab(mSystemMenu, tr("System"));
 
   mFlowMenu = new FlowMenu(mNavigationTab);
+
+  QTreeWidgetItem* systemFlows = new QTreeWidgetItem(mFlowMenu);
+  systemFlows->setText(0, tr("System flows"));
+  mFlowMenu->addTopLevelItem(systemFlows);
+
+  QTreeWidgetItem* componentFlows = new QTreeWidgetItem(mFlowMenu);
+  componentFlows->setText(0, tr("Component flows"));
+  mFlowMenu->addTopLevelItem(componentFlows);
+
   mNavigationTab->addTab(mFlowMenu, tr("Flow"));
 
   mInterfaceMenu = new SystemMenu(mNavigationTab);

@@ -34,6 +34,8 @@ public:
 
   QList<NodeItem*> availableNodes();
 
+  virtual Types::LibraryTypes type() const;
+
 protected:
   void dragEnterEvent(QGraphicsSceneDragDropEvent* event) override;
   void dragMoveEvent(QGraphicsSceneDragDropEvent* event) override;
@@ -50,6 +52,8 @@ signals:
   void nodeAdded(NodeItem* node);
   void nodeRemoved(NodeItem* node);
   void nodeModified(NodeItem* node);
+
+  void createNewFlow(NodeItem* node);
 
 public slots:
   void onFocusNode(const QString& nodeId);

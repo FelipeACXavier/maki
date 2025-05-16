@@ -34,6 +34,8 @@ private slots:
   void onNodeRemoved(NodeItem* node);
   void onNodeModified(NodeItem* node);
 
+  void onCreateNewFlow(NodeItem* node);
+
 private:
   JSON mConfig;
   std::unique_ptr<SaveHandler> mSaveHandler;
@@ -41,6 +43,7 @@ private:
   std::shared_ptr<ConfigurationTable> mConfigTable;
 
   std::shared_ptr<Generator> mGenerator;
+  Canvas* mActiveCanvas;
 
   logging::LogLevel mLogLevel;
 
@@ -50,8 +53,15 @@ private:
   VoidResult loadElementLibrary(const QString& name, const JSON& config);
 
   void bind();
+  void bindCanvas();
+  void unbindCanvas();
   void bindShortcuts();
   void startUI();
+
+  void onCanvasTabChanged(int index);
+  void closeCanvasTab();
+
+  int libraryTypeToIndex(Types::LibraryTypes type) const;
 
   // ================================================
   // Actions

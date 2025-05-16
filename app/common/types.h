@@ -67,9 +67,10 @@ enum class LibraryTypes
 {
   UNKNOWN = 0,
   STRUCTURAL,
-  EXTERNAL_BEHAVIOUR,
-  INTERNAL_BEHAVIOUR
+  BEHAVIOUR
 };
+
+QString LibraryTypeToString(LibraryTypes type);
 
 typedef QJsonValueConstRef Config;
 }  // namespace Types

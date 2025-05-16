@@ -2,9 +2,12 @@
 
 #include <QComboBox>
 #include <QDrag>
+#include <QInputDialog>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QListWidgetItem>
+#include <QRegularExpression>
+#include <QRegularExpressionValidator>
 #include <QShortcut>
 #include <QString>
 #include <QTextBlock>
@@ -12,6 +15,7 @@
 #include <QWidget>
 
 #include "app_configs.h"
+#include "behaviour_canvas.h"
 #include "canvas.h"
 #include "canvas_view.h"
 #include "elements/node.h"
@@ -19,13 +23,16 @@
 #include "logging.h"
 #include "plugin_manager.h"
 #include "save_handler.h"
+#include "structure_canvas.h"
 #include "style_helpers.h"
 #include "widgets/properties/fields_menu.h"
 #include "widgets/properties/properties_menu.h"
+#include "widgets/structure/flow_menu.h"
 #include "widgets/structure/system_menu.h"
 
 MainWindow::MainWindow(QWidget* parent)
     : MainWindowlayout(parent)
+    , mActiveCanvas(nullptr)
 {
 }
 
@@ -88,8 +95,10 @@ VoidResult MainWindow::start()
 
 void MainWindow::startUI()
 {
-  Canvas* canvas = new Canvas(mConfigTable, mCanvasView);
-  mCanvasView->setScene(canvas);
+  CanvasView* currentCanvas = static_cast<CanvasView*>(mCanvasPanel->currentWidget());
+  StructureCanvas* canvas = new StructureCanvas(mConfigTable, currentCanvas);
+  mActiveCanvas = canvas;
+  currentCanvas->setScene(canvas);
 
   // Make sure the UI matches the internal state
   mLogLevelComboBox->setCurrentIndex(static_cast<int>(mLogLevel));
@@ -123,21 +132,38 @@ void MainWindow::bind()
   });
 
   // Internal actions =============================================================
+  connect(mCanvasPanel, &QTabWidget::currentChanged, this, &MainWindow::onCanvasTabChanged);
+  connect(mCanvasPanel, &QTabWidget::tabCloseRequested, this, &MainWindow::closeCanvasTab);
+
+  bindCanvas();
+}
+
+void MainWindow::bindCanvas()
+{
   connect(canvas(), &Canvas::nodeSelected, this, &MainWindow::onNodeSelected);
   connect(canvas(), &Canvas::nodeAdded, this, &MainWindow::onNodeAdded);
   connect(canvas(), &Canvas::nodeRemoved, this, &MainWindow::onNodeRemoved);
   connect(canvas(), &Canvas::nodeModified, this, &MainWindow::onNodeModified);
+  connect(canvas(), &Canvas::createNewFlow, this, &MainWindow::onCreateNewFlow);
 
   connect(mSystemMenu, &SystemMenu::nodeRemoved, canvas(), &Canvas::onRemoveNode);
   connect(mSystemMenu, &SystemMenu::nodeSelected, canvas(), &Canvas::onSelectNode);
   connect(mSystemMenu, &SystemMenu::nodeRenamed, canvas(), &Canvas::onRenameNode);
   connect(mSystemMenu, &SystemMenu::nodeFocused, canvas(), &Canvas::onFocusNode);
-  connect(mSystemMenu, &SystemMenu::nodeFocused, canvas(), &Canvas::onFocusNode);
+}
 
-  // auto behaviourMenu = static_cast<BehaviourMenu*>(mUI->behaviourFrame);
-  // behaviourMenu->mGetAvailableNodes = [this]() {
-  //   return canvas()->availableNodes();
-  // };
+void MainWindow::unbindCanvas()
+{
+  disconnect(canvas(), &Canvas::nodeSelected, this, &MainWindow::onNodeSelected);
+  disconnect(canvas(), &Canvas::nodeAdded, this, &MainWindow::onNodeAdded);
+  disconnect(canvas(), &Canvas::nodeRemoved, this, &MainWindow::onNodeRemoved);
+  disconnect(canvas(), &Canvas::nodeModified, this, &MainWindow::onNodeModified);
+  disconnect(canvas(), &Canvas::createNewFlow, this, &MainWindow::onCreateNewFlow);
+
+  disconnect(mSystemMenu, &SystemMenu::nodeRemoved, canvas(), &Canvas::onRemoveNode);
+  disconnect(mSystemMenu, &SystemMenu::nodeSelected, canvas(), &Canvas::onSelectNode);
+  disconnect(mSystemMenu, &SystemMenu::nodeRenamed, canvas(), &Canvas::onRenameNode);
+  disconnect(mSystemMenu, &SystemMenu::nodeFocused, canvas(), &Canvas::onFocusNode);
 }
 
 void MainWindow::bindShortcuts()
@@ -158,7 +184,7 @@ void MainWindow::bindShortcuts()
 
 Canvas* MainWindow::canvas() const
 {
-  return static_cast<Canvas*>(mCanvasView->scene());
+  return mActiveCanvas;
 }
 
 VoidResult MainWindow::loadElements()
@@ -253,10 +279,8 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
     // Initialize the library type
     if (type == "structure")
       config->libraryType = Types::LibraryTypes::STRUCTURAL;
-    else if (type == "internal behaviour")
-      config->libraryType = Types::LibraryTypes::INTERNAL_BEHAVIOUR;
     else
-      config->libraryType = Types::LibraryTypes::EXTERNAL_BEHAVIOUR;
+      config->libraryType = Types::LibraryTypes::BEHAVIOUR;
 
     auto id = QStringLiteral("%1::%2").arg(name, config->type);
     sidebarview->addNode(id, config);
@@ -374,4 +398,83 @@ void MainWindow::onNodeModified(NodeItem* node)
   }
 
   LOG_WARN_ON_FAILURE(mSystemMenu->onNodeModified(node));
+}
+
+void MainWindow::onCanvasTabChanged(int index)
+{
+  CanvasView* newCanvas = static_cast<CanvasView*>(mCanvasPanel->widget(index));
+  if (!newCanvas)
+    return;
+
+  // Disconnect signals from the previous canvas
+  if (mActiveCanvas)
+    unbindCanvas();
+
+  mActiveCanvas = static_cast<Canvas*>(newCanvas->scene());
+  bindCanvas();
+
+  auto libIndex = libraryTypeToIndex(mActiveCanvas->type());
+  mNavigationTab->setCurrentIndex(libIndex);
+  mLeftPanel->setCurrentIndex(libIndex);
+}
+
+void MainWindow::closeCanvasTab()
+{
+}
+
+void MainWindow::onCreateNewFlow(NodeItem* /* node */)
+{
+  QInputDialog* dialog = new QInputDialog(this);
+  dialog->setWindowTitle(tr("Flow name"));
+  dialog->setLabelText(tr("Enter a name for the new flow:"));
+  dialog->setTextValue(tr(""));
+
+  // Set a validator: allow only alphanumerics and spaces
+  QRegularExpression rx("[A-Za-z ]+");
+  QValidator* validator = new QRegularExpressionValidator(rx, dialog);
+
+  // Access the line edit and assign the validator
+  QLineEdit* lineEdit = dialog->findChild<QLineEdit*>();
+  if (lineEdit)
+    lineEdit->setValidator(validator);
+
+  // Execute the dialog
+  if (dialog->exec() != QDialog::Accepted)
+    return;
+
+  QString flowName = dialog->textValue().trimmed();
+  if (flowName.isEmpty())
+    return;
+
+  CanvasView* newView = new CanvasView();
+
+  BehaviourCanvas* canvas = new BehaviourCanvas(mConfigTable, newView);
+  newView->setScene(canvas);
+
+  // Change to respective tabs
+  auto index = libraryTypeToIndex(canvas->type());
+  mNavigationTab->setCurrentIndex(index);
+  mLeftPanel->setCurrentIndex(index);
+
+  // Add a new flow to the FlowMenu
+  mFlowMenu->addComponentFlow(flowName);
+
+  // Add default start and end nodes to flow
+
+  mCanvasPanel->addTab(newView, flowName);
+  mCanvasPanel->setCurrentWidget(newView);
+}
+
+int MainWindow::libraryTypeToIndex(Types::LibraryTypes type) const
+{
+  switch (type)
+  {
+    case Types::LibraryTypes::STRUCTURAL:
+      return 0;
+    case Types::LibraryTypes::BEHAVIOUR:
+      return 1;
+    default:
+      LOG_ERROR("Unknown library type");
+      return 0;
+  }
 }

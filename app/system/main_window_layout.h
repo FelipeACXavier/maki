@@ -8,7 +8,6 @@ class QWidget;
 class QSplitter;
 class QTabWidget;
 
-class CanvasView;
 class SystemMenu;
 class FlowMenu;
 class PropertiesMenu;
@@ -40,7 +39,7 @@ protected:
 
   // === Central Panel ===
   QSplitter* mCentralSplitter;
-  CanvasView* mCanvasView;
+  QTabWidget* mCanvasPanel;
 
   QTabWidget* mBottomPanel;
   QTextBrowser* mInfoText;

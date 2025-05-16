@@ -27,6 +27,12 @@
               "type": "color",
               "default": "#202020"
             }
+          ],
+          "controls": [
+            {
+              "id": "Add event",
+              "type": "add event"
+            }
           ]
         },
         {

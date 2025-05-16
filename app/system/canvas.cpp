@@ -16,6 +16,7 @@
 #include "elements/node.h"
 #include "elements/transition.h"
 #include "logging.h"
+#include "widgets/flow_dialog.h"
 
 Canvas::Canvas(std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
     : QGraphicsScene(parent)
@@ -26,6 +27,11 @@ Canvas::Canvas(std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
 
   mHoverTimer = new QTimer(this);
   mHoverTimer->setSingleShot(true);
+}
+
+Types::LibraryTypes Canvas::type() const
+{
+  return Types::LibraryTypes::UNKNOWN;
 }
 
 QList<NodeItem*> Canvas::availableNodes()
@@ -453,6 +459,18 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 
   menu.addMenu(createConnectionMenu(items));
 
+  QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
+  NodeItem* node = nullptr;
+  if (item && item->type() == NodeItem::Type)
+    node = static_cast<NodeItem*>(item);
+
+  QAction* newFlowAction = menu.addAction(tr("New flow"));
+  newFlowAction->setEnabled(node != nullptr && items.size() == 1);
+  QObject::connect(newFlowAction, &QAction::triggered, [this, node]() {
+    emit createNewFlow(node);
+  });
+  menu.addAction(newFlowAction);
+
   // =============================================
   menu.addSection("Edit");
 
@@ -754,9 +772,15 @@ NodeItem* Canvas::createNode(const NodeSaveInfo& info, const QPointF& position, 
     return nullptr;
   }
 
-  if (config->libraryType != Types::LibraryTypes::STRUCTURAL && parent == nullptr)
+  // if (config->libraryType != Types::LibraryTypes::STRUCTURAL && parent == nullptr)
+  // {
+  //   LOG_WARNING("Node %d must be inside a structural element", (int)config->libraryType);
+  //   return nullptr;
+  // }
+
+  if (config->libraryType != type())
   {
-    LOG_WARNING("Node %d must be inside a structural element", (int)config->libraryType);
+    LOG_WARNING("Node of type \"%s\" cannot be placed in a \"%s\" canvas", qPrintable(Types::LibraryTypeToString(config->libraryType)), qPrintable(Types::LibraryTypeToString(type())));
     return nullptr;
   }
 

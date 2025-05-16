@@ -52,9 +52,8 @@ QString Types::PropertyTypesToString(Types::PropertyTypes type)
   return "unknown";
 }
 
-Types::PropertyTypes Types::StringToPropertyTypes(const QString& config)
+Types::PropertyTypes Types::StringToPropertyTypes(const QString& type)
 {
-  const auto type = config;
   if (type == "string")
     return Types::PropertyTypes::STRING;
   else if (type == "integer" || type == "int")
@@ -73,4 +72,16 @@ Types::PropertyTypes Types::StringToPropertyTypes(const QString& config)
     return Types::PropertyTypes::VOID;
 
   return Types::PropertyTypes::UNKNOWN;
+}
+
+// =====================================================================================
+// Library type
+QString Types::LibraryTypeToString(Types::LibraryTypes type)
+{
+  if (type == Types::LibraryTypes::STRUCTURAL)
+    return "structural";
+  else if (type == Types::LibraryTypes::BEHAVIOUR)
+    return "behavioural";
+
+  return "unknown";
 }
