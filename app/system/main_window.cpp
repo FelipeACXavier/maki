@@ -8,17 +8,21 @@
 #include <QShortcut>
 #include <QString>
 #include <QTextBlock>
+#include <QTextBrowser>
 #include <QWidget>
 
 #include "app_configs.h"
 #include "canvas.h"
+#include "canvas_view.h"
 #include "elements/node.h"
 #include "library_container.h"
 #include "logging.h"
 #include "plugin_manager.h"
 #include "save_handler.h"
 #include "style_helpers.h"
-#include "ui_editor.h"
+#include "widgets/properties/fields_menu.h"
+#include "widgets/properties/properties_menu.h"
+#include "widgets/structure/system_menu.h"
 
 MainWindow::MainWindow(QWidget* parent)
     : MainWindowlayout(parent)
@@ -124,10 +128,11 @@ void MainWindow::bind()
   connect(canvas(), &Canvas::nodeRemoved, this, &MainWindow::onNodeRemoved);
   connect(canvas(), &Canvas::nodeModified, this, &MainWindow::onNodeModified);
 
-  connect(mSystemMenu, &TreeMenu::nodeRemoved, canvas(), &Canvas::onRemoveNode);
-  connect(mSystemMenu, &TreeMenu::nodeSelected, canvas(), &Canvas::onSelectNode);
-  connect(mSystemMenu, &TreeMenu::nodeRenamed, canvas(), &Canvas::onRenameNode);
-  connect(mSystemMenu, &TreeMenu::nodeFocused, canvas(), &Canvas::onFocusNode);
+  connect(mSystemMenu, &SystemMenu::nodeRemoved, canvas(), &Canvas::onRemoveNode);
+  connect(mSystemMenu, &SystemMenu::nodeSelected, canvas(), &Canvas::onSelectNode);
+  connect(mSystemMenu, &SystemMenu::nodeRenamed, canvas(), &Canvas::onRenameNode);
+  connect(mSystemMenu, &SystemMenu::nodeFocused, canvas(), &Canvas::onFocusNode);
+  connect(mSystemMenu, &SystemMenu::nodeFocused, canvas(), &Canvas::onFocusNode);
 
   // auto behaviourMenu = static_cast<BehaviourMenu*>(mUI->behaviourFrame);
   // behaviourMenu->mGetAvailableNodes = [this]() {

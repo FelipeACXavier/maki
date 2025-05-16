@@ -10,7 +10,7 @@ class NodeItem;
 class QTableView;
 class QHBoxLayout;
 
-class PropertiesMenu : public MenuBase, public QFrame
+class PropertiesMenu : public QFrame, public MenuBase
 {
 public:
   PropertiesMenu(QWidget* parent);

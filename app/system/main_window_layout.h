@@ -9,7 +9,7 @@ class QSplitter;
 class QTabWidget;
 
 class CanvasView;
-class TreeMenu;
+class SystemMenu;
 class FlowMenu;
 class PropertiesMenu;
 class FieldsMenu;
@@ -50,9 +50,9 @@ protected:
   // === Right Panel ===
   QSplitter* mRightPanel;
   QTabWidget* mNavigationTab;
-  TreeMenu* mSystemMenu;
+  SystemMenu* mSystemMenu;
   FlowMenu* mFlowMenu;
-  TreeMenu* mInterfaceMenu;
+  SystemMenu* mInterfaceMenu;
 
   QTabWidget* mPropertiesTab;
   PropertiesMenu* mPropertiesMenu;

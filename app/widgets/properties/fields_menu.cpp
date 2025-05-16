@@ -41,18 +41,8 @@ void FieldsMenu::clear()
   }
 }
 
-VoidResult FieldsMenu::onNodeSelected(NodeItem* node, bool selected)
+VoidResult FieldsMenu::onNodeAdded(NodeItem* /* node */)
 {
-  // Clear the frame
-  clear();
-
-  if (!node)
-    return VoidResult();
-
-  mCurrentNode = node->id();
-
-  RETURN_ON_FAILURE(loadControls(node));
-
   return VoidResult();
 }
 
@@ -67,6 +57,26 @@ VoidResult FieldsMenu::onNodeRemoved(NodeItem* node)
 
   clear();
   mCurrentNode.clear();
+
+  return VoidResult();
+}
+
+VoidResult FieldsMenu::onNodeModified(NodeItem* node)
+{
+  return VoidResult();
+}
+
+VoidResult FieldsMenu::onNodeSelected(NodeItem* node, bool selected)
+{
+  // Clear the frame
+  clear();
+
+  if (!node)
+    return VoidResult();
+
+  mCurrentNode = node->id();
+
+  RETURN_ON_FAILURE(loadControls(node));
 
   return VoidResult();
 }

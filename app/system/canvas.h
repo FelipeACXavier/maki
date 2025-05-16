@@ -54,7 +54,7 @@ signals:
 public slots:
   void onFocusNode(const QString& nodeId);
   void onRemoveNode(const QString& nodeId);
-  void onSelectNode(const QString& nodeId);
+  void onSelectNode(const QList<QString>& nodeIds);
   void onRenameNode(const QString& nodeId, const QString& name);
 
 private:

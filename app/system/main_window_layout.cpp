@@ -4,10 +4,12 @@
 #include <QApplication>
 #include <QComboBox>
 #include <QHBoxLayout>
+#include <QHeaderView>
 #include <QLabel>
 #include <QMenu>
 #include <QMenuBar>
 #include <QSplitter>
+#include <QStyledItemDelegate>
 #include <QTabWidget>
 #include <QTextBrowser>
 #include <QToolBar>
@@ -23,7 +25,7 @@
 #include "widgets/properties/fields_menu.h"
 #include "widgets/properties/properties_menu.h"
 #include "widgets/structure/flow_menu.h"
-#include "widgets/structure/tree_menu.h"
+#include "widgets/structure/system_menu.h"
 
 MainWindowlayout::MainWindowlayout(QWidget* parent)
     : QMainWindow(parent)
@@ -116,13 +118,24 @@ void MainWindowlayout::buildRightPanel()
   mNavigationTab->setMinimumHeight(200);
   mNavigationTab->setMaximumHeight(800);
 
-  mSystemMenu = new TreeMenu(mNavigationTab);
+  mSystemMenu = new SystemMenu(mNavigationTab);
+  mSystemMenu->setColumnCount(2);
+  mSystemMenu->setHeaderLabels({tr("Name"), tr("Type")});
+  mSystemMenu->header()->setAlternatingRowColors(true);
+  mSystemMenu->header()->setSectionResizeMode(0, QHeaderView::Stretch);
+
+  mSystemMenu->setColumnWidth(1, 150);
+  mSystemMenu->header()->setStretchLastSection(false);
+  mSystemMenu->header()->setSectionResizeMode(1, QHeaderView::Fixed);
+  mSystemMenu->header()->setTextElideMode(Qt::ElideRight);
+  mSystemMenu->header()->setSectionsMovable(false);
+
   mNavigationTab->addTab(mSystemMenu, tr("System"));
 
   mFlowMenu = new FlowMenu(mNavigationTab);
   mNavigationTab->addTab(mFlowMenu, tr("Flow"));
 
-  mInterfaceMenu = new TreeMenu(mNavigationTab);
+  mInterfaceMenu = new SystemMenu(mNavigationTab);
   mNavigationTab->addTab(mInterfaceMenu, tr("Interface"));
 
   // Properties Menu

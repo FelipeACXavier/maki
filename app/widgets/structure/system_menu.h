@@ -2,30 +2,35 @@
 
 #include <QTreeWidget>
 
+#include "../menu_base.h"
 #include "result.h"
 
 class NodeItem;
 class QTreeWidgetItem;
 
-class TreeMenu : public QTreeWidget
+class SystemMenu : public QTreeWidget, public MenuBase
 {
   Q_OBJECT
 public:
-  TreeMenu(QWidget* parent);
+  SystemMenu(QWidget* parent);
 
-  VoidResult onNodeAdded(NodeItem* node);
-  VoidResult onNodeRemoved(NodeItem* node);
-  VoidResult onNodeModified(NodeItem* node);
+  VoidResult onNodeAdded(NodeItem* node) override;
+  VoidResult onNodeRemoved(NodeItem* node) override;
+  VoidResult onNodeModified(NodeItem* node) override;
+  VoidResult onNodeSelected(NodeItem* node, bool selected) override;
 
 signals:
   void nodeFocused(const QString& nodeId);
-  void nodeSelected(const QString& nodeId);
+  void nodeSelected(const QList<QString>& nodeIds);
   void nodeRemoved(const QString& nodeId);
   void nodeRenamed(const QString& nodeId, const QString& name);
+
+  void createFlow(const QString& nodeId);
 
 private slots:
   void showContextMenu(const QPoint& pos);
   void onItemClicked(QTreeWidgetItem* item, int /* column */);
+  void onSelectionChanged();
 
 private:
   VoidResult addRootNode(NodeItem* node);

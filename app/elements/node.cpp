@@ -7,6 +7,7 @@
 #include <QObject>
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
+#include <QTimer>
 #include <QUuid>
 
 #include "app_configs.h"
@@ -463,7 +464,7 @@ void NodeItem::deleteNode()
 
   setSelected(false);
 
-  delete this;
+  QTimer::singleShot(0, qApp, [this]() { delete this; });
 }
 
 void NodeItem::onProperties()

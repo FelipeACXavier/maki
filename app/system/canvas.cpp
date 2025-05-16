@@ -851,10 +851,18 @@ void Canvas::onRemoveNode(const QString& nodeId)
     node->deleteNode();
 }
 
-void Canvas::onSelectNode(const QString& nodeId)
+void Canvas::onSelectNode(const QList<QString>& nodeIds)
 {
-  auto node = findNodeWithId(nodeId);
-  selectNode(node, true);
+  clearSelectedNodes();
+
+  for (const auto& nodeId : nodeIds)
+  {
+    auto node = findNodeWithId(nodeId);
+    if (node)
+      node->setSelected(true);
+
+    emit nodeSelected(nodeIds.size() == 1 ? node : nullptr, nodeIds.size() == 1);
+  }
 }
 
 void Canvas::onRenameNode(const QString& nodeId, const QString& name)

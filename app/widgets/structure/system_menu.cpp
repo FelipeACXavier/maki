@@ -1,4 +1,4 @@
-#include "tree_menu.h"
+#include "system_menu.h"
 
 #include <QInputDialog>
 #include <QMenu>
@@ -8,18 +8,21 @@
 
 static const int NAME_COLUMN = 0;
 static const int TYPE_COLUMN = 1;
-static const int ID_COLUMN = 2;
+static const int ID_DATA = 0;
 
-TreeMenu::TreeMenu(QWidget* parent)
+SystemMenu::SystemMenu(QWidget* parent)
     : QTreeWidget(parent)
 {
+  setSelectionMode(QAbstractItemView::ExtendedSelection);
+  connect(this, &QTreeWidget::itemSelectionChanged, this, &SystemMenu::onSelectionChanged);
+
   setContextMenuPolicy(Qt::CustomContextMenu);
 
-  connect(this, &QTreeWidget::customContextMenuRequested, this, &TreeMenu::showContextMenu);
-  connect(this, &QTreeWidget::itemClicked, this, &TreeMenu::onItemClicked);
+  connect(this, &QTreeWidget::customContextMenuRequested, this, &SystemMenu::showContextMenu);
+  // connect(this, &QTreeWidget::itemClicked, this, &SystemMenu::onItemClicked);
 }
 
-VoidResult TreeMenu::onNodeAdded(NodeItem* node)
+VoidResult SystemMenu::onNodeAdded(NodeItem* node)
 {
   LOG_DEBUG("Node added: %s", qPrintable(node->id()));
 
@@ -30,7 +33,7 @@ VoidResult TreeMenu::onNodeAdded(NodeItem* node)
   return addLeafNode(node);
 }
 
-VoidResult TreeMenu::onNodeRemoved(NodeItem* node)
+VoidResult SystemMenu::onNodeRemoved(NodeItem* node)
 {
   LOG_INFO("Node removed: %s", qPrintable(node->id()));
 
@@ -54,7 +57,7 @@ VoidResult TreeMenu::onNodeRemoved(NodeItem* node)
   return VoidResult();
 }
 
-VoidResult TreeMenu::onNodeModified(NodeItem* node)
+VoidResult SystemMenu::onNodeModified(NodeItem* node)
 {
   auto item = getItemById(node->id());
   if (!item)
@@ -65,14 +68,19 @@ VoidResult TreeMenu::onNodeModified(NodeItem* node)
   return VoidResult();
 }
 
-void TreeMenu::populateItem(QTreeWidgetItem* item, NodeItem* node)
+VoidResult SystemMenu::onNodeSelected(NodeItem* /* node */, bool /* selected */)
+{
+  return VoidResult();
+}
+
+void SystemMenu::populateItem(QTreeWidgetItem* item, NodeItem* node)
 {
   item->setText(NAME_COLUMN, node->nodeName());
   item->setText(TYPE_COLUMN, node->nodeType());
-  item->setText(ID_COLUMN, node->id());
+  item->setData(ID_DATA, Qt::UserRole, node->id());  // Not shown to user
 }
 
-VoidResult TreeMenu::addRootNode(NodeItem* node)
+VoidResult SystemMenu::addRootNode(NodeItem* node)
 {
   QTreeWidgetItem* item = new QTreeWidgetItem(this);
   populateItem(item, node);
@@ -81,7 +89,7 @@ VoidResult TreeMenu::addRootNode(NodeItem* node)
   return VoidResult();
 }
 
-VoidResult TreeMenu::addLeafNode(NodeItem* node)
+VoidResult SystemMenu::addLeafNode(NodeItem* node)
 {
   auto parent = static_cast<NodeItem*>(node->parentNode());
   if (!parent)
@@ -97,50 +105,46 @@ VoidResult TreeMenu::addLeafNode(NodeItem* node)
   return VoidResult();
 }
 
-QTreeWidgetItem* TreeMenu::getItemById(const QString& id)
+QTreeWidgetItem* SystemMenu::getItemById(const QString& id)
 {
   for (QTreeWidgetItemIterator it(this); *it; ++it)
   {
-    if ((*it)->text(ID_COLUMN) == id)
+    if ((*it)->data(ID_DATA, Qt::UserRole).toString() == id)
       return *it;
   }
 
   return nullptr;
 }
 
-void TreeMenu::showContextMenu(const QPoint& pos)
+void SystemMenu::showContextMenu(const QPoint& pos)
 {
   QTreeWidgetItem* selectedItem = itemAt(pos);
   if (!selectedItem)
     return;
 
   QMenu contextMenu(this);
-  QAction* deleteAction = contextMenu.addAction("Delete");
-  // QAction* renameAction = contextMenu.addAction("Rename Node");
-  QAction* focusAction = contextMenu.addAction("Focus");
+  contextMenu.addAction(tr("New flow"), this, []() { LOG_WARNING("Not implemented"); });
+  contextMenu.addAction(tr("Focus"), this, [this, selectedItem]() { emit nodeFocused(selectedItem->data(ID_DATA, Qt::UserRole).toString()); });
+  contextMenu.addAction(tr("Delete"), this, [this, selectedItem]() { emit nodeRemoved(selectedItem->data(ID_DATA, Qt::UserRole).toString()); });
 
-  QAction* selectedAction = contextMenu.exec(viewport()->mapToGlobal(pos));
-  if (selectedAction == deleteAction)
-  {
-    emit nodeRemoved(selectedItem->text(ID_COLUMN));
-  }
-  // else if (selectedAction == renameAction)
-  // {
-  //   bool ok;
-  //   QString newName = QInputDialog::getText(this, "Rename Node", "New Name:", QLineEdit::Normal, selectedItem->text(NAME_COLUMN), &ok);
-  //   if (ok && !newName.isEmpty())
-  //     emit nodeRenamed(selectedItem->text(ID_COLUMN), newName);
-  // }
-  else if (selectedAction == focusAction)
-  {
-    emit nodeFocused(selectedItem->text(ID_COLUMN));
-  }
+  contextMenu.exec(viewport()->mapToGlobal(pos));
 }
 
-void TreeMenu::onItemClicked(QTreeWidgetItem* item, int /* column */)
+void SystemMenu::onItemClicked(QTreeWidgetItem* item, int /* column */)
 {
   if (!item)
     return;
 
-  emit nodeSelected(item->text(ID_COLUMN));
+  emit nodeSelected({item->data(ID_DATA, Qt::UserRole).toString()});
+}
+
+void SystemMenu::onSelectionChanged()
+{
+  QList<QTreeWidgetItem*> items = selectedItems();
+
+  QList<QString> selectedNodes;
+  for (QTreeWidgetItem* item : items)
+    selectedNodes.push_back(item->data(ID_DATA, Qt::UserRole).toString());
+
+  emit nodeSelected(selectedNodes);
 }
