@@ -20,10 +20,8 @@
 #include "ui_editor.h"
 
 MainWindow::MainWindow(QWidget* parent)
-    : QMainWindow(parent)
-    , mUI(new Ui::MainWindow)
+    : MainWindowlayout(parent)
 {
-  mUI->setupUi(this);
 }
 
 MainWindow::~MainWindow()
@@ -32,26 +30,23 @@ MainWindow::~MainWindow()
 
 VoidResult MainWindow::start()
 {
-  // Bind the logging function
-  mUI->logText->setStyleSheet("QTextBrowser { font-family: monospace; }");
-
   logging::gLogToStream = [this](struct timespec ts, logging::LogLevel level, const std::string& filename, const uint32_t& line, const std::string& message) {
-    if (!mUI->logText)
+    if (!mLogText)
       return;
 
     if (level > mLogLevel)
       return;
 
-    mUI->logText->append(toQT(ts, level, message));
+    mLogText->append(toQT(ts, level, message));
 
     // Check if the number of lines exceeds the maximum limit
-    QTextDocument* doc = mUI->logText->document();
+    QTextDocument* doc = mLogText->document();
     if (doc->blockCount() > 100)
     {
       // Remove the first block (top line) to limit the number of lines
       QTextBlock block = doc->begin();
-      mUI->logText->textCursor().setPosition(block.position());
-      mUI->logText->textCursor().removeSelectedText();
+      mLogText->textCursor().setPosition(block.position());
+      mLogText->textCursor().removeSelectedText();
     }
   };
 
@@ -74,10 +69,12 @@ VoidResult MainWindow::start()
 
   RETURN_ON_FAILURE(loadElements());
 
+  return VoidResult();
+
   // Set initial tabs
-  mUI->leftPanel->setCurrentIndex(0);
-  mUI->helpMenu->setCurrentIndex(0);
-  mUI->propertiesMenu->setCurrentIndex(0);
+  mLeftPanel->setCurrentIndex(0);
+  mNavigationTab->setCurrentIndex(0);
+  mPropertiesTab->setCurrentIndex(0);
 
   LOG_DEBUG("Main window started");
 
@@ -86,35 +83,29 @@ VoidResult MainWindow::start()
 
 void MainWindow::startUI()
 {
-  Canvas* canvas = new Canvas(mConfigTable, mUI->graphicsView);
-  mUI->graphicsView->setScene(canvas);
+  Canvas* canvas = new Canvas(mConfigTable, mCanvasView);
+  mCanvasView->setScene(canvas);
 
-  mUI->splitter->widget(0)->setMinimumWidth(200);
-  mUI->splitter->widget(0)->setMaximumWidth(300);
+  mLeftPanel->setMinimumWidth(200);
+  mLeftPanel->setMaximumWidth(300);
 
-  mUI->splitter->widget(2)->setMinimumWidth(250);
-  mUI->splitter->widget(2)->setMaximumWidth(400);
+  mRightPanel->setMinimumWidth(250);
+  mRightPanel->setMaximumWidth(400);
 
-  mUI->propertiesMenu->setMinimumHeight(400);
-  mUI->propertiesMenu->setMaximumHeight(800);
+  mPropertiesTab->setMinimumHeight(400);
+  mPropertiesTab->setMaximumHeight(800);
 
-  mUI->helpMenu->setMinimumHeight(200);
-  mUI->helpMenu->setMaximumHeight(800);
+  mNavigationTab->setMinimumHeight(200);
+  mNavigationTab->setMaximumHeight(800);
 
-  mUI->leftPanel->setTabIcon(0, addIconWithColor(":/icons/cubes.svg", Qt::white));
-  mUI->leftPanel->setTabToolTip(0, "Structure");
-  mUI->leftPanel->setTabText(0, "Structure");
+  mLeftPanel->setTabIcon(0, addIconWithColor(":/icons/cubes.svg", Qt::white));
+  mLeftPanel->setTabToolTip(0, "Structure");
 
-  // mUI->leftPanel->setTabIcon(1, addIconWithColor(":/icons/vector-square.svg", Qt::white));
-  // mUI->leftPanel->setTabToolTip(1, "Cross-component behaviour");
-  // mUI->leftPanel->setTabText(1, "External");
+  mLeftPanel->setTabIcon(1, addIconWithColor(":/icons/code-branch.svg", Qt::white));
+  mLeftPanel->setTabToolTip(1, "Component behaviour");
+  mLeftPanel->tabBar()->setExpanding(true);
 
-  mUI->leftPanel->setTabIcon(1, addIconWithColor(":/icons/code-branch.svg", Qt::white));
-  mUI->leftPanel->setTabToolTip(1, "Component behaviour");
-  mUI->leftPanel->setTabText(1, "Internal");
-  mUI->leftPanel->tabBar()->setExpanding(true);
-
-  mPluginManager->start(mUI->menuGenerator);
+  mPluginManager->start(mGeneratorMenu);
 }
 
 void MainWindow::bind()
@@ -122,31 +113,26 @@ void MainWindow::bind()
   LOG_DEBUG("Binding UI callbacks");
 
   // File actions =============================================================
-  connect(mUI->actionSave, &QAction::triggered, this,
-          &MainWindow::onActionSave);
-  mUI->actionSave->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_S));
+  connect(mActionNew, &QAction::triggered, this, &MainWindow::onActionNew);
+  mActionNew->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_N));
 
-  connect(mUI->actionSave_As, &QAction::triggered, this,
-          &MainWindow::onActionSaveAs);
-  mUI->actionSave_As->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S));
+  connect(mActionOpen, &QAction::triggered, this, &MainWindow::onActionLoad);
+  mActionOpen->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_O));
 
-  connect(mUI->actionOpen, &QAction::triggered, this,
-          &MainWindow::onActionLoad);
-  mUI->actionOpen->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_O));
+  connect(mActionSave, &QAction::triggered, this, &MainWindow::onActionSave);
+  mActionSave->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_S));
 
-  connect(mUI->actionNew, &QAction::triggered, this,
-          &MainWindow::onActionNew);
-  mUI->actionNew->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_N));
+  connect(mActionSaveAs, &QAction::triggered, this, &MainWindow::onActionSaveAs);
+  mActionSaveAs->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S));
 
   // Diagram actions =============================================================
-  connect(mUI->actionGenerate, &QAction::triggered, this,
-          &MainWindow::onActionGenerate);
+  connect(mActionGenerate, &QAction::triggered, this, &MainWindow::onActionGenerate);
 
   // Setting actions =============================================================
-  connect(mUI->actionError, &QAction::triggered, [this] { mLogLevel = logging::LogLevel::Error; });
-  connect(mUI->actionWarning, &QAction::triggered, [this] { mLogLevel = logging::LogLevel::Warning; });
-  connect(mUI->actionInfo, &QAction::triggered, [this] { mLogLevel = logging::LogLevel::Info; });
-  connect(mUI->actionDebug, &QAction::triggered, [this] { mLogLevel = logging::LogLevel::Debugging; });
+  connect(mActionSetErrorLevel, &QAction::triggered, [this] { mLogLevel = logging::LogLevel::Error; });
+  connect(mActionSetWarningLevel, &QAction::triggered, [this] { mLogLevel = logging::LogLevel::Warning; });
+  connect(mActionSetInfoLevel, &QAction::triggered, [this] { mLogLevel = logging::LogLevel::Info; });
+  connect(mActionSetDebugLevel, &QAction::triggered, [this] { mLogLevel = logging::LogLevel::Debugging; });
 
   // Internal actions =============================================================
   connect(canvas(), &Canvas::nodeSelected, this, &MainWindow::onNodeSelected);
@@ -154,13 +140,12 @@ void MainWindow::bind()
   connect(canvas(), &Canvas::nodeRemoved, this, &MainWindow::onNodeRemoved);
   connect(canvas(), &Canvas::nodeModified, this, &MainWindow::onNodeModified);
 
-  connect(mUI->systemTree, &TreeMenu::nodeRemoved, canvas(), &Canvas::onRemoveNode);
-  connect(mUI->systemTree, &TreeMenu::nodeSelected, canvas(), &Canvas::onSelectNode);
-  connect(mUI->systemTree, &TreeMenu::nodeRenamed, canvas(), &Canvas::onRenameNode);
-  connect(mUI->systemTree, &TreeMenu::nodeFocused, canvas(), &Canvas::onFocusNode);
+  connect(mSystemMenu, &TreeMenu::nodeRemoved, canvas(), &Canvas::onRemoveNode);
+  connect(mSystemMenu, &TreeMenu::nodeSelected, canvas(), &Canvas::onSelectNode);
+  connect(mSystemMenu, &TreeMenu::nodeRenamed, canvas(), &Canvas::onRenameNode);
+  connect(mSystemMenu, &TreeMenu::nodeFocused, canvas(), &Canvas::onFocusNode);
 
   // auto behaviourMenu = static_cast<BehaviourMenu*>(mUI->behaviourFrame);
-
   // behaviourMenu->mGetAvailableNodes = [this]() {
   //   return canvas()->availableNodes();
   // };
@@ -184,7 +169,7 @@ void MainWindow::bindShortcuts()
 
 Canvas* MainWindow::canvas() const
 {
-  return static_cast<Canvas*>(mUI->graphicsView->scene());
+  return static_cast<Canvas*>(mCanvasView->scene());
 }
 
 VoidResult MainWindow::loadElements()
@@ -252,9 +237,9 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
   // We load those dynamically on startup.
   QToolBox* toolbox = nullptr;
   if (type == "structure")
-    toolbox = mUI->structureToolbox;
+    toolbox = mStructureToolBox;
   else
-    toolbox = mUI->internalBehaviourToolbox;
+    toolbox = mBehaviourToolBox;
 
   LibraryContainer* sidebarview = LibraryContainer::create(name, toolbox);
 
@@ -295,6 +280,8 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
 
 void MainWindow::onActionNew()
 {
+  LOG_DEBUG("Triggering action new");
+
   // Repopulate the canvas
   SaveInfo emptySave;
   canvas()->loadFromSave(emptySave);
@@ -354,13 +341,13 @@ void MainWindow::onNodeSelected(NodeItem* node, bool selected)
 {
   if (node)
   {
-    mUI->infoText->setText(node->help().message);
-    mUI->infoText->setWordWrapMode(QTextOption::WrapMode::WordWrap);
-    mUI->infoText->setFont(Fonts::Property);
+    mInfoText->setText(node->help().message);
+    mInfoText->setWordWrapMode(QTextOption::WrapMode::WordWrap);
+    mInfoText->setFont(Fonts::Property);
   }
 
-  LOG_WARN_ON_FAILURE(mUI->propertiesFrame->onNodeSelected(node, selected));
-  LOG_WARN_ON_FAILURE(mUI->fieldsFrame->onNodeSelected(node, selected));
+  LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeSelected(node, selected));
+  LOG_WARN_ON_FAILURE(mFieldsMenu->onNodeSelected(node, selected));
   // LOG_WARN_ON_FAILURE(mUI->behaviourFrame->onNodeSelected(node, selected));
 }
 
@@ -372,7 +359,7 @@ void MainWindow::onNodeAdded(NodeItem* node)
     return;
   }
 
-  LOG_WARN_ON_FAILURE(mUI->systemTree->onNodeAdded(node));
+  LOG_WARN_ON_FAILURE(mSystemMenu->onNodeAdded(node));
 }
 
 void MainWindow::onNodeRemoved(NodeItem* node)
@@ -383,9 +370,9 @@ void MainWindow::onNodeRemoved(NodeItem* node)
     return;
   }
 
-  LOG_WARN_ON_FAILURE(mUI->systemTree->onNodeRemoved(node));
-  LOG_WARN_ON_FAILURE(mUI->propertiesFrame->onNodeRemoved(node));
-  LOG_WARN_ON_FAILURE(mUI->fieldsFrame->onNodeRemoved(node));
+  LOG_WARN_ON_FAILURE(mSystemMenu->onNodeRemoved(node));
+  LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeRemoved(node));
+  LOG_WARN_ON_FAILURE(mFieldsMenu->onNodeRemoved(node));
   // LOG_WARN_ON_FAILURE(mUI->behaviourFrame->onNodeRemoved(node));
 }
 
@@ -397,5 +384,5 @@ void MainWindow::onNodeModified(NodeItem* node)
     return;
   }
 
-  LOG_WARN_ON_FAILURE(mUI->systemTree->onNodeModified(node));
+  LOG_WARN_ON_FAILURE(mSystemMenu->onNodeModified(node));
 }

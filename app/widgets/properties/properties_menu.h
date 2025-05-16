@@ -2,6 +2,7 @@
 
 #include <QFrame>
 
+#include "../menu_base.h"
 #include "config.h"
 #include "result.h"
 
@@ -9,13 +10,15 @@ class NodeItem;
 class QTableView;
 class QHBoxLayout;
 
-class PropertiesMenu : public QFrame
+class PropertiesMenu : public MenuBase, public QFrame
 {
 public:
   PropertiesMenu(QWidget* parent);
 
-  VoidResult onNodeSelected(NodeItem* node, bool selected);
-  VoidResult onNodeRemoved(NodeItem* node);
+  VoidResult onNodeAdded(NodeItem* node) override;
+  VoidResult onNodeRemoved(NodeItem* node) override;
+  VoidResult onNodeModified(NodeItem* node) override;
+  VoidResult onNodeSelected(NodeItem* node, bool selected) override;
 
 private:
   QString mCurrentNode;

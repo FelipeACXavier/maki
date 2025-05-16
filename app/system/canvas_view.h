@@ -4,13 +4,17 @@
 #include <QKeyEvent>
 #include <QWheelEvent>
 
+class Canvas;
+
 class CanvasView : public QGraphicsView
 {
   Q_OBJECT
 public:
   CanvasView(QWidget* parent = nullptr);
-  qreal getScale() const;
+
   QPointF getCenter() const;
+
+  qreal getScale() const;
   void setScale(qreal scale);
 
   void zoom(float scaleFactor);

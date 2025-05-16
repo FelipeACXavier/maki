@@ -10,9 +10,9 @@
 #include <QTableView>
 #include <QVBoxLayout>
 
+#include "../structure/event_dialog.h"
 #include "app_configs.h"
 #include "elements/node.h"
-#include "event_dialog.h"
 #include "json.h"
 #include "logging.h"
 #include "style_helpers.h"

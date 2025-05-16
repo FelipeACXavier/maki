@@ -31,20 +31,8 @@ PropertiesMenu::PropertiesMenu(QWidget* parent)
   setLayout(layout);
 }
 
-VoidResult PropertiesMenu::onNodeSelected(NodeItem* node, bool selected)
+VoidResult PropertiesMenu::onNodeAdded(NodeItem* /* node */)
 {
-  // Clear the frame
-  clear();
-
-  if (!node)
-    return VoidResult();
-
-  mCurrentNode = node->id();
-
-  RETURN_ON_FAILURE(loadProperties(node));
-
-  static_cast<QVBoxLayout*>(layout())->addStretch();
-
   return VoidResult();
 }
 
@@ -59,6 +47,28 @@ VoidResult PropertiesMenu::onNodeRemoved(NodeItem* node)
 
   clear();
   mCurrentNode.clear();
+
+  return VoidResult();
+}
+
+VoidResult PropertiesMenu::onNodeModified(NodeItem* node)
+{
+  return VoidResult();
+}
+
+VoidResult PropertiesMenu::onNodeSelected(NodeItem* node, bool selected)
+{
+  // Clear the frame
+  clear();
+
+  if (!node)
+    return VoidResult();
+
+  mCurrentNode = node->id();
+
+  RETURN_ON_FAILURE(loadProperties(node));
+
+  static_cast<QVBoxLayout*>(layout())->addStretch();
 
   return VoidResult();
 }

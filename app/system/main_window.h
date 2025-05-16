@@ -12,19 +12,13 @@
 #include "config_table.h"
 #include "json.h"
 #include "logging.h"
+#include "main_window_layout.h"
 #include "result.h"
-
-QT_BEGIN_NAMESPACE
-namespace Ui
-{
-class MainWindow;
-}
-QT_END_NAMESPACE
 
 class SaveHandler;
 class PluginManager;
 
-class MainWindow : public QMainWindow
+class MainWindow : public MainWindowlayout
 {
   Q_OBJECT
 
@@ -42,7 +36,6 @@ private slots:
 
 private:
   JSON mConfig;
-  std::unique_ptr<Ui::MainWindow> mUI;
   std::unique_ptr<SaveHandler> mSaveHandler;
   std::unique_ptr<PluginManager> mPluginManager;
   std::shared_ptr<ConfigurationTable> mConfigTable;

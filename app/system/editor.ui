@@ -36,6 +36,9 @@
        <property name="focusPolicy">
         <enum>Qt::TabFocus</enum>
        </property>
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="toolTipDuration">
         <number>1</number>
        </property>
@@ -46,13 +49,16 @@
         <bool>true</bool>
        </property>
        <property name="tabPosition">
-        <enum>QTabWidget::West</enum>
+        <enum>QTabWidget::North</enum>
        </property>
        <property name="currentIndex">
         <number>1</number>
        </property>
        <property name="elideMode">
         <enum>Qt::ElideRight</enum>
+       </property>
+       <property name="usesScrollButtons">
+        <bool>false</bool>
        </property>
        <widget class="QWidget" name="structureElements">
         <attribute name="title">
@@ -68,13 +74,13 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="internalBehaviourElements">
+       <widget class="QWidget" name="behaviourElements">
         <attribute name="title">
-         <string>Internal</string>
+         <string>Behaviour</string>
         </attribute>
         <layout class="QVBoxLayout" name="verticalLayout_9">
          <item>
-          <widget class="QToolBox" name="internalBehaviourToolbox">
+          <widget class="QToolBox" name="behaviourToolbox">
            <property name="currentIndex">
             <number>-1</number>
            </property>
@@ -172,7 +178,7 @@
          <enum>QTabWidget::Rounded</enum>
         </property>
         <property name="currentIndex">
-         <number>2</number>
+         <number>0</number>
         </property>
         <property name="elideMode">
          <enum>Qt::ElideLeft</enum>
@@ -205,7 +211,13 @@
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout_2">
           <item>
-           <widget class="QListView" name="flowList"/>
+           <widget class="FlowMenu" name="flowList">
+            <column>
+             <property name="text">
+              <string notr="true">1</string>
+             </property>
+            </column>
+           </widget>
           </item>
          </layout>
         </widget>
@@ -453,19 +465,24 @@
   <customwidget>
    <class>PropertiesMenu</class>
    <extends>QFrame</extends>
-   <header>widgets/properties_menu.h</header>
+   <header>widgets/properties/properties_menu.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>FieldsMenu</class>
    <extends>QFrame</extends>
-   <header>widgets/fields_menu.h</header>
+   <header>widgets/properties/fields_menu.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>TreeMenu</class>
    <extends>QTreeWidget</extends>
-   <header>widgets/tree_menu.h</header>
+   <header>widgets/structure/tree_menu.h</header>
+  </customwidget>
+  <customwidget>
+   <class>FlowMenu</class>
+   <extends>QTreeWidget</extends>
+   <header>widgets/structure/flow_menu.h</header>
   </customwidget>
   <customwidget>
    <class>BehaviourMenu</class>

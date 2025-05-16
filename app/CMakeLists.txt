@@ -14,6 +14,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 file(GLOB SYSTEM_FILES ${CMAKE_CURRENT_SOURCE_DIR}/system/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/system/*.ui)
 file(GLOB ELEMENT_FILES ${CMAKE_CURRENT_SOURCE_DIR}/elements/*.cpp)
 file(GLOB WIDGET_FILES ${CMAKE_CURRENT_SOURCE_DIR}/widgets/*.cpp)
+file(GLOB STRUCTURAL_WIDGET_FILES ${CMAKE_CURRENT_SOURCE_DIR}/widgets/structure/*.cpp)
+file(GLOB PROPERTY_WIDGET_FILES ${CMAKE_CURRENT_SOURCE_DIR}/widgets/properties/*.cpp)
 file(GLOB COMPILER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/compiler/*.cpp)
 
 message("view files: ${VIEW_FILES}")
@@ -22,6 +24,8 @@ qt_add_executable(${APPLICATION_NAME}
     assets.qrc
     ${SYSTEM_FILES}
     ${WIDGET_FILES}
+    ${STRUCTURAL_WIDGET_FILES}
+    ${PROPERTY_WIDGET_FILES}
     ${ELEMENT_FILES}
     ${COMPILER_FILES}
 )
