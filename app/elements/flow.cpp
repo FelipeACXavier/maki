@@ -3,10 +3,12 @@
 #include "node.h"
 
 Flow::Flow(const QString& name, std::shared_ptr<FlowSaveInfo> storage)
-    : mId(QUuid::createUuid().toString())
+    : mId((!storage->id.isEmpty() && !storage->id.isNull()) ? storage->id : QUuid::createUuid().toString())
     , mName(name)
     , mStorage(storage)
 {
+  mStorage->id = this->id();
+  mStorage->name = this->name();
 }
 
 QString Flow::id() const
@@ -31,7 +33,7 @@ void Flow::removeNode(NodeItem* node)
   });
 }
 
-void Flow::updateFlow(NodeItem* node, std::shared_ptr<NodeSaveInfo> storage)
+void Flow::updateFlow(NodeItem* /* node */, std::shared_ptr<NodeSaveInfo> storage)
 {
   // for (auto& info : mInfo.behaviouralNodes)
   // {

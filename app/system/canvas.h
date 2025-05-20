@@ -57,6 +57,7 @@ signals:
   void nodeModified(NodeItem* node);
 
   void openFlow(Flow* flow, NodeItem* node);
+  void flowAdded(Flow* flow, NodeItem* node);
   void closeFlow(Flow* flow, NodeItem* node);
 
 public slots:
@@ -72,7 +73,8 @@ private:
   enum class NodeCreation
   {
     Dropping,
-    Pasting
+    Pasting,
+    Populating
   };
   // TODO(felaze): Move connection behaviour to a separate class
   NodeItem* mHoveredNode = nullptr;

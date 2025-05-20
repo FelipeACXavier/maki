@@ -14,6 +14,27 @@ Q_DECLARE_METATYPE(SaveInfo)
 
 // ==========================================================================================================
 // FlowSaveInfo
+QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<FlowSaveInfo>>& flows)
+{
+  out << static_cast<qint32>(flows.size());
+  for (const auto& flow : flows)
+    out << *flow;
+
+  return out;
+}
+
+QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<FlowSaveInfo>>& flows)
+{
+  qint32 size;
+  in >> size;
+
+  flows.resize(size);
+  for (int i = 0; i < size; ++i)
+    in >> *flows[i];
+
+  return in;
+}
+
 QDataStream& operator<<(QDataStream& out, const FlowSaveInfo& info)
 {
   out << info.id;
@@ -185,6 +206,7 @@ QDataStream& operator<<(QDataStream& out, const NodeSaveInfo& info)
   out << info.parentId;
   out << info.transitions;
   out << info.children;
+  out << info.flows;
 
   QByteArray pixmapData;
   QBuffer buffer(&pixmapData);
@@ -209,6 +231,7 @@ QDataStream& operator>>(QDataStream& in, NodeSaveInfo& info)
   in >> info.parentId;
   in >> info.transitions;
   in >> info.children;
+  in >> info.flows;
 
   QByteArray pixmapData;
   in >> pixmapData;
@@ -245,6 +268,10 @@ QJsonObject NodeSaveInfo::toJson() const
   for (const auto& child : children)
     childrenArray.append(child->toJson());
 
+  QJsonArray flowArray;
+  for (const auto& flow : flows)
+    flowArray.append(flow->toJson());
+
   QJsonObject propertiesObject;
   for (auto it = properties.constBegin(); it != properties.constEnd(); ++it)
     propertiesObject[it.key()] = it.value().toJsonValue();
@@ -259,6 +286,8 @@ QJsonObject NodeSaveInfo::toJson() const
     data[ConfigKeys::TRANSITIONS] = transitionArray;
   if (childrenArray.size() > 0)
     data[ConfigKeys::CHILDREN] = childrenArray;
+  if (flowArray.size() > 0)
+    data[ConfigKeys::FLOWS] = flowArray;
 
   data[ConfigKeys::PIXMAP] = JSON::fromPixmap(pixmap);
 
@@ -304,6 +333,12 @@ NodeSaveInfo NodeSaveInfo::fromJson(const QJsonObject& data)
   {
     for (const auto& node : data[ConfigKeys::CHILDREN].toArray())
       info.children.append(std::make_shared<NodeSaveInfo>(NodeSaveInfo::fromJson(node.toObject())));
+  }
+
+  if (data.contains(ConfigKeys::FLOWS))
+  {
+    for (const auto& node : data[ConfigKeys::FLOWS].toArray())
+      info.flows.append(std::make_shared<FlowSaveInfo>(FlowSaveInfo::fromJson(node.toObject())));
   }
 
   if (data.contains(ConfigKeys::PROPERTIES))

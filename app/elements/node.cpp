@@ -514,21 +514,15 @@ QPointF NodeItem::edgePointToward(const QPointF& targetScenePos) const
   return center + dir * radius;
 }
 
-Flow* NodeItem::createFlow(const QString& flowName)
+Flow* NodeItem::createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo> info)
 {
-  auto flowConfig = std::make_shared<FlowSaveInfo>();
+  auto flowConfig = info == nullptr ? std::make_shared<FlowSaveInfo>() : info;
   mStorage->flows.push_back(flowConfig);
 
   Flow* flow = new Flow(flowName, flowConfig);
   mFlows.push_back(flow);
 
   return flow;
-}
-
-void NodeItem::addFlow(Flow* flow)
-{
-  // Create new flow
-  mFlows.push_back(flow);
 }
 
 Flow* NodeItem::getFlow(const QString& flowId) const

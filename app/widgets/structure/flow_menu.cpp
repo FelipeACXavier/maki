@@ -47,7 +47,7 @@ Result<Flow*> FlowMenu::addComponentFlow(NodeItem* node, const QString& flowName
   }
 
   // Create the new flow and add it to the node
-  Flow* flow = node->createFlow(flowName);
+  Flow* flow = node->createFlow(flowName, nullptr);
 
   // Assign the tree information
   newFlow->setText(NAME_INDEX, flow->name());
@@ -65,6 +65,40 @@ QTreeWidgetItem* FlowMenu::systemFlows()
 QTreeWidgetItem* FlowMenu::componentFlows()
 {
   return topLevelItem(COMPONENT_FLOWS_INDEX);
+}
+
+VoidResult FlowMenu::onFlowAdded(Flow* flow, NodeItem* node)
+{
+  auto parent = getItemById(node->id());
+  QTreeWidgetItem* newFlow = nullptr;
+  if (parent)
+  {
+    newFlow = new QTreeWidgetItem(parent);
+  }
+  else
+  {
+    QTreeWidgetItem* newNode = new QTreeWidgetItem(componentFlows());
+    newNode->setText(NAME_INDEX, node->nodeName());
+    newNode->setData(ID_DATA, Qt::UserRole, node->id());
+    newNode->setData(TYPE_DATA, Qt::UserRole, Roles::ComponentRole);
+
+    newFlow = new QTreeWidgetItem(newNode);
+  }
+
+  // Assign the tree information
+  newFlow->setText(NAME_INDEX, flow->name());
+  newFlow->setData(ID_DATA, Qt::UserRole, flow->id());
+  newFlow->setData(TYPE_DATA, Qt::UserRole, Roles::FlowRole);
+
+  for (const auto& component : flow->getNodes())
+  {
+    QTreeWidgetItem* newComponent = new QTreeWidgetItem(newFlow);
+    newComponent->setText(NAME_INDEX, component->properties["name"].toString());
+    newComponent->setData(ID_DATA, Qt::UserRole, component->id);
+    newComponent->setData(TYPE_DATA, Qt::UserRole, Roles::NodeRole);
+  }
+
+  return VoidResult();
 }
 
 VoidResult FlowMenu::onNodeAdded(const QString& flowId, NodeItem* node)
@@ -101,12 +135,18 @@ VoidResult FlowMenu::onNodeRemoved(const QString& flowId, NodeItem* node)
   return VoidResult();
 }
 
-VoidResult FlowMenu::onNodeModified(NodeItem* node)
+VoidResult FlowMenu::onNodeModified(const QString& /* flowId */, NodeItem* node)
 {
+  auto component = getItemById(node->id());
+  if (component == nullptr)
+    return VoidResult();
+
+  component->setText(NAME_INDEX, node->nodeName());
+
   return VoidResult();
 }
 
-VoidResult FlowMenu::onNodeSelected(NodeItem* node, bool selected)
+VoidResult FlowMenu::onNodeSelected(const QString& flowId, NodeItem* node, bool selected)
 {
   return VoidResult();
 }

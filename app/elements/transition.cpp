@@ -9,7 +9,7 @@
 
 TransitionItem::TransitionItem(std::shared_ptr<TransitionSaveInfo> storage)
     : QGraphicsPathItem()
-    , mId(QUuid::createUuid().toString())
+    , mId((!storage->id.isEmpty() && !storage->id.isNull()) ? storage->id : QUuid::createUuid().toString())
     , mComplete(false)
     , mSource(nullptr)
     , mDestination(nullptr)

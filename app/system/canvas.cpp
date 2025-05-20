@@ -124,8 +124,7 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
       if (isModifierSet(event, Qt::AltModifier))
       {
         mNode = node;
-        auto storage = std::make_shared<TransitionSaveInfo>();
-        mTransition = new TransitionItem(storage);
+        mTransition = new TransitionItem(std::make_shared<TransitionSaveInfo>());
 
         mTransition->setStart(node->id(), node->mapToScene(node->boundingRect().center()), {0, 0});
         mTransition->setEnd(Constants::TMP_CONNECTION_ID, event->scenePos(), {0, 0});
@@ -571,6 +570,12 @@ VoidResult Canvas::loadFromSave(const SaveInfo& info)
       selectNode(child, false);
     }
 
+    for (const auto& flow : node->flows)
+    {
+      Flow* createdFlow = createdNode->createFlow(flow->name, flow);
+      emit flowAdded(createdFlow, createdNode);
+    }
+
     selectNode(createdNode, false);
   }
 
@@ -677,7 +682,8 @@ NodeItem* Canvas::createNode(NodeCreation creation, const NodeSaveInfo& info, co
   if (parent == nullptr)
     addItem(node);
 
-  updateParent(node, nodeInfo, true);
+  if (creation != NodeCreation::Populating)
+    updateParent(node, nodeInfo, true);
 
   emit nodeAdded(node);
 
@@ -754,17 +760,16 @@ void Canvas::onRenameNode(const QString& nodeId, const QString& name)
 void Canvas::populate(Flow* flow)
 {
   // First create all the nodes
+  LOG_DEBUG("Nodes before %d", flow->getNodes().size());
   for (const auto& node : flow->getNodes())
   {
     LOG_DEBUG("Creating behavioral node %s with parent %s", qPrintable(node->id), qPrintable(node->parentId));
-    (void)createNode(NodeCreation::Pasting, *node, node->position, findNodeWithId(node->parentId));
+    (void)createNode(NodeCreation::Populating, *node, node->position, findNodeWithId(node->parentId));
   }
 
   // Then create the transitions between the nodes
   for (const auto& node : flow->getNodes())
   {
-    qDebug() << node->toJson() << "\n\n";
-
     auto srcConn = findNodeWithId(node->id);
     if (!srcConn)
     {
@@ -772,6 +777,7 @@ void Canvas::populate(Flow* flow)
       continue;
     }
 
+    qDebug() << node->toJson();
     for (const auto& transition : node->transitions)
     {
       auto dstConn = findNodeWithId(transition->dstId);
@@ -783,8 +789,7 @@ void Canvas::populate(Flow* flow)
 
       LOG_DEBUG("Creating transitions %s -> %s", qPrintable(node->id), qPrintable(transition->dstId));
 
-      auto storage = std::make_shared<TransitionSaveInfo>();
-      auto connection = new TransitionItem(storage);
+      auto connection = new TransitionItem(transition);
 
       connection->setStart(node->id, transition->srcPoint, transition->srcShift);
       connection->setEnd(transition->dstId, transition->dstPoint, transition->dstShift);

@@ -35,6 +35,7 @@ private slots:
   void onNodeModified(NodeItem* node);
 
   void onOpenFlow(Flow* flow, NodeItem* node);
+  void onFlowAdded(Flow* flow, NodeItem* node);
 
 private:
   JSON mConfig;

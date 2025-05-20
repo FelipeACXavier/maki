@@ -70,8 +70,7 @@ public:
   void addChild(NodeItem* node, std::shared_ptr<NodeSaveInfo> info);
   void childRemoved(NodeItem* child);
 
-  Flow* createFlow(const QString& flowName);
-  void addFlow(Flow* flow);
+  Flow* createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo> info);
   Flow* getFlow(const QString& flowId) const;
   void deleteFlow(Flow* flow);
   void updateFlow();

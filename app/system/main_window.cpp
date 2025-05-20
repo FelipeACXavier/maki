@@ -148,6 +148,7 @@ void MainWindow::bindCanvas()
   connect(canvas(), &Canvas::nodeRemoved, this, &MainWindow::onNodeRemoved);
   connect(canvas(), &Canvas::nodeModified, this, &MainWindow::onNodeModified);
   connect(canvas(), &Canvas::openFlow, this, &MainWindow::onOpenFlow);
+  connect(canvas(), &Canvas::flowAdded, this, &MainWindow::onFlowAdded);
 
   connect(mSystemMenu, &SystemMenu::nodeRemoved, canvas(), &Canvas::onRemoveNode);
   connect(mSystemMenu, &SystemMenu::nodeSelected, canvas(), &Canvas::onSelectNode);
@@ -165,6 +166,7 @@ void MainWindow::unbindCanvas()
   disconnect(canvas(), &Canvas::nodeRemoved, this, &MainWindow::onNodeRemoved);
   disconnect(canvas(), &Canvas::nodeModified, this, &MainWindow::onNodeModified);
   disconnect(canvas(), &Canvas::openFlow, this, &MainWindow::onOpenFlow);
+  disconnect(canvas(), &Canvas::flowAdded, this, &MainWindow::onFlowAdded);
 
   disconnect(mSystemMenu, &SystemMenu::nodeRemoved, canvas(), &Canvas::onRemoveNode);
   disconnect(mSystemMenu, &SystemMenu::nodeSelected, canvas(), &Canvas::onSelectNode);
@@ -325,7 +327,11 @@ void MainWindow::onActionSave()
     return;
   }
 
-  mSaveHandler->save(canvas());
+  qDebug() << mStorage->toJson();
+
+  auto view = static_cast<CanvasView*>(mCanvasPanel->widget(0));
+  auto canvas = static_cast<Canvas*>(view->scene());
+  mSaveHandler->save(canvas);
 }
 
 void MainWindow::onActionSaveAs()
@@ -336,7 +342,9 @@ void MainWindow::onActionSaveAs()
     return;
   }
 
-  mSaveHandler->saveFileAs(canvas());
+  auto view = static_cast<CanvasView*>(mCanvasPanel->widget(0));
+  auto canvas = static_cast<Canvas*>(view->scene());
+  mSaveHandler->saveFileAs(canvas);
 }
 
 void MainWindow::onActionLoad()
@@ -353,6 +361,10 @@ void MainWindow::onActionLoad()
     LOG_ERROR(loaded.ErrorMessage());
     return;
   }
+
+  // Close all tabs except the first
+  for (int i = 1; i < mCanvasPanel->count(); ++i)
+    closeCanvasTab(i);
 
   // Repopulate the canvas
   auto info = loaded.Value();
@@ -395,11 +407,11 @@ void MainWindow::onNodeRemoved(NodeItem* node)
     return;
   }
 
-  LOG_WARN_ON_FAILURE(mSystemMenu->onNodeRemoved(node));
   LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeRemoved(node));
+  LOG_WARN_ON_FAILURE(mFieldsMenu->onNodeRemoved(node));
 
   if (canvas()->type() == Types::LibraryTypes::STRUCTURAL)
-    LOG_WARN_ON_FAILURE(mFieldsMenu->onNodeRemoved(node));
+    LOG_WARN_ON_FAILURE(mSystemMenu->onNodeRemoved(node));
   else
     LOG_WARN_ON_FAILURE(mFlowMenu->onNodeRemoved(canvas()->id(), node));
 }
@@ -413,6 +425,7 @@ void MainWindow::onNodeModified(NodeItem* node)
   }
 
   LOG_WARN_ON_FAILURE(mSystemMenu->onNodeModified(node));
+  LOG_WARN_ON_FAILURE(mFlowMenu->onNodeModified(canvas()->id(), node));
 }
 
 void MainWindow::onCanvasTabChanged(int index)
@@ -525,6 +538,11 @@ void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
 
   mCanvasPanel->addTab(newView, flowName);
   mCanvasPanel->setCurrentWidget(newView);
+}
+
+void MainWindow::onFlowAdded(Flow* flow, NodeItem* node)
+{
+  LOG_WARN_ON_FAILURE(mFlowMenu->onFlowAdded(flow, node));
 }
 
 int MainWindow::libraryTypeToIndex(Types::LibraryTypes type) const

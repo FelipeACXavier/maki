@@ -17,10 +17,12 @@ public:
   VoidResult addSystemFlow(const QString& flowName);
   Result<Flow*> addComponentFlow(NodeItem* node, const QString& flowName);
 
+  VoidResult onFlowAdded(Flow* flow, NodeItem* node);
+
   VoidResult onNodeAdded(const QString& flowId, NodeItem* node);
   VoidResult onNodeRemoved(const QString& flowId, NodeItem* node);
-  VoidResult onNodeModified(NodeItem* node);
-  VoidResult onNodeSelected(NodeItem* node, bool selected);
+  VoidResult onNodeModified(const QString& flowId, NodeItem* node);
+  VoidResult onNodeSelected(const QString& flowId, NodeItem* node, bool selected);
 
 signals:
   void nodeFocused(const QString& nodeId);

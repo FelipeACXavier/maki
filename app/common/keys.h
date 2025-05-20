@@ -21,6 +21,7 @@ static const QString OPTIONS = "options";
 static const QString CONNECTORS = "connectors";
 static const QString PROPERTIES = "properties";
 static const QString CHILDREN = "children";
+static const QString FLOWS = "flows";
 
 static const QString ARGUMENTS = "arguments";
 static const QString RETURN_TYPE = "returnType";
