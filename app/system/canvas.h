@@ -58,7 +58,7 @@ signals:
 
   void openFlow(Flow* flow, NodeItem* node);
   void flowAdded(Flow* flow, NodeItem* node);
-  void closeFlow(Flow* flow, NodeItem* node);
+  void flowRemoved(const QString& flowId, NodeItem* node);
 
 public slots:
   void onFocusNode(const QString& nodeId);

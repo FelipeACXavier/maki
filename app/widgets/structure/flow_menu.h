@@ -18,6 +18,7 @@ public:
   Result<Flow*> addComponentFlow(NodeItem* node, const QString& flowName);
 
   VoidResult onFlowAdded(Flow* flow, NodeItem* node);
+  VoidResult onFlowRemoved(const QString& flowId, NodeItem* node);
 
   VoidResult onNodeAdded(const QString& flowId, NodeItem* node);
   VoidResult onNodeRemoved(const QString& flowId, NodeItem* node);

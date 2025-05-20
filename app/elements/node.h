@@ -72,7 +72,7 @@ public:
 
   Flow* createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo> info);
   Flow* getFlow(const QString& flowId) const;
-  void deleteFlow(Flow* flow);
+  void deleteFlow(const QString& flowId);
   void updateFlow();
 
   qreal baseScale() const;

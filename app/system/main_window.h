@@ -36,6 +36,7 @@ private slots:
 
   void onOpenFlow(Flow* flow, NodeItem* node);
   void onFlowAdded(Flow* flow, NodeItem* node);
+  void onFlowRemoved(const QString& flowId, NodeItem* node);
 
 private:
   JSON mConfig;
@@ -51,6 +52,7 @@ private:
   std::shared_ptr<SaveInfo> mStorage;
 
   Canvas* canvas() const;
+  Canvas* rootCanvas() const;
   VoidResult loadElements();
   VoidResult loadLibrary(const JSON& config);
   VoidResult loadElementLibrary(const QString& name, const JSON& config);

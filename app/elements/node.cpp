@@ -509,7 +509,7 @@ QPointF NodeItem::edgePointToward(const QPointF& targetScenePos) const
     return center;  // avoid divide by zero
 
   // Normalise and scale
-  dir /= std::hypot(dir.x(), dir.y());  // same as dir.normalized() in QVector2D
+  dir /= std::hypot(dir.x(), dir.y());
   qreal radius = boundingRect().width() / 2.0;
   return center + dir * radius;
 }
@@ -536,9 +536,12 @@ Flow* NodeItem::getFlow(const QString& flowId) const
   return nullptr;
 }
 
-void NodeItem::deleteFlow(Flow* flow)
+void NodeItem::deleteFlow(const QString& flowId)
 {
-  mFlows.removeAll(flow);
+  mStorage->flows.removeIf([flowId](std::shared_ptr<FlowSaveInfo> item) {
+    return flowId == item->id;
+  });
+  mFlows.removeIf([flowId](Flow* flow) { return flow->id() == flowId; });
 }
 
 void NodeItem::updateFlow()

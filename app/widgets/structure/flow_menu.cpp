@@ -101,6 +101,28 @@ VoidResult FlowMenu::onFlowAdded(Flow* flow, NodeItem* node)
   return VoidResult();
 }
 
+VoidResult FlowMenu::onFlowRemoved(const QString& flowId, NodeItem* node)
+{
+  auto nodeItem = getItemById(node->id());
+  if (nodeItem == nullptr)
+    return VoidResult::Failed("No node to delete");
+
+  auto flowItem = getItemById(flowId);
+  if (flowItem == nullptr)
+    return VoidResult::Failed("No flow to delete");
+
+  nodeItem->removeChild(flowItem);
+  delete flowItem;
+
+  if (nodeItem->childCount() == 0)
+  {
+    componentFlows()->removeChild(nodeItem);
+    delete nodeItem;
+  }
+
+  return VoidResult();
+}
+
 VoidResult FlowMenu::onNodeAdded(const QString& flowId, NodeItem* node)
 {
   // Find parent

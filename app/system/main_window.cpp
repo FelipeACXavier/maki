@@ -138,6 +138,11 @@ void MainWindow::bind()
   connect(mCanvasPanel, &QTabWidget::currentChanged, this, &MainWindow::onCanvasTabChanged);
   connect(mCanvasPanel, &QTabWidget::tabCloseRequested, this, &MainWindow::closeCanvasTab);
 
+  connect(rootCanvas(), &Canvas::openFlow, this, &MainWindow::onOpenFlow);
+
+  connect(mFlowMenu, &FlowMenu::flowSelected, rootCanvas(), &Canvas::onFlowSelected);
+  connect(mFlowMenu, &FlowMenu::flowRemoved, rootCanvas(), &Canvas::onFlowRemoved);
+
   bindCanvas();
 }
 
@@ -147,16 +152,13 @@ void MainWindow::bindCanvas()
   connect(canvas(), &Canvas::nodeAdded, this, &MainWindow::onNodeAdded);
   connect(canvas(), &Canvas::nodeRemoved, this, &MainWindow::onNodeRemoved);
   connect(canvas(), &Canvas::nodeModified, this, &MainWindow::onNodeModified);
-  connect(canvas(), &Canvas::openFlow, this, &MainWindow::onOpenFlow);
+  connect(canvas(), &Canvas::flowRemoved, this, &MainWindow::onFlowRemoved);
   connect(canvas(), &Canvas::flowAdded, this, &MainWindow::onFlowAdded);
 
   connect(mSystemMenu, &SystemMenu::nodeRemoved, canvas(), &Canvas::onRemoveNode);
   connect(mSystemMenu, &SystemMenu::nodeSelected, canvas(), &Canvas::onSelectNode);
   connect(mSystemMenu, &SystemMenu::nodeRenamed, canvas(), &Canvas::onRenameNode);
   connect(mSystemMenu, &SystemMenu::nodeFocused, canvas(), &Canvas::onFocusNode);
-
-  connect(mFlowMenu, &FlowMenu::flowSelected, canvas(), &Canvas::onFlowSelected);
-  connect(mFlowMenu, &FlowMenu::flowRemoved, canvas(), &Canvas::onFlowRemoved);
 }
 
 void MainWindow::unbindCanvas()
@@ -165,16 +167,13 @@ void MainWindow::unbindCanvas()
   disconnect(canvas(), &Canvas::nodeAdded, this, &MainWindow::onNodeAdded);
   disconnect(canvas(), &Canvas::nodeRemoved, this, &MainWindow::onNodeRemoved);
   disconnect(canvas(), &Canvas::nodeModified, this, &MainWindow::onNodeModified);
-  disconnect(canvas(), &Canvas::openFlow, this, &MainWindow::onOpenFlow);
+  disconnect(canvas(), &Canvas::flowRemoved, this, &MainWindow::onFlowRemoved);
   disconnect(canvas(), &Canvas::flowAdded, this, &MainWindow::onFlowAdded);
 
   disconnect(mSystemMenu, &SystemMenu::nodeRemoved, canvas(), &Canvas::onRemoveNode);
   disconnect(mSystemMenu, &SystemMenu::nodeSelected, canvas(), &Canvas::onSelectNode);
   disconnect(mSystemMenu, &SystemMenu::nodeRenamed, canvas(), &Canvas::onRenameNode);
   disconnect(mSystemMenu, &SystemMenu::nodeFocused, canvas(), &Canvas::onFocusNode);
-
-  disconnect(mFlowMenu, &FlowMenu::flowSelected, canvas(), &Canvas::onFlowSelected);
-  disconnect(mFlowMenu, &FlowMenu::flowRemoved, canvas(), &Canvas::onFlowRemoved);
 }
 
 void MainWindow::bindShortcuts()
@@ -196,6 +195,12 @@ void MainWindow::bindShortcuts()
 Canvas* MainWindow::canvas() const
 {
   return mActiveCanvas;
+}
+
+Canvas* MainWindow::rootCanvas() const
+{
+  auto view = static_cast<CanvasView*>(mCanvasPanel->widget(0));
+  return static_cast<Canvas*>(view->scene());
 }
 
 VoidResult MainWindow::loadElements()
@@ -329,9 +334,7 @@ void MainWindow::onActionSave()
 
   qDebug() << mStorage->toJson();
 
-  auto view = static_cast<CanvasView*>(mCanvasPanel->widget(0));
-  auto canvas = static_cast<Canvas*>(view->scene());
-  mSaveHandler->save(canvas);
+  mSaveHandler->save(rootCanvas());
 }
 
 void MainWindow::onActionSaveAs()
@@ -342,9 +345,7 @@ void MainWindow::onActionSaveAs()
     return;
   }
 
-  auto view = static_cast<CanvasView*>(mCanvasPanel->widget(0));
-  auto canvas = static_cast<Canvas*>(view->scene());
-  mSaveHandler->saveFileAs(canvas);
+  mSaveHandler->saveFileAs(rootCanvas());
 }
 
 void MainWindow::onActionLoad()
@@ -508,6 +509,15 @@ void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
     return;
   }
 
+  for (int i = 1; i < mCanvasPanel->count(); ++i)
+  {
+    if (mCanvasPanel->tabText(i) == flowName)
+    {
+      mCanvasPanel->setCurrentIndex(i);
+      return;
+    }
+  }
+
   // Add a new flow to the FlowMenu
   if (flow == nullptr)
   {
@@ -538,6 +548,18 @@ void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
 
   mCanvasPanel->addTab(newView, flowName);
   mCanvasPanel->setCurrentWidget(newView);
+}
+
+void MainWindow::onFlowRemoved(const QString& flowId, NodeItem* node)
+{
+  if (mActiveCanvas->id() == flowId)
+  {
+    int oldTab = mCanvasPanel->currentIndex();
+    mCanvasPanel->setCurrentIndex(oldTab - 1);
+    mCanvasPanel->removeTab(oldTab);
+  }
+
+  LOG_WARN_ON_FAILURE(mFlowMenu->onFlowRemoved(flowId, node));
 }
 
 void MainWindow::onFlowAdded(Flow* flow, NodeItem* node)

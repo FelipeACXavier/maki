@@ -45,6 +45,7 @@ VoidResult SystemMenu::onNodeRemoved(NodeItem* node)
   if (!parent)
   {
     takeTopLevelItem(indexOfTopLevelItem(item));
+    delete item;
     return VoidResult();
   }
 
@@ -53,6 +54,7 @@ VoidResult SystemMenu::onNodeRemoved(NodeItem* node)
     return VoidResult::Failed("The parent node is not on the tree");
 
   parentItem->removeChild(item);
+  delete item;
 
   return VoidResult();
 }

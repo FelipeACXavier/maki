@@ -803,6 +803,7 @@ void Canvas::populate(Flow* flow)
 
 void Canvas::onFlowSelected(const QString& flowId, const QString& nodeId)
 {
+  LOG_INFO("Selected flow %s of node %s", qPrintable(flowId), qPrintable(nodeId));
   auto node = findNodeWithId(nodeId);
   if (!node)
   {
@@ -823,8 +824,8 @@ void Canvas::onFlowRemoved(const QString& flowId, const QString& nodeId)
     return;
   }
 
-  auto flow = node->getFlow(flowId);
-  emit closeFlow(flow, node);
+  node->deleteFlow(flowId);
+  emit flowRemoved(flowId, node);
 }
 
 void Canvas::updateParent(NodeItem* /* node */, std::shared_ptr<NodeSaveInfo> /* storage */, bool /* adding */)
