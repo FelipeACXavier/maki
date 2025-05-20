@@ -13,6 +13,7 @@
 #include "transition.h"
 #include "types.h"
 
+class Flow;
 class Connector;
 class ConnectionItem;
 class QGraphicsSceneMouseEvent;
@@ -73,11 +74,17 @@ public:
   void setParent(NodeItem* parent);
   void childRemoved(NodeItem* child);
 
+  void addFlow(Flow* flow);
+  Flow* getFlow(const QString& flowId) const;
+  void deleteFlow(Flow* flow);
+  void updateFlow();
+
   qreal baseScale() const;
 
   // "signals":
   std::function<void(NodeItem* item)> nodeDeleted;
   std::function<void(NodeItem* item)> nodeModified;
+  std::function<void(Flow* flow, NodeItem* item)> flowAdded;
 
   // "slots":
   void deleteNode();
@@ -100,6 +107,8 @@ private:
   QVector<EventConfig> mEvents;
   QMap<QString, QVariant> mProperties;
   QVector<std::shared_ptr<IConnector>> mConnectors;
+
+  QVector<Flow*> mFlows;
 
   QVector<TransitionItem*> mTransitions;
 

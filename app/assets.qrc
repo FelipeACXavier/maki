@@ -18,5 +18,7 @@
          <file alias="code-branch.svg">assets/icons/fontawesome/svgs/solid/code-branch.svg</file>
          <file alias="cubes.svg">assets/icons/fontawesome/svgs/solid/cubes.svg</file>
          <file alias="vector-square.svg">assets/icons/fontawesome/svgs/solid/vector-square.svg</file>
+         <file alias="close.svg">assets/icons/fontawesome/svgs/solid/xmark.svg</file>
+         <file alias="circle-close.svg">assets/icons/fontawesome/svgs/solid/circle-xmark.svg</file>
       </qresource>
 </RCC>

@@ -34,7 +34,7 @@ private slots:
   void onNodeRemoved(NodeItem* node);
   void onNodeModified(NodeItem* node);
 
-  void onCreateNewFlow(NodeItem* node);
+  void onOpenFlow(Flow* flow, NodeItem* node);
 
 private:
   JSON mConfig;
@@ -59,7 +59,7 @@ private:
   void startUI();
 
   void onCanvasTabChanged(int index);
-  void closeCanvasTab();
+  void closeCanvasTab(int index);
 
   int libraryTypeToIndex(Types::LibraryTypes type) const;
 

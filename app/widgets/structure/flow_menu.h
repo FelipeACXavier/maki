@@ -2,6 +2,7 @@
 
 #include <QTreeWidget>
 
+#include "../menu_base.h"
 #include "result.h"
 
 class NodeItem;
@@ -12,17 +13,39 @@ class FlowMenu : public QTreeWidget
 public:
   FlowMenu(QWidget* parent);
 
-  VoidResult addSystemFlow(const QString& flowName);
-  VoidResult addComponentFlow(NodeItem* node, const QString& flowName);
+  Result<QString> addSystemFlow(const QString& flowName);
+  Result<QString> addComponentFlow(NodeItem* node, const QString& flowName);
+
+  VoidResult onNodeAdded(const QString& flowId, NodeItem* node);
+  VoidResult onNodeRemoved(NodeItem* node);
+  VoidResult onNodeModified(NodeItem* node);
+  VoidResult onNodeSelected(NodeItem* node, bool selected);
 
 signals:
-  void flowSelected();
-  void flowRemoved();
-  void flowRenamed();
+  void nodeFocused(const QString& nodeId);
+
+  void flowSelected(const QString& flowId, const QString& nodeId);
+  void flowRemoved(const QString& flowId, const QString& nodeId);
+  void flowRenamed(const QString& flowId, const QString& nodeId);
+
+private slots:
+  void showContextMenu(const QPoint& pos);
+  void onItemClicked(QTreeWidgetItem* item, int /* column */);
 
 private:
+  enum Roles
+  {
+    ToplevelRole = 0,
+    ComponentRole,
+    FlowRole,
+    NodeRole
+  };
+
   QTreeWidgetItem* systemFlows();
   QTreeWidgetItem* componentFlows();
 
   QTreeWidgetItem* getNodeById(const QString& id);
+
+  void editFlow(QTreeWidgetItem* item);
+  void removeFlow(QTreeWidgetItem* item);
 };

@@ -1,7 +1,7 @@
 #include "structure_canvas.h"
 
-StructureCanvas::StructureCanvas(std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
-    : Canvas(configTable, parent)
+StructureCanvas::StructureCanvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
+    : Canvas(canvasId, configTable, parent)
 {
 }
 

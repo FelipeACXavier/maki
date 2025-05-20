@@ -22,8 +22,9 @@ class Canvas : public QGraphicsScene
 {
   Q_OBJECT
 public:
-  Canvas(std::shared_ptr<ConfigurationTable> configTable, QObject* parent = nullptr);
+  Canvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> configTable, QObject* parent = nullptr);
 
+  QString id() const;
   void pasteCopiedItems();
   void copySelectedItems();
   void deleteSelectedItems();
@@ -35,6 +36,8 @@ public:
   QList<NodeItem*> availableNodes();
 
   virtual Types::LibraryTypes type() const;
+
+  void populate(Flow* flow);
 
 protected:
   void dragEnterEvent(QGraphicsSceneDragDropEvent* event) override;
@@ -53,13 +56,17 @@ signals:
   void nodeRemoved(NodeItem* node);
   void nodeModified(NodeItem* node);
 
-  void createNewFlow(NodeItem* node);
+  void openFlow(Flow* flow, NodeItem* node);
+  void closeFlow(Flow* flow, NodeItem* node);
 
 public slots:
   void onFocusNode(const QString& nodeId);
   void onRemoveNode(const QString& nodeId);
   void onSelectNode(const QList<QString>& nodeIds);
   void onRenameNode(const QString& nodeId, const QString& name);
+
+  void onFlowSelected(const QString& flowId, const QString& nodeId);
+  void onFlowRemoved(const QString& flowId, const QString& nodeId);
 
 private:
   // TODO(felaze): Move connection behaviour to a separate class
@@ -78,6 +85,8 @@ private:
 
   QList<NodeSaveInfo> copiedNodes;
   std::shared_ptr<ConfigurationTable> mConfigTable;
+
+  const QString mId;
 
   void clearCanvas();
   void selectNode(NodeItem* node, bool select);

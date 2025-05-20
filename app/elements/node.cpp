@@ -12,6 +12,7 @@
 
 #include "app_configs.h"
 #include "connector.h"
+#include "flow.h"
 #include "logging.h"
 #include "style_helpers.h"
 #include "system/canvas.h"
@@ -532,4 +533,30 @@ QPointF NodeItem::edgePointToward(const QPointF& targetScenePos) const
   dir /= std::hypot(dir.x(), dir.y());  // same as dir.normalized() in QVector2D
   qreal radius = boundingRect().width() / 2.0;
   return center + dir * radius;
+}
+
+void NodeItem::addFlow(Flow* flow)
+{
+  // Create new flow
+  mFlows.append(flow);
+}
+
+Flow* NodeItem::getFlow(const QString& flowId) const
+{
+  for (const auto& flow : mFlows)
+  {
+    if (flow->id() == flowId)
+      return flow;
+  }
+
+  return nullptr;
+}
+
+void NodeItem::deleteFlow(Flow* flow)
+{
+  mFlows.removeAll(flow);
+}
+
+void NodeItem::updateFlow()
+{
 }

@@ -18,6 +18,7 @@
 #include "behaviour_canvas.h"
 #include "canvas.h"
 #include "canvas_view.h"
+#include "elements/flow.h"
 #include "elements/node.h"
 #include "library_container.h"
 #include "logging.h"
@@ -96,7 +97,8 @@ VoidResult MainWindow::start()
 void MainWindow::startUI()
 {
   CanvasView* currentCanvas = static_cast<CanvasView*>(mCanvasPanel->currentWidget());
-  StructureCanvas* canvas = new StructureCanvas(mConfigTable, currentCanvas);
+  // TODO(felaze): Shouldn't be hard-coded
+  StructureCanvas* canvas = new StructureCanvas("MainSystemCanvas", mConfigTable, currentCanvas);
   mActiveCanvas = canvas;
   currentCanvas->setScene(canvas);
 
@@ -144,12 +146,15 @@ void MainWindow::bindCanvas()
   connect(canvas(), &Canvas::nodeAdded, this, &MainWindow::onNodeAdded);
   connect(canvas(), &Canvas::nodeRemoved, this, &MainWindow::onNodeRemoved);
   connect(canvas(), &Canvas::nodeModified, this, &MainWindow::onNodeModified);
-  connect(canvas(), &Canvas::createNewFlow, this, &MainWindow::onCreateNewFlow);
+  connect(canvas(), &Canvas::openFlow, this, &MainWindow::onOpenFlow);
 
   connect(mSystemMenu, &SystemMenu::nodeRemoved, canvas(), &Canvas::onRemoveNode);
   connect(mSystemMenu, &SystemMenu::nodeSelected, canvas(), &Canvas::onSelectNode);
   connect(mSystemMenu, &SystemMenu::nodeRenamed, canvas(), &Canvas::onRenameNode);
   connect(mSystemMenu, &SystemMenu::nodeFocused, canvas(), &Canvas::onFocusNode);
+
+  connect(mFlowMenu, &FlowMenu::flowSelected, canvas(), &Canvas::onFlowSelected);
+  connect(mFlowMenu, &FlowMenu::flowRemoved, canvas(), &Canvas::onFlowRemoved);
 }
 
 void MainWindow::unbindCanvas()
@@ -158,12 +163,15 @@ void MainWindow::unbindCanvas()
   disconnect(canvas(), &Canvas::nodeAdded, this, &MainWindow::onNodeAdded);
   disconnect(canvas(), &Canvas::nodeRemoved, this, &MainWindow::onNodeRemoved);
   disconnect(canvas(), &Canvas::nodeModified, this, &MainWindow::onNodeModified);
-  disconnect(canvas(), &Canvas::createNewFlow, this, &MainWindow::onCreateNewFlow);
+  disconnect(canvas(), &Canvas::openFlow, this, &MainWindow::onOpenFlow);
 
   disconnect(mSystemMenu, &SystemMenu::nodeRemoved, canvas(), &Canvas::onRemoveNode);
   disconnect(mSystemMenu, &SystemMenu::nodeSelected, canvas(), &Canvas::onSelectNode);
   disconnect(mSystemMenu, &SystemMenu::nodeRenamed, canvas(), &Canvas::onRenameNode);
   disconnect(mSystemMenu, &SystemMenu::nodeFocused, canvas(), &Canvas::onFocusNode);
+
+  disconnect(mFlowMenu, &FlowMenu::flowSelected, canvas(), &Canvas::onFlowSelected);
+  disconnect(mFlowMenu, &FlowMenu::flowRemoved, canvas(), &Canvas::onFlowRemoved);
 }
 
 void MainWindow::bindShortcuts()
@@ -372,7 +380,10 @@ void MainWindow::onNodeAdded(NodeItem* node)
     return;
   }
 
-  LOG_WARN_ON_FAILURE(mSystemMenu->onNodeAdded(node));
+  if (canvas()->type() == Types::LibraryTypes::STRUCTURAL)
+    LOG_WARN_ON_FAILURE(mSystemMenu->onNodeAdded(node));
+  else
+    LOG_WARN_ON_FAILURE(mFlowMenu->onNodeAdded(canvas()->id(), node));
 }
 
 void MainWindow::onNodeRemoved(NodeItem* node)
@@ -418,37 +429,85 @@ void MainWindow::onCanvasTabChanged(int index)
   mLeftPanel->setCurrentIndex(libIndex);
 }
 
-void MainWindow::closeCanvasTab()
+void MainWindow::closeCanvasTab(int index)
 {
+  CanvasView* newCanvas = static_cast<CanvasView*>(mCanvasPanel->widget(index));
+  if (!newCanvas)
+    return;
+
+  if (newCanvas->scene() == mActiveCanvas)
+  {
+    unbindCanvas();
+
+    if (index > 0)
+    {
+      // The previous tab becomes the new active tab
+      newCanvas = static_cast<CanvasView*>(mCanvasPanel->widget(index - 1));
+      mActiveCanvas = static_cast<Canvas*>(newCanvas->scene());
+      bindCanvas();
+
+      auto libIndex = libraryTypeToIndex(mActiveCanvas->type());
+      mNavigationTab->setCurrentIndex(libIndex);
+      mLeftPanel->setCurrentIndex(libIndex);
+    }
+  }
+
+  mCanvasPanel->removeTab(index);
 }
 
-void MainWindow::onCreateNewFlow(NodeItem* node)
+void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
 {
-  QInputDialog* dialog = new QInputDialog(this);
-  dialog->setWindowTitle(tr("Flow name"));
-  dialog->setLabelText(tr("Enter a name for the new flow:"));
-  dialog->setTextValue(tr(""));
+  QString flowName;
+  if (flow == nullptr)
+  {
+    QInputDialog* dialog = new QInputDialog(this);
+    dialog->setWindowTitle(tr("Flow name"));
+    dialog->setLabelText(tr("Enter a name for the new flow:"));
+    dialog->setTextValue(tr(""));
 
-  // Set a validator: allow only alphanumerics and spaces
-  QRegularExpression rx("[A-Za-z ]+");
-  QValidator* validator = new QRegularExpressionValidator(rx, dialog);
+    // Set a validator: allow only alphanumerics and spaces
+    QRegularExpression rx("[A-Za-z ]+");
+    QValidator* validator = new QRegularExpressionValidator(rx, dialog);
 
-  // Access the line edit and assign the validator
-  QLineEdit* lineEdit = dialog->findChild<QLineEdit*>();
-  if (lineEdit)
-    lineEdit->setValidator(validator);
+    // Access the line edit and assign the validator
+    QLineEdit* lineEdit = dialog->findChild<QLineEdit*>();
+    if (lineEdit)
+      lineEdit->setValidator(validator);
 
-  // Execute the dialog
-  if (dialog->exec() != QDialog::Accepted)
-    return;
+    // Execute the dialog
+    if (dialog->exec() != QDialog::Accepted)
+      return;
 
-  QString flowName = dialog->textValue().trimmed();
+    flowName = dialog->textValue().trimmed();
+  }
+  else
+  {
+    flowName = flow->name();
+  }
+
   if (flowName.isEmpty())
+  {
+    LOG_INFO("No name provided, skipping flow creation");
     return;
+  }
 
+  // Add a new flow to the FlowMenu
+  Result<QString> flowIdResult = Result<QString>::Failed("No such flow");
+  if (flow == nullptr)
+    flowIdResult = mFlowMenu->addComponentFlow(node, flowName);
+  else
+    flowIdResult = flow->id();
+
+  if (!flowIdResult.IsSuccess())
+  {
+    LOG_WARNING(flowIdResult.ErrorMessage());
+    return;
+  }
+
+  QString flowId = flowIdResult.Value();
   CanvasView* newView = new CanvasView();
 
-  BehaviourCanvas* canvas = new BehaviourCanvas(mConfigTable, newView);
+  BehaviourCanvas* canvas = new BehaviourCanvas(flowId, mConfigTable, newView);
   newView->setScene(canvas);
 
   // Change to respective tabs
@@ -456,10 +515,8 @@ void MainWindow::onCreateNewFlow(NodeItem* node)
   mNavigationTab->setCurrentIndex(index);
   mLeftPanel->setCurrentIndex(index);
 
-  // Add a new flow to the FlowMenu
-  mFlowMenu->addComponentFlow(node, flowName);
-
   // Add default start and end nodes to flow
+  // canvas->populate(flow);
 
   mCanvasPanel->addTab(newView, flowName);
   mCanvasPanel->setCurrentWidget(newView);

@@ -1,7 +1,7 @@
 #include "behaviour_canvas.h"
 
-BehaviourCanvas::BehaviourCanvas(std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
-    : Canvas(configTable, parent)
+BehaviourCanvas::BehaviourCanvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
+    : Canvas(canvasId, configTable, parent)
 {
 }
 

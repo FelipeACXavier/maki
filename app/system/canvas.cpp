@@ -16,17 +16,22 @@
 #include "elements/node.h"
 #include "elements/transition.h"
 #include "logging.h"
-#include "widgets/flow_dialog.h"
 
-Canvas::Canvas(std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
+Canvas::Canvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
     : QGraphicsScene(parent)
     , mConfigTable(configTable)
+    , mId(canvasId)
 {
   setProperty("class", QVariant(QStringLiteral("canvas")));
   setBackgroundBrush(Qt::transparent);
 
   mHoverTimer = new QTimer(this);
   mHoverTimer->setSingleShot(true);
+}
+
+QString Canvas::id() const
+{
+  return mId;
 }
 
 Types::LibraryTypes Canvas::type() const
@@ -467,7 +472,7 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
   QAction* newFlowAction = menu.addAction(tr("New flow"));
   newFlowAction->setEnabled(node != nullptr && items.size() == 1);
   QObject::connect(newFlowAction, &QAction::triggered, [this, node]() {
-    emit createNewFlow(node);
+    emit openFlow(nullptr, node);
   });
   menu.addAction(newFlowAction);
 
@@ -894,4 +899,36 @@ void Canvas::onRenameNode(const QString& nodeId, const QString& name)
   auto node = findNodeWithId(nodeId);
   if (node)
     node->setProperty("name", name);
+}
+
+// ==========================================================================================
+// Flow
+void Canvas::populate(Flow* flow)
+{
+}
+
+void Canvas::onFlowSelected(const QString& flowId, const QString& nodeId)
+{
+  auto node = findNodeWithId(nodeId);
+  if (!node)
+  {
+    LOG_WARNING("Flow is not tied to any nodes");
+    return;
+  }
+
+  auto flow = node->getFlow(flowId);
+  emit openFlow(flow, node);
+}
+
+void Canvas::onFlowRemoved(const QString& flowId, const QString& nodeId)
+{
+  auto node = findNodeWithId(nodeId);
+  if (!node)
+  {
+    LOG_WARNING("Flow is not tied to any nodes");
+    return;
+  }
+
+  auto flow = node->getFlow(flowId);
+  emit closeFlow(flow, node);
 }

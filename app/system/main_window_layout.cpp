@@ -93,23 +93,14 @@ void MainWindowlayout::buildCentralPanel()
   mCanvasPanel->setTabsClosable(true);
   mCanvasPanel->setMovable(true);
 
-  // mCanvasPanel->setStyleSheet(R"(
-  //   QTabBar::close-button {
-  //     image: url(:/icons/close.svg);      /* Use your own icon */
-  //     subcontrol-position: right;
-  //     margin: 4px;
-  //   }
-
-  //   QTabBar::close-button:hover {
-  //     image: url(:/icons/close-hover.svg);  /* Optional hover state */
-  //   }
-  // )");
-
   CanvasView* canvasView = new CanvasView();
   canvasView->setMinimumSize(500, 0);
 
   mCanvasPanel->addTab(canvasView, "System");
   mCanvasPanel->setCurrentWidget(canvasView);
+
+  // Remove the close button from the system tab
+  mCanvasPanel->tabBar()->setTabButton(0, QTabBar::RightSide, nullptr);
 
   mCentralSplitter->addWidget(mCanvasPanel);
 

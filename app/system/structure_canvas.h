@@ -5,7 +5,7 @@
 class StructureCanvas : public Canvas
 {
 public:
-  StructureCanvas(std::shared_ptr<ConfigurationTable> configTable, QObject* parent = nullptr);
+  StructureCanvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> configTable, QObject* parent = nullptr);
 
   Types::LibraryTypes type() const override;
 };

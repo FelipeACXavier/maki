@@ -13,6 +13,7 @@ static const int CONNECTION = QGraphicsItem::UserType + 3;
 static const int DRAGGABLE = QGraphicsItem::UserType + 4;
 static const int BASE_NODE = QGraphicsItem::UserType + 5;
 static const int TRANSITION = QGraphicsItem::UserType + 6;
+static const int FLOW = QGraphicsItem::UserType + 7;
 
 static const char* PIXMAP = "PNG";
 
@@ -65,6 +66,7 @@ enum class ControlTypes
 
 enum class LibraryTypes
 {
+
   UNKNOWN = 0,
   STRUCTURAL,
   BEHAVIOUR
