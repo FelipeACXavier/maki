@@ -777,7 +777,6 @@ void Canvas::populate(Flow* flow)
       continue;
     }
 
-    qDebug() << node->toJson();
     for (const auto& transition : node->transitions)
     {
       auto dstConn = findNodeWithId(transition->dstId);
@@ -817,6 +816,7 @@ void Canvas::onFlowSelected(const QString& flowId, const QString& nodeId)
 
 void Canvas::onFlowRemoved(const QString& flowId, const QString& nodeId)
 {
+  LOG_DEBUG("Removing flow canvas");
   auto node = findNodeWithId(nodeId);
   if (!node)
   {
@@ -825,6 +825,7 @@ void Canvas::onFlowRemoved(const QString& flowId, const QString& nodeId)
   }
 
   node->deleteFlow(flowId);
+  LOG_DEBUG("Removed flow canvas");
   emit flowRemoved(flowId, node);
 }
 

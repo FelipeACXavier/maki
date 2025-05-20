@@ -139,6 +139,8 @@ void MainWindow::bind()
   connect(mCanvasPanel, &QTabWidget::tabCloseRequested, this, &MainWindow::closeCanvasTab);
 
   connect(rootCanvas(), &Canvas::openFlow, this, &MainWindow::onOpenFlow);
+  connect(rootCanvas(), &Canvas::flowAdded, this, &MainWindow::onFlowAdded);
+  connect(rootCanvas(), &Canvas::flowRemoved, this, &MainWindow::onFlowRemoved);
 
   connect(mFlowMenu, &FlowMenu::flowSelected, rootCanvas(), &Canvas::onFlowSelected);
   connect(mFlowMenu, &FlowMenu::flowRemoved, rootCanvas(), &Canvas::onFlowRemoved);
@@ -152,8 +154,6 @@ void MainWindow::bindCanvas()
   connect(canvas(), &Canvas::nodeAdded, this, &MainWindow::onNodeAdded);
   connect(canvas(), &Canvas::nodeRemoved, this, &MainWindow::onNodeRemoved);
   connect(canvas(), &Canvas::nodeModified, this, &MainWindow::onNodeModified);
-  connect(canvas(), &Canvas::flowRemoved, this, &MainWindow::onFlowRemoved);
-  connect(canvas(), &Canvas::flowAdded, this, &MainWindow::onFlowAdded);
 
   connect(mSystemMenu, &SystemMenu::nodeRemoved, canvas(), &Canvas::onRemoveNode);
   connect(mSystemMenu, &SystemMenu::nodeSelected, canvas(), &Canvas::onSelectNode);
@@ -167,8 +167,6 @@ void MainWindow::unbindCanvas()
   disconnect(canvas(), &Canvas::nodeAdded, this, &MainWindow::onNodeAdded);
   disconnect(canvas(), &Canvas::nodeRemoved, this, &MainWindow::onNodeRemoved);
   disconnect(canvas(), &Canvas::nodeModified, this, &MainWindow::onNodeModified);
-  disconnect(canvas(), &Canvas::flowRemoved, this, &MainWindow::onFlowRemoved);
-  disconnect(canvas(), &Canvas::flowAdded, this, &MainWindow::onFlowAdded);
 
   disconnect(mSystemMenu, &SystemMenu::nodeRemoved, canvas(), &Canvas::onRemoveNode);
   disconnect(mSystemMenu, &SystemMenu::nodeSelected, canvas(), &Canvas::onSelectNode);
@@ -552,6 +550,7 @@ void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
 
 void MainWindow::onFlowRemoved(const QString& flowId, NodeItem* node)
 {
+  LOG_DEBUG("Flow removed");
   if (mActiveCanvas->id() == flowId)
   {
     int oldTab = mCanvasPanel->currentIndex();
@@ -559,7 +558,9 @@ void MainWindow::onFlowRemoved(const QString& flowId, NodeItem* node)
     mCanvasPanel->removeTab(oldTab);
   }
 
+  LOG_DEBUG("Flow menu removing");
   LOG_WARN_ON_FAILURE(mFlowMenu->onFlowRemoved(flowId, node));
+  LOG_DEBUG("Flow menu removed");
 }
 
 void MainWindow::onFlowAdded(Flow* flow, NodeItem* node)

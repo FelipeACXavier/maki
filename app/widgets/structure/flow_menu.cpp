@@ -236,5 +236,6 @@ void FlowMenu::removeFlow(QTreeWidgetItem* item)
 
   auto nodeId = node->data(ID_DATA, Qt::UserRole).toString();
   auto flowId = item->data(ID_DATA, Qt::UserRole).toString();
+  LOG_DEBUG("Removing flow");
   emit flowRemoved(flowId, nodeId);
 }

@@ -9,6 +9,23 @@ Flow::Flow(const QString& name, std::shared_ptr<FlowSaveInfo> storage)
 {
   mStorage->id = this->id();
   mStorage->name = this->name();
+
+  auto startNode = std::make_shared<NodeSaveInfo>();
+  startNode->id = "Start";
+  startNode->nodeId = "Generic::Start";
+  startNode->position = {-250, 0};
+  startNode->size = {50, 50};
+  startNode->scale = {1.0};
+
+  auto endNode = std::make_shared<NodeSaveInfo>();
+  endNode->id = "End";
+  endNode->nodeId = "Generic::End";
+  endNode->position = {250, 0};
+  endNode->size = {50, 50};
+  endNode->scale = {1.0};
+
+  updateFlow(nullptr, startNode);
+  updateFlow(nullptr, endNode);
 }
 
 QString Flow::id() const
