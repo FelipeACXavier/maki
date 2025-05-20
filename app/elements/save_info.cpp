@@ -270,6 +270,8 @@ NodeSaveInfo NodeSaveInfo::fromJson(const QJsonObject& data)
 // ConnectionSaveInfo
 QDataStream& operator<<(QDataStream& out, const ConnectionSaveInfo& info)
 {
+  out << info.id;
+
   out << info.srcId;
   out << info.srcPoint;
   out << info.srcShift;
@@ -283,6 +285,8 @@ QDataStream& operator<<(QDataStream& out, const ConnectionSaveInfo& info)
 
 QDataStream& operator>>(QDataStream& in, ConnectionSaveInfo& info)
 {
+  in >> info.id;
+
   in >> info.srcId;
   in >> info.srcPoint;
   in >> info.srcShift;
@@ -297,6 +301,8 @@ QDataStream& operator>>(QDataStream& in, ConnectionSaveInfo& info)
 QJsonObject ConnectionSaveInfo::toJson() const
 {
   QJsonObject data;
+
+  data[ConfigKeys::ID] = id;
 
   QJsonObject source;
   source[ConfigKeys::ID] = srcId;
@@ -316,6 +322,8 @@ QJsonObject ConnectionSaveInfo::toJson() const
 ConnectionSaveInfo ConnectionSaveInfo::fromJson(const QJsonObject& data)
 {
   ConnectionSaveInfo info;
+
+  info.id = data[ConfigKeys::ID].toString();
 
   info.srcId = data[ConfigKeys::SOURCE][ConfigKeys::ID].toString();
   info.srcPoint = JSON::toPointF(data[ConfigKeys::SOURCE][ConfigKeys::POSITION].toObject());

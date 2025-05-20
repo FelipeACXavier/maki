@@ -50,6 +50,9 @@ protected:
 
   void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
 
+  virtual void updateParent(NodeItem* node, bool adding);
+  virtual void updateParent(ConnectionItem* connection, bool adding);
+
 signals:
   void nodeSelected(NodeItem* node, bool selected);
   void nodeAdded(NodeItem* node);

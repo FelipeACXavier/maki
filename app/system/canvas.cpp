@@ -13,6 +13,7 @@
 #include "config_table.h"
 #include "elements/connection.h"
 #include "elements/connector.h"
+#include "elements/flow.h"
 #include "elements/node.h"
 #include "elements/transition.h"
 #include "logging.h"
@@ -307,6 +308,7 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
           mConnector->addConnection(mConnection);
 
           mConnection->done(mConnector, connector);
+          updateParent(mConnection, true);
         }
         else
         {
@@ -425,6 +427,7 @@ QMenu* Canvas::createConnectionMenu(const QList<QGraphicsItem*>& items)
         end->addConnection(connection);
 
         connection->done(start, end);
+        updateParent(connection, true);
 
         addItem(connection);
       });
@@ -558,7 +561,7 @@ void Canvas::deleteSelectedItems()
     {
       ConnectionItem* transition = static_cast<ConnectionItem*>(item);
       if (!(transition->source() && static_cast<Connector*>(transition->source())->isSelected()) && !(transition->destination() && static_cast<Connector*>(transition->destination())->isSelected()))
-        connectionsToDelete.append(item);
+        connectionsToDelete.append(transition);
     }
     else if (item->type() == TransitionItem::Type)
     {
@@ -569,15 +572,19 @@ void Canvas::deleteSelectedItems()
   }
 
   // First delete the connections
-  for (QGraphicsItem* item : connectionsToDelete)
+  for (QGraphicsItem* connection : connectionsToDelete)
   {
-    removeItem(item);
-    delete item;
+    updateParent(static_cast<ConnectionItem*>(connection), false);
+    removeItem(connection);
+    delete connection;
   }
 
   // Then delete the nodes
   for (NodeItem* node : nodesToDelete)
+  {
+    updateParent(node, false);
     node->deleteNode();
+  }
 }
 
 void Canvas::copySelectedItems()
@@ -815,6 +822,7 @@ NodeItem* Canvas::createNode(const NodeSaveInfo& info, const QPointF& position, 
   }
 
   addItem(node);
+  updateParent(node, true);
 
   emit nodeAdded(node);
 
@@ -905,6 +913,37 @@ void Canvas::onRenameNode(const QString& nodeId, const QString& name)
 // Flow
 void Canvas::populate(Flow* flow)
 {
+  for (const auto& node : flow->getNodes())
+  {
+    LOG_DEBUG("Creating behavioral node %s with parent %s", qPrintable(node.id), qPrintable(node.parentId));
+    (void)createNode(node, node.position, findNodeWithId(node.parentId));
+  }
+
+  for (const auto& conn : flow->getConnections())
+  {
+    LOG_DEBUG("Creating connection with parents %s -> %s", qPrintable(conn.srcId), qPrintable(conn.dstId));
+
+    auto srcConn = findConnectorWithId(conn.srcId);
+    auto dstConn = findConnectorWithId(conn.dstId);
+
+    if (!srcConn || !dstConn)
+    {
+      LOG_WARNING("Could not find connectors");
+      continue;
+    }
+
+    auto connection = new ConnectionItem();
+
+    connection->setStart(conn.srcId, conn.srcPoint, conn.srcShift);
+    connection->setEnd(conn.dstId, conn.dstPoint, conn.dstShift);
+
+    srcConn->addConnection(connection);
+    dstConn->addConnection(connection);
+
+    connection->done(srcConn, dstConn);
+
+    addItem(connection);
+  }
 }
 
 void Canvas::onFlowSelected(const QString& flowId, const QString& nodeId)
@@ -931,4 +970,12 @@ void Canvas::onFlowRemoved(const QString& flowId, const QString& nodeId)
 
   auto flow = node->getFlow(flowId);
   emit closeFlow(flow, node);
+}
+
+void Canvas::updateParent(NodeItem* /* node */, bool /* adding */)
+{
+}
+
+void Canvas::updateParent(ConnectionItem* /* connection */, bool /* adding */)
+{
 }

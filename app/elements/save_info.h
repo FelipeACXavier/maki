@@ -70,6 +70,7 @@ struct NodeSaveInfo
 
 struct ConnectionSaveInfo
 {
+  QString id = "";
   QString srcId = "";
   QPointF srcPoint{0, 0};
   QPointF srcShift{0, 0};

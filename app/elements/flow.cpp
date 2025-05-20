@@ -1,6 +1,6 @@
 #include "flow.h"
 
-#include "elements/save_info.h"
+#include "connection.h"
 #include "node.h"
 
 Flow::Flow(const QString& name)
@@ -24,11 +24,48 @@ QString Flow::name() const
   return mName;
 }
 
-void Flow::updateFlow(NodeItem* node)
+void Flow::addNode(NodeItem* node)
 {
-  mNodes[node->id()] = node->saveInfo();
+  mInfo.behaviouralNodes.append(node->saveInfo());
 }
 
-void Flow::getNodes()
+void Flow::removeNode(NodeItem* node)
 {
+  mInfo.behaviouralNodes.removeIf([node](NodeSaveInfo item) {
+    return item.id == node->id();
+  });
+}
+
+void Flow::addConnection(ConnectionItem* connection)
+{
+  mInfo.connections.append(connection->saveInfo());
+}
+
+void Flow::removeConnection(ConnectionItem* connection)
+{
+  mInfo.connections.removeIf([connection](ConnectionSaveInfo item) {
+    return item.id == connection->id();
+  });
+}
+
+void Flow::updateFlow(NodeItem* node)
+{
+  for (auto& info : mInfo.behaviouralNodes)
+  {
+    if (info.id != node->id())
+      continue;
+
+    info = node->saveInfo();
+    return;
+  }
+}
+
+QVector<NodeSaveInfo> Flow::getNodes() const
+{
+  return mInfo.behaviouralNodes;
+}
+
+QVector<ConnectionSaveInfo> Flow::getConnections() const
+{
+  return mInfo.connections;
 }

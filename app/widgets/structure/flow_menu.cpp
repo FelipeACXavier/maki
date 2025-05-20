@@ -21,16 +21,16 @@ FlowMenu::FlowMenu(QWidget* parent)
   connect(this, &QTreeWidget::customContextMenuRequested, this, &FlowMenu::showContextMenu);
 }
 
-Result<QString> FlowMenu::addSystemFlow(const QString& flowName)
+VoidResult FlowMenu::addSystemFlow(const QString& flowName)
 {
   QTreeWidgetItem* item = new QTreeWidgetItem(systemFlows());
   item->setText(NAME_INDEX, flowName);
-  return QString("");
+  return VoidResult();
 }
 
-Result<QString> FlowMenu::addComponentFlow(NodeItem* node, const QString& flowName)
+Result<Flow*> FlowMenu::addComponentFlow(NodeItem* node, const QString& flowName)
 {
-  auto parent = getNodeById(node->id());
+  auto parent = getItemById(node->id());
   QTreeWidgetItem* newFlow = nullptr;
   if (parent)
   {
@@ -55,7 +55,7 @@ Result<QString> FlowMenu::addComponentFlow(NodeItem* node, const QString& flowNa
   newFlow->setData(ID_DATA, Qt::UserRole, flow->id());
   newFlow->setData(TYPE_DATA, Qt::UserRole, Roles::FlowRole);
 
-  return flow->id();
+  return flow;
 }
 
 QTreeWidgetItem* FlowMenu::systemFlows()
@@ -71,11 +71,11 @@ QTreeWidgetItem* FlowMenu::componentFlows()
 VoidResult FlowMenu::onNodeAdded(const QString& flowId, NodeItem* node)
 {
   // Find parent
-  auto parent = getNodeById(flowId);
+  auto parent = getItemById(flowId);
   if (parent == nullptr)
     return VoidResult::Failed("Could not add node, no such flow");
 
-  // Add item to current flow
+  // Add item to the tree
   QTreeWidgetItem* newNode = new QTreeWidgetItem(parent);
   newNode->setText(NAME_INDEX, node->nodeName());
   newNode->setData(ID_DATA, Qt::UserRole, node->id());
@@ -84,8 +84,21 @@ VoidResult FlowMenu::onNodeAdded(const QString& flowId, NodeItem* node)
   return VoidResult();
 }
 
-VoidResult FlowMenu::onNodeRemoved(NodeItem* node)
+VoidResult FlowMenu::onNodeRemoved(const QString& flowId, NodeItem* node)
 {
+  auto flow = getItemById(flowId);
+  if (!flow)
+    return VoidResult::Failed("Flow is not in the tree");
+
+  auto component = getItemById(node->id());
+  if (!component)
+    return VoidResult::Failed("The node is not in the tree");
+
+  if (component->data(TYPE_DATA, Qt::UserRole) != Roles::NodeRole)
+    return VoidResult::Failed("Item is in the tree but it is not a node");
+
+  flow->removeChild(component);
+
   return VoidResult();
 }
 
@@ -99,7 +112,7 @@ VoidResult FlowMenu::onNodeSelected(NodeItem* node, bool selected)
   return VoidResult();
 }
 
-QTreeWidgetItem* FlowMenu::getNodeById(const QString& id)
+QTreeWidgetItem* FlowMenu::getItemById(const QString& id)
 {
   for (QTreeWidgetItemIterator it(this); *it; ++it)
   {

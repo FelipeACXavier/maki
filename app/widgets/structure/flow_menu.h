@@ -5,6 +5,7 @@
 #include "../menu_base.h"
 #include "result.h"
 
+class Flow;
 class NodeItem;
 
 class FlowMenu : public QTreeWidget
@@ -13,11 +14,11 @@ class FlowMenu : public QTreeWidget
 public:
   FlowMenu(QWidget* parent);
 
-  Result<QString> addSystemFlow(const QString& flowName);
-  Result<QString> addComponentFlow(NodeItem* node, const QString& flowName);
+  VoidResult addSystemFlow(const QString& flowName);
+  Result<Flow*> addComponentFlow(NodeItem* node, const QString& flowName);
 
   VoidResult onNodeAdded(const QString& flowId, NodeItem* node);
-  VoidResult onNodeRemoved(NodeItem* node);
+  VoidResult onNodeRemoved(const QString& flowId, NodeItem* node);
   VoidResult onNodeModified(NodeItem* node);
   VoidResult onNodeSelected(NodeItem* node, bool selected);
 
@@ -44,7 +45,7 @@ private:
   QTreeWidgetItem* systemFlows();
   QTreeWidgetItem* componentFlows();
 
-  QTreeWidgetItem* getNodeById(const QString& id);
+  QTreeWidgetItem* getItemById(const QString& id);
 
   void editFlow(QTreeWidgetItem* item);
   void removeFlow(QTreeWidgetItem* item);

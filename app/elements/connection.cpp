@@ -110,6 +110,9 @@ void ConnectionItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
 ConnectionSaveInfo ConnectionItem::saveInfo() const
 {
   ConnectionSaveInfo info;
+
+  info.id = id();
+
   info.srcId = mSrcId;
   info.srcPoint = mSrcPoint;
   info.srcShift = mSrcShift;

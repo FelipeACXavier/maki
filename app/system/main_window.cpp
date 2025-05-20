@@ -380,10 +380,8 @@ void MainWindow::onNodeAdded(NodeItem* node)
     return;
   }
 
-  if (canvas()->type() == Types::LibraryTypes::STRUCTURAL)
-    LOG_WARN_ON_FAILURE(mSystemMenu->onNodeAdded(node));
-  else
-    LOG_WARN_ON_FAILURE(mFlowMenu->onNodeAdded(canvas()->id(), node));
+  LOG_WARN_ON_FAILURE(mSystemMenu->onNodeAdded(node));
+  LOG_WARN_ON_FAILURE(mFlowMenu->onNodeAdded(canvas()->id(), node));
 }
 
 void MainWindow::onNodeRemoved(NodeItem* node)
@@ -397,7 +395,7 @@ void MainWindow::onNodeRemoved(NodeItem* node)
   LOG_WARN_ON_FAILURE(mSystemMenu->onNodeRemoved(node));
   LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeRemoved(node));
   LOG_WARN_ON_FAILURE(mFieldsMenu->onNodeRemoved(node));
-  // LOG_WARN_ON_FAILURE(mUI->behaviourFrame->onNodeRemoved(node));
+  LOG_WARN_ON_FAILURE(mFlowMenu->onNodeRemoved(canvas()->id(), node));
 }
 
 void MainWindow::onNodeModified(NodeItem* node)
@@ -492,22 +490,23 @@ void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
   }
 
   // Add a new flow to the FlowMenu
-  Result<QString> flowIdResult = Result<QString>::Failed("No such flow");
   if (flow == nullptr)
-    flowIdResult = mFlowMenu->addComponentFlow(node, flowName);
-  else
-    flowIdResult = flow->id();
-
-  if (!flowIdResult.IsSuccess())
   {
-    LOG_WARNING(flowIdResult.ErrorMessage());
-    return;
+    Result<Flow*> flowResult = mFlowMenu->addComponentFlow(node, flowName);
+    if (!flowResult.IsSuccess())
+    {
+      LOG_WARNING(flowResult.ErrorMessage());
+      return;
+    }
+    else
+    {
+      flow = flowResult.Value();
+    }
   }
 
-  QString flowId = flowIdResult.Value();
   CanvasView* newView = new CanvasView();
 
-  BehaviourCanvas* canvas = new BehaviourCanvas(flowId, mConfigTable, newView);
+  BehaviourCanvas* canvas = new BehaviourCanvas(flow, mConfigTable, newView);
   newView->setScene(canvas);
 
   // Change to respective tabs
@@ -516,7 +515,7 @@ void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
   mLeftPanel->setCurrentIndex(index);
 
   // Add default start and end nodes to flow
-  // canvas->populate(flow);
+  canvas->populate(flow);
 
   mCanvasPanel->addTab(newView, flowName);
   mCanvasPanel->setCurrentWidget(newView);
