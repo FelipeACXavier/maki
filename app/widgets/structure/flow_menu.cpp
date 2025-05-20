@@ -47,8 +47,7 @@ Result<Flow*> FlowMenu::addComponentFlow(NodeItem* node, const QString& flowName
   }
 
   // Create the new flow and add it to the node
-  Flow* flow = new Flow(flowName);
-  node->addFlow(flow);
+  Flow* flow = node->createFlow(flowName);
 
   // Assign the tree information
   newFlow->setText(NAME_INDEX, flow->name());

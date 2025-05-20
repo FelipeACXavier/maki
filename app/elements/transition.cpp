@@ -7,12 +7,13 @@
 #include "app_configs.h"
 #include "node.h"
 
-TransitionItem::TransitionItem()
+TransitionItem::TransitionItem(std::shared_ptr<TransitionSaveInfo> storage)
     : QGraphicsPathItem()
     , mId(QUuid::createUuid().toString())
     , mComplete(false)
     , mSource(nullptr)
     , mDestination(nullptr)
+    , mStorage(storage)
 {
   // Make sure the transitions are behind the nodes
   setZValue(-1);
@@ -21,6 +22,8 @@ TransitionItem::TransitionItem()
   // Set line color and width
   // TODO(felaze): make configurable
   setPen(QPen(Qt::white, 2));
+
+  mStorage->id = id();
 }
 
 TransitionItem::~TransitionItem()
@@ -43,16 +46,16 @@ int TransitionItem::type() const
 
 void TransitionItem::setStart(const QString& id, const QPointF& point, const QPointF& controlShift)
 {
-  mSrcId = id;
-  mSrcPoint = point;
-  mSrcShift = controlShift;
+  mStorage->srcId = id;
+  mStorage->srcPoint = point;
+  mStorage->srcShift = controlShift;
 }
 
 void TransitionItem::setEnd(const QString& id, const QPointF& point, const QPointF& controlShift)
 {
-  mDstId = id;
-  mDstPoint = point;
-  mDstShift = controlShift;
+  mStorage->dstId = id;
+  mStorage->dstPoint = point;
+  mStorage->dstShift = controlShift;
 }
 
 void TransitionItem::done(NodeItem* source, NodeItem* destination)
@@ -61,9 +64,12 @@ void TransitionItem::done(NodeItem* source, NodeItem* destination)
   mSource = source;
   mDestination = destination;
 
+  mSource->addTransition(this);
+  mDestination->addTransition(this);
+
   // Make sure line is update with new control points
-  move(mSrcId, mSrcPoint);
-  move(mDstId, mDstPoint);
+  move(mStorage->srcId, mStorage->srcPoint);
+  move(mStorage->dstId, mStorage->dstPoint);
 }
 
 NodeItem* TransitionItem::source() const
@@ -78,22 +84,22 @@ NodeItem* TransitionItem::destination() const
 
 void TransitionItem::move(const QString& id, QPointF pos)
 {
-  if (id == mSrcId)
-    mSrcPoint = mSource ? mSource->edgePointToward(mDestination->sceneBoundingRect().center()) : pos;
-  else if (id == mDstId)
-    mDstPoint = mDestination ? mDestination->edgePointToward(mSource->sceneBoundingRect().center()) : pos;
+  if (id == mStorage->srcId)
+    mStorage->srcPoint = mSource ? mSource->edgePointToward(mDestination->sceneBoundingRect().center()) : pos;
+  else if (id == mStorage->dstId)
+    mStorage->dstPoint = mDestination ? mDestination->edgePointToward(mSource->sceneBoundingRect().center()) : pos;
   else
     return;
 
   // Control points for Bézier curve
   QPainterPath path;
-  path.moveTo(mSrcPoint);
+  path.moveTo(mStorage->srcPoint);
 
   if (mComplete)
     // Control points for Bézier curve
-    path.cubicTo(mSrcPoint + mSrcShift, mDstPoint + mDstShift, mDstPoint);
+    path.cubicTo(mStorage->srcPoint + mStorage->srcShift, mStorage->dstPoint + mStorage->dstShift, mStorage->dstPoint);
   else
-    path.lineTo(mDstPoint);
+    path.lineTo(mStorage->dstPoint);
 
   setPath(path);
 }
@@ -123,17 +129,14 @@ void TransitionItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
   painter->drawPolygon(arrowHead);
 }
 
+std::shared_ptr<TransitionSaveInfo> TransitionItem::storage() const
+{
+  return mStorage;
+}
+
 TransitionSaveInfo TransitionItem::saveInfo() const
 {
-  TransitionSaveInfo info;
-  info.srcPoint = mSrcPoint;
-  info.srcShift = mSrcShift;
-
-  info.dstId = mDstId;
-  info.dstPoint = mDstPoint;
-  info.dstShift = mDstShift;
-
-  return info;
+  return *mStorage;
 }
 
 void TransitionItem::updatePath()

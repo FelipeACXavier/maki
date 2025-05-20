@@ -47,6 +47,8 @@ private:
 
   logging::LogLevel mLogLevel;
 
+  std::shared_ptr<SaveInfo> mStorage;
+
   Canvas* canvas() const;
   VoidResult loadElements();
   VoidResult loadLibrary(const JSON& config);

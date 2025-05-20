@@ -30,45 +30,41 @@ static const qreal LOG_TWO = log(2);
 static const qreal MIN_OPACITY = 0.01;
 static const qreal MAX_OPACITY = 1.0;
 
-NodeItem::NodeItem(const QString& nodeId, const NodeSaveInfo& info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
-    : NodeBase(nodeId, info.nodeId, nodeConfig, parent)
+NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
+    : NodeBase((!info->id.isEmpty() && !info->id.isNull()) ? info->id : QUuid::createUuid().toString(), info->nodeId, nodeConfig, parent)
+    , mStorage(info)
     , mChildrenNodes({})
-    , mBaseScale(config()->libraryType == Types::LibraryTypes::STRUCTURAL ? info.scale : 1.0)
-    , mSize(info.size / baseScale())
+    , mBaseScale(config()->libraryType == Types::LibraryTypes::STRUCTURAL ? mStorage->scale : 1.0)
+    , mSize(mStorage->size / baseScale())
 {
   setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
   setCacheMode(DeviceCoordinateCache);
   setAcceptDrops(config()->libraryType == Types::LibraryTypes::STRUCTURAL);
   setAcceptHoverEvents(config()->libraryType == Types::LibraryTypes::STRUCTURAL);
 
-  if (info.properties.isEmpty())
+  mStorage->id = this->id();
+  mStorage->nodeId = this->nodeId();
+
+  if (parent && parent->type() == Types::NODE)
+    mStorage->parentId = static_cast<NodeItem*>(parent)->id();
+
+  if (mStorage->properties.isEmpty())
   {
     for (const auto& property : config()->properties)
-      mProperties[property.id] = property.defaultValue;
-  }
-  else
-  {
-    mProperties = info.properties;
+      mStorage->properties[property.id] = property.defaultValue;
   }
 
-  if (!info.fields.isEmpty())
-    mFields = info.fields;
-
-  if (info.events.isEmpty())
+  if (mStorage->events.isEmpty())
   {
     for (const auto& event : config()->events)
-      mEvents.push_back(event);
-  }
-  else
-  {
-    mEvents = info.events;
+      mStorage->events.push_back(event);
   }
 
   // Add icon if it exists
-  if (!info.pixmap.isNull())
+  if (!mStorage->pixmap.isNull())
   {
-    QSize newSize = info.pixmap.size() / baseScale();
-    setPixmap(info.pixmap.scaled(newSize, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    QSize newSize = mStorage->pixmap.size() / baseScale();
+    setPixmap(mStorage->pixmap.scaled(newSize, Qt::KeepAspectRatio, Qt::SmoothTransformation));
   }
   else
   {
@@ -76,7 +72,6 @@ NodeItem::NodeItem(const QString& nodeId, const NodeSaveInfo& info, const QPoint
     setLabel(getProperty("name").toString(), config()->body.textColor, labelSize);
   }
 
-  setParent(nullptr);
   updatePosition(snapToGrid(initialPosition - boundingRect().center(), Config::GRID_SIZE));
 
   LOG_DEBUG("%s created at: (%f, %f) with size (%f, %f) and scale %f", qPrintable(id()), pos().x(), pos().y(), mSize.width(), mSize.height(), baseScale());
@@ -84,9 +79,9 @@ NodeItem::NodeItem(const QString& nodeId, const NodeSaveInfo& info, const QPoint
 
 NodeItem::~NodeItem()
 {
-  auto copy = transitions();
-  for (auto& item : copy)
-    delete item;
+  // auto copy = transitions();
+  // for (auto& item : copy)
+  //   delete item;
 }
 
 int NodeItem::type() const
@@ -113,7 +108,7 @@ QString NodeItem::nodeType() const
 
 qreal NodeItem::baseScale() const
 {
-  return mBaseScale;
+  return mStorage->scale;
 }
 
 VoidResult NodeItem::start()
@@ -184,17 +179,17 @@ QVector<PropertiesConfig> NodeItem::configurationProperties() const
 
 QMap<QString, QVariant> NodeItem::properties() const
 {
-  return mProperties;
+  return mStorage->properties;
 }
 
 QVector<PropertiesConfig> NodeItem::fields() const
 {
-  return mFields;
+  return mStorage->fields;
 }
 
 QVector<EventConfig> NodeItem::events() const
 {
-  return mEvents;
+  return mStorage->events;
 }
 
 QVector<ControlsConfig> NodeItem::controls() const
@@ -204,21 +199,27 @@ QVector<ControlsConfig> NodeItem::controls() const
 
 QVariant NodeItem::getProperty(const QString& key) const
 {
-  if (mProperties.find(key) == mProperties.end())
+  if (!mStorage)
     return QVariant();
 
-  return mProperties.value(key);
+  if (mStorage->properties.find(key) == mStorage->properties.end())
+    return QVariant();
+
+  return mStorage->properties.value(key);
 }
 
 void NodeItem::setProperty(const QString& key, QVariant value)
 {
-  if (mProperties.find(key) == mProperties.end())
+  if (!mStorage)
+    return;
+
+  if (mStorage->properties.find(key) == mStorage->properties.end())
   {
     LOG_WARNING("Tried to update property %s but it does not exist", qPrintable(key));
     return;
   }
 
-  mProperties[key] = value;
+  mStorage->properties[key] = value;
 
   if (key == "name")
     setLabelName(value.toString());
@@ -231,12 +232,15 @@ void NodeItem::setProperty(const QString& key, QVariant value)
 
 VoidResult NodeItem::setField(const QString& key, const QJsonObject& value)
 {
+  if (!mStorage)
+    return VoidResult::Failed("Storage is not set");
+
   // Check if key exists
   auto property = PropertiesConfig(value);
   if (!property.isValid())
     return VoidResult::Failed(property.errorMessage.toStdString());
 
-  for (auto& field : mFields)
+  for (auto& field : fields())
   {
     if (field.id != key)
       continue;
@@ -245,14 +249,17 @@ VoidResult NodeItem::setField(const QString& key, const QJsonObject& value)
     return VoidResult();
   }
 
-  mFields.push_back(property);
+  mStorage->fields.push_back(property);
 
   return VoidResult();
 }
 
 PropertiesConfig NodeItem::getField(const QString& key) const
 {
-  for (const auto& field : mFields)
+  if (!mStorage)
+    return PropertiesConfig();
+
+  for (const auto& field : fields())
   {
     if (field.id == key)
       return field;
@@ -263,47 +270,55 @@ PropertiesConfig NodeItem::getField(const QString& key) const
 
 void NodeItem::removeField(const QString& key)
 {
-  for (auto iter = mFields.begin(); iter < mFields.end(); ++iter)
+  if (!mStorage)
+    return;
+
+  for (auto iter = mStorage->fields.begin(); iter < mStorage->fields.end(); ++iter)
   {
     if (iter->id != key)
       continue;
 
-    mFields.erase(iter);
+    mStorage->fields.erase(iter);
     return;
   }
 }
 
 void NodeItem::setEvent(int index, const EventConfig& event)
 {
-  if (index < mEvents.size())
-    mEvents[index] = event;
+  if (!mStorage)
+    return;
+
+  if (index < mStorage->events.size())
+    mStorage->events[index] = event;
   else
-    mEvents.push_back(event);
+    mStorage->events.push_back(event);
 }
 
-QVector<INode*> NodeItem::children() const
+QVector<NodeItem*> NodeItem::children() const
 {
   return mChildrenNodes;
 }
 
-void NodeItem::addChild(NodeItem* child)
+void NodeItem::addChild(NodeItem* node, std::shared_ptr<NodeSaveInfo> info)
 {
-  mChildrenNodes.push_back(child);
-}
+  if (info)
+    mStorage->children.append(info);
 
-INode* NodeItem::parentNode() const
-{
-  return mParentNode;
-}
-
-void NodeItem::setParent(NodeItem* parent)
-{
-  mParentNode = parent;
+  mChildrenNodes.push_back(node);
 }
 
 void NodeItem::childRemoved(NodeItem* child)
 {
+  mStorage->children.removeIf([child](std::shared_ptr<NodeSaveInfo> info) { return info->id == child->id(); });
   mChildrenNodes.removeAll(child);
+}
+
+INode* NodeItem::parentNode() const
+{
+  if (parentItem() && parentItem()->type() == Types::NODE)
+    return static_cast<NodeItem*>(parentItem());
+
+  return nullptr;
 }
 
 QString NodeItem::behaviour() const
@@ -324,8 +339,22 @@ void NodeItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
     qreal newWidth = qMax(Config::MINIMUM_NODE_SIZE, mResizeStartSize.width() + delta.x());
     qreal newHeight = qMax(Config::MINIMUM_NODE_SIZE, mResizeStartSize.height() + delta.y());
 
+    // Clamp size to parent
+    if (parentItem())
+    {
+      QRectF parentBounds = dynamic_cast<NodeItem*>(parentItem())->boundingRect();
+      QPointF localTopLeft = pos();
+
+      // Clamp width and height so the bottom-right stays inside parent
+      qreal maxWidth = parentBounds.right() - localTopLeft.x();
+      qreal maxHeight = parentBounds.bottom() - localTopLeft.y();
+
+      newWidth = qMin(newWidth, maxWidth);
+      newHeight = qMin(newHeight, maxHeight);
+    }
+
     // Update the scale when the node is resized
-    mBaseScale = qMax(config()->body.width / newWidth, config()->body.height / newHeight);
+    mStorage->scale = qMax(config()->body.width / newWidth, config()->body.height / newHeight);
 
     mSize.setWidth(newWidth);
     mSize.setHeight(newHeight);
@@ -366,8 +395,6 @@ void NodeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     dynamic_cast<QGraphicsView*>(scene()->parent())->setCursor(Qt::ArrowCursor);
   }
 
-  updatePosition(snapToGrid(scenePos(), Config::GRID_SIZE / static_cast<Canvas*>(scene())->getScale()));
-
   QGraphicsItem::mouseReleaseEvent(event);
 }
 
@@ -375,37 +402,27 @@ QVariant NodeItem::itemChange(GraphicsItemChange change, const QVariant& value)
 {
   if (change == QGraphicsItem::ItemPositionChange)
   {
-    QPointF newPos = value.toPointF();
-
-    if (parentNode() != nullptr)
-    {
-      auto parent = dynamic_cast<NodeItem*>(parentNode());
-
-      // Ensure child stays inside parent's bounding box
-      // Clamp position inside parent
-      QRectF parentRect = parent->mapRectToScene(parent->boundingRect());
-      QRectF childRect = boundingRect();
-
-      newPos.setX(qBound(parentRect.left(), newPos.x(), parentRect.right() - childRect.width()));
-      newPos.setY(qBound(parentRect.top(), newPos.y(), parentRect.bottom() - childRect.height()));
-    }
-
-    // Move all children relatively
-    for (INode* child : children())
-    {
-      if (!child)
-        continue;
-
-      auto nodeChild = dynamic_cast<NodeItem*>(child);
-
-      QPointF relativeOffset = nodeChild->pos() - pos();  // Maintain offset
-      nodeChild->updatePosition(newPos + relativeOffset);
-    }
-
-    updateExtrasPosition();
-
     if (parentNode())
+    {
+      QPointF newPos = value.toPointF();
+      auto parent = dynamic_cast<NodeItem*>(parentNode());
+      QRectF bounds = parent->boundingRect();
+
+      // Optional: subtract the child's size if you want full containment
+      QRectF childRect = boundingRect();
+      QSizeF childSize = childRect.size();
+
+      // Clamp position so child stays inside parent
+      newPos.setX(qBound(bounds.left(), newPos.x(), bounds.right() - childSize.width()));
+      newPos.setY(qBound(bounds.top(), newPos.y(), bounds.bottom() - childSize.height()));
+
       return newPos;
+    }
+  }
+  else if (change == QGraphicsItem::ItemPositionHasChanged)
+  {
+    updateExtrasPosition();
+    mStorage->position = pos();
   }
 
   return QGraphicsItem::itemChange(change, value);
@@ -415,6 +432,7 @@ void NodeItem::updatePosition(const QPointF& position)
 {
   setPos(position);
   updateExtrasPosition();
+  mStorage->position = pos();
 }
 
 void NodeItem::updateExtrasPosition()
@@ -432,7 +450,8 @@ void NodeItem::deleteNode()
   if (parentNode())
     dynamic_cast<NodeItem*>(parentNode())->childRemoved(this);
 
-  for (INode* child : children())
+  auto toDelete = children();
+  for (INode* child : toDelete)
     dynamic_cast<NodeItem*>(child)->deleteNode();
 
   // Remove the item from the scene
@@ -451,32 +470,10 @@ void NodeItem::onProperties()
 
 NodeSaveInfo NodeItem::saveInfo() const
 {
-  NodeSaveInfo info;
-  info.id = id();
-  info.position = scenePos();
-  info.nodeId = nodeId();
-  info.fields = fields();
-  info.events = events();
-  info.pixmap = nodePixmap();
-  info.properties = properties();
-  info.size = QSizeF{mSize.width() * mBaseScale, mSize.height() * mBaseScale};
-  info.scale = baseScale();
+  // NodeSaveInfo info;
+  // info.size = QSizeF{mSize.width() * baseScale(), mSize.height() * baseScale()};
 
-  for (const auto& transition : transitions())
-    info.transitions.push_back(transition->saveInfo());
-
-  if (parentNode())
-    info.parentId = dynamic_cast<NodeItem*>(parentNode())->id();
-
-  for (const auto& child : children())
-  {
-    // Save position relative to parent
-    auto childInfo = static_cast<NodeItem*>(child)->saveInfo();
-    childInfo.position = scenePos() - childInfo.position;
-    info.children.push_back(childInfo);
-  }
-
-  return info;
+  return *mStorage;
 }
 
 QVector<TransitionItem*> NodeItem::transitions() const
@@ -486,12 +483,19 @@ QVector<TransitionItem*> NodeItem::transitions() const
 
 void NodeItem::addTransition(TransitionItem* transition)
 {
-  transitions().push_back(transition);
+  // Make sure the source node holds the transition info
+  if (transition->destination() && (id() != transition->destination()->id()))
+    mStorage->transitions.push_back(transition->storage());
+
+  mTransitions.push_back(transition);
 }
 
 void NodeItem::removeTransition(TransitionItem* transition)
 {
-  transitions().removeIf([transition](TransitionItem* item) {
+  mStorage->transitions.removeIf([transition](std::shared_ptr<TransitionSaveInfo> item) {
+    return transition->id() == item->id;
+  });
+  mTransitions.removeIf([transition](TransitionItem* item) {
     return item->id() == transition->id();
   });
 }
@@ -510,10 +514,21 @@ QPointF NodeItem::edgePointToward(const QPointF& targetScenePos) const
   return center + dir * radius;
 }
 
+Flow* NodeItem::createFlow(const QString& flowName)
+{
+  auto flowConfig = std::make_shared<FlowSaveInfo>();
+  mStorage->flows.push_back(flowConfig);
+
+  Flow* flow = new Flow(flowName, flowConfig);
+  mFlows.push_back(flow);
+
+  return flow;
+}
+
 void NodeItem::addFlow(Flow* flow)
 {
   // Create new flow
-  mFlows.append(flow);
+  mFlows.push_back(flow);
 }
 
 Flow* NodeItem::getFlow(const QString& flowId) const

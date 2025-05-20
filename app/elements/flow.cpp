@@ -2,9 +2,10 @@
 
 #include "node.h"
 
-Flow::Flow(const QString& name)
+Flow::Flow(const QString& name, std::shared_ptr<FlowSaveInfo> storage)
     : mId(QUuid::createUuid().toString())
     , mName(name)
+    , mStorage(storage)
 {
 }
 
@@ -23,34 +24,29 @@ QString Flow::name() const
   return mName;
 }
 
-void Flow::addNode(NodeItem* node)
-{
-  mInfo.behaviouralNodes.append(node->saveInfo());
-}
-
 void Flow::removeNode(NodeItem* node)
 {
-  mInfo.behaviouralNodes.removeIf([node](NodeSaveInfo item) {
-    return item.id == node->id();
+  mStorage->nodes.removeIf([node](std::shared_ptr<NodeSaveInfo> item) {
+    return item->id == node->id();
   });
 }
 
-void Flow::updateFlow(NodeItem* node)
+void Flow::updateFlow(NodeItem* node, std::shared_ptr<NodeSaveInfo> storage)
 {
-  for (auto& info : mInfo.behaviouralNodes)
-  {
-    if (info.id != node->id())
-      continue;
+  // for (auto& info : mInfo.behaviouralNodes)
+  // {
+  //   if (info.id != node->id())
+  //     continue;
 
-    info = node->saveInfo();
-    return;
-  }
+  //   info = node->saveInfo();
+  //   return;
+  // }
 
-  // If the node does not exist, then add it to the list
-  mInfo.behaviouralNodes.append(node->saveInfo());
+  // Add the node info directly to our shared knowledge
+  mStorage->nodes.push_back(storage);
 }
 
-QVector<NodeSaveInfo> Flow::getNodes() const
+QVector<std::shared_ptr<NodeSaveInfo>> Flow::getNodes() const
 {
-  return mInfo.behaviouralNodes;
+  return mStorage->nodes;
 }

@@ -24,7 +24,7 @@ public:
     Type = Types::NODE
   };
 
-  NodeItem(const QString& id, const NodeSaveInfo& info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent = nullptr);
+  NodeItem(const QString& id, std::shared_ptr<NodeSaveInfo> info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent = nullptr);
 
   virtual ~NodeItem();
 
@@ -57,7 +57,7 @@ public:
   void renameNode(const QString& name);
 
   INode* parentNode() const override;
-  QVector<INode*> children() const override;
+  QVector<NodeItem*> children() const;
 
   QVector<TransitionItem*> transitions() const;
   void addTransition(TransitionItem* transition);
@@ -67,10 +67,10 @@ public:
   void setEvent(int index, const EventConfig& event);
   QVector<EventConfig> events() const;
 
-  void addChild(NodeItem* child);
-  void setParent(NodeItem* parent);
+  void addChild(NodeItem* node, std::shared_ptr<NodeSaveInfo> info);
   void childRemoved(NodeItem* child);
 
+  Flow* createFlow(const QString& flowName);
   void addFlow(Flow* flow);
   Flow* getFlow(const QString& flowId) const;
   void deleteFlow(Flow* flow);
@@ -100,16 +100,12 @@ protected:
   QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
 
 private:
-  QVector<PropertiesConfig> mFields;
-  QVector<EventConfig> mEvents;
-  QMap<QString, QVariant> mProperties;
-
-  QVector<Flow*> mFlows;
-
-  QVector<TransitionItem*> mTransitions;
+  std::shared_ptr<NodeSaveInfo> mStorage;
 
   INode* mParentNode;
-  QVector<INode*> mChildrenNodes;
+  QVector<Flow*> mFlows;
+  QVector<NodeItem*> mChildrenNodes;
+  QVector<TransitionItem*> mTransitions;
 
   qreal mBaseScale;
   QSizeF mSize{0, 0};

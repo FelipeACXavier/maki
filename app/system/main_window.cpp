@@ -70,7 +70,8 @@ VoidResult MainWindow::start()
     return VoidResult::Failed(configRead);
 
   mConfig = configRead.Value();
-  mConfigTable = std::make_unique<ConfigurationTable>();
+  mConfigTable = std::make_shared<ConfigurationTable>();
+  mStorage = std::make_shared<SaveInfo>();
 
   LOG_DEBUG("Starting the main window");
 
@@ -98,7 +99,7 @@ void MainWindow::startUI()
 {
   CanvasView* currentCanvas = static_cast<CanvasView*>(mCanvasPanel->currentWidget());
   // TODO(felaze): Shouldn't be hard-coded
-  StructureCanvas* canvas = new StructureCanvas("MainSystemCanvas", mConfigTable, currentCanvas);
+  StructureCanvas* canvas = new StructureCanvas("MainSystemCanvas", mStorage, mConfigTable, currentCanvas);
   mActiveCanvas = canvas;
   currentCanvas->setScene(canvas);
 
@@ -511,7 +512,7 @@ void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
 
   CanvasView* newView = new CanvasView();
 
-  BehaviourCanvas* canvas = new BehaviourCanvas(flow, mConfigTable, newView);
+  BehaviourCanvas* canvas = new BehaviourCanvas(flow, mStorage, mConfigTable, newView);
   newView->setScene(canvas);
 
   // Change to respective tabs

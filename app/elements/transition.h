@@ -17,7 +17,7 @@ public:
     Type = Types::TRANSITION
   };
 
-  TransitionItem();
+  TransitionItem(std::shared_ptr<TransitionSaveInfo> storage);
   virtual ~TransitionItem();
 
   QString id() const;
@@ -36,20 +36,14 @@ public:
   void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
 
   TransitionSaveInfo saveInfo() const;
+  std::shared_ptr<TransitionSaveInfo> storage() const;
 
 private:
   const QString mId;
   bool mComplete;
 
-  QPointF mSrcPoint;
-  QPointF mDstPoint;
-
-  QPointF mSrcShift;
-  QPointF mDstShift;
-
   NodeItem* mSource;
   NodeItem* mDestination;
 
-  QString mSrcId;
-  QString mDstId;
+  std::shared_ptr<TransitionSaveInfo> mStorage;
 };

@@ -22,5 +22,4 @@ public:
   virtual PropertiesConfig getField(const QString& key) const = 0;
 
   virtual INode* parentNode() const = 0;
-  virtual QVector<INode*> children() const = 0;
 };

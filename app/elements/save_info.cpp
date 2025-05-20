@@ -40,7 +40,7 @@ QJsonObject FlowSaveInfo::toJson() const
 
   QJsonArray nodesArray;
   for (const auto& node : nodes)
-    nodesArray.append(node.toJson());
+    nodesArray.append(node->toJson());
 
   if (nodesArray.size() > 0)
     data[ConfigKeys::NODES] = nodesArray;
@@ -55,17 +55,39 @@ FlowSaveInfo FlowSaveInfo::fromJson(const QJsonObject& data)
   info.name = data[ConfigKeys::NAME].toString();
 
   for (const auto& node : data[ConfigKeys::NODES].toArray())
-    info.nodes.append(NodeSaveInfo::fromJson(node.toObject()));
+    info.nodes.append(std::make_shared<NodeSaveInfo>(NodeSaveInfo::fromJson(node.toObject())));
 
   return info;
 }
 
 // ==========================================================================================================
 // TransitionSaveInfo
+QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<TransitionSaveInfo>>& transitions)
+{
+  out << static_cast<qint32>(transitions.size());
+  for (const auto& transition : transitions)
+    out << *transition;
+
+  return out;
+}
+
+QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<TransitionSaveInfo>>& transitions)
+{
+  qint32 size;
+  in >> size;
+
+  transitions.resize(size);
+  for (int i = 0; i < size; ++i)
+    in >> *transitions[i];
+
+  return in;
+}
+
 QDataStream& operator<<(QDataStream& out, const TransitionSaveInfo& info)
 {
   out << info.id;
 
+  out << info.srcId;
   out << info.srcPoint;
   out << info.srcShift;
 
@@ -80,6 +102,7 @@ QDataStream& operator>>(QDataStream& in, TransitionSaveInfo& info)
 {
   in >> info.id;
 
+  in >> info.srcId;
   in >> info.srcPoint;
   in >> info.srcShift;
 
@@ -96,6 +119,7 @@ QJsonObject TransitionSaveInfo::toJson() const
   data[ConfigKeys::ID] = id;
 
   QJsonObject source;
+  source[ConfigKeys::ID] = srcId;
   source[ConfigKeys::POSITION] = JSON::fromPointF(srcPoint);
   source[ConfigKeys::SHIFT] = JSON::fromPointF(srcShift);
   data[ConfigKeys::SOURCE] = source;
@@ -114,6 +138,7 @@ TransitionSaveInfo TransitionSaveInfo::fromJson(const QJsonObject& data)
   TransitionSaveInfo info;
   info.id = data[ConfigKeys::ID].toString();
 
+  info.srcId = data[ConfigKeys::SOURCE][ConfigKeys::ID].toString();
   info.srcPoint = JSON::toPointF(data[ConfigKeys::SOURCE][ConfigKeys::POSITION].toObject());
   info.srcShift = JSON::toPointF(data[ConfigKeys::SOURCE][ConfigKeys::SHIFT].toObject());
 
@@ -126,23 +151,23 @@ TransitionSaveInfo TransitionSaveInfo::fromJson(const QJsonObject& data)
 
 // ==========================================================================================================
 // NodeSaveInfo
-QDataStream& operator<<(QDataStream& out, const QVector<NodeSaveInfo>& nodes)
+QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<NodeSaveInfo>>& nodes)
 {
   out << static_cast<qint32>(nodes.size());
   for (const auto& node : nodes)
-    out << node;
+    out << *node;
 
   return out;
 }
 
-QDataStream& operator>>(QDataStream& in, QVector<NodeSaveInfo>& nodes)
+QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<NodeSaveInfo>>& nodes)
 {
   qint32 size;
   in >> size;
 
   nodes.resize(size);
   for (int i = 0; i < size; ++i)
-    in >> nodes[i];
+    in >> *nodes[i];
 
   return in;
 }
@@ -159,6 +184,7 @@ QDataStream& operator<<(QDataStream& out, const NodeSaveInfo& info)
   out << info.properties;
   out << info.parentId;
   out << info.transitions;
+  out << info.children;
 
   QByteArray pixmapData;
   QBuffer buffer(&pixmapData);
@@ -182,6 +208,7 @@ QDataStream& operator>>(QDataStream& in, NodeSaveInfo& info)
   in >> info.properties;
   in >> info.parentId;
   in >> info.transitions;
+  in >> info.children;
 
   QByteArray pixmapData;
   in >> pixmapData;
@@ -212,7 +239,11 @@ QJsonObject NodeSaveInfo::toJson() const
 
   QJsonArray transitionArray;
   for (const auto& transition : transitions)
-    transitionArray.append(transition.toJson());
+    transitionArray.append(transition->toJson());
+
+  QJsonArray childrenArray;
+  for (const auto& child : children)
+    childrenArray.append(child->toJson());
 
   QJsonObject propertiesObject;
   for (auto it = properties.constBegin(); it != properties.constEnd(); ++it)
@@ -226,6 +257,8 @@ QJsonObject NodeSaveInfo::toJson() const
     data[ConfigKeys::EVENTS] = eventArray;
   if (transitionArray.size() > 0)
     data[ConfigKeys::TRANSITIONS] = transitionArray;
+  if (childrenArray.size() > 0)
+    data[ConfigKeys::CHILDREN] = childrenArray;
 
   data[ConfigKeys::PIXMAP] = JSON::fromPixmap(pixmap);
 
@@ -264,7 +297,13 @@ NodeSaveInfo NodeSaveInfo::fromJson(const QJsonObject& data)
   if (data.contains(ConfigKeys::TRANSITIONS))
   {
     for (const auto& node : data[ConfigKeys::TRANSITIONS].toArray())
-      info.transitions.append(TransitionSaveInfo::fromJson(node.toObject()));
+      info.transitions.append(std::make_shared<TransitionSaveInfo>(TransitionSaveInfo::fromJson(node.toObject())));
+  }
+
+  if (data.contains(ConfigKeys::CHILDREN))
+  {
+    for (const auto& node : data[ConfigKeys::CHILDREN].toArray())
+      info.children.append(std::make_shared<NodeSaveInfo>(NodeSaveInfo::fromJson(node.toObject())));
   }
 
   if (data.contains(ConfigKeys::PROPERTIES))
@@ -321,18 +360,18 @@ CanvasSaveInfo CanvasSaveInfo::fromJson(const QJsonObject& data)
 // SaveInfo
 QDataStream& operator<<(QDataStream& out, const SaveInfo& info)
 {
-  out << info.canvasInfo;
-  out << info.structuralNodes;
-  out << info.behaviouralNodes;
+  // out << info.canvasInfo;
+  // out << info.structuralNodes;
+  // out << info.behaviouralNodes;
 
   return out;
 }
 
 QDataStream& operator>>(QDataStream& in, SaveInfo& info)
 {
-  in >> info.canvasInfo;
-  in >> info.structuralNodes;
-  in >> info.behaviouralNodes;
+  // in >> info.canvasInfo;
+  // in >> info.structuralNodes;
+  // in >> info.behaviouralNodes;
 
   return in;
 }
@@ -345,11 +384,11 @@ QJsonObject SaveInfo::toJson() const
 
   QJsonArray structuralArray;
   for (const auto& node : structuralNodes)
-    structuralArray.append(node.toJson());
+    structuralArray.append(node->toJson());
 
   QJsonArray behaviouralArray;
   for (const auto& node : behaviouralNodes)
-    behaviouralArray.append(node.toJson());
+    behaviouralArray.append(node->toJson());
 
   if (structuralArray.size() > 0)
     data[ConfigKeys::STRUCTURAL] = structuralArray;
@@ -365,10 +404,10 @@ SaveInfo SaveInfo::fromJson(const QJsonObject& data)
   info.canvasInfo = CanvasSaveInfo::fromJson(data[ConfigKeys::CANVAS].toObject());
 
   for (const auto& node : data[ConfigKeys::STRUCTURAL].toArray())
-    info.structuralNodes.append(NodeSaveInfo::fromJson(node.toObject()));
+    info.structuralNodes.append(std::make_shared<NodeSaveInfo>(NodeSaveInfo::fromJson(node.toObject())));
 
   for (const auto& node : data[ConfigKeys::BEHAVIOURAL].toArray())
-    info.behaviouralNodes.append(NodeSaveInfo::fromJson(node.toObject()));
+    info.behaviouralNodes.append(std::make_shared<NodeSaveInfo>(NodeSaveInfo::fromJson(node.toObject())));
 
   return info;
 }

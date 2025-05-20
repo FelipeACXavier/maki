@@ -18,6 +18,8 @@ CanvasView::CanvasView(QWidget* parent)
   // TODO(felaze): Evaluate the peformance impact of this
   setViewportUpdateMode(ViewportUpdateMode::FullViewportUpdate);
 
+  setAttribute(Qt::WA_DeleteOnClose);
+
   // TODO(felaze): Maybe we can make this custom
   setDragMode(QGraphicsView::RubberBandDrag);
   setAcceptDrops(true);

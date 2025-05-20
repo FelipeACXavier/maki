@@ -17,7 +17,7 @@ struct FlowSaveInfo
   QString id = "";
   QString name = "";
 
-  QVector<NodeSaveInfo> nodes;
+  QVector<std::shared_ptr<NodeSaveInfo>> nodes;
 
   FlowSaveInfo() = default;
 
@@ -32,6 +32,7 @@ struct TransitionSaveInfo
 {
   QString id = "";
 
+  QString srcId = "";
   QPointF srcPoint{0, 0};
   QPointF srcShift{0, 0};
 
@@ -59,11 +60,11 @@ struct NodeSaveInfo
   QVector<PropertiesConfig> fields;
   QVector<EventConfig> events;
   QMap<QString, QVariant> properties;
-  QVector<TransitionSaveInfo> transitions;
-  QVector<FlowSaveInfo> flows;
+  QVector<std::shared_ptr<TransitionSaveInfo>> transitions;
+  QVector<std::shared_ptr<FlowSaveInfo>> flows;
 
   QString parentId = "";
-  QVector<NodeSaveInfo> children = {};
+  QVector<std::shared_ptr<NodeSaveInfo>> children = {};
 
   NodeSaveInfo() = default;
 
@@ -89,8 +90,8 @@ struct CanvasSaveInfo
 struct SaveInfo
 {
   CanvasSaveInfo canvasInfo;
-  QVector<NodeSaveInfo> structuralNodes;
-  QVector<NodeSaveInfo> behaviouralNodes;
+  QVector<std::shared_ptr<NodeSaveInfo>> structuralNodes = {};
+  QVector<std::shared_ptr<NodeSaveInfo>> behaviouralNodes = {};
 
   QJsonObject toJson() const;
   static SaveInfo fromJson(const QJsonObject& data);
@@ -99,5 +100,8 @@ struct SaveInfo
   friend QDataStream& operator>>(QDataStream& in, SaveInfo& info);
 };
 
-QDataStream& operator<<(QDataStream& out, const QVector<NodeSaveInfo>& nodes);
-QDataStream& operator>>(QDataStream& in, QVector<NodeSaveInfo>& nodes);
+QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<TransitionSaveInfo>>& nodes);
+QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<TransitionSaveInfo>>& nodes);
+
+QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<NodeSaveInfo>>& nodes);
+QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<NodeSaveInfo>>& nodes);

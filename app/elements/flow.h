@@ -16,7 +16,7 @@ public:
     Type = Types::FLOW
   };
 
-  Flow(const QString& flowName);
+  Flow(const QString& flowName, std::shared_ptr<FlowSaveInfo> storage);
 
   QString id() const;
   int type() const;
@@ -24,16 +24,15 @@ public:
 
   // Contains a list of saved data of the behaviour nodes
   // Add, remove, and edit nodes
-  void addNode(NodeItem* node);
   void removeNode(NodeItem* node);
 
-  void updateFlow(NodeItem* node);
+  void updateFlow(NodeItem* node, std::shared_ptr<NodeSaveInfo> storage);
 
-  QVector<NodeSaveInfo> getNodes() const;
+  QVector<std::shared_ptr<NodeSaveInfo>> getNodes() const;
 
 private:
   const QString mId;
   QString mName;
 
-  SaveInfo mInfo;
+  std::shared_ptr<FlowSaveInfo> mStorage;
 };

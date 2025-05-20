@@ -50,10 +50,13 @@ VoidResult SaveHandler::saveToFile(Canvas* canvas)
     if (item->type() == NodeItem::Type)
     {
       auto node = static_cast<NodeItem*>(item);
+      if (node->parentNode() != nullptr)
+        continue;
+
       if (node->function() == Types::LibraryTypes::STRUCTURAL)
-        info.structuralNodes.push_front(node->saveInfo());
+        info.structuralNodes.push_back(std::make_shared<NodeSaveInfo>(node->saveInfo()));
       else
-        info.behaviouralNodes.push_back(node->saveInfo());
+        info.behaviouralNodes.push_back(std::make_shared<NodeSaveInfo>(node->saveInfo()));
     }
   }
 

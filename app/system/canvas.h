@@ -20,7 +20,7 @@ class Canvas : public QGraphicsScene
 {
   Q_OBJECT
 public:
-  Canvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> configTable, QObject* parent = nullptr);
+  Canvas(const QString& canvasId, std::shared_ptr<SaveInfo> storage, std::shared_ptr<ConfigurationTable> configTable, QObject* parent = nullptr);
 
   QString id() const;
   void pasteCopiedItems();
@@ -48,7 +48,7 @@ protected:
 
   void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
 
-  virtual void updateParent(NodeItem* node, bool adding);
+  virtual void updateParent(NodeItem* node, std::shared_ptr<NodeSaveInfo> storage, bool adding);
 
 signals:
   void nodeSelected(NodeItem* node, bool selected);
@@ -69,6 +69,11 @@ public slots:
   void onFlowRemoved(const QString& flowId, const QString& nodeId);
 
 private:
+  enum class NodeCreation
+  {
+    Dropping,
+    Pasting
+  };
   // TODO(felaze): Move connection behaviour to a separate class
   NodeItem* mHoveredNode = nullptr;
   TransitionItem* mTransition = nullptr;
@@ -82,6 +87,7 @@ private:
 
   QList<NodeSaveInfo> copiedNodes;
   std::shared_ptr<ConfigurationTable> mConfigTable;
+  std::shared_ptr<SaveInfo> mStorage;
 
   const QString mId;
 
@@ -89,7 +95,7 @@ private:
   void selectNode(NodeItem* node, bool select);
 
   CanvasView* parentView() const;
-  NodeItem* createNode(const NodeSaveInfo& info, const QPointF& position, NodeItem* parent);
+  NodeItem* createNode(NodeCreation creation, const NodeSaveInfo& info, const QPointF& position, NodeItem* parent);
 
   NodeItem* findNodeWithId(const QString& id) const;
 
