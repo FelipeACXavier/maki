@@ -8,8 +8,6 @@
 #include "logging.h"
 
 Q_DECLARE_METATYPE(TransitionSaveInfo)
-Q_DECLARE_METATYPE(ConnectorSaveInfo)
-Q_DECLARE_METATYPE(ConnectionSaveInfo)
 Q_DECLARE_METATYPE(NodeSaveInfo)
 Q_DECLARE_METATYPE(SaveInfo)
 
@@ -17,7 +15,8 @@ Q_DECLARE_METATYPE(SaveInfo)
 // TransitionSaveInfo
 QDataStream& operator<<(QDataStream& out, const TransitionSaveInfo& info)
 {
-  out << info.srcId;
+  out << info.id;
+
   out << info.srcPoint;
   out << info.srcShift;
 
@@ -30,7 +29,8 @@ QDataStream& operator<<(QDataStream& out, const TransitionSaveInfo& info)
 
 QDataStream& operator>>(QDataStream& in, TransitionSaveInfo& info)
 {
-  in >> info.srcId;
+  in >> info.id;
+
   in >> info.srcPoint;
   in >> info.srcShift;
 
@@ -44,9 +44,9 @@ QDataStream& operator>>(QDataStream& in, TransitionSaveInfo& info)
 QJsonObject TransitionSaveInfo::toJson() const
 {
   QJsonObject data;
+  data[ConfigKeys::ID] = id;
 
   QJsonObject source;
-  source[ConfigKeys::ID] = srcId;
   source[ConfigKeys::POSITION] = JSON::fromPointF(srcPoint);
   source[ConfigKeys::SHIFT] = JSON::fromPointF(srcShift);
   data[ConfigKeys::SOURCE] = source;
@@ -63,50 +63,14 @@ QJsonObject TransitionSaveInfo::toJson() const
 TransitionSaveInfo TransitionSaveInfo::fromJson(const QJsonObject& data)
 {
   TransitionSaveInfo info;
+  info.id = data[ConfigKeys::ID].toString();
 
-  info.srcId = data[ConfigKeys::SOURCE][ConfigKeys::ID].toString();
   info.srcPoint = JSON::toPointF(data[ConfigKeys::SOURCE][ConfigKeys::POSITION].toObject());
   info.srcShift = JSON::toPointF(data[ConfigKeys::SOURCE][ConfigKeys::SHIFT].toObject());
 
   info.dstId = data[ConfigKeys::DESTINATION][ConfigKeys::ID].toString();
   info.dstPoint = JSON::toPointF(data[ConfigKeys::DESTINATION][ConfigKeys::POSITION].toObject());
   info.dstShift = JSON::toPointF(data[ConfigKeys::DESTINATION][ConfigKeys::SHIFT].toObject());
-
-  return info;
-}
-
-// ==========================================================================================================
-// ConnectorSaveInfo
-QDataStream& operator<<(QDataStream& out, const ConnectorSaveInfo& info)
-{
-  out << info.connectorId;
-  out << info.configId;
-
-  return out;
-}
-
-QDataStream& operator>>(QDataStream& in, ConnectorSaveInfo& info)
-{
-  in >> info.connectorId;
-  in >> info.configId;
-
-  return in;
-}
-
-QJsonObject ConnectorSaveInfo::toJson() const
-{
-  QJsonObject data;
-  data[ConfigKeys::CONFIG_ID] = configId;
-  data[ConfigKeys::CONNECTOR_ID] = connectorId;
-
-  return data;
-}
-
-ConnectorSaveInfo ConnectorSaveInfo::fromJson(const QJsonObject& data)
-{
-  ConnectorSaveInfo info;
-  info.configId = data[ConfigKeys::CONFIG_ID].toString();
-  info.connectorId = data[ConfigKeys::CONNECTOR_ID].toString();
 
   return info;
 }
@@ -143,9 +107,9 @@ QDataStream& operator<<(QDataStream& out, const NodeSaveInfo& info)
   out << info.fields;
   out << info.events;
   out << info.position;
-  out << info.connectors;
   out << info.properties;
   out << info.parentId;
+  out << info.transitions;
 
   QByteArray pixmapData;
   QBuffer buffer(&pixmapData);
@@ -166,9 +130,9 @@ QDataStream& operator>>(QDataStream& in, NodeSaveInfo& info)
   in >> info.fields;
   in >> info.events;
   in >> info.position;
-  in >> info.connectors;
   in >> info.properties;
   in >> info.parentId;
+  in >> info.transitions;
 
   QByteArray pixmapData;
   in >> pixmapData;
@@ -189,10 +153,6 @@ QJsonObject NodeSaveInfo::toJson() const
   data[ConfigKeys::SIZE] = JSON::fromSizeF(size);
   data[ConfigKeys::POSITION] = JSON::fromPointF(position);
 
-  QJsonArray connectorArray;
-  for (const auto& connector : connectors)
-    connectorArray.append(connector.toJson());
-
   QJsonArray fieldArray;
   for (const auto& field : fields)
     fieldArray.append(field.toJson());
@@ -201,18 +161,22 @@ QJsonObject NodeSaveInfo::toJson() const
   for (const auto& event : events)
     eventArray.append(event.toJson());
 
+  QJsonArray transitionArray;
+  for (const auto& transition : transitions)
+    transitionArray.append(transition.toJson());
+
   QJsonObject propertiesObject;
   for (auto it = properties.constBegin(); it != properties.constEnd(); ++it)
     propertiesObject[it.key()] = it.value().toJsonValue();
 
   if (properties.size() > 0)
     data[ConfigKeys::PROPERTIES] = propertiesObject;
-  if (connectorArray.size() > 0)
-    data[ConfigKeys::CONNECTORS] = connectorArray;
   if (fieldArray.size() > 0)
     data[ConfigKeys::FIELDS] = fieldArray;
   if (eventArray.size() > 0)
     data[ConfigKeys::EVENTS] = eventArray;
+  if (transitionArray.size() > 0)
+    data[ConfigKeys::TRANSITIONS] = transitionArray;
 
   data[ConfigKeys::PIXMAP] = JSON::fromPixmap(pixmap);
 
@@ -248,10 +212,10 @@ NodeSaveInfo NodeSaveInfo::fromJson(const QJsonObject& data)
       info.events.append(EventConfig::fromJson(node.toObject()));
   }
 
-  if (data.contains(ConfigKeys::CONNECTORS))
+  if (data.contains(ConfigKeys::TRANSITIONS))
   {
-    for (const auto& node : data[ConfigKeys::CONNECTORS].toArray())
-      info.connectors.append(ConnectorSaveInfo::fromJson(node.toObject()));
+    for (const auto& node : data[ConfigKeys::TRANSITIONS].toArray())
+      info.transitions.append(TransitionSaveInfo::fromJson(node.toObject()));
   }
 
   if (data.contains(ConfigKeys::PROPERTIES))
@@ -262,76 +226,6 @@ NodeSaveInfo NodeSaveInfo::fromJson(const QJsonObject& data)
   }
 
   info.pixmap = JSON::toPixmap(data[ConfigKeys::PIXMAP].toObject());
-
-  return info;
-}
-
-// ==========================================================================================================
-// ConnectionSaveInfo
-QDataStream& operator<<(QDataStream& out, const ConnectionSaveInfo& info)
-{
-  out << info.id;
-
-  out << info.srcId;
-  out << info.srcPoint;
-  out << info.srcShift;
-
-  out << info.dstId;
-  out << info.dstPoint;
-  out << info.dstShift;
-
-  return out;
-}
-
-QDataStream& operator>>(QDataStream& in, ConnectionSaveInfo& info)
-{
-  in >> info.id;
-
-  in >> info.srcId;
-  in >> info.srcPoint;
-  in >> info.srcShift;
-
-  in >> info.dstId;
-  in >> info.dstPoint;
-  in >> info.dstShift;
-
-  return in;
-}
-
-QJsonObject ConnectionSaveInfo::toJson() const
-{
-  QJsonObject data;
-
-  data[ConfigKeys::ID] = id;
-
-  QJsonObject source;
-  source[ConfigKeys::ID] = srcId;
-  source[ConfigKeys::POSITION] = JSON::fromPointF(srcPoint);
-  source[ConfigKeys::SHIFT] = JSON::fromPointF(srcShift);
-  data[ConfigKeys::SOURCE] = source;
-
-  QJsonObject destination;
-  destination[ConfigKeys::ID] = dstId;
-  destination[ConfigKeys::POSITION] = JSON::fromPointF(dstPoint);
-  destination[ConfigKeys::SHIFT] = JSON::fromPointF(dstShift);
-  data[ConfigKeys::DESTINATION] = destination;
-
-  return data;
-}
-
-ConnectionSaveInfo ConnectionSaveInfo::fromJson(const QJsonObject& data)
-{
-  ConnectionSaveInfo info;
-
-  info.id = data[ConfigKeys::ID].toString();
-
-  info.srcId = data[ConfigKeys::SOURCE][ConfigKeys::ID].toString();
-  info.srcPoint = JSON::toPointF(data[ConfigKeys::SOURCE][ConfigKeys::POSITION].toObject());
-  info.srcShift = JSON::toPointF(data[ConfigKeys::SOURCE][ConfigKeys::SHIFT].toObject());
-
-  info.dstId = data[ConfigKeys::DESTINATION][ConfigKeys::ID].toString();
-  info.dstPoint = JSON::toPointF(data[ConfigKeys::DESTINATION][ConfigKeys::POSITION].toObject());
-  info.dstShift = JSON::toPointF(data[ConfigKeys::DESTINATION][ConfigKeys::SHIFT].toObject());
 
   return info;
 }
@@ -381,8 +275,6 @@ QDataStream& operator<<(QDataStream& out, const SaveInfo& info)
   out << info.canvasInfo;
   out << info.structuralNodes;
   out << info.behaviouralNodes;
-  out << info.connections;
-  out << info.transitions;
 
   return out;
 }
@@ -392,8 +284,6 @@ QDataStream& operator>>(QDataStream& in, SaveInfo& info)
   in >> info.canvasInfo;
   in >> info.structuralNodes;
   in >> info.behaviouralNodes;
-  in >> info.connections;
-  in >> info.transitions;
 
   return in;
 }
@@ -412,22 +302,10 @@ QJsonObject SaveInfo::toJson() const
   for (const auto& node : behaviouralNodes)
     behaviouralArray.append(node.toJson());
 
-  QJsonArray connectionArray;
-  for (const auto& node : connections)
-    connectionArray.append(node.toJson());
-
-  QJsonArray transitionArray;
-  for (const auto& node : transitions)
-    transitionArray.append(node.toJson());
-
   if (structuralArray.size() > 0)
     data[ConfigKeys::STRUCTURAL] = structuralArray;
   if (behaviouralArray.size() > 0)
     data[ConfigKeys::BEHAVIOURAL] = behaviouralArray;
-  if (connectionArray.size() > 0)
-    data[ConfigKeys::CONNECTIONS] = connectionArray;
-  if (transitionArray.size() > 0)
-    data[ConfigKeys::TRANSITIONS] = transitionArray;
 
   return data;
 }
@@ -442,12 +320,6 @@ SaveInfo SaveInfo::fromJson(const QJsonObject& data)
 
   for (const auto& node : data[ConfigKeys::BEHAVIOURAL].toArray())
     info.behaviouralNodes.append(NodeSaveInfo::fromJson(node.toObject()));
-
-  for (const auto& node : data[ConfigKeys::CONNECTIONS].toArray())
-    info.connections.append(ConnectionSaveInfo::fromJson(node.toObject()));
-
-  for (const auto& node : data[ConfigKeys::TRANSITIONS].toArray())
-    info.transitions.append(TransitionSaveInfo::fromJson(node.toObject()));
 
   return info;
 }

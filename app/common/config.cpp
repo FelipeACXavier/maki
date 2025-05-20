@@ -7,107 +7,6 @@
 #include "app_configs.h"
 #include "string_helpers.h"
 
-ConnectorConfig::ConnectorConfig()
-{
-}
-
-ConnectorConfig::ConnectorConfig(const QJsonObject& object)
-{
-  if (object.contains("id"))
-    id = object["id"].toString();
-
-  if (object.contains("position"))
-  {
-    const auto config = object["position"].toString();
-    position = QString::fromStdString(ToLowerCase(config.toStdString(), 0, config.size()));
-  }
-
-  if (object.contains("type"))
-    type = fromString(object["type"].toString());
-}
-
-QPointF ConnectorConfig::getPosition(const QRectF& bounds) const
-{
-  if (position == "north")
-    return QPointF(bounds.width() / 2, 0);
-  else if (position == "north west")
-    return QPointF(bounds.width() / 4, 0);
-  else if (position == "north east")
-    return QPointF(3 * bounds.width() / 4, 0);
-
-  else if (position == "south")
-    return QPointF(bounds.width() / 2, bounds.height());
-  else if (position == "south west")
-    return QPointF(bounds.width() / 4, bounds.height());
-  else if (position == "south east")
-    return QPointF(3 * bounds.width() / 4, bounds.height());
-
-  else if (position == "east")
-    return QPointF(bounds.width(), bounds.height() / 2);
-  else if (position == "east north")
-    return QPointF(bounds.width(), bounds.height() / 4);
-  else if (position == "east south")
-    return QPointF(bounds.width(), 3 * bounds.height() / 4);
-
-  else if (position == "west")
-    return QPointF(0, bounds.height() / 2);
-  else if (position == "west north")
-    return QPointF(0, bounds.height() / 4);
-  else if (position == "west south")
-    return QPointF(0, 3 * bounds.height() / 4);
-
-  return QPointF(0, 0);
-}
-
-QPointF ConnectorConfig::getShift(const QString& config) const
-{
-  auto pos = config.isEmpty() ? position : config;
-
-  if (pos == "north" || pos == "north west" || pos == "north east")
-    return QPointF(0, -Constants::CONTROL_POINT_SHIFT);
-
-  else if (pos == "south" || pos == "south west" || pos == "south east")
-    return QPointF(0, Constants::CONTROL_POINT_SHIFT);
-
-  else if (pos == "east" || pos == "east north" || pos == "east south")
-    return QPointF(Constants::CONTROL_POINT_SHIFT, 0);
-
-  else if (pos == "west" || pos == "west north" || pos == "west north")
-    return QPointF(-Constants::CONTROL_POINT_SHIFT, 0);
-
-  return QPointF(0, 0);
-}
-
-QPointF ConnectorConfig::getMirrorShift() const
-{
-  if (position == "north" || position == "north west" ||
-      position == "north east")
-    return getShift("south");
-
-  else if (position == "south" || position == "south west" ||
-           position == "south east")
-    return getShift("north");
-
-  else if (position == "east" || position == "east north" ||
-           position == "east south")
-    return getShift("west");
-
-  return getShift("east");
-}
-
-Types::ConnectorType ConnectorConfig::fromString(const QString& config) const
-{
-  const auto type = QString::fromStdString(ToLowerCase(config.toStdString(), 0, config.size()));
-  if (config == "in")
-    return Types::ConnectorType::IN;
-  else if (config == "out")
-    return Types::ConnectorType::OUT;
-  else if (config == "inout")
-    return Types::ConnectorType::IN_AND_OUT;
-
-  return Types::ConnectorType::UNKNOWN;
-}
-
 ControlsConfig::ControlsConfig()
 {
 }
@@ -269,18 +168,6 @@ NodeConfig::NodeConfig(const QJsonObject& object)
     }
   }
 
-  if (object.contains("connectors"))
-  {
-    for (const auto& connector : object["connectors"].toArray())
-    {
-      auto conn = ConnectorConfig(connector.toObject());
-      if (!conn.isValid())
-        setInvalid(conn.errorMessage);
-
-      connectors.push_back(conn);
-    }
-  }
-
   if (object.contains("controls"))
   {
     for (const auto& control : object["controls"].toArray())
@@ -315,7 +202,6 @@ QDataStream& operator<<(QDataStream& out, const NodeConfig& config)
   out << config.help;
   out << config.behaviour;
   out << config.controls;
-  out << config.connectors;
   out << config.properties;
   out << config.libraryType;
   out << config.events;
@@ -330,7 +216,6 @@ QDataStream& operator>>(QDataStream& in, NodeConfig& config)
   in >> config.help;
   in >> config.behaviour;
   in >> config.controls;
-  in >> config.connectors;
   in >> config.properties;
   in >> config.libraryType;
   in >> config.events;
@@ -401,22 +286,6 @@ QDataStream& operator<<(QDataStream& out, const ControlsConfig& config)
 }
 
 QDataStream& operator>>(QDataStream& in, ControlsConfig& config)
-{
-  return in;
-}
-
-// ===========================================================================================================
-// ConnectorConfig
-QDataStream& operator<<(QDataStream& out, const ConnectorConfig& config)
-{
-  out << config.id;
-  out << config.position;
-  out << config.type;
-
-  return out;
-}
-
-QDataStream& operator>>(QDataStream& in, ConnectorConfig& config)
 {
   return in;
 }

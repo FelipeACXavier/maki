@@ -14,7 +14,7 @@ TransitionItem::TransitionItem()
     , mSource(nullptr)
     , mDestination(nullptr)
 {
-  // Make sure the connections are behind the nodes
+  // Make sure the transitions are behind the nodes
   setZValue(-1);
   setFlags(QGraphicsItem::ItemIsSelectable);
 
@@ -126,7 +126,6 @@ void TransitionItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
 TransitionSaveInfo TransitionItem::saveInfo() const
 {
   TransitionSaveInfo info;
-  info.srcId = mSrcId;
   info.srcPoint = mSrcPoint;
   info.srcShift = mSrcShift;
 

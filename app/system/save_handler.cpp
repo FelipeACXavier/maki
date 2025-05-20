@@ -8,8 +8,6 @@
 #include <QJsonDocument>
 
 #include "canvas.h"
-#include "elements/connection.h"
-#include "elements/connector.h"
 #include "elements/node.h"
 #include "logging.h"
 #include "main_window.h"
@@ -56,16 +54,6 @@ VoidResult SaveHandler::saveToFile(Canvas* canvas)
         info.structuralNodes.push_front(node->saveInfo());
       else
         info.behaviouralNodes.push_back(node->saveInfo());
-
-      for (const auto& connector : node->connectors())
-        for (const auto& conn : connector->connectionsFromThis())
-          info.connections.push_back(static_cast<ConnectionItem*>(conn)->saveInfo());
-
-      for (const auto& transition : node->transitions())
-      {
-        if (transition->source() && (transition->source()->id() == node->id()))
-          info.transitions.push_back(transition->saveInfo());
-      }
     }
   }
 

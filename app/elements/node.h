@@ -14,8 +14,6 @@
 #include "types.h"
 
 class Flow;
-class Connector;
-class ConnectionItem;
 class QGraphicsSceneMouseEvent;
 
 class NodeItem : public INode, public NodeBase
@@ -45,7 +43,6 @@ public:
   QVector<ControlsConfig> controls() const;
   QVector<PropertiesConfig> fields() const override;
   QMap<QString, QVariant> properties() const override;
-  QVector<std::shared_ptr<IConnector>> connectors() const override;
   QVector<PropertiesConfig> configurationProperties() const;
 
   Types::LibraryTypes function() const override;
@@ -106,7 +103,6 @@ private:
   QVector<PropertiesConfig> mFields;
   QVector<EventConfig> mEvents;
   QMap<QString, QVariant> mProperties;
-  QVector<std::shared_ptr<IConnector>> mConnectors;
 
   QVector<Flow*> mFlows;
 

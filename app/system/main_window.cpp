@@ -380,8 +380,10 @@ void MainWindow::onNodeAdded(NodeItem* node)
     return;
   }
 
-  LOG_WARN_ON_FAILURE(mSystemMenu->onNodeAdded(node));
-  LOG_WARN_ON_FAILURE(mFlowMenu->onNodeAdded(canvas()->id(), node));
+  if (canvas()->type() == Types::LibraryTypes::STRUCTURAL)
+    LOG_WARN_ON_FAILURE(mSystemMenu->onNodeAdded(node));
+  else
+    LOG_WARN_ON_FAILURE(mFlowMenu->onNodeAdded(canvas()->id(), node));
 }
 
 void MainWindow::onNodeRemoved(NodeItem* node)
@@ -394,8 +396,11 @@ void MainWindow::onNodeRemoved(NodeItem* node)
 
   LOG_WARN_ON_FAILURE(mSystemMenu->onNodeRemoved(node));
   LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeRemoved(node));
-  LOG_WARN_ON_FAILURE(mFieldsMenu->onNodeRemoved(node));
-  LOG_WARN_ON_FAILURE(mFlowMenu->onNodeRemoved(canvas()->id(), node));
+
+  if (canvas()->type() == Types::LibraryTypes::STRUCTURAL)
+    LOG_WARN_ON_FAILURE(mFieldsMenu->onNodeRemoved(node));
+  else
+    LOG_WARN_ON_FAILURE(mFlowMenu->onNodeRemoved(canvas()->id(), node));
 }
 
 void MainWindow::onNodeModified(NodeItem* node)

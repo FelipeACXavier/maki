@@ -13,9 +13,7 @@
 #include "elements/save_info.h"
 
 class CanvasView;
-class Connector;
 class TransitionItem;
-class ConnectionItem;
 class ConfigurationTable;
 
 class Canvas : public QGraphicsScene
@@ -51,7 +49,6 @@ protected:
   void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
 
   virtual void updateParent(NodeItem* node, bool adding);
-  virtual void updateParent(ConnectionItem* connection, bool adding);
 
 signals:
   void nodeSelected(NodeItem* node, bool selected);
@@ -73,10 +70,7 @@ public slots:
 
 private:
   // TODO(felaze): Move connection behaviour to a separate class
-  Connector* mConnector = nullptr;
-  Connector* mHoveredConnector = nullptr;
   NodeItem* mHoveredNode = nullptr;
-  ConnectionItem* mConnection = nullptr;
   TransitionItem* mTransition = nullptr;
   NodeItem* mNode = nullptr;
   QPointF mStartDragPosition;
@@ -98,12 +92,10 @@ private:
   NodeItem* createNode(const NodeSaveInfo& info, const QPointF& position, NodeItem* parent);
 
   NodeItem* findNodeWithId(const QString& id) const;
-  Connector* findConnectorWithId(const QString& id) const;
 
   // Context menu
   // TODO(felaze): Make this a separate class
   QMenu* createAlignMenu(const QList<QGraphicsItem*>& items);
-  QMenu* createConnectionMenu(const QList<QGraphicsItem*>& items);
 
   void clearSelectedNodes();
   bool isModifierSet(QGraphicsSceneMouseEvent* event, Qt::KeyboardModifier modifier);

@@ -6,31 +6,6 @@
 #include "property_config.h"
 #include "types.h"
 
-class IConnector;
-
-class IConnection
-{
-public:
-  virtual ~IConnection() = default;
-
-  virtual QString id() const = 0;
-  virtual IConnector* source() const = 0;
-  virtual IConnector* destination() const = 0;
-};
-
-class IConnector
-{
-public:
-  virtual ~IConnector() = default;
-
-  virtual QString id() const = 0;
-  virtual QString connectorName() const = 0;
-  virtual Types::ConnectorType connectorType() const = 0;
-  virtual QVector<IConnection*> connections() const = 0;
-  virtual QVector<IConnection*> connectionsFromThis() const = 0;
-  virtual QVector<IConnection*> connectionsToThis() const = 0;
-};
-
 class INode
 {
 public:
@@ -38,7 +13,6 @@ public:
 
   virtual QString nodeType() const = 0;
   virtual QMap<QString, QVariant> properties() const = 0;
-  virtual QVector<std::shared_ptr<IConnector>> connectors() const = 0;
 
   virtual Types::LibraryTypes function() const = 0;
 

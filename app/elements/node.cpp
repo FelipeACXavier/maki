@@ -11,7 +11,6 @@
 #include <QUuid>
 
 #include "app_configs.h"
-#include "connector.h"
 #include "flow.h"
 #include "logging.h"
 #include "style_helpers.h"
@@ -41,21 +40,6 @@ NodeItem::NodeItem(const QString& nodeId, const NodeSaveInfo& info, const QPoint
   setCacheMode(DeviceCoordinateCache);
   setAcceptDrops(config()->libraryType == Types::LibraryTypes::STRUCTURAL);
   setAcceptHoverEvents(config()->libraryType == Types::LibraryTypes::STRUCTURAL);
-
-  for (const auto& connector : config()->connectors)
-  {
-    QString connectorId = QUuid::createUuid().toString();
-    for (const auto& cfg : info.connectors)
-    {
-      if (connector.id != cfg.configId || cfg.connectorId.isEmpty())
-        continue;
-
-      connectorId = cfg.connectorId;
-      break;
-    }
-
-    mConnectors.append(std::make_shared<Connector>(connector, connectorId, this));
-  }
 
   if (info.properties.isEmpty())
   {
@@ -100,7 +84,7 @@ NodeItem::NodeItem(const QString& nodeId, const NodeSaveInfo& info, const QPoint
 
 NodeItem::~NodeItem()
 {
-  auto copy = mTransitions;
+  auto copy = transitions();
   for (auto& item : copy)
     delete item;
 }
@@ -191,11 +175,6 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
 QPainterPath NodeItem::shape() const
 {
   return NodeBase::nodeShape(boundingRect());
-}
-
-QVector<std::shared_ptr<IConnector>> NodeItem::connectors() const
-{
-  return mConnectors;
 }
 
 QVector<PropertiesConfig> NodeItem::configurationProperties() const
@@ -440,10 +419,7 @@ void NodeItem::updatePosition(const QPointF& position)
 
 void NodeItem::updateExtrasPosition()
 {
-  for (auto& connector : connectors())
-    std::dynamic_pointer_cast<Connector>(connector)->updateConnections();
-
-  for (auto& transition : mTransitions)
+  for (auto& transition : transitions())
     transition->updatePath();
 
   updateLabelPosition();
@@ -486,8 +462,8 @@ NodeSaveInfo NodeItem::saveInfo() const
   info.size = QSizeF{mSize.width() * mBaseScale, mSize.height() * mBaseScale};
   info.scale = baseScale();
 
-  for (const auto& connector : connectors())
-    info.connectors.push_back(std::dynamic_pointer_cast<Connector>(connector)->saveInfo());
+  for (const auto& transition : transitions())
+    info.transitions.push_back(transition->saveInfo());
 
   if (parentNode())
     info.parentId = dynamic_cast<NodeItem*>(parentNode())->id();
@@ -503,7 +479,6 @@ NodeSaveInfo NodeItem::saveInfo() const
   return info;
 }
 
-// TODO(Felaze): these should be in a separate class
 QVector<TransitionItem*> NodeItem::transitions() const
 {
   return mTransitions;
@@ -511,12 +486,12 @@ QVector<TransitionItem*> NodeItem::transitions() const
 
 void NodeItem::addTransition(TransitionItem* transition)
 {
-  mTransitions.push_back(transition);
+  transitions().push_back(transition);
 }
 
 void NodeItem::removeTransition(TransitionItem* transition)
 {
-  mTransitions.removeIf([transition](TransitionItem* item) {
+  transitions().removeIf([transition](TransitionItem* item) {
     return item->id() == transition->id();
   });
 }

@@ -10,27 +10,6 @@
 #include "property_config.h"
 #include "types.h"
 
-class ConnectorConfig : public ConfigBase
-{
-public:
-  ConnectorConfig();
-  ConnectorConfig(const QJsonObject& object);
-
-  QString id = "";
-  QString position = "";
-  Types::ConnectorType type = Types::ConnectorType::UNKNOWN;
-
-  QPointF getPosition(const QRectF& bounds) const;
-  QPointF getShift(const QString& config = "") const;
-  QPointF getMirrorShift() const;
-
-  friend QDataStream& operator<<(QDataStream& out, const ConnectorConfig& config);
-  friend QDataStream& operator>>(QDataStream& in, ConnectorConfig& config);
-
-private:
-  Types::ConnectorType fromString(const QString& config) const;
-};
-
 class ControlsConfig : public ConfigBase
 {
 public:
@@ -110,7 +89,6 @@ public:
   HelpConfig help;
   BehaviourConfig behaviour;
   QVector<ControlsConfig> controls;
-  QVector<ConnectorConfig> connectors;
   QVector<PropertiesConfig> properties;
   QVector<EventConfig> events;
 

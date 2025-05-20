@@ -1,6 +1,5 @@
 #include "flow.h"
 
-#include "connection.h"
 #include "node.h"
 
 Flow::Flow(const QString& name)
@@ -36,18 +35,6 @@ void Flow::removeNode(NodeItem* node)
   });
 }
 
-void Flow::addConnection(ConnectionItem* connection)
-{
-  mInfo.connections.append(connection->saveInfo());
-}
-
-void Flow::removeConnection(ConnectionItem* connection)
-{
-  mInfo.connections.removeIf([connection](ConnectionSaveInfo item) {
-    return item.id == connection->id();
-  });
-}
-
 void Flow::updateFlow(NodeItem* node)
 {
   for (auto& info : mInfo.behaviouralNodes)
@@ -58,14 +45,12 @@ void Flow::updateFlow(NodeItem* node)
     info = node->saveInfo();
     return;
   }
+
+  // If the node does not exist, then add it to the list
+  mInfo.behaviouralNodes.append(node->saveInfo());
 }
 
 QVector<NodeSaveInfo> Flow::getNodes() const
 {
   return mInfo.behaviouralNodes;
-}
-
-QVector<ConnectionSaveInfo> Flow::getConnections() const
-{
-  return mInfo.connections;
 }

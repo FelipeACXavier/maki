@@ -18,7 +18,7 @@ file(GLOB STRUCTURAL_WIDGET_FILES ${CMAKE_CURRENT_SOURCE_DIR}/widgets/structure/
 file(GLOB PROPERTY_WIDGET_FILES ${CMAKE_CURRENT_SOURCE_DIR}/widgets/properties/*.cpp)
 file(GLOB COMPILER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/compiler/*.cpp)
 
-# message("view files: ${VIEW_FILES}")
+message("view files: ${VIEW_FILES}")
 qt_add_executable(${APPLICATION_NAME}
     main.cpp
     assets.qrc

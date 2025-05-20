@@ -11,8 +11,6 @@
 #include "canvas_view.h"
 #include "config.h"
 #include "config_table.h"
-#include "elements/connection.h"
-#include "elements/connector.h"
 #include "elements/flow.h"
 #include "elements/node.h"
 #include "elements/transition.h"
@@ -119,27 +117,7 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
     mStartDragPosition = event->scenePos();
 
     QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
-    if (item && item->type() == Connector::Type)
-    {
-      Connector* connector = static_cast<Connector*>(item);
-
-      // Add error message
-      if (connector->connectorType() == Types::ConnectorType::IN)
-        return;
-
-      mConnector = connector;
-      mConnection = new ConnectionItem();
-
-      auto shifts = connector->shift();
-      mConnection->setStart(connector->id(), connector->center(), shifts.first);
-      mConnection->setEnd(Constants::TMP_CONNECTION_ID, event->scenePos(), shifts.second);
-
-      addItem(mConnection);
-      parentView()->setDragMode(QGraphicsView::NoDrag);
-      event->accept();
-      return;
-    }
-    else if (item && (item->type() == NodeItem::Type || item->type() == QGraphicsTextItem::Type))
+    if (item && (item->type() == NodeItem::Type || item->type() == QGraphicsTextItem::Type))
     {
       NodeItem* node = static_cast<NodeItem*>(item->type() == QGraphicsTextItem::Type ? item->parentItem() : item);
       if (isModifierSet(event, Qt::AltModifier))
@@ -185,24 +163,7 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
 
 void Canvas::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
-  if (mConnection)
-  {
-    // Find the nearest Connector while dragging
-    QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
-    if (item && item->type() == Connector::Type)
-    {
-      mHoveredConnector = dynamic_cast<Connector*>(item);
-      mHoveredConnector->updateColor(true);
-    }
-    else if (mHoveredConnector)
-    {
-      mHoveredConnector->updateColor(false);
-      mHoveredConnector = nullptr;
-    }
-
-    mConnection->move(Constants::TMP_CONNECTION_ID, event->scenePos());
-  }
-  else if (mTransition)
+  if (mTransition)
   {
     mTransition->move(Constants::TMP_CONNECTION_ID, event->scenePos());
   }
@@ -292,39 +253,7 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
   parentView()->setDragMode(QGraphicsView::RubberBandDrag);
 
-  if (mConnection)
-  {
-    if (event->button() == Qt::LeftButton)
-    {
-      QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
-      if (item && item->type() == Connector::Type)
-      {
-        Connector* connector = static_cast<Connector*>(item);
-
-        if (connector->connectorType() != Types::ConnectorType::OUT && connector != mConnector)
-        {
-          mConnection->setEnd(connector->id(), connector->center(), connector->shift().first);
-          connector->addConnection(mConnection);
-          mConnector->addConnection(mConnection);
-
-          mConnection->done(mConnector, connector);
-          updateParent(mConnection, true);
-        }
-        else
-        {
-          LOG_WARNING("To create the connection, drop the connection on a valid connector");
-        }
-      }
-      else
-      {
-        removeItem(mConnection);
-      }
-
-      mConnection = nullptr;
-      mConnector = nullptr;
-    }
-  }
-  else if (mTransition)
+  if (mTransition)
   {
     if (event->button() == Qt::LeftButton)
     {
@@ -338,6 +267,7 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
         mNode->addTransition(mTransition);
 
         mTransition->done(mNode, node);
+        updateParent(node, true);
       }
       else
       {
@@ -372,73 +302,6 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
   QGraphicsScene::mouseReleaseEvent(event);  // Allow normal item drop behavior
 }
 
-QMenu* Canvas::createConnectionMenu(const QList<QGraphicsItem*>& items)
-{
-  QMenu* connectMenu = new QMenu("Connect");
-  connectMenu->setEnabled(false);
-
-  if (items.size() != 2)
-    return connectMenu;
-
-  auto item1 = selectedItems().at(0);
-  auto item2 = selectedItems().at(1);
-
-  if (item1->type() != NodeItem::Type || item2->type() != NodeItem::Type)
-    return connectMenu;
-
-  auto node1 = static_cast<NodeItem*>(item1);
-  auto node2 = static_cast<NodeItem*>(item2);
-
-  for (auto& con1 : node1->connectors())
-  {
-    for (auto& con2 : node2->connectors())
-    {
-      Connector* start = nullptr;
-      Connector* end = nullptr;
-
-      if (con1->connectorType() == Types::ConnectorType::OUT &&
-          (con2->connectorType() == Types::ConnectorType::IN || con2->connectorType() == Types::ConnectorType::IN_AND_OUT))
-      {
-        start = static_cast<Connector*>(con1.get());
-        end = static_cast<Connector*>(con2.get());
-      }
-      else if (con1->connectorType() == Types::ConnectorType::IN &&
-               (con2->connectorType() == Types::ConnectorType::OUT || con2->connectorType() == Types::ConnectorType::IN_AND_OUT))
-      {
-        start = static_cast<Connector*>(con2.get());
-        end = static_cast<Connector*>(con1.get());
-      }
-      else
-      {
-        continue;
-      }
-
-      QAction* connectAction = connectMenu->addAction(QString("%1 -> %2").arg(start->connectorName(), end->connectorName()));
-      QObject::connect(connectAction, &QAction::triggered, [this, start, end]() {
-        assert(start && end);
-        auto connection = new ConnectionItem();
-
-        LOG_DEBUG("Connecting %s to %s", qPrintable(start->connectorName()), qPrintable(end->connectorName()));
-
-        connection->setStart(start->id(), start->center(), start->shift().first);
-        connection->setEnd(end->id(), end->center(), end->shift().first);
-
-        start->addConnection(connection);
-        end->addConnection(connection);
-
-        connection->done(start, end);
-        updateParent(connection, true);
-
-        addItem(connection);
-      });
-    }
-  }
-
-  connectMenu->setEnabled(connectMenu->actions().size() > 0);
-
-  return connectMenu;
-}
-
 QMenu* Canvas::createAlignMenu(const QList<QGraphicsItem*>& items)
 {
   QMenu* alignMenu = new QMenu("Align");
@@ -464,8 +327,6 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
   // Define menu actions
   // =============================================
   menu.addSection("Creation");
-
-  menu.addMenu(createConnectionMenu(items));
 
   QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
   NodeItem* node = nullptr;
@@ -557,12 +418,6 @@ void Canvas::deleteSelectedItems()
       if (!parent || !parent->isSelected())
         nodesToDelete.append(node);
     }
-    else if (item->type() == ConnectionItem::Type)
-    {
-      ConnectionItem* transition = static_cast<ConnectionItem*>(item);
-      if (!(transition->source() && static_cast<Connector*>(transition->source())->isSelected()) && !(transition->destination() && static_cast<Connector*>(transition->destination())->isSelected()))
-        connectionsToDelete.append(transition);
-    }
     else if (item->type() == TransitionItem::Type)
     {
       TransitionItem* transition = static_cast<TransitionItem*>(item);
@@ -574,7 +429,7 @@ void Canvas::deleteSelectedItems()
   // First delete the connections
   for (QGraphicsItem* connection : connectionsToDelete)
   {
-    updateParent(static_cast<ConnectionItem*>(connection), false);
+    // updateParent(static_cast<ConnectionItem*>(connection), false);
     removeItem(connection);
     delete connection;
   }
@@ -606,8 +461,6 @@ void Canvas::copySelectedItems()
     auto info = node->saveInfo();
     info.id = QString();
     info.position = mousePosition - info.position;
-    for (auto& connector : info.connectors)
-      connector.connectorId = QString();
 
     copiedNodes.append(info);
 
@@ -709,63 +562,42 @@ VoidResult Canvas::loadFromSave(const SaveInfo& info)
     (void)createNode(node, node.position, findNodeWithId(node.parentId));
   }
 
-  for (const auto& node : info.behaviouralNodes)
-  {
-    LOG_DEBUG("Creating behavioral node %s with parent %s", qPrintable(node.id), qPrintable(node.parentId));
-    (void)createNode(node, node.position, findNodeWithId(node.parentId));
-  }
+  // for (const auto& node : info.behaviouralNodes)
+  // {
+  //   LOG_DEBUG("Creating behavioral node %s with parent %s", qPrintable(node.id), qPrintable(node.parentId));
+  //   (void)createNode(node, node.position, findNodeWithId(node.parentId));
+  // }
 
-  for (const auto& conn : info.connections)
-  {
-    LOG_DEBUG("Creating connection with parents %s -> %s", qPrintable(conn.srcId), qPrintable(conn.dstId));
+  // for (const auto& node : info.behaviouralNodes)
+  // {
+  //   auto srcConn = findNodeWithId(node.id);
+  //   if (!srcConn)
+  //     continue;
 
-    auto srcConn = findConnectorWithId(conn.srcId);
-    auto dstConn = findConnectorWithId(conn.dstId);
+  //   for (const auto& transition : node.transitions)
+  //   {
+  //     auto dstConn = findNodeWithId(transition.dstId);
+  //     if (!dstConn)
+  //     {
+  //       LOG_WARNING("Could not find destination node");
+  //       continue;
+  //     }
 
-    if (!srcConn || !dstConn)
-    {
-      LOG_WARNING("Could not find connectors");
-      continue;
-    }
+  //     LOG_DEBUG("Creating transitions with parents %s -> %s", qPrintable(node.id), qPrintable(transition.dstId));
 
-    auto connection = new ConnectionItem();
+  //     auto connection = new TransitionItem();
 
-    connection->setStart(conn.srcId, conn.srcPoint, conn.srcShift);
-    connection->setEnd(conn.dstId, conn.dstPoint, conn.dstShift);
+  //     connection->setStart(node.id, transition.srcPoint, transition.srcShift);
+  //     connection->setEnd(transition.dstId, transition.dstPoint, transition.dstShift);
 
-    srcConn->addConnection(connection);
-    dstConn->addConnection(connection);
+  //     srcConn->addTransition(connection);
+  //     dstConn->addTransition(connection);
 
-    connection->done(srcConn, dstConn);
+  //     connection->done(srcConn, dstConn);
 
-    addItem(connection);
-  }
-
-  for (const auto& conn : info.transitions)
-  {
-    LOG_DEBUG("Creating transitions with parents %s -> %s", qPrintable(conn.srcId), qPrintable(conn.dstId));
-
-    auto srcConn = findNodeWithId(conn.srcId);
-    auto dstConn = findNodeWithId(conn.dstId);
-
-    if (!srcConn || !dstConn)
-    {
-      LOG_WARNING("Could not find nodes");
-      continue;
-    }
-
-    auto connection = new TransitionItem();
-
-    connection->setStart(conn.srcId, conn.srcPoint, conn.srcShift);
-    connection->setEnd(conn.dstId, conn.dstPoint, conn.dstShift);
-
-    srcConn->addTransition(connection);
-    dstConn->addTransition(connection);
-
-    connection->done(srcConn, dstConn);
-
-    addItem(connection);
-  }
+  //     addItem(connection);
+  //   }
+  // }
 
   return VoidResult();
 }
@@ -844,21 +676,6 @@ NodeItem* Canvas::findNodeWithId(const QString& id) const
   return nullptr;
 }
 
-Connector* Canvas::findConnectorWithId(const QString& id) const
-{
-  for (const auto& item : items())
-  {
-    if (item->type() != Connector::Type)
-      continue;
-
-    auto connector = static_cast<Connector*>(item);
-    if (connector->id() == id)
-      return connector;
-  }
-
-  return nullptr;
-}
-
 qreal Canvas::getScale() const
 {
   return parentView()->getScale();
@@ -913,36 +730,46 @@ void Canvas::onRenameNode(const QString& nodeId, const QString& name)
 // Flow
 void Canvas::populate(Flow* flow)
 {
+  // First create all the nodes
   for (const auto& node : flow->getNodes())
   {
     LOG_DEBUG("Creating behavioral node %s with parent %s", qPrintable(node.id), qPrintable(node.parentId));
     (void)createNode(node, node.position, findNodeWithId(node.parentId));
   }
 
-  for (const auto& conn : flow->getConnections())
+  // Then create the transitions between the nodes
+  for (const auto& node : flow->getNodes())
   {
-    LOG_DEBUG("Creating connection with parents %s -> %s", qPrintable(conn.srcId), qPrintable(conn.dstId));
-
-    auto srcConn = findConnectorWithId(conn.srcId);
-    auto dstConn = findConnectorWithId(conn.dstId);
-
-    if (!srcConn || !dstConn)
+    auto srcConn = findNodeWithId(node.id);
+    if (!srcConn)
     {
-      LOG_WARNING("Could not find connectors");
+      LOG_WARNING("Could not find source node");
       continue;
     }
 
-    auto connection = new ConnectionItem();
+    for (const auto& transition : node.transitions)
+    {
+      auto dstConn = findNodeWithId(transition.dstId);
+      if (!dstConn)
+      {
+        LOG_WARNING("Could not find destination node");
+        continue;
+      }
 
-    connection->setStart(conn.srcId, conn.srcPoint, conn.srcShift);
-    connection->setEnd(conn.dstId, conn.dstPoint, conn.dstShift);
+      LOG_DEBUG("Creating transitions %s -> %s", qPrintable(node.id), qPrintable(transition.dstId));
 
-    srcConn->addConnection(connection);
-    dstConn->addConnection(connection);
+      auto connection = new TransitionItem();
 
-    connection->done(srcConn, dstConn);
+      connection->setStart(node.id, transition.srcPoint, transition.srcShift);
+      connection->setEnd(transition.dstId, transition.dstPoint, transition.dstShift);
 
-    addItem(connection);
+      srcConn->addTransition(connection);
+      dstConn->addTransition(connection);
+
+      connection->done(srcConn, dstConn);
+
+      addItem(connection);
+    }
   }
 }
 
@@ -973,9 +800,5 @@ void Canvas::onFlowRemoved(const QString& flowId, const QString& nodeId)
 }
 
 void Canvas::updateParent(NodeItem* /* node */, bool /* adding */)
-{
-}
-
-void Canvas::updateParent(ConnectionItem* /* connection */, bool /* adding */)
 {
 }

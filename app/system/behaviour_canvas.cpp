@@ -19,18 +19,7 @@ void BehaviourCanvas::updateParent(NodeItem* node, bool adding)
     return;
 
   if (adding)
-    mFlow->addNode(node);
+    mFlow->updateFlow(node);
   else
     mFlow->removeNode(node);
-}
-
-void BehaviourCanvas::updateParent(ConnectionItem* connection, bool adding)
-{
-  if (mFlow == nullptr)
-    return;
-
-  if (adding)
-    mFlow->addConnection(connection);
-  else
-    mFlow->removeConnection(connection);
 }

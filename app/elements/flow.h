@@ -7,7 +7,6 @@
 #include "types.h"
 
 class NodeItem;
-class ConnectionItem;
 
 class Flow
 {
@@ -30,11 +29,7 @@ public:
 
   void updateFlow(NodeItem* node);
 
-  void addConnection(ConnectionItem* connection);
-  void removeConnection(ConnectionItem* connection);
-
   QVector<NodeSaveInfo> getNodes() const;
-  QVector<ConnectionSaveInfo> getConnections() const;
 
 private:
   const QString mId;

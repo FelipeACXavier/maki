@@ -3,7 +3,6 @@
 #include "result.h"
 #include "system/canvas.h"
 
-class Connector;
 class GeneratorPlugin;
 
 class Generator

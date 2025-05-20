@@ -15,5 +15,4 @@ private:
   Flow* mFlow;
 
   void updateParent(NodeItem* node, bool adding) override;
-  void updateParent(ConnectionItem* connection, bool adding) override;
 };

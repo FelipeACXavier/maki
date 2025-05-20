@@ -1,7 +1,5 @@
 #include "generator.h"
 
-#include "elements/connection.h"
-#include "elements/connector.h"
 #include "elements/node.h"
 #include "logging.h"
 #include "system/generator_plugin.h"

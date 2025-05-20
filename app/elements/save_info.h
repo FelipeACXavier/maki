@@ -12,7 +12,8 @@
 
 struct TransitionSaveInfo
 {
-  QString srcId = "";
+  QString id = "";
+
   QPointF srcPoint{0, 0};
   QPointF srcShift{0, 0};
 
@@ -29,20 +30,6 @@ struct TransitionSaveInfo
   friend QDataStream& operator>>(QDataStream& in, TransitionSaveInfo& info);
 };
 
-struct ConnectorSaveInfo
-{
-  QString connectorId = "";
-  QString configId = "";
-
-  ConnectorSaveInfo() = default;
-
-  QJsonObject toJson() const;
-  static ConnectorSaveInfo fromJson(const QJsonObject& data);
-
-  friend QDataStream& operator<<(QDataStream& out, const ConnectorSaveInfo& info);
-  friend QDataStream& operator>>(QDataStream& in, ConnectorSaveInfo& info);
-};
-
 struct NodeSaveInfo
 {
   QString id = "";
@@ -54,7 +41,7 @@ struct NodeSaveInfo
   QVector<PropertiesConfig> fields;
   QVector<EventConfig> events;
   QMap<QString, QVariant> properties;
-  QVector<ConnectorSaveInfo> connectors;
+  QVector<TransitionSaveInfo> transitions;
 
   QString parentId = "";
   QVector<NodeSaveInfo> children = {};
@@ -66,26 +53,6 @@ struct NodeSaveInfo
 
   friend QDataStream& operator<<(QDataStream& out, const NodeSaveInfo& info);
   friend QDataStream& operator>>(QDataStream& in, NodeSaveInfo& info);
-};
-
-struct ConnectionSaveInfo
-{
-  QString id = "";
-  QString srcId = "";
-  QPointF srcPoint{0, 0};
-  QPointF srcShift{0, 0};
-
-  QString dstId = "";
-  QPointF dstPoint{0, 0};
-  QPointF dstShift{0, 0};
-
-  ConnectionSaveInfo() = default;
-
-  QJsonObject toJson() const;
-  static ConnectionSaveInfo fromJson(const QJsonObject& data);
-
-  friend QDataStream& operator<<(QDataStream& out, const ConnectionSaveInfo& info);
-  friend QDataStream& operator>>(QDataStream& in, ConnectionSaveInfo& info);
 };
 
 struct CanvasSaveInfo
@@ -105,8 +72,6 @@ struct SaveInfo
   CanvasSaveInfo canvasInfo;
   QVector<NodeSaveInfo> structuralNodes;
   QVector<NodeSaveInfo> behaviouralNodes;
-  QVector<ConnectionSaveInfo> connections;
-  QVector<TransitionSaveInfo> transitions;
 
   QJsonObject toJson() const;
   static SaveInfo fromJson(const QJsonObject& data);
