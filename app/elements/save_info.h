@@ -10,6 +10,24 @@
 #include "config.h"
 #include "inode.h"
 
+struct NodeSaveInfo;
+
+struct FlowSaveInfo
+{
+  QString id = "";
+  QString name = "";
+
+  QVector<NodeSaveInfo> nodes;
+
+  FlowSaveInfo() = default;
+
+  QJsonObject toJson() const;
+  static FlowSaveInfo fromJson(const QJsonObject& data);
+
+  friend QDataStream& operator<<(QDataStream& out, const FlowSaveInfo& info);
+  friend QDataStream& operator>>(QDataStream& in, FlowSaveInfo& info);
+};
+
 struct TransitionSaveInfo
 {
   QString id = "";
@@ -42,6 +60,7 @@ struct NodeSaveInfo
   QVector<EventConfig> events;
   QMap<QString, QVariant> properties;
   QVector<TransitionSaveInfo> transitions;
+  QVector<FlowSaveInfo> flows;
 
   QString parentId = "";
   QVector<NodeSaveInfo> children = {};

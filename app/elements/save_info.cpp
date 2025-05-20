@@ -8,8 +8,57 @@
 #include "logging.h"
 
 Q_DECLARE_METATYPE(TransitionSaveInfo)
+Q_DECLARE_METATYPE(FlowSaveInfo)
 Q_DECLARE_METATYPE(NodeSaveInfo)
 Q_DECLARE_METATYPE(SaveInfo)
+
+// ==========================================================================================================
+// FlowSaveInfo
+QDataStream& operator<<(QDataStream& out, const FlowSaveInfo& info)
+{
+  out << info.id;
+  out << info.name;
+  out << info.nodes;
+
+  return out;
+}
+
+QDataStream& operator>>(QDataStream& in, FlowSaveInfo& info)
+{
+  in >> info.id;
+  in >> info.name;
+  in >> info.nodes;
+
+  return in;
+}
+
+QJsonObject FlowSaveInfo::toJson() const
+{
+  QJsonObject data;
+  data[ConfigKeys::ID] = id;
+  data[ConfigKeys::NAME] = name;
+
+  QJsonArray nodesArray;
+  for (const auto& node : nodes)
+    nodesArray.append(node.toJson());
+
+  if (nodesArray.size() > 0)
+    data[ConfigKeys::NODES] = nodesArray;
+
+  return data;
+}
+
+FlowSaveInfo FlowSaveInfo::fromJson(const QJsonObject& data)
+{
+  FlowSaveInfo info;
+  info.id = data[ConfigKeys::ID].toString();
+  info.name = data[ConfigKeys::NAME].toString();
+
+  for (const auto& node : data[ConfigKeys::NODES].toArray())
+    info.nodes.append(NodeSaveInfo::fromJson(node.toObject()));
+
+  return info;
+}
 
 // ==========================================================================================================
 // TransitionSaveInfo
