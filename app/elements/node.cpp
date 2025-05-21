@@ -470,9 +470,6 @@ void NodeItem::onProperties()
 
 NodeSaveInfo NodeItem::saveInfo() const
 {
-  // NodeSaveInfo info;
-  // info.size = QSizeF{mSize.width() * baseScale(), mSize.height() * baseScale()};
-
   return *mStorage;
 }
 

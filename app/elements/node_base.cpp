@@ -163,7 +163,7 @@ void NodeBase::setLabelName(const QString& name)
     return;
 
   mLabel->setPlainText(name);
-  updateLabelPosition();
+  setLabelSize(mLabel->font().pointSizeF(), boundingRect().size());
 }
 
 void NodeBase::setLabelSize(qreal fontSize, const QSizeF& boundingSize)
