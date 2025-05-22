@@ -16,6 +16,11 @@ struct FlowSaveInfo
 {
   QString id = "";
   QString name = "";
+  bool modifiable = true;
+
+  Types::ConnectorType type = Types::ConnectorType::UNKNOWN;
+  Types::PropertyTypes returnType = Types::PropertyTypes::UNKNOWN;
+  QVector<PropertiesConfig> arguments = {};
 
   QVector<std::shared_ptr<NodeSaveInfo>> nodes;
 

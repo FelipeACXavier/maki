@@ -1,0 +1,58 @@
+{
+  "name": "Utilities",
+  "author": "Felipe Xavier",
+  "libraries": [
+    {
+      "type": "structure",
+      "nodes": [
+        {
+          "type": "Timer",
+          "body": {
+            "shape": "Rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#202020",
+            "borderColor": "#FFFFFF",
+            "width": 500,
+            "height": 500,
+            "z-index": -2
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Timer"
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#0d0d50"
+            }
+          ],
+          "controls": [
+            {
+              "id": "Add event",
+              "type": "add event"
+            }
+          ],
+          "events": [
+            {
+              "id": "set",
+              "type": "in",
+              "returnType": "void"
+            },
+            {
+              "id": "reset",
+              "type": "in",
+              "returnType": "void"
+            },
+            {
+              "id": "timeout",
+              "type": "out",
+              "returnType": "void"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

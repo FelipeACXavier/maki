@@ -40,6 +40,10 @@ QDataStream& operator<<(QDataStream& out, const FlowSaveInfo& info)
   out << info.id;
   out << info.name;
   out << info.nodes;
+  out << info.modifiable;
+  out << info.type;
+  out << info.returnType;
+  out << info.arguments;
 
   return out;
 }
@@ -49,6 +53,10 @@ QDataStream& operator>>(QDataStream& in, FlowSaveInfo& info)
   in >> info.id;
   in >> info.name;
   in >> info.nodes;
+  in >> info.modifiable;
+  in >> info.type;
+  in >> info.returnType;
+  in >> info.arguments;
 
   return in;
 }
@@ -58,6 +66,15 @@ QJsonObject FlowSaveInfo::toJson() const
   QJsonObject data;
   data[ConfigKeys::ID] = id;
   data[ConfigKeys::NAME] = name;
+  data[ConfigKeys::MODIFIABLE] = modifiable;
+  data[ConfigKeys::TYPE] = Types::ConnectorTypeToString(type);
+  data[ConfigKeys::RETURN_TYPE] = Types::PropertyTypesToString(returnType);
+
+  QJsonArray optionArray;
+  for (const auto& arg : arguments)
+    optionArray.append(arg.toJson());
+
+  data[ConfigKeys::ARGUMENTS] = optionArray;
 
   QJsonArray nodesArray;
   for (const auto& node : nodes)
@@ -74,6 +91,12 @@ FlowSaveInfo FlowSaveInfo::fromJson(const QJsonObject& data)
   FlowSaveInfo info;
   info.id = data[ConfigKeys::ID].toString();
   info.name = data[ConfigKeys::NAME].toString();
+  info.modifiable = data[ConfigKeys::MODIFIABLE].toBool();
+  info.type = Types::StringToConnectorType(data[ConfigKeys::TYPE].toString());
+  info.returnType = Types::StringToPropertyTypes(data[ConfigKeys::RETURN_TYPE].toString());
+
+  for (const auto& argument : data[ConfigKeys::ARGUMENTS].toArray())
+    info.arguments.append(PropertiesConfig::fromJson(argument.toObject()));
 
   for (const auto& node : data[ConfigKeys::NODES].toArray())
     info.nodes.append(std::make_shared<NodeSaveInfo>(NodeSaveInfo::fromJson(node.toObject())));
@@ -452,7 +475,6 @@ QVector<std::shared_ptr<NodeSaveInfo>> SaveInfo::findFamilyOfConstruct(const QSt
   for (const auto& node : nodes)
   {
     auto parent = findParentOfConstruct(nodeId, node);
-    LOG_DEBUG("Looking through node: %s => %d", qPrintable(node->properties["name"].toString()), (parent != nullptr));
     if (parent)
       return nodes + node->children;
 

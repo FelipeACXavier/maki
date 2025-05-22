@@ -11,6 +11,7 @@ class QTableView;
 class QHBoxLayout;
 class EventDialog;
 class QStandardItemModel;
+class FlowSaveInfo;
 
 class FieldsMenu : public QFrame, public MenuBase
 {
@@ -35,5 +36,5 @@ private:
   void showEventContextMenu(QTableView* tableView, NodeItem* node, const QPoint& pos);
 
   void editEvent(QTableView* tableView, NodeItem* node, const QModelIndex& index);
-  void addEventToTable(QStandardItemModel* model, int row, const EventConfig& event);
+  void addEventToTable(QStandardItemModel* model, int row, std::shared_ptr<FlowSaveInfo> event);
 };

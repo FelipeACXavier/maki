@@ -7,6 +7,7 @@
         <file>libraries/grpc.json</file>
         <file>libraries/ros2.json</file>
         <file>libraries/serial.json</file>
+        <file>libraries/utilities.json</file>
       </qresource>
       <qresource prefix="/math">
          <file alias="addition.png">assets/icons/math/addition.png</file>

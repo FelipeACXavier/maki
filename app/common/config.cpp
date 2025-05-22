@@ -5,7 +5,45 @@
 #include <QRect>
 
 #include "app_configs.h"
+#include "keys.h"
 #include "string_helpers.h"
+
+FlowConfig::FlowConfig()
+{
+}
+
+FlowConfig::FlowConfig(const QJsonObject& object)
+{
+  if (!object.contains(ConfigKeys::ID))
+  {
+    setInvalid("Missing event id");
+    return;
+  }
+
+  if (!object.contains(ConfigKeys::TYPE))
+  {
+    setInvalid("Missing event type");
+    return;
+  }
+
+  name = object[ConfigKeys::ID].toString();
+  type = Types::StringToConnectorType(object[ConfigKeys::TYPE].toString());
+  if (type == Types::ConnectorType::UNKNOWN)
+  {
+    setInvalid("Invalid type: " + object[ConfigKeys::TYPE].toString() + " for " + name);
+    return;
+  }
+
+  returnType = Types::StringToPropertyTypes(object[ConfigKeys::RETURN_TYPE].toString());
+  if (returnType == Types::PropertyTypes::UNKNOWN)
+  {
+    setInvalid("Invalid property type: " + object[ConfigKeys::RETURN_TYPE].toString() + " for " + name);
+    return;
+  }
+
+  for (const auto& arg : object[ConfigKeys::ARGUMENTS].toArray())
+    arguments.push_back(PropertiesConfig(arg.toObject()));
+}
 
 ControlsConfig::ControlsConfig()
 {
@@ -169,7 +207,7 @@ NodeConfig::NodeConfig(const QJsonObject& object)
   {
     for (const auto& control : object["events"].toArray())
     {
-      auto ctrl = EventConfig(control.toObject());
+      auto ctrl = FlowConfig(control.toObject());
       if (!ctrl.isValid())
         setInvalid(ctrl.errorMessage);
 
@@ -271,6 +309,23 @@ QDataStream& operator<<(QDataStream& out, const ControlsConfig& config)
 }
 
 QDataStream& operator>>(QDataStream& in, ControlsConfig& config)
+{
+  return in;
+}
+
+// ===========================================================================================================
+// FlowConfig
+QDataStream& operator<<(QDataStream& out, const FlowConfig& config)
+{
+  out << config.name;
+  out << config.type;
+  out << config.returnType;
+  out << config.arguments;
+
+  return out;
+}
+
+QDataStream& operator>>(QDataStream& in, FlowConfig& config)
 {
   return in;
 }

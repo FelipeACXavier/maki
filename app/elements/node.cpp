@@ -57,10 +57,29 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
       mStorage->properties[property.id] = property.defaultValue;
   }
 
-  if (mStorage->events.isEmpty())
+  for (const auto& event : config()->events)
   {
-    for (const auto& event : config()->events)
-      mStorage->events.push_back(event);
+    bool found = false;
+    for (const auto& flow : mStorage->flows)
+    {
+      if (flow->name != event.name)
+        continue;
+
+      found = true;
+      break;
+    }
+
+    if (found)
+      continue;
+
+    // Add new flow
+    auto flow = std::make_shared<FlowSaveInfo>();
+    flow->id = QUuid::createUuid().toString();
+    flow->name = event.name;
+    flow->modifiable = false;
+    flow->type = event.type;
+
+    mStorage->flows.push_back(flow);
   }
 
   // Add icon if it exists
@@ -190,9 +209,9 @@ QVector<PropertiesConfig> NodeItem::fields() const
   return mStorage->fields;
 }
 
-QVector<EventConfig> NodeItem::events() const
+QVector<std::shared_ptr<FlowSaveInfo>> NodeItem::events() const
 {
-  return mStorage->events;
+  return mStorage->flows;
 }
 
 QVector<ControlsConfig> NodeItem::controls() const
@@ -288,13 +307,13 @@ void NodeItem::removeField(const QString& key)
 
 void NodeItem::setEvent(int index, const EventConfig& event)
 {
-  if (!mStorage)
-    return;
+  // if (!mStorage)
+  //   return;
 
-  if (index < mStorage->events.size())
-    mStorage->events[index] = event;
-  else
-    mStorage->events.push_back(event);
+  // if (index < mStorage->events.size())
+  //   mStorage->events[index] = event;
+  // else
+  //   mStorage->events.push_back(event);
 }
 
 QVector<NodeItem*> NodeItem::children() const

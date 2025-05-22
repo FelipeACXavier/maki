@@ -1,6 +1,7 @@
 {
   "libraries": [
     "generic",
+    "utilities",
     "math",
     "grpc",
     "ros2",

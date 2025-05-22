@@ -14,6 +14,7 @@ static const QString SCALE = "scale";
 static const QString NODE_ID = "nodeId";
 static const QString POSITION = "position";
 static const QString PARENT_ID = "parentId";
+static const QString MODIFIABLE = "modifiable";
 
 static const QString FIELDS = "fields";
 static const QString EVENTS = "events";

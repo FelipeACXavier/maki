@@ -295,52 +295,52 @@ void FieldsMenu::showEventContextMenu(QTableView* tableView, NodeItem* node, con
 void FieldsMenu::editEvent(QTableView* tableView, NodeItem* node, const QModelIndex& index)
 {
   // Open the dialog
-  mCurrentDialog = new EventDialog("Edit event", this);
+  // mCurrentDialog = new EventDialog("Edit event", this);
 
-  EventConfig config = index.row() < node->events().size() ? node->events().at(index.row()) : EventConfig();
-  mCurrentDialog->setup(config);
+  // EventConfig config = index.row() < node->events().size() ? node->events().at(index.row()) : EventConfig();
+  // mCurrentDialog->setup(config);
 
-  connect(mCurrentDialog, &QDialog::accepted, [this, tableView, node, index] {
-    int row = index.row();
+  // connect(mCurrentDialog, &QDialog::accepted, [this, tableView, node, index] {
+  //   int row = index.row();
 
-    EventConfig event;
-    event.id = mCurrentDialog->getName();
-    event.type = Types::StringToConnectorType(mCurrentDialog->getType());
-    event.returnType = Types::StringToPropertyTypes(mCurrentDialog->getReturnType());
+  //   EventConfig event;
+  //   event.id = mCurrentDialog->getName();
+  //   event.type = Types::StringToConnectorType(mCurrentDialog->getType());
+  //   event.returnType = Types::StringToPropertyTypes(mCurrentDialog->getReturnType());
 
-    auto model = mCurrentDialog->getArguments();
-    for (int i = 0; i < model->rowCount(); ++i)
-    {
-      PropertiesConfig property;
-      property.id = model->index(i, 0).data().toString();
-      property.type = Types::StringToPropertyTypes(model->index(i, 1).data().toString());
-      event.arguments.push_back(property);
-    }
+  //   auto model = mCurrentDialog->getArguments();
+  //   for (int i = 0; i < model->rowCount(); ++i)
+  //   {
+  //     PropertiesConfig property;
+  //     property.id = model->index(i, 0).data().toString();
+  //     property.type = Types::StringToPropertyTypes(model->index(i, 1).data().toString());
+  //     event.arguments.push_back(property);
+  //   }
 
-    addEventToTable((QStandardItemModel*)tableView->model(), row, event);
+  //   addEventToTable((QStandardItemModel*)tableView->model(), row, event);
 
-    node->setEvent(row, event);
-  });
-  connect(mCurrentDialog, &QDialog::rejected, [this] {
-    mCurrentDialog->close();
-    mCurrentDialog->deleteLater();
-  });
+  //   node->setEvent(row, event);
+  // });
+  // connect(mCurrentDialog, &QDialog::rejected, [this] {
+  //   mCurrentDialog->close();
+  //   mCurrentDialog->deleteLater();
+  // });
 
-  mCurrentDialog->setAttribute(Qt::WA_DeleteOnClose);
-  mCurrentDialog->show();
+  // mCurrentDialog->setAttribute(Qt::WA_DeleteOnClose);
+  // mCurrentDialog->show();
 }
 
-void FieldsMenu::addEventToTable(QStandardItemModel* model, int row, const EventConfig& event)
+void FieldsMenu::addEventToTable(QStandardItemModel* model, int row, std::shared_ptr<FlowSaveInfo> event)
 {
-  model->setItem(row, 0, new QStandardItem(event.id));
-  model->setItem(row, 1, new QStandardItem(Types::ConnectorTypeToString(event.type)));
-  model->setItem(row, 2, new QStandardItem(Types::PropertyTypesToString(event.returnType)));
+  model->setItem(row, 0, new QStandardItem(event->name));
+  model->setItem(row, 1, new QStandardItem(Types::ConnectorTypeToString(event->type)));
+  model->setItem(row, 2, new QStandardItem(Types::PropertyTypesToString(event->returnType)));
 
-  if (event.arguments.isEmpty())
+  if (event->arguments.isEmpty())
     return;
 
   QString args = "";
-  for (const auto& arg : event.arguments)
+  for (const auto& arg : event->arguments)
     args += arg.id + ", ";
 
   // Remove the trailing ", "

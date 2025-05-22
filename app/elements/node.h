@@ -65,7 +65,7 @@ public:
   QPointF edgePointToward(const QPointF& targetScenePos) const;
 
   void setEvent(int index, const EventConfig& event);
-  QVector<EventConfig> events() const;
+  QVector<std::shared_ptr<FlowSaveInfo>> events() const;
 
   void addChild(NodeItem* node, std::shared_ptr<NodeSaveInfo> info);
   void childRemoved(NodeItem* child);

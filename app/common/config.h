@@ -10,6 +10,21 @@
 #include "property_config.h"
 #include "types.h"
 
+class FlowConfig : public ConfigBase
+{
+public:
+  FlowConfig();
+  FlowConfig(const QJsonObject& object);
+
+  QString name = "";
+  Types::ConnectorType type = Types::ConnectorType::UNKNOWN;
+  Types::PropertyTypes returnType = Types::PropertyTypes::UNKNOWN;
+  QList<PropertiesConfig> arguments = {};
+
+  friend QDataStream& operator<<(QDataStream& out, const FlowConfig& config);
+  friend QDataStream& operator>>(QDataStream& in, FlowConfig& config);
+};
+
 class ControlsConfig : public ConfigBase
 {
 public:
@@ -87,7 +102,7 @@ public:
   BehaviourConfig behaviour;
   QVector<ControlsConfig> controls;
   QVector<PropertiesConfig> properties;
-  QVector<EventConfig> events;
+  QVector<FlowConfig> events;
 
   Types::LibraryTypes libraryType = Types::LibraryTypes::UNKNOWN;
 
