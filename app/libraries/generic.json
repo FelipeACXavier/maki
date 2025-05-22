@@ -331,9 +331,8 @@
               "default": "Action"
             },
             {
-              "id": "call",
-              "type": "string",
-              "default": ""
+              "id": "Component",
+              "type": "event_select"
             }
           ],
           "connectors": [
@@ -347,8 +346,7 @@
               "type": "out",
               "position": "east"
             }
-          ],
-          "behaviour": {}
+          ]
         },
         {
           "type": "Constant",

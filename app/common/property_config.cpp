@@ -27,7 +27,7 @@ PropertiesConfig::PropertiesConfig(const QJsonObject& object)
   }
 
   id = object["id"].toString();
-  type = toType(object["type"].toString());
+  type = Types::StringToPropertyTypes(object["type"].toString());
   if (type == Types::PropertyTypes::UNKNOWN)
   {
     setInvalid("Invalid property type: " + object["type"].toString() + " for " + id);
@@ -38,22 +38,6 @@ PropertiesConfig::PropertiesConfig(const QJsonObject& object)
   defaultValue = toDefault(object, type);
   if (!defaultValue.isValid())
     setInvalid("Invalid default value for " + id);
-}
-
-QString PropertiesConfig::typeToString() const
-{
-  if (type == Types::PropertyTypes::STRING)
-    return "string";
-  else if (type == Types::PropertyTypes::INTEGER)
-    return "integer";
-  else if (type == Types::PropertyTypes::REAL)
-    return "real";
-  else if (type == Types::PropertyTypes::BOOLEAN)
-    return "boolean";
-  else if (type == Types::PropertyTypes::LIST)
-    return "list";
-
-  return "unknown";
 }
 
 QVariant PropertiesConfig::toDefault(const QJsonObject& object, Types::PropertyTypes objectType)
@@ -86,29 +70,12 @@ QVariant PropertiesConfig::toDefault(const QJsonObject& object, Types::PropertyT
 
     return toDefault(object, Types::PropertyTypes::STRING);
   }
+  else if (objectType == Types::PropertyTypes::EVENT_SELECT)
+  {
+    return QVariant(QString(""));
+  }
 
   return QVariant();
-}
-
-Types::PropertyTypes PropertiesConfig::toType(const QString& config)
-{
-  const auto type = config;  // QString::fromStdString(ToLowerCase(config.toStdString(), 0, config.size()));
-  if (type == "string")
-    return Types::PropertyTypes::STRING;
-  else if (type == "integer" || type == "int")
-    return Types::PropertyTypes::INTEGER;
-  else if (type == "real")
-    return Types::PropertyTypes::REAL;
-  else if (type == "boolean")
-    return Types::PropertyTypes::BOOLEAN;
-  else if (type == "select")
-    return Types::PropertyTypes::SELECT;
-  else if (type == "list")
-    return Types::PropertyTypes::LIST;
-  else if (type == "color")
-    return Types::PropertyTypes::COLOR;
-
-  return Types::PropertyTypes::UNKNOWN;
 }
 
 bool PropertiesConfig::isValid() const

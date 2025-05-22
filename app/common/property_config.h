@@ -16,8 +16,6 @@ public:
   QList<PropertiesConfig> options;
   Types::PropertyTypes type = Types::PropertyTypes::UNKNOWN;
 
-  QString typeToString() const;
-
   bool isValid() const;
   void setInvalid(const QString& message);
 
@@ -31,6 +29,5 @@ public:
   QString errorMessage;
 
 private:
-  Types::PropertyTypes toType(const QString& input);
   QVariant toDefault(const QJsonObject& object, Types::PropertyTypes objectType);
 };

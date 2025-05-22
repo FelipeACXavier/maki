@@ -46,6 +46,8 @@ QString Types::PropertyTypesToString(Types::PropertyTypes type)
     return "color";
   else if (type == Types::PropertyTypes::VOID)
     return "void";
+  else if (type == Types::PropertyTypes::EVENT_SELECT)
+    return "void";
 
   return "unknown";
 }
@@ -68,8 +70,44 @@ Types::PropertyTypes Types::StringToPropertyTypes(const QString& type)
     return Types::PropertyTypes::COLOR;
   else if (type == "void")
     return Types::PropertyTypes::VOID;
+  else if (type == "event_select")
+    return Types::PropertyTypes::EVENT_SELECT;
 
   return Types::PropertyTypes::UNKNOWN;
+}
+
+// =====================================================================================
+// Control type
+Types::ControlTypes Types::StringToControlTypes(const QString& type)
+{
+  if (type == "add field")
+    return Types::ControlTypes::ADD_FIELD;
+  else if (type == "add control")
+    return Types::ControlTypes::ADD_CONTROL;
+  if (type == "remove control")
+    return Types::ControlTypes::REMOVE_CONTROL;
+  if (type == "add event")
+    return Types::ControlTypes::ADD_EVENT;
+  else
+    return Types::ControlTypes::UNKNOWN;
+}
+
+QString Types::ControlTypesToString(Types::ControlTypes type)
+{
+  switch (type)
+  {
+    case Types::ControlTypes::ADD_FIELD:
+      return "add field";
+    case Types::ControlTypes::ADD_CONTROL:
+      return "add control";
+    case Types::ControlTypes::REMOVE_CONTROL:
+      return "remove control";
+    case Types::ControlTypes::ADD_EVENT:
+      return "add event";
+    case Types::ControlTypes::UNKNOWN:
+    default:
+      return "unknown";
+  }
 }
 
 // =====================================================================================

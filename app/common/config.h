@@ -22,9 +22,6 @@ public:
 
   friend QDataStream& operator<<(QDataStream& out, const ControlsConfig& config);
   friend QDataStream& operator>>(QDataStream& in, ControlsConfig& config);
-
-private:
-  Types::ControlTypes toType(const QString& config) const;
 };
 
 class BehaviourConfig : public ConfigBase

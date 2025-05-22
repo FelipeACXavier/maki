@@ -19,6 +19,7 @@
 
 #include "app_configs.h"
 #include "elements/node.h"
+#include "keys.h"
 #include "logging.h"
 #include "style_helpers.h"
 
@@ -29,6 +30,12 @@ PropertiesMenu::PropertiesMenu(QWidget* parent)
   // Set widget layout
   QVBoxLayout* layout = new QVBoxLayout();
   setLayout(layout);
+}
+
+VoidResult PropertiesMenu::start(std::shared_ptr<SaveInfo> storage)
+{
+  mStorage = storage;
+  return VoidResult();
 }
 
 VoidResult PropertiesMenu::onNodeAdded(NodeItem* /* node */)
@@ -123,6 +130,8 @@ VoidResult PropertiesMenu::loadProperties(NodeItem* node)
       LOG_WARN_ON_FAILURE(loadPropertySelect(property, node));
     else if (property.type == Types::PropertyTypes::COLOR)
       LOG_WARN_ON_FAILURE(loadPropertyColor(property, node));
+    else if (property.type == Types::PropertyTypes::EVENT_SELECT)
+      LOG_WARN_ON_FAILURE(loadPropertyEventSelect(property, node));
     else
       LOG_WARNING("Property without a type, how is that possible?");
   }
@@ -274,6 +283,68 @@ VoidResult PropertiesMenu::loadPropertyBoolean(const PropertiesConfig& property,
 
   widget->setFont(Fonts::Property);
   layout()->addWidget(widget);
+
+  return VoidResult();
+}
+
+VoidResult PropertiesMenu::loadPropertyEventSelect(const PropertiesConfig& property, NodeItem* node)
+{
+  if (!mStorage)
+    return VoidResult::Failed("No storage assigned to properties menu");
+
+  QComboBox* widget = new QComboBox(this);
+
+  // auto options = property.options;
+
+  for (const auto& child : mStorage->getPossibleCallers(node->id()))
+  {
+    auto name = child->properties[ConfigKeys::NAME];
+    if (name.isNull() || !name.isValid())
+      continue;
+
+    widget->addItem(name.toString());
+  }
+
+  // auto result = node->getProperty(property.id);
+  // if (!result.isValid())
+  //   return VoidResult::Failed("Failed to get default value");
+
+  // widget->setCurrentText(result.toString());
+  // connect(widget, &QComboBox::currentTextChanged, this, [=](const QString& text) {
+  //   node->setProperty(property.id, text);
+  // });
+
+  widget->setFont(Fonts::Property);
+  layout()->addWidget(widget);
+
+  return VoidResult();
+}
+
+VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)
+{
+  // Clear the frame
+  clear();
+
+  if (!transition)
+    return VoidResult();
+
+  mCurrentNode = transition->id();
+
+  QLabel* nameLabel = new QLabel("Condition");
+
+  nameLabel->setFont(Fonts::Label);
+  layout()->addWidget(nameLabel);
+
+  QLineEdit* widget = new QLineEdit(this);
+  widget->setText(transition->getName());
+  connect(widget, &QLineEdit::returnPressed, this, [=]() {
+    transition->setName(widget->text());
+  });
+
+  widget->setFont(Fonts::Property);
+  layout()->addWidget(widget);
+
+  static_cast<QVBoxLayout*>(layout())->addStretch();
 
   return VoidResult();
 }

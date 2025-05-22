@@ -83,6 +83,8 @@ VoidResult MainWindow::start()
   bind();
   bindShortcuts();
 
+  mPropertiesMenu->start(mStorage);
+
   RETURN_ON_FAILURE(loadElements());
 
   // Set initial tabs
@@ -154,6 +156,10 @@ void MainWindow::bindCanvas()
   connect(canvas(), &Canvas::nodeAdded, this, &MainWindow::onNodeAdded);
   connect(canvas(), &Canvas::nodeRemoved, this, &MainWindow::onNodeRemoved);
   connect(canvas(), &Canvas::nodeModified, this, &MainWindow::onNodeModified);
+
+  connect(canvas(), &Canvas::transitionSelected, [this](TransitionItem* transition) {
+    mPropertiesMenu->onTransitionSelected(transition);
+  });
 
   connect(mSystemMenu, &SystemMenu::nodeRemoved, canvas(), &Canvas::onRemoveNode);
   connect(mSystemMenu, &SystemMenu::nodeSelected, canvas(), &Canvas::onSelectNode);
@@ -330,7 +336,9 @@ void MainWindow::onActionSave()
     return;
   }
 
-  qDebug() << mStorage->toJson();
+  // QJsonDocument doc(mStorage->toJson());
+  // QByteArray jsonBytes = doc.toJson(QJsonDocument::Indented);
+  // qDebug().noquote() << jsonBytes;
 
   mSaveHandler->save(rootCanvas());
 }

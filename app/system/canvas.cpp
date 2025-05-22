@@ -118,35 +118,28 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
     mStartDragPosition = event->scenePos();
 
     QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
-    if (item && (item->type() == NodeItem::Type || item->type() == QGraphicsTextItem::Type))
+    if (item && item->type() == NodeItem::Type)
     {
-      NodeItem* node = static_cast<NodeItem*>(item->type() == QGraphicsTextItem::Type ? item->parentItem() : item);
-      if (isModifierSet(event, Qt::AltModifier))
-      {
-        mNode = node;
-        mTransition = new TransitionItem(std::make_shared<TransitionSaveInfo>());
-
-        mTransition->setStart(node->id(), node->mapToScene(node->boundingRect().center()), {0, 0});
-        mTransition->setEnd(Constants::TMP_CONNECTION_ID, event->scenePos(), {0, 0});
-
-        addItem(mTransition);
-        parentView()->setDragMode(QGraphicsView::NoDrag);
-        event->accept();
+      if (!nodeClickHandler(event, item))
         return;
-      }
-      else if (isModifierSet(event, Qt::ControlModifier))
-      {
-        selectNode(node, !node->isSelected());
-        event->accept();
+    }
+    else if (item && (item->type() == TransitionItem::Type))
+    {
+      if (!transitionClickHandler(event, item))
         return;
-      }
-      else
+    }
+    else if (item && item->type() == QGraphicsTextItem::Type)
+    {
+      auto parent = item->parentItem();
+      if (parent && parent->type() == NodeItem::Type)
       {
-        // We cannot clear if there are multiple nodes selected
-        if (selectedItems().size() < 2)
-          clearSelectedNodes();
-
-        selectNode(node, true);
+        if (!nodeClickHandler(event, parent))
+          return;
+      }
+      else if (parent && parent->type() == TransitionItem::Type)
+      {
+        if (!transitionClickHandler(event, parent))
+          return;
       }
     }
     else if (!item)
@@ -160,6 +153,50 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
   }
 
   QGraphicsScene::mousePressEvent(event);
+}
+
+bool Canvas::nodeClickHandler(QGraphicsSceneMouseEvent* event, QGraphicsItem* item)
+{
+  NodeItem* node = static_cast<NodeItem*>(item);
+  if (isModifierSet(event, Qt::AltModifier))
+  {
+    mNode = node;
+    mTransition = new TransitionItem(std::make_shared<TransitionSaveInfo>());
+
+    mTransition->setStart(node->id(), node->mapToScene(node->boundingRect().center()), {0, 0});
+    mTransition->setEnd(Constants::TMP_CONNECTION_ID, event->scenePos(), {0, 0});
+
+    addItem(mTransition);
+    parentView()->setDragMode(QGraphicsView::NoDrag);
+    event->accept();
+    return false;
+  }
+  else if (isModifierSet(event, Qt::ControlModifier))
+  {
+    selectNode(node, !node->isSelected());
+    event->accept();
+    return false;
+  }
+  else
+  {
+    // We cannot clear if there are multiple nodes selected
+    if (selectedItems().size() < 2)
+      clearSelectedNodes();
+
+    selectNode(node, true);
+  }
+
+  return true;
+}
+
+bool Canvas::transitionClickHandler(QGraphicsSceneMouseEvent* event, QGraphicsItem* item)
+{
+  TransitionItem* transition = static_cast<TransitionItem*>(item);
+  transition->setSelected(true);
+
+  emit transitionSelected(transition);
+
+  return true;
 }
 
 void Canvas::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
@@ -317,82 +354,109 @@ QMenu* Canvas::createAlignMenu(const QList<QGraphicsItem*>& items)
 
 void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 {
-  QList<QGraphicsItem*> items = selectedItems();
-
-  QMenu menu;
+  QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
+  // For now, we do not support canvas context menu
+  if (!item)
+    return;
 
   // Define menu actions
-  // =============================================
-  menu.addSection("Creation");
+  QMenu menu;
+  QList<QGraphicsItem*> items = selectedItems();
 
-  QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
-  NodeItem* node = nullptr;
-  if (item && item->type() == NodeItem::Type)
-    node = static_cast<NodeItem*>(item);
+  if (item->type() == NodeItem::Type)
+  {
+    NodeItem* node = static_cast<NodeItem*>(item);
 
-  QAction* newFlowAction = menu.addAction(tr("New flow"));
-  newFlowAction->setEnabled(node != nullptr && items.size() == 1);
-  QObject::connect(newFlowAction, &QAction::triggered, [this, node]() {
-    emit openFlow(nullptr, node);
-  });
-  menu.addAction(newFlowAction);
+    // =============================================
+    menu.addSection("Creation");
 
-  // =============================================
-  menu.addSection("Edit");
+    QAction* newFlowAction = menu.addAction(tr("New flow"));
+    newFlowAction->setEnabled(node != nullptr && items.size() == 1);
+    QObject::connect(newFlowAction, &QAction::triggered, [this, node]() {
+      emit openFlow(nullptr, node);
+    });
+    menu.addAction(newFlowAction);
 
-  QAction* copyAction = menu.addAction("Copy");
-  copyAction->setEnabled(items.size() > 0);
-  QObject::connect(copyAction, &QAction::triggered, [this]() {
-    copySelectedItems();
-  });
+    // =============================================
+    menu.addSection("Edit");
 
-  QAction* pasteAction = menu.addAction("Paste");
-  pasteAction->setEnabled(copiedNodes.size() > 0);
-  QObject::connect(pasteAction, &QAction::triggered, [this]() {
-    pasteCopiedItems();
-  });
+    QAction* copyAction = menu.addAction("Copy");
+    copyAction->setEnabled(items.size() > 0);
+    QObject::connect(copyAction, &QAction::triggered, [this]() {
+      copySelectedItems();
+    });
 
-  QAction* deleteAction = menu.addAction("Delete");
-  deleteAction->setEnabled(items.size() > 0);
-  QObject::connect(deleteAction, &QAction::triggered, [this]() {
-    deleteSelectedItems();
-  });
+    QAction* pasteAction = menu.addAction("Paste");
+    pasteAction->setEnabled(copiedNodes.size() > 0);
+    QObject::connect(pasteAction, &QAction::triggered, [this]() {
+      pasteCopiedItems();
+    });
 
-  // =============================================
-  menu.addSection("Visual");
+    QAction* deleteAction = menu.addAction("Delete");
+    deleteAction->setEnabled(items.size() > 0);
+    QObject::connect(deleteAction, &QAction::triggered, [this]() {
+      deleteSelectedItems();
+    });
 
-  QAction* forwardAction = menu.addAction("To front");
-  forwardAction->setEnabled(items.size() > 0);
-  QObject::connect(forwardAction, &QAction::triggered, [this]() {
-    for (QGraphicsItem* item : selectedItems())
-      item->setZValue(mFrontZValue);
+    // =============================================
+    menu.addSection("Visual");
 
-    ++mFrontZValue;
-  });
+    QAction* forwardAction = menu.addAction("To front");
+    forwardAction->setEnabled(items.size() > 0);
+    QObject::connect(forwardAction, &QAction::triggered, [this, items]() {
+      for (QGraphicsItem* item : items)
+        item->setZValue(mFrontZValue);
 
-  QAction* backwardAction = menu.addAction("To back");
-  backwardAction->setEnabled(items.size() > 0);
-  QObject::connect(backwardAction, &QAction::triggered, [this]() {
-    for (QGraphicsItem* item : selectedItems())
-      item->setZValue(mBackZValue);
+      ++mFrontZValue;
+    });
 
-    --mBackZValue;
-  });
+    QAction* backwardAction = menu.addAction("To back");
+    backwardAction->setEnabled(items.size() > 0);
+    QObject::connect(backwardAction, &QAction::triggered, [this, items]() {
+      for (QGraphicsItem* item : items)
+        item->setZValue(mBackZValue);
 
-  QAction* toggleLabelAction = menu.addAction("Toggle label");
-  toggleLabelAction->setEnabled(items.size() > 0);
-  QObject::connect(toggleLabelAction, &QAction::triggered, [this]() {
-    for (QGraphicsItem* item : selectedItems())
-    {
-      if (item->type() == NodeItem::Type)
-        dynamic_cast<NodeItem*>(item)->toggleLableVisibility();
-    }
-  });
+      --mBackZValue;
+    });
 
-  menu.addMenu(createAlignMenu(items));
+    QAction* toggleLabelAction = menu.addAction("Toggle label");
+    toggleLabelAction->setEnabled(items.size() > 0);
+    QObject::connect(toggleLabelAction, &QAction::triggered, [items]() {
+      for (QGraphicsItem* item : items)
+      {
+        if (item->type() == NodeItem::Type)
+          dynamic_cast<NodeItem*>(item)->toggleLabelVisibility();
+      }
+    });
+
+    menu.addMenu(createAlignMenu(items));
+  }
+  else if (item->type() == TransitionItem::Type)
+  {
+    // =============================================
+    menu.addSection("Visual");
+
+    QAction* toggleLabelAction = menu.addAction("Toggle label");
+    toggleLabelAction->setEnabled(items.size() > 0);
+    QObject::connect(toggleLabelAction, &QAction::triggered, [items]() {
+      // for (QGraphicsItem* item : items)
+      // {
+      //   if (item->type() == TransitionItem::Type)
+      //     dynamic_cast<TransitionItem*>(item)->toggleLabelVisibility();
+      // }
+    });
+  }
 
   // Execute the menu at the mouse cursor's position
   menu.exec(event->screenPos());
+}
+
+void Canvas::createNodeContextMenu(QMenu& menu)
+{
+}
+
+void Canvas::createTransitionContextMenu(QMenu& menu)
+{
 }
 
 void Canvas::deleteSelectedItems()
@@ -461,7 +525,6 @@ void Canvas::copySelectedItems()
     auto info = node->saveInfo();
 
     // Must clean since the pasted nodes must have generated id
-    info.id = QString();
     info.position = mousePosition - info.position;
 
     copiedNodes.append(info);
@@ -561,12 +624,12 @@ VoidResult Canvas::loadFromSave(const SaveInfo& info)
   for (const auto& node : info.structuralNodes)
   {
     LOG_DEBUG("Creating structural node %s with parent %s", qPrintable(node->id), qPrintable(node->parentId));
-    auto createdNode = createNode(NodeCreation::Pasting, *node, node->position, nullptr);
+    auto createdNode = createNode(NodeCreation::Loading, *node, node->position, nullptr);
 
     for (const auto& childInfo : node->children)
     {
       // Children's positions take into account the relative prosition to the parent
-      auto child = createNode(NodeCreation::Pasting, *childInfo, childInfo->position, createdNode);
+      auto child = createNode(NodeCreation::Loading, *childInfo, childInfo->position, createdNode);
       selectNode(child, false);
     }
 
@@ -578,43 +641,6 @@ VoidResult Canvas::loadFromSave(const SaveInfo& info)
 
     selectNode(createdNode, false);
   }
-
-  // for (const auto& node : info.behaviouralNodes)
-  // {
-  //   LOG_DEBUG("Creating behavioral node %s with parent %s", qPrintable(node.id), qPrintable(node.parentId));
-  //   (void)createNode(node, node.position, findNodeWithId(node.parentId));
-  // }
-
-  // for (const auto& node : info.behaviouralNodes)
-  // {
-  //   auto srcConn = findNodeWithId(node.id);
-  //   if (!srcConn)
-  //     continue;
-
-  //   for (const auto& transition : node.transitions)
-  //   {
-  //     auto dstConn = findNodeWithId(transition.dstId);
-  //     if (!dstConn)
-  //     {
-  //       LOG_WARNING("Could not find destination node");
-  //       continue;
-  //     }
-
-  //     LOG_DEBUG("Creating transitions with parents %s -> %s", qPrintable(node.id), qPrintable(transition.dstId));
-
-  //     auto connection = new TransitionItem();
-
-  //     connection->setStart(node.id, transition.srcPoint, transition.srcShift);
-  //     connection->setEnd(transition.dstId, transition.dstPoint, transition.dstShift);
-
-  //     srcConn->addTransition(connection);
-  //     dstConn->addTransition(connection);
-
-  //     connection->done(srcConn, dstConn);
-
-  //     addItem(connection);
-  //   }
-  // }
 
   return VoidResult();
 }
@@ -642,25 +668,19 @@ NodeItem* Canvas::createNode(NodeCreation creation, const NodeSaveInfo& info, co
   // If no parent is defined, we must create a "base node" in the canvas
   NodeItem* node = nullptr;
   auto nodeInfo = std::make_shared<NodeSaveInfo>(info);
+  auto nodeId = creation == NodeCreation::Pasting ? "" : nodeInfo->id;
   if (parent == nullptr)
   {
     if (type() == Types::LibraryTypes::STRUCTURAL)
-    {
       mStorage->structuralNodes.append(nodeInfo);
-      node = new NodeItem("", nodeInfo, position, config);
-    }
-    else
-    {
-      // In a behavioral flow, the info is stored in the flow itself
-      // mStorage->behaviouralNodes.append(nodeInfo);
-      node = new NodeItem("", nodeInfo, position, config);
-    }
+
+    node = new NodeItem(nodeId, nodeInfo, position, config);
   }
   // If it is defined, we simply add a child node to the parent
   else
   {
     QPointF pos = creation == NodeCreation::Dropping ? parent->mapFromScene(position) : position;
-    node = new NodeItem("", nodeInfo, pos, config, parent);
+    node = new NodeItem(nodeId, nodeInfo, pos, config, parent);
 
     parent->addChild(node, nodeInfo);
   }
@@ -675,7 +695,7 @@ NodeItem* Canvas::createNode(NodeCreation creation, const NodeSaveInfo& info, co
   node->start();
 
   // TODO(felaze): When loading from save, we need to enforce the position
-  if (creation == NodeCreation::Pasting)
+  if (creation == NodeCreation::Pasting || creation == NodeCreation::Loading)
     node->setPos(position);
 
   // Do not add child nodes to the scene
@@ -764,7 +784,8 @@ void Canvas::populate(Flow* flow)
   for (const auto& node : flow->getNodes())
   {
     LOG_DEBUG("Creating behavioral node %s with parent %s", qPrintable(node->id), qPrintable(node->parentId));
-    (void)createNode(NodeCreation::Populating, *node, node->position, findNodeWithId(node->parentId));
+    auto created = createNode(NodeCreation::Populating, *node, node->position, findNodeWithId(node->parentId));
+    LOG_DEBUG("Created node %s", qPrintable(created->id()));
   }
 
   // Then create the transitions between the nodes
@@ -802,7 +823,6 @@ void Canvas::populate(Flow* flow)
 
 void Canvas::onFlowSelected(const QString& flowId, const QString& nodeId)
 {
-  LOG_INFO("Selected flow %s of node %s", qPrintable(flowId), qPrintable(nodeId));
   auto node = findNodeWithId(nodeId);
   if (!node)
   {
@@ -816,7 +836,6 @@ void Canvas::onFlowSelected(const QString& flowId, const QString& nodeId)
 
 void Canvas::onFlowRemoved(const QString& flowId, const QString& nodeId)
 {
-  LOG_DEBUG("Removing flow canvas");
   auto node = findNodeWithId(nodeId);
   if (!node)
   {
@@ -825,7 +844,6 @@ void Canvas::onFlowRemoved(const QString& flowId, const QString& nodeId)
   }
 
   node->deleteFlow(flowId);
-  LOG_DEBUG("Removed flow canvas");
   emit flowRemoved(flowId, node);
 }
 

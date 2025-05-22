@@ -112,7 +112,7 @@ void EventDialog::setup(const EventConfig& event)
     int newRow = model->rowCount();
     model->insertRow(newRow);
     model->setItem(newRow, 0, new QStandardItem(field.id));
-    model->setItem(newRow, 1, new QStandardItem(field.typeToString()));
+    model->setItem(newRow, 1, new QStandardItem(Types::PropertyTypesToString(field.type)));
   }
 
   QPushButton* button = new QPushButton(controls);

@@ -56,6 +56,8 @@ signals:
   void nodeRemoved(NodeItem* node);
   void nodeModified(NodeItem* node);
 
+  void transitionSelected(TransitionItem* transtion);
+
   void openFlow(Flow* flow, NodeItem* node);
   void flowAdded(Flow* flow, NodeItem* node);
   void flowRemoved(const QString& flowId, NodeItem* node);
@@ -74,6 +76,7 @@ private:
   {
     Dropping,
     Pasting,
+    Loading,
     Populating
   };
   // TODO(felaze): Move connection behaviour to a separate class
@@ -107,4 +110,10 @@ private:
 
   void clearSelectedNodes();
   bool isModifierSet(QGraphicsSceneMouseEvent* event, Qt::KeyboardModifier modifier);
+
+  bool nodeClickHandler(QGraphicsSceneMouseEvent* event, QGraphicsItem* item);
+  bool transitionClickHandler(QGraphicsSceneMouseEvent* event, QGraphicsItem* item);
+
+  void createNodeContextMenu(QMenu& menu);
+  void createTransitionContextMenu(QMenu& menu);
 };

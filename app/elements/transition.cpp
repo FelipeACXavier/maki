@@ -23,6 +23,11 @@ TransitionItem::TransitionItem(std::shared_ptr<TransitionSaveInfo> storage)
   // TODO(felaze): make configurable
   setPen(QPen(Qt::white, 2));
 
+  mLabel = std::make_shared<QGraphicsTextItem>(this);
+  mLabel->setFont(Fonts::Property);
+  mLabel->setPlainText("");
+  updateLabelPosition();
+
   mStorage->id = id();
 }
 
@@ -158,5 +163,51 @@ void TransitionItem::updatePath()
   path.lineTo(end);
 
   setPath(path);
+  updateLabelPosition();
   prepareGeometryChange();  // if needed for boundingRect
+}
+
+QString TransitionItem::getName() const
+{
+  if (!mLabel)
+    return QString();
+
+  return mLabel->toPlainText();
+}
+
+void TransitionItem::setName(const QString& name)
+{
+  if (!mLabel)
+    return;
+
+  mLabel->setPlainText(name);
+  updateLabelPosition();
+}
+
+void TransitionItem::updateLabelPosition()
+{
+  if (!mLabel)
+    return;
+
+  const QPainterPath& p = path();
+  if (p.length() == 0.0)
+    return;
+
+  QPointF midPoint = p.pointAtPercent(0.5);
+  qreal angleDeg = p.angleAtPercent(0.5);
+
+  // Convert angle to radians for vector math
+  qreal angleRad = qDegreesToRadians(angleDeg);
+
+  // Compute the unit perpendicular vector
+  qreal offsetDistance = 10.0;  // adjust this as needed
+  qreal dx = -std::sin(angleRad);
+  qreal dy = -std::cos(angleRad);
+
+  QPointF offset(dx * offsetDistance, dy * offsetDistance);
+  QPointF labelPos = midPoint + offset;
+
+  QSizeF labelSize = mLabel->boundingRect().size();
+  mLabel->setPos(labelPos.x() - labelSize.width() / 2,
+                 labelPos.y() - labelSize.height() / 2);
 }

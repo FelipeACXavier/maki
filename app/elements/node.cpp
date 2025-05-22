@@ -31,7 +31,7 @@ static const qreal MIN_OPACITY = 0.01;
 static const qreal MAX_OPACITY = 1.0;
 
 NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
-    : NodeBase((!info->id.isEmpty() && !info->id.isNull()) ? info->id : QUuid::createUuid().toString(), info->nodeId, nodeConfig, parent)
+    : NodeBase((!nodeId.isEmpty() && !nodeId.isNull()) ? nodeId : QUuid::createUuid().toString(), info->nodeId, nodeConfig, parent)
     , mStorage(info)
     , mChildrenNodes({})
     , mBaseScale(config()->libraryType == Types::LibraryTypes::STRUCTURAL ? mStorage->scale : 1.0)
@@ -44,6 +44,9 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
 
   mStorage->id = this->id();
   mStorage->nodeId = this->nodeId();
+
+  // Children are created by the canvas, so we must make sure that there is no trailing children information
+  mStorage->children = {};
 
   if (parent && parent->type() == Types::NODE)
     mStorage->parentId = static_cast<NodeItem*>(parent)->id();
@@ -513,8 +516,29 @@ QPointF NodeItem::edgePointToward(const QPointF& targetScenePos) const
 
 Flow* NodeItem::createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo> info)
 {
-  auto flowConfig = info == nullptr ? std::make_shared<FlowSaveInfo>() : info;
-  mStorage->flows.push_back(flowConfig);
+  std::shared_ptr<FlowSaveInfo> flowConfig = info;
+  if (info != nullptr)
+  {
+    // Clean up
+    bool found = false;
+    for (const auto& f : mStorage->flows)
+    {
+      if (f->id != info->id)
+        continue;
+
+      flowConfig = f;
+      found = true;
+      break;
+    }
+
+    if (!found)
+      mStorage->flows.push_back(flowConfig);
+  }
+  else
+  {
+    flowConfig = std::make_shared<FlowSaveInfo>();
+    mStorage->flows.push_back(flowConfig);
+  }
 
   Flow* flow = new Flow(flowName, flowConfig);
   mFlows.push_back(flow);

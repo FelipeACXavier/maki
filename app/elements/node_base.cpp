@@ -196,7 +196,7 @@ void NodeBase::updateLabelPosition()
   mLabel->setPos(x, y);
 }
 
-void NodeBase::toggleLableVisibility()
+void NodeBase::toggleLabelVisibility()
 {
   if (!mLabel)
     return;

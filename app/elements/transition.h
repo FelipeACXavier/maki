@@ -38,6 +38,13 @@ public:
   TransitionSaveInfo saveInfo() const;
   std::shared_ptr<TransitionSaveInfo> storage() const;
 
+  QString getName() const;
+  void setName(const QString& name);
+
+  // "signals":
+  std::function<void(TransitionItem* item)> transitionDeleted;
+  std::function<void(TransitionItem* item)> transitionModified;
+
 private:
   const QString mId;
   bool mComplete;
@@ -45,5 +52,8 @@ private:
   NodeItem* mSource;
   NodeItem* mDestination;
 
+  std::shared_ptr<QGraphicsTextItem> mLabel;
   std::shared_ptr<TransitionSaveInfo> mStorage;
+
+  void updateLabelPosition();
 };

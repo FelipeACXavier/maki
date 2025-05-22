@@ -26,25 +26,10 @@ ControlsConfig::ControlsConfig(const QJsonObject& object)
   }
 
   id = object["id"].toString();
-  type = toType(object["type"].toString());
+  type = Types::StringToControlTypes(object["type"].toString());
 
   if (object.contains("format"))
     format = object["format"].toString();
-}
-
-Types::ControlTypes ControlsConfig::toType(const QString& config) const
-{
-  const auto type = QString::fromStdString(ToLowerCase(config.toStdString(), 0, config.size()));
-  if (type == "add control")
-    return Types::ControlTypes::ADD_CONTROL;
-  else if (type == "remove control")
-    return Types::ControlTypes::REMOVE_CONTROL;
-  else if (type == "add field")
-    return Types::ControlTypes::ADD_FIELD;
-  else if (type == "add event")
-    return Types::ControlTypes::ADD_EVENT;
-
-  return Types::ControlTypes::UNKNOWN;
 }
 
 BehaviourConfig::BehaviourConfig()

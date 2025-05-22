@@ -137,7 +137,7 @@ VoidResult FieldsMenu::loadControlAddField(const ControlsConfig& control, NodeIt
     int newRow = model->rowCount();
     model->insertRow(newRow);
     model->setItem(newRow, 0, new QStandardItem(field.id));
-    model->setItem(newRow, 2, new QStandardItem(field.typeToString()));
+    model->setItem(newRow, 2, new QStandardItem(Types::PropertyTypesToString(field.type)));
 
     if (field.type == Types::PropertyTypes::LIST)
       model->setItem(newRow, 1, new QStandardItem(JSON::fromArray(field.defaultValue.toList(), ',')));

@@ -446,3 +446,42 @@ SaveInfo SaveInfo::fromJson(const QJsonObject& data)
 
   return info;
 }
+
+QVector<std::shared_ptr<NodeSaveInfo>> SaveInfo::findFamilyOfConstruct(const QString& nodeId, QVector<std::shared_ptr<NodeSaveInfo>> nodes) const
+{
+  for (const auto& node : nodes)
+  {
+    auto parent = findParentOfConstruct(nodeId, node);
+    LOG_DEBUG("Looking through node: %s => %d", qPrintable(node->properties["name"].toString()), (parent != nullptr));
+    if (parent)
+      return nodes + node->children;
+
+    auto family = findFamilyOfConstruct(nodeId, node->children);
+    if (!family.empty())
+      return family;
+  }
+
+  return {};
+}
+
+std::shared_ptr<NodeSaveInfo> SaveInfo::findParentOfConstruct(const QString& nodeId, const std::shared_ptr<NodeSaveInfo> node) const
+{
+  for (const auto& flow : node->flows)
+  {
+    for (const auto& construct : flow->nodes)
+    {
+      if (construct->id != nodeId)
+        continue;
+
+      return node;
+    }
+  }
+
+  return nullptr;
+}
+
+QVector<std::shared_ptr<NodeSaveInfo>> SaveInfo::getPossibleCallers(const QString& nodeId) const
+{
+  // Get the parent
+  return findFamilyOfConstruct(nodeId, structuralNodes);
+}

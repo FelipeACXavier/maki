@@ -49,6 +49,7 @@ enum class PropertyTypes
   LIST,
   COLOR,
   VOID,
+  EVENT_SELECT,
   END
 };
 
@@ -63,6 +64,9 @@ enum class ControlTypes
   REMOVE_CONTROL,
   ADD_EVENT
 };
+
+ControlTypes StringToControlTypes(const QString& type);
+QString ControlTypesToString(ControlTypes type);
 
 enum class LibraryTypes
 {
