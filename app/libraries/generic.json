@@ -331,7 +331,17 @@
               "default": "Action"
             },
             {
-              "id": "Component",
+              "id": "component",
+              "type": "component_select",
+              "options": [
+                {
+                  "id": "event",
+                  "type": "event_select"
+                }
+              ]
+            },
+            {
+              "id": "event",
               "type": "event_select"
             }
           ],

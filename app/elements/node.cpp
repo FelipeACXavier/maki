@@ -51,9 +51,9 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
   if (parent && parent->type() == Types::NODE)
     mStorage->parentId = static_cast<NodeItem*>(parent)->id();
 
-  if (mStorage->properties.isEmpty())
+  for (const auto& property : config()->properties)
   {
-    for (const auto& property : config()->properties)
+    if (!mStorage->properties.contains(property.id))
       mStorage->properties[property.id] = property.defaultValue;
   }
 

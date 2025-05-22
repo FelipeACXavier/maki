@@ -485,3 +485,23 @@ QVector<std::shared_ptr<NodeSaveInfo>> SaveInfo::getPossibleCallers(const QStrin
   // Get the parent
   return findFamilyOfConstruct(nodeId, structuralNodes);
 }
+
+QVector<std::shared_ptr<FlowSaveInfo>> SaveInfo::getEventsFromNode(const QString& nodeId, QVector<std::shared_ptr<NodeSaveInfo>> nodes) const
+{
+  for (const auto& node : nodes)
+  {
+    if (node->id == nodeId)
+      return node->flows;
+
+    auto events = getEventsFromNode(nodeId, node->children);
+    if (!events.empty())
+      return events;
+  }
+
+  return {};
+}
+
+QVector<std::shared_ptr<FlowSaveInfo>> SaveInfo::getEventsFromNode(const QString& nodeId) const
+{
+  return getEventsFromNode(nodeId, structuralNodes);
+}

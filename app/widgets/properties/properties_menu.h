@@ -40,4 +40,5 @@ private:
   VoidResult loadPropertyString(const PropertiesConfig& property, NodeItem* node);
   VoidResult loadPropertyBoolean(const PropertiesConfig& property, NodeItem* node);
   VoidResult loadPropertyEventSelect(const PropertiesConfig& property, NodeItem* node);
+  VoidResult loadPropertyComponentSelect(const PropertiesConfig& property, NodeItem* node);
 };

@@ -46,8 +46,10 @@ QString Types::PropertyTypesToString(Types::PropertyTypes type)
     return "color";
   else if (type == Types::PropertyTypes::VOID)
     return "void";
+  else if (type == Types::PropertyTypes::COMPONENT_SELECT)
+    return "component_select";
   else if (type == Types::PropertyTypes::EVENT_SELECT)
-    return "void";
+    return "event_select";
 
   return "unknown";
 }
@@ -72,6 +74,8 @@ Types::PropertyTypes Types::StringToPropertyTypes(const QString& type)
     return Types::PropertyTypes::VOID;
   else if (type == "event_select")
     return Types::PropertyTypes::EVENT_SELECT;
+  else if (type == "component_select")
+    return Types::PropertyTypes::COMPONENT_SELECT;
 
   return Types::PropertyTypes::UNKNOWN;
 }

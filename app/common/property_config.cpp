@@ -54,6 +54,32 @@ QVariant PropertiesConfig::toDefault(const QJsonObject& object, Types::PropertyT
     return object.contains("default") ? object["default"].toArray().toVariantList() : QVariantList();
   else if (objectType == Types::PropertyTypes::COLOR)
     return object.contains("default") ? object["default"].toString() : QVariant(QString("#050505"));
+  else if (objectType == Types::PropertyTypes::COMPONENT_SELECT)
+  {
+    if (!object.contains("options"))
+      return QVariant(QString(""));
+
+    for (const auto& option : object["options"].toArray())
+    {
+      auto prop = PropertiesConfig(option.toObject());
+      options.push_back(PropertiesConfig(option.toObject()));
+    }
+
+    return toDefault(object, Types::PropertyTypes::STRING);
+  }
+  else if (objectType == Types::PropertyTypes::EVENT_SELECT)
+  {
+    if (!object.contains("options"))
+      return QVariant(QString(""));
+
+    for (const auto& option : object["options"].toArray())
+    {
+      auto prop = PropertiesConfig(option.toObject());
+      options.push_back(PropertiesConfig(option.toObject()));
+    }
+
+    return toDefault(object, Types::PropertyTypes::STRING);
+  }
   else if (objectType == Types::PropertyTypes::SELECT)
   {
     if (!object.contains("options"))
@@ -69,10 +95,6 @@ QVariant PropertiesConfig::toDefault(const QJsonObject& object, Types::PropertyT
     }
 
     return toDefault(object, Types::PropertyTypes::STRING);
-  }
-  else if (objectType == Types::PropertyTypes::EVENT_SELECT)
-  {
-    return QVariant(QString(""));
   }
 
   return QVariant();

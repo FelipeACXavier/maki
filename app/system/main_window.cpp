@@ -389,7 +389,6 @@ void MainWindow::onNodeSelected(NodeItem* node, bool selected)
 
   LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeSelected(node, selected));
   LOG_WARN_ON_FAILURE(mFieldsMenu->onNodeSelected(node, selected));
-  // LOG_WARN_ON_FAILURE(mUI->behaviourFrame->onNodeSelected(node, selected));
 }
 
 void MainWindow::onNodeAdded(NodeItem* node)
@@ -431,8 +430,10 @@ void MainWindow::onNodeModified(NodeItem* node)
     return;
   }
 
-  LOG_WARN_ON_FAILURE(mSystemMenu->onNodeModified(node));
-  LOG_WARN_ON_FAILURE(mFlowMenu->onNodeModified(canvas()->id(), node));
+  if (canvas()->type() == Types::LibraryTypes::STRUCTURAL)
+    LOG_WARN_ON_FAILURE(mSystemMenu->onNodeModified(node));
+  else
+    LOG_WARN_ON_FAILURE(mFlowMenu->onNodeModified(canvas()->id(), node));
 }
 
 void MainWindow::onCanvasTabChanged(int index)

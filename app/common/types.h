@@ -49,6 +49,7 @@ enum class PropertyTypes
   LIST,
   COLOR,
   VOID,
+  COMPONENT_SELECT,
   EVENT_SELECT,
   END
 };

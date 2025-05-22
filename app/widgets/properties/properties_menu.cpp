@@ -132,6 +132,8 @@ VoidResult PropertiesMenu::loadProperties(NodeItem* node)
       LOG_WARN_ON_FAILURE(loadPropertyColor(property, node));
     else if (property.type == Types::PropertyTypes::EVENT_SELECT)
       LOG_WARN_ON_FAILURE(loadPropertyEventSelect(property, node));
+    else if (property.type == Types::PropertyTypes::COMPONENT_SELECT)
+      LOG_WARN_ON_FAILURE(loadPropertyComponentSelect(property, node));
     else
       LOG_WARNING("Property without a type, how is that possible?");
   }
@@ -287,14 +289,14 @@ VoidResult PropertiesMenu::loadPropertyBoolean(const PropertiesConfig& property,
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::loadPropertyEventSelect(const PropertiesConfig& property, NodeItem* node)
+// TODO(felaze): The component and the event fields are always dependent on each other for now
+VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertiesConfig& property, NodeItem* node)
 {
   if (!mStorage)
     return VoidResult::Failed("No storage assigned to properties menu");
 
   QComboBox* widget = new QComboBox(this);
-
-  // auto options = property.options;
+  widget->setObjectName(property.id);
 
   for (const auto& child : mStorage->getPossibleCallers(node->id()))
   {
@@ -302,17 +304,55 @@ VoidResult PropertiesMenu::loadPropertyEventSelect(const PropertiesConfig& prope
     if (name.isNull() || !name.isValid())
       continue;
 
-    widget->addItem(name.toString());
+    widget->addItem(name.toString(), child->id);
   }
 
-  // auto result = node->getProperty(property.id);
-  // if (!result.isValid())
-  //   return VoidResult::Failed("Failed to get default value");
+  if (property.options.empty())
+  {
+    connect(widget, &QComboBox::currentTextChanged, this, [=](const QString& text) {
+      node->setProperty(property.id, text);
+    });
+  }
+  else
+  {
+    if (property.options.at(0).type == Types::PropertyTypes::EVENT_SELECT)
+    {
+      connect(widget, &QComboBox::currentTextChanged, this, [=](const QString& text) {
+        QComboBox* eventCombo = findChild<QComboBox*>(property.options.at(0).id);
+        if (eventCombo == nullptr)
+          return;
 
-  // widget->setCurrentText(result.toString());
-  // connect(widget, &QComboBox::currentTextChanged, this, [=](const QString& text) {
-  //   node->setProperty(property.id, text);
-  // });
+        node->setProperty(property.id, text);
+        eventCombo->clear();
+        auto events = mStorage->getEventsFromNode(widget->currentData().toString());
+        for (const auto& event : events)
+          eventCombo->addItem(event->name, event->id);
+      });
+    }
+    else
+    {
+      LOG_WARNING("Configuration is not supported");
+    }
+  }
+
+  widget->setFont(Fonts::Property);
+  layout()->addWidget(widget);
+
+  return VoidResult();
+}
+
+VoidResult PropertiesMenu::loadPropertyEventSelect(const PropertiesConfig& property, NodeItem* node)
+{
+  if (!mStorage)
+    return VoidResult::Failed("No storage assigned to properties menu");
+
+  QComboBox* widget = new QComboBox(this);
+  widget->setObjectName(property.id);
+
+  widget->setCurrentText("-");
+  connect(widget, &QComboBox::currentTextChanged, this, [=](const QString& text) {
+    node->setProperty(property.id, text);
+  });
 
   widget->setFont(Fonts::Property);
   layout()->addWidget(widget);
