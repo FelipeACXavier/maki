@@ -64,7 +64,7 @@ public:
   void removeTransition(TransitionItem* transition);
   QPointF edgePointToward(const QPointF& targetScenePos) const;
 
-  void setEvent(int index, const EventConfig& event);
+  void setEvent(int index, const FlowConfig& event);
   QVector<std::shared_ptr<FlowSaveInfo>> events() const;
 
   void addChild(NodeItem* node, std::shared_ptr<NodeSaveInfo> info);

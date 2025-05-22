@@ -64,7 +64,6 @@ struct NodeSaveInfo
   QSizeF size{0, 0};
   qreal scale{1.0};
   QVector<PropertiesConfig> fields;
-  QVector<EventConfig> events;
   QMap<QString, QVariant> properties;
   QVector<std::shared_ptr<TransitionSaveInfo>> transitions;
   QVector<std::shared_ptr<FlowSaveInfo>> flows;

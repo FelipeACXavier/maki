@@ -6,6 +6,7 @@
 #include "config.h"
 #include "result.h"
 
+class Flow;
 class NodeItem;
 class QTableView;
 class QHBoxLayout;
@@ -15,6 +16,7 @@ class FlowSaveInfo;
 
 class FieldsMenu : public QFrame, public MenuBase
 {
+  Q_OBJECT
 public:
   FieldsMenu(QWidget* parent);
 
@@ -22,6 +24,15 @@ public:
   VoidResult onNodeRemoved(NodeItem* node) override;
   VoidResult onNodeModified(NodeItem* node) override;
   VoidResult onNodeSelected(NodeItem* node, bool selected) override;
+
+  VoidResult onFlowAdded(Flow* flow, NodeItem* node);
+  VoidResult onFlowRemoved(const QString& flowId, NodeItem* node);
+
+signals:
+  void nodeFocused(const QString& nodeId);
+
+  void flowSelected(const QString& flowId, const QString& nodeId);
+  void flowRemoved(const QString& flowId, const QString& nodeId);
 
 private:
   void clear();
@@ -35,6 +46,6 @@ private:
   void showContextMenu(QTableView* tableView, NodeItem* node, const QPoint& pos);
   void showEventContextMenu(QTableView* tableView, NodeItem* node, const QPoint& pos);
 
-  void editEvent(QTableView* tableView, NodeItem* node, const QModelIndex& index);
+  void openEventDialog(QTableView* tableView, NodeItem* node, int row);
   void addEventToTable(QStandardItemModel* model, int row, std::shared_ptr<FlowSaveInfo> event);
 };

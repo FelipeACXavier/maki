@@ -223,7 +223,6 @@ QDataStream& operator<<(QDataStream& out, const NodeSaveInfo& info)
   out << info.scale;
   out << info.nodeId;
   out << info.fields;
-  out << info.events;
   out << info.position;
   out << info.properties;
   out << info.parentId;
@@ -248,7 +247,6 @@ QDataStream& operator>>(QDataStream& in, NodeSaveInfo& info)
   in >> info.scale;
   in >> info.nodeId;
   in >> info.fields;
-  in >> info.events;
   in >> info.position;
   in >> info.properties;
   in >> info.parentId;
@@ -279,10 +277,6 @@ QJsonObject NodeSaveInfo::toJson() const
   for (const auto& field : fields)
     fieldArray.append(field.toJson());
 
-  QJsonArray eventArray;
-  for (const auto& event : events)
-    eventArray.append(event.toJson());
-
   QJsonArray transitionArray;
   for (const auto& transition : transitions)
     transitionArray.append(transition->toJson());
@@ -303,8 +297,6 @@ QJsonObject NodeSaveInfo::toJson() const
     data[ConfigKeys::PROPERTIES] = propertiesObject;
   if (fieldArray.size() > 0)
     data[ConfigKeys::FIELDS] = fieldArray;
-  if (eventArray.size() > 0)
-    data[ConfigKeys::EVENTS] = eventArray;
   if (transitionArray.size() > 0)
     data[ConfigKeys::TRANSITIONS] = transitionArray;
   if (childrenArray.size() > 0)
@@ -338,12 +330,6 @@ NodeSaveInfo NodeSaveInfo::fromJson(const QJsonObject& data)
   {
     for (const auto& node : data[ConfigKeys::FIELDS].toArray())
       info.fields.append(PropertiesConfig::fromJson(node.toObject()));
-  }
-
-  if (data.contains(ConfigKeys::EVENTS))
-  {
-    for (const auto& node : data[ConfigKeys::EVENTS].toArray())
-      info.events.append(EventConfig::fromJson(node.toObject()));
   }
 
   if (data.contains(ConfigKeys::TRANSITIONS))

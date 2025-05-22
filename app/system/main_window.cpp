@@ -144,6 +144,8 @@ void MainWindow::bind()
   connect(rootCanvas(), &Canvas::flowAdded, this, &MainWindow::onFlowAdded);
   connect(rootCanvas(), &Canvas::flowRemoved, this, &MainWindow::onFlowRemoved);
 
+  connect(mFieldsMenu, &FieldsMenu::flowSelected, rootCanvas(), &Canvas::onFlowSelected);
+
   connect(mFlowMenu, &FlowMenu::flowSelected, rootCanvas(), &Canvas::onFlowSelected);
   connect(mFlowMenu, &FlowMenu::flowRemoved, rootCanvas(), &Canvas::onFlowRemoved);
 
@@ -526,18 +528,24 @@ void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
   }
 
   // Add a new flow to the FlowMenu
+  // if (flow == nullptr)
+  // {
+  //   Result<Flow*> flowResult = mFlowMenu->addComponentFlow(node, flowName);
+  //   if (!flowResult.IsSuccess())
+  //   {
+  //     LOG_WARNING(flowResult.ErrorMessage());
+  //     return;
+  //   }
+  //   else
+  //   {
+  //     flow = flowResult.Value();
+  //   }
+  // }
+
   if (flow == nullptr)
   {
-    Result<Flow*> flowResult = mFlowMenu->addComponentFlow(node, flowName);
-    if (!flowResult.IsSuccess())
-    {
-      LOG_WARNING(flowResult.ErrorMessage());
-      return;
-    }
-    else
-    {
-      flow = flowResult.Value();
-    }
+    LOG_WARNING("This shouldn't happen");
+    return;
   }
 
   CanvasView* newView = new CanvasView();
@@ -559,7 +567,6 @@ void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
 
 void MainWindow::onFlowRemoved(const QString& flowId, NodeItem* node)
 {
-  LOG_DEBUG("Flow removed");
   if (mActiveCanvas->id() == flowId)
   {
     int oldTab = mCanvasPanel->currentIndex();
@@ -567,9 +574,7 @@ void MainWindow::onFlowRemoved(const QString& flowId, NodeItem* node)
     mCanvasPanel->removeTab(oldTab);
   }
 
-  LOG_DEBUG("Flow menu removing");
   LOG_WARN_ON_FAILURE(mFlowMenu->onFlowRemoved(flowId, node));
-  LOG_DEBUG("Flow menu removed");
 }
 
 void MainWindow::onFlowAdded(Flow* flow, NodeItem* node)

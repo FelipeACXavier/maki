@@ -50,9 +50,9 @@ Result<Flow*> FlowMenu::addComponentFlow(NodeItem* node, const QString& flowName
   Flow* flow = node->createFlow(flowName, nullptr);
 
   // Assign the tree information
-  newFlow->setText(NAME_INDEX, flow->name());
-  newFlow->setData(ID_DATA, Qt::UserRole, flow->id());
-  newFlow->setData(TYPE_DATA, Qt::UserRole, Roles::FlowRole);
+  // newFlow->setText(NAME_INDEX, flow->name());
+  // newFlow->setData(ID_DATA, Qt::UserRole, flow->id());
+  // newFlow->setData(TYPE_DATA, Qt::UserRole, Roles::FlowRole);
 
   return flow;
 }

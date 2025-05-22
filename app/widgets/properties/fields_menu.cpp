@@ -81,11 +81,21 @@ VoidResult FieldsMenu::onNodeSelected(NodeItem* node, bool selected)
   return VoidResult();
 }
 
+VoidResult FieldsMenu::onFlowAdded(Flow* flow, NodeItem* node)
+{
+  return VoidResult();
+}
+
+VoidResult FieldsMenu::onFlowRemoved(const QString& flowId, NodeItem* node)
+{
+  return VoidResult();
+}
+
 VoidResult FieldsMenu::loadControls(NodeItem* node)
 {
   if (node->controls().size() < 1)
   {
-    QLabel* nameLabel = new QLabel("Block has no fields", this);
+    QLabel* nameLabel = new QLabel("Block has no events", this);
     nameLabel->setFont(Fonts::Property);
 
     layout()->setAlignment(Qt::AlignCenter);
@@ -196,28 +206,6 @@ VoidResult FieldsMenu::loadControlAddField(const ControlsConfig& control, NodeIt
   return VoidResult();
 }
 
-void FieldsMenu::showContextMenu(QTableView* tableView, NodeItem* node, const QPoint& pos)
-{
-  // Get the index of the clicked row
-  QModelIndex index = tableView->indexAt(pos);
-  if (!index.isValid())
-    return;
-
-  QMenu contextMenu;
-  QAction* actionDelete = contextMenu.addAction("Delete");
-
-  int row = index.row();
-  connect(actionDelete, &QAction::triggered, this, [row, tableView, node] {
-    auto key = static_cast<QStandardItemModel*>(tableView->model())->item(row, 0);
-    if (key && !key->text().isNull())
-      node->removeField(key->text());
-
-    tableView->model()->removeRow(row);
-  });
-
-  contextMenu.exec(tableView->viewport()->mapToGlobal(pos));
-}
-
 VoidResult FieldsMenu::loadControlAddEvent(const ControlsConfig& control, NodeItem* node, QWidget* parent, QHBoxLayout* controlLayout)
 {
   // Create table to hold new fields
@@ -251,17 +239,12 @@ VoidResult FieldsMenu::loadControlAddEvent(const ControlsConfig& control, NodeIt
   });
 
   connect(tableView, &QTableView::doubleClicked, [this, tableView, node](const QModelIndex& index) {
-    editEvent(tableView, node, index);
+    openEventDialog(tableView, node, index.row());
   });
 
   QPushButton* button = new QPushButton(parent);
   connect(button, &QPushButton::pressed, this, [=]() {
-    int newRow = model->rowCount();
-    model->insertRow(newRow);
-    model->setItem(newRow, 0, new QStandardItem(""));
-    model->setItem(newRow, 1, new QStandardItem(""));
-    model->setItem(newRow, 2, new QStandardItem(""));
-    model->setItem(newRow, 3, new QStandardItem(""));
+    openEventDialog(tableView, node, model->rowCount());
   });
 
   button->setText(control.id);
@@ -270,7 +253,7 @@ VoidResult FieldsMenu::loadControlAddEvent(const ControlsConfig& control, NodeIt
   return VoidResult();
 }
 
-void FieldsMenu::showEventContextMenu(QTableView* tableView, NodeItem* node, const QPoint& pos)
+void FieldsMenu::showContextMenu(QTableView* tableView, NodeItem* node, const QPoint& pos)
 {
   // Get the index of the clicked row
   QModelIndex index = tableView->indexAt(pos);
@@ -292,47 +275,72 @@ void FieldsMenu::showEventContextMenu(QTableView* tableView, NodeItem* node, con
   contextMenu.exec(tableView->viewport()->mapToGlobal(pos));
 }
 
-void FieldsMenu::editEvent(QTableView* tableView, NodeItem* node, const QModelIndex& index)
+void FieldsMenu::showEventContextMenu(QTableView* tableView, NodeItem* node, const QPoint& pos)
+{
+  // Get the index of the clicked row
+  QModelIndex index = tableView->indexAt(pos);
+  if (!index.isValid())
+    return;
+
+  int row = index.row();
+
+  QMenu contextMenu;
+  QAction* actionEditFlow = contextMenu.addAction(tr("Edit flow"));
+  connect(actionEditFlow, &QAction::triggered, this, [this, row, tableView, node] {
+    auto model = static_cast<QStandardItemModel*>(tableView->model());
+    auto flowId = model->item(row)->data(Qt::UserRole).toString();
+    emit flowSelected(flowId, node->id());
+  });
+
+  QAction* actionEditProperties = contextMenu.addAction(tr("Edit event"));
+  connect(actionEditProperties, &QAction::triggered, this, [this, row, tableView, node] {
+    openEventDialog(tableView, node, row);
+  });
+
+  QAction* actionDelete = contextMenu.addAction(tr("Delete"));
+  connect(actionDelete, &QAction::triggered, this, [row, tableView, node] {
+    auto key = static_cast<QStandardItemModel*>(tableView->model())->item(row, 0);
+    if (key && !key->text().isNull())
+      node->removeField(key->text());
+
+    tableView->model()->removeRow(row);
+  });
+
+  contextMenu.exec(tableView->viewport()->mapToGlobal(pos));
+}
+
+void FieldsMenu::openEventDialog(QTableView* tableView, NodeItem* node, int row)
 {
   // Open the dialog
-  // mCurrentDialog = new EventDialog("Edit event", this);
+  mCurrentDialog = new EventDialog(tr("Edit event"), this);
 
-  // EventConfig config = index.row() < node->events().size() ? node->events().at(index.row()) : EventConfig();
-  // mCurrentDialog->setup(config);
+  auto config = row < node->events().size() ? node->events().at(row) : std::make_shared<FlowSaveInfo>();
+  mCurrentDialog->setup(config);
 
-  // connect(mCurrentDialog, &QDialog::accepted, [this, tableView, node, index] {
-  //   int row = index.row();
+  connect(mCurrentDialog, &QDialog::accepted, [this, tableView, node, row] {
+    auto info = mCurrentDialog->getInfo();
+    node->createFlow(info->name, info);
+    addEventToTable((QStandardItemModel*)tableView->model(), row, info);
+  });
+  connect(mCurrentDialog, &QDialog::rejected, [this] {
+    mCurrentDialog->close();
+    mCurrentDialog->deleteLater();
+  });
 
-  //   EventConfig event;
-  //   event.id = mCurrentDialog->getName();
-  //   event.type = Types::StringToConnectorType(mCurrentDialog->getType());
-  //   event.returnType = Types::StringToPropertyTypes(mCurrentDialog->getReturnType());
-
-  //   auto model = mCurrentDialog->getArguments();
-  //   for (int i = 0; i < model->rowCount(); ++i)
-  //   {
-  //     PropertiesConfig property;
-  //     property.id = model->index(i, 0).data().toString();
-  //     property.type = Types::StringToPropertyTypes(model->index(i, 1).data().toString());
-  //     event.arguments.push_back(property);
-  //   }
-
-  //   addEventToTable((QStandardItemModel*)tableView->model(), row, event);
-
-  //   node->setEvent(row, event);
-  // });
-  // connect(mCurrentDialog, &QDialog::rejected, [this] {
-  //   mCurrentDialog->close();
-  //   mCurrentDialog->deleteLater();
-  // });
-
-  // mCurrentDialog->setAttribute(Qt::WA_DeleteOnClose);
-  // mCurrentDialog->show();
+  mCurrentDialog->setAttribute(Qt::WA_DeleteOnClose);
+  mCurrentDialog->exec();
 }
 
 void FieldsMenu::addEventToTable(QStandardItemModel* model, int row, std::shared_ptr<FlowSaveInfo> event)
 {
-  model->setItem(row, 0, new QStandardItem(event->name));
+  // If the row is not in the table yet, add it
+  if (row >= model->rowCount())
+    model->insertRow(row);
+
+  auto indexItem = new QStandardItem(event->name);
+  indexItem->setData(event->id, Qt::UserRole);
+
+  model->setItem(row, 0, indexItem);
   model->setItem(row, 1, new QStandardItem(Types::ConnectorTypeToString(event->type)));
   model->setItem(row, 2, new QStandardItem(Types::PropertyTypesToString(event->returnType)));
 

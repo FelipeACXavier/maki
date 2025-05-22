@@ -5,7 +5,8 @@
 #include <QLineEdit>
 #include <QTableView>
 
-class EventConfig;
+class FlowSaveInfo;
+class QStandardItem;
 class QStandardItemModel;
 
 class EventDialog : public QDialog
@@ -14,18 +15,24 @@ class EventDialog : public QDialog
 public:
   EventDialog(const QString& title, QWidget* parent = nullptr);
 
-  void setup(const EventConfig& event);
+  void setup(std::shared_ptr<FlowSaveInfo> event);
 
+  std::shared_ptr<FlowSaveInfo> getInfo() const;
   QString getName() const;
   QString getType() const;
   QString getReturnType() const;
   QStandardItemModel* getArguments() const;
 
+protected:
+  void keyPressEvent(QKeyEvent* event) override;
+
 private:
-  QLineEdit* mName;
-  QComboBox* mType;
-  QComboBox* mReturnType;
-  QTableView* mArguments;
+  std::shared_ptr<FlowSaveInfo> mStorage;
 
   void populateNodeList();
+  void createNameInput(QWidget* parent);
+  void createTypeInput(QWidget* parent);
+  void createReturnTypeInput(QWidget* parent);
+  void createArgumentInput(QWidget* parent);
+  void updateArgumentTable(QStandardItem* item);
 };

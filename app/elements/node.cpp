@@ -305,7 +305,7 @@ void NodeItem::removeField(const QString& key)
   }
 }
 
-void NodeItem::setEvent(int index, const EventConfig& event)
+void NodeItem::setEvent(int index, const FlowConfig& event)
 {
   // if (!mStorage)
   //   return;
@@ -561,6 +561,9 @@ Flow* NodeItem::createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo
 
   Flow* flow = new Flow(flowName, flowConfig);
   mFlows.push_back(flow);
+
+  if (flowAdded)
+    flowAdded(flow, this);
 
   return flow;
 }

@@ -10,7 +10,7 @@
           "body": {
             "shape": "Rectangle",
             "textColor": "#FFFFFF",
-            "backgroundColor": "#202020",
+            "backgroundColor": "#DBB146",
             "borderColor": "#FFFFFF",
             "width": 500,
             "height": 500,
@@ -25,13 +25,7 @@
             {
               "id": "color",
               "type": "color",
-              "default": "#0d0d50"
-            }
-          ],
-          "controls": [
-            {
-              "id": "Add event",
-              "type": "add event"
+              "default": "#DBB146"
             }
           ],
           "events": [
@@ -47,6 +41,37 @@
             },
             {
               "id": "timeout",
+              "type": "out",
+              "returnType": "void"
+            }
+          ]
+        },
+        {
+          "type": "Presence sensor",
+          "body": {
+            "shape": "Rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#62A22A",
+            "borderColor": "#FFFFFF",
+            "width": 250,
+            "height": 250,
+            "z-index": -2
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Presence sensor"
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#62A22A"
+            }
+          ],
+          "events": [
+            {
+              "id": "detected",
               "type": "out",
               "returnType": "void"
             }

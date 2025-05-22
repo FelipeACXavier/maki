@@ -370,12 +370,12 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     // =============================================
     menu.addSection("Creation");
 
-    QAction* newFlowAction = menu.addAction(tr("New flow"));
-    newFlowAction->setEnabled(node != nullptr && items.size() == 1);
-    QObject::connect(newFlowAction, &QAction::triggered, [this, node]() {
-      emit openFlow(nullptr, node);
-    });
-    menu.addAction(newFlowAction);
+    // QAction* newFlowAction = menu.addAction(tr("New flow"));
+    // newFlowAction->setEnabled(node != nullptr && items.size() == 1);
+    // QObject::connect(newFlowAction, &QAction::triggered, [this, node]() {
+    //   emit openFlow(nullptr, node);
+    // });
+    // menu.addAction(newFlowAction);
 
     // =============================================
     menu.addSection("Edit");
@@ -635,8 +635,7 @@ VoidResult Canvas::loadFromSave(const SaveInfo& info)
 
     for (const auto& flow : node->flows)
     {
-      Flow* createdFlow = createdNode->createFlow(flow->name, flow);
-      emit flowAdded(createdFlow, createdNode);
+      createdNode->createFlow(flow->name, flow);
     }
 
     selectNode(createdNode, false);
@@ -686,10 +685,15 @@ NodeItem* Canvas::createNode(NodeCreation creation, const NodeSaveInfo& info, co
   }
 
   // TODO(felaze): Move these to a function or so
-  node->nodeModified = [this](NodeItem* item) { emit nodeModified(item); };
+  node->nodeModified = [this](NodeItem* item) {
+    emit nodeModified(item);
+  };
   node->nodeDeleted = [this](NodeItem* item) {
     removeItem(item);
     emit nodeRemoved(item);
+  };
+  node->flowAdded = [this](Flow* flow, NodeItem* node) {
+    emit flowAdded(flow, node);
   };
 
   node->start();
