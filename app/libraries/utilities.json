@@ -47,6 +47,81 @@
           ]
         },
         {
+          "type": "Authenticator",
+          "body": {
+            "shape": "Rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#24273A",
+            "borderColor": "#FFFFFF",
+            "width": 500,
+            "height": 500,
+            "z-index": -2
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Authenticator"
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#24273A"
+            },
+            {
+              "id": "token",
+              "type": "string"
+            }
+          ],
+          "events": [
+            {
+              "id": "authenticate",
+              "type": "in",
+              "returnType": "boolean"
+            }
+          ]
+        },
+        {
+          "type": "Siren",
+          "body": {
+            "shape": "Rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#35AA46",
+            "borderColor": "#FFFFFF",
+            "width": 500,
+            "height": 500,
+            "z-index": -2
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Siren"
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#35AA46"
+            },
+            {
+              "id": "token",
+              "type": "string"
+            }
+          ],
+          "events": [
+            {
+              "id": "enable",
+              "type": "in",
+              "returnType": "void"
+            },
+            {
+              "id": "disable",
+              "type": "in",
+              "returnType": "void"
+            }
+          ]
+        },
+        {
           "type": "Presence sensor",
           "body": {
             "shape": "Rectangle",

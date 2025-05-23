@@ -307,8 +307,18 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertiesConfig& p
     widget->addItem(name.toString(), child->id);
   }
 
+  widget->setFont(Fonts::Property);
+  layout()->addWidget(widget);
+
   if (property.options.empty())
   {
+    // Make sure the widget shows the current selected component if it exists
+    auto currentValue = node->getProperty(property.id);
+    if (currentValue.isValid())
+      widget->setCurrentText(currentValue.toString());
+    else
+      widget->setCurrentText("-");
+
     connect(widget, &QComboBox::currentTextChanged, this, [=](const QString& text) {
       node->setProperty(property.id, text);
     });
@@ -317,16 +327,68 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertiesConfig& p
   {
     if (property.options.at(0).type == Types::PropertyTypes::EVENT_SELECT)
     {
-      connect(widget, &QComboBox::currentTextChanged, this, [=](const QString& text) {
-        QComboBox* eventCombo = findChild<QComboBox*>(property.options.at(0).id);
-        if (eventCombo == nullptr)
+      // auto option = property.options.at(0);
+      // QComboBox* eventWidget = new QComboBox(this);
+      // eventWidget->setObjectName(option.id);
+
+      // Set starting values
+      auto value = node->getProperty(property.id);
+      if (value.isValid())
+      {
+        QJsonObject object = value.toJsonObject();
+        qDebug() << "Starting with " << object;
+        widget->setCurrentText(object[ConfigKeys::DATA].toString());
+
+        // auto events = mStorage->getEventsFromNode(widget->currentData().toString());
+        // for (const auto& event : events)
+        //   eventWidget->addItem(event->name, event->id);
+
+        // eventWidget->setCurrentText(object[ConfigKeys::OPTION_DATA].toString());
+      }
+      else
+      {
+        widget->setCurrentText("-");
+        // eventWidget->setCurrentText("-");
+      }
+
+      // connect(eventWidget, &QComboBox::currentTextChanged, this, [node, property](const QString& text) {
+      //   if (text.isEmpty())
+      //     return;
+
+      //   auto value = node->getProperty(property.id);
+      //   if (!value.isValid())
+      //     return;
+
+      //   QJsonObject object = value.toJsonObject();
+      //   object[ConfigKeys::OPTION_DATA] = text;
+
+      //   qDebug() << "Setting event " << object;
+      //   node->setProperty(property.id, object);
+      // });
+
+      // eventWidget->setFont(Fonts::Property);
+      // layout()->addWidget(eventWidget);
+
+      connect(widget, &QComboBox::currentTextChanged, this, [this, widget, node, property](const QString& text) {
+        if (text.isEmpty())
           return;
 
-        node->setProperty(property.id, text);
-        eventCombo->clear();
-        auto events = mStorage->getEventsFromNode(widget->currentData().toString());
-        for (const auto& event : events)
-          eventCombo->addItem(event->name, event->id);
+        // eventWidget->clear();
+        // auto events = mStorage->getEventsFromNode(widget->currentData().toString());
+        // for (const auto& event : events)
+        //   eventWidget->addItem(event->name, event->id);
+
+        // Set the component
+        auto value = node->getProperty(property.id);
+        if (!value.isValid())
+          return;
+
+        QJsonObject object = value.toJsonObject();
+        object[ConfigKeys::DATA] = text;
+        // object[ConfigKeys::OPTION_DATA] = events.size() > 0 ? events.at(0)->name : "";
+
+        qDebug() << "Setting component " << object;
+        node->setProperty(property.id, object);
       });
     }
     else
@@ -334,9 +396,6 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertiesConfig& p
       LOG_WARNING("Configuration is not supported");
     }
   }
-
-  widget->setFont(Fonts::Property);
-  layout()->addWidget(widget);
 
   return VoidResult();
 }
@@ -349,7 +408,13 @@ VoidResult PropertiesMenu::loadPropertyEventSelect(const PropertiesConfig& prope
   QComboBox* widget = new QComboBox(this);
   widget->setObjectName(property.id);
 
-  widget->setCurrentText("-");
+  // Make sure the widget shows the current selected component if it exists
+  auto currentValue = node->getProperty(property.id);
+  if (currentValue.isValid())
+    widget->setCurrentText(currentValue.toString());
+  else
+    widget->setCurrentText("-");
+
   connect(widget, &QComboBox::currentTextChanged, this, [=](const QString& text) {
     node->setProperty(property.id, text);
   });

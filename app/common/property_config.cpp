@@ -34,6 +34,23 @@ PropertiesConfig::PropertiesConfig(const QJsonObject& object)
     return;
   }
 
+  if (object.contains("options"))
+  {
+    if (type == Types::PropertyTypes::COMPONENT_SELECT && object["options"].toArray().size() != 1)
+    {
+      setInvalid("We only support one option for now");
+      return;
+    }
+
+    for (const auto& option : object["options"].toArray())
+      options.push_back(PropertiesConfig(option.toObject()));
+  }
+  else if (type == Types::PropertyTypes::SELECT)
+  {
+    setInvalid("Invalid config for " + id + ". " + object["type"].toString() + " type must have options");
+    return;
+  }
+
   // Set default later for easier comparison
   defaultValue = toDefault(object, type);
   if (!defaultValue.isValid())
@@ -57,45 +74,22 @@ QVariant PropertiesConfig::toDefault(const QJsonObject& object, Types::PropertyT
   else if (objectType == Types::PropertyTypes::COMPONENT_SELECT)
   {
     if (!object.contains("options"))
-      return QVariant(QString(""));
+      return toDefault(object, Types::PropertyTypes::STRING);
 
-    for (const auto& option : object["options"].toArray())
-    {
-      auto prop = PropertiesConfig(option.toObject());
-      options.push_back(PropertiesConfig(option.toObject()));
-    }
+    // A component select with options must be able to hold its on data as well as the data option
+    QJsonObject propOption;
+    propOption[ConfigKeys::DATA] = "";
 
-    return toDefault(object, Types::PropertyTypes::STRING);
+    propOption[ConfigKeys::ID] = options.at(0).id;
+    propOption[ConfigKeys::TYPE] = Types::PropertyTypesToString(options.at(0).type);
+    propOption[ConfigKeys::OPTION_DATA] = options.at(0).defaultValue.toString();
+
+    return propOption;
   }
   else if (objectType == Types::PropertyTypes::EVENT_SELECT)
-  {
-    if (!object.contains("options"))
-      return QVariant(QString(""));
-
-    for (const auto& option : object["options"].toArray())
-    {
-      auto prop = PropertiesConfig(option.toObject());
-      options.push_back(PropertiesConfig(option.toObject()));
-    }
-
     return toDefault(object, Types::PropertyTypes::STRING);
-  }
   else if (objectType == Types::PropertyTypes::SELECT)
-  {
-    if (!object.contains("options"))
-    {
-      setInvalid("Select type requires and \"options\" attribute");
-      return QVariant();
-    }
-
-    for (const auto& option : object["options"].toArray())
-    {
-      auto prop = PropertiesConfig(option.toObject());
-      options.push_back(PropertiesConfig(option.toObject()));
-    }
-
     return toDefault(object, Types::PropertyTypes::STRING);
-  }
 
   return QVariant();
 }

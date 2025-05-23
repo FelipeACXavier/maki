@@ -100,7 +100,7 @@ private:
   void selectNode(NodeItem* node, bool select);
 
   CanvasView* parentView() const;
-  NodeItem* createNode(NodeCreation creation, const NodeSaveInfo& info, const QPointF& position, NodeItem* parent);
+  NodeItem* createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo> info, const QPointF& position, NodeItem* parent);
 
   NodeItem* findNodeWithId(const QString& id) const;
 

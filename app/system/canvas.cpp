@@ -84,9 +84,9 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
     QByteArray data = event->mimeData()->data(Constants::TYPE_NODE);
     QDataStream stream(&data, QIODevice::ReadOnly);
 
-    NodeSaveInfo info;
-    stream >> info;
-    info.scale = parentView()->getScale();
+    auto info = std::make_shared<NodeSaveInfo>();
+    stream >> *info;
+    info->scale = parentView()->getScale();
 
     auto node = createNode(NodeCreation::Dropping, info, event->scenePos(), parentNode);
     if (node)
@@ -554,12 +554,13 @@ void Canvas::pasteCopiedItems()
         return;
     }
 
-    auto node = createNode(NodeCreation::Pasting, info, mousePosition - info.position, parentNode);
+    auto infoPtr = std::make_shared<NodeSaveInfo>();
+    auto node = createNode(NodeCreation::Pasting, infoPtr, mousePosition - info.position, parentNode);
 
-    for (const auto& childInfo : info.children)
+    for (std::shared_ptr<NodeSaveInfo> childInfo : info.children)
     {
       // Children's positions take into account the relative prosition to the parent
-      auto child = createNode(NodeCreation::Pasting, *childInfo, childInfo->position, node);
+      auto child = createNode(NodeCreation::Pasting, childInfo, childInfo->position, node);
       selectNode(child, false);
     }
 
@@ -621,15 +622,15 @@ VoidResult Canvas::loadFromSave(const SaveInfo& info)
   parentView()->setScale(info.canvasInfo.scale);
   parentView()->centerOn(info.canvasInfo.center);
 
-  for (const auto& node : info.structuralNodes)
+  for (std::shared_ptr<NodeSaveInfo> node : info.structuralNodes)
   {
     LOG_DEBUG("Creating structural node %s with parent %s", qPrintable(node->id), qPrintable(node->parentId));
-    auto createdNode = createNode(NodeCreation::Loading, *node, node->position, nullptr);
+    auto createdNode = createNode(NodeCreation::Loading, node, node->position, nullptr);
 
-    for (const auto& childInfo : node->children)
+    for (std::shared_ptr<NodeSaveInfo> childInfo : node->children)
     {
       // Children's positions take into account the relative prosition to the parent
-      auto child = createNode(NodeCreation::Loading, *childInfo, childInfo->position, createdNode);
+      auto child = createNode(NodeCreation::Loading, childInfo, childInfo->position, createdNode);
       selectNode(child, false);
     }
 
@@ -649,9 +650,9 @@ CanvasView* Canvas::parentView() const
   return static_cast<CanvasView*>(parent());
 }
 
-NodeItem* Canvas::createNode(NodeCreation creation, const NodeSaveInfo& info, const QPointF& position, NodeItem* parent)
+NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo> info, const QPointF& position, NodeItem* parent)
 {
-  auto config = mConfigTable->get(info.nodeId);
+  auto config = mConfigTable->get(info->nodeId);
   if (config == nullptr)
   {
     LOG_WARNING("Added node with no configuration");
@@ -666,22 +667,21 @@ NodeItem* Canvas::createNode(NodeCreation creation, const NodeSaveInfo& info, co
 
   // If no parent is defined, we must create a "base node" in the canvas
   NodeItem* node = nullptr;
-  auto nodeInfo = std::make_shared<NodeSaveInfo>(info);
-  auto nodeId = creation == NodeCreation::Pasting ? "" : nodeInfo->id;
+  auto nodeId = creation == NodeCreation::Pasting ? "" : info->id;
   if (parent == nullptr)
   {
     if (type() == Types::LibraryTypes::STRUCTURAL)
-      mStorage->structuralNodes.append(nodeInfo);
+      mStorage->structuralNodes.append(info);
 
-    node = new NodeItem(nodeId, nodeInfo, position, config);
+    node = new NodeItem(nodeId, info, position, config);
   }
   // If it is defined, we simply add a child node to the parent
   else
   {
     QPointF pos = creation == NodeCreation::Dropping ? parent->mapFromScene(position) : position;
-    node = new NodeItem(nodeId, nodeInfo, pos, config, parent);
+    node = new NodeItem(nodeId, info, pos, config, parent);
 
-    parent->addChild(node, nodeInfo);
+    parent->addChild(node, info);
   }
 
   // TODO(felaze): Move these to a function or so
@@ -707,7 +707,7 @@ NodeItem* Canvas::createNode(NodeCreation creation, const NodeSaveInfo& info, co
     addItem(node);
 
   if (creation != NodeCreation::Populating)
-    updateParent(node, nodeInfo, true);
+    updateParent(node, info, true);
 
   emit nodeAdded(node);
 
@@ -785,15 +785,15 @@ void Canvas::populate(Flow* flow)
 {
   // First create all the nodes
   LOG_DEBUG("Nodes before %d", flow->getNodes().size());
-  for (const auto& node : flow->getNodes())
+  for (std::shared_ptr<NodeSaveInfo> node : flow->getNodes())
   {
     LOG_DEBUG("Creating behavioral node %s with parent %s", qPrintable(node->id), qPrintable(node->parentId));
-    auto created = createNode(NodeCreation::Populating, *node, node->position, findNodeWithId(node->parentId));
+    auto created = createNode(NodeCreation::Populating, node, node->position, findNodeWithId(node->parentId));
     LOG_DEBUG("Created node %s", qPrintable(created->id()));
   }
 
   // Then create the transitions between the nodes
-  for (const auto& node : flow->getNodes())
+  for (std::shared_ptr<NodeSaveInfo> node : flow->getNodes())
   {
     auto srcConn = findNodeWithId(node->id);
     if (!srcConn)

@@ -33,6 +33,7 @@ static const QString WIDTH = "width";
 static const QString HEIGHT = "height";
 static const QString PIXMAP = "pixmap";
 static const QString DATA = "data";
+static const QString OPTION_DATA = "option_data";
 
 static const QString SHIFT = "shift";
 static const QString SOURCE = "source";

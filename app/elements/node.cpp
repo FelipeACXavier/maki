@@ -250,6 +250,8 @@ void NodeItem::setProperty(const QString& key, QVariant value)
     nodeModified(this);
 
   update();
+
+  qDebug() << mStorage->properties;
 }
 
 VoidResult NodeItem::setField(const QString& key, const QJsonObject& value)
@@ -475,6 +477,10 @@ void NodeItem::deleteNode()
   auto toDelete = children();
   for (INode* child : toDelete)
     dynamic_cast<NodeItem*>(child)->deleteNode();
+
+  auto transtionsToDelete = transitions();
+  for (TransitionItem* transtion : transtionsToDelete)
+    delete transtion;
 
   // Remove the item from the scene
   if (nodeDeleted)
