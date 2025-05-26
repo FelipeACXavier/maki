@@ -435,7 +435,7 @@ VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)
 
   mCurrentNode = transition->id();
 
-  QLabel* nameLabel = new QLabel("Condition");
+  QLabel* nameLabel = new QLabel("Label");
 
   nameLabel->setFont(Fonts::Label);
   layout()->addWidget(nameLabel);

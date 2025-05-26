@@ -161,8 +161,18 @@ bool Canvas::nodeClickHandler(QGraphicsSceneMouseEvent* event, QGraphicsItem* it
   NodeItem* node = static_cast<NodeItem*>(item);
   if (isModifierSet(event, Qt::AltModifier))
   {
+    if (!node->canAddTransition())
+    {
+      LOG_WARNING("Node already has the maximum number of transitions");
+      return false;
+    }
+
     mNode = node;
+    auto info = std::make_shared<TransitionSaveInfo>();
     mTransition = new TransitionItem(std::make_shared<TransitionSaveInfo>());
+
+    auto config = node->nextTransition();
+    mTransition->setName(config.label);
 
     mTransition->setStart(node->id(), node->mapToScene(node->boundingRect().center()), {0, 0});
     mTransition->setEnd(Constants::TMP_CONNECTION_ID, event->scenePos(), {0, 0});

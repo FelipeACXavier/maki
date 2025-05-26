@@ -539,6 +539,35 @@ QPointF NodeItem::edgePointToward(const QPointF& targetScenePos) const
   return center + dir * radius;
 }
 
+bool NodeItem::canAddTransition() const
+{
+  int index = 0;
+  for (const auto& t : transitions())
+  {
+    if (t->source()->id() == id())
+      ++index;
+  }
+  LOG_DEBUG("Current %d vs Allowed: %d", index, config()->transitions.size());
+  return config()->transitions.isEmpty() || index < config()->transitions.size();
+}
+
+TransitionConfig NodeItem::nextTransition() const
+{
+  // Only count the transitions coming from this
+  int index = 0;
+  for (const auto& t : transitions())
+  {
+    if (t->source()->id() == id())
+      ++index;
+  }
+
+  LOG_DEBUG("Next %d vs Current: %d", index, config()->transitions.size());
+  if (config()->transitions.isEmpty() || index >= config()->transitions.size())
+    return TransitionConfig();
+
+  return config()->transitions.at(index);
+}
+
 Flow* NodeItem::createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo> info)
 {
   std::shared_ptr<FlowSaveInfo> flowConfig = info;

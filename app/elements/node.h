@@ -77,6 +77,9 @@ public:
 
   qreal baseScale() const;
 
+  bool canAddTransition() const;
+  TransitionConfig nextTransition() const;
+
   // "signals":
   std::function<void(NodeItem* item)> nodeDeleted;
   std::function<void(NodeItem* item)> nodeModified;

@@ -7,6 +7,7 @@ namespace ConfigKeys
 // Generic
 static const QString ID = "id";
 static const QString NAME = "name";
+static const QString LABEL = "label";
 static const QString TYPE = "type";
 static const QString DEFAULT = "default";
 static const QString SIZE = "size";

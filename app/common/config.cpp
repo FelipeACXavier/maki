@@ -8,6 +8,26 @@
 #include "keys.h"
 #include "string_helpers.h"
 
+TransitionConfig::TransitionConfig()
+{
+}
+
+TransitionConfig::TransitionConfig(const QJsonObject& object)
+{
+  if (!object.contains(ConfigKeys::ID))
+  {
+    setInvalid("Missing event id");
+    return;
+  }
+
+  id = object[ConfigKeys::ID].toString();
+  if (object.contains(ConfigKeys::LABEL))
+    label = object[ConfigKeys::LABEL].toString();
+
+  if (object.contains(ConfigKeys::MODIFIABLE))
+    modifiable = object[ConfigKeys::MODIFIABLE].toBool();
+}
+
 FlowConfig::FlowConfig()
 {
 }
@@ -214,6 +234,18 @@ NodeConfig::NodeConfig(const QJsonObject& object)
       events.push_back(ctrl);
     }
   }
+
+  if (object.contains(ConfigKeys::TRANSITIONS))
+  {
+    for (const auto& control : object[ConfigKeys::TRANSITIONS].toArray())
+    {
+      auto ctrl = TransitionConfig(control.toObject());
+      if (!ctrl.isValid())
+        setInvalid(ctrl.errorMessage);
+
+      transitions.push_back(ctrl);
+    }
+  }
 }
 
 // ===========================================================================================================
@@ -228,6 +260,7 @@ QDataStream& operator<<(QDataStream& out, const NodeConfig& config)
   out << config.properties;
   out << config.libraryType;
   out << config.events;
+  out << config.transitions;
 
   return out;
 }
@@ -242,6 +275,7 @@ QDataStream& operator>>(QDataStream& in, NodeConfig& config)
   in >> config.properties;
   in >> config.libraryType;
   in >> config.events;
+  in >> config.transitions;
 
   return in;
 }
@@ -326,6 +360,22 @@ QDataStream& operator<<(QDataStream& out, const FlowConfig& config)
 }
 
 QDataStream& operator>>(QDataStream& in, FlowConfig& config)
+{
+  return in;
+}
+
+// ===========================================================================================================
+// TransitionConfig
+QDataStream& operator<<(QDataStream& out, const TransitionConfig& config)
+{
+  out << config.id;
+  out << config.label;
+  out << config.modifiable;
+
+  return out;
+}
+
+QDataStream& operator>>(QDataStream& in, TransitionConfig& config)
 {
   return in;
 }

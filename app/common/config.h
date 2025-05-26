@@ -9,6 +9,20 @@
 #include "property_config.h"
 #include "types.h"
 
+class TransitionConfig : public ConfigBase
+{
+public:
+  TransitionConfig();
+  TransitionConfig(const QJsonObject& object);
+
+  QString id = "";
+  QString label = "";
+  bool modifiable = true;
+
+  friend QDataStream& operator<<(QDataStream& out, const TransitionConfig& config);
+  friend QDataStream& operator>>(QDataStream& in, TransitionConfig& config);
+};
+
 class FlowConfig : public ConfigBase
 {
 public:
@@ -102,6 +116,7 @@ public:
   QVector<ControlsConfig> controls;
   QVector<PropertiesConfig> properties;
   QVector<FlowConfig> events;
+  QVector<TransitionConfig> transitions;
 
   Types::LibraryTypes libraryType = Types::LibraryTypes::UNKNOWN;
 

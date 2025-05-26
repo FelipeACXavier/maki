@@ -25,7 +25,7 @@ TransitionItem::TransitionItem(std::shared_ptr<TransitionSaveInfo> storage)
 
   mLabel = std::make_shared<QGraphicsTextItem>(this);
   mLabel->setFont(Fonts::Property);
-  mLabel->setPlainText("");
+  mLabel->setPlainText(mStorage->label);
   updateLabelPosition();
 
   mStorage->id = id();
@@ -99,14 +99,11 @@ void TransitionItem::move(const QString& id, QPointF pos)
   // Control points for Bézier curve
   QPainterPath path;
   path.moveTo(mStorage->srcPoint);
-
-  if (mComplete)
-    // Control points for Bézier curve
-    path.cubicTo(mStorage->srcPoint + mStorage->srcShift, mStorage->dstPoint + mStorage->dstShift, mStorage->dstPoint);
-  else
-    path.lineTo(mStorage->dstPoint);
+  path.lineTo(mStorage->dstPoint);
 
   setPath(path);
+  updateLabelPosition();
+  prepareGeometryChange();
 }
 
 void TransitionItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
@@ -164,7 +161,7 @@ void TransitionItem::updatePath()
 
   setPath(path);
   updateLabelPosition();
-  prepareGeometryChange();  // if needed for boundingRect
+  prepareGeometryChange();
 }
 
 QString TransitionItem::getName() const

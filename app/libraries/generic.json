@@ -312,7 +312,19 @@
           },
           "help": {
             "message": "Performs a conditional check on the given input and continues the flow based on the check."
-          }
+          },
+          "transitions": [
+            {
+              "id": "true",
+              "label": "True",
+              "modifiable": false
+            },
+            {
+              "id": "false",
+              "label": "False",
+              "modifiable": false
+            }
+          ]
         },
         {
           "type": "Action",
