@@ -381,12 +381,12 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     // =============================================
     menu.addSection("Creation");
 
-    // QAction* newFlowAction = menu.addAction(tr("New flow"));
-    // newFlowAction->setEnabled(node != nullptr && items.size() == 1);
-    // QObject::connect(newFlowAction, &QAction::triggered, [this, node]() {
-    //   emit openFlow(nullptr, node);
-    // });
-    // menu.addAction(newFlowAction);
+    QAction* newEventAction = menu.addAction(tr("New event"));
+    newEventAction->setEnabled(node != nullptr && items.size() == 1);
+    QObject::connect(newEventAction, &QAction::triggered, [this, node]() {
+      emit createEvent(node);
+    });
+    menu.addAction(newEventAction);
 
     // =============================================
     menu.addSection("Edit");

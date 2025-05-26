@@ -547,7 +547,7 @@ bool NodeItem::canAddTransition() const
     if (t->source()->id() == id())
       ++index;
   }
-  LOG_DEBUG("Current %d vs Allowed: %d", index, config()->transitions.size());
+
   return config()->transitions.isEmpty() || index < config()->transitions.size();
 }
 
@@ -561,7 +561,6 @@ TransitionConfig NodeItem::nextTransition() const
       ++index;
   }
 
-  LOG_DEBUG("Next %d vs Current: %d", index, config()->transitions.size());
   if (config()->transitions.isEmpty() || index >= config()->transitions.size())
     return TransitionConfig();
 

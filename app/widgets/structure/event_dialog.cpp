@@ -8,6 +8,7 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QStandardItemModel>
+#include <QTimer>
 #include <QVBoxLayout>
 
 #include "app_configs.h"
@@ -17,6 +18,7 @@
 
 EventDialog::EventDialog(const QString& title, QWidget* parent)
     : QDialog(parent)
+    , mEnterCount(0)
 {
   setWindowTitle(title);
 
@@ -75,6 +77,7 @@ void EventDialog::createNameInput(QWidget* parent)
 
   QLineEdit* name = new QLineEdit(parent);
   name->setText(mStorage->name);
+  name->setFocusPolicy(Qt::StrongFocus);
 
   connect(name, &QLineEdit::editingFinished, this, [=]() { mStorage->name = name->text(); });
   layout()->addWidget(name);
@@ -86,6 +89,8 @@ void EventDialog::createTypeInput(QWidget* parent)
   layout()->addWidget(eventTypeLabel);
 
   QComboBox* type = new QComboBox(parent);
+  type->setFocusPolicy(Qt::ClickFocus);
+
   for (uint16_t i = (uint16_t)Types::ConnectorType::UNKNOWN + 1; i < (uint16_t)Types::ConnectorType::END; ++i)
     type->addItem(Types::ConnectorTypeToString((Types::ConnectorType)i));
 
@@ -109,6 +114,7 @@ void EventDialog::createReturnTypeInput(QWidget* parent)
   layout()->addWidget(returnTypeLabel);
 
   QComboBox* returnType = new QComboBox(parent);
+  returnType->setFocusPolicy(Qt::ClickFocus);
 
   for (uint16_t i = (uint16_t)Types::PropertyTypes::UNKNOWN + 1; i < (uint16_t)Types::PropertyTypes::END; ++i)
     returnType->addItem(Types::PropertyTypesToString((Types::PropertyTypes)i));
@@ -137,6 +143,7 @@ void EventDialog::createArgumentInput(QWidget* parent)
   // Create table to hold the arguments
   QTableView* args = new QTableView(parent);
   QStandardItemModel* model = new QStandardItemModel(0, 2);
+  args->setFocusPolicy(Qt::ClickFocus);
 
   model->setHorizontalHeaderItem(0, new QStandardItem(tr("Name")));
   model->setHorizontalHeaderItem(1, new QStandardItem(tr("Type")));
@@ -170,6 +177,7 @@ void EventDialog::createArgumentInput(QWidget* parent)
     mStorage->arguments.push_back(PropertiesConfig());
   });
 
+  button->setFocusPolicy(Qt::NoFocus);
   button->setText(tr("Add argument"));
   button->setMaximumWidth(100);
   layout()->addWidget(button);
@@ -202,9 +210,21 @@ void EventDialog::keyPressEvent(QKeyEvent* event)
 {
   if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
   {
-    // Ignore the key press — do NOT accept the dialog
-    event->accept();
-    return;
+    QWidget* first = focusWidget();
+    QWidget* next = first->nextInFocusChain();
+
+    while (next && next != first)
+    {
+      // TODO: magic number
+      if ((next->focusPolicy() & 0x8) && next->isEnabled() && next->isVisible())
+      {
+        next->setFocus();
+        event->accept();
+        return;
+      }
+
+      next = next->nextInFocusChain();
+    }
   }
 
   QDialog::keyPressEvent(event);

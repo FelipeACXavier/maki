@@ -58,6 +58,7 @@ signals:
 
   void transitionSelected(TransitionItem* transtion);
 
+  void createEvent(NodeItem* node);
   void openFlow(Flow* flow, NodeItem* node);
   void flowAdded(Flow* flow, NodeItem* node);
   void flowRemoved(const QString& flowId, NodeItem* node);

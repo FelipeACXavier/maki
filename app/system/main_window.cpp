@@ -143,6 +143,7 @@ void MainWindow::bind()
   connect(rootCanvas(), &Canvas::openFlow, this, &MainWindow::onOpenFlow);
   connect(rootCanvas(), &Canvas::flowAdded, this, &MainWindow::onFlowAdded);
   connect(rootCanvas(), &Canvas::flowRemoved, this, &MainWindow::onFlowRemoved);
+  connect(rootCanvas(), &Canvas::createEvent, mFieldsMenu, &FieldsMenu::onCreateEvent);
 
   connect(mFieldsMenu, &FieldsMenu::flowSelected, rootCanvas(), &Canvas::onFlowSelected);
 

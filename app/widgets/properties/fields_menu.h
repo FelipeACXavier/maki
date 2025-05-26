@@ -26,6 +26,7 @@ public:
   VoidResult onNodeSelected(NodeItem* node, bool selected) override;
 
   VoidResult onFlowAdded(Flow* flow, NodeItem* node);
+  VoidResult onCreateEvent(NodeItem* node);
   VoidResult onFlowRemoved(const QString& flowId, NodeItem* node);
 
 signals:

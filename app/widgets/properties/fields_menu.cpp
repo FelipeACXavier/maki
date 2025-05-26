@@ -12,6 +12,7 @@
 
 #include "../structure/event_dialog.h"
 #include "app_configs.h"
+#include "elements/flow.h"
 #include "elements/node.h"
 #include "json.h"
 #include "logging.h"
@@ -77,6 +78,38 @@ VoidResult FieldsMenu::onNodeSelected(NodeItem* node, bool selected)
   mCurrentNode = node->id();
 
   RETURN_ON_FAILURE(loadControls(node));
+
+  return VoidResult();
+}
+
+VoidResult FieldsMenu::onCreateEvent(NodeItem* node)
+{
+  QWidget* w = this;  // or any child widget in the tab
+  QTabWidget* tabWidget = nullptr;
+
+  while (w)
+  {
+    qDebug() << "Current:" << w << w->metaObject()->className() << w->objectName();
+    tabWidget = qobject_cast<QTabWidget*>(w);
+    if (tabWidget)
+      break;
+    w = w->parentWidget();
+  }
+  2 if (tabWidget == nullptr) return VoidResult::Failed("Could not find parent widget");
+
+  tabWidget->setCurrentIndex(1);
+
+  LOG_INFO("Event created");
+
+  onNodeSelected(node, true);
+
+  LOG_INFO("Node selected created");
+
+  auto table = findChild<QTableView*>("EventTable");
+  if (table == nullptr)
+    return VoidResult::Failed("Could not find the event table");
+
+  openEventDialog(table, node, table->model()->rowCount() + 1);
 
   return VoidResult();
 }
@@ -210,6 +243,7 @@ VoidResult FieldsMenu::loadControlAddEvent(const ControlsConfig& control, NodeIt
 {
   // Create table to hold new fields
   QTableView* tableView = new QTableView(parent);
+  tableView->setObjectName("EventTable");
   QStandardItemModel* model = new QStandardItemModel(0, 3);
 
   model->setHorizontalHeaderItem(0, new QStandardItem("Name"));
@@ -319,8 +353,9 @@ void FieldsMenu::openEventDialog(QTableView* tableView, NodeItem* node, int row)
 
   connect(mCurrentDialog, &QDialog::accepted, [this, tableView, node, row] {
     auto info = mCurrentDialog->getInfo();
-    node->createFlow(info->name, info);
+    Flow* flow = node->createFlow(info->name, info);
     addEventToTable((QStandardItemModel*)tableView->model(), row, info);
+    emit flowSelected(flow->id(), node->id());
   });
   connect(mCurrentDialog, &QDialog::rejected, [this] {
     mCurrentDialog->close();

@@ -28,6 +28,7 @@ protected:
 
 private:
   std::shared_ptr<FlowSaveInfo> mStorage;
+  int mEnterCount;
 
   void populateNodeList();
   void createNameInput(QWidget* parent);
