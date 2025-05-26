@@ -90,7 +90,13 @@ private:
 
   QTimer* mHoverTimer;
 
-  QList<NodeSaveInfo> copiedNodes;
+  struct CopiedNode
+  {
+    NodeSaveInfo info;
+    QPointF posRelativeToMouse;
+  };
+
+  QList<CopiedNode> mCopiedNodes;
   std::shared_ptr<ConfigurationTable> mConfigTable;
   std::shared_ptr<SaveInfo> mStorage;
 
@@ -116,4 +122,7 @@ private:
 
   void createNodeContextMenu(QMenu& menu);
   void createTransitionContextMenu(QMenu& menu);
+
+  bool isParentSelected(NodeItem* node);
+  void pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode, QList<CopiedNode> nodes, bool relative);
 };

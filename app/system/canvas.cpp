@@ -21,6 +21,7 @@ Canvas::Canvas(const QString& canvasId, std::shared_ptr<SaveInfo> storage, std::
     , mConfigTable(configTable)
     , mStorage(storage)
     , mId(canvasId)
+    , mCopiedNodes({})
 {
   setProperty("class", QVariant(QStringLiteral("canvas")));
   setBackgroundBrush(Qt::transparent);
@@ -387,7 +388,7 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     });
 
     QAction* pasteAction = menu.addAction("Paste");
-    pasteAction->setEnabled(copiedNodes.size() > 0);
+    pasteAction->setEnabled(!mCopiedNodes.isEmpty());
     QObject::connect(pasteAction, &QAction::triggered, [this]() {
       pasteCopiedItems();
     });
@@ -502,9 +503,18 @@ void Canvas::deleteSelectedItems()
   }
 }
 
+bool Canvas::isParentSelected(NodeItem* node)
+{
+  if (node->parentNode() == nullptr)
+    return false;
+
+  auto parent = static_cast<NodeItem*>(node->parentNode());
+  return parent->isSelected() || isParentSelected(parent);
+}
+
 void Canvas::copySelectedItems()
 {
-  copiedNodes.clear();
+  mCopiedNodes.clear();
 
   QPointF mousePosition = parentView()->mapToScene(parentView()->mapFromGlobal(QCursor::pos()));
 
@@ -518,54 +528,56 @@ void Canvas::copySelectedItems()
       continue;
 
     // Do not copy the children
-    if (node->parentNode() != nullptr && static_cast<NodeItem*>(node->parentNode())->isSelected())
+    if (isParentSelected(node))
       continue;
 
     // Save relative position
     auto info = node->saveInfo();
-
-    // Must clean since the pasted nodes must have generated id
-    info.position = mousePosition - info.position;
-
-    copiedNodes.append(info);
+    mCopiedNodes.append({info, mousePosition - info.position});
 
     // Make sure the item is not selected after copying
     selectNode(node, false);
   }
 }
 
+void Canvas::pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode, QList<CopiedNode> copiedNodes, bool absolute)
+{
+  for (const auto& copy : copiedNodes)
+  {
+    auto infoPtr = std::make_shared<NodeSaveInfo>(copy.info);
+    auto node = createNode(NodeCreation::Pasting,
+                           infoPtr,
+                           absolute ? mousePosition - copy.posRelativeToMouse : copy.info.position,
+                           parentNode);
+
+    QList<CopiedNode> children;
+    for (const auto& child : copy.info.children)
+      children.push_back({*child});
+
+    pasteCopiedItems(mousePosition, node, children, false);
+    selectNode(node, false);
+  }
+}
+
 void Canvas::pasteCopiedItems()
 {
-  if (copiedNodes.isEmpty())
+  if (mCopiedNodes.isEmpty())
     return;
 
   QPointF mousePosition = parentView()->mapToScene(parentView()->mapFromGlobal(QCursor::pos()));
 
-  for (NodeSaveInfo info : copiedNodes)
+  NodeItem* parentNode = nullptr;
+  QGraphicsItem* item = itemAt(mousePosition, QTransform());
+  if (item && item->type() == NodeItem::Type)
   {
-    NodeItem* parentNode = nullptr;
-    QGraphicsItem* item = itemAt(mousePosition, QTransform());
-    if (item && item->type() == NodeItem::Type)
-    {
-      parentNode = static_cast<NodeItem*>(item);
+    parentNode = static_cast<NodeItem*>(item);
 
-      // Add error message
-      if (!parentNode->acceptDrops())
-        return;
-    }
-
-    auto infoPtr = std::make_shared<NodeSaveInfo>();
-    auto node = createNode(NodeCreation::Pasting, infoPtr, mousePosition - info.position, parentNode);
-
-    for (std::shared_ptr<NodeSaveInfo> childInfo : info.children)
-    {
-      // Children's positions take into account the relative prosition to the parent
-      auto child = createNode(NodeCreation::Pasting, childInfo, childInfo->position, node);
-      selectNode(child, false);
-    }
-
-    selectNode(node, false);
+    // Add error message
+    if (!parentNode->acceptDrops())
+      return;
   }
+
+  pasteCopiedItems(mousePosition, parentNode, mCopiedNodes, true);
 }
 
 void Canvas::clearCanvas()
