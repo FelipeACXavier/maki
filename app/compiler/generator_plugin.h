@@ -5,7 +5,7 @@
 #include <QObject>
 #include <QString>
 
-#include "inode.h"
+#include "elements/save_info.h"
 
 // Forward declaration to avoid exposing full NodeItem definition
 class NodeItem;
@@ -18,6 +18,7 @@ enum class Language
   ROS,
   Python,
   JSON,
+  Dezyne,
   Custom
 };
 }
@@ -26,7 +27,7 @@ class GeneratorPlugin
 {
 public:
   virtual ~GeneratorPlugin() = default;
-  virtual QString generateCode(const QList<INode*>& nodes) = 0;
+  virtual QString generateCode(const QVector<NodeSaveInfo>& nodes) = 0;
   virtual generator::Language supportedLanguage() const = 0;
   virtual QString languageName() const = 0;
 };

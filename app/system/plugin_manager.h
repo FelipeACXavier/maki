@@ -2,7 +2,7 @@
 
 #include <QWidget>
 
-#include "generator_plugin.h"
+#include "compiler/generator_plugin.h"
 
 class PluginManager : public QObject
 {

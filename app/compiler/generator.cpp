@@ -1,8 +1,8 @@
 #include "generator.h"
 
 #include "elements/node.h"
+#include "generator_plugin.h"
 #include "logging.h"
-#include "system/generator_plugin.h"
 
 Generator::Generator()
 {
@@ -16,7 +16,7 @@ void Generator::generate(GeneratorPlugin* generator, Canvas* canvas)
     return;
   }
 
-  QList<INode*> nodes;
+  QVector<NodeSaveInfo> nodes;
 
   for (const auto& item : canvas->items())
   {
@@ -26,7 +26,7 @@ void Generator::generate(GeneratorPlugin* generator, Canvas* canvas)
     // Use top level nodes only
     auto node = dynamic_cast<NodeItem*>(item);
     if (!node->parentNode())
-      nodes.push_back(node);
+      nodes.push_back(node->saveInfo());
   }
 
   LOG_INFO("======================================");
@@ -39,6 +39,6 @@ void Generator::generate(GeneratorPlugin* generator, Canvas* canvas)
   //    4. Connect the callbacks
   QString text = generator->generateCode(nodes);
   LOG_INFO("Generated code:");
-  LOG_INFO(text.toStdString());
+  LOG_INFO("%s", qPrintable(text));
   LOG_INFO("======================================");
 }
