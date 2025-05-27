@@ -390,6 +390,7 @@ void MainWindow::onNodeSelected(NodeItem* node, bool selected)
     mInfoText->setFont(Fonts::Property);
   }
 
+  LOG_INFO("Node selected");
   LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeSelected(node, selected));
   LOG_WARN_ON_FAILURE(mFieldsMenu->onNodeSelected(node, selected));
 }
@@ -403,9 +404,14 @@ void MainWindow::onNodeAdded(NodeItem* node)
   }
 
   if (canvas()->type() == Types::LibraryTypes::STRUCTURAL)
+  {
     LOG_WARN_ON_FAILURE(mSystemMenu->onNodeAdded(node));
+    LOG_WARN_ON_FAILURE(mFieldsMenu->onNodeAdded(node));
+  }
   else
+  {
     LOG_WARN_ON_FAILURE(mFlowMenu->onNodeAdded(canvas()->id(), node));
+  }
 }
 
 void MainWindow::onNodeRemoved(NodeItem* node)

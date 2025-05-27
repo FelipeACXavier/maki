@@ -25,6 +25,7 @@ struct FlowSaveInfo
   QVector<std::shared_ptr<NodeSaveInfo>> nodes;
 
   FlowSaveInfo() = default;
+  FlowSaveInfo(const FlowConfig& config);
 
   QJsonObject toJson() const;
   static FlowSaveInfo fromJson(const QJsonObject& data);

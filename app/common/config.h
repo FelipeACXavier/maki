@@ -33,6 +33,7 @@ public:
   Types::ConnectorType type = Types::ConnectorType::UNKNOWN;
   Types::PropertyTypes returnType = Types::PropertyTypes::UNKNOWN;
   QList<PropertiesConfig> arguments = {};
+  bool modifiable = true;
 
   friend QDataStream& operator<<(QDataStream& out, const FlowConfig& config);
   friend QDataStream& operator>>(QDataStream& in, FlowConfig& config);

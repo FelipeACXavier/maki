@@ -3,6 +3,7 @@
 #include <QBuffer>
 #include <QJsonArray>
 
+#include "config.h"
 #include "json.h"
 #include "keys.h"
 #include "logging.h"
@@ -59,6 +60,16 @@ QDataStream& operator>>(QDataStream& in, FlowSaveInfo& info)
   in >> info.arguments;
 
   return in;
+}
+
+FlowSaveInfo::FlowSaveInfo(const FlowConfig& config)
+{
+  id = QUuid::createUuid().toString();
+  name = config.name;
+  type = config.type;
+  returnType = config.returnType;
+  arguments = config.arguments;
+  modifiable = config.modifiable;
 }
 
 QJsonObject FlowSaveInfo::toJson() const

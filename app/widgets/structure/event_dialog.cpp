@@ -1,4 +1,6 @@
 #include "event_dialog.h"
+#include <qabstractitemview.h>
+#include <qnamespace.h>
 
 #include <QComboBox>
 #include <QDialogButtonBox>
@@ -77,7 +79,8 @@ void EventDialog::createNameInput(QWidget* parent)
 
   QLineEdit* name = new QLineEdit(parent);
   name->setText(mStorage->name);
-  name->setFocusPolicy(Qt::StrongFocus);
+  name->setFocusPolicy(mStorage->modifiable ? Qt::StrongFocus : Qt::NoFocus);
+  name->setReadOnly(!mStorage->modifiable);
 
   connect(name, &QLineEdit::editingFinished, this, [=]() { mStorage->name = name->text(); });
   layout()->addWidget(name);
@@ -89,7 +92,8 @@ void EventDialog::createTypeInput(QWidget* parent)
   layout()->addWidget(eventTypeLabel);
 
   QComboBox* type = new QComboBox(parent);
-  type->setFocusPolicy(Qt::ClickFocus);
+  type->setFocusPolicy(mStorage->modifiable ? Qt::ClickFocus : Qt::NoFocus);
+  type->setEnabled(mStorage->modifiable);
 
   for (uint16_t i = (uint16_t)Types::ConnectorType::UNKNOWN + 1; i < (uint16_t)Types::ConnectorType::END; ++i)
     type->addItem(Types::ConnectorTypeToString((Types::ConnectorType)i));
@@ -114,7 +118,8 @@ void EventDialog::createReturnTypeInput(QWidget* parent)
   layout()->addWidget(returnTypeLabel);
 
   QComboBox* returnType = new QComboBox(parent);
-  returnType->setFocusPolicy(Qt::ClickFocus);
+  returnType->setFocusPolicy(mStorage->modifiable ? Qt::ClickFocus : Qt::NoFocus);
+  returnType->setEnabled(mStorage->modifiable);
 
   for (uint16_t i = (uint16_t)Types::PropertyTypes::UNKNOWN + 1; i < (uint16_t)Types::PropertyTypes::END; ++i)
     returnType->addItem(Types::PropertyTypesToString((Types::PropertyTypes)i));
@@ -144,7 +149,7 @@ void EventDialog::createArgumentInput(QWidget* parent)
   QTableView* args = new QTableView(parent);
   QStandardItemModel* model = new QStandardItemModel(0, 2);
   args->setFocusPolicy(Qt::ClickFocus);
-
+   
   model->setHorizontalHeaderItem(0, new QStandardItem(tr("Name")));
   model->setHorizontalHeaderItem(1, new QStandardItem(tr("Type")));
 
@@ -153,7 +158,10 @@ void EventDialog::createArgumentInput(QWidget* parent)
 
   addDynamicWidget((QVBoxLayout*)layout(), args, parent);
 
-  args->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::EditKeyPressed);
+  if (mStorage->modifiable)
+    args->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::EditKeyPressed);
+  else
+    args->setEditTriggers(QAbstractItemView::NoEditTriggers);
   args->setModel(model);
 
   for (const auto& field : mStorage->arguments)
@@ -167,6 +175,7 @@ void EventDialog::createArgumentInput(QWidget* parent)
   connect(model, &QStandardItemModel::itemChanged, this, &EventDialog::updateArgumentTable);
 
   QPushButton* button = new QPushButton(parent);
+  button->setEnabled(mStorage->modifiable);
   connect(button, &QPushButton::pressed, this, [=]() {
     int newRow = model->rowCount();
     model->insertRow(newRow);

@@ -32,17 +32,20 @@
             {
               "id": "set",
               "type": "in",
-              "returnType": "void"
+              "returnType": "void",
+              "modifiable": false
             },
             {
               "id": "reset",
               "type": "in",
-              "returnType": "void"
+              "returnType": "void",
+              "modifiable": false
             },
             {
               "id": "timeout",
               "type": "out",
-              "returnType": "void"
+              "returnType": "void",
+              "modifiable": false
             }
           ]
         },
@@ -78,6 +81,12 @@
               "id": "authenticate",
               "type": "in",
               "returnType": "boolean"
+            }
+          ],
+          "controls": [
+            {
+              "id": "Add event",
+              "type": "add event"
             }
           ]
         },
@@ -119,6 +128,12 @@
               "type": "in",
               "returnType": "void"
             }
+          ],
+          "controls": [
+            {
+              "id": "Add event",
+              "type": "add event"
+            }
           ]
         },
         {
@@ -149,6 +164,12 @@
               "id": "detected",
               "type": "out",
               "returnType": "void"
+            }
+          ],
+          "controls": [
+            {
+              "id": "Add event",
+              "type": "add event"
             }
           ]
         }

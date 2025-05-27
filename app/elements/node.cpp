@@ -72,14 +72,7 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
     if (found)
       continue;
 
-    // Add new flow
-    auto flow = std::make_shared<FlowSaveInfo>();
-    flow->id = QUuid::createUuid().toString();
-    flow->name = event.name;
-    flow->modifiable = false;
-    flow->type = event.type;
-
-    mStorage->flows.push_back(flow);
+    mStorage->flows.push_back(std::make_shared<FlowSaveInfo>(event));
   }
 
   // Add icon if it exists
@@ -250,8 +243,6 @@ void NodeItem::setProperty(const QString& key, QVariant value)
     nodeModified(this);
 
   update();
-
-  qDebug() << mStorage->properties;
 }
 
 VoidResult NodeItem::setField(const QString& key, const QJsonObject& value)

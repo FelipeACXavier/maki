@@ -1,5 +1,7 @@
 #include "fields_menu.h"
 
+#include <qobject.h>
+
 #include <QHeaderView>
 #include <QJsonArray>
 #include <QJsonObject>
@@ -12,10 +14,12 @@
 
 #include "../structure/event_dialog.h"
 #include "app_configs.h"
+#include "config.h"
 #include "elements/flow.h"
 #include "elements/node.h"
 #include "json.h"
 #include "logging.h"
+#include "result.h"
 #include "style_helpers.h"
 
 FieldsMenu::FieldsMenu(QWidget* parent)
@@ -42,9 +46,9 @@ void FieldsMenu::clear()
   }
 }
 
-VoidResult FieldsMenu::onNodeAdded(NodeItem* /* node */)
+VoidResult FieldsMenu::onNodeAdded(NodeItem* node)
 {
-  return VoidResult();
+  return onNodeSelected(node, true);
 }
 
 VoidResult FieldsMenu::onNodeRemoved(NodeItem* node)
@@ -89,21 +93,18 @@ VoidResult FieldsMenu::onCreateEvent(NodeItem* node)
 
   while (w)
   {
-    qDebug() << "Current:" << w << w->metaObject()->className() << w->objectName();
     tabWidget = qobject_cast<QTabWidget*>(w);
     if (tabWidget)
       break;
     w = w->parentWidget();
   }
-  2 if (tabWidget == nullptr) return VoidResult::Failed("Could not find parent widget");
+
+  if (tabWidget == nullptr)
+    return VoidResult::Failed("Could not find parent widget");
 
   tabWidget->setCurrentIndex(1);
 
-  LOG_INFO("Event created");
-
   onNodeSelected(node, true);
-
-  LOG_INFO("Node selected created");
 
   auto table = findChild<QTableView*>("EventTable");
   if (table == nullptr)
@@ -126,7 +127,7 @@ VoidResult FieldsMenu::onFlowRemoved(const QString& flowId, NodeItem* node)
 
 VoidResult FieldsMenu::loadControls(NodeItem* node)
 {
-  if (node->controls().size() < 1)
+  if (node->controls().isEmpty() && node->events().isEmpty())
   {
     QLabel* nameLabel = new QLabel("Block has no events", this);
     nameLabel->setFont(Fonts::Property);
@@ -135,7 +136,7 @@ VoidResult FieldsMenu::loadControls(NodeItem* node)
     layout()->addWidget(nameLabel);
 
     return VoidResult();
-  }
+ }
 
   // Controls are placed in a new horizontal widget at the bottom of the properties menu
   QWidget* controls = new QWidget(this);
@@ -154,6 +155,9 @@ VoidResult FieldsMenu::loadControls(NodeItem* node)
       LOG_WARNING("Unknown control type: %s", qPrintable(control.id));
   }
 
+  if (!node->events().isEmpty() && node->controls().isEmpty())
+    loadControlAddEvent(ControlsConfig(), node, controls, controlLayout); 
+  
   return VoidResult();
 }
 
@@ -263,10 +267,7 @@ VoidResult FieldsMenu::loadControlAddEvent(const ControlsConfig& control, NodeIt
   tableView->setModel(model);
 
   for (const auto& event : node->events())
-  {
-    int newRow = model->rowCount();
-    addEventToTable(model, newRow, event);
-  }
+    addEventToTable(model, model->rowCount(), event);
 
   connect(tableView, &QTableView::customContextMenuRequested, [this, tableView, node](const QPoint& pos) {
     showEventContextMenu(tableView, node, pos);
@@ -276,6 +277,9 @@ VoidResult FieldsMenu::loadControlAddEvent(const ControlsConfig& control, NodeIt
     openEventDialog(tableView, node, index.row());
   });
 
+  if (control.id.isEmpty())
+    return VoidResult();
+  
   QPushButton* button = new QPushButton(parent);
   connect(button, &QPushButton::pressed, this, [=]() {
     openEventDialog(tableView, node, model->rowCount());
@@ -318,15 +322,19 @@ void FieldsMenu::showEventContextMenu(QTableView* tableView, NodeItem* node, con
 
   int row = index.row();
 
+  auto model = static_cast<QStandardItemModel*>(tableView->model());
+  auto modifiable = model->item(row)->data(Qt::UserRole + 1).toBool();
+  
   QMenu contextMenu;
   QAction* actionEditFlow = contextMenu.addAction(tr("Edit flow"));
-  connect(actionEditFlow, &QAction::triggered, this, [this, row, tableView, node] {
-    auto model = static_cast<QStandardItemModel*>(tableView->model());
+  actionEditFlow->setEnabled(modifiable);
+  connect(actionEditFlow, &QAction::triggered, this, [this, row, model, node] {
     auto flowId = model->item(row)->data(Qt::UserRole).toString();
     emit flowSelected(flowId, node->id());
   });
 
   QAction* actionEditProperties = contextMenu.addAction(tr("Edit event"));
+  actionEditProperties->setEnabled(modifiable);
   connect(actionEditProperties, &QAction::triggered, this, [this, row, tableView, node] {
     openEventDialog(tableView, node, row);
   });
@@ -355,7 +363,8 @@ void FieldsMenu::openEventDialog(QTableView* tableView, NodeItem* node, int row)
     auto info = mCurrentDialog->getInfo();
     Flow* flow = node->createFlow(info->name, info);
     addEventToTable((QStandardItemModel*)tableView->model(), row, info);
-    emit flowSelected(flow->id(), node->id());
+    if (info->modifiable)
+      emit flowSelected(flow->id(), node->id());
   });
   connect(mCurrentDialog, &QDialog::rejected, [this] {
     mCurrentDialog->close();
@@ -374,6 +383,7 @@ void FieldsMenu::addEventToTable(QStandardItemModel* model, int row, std::shared
 
   auto indexItem = new QStandardItem(event->name);
   indexItem->setData(event->id, Qt::UserRole);
+  indexItem->setData(event->modifiable, Qt::UserRole + 1);
 
   model->setItem(row, 0, indexItem);
   model->setItem(row, 1, new QStandardItem(Types::ConnectorTypeToString(event->type)));
