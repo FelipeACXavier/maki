@@ -321,8 +321,6 @@ QJsonObject NodeSaveInfo::toJson() const
 
   data[ConfigKeys::PIXMAP] = JSON::fromPixmap(pixmap);
 
-  // Currently, we don't save the children.
-
   return data;
 }
 

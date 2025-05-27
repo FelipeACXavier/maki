@@ -11,6 +11,7 @@ class INode
 public:
   virtual ~INode() = default;
 
+  virtual QString nodeName() const = 0;
   virtual QString nodeType() const = 0;
   virtual QMap<QString, QVariant> properties() const = 0;
 

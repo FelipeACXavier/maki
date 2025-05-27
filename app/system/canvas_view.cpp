@@ -1,4 +1,5 @@
 #include "canvas_view.h"
+#include <qgraphicsview.h>
 
 #include <QShortcut>
 
@@ -25,7 +26,7 @@ CanvasView::CanvasView(QWidget* parent)
   setAcceptDrops(true);
 
   setMaxSize();
-  centerOn(0, 0);
+  centerOn({0, 0});
 
   // TODO(felaze): make these configurable
   mZoomDelta = 0.1;
@@ -46,6 +47,17 @@ qreal CanvasView::getScale() const
 QPointF CanvasView::getCenter() const
 {
   return mCenterPoint;
+}
+
+void CanvasView::centerOn(const QGraphicsItem *item)
+{
+  QGraphicsView::centerOn(item);
+}
+
+void CanvasView::centerOn(const QPointF &pos)
+{
+  mCenterPoint = pos;
+  QGraphicsView::centerOn(mCenterPoint);
 }
 
 void CanvasView::setScale(qreal scale)

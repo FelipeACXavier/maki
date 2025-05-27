@@ -6,6 +6,7 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QMimeData>
+#include <memory>
 
 #include "app_configs.h"
 #include "canvas_view.h"
@@ -13,6 +14,7 @@
 #include "config_table.h"
 #include "elements/flow.h"
 #include "elements/node.h"
+#include "elements/save_info.h"
 #include "elements/transition.h"
 #include "logging.h"
 
@@ -644,14 +646,22 @@ VoidResult Canvas::loadFromSave(const SaveInfo& info)
   parentView()->setScale(info.canvasInfo.scale);
   parentView()->centerOn(info.canvasInfo.center);
 
-  for (std::shared_ptr<NodeSaveInfo> node : info.structuralNodes)
+  qDebug() << "Center" << parentView()->getCenter() << "vs" << info.canvasInfo.center;
+  for (std::shared_ptr<NodeSaveInfo> nodeInfo : info.structuralNodes)
   {
+    // TODO(felaze): This is necessary because the save info is using shared ptr when it shouldn't...
+    // I need to make a proper distinction between save and run-time store structures.
+    auto node = std::make_shared<NodeSaveInfo>(*nodeInfo);
+
     LOG_DEBUG("Creating structural node %s with parent %s", qPrintable(node->id), qPrintable(node->parentId));
+    qDebug() << "Parent's position" << node->position;
     auto createdNode = createNode(NodeCreation::Loading, node, node->position, nullptr);
 
-    for (std::shared_ptr<NodeSaveInfo> childInfo : node->children)
+    for (std::shared_ptr<NodeSaveInfo> childInfo : nodeInfo->children)
     {
       // Children's positions take into account the relative prosition to the parent
+      LOG_DEBUG("Creating child node %s with parent %s", qPrintable(childInfo->id), qPrintable(childInfo->parentId));
+      qDebug() << "Child's position" << childInfo->position;
       auto child = createNode(NodeCreation::Loading, childInfo, childInfo->position, createdNode);
       selectNode(child, false);
     }
@@ -721,8 +731,8 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
   node->start();
 
   // TODO(felaze): When loading from save, we need to enforce the position
-  if (creation == NodeCreation::Pasting || creation == NodeCreation::Loading)
-    node->setPos(position);
+  // if (creation == NodeCreation::Pasting || (parent == nullptr && creation == NodeCreation::Loading))
+    // node->setPos(position);
 
   // Do not add child nodes to the scene
   if (parent == nullptr)

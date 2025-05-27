@@ -390,7 +390,6 @@ void MainWindow::onNodeSelected(NodeItem* node, bool selected)
     mInfoText->setFont(Fonts::Property);
   }
 
-  LOG_INFO("Node selected");
   LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeSelected(node, selected));
   LOG_WARN_ON_FAILURE(mFieldsMenu->onNodeSelected(node, selected));
 }

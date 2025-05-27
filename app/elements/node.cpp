@@ -88,6 +88,7 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
   }
 
   updatePosition(snapToGrid(initialPosition - boundingRect().center(), Config::GRID_SIZE));
+  // updatePosition(initialPosition);
 
   LOG_DEBUG("%s created at: (%f, %f) with size (%f, %f) and scale %f", qPrintable(id()), pos().x(), pos().y(), mSize.width(), mSize.height(), baseScale());
 }
@@ -437,7 +438,7 @@ QVariant NodeItem::itemChange(GraphicsItemChange change, const QVariant& value)
   else if (change == QGraphicsItem::ItemPositionHasChanged)
   {
     updateExtrasPosition();
-    mStorage->position = pos();
+    mStorage->position = pos() + boundingRect().center();
   }
 
   return QGraphicsItem::itemChange(change, value);
@@ -445,9 +446,10 @@ QVariant NodeItem::itemChange(GraphicsItemChange change, const QVariant& value)
 
 void NodeItem::updatePosition(const QPointF& position)
 {
+  qDebug() << "Setting position" << position;
   setPos(position);
   updateExtrasPosition();
-  mStorage->position = pos();
+  mStorage->position = pos() + boundingRect().center();
 }
 
 void NodeItem::updateExtrasPosition()

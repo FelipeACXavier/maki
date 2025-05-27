@@ -18,6 +18,8 @@ public:
   void setScale(qreal scale);
 
   void zoom(float scaleFactor);
+  void centerOn(const QPointF &pos);
+  void centerOn(const QGraphicsItem *item);
 
 protected:
   void keyPressEvent(QKeyEvent*) override;
