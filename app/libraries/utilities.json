@@ -45,7 +45,7 @@
               "id": "timeout",
               "type": "out",
               "returnType": "void",
-              "modifiable": false
+              "modifiable": true
             }
           ]
         },
@@ -80,7 +80,8 @@
             {
               "id": "authenticate",
               "type": "in",
-              "returnType": "boolean"
+              "returnType": "boolean",
+              "modifiable": false
             }
           ],
           "controls": [
@@ -121,12 +122,14 @@
             {
               "id": "enable",
               "type": "in",
-              "returnType": "void"
+              "returnType": "void",
+              "modifiable": false
             },
             {
               "id": "disable",
               "type": "in",
-              "returnType": "void"
+              "returnType": "void",
+              "modifiable": false
             }
           ],
           "controls": [

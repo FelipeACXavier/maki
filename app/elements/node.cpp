@@ -35,7 +35,7 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
     , mStorage(info)
     , mChildrenNodes({})
     , mBaseScale(config()->libraryType == Types::LibraryTypes::STRUCTURAL ? mStorage->scale : 1.0)
-    , mSize(mStorage->size / baseScale())
+    , mSize(mStorage->size) // / baseScale())
 {
   setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
   setCacheMode(DeviceCoordinateCache);
@@ -119,7 +119,7 @@ QString NodeItem::nodeName() const
 QString NodeItem::nodeType() const
 {
   // This should also contain the library to make it unique
-  return config()->type;
+  return nodeId();
 }
 
 qreal NodeItem::baseScale() const
@@ -310,7 +310,7 @@ void NodeItem::setEvent(int index, const FlowConfig& event)
   //   mStorage->events.push_back(event);
 }
 
-QVector<NodeItem*> NodeItem::children() const
+QVector<INode*> NodeItem::children() const
 {
   return mChildrenNodes;
 }
@@ -374,6 +374,7 @@ void NodeItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 
     mSize.setWidth(newWidth);
     mSize.setHeight(newHeight);
+    mStorage->size = mSize;
 
     qreal newFontSize = qMax(Fonts::BaseSize, mSize.width() / Fonts::BaseFactor);
 
@@ -446,7 +447,6 @@ QVariant NodeItem::itemChange(GraphicsItemChange change, const QVariant& value)
 
 void NodeItem::updatePosition(const QPointF& position)
 {
-  qDebug() << "Setting position" << position;
   setPos(position);
   updateExtrasPosition();
   mStorage->position = pos() + boundingRect().center();

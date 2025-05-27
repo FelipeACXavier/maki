@@ -126,4 +126,6 @@ private:
 
   bool isParentSelected(NodeItem* node);
   void pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode, QList<CopiedNode> nodes, bool relative);
+
+  VoidResult loadFromSave(const QVector<std::shared_ptr<NodeSaveInfo>>& nodes, NodeItem* parent);
 };

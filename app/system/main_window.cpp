@@ -1,4 +1,6 @@
 #include "main_window.h"
+#include <qkeysequence.h>
+#include <qnamespace.h>
 
 #include <QComboBox>
 #include <QDrag>
@@ -130,6 +132,7 @@ void MainWindow::bind()
 
   // Diagram actions =============================================================
   connect(mActionGenerate, &QAction::triggered, this, &MainWindow::onActionGenerate);
+  mActionGenerate->setShortcut(QKeySequence(Qt::Key_F5));
 
   // Setting actions =============================================================
   connect(mLogLevelComboBox, &QComboBox::currentIndexChanged, this, [this](int index) {

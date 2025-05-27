@@ -57,7 +57,7 @@ public:
   void renameNode(const QString& name);
 
   INode* parentNode() const override;
-  QVector<NodeItem*> children() const;
+  QVector<INode*> children() const override;
 
   QVector<TransitionItem*> transitions() const;
   void addTransition(TransitionItem* transition);
@@ -106,7 +106,7 @@ private:
 
   INode* mParentNode;
   QVector<Flow*> mFlows;
-  QVector<NodeItem*> mChildrenNodes;
+  QVector<INode*> mChildrenNodes;
   QVector<TransitionItem*> mTransitions;
 
   qreal mBaseScale;

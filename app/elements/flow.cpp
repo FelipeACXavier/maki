@@ -43,6 +43,11 @@ QString Flow::name() const
   return mName;
 }
 
+bool Flow::modifiable() const
+{
+  return mStorage->modifiable;
+}
+
 void Flow::removeNode(NodeItem* node)
 {
   mStorage->nodes.removeIf([node](std::shared_ptr<NodeSaveInfo> item) {

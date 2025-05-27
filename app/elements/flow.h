@@ -22,6 +22,8 @@ public:
   int type() const;
   QString name() const;
 
+  bool modifiable() const;
+
   // Contains a list of saved data of the behaviour nodes
   // Add, remove, and edit nodes
   void removeNode(NodeItem* node);

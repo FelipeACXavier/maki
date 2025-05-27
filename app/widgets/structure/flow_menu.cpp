@@ -69,6 +69,12 @@ QTreeWidgetItem* FlowMenu::componentFlows()
 
 VoidResult FlowMenu::onFlowAdded(Flow* flow, NodeItem* node)
 {
+  if (!flow)
+    return VoidResult();
+
+  if (!flow->modifiable())
+    return VoidResult();
+
   auto parent = getItemById(node->id());
   QTreeWidgetItem* newFlow = nullptr;
   if (parent)

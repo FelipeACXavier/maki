@@ -17,6 +17,7 @@
 #include "elements/save_info.h"
 #include "elements/transition.h"
 #include "logging.h"
+#include "result.h"
 
 Canvas::Canvas(const QString& canvasId, std::shared_ptr<SaveInfo> storage, std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
     : QGraphicsScene(parent)
@@ -635,6 +636,35 @@ void Canvas::clearSelectedNodes()
   selectNode(nullptr, false);
 }
 
+VoidResult Canvas::loadFromSave(const QVector<std::shared_ptr<NodeSaveInfo>>& nodes, NodeItem* parent)
+{
+  for (std::shared_ptr<NodeSaveInfo> nodeInfo : nodes)
+  {
+    // TODO(felaze): This is necessary because the save info is using shared ptr when it shouldn't...
+    // I need to make a proper distinction between save and run-time store structures.
+    auto node = std::make_shared<NodeSaveInfo>(*nodeInfo);
+
+    LOG_DEBUG("Creating node %s with parent %s", qPrintable(node->id), qPrintable(node->parentId));
+    auto createdNode = createNode(NodeCreation::Loading, node, node->position, parent);
+
+    LOG_AND_RETURN_VOID_ON_FAILURE(loadFromSave(nodeInfo->children, createdNode));
+    // for (std::shared_ptr<NodeSaveInfo> childInfo : nodeInfo->children)
+    // {
+    //   // Children's positions take into account the relative prosition to the parent
+    //   LOG_DEBUG("Creating child node %s with parent %s", qPrintable(childInfo->id), qPrintable(childInfo->parentId));
+    //   auto child = createNode(NodeCreation::Loading, childInfo, childInfo->position, createdNode);
+    //   selectNode(child, false);
+    // }
+
+    for (const auto& flow : node->flows)
+      createdNode->createFlow(flow->name, flow);
+
+    selectNode(createdNode, false);
+  }
+
+  return VoidResult();
+}
+
 VoidResult Canvas::loadFromSave(const SaveInfo& info)
 {
   // Clear the canvas before repopulating
@@ -646,35 +676,7 @@ VoidResult Canvas::loadFromSave(const SaveInfo& info)
   parentView()->setScale(info.canvasInfo.scale);
   parentView()->centerOn(info.canvasInfo.center);
 
-  qDebug() << "Center" << parentView()->getCenter() << "vs" << info.canvasInfo.center;
-  for (std::shared_ptr<NodeSaveInfo> nodeInfo : info.structuralNodes)
-  {
-    // TODO(felaze): This is necessary because the save info is using shared ptr when it shouldn't...
-    // I need to make a proper distinction between save and run-time store structures.
-    auto node = std::make_shared<NodeSaveInfo>(*nodeInfo);
-
-    LOG_DEBUG("Creating structural node %s with parent %s", qPrintable(node->id), qPrintable(node->parentId));
-    qDebug() << "Parent's position" << node->position;
-    auto createdNode = createNode(NodeCreation::Loading, node, node->position, nullptr);
-
-    for (std::shared_ptr<NodeSaveInfo> childInfo : nodeInfo->children)
-    {
-      // Children's positions take into account the relative prosition to the parent
-      LOG_DEBUG("Creating child node %s with parent %s", qPrintable(childInfo->id), qPrintable(childInfo->parentId));
-      qDebug() << "Child's position" << childInfo->position;
-      auto child = createNode(NodeCreation::Loading, childInfo, childInfo->position, createdNode);
-      selectNode(child, false);
-    }
-
-    for (const auto& flow : node->flows)
-    {
-      createdNode->createFlow(flow->name, flow);
-    }
-
-    selectNode(createdNode, false);
-  }
-
-  return VoidResult();
+  return loadFromSave(info.structuralNodes, nullptr);
 }
 
 CanvasView* Canvas::parentView() const
@@ -729,10 +731,6 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
   };
 
   node->start();
-
-  // TODO(felaze): When loading from save, we need to enforce the position
-  // if (creation == NodeCreation::Pasting || (parent == nullptr && creation == NodeCreation::Loading))
-    // node->setPos(position);
 
   // Do not add child nodes to the scene
   if (parent == nullptr)
