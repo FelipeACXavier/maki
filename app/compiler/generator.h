@@ -8,7 +8,10 @@ class GeneratorPlugin;
 class Generator
 {
 public:
-  Generator();
+  Generator(std::shared_ptr<SaveInfo> storage);
 
-  void generate(GeneratorPlugin* generator, Canvas* canvas);
+  void generate(GeneratorPlugin* generator);
+
+private:
+  const std::shared_ptr<SaveInfo> mStorage;
 };

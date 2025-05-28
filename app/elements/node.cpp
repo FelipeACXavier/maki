@@ -503,9 +503,33 @@ void NodeItem::addTransition(TransitionItem* transition)
 {
   // Make sure the source node holds the transition info
   if (transition->destination() && (id() != transition->destination()->id()))
-    mStorage->transitions.push_back(transition->storage());
+  {
+    bool found = false;
+    for (const auto& t : mStorage->transitions)
+    {
+      if (t->id == transition->id())
+      {
+        found = true;
+        break;        
+      }
+    }
 
-  mTransitions.push_back(transition);
+    if (!found)
+      mStorage->transitions.push_back(transition->storage());
+  }
+
+  bool found = false;
+  for (const auto& t : transitions())
+  {
+    if (t->id() == transition->id())
+    {
+      found = true;
+      break;
+    }
+  }
+
+  if (!found)
+    mTransitions.push_back(transition);
 }
 
 void NodeItem::removeTransition(TransitionItem* transition)

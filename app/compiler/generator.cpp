@@ -4,29 +4,17 @@
 #include "generator_plugin.h"
 #include "logging.h"
 
-Generator::Generator()
+Generator::Generator(std::shared_ptr<SaveInfo> storage)
+  : mStorage(storage)
 {
 }
 
-void Generator::generate(GeneratorPlugin* generator, Canvas* canvas)
+void Generator::generate(GeneratorPlugin* generator)
 {
-  if (!canvas)
+  if (!mStorage)
   {
-    LOG_ERROR("No canvas provided");
+    LOG_ERROR("No storage available");
     return;
-  }
-
-  QVector<NodeSaveInfo> nodes;
-
-  for (const auto& item : canvas->items())
-  {
-    if (item->type() != NodeItem::Type)
-      continue;
-
-    // Use top level nodes only
-    auto node = dynamic_cast<NodeItem*>(item);
-    if (!node->parentNode())
-      nodes.push_back(node->saveInfo());
   }
 
   LOG_INFO("======================================");
@@ -37,8 +25,8 @@ void Generator::generate(GeneratorPlugin* generator, Canvas* canvas)
   //    2. Define the functions
   //    3. Write the computations
   //    4. Connect the callbacks
-  QString text = generator->generateCode(nodes);
-  LOG_INFO("Generated code:");
-  LOG_INFO("%s", qPrintable(text));
+  QString text = generator->generateCode(mStorage);
+  // LOG_INFO("Generated code:");
+  // LOG_INFO("%s", qPrintable(text));
   LOG_INFO("======================================");
 }

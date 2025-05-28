@@ -79,10 +79,12 @@ QVariant PropertiesConfig::toDefault(const QJsonObject& object, Types::PropertyT
     // A component select with options must be able to hold its on data as well as the data option
     QJsonObject propOption;
     propOption[ConfigKeys::DATA] = "";
+    propOption["data_id"] = "";
 
     propOption[ConfigKeys::ID] = options.at(0).id;
     propOption[ConfigKeys::TYPE] = Types::PropertyTypesToString(options.at(0).type);
     propOption[ConfigKeys::OPTION_DATA] = options.at(0).defaultValue.toString();
+    propOption["option_data_id"] = "";
 
     return propOption;
   }

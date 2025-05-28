@@ -27,7 +27,7 @@ class GeneratorPlugin
 {
 public:
   virtual ~GeneratorPlugin() = default;
-  virtual QString generateCode(const QVector<NodeSaveInfo>& nodes) = 0;
+  virtual QString generateCode(std::shared_ptr<SaveInfo> nodes) = 0;
   virtual generator::Language supportedLanguage() const = 0;
   virtual QString languageName() const = 0;
 };

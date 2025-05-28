@@ -526,3 +526,54 @@ QVector<std::shared_ptr<FlowSaveInfo>> SaveInfo::getEventsFromNode(const QString
 {
   return getEventsFromNode(nodeId, structuralNodes);
 }
+
+
+std::shared_ptr<NodeSaveInfo> SaveInfo::getNodeWithId(const QString& nodeId)
+{
+  return getNodeWithId(nodeId, structuralNodes);
+}
+
+std::shared_ptr<NodeSaveInfo> SaveInfo::getNodeWithId(const QString& nodeId, const QVector<std::shared_ptr<NodeSaveInfo>>& nodes)
+{
+  for (const auto& node : nodes)
+  {
+    if (node->id == nodeId)
+      return node;
+    
+    auto found = getNodeWithId(nodeId, node->children);
+    if (found != nullptr)
+      return found;
+
+    for (const auto& flow : node->flows)
+    {
+      found = getNodeWithId(nodeId, flow->nodes);
+      if (found != nullptr)
+        return found;
+    }
+  }
+
+  return nullptr;
+}
+
+std::shared_ptr<FlowSaveInfo> SaveInfo::getFlowWithId(const QString& flowId)
+{
+  return getFlowWithId(flowId, structuralNodes);
+}
+
+std::shared_ptr<FlowSaveInfo> SaveInfo::getFlowWithId(const QString& flowId, const QVector<std::shared_ptr<NodeSaveInfo>>& nodes)
+{
+  for (const auto& node : nodes)
+  {
+    for (const auto& flow : node->flows)
+    {
+      if (flow->id == flowId)
+        return flow;
+    }
+
+    auto found = getFlowWithId(flowId, node->children);
+    if (found != nullptr)
+      return found;
+  }
+
+  return nullptr;
+}

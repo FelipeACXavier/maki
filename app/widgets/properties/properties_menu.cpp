@@ -350,7 +350,7 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertiesConfig& p
         // eventWidget->setCurrentText("-");
       }
 
-      connect(eventWidget, &QComboBox::currentTextChanged, this, [node, property](const QString& text) {
+      connect(eventWidget, &QComboBox::currentTextChanged, this, [node, property, eventWidget](const QString& text) {
         if (text.isEmpty())
           return;
 
@@ -360,8 +360,8 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertiesConfig& p
 
         QJsonObject object = value.toJsonObject();
         object[ConfigKeys::OPTION_DATA] = text;
+        object["option_data_id"] = eventWidget->currentData().toString();
 
-        qDebug() << "Setting event " << object;
         node->setProperty(property.id, object);
       });
 
@@ -384,7 +384,9 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertiesConfig& p
 
         QJsonObject object = value.toJsonObject();
         object[ConfigKeys::DATA] = text;
+        object["data_id"] = widget->currentData().toString();
         object[ConfigKeys::OPTION_DATA] = events.size() > 0 ? events.at(0)->name : "";
+        object["option_data_id"] = events.size() > 0 ? eventWidget->currentData().toString() : "";
 
         node->setProperty(property.id, object);
       });

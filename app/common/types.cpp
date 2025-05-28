@@ -37,7 +37,7 @@ QString Types::PropertyTypesToString(Types::PropertyTypes type)
   else if (type == Types::PropertyTypes::REAL)
     return "real";
   else if (type == Types::PropertyTypes::BOOLEAN)
-    return "boolean";
+    return "bool";
   else if (type == Types::PropertyTypes::SELECT)
     return "select";
   else if (type == Types::PropertyTypes::LIST)
@@ -62,7 +62,7 @@ Types::PropertyTypes Types::StringToPropertyTypes(const QString& type)
     return Types::PropertyTypes::INTEGER;
   else if (type == "real")
     return Types::PropertyTypes::REAL;
-  else if (type == "boolean")
+  else if (type == "boolean" || type == "bool")
     return Types::PropertyTypes::BOOLEAN;
   else if (type == "select")
     return Types::PropertyTypes::SELECT;

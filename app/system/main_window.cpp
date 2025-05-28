@@ -77,7 +77,7 @@ VoidResult MainWindow::start()
 
   LOG_DEBUG("Starting the main window");
 
-  mGenerator = std::make_shared<Generator>();
+  mGenerator = std::make_shared<Generator>(mStorage);
   mSaveHandler = std::make_unique<SaveHandler>(this);
   mPluginManager = std::make_unique<PluginManager>();
 
@@ -331,7 +331,7 @@ void MainWindow::onActionGenerate()
   if (!mGenerator)
     LOG_WARNING("No generator available");
 
-  mGenerator->generate(mPluginManager->currentPlugin(), canvas());
+  mGenerator->generate(mPluginManager->currentPlugin());
 }
 
 void MainWindow::onActionSave()

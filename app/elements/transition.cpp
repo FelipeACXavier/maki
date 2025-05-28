@@ -178,6 +178,7 @@ void TransitionItem::setName(const QString& name)
     return;
 
   mLabel->setPlainText(name);
+  mStorage->label = name;
   updateLabelPosition();
 }
 
