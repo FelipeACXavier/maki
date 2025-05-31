@@ -1,4 +1,5 @@
 #include "main_window.h"
+
 #include <qkeysequence.h>
 #include <qnamespace.h>
 
@@ -535,21 +536,6 @@ void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
       return;
     }
   }
-
-  // Add a new flow to the FlowMenu
-  // if (flow == nullptr)
-  // {
-  //   Result<Flow*> flowResult = mFlowMenu->addComponentFlow(node, flowName);
-  //   if (!flowResult.IsSuccess())
-  //   {
-  //     LOG_WARNING(flowResult.ErrorMessage());
-  //     return;
-  //   }
-  //   else
-  //   {
-  //     flow = flowResult.Value();
-  //   }
-  // }
 
   if (flow == nullptr)
   {

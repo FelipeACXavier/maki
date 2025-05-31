@@ -134,6 +134,8 @@ VoidResult PropertiesMenu::loadProperties(NodeItem* node)
       LOG_WARN_ON_FAILURE(loadPropertyEventSelect(property, node));
     else if (property.type == Types::PropertyTypes::COMPONENT_SELECT)
       LOG_WARN_ON_FAILURE(loadPropertyComponentSelect(property, node));
+    else if (property.type == Types::PropertyTypes::STATE_SELECT)
+      LOG_WARN_ON_FAILURE(loadPropertyStateSelect(property, node));
     else
       LOG_WARNING("Property without a type, how is that possible?");
   }
@@ -281,6 +283,71 @@ VoidResult PropertiesMenu::loadPropertyBoolean(const PropertiesConfig& property,
   widget->setChecked(result.toBool());
   connect(widget, &QCheckBox::checkStateChanged, this, [=](Qt::CheckState state) {
     node->setProperty(property.id, state);
+  });
+
+  widget->setFont(Fonts::Property);
+  layout()->addWidget(widget);
+
+  return VoidResult();
+}
+
+VoidResult PropertiesMenu::loadPropertyStateSelect(const PropertiesConfig& property, NodeItem* node)
+{
+  // Get possible states
+  if (!mStorage)
+    return VoidResult::Failed("No storage assigned to properties menu");
+
+  QComboBox* widget = new QComboBox(this);
+  widget->setObjectName(property.id);
+
+  auto callers = mStorage->getPossibleCallers(node->id());
+  for (const auto& caller : callers)
+  {
+    auto callerName = caller->properties[ConfigKeys::NAME].toString();
+    for (const auto& field : caller->fields)
+    {
+      if (field.type == Types::PropertyTypes::ENUM)
+      {
+        auto name = field.options.at(0).defaultValue.toString();
+        auto values = field.options.at(1).options;
+
+        for (const auto& opt : values)
+        {
+          QJsonObject data;
+          data[ConfigKeys::ID] = caller->id;                                    // The UUID of the caller
+          data[ConfigKeys::TYPE] = Types::PropertyTypesToString(field.type);    // Data type for convenience
+          data[ConfigKeys::NAME] = callerName;                                  // The caller/component name
+          data[ConfigKeys::FIELDS] = field.id;                                  // The field, e.g., State
+          data[ConfigKeys::EVENTS] = opt.id;                                    // The field specifier, e.g., disabled
+          data[ConfigKeys::DATA] = callerName + "." + field.id + "." + opt.id;  // generic.State.disabled
+
+          widget->addItem(callerName + "." + field.id + "." + opt.id, data);
+        }
+      }
+      else
+      {
+        QJsonObject data;
+        data[ConfigKeys::ID] = caller->id;
+        data[ConfigKeys::TYPE] = Types::PropertyTypesToString(field.type);
+        data[ConfigKeys::NAME] = callerName;
+        data[ConfigKeys::FIELDS] = field.id;
+        data[ConfigKeys::DATA] = callerName + "." + field.id;
+
+        widget->addItem(callerName + "." + field.id);
+      }
+    }
+  }
+
+  auto currentValue = node->getProperty(property.id);
+  if (currentValue.isValid() && !currentValue.isNull())
+  {
+    auto value = currentValue.toJsonObject();
+    widget->setCurrentText(value[ConfigKeys::DATA].toString());
+  }
+
+  connect(widget, &QComboBox::currentTextChanged, this, [=](const QString& text) {
+    auto data = widget->currentData();
+    node->setProperty(property.id, data);
   });
 
   widget->setFont(Fonts::Property);

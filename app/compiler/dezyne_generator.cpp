@@ -251,6 +251,9 @@ QString DezyneGenerator::generateComponent(const NodeSaveInfo& node)
     for (const auto& imp : mImports)
       out << "import " + imp + ";\n";
 
+    if (!mImports.isEmpty())
+      out << "\n";
+    
     out << "component " + name + "\n";
     out << "{\n";
 

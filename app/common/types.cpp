@@ -50,6 +50,10 @@ QString Types::PropertyTypesToString(Types::PropertyTypes type)
     return "component_select";
   else if (type == Types::PropertyTypes::EVENT_SELECT)
     return "event_select";
+  else if (type == Types::PropertyTypes::STATE_SELECT)
+    return "state_select";
+  else if (type == Types::PropertyTypes::ENUM)
+    return "enum";
 
   return "unknown";
 }
@@ -76,6 +80,10 @@ Types::PropertyTypes Types::StringToPropertyTypes(const QString& type)
     return Types::PropertyTypes::EVENT_SELECT;
   else if (type == "component_select")
     return Types::PropertyTypes::COMPONENT_SELECT;
+  else if (type == "state_select")
+    return Types::PropertyTypes::STATE_SELECT;
+  else if (type == "enum")
+    return Types::PropertyTypes::ENUM;
 
   return Types::PropertyTypes::UNKNOWN;
 }
@@ -88,10 +96,12 @@ Types::ControlTypes Types::StringToControlTypes(const QString& type)
     return Types::ControlTypes::ADD_FIELD;
   else if (type == "add control")
     return Types::ControlTypes::ADD_CONTROL;
-  if (type == "remove control")
+  else if (type == "remove control")
     return Types::ControlTypes::REMOVE_CONTROL;
-  if (type == "add event")
+  else if (type == "add event")
     return Types::ControlTypes::ADD_EVENT;
+  else if (type == "add state")
+    return Types::ControlTypes::ADD_STATE;
   else
     return Types::ControlTypes::UNKNOWN;
 }
@@ -108,6 +118,8 @@ QString Types::ControlTypesToString(Types::ControlTypes type)
       return "remove control";
     case Types::ControlTypes::ADD_EVENT:
       return "add event";
+    case Types::ControlTypes::ADD_STATE:
+      return "add state";
     case Types::ControlTypes::UNKNOWN:
     default:
       return "unknown";

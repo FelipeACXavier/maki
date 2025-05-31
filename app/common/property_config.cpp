@@ -90,7 +90,11 @@ QVariant PropertiesConfig::toDefault(const QJsonObject& object, Types::PropertyT
   }
   else if (objectType == Types::PropertyTypes::EVENT_SELECT)
     return toDefault(object, Types::PropertyTypes::STRING);
+  else if (objectType == Types::PropertyTypes::STATE_SELECT)
+    return toDefault(object, Types::PropertyTypes::STRING);
   else if (objectType == Types::PropertyTypes::SELECT)
+    return toDefault(object, Types::PropertyTypes::STRING);
+  else if (objectType == Types::PropertyTypes::ENUM)
     return toDefault(object, Types::PropertyTypes::STRING);
 
   return QVariant();
@@ -115,13 +119,28 @@ QJsonObject PropertiesConfig::toJson() const
 {
   QJsonObject data;
   data[ConfigKeys::ID] = id;
-  data[ConfigKeys::DEFAULT] = defaultValue.toJsonObject();
+
+  if (defaultValue.isValid() && !defaultValue.isNull())
+  {
+    if (type == Types::PropertyTypes::STRING)
+      data[ConfigKeys::DEFAULT] = defaultValue.toString();
+    else if (type == Types::PropertyTypes::BOOLEAN)
+      data[ConfigKeys::DEFAULT] = defaultValue.toBool();
+    else if (type == Types::PropertyTypes::INTEGER)
+      data[ConfigKeys::DEFAULT] = defaultValue.toInt();
+    else if (type == Types::PropertyTypes::REAL)
+      data[ConfigKeys::DEFAULT] = defaultValue.toDouble();
+    else
+      data[ConfigKeys::DEFAULT] = defaultValue.toJsonObject();
+  }
 
   QJsonArray optionArray;
   for (const auto& opt : options)
     optionArray.append(opt.toJson());
 
-  data[ConfigKeys::OPTIONS] = optionArray;
+  if (!optionArray.isEmpty())
+    data[ConfigKeys::OPTIONS] = optionArray;
+
   data[ConfigKeys::TYPE] = (int)type;
 
   return data;

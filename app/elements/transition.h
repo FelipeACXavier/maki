@@ -17,6 +17,13 @@ public:
     Type = Types::TRANSITION
   };
 
+  enum class Edge
+  {
+    NONE = 0,
+    FORWARD,
+    BACKWARD
+  };
+
   TransitionItem(std::shared_ptr<TransitionSaveInfo> storage);
   virtual ~TransitionItem();
 
@@ -41,6 +48,8 @@ public:
   QString getName() const;
   void setName(const QString& name);
 
+  void setEdge(Edge edge);
+
   // "signals":
   std::function<void(TransitionItem* item)> transitionDeleted;
   std::function<void(TransitionItem* item)> transitionModified;
@@ -48,6 +57,8 @@ public:
 private:
   const QString mId;
   bool mComplete;
+
+  Edge mEdge = Edge::NONE;
 
   NodeItem* mSource;
   NodeItem* mDestination;

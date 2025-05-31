@@ -32,6 +32,10 @@
             {
               "id": "Add event",
               "type": "add event"
+            },
+            {
+              "id": "Add state",
+              "type": "add state"
             }
           ]
         },
@@ -387,6 +391,16 @@
               "id": "name",
               "type": "string",
               "default": "State"
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#62A22A"
+            },
+            {
+              "id": "state",
+              "type": "state_select",
+              "default": ""
             }
           ],
           "events": [

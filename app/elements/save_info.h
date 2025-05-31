@@ -15,6 +15,7 @@ struct FlowSaveInfo
 {
   QString id = "";
   QString name = "";
+  QString owner = "";
   bool modifiable = true;
 
   Types::ConnectorType type = Types::ConnectorType::UNKNOWN;
@@ -67,6 +68,7 @@ struct NodeSaveInfo
   QMap<QString, QVariant> properties;
   QVector<std::shared_ptr<TransitionSaveInfo>> transitions;
   QVector<std::shared_ptr<FlowSaveInfo>> flows;
+  std::shared_ptr<FlowSaveInfo> behaviour;
 
   QString parentId = "";
   QVector<std::shared_ptr<NodeSaveInfo>> children = {};

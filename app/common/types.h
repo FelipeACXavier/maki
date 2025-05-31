@@ -51,6 +51,8 @@ enum class PropertyTypes
   VOID,
   COMPONENT_SELECT,
   EVENT_SELECT,
+  STATE_SELECT,
+  ENUM,
   END
 };
 
@@ -63,7 +65,8 @@ enum class ControlTypes
   ADD_FIELD,
   ADD_CONTROL,
   REMOVE_CONTROL,
-  ADD_EVENT
+  ADD_EVENT,
+  ADD_STATE
 };
 
 ControlTypes StringToControlTypes(const QString& type);

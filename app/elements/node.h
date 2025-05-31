@@ -52,6 +52,7 @@ public:
 
   PropertiesConfig getField(const QString& key) const override;
   VoidResult setField(const QString& key, const QJsonObject& value);
+  VoidResult setField(const QString& key, const PropertiesConfig& property);
   void removeField(const QString& key);
 
   void renameNode(const QString& name);
@@ -70,6 +71,7 @@ public:
   void addChild(NodeItem* node, std::shared_ptr<NodeSaveInfo> info);
   void childRemoved(NodeItem* child);
 
+  Flow* createBehaviour(std::shared_ptr<FlowSaveInfo> info);
   Flow* createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo> info);
   Flow* getFlow(const QString& flowId) const;
   void deleteFlow(const QString& flowId);
@@ -105,6 +107,7 @@ private:
   std::shared_ptr<NodeSaveInfo> mStorage;
 
   INode* mParentNode;
+  Flow* mBehaviour;
   QVector<Flow*> mFlows;
   QVector<INode*> mChildrenNodes;
   QVector<TransitionItem*> mTransitions;

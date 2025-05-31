@@ -16,6 +16,7 @@ static const QString NODE_ID = "nodeId";
 static const QString POSITION = "position";
 static const QString PARENT_ID = "parentId";
 static const QString MODIFIABLE = "modifiable";
+static const QString OWNER = "owner";
 
 static const QString FIELDS = "fields";
 static const QString EVENTS = "events";
@@ -24,6 +25,7 @@ static const QString CONNECTORS = "connectors";
 static const QString PROPERTIES = "properties";
 static const QString CHILDREN = "children";
 static const QString FLOWS = "flows";
+static const QString BEHAVIOUR = "behaviour";
 
 static const QString ARGUMENTS = "arguments";
 static const QString RETURN_TYPE = "returnType";

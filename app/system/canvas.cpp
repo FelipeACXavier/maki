@@ -391,6 +391,21 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     });
     menu.addAction(newEventAction);
 
+    QAction* newStateAction = menu.addAction(tr("New state"));
+    // newStateMachineAction->setEnabled(node != nullptr && items.size() == 1);
+    // QObject::connect(newStateAction, &QAction::triggered, [this, node]() {
+    //   emit createEvent(node);
+    // });
+    menu.addAction(newStateAction);
+
+    QAction* newBehaviourAction = menu.addAction(tr("Edit behaviour"));
+    // newStateMachineAction->setEnabled(node != nullptr && items.size() == 1);
+    QObject::connect(newBehaviourAction, &QAction::triggered, [this, node]() {
+      auto flow = node->createBehaviour(nullptr);
+      emit openFlow(flow, node);
+    });
+    menu.addAction(newBehaviourAction);
+
     // =============================================
     menu.addSection("Edit");
 

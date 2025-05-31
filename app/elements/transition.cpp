@@ -77,6 +77,11 @@ void TransitionItem::done(NodeItem* source, NodeItem* destination)
   move(mStorage->dstId, mStorage->dstPoint);
 }
 
+void TransitionItem::setEdge(Edge edge)
+{
+  mEdge = edge;
+}
+
 NodeItem* TransitionItem::source() const
 {
   return mSource;
@@ -157,7 +162,20 @@ void TransitionItem::updatePath()
   // Draw the curve or line
   QPainterPath path(start);
 
-  path.lineTo(end);
+  if (mEdge == Edge::NONE)
+  {
+    path.lineTo(end);
+  }
+  else
+  {
+    QPointF mid = (start + end) / 2;
+    qreal distance = QLineF(start, end).length();
+    qreal offset = qMin(80.0, distance * 0.5);  // cap max curve to avoid going crazy
+
+    mid.setY(mid.y() + (mEdge == Edge::FORWARD ? offset : -offset));
+
+    path.quadTo(mid, end);
+  }
 
   setPath(path);
   updateLabelPosition();

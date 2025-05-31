@@ -45,6 +45,7 @@ QDataStream& operator<<(QDataStream& out, const FlowSaveInfo& info)
   out << info.type;
   out << info.returnType;
   out << info.arguments;
+  out << info.owner;
 
   return out;
 }
@@ -58,6 +59,7 @@ QDataStream& operator>>(QDataStream& in, FlowSaveInfo& info)
   in >> info.type;
   in >> info.returnType;
   in >> info.arguments;
+  in >> info.owner;
 
   return in;
 }
@@ -80,6 +82,7 @@ QJsonObject FlowSaveInfo::toJson() const
   data[ConfigKeys::MODIFIABLE] = modifiable;
   data[ConfigKeys::TYPE] = Types::ConnectorTypeToString(type);
   data[ConfigKeys::RETURN_TYPE] = Types::PropertyTypesToString(returnType);
+  data[ConfigKeys::OWNER] = owner;
 
   QJsonArray optionArray;
   for (const auto& arg : arguments)
@@ -105,6 +108,7 @@ FlowSaveInfo FlowSaveInfo::fromJson(const QJsonObject& data)
   info.modifiable = data[ConfigKeys::MODIFIABLE].toBool();
   info.type = Types::StringToConnectorType(data[ConfigKeys::TYPE].toString());
   info.returnType = Types::StringToPropertyTypes(data[ConfigKeys::RETURN_TYPE].toString());
+  info.owner = data[ConfigKeys::OWNER].toString();
 
   for (const auto& argument : data[ConfigKeys::ARGUMENTS].toArray())
     info.arguments.append(PropertiesConfig::fromJson(argument.toObject()));
@@ -244,6 +248,8 @@ QDataStream& operator<<(QDataStream& out, const NodeSaveInfo& info)
   out << info.transitions;
   out << info.children;
   out << info.flows;
+  if (info.behaviour)
+    out << *info.behaviour;
 
   QByteArray pixmapData;
   QBuffer buffer(&pixmapData);
@@ -269,6 +275,9 @@ QDataStream& operator>>(QDataStream& in, NodeSaveInfo& info)
   in >> info.children;
   in >> info.flows;
 
+  info.behaviour = std::make_shared<FlowSaveInfo>();
+  in >> *info.behaviour;
+
   QByteArray pixmapData;
   in >> pixmapData;
   info.pixmap.loadFromData(pixmapData, "PNG");
@@ -287,6 +296,8 @@ QJsonObject NodeSaveInfo::toJson() const
   data[ConfigKeys::SCALE] = scale;
   data[ConfigKeys::SIZE] = JSON::fromSizeF(size);
   data[ConfigKeys::POSITION] = JSON::fromPointF(position);
+
+  data[ConfigKeys::BEHAVIOUR] = behaviour->toJson();
 
   QJsonArray fieldArray;
   for (const auto& field : fields)
@@ -335,6 +346,8 @@ NodeSaveInfo NodeSaveInfo::fromJson(const QJsonObject& data)
   info.scale = data[ConfigKeys::SCALE].toDouble();
   info.size = JSON::toSizeF(data[ConfigKeys::SIZE].toObject());
   info.position = JSON::toPointF(data[ConfigKeys::POSITION].toObject());
+
+  info.behaviour = std::make_shared<FlowSaveInfo>(FlowSaveInfo::fromJson(data[ConfigKeys::BEHAVIOUR].toObject()));
 
   if (data.contains(ConfigKeys::PARENT_ID))
     info.parentId = data[ConfigKeys::PARENT_ID].toString();
@@ -487,6 +500,17 @@ QVector<std::shared_ptr<NodeSaveInfo>> SaveInfo::findFamilyOfConstruct(const QSt
 
 std::shared_ptr<NodeSaveInfo> SaveInfo::findParentOfConstruct(const QString& nodeId, const std::shared_ptr<NodeSaveInfo> node) const
 {
+  if (node->behaviour != nullptr)
+  {
+    for (const auto& construct : node->behaviour->nodes)
+    {
+      if (construct->id != nodeId)
+        continue;
+
+      return node;
+    }
+  }
+
   for (const auto& flow : node->flows)
   {
     for (const auto& construct : flow->nodes)
@@ -527,7 +551,6 @@ QVector<std::shared_ptr<FlowSaveInfo>> SaveInfo::getEventsFromNode(const QString
   return getEventsFromNode(nodeId, structuralNodes);
 }
 
-
 std::shared_ptr<NodeSaveInfo> SaveInfo::getNodeWithId(const QString& nodeId)
 {
   return getNodeWithId(nodeId, structuralNodes);
@@ -539,7 +562,7 @@ std::shared_ptr<NodeSaveInfo> SaveInfo::getNodeWithId(const QString& nodeId, con
   {
     if (node->id == nodeId)
       return node;
-    
+
     auto found = getNodeWithId(nodeId, node->children);
     if (found != nullptr)
       return found;

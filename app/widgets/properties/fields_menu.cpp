@@ -13,6 +13,7 @@
 #include <QVBoxLayout>
 
 #include "../structure/event_dialog.h"
+#include "../structure/field_dialog.h"
 #include "app_configs.h"
 #include "config.h"
 #include "elements/flow.h"
@@ -136,14 +137,11 @@ VoidResult FieldsMenu::loadControls(NodeItem* node)
     layout()->addWidget(nameLabel);
 
     return VoidResult();
- }
+  }
 
-  // Controls are placed in a new horizontal widget at the bottom of the properties menu
   QWidget* controls = new QWidget(this);
   QHBoxLayout* controlLayout = new QHBoxLayout(controls);
-
   controls->setLayout(controlLayout);
-  layout()->addWidget(controls);
 
   for (const auto& control : node->controls())
   {
@@ -151,13 +149,18 @@ VoidResult FieldsMenu::loadControls(NodeItem* node)
       LOG_WARN_ON_FAILURE(loadControlAddField(control, node, controls, controlLayout));
     else if (control.type == Types::ControlTypes::ADD_EVENT)
       LOG_WARN_ON_FAILURE(loadControlAddEvent(control, node, controls, controlLayout));
+    else if (control.type == Types::ControlTypes::ADD_STATE)
+      LOG_WARN_ON_FAILURE(loadControlAddState(control, node, controls, controlLayout));
     else
       LOG_WARNING("Unknown control type: %s", qPrintable(control.id));
   }
 
   if (!node->events().isEmpty() && node->controls().isEmpty())
-    loadControlAddEvent(ControlsConfig(), node, controls, controlLayout); 
-  
+    loadControlAddEvent(ControlsConfig(), node, controls, controlLayout);
+
+  // Controls are placed in a new horizontal widget at the bottom of the properties menu
+  layout()->addWidget(controls);
+
   return VoidResult();
 }
 
@@ -248,7 +251,7 @@ VoidResult FieldsMenu::loadControlAddEvent(const ControlsConfig& control, NodeIt
   // Create table to hold new fields
   QTableView* tableView = new QTableView(parent);
   tableView->setObjectName("EventTable");
-  QStandardItemModel* model = new QStandardItemModel(0, 3);
+  QStandardItemModel* model = new QStandardItemModel(0, 4);
 
   model->setHorizontalHeaderItem(0, new QStandardItem("Name"));
   model->setHorizontalHeaderItem(1, new QStandardItem("Type"));
@@ -258,7 +261,7 @@ VoidResult FieldsMenu::loadControlAddEvent(const ControlsConfig& control, NodeIt
   tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
   tableView->setContextMenuPolicy(Qt::CustomContextMenu);
 
-  addDynamicWidget((QVBoxLayout*)layout(), tableView, parent);
+  // addDynamicWidget((QVBoxLayout*)layout(), tableView, parent);
 
   // We do not support editing values in the table directly. I want to avoid issues caused by a wrong click
   // Instead, we open a dialog with a complete overview of the event.
@@ -279,14 +282,61 @@ VoidResult FieldsMenu::loadControlAddEvent(const ControlsConfig& control, NodeIt
 
   if (control.id.isEmpty())
     return VoidResult();
-  
+
   QPushButton* button = new QPushButton(parent);
   connect(button, &QPushButton::pressed, this, [=]() {
     openEventDialog(tableView, node, model->rowCount());
   });
 
   button->setText(control.id);
-  controlLayout->addWidget(button);
+  layout()->addWidget(tableView);
+  layout()->addWidget(button);
+
+  return VoidResult();
+}
+
+VoidResult FieldsMenu::loadControlAddState(const ControlsConfig& control, NodeItem* node, QWidget* parent, QHBoxLayout* controlLayout)
+{
+  // Create table to hold new fields
+  QTableView* tableView = new QTableView(parent);
+  tableView->setObjectName("StateTable");
+  QStandardItemModel* model = new QStandardItemModel(0, 3);
+
+  model->setHorizontalHeaderItem(0, new QStandardItem("Name"));
+  model->setHorizontalHeaderItem(1, new QStandardItem("Type"));
+  model->setHorizontalHeaderItem(2, new QStandardItem("Value"));
+
+  tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+  tableView->setContextMenuPolicy(Qt::CustomContextMenu);
+
+  // addDynamicWidget((QVBoxLayout*)layout(), tableView, parent);
+
+  // We do not support editing values in the table directly. I want to avoid issues caused by a wrong click
+  // Instead, we open a dialog with a complete overview of the event.
+  // TODO(felaze): It would be nice to also show the nodes that trigger this event
+  // tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+  tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+  tableView->setModel(model);
+
+  for (const auto& field : node->fields())
+    addStateToTable(model, model->rowCount(), field);
+
+  connect(tableView, &QTableView::doubleClicked, [this, tableView, node](const QModelIndex& index) {
+    openFieldDialog(tableView, node, index.row());
+  });
+
+  connect(tableView, &QTableView::customContextMenuRequested, [this, tableView, node](const QPoint& pos) {
+    showContextMenu(tableView, node, pos);
+  });
+
+  QPushButton* button = new QPushButton(parent);
+  connect(button, &QPushButton::pressed, this, [=]() {
+    openFieldDialog(tableView, node, model->rowCount());
+  });
+
+  button->setText(control.id);
+  layout()->addWidget(tableView);
+  layout()->addWidget(button);
 
   return VoidResult();
 }
@@ -324,7 +374,7 @@ void FieldsMenu::showEventContextMenu(QTableView* tableView, NodeItem* node, con
 
   auto model = static_cast<QStandardItemModel*>(tableView->model());
   auto modifiable = model->item(row)->data(Qt::UserRole + 1).toBool();
-  
+
   QMenu contextMenu;
   QAction* actionEditFlow = contextMenu.addAction(tr("Edit flow"));
   actionEditFlow->setEnabled(modifiable);
@@ -357,14 +407,36 @@ void FieldsMenu::openEventDialog(QTableView* tableView, NodeItem* node, int row)
   mCurrentDialog = new EventDialog(tr("Edit event"), this);
 
   auto config = row < node->events().size() ? node->events().at(row) : std::make_shared<FlowSaveInfo>();
-  mCurrentDialog->setup(config);
+  qobject_cast<EventDialog*>(mCurrentDialog)->setup(config);
 
   connect(mCurrentDialog, &QDialog::accepted, [this, tableView, node, row] {
-    auto info = mCurrentDialog->getInfo();
+    auto info = qobject_cast<EventDialog*>(mCurrentDialog)->getInfo();
     Flow* flow = node->createFlow(info->name, info);
     addEventToTable((QStandardItemModel*)tableView->model(), row, info);
     if (info->modifiable)
       emit flowSelected(flow->id(), node->id());
+  });
+  connect(mCurrentDialog, &QDialog::rejected, [this] {
+    mCurrentDialog->close();
+    mCurrentDialog->deleteLater();
+  });
+
+  mCurrentDialog->setAttribute(Qt::WA_DeleteOnClose);
+  mCurrentDialog->exec();
+}
+
+void FieldsMenu::openFieldDialog(QTableView* tableView, NodeItem* node, int row)
+{
+  // Open the dialog
+  mCurrentDialog = new FieldDialog(tr("Edit field"), this);
+
+  auto config = row < node->fields().size() ? node->fields().at(row) : PropertiesConfig();
+  qobject_cast<FieldDialog*>(mCurrentDialog)->setup(config);
+
+  connect(mCurrentDialog, &QDialog::accepted, [this, tableView, node, row] {
+    auto info = qobject_cast<FieldDialog*>(mCurrentDialog)->getInfo();
+    node->setField(info.id, info);
+    addStateToTable((QStandardItemModel*)tableView->model(), row, info);
   });
   connect(mCurrentDialog, &QDialog::rejected, [this] {
     mCurrentDialog->close();
@@ -399,4 +471,18 @@ void FieldsMenu::addEventToTable(QStandardItemModel* model, int row, std::shared
   // Remove the trailing ", "
   args.chop(2);
   model->setItem(row, 3, new QStandardItem(args));
+}
+
+void FieldsMenu::addStateToTable(QStandardItemModel* model, int row, const PropertiesConfig& field)
+{
+  if (row >= model->rowCount())
+    model->insertRow(row);
+
+  model->setItem(row, 0, new QStandardItem(field.id));
+  model->setItem(row, 1, new QStandardItem(Types::PropertyTypesToString(field.type)));
+
+  if (field.type == Types::PropertyTypes::LIST)
+    model->setItem(row, 2, new QStandardItem(JSON::fromArray(field.defaultValue.toList(), ',')));
+  else
+    model->setItem(row, 2, new QStandardItem(field.defaultValue.toString()));
 }

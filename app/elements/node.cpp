@@ -35,7 +35,8 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
     , mStorage(info)
     , mChildrenNodes({})
     , mBaseScale(config()->libraryType == Types::LibraryTypes::STRUCTURAL ? mStorage->scale : 1.0)
-    , mSize(mStorage->size) // / baseScale())
+    , mSize(mStorage->size)  // / baseScale())
+    , mBehaviour(nullptr)
 {
   setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
   setCacheMode(DeviceCoordinateCache);
@@ -261,6 +262,27 @@ VoidResult NodeItem::setField(const QString& key, const QJsonObject& value)
     if (field.id != key)
       continue;
 
+    field = property;
+    return VoidResult();
+  }
+
+  mStorage->fields.push_back(property);
+
+  return VoidResult();
+}
+
+VoidResult NodeItem::setField(const QString& key, const PropertiesConfig& property)
+{
+  if (!mStorage)
+    return VoidResult::Failed("Storage is not set");
+
+  // Check if key exists
+  for (auto& field : mStorage->fields)
+  {
+    if (field.id != key)
+      continue;
+
+    LOG_DEBUG("Setting field: %s", qPrintable(field.id));
     field = property;
     return VoidResult();
   }
@@ -510,12 +532,27 @@ void NodeItem::addTransition(TransitionItem* transition)
       if (t->id == transition->id())
       {
         found = true;
-        break;        
+        break;
       }
     }
 
     if (!found)
       mStorage->transitions.push_back(transition->storage());
+
+    for (auto& t : transitions())
+    {
+      if (transition->source()->id() == id() && t->destination()->id() == id())
+      {
+        transition->setEdge(TransitionItem::Edge::FORWARD);
+        t->setEdge(TransitionItem::Edge::BACKWARD);
+      }
+
+      if (transition->destination()->id() == id() && t->source()->id() == id())
+      {
+        transition->setEdge(TransitionItem::Edge::BACKWARD);
+        t->setEdge(TransitionItem::Edge::FORWARD);
+      }
+    }
   }
 
   bool found = false;
@@ -584,13 +621,28 @@ TransitionConfig NodeItem::nextTransition() const
   return config()->transitions.at(index);
 }
 
+Flow* NodeItem::createBehaviour(std::shared_ptr<FlowSaveInfo> info)
+{
+  if (mBehaviour != nullptr)
+    return mBehaviour;
+
+  std::shared_ptr<FlowSaveInfo> flowConfig = info;
+  if (flowConfig == nullptr)
+    flowConfig = std::make_shared<FlowSaveInfo>();
+
+  mStorage->behaviour = flowConfig;
+  mBehaviour = new Flow("MainBehaviour", flowConfig);
+
+  return mBehaviour;
+}
+
 Flow* NodeItem::createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo> info)
 {
   std::shared_ptr<FlowSaveInfo> flowConfig = info;
+  bool found = false;
   if (info != nullptr)
   {
     // Clean up
-    bool found = false;
     for (const auto& f : mStorage->flows)
     {
       if (f->id != info->id)
@@ -600,13 +652,16 @@ Flow* NodeItem::createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo
       found = true;
       break;
     }
-
-    if (!found)
-      mStorage->flows.push_back(flowConfig);
   }
   else
   {
     flowConfig = std::make_shared<FlowSaveInfo>();
+  }
+
+  if (!found)
+  {
+    // Set this as owner of the flow
+    flowConfig->owner = id();
     mStorage->flows.push_back(flowConfig);
   }
 
