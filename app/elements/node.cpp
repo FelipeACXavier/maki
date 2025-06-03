@@ -539,20 +539,19 @@ void NodeItem::addTransition(TransitionItem* transition)
     if (!found)
       mStorage->transitions.push_back(transition->storage());
 
-    for (auto& t : transitions())
-    {
-      if (transition->source()->id() == id() && t->destination()->id() == id())
-      {
-        transition->setEdge(TransitionItem::Edge::FORWARD);
-        t->setEdge(TransitionItem::Edge::BACKWARD);
-      }
-
-      if (transition->destination()->id() == id() && t->source()->id() == id())
-      {
-        transition->setEdge(TransitionItem::Edge::BACKWARD);
-        t->setEdge(TransitionItem::Edge::FORWARD);
-      }
-    }
+    // for (auto& t : transitions())
+    // {
+    //   if (transition->source()->id() == id() && t->destination()->id() == id())
+    //   {
+    //     transition->setEdge(TransitionItem::Edge::FORWARD);
+    //     t->setEdge(TransitionItem::Edge::BACKWARD);
+    //   }
+    //   else if (transition->destination()->id() == id() && t->source()->id() == id())
+    //   {
+    //     transition->setEdge(TransitionItem::Edge::BACKWARD);
+    //     t->setEdge(TransitionItem::Edge::FORWARD);
+    //   }
+    // }
   }
 
   bool found = false;
@@ -567,6 +566,8 @@ void NodeItem::addTransition(TransitionItem* transition)
 
   if (!found)
     mTransitions.push_back(transition);
+
+  updateExtrasPosition();
 }
 
 void NodeItem::removeTransition(TransitionItem* transition)

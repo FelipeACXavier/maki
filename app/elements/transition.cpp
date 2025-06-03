@@ -11,6 +11,7 @@ TransitionItem::TransitionItem(std::shared_ptr<TransitionSaveInfo> storage)
     : QGraphicsPathItem()
     , mId((!storage->id.isEmpty() && !storage->id.isNull()) ? storage->id : QUuid::createUuid().toString())
     , mComplete(false)
+    , mEdge(Edge::NONE)
     , mSource(nullptr)
     , mDestination(nullptr)
     , mStorage(storage)
@@ -134,6 +135,14 @@ void TransitionItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
 
   painter->setBrush(isSelected() ? QBrush(Config::Colours::ACCENT) : QBrush(Qt::white));
   painter->drawPolygon(arrowHead);
+}
+
+
+QPainterPath TransitionItem::shape() const
+{
+  QPainterPathStroker stroker;
+  stroker.setWidth(10); // Wider clickable area
+  return stroker.createStroke(path());
 }
 
 std::shared_ptr<TransitionSaveInfo> TransitionItem::storage() const

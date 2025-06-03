@@ -1,4 +1,7 @@
 #include "property_config.h"
+#include <qcontainerfwd.h>
+#include <qjsonarray.h>
+#include <qjsonobject.h>
 
 #include <QJsonArray>
 
@@ -92,6 +95,8 @@ QVariant PropertiesConfig::toDefault(const QJsonObject& object, Types::PropertyT
     return toDefault(object, Types::PropertyTypes::STRING);
   else if (objectType == Types::PropertyTypes::STATE_SELECT)
     return toDefault(object, Types::PropertyTypes::STRING);
+  else if (objectType == Types::PropertyTypes::SET_STATE)
+    return QJsonArray();
   else if (objectType == Types::PropertyTypes::SELECT)
     return toDefault(object, Types::PropertyTypes::STRING);
   else if (objectType == Types::PropertyTypes::ENUM)

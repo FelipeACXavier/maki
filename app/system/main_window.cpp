@@ -147,9 +147,10 @@ void MainWindow::bind()
   connect(rootCanvas(), &Canvas::openFlow, this, &MainWindow::onOpenFlow);
   connect(rootCanvas(), &Canvas::flowAdded, this, &MainWindow::onFlowAdded);
   connect(rootCanvas(), &Canvas::flowRemoved, this, &MainWindow::onFlowRemoved);
-  connect(rootCanvas(), &Canvas::createEvent, mFieldsMenu, &FieldsMenu::onCreateEvent);
+  // connect(rootCanvas(), &Canvas::createEvent, mFieldsMenu, &FieldsMenu::onCreateEvent);
 
-  connect(mFieldsMenu, &FieldsMenu::flowSelected, rootCanvas(), &Canvas::onFlowSelected);
+  // connect(mFieldsMenu, &FieldsMenu::flowSelected, rootCanvas(), &Canvas::onFlowSelected);
+  connect(mPropertiesMenu, &PropertiesMenu::flowSelected, rootCanvas(), &Canvas::onFlowSelected);
 
   connect(mFlowMenu, &FlowMenu::flowSelected, rootCanvas(), &Canvas::onFlowSelected);
   connect(mFlowMenu, &FlowMenu::flowRemoved, rootCanvas(), &Canvas::onFlowRemoved);
@@ -164,14 +165,14 @@ void MainWindow::bindCanvas()
   connect(canvas(), &Canvas::nodeRemoved, this, &MainWindow::onNodeRemoved);
   connect(canvas(), &Canvas::nodeModified, this, &MainWindow::onNodeModified);
 
-  connect(canvas(), &Canvas::transitionSelected, [this](TransitionItem* transition) {
-    mPropertiesMenu->onTransitionSelected(transition);
-  });
+  connect(canvas(), &Canvas::createEvent, mPropertiesMenu, &PropertiesMenu::onCreateEvent);
+  connect(canvas(), &Canvas::transitionSelected, mPropertiesMenu, &PropertiesMenu::onTransitionSelected);
 
   connect(mSystemMenu, &SystemMenu::nodeRemoved, canvas(), &Canvas::onRemoveNode);
   connect(mSystemMenu, &SystemMenu::nodeSelected, canvas(), &Canvas::onSelectNode);
   connect(mSystemMenu, &SystemMenu::nodeRenamed, canvas(), &Canvas::onRenameNode);
   connect(mSystemMenu, &SystemMenu::nodeFocused, canvas(), &Canvas::onFocusNode);
+
 }
 
 void MainWindow::unbindCanvas()
@@ -180,11 +181,13 @@ void MainWindow::unbindCanvas()
   disconnect(canvas(), &Canvas::nodeAdded, this, &MainWindow::onNodeAdded);
   disconnect(canvas(), &Canvas::nodeRemoved, this, &MainWindow::onNodeRemoved);
   disconnect(canvas(), &Canvas::nodeModified, this, &MainWindow::onNodeModified);
+  disconnect(canvas(), &Canvas::createEvent, mPropertiesMenu, &PropertiesMenu::onCreateEvent);
 
   disconnect(mSystemMenu, &SystemMenu::nodeRemoved, canvas(), &Canvas::onRemoveNode);
   disconnect(mSystemMenu, &SystemMenu::nodeSelected, canvas(), &Canvas::onSelectNode);
   disconnect(mSystemMenu, &SystemMenu::nodeRenamed, canvas(), &Canvas::onRenameNode);
   disconnect(mSystemMenu, &SystemMenu::nodeFocused, canvas(), &Canvas::onFocusNode);
+  
 }
 
 void MainWindow::bindShortcuts()
@@ -395,7 +398,7 @@ void MainWindow::onNodeSelected(NodeItem* node, bool selected)
   }
 
   LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeSelected(node, selected));
-  LOG_WARN_ON_FAILURE(mFieldsMenu->onNodeSelected(node, selected));
+  // LOG_WARN_ON_FAILURE(mFieldsMenu->onNodeSelected(node, selected));
 }
 
 void MainWindow::onNodeAdded(NodeItem* node)
@@ -409,7 +412,8 @@ void MainWindow::onNodeAdded(NodeItem* node)
   if (canvas()->type() == Types::LibraryTypes::STRUCTURAL)
   {
     LOG_WARN_ON_FAILURE(mSystemMenu->onNodeAdded(node));
-    LOG_WARN_ON_FAILURE(mFieldsMenu->onNodeAdded(node));
+    LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeAdded(node));
+    // LOG_WARN_ON_FAILURE(mFieldsMenu->onNodeAdded(node));
   }
   else
   {
@@ -426,7 +430,7 @@ void MainWindow::onNodeRemoved(NodeItem* node)
   }
 
   LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeRemoved(node));
-  LOG_WARN_ON_FAILURE(mFieldsMenu->onNodeRemoved(node));
+  // LOG_WARN_ON_FAILURE(mFieldsMenu->onNodeRemoved(node));
 
   if (canvas()->type() == Types::LibraryTypes::STRUCTURAL)
     LOG_WARN_ON_FAILURE(mSystemMenu->onNodeRemoved(node));

@@ -21,5 +21,6 @@
          <file alias="vector-square.svg">assets/icons/fontawesome/svgs/solid/vector-square.svg</file>
          <file alias="close.svg">assets/icons/fontawesome/svgs/solid/xmark.svg</file>
          <file alias="circle-close.svg">assets/icons/fontawesome/svgs/solid/circle-xmark.svg</file>
+         <file alias="equals.svg">assets/icons/fontawesome/svgs/solid/equals.svg</file>
       </qresource>
 </RCC>

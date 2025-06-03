@@ -7,6 +7,7 @@
 
 #include "app_configs.h"
 #include "logging.h"
+#include "node.h"
 
 const qreal MAX_WIDTH = 100.0;
 const qreal MAX_HEIGHT = 100.0;
@@ -191,7 +192,7 @@ void NodeBase::updateLabelPosition()
 
   // Calculate centered position
   qreal x = boundingRect().center().x() - (textBounds.width() / 2);
-  qreal y = config()->libraryType == Types::LibraryTypes::STRUCTURAL ? boundingRect().top() + 2 : boundingRect().center().y() - (textBounds.height() / 2);
+  qreal y = type() == NodeItem::Type ? boundingRect().bottom() + 2 : boundingRect().center().y() - (textBounds.height() / 2);
 
   mLabel->setPos(x, y);
 }

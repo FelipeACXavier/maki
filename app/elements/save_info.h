@@ -106,6 +106,7 @@ struct SaveInfo
   friend QDataStream& operator<<(QDataStream& out, const SaveInfo& info);
   friend QDataStream& operator>>(QDataStream& in, SaveInfo& info);
 
+  QVector<std::shared_ptr<NodeSaveInfo>> getPossibleStates(const QString& nodeId) const;
   QVector<std::shared_ptr<NodeSaveInfo>> getPossibleCallers(const QString& nodeId) const;
   QVector<std::shared_ptr<FlowSaveInfo>> getEventsFromNode(const QString& nodeId) const;
 

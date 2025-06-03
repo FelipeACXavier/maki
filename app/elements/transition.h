@@ -21,7 +21,8 @@ public:
   {
     NONE = 0,
     FORWARD,
-    BACKWARD
+    BACKWARD,
+    ARC
   };
 
   TransitionItem(std::shared_ptr<TransitionSaveInfo> storage);
@@ -41,6 +42,7 @@ public:
   void updatePath();
 
   void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
+  QPainterPath shape() const override;
 
   TransitionSaveInfo saveInfo() const;
   std::shared_ptr<TransitionSaveInfo> storage() const;

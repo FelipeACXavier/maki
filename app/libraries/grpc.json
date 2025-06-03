@@ -30,8 +30,8 @@
           ],
           "controls": [
             {
-              "id": "Add",
-              "type": "add field"
+              "id": "Add state",
+              "type": "add state"
             }
           ],
           "help": {
@@ -64,8 +64,8 @@
           ],
           "controls": [
             {
-              "id": "Add",
-              "type": "add field"
+              "id": "Add state",
+              "type": "add state"
             }
           ],
           "help": {

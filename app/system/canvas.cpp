@@ -829,7 +829,6 @@ void Canvas::onRenameNode(const QString& nodeId, const QString& name)
 void Canvas::populate(Flow* flow)
 {
   // First create all the nodes
-  LOG_DEBUG("Nodes before %d", flow->getNodes().size());
   for (std::shared_ptr<NodeSaveInfo> node : flow->getNodes())
   {
     LOG_DEBUG("Creating behavioral node %s with parent %s", qPrintable(node->id), qPrintable(node->parentId));

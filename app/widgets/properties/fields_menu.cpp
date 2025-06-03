@@ -1,7 +1,5 @@
 #include "fields_menu.h"
 
-#include <qobject.h>
-
 #include <QHeaderView>
 #include <QJsonArray>
 #include <QJsonObject>

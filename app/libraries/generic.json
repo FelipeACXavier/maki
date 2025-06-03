@@ -105,8 +105,8 @@
           ],
           "controls": [
             {
-              "id": "Add",
-              "type": "add field"
+              "id": "Add state",
+              "type": "add state"
             }
           ],
           "connectors": [],
@@ -413,14 +413,45 @@
           "connectors": [],
           "controls": [
             {
-              "id": "Add field",
-              "type": "add field"
-            },
-            {
               "id": "Add event",
               "type": "add event"
             }
           ],
+          "behaviour": {},
+          "help": {
+            "message": "Represents a state in the system"
+          }
+        },
+        {
+          "type": "Assign",
+          "body": {
+            "shape": "Ellipse",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#94D2E0",
+            "borderColor": "#FFFFFF",
+            "width": 50,
+            "height": 50
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Assign"
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#94D2E0"
+            },
+            {
+              "id": "state",
+              "type": "set_state",
+              "default": ""
+            }
+          ],
+          "events": [],
+          "connectors": [],
+          "controls": [],
           "behaviour": {},
           "help": {
             "message": "Represents a state in the system"

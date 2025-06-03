@@ -63,7 +63,7 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Read I2C"
+              "default": "Write I2C"
             },
             {
               "id": "address",
@@ -178,11 +178,11 @@
               "type": "select",
               "options": [
                 {
-                  "id": "read bit",
+                  "id": "write bit",
                   "type": "string"
                 },
                 {
-                  "id": "read register",
+                  "id": "write register",
                   "type": "string"
                 }
               ]
@@ -259,7 +259,7 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Read I2C"
+              "default": "Write I2C"
             },
             {
               "id": "address",

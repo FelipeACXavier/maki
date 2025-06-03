@@ -25,16 +25,28 @@
               "id": "color",
               "type": "color",
               "default": "#F2532E"
+            },
+            {
+              "id": "publishes",
+              "type": "string"
+            },
+            {
+              "id": "subscribes",
+              "type": "string"
+            },
+            {
+              "id": "callback",
+              "type": "string"
             }
           ],
           "controls": [
             {
-              "id": "Add",
-              "type": "add field"
+              "id": "Add event",
+              "type": "add event"
             },
             {
-              "id": "Parameters",
-              "type": "add field"
+              "id": "Add state",
+              "type": "add state"
             }
           ],
           "help": {
@@ -67,8 +79,8 @@
           ],
           "controls": [
             {
-              "id": "Add",
-              "type": "add field"
+              "id": "Add state",
+              "type": "add state"
             }
           ],
           "help": {
@@ -193,17 +205,7 @@
               "default": "Write"
             },
             {
-              "id": "service",
-              "type": "string",
-              "default": ""
-            },
-            {
-              "id": "method",
-              "type": "string",
-              "default": ""
-            },
-            {
-              "id": "message",
+              "id": "topic",
               "type": "string",
               "default": ""
             }
@@ -240,17 +242,7 @@
               "default": "Read"
             },
             {
-              "id": "service",
-              "type": "string",
-              "default": ""
-            },
-            {
-              "id": "method",
-              "type": "string",
-              "default": ""
-            },
-            {
-              "id": "message",
+              "id": "topic",
               "type": "string",
               "default": ""
             }

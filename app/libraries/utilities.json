@@ -177,6 +177,46 @@
           ]
         }
       ]
+    },
+    {
+      "type": "internal behaviour",
+      "nodes": [
+        {
+          "type": "Filter",
+          "body": {
+            "shape": "rounded rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#35AA46",
+            "borderColor": "#FFFFFF",
+            "borderRadius": 5,
+            "width": 100,
+            "height": 50,
+            "scale": 0.5
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Filter"
+            },
+            {
+              "id": "service",
+              "type": "select",
+              "default": "kalman",
+              "options": [
+                {
+                  "id": "kalman",
+                  "type": "string"
+                },
+                {
+                  "id": "rolling average",
+                  "type": "string"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ]
 }

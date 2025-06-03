@@ -1,5 +1,14 @@
 #include "properties_menu.h"
+#include <qboxlayout.h>
+#include <qcombobox.h>
+#include <qgroupbox.h>
+#include <qjsonobject.h>
+#include <qsizepolicy.h>
 
+#include <QScrollArea>
+#include <QHeaderView>
+#include <QJsonArray>
+#include <QJsonObject>
 #include <QCheckBox>
 #include <QColorDialog>
 #include <QComboBox>
@@ -17,11 +26,16 @@
 #include <QWidget>
 #include <cfloat>
 
+#include "../structure/event_dialog.h"
+#include "../structure/field_dialog.h"
 #include "app_configs.h"
 #include "elements/node.h"
+#include "elements/flow.h"
 #include "keys.h"
+#include "json.h"
 #include "logging.h"
 #include "style_helpers.h"
+#include "types.h"
 
 PropertiesMenu::PropertiesMenu(QWidget* parent)
     : QFrame(parent)
@@ -36,6 +50,21 @@ VoidResult PropertiesMenu::start(std::shared_ptr<SaveInfo> storage)
 {
   mStorage = storage;
   return VoidResult();
+}
+
+void PropertiesMenu::clear()
+{
+  if (!layout())
+    return;
+
+  // Remove and delete all child widgets
+  while (QLayoutItem* item = layout()->takeAt(0))
+  {
+    if (QWidget* widget = item->widget())
+      widget->deleteLater();
+
+    delete item;
+  }
 }
 
 VoidResult PropertiesMenu::onNodeAdded(NodeItem* /* node */)
@@ -74,50 +103,61 @@ VoidResult PropertiesMenu::onNodeSelected(NodeItem* node, bool selected)
   mCurrentNode = node->id();
 
   RETURN_ON_FAILURE(loadProperties(node));
+  RETURN_ON_FAILURE(loadControls(node));
 
   static_cast<QVBoxLayout*>(layout())->addStretch();
 
   return VoidResult();
 }
 
-void PropertiesMenu::clear()
+VoidResult PropertiesMenu::onCreateEvent(NodeItem* node)
 {
-  if (!layout())
-    return;
+  // QWidget* w = this;  // or any child widget in the tab
+  // QTabWidget* tabWidget = nullptr;
 
-  // Remove and delete all child widgets
-  while (QLayoutItem* item = layout()->takeAt(0))
-  {
-    if (QWidget* widget = item->widget())
-      widget->deleteLater();
+  // while (w)
+  // {
+  //   tabWidget = qobject_cast<QTabWidget*>(w);
+  //   if (tabWidget)
+  //     break;
+  //   w = w->parentWidget();
+  // }
 
-    delete item;
-  }
+  // if (tabWidget == nullptr)
+  //   return VoidResult::Failed("Could not find parent widget");
+
+  // tabWidget->setCurrentIndex(1);
+
+  LOG_INFO("Creating event");
+  onNodeSelected(node, true);
+
+  auto table = findChild<QTableView*>("EventTable");
+  if (table == nullptr)
+    return VoidResult::Failed("Could not find the event table");
+
+  openEventDialog(table, node, table->model()->rowCount() + 1);
+
+  return VoidResult();
+}
+
+VoidResult PropertiesMenu::onFlowAdded(Flow* flow, NodeItem* node)
+{
+  return VoidResult();
+}
+
+VoidResult PropertiesMenu::onFlowRemoved(const QString& flowId, NodeItem* node)
+{
+  return VoidResult();
 }
 
 VoidResult PropertiesMenu::loadProperties(NodeItem* node)
 {
   if (node->configurationProperties().size() < 1)
-  {
-    QLabel* nameLabel = new QLabel("Block has no properties", this);
-    nameLabel->setFont(Fonts::Property);
-
-    layout()->setAlignment(Qt::AlignCenter);
-    layout()->addWidget(nameLabel);
-
     return VoidResult();
-  }
 
   for (const auto& property : node->configurationProperties())
   {
     // LOG_DEBUG("Updating properties with %s of type %d", qPrintable(property.id), (int)property.type);
-
-    QString label = ToLabel(property.id);
-    QLabel* nameLabel = new QLabel(label);
-
-    nameLabel->setFont(Fonts::Label);
-    layout()->addWidget(nameLabel);
-
     if (property.type == Types::PropertyTypes::STRING)
       LOG_WARN_ON_FAILURE(loadPropertyString(property, node));
     else if (property.type == Types::PropertyTypes::INTEGER)
@@ -136,6 +176,8 @@ VoidResult PropertiesMenu::loadProperties(NodeItem* node)
       LOG_WARN_ON_FAILURE(loadPropertyComponentSelect(property, node));
     else if (property.type == Types::PropertyTypes::STATE_SELECT)
       LOG_WARN_ON_FAILURE(loadPropertyStateSelect(property, node));
+    else if (property.type == Types::PropertyTypes::SET_STATE)
+      LOG_WARN_ON_FAILURE(loadPropertySetState(property, node));
     else
       LOG_WARNING("Property without a type, how is that possible?");
   }
@@ -143,8 +185,44 @@ VoidResult PropertiesMenu::loadProperties(NodeItem* node)
   return VoidResult();
 }
 
+VoidResult PropertiesMenu::loadControls(NodeItem* node)
+{
+  if (node->controls().isEmpty() && node->events().isEmpty())
+    return VoidResult();
+
+  QWidget* controls = new QWidget(this);
+  QHBoxLayout* controlLayout = new QHBoxLayout(controls);
+  controls->setLayout(controlLayout);
+
+  for (const auto& control : node->controls())
+  {
+    if (control.type == Types::ControlTypes::ADD_FIELD)
+      LOG_WARN_ON_FAILURE(loadControlAddField(control, node, controls, controlLayout));
+    else if (control.type == Types::ControlTypes::ADD_EVENT)
+      LOG_WARN_ON_FAILURE(loadControlAddEvent(control, node, controls, controlLayout));
+    else if (control.type == Types::ControlTypes::ADD_STATE)
+      LOG_WARN_ON_FAILURE(loadControlAddState(control, node, controls, controlLayout));
+    else
+      LOG_WARNING("Unknown control type: %s", qPrintable(control.id));
+  }
+
+  if (!node->events().isEmpty() && node->controls().isEmpty())
+    loadControlAddEvent(ControlsConfig(), node, controls, controlLayout);
+
+  // Controls are placed in a new horizontal widget at the bottom of the properties menu
+  layout()->addWidget(controls);
+
+  return VoidResult();
+}
+
 VoidResult PropertiesMenu::loadPropertyInt(const PropertiesConfig& property, NodeItem* node)
 {
+  QString label = ToLabel(property.id);
+  QLabel* nameLabel = new QLabel(label);
+
+  nameLabel->setFont(Fonts::Label);
+  layout()->addWidget(nameLabel);
+  
   QLineEdit* widget = new QLineEdit(this);
   QIntValidator* validator = new QIntValidator(INT32_MIN, INT32_MIN, widget);
 
@@ -170,6 +248,12 @@ VoidResult PropertiesMenu::loadPropertyInt(const PropertiesConfig& property, Nod
 
 VoidResult PropertiesMenu::loadPropertyReal(const PropertiesConfig& property, NodeItem* node)
 {
+  QString label = ToLabel(property.id);
+  QLabel* nameLabel = new QLabel(label);
+
+  nameLabel->setFont(Fonts::Label);
+  layout()->addWidget(nameLabel);
+  
   QLineEdit* widget = new QLineEdit(this);
   QDoubleValidator* validator = new QDoubleValidator(DBL_MIN, DBL_MAX, 6, widget);
 
@@ -195,6 +279,12 @@ VoidResult PropertiesMenu::loadPropertyReal(const PropertiesConfig& property, No
 
 VoidResult PropertiesMenu::loadPropertyColor(const PropertiesConfig& property, NodeItem* node)
 {
+  QString label = ToLabel(property.id);
+  QLabel* nameLabel = new QLabel(label);
+
+  nameLabel->setFont(Fonts::Label);
+  layout()->addWidget(nameLabel);
+  
   QWidget* holder = new QWidget(this);
   QHBoxLayout* holderLayout = new QHBoxLayout(holder);
   holder->setLayout(holderLayout);
@@ -235,6 +325,12 @@ VoidResult PropertiesMenu::loadPropertyColor(const PropertiesConfig& property, N
 
 VoidResult PropertiesMenu::loadPropertySelect(const PropertiesConfig& property, NodeItem* node)
 {
+  QString label = ToLabel(property.id);
+  QLabel* nameLabel = new QLabel(label);
+
+  nameLabel->setFont(Fonts::Label);
+  layout()->addWidget(nameLabel);
+  
   QComboBox* widget = new QComboBox(this);
 
   auto options = property.options;
@@ -258,6 +354,12 @@ VoidResult PropertiesMenu::loadPropertySelect(const PropertiesConfig& property, 
 
 VoidResult PropertiesMenu::loadPropertyString(const PropertiesConfig& property, NodeItem* node)
 {
+  QString label = ToLabel(property.id);
+  QLabel* nameLabel = new QLabel(label);
+
+  nameLabel->setFont(Fonts::Label);
+  layout()->addWidget(nameLabel);
+  
   QLineEdit* widget = new QLineEdit(this);
   auto result = node->getProperty(property.id);
   if (!result.isValid())
@@ -275,6 +377,12 @@ VoidResult PropertiesMenu::loadPropertyString(const PropertiesConfig& property, 
 
 VoidResult PropertiesMenu::loadPropertyBoolean(const PropertiesConfig& property, NodeItem* node)
 {
+  QString label = ToLabel(property.id);
+  QLabel* nameLabel = new QLabel(label);
+
+  nameLabel->setFont(Fonts::Label);
+  layout()->addWidget(nameLabel);
+  
   QCheckBox* widget = new QCheckBox(this);
   auto result = node->getProperty(property.id);
   if (!result.isValid())
@@ -297,6 +405,12 @@ VoidResult PropertiesMenu::loadPropertyStateSelect(const PropertiesConfig& prope
   if (!mStorage)
     return VoidResult::Failed("No storage assigned to properties menu");
 
+  QString label = ToLabel(property.id);
+  QLabel* nameLabel = new QLabel(label);
+
+  nameLabel->setFont(Fonts::Label);
+  layout()->addWidget(nameLabel);
+  
   QComboBox* widget = new QComboBox(this);
   widget->setObjectName(property.id);
 
@@ -354,6 +468,94 @@ VoidResult PropertiesMenu::loadPropertyStateSelect(const PropertiesConfig& prope
   layout()->addWidget(widget);
 
   return VoidResult();
+}
+
+
+VoidResult PropertiesMenu::loadPropertySetState(const PropertiesConfig& property, NodeItem* node)
+{
+  if (!mStorage)
+    return VoidResult::Failed("No storage assigned to properties menu");
+
+  QGroupBox* group = new QGroupBox("Assignments", this);
+  group->setObjectName("AssignmentGroup");
+  group->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+
+  QVBoxLayout* groupLayout = new QVBoxLayout(group);
+
+  QScrollArea* scrollArea = new QScrollArea(group);
+  scrollArea->setWidgetResizable(true);
+
+  // Create a scrollable content widget
+  QWidget* scrollContent = new QWidget();
+  scrollContent->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+
+  QVBoxLayout* scrollLayout = new QVBoxLayout(scrollContent);
+  scrollLayout->setSpacing(5);        
+  scrollLayout->setAlignment(Qt::AlignTop); 
+  
+  addStateAssignment(property, node, scrollContent);
+
+  scrollArea->setWidget(scrollContent);
+  groupLayout->addWidget(scrollArea);
+  qobject_cast<QVBoxLayout*>(layout())->addWidget(group, 1);
+
+  return VoidResult();
+}
+
+void PropertiesMenu::addStateAssignment(const PropertiesConfig& property, NodeItem* node, QWidget* group)
+{
+  QComboBox* widget = new QComboBox(group);
+  widget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+
+  auto callers = mStorage->getPossibleCallers(node->id());
+  for (const auto& caller : callers)
+  {
+    auto callerName = caller->properties[ConfigKeys::NAME].toString();
+    for (const auto& field : caller->fields)
+    {
+      auto name = field.options.at(0).defaultValue.toString();
+      widget->addItem(callerName + "." + name);
+    }
+  }
+  
+  QWidget* controls = new QWidget(group);
+  QHBoxLayout* controlsLayout = new QHBoxLayout(controls);
+
+  QLabel* icon = new QLabel(controls);
+  icon->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+  icon->setPixmap(QPixmap(":/icons/equals.svg").scaled(20, 20, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+  icon->setFixedSize({20, 20});
+  
+  QLineEdit* assignEdit = new QLineEdit(group);
+  assignEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+  assignEdit->setFont(Fonts::Property);
+
+  connect(assignEdit, &QLineEdit::editingFinished, this, [=]{
+    auto returnData = node->getProperty(property.id);
+    if (!returnData.isValid())
+    {
+      LOG_WARNING("Invalid data in %s", qPrintable(property.id));
+      return;
+    }
+
+    QJsonObject object;
+    object["variable"] = widget->currentText();
+    object["value"] = assignEdit->text();
+
+    auto data = returnData.toJsonArray();
+    data.append(object);
+
+    node->setProperty(property.id, data);
+
+    // Open a new assignment
+    addStateAssignment(property, node, group);
+  });
+
+  controlsLayout->addWidget(icon);
+  controlsLayout->addWidget(assignEdit);
+  
+  group->layout()->addWidget(widget);
+  group->layout()->addWidget(controls);
 }
 
 // TODO(felaze): The component and the event fields are always dependent on each other for now
@@ -516,7 +718,354 @@ VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)
   widget->setFont(Fonts::Property);
   layout()->addWidget(widget);
 
-  static_cast<QVBoxLayout*>(layout())->addStretch();
+  auto source = transition->source();
+  if (source == nullptr)
+    return VoidResult::Failed("Transition with no source");
+
+  QLabel* comboLabel = new QLabel("Transition event");
+  comboLabel->setFont(Fonts::Label);
+  layout()->addWidget(comboLabel);
+
+  QComboBox* eventWidget = new QComboBox(this);
+
+  for (const auto& caller : mStorage->getPossibleCallers(source->id()))
+  {
+    auto name = caller->properties[ConfigKeys::NAME];
+    if (name.isNull() || !name.isValid())
+      continue;
+
+    auto events = mStorage->getEventsFromNode(caller->id);
+    for (const auto& event : events)
+      eventWidget->addItem(name.toString() + "." + event->name, event->id);
+  }
+
+  layout()->addWidget(eventWidget);
+
+  // static_cast<QVBoxLayout*>(layout())->addStretch();
 
   return VoidResult();
+}
+
+
+VoidResult PropertiesMenu::loadControlAddField(const ControlsConfig& control, NodeItem* node, QWidget* parent, QHBoxLayout* controlLayout)
+{
+  // Create table to hold new fields
+  QTableView* tableView = new QTableView(parent);
+  QStandardItemModel* model = new QStandardItemModel(0, 3);
+
+  model->setHorizontalHeaderItem(0, new QStandardItem("Name"));
+  model->setHorizontalHeaderItem(1, new QStandardItem("Value"));
+  model->setHorizontalHeaderItem(2, new QStandardItem("Type"));
+
+  tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+  tableView->setContextMenuPolicy(Qt::CustomContextMenu);
+
+  addDynamicWidget((QVBoxLayout*)layout(), tableView, parent);
+
+  tableView->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::EditKeyPressed);
+  tableView->setModel(model);
+
+  for (const auto& field : node->fields())
+  {
+    int newRow = model->rowCount();
+    model->insertRow(newRow);
+    model->setItem(newRow, 0, new QStandardItem(field.id));
+    model->setItem(newRow, 2, new QStandardItem(Types::PropertyTypesToString(field.type)));
+
+    if (field.type == Types::PropertyTypes::LIST)
+      model->setItem(newRow, 1, new QStandardItem(JSON::fromArray(field.defaultValue.toList(), ',')));
+    else
+      model->setItem(newRow, 1, new QStandardItem(field.defaultValue.toString()));
+  }
+
+  connect(model, &QStandardItemModel::itemChanged, [=](QStandardItem* item) {
+    if (!item)
+      return;
+
+    QJsonObject json;
+
+    // TODO: clean this up and make the divider a configuration option
+    int row = item->row();
+    for (int i = 0; i < model->columnCount(); ++i)
+    {
+      if (!model->item(row, i))
+        return;
+
+      auto text = model->item(row, i)->text();
+      if (text.isNull() || text.isEmpty())
+        return;
+
+      if (i == 0)
+        json["id"] = text;
+      else if (i == 1)
+        json["default"] = text;
+      else
+        json["type"] = text;
+    }
+
+    if (json["type"] == "list")
+      json["default"] = JSON::toArray(json["default"], ',');
+
+    // LOG_INFO("Setting: %s %s %s", qPrintable(json["id"].toString()), qPrintable(json["default"].toString()), qPrintable(json["type"].toString()));
+    LOG_ERROR_ON_FAILURE(node->setField(json["id"].toString(), json));
+  });
+
+  connect(tableView, &QTableView::customContextMenuRequested, [this, tableView, node](const QPoint& pos) {
+    showContextMenu(tableView, node, pos);
+  });
+
+  QPushButton* button = new QPushButton(parent);
+  connect(button, &QPushButton::pressed, this, [=]() {
+    int newRow = model->rowCount();
+    model->insertRow(newRow);
+    model->setItem(newRow, 0, new QStandardItem(""));
+    model->setItem(newRow, 1, new QStandardItem(""));
+    model->setItem(newRow, 2, new QStandardItem(""));
+  });
+
+  button->setText(control.id);
+  controlLayout->addWidget(button);
+
+  return VoidResult();
+}
+
+VoidResult PropertiesMenu::loadControlAddEvent(const ControlsConfig& control, NodeItem* node, QWidget* parent, QHBoxLayout* controlLayout)
+{
+  // Create table to hold new fields
+  QTableView* tableView = new QTableView(parent);
+  tableView->setObjectName("EventTable");
+  QStandardItemModel* model = new QStandardItemModel(0, 4);
+
+  model->setHorizontalHeaderItem(0, new QStandardItem("Name"));
+  model->setHorizontalHeaderItem(1, new QStandardItem("Type"));
+  model->setHorizontalHeaderItem(2, new QStandardItem("Return"));
+  model->setHorizontalHeaderItem(3, new QStandardItem("Argument"));
+
+  tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+  tableView->setContextMenuPolicy(Qt::CustomContextMenu);
+
+  // addDynamicWidget((QVBoxLayout*)layout(), tableView, parent);
+
+  // We do not support editing values in the table directly. I want to avoid issues caused by a wrong click
+  // Instead, we open a dialog with a complete overview of the event.
+  // TODO(felaze): It would be nice to also show the nodes that trigger this event
+  tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+  tableView->setModel(model);
+
+  for (const auto& event : node->events())
+    addEventToTable(model, model->rowCount(), event);
+
+  connect(tableView, &QTableView::customContextMenuRequested, [this, tableView, node](const QPoint& pos) {
+    showEventContextMenu(tableView, node, pos);
+  });
+
+  connect(tableView, &QTableView::doubleClicked, [this, tableView, node](const QModelIndex& index) {
+    openEventDialog(tableView, node, index.row());
+  });
+
+  if (control.id.isEmpty())
+    return VoidResult();
+
+  QPushButton* button = new QPushButton(parent);
+  connect(button, &QPushButton::pressed, this, [=]() {
+    openEventDialog(tableView, node, model->rowCount());
+  });
+
+  button->setText(control.id);
+  layout()->addWidget(tableView);
+  layout()->addWidget(button);
+
+  return VoidResult();
+}
+
+VoidResult PropertiesMenu::loadControlAddState(const ControlsConfig& control, NodeItem* node, QWidget* parent, QHBoxLayout* controlLayout)
+{
+  // Create table to hold new fields
+  QTableView* tableView = new QTableView(parent);
+  tableView->setObjectName("StateTable");
+  QStandardItemModel* model = new QStandardItemModel(0, 3);
+
+  model->setHorizontalHeaderItem(0, new QStandardItem("Name"));
+  model->setHorizontalHeaderItem(1, new QStandardItem("Type"));
+  model->setHorizontalHeaderItem(2, new QStandardItem("Value"));
+
+  tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+  tableView->setContextMenuPolicy(Qt::CustomContextMenu);
+
+  // addDynamicWidget((QVBoxLayout*)layout(), tableView, parent);
+
+  // We do not support editing values in the table directly. I want to avoid issues caused by a wrong click
+  // Instead, we open a dialog with a complete overview of the event.
+  // TODO(felaze): It would be nice to also show the nodes that trigger this event
+  // tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+  tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+  tableView->setModel(model);
+
+  for (const auto& field : node->fields())
+    addStateToTable(model, model->rowCount(), field);
+
+  connect(tableView, &QTableView::doubleClicked, [this, tableView, node](const QModelIndex& index) {
+    openFieldDialog(tableView, node, index.row());
+  });
+
+  connect(tableView, &QTableView::customContextMenuRequested, [this, tableView, node](const QPoint& pos) {
+    showContextMenu(tableView, node, pos);
+  });
+
+  QPushButton* button = new QPushButton(parent);
+  connect(button, &QPushButton::pressed, this, [=]() {
+    openFieldDialog(tableView, node, model->rowCount());
+  });
+
+  button->setText(control.id);
+  layout()->addWidget(tableView);
+  layout()->addWidget(button);
+
+  return VoidResult();
+}
+
+void PropertiesMenu::showContextMenu(QTableView* tableView, NodeItem* node, const QPoint& pos)
+{
+  // Get the index of the clicked row
+  QModelIndex index = tableView->indexAt(pos);
+  if (!index.isValid())
+    return;
+
+  QMenu contextMenu;
+  QAction* actionDelete = contextMenu.addAction("Delete");
+
+  int row = index.row();
+  connect(actionDelete, &QAction::triggered, this, [row, tableView, node] {
+    auto key = static_cast<QStandardItemModel*>(tableView->model())->item(row, 0);
+    if (key && !key->text().isNull())
+      node->removeField(key->text());
+
+    tableView->model()->removeRow(row);
+  });
+
+  contextMenu.exec(tableView->viewport()->mapToGlobal(pos));
+}
+
+void PropertiesMenu::showEventContextMenu(QTableView* tableView, NodeItem* node, const QPoint& pos)
+{
+  // Get the index of the clicked row
+  QModelIndex index = tableView->indexAt(pos);
+  if (!index.isValid())
+    return;
+
+  int row = index.row();
+
+  auto model = static_cast<QStandardItemModel*>(tableView->model());
+  auto modifiable = model->item(row)->data(Qt::UserRole + 1).toBool();
+
+  QMenu contextMenu;
+  QAction* actionEditFlow = contextMenu.addAction(tr("Edit flow"));
+  actionEditFlow->setEnabled(modifiable);
+  connect(actionEditFlow, &QAction::triggered, this, [this, row, model, node] {
+    auto flowId = model->item(row)->data(Qt::UserRole).toString();
+    emit flowSelected(flowId, node->id());
+  });
+
+  QAction* actionEditProperties = contextMenu.addAction(tr("Edit event"));
+  actionEditProperties->setEnabled(modifiable);
+  connect(actionEditProperties, &QAction::triggered, this, [this, row, tableView, node] {
+    openEventDialog(tableView, node, row);
+  });
+
+  QAction* actionDelete = contextMenu.addAction(tr("Delete"));
+  connect(actionDelete, &QAction::triggered, this, [row, tableView, node] {
+    auto key = static_cast<QStandardItemModel*>(tableView->model())->item(row, 0);
+    if (key && !key->text().isNull())
+      node->removeField(key->text());
+
+    tableView->model()->removeRow(row);
+  });
+
+  contextMenu.exec(tableView->viewport()->mapToGlobal(pos));
+}
+
+void PropertiesMenu::openEventDialog(QTableView* tableView, NodeItem* node, int row)
+{
+  // Open the dialog
+  mCurrentDialog = new EventDialog(tr("Edit event"), this);
+
+  auto config = row < node->events().size() ? node->events().at(row) : std::make_shared<FlowSaveInfo>();
+  qobject_cast<EventDialog*>(mCurrentDialog)->setup(config);
+
+  connect(mCurrentDialog, &QDialog::accepted, [this, tableView, node, row] {
+    auto info = qobject_cast<EventDialog*>(mCurrentDialog)->getInfo();
+    Flow* flow = node->createFlow(info->name, info);
+    addEventToTable((QStandardItemModel*)tableView->model(), row, info);
+    if (info->modifiable)
+      emit flowSelected(flow->id(), node->id());
+  });
+  connect(mCurrentDialog, &QDialog::rejected, [this] {
+    mCurrentDialog->close();
+    mCurrentDialog->deleteLater();
+  });
+
+  mCurrentDialog->setAttribute(Qt::WA_DeleteOnClose);
+  mCurrentDialog->exec();
+}
+
+void PropertiesMenu::openFieldDialog(QTableView* tableView, NodeItem* node, int row)
+{
+  // Open the dialog
+  mCurrentDialog = new FieldDialog(tr("Edit field"), this);
+
+  auto config = row < node->fields().size() ? node->fields().at(row) : PropertiesConfig();
+  qobject_cast<FieldDialog*>(mCurrentDialog)->setup(config);
+
+  connect(mCurrentDialog, &QDialog::accepted, [this, tableView, node, row] {
+    auto info = qobject_cast<FieldDialog*>(mCurrentDialog)->getInfo();
+    node->setField(info.id, info);
+    addStateToTable((QStandardItemModel*)tableView->model(), row, info);
+  });
+  connect(mCurrentDialog, &QDialog::rejected, [this] {
+    mCurrentDialog->close();
+    mCurrentDialog->deleteLater();
+  });
+
+  mCurrentDialog->setAttribute(Qt::WA_DeleteOnClose);
+  mCurrentDialog->exec();
+}
+
+void PropertiesMenu::addEventToTable(QStandardItemModel* model, int row, std::shared_ptr<FlowSaveInfo> event)
+{
+  // If the row is not in the table yet, add it
+  if (row >= model->rowCount())
+    model->insertRow(row);
+
+  auto indexItem = new QStandardItem(event->name);
+  indexItem->setData(event->id, Qt::UserRole);
+  indexItem->setData(event->modifiable, Qt::UserRole + 1);
+
+  model->setItem(row, 0, indexItem);
+  model->setItem(row, 1, new QStandardItem(Types::ConnectorTypeToString(event->type)));
+  model->setItem(row, 2, new QStandardItem(Types::PropertyTypesToString(event->returnType)));
+
+  if (event->arguments.isEmpty())
+    return;
+
+  QString args = "";
+  for (const auto& arg : event->arguments)
+    args += arg.id + ", ";
+
+  // Remove the trailing ", "
+  args.chop(2);
+  model->setItem(row, 3, new QStandardItem(args));
+}
+
+void PropertiesMenu::addStateToTable(QStandardItemModel* model, int row, const PropertiesConfig& field)
+{
+  if (row >= model->rowCount())
+    model->insertRow(row);
+
+  model->setItem(row, 0, new QStandardItem(field.id));
+  model->setItem(row, 1, new QStandardItem(Types::PropertyTypesToString(field.type)));
+
+  if (field.type == Types::PropertyTypes::LIST)
+    model->setItem(row, 2, new QStandardItem(JSON::fromArray(field.defaultValue.toList(), ',')));
+  else
+    model->setItem(row, 2, new QStandardItem(field.defaultValue.toString()));
 }
