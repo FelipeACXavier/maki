@@ -38,6 +38,7 @@ struct TransitionSaveInfo
 {
   QString id = "";
   QString label = "";
+  QString event = "";
 
   QString srcId = "";
   QPointF srcPoint{0, 0};

@@ -236,3 +236,12 @@ void TransitionItem::updateLabelPosition()
   mLabel->setPos(labelPos.x() - labelSize.width() / 2,
                  labelPos.y() - labelSize.height() / 2);
 }
+QString TransitionItem::getEvent() const
+{
+  return mStorage->event;
+}
+
+void TransitionItem::setEvent(const QString& name)
+{
+  mStorage->event = name;
+}

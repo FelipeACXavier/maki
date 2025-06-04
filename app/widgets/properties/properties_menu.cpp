@@ -3,6 +3,7 @@
 #include <qcombobox.h>
 #include <qgroupbox.h>
 #include <qjsonobject.h>
+#include <qlogging.h>
 #include <qsizepolicy.h>
 
 #include <QScrollArea>
@@ -366,7 +367,7 @@ VoidResult PropertiesMenu::loadPropertyString(const PropertiesConfig& property, 
     return VoidResult::Failed("Failed to get default value");
 
   widget->setText(result.toString());
-  connect(widget, &QLineEdit::returnPressed, this, [=]() {
+  connect(widget, &QLineEdit::editingFinished, this, [=]() {
     node->setProperty(property.id, widget->text());
   });
 
@@ -493,7 +494,7 @@ VoidResult PropertiesMenu::loadPropertySetState(const PropertiesConfig& property
   scrollLayout->setSpacing(5);        
   scrollLayout->setAlignment(Qt::AlignTop); 
   
-  addStateAssignment(property, node, scrollContent);
+  addStateAssignment(property, 0, node, scrollContent);
 
   scrollArea->setWidget(scrollContent);
   groupLayout->addWidget(scrollArea);
@@ -502,7 +503,7 @@ VoidResult PropertiesMenu::loadPropertySetState(const PropertiesConfig& property
   return VoidResult();
 }
 
-void PropertiesMenu::addStateAssignment(const PropertiesConfig& property, NodeItem* node, QWidget* group)
+void PropertiesMenu::addStateAssignment(const PropertiesConfig& property, int index, NodeItem* node, QWidget* group)
 {
   QComboBox* widget = new QComboBox(group);
   widget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
@@ -517,7 +518,7 @@ void PropertiesMenu::addStateAssignment(const PropertiesConfig& property, NodeIt
     for (const auto& field : caller->fields)
       widget->addItem(callerName + field.id);
   }
-  
+
   QWidget* controls = new QWidget(group);
   QHBoxLayout* controlsLayout = new QHBoxLayout(controls);
 
@@ -530,7 +531,33 @@ void PropertiesMenu::addStateAssignment(const PropertiesConfig& property, NodeIt
   assignEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
   assignEdit->setFont(Fonts::Property);
 
+  auto currentReturn = node->getProperty(property.id);
+  bool addNew = false;
+  if (currentReturn.isValid())
+  {
+    QJsonArray currentValue = currentReturn.toJsonArray();
+
+    if (index < currentValue.size())
+    {
+      auto val = currentValue.at(index).toObject();
+      if (val.contains("variable"))
+        widget->setCurrentText(val["variable"].toString());
+      if (val.contains("value"))
+        assignEdit->setText(val["value"].toString());
+    }
+
+    addNew = index < currentValue.size() - 1;
+  }
+  
   connect(assignEdit, &QLineEdit::editingFinished, this, [=]{
+
+    if (assignEdit->text().isEmpty())
+    {
+      controls->deleteLater();
+      widget->deleteLater();
+      return;
+    }
+    
     auto returnData = node->getProperty(property.id);
     if (!returnData.isValid())
     {
@@ -543,12 +570,15 @@ void PropertiesMenu::addStateAssignment(const PropertiesConfig& property, NodeIt
     object["value"] = assignEdit->text();
 
     auto data = returnData.toJsonArray();
-    data.append(object);
+    if (index < data.size())
+      data.replace(index, object);
+    else
+      data.append(object);
 
     node->setProperty(property.id, data);
 
     // Open a new assignment
-    addStateAssignment(property, node, group);
+    addStateAssignment(property, index + 1, node, group);
   });
 
   controlsLayout->addWidget(icon);
@@ -556,6 +586,9 @@ void PropertiesMenu::addStateAssignment(const PropertiesConfig& property, NodeIt
   
   group->layout()->addWidget(widget);
   group->layout()->addWidget(controls);
+
+  if (addNew)
+    addStateAssignment(property, index + 1, node, group);
 }
 
 // TODO(felaze): The component and the event fields are always dependent on each other for now
@@ -727,8 +760,8 @@ VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)
   layout()->addWidget(comboLabel);
 
   QComboBox* eventWidget = new QComboBox(this);
-
-  for (const auto& caller : mStorage->getPossibleCallers(source->id()))
+  auto callers = mStorage->getPossibleCallers(source->id());
+  for (const auto& caller : callers)
   {
     auto name = caller->properties[ConfigKeys::NAME];
     if (name.isNull() || !name.isValid())
@@ -737,11 +770,17 @@ VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)
     auto events = mStorage->getEventsFromNode(caller->id);
     for (const auto& event : events)
       eventWidget->addItem(name.toString() + "." + event->name, event->id);
+
+    eventWidget->setCurrentText(transition->getEvent());
   }
+
+  connect(eventWidget, &QComboBox::currentTextChanged, this, [=](const QString& text) {
+    transition->setEvent(text);
+  });
 
   layout()->addWidget(eventWidget);
 
-  // static_cast<QVBoxLayout*>(layout())->addStretch();
+  static_cast<QVBoxLayout*>(layout())->addStretch();
 
   return VoidResult();
 }

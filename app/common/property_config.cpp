@@ -6,6 +6,7 @@
 #include <QJsonArray>
 
 #include "keys.h"
+#include "types.h"
 
 PropertiesConfig::PropertiesConfig()
     : isConfigValid(true)
@@ -135,6 +136,8 @@ QJsonObject PropertiesConfig::toJson() const
       data[ConfigKeys::DEFAULT] = defaultValue.toInt();
     else if (type == Types::PropertyTypes::REAL)
       data[ConfigKeys::DEFAULT] = defaultValue.toDouble();
+    else if (type == Types::PropertyTypes::ENUM)
+      data[ConfigKeys::DEFAULT] = defaultValue.toString();
     else
       data[ConfigKeys::DEFAULT] = defaultValue.toJsonObject();
   }

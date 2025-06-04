@@ -1,8 +1,7 @@
 #include "dezyne_generator.h"
-#include <qcoreapplication.h>
-#include <qdir.h>
-#include <qobject.h>
 
+#include <QJsonArray>
+#include <QJsonObject>
 #include <QFile>
 #include <QFileInfo>
 #include <QTextStream>
@@ -65,6 +64,8 @@ QString DezyneGenerator::generateNode(const NodeSaveInfo& node)
     code += generatePresenceSensor(node);
   else if (type == "Generic::Component")
     code += generateComponent(node);
+  else if (type == "Generic::Interface")
+    code += generateInterface(node);
   
   return code;
 }
@@ -85,6 +86,10 @@ QString DezyneGenerator::generateBehaviourNode(const NodeSaveInfo& node, const A
     code += generateAction(node, arg, flow, format);
   else if (type == "Generic::Condition")
     code += generateCondition(node, arg, flow, format);
+  else if (type == "Generic::Assign")
+    code += generateAssign(node, arg, flow, format);
+  else if (type == "Generic::State")
+    code += generateState(node, arg, flow, format);
 
   return code;
 }
@@ -129,7 +134,22 @@ QString DezyneGenerator::generateTimer(const NodeSaveInfo& node)
     file.close();
   }
   
-  return QString();  
+  QString code = "";
+  for (const auto& f : node.flows)
+  {
+    LOG_DEBUG("Generating flow %s", qPrintable(f->name));
+    // Find the start node
+    for (const auto& n : f->nodes)
+    {
+      if (n->nodeId != "Generic::Start")
+        continue;
+
+      code += generateStart(node.properties[ConfigKeys::NAME].toString(), *n, *f, "    ");
+      break;
+    }
+  }
+  
+  return code;  
 }
 
 QString DezyneGenerator::generateAuthenticator(const NodeSaveInfo& node)
@@ -153,7 +173,22 @@ QString DezyneGenerator::generateAuthenticator(const NodeSaveInfo& node)
     file.close();
   }
 
-  return QString();  
+  QString code = "";
+  for (const auto& f : node.flows)
+  {
+    LOG_DEBUG("Generating flow %s", qPrintable(f->name));
+    // Find the start node
+    for (const auto& n : f->nodes)
+    {
+      if (n->nodeId != "Generic::Start")
+        continue;
+
+      code += generateStart(node.properties[ConfigKeys::NAME].toString(), *n, *f, "    ");
+      break;
+    }
+  }
+  
+  return code;  
 }
 
 QString DezyneGenerator::generateSiren(const NodeSaveInfo& node)
@@ -178,7 +213,23 @@ QString DezyneGenerator::generateSiren(const NodeSaveInfo& node)
     out << "}";
     file.close();
   }
-  return QString();  
+
+  QString code = "";
+  for (const auto& f : node.flows)
+  {
+    LOG_DEBUG("Generating flow %s", qPrintable(f->name));
+    // Find the start node
+    for (const auto& n : f->nodes)
+    {
+      if (n->nodeId != "Generic::Start")
+        continue;
+
+      code += generateStart(node.properties[ConfigKeys::NAME].toString(), *n, *f, "    ");
+      break;
+    }
+  }
+  
+  return code;  
 }
 
 QString DezyneGenerator::generatePresenceSensor(const NodeSaveInfo& node)
@@ -201,7 +252,22 @@ QString DezyneGenerator::generatePresenceSensor(const NodeSaveInfo& node)
     out << "}";
     file.close();
   }
-  return QString();  
+  QString code = "";
+  for (const auto& f : node.flows)
+  {
+    LOG_DEBUG("Generating flow %s", qPrintable(f->name));
+    // Find the start node
+    for (const auto& n : f->nodes)
+    {
+      if (n->nodeId != "Generic::Start")
+        continue;
+
+      code += generateStart(node.properties[ConfigKeys::NAME].toString(), *n, *f, "    ");
+      break;
+    }
+  }
+  
+  return code;  
 }
 
 QString DezyneGenerator::generateComponent(const NodeSaveInfo& node)
@@ -213,17 +279,12 @@ QString DezyneGenerator::generateComponent(const NodeSaveInfo& node)
 
   // Create a file for each top level component
   QFile file(mOutputFolder.filePath(name + ".dzn"));
-  if (node.parentId.isEmpty())
+  if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
   {
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
-    {
-      LOG_WARNING("Failed to open device for writing");
-      return code;
-    }
-
-    mImports.clear();
+    LOG_WARNING("Failed to open device for writing");
+    return code;
   }
-
+  
   // Generate child code
   for (const auto& child : node.children)
     code += generateNode(*child);
@@ -245,34 +306,207 @@ QString DezyneGenerator::generateComponent(const NodeSaveInfo& node)
     }
   }
 
-  if (node.parentId.isEmpty())
-  {
-    QTextStream out(&file);
-    for (const auto& imp : mImports)
-      out << "import " + imp + ";\n";
+  QTextStream out(&file);
+  for (const auto& imp : mImports)
+    out << "import " + imp + ";\n";
 
-    if (!mImports.isEmpty())
-      out << "\n";
+  if (!mImports.isEmpty())
+    out << "\n";
     
-    out << "component " + name + "\n";
-    out << "{\n";
+  out << "component " + name + "\n";
+  out << "{\n";
 
-    for (const auto& child : node.children)
-    {
-      auto childName = fixCase(child->properties["name"].toString());
-      out << "  requires i" + childName + " " + childName + ";\n";
-    }
-      
-    out << "\n  behaviour\n";
-    out << "  {\n";
-    out << code;
-    out << "  }\n";
-    out << "}\n";
-
-    file.close();
+  // TODO(felaze): I really need to take some day to clean this and the widget codes.
+  // - More widgets, maybe even one per property type
+  // - The generation should use more inheritance, a lot of the code here is repeated
+  for (const auto& child : node.children)
+  {
+    auto childName = fixCase(child->properties["name"].toString());
+    out << "  requires i" + childName + " " + childName + ";\n";
   }
+      
+  out << "\n  behaviour\n";
+  out << "  {\n";
+  for (const auto& state : node.fields)
+  {
+    if (state.type == Types::PropertyTypes::ENUM)
+    {
+      out << "   enum " + state.options.at(0).defaultValue.toString() + " {\n";  
+      QString enumValues = "";
+      for (const auto& opt : state.options.at(1).options)
+        enumValues += "    " + opt.id + ",\n";
+
+      enumValues.chop(2);
+      out << enumValues;
+      out << "  }\n";
+
+      out << "  " + state.options.at(0).defaultValue.toString() + " " + state.id + " = " + state.defaultValue.toString() + ";\n"; 
+    }
+    else
+    {
+      out << "  " + Types::PropertyTypesToString(state.type) + " " + state.id + " = " + state.defaultValue.toString() + ";\n";       
+    }
+  }
+  out << code;
+  out << "  }\n";
+  out << "}\n";
+
+  file.close();
 
   return code; 
+}
+
+QString DezyneGenerator::generateInterface(const NodeSaveInfo& node)
+{
+  QString code = "";
+
+  // Generate necessary wrappers
+  QString name = fixCase(node.properties["name"].toString());
+
+  // Create a file for each top level component
+  QFile file(mOutputFolder.filePath(name + ".dzn"));
+  if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
+  {
+    LOG_WARNING("Failed to open device for writing");
+    return code;
+  }
+  
+  // Generate child code
+  for (const auto& child : node.children)
+    code += generateNode(*child);
+
+  // Generate my structural code
+  QString behaviour = "";
+  behaviour += generateBehaviour(*node.behaviour);
+
+  // Generate flows    
+  for (const auto& f : node.flows)
+  {
+    LOG_DEBUG("Generating flow %s", qPrintable(f->name));
+    // Find the start node
+    for (const auto& n : f->nodes)
+    {
+      if (n->nodeId != "Generic::Start")
+        continue;
+
+      code += generateStart(node.properties[ConfigKeys::NAME].toString(), *n, *f, "    ");
+      break;
+    }
+  }
+
+  QTextStream out(&file);
+    
+  out << "interface i" + name + "\n";
+  out << "{\n";
+
+  for (const auto& event : node.flows)
+  {
+    QString args = "";
+    out << "  " + Types::ConnectorTypeToString(event->type) + " " + Types::PropertyTypesToString(event->returnType) + " " + event->name + "(" + args + ");\n";  
+  }
+  
+  // TODO(felaze): I really need to take some day to clean this and the widget codes.
+  // - More widgets, maybe even one per property type
+  // - The generation should use more inheritance, a lot of the code here is repeated
+  for (const auto& child : node.children)
+  {
+    auto childName = fixCase(child->properties["name"].toString());
+    out << "  requires i" + childName + " " + childName + ";\n";
+  }
+      
+  out << "\n  behaviour\n";
+  out << "  {\n";
+  for (const auto& state : node.fields)
+  {
+    if (state.type == Types::PropertyTypes::ENUM)
+    {
+      out << "    enum " + state.options.at(0).defaultValue.toString() + " {\n";  
+      QString enumValues = "";
+      for (const auto& opt : state.options.at(1).options)
+        enumValues += "      " + opt.id + ",\n";
+
+      enumValues.chop(2);
+      out << enumValues;
+      out << "\n    };\n";
+
+      out << "    " + state.options.at(0).defaultValue.toString() + " " + state.id + " = " + state.defaultValue.toString() + ";\n"; 
+    }
+    else
+    {
+      out << "    " + Types::PropertyTypesToString(state.type) + " " + state.id + " = " + state.defaultValue.toString() +  ";\n";       
+    }
+  }
+  out << "\n";
+  out << behaviour;
+  out << "  }\n";
+  out << "}\n";
+
+  file.close();
+
+  return code; 
+}
+
+QString DezyneGenerator::generateBehaviour(const FlowSaveInfo& flow)
+{
+  QString code = "";
+
+  LOG_DEBUG("Generating behaviour");
+
+  for (const auto& node : flow.nodes)
+  {
+    // Find the start node
+    if (node->nodeId != "Generic::State")
+      continue;
+    
+    Argument arg;
+    mGeneratedIds.clear();
+    
+    LOG_DEBUG("Generating code for state: %s", qPrintable(node->properties["name"].toString()));
+    code += "    [";
+    auto info = node->properties["state"].toJsonObject();
+    qDebug() << info;
+    if (info[ConfigKeys::TYPE].toString() == Types::PropertyTypesToString(Types::PropertyTypes::ENUM))
+      code += info["fields"].toString() + "." + info["events"].toString();
+    else
+      code += "aaah";
+    
+    code += "] {\n";
+    for (const auto& transition : node->transitions)
+    {
+      QString name = fixCase(transition->event);
+      if (transition->label == "optional")
+        name = "optional";
+      
+      code += "      on " + name + " {\n";
+      auto dst = findDestination(transition->dstId, flow);
+      if (dst != nullptr)
+        code += generateBehaviourNode(*dst, arg, flow, "        ");
+      code += "      }\n";
+    }
+    code += "    }\n";
+  }
+  
+  return code;
+}
+
+QString DezyneGenerator::generateState(const NodeSaveInfo& node, const Argument& arg, const FlowSaveInfo& flow, const QString& format)
+{
+  QString code = "";
+
+  auto info = node.properties["state"].toJsonObject();
+  qDebug() << info;
+  if (info[ConfigKeys::TYPE].toString() == Types::PropertyTypesToString(Types::PropertyTypes::ENUM))
+  {    
+    code += format + info["fields"].toString() + " = " + info["events"].toString() + ";\n";
+  }
+  else
+  {
+    code += format + "blah";
+  }
+
+  mGeneratedIds.push_back(node.id);
+
+  return code;
 }
 
 QString DezyneGenerator::generateStart(const QString& parent, const NodeSaveInfo& node, const FlowSaveInfo& flow, const QString& format)
@@ -386,6 +620,25 @@ QString DezyneGenerator::generateCondition(const NodeSaveInfo& node, const Argum
   return code;  
 }
 
+QString DezyneGenerator::generateAssign(const NodeSaveInfo& node, const Argument& arg, const FlowSaveInfo& flow, const QString& format)
+{
+  QString code = "";
+  auto value = node.properties["state"];
+  if (!value.isValid())
+    return code;
+
+  auto values = value.toJsonArray();
+  for (const auto& val : values)
+  {
+    auto obj = val.toObject();    
+    code += format + obj["variable"].toString() + " = " + obj["value"].toString() + "\n";
+  }
+
+  code += generateTransitions(node, arg, flow, format);
+  
+  return code;
+}
+
 std::shared_ptr<NodeSaveInfo> DezyneGenerator::findDestination(const QString& nodeId, const FlowSaveInfo& flow) const
 {
   for (const auto& dst : flow.nodes)
@@ -400,5 +653,5 @@ std::shared_ptr<NodeSaveInfo> DezyneGenerator::findDestination(const QString& no
 
 QString DezyneGenerator::fixCase(const QString& name)
 {
-  return name.toLower();
+  return name.toLower().replace(" ", "_");
 }

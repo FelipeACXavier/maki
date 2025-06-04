@@ -1,4 +1,5 @@
 #include "node.h"
+#include <qhashfunctions.h>
 
 #include <QGraphicsScene>
 #include <QGraphicsSceneMouseEvent>
@@ -282,7 +283,6 @@ VoidResult NodeItem::setField(const QString& key, const PropertiesConfig& proper
     if (field.id != key)
       continue;
 
-    LOG_DEBUG("Setting field: %s", qPrintable(field.id));
     field = property;
     return VoidResult();
   }
@@ -539,19 +539,20 @@ void NodeItem::addTransition(TransitionItem* transition)
     if (!found)
       mStorage->transitions.push_back(transition->storage());
 
-    // for (auto& t : transitions())
-    // {
-    //   if (transition->source()->id() == id() && t->destination()->id() == id())
-    //   {
-    //     transition->setEdge(TransitionItem::Edge::FORWARD);
-    //     t->setEdge(TransitionItem::Edge::BACKWARD);
-    //   }
-    //   else if (transition->destination()->id() == id() && t->source()->id() == id())
-    //   {
-    //     transition->setEdge(TransitionItem::Edge::BACKWARD);
-    //     t->setEdge(TransitionItem::Edge::FORWARD);
-    //   }
-    // }
+    for (auto& t : transitions())
+    {
+      // If I am the source of this transition
+      // Check whether we have another transition with me as destination
+      auto src1 = transition->source()->id();
+      auto dst1 = transition->destination()->id();
+      auto src2 = t->source()->id();
+      auto dst2 = t->destination()->id();
+      if (((src1 == dst2) && (src2 == dst1)))
+      {
+        transition->setEdge(TransitionItem::Edge::FORWARD);
+        t->setEdge(TransitionItem::Edge::BACKWARD);
+      }
+    }
   }
 
   bool found = false;

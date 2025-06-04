@@ -536,9 +536,10 @@ void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
     return;
   }
 
-  for (int i = 1; i < mCanvasPanel->count(); ++i)
+  for (int i = 1; i < mCanvasPanel->count() && flow != nullptr; ++i)
   {
-    if (mCanvasPanel->tabText(i) == flowName)
+    auto prop = mCanvasPanel->widget(i)->property("id");
+    if (prop.isValid() && prop.toString() == flow->id())
     {
       mCanvasPanel->setCurrentIndex(i);
       return;
@@ -564,6 +565,8 @@ void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
   // Add default start and end nodes to flow
   canvas->populate(flow);
 
+  newView->setProperty("id", flow->id());
+  LOG_DEBUG("Set tab property to %s", qPrintable(flow->id()));
   mCanvasPanel->addTab(newView, flowName);
   mCanvasPanel->setCurrentWidget(newView);
 }

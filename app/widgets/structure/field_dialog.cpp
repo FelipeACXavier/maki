@@ -123,54 +123,18 @@ void FieldDialog::createTypeInput(QWidget* parent)
 void FieldDialog::createArgumentInput(QWidget* parent)
 {
   // TODO(felaze): Make this field based on the type
-  // QLabel* argumentLabel = new QLabel(tr("Default value"), parent);
-  // layout()->addWidget(argumentLabel);
+  QLabel* nameLabel = new QLabel(tr("Default value"), parent);
+  layout()->addWidget(nameLabel);
 
-  // // Create table to hold the arguments
-  // QTableView* args = new QTableView(parent);
-  // QStandardItemModel* model = new QStandardItemModel(0, 2);
-  // args->setFocusPolicy(Qt::ClickFocus);
+  QLineEdit* name = new QLineEdit(parent);
+  name->setText(mStorage.defaultValue.toString());
+  name->setFocusPolicy(Qt::ClickFocus);
 
-  // model->setHorizontalHeaderItem(0, new QStandardItem(tr("Name")));
-  // model->setHorizontalHeaderItem(1, new QStandardItem(tr("Type")));
-
-  // args->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-  // args->setContextMenuPolicy(Qt::CustomContextMenu);
-
-  // addDynamicWidget((QVBoxLayout*)layout(), args, parent);
-
-  // if (mStorage->modifiable)
-  //   args->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::EditKeyPressed);
-  // else
-  //   args->setEditTriggers(QAbstractItemView::NoEditTriggers);
-  // args->setModel(model);
-
-  // for (const auto& field : mStorage->arguments)
-  // {
-  //   int newRow = model->rowCount();
-  //   model->insertRow(newRow);
-  //   model->setItem(newRow, 0, new QStandardItem(field.id));
-  //   model->setItem(newRow, 1, new QStandardItem(Types::PropertyTypesToString(field.type)));
-  // }
-
-  // connect(model, &QStandardItemModel::itemChanged, this, &FieldDialog::updateArgumentTable);
-
-  // QPushButton* button = new QPushButton(parent);
-  // button->setEnabled(mStorage->modifiable);
-  // connect(button, &QPushButton::pressed, this, [=]() {
-  //   int newRow = model->rowCount();
-  //   model->insertRow(newRow);
-  //   model->setItem(newRow, 0, new QStandardItem(""));
-  //   model->setItem(newRow, 1, new QStandardItem(""));
-
-  //   // Create new argument in the storage as well
-  //   mStorage->arguments.push_back(PropertiesConfig());
-  // });
-
-  // button->setFocusPolicy(Qt::NoFocus);
-  // button->setText(tr("Add argument"));
-  // button->setMaximumWidth(100);
-  // layout()->addWidget(button);
+  connect(name, &QLineEdit::editingFinished, this, [=]() {
+    LOG_DEBUG("Setting default to %s", qPrintable(name->text()));
+    mStorage.defaultValue = name->text();
+  });
+  layout()->addWidget(name);
 }
 
 void FieldDialog::updateArgumentTable(QStandardItem* item)
@@ -246,7 +210,6 @@ void FieldDialog::addEnumField(QWidget* parent)
   QLabel* enumTypeLabel = new QLabel(tr("Enum values"), group);
 
   QListWidget* listWidget = new QListWidget(group);
-  listWidget->setFocusPolicy(Qt::StrongFocus);
 
   QLineEdit* input = new QLineEdit(group);
   input->setFocusPolicy(Qt::StrongFocus);
@@ -289,12 +252,10 @@ void FieldDialog::addEnumField(QWidget* parent)
   connect(name, &QLineEdit::editingFinished, this, [=]() {
     for (auto& opt : mStorage.options)
     {
-      qDebug() << "Looking for name" << opt.id;
       if (opt.id != "name")
         continue;
 
       opt.defaultValue = name->text();
-      qDebug() << "Setting new default value" << opt.id << opt.defaultValue << name->text();
       break;
     }
   });
@@ -316,6 +277,7 @@ void FieldDialog::addEnumField(QWidget* parent)
 
       listWidget->addItem(input->text());
       input->clear();
+      input->focusWidget();
     }
   });
 

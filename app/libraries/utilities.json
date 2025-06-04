@@ -28,6 +28,12 @@
               "default": "#DBB146"
             }
           ],
+          "controls": [
+            {
+              "id": "Add event",
+              "type": "add event"
+            }
+          ],
           "events": [
             {
               "id": "set",
@@ -112,10 +118,6 @@
               "id": "color",
               "type": "color",
               "default": "#35AA46"
-            },
-            {
-              "id": "token",
-              "type": "string"
             }
           ],
           "events": [

@@ -146,6 +146,7 @@ QDataStream& operator<<(QDataStream& out, const TransitionSaveInfo& info)
 {
   out << info.id;
   out << info.label;
+  out << info.event;
 
   out << info.srcId;
   out << info.srcPoint;
@@ -162,6 +163,7 @@ QDataStream& operator>>(QDataStream& in, TransitionSaveInfo& info)
 {
   in >> info.id;
   in >> info.label;
+  in >> info.event;
 
   in >> info.srcId;
   in >> info.srcPoint;
@@ -179,6 +181,7 @@ QJsonObject TransitionSaveInfo::toJson() const
   QJsonObject data;
   data[ConfigKeys::ID] = id;
   data[ConfigKeys::LABEL] = label;
+  data[ConfigKeys::EVENTS] = event;
 
   QJsonObject source;
   source[ConfigKeys::ID] = srcId;
@@ -200,6 +203,7 @@ TransitionSaveInfo TransitionSaveInfo::fromJson(const QJsonObject& data)
   TransitionSaveInfo info;
   info.id = data[ConfigKeys::ID].toString();
   info.label = data[ConfigKeys::LABEL].toString();
+  info.event = data[ConfigKeys::EVENTS].toString();
 
   info.srcId = data[ConfigKeys::SOURCE][ConfigKeys::ID].toString();
   info.srcPoint = JSON::toPointF(data[ConfigKeys::SOURCE][ConfigKeys::POSITION].toObject());

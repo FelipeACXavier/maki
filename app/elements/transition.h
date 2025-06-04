@@ -50,6 +50,9 @@ public:
   QString getName() const;
   void setName(const QString& name);
 
+  QString getEvent() const;
+  void setEvent(const QString& name);
+
   void setEdge(Edge edge);
 
   // "signals":

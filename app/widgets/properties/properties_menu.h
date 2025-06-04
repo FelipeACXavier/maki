@@ -62,7 +62,7 @@ private:
   VoidResult loadPropertyEventSelect(const PropertiesConfig& property, NodeItem* node);
   VoidResult loadPropertyComponentSelect(const PropertiesConfig& property, NodeItem* node);
 
-  void addStateAssignment(const PropertiesConfig& property, NodeItem* node, QWidget* parent);
+  void addStateAssignment(const PropertiesConfig& property, int index, NodeItem* node, QWidget* parent);
 
   // Control related actions
   VoidResult loadControls(NodeItem* node);
