@@ -507,15 +507,15 @@ void PropertiesMenu::addStateAssignment(const PropertiesConfig& property, NodeIt
   QComboBox* widget = new QComboBox(group);
   widget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 
-  auto callers = mStorage->getPossibleCallers(node->id());
+  auto callers = mStorage->getPossibleStates(node->id());
   for (const auto& caller : callers)
   {
-    auto callerName = caller->properties[ConfigKeys::NAME].toString();
+    QString callerName = "";
+    if (!caller->parentId.isEmpty())
+     callerName = caller->properties[ConfigKeys::NAME].toString() + ".";
+    
     for (const auto& field : caller->fields)
-    {
-      auto name = field.options.at(0).defaultValue.toString();
-      widget->addItem(callerName + "." + name);
-    }
+      widget->addItem(callerName + field.id);
   }
   
   QWidget* controls = new QWidget(group);

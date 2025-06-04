@@ -327,6 +327,10 @@ void MainWindow::onActionNew()
 
   // Repopulate the canvas
   SaveInfo emptySave;
+
+  // Gotta make sure we don't save over an old file
+  mSaveHandler->newFileCreated();
+
   canvas()->loadFromSave(emptySave);
 }
 

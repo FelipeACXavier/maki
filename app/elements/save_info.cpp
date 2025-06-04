@@ -525,6 +525,24 @@ std::shared_ptr<NodeSaveInfo> SaveInfo::findParentOfConstruct(const QString& nod
   return nullptr;
 }
 
+void SaveInfo::findStatesOfConstruct(QVector<std::shared_ptr<NodeSaveInfo>>& toReturn, QVector<std::shared_ptr<NodeSaveInfo>> nodes) const
+{
+  for (const auto& node : nodes)
+  {
+    if (!node->fields.isEmpty())
+      toReturn.push_back(node);
+
+    findStatesOfConstruct(toReturn, node->children);
+  }
+}
+
+QVector<std::shared_ptr<NodeSaveInfo>> SaveInfo::getPossibleStates(const QString& nodeId) const
+{
+  QVector<std::shared_ptr<NodeSaveInfo>> toReturn;
+  findStatesOfConstruct(toReturn, structuralNodes);
+  return toReturn;
+}
+
 QVector<std::shared_ptr<NodeSaveInfo>> SaveInfo::getPossibleCallers(const QString& nodeId) const
 {
   // Get the parent

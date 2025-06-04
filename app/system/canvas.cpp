@@ -663,17 +663,12 @@ VoidResult Canvas::loadFromSave(const QVector<std::shared_ptr<NodeSaveInfo>>& no
     auto createdNode = createNode(NodeCreation::Loading, node, node->position, parent);
 
     LOG_AND_RETURN_VOID_ON_FAILURE(loadFromSave(nodeInfo->children, createdNode));
-    // for (std::shared_ptr<NodeSaveInfo> childInfo : nodeInfo->children)
-    // {
-    //   // Children's positions take into account the relative prosition to the parent
-    //   LOG_DEBUG("Creating child node %s with parent %s", qPrintable(childInfo->id), qPrintable(childInfo->parentId));
-    //   auto child = createNode(NodeCreation::Loading, childInfo, childInfo->position, createdNode);
-    //   selectNode(child, false);
-    // }
 
+    (void)createdNode->createBehaviour(nodeInfo->behaviour);
+    
     for (const auto& flow : node->flows)
-      createdNode->createFlow(flow->name, flow);
-
+      (void)createdNode->createFlow(flow->name, flow);
+      
     selectNode(createdNode, false);
   }
 

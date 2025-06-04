@@ -19,6 +19,7 @@ public:
   VoidResult saveToFile(Canvas* canvas);
   VoidResult saveFileAs(Canvas* canvas);
 
+  void newFileCreated();
   Result<SaveInfo> load();
 
   enum class Function

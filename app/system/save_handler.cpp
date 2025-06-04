@@ -20,6 +20,11 @@ SaveHandler::SaveHandler(QWidget* parent)
 {
 }
 
+void SaveHandler::newFileCreated()
+{
+  mCurrentFile.clear();  
+}
+
 VoidResult SaveHandler::save(Canvas* canvas)
 {
   if (mCurrentFile.isEmpty() || mCurrentFile.isNull())
