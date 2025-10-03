@@ -4,12 +4,14 @@
 #include <QVBoxLayout>
 
 #include "config.h"
+#include "logging.h"
 #include "elements/draggable.h"
 
 static const int PADDING = 15;
 
 LibraryContainer::LibraryContainer(QGraphicsScene* scene)
     : QGraphicsView(scene)
+    , mLastItemY(0)
 {
   setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
@@ -53,7 +55,8 @@ VoidResult LibraryContainer::addNode(const QString& id, std::shared_ptr<NodeConf
   DraggableItem* item = new DraggableItem(id, config);
 
   // Center the item in the sidebar and make sure it is below the last item added
-  item->setPos(viewport()->width() / 2, getYOfLastItem() + PADDING);
+  item->setPos(static_cast<int>(viewport()->width() / 2), mLastItemY + PADDING);
+  mLastItemY = item->mapToScene(item->boundingRect().bottomLeft()).y();
 
   // Add item to scene
   scene()->addItem(item);
@@ -81,14 +84,3 @@ void LibraryContainer::adjustNodePositions()
   }
 }
 
-int LibraryContainer::getYOfLastItem() const
-{
-  QList<QGraphicsItem*> items = scene()->items();
-  for (const auto& item : items)
-  {
-    if (item->type() == DraggableItem::Type)
-      return item->mapToScene(item->boundingRect().bottomLeft()).y();
-  }
-
-  return 0;
-}

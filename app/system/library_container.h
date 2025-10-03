@@ -19,8 +19,8 @@ protected:
   void resizeEvent(QResizeEvent* event) override;
 
 private:
-  void adjustNodePositions();
-  int getYOfLastItem() const;
+  int mLastItemY;
 
   void updateSceneSize();
+  void adjustNodePositions();
 };
