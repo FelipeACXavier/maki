@@ -266,7 +266,7 @@ VoidResult FieldsMenu::loadControlAddEvent(const ControlsConfig& control, NodeIt
   // TODO(felaze): It would be nice to also show the nodes that trigger this event
   tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
   tableView->setModel(model);
-
+  
   for (const auto& event : node->events())
     addEventToTable(model, model->rowCount(), event);
 

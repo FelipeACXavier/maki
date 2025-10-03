@@ -78,8 +78,10 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
       parentNode = static_cast<NodeItem*>(item);
 
       // Add error message
-      if (!parentNode->acceptDrops())
+      if (!parentNode->acceptDrops()) {
+        LOG_WARNING("Tried to drop node on parent that does not accept drops");
         return;
+      }
     }
 
     // Make sure that no other nodes are selected before dropping
@@ -173,6 +175,8 @@ bool Canvas::nodeClickHandler(QGraphicsSceneMouseEvent* event, QGraphicsItem* it
     mNode = node;
     auto info = std::make_shared<TransitionSaveInfo>();
     mTransition = new TransitionItem(std::make_shared<TransitionSaveInfo>());
+    mTransition->setZValue(node->zValue() - 1);
+    LOG_INFO("Node: %s ZValue: %f %f", qPrintable(node->nodeId()), node->zValue(), mTransition->zValue());
 
     auto config = node->nextTransition();
     mTransition->setName(config.label);
@@ -310,6 +314,7 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     if (event->button() == Qt::LeftButton)
     {
       QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
+      LOG_INFO("Dropping transition: %d", item ? item->type() : -1);
       if (item && (item->type() == NodeItem::Type || item->type() == QGraphicsTextItem::Type))
       {
         NodeItem* node = static_cast<NodeItem*>(item->type() == QGraphicsTextItem::Type ? item->parentItem() : item);

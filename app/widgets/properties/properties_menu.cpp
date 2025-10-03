@@ -225,20 +225,22 @@ VoidResult PropertiesMenu::loadPropertyInt(const PropertiesConfig& property, Nod
   layout()->addWidget(nameLabel);
   
   QLineEdit* widget = new QLineEdit(this);
-  QIntValidator* validator = new QIntValidator(INT32_MIN, INT32_MIN, widget);
+  // QIntValidator* validator = new QIntValidator(INT32_MIN, INT32_MIN, widget);
 
   auto result = node->getProperty(property.id);
   if (!result.isValid())
     return VoidResult::Failed("Failed to get default value");
 
   widget->setText(result.toString());
-  widget->setValidator(validator);
+  // widget->setValidator(validator);
 
-  connect(widget, &QLineEdit::returnPressed, this, [=]() {
+  connect(widget, &QLineEdit::editingFinished, this, [=]() {
     bool ok;
     int newValue = widget->text().toInt(&ok);
     if (ok)
       node->setProperty(property.id, newValue);
+    else
+      LOG_WARNING("Failed to set property of node %s to %d (%s)", qPrintable(node->nodeId()), newValue, qPrintable(widget->text()));
   });
 
   widget->setFont(Fonts::Property);
@@ -870,6 +872,12 @@ VoidResult PropertiesMenu::loadControlAddField(const ControlsConfig& control, No
 
 VoidResult PropertiesMenu::loadControlAddEvent(const ControlsConfig& control, NodeItem* node, QWidget* parent, QHBoxLayout* controlLayout)
 {
+  QString label = ToLabel(QStringLiteral("Events"));
+  QLabel* nameLabel = new QLabel(label);
+
+  nameLabel->setFont(Fonts::Label);
+  layout()->addWidget(nameLabel);
+
   // Create table to hold new fields
   QTableView* tableView = new QTableView(parent);
   tableView->setObjectName("EventTable");
@@ -891,8 +899,10 @@ VoidResult PropertiesMenu::loadControlAddEvent(const ControlsConfig& control, No
   tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
   tableView->setModel(model);
 
-  for (const auto& event : node->events())
+  for (const auto& event : node->events()) {
+    LOG_INFO("Setting events for %s (%d): %s", qPrintable(node->nodeName()), model->rowCount(), qPrintable(event->name));
     addEventToTable(model, model->rowCount(), event);
+  }
 
   connect(tableView, &QTableView::customContextMenuRequested, [this, tableView, node](const QPoint& pos) {
     showEventContextMenu(tableView, node, pos);
@@ -902,6 +912,7 @@ VoidResult PropertiesMenu::loadControlAddEvent(const ControlsConfig& control, No
     openEventDialog(tableView, node, index.row());
   });
 
+  layout()->addWidget(tableView);
   if (control.id.isEmpty())
     return VoidResult();
 
@@ -911,7 +922,6 @@ VoidResult PropertiesMenu::loadControlAddEvent(const ControlsConfig& control, No
   });
 
   button->setText(control.id);
-  layout()->addWidget(tableView);
   layout()->addWidget(button);
 
   return VoidResult();
@@ -919,6 +929,12 @@ VoidResult PropertiesMenu::loadControlAddEvent(const ControlsConfig& control, No
 
 VoidResult PropertiesMenu::loadControlAddState(const ControlsConfig& control, NodeItem* node, QWidget* parent, QHBoxLayout* controlLayout)
 {
+  QString label = ToLabel(QStringLiteral("States"));
+  QLabel* nameLabel = new QLabel(label);
+
+  nameLabel->setFont(Fonts::Label);
+  layout()->addWidget(nameLabel);
+
   // Create table to hold new fields
   QTableView* tableView = new QTableView(parent);
   tableView->setObjectName("StateTable");

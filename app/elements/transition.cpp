@@ -17,7 +17,7 @@ TransitionItem::TransitionItem(std::shared_ptr<TransitionSaveInfo> storage)
     , mStorage(storage)
 {
   // Make sure the transitions are behind the nodes
-  setZValue(-1);
+  // setZValue(-1);
   setFlags(QGraphicsItem::ItemIsSelectable);
 
   // Set line color and width

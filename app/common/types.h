@@ -75,7 +75,6 @@ QString ControlTypesToString(ControlTypes type);
 
 enum class LibraryTypes
 {
-
   UNKNOWN = 0,
   STRUCTURAL,
   BEHAVIOUR
