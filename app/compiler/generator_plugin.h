@@ -19,6 +19,7 @@ enum class Language
   Python,
   JSON,
   Dezyne,
+  Rozyne,
   Custom
 };
 }
@@ -32,6 +33,6 @@ public:
   virtual QString languageName() const = 0;
 };
 
-#define GeneratorPlugin_iid "com.felipexavier.GeneratorPlugin"
+#define GeneratorPlugin_iid "com.felipexavier.GeneratorPlugin/1.0"
 
 Q_DECLARE_INTERFACE(GeneratorPlugin, GeneratorPlugin_iid)

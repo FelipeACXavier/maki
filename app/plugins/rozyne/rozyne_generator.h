@@ -3,11 +3,14 @@
 #include <QDir>
 #include <QObject>
 
-#include "elements/save_info.h"
-#include "generator_plugin.h"
+#include "compiler/generator_plugin.h"
 
-class DezyneGenerator : public GeneratorPlugin
+class RozyneGenerator : public QObject, public GeneratorPlugin
 {
+  Q_OBJECT
+  Q_PLUGIN_METADATA(IID GeneratorPlugin_iid FILE "rozyne_generator.json")
+  Q_INTERFACES(GeneratorPlugin)
+
 public:
   QString generateCode(std::shared_ptr<SaveInfo> nodes) override;
   generator::Language supportedLanguage() const override;
@@ -29,21 +32,18 @@ private:
   QString generateTransitions(const NodeSaveInfo& node, const Argument& arg, const FlowSaveInfo& flow, const QString& format);
 
   // These are the block generators
-  QString generateTimer(const NodeSaveInfo& node);
-  QString generateAuthenticator(const NodeSaveInfo& node);
-  QString generateSiren(const NodeSaveInfo& node);
-  QString generatePresenceSensor(const NodeSaveInfo& node);
-  QString generateComponent(const NodeSaveInfo& node);
-  QString generateInterface(const NodeSaveInfo& node);
-  QString generateBehaviour(const FlowSaveInfo& node);
+  QString generateComponent(const NodeSaveInfo& node, const QString& code);
+  QString generateCapability(const NodeSaveInfo& node);
 
   QString generateStart(const QString& parent, const NodeSaveInfo& node, const FlowSaveInfo& flow, const QString& format);
   QString generateEnd(const NodeSaveInfo& node, const Argument& arg, const FlowSaveInfo& flow, const QString& format);
   QString generateError(const NodeSaveInfo& node, const Argument& arg, const FlowSaveInfo& flow, const QString& format);
-  QString generateAction(const NodeSaveInfo& node, const Argument& arg, const FlowSaveInfo& flow, const QString& format);
-  QString generateCondition(const NodeSaveInfo& node, const Argument& arg, const FlowSaveInfo& flow, const QString& format);
-  QString generateAssign(const NodeSaveInfo& node, const Argument& arg, const FlowSaveInfo& flow, const QString& format);
-  QString generateState(const NodeSaveInfo& node, const Argument& arg, const FlowSaveInfo& flow, const QString& format);
+
+  QString generateAsyncTask(const NodeSaveInfo& node, const Argument& arg, const FlowSaveInfo& flow, const QString& format);
+  QString generateSyncTask(const NodeSaveInfo& node, const Argument& arg, const FlowSaveInfo& flow, const QString& format);
+  QString generateWithin(const NodeSaveInfo& node, const Argument& arg, const FlowSaveInfo& flow, const QString& format);
+  QString generateRepeat(const NodeSaveInfo& node, const Argument& arg, const FlowSaveInfo& flow, const QString& format);
+  QString generateStrategy(const NodeSaveInfo& node, const Argument& arg, const FlowSaveInfo& flow, const QString& format);
 
   // Helpers
   QString fixCase(const QString& name);

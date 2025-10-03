@@ -5,6 +5,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
 
 # Compile libraries
 add_subdirectory(common)
+add_subdirectory(plugins)
 
 qt_standard_project_setup()
 
