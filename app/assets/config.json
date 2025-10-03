@@ -5,7 +5,8 @@
     "math",
     "grpc",
     "ros2",
-    "serial"
+    "serial",
+    "mission"
   ],
   "layout": {
     "leftPanel": {

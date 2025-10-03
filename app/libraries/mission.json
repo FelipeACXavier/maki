@@ -1,0 +1,619 @@
+{
+  "name": "Mission",
+  "author": "Felipe Xavier",
+  "libraries": [
+    {
+      "type": "structure",
+      "nodes": [
+        {
+          "type": "Component",
+          "body": {
+            "shape": "Rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#202020",
+            "borderColor": "#FFFFFF",
+            "width": 250,
+            "height": 250,
+            "z-index": -2
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Component"
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#202020"
+            }
+          ],
+          "controls": [
+            {
+              "id": "Add event",
+              "type": "add event"
+            },
+            {
+              "id": "Add state",
+              "type": "add state"
+            }
+          ]
+        },
+        {
+          "type": "Siren",
+          "body": {
+            "shape": "Rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#c45335",
+            "borderColor": "#FFFFFF",
+            "width": 500,
+            "height": 500,
+            "z-index": -2
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Siren"
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#c45335"
+            },
+            {
+              "id": "type",
+              "type": "string",
+              "default": "sync"
+            }
+          ],
+          "events": [
+            {
+              "id": "start",
+              "type": "in",
+              "returnType": "void",
+              "modifiable": false
+            },
+            {
+              "id": "stop",
+              "type": "in",
+              "returnType": "void",
+              "modifiable": false
+            }
+          ]
+        },
+        {
+          "type": "Picker",
+          "body": {
+            "shape": "Rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#cc7a3d",
+            "borderColor": "#FFFFFF",
+            "width": 500,
+            "height": 500,
+            "z-index": -2
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Picker"
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#cc7a3d"
+            },
+            {
+              "id": "type",
+              "type": "string",
+              "default": "async"
+            }
+          ],
+          "events": [
+            {
+              "id": "pick",
+              "type": "in",
+              "returnType": "void",
+              "modifiable": false
+            },
+            {
+              "id": "abort",
+              "type": "in",
+              "returnType": "void",
+              "modifiable": false
+            },
+            {
+              "id": "picked",
+              "type": "out",
+              "returnType": "void",
+              "modifiable": false
+            },
+            {
+              "id": "failed",
+              "type": "out",
+              "returnType": "void",
+              "modifiable": false
+            }
+          ]
+        },
+        {
+          "type": "ImageRecognition",
+          "body": {
+            "shape": "Rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#e6c994",
+            "borderColor": "#FFFFFF",
+            "width": 500,
+            "height": 500,
+            "z-index": -2
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "ImageRecognition"
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#e6c994"
+            },
+            {
+              "id": "type",
+              "type": "string",
+              "default": "async"
+            }
+          ],
+          "events": [
+            {
+              "id": "recognize",
+              "type": "in",
+              "returnType": "void",
+              "modifiable": false
+            },
+            {
+              "id": "abort",
+              "type": "in",
+              "returnType": "void",
+              "modifiable": false
+            },
+            {
+              "id": "found",
+              "type": "out",
+              "returnType": "void",
+              "modifiable": false
+            }
+          ]
+        },
+        {
+          "type": "Drive",
+          "body": {
+            "shape": "Rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#74a892",
+            "borderColor": "#FFFFFF",
+            "width": 500,
+            "height": 500,
+            "z-index": -2
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Drive"
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#74a892"
+            },
+            {
+              "id": "type",
+              "type": "string",
+              "default": "async"
+            }
+          ],
+          "events": [
+            {
+              "id": "to_position",
+              "type": "in",
+              "returnType": "void",
+              "modifiable": false,
+              "arguments": [
+                  {
+                    "id": "x",
+                    "type": "float"
+                  },
+                  {
+                    "id": "y",
+                    "type": "float"
+                  }
+              ]
+            },
+            {
+              "id": "abort",
+              "type": "in",
+              "returnType": "void",
+              "modifiable": false
+            },
+            {
+              "id": "in_position",
+              "type": "out",
+              "returnType": "void",
+              "modifiable": false,
+              "arguments": [
+                  {
+                    "id": "x",
+                    "type": "float"
+                  },
+                  {
+                    "id": "y",
+                    "type": "float"
+                  }
+              ]
+            },
+            {
+              "id": "path_blocked",
+              "type": "out",
+              "returnType": "void",
+              "modifiable": false
+            }
+          ]
+        },
+        {
+          "type": "Timer",
+          "body": {
+            "shape": "Rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#008585",
+            "borderColor": "#FFFFFF",
+            "width": 500,
+            "height": 500,
+            "z-index": -2
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Timer"
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#008585"
+            }
+          ],
+          "controls": [
+            {
+              "id": "Add event",
+              "type": "add event"
+            }
+          ],
+          "events": [
+            {
+              "id": "set",
+              "type": "in",
+              "returnType": "void",
+              "modifiable": false
+            },
+            {
+              "id": "reset",
+              "type": "in",
+              "returnType": "void",
+              "modifiable": false
+            },
+            {
+              "id": "timeout",
+              "type": "out",
+              "returnType": "void",
+              "modifiable": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "internal behaviour",
+      "nodes": [
+        {
+          "type": "Start",
+          "body": {
+            "shape": "Ellipse",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#ffc300",
+            "borderColor": "#FFFFFF",
+            "width": 50,
+            "height": 50
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Start"
+            },
+            {
+              "id": "mode",
+              "type": "select",
+              "default": "signal",
+              "options": [
+                {
+                  "id": "signal",
+                  "type": "string"
+                },
+                {
+                  "id": "timed",
+                  "type": "string"
+                }
+              ]
+            }
+          ],
+          "connectors": [
+            {
+              "id": "output",
+              "type": "out",
+              "position": "east"
+            }
+          ],
+          "behaviour": {},
+          "help": {
+            "message": "Start of a behavioural flow. This can be a reaction to an event or a timed action"
+          }
+        },
+        {
+          "type": "End",
+          "body": {
+            "shape": "Ellipse",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#6a994e",
+            "borderColor": "#FFFFFF",
+            "width": 50,
+            "height": 50
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "End"
+            }
+          ],
+          "connectors": [
+            {
+              "id": "input",
+              "type": "in",
+              "position": "west"
+            }
+          ],
+          "behaviour": {},
+          "help": {
+            "message": "End of a happy behavioural flow. This must always be present in a flow"
+          }
+        },
+        {
+          "type": "Error",
+          "body": {
+            "shape": "Ellipse",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#bc4749",
+            "borderColor": "#FFFFFF",
+            "width": 50,
+            "height": 50
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Error"
+            }
+          ],
+          "connectors": [
+            {
+              "id": "input",
+              "type": "in",
+              "position": "west"
+            }
+          ],
+          "behaviour": {},
+          "help": {
+            "message": "End of an errored behavioural flow. This indicates the flow of a bad behaviour."
+          }
+        },
+        {
+          "type": "Async task",
+          "body": {
+            "shape": "rounded rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#202020",
+            "borderColor": "#FFFFFF",
+            "borderRadius": 10,
+            "width": 100,
+            "height": 50
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Async task"
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#202020"
+            },
+            {
+              "id": "component",
+              "type": "component_select"
+            }
+          ],
+          "controls": []
+        },
+        {
+          "type": "Sync task",
+          "body": {
+            "shape": "rounded rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#202020",
+            "borderColor": "#FFFFFF",
+            "borderRadius": 10,
+            "width": 100,
+            "height": 50
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Sync task"
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#202020"
+            },
+            {
+              "id": "component",
+              "type": "component_select",
+              "options": [
+                {
+                  "id": "event",
+                  "type": "event_select"
+                }
+              ]
+            }
+          ],
+          "controls": []
+        },
+        {
+          "type": "Strategy",
+          "body": {
+            "shape": "rounded rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#202020",
+            "borderColor": "#FFFFFF",
+            "borderRadius": 10,
+            "width": 100,
+            "height": 50
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Strategy"
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#202020"
+            },
+            {
+              "id": "component",
+              "type": "component_select",
+              "options": [
+                {
+                  "id": "event",
+                  "type": "event_select"
+                }
+              ]
+            }
+          ],
+          "controls": []
+        },
+        {
+          "type": "Join",
+          "body": {
+            "shape": "Ellipse",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#74a892",
+            "borderColor": "#FFFFFF",
+            "width": 50,
+            "height": 50
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Join"
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#74a892"
+            }
+          ],
+          "controls": []
+        },
+        {
+          "type": "Within",
+          "body": {
+            "shape": "rounded rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#202020",
+            "borderColor": "#FFFFFF",
+            "borderRadius": 10,
+            "width": 100,
+            "height": 50
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Within"
+            },
+            {
+              "id": "time",
+              "type": "int"
+            }
+          ],
+          "behaviour": {},
+          "help": {
+            "message": "Performs the \"do\" strategy and if it does not conclude within the set time, it will trigger the \"else\" strategy."
+          },
+          "transitions": [
+            {
+              "id": "true",
+              "label": "do",
+              "modifiable": false
+            },
+            {
+              "id": "false",
+              "label": "else",
+              "modifiable": false
+            }
+          ]
+        },
+        {
+          "type": "Repeat",
+          "body": {
+            "shape": "rounded rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#202020",
+            "borderColor": "#FFFFFF",
+            "borderRadius": 10,
+            "width": 200,
+            "height": 100
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Repeat"
+            },
+            {
+              "id": "component",
+              "type": "component_select",
+              "options": [
+                {
+                  "id": "event",
+                  "type": "event_select"
+                }
+              ]
+            }
+          ],
+          "behaviour": {},
+          "help": {
+            "message": "Repeats the contained strategy forever"
+          }
+        }
+      ]
+    }
+  ]
+}
