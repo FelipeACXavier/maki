@@ -1,0 +1,4 @@
+[submodule "3rdparty/CppHelpers"]
+	path = 3rdparty/CppHelpers
+	url = https://github.com/FelipeACXavier/CppHelpers.git
+	branch = master
