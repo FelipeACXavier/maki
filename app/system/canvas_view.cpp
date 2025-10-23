@@ -1,4 +1,5 @@
 #include "canvas_view.h"
+
 #include <qgraphicsview.h>
 
 #include <QShortcut>
@@ -6,10 +7,7 @@
 #include "app_configs.h"
 #include "canvas.h"
 
-#define VIEW_CENTER viewport()->rect().center()
-#define VIEW_WIDTH viewport()->rect().width()
-#define VIEW_HEIGHT viewport()->rect().height()
-#define DEFAULT_ZOOM 1.0
+static constexpr qreal DEFAULT_ZOOM = 1.0;
 
 CanvasView::CanvasView(QWidget* parent)
 {
@@ -29,11 +27,13 @@ CanvasView::CanvasView(QWidget* parent)
   centerOn({0, 0});
 
   // TODO(felaze): make these configurable
-  mZoomDelta = 0.1;
+  mZoomDelta = 0.2;
   mPanSpeed = 1;
   mDoMousePanning = false;
   mDoKeyZoom = false;
-  mScale = DEFAULT_ZOOM;
+
+  mMinZoom = 0.2;
+  mMaxZoom = 10;
 
   mPanButton = Qt::MiddleButton;
   mZoomKey = Qt::Key_Control;
@@ -41,7 +41,7 @@ CanvasView::CanvasView(QWidget* parent)
 
 qreal CanvasView::getScale() const
 {
-  return mScale;
+  return transform().m11();
 }
 
 QPointF CanvasView::getCenter() const
@@ -49,12 +49,12 @@ QPointF CanvasView::getCenter() const
   return mCenterPoint;
 }
 
-void CanvasView::centerOn(const QGraphicsItem *item)
+void CanvasView::centerOn(const QGraphicsItem* item)
 {
   QGraphicsView::centerOn(item);
 }
 
-void CanvasView::centerOn(const QPointF &pos)
+void CanvasView::centerOn(const QPointF& pos)
 {
   mCenterPoint = pos;
   QGraphicsView::centerOn(mCenterPoint);
@@ -62,8 +62,16 @@ void CanvasView::centerOn(const QPointF &pos)
 
 void CanvasView::setScale(qreal scale)
 {
-  mScale = scale;
+  QTransform t;
+  const double snapped = quantisedScale(scale);
+  t.scale(snapped, snapped);
+  setTransform(t);
   update();
+}
+
+void CanvasView::setMaxSize()
+{
+  setSceneRect(INT_MIN / 2, INT_MIN / 2, INT_MAX, INT_MAX);
 }
 
 void CanvasView::keyPressEvent(QKeyEvent* event)
@@ -75,12 +83,18 @@ void CanvasView::keyPressEvent(QKeyEvent* event)
 
   if (mDoKeyZoom)
   {
-    if (key == Qt::Key_Plus)
-      zoomIn();
-    else if (key == Qt::Key_Minus)
-      zoomOut();
-    else if (key == Qt::Key_Equal)
-      resetZoom();
+    switch (key)
+    {
+      case Qt::Key_Plus:
+        zoomIn();
+        break;
+      case Qt::Key_Minus:
+        zoomOut();
+        break;
+      case Qt::Key_Equal:
+        resetZoom();
+        break;
+    }
   }
   else
   {
@@ -99,9 +113,15 @@ void CanvasView::keyReleaseEvent(QKeyEvent* event)
 void CanvasView::mouseMoveEvent(QMouseEvent* event)
 {
   if (mDoMousePanning)
+  {
     pan(mapToScene(event->pos()) - mapToScene(mLastMousePos));
+    event->accept();
+  }
+  else
+  {
+    QGraphicsView::mouseMoveEvent(event);
+  }
 
-  QGraphicsView::mouseMoveEvent(event);
   mLastMousePos = event->pos();
 }
 
@@ -136,11 +156,6 @@ void CanvasView::wheelEvent(QWheelEvent* event)
   scrollAmount.y() > 0 ? zoomIn() : zoomOut();
 }
 
-void CanvasView::setMaxSize()
-{
-  setSceneRect(INT_MIN / 2, INT_MIN / 2, INT_MAX, INT_MAX);
-}
-
 void CanvasView::zoomIn()
 {
   zoom(1 + mZoomDelta);
@@ -153,55 +168,85 @@ void CanvasView::zoomOut()
 
 void CanvasView::resetZoom()
 {
-  resetTransform();
-  mScale = DEFAULT_ZOOM;
+  QTransform t;
+  const double snapped = quantisedScale(DEFAULT_ZOOM);
+  t.scale(snapped, snapped);
+  setTransform(t);
 }
 
 void CanvasView::zoom(float scaleFactor)
 {
-  scale(scaleFactor, scaleFactor);
-  mScale *= scaleFactor;
+  const qreal cur = getScale();
+  const qreal target = cur * static_cast<qreal>(scaleFactor);
+  const qreal snapped = quantisedScale(target);
+
+  // Compute relative factor to apply on top of current transform
+  const double rel = snapped / cur;
+  if (qFuzzyCompare(rel, 1.0))
+    return;
+
+  scale(rel, rel);
+  update();
+}
+
+qreal CanvasView::quantisedScale(qreal proposedScale) const
+{
+  const qreal dpr = devicePixelRatioF();
+  const qreal S = Config::GRID_SIZE * proposedScale * dpr;
+
+  const qreal k = std::max(1.0, std::round(S));  // avoid 0
+  const qreal snapped = (k / (Config::GRID_SIZE * dpr));
+
+  // Clamp to sane limits
+  return std::clamp(snapped, mMinZoom, mMaxZoom);
 }
 
 void CanvasView::pan(QPointF delta)
 {
   // Scale the pan amount by the current zoom.
-  delta *= mScale;
+  delta *= getScale();
   delta *= mPanSpeed;
 
   // Have panning be anchored from the mouse.
   setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
 
-  QPoint newCenter(VIEW_WIDTH / 2 - delta.x(), VIEW_HEIGHT / 2 - delta.y());
-  mCenterPoint = mapToScene(newCenter);
-  centerOn(mCenterPoint);
+  QPoint newCenter(qreal(viewport()->rect().width()) / 2 - delta.x(), qreal(viewport()->rect().height()) / 2 - delta.y());
+  centerOn(mapToScene(newCenter));
 
   // For zooming to anchor from the view center.
   setTransformationAnchor(QGraphicsView::AnchorViewCenter);
 }
 
-void CanvasView::drawBackground(QPainter* painter, const QRectF& rect)
+void CanvasView::drawBackground(QPainter* p, const QRectF& /* rect */)
 {
-  painter->setRenderHint(QPainter::Antialiasing, false);
+  // Save so we dont affect the following calls
+  p->save();
+  p->setWorldTransform(QTransform());
+  p->setRenderHint(QPainter::Antialiasing, false);
 
-  const qreal gridSize = Config::GRID_SIZE / getScale();
+  QPen pen(Qt::gray, 0.5, Qt::DotLine);
+  pen.setCapStyle(Qt::SquareCap);
+  pen.setCosmetic(true);  // Keep line thickness fixed
 
-  QPen lightPen(Qt::gray, 0.5, Qt::DotLine);
+  p->setPen(pen);
 
-  // Keep line thickness fixed
-  lightPen.setCosmetic(true);
+  // Viewport rectangle in device pixels (HiDPI aware)
+  const qreal dpr = this->devicePixelRatioF();
+  const QRect vp = viewport()->rect();
 
-  // Draw thinner lines
-  qreal left = std::floor(rect.left() / gridSize) * gridSize;
-  qreal top = std::floor(rect.top() / gridSize) * gridSize;
-  qreal right = std::ceil(rect.right() / gridSize) * gridSize;
-  qreal bottom = std::ceil(rect.bottom() / gridSize) * gridSize;
+  const int stepDev = std::max(1, static_cast<int>(std::lround(Config::GRID_SIZE * dpr)));
 
-  painter->setPen(lightPen);
-  for (qreal x = left; x < right; x += gridSize)
-    painter->drawLine(QLineF(x, top, x, bottom));
-  for (qreal y = top; y < bottom; y += gridSize)
-    painter->drawLine(QLineF(left, y, right, y));
+  for (int xDev = (vp.left() * dpr); xDev <= (vp.right() * dpr); xDev += stepDev)
+  {
+    const qreal x = xDev / dpr;
+    p->drawLine(QPointF(x, vp.top()), QPointF(x, vp.bottom()));
+  }
 
-  painter->setRenderHint(QPainter::Antialiasing, true);
+  for (int yDev = (vp.top() * dpr); yDev <= (vp.bottom() * dpr); yDev += stepDev)
+  {
+    const qreal y = yDev / dpr;
+    p->drawLine(QPointF(vp.left(), y), QPointF(vp.right(), y));
+  }
+
+  p->restore();
 }

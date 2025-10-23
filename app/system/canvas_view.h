@@ -18,8 +18,8 @@ public:
   void setScale(qreal scale);
 
   void zoom(float scaleFactor);
-  void centerOn(const QPointF &pos);
-  void centerOn(const QGraphicsItem *item);
+  void centerOn(const QPointF& pos);
+  void centerOn(const QGraphicsItem* item);
 
 protected:
   void keyPressEvent(QKeyEvent*) override;
@@ -38,12 +38,13 @@ private:
   bool mDoKeyZoom;
 
   QPoint mLastMousePos;
-  qreal mScale;
   QPointF mCenterPoint;
 
   qreal mPanSpeed;
   qreal mZoomDelta;
   qreal mZoomKey;
+  qreal mMinZoom;
+  qreal mMaxZoom;
   Qt::MouseButton mPanButton;
 
   void pan(QPointF delta);
@@ -51,6 +52,7 @@ private:
   void zoomIn();
   void zoomOut();
   void resetZoom();
+  qreal quantisedScale(qreal proposedScale) const;
 
   void setMaxSize();
 };
