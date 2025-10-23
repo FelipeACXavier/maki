@@ -24,6 +24,7 @@ static const QColor BACKGROUND = "#264653";
 static const QColor FOREGROUND = "#2a9d8f";
 static const QColor MAIN = "#2a9d8f";
 static const QColor ACCENT = "#f4a261";
+static const QColor TEXT = "#FFFFFF";
 static const QColor EXTRA_ACCENT = "#e76f51";
 };  // namespace Colours
 

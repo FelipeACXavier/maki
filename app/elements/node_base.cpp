@@ -71,6 +71,9 @@ void NodeBase::paintNode(const QRectF& bounds, const QColor& background, const Q
   painter->setBrush(background);
   painter->setRenderHint(QPainter::Antialiasing, false);
 
+  if (mLabel)
+    mLabel->setDefaultTextColor(text.color());
+
   const auto drawingBounds = drawingRect(bounds);
   if (config()->body.shape == Types::Shape::RECTANGLE)
   {
@@ -132,7 +135,7 @@ void NodeBase::paintLabel(QPainter* painter, const QRectF& area) const
   if (!mLabel)
     return;
 
-  painter->setPen(mLabel->defaultTextColor());
+  painter->setPen(Config::Colours::TEXT);
   painter->drawText(area, Qt::AlignCenter, mLabel->toPlainText());
 }
 

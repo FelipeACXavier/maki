@@ -1,4 +1,5 @@
 #include "properties_menu.h"
+
 #include <qboxlayout.h>
 #include <qcombobox.h>
 #include <qgroupbox.h>
@@ -6,20 +7,20 @@
 #include <qlogging.h>
 #include <qsizepolicy.h>
 
-#include <QScrollArea>
-#include <QHeaderView>
-#include <QJsonArray>
-#include <QJsonObject>
 #include <QCheckBox>
 #include <QColorDialog>
 #include <QComboBox>
 #include <QDoubleValidator>
 #include <QHBoxLayout>
+#include <QHeaderView>
 #include <QIntValidator>
+#include <QJsonArray>
+#include <QJsonObject>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMenu>
 #include <QPushButton>
+#include <QScrollArea>
 #include <QStandardItemModel>
 #include <QString>
 #include <QTableWidget>
@@ -30,10 +31,10 @@
 #include "../structure/event_dialog.h"
 #include "../structure/field_dialog.h"
 #include "app_configs.h"
-#include "elements/node.h"
 #include "elements/flow.h"
-#include "keys.h"
+#include "elements/node.h"
 #include "json.h"
+#include "keys.h"
 #include "logging.h"
 #include "style_helpers.h"
 #include "types.h"
@@ -180,7 +181,7 @@ VoidResult PropertiesMenu::loadProperties(NodeItem* node)
     else if (property.type == Types::PropertyTypes::SET_STATE)
       LOG_WARN_ON_FAILURE(loadPropertySetState(property, node));
     else
-      LOG_WARNING("Property without a type, how is that possible?");
+      LOG_WARNING("Property %s (%d) without a type, how is that possible?", qPrintable(property.id), (int)property.type);
   }
 
   return VoidResult();
@@ -223,7 +224,7 @@ VoidResult PropertiesMenu::loadPropertyInt(const PropertiesConfig& property, Nod
 
   nameLabel->setFont(Fonts::Label);
   layout()->addWidget(nameLabel);
-  
+
   QLineEdit* widget = new QLineEdit(this);
   // QIntValidator* validator = new QIntValidator(INT32_MIN, INT32_MIN, widget);
 
@@ -256,7 +257,7 @@ VoidResult PropertiesMenu::loadPropertyReal(const PropertiesConfig& property, No
 
   nameLabel->setFont(Fonts::Label);
   layout()->addWidget(nameLabel);
-  
+
   QLineEdit* widget = new QLineEdit(this);
   QDoubleValidator* validator = new QDoubleValidator(DBL_MIN, DBL_MAX, 6, widget);
 
@@ -287,7 +288,7 @@ VoidResult PropertiesMenu::loadPropertyColor(const PropertiesConfig& property, N
 
   nameLabel->setFont(Fonts::Label);
   layout()->addWidget(nameLabel);
-  
+
   QWidget* holder = new QWidget(this);
   QHBoxLayout* holderLayout = new QHBoxLayout(holder);
   holder->setLayout(holderLayout);
@@ -333,7 +334,7 @@ VoidResult PropertiesMenu::loadPropertySelect(const PropertiesConfig& property, 
 
   nameLabel->setFont(Fonts::Label);
   layout()->addWidget(nameLabel);
-  
+
   QComboBox* widget = new QComboBox(this);
 
   auto options = property.options;
@@ -362,7 +363,7 @@ VoidResult PropertiesMenu::loadPropertyString(const PropertiesConfig& property, 
 
   nameLabel->setFont(Fonts::Label);
   layout()->addWidget(nameLabel);
-  
+
   QLineEdit* widget = new QLineEdit(this);
   auto result = node->getProperty(property.id);
   if (!result.isValid())
@@ -385,7 +386,7 @@ VoidResult PropertiesMenu::loadPropertyBoolean(const PropertiesConfig& property,
 
   nameLabel->setFont(Fonts::Label);
   layout()->addWidget(nameLabel);
-  
+
   QCheckBox* widget = new QCheckBox(this);
   auto result = node->getProperty(property.id);
   if (!result.isValid())
@@ -413,7 +414,7 @@ VoidResult PropertiesMenu::loadPropertyStateSelect(const PropertiesConfig& prope
 
   nameLabel->setFont(Fonts::Label);
   layout()->addWidget(nameLabel);
-  
+
   QComboBox* widget = new QComboBox(this);
   widget->setObjectName(property.id);
 
@@ -473,7 +474,6 @@ VoidResult PropertiesMenu::loadPropertyStateSelect(const PropertiesConfig& prope
   return VoidResult();
 }
 
-
 VoidResult PropertiesMenu::loadPropertySetState(const PropertiesConfig& property, NodeItem* node)
 {
   if (!mStorage)
@@ -493,9 +493,9 @@ VoidResult PropertiesMenu::loadPropertySetState(const PropertiesConfig& property
   scrollContent->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
 
   QVBoxLayout* scrollLayout = new QVBoxLayout(scrollContent);
-  scrollLayout->setSpacing(5);        
-  scrollLayout->setAlignment(Qt::AlignTop); 
-  
+  scrollLayout->setSpacing(5);
+  scrollLayout->setAlignment(Qt::AlignTop);
+
   addStateAssignment(property, 0, node, scrollContent);
 
   scrollArea->setWidget(scrollContent);
@@ -515,8 +515,8 @@ void PropertiesMenu::addStateAssignment(const PropertiesConfig& property, int in
   {
     QString callerName = "";
     if (!caller->parentId.isEmpty())
-     callerName = caller->properties[ConfigKeys::NAME].toString() + ".";
-    
+      callerName = caller->properties[ConfigKeys::NAME].toString() + ".";
+
     for (const auto& field : caller->fields)
       widget->addItem(callerName + field.id);
   }
@@ -528,7 +528,7 @@ void PropertiesMenu::addStateAssignment(const PropertiesConfig& property, int in
   icon->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
   icon->setPixmap(QPixmap(":/icons/equals.svg").scaled(20, 20, Qt::KeepAspectRatio, Qt::SmoothTransformation));
   icon->setFixedSize({20, 20});
-  
+
   QLineEdit* assignEdit = new QLineEdit(group);
   assignEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
   assignEdit->setFont(Fonts::Property);
@@ -550,16 +550,15 @@ void PropertiesMenu::addStateAssignment(const PropertiesConfig& property, int in
 
     addNew = index < currentValue.size() - 1;
   }
-  
-  connect(assignEdit, &QLineEdit::editingFinished, this, [=]{
 
+  connect(assignEdit, &QLineEdit::editingFinished, this, [=] {
     if (assignEdit->text().isEmpty())
     {
       controls->deleteLater();
       widget->deleteLater();
       return;
     }
-    
+
     auto returnData = node->getProperty(property.id);
     if (!returnData.isValid())
     {
@@ -585,7 +584,7 @@ void PropertiesMenu::addStateAssignment(const PropertiesConfig& property, int in
 
   controlsLayout->addWidget(icon);
   controlsLayout->addWidget(assignEdit);
-  
+
   group->layout()->addWidget(widget);
   group->layout()->addWidget(controls);
 
@@ -629,75 +628,168 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertiesConfig& p
   }
   else
   {
-    if (property.options.at(0).type == Types::PropertyTypes::EVENT_SELECT)
+    for (int i = 0; i < property.options.size(); ++i)
     {
-      auto option = property.options.at(0);
-      QComboBox* eventWidget = new QComboBox(this);
-      eventWidget->setObjectName(option.id);
+      const auto option = property.options.at(i);
+      QString eventLabel = ToLabel(option.id);
+      QLabel* nameEventLabel = new QLabel(eventLabel);
 
-      // Set starting values
-      auto value = node->getProperty(property.id);
-      if (value.isValid())
+      nameEventLabel->setFont(Fonts::Label);
+      layout()->addWidget(nameEventLabel);
+
+      if (option.type == Types::PropertyTypes::EVENT_SELECT)
       {
-        QJsonObject object = value.toJsonObject();
-        widget->setCurrentText(object[ConfigKeys::DATA].toString());
+        QComboBox* eventWidget = new QComboBox(this);
+        eventWidget->setObjectName(option.id);
 
-        auto events = mStorage->getEventsFromNode(widget->currentData().toString());
-        for (const auto& event : events)
-          eventWidget->addItem(event->name, event->id);
+        // Set starting values
+        auto value = node->getProperty(property.id);
+        if (value.isValid())
+        {
+          QJsonObject object = value.toJsonObject();
+          widget->setCurrentText(object[ConfigKeys::DATA].toString());
 
-        eventWidget->setCurrentText(object[ConfigKeys::OPTION_DATA].toString());
+          auto events = mStorage->getEventsFromNode(widget->currentData().toString());
+          for (const auto& event : events)
+            eventWidget->addItem(event->name, event->id);
+
+          eventWidget->setCurrentText(object[ConfigKeys::OPTIONS][i][ConfigKeys::DATA].toString());
+        }
+        else
+        {
+          widget->setCurrentText("-");
+          // eventWidget->setCurrentText("-");
+        }
+
+        connect(eventWidget, &QComboBox::currentTextChanged, this, [node, i, property, eventWidget](const QString& text) {
+          if (text.isEmpty())
+            return;
+
+          auto value = node->getProperty(property.id);
+          if (!value.isValid())
+            return;
+
+          QJsonObject object = value.toJsonObject();
+          QJsonArray array = object[ConfigKeys::OPTIONS].toArray();
+          QJsonObject item = array[i].toObject();
+
+          item[ConfigKeys::DATA] = text;
+          item["option_data_id"] = eventWidget->currentData().toString();
+
+          array[i] = item;
+          object[ConfigKeys::OPTIONS] = array;
+
+          node->setProperty(property.id, object);
+        });
+
+        eventWidget->setFont(Fonts::Property);
+        layout()->addWidget(eventWidget);
+
+        connect(widget, &QComboBox::currentTextChanged, this, [this, i, widget, eventWidget, node, property](const QString& text) {
+          if (text.isEmpty())
+            return;
+
+          eventWidget->clear();
+          auto events = mStorage->getEventsFromNode(widget->currentData().toString());
+          for (const auto& event : events)
+            eventWidget->addItem(event->name, event->id);
+
+          // Set the component
+          auto value = node->getProperty(property.id);
+          if (!value.isValid())
+            return;
+
+          QJsonObject object = value.toJsonObject();
+          object[ConfigKeys::DATA] = text;
+          object["data_id"] = widget->currentData().toString();
+
+          QJsonArray array = object[ConfigKeys::OPTIONS].toArray();
+          QJsonObject item = array[i].toObject();
+
+          item[ConfigKeys::DATA] = events.size() > 0 ? events.at(0)->name : "";
+          item["option_data_id"] = events.size() > 0 ? eventWidget->currentData().toString() : "";
+
+          array[i] = item;
+          object[ConfigKeys::OPTIONS] = array;
+
+          node->setProperty(property.id, object);
+        });
+      }
+      else if (option.type == Types::PropertyTypes::STRING)
+      {
+        QLineEdit* eventWidget = new QLineEdit(this);
+        eventWidget->setObjectName(option.id);
+
+        // Set starting values
+        auto value = node->getProperty(property.id);
+        if (value.isValid())
+        {
+          QJsonObject object = value.toJsonObject();
+          widget->setCurrentText(object[ConfigKeys::DATA].toString());
+          eventWidget->setText(object[ConfigKeys::OPTIONS][i][ConfigKeys::DATA].toString());
+        }
+        else
+        {
+          widget->setCurrentText("-");
+          // eventWidget->setCurrentText("-");
+        }
+
+        connect(eventWidget, &QLineEdit::editingFinished, this, [i, node, property, eventWidget]() {
+          auto value = node->getProperty(property.id);
+          if (!value.isValid())
+            return;
+
+          QJsonObject object = value.toJsonObject();
+          QJsonArray array = object[ConfigKeys::OPTIONS].toArray();
+          QJsonObject item = array[i].toObject();
+
+          item[ConfigKeys::DATA] = eventWidget->text();
+          // object["option_data_id"] = eventWidget->currentData().toString();
+
+          array[i] = item;
+          object[ConfigKeys::OPTIONS] = array;
+
+          node->setProperty(property.id, object);
+        });
+
+        eventWidget->setFont(Fonts::Property);
+        layout()->addWidget(eventWidget);
+
+        connect(widget, &QComboBox::currentTextChanged, this, [i, widget, eventWidget, node, property](const QString& text) {
+          if (text.isEmpty())
+            return;
+
+          eventWidget->clear();
+
+          // Set the component
+          auto value = node->getProperty(property.id);
+          if (!value.isValid())
+            return;
+
+          QJsonObject object = value.toJsonObject();
+          qDebug() << "Object: " << object;
+          object[ConfigKeys::DATA] = text;
+          object["data_id"] = widget->currentData().toString();
+
+          QJsonArray array = object[ConfigKeys::OPTIONS].toArray();
+          QJsonObject item = array[i].toObject();
+
+          item[ConfigKeys::DATA] = eventWidget->text();
+          // object["option_data_id"] = eventWidget->currentData().toString();
+
+          array[i] = item;
+          object[ConfigKeys::OPTIONS] = array;
+
+          // object[ConfigKeys::OPTION_DATA] = eventWidget->text();
+          // object["option_data_id"] = events.size() > 0 ? eventWidget->currentData().toString() : "";
+
+          node->setProperty(property.id, object);
+        });
       }
       else
       {
-        widget->setCurrentText("-");
-        // eventWidget->setCurrentText("-");
+        LOG_WARNING("Configuration is not supported");
       }
-
-      connect(eventWidget, &QComboBox::currentTextChanged, this, [node, property, eventWidget](const QString& text) {
-        if (text.isEmpty())
-          return;
-
-        auto value = node->getProperty(property.id);
-        if (!value.isValid())
-          return;
-
-        QJsonObject object = value.toJsonObject();
-        object[ConfigKeys::OPTION_DATA] = text;
-        object["option_data_id"] = eventWidget->currentData().toString();
-
-        node->setProperty(property.id, object);
-      });
-
-      eventWidget->setFont(Fonts::Property);
-      layout()->addWidget(eventWidget);
-
-      connect(widget, &QComboBox::currentTextChanged, this, [this, widget, eventWidget, node, property](const QString& text) {
-        if (text.isEmpty())
-          return;
-
-        eventWidget->clear();
-        auto events = mStorage->getEventsFromNode(widget->currentData().toString());
-        for (const auto& event : events)
-          eventWidget->addItem(event->name, event->id);
-
-        // Set the component
-        auto value = node->getProperty(property.id);
-        if (!value.isValid())
-          return;
-
-        QJsonObject object = value.toJsonObject();
-        object[ConfigKeys::DATA] = text;
-        object["data_id"] = widget->currentData().toString();
-        object[ConfigKeys::OPTION_DATA] = events.size() > 0 ? events.at(0)->name : "";
-        object["option_data_id"] = events.size() > 0 ? eventWidget->currentData().toString() : "";
-
-        node->setProperty(property.id, object);
-      });
-    }
-    else
-    {
-      LOG_WARNING("Configuration is not supported");
     }
   }
 
@@ -727,6 +819,35 @@ VoidResult PropertiesMenu::loadPropertyEventSelect(const PropertiesConfig& prope
   layout()->addWidget(widget);
 
   return VoidResult();
+}
+
+QLineEdit* PropertiesMenu::loadPropertyEventArguments(const PropertiesConfig& property, NodeItem* node, const QString& propertyId, const QString& eventName, QComboBox* eventWidget)
+{
+  QString label = ToLabel(property.id);
+  QLabel* nameLabel = new QLabel(label);
+
+  nameLabel->setFont(Fonts::Label);
+  layout()->addWidget(nameLabel);
+
+  QLineEdit* widget = new QLineEdit(this);
+  auto result = node->getProperty(propertyId);
+  if (!result.isValid())
+    return NULL;
+
+  widget->setText(result.toString());
+  connect(widget, &QLineEdit::editingFinished, this, [=]() {
+    auto value = node->getProperty(propertyId);
+    if (!value.isValid())
+      return;
+
+    QJsonObject object = value.toJsonObject();
+    object[ConfigKeys::OPTION_DATA] = eventName;
+    object["option_data_id"] = eventWidget->currentData().toString();
+  });
+
+  widget->setFont(Fonts::Property);
+  layout()->addWidget(widget);
+  return widget;
 }
 
 VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)
@@ -786,7 +907,6 @@ VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)
 
   return VoidResult();
 }
-
 
 VoidResult PropertiesMenu::loadControlAddField(const ControlsConfig& control, NodeItem* node, QWidget* parent, QHBoxLayout* controlLayout)
 {
@@ -899,7 +1019,8 @@ VoidResult PropertiesMenu::loadControlAddEvent(const ControlsConfig& control, No
   tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
   tableView->setModel(model);
 
-  for (const auto& event : node->events()) {
+  for (const auto& event : node->events())
+  {
     LOG_INFO("Setting events for %s (%d): %s", qPrintable(node->nodeName()), model->rowCount(), qPrintable(event->name));
     addEventToTable(model, model->rowCount(), event);
   }

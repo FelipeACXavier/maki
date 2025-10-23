@@ -1,4 +1,5 @@
 #include "node.h"
+
 #include <qhashfunctions.h>
 
 #include <QGraphicsScene>
@@ -50,7 +51,8 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
   // Children are created by the canvas, so we must make sure that there is no trailing children information
   mStorage->children = {};
 
-  if (parent && parent->type() == Types::NODE) {
+  if (parent && parent->type() == Types::NODE)
+  {
     mStorage->parentId = static_cast<NodeItem*>(parent)->id();
     setZValue(parent->zValue() + 2);
   }
@@ -185,7 +187,7 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
 
   NodeBase::paintNode(boundingRect(),
                       background,
-                      isSelected() ? QPen(Config::Colours::ACCENT, 4 / baseScale()) : QPen(config()->body.borderColor, 1.0 / baseScale()),
+                      isSelected() ? QPen(Config::Colours::ACCENT, 4 / baseScale()) : QPen(Config::Colours::TEXT, 1.0 / baseScale()),
                       painter);
 }
 

@@ -37,6 +37,32 @@
               "id": "Add state",
               "type": "add state"
             }
+          ],
+          "events": [
+            {
+              "id": "start",
+              "type": "in",
+              "returnType": "void",
+              "modifiable": true
+            },
+            {
+              "id": "abort",
+              "type": "in",
+              "returnType": "void",
+              "modifiable": false
+            },
+            {
+              "id": "done",
+              "type": "out",
+              "returnType": "void",
+              "modifiable": false
+            },
+            {
+              "id": "failed",
+              "type": "out",
+              "returnType": "void",
+              "modifiable": false
+            }
           ]
         },
         {
@@ -83,7 +109,7 @@
           ]
         },
         {
-          "type": "Picker",
+          "type": "Grip",
           "body": {
             "shape": "Rectangle",
             "textColor": "#FFFFFF",
@@ -97,7 +123,7 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Picker"
+              "default": "Grip"
             },
             {
               "id": "color",
@@ -107,24 +133,40 @@
             {
               "id": "type",
               "type": "string",
-              "default": "async"
+              "default": "action \"/handler/action\" \"std_msgs::String\""
+            },
+            {
+              "id": "arguments",
+              "type": "list",
+              "default": [
+                {
+                  "id": "grip",
+                  "type": "boolean"
+                }
+              ]
             }
           ],
           "events": [
             {
-              "id": "pick",
+              "id": "handle",
+              "type": "in",
+              "returnType": "void",
+              "modifiable": false,
+              "arguments": [
+                {
+                  "id": "grip",
+                  "type": "boolean"
+                }
+              ]
+            },
+            {
+              "id": "cancel",
               "type": "in",
               "returnType": "void",
               "modifiable": false
             },
             {
-              "id": "abort",
-              "type": "in",
-              "returnType": "void",
-              "modifiable": false
-            },
-            {
-              "id": "picked",
+              "id": "handled",
               "type": "out",
               "returnType": "void",
               "modifiable": false
@@ -138,7 +180,7 @@
           ]
         },
         {
-          "type": "ImageRecognition",
+          "type": "Vision",
           "body": {
             "shape": "Rectangle",
             "textColor": "#FFFFFF",
@@ -152,7 +194,7 @@
             {
               "id": "name",
               "type": "string",
-              "default": "ImageRecognition"
+              "default": "Vision"
             },
             {
               "id": "color",
@@ -162,7 +204,7 @@
             {
               "id": "type",
               "type": "string",
-              "default": "async"
+              "default": "action \"/recognize\" \"std_msgs::String\""
             }
           ],
           "events": [
@@ -173,7 +215,7 @@
               "modifiable": false
             },
             {
-              "id": "abort",
+              "id": "cancel",
               "type": "in",
               "returnType": "void",
               "modifiable": false
@@ -211,7 +253,21 @@
             {
               "id": "type",
               "type": "string",
-              "default": "async"
+              "default": "action \"/navigate_to_pose\" \"nav2_msgs::action::NavigateToPose::Goal\""
+            },
+            {
+              "id": "arguments",
+              "type": "list",
+              "default": [
+                {
+                  "id": "x",
+                  "type": "float"
+                },
+                {
+                  "id": "y",
+                  "type": "float"
+                }
+              ]
             }
           ],
           "events": [
@@ -308,6 +364,269 @@
               "type": "out",
               "returnType": "void",
               "modifiable": true
+            }
+          ]
+        },
+        {
+          "type": "Bridge",
+          "body": {
+            "shape": "Rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#bb2c1e",
+            "borderColor": "#FFFFFF",
+            "width": 500,
+            "height": 500,
+            "z-index": -2
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Bridge"
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#bb2c1e"
+            },
+            {
+              "id": "type",
+              "type": "string",
+              "default": "service \"\/poll\" \"\""
+            },
+            {
+              "id": "arguments",
+              "type": "list",
+              "default": [
+                {
+                  "id": "zone",
+                  "type": "string"
+                }
+              ]
+            }
+          ],
+          "events": [
+            {
+              "id": "poll",
+              "type": "in",
+              "returnType": "void",
+              "modifiable": false,
+              "arguments": [
+                  {
+                    "id": "zone",
+                    "type": "string"
+                  }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "Co2Sensor",
+          "body": {
+            "shape": "Rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#d73800",
+            "borderColor": "#FFFFFF",
+            "width": 500,
+            "height": 500,
+            "z-index": -2
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Co2Sensor"
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#d73800"
+            },
+            {
+              "id": "type",
+              "type": "string",
+              "default": "service \"co2/normal\" \"\""
+            }
+          ],
+          "events": [
+            {
+              "id": "normal",
+              "type": "out",
+              "returnType": "void",
+              "modifiable": false
+            },
+            {
+              "id": "high",
+              "type": "out",
+              "returnType": "void",
+              "modifiable": false
+            }
+          ]
+        },
+        {
+          "type": "EnvSensor",
+          "body": {
+            "shape": "Rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#e5c185",
+            "borderColor": "#FFFFFF",
+            "width": 500,
+            "height": 500,
+            "z-index": -2
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "EnvSensor"
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#e5c185"
+            },
+            {
+              "id": "type",
+              "type": "string",
+              "default": "service \"environment/empty\" \"\""
+            }
+          ],
+          "events": [
+            {
+              "id": "empty",
+              "type": "out",
+              "returnType": "void",
+              "modifiable": false
+            },
+            {
+              "id": "present",
+              "type": "out",
+              "returnType": "void",
+              "modifiable": false
+            }
+          ]
+        },
+        {
+          "type": "Lighting",
+          "body": {
+            "shape": "Rectangle",
+            "textColor": "#000000",
+            "backgroundColor": "#fbf2c4",
+            "borderColor": "#FFFFFF",
+            "width": 500,
+            "height": 500,
+            "z-index": -2
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Lighting"
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#fbf2c4"
+            },
+            {
+              "id": "type",
+              "type": "string",
+              "default": "service \"lighting/scene\" \"\""
+            },
+            {
+              "id": "arguments",
+              "type": "list",
+              "default": [
+                {
+                  "id": "scene",
+                  "type": "string"
+                }
+              ]
+            }
+          ],
+          "events": [
+            {
+              "id": "set",
+              "type": "in",
+              "returnType": "void",
+              "modifiable": false,
+              "arguments": [
+                {
+                  "id": "scene",
+                  "type": "string"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "Ventilation",
+          "body": {
+            "shape": "Rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#7ebb9c",
+            "borderColor": "#FFFFFF",
+            "width": 500,
+            "height": 500,
+            "z-index": -2
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Ventilation"
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#7ebb9c"
+            },
+            {
+              "id": "type",
+              "type": "string",
+              "default": "service \"ventilation\" \"{ \\\"cmd:\\\" \\\"up\\\" }\""
+            },
+            {
+              "id": "arguments",
+              "type": "list",
+              "default": [
+                {
+                  "id": "up",
+                  "type": "boolean"
+                }
+              ]
+            }
+          ],
+          "events": [
+            {
+              "id": "solve",
+              "type": "in",
+              "returnType": "void",
+              "modifiable": false,
+              "arguments": [
+                {
+                  "id": "up",
+                  "type": "boolean"
+                }
+              ]
+            },
+            {
+              "id": "done",
+              "type": "out",
+              "returnType": "void",
+              "modifiable": false
+            },
+            {
+              "id": "stop",
+              "type": "in",
+              "returnType": "void",
+              "modifiable": false
+            },
+            {
+              "id": "failed",
+              "type": "out",
+              "returnType": "void",
+              "modifiable": false
             }
           ]
         }
@@ -442,7 +761,13 @@
             },
             {
               "id": "component",
-              "type": "component_select"
+              "type": "component_select",
+              "options": [
+                {
+                  "id": "argument",
+                  "type": "string"
+                }
+              ]
             }
           ],
           "controls": []
@@ -476,6 +801,10 @@
                 {
                   "id": "event",
                   "type": "event_select"
+                },
+                {
+                  "id": "argument",
+                  "type": "string"
                 }
               ]
             }
@@ -559,26 +888,19 @@
               "default": "Within"
             },
             {
-              "id": "time",
+              "id": "color",
+              "type": "color",
+              "default": "#202020"
+            },
+            {
+              "id": "timeout",
               "type": "int"
             }
           ],
           "behaviour": {},
           "help": {
             "message": "Performs the \"do\" strategy and if it does not conclude within the set time, it will trigger the \"else\" strategy."
-          },
-          "transitions": [
-            {
-              "id": "true",
-              "label": "do",
-              "modifiable": false
-            },
-            {
-              "id": "false",
-              "label": "else",
-              "modifiable": false
-            }
-          ]
+          }
         },
         {
           "type": "Repeat",
@@ -611,6 +933,38 @@
           "behaviour": {},
           "help": {
             "message": "Repeats the contained strategy forever"
+          }
+        },
+        {
+          "type": "Every",
+          "body": {
+            "shape": "rounded rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#202020",
+            "borderColor": "#FFFFFF",
+            "borderRadius": 10,
+            "width": 100,
+            "height": 50
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Every"
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#202020"
+            },
+            {
+              "id": "rate",
+              "type": "int"
+            }
+          ],
+          "behaviour": {},
+          "help": {
+            "message": "Performs the \"do\" strategy and if it does not conclude within the set time, it will trigger the \"else\" strategy."
           }
         }
       ]

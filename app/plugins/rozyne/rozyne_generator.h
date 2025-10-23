@@ -20,7 +20,7 @@ private:
   QDir mOutputFolder;
   std::shared_ptr<SaveInfo> mStorage;
   QVector<QString> mImports;
-  
+
   struct Argument
   {
     QString name = "";
@@ -32,7 +32,7 @@ private:
   QString generateTransitions(const NodeSaveInfo& node, const Argument& arg, const FlowSaveInfo& flow, const QString& format);
 
   // These are the block generators
-  QString generateComponent(const NodeSaveInfo& node, const QString& code);
+  QString generateComponent(const NodeSaveInfo& node, const QString& code, const QString& args);
   QString generateCapability(const NodeSaveInfo& node);
 
   QString generateStart(const QString& parent, const NodeSaveInfo& node, const FlowSaveInfo& flow, const QString& format);

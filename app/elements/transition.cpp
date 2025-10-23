@@ -116,7 +116,10 @@ void TransitionItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
 {
   QGraphicsPathItem::paint(painter, option, widget);
 
-  setPen(isSelected() ? QPen(Config::Colours::ACCENT, 2) : QPen(Qt::white, 2));
+  setPen(isSelected() ? QPen(Config::Colours::ACCENT, 2) : QPen(Config::Colours::TEXT, 2));
+
+  if (mLabel)
+    mLabel->setDefaultTextColor(Config::Colours::TEXT);
 
   QLineF line = path().currentPosition() == path().pointAtPercent(1.0)
                     ? QLineF(path().pointAtPercent(0.99), path().pointAtPercent(1.0))
@@ -133,15 +136,14 @@ void TransitionItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
   QPolygonF arrowHead;
   arrowHead << line.p2() << arrowP1 << arrowP2;
 
-  painter->setBrush(isSelected() ? QBrush(Config::Colours::ACCENT) : QBrush(Qt::white));
+  painter->setBrush(isSelected() ? QBrush(Config::Colours::ACCENT) : QBrush(Config::Colours::TEXT));
   painter->drawPolygon(arrowHead);
 }
-
 
 QPainterPath TransitionItem::shape() const
 {
   QPainterPathStroker stroker;
-  stroker.setWidth(10); // Wider clickable area
+  stroker.setWidth(10);  // Wider clickable area
   return stroker.createStroke(path());
 }
 

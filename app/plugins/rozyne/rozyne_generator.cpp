@@ -1,14 +1,15 @@
 #include "rozyne_generator.h"
 
-#include <QJsonArray>
-#include <QJsonObject>
 #include <QFile>
 #include <QFileInfo>
+#include <QJsonArray>
+#include <QJsonObject>
 #include <QTextStream>
 
-#include "keys.h"
 #include "elements/save_info.h"
+#include "keys.h"
 #include "logging.h"
+#include "string_helpers.h"
 #include "types.h"
 
 static const QString FOLDER = "/generated";
@@ -23,23 +24,33 @@ QString RozyneGenerator::generateCode(std::shared_ptr<SaveInfo> storage)
     mOutputFolder.mkpath(".");
 
   QString code = "";
+  // for (const auto& node : mStorage->structuralNodes)
+  // {
+  //   if (node->nodeId == "Generic::Component")
+  //     continue;
+
+  //   LOG_DEBUG("Generating code for top level node %s %s %d", qPrintable(node->properties["name"].toString()), qPrintable(node->nodeId), node->children.size());
+  //   code += generateCapability(*node);
+  // }
+
   for (const auto& node : mStorage->structuralNodes)
   {
-    if (node->nodeId == "Generic::Component")
+    if (node->nodeId != "Mission::Component")
       continue;
 
-    LOG_DEBUG("Generating code for top level node %s %s %d", qPrintable(node->properties["name"].toString()), qPrintable(node->nodeId), node->children.size());
-    code += generateCapability(*node);
-  }
-
-  for (const auto& node : mStorage->structuralNodes)
-  {
-    if (node->nodeId != "Generic::Component")
-      continue;
-    
     // TODO(felaze): Create file at this level
     LOG_DEBUG("Generating code for top level node %s %s %d", qPrintable(node->properties["name"].toString()), qPrintable(node->nodeId), node->children.size());
-    code = generateComponent(*node, code);
+
+    QString args = "";
+    for (const auto& child : node->children)
+    {
+      auto capabilityId = child->properties["name"].toString();
+      LOG_DEBUG("Generating code for capability %s %s %d", qPrintable(capabilityId), qPrintable(child->nodeId), child->children.size());
+      code += generateCapability(*child);
+      args += fixCase(capabilityId) + " req " + capabilityId + ", ";
+    }
+
+    code = generateComponent(*node, code, args);
   }
 
   code.chop(1);
@@ -67,8 +78,8 @@ QString RozyneGenerator::generateNode(const NodeSaveInfo& node)
   LOG_DEBUG("Generating code for %s", qPrintable(type));
 
   if (type == "Generic::Component")
-    code += generateComponent(node, code);
-  
+    code += generateComponent(node, code, "");
+
   return code;
 }
 
@@ -101,7 +112,7 @@ QString RozyneGenerator::generateBehaviourNode(const NodeSaveInfo& node, const A
 QString RozyneGenerator::generateTransitions(const NodeSaveInfo& node, const Argument& arg, const FlowSaveInfo& flow, const QString& format)
 {
   QString code = "";
-      
+
   for (const auto& transition : node.transitions)
   {
     auto dst = findDestination(transition->dstId, flow);
@@ -115,17 +126,34 @@ QString RozyneGenerator::generateTransitions(const NodeSaveInfo& node, const Arg
 QString RozyneGenerator::generateCapability(const NodeSaveInfo& node)
 {
   QString code = "";
-  
-  QString name = node.properties["name"].toString();
-  QString type = fixCase(node.properties["type"].toString());
-  code += type + " component " + name + "() {\n";
 
-  if (type == "sync")
-    code += "  accepts {\n";
+  qDebug() << node.properties;
+  QString args = "";
+  if (node.properties.contains("arguments"))
+  {
+    auto list = node.properties["arguments"].toList();
+    for (const auto& l : list)
+    {
+      auto l0 = l.toMap();
+      args += l0["type"].toString() + " " + l0["id"].toString() + ", ";
+    }
+  }
+
+  QString name = node.properties["name"].toString();
+  args.chop(2);
+  code += "capability " + name + "(" + args + ") {\n";
+
+  QString type = "async";
+  QString rosType = node.properties["type"].toString();
+  auto typeComponents = Split(rosType.toStdString(), ' ');
+  if (typeComponents.size() == 3 && typeComponents.at(0) != "action")
+    type = "sync";
+
+  code += "  " + rosType + "{\n";
 
   int inIndex = 0;
   QString qualifier = "  ";
-  for (const auto& f : node.flows) 
+  for (const auto& f : node.flows)
   {
     if (f->type != Types::ConnectorType::IN)
       continue;
@@ -136,42 +164,37 @@ QString RozyneGenerator::generateCapability(const NodeSaveInfo& node)
 
     args.chop(2);
     if (type == "async")
-      qualifier = inIndex == 0? QStringLiteral("  trigger:") : QStringLiteral("  abort:");
+      qualifier = inIndex == 0 ? QStringLiteral("  trigger:") : QStringLiteral("  abort:");
 
     code += qualifier + "  " + PropertyTypesToString(f->returnType) + " " + f->name + "(" + args + ");\n";
     inIndex++;
   }
 
-  if (type == "sync")
-    code += "  }\n  emits {";
-
   int outIndex = 0;
-  for (const auto& f : node.flows) 
+  for (const auto& f : node.flows)
   {
     if (f->type != Types::ConnectorType::OUT)
       continue;
-    
+
     QString args = "";
     for (auto& arg : f->arguments)
       args += PropertyTypesToString(arg.type) + " " + arg.id + ", ";
 
     args.chop(2);
     if (type == "async")
-      qualifier = outIndex == 0? QStringLiteral("  return:") : QStringLiteral("  error:");
+      qualifier = outIndex == 0 ? QStringLiteral("  return:") : QStringLiteral("  error:");
 
     code += qualifier + "  " + PropertyTypesToString(f->returnType) + " " + f->name + "(" + args + ");\n";
     outIndex++;
   }
 
-  if (type == "sync")
-    code += "  }\n";
-
+  code += "  }\n";
   code += "}\n";
 
   return code;
 }
 
-QString RozyneGenerator::generateComponent(const NodeSaveInfo& node, const QString& incomingCode)
+QString RozyneGenerator::generateComponent(const NodeSaveInfo& node, const QString& incomingCode, const QString& arguments)
 {
   QString code = "";
 
@@ -185,16 +208,43 @@ QString RozyneGenerator::generateComponent(const NodeSaveInfo& node, const QStri
     LOG_WARNING("Failed to open device for writing");
     return code;
   }
-  
+
   // Generate child code
   // for (const auto& child : node.children)
   //   code += generateNode(*child);
 
   // Generate my structural code
 
-  // Generate flows    
+  // Generate flows
+  int index = 0;
+  QString bodyCode = "";
   for (const auto& f : node.flows)
   {
+    if (!f->nodes.empty())
+      continue;
+
+    LOG_DEBUG("Generating flow %s", qPrintable(f->name));
+
+    QString args = "";
+    for (auto& arg : f->arguments)
+      args += PropertyTypesToString(arg.type) + " " + arg.id + ", ";
+
+    args.chop(2);
+    QString qualifier = "";
+    if (f->type == Types::ConnectorType::IN)
+      qualifier = index == 0 ? QStringLiteral("  trigger:") : QStringLiteral("  abort:");
+    else
+      qualifier = index == 2 ? QStringLiteral("  return:") : QStringLiteral("  error:");
+
+    bodyCode += qualifier + "  " + PropertyTypesToString(f->returnType) + " " + f->name + "(" + args + ");\n";
+    index++;
+  }
+
+  for (const auto& f : node.flows)
+  {
+    if (f->nodes.empty())
+      continue;
+
     LOG_DEBUG("Generating flow %s", qPrintable(f->name));
     // Find the start node
     for (const auto& n : f->nodes)
@@ -213,65 +263,63 @@ QString RozyneGenerator::generateComponent(const NodeSaveInfo& node, const QStri
 
   if (!mImports.isEmpty())
     out << "\n";
-    
+
+  if (!node.fields.empty())
+    bodyCode += "  vars {\n";
+
+  QString args = arguments;
+  for (const auto& state : node.fields)
+  {
+    bodyCode += "    " + Types::PropertyTypesToString(state.type) + " " + state.id + "_ = " + state.id + " : " + state.defaultValue.toString() + "\n";
+    args += Types::PropertyTypesToString(state.type) + " " + state.id + ", ";
+  }
+
+  if (!node.fields.empty())
+    bodyCode += "  }\n";
+
   out << incomingCode << "\n";
 
-  out << "task component " + name + "()\n";
+  // Remove trailing comma + space
+  args.chop(2);
+
+  out << "task " + name + "(" + args + ")\n";
   out << "{\n";
 
   // TODO(felaze): I really need to take some day to clean this and the widget codes.
   // - More widgets, maybe even one per property type
   // - The generation should use more inheritance, a lot of the code here is repeated
-  for (const auto& child : node.children)
-  {
-    auto childName = fixCase(child->properties["name"].toString());
-    out << "  requires i" + childName + " " + childName + ";\n";
-  }
-      
-  for (const auto& state : node.fields)
-  {
-    if (state.type == Types::PropertyTypes::ENUM)
-    {
-      out << "   enum " + state.options.at(0).defaultValue.toString() + " {\n";  
-      QString enumValues = "";
-      for (const auto& opt : state.options.at(1).options)
-        enumValues += "    " + opt.id + ",\n";
+  // for (const auto& child : node.children)
+  // {
+  //   auto childName = fixCase(child->properties["name"].toString());
+  //   out << "  requires i" + childName + " " + childName + ";\n";
+  // }
 
-      enumValues.chop(2);
-      out << enumValues;
-      out << "  }\n";
-
-      out << "  " + state.options.at(0).defaultValue.toString() + " " + state.id + " = " + state.defaultValue.toString() + ";\n"; 
-    }
-    else
-    {
-      out << "  " + Types::PropertyTypesToString(state.type) + " " + state.id + " = " + state.defaultValue.toString() + ";\n";       
-    }
-  }
-  out << "strategy {\n" << code << "}";
+  out << bodyCode << "\n";
+  out << "  strategy {\n"
+      << code << "  }\n";
   out << "}\n";
 
   file.close();
 
-  return code; 
+  return code;
 }
 
 QString RozyneGenerator::generateStart(const QString& parent, const NodeSaveInfo& node, const FlowSaveInfo& flow, const QString& format)
 {
-  QString code = flow.name + ": ";
+  QString code = "    " + flow.name + ": ";
 
   Argument arg;
   code += generateTransitions(node, arg, flow, "  " + format);
-  code += ";\n\n";
+  code += ";\n";
 
-  return code;  
+  return code;
 }
 
 QString RozyneGenerator::generateEnd(const NodeSaveInfo& node, const Argument& arg, const FlowSaveInfo& flow, const QString& format)
 {
   QString code = "";
   code += "end";
-  return code;  
+  return code;
 }
 
 QString RozyneGenerator::generateError(const NodeSaveInfo& node, const Argument& arg, const FlowSaveInfo& flow, const QString& format)
@@ -279,7 +327,7 @@ QString RozyneGenerator::generateError(const NodeSaveInfo& node, const Argument&
   QString code = "";
   if (arg.name.isEmpty())
     return code;
-  
+
   code += format + "reply(" + arg.name + ");\n";
   return code;
 }
@@ -287,11 +335,15 @@ QString RozyneGenerator::generateError(const NodeSaveInfo& node, const Argument&
 QString RozyneGenerator::generateAsyncTask(const NodeSaveInfo& node, const Argument& arg, const FlowSaveInfo& flow, const QString& format)
 {
   QString code = "";
-  QString val = node.properties["component"].toString();
-  // qDebug() << format + "generateAsyncTask (" + node.properties["name"].toString() + "): " << val;
-  
+  QJsonObject object = node.properties["component"].toJsonObject();
+  QString val = object["data"].toString();
+  QJsonArray options = object["options"].toArray();
+  QString args = options.size() > 0 ? options[0].toObject()["data"].toString() : "";
+
+  // qDebug() << format + "generateAsyncTask (" + val + "): " << options;
+
   auto fixed = QString::fromStdString(ToLowerCase(val.toStdString(), 0, 1));
-  code += "(" + fixed + "()";
+  code += "(" + fixed + "(" + args + ")";
   for (const auto& transition : node.transitions)
   {
     if (transition->label != "on error")
@@ -358,12 +410,27 @@ QString RozyneGenerator::generateAsyncTask(const NodeSaveInfo& node, const Argum
 QString RozyneGenerator::generateSyncTask(const NodeSaveInfo& node, const Argument& arg, const FlowSaveInfo& flow, const QString& format)
 {
   QString code = "";
-  QJsonObject val = node.properties["component"].toJsonObject();
+  QJsonObject object = node.properties["component"].toJsonObject();
+  QString val = object["data"].toString();
+  QJsonArray options = object["options"].toArray();
+
+  QString method = "";
+  QString args = "";
+  for (const auto& opt : options)
+  {
+    QJsonObject obj = opt.toObject();
+    if (obj["id"] == "event")
+      method = obj["data"].toString();
+    else if (obj["id"] == "argument")
+      args = obj["data"].toString();
+  }
+
+  // qDebug() << "Sync: " << node.properties;
+
   // qDebug() << format + "generateSyncTask (" + node.properties["name"].toString() + "): " << val["data"].toString() << " " << val["option_data"].toString();
 
-  auto str = val["data"].toString();
-  auto fixed = QString::fromStdString(ToLowerCase(str.toStdString(), 0, 1));
-  code += fixed + "." + val["option_data"].toString() + "()";
+  auto fixed = QString::fromStdString(ToLowerCase(val.toStdString(), 0, 1));
+  code += fixed + "." + method + "(" + args + ")";
 
   if (node.transitions.size() > 0)
     code += " --> ";
@@ -376,30 +443,57 @@ QString RozyneGenerator::generateSyncTask(const NodeSaveInfo& node, const Argume
 QString RozyneGenerator::generateWithin(const NodeSaveInfo& node, const Argument& arg, const FlowSaveInfo& flow, const QString& format)
 {
   QString code = "";
-  int val = node.properties["time"].toInt();
+  int val = node.properties["timeout"].toInt();
+
+  qDebug() << node.properties;
+
+  // QJsonObject object = node.properties["component"].toJsonObject();
+  // QString val = object["data"].toString();
+  // QJsonArray options = object["options"].toArray();
+  // QString strategy = options.size() > 0 ? options[0].toObject()["data"].toString() : "";
+
   // qDebug() << format + "generateWithin (" + node.properties["name"].toString() + "): " << val;
 
-  if (node.transitions.size() != 2)
+  code += "(within " + QString::number(val) + " do (";
+
+  for (const auto& transition : node.transitions)
   {
-    LOG_ERROR("%s must have two transitions", qPrintable(node.nodeId));
-    return code;
+    if (transition->label == "do")
+    {
+      auto dst = findDestination(transition->dstId, flow);
+      if (dst != nullptr)
+        code += generateBehaviourNode(*dst, arg, flow, format);
+      break;
+    }
   }
 
-  code += "within " + QString::number(val) + " do (";
-
-  auto doTransition = node.transitions.at(0);
-  auto dstDo = findDestination(doTransition->dstId, flow);
-  if (dstDo != nullptr)
-      code += generateBehaviourNode(*dstDo, arg, flow, format);
-  
   code += ") else (";
-      
-  auto elseTransition = node.transitions.at(1);
-  auto dstElse = findDestination(elseTransition->dstId, flow);
-  if (dstElse != nullptr)
-      code += generateBehaviourNode(*dstElse, arg, flow, format);
 
-  code += ")";
+  for (const auto& transition : node.transitions)
+  {
+    if (transition->label == "else")
+    {
+      auto dst = findDestination(transition->dstId, flow);
+      if (dst != nullptr)
+        code += generateBehaviourNode(*dst, arg, flow, format);
+      break;
+    }
+  }
+
+  code += "))";
+
+  for (const auto& transition : node.transitions)
+  {
+    if (transition->label == "do" || transition->label == "else")
+      continue;
+
+    auto dst = findDestination(transition->dstId, flow);
+    if (dst != nullptr)
+    {
+      code += " --> ";
+      code += generateBehaviourNode(*dst, arg, flow, format);
+    }
+  }
 
   return code;
 }
@@ -407,8 +501,13 @@ QString RozyneGenerator::generateWithin(const NodeSaveInfo& node, const Argument
 QString RozyneGenerator::generateRepeat(const NodeSaveInfo& node, const Argument& arg, const FlowSaveInfo& flow, const QString& format)
 {
   QString code = "";
-  QJsonObject val = node.properties["component"].toJsonObject();
-  qDebug() << format + "generateRepeat (" + node.properties["name"].toString() + "): " << val;
+  QJsonObject object = node.properties["component"].toJsonObject();
+  QString val = object["data"].toString();
+  QJsonArray options = object["options"].toArray();
+  QString strategy = options.size() > 0 ? options[0].toObject()["data"].toString() : "";
+
+  // qDebug() << "Repeat: " << node.properties;
+  // qDebug() << format + "generateRepeat (" + node.properties["name"].toString() + "): " << val;
 
   // if (node.transitions.size() != 1)
   // {
@@ -416,7 +515,7 @@ QString RozyneGenerator::generateRepeat(const NodeSaveInfo& node, const Argument
   //   return code;
   // }
 
-  code += "repeat(" + val["option_data"].toString() + ")";
+  code += "repeat(" + strategy + ")";
 
   // auto doTransition = node.transitions.at(0);
   // auto dstDo = findDestination(doTransition->dstId, flow);
@@ -430,12 +529,19 @@ QString RozyneGenerator::generateRepeat(const NodeSaveInfo& node, const Argument
 QString RozyneGenerator::generateStrategy(const NodeSaveInfo& node, const Argument& arg, const FlowSaveInfo& flow, const QString& format)
 {
   QString code = "";
-  QJsonObject val = node.properties["component"].toJsonObject();
-  // QString strategy = val["option_data"].toString();
+  QJsonObject object = node.properties["component"].toJsonObject();
+  QJsonArray options = object["options"].toArray();
+  QString strategy = options.size() > 0 ? options[0].toObject()["data"].toString() : "";
+
+  // qDebug() << "Strategy: " << node.properties;
 
   // qDebug() << format + "generateStrategy (" << node.properties["name"] << "): " << val["option_data"].toString();
-  code += val["option_data"].toString();
+  code += strategy;
+  if (node.transitions.size() > 0)
+    code += " --> ";
+
   code += generateTransitions(node, arg, flow, format + "  ");
+
   return code;
 }
 

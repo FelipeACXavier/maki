@@ -1,4 +1,5 @@
 #include "property_config.h"
+
 #include <qcontainerfwd.h>
 #include <qjsonarray.h>
 #include <qjsonobject.h>
@@ -38,15 +39,15 @@ PropertiesConfig::PropertiesConfig(const QJsonObject& object)
     return;
   }
 
-  if (object.contains("options"))
+  if (object.contains(ConfigKeys::OPTIONS))
   {
-    if (type == Types::PropertyTypes::COMPONENT_SELECT && object["options"].toArray().size() != 1)
-    {
-      setInvalid("We only support one option for now");
-      return;
-    }
+    // if (type == Types::PropertyTypes::COMPONENT_SELECT && object["options"].toArray().size() != 1)
+    // {
+    //   setInvalid("We only support one option for now");
+    //   return;
+    // }
 
-    for (const auto& option : object["options"].toArray())
+    for (const auto& option : object[ConfigKeys::OPTIONS].toArray())
       options.push_back(PropertiesConfig(option.toObject()));
   }
   else if (type == Types::PropertyTypes::SELECT)
@@ -77,20 +78,29 @@ QVariant PropertiesConfig::toDefault(const QJsonObject& object, Types::PropertyT
     return object.contains("default") ? object["default"].toString() : QVariant(QString("#050505"));
   else if (objectType == Types::PropertyTypes::COMPONENT_SELECT)
   {
-    if (!object.contains("options"))
+    if (!object.contains(ConfigKeys::OPTIONS))
       return toDefault(object, Types::PropertyTypes::STRING);
 
-    // A component select with options must be able to hold its on data as well as the data option
-    QJsonObject propOption;
-    propOption[ConfigKeys::DATA] = "";
-    propOption["data_id"] = "";
+    QJsonObject defaultObject;
+    QJsonArray array;
+    for (const auto& option : options)
+    {
+      // A component select with options must be able to hold its on data as well as the data option
+      QJsonObject propOption;
+      propOption[ConfigKeys::DATA] = "";
+      propOption["data_id"] = "";
 
-    propOption[ConfigKeys::ID] = options.at(0).id;
-    propOption[ConfigKeys::TYPE] = Types::PropertyTypesToString(options.at(0).type);
-    propOption[ConfigKeys::OPTION_DATA] = options.at(0).defaultValue.toString();
-    propOption["option_data_id"] = "";
+      propOption[ConfigKeys::ID] = option.id;
+      propOption[ConfigKeys::TYPE] = Types::PropertyTypesToString(option.type);
+      propOption[ConfigKeys::OPTION_DATA] = option.defaultValue.toString();
+      propOption["option_data_id"] = "";
 
-    return propOption;
+      array.append(propOption);
+    }
+
+    defaultObject[ConfigKeys::OPTIONS] = array;
+
+    return defaultObject;
   }
   else if (objectType == Types::PropertyTypes::EVENT_SELECT)
     return toDefault(object, Types::PropertyTypes::STRING);
