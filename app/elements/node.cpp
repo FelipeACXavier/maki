@@ -1,7 +1,5 @@
 #include "node.h"
 
-#include <qhashfunctions.h>
-
 #include <QGraphicsScene>
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsView>
@@ -18,27 +16,27 @@
 #include "style_helpers.h"
 #include "system/canvas.h"
 
-static const qreal FADE_THRESHOLD = 1.0;
-
-static const qreal FADE_IN_BASE = 1000;
-static const qreal FADE_IN_START = 0.01;
-static const qreal FADE_IN_MULTIPLIER = 0.01;
-
-static const qreal FADE_OUT_BASE = 4000;
-static const qreal FADE_OUT_START = 2.0;
-static const qreal FADE_OUT_MULTIPLIER = 0.3;
-
-static const qreal LOG_TWO = log(2);
-static const qreal MIN_OPACITY = 0.01;
-static const qreal MAX_OPACITY = 1.0;
+// static const qreal FADE_THRESHOLD = 1.0;
+// 
+// static const qreal FADE_IN_BASE = 1000;
+// static const qreal FADE_IN_START = 0.01;
+// static const qreal FADE_IN_MULTIPLIER = 0.01;
+// 
+// static const qreal FADE_OUT_BASE = 4000;
+// static const qreal FADE_OUT_START = 2.0;
+// static const qreal FADE_OUT_MULTIPLIER = 0.3;
+// 
+// static const qreal LOG_TWO = log(2);
+// static const qreal MIN_OPACITY = 0.01;
+// static const qreal MAX_OPACITY = 1.0;
 
 NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
     : NodeBase((!nodeId.isEmpty() && !nodeId.isNull()) ? nodeId : QUuid::createUuid().toString(), info->nodeId, nodeConfig, parent)
     , mStorage(info)
+    , mBehaviour(nullptr)
     , mChildrenNodes({})
     , mBaseScale(config()->libraryType == Types::LibraryTypes::STRUCTURAL ? mStorage->scale : 1.0)
     , mSize(mStorage->size)  // / baseScale())
-    , mBehaviour(nullptr)
 {
   setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
   setCacheMode(DeviceCoordinateCache);

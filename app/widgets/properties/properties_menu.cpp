@@ -4,6 +4,7 @@
 #include <QColorDialog>
 #include <QComboBox>
 #include <QDoubleValidator>
+#include <QGroupBox>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QIntValidator>
