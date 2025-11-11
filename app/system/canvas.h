@@ -97,11 +97,11 @@ private:
     QPointF posRelativeToMouse;
   };
 
+  const QString mId;
+
   QList<CopiedNode> mCopiedNodes;
   std::shared_ptr<ConfigurationTable> mConfigTable;
   std::shared_ptr<SaveInfo> mStorage;
-
-  const QString mId;
 
   void clearCanvas();
   void selectNode(NodeItem* node, bool select);

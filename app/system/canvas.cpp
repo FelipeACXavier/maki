@@ -21,10 +21,10 @@
 
 Canvas::Canvas(const QString& canvasId, std::shared_ptr<SaveInfo> storage, std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
     : QGraphicsScene(parent)
-    , mConfigTable(configTable)
-    , mStorage(storage)
     , mId(canvasId)
     , mCopiedNodes({})
+    , mConfigTable(configTable)
+    , mStorage(storage)
 {
   setProperty("class", QVariant(QStringLiteral("canvas")));
   setBackgroundBrush(Qt::transparent);
@@ -670,10 +670,10 @@ VoidResult Canvas::loadFromSave(const QVector<std::shared_ptr<NodeSaveInfo>>& no
     LOG_AND_RETURN_VOID_ON_FAILURE(loadFromSave(nodeInfo->children, createdNode));
 
     (void)createdNode->createBehaviour(nodeInfo->behaviour);
-    
+
     for (const auto& flow : node->flows)
       (void)createdNode->createFlow(flow->name, flow);
-      
+
     selectNode(createdNode, false);
   }
 
