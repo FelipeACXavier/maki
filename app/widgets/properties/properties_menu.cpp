@@ -1,12 +1,5 @@
 #include "properties_menu.h"
 
-#include <qboxlayout.h>
-#include <qcombobox.h>
-#include <qgroupbox.h>
-#include <qjsonobject.h>
-#include <qlogging.h>
-#include <qsizepolicy.h>
-
 #include <QCheckBox>
 #include <QColorDialog>
 #include <QComboBox>
@@ -273,6 +266,8 @@ VoidResult PropertiesMenu::loadPropertyReal(const PropertiesConfig& property, No
     qreal newValue = widget->text().toDouble(&ok);
     if (ok)
       node->setProperty(property.id, newValue);
+    else
+      LOG_WARNING("Failed to set property. Not a valid number");
   });
 
   widget->setFont(Fonts::Property);
