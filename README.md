@@ -4,6 +4,9 @@ MAKI is a low-code platform that targets robotic systems. It is build on top of 
 
 ## Installation
 
+> [!IMPORTANT]
+> I haven't properly checked the process in Windows. The instructions below is how it **should** work, but there are not guarantees.
+
 A Dockerfile is provided to ensure everyone has the same build and run environment. Note that there is no specific run image though. To build the application, follow the instructions below:
 
   1. Clone this repository and move into it
@@ -76,6 +79,11 @@ A Dockerfile is provided to ensure everyone has the same build and run environme
 
   ```bash
   cmake --build build-linux -j 4 --target deploy-linux
+  ```
+
+  6. After installation, it is possible to run the application with:
+  ```
+  ./dist-linux/bin/maki
   ```
 
 ## Examples of KODA:
