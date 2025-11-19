@@ -5,88 +5,89 @@ MAKI is a low-code platform that targets robotic systems. It is build on top of 
 ## Installation
 
 > [!IMPORTANT]
-> I haven't properly checked the process in Windows. The instructions below is how it **should** work, but there are not guarantees.
+> I haven't properly checked the process in Windows. The instructions below indicate how it **should** work, but there are not guarantees.
 
 A Dockerfile is provided to ensure everyone has the same build and run environment. Note that there is no specific run image though. To build the application, follow the instructions below:
 
   1. Clone this repository and move into it
 
-  ```bash
-  git clone https://github.com/FelipeACXavier/MAKI.git && cd MAKI
-  ```
+```bash
+git clone https://github.com/FelipeACXavier/MAKI.git && cd MAKI
+```
 
   2. Then clone the submodules:
 
-  ```bash
-  git submodule update --init --recursive
-  ```
+```bash
+git submodule update --init --recursive
+```
 
   3. Build the docker container, this might take some time (30+ minutes) since we need to build the QT library. Still, that only needs to be done once.
 
-  ```bash
-  docker build -f docker/Dockerfile -t maki:v1.0.0 .
-  ```
+```bash
+docker build -f docker/Dockerfile -t maki:v1.0.0 .
+```
 
   4. Run the docker image
 
   - Windows:
 
-  ```powershell
-  TODO: No idea to be honest
-  ```
+```powershell
+TODO: No idea to be honest
+```
 
   - Linux, using X11
 
-  ```bash
-  docker run -it \
-    --name maki \
-    --user 1000:1000 \
-    --net=host \
-    -e DISPLAY=:0 \
-    -e QT_X11_NO_MITSHM=1 \
-    --device /dev/dri \
-    -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
-    -v .:/home/ubuntu/MAKI:rw \
-    maki:v1.0.0
-  ```
+```bash
+docker run -it \
+  --name maki \
+  --user 1000:1000 \
+  --net=host \
+  -e DISPLAY=:0 \
+  -e QT_X11_NO_MITSHM=1 \
+  --device /dev/dri \
+  -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
+  -v .:/home/ubuntu/MAKI:rw \
+  maki:v1.0.0
+```
 
   5. Inside the docker, we can now build Maki. There are two options available
 
   - Windows: 
 
-  ```powershell
-  cmake -S . -B build-windows \
-    -DDEPLOY_TARGET=windows \
-    -DCMAKE_PREFIX_PATH=$HOME/Qt6-Windows \
-    -DCMAKE_INSTALL_PREFIX=/home/ubuntu/MAKI/dist-windows \
-    -DCMAKE_TOOLCHAIN_FILE=$HOME/cmake/toolchain-mingw64.cmake
+```powershell
+cmake -S . -B build-windows \
+  -DDEPLOY_TARGET=windows \
+  -DCMAKE_PREFIX_PATH=$HOME/Qt6-Windows \
+  -DCMAKE_INSTALL_PREFIX=/home/ubuntu/MAKI/dist-windows \
+  -DCMAKE_TOOLCHAIN_FILE=$HOME/cmake/toolchain-mingw64.cmake
 
-  cmake --build build-windows -j 4
-  ```
+cmake --build build-windows -j 4
+```
 
   - Linux (we have only tested in Ubuntu 24.04)
 
-  ```bash
-  cmake -S . -B build-linux \
-    -DDEPLOY_TARGET=linux \
-    -DCMAKE_PREFIX_PATH=$HOME/Qt6-Linux \
-    -DCMAKE_INSTALL_PREFIX=/home/ubuntu/MAKI/dist-linux
+```bash
+cmake -S . -B build-linux \
+  -DDEPLOY_TARGET=linux \
+  -DCMAKE_PREFIX_PATH=$HOME/Qt6-Linux \
+  -DCMAKE_INSTALL_PREFIX=/home/ubuntu/MAKI/dist-linux
 
-  cmake --build build-linux -j 4
-  ```
+cmake --build build-linux -j 4
+```
+
   6. Finally, to install the tool
 
   - Windows (This needs to be run in a Windows machine due to the need for `windeployqt.exe`)
 
-  ```powershell
-  cmake --build build-windows -j 4 --target deploy-windows
-  ```
+```powershell
+cmake --build build-windows -j 4 --target deploy-windows
+```
 
   - Linux (we have only tested in **Ubuntu 24.04**)
 
-  ```bash
-  cmake --build build-linux -j 4 --target deploy-linux
-  ```
+```bash
+cmake --build build-linux -j 4 --target deploy-linux
+```
 
 ## Running
 
@@ -240,6 +241,8 @@ task AirQuality (bridge req Bridge, sensor req Co2Sensor, environ req EnvSensor,
 
 ## Styling ideas
 
+### Colors
+
 - Red Inferno: [\#bb2c1e](https://colorkit.co/color/bb2c1e/)
 - Flame of Prometheus: [\#d73800](https://colorkit.co/color/d73800/)
 - Freshly Baked: [\#e5c185](https://colorkit.co/color/e5c185/)
@@ -247,3 +250,9 @@ task AirQuality (bridge req Bridge, sensor req Co2Sensor, environ req EnvSensor,
 - Neptune Green: [\#7ebb9c](https://colorkit.co/color/7ebb9c/)
 - Emperor Jade: [\#018373](https://colorkit.co/color/018373/)
 - Windows 95 Desktop: [\#008585](https://colorkit.co/color/008585/)
+
+### Fonts
+
+- [JetBrains Mono](https://www.jetbrains.com/lp/mono/)
+- [Geist](https://fonts.google.com/specimen/Geist)
+- [Can robots say I'm not a robot?](https://www.1001fonts.com/can-robots-say-i-m-not-a-robot-font.html)
