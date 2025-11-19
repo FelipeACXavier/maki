@@ -15,13 +15,19 @@ A Dockerfile is provided to ensure everyone has the same build and run environme
   git clone https://github.com/FelipeACXavier/MAKI.git && cd MAKI
   ```
 
-  2. Build the docker container, this might take some time (30+ minutes) since we need to build the QT library. Still, that only needs to be done once.
+  2. Then clone the submodules:
+
+  ```bash
+  git submodule update --init --recursive
+  ```
+
+  3. Build the docker container, this might take some time (30+ minutes) since we need to build the QT library. Still, that only needs to be done once.
 
   ```bash
   docker build -f docker/Dockerfile -t maki:v1.0.0 .
   ```
 
-  3. Run the docker image
+  4. Run the docker image
 
   - Windows:
 
@@ -43,7 +49,8 @@ A Dockerfile is provided to ensure everyone has the same build and run environme
     -v .:/home/ubuntu/MAKI:rw \
     maki:v1.0.0
   ```
-  4. Inside the docker, we can now build Maki. There are two options available
+
+  5. Inside the docker, we can now build Maki. There are two options available
 
   - Windows: 
 
@@ -67,7 +74,7 @@ A Dockerfile is provided to ensure everyone has the same build and run environme
 
   cmake --build build-linux -j 4
   ```
-  5. Finally, to install the tool
+  6. Finally, to install the tool
 
   - Windows (This needs to be run in a Windows machine due to the need for `windeployqt.exe`)
 
@@ -81,10 +88,13 @@ A Dockerfile is provided to ensure everyone has the same build and run environme
   cmake --build build-linux -j 4 --target deploy-linux
   ```
 
-  6. After installation, it is possible to run the application with:
-  ```
-  ./dist-linux/bin/maki
-  ```
+## Running
+
+After the installation, it is possible to run the application with:
+
+```
+./dist-linux/bin/maki
+```
 
 ## Examples of KODA:
 
