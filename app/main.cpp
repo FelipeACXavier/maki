@@ -1,6 +1,7 @@
 // #include "mainwindow.h"
 #include <QApplication>
 #include <QCommandLineParser>
+#include <QFontDatabase>
 #include <QMessageBox>
 #include <QUrl>
 
@@ -10,6 +11,33 @@
 
 using namespace Qt::StringLiterals;
 
+void loadApplicationFonts()
+{
+  QString fontDirPath;
+
+#ifdef Q_OS_WIN
+  // TODO(felaze): Fix when we have access to a windows computer
+  fontDirPath = QCoreApplication::applicationDirPath() + "/../share/fonts";
+#else
+  fontDirPath = QCoreApplication::applicationDirPath() + "/../share/fonts";
+#endif
+
+  QDir fontDir(fontDirPath);
+  const QStringList files = fontDir.entryList({"*.ttf", "*.otf"}, QDir::Files);
+
+  for (const QString& file : files)
+  {
+    const QString fullPath = fontDir.filePath(file);
+    if (QFontDatabase::addApplicationFont(fullPath) == -1)
+      LOG_WARNING("Failed to load font %s", qPrintable(fullPath));
+  }
+
+  // Uncomment if you need to know what fonts are available
+  // QFontDatabase db;
+  // for (const QString& family : db.families())
+  //   qDebug() << family;
+}
+
 int main(int argc, char* argv[])
 {
   QApplication app(argc, argv);
@@ -17,16 +45,7 @@ int main(int argc, char* argv[])
   QCoreApplication::setApplicationName(Config::APPLICATION_NAME);
   QCoreApplication::setApplicationVersion(Config::VERSION);
 
-  // QCommandLineParser parser;
-  // parser.setApplicationDescription(
-  //     QApplication::translate("main", "A viewer for JSON, PDF and text files"));
-  // parser.addHelpOption();
-  // parser.addVersionOption();
-  // parser.addPositionalArgument("File"_L1, QApplication::translate("main", "JSON, PDF or text file to open"));
-  // parser.process(app);
-
-  // const QStringList& positionalArguments = parser.positionalArguments();
-  // const QString& fileName = (positionalArguments.count() > 0) ? positionalArguments.at(0) : QString();
+  loadApplicationFonts();
 
   QFile file(QStringLiteral(":/assets/style.css"));
   if (!file.open(QFile::ReadOnly))
@@ -34,6 +53,8 @@ int main(int argc, char* argv[])
     LOG_ERROR("Failed to open stylesheet");
     return -1;
   }
+
+  QApplication::setFont(Fonts::Main);
 
   MainWindow system;
   system.setStyleSheet(QLatin1String(file.readAll()));

@@ -267,7 +267,7 @@ void MainWindowlayout::buildLogTab()
   logToolBar->addWidget(group);
 
   mLogText = new QTextBrowser(mBottomPanel);
-  mLogText->setStyleSheet("QTextBrowser { font-family: monospace; }");
+  mLogText->setFont(Fonts::MonoSpace);
 
   // Assemble the complete tab
   logLayout->addWidget(logToolBar);
