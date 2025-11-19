@@ -1,14 +1,35 @@
 cmake_minimum_required(VERSION 3.16)
 project(${APPLICATION_NAME} LANGUAGES CXX)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
-
 # Compile libraries
 add_subdirectory(common)
 add_subdirectory(plugins)
 
 qt_standard_project_setup()
 
+# ------------------------------------------------------------------------------------------------------------
+# Fonts
+file(GLOB APP_FONT_FILES
+  ${CMAKE_CURRENT_SOURCE_DIR}/assets/fonts/dejavu/*.ttf
+  ${CMAKE_CURRENT_SOURCE_DIR}/assets/fonts/geist/*.ttf
+  ${CMAKE_CURRENT_SOURCE_DIR}/assets/fonts/jetbrains_mono/*.ttf
+)
+
+set(FONT_BUILD_DIR "${CMAKE_BINARY_DIR}/share/fonts")
+
+add_custom_target(copy_fonts ALL
+  COMMENT "Copying fonts to ${FONT_BUILD_DIR}"
+  COMMAND ${CMAKE_COMMAND} -E make_directory ${FONT_BUILD_DIR}
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different ${APP_FONT_FILES} ${FONT_BUILD_DIR}
+  DEPENDS ${APP_FONT_FILES}
+)
+
+install(FILES ${APP_FONT_FILES}
+  DESTINATION "${CMAKE_INSTALL_DATADIR}/fonts"
+)
+
+# ------------------------------------------------------------------------------------------------------------
+# Main application
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 # Get the source files in common and view
@@ -44,16 +65,7 @@ target_link_libraries(${APPLICATION_NAME} PRIVATE
     libcpphelpers
 )
 
-# set(plugin_targets
-#     jsonviewer
-#     txtviewer
-# )
-
-# if(QT6_IS_SHARED_LIBS_BUILD)
-#     add_dependencies(${APPLICATION_NAME} ${plugin_targets})
-# else()
-#     target_link_libraries(${APPLICATION_NAME} PRIVATE ${plugin_targets})
-# endif()
+add_dependencies(${APPLICATION_NAME} copy_fonts)
 
 install(TARGETS ${APPLICATION_NAME}
     BUNDLE  DESTINATION .
@@ -61,7 +73,48 @@ install(TARGETS ${APPLICATION_NAME}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
-# install(TARGETS abstractviewer
-#     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-#     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-# )
+# ------------------------------------------------------------------------------------------------------------
+# Linux deployment
+if (DEPLOY_TARGET STREQUAL "linux" AND UNIX AND NOT APPLE)
+  # Where Qt is installed in the container
+  set(QT_RUNTIME_PREFIX "/home/ubuntu/Qt6-Linux" CACHE PATH "Qt runtime prefix (Qt install dir)")
+
+  add_custom_target(deploy-linux
+    # 1. Regular install into CMAKE_INSTALL_PREFIX (e.g. /dist)
+    COMMAND "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --target install
+
+    # 2. Copy Qt plugins (platforms, imageformats, etc.)
+    COMMAND "${CMAKE_COMMAND}" -E make_directory "${CMAKE_INSTALL_PREFIX}/plugins"
+    COMMAND "${CMAKE_COMMAND}" -E copy_directory
+            "${QT_RUNTIME_PREFIX}/plugins"
+            "${CMAKE_INSTALL_PREFIX}/plugins"
+
+    # 3. Copy our language plugins
+    COMMAND "${CMAKE_COMMAND}" -E copy_directory
+            "${PLUGINS_FOLDER}"
+            "${CMAKE_INSTALL_PREFIX}/plugins"
+
+    # 4. Call CMake script to run ldd and copy only needed Qt libs
+    COMMAND "${CMAKE_COMMAND}"
+    -DAPP_PATH="${CMAKE_INSTALL_PREFIX}/bin/${APPLICATION_NAME}"
+    -DCMAKE_INSTALL_PREFIX="${CMAKE_INSTALL_PREFIX}"
+    -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}"
+    -P "${CMAKE_SOURCE_DIR}/cmake/deploy-linux.cmake"
+
+    COMMENT "Installing maki and bundling Qt runtime into ${CMAKE_INSTALL_PREFIX}"
+  )
+endif()
+
+# TODO: Test this with a windows machine
+# Windows deployment
+if (DEPLOY_TARGET STREQUAL "windows" AND WIN32 AND NOT CMAKE_CROSSCOMPILING)
+  if (QT_WINDEPLOYQT_EXECUTABLE)
+    add_custom_target(deploy-windows
+      COMMAND "${QT_WINDEPLOYQT_EXECUTABLE}"
+              --dir "$<TARGET_FILE_DIR:editor>\\deploy"
+              "$<TARGET_FILE:editor>"
+      DEPENDS editor
+      COMMENT "Running windeployqt for editor"
+    )
+  endif()
+endif()
