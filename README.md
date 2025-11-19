@@ -1,10 +1,88 @@
-# Low-code platform for embedded systems
+# MAKI
 
+MAKI is a low-code platform that targets robotic systems. It is build on top of KODA and aims to simplify the creation of formally verified ROS2 systems. MAKI is still in development and there is no easy way to install it yet
+
+## Installation
+
+A Dockerfile is provided to ensure everyone has the same build and run environment. Note that there is no specific run image though. To build the application, follow the instructions below:
+
+  1. Clone this repository and move into it
+
+  ```bash
+  git clone https://github.com/FelipeACXavier/MAKI.git && cd MAKI
+  ```
+
+  2. Build the docker container, this might take some time (30+ minutes) since we need to build the QT library. Still, that only needs to be done once.
+
+  ```bash
+  docker build -f docker/Dockerfile -t maki:v1.0.0 .
+  ```
+
+  3. Run the docker image
+
+  - Windows:
+
+  ```powershell
+  TODO: No idea to be honest
+  ```
+
+  - Linux, using X11
+
+  ```bash
+  docker run -it \
+    --name maki \
+    --user 1000:1000 \
+    --net=host \
+    -e DISPLAY=:0 \
+    -e QT_X11_NO_MITSHM=1 \
+    --device /dev/dri \
+    -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
+    -v .:/home/ubuntu/MAKI:rw \
+    maki:v1.0.0
+  ```
+  4. Inside the docker, we can now build Maki. There are two options available
+
+  - Windows: 
+
+  ```powershell
+  cmake -S . -B build-windows \
+    -DDEPLOY_TARGET=windows \
+    -DCMAKE_PREFIX_PATH=$HOME/Qt6-Windows \
+    -DCMAKE_INSTALL_PREFIX=/home/ubuntu/MAKI/dist-windows \
+    -DCMAKE_TOOLCHAIN_FILE=$HOME/cmake/toolchain-mingw64.cmake
+
+  cmake --build build-windows -j 4
+  ```
+
+  - Linux (we have only tested in Ubuntu 24.04)
+
+  ```bash
+  cmake -S . -B build-linux \
+    -DDEPLOY_TARGET=linux \
+    -DCMAKE_PREFIX_PATH=$HOME/Qt6-Linux \
+    -DCMAKE_INSTALL_PREFIX=/home/ubuntu/MAKI/dist-linux
+
+  cmake --build build-linux -j 4
+  ```
+  5. Finally, to install the tool
+
+  - Windows (This needs to be run in a Windows machine due to the need for `windeployqt.exe`)
+
+  ```powershell
+  cmake --build build-windows -j 4 --target deploy-windows
+  ```
+
+  - Linux (we have only tested in **Ubuntu 24.04**)
+
+  ```bash
+  cmake --build build-linux -j 4 --target deploy-linux
+  ```
 
 ## Examples of KODA:
 
-The first is a simple pick and place robot.
-It drives between two specified locations where it first picks an object and then places the object.
+As mentioned, MAKI is build on top of KODA, a DSL for describing and composing robotic missions. For context, here, we present two small examples of this DSL. For more information, refer to the KODA repository.
+
+The first example is a simple pick and place robot. It drives between two specified locations where it first picks an object and then places the object.
 
 ```
 capability Drive(float x, float y) {
@@ -66,8 +144,7 @@ task PickAndDrop (drive req Drive, vision req Vision,
 }
 ```
 
-The second example represents a small building automation scenario. 
-The orchestrator monitors the occupancy of the room and set the lights accordingly, and it triggers the HVAC to control the CO2 levels.
+The second example represents a small building automation scenario. The orchestrator monitors the occupancy of the room and set the lights accordingly, and it triggers the HVAC to control the CO2 levels.
 
 ```
 capability Bridge(string zone) {
@@ -143,7 +220,7 @@ task AirQuality (bridge req Bridge, sensor req Co2Sensor, environ req EnvSensor,
 }
 ```
 
-# Styling ideas
+## Styling ideas
 
 - Red Inferno: [\#bb2c1e](https://colorkit.co/color/bb2c1e/)
 - Flame of Prometheus: [\#d73800](https://colorkit.co/color/d73800/)
