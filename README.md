@@ -54,39 +54,28 @@ docker run -it \
 
   - Windows: 
 
-```powershell
-cmake -S . -B build-windows \
-  -DDEPLOY_TARGET=windows \
-  -DCMAKE_PREFIX_PATH=$HOME/Qt6-Windows \
-  -DCMAKE_INSTALL_PREFIX=/home/ubuntu/MAKI/dist-windows \
-  -DCMAKE_TOOLCHAIN_FILE=$HOME/cmake/toolchain-mingw64.cmake
-
-cmake --build build-windows -j 4
+```bash
+./scripts/build.sh --windows
 ```
 
   - Linux (we have only tested in Ubuntu 24.04)
 
 ```bash
-cmake -S . -B build-linux \
-  -DDEPLOY_TARGET=linux \
-  -DCMAKE_PREFIX_PATH=$HOME/Qt6-Linux \
-  -DCMAKE_INSTALL_PREFIX=/home/ubuntu/MAKI/dist-linux
-
-cmake --build build-linux -j 4
+./scripts/build.sh --linux
 ```
 
   6. Finally, to install the tool
 
   - Windows (This needs to be run in a Windows machine due to the need for `windeployqt.exe`)
 
-```powershell
-cmake --build build-windows -j 4 --target deploy-windows
+```bash
+./scripts/release.sh --windows
 ```
 
   - Linux (we have only tested in **Ubuntu 24.04**)
 
 ```bash
-cmake --build build-linux -j 4 --target deploy-linux
+./scripts/release.sh --linux
 ```
 
 ## Running

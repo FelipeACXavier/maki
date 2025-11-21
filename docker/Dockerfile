@@ -6,6 +6,7 @@ ARG QT_VERSION=6.8.3
 ARG QT_BUILD_TYPE=debug
 ARG NODE_VERSION=23.8.0
 ARG NVM_VERSION=v0.40.2
+ARG HOME=/home/ubuntu
 
 # -----------------------------------------------------------------------------------------------------------
 # Essential packages
@@ -52,11 +53,11 @@ ENV LANGUAGE=en_US.UTF-8
 
 # Make sure we are signed in as ubuntu
 USER ubuntu
-WORKDIR /home/ubuntu
+WORKDIR ${HOME}
 
 # Let's install node, just in case...
 RUN wget -O - https://raw.githubusercontent.com/nvm-sh/nvm/${NVM_VERSION}/install.sh | bash
-ENV NVM_DIR=/home/ubuntu/.nvm
+ENV NVM_DIR=${HOME}/.nvm
 RUN bash -c "source $NVM_DIR/nvm.sh && nvm install $NODE_VERSION"
 
 # -----------------------------------------------------------------------------------------------------------
@@ -70,10 +71,10 @@ RUN tar xf qt-everywhere-src-${QT_VERSION}.tar.xz
 
 # Build QT for linux
 RUN mkdir -p ~/qt-linux
-WORKDIR /home/ubuntu/qt-linux
+WORKDIR ${HOME}/qt-linux
 
 RUN /tmp/qt-everywhere-src-${QT_VERSION}/configure \
-    -prefix /home/ubuntu/Qt6-Linux \
+    -prefix ${HOME}/Qt6-Linux \
     -${QT_BUILD_TYPE} \
     -nomake tests \
     -nomake examples \
@@ -119,55 +120,57 @@ RUN cmake --install .
 
 # Build QT for windows
 RUN mkdir -p ~/qt-windows
-WORKDIR /home/ubuntu/qt-windows
+WORKDIR ${HOME}/qt-windows
 COPY cmake/toolchain-mingw64.cmake  ./
 RUN /tmp/qt-everywhere-src-${QT_VERSION}/configure \
-    -prefix /home/ubuntu/Qt6-Windows \
-    -${QT_BUILD_TYPE} \
-    -nomake tests \
-    -nomake examples \
-    -skip qt3d \
-    -skip qtcharts \
-    -skip qtconnectivity \
-    -skip qtdatavis3d \
-    -skip qtdoc \
-    -skip qtgamepad \
-    -skip qtgraphicaleffects \
-    -skip qtlocation \
-    -skip qtmultimedia \
-    -skip qtnetworkauth \
-    -skip qtopcua \
-    -skip qtpositioning \
-    -skip qtdeclarative \
-    -skip qtquick3d \
-    -skip qtquick3dphysics \
-    -skip qtquicktimeline \
-    -skip qtquickeffectmaker \
-    -skip qtlottie \
-    -skip qtmqtt \
-    -skip qtremoteobjects \
-    -skip qtscxml \
-    -skip qtsensors \
-    -skip qtserialbus \
-    -skip qtserialport \
-    -skip qtspeech \
-    -skip qtvirtualkeyboard \
-    -skip qtwayland \
-    -skip qtwebchannel \
-    -skip qtwebengine \
-    -skip qtwebsockets \
-    -skip qtwebview \
-    -skip qtgraphs \
-    -skip qtgrpc \
-    -qt-freetype \
-    -qt-harfbuzz \
-    -qt-libpng \
-    -D CMAKE_TOOLCHAIN_FILE=toolchain-mingw64.cmake
+  -prefix ${HOME}/Qt6-Windows \
+  -${QT_BUILD_TYPE} \
+  -nomake tests \
+  -nomake examples \
+  -skip qt3d \
+  -skip qtcharts \
+  -skip qtconnectivity \
+  -skip qtdatavis3d \
+  -skip qtdoc \
+  -skip qtgamepad \
+  -skip qtgraphicaleffects \
+  -skip qtlocation \
+  -skip qtmultimedia \
+  -skip qtnetworkauth \
+  -skip qtopcua \
+  -skip qtpositioning \
+  -skip qtdeclarative \
+  -skip qtquick3d \
+  -skip qtquick3dphysics \
+  -skip qtquicktimeline \
+  -skip qtquickeffectmaker \
+  -skip qtlottie \
+  -skip qtmqtt \
+  -skip qtremoteobjects \
+  -skip qtscxml \
+  -skip qtsensors \
+  -skip qtserialbus \
+  -skip qtserialport \
+  -skip qtspeech \
+  -skip qtvirtualkeyboard \
+  -skip qtwayland \
+  -skip qtwebchannel \
+  -skip qtwebengine \
+  -skip qtwebsockets \
+  -skip qtwebview \
+  -skip qtgraphs \
+  -skip qtgrpc \
+  -skip qtactiveqt \
+  -qt-freetype \
+  -qt-harfbuzz \
+  -qt-libpng \
+  -qt-host-path ${HOME}/Qt6-Linux \
+  -- -DCMAKE_TOOLCHAIN_FILE=${HOME}/qt-windows/toolchain-mingw64.cmake -DQT_FORCE_BUILD_TOOLS=ON
 
 RUN cmake --build . --parallel 4
 RUN cmake --install .
 
 # -----------------------------------------------------------------------------------------------------------
 # Cd to the maki directory and end
-WORKDIR /home/ubuntu/MAKI
+WORKDIR ${HOME}/MAKI
 CMD ["bash"]

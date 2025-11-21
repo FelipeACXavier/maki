@@ -9,10 +9,11 @@ set(CMAKE_RC_COMPILER  x86_64-w64-mingw32-windres)
 
 # Optional: where MinGW lives; often not necessary on Ubuntu
 # set(MINGW_ROOT "/usr/x86_64-w64-mingw32")
-# set(CMAKE_FIND_ROOT_PATH "${MINGW_ROOT}")
+set(QT_HOST_PATH "/home/ubuntu/Qt6-Linux" CACHE PATH "host path for Qt")
+set(CMAKE_FIND_ROOT_PATH "/usr/x86_64-w64-mingw32")
 
 # Tell CMake how to search for libraries and headers
-set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
-set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
-set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+# set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+# set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+# set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+# set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
