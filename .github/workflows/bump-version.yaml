@@ -31,8 +31,8 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           default_bump: ${{ github.event.inputs.bump }}
-          # Only bump from main (change if needed)
-          release_branches: main
+          # Only bump from master (change if needed)
+          release_branches: master
           tag_prefix: "v"
 
       # Apply optional suffix: vX.Y.Z -> vX.Y.Z-suffix

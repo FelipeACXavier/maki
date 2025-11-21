@@ -1,5 +1,6 @@
 name: Release
 
+# Create release on tag creation, but only if it follows a specific pattern
 on:
   push:
     tags:
@@ -9,117 +10,130 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+-*'
 
 jobs:
-  # 1) Build Linux + Windows artifacts inside dev image
+  # ==========================================================================================
+  # 1) Build Linux artifacts + Windows SDK inside the dev image
   build:
+    name: Build (Linux + Windows SDK)
     runs-on: self-hosted
     container:
-      image: ghcr.io/${{ github.repository }}/dev:${{ vars.QT_DEV_TAG }}
-
-    strategy:
-      matrix:
-        target: [ linux, windows ]
-
-    env:
-      BUILD_TARGET: ${{ matrix.target }}
+      image: ghcr.io/felipeacxavier/maki/dev:${{ vars.QT_DEV_TAG }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build release artifacts
-        # scripts/release-build.sh must create:
-        #   dist/linux/... for BUILD_TARGET=linux
-        #   dist/windows/... for BUILD_TARGET=windows
+      # --------------------------------------------------------------------------------------
+      # Linux build
+      - name: Build (Linux)
         run: |
-          chmod +x scripts/release.sh
-          ./scripts/release.sh "$BUILD_TARGET"
+          chmod +x scripts/build.sh
+          ./scripts/build.sh --linux
 
-      - name: Upload build artifacts
+      - name: Create Linux release
+        run: |
+          chmod +x ./scripts/release.sh
+          ./scripts/release.sh --linux
+
+      - name: Upload Linux release folder
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.target }}-build
-          path: dist/${{ matrix.target }}/
-
-  # 2) Package Windows Qt SDK from inside the same dev image
-  package-qt-sdk:
-    runs-on: self-hosted
-    container:
-      image: ghcr.io/${{ github.repository }}/dev:${{ vars.QT_DEV_TAG }}
-
-    steps:
-      - name: Package Windows Qt SDK
-        # Assumes /opt/qt-win64 is your Windows Qt install in the image
-        run: |
-          cd /home/ubuntu/Qt6-Windows
-          zip -r "$GITHUB_WORKSPACE/qt-win64.zip" qt-win64
-
-      - name: Upload Qt SDK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: qt-win64-sdk
-          path: qt-win64.zip
-
-  # 3) On Windows: run windeployqt using the SDK from the image, then create release
-  package-and-release:
-    runs-on: windows-latest
-    needs:
-      - build
-      - package-qt-sdk
-
-    steps:
-      # --- Download artifacts from previous jobs ---
-      - name: Download Linux build
-        uses: actions/download-artifact@v4
-        with:
-          name: linux-build
+          name: linux-release-folder
           path: dist/linux
 
-      - name: Download Windows build
+      # --------------------------------------------------------------------------------------
+      # Windows build
+      - name: Build (Windows cross)
+        run: |
+          chmod +x scripts/build.sh
+          ./scripts/build.sh --windows
+
+      - name: Package Windows SDK
+        run: |
+          chmod +x ./scripts/release.sh
+          ./scripts/release.sh --windows
+
+      - name: Upload Windows SDK
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-sdk
+          path: windows-sdk.zip
+
+  # ==========================================================================================
+  # 2) On Windows runner: create Windows release using SDK + re-zip Linux
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # --------------------------------------------------------------------------------------
+      # Linux release
+      - name: Download Linux release folder
         uses: actions/download-artifact@v4
         with:
-          name: windows-build
-          path: dist/windows
+          name: linux-release-folder
+          path: artifacts/linux
 
-      - name: Download Qt SDK
-        uses: actions/download-artifact@v4
-        with:
-          name: qt-win64-sdk
-          path: qt-sdk
-
-      # --- Unpack the Qt SDK into a portable directory ---
-      - name: Unpack Qt SDK
-        run: |
-          Expand-Archive -Path "qt-sdk/qt-win64.zip" -DestinationPath "qt-sdk"
-
-      # --- Add Qt's bin (where windeployqt.exe lives) to PATH ---
-      - name: Add Qt to PATH
-        run: echo "$PWD\qt-sdk\qt-win64\bin" >> $env:GITHUB_PATH
-
-      # --- Run windeployqt on your built Windows exe ---
-      - name: Run windeployqt
-        run: |
-          # Adjust path/exe name to your actual app
-          windeployqt.exe "dist/windows/MyApp.exe"
-
-      # --- Package final artifacts for release ---
       - name: Package Linux artifact
         run: |
           Compress-Archive -Path dist/linux -DestinationPath linux-release.zip
 
+      # --------------------------------------------------------------------------------------
+      # Windows release
+      - name: Download Windows SDK
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-sdk
+          path: artifacts
+
+      - name: Unpack Windows SDK
+        run: |
+          Push-Location artifacts
+          Expand-Archive -Path "windows-sdk.zip" -DestinationPath "."
+          Pop-Location
+
+      # Use SDK + windeployqt to create Windows release
+      # - name: Create Windows release with windeployqt
+      #   shell: pwsh
+      #   run: |
+      #     Set-StrictMode -Version Latest
+      #     $ErrorActionPreference = "Stop"
+
+      #     $sdkRoot   = (Resolve-Path "artifacts/windows-sdk").Path
+      #     $qtTools   = Join-Path $sdkRoot "qttools-install/bin"
+      #     $buildWin  = Join-Path $sdkRoot "build-windows"
+
+      #     $exe       = Join-Path $buildWin "maki.exe"
+
+      #     $distWin   = Join-Path $PWD "dist/windows"
+      #     New-Item -ItemType Directory -Force -Path $distWin | Out-Null
+
+      #     # Make sure windeployqt.exe is on PATH
+      #     $env:PATH = "$qtTools;$env:PATH"
+
+      #     $windeploy = Join-Path $qtTools "windeployqt.exe"
+
+      #     $windeploy "--dir=$distWin" $exe
+
+      #     if ($LASTEXITCODE -ne 0) {
+      #       throw "windeployqt.exe failed with exit code $LASTEXITCODE"
+      #     }
+
       - name: Package Windows artifact
         run: |
-          Compress-Archive -Path dist/windows -DestinationPath windows-release.zip
+          Compress-Archive -Path windows-sdk -DestinationPath windows-release.zip
 
-      # --- Create GitHub Release with auto-changelog + prerelease detection ---
+      # --------------------------------------------------------------------------------------
+      # Publish GitHub Release
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             linux-release.zip
             windows-release.zip
-          # Auto-generate notes from commits/PRs
           generate_release_notes: true
-          # Mark as prerelease if tag has a "-" (e.g. v1.2.3-rc1)
           prerelease: ${{ contains(github.ref_name, '-') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

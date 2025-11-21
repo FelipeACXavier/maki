@@ -6,12 +6,12 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  # Build/test on PRs to main
+  # Build/test on PRs to master
   pull_request:
-    branches: [ main ]
-  # Optional: also on direct pushes to main
+    branches: [ master ]
+  # Optional: also on direct pushes to master
   push:
-    branches: [ main ]
+    branches: [ master ]
 
 jobs:
   build-and-test:
@@ -20,7 +20,7 @@ jobs:
 
     # Run inside the dev Docker image (standardised env)
     container:
-      image: ghcr.io/${{ github.repository }}/dev:${{ vars.QT_DEV_TAG }}
+      image: ghcr.io/felipeacxavier/maki/dev:${{ vars.QT_DEV_TAG }}
 
     strategy:
       # Build/test both Linux and Windows targets inside this image

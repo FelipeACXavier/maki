@@ -66,10 +66,13 @@ docker run -it \
 
   6. Finally, to install the tool
 
-  - Windows (This needs to be run in a Windows machine due to the need for `windeployqt.exe`)
+  - Windows. This is tricky, apparently qt requires the `windeployqt` script to be able to package the final program. In the docker container, we are able to create this program but it still needs to run in a Windows machine.
 
 ```bash
 ./scripts/release.sh --windows
+```
+```
+TODO: Something in powershell
 ```
 
   - Linux (we have only tested in **Ubuntu 24.04**)
