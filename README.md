@@ -29,10 +29,19 @@ docker build -f docker/Dockerfile -t maki:v1.0.0 .
 
   4. Run the docker image
 
+a) To be able to run GUI applications, first download & install an X server such as vcXsrv (https://sourceforge.net/projects/vcxsrv/).  
+
+b) Set DISPLAY (env. var. used by Linux) to the address of your Windows X server.
+```powershell
+setx DISPLAY "127.0.0.1:0"
+```
+c) Launch vsXsrv with the following settings: Multiple Windows, Start no client, Disable access control. 
+
+d) Run the image:
   - Windows:
 
 ```powershell
-TODO: No idea to be honest
+docker run -it --name maki -e DISPLAY=host.docker.internal:0 -e QT_X11_NO_MITSHM=1 -v ${PWD}:/home/ubuntu/MAKI maki:v1.0.0
 ```
 
   - Linux, using X11
@@ -58,7 +67,7 @@ docker run -it \
 ./scripts/build.sh --windows
 ```
 
-  - Linux (we have only tested in Ubuntu 24.04)
+  - Linux (we have only tested in Ubuntu 24.04; this is what worked for me as well)
 
 ```bash
 ./scripts/build.sh --linux
