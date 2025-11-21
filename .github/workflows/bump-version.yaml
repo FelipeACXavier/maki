@@ -63,4 +63,4 @@ jobs:
           git push origin "$TAG"
 
       - name: Show final tag
-        run: echo "Created tag: ${{ steps.final.outputs.final_tag }}"
+        run: echo "Created tag - ${{ steps.final.outputs.final_tag }}"
