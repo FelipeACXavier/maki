@@ -32,7 +32,7 @@ done
 # ----------------------------------
 # Main
 if [ "$LINUX" == "1" ]; then
-  cmake --build build-linux -j 4 --target deploy-linux
+  cmake --build build/linux -j 4 --target deploy-linux
 else
-  cmake --build build-windows -j 4 --target deploy-windows
+  cmake --build build/windows -j 4 --target deploy-windows
 fi

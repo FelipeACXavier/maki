@@ -1,9 +1,8 @@
 # Folders and other build artifacts
 .vscode
-build
+build/
+dist/
 .cache
-build-*
-dist-*
 
 compile_commands.json
 
