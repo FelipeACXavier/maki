@@ -6,6 +6,7 @@ MAKI is a low-code platform that targets robotic systems. It is build on top of 
 
 > [!IMPORTANT]
 > I haven't properly checked the process in Windows. The instructions below indicate how it **should** work, but there are not guarantees.
+> Update: Instructions have been added for a setup that works on Windows 11.  
 
 A Dockerfile is provided to ensure everyone has the same build and run environment. Note that there is no specific run image though. To build the application, follow the instructions below:
 
@@ -29,15 +30,15 @@ docker build -f docker/Dockerfile -t maki:v1.0.0 .
 
   4. Run the docker image
 
-a) To be able to run GUI applications, first download & install an X server such as vcXsrv (https://sourceforge.net/projects/vcxsrv/).  
+  a) To be able to run GUI applications in Docker on Windows, first download & install an X server such as vcXsrv (https://sourceforge.net/projects/vcxsrv/).  
 
-b) Set DISPLAY (env. var. used by Linux) to the address of your Windows X server.
+  b) Set DISPLAY (env. var. used by Linux) to the address of your Windows X server.
 ```powershell
 setx DISPLAY "127.0.0.1:0"
 ```
-c) Launch vsXsrv with the following settings: Multiple Windows, Start no client, Disable access control. 
+  c) Launch vsXsrv with the following settings: Multiple Windows, Start no client, Disable access control. 
 
-d) Run the image:
+  d) Run the image:
   - Windows:
 
 ```powershell
@@ -67,7 +68,7 @@ docker run -it \
 ./scripts/build.sh --windows
 ```
 
-  - Linux (we have only tested in Ubuntu 24.04; this is what worked for me as well)
+  - Linux (we have only tested in Ubuntu 24.04; use this for Windows as well)
 
 ```bash
 ./scripts/build.sh --linux
