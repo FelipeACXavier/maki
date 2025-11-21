@@ -172,5 +172,5 @@ RUN cmake --install .
 
 # -----------------------------------------------------------------------------------------------------------
 # Cd to the maki directory and end
-WORKDIR ${HOME}/MAKI
+WORKDIR ${HOME}/maki
 CMD ["bash"]

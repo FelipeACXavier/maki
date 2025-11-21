@@ -12,7 +12,7 @@ A Dockerfile is provided to ensure everyone has the same build and run environme
   1. Clone this repository and move into it
 
 ```bash
-git clone https://github.com/FelipeACXavier/MAKI.git && cd MAKI
+git clone https://github.com/FelipeACXavier/maki.git && cd maki
 ```
 
   2. Then clone the submodules:
@@ -46,7 +46,7 @@ docker run -it \
   -e QT_X11_NO_MITSHM=1 \
   --device /dev/dri \
   -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
-  -v .:/home/ubuntu/MAKI:rw \
+  -v .:/home/ubuntu/maki:rw \
   maki:v1.0.0
 ```
 

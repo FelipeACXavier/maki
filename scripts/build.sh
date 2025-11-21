@@ -35,14 +35,14 @@ if [ "$LINUX" == "1" ]; then
   cmake -S . -B build/linux \
     -DDEPLOY_TARGET=linux \
     -DCMAKE_PREFIX_PATH=$HOME/Qt6-Linux \
-    -DCMAKE_INSTALL_PREFIX=/home/ubuntu/MAKI/dist/linux
+    -DCMAKE_INSTALL_PREFIX=/home/ubuntu/maki/dist/linux
 
   cmake --build build/linux -j 4
 else
   cmake -S . -B build/windows \
     -DDEPLOY_TARGET=windows \
     -DCMAKE_PREFIX_PATH=$HOME/Qt6-Windows \
-    -DCMAKE_INSTALL_PREFIX=/home/ubuntu/MAKI/dist/windows \
+    -DCMAKE_INSTALL_PREFIX=/home/ubuntu/maki/dist/windows \
     -DCMAKE_TOOLCHAIN_FILE=cmake/toolchain-mingw64.cmake
 
   cmake --build build/windows -j 4
