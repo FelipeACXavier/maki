@@ -32,7 +32,7 @@ jobs:
           file: ./docker/Dockerfile
           push: true
           # Centralised image tag (e.g. dev:qt6.5)
-          tags: ghcr.io/${{ github.repository }}/dev:${{ vars.QT_DEV_TAG }}
+          tags: ghcr.io/felipeacxavier/maki/dev:${{ vars.QT_DEV_TAG }}
           # Pass Qt version into the Dockerfile
           build-args: |
             QT_VERSION=${{ vars.QT_VERSION }}
