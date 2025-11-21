@@ -15,8 +15,8 @@ QString ToLabel(const std::string& str);
 
 QIcon addIconWithColor(const QString& path, const QColor& color);
 
-QString timeToQT(struct timespec ts);
+QString timeToQT(std::chrono::system_clock::time_point ts);
 QString logLevelToQT(logging::LogLevel logLevel);
-QString toQT(struct timespec ts, logging::LogLevel level, const std::string& message);
+QString toQT(std::chrono::system_clock::time_point ts, logging::LogLevel level, const std::string& message);
 
 void addDynamicWidget(QVBoxLayout* layout, QWidget* dynamicWidget, QWidget* parent);

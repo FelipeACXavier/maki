@@ -45,10 +45,18 @@ QIcon addIconWithColor(const QString& path, const QColor& color)
   return QIcon(pixmap);
 }
 
-QString timeToQT(struct timespec ts)
+QString timeToQT(std::chrono::system_clock::time_point now)
 {
-  const struct tm* time = localtime(&ts.tv_sec);
-  return QString::fromStdString(Format("%2d:%02d:%02d.%03ld", time->tm_hour, time->tm_min, time->tm_sec, ts.tv_nsec));
+  // const struct tm* time = localtime(&ts.tv_sec);
+  // return QString::fromStdString(Format("%2d:%02d:%02d.%03ld", time->tm_hour, time->tm_min, time->tm_sec, ts.tv_nsec));
+
+  auto secs = std::chrono::time_point_cast<std::chrono::seconds>(now);
+  auto micros = std::chrono::duration_cast<std::chrono::microseconds>(now - secs).count();
+  auto t = std::chrono::system_clock::to_time_t(secs);
+  std::tm tm = logging::ToLocalTm(t);
+
+  return QString::fromStdString(Format(
+      "%02d:%02d:%02d.%09lld", tm.tm_hour, tm.tm_min, tm.tm_sec, static_cast<long long>(micros)));
 }
 
 QString logLevelToQT(logging::LogLevel logLevel)
@@ -70,7 +78,7 @@ QString logLevelToQT(logging::LogLevel logLevel)
   }
 }
 
-QString toQT(struct timespec ts, logging::LogLevel level, const std::string& message)
+QString toQT(std::chrono::system_clock::time_point ts, logging::LogLevel level, const std::string& message)
 {
   return QStringLiteral("%1 %2: %3").arg(timeToQT(ts), logLevelToQT(level), QString::fromStdString(message));
 }

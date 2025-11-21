@@ -48,7 +48,7 @@ VoidResult MainWindow::start()
 {
   mLogLevel = logging::LogLevel::Debugging;
 
-  logging::gLogToStream = [this](struct timespec ts, logging::LogLevel level, const std::string& filename, const uint32_t& line, const std::string& message) {
+  logging::gLogToStream = [this](std::chrono::system_clock::time_point ts, logging::LogLevel level, const std::string& filename, const uint32_t& line, const std::string& message) {
     if (!mLogText)
       return;
 
@@ -172,7 +172,6 @@ void MainWindow::bindCanvas()
   connect(mSystemMenu, &SystemMenu::nodeSelected, canvas(), &Canvas::onSelectNode);
   connect(mSystemMenu, &SystemMenu::nodeRenamed, canvas(), &Canvas::onRenameNode);
   connect(mSystemMenu, &SystemMenu::nodeFocused, canvas(), &Canvas::onFocusNode);
-
 }
 
 void MainWindow::unbindCanvas()
@@ -187,7 +186,6 @@ void MainWindow::unbindCanvas()
   disconnect(mSystemMenu, &SystemMenu::nodeSelected, canvas(), &Canvas::onSelectNode);
   disconnect(mSystemMenu, &SystemMenu::nodeRenamed, canvas(), &Canvas::onRenameNode);
   disconnect(mSystemMenu, &SystemMenu::nodeFocused, canvas(), &Canvas::onFocusNode);
-  
 }
 
 void MainWindow::bindShortcuts()
