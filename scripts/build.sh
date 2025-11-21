@@ -8,18 +8,23 @@ function printHelp()
   echo "    --windows, windows  | Build the windows project"
 }
 
-LINUX="1"
-
 while [[ $# -gt 0 ]]; do
   key="$1"
-  echo "Arg: $key"
   case $key in
       --linux|linux)
-      LINUX="1"
+      TARGET="linux"
+      BUILD_PATH="build/linux"
+      PREFIX_PATH="$HOME/Qt6-Linux"
+      INSTALL_PREFIX="$HOME/dist/Linux"
+      TOOLCHAIN_FILE=""
       shift
       ;;
       --windows|windows)
-      LINUX="0"
+      TARGET="windows"
+      BUILD_PATH="build/windows"
+      PREFIX_PATH="$HOME/Qt6-Windows"
+      INSTALL_PREFIX="$HOME/dist/Windows"
+      TOOLCHAIN_FILE="cmake/toolchain-mingw64.cmake"
       shift
       ;;
       *)
@@ -29,21 +34,18 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+if [[ -z "${PREFIX_PATH}" ]]; then
+  echo "Error: --linux or --windows required"
+  printHelp "$0"
+  exit 1
+fi
+
 # ----------------------------------
 # Main
-if [ "$LINUX" == "1" ]; then
-  cmake -S . -B build/linux \
-    -DDEPLOY_TARGET=linux \
-    -DCMAKE_PREFIX_PATH=$HOME/Qt6-Linux \
-    -DCMAKE_INSTALL_PREFIX=/home/ubuntu/maki/dist/linux
+cmake -S . -B "$BUILD_PATH"\
+  -DDEPLOY_TARGET="$TARGET" \
+  -DCMAKE_PREFIX_PATH="$PREFIX_PATH" \
+  -DCMAKE_INSTALL_PREFIX="$INSTALL_PREFIX" \
+  -DCMAKE_TOOLCHAIN_FILE="$TOOLCHAIN_FILE"
 
-  cmake --build build/linux -j 4
-else
-  cmake -S . -B build/windows \
-    -DDEPLOY_TARGET=windows \
-    -DCMAKE_PREFIX_PATH=$HOME/Qt6-Windows \
-    -DCMAKE_INSTALL_PREFIX=/home/ubuntu/maki/dist/windows \
-    -DCMAKE_TOOLCHAIN_FILE=cmake/toolchain-mingw64.cmake
-
-  cmake --build build/windows -j 4
-fi
+cmake --build "$BUILD_PATH" -j 4

@@ -7,6 +7,7 @@ ARG QT_BUILD_TYPE=debug
 ARG NODE_VERSION=23.8.0
 ARG NVM_VERSION=v0.40.2
 ARG HOME=/home/ubuntu
+ARG TOOLCHAIN_FILE=toolchain-mingw64.cmake
 
 # -----------------------------------------------------------------------------------------------------------
 # Essential packages
@@ -121,7 +122,7 @@ RUN cmake --install .
 # Build QT for windows
 RUN mkdir -p ~/qt-windows
 WORKDIR ${HOME}/qt-windows
-COPY cmake/toolchain-mingw64.cmake  ./
+COPY cmake/${TOOLCHAIN_FILE}  ${HOME}/
 RUN /tmp/qt-everywhere-src-${QT_VERSION}/configure \
   -prefix ${HOME}/Qt6-Windows \
   -${QT_BUILD_TYPE} \
@@ -165,7 +166,7 @@ RUN /tmp/qt-everywhere-src-${QT_VERSION}/configure \
   -qt-harfbuzz \
   -qt-libpng \
   -qt-host-path ${HOME}/Qt6-Linux \
-  -- -DCMAKE_TOOLCHAIN_FILE=${HOME}/qt-windows/toolchain-mingw64.cmake -DQT_FORCE_BUILD_TOOLS=ON
+  -- -DCMAKE_TOOLCHAIN_FILE=${HOME}/${TOOLCHAIN_FILE}
 
 RUN cmake --build . --parallel 4
 RUN cmake --install .
