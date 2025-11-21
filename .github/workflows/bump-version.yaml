@@ -1,0 +1,66 @@
+name: Bump version and tag
+
+on:
+  # Manual trigger from Actions tab
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump type: major, minor, patch"
+        required: true
+        default: "patch"
+      suffix:
+        description: "Optional suffix (e.g. rc1, beta, preview.1). Leave empty for stable releases."
+        required: false
+        default: ""
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # We need history + tags
+          fetch-depth: 0
+
+      # Use github-tag-action to calculate next base semver (vX.Y.Z)
+      - name: Bump version (base semver)
+        id: bump
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_bump: ${{ github.event.inputs.bump }}
+          # Only bump from main (change if needed)
+          release_branches: main
+          tag_prefix: "v"
+
+      # Apply optional suffix: vX.Y.Z -> vX.Y.Z-suffix
+      - name: Apply suffix if provided
+        id: final
+        run: |
+          BASE_TAG="${{ steps.bump.outputs.new_tag }}"
+          SUFFIX="${{ github.event.inputs.suffix }}"
+
+          if [ -z "$SUFFIX" ]; then
+            # No suffix => stable tag like v1.2.3
+            echo "final_tag=$BASE_TAG" >> $GITHUB_OUTPUT
+          else
+            # Add suffix => v1.2.3-rc1, v1.2.3-beta, etc.
+            FINAL="${BASE_TAG}-${SUFFIX}"
+            echo "final_tag=$FINAL" >> $GITHUB_OUTPUT
+
+            # Remove base tag so only the suffixed tag exists
+            git tag -d "$BASE_TAG"
+            git push origin :refs/tags/"$BASE_TAG"
+          fi
+
+      # Create and push the final tag
+      - name: Create and push final tag
+        run: |
+          TAG="${{ steps.final.outputs.final_tag }}"
+          git tag "$TAG"
+          git push origin "$TAG"
+
+      - name: Show final tag
+        run: echo "Created tag: ${{ steps.final.outputs.final_tag }}"

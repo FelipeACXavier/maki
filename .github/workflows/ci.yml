@@ -1,0 +1,49 @@
+name: CI
+
+# Ensure only one run per PR/ref; newer pushes cancel older runs
+concurrency:
+  group: pr-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+on:
+  # Build/test on PRs to main
+  pull_request:
+    branches: [ main ]
+  # Optional: also on direct pushes to main
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    # Self-hosted Linux box
+    runs-on: self-hosted
+
+    # Run inside the dev Docker image (standardised env)
+    container:
+      image: ghcr.io/${{ github.repository }}/dev:${{ vars.QT_DEV_TAG }}
+
+    strategy:
+      # Build/test both Linux and Windows targets inside this image
+      matrix:
+        target: [ linux, windows ]
+
+    env:
+      BUILD_TARGET: ${{ matrix.target }}
+
+    steps:
+      # 1) Checkout code
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2) Build for given target
+      - name: Build
+        run: |
+          chmod +x scripts/build.sh
+          ./scripts/build.sh "$BUILD_TARGET"
+
+      # No tests for now
+      # 3) Run tests for given target (optional)
+      # - name: Run tests
+      #   run: |
+      #     chmod +x scripts/ci-test.sh
+      #     ./scripts/ci-test.sh "$BUILD_TARGET"
