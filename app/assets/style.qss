@@ -1,0 +1,159 @@
+/* ===============================
+   GLOBAL DEFAULTS
+   =============================== */
+
+   QWidget {
+    background-color: @background;
+    color: @foreground;
+    selection-background-color: @selection_bg;
+    selection-color: @selection_fg;
+}
+
+/* ===============================
+   SCROLLBARS
+   =============================== */
+
+QScrollBar:vertical {
+    background: @background;
+    width: 12px;
+}
+
+QScrollBar::handle:vertical {
+    background: @scrollbar_handle;
+    min-height: 20px;
+    border-radius: 4px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: @scrollbar_handle_hover;
+}
+
+QScrollBar::add-line,
+QScrollBar::sub-line {
+    height: 0;
+}
+
+/* ===============================
+   BUTTONS
+   =============================== */
+
+QPushButton {
+    background-color: @button_bg;
+    border: 1px solid @button_border;
+    padding: 6px 10px;
+    border-radius: 4px;
+}
+
+QPushButton:hover {
+    background-color: @button_bg_hover;
+}
+
+QPushButton:pressed {
+    background-color: @button_pressed_bg;
+    border-color: @button_pressed_border;
+    color: @button_pressed_fg;
+}
+
+/* ===============================
+   LINE EDIT / TEXT EDIT
+   =============================== */
+
+QLineEdit, QTextEdit, QPlainTextEdit {
+    background-color: @input_bg;
+    border: 1px solid @input_border;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+QLineEdit:focus, QTextEdit:focus {
+    border: 1px solid @input_focus_border;
+}
+
+/* ===============================
+   COMBO BOX
+   =============================== */
+
+QComboBox {
+    background-color: @combobox_bg;
+    border: 1px solid @combobox_border;
+    border-radius: 4px;
+    padding: 4px;
+}
+
+QComboBox:hover {
+    border-color: @combobox_hover_border;
+}
+
+QComboBox::drop-down {
+    border-left: 1px solid @combobox_border;
+    width: 24px;
+}
+
+QComboBox::down-arrow {
+    image: url(@arrow_icon);
+}
+
+/* ===============================
+   TAB WIDGETS
+   =============================== */
+
+QTabWidget::pane {
+    border: 1px solid @tab_border;
+    top: -1px;
+}
+
+QTabBar::tab {
+    background: @tab_bg;
+    border: 1px solid @tab_border;
+    padding: 6px 12px;
+    margin-right: 2px;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+}
+
+QTabBar::tab:selected {
+    background: @tab_selected_bg;
+    border-bottom-color: @tab_selected_bg;
+}
+
+/* ===============================
+   MENUS
+   =============================== */
+
+QMenu {
+    background-color: @menu_bg;
+    border: 1px solid @menu_border;
+}
+
+QMenu::item {
+    padding: 6px 20px;
+}
+
+QMenu::item:selected {
+    background-color: @selection_bg;
+    color: @selection_fg;
+}
+
+/* ===============================
+   TOOLBARS
+   =============================== */
+
+QToolBar {
+    background: @toolbar_bg;
+    border-bottom: 1px solid @toolbar_border;
+}
+
+QToolButton {
+    background: transparent;
+    padding: 6px;
+    border-radius: 4px;
+}
+
+QToolButton:hover {
+    background: @toolbutton_hover_bg;
+}
+
+QToolButton:pressed {
+    background: @button_pressed_bg;
+    color: @button_pressed_fg;
+}

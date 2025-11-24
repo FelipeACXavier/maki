@@ -1,6 +1,6 @@
 <RCC>
   <qresource prefix="/">
-    <file>assets/style.css</file>
+    <file alias="themes/style.qss">assets/style.qss</file>
     <file>assets/config.json</file>
     <file>libraries/generic.json</file>
     <file>libraries/math.json</file>

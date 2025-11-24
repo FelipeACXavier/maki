@@ -5,6 +5,7 @@
 #include <QMenu>
 #include <QPluginLoader>
 
+#include "common/style_helpers.h"
 #include "logging.h"
 
 PluginManager::PluginManager()

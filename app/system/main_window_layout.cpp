@@ -207,6 +207,9 @@ void MainWindowlayout::buildMenuBar()
 
   QMenu* settings = mMenuBar->addMenu(tr("Settings"));
 
+  mOpenAllSettings = new QAction(tr("Open all settings"), this);
+  settings->addAction(mOpenAllSettings);
+
   mGeneratorMenu = new QMenu(tr("Generator"));
   settings->addMenu(mGeneratorMenu);
 

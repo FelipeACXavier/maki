@@ -31,6 +31,8 @@
 #include "style_helpers.h"
 #include "widgets/properties/fields_menu.h"
 #include "widgets/properties/properties_menu.h"
+#include "widgets/settings_dialog.h"
+#include "widgets/settings_manager.h"
 #include "widgets/structure/flow_menu.h"
 #include "widgets/structure/system_menu.h"
 
@@ -81,6 +83,7 @@ VoidResult MainWindow::start()
   mGenerator = std::make_shared<Generator>(mStorage);
   mSaveHandler = std::make_unique<SaveHandler>(this);
   mPluginManager = std::make_unique<PluginManager>();
+  mSettingsManager = std::make_shared<SettingsManager>();
 
   startUI();
   bind();
@@ -98,6 +101,11 @@ VoidResult MainWindow::start()
   LOG_DEBUG("Main window started");
 
   return VoidResult();
+}
+
+std::shared_ptr<SettingsManager> MainWindow::settingsManager() const
+{
+  return mSettingsManager;
 }
 
 void MainWindow::startUI()
@@ -139,6 +147,15 @@ void MainWindow::bind()
   connect(mLogLevelComboBox, &QComboBox::currentIndexChanged, this, [this](int index) {
     mLogLevel = static_cast<logging::LogLevel>(index);
   });
+
+  connect(mOpenAllSettings, &QAction::triggered, this, [this] {
+    LOG_INFO("Opening all settings");
+    SettingsDialog* settingsDialog = new SettingsDialog("Add behaviour", mSettingsManager, this);
+
+    settingsDialog->setAttribute(Qt::WA_DeleteOnClose);
+    settingsDialog->show();
+  });
+  mOpenAllSettings->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_Comma));
 
   // Internal actions =============================================================
   connect(mCanvasPanel, &QTabWidget::currentChanged, this, &MainWindow::onCanvasTabChanged);

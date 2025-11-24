@@ -7,8 +7,10 @@
 
 #include "common/app_configs.h"
 #include "common/style_helpers.h"
+#include "common/theme.h"
 #include "logging.h"
 #include "system/main_window.h"
+#include "widgets/settings_manager.h"
 
 using namespace Qt::StringLiterals;
 
@@ -39,25 +41,22 @@ int main(int argc, char* argv[])
 
   loadApplicationFonts();
 
-  QFile file(QStringLiteral(":/assets/style.css"));
-  if (!file.open(QFile::ReadOnly))
-  {
-    LOG_ERROR("Failed to open stylesheet");
-    return -1;
-  }
-
   QApplication::setFont(Fonts::Main);
-
   MainWindow system;
-  system.setStyleSheet(QLatin1String(file.readAll()));
-
-  file.close();
 
   auto started = system.start();
   if (!started.IsSuccess())
   {
     LOG_ERROR("Failed to start main window: %s", started.ErrorMessage().c_str());
     return -1;
+  }
+
+  auto settingsManager = system.settingsManager();
+  if (settingsManager)
+  {
+    Config::applyThemeToApp(app, settingsManager->appearance().theme, settingsManager->availableThemes());
+    QObject::connect(settingsManager.get(), &SettingsManager::themeChanged, &app,
+                     [&app](const QString& t, const QList<Config::ThemeInfo>& at) { Config::applyThemeToApp(app, t, at); });
   }
 
   system.show();

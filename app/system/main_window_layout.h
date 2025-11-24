@@ -60,7 +60,6 @@ protected:
 
   // === Menu Bar ===
   QMenuBar* mMenuBar;
-  QMenu* mGeneratorMenu;
 
   // === Actions ===
   // File menu
@@ -73,8 +72,10 @@ protected:
   // View menu
   // Diagram menu
   QAction* mActionGenerate;
+  QMenu* mGeneratorMenu;
 
   // Settings menu
+  QAction* mOpenAllSettings;
 
   // Help menu
 

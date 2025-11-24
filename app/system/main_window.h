@@ -8,6 +8,7 @@
 #include <QMainWindow>
 #include <QStringLiteral>
 
+#include "common/theme.h"
 #include "compiler/generator.h"
 #include "config_table.h"
 #include "json.h"
@@ -17,6 +18,7 @@
 
 class SaveHandler;
 class PluginManager;
+class SettingsManager;
 
 class MainWindow : public MainWindowlayout
 {
@@ -27,6 +29,8 @@ public:
   ~MainWindow();
 
   VoidResult start();
+
+  std::shared_ptr<SettingsManager> settingsManager() const;
 
 private slots:
   void onNodeSelected(NodeItem* node, bool selected);
@@ -43,6 +47,7 @@ private:
   std::unique_ptr<SaveHandler> mSaveHandler;
   std::unique_ptr<PluginManager> mPluginManager;
   std::shared_ptr<ConfigurationTable> mConfigTable;
+  std::shared_ptr<SettingsManager> mSettingsManager;
 
   std::shared_ptr<Generator> mGenerator;
   Canvas* mActiveCanvas;
