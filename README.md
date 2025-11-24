@@ -1,6 +1,6 @@
 # MAKI
 
-MAKI is a low-code platform that targets robotic systems. It is build on top of KODA and aims to simplify the creation of formally verified ROS2 systems. MAKI is still in development and there is no easy way to install it yet
+MAKI is a low-code platform that targets robotic systems. It is build on top of KODA and aims to simplify the creation of formally verified ROS2 systems. MAKI is still in development so expect breaking changes now and then.
 
 ## Installation
 
@@ -66,13 +66,10 @@ docker run -it \
 
   6. Finally, to install the tool
 
-  - Windows. This is tricky, apparently qt requires the `windeployqt` script to be able to package the final program. In the docker container, we are able to create this program but it still needs to run in a Windows machine.
+  - Windows. 
 
 ```bash
 ./scripts/release.sh --windows
-```
-```
-TODO: Something in powershell
 ```
 
   - Linux (we have only tested in **Ubuntu 24.04**)
@@ -85,8 +82,12 @@ TODO: Something in powershell
 
 After the installation, it is possible to run the application with:
 
+```bash
+./release/linux/bin/maki
 ```
-./dist-linux/bin/maki
+
+```powershell
+./release/windows/maki.exe
 ```
 
 ## Examples of KODA:
