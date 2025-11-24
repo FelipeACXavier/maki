@@ -58,10 +58,16 @@ docker run -it \
 ./scripts/build.sh --windows
 ```
 
-  - Linux (we have only tested in Ubuntu 24.04)
+  - Linux (we have only tested in Ubuntu 24.04).
 
 ```bash
 ./scripts/build.sh --linux
+```
+
+  - If you need support for clangd and `compile_commands.json`, you can pass the options `--local-qt` and `--local-project`, which will make sure the generated `compile_commands.json` points to your local QT installation and project folder. For example:
+
+```bash
+./scripts/build.sh --linux --local-qt /opt/qt/6.8.3/gcc_64 --local-project /home/foo/maki
 ```
 
   6. Finally, to install the tool
