@@ -36,3 +36,4 @@ jobs:
           # Pass Qt version into the Dockerfile
           build-args: |
             QT_VERSION=${{ vars.QT_VERSION }}
+            QT_BUILD_TYPE=release

@@ -24,7 +24,7 @@ git submodule update --init --recursive
   3. Build the docker container, this might take some time (30+ minutes) since we need to build the QT library. Still, that only needs to be done once.
 
 ```bash
-docker build -f docker/Dockerfile -t maki:v1.0.0 .
+docker build --build-arg QT_BUILD_TYPE=release -f docker/Dockerfile -t maki:v1.0.0 .
 ```
 
   4. Run the docker image
