@@ -1,5 +1,6 @@
 #include "style_helpers.h"
 
+#include <QApplication>
 #include <QPainter>
 #include <QStyle>
 #include <QVariant>
@@ -95,4 +96,13 @@ void addDynamicWidget(QVBoxLayout* layout, QWidget* dynamicWidget, QWidget* pare
     layout->insertWidget(i - 1, dynamicWidget);
     break;
   }
+}
+
+QString getDirPathFor(const QString& path)
+{
+#ifdef Q_OS_WIN
+  return QCoreApplication::applicationDirPath() + "/" + path;
+#else
+  return QCoreApplication::applicationDirPath() + "/../" + path;
+#endif
 }

@@ -20,3 +20,5 @@ QString logLevelToQT(logging::LogLevel logLevel);
 QString toQT(std::chrono::system_clock::time_point ts, logging::LogLevel level, const std::string& message);
 
 void addDynamicWidget(QVBoxLayout* layout, QWidget* dynamicWidget, QWidget* parent);
+
+QString getDirPathFor(const QString& path);

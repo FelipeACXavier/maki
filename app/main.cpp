@@ -6,6 +6,7 @@
 #include <QUrl>
 
 #include "common/app_configs.h"
+#include "common/style_helpers.h"
 #include "logging.h"
 #include "system/main_window.h"
 
@@ -13,15 +14,7 @@ using namespace Qt::StringLiterals;
 
 void loadApplicationFonts()
 {
-  QString fontDirPath;
-
-#ifdef Q_OS_WIN
-  fontDirPath = QCoreApplication::applicationDirPath() + "/share/fonts";
-#else
-  fontDirPath = QCoreApplication::applicationDirPath() + "/../share/fonts";
-#endif
-
-  QDir fontDir(fontDirPath);
+  QDir fontDir(getDirPathFor("share/fonts"));
   const QStringList files = fontDir.entryList({"*.ttf", "*.otf"}, QDir::Files);
 
   for (const QString& file : files)

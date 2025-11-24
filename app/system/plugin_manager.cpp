@@ -5,8 +5,6 @@
 #include <QMenu>
 #include <QPluginLoader>
 
-// #include "compiler/rozyne_generator.h"
-// #include "compiler/dezyne_generator.h"
 #include "logging.h"
 
 PluginManager::PluginManager()
@@ -23,15 +21,7 @@ void PluginManager::start(QMenu* menu)
     return;
   }
 
-  QString pluginDirPath;
-
-#ifdef Q_OS_WIN
-  pluginDirPath = QCoreApplication::applicationDirPath() + "/plugins";
-#else
-  pluginDirPath = QCoreApplication::applicationDirPath() + "/../plugins";
-#endif
-
-  QDir pluginsDir(pluginDirPath);
+  QDir pluginsDir(getDirPathFor("plugins"));
 
   LOG_INFO("Loading plugins from %s", qPrintable(pluginsDir.path()));
   auto pluginNames = pluginsDir.entryList(QDir::Files);
@@ -63,10 +53,6 @@ void PluginManager::start(QMenu* menu)
 
     mPlugins.append(codeGen);
   }
-
-  // TODO(felaze): Use the plugin system above once the interfaces are defined
-  // RozyneGenerator* generator = new RozyneGenerator();
-  // mPlugins.append(generator);
 
   // Set default plugin
   setPlugin(mPlugins.front());
