@@ -2,3 +2,6 @@
 	path = 3rdparty/CppHelpers
 	url = https://github.com/FelipeACXavier/CppHelpers.git
 	branch = master
+[submodule "scripts/crossdeployqt"]
+	path = scripts/crossdeployqt
+	url = https://github.com/FelipeACXavier/crossdeployqt.git
