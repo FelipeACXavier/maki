@@ -3,16 +3,17 @@
 function printHelp()
 {
   echo "Usage:"
-  echo "  $1 < --linux | --windows >"
+  echo "  $1 < --linux | --windows > --verbose"
   echo "    --linux, linux      | Build the linux project"
   echo "    --windows, windows  | Build the windows project"
+  echo "    --verbose           | Show the tool logs"
 }
 
 LINUX="1"
+export CROSSDEPLOYQT_VERBOSE=""
 
 while [[ $# -gt 0 ]]; do
   key="$1"
-  echo "Arg: $key"
   case $key in
       --linux|linux)
       LINUX="1"
@@ -20,6 +21,10 @@ while [[ $# -gt 0 ]]; do
       ;;
       --windows|windows)
       LINUX="0"
+      shift
+      ;;
+      --verbose)
+      export CROSSDEPLOYQT_VERBOSE="true"
       shift
       ;;
       *)
@@ -30,25 +35,39 @@ while [[ $# -gt 0 ]]; do
 done
 
 # ----------------------------------
+# Constants
+SRC_DIR=$HOME/maki
+SCRIPT_DIR=$SRC_DIR/scripts
+TOOL_DIR=$SCRIPT_DIR/crossdeployqt
+TOOL_BUILD_DIR=$TOOL_DIR/build
+INSTALL_DIR=$SRC_DIR/release/windows
+WINDOWS_BUILD_DIR=$SRC_DIR/build/windows
+
+# ----------------------------------
 # Main
 if [ "$LINUX" == "1" ]; then
   cmake --build build/linux -j 4 --target deploy-linux
 else
-  # cmake --build build/windows -j 4 --target deploy-windows
-  # Make sure it is built
-  cmake --build build/windows -j 4
+  # Build the tool
+  cd $TOOL_DIR
+  mkdir -p build
 
-  # Pack necessary files for windeployqt
-  mkdir -p dist/windows-sdk
+  cd $TOOL_BUILD_DIR
+  cmake ..
+  make -j4
 
-  # Copy Windows build artifacts
-  cp -r build/windows dist/windows-sdk/build-windows
+  # Make sure the output folder exists
+  mkdir -p $INSTALL_DIR
 
-  # Copy cross-built Windows Qt prefix
-  cp -r $HOME/Qt6-Windows dist/windows-sdk/Qt6-Windows
+  # Run the crossdeploy tool
+  ./crossdeployqt --bin $WINDOWS_BUILD_DIR/maki.exe --out $INSTALL_DIR --no-qml
 
-  # Copy qttools install which contains windeployqt.exe
-  cp -r $HOME/qttools-install dist/windows-sdk/qttools-install
+  # Copy extra libraries, this might not be needed outside wine
+  cp /usr/x86_64-w64-mingw32/lib/libwinpthread-1.dll              $INSTALL_DIR
+  cp /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libgcc_s_seh-1.dll  $INSTALL_DIR
+  cp /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libstdc++-6.dll     $INSTALL_DIR
 
-  zip -r dist/windows-sdk.zip dist/windows-sdk
+  # Copy assets and pluggins
+  cp -r $WINDOWS_BUILD_DIR/share $INSTALL_DIR/share
+  cp $WINDOWS_BUILD_DIR/plugins/* $INSTALL_DIR/plugins/
 fi

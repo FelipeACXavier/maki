@@ -171,7 +171,16 @@ RUN /tmp/qt-everywhere-src-${QT_VERSION}/configure \
 RUN cmake --build . --parallel 4
 RUN cmake --install .
 
+# -----------------------------------------------------------------------------------------------------------\
+# Install extra packages
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  zip \
+  unzip \
+  && rm -rf /var/lib/apt/lists/*
+
 # -----------------------------------------------------------------------------------------------------------
 # Cd to the maki directory and end
+USER ubuntu
 WORKDIR ${HOME}/maki
 CMD ["bash"]

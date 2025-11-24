@@ -54,6 +54,10 @@ endif()
 
 message(STATUS "Deploy target: ${DEPLOY_TARGET}")
 
+if (CMAKE_TOOLCHAIN_FILE)
+  message(STATUS "Using toolchain file: ${CMAKE_TOOLCHAIN_FILE}")
+endif()
+
 # -----------------------------------------
 # Linux stuff
 if (DEPLOY_TARGET STREQUAL "linux")

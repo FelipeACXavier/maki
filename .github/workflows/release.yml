@@ -18,121 +18,66 @@ jobs:
     container:
       image: ghcr.io/felipeacxavier/maki/dev:${{ vars.QT_DEV_TAG }}
 
+    strategy:
+      # Release both Linux and Windows targets inside this image
+      matrix:
+        target: [ linux, windows ]
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       # --------------------------------------------------------------------------------------
-      # Linux build
-      - name: Build (Linux)
+      # Create the package
+      - name: Build ${{ matrix.target }}
         run: |
           chmod +x scripts/build.sh
-          ./scripts/build.sh --linux
+          ./scripts/build.sh "${{ matrix.target }}"
 
-      - name: Create Linux release
+      - name: Create release for ${{ matrix.target }}
         run: |
           chmod +x ./scripts/release.sh
-          ./scripts/release.sh --linux
+          ./scripts/release.sh "${{ matrix.target }}"
 
-      - name: Upload Linux release folder
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-release-folder
-          path: dist/linux
+      - name: Package release for ${{ matrix.target }}
+        run: |
+          cd ./release/"$BUILD_TARGET"
+          zip -r ../maki-${{ matrix.target }}.zip ./*
 
       # --------------------------------------------------------------------------------------
-      # Windows build
-      - name: Build (Windows cross)
-        run: |
-          chmod +x scripts/build.sh
-          ./scripts/build.sh --windows
-
-      - name: Package Windows SDK
-        run: |
-          chmod +x ./scripts/release.sh
-          ./scripts/release.sh --windows
-
-      - name: Upload Windows SDK
+      # Upload artifact for next job
+      - name: Upload ${{ matrix.target }} artifact
         uses: actions/upload-artifact@v4
         with:
-          name: windows-sdk
-          path: windows-sdk.zip
+          name: ${{ matrix.target }}
+          path: release/maki-${{ matrix.target }}.zip
 
   # ==========================================================================================
-  # 2) On Windows runner: create Windows release using SDK + re-zip Linux
+  # 2) Publish GitHub Release
   release:
     name: Create GitHub Release
     needs: build
-    runs-on: windows-latest
+    runs-on: self-hosted
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      # --------------------------------------------------------------------------------------
-      # Linux release
-      - name: Download Linux release folder
+      - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          name: linux-release-folder
-          path: artifacts/linux
+          name: linux
+          path: ./release
 
-      - name: Package Linux artifact
-        run: |
-          Compress-Archive -Path dist/linux -DestinationPath linux-release.zip
-
-      # --------------------------------------------------------------------------------------
-      # Windows release
-      - name: Download Windows SDK
+      - name: Download Windows artifact
         uses: actions/download-artifact@v4
         with:
-          name: windows-sdk
-          path: artifacts
+          name: windows
+          path: ./release
 
-      - name: Unpack Windows SDK
-        run: |
-          Push-Location artifacts
-          Expand-Archive -Path "windows-sdk.zip" -DestinationPath "."
-          Pop-Location
-
-      # Use SDK + windeployqt to create Windows release
-      # - name: Create Windows release with windeployqt
-      #   shell: pwsh
-      #   run: |
-      #     Set-StrictMode -Version Latest
-      #     $ErrorActionPreference = "Stop"
-
-      #     $sdkRoot   = (Resolve-Path "artifacts/windows-sdk").Path
-      #     $qtTools   = Join-Path $sdkRoot "qttools-install/bin"
-      #     $buildWin  = Join-Path $sdkRoot "build-windows"
-
-      #     $exe       = Join-Path $buildWin "maki.exe"
-
-      #     $distWin   = Join-Path $PWD "dist/windows"
-      #     New-Item -ItemType Directory -Force -Path $distWin | Out-Null
-
-      #     # Make sure windeployqt.exe is on PATH
-      #     $env:PATH = "$qtTools;$env:PATH"
-
-      #     $windeploy = Join-Path $qtTools "windeployqt.exe"
-
-      #     $windeploy "--dir=$distWin" $exe
-
-      #     if ($LASTEXITCODE -ne 0) {
-      #       throw "windeployqt.exe failed with exit code $LASTEXITCODE"
-      #     }
-
-      - name: Package Windows artifact
-        run: |
-          Compress-Archive -Path windows-sdk -DestinationPath windows-release.zip
-
-      # --------------------------------------------------------------------------------------
-      # Publish GitHub Release
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            linux-release.zip
-            windows-release.zip
+            ./release/maki-linux.zip
+            ./release/maki-windows.zip
           generate_release_notes: true
           prerelease: ${{ contains(github.ref_name, '-') }}
         env:

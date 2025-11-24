@@ -15,7 +15,7 @@ while [[ $# -gt 0 ]]; do
       TARGET="linux"
       BUILD_PATH="build/linux"
       PREFIX_PATH="$HOME/Qt6-Linux"
-      INSTALL_PREFIX="$HOME/dist/Linux"
+      INSTALL_PREFIX="$HOME/maki/release/linux"
       TOOLCHAIN_FILE=""
       shift
       ;;
@@ -23,7 +23,7 @@ while [[ $# -gt 0 ]]; do
       TARGET="windows"
       BUILD_PATH="build/windows"
       PREFIX_PATH="$HOME/Qt6-Windows"
-      INSTALL_PREFIX="$HOME/dist/Windows"
+      INSTALL_PREFIX="$HOME/maki/release/windows"
       TOOLCHAIN_FILE="cmake/toolchain-mingw64.cmake"
       shift
       ;;
