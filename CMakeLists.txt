@@ -4,6 +4,13 @@ set(APPLICATION_NAME maki)
 
 option(DEBUG "Build with debug symbols" OFF)
 
+# Paths as configurable cache variables
+set(LOCAL_QT_PATH "" CACHE PATH "Qt path on this machine")
+set(LOCAL_PROJECT_PATH "" CACHE PATH "Project path on this machine")
+
+# Adjust this to the actual build dir where compile_commands.json lives
+set(LINUX_BUILD_DIR "${CMAKE_SOURCE_DIR}/build/linux")
+
 set(DEPLOY_TARGET "auto" CACHE STRING "Deployment target (auto|linux|windows)")
 set_property(CACHE DEPLOY_TARGET PROPERTY STRINGS auto linux windows)
 
@@ -89,3 +96,25 @@ endif()
 # add_subdirectory(plugins)
 add_subdirectory(3rdparty)
 add_subdirectory(app)
+
+# Make sure the compile_commands works in the host and not in the docker
+# TODO: We should make this also available on windows
+if (DEPLOY_TARGET STREQUAL "linux" AND LOCAL_QT_PATH AND LOCAL_PROJECT_PATH)
+  add_custom_target(patch_compile_commands ALL
+    COMMAND ${CMAKE_COMMAND}
+      -DINPUT="${CMAKE_CURRENT_SOURCE_DIR}/build/linux/compile_commands.json"
+      -DOLD="/home/ubuntu/Qt6-Linux"
+      -DNEW="${LOCAL_QT_PATH}"
+      -P "${CMAKE_SOURCE_DIR}/cmake/patch_compile_commands.cmake"
+
+    COMMAND ${CMAKE_COMMAND}
+      -DINPUT="${CMAKE_CURRENT_SOURCE_DIR}/build/linux/compile_commands.json"
+      -DOLD="/home/ubuntu/maki"
+      -DNEW="${LOCAL_PROJECT_PATH}"
+      -P "${CMAKE_SOURCE_DIR}/cmake/patch_compile_commands.cmake"
+
+    COMMENT "Patching compile_commands.json with local paths"
+
+    DEPENDS ${APPLICATION_NAME}
+  )
+endif()
