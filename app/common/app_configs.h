@@ -9,8 +9,8 @@ namespace Config
 using namespace Qt::StringLiterals;
 
 static const QString ORGANIZATION_NAME = QString("Savant"_L1);
-static const QString APPLICATION_NAME = QString("Low-Code Platform"_L1);
-static const QString VERSION = QString("1.0.0"_L1);
+static const QString APPLICATION_NAME = QString("MAKI"_L1);
+static const QString VERSION = QString("0.0.1"_L1);
 
 static const int GRID_SIZE = 20;
 static const int CONNECTOR_RADIUS = 5;

@@ -23,7 +23,15 @@ void PluginManager::start(QMenu* menu)
     return;
   }
 
-  QDir pluginsDir = QDir(QApplication::applicationDirPath().append("/../plugins"));
+  QString pluginDirPath;
+
+#ifdef Q_OS_WIN
+  pluginDirPath = QCoreApplication::applicationDirPath() + "/plugins";
+#else
+  pluginDirPath = QCoreApplication::applicationDirPath() + "/../plugins";
+#endif
+
+  QDir pluginsDir(pluginDirPath);
 
   LOG_INFO("Loading plugins from %s", qPrintable(pluginsDir.path()));
   auto pluginNames = pluginsDir.entryList(QDir::Files);

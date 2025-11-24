@@ -16,8 +16,7 @@ void loadApplicationFonts()
   QString fontDirPath;
 
 #ifdef Q_OS_WIN
-  // TODO(felaze): Fix when we have access to a windows computer
-  fontDirPath = QCoreApplication::applicationDirPath() + "/../share/fonts";
+  fontDirPath = QCoreApplication::applicationDirPath() + "/share/fonts";
 #else
   fontDirPath = QCoreApplication::applicationDirPath() + "/../share/fonts";
 #endif

@@ -1,27 +1,27 @@
 <RCC>
-    <qresource prefix="/">
-        <file>assets/style.css</file>
-        <file>assets/config.json</file>
-        <file>libraries/generic.json</file>
-        <file>libraries/math.json</file>
-        <file>libraries/grpc.json</file>
-        <file>libraries/ros2.json</file>
-        <file>libraries/mission.json</file>
-        <file>libraries/serial.json</file>
-        <file>libraries/utilities.json</file>
-      </qresource>
-      <qresource prefix="/math">
-         <file alias="addition.png">assets/icons/math/addition.png</file>
-         <file alias="subtraction.png">assets/icons/math/subtraction.png</file>
-         <file alias="multiplication.png">assets/icons/math/multiplication.png</file>
-         <file alias="division.png">assets/icons/math/division.png</file>
-      </qresource>
-      <qresource prefix="/icons">
-         <file alias="code-branch.svg">assets/icons/fontawesome/svgs/solid/code-branch.svg</file>
-         <file alias="cubes.svg">assets/icons/fontawesome/svgs/solid/cubes.svg</file>
-         <file alias="vector-square.svg">assets/icons/fontawesome/svgs/solid/vector-square.svg</file>
-         <file alias="close.svg">assets/icons/fontawesome/svgs/solid/xmark.svg</file>
-         <file alias="circle-close.svg">assets/icons/fontawesome/svgs/solid/circle-xmark.svg</file>
-         <file alias="equals.svg">assets/icons/fontawesome/svgs/solid/equals.svg</file>
-      </qresource>
+  <qresource prefix="/">
+    <file>assets/style.css</file>
+    <file>assets/config.json</file>
+    <file>libraries/generic.json</file>
+    <file>libraries/math.json</file>
+    <file>libraries/grpc.json</file>
+    <file>libraries/ros2.json</file>
+    <file>libraries/mission.json</file>
+    <file>libraries/serial.json</file>
+    <file>libraries/utilities.json</file>
+  </qresource>
+  <qresource prefix="/math">
+      <file alias="addition.png">assets/icons/math/addition.png</file>
+      <file alias="subtraction.png">assets/icons/math/subtraction.png</file>
+      <file alias="multiplication.png">assets/icons/math/multiplication.png</file>
+      <file alias="division.png">assets/icons/math/division.png</file>
+  </qresource>
+  <qresource prefix="/icons">
+      <file alias="code-branch.svg">assets/icons/fontawesome/svgs/solid/code-branch.svg</file>
+      <file alias="cubes.svg">assets/icons/fontawesome/svgs/solid/cubes.svg</file>
+      <file alias="vector-square.svg">assets/icons/fontawesome/svgs/solid/vector-square.svg</file>
+      <file alias="close.svg">assets/icons/fontawesome/svgs/solid/xmark.svg</file>
+      <file alias="circle-close.svg">assets/icons/fontawesome/svgs/solid/circle-xmark.svg</file>
+      <file alias="equals.svg">assets/icons/fontawesome/svgs/solid/equals.svg</file>
+  </qresource>
 </RCC>
