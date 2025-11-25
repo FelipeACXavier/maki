@@ -27,17 +27,20 @@ jobs:
       matrix:
         target: [ linux, windows ]
 
+    env:
+      HOME: /home/ubuntu
+
     defaults:
       run:
         shell: bash
-        working-directory: ~/maki
+        working-directory: /home/ubuntu/maki
 
     steps:
       # 1) Checkout code
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          path: ~/maki
+          path: /home/ubuntu/maki
 
       # 2) Build for given target
       - name: Build

@@ -26,13 +26,13 @@ jobs:
     defaults:
       run:
         shell: bash
-        working-directory: ~/maki
+        working-directory: /home/ubuntu/maki
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          path: ~/maki
+          path: /home/ubuntu/maki
 
       # --------------------------------------------------------------------------------------
       # Create the package
