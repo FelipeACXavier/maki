@@ -27,20 +27,23 @@ jobs:
       matrix:
         target: [ linux, windows ]
 
-    env:
-      BUILD_TARGET: ${{ matrix.target }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: ~/maki
 
     steps:
       # 1) Checkout code
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          path: ~/maki
 
       # 2) Build for given target
       - name: Build
-        shell: bash
         run: |
           chmod +x scripts/build.sh
-          ./scripts/build.sh "$BUILD_TARGET"
+          ./scripts/build.sh "${{ matrix.target }}"
 
       # No tests for now
       # 3) Run tests for given target (optional)
