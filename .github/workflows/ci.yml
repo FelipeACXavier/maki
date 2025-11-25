@@ -37,6 +37,7 @@ jobs:
 
       # 2) Build for given target
       - name: Build
+        shell: bash
         run: |
           chmod +x scripts/build.sh
           ./scripts/build.sh "$BUILD_TARGET"
@@ -44,6 +45,7 @@ jobs:
       # No tests for now
       # 3) Run tests for given target (optional)
       # - name: Run tests
+      #   shell: bash
       #   run: |
       #     chmod +x scripts/ci-test.sh
       #     ./scripts/ci-test.sh "$BUILD_TARGET"
