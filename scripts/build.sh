@@ -67,7 +67,7 @@ echo "Running with:"
 echo "  Current directory: `pwd`"
 ls
 echo "  HOME directory:"
-ls $HOME
+(cd $HOME && ls)
 echo "  TARGET: ${TARGET}"
 echo "  BUILD_PATH: ${BUILD_PATH}"
 echo "  PREFIX_PATH: ${PREFIX_PATH}"
