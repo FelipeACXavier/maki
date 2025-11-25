@@ -2,6 +2,7 @@
 .vscode
 build/
 release/
+generated/
 .cache
 
 compile_commands.json
