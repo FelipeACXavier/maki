@@ -61,6 +61,13 @@ if [[ -z "${PREFIX_PATH}" ]]; then
   exit 1
 fi
 
+echo "Running with:"
+echo "  TARGET: ${TARGET}"
+echo "  BUILD_PATH: ${BUILD_PATH}"
+echo "  PREFIX_PATH: ${PREFIX_PATH}"
+echo "  INSTALL_PREFIX: ${INSTALL_PREFIX}"
+echo "  TOOLCHAIN_FILE: ${TOOLCHAIN_FILE}"
+
 # ----------------------------------
 # Main
 if [ $CLEAN -eq 1 ]; then
