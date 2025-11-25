@@ -1,5 +1,8 @@
 # MAKI
 
+[![Build dev Docker image](https://github.com/FelipeACXavier/maki/actions/workflows/build-dev-image.yaml/badge.svg)](https://github.com/FelipeACXavier/maki/actions/workflows/build-dev-image.yaml)
+[![CI](https://github.com/FelipeACXavier/maki/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/FelipeACXavier/maki/actions/workflows/ci.yml)
+
 MAKI is a low-code platform that targets robotic systems. It is build on top of KODA and aims to simplify the creation of formally verified ROS2 systems. MAKI is still in development so expect breaking changes now and then.
 
 ## Installation
@@ -9,34 +12,46 @@ MAKI is a low-code platform that targets robotic systems. It is build on top of 
 
 A Dockerfile is provided to ensure everyone has the same build and run environment. Note that there is no specific run image though. To build the application, follow the instructions below:
 
-  1. Clone this repository and move into it
+1. Clone this repository and move into it
 
 ```bash
 git clone https://github.com/FelipeACXavier/maki.git && cd maki
 ```
 
-  2. Then clone the submodules:
+2. Then clone the submodules:
 
 ```bash
 git submodule update --init --recursive
 ```
 
-  3. Build the docker container, this might take some time (30+ minutes) since we need to build the QT library. Still, that only needs to be done once.
+3. Build the docker container, this might take some time (30+ minutes) since we need to build the QT library. Still, that only needs to be done once.
 
 ```bash
-docker build --build-arg QT_BUILD_TYPE=release -f docker/Dockerfile -t maki:v1.0.0 .
+docker build --build-arg QT_BUILD_TYPE=release \
+       -f docker/Dockerfile \
+       -t maki:v1.0.0 .
 ```
 
-  4. Run the docker image
+4. Run the docker image
 
   - Windows:
-
-```powershell
-TODO: No idea to be honest
-```
+    1. To be able to run GUI applications in Docker on Windows, first download & install an X server such as [vcXsrv](https://sourceforge.net/projects/vcxsrv/)
+    2. Set DISPLAY to the address of your Windows X server. 
+  ```powershell
+  setx DISPLAY "127.0.0.1:0"
+  ```
+    3. Launch vsXsrv with the following settings: Multiple Windows, Start no client, Disable access control. 
+    4. Run the image:
+  ```powershell
+  docker run -it \
+    --name maki \
+    -e DISPLAY=host.docker.internal:0 \
+    -e QT_X11_NO_MITSHM=1 \
+    -v ${PWD}:/home/ubuntu/maki \
+    maki:v1.0.0
+  ```
 
   - Linux, using X11
-
 ```bash
 docker run -it \
   --name maki \
@@ -50,36 +65,31 @@ docker run -it \
   maki:v1.0.0
 ```
 
-  5. Inside the docker, we can now build Maki. There are two options available
+5. Inside the docker, we can now build Maki. There are two options available
 
   - Windows: 
-
 ```bash
 ./scripts/build.sh --windows
 ```
 
   - Linux (we have only tested in Ubuntu 24.04).
-
 ```bash
 ./scripts/build.sh --linux
 ```
 
   - If you need support for clangd and `compile_commands.json`, you can pass the options `--local-qt` and `--local-project`, which will make sure the generated `compile_commands.json` points to your local QT installation and project folder. For example:
-
 ```bash
 ./scripts/build.sh --linux --local-qt /opt/qt/6.8.3/gcc_64 --local-project /home/foo/maki
 ```
 
-  6. Finally, to install the tool
+6. Finally, to install the tool
 
-  - Windows. 
-
+  - Windows
 ```bash
 ./scripts/release.sh --windows
 ```
 
   - Linux (we have only tested in **Ubuntu 24.04**)
-
 ```bash
 ./scripts/release.sh --linux
 ```
@@ -88,12 +98,14 @@ docker run -it \
 
 After the installation, it is possible to run the application with:
 
-```bash
-./release/linux/bin/maki
-```
-
+  - Windows:
 ```powershell
 ./release/windows/maki.exe
+```
+
+  - Linux:
+```bash
+./release/linux/bin/maki
 ```
 
 ## Examples of KODA:

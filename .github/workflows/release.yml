@@ -37,6 +37,12 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 1
+
+      - name: Symlink repo to $HOME/maki for scripts
+        run: |
+          mkdir -p "$HOME"
+          ln -s "$GITHUB_WORKSPACE" "$HOME/maki" || true
+
       # --------------------------------------------------------------------------------------
       # Create the package
       - name: Build ${{ matrix.target }}

@@ -49,7 +49,7 @@ jobs:
           ln -s "$GITHUB_WORKSPACE" "$HOME/maki" || true
 
       # 2) Build for given target
-      - name: Build
+      - name: Build ${{ matrix.target }}
         run: |
           chmod +x scripts/build.sh
           ./scripts/build.sh "${{ matrix.target }}"
