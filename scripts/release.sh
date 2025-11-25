@@ -36,7 +36,8 @@ done
 
 # ----------------------------------
 # Constants
-SRC_DIR=$HOME/maki
+BASE_DIR=`git rev-parse --show-prefix`
+SRC_DIR=$BASE_DIR/maki
 SCRIPT_DIR=$SRC_DIR/scripts
 TOOL_DIR=$SCRIPT_DIR/crossdeployqt
 TOOL_BUILD_DIR=$TOOL_DIR/build

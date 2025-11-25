@@ -13,7 +13,8 @@ function printHelp()
 }
 
 CLEAN=0
-SOURCE_DIR=$HOME/maki
+BASE_DIR=`git rev-parse --show-prefix`
+SOURCE_DIR=$BASE_DIR/maki
 
 while [[ $# -gt 0 ]]; do
   key="$1"
@@ -65,6 +66,8 @@ echo "--------------------------------------"
 echo "Running with:"
 echo "  Current directory: `pwd`"
 ls
+echo "  HOME directory:"
+ls $HOME
 echo "  TARGET: ${TARGET}"
 echo "  BUILD_PATH: ${BUILD_PATH}"
 echo "  PREFIX_PATH: ${PREFIX_PATH}"
