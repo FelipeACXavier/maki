@@ -63,7 +63,8 @@ fi
 
 echo "--------------------------------------"
 echo "Running with:"
-echo "  Current directory:\n`ls`"
+echo "  Current directory: `pwd`"
+ls
 echo "  TARGET: ${TARGET}"
 echo "  BUILD_PATH: ${BUILD_PATH}"
 echo "  PREFIX_PATH: ${PREFIX_PATH}"
