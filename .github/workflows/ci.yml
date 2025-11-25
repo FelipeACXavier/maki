@@ -33,14 +33,17 @@ jobs:
     defaults:
       run:
         shell: bash
-        working-directory: /home/ubuntu/maki
+        working-directory: ${{ github.workspace }}
 
     steps:
       # 1) Checkout code
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          path: /home/ubuntu/maki
+
+      - name: Symlink repo to $HOME/maki for scripts
+        run: |
+          mkdir -p "$HOME"
+          ln -s "$GITHUB_WORKSPACE" "$HOME/maki" || true
 
       # 2) Build for given target
       - name: Build

@@ -23,16 +23,17 @@ jobs:
       matrix:
         target: [ linux, windows ]
 
+    env:
+      HOME: /home/ubuntu
+
     defaults:
       run:
         shell: bash
-        working-directory: /home/ubuntu/maki
+        working-directory: ${{ github.workspace }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          path: /home/ubuntu/maki
 
       # --------------------------------------------------------------------------------------
       # Create the package
