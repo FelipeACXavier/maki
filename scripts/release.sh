@@ -43,6 +43,9 @@ TOOL_BUILD_DIR=$TOOL_DIR/build
 INSTALL_DIR=$SRC_DIR/release/windows
 WINDOWS_BUILD_DIR=$SRC_DIR/build/windows
 
+QT_LINUX_BIN_DIR=$HOME/Qt6-Linux/bin
+QT_WINDOWS_BIN_DIR=$HOME/Qt6-Windows/bin
+
 # ----------------------------------
 # Main
 if [ "$LINUX" == "1" ]; then
@@ -60,14 +63,14 @@ else
   mkdir -p $INSTALL_DIR
 
   # Run the crossdeploy tool
-  ./crossdeployqt --bin $WINDOWS_BUILD_DIR/maki.exe --out $INSTALL_DIR --no-qml
+  PATH=$PATH:$QT_LINUX_BIN_DIR:$QT_WINDOWS_BIN_DIR ./crossdeployqt --bin $WINDOWS_BUILD_DIR/maki.exe --out $INSTALL_DIR --no-qml
 
   # Copy extra libraries, this might not be needed outside wine
   cp /usr/x86_64-w64-mingw32/lib/libwinpthread-1.dll              $INSTALL_DIR
   cp /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libgcc_s_seh-1.dll  $INSTALL_DIR
   cp /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libstdc++-6.dll     $INSTALL_DIR
 
-  # Copy assets and pluggins
+  # Copy assets and plugins
   cp -r $WINDOWS_BUILD_DIR/share $INSTALL_DIR/share
   cp $WINDOWS_BUILD_DIR/plugins/* $INSTALL_DIR/plugins/
 fi

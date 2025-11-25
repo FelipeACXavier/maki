@@ -44,7 +44,7 @@ add_custom_target(copy_themes ALL
 )
 
 install(FILES ${APP_THEME_FILES}
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/themes"
+  DESTINATION "${CMAKE_INSTALL_DATADIR}/themes"
 )
 
 # ------------------------------------------------------------------------------------------------------------
