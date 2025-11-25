@@ -61,12 +61,15 @@ if [[ -z "${PREFIX_PATH}" ]]; then
   exit 1
 fi
 
+echo "--------------------------------------"
 echo "Running with:"
+echo "  Current directory:\n`ls`"
 echo "  TARGET: ${TARGET}"
 echo "  BUILD_PATH: ${BUILD_PATH}"
 echo "  PREFIX_PATH: ${PREFIX_PATH}"
 echo "  INSTALL_PREFIX: ${INSTALL_PREFIX}"
 echo "  TOOLCHAIN_FILE: ${TOOLCHAIN_FILE}"
+echo "--------------------------------------"
 
 # ----------------------------------
 # Main
