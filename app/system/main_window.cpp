@@ -36,9 +36,10 @@
 #include "widgets/structure/flow_menu.h"
 #include "widgets/structure/system_menu.h"
 
-MainWindow::MainWindow(QWidget* parent)
+MainWindow::MainWindow(QApplication* app, QWidget* parent)
     : MainWindowlayout(parent)
     , mActiveCanvas(nullptr)
+    , mApp(app)
 {
 }
 
@@ -98,14 +99,26 @@ VoidResult MainWindow::start()
   mNavigationTab->setCurrentIndex(0);
   mPropertiesTab->setCurrentIndex(0);
 
+  if (mSettingsManager)
+  {
+    Config::applyThemeToApp(mApp, mSettingsManager->appearance().theme, mSettingsManager->availableThemes());
+    QObject::connect(mSettingsManager.get(), &SettingsManager::themeChanged, mApp,
+                     [this](const QString& t, const QList<Config::ThemeInfo>& at) {
+                       Config::applyThemeToApp(mApp, t, at);
+
+                       // Update all items in all canvases
+                       for (int i = 0; i < mCanvasPanel->count(); ++i)
+                       {
+                         QWidget* w = mCanvasPanel->widget(i);
+                         if (auto canvas = qobject_cast<CanvasView*>(w))
+                           static_cast<Canvas*>(canvas->scene())->themeChanged();
+                       }
+                     });
+  }
+
   LOG_DEBUG("Main window started");
 
   return VoidResult();
-}
-
-std::shared_ptr<SettingsManager> MainWindow::settingsManager() const
-{
-  return mSettingsManager;
 }
 
 void MainWindow::startUI()

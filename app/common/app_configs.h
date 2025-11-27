@@ -17,17 +17,6 @@ static const int CONNECTOR_RADIUS = 5;
 static const qreal MINIMUM_NODE_SIZE = 50;
 static const qreal OPACITY_THRESHOLD = 0.25;
 
-// TODO(felaze): move to config
-namespace Colours
-{
-static const QColor BACKGROUND = "#264653";
-static const QColor FOREGROUND = "#2a9d8f";
-static const QColor MAIN = "#2a9d8f";
-static const QColor ACCENT = "#f4a261";
-static const QColor TEXT = "#FFFFFF";
-static const QColor EXTRA_ACCENT = "#e76f51";
-};  // namespace Colours
-
 }  // namespace Config
 
 namespace Constants

@@ -37,8 +37,11 @@ public:
 
   void populate(Flow* flow);
 
+  void themeChanged();
+
 protected:
-  void dragEnterEvent(QGraphicsSceneDragDropEvent* event) override;
+  void
+  dragEnterEvent(QGraphicsSceneDragDropEvent* event) override;
   void dragMoveEvent(QGraphicsSceneDragDropEvent* event) override;
   void dropEvent(QGraphicsSceneDragDropEvent* event) override;
 

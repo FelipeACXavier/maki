@@ -43,7 +43,7 @@ protected:
 
   virtual void updateLabelPosition();
   virtual void setPixmap(const QPixmap& pixmap);
-  virtual void setLabel(const QString& name, const QColor& color, qreal fontSize);
+  virtual void setLabel(const QString& name, qreal fontSize);
   virtual void setLabelName(const QString& name);
   virtual void setLabelSize(qreal fontSize, const QSizeF& boundingSize);
 

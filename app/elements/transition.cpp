@@ -6,6 +6,7 @@
 
 #include "app_configs.h"
 #include "node.h"
+#include "theme.h"
 
 TransitionItem::TransitionItem(std::shared_ptr<TransitionSaveInfo> storage)
     : QGraphicsPathItem()
@@ -116,10 +117,10 @@ void TransitionItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
 {
   QGraphicsPathItem::paint(painter, option, widget);
 
-  setPen(isSelected() ? QPen(Config::Colours::ACCENT, 2) : QPen(Config::Colours::TEXT, 2));
+  setPen(isSelected() ? QPen(Config::HIGHLIGHT, 2) : QPen(Config::FOREGROUND, 2));
 
   if (mLabel)
-    mLabel->setDefaultTextColor(Config::Colours::TEXT);
+    mLabel->setDefaultTextColor(Config::FOREGROUND);
 
   QLineF line = path().currentPosition() == path().pointAtPercent(1.0)
                     ? QLineF(path().pointAtPercent(0.99), path().pointAtPercent(1.0))
@@ -136,7 +137,7 @@ void TransitionItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
   QPolygonF arrowHead;
   arrowHead << line.p2() << arrowP1 << arrowP2;
 
-  painter->setBrush(isSelected() ? QBrush(Config::Colours::ACCENT) : QBrush(Config::Colours::TEXT));
+  painter->setBrush(isSelected() ? QBrush(Config::HIGHLIGHT) : QBrush(Config::FOREGROUND));
   painter->drawPolygon(arrowHead);
 }
 

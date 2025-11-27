@@ -15,20 +15,7 @@
 #include "logging.h"
 #include "style_helpers.h"
 #include "system/canvas.h"
-
-// static const qreal FADE_THRESHOLD = 1.0;
-// 
-// static const qreal FADE_IN_BASE = 1000;
-// static const qreal FADE_IN_START = 0.01;
-// static const qreal FADE_IN_MULTIPLIER = 0.01;
-// 
-// static const qreal FADE_OUT_BASE = 4000;
-// static const qreal FADE_OUT_START = 2.0;
-// static const qreal FADE_OUT_MULTIPLIER = 0.3;
-// 
-// static const qreal LOG_TWO = log(2);
-// static const qreal MIN_OPACITY = 0.01;
-// static const qreal MAX_OPACITY = 1.0;
+#include "theme.h"
 
 NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
     : NodeBase((!nodeId.isEmpty() && !nodeId.isNull()) ? nodeId : QUuid::createUuid().toString(), info->nodeId, nodeConfig, parent)
@@ -90,7 +77,7 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
   else
   {
     qreal labelSize = qMax(Fonts::BaseSize, mSize.width() / Fonts::BaseFactor);
-    setLabel(getProperty("name").toString(), config()->body.textColor, labelSize);
+    setLabel(getProperty("name").toString(), labelSize);
   }
 
   updatePosition(snapToGrid(initialPosition - boundingRect().center(), Config::GRID_SIZE));
@@ -148,44 +135,9 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
   auto color = getProperty("color");
   auto background = color.isValid() ? QColor::fromString(color.toString()) : config()->body.backgroundColor;
 
-  // auto currentScale = static_cast<Canvas*>(scene())->getScale();
-  // qreal zoomRatio = currentScale / baseScale();
-
-  // qreal originalSize = mSize.width();
-  // qreal fullOpacityThreshold = FADE_THRESHOLD;
-  // qreal fadeInThreshold = FADE_IN_START + qMax((FADE_IN_BASE / originalSize) * FADE_IN_MULTIPLIER, MIN_OPACITY);
-  // qreal fadeOutThreshold = FADE_OUT_START * (MAX_OPACITY + (FADE_OUT_BASE / originalSize) * FADE_OUT_MULTIPLIER);
-
-  // // Make smaller objects fade faster when zooming out and slower when zooming in.
-  // qreal opacity = MAX_OPACITY;
-  // if (zoomRatio < fadeInThreshold)
-  // {
-  //   opacity = MIN_OPACITY;
-  // }
-  // else if (zoomRatio < fullOpacityThreshold)
-  // {
-  //   qreal progress = (zoomRatio - fadeInThreshold) / (fullOpacityThreshold - fadeInThreshold);
-  //   opacity = progress;
-  // }
-  // else if (zoomRatio > fadeOutThreshold)
-  // {
-  //   qreal progress = MAX_OPACITY - (zoomRatio - fadeOutThreshold) / (fadeOutThreshold - fullOpacityThreshold);
-  //   opacity = progress;
-  // }
-
-  // opacity = qBound(MIN_OPACITY, opacity, MAX_OPACITY);
-
-  // setOpacity(opacity);
-
-  // for (auto& connector : connectors())
-  //   std::static_pointer_cast<Connector>(connector)->setOpacity(opacity);
-
-  // setFlag(QGraphicsItem::ItemIsSelectable, opacity > Config::OPACITY_THRESHOLD);
-  // setFlag(QGraphicsItem::ItemIsMovable, opacity > Config::OPACITY_THRESHOLD);
-
   NodeBase::paintNode(boundingRect(),
                       background,
-                      isSelected() ? QPen(Config::Colours::ACCENT, 4 / baseScale()) : QPen(Config::Colours::TEXT, 1.0 / baseScale()),
+                      isSelected() ? QPen(Config::HIGHLIGHT, 4 / baseScale()) : QPen(Config::FOREGROUND, 1.0 / baseScale()),
                       painter);
 }
 

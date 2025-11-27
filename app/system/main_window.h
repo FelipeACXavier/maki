@@ -25,12 +25,10 @@ class MainWindow : public MainWindowlayout
   Q_OBJECT
 
 public:
-  explicit MainWindow(QWidget* parent = nullptr);
+  explicit MainWindow(QApplication* app, QWidget* parent = nullptr);
   ~MainWindow();
 
   VoidResult start();
-
-  std::shared_ptr<SettingsManager> settingsManager() const;
 
 private slots:
   void onNodeSelected(NodeItem* node, bool selected);
@@ -55,6 +53,8 @@ private:
   logging::LogLevel mLogLevel;
 
   std::shared_ptr<SaveInfo> mStorage;
+
+  QApplication* mApp;
 
   Canvas* canvas() const;
   Canvas* rootCanvas() const;

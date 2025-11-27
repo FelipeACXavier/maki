@@ -78,7 +78,8 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
       parentNode = static_cast<NodeItem*>(item);
 
       // Add error message
-      if (!parentNode->acceptDrops()) {
+      if (!parentNode->acceptDrops())
+      {
         LOG_WARNING("Tried to drop node on parent that does not accept drops");
         return;
       }
@@ -897,4 +898,12 @@ void Canvas::onFlowRemoved(const QString& flowId, const QString& nodeId)
 
 void Canvas::updateParent(NodeItem* /* node */, std::shared_ptr<NodeSaveInfo> /* storage */, bool /* adding */)
 {
+}
+
+void Canvas::themeChanged()
+{
+  for (QGraphicsItem* item : items())
+  {
+    item->update();
+  }
 }

@@ -8,6 +8,7 @@
 #include "app_configs.h"
 #include "logging.h"
 #include "node.h"
+#include "theme.h"
 
 const qreal MAX_WIDTH = 100.0;
 const qreal MAX_HEIGHT = 100.0;
@@ -135,7 +136,7 @@ void NodeBase::paintLabel(QPainter* painter, const QRectF& area) const
   if (!mLabel)
     return;
 
-  painter->setPen(Config::Colours::TEXT);
+  painter->setPen(Config::FOREGROUND);
   painter->drawText(area, Qt::AlignCenter, mLabel->toPlainText());
 }
 
@@ -150,10 +151,10 @@ void NodeBase::paintPixmap(QPainter* painter) const
   painter->drawPixmap(topLeft, mPixmapItem->pixmap());
 }
 
-void NodeBase::setLabel(const QString& name, const QColor& color, qreal fontSize)
+void NodeBase::setLabel(const QString& name, qreal fontSize)
 {
   mLabel = std::make_shared<QGraphicsTextItem>(this);
-  mLabel->setDefaultTextColor(color);
+  mLabel->setDefaultTextColor(Config::FOREGROUND);
 
   setLabelName(name);
   setLabelSize(fontSize, {(double)config()->body.width, (double)config()->body.height});

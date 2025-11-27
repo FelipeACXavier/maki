@@ -10,6 +10,7 @@
 
 #include "app_configs.h"
 #include "save_info.h"
+#include "theme.h"
 
 DraggableItem::DraggableItem(const QString& nodeId, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
     : NodeBase(QUuid::createUuid().toString(), nodeId, nodeConfig, parent)
@@ -20,7 +21,7 @@ DraggableItem::DraggableItem(const QString& nodeId, std::shared_ptr<NodeConfig> 
     setPixmap(icon.scaled(scaledRect().size().toSize() * config()->body.iconScale, Qt::KeepAspectRatio, Qt::SmoothTransformation));
   }
   else
-    setLabel(config()->type, config()->body.textColor, Fonts::BaseSize);
+    setLabel(config()->type, Fonts::BaseSize);
 }
 
 DraggableItem::~DraggableItem()
@@ -42,7 +43,7 @@ void DraggableItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* sty
   Q_UNUSED(widget);
   NodeBase::paintNode((style && style->state == QStyle::State_Active) ? boundingRect() : scaledRect(),
                       config()->body.backgroundColor,
-                      QPen(config()->body.borderColor),
+                      QPen(Config::FOREGROUND),
                       painter);
 }
 

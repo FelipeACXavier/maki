@@ -13,6 +13,9 @@
 namespace Config
 {
 
+QColor FOREGROUND = QColor("#000000");
+QColor HIGHLIGHT = QColor("#000000");
+
 QString loadFile(const QString& path)
 {
   QFile f(path);
@@ -37,12 +40,15 @@ QString applyThemeVars(QString qss, const ThemeVars& t)
   return qss;
 }
 
-void applyThemeToApp(QApplication& app, const QString& theme, const QList<Config::ThemeInfo>& availableThemes)
+void applyThemeToApp(QApplication* app, const QString& theme, const QList<Config::ThemeInfo>& availableThemes)
 {
+  if (!app)
+    return;
+
   if (theme == "system")
   {
-    app.setStyleSheet({});
-    app.setPalette(app.style()->standardPalette());
+    app->setStyleSheet({});
+    app->setPalette(app->style()->standardPalette());
     return;
   }
 
@@ -50,15 +56,27 @@ void applyThemeToApp(QApplication& app, const QString& theme, const QList<Config
   if (it == availableThemes.end())
   {
     LOG_WARNING("Theme \"%s\"not found, falling back to system", qPrintable(theme));
-    app.setStyleSheet({});
+    app->setStyleSheet({});
     return;
   }
 
   auto base = loadFile(":/themes/style.qss");
   SYSTEM_THEME = loadThemeVarsFromFile(it->filePath);
+  auto foreground = getValueFromTheme("@foreground");
+  if (foreground.isValid())
+    Config::FOREGROUND = QColor(foreground.toString());
+  else
+    LOG_WARNING("Failed to get foreground color from theme");
+
+  auto highlight = getValueFromTheme("@highlight");
+  if (highlight.isValid())
+    Config::HIGHLIGHT = QColor(highlight.toString());
+  else
+    LOG_WARNING("Failed to get highlight color from theme");
+
   QString styled = applyThemeVars(base, SYSTEM_THEME);
   // LOG_DEBUG("\n%s", qPrintable(styled));
-  app.setStyleSheet(styled);
+  app->setStyleSheet(styled);
 }
 
 ThemeVars loadThemeVarsFromFile(const QString& filePath)
@@ -183,11 +201,8 @@ QVariant getValueFromTheme(const QString& key)
 
   QString rawValue = SYSTEM_THEME.*(it.value());
 
-  QColor c(rawValue);
-  if (c.isValid())
-    return c;
-
-  QRegularExpression number("(\\d+)");
+  LOG_INFO("%s: %s", qPrintable(key), qPrintable(rawValue));
+  QRegularExpression number("(\\d+)px");
   QRegularExpressionMatch numberMatch = number.match(rawValue);
 
   if (numberMatch.hasMatch())

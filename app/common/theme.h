@@ -1,7 +1,10 @@
 #pragma once
 
+#include <QColor>
 #include <QHash>
 #include <QString>
+
+#include "app_configs.h"
 
 class QApplication;
 
@@ -24,6 +27,7 @@ struct ThemeVars
   // General
   QString background = "#f1f1f1";
   QString foreground = "#202020";
+  QString highlight = "#ff6600";
   QString selection_bg = "#3d6fb4";
   QString selection_fg = "#ffffff";
   QString border_radius = "5px";
@@ -73,6 +77,7 @@ const QHash<QString, QString ThemeVars::*> THEME_KEY_MAP = {
     // General
     {"@background", &ThemeVars::background},
     {"@foreground", &ThemeVars::foreground},
+    {"@highlight", &ThemeVars::highlight},
     {"@selection_bg", &ThemeVars::selection_bg},
     {"@selection_fg", &ThemeVars::selection_fg},
     {"@border_radius", &ThemeVars::border_radius},
@@ -117,13 +122,15 @@ const QHash<QString, QString ThemeVars::*> THEME_KEY_MAP = {
 };
 
 static ThemeVars SYSTEM_THEME = ThemeVars{};
+extern QColor FOREGROUND;
+extern QColor HIGHLIGHT;
 
 QVariant getValueFromTheme(const QString& key);
 
 // ------------------------------------------------------------
 // Theme loading stuff
 QString loadFile(const QString& path);
-void applyThemeToApp(QApplication& app, const QString& theme, const QList<Config::ThemeInfo>& availableThemes);
+void applyThemeToApp(QApplication* app, const QString& theme, const QList<Config::ThemeInfo>& availableThemes);
 ThemeVars loadThemeVarsFromFile(const QString& filePath);
 
 // ------------------------------------------------------------
