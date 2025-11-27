@@ -19,7 +19,7 @@ combobox_border: #7c6f64
 combobox_hover_border: #83a598
 arrow_icon: :/icons/chevron-down.svg
 tab_bg: #3c3836
-tab_border: #7c6f64
+tab_border_color: #7c6f64
 tab_selected_bg: #282828
 menu_bg: #282828
 menu_border: #665c54

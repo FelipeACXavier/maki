@@ -410,11 +410,7 @@ void MainWindow::onActionLoad()
 void MainWindow::onNodeSelected(NodeItem* node, bool selected)
 {
   if (node)
-  {
     mInfoText->setText(node->help().message);
-    mInfoText->setWordWrapMode(QTextOption::WrapMode::WordWrap);
-    mInfoText->setFont(Fonts::Property);
-  }
 
   LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeSelected(node, selected));
   // LOG_WARN_ON_FAILURE(mFieldsMenu->onNodeSelected(node, selected));

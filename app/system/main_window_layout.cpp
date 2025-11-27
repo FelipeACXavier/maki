@@ -8,10 +8,12 @@
 #include <QLabel>
 #include <QMenu>
 #include <QMenuBar>
+#include <QPushButton>
 #include <QSplitter>
 #include <QStyledItemDelegate>
 #include <QTabWidget>
 #include <QTextBrowser>
+#include <QTimer>
 #include <QToolBar>
 #include <QToolBox>
 #include <QToolButton>
@@ -21,6 +23,7 @@
 #include "app_configs.h"
 #include "style_helpers.h"
 #include "system/canvas_view.h"
+#include "theme.h"
 #include "widgets/behaviour_menu.h"
 #include "widgets/properties/fields_menu.h"
 #include "widgets/properties/properties_menu.h"
@@ -52,14 +55,13 @@ void MainWindowlayout::buildMainWindow()
   setCentralWidget(mCentralWidget);
 
   buildMenuBar();
+
+  applyTheme();
 }
 
 void MainWindowlayout::buildLeftPanel()
 {
   mLeftPanel = new QTabWidget();
-  mLeftPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-  mLeftPanel->setMinimumWidth(220);
-  mLeftPanel->setMaximumWidth(300);
 
   mStructureTab = new QWidget();
   QVBoxLayout* structureLayout = new QVBoxLayout(mStructureTab);
@@ -81,7 +83,7 @@ void MainWindowlayout::buildLeftPanel()
   mLeftPanel->setTabIcon(1, addIconWithColor(":/icons/code-branch.svg", Qt::white));
   mLeftPanel->setTabToolTip(1, tr("Component behaviour"));
 
-  mLeftPanel->tabBar()->setExpanding(true);
+  mLeftPanel->tabBar()->setIconSize(QSize(18, 18));
 
   mMainSplitter->addWidget(mLeftPanel);
 }
@@ -89,12 +91,42 @@ void MainWindowlayout::buildLeftPanel()
 void MainWindowlayout::buildCentralPanel()
 {
   mCentralSplitter = new QSplitter(Qt::Vertical);
+
+  QWidget* header = new QWidget();
+  QHBoxLayout* headerLayout = new QHBoxLayout(header);
+  headerLayout->setContentsMargins(0, 8, 0, 8);  // top/bottom spacing
+  headerLayout->setAlignment(Qt::AlignCenter);
+
+  // Create the big round button
+  QPushButton* genButton = new QPushButton("R");
+  genButton->setToolTip("Run");
+  genButton->setToolTipDuration(2000);
+  genButton->setFixedSize(30, 30);
+
+  QComboBox* genOption = new QComboBox();
+  genOption->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+
+  genOption->addItem(tr("Generate"), "Generate");
+  genOption->addItem(tr("Verify"), "Verify");
+  genOption->addItem(tr("Simulate"), "Simulate");
+
+  QPushButton* deployButton = new QPushButton("D");
+  deployButton->setToolTip("Deploy");
+  deployButton->setToolTipDuration(2000);
+  deployButton->setFixedSize(30, 30);
+
+  headerLayout->addWidget(genButton);
+  headerLayout->addWidget(genOption);
+  // headerLayout->addWidget(simulateButton);
+  headerLayout->addWidget(deployButton);
+
+  // ---------------------------------------------
   mCanvasPanel = new QTabWidget();
   mCanvasPanel->setTabsClosable(true);
   mCanvasPanel->setMovable(true);
 
   CanvasView* canvasView = new CanvasView();
-  canvasView->setMinimumSize(500, 0);
+  // canvasView->setMinimumSize(500, 0);
 
   mCanvasPanel->addTab(canvasView, "System");
   mCanvasPanel->setCurrentWidget(canvasView);
@@ -102,13 +134,29 @@ void MainWindowlayout::buildCentralPanel()
   // Remove the close button from the system tab
   mCanvasPanel->tabBar()->setTabButton(0, QTabBar::RightSide, nullptr);
 
-  mCentralSplitter->addWidget(mCanvasPanel);
+  // =================================================================
+  QWidget* canvasContainer = new QWidget();
+  QVBoxLayout* canvasLayout = new QVBoxLayout(canvasContainer);
+  canvasLayout->setContentsMargins(0, 0, 0, 0);
+  canvasLayout->setSpacing(0);
+
+  // Add header + tabs
+  canvasLayout->addWidget(header);
+  canvasLayout->addWidget(mCanvasPanel);
+
+  // Now add the container to the splitter
+  mCentralSplitter->addWidget(canvasContainer);
+
+  // mCentralSplitter->addWidget(mCanvasPanel);
 
   mBottomPanel = new QTabWidget();
 
   // ===================================================================
   // Info tab
   mInfoText = new QTextBrowser(mBottomPanel);
+  mInfoText->setWordWrapMode(QTextOption::WrapMode::WordWrap);
+  mInfoText->setFont(Fonts::Property);
+
   mBottomPanel->addTab(mInfoText, tr("Info"));
 
   buildLogTab();
@@ -126,8 +174,6 @@ void MainWindowlayout::buildRightPanel()
 
   // Help Menu
   mNavigationTab = new QTabWidget();
-  mNavigationTab->setMinimumHeight(200);
-  mNavigationTab->setMaximumHeight(800);
 
   mSystemMenu = new SystemMenu(mNavigationTab);
   mSystemMenu->setColumnCount(2);
@@ -155,13 +201,8 @@ void MainWindowlayout::buildRightPanel()
 
   mNavigationTab->addTab(mFlowMenu, tr("Flow"));
 
-  mInterfaceMenu = new SystemMenu(mNavigationTab);
-  mNavigationTab->addTab(mInterfaceMenu, tr("Interface"));
-
   // Properties Menu
   mPropertiesTab = new QTabWidget();
-  mPropertiesTab->setMinimumHeight(400);
-  mPropertiesTab->setMaximumHeight(800);
 
   mPropertiesMenu = new PropertiesMenu(mPropertiesTab);
   mPropertiesTab->addTab(mPropertiesMenu, tr("Properties"));
@@ -279,35 +320,94 @@ void MainWindowlayout::buildLogTab()
   mBottomPanel->addTab(logContainer, tr("Log"));
 }
 
-// bool MainWindowlayout::eventFilter(QObject* obj, QEvent* event)
-// {
-//   if (event->type() == QEvent::MouseButtonPress)
-//   {
-//     QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
-//     QPoint globalPos = mouseEvent->globalPos();
+void MainWindowlayout::applyTheme()
+{
+  if (mLeftPanel)
+  {
+    mLeftPanel->setObjectName("LeftPanel");
+    mLeftPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    mLeftPanel->tabBar()->setExpanding(true);
 
-//     QWidget* clickedWidget = QApplication::widgetAt(globalPos);
-//     if (clickedWidget)
-//     {
-//       qDebug() << "Clicked widget:" << clickedWidget->metaObject()->className()
-//                << "objectName:" << clickedWidget->objectName();
-//     }
+    auto tabWidth = Config::getValueFromTheme("@left_tab_width");
+    auto tabPadding = Config::getValueFromTheme("@tab_w_padding");
+    auto tabBorderSize = Config::getValueFromTheme("@tab_border_size");
 
-//     // Check if click lands inside tab 0 of mLeftPanel
-//     QTabBar* tabBar = mLeftPanel->tabBar();
-//     QRect tabRect = tabBar->tabRect(0);
-//     QPoint tabBarGlobalPos = tabBar->mapToGlobal(QPoint(0, 0));
-//     QRect tabGlobalRect(tabBarGlobalPos, tabRect.size());
+    int count = mLeftPanel->tabBar()->count();
+    if (tabWidth.isValid() && tabPadding.isValid() && tabBorderSize.isValid())
+    {
+      int width = (count * tabWidth.toInt()) + (2 * count * tabPadding.toInt()) + (2 * count * tabBorderSize.toInt());
+      mLeftPanel->setMaximumWidth(width);
+      mLeftPanel->setFixedWidth(width);
+    }
+    else
+    {
+      LOG_WARNING("Failed to derive left panel size from theme");
+    }
+  }
 
-//     if (tabGlobalRect.contains(globalPos))
-//     {
-//       qDebug() << "CLICK WAS ON STRUCTURE TAB (tab 0)";
-//     }
-//     else
-//     {
-//       qDebug() << "Click was outside Structure tab";
-//     }
-//   }
+  if (mCanvasPanel)
+  {
+    mCanvasPanel->setObjectName("CanvasPanel");
+    mCanvasPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    mCanvasPanel->tabBar()->setExpanding(true);
+  }
 
-//   return QObject::eventFilter(obj, event);
-// }
+  if (mBottomPanel)
+  {
+    mBottomPanel->setObjectName("InfoPanel");
+    mBottomPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    mBottomPanel->tabBar()->setExpanding(true);
+  }
+
+  if (mRightPanel)
+  {
+    int navigationTabWidth = 0;
+    int propertiesTabWidth = 0;
+
+    if (mNavigationTab)
+    {
+      mNavigationTab->setObjectName("RightPanel");
+      mNavigationTab->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+      mNavigationTab->tabBar()->setExpanding(true);
+
+      auto tabWidth = Config::getValueFromTheme("@right_tab_width");
+      auto tabPadding = Config::getValueFromTheme("@tab_w_padding");
+      auto tabBorderSize = Config::getValueFromTheme("@tab_border_size");
+
+      int count = mNavigationTab->tabBar()->count();
+      if (tabWidth.isValid() && tabPadding.isValid() && tabBorderSize.isValid())
+      {
+        navigationTabWidth = (count * tabWidth.toInt()) + (2 * count * tabPadding.toInt()) + (2 * count * tabBorderSize.toInt());
+        mNavigationTab->setMinimumWidth(navigationTabWidth);
+      }
+      else
+      {
+        LOG_WARNING("Failed to derive navigation panel size from theme");
+      }
+    }
+
+    if (mPropertiesTab)
+    {
+      mPropertiesTab->setObjectName("RightPanel");
+      mPropertiesTab->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+      mPropertiesTab->tabBar()->setExpanding(true);
+
+      auto tabWidth = Config::getValueFromTheme("@right_tab_width");
+      auto tabPadding = Config::getValueFromTheme("@tab_w_padding");
+      auto tabBorderSize = Config::getValueFromTheme("@tab_border_size");
+
+      int count = mPropertiesTab->tabBar()->count();
+      if (tabWidth.isValid() && tabPadding.isValid() && tabBorderSize.isValid())
+      {
+        propertiesTabWidth = (count * tabWidth.toInt()) + (2 * count * tabPadding.toInt()) + (2 * count * tabBorderSize.toInt());
+        mPropertiesTab->setMinimumWidth(propertiesTabWidth);
+      }
+      else
+      {
+        LOG_WARNING("Failed to derive properties panel size from theme");
+      }
+    }
+
+    mRightPanel->setMinimumWidth(std::max(navigationTabWidth, propertiesTabWidth));
+  }
+}

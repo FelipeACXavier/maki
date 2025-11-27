@@ -51,7 +51,6 @@ protected:
   QTabWidget* mNavigationTab;
   SystemMenu* mSystemMenu;
   FlowMenu* mFlowMenu;
-  SystemMenu* mInterfaceMenu;
 
   QTabWidget* mPropertiesTab;
   PropertiesMenu* mPropertiesMenu;
@@ -88,4 +87,6 @@ private:
   void buildRightPanel();
 
   void buildMenuBar();
+
+  void applyTheme();
 };

@@ -18,7 +18,7 @@ combobox_border: #6272a4
 combobox_hover_border: #bd93f9
 arrow_icon: :/icons/chevron-down.svg
 tab_bg: #343746
-tab_border: #6272a4
+tab_border_color: #6272a4
 tab_selected_bg: #282a36
 menu_bg: #282a36
 menu_border: #6272a4

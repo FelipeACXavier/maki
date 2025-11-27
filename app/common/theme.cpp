@@ -55,8 +55,9 @@ void applyThemeToApp(QApplication& app, const QString& theme, const QList<Config
   }
 
   auto base = loadFile(":/themes/style.qss");
-  ThemeVars vars = loadThemeVarsFromFile(it->filePath);
-  QString styled = applyThemeVars(base, vars);
+  SYSTEM_THEME = loadThemeVarsFromFile(it->filePath);
+  QString styled = applyThemeVars(base, SYSTEM_THEME);
+  // LOG_DEBUG("\n%s", qPrintable(styled));
   app.setStyleSheet(styled);
 }
 
@@ -172,6 +173,27 @@ QList<ThemeInfo> discoverThemes()
   }
 
   return byId.values();
+}
+
+QVariant getValueFromTheme(const QString& key)
+{
+  auto it = THEME_KEY_MAP.constFind(key.trimmed());
+  if (it == THEME_KEY_MAP.constEnd())
+    return QVariant();
+
+  QString rawValue = SYSTEM_THEME.*(it.value());
+
+  QColor c(rawValue);
+  if (c.isValid())
+    return c;
+
+  QRegularExpression number("(\\d+)");
+  QRegularExpressionMatch numberMatch = number.match(rawValue);
+
+  if (numberMatch.hasMatch())
+    return numberMatch.captured(1).toInt();
+
+  return rawValue;
 }
 
 }  // namespace Config
