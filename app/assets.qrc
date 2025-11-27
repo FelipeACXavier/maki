@@ -23,5 +23,6 @@
       <file alias="close.svg">assets/icons/fontawesome/svgs/solid/xmark.svg</file>
       <file alias="circle-close.svg">assets/icons/fontawesome/svgs/solid/circle-xmark.svg</file>
       <file alias="equals.svg">assets/icons/fontawesome/svgs/solid/equals.svg</file>
+      <file alias="chevron-down.svg">assets/icons/fontawesome/svgs/solid/chevron-down.svg</file>
   </qresource>
 </RCC>

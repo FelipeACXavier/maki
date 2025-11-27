@@ -57,7 +57,6 @@ void applyThemeToApp(QApplication& app, const QString& theme, const QList<Config
   auto base = loadFile(":/themes/style.qss");
   ThemeVars vars = loadThemeVarsFromFile(it->filePath);
   QString styled = applyThemeVars(base, vars);
-  LOG_DEBUG("Styled file:\n%s", qPrintable(styled));
   app.setStyleSheet(styled);
 }
 
@@ -112,7 +111,7 @@ ThemeVars loadThemeVarsFromFile(const QString& filePath)
     }
 
     // Set the corresponding member
-    LOG_INFO("Loading %s as value %s", qPrintable(key), qPrintable(value));
+    LOG_DEBUG("Loading %s as value %s", qPrintable(key), qPrintable(value));
     vars.*(it.value()) = value;
   }
 

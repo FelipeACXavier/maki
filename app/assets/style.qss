@@ -45,7 +45,8 @@ QPushButton {
 }
 
 QPushButton:hover {
-    background-color: @button_bg_hover;
+    /* background-color: @button_bg_hover; */
+    border-color: @combobox_hover_border;
 }
 
 QPushButton:pressed {
@@ -66,7 +67,7 @@ QLineEdit, QTextEdit, QPlainTextEdit {
 }
 
 QLineEdit:focus, QTextEdit:focus {
-    border: 1px solid @input_focus_border;
+    border: 1px solid @combobox_hover_border;
 }
 
 /* ===============================
@@ -91,6 +92,8 @@ QComboBox::drop-down {
 
 QComboBox::down-arrow {
     image: url(@arrow_icon);
+    width: 10px;
+    height: 10px;
 }
 
 /* ===============================
@@ -99,12 +102,13 @@ QComboBox::down-arrow {
 
 QTabWidget::pane {
     border: 1px solid @tab_border;
-    top: -1px;
+    /* top: -1px; */
 }
 
 QTabBar::tab {
     background: @tab_bg;
     border: 1px solid @tab_border;
+    border-bottom: 3px solid @tab_border;
     padding: 6px 12px;
     margin-right: 2px;
     border-top-left-radius: 4px;
@@ -113,8 +117,9 @@ QTabBar::tab {
 
 QTabBar::tab:selected {
     background: @tab_selected_bg;
-    border-bottom-color: @tab_selected_bg;
+    border-bottom-color: @combobox_hover_border;
 }
+
 
 /* ===============================
    MENUS
