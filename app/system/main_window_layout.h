@@ -95,6 +95,7 @@ private:
     QWidget* widget;
     QString path;
     int index;
+    QColor color;
   };
 
   QList<WidgetWithIcon> mIcons;

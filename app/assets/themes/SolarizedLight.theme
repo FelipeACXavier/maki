@@ -16,7 +16,6 @@ input_focus_border: #268bd2
 combobox_bg: #eee8d5
 combobox_border: #93a1a1
 combobox_hover_border: #268bd2
-arrow_icon: :/icons/arrow-down.svg
 tab_bg: #eee8d5
 tab_border_color: #93a1a1
 tab_selected_bg: #fdf6e3

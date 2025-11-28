@@ -10,6 +10,11 @@
     <file>libraries/mission.json</file>
     <file>libraries/serial.json</file>
     <file>libraries/utilities.json</file>
+    <file>assets/branch-closed.png</file>
+    <file>assets/branch-end.png</file>
+    <file>assets/branch-more.png</file>
+    <file>assets/branch-open.png</file>
+    <file>assets/vline.png</file>
   </qresource>
   <qresource prefix="/math">
     <file alias="addition.png">assets/icons/math/addition.png</file>
@@ -18,7 +23,7 @@
     <file alias="division.png">assets/icons/math/division.png</file>
   </qresource>
   <qresource prefix="/icons">
-    <file alias="behaviour.svg">assets/icons/fontawesome/svgs/solid/code-branch.svg</file>
+    <file alias="behaviour.svg">assets/icons/fontawesome/svgs/solid/circle-nodes.svg</file>
     <file alias="structure.svg">assets/icons/fontawesome/svgs/solid/cubes.svg</file>
     <file alias="vector-square.svg">assets/icons/fontawesome/svgs/solid/vector-square.svg</file>
     <file alias="close.svg">assets/icons/fontawesome/svgs/solid/xmark.svg</file>
@@ -26,6 +31,7 @@
     <file alias="equals.svg">assets/icons/fontawesome/svgs/solid/equals.svg</file>
     <file alias="arrow-down.svg">assets/icons/fontawesome/svgs/solid/chevron-down.svg</file>
     <file alias="arrow-up.svg">assets/icons/fontawesome/svgs/solid/chevron-up.svg</file>
+    <file alias="arrow-right.svg">assets/icons/fontawesome/svgs/solid/chevron-right.svg</file>
     <file alias="play.svg">assets/icons/fontawesome/svgs/solid/circle-play.svg</file>
     <file alias="generator.svg">assets/icons/fontawesome/svgs/solid/rocket.svg</file>
     <file alias="generation_options.svg">assets/icons/fontawesome/svgs/solid/terminal.svg</file>
@@ -33,7 +39,7 @@
     <file alias="info.svg">assets/icons/fontawesome/svgs/solid/circle-info.svg</file>
     <file alias="logs.svg">assets/icons/fontawesome/svgs/solid/newspaper.svg</file>
     <file alias="system.svg">assets/icons/fontawesome/svgs/solid/folder-tree.svg</file>
-    <file alias="flows.svg">assets/icons/fontawesome/svgs/solid/circle-nodes.svg</file>
+    <file alias="flows.svg">assets/icons/fontawesome/svgs/solid/code-branch.svg</file>
     <file alias="properties.svg">assets/icons/fontawesome/svgs/solid/sliders.svg</file>
     <file alias="fields.svg">assets/icons/fontawesome/svgs/solid/rectangle-list.svg</file>
     <file alias="general.svg">assets/icons/fontawesome/svgs/solid/gear.svg</file>

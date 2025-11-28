@@ -324,14 +324,14 @@ void MainWindowlayout::buildLogTab()
   errorButton->setCheckable(true);
   errorButton->setToolTip("View only the errors");
   errorButton->setToolTipDuration(2000);
-  mIcons.append({errorButton, ":/icons/error.svg"});
+  mIcons.append({errorButton, ":/icons/error.svg", 0, QColor("red")});
 
   QPushButton* warningButton = new QPushButton("");
   warningButton->setObjectName("CheckableButton");
   warningButton->setCheckable(true);
   warningButton->setToolTip("View only the warnings");
   warningButton->setToolTipDuration(2000);
-  mIcons.append({warningButton, ":/icons/warning.svg"});
+  mIcons.append({warningButton, ":/icons/warning.svg", 0, QColor("yellow")});
 
   QStackedWidget* logViews = new QStackedWidget();
 
@@ -509,18 +509,19 @@ void MainWindowlayout::themeChanged()
   {
     if (item.widget)
     {
+      QColor color = item.color.isValid() ? item.color : Config::FOREGROUND;
       if (auto label = qobject_cast<QLabel*>(item.widget))
       {
-        label->setPixmap(applyColorToIcon(item.path, Config::FOREGROUND).scaled(16, 16, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        label->setPixmap(applyColorToIcon(item.path, color).scaled(16, 16, Qt::KeepAspectRatio, Qt::SmoothTransformation));
       }
       if (auto button = qobject_cast<QPushButton*>(item.widget))
       {
-        button->setIcon(addIconWithColor(item.path, Config::FOREGROUND));
+        button->setIcon(addIconWithColor(item.path, color));
       }
       else if (auto tabBar = qobject_cast<QTabBar*>(item.widget))
       {
         if (item.index < tabBar->count())
-          tabBar->setTabIcon(item.index, addIconWithColor(item.path, Config::FOREGROUND));
+          tabBar->setTabIcon(item.index, addIconWithColor(item.path, color));
       }
     }
   }

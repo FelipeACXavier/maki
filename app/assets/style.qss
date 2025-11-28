@@ -252,3 +252,31 @@ QToolTip {
   border-radius: @border_radius;
   font-size: 14px;
 }
+
+/* ===============================
+   TREEVIEW
+   =============================== */
+
+/* QTreeView::branch:has-siblings:!adjoins-item {
+  border-image: url(:/assets/vline.png) 0;
+}
+
+QTreeView::branch:has-siblings:adjoins-item {
+  border-image: url(:/assets/branch-more.png) 0;
+}
+
+QTreeView::branch:!has-children:!has-siblings:adjoins-item {
+  border-image: url(:/assets/branch-end.png) 0;
+}
+
+QTreeView::branch:has-children:!has-siblings:closed,
+QTreeView::branch:closed:has-children:has-siblings {
+  border-image: none;
+  image: url(:/icons/arrow-right.svg);
+}
+
+QTreeView::branch:open:has-children:!has-siblings,
+QTreeView::branch:open:has-children:has-siblings  {
+  border-image: none;
+  image: url(:/icons/arrow-down.svg);
+} */
