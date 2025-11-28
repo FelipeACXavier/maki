@@ -10,6 +10,7 @@
 #include <QMenuBar>
 #include <QPushButton>
 #include <QSplitter>
+#include <QStackedWidget>
 #include <QStyledItemDelegate>
 #include <QTabWidget>
 #include <QTextBrowser>
@@ -77,11 +78,11 @@ void MainWindowlayout::buildLeftPanel()
   mBehaviourTab->setLayout(behaviourLayout);
   mLeftPanel->addTab(mBehaviourTab, tr("Behaviour"));
 
-  mLeftPanel->setTabIcon(0, addIconWithColor(":/icons/cubes.svg", Qt::white));
   mLeftPanel->setTabToolTip(0, tr("Structure"));
-
-  mLeftPanel->setTabIcon(1, addIconWithColor(":/icons/code-branch.svg", Qt::white));
   mLeftPanel->setTabToolTip(1, tr("Component behaviour"));
+
+  mIcons.append({mLeftPanel->tabBar(), ":/icons/structure.svg", 0});
+  mIcons.append({mLeftPanel->tabBar(), ":/icons/behaviour.svg", 1});
 
   mLeftPanel->tabBar()->setIconSize(QSize(18, 18));
 
@@ -95,30 +96,43 @@ void MainWindowlayout::buildCentralPanel()
   QWidget* header = new QWidget();
   QHBoxLayout* headerLayout = new QHBoxLayout(header);
   headerLayout->setContentsMargins(0, 8, 0, 8);  // top/bottom spacing
+  headerLayout->setSpacing(5);
   headerLayout->setAlignment(Qt::AlignCenter);
 
-  // Create the big round button
-  QPushButton* genButton = new QPushButton("R");
-  genButton->setToolTip("Run");
-  genButton->setToolTipDuration(2000);
-  genButton->setFixedSize(30, 30);
+  // ---------------------------------------------
+  mGenerationButton = new QPushButton("");
+  mIcons.append({mGenerationButton, ":/icons/play.svg"});
 
-  QComboBox* genOption = new QComboBox();
-  genOption->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+  mGenerationButton->setToolTip("Run with the selected options");
+  mGenerationButton->setToolTipDuration(2000);
+  mGenerationButton->setFixedSize(30, 30);
 
-  genOption->addItem(tr("Generate"), "Generate");
-  genOption->addItem(tr("Verify"), "Verify");
-  genOption->addItem(tr("Simulate"), "Simulate");
+  headerLayout->addWidget(mGenerationButton);
 
-  QPushButton* deployButton = new QPushButton("D");
-  deployButton->setToolTip("Deploy");
-  deployButton->setToolTipDuration(2000);
-  deployButton->setFixedSize(30, 30);
+  // ----------------------------------------------------------------
+  mGenerationOption = new QComboBox();
+  mGenerationOption->addItem(tr("Generate"), "Generate");
+  mGenerationOption->addItem(tr("Verify"), "Verify");
+  mGenerationOption->addItem(tr("Simulate"), "Simulate");
 
-  headerLayout->addWidget(genButton);
-  headerLayout->addWidget(genOption);
-  // headerLayout->addWidget(simulateButton);
-  headerLayout->addWidget(deployButton);
+  auto generationOptionsWrapper = createHeaderComboBox(mGenerationOption, ":/icons/generator.svg");
+  headerLayout->addWidget(generationOptionsWrapper);
+
+  // ----------------------------------------------------------------
+  mGeneratorOption = new QComboBox();
+
+  auto generatorOptionsWrapper = createHeaderComboBox(mGeneratorOption, ":/icons/generation_options.svg");
+  headerLayout->addWidget(generatorOptionsWrapper);
+
+  // ----------------------------------------------------------------
+  mDeployButton = new QPushButton("");
+  mIcons.append({mDeployButton, ":/icons/deploy.svg"});
+
+  mDeployButton->setToolTip("Deploy program to selected application");
+  mDeployButton->setToolTipDuration(2000);
+  mDeployButton->setFixedSize(30, 30);
+
+  headerLayout->addWidget(mDeployButton);
 
   // ---------------------------------------------
   mCanvasPanel = new QTabWidget();
@@ -126,7 +140,6 @@ void MainWindowlayout::buildCentralPanel()
   mCanvasPanel->setMovable(true);
 
   CanvasView* canvasView = new CanvasView();
-  // canvasView->setMinimumSize(500, 0);
 
   mCanvasPanel->addTab(canvasView, "System");
   mCanvasPanel->setCurrentWidget(canvasView);
@@ -147,19 +160,43 @@ void MainWindowlayout::buildCentralPanel()
   // Now add the container to the splitter
   mCentralSplitter->addWidget(canvasContainer);
 
-  // mCentralSplitter->addWidget(mCanvasPanel);
-
   mBottomPanel = new QTabWidget();
+  mBottomPanel->setFixedHeight(320);
 
   // ===================================================================
   // Info tab
   mInfoText = new QTextBrowser(mBottomPanel);
   mInfoText->setWordWrapMode(QTextOption::WrapMode::WordWrap);
   mInfoText->setFont(Fonts::Property);
+  mInfoText->setText(
+      "<h2>Welcome to " + Config::APPLICATION_NAME +
+      "</h2>"
+
+      "<p>"
+      "  MAKI is a low-code platform that helps you design and orchestrate your systems."
+      "</p>"
+      ""
+      "<p><b>To get started:</b></p>"
+      "<ul>"
+      "  <li>Drag a structural block from the palette onto the Canvas.</li>"
+      "  <li>Right-click and select \"Edit behavior\"</li>"
+      "  <li>Connect blocks to define the data and control flow.</li>"
+      "  <li>Double-click a block to inspect or adjust its properties.</li>"
+      "</ul>"
+      ""
+      "<p>"
+      "  For extra help, hover over any control to see a tooltip, or explore the <b>Help</b> menu in the navigation bar."
+      "</p>"
+      ""
+      "<p style='color:#888; font-size: 16px'>"
+      "  Tip: You can always reset the layout or theme from the <b>Settings</b> menu if things get messy."
+      "</p>");
 
   mBottomPanel->addTab(mInfoText, tr("Info"));
+  mIcons.append({mBottomPanel->tabBar(), ":/icons/info.svg", 0});
 
   buildLogTab();
+  mIcons.append({mBottomPanel->tabBar(), ":/icons/logs.svg", 1});
 
   mCentralSplitter->addWidget(mBottomPanel);
 
@@ -172,7 +209,8 @@ void MainWindowlayout::buildRightPanel()
   mRightPanel->setMinimumWidth(250);
   mRightPanel->setMaximumWidth(400);
 
-  // Help Menu
+  // ----------------------------------------------------------------------
+  // Navigation Menu
   mNavigationTab = new QTabWidget();
 
   mSystemMenu = new SystemMenu(mNavigationTab);
@@ -201,6 +239,10 @@ void MainWindowlayout::buildRightPanel()
 
   mNavigationTab->addTab(mFlowMenu, tr("Flow"));
 
+  mIcons.append({mNavigationTab->tabBar(), ":/icons/system.svg", 0});
+  mIcons.append({mNavigationTab->tabBar(), ":/icons/flows.svg", 1});
+
+  // ----------------------------------------------------------------------
   // Properties Menu
   mPropertiesTab = new QTabWidget();
 
@@ -212,6 +254,10 @@ void MainWindowlayout::buildRightPanel()
 
   mBehaviourMenu = new BehaviourMenu(mPropertiesTab);
   mPropertiesTab->addTab(mBehaviourMenu, tr("Behaviour"));
+
+  mIcons.append({mPropertiesTab->tabBar(), ":/icons/properties.svg", 0});
+  mIcons.append({mPropertiesTab->tabBar(), ":/icons/fields.svg", 1});
+  mIcons.append({mPropertiesTab->tabBar(), ":/icons/behaviour.svg", 2});
 
   mRightPanel->addWidget(mNavigationTab);
   mRightPanel->addWidget(mPropertiesTab);
@@ -239,6 +285,9 @@ void MainWindowlayout::buildMenuBar()
   file->addAction(mActionSaveAs);
 
   QMenu* edit = mMenuBar->addMenu(tr("Edit"));
+  mOpenAllSettings = new QAction(tr("Open all settings"), this);
+  edit->addAction(mOpenAllSettings);
+
   QMenu* view = mMenuBar->addMenu(tr("View"));
 
   QMenu* window = mMenuBar->addMenu(tr("Diagram"));
@@ -247,10 +296,6 @@ void MainWindowlayout::buildMenuBar()
   window->addAction(mActionGenerate);
 
   QMenu* settings = mMenuBar->addMenu(tr("Settings"));
-
-  mOpenAllSettings = new QAction(tr("Open all settings"), this);
-  settings->addAction(mOpenAllSettings);
-
   mGeneratorMenu = new QMenu(tr("Generator"));
   settings->addMenu(mGeneratorMenu);
 
@@ -267,55 +312,101 @@ void MainWindowlayout::buildLogTab()
 
   // Toolbar
   QToolBar* logToolBar = new QToolBar(logContainer);
-  logToolBar->setMaximumHeight(28);
+  logToolBar->setObjectName("LogToolBar");
   logToolBar->setMovable(false);
   logToolBar->setFloatable(false);
   logToolBar->setFont(Fonts::SmallTab);
 
-  QWidget* group = new QWidget();
-  QHBoxLayout* layout = new QHBoxLayout(group);
-  layout->setContentsMargins(0, 0, 0, 0);
-  layout->setSpacing(8);
-
-  // =======================================================================================
-  // Clear button
-  QToolButton* clearButton = new QToolButton();
-  QAction* clearAction = new QAction(tr("Clear"), this);
-  clearButton->setDefaultAction(clearAction);
-
-  clearButton->setAutoRaise(true);
-  clearButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
-  clearButton->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred);
-  clearButton->setFont(Fonts::SmallTab);
-
-  connect(clearAction, &QAction::triggered, this, [this]() { mLogText->clear(); });
-
   // =======================================================================================
   // Log level selector
-  mLogLevelComboBox = new QComboBox(logToolBar);
-  mLogLevelComboBox->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+  QPushButton* errorButton = new QPushButton("");
+  errorButton->setObjectName("CheckableButton");
+  errorButton->setCheckable(true);
+  errorButton->setToolTip("View only the errors");
+  errorButton->setToolTipDuration(2000);
+  mIcons.append({errorButton, ":/icons/error.svg"});
 
-  mLogLevelComboBox->addItem(tr("Error"), QVariant::fromValue(logging::LogLevel::Error));
-  mLogLevelComboBox->addItem(tr("Warning"), QVariant::fromValue(logging::LogLevel::Warning));
-  mLogLevelComboBox->addItem(tr("Info"), QVariant::fromValue(logging::LogLevel::Info));
-  mLogLevelComboBox->addItem(tr("Debug"), QVariant::fromValue(logging::LogLevel::Debugging));
+  QPushButton* warningButton = new QPushButton("");
+  warningButton->setObjectName("CheckableButton");
+  warningButton->setCheckable(true);
+  warningButton->setToolTip("View only the warnings");
+  warningButton->setToolTipDuration(2000);
+  mIcons.append({warningButton, ":/icons/warning.svg"});
 
-  QLabel* levelLabel = new QLabel(tr("Log level"));
-  levelLabel->setContentsMargins(0, 0, 0, 0);
-  levelLabel->setAlignment(Qt::AlignVCenter);
-
-  layout->addWidget(levelLabel);
-  layout->addWidget(mLogLevelComboBox);
-  layout->addWidget(clearButton);
-
-  logToolBar->addWidget(group);
+  QStackedWidget* logViews = new QStackedWidget();
 
   mLogText = new QTextBrowser(mBottomPanel);
   mLogText->setFont(Fonts::MonoSpace);
 
+  mErrorLogText = new QTextBrowser(mBottomPanel);
+  mErrorLogText->setFont(Fonts::MonoSpace);
+
+  mWarningLogText = new QTextBrowser(mBottomPanel);
+  mWarningLogText->setFont(Fonts::MonoSpace);
+
+  // =======================================================================================
+  // Clear button
+  QPushButton* clearButton = new QPushButton();
+  clearButton->setToolTip("Clear the logs");
+  clearButton->setToolTipDuration(2000);
+  mIcons.append({clearButton, ":/icons/clear.svg"});
+
+  connect(clearButton, &QPushButton::pressed, this, [this]() {
+    mLogText->clear();
+    mErrorLogText->clear();
+    mWarningLogText->clear();
+  });
+
+  // =======================================================================================
+  // Set the layout
+  QWidget* group = new QWidget();
+  QHBoxLayout* layout = new QHBoxLayout(group);
+  layout->setContentsMargins(0, 0, 0, 0);
+  layout->setSpacing(5);
+  layout->setAlignment(Qt::AlignCenter);
+
+  layout->addWidget(errorButton);
+  layout->addWidget(warningButton);
+  layout->addStretch();
+  layout->addWidget(clearButton);
+
+  logToolBar->addWidget(group);
+
+  logViews->addWidget(mLogText);
+  logViews->addWidget(mErrorLogText);
+  logViews->addWidget(mWarningLogText);
+
+  // TODO: Make these indices less magical
+  connect(errorButton, &QPushButton::toggled, this, [logViews, warningButton](bool checked) {
+    if (checked)
+    {
+      // Highest priority
+      logViews->setCurrentIndex(1);
+    }
+    else
+    {
+      if (warningButton->isChecked())
+        logViews->setCurrentIndex(2);
+      else
+        logViews->setCurrentIndex(0);
+    }
+  });
+
+  connect(warningButton, &QPushButton::toggled, this, [logViews, errorButton](bool checked) {
+    if (checked)
+    {
+      if (!errorButton->isChecked())
+        logViews->setCurrentIndex(2);
+    }
+    else
+    {
+      logViews->setCurrentIndex(0);
+    }
+  });
+
   // Assemble the complete tab
   logLayout->addWidget(logToolBar);
-  logLayout->addWidget(mLogText);
+  logLayout->addWidget(logViews);
 
   mBottomPanel->addTab(logContainer, tr("Log"));
 }
@@ -410,4 +501,47 @@ void MainWindowlayout::applyTheme()
 
     mRightPanel->setMinimumWidth(std::max(navigationTabWidth, propertiesTabWidth));
   }
+}
+
+void MainWindowlayout::themeChanged()
+{
+  for (auto item : mIcons)
+  {
+    if (item.widget)
+    {
+      if (auto label = qobject_cast<QLabel*>(item.widget))
+      {
+        label->setPixmap(applyColorToIcon(item.path, Config::FOREGROUND).scaled(16, 16, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+      }
+      if (auto button = qobject_cast<QPushButton*>(item.widget))
+      {
+        button->setIcon(addIconWithColor(item.path, Config::FOREGROUND));
+      }
+      else if (auto tabBar = qobject_cast<QTabBar*>(item.widget))
+      {
+        if (item.index < tabBar->count())
+          tabBar->setTabIcon(item.index, addIconWithColor(item.path, Config::FOREGROUND));
+      }
+    }
+  }
+}
+
+QWidget* MainWindowlayout::createHeaderComboBox(QComboBox* comboBox, const QString& iconPath)
+{
+  QWidget* wrapper = new QWidget();
+  QHBoxLayout* wLayout = new QHBoxLayout(wrapper);
+  wLayout->setContentsMargins(0, 0, 0, 0);
+  wLayout->setSpacing(0);
+
+  QLabel* iconLabel = new QLabel();
+  iconLabel->setObjectName("HeaderButton");
+  mIcons.append({iconLabel, iconPath});
+
+  comboBox->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+  comboBox->setObjectName("HeaderComboBox");
+
+  wLayout->addWidget(iconLabel);
+  wLayout->addWidget(comboBox);
+
+  return wrapper;
 }

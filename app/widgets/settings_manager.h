@@ -17,6 +17,7 @@ struct GeneralSettings
   bool autosaveEnabled = true;
   int autosaveIntervalMinutes = 5;
   bool confirmOnCloseWithExecution = true;
+  bool enableDebugLogs = true;
 };
 
 struct AppearanceSettings

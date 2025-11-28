@@ -1,6 +1,7 @@
 #include "plugin_manager.h"
 
 #include <QApplication>
+#include <QComboBox>
 #include <QDir>
 #include <QMenu>
 #include <QPluginLoader>
@@ -14,11 +15,17 @@ PluginManager::PluginManager()
 {
 }
 
-void PluginManager::start(QMenu* menu)
+void PluginManager::start(QMenu* menu, QComboBox* comboBox)
 {
   if (!menu)
   {
     LOG_WARNING("No menu provided, cannot set the langauge plugins");
+    return;
+  }
+
+  if (!comboBox)
+  {
+    LOG_WARNING("No comboBox provided, cannot set the langauge plugins");
     return;
   }
 
@@ -51,6 +58,8 @@ void PluginManager::start(QMenu* menu)
 
     QAction* action = menu->addAction(codeGen->languageName());
     connect(action, &QAction::triggered, [this, codeGen] { setPlugin(codeGen); });
+
+    comboBox->addItem(codeGen->languageName(), codeGen->languageName());
 
     mPlugins.append(codeGen);
   }

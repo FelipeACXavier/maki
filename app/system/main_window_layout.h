@@ -16,6 +16,7 @@ class BehaviourMenu;
 class QTextBrowser;
 class QToolBox;
 class QComboBox;
+class QPushButton;
 
 class MainWindowlayout : public QMainWindow
 {
@@ -38,12 +39,20 @@ protected:
   QToolBox* mBehaviourToolBox;
 
   // === Central Panel ===
+  QPushButton* mGenerationButton;
+  QComboBox* mGenerationOption;
+  QComboBox* mGeneratorOption;
+
+  QPushButton* mDeployButton;
+
   QSplitter* mCentralSplitter;
   QTabWidget* mCanvasPanel;
 
   QTabWidget* mBottomPanel;
   QTextBrowser* mInfoText;
   QTextBrowser* mLogText;
+  QTextBrowser* mErrorLogText;
+  QTextBrowser* mWarningLogText;
   QComboBox* mLogLevelComboBox;
 
   // === Right Panel ===
@@ -78,7 +87,18 @@ protected:
 
   // Help menu
 
+  void themeChanged();
+
 private:
+  struct WidgetWithIcon
+  {
+    QWidget* widget;
+    QString path;
+    int index;
+  };
+
+  QList<WidgetWithIcon> mIcons;
+
   void buildMainWindow();
 
   void buildLeftPanel();
@@ -89,4 +109,5 @@ private:
   void buildMenuBar();
 
   void applyTheme();
+  QWidget* createHeaderComboBox(QComboBox* comboBox, const QString& iconPath);
 };

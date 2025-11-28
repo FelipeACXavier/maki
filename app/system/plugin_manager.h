@@ -4,13 +4,15 @@
 
 #include "compiler/generator_plugin.h"
 
+class QComboBox;
+
 class PluginManager : public QObject
 {
   Q_OBJECT
 public:
   PluginManager();
 
-  void start(QMenu* menu);
+  void start(QMenu* menu, QComboBox* comboBox);
 
   GeneratorPlugin* currentPlugin() const;
   GeneratorPlugin* pluginByLanguage(generator::Language language) const;

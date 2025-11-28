@@ -11,6 +11,7 @@
 #include <QVBoxLayout>
 
 #include "logging.h"
+#include "style_helpers.h"
 
 SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsManager> manager, QWidget* parent)
     : QDialog(parent)
@@ -55,9 +56,9 @@ SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsMan
   loadFromSettings();
 }
 
-QWidget* SettingsDialog::addPage(const QString& pageName, const QString& iconNeame) const
+QWidget* SettingsDialog::addPage(const QString& pageName, const QString& iconName) const
 {
-  auto selector = new QListWidgetItem(QIcon(iconNeame), pageName, mPageSelector);
+  auto selector = new QListWidgetItem(addIconWithColor(iconName, Config::FOREGROUND), pageName, mPageSelector);
   mPageSelector->addItem(selector);
 
   QWidget* page = new QWidget;
@@ -87,11 +88,13 @@ VoidResult SettingsDialog::createGeneralPage()
   autosaveLayout->addStretch();
 
   mConfirmOnClose = new QCheckBox(tr("Confirm before closing editor with running execution"), page);
+  mEnableDebugLogs = new QCheckBox(tr("Enable debug logs"), page);
 
   static_cast<QVBoxLayout*>(page->layout())->addWidget(mRestoreLastSession);
   static_cast<QVBoxLayout*>(page->layout())->addWidget(mAutosaveEnabled);
   static_cast<QVBoxLayout*>(page->layout())->addLayout(autosaveLayout);
   static_cast<QVBoxLayout*>(page->layout())->addWidget(mConfirmOnClose);
+  static_cast<QVBoxLayout*>(page->layout())->addWidget(mEnableDebugLogs);
   static_cast<QVBoxLayout*>(page->layout())->addStretch();
 
   return VoidResult();
@@ -164,6 +167,7 @@ void SettingsDialog::loadFromSettings()
   mAutosaveEnabled->setChecked(g.autosaveEnabled);
   mAutosaveMinutes->setValue(g.autosaveIntervalMinutes);
   mConfirmOnClose->setChecked(g.confirmOnCloseWithExecution);
+  mEnableDebugLogs->setChecked(g.enableDebugLogs);
 
   int themeIndex = mThemeCombo->findData(a.theme);
   if (themeIndex < 0)
@@ -183,6 +187,7 @@ void SettingsDialog::saveToSettings()
   g.autosaveEnabled = mAutosaveEnabled->isChecked();
   g.autosaveIntervalMinutes = mAutosaveMinutes->value();
   g.confirmOnCloseWithExecution = mConfirmOnClose->isChecked();
+  g.enableDebugLogs = mEnableDebugLogs->isChecked();
 
   AppearanceSettings a;
   a.uiScalePercent = mUiScale->value();

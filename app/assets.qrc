@@ -1,3 +1,4 @@
+<!DOCTYPE RCC>
 <RCC>
   <qresource prefix="/">
     <file alias="themes/style.qss">assets/style.qss</file>
@@ -11,18 +12,35 @@
     <file>libraries/utilities.json</file>
   </qresource>
   <qresource prefix="/math">
-      <file alias="addition.png">assets/icons/math/addition.png</file>
-      <file alias="subtraction.png">assets/icons/math/subtraction.png</file>
-      <file alias="multiplication.png">assets/icons/math/multiplication.png</file>
-      <file alias="division.png">assets/icons/math/division.png</file>
+    <file alias="addition.png">assets/icons/math/addition.png</file>
+    <file alias="subtraction.png">assets/icons/math/subtraction.png</file>
+    <file alias="multiplication.png">assets/icons/math/multiplication.png</file>
+    <file alias="division.png">assets/icons/math/division.png</file>
   </qresource>
   <qresource prefix="/icons">
-      <file alias="code-branch.svg">assets/icons/fontawesome/svgs/solid/code-branch.svg</file>
-      <file alias="cubes.svg">assets/icons/fontawesome/svgs/solid/cubes.svg</file>
-      <file alias="vector-square.svg">assets/icons/fontawesome/svgs/solid/vector-square.svg</file>
-      <file alias="close.svg">assets/icons/fontawesome/svgs/solid/xmark.svg</file>
-      <file alias="circle-close.svg">assets/icons/fontawesome/svgs/solid/circle-xmark.svg</file>
-      <file alias="equals.svg">assets/icons/fontawesome/svgs/solid/equals.svg</file>
-      <file alias="chevron-down.svg">assets/icons/fontawesome/svgs/solid/chevron-down.svg</file>
+    <file alias="behaviour.svg">assets/icons/fontawesome/svgs/solid/code-branch.svg</file>
+    <file alias="structure.svg">assets/icons/fontawesome/svgs/solid/cubes.svg</file>
+    <file alias="vector-square.svg">assets/icons/fontawesome/svgs/solid/vector-square.svg</file>
+    <file alias="close.svg">assets/icons/fontawesome/svgs/solid/xmark.svg</file>
+    <file alias="circle-close.svg">assets/icons/fontawesome/svgs/solid/circle-xmark.svg</file>
+    <file alias="equals.svg">assets/icons/fontawesome/svgs/solid/equals.svg</file>
+    <file alias="arrow-down.svg">assets/icons/fontawesome/svgs/solid/chevron-down.svg</file>
+    <file alias="arrow-up.svg">assets/icons/fontawesome/svgs/solid/chevron-up.svg</file>
+    <file alias="play.svg">assets/icons/fontawesome/svgs/solid/circle-play.svg</file>
+    <file alias="generator.svg">assets/icons/fontawesome/svgs/solid/rocket.svg</file>
+    <file alias="generation_options.svg">assets/icons/fontawesome/svgs/solid/terminal.svg</file>
+    <file alias="deploy.svg">assets/icons/fontawesome/svgs/solid/diagram-next.svg</file>
+    <file alias="info.svg">assets/icons/fontawesome/svgs/solid/circle-info.svg</file>
+    <file alias="logs.svg">assets/icons/fontawesome/svgs/solid/newspaper.svg</file>
+    <file alias="system.svg">assets/icons/fontawesome/svgs/solid/folder-tree.svg</file>
+    <file alias="flows.svg">assets/icons/fontawesome/svgs/solid/circle-nodes.svg</file>
+    <file alias="properties.svg">assets/icons/fontawesome/svgs/solid/sliders.svg</file>
+    <file alias="fields.svg">assets/icons/fontawesome/svgs/solid/rectangle-list.svg</file>
+    <file alias="general.svg">assets/icons/fontawesome/svgs/solid/gear.svg</file>
+    <file alias="appearance.svg">assets/icons/fontawesome/svgs/solid/paint-roller.svg</file>
+    <file alias="clear.svg">assets/icons/fontawesome/svgs/solid/trash.svg</file>
+    <file alias="log-level.svg">assets/icons/fontawesome/svgs/solid/temperature-half.svg</file>
+    <file alias="warning.svg">assets/icons/fontawesome/svgs/solid/triangle-exclamation.svg</file>
+    <file alias="error.svg">assets/icons/fontawesome/svgs/solid/circle-xmark.svg</file>
   </qresource>
 </RCC>

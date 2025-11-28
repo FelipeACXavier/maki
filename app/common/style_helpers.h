@@ -13,6 +13,7 @@ QPointF snapToGrid(const QPointF& point, const int gridSize);
 QString ToLabel(const QString& str);
 QString ToLabel(const std::string& str);
 
+QPixmap applyColorToIcon(const QString& path, const QColor& color);
 QIcon addIconWithColor(const QString& path, const QColor& color);
 
 QString timeToQT(std::chrono::system_clock::time_point ts);

@@ -35,6 +35,7 @@ void SettingsManager::load()
   mGeneral.autosaveEnabled = mSettings.value("autosaveEnabled", mGeneral.autosaveEnabled).toBool();
   mGeneral.autosaveIntervalMinutes = mSettings.value("autosaveIntervalMinutes", mGeneral.autosaveIntervalMinutes).toInt();
   mGeneral.confirmOnCloseWithExecution = mSettings.value("confirmOnCloseWithExecution", mGeneral.confirmOnCloseWithExecution).toBool();
+  mGeneral.enableDebugLogs = mSettings.value("enableDebugLogs", mGeneral.enableDebugLogs).toBool();
   mSettings.endGroup();
 
   mSettings.beginGroup("Appearance");
@@ -52,6 +53,7 @@ void SettingsManager::save()
   mSettings.setValue("autosaveEnabled", mGeneral.autosaveEnabled);
   mSettings.setValue("autosaveIntervalMinutes", mGeneral.autosaveIntervalMinutes);
   mSettings.setValue("confirmOnCloseWithExecution", mGeneral.confirmOnCloseWithExecution);
+  mSettings.setValue("enableDebugLogs", mGeneral.enableDebugLogs);
   mSettings.endGroup();
 
   mSettings.beginGroup("Appearance");

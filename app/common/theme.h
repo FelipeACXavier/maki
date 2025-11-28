@@ -50,13 +50,16 @@ struct ThemeVars
   QString combobox_bg = "#e0e0e0";
   QString combobox_border = "#b0b0b0";
   QString combobox_hover_border = "#6b90c6";
-  QString arrow_icon = ":/icons/arrow-down.svg";
+
+  // Icons
+  QString arrow_icon_up = ":/icons/arrow-up.svg";
+  QString arrow_icon_down = ":/icons/arrow-down.svg";
 
   // QTabBar
   QString left_tab_width = "100px";
   QString canvas_tab_width = "200px";
   QString info_tab_width = "50px";
-  QString right_tab_width = "85px";
+  QString right_tab_width = "100px";
   QString tab_border_size = "1px";
   QString tab_border_style = "solid";
   QString tab_border_color = "#b0b0b0";
@@ -65,11 +68,21 @@ struct ThemeVars
   QString tab_w_padding = "12px";
   QString tab_selected_bg = "#ffffff";
 
+  // Menu
   QString menu_bg = "#f4f4f4";
   QString menu_border = "#b0b0b0";
+
+  // Toolbar
   QString toolbar_bg = "#e8e8e8";
   QString toolbar_border = "#b0b0b0";
   QString toolbutton_hover_bg = "#dcdcdc";
+
+  // Tooltip
+  QString tooltip_h_padding = "2px";
+  QString tooltip_w_padding = "12px";
+  QString tooltip_border_size = "1px";
+  QString tooltip_border_style = "solid";
+  QString tooltip_border_color = "#b0b0b0";
 };
 
 // Map key strings to ThemeVars members using the handy pointer to member notation
@@ -96,7 +109,8 @@ const QHash<QString, QString ThemeVars::*> THEME_KEY_MAP = {
     {"@combobox_bg", &ThemeVars::combobox_bg},
     {"@combobox_border", &ThemeVars::combobox_border},
     {"@combobox_hover_border", &ThemeVars::combobox_hover_border},
-    {"@arrow_icon", &ThemeVars::arrow_icon},
+    {"@arrow_icon_up", &ThemeVars::arrow_icon_up},
+    {"@arrow_icon_down", &ThemeVars::arrow_icon_down},
 
     // QTabBar
     {"@tab_bg", &ThemeVars::tab_bg},
@@ -119,6 +133,13 @@ const QHash<QString, QString ThemeVars::*> THEME_KEY_MAP = {
     {"@toolbar_bg", &ThemeVars::toolbar_bg},
     {"@toolbar_border", &ThemeVars::toolbar_border},
     {"@toolbutton_hover_bg", &ThemeVars::toolbutton_hover_bg},
+
+    // QToolTip
+    {"@tooltip_h_padding", &ThemeVars::tooltip_h_padding},
+    {"@tooltip_w_padding", &ThemeVars::tooltip_w_padding},
+    {"@tooltip_border_size", &ThemeVars::tooltip_border_size},
+    {"@tooltip_border_style", &ThemeVars::tooltip_border_style},
+    {"@tooltip_border_color", &ThemeVars::tooltip_border_color},
 };
 
 static ThemeVars SYSTEM_THEME = ThemeVars{};

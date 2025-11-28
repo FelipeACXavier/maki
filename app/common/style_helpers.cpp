@@ -36,14 +36,19 @@ QString ToLabel(const QString& str)
   return QString::fromStdString(ToUpperCase(str.toStdString(), 0, 1));
 }
 
-QIcon addIconWithColor(const QString& path, const QColor& color)
+QPixmap applyColorToIcon(const QString& path, const QColor& color)
 {
   QPixmap pixmap(path);
   QPainter painter(&pixmap);
   painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
   painter.fillRect(pixmap.rect(), color);
   painter.end();
-  return QIcon(pixmap);
+  return pixmap;
+}
+
+QIcon addIconWithColor(const QString& path, const QColor& color)
+{
+  return QIcon(applyColorToIcon(path, color));
 }
 
 QString timeToQT(std::chrono::system_clock::time_point now)

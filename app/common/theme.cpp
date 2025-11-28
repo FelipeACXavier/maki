@@ -201,7 +201,6 @@ QVariant getValueFromTheme(const QString& key)
 
   QString rawValue = SYSTEM_THEME.*(it.value());
 
-  LOG_INFO("%s: %s", qPrintable(key), qPrintable(rawValue));
   QRegularExpression number("(\\d+)px");
   QRegularExpressionMatch numberMatch = number.match(rawValue);
 

@@ -36,6 +36,7 @@ private:
   QCheckBox* mAutosaveEnabled = nullptr;
   QSpinBox* mAutosaveMinutes = nullptr;
   QCheckBox* mConfirmOnClose = nullptr;
+  QCheckBox* mEnableDebugLogs = nullptr;
 
   // Appearance
   QComboBox* mThemeCombo = nullptr;

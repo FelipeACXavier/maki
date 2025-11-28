@@ -52,23 +52,15 @@ VoidResult MainWindow::start()
   mLogLevel = logging::LogLevel::Debugging;
 
   logging::gLogToStream = [this](std::chrono::system_clock::time_point ts, logging::LogLevel level, const std::string& filename, const uint32_t& line, const std::string& message) {
-    if (!mLogText)
-      return;
-
     if (level > mLogLevel)
       return;
 
-    mLogText->append(toQT(ts, level, message));
-
-    // Check if the number of lines exceeds the maximum limit
-    QTextDocument* doc = mLogText->document();
-    if (doc->blockCount() > 100)
-    {
-      // Remove the first block (top line) to limit the number of lines
-      QTextBlock block = doc->begin();
-      mLogText->textCursor().setPosition(block.position());
-      mLogText->textCursor().removeSelectedText();
-    }
+    QString logMessage = toQT(ts, level, message);
+    handleLogging(logMessage, mLogText);
+    if (level == logging::LogLevel::Error)
+      handleLogging(logMessage, mErrorLogText);
+    if (level == logging::LogLevel::Warning)
+      handleLogging(logMessage, mWarningLogText);
   };
 
   auto configRead = JSON::fromFile(":/assets/config.json");
@@ -101,24 +93,28 @@ VoidResult MainWindow::start()
 
   if (mSettingsManager)
   {
-    Config::applyThemeToApp(mApp, mSettingsManager->appearance().theme, mSettingsManager->availableThemes());
-    QObject::connect(mSettingsManager.get(), &SettingsManager::themeChanged, mApp,
-                     [this](const QString& t, const QList<Config::ThemeInfo>& at) {
-                       Config::applyThemeToApp(mApp, t, at);
-
-                       // Update all items in all canvases
-                       for (int i = 0; i < mCanvasPanel->count(); ++i)
-                       {
-                         QWidget* w = mCanvasPanel->widget(i);
-                         if (auto canvas = qobject_cast<CanvasView*>(w))
-                           static_cast<Canvas*>(canvas->scene())->themeChanged();
-                       }
-                     });
+    onThemeChanged(mSettingsManager->appearance().theme, mSettingsManager->availableThemes());
+    connect(mSettingsManager.get(), &SettingsManager::themeChanged, this, &MainWindow::onThemeChanged);
   }
 
   LOG_DEBUG("Main window started");
 
   return VoidResult();
+}
+
+void MainWindow::onThemeChanged(const QString& t, const QList<Config::ThemeInfo>& at)
+{
+  Config::applyThemeToApp(mApp, t, at);
+
+  // Update all items in all canvases
+  for (int i = 0; i < mCanvasPanel->count(); ++i)
+  {
+    QWidget* w = mCanvasPanel->widget(i);
+    if (auto canvas = qobject_cast<CanvasView*>(w))
+      static_cast<Canvas*>(canvas->scene())->themeChanged();
+  }
+
+  themeChanged();
 }
 
 void MainWindow::startUI()
@@ -129,10 +125,7 @@ void MainWindow::startUI()
   mActiveCanvas = canvas;
   currentCanvas->setScene(canvas);
 
-  // Make sure the UI matches the internal state
-  mLogLevelComboBox->setCurrentIndex(static_cast<int>(mLogLevel));
-
-  mPluginManager->start(mGeneratorMenu);
+  mPluginManager->start(mGeneratorMenu, mGeneratorOption);
 }
 
 void MainWindow::bind()
@@ -157,10 +150,6 @@ void MainWindow::bind()
   mActionGenerate->setShortcut(QKeySequence(Qt::Key_F5));
 
   // Setting actions =============================================================
-  connect(mLogLevelComboBox, &QComboBox::currentIndexChanged, this, [this](int index) {
-    mLogLevel = static_cast<logging::LogLevel>(index);
-  });
-
   connect(mOpenAllSettings, &QAction::triggered, this, [this] {
     LOG_INFO("Opening all settings");
     SettingsDialog* settingsDialog = new SettingsDialog("Add behaviour", mSettingsManager, this);
@@ -623,5 +612,23 @@ int MainWindow::libraryTypeToIndex(Types::LibraryTypes type) const
     default:
       LOG_ERROR("Unknown library type");
       return 0;
+  }
+}
+
+void MainWindow::handleLogging(const QString& message, QTextBrowser* textBrowser)
+{
+  if (textBrowser)
+  {
+    textBrowser->append(message);
+
+    // Check if the number of lines exceeds the maximum limit
+    QTextDocument* doc = textBrowser->document();
+    if (doc->blockCount() > 100)
+    {
+      // Remove the first block (top line) to limit the number of lines
+      QTextBlock block = doc->begin();
+      textBrowser->textCursor().setPosition(block.position());
+      textBrowser->textCursor().removeSelectedText();
+    }
   }
 }
