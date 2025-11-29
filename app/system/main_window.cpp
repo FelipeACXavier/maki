@@ -9,6 +9,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QListWidgetItem>
+#include <QPushButton>
 #include <QRegularExpression>
 #include <QRegularExpressionValidator>
 #include <QShortcut>
@@ -26,6 +27,7 @@
 #include "library_container.h"
 #include "logging.h"
 #include "plugin_manager.h"
+#include "process_tab.h"
 #include "save_handler.h"
 #include "structure_canvas.h"
 #include "style_helpers.h"
@@ -144,6 +146,8 @@ void MainWindow::bind()
 
   connect(mActionSaveAs, &QAction::triggered, this, &MainWindow::onActionSaveAs);
   mActionSaveAs->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S));
+
+  connect(mGenerationButton, &QPushButton::pressed, this, &MainWindow::addProcessTab);
 
   // Diagram actions =============================================================
   connect(mActionGenerate, &QAction::triggered, this, &MainWindow::onActionGenerate);
@@ -471,7 +475,7 @@ void MainWindow::onNodeModified(NodeItem* node)
 
 void MainWindow::onCanvasTabChanged(int index)
 {
-  CanvasView* newCanvas = static_cast<CanvasView*>(mCanvasPanel->widget(index));
+  CanvasView* newCanvas = qobject_cast<CanvasView*>(mCanvasPanel->widget(index));
   if (!newCanvas)
     return;
 
@@ -479,7 +483,10 @@ void MainWindow::onCanvasTabChanged(int index)
   if (mActiveCanvas)
     unbindCanvas();
 
-  mActiveCanvas = static_cast<Canvas*>(newCanvas->scene());
+  mActiveCanvas = qobject_cast<Canvas*>(newCanvas->scene());
+  if (!mActiveCanvas)
+    return;
+
   bindCanvas();
 
   auto libIndex = libraryTypeToIndex(mActiveCanvas->type());
@@ -489,24 +496,24 @@ void MainWindow::onCanvasTabChanged(int index)
 
 void MainWindow::closeCanvasTab(int index)
 {
-  CanvasView* newCanvas = static_cast<CanvasView*>(mCanvasPanel->widget(index));
-  if (!newCanvas)
-    return;
-
-  if (newCanvas->scene() == mActiveCanvas)
+  CanvasView* newCanvas = qobject_cast<CanvasView*>(mCanvasPanel->widget(index));
+  if (newCanvas)
   {
-    unbindCanvas();
-
-    if (index > 0)
+    if (newCanvas->scene() == mActiveCanvas)
     {
-      // The previous tab becomes the new active tab
-      newCanvas = static_cast<CanvasView*>(mCanvasPanel->widget(index - 1));
-      mActiveCanvas = static_cast<Canvas*>(newCanvas->scene());
-      bindCanvas();
+      unbindCanvas();
 
-      auto libIndex = libraryTypeToIndex(mActiveCanvas->type());
-      mNavigationTab->setCurrentIndex(libIndex);
-      mLeftPanel->setCurrentIndex(libIndex);
+      if (index > 0)
+      {
+        // The previous tab becomes the new active tab
+        newCanvas = qobject_cast<CanvasView*>(mCanvasPanel->widget(index - 1));
+        mActiveCanvas = qobject_cast<Canvas*>(newCanvas->scene());
+        bindCanvas();
+
+        auto libIndex = libraryTypeToIndex(mActiveCanvas->type());
+        mNavigationTab->setCurrentIndex(libIndex);
+        mLeftPanel->setCurrentIndex(libIndex);
+      }
     }
   }
 
@@ -582,6 +589,28 @@ void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
   LOG_DEBUG("Set tab property to %s", qPrintable(flow->id()));
   mCanvasPanel->addTab(newView, flowName);
   mCanvasPanel->setCurrentWidget(newView);
+}
+
+void MainWindow::addProcessTab()
+{
+  // Get information to run command
+  QString command = "tail";
+  QStringList arguments = {"-F", "/home/ubuntu/maki/README.md"};
+
+  auto* tab = new ProcessTab(mCanvasPanel);  // or mCanvasPanel, or your execution tab widget
+  mCanvasPanel->addTab(tab, command + ": " + tr("Running…"));
+  mCanvasPanel->setCurrentWidget(tab);
+
+  // Update tab text on finish (optional)
+  connect(tab, &ProcessTab::processFinished, this,
+          [this, tab, command](int exitCode, QProcess::ExitStatus) {
+            int idx = mCanvasPanel->indexOf(tab);
+            if (idx >= 0)
+              mCanvasPanel->setTabText(idx, exitCode == 0 ? command + ": " + tr("Done") : command + ": " + tr("Error (%1)").arg(exitCode));
+          });
+
+  // Now actually start the command
+  tab->startProcess(command, arguments);
 }
 
 void MainWindow::onFlowRemoved(const QString& flowId, NodeItem* node)

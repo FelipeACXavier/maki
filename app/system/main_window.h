@@ -77,6 +77,8 @@ private:
 
   void handleLogging(const QString& message, QTextBrowser* textBrowser);
 
+  void addProcessTab();
+
   // ================================================
   // Actions
   void onActionNew();
