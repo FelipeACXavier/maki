@@ -3,9 +3,7 @@
 function printHelp()
 {
   echo "Usage:"
-  echo "  $1 < --linux | --windows >"
-  echo "    --linux, linux      | Build the linux project"
-  echo "    --windows, windows  | Build the windows project"
+  echo "  $1"
   echo "    --local-qt          | Path to the local Qt installation"
   echo "    --local-project     | Path to the local project"
   echo "    --clean             | Clean the build directory"
@@ -14,26 +12,18 @@ function printHelp()
 
 CLEAN=0
 SOURCE_DIR=$HOME/maki
+TARGET="linux"
+BUILD_PATH="$SOURCE_DIR/build/linux"
+PREFIX_PATH="$HOME/Qt/$QT_VERSION/gcc_64"
+INSTALL_PREFIX="$SOURCE_DIR/release/linux"
+
+# Use QT version from the single source of truth file
+QT_VERSION="$(tr -d ' \n' < $SOURCE_DIR/.qt-version)"
+echo "Using Qt version: ${QT_VERSION}"
 
 while [[ $# -gt 0 ]]; do
   key="$1"
   case $key in
-      --linux|linux)
-      TARGET="linux"
-      BUILD_PATH="$SOURCE_DIR/build/linux"
-      PREFIX_PATH="$HOME/Qt6-Linux"
-      INSTALL_PREFIX="$SOURCE_DIR/release/linux"
-      TOOLCHAIN_FILE=""
-      shift
-      ;;
-      --windows|windows)
-      TARGET="windows"
-      BUILD_PATH="$SOURCE_DIR/build/windows"
-      PREFIX_PATH="$HOME/Qt6-Windows"
-      INSTALL_PREFIX="$SOURCE_DIR/release/windows"
-      TOOLCHAIN_FILE="cmake/toolchain-mingw64.cmake"
-      shift
-      ;;
       --local-qt)
       LOCAL_QT_PATH="$2"
       shift
@@ -63,18 +53,11 @@ fi
 
 echo "--------------------------------------"
 echo "Running with:"
-echo "--------------------------------------"
-echo "Current directory: `pwd`"
-ls
-
-echo "HOME directory:"
-(cd ${HOME} && ls)
-
+echo "  CURR_DIR: `pwd`"
 echo "  TARGET: ${TARGET}"
 echo "  BUILD_PATH: ${BUILD_PATH}"
 echo "  PREFIX_PATH: ${PREFIX_PATH}"
 echo "  INSTALL_PREFIX: ${INSTALL_PREFIX}"
-echo "  TOOLCHAIN_FILE: ${TOOLCHAIN_FILE}"
 echo "--------------------------------------"
 
 # ----------------------------------
@@ -87,7 +70,6 @@ else
     -DDEPLOY_TARGET="$TARGET" \
     -DCMAKE_PREFIX_PATH="$PREFIX_PATH" \
     -DCMAKE_INSTALL_PREFIX="$INSTALL_PREFIX" \
-    -DCMAKE_TOOLCHAIN_FILE="$TOOLCHAIN_FILE" \
     -DLOCAL_QT_PATH="$LOCAL_QT_PATH" \
     -DLOCAL_PROJECT_PATH="$LOCAL_PROJECT_PATH"
 

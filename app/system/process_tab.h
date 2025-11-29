@@ -12,8 +12,6 @@ class ProcessTab : public QWidget
 public:
   explicit ProcessTab(QWidget* parent = nullptr);
 
-  ~ProcessTab();
-
   // Start a process and stream its output into the tab
   void startProcess(const QString& program, const QStringList& arguments = {});
 

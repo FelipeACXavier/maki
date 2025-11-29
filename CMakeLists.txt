@@ -8,7 +8,6 @@ option(DEBUG "Build with debug symbols" OFF)
 set(LOCAL_QT_PATH "" CACHE PATH "Qt path on this machine")
 set(LOCAL_PROJECT_PATH "" CACHE PATH "Project path on this machine")
 
-# Adjust this to the actual build dir where compile_commands.json lives
 set(LINUX_BUILD_DIR "${CMAKE_SOURCE_DIR}/build/linux")
 
 set(DEPLOY_TARGET "auto" CACHE STRING "Deployment target (auto|linux|windows)")
@@ -22,6 +21,12 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Get QT version
+file(READ "${CMAKE_SOURCE_DIR}/.qt-version" QT_VERSION_RAW)
+string(STRIP "${QT_VERSION_RAW}" QT_VERSION)
+
+message(STATUS "Using Qt version from .qt-version: ${QT_VERSION}")
 
 # Comment out to allow casting from literal string to QString
 # add_compile_definitions(QT_NO_CAST_FROM_ASCII)
@@ -39,9 +44,11 @@ find_package(Qt6 REQUIRED COMPONENTS
   Core
   Gui
   Widgets
+  WebEngineCore
+  WebEngineWidgets
 )
 
-qt_standard_project_setup(REQUIRES 6.8)
+qt_standard_project_setup(REQUIRES ${QT_VERSION})
 
 # -----------------------------------------
 # Some variables
@@ -102,15 +109,15 @@ add_subdirectory(app)
 if (DEPLOY_TARGET STREQUAL "linux" AND LOCAL_QT_PATH AND LOCAL_PROJECT_PATH)
   add_custom_target(patch_compile_commands ALL
     COMMAND ${CMAKE_COMMAND}
-      -DINPUT="${CMAKE_CURRENT_SOURCE_DIR}/build/linux/compile_commands.json"
-      -DOLD="/home/ubuntu/Qt6-Linux"
-      -DNEW="${LOCAL_QT_PATH}"
+      -DINPUT="${LINUX_BUILD_DIR}/compile_commands.json"
+      -DOLD="/home/ubuntu/maki"
+      -DNEW="${LOCAL_PROJECT_PATH}"
       -P "${CMAKE_SOURCE_DIR}/cmake/patch_compile_commands.cmake"
 
     COMMAND ${CMAKE_COMMAND}
-      -DINPUT="${CMAKE_CURRENT_SOURCE_DIR}/build/linux/compile_commands.json"
-      -DOLD="/home/ubuntu/maki"
-      -DNEW="${LOCAL_PROJECT_PATH}"
+      -DINPUT="${LINUX_BUILD_DIR}/compile_commands.json"
+      -DOLD="/home/ubuntu/Qt/${QT_VERSION}/gcc_64"
+      -DNEW="${LOCAL_QT_PATH}"
       -P "${CMAKE_SOURCE_DIR}/cmake/patch_compile_commands.cmake"
 
     COMMENT "Patching compile_commands.json with local paths"

@@ -80,6 +80,8 @@ target_link_libraries(${APPLICATION_NAME} PRIVATE
     Qt6::Core
     Qt6::Gui
     Qt6::Widgets
+    Qt6::WebEngineCore
+    Qt6::WebEngineWidgets
     libcommon
     libcpphelpers
 )

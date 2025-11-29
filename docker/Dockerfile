@@ -20,8 +20,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   wget \
   ninja-build \
   python3.12 \
+  python3-pip \
+  python3-html5lib \
+  python3.12-venv \
   g++-13 \
-  mingw-w64 \
+  # mingw-w64 \
   ccache \
   libasio-dev \
   libgl1-mesa-dri \
@@ -62,114 +65,19 @@ ENV NVM_DIR=${HOME}/.nvm
 RUN bash -c "source $NVM_DIR/nvm.sh && nvm install $NODE_VERSION"
 
 # -----------------------------------------------------------------------------------------------------------
-# We now need to copy and build QT
-# Download QT 6.8
-WORKDIR /tmp
-RUN wget https://download.qt.io/official_releases/qt/6.8/6.8.3/single/qt-everywhere-src-${QT_VERSION}.tar.xz
+# We now need to install qt
+USER ubuntu
+RUN python3 -m venv env
+RUN ${HOME}/env/bin/pip install --no-cache-dir aqtinstall
 
-# Extract the archive
-RUN tar xf qt-everywhere-src-${QT_VERSION}.tar.xz
-
-# Build QT for linux
-RUN mkdir -p ~/qt-linux
-WORKDIR ${HOME}/qt-linux
-
-RUN /tmp/qt-everywhere-src-${QT_VERSION}/configure \
-    -prefix ${HOME}/Qt6-Linux \
-    -${QT_BUILD_TYPE} \
-    -nomake tests \
-    -nomake examples \
-    -skip qt3d \
-    -skip qtcharts \
-    -skip qtconnectivity \
-    -skip qtdatavis3d \
-    -skip qtdoc \
-    -skip qtgamepad \
-    -skip qtgraphicaleffects \
-    -skip qtlocation \
-    -skip qtmultimedia \
-    -skip qtnetworkauth \
-    -skip qtopcua \
-    -skip qtpositioning \
-    -skip qtdeclarative \
-    -skip qtquick3d \
-    -skip qtquick3dphysics \
-    -skip qtquicktimeline \
-    -skip qtquickeffectmaker \
-    -skip qtlottie \
-    -skip qtmqtt \
-    -skip qtremoteobjects \
-    -skip qtscxml \
-    -skip qtsensors \
-    -skip qtserialbus \
-    -skip qtserialport \
-    -skip qtspeech \
-    -skip qtvirtualkeyboard \
-    -skip qtwayland \
-    -skip qtwebchannel \
-    -skip qtwebengine \
-    -skip qtwebsockets \
-    -skip qtwebview \
-    -skip qtgraphs \
-    -skip qtgrpc \
-    -qt-freetype \
-    -qt-harfbuzz \
-    -qt-libpng
-
-RUN cmake --build . --parallel 4
-RUN cmake --install .
-
-# Build QT for windows
-RUN mkdir -p ~/qt-windows
-WORKDIR ${HOME}/qt-windows
-COPY cmake/${TOOLCHAIN_FILE}  ${HOME}/
-RUN /tmp/qt-everywhere-src-${QT_VERSION}/configure \
-  -prefix ${HOME}/Qt6-Windows \
-  -${QT_BUILD_TYPE} \
-  -nomake tests \
-  -nomake examples \
-  -skip qt3d \
-  -skip qtcharts \
-  -skip qtconnectivity \
-  -skip qtdatavis3d \
-  -skip qtdoc \
-  -skip qtgamepad \
-  -skip qtgraphicaleffects \
-  -skip qtlocation \
-  -skip qtmultimedia \
-  -skip qtnetworkauth \
-  -skip qtopcua \
-  -skip qtpositioning \
-  -skip qtdeclarative \
-  -skip qtquick3d \
-  -skip qtquick3dphysics \
-  -skip qtquicktimeline \
-  -skip qtquickeffectmaker \
-  -skip qtlottie \
-  -skip qtmqtt \
-  -skip qtremoteobjects \
-  -skip qtscxml \
-  -skip qtsensors \
-  -skip qtserialbus \
-  -skip qtserialport \
-  -skip qtspeech \
-  -skip qtvirtualkeyboard \
-  -skip qtwayland \
-  -skip qtwebchannel \
-  -skip qtwebengine \
-  -skip qtwebsockets \
-  -skip qtwebview \
-  -skip qtgraphs \
-  -skip qtgrpc \
-  -skip qtactiveqt \
-  -qt-freetype \
-  -qt-harfbuzz \
-  -qt-libpng \
-  -qt-host-path ${HOME}/Qt6-Linux \
-  -- -DCMAKE_TOOLCHAIN_FILE=${HOME}/${TOOLCHAIN_FILE}
-
-RUN cmake --build . --parallel 4
-RUN cmake --install .
+RUN mkdir -p ${HOME}/Qt && \
+    ${HOME}/env/bin/python3 -m aqt install-qt \
+      linux \
+      desktop \
+      "${QT_VERSION}" \
+      linux_gcc_64 \
+      -m qtwebengine qtpdf qtwebchannel qtpositioning \
+      -O ${HOME}/Qt
 
 # -----------------------------------------------------------------------------------------------------------\
 # Install extra packages
@@ -177,10 +85,47 @@ USER root
 RUN apt-get update && apt-get install -y --no-install-recommends \
   zip \
   unzip \
+  gdb \
+  bison \
+  flex \
+  gperf \
+  libgl1-mesa-dev \
+  libgles2-mesa-dev \
+  mesa-common-dev \
+  libnss3-dev \
+  libglib2.0-dev \
+  libharfbuzz-dev \
+  libudev-dev \
+  libpng-dev \
+  libtiff-dev \
+  libicu-dev \
+  libopus-dev \
+  libvpx-dev \
+  libavutil-dev \
+  libavcodec-dev \
+  libavformat-dev \
+  libswresample-dev \
+  libswscale-dev \
+  libre2-dev \
+  libopenh264-dev \
+  zlib1g-dev \
+  libssl-dev \
+  libdbus-1-dev \
+  libxcomposite-dev \
+  libxdamage-dev \
+  libxrandr-dev \
+  libxtst-dev \
+  libasound2-dev \
+  libxkbfile-dev \
   && rm -rf /var/lib/apt/lists/*
+
+# Install dezyne
+WORKDIR ${HOME}
+USER ubuntu
+COPY scripts/install_dezyne.sh ${HOME}/
+RUN ${HOME}/install_dezyne.sh
 
 # -----------------------------------------------------------------------------------------------------------
 # Cd to the maki directory and end
-USER ubuntu
 WORKDIR ${HOME}/maki
 CMD ["bash"]
