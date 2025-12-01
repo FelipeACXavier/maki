@@ -80,6 +80,7 @@ target_link_libraries(${APPLICATION_NAME} PRIVATE
     Qt6::Core
     Qt6::Gui
     Qt6::Widgets
+    Qt6::Svg
     Qt6::WebEngineCore
     Qt6::WebEngineWidgets
     libcommon
@@ -98,7 +99,7 @@ install(TARGETS ${APPLICATION_NAME}
 # Linux deployment
 if (DEPLOY_TARGET STREQUAL "linux" AND UNIX AND NOT APPLE)
   # Where Qt is installed in the container
-  set(QT_RUNTIME_PREFIX "/home/ubuntu/Qt6-Linux" CACHE PATH "Qt runtime prefix (Qt install dir)")
+  set(QT_RUNTIME_PREFIX "${CMAKE_PREFIX_PATH}" CACHE PATH "Qt runtime prefix (Qt install dir)")
 
   add_custom_target(deploy-linux
     # 1. Regular install into CMAKE_INSTALL_PREFIX (e.g. /dist)
@@ -124,6 +125,8 @@ if (DEPLOY_TARGET STREQUAL "linux" AND UNIX AND NOT APPLE)
 
     COMMENT "Installing maki and bundling Qt runtime into ${CMAKE_INSTALL_PREFIX}"
   )
+
+  add_dependencies(deploy-linux ${APPLICATION_NAME})
 endif()
 
 # TODO: Test this with a windows machine
@@ -131,11 +134,14 @@ endif()
 if (DEPLOY_TARGET STREQUAL "windows" AND WIN32 AND NOT CMAKE_CROSSCOMPILING)
   if (QT_WINDEPLOYQT_EXECUTABLE)
     add_custom_target(deploy-windows
-      COMMAND "${QT_WINDEPLOYQT_EXECUTABLE}"
-              --dir "$<TARGET_FILE_DIR:editor>\\deploy"
-              "$<TARGET_FILE:editor>"
-      DEPENDS editor
-      COMMENT "Running windeployqt for editor"
+      COMMAND "${QT_WINDEPLOYQT_EXECUTABLE}" --force --release
+              --dir "${CMAKE_INSTALL_PREFIX}"
+              "${CMAKE_BINARY_DIR}/${APPLICATION_NAME}.exe"
+      DEPENDS ${APPLICATION_NAME}
+
+      COMMENT "Running windeployqt for ${APPLICATION_NAME}"
     )
+  else()
+    message(WARNING "windeployqt not found; cannot run the 'deploy-windows' target")
   endif()
 endif()

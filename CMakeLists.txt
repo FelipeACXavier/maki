@@ -30,12 +30,22 @@ message(STATUS "Using Qt version from .qt-version: ${QT_VERSION}")
 
 # Comment out to allow casting from literal string to QString
 # add_compile_definitions(QT_NO_CAST_FROM_ASCII)
-add_compile_options(-Wall)
+if (MSVC)
+  add_compile_options(/W4)
 
-if (DEBUG)
-  add_compile_options(-g -O0)
+  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+      add_compile_options(/Zi /Od)
+  elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
+      add_compile_options(/O2)
+  endif()
 else()
-  add_compile_options(-O2)
+  add_compile_options(-Wall)
+
+  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+      add_compile_options(-g -O0)
+  elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
+      add_compile_options(-O2)
+  endif()
 endif()
 
 project(${APPLICATION_NAME} LANGUAGES CXX)
@@ -43,6 +53,7 @@ project(${APPLICATION_NAME} LANGUAGES CXX)
 find_package(Qt6 REQUIRED COMPONENTS
   Core
   Gui
+  Svg
   Widgets
   WebEngineCore
   WebEngineWidgets
@@ -88,7 +99,6 @@ if (DEPLOY_TARGET STREQUAL "windows" AND WIN32 AND NOT CMAKE_CROSSCOMPILING)
   # You can refine this hint based on your Qt install location
   find_program(QT_WINDEPLOYQT_EXECUTABLE
     NAMES windeployqt windeployqt.exe
-    HINTS "/home/ubuntu/Qt-Windows/bin"
   )
 
   if (QT_WINDEPLOYQT_EXECUTABLE)
