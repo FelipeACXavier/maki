@@ -119,9 +119,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
 
 # Install dezyne
-WORKDIR ${HOME}
 USER ubuntu
-COPY scripts/install_dezyne.sh ${HOME}/
+
+WORKDIR ${HOME}
+COPY scripts/install_dezyne.sh ${HOME}/install_dezyne.sh
 RUN ${HOME}/install_dezyne.sh
 
 # Install gf2 for debugging
@@ -130,12 +131,13 @@ WORKDIR ${HOME}/gf
 RUN ./build.sh
 
 # Install KODA
-USER root
+USER ubuntu
 WORKDIR ${HOME}
-# RUN git clone https://github.com/FelipeACXavier/rosyne.git
 RUN wget https://update.rascal-mpl.org/console/rascal-0.40.9.jar -O rascal-0.40.9.jar
 # Rascal can now be used with:
 # java -jar ~/rascal-0.40.9.jar Main.rsc <input>  <output>
+
+RUN git clone https://github.com/FelipeACXavier/KODA.git
 
 # -----------------------------------------------------------------------------------------------------------
 # Cd to the maki directory and end
