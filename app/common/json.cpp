@@ -96,7 +96,7 @@ QJsonObject JSON::fromPixmap(const QPixmap& value)
   QByteArray pixmapData;
   QBuffer buffer(&pixmapData);
   buffer.open(QIODevice::WriteOnly);
-  value.save(&buffer, Types::PIXMAP);
+  value.save(&buffer, Types::PIXMAP.toLocal8Bit().constData());
 
   QJsonObject data;
   data[ConfigKeys::DATA] = QString::fromLatin1(pixmapData.toBase64());
@@ -110,7 +110,7 @@ QPixmap JSON::toPixmap(const QJsonObject& data)
   QByteArray byteArray = QByteArray::fromBase64(base64Data.toLatin1());
 
   QPixmap pixmap;
-  pixmap.loadFromData(byteArray, Types::PIXMAP);
+  pixmap.loadFromData(byteArray, Types::PIXMAP.toLocal8Bit().constData());
 
   return pixmap;
 }

@@ -16,6 +16,7 @@
 #include "main_window_layout.h"
 #include "result.h"
 
+class NodeItem;
 class SaveHandler;
 class PluginManager;
 class SettingsManager;

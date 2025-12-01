@@ -1015,7 +1015,7 @@ VoidResult PropertiesMenu::loadControlAddEvent(const ControlsConfig& control, No
   tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
   tableView->setModel(model);
 
-  for (const auto& event : node->events())
+  for (const std::shared_ptr<FlowSaveInfo>& event : node->events())
   {
     LOG_INFO("Setting events for %s (%d): %s", qPrintable(node->nodeName()), model->rowCount(), qPrintable(event->name));
     addEventToTable(model, model->rowCount(), event);

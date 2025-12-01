@@ -3,10 +3,10 @@
 #include <QGraphicsLineItem>
 #include <QGraphicsPathItem>
 
-#include "inode.h"
 #include "types.h"
 
 class NodeItem;
+
 struct TransitionSaveInfo;
 
 class TransitionItem : public QGraphicsPathItem

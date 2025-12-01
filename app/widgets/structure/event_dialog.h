@@ -5,9 +5,10 @@
 #include <QLineEdit>
 #include <QTableView>
 
-class FlowSaveInfo;
 class QStandardItem;
 class QStandardItemModel;
+
+struct FlowSaveInfo;
 
 class EventDialog : public QDialog
 {

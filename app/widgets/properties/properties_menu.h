@@ -6,18 +6,19 @@
 
 #include "../menu_base.h"
 #include "config.h"
+#include "elements/save_info.h"
 #include "result.h"
 
 class Flow;
 class NodeItem;
-class SaveInfo;
 class QLineEdit;
 class QComboBox;
 class QTableView;
 class QHBoxLayout;
-class FlowSaveInfo;
 class TransitionItem;
 class QStandardItemModel;
+
+struct FlowSaveInfo;
 
 class PropertiesMenu : public QFrame, public MenuBase
 {

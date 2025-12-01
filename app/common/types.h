@@ -15,7 +15,7 @@ static const int BASE_NODE = QGraphicsItem::UserType + 5;
 static const int TRANSITION = QGraphicsItem::UserType + 6;
 static const int FLOW = QGraphicsItem::UserType + 7;
 
-static const char* PIXMAP = "PNG";
+static const QString PIXMAP = "PNG";
 
 enum class Shape
 {

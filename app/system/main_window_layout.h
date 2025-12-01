@@ -2,21 +2,19 @@
 
 #include <QMainWindow>
 
-#include "logging.h"
-
 class QWidget;
 class QSplitter;
 class QTabWidget;
 
 class SystemMenu;
 class FlowMenu;
-class PropertiesMenu;
 class FieldsMenu;
 class BehaviourMenu;
 class QTextBrowser;
 class QToolBox;
 class QComboBox;
 class QPushButton;
+class PropertiesMenu;
 
 class MainWindowlayout : public QMainWindow
 {
@@ -78,6 +76,10 @@ protected:
 
   // Edit menu
   // View menu
+  QAction* mOpenComponentsPanel;
+  QAction* mOpenPropertiesPanel;
+  QAction* mOpenInfoPanel;
+
   // Diagram menu
   QAction* mActionGenerate;
   QMenu* mGeneratorMenu;
@@ -86,6 +88,7 @@ protected:
   QAction* mOpenAllSettings;
 
   // Help menu
+  QAction* mAboutAction;
 
   void themeChanged();
 

@@ -12,7 +12,8 @@ class QTableView;
 class QHBoxLayout;
 class EventDialog;
 class QStandardItemModel;
-class FlowSaveInfo;
+
+struct FlowSaveInfo;
 
 class FieldsMenu : public QFrame, public MenuBase
 {

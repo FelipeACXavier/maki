@@ -360,12 +360,12 @@ QMenu* Canvas::createAlignMenu(const QList<QGraphicsItem*>& items)
 {
   QMenu* alignMenu = new QMenu("Align");
 
-  QAction* alignHCenter = alignMenu->addAction("Align H center");
-  QAction* alignLeft = alignMenu->addAction("Align left");
-  QAction* alignRight = alignMenu->addAction("Align right");
-  QAction* alignVCenter = alignMenu->addAction("Align V center");
-  QAction* alignTop = alignMenu->addAction("Align top");
-  QAction* alignBottom = alignMenu->addAction("Align bottom");
+  // QAction* alignHCenter = alignMenu->addAction("Align H center");
+  // QAction* alignLeft = alignMenu->addAction("Align left");
+  // QAction* alignRight = alignMenu->addAction("Align right");
+  // QAction* alignVCenter = alignMenu->addAction("Align V center");
+  // QAction* alignTop = alignMenu->addAction("Align top");
+  // QAction* alignBottom = alignMenu->addAction("Align bottom");
 
   alignMenu->setEnabled(items.size() > 1);
 
@@ -668,7 +668,12 @@ VoidResult Canvas::loadFromSave(const QVector<std::shared_ptr<NodeSaveInfo>>& no
     LOG_DEBUG("Creating node %s with parent %s", qPrintable(node->id), qPrintable(node->parentId));
     auto createdNode = createNode(NodeCreation::Loading, node, node->position, parent);
 
-    LOG_AND_RETURN_VOID_ON_FAILURE(loadFromSave(nodeInfo->children, createdNode));
+    auto ret = loadFromSave(nodeInfo->children, createdNode);
+    if (!ret.IsSuccess())
+    {
+      LOG_ERROR("%s", ret.ErrorMessage().c_str());
+      return VoidResult::Failed(ret.ErrorMessage());
+    }
 
     (void)createdNode->createBehaviour(nodeInfo->behaviour);
 

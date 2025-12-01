@@ -22,6 +22,7 @@
 
 // Custom widgets
 #include "app_configs.h"
+#include "logging.h"
 #include "style_helpers.h"
 #include "system/canvas_view.h"
 #include "theme.h"
@@ -161,7 +162,8 @@ void MainWindowlayout::buildCentralPanel()
   mCentralSplitter->addWidget(canvasContainer);
 
   mBottomPanel = new QTabWidget();
-  mBottomPanel->setFixedHeight(320);
+  mBottomPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+  mBottomPanel->setMinimumHeight(320);
 
   // ===================================================================
   // Info tab
@@ -199,6 +201,7 @@ void MainWindowlayout::buildCentralPanel()
   mIcons.append({mBottomPanel->tabBar(), ":/icons/logs.svg", 1});
 
   mCentralSplitter->addWidget(mBottomPanel);
+  mCentralSplitter->setCollapsible(0, false);
 
   mMainSplitter->addWidget(mCentralSplitter);
 }
@@ -289,6 +292,14 @@ void MainWindowlayout::buildMenuBar()
   edit->addAction(mOpenAllSettings);
 
   QMenu* view = mMenuBar->addMenu(tr("View"));
+  mOpenComponentsPanel = new QAction(tr("Components panel"), this);
+  view->addAction(mOpenComponentsPanel);
+
+  mOpenPropertiesPanel = new QAction(tr("Properties panel"), this);
+  view->addAction(mOpenPropertiesPanel);
+
+  mOpenInfoPanel = new QAction(tr("Information panel"), this);
+  view->addAction(mOpenInfoPanel);
 
   QMenu* window = mMenuBar->addMenu(tr("Diagram"));
 
@@ -300,6 +311,8 @@ void MainWindowlayout::buildMenuBar()
   settings->addMenu(mGeneratorMenu);
 
   QMenu* help = mMenuBar->addMenu(tr("Help"));
+  mAboutAction = new QAction(tr("About"), this);
+  help->addAction(mAboutAction);
 
   setMenuBar(mMenuBar);
 }

@@ -280,3 +280,20 @@ QTreeView::branch:open:has-children:has-siblings  {
   border-image: none;
   image: url(:/icons/arrow-down.svg);
 } */
+
+/* ===============================
+   QSPLITER
+   =============================== */
+
+QSplitter::handle:hover {
+  /* border: 1px solid @selection_fg; */
+  background: @selection_bg;
+}
+
+QSplitter::handle:horizontal {
+  width: 5px;
+}
+
+QSplitter::handle:vertical {
+  height: 5px;
+}
