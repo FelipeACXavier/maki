@@ -11,3 +11,6 @@ compile_commands.json
 history
 bookmarks
 tagged
+
+# Compilations logs
+/*.log
