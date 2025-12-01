@@ -48,5 +48,9 @@
     <file alias="log-level.svg">assets/icons/fontawesome/svgs/solid/temperature-half.svg</file>
     <file alias="warning.svg">assets/icons/fontawesome/svgs/solid/triangle-exclamation.svg</file>
     <file alias="error.svg">assets/icons/fontawesome/svgs/solid/circle-xmark.svg</file>
+    <file alias="reset.svg">assets/icons/fontawesome/svgs/solid/arrow-rotate-left.svg</file>
+    <file alias="accept.svg">assets/icons/fontawesome/svgs/solid/circle-check.svg</file>
+    <file alias="reject.svg">assets/icons/fontawesome/svgs/solid/circle-xmark.svg</file>
+    <file alias="caret-right.svg">assets/icons/fontawesome/svgs/solid/caret-right.svg</file>
   </qresource>
 </RCC>

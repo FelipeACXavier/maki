@@ -360,7 +360,7 @@ void MainWindow::onActionGenerate()
   if (!mGenerator)
     LOG_WARNING("No generator available");
 
-  mGenerator->generate(mPluginManager->currentPlugin());
+  mGenerator->generate(mSettingsManager->generation().generationDir, mPluginManager->currentPlugin());
 }
 
 void MainWindow::onActionSave()

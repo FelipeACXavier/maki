@@ -23,6 +23,11 @@ AppearanceSettings SettingsManager::appearance() const
   return mAppearance;
 }
 
+GenerationSettings SettingsManager::generation() const
+{
+  return mGeneration;
+}
+
 QList<Config::ThemeInfo> SettingsManager::availableThemes() const
 {
   return mAvailableThemes;
@@ -44,6 +49,11 @@ void SettingsManager::load()
   mAppearance.showCanvasGrid = mSettings.value("showCanvasGrid", mAppearance.showCanvasGrid).toBool();
   mAppearance.nodeCornerRadius = mSettings.value("nodeCornerRadius", mAppearance.nodeCornerRadius).toInt();
   mSettings.endGroup();
+
+  mSettings.beginGroup("Generation");
+  mGeneration.generationDir = mSettings.value("generationDir", mGeneration.generationDir).toString();
+  mGeneration.pluginSearchPaths = mSettings.value("pluginSearchPaths").toStringList();
+  mSettings.endGroup();
 }
 
 void SettingsManager::save()
@@ -63,6 +73,11 @@ void SettingsManager::save()
   mSettings.setValue("nodeCornerRadius", mAppearance.nodeCornerRadius);
   mSettings.endGroup();
 
+  mSettings.beginGroup("Generation");
+  mSettings.setValue("generationDir", mGeneration.generationDir);
+  mSettings.setValue("pluginSearchPaths", mGeneration.pluginSearchPaths);
+  mSettings.endGroup();
+
   mSettings.sync();
 }
 
@@ -80,4 +95,10 @@ void SettingsManager::setAppearance(const AppearanceSettings& s)
 
   if (changed)
     emit themeChanged(mAppearance.theme, mAvailableThemes);
+}
+
+void SettingsManager::setGeneration(const GenerationSettings& s)
+{
+  mGeneration = s;
+  save();
 }

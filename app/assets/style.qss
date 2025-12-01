@@ -9,6 +9,10 @@ QWidget {
   selection-color: @selection_fg;
 }
 
+QWidget#SettingsPage {
+  border-left: 1px solid @selection_bg;
+}
+
 /* ===============================
    SCROLLBARS
    =============================== */
@@ -59,6 +63,10 @@ QPushButton#CheckableButton:checked {
   background-color: @selection_bg;
 }
 
+
+/* ===============================
+   QLABEL
+   =============================== */
 QLabel#HeaderButton {
   width: 30px;
   height: 30px;
@@ -70,6 +78,15 @@ QLabel#HeaderButton {
   border-bottom: 1px solid @combobox_border;
   border-top-left-radius: @border_radius;
   border-bottom-left-radius: @border_radius;
+}
+
+QLabel#PageTitle {
+  font-size: 24px;
+}
+
+QLabel#HintLabel {
+  font-size: 12px;
+  color: @faded_foreground
 }
 
 /* ===============================
@@ -92,10 +109,12 @@ QLineEdit:focus, QTextEdit:focus {
    =============================== */
 
 QComboBox {
-  background-color: @combobox_bg;
+  padding: 4px;
+
   border: 1px solid @combobox_border;
   border-radius: @border_radius;
-  padding: 4px;
+  background-color: @combobox_bg;
+
   /* Open the popup under the combo box */
   combobox-popup: 0;
 }
@@ -103,6 +122,7 @@ QComboBox {
 QComboBox:on {
   border-radius: 0px;
   border-top-right-radius: @border_radius;
+  border-top-left-radius: @border_radius;
 }
 
 QComboBox QAbstractItemView {
@@ -222,9 +242,9 @@ QToolBar {
 }
 
 QToolButton {
-  background: transparent;
+  /* background: transparent; */
   padding: 6px;
-  border-radius: 4px;
+  border-radius: @border_radius;
 }
 
 QToolButton:hover {
@@ -296,4 +316,36 @@ QSplitter::handle:horizontal {
 
 QSplitter::handle:vertical {
   height: 5px;
+}
+
+/* ===============================
+   QFrame
+   =============================== */
+
+QFrame#HLine {
+  color: @foreground;
+  background: @foreground;
+}
+
+/* ===============================
+   QLISTWIDGET
+   =============================== */
+QListWidget#SettingsList {
+  padding: 5px 1px;
+  margin-right: 0px;
+  padding-right: 0px;
+}
+
+QListWidget#SettingsList::item {
+  /* border-left: 2px solid @background; */
+  border-bottom: 2px solid @background;
+}
+
+QListWidget#SettingsList::item:selected {
+  color: @foreground;
+  background: @background;
+
+  /* padding-left: 2px; */
+  /* border-left: 2px solid @selection_bg; */
+  border-bottom: 2px solid @selection_bg;
 }

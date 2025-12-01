@@ -1,6 +1,7 @@
 # Dark theme
 background: #2b2b2b
 foreground: #e0e0e0
+faded_foreground: #afafaf
 selection_bg: #3d6fb4
 selection_fg: #ffffff
 scrollbar_handle: #555555

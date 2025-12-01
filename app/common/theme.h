@@ -31,6 +31,7 @@ struct ThemeVars
   QString selection_bg = "#3d6fb4";
   QString selection_fg = "#ffffff";
   QString border_radius = "5px";
+  QString faded_foreground = "#afafaf";
 
   // Scrollbar
   QString scrollbar_handle = "#c3c3c3";
@@ -90,6 +91,7 @@ const QHash<QString, QString ThemeVars::*> THEME_KEY_MAP = {
     // General
     {"@background", &ThemeVars::background},
     {"@foreground", &ThemeVars::foreground},
+    {"@faded_foreground", &ThemeVars::faded_foreground},
     {"@highlight", &ThemeVars::highlight},
     {"@selection_bg", &ThemeVars::selection_bg},
     {"@selection_fg", &ThemeVars::selection_fg},

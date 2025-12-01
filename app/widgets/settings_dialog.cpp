@@ -3,11 +3,15 @@
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDialogButtonBox>
+#include <QFileDialog>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QLineEdit>
 #include <QListWidget>
+#include <QPushButton>
 #include <QSpinBox>
 #include <QStackedWidget>
+#include <QToolButton>
 #include <QVBoxLayout>
 
 #include "logging.h"
@@ -20,13 +24,16 @@ SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsMan
   setWindowTitle(title);
 
   auto* mainLayout = new QHBoxLayout();
+  mainLayout->setSpacing(0);
 
   // Left: navigation list
   mPageSelector = new QListWidget(this);
+  mPageSelector->setObjectName("SettingsList");
   mPageSelector->setViewMode(QListView::ListMode);
   mPageSelector->setMovement(QListView::Static);
-  mPageSelector->setIconSize(QSize(24, 24));
+  mPageSelector->setIconSize(QSize(16, 16));
   mPageSelector->setSpacing(4);
+  mPageSelector->setFocusPolicy(Qt::NoFocus);
 
   // Right: stacked mPages
   mPages = new QStackedWidget(this);
@@ -34,6 +41,7 @@ SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsMan
   // Add categories
   LOG_WARN_ON_FAILURE(createGeneralPage());
   LOG_WARN_ON_FAILURE(createAppearancePage());
+  LOG_WARN_ON_FAILURE(createGenerationPage());
 
   mPageSelector->setCurrentRow(0);
 
@@ -45,25 +53,76 @@ SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsMan
 
   // Buttons
   auto buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
+  auto* okBtn = buttonBox->button(QDialogButtonBox::Ok);
+  auto* cancelBtn = buttonBox->button(QDialogButtonBox::Cancel);
+
+  if (okBtn)
+  {
+    okBtn->setText(" Apply");
+    okBtn->setIcon(addIconWithColor(":/icons/accept.svg", Config::FOREGROUND));
+  }
+
+  if (cancelBtn)
+  {
+    cancelBtn->setText(" Close");
+    cancelBtn->setIcon(addIconWithColor(":/icons/reject.svg", Config::FOREGROUND));
+  }
+
   auto outerLayout = new QVBoxLayout();
   outerLayout->addLayout(mainLayout);
   outerLayout->addWidget(buttonBox);
   setLayout(outerLayout);
 
-  connect(buttonBox, &QDialogButtonBox::accepted, this, &SettingsDialog::applyAndClose);
+  connect(buttonBox, &QDialogButtonBox::accepted, this, &SettingsDialog::apply);
   connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
   loadFromSettings();
 }
 
-QWidget* SettingsDialog::addPage(const QString& pageName, const QString& iconName) const
+QWidget* SettingsDialog::addPage(const QString& pageName, const QString& iconName, std::function<void()> resetCallback) const
 {
+  // Update the selector with new page
   auto selector = new QListWidgetItem(addIconWithColor(iconName, Config::FOREGROUND), pageName, mPageSelector);
   mPageSelector->addItem(selector);
 
+  // Create base page layout
   QWidget* page = new QWidget;
-  auto* layout = new QVBoxLayout(page);
-  layout->addWidget(new QLabel(pageName));
+  page->setObjectName("SettingsPage");
+
+  QVBoxLayout* layout = new QVBoxLayout(page);
+  layout->setContentsMargins(10, 10, 10, 10);
+
+  auto* headerRow = new QHBoxLayout();
+  QLabel* titleIcon = new QLabel();
+  titleIcon->setPixmap(applyColorToIcon(iconName, Config::FOREGROUND).scaled(16, 16, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+
+  QLabel* title = new QLabel(pageName);
+  title->setObjectName("PageTitle");
+
+  auto* resetButton = new QPushButton(page);
+  resetButton->setText(tr(" Reset"));
+  resetButton->setToolTip(tr("Reset page settings"));
+  resetButton->setIcon(addIconWithColor(":/icons/reset.svg", Config::FOREGROUND));
+  connect(resetButton, &QPushButton::pressed, resetCallback);
+
+  headerRow->addWidget(titleIcon);
+  headerRow->addWidget(title);
+  headerRow->addStretch();
+  headerRow->addWidget(resetButton);
+
+  QFrame* line = new QFrame(page);
+  line->setObjectName("HLine");
+  line->setFrameShape(QFrame::HLine);
+  line->setFrameShadow(QFrame::Sunken);
+
+  // Content layout
+  auto contentLayout = new QVBoxLayout();
+  contentLayout->setContentsMargins(20, 5, 5, 5);
+  contentLayout->setObjectName("ContentArea");
+
+  layout->addLayout(headerRow);
+  layout->addWidget(line);
+  layout->addLayout(contentLayout);
 
   // Add page to the collection of pages
   mPages->addWidget(page);
@@ -73,7 +132,10 @@ QWidget* SettingsDialog::addPage(const QString& pageName, const QString& iconNam
 
 VoidResult SettingsDialog::createGeneralPage()
 {
-  auto page = addPage(tr("General"), ":/icons/general.svg");
+  auto page = addPage(tr("General"), ":/icons/general.svg", [this] {
+    mSettingsManager->setGeneral(GeneralSettings());
+    loadFromSettings();
+  });
 
   mRestoreLastSession = new QCheckBox(tr("Restore last session on startup"), page);
   mAutosaveEnabled = new QCheckBox(tr("Enable autosave"), page);
@@ -90,19 +152,23 @@ VoidResult SettingsDialog::createGeneralPage()
   mConfirmOnClose = new QCheckBox(tr("Confirm before closing editor with running execution"), page);
   mEnableDebugLogs = new QCheckBox(tr("Enable debug logs"), page);
 
-  static_cast<QVBoxLayout*>(page->layout())->addWidget(mRestoreLastSession);
-  static_cast<QVBoxLayout*>(page->layout())->addWidget(mAutosaveEnabled);
-  static_cast<QVBoxLayout*>(page->layout())->addLayout(autosaveLayout);
-  static_cast<QVBoxLayout*>(page->layout())->addWidget(mConfirmOnClose);
-  static_cast<QVBoxLayout*>(page->layout())->addWidget(mEnableDebugLogs);
-  static_cast<QVBoxLayout*>(page->layout())->addStretch();
+  QVBoxLayout* layout = page->findChild<QVBoxLayout*>("ContentArea");
+  layout->addWidget(mRestoreLastSession);
+  layout->addWidget(mAutosaveEnabled);
+  layout->addLayout(autosaveLayout);
+  layout->addWidget(mConfirmOnClose);
+  layout->addWidget(mEnableDebugLogs);
+  layout->addStretch();
 
   return VoidResult();
 }
 
 VoidResult SettingsDialog::createAppearancePage()
 {
-  auto page = addPage(tr("Appearance"), ":/icons/appearance.svg");
+  auto page = addPage(tr("Appearance"), ":/icons/appearance.svg", [this] {
+    mSettingsManager->setAppearance(AppearanceSettings());
+    loadFromSettings();
+  });
 
   mThemeCombo = new QComboBox(page);
 
@@ -143,11 +209,64 @@ VoidResult SettingsDialog::createAppearancePage()
   radiusLayout->addWidget(mNodeCornerRadius);
   radiusLayout->addStretch();
 
-  static_cast<QVBoxLayout*>(page->layout())->addLayout(themeLayout);
-  static_cast<QVBoxLayout*>(page->layout())->addLayout(scaleLayout);
-  static_cast<QVBoxLayout*>(page->layout())->addWidget(mShowGrid);
-  static_cast<QVBoxLayout*>(page->layout())->addLayout(radiusLayout);
-  static_cast<QVBoxLayout*>(page->layout())->addStretch();
+  QVBoxLayout* layout = page->findChild<QVBoxLayout*>("ContentArea");
+  layout->addLayout(themeLayout);
+  layout->addLayout(scaleLayout);
+  layout->addWidget(mShowGrid);
+  layout->addLayout(radiusLayout);
+  layout->addStretch();
+
+  return VoidResult();
+}
+
+VoidResult SettingsDialog::createGenerationPage()
+{
+  QWidget* page = addPage(tr("Generation"), ":/icons/generator.svg", [this] {
+    mSettingsManager->setGeneration(GenerationSettings());
+    loadFromSettings();
+  });
+
+  // Row: text field + "Browse…" button
+  auto* label = new QLabel(tr("Default generation output folder"), page);
+
+  auto* pathRow = new QWidget(page);
+  auto* colLayout = new QVBoxLayout(pathRow);
+  colLayout->setSpacing(0);
+
+  auto* rowLayout = new QHBoxLayout();
+  rowLayout->setContentsMargins(0, 0, 0, 0);
+
+  mGenerationDirEdit = new QLineEdit(pathRow);
+  mGenerationDirEdit->setObjectName("generationPathEdit");
+
+  // This is the "faded default value"
+  mGenerationDirEdit->setPlaceholderText(mSettingsManager->generation().generationDir);
+
+  auto* hint = new QLabel(tr("\"/generated/<plugin name>\" will be appended to this path"), page);
+  hint->setObjectName("HintLabel");
+
+  mGenerationBrowseBtn = new QToolButton(pathRow);
+  mGenerationBrowseBtn->setText("…");
+  mGenerationBrowseBtn->setToolTip(tr("Choose folder"));
+
+  rowLayout->addWidget(mGenerationDirEdit, /*stretch=*/1);
+  rowLayout->addWidget(mGenerationBrowseBtn);
+
+  colLayout->addLayout(rowLayout);
+  colLayout->addWidget(hint);
+
+  // hook up buttons
+  connect(mGenerationBrowseBtn, &QToolButton::clicked, this, [this] {
+    const QString dir = QFileDialog::getExistingDirectory(this, tr("Select default generation folder"));
+    if (!dir.isEmpty())
+      mGenerationDirEdit->setText(dir);
+  });
+
+  // static_cast<QVBoxLayout*>(page->layout())->addLayout(headerRow);
+  QVBoxLayout* layout = page->findChild<QVBoxLayout*>("ContentArea");
+  layout->addWidget(label);
+  layout->addWidget(pathRow);
+  layout->addStretch();
 
   return VoidResult();
 }
@@ -160,47 +279,59 @@ void SettingsDialog::loadFromSettings()
     return;
   }
 
-  const auto g = mSettingsManager->general();
-  const auto a = mSettingsManager->appearance();
+  const auto general = mSettingsManager->general();
+  const auto appearance = mSettingsManager->appearance();
+  const auto generation = mSettingsManager->generation();
 
-  mRestoreLastSession->setChecked(g.restoreLastSession);
-  mAutosaveEnabled->setChecked(g.autosaveEnabled);
-  mAutosaveMinutes->setValue(g.autosaveIntervalMinutes);
-  mConfirmOnClose->setChecked(g.confirmOnCloseWithExecution);
-  mEnableDebugLogs->setChecked(g.enableDebugLogs);
+  // -----------------------------------------------------------------
+  // Load General settings
+  mRestoreLastSession->setChecked(general.restoreLastSession);
+  mAutosaveEnabled->setChecked(general.autosaveEnabled);
+  mAutosaveMinutes->setValue(general.autosaveIntervalMinutes);
+  mConfirmOnClose->setChecked(general.confirmOnCloseWithExecution);
+  mEnableDebugLogs->setChecked(general.enableDebugLogs);
 
-  int themeIndex = mThemeCombo->findData(a.theme);
+  // -----------------------------------------------------------------
+  // Load Appearance settings
+  int themeIndex = mThemeCombo->findData(appearance.theme);
   if (themeIndex < 0)
     themeIndex = 0;  // fallback to "system"
 
   mThemeCombo->setCurrentIndex(themeIndex);
 
-  mUiScale->setValue(a.uiScalePercent);
-  mShowGrid->setChecked(a.showCanvasGrid);
-  mNodeCornerRadius->setValue(a.nodeCornerRadius);
+  mUiScale->setValue(appearance.uiScalePercent);
+  mShowGrid->setChecked(appearance.showCanvasGrid);
+  mNodeCornerRadius->setValue(appearance.nodeCornerRadius);
+
+  // -----------------------------------------------------------------
+  // Load Generation settings
+  mGenerationDirEdit->setText(generation.generationDir);
 }
 
 void SettingsDialog::saveToSettings()
 {
-  GeneralSettings g;
-  g.restoreLastSession = mRestoreLastSession->isChecked();
-  g.autosaveEnabled = mAutosaveEnabled->isChecked();
-  g.autosaveIntervalMinutes = mAutosaveMinutes->value();
-  g.confirmOnCloseWithExecution = mConfirmOnClose->isChecked();
-  g.enableDebugLogs = mEnableDebugLogs->isChecked();
+  GeneralSettings general;
+  general.restoreLastSession = mRestoreLastSession->isChecked();
+  general.autosaveEnabled = mAutosaveEnabled->isChecked();
+  general.autosaveIntervalMinutes = mAutosaveMinutes->value();
+  general.confirmOnCloseWithExecution = mConfirmOnClose->isChecked();
+  general.enableDebugLogs = mEnableDebugLogs->isChecked();
 
-  AppearanceSettings a;
-  a.uiScalePercent = mUiScale->value();
-  a.showCanvasGrid = mShowGrid->isChecked();
-  a.nodeCornerRadius = mNodeCornerRadius->value();
-  a.theme = mThemeCombo->currentData().toString();
+  AppearanceSettings appearance;
+  appearance.uiScalePercent = mUiScale->value();
+  appearance.showCanvasGrid = mShowGrid->isChecked();
+  appearance.nodeCornerRadius = mNodeCornerRadius->value();
+  appearance.theme = mThemeCombo->currentData().toString();
 
-  mSettingsManager->setGeneral(g);
-  mSettingsManager->setAppearance(a);
+  GenerationSettings generation;
+  generation.generationDir = mGenerationDirEdit->text();
+
+  mSettingsManager->setGeneral(general);
+  mSettingsManager->setAppearance(appearance);
+  mSettingsManager->setGeneration(generation);
 }
 
-void SettingsDialog::applyAndClose()
+void SettingsDialog::apply()
 {
   saveToSettings();
-  accept();
 }

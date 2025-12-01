@@ -1,6 +1,7 @@
 // SettingsManager.h
 #pragma once
 
+#include <QApplication>
 #include <QObject>
 #include <QSettings>
 
@@ -28,6 +29,12 @@ struct AppearanceSettings
   int nodeCornerRadius = 8;
 };
 
+struct GenerationSettings
+{
+  QString generationDir = QCoreApplication::applicationDirPath();
+  QStringList pluginSearchPaths;
+};
+
 class SettingsManager : public QObject
 {
   Q_OBJECT
@@ -36,13 +43,16 @@ public:
 
   GeneralSettings general() const;
   AppearanceSettings appearance() const;
-  QList<Config::ThemeInfo> availableThemes() const;
+  GenerationSettings generation() const;
 
   void setGeneral(const GeneralSettings& s);
   void setAppearance(const AppearanceSettings& s);
+  void setGeneration(const GenerationSettings& s);
 
   void load();
   void save();
+
+  QList<Config::ThemeInfo> availableThemes() const;
 
 signals:
   void themeChanged(const QString& theme, const QList<Config::ThemeInfo>& availableThemes);
@@ -51,6 +61,7 @@ private:
   QSettings mSettings;
   GeneralSettings mGeneral;
   AppearanceSettings mAppearance;
+  GenerationSettings mGeneration;
 
   QList<Config::ThemeInfo> mAvailableThemes;
 };

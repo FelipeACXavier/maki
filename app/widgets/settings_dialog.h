@@ -11,6 +11,9 @@ class QCheckBox;
 class QComboBox;
 class QStackedWidget;
 class QListWidget;
+class QLineEdit;
+class QToolButton;
+class QVBoxLayout;
 
 class SettingsDialog : public QDialog
 {
@@ -19,7 +22,7 @@ public:
   SettingsDialog(const QString& title, std::shared_ptr<SettingsManager> manager, QWidget* parent = nullptr);
 
 private slots:
-  void applyAndClose();
+  void apply();
 
 private:
   // ------------------------------------------
@@ -44,13 +47,19 @@ private:
   QCheckBox* mShowGrid = nullptr;
   QSpinBox* mNodeCornerRadius = nullptr;
 
+  // Generation
+  QLineEdit* mGenerationDirEdit = nullptr;
+  QToolButton* mGenerationBrowseBtn = nullptr;
+  QToolButton* mGenerationResetBtn = nullptr;
+
   // ------------------------------------------
   // Methods
   void saveToSettings();
   void loadFromSettings();
 
-  QWidget* addPage(const QString& pageName, const QString& iconNeame) const;
+  QWidget* addPage(const QString& pageName, const QString& iconNeame, std::function<void()> resetCallback) const;
 
   VoidResult createGeneralPage();
   VoidResult createAppearancePage();
+  VoidResult createGenerationPage();
 };
