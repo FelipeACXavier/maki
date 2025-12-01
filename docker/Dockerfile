@@ -86,9 +86,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   zip \
   unzip \
   gdb \
-  bison \
-  flex \
-  gperf \
   libgl1-mesa-dev \
   libgles2-mesa-dev \
   mesa-common-dev \
@@ -117,6 +114,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libxtst-dev \
   libasound2-dev \
   libxkbfile-dev \
+  # Should be Java 21
+  default-jdk \
   && rm -rf /var/lib/apt/lists/*
 
 # Install dezyne
@@ -124,6 +123,19 @@ WORKDIR ${HOME}
 USER ubuntu
 COPY scripts/install_dezyne.sh ${HOME}/
 RUN ${HOME}/install_dezyne.sh
+
+# Install gf2 for debugging
+RUN git clone https://github.com/nakst/gf.git
+WORKDIR ${HOME}/gf
+RUN ./build.sh
+
+# Install KODA
+USER root
+WORKDIR ${HOME}
+# RUN git clone https://github.com/FelipeACXavier/rosyne.git
+RUN wget https://update.rascal-mpl.org/console/rascal-0.40.9.jar -O rascal-0.40.9.jar
+# Rascal can now be used with:
+# java -jar ~/rascal-0.40.9.jar Main.rsc <input>  <output>
 
 # -----------------------------------------------------------------------------------------------------------
 # Cd to the maki directory and end

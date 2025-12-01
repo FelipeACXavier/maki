@@ -9,12 +9,14 @@
   Run this in an elevated PowerShell (Run as Administrator).
 #>
 
-function Fail($msg) {
-    Write-Host "ERROR: $msg" -ForegroundColor Red
-    exit 1
-}
+# ------------------------------------------------------
+# Load shared settings
+# ------------------------------------------------------
+$RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
+$SettingsPath = Join-Path $RepoRoot "scripts\windows\settings.ps1"
+. $SettingsPath
 
-Write-Host "==> Windows setup script starting..." -ForegroundColor Cyan
+LogDebug "==> Windows setup script starting..."
 
 # ------------------------------------------------------
 # Ensure script is running on Windows
@@ -26,101 +28,102 @@ if ($PSVersionTable.PSEdition -ne "Desktop" -and $env:OS -notlike "*Windows*") {
 # ------------------------------------------------------
 # Install / ensure Chocolatey
 # ------------------------------------------------------
-Write-Host "==> Checking for Chocolatey..." -ForegroundColor Cyan
+LogDebug "==> Checking for Chocolatey..."
 $choco = Get-Command choco -ErrorAction SilentlyContinue
 if (-not $choco) {
-    Write-Host "Chocolatey not found. Installing..." -ForegroundColor Yellow
+    LogWarning "Chocolatey not found. Installing..."
     Set-ExecutionPolicy Bypass -Scope Process -Force
     [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-    Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')) `
-        || Fail "Failed to install Chocolatey."
+    try {
+      Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+    } catch {
+      Fail "Failed to install Chocolatey."
+    }
 } else {
-    Write-Host "Chocolatey found." -ForegroundColor Green
+    LogInfo "Chocolatey found."
 }
 
 # ------------------------------------------------------
 # Install tools with Chocolatey
 # ------------------------------------------------------
 $packages = @(
-    "git",
     "cmake",
-    "ninja",
-    "python3"
+    "ninja"
 )
 
-Write-Host "==> Ensuring base tools are installed: $($packages -join ', ')" -ForegroundColor Cyan
+LogDebug "==> Ensuring base tools are installed: $($packages -join ', ')"
 foreach ($pkg in $packages) {
-    Write-Host "  - $pkg" -ForegroundColor Gray
+    LogDebug "  - $pkg"
     choco install $pkg -y --no-progress | Out-Null
 }
 
-Write-Host "==> Base tools installed/updated." -ForegroundColor Green
+LogInfo "==> Base tools installed/updated."
 
 # ------------------------------------------------------
 # Ensure aqtinstall is installed
 # ------------------------------------------------------
-Write-Host "==> Checking for Python..." -ForegroundColor Cyan
-$python = Get-Command python -ErrorAction SilentlyContinue
-if (-not $python) {
+LogDebug "==> Checking for Python $PythonVersion ..."
+$PythonExists = Get-Command $Python -ErrorAction SilentlyContinue
+if (-not $PythonExists) {
+  LogWarning "==> Python $PythonVersion not found, installing it..."
+  choco install python --version=$PythonVersion -y --no-progress | Out-Null
+  $PythonExists = Get-Command $Python -ErrorAction SilentlyContinue
+  if (-not $PythonExists) {
     Fail "Python not found on PATH even after installation. Reopen PowerShell and retry."
+  } else {
+    LogInfo "==> Python $PythonVersion installed."
+  }
 }
 
-Write-Host "==> Ensuring aqtinstall is installed..." -ForegroundColor Cyan
+# Add the script directory to the path
+$UserScripts = Join-Path $env:APPDATA "Python\Python312\Scripts"
+$env:PATH = "$UserScripts;$env:PATH"
+
+LogDebug "==> Ensuring aqtinstall is installed..."
 try {
-    python -m aqt --help | Out-Null
+  & $Python -m pip install --user aqtinstall
 } catch {
-    Write-Host "aqtinstall not found, installing..." -ForegroundColor Yellow
-    python -m pip install --user aqtinstall ` || Fail "Failed to install aqtinstall."
+  Fail "Failed to install aqtinstall."
 }
 
 # ------------------------------------------------------
 # Install Qt via aqtinstall
 # ------------------------------------------------------
-# Get QT version
-$RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
-$QtVersionFile = Join-Path $RepoRoot ".qt-version"
-
-$QtVersion = Get-Content $QtVersionFile -Raw
-$QtVersion = $QtVersion.Trim()
-
-Write-Host "Using Qt version: $QtVersion"
-
-$QtArch    = "win64_msvc2022_64"
-$QtRoot    = "C:\Qt"
-$QtBase    = Join-Path $QtRoot "$QtVersion\$QtArch"
-$QtBin  = Join-Path $QtBase "bin"
-$WindeployqtPath = Join-Path $QtBin "windeployqt.exe"
+LogDebug "Using Qt version: $QtVersion"
 
 if (Test-Path $WindeployqtPath) {
-    Write-Host "==> Qt already installed at: $QtBase" -ForegroundColor Green
+    LogDebug "==> Qt already installed at: $QtBase"
 } else {
-    Write-Host "==> Installing Qt $QtVersion ($QtArch)..." -ForegroundColor Cyan
+    LogDebug "==> Installing Qt $QtVersion ($QtArch)..."
 
     if (-not (Test-Path $QtRoot)) {
         New-Item -ItemType Directory -Path $QtRoot | Out-Null
     }
 
-    aqt install-qt windows desktop $QtVersion $QtArch `
-        -m qtwebengine qtpdf qtwebchannel qtpositioning `
-        -O $QtRoot `
-        || Fail "Qt installation failed."
+    try {
+      aqt install-qt windows desktop $QtVersion $QtArch `
+          -m qtwebengine qtpdf qtwebchannel qtpositioning `
+          -O $QtRoot `
+    } catch {
+      Fail "Qt installation failed."
+    }
 
     if (-not (Test-Path $WindeployqtPath)) {
         Fail "Qt installation completed but windeployqt.exe not found. Something went wrong."
     }
 }
 
-Write-Host "Qt successfully installed at: $QtBase" -ForegroundColor Green
-
 $env:PATH = "$QtBin;$env:PATH"
+LogInfo "Qt successfully installed at: $QtBase"
+
 
 # ------------------------------------------------------
 # Check for C++ compiler (MSVC)
 # ------------------------------------------------------
-Write-Host "==> Checking for MSVC (cl.exe)..." -ForegroundColor Cyan
+LogDebug "==> Checking for MSVC (cl.exe)..."
 $cl = Get-Command cl.exe -ErrorAction SilentlyContinue
 if (-not $cl) {
-    Write-Host @"
+    LogWarning @"
 WARNING: 'cl.exe' (MSVC) not found on PATH.
 You likely need to install:
   - Visual Studio with "Desktop development with C++"
@@ -128,10 +131,10 @@ You likely need to install:
   - Microsoft Build Tools for Visual Studio (C++)
 
 This script does not install Visual Studio automatically.
-"@ -ForegroundColor Yellow
+"@
 } else {
-    Write-Host "MSVC compiler detected: $($cl.Source)" -ForegroundColor Green
+    LogDebug "MSVC compiler detected: $($cl.Source)"
 }
 
-Write-Host "==> setup_windows.ps1 finished." -ForegroundColor Cyan
-Write-Host "You can now run build.ps1 (after ensuring MSVC is installed)." -ForegroundColor Cyan
+LogInfo "==> setup.ps1 finished."
+LogDebug "You can now run build.ps1 (after ensuring MSVC is installed)."
