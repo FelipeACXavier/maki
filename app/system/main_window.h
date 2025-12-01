@@ -20,6 +20,7 @@ class NodeItem;
 class SaveHandler;
 class PluginManager;
 class SettingsManager;
+class Pipeline;
 
 class MainWindow : public MainWindowlayout
 {
@@ -48,7 +49,7 @@ private:
   std::shared_ptr<ConfigurationTable> mConfigTable;
   std::shared_ptr<SettingsManager> mSettingsManager;
 
-  std::shared_ptr<Generator> mGenerator;
+  Generator* mGenerator;
   Canvas* mActiveCanvas;
 
   logging::LogLevel mLogLevel;
@@ -78,7 +79,7 @@ private:
 
   void handleLogging(const QString& message, QTextBrowser* textBrowser);
 
-  void addProcessTab();
+  void addProcessTab(Pipeline* pipeline);
 
   // ================================================
   // Actions

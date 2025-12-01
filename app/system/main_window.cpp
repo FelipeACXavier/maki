@@ -22,6 +22,7 @@
 #include "behaviour_canvas.h"
 #include "canvas.h"
 #include "canvas_view.h"
+#include "compiler/pipeline.h"
 #include "elements/flow.h"
 #include "elements/node.h"
 #include "library_container.h"
@@ -75,7 +76,7 @@ VoidResult MainWindow::start()
 
   LOG_DEBUG("Starting the main window");
 
-  mGenerator = std::make_shared<Generator>(mStorage);
+  mGenerator = new Generator(mStorage, this);
   mSaveHandler = std::make_unique<SaveHandler>(this);
   mPluginManager = std::make_unique<PluginManager>();
   mSettingsManager = std::make_shared<SettingsManager>();
@@ -147,7 +148,7 @@ void MainWindow::bind()
   connect(mActionSaveAs, &QAction::triggered, this, &MainWindow::onActionSaveAs);
   mActionSaveAs->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S));
 
-  connect(mGenerationButton, &QPushButton::pressed, this, &MainWindow::addProcessTab);
+  connect(mGenerationButton, &QPushButton::pressed, this, &MainWindow::onActionGenerate);
 
   // Diagram actions =============================================================
   connect(mActionGenerate, &QAction::triggered, this, &MainWindow::onActionGenerate);
@@ -178,6 +179,7 @@ void MainWindow::bind()
   connect(mFlowMenu, &FlowMenu::flowSelected, rootCanvas(), &Canvas::onFlowSelected);
   connect(mFlowMenu, &FlowMenu::flowRemoved, rootCanvas(), &Canvas::onFlowRemoved);
 
+  connect(mGenerator, &Generator::generationStarted, this, &MainWindow::addProcessTab);
   bindCanvas();
 }
 
@@ -360,7 +362,11 @@ void MainWindow::onActionGenerate()
   if (!mGenerator)
     LOG_WARNING("No generator available");
 
-  mGenerator->generate(mSettingsManager->generation().generationDir, mPluginManager->currentPlugin());
+  // Get options
+  Generator::GenerationOptions options;
+  options.pipeline = static_cast<Types::GenerationOptions>(mGenerationOption->currentData().toInt());
+
+  mGenerator->generate(mSettingsManager->generation().generationDir, mPluginManager->currentPlugin(), options);
 }
 
 void MainWindow::onActionSave()
@@ -591,26 +597,19 @@ void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
   mCanvasPanel->setCurrentWidget(newView);
 }
 
-void MainWindow::addProcessTab()
+void MainWindow::addProcessTab(Pipeline* pipeline)
 {
-  // Get information to run command
-  QString command = "tail";
-  QStringList arguments = {"-F", "/home/ubuntu/maki/README.md"};
-
-  auto* tab = new ProcessTab(mCanvasPanel);  // or mCanvasPanel, or your execution tab widget
-  mCanvasPanel->addTab(tab, command + ": " + tr("Running…"));
+  auto* tab = new ProcessTab(pipeline, mCanvasPanel);  // or mCanvasPanel, or your execution tab widget
+  mCanvasPanel->addTab(tab, pipeline->name() + ": " + tr("Runnin"));
   mCanvasPanel->setCurrentWidget(tab);
 
   // Update tab text on finish (optional)
   connect(tab, &ProcessTab::processFinished, this,
-          [this, tab, command](int exitCode, QProcess::ExitStatus) {
+          [this, tab, pipeline](int exitCode, QProcess::ExitStatus) {
             int idx = mCanvasPanel->indexOf(tab);
             if (idx >= 0)
-              mCanvasPanel->setTabText(idx, exitCode == 0 ? command + ": " + tr("Done") : command + ": " + tr("Error (%1)").arg(exitCode));
+              mCanvasPanel->setTabText(idx, pipeline->name() + ": " + QString(exitCode == 0 ? tr("Done") : tr("Error (%1)").arg(exitCode)));
           });
-
-  // Now actually start the command
-  tab->startProcess(command, arguments);
 }
 
 void MainWindow::onFlowRemoved(const QString& flowId, NodeItem* node)

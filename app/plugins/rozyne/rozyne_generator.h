@@ -12,14 +12,16 @@ class RozyneGenerator : public QObject, public GeneratorPlugin
   Q_INTERFACES(GeneratorPlugin)
 
 public:
-  QString generateCode(std::shared_ptr<SaveInfo> nodes) override;
+  QString generateCode(const QString& outputFolder, std::shared_ptr<SaveInfo> nodes) override;
   generator::Language supportedLanguage() const override;
   QString languageName() const override;
+  QList<QString> generatedFiles() const override;
 
 private:
   QDir mOutputFolder;
   std::shared_ptr<SaveInfo> mStorage;
   QVector<QString> mImports;
+  QList<QString> mGeneratedFiles = {};
 
   struct Argument
   {

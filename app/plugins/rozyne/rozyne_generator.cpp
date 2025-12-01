@@ -12,14 +12,13 @@
 #include "string_helpers.h"
 #include "types.h"
 
-static const QString FOLDER = "/generated";
-
-QString RozyneGenerator::generateCode(std::shared_ptr<SaveInfo> storage)
+QString RozyneGenerator::generateCode(const QString& outputFolder, std::shared_ptr<SaveInfo> storage)
 {
   LOG_DEBUG("Starting generation");
   mStorage = storage;
+  mGeneratedFiles.clear();
 
-  mOutputFolder = QDir(QDir::currentPath() + FOLDER);
+  mOutputFolder = QDir(outputFolder + "/generated/" + languageName());
   if (!mOutputFolder.exists())
     mOutputFolder.mkpath(".");
 
@@ -66,6 +65,11 @@ generator::Language RozyneGenerator::supportedLanguage() const
 QString RozyneGenerator::languageName() const
 {
   return "Rozyne";
+}
+
+QList<QString> RozyneGenerator::generatedFiles() const
+{
+  return mGeneratedFiles;
 }
 
 // Add function per block type
@@ -127,7 +131,7 @@ QString RozyneGenerator::generateCapability(const NodeSaveInfo& node)
 {
   QString code = "";
 
-  qDebug() << node.properties;
+  // qDebug() << node.properties;
   QString args = "";
   if (node.properties.contains("arguments"))
   {
@@ -202,18 +206,15 @@ QString RozyneGenerator::generateComponent(const NodeSaveInfo& node, const QStri
   QString name = fixCase(node.properties["name"].toString());
 
   // Create a file for each top level component
-  QFile file(mOutputFolder.filePath(name + ".rzn"));
+  QString fileName = mOutputFolder.filePath(name + ".rzn");
+  QFile file(fileName);
   if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
   {
     LOG_WARNING("Failed to open device for writing");
     return code;
   }
 
-  // Generate child code
-  // for (const auto& child : node.children)
-  //   code += generateNode(*child);
-
-  // Generate my structural code
+  mGeneratedFiles.append(fileName);
 
   // Generate flows
   int index = 0;
@@ -445,7 +446,7 @@ QString RozyneGenerator::generateWithin(const NodeSaveInfo& node, const Argument
   QString code = "";
   int val = node.properties["timeout"].toInt();
 
-  qDebug() << node.properties;
+  // qDebug() << node.properties;
 
   // QJsonObject object = node.properties["component"].toJsonObject();
   // QString val = object["data"].toString();

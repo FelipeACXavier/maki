@@ -112,9 +112,9 @@ void MainWindowlayout::buildCentralPanel()
 
   // ----------------------------------------------------------------
   mGenerationOption = new QComboBox();
-  mGenerationOption->addItem(tr("Generate"), "Generate");
-  mGenerationOption->addItem(tr("Verify"), "Verify");
-  mGenerationOption->addItem(tr("Simulate"), "Simulate");
+  mGenerationOption->addItem(tr("Generate"), QVariant::fromValue(Types::GenerationOptions::Generate));
+  mGenerationOption->addItem(tr("Verify"), QVariant::fromValue(Types::GenerationOptions::GenerateVerify));
+  mGenerationOption->addItem(tr("Simulate"), QVariant::fromValue(Types::GenerationOptions::GenerateSimulate));
 
   auto generationOptionsWrapper = createHeaderComboBox(mGenerationOption, ":/icons/generator.svg");
   headerLayout->addWidget(generationOptionsWrapper);

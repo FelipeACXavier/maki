@@ -28,9 +28,10 @@ class GeneratorPlugin
 {
 public:
   virtual ~GeneratorPlugin() = default;
-  virtual QString generateCode(std::shared_ptr<SaveInfo> nodes) = 0;
+  virtual QString generateCode(const QString& outputFolder, std::shared_ptr<SaveInfo> nodes) = 0;
   virtual generator::Language supportedLanguage() const = 0;
   virtual QString languageName() const = 0;
+  virtual QList<QString> generatedFiles() const = 0;
 };
 
 #define GeneratorPlugin_iid "com.felipexavier.GeneratorPlugin/1.0"

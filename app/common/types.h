@@ -35,6 +35,13 @@ enum class ConnectorType
   END
 };
 
+enum class GenerationOptions
+{
+  Generate,
+  GenerateVerify,
+  GenerateSimulate
+};
+
 ConnectorType StringToConnectorType(const QString& type);
 QString ConnectorTypeToString(ConnectorType type);
 

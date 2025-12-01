@@ -4,60 +4,68 @@
 #include <QTextBrowser>
 #include <QVBoxLayout>
 
-ProcessTab::ProcessTab(QWidget* parent)
+#include "compiler/pipeline.h"
+
+ProcessTab::ProcessTab(Pipeline* pipeline, QWidget* parent)
     : QWidget(parent)
-    , m_output(new QTextBrowser(this))
-    , m_process(new QProcess(this))
+    , mOutput(new QTextBrowser(this))
+    , mPipeline(pipeline)
 {
-  m_output->setReadOnly(true);
-  // m_output->setWordWrapMode(QTextOption::NoWrap);
+  mOutput->setReadOnly(true);
+  // mOutput->setWordWrapMode(QTextOption::NoWrap);
 
   auto* layout = new QVBoxLayout(this);
   layout->setContentsMargins(0, 0, 0, 0);
-  layout->addWidget(m_output);
+  layout->addWidget(mOutput);
 
   // Merge stdout + stderr into one stream if you prefer
-  m_process->setProcessChannelMode(QProcess::SeparateChannels);
+  // mPipeline->setProcessChannelMode(QProcess::SeparateChannels);
 
-  connect(m_process, &QProcess::readyReadStandardOutput, this, &ProcessTab::onReadyReadStandardOutput);
-  connect(m_process, &QProcess::readyReadStandardError, this, &ProcessTab::onReadyReadStandardError);
-  connect(m_process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, &ProcessTab::onFinished);
-  connect(m_process, &QProcess::errorOccurred, this, &ProcessTab::onErrorOccurred);
+  connect(mPipeline, &Pipeline::startingProcess, this, &ProcessTab::onStartingProcess);
+  connect(mPipeline, &Pipeline::finished, this, &ProcessTab::onFinished);
+  connect(mPipeline, &Pipeline::finishedLast, this, &ProcessTab::onFinishedLast);
+  connect(mPipeline, &Pipeline::readyReadStandardOutput, this, &ProcessTab::onReadyReadStandardOutput);
+  connect(mPipeline, &Pipeline::readyReadStandardOutput, this, &ProcessTab::onReadyReadStandardOutput);
+  connect(mPipeline, &Pipeline::errorOccurred, this, &ProcessTab::onErrorOccurred);
 }
 
-void ProcessTab::startProcess(const QString& program, const QStringList& arguments)
+void ProcessTab::onReadyReadStandardOutput(const QString& message)
 {
-  appendText(QString("> %1 %2\n\n").arg(program, arguments.join(' ')));
-
-  m_process->start(program, arguments);
+  // const QString text = QString::fromLocal8Bit(mPipeline->readAllStandardOutput());
+  appendText(message);
 }
 
-void ProcessTab::onReadyReadStandardOutput()
+void ProcessTab::onReadyReadStandardError(const QString& message)
 {
-  const QString text = QString::fromLocal8Bit(m_process->readAllStandardOutput());
-  appendText(text);
-}
-
-void ProcessTab::onReadyReadStandardError()
-{
-  const QString text = QString::fromLocal8Bit(m_process->readAllStandardError());
-  appendText(text);
+  // const QString text = QString::fromLocal8Bit(mPipeline->readAllStandardError());
+  appendText(message);
 }
 
 void ProcessTab::onFinished(int exitCode, QProcess::ExitStatus status)
 {
-  appendText(QString("\n[Process finished with code %1]\n").arg(exitCode));
-  emit processFinished(exitCode, status);
+  appendText(QString("[Process finished with code %1]\n").arg(exitCode));
+}
+
+void ProcessTab::onFinishedLast()
+{
+  appendText(QString("Finished all process in the pipeline\n"));
+  emit processFinished(0, QProcess::ExitStatus::NormalExit);
+}
+
+void ProcessTab::onStartingProcess(const QString& process, const QStringList& arguments)
+{
+  appendText(QString("> %1 %2\n").arg(process, arguments.join(' ')));
 }
 
 void ProcessTab::onErrorOccurred(QProcess::ProcessError error)
 {
   appendText(QString("\n[Process error: %1]\n").arg(static_cast<int>(error)));
+  emit processFinished(1, QProcess::ExitStatus::CrashExit);
 }
 
 void ProcessTab::appendText(const QString& text)
 {
-  m_output->moveCursor(QTextCursor::End);
-  m_output->append(text);
-  // m_output->verticalScrollBar()->setValue(m_output->verticalScrollBar()->maximum());
+  mOutput->moveCursor(QTextCursor::End);
+  mOutput->append(text);
+  mOutput->verticalScrollBar()->setValue(mOutput->verticalScrollBar()->maximum());
 }
