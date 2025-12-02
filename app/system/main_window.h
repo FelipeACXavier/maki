@@ -21,6 +21,7 @@ class SaveHandler;
 class PluginManager;
 class SettingsManager;
 class Pipeline;
+class LocalServerTab;
 
 class MainWindow : public MainWindowlayout
 {
@@ -51,6 +52,8 @@ private:
 
   Generator* mGenerator;
   Canvas* mActiveCanvas;
+  ProcessTab* mProcessTab;
+  LocalServerTab* mLocalServerTab;
 
   logging::LogLevel mLogLevel;
 
@@ -79,8 +82,8 @@ private:
 
   void handleLogging(const QString& message, QTextBrowser* textBrowser);
 
-  void addProcessTab(Pipeline* pipeline);
-  void addBrowserTab(const QString& url);
+  void addProcessTab();
+  void addBrowserTab();
 
   // ================================================
   // Actions

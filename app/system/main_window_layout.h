@@ -15,6 +15,7 @@ class QToolBox;
 class QComboBox;
 class QPushButton;
 class PropertiesMenu;
+class ProcessTab;
 
 class MainWindowlayout : public QMainWindow
 {
@@ -45,6 +46,8 @@ protected:
 
   QSplitter* mCentralSplitter;
   QTabWidget* mCanvasPanel;
+  QPushButton* mProcessTabButton;
+  QPushButton* mBrowserTabButton;
 
   QTabWidget* mBottomPanel;
   QTextBrowser* mInfoText;
@@ -90,7 +93,11 @@ protected:
   // Help menu
   QAction* mAboutAction;
 
+protected:
   void themeChanged();
+
+  void toggleGenerationButton(bool running);
+  void toggleDeployButton(bool running);
 
 private:
   struct WidgetWithIcon

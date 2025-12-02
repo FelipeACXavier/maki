@@ -63,6 +63,9 @@ QPushButton#CheckableButton:checked {
   background-color: @selection_bg;
 }
 
+QPushButton[hasActivity="true"] {
+  border: 1x solid @selection_bg;
+}
 
 /* ===============================
    QLABEL

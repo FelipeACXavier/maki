@@ -17,10 +17,12 @@ public:
 
   Generator(std::shared_ptr<SaveInfo> storage, QWidget* parent = nullptr);
 
-  void generate(const QString& outputDir, GeneratorPlugin* generator, const GenerationOptions& option);
+  VoidResult generate(const QString& outputDir, GeneratorPlugin* generator, const GenerationOptions& option);
+  Pipeline* pipeline() const;
 
 signals:
   void generationStarted(Pipeline* pipeline);
+  void generationEnded();
   void openClient(const QString& url);
 
 private:

@@ -64,6 +64,7 @@ VoidResult Pipeline::start()
 
   emit startingProcess(name, args);
   mRunningProcess.process->start();
+  // mRunningProcess.process->startDetached();
 
   // This makes the ide work
   mRunningProcess.process->closeWriteChannel();

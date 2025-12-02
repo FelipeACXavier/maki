@@ -82,6 +82,12 @@ VoidResult MainWindow::start()
   mPluginManager = std::make_unique<PluginManager>();
   mSettingsManager = std::make_shared<SettingsManager>();
 
+  mProcessTab = new ProcessTab(mGenerator->pipeline(), this);
+  mProcessTab->hide();
+
+  mLocalServerTab = new LocalServerTab(this);
+  mLocalServerTab->hide();
+
   startUI();
   bind();
   bindShortcuts();
@@ -180,8 +186,13 @@ void MainWindow::bind()
   connect(mFlowMenu, &FlowMenu::flowSelected, rootCanvas(), &Canvas::onFlowSelected);
   connect(mFlowMenu, &FlowMenu::flowRemoved, rootCanvas(), &Canvas::onFlowRemoved);
 
-  connect(mGenerator, &Generator::generationStarted, this, &MainWindow::addProcessTab);
-  connect(mGenerator, &Generator::openClient, this, &MainWindow::addBrowserTab);
+  connect(mGenerator, &Generator::generationStarted, [this] { toggleGenerationButton(true); });
+  connect(mGenerator, &Generator::generationEnded, [this] { toggleGenerationButton(false); });
+
+  connect(mProcessTabButton, &QPushButton::pressed, this, &MainWindow::addProcessTab);
+  connect(mBrowserTabButton, &QPushButton::pressed, this, &MainWindow::addBrowserTab);
+
+  // Canvas stuff =============================================================
   bindCanvas();
 }
 
@@ -368,7 +379,7 @@ void MainWindow::onActionGenerate()
   Generator::GenerationOptions options;
   options.pipeline = static_cast<Types::GenerationOptions>(mGenerationOption->currentData().toInt());
 
-  mGenerator->generate(mSettingsManager->generation().generationDir, mPluginManager->currentPlugin(), options);
+  LOG_ERROR_ON_FAILURE(mGenerator->generate(mSettingsManager->generation().generationDir, mPluginManager->currentPlugin(), options));
 }
 
 void MainWindow::onActionSave()
@@ -504,8 +515,7 @@ void MainWindow::onCanvasTabChanged(int index)
 
 void MainWindow::closeCanvasTab(int index)
 {
-  CanvasView* newCanvas = qobject_cast<CanvasView*>(mCanvasPanel->widget(index));
-  if (newCanvas)
+  if (CanvasView* newCanvas = qobject_cast<CanvasView*>(mCanvasPanel->widget(index)))
   {
     if (newCanvas->scene() == mActiveCanvas)
     {
@@ -523,6 +533,14 @@ void MainWindow::closeCanvasTab(int index)
         mLeftPanel->setCurrentIndex(libIndex);
       }
     }
+  }
+  else if (ProcessTab* tab = qobject_cast<ProcessTab*>(mCanvasPanel->widget(index)))
+  {
+    tab->hide();
+  }
+  else if (LocalServerTab* tab = qobject_cast<LocalServerTab*>(mCanvasPanel->widget(index)))
+  {
+    tab->hide();
   }
 
   mCanvasPanel->removeTab(index);
@@ -599,28 +617,41 @@ void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
   mCanvasPanel->setCurrentWidget(newView);
 }
 
-void MainWindow::addProcessTab(Pipeline* pipeline)
+void MainWindow::addProcessTab()
 {
-  auto* tab = new ProcessTab(pipeline, mCanvasPanel);  // or mCanvasPanel, or your execution tab widget
-  mCanvasPanel->addTab(tab, pipeline->name() + ": " + tr("Running"));
-  mCanvasPanel->setCurrentWidget(tab);
+  if (!mProcessTab)
+  {
+    LOG_WARNING("No process tab to be added");
+    return;
+  }
 
-  // Update tab text on finish (optional)
-  connect(tab, &ProcessTab::processFinished, this,
-          [this, tab, pipeline](int exitCode, QProcess::ExitStatus) {
-            int idx = mCanvasPanel->indexOf(tab);
-            if (idx >= 0)
-              mCanvasPanel->setTabText(idx, pipeline->name() + ": " + QString(exitCode == 0 ? tr("Done") : tr("Error (%1)").arg(exitCode)));
-          });
+  // Check if process tab was already added
+  for (int i = 1; i < mCanvasPanel->count(); ++i)
+    if (qobject_cast<ProcessTab*>(mCanvasPanel->widget(i)))
+      return;
+
+  mCanvasPanel->addTab(mProcessTab, "Process view");
+  mCanvasPanel->setCurrentWidget(mProcessTab);
+  mProcessTab->show();
 }
 
-void MainWindow::addBrowserTab(const QString& url)
+void MainWindow::addBrowserTab()
 {
-  auto* tab = new LocalServerTab(mCanvasPanel);  // or wherever
-  mCanvasPanel->addTab(tab, url);
-  mCanvasPanel->setCurrentWidget(tab);
+  if (!mLocalServerTab)
+  {
+    LOG_WARNING("No browser tab to be added");
+    return;
+  }
 
-  tab->connectToServer(url);
+  // Check if process tab was already added
+  for (int i = 1; i < mCanvasPanel->count(); ++i)
+    if (qobject_cast<LocalServerTab*>(mCanvasPanel->widget(i)))
+      return;
+
+  mCanvasPanel->addTab(mLocalServerTab, "Simulation view");
+  mCanvasPanel->setCurrentWidget(mLocalServerTab);
+  mLocalServerTab->connectToServer("http://localhost:3000/trace");
+  mLocalServerTab->show();
 }
 
 void MainWindow::onFlowRemoved(const QString& flowId, NodeItem* node)

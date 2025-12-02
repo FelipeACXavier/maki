@@ -142,11 +142,36 @@ void MainWindowlayout::buildCentralPanel()
 
   CanvasView* canvasView = new CanvasView();
 
-  mCanvasPanel->addTab(canvasView, "System");
+  mCanvasPanel->addTab(canvasView, "System view");
   mCanvasPanel->setCurrentWidget(canvasView);
 
   // Remove the close button from the system tab
   mCanvasPanel->tabBar()->setTabButton(0, QTabBar::RightSide, nullptr);
+
+  // Top right buttons
+  QWidget* corner = new QWidget();
+  auto* layout = new QHBoxLayout(corner);
+
+  layout->setContentsMargins(0, 0, 0, 0);
+  layout->setSpacing(4);
+
+  // First button
+  mProcessTabButton = new QPushButton(corner);
+  mProcessTabButton->setToolTip(tr("Show process tab"));
+  mProcessTabButton->setProperty("hasActivity", false);
+  mIcons.append({mProcessTabButton, ":/icons/terminal.svg"});
+
+  // Second button
+  mBrowserTabButton = new QPushButton(corner);
+  mBrowserTabButton->setToolTip(tr("Show simulation tab"));
+  mBrowserTabButton->setProperty("hasActivity", false);
+  mIcons.append({mBrowserTabButton, ":/icons/display.svg"});
+
+  layout->addWidget(mProcessTabButton);
+  layout->addWidget(mBrowserTabButton);
+
+  // Add the whole widget to the corner
+  mCanvasPanel->setCornerWidget(corner, Qt::TopRightCorner);
 
   // =================================================================
   QWidget* canvasContainer = new QWidget();
@@ -518,7 +543,7 @@ void MainWindowlayout::applyTheme()
 
 void MainWindowlayout::themeChanged()
 {
-  for (auto item : mIcons)
+  for (auto& item : mIcons)
   {
     if (item.widget)
     {
@@ -527,7 +552,7 @@ void MainWindowlayout::themeChanged()
       {
         label->setPixmap(applyColorToIcon(item.path, color).scaled(16, 16, Qt::KeepAspectRatio, Qt::SmoothTransformation));
       }
-      if (auto button = qobject_cast<QPushButton*>(item.widget))
+      else if (auto button = qobject_cast<QPushButton*>(item.widget))
       {
         button->setIcon(addIconWithColor(item.path, color));
       }
@@ -558,4 +583,36 @@ QWidget* MainWindowlayout::createHeaderComboBox(QComboBox* comboBox, const QStri
   wLayout->addWidget(comboBox);
 
   return wrapper;
+}
+
+void MainWindowlayout::toggleGenerationButton(bool running)
+{
+  auto it = std::find_if(mIcons.begin(), mIcons.end(), [&](const WidgetWithIcon& item) { return item.widget == mGenerationButton; });
+  if (it != mIcons.end())
+  {
+    if (running)
+    {
+      mGenerationButton->setToolTip("Cancel current generation");
+      mProcessTabButton->setProperty("hasActivity", true);
+      mProcessTabButton->style()->unpolish(mProcessTabButton);
+      mProcessTabButton->style()->polish(mProcessTabButton);
+      mProcessTabButton->update();
+      it->path = ":/icons/pause.svg";
+    }
+    else
+    {
+      mGenerationButton->setToolTip("Run with the selected options");
+      mProcessTabButton->setProperty("hasActivity", false);
+      mProcessTabButton->style()->unpolish(mProcessTabButton);
+      mProcessTabButton->style()->polish(mProcessTabButton);
+      mProcessTabButton->update();
+      it->path = ":/icons/play.svg";
+    }
+  }
+
+  themeChanged();
+}
+
+void MainWindowlayout::toggleDeployButton(bool running)
+{
 }

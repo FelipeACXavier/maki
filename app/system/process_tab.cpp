@@ -21,9 +21,6 @@ ProcessTab::ProcessTab(Pipeline* pipeline, QWidget* parent)
   layout->setContentsMargins(0, 0, 0, 0);
   layout->addWidget(mOutput);
 
-  // Merge stdout + stderr into one stream if you prefer
-  // mPipeline->setProcessChannelMode(QProcess::SeparateChannels);
-
   connect(mPipeline, &Pipeline::startingProcess, this, &ProcessTab::onStartingProcess);
   connect(mPipeline, &Pipeline::finished, this, &ProcessTab::onFinished);
   connect(mPipeline, &Pipeline::finishedLast, this, &ProcessTab::onFinishedLast);
@@ -35,15 +32,11 @@ ProcessTab::ProcessTab(Pipeline* pipeline, QWidget* parent)
 void ProcessTab::onReadyReadStandardOutput(const QByteArray& message)
 {
   handleProcessData(message);
-  // const QString text = QString::fromLocal8Bit(mPipeline->readAllStandardOutput());
-  // appendText(message);
 }
 
 void ProcessTab::onReadyReadStandardError(const QByteArray& message)
 {
   handleProcessData(message);
-  // const QString text = QString::fromLocal8Bit(mPipeline->readAllStandardError());
-  // appendText(message);
 }
 
 void ProcessTab::onFinished(int exitCode, QProcess::ExitStatus status)
@@ -86,6 +79,8 @@ void ProcessTab::handleProcessData(const QByteArray& raw)
   cursor.movePosition(QTextCursor::End);
 
   int i = 0;
+  // For more information on ANSI codes, see:
+  // https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
   while (i < buf.size())
   {
     unsigned char ch = buf.at(i);

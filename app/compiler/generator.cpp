@@ -13,32 +13,24 @@ Generator::Generator(std::shared_ptr<SaveInfo> storage, QWidget* parent)
     , mPipeline(new Pipeline(this))
 {
   connect(mPipeline, &Pipeline::openClient, [this](const QString& url) { emit openClient(url); });
+  connect(mPipeline, &Pipeline::finishedLast, [this] { emit generationEnded(); });
 }
 
-void Generator::generate(const QString& outputDir, GeneratorPlugin* generator, const GenerationOptions& option)
+Pipeline* Generator::pipeline() const
+{
+  return mPipeline;
+}
+
+VoidResult Generator::generate(const QString& outputDir, GeneratorPlugin* generator, const GenerationOptions& option)
 {
   if (!mStorage)
-  {
-    LOG_ERROR("No storage available");
-    return;
-  }
-
-  LOG_INFO("======================================");
-  LOG_INFO("Starting generation");
-  // Main generation loop, we need to:
-  // For each component:
-  //    1. Find all starting points
-  //    2. Define the functions
-  //    3. Write the computations
-  //    4. Connect the callbacks
-  QString text = generator->generateCode(outputDir, mStorage);
-  // LOG_INFO("Generated code:");
-  // LOG_INFO("%s", qPrintable(text));
-  LOG_INFO("======================================");
+    return VoidResult::Failed("No storage available");
 
   mPipeline->setName(generator->languageName());
 
-  LOG_INFO("Generation done, wrote files to %s", qPrintable(outputDir));
+  QString text = generator->generateCode(outputDir, mStorage);
+
+  // LOG_INFO("Generation done, wrote files to %s", qPrintable(outputDir));
 
   // Move these commands to the plugin interface
   QStringList generationOutput = {};
@@ -46,37 +38,30 @@ void Generator::generate(const QString& outputDir, GeneratorPlugin* generator, c
 
   auto result = generatePipeline(outputDir, generatedFiles, generationOutput);
   if (!result.IsSuccess())
-  {
-    LOG_ERROR("Failed to prepare the generation pipeline: %s", result.ErrorMessage().c_str());
-    return;
-  }
+    return VoidResult::Failed("Failed to prepare the generation pipeline: " + result.ErrorMessage());
 
   if (option.pipeline == Types::GenerationOptions::GenerateVerify)
   {
     QStringList verificationOutput = {};
     auto verify = verifyPipeline(generationOutput, verificationOutput);
     if (!verify.IsSuccess())
-    {
-      LOG_ERROR("Failed to prepare the verification pipeline: %s", verify.ErrorMessage().c_str());
-      return;
-    }
+      return VoidResult::Failed("Failed to prepare the verification pipeline: " + verify.ErrorMessage());
   }
   else if (option.pipeline == Types::GenerationOptions::GenerateSimulate)
   {
     QStringList simulationOutput = {};
     auto simulate = simulatePipeline(generationOutput, simulationOutput);
     if (!simulate.IsSuccess())
-    {
-      LOG_ERROR("Failed to prepare the simlation pipeline: %s", simulate.ErrorMessage().c_str());
-      return;
-    }
+      return VoidResult::Failed("Failed to prepare the simlation pipeline: " + simulate.ErrorMessage());
   }
 
   emit generationStarted(mPipeline);
 
   auto ran = mPipeline->start();
   if (!ran.IsSuccess())
-    LOG_ERROR("Failed to run ipeline: %s", ran.ErrorMessage().c_str());
+    return VoidResult::Failed("Failed to run pipeline: " + ran.ErrorMessage());
+
+  return VoidResult();
 }
 
 VoidResult Generator::generatePipeline(const QString& outputDir, const QStringList& input, QStringList& output)
