@@ -26,6 +26,7 @@
 #include "elements/flow.h"
 #include "elements/node.h"
 #include "library_container.h"
+#include "local_server_tab.h"
 #include "logging.h"
 #include "plugin_manager.h"
 #include "process_tab.h"
@@ -180,6 +181,7 @@ void MainWindow::bind()
   connect(mFlowMenu, &FlowMenu::flowRemoved, rootCanvas(), &Canvas::onFlowRemoved);
 
   connect(mGenerator, &Generator::generationStarted, this, &MainWindow::addProcessTab);
+  connect(mGenerator, &Generator::openClient, this, &MainWindow::addBrowserTab);
   bindCanvas();
 }
 
@@ -600,7 +602,7 @@ void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
 void MainWindow::addProcessTab(Pipeline* pipeline)
 {
   auto* tab = new ProcessTab(pipeline, mCanvasPanel);  // or mCanvasPanel, or your execution tab widget
-  mCanvasPanel->addTab(tab, pipeline->name() + ": " + tr("Runnin"));
+  mCanvasPanel->addTab(tab, pipeline->name() + ": " + tr("Running"));
   mCanvasPanel->setCurrentWidget(tab);
 
   // Update tab text on finish (optional)
@@ -610,6 +612,15 @@ void MainWindow::addProcessTab(Pipeline* pipeline)
             if (idx >= 0)
               mCanvasPanel->setTabText(idx, pipeline->name() + ": " + QString(exitCode == 0 ? tr("Done") : tr("Error (%1)").arg(exitCode)));
           });
+}
+
+void MainWindow::addBrowserTab(const QString& url)
+{
+  auto* tab = new LocalServerTab(mCanvasPanel);  // or wherever
+  mCanvasPanel->addTab(tab, url);
+  mCanvasPanel->setCurrentWidget(tab);
+
+  tab->connectToServer(url);
 }
 
 void MainWindow::onFlowRemoved(const QString& flowId, NodeItem* node)

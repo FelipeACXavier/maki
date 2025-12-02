@@ -12,6 +12,7 @@ Generator::Generator(std::shared_ptr<SaveInfo> storage, QWidget* parent)
     , mStorage(storage)
     , mPipeline(new Pipeline(this))
 {
+  connect(mPipeline, &Pipeline::openClient, [this](const QString& url) { emit openClient(url); });
 }
 
 void Generator::generate(const QString& outputDir, GeneratorPlugin* generator, const GenerationOptions& option)
@@ -40,67 +41,63 @@ void Generator::generate(const QString& outputDir, GeneratorPlugin* generator, c
   LOG_INFO("Generation done, wrote files to %s", qPrintable(outputDir));
 
   // Move these commands to the plugin interface
-  if (option.pipeline == Types::GenerationOptions::Generate)
-  {
-    auto generatedFiles = generator->generatedFiles();
-    auto result = generatePipeline(generatedFiles, outputDir);
-    if (!result.IsSuccess())
-    {
-      LOG_ERROR("Failed to prepare the generation pipeline: %s", result.ErrorMessage().c_str());
-      return;
-    }
+  QStringList generationOutput = {};
+  auto generatedFiles = generator->generatedFiles();
 
-    emit generationStarted(mPipeline);
-    auto ran = mPipeline->start();
-    if (!ran.IsSuccess())
-      LOG_ERROR("Failed to run ipeline: %s", ran.ErrorMessage().c_str());
+  auto result = generatePipeline(outputDir, generatedFiles, generationOutput);
+  if (!result.IsSuccess())
+  {
+    LOG_ERROR("Failed to prepare the generation pipeline: %s", result.ErrorMessage().c_str());
+    return;
   }
-  else if (option.pipeline == Types::GenerationOptions::GenerateVerify)
-  {
-    auto generatedFiles = generator->generatedFiles();
-    auto result = generatePipeline(generatedFiles, outputDir);
-    if (!result.IsSuccess())
-    {
-      LOG_ERROR("Failed to prepare the generation pipeline: %s", result.ErrorMessage().c_str());
-      return;
-    }
 
-    auto verify = verifyPipeline(outputDir);
+  if (option.pipeline == Types::GenerationOptions::GenerateVerify)
+  {
+    QStringList verificationOutput = {};
+    auto verify = verifyPipeline(generationOutput, verificationOutput);
     if (!verify.IsSuccess())
     {
       LOG_ERROR("Failed to prepare the verification pipeline: %s", verify.ErrorMessage().c_str());
       return;
     }
-
-    emit generationStarted(mPipeline);
-    auto ran = mPipeline->start();
-    if (!ran.IsSuccess())
-      LOG_ERROR("Failed to run ipeline: %s", ran.ErrorMessage().c_str());
   }
-  else
+  else if (option.pipeline == Types::GenerationOptions::GenerateSimulate)
   {
+    QStringList simulationOutput = {};
+    auto simulate = simulatePipeline(generationOutput, simulationOutput);
+    if (!simulate.IsSuccess())
+    {
+      LOG_ERROR("Failed to prepare the simlation pipeline: %s", simulate.ErrorMessage().c_str());
+      return;
+    }
   }
+
+  emit generationStarted(mPipeline);
+
+  auto ran = mPipeline->start();
+  if (!ran.IsSuccess())
+    LOG_ERROR("Failed to run ipeline: %s", ran.ErrorMessage().c_str());
 }
 
-VoidResult Generator::generatePipeline(const QStringList& files, const QString& outputDir)
+VoidResult Generator::generatePipeline(const QString& outputDir, const QStringList& input, QStringList& output)
 {
-  LOG_INFO("Running generation");
+  LOG_INFO("Preparing generation");
 
   // Make sure the directory exists
   QDir dir = QDir(outputDir + "/generated");
   if (!dir.exists())
     dir.mkpath(".");
 
-  for (const auto& file : files)
+  for (const auto& file : input)
   {
-    LOG_INFO("Will generate: %s", qPrintable(file));
+    LOG_DEBUG("Will generate from file: %s", qPrintable(file));
     const QString command = "java";
     const QStringList arguments = {
         "-jar",
         "/home/ubuntu/rascal-0.40.9.jar",
-        "Main.rsc",                // Entrypoint for KODA
-        file,                      // Input
-        outputDir + "/generated",  // Output
+        "Main.rsc",          // Entrypoint for KODA
+        file,                // Input
+        dir.absolutePath(),  // Output
     };
 
     QProcess* generate = new QProcess(this);
@@ -111,36 +108,69 @@ VoidResult Generator::generatePipeline(const QStringList& files, const QString& 
     mPipeline->add(generate, Pipeline::OnFail::STOP);
   }
 
+  output.append(dir.absolutePath());
+
   return VoidResult();
 }
 
-VoidResult Generator::verifyPipeline(const QString& outputDir)
+VoidResult Generator::verifyPipeline(const QStringList& input, QStringList& output)
 {
-  LOG_INFO("Running verification");
+  LOG_INFO("Preparing verification");
 
-  QDir dir(outputDir + "/generated");
-  QStringList files = dir.entryList(QDir::Files | QDir::NoDotAndDotDot);
-
-  QStringList fullPaths;
-  for (const QString& f : files)
+  for (const auto& folder : input)
   {
-    auto fullPath = dir.absoluteFilePath(f);
-    LOG_INFO("Will verify: %s", qPrintable(fullPath));
+    QDir dir(folder);
+    QStringList files = dir.entryList(QDir::Files | QDir::NoDotAndDotDot);
 
-    const QString command = "dzn";
-    const QStringList arguments = {"verify", fullPath};
+    QStringList fullPaths;
+    for (const QString& f : files)
+    {
+      auto fullPath = dir.absoluteFilePath(f);
+      LOG_INFO("Will verify file: %s", qPrintable(fullPath));
 
-    QProcess* generate = new QProcess(this);
-    generate->setProgram(command);
-    generate->setArguments(arguments);
+      const QString command = "dzn";
+      const QStringList arguments = {"verify", fullPath};
 
-    mPipeline->add(generate, Pipeline::OnFail::STOP);
+      QProcess* generate = new QProcess(this);
+      generate->setProgram(command);
+      generate->setArguments(arguments);
+
+      mPipeline->add(generate, Pipeline::OnFail::STOP);
+    }
   }
 
   return VoidResult();
 }
 
-VoidResult Generator::simulatePipeline()
+VoidResult Generator::simulatePipeline(const QStringList& input, QStringList& output)
 {
+  LOG_INFO("Preparing simulation");
+
+  for (const auto& folder : input)
+  {
+    QDir dir(folder);
+    QStringList files = dir.entryList(QDir::Files | QDir::NoDotAndDotDot);
+
+    QStringList fullPaths;
+    for (const QString& f : files)
+    {
+      auto fullPath = dir.absoluteFilePath(f);
+      if (!fullPath.contains("_task"))
+        continue;
+
+      LOG_INFO("Will simulate: %s", qPrintable(fullPath));
+
+      const QString command = "ide";
+      const QStringList arguments = {"simulate", fullPath};
+
+      QProcess* generate = new QProcess(this);
+      generate->setProgram(command);
+      generate->setArguments(arguments);
+
+      mPipeline->add(generate, Pipeline::OnFail::STOP, "http://localhost:3000/trace");
+      output.append(fullPath);
+    }
+  }
+
   return VoidResult();
 }

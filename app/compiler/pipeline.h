@@ -13,12 +13,14 @@ public:
   enum class OnFail
   {
     STOP = 0,
-    CONTINUE
+    CONTINUE,
+    OPEN_BROWSER
   };
 
   Pipeline(QWidget* parent = nullptr);
 
   VoidResult add(QProcess* process, OnFail onFail);
+  VoidResult add(QProcess* process, OnFail onFail, const QString& options);
   VoidResult start();
 
   QString name() const;
@@ -29,9 +31,11 @@ signals:
   void startingProcess(const QString& process, const QStringList& arguments);
   void finished(int exitCode, QProcess::ExitStatus status);
   void finishedLast();
-  void readyReadStandardOutput(const QString& message);
-  void readyReadStandardError(const QString& message);
+  void readyReadStandardOutput(const QByteArray& message);
+  void readyReadStandardError(const QByteArray& message);
   void errorOccurred(QProcess::ProcessError error);
+
+  void openClient(const QString& url);
 
 private slots:
   void onReadyReadStandardOutput();
@@ -42,8 +46,9 @@ private slots:
 private:
   struct PipelineProcess
   {
-    QProcess* process;
-    OnFail onFail;
+    QProcess* process = nullptr;
+    OnFail onFail = OnFail::STOP;
+    QString options = "";
   };
 
   QString mName;
@@ -51,4 +56,5 @@ private:
   QVector<PipelineProcess> mProcesses;
 
   void startNextOrEnd(int exitCode, QProcess::ExitStatus status);
+  bool handleInputData(QByteArray& data) const;
 };

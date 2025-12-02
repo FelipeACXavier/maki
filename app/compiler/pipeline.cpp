@@ -1,17 +1,18 @@
 #include "pipeline.h"
 
 #include <QProcess>
+#include <QRegularExpression>
 #include <QStandardPaths>
 
 #include "logging.h"
 
 static const int SUCCESS = 0;
-static const int FAILURE = -1;
+static const QRegularExpression ansiRe("\x1B\\[[0-9;?]*[ -/]*[@-~]", QRegularExpression::DontCaptureOption);
 
 Pipeline::Pipeline(QWidget* parent)
     : QWidget(parent)
     , mName("")
-    , mRunningProcess({nullptr, OnFail::STOP})
+    , mRunningProcess({nullptr, OnFail::STOP, ""})
 {
 }
 
@@ -41,6 +42,17 @@ VoidResult Pipeline::add(QProcess* process, OnFail onFail)
   return VoidResult();
 }
 
+VoidResult Pipeline::add(QProcess* process, OnFail onFail, const QString& options)
+{
+  auto result = add(process, onFail);
+  if (!result.IsSuccess())
+    return result;
+
+  mProcesses.last().options = options;
+
+  return VoidResult();
+}
+
 VoidResult Pipeline::start()
 {
   if (mProcesses.isEmpty())
@@ -52,6 +64,9 @@ VoidResult Pipeline::start()
 
   emit startingProcess(name, args);
   mRunningProcess.process->start();
+
+  // This makes the ide work
+  mRunningProcess.process->closeWriteChannel();
 
   if (!mRunningProcess.process->waitForStarted())
     LOG_WARNING("Command not found or not executable!");
@@ -71,16 +86,8 @@ void Pipeline::startNextOrEnd(int exitCode, QProcess::ExitStatus status)
   }
 }
 
-void Pipeline::onReadyReadStandardOutput()
+bool Pipeline::handleInputData(QByteArray& data) const
 {
-  if (!mRunningProcess.process)
-  {
-    LOG_WARNING("Process ready to read stdout, but there are no processes running");
-    return;
-  }
-
-  QByteArray data = mRunningProcess.process->readAllStandardOutput();
-
   // Look for the DSR query: ESC [ 6 n
   const QByteArray dsrQuery = "\x1b[6n";
   if (data.contains(dsrQuery))
@@ -91,11 +98,27 @@ void Pipeline::onReadyReadStandardOutput()
     // Fake a reply: say cursor is at row 1, col 1
     QByteArray reply = "\x1b[1;1R";
     mRunningProcess.process->write(reply);
+    return false;
+  }
+
+  // Remove all ansi codes
+  // QString text = QString::fromLocal8Bit(data);
+  // text.remove(ansiRe);
+  return true;
+}
+
+void Pipeline::onReadyReadStandardOutput()
+{
+  if (!mRunningProcess.process)
+  {
+    LOG_WARNING("Process ready to read stdout, but there are no processes running");
     return;
   }
 
-  const QString text = QString::fromLocal8Bit(data);
-  emit readyReadStandardOutput(text);
+  QByteArray data = mRunningProcess.process->readAllStandardOutput();
+
+  if (handleInputData(data))
+    emit readyReadStandardOutput(data);
 }
 
 void Pipeline::onReadyReadStandardError()
@@ -106,8 +129,11 @@ void Pipeline::onReadyReadStandardError()
     return;
   }
 
-  const QString text = QString::fromLocal8Bit(mRunningProcess.process->readAllStandardError());
-  emit readyReadStandardError(text);
+  QByteArray data = mRunningProcess.process->readAllStandardError();
+  // QString text = handleInputData(data);
+
+  if (handleInputData(data))
+    emit readyReadStandardError(data);
 }
 
 void Pipeline::onFinished(int exitCode, QProcess::ExitStatus status)
@@ -118,7 +144,14 @@ void Pipeline::onFinished(int exitCode, QProcess::ExitStatus status)
     return;
   }
 
+  LOG_DEBUG("Process finished: %s", qPrintable(mRunningProcess.process->program()));
   emit finished(exitCode, status);
+
+  if (!mRunningProcess.options.isEmpty())
+  {
+    LOG_DEBUG("Opening client: %s", qPrintable(mRunningProcess.options));
+    emit openClient(mRunningProcess.options);
+  }
 
   mProcesses.removeFirst();
 

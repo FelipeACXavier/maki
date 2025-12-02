@@ -1,4 +1,4 @@
-#include "server_tab.h"
+#include "local_server_tab.h"
 
 #include <QHBoxLayout>
 #include <QLabel>
@@ -31,10 +31,10 @@ LocalServerTab::LocalServerTab(QWidget* parent)
   connect(m_view, &QWebEngineView::loadFinished, this, &LocalServerTab::onLoadFinished);
 }
 
-void LocalServerTab::connectToServer(const QString& host, quint16 port)
+void LocalServerTab::connectToServer(const QString& host)
 {
-  const QUrl url(QStringLiteral("http://%1:%2").arg(host).arg(port));
-  setUrl(url);
+  // const QUrl url(QStringLiteral("http://%1:%2").arg(host).arg(port));
+  setUrl(host);
 }
 
 void LocalServerTab::setUrl(const QUrl& url)

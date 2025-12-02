@@ -80,6 +80,7 @@ private:
   void handleLogging(const QString& message, QTextBrowser* textBrowser);
 
   void addProcessTab(Pipeline* pipeline);
+  void addBrowserTab(const QString& url);
 
   // ================================================
   // Actions

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QProcess>
+#include <QTextCharFormat>
 #include <QWidget>
 
 class QTextBrowser;
@@ -17,16 +18,23 @@ signals:
   void processFinished(int exitCode, QProcess::ExitStatus status);
 
 private slots:
-  void onReadyReadStandardOutput(const QString& message);
-  void onReadyReadStandardError(const QString& message);
   void onStartingProcess(const QString& process, const QStringList& arguments);
   void onFinished(int exitCode, QProcess::ExitStatus status);
   void onFinishedLast();
+  void onReadyReadStandardOutput(const QByteArray& message);
+  void onReadyReadStandardError(const QByteArray& message);
   void onErrorOccurred(QProcess::ProcessError error);
 
 private:
   QTextBrowser* mOutput;
   Pipeline* mPipeline;
+  QTextCharFormat mCurrentFormat;
+
+  int mOverwriteNextLine = 0;  // after ESC[1F]
 
   void appendText(const QString& text);
+
+  void handleProcessData(const QByteArray& raw);
+  void applySgr(const QList<int>& codes);
+  void deleteLastLine(QTextCursor& cursor);
 };

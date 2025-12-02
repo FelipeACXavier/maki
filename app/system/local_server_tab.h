@@ -15,7 +15,7 @@ public:
   explicit LocalServerTab(QWidget* parent = nullptr);
 
   // Convenience: set host/port directly
-  void connectToServer(const QString& host, quint16 port);
+  void connectToServer(const QString& host);
 
   // Or pass a full URL if you prefer
   void setUrl(const QUrl& url);

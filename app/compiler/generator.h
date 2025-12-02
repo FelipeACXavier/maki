@@ -21,12 +21,13 @@ public:
 
 signals:
   void generationStarted(Pipeline* pipeline);
+  void openClient(const QString& url);
 
 private:
   const std::shared_ptr<SaveInfo> mStorage;
   Pipeline* mPipeline;
 
-  VoidResult generatePipeline(const QStringList& files, const QString& outputDir);
-  VoidResult verifyPipeline(const QString& outputDir);
-  VoidResult simulatePipeline();
+  VoidResult generatePipeline(const QString& outputDir, const QStringList& input, QStringList& output);
+  VoidResult verifyPipeline(const QStringList& input, QStringList& output);
+  VoidResult simulatePipeline(const QStringList& input, QStringList& output);
 };
