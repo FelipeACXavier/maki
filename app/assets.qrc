@@ -56,6 +56,8 @@
     <file alias="reject.svg">assets/icons/fontawesome/svgs/solid/circle-xmark.svg</file>
     <file alias="caret-right.svg">assets/icons/fontawesome/svgs/solid/caret-right.svg</file>
 
-    <file alias="maki.jpeg">assets/maki.jpeg</file>
+  </qresource>
+  <qresource prefix="/app_icons">
+    <file alias="maki.png">assets/app_icon/maki_icon_only.png</file>
   </qresource>
 </RCC>

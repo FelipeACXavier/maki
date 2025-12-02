@@ -195,29 +195,53 @@ void MainWindowlayout::buildCentralPanel()
   mInfoText = new QTextBrowser(mBottomPanel);
   mInfoText->setWordWrapMode(QTextOption::WrapMode::WordWrap);
   mInfoText->setFont(Fonts::Property);
-  mInfoText->setText(
-      "<h2>Welcome to " + Config::APPLICATION_NAME +
-      "</h2>"
+  // mInfoText->setText(
+  //     "<h2>Welcome to " + Config::APPLICATION_NAME +
+  //     "</h2>"
 
-      "<p>"
-      "  MAKI is a low-code platform that helps you design and orchestrate your systems."
-      "</p>"
-      ""
-      "<p><b>To get started:</b></p>"
-      "<ul>"
-      "  <li>Drag a structural block from the palette onto the Canvas.</li>"
-      "  <li>Right-click and select \"Edit behavior\"</li>"
-      "  <li>Connect blocks to define the data and control flow.</li>"
-      "  <li>Double-click a block to inspect or adjust its properties.</li>"
-      "</ul>"
-      ""
-      "<p>"
-      "  For extra help, hover over any control to see a tooltip, or explore the <b>Help</b> menu in the navigation bar."
-      "</p>"
-      ""
-      "<p style='color:#888; font-size: 16px'>"
-      "  Tip: You can always reset the layout or theme from the <b>Settings</b> menu if things get messy."
-      "</p>");
+  //     "<p>"
+  //     "  MAKI is a low-code platform that helps you design and orchestrate your systems."
+  //     "</p>"
+  //     ""
+  //     "<p><b>To get started:</b></p>"
+  //     "<ul>"
+  //     "  <li>Drag a structural block from the palette onto the Canvas.</li>"
+  //     "  <li>Right-click and select \"Edit behavior\"</li>"
+  //     "  <li>Connect blocks to define the data and control flow.</li>"
+  //     "  <li>Double-click a block to inspect or adjust its properties.</li>"
+  //     "</ul>"
+  //     ""
+  //     "<p>"
+  //     "  For extra help, hover over any control to see a tooltip, or explore the <b>Help</b> menu in the navigation bar."
+  //     "</p>"
+  //     ""
+  //     "<p style='color:#888; font-size: 16px'>"
+  //     "  Tip: You can always reset the layout or theme from the <b>Settings</b> menu if things get messy."
+  //     "</p>");
+  mInfoText->setHtml(
+      "<table width='100%'><tr>"
+      "  <td style='vertical-align:top;'>"
+      "    <h2>Welcome to " +
+      Config::APPLICATION_NAME +
+      "</h2>"
+      "    <p>MAKI is a low-code platform that helps you design and orchestrate your systems.</p>"
+      "    <p><b>To get started:</b></p>"
+      "    <ul>"
+      "      <li>Drag a structural block from the palette onto the Canvas.</li>"
+      "      <li>Right-click and select \"Edit behavior\".</li>"
+      "      <li>Connect blocks to define the data and control flow.</li>"
+      "      <li>Double-click a block to inspect or adjust its properties.</li>"
+      "    </ul>"
+      "    <p>For extra help, hover over any control to see a tooltip, or explore the <b>Help</b> menu.</p>"
+      "    <p style='color:#888; font-size: 16px'>"
+      "      Tip: You can always reset the layout or theme from the <b>Settings</b> menu if things get messy."
+      "    </p>"
+      "  </td>"
+      // IMAGE COLUMN
+      "  <td style='text-align: right; vertical-align: top; padding-top: 10px; padding-right: 10px'>"
+      "    <img src=':/app_icons/maki.png' width='100' style='border-radius:80px; box-shadow: 0px 3px 8px rgba(0,0,0,0.25);' />"
+      "  </td>"
+      "</tr></table>");
 
   mBottomPanel->addTab(mInfoText, tr("Info"));
   mIcons.append({mBottomPanel->tabBar(), ":/icons/info.svg", 0});

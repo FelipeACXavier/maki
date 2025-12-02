@@ -39,6 +39,8 @@ int main(int argc, char* argv[])
   QCoreApplication::setApplicationName(Config::APPLICATION_NAME);
   QCoreApplication::setApplicationVersion(Config::VERSION);
 
+  app.setWindowIcon(QIcon(":/app_icons/maki.png"));
+
   loadApplicationFonts();
 
   QApplication::setFont(Fonts::Main);
