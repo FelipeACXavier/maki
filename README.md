@@ -1,6 +1,6 @@
 # MAKI
 
-<img src="./app/assets/app_icon/maki_icon.png" style="height: 150px; float: right; margin: 0 15px 15px 15px;">
+<img aligh="right" src="./app/assets/app_icon/maki_icon.png" style="height: 150px; float: right; margin: 0 15px 15px 15px;">
 
 <div style="text-align: justify; text-justify: inter-word;">
 
