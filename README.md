@@ -1,9 +1,15 @@
 # MAKI
 
+<img src="./app/assets/app_icon/maki_icon.png" style="height: 150px; float: right; margin: 0 15px 15px 15px;">
+
+<div style="text-align: justify; text-justify: inter-word;">
+
 [![Build dev Docker image](https://github.com/FelipeACXavier/maki/actions/workflows/build-dev-image.yaml/badge.svg)](https://github.com/FelipeACXavier/maki/actions/workflows/build-dev-image.yaml)
 [![CI](https://github.com/FelipeACXavier/maki/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/FelipeACXavier/maki/actions/workflows/ci.yml)
 
-MAKI is a low-code platform that targets robotic systems. It is build on top of KODA and aims to simplify the creation of formally verified ROS2 systems. MAKI is still in development so expect breaking changes now and then.
+MAKI is a low-code platform that targets robotic systems. It is build on top of [KODA](https://github.com/FelipeACXavier/KODA) and aims to simplify the creation of formally verified ROS2 systems. MAKI is still in development so expect breaking changes now and then. For more information, check out the documentation **(add ink)** and these papers **(add links)**.
+
+</div>
 
 ## Installation
 
