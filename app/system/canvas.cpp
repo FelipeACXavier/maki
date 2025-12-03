@@ -567,6 +567,8 @@ void Canvas::copySelectedItems()
 
     // Save relative position
     auto info = node->saveInfo();
+    LOG_DEBUG("Selected %s (%.2f %.2f)", qPrintable(node->id()), info.position.x(), info.position.y());
+
     mCopiedNodes.append({info, mousePosition - info.position});
 
     // Make sure the item is not selected after copying
@@ -579,14 +581,19 @@ void Canvas::pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode
   for (const auto& copy : copiedNodes)
   {
     auto infoPtr = std::make_shared<NodeSaveInfo>(copy.info);
+
+    QPointF newParentPosition = {0.0, 0.0};
+    if (parentNode)
+      newParentPosition = parentNode->saveInfo().position;
+
     auto node = createNode(NodeCreation::Pasting,
                            infoPtr,
-                           absolute ? mousePosition - copy.posRelativeToMouse : copy.info.position,
+                           absolute ? mousePosition - copy.posRelativeToMouse : (newParentPosition + (copy.info.position - copy.posRelativeToMouse)),
                            parentNode);
 
     QList<CopiedNode> children;
     for (const auto& child : copy.info.children)
-      children.push_back({*child});
+      children.push_back({*child, copy.info.position});
 
     pasteCopiedItems(mousePosition, node, children, false);
     selectNode(node, false);
@@ -721,21 +728,17 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
   }
 
   // If no parent is defined, we must create a "base node" in the canvas
-  NodeItem* node = nullptr;
   auto nodeId = creation == NodeCreation::Pasting ? "" : info->id;
+  NodeItem* node = new NodeItem(nodeId, info, position, config);
+
   if (parent == nullptr)
   {
     if (type() == Types::LibraryTypes::STRUCTURAL)
       mStorage->structuralNodes.append(info);
-
-    node = new NodeItem(nodeId, info, position, config);
   }
-  // If it is defined, we simply add a child node to the parent
   else
   {
-    QPointF pos = creation == NodeCreation::Dropping ? parent->mapFromScene(position) : position;
-    node = new NodeItem(nodeId, info, pos, config, parent);
-
+    node->addParent(parent);
     parent->addChild(node, info);
   }
 
@@ -754,11 +757,12 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
   node->start();
 
   // Do not add child nodes to the scene
-  if (parent == nullptr)
-    addItem(node);
+  // if (parent == nullptr)
+  // All nodes are children of the canvas
+  addItem(node);
 
-  if (creation != NodeCreation::Populating)
-    updateParent(node, info, true);
+  // if (creation != NodeCreation::Populating)
+  //   updateParent(node, info, true);
 
   emit nodeAdded(node);
 

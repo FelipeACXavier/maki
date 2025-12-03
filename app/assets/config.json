@@ -1,11 +1,6 @@
 {
   "libraries": [
     "generic",
-    "utilities",
-    "math",
-    "grpc",
-    "ros2",
-    "serial",
     "mission"
   ],
   "layout": {

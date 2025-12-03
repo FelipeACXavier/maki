@@ -21,9 +21,10 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
     : NodeBase((!nodeId.isEmpty() && !nodeId.isNull()) ? nodeId : QUuid::createUuid().toString(), info->nodeId, nodeConfig, parent)
     , mStorage(info)
     , mBehaviour(nullptr)
+    , mParentNode(nullptr)
     , mChildrenNodes({})
     , mBaseScale(config()->libraryType == Types::LibraryTypes::STRUCTURAL ? mStorage->scale : 1.0)
-    , mSize(mStorage->size)  // / baseScale())
+    , mSize(mStorage->size)
 {
   setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
   setCacheMode(DeviceCoordinateCache);
@@ -35,14 +36,6 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
 
   // Children are created by the canvas, so we must make sure that there is no trailing children information
   mStorage->children = {};
-
-  if (parent && parent->type() == Types::NODE)
-  {
-    mStorage->parentId = static_cast<NodeItem*>(parent)->id();
-    setZValue(parent->zValue() + 2);
-  }
-
-  LOG_INFO("Created node with zvalue: %f", zValue());
 
   for (const auto& property : config()->properties)
   {
@@ -81,7 +74,7 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
   }
 
   updatePosition(snapToGrid(initialPosition - boundingRect().center(), Config::GRID_SIZE));
-  // updatePosition(initialPosition);
+  mLastPosition = pos();
 
   LOG_DEBUG("%s created at: (%f, %f) with size (%f, %f) and scale %f", qPrintable(id()), pos().x(), pos().y(), mSize.width(), mSize.height(), baseScale());
 }
@@ -289,9 +282,21 @@ void NodeItem::setEvent(int index, const FlowConfig& event)
   //   mStorage->events.push_back(event);
 }
 
-QVector<INode*> NodeItem::children() const
+QVector<NodeItem*> NodeItem::children() const
 {
   return mChildrenNodes;
+}
+
+void NodeItem::addParent(NodeItem* parent)
+{
+  if (!parent)
+    return;
+
+  mParentNode = parent;
+  mStorage->parentId = parent->id();
+  setZValue(parent->zValue() + 2);
+
+  fitInsideParent(20);
 }
 
 void NodeItem::addChild(NodeItem* node, std::shared_ptr<NodeSaveInfo> info)
@@ -308,12 +313,9 @@ void NodeItem::childRemoved(NodeItem* child)
   mChildrenNodes.removeAll(child);
 }
 
-INode* NodeItem::parentNode() const
+NodeItem* NodeItem::parentNode() const
 {
-  if (parentItem() && parentItem()->type() == Types::NODE)
-    return static_cast<NodeItem*>(parentItem());
-
-  return nullptr;
+  return mParentNode;
 }
 
 QString NodeItem::behaviour() const
@@ -326,40 +328,121 @@ HelpConfig NodeItem::help() const
   return config()->help;
 }
 
+QRectF NodeItem::parentInnerSceneRect(qreal padding) const
+{
+  if (!parentNode())
+    return {};
+
+  QRectF r = parentNode()->mapRectToScene(parentNode()->boundingRect());
+  return r.adjusted(padding, padding, -padding, -padding);
+}
+
+// Apply a new logical size to this node in one place
+void NodeItem::applySize(const QSizeF& size)
+{
+  if (size == mSize)
+    return;
+
+  mSize = size;
+  mStorage->size = mSize;
+
+  // Same scale logic as before
+  mStorage->scale = qMax(config()->body.width / mSize.width(), config()->body.height / mSize.height());
+
+  qreal newFontSize = qMax(Fonts::BaseSize, mSize.width() / Fonts::BaseFactor);
+
+  setLabelSize(newFontSize, mSize);
+  prepareGeometryChange();
+  update();
+}
+
+// Clamp this node's position so its scene rect stays inside `inner`
+QPointF NodeItem::clampPosInside(const QRectF& inner, const QRectF& childSceneRect) const
+{
+  QPointF posScene = pos();
+  QPointF offset = childSceneRect.topLeft() - posScene;  // pos() → top-left
+
+  QPointF newPos = posScene;
+
+  const qreal minX = inner.left() - offset.x();
+  const qreal maxX = inner.right() - (childSceneRect.width() + offset.x());
+  const qreal minY = inner.top() - offset.y();
+  const qreal maxY = inner.bottom() - (childSceneRect.height() + offset.y());
+
+  newPos.setX(std::clamp(newPos.x(), minX, maxX));
+  newPos.setY(std::clamp(newPos.y(), minY, maxY));
+
+  return newPos;
+}
+
+QSizeF NodeItem::clampSize(qreal width, qreal height) const
+{
+  if (!parentNode())
+    return QSizeF(width, height);
+
+  QRectF inner = parentInnerSceneRect(10);
+  if (!inner.isValid())
+    return QSizeF(width, height);
+
+  // Where is the child now?
+  QRectF childSceneRect = mapRectToScene(boundingRect());
+  QPointF currentTopLeft = childSceneRect.topLeft();
+
+  // Max width/height keeping bottom-right within inner
+  qreal maxWidth = inner.right() - currentTopLeft.x();
+  qreal maxHeight = inner.bottom() - currentTopLeft.y();
+
+  qreal clampedW = qMin(width, qMax<qreal>(0.0, maxWidth));
+  qreal clampedH = qMin(height, qMax<qreal>(0.0, maxHeight));
+
+  return QSizeF(clampedW, clampedH);
+}
+
+void NodeItem::fitInsideParent(qreal padding)
+{
+  QRectF inner = parentInnerSceneRect(padding);
+  if (!inner.isValid())
+    return;
+
+  // 1) Clamp size so we're not bigger than the inner rect
+  QSizeF currentSize = mSize;
+  qreal maxW = inner.width();
+  qreal maxH = inner.height();
+
+  maxW = qMax(maxW, Config::MINIMUM_NODE_SIZE);
+  maxH = qMax(maxH, Config::MINIMUM_NODE_SIZE);
+
+  qreal newW = qMin(currentSize.width(), maxW);
+  qreal newH = qMin(currentSize.height(), maxH);
+
+  if (newW != currentSize.width() || newH != currentSize.height())
+    applySize(QSizeF(newW, newH));
+
+  // 2) Clamp position so we're fully inside `inner`
+  QRectF childSceneRect = mapRectToScene(boundingRect());
+  QPointF newPos = clampPosInside(inner, childSceneRect);
+  setPos(newPos);
+}
+
 void NodeItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
   if (mIsResizing && (event->modifiers() & Qt::ShiftModifier))
   {
     QPointF delta = event->pos() - mResizeStartMousePos;
+
     qreal newWidth = qMax(Config::MINIMUM_NODE_SIZE, mResizeStartSize.width() + delta.x());
     qreal newHeight = qMax(Config::MINIMUM_NODE_SIZE, mResizeStartSize.height() + delta.y());
 
-    // Clamp size to parent
-    if (parentItem())
+    QSizeF clampedSize = clampSize(newWidth, newHeight);
+
+    applySize(clampedSize);
+
+    // After the parent resizes, keep children inside
+    for (auto* child : mChildrenNodes)
     {
-      QRectF parentBounds = dynamic_cast<NodeItem*>(parentItem())->boundingRect();
-      QPointF localTopLeft = pos();
-
-      // Clamp width and height so the bottom-right stays inside parent
-      qreal maxWidth = parentBounds.right() - localTopLeft.x();
-      qreal maxHeight = parentBounds.bottom() - localTopLeft.y();
-
-      newWidth = qMin(newWidth, maxWidth);
-      newHeight = qMin(newHeight, maxHeight);
+      auto* nodeChild = static_cast<NodeItem*>(child);
+      nodeChild->fitInsideParent(10);
     }
-
-    // Update the scale when the node is resized
-    mStorage->scale = qMax(config()->body.width / newWidth, config()->body.height / newHeight);
-
-    mSize.setWidth(newWidth);
-    mSize.setHeight(newHeight);
-    mStorage->size = mSize;
-
-    qreal newFontSize = qMax(Fonts::BaseSize, mSize.width() / Fonts::BaseFactor);
-
-    setLabelSize(newFontSize, mSize);
-    prepareGeometryChange();
-    update();
   }
   else
   {
@@ -398,35 +481,55 @@ QVariant NodeItem::itemChange(GraphicsItemChange change, const QVariant& value)
 {
   if (change == QGraphicsItem::ItemPositionChange)
   {
-    if (parentNode())
+    if (NodeItem* parent = parentNode())
     {
-      QPointF newPos = value.toPointF();
-      auto parent = dynamic_cast<NodeItem*>(parentNode());
-      QRectF bounds = parent->boundingRect();
+      QPointF newPos = value.toPointF();  // proposed new pos in scene coords
 
-      // Optional: subtract the child's size if you want full containment
-      QRectF childRect = boundingRect();
-      QSizeF childSize = childRect.size();
+      // auto parent = parentNode();
+      // if (parent == nullptr)
+      //   return QGraphicsItem::itemChange(change, value);
 
-      // Clamp position so child stays inside parent
-      newPos.setX(qBound(bounds.left(), newPos.x(), bounds.right() - childSize.width()));
-      newPos.setY(qBound(bounds.top(), newPos.y(), bounds.bottom() - childSize.height()));
+      QRectF parentRect = parent->boundingRect();
+      parentRect = parentRect.adjusted(10, 10, -10, -10);
+      parentRect.translate(parent->pos());
 
-      return newPos;
+      // Child rect in its own coords
+      QRectF childLocalRect = boundingRect();
+
+      // Compute allowed range so childSceneRect stays inside parentRect
+      const qreal minX = parentRect.left();
+      const qreal maxX = parentRect.right() - childLocalRect.width();
+      const qreal minY = parentRect.top();
+      const qreal maxY = parentRect.bottom() - childLocalRect.height();
+
+      // Clamp
+      newPos.setX(std::clamp(newPos.x(), minX, maxX));
+      newPos.setY(std::clamp(newPos.y(), minY, maxY));
+
+      return newPos;  // this replaces the proposed position
     }
   }
   else if (change == QGraphicsItem::ItemPositionHasChanged)
   {
-    updateExtrasPosition();
-    mStorage->position = pos() + boundingRect().center();
+    updatePosition(value.toPointF());
   }
 
   return QGraphicsItem::itemChange(change, value);
 }
 
-void NodeItem::updatePosition(const QPointF& position)
+void NodeItem::updatePosition(const QPointF& newPosition)
 {
-  setPos(position);
+  setPos(newPosition);
+
+  QPointF delta = newPosition - mLastPosition;
+  for (auto* child : mChildrenNodes)
+  {
+    auto childNode = static_cast<NodeItem*>(child);
+    childNode->updatePosition(childNode->pos() + delta);
+  }
+
+  mLastPosition = newPosition;
+
   updateExtrasPosition();
   mStorage->position = pos() + boundingRect().center();
 }
@@ -444,11 +547,11 @@ void NodeItem::deleteNode()
 {
   // If the node has a parent, inform the parent about the deletion
   if (parentNode())
-    dynamic_cast<NodeItem*>(parentNode())->childRemoved(this);
+    parentNode()->childRemoved(this);
 
   auto toDelete = children();
-  for (INode* child : toDelete)
-    dynamic_cast<NodeItem*>(child)->deleteNode();
+  for (NodeItem* child : toDelete)
+    child->deleteNode();
 
   auto transtionsToDelete = transitions();
   for (TransitionItem* transtion : transtionsToDelete)

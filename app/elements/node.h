@@ -7,7 +7,7 @@
 #include <memory>
 
 #include "config.h"
-#include "inode.h"
+// #include "inode.h"
 #include "node_base.h"
 #include "save_info.h"
 #include "transition.h"
@@ -16,7 +16,7 @@
 class Flow;
 class QGraphicsSceneMouseEvent;
 
-class NodeItem : public INode, public NodeBase
+class NodeItem : public NodeBase
 {
 public:
   enum
@@ -37,28 +37,28 @@ public:
   void paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget) override;
 
   HelpConfig help() const;
-  QString nodeName() const override;
-  QString nodeType() const override;
+  QString nodeName() const;
+  QString nodeType() const;
   QString behaviour() const;
   QVector<ControlsConfig> controls() const;
-  QVector<PropertiesConfig> fields() const override;
-  QMap<QString, QVariant> properties() const override;
+  QVector<PropertiesConfig> fields() const;
+  QMap<QString, QVariant> properties() const;
   QVector<PropertiesConfig> configurationProperties() const;
 
-  Types::LibraryTypes function() const override;
+  Types::LibraryTypes function() const;
 
-  QVariant getProperty(const QString& key) const override;
+  QVariant getProperty(const QString& key) const;
   void setProperty(const QString& key, QVariant value);
 
-  PropertiesConfig getField(const QString& key) const override;
+  PropertiesConfig getField(const QString& key) const;
   VoidResult setField(const QString& key, const QJsonObject& value);
   VoidResult setField(const QString& key, const PropertiesConfig& property);
   void removeField(const QString& key);
 
   void renameNode(const QString& name);
 
-  INode* parentNode() const override;
-  QVector<INode*> children() const override;
+  NodeItem* parentNode() const;
+  QVector<NodeItem*> children() const;
 
   QVector<TransitionItem*> transitions() const;
   void addTransition(TransitionItem* transition);
@@ -68,6 +68,7 @@ public:
   void setEvent(int index, const FlowConfig& event);
   QVector<std::shared_ptr<FlowSaveInfo>> events() const;
 
+  void addParent(NodeItem* node);
   void addChild(NodeItem* node, std::shared_ptr<NodeSaveInfo> info);
   void childRemoved(NodeItem* child);
 
@@ -81,6 +82,8 @@ public:
 
   bool canAddTransition() const;
   TransitionConfig nextTransition() const;
+
+  void fitInsideParent(qreal padding);
 
   // "signals":
   std::function<void(NodeItem* item)> nodeDeleted;
@@ -106,14 +109,15 @@ protected:
 private:
   std::shared_ptr<NodeSaveInfo> mStorage;
 
-  INode* mParentNode;
   Flow* mBehaviour;
   QVector<Flow*> mFlows;
-  QVector<INode*> mChildrenNodes;
+  NodeItem* mParentNode;
+  QVector<NodeItem*> mChildrenNodes;
   QVector<TransitionItem*> mTransitions;
 
   qreal mBaseScale;
   QSizeF mSize{0, 0};
+  QPointF mLastPosition{0, 0};
 
   bool mIsResizing{false};
   QPointF mResizeStartMousePos{0, 0};
@@ -121,4 +125,9 @@ private:
 
   void updatePosition(const QPointF& position);
   void updateExtrasPosition();
+
+  void applySize(const QSizeF& size);
+  QSizeF clampSize(qreal width, qreal height) const;
+  QPointF clampPosInside(const QRectF& inner, const QRectF& childSceneRect) const;
+  QRectF parentInnerSceneRect(qreal padding) const;
 };
