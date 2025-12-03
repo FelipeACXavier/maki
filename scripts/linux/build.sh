@@ -13,7 +13,7 @@ function printHelp()
 }
 
 CLEAN=0
-RELEASE=0
+BUILD_TYPE="Debug"
 TARGET="linux"
 SOURCE_DIR=$HOME/maki
 # Use QT version from the single source of truth file
@@ -40,7 +40,7 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
       --release)
-      RELEASE=1
+      BUILD_TYPE="Release"
       shift
       ;;
       *)
@@ -54,6 +54,7 @@ echo "--------------------------------------"
 echo "Running with:"
 echo "  CURR_DIR: `pwd`"
 echo "  QT_VERSION: ${QT_VERSION}"
+echo "  BUILD_TYPE: ${BUILD_TYPE}"
 echo "  TARGET: ${TARGET}"
 echo "  BUILD_PATH: ${BUILD_PATH}"
 echo "  PREFIX_PATH: ${PREFIX_PATH}"
@@ -72,9 +73,10 @@ else
     -DCMAKE_PREFIX_PATH="$PREFIX_PATH" \
     -DCMAKE_INSTALL_PREFIX="$INSTALL_PREFIX" \
     -DLOCAL_QT_PATH="$LOCAL_QT_PATH" \
-    -DLOCAL_PROJECT_PATH="$LOCAL_PROJECT_PATH"
+    -DLOCAL_PROJECT_PATH="$LOCAL_PROJECT_PATH" \
+    -DCMAKE_BUILD_TYPE="$BUILD_TYPE"
 
-  if [ $RELEASE -eq 1 ]; then
+  if [ "$BUILD_TYPE" == "Release" ]; then
     cmake --build "$BUILD_PATH" -j 4 --target deploy-linux
   else
     cmake --build "$BUILD_PATH" -j 4
