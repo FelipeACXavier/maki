@@ -130,7 +130,7 @@ ThemeVars loadThemeVarsFromFile(const QString& filePath)
     }
 
     // Set the corresponding member
-    LOG_DEBUG("Loading %s as value %s", qPrintable(key), qPrintable(value));
+    // LOG_DEBUG("Loading %s as value %s", qPrintable(key), qPrintable(value));
     vars.*(it.value()) = value;
   }
 

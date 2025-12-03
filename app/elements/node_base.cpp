@@ -56,6 +56,14 @@ QRectF NodeBase::boundingRect() const
   return mBounds;
 }
 
+QRectF NodeBase::labelBoundingRect() const
+{
+  if (mLabel != nullptr)
+    return mLabel->boundingRect();
+
+  return QRectF();
+}
+
 QRectF NodeBase::scaledRect() const
 {
   return mScaledBounds;
@@ -196,7 +204,7 @@ void NodeBase::updateLabelPosition()
 
   // Calculate centered position
   qreal x = boundingRect().center().x() - (textBounds.width() / 2);
-  qreal y = type() == NodeItem::Type ? boundingRect().bottom() + 2 : boundingRect().center().y() - (textBounds.height() / 2);
+  qreal y = boundingRect().bottom() + 2;  // type() == NodeItem::Type ? boundingRect().bottom() + 2 : boundingRect().center().y() - (textBounds.height() / 2);
 
   mLabel->setPos(x, y);
 }

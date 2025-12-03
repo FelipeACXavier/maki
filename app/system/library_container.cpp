@@ -4,8 +4,8 @@
 #include <QVBoxLayout>
 
 #include "config.h"
-#include "logging.h"
 #include "elements/draggable.h"
+#include "logging.h"
 
 static const int PADDING = 15;
 
@@ -51,12 +51,14 @@ void LibraryContainer::updateSceneSize()
 
 VoidResult LibraryContainer::addNode(const QString& id, std::shared_ptr<NodeConfig> config)
 {
-  // Create Draggable Items
   DraggableItem* item = new DraggableItem(id, config);
 
   // Center the item in the sidebar and make sure it is below the last item added
   item->setPos(static_cast<int>(viewport()->width() / 2), mLastItemY + PADDING);
-  mLastItemY = item->mapToScene(item->boundingRect().bottomLeft()).y();
+
+  QRectF itemBounds = item->boundingRect();
+  QRectF labelBounds = item->labelBoundingRect();
+  mLastItemY = item->mapToScene(itemBounds.bottomLeft() + labelBounds.bottomLeft()).y();
 
   // Add item to scene
   scene()->addItem(item);
@@ -83,4 +85,3 @@ void LibraryContainer::adjustNodePositions()
     dynamic_cast<DraggableItem*>(item)->adjustWidth(viewport()->width());
   }
 }
-

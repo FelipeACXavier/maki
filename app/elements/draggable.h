@@ -35,8 +35,4 @@ public:
 
 protected:
   void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
-
-private:
-  std::shared_ptr<QPixmap> mPixmap;
-  std::shared_ptr<QGraphicsTextItem> mLabel;
 };

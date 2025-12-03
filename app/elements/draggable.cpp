@@ -21,7 +21,9 @@ DraggableItem::DraggableItem(const QString& nodeId, std::shared_ptr<NodeConfig> 
     setPixmap(icon.scaled(scaledRect().size().toSize() * config()->body.iconScale, Qt::KeepAspectRatio, Qt::SmoothTransformation));
   }
   else
+  {
     setLabel(config()->type, Fonts::BaseSize);
+  }
 }
 
 DraggableItem::~DraggableItem()

@@ -26,6 +26,7 @@ public:
   virtual std::shared_ptr<NodeConfig> config() const;
 
   virtual QRectF boundingRect() const override;
+  virtual QRectF labelBoundingRect() const;
   virtual QRectF scaledRect() const;
   virtual QRectF drawingRect(const QRectF& input) const;
 

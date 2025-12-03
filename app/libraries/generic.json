@@ -6,7 +6,7 @@
       "type": "structure",
       "nodes": [
         {
-          "type": "Component",
+          "type": "System",
           "body": {
             "shape": "Rectangle",
             "textColor": "#FFFFFF",
@@ -20,7 +20,7 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Component"
+              "default": "System"
             },
             {
               "id": "color",
