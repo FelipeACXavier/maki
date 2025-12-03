@@ -16,7 +16,7 @@ input_bg: #1f1f1f
 input_border: #444444
 input_focus_border: #638ecb
 combobox_bg: #3c3f41
-combobox_border: #555555
+control_border: #555555
 combobox_hover_border: #6b90c6
 tab_bg: #3c3f41
 tab_border_color: #444444
@@ -26,3 +26,8 @@ menu_border: #444444
 toolbar_bg: #2c2c2c
 toolbar_border: #444444
 toolbutton_hover_bg: #3c3c3c
+arrow_icon_up: :/icons/arrow-up-dark.svg
+arrow_icon_down: :/icons/arrow-down-dark.svg
+check_icon: :/icons/check-dark.svg
+uncheck_icon: :/icons/uncheck-dark.svg
+limit_icon: :/icons/limit-dark.svg

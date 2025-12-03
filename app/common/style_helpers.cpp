@@ -111,3 +111,11 @@ QString getDirPathFor(const QString& path)
   return QCoreApplication::applicationDirPath() + "/../" + path;
 #endif
 }
+
+void applyStyle(QWidget* widget, const QString& style)
+{
+  widget->setStyleSheet(style);
+  widget->style()->unpolish(widget);
+  widget->style()->polish(widget);
+  widget->update();
+}

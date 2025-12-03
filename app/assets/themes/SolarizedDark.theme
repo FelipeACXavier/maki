@@ -14,7 +14,7 @@ input_bg: #073642
 input_border: #586e75
 input_focus_border: #268bd2
 combobox_bg: #073642
-combobox_border: #586e75
+control_border: #586e75
 combobox_hover_border: #268bd2
 tab_bg: #073642
 tab_border_color: #586e75

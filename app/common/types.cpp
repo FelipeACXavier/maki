@@ -50,10 +50,6 @@ QString Types::PropertyTypesToString(Types::PropertyTypes type)
     return "component_select";
   else if (type == Types::PropertyTypes::EVENT_SELECT)
     return "event_select";
-  else if (type == Types::PropertyTypes::STATE_SELECT)
-    return "state_select";
-  else if (type == Types::PropertyTypes::SET_STATE)
-    return "set_state";
   else if (type == Types::PropertyTypes::ENUM)
     return "enum";
 
@@ -82,10 +78,6 @@ Types::PropertyTypes Types::StringToPropertyTypes(const QString& type)
     return Types::PropertyTypes::EVENT_SELECT;
   else if (type == "component_select")
     return Types::PropertyTypes::COMPONENT_SELECT;
-  else if (type == "state_select")
-    return Types::PropertyTypes::STATE_SELECT;
-  else if (type == "set_state")
-    return Types::PropertyTypes::SET_STATE;
   else if (type == "enum")
     return Types::PropertyTypes::ENUM;
 

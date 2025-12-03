@@ -58,12 +58,14 @@ SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsMan
 
   if (okBtn)
   {
+    okBtn->setObjectName("TextAndIcon");
     okBtn->setText(" Apply");
     okBtn->setIcon(addIconWithColor(":/icons/accept.svg", Config::FOREGROUND));
   }
 
   if (cancelBtn)
   {
+    cancelBtn->setObjectName("TextAndIcon");
     cancelBtn->setText(" Close");
     cancelBtn->setIcon(addIconWithColor(":/icons/reject.svg", Config::FOREGROUND));
   }
@@ -100,8 +102,9 @@ QWidget* SettingsDialog::addPage(const QString& pageName, const QString& iconNam
   title->setObjectName("PageTitle");
 
   auto* resetButton = new QPushButton(page);
+  resetButton->setObjectName("TextAndIcon");
   resetButton->setText(tr(" Reset"));
-  resetButton->setToolTip(tr("Reset page settings"));
+  resetButton->setToolTip(tr("Reset settings for this page"));
   resetButton->setIcon(addIconWithColor(":/icons/reset.svg", Config::FOREGROUND));
   connect(resetButton, &QPushButton::pressed, resetCallback);
 

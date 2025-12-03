@@ -60,13 +60,9 @@ private:
   VoidResult loadPropertySelect(const PropertiesConfig& property, NodeItem* node);
   VoidResult loadPropertyString(const PropertiesConfig& property, NodeItem* node);
   VoidResult loadPropertyBoolean(const PropertiesConfig& property, NodeItem* node);
-  VoidResult loadPropertyStateSelect(const PropertiesConfig& property, NodeItem* node);
-  VoidResult loadPropertySetState(const PropertiesConfig& property, NodeItem* node);
   VoidResult loadPropertyEventSelect(const PropertiesConfig& property, NodeItem* node);
   QLineEdit* loadPropertyEventArguments(const PropertiesConfig& property, NodeItem* node, const QString& propertyId, const QString& eventName, QComboBox* eventWidget);
   VoidResult loadPropertyComponentSelect(const PropertiesConfig& property, NodeItem* node);
-
-  void addStateAssignment(const PropertiesConfig& property, int index, NodeItem* node, QWidget* parent);
 
   // Control related actions
   VoidResult loadControls(NodeItem* node);

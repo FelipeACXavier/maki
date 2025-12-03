@@ -29,9 +29,6 @@
     <file alias="close.svg">assets/icons/fontawesome/svgs/solid/xmark.svg</file>
     <file alias="circle-close.svg">assets/icons/fontawesome/svgs/solid/circle-xmark.svg</file>
     <file alias="equals.svg">assets/icons/fontawesome/svgs/solid/equals.svg</file>
-    <file alias="arrow-down.svg">assets/icons/fontawesome/svgs/solid/chevron-down.svg</file>
-    <file alias="arrow-up.svg">assets/icons/fontawesome/svgs/solid/chevron-up.svg</file>
-    <file alias="arrow-right.svg">assets/icons/fontawesome/svgs/solid/chevron-right.svg</file>
     <file alias="play.svg">assets/icons/fontawesome/svgs/solid/circle-play.svg</file>
     <file alias="pause.svg">assets/icons/fontawesome/svgs/solid/circle-pause.svg</file>
     <file alias="generator.svg">assets/icons/fontawesome/svgs/solid/rocket.svg</file>
@@ -55,6 +52,19 @@
     <file alias="accept.svg">assets/icons/fontawesome/svgs/solid/circle-check.svg</file>
     <file alias="reject.svg">assets/icons/fontawesome/svgs/solid/circle-xmark.svg</file>
     <file alias="caret-right.svg">assets/icons/fontawesome/svgs/solid/caret-right.svg</file>
+
+    <file alias="arrow-up.svg">assets/icons/fontawesome/svgs/solid/chevron-up.svg</file>
+    <file alias="arrow-down.svg">assets/icons/fontawesome/svgs/solid/chevron-down.svg</file>
+    <file alias="arrow-right.svg">assets/icons/fontawesome/svgs/solid/chevron-right.svg</file>
+    <file alias="check.svg">assets/icons/fontawesome/svgs/solid/toggle-on.svg</file>
+    <file alias="uncheck.svg">assets/icons/fontawesome/svgs/solid/toggle-off.svg</file>
+    <file alias="limit.svg">assets/icons/fontawesome/svgs/solid/minus.svg</file>
+
+    <file alias="arrow-up-dark.svg">assets/icons/fontawesome/svgs/solid/chevron-up-dark.svg</file>
+    <file alias="arrow-down-dark.svg">assets/icons/fontawesome/svgs/solid/chevron-down-dark.svg</file>
+    <file alias="check-dark.svg">assets/icons/fontawesome/svgs/solid/toggle-on-dark.svg</file>
+    <file alias="uncheck-dark.svg">assets/icons/fontawesome/svgs/solid/toggle-off-dark.svg</file>
+    <file alias="limit-dark.svg">assets/icons/fontawesome/svgs/solid/minus-dark.svg</file>
 
   </qresource>
   <qresource prefix="/app_icons">

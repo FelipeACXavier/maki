@@ -104,10 +104,6 @@ QVariant PropertiesConfig::toDefault(const QJsonObject& object, Types::PropertyT
   }
   else if (objectType == Types::PropertyTypes::EVENT_SELECT)
     return toDefault(object, Types::PropertyTypes::STRING);
-  else if (objectType == Types::PropertyTypes::STATE_SELECT)
-    return toDefault(object, Types::PropertyTypes::STRING);
-  else if (objectType == Types::PropertyTypes::SET_STATE)
-    return QJsonArray();
   else if (objectType == Types::PropertyTypes::SELECT)
     return toDefault(object, Types::PropertyTypes::STRING);
   else if (objectType == Types::PropertyTypes::ENUM)

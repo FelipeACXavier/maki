@@ -23,3 +23,5 @@ QString toQT(std::chrono::system_clock::time_point ts, logging::LogLevel level, 
 void addDynamicWidget(QVBoxLayout* layout, QWidget* dynamicWidget, QWidget* parent);
 
 QString getDirPathFor(const QString& path);
+
+void applyStyle(QWidget* widget, const QString& style);

@@ -39,6 +39,7 @@ PropertiesMenu::PropertiesMenu(QWidget* parent)
 {
   // Set widget layout
   QVBoxLayout* layout = new QVBoxLayout();
+  layout->setSpacing(10);
   setLayout(layout);
 }
 
@@ -170,10 +171,6 @@ VoidResult PropertiesMenu::loadProperties(NodeItem* node)
       LOG_WARN_ON_FAILURE(loadPropertyEventSelect(property, node));
     else if (property.type == Types::PropertyTypes::COMPONENT_SELECT)
       LOG_WARN_ON_FAILURE(loadPropertyComponentSelect(property, node));
-    else if (property.type == Types::PropertyTypes::STATE_SELECT)
-      LOG_WARN_ON_FAILURE(loadPropertyStateSelect(property, node));
-    else if (property.type == Types::PropertyTypes::SET_STATE)
-      LOG_WARN_ON_FAILURE(loadPropertySetState(property, node));
     else
       LOG_WARNING("Property %s (%d) without a type, how is that possible?", qPrintable(property.id), (int)property.type);
   }
@@ -215,19 +212,19 @@ VoidResult PropertiesMenu::loadPropertyInt(const PropertiesConfig& property, Nod
 {
   QString label = ToLabel(property.id);
   QLabel* nameLabel = new QLabel(label);
-
+  nameLabel->setObjectName("PropertyLabel");
   nameLabel->setFont(Fonts::Label);
-  layout()->addWidget(nameLabel);
 
   QLineEdit* widget = new QLineEdit(this);
-  // QIntValidator* validator = new QIntValidator(INT32_MIN, INT32_MIN, widget);
+  widget->setFont(Fonts::Property);
+  QIntValidator* validator = new QIntValidator(INT32_MIN, INT32_MIN, widget);
 
   auto result = node->getProperty(property.id);
   if (!result.isValid())
     return VoidResult::Failed("Failed to get default value");
 
   widget->setText(result.toString());
-  // widget->setValidator(validator);
+  widget->setValidator(validator);
 
   connect(widget, &QLineEdit::editingFinished, this, [=]() {
     bool ok;
@@ -238,7 +235,7 @@ VoidResult PropertiesMenu::loadPropertyInt(const PropertiesConfig& property, Nod
       LOG_WARNING("Failed to set property of node %s to %d (%s)", qPrintable(node->nodeId()), newValue, qPrintable(widget->text()));
   });
 
-  widget->setFont(Fonts::Property);
+  layout()->addWidget(nameLabel);
   layout()->addWidget(widget);
 
   return VoidResult();
@@ -248,8 +245,9 @@ VoidResult PropertiesMenu::loadPropertyReal(const PropertiesConfig& property, No
 {
   QString label = ToLabel(property.id);
   QLabel* nameLabel = new QLabel(label);
-
+  nameLabel->setObjectName("PropertyLabel");
   nameLabel->setFont(Fonts::Label);
+
   layout()->addWidget(nameLabel);
 
   QLineEdit* widget = new QLineEdit(this);
@@ -281,12 +279,13 @@ VoidResult PropertiesMenu::loadPropertyColor(const PropertiesConfig& property, N
 {
   QString label = ToLabel(property.id);
   QLabel* nameLabel = new QLabel(label);
-
+  nameLabel->setObjectName("PropertyLabel");
   nameLabel->setFont(Fonts::Label);
-  layout()->addWidget(nameLabel);
 
   QWidget* holder = new QWidget(this);
   QHBoxLayout* holderLayout = new QHBoxLayout(holder);
+  holderLayout->setSpacing(10);
+  holderLayout->setContentsMargins(5, 0, 5, 0);
   holder->setLayout(holderLayout);
 
   QPushButton* widget = new QPushButton(this);
@@ -295,21 +294,25 @@ VoidResult PropertiesMenu::loadPropertyColor(const PropertiesConfig& property, N
     return VoidResult::Failed("Failed to get default value");
 
   QColor selectedColor = QColor::fromString(result.toString());
-  QPalette palette;
-  palette.setColor(QPalette::Window, selectedColor);
 
   QLabel* colorPreviewLabel = new QLabel(this);
-  colorPreviewLabel->setAutoFillBackground(true);
-  colorPreviewLabel->setPalette(palette);
+  colorPreviewLabel->setObjectName("PropertyColorPreview");
+  applyStyle(colorPreviewLabel, QStringLiteral(
+                                    "QLabel#PropertyColorPreview { background-color: %1; }")
+                                    .arg(result.toString()));
 
   connect(widget, &QPushButton::pressed, [=]() {
     QColor color = QColorDialog::getColor(selectedColor, this, "Background Color");
-    QPalette newPalette;
-    newPalette.setColor(QPalette::Window, color);
-    colorPreviewLabel->setPalette(newPalette);
+    if (!color.isValid())
+      return;
+
+    applyStyle(colorPreviewLabel, QStringLiteral(
+                                      "QLabel#PropertyColorPreview { background-color: %1; }")
+                                      .arg(result.toString()));
 
     node->config()->body.backgroundColor = color;
     node->setProperty(property.id, color.name());
+    colorPreviewLabel->update();
   });
 
   widget->setText(result.toString());
@@ -318,6 +321,7 @@ VoidResult PropertiesMenu::loadPropertyColor(const PropertiesConfig& property, N
   holderLayout->addWidget(colorPreviewLabel);
   holderLayout->addWidget(widget);
 
+  layout()->addWidget(nameLabel);
   layout()->addWidget(holder);
 
   return VoidResult();
@@ -327,9 +331,8 @@ VoidResult PropertiesMenu::loadPropertySelect(const PropertiesConfig& property, 
 {
   QString label = ToLabel(property.id);
   QLabel* nameLabel = new QLabel(label);
-
+  nameLabel->setObjectName("PropertyLabel");
   nameLabel->setFont(Fonts::Label);
-  layout()->addWidget(nameLabel);
 
   QComboBox* widget = new QComboBox(this);
 
@@ -342,11 +345,13 @@ VoidResult PropertiesMenu::loadPropertySelect(const PropertiesConfig& property, 
     return VoidResult::Failed("Failed to get default value");
 
   widget->setCurrentText(result.toString());
+  widget->setFont(Fonts::Property);
+
   connect(widget, &QComboBox::currentTextChanged, this, [=](const QString& text) {
     node->setProperty(property.id, text);
   });
 
-  widget->setFont(Fonts::Property);
+  layout()->addWidget(nameLabel);
   layout()->addWidget(widget);
 
   return VoidResult();
@@ -356,11 +361,12 @@ VoidResult PropertiesMenu::loadPropertyString(const PropertiesConfig& property, 
 {
   QString label = ToLabel(property.id);
   QLabel* nameLabel = new QLabel(label);
-
+  nameLabel->setObjectName("PropertyLabel");
   nameLabel->setFont(Fonts::Label);
-  layout()->addWidget(nameLabel);
 
   QLineEdit* widget = new QLineEdit(this);
+  widget->setFont(Fonts::Property);
+
   auto result = node->getProperty(property.id);
   if (!result.isValid())
     return VoidResult::Failed("Failed to get default value");
@@ -370,7 +376,7 @@ VoidResult PropertiesMenu::loadPropertyString(const PropertiesConfig& property, 
     node->setProperty(property.id, widget->text());
   });
 
-  widget->setFont(Fonts::Property);
+  layout()->addWidget(nameLabel);
   layout()->addWidget(widget);
   return VoidResult();
 }
@@ -379,8 +385,9 @@ VoidResult PropertiesMenu::loadPropertyBoolean(const PropertiesConfig& property,
 {
   QString label = ToLabel(property.id);
   QLabel* nameLabel = new QLabel(label);
-
+  nameLabel->setObjectName("PropertyLabel");
   nameLabel->setFont(Fonts::Label);
+
   layout()->addWidget(nameLabel);
 
   QCheckBox* widget = new QCheckBox(this);
@@ -399,195 +406,6 @@ VoidResult PropertiesMenu::loadPropertyBoolean(const PropertiesConfig& property,
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::loadPropertyStateSelect(const PropertiesConfig& property, NodeItem* node)
-{
-  // Get possible states
-  if (!mStorage)
-    return VoidResult::Failed("No storage assigned to properties menu");
-
-  QString label = ToLabel(property.id);
-  QLabel* nameLabel = new QLabel(label);
-
-  nameLabel->setFont(Fonts::Label);
-  layout()->addWidget(nameLabel);
-
-  QComboBox* widget = new QComboBox(this);
-  widget->setObjectName(property.id);
-
-  auto callers = mStorage->getPossibleCallers(node->id());
-  for (const auto& caller : callers)
-  {
-    auto callerName = caller->properties[ConfigKeys::NAME].toString();
-    for (const auto& field : caller->fields)
-    {
-      if (field.type == Types::PropertyTypes::ENUM)
-      {
-        auto name = field.options.at(0).defaultValue.toString();
-        auto values = field.options.at(1).options;
-
-        for (const auto& opt : values)
-        {
-          QJsonObject data;
-          data[ConfigKeys::ID] = caller->id;                                    // The UUID of the caller
-          data[ConfigKeys::TYPE] = Types::PropertyTypesToString(field.type);    // Data type for convenience
-          data[ConfigKeys::NAME] = callerName;                                  // The caller/component name
-          data[ConfigKeys::FIELDS] = field.id;                                  // The field, e.g., State
-          data[ConfigKeys::EVENTS] = opt.id;                                    // The field specifier, e.g., disabled
-          data[ConfigKeys::DATA] = callerName + "." + field.id + "." + opt.id;  // generic.State.disabled
-
-          widget->addItem(callerName + "." + field.id + "." + opt.id, data);
-        }
-      }
-      else
-      {
-        QJsonObject data;
-        data[ConfigKeys::ID] = caller->id;
-        data[ConfigKeys::TYPE] = Types::PropertyTypesToString(field.type);
-        data[ConfigKeys::NAME] = callerName;
-        data[ConfigKeys::FIELDS] = field.id;
-        data[ConfigKeys::DATA] = callerName + "." + field.id;
-
-        widget->addItem(callerName + "." + field.id);
-      }
-    }
-  }
-
-  auto currentValue = node->getProperty(property.id);
-  if (currentValue.isValid() && !currentValue.isNull())
-  {
-    auto value = currentValue.toJsonObject();
-    widget->setCurrentText(value[ConfigKeys::DATA].toString());
-  }
-
-  connect(widget, &QComboBox::currentTextChanged, this, [=](const QString& text) {
-    auto data = widget->currentData();
-    node->setProperty(property.id, data);
-  });
-
-  widget->setFont(Fonts::Property);
-  layout()->addWidget(widget);
-
-  return VoidResult();
-}
-
-VoidResult PropertiesMenu::loadPropertySetState(const PropertiesConfig& property, NodeItem* node)
-{
-  if (!mStorage)
-    return VoidResult::Failed("No storage assigned to properties menu");
-
-  QGroupBox* group = new QGroupBox("Assignments", this);
-  group->setObjectName("AssignmentGroup");
-  group->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
-
-  QVBoxLayout* groupLayout = new QVBoxLayout(group);
-
-  QScrollArea* scrollArea = new QScrollArea(group);
-  scrollArea->setWidgetResizable(true);
-
-  // Create a scrollable content widget
-  QWidget* scrollContent = new QWidget();
-  scrollContent->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
-
-  QVBoxLayout* scrollLayout = new QVBoxLayout(scrollContent);
-  scrollLayout->setSpacing(5);
-  scrollLayout->setAlignment(Qt::AlignTop);
-
-  addStateAssignment(property, 0, node, scrollContent);
-
-  scrollArea->setWidget(scrollContent);
-  groupLayout->addWidget(scrollArea);
-  qobject_cast<QVBoxLayout*>(layout())->addWidget(group, 1);
-
-  return VoidResult();
-}
-
-void PropertiesMenu::addStateAssignment(const PropertiesConfig& property, int index, NodeItem* node, QWidget* group)
-{
-  QComboBox* widget = new QComboBox(group);
-  widget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-
-  auto callers = mStorage->getPossibleStates(node->id());
-  for (const auto& caller : callers)
-  {
-    QString callerName = "";
-    if (!caller->parentId.isEmpty())
-      callerName = caller->properties[ConfigKeys::NAME].toString() + ".";
-
-    for (const auto& field : caller->fields)
-      widget->addItem(callerName + field.id);
-  }
-
-  QWidget* controls = new QWidget(group);
-  QHBoxLayout* controlsLayout = new QHBoxLayout(controls);
-
-  QLabel* icon = new QLabel(controls);
-  icon->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-  icon->setPixmap(QPixmap(":/icons/equals.svg").scaled(20, 20, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-  icon->setFixedSize({20, 20});
-
-  QLineEdit* assignEdit = new QLineEdit(group);
-  assignEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-  assignEdit->setFont(Fonts::Property);
-
-  auto currentReturn = node->getProperty(property.id);
-  bool addNew = false;
-  if (currentReturn.isValid())
-  {
-    QJsonArray currentValue = currentReturn.toJsonArray();
-
-    if (index < currentValue.size())
-    {
-      auto val = currentValue.at(index).toObject();
-      if (val.contains("variable"))
-        widget->setCurrentText(val["variable"].toString());
-      if (val.contains("value"))
-        assignEdit->setText(val["value"].toString());
-    }
-
-    addNew = index < currentValue.size() - 1;
-  }
-
-  connect(assignEdit, &QLineEdit::editingFinished, this, [=] {
-    if (assignEdit->text().isEmpty())
-    {
-      controls->deleteLater();
-      widget->deleteLater();
-      return;
-    }
-
-    auto returnData = node->getProperty(property.id);
-    if (!returnData.isValid())
-    {
-      LOG_WARNING("Invalid data in %s", qPrintable(property.id));
-      return;
-    }
-
-    QJsonObject object;
-    object["variable"] = widget->currentText();
-    object["value"] = assignEdit->text();
-
-    auto data = returnData.toJsonArray();
-    if (index < data.size())
-      data.replace(index, object);
-    else
-      data.append(object);
-
-    node->setProperty(property.id, data);
-
-    // Open a new assignment
-    addStateAssignment(property, index + 1, node, group);
-  });
-
-  controlsLayout->addWidget(icon);
-  controlsLayout->addWidget(assignEdit);
-
-  group->layout()->addWidget(widget);
-  group->layout()->addWidget(controls);
-
-  if (addNew)
-    addStateAssignment(property, index + 1, node, group);
-}
-
 // TODO(felaze): The component and the event fields are always dependent on each other for now
 VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertiesConfig& property, NodeItem* node)
 {
@@ -595,7 +413,6 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertiesConfig& p
     return VoidResult::Failed("No storage assigned to properties menu");
 
   QComboBox* widget = new QComboBox(this);
-  widget->setObjectName(property.id);
 
   for (const auto& child : mStorage->getPossibleCallers(node->id()))
   {
@@ -990,13 +807,16 @@ VoidResult PropertiesMenu::loadControlAddEvent(const ControlsConfig& control, No
 {
   QString label = ToLabel(QStringLiteral("Events"));
   QLabel* nameLabel = new QLabel(label);
-
+  nameLabel->setObjectName("PropertyLabel");
   nameLabel->setFont(Fonts::Label);
+
   layout()->addWidget(nameLabel);
 
   // Create table to hold new fields
   QTableView* tableView = new QTableView(parent);
   tableView->setObjectName("EventTable");
+  tableView->verticalHeader()->setVisible(false);
+
   QStandardItemModel* model = new QStandardItemModel(0, 4);
 
   model->setHorizontalHeaderItem(0, new QStandardItem("Name"));
@@ -1048,13 +868,13 @@ VoidResult PropertiesMenu::loadControlAddState(const ControlsConfig& control, No
 {
   QString label = ToLabel(QStringLiteral("States"));
   QLabel* nameLabel = new QLabel(label);
-
+  nameLabel->setObjectName("PropertyLabel");
   nameLabel->setFont(Fonts::Label);
+
   layout()->addWidget(nameLabel);
 
   // Create table to hold new fields
   QTableView* tableView = new QTableView(parent);
-  tableView->setObjectName("StateTable");
   QStandardItemModel* model = new QStandardItemModel(0, 3);
 
   model->setHorizontalHeaderItem(0, new QStandardItem("Name"));

@@ -157,12 +157,14 @@ void MainWindowlayout::buildCentralPanel()
 
   // First button
   mProcessTabButton = new QPushButton(corner);
+  mProcessTabButton->setObjectName("MainWindowButton");
   mProcessTabButton->setToolTip(tr("Show process tab"));
   mProcessTabButton->setProperty("hasActivity", false);
   mIcons.append({mProcessTabButton, ":/icons/terminal.svg"});
 
   // Second button
   mBrowserTabButton = new QPushButton(corner);
+  mBrowserTabButton->setObjectName("MainWindowButton");
   mBrowserTabButton->setToolTip(tr("Show simulation tab"));
   mBrowserTabButton->setProperty("hasActivity", false);
   mIcons.append({mBrowserTabButton, ":/icons/display.svg"});
@@ -195,29 +197,6 @@ void MainWindowlayout::buildCentralPanel()
   mInfoText = new QTextBrowser(mBottomPanel);
   mInfoText->setWordWrapMode(QTextOption::WrapMode::WordWrap);
   mInfoText->setFont(Fonts::Property);
-  // mInfoText->setText(
-  //     "<h2>Welcome to " + Config::APPLICATION_NAME +
-  //     "</h2>"
-
-  //     "<p>"
-  //     "  MAKI is a low-code platform that helps you design and orchestrate your systems."
-  //     "</p>"
-  //     ""
-  //     "<p><b>To get started:</b></p>"
-  //     "<ul>"
-  //     "  <li>Drag a structural block from the palette onto the Canvas.</li>"
-  //     "  <li>Right-click and select \"Edit behavior\"</li>"
-  //     "  <li>Connect blocks to define the data and control flow.</li>"
-  //     "  <li>Double-click a block to inspect or adjust its properties.</li>"
-  //     "</ul>"
-  //     ""
-  //     "<p>"
-  //     "  For extra help, hover over any control to see a tooltip, or explore the <b>Help</b> menu in the navigation bar."
-  //     "</p>"
-  //     ""
-  //     "<p style='color:#888; font-size: 16px'>"
-  //     "  Tip: You can always reset the layout or theme from the <b>Settings</b> menu if things get messy."
-  //     "</p>");
   mInfoText->setHtml(
       "<table width='100%'><tr>"
       "  <td style='vertical-align:top;'>"
@@ -371,6 +350,7 @@ void MainWindowlayout::buildLogTab()
   QWidget* logContainer = new QWidget(mBottomPanel);
   QVBoxLayout* logLayout = new QVBoxLayout(logContainer);
   logLayout->setContentsMargins(2, 2, 2, 2);
+  logLayout->setSpacing(0);
 
   // Toolbar
   QToolBar* logToolBar = new QToolBar(logContainer);
@@ -382,14 +362,16 @@ void MainWindowlayout::buildLogTab()
   // =======================================================================================
   // Log level selector
   QPushButton* errorButton = new QPushButton("");
-  errorButton->setObjectName("CheckableButton");
+  errorButton->setObjectName("TextAndIcon");
+  errorButton->setText(" Errors");
   errorButton->setCheckable(true);
   errorButton->setToolTip("View only the errors");
   errorButton->setToolTipDuration(2000);
   mIcons.append({errorButton, ":/icons/error.svg", 0, QColor("red")});
 
   QPushButton* warningButton = new QPushButton("");
-  warningButton->setObjectName("CheckableButton");
+  warningButton->setObjectName("TextAndIcon");
+  warningButton->setText(" Warnings");
   warningButton->setCheckable(true);
   warningButton->setToolTip("View only the warnings");
   warningButton->setToolTipDuration(2000);

@@ -49,16 +49,20 @@ struct ThemeVars
   QString input_border = "#b0b0b0";
   QString input_focus_border = "#638ecb";
   QString combobox_bg = "#e0e0e0";
-  QString combobox_border = "#b0b0b0";
+  QString control_border = "#b0b0b0";
   QString combobox_hover_border = "#6b90c6";
 
   // Icons
   QString arrow_icon_up = ":/icons/arrow-up.svg";
   QString arrow_icon_down = ":/icons/arrow-down.svg";
+  QString check_icon = ":/icons/check.svg";
+  QString uncheck_icon = ":/icons/uncheck.svg";
+  QString limit_icon = ":/icons/limit.svg";
 
   // QTabBar
   QString left_tab_width = "100px";
   QString canvas_tab_width = "200px";
+  QString canvas_tab_height = "24px";
   QString info_tab_width = "50px";
   QString right_tab_width = "100px";
   QString tab_border_size = "1px";
@@ -80,7 +84,7 @@ struct ThemeVars
 
   // Tooltip
   QString tooltip_h_padding = "2px";
-  QString tooltip_w_padding = "12px";
+  QString tooltip_w_padding = "5px";
   QString tooltip_border_size = "1px";
   QString tooltip_border_style = "solid";
   QString tooltip_border_color = "#b0b0b0";
@@ -109,16 +113,22 @@ const QHash<QString, QString ThemeVars::*> THEME_KEY_MAP = {
     {"@input_border", &ThemeVars::input_border},
     {"@input_focus_border", &ThemeVars::input_focus_border},
     {"@combobox_bg", &ThemeVars::combobox_bg},
-    {"@combobox_border", &ThemeVars::combobox_border},
+    {"@control_border", &ThemeVars::control_border},
     {"@combobox_hover_border", &ThemeVars::combobox_hover_border},
+
+    // Icons
     {"@arrow_icon_up", &ThemeVars::arrow_icon_up},
     {"@arrow_icon_down", &ThemeVars::arrow_icon_down},
+    {"@uncheck_icon", &ThemeVars::uncheck_icon},
+    {"@check_icon", &ThemeVars::check_icon},
+    {"@limit_icon", &ThemeVars::limit_icon},
 
     // QTabBar
     {"@tab_bg", &ThemeVars::tab_bg},
     {"@left_tab_width", &ThemeVars::left_tab_width},
     {"@right_tab_width", &ThemeVars::right_tab_width},
     {"@canvas_tab_width", &ThemeVars::canvas_tab_width},
+    {"@canvas_tab_height", &ThemeVars::canvas_tab_height},
     {"@info_tab_width", &ThemeVars::info_tab_width},
     {"@tab_border_size", &ThemeVars::tab_border_size},
     {"@tab_border_style", &ThemeVars::tab_border_style},

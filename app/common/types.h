@@ -58,8 +58,6 @@ enum class PropertyTypes
   VOID,
   COMPONENT_SELECT,
   EVENT_SELECT,
-  STATE_SELECT,
-  SET_STATE,
   ENUM,
   END
 };

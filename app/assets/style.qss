@@ -17,19 +17,36 @@ QWidget#SettingsPage {
    SCROLLBARS
    =============================== */
 
+QScrollBar:horizontal {
+  background: @background;
+  height: 8px;
+}
+
+QScrollBar::handle:horizontal {
+  background: @scrollbar_handle;
+  min-width: 20px;
+  max-width: 50px;
+  border-radius: @border_radius;
+}
+
+QScrollBar::handle:horizontal:hover {
+  background: @selection_bg;
+}
+
 QScrollBar:vertical {
   background: @background;
-  width: 12px;
+  width: 8px;
 }
 
 QScrollBar::handle:vertical {
   background: @scrollbar_handle;
   min-height: 20px;
-  border-radius: 4px;
+  max-height: 50px;
+  border-radius: @border_radius;
 }
 
 QScrollBar::handle:vertical:hover {
-  background: @scrollbar_handle_hover;
+  background: @selection_bg;
 }
 
 QScrollBar::add-line,
@@ -42,29 +59,134 @@ QScrollBar::sub-line {
    =============================== */
 
 QPushButton {
-  background-color: @button_bg;
-  border: 1px solid @button_border;
-  padding: 6px 10px;
-  border-radius: 4px;
+  color: @foreground;
+  background-color: @input_bg;
+
+  padding: 2px 5px;
+
+  border: 1px solid @control_border;
+  border-radius: @border_radius;
+
+  min-width: 24px;
+  min-height: 24px;
 }
 
 QPushButton:hover {
-  /* background-color: @button_bg_hover; */
-  border-color: @combobox_hover_border;
+  border-color: @selection_bg;
 }
 
 QPushButton:pressed {
-  background-color: @button_pressed_bg;
-  border-color: @button_pressed_border;
-  color: @button_pressed_fg;
+  color: @selection_fg;
+  border-color: @control_border;
+  background-color: @selection_bg;
 }
 
-QPushButton#CheckableButton:checked {
-  background-color: @selection_bg;
+QPushButton#MainWindowButton {
+  width: @canvas_tab_height;
+  height: @canvas_tab_height;
 }
 
 QPushButton[hasActivity="true"] {
   border: 1x solid @selection_bg;
+}
+
+QPushButton#TextAndIcon {
+  min-width: 60px;
+  padding: 2px 10px;
+}
+
+QPushButton#TextAndIcon:checked {
+  background-color: @selection_bg;
+}
+
+/* ===============================
+   QCHECKBOX
+   =============================== */
+QCheckBox {
+  spacing: 5px;
+}
+
+QCheckBox::indicator {
+  width: 28px;
+  height: 24px;
+  background: transparent;
+
+  border: none;
+  border-radius: 10px;
+
+  margin-right: 5px;
+}
+
+QCheckBox::indicator:hover {
+  color: @selection_bg;
+}
+
+QCheckBox::indicator:unchecked {
+  image: url(@uncheck_icon);
+}
+
+QCheckBox::indicator:checked {
+  image: url(@check_icon);
+}
+
+/* ===============================
+   QSPINBOX
+   =============================== */
+QSpinBox {
+  padding: 4px;
+
+  color: @foreground;
+  background-color: @input_bg;
+
+  border: 1px solid @control_border;
+  border-radius: @border_radius;
+}
+
+QSpinBox:hover {
+  border-color: @selection_bg;
+}
+
+QSpinBox::up-button {
+  subcontrol-origin: border;
+  subcontrol-position: top right;
+
+  width: 16px;
+  border: 1px solid @control_border;
+  border-top-right-radius: @border_radius;
+}
+
+QSpinBox::up-button:hover {
+  border: 1px solid @selection_bg;
+}
+
+QSpinBox::up-arrow {
+  image: url(@arrow_icon_up);
+  width: 7px;
+  height: 7px;
+}
+
+QSpinBox::down-button {
+  subcontrol-origin: border;
+  subcontrol-position: bottom right;
+
+  width: 16px;
+  border: 1px solid @control_border;
+  border-bottom-right-radius: @border_radius;
+}
+
+QSpinBox::down-button:hover {
+  border: 1px solid @selection_bg;
+}
+
+QSpinBox::down-arrow {
+  image: url(@arrow_icon_down);
+  width: 7px;
+  height: 7px;
+}
+
+QSpinBox::down-arrow:disabled,
+QSpinBox::down-arrow:off {
+  image: url(@limit_icon);
 }
 
 /* ===============================
@@ -73,12 +195,12 @@ QPushButton[hasActivity="true"] {
 QLabel#HeaderButton {
   width: 30px;
   height: 30px;
-  padding: 5px;
+  padding: 4px;
 
-  background-color: @combobox_bg;
-  border-top: 1px solid @combobox_border;
-  border-left: 1px solid @combobox_border;
-  border-bottom: 1px solid @combobox_border;
+  background: @input_bg;
+  border-top: 1px solid @control_border;
+  border-left: 1px solid @control_border;
+  border-bottom: 1px solid @control_border;
   border-top-left-radius: @border_radius;
   border-bottom-left-radius: @border_radius;
 }
@@ -92,19 +214,50 @@ QLabel#HintLabel {
   color: @faded_foreground
 }
 
+QLabel#PropertyLabel {
+  font-size: 16px;
+  color: @foreground;
+}
+
+QLabel#PropertyColorPreview {
+  width: 24px;
+  border: 1px solid @foreground;
+  border-radius: @border_radius
+}
+
 /* ===============================
    LINE EDIT / TEXT EDIT
    =============================== */
+QTextBrowser {
+  font-size: 16px;
+  color: @foreground;
+  background: @background;QPushButton
 
-QLineEdit, QTextEdit, QPlainTextEdit {
-  background-color: @input_bg;
-  border: 1px solid @input_border;
   padding: 4px;
-  border-radius: 4px;
+
+  border: 1px solid @control_border;
+  border-radius: @border_radius;
+}
+
+QLineEdit {
+  font-size: 16px;
+  color: @foreground;
+  background: @input_bg;
+
+  margin: 0px 5px;
+  padding: 4px;
+
+  border: none;
+  border-bottom: 2px solid @foreground;
+  border-radius: @border_radius;
 }
 
 QLineEdit:focus, QTextEdit:focus {
-  border: 1px solid @combobox_hover_border;
+  border-bottom: 2px solid @selection_bg;
+}
+
+QLineEdit:hover {
+  border-color: @selection_bg;
 }
 
 /* ===============================
@@ -114,9 +267,9 @@ QLineEdit:focus, QTextEdit:focus {
 QComboBox {
   padding: 4px;
 
-  border: 1px solid @combobox_border;
+  border: 1px solid @control_border;
   border-radius: @border_radius;
-  background-color: @combobox_bg;
+  background-color: @input_bg;
 
   /* Open the popup under the combo box */
   combobox-popup: 0;
@@ -129,26 +282,34 @@ QComboBox:on {
 }
 
 QComboBox QAbstractItemView {
-  background-color: @combobox_bg;
+  font-size: 14px;
+
+  background-color: @input_bg;
   selection-background-color: @selection_bg;
 
-  border: 1px solid @combobox_border;
+  border: 1px solid @control_border;
   border-bottom-left-radius: @border_radius;
   border-bottom-right-radius: @border_radius;
 }
 
+QComboBox QAbstractItemView::item {
+  padding 5px 10px;
+}
+
 QComboBox QAbstractItemView::item:selected {
-  background-color: @background;
-  padding-left: 2px;
-  border-left: 2px solid @selection_bg;
+  background-color: @selection_bg;
 }
 
 QComboBox:hover {
-  border-color: @combobox_hover_border;
+  border-color: @selection_bg;
+}
+
+QComboBox:focus {
+  outline: none;
 }
 
 QComboBox::drop-down {
-  border-left: 1px solid @combobox_border;
+  border-left: 1px solid @control_border;
   border-radius: 0px;
   width: 24px;
 }
@@ -182,7 +343,6 @@ QComboBox#HeaderComboBox:on {
 
 QTabWidget::pane {
   border: 1px @tab_border_style @tab_border_color;
-    /* top: -1px; */
 }
 
 QTabBar::tab {
@@ -211,6 +371,7 @@ QTabWidget#RightPanel QTabBar::tab {
 
 QTabWidget#CanvasPanel QTabBar::tab {
   width: @canvas_tab_width;
+  height: @canvas_tab_height;
 }
 
 QTabWidget#InfoPanel QTabBar::tab {
@@ -261,6 +422,7 @@ QToolButton:pressed {
 
 QToolBar#LogToolBar {
   max-height: 32px;
+  margin: 2px 4px;
 }
 
 /* ===============================
@@ -340,7 +502,7 @@ QListWidget#SettingsList {
 }
 
 QListWidget#SettingsList::item {
-  /* border-left: 2px solid @background; */
+  padding: 5px;
   border-bottom: 2px solid @background;
 }
 
@@ -351,4 +513,52 @@ QListWidget#SettingsList::item:selected {
   /* padding-left: 2px; */
   /* border-left: 2px solid @selection_bg; */
   border-bottom: 2px solid @selection_bg;
+}
+
+/* ===============================
+   QTABLEVIEW
+   =============================== */
+QTableView {
+  color: @foreground;
+  background: @input_bg;
+
+  border: 1px solid @control_border;
+  border-bottom-left-radius: @border_radius;
+  border-bottom-right-radius: @border_radius;
+}
+
+QTableView QHeaderView::section {
+  color: @foreground;
+  background-color: @background;
+
+  padding: 2px 5px;
+
+  border: none;
+  border-bottom: 1px solid @control_border;
+}
+
+QTableView QHeaderView::section:first {
+  border-top-left-radius: @border_radius;
+}
+
+QTableView QHeaderView::section:last {
+  border-top-right-radius: @border_radius;
+}
+
+QTableView::item {
+  padding: 2px 5px;
+  border-bottom: 1px solid @control_border;
+}
+
+QTableView::item:hover {
+  border-bottom: 1px solid @selection_bg;
+
+}
+QTableView::item:selected {
+  color: @selection_fg;
+  background-color: @selection_bg;
+}
+
+QTableView::item:focus {
+  outline: none;
 }
