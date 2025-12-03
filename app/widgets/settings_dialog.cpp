@@ -9,6 +9,7 @@
 #include <QLineEdit>
 #include <QListWidget>
 #include <QPushButton>
+#include <QScreen>
 #include <QSpinBox>
 #include <QStackedWidget>
 #include <QToolButton>
@@ -77,6 +78,14 @@ SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsMan
 
   connect(buttonBox, &QDialogButtonBox::accepted, this, &SettingsDialog::apply);
   connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
+
+  // Set the dialog size dynamically
+  QScreen* screen = this->screen();
+  QRect available = screen->availableGeometry();
+
+  int targetWidth = available.width() * 0.3;
+  int targetHeight = available.height() * 0.5;
+  resize(targetWidth, targetHeight);
 
   loadFromSettings();
 }

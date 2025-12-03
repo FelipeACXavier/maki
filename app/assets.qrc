@@ -29,6 +29,7 @@
     <file alias="close.svg">assets/icons/fontawesome/svgs/solid/xmark.svg</file>
     <file alias="circle-close.svg">assets/icons/fontawesome/svgs/solid/circle-xmark.svg</file>
     <file alias="equals.svg">assets/icons/fontawesome/svgs/solid/equals.svg</file>
+    <file alias="plus.svg">assets/icons/fontawesome/svgs/solid/plus.svg</file>
     <file alias="play.svg">assets/icons/fontawesome/svgs/solid/circle-play.svg</file>
     <file alias="pause.svg">assets/icons/fontawesome/svgs/solid/circle-pause.svg</file>
     <file alias="generator.svg">assets/icons/fontawesome/svgs/solid/rocket.svg</file>

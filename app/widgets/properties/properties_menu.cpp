@@ -827,8 +827,6 @@ VoidResult PropertiesMenu::loadControlAddEvent(const ControlsConfig& control, No
   tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
   tableView->setContextMenuPolicy(Qt::CustomContextMenu);
 
-  // addDynamicWidget((QVBoxLayout*)layout(), tableView, parent);
-
   // We do not support editing values in the table directly. I want to avoid issues caused by a wrong click
   // Instead, we open a dialog with a complete overview of the event.
   // TODO(felaze): It would be nice to also show the nodes that trigger this event

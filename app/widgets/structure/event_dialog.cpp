@@ -1,4 +1,5 @@
 #include "event_dialog.h"
+
 #include <qabstractitemview.h>
 #include <qnamespace.h>
 
@@ -14,6 +15,7 @@
 #include <QVBoxLayout>
 
 #include "app_configs.h"
+#include "common/theme.h"
 #include "elements/save_info.h"
 #include "logging.h"
 #include "style_helpers.h"
@@ -28,8 +30,13 @@ EventDialog::EventDialog(const QString& title, QWidget* parent)
   QVBoxLayout* layout = new QVBoxLayout;
   setLayout(layout);
 
-  // TODO(felaze): Make this dynamic
-  resize(500, 400);
+  // Resize based on screen size
+  QScreen* screen = this->screen();
+  QRect available = screen->availableGeometry();
+
+  int targetWidth = available.width() * 0.3;
+  int targetHeight = available.height() * 0.5;
+  resize(targetWidth, targetHeight);
 }
 
 std::shared_ptr<FlowSaveInfo> EventDialog::getInfo() const
@@ -62,10 +69,24 @@ void EventDialog::setup(std::shared_ptr<FlowSaveInfo> event)
   QDialogButtonBox* buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, controls);
   layout()->addWidget(buttonBox);
 
-  // Disable enter
   auto okButton = buttonBox->button(QDialogButtonBox::Ok);
-  okButton->setDefault(false);
-  okButton->setAutoDefault(false);
+  if (okButton)
+  {
+    okButton->setDefault(false);
+    okButton->setAutoDefault(false);
+
+    okButton->setObjectName("TextAndIcon");
+    okButton->setText(" Ok");
+    okButton->setIcon(addIconWithColor(":/icons/accept.svg", Config::FOREGROUND));
+  }
+
+  auto* cancelBtn = buttonBox->button(QDialogButtonBox::Cancel);
+  if (cancelBtn)
+  {
+    cancelBtn->setObjectName("TextAndIcon");
+    cancelBtn->setText(" Cancel");
+    cancelBtn->setIcon(addIconWithColor(":/icons/reject.svg", Config::FOREGROUND));
+  }
 
   // Connect buttons to appropriate slots
   connect(buttonBox, &QDialogButtonBox::accepted, this, &EventDialog::accept);
@@ -75,6 +96,7 @@ void EventDialog::setup(std::shared_ptr<FlowSaveInfo> event)
 void EventDialog::createNameInput(QWidget* parent)
 {
   QLabel* nameLabel = new QLabel(tr("Event name"), parent);
+  nameLabel->setObjectName("PropertyLabel");
   layout()->addWidget(nameLabel);
 
   QLineEdit* name = new QLineEdit(parent);
@@ -89,6 +111,7 @@ void EventDialog::createNameInput(QWidget* parent)
 void EventDialog::createTypeInput(QWidget* parent)
 {
   QLabel* eventTypeLabel = new QLabel(tr("Event type"), parent);
+  eventTypeLabel->setObjectName("PropertyLabel");
   layout()->addWidget(eventTypeLabel);
 
   QComboBox* type = new QComboBox(parent);
@@ -115,6 +138,7 @@ void EventDialog::createTypeInput(QWidget* parent)
 void EventDialog::createReturnTypeInput(QWidget* parent)
 {
   QLabel* returnTypeLabel = new QLabel(tr("Return type"), parent);
+  returnTypeLabel->setObjectName("PropertyLabel");
   layout()->addWidget(returnTypeLabel);
 
   QComboBox* returnType = new QComboBox(parent);
@@ -143,13 +167,15 @@ void EventDialog::createReturnTypeInput(QWidget* parent)
 void EventDialog::createArgumentInput(QWidget* parent)
 {
   QLabel* argumentLabel = new QLabel(tr("Arguments"), parent);
+  argumentLabel->setObjectName("PropertyLabel");
   layout()->addWidget(argumentLabel);
 
   // Create table to hold the arguments
   QTableView* args = new QTableView(parent);
   QStandardItemModel* model = new QStandardItemModel(0, 2);
+  args->verticalHeader()->setVisible(false);
   args->setFocusPolicy(Qt::ClickFocus);
-   
+
   model->setHorizontalHeaderItem(0, new QStandardItem(tr("Name")));
   model->setHorizontalHeaderItem(1, new QStandardItem(tr("Type")));
 
@@ -175,6 +201,8 @@ void EventDialog::createArgumentInput(QWidget* parent)
   connect(model, &QStandardItemModel::itemChanged, this, &EventDialog::updateArgumentTable);
 
   QPushButton* button = new QPushButton(parent);
+  button->setObjectName("TextAndIcon");
+
   button->setEnabled(mStorage->modifiable);
   connect(button, &QPushButton::pressed, this, [=]() {
     int newRow = model->rowCount();
@@ -187,8 +215,9 @@ void EventDialog::createArgumentInput(QWidget* parent)
   });
 
   button->setFocusPolicy(Qt::NoFocus);
-  button->setText(tr("Add argument"));
-  button->setMaximumWidth(100);
+  button->setText(tr(" Add argument"));
+  button->setIcon(addIconWithColor(":/icons/plus.svg", Config::FOREGROUND));
+  button->setMaximumWidth(250);
   layout()->addWidget(button);
 }
 
