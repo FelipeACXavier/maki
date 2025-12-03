@@ -55,6 +55,7 @@ struct ThemeVars
   // Icons
   QString arrow_icon_up = ":/icons/arrow-up.svg";
   QString arrow_icon_down = ":/icons/arrow-down.svg";
+  QString arrow_icon_right = ":/icons/arrow-right.svg";
   QString check_icon = ":/icons/check.svg";
   QString uncheck_icon = ":/icons/uncheck.svg";
   QString limit_icon = ":/icons/limit.svg";
@@ -119,6 +120,7 @@ const QHash<QString, QString ThemeVars::*> THEME_KEY_MAP = {
     // Icons
     {"@arrow_icon_up", &ThemeVars::arrow_icon_up},
     {"@arrow_icon_down", &ThemeVars::arrow_icon_down},
+    {"@arrow_icon_right", &ThemeVars::arrow_icon_right},
     {"@uncheck_icon", &ThemeVars::uncheck_icon},
     {"@check_icon", &ThemeVars::check_icon},
     {"@limit_icon", &ThemeVars::limit_icon},

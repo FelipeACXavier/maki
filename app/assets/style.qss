@@ -383,17 +383,45 @@ QTabWidget#InfoPanel QTabBar::tab {
    =============================== */
 
 QMenu {
-  background-color: @menu_bg;
-  border: 1px solid @menu_border;
+  color: @foreground;
+  background-color: @input_bg;
+
+  min-width: 200px;
+  border: 1px solid @control_border;
+  border-radius: @border_radius;
 }
 
 QMenu::item {
-  padding: 6px 20px;
+  color: @foreground;
+  padding: 5px 20px;
 }
 
 QMenu::item:selected {
-  background-color: @selection_bg;
   color: @selection_fg;
+  background-color: @selection_bg;
+}
+
+QMenu::item:disabled {
+  color: @faded_foreground;
+}
+
+QMenu::separator {
+  height: 1px;
+  margin: 0px 5px;
+  background: @faded_foreground;
+}
+
+QMenu::right-arrow {
+  image: url(@arrow_icon_right);
+  width: 10px;
+  height: 10px;
+}
+
+QMenu QLabel {
+  background: @input_bg;
+  padding: 5px 5px;
+  border-top-right-radius: @border_radius;
+  border-top-left-radius: @border_radius;
 }
 
 /* ===============================

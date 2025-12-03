@@ -3,9 +3,11 @@
 #include <QBuffer>
 #include <QClipboard>
 #include <QGraphicsSceneDragDropEvent>
+#include <QLabel>
 #include <QMenu>
 #include <QMessageBox>
 #include <QMimeData>
+#include <QWidgetAction>
 #include <memory>
 
 #include "app_configs.h"
@@ -383,12 +385,28 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
   QMenu menu;
   QList<QGraphicsItem*> items = selectedItems();
 
+  auto addSectionLabel = [&menu](const QString& text) {
+    auto* label = new QLabel(text);
+    label->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    // QFont f = label->font();
+    // f.setBold(true);
+    // label->setFont(f);
+
+    auto action = new QWidgetAction(&menu);
+    action->setDefaultWidget(label);
+    menu.addAction(action);
+
+    // Optional: add a thin separator line below it
+    menu.addSeparator();
+  };
+
   if (item->type() == NodeItem::Type)
   {
     NodeItem* node = static_cast<NodeItem*>(item);
 
     // =============================================
-    menu.addSection("Creation");
+    // menu.addSection("Creation");
+    addSectionLabel("Creation");
 
     QAction* newEventAction = menu.addAction(tr("New event"));
     newEventAction->setEnabled(node != nullptr && items.size() == 1);
@@ -404,7 +422,7 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     // });
     menu.addAction(newStateAction);
 
-    QAction* newBehaviourAction = menu.addAction(tr("Edit behaviour"));
+    QAction* newBehaviourAction = menu.addAction(tr("Add task"));
     // newStateMachineAction->setEnabled(node != nullptr && items.size() == 1);
     QObject::connect(newBehaviourAction, &QAction::triggered, [this, node]() {
       auto flow = node->createBehaviour(nullptr);
@@ -413,7 +431,8 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     menu.addAction(newBehaviourAction);
 
     // =============================================
-    menu.addSection("Edit");
+    // menu.addSection("Edit");
+    addSectionLabel("Edit");
 
     QAction* copyAction = menu.addAction("Copy");
     copyAction->setEnabled(items.size() > 0);
@@ -434,7 +453,8 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     });
 
     // =============================================
-    menu.addSection("Visual");
+    // menu.addSection("Visual");
+    addSectionLabel("Visual");
 
     QAction* forwardAction = menu.addAction("To front");
     forwardAction->setEnabled(items.size() > 0);
