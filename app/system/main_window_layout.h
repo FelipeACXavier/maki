@@ -18,6 +18,7 @@ class PropertiesMenu;
 class ProcessTab;
 
 #include "style_helpers.h"
+#include "widgets/settings_manager.h"
 
 class MainWindowLayout : public QMainWindow
 {
@@ -96,7 +97,7 @@ protected:
   QAction* mAboutAction;
 
 protected:
-  void onThemeChanged();
+  void onThemeChanged(const AppearanceSettings& settings);
 
   void toggleGenerationButton(bool running);
   void toggleDeployButton(bool running);

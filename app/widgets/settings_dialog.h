@@ -44,6 +44,7 @@ private:
   // Appearance
   QComboBox* mThemeCombo = nullptr;
   QSpinBox* mUiScale = nullptr;
+  QCheckBox* mNativeMenuBar = nullptr;
   QCheckBox* mShowGrid = nullptr;
   QSpinBox* mNodeCornerRadius = nullptr;
 

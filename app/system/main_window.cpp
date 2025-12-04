@@ -137,7 +137,7 @@ void MainWindow::onThemeChanged(const QString& t, const QList<Config::ThemeInfo>
       static_cast<Canvas*>(canvas->scene())->themeChanged();
   }
 
-  MainWindowLayout::onThemeChanged();
+  MainWindowLayout::onThemeChanged(mSettingsManager->appearance());
 }
 
 void MainWindow::startUI()

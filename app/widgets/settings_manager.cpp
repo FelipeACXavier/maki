@@ -47,6 +47,7 @@ void SettingsManager::load()
   mAppearance.theme = mSettings.value("theme", mAppearance.theme).toString();
   mAppearance.uiScalePercent = mSettings.value("uiScalePercent", mAppearance.uiScalePercent).toInt();
   mAppearance.showCanvasGrid = mSettings.value("showCanvasGrid", mAppearance.showCanvasGrid).toBool();
+  mAppearance.nativeMenuBar = mSettings.value("nativeMenuBar", mAppearance.nativeMenuBar).toBool();
   mAppearance.nodeCornerRadius = mSettings.value("nodeCornerRadius", mAppearance.nodeCornerRadius).toInt();
   mSettings.endGroup();
 
@@ -70,6 +71,7 @@ void SettingsManager::save()
   mSettings.setValue("theme", mAppearance.theme);
   mSettings.setValue("uiScalePercent", mAppearance.uiScalePercent);
   mSettings.setValue("showCanvasGrid", mAppearance.showCanvasGrid);
+  mSettings.setValue("nativeMenuBar", mAppearance.nativeMenuBar);
   mSettings.setValue("nodeCornerRadius", mAppearance.nodeCornerRadius);
   mSettings.endGroup();
 

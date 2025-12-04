@@ -300,6 +300,7 @@ void MainWindowLayout::buildMenuBar()
 {
   // === Menu Bar ===
   mMenuBar = new QMenuBar();
+  mMenuBar->setNativeMenuBar(true);
 
   QMenu* file = mMenuBar->addMenu(tr("File"));
 
@@ -547,9 +548,10 @@ void MainWindowLayout::applyTheme()
   }
 }
 
-void MainWindowLayout::onThemeChanged()
+void MainWindowLayout::onThemeChanged(const AppearanceSettings& settings)
 {
   updateIconTheme(mIcons);
+  mMenuBar->setNativeMenuBar(settings.nativeMenuBar);
 }
 
 QWidget* MainWindowLayout::createHeaderComboBox(QComboBox* comboBox, const QString& iconPath, const QString& tooltip)
@@ -595,7 +597,7 @@ void MainWindowLayout::toggleGenerationButton(bool running)
     }
   }
 
-  onThemeChanged();
+  updateIconTheme(mIcons);
 }
 
 void MainWindowLayout::toggleDeployButton(bool running)

@@ -26,6 +26,7 @@ struct AppearanceSettings
   QString theme = "system";
   int uiScalePercent = 100;  // 100%, 110%, ...
   bool showCanvasGrid = true;
+  bool nativeMenuBar = true;
   int nodeCornerRadius = 8;
 };
 

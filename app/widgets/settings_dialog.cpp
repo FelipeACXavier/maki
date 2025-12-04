@@ -194,6 +194,8 @@ VoidResult SettingsDialog::createAppearancePage()
   themeLayout->addWidget(mThemeCombo);
   themeLayout->addStretch();
 
+  mNativeMenuBar = new QCheckBox(tr("Use native menubar"), page);
+
   mUiScale = new QSpinBox(page);
   mUiScale->setRange(80, 200);
   mUiScale->setSuffix(tr(" %"));
@@ -215,6 +217,7 @@ VoidResult SettingsDialog::createAppearancePage()
 
   QVBoxLayout* layout = page->findChild<QVBoxLayout*>("ContentArea");
   layout->addLayout(themeLayout);
+  layout->addWidget(mNativeMenuBar);
   layout->addLayout(scaleLayout);
   layout->addWidget(mShowGrid);
   layout->addLayout(radiusLayout);
@@ -305,6 +308,7 @@ void SettingsDialog::loadFromSettings()
   mUiScale->setValue(appearance.uiScalePercent);
   mShowGrid->setChecked(appearance.showCanvasGrid);
   mNodeCornerRadius->setValue(appearance.nodeCornerRadius);
+  mNativeMenuBar->setChecked(appearance.nativeMenuBar);
 
   // -----------------------------------------------------------------
   // Load Generation settings
