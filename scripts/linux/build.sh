@@ -15,9 +15,10 @@ function printHelp()
 CLEAN=0
 BUILD_TYPE="Debug"
 TARGET="linux"
+CURR_DIR=`pwd`
 SOURCE_DIR=$HOME/maki
 # Use QT version from the single source of truth file
-QT_VERSION="$(tr -d ' \n' < $SOURCE_DIR/.qt-version)"
+QT_VERSION="$(tr -d ' \n' < $CURR_DIR/.qt-version)"
 BUILD_PATH="$SOURCE_DIR/build/linux"
 PREFIX_PATH="$HOME/Qt/$QT_VERSION/gcc_64"
 INSTALL_PREFIX="$SOURCE_DIR/release/linux"
@@ -52,7 +53,7 @@ done
 
 echo "--------------------------------------"
 echo "Running with:"
-echo "  CURR_DIR: `pwd`"
+echo "  CURR_DIR: ${CURR_DIR}"
 echo "  QT_VERSION: ${QT_VERSION}"
 echo "  BUILD_TYPE: ${BUILD_TYPE}"
 echo "  TARGET: ${TARGET}"

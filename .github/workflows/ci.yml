@@ -51,7 +51,7 @@ jobs:
       # 2) Build for given target
       - name: Build Linux
         run: |
-          chmod +x scripts/linux/build.sh
+          chmod +x ./scripts/linux/build.sh
           ./scripts/linux/build.sh
 
       # No tests for now
