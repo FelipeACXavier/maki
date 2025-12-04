@@ -335,6 +335,7 @@ QComboBox::down-arrow:on {
 }
 
 QComboBox#HeaderComboBox {
+  min-width: 85px;
   border-radius: 0px;
   border-top-right-radius: @border_radius;
   border-bottom-right-radius: @border_radius;
@@ -401,7 +402,6 @@ QMenu {
 
 QMenu::item {
   color: @foreground;
-  padding: 5px 20px;
 }
 
 QMenu::item:selected {

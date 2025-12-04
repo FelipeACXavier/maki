@@ -120,5 +120,5 @@ private:
   void buildMenuBar();
 
   void applyTheme();
-  QWidget* createHeaderComboBox(QComboBox* comboBox, const QString& iconPath);
+  QWidget* createHeaderComboBox(QComboBox* comboBox, const QString& iconPath, const QString& tooltip);
 };

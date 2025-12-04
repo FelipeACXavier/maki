@@ -64,7 +64,7 @@ generator::Language RozyneGenerator::supportedLanguage() const
 
 QString RozyneGenerator::languageName() const
 {
-  return "Rozyne";
+  return "koda";
 }
 
 QList<QString> RozyneGenerator::generatedFiles() const

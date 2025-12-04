@@ -32,8 +32,8 @@
     <file alias="plus.svg">assets/icons/fontawesome/svgs/solid/plus.svg</file>
     <file alias="play.svg">assets/icons/fontawesome/svgs/solid/circle-play.svg</file>
     <file alias="pause.svg">assets/icons/fontawesome/svgs/solid/circle-pause.svg</file>
+    <file alias="target.svg">assets/icons/fontawesome/svgs/solid/bullseye.svg</file>
     <file alias="generator.svg">assets/icons/fontawesome/svgs/solid/rocket.svg</file>
-    <file alias="generation_options.svg">assets/icons/fontawesome/svgs/solid/terminal.svg</file>
     <file alias="terminal.svg">assets/icons/fontawesome/svgs/solid/terminal.svg</file>
     <file alias="display.svg">assets/icons/fontawesome/svgs/solid/display.svg</file>
     <file alias="deploy.svg">assets/icons/fontawesome/svgs/solid/diagram-next.svg</file>

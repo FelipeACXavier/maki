@@ -116,13 +116,13 @@ void MainWindowlayout::buildCentralPanel()
   mGenerationOption->addItem(tr("Verify"), QVariant::fromValue(Types::GenerationOptions::GenerateVerify));
   mGenerationOption->addItem(tr("Simulate"), QVariant::fromValue(Types::GenerationOptions::GenerateSimulate));
 
-  auto generationOptionsWrapper = createHeaderComboBox(mGenerationOption, ":/icons/generator.svg");
+  auto generationOptionsWrapper = createHeaderComboBox(mGenerationOption, ":/icons/target.svg", "Run target");
   headerLayout->addWidget(generationOptionsWrapper);
 
   // ----------------------------------------------------------------
   mGeneratorOption = new QComboBox();
 
-  auto generatorOptionsWrapper = createHeaderComboBox(mGeneratorOption, ":/icons/generation_options.svg");
+  auto generatorOptionsWrapper = createHeaderComboBox(mGeneratorOption, ":/icons/generator.svg", "Generator to be used");
   headerLayout->addWidget(generatorOptionsWrapper);
 
   // ----------------------------------------------------------------
@@ -571,7 +571,7 @@ void MainWindowlayout::themeChanged()
   }
 }
 
-QWidget* MainWindowlayout::createHeaderComboBox(QComboBox* comboBox, const QString& iconPath)
+QWidget* MainWindowlayout::createHeaderComboBox(QComboBox* comboBox, const QString& iconPath, const QString& tooltip)
 {
   QWidget* wrapper = new QWidget();
   QHBoxLayout* wLayout = new QHBoxLayout(wrapper);
@@ -580,9 +580,13 @@ QWidget* MainWindowlayout::createHeaderComboBox(QComboBox* comboBox, const QStri
 
   QLabel* iconLabel = new QLabel();
   iconLabel->setObjectName("HeaderButton");
+  iconLabel->setToolTip(tooltip);
+  iconLabel->setToolTipDuration(2000);
   mIcons.append({iconLabel, iconPath});
 
   comboBox->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+  comboBox->setToolTip(tooltip);
+  comboBox->setToolTipDuration(2000);
   comboBox->setObjectName("HeaderComboBox");
 
   wLayout->addWidget(iconLabel);
