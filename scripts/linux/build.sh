@@ -16,7 +16,7 @@ CLEAN=0
 BUILD_TYPE="Debug"
 TARGET="linux"
 CURR_DIR=`pwd`
-SOURCE_DIR=$HOME/maki
+SOURCE_DIR=$CURR_DIR
 # Use QT version from the single source of truth file
 QT_VERSION="$(tr -d ' \n' < $CURR_DIR/.qt-version)"
 BUILD_PATH="$SOURCE_DIR/build/linux"
