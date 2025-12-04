@@ -4,11 +4,15 @@
 #include <QLabel>
 #include <QMenu>
 #include <QPainter>
+#include <QPushButton>
 #include <QStyle>
+#include <QTabBar>
 #include <QVariant>
 #include <QWidgetAction>
 
+#include "logging.h"
 #include "string_helpers.h"
+#include "theme.h"
 
 static const char* CLASS = "class";
 
@@ -143,3 +147,31 @@ void addSectionLabel(QMenu* menu, const QString& text)
   // Optional: add a thin separator line below it
   menu->addSeparator();
 };
+
+void updateIconTheme(QList<WidgetWithIcon>& icons)
+{
+  for (auto& item : icons)
+  {
+    if (item.widget)
+    {
+      QColor color = item.color.isValid() ? item.color : Config::FOREGROUND;
+      if (auto label = qobject_cast<QLabel*>(item.widget))
+      {
+        label->setPixmap(applyColorToIcon(item.path, color).scaled(16, 16, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+      }
+      else if (auto button = qobject_cast<QPushButton*>(item.widget))
+      {
+        button->setIcon(addIconWithColor(item.path, color));
+      }
+      else if (auto tabBar = qobject_cast<QTabBar*>(item.widget))
+      {
+        if (item.index < tabBar->count())
+          tabBar->setTabIcon(item.index, addIconWithColor(item.path, color));
+      }
+      else
+      {
+        LOG_WARNING("Unsupported widget");
+      }
+    }
+  }
+}

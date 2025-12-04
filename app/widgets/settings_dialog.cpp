@@ -7,6 +7,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
+#include <QList>
 #include <QListWidget>
 #include <QPushButton>
 #include <QScreen>
@@ -19,13 +20,13 @@
 #include "style_helpers.h"
 
 SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsManager> manager, QWidget* parent)
-    : QDialog(parent)
+    : BaseDialog(title, parent)
     , mSettingsManager(manager)
 {
-  setWindowTitle(title);
-
   auto* mainLayout = new QHBoxLayout();
   mainLayout->setSpacing(0);
+
+  connect(mSettingsManager.get(), &SettingsManager::themeChanged, this, &BaseDialog::onThemeChanged);
 
   // Left: navigation list
   mPageSelector = new QListWidget(this);
@@ -61,36 +62,26 @@ SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsMan
   {
     okBtn->setObjectName("TextAndIcon");
     okBtn->setText(" Apply");
-    okBtn->setIcon(addIconWithColor(":/icons/accept.svg", Config::FOREGROUND));
+    addIcon(okBtn, ":/icons/accept.svg");
   }
 
   if (cancelBtn)
   {
     cancelBtn->setObjectName("TextAndIcon");
     cancelBtn->setText(" Close");
-    cancelBtn->setIcon(addIconWithColor(":/icons/reject.svg", Config::FOREGROUND));
+    addIcon(cancelBtn, ":/icons/reject.svg");
   }
 
-  auto outerLayout = new QVBoxLayout();
-  outerLayout->addLayout(mainLayout);
-  outerLayout->addWidget(buttonBox);
-  setLayout(outerLayout);
+  layout()->addLayout(mainLayout);
+  layout()->addWidget(buttonBox);
 
   connect(buttonBox, &QDialogButtonBox::accepted, this, &SettingsDialog::apply);
   connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
-  // Set the dialog size dynamically
-  QScreen* screen = this->screen();
-  QRect available = screen->availableGeometry();
-
-  int targetWidth = available.width() * 0.3;
-  int targetHeight = available.height() * 0.5;
-  resize(targetWidth, targetHeight);
-
   loadFromSettings();
 }
 
-QWidget* SettingsDialog::addPage(const QString& pageName, const QString& iconName, std::function<void()> resetCallback) const
+QWidget* SettingsDialog::addPage(const QString& pageName, const QString& iconName, std::function<void()> resetCallback)
 {
   // Update the selector with new page
   auto selector = new QListWidgetItem(addIconWithColor(iconName, Config::FOREGROUND), pageName, mPageSelector);
@@ -114,7 +105,8 @@ QWidget* SettingsDialog::addPage(const QString& pageName, const QString& iconNam
   resetButton->setObjectName("TextAndIcon");
   resetButton->setText(tr(" Reset"));
   resetButton->setToolTip(tr("Reset settings for this page"));
-  resetButton->setIcon(addIconWithColor(":/icons/reset.svg", Config::FOREGROUND));
+  addIcon(resetButton, ":/icons/reset.svg");
+
   connect(resetButton, &QPushButton::pressed, resetCallback);
 
   headerRow->addWidget(titleIcon);

@@ -32,14 +32,14 @@
 #include "widgets/structure/flow_menu.h"
 #include "widgets/structure/system_menu.h"
 
-MainWindowlayout::MainWindowlayout(QWidget* parent)
+MainWindowLayout::MainWindowLayout(QWidget* parent)
     : QMainWindow(parent)
 {
   buildMainWindow();
   // qApp->installEventFilter(this);
 }
 
-void MainWindowlayout::buildMainWindow()
+void MainWindowLayout::buildMainWindow()
 {
   // Central widget
   mCentralWidget = new QWidget(this);
@@ -61,7 +61,7 @@ void MainWindowlayout::buildMainWindow()
   applyTheme();
 }
 
-void MainWindowlayout::buildLeftPanel()
+void MainWindowLayout::buildLeftPanel()
 {
   mLeftPanel = new QTabWidget();
 
@@ -90,7 +90,7 @@ void MainWindowlayout::buildLeftPanel()
   mMainSplitter->addWidget(mLeftPanel);
 }
 
-void MainWindowlayout::buildCentralPanel()
+void MainWindowLayout::buildCentralPanel()
 {
   mCentralSplitter = new QSplitter(Qt::Vertical);
 
@@ -234,7 +234,7 @@ void MainWindowlayout::buildCentralPanel()
   mMainSplitter->addWidget(mCentralSplitter);
 }
 
-void MainWindowlayout::buildRightPanel()
+void MainWindowLayout::buildRightPanel()
 {
   mRightPanel = new QSplitter(Qt::Vertical);
   mRightPanel->setMinimumWidth(250);
@@ -296,7 +296,7 @@ void MainWindowlayout::buildRightPanel()
   mMainSplitter->addWidget(mRightPanel);
 }
 
-void MainWindowlayout::buildMenuBar()
+void MainWindowLayout::buildMenuBar()
 {
   // === Menu Bar ===
   mMenuBar = new QMenuBar();
@@ -345,7 +345,7 @@ void MainWindowlayout::buildMenuBar()
   setMenuBar(mMenuBar);
 }
 
-void MainWindowlayout::buildLogTab()
+void MainWindowLayout::buildLogTab()
 {
   QWidget* logContainer = new QWidget(mBottomPanel);
   QVBoxLayout* logLayout = new QVBoxLayout(logContainer);
@@ -455,7 +455,7 @@ void MainWindowlayout::buildLogTab()
   mBottomPanel->addTab(logContainer, tr("Log"));
 }
 
-void MainWindowlayout::applyTheme()
+void MainWindowLayout::applyTheme()
 {
   if (mLeftPanel)
   {
@@ -547,31 +547,12 @@ void MainWindowlayout::applyTheme()
   }
 }
 
-void MainWindowlayout::themeChanged()
+void MainWindowLayout::onThemeChanged()
 {
-  for (auto& item : mIcons)
-  {
-    if (item.widget)
-    {
-      QColor color = item.color.isValid() ? item.color : Config::FOREGROUND;
-      if (auto label = qobject_cast<QLabel*>(item.widget))
-      {
-        label->setPixmap(applyColorToIcon(item.path, color).scaled(16, 16, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-      }
-      else if (auto button = qobject_cast<QPushButton*>(item.widget))
-      {
-        button->setIcon(addIconWithColor(item.path, color));
-      }
-      else if (auto tabBar = qobject_cast<QTabBar*>(item.widget))
-      {
-        if (item.index < tabBar->count())
-          tabBar->setTabIcon(item.index, addIconWithColor(item.path, color));
-      }
-    }
-  }
+  updateIconTheme(mIcons);
 }
 
-QWidget* MainWindowlayout::createHeaderComboBox(QComboBox* comboBox, const QString& iconPath, const QString& tooltip)
+QWidget* MainWindowLayout::createHeaderComboBox(QComboBox* comboBox, const QString& iconPath, const QString& tooltip)
 {
   QWidget* wrapper = new QWidget();
   QHBoxLayout* wLayout = new QHBoxLayout(wrapper);
@@ -595,7 +576,7 @@ QWidget* MainWindowlayout::createHeaderComboBox(QComboBox* comboBox, const QStri
   return wrapper;
 }
 
-void MainWindowlayout::toggleGenerationButton(bool running)
+void MainWindowLayout::toggleGenerationButton(bool running)
 {
   auto it = std::find_if(mIcons.begin(), mIcons.end(), [&](const WidgetWithIcon& item) { return item.widget == mGenerationButton; });
   if (it != mIcons.end())
@@ -614,9 +595,9 @@ void MainWindowlayout::toggleGenerationButton(bool running)
     }
   }
 
-  themeChanged();
+  onThemeChanged();
 }
 
-void MainWindowlayout::toggleDeployButton(bool running)
+void MainWindowLayout::toggleDeployButton(bool running)
 {
 }

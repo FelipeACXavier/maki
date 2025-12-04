@@ -1,16 +1,17 @@
 #pragma once
 
 #include <QComboBox>
-#include <QDialog>
 #include <QLineEdit>
 #include <QTableView>
+
+#include "widgets/base_dialog.h"
 
 class QStandardItem;
 class QStandardItemModel;
 
 struct FlowSaveInfo;
 
-class EventDialog : public QDialog
+class EventDialog : public BaseDialog
 {
   Q_OBJECT
 public:

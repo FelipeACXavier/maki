@@ -23,7 +23,6 @@
 #include "behaviour_canvas.h"
 #include "canvas.h"
 #include "canvas_view.h"
-#include "compiler/pipeline.h"
 #include "elements/flow.h"
 #include "elements/node.h"
 #include "library_container.h"
@@ -34,6 +33,7 @@
 #include "save_handler.h"
 #include "structure_canvas.h"
 #include "style_helpers.h"
+#include "system/main_window_layout.h"
 #include "widgets/properties/fields_menu.h"
 #include "widgets/properties/properties_menu.h"
 #include "widgets/settings_dialog.h"
@@ -42,7 +42,7 @@
 #include "widgets/structure/system_menu.h"
 
 MainWindow::MainWindow(QApplication* app, QWidget* parent)
-    : MainWindowlayout(parent)
+    : MainWindowLayout(parent)
     , mActiveCanvas(nullptr)
     , mApp(app)
 {
@@ -125,7 +125,7 @@ void MainWindow::onThemeChanged(const QString& t, const QList<Config::ThemeInfo>
       static_cast<Canvas*>(canvas->scene())->themeChanged();
   }
 
-  themeChanged();
+  MainWindowLayout::onThemeChanged();
 }
 
 void MainWindow::startUI()
@@ -166,7 +166,6 @@ void MainWindow::bind()
   connect(mOpenAllSettings, &QAction::triggered, this, [this] {
     LOG_INFO("Opening all settings");
     SettingsDialog* settingsDialog = new SettingsDialog("Add behaviour", mSettingsManager, this);
-
     settingsDialog->setAttribute(Qt::WA_DeleteOnClose);
     settingsDialog->show();
   });

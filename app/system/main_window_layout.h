@@ -17,12 +17,14 @@ class QPushButton;
 class PropertiesMenu;
 class ProcessTab;
 
-class MainWindowlayout : public QMainWindow
+#include "style_helpers.h"
+
+class MainWindowLayout : public QMainWindow
 {
   Q_OBJECT
 
 public:
-  MainWindowlayout(QWidget* parent = nullptr);
+  MainWindowLayout(QWidget* parent = nullptr);
 
 protected:
   // === Main ===
@@ -94,20 +96,12 @@ protected:
   QAction* mAboutAction;
 
 protected:
-  void themeChanged();
+  void onThemeChanged();
 
   void toggleGenerationButton(bool running);
   void toggleDeployButton(bool running);
 
 private:
-  struct WidgetWithIcon
-  {
-    QWidget* widget;
-    QString path;
-    int index;
-    QColor color;
-  };
-
   QList<WidgetWithIcon> mIcons;
 
   void buildMainWindow();

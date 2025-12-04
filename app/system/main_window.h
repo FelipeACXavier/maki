@@ -23,7 +23,7 @@ class SettingsManager;
 class Pipeline;
 class LocalServerTab;
 
-class MainWindow : public MainWindowlayout
+class MainWindow : public MainWindowLayout
 {
   Q_OBJECT
 

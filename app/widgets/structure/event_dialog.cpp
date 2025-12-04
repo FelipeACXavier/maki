@@ -1,8 +1,5 @@
 #include "event_dialog.h"
 
-#include <qabstractitemview.h>
-#include <qnamespace.h>
-
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QHeaderView>
@@ -21,22 +18,9 @@
 #include "style_helpers.h"
 
 EventDialog::EventDialog(const QString& title, QWidget* parent)
-    : QDialog(parent)
+    : BaseDialog(title, parent)
     , mEnterCount(0)
 {
-  setWindowTitle(title);
-
-  // Create layout and widgets
-  QVBoxLayout* layout = new QVBoxLayout;
-  setLayout(layout);
-
-  // Resize based on screen size
-  QScreen* screen = this->screen();
-  QRect available = screen->availableGeometry();
-
-  int targetWidth = available.width() * 0.3;
-  int targetHeight = available.height() * 0.5;
-  resize(targetWidth, targetHeight);
 }
 
 std::shared_ptr<FlowSaveInfo> EventDialog::getInfo() const

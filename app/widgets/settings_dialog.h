@@ -1,8 +1,8 @@
 #pragma once
 
-#include <QDialog>
 #include <memory>
 
+#include "base_dialog.h"
 #include "result.h"
 #include "settings_manager.h"
 
@@ -15,7 +15,7 @@ class QLineEdit;
 class QToolButton;
 class QVBoxLayout;
 
-class SettingsDialog : public QDialog
+class SettingsDialog : public BaseDialog
 {
   Q_OBJECT
 public:
@@ -57,7 +57,7 @@ private:
   void saveToSettings();
   void loadFromSettings();
 
-  QWidget* addPage(const QString& pageName, const QString& iconNeame, std::function<void()> resetCallback) const;
+  QWidget* addPage(const QString& pageName, const QString& iconNeame, std::function<void()> resetCallback);
 
   VoidResult createGeneralPage();
   VoidResult createAppearancePage();
