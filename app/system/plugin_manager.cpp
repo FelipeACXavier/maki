@@ -9,8 +9,8 @@
 #include "common/style_helpers.h"
 #include "logging.h"
 
-PluginManager::PluginManager()
-    : QObject()
+PluginManager::PluginManager(QObject* parent)
+    : QObject(parent)
     , mPlugin{nullptr}
 {
 }

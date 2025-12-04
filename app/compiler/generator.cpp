@@ -7,11 +7,11 @@
 #include "logging.h"
 #include "pipeline.h"
 
-Generator::Generator(std::shared_ptr<SaveInfo> storage, QWidget* parent)
-    : QWidget(parent)
+Generator::Generator(std::shared_ptr<SaveInfo> storage, QObject* parent)
+    : QObject(parent)
     , mStorage(storage)
-    , mPipeline(new Pipeline(this))
 {
+  mPipeline = new Pipeline(this);
   connect(mPipeline, &Pipeline::openClient, [this](const QString& url) { emit openClient(url); });
   connect(mPipeline, &Pipeline::finishedLast, [this] { emit generationEnded(); });
 }

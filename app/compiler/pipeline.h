@@ -2,11 +2,10 @@
 
 #include <QProcess>
 #include <QVector>
-#include <QWidget>
 
 #include "result.h"
 
-class Pipeline : public QWidget
+class Pipeline : public QObject
 {
   Q_OBJECT
 public:
@@ -17,7 +16,7 @@ public:
     OPEN_BROWSER
   };
 
-  Pipeline(QWidget* parent = nullptr);
+  Pipeline(QObject* parent = nullptr);
 
   VoidResult add(QProcess* process, OnFail onFail);
   VoidResult add(QProcess* process, OnFail onFail, const QString& options);

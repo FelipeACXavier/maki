@@ -256,6 +256,7 @@ VoidResult SettingsDialog::createGenerationPage()
   rowLayout->addWidget(mGenerationDirEdit, /*stretch=*/1);
   rowLayout->addWidget(mGenerationBrowseBtn);
 
+  colLayout->addWidget(label);
   colLayout->addLayout(rowLayout);
   colLayout->addWidget(hint);
 
@@ -266,9 +267,7 @@ VoidResult SettingsDialog::createGenerationPage()
       mGenerationDirEdit->setText(dir);
   });
 
-  // static_cast<QVBoxLayout*>(page->layout())->addLayout(headerRow);
   QVBoxLayout* layout = page->findChild<QVBoxLayout*>("ContentArea");
-  layout->addWidget(label);
   layout->addWidget(pathRow);
   layout->addStretch();
 

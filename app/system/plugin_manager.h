@@ -10,7 +10,7 @@ class PluginManager : public QObject
 {
   Q_OBJECT
 public:
-  PluginManager();
+  PluginManager(QObject* parent = nullptr);
 
   void start(QMenu* menu, QComboBox* comboBox);
 

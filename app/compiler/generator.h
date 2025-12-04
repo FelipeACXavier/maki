@@ -6,7 +6,7 @@
 class GeneratorPlugin;
 class Pipeline;
 
-class Generator : public QWidget
+class Generator : public QObject
 {
   Q_OBJECT
 public:
@@ -15,7 +15,7 @@ public:
     Types::GenerationOptions pipeline;
   };
 
-  Generator(std::shared_ptr<SaveInfo> storage, QWidget* parent = nullptr);
+  Generator(std::shared_ptr<SaveInfo> storage, QObject* parent = nullptr);
 
   VoidResult generate(const QString& outputDir, GeneratorPlugin* generator, const GenerationOptions& option);
   Pipeline* pipeline() const;

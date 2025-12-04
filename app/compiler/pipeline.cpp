@@ -9,8 +9,8 @@
 static const int SUCCESS = 0;
 static const QRegularExpression ansiRe("\x1B\\[[0-9;?]*[ -/]*[@-~]", QRegularExpression::DontCaptureOption);
 
-Pipeline::Pipeline(QWidget* parent)
-    : QWidget(parent)
+Pipeline::Pipeline(QObject* parent)
+    : QObject(parent)
     , mName("")
     , mRunningProcess({nullptr, OnFail::STOP, ""})
 {
