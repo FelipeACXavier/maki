@@ -15,6 +15,7 @@
 #include "logging.h"
 #include "main_window_layout.h"
 #include "result.h"
+#include "widgets/notification_manager.h"
 
 class NodeItem;
 class SaveHandler;
@@ -22,6 +23,7 @@ class PluginManager;
 class SettingsManager;
 class Pipeline;
 class LocalServerTab;
+class NotificationManager;
 
 class MainWindow : public MainWindowLayout
 {
@@ -50,10 +52,11 @@ private:
   std::shared_ptr<ConfigurationTable> mConfigTable;
   std::shared_ptr<SettingsManager> mSettingsManager;
 
-  Generator* mGenerator;
-  Canvas* mActiveCanvas;
-  ProcessTab* mProcessTab;
-  LocalServerTab* mLocalServerTab;
+  Generator* mGenerator = nullptr;
+  Canvas* mActiveCanvas = nullptr;
+  ProcessTab* mProcessTab = nullptr;
+  LocalServerTab* mLocalServerTab = nullptr;
+  NotificationManager* mNotificationManager = nullptr;
 
   logging::LogLevel mLogLevel;
 

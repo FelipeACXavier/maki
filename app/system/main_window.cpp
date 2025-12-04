@@ -34,6 +34,7 @@
 #include "structure_canvas.h"
 #include "style_helpers.h"
 #include "system/main_window_layout.h"
+#include "widgets/notification_manager.h"
 #include "widgets/properties/fields_menu.h"
 #include "widgets/properties/properties_menu.h"
 #include "widgets/settings_dialog.h"
@@ -63,9 +64,19 @@ VoidResult MainWindow::start()
     QString logMessage = toQT(ts, level, message);
     handleLogging(logMessage, mLogText);
     if (level == logging::LogLevel::Error)
+    {
+      if (mNotificationManager)
+        mNotificationManager->showNotification(QString::fromStdString(message), logging::LogLevel::Error);
+
       handleLogging(logMessage, mErrorLogText);
-    if (level == logging::LogLevel::Warning)
+    }
+    else if (level == logging::LogLevel::Warning)
+    {
+      if (mNotificationManager)
+        mNotificationManager->showNotification(QString::fromStdString(message), logging::LogLevel::Warning);
+
       handleLogging(logMessage, mWarningLogText);
+    }
   };
 
   auto configRead = JSON::fromFile(":/assets/config.json");
@@ -80,13 +91,14 @@ VoidResult MainWindow::start()
 
   mGenerator = new Generator(mStorage, this);
   mSaveHandler = std::make_unique<SaveHandler>(this);
-  mPluginManager = std::make_unique<PluginManager>();
+  mPluginManager = std::make_unique<PluginManager>(this);
   mSettingsManager = std::make_shared<SettingsManager>();
+  mNotificationManager = new NotificationManager(this);
 
-  mProcessTab = new ProcessTab(mGenerator->pipeline(), this);
+  mProcessTab = new ProcessTab(mGenerator->pipeline(), mCanvasPanel);
   mProcessTab->hide();
 
-  mLocalServerTab = new LocalServerTab(this);
+  mLocalServerTab = new LocalServerTab(mCanvasPanel);
   mLocalServerTab->hide();
 
   startUI();
@@ -136,7 +148,8 @@ void MainWindow::startUI()
   mActiveCanvas = canvas;
   currentCanvas->setScene(canvas);
 
-  mPluginManager->start(mGeneratorMenu, mGeneratorOption);
+  if (mPluginManager)
+    mPluginManager->start(mGeneratorMenu, mGeneratorOption);
 }
 
 void MainWindow::bind()
@@ -186,8 +199,11 @@ void MainWindow::bind()
   connect(mFlowMenu, &FlowMenu::flowSelected, rootCanvas(), &Canvas::onFlowSelected);
   connect(mFlowMenu, &FlowMenu::flowRemoved, rootCanvas(), &Canvas::onFlowRemoved);
 
-  connect(mGenerator, &Generator::generationStarted, [this] { toggleGenerationButton(true); });
-  connect(mGenerator, &Generator::generationEnded, [this] { toggleGenerationButton(false); });
+  if (mGenerator)
+  {
+    connect(mGenerator, &Generator::generationStarted, [this] { toggleGenerationButton(true); });
+    connect(mGenerator, &Generator::generationEnded, [this] { toggleGenerationButton(false); });
+  }
 
   connect(mProcessTabButton, &QPushButton::pressed, this, &MainWindow::addProcessTab);
   connect(mBrowserTabButton, &QPushButton::pressed, this, &MainWindow::addBrowserTab);
@@ -359,7 +375,11 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
 
 void MainWindow::onActionNew()
 {
-  LOG_DEBUG("Triggering action new");
+  if (!mSaveHandler)
+  {
+    LOG_WARNING("System not initialized");
+    return;
+  }
 
   // Repopulate the canvas
   SaveInfo emptySave;

@@ -107,6 +107,7 @@ QPushButton#TextAndIcon[hasActivity="true"] {
   background-color: @selection_bg;
 }
 
+
 /* ===============================
    QCHECKBOX
    =============================== */
@@ -549,6 +550,85 @@ QListWidget#SettingsList::item:selected {
   /* padding-left: 2px; */
   /* border-left: 2px solid @selection_bg; */
   border-bottom: 2px solid @selection_bg;
+}
+
+/* ===============================
+   NOTIFICATIONWIDGET
+   =============================== */
+NotificationWidget {
+  color: @foreground;
+  background-color: @background;
+
+  min-width: 300px;
+  max-width: @notification_width;
+  min-height: @min_notification_height;
+  max-height: @max_notification_height;
+
+  padding: 0px;
+  font-size: 16px;
+
+  border: 2px solid @foreground;
+  border-radius: @border_radius;
+}
+
+QPushButton#FlatButton {
+  max-width: 16px;
+  max-height: 16px;
+  padding: 0;
+
+  background: transparent;
+  border: none;
+}
+
+QPushButton#FlatButton:hover {
+  border: 1px solid @foreground;
+}
+
+QLabel#NotificationTitle {
+  background: transparent;
+  font-size: 20px;
+  padding: 0;
+}
+
+QWidget#NotificationHeader {
+  height: 36px;
+
+  color: @foreground;
+  background-color: @background;
+  font: bold 20px;
+
+  border-top-left-radius: @border_radius;
+  border-top-right-radius: @border_radius;
+  border-bottom: 2px solid @foreground;
+}
+
+QWidget#NotificationBody {
+  border-bottom-left-radius: @border_radius;
+  border-bottom-right-radius: @border_radius;
+}
+
+NotificationWidget[level="info"] {
+  border: 2px solid @info_color;
+}
+
+QWidget#NotificationHeader[level="info"] {
+  border-bottom: px solid @info_color;
+}
+
+NotificationWidget[level="error"] {
+  border: 2px solid @error_color;
+}
+
+QWidget#NotificationHeader[level="error"] {
+  border-bottom: 2px solid @error_color;
+}
+
+NotificationWidget[level="warning"] {
+  border: 2px solid @warning_color;
+}
+
+QWidget#NotificationHeader[level="warning"] {
+  border-bottom: 2px solid @warning_color;
 }
 
 /* ===============================

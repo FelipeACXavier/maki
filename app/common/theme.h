@@ -34,6 +34,16 @@ struct ThemeVars
   QString border_radius = "5px";
   QString faded_foreground = "#afafaf";
 
+  QString info_color = "#7CC183";
+  QString error_color = "#DC6C6D";
+  QString warning_color = "#E5C07B";
+
+  // Notifications
+  QString notification_width = "300";
+  QString min_notification_height = "100";
+  QString max_notification_height = "500";
+  QString notification_margin = "10";
+
   // Scrollbar
   QString scrollbar_handle = "#c3c3c3";
   QString scrollbar_handle_hover = "#b0b0b0";
@@ -102,6 +112,16 @@ const QHash<QString, QString ThemeVars::*> THEME_KEY_MAP = {
     {"@selection_bg", &ThemeVars::selection_bg},
     {"@selection_fg", &ThemeVars::selection_fg},
     {"@border_radius", &ThemeVars::border_radius},
+
+    {"@info_color", &ThemeVars::info_color},
+    {"@error_color", &ThemeVars::error_color},
+    {"@warning_color", &ThemeVars::warning_color},
+
+    // Notification
+    {"@notification_width", &ThemeVars::notification_width},
+    {"@min_notification_height", &ThemeVars::min_notification_height},
+    {"@max_notification_height", &ThemeVars::max_notification_height},
+    {"@notification_margin", &ThemeVars::notification_margin},
 
     {"@scrollbar_handle", &ThemeVars::scrollbar_handle},
     {"@scrollbar_handle_hover", &ThemeVars::scrollbar_handle_hover},
