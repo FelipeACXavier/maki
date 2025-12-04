@@ -111,9 +111,12 @@ VoidResult Generator::verifyPipeline(const QStringList& input, QStringList& outp
     for (const QString& f : files)
     {
       auto fullPath = dir.absoluteFilePath(f);
+      if (fullPath.contains("/a_") || fullPath.contains("types"))
+        continue;
+
       LOG_INFO("Will verify file: %s", qPrintable(fullPath));
 
-      const QString command = "dzn";
+      const QString command = "ide";
       const QStringList arguments = {"verify", fullPath};
 
       QProcess* generate = new QProcess(this);

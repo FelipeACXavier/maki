@@ -159,14 +159,14 @@ void MainWindowlayout::buildCentralPanel()
   mProcessTabButton = new QPushButton(corner);
   mProcessTabButton->setObjectName("MainWindowButton");
   mProcessTabButton->setToolTip(tr("Show process tab"));
-  mProcessTabButton->setProperty("hasActivity", false);
+  connect(mProcessTabButton, &QPushButton::pressed, [this] { updateProperty(mProcessTabButton, Config::HAS_ACTIVITY, false); });
   mIcons.append({mProcessTabButton, ":/icons/terminal.svg"});
 
   // Second button
   mBrowserTabButton = new QPushButton(corner);
   mBrowserTabButton->setObjectName("MainWindowButton");
   mBrowserTabButton->setToolTip(tr("Show simulation tab"));
-  mBrowserTabButton->setProperty("hasActivity", false);
+  connect(mBrowserTabButton, &QPushButton::pressed, [this] { updateProperty(mBrowserTabButton, Config::HAS_ACTIVITY, false); });
   mIcons.append({mBrowserTabButton, ":/icons/display.svg"});
 
   layout->addWidget(mProcessTabButton);
@@ -599,19 +599,13 @@ void MainWindowlayout::toggleGenerationButton(bool running)
     if (running)
     {
       mGenerationButton->setToolTip("Cancel current generation");
-      mProcessTabButton->setProperty("hasActivity", true);
-      mProcessTabButton->style()->unpolish(mProcessTabButton);
-      mProcessTabButton->style()->polish(mProcessTabButton);
-      mProcessTabButton->update();
+      updateProperty(mProcessTabButton, Config::HAS_ACTIVITY, true);
       it->path = ":/icons/pause.svg";
     }
     else
     {
       mGenerationButton->setToolTip("Run with the selected options");
-      mProcessTabButton->setProperty("hasActivity", false);
-      mProcessTabButton->style()->unpolish(mProcessTabButton);
-      mProcessTabButton->style()->polish(mProcessTabButton);
-      mProcessTabButton->update();
+      updateProperty(mProcessTabButton, Config::HAS_ACTIVITY, false);
       it->path = ":/icons/play.svg";
     }
   }

@@ -4,6 +4,7 @@
 #include <QTextBlock>
 #include <QTextBrowser>
 #include <QTextCursor>
+#include <QTimer>
 #include <QVBoxLayout>
 
 #include "compiler/pipeline.h"
@@ -11,9 +12,9 @@
 
 ProcessTab::ProcessTab(Pipeline* pipeline, QWidget* parent)
     : QWidget(parent)
-    , mOutput(new QTextBrowser(this))
     , mPipeline(pipeline)
 {
+  mOutput = new QTextBrowser(this);
   mOutput->setReadOnly(true);
   mOutput->setWordWrapMode(QTextOption::NoWrap);
 

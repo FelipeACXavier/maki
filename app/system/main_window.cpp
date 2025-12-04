@@ -16,6 +16,7 @@
 #include <QString>
 #include <QTextBlock>
 #include <QTextBrowser>
+#include <QWebEngineProfile>
 #include <QWidget>
 
 #include "app_configs.h"

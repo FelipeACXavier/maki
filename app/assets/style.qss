@@ -86,16 +86,24 @@ QPushButton#MainWindowButton {
   height: @canvas_tab_height;
 }
 
-QPushButton[hasActivity="true"] {
-  border: 1x solid @selection_bg;
-}
-
 QPushButton#TextAndIcon {
   min-width: 60px;
   padding: 2px 10px;
 }
 
 QPushButton#TextAndIcon:checked {
+  background-color: @selection_bg;
+}
+
+QPushButton[hasActivity="true"] {
+  background-color: @selection_bg;
+}
+
+QPushButton#MainWindowButton[hasActivity="true"] {
+  background-color: @selection_bg;
+}
+
+QPushButton#TextAndIcon[hasActivity="true"] {
   background-color: @selection_bg;
 }
 

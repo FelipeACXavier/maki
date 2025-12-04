@@ -12,6 +12,7 @@ namespace Config
 {
 // ------------------------------------------------------------
 // Data types
+static const QString HAS_ACTIVITY = "hasActivity";
 
 struct ThemeInfo
 {

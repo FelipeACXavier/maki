@@ -10,25 +10,28 @@
 LocalServerTab::LocalServerTab(QWidget* parent)
     : QWidget(parent)
 {
-  m_urlEdit = new QLineEdit(this);
-  m_reloadButton = new QPushButton(tr("Reload"), this);
-  m_view = new QWebEngineView(this);
+  mUrlEdit = new QLineEdit(this);
+  mReloadButton = new QPushButton(tr("Reload"), this);
+  mView = new QWebEngineView(this);
 
-  auto* topBarLayout = new QHBoxLayout();
-  topBarLayout->setContentsMargins(0, 0, 0, 0);
-  topBarLayout->addWidget(new QLabel(tr("URL:"), this));
-  topBarLayout->addWidget(m_urlEdit);
-  topBarLayout->addWidget(m_reloadButton);
+  const QUrl url("http://localhost:80");
+  mView->load(url);
+
+  // auto* topBarLayout = new QHBoxLayout();
+  // topBarLayout->setContentsMargins(0, 0, 0, 0);
+  // topBarLayout->addWidget(new QLabel(tr("URL:"), this));
+  // topBarLayout->addWidget(mUrlEdit);
+  // topBarLayout->addWidget(mReloadButton);
 
   auto* mainLayout = new QVBoxLayout(this);
   mainLayout->setContentsMargins(0, 0, 0, 0);
-  mainLayout->addLayout(topBarLayout);
-  mainLayout->addWidget(m_view);
+  // mainLayout->addLayout(topBarLayout);
+  mainLayout->addWidget(mView);
 
-  connect(m_reloadButton, &QPushButton::clicked, this, &LocalServerTab::onReloadClicked);
-  connect(m_urlEdit, &QLineEdit::returnPressed, this, &LocalServerTab::onReloadClicked);
-  connect(m_view, &QWebEngineView::loadStarted, this, &LocalServerTab::onLoadStarted);
-  connect(m_view, &QWebEngineView::loadFinished, this, &LocalServerTab::onLoadFinished);
+  // connect(mReloadButton, &QPushButton::clicked, this, &LocalServerTab::onReloadClicked);
+  // connect(mUrlEdit, &QLineEdit::returnPressed, this, &LocalServerTab::onReloadClicked);
+  connect(mView, &QWebEngineView::loadStarted, this, &LocalServerTab::onLoadStarted);
+  connect(mView, &QWebEngineView::loadFinished, this, &LocalServerTab::onLoadFinished);
 }
 
 void LocalServerTab::connectToServer(const QString& host)
@@ -39,17 +42,17 @@ void LocalServerTab::connectToServer(const QString& host)
 
 void LocalServerTab::setUrl(const QUrl& url)
 {
-  m_urlEdit->setText(url.toString());
-  m_view->load(url);
+  // mUrlEdit->setText(url.toString());
+  mView->load(url);
 }
 
 void LocalServerTab::onReloadClicked()
 {
-  QUrl url = QUrl::fromUserInput(m_urlEdit->text());
-  if (!url.isEmpty())
-  {
-    m_view->load(url);
-  }
+  // QUrl url = QUrl::fromUserInput(mUrlEdit->text());
+  // if (!url.isEmpty())
+  // {
+  //   mView->load(url);
+  // }
 }
 
 void LocalServerTab::onLoadStarted()
@@ -63,7 +66,7 @@ void LocalServerTab::onLoadFinished(bool ok)
   if (ok)
   {
     // Example: set the QTabWidget tab text from outside via signal, if you like
-    // emit pageTitleChanged(m_view->title());
+    // emit pageTitleChanged(mView->title());
   }
   else
   {

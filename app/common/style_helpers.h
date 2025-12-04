@@ -24,4 +24,6 @@ void addDynamicWidget(QVBoxLayout* layout, QWidget* dynamicWidget, QWidget* pare
 
 QString getDirPathFor(const QString& path);
 
+void updateProperty(QWidget* widget, const QString& property, bool value);
 void applyStyle(QWidget* widget, const QString& style);
+void addSectionLabel(QMenu* menu, const QString& text);

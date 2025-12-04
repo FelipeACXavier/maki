@@ -7,11 +7,11 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QMimeData>
-#include <QWidgetAction>
 #include <memory>
 
 #include "app_configs.h"
 #include "canvas_view.h"
+#include "common/style_helpers.h"
 #include "config.h"
 #include "config_table.h"
 #include "elements/flow.h"
@@ -385,44 +385,21 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
   QMenu menu;
   QList<QGraphicsItem*> items = selectedItems();
 
-  auto addSectionLabel = [&menu](const QString& text) {
-    auto* label = new QLabel(text);
-    label->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    // QFont f = label->font();
-    // f.setBold(true);
-    // label->setFont(f);
-
-    auto action = new QWidgetAction(&menu);
-    action->setDefaultWidget(label);
-    menu.addAction(action);
-
-    // Optional: add a thin separator line below it
-    menu.addSeparator();
-  };
-
   if (item->type() == NodeItem::Type)
   {
     NodeItem* node = static_cast<NodeItem*>(item);
 
     // =============================================
-    // menu.addSection("Creation");
-    addSectionLabel("Creation");
+    addSectionLabel(&menu, "Creation");
 
-    QAction* newEventAction = menu.addAction(tr("New event"));
+    QAction* newEventAction = menu.addAction(tr("New task"));
     newEventAction->setEnabled(node != nullptr && items.size() == 1);
     QObject::connect(newEventAction, &QAction::triggered, [this, node]() {
       emit createEvent(node);
     });
     menu.addAction(newEventAction);
 
-    QAction* newStateAction = menu.addAction(tr("New state"));
-    // newStateMachineAction->setEnabled(node != nullptr && items.size() == 1);
-    // QObject::connect(newStateAction, &QAction::triggered, [this, node]() {
-    //   emit createEvent(node);
-    // });
-    menu.addAction(newStateAction);
-
-    QAction* newBehaviourAction = menu.addAction(tr("Add task"));
+    QAction* newBehaviourAction = menu.addAction(tr("New flow"));
     // newStateMachineAction->setEnabled(node != nullptr && items.size() == 1);
     QObject::connect(newBehaviourAction, &QAction::triggered, [this, node]() {
       auto flow = node->createBehaviour(nullptr);
@@ -431,8 +408,7 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     menu.addAction(newBehaviourAction);
 
     // =============================================
-    // menu.addSection("Edit");
-    addSectionLabel("Edit");
+    addSectionLabel(&menu, "Edit");
 
     QAction* copyAction = menu.addAction("Copy");
     copyAction->setEnabled(items.size() > 0);
@@ -453,8 +429,7 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     });
 
     // =============================================
-    // menu.addSection("Visual");
-    addSectionLabel("Visual");
+    addSectionLabel(&menu, "Visual");
 
     QAction* forwardAction = menu.addAction("To front");
     forwardAction->setEnabled(items.size() > 0);
@@ -781,8 +756,8 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
   // All nodes are children of the canvas
   addItem(node);
 
-  // if (creation != NodeCreation::Populating)
-  //   updateParent(node, info, true);
+  if (creation != NodeCreation::Populating)
+    updateParent(node, info, true);
 
   emit nodeAdded(node);
 

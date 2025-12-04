@@ -1,9 +1,12 @@
 #include "style_helpers.h"
 
 #include <QApplication>
+#include <QLabel>
+#include <QMenu>
 #include <QPainter>
 #include <QStyle>
 #include <QVariant>
+#include <QWidgetAction>
 
 #include "string_helpers.h"
 
@@ -112,6 +115,14 @@ QString getDirPathFor(const QString& path)
 #endif
 }
 
+void updateProperty(QWidget* widget, const QString& property, bool value)
+{
+  widget->setProperty(property.toStdString().c_str(), value);
+  widget->style()->unpolish(widget);
+  widget->style()->polish(widget);
+  widget->update();
+}
+
 void applyStyle(QWidget* widget, const QString& style)
 {
   widget->setStyleSheet(style);
@@ -119,3 +130,16 @@ void applyStyle(QWidget* widget, const QString& style)
   widget->style()->polish(widget);
   widget->update();
 }
+
+void addSectionLabel(QMenu* menu, const QString& text)
+{
+  auto* label = new QLabel(text);
+  label->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+
+  auto action = new QWidgetAction(menu);
+  action->setDefaultWidget(label);
+  menu->addAction(action);
+
+  // Optional: add a thin separator line below it
+  menu->addSeparator();
+};

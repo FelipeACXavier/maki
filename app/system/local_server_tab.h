@@ -26,7 +26,7 @@ private slots:
   void onLoadFinished(bool ok);
 
 private:
-  QLineEdit* m_urlEdit;
-  QPushButton* m_reloadButton;
-  QWebEngineView* m_view;
+  QLineEdit* mUrlEdit;
+  QPushButton* mReloadButton;
+  QWebEngineView* mView;
 };
