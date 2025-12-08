@@ -53,9 +53,7 @@ endif()
 file(COPY_FILE "${CMAKE_PREFIX_PATH}/lib/libQt6XcbQpa.so.6.8.3" "${CMAKE_INSTALL_PREFIX}/lib/libQt6XcbQpa.so.6")
 file(COPY_FILE "${CMAKE_PREFIX_PATH}/lib/libQt6Svg.so.6.8.3" "${CMAKE_INSTALL_PREFIX}/lib/libQt6Svg.so.6")
 
-set(QT_RESOURCES_DIR "${CMAKE_PREFIX_PATH}/resources")
-set(APP_RESOURCES_DIR "${CMAKE_INSTALL_PREFIX}/resources")
-
+# Copy the stuff needed by qtwebengine
 file(GLOB QTWEBENGINE_PAKS
   ${CMAKE_PREFIX_PATH}/resources/qtwebengine_*.pak
 )
@@ -68,7 +66,7 @@ set(QTWEBENGINE_FILES
 
 file(COPY
   ${QTWEBENGINE_FILES}
-  DESTINATION "${APP_RESOURCES_DIR}"
+  DESTINATION "${CMAKE_INSTALL_PREFIX}/resources"
 )
 
 file(COPY
@@ -80,16 +78,3 @@ file(COPY
   "${CMAKE_PREFIX_PATH}/libexec/QtWebEngineProcess"
   DESTINATION "${CMAKE_INSTALL_PREFIX}/libexec/"
 )
-
-# Copy webengine stuff
-# execute_process(
-#   COMMAND mkdir -p "${CMAKE_INSTALL_PREFIX}/resources"
-#   COMMAND cp "${CMAKE_PREFIX_PATH}/resources/qtwebengine*" "${CMAKE_INSTALL_PREFIX}/resources/"
-#   COMMAND cp "${CMAKE_PREFIX_PATH}/resources/icudtl.dat" "${CMAKE_INSTALL_PREFIX}/resources/"
-
-#   COMMAND mkdir -p "${CMAKE_INSTALL_PREFIX}/translations"
-#   COMMAND cp -r "${CMAKE_PREFIX_PATH}/translations/qtwebengine_locales" "${CMAKE_INSTALL_PREFIX}/translations/"
-
-#   COMMAND mkdir -p "${CMAKE_INSTALL_PREFIX}/libexec"
-#   COMMAND cp -r "${CMAKE_PREFIX_PATH}/libexec/QtWebEngineProcess" "${CMAKE_INSTALL_PREFIX}/libexec/"
-# )
