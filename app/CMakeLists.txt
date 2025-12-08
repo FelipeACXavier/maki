@@ -52,7 +52,10 @@ install(FILES ${APP_THEME_FILES}
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 # Get the source files in common and view
-file(GLOB SYSTEM_FILES ${CMAKE_CURRENT_SOURCE_DIR}/system/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/system/*.ui)
+file(GLOB SYSTEM_FILES
+  ${CMAKE_CURRENT_SOURCE_DIR}/system/*.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/system/undo_commands/*.cpp
+)
 file(GLOB ELEMENT_FILES ${CMAKE_CURRENT_SOURCE_DIR}/elements/*.cpp)
 file(GLOB WIDGET_FILES ${CMAKE_CURRENT_SOURCE_DIR}/widgets/*.cpp)
 file(GLOB STRUCTURAL_WIDGET_FILES ${CMAKE_CURRENT_SOURCE_DIR}/widgets/structure/*.cpp)

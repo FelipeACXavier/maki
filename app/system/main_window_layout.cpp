@@ -18,6 +18,7 @@
 #include <QToolBar>
 #include <QToolBox>
 #include <QToolButton>
+#include <QUndoGroup>
 #include <QVBoxLayout>
 
 // Custom widgets
@@ -36,7 +37,6 @@ MainWindowLayout::MainWindowLayout(QWidget* parent)
     : QMainWindow(parent)
 {
   buildMainWindow();
-  // qApp->installEventFilter(this);
 }
 
 void MainWindowLayout::buildMainWindow()
@@ -47,6 +47,9 @@ void MainWindowLayout::buildMainWindow()
 
   // Main horizontal splitter
   mMainSplitter = new QSplitter(Qt::Horizontal, mCentralWidget);
+
+  // Application undo group
+  mUndoGroup = new QUndoGroup(this);
 
   buildLeftPanel();
   buildCentralPanel();
@@ -302,6 +305,8 @@ void MainWindowLayout::buildMenuBar()
   mMenuBar = new QMenuBar();
   mMenuBar->setNativeMenuBar(true);
 
+  // ----------------------------------------------------------
+  // File menu
   QMenu* file = mMenuBar->addMenu(tr("File"));
 
   mActionNew = new QAction(tr("New"), this);
@@ -316,10 +321,17 @@ void MainWindowLayout::buildMenuBar()
   mActionSaveAs = new QAction(tr("Save As"), this);
   file->addAction(mActionSaveAs);
 
+  // ----------------------------------------------------------
+  // Edit menu
   QMenu* edit = mMenuBar->addMenu(tr("Edit"));
-  mOpenAllSettings = new QAction(tr("Open all settings"), this);
-  edit->addAction(mOpenAllSettings);
+  mActionUndo = mUndoGroup->createUndoAction(this, tr("&Undo"));
+  edit->addAction(mActionUndo);
 
+  mActionRedo = mUndoGroup->createRedoAction(this, tr("&Redo"));
+  edit->addAction(mActionRedo);
+
+  // ----------------------------------------------------------
+  // View menu
   QMenu* view = mMenuBar->addMenu(tr("View"));
   mOpenComponentsPanel = new QAction(tr("Components panel"), this);
   view->addAction(mOpenComponentsPanel);
@@ -330,15 +342,24 @@ void MainWindowLayout::buildMenuBar()
   mOpenInfoPanel = new QAction(tr("Information panel"), this);
   view->addAction(mOpenInfoPanel);
 
+  // ----------------------------------------------------------
+  // Diagram menu
   QMenu* window = mMenuBar->addMenu(tr("Diagram"));
 
   mActionGenerate = new QAction(tr("Generate"), this);
   window->addAction(mActionGenerate);
 
+  // ----------------------------------------------------------
+  // Settings menu
   QMenu* settings = mMenuBar->addMenu(tr("Settings"));
   mGeneratorMenu = new QMenu(tr("Generator"));
   settings->addMenu(mGeneratorMenu);
 
+  mOpenAllSettings = new QAction(tr("Open all settings"), this);
+  settings->addAction(mOpenAllSettings);
+
+  // ----------------------------------------------------------
+  // Help menu
   QMenu* help = mMenuBar->addMenu(tr("Help"));
   mAboutAction = new QAction(tr("About"), this);
   help->addAction(mAboutAction);

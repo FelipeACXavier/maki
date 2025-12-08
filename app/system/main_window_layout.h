@@ -16,6 +16,7 @@ class QComboBox;
 class QPushButton;
 class PropertiesMenu;
 class ProcessTab;
+class QUndoGroup;
 
 #include "style_helpers.h"
 #include "widgets/settings_manager.h"
@@ -29,7 +30,7 @@ public:
 
 protected:
   // === Main ===
-  QWidget* mCentralWidget;
+  QWidget* mCentralWidget = nullptr;
   QSplitter* mMainSplitter;
 
   // === Left Panel ===
@@ -81,6 +82,10 @@ protected:
   QAction* mActionSaveAs;
 
   // Edit menu
+  QUndoGroup* mUndoGroup = nullptr;
+  QAction* mActionUndo;
+  QAction* mActionRedo;
+
   // View menu
   QAction* mOpenComponentsPanel;
   QAction* mOpenPropertiesPanel;

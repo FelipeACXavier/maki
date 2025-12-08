@@ -38,10 +38,18 @@ public:
   QUndoStack* undoStack() const;
 
   void populate(Flow* flow);
+
+  void themeChanged();
+
+  // Used for undo
   void createNode(const NodeSaveInfo info);
   void removeNode(NodeItem* node);
 
-  void themeChanged();
+  void moveNodeTo(const QString& nodeId, const QPointF& position);
+  void setNodeSize(const QString& nodeId, const QSizeF& size);
+
+  void createTransition(const TransitionSaveInfo& info);
+  void removeTransition(const TransitionSaveInfo& info);
 
 protected:
   void

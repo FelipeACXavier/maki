@@ -37,6 +37,7 @@ Canvas::Canvas(const QString& canvasId, std::shared_ptr<SaveInfo> storage, std::
   mHoverTimer->setSingleShot(true);
 
   mUndoStack = new QUndoStack(this);
+  mUndoStack->setUndoLimit(20);
 }
 
 QString Canvas::id() const
@@ -747,6 +748,32 @@ VoidResult Canvas::loadFromSave(const SaveInfo& info)
 CanvasView* Canvas::parentView() const
 {
   return static_cast<CanvasView*>(parent());
+}
+
+void Canvas::moveNodeTo(const QString& nodeId, const QPointF& position)
+{
+  auto node = findNodeWithId(nodeId);
+  if (!node)
+    return;
+
+  node->updatePosition(position);
+}
+
+void Canvas::setNodeSize(const QString& nodeId, const QSizeF& size)
+{
+  auto node = findNodeWithId(nodeId);
+  if (!node)
+    return;
+
+  node->applySize(size);
+}
+
+void Canvas::createTransition(const TransitionSaveInfo& info)
+{
+}
+
+void Canvas::removeTransition(const TransitionSaveInfo& info)
+{
 }
 
 void Canvas::createNode(const NodeSaveInfo info)

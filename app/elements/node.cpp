@@ -8,6 +8,7 @@
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
 #include <QTimer>
+#include <QUndoStack>
 #include <QUuid>
 
 #include "app_configs.h"
@@ -15,6 +16,8 @@
 #include "logging.h"
 #include "style_helpers.h"
 #include "system/canvas.h"
+#include "system/undo_commands/move_node.h"
+#include "system/undo_commands/resize_node.h"
 #include "theme.h"
 
 NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
@@ -421,7 +424,7 @@ void NodeItem::fitInsideParent(qreal padding)
   // 2) Clamp position so we're fully inside `inner`
   QRectF childSceneRect = mapRectToScene(boundingRect());
   QPointF newPos = clampPosInside(inner, childSceneRect);
-  setPos(newPos);
+  updatePosition(newPos);
 }
 
 void NodeItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
@@ -462,6 +465,7 @@ void NodeItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
   }
   else
   {
+    mDragStartPos = pos();
     QGraphicsItem::mousePressEvent(event);
   }
 }
@@ -472,6 +476,16 @@ void NodeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
   {
     mIsResizing = false;
     dynamic_cast<QGraphicsView*>(scene()->parent())->setCursor(Qt::ArrowCursor);
+
+    auto canvas = static_cast<Canvas*>(scene());
+    if (canvas)
+      canvas->undoStack()->push(new ResizeNodeCommand(canvas, id(), mResizeStartSize, mSize));
+  }
+  else if (pos() != mDragStartPos)
+  {
+    auto canvas = static_cast<Canvas*>(scene());
+    if (canvas)
+      canvas->undoStack()->push(new MoveNodeCommand(canvas, id(), mDragStartPos, pos()));
   }
 
   QGraphicsItem::mouseReleaseEvent(event);

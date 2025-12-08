@@ -84,7 +84,8 @@ public:
   bool canAddTransition() const;
   TransitionConfig nextTransition() const;
 
-  void fitInsideParent(qreal padding);
+  void applySize(const QSizeF& size);
+  void updatePosition(const QPointF& position);
 
   // "signals":
   std::function<void(NodeItem* item)> nodeModified;
@@ -116,17 +117,17 @@ private:
 
   qreal mBaseScale;
   QSizeF mSize{0, 0};
+  QPointF mDragStartPos{0, 0};
   QPointF mLastPosition{0, 0};
 
   bool mIsResizing{false};
   QPointF mResizeStartMousePos{0, 0};
   QSizeF mResizeStartSize{0, 0};
 
-  void updatePosition(const QPointF& position);
   void updateExtrasPosition();
 
-  void applySize(const QSizeF& size);
   QSizeF clampSize(qreal width, qreal height) const;
   QPointF clampPosInside(const QRectF& inner, const QRectF& childSceneRect) const;
+  void fitInsideParent(qreal padding);
   QRectF parentInnerSceneRect(qreal padding) const;
 };

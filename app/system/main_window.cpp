@@ -1,8 +1,5 @@
 #include "main_window.h"
 
-#include <qkeysequence.h>
-#include <qnamespace.h>
-
 #include <QComboBox>
 #include <QDrag>
 #include <QInputDialog>
@@ -16,6 +13,7 @@
 #include <QString>
 #include <QTextBlock>
 #include <QTextBrowser>
+#include <QUndoGroup>
 #include <QWebEngineProfile>
 #include <QWidget>
 
@@ -143,10 +141,15 @@ void MainWindow::onThemeChanged(const QString& t, const QList<Config::ThemeInfo>
 void MainWindow::startUI()
 {
   CanvasView* currentCanvas = static_cast<CanvasView*>(mCanvasPanel->currentWidget());
+
   // TODO(felaze): Shouldn't be hard-coded
   StructureCanvas* canvas = new StructureCanvas("MainSystemCanvas", mStorage, mConfigTable, currentCanvas);
+
   mActiveCanvas = canvas;
   currentCanvas->setScene(canvas);
+
+  mUndoGroup->addStack(canvas->undoStack());
+  mUndoGroup->setActiveStack(canvas->undoStack());
 
   if (mPluginManager)
     mPluginManager->start(mGeneratorMenu, mGeneratorOption);
@@ -256,6 +259,9 @@ void MainWindow::bindShortcuts()
     if (canvas())
       canvas()->deleteSelectedItems();
   });
+
+  mActionUndo->setShortcuts(QKeySequence::Undo);
+  mActionRedo->setShortcuts(QKeySequence::Redo);
 }
 
 Canvas* MainWindow::canvas() const
