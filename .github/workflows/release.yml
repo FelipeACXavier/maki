@@ -12,16 +12,11 @@ on:
 jobs:
   # ==========================================================================================
   # 1) Build Linux artifacts + Windows SDK inside the dev image
-  build:
-    name: Build (Linux + Windows SDK)
+  build-linux:
+    name: Build Linux
     runs-on: self-hosted
     container:
       image: ghcr.io/felipeacxavier/maki/dev:${{ vars.QT_DEV_TAG }}
-
-    strategy:
-      # Release both Linux and Windows targets inside this image
-      matrix:
-        target: [ linux, windows ]
 
     env:
       HOME: /home/ubuntu
@@ -45,54 +40,79 @@ jobs:
 
       # --------------------------------------------------------------------------------------
       # Create the package
-      - name: Build ${{ matrix.target }}
+      - name: Build Linux
         run: |
-          chmod +x scripts/build.sh
-          ./scripts/build.sh "${{ matrix.target }}"
-
-      - name: Create release for ${{ matrix.target }}
-        run: |
-          chmod +x ./scripts/release.sh
-          ./scripts/release.sh "${{ matrix.target }}"
-
-      - name: Package release for ${{ matrix.target }}
-        run: |
-          cd ./release/"$BUILD_TARGET"
-          zip -r ../maki-${{ matrix.target }}.zip ./*
+          chmod +x scripts/linux/release.sh
+          ./scripts/linux/release.sh
 
       # --------------------------------------------------------------------------------------
       # Upload artifact for next job
-      - name: Upload ${{ matrix.target }} artifact
+      - name: Upload Linux artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.target }}
-          path: release/maki-${{ matrix.target }}.zip
+          name: linux-release
+          path: release/maki-linux.tar.gz
 
   # ==========================================================================================
-  # 2) Publish GitHub Release
+  # 2) Create a windows release
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: ${{ github.workspace }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      # --------------------------------------------------------------------------------------
+      # Create the package
+      - name: Set up Windows
+        run: |
+          ./scripts/windows/setup.ps1
+
+      - name: Build Windows
+        run: |
+          ./scripts/windows/release.ps1
+
+      # --------------------------------------------------------------------------------------
+      # Upload artifact for next job
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release
+          path: release/maki-windows.zip
+
+  # ==========================================================================================
+  # 3) Publish GitHub Release
   release:
-    name: Create GitHub Release
-    needs: build
+    name: Create GitHub Linux Release
+    needs: [build-linux, build-windows]
     runs-on: self-hosted
 
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          name: linux
+          name: linux-release
           path: ./release
 
       - name: Download Windows artifact
         uses: actions/download-artifact@v4
         with:
-          name: windows
+          name: windows-release
           path: ./release
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            ./release/maki-linux.zip
+            ./release/maki-linux.tar.gz
             ./release/maki-windows.zip
           generate_release_notes: true
           prerelease: ${{ contains(github.ref_name, '-') }}

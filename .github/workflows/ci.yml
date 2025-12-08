@@ -9,23 +9,20 @@ on:
   # Build/test on PRs to master
   pull_request:
     branches: [ master ]
-  # Optional: also on direct pushes to master
+  # Also on direct pushes to master
   push:
     branches: [ master ]
 
 jobs:
-  build-and-test:
+  # ====================================================================================
+  # 1) Build the linux version
+  build-linux:
     # Self-hosted Linux box
     runs-on: self-hosted
 
     # Run inside the dev Docker image (standardised env)
     container:
       image: ghcr.io/felipeacxavier/maki/dev:${{ vars.QT_DEV_TAG }}
-
-    # strategy:
-    #   # Build/test both Linux and Windows targets inside this image
-    #   matrix:
-    #     target: [ linux, windows ]
 
     env:
       HOME: /home/ubuntu
@@ -49,15 +46,123 @@ jobs:
           ln -s "$GITHUB_WORKSPACE" "$HOME/maki" || true
 
       # 2) Build for given target
-      - name: Build Linux
+      - name: Build script Linux
         run: |
           chmod +x ./scripts/linux/build.sh
           ./scripts/linux/build.sh
 
-      # No tests for now
       # 3) Run tests for given target (optional)
-      # - name: Run tests
-      #   shell: bash
-      #   run: |
-      #     chmod +x scripts/ci-test.sh
-      #     ./scripts/ci-test.sh "$BUILD_TARGET"
+      - name: Upload build artefacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: build/linux/
+
+  # ====================================================================================
+  # 2) Test the linux version
+  # test-linux:
+  #   runs-on: self-hosted
+  #   needs: build-linux
+
+  #   container:
+  #     image: ghcr.io/felipeacxavier/maki/dev:${{ vars.QT_DEV_TAG }}
+
+  #   env:
+  #     HOME: /home/ubuntu
+
+  #   defaults:
+  #     run:
+  #       shell: bash
+  #       working-directory: ${{ github.workspace }}
+
+  #   steps:
+  #     # 1) Checkout (if your test script expects the repo tree)
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #       with:
+  #         submodules: recursive
+  #         fetch-depth: 1
+
+  #     - name: Symlink repo to $HOME/maki for scripts
+  #       run: |
+  #         mkdir -p "$HOME"
+  #         ln -s "$GITHUB_WORKSPACE" "$HOME/maki" || true
+
+  #     # 2) Download build artefacts produced by build-linux job
+  #     - name: Download build artefacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: linux-build
+  #         path: build/linux
+
+  #     # 3) Run tests (should use the already-built tree)
+  #     - name: Run tests
+  #       run: |
+  #         chmod +x ./scripts/linux/run-tests.sh
+  #         ./scripts/linux/run-tests.sh
+
+  # ====================================================================================
+  # 3) Build the Windows version
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: ${{ github.workspace }}
+
+    steps:
+      # 1) Checkout code
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      # 2) Setup windows machine
+      - name: Setup script Windows
+        run: |
+          ./scripts/windows/setup.ps1
+
+      # 3) Build for given target
+      - name: Build script Windows
+        run: |
+          ./scripts/windows/build.ps1
+
+      # 4) Build for given target
+      - name: Upload build artefacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: build/windows/
+
+  # ====================================================================================
+  # 4) Test the Windows version
+  # test-windows:
+  #   name: Test Windows
+  #   runs-on: windows-latest
+  #   needs: build-windows
+  #   defaults:
+  #     run:
+  #       shell: pwsh
+  #       working-directory: ${{ github.workspace }}
+
+  #   steps:
+  #     # 1) Checkout code
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #       with:
+  #         submodules: recursive
+  #         fetch-depth: 1
+
+  #     # 2) Download build artefacts produced by build-windows job
+  #     - name: Download build artefacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: windows-build
+  #         path: build/windows
+
+  #     # 3) Run tests (should use the already-built tree)
+  #     - name: Run tests
+  #       run: |
+  #         ./scripts/windows/run-tests.ps1
