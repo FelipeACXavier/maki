@@ -126,10 +126,14 @@ private:
   NodeItem* createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo> info, const QPointF& position, NodeItem* parent);
 
   NodeItem* findNodeWithId(const QString& id) const;
+  QList<NodeItem*> selectedNodes() const;
+
+  void alignNodesHorizontally(const QList<NodeItem*>& items);
+  void alignNodesVertically(const QList<NodeItem*>& items);
 
   // Context menu
   // TODO(felaze): Make this a separate class
-  QMenu* createAlignMenu(const QList<QGraphicsItem*>& items);
+  QMenu* createAlignMenu(const QList<NodeItem*>& items);
 
   void clearSelectedNodes();
   bool isModifierSet(QGraphicsSceneMouseEvent* event, Qt::KeyboardModifier modifier);

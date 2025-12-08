@@ -368,20 +368,72 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
   QGraphicsScene::mouseReleaseEvent(event);  // Allow normal item drop behavior
 }
 
-QMenu* Canvas::createAlignMenu(const QList<QGraphicsItem*>& items)
+QMenu* Canvas::createAlignMenu(const QList<NodeItem*>& items)
 {
   QMenu* alignMenu = new QMenu("Align");
 
-  // QAction* alignHCenter = alignMenu->addAction("Align H center");
+  // QAction* distribute = alignMenu->addAction("Distribute");
+  // QAction* alignCenter = alignMenu->addAction("Align H center");
+  QAction* alignHCenter = alignMenu->addAction("Align H center");
+  connect(alignHCenter, &QAction::triggered, [this, &items]() { alignNodesHorizontally(items); });
   // QAction* alignLeft = alignMenu->addAction("Align left");
   // QAction* alignRight = alignMenu->addAction("Align right");
-  // QAction* alignVCenter = alignMenu->addAction("Align V center");
+  QAction* alignVCenter = alignMenu->addAction("Align V center");
+  connect(alignVCenter, &QAction::triggered, [this, &items]() { alignNodesVertically(items); });
   // QAction* alignTop = alignMenu->addAction("Align top");
   // QAction* alignBottom = alignMenu->addAction("Align bottom");
 
   alignMenu->setEnabled(items.size() > 1);
 
   return alignMenu;
+}
+
+QList<NodeItem*> Canvas::selectedNodes() const
+{
+  QList<NodeItem*> result;
+  for (QGraphicsItem* item : selectedItems())
+  {
+    if (auto* node = qgraphicsitem_cast<NodeItem*>(item))
+      result.append(node);
+  }
+
+  return result;
+}
+
+void Canvas::alignNodesHorizontally(const QList<NodeItem*>& nodes)
+{
+  if (nodes.size() < 2)
+    return;
+
+  NodeItem* refNode = nodes.first();
+  const qreal refY = refNode->pos().y();
+
+  for (NodeItem* node : nodes)
+  {
+    if (node == refNode)
+      continue;
+
+    QPointF p = node->pos();
+    node->updatePosition(QPointF(p.x(), refY));
+  }
+}
+
+void Canvas::alignNodesVertically(const QList<NodeItem*>& nodes)
+{
+  if (nodes.size() < 2)
+    return;
+
+  NodeItem* refNode = nodes.first();
+  const qreal refX = refNode->pos().x();  // + refNode->boundingRect().width() / 2.0;
+
+  for (NodeItem* node : nodes)
+  {
+    if (node == refNode)
+      continue;
+
+    QPointF p = node->pos();
+    node->updatePosition(QPointF(refX, p.y()));
+  }
 }
 
 void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
@@ -393,7 +445,7 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 
   // Define menu actions
   QMenu menu;
-  QList<QGraphicsItem*> items = selectedItems();
+  QList<NodeItem*> items = selectedNodes();
 
   if (item->type() == NodeItem::Type)
   {
