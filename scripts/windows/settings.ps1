@@ -26,6 +26,8 @@ $Python           = "python$PythonVersion"
 $BuildPath      = "$RepoRoot\build\windows"
 $InstallPath      = "$RepoRoot\release\windows"
 
+$BuildType = "Release"
+
 # ------------------------------------------------------
 # Environment
 $env:PATH = "$QtBin;$env:PATH"

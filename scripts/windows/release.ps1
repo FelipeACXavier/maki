@@ -10,37 +10,22 @@
   Run this after build_windows.ps1.
 #>
 
-function Fail($msg) {
-    Write-Host "ERROR: $msg" -ForegroundColor Red
-    exit 1
-}
+# ------------------------------------------------------
+# Load shared settings
+# ------------------------------------------------------
+$RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
+$SettingsPath = Join-Path $RepoRoot "scripts\windows\settings.ps1"
+. $SettingsPath
 
 Write-Host "==> Windows release script starting..." -ForegroundColor Cyan
 
+LogInfo "Using Qt version: $QtVersion"
+LogDebug "Repo root: $RepoRoot"
+
 # ------------------------------------------------------
-# Configuration (must match build_windows.ps1)
+# Configuration
 # ------------------------------------------------------
-# Get QT version
-$RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
-$QtVersionFile = Join-Path $RepoRoot ".qt-version"
-
-$QtVersion = Get-Content $QtVersionFile -Raw
-$QtVersion = $QtVersion.Trim()
-
-Write-Host "Using Qt version: $QtVersion"
-
-$QtArch    = "win64_msvc2019_64"
-$QtRoot    = "C:\Qt"
-
-$RepoRoot  = Resolve-Path (Join-Path $PSScriptRoot "..\..")
-$BuildDir  = Join-Path $RepoRoot "build-windows"
-$BuildType = "Release"
-$ExeName   = "maki.exe"              # adjust if different
-
-$DistDir   = Join-Path $RepoRoot "release\windows"
-$QtBase    = Join-Path $QtRoot "$QtVersion\$QtArch"
-$QtBin     = Join-Path $QtBase "bin"
-$WindeployqtPath = Join-Path $QtBin "windeployqt.exe"
+$ExeName   = "maki.exe"
 
 # ------------------------------------------------------
 # Basic checks
@@ -51,8 +36,8 @@ if (-not (Test-Path $QtBin)) {
 if (-not (Test-Path $WindeployqtPath)) {
     Fail "windeployqt not found at '$WindeployqtPath'."
 }
-if (-not (Test-Path $BuildDir)) {
-    Fail "Build directory '$BuildDir' not found. Run build.ps1 first."
+if (-not (Test-Path $BuildPath)) {
+    Fail "Build directory '$BuildPath' not found. Run build.ps1 first."
 }
 
 $env:PATH = "$QtBin;$env:PATH"
@@ -60,14 +45,14 @@ $env:PATH = "$QtBin;$env:PATH"
 # ------------------------------------------------------
 # Locate the executable
 # ------------------------------------------------------
-$ExePath = Join-Path $BuildDir $ExeName
+$ExePath = Join-Path $BuildPath $ExeName
 if (-not (Test-Path $ExePath)) {
     # Try config-specific subdir
-    $ExePathConfig = Join-Path (Join-Path $BuildDir $BuildType) $ExeName
+    $ExePathConfig = Join-Path (Join-Path $BuildPath $BuildType) $ExeName
     if (Test-Path $ExePathConfig) {
         $ExePath = $ExePathConfig
     } else {
-        Fail "Could not find executable '$ExeName' in '$BuildDir' or '$BuildDir\$BuildType'."
+        Fail "Could not find executable '$ExeName' in '$BuildPath' or '$BuildPath\$BuildType'."
     }
 }
 
@@ -76,27 +61,30 @@ Write-Host "Executable: $ExePath" -ForegroundColor Green
 # ------------------------------------------------------
 # Run windeployqt
 # ------------------------------------------------------
-if (-not (Test-Path $DistDir)) {
-    New-Item -ItemType Directory -Path $DistDir -Force | Out-Null
+if (-not (Test-Path $InstallPath)) {
+    New-Item -ItemType Directory -Path $InstallPath -Force | Out-Null
 }
 
-Write-Host "==> Running windeployqt into '$DistDir'..." -ForegroundColor Cyan
-& $WindeployqtPath `
-    --release `
-    --dir $DistDir `
-    $ExePath `
-    || Fail "windeployqt failed."
+Write-Host "==> Running windeployqt into '$InstallPath'..." -ForegroundColor Cyan
+try {
+  cmake --build "$BuildPath" `
+        --config "$BuildType" `
+        --parallel 4 `
+        --target deploy-windows
+} catch {
+  Fail "Build failed."
+}
 
 # Ensure exe itself is in the dist dir
-Copy-Item $ExePath $DistDir -Force
+Copy-Item $ExePath $InstallPath -Force
 
 Write-Host "==> Deployment complete." -ForegroundColor Green
-Write-Host "Distribution folder: $DistDir"
+Write-Host "Distribution folder: $InstallPath"
 
 # ------------------------------------------------------
-# Optional: create a zip archive
+# Create a zip archive
 # ------------------------------------------------------
-$ZipPath = Join-Path $RepoRoot "dist\windows.zip"
+$ZipPath = Join-Path $RepoRoot "release\windows.zip"
 Write-Host "==> Creating zip archive: $ZipPath" -ForegroundColor Cyan
 
 if (Test-Path $ZipPath) {
@@ -104,8 +92,8 @@ if (Test-Path $ZipPath) {
 }
 
 Add-Type -AssemblyName System.IO.Compression.FileSystem
-[System.IO.Compression.ZipFile]::CreateFromDirectory($DistDir, $ZipPath)
+[System.IO.Compression.ZipFile]::CreateFromDirectory($InstallPath, $ZipPath)
 
 Write-Host "==> Release artifacts ready:" -ForegroundColor Green
-Write-Host "  - Folder: $DistDir"
+Write-Host "  - Folder: $InstallPath"
 Write-Host "  - Zip:    $ZipPath"

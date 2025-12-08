@@ -23,9 +23,6 @@ LogInfo "==> Windows build script starting..."
 # Configuration
 # ------------------------------------------------------
 LogInfo "Using Qt version: $QtVersion"
-
-$BuildType = "Release"
-
 LogDebug "Repo root: $RepoRoot"
 
 # ------------------------------------------------------
