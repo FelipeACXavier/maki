@@ -171,6 +171,8 @@ VoidResult PropertiesMenu::loadProperties(NodeItem* node)
       LOG_WARN_ON_FAILURE(loadPropertyEventSelect(property, node));
     else if (property.type == Types::PropertyTypes::COMPONENT_SELECT)
       LOG_WARN_ON_FAILURE(loadPropertyComponentSelect(property, node));
+    else if (property.type == Types::PropertyTypes::LIST)
+      continue;
     else
       LOG_WARNING("Property %s (%d) without a type, how is that possible?", qPrintable(property.id), (int)property.type);
   }

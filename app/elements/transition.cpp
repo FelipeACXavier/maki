@@ -25,7 +25,7 @@ TransitionItem::TransitionItem(std::shared_ptr<TransitionSaveInfo> storage)
   // TODO(felaze): make configurable
   setPen(QPen(Qt::white, 2));
 
-  mLabel = std::make_shared<QGraphicsTextItem>(this);
+  mLabel = new QGraphicsTextItem(this);
   mLabel->setFont(Fonts::Property);
   mLabel->setPlainText(mStorage->label);
   updateLabelPosition();

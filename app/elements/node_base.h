@@ -39,8 +39,8 @@ public:
 protected:
   std::shared_ptr<NodeConfig> mConfig;
 
-  std::shared_ptr<QGraphicsTextItem> mLabel;
-  std::shared_ptr<QGraphicsPixmapItem> mPixmapItem;
+  QGraphicsTextItem* mLabel = nullptr;
+  QGraphicsPixmapItem* mPixmapItem = nullptr;
 
   virtual void updateLabelPosition();
   virtual void setPixmap(const QPixmap& pixmap);

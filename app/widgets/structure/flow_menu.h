@@ -15,7 +15,6 @@ public:
   FlowMenu(QWidget* parent);
 
   VoidResult addSystemFlow(const QString& flowName);
-  Result<Flow*> addComponentFlow(NodeItem* node, const QString& flowName);
 
   VoidResult onFlowAdded(Flow* flow, NodeItem* node);
   VoidResult onFlowRemoved(const QString& flowId, NodeItem* node);

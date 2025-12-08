@@ -68,7 +68,7 @@ private:
   NodeItem* mSource;
   NodeItem* mDestination;
 
-  std::shared_ptr<QGraphicsTextItem> mLabel;
+  QGraphicsTextItem* mLabel = nullptr;
   std::shared_ptr<TransitionSaveInfo> mStorage;
 
   void updateLabelPosition();

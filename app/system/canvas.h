@@ -12,6 +12,7 @@
 #include "elements/node.h"
 #include "elements/save_info.h"
 
+class QUndoStack;
 class CanvasView;
 class TransitionItem;
 class ConfigurationTable;
@@ -34,8 +35,11 @@ public:
   QList<NodeItem*> availableNodes();
 
   virtual Types::LibraryTypes type() const;
+  QUndoStack* undoStack() const;
 
   void populate(Flow* flow);
+  void createNode(const NodeSaveInfo info);
+  void removeNode(NodeItem* node);
 
   void themeChanged();
 
@@ -93,6 +97,7 @@ private:
   int mBackZValue = -5;
 
   QTimer* mHoverTimer;
+  QUndoStack* mUndoStack = nullptr;
 
   struct CopiedNode
   {

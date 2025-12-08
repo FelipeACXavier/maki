@@ -543,29 +543,6 @@ void NodeItem::updateExtrasPosition()
 }
 
 // Slots
-void NodeItem::deleteNode()
-{
-  // If the node has a parent, inform the parent about the deletion
-  if (parentNode())
-    parentNode()->childRemoved(this);
-
-  auto toDelete = children();
-  for (NodeItem* child : toDelete)
-    child->deleteNode();
-
-  auto transtionsToDelete = transitions();
-  for (TransitionItem* transtion : transtionsToDelete)
-    delete transtion;
-
-  // Remove the item from the scene
-  if (nodeDeleted)
-    nodeDeleted(this);
-
-  setSelected(false);
-
-  QTimer::singleShot(0, qApp, [this]() { delete this; });
-}
-
 void NodeItem::onProperties()
 {
   // Handle the properties action, e.g., show a dialog to edit properties
@@ -696,6 +673,11 @@ Flow* NodeItem::createBehaviour(std::shared_ptr<FlowSaveInfo> info)
   mBehaviour = new Flow("MainBehaviour", flowConfig);
 
   return mBehaviour;
+}
+
+QVector<Flow*> NodeItem::flows() const
+{
+  return mFlows;
 }
 
 Flow* NodeItem::createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo> info)

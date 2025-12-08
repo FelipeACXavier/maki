@@ -7,6 +7,7 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QMimeData>
+#include <QUndoStack>
 #include <memory>
 
 #include "app_configs.h"
@@ -20,6 +21,7 @@
 #include "elements/transition.h"
 #include "logging.h"
 #include "result.h"
+#include "undo_commands/add_node.h"
 
 Canvas::Canvas(const QString& canvasId, std::shared_ptr<SaveInfo> storage, std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
     : QGraphicsScene(parent)
@@ -33,6 +35,8 @@ Canvas::Canvas(const QString& canvasId, std::shared_ptr<SaveInfo> storage, std::
 
   mHoverTimer = new QTimer(this);
   mHoverTimer->setSingleShot(true);
+
+  mUndoStack = new QUndoStack(this);
 }
 
 QString Canvas::id() const
@@ -43,6 +47,11 @@ QString Canvas::id() const
 Types::LibraryTypes Canvas::type() const
 {
   return Types::LibraryTypes::UNKNOWN;
+}
+
+QUndoStack* Canvas::undoStack() const
+{
+  return mUndoStack;
 }
 
 QList<NodeItem*> Canvas::availableNodes()
@@ -527,9 +536,42 @@ void Canvas::deleteSelectedItems()
   // Then delete the nodes
   for (NodeItem* node : nodesToDelete)
   {
-    updateParent(node, nullptr, false);
-    node->deleteNode();
+    removeNode(node);
   }
+}
+
+void Canvas::removeNode(NodeItem* node)
+{
+  if (!node)
+    return;
+
+  updateParent(node, nullptr, false);
+
+  auto flows = node->flows();
+  for (Flow* flow : flows)
+  {
+    node->deleteFlow(flow->id());
+    emit flowRemoved(flow->id(), node);
+  }
+
+  if (node->parentNode())
+    node->parentNode()->childRemoved(node);
+
+  auto toDelete = node->children();
+  for (NodeItem* child : toDelete)
+    removeNode(child);
+
+  auto transtionsToDelete = node->transitions();
+  for (TransitionItem* transtion : transtionsToDelete)
+  {
+    removeItem(transtion);
+    delete transtion;
+  }
+
+  emit nodeRemoved(node);
+
+  removeItem(node);
+  delete node;
 }
 
 bool Canvas::isParentSelected(NodeItem* node)
@@ -631,7 +673,7 @@ void Canvas::clearCanvas()
     if (node->parentNode())
       continue;
 
-    node->deleteNode();
+    removeNode(node);
   }
 }
 
@@ -707,6 +749,21 @@ CanvasView* Canvas::parentView() const
   return static_cast<CanvasView*>(parent());
 }
 
+void Canvas::createNode(const NodeSaveInfo info)
+{
+  auto exists = findNodeWithId(info.id);
+  if (exists)
+  {
+    LOG_DEBUG("Node %s already exists", qPrintable(info.id));
+    return;
+  }
+
+  auto parent = findNodeWithId(info.parentId);
+
+  auto infoPtr = std::make_shared<NodeSaveInfo>(info);
+  (void)createNode(NodeCreation::Populating, infoPtr, info.position, parent);
+}
+
 NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo> info, const QPointF& position, NodeItem* parent)
 {
   auto config = mConfigTable->get(info->nodeId);
@@ -741,18 +798,12 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
   node->nodeModified = [this](NodeItem* item) {
     emit nodeModified(item);
   };
-  node->nodeDeleted = [this](NodeItem* item) {
-    removeItem(item);
-    emit nodeRemoved(item);
-  };
   node->flowAdded = [this](Flow* flow, NodeItem* node) {
     emit flowAdded(flow, node);
   };
 
   node->start();
 
-  // Do not add child nodes to the scene
-  // if (parent == nullptr)
   // All nodes are children of the canvas
   addItem(node);
 
@@ -760,6 +811,9 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
     updateParent(node, info, true);
 
   emit nodeAdded(node);
+
+  if (creation != NodeCreation::Populating)
+    mUndoStack->push(new AddNodeCommand(this, node->saveInfo()));
 
   return node;
 }
@@ -805,7 +859,9 @@ void Canvas::onRemoveNode(const QString& nodeId)
 {
   auto node = findNodeWithId(nodeId);
   if (node)
-    node->deleteNode();
+    removeNode(node);
+  else
+    LOG_WARNING("No node with id: %s", qPrintable(nodeId));
 }
 
 void Canvas::onSelectNode(const QList<QString>& nodeIds)

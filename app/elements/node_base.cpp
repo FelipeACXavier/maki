@@ -161,7 +161,7 @@ void NodeBase::paintPixmap(QPainter* painter) const
 
 void NodeBase::setLabel(const QString& name, qreal fontSize)
 {
-  mLabel = std::make_shared<QGraphicsTextItem>(this);
+  mLabel = new QGraphicsTextItem(this);
   mLabel->setDefaultTextColor(Config::FOREGROUND);
 
   setLabelName(name);
@@ -219,7 +219,7 @@ void NodeBase::toggleLabelVisibility()
 
 void NodeBase::setPixmap(const QPixmap& pixmap)
 {
-  mPixmapItem = std::make_shared<QGraphicsPixmapItem>(pixmap);
+  mPixmapItem = new QGraphicsPixmapItem(pixmap);
 }
 
 qreal NodeBase::computeScaleFactor() const

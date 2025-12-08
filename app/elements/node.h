@@ -72,6 +72,7 @@ public:
   void addChild(NodeItem* node, std::shared_ptr<NodeSaveInfo> info);
   void childRemoved(NodeItem* child);
 
+  QVector<Flow*> flows() const;
   Flow* createBehaviour(std::shared_ptr<FlowSaveInfo> info);
   Flow* createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo> info);
   Flow* getFlow(const QString& flowId) const;
@@ -86,12 +87,10 @@ public:
   void fitInsideParent(qreal padding);
 
   // "signals":
-  std::function<void(NodeItem* item)> nodeDeleted;
   std::function<void(NodeItem* item)> nodeModified;
   std::function<void(Flow* flow, NodeItem* item)> flowAdded;
 
   // "slots":
-  void deleteNode();
   void onProperties();
 
   // Serialization functions

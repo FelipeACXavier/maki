@@ -19,6 +19,7 @@ FlowMenu::FlowMenu(QWidget* parent)
   // Add base menu items
   setContextMenuPolicy(Qt::CustomContextMenu);
   connect(this, &QTreeWidget::customContextMenuRequested, this, &FlowMenu::showContextMenu);
+  connect(this, &QTreeWidget::itemDoubleClicked, this, &FlowMenu::onItemClicked);
 }
 
 VoidResult FlowMenu::addSystemFlow(const QString& flowName)
@@ -26,35 +27,6 @@ VoidResult FlowMenu::addSystemFlow(const QString& flowName)
   QTreeWidgetItem* item = new QTreeWidgetItem(systemFlows());
   item->setText(NAME_INDEX, flowName);
   return VoidResult();
-}
-
-Result<Flow*> FlowMenu::addComponentFlow(NodeItem* node, const QString& flowName)
-{
-  auto parent = getItemById(node->id());
-  QTreeWidgetItem* newFlow = nullptr;
-  if (parent)
-  {
-    newFlow = new QTreeWidgetItem(parent);
-  }
-  else
-  {
-    QTreeWidgetItem* newNode = new QTreeWidgetItem(componentFlows());
-    newNode->setText(NAME_INDEX, node->nodeName());
-    newNode->setData(ID_DATA, Qt::UserRole, node->id());
-    newNode->setData(TYPE_DATA, Qt::UserRole, Roles::ComponentRole);
-
-    newFlow = new QTreeWidgetItem(newNode);
-  }
-
-  // Create the new flow and add it to the node
-  Flow* flow = node->createFlow(flowName, nullptr);
-
-  // Assign the tree information
-  // newFlow->setText(NAME_INDEX, flow->name());
-  // newFlow->setData(ID_DATA, Qt::UserRole, flow->id());
-  // newFlow->setData(TYPE_DATA, Qt::UserRole, Roles::FlowRole);
-
-  return flow;
 }
 
 QTreeWidgetItem* FlowMenu::systemFlows()
@@ -205,6 +177,10 @@ void FlowMenu::showContextMenu(const QPoint& pos)
     contextMenu.addAction(tr("Edit"), this, [this, selectedItem]() { editFlow(selectedItem); });
     contextMenu.addAction(tr("Delete"), this, [this, selectedItem]() { removeFlow(selectedItem); });
   }
+  else if (selectedItem->data(TYPE_DATA, Qt::UserRole) == Roles::NodeRole)
+  {
+    contextMenu.addAction(tr("Go to node"), this, []() { LOG_WARNING("Unimplemented"); });
+  }
   else
   {
     LOG_WARNING("Unknown item type, ignoring action");
@@ -215,6 +191,11 @@ void FlowMenu::showContextMenu(const QPoint& pos)
 
 void FlowMenu::onItemClicked(QTreeWidgetItem* item, int /* column */)
 {
+  // This should never happen, but better safe than sorry
+  if (!item)
+    return;
+
+  editFlow(item);
 }
 
 void FlowMenu::editFlow(QTreeWidgetItem* item)
