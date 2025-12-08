@@ -63,21 +63,23 @@ LogInfo "==> Base tools installed/updated."
 # Ensure aqtinstall is installed
 # ------------------------------------------------------
 LogDebug "==> Checking for Python $PythonVersion ..."
+
 $PythonExists = Get-Command $Python -ErrorAction SilentlyContinue
 if (-not $PythonExists) {
   LogWarning "==> Python $PythonVersion not found, installing it..."
   choco install python --version=$PythonVersion -y --no-progress | Out-Null
-  $PythonExists = Get-Command $Python -ErrorAction SilentlyContinue
-  if (-not $PythonExists) {
-    Fail "Python not found on PATH even after installation. Reopen PowerShell and retry."
-  } else {
-    LogInfo "==> Python $PythonVersion installed."
-  }
 }
 
 # Add the script directory to the path
 $UserScripts = Join-Path $env:APPDATA "Python\Python312\Scripts"
 $env:PATH = "$UserScripts;$env:PATH"
+
+$PythonExists = Get-Command $Python -ErrorAction SilentlyContinue
+if (-not $PythonExists) {
+  Fail "Python not found on PATH even after installation. Reopen PowerShell and retry."
+} else {
+  LogInfo "==> Python $PythonVersion installed."
+}
 
 LogDebug "==> Ensuring aqtinstall is installed..."
 try {
