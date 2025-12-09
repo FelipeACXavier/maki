@@ -119,17 +119,22 @@ jobs:
           submodules: recursive
           fetch-depth: 1
 
-      # 2) Setup windows machine
+      # 2) Setup tools in windows machine
+      - name: Setup tools script Windows
+        run: |
+          ./scripts/windows/setup_tools.ps1
+
+      # 3) Setup windows machine
       - name: Setup script Windows
         run: |
           ./scripts/windows/setup.ps1
 
-      # 3) Build for given target
+      # 4) Build for given target
       - name: Build script Windows
         run: |
           ./scripts/windows/build.ps1
 
-      # 4) Build for given target
+      # 5) Build for given target
       - name: Upload build artefacts
         uses: actions/upload-artifact@v4
         with:

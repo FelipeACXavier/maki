@@ -22,7 +22,7 @@ $WindeployqtPath  = Join-Path $QtBin "windeployqt.exe"
 
 $PythonVersion    = "3.12"
 $PythonHome       = "C:\Python312"
-$Python           = "$PythonHome\python.exe"
+$Python           = "python$PythonVersion"
 
 $BuildPath      = "$RepoRoot\build\windows"
 $InstallPath      = "$RepoRoot\release\windows"

@@ -26,66 +26,13 @@ if ($PSVersionTable.PSEdition -ne "Desktop" -and $env:OS -notlike "*Windows*") {
 }
 
 # ------------------------------------------------------
-# Install / ensure Chocolatey
-# ------------------------------------------------------
-LogDebug "==> Checking for Chocolatey..."
-$choco = Get-Command choco -ErrorAction SilentlyContinue
-if (-not $choco) {
-    LogWarning "Chocolatey not found. Installing..."
-    Set-ExecutionPolicy Bypass -Scope Process -Force
-    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-    try {
-      Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-    } catch {
-      Fail "Failed to install Chocolatey."
-    }
-} else {
-    LogInfo "Chocolatey found."
-}
-
-# ------------------------------------------------------
-# Install tools with Chocolatey
-# ------------------------------------------------------
-$packages = @(
-    "cmake",
-    "ninja"
-)
-
-LogDebug "==> Ensuring base tools are installed: $($packages -join ', ')"
-foreach ($pkg in $packages) {
-    LogDebug "  - $pkg"
-    choco install $pkg -y --no-progress | Out-Null
-}
-
-LogInfo "==> Base tools installed/updated."
-
-# ------------------------------------------------------
 # Ensure aqtinstall is installed
 # ------------------------------------------------------
-LogDebug "==> Checking for Python $PythonVersion ..."
-
-$PythonExists = Get-Command $Python -ErrorAction SilentlyContinue
-if (-not $PythonExists) {
-  LogWarning "==> Python $PythonVersion not found, installing it..."
-  choco install python --version=$PythonVersion -y --no-progress | Out-Null
-
-  if (Test-Path "$env:ChocolateyInstall\bin\refreshenv.cmd") {
-    & "$env:ChocolateyInstall\bin\refreshenv.cmd"
-  }
-}
-
 # Add both the binary dir and Scripts dir
 $env:PATH = "$PythonHome;$PythonHome\Scripts;$env:PATH"
 
-$PythonExists = Get-Command $Python -ErrorAction SilentlyContinue
-if (-not $PythonExists) {
-  Fail "Python not found on PATH even after installation. Reopen PowerShell and retry."
-} else {
-  LogInfo "==> Python $PythonVersion installed."
-}
-
-LogDebug "==> Ensuring aqtinstall is installed..."
 LogDebug "==> Running with $Python"
+LogDebug "==> Ensuring aqtinstall is installed..."
 try {
   & $Python -m pip install --user aqtinstall
 } catch {
