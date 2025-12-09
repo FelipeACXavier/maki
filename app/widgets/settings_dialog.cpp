@@ -79,6 +79,8 @@ SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsMan
   connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
   loadFromSettings();
+
+  updateIconTheme(mIcons);
 }
 
 QWidget* SettingsDialog::addPage(const QString& pageName, const QString& iconName, std::function<void()> resetCallback)

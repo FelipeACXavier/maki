@@ -75,6 +75,8 @@ void EventDialog::setup(std::shared_ptr<FlowSaveInfo> event)
   // Connect buttons to appropriate slots
   connect(buttonBox, &QDialogButtonBox::accepted, this, &EventDialog::accept);
   connect(buttonBox, &QDialogButtonBox::rejected, this, &EventDialog::reject);
+
+  updateIconTheme(mIcons);
 }
 
 void EventDialog::createNameInput(QWidget* parent)

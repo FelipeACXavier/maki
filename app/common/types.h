@@ -3,6 +3,7 @@
 #include <QGraphicsItem>
 #include <QJsonObject>
 #include <QJsonValueConstRef>
+#include <QPointF>
 #include <QString>
 
 namespace Types
@@ -24,6 +25,25 @@ enum class Shape
   ROUNDED_RECTANGLE,
   ELLIPSE,
   DIAMOND
+};
+
+enum class AlignmentMode
+{
+  VERTICAL,
+  HORIZONTAL
+};
+
+enum class AlignmentDirection
+{
+  CENTER,
+  START,
+  END
+};
+
+struct AlignmentNode
+{
+  QString id;
+  QPointF pos;
 };
 
 enum class ConnectorType

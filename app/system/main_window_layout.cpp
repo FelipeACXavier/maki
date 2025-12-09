@@ -196,6 +196,11 @@ void MainWindowLayout::buildCentralPanel()
   mBottomPanel->setMinimumHeight(320);
 
   // ===================================================================
+  QWidget* infoContainer = new QWidget(mBottomPanel);
+  QVBoxLayout* infoLayout = new QVBoxLayout(infoContainer);
+  infoLayout->setContentsMargins(2, 2, 2, 2);
+  infoLayout->setSpacing(0);
+
   // Info tab
   mInfoText = new QTextBrowser(mBottomPanel);
   mInfoText->setWordWrapMode(QTextOption::WrapMode::WordWrap);
@@ -225,7 +230,9 @@ void MainWindowLayout::buildCentralPanel()
       "  </td>"
       "</tr></table>");
 
-  mBottomPanel->addTab(mInfoText, tr("Info"));
+  infoLayout->addWidget(mInfoText);
+
+  mBottomPanel->addTab(infoContainer, tr("Info"));
   mIcons.append({mBottomPanel->tabBar(), ":/icons/info.svg", 0});
 
   buildLogTab();
@@ -401,13 +408,13 @@ void MainWindowLayout::buildLogTab()
 
   QStackedWidget* logViews = new QStackedWidget();
 
-  mLogText = new QTextBrowser(mBottomPanel);
+  mLogText = new QTextBrowser(logContainer);
   mLogText->setFont(Fonts::MonoSpace);
 
-  mErrorLogText = new QTextBrowser(mBottomPanel);
+  mErrorLogText = new QTextBrowser(logContainer);
   mErrorLogText->setFont(Fonts::MonoSpace);
 
-  mWarningLogText = new QTextBrowser(mBottomPanel);
+  mWarningLogText = new QTextBrowser(logContainer);
   mWarningLogText->setFont(Fonts::MonoSpace);
 
   // =======================================================================================
@@ -472,6 +479,7 @@ void MainWindowLayout::buildLogTab()
 
   // Assemble the complete tab
   logLayout->addWidget(logToolBar);
+  logLayout->addSpacing(2);
   logLayout->addWidget(logViews);
 
   mBottomPanel->addTab(logContainer, tr("Log"));

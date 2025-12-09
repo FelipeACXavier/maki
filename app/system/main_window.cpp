@@ -53,7 +53,7 @@ MainWindow::~MainWindow()
 
 VoidResult MainWindow::start()
 {
-  mLogLevel = logging::LogLevel::Debugging;
+  mLogLevel = logging::LogLevel::Trace;
 
   logging::gLogToStream = [this](std::chrono::system_clock::time_point ts, logging::LogLevel level, const std::string& filename, const uint32_t& line, const std::string& message) {
     if (level > mLogLevel)
@@ -249,7 +249,7 @@ void MainWindow::bindShortcuts()
 {
   new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_C), this, [this] {
     if (canvas())
-      canvas()->copySelectedItems();
+      canvas()->copySelectedItems(nullptr);
   });
   new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_V), this, [this] {
     if (canvas())
@@ -537,12 +537,21 @@ void MainWindow::onCanvasTabChanged(int index)
   auto libIndex = libraryTypeToIndex(mActiveCanvas->type());
   mNavigationTab->setCurrentIndex(libIndex);
   mLeftPanel->setCurrentIndex(libIndex);
+
+  auto activeStack = mActiveCanvas->undoStack();
+  if (!mUndoGroup->stacks().contains(activeStack))
+    mUndoGroup->addStack(activeStack);
+
+  mUndoGroup->setActiveStack(activeStack);
 }
 
 void MainWindow::closeCanvasTab(int index)
 {
   if (CanvasView* newCanvas = qobject_cast<CanvasView*>(mCanvasPanel->widget(index)))
   {
+    auto toBeRemoved = qobject_cast<Canvas*>(newCanvas->scene());
+    mUndoGroup->removeStack(toBeRemoved->undoStack());
+
     if (newCanvas->scene() == mActiveCanvas)
     {
       unbindCanvas();

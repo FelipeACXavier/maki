@@ -3,9 +3,12 @@
 #include "logging.h"
 #include "system/canvas.h"
 
-AlignCommand::AlignCommand(Canvas* canvas, QUndoCommand* parent)
+AlignCommand::AlignCommand(Canvas* canvas, const QList<Types::AlignmentNode>& items, Types::AlignmentMode mode, Types::AlignmentDirection direction, QUndoCommand* parent)
     : QUndoCommand(parent)
     , mCanvas(canvas)
+    , mItems(items)
+    , mMode(mode)
+    , mDirection(direction)
 {
   setText(QObject::tr("Align"));
 }
@@ -15,7 +18,8 @@ void AlignCommand::undo()
   if (!mCanvas)
     return;
 
-  LOG_DEBUG("Undo AlignCommand");
+  mCanvas->alignNodes(mItems, mMode, mDirection, true);
+  LOG_TRACE("Undo AlignCommand");
 }
 
 void AlignCommand::redo()
@@ -23,5 +27,6 @@ void AlignCommand::redo()
   if (!mCanvas)
     return;
 
-  LOG_DEBUG("Redo AlignCommand");
+  mCanvas->alignNodes(mItems, mMode, mDirection, false);
+  LOG_TRACE("Redo AlignCommand");
 }

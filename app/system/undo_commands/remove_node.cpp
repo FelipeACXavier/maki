@@ -8,7 +8,7 @@ RemoveNodeCommand::RemoveNodeCommand(Canvas* canvas, const NodeSaveInfo& desc, Q
     , mCanvas(canvas)
     , mDesc(desc)
 {
-  setText(QObject::tr("Remove node %1").arg(desc.nodeId));
+  setText(QObject::tr("Remove node"));
 }
 
 void RemoveNodeCommand::undo()
@@ -17,7 +17,7 @@ void RemoveNodeCommand::undo()
     return;
 
   mCanvas->createNode(mDesc);
-  LOG_DEBUG("Undo RemoveNodeCommand: %s %s", qPrintable(mDesc.nodeId), qPrintable(mDesc.id));
+  LOG_TRACE("Undo RemoveNodeCommand: %s %s", qPrintable(mDesc.nodeId), qPrintable(mDesc.id));
 }
 
 void RemoveNodeCommand::redo()
@@ -25,6 +25,6 @@ void RemoveNodeCommand::redo()
   if (!mCanvas)
     return;
 
-  mCanvas->onRemoveNode(mDesc.id);
-  LOG_DEBUG("Redo RemoveNodeCommand: %s %s", qPrintable(mDesc.nodeId), qPrintable(mDesc.id));
+  mCanvas->removeNode(mDesc, false);
+  LOG_TRACE("Redo RemoveNodeCommand: %s %s", qPrintable(mDesc.nodeId), qPrintable(mDesc.id));
 }

@@ -274,7 +274,7 @@ QLineEdit:hover {
    =============================== */
 
 QComboBox {
-  padding: 4px;
+  padding: 4px 6px;
 
   border: 1px solid @control_border;
   border-radius: @border_radius;
@@ -368,7 +368,7 @@ QTabBar::tab {
 
 QTabBar::tab:selected {
   background: @tab_selected_bg;
-  border-bottom-color: @combobox_hover_border;
+  border-bottom-color: @selection_bg;
 }
 
 QTabWidget#LeftPanel QTabBar::tab {

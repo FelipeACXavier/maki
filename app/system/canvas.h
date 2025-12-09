@@ -25,7 +25,7 @@ public:
 
   QString id() const;
   void pasteCopiedItems();
-  void copySelectedItems();
+  void copySelectedItems(NodeItem* node);
   void deleteSelectedItems();
 
   qreal getScale() const;
@@ -37,19 +37,24 @@ public:
   virtual Types::LibraryTypes type() const;
   QUndoStack* undoStack() const;
 
+  void nodeClicked(NodeItem* node);
   void populate(Flow* flow);
 
   void themeChanged();
 
   // Used for undo
   void createNode(const NodeSaveInfo info);
-  void removeNode(NodeItem* node);
+  void removeNode(const NodeSaveInfo info, bool createUndo);
+  void removeNode(NodeItem* node, bool createUndo);
 
   void moveNodeTo(const QString& nodeId, const QPointF& position);
   void setNodeSize(const QString& nodeId, const QSizeF& size);
 
   void createTransition(const TransitionSaveInfo& info);
   void removeTransition(const TransitionSaveInfo& info);
+
+  void requestAlignNodes(const QList<Types::AlignmentNode>& items, Types::AlignmentMode mode, Types::AlignmentDirection direction);
+  void alignNodes(const QList<Types::AlignmentNode>& items, Types::AlignmentMode mode, Types::AlignmentDirection direction, bool useGiven);
 
 protected:
   void
@@ -101,9 +106,6 @@ private:
   NodeItem* mNode = nullptr;
   QPointF mStartDragPosition;
 
-  int mFrontZValue = 5;
-  int mBackZValue = -5;
-
   QTimer* mHoverTimer;
   QUndoStack* mUndoStack = nullptr;
 
@@ -116,6 +118,7 @@ private:
   const QString mId;
 
   QList<CopiedNode> mCopiedNodes;
+  QList<NodeItem*> mSelectedNodes;
   std::shared_ptr<ConfigurationTable> mConfigTable;
   std::shared_ptr<SaveInfo> mStorage;
 
@@ -128,12 +131,12 @@ private:
   NodeItem* findNodeWithId(const QString& id) const;
   QList<NodeItem*> selectedNodes() const;
 
-  void alignNodesHorizontally(const QList<NodeItem*>& items);
-  void alignNodesVertically(const QList<NodeItem*>& items);
+  void alignNodesHorizontally(const QList<Types::AlignmentNode>& items, Types::AlignmentDirection direction);
+  void alignNodesVertically(const QList<Types::AlignmentNode>& items, Types::AlignmentDirection direction);
 
   // Context menu
   // TODO(felaze): Make this a separate class
-  QMenu* createAlignMenu(const QList<NodeItem*>& items);
+  QMenu* createAlignMenu(const QList<Types::AlignmentNode>& items);
 
   void clearSelectedNodes();
   bool isModifierSet(QGraphicsSceneMouseEvent* event, Qt::KeyboardModifier modifier);
