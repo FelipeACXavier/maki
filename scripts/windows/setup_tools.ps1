@@ -46,6 +46,8 @@ foreach ($pkg in $packages) {
     choco install $pkg -y --no-progress | Out-Null
 }
 
+LogDebug "   - python"
 choco install python --version=$PythonVersion -y --no-progress | Out-Null
 
 LogInfo "==> Base tools installed/updated."
+exit 0

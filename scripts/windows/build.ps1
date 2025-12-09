@@ -57,3 +57,4 @@ try {
 
 LogInfo "==> build_windows.ps1 finished successfully." -ForegroundColor Green
 LogInfo "Build directory: $BuildPath"
+exit 0

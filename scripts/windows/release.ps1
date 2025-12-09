@@ -97,3 +97,4 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 Write-Host "==> Release artifacts ready:" -ForegroundColor Green
 Write-Host "  - Folder: $InstallPath"
 Write-Host "  - Zip:    $ZipPath"
+exit 0

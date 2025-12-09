@@ -91,3 +91,4 @@ This script does not install Visual Studio automatically.
 
 LogInfo "==> setup.ps1 finished."
 LogDebug "You can now run build.ps1 (after ensuring MSVC is installed)."
+exit 0
