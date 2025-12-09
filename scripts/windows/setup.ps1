@@ -68,11 +68,14 @@ $PythonExists = Get-Command $Python -ErrorAction SilentlyContinue
 if (-not $PythonExists) {
   LogWarning "==> Python $PythonVersion not found, installing it..."
   choco install python --version=$PythonVersion -y --no-progress | Out-Null
+
+  if (Test-Path "$env:ChocolateyInstall\bin\refreshenv.cmd") {
+    & "$env:ChocolateyInstall\bin\refreshenv.cmd"
+  }
 }
 
 # Add both the binary dir and Scripts dir
-$pySuffix   = $PythonVersion.Replace('.', '')
-$PythonHome = "C:\Python$pySuffix"
+$PythonHome = "C:\Python312"
 $env:PATH = "$PythonHome;$PythonHome\Scripts;$env:PATH"
 
 $PythonExists = Get-Command $Python -ErrorAction SilentlyContinue
