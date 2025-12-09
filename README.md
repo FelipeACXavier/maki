@@ -9,10 +9,7 @@ MAKI is a low-code platform that targets robotic systems. It is build on top of 
 
 ## Installation
 
-> [!IMPORTANT]
-> I haven't properly checked the process in Windows. The instructions below indicate how it **should** work, but there are not guarantees.
-
-A Dockerfile is provided to ensure everyone has the same build and run environment. Note that there is no specific run image though. To build the application, follow the instructions below:
+To build and install the application, follow the instructions below:
 
 1. Clone this repository and move into it
 
