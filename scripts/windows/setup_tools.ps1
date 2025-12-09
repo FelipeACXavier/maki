@@ -46,8 +46,23 @@ foreach ($pkg in $packages) {
     choco install $pkg -y --no-progress | Out-Null
 }
 
-LogDebug "   - python"
+LogDebug "  - python"
 choco install python --version=$PythonVersion -y --no-progress | Out-Null
 
 LogInfo "==> Base tools installed/updated."
+
+# ------------------------------------------------------
+# Ensure aqtinstall is installed
+# ------------------------------------------------------
+# Add both the binary dir and Scripts dir
+$env:PATH = "$PythonHome;$PythonHome\Scripts;$env:PATH"
+
+LogDebug "==> Running with $Python"
+LogDebug "==> Ensuring aqtinstall is installed..."
+try {
+  & $Python -m pip install --user aqtinstall
+} catch {
+  Fail "Failed to install aqtinstall."
+}
+
 exit 0

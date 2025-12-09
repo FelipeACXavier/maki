@@ -55,7 +55,7 @@ function LogDebug($msg) {
 }
 
 function LogTrace($msg) {
-  Write-Host "DEBUG: $msg" -ForegroundColor Gray
+  Write-Host "TRACE: $msg" -ForegroundColor Gray
 }
 
 function LogWarning($msg) {

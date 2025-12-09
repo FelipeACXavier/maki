@@ -26,20 +26,6 @@ if ($PSVersionTable.PSEdition -ne "Desktop" -and $env:OS -notlike "*Windows*") {
 }
 
 # ------------------------------------------------------
-# Ensure aqtinstall is installed
-# ------------------------------------------------------
-# Add both the binary dir and Scripts dir
-$env:PATH = "$PythonHome;$PythonHome\Scripts;$env:PATH"
-
-LogDebug "==> Running with $Python"
-LogDebug "==> Ensuring aqtinstall is installed..."
-try {
-  & $Python -m pip install --user aqtinstall
-} catch {
-  Fail "Failed to install aqtinstall."
-}
-
-# ------------------------------------------------------
 # Install Qt via aqtinstall
 # ------------------------------------------------------
 LogDebug "Using Qt version: $QtVersion"
