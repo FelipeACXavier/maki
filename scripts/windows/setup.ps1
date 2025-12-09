@@ -70,11 +70,9 @@ if (-not $PythonExists) {
   choco install python --version=$PythonVersion -y --no-progress | Out-Null
 }
 
-# Compute Python home based on version (e.g. 3.12 -> Python312)
-$pySuffix   = $PythonVersion.Replace('.', '')        # "312"
-$PythonHome = "C:\Python$pySuffix"
-
 # Add both the binary dir and Scripts dir
+$pySuffix   = $PythonVersion.Replace('.', '')
+$PythonHome = "C:\Python$pySuffix"
 $env:PATH = "$PythonHome;$PythonHome\Scripts;$env:PATH"
 
 $PythonExists = Get-Command $Python -ErrorAction SilentlyContinue
