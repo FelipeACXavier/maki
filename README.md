@@ -5,7 +5,7 @@
 [![Build dev Docker image](https://github.com/FelipeACXavier/maki/actions/workflows/build-dev-image.yaml/badge.svg)](https://github.com/FelipeACXavier/maki/actions/workflows/build-dev-image.yaml)
 [![CI](https://github.com/FelipeACXavier/maki/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/FelipeACXavier/maki/actions/workflows/ci.yml)
 
-MAKI is a low-code platform that targets robotic systems. It is build on top of [KODA](https://github.com/FelipeACXavier/KODA) and aims to simplify the creation of formally verified ROS2 systems. MAKI is still in development so expect breaking changes now and then. For more information, check out the documentation **(add ink)** and these papers **(add links)**.
+MAKI is a low-code platform that targets robotic systems. It is build on top of [KODA](https://github.com/FelipeACXavier/KODA) and aims to simplify the creation of formally verified ROS2 systems. MAKI is still in development so expect breaking changes now and then. For more information, check out the [documentation](./docs) **(add ink)** and these papers **(add links)**.
 
 ## Installation
 
@@ -26,231 +26,15 @@ git clone https://github.com/FelipeACXavier/maki.git && cd maki
 git submodule update --init --recursive
 ```
 
-3. Build the docker container, this might take some time (30+ minutes) since we need to build the QT library. Still, that only needs to be done once.
+3. After this step, we follow OS specific instructions:
 
-```bash
-docker build --build-arg QT_BUILD_TYPE=release \
-       -f docker/Dockerfile \
-       -t maki:v1.0.0 .
-```
-
-4. Run the docker image
-
-  - Windows:
-    1. To be able to run GUI applications in Docker on Windows, first download & install an X server such as [vcXsrv](https://sourceforge.net/projects/vcxsrv/)
-    2. Set DISPLAY to the address of your Windows X server. 
-  ```powershell
-  setx DISPLAY "127.0.0.1:0"
-  ```
-    3. Launch vsXsrv with the following settings: Multiple Windows, Start no client, Disable access control. 
-    4. Run the image:
-  ```powershell
-  docker run -it \
-    --name maki \
-    -e DISPLAY=host.docker.internal:0 \
-    -e QT_X11_NO_MITSHM=1 \
-    -v ${PWD}:/home/ubuntu/maki \
-    maki:v1.0.0
-  ```
-
-  - Linux, using X11
-```bash
-docker run -it \
-  --name maki \
-  --user 1000:1000 \
-  --net=host \
-  -e DISPLAY=:0 \
-  -e QT_X11_NO_MITSHM=1 \
-  --device /dev/dri \
-  -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
-  -v .:/home/ubuntu/maki:rw \
-  maki:v1.0.0
-```
-
-5. Inside the docker, we can now build Maki. There are two options available
-
-  - Windows: 
-```bash
-./scripts/build.sh --windows
-```
-
-  - Linux (we have only tested in Ubuntu 24.04).
-```bash
-./scripts/build.sh --linux
-```
-
-  - If you need support for clangd and `compile_commands.json`, you can pass the options `--local-qt` and `--local-project`, which will make sure the generated `compile_commands.json` points to your local QT installation and project folder. For example:
-```bash
-./scripts/build.sh --linux --local-qt /opt/qt/6.8.3/gcc_64 --local-project /home/foo/maki
-```
-
-6. Finally, to install the tool
-
-  - Windows
-```bash
-./scripts/release.sh --windows
-```
-
-  - Linux (we have only tested in **Ubuntu 24.04**)
-```bash
-./scripts/release.sh --linux
-```
-
-## Running
-
-After the installation, it is possible to run the application with:
-
-  - Windows:
-```powershell
-./release/windows/maki.exe
-```
-
-  - Linux:
-```bash
-./release/linux/bin/maki
-```
-
-## Examples of KODA:
-
-As mentioned, MAKI is build on top of KODA, a DSL for describing and composing robotic missions. For context, here, we present two small examples of this DSL. For more information, refer to the KODA repository.
-
-The first example is a simple pick and place robot. It drives between two specified locations where it first picks an object and then places the object.
-
-```
-capability Drive(float x, float y) {
-  action "/navigate_to_pose" "nav2_msgs::action::NavigateToPose::Goal" {
-    trigger: void to_position(float x, float y);
-    abort: void cancel();
-    return: void in_position(float x, float y);
-    error: void path_blocked();
-  }
-}
-
-capability Vision() {
-  action "/recognize" "std_msgs::String" {
-    trigger: void recognize();
-    return: void found();
-    abort: void cancel();
-  }
-}
-
-capability Grip(boolean grip) {
-  action "/handler/action" "std_msgs::String" {
-    trigger: void handle(boolean grip);
-    return: void handled();
-    error: void failed();
-    abort: void cancel();
-  }
-}
+  - [Linux](./docs/build_linux.md)
+  - [Windows](./docs/build_windows.md)
 
 
-task PickAndDrop (drive req Drive, vision req Vision, 
-                  grip req Grip,
-                  float x1, float y1, float x2, float y2) 
-{
-  trigger: void start(float x1, float y1, float x2, float y2);
-  return: void done();
-  abort: void abort();
-  error: void failed();
+## Examples:
 
-  vars {
-    float x1_ = x1 : 0.0
-    float y1_ = y1 : 0.0
-    float x2_ = x2 : 0.0
-    float y2_ = y2 : 0.0
-  }
-
-  strategy {
-    err: drive.abort() --> grip.abort() --> end;
-
-    pick: (vision() on abort err) --> (grip(true) on error err on abort err);
-    drop: grip(false) on error err on abort err;
-
-    loop: (drive(x1_, y1_) on error err on abort err) -->
-          pick -->
-          (drive(x2_, y2_) on error err on abort err) -->
-          drop;
-
-    main: repeat(loop);
-  }
-}
-```
-
-The second example represents a small building automation scenario. The orchestrator monitors the occupancy of the room and set the lights accordingly, and it triggers the HVAC to control the CO2 levels.
-
-```
-capability Bridge(string zone) {
-  service "/poll" ""{
-    in: void poll(string scene);
-  }
-}
-
-capability Co2Sensor() {    
-  service "co2/normal" ""{
-    out: void normal();
-  }
-  service "co2/high" ""{
-    out: void high();
-  }
-}
-
-capability EnvSensor() {
-  service "environment/empty" "" {
-    out: void empty();
-  }
-  service "environment/present" "" {
-    out: void present();
-  }
-}
-
-capability Lighting(string scene) {
-  service "lighting/scene" "{ \"cmd:\" \"scene\" }" {
-    in: void set(string scene);
-  }
-}
-
-capability Ventilation(boolean up) {
-    action "ventilation" "{ \"cmd:\" \"up\" }" {
-      trigger: void solve(boolean up);
-      return: void done();
-      abort: void stop();
-      error: void failed();
-    }
-}
-
-task AirQuality (bridge req Bridge, sensor req Co2Sensor, environ req EnvSensor, 
-                 light req Lighting, hvac req Ventilation, string zone)
-{
-  trigger: void start(string zone);
-  return:  void done();
-  abort:   void abort();
-  error:   void failed();
-
-  vars {
-    string zone_ = zone : "zone1"
-    int count_ = 0 : 0
-  }
-
-  strategy {
-    err:  hvac.abort() --> light.set("Alert") --> end;
-    abrt: hvac.abort() --> end;
-
-    ventilation [mode]: within 300 do ( hvac(mode)
-          on error err
-          on abort abrt
-          on environ.present() ( light.set("On") --> continue )
-          on environ.empty() ( light.set("Off") --> continue )
-        ) else err;
-
-    main: every 10 { bridge.poll(zone_) }
-      on abort ( abrt )
-      on environ.present() ( light.set("On") )
-      on environ.empty() ( light.set("Off") )
-      on sensor.high() ( ventilation(true) )
-      on sensor.normal() ( ventilation(false) );
-  }
-}
-```
+  Some examples are available in the [./examples](./examples/) folder. These can be loaded directly into MAKI. Each example has a correlated generated KODA file for those interested in the textual DSL. More information can be found in the KODA [repository](https://github.com/FelipeACXavier/KODA).
 
 ## Styling ideas
 
@@ -265,6 +49,8 @@ task AirQuality (bridge req Bridge, sensor req Co2Sensor, environ req EnvSensor,
 - Windows 95 Desktop: [\#008585](https://colorkit.co/color/008585/)
 
 ### Fonts
+
+To keep the same aesthetic across different operating systems, MAKI uses predefined fonts. All of these are open-source:
 
 - [JetBrains Mono](https://www.jetbrains.com/lp/mono/)
 - [Geist](https://fonts.google.com/specimen/Geist)
