@@ -75,7 +75,6 @@ if (-not $PythonExists) {
 }
 
 # Add both the binary dir and Scripts dir
-$PythonHome = "C:\Python312"
 $env:PATH = "$PythonHome;$PythonHome\Scripts;$env:PATH"
 
 $PythonExists = Get-Command $Python -ErrorAction SilentlyContinue
@@ -86,6 +85,7 @@ if (-not $PythonExists) {
 }
 
 LogDebug "==> Ensuring aqtinstall is installed..."
+LogDebug "==> Running with $Python"
 try {
   & $Python -m pip install --user aqtinstall
 } catch {
