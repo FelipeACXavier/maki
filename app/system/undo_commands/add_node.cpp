@@ -16,7 +16,7 @@ void AddNodeCommand::undo()
   if (!mCanvas)
     return;
 
-  mCanvas->removeNode(mDesc, false);
+  mCanvas->removeNode(mDesc);
   LOG_TRACE("Undo AddNodeCommand: %s %s", qPrintable(mDesc.nodeId), qPrintable(mDesc.id));
 }
 

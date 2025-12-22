@@ -79,9 +79,9 @@ VoidResult FlowMenu::onFlowAdded(Flow* flow, NodeItem* node)
   return VoidResult();
 }
 
-VoidResult FlowMenu::onFlowRemoved(const QString& flowId, NodeItem* node)
+VoidResult FlowMenu::onFlowRemoved(const QString& flowId, const QString& nodeId)
 {
-  auto nodeItem = getItemById(node->id());
+  auto nodeItem = getItemById(nodeId);
   if (nodeItem == nullptr)
     return VoidResult::Failed("No node to delete");
 

@@ -25,6 +25,6 @@ void RemoveNodeCommand::redo()
   if (!mCanvas)
     return;
 
-  mCanvas->removeNode(mDesc, false);
+  mCanvas->removeNode(mDesc);
   LOG_TRACE("Redo RemoveNodeCommand: %s %s", qPrintable(mDesc.nodeId), qPrintable(mDesc.id));
 }

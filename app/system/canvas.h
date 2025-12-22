@@ -42,10 +42,10 @@ public:
 
   void themeChanged();
 
-  // Used for undo
+  // Used for undo commands
   void createNode(const NodeSaveInfo info);
-  void removeNode(const NodeSaveInfo info, bool createUndo);
-  void removeNode(NodeItem* node, bool createUndo);
+  void removeNode(const NodeSaveInfo info);
+  void triggerNodeRemoval(const NodeItem* node);
 
   void moveNodeTo(const QString& nodeId, const QPointF& position);
   void setNodeSize(const QString& nodeId, const QSizeF& size);
@@ -81,7 +81,7 @@ signals:
   void createEvent(NodeItem* node);
   void openFlow(Flow* flow, NodeItem* node);
   void flowAdded(Flow* flow, NodeItem* node);
-  void flowRemoved(const QString& flowId, NodeItem* node);
+  void flowRemoved(const QString& flowId, const QString& nodeId);
 
 public slots:
   void onFocusNode(const QString& nodeId);
@@ -137,6 +137,8 @@ private:
   // Context menu
   // TODO(felaze): Make this a separate class
   QMenu* createAlignMenu(const QList<Types::AlignmentNode>& items);
+
+  QVector<QGraphicsItem*> removeNode(NodeItem* node);
 
   void clearSelectedNodes();
   bool isModifierSet(QGraphicsSceneMouseEvent* event, Qt::KeyboardModifier modifier);

@@ -689,7 +689,7 @@ void MainWindow::addBrowserTab()
   mLocalServerTab->show();
 }
 
-void MainWindow::onFlowRemoved(const QString& flowId, NodeItem* node)
+void MainWindow::onFlowRemoved(const QString& flowId, const QString& nodeId)
 {
   if (mActiveCanvas->id() == flowId)
   {
@@ -698,7 +698,7 @@ void MainWindow::onFlowRemoved(const QString& flowId, NodeItem* node)
     mCanvasPanel->removeTab(oldTab);
   }
 
-  LOG_WARN_ON_FAILURE(mFlowMenu->onFlowRemoved(flowId, node));
+  LOG_WARN_ON_FAILURE(mFlowMenu->onFlowRemoved(flowId, nodeId));
 }
 
 void MainWindow::onFlowAdded(Flow* flow, NodeItem* node)

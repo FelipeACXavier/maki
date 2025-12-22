@@ -43,7 +43,7 @@ private slots:
 
   void onOpenFlow(Flow* flow, NodeItem* node);
   void onFlowAdded(Flow* flow, NodeItem* node);
-  void onFlowRemoved(const QString& flowId, NodeItem* node);
+  void onFlowRemoved(const QString& flowId, const QString& nodeId);
 
 private:
   JSON mConfig;

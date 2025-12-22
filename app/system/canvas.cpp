@@ -524,8 +524,11 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
   QMenu menu;
   QList<NodeItem*> items = selectedNodes();
   QList<Types::AlignmentNode> itemIds = {};
-  for (auto node : items)
-    itemIds.append(Types::AlignmentNode{node->id(), node->pos()});
+  for (const auto node : items)
+  {
+    if (node != nullptr)
+      itemIds.append(Types::AlignmentNode{node->id(), node->pos()});
+  }
 
   if (!item)
   {
@@ -742,56 +745,70 @@ void Canvas::deleteSelectedItems()
   mUndoStack->beginMacro("Remove nodes");
 
   for (NodeItem* node : nodesToDelete)
-    removeNode(node, true);
+    triggerNodeRemoval(node);
 
   mUndoStack->endMacro();
 }
 
-void Canvas::removeNode(const NodeSaveInfo info, bool createUndo)
+void Canvas::triggerNodeRemoval(const NodeItem* node)
 {
-  auto node = findNodeWithId(info.id);
-  if (node)
-    removeNode(node, createUndo);
+  // We have to remember that QT QUndoCommands trigger the 'redo' method after creation. Thus, the node
+  // removal is not explicit (as I would like) but happens through the RemoveNodeCommand below
+  mUndoStack->push(new RemoveNodeCommand(this, node->saveInfo()));
 }
 
-void Canvas::removeNode(NodeItem* node, bool createUndo)
+void Canvas::removeNode(const NodeSaveInfo info)
 {
+  auto node = findNodeWithId(info.id);
   if (!node)
     return;
 
-  if (createUndo)
-  {
-    mUndoStack->push(new RemoveNodeCommand(this, node->saveInfo()));
-    return;
-  }
+  auto toRemove = removeNode(node);
+  QTimer::singleShot(0, this, [toRemove]() {
+    for (QGraphicsItem* item : toRemove)
+      delete item;
+  });
+}
 
+QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
+{
+  if (!node)
+    return {};
+
+  LOG_TRACE("Removing node: %s", qPrintable(node->id()));
+
+  QVector<QGraphicsItem*> itemsToRemove = {node};
   updateParent(node, nullptr, false);
 
   auto flows = node->flows();
   for (Flow* flow : flows)
   {
     node->deleteFlow(flow->id());
-    emit flowRemoved(flow->id(), node);
+    emit flowRemoved(flow->id(), node->id());
   }
 
   if (node->parentNode())
     node->parentNode()->childRemoved(node);
 
-  auto toDelete = node->children();
-  for (NodeItem* child : toDelete)
-    removeNode(child, false);  // Do not create undo for children
-
   auto transtionsToDelete = node->transitions();
   for (TransitionItem* transtion : transtionsToDelete)
   {
     removeItem(transtion);
-    delete transtion;
+    itemsToRemove.append(transtion);
   }
+
+  auto toDelete = node->children();
+  for (NodeItem* child : toDelete)
+    itemsToRemove += removeNode(child);  // Do not create undo for children
 
   emit nodeRemoved(node);
 
   removeItem(node);
-  delete node;
+  mSelectedNodes.removeAll(node);
+
+  // Since this function can be called in loops or recusively, we do not perform the deletion of the pointer.
+  // Deletion is the responsibility of the outer caller
+  return itemsToRemove;
 }
 
 bool Canvas::isParentSelected(NodeItem* node)
@@ -888,6 +905,7 @@ void Canvas::pasteCopiedItems()
 
 void Canvas::clearCanvas()
 {
+  QVector<QGraphicsItem*> toRemove = {};
   QList<QGraphicsItem*> itemsList = items();
   for (QGraphicsItem* item : itemsList)
   {
@@ -901,8 +919,13 @@ void Canvas::clearCanvas()
     if (node->parentNode())
       continue;
 
-    removeNode(node, false);
+    toRemove = removeNode(node);
   }
+
+  QTimer::singleShot(0, this, [toRemove]() {
+    for (QGraphicsItem* item : toRemove)
+      delete item;
+  });
 }
 
 void Canvas::selectNode(NodeItem* node, bool select)
@@ -1014,6 +1037,10 @@ void Canvas::createNode(const NodeSaveInfo info)
 
   auto infoPtr = std::make_shared<NodeSaveInfo>(info);
   (void)createNode(NodeCreation::Populating, infoPtr, info.position, parent);
+
+  // We also need to create the children of the node
+  for (const auto& child : info.children)
+    (void)createNode(*child);
 }
 
 NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo> info, const QPointF& position, NodeItem* parent)
@@ -1110,10 +1137,13 @@ void Canvas::onFocusNode(const QString& nodeId)
 void Canvas::onRemoveNode(const QString& nodeId)
 {
   auto node = findNodeWithId(nodeId);
-  if (node)
-    removeNode(node, true);
-  else
+  if (!node)
+  {
     LOG_WARNING("No node with id: %s", qPrintable(nodeId));
+    return;
+  }
+
+  triggerNodeRemoval(node);
 }
 
 void Canvas::onSelectNode(const QList<QString>& nodeIds)
@@ -1205,7 +1235,7 @@ void Canvas::onFlowRemoved(const QString& flowId, const QString& nodeId)
   }
 
   node->deleteFlow(flowId);
-  emit flowRemoved(flowId, node);
+  emit flowRemoved(flowId, nodeId);
 }
 
 void Canvas::updateParent(NodeItem* /* node */, std::shared_ptr<NodeSaveInfo> /* storage */, bool /* adding */)
