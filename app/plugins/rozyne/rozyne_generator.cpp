@@ -57,6 +57,16 @@ QString RozyneGenerator::generateCode(const QString& outputFolder, std::shared_p
   return code;
 }
 
+bool RozyneGenerator::setup()
+{
+  return true;
+}
+
+bool RozyneGenerator::tearDown()
+{
+  return true;
+}
+
 generator::Language RozyneGenerator::supportedLanguage() const
 {
   return generator::Language::Rozyne;

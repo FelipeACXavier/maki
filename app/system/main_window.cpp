@@ -26,6 +26,7 @@
 #include "library_container.h"
 #include "local_server_tab.h"
 #include "logging.h"
+#include "notifications.h"
 #include "plugin_manager.h"
 #include "process_tab.h"
 #include "save_handler.h"
@@ -63,18 +64,17 @@ VoidResult MainWindow::start()
     handleLogging(logMessage, mLogText);
     if (level == logging::LogLevel::Error)
     {
-      if (mNotificationManager)
-        mNotificationManager->showNotification(QString::fromStdString(message), logging::LogLevel::Error);
-
       handleLogging(logMessage, mErrorLogText);
     }
     else if (level == logging::LogLevel::Warning)
     {
-      if (mNotificationManager)
-        mNotificationManager->showNotification(QString::fromStdString(message), logging::LogLevel::Warning);
-
       handleLogging(logMessage, mWarningLogText);
     }
+  };
+
+  notification::gNotificationStream = [this](logging::LogLevel level, const std::string& header, const std::string& message) {
+    if (mNotificationManager)
+      mNotificationManager->showNotification(QString::fromStdString(header), QString::fromStdString(message), level);
   };
 
   auto configRead = JSON::fromFile(":/assets/config.json");
@@ -91,7 +91,7 @@ VoidResult MainWindow::start()
   mSaveHandler = std::make_unique<SaveHandler>(this);
   mPluginManager = std::make_unique<PluginManager>(this);
   mSettingsManager = std::make_shared<SettingsManager>();
-  mNotificationManager = new NotificationManager(this);
+  mNotificationManager = new NotificationManager(mCanvasPanel);
 
   mProcessTab = new ProcessTab(mGenerator->pipeline(), mCanvasPanel);
   mProcessTab->hide();
@@ -415,6 +415,8 @@ void MainWindow::onActionSave()
     LOG_WARNING("System not initialized");
     return;
   }
+
+  NOTIFY_INFO("Save info", "Project successfuly saved");
 
   // QJsonDocument doc(mStorage->toJson());
   // QByteArray jsonBytes = doc.toJson(QJsonDocument::Indented);

@@ -32,6 +32,8 @@ public:
   virtual generator::Language supportedLanguage() const = 0;
   virtual QString languageName() const = 0;
   virtual QList<QString> generatedFiles() const = 0;
+  virtual bool setup() = 0;
+  virtual bool tearDown() = 0;
 };
 
 #define GeneratorPlugin_iid "com.felipexavier.GeneratorPlugin/1.0"

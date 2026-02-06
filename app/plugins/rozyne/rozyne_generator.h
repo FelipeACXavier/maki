@@ -17,6 +17,9 @@ public:
   QString languageName() const override;
   QList<QString> generatedFiles() const override;
 
+  bool setup() override;
+  bool tearDown() override;
+
 private:
   QDir mOutputFolder;
   std::shared_ptr<SaveInfo> mStorage;

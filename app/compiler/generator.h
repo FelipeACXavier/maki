@@ -19,6 +19,7 @@ public:
 
   VoidResult generate(const QString& outputDir, GeneratorPlugin* generator, const GenerationOptions& option);
   Pipeline* pipeline() const;
+  void setup();
 
 signals:
   void generationStarted(Pipeline* pipeline);

@@ -10,7 +10,7 @@
 #include "style_helpers.h"
 #include "theme.h"
 
-NotificationWidget::NotificationWidget(const QString& text, logging::LogLevel level, QWidget* parent)
+NotificationWidget::NotificationWidget(const QString& title, const QString& text, logging::LogLevel level, QWidget* parent)
     : QFrame(parent)
     , m_opacity(0.0)
 {
@@ -50,10 +50,10 @@ NotificationWidget::NotificationWidget(const QString& text, logging::LogLevel le
   headerLayout->setContentsMargins(6, 0, 6, 0);
   headerLayout->setSpacing(0);
 
-  QLabel* title = new QLabel("Notification", this);
-  title->setObjectName("NotificationTitle");
-  title->setContentsMargins(0, 0, 0, 0);
-  title->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
+  QLabel* titleLabel = new QLabel(title.size() > 1 ? title : "Notification", this);
+  titleLabel->setObjectName("NotificationTitle");
+  titleLabel->setContentsMargins(0, 0, 0, 0);
+  titleLabel->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
 
   QLabel* titleIcon = new QLabel();
   titleIcon->setPixmap(applyColorToIcon(iconPath, Config::FOREGROUND).scaled(16, 16, Qt::KeepAspectRatio, Qt::SmoothTransformation));
@@ -65,7 +65,7 @@ NotificationWidget::NotificationWidget(const QString& text, logging::LogLevel le
 
   headerLayout->addWidget(titleIcon, 0, Qt::AlignVCenter);
   headerLayout->addSpacing(6);
-  headerLayout->addWidget(title, 0, Qt::AlignVCenter);
+  headerLayout->addWidget(titleLabel, 0, Qt::AlignVCenter);
   headerLayout->addStretch();
   headerLayout->addWidget(mCloseButton, 0, Qt::AlignVCenter);
 

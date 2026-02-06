@@ -42,7 +42,9 @@ struct ThemeVars
   QString notification_width = "300";
   QString min_notification_height = "100";
   QString max_notification_height = "500";
-  QString notification_margin = "10";
+  QString notification_top_margin = "60";
+  QString notification_left_margin = "10";
+  QString notification_between_margin = "10";
 
   // Scrollbar
   QString scrollbar_handle = "#c3c3c3";
@@ -121,7 +123,9 @@ const QHash<QString, QString ThemeVars::*> THEME_KEY_MAP = {
     {"@notification_width", &ThemeVars::notification_width},
     {"@min_notification_height", &ThemeVars::min_notification_height},
     {"@max_notification_height", &ThemeVars::max_notification_height},
-    {"@notification_margin", &ThemeVars::notification_margin},
+    {"@notification_left_margin", &ThemeVars::notification_left_margin},
+    {"@notification_top_margin", &ThemeVars::notification_top_margin},
+    {"@notification_between_margin", &ThemeVars::notification_between_margin},
 
     {"@scrollbar_handle", &ThemeVars::scrollbar_handle},
     {"@scrollbar_handle_hover", &ThemeVars::scrollbar_handle_hover},

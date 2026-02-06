@@ -16,7 +16,7 @@ class NotificationWidget : public QFrame
   Q_PROPERTY(qreal opacity READ opacity WRITE setOpacity)
 
 public:
-  NotificationWidget(const QString& text, logging::LogLevel level, QWidget* parent = nullptr);
+  NotificationWidget(const QString& title, const QString& text, logging::LogLevel level, QWidget* parent = nullptr);
 
   qreal opacity() const;
   void setOpacity(qreal o);

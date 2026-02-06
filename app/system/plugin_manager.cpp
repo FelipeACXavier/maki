@@ -71,7 +71,11 @@ void PluginManager::start(QMenu* menu, QComboBox* comboBox)
 
 void PluginManager::setPlugin(GeneratorPlugin* plugin)
 {
+  if (mPlugin)
+    mPlugin->tearDown();
+
   mPlugin = plugin;
+  plugin->setup();
 }
 
 GeneratorPlugin* PluginManager::currentPlugin() const

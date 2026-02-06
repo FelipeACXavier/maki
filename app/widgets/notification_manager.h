@@ -14,7 +14,7 @@ public:
   explicit NotificationManager(QWidget* parentWindow, QObject* parent = nullptr);
 
 public slots:
-  void showNotification(const QString& text, logging::LogLevel level);
+  void showNotification(const QString& header, const QString& text, logging::LogLevel level);
 
 private slots:
   void onToastDismissed(NotificationWidget* toast);
