@@ -2,8 +2,8 @@
 
 #include <QUndoCommand>
 
-#include "common/types.h"
 #include "elements/save_info.h"
+#include "types.h"
 
 class Canvas;
 class QPointF;

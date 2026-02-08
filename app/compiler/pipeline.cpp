@@ -12,7 +12,7 @@ static const QRegularExpression ansiRe("\x1B\\[[0-9;?]*[ -/]*[@-~]", QRegularExp
 Pipeline::Pipeline(QObject* parent)
     : QObject(parent)
     , mName("")
-    , mRunningProcess({nullptr, OnFail::STOP, ""})
+    , mRunningProcess({nullptr, maki::OnFail::STOP, ""})
 {
 }
 
@@ -26,7 +26,7 @@ void Pipeline::setName(const QString& name)
   mName = name;
 }
 
-VoidResult Pipeline::add(QProcess* process, OnFail onFail)
+VoidResult Pipeline::add(QProcess* process, maki::OnFail onFail, const QString& options)
 {
   QString exe = QStandardPaths::findExecutable(process->program());
   if (exe.isEmpty())
@@ -38,16 +38,6 @@ VoidResult Pipeline::add(QProcess* process, OnFail onFail)
   connect(process, &QProcess::errorOccurred, this, &Pipeline::onErrorOccurred);
 
   mProcesses.append({process, onFail});
-
-  return VoidResult();
-}
-
-VoidResult Pipeline::add(QProcess* process, OnFail onFail, const QString& options)
-{
-  auto result = add(process, onFail);
-  if (!result.IsSuccess())
-    return result;
-
   mProcesses.last().options = options;
 
   return VoidResult();
@@ -56,7 +46,7 @@ VoidResult Pipeline::add(QProcess* process, OnFail onFail, const QString& option
 VoidResult Pipeline::start()
 {
   if (mProcesses.isEmpty())
-    return VoidResult::Failed("Nothing to run");
+    return VoidResult();
 
   mRunningProcess = mProcesses.first();
   const QString name = mRunningProcess.process->program();
@@ -163,7 +153,7 @@ void Pipeline::onFinished(int exitCode, QProcess::ExitStatus status)
   }
   else
   {
-    if (mRunningProcess.onFail == OnFail::CONTINUE)
+    if (mRunningProcess.onFail == maki::OnFail::CONTINUE)
     {
       startNextOrEnd(SUCCESS, status);
     }

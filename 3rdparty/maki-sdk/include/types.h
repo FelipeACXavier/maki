@@ -1,23 +1,12 @@
 #pragma once
 
-#include <QGraphicsItem>
-#include <QJsonObject>
-#include <QJsonValueConstRef>
+// #include <QJsonObject>
+// #include <QJsonValueConstRef>
 #include <QPointF>
 #include <QString>
 
 namespace Types
 {
-static const int NODE = QGraphicsItem::UserType + 1;
-static const int CONNECTOR = QGraphicsItem::UserType + 2;
-static const int CONNECTION = QGraphicsItem::UserType + 3;
-static const int DRAGGABLE = QGraphicsItem::UserType + 4;
-static const int BASE_NODE = QGraphicsItem::UserType + 5;
-static const int TRANSITION = QGraphicsItem::UserType + 6;
-static const int FLOW = QGraphicsItem::UserType + 7;
-
-static const QString PIXMAP = "PNG";
-
 enum class Shape
 {
   UNKNOWN = 0,
@@ -53,13 +42,6 @@ enum class ConnectorType
   OUT,
   IN_AND_OUT,
   END
-};
-
-enum class GenerationOptions
-{
-  Generate,
-  GenerateVerify,
-  GenerateSimulate
 };
 
 ConnectorType StringToConnectorType(const QString& type);
@@ -107,5 +89,5 @@ enum class LibraryTypes
 
 QString LibraryTypeToString(LibraryTypes type);
 
-typedef QJsonValueConstRef Config;
+// typedef QJsonValueConstRef Config;
 }  // namespace Types

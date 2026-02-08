@@ -43,7 +43,7 @@ protected:
 
   // === Central Panel ===
   QPushButton* mGenerationButton;
-  QComboBox* mGenerationOption;
+  QPushButton* mSimulateButton;
   QComboBox* mGeneratorOption;
 
   QPushButton* mDeployButton;

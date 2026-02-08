@@ -3,21 +3,23 @@
 #include "result.h"
 #include "system/canvas.h"
 
-class GeneratorPlugin;
+namespace maki
+{
+class IGeneratorPlugin;
+}
+
 class Pipeline;
+class HostServices;
 
 class Generator : public QObject
 {
   Q_OBJECT
 public:
-  struct GenerationOptions
-  {
-    Types::GenerationOptions pipeline;
-  };
-
   Generator(std::shared_ptr<SaveInfo> storage, QObject* parent = nullptr);
 
-  VoidResult generate(const QString& outputDir, GeneratorPlugin* generator, const GenerationOptions& option);
+  VoidResult generate(const QString& outputDir, maki::IGeneratorPlugin* generator);
+  VoidResult simulate(const QString& outputDir, maki::IGeneratorPlugin* generator);
+
   Pipeline* pipeline() const;
   void setup();
 
@@ -27,8 +29,8 @@ signals:
   void openClient(const QString& url);
 
 private:
-  const std::shared_ptr<SaveInfo> mStorage;
-  Pipeline* mPipeline;
+  Pipeline* mPipeline = nullptr;
+  HostServices* mServices = nullptr;
 
   VoidResult generatePipeline(const QString& outputDir, const QStringList& input, QStringList& output);
   VoidResult verifyPipeline(const QStringList& input, QStringList& output);

@@ -3,9 +3,10 @@
 #include <QJsonObject>
 #include <QList>
 
+#include "idocument.h"
 #include "types.h"
 
-class PropertiesConfig
+class PropertiesConfig : public IProperty
 {
 public:
   PropertiesConfig();
@@ -18,6 +19,30 @@ public:
 
   bool isValid() const;
   void setInvalid(const QString& message);
+
+  // Inherited --------------------------------------
+  QString getid() const override
+  {
+    return id;
+  }
+  QVariant getdefaultValue() const override
+  {
+    return defaultValue;
+  }
+  QList<std::shared_ptr<IProperty>> getoptions() const override
+  {
+    QList<std::shared_ptr<IProperty>> out;
+    out.reserve(options.size());
+    for (const auto& f : options)
+      out.push_back(std::make_shared<PropertiesConfig>(f));
+
+    return out;
+  }
+  Types::PropertyTypes gettype() const override
+  {
+    return type;
+  }
+  // ------------------------------------------------
 
   QJsonObject toJson() const;
   static PropertiesConfig fromJson(const QJsonObject& data);

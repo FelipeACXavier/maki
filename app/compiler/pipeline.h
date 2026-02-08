@@ -3,23 +3,16 @@
 #include <QProcess>
 #include <QVector>
 
+#include "ipipeline.h"
 #include "result.h"
 
-class Pipeline : public QObject
+class Pipeline : public QObject, public maki::IPipeline
 {
   Q_OBJECT
 public:
-  enum class OnFail
-  {
-    STOP = 0,
-    CONTINUE,
-    OPEN_BROWSER
-  };
-
   Pipeline(QObject* parent = nullptr);
 
-  VoidResult add(QProcess* process, OnFail onFail);
-  VoidResult add(QProcess* process, OnFail onFail, const QString& options);
+  VoidResult add(QProcess* process, maki::OnFail onFail, const QString& options = {}) override;
   VoidResult start();
 
   QString name() const;
@@ -46,7 +39,7 @@ private:
   struct PipelineProcess
   {
     QProcess* process = nullptr;
-    OnFail onFail = OnFail::STOP;
+    maki::OnFail onFail = maki::OnFail::STOP;
     QString options = "";
   };
 

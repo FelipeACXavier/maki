@@ -18,7 +18,8 @@ target_link_libraries(${PLUGIN_NAME} PRIVATE
     Qt6::Gui
     Qt6::Widgets
     libcommon
-    libcpphelpers)
+    libcpphelpers
+    libmaki)
 
 target_include_directories(${PLUGIN_NAME} PRIVATE
   ${CMAKE_SOURCE_DIR}/app

@@ -8,10 +8,11 @@
 #include <QVector>
 
 #include "config.h"
+#include "idocument.h"
 
 struct NodeSaveInfo;
 
-struct FlowSaveInfo
+struct FlowSaveInfo : public IFlow
 {
   QString id = "";
   QString name = "";
@@ -22,7 +23,51 @@ struct FlowSaveInfo
   Types::PropertyTypes returnType = Types::PropertyTypes::UNKNOWN;
   QVector<PropertiesConfig> arguments = {};
 
-  QVector<std::shared_ptr<NodeSaveInfo>> nodes;
+  QVector<std::shared_ptr<NodeSaveInfo>> nodes = {};
+
+  // Inherited --------------------------------------
+  QString getid() const override
+  {
+    return id;
+  }
+  QString getname() const override
+  {
+    return name;
+  }
+  QString getowner() const override
+  {
+    return owner;
+  }
+  bool getmodifiable() const override
+  {
+    return modifiable;
+  }
+  Types::ConnectorType gettype() const override
+  {
+    return type;
+  }
+  Types::PropertyTypes getreturnType() const override
+  {
+    return returnType;
+  }
+  QVector<std::shared_ptr<IProperty>> getarguments() const override
+  {
+    QVector<std::shared_ptr<IProperty>> args;
+    for (auto arg : arguments)
+      args.emplace_back(std::make_shared<PropertiesConfig>(arg));
+    return args;
+  }
+  QVector<std::shared_ptr<INode>> getnodes() const override
+  {
+    QVector<std::shared_ptr<INode>> out;
+    out.reserve(nodes.size());
+    for (const auto& f : nodes)
+      out.push_back(std::static_pointer_cast<INode>(f));
+
+    return out;
+  }
+
+  // ------------------------------------------------
 
   FlowSaveInfo() = default;
   FlowSaveInfo(const FlowConfig& config);
@@ -34,7 +79,7 @@ struct FlowSaveInfo
   friend QDataStream& operator>>(QDataStream& in, FlowSaveInfo& info);
 };
 
-struct TransitionSaveInfo
+struct TransitionSaveInfo : public ITransition
 {
   QString id = "";
   QString label = "";
@@ -48,6 +93,29 @@ struct TransitionSaveInfo
   QPointF dstPoint{0, 0};
   QPointF dstShift{0, 0};
 
+  // Inherited --------------------------------------
+  QString getid() const override
+  {
+    return id;
+  }
+  QString getlabel() const override
+  {
+    return label;
+  }
+  QString getevent() const override
+  {
+    return event;
+  }
+  QString getsrcId() const override
+  {
+    return srcId;
+  }
+  QString getdstId() const override
+  {
+    return dstId;
+  }
+  // ------------------------------------------------
+
   TransitionSaveInfo() = default;
 
   QJsonObject toJson() const;
@@ -57,7 +125,7 @@ struct TransitionSaveInfo
   friend QDataStream& operator>>(QDataStream& in, TransitionSaveInfo& info);
 };
 
-struct NodeSaveInfo
+struct NodeSaveInfo : public INode
 {
   QString id = "";
   QString nodeId = "";
@@ -73,6 +141,67 @@ struct NodeSaveInfo
 
   QString parentId = "";
   QVector<std::shared_ptr<NodeSaveInfo>> children = {};
+
+  // Inherited --------------------------------------
+  QString getid() const override
+  {
+    return id;
+  }
+  QString getnodeId() const override
+  {
+    return nodeId;
+  }
+  QPointF getposition() const override
+  {
+    return position;
+  }
+  QVector<std::shared_ptr<IProperty>> getfields() const override
+  {
+    QVector<std::shared_ptr<IProperty>> args;
+    for (auto arg : fields)
+      args.emplace_back(std::make_shared<PropertiesConfig>(arg));
+    return args;
+  }
+  QMap<QString, QVariant> getproperties() const override
+  {
+    return properties;
+  }
+  QVector<std::shared_ptr<ITransition>> gettransitions() const override
+  {
+    QVector<std::shared_ptr<ITransition>> out;
+    out.reserve(transitions.size());
+    for (const auto& f : transitions)
+      out.push_back(std::static_pointer_cast<ITransition>(f));
+
+    return out;
+  }
+  QVector<std::shared_ptr<IFlow>> getflows() const override
+  {
+    QVector<std::shared_ptr<IFlow>> out;
+    out.reserve(flows.size());
+    for (const auto& f : flows)
+      out.push_back(std::static_pointer_cast<IFlow>(f));
+
+    return out;
+  }
+  std::shared_ptr<IFlow> getbehaviour() const override
+  {
+    return std::static_pointer_cast<IFlow>(behaviour);
+  }
+  QString getparentId() const override
+  {
+    return parentId;
+  }
+  QVector<std::shared_ptr<INode>> getchildren() const override
+  {
+    QVector<std::shared_ptr<INode>> out;
+    out.reserve(children.size());
+    for (const auto& f : children)
+      out.push_back(std::static_pointer_cast<INode>(f));
+
+    return out;
+  }
+  // ------------------------------------------------
 
   NodeSaveInfo() = default;
 
@@ -95,11 +224,23 @@ struct CanvasSaveInfo
   friend QDataStream& operator>>(QDataStream& in, CanvasSaveInfo& info);
 };
 
-struct SaveInfo
+struct SaveInfo : public IDocument
 {
   CanvasSaveInfo canvasInfo;
   QVector<std::shared_ptr<NodeSaveInfo>> structuralNodes = {};
   QVector<std::shared_ptr<NodeSaveInfo>> behaviouralNodes = {};
+
+  // Inherited --------------------------------------
+  QVector<std::shared_ptr<INode>> getnodes() const override
+  {
+    QVector<std::shared_ptr<INode>> out;
+    out.reserve(structuralNodes.size());
+    for (const auto& f : structuralNodes)
+      out.push_back(std::static_pointer_cast<INode>(f));
+
+    return out;
+  };
+  // ------------------------------------------------
 
   QJsonObject toJson() const;
   static SaveInfo fromJson(const QJsonObject& data);

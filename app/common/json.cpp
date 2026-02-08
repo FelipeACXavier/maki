@@ -5,6 +5,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 
+#include "ids.h"
 #include "keys.h"
 #include "types.h"
 

@@ -4,16 +4,18 @@
 
 #include "elements/node.h"
 #include "generator_plugin.h"
+#include "host_services.h"
 #include "logging.h"
 #include "pipeline.h"
 
 Generator::Generator(std::shared_ptr<SaveInfo> storage, QObject* parent)
     : QObject(parent)
-    , mStorage(storage)
 {
   mPipeline = new Pipeline(this);
   connect(mPipeline, &Pipeline::openClient, [this](const QString& url) { emit openClient(url); });
   connect(mPipeline, &Pipeline::finishedLast, [this] { emit generationEnded(); });
+
+  mServices = new HostServices(storage.get(), mPipeline, "/home/ubuntu");
 }
 
 Pipeline* Generator::pipeline() const
@@ -21,39 +23,34 @@ Pipeline* Generator::pipeline() const
   return mPipeline;
 }
 
-VoidResult Generator::generate(const QString& outputDir, GeneratorPlugin* generator, const GenerationOptions& option)
+VoidResult Generator::generate(const QString& outputDir, maki::IGeneratorPlugin* generator)
 {
-  if (!mStorage)
-    return VoidResult::Failed("No storage available");
+  LOG_INFO("[VERIFY] SetHostServices");
+  generator->setHostServices(mServices);
+
+  LOG_INFO("[VERIFY] SetName");
+  mPipeline->setName(generator->languageName());
+
+  LOG_INFO("[VERIFY] Verify");
+  QString text = generator->verify(outputDir);
+
+  LOG_INFO("[VERIFY] started");
+  emit generationStarted(mPipeline);
+
+  auto ran = mPipeline->start();
+  if (!ran.IsSuccess())
+    return VoidResult::Failed("Failed to run pipeline: " + ran.ErrorMessage());
+
+  return VoidResult();
+}
+
+VoidResult Generator::simulate(const QString& outputDir, maki::IGeneratorPlugin* generator)
+{
+  generator->setHostServices(mServices);
 
   mPipeline->setName(generator->languageName());
 
-  QString text = generator->generateCode(outputDir, mStorage);
-
-  // LOG_INFO("Generation done, wrote files to %s", qPrintable(outputDir));
-
-  // Move these commands to the plugin interface
-  QStringList generationOutput = {};
-  auto generatedFiles = generator->generatedFiles();
-
-  auto result = generatePipeline(outputDir, generatedFiles, generationOutput);
-  if (!result.IsSuccess())
-    return VoidResult::Failed("Failed to prepare the generation pipeline: " + result.ErrorMessage());
-
-  if (option.pipeline == Types::GenerationOptions::GenerateVerify)
-  {
-    QStringList verificationOutput = {};
-    auto verify = verifyPipeline(generationOutput, verificationOutput);
-    if (!verify.IsSuccess())
-      return VoidResult::Failed("Failed to prepare the verification pipeline: " + verify.ErrorMessage());
-  }
-  else if (option.pipeline == Types::GenerationOptions::GenerateSimulate)
-  {
-    QStringList simulationOutput = {};
-    auto simulate = simulatePipeline(generationOutput, simulationOutput);
-    if (!simulate.IsSuccess())
-      return VoidResult::Failed("Failed to prepare the simlation pipeline: " + simulate.ErrorMessage());
-  }
+  QString text = generator->simulate(outputDir);
 
   emit generationStarted(mPipeline);
 
@@ -90,7 +87,7 @@ VoidResult Generator::generatePipeline(const QString& outputDir, const QStringLi
     generate->setProgram(command);
     generate->setArguments(arguments);
 
-    mPipeline->add(generate, Pipeline::OnFail::STOP);
+    mPipeline->add(generate, maki::OnFail::STOP);
   }
 
   output.append(dir.absolutePath());
@@ -123,7 +120,7 @@ VoidResult Generator::verifyPipeline(const QStringList& input, QStringList& outp
       generate->setProgram(command);
       generate->setArguments(arguments);
 
-      mPipeline->add(generate, Pipeline::OnFail::STOP);
+      mPipeline->add(generate, maki::OnFail::STOP);
     }
   }
 
@@ -155,7 +152,7 @@ VoidResult Generator::simulatePipeline(const QStringList& input, QStringList& ou
       generate->setProgram(command);
       generate->setArguments(arguments);
 
-      mPipeline->add(generate, Pipeline::OnFail::STOP, "http://localhost:3000/trace");
+      mPipeline->add(generate, maki::OnFail::STOP, "http://localhost:3000/trace");
       output.append(fullPath);
     }
   }

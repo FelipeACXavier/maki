@@ -3,7 +3,7 @@
 #include <QGraphicsLineItem>
 #include <QGraphicsPathItem>
 
-#include "types.h"
+#include "ids.h"
 
 class NodeItem;
 

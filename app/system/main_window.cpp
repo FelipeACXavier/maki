@@ -173,6 +173,7 @@ void MainWindow::bind()
   mActionSaveAs->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S));
 
   connect(mGenerationButton, &QPushButton::pressed, this, &MainWindow::onActionGenerate);
+  connect(mSimulateButton, &QPushButton::pressed, this, &MainWindow::onActionSimulate);
 
   // Diagram actions =============================================================
   connect(mActionGenerate, &QAction::triggered, this, &MainWindow::onActionGenerate);
@@ -401,11 +402,15 @@ void MainWindow::onActionGenerate()
   if (!mGenerator)
     LOG_WARNING("No generator available");
 
-  // Get options
-  Generator::GenerationOptions options;
-  options.pipeline = static_cast<Types::GenerationOptions>(mGenerationOption->currentData().toInt());
+  LOG_ERROR_ON_FAILURE(mGenerator->generate(mSettingsManager->generation().generationDir, mPluginManager->currentPlugin()));
+}
 
-  LOG_ERROR_ON_FAILURE(mGenerator->generate(mSettingsManager->generation().generationDir, mPluginManager->currentPlugin(), options));
+void MainWindow::onActionSimulate()
+{
+  if (!mGenerator)
+    LOG_WARNING("No generator available");
+
+  LOG_ERROR_ON_FAILURE(mGenerator->simulate(mSettingsManager->generation().generationDir, mPluginManager->currentPlugin()));
 }
 
 void MainWindow::onActionSave()
@@ -415,8 +420,6 @@ void MainWindow::onActionSave()
     LOG_WARNING("System not initialized");
     return;
   }
-
-  NOTIFY_INFO("Save info", "Project successfuly saved");
 
   // QJsonDocument doc(mStorage->toJson());
   // QByteArray jsonBytes = doc.toJson(QJsonDocument::Indented);

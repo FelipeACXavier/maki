@@ -15,6 +15,12 @@ PluginManager::PluginManager(QObject* parent)
 {
 }
 
+PluginManager::~PluginManager()
+{
+  if (mPlugin != nullptr)
+    mPlugin->tearDown();
+}
+
 void PluginManager::start(QMenu* menu, QComboBox* comboBox)
 {
   if (!menu)
@@ -50,7 +56,7 @@ void PluginManager::start(QMenu* menu, QComboBox* comboBox)
       continue;
     }
 
-    auto* codeGen = qobject_cast<GeneratorPlugin*>(plugin);
+    auto* codeGen = qobject_cast<maki::IGeneratorPlugin*>(plugin);
     if (!codeGen)
       continue;
 
@@ -69,7 +75,7 @@ void PluginManager::start(QMenu* menu, QComboBox* comboBox)
   LOG_DEBUG("Starting with plugin: %s", qPrintable(currentPlugin()->languageName()));
 }
 
-void PluginManager::setPlugin(GeneratorPlugin* plugin)
+void PluginManager::setPlugin(maki::IGeneratorPlugin* plugin)
 {
   if (mPlugin)
     mPlugin->tearDown();
@@ -78,16 +84,16 @@ void PluginManager::setPlugin(GeneratorPlugin* plugin)
   plugin->setup();
 }
 
-GeneratorPlugin* PluginManager::currentPlugin() const
+maki::IGeneratorPlugin* PluginManager::currentPlugin() const
 {
   return mPlugin;
 }
 
-GeneratorPlugin* PluginManager::pluginByLanguage(generator::Language language) const
+maki::IGeneratorPlugin* PluginManager::pluginByLanguage(const QString& language) const
 {
   for (const auto& plugin : mPlugins)
   {
-    if (plugin->supportedLanguage() == language)
+    if (plugin->languageName() == language)
       return plugin;
   }
 

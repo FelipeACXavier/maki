@@ -3,8 +3,8 @@
 #include <QMap>
 #include <QString>
 
+#include "ids.h"
 #include "save_info.h"
-#include "types.h"
 
 class NodeItem;
 

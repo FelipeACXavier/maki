@@ -3,7 +3,6 @@ project(${APPLICATION_NAME} LANGUAGES CXX)
 
 # Compile libraries
 add_subdirectory(common)
-add_subdirectory(plugins)
 
 qt_standard_project_setup()
 
@@ -88,6 +87,7 @@ target_link_libraries(${APPLICATION_NAME} PRIVATE
     Qt6::WebEngineWidgets
     libcommon
     libcpphelpers
+    libmaki
 )
 
 add_dependencies(${APPLICATION_NAME} copy_fonts copy_themes)

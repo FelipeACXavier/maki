@@ -53,20 +53,18 @@
     <file alias="accept.svg">assets/icons/fontawesome/svgs/solid/circle-check.svg</file>
     <file alias="reject.svg">assets/icons/fontawesome/svgs/solid/circle-xmark.svg</file>
     <file alias="caret-right.svg">assets/icons/fontawesome/svgs/solid/caret-right.svg</file>
-
     <file alias="arrow-up.svg">assets/icons/fontawesome/svgs/solid/chevron-up.svg</file>
     <file alias="arrow-down.svg">assets/icons/fontawesome/svgs/solid/chevron-down.svg</file>
     <file alias="arrow-right.svg">assets/icons/fontawesome/svgs/solid/chevron-right.svg</file>
     <file alias="check.svg">assets/icons/fontawesome/svgs/solid/toggle-on.svg</file>
     <file alias="uncheck.svg">assets/icons/fontawesome/svgs/solid/toggle-off.svg</file>
     <file alias="limit.svg">assets/icons/fontawesome/svgs/solid/minus.svg</file>
-
     <file alias="arrow-up-dark.svg">assets/icons/fontawesome/svgs/solid/chevron-up-dark.svg</file>
     <file alias="arrow-down-dark.svg">assets/icons/fontawesome/svgs/solid/chevron-down-dark.svg</file>
     <file alias="check-dark.svg">assets/icons/fontawesome/svgs/solid/toggle-on-dark.svg</file>
     <file alias="uncheck-dark.svg">assets/icons/fontawesome/svgs/solid/toggle-off-dark.svg</file>
     <file alias="limit-dark.svg">assets/icons/fontawesome/svgs/solid/minus-dark.svg</file>
-
+    <file alias="verify.svg">assets/icons/fontawesome/svgs/solid/shield-cat.svg</file>
   </qresource>
   <qresource prefix="/app_icons">
     <file alias="maki.png">assets/app_icon/maki_icon_only.png</file>

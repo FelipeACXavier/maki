@@ -52,4 +52,4 @@ static const QString BEHAVIOURAL = "behavioural";
 static const QString TRANSITIONS = "transitions";
 static const QString NODES = "nodes";
 
-};  // namespace ConfigKeys
+}  // namespace ConfigKeys

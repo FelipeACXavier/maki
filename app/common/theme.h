@@ -42,7 +42,7 @@ struct ThemeVars
   QString notification_width = "300";
   QString min_notification_height = "100";
   QString max_notification_height = "500";
-  QString notification_top_margin = "60";
+  QString notification_top_margin = "55";
   QString notification_left_margin = "10";
   QString notification_between_margin = "10";
 

@@ -105,27 +105,27 @@ void MainWindowLayout::buildCentralPanel()
 
   // ---------------------------------------------
   mGenerationButton = new QPushButton("");
-  mIcons.append({mGenerationButton, ":/icons/play.svg"});
+  mIcons.append({mGenerationButton, ":/icons/verify.svg"});
 
-  mGenerationButton->setToolTip("Run with the selected options");
+  mGenerationButton->setToolTip("Verify system");
   mGenerationButton->setToolTipDuration(2000);
   mGenerationButton->setFixedSize(30, 30);
 
   headerLayout->addWidget(mGenerationButton);
 
   // ----------------------------------------------------------------
-  mGenerationOption = new QComboBox();
-  mGenerationOption->addItem(tr("Generate"), QVariant::fromValue(Types::GenerationOptions::Generate));
-  mGenerationOption->addItem(tr("Verify"), QVariant::fromValue(Types::GenerationOptions::GenerateVerify));
-  mGenerationOption->addItem(tr("Simulate"), QVariant::fromValue(Types::GenerationOptions::GenerateSimulate));
+  mSimulateButton = new QPushButton("");
+  mIcons.append({mSimulateButton, ":/icons/play.svg"});
+  mSimulateButton->setToolTip("Simulate system");
+  mSimulateButton->setToolTipDuration(2000);
+  mSimulateButton->setFixedSize(30, 30);
 
-  auto generationOptionsWrapper = createHeaderComboBox(mGenerationOption, ":/icons/target.svg", "Run target");
-  headerLayout->addWidget(generationOptionsWrapper);
+  headerLayout->addWidget(mSimulateButton);
 
   // ----------------------------------------------------------------
   mGeneratorOption = new QComboBox();
 
-  auto generatorOptionsWrapper = createHeaderComboBox(mGeneratorOption, ":/icons/generator.svg", "Generator to be used");
+  auto generatorOptionsWrapper = createHeaderComboBox(mGeneratorOption, ":/icons/generator.svg", "Verification plugin");
   headerLayout->addWidget(generatorOptionsWrapper);
 
   // ----------------------------------------------------------------

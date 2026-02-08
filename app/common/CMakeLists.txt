@@ -21,15 +21,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::Gui
     Qt6::Widgets
     libcpphelpers
+    libmaki
 )
-# target_include_directories(${PROJECT_NAME}
-#  PUBLIC
-#   result
-#   string
-#   logging
-#   safe_types
-#   file_system
-# )
 
 target_include_directories(${PROJECT_NAME}
  PUBLIC

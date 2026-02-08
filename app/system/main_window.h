@@ -95,6 +95,7 @@ private:
   void onActionSave();
   void onActionSaveAs();
   void onActionGenerate();
+  void onActionSimulate();
   void onActionLogLevelChanged();
 };
 

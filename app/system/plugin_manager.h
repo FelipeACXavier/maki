@@ -2,7 +2,7 @@
 
 #include <QWidget>
 
-#include "compiler/generator_plugin.h"
+#include "generator_plugin.h"
 
 class QComboBox;
 
@@ -12,14 +12,16 @@ class PluginManager : public QObject
 public:
   PluginManager(QObject* parent = nullptr);
 
+  virtual ~PluginManager();
+
   void start(QMenu* menu, QComboBox* comboBox);
 
-  GeneratorPlugin* currentPlugin() const;
-  GeneratorPlugin* pluginByLanguage(generator::Language language) const;
+  maki::IGeneratorPlugin* currentPlugin() const;
+  maki::IGeneratorPlugin* pluginByLanguage(const QString& language) const;
 
 private:
-  GeneratorPlugin* mPlugin;
-  QVector<GeneratorPlugin*> mPlugins;
+  maki::IGeneratorPlugin* mPlugin;
+  QVector<maki::IGeneratorPlugin*> mPlugins;
 
-  void setPlugin(GeneratorPlugin* plugin);
+  void setPlugin(maki::IGeneratorPlugin* plugin);
 };

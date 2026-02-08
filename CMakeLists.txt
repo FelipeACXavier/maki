@@ -110,7 +110,6 @@ if (DEPLOY_TARGET STREQUAL "windows" AND WIN32 AND NOT CMAKE_CROSSCOMPILING)
   # We'll hook this up to a target in app/CMakeLists (see below)
 endif()
 
-# add_subdirectory(plugins)
 add_subdirectory(3rdparty)
 add_subdirectory(app)
 

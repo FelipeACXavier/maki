@@ -64,7 +64,6 @@ FlowConfig::FlowConfig(const QJsonObject& object)
   for (const auto& arg : object[ConfigKeys::ARGUMENTS].toArray())
     arguments.push_back(PropertiesConfig(arg.toObject()));
 
-  
   if (object.contains(ConfigKeys::MODIFIABLE))
     modifiable = object[ConfigKeys::MODIFIABLE].toBool();
 }
