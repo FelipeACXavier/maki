@@ -55,7 +55,7 @@ public:
   virtual QMap<QString, QVariant> getproperties() const = 0;
   virtual QVector<std::shared_ptr<ITransition>> gettransitions() const = 0;
   virtual QVector<std::shared_ptr<IFlow>> getflows() const = 0;
-  virtual std::shared_ptr<IFlow> getbehaviour() const = 0;
+  // virtual std::shared_ptr<IFlow> getbehaviour() const = 0;
   virtual QString getparentId() const = 0;
   virtual QVector<std::shared_ptr<INode>> getchildren() const = 0;
 };

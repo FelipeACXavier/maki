@@ -23,7 +23,6 @@
 NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
     : NodeBase((!nodeId.isEmpty() && !nodeId.isNull()) ? nodeId : QUuid::createUuid().toString(), info->nodeId, nodeConfig, parent)
     , mStorage(info)
-    , mBehaviour(nullptr)
     , mParentNode(nullptr)
     , mChildrenNodes({})
     , mBaseScale(config()->libraryType == Types::LibraryTypes::STRUCTURAL ? mStorage->scale : 1.0)
@@ -672,21 +671,6 @@ TransitionConfig NodeItem::nextTransition() const
     return TransitionConfig();
 
   return config()->transitions.at(index);
-}
-
-Flow* NodeItem::createBehaviour(std::shared_ptr<FlowSaveInfo> info)
-{
-  if (mBehaviour != nullptr)
-    return mBehaviour;
-
-  std::shared_ptr<FlowSaveInfo> flowConfig = info;
-  if (flowConfig == nullptr)
-    flowConfig = std::make_shared<FlowSaveInfo>();
-
-  mStorage->behaviour = flowConfig;
-  mBehaviour = new Flow("MainBehaviour", flowConfig);
-
-  return mBehaviour;
 }
 
 QVector<Flow*> NodeItem::flows() const

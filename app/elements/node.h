@@ -73,7 +73,6 @@ public:
   void childRemoved(NodeItem* child);
 
   QVector<Flow*> flows() const;
-  Flow* createBehaviour(std::shared_ptr<FlowSaveInfo> info);
   Flow* createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo> info);
   Flow* getFlow(const QString& flowId) const;
   void deleteFlow(const QString& flowId);
@@ -109,7 +108,6 @@ protected:
 private:
   std::shared_ptr<NodeSaveInfo> mStorage;
 
-  Flow* mBehaviour;
   QVector<Flow*> mFlows;
   NodeItem* mParentNode;
   QVector<NodeItem*> mChildrenNodes;

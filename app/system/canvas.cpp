@@ -604,14 +604,6 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     });
     menu.addAction(newEventAction);
 
-    QAction* newBehaviourAction = menu.addAction(tr("New flow"));
-    // newStateMachineAction->setEnabled(node != nullptr && items.size() == 1);
-    QObject::connect(newBehaviourAction, &QAction::triggered, [this, node]() {
-      auto flow = node->createBehaviour(nullptr);
-      emit openFlow(flow, node);
-    });
-    menu.addAction(newBehaviourAction);
-
     // =============================================
     addSectionLabel(&menu, "Edit");
 
@@ -969,8 +961,6 @@ VoidResult Canvas::loadFromSave(const QVector<std::shared_ptr<NodeSaveInfo>>& no
       LOG_ERROR("%s", ret.ErrorMessage().c_str());
       return VoidResult::Failed(ret.ErrorMessage());
     }
-
-    (void)createdNode->createBehaviour(nodeInfo->behaviour);
 
     for (const auto& flow : node->flows)
       (void)createdNode->createFlow(flow->name, flow);

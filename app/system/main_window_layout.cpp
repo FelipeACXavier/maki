@@ -293,8 +293,8 @@ void MainWindowLayout::buildRightPanel()
   mFieldsMenu = new FieldsMenu(mPropertiesTab);
   mPropertiesTab->addTab(mFieldsMenu, tr("Events"));
 
-  mBehaviourMenu = new BehaviourMenu(mPropertiesTab);
-  mPropertiesTab->addTab(mBehaviourMenu, tr("Behaviour"));
+  // mBehaviourMenu = new BehaviourMenu(mPropertiesTab);
+  // mPropertiesTab->addTab(mBehaviourMenu, tr("Behaviour"));
 
   mIcons.append({mPropertiesTab->tabBar(), ":/icons/properties.svg", 0});
   mIcons.append({mPropertiesTab->tabBar(), ":/icons/fields.svg", 1});

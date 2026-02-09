@@ -137,7 +137,6 @@ struct NodeSaveInfo : public INode
   QMap<QString, QVariant> properties;
   QVector<std::shared_ptr<TransitionSaveInfo>> transitions;
   QVector<std::shared_ptr<FlowSaveInfo>> flows;
-  std::shared_ptr<FlowSaveInfo> behaviour;
 
   QString parentId = "";
   QVector<std::shared_ptr<NodeSaveInfo>> children = {};
@@ -184,10 +183,6 @@ struct NodeSaveInfo : public INode
 
     return out;
   }
-  std::shared_ptr<IFlow> getbehaviour() const override
-  {
-    return std::static_pointer_cast<IFlow>(behaviour);
-  }
   QString getparentId() const override
   {
     return parentId;
@@ -224,8 +219,9 @@ struct CanvasSaveInfo
   friend QDataStream& operator>>(QDataStream& in, CanvasSaveInfo& info);
 };
 
-struct SaveInfo : public IDocument
+class SaveInfo : public IDocument
 {
+public:
   CanvasSaveInfo canvasInfo;
   QVector<std::shared_ptr<NodeSaveInfo>> structuralNodes = {};
   QVector<std::shared_ptr<NodeSaveInfo>> behaviouralNodes = {};
