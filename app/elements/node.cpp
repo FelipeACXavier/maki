@@ -50,7 +50,7 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
     bool found = false;
     for (const auto& flow : mStorage->flows)
     {
-      if (flow->name != event.name)
+      if (flow->getname() != event.name)
         continue;
 
       found = true;
@@ -687,7 +687,7 @@ Flow* NodeItem::createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo
     // Clean up
     for (const auto& f : mStorage->flows)
     {
-      if (f->id != info->id)
+      if (f->getid() != info->getid())
         continue;
 
       flowConfig = f;
@@ -703,7 +703,7 @@ Flow* NodeItem::createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo
   if (!found)
   {
     // Set this as owner of the flow
-    flowConfig->owner = id();
+    flowConfig->setOwner(id());
     mStorage->flows.push_back(flowConfig);
   }
 
@@ -730,7 +730,7 @@ Flow* NodeItem::getFlow(const QString& flowId) const
 void NodeItem::deleteFlow(const QString& flowId)
 {
   mStorage->flows.removeIf([flowId](std::shared_ptr<FlowSaveInfo> item) {
-    return flowId == item->id;
+    return flowId == item->getid();
   });
   mFlows.removeIf([flowId](Flow* flow) { return flow->id() == flowId; });
 }

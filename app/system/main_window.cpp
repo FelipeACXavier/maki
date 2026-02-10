@@ -34,7 +34,6 @@
 #include "style_helpers.h"
 #include "system/main_window_layout.h"
 #include "widgets/notification_manager.h"
-#include "widgets/properties/fields_menu.h"
 #include "widgets/properties/properties_menu.h"
 #include "widgets/settings_dialog.h"
 #include "widgets/settings_manager.h"

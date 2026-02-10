@@ -86,11 +86,11 @@ void EventDialog::createNameInput(QWidget* parent)
   layout()->addWidget(nameLabel);
 
   QLineEdit* name = new QLineEdit(parent);
-  name->setText(mStorage->name);
-  name->setFocusPolicy(mStorage->modifiable ? Qt::StrongFocus : Qt::NoFocus);
-  name->setReadOnly(!mStorage->modifiable);
+  name->setText(mStorage->getname());
+  name->setFocusPolicy(mStorage->getmodifiable() ? Qt::StrongFocus : Qt::NoFocus);
+  name->setReadOnly(!mStorage->getmodifiable());
 
-  connect(name, &QLineEdit::editingFinished, this, [=]() { mStorage->name = name->text(); });
+  connect(name, &QLineEdit::editingFinished, this, [=]() { mStorage->getname() = name->text(); });
   layout()->addWidget(name);
 }
 
@@ -101,23 +101,23 @@ void EventDialog::createTypeInput(QWidget* parent)
   layout()->addWidget(eventTypeLabel);
 
   QComboBox* type = new QComboBox(parent);
-  type->setFocusPolicy(mStorage->modifiable ? Qt::ClickFocus : Qt::NoFocus);
-  type->setEnabled(mStorage->modifiable);
+  type->setFocusPolicy(mStorage->getmodifiable() ? Qt::ClickFocus : Qt::NoFocus);
+  type->setEnabled(mStorage->getmodifiable());
 
   for (uint16_t i = (uint16_t)Types::ConnectorType::UNKNOWN + 1; i < (uint16_t)Types::ConnectorType::END; ++i)
     type->addItem(Types::ConnectorTypeToString((Types::ConnectorType)i));
 
-  if (mStorage->type == Types::ConnectorType::UNKNOWN)
+  if (mStorage->gettype() == Types::ConnectorType::UNKNOWN)
   {
     type->setCurrentIndex(0);
-    mStorage->type = Types::StringToConnectorType(type->currentText());
+    mStorage->setType(Types::StringToConnectorType(type->currentText()));
   }
   else
   {
-    type->setCurrentText(Types::ConnectorTypeToString(mStorage->type));
+    type->setCurrentText(Types::ConnectorTypeToString(mStorage->gettype()));
   }
 
-  connect(type, &QComboBox::currentTextChanged, this, [=](const QString& text) { mStorage->type = Types::StringToConnectorType(text); });
+  connect(type, &QComboBox::currentTextChanged, this, [=](const QString& text) { mStorage->setType(Types::StringToConnectorType(text)); });
   layout()->addWidget(type);
 }
 
@@ -128,24 +128,24 @@ void EventDialog::createReturnTypeInput(QWidget* parent)
   layout()->addWidget(returnTypeLabel);
 
   QComboBox* returnType = new QComboBox(parent);
-  returnType->setFocusPolicy(mStorage->modifiable ? Qt::ClickFocus : Qt::NoFocus);
-  returnType->setEnabled(mStorage->modifiable);
+  returnType->setFocusPolicy(mStorage->getmodifiable() ? Qt::ClickFocus : Qt::NoFocus);
+  returnType->setEnabled(mStorage->getmodifiable());
 
   for (uint16_t i = (uint16_t)Types::PropertyTypes::UNKNOWN + 1; i < (uint16_t)Types::PropertyTypes::END; ++i)
     returnType->addItem(Types::PropertyTypesToString((Types::PropertyTypes)i));
 
-  if (mStorage->returnType == Types::PropertyTypes::UNKNOWN)
+  if (mStorage->getreturnType() == Types::PropertyTypes::UNKNOWN)
   {
     returnType->setCurrentIndex(0);
-    mStorage->returnType = Types::StringToPropertyTypes(returnType->currentText());
+    mStorage->setReturnType(Types::StringToPropertyTypes(returnType->currentText()));
   }
   else
   {
-    returnType->setCurrentText(Types::PropertyTypesToString(mStorage->returnType));
+    returnType->setCurrentText(Types::PropertyTypesToString(mStorage->getreturnType()));
   }
 
   connect(returnType, &QComboBox::currentTextChanged, this, [=](const QString& text) {
-    mStorage->returnType = Types::StringToPropertyTypes(text);
+    mStorage->setReturnType(Types::StringToPropertyTypes(text));
   });
   layout()->addWidget(returnType);
 }
@@ -170,18 +170,18 @@ void EventDialog::createArgumentInput(QWidget* parent)
 
   addDynamicWidget((QVBoxLayout*)layout(), args, parent);
 
-  if (mStorage->modifiable)
+  if (mStorage->getmodifiable())
     args->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::EditKeyPressed);
   else
     args->setEditTriggers(QAbstractItemView::NoEditTriggers);
   args->setModel(model);
 
-  for (const auto& field : mStorage->arguments)
+  for (const auto& field : mStorage->getarguments())
   {
     int newRow = model->rowCount();
     model->insertRow(newRow);
-    model->setItem(newRow, 0, new QStandardItem(field.id));
-    model->setItem(newRow, 1, new QStandardItem(Types::PropertyTypesToString(field.type)));
+    model->setItem(newRow, 0, new QStandardItem(field->getid()));
+    model->setItem(newRow, 1, new QStandardItem(Types::PropertyTypesToString(field->gettype())));
   }
 
   connect(model, &QStandardItemModel::itemChanged, this, &EventDialog::updateArgumentTable);
@@ -189,7 +189,7 @@ void EventDialog::createArgumentInput(QWidget* parent)
   QPushButton* button = new QPushButton(parent);
   button->setObjectName("TextAndIcon");
 
-  button->setEnabled(mStorage->modifiable);
+  button->setEnabled(mStorage->getmodifiable());
   connect(button, &QPushButton::pressed, this, [=]() {
     int newRow = model->rowCount();
     model->insertRow(newRow);
@@ -197,7 +197,7 @@ void EventDialog::createArgumentInput(QWidget* parent)
     model->setItem(newRow, 1, new QStandardItem(""));
 
     // Create new argument in the storage as well
-    mStorage->arguments.push_back(PropertiesConfig());
+    mStorage->addArgument(std::make_shared<PropertiesConfig>());
   });
 
   button->setFocusPolicy(Qt::NoFocus);
@@ -213,7 +213,7 @@ void EventDialog::updateArgumentTable(QStandardItem* item)
     return;
 
   int row = item->row();
-  if (row >= mStorage->arguments.size())
+  if (row >= mStorage->getarguments().size())
   {
     LOG_WARNING("Tried to modify argument that does not exist");
     return;
@@ -225,9 +225,9 @@ void EventDialog::updateArgumentTable(QStandardItem* item)
     return;
 
   if (column == 0)
-    mStorage->arguments[row].id = text;
+    std::dynamic_pointer_cast<PropertiesConfig>(mStorage->getArgument(row))->id = text;
   else if (column == 1)
-    mStorage->arguments[row].type = Types::StringToPropertyTypes(text);
+    std::dynamic_pointer_cast<PropertiesConfig>(mStorage->getArgument(row))->type = Types::StringToPropertyTypes(text);
 }
 
 void EventDialog::keyPressEvent(QKeyEvent* event)

@@ -28,7 +28,6 @@
 #include "system/canvas_view.h"
 #include "theme.h"
 #include "widgets/behaviour_menu.h"
-#include "widgets/properties/fields_menu.h"
 #include "widgets/properties/properties_menu.h"
 #include "widgets/structure/flow_menu.h"
 #include "widgets/structure/system_menu.h"

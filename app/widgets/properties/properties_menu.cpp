@@ -466,7 +466,7 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertiesConfig& p
 
           auto events = mStorage->getEventsFromNode(widget->currentData().toString());
           for (const auto& event : events)
-            eventWidget->addItem(event->name, event->id);
+            eventWidget->addItem(event->getname(), event->getid());
 
           eventWidget->setCurrentText(object[ConfigKeys::OPTIONS][i][ConfigKeys::DATA].toString());
         }
@@ -507,7 +507,7 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertiesConfig& p
           eventWidget->clear();
           auto events = mStorage->getEventsFromNode(widget->currentData().toString());
           for (const auto& event : events)
-            eventWidget->addItem(event->name, event->id);
+            eventWidget->addItem(event->getname(), event->getid());
 
           // Set the component
           auto value = node->getProperty(property.id);
@@ -521,7 +521,7 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertiesConfig& p
           QJsonArray array = object[ConfigKeys::OPTIONS].toArray();
           QJsonObject item = array[i].toObject();
 
-          item[ConfigKeys::DATA] = events.size() > 0 ? events.at(0)->name : "";
+          item[ConfigKeys::DATA] = events.size() > 0 ? events.at(0)->getname() : "";
           item["option_data_id"] = events.size() > 0 ? eventWidget->currentData().toString() : "";
 
           array[i] = item;
@@ -707,7 +707,7 @@ VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)
 
     auto events = mStorage->getEventsFromNode(caller->id);
     for (const auto& event : events)
-      eventWidget->addItem(name.toString() + "." + event->name, event->id);
+      eventWidget->addItem(name.toString() + "." + event->getname(), event->getid());
 
     eventWidget->setCurrentText(transition->getEvent());
   }
@@ -837,7 +837,7 @@ VoidResult PropertiesMenu::loadControlAddEvent(const ControlsConfig& control, No
 
   for (const std::shared_ptr<FlowSaveInfo>& event : node->events())
   {
-    LOG_INFO("Setting events for %s (%d): %s", qPrintable(node->nodeName()), model->rowCount(), qPrintable(event->name));
+    LOG_INFO("Setting events for %s (%d): %s", qPrintable(node->nodeName()), model->rowCount(), qPrintable(event->getname()));
     addEventToTable(model, model->rowCount(), event);
   }
 
@@ -986,9 +986,9 @@ void PropertiesMenu::openEventDialog(QTableView* tableView, NodeItem* node, int 
 
   connect(mCurrentDialog, &QDialog::accepted, [this, tableView, node, row] {
     auto info = qobject_cast<EventDialog*>(mCurrentDialog)->getInfo();
-    Flow* flow = node->createFlow(info->name, info);
+    Flow* flow = node->createFlow(info->getname(), info);
     addEventToTable((QStandardItemModel*)tableView->model(), row, info);
-    if (info->modifiable)
+    if (info->getmodifiable())
       emit flowSelected(flow->id(), node->id());
   });
   connect(mCurrentDialog, &QDialog::rejected, [this] {
@@ -1028,20 +1028,20 @@ void PropertiesMenu::addEventToTable(QStandardItemModel* model, int row, std::sh
   if (row >= model->rowCount())
     model->insertRow(row);
 
-  auto indexItem = new QStandardItem(event->name);
-  indexItem->setData(event->id, Qt::UserRole);
-  indexItem->setData(event->modifiable, Qt::UserRole + 1);
+  auto indexItem = new QStandardItem(event->getname());
+  indexItem->setData(event->getid(), Qt::UserRole);
+  indexItem->setData(event->getmodifiable(), Qt::UserRole + 1);
 
   model->setItem(row, 0, indexItem);
-  model->setItem(row, 1, new QStandardItem(Types::ConnectorTypeToString(event->type)));
-  model->setItem(row, 2, new QStandardItem(Types::PropertyTypesToString(event->returnType)));
+  model->setItem(row, 1, new QStandardItem(Types::ConnectorTypeToString(event->gettype())));
+  model->setItem(row, 2, new QStandardItem(Types::PropertyTypesToString(event->getreturnType())));
 
-  if (event->arguments.isEmpty())
+  if (event->getarguments().isEmpty())
     return;
 
   QString args = "";
-  for (const auto& arg : event->arguments)
-    args += arg.id + ", ";
+  for (auto arg : event->getarguments())
+    args += arg->getid() + ", ";
 
   // Remove the trailing ", "
   args.chop(2);

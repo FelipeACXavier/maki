@@ -963,7 +963,7 @@ VoidResult Canvas::loadFromSave(const QVector<std::shared_ptr<NodeSaveInfo>>& no
     }
 
     for (const auto& flow : node->flows)
-      (void)createdNode->createFlow(flow->name, flow);
+      (void)createdNode->createFlow(flow->getname(), flow);
 
     selectNode(createdNode, false);
   }

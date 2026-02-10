@@ -3,12 +3,12 @@
 #include "node.h"
 
 Flow::Flow(const QString& name, std::shared_ptr<FlowSaveInfo> storage)
-    : mId((!storage->id.isEmpty() && !storage->id.isNull()) ? storage->id : QUuid::createUuid().toString())
+    : mId((!storage->getid().isEmpty() && !storage->getid().isNull()) ? storage->getid() : QUuid::createUuid().toString())
     , mName(name)
     , mStorage(storage)
 {
-  mStorage->id = this->id();
-  mStorage->name = this->name();
+  mStorage->setId(this->id());
+  mStorage->setName(this->name());
 
   // auto startNode = std::make_shared<NodeSaveInfo>();
   // startNode->id = "Start";
@@ -45,23 +45,26 @@ QString Flow::name() const
 
 bool Flow::modifiable() const
 {
-  return mStorage->modifiable;
+  return mStorage->getmodifiable();
 }
 
 void Flow::removeNode(NodeItem* node)
 {
-  mStorage->nodes.removeIf([node](std::shared_ptr<NodeSaveInfo> item) {
-    return item->id == node->id();
-  });
+  mStorage->removeNode(std::make_shared<NodeSaveInfo>(node->saveInfo()));
 }
 
 void Flow::updateFlow(NodeItem* /* node */, std::shared_ptr<NodeSaveInfo> storage)
 {
   // Add the node info directly to our shared knowledge
-  mStorage->nodes.push_back(storage);
+  mStorage->addNode(storage);
 }
 
 QVector<std::shared_ptr<NodeSaveInfo>> Flow::getNodes() const
 {
-  return mStorage->nodes;
+  QVector<std::shared_ptr<NodeSaveInfo>> out;
+  out.reserve(mStorage->getnodes().size());
+  for (const auto& f : mStorage->getnodes())
+    out.push_back(std::static_pointer_cast<NodeSaveInfo>(f));
+
+  return out;
 }

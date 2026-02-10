@@ -12,71 +12,50 @@
 
 struct NodeSaveInfo;
 
-struct FlowSaveInfo : public IFlow
+class FlowSaveInfo : public IFlow
 {
-  QString id = "";
-  QString name = "";
-  QString owner = "";
-  bool modifiable = true;
-
-  Types::ConnectorType type = Types::ConnectorType::UNKNOWN;
-  Types::PropertyTypes returnType = Types::PropertyTypes::UNKNOWN;
-  QVector<PropertiesConfig> arguments = {};
-
-  QVector<std::shared_ptr<NodeSaveInfo>> nodes = {};
-
-  // Inherited --------------------------------------
-  QString getid() const override
-  {
-    return id;
-  }
-  QString getname() const override
-  {
-    return name;
-  }
-  QString getowner() const override
-  {
-    return owner;
-  }
-  bool getmodifiable() const override
-  {
-    return modifiable;
-  }
-  Types::ConnectorType gettype() const override
-  {
-    return type;
-  }
-  Types::PropertyTypes getreturnType() const override
-  {
-    return returnType;
-  }
-  QVector<std::shared_ptr<IProperty>> getarguments() const override
-  {
-    QVector<std::shared_ptr<IProperty>> args;
-    for (auto arg : arguments)
-      args.emplace_back(std::make_shared<PropertiesConfig>(arg));
-    return args;
-  }
-  QVector<std::shared_ptr<INode>> getnodes() const override
-  {
-    QVector<std::shared_ptr<INode>> out;
-    out.reserve(nodes.size());
-    for (const auto& f : nodes)
-      out.push_back(std::static_pointer_cast<INode>(f));
-
-    return out;
-  }
-
-  // ------------------------------------------------
-
-  FlowSaveInfo() = default;
+public:
+  FlowSaveInfo();
   FlowSaveInfo(const FlowConfig& config);
+
+  QString getid() const override;
+  QString getname() const override;
+  QString getowner() const override;
+  bool getmodifiable() const override;
+  Types::ConnectorType gettype() const override;
+  Types::PropertyTypes getreturnType() const override;
+  QVector<std::shared_ptr<IProperty>> getarguments() const override;
+  QVector<std::shared_ptr<INode>> getnodes() const override;
+
+  void setId(const QString& arg);
+  void setName(const QString& arg);
+  void setOwner(const QString& arg);
+  void setModifiable(bool arg);
+  void setType(Types::ConnectorType arg);
+  void setReturnType(Types::PropertyTypes arg);
+  void addArgument(std::shared_ptr<IProperty> arg);
+  void setArgument(uint32_t index, std::shared_ptr<IProperty> arg);
+  std::shared_ptr<IProperty> getArgument(uint32_t index);
+  void removeArgument(std::shared_ptr<IProperty> arg);
+  void addNode(std::shared_ptr<INode> arg);
+  void removeNode(std::shared_ptr<INode> arg);
 
   QJsonObject toJson() const;
   static FlowSaveInfo fromJson(const QJsonObject& data);
 
   friend QDataStream& operator<<(QDataStream& out, const FlowSaveInfo& info);
   friend QDataStream& operator>>(QDataStream& in, FlowSaveInfo& info);
+
+private:
+  QString mId;
+  QString mName;
+  QString mOwner;
+  bool mModifiable;
+
+  Types::ConnectorType mType;
+  Types::PropertyTypes mReturnType;
+  QVector<std::shared_ptr<INode>> mNodes;
+  QVector<std::shared_ptr<IProperty>> mArguments;
 };
 
 class TransitionSaveInfo : public ITransition

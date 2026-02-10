@@ -15,84 +15,197 @@ Q_DECLARE_METATYPE(SaveInfo)
 
 // ==========================================================================================================
 // FlowSaveInfo
+FlowSaveInfo::FlowSaveInfo()
+    : mId("")
+    , mName("")
+    , mOwner("")
+    , mModifiable(true)
+    , mType(Types::ConnectorType::UNKNOWN)
+    , mReturnType(Types::PropertyTypes::UNKNOWN)
+    , mNodes({})
+    , mArguments({})
+{
+}
+
+FlowSaveInfo::FlowSaveInfo(const FlowConfig& config)
+{
+  setId(QUuid::createUuid().toString());
+  setName(config.name);
+  setType(config.type);
+  setReturnType(config.returnType);
+  setModifiable(config.modifiable);
+  for (const auto& arg : config.arguments)
+    addArgument(std::make_shared<PropertiesConfig>(arg));
+}
+
+QString FlowSaveInfo::getid() const
+{
+  return mId;
+}
+
+QString FlowSaveInfo::getname() const
+{
+  return mName;
+}
+
+QString FlowSaveInfo::getowner() const
+{
+  return mOwner;
+}
+
+bool FlowSaveInfo::getmodifiable() const
+{
+  return mModifiable;
+}
+
+Types::ConnectorType FlowSaveInfo::gettype() const
+{
+  return mType;
+}
+
+Types::PropertyTypes FlowSaveInfo::getreturnType() const
+{
+  return mReturnType;
+}
+
+QVector<std::shared_ptr<IProperty>> FlowSaveInfo::getarguments() const
+{
+  return mArguments;
+}
+
+QVector<std::shared_ptr<INode>> FlowSaveInfo::getnodes() const
+{
+  return mNodes;
+}
+
+void FlowSaveInfo::setId(const QString& arg)
+{
+  mId = arg;
+}
+
+void FlowSaveInfo::setName(const QString& arg)
+{
+  mName = arg;
+}
+
+void FlowSaveInfo::setOwner(const QString& arg)
+{
+  mOwner = arg;
+}
+
+void FlowSaveInfo::setModifiable(bool arg)
+{
+  mModifiable = arg;
+}
+
+void FlowSaveInfo::setType(Types::ConnectorType arg)
+{
+  mType = arg;
+}
+
+void FlowSaveInfo::setReturnType(Types::PropertyTypes arg)
+{
+  mReturnType = arg;
+}
+
+void FlowSaveInfo::setArgument(uint32_t index, std::shared_ptr<IProperty> arg)
+{
+  mArguments[index] = arg;
+}
+
+std::shared_ptr<IProperty> FlowSaveInfo::getArgument(uint32_t index)
+{
+  return mArguments.at(index);
+}
+
+void FlowSaveInfo::addArgument(std::shared_ptr<IProperty> arg)
+{
+  mArguments.push_back(arg);
+}
+
+void FlowSaveInfo::removeArgument(std::shared_ptr<IProperty> arg)
+{
+  mArguments.removeIf([arg](std::shared_ptr<IProperty> info) { return info->getid() == arg->getid(); });
+}
+
+void FlowSaveInfo::addNode(std::shared_ptr<INode> arg)
+{
+  mNodes.push_back(arg);
+}
+
+void FlowSaveInfo::removeNode(std::shared_ptr<INode> node)
+{
+  mNodes.removeIf([node](std::shared_ptr<INode> info) { return info->getid() == node->getid(); });
+}
+
 QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<FlowSaveInfo>>& flows)
 {
-  out << static_cast<qint32>(flows.size());
-  for (const auto& flow : flows)
-    out << *flow;
+  // out << static_cast<qint32>(flows.size());
+  // for (const auto& flow : flows)
+  //   out << *flow;
 
   return out;
 }
 
 QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<FlowSaveInfo>>& flows)
 {
-  qint32 size;
-  in >> size;
+  // qint32 size;
+  // in >> size;
 
-  flows.resize(size);
-  for (int i = 0; i < size; ++i)
-    in >> *flows[i];
+  // flows.resize(size);
+  // for (int i = 0; i < size; ++i)
+  //   in >> *flows[i];
 
   return in;
 }
 
 QDataStream& operator<<(QDataStream& out, const FlowSaveInfo& info)
 {
-  out << info.id;
-  out << info.name;
-  out << info.nodes;
-  out << info.modifiable;
-  out << info.type;
-  out << info.returnType;
-  out << info.arguments;
-  out << info.owner;
+  // out << info.id;
+  // out << info.name;
+  // out << info.nodes;
+  // out << info.modifiable;
+  // out << info.type;
+  // out << info.returnType;
+  // out << info.arguments;
+  // out << info.owner;
 
   return out;
 }
 
 QDataStream& operator>>(QDataStream& in, FlowSaveInfo& info)
 {
-  in >> info.id;
-  in >> info.name;
-  in >> info.nodes;
-  in >> info.modifiable;
-  in >> info.type;
-  in >> info.returnType;
-  in >> info.arguments;
-  in >> info.owner;
+  // in >> info.id;
+  // in >> info.name;
+  // in >> info.nodes;
+  // in >> info.modifiable;
+  // in >> info.type;
+  // in >> info.returnType;
+  // in >> info.arguments;
+  // in >> info.owner;
 
   return in;
-}
-
-FlowSaveInfo::FlowSaveInfo(const FlowConfig& config)
-{
-  id = QUuid::createUuid().toString();
-  name = config.name;
-  type = config.type;
-  returnType = config.returnType;
-  arguments = config.arguments;
-  modifiable = config.modifiable;
 }
 
 QJsonObject FlowSaveInfo::toJson() const
 {
   QJsonObject data;
-  data[ConfigKeys::ID] = id;
-  data[ConfigKeys::NAME] = name;
-  data[ConfigKeys::MODIFIABLE] = modifiable;
-  data[ConfigKeys::TYPE] = Types::ConnectorTypeToString(type);
-  data[ConfigKeys::RETURN_TYPE] = Types::PropertyTypesToString(returnType);
-  data[ConfigKeys::OWNER] = owner;
+  data[ConfigKeys::ID] = getid();
+  data[ConfigKeys::NAME] = getname();
+  data[ConfigKeys::MODIFIABLE] = getmodifiable();
+  data[ConfigKeys::TYPE] = Types::ConnectorTypeToString(gettype());
+  data[ConfigKeys::RETURN_TYPE] = Types::PropertyTypesToString(getreturnType());
+  data[ConfigKeys::OWNER] = getowner();
 
   QJsonArray optionArray;
-  for (const auto& arg : arguments)
-    optionArray.append(arg.toJson());
+  for (const auto& arg : getarguments())
+    optionArray.append(std::dynamic_pointer_cast<PropertiesConfig>(arg)->toJson());
 
   data[ConfigKeys::ARGUMENTS] = optionArray;
 
   QJsonArray nodesArray;
-  for (const auto& node : nodes)
-    nodesArray.append(node->toJson());
+  for (const auto& node : getnodes())
+    nodesArray.append(std::dynamic_pointer_cast<NodeSaveInfo>(node)->toJson());
 
   if (nodesArray.size() > 0)
     data[ConfigKeys::NODES] = nodesArray;
@@ -103,18 +216,18 @@ QJsonObject FlowSaveInfo::toJson() const
 FlowSaveInfo FlowSaveInfo::fromJson(const QJsonObject& data)
 {
   FlowSaveInfo info;
-  info.id = data[ConfigKeys::ID].toString();
-  info.name = data[ConfigKeys::NAME].toString();
-  info.modifiable = data[ConfigKeys::MODIFIABLE].toBool();
-  info.type = Types::StringToConnectorType(data[ConfigKeys::TYPE].toString());
-  info.returnType = Types::StringToPropertyTypes(data[ConfigKeys::RETURN_TYPE].toString());
-  info.owner = data[ConfigKeys::OWNER].toString();
+  info.setId(data[ConfigKeys::ID].toString());
+  info.setName(data[ConfigKeys::NAME].toString());
+  info.setModifiable(data[ConfigKeys::MODIFIABLE].toBool());
+  info.setType(Types::StringToConnectorType(data[ConfigKeys::TYPE].toString()));
+  info.setReturnType(Types::StringToPropertyTypes(data[ConfigKeys::RETURN_TYPE].toString()));
+  info.setOwner(data[ConfigKeys::OWNER].toString());
 
   for (const auto& argument : data[ConfigKeys::ARGUMENTS].toArray())
-    info.arguments.append(PropertiesConfig::fromJson(argument.toObject()));
+    info.addArgument(std::make_shared<PropertiesConfig>(PropertiesConfig::fromJson(argument.toObject())));
 
   for (const auto& node : data[ConfigKeys::NODES].toArray())
-    info.nodes.append(std::make_shared<NodeSaveInfo>(NodeSaveInfo::fromJson(node.toObject())));
+    info.addNode(std::make_shared<NodeSaveInfo>(NodeSaveInfo::fromJson(node.toObject())));
 
   return info;
 }
