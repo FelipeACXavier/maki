@@ -47,8 +47,8 @@ VoidResult SaveHandler::saveFileAs(Canvas* canvas)
 VoidResult SaveHandler::saveToFile(Canvas* canvas)
 {
   CanvasSaveInfo canvasInfo;
-  canvasInfo.scale = canvas->getScale();
-  canvasInfo.center = canvas->getCenter();
+  canvasInfo.setScale(canvas->getScale());
+  canvasInfo.setCenter(canvas->getCenter());
 
   SaveInfo info;
   info.setCanvasInfo(canvasInfo);

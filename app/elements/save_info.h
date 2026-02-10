@@ -210,16 +210,24 @@ struct NodeSaveInfo : public INode
   friend QDataStream& operator>>(QDataStream& in, NodeSaveInfo& info);
 };
 
-struct CanvasSaveInfo
+class CanvasSaveInfo
 {
-  qreal scale{1.0};
-  QPointF center{0, 0};
+public:
+  qreal scale() const;
+  QPointF center() const;
+
+  void setScale(qreal scale);
+  void setCenter(const QPointF& center);
 
   QJsonObject toJson() const;
   static CanvasSaveInfo fromJson(const QJsonObject& data);
 
   friend QDataStream& operator<<(QDataStream& out, const CanvasSaveInfo& info);
   friend QDataStream& operator>>(QDataStream& in, CanvasSaveInfo& info);
+
+private:
+  qreal mScale{1.0};
+  QPointF mCenter{0, 0};
 };
 
 class SaveInfo : public IDocument

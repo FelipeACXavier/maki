@@ -384,19 +384,39 @@ NodeSaveInfo NodeSaveInfo::fromJson(const QJsonObject& data)
 }
 
 // ==========================================================================================================
+qreal CanvasSaveInfo::scale() const
+{
+  return mScale;
+}
+
+QPointF CanvasSaveInfo::center() const
+{
+  return mCenter;
+}
+
+void CanvasSaveInfo::setScale(qreal scale)
+{
+  mScale = scale;
+}
+
+void CanvasSaveInfo::setCenter(const QPointF& center)
+{
+  mCenter = center;
+}
+
 // CanvasSaveInfo
 QDataStream& operator<<(QDataStream& out, const CanvasSaveInfo& info)
 {
-  out << info.scale;
-  out << info.center;
+  // out << info.scale();
+  // out << info.center();
 
   return out;
 }
 
 QDataStream& operator>>(QDataStream& in, CanvasSaveInfo& info)
 {
-  in >> info.scale;
-  in >> info.center;
+  // in >> info.scale;
+  // in >> info.center;
 
   return in;
 }
@@ -405,8 +425,8 @@ QJsonObject CanvasSaveInfo::toJson() const
 {
   QJsonObject data;
 
-  data[ConfigKeys::POSITION] = JSON::fromPointF(center);
-  data[ConfigKeys::SCALE] = scale;
+  data[ConfigKeys::POSITION] = JSON::fromPointF(center());
+  data[ConfigKeys::SCALE] = scale();
 
   return data;
 }
@@ -415,8 +435,8 @@ CanvasSaveInfo CanvasSaveInfo::fromJson(const QJsonObject& data)
 {
   CanvasSaveInfo info;
 
-  info.center = JSON::toPointF(data[ConfigKeys::POSITION].toObject());
-  info.scale = data[ConfigKeys::SCALE].toDouble();
+  info.setCenter(JSON::toPointF(data[ConfigKeys::POSITION].toObject()));
+  info.setScale(data[ConfigKeys::SCALE].toDouble());
 
   return info;
 }

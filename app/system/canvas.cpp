@@ -979,9 +979,9 @@ VoidResult Canvas::loadFromSave(const SaveInfo& info)
   // Reset canvas
   // TODO(felaze): This should be moved to the CanvasView, something like parentView()->loadFromSave(info.canvasInfo);
   auto canvasInfo = info.canvasInfo();
-  parentView()->zoom(canvasInfo.scale / parentView()->getScale());
-  parentView()->setScale(canvasInfo.scale);
-  parentView()->centerOn(canvasInfo.center);
+  parentView()->zoom(canvasInfo.scale() / parentView()->getScale());
+  parentView()->setScale(canvasInfo.scale());
+  parentView()->centerOn(canvasInfo.center());
 
   QVector<std::shared_ptr<NodeSaveInfo>> out;
   for (std::shared_ptr<INode> node : info.getnodes())
