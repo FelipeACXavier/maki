@@ -151,7 +151,7 @@ QMap<QString, QVariant> NodeItem::properties() const
   return mStorage->properties;
 }
 
-QVector<PropertiesConfig> NodeItem::fields() const
+QVector<std::shared_ptr<PropertiesConfig>> NodeItem::fields() const
 {
   return mStorage->fields;
 }
@@ -212,14 +212,14 @@ VoidResult NodeItem::setField(const QString& key, const QJsonObject& value)
 
   for (auto& field : fields())
   {
-    if (field.id != key)
+    if (field->id != key)
       continue;
 
-    field = property;
+    *field = property;
     return VoidResult();
   }
 
-  mStorage->fields.push_back(property);
+  mStorage->fields.push_back(std::make_shared<PropertiesConfig>(property));
 
   return VoidResult();
 }
@@ -232,14 +232,14 @@ VoidResult NodeItem::setField(const QString& key, const PropertiesConfig& proper
   // Check if key exists
   for (auto& field : mStorage->fields)
   {
-    if (field.id != key)
+    if (field->id != key)
       continue;
 
-    field = property;
+    *field = property;
     return VoidResult();
   }
 
-  mStorage->fields.push_back(property);
+  mStorage->fields.push_back(std::make_shared<PropertiesConfig>(property));
 
   return VoidResult();
 }
@@ -251,8 +251,8 @@ PropertiesConfig NodeItem::getField(const QString& key) const
 
   for (const auto& field : fields())
   {
-    if (field.id == key)
-      return field;
+    if (field->id == key)
+      return *field;
   }
 
   return PropertiesConfig();
@@ -265,7 +265,7 @@ void NodeItem::removeField(const QString& key)
 
   for (auto iter = mStorage->fields.begin(); iter < mStorage->fields.end(); ++iter)
   {
-    if (iter->id != key)
+    if ((*iter)->id != key)
       continue;
 
     mStorage->fields.erase(iter);

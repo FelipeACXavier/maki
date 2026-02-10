@@ -290,8 +290,8 @@ void MainWindowLayout::buildRightPanel()
   mPropertiesMenu = new PropertiesMenu(mPropertiesTab);
   mPropertiesTab->addTab(mPropertiesMenu, tr("Properties"));
 
-  mFieldsMenu = new FieldsMenu(mPropertiesTab);
-  mPropertiesTab->addTab(mFieldsMenu, tr("Events"));
+  // mFieldsMenu = new FieldsMenu(mPropertiesTab);
+  // mPropertiesTab->addTab(mFieldsMenu, tr("Events"));
 
   // mBehaviourMenu = new BehaviourMenu(mPropertiesTab);
   // mPropertiesTab->addTab(mBehaviourMenu, tr("Behaviour"));

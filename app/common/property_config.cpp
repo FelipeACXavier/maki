@@ -48,7 +48,7 @@ PropertiesConfig::PropertiesConfig(const QJsonObject& object)
     // }
 
     for (const auto& option : object[ConfigKeys::OPTIONS].toArray())
-      options.push_back(PropertiesConfig(option.toObject()));
+      options.push_back(std::make_shared<PropertiesConfig>(option.toObject()));
   }
   else if (type == Types::PropertyTypes::SELECT)
   {
@@ -90,9 +90,9 @@ QVariant PropertiesConfig::toDefault(const QJsonObject& object, Types::PropertyT
       propOption[ConfigKeys::DATA] = "";
       propOption["data_id"] = "";
 
-      propOption[ConfigKeys::ID] = option.id;
-      propOption[ConfigKeys::TYPE] = Types::PropertyTypesToString(option.type);
-      propOption[ConfigKeys::OPTION_DATA] = option.defaultValue.toString();
+      propOption[ConfigKeys::ID] = option->id;
+      propOption[ConfigKeys::TYPE] = Types::PropertyTypesToString(option->type);
+      propOption[ConfigKeys::OPTION_DATA] = option->defaultValue.toString();
       propOption["option_data_id"] = "";
 
       array.append(propOption);
@@ -115,7 +115,7 @@ QVariant PropertiesConfig::toDefault(const QJsonObject& object, Types::PropertyT
 bool PropertiesConfig::isValid() const
 {
   for (const auto& option : options)
-    if (!option.isValid())
+    if (!option->isValid())
       return false;
 
   return isConfigValid;
@@ -150,7 +150,7 @@ QJsonObject PropertiesConfig::toJson() const
 
   QJsonArray optionArray;
   for (const auto& opt : options)
-    optionArray.append(opt.toJson());
+    optionArray.append(opt->toJson());
 
   if (!optionArray.isEmpty())
     data[ConfigKeys::OPTIONS] = optionArray;
@@ -167,7 +167,7 @@ PropertiesConfig PropertiesConfig::fromJson(const QJsonObject& data)
   config.defaultValue = QJsonValue(data[ConfigKeys::DEFAULT]).toVariant();
 
   for (const auto& value : data[ConfigKeys::OPTIONS].toArray())
-    config.options.append(fromJson(value.toObject()));
+    config.options.append(std::make_shared<PropertiesConfig>(fromJson(value.toObject())));
 
   config.type = (Types::PropertyTypes)data[ConfigKeys::TYPE].toInt();
 

@@ -8,8 +8,8 @@ class QTabWidget;
 
 class SystemMenu;
 class FlowMenu;
-class FieldsMenu;
-class BehaviourMenu;
+// class FieldsMenu;
+// class BehaviourMenu;
 class QTextBrowser;
 class QToolBox;
 class QComboBox;
@@ -68,8 +68,8 @@ protected:
 
   QTabWidget* mPropertiesTab;
   PropertiesMenu* mPropertiesMenu;
-  FieldsMenu* mFieldsMenu;
-  BehaviourMenu* mBehaviourMenu;
+  // FieldsMenu* mFieldsMenu;
+  // BehaviourMenu* mBehaviourMenu;
 
   // === Menu Bar ===
   QMenuBar* mMenuBar;

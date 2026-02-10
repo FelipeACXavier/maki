@@ -15,7 +15,7 @@ class IProperty
 public:
   virtual QString getid() const = 0;
   virtual QVariant getdefaultValue() const = 0;
-  virtual QList<std::shared_ptr<IProperty>> getoptions() const = 0;
+  virtual QList<std::shared_ptr<const IProperty>> getoptions() const = 0;
   virtual Types::PropertyTypes gettype() const = 0;
 };
 

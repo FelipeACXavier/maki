@@ -298,7 +298,7 @@ QJsonObject NodeSaveInfo::toJson() const
 
   QJsonArray fieldArray;
   for (const auto& field : fields)
-    fieldArray.append(field.toJson());
+    fieldArray.append(field->toJson());
 
   QJsonArray transitionArray;
   for (const auto& transition : transitions)
@@ -350,7 +350,7 @@ NodeSaveInfo NodeSaveInfo::fromJson(const QJsonObject& data)
   if (data.contains(ConfigKeys::FIELDS))
   {
     for (const auto& node : data[ConfigKeys::FIELDS].toArray())
-      info.fields.append(PropertiesConfig::fromJson(node.toObject()));
+      info.fields.append(std::make_shared<PropertiesConfig>(PropertiesConfig::fromJson(node.toObject())));
   }
 
   if (data.contains(ConfigKeys::TRANSITIONS))

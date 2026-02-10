@@ -14,7 +14,7 @@ public:
 
   QString id = "";
   QVariant defaultValue;
-  QList<PropertiesConfig> options;
+  QList<std::shared_ptr<PropertiesConfig>> options = {};
   Types::PropertyTypes type = Types::PropertyTypes::UNKNOWN;
 
   bool isValid() const;
@@ -29,12 +29,12 @@ public:
   {
     return defaultValue;
   }
-  QList<std::shared_ptr<IProperty>> getoptions() const override
+  QList<std::shared_ptr<const IProperty>> getoptions() const override
   {
-    QList<std::shared_ptr<IProperty>> out;
+    QList<std::shared_ptr<const IProperty>> out;
     out.reserve(options.size());
     for (const auto& f : options)
-      out.push_back(std::make_shared<PropertiesConfig>(f));
+      out.push_back(std::static_pointer_cast<PropertiesConfig>(f));
 
     return out;
   }
@@ -56,3 +56,6 @@ public:
 private:
   QVariant toDefault(const QJsonObject& object, Types::PropertyTypes objectType);
 };
+
+QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<PropertiesConfig>>& properties);
+QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<PropertiesConfig>>& properties);

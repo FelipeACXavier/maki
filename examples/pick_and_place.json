@@ -1,35 +1,15 @@
 {
     "canvas": {
         "position": {
-            "x": 315,
-            "y": 335
+            "x": -265.7142857142857,
+            "y": 357.14285714285717
         },
-        "scale": 0.3
+        "scale": 0.35
     },
     "structural": [
         {
-            "behaviour": {
-                "arguments": [
-                ],
-                "id": "{2526a069-1f97-49e2-b547-f2582e15de40}",
-                "modifiable": false,
-                "name": "MainBehaviour",
-                "owner": "",
-                "returnType": "unknown",
-                "type": "unknown"
-            },
             "children": [
                 {
-                    "behaviour": {
-                        "arguments": [
-                        ],
-                        "id": "{736eed90-e1bd-4996-9140-4e834d0172e6}",
-                        "modifiable": false,
-                        "name": "MainBehaviour",
-                        "owner": "",
-                        "returnType": "unknown",
-                        "type": "unknown"
-                    },
                     "flows": [
                         {
                             "arguments": [
@@ -99,8 +79,8 @@
                         "data": ""
                     },
                     "position": {
-                        "x": 27.83333333333337,
-                        "y": 197.83333333333337
+                        "x": 24.5,
+                        "y": 194.5
                     },
                     "properties": {
                         "arguments": [
@@ -124,16 +104,6 @@
                     }
                 },
                 {
-                    "behaviour": {
-                        "arguments": [
-                        ],
-                        "id": "{ab9656c6-39c4-450d-82ea-a0c79999ac7c}",
-                        "modifiable": false,
-                        "name": "MainBehaviour",
-                        "owner": "",
-                        "returnType": "unknown",
-                        "type": "unknown"
-                    },
                     "flows": [
                         {
                             "arguments": [
@@ -188,8 +158,8 @@
                         "data": ""
                     },
                     "position": {
-                        "x": -742.1666666666666,
-                        "y": -1
+                        "x": -735.5,
+                        "y": -11
                     },
                     "properties": {
                         "arguments": [
@@ -209,16 +179,6 @@
                     }
                 },
                 {
-                    "behaviour": {
-                        "arguments": [
-                        ],
-                        "id": "",
-                        "modifiable": false,
-                        "name": "",
-                        "owner": "",
-                        "returnType": "unknown",
-                        "type": "unknown"
-                    },
                     "flows": [
                         {
                             "arguments": [
@@ -298,10 +258,30 @@
             "flows": [
                 {
                     "arguments": [
+                        {
+                            "default": 0,
+                            "id": "x1",
+                            "type": 3
+                        },
+                        {
+                            "default": 0,
+                            "id": "y1",
+                            "type": 3
+                        },
+                        {
+                            "default": 0,
+                            "id": "x2",
+                            "type": 3
+                        },
+                        {
+                            "default": 0,
+                            "id": "y2",
+                            "type": 3
+                        }
                     ],
                     "id": "{24c23024-094b-4349-aac9-5c56b0555615}",
                     "modifiable": false,
-                    "name": "abort",
+                    "name": "start",
                     "owner": "",
                     "returnType": "void",
                     "type": "in"
@@ -334,16 +314,6 @@
                     "name": "loop",
                     "nodes": [
                         {
-                            "behaviour": {
-                                "arguments": [
-                                ],
-                                "id": "",
-                                "modifiable": false,
-                                "name": "",
-                                "owner": "",
-                                "returnType": "unknown",
-                                "type": "unknown"
-                            },
                             "id": "{d1a878e1-e833-4deb-b8fb-57e78997f33d}",
                             "nodeId": "Mission::Start",
                             "parentId": "",
@@ -394,16 +364,6 @@
                             ]
                         },
                         {
-                            "behaviour": {
-                                "arguments": [
-                                ],
-                                "id": "",
-                                "modifiable": false,
-                                "name": "",
-                                "owner": "",
-                                "returnType": "unknown",
-                                "type": "unknown"
-                            },
                             "id": "{f9d10462-46be-4c76-9928-fa23e871c2a1}",
                             "nodeId": "Mission::Async task",
                             "parentId": "",
@@ -522,16 +482,6 @@
                             ]
                         },
                         {
-                            "behaviour": {
-                                "arguments": [
-                                ],
-                                "id": "",
-                                "modifiable": false,
-                                "name": "",
-                                "owner": "",
-                                "returnType": "unknown",
-                                "type": "unknown"
-                            },
                             "id": "{600d7a41-6b41-4720-99c6-dfcf7a0474bd}",
                             "nodeId": "Mission::Strategy",
                             "parentId": "",
@@ -604,16 +554,6 @@
                             ]
                         },
                         {
-                            "behaviour": {
-                                "arguments": [
-                                ],
-                                "id": "",
-                                "modifiable": false,
-                                "name": "",
-                                "owner": "",
-                                "returnType": "unknown",
-                                "type": "unknown"
-                            },
                             "id": "{8a5d8832-6b78-48e5-a481-aa805e738aaf}",
                             "nodeId": "Mission::Async task",
                             "parentId": "",
@@ -732,16 +672,6 @@
                             ]
                         },
                         {
-                            "behaviour": {
-                                "arguments": [
-                                ],
-                                "id": "",
-                                "modifiable": false,
-                                "name": "",
-                                "owner": "",
-                                "returnType": "unknown",
-                                "type": "unknown"
-                            },
                             "id": "{ef26960f-5ebf-4ebe-81a2-e6ac9393e911}",
                             "nodeId": "Mission::Strategy",
                             "parentId": "",
@@ -775,16 +705,6 @@
                             }
                         },
                         {
-                            "behaviour": {
-                                "arguments": [
-                                ],
-                                "id": "",
-                                "modifiable": false,
-                                "name": "",
-                                "owner": "",
-                                "returnType": "unknown",
-                                "type": "unknown"
-                            },
                             "id": "{501406ae-964f-4777-bbeb-13d96dcdd62e}",
                             "nodeId": "Mission::Strategy",
                             "parentId": "",
@@ -818,16 +738,6 @@
                             }
                         },
                         {
-                            "behaviour": {
-                                "arguments": [
-                                ],
-                                "id": "",
-                                "modifiable": false,
-                                "name": "",
-                                "owner": "",
-                                "returnType": "unknown",
-                                "type": "unknown"
-                            },
                             "id": "{5a1e72a9-5ea8-46fe-81f5-2a04ad12213a}",
                             "nodeId": "Mission::Strategy",
                             "parentId": "",
@@ -861,16 +771,6 @@
                             }
                         },
                         {
-                            "behaviour": {
-                                "arguments": [
-                                ],
-                                "id": "",
-                                "modifiable": false,
-                                "name": "",
-                                "owner": "",
-                                "returnType": "unknown",
-                                "type": "unknown"
-                            },
                             "id": "{e67f1172-2164-4d32-a743-3b5006a9477f}",
                             "nodeId": "Mission::Strategy",
                             "parentId": "",
@@ -904,16 +804,6 @@
                             }
                         },
                         {
-                            "behaviour": {
-                                "arguments": [
-                                ],
-                                "id": "",
-                                "modifiable": false,
-                                "name": "",
-                                "owner": "",
-                                "returnType": "unknown",
-                                "type": "unknown"
-                            },
                             "id": "{fbd6a8c8-924d-4004-94e8-8a8f34239274}",
                             "nodeId": "Mission::Strategy",
                             "parentId": "",
@@ -959,16 +849,6 @@
                     "name": "main",
                     "nodes": [
                         {
-                            "behaviour": {
-                                "arguments": [
-                                ],
-                                "id": "",
-                                "modifiable": false,
-                                "name": "",
-                                "owner": "",
-                                "returnType": "unknown",
-                                "type": "unknown"
-                            },
                             "id": "{f2c2e0fe-3003-4b1a-8c05-4349657d8aec}",
                             "nodeId": "Mission::Start",
                             "parentId": "",
@@ -1019,16 +899,6 @@
                             ]
                         },
                         {
-                            "behaviour": {
-                                "arguments": [
-                                ],
-                                "id": "",
-                                "modifiable": false,
-                                "name": "",
-                                "owner": "",
-                                "returnType": "unknown",
-                                "type": "unknown"
-                            },
                             "id": "{d2f256fa-814b-44b2-b47e-27800b0fbbde}",
                             "nodeId": "Mission::Repeat",
                             "parentId": "",
@@ -1073,16 +943,6 @@
                     "name": "pick",
                     "nodes": [
                         {
-                            "behaviour": {
-                                "arguments": [
-                                ],
-                                "id": "",
-                                "modifiable": false,
-                                "name": "",
-                                "owner": "",
-                                "returnType": "unknown",
-                                "type": "unknown"
-                            },
                             "id": "{89babe53-4fbb-44ed-bf78-5ed99c6b59f0}",
                             "nodeId": "Mission::Start",
                             "parentId": "",
@@ -1133,16 +993,6 @@
                             ]
                         },
                         {
-                            "behaviour": {
-                                "arguments": [
-                                ],
-                                "id": "",
-                                "modifiable": false,
-                                "name": "",
-                                "owner": "",
-                                "returnType": "unknown",
-                                "type": "unknown"
-                            },
                             "id": "{5b255e1d-47d0-4d90-86b5-209205a288bc}",
                             "nodeId": "Mission::Async task",
                             "parentId": "",
@@ -1207,16 +1057,6 @@
                             ]
                         },
                         {
-                            "behaviour": {
-                                "arguments": [
-                                ],
-                                "id": "",
-                                "modifiable": false,
-                                "name": "",
-                                "owner": "",
-                                "returnType": "unknown",
-                                "type": "unknown"
-                            },
                             "id": "{7feae9f0-a43a-4628-9b5b-e80117b49fd4}",
                             "nodeId": "Mission::Async task",
                             "parentId": "",
@@ -1308,16 +1148,6 @@
                             ]
                         },
                         {
-                            "behaviour": {
-                                "arguments": [
-                                ],
-                                "id": "",
-                                "modifiable": false,
-                                "name": "",
-                                "owner": "",
-                                "returnType": "unknown",
-                                "type": "unknown"
-                            },
                             "id": "{9a9dac6d-3eb1-4d9b-9673-6e8cb4a541f0}",
                             "nodeId": "Mission::Strategy",
                             "parentId": "",
@@ -1351,16 +1181,6 @@
                             }
                         },
                         {
-                            "behaviour": {
-                                "arguments": [
-                                ],
-                                "id": "",
-                                "modifiable": false,
-                                "name": "",
-                                "owner": "",
-                                "returnType": "unknown",
-                                "type": "unknown"
-                            },
                             "id": "{28d1d1a3-77c8-484a-9146-9b8a11edb38f}",
                             "nodeId": "Mission::Strategy",
                             "parentId": "",
@@ -1394,16 +1214,6 @@
                             }
                         },
                         {
-                            "behaviour": {
-                                "arguments": [
-                                ],
-                                "id": "",
-                                "modifiable": false,
-                                "name": "",
-                                "owner": "",
-                                "returnType": "unknown",
-                                "type": "unknown"
-                            },
                             "id": "{0ab495dc-cc6b-48b6-9aab-51727ced9d6e}",
                             "nodeId": "Mission::Strategy",
                             "parentId": "",
@@ -1437,16 +1247,6 @@
                             }
                         },
                         {
-                            "behaviour": {
-                                "arguments": [
-                                ],
-                                "id": "",
-                                "modifiable": false,
-                                "name": "",
-                                "owner": "",
-                                "returnType": "unknown",
-                                "type": "unknown"
-                            },
                             "id": "{16c4b931-ba93-4e19-81fe-1c7c0b5bad69}",
                             "nodeId": "Mission::Within",
                             "parentId": "",
@@ -1552,16 +1352,6 @@
                             ]
                         },
                         {
-                            "behaviour": {
-                                "arguments": [
-                                ],
-                                "id": "",
-                                "modifiable": false,
-                                "name": "",
-                                "owner": "",
-                                "returnType": "unknown",
-                                "type": "unknown"
-                            },
                             "id": "{62f6dcdc-daa5-47f0-b2b4-0c6c6332f4b8}",
                             "nodeId": "Mission::Strategy",
                             "parentId": "",
@@ -1607,16 +1397,6 @@
                     "name": "drop",
                     "nodes": [
                         {
-                            "behaviour": {
-                                "arguments": [
-                                ],
-                                "id": "",
-                                "modifiable": false,
-                                "name": "",
-                                "owner": "",
-                                "returnType": "unknown",
-                                "type": "unknown"
-                            },
                             "id": "{7f860d70-2057-4090-ab1f-daada5f8e5d7}",
                             "nodeId": "Mission::Start",
                             "parentId": "",
@@ -1667,16 +1447,6 @@
                             ]
                         },
                         {
-                            "behaviour": {
-                                "arguments": [
-                                ],
-                                "id": "",
-                                "modifiable": false,
-                                "name": "",
-                                "owner": "",
-                                "returnType": "unknown",
-                                "type": "unknown"
-                            },
                             "id": "{f9dd1d5e-8321-4f1a-9228-15ed940dd2da}",
                             "nodeId": "Mission::Async task",
                             "parentId": "",
@@ -1768,16 +1538,6 @@
                             ]
                         },
                         {
-                            "behaviour": {
-                                "arguments": [
-                                ],
-                                "id": "",
-                                "modifiable": false,
-                                "name": "",
-                                "owner": "",
-                                "returnType": "unknown",
-                                "type": "unknown"
-                            },
                             "id": "{04f5a7fe-9043-459b-8b49-8009fbc38dd0}",
                             "nodeId": "Mission::Strategy",
                             "parentId": "",
@@ -1811,16 +1571,6 @@
                             }
                         },
                         {
-                            "behaviour": {
-                                "arguments": [
-                                ],
-                                "id": "",
-                                "modifiable": false,
-                                "name": "",
-                                "owner": "",
-                                "returnType": "unknown",
-                                "type": "unknown"
-                            },
                             "id": "{dad34b86-96d0-4697-bc63-18b7f07154fd}",
                             "nodeId": "Mission::Strategy",
                             "parentId": "",
@@ -1866,16 +1616,6 @@
                     "name": "err",
                     "nodes": [
                         {
-                            "behaviour": {
-                                "arguments": [
-                                ],
-                                "id": "",
-                                "modifiable": false,
-                                "name": "",
-                                "owner": "",
-                                "returnType": "unknown",
-                                "type": "unknown"
-                            },
                             "id": "{e872eef7-0de2-422c-93ba-48920f57f17a}",
                             "nodeId": "Mission::Start",
                             "parentId": "",
@@ -1926,16 +1666,6 @@
                             ]
                         },
                         {
-                            "behaviour": {
-                                "arguments": [
-                                ],
-                                "id": "",
-                                "modifiable": false,
-                                "name": "",
-                                "owner": "",
-                                "returnType": "unknown",
-                                "type": "unknown"
-                            },
                             "id": "{01699586-93b5-435c-b778-9e438f03fc87}",
                             "nodeId": "Mission::Sync task",
                             "parentId": "",
@@ -2008,16 +1738,6 @@
                             ]
                         },
                         {
-                            "behaviour": {
-                                "arguments": [
-                                ],
-                                "id": "",
-                                "modifiable": false,
-                                "name": "",
-                                "owner": "",
-                                "returnType": "unknown",
-                                "type": "unknown"
-                            },
                             "id": "{d60542f4-e2d8-424f-ac58-378734e5f74d}",
                             "nodeId": "Mission::Sync task",
                             "parentId": "",
@@ -2090,16 +1810,6 @@
                             ]
                         },
                         {
-                            "behaviour": {
-                                "arguments": [
-                                ],
-                                "id": "",
-                                "modifiable": false,
-                                "name": "",
-                                "owner": "",
-                                "returnType": "unknown",
-                                "type": "unknown"
-                            },
                             "id": "{668a71ea-915f-47c4-80de-33ca17cf7b22}",
                             "nodeId": "Mission::Sync task",
                             "parentId": "",
@@ -2172,16 +1882,6 @@
                             ]
                         },
                         {
-                            "behaviour": {
-                                "arguments": [
-                                ],
-                                "id": "",
-                                "modifiable": false,
-                                "name": "",
-                                "owner": "",
-                                "returnType": "unknown",
-                                "type": "unknown"
-                            },
                             "id": "{8da832fe-ff61-4357-b15e-aa94f58c8494}",
                             "nodeId": "Mission::End",
                             "parentId": "",
@@ -2204,6 +1904,16 @@
                     ],
                     "owner": "{d9929bf1-c612-4843-aff8-1daeca5c3386}",
                     "returnType": "string",
+                    "type": "in"
+                },
+                {
+                    "arguments": [
+                    ],
+                    "id": "{ace9f6fb-ffd0-47fb-9186-b869cbd70b20}",
+                    "modifiable": false,
+                    "name": "abort",
+                    "owner": "",
+                    "returnType": "void",
                     "type": "in"
                 }
             ],

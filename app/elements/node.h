@@ -41,7 +41,7 @@ public:
   QString nodeType() const;
   QString behaviour() const;
   QVector<ControlsConfig> controls() const;
-  QVector<PropertiesConfig> fields() const;
+  QVector<std::shared_ptr<PropertiesConfig>> fields() const;
   QMap<QString, QVariant> properties() const;
   QVector<PropertiesConfig> configurationProperties() const;
 

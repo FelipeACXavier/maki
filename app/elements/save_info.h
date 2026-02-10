@@ -133,10 +133,12 @@ struct NodeSaveInfo : public INode
   QPixmap pixmap;
   QSizeF size{0, 0};
   qreal scale{1.0};
-  QVector<PropertiesConfig> fields;
-  QMap<QString, QVariant> properties;
-  QVector<std::shared_ptr<TransitionSaveInfo>> transitions;
-  QVector<std::shared_ptr<FlowSaveInfo>> flows;
+  // TODO(felaze): Remove fields
+  QVector<std::shared_ptr<PropertiesConfig>> fields = {};
+  // TODO(felaze): Use Properties class instead of map
+  QMap<QString, QVariant> properties = {};
+  QVector<std::shared_ptr<TransitionSaveInfo>> transitions = {};
+  QVector<std::shared_ptr<FlowSaveInfo>> flows = {};
 
   QString parentId = "";
   QVector<std::shared_ptr<NodeSaveInfo>> children = {};
@@ -158,7 +160,8 @@ struct NodeSaveInfo : public INode
   {
     QVector<std::shared_ptr<IProperty>> args;
     for (auto arg : fields)
-      args.emplace_back(std::make_shared<PropertiesConfig>(arg));
+      args.emplace_back(std::static_pointer_cast<IProperty>(arg));
+
     return args;
   }
   QMap<QString, QVariant> getproperties() const override

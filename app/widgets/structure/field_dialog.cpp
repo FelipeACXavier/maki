@@ -218,10 +218,10 @@ void FieldDialog::addEnumField(QWidget* parent)
   PropertiesConfig foundValues;
   for (const auto& opt : mStorage.options)
   {
-    if (opt.id == "name")
-      foundName = opt;
-    if (opt.id == "values")
-      foundValues = opt;
+    if (opt->id == "name")
+      foundName = *opt;
+    if (opt->id == "values")
+      foundValues = *opt;
   }
 
   if (foundName.id.isEmpty())
@@ -229,7 +229,7 @@ void FieldDialog::addEnumField(QWidget* parent)
     PropertiesConfig enumName;
     enumName.id = "name";
     enumName.type = Types::PropertyTypes::STRING;
-    mStorage.options.push_back(enumName);
+    mStorage.options.push_back(std::make_shared<PropertiesConfig>(enumName));
   }
   else
   {
@@ -241,21 +241,21 @@ void FieldDialog::addEnumField(QWidget* parent)
     PropertiesConfig enumValues;
     enumValues.id = "values";
     enumValues.type = Types::PropertyTypes::LIST;
-    mStorage.options.push_back(enumValues);
+    mStorage.options.push_back(std::make_shared<PropertiesConfig>(enumValues));
   }
   else
   {
     for (const auto& opt : foundValues.options)
-      listWidget->addItem(opt.id);
+      listWidget->addItem(opt->id);
   }
 
   connect(name, &QLineEdit::editingFinished, this, [=]() {
     for (auto& opt : mStorage.options)
     {
-      if (opt.id != "name")
+      if (opt->id != "name")
         continue;
 
-      opt.defaultValue = name->text();
+      opt->defaultValue = name->text();
       break;
     }
   });
@@ -265,12 +265,12 @@ void FieldDialog::addEnumField(QWidget* parent)
     {
       for (auto& opt : mStorage.options)
       {
-        if (opt.id == "values")
+        if (opt->id == "values")
         {
           PropertiesConfig option;
           option.id = input->text();
 
-          opt.options.push_back(option);
+          opt->options.push_back(std::make_shared<PropertiesConfig>(option));
           break;
         }
       }

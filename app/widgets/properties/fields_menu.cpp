@@ -184,13 +184,13 @@ VoidResult FieldsMenu::loadControlAddField(const ControlsConfig& control, NodeIt
   {
     int newRow = model->rowCount();
     model->insertRow(newRow);
-    model->setItem(newRow, 0, new QStandardItem(field.id));
-    model->setItem(newRow, 2, new QStandardItem(Types::PropertyTypesToString(field.type)));
+    model->setItem(newRow, 0, new QStandardItem(field->id));
+    model->setItem(newRow, 2, new QStandardItem(Types::PropertyTypesToString(field->type)));
 
-    if (field.type == Types::PropertyTypes::LIST)
-      model->setItem(newRow, 1, new QStandardItem(JSON::fromArray(field.defaultValue.toList(), ',')));
+    if (field->type == Types::PropertyTypes::LIST)
+      model->setItem(newRow, 1, new QStandardItem(JSON::fromArray(field->defaultValue.toList(), ',')));
     else
-      model->setItem(newRow, 1, new QStandardItem(field.defaultValue.toString()));
+      model->setItem(newRow, 1, new QStandardItem(field->defaultValue.toString()));
   }
 
   connect(model, &QStandardItemModel::itemChanged, [=](QStandardItem* item) {
@@ -317,7 +317,7 @@ VoidResult FieldsMenu::loadControlAddState(const ControlsConfig& control, NodeIt
   tableView->setModel(model);
 
   for (const auto& field : node->fields())
-    addStateToTable(model, model->rowCount(), field);
+    addStateToTable(model, model->rowCount(), *field);
 
   connect(tableView, &QTableView::doubleClicked, [this, tableView, node](const QModelIndex& index) {
     openFieldDialog(tableView, node, index.row());
@@ -428,8 +428,8 @@ void FieldsMenu::openFieldDialog(QTableView* tableView, NodeItem* node, int row)
   // Open the dialog
   mCurrentDialog = new FieldDialog(tr("Edit field"), this);
 
-  auto config = row < node->fields().size() ? node->fields().at(row) : PropertiesConfig();
-  qobject_cast<FieldDialog*>(mCurrentDialog)->setup(config);
+  auto config = row < node->fields().size() ? node->fields().at(row) : std::make_shared<PropertiesConfig>();
+  qobject_cast<FieldDialog*>(mCurrentDialog)->setup(*config);
 
   connect(mCurrentDialog, &QDialog::accepted, [this, tableView, node, row] {
     auto info = qobject_cast<FieldDialog*>(mCurrentDialog)->getInfo();

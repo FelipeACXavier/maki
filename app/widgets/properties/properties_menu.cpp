@@ -340,7 +340,7 @@ VoidResult PropertiesMenu::loadPropertySelect(const PropertiesConfig& property, 
 
   auto options = property.options;
   for (const auto& option : options)
-    widget->addItem(option.id);
+    widget->addItem(option->id);
 
   auto result = node->getProperty(property.id);
   if (!result.isValid())
@@ -446,16 +446,16 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertiesConfig& p
     for (int i = 0; i < property.options.size(); ++i)
     {
       const auto option = property.options.at(i);
-      QString eventLabel = ToLabel(option.id);
+      QString eventLabel = ToLabel(option->id);
       QLabel* nameEventLabel = new QLabel(eventLabel);
 
       nameEventLabel->setFont(Fonts::Label);
       layout()->addWidget(nameEventLabel);
 
-      if (option.type == Types::PropertyTypes::EVENT_SELECT)
+      if (option->type == Types::PropertyTypes::EVENT_SELECT)
       {
         QComboBox* eventWidget = new QComboBox(this);
-        eventWidget->setObjectName(option.id);
+        eventWidget->setObjectName(option->id);
 
         // Set starting values
         auto value = node->getProperty(property.id);
@@ -530,10 +530,10 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertiesConfig& p
           node->setProperty(property.id, object);
         });
       }
-      else if (option.type == Types::PropertyTypes::STRING)
+      else if (option->type == Types::PropertyTypes::STRING)
       {
         QLineEdit* eventWidget = new QLineEdit(this);
-        eventWidget->setObjectName(option.id);
+        eventWidget->setObjectName(option->id);
 
         // Set starting values
         auto value = node->getProperty(property.id);
@@ -745,13 +745,13 @@ VoidResult PropertiesMenu::loadControlAddField(const ControlsConfig& control, No
   {
     int newRow = model->rowCount();
     model->insertRow(newRow);
-    model->setItem(newRow, 0, new QStandardItem(field.id));
-    model->setItem(newRow, 2, new QStandardItem(Types::PropertyTypesToString(field.type)));
+    model->setItem(newRow, 0, new QStandardItem(field->id));
+    model->setItem(newRow, 2, new QStandardItem(Types::PropertyTypesToString(field->type)));
 
-    if (field.type == Types::PropertyTypes::LIST)
-      model->setItem(newRow, 1, new QStandardItem(JSON::fromArray(field.defaultValue.toList(), ',')));
+    if (field->type == Types::PropertyTypes::LIST)
+      model->setItem(newRow, 1, new QStandardItem(JSON::fromArray(field->defaultValue.toList(), ',')));
     else
-      model->setItem(newRow, 1, new QStandardItem(field.defaultValue.toString()));
+      model->setItem(newRow, 1, new QStandardItem(field->defaultValue.toString()));
   }
 
   connect(model, &QStandardItemModel::itemChanged, [=](QStandardItem* item) {
@@ -894,7 +894,7 @@ VoidResult PropertiesMenu::loadControlAddState(const ControlsConfig& control, No
   tableView->setModel(model);
 
   for (const auto& field : node->fields())
-    addStateToTable(model, model->rowCount(), field);
+    addStateToTable(model, model->rowCount(), *field);
 
   connect(tableView, &QTableView::doubleClicked, [this, tableView, node](const QModelIndex& index) {
     openFieldDialog(tableView, node, index.row());
@@ -1005,8 +1005,8 @@ void PropertiesMenu::openFieldDialog(QTableView* tableView, NodeItem* node, int 
   // Open the dialog
   mCurrentDialog = new FieldDialog(tr("Edit field"), this);
 
-  auto config = row < node->fields().size() ? node->fields().at(row) : PropertiesConfig();
-  qobject_cast<FieldDialog*>(mCurrentDialog)->setup(config);
+  auto config = row < node->fields().size() ? node->fields().at(row) : std::make_shared<PropertiesConfig>();
+  qobject_cast<FieldDialog*>(mCurrentDialog)->setup(*config);
 
   connect(mCurrentDialog, &QDialog::accepted, [this, tableView, node, row] {
     auto info = qobject_cast<FieldDialog*>(mCurrentDialog)->getInfo();
@@ -1060,4 +1060,25 @@ void PropertiesMenu::addStateToTable(QStandardItemModel* model, int row, const P
     model->setItem(row, 2, new QStandardItem(JSON::fromArray(field.defaultValue.toList(), ',')));
   else
     model->setItem(row, 2, new QStandardItem(field.defaultValue.toString()));
+}
+
+QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<PropertiesConfig>>& properties)
+{
+  out << static_cast<qint32>(properties.size());
+  for (const auto& prop : properties)
+    out << *prop;
+
+  return out;
+}
+
+QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<PropertiesConfig>>& properties)
+{
+  qint32 size;
+  in >> size;
+
+  properties.resize(size);
+  for (int i = 0; i < size; ++i)
+    in >> *properties[i];
+
+  return in;
 }
