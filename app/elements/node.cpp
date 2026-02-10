@@ -579,7 +579,7 @@ void NodeItem::addTransition(TransitionItem* transition)
     bool found = false;
     for (const auto& t : mStorage->transitions)
     {
-      if (t->id == transition->id())
+      if (t->getid() == transition->id())
       {
         found = true;
         break;
@@ -624,7 +624,7 @@ void NodeItem::addTransition(TransitionItem* transition)
 void NodeItem::removeTransition(TransitionItem* transition)
 {
   mStorage->transitions.removeIf([transition](std::shared_ptr<TransitionSaveInfo> item) {
-    return transition->id() == item->id;
+    return transition->id() == item->getid();
   });
   mTransitions.removeIf([transition](TransitionItem* item) {
     return item->id() == transition->id();

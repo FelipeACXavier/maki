@@ -1186,19 +1186,19 @@ void Canvas::populate(Flow* flow)
 
     for (const auto& transition : node->transitions)
     {
-      auto dstConn = findNodeWithId(transition->dstId);
+      auto dstConn = findNodeWithId(transition->getdstId());
       if (!dstConn)
       {
         LOG_WARNING("Could not find destination node");
         continue;
       }
 
-      LOG_DEBUG("Creating transitions %s -> %s", qPrintable(node->id), qPrintable(transition->dstId));
+      LOG_DEBUG("Creating transitions %s -> %s", qPrintable(node->getid()), qPrintable(transition->getdstId()));
 
       auto connection = new TransitionItem(transition);
 
-      connection->setStart(node->id, transition->srcPoint, transition->srcShift);
-      connection->setEnd(transition->dstId, transition->dstPoint, transition->dstShift);
+      connection->setStart(node->getid(), transition->srcPoint(), transition->srcShift());
+      connection->setEnd(transition->getdstId(), transition->dstPoint(), transition->dstShift());
 
       connection->done(srcConn, dstConn);
 

@@ -10,7 +10,7 @@
 
 TransitionItem::TransitionItem(std::shared_ptr<TransitionSaveInfo> storage)
     : QGraphicsPathItem()
-    , mId((!storage->id.isEmpty() && !storage->id.isNull()) ? storage->id : QUuid::createUuid().toString())
+    , mId((!storage->getid().isEmpty() && !storage->getid().isNull()) ? storage->getid() : QUuid::createUuid().toString())
     , mComplete(false)
     , mEdge(Edge::NONE)
     , mSource(nullptr)
@@ -27,10 +27,10 @@ TransitionItem::TransitionItem(std::shared_ptr<TransitionSaveInfo> storage)
 
   mLabel = new QGraphicsTextItem(this);
   mLabel->setFont(Fonts::Property);
-  mLabel->setPlainText(mStorage->label);
+  mLabel->setPlainText(mStorage->getlabel());
   updateLabelPosition();
 
-  mStorage->id = id();
+  mStorage->setId(id());
 }
 
 TransitionItem::~TransitionItem()
@@ -53,16 +53,16 @@ int TransitionItem::type() const
 
 void TransitionItem::setStart(const QString& id, const QPointF& point, const QPointF& controlShift)
 {
-  mStorage->srcId = id;
-  mStorage->srcPoint = point;
-  mStorage->srcShift = controlShift;
+  mStorage->setSrcId(id);
+  mStorage->setSrcPoint(point);
+  mStorage->setSrcShift(controlShift);
 }
 
 void TransitionItem::setEnd(const QString& id, const QPointF& point, const QPointF& controlShift)
 {
-  mStorage->dstId = id;
-  mStorage->dstPoint = point;
-  mStorage->dstShift = controlShift;
+  mStorage->setDstId(id);
+  mStorage->setDstPoint(point);
+  mStorage->setDstShift(controlShift);
 }
 
 void TransitionItem::done(NodeItem* source, NodeItem* destination)
@@ -75,8 +75,8 @@ void TransitionItem::done(NodeItem* source, NodeItem* destination)
   mDestination->addTransition(this);
 
   // Make sure line is update with new control points
-  move(mStorage->srcId, mStorage->srcPoint);
-  move(mStorage->dstId, mStorage->dstPoint);
+  move(mStorage->getsrcId(), mStorage->srcPoint());
+  move(mStorage->getdstId(), mStorage->dstPoint());
 }
 
 void TransitionItem::setEdge(Edge edge)
@@ -96,17 +96,17 @@ NodeItem* TransitionItem::destination() const
 
 void TransitionItem::move(const QString& id, QPointF pos)
 {
-  if (id == mStorage->srcId)
-    mStorage->srcPoint = mSource ? mSource->edgePointToward(mDestination->sceneBoundingRect().center()) : pos;
-  else if (id == mStorage->dstId)
-    mStorage->dstPoint = mDestination ? mDestination->edgePointToward(mSource->sceneBoundingRect().center()) : pos;
+  if (id == mStorage->getsrcId())
+    mStorage->setSrcPoint(mSource ? mSource->edgePointToward(mDestination->sceneBoundingRect().center()) : pos);
+  else if (id == mStorage->getdstId())
+    mStorage->setDstPoint(mDestination ? mDestination->edgePointToward(mSource->sceneBoundingRect().center()) : pos);
   else
     return;
 
   // Control points for Bézier curve
   QPainterPath path;
-  path.moveTo(mStorage->srcPoint);
-  path.lineTo(mStorage->dstPoint);
+  path.moveTo(mStorage->srcPoint());
+  path.lineTo(mStorage->dstPoint());
 
   setPath(path);
   updateLabelPosition();
@@ -208,7 +208,7 @@ void TransitionItem::setName(const QString& name)
     return;
 
   mLabel->setPlainText(name);
-  mStorage->label = name;
+  mStorage->setLabel(name);
   updateLabelPosition();
 }
 
@@ -241,10 +241,10 @@ void TransitionItem::updateLabelPosition()
 }
 QString TransitionItem::getEvent() const
 {
-  return mStorage->event;
+  return mStorage->getevent();
 }
 
 void TransitionItem::setEvent(const QString& name)
 {
-  mStorage->event = name;
+  mStorage->setEvent(name);
 }

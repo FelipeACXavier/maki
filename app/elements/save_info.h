@@ -79,50 +79,52 @@ struct FlowSaveInfo : public IFlow
   friend QDataStream& operator>>(QDataStream& in, FlowSaveInfo& info);
 };
 
-struct TransitionSaveInfo : public ITransition
+class TransitionSaveInfo : public ITransition
 {
-  QString id = "";
-  QString label = "";
-  QString event = "";
+public:
+  TransitionSaveInfo();
 
-  QString srcId = "";
-  QPointF srcPoint{0, 0};
-  QPointF srcShift{0, 0};
+  QString getid() const override;
+  QString getlabel() const override;
+  QString getevent() const override;
+  QString getsrcId() const override;
+  QString getdstId() const override;
 
-  QString dstId = "";
-  QPointF dstPoint{0, 0};
-  QPointF dstShift{0, 0};
+  QPointF srcPoint() const;
+  QPointF srcShift() const;
+  QPointF dstPoint() const;
+  QPointF dstShift() const;
 
-  // Inherited --------------------------------------
-  QString getid() const override
-  {
-    return id;
-  }
-  QString getlabel() const override
-  {
-    return label;
-  }
-  QString getevent() const override
-  {
-    return event;
-  }
-  QString getsrcId() const override
-  {
-    return srcId;
-  }
-  QString getdstId() const override
-  {
-    return dstId;
-  }
-  // ------------------------------------------------
+  void setId(const QString& arg);
+  void setLabel(const QString& arg);
+  void setEvent(const QString& arg);
 
-  TransitionSaveInfo() = default;
+  void setSrcId(const QString& arg);
+  void setSrcPoint(const QPointF& arg);
+  void setSrcShift(const QPointF& arg);
+
+  void setDstId(const QString& arg);
+  void setDstPoint(const QPointF& arg);
+  void setDstShift(const QPointF& arg);
 
   QJsonObject toJson() const;
   static TransitionSaveInfo fromJson(const QJsonObject& data);
 
   friend QDataStream& operator<<(QDataStream& out, const TransitionSaveInfo& info);
   friend QDataStream& operator>>(QDataStream& in, TransitionSaveInfo& info);
+
+private:
+  QString mId;
+  QString mLabel;
+  QString mEvent;
+
+  QString mSrcId;
+  QPointF mSrcPoint;
+  QPointF mSrcShift;
+
+  QString mDstId;
+  QPointF mDstPoint;
+  QPointF mDstShift;
 };
 
 struct NodeSaveInfo : public INode
@@ -213,6 +215,8 @@ struct NodeSaveInfo : public INode
 class CanvasSaveInfo
 {
 public:
+  CanvasSaveInfo() = default;
+
   qreal scale() const;
   QPointF center() const;
 
@@ -226,13 +230,15 @@ public:
   friend QDataStream& operator>>(QDataStream& in, CanvasSaveInfo& info);
 
 private:
-  qreal mScale{1.0};
-  QPointF mCenter{0, 0};
+  qreal mScale = {1.0};
+  QPointF mCenter = {0, 0};
 };
 
 class SaveInfo : public IDocument
 {
 public:
+  SaveInfo() = default;
+
   CanvasSaveInfo canvasInfo() const;
   void setCanvasInfo(const CanvasSaveInfo& info);
 
