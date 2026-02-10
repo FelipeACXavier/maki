@@ -225,21 +225,12 @@ struct CanvasSaveInfo
 class SaveInfo : public IDocument
 {
 public:
-  CanvasSaveInfo canvasInfo;
-  QVector<std::shared_ptr<NodeSaveInfo>> structuralNodes = {};
-  QVector<std::shared_ptr<NodeSaveInfo>> behaviouralNodes = {};
+  CanvasSaveInfo canvasInfo() const;
+  void setCanvasInfo(const CanvasSaveInfo& info);
 
-  // Inherited --------------------------------------
-  QVector<std::shared_ptr<INode>> getnodes() const override
-  {
-    QVector<std::shared_ptr<INode>> out;
-    out.reserve(structuralNodes.size());
-    for (const auto& f : structuralNodes)
-      out.push_back(std::static_pointer_cast<INode>(f));
-
-    return out;
-  };
-  // ------------------------------------------------
+  QVector<std::shared_ptr<INode>> getnodes() const override;
+  void addNode(std::shared_ptr<NodeSaveInfo> node);
+  void removeNode(std::shared_ptr<NodeSaveInfo> node);
 
   QJsonObject toJson() const;
   static SaveInfo fromJson(const QJsonObject& data);
@@ -255,13 +246,16 @@ public:
   std::shared_ptr<FlowSaveInfo> getFlowWithId(const QString& flowId);
 
 private:
-  QVector<std::shared_ptr<NodeSaveInfo>> findFamilyOfConstruct(const QString& nodeId, QVector<std::shared_ptr<NodeSaveInfo>> nodes) const;
-  std::shared_ptr<NodeSaveInfo> findParentOfConstruct(const QString& nodeId, const std::shared_ptr<NodeSaveInfo> node) const;
-  void findStatesOfConstruct(QVector<std::shared_ptr<NodeSaveInfo>>& toReturn, QVector<std::shared_ptr<NodeSaveInfo>> nodes) const;
+  CanvasSaveInfo mCanvasInfo;
+  QVector<std::shared_ptr<INode>> mStructuralNodes;
 
-  QVector<std::shared_ptr<FlowSaveInfo>> getEventsFromNode(const QString& nodeId, QVector<std::shared_ptr<NodeSaveInfo>> nodes) const;
-  std::shared_ptr<NodeSaveInfo> getNodeWithId(const QString& nodeId, const QVector<std::shared_ptr<NodeSaveInfo>>& nodes);
-  std::shared_ptr<FlowSaveInfo> getFlowWithId(const QString& flowId, const QVector<std::shared_ptr<NodeSaveInfo>>& nodes);
+  QVector<std::shared_ptr<NodeSaveInfo>> findFamilyOfConstruct(const QString& nodeId, QVector<std::shared_ptr<INode>> nodes) const;
+  std::shared_ptr<NodeSaveInfo> findParentOfConstruct(const QString& nodeId, const std::shared_ptr<INode> node) const;
+  void findStatesOfConstruct(QVector<std::shared_ptr<NodeSaveInfo>>& toReturn, QVector<std::shared_ptr<INode>> nodes) const;
+
+  QVector<std::shared_ptr<FlowSaveInfo>> getEventsFromNode(const QString& nodeId, QVector<std::shared_ptr<INode>> nodes) const;
+  std::shared_ptr<NodeSaveInfo> getNodeWithId(const QString& nodeId, const QVector<std::shared_ptr<INode>>& nodes);
+  std::shared_ptr<FlowSaveInfo> getFlowWithId(const QString& flowId, const QVector<std::shared_ptr<INode>>& nodes);
 };
 
 QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<FlowSaveInfo>>& nodes);

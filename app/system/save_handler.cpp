@@ -22,7 +22,7 @@ SaveHandler::SaveHandler(QWidget* parent)
 
 void SaveHandler::newFileCreated()
 {
-  mCurrentFile.clear();  
+  mCurrentFile.clear();
 }
 
 VoidResult SaveHandler::save(Canvas* canvas)
@@ -46,9 +46,12 @@ VoidResult SaveHandler::saveFileAs(Canvas* canvas)
 
 VoidResult SaveHandler::saveToFile(Canvas* canvas)
 {
+  CanvasSaveInfo canvasInfo;
+  canvasInfo.scale = canvas->getScale();
+  canvasInfo.center = canvas->getCenter();
+
   SaveInfo info;
-  info.canvasInfo.scale = canvas->getScale();
-  info.canvasInfo.center = canvas->getCenter();
+  info.setCanvasInfo(canvasInfo);
 
   for (const auto& item : canvas->items())
   {
@@ -59,9 +62,7 @@ VoidResult SaveHandler::saveToFile(Canvas* canvas)
         continue;
 
       if (node->function() == Types::LibraryTypes::STRUCTURAL)
-        info.structuralNodes.push_back(std::make_shared<NodeSaveInfo>(node->saveInfo()));
-      else
-        info.behaviouralNodes.push_back(std::make_shared<NodeSaveInfo>(node->saveInfo()));
+        info.addNode(std::make_shared<NodeSaveInfo>(node->saveInfo()));
     }
   }
 

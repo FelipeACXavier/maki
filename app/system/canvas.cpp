@@ -978,11 +978,16 @@ VoidResult Canvas::loadFromSave(const SaveInfo& info)
 
   // Reset canvas
   // TODO(felaze): This should be moved to the CanvasView, something like parentView()->loadFromSave(info.canvasInfo);
-  parentView()->zoom(info.canvasInfo.scale / parentView()->getScale());
-  parentView()->setScale(info.canvasInfo.scale);
-  parentView()->centerOn(info.canvasInfo.center);
+  auto canvasInfo = info.canvasInfo();
+  parentView()->zoom(canvasInfo.scale / parentView()->getScale());
+  parentView()->setScale(canvasInfo.scale);
+  parentView()->centerOn(canvasInfo.center);
 
-  return loadFromSave(info.structuralNodes, nullptr);
+  QVector<std::shared_ptr<NodeSaveInfo>> out;
+  for (std::shared_ptr<INode> node : info.getnodes())
+    out.push_back(std::dynamic_pointer_cast<NodeSaveInfo>(node));
+
+  return loadFromSave(out, nullptr);
 }
 
 CanvasView* Canvas::parentView() const
@@ -1055,7 +1060,7 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
   if (parent == nullptr)
   {
     if (type() == Types::LibraryTypes::STRUCTURAL)
-      mStorage->structuralNodes.append(info);
+      mStorage->addNode(info);
   }
   else
   {

@@ -57,15 +57,6 @@ void Flow::removeNode(NodeItem* node)
 
 void Flow::updateFlow(NodeItem* /* node */, std::shared_ptr<NodeSaveInfo> storage)
 {
-  // for (auto& info : mInfo.behaviouralNodes)
-  // {
-  //   if (info.id != node->id())
-  //     continue;
-
-  //   info = node->saveInfo();
-  //   return;
-  // }
-
   // Add the node info directly to our shared knowledge
   mStorage->nodes.push_back(storage);
 }

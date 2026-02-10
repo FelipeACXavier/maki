@@ -423,6 +423,7 @@ CanvasSaveInfo CanvasSaveInfo::fromJson(const QJsonObject& data)
 
 // ==========================================================================================================
 // SaveInfo
+
 QDataStream& operator<<(QDataStream& out, const SaveInfo& info)
 {
   // out << info.canvasInfo;
@@ -441,24 +442,43 @@ QDataStream& operator>>(QDataStream& in, SaveInfo& info)
   return in;
 }
 
+CanvasSaveInfo SaveInfo::canvasInfo() const
+{
+  return mCanvasInfo;
+}
+
+void SaveInfo::setCanvasInfo(const CanvasSaveInfo& info)
+{
+  mCanvasInfo = info;
+}
+
+void SaveInfo::addNode(std::shared_ptr<NodeSaveInfo> node)
+{
+  mStructuralNodes.push_back(node);
+}
+
+void SaveInfo::removeNode(std::shared_ptr<NodeSaveInfo> node)
+{
+  mStructuralNodes.removeIf([node](std::shared_ptr<INode> info) { return info->getid() == node->getid(); });
+}
+
+QVector<std::shared_ptr<INode>> SaveInfo::getnodes() const
+{
+  return mStructuralNodes;
+};
+
 QJsonObject SaveInfo::toJson() const
 {
   QJsonObject data;
 
-  data[ConfigKeys::CANVAS] = canvasInfo.toJson();
+  data[ConfigKeys::CANVAS] = canvasInfo().toJson();
 
   QJsonArray structuralArray;
-  for (const auto& node : structuralNodes)
-    structuralArray.append(node->toJson());
-
-  QJsonArray behaviouralArray;
-  for (const auto& node : behaviouralNodes)
-    behaviouralArray.append(node->toJson());
+  for (const auto& node : getnodes())
+    structuralArray.append(std::dynamic_pointer_cast<NodeSaveInfo>(node)->toJson());
 
   if (structuralArray.size() > 0)
     data[ConfigKeys::STRUCTURAL] = structuralArray;
-  if (behaviouralArray.size() > 0)
-    data[ConfigKeys::BEHAVIOURAL] = behaviouralArray;
 
   return data;
 }
@@ -466,27 +486,31 @@ QJsonObject SaveInfo::toJson() const
 SaveInfo SaveInfo::fromJson(const QJsonObject& data)
 {
   SaveInfo info;
-  info.canvasInfo = CanvasSaveInfo::fromJson(data[ConfigKeys::CANVAS].toObject());
+  auto canvasInfo = CanvasSaveInfo::fromJson(data[ConfigKeys::CANVAS].toObject());
+  info.setCanvasInfo(canvasInfo);
 
   for (const auto& node : data[ConfigKeys::STRUCTURAL].toArray())
-    info.structuralNodes.append(std::make_shared<NodeSaveInfo>(NodeSaveInfo::fromJson(node.toObject())));
-
-  for (const auto& node : data[ConfigKeys::BEHAVIOURAL].toArray())
-    info.behaviouralNodes.append(std::make_shared<NodeSaveInfo>(NodeSaveInfo::fromJson(node.toObject())));
+    info.addNode(std::make_shared<NodeSaveInfo>(NodeSaveInfo::fromJson(node.toObject())));
 
   return info;
 }
 
-QVector<std::shared_ptr<NodeSaveInfo>> SaveInfo::findFamilyOfConstruct(const QString& nodeId, QVector<std::shared_ptr<NodeSaveInfo>> nodes) const
+QVector<std::shared_ptr<NodeSaveInfo>> SaveInfo::findFamilyOfConstruct(const QString& nodeId, QVector<std::shared_ptr<INode>> nodes) const
 {
   for (const auto& node : nodes)
   {
-    LOG_INFO("Looking into: %s %s", qPrintable(node->id), qPrintable(node->nodeId));
+    LOG_INFO("Looking into: %s %s", qPrintable(node->getid()), qPrintable(node->getnodeId()));
     auto parent = findParentOfConstruct(nodeId, node);
     if (parent)
-      return nodes + node->children;
+    {
+      QVector<std::shared_ptr<NodeSaveInfo>> out = {std::static_pointer_cast<NodeSaveInfo>(node)};
+      for (auto& child : node->getchildren())
+        out.push_back(std::static_pointer_cast<NodeSaveInfo>(child));
 
-    auto family = findFamilyOfConstruct(nodeId, node->children);
+      return out;
+    }
+
+    auto family = findFamilyOfConstruct(nodeId, node->getchildren());
     if (!family.empty())
       return family;
   }
@@ -494,60 +518,66 @@ QVector<std::shared_ptr<NodeSaveInfo>> SaveInfo::findFamilyOfConstruct(const QSt
   return {};
 }
 
-std::shared_ptr<NodeSaveInfo> SaveInfo::findParentOfConstruct(const QString& nodeId, const std::shared_ptr<NodeSaveInfo> node) const
+std::shared_ptr<NodeSaveInfo> SaveInfo::findParentOfConstruct(const QString& nodeId, const std::shared_ptr<INode> node) const
 {
   if (!node)
     return nullptr;
 
-  LOG_INFO("Node info: %s %d %d", qPrintable(node->nodeId), node->children.size(), node->flows.size());
+  LOG_INFO("Node info: %s %d %d", qPrintable(node->getnodeId()), node->getchildren().size(), node->getflows().size());
 
-  for (const auto& flow : node->flows)
+  for (const auto& flow : node->getflows())
   {
-    LOG_INFO("Looking into flow: %s", qPrintable(flow->name));
-    for (const auto& construct : flow->nodes)
+    LOG_INFO("Looking into flow: %s", qPrintable(flow->getname()));
+    for (const auto& construct : flow->getnodes())
     {
-      if (construct->id != nodeId)
+      if (construct->getid() != nodeId)
         continue;
 
-      return node;
+      return std::static_pointer_cast<NodeSaveInfo>(node);
     }
   }
 
   return nullptr;
 }
 
-void SaveInfo::findStatesOfConstruct(QVector<std::shared_ptr<NodeSaveInfo>>& toReturn, QVector<std::shared_ptr<NodeSaveInfo>> nodes) const
+void SaveInfo::findStatesOfConstruct(QVector<std::shared_ptr<NodeSaveInfo>>& toReturn, QVector<std::shared_ptr<INode>> nodes) const
 {
   for (const auto& node : nodes)
   {
-    if (!node->fields.isEmpty())
-      toReturn.push_back(node);
+    if (!node->getfields().isEmpty())
+      toReturn.push_back(std::static_pointer_cast<NodeSaveInfo>(node));
 
-    findStatesOfConstruct(toReturn, node->children);
+    findStatesOfConstruct(toReturn, node->getchildren());
   }
 }
 
 QVector<std::shared_ptr<NodeSaveInfo>> SaveInfo::getPossibleStates(const QString& nodeId) const
 {
   QVector<std::shared_ptr<NodeSaveInfo>> toReturn;
-  findStatesOfConstruct(toReturn, structuralNodes);
+  findStatesOfConstruct(toReturn, getnodes());
   return toReturn;
 }
 
 QVector<std::shared_ptr<NodeSaveInfo>> SaveInfo::getPossibleCallers(const QString& nodeId) const
 {
   // Get the parent
-  return findFamilyOfConstruct(nodeId, structuralNodes);
+  return findFamilyOfConstruct(nodeId, getnodes());
 }
 
-QVector<std::shared_ptr<FlowSaveInfo>> SaveInfo::getEventsFromNode(const QString& nodeId, QVector<std::shared_ptr<NodeSaveInfo>> nodes) const
+QVector<std::shared_ptr<FlowSaveInfo>> SaveInfo::getEventsFromNode(const QString& nodeId, QVector<std::shared_ptr<INode>> nodes) const
 {
   for (const auto& node : nodes)
   {
-    if (node->id == nodeId)
-      return node->flows;
+    if (node->getid() == nodeId)
+    {
+      QVector<std::shared_ptr<FlowSaveInfo>> out;
+      for (auto& flow : node->getflows())
+        out.push_back(std::static_pointer_cast<FlowSaveInfo>(flow));
 
-    auto events = getEventsFromNode(nodeId, node->children);
+      return out;
+    }
+
+    auto events = getEventsFromNode(nodeId, node->getchildren());
     if (!events.empty())
       return events;
   }
@@ -557,28 +587,28 @@ QVector<std::shared_ptr<FlowSaveInfo>> SaveInfo::getEventsFromNode(const QString
 
 QVector<std::shared_ptr<FlowSaveInfo>> SaveInfo::getEventsFromNode(const QString& nodeId) const
 {
-  return getEventsFromNode(nodeId, structuralNodes);
+  return getEventsFromNode(nodeId, getnodes());
 }
 
 std::shared_ptr<NodeSaveInfo> SaveInfo::getNodeWithId(const QString& nodeId)
 {
-  return getNodeWithId(nodeId, structuralNodes);
+  return getNodeWithId(nodeId, getnodes());
 }
 
-std::shared_ptr<NodeSaveInfo> SaveInfo::getNodeWithId(const QString& nodeId, const QVector<std::shared_ptr<NodeSaveInfo>>& nodes)
+std::shared_ptr<NodeSaveInfo> SaveInfo::getNodeWithId(const QString& nodeId, const QVector<std::shared_ptr<INode>>& nodes)
 {
   for (const auto& node : nodes)
   {
-    if (node->id == nodeId)
-      return node;
+    if (node->getid() == nodeId)
+      return std::static_pointer_cast<NodeSaveInfo>(node);
 
-    auto found = getNodeWithId(nodeId, node->children);
+    auto found = getNodeWithId(nodeId, node->getchildren());
     if (found != nullptr)
       return found;
 
-    for (const auto& flow : node->flows)
+    for (const auto& flow : node->getflows())
     {
-      found = getNodeWithId(nodeId, flow->nodes);
+      found = getNodeWithId(nodeId, flow->getnodes());
       if (found != nullptr)
         return found;
     }
@@ -589,20 +619,20 @@ std::shared_ptr<NodeSaveInfo> SaveInfo::getNodeWithId(const QString& nodeId, con
 
 std::shared_ptr<FlowSaveInfo> SaveInfo::getFlowWithId(const QString& flowId)
 {
-  return getFlowWithId(flowId, structuralNodes);
+  return getFlowWithId(flowId, getnodes());
 }
 
-std::shared_ptr<FlowSaveInfo> SaveInfo::getFlowWithId(const QString& flowId, const QVector<std::shared_ptr<NodeSaveInfo>>& nodes)
+std::shared_ptr<FlowSaveInfo> SaveInfo::getFlowWithId(const QString& flowId, const QVector<std::shared_ptr<INode>>& nodes)
 {
   for (const auto& node : nodes)
   {
-    for (const auto& flow : node->flows)
+    for (const auto& flow : node->getflows())
     {
-      if (flow->id == flowId)
-        return flow;
+      if (flow->getid() == flowId)
+        return std::static_pointer_cast<FlowSaveInfo>(flow);
     }
 
-    auto found = getFlowWithId(flowId, node->children);
+    auto found = getFlowWithId(flowId, node->getchildren());
     if (found != nullptr)
       return found;
   }
