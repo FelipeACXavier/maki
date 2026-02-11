@@ -156,55 +156,103 @@ TransitionSaveInfo TransitionSaveInfo::fromJson(const QJsonObject& data)
 // Stream serialization
 QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<TransitionSaveInfo>>& transitions)
 {
-  // out << static_cast<qint32>(transitions.size());
-  // for (const auto& transition : transitions)
-  //   out << *transition;
+  out << static_cast<qint32>(transitions.size());
+  for (const auto& transition : transitions)
+    out << *transition;
 
   return out;
 }
 
 QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<TransitionSaveInfo>>& transitions)
 {
-  // qint32 size;
-  // in >> size;
+  qint32 size;
+  in >> size;
 
-  // transitions.resize(size);
-  // for (int i = 0; i < size; ++i)
-  //   in >> *transitions[i];
+  transitions.resize(size);
+  for (int i = 0; i < size; ++i)
+    in >> *transitions[i];
+
+  return in;
+}
+
+QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<ITransition>>& transitions)
+{
+  out << static_cast<qint32>(transitions.size());
+  for (const auto& transition : transitions)
+    out << *std::dynamic_pointer_cast<TransitionSaveInfo>(transition);
+
+  return out;
+}
+
+QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<ITransition>>& transitions)
+{
+  qint32 size;
+  in >> size;
+
+  transitions.resize(size);
+  for (int i = 0; i < size; ++i)
+  {
+    transitions[i] = std::make_shared<TransitionSaveInfo>();
+    in >> *std::dynamic_pointer_cast<TransitionSaveInfo>(transitions[i]);
+  }
 
   return in;
 }
 
 QDataStream& operator<<(QDataStream& out, const TransitionSaveInfo& info)
 {
-  // out << info.id;
-  // out << info.label;
-  // out << info.event;
+  out << info.getid();
+  out << info.getlabel();
+  out << info.getevent();
 
-  // out << info.srcId;
-  // out << info.srcPoint;
-  // out << info.srcShift;
+  out << info.getsrcId();
+  out << info.srcPoint();
+  out << info.srcShift();
 
-  // out << info.dstId;
-  // out << info.dstPoint;
-  // out << info.dstShift;
+  out << info.getdstId();
+  out << info.dstPoint();
+  out << info.dstShift();
 
   return out;
 }
 
 QDataStream& operator>>(QDataStream& in, TransitionSaveInfo& info)
 {
-  // in >> info.id;
-  // in >> info.label;
-  // in >> info.event;
+  QString id;
+  in >> id;
+  info.setId(id);
 
-  // in >> info.srcId;
-  // in >> info.srcPoint;
-  // in >> info.srcShift;
+  QString label;
+  in >> label;
+  info.setLabel(label);
 
-  // in >> info.dstId;
-  // in >> info.dstPoint;
-  // in >> info.dstShift;
+  QString event;
+  in >> event;
+  info.setEvent(event);
+
+  QString srcId;
+  in >> srcId;
+  info.setSrcId(srcId);
+
+  QPointF srcPoint;
+  in >> srcPoint;
+  info.setSrcPoint(srcPoint);
+
+  QPointF srcShift;
+  in >> srcShift;
+  info.setSrcShift(srcShift);
+
+  QString dstId;
+  in >> dstId;
+  info.setDstId(dstId);
+
+  QPointF dstPoint;
+  in >> dstPoint;
+  info.setDstPoint(dstPoint);
+
+  QPointF dstShift;
+  in >> dstShift;
+  info.setDstShift(dstShift);
 
   return in;
 }

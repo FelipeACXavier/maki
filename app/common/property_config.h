@@ -59,3 +59,5 @@ private:
 
 QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<PropertiesConfig>>& properties);
 QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<PropertiesConfig>>& properties);
+QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<IProperty>>& properties);
+QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<IProperty>>& properties);

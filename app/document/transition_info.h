@@ -57,3 +57,5 @@ private:
 
 QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<TransitionSaveInfo>>& nodes);
 QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<TransitionSaveInfo>>& nodes);
+QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<ITransition>>& nodes);
+QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<ITransition>>& nodes);

@@ -56,3 +56,5 @@ private:
 
 QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<FlowSaveInfo>>& nodes);
 QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<FlowSaveInfo>>& nodes);
+QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<IFlow>>& nodes);
+QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<IFlow>>& nodes);

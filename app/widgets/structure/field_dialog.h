@@ -16,9 +16,9 @@ class FieldDialog : public QDialog
 public:
   FieldDialog(const QString& title, QWidget* parent = nullptr);
 
-  void setup(const PropertiesConfig& config);
+  void setup(std::shared_ptr<PropertiesConfig> config);
 
-  PropertiesConfig getInfo() const;
+  std::shared_ptr<PropertiesConfig> getInfo() const;
   QString getName() const;
   QString getType() const;
   QString getReturnType() const;
@@ -28,7 +28,7 @@ protected:
   void keyPressEvent(QKeyEvent* event) override;
 
 private:
-  PropertiesConfig mStorage;
+  std::shared_ptr<PropertiesConfig> mStorage;
   int mEnterCount;
 
   void populateNodeList();

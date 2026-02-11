@@ -32,6 +32,10 @@
             {
               "id": "Add event",
               "type": "add event"
+            },
+            {
+              "id": "Add state",
+              "type": "add state"
             }
           ]
         },
@@ -62,6 +66,10 @@
             {
               "id": "Add event",
               "type": "add event"
+            },
+            {
+              "id": "Add state",
+              "type": "add state"
             }
           ]
         },
@@ -129,7 +137,12 @@
               "default": "#fcbf49"
             }
           ],
-          "controls": [],
+          "controls": [
+            {
+               "id": "Add state",
+               "type": "add state"
+            }
+          ],
           "connectors": [],
           "behaviour": {}
         },

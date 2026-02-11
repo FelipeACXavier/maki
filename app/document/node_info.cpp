@@ -1,5 +1,6 @@
 #include "node_info.h"
 
+#include <QBuffer>
 #include <QJsonArray>
 #include <QJsonObject>
 
@@ -18,9 +19,9 @@ NodeSaveInfo::NodeSaveInfo()
     , mSize(QSizeF{0, 0})
     , mScale(1.0)
     , mProperties({})
-    , mTransitions({})
-    , mFlows({})
     , mChildren({})
+    , mFlows({})
+    , mTransitions({})
 {
 }
 
@@ -61,11 +62,7 @@ QPixmap NodeSaveInfo::getPixmap() const
 
 QVector<std::shared_ptr<IProperty>> NodeSaveInfo::getfields() const
 {
-  QVector<std::shared_ptr<IProperty>> args;
-  for (auto arg : fields)
-    args.emplace_back(std::static_pointer_cast<IProperty>(arg));
-
-  return args;
+  return mFields;
 }
 
 QMap<QString, QVariant> NodeSaveInfo::getproperties() const
@@ -123,6 +120,14 @@ void NodeSaveInfo::setScale(qreal arg)
   mScale = arg;
 }
 
+QVariant NodeSaveInfo::getProperty(const QString& key) const
+{
+  if (mProperties.find(key) == mProperties.end())
+    return QVariant();
+
+  return mProperties[key];
+}
+
 void NodeSaveInfo::addProperty(const QString& key, const QVariant& value)
 {
   mProperties[key] = value;
@@ -133,12 +138,48 @@ void NodeSaveInfo::removeProperty(const QString& key)
   mProperties.remove(key);
 }
 
-QVariant NodeSaveInfo::getProperty(const QString& key)
+PropertiesConfig NodeSaveInfo::getField(const QString& key) const
 {
-  if (mProperties.find(key) == mProperties.end())
-    return QVariant();
+  for (const auto& field : getfields())
+  {
+    if (field->getid() == key)
+      return *std::dynamic_pointer_cast<PropertiesConfig>(field);
+  }
 
-  return mProperties[key];
+  return PropertiesConfig();
+}
+
+void NodeSaveInfo::setField(const QString& key, std::shared_ptr<IProperty> property)
+{
+  // Check if key exists
+  for (auto& field : getfields())
+  {
+    if (field->getid() != key)
+      continue;
+
+    field = property;
+    return;
+  }
+
+  // If it doesn't exist, add it
+  addField(property);
+}
+
+void NodeSaveInfo::addField(std::shared_ptr<IProperty> property)
+{
+  mFields.push_back(property);
+}
+
+void NodeSaveInfo::removeField(const QString& key)
+{
+  for (auto iter = mFields.begin(); iter < mFields.end(); ++iter)
+  {
+    if ((*iter)->getid() != key)
+      continue;
+
+    mFields.erase(iter);
+    return;
+  }
 }
 
 void NodeSaveInfo::addTransition(std::shared_ptr<ITransition> transition)
@@ -196,8 +237,8 @@ QJsonObject NodeSaveInfo::toJson() const
   data[ConfigKeys::POSITION] = JSON::fromPointF(getposition());
 
   QJsonArray fieldArray;
-  for (const auto& field : fields)
-    fieldArray.append(field->toJson());
+  for (const auto& field : getfields())
+    fieldArray.append(std::dynamic_pointer_cast<PropertiesConfig>(field)->toJson());
 
   QJsonArray transitionArray;
   for (const auto& transition : gettransitions())
@@ -248,7 +289,7 @@ NodeSaveInfo NodeSaveInfo::fromJson(const QJsonObject& data)
   if (data.contains(ConfigKeys::FIELDS))
   {
     for (const auto& node : data[ConfigKeys::FIELDS].toArray())
-      info.fields.append(std::make_shared<PropertiesConfig>(PropertiesConfig::fromJson(node.toObject())));
+      info.addField(std::make_shared<PropertiesConfig>(PropertiesConfig::fromJson(node.toObject())));
   }
 
   if (data.contains(ConfigKeys::TRANSITIONS))
@@ -285,66 +326,132 @@ NodeSaveInfo NodeSaveInfo::fromJson(const QJsonObject& data)
 // Stream serialization
 QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<NodeSaveInfo>>& nodes)
 {
-  // out << static_cast<qint32>(nodes.size());
-  // for (const auto& node : nodes)
-  //   out << *node;
+  out << static_cast<qint32>(nodes.size());
+  for (const auto& node : nodes)
+    out << *node;
 
   return out;
 }
 
 QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<NodeSaveInfo>>& nodes)
 {
-  // qint32 size;
-  // in >> size;
+  qint32 size;
+  in >> size;
 
-  // nodes.resize(size);
-  // for (int i = 0; i < size; ++i)
-  //   in >> *nodes[i];
+  nodes.resize(size);
+  for (int i = 0; i < size; ++i)
+    in >> *nodes[i];
+
+  return in;
+}
+
+QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<INode>>& nodes)
+{
+  out << static_cast<qint32>(nodes.size());
+  for (const auto& node : nodes)
+    out << *std::dynamic_pointer_cast<NodeSaveInfo>(node);
+
+  return out;
+}
+
+QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<INode>>& nodes)
+{
+  qint32 size;
+  in >> size;
+
+  nodes.resize(size);
+  for (int i = 0; i < size; ++i)
+  {
+    nodes[i] = std::make_shared<NodeSaveInfo>();
+    in >> *std::dynamic_pointer_cast<NodeSaveInfo>(nodes[i]);
+  }
 
   return in;
 }
 
 QDataStream& operator<<(QDataStream& out, const NodeSaveInfo& info)
 {
-  // out << info.id;
-  // out << info.size;
-  // out << info.scale;
-  // out << info.nodeId;
-  // out << info.fields;
-  // out << info.position;
-  // out << info.properties;
-  // out << info.parentId;
-  // out << info.transitions;
-  // out << info.children;
-  // out << info.flows;
+  out << info.getid();
+  out << info.getnodeId();
+  out << info.getparentId();
 
-  // QByteArray pixmapData;
-  // QBuffer buffer(&pixmapData);
-  // buffer.open(QIODevice::WriteOnly);
-  // info.pixmap.save(&buffer, "PNG");
+  out << info.getposition();
+  out << info.getSize();
+  out << info.getScale();
 
-  // out << pixmapData;
+  out << info.getproperties();
+  out << info.getchildren();
+  out << info.getflows();
+  out << info.gettransitions();
+  out << info.getfields();
+
+  QByteArray pixmapData;
+  QBuffer buffer(&pixmapData);
+  buffer.open(QIODevice::WriteOnly);
+  info.getPixmap().save(&buffer, "PNG");
+
+  out << pixmapData;
 
   return out;
 }
 
 QDataStream& operator>>(QDataStream& in, NodeSaveInfo& info)
 {
-  // in >> info.id;
-  // in >> info.size;
-  // in >> info.scale;
-  // in >> info.nodeId;
-  // in >> info.fields;
-  // in >> info.position;
-  // in >> info.properties;
-  // in >> info.parentId;
-  // in >> info.transitions;
-  // in >> info.children;
-  // in >> info.flows;
+  QString id;
+  in >> id;
+  info.setId(id);
 
-  // QByteArray pixmapData;
-  // in >> pixmapData;
-  // info.pixmap.loadFromData(pixmapData, "PNG");
+  QString nodeId;
+  in >> nodeId;
+  info.setNodeId(nodeId);
+
+  QString parentId;
+  in >> parentId;
+  info.setParentId(parentId);
+
+  QPointF position;
+  in >> position;
+  info.setPosition(position);
+
+  QSizeF size;
+  in >> size;
+  info.setSize(size);
+
+  qreal scale;
+  in >> scale;
+  info.setScale(scale);
+
+  QMap<QString, QVariant> properties;
+  in >> properties;
+  for (auto iter = properties.keyValueBegin(); iter != properties.keyValueEnd(); ++iter)
+    info.addProperty(iter->first, iter->second);
+
+  QVector<std::shared_ptr<NodeSaveInfo>> children;
+  in >> children;
+  for (const auto& child : children)
+    info.addChild(std::dynamic_pointer_cast<INode>(child));
+
+  QVector<std::shared_ptr<FlowSaveInfo>> flows;
+  in >> flows;
+  for (const auto& flow : flows)
+    info.addFlow(std::dynamic_pointer_cast<IFlow>(flow));
+
+  QVector<std::shared_ptr<TransitionSaveInfo>> transitions;
+  in >> transitions;
+  for (const auto& transition : transitions)
+    info.addTransition(std::dynamic_pointer_cast<ITransition>(transition));
+
+  QVector<std::shared_ptr<PropertiesConfig>> fields;
+  in >> fields;
+  for (const auto& field : fields)
+    info.addField(std::dynamic_pointer_cast<IProperty>(field));
+
+  QPixmap pixmap;
+  QByteArray pixmapData;
+  in >> pixmapData;
+
+  pixmap.loadFromData(pixmapData, "PNG");
+  info.setPixmap(pixmap);
 
   return in;
 }

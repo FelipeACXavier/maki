@@ -182,49 +182,95 @@ FlowSaveInfo FlowSaveInfo::fromJson(const QJsonObject& data)
 // Stream serialization
 QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<FlowSaveInfo>>& flows)
 {
-  // out << static_cast<qint32>(flows.size());
-  // for (const auto& flow : flows)
-  //   out << *flow;
+  out << static_cast<qint32>(flows.size());
+  for (const auto& flow : flows)
+    out << *flow;
 
   return out;
 }
 
 QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<FlowSaveInfo>>& flows)
 {
-  // qint32 size;
-  // in >> size;
+  qint32 size;
+  in >> size;
 
-  // flows.resize(size);
-  // for (int i = 0; i < size; ++i)
-  //   in >> *flows[i];
+  flows.resize(size);
+  for (int i = 0; i < size; ++i)
+    in >> *flows[i];
+
+  return in;
+}
+
+QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<IFlow>>& flows)
+{
+  out << static_cast<qint32>(flows.size());
+  for (const auto& flow : flows)
+    out << *std::dynamic_pointer_cast<FlowSaveInfo>(flow);
+
+  return out;
+}
+
+QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<IFlow>>& flows)
+{
+  qint32 size;
+  in >> size;
+
+  flows.resize(size);
+  for (int i = 0; i < size; ++i)
+  {
+    flows[i] = std::make_shared<FlowSaveInfo>();
+    in >> *std::dynamic_pointer_cast<FlowSaveInfo>(flows[i]);
+  }
 
   return in;
 }
 
 QDataStream& operator<<(QDataStream& out, const FlowSaveInfo& info)
 {
-  // out << info.id;
-  // out << info.name;
-  // out << info.nodes;
-  // out << info.modifiable;
-  // out << info.type;
-  // out << info.returnType;
-  // out << info.arguments;
-  // out << info.owner;
+  out << info.getid();
+  out << info.getname();
+  out << info.getnodes();
+  out << info.getmodifiable();
+  out << info.gettype();
+  out << info.getreturnType();
+  out << info.getowner();
+
+  out << info.getarguments();
 
   return out;
 }
 
 QDataStream& operator>>(QDataStream& in, FlowSaveInfo& info)
 {
-  // in >> info.id;
-  // in >> info.name;
-  // in >> info.nodes;
-  // in >> info.modifiable;
-  // in >> info.type;
-  // in >> info.returnType;
-  // in >> info.arguments;
-  // in >> info.owner;
+  QString id;
+  in >> id;
+  info.setId(id);
+
+  QString name;
+  in >> name;
+  info.setName(name);
+
+  QVector<std::shared_ptr<INode>> nodes;
+  in >> nodes;
+
+  bool modifiable;
+  in >> modifiable;
+  info.setModifiable(modifiable);
+
+  Types::ConnectorType type;
+  in >> type;
+  info.setType(type);
+
+  Types::PropertyTypes returnType;
+  in >> returnType;
+  info.setReturnType(returnType);
+
+  QString owner;
+  in >> owner;
+  info.setOwner(owner);
+
+  QVector<std::shared_ptr<IProperty>> arguments;
+  in >> arguments;
 
   return in;
 }

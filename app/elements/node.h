@@ -59,6 +59,12 @@ public:
   void removeTransition(TransitionItem* transition);
   QPointF edgePointToward(const QPointF& targetScenePos) const;
 
+  QVector<std::shared_ptr<IProperty>> fields() const;
+  PropertiesConfig getField(const QString& key) const;
+  VoidResult setField(const QString& key, const QJsonObject& property);
+  VoidResult setField(const QString& key, std::shared_ptr<PropertiesConfig> property);
+  void removeField(const QString& key);
+
   void setEvent(int index, const FlowConfig& event);
   QVector<std::shared_ptr<IFlow>> events() const;
 

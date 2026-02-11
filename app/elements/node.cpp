@@ -151,6 +151,11 @@ QMap<QString, QVariant> NodeItem::properties() const
   return mStorage->getproperties();
 }
 
+QVector<std::shared_ptr<IProperty>> NodeItem::fields() const
+{
+  return mStorage->getfields();
+}
+
 QVector<std::shared_ptr<IFlow>> NodeItem::events() const
 {
   return mStorage->getflows();
@@ -204,6 +209,42 @@ void NodeItem::setEvent(int index, const FlowConfig& event)
   //   mStorage->events[index] = event;
   // else
   //   mStorage->events.push_back(event);
+}
+
+VoidResult NodeItem::setField(const QString& key, const QJsonObject& property)
+{
+  if (!mStorage)
+    return VoidResult::Failed("Storage is not set");
+
+  mStorage->setField(key, std::dynamic_pointer_cast<IProperty>(std::make_shared<PropertiesConfig>(property)));
+
+  return VoidResult();
+}
+
+VoidResult NodeItem::setField(const QString& key, std::shared_ptr<PropertiesConfig> property)
+{
+  if (!mStorage)
+    return VoidResult::Failed("Storage is not set");
+
+  mStorage->setField(key, std::dynamic_pointer_cast<IProperty>(property));
+
+  return VoidResult();
+}
+
+PropertiesConfig NodeItem::getField(const QString& key) const
+{
+  if (!mStorage)
+    return PropertiesConfig();
+
+  return mStorage->getField(key);
+}
+
+void NodeItem::removeField(const QString& key)
+{
+  if (!mStorage)
+    return;
+
+  mStorage->removeField(key);
 }
 
 QVector<NodeItem*> NodeItem::children() const

@@ -88,14 +88,10 @@ Types::PropertyTypes Types::StringToPropertyTypes(const QString& type)
 // Control type
 Types::ControlTypes Types::StringToControlTypes(const QString& type)
 {
-  if (type == "add field")
-    return Types::ControlTypes::ADD_FIELD;
-  else if (type == "add control")
-    return Types::ControlTypes::ADD_CONTROL;
-  else if (type == "remove control")
-    return Types::ControlTypes::REMOVE_CONTROL;
-  else if (type == "add event")
+  if (type == "add event")
     return Types::ControlTypes::ADD_EVENT;
+  else if (type == "add field")
+    return Types::ControlTypes::ADD_FIELD;
   else if (type == "add state")
     return Types::ControlTypes::ADD_STATE;
   else
@@ -108,10 +104,6 @@ QString Types::ControlTypesToString(Types::ControlTypes type)
   {
     case Types::ControlTypes::ADD_FIELD:
       return "add field";
-    case Types::ControlTypes::ADD_CONTROL:
-      return "add control";
-    case Types::ControlTypes::REMOVE_CONTROL:
-      return "remove control";
     case Types::ControlTypes::ADD_EVENT:
       return "add event";
     case Types::ControlTypes::ADD_STATE:

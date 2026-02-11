@@ -70,10 +70,10 @@ QString PropertyTypesToString(PropertyTypes type);
 enum class ControlTypes
 {
   UNKNOWN = 0,
+  ADD_EVENT,
   ADD_FIELD,
   ADD_CONTROL,
   REMOVE_CONTROL,
-  ADD_EVENT,
   ADD_STATE
 };
 

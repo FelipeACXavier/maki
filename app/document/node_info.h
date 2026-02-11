@@ -37,9 +37,14 @@ public:
   void setSize(const QSizeF& arg);
   void setScale(qreal arg);
 
-  QVariant getProperty(const QString& key);
+  QVariant getProperty(const QString& key) const;
   void addProperty(const QString& key, const QVariant& value);
   void removeProperty(const QString& key);
+
+  PropertiesConfig getField(const QString& key) const;
+  void setField(const QString& key, std::shared_ptr<IProperty> property);
+  void addField(std::shared_ptr<IProperty> property);
+  void removeField(const QString& key);
 
   void addTransition(std::shared_ptr<ITransition> transition);
   void removeTransition(std::shared_ptr<ITransition> transition);
@@ -62,18 +67,21 @@ private:
   QString mId;
   QString mNodeId;
   QString mParentId;
+
   QPointF mPosition;
-  QPixmap mPixmap;
   QSizeF mSize;
   qreal mScale;
+
+  QPixmap mPixmap;
+
   QMap<QString, QVariant> mProperties;
-  QVector<std::shared_ptr<ITransition>> mTransitions;
-  QVector<std::shared_ptr<IFlow>> mFlows;
-
   QVector<std::shared_ptr<INode>> mChildren;
-
-  QVector<std::shared_ptr<PropertiesConfig>> fields = {};
+  QVector<std::shared_ptr<IFlow>> mFlows;
+  QVector<std::shared_ptr<ITransition>> mTransitions;
+  QVector<std::shared_ptr<IProperty>> mFields;
 };
 
+QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<INode>>& nodes);
+QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<INode>>& nodes);
 QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<NodeSaveInfo>>& nodes);
 QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<NodeSaveInfo>>& nodes);

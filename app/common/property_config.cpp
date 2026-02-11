@@ -197,3 +197,48 @@ QDataStream& operator>>(QDataStream& in, PropertiesConfig& config)
 
   return in;
 }
+
+QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<PropertiesConfig>>& properties)
+{
+  out << static_cast<qint32>(properties.size());
+  for (const auto& prop : properties)
+    out << *prop;
+
+  return out;
+}
+
+QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<PropertiesConfig>>& properties)
+{
+  qint32 size;
+  in >> size;
+
+  properties.resize(size);
+  for (int i = 0; i < size; ++i)
+    in >> *properties[i];
+
+  return in;
+}
+
+QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<IProperty>>& properties)
+{
+  out << static_cast<qint32>(properties.size());
+  for (const auto& prop : properties)
+    out << *std::dynamic_pointer_cast<PropertiesConfig>(prop);
+
+  return out;
+}
+
+QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<IProperty>>& properties)
+{
+  qint32 size;
+  in >> size;
+
+  properties.resize(size);
+  for (int i = 0; i < size; ++i)
+  {
+    properties[i] = std::make_shared<PropertiesConfig>();
+    in >> *std::dynamic_pointer_cast<PropertiesConfig>(properties[i]);
+  }
+
+  return in;
+}

@@ -1,6 +1,5 @@
 #include "save_info.h"
 
-#include <QBuffer>
 #include <QJsonArray>
 
 #include "config.h"
@@ -82,13 +81,13 @@ std::shared_ptr<NodeSaveInfo> SaveInfo::findParentOfConstruct(const QString& nod
 
 void SaveInfo::findStatesOfConstruct(QVector<std::shared_ptr<NodeSaveInfo>>& toReturn, QVector<std::shared_ptr<INode>> nodes) const
 {
-  for (const auto& node : nodes)
-  {
-    if (!node->getfields().isEmpty())
-      toReturn.push_back(std::static_pointer_cast<NodeSaveInfo>(node));
+  // for (const auto& node : nodes)
+  // {
+  //   if (!node->getfields().isEmpty())
+  //     toReturn.push_back(std::static_pointer_cast<NodeSaveInfo>(node));
 
-    findStatesOfConstruct(toReturn, node->getchildren());
-  }
+  //   findStatesOfConstruct(toReturn, node->getchildren());
+  // }
 }
 
 QVector<std::shared_ptr<NodeSaveInfo>> SaveInfo::getPossibleStates(const QString& nodeId) const
@@ -214,18 +213,16 @@ SaveInfo SaveInfo::fromJson(const QJsonObject& data)
 // Stream serialization
 QDataStream& operator<<(QDataStream& out, const SaveInfo& info)
 {
-  // out << info.canvasInfo;
-  // out << info.structuralNodes;
-  // out << info.behaviouralNodes;
+  out << info.mCanvasInfo;
+  out << info.mStructuralNodes;
 
   return out;
 }
 
 QDataStream& operator>>(QDataStream& in, SaveInfo& info)
 {
-  // in >> info.canvasInfo;
-  // in >> info.structuralNodes;
-  // in >> info.behaviouralNodes;
+  in >> info.mCanvasInfo;
+  in >> info.mStructuralNodes;
 
   return in;
 }

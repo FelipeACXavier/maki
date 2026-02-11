@@ -32,12 +32,12 @@ FieldDialog::FieldDialog(const QString& title, QWidget* parent)
   resize(500, 400);
 }
 
-PropertiesConfig FieldDialog::getInfo() const
+std::shared_ptr<PropertiesConfig> FieldDialog::getInfo() const
 {
   return mStorage;
 }
 
-void FieldDialog::setup(const PropertiesConfig& config)
+void FieldDialog::setup(std::shared_ptr<PropertiesConfig> config)
 {
   mStorage = config;
 
@@ -77,10 +77,10 @@ void FieldDialog::createNameInput(QWidget* parent)
   layout()->addWidget(nameLabel);
 
   QLineEdit* name = new QLineEdit(parent);
-  name->setText(mStorage.id);
+  name->setText(mStorage->getid());
   name->setFocusPolicy(Qt::ClickFocus);
 
-  connect(name, &QLineEdit::editingFinished, this, [=]() { mStorage.id = name->text(); });
+  connect(name, &QLineEdit::editingFinished, this, [=]() { mStorage->id = name->text(); });
   layout()->addWidget(name);
 }
 
@@ -96,24 +96,24 @@ void FieldDialog::createTypeInput(QWidget* parent)
   for (uint16_t i = (uint16_t)Types::PropertyTypes::UNKNOWN + 1; i < (uint16_t)Types::PropertyTypes::END; ++i)
     returnType->addItem(Types::PropertyTypesToString((Types::PropertyTypes)i));
 
-  if (mStorage.type == Types::PropertyTypes::UNKNOWN)
+  if (mStorage->gettype() == Types::PropertyTypes::UNKNOWN)
   {
     returnType->setCurrentIndex(0);
-    mStorage.type = Types::StringToPropertyTypes(returnType->currentText());
+    mStorage->type = Types::StringToPropertyTypes(returnType->currentText());
   }
   else
   {
-    returnType->setCurrentText(Types::PropertyTypesToString(mStorage.type));
+    returnType->setCurrentText(Types::PropertyTypesToString(mStorage->type));
   }
 
   layout()->addWidget(returnType);
 
-  if (mStorage.type == Types::PropertyTypes::ENUM)
+  if (mStorage->type == Types::PropertyTypes::ENUM)
     addEnumField(parent);
 
   connect(returnType, &QComboBox::currentTextChanged, this, [=](const QString& text) {
-    mStorage.type = Types::StringToPropertyTypes(text);
-    if (mStorage.type == Types::PropertyTypes::ENUM)
+    mStorage->type = Types::StringToPropertyTypes(text);
+    if (mStorage->type == Types::PropertyTypes::ENUM)
       addEnumField(parent);
     else
       removeEnumField();
@@ -127,12 +127,12 @@ void FieldDialog::createArgumentInput(QWidget* parent)
   layout()->addWidget(nameLabel);
 
   QLineEdit* name = new QLineEdit(parent);
-  name->setText(mStorage.defaultValue.toString());
+  name->setText(mStorage->defaultValue.toString());
   name->setFocusPolicy(Qt::ClickFocus);
 
   connect(name, &QLineEdit::editingFinished, this, [=]() {
     LOG_DEBUG("Setting default to %s", qPrintable(name->text()));
-    mStorage.defaultValue = name->text();
+    mStorage->defaultValue = name->text();
   });
   layout()->addWidget(name);
 }
@@ -216,7 +216,7 @@ void FieldDialog::addEnumField(QWidget* parent)
 
   PropertiesConfig foundName;
   PropertiesConfig foundValues;
-  for (const auto& opt : mStorage.options)
+  for (const auto& opt : mStorage->options)
   {
     if (opt->id == "name")
       foundName = *opt;
@@ -229,7 +229,7 @@ void FieldDialog::addEnumField(QWidget* parent)
     PropertiesConfig enumName;
     enumName.id = "name";
     enumName.type = Types::PropertyTypes::STRING;
-    mStorage.options.push_back(std::make_shared<PropertiesConfig>(enumName));
+    mStorage->options.push_back(std::make_shared<PropertiesConfig>(enumName));
   }
   else
   {
@@ -241,7 +241,7 @@ void FieldDialog::addEnumField(QWidget* parent)
     PropertiesConfig enumValues;
     enumValues.id = "values";
     enumValues.type = Types::PropertyTypes::LIST;
-    mStorage.options.push_back(std::make_shared<PropertiesConfig>(enumValues));
+    mStorage->options.push_back(std::make_shared<PropertiesConfig>(enumValues));
   }
   else
   {
@@ -250,7 +250,7 @@ void FieldDialog::addEnumField(QWidget* parent)
   }
 
   connect(name, &QLineEdit::editingFinished, this, [=]() {
-    for (auto& opt : mStorage.options)
+    for (auto& opt : mStorage->options)
     {
       if (opt->id != "name")
         continue;
@@ -263,7 +263,7 @@ void FieldDialog::addEnumField(QWidget* parent)
   connect(input, &QLineEdit::returnPressed, this, [=]() {
     if (!input->text().isEmpty())
     {
-      for (auto& opt : mStorage.options)
+      for (auto& opt : mStorage->options)
       {
         if (opt->id == "values")
         {
