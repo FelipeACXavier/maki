@@ -78,9 +78,9 @@ void DraggableItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
   paintLabel(&painter, pixmap.rect());
 
   NodeSaveInfo info;
-  info.nodeId = nodeId();
-  info.pixmap = nodePixmap();
-  info.size = QSize(config()->body.width, config()->body.height);
+  info.setNodeId(nodeId());
+  info.setPixmap(nodePixmap());
+  info.setSize(QSize(config()->body.width, config()->body.height));
 
   QByteArray data;
   QDataStream stream(&data, QIODevice::WriteOnly);

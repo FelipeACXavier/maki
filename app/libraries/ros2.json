@@ -43,10 +43,6 @@
             {
               "id": "Add event",
               "type": "add event"
-            },
-            {
-              "id": "Add state",
-              "type": "add state"
             }
           ],
           "help": {
@@ -77,12 +73,7 @@
               "default": "#2980B9"
             }
           ],
-          "controls": [
-            {
-              "id": "Add state",
-              "type": "add state"
-            }
-          ],
+          "controls": [],
           "help": {
             "message": "Used to define a ROS2 message to be used in a ROS2 service"
           }

@@ -13,8 +13,8 @@
 
 #include "app_configs.h"
 #include "common/theme.h"
-#include "elements/save_info.h"
 #include "logging.h"
+#include "save_info.h"
 #include "style_helpers.h"
 
 EventDialog::EventDialog(const QString& title, QWidget* parent)

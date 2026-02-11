@@ -21,34 +21,34 @@
 #include "theme.h"
 
 NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
-    : NodeBase((!nodeId.isEmpty() && !nodeId.isNull()) ? nodeId : QUuid::createUuid().toString(), info->nodeId, nodeConfig, parent)
+    : NodeBase((!nodeId.isEmpty() && !nodeId.isNull()) ? nodeId : QUuid::createUuid().toString(), info->getnodeId(), nodeConfig, parent)
     , mStorage(info)
     , mParentNode(nullptr)
     , mChildrenNodes({})
-    , mBaseScale(config()->libraryType == Types::LibraryTypes::STRUCTURAL ? mStorage->scale : 1.0)
-    , mSize(mStorage->size)
+    , mBaseScale(config()->libraryType == Types::LibraryTypes::STRUCTURAL ? mStorage->getScale() : 1.0)
+    , mSize(mStorage->getSize())
 {
   setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
   setCacheMode(DeviceCoordinateCache);
   setAcceptDrops(config()->libraryType == Types::LibraryTypes::STRUCTURAL);
   setAcceptHoverEvents(config()->libraryType == Types::LibraryTypes::STRUCTURAL);
 
-  mStorage->id = this->id();
-  mStorage->nodeId = this->nodeId();
+  mStorage->setId(this->id());
+  mStorage->setNodeId(this->nodeId());
 
   // Children are created by the canvas, so we must make sure that there is no trailing children information
-  mStorage->children = {};
+  mStorage->clearChildren();
 
   for (const auto& property : config()->properties)
   {
-    if (!mStorage->properties.contains(property.id))
-      mStorage->properties[property.id] = property.defaultValue;
+    if (!mStorage->getproperties().contains(property.id))
+      mStorage->addProperty(property.id, property.defaultValue);
   }
 
   for (const auto& event : config()->events)
   {
     bool found = false;
-    for (const auto& flow : mStorage->flows)
+    for (const auto& flow : mStorage->getflows())
     {
       if (flow->getname() != event.name)
         continue;
@@ -60,14 +60,14 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
     if (found)
       continue;
 
-    mStorage->flows.push_back(std::make_shared<FlowSaveInfo>(event));
+    mStorage->addFlow(std::make_shared<FlowSaveInfo>(event));
   }
 
   // Add icon if it exists
-  if (!mStorage->pixmap.isNull())
+  if (!mStorage->getPixmap().isNull())
   {
-    QSize newSize = mStorage->pixmap.size() / baseScale();
-    setPixmap(mStorage->pixmap.scaled(newSize, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    QSize newSize = mStorage->getPixmap().size() / baseScale();
+    setPixmap(mStorage->getPixmap().scaled(newSize, Qt::KeepAspectRatio, Qt::SmoothTransformation));
   }
   else
   {
@@ -112,7 +112,7 @@ QString NodeItem::nodeType() const
 
 qreal NodeItem::baseScale() const
 {
-  return mStorage->scale;
+  return mStorage->getScale();
 }
 
 VoidResult NodeItem::start()
@@ -148,17 +148,12 @@ QVector<PropertiesConfig> NodeItem::configurationProperties() const
 
 QMap<QString, QVariant> NodeItem::properties() const
 {
-  return mStorage->properties;
+  return mStorage->getproperties();
 }
 
-QVector<std::shared_ptr<PropertiesConfig>> NodeItem::fields() const
+QVector<std::shared_ptr<IFlow>> NodeItem::events() const
 {
-  return mStorage->fields;
-}
-
-QVector<std::shared_ptr<FlowSaveInfo>> NodeItem::events() const
-{
-  return mStorage->flows;
+  return mStorage->getflows();
 }
 
 QVector<ControlsConfig> NodeItem::controls() const
@@ -171,10 +166,7 @@ QVariant NodeItem::getProperty(const QString& key) const
   if (!mStorage)
     return QVariant();
 
-  if (mStorage->properties.find(key) == mStorage->properties.end())
-    return QVariant();
-
-  return mStorage->properties.value(key);
+  return mStorage->getProperty(key);
 }
 
 void NodeItem::setProperty(const QString& key, QVariant value)
@@ -183,13 +175,16 @@ void NodeItem::setProperty(const QString& key, QVariant value)
   if (!mStorage)
     return;
 
-  if (mStorage->properties.find(key) == mStorage->properties.end())
-  {
-    LOG_WARNING("Tried to update property %s but it does not exist", qPrintable(key));
-    return;
-  }
+  // if (mStorage->properties.find(key) == mStorage->properties.end())
+  // {
+  //   LOG_WARNING("Tried to update property %s but it does not exist", qPrintable(key));
+  //   return;
+  // }
 
-  mStorage->properties[key] = value;
+  // TODO(felaze): We should check for success here
+  mStorage->addProperty(key, value);
+
+  // mStorage->properties[key] = value;
 
   if (key == "name")
     setLabelName(value.toString());
@@ -198,79 +193,6 @@ void NodeItem::setProperty(const QString& key, QVariant value)
     nodeModified(this);
 
   update();
-}
-
-VoidResult NodeItem::setField(const QString& key, const QJsonObject& value)
-{
-  if (!mStorage)
-    return VoidResult::Failed("Storage is not set");
-
-  // Check if key exists
-  auto property = PropertiesConfig(value);
-  if (!property.isValid())
-    return VoidResult::Failed(property.errorMessage.toStdString());
-
-  for (auto& field : fields())
-  {
-    if (field->id != key)
-      continue;
-
-    *field = property;
-    return VoidResult();
-  }
-
-  mStorage->fields.push_back(std::make_shared<PropertiesConfig>(property));
-
-  return VoidResult();
-}
-
-VoidResult NodeItem::setField(const QString& key, const PropertiesConfig& property)
-{
-  if (!mStorage)
-    return VoidResult::Failed("Storage is not set");
-
-  // Check if key exists
-  for (auto& field : mStorage->fields)
-  {
-    if (field->id != key)
-      continue;
-
-    *field = property;
-    return VoidResult();
-  }
-
-  mStorage->fields.push_back(std::make_shared<PropertiesConfig>(property));
-
-  return VoidResult();
-}
-
-PropertiesConfig NodeItem::getField(const QString& key) const
-{
-  if (!mStorage)
-    return PropertiesConfig();
-
-  for (const auto& field : fields())
-  {
-    if (field->id == key)
-      return *field;
-  }
-
-  return PropertiesConfig();
-}
-
-void NodeItem::removeField(const QString& key)
-{
-  if (!mStorage)
-    return;
-
-  for (auto iter = mStorage->fields.begin(); iter < mStorage->fields.end(); ++iter)
-  {
-    if ((*iter)->id != key)
-      continue;
-
-    mStorage->fields.erase(iter);
-    return;
-  }
 }
 
 void NodeItem::setEvent(int index, const FlowConfig& event)
@@ -295,7 +217,7 @@ void NodeItem::addParent(NodeItem* parent)
     return;
 
   mParentNode = parent;
-  mStorage->parentId = parent->id();
+  mStorage->setParentId(parent->id());
   setZValue(parent->zValue() + 2);
 
   fitInsideParent(20);
@@ -303,15 +225,16 @@ void NodeItem::addParent(NodeItem* parent)
 
 void NodeItem::addChild(NodeItem* node, std::shared_ptr<NodeSaveInfo> info)
 {
-  if (info)
-    mStorage->children.append(info);
+  if (!info)
+    return;
 
+  mStorage->addChild(info);
   mChildrenNodes.push_back(node);
 }
 
 void NodeItem::childRemoved(NodeItem* child)
 {
-  mStorage->children.removeIf([child](std::shared_ptr<NodeSaveInfo> info) { return info->id == child->id(); });
+  mStorage->removeChild(std::make_shared<NodeSaveInfo>(child->saveInfo()));
   mChildrenNodes.removeAll(child);
 }
 
@@ -346,10 +269,10 @@ void NodeItem::applySize(const QSizeF& size)
     return;
 
   mSize = size;
-  mStorage->size = mSize;
+  mStorage->setSize(mSize);
 
   // Same scale logic as before
-  mStorage->scale = qMax(config()->body.width / mSize.width(), config()->body.height / mSize.height());
+  mStorage->setScale(qMax(config()->body.width / mSize.width(), config()->body.height / mSize.height()));
 
   qreal newFontSize = qMax(Fonts::BaseSize, mSize.width() / Fonts::BaseFactor);
 
@@ -544,7 +467,7 @@ void NodeItem::updatePosition(const QPointF& newPosition)
   mLastPosition = newPosition;
 
   updateExtrasPosition();
-  mStorage->position = pos() + boundingRect().center();
+  mStorage->setPosition(pos() + boundingRect().center());
 }
 
 void NodeItem::updateExtrasPosition()
@@ -577,7 +500,7 @@ void NodeItem::addTransition(TransitionItem* transition)
   if (transition->destination() && (id() != transition->destination()->id()))
   {
     bool found = false;
-    for (const auto& t : mStorage->transitions)
+    for (const auto& t : mStorage->gettransitions())
     {
       if (t->getid() == transition->id())
       {
@@ -587,7 +510,7 @@ void NodeItem::addTransition(TransitionItem* transition)
     }
 
     if (!found)
-      mStorage->transitions.push_back(transition->storage());
+      mStorage->addTransition(transition->storage());
 
     for (auto& t : transitions())
     {
@@ -623,9 +546,7 @@ void NodeItem::addTransition(TransitionItem* transition)
 
 void NodeItem::removeTransition(TransitionItem* transition)
 {
-  mStorage->transitions.removeIf([transition](std::shared_ptr<TransitionSaveInfo> item) {
-    return transition->id() == item->getid();
-  });
+  mStorage->removeTransition(transition->storage());
   mTransitions.removeIf([transition](TransitionItem* item) {
     return item->id() == transition->id();
   });
@@ -685,12 +606,12 @@ Flow* NodeItem::createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo
   if (info != nullptr)
   {
     // Clean up
-    for (const auto& f : mStorage->flows)
+    for (const auto& f : mStorage->getflows())
     {
       if (f->getid() != info->getid())
         continue;
 
-      flowConfig = f;
+      flowConfig = std::dynamic_pointer_cast<FlowSaveInfo>(f);
       found = true;
       break;
     }
@@ -704,7 +625,7 @@ Flow* NodeItem::createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo
   {
     // Set this as owner of the flow
     flowConfig->setOwner(id());
-    mStorage->flows.push_back(flowConfig);
+    mStorage->addFlow(flowConfig);
   }
 
   Flow* flow = new Flow(flowName, flowConfig);
@@ -729,9 +650,7 @@ Flow* NodeItem::getFlow(const QString& flowId) const
 
 void NodeItem::deleteFlow(const QString& flowId)
 {
-  mStorage->flows.removeIf([flowId](std::shared_ptr<FlowSaveInfo> item) {
-    return flowId == item->getid();
-  });
+  mStorage->removeFlow(flowId);
   mFlows.removeIf([flowId](Flow* flow) { return flow->id() == flowId; });
 }
 

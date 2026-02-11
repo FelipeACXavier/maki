@@ -28,12 +28,7 @@
               "default": "#202020"
             }
           ],
-          "controls": [
-            {
-              "id": "Add state",
-              "type": "add state"
-            }
-          ],
+          "controls": [],
           "help": {
             "message": "Used to define a GRPC service\nMessages should be available before they are used in the service definition."
           }
@@ -62,12 +57,7 @@
               "default": "#fcbf49"
             }
           ],
-          "controls": [
-            {
-              "id": "Add state",
-              "type": "add state"
-            }
-          ],
+          "controls": [],
           "help": {
             "message": "Used to define a protobuf message to be used in a GRPC service"
           }

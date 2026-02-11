@@ -14,8 +14,8 @@
 #include <QVBoxLayout>
 
 #include "app_configs.h"
-#include "elements/save_info.h"
 #include "logging.h"
+#include "save_info.h"
 #include "style_helpers.h"
 
 FieldDialog::FieldDialog(const QString& title, QWidget* parent)

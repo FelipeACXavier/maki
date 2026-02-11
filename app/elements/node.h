@@ -41,7 +41,6 @@ public:
   QString nodeType() const;
   QString behaviour() const;
   QVector<ControlsConfig> controls() const;
-  QVector<std::shared_ptr<PropertiesConfig>> fields() const;
   QMap<QString, QVariant> properties() const;
   QVector<PropertiesConfig> configurationProperties() const;
 
@@ -49,11 +48,6 @@ public:
 
   QVariant getProperty(const QString& key) const;
   void setProperty(const QString& key, QVariant value);
-
-  PropertiesConfig getField(const QString& key) const;
-  VoidResult setField(const QString& key, const QJsonObject& value);
-  VoidResult setField(const QString& key, const PropertiesConfig& property);
-  void removeField(const QString& key);
 
   void renameNode(const QString& name);
 
@@ -66,7 +60,7 @@ public:
   QPointF edgePointToward(const QPointF& targetScenePos) const;
 
   void setEvent(int index, const FlowConfig& event);
-  QVector<std::shared_ptr<FlowSaveInfo>> events() const;
+  QVector<std::shared_ptr<IFlow>> events() const;
 
   void addParent(NodeItem* node);
   void addChild(NodeItem* node, std::shared_ptr<NodeSaveInfo> info);

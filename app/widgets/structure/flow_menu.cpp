@@ -71,8 +71,8 @@ VoidResult FlowMenu::onFlowAdded(Flow* flow, NodeItem* node)
   for (const auto& component : flow->getNodes())
   {
     QTreeWidgetItem* newComponent = new QTreeWidgetItem(newFlow);
-    newComponent->setText(NAME_INDEX, component->properties["name"].toString());
-    newComponent->setData(ID_DATA, Qt::UserRole, component->id);
+    newComponent->setText(NAME_INDEX, component->getProperty("name").toString());
+    newComponent->setData(ID_DATA, Qt::UserRole, component->getid());
     newComponent->setData(TYPE_DATA, Qt::UserRole, Roles::NodeRole);
   }
 

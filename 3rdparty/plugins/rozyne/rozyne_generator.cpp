@@ -7,7 +7,6 @@
 #include <QProcess>
 #include <QTextStream>
 
-#include "elements/save_info.h"
 #include "idocument.h"
 #include "ipipeline.h"
 #include "keys.h"

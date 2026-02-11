@@ -32,10 +32,6 @@
             {
               "id": "Add event",
               "type": "add event"
-            },
-            {
-              "id": "Add state",
-              "type": "add state"
             }
           ],
           "events": [

@@ -18,10 +18,10 @@
 #include "config_table.h"
 #include "elements/flow.h"
 #include "elements/node.h"
-#include "elements/save_info.h"
 #include "elements/transition.h"
 #include "logging.h"
 #include "result.h"
+#include "save_info.h"
 #include "undo_commands/add_node.h"
 #include "undo_commands/align.h"
 #include "undo_commands/remove_node.h"
@@ -107,7 +107,7 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
 
     auto info = std::make_shared<NodeSaveInfo>();
     stream >> *info;
-    info->scale = parentView()->getScale();
+    info->setScale(parentView()->getScale());
 
     auto node = createNode(NodeCreation::Dropping, info, event->scenePos(), parentNode);
     if (node)
@@ -751,7 +751,7 @@ void Canvas::triggerNodeRemoval(const NodeItem* node)
 
 void Canvas::removeNode(const NodeSaveInfo info)
 {
-  auto node = findNodeWithId(info.id);
+  auto node = findNodeWithId(info.getid());
   if (!node)
     return;
 
@@ -821,9 +821,9 @@ void Canvas::copySelectedItems(NodeItem* clickedNode)
   if (clickedNode != nullptr)
   {
     auto info = clickedNode->saveInfo();
-    LOG_DEBUG("Selected %s (%.2f %.2f)", qPrintable(clickedNode->id()), info.position.x(), info.position.y());
+    LOG_DEBUG("Selected %s (%.2f %.2f)", qPrintable(clickedNode->id()), info.getposition().x(), info.getposition().y());
 
-    mCopiedNodes.append({info, mousePosition - info.position});
+    mCopiedNodes.append({info, mousePosition - info.getposition()});
   }
 
   for (QGraphicsItem* item : selectedItems())
@@ -841,9 +841,9 @@ void Canvas::copySelectedItems(NodeItem* clickedNode)
 
     // Save relative position
     auto info = node->saveInfo();
-    LOG_DEBUG("Selected %s (%.2f %.2f)", qPrintable(node->id()), info.position.x(), info.position.y());
+    LOG_DEBUG("Selected %s (%.2f %.2f)", qPrintable(node->id()), info.getposition().x(), info.getposition().y());
 
-    mCopiedNodes.append({info, mousePosition - info.position});
+    mCopiedNodes.append({info, mousePosition - info.getposition()});
 
     // Make sure the item is not selected after copying
     selectNode(node, false);
@@ -858,16 +858,16 @@ void Canvas::pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode
 
     QPointF newParentPosition = {0.0, 0.0};
     if (parentNode)
-      newParentPosition = parentNode->saveInfo().position;
+      newParentPosition = parentNode->saveInfo().getposition();
 
     auto node = createNode(NodeCreation::Pasting,
                            infoPtr,
-                           absolute ? mousePosition - copy.posRelativeToMouse : (newParentPosition + (copy.info.position - copy.posRelativeToMouse)),
+                           absolute ? mousePosition - copy.posRelativeToMouse : (newParentPosition + (copy.info.getposition() - copy.posRelativeToMouse)),
                            parentNode);
 
     QList<CopiedNode> children;
-    for (const auto& child : copy.info.children)
-      children.push_back({*child, copy.info.position});
+    for (const auto& child : copy.info.getchildren())
+      children.push_back({*std::dynamic_pointer_cast<NodeSaveInfo>(child), copy.info.getposition()});
 
     pasteCopiedItems(mousePosition, node, children, false);
     selectNode(node, false);
@@ -944,26 +944,28 @@ void Canvas::clearSelectedNodes()
   selectNode(nullptr, false);
 }
 
-VoidResult Canvas::loadFromSave(const QVector<std::shared_ptr<NodeSaveInfo>>& nodes, NodeItem* parent)
+VoidResult Canvas::loadFromSave(const QVector<std::shared_ptr<INode>>& nodes, NodeItem* parent)
 {
-  for (std::shared_ptr<NodeSaveInfo> nodeInfo : nodes)
+  for (std::shared_ptr<INode> inodeInfo : nodes)
   {
     // TODO(felaze): This is necessary because the save info is using shared ptr when it shouldn't...
     // I need to make a proper distinction between save and run-time store structures.
+    std::shared_ptr<NodeSaveInfo> nodeInfo = std::dynamic_pointer_cast<NodeSaveInfo>(inodeInfo);
+
     auto node = std::make_shared<NodeSaveInfo>(*nodeInfo);
 
-    LOG_DEBUG("Creating node %s with parent %s", qPrintable(node->id), qPrintable(node->parentId));
-    auto createdNode = createNode(NodeCreation::Loading, node, node->position, parent);
+    LOG_DEBUG("Creating node %s with parent %s", qPrintable(node->getid()), qPrintable(node->getparentId()));
+    auto createdNode = createNode(NodeCreation::Loading, node, node->getposition(), parent);
 
-    auto ret = loadFromSave(nodeInfo->children, createdNode);
+    auto ret = loadFromSave(nodeInfo->getchildren(), createdNode);
     if (!ret.IsSuccess())
     {
       LOG_ERROR("%s", ret.ErrorMessage().c_str());
       return VoidResult::Failed(ret.ErrorMessage());
     }
 
-    for (const auto& flow : node->flows)
-      (void)createdNode->createFlow(flow->getname(), flow);
+    for (const auto& flow : node->getflows())
+      (void)createdNode->createFlow(flow->getname(), std::dynamic_pointer_cast<FlowSaveInfo>(flow));
 
     selectNode(createdNode, false);
   }
@@ -983,11 +985,7 @@ VoidResult Canvas::loadFromSave(const SaveInfo& info)
   parentView()->setScale(canvasInfo.scale());
   parentView()->centerOn(canvasInfo.center());
 
-  QVector<std::shared_ptr<NodeSaveInfo>> out;
-  for (std::shared_ptr<INode> node : info.getnodes())
-    out.push_back(std::dynamic_pointer_cast<NodeSaveInfo>(node));
-
-  return loadFromSave(out, nullptr);
+  return loadFromSave(info.getnodes(), nullptr);
 }
 
 CanvasView* Canvas::parentView() const
@@ -1024,23 +1022,23 @@ void Canvas::removeTransition(const TransitionSaveInfo& info)
 // TODO: Properly integrate the creation with the undo command
 void Canvas::createNode(const NodeSaveInfo info)
 {
-  auto exists = findNodeWithId(info.id);
+  auto exists = findNodeWithId(info.getid());
   if (exists)
     return;
 
-  auto parent = findNodeWithId(info.parentId);
+  auto parent = findNodeWithId(info.getparentId());
 
   auto infoPtr = std::make_shared<NodeSaveInfo>(info);
-  (void)createNode(NodeCreation::Populating, infoPtr, info.position, parent);
+  (void)createNode(NodeCreation::Populating, infoPtr, info.getposition(), parent);
 
   // We also need to create the children of the node
-  for (const auto& child : info.children)
-    (void)createNode(*child);
+  for (const auto& child : info.getchildren())
+    (void)createNode(*std::dynamic_pointer_cast<NodeSaveInfo>(child));
 }
 
 NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo> info, const QPointF& position, NodeItem* parent)
 {
-  auto config = mConfigTable->get(info->nodeId);
+  auto config = mConfigTable->get(info->getnodeId());
   if (config == nullptr)
   {
     LOG_WARNING("Added node with no configuration");
@@ -1054,7 +1052,7 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
   }
 
   // If no parent is defined, we must create a "base node" in the canvas
-  auto nodeId = creation == NodeCreation::Pasting ? "" : info->id;
+  auto nodeId = creation == NodeCreation::Pasting ? "" : info->getid();
   NodeItem* node = new NodeItem(nodeId, info, position, config);
 
   if (parent == nullptr)
@@ -1169,23 +1167,24 @@ void Canvas::populate(Flow* flow)
   // First create all the nodes
   for (std::shared_ptr<NodeSaveInfo> node : flow->getNodes())
   {
-    LOG_DEBUG("Creating behavioral node %s with parent %s", qPrintable(node->id), qPrintable(node->parentId));
-    auto created = createNode(NodeCreation::Populating, node, node->position, findNodeWithId(node->parentId));
+    LOG_DEBUG("Creating behavioral node %s with parent %s", qPrintable(node->getid()), qPrintable(node->getparentId()));
+    auto created = createNode(NodeCreation::Populating, node, node->getposition(), findNodeWithId(node->getparentId()));
     LOG_DEBUG("Created node %s", qPrintable(created->id()));
   }
 
   // Then create the transitions between the nodes
   for (std::shared_ptr<NodeSaveInfo> node : flow->getNodes())
   {
-    auto srcConn = findNodeWithId(node->id);
+    auto srcConn = findNodeWithId(node->getid());
     if (!srcConn)
     {
       LOG_WARNING("Could not find source node");
       continue;
     }
 
-    for (const auto& transition : node->transitions)
+    for (std::shared_ptr<ITransition> itransition : node->gettransitions())
     {
+      auto transition = std::dynamic_pointer_cast<TransitionSaveInfo>(itransition);
       auto dstConn = findNodeWithId(transition->getdstId());
       if (!dstConn)
       {

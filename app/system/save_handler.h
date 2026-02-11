@@ -3,8 +3,8 @@
 #include <QString>
 #include <QWidget>
 
-#include "elements/save_info.h"
 #include "result.h"
+#include "save_info.h"
 
 class QGraphicsItem;
 class Canvas;

@@ -2,7 +2,7 @@
 
 #include <QUndoCommand>
 
-#include "elements/save_info.h"
+#include "save_info.h"
 #include "types.h"
 
 class Canvas;

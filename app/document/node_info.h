@@ -1,0 +1,79 @@
+#pragma once
+
+#include <QMap>
+#include <QPixmap>
+#include <QPointF>
+#include <QSizeF>
+#include <QString>
+#include <QVector>
+
+#include "config.h"
+#include "idocument.h"
+
+class NodeSaveInfo : public INode
+{
+public:
+  NodeSaveInfo();
+
+  QString getid() const override;
+  QString getnodeId() const override;
+  QPointF getposition() const override;
+  QVector<std::shared_ptr<IProperty>> getfields() const override;
+  QMap<QString, QVariant> getproperties() const override;
+  QVector<std::shared_ptr<ITransition>> gettransitions() const override;
+  QVector<std::shared_ptr<IFlow>> getflows() const override;
+  QString getparentId() const override;
+  QVector<std::shared_ptr<INode>> getchildren() const override;
+
+  qreal getScale() const;
+  QSizeF getSize() const;
+  QPixmap getPixmap() const;
+
+  void setId(const QString& arg);
+  void setNodeId(const QString& arg);
+  void setParentId(const QString& arg);
+  void setPosition(const QPointF& arg);
+  void setPixmap(const QPixmap& arg);
+  void setSize(const QSizeF& arg);
+  void setScale(qreal arg);
+
+  QVariant getProperty(const QString& key);
+  void addProperty(const QString& key, const QVariant& value);
+  void removeProperty(const QString& key);
+
+  void addTransition(std::shared_ptr<ITransition> transition);
+  void removeTransition(std::shared_ptr<ITransition> transition);
+
+  void addFlow(std::shared_ptr<IFlow> flow);
+  void removeFlow(std::shared_ptr<IFlow> flow);
+  void removeFlow(const QString& flowId);
+
+  void addChild(std::shared_ptr<INode> child);
+  void removeChild(std::shared_ptr<INode> child);
+  void clearChildren();
+
+  QJsonObject toJson() const;
+  static NodeSaveInfo fromJson(const QJsonObject& data);
+
+  friend QDataStream& operator<<(QDataStream& out, const NodeSaveInfo& info);
+  friend QDataStream& operator>>(QDataStream& in, NodeSaveInfo& info);
+
+private:
+  QString mId;
+  QString mNodeId;
+  QString mParentId;
+  QPointF mPosition;
+  QPixmap mPixmap;
+  QSizeF mSize;
+  qreal mScale;
+  QMap<QString, QVariant> mProperties;
+  QVector<std::shared_ptr<ITransition>> mTransitions;
+  QVector<std::shared_ptr<IFlow>> mFlows;
+
+  QVector<std::shared_ptr<INode>> mChildren;
+
+  QVector<std::shared_ptr<PropertiesConfig>> fields = {};
+};
+
+QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<NodeSaveInfo>>& nodes);
+QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<NodeSaveInfo>>& nodes);

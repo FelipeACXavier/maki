@@ -6,8 +6,8 @@
 
 #include "../menu_base.h"
 #include "config.h"
-#include "elements/save_info.h"
 #include "result.h"
+#include "save_info.h"
 
 class Flow;
 class NodeItem;
@@ -66,16 +66,16 @@ private:
 
   // Control related actions
   VoidResult loadControls(NodeItem* node);
-  VoidResult loadControlAddField(const ControlsConfig& control, NodeItem* node, QWidget* parent, QHBoxLayout* controlLayout);
   VoidResult loadControlAddEvent(const ControlsConfig& control, NodeItem* node, QWidget* parent, QHBoxLayout* controlLayout);
-  VoidResult loadControlAddState(const ControlsConfig& control, NodeItem* node, QWidget* parent, QHBoxLayout* controlLayout);
+  // VoidResult loadControlAddField(const ControlsConfig& control, NodeItem* node, QWidget* parent, QHBoxLayout* controlLayout);
+  // VoidResult loadControlAddState(const ControlsConfig& control, NodeItem* node, QWidget* parent, QHBoxLayout* controlLayout);
 
-  void showContextMenu(QTableView* tableView, NodeItem* node, const QPoint& pos);
+  // void showContextMenu(QTableView* tableView, NodeItem* node, const QPoint& pos);
   void showEventContextMenu(QTableView* tableView, NodeItem* node, const QPoint& pos);
 
   void openEventDialog(QTableView* tableView, NodeItem* node, int row);
   void addEventToTable(QStandardItemModel* model, int row, std::shared_ptr<FlowSaveInfo> event);
 
-  void openFieldDialog(QTableView* tableView, NodeItem* node, int row);
+  // void openFieldDialog(QTableView* tableView, NodeItem* node, int row);
   void addStateToTable(QStandardItemModel* model, int row, const PropertiesConfig& event);
 };

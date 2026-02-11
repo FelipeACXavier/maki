@@ -10,7 +10,7 @@
 #include <QTimer>
 
 #include "elements/node.h"
-#include "elements/save_info.h"
+#include "save_info.h"
 
 class QUndoStack;
 class CanvasView;
@@ -152,5 +152,5 @@ private:
   bool isParentSelected(NodeItem* node);
   void pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode, QList<CopiedNode> nodes, bool relative);
 
-  VoidResult loadFromSave(const QVector<std::shared_ptr<NodeSaveInfo>>& nodes, NodeItem* parent);
+  VoidResult loadFromSave(const QVector<std::shared_ptr<INode>>& nodes, NodeItem* parent);
 };
