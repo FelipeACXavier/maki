@@ -54,15 +54,15 @@ private:
 
   // Property related actions
   VoidResult loadProperties(NodeItem* node);
-  VoidResult loadPropertyInt(const PropertiesConfig& property, NodeItem* node);
-  VoidResult loadPropertyReal(const PropertiesConfig& property, NodeItem* node);
-  VoidResult loadPropertyColor(const PropertiesConfig& property, NodeItem* node);
-  VoidResult loadPropertySelect(const PropertiesConfig& property, NodeItem* node);
-  VoidResult loadPropertyString(const PropertiesConfig& property, NodeItem* node);
-  VoidResult loadPropertyBoolean(const PropertiesConfig& property, NodeItem* node);
-  VoidResult loadPropertyEventSelect(const PropertiesConfig& property, NodeItem* node);
-  QLineEdit* loadPropertyEventArguments(const PropertiesConfig& property, NodeItem* node, const QString& propertyId, const QString& eventName, QComboBox* eventWidget);
-  VoidResult loadPropertyComponentSelect(const PropertiesConfig& property, NodeItem* node);
+  VoidResult loadPropertyInt(const PropertyInfo& property, NodeItem* node);
+  VoidResult loadPropertyReal(const PropertyInfo& property, NodeItem* node);
+  VoidResult loadPropertyColor(const PropertyInfo& property, NodeItem* node);
+  VoidResult loadPropertySelect(const PropertyInfo& property, NodeItem* node);
+  VoidResult loadPropertyString(const PropertyInfo& property, NodeItem* node);
+  VoidResult loadPropertyBoolean(const PropertyInfo& property, NodeItem* node);
+  VoidResult loadPropertyEventSelect(const PropertyInfo& property, NodeItem* node);
+  QLineEdit* loadPropertyEventArguments(const PropertyInfo& property, NodeItem* node, const QString& propertyId, const QString& eventName, QComboBox* eventWidget);
+  VoidResult loadPropertyComponentSelect(const PropertyInfo& property, NodeItem* node);
 
   // Control related actions
   VoidResult loadControls(NodeItem* node);
@@ -77,5 +77,5 @@ private:
   void addEventToTable(QStandardItemModel* model, int row, std::shared_ptr<FlowSaveInfo> event);
 
   void openFieldDialog(QTableView* tableView, NodeItem* node, int row);
-  void addStateToTable(QStandardItemModel* model, int row, std::shared_ptr<PropertiesConfig> event);
+  void addStateToTable(QStandardItemModel* model, int row, std::shared_ptr<PropertyInfo> event);
 };

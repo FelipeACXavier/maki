@@ -32,12 +32,12 @@ FieldDialog::FieldDialog(const QString& title, QWidget* parent)
   resize(500, 400);
 }
 
-std::shared_ptr<PropertiesConfig> FieldDialog::getInfo() const
+std::shared_ptr<PropertyInfo> FieldDialog::getInfo() const
 {
   return mStorage;
 }
 
-void FieldDialog::setup(std::shared_ptr<PropertiesConfig> config)
+void FieldDialog::setup(std::shared_ptr<PropertyInfo> config)
 {
   mStorage = config;
 
@@ -80,7 +80,7 @@ void FieldDialog::createNameInput(QWidget* parent)
   name->setText(mStorage->getid());
   name->setFocusPolicy(Qt::ClickFocus);
 
-  connect(name, &QLineEdit::editingFinished, this, [=]() { mStorage->id = name->text(); });
+  connect(name, &QLineEdit::editingFinished, this, [=]() { mStorage->setId(name->text()); });
   layout()->addWidget(name);
 }
 
@@ -99,21 +99,21 @@ void FieldDialog::createTypeInput(QWidget* parent)
   if (mStorage->gettype() == Types::PropertyTypes::UNKNOWN)
   {
     returnType->setCurrentIndex(0);
-    mStorage->type = Types::StringToPropertyTypes(returnType->currentText());
+    mStorage->setType(Types::StringToPropertyTypes(returnType->currentText()));
   }
   else
   {
-    returnType->setCurrentText(Types::PropertyTypesToString(mStorage->type));
+    returnType->setCurrentText(Types::PropertyTypesToString(mStorage->gettype()));
   }
 
   layout()->addWidget(returnType);
 
-  if (mStorage->type == Types::PropertyTypes::ENUM)
+  if (mStorage->gettype() == Types::PropertyTypes::ENUM)
     addEnumField(parent);
 
   connect(returnType, &QComboBox::currentTextChanged, this, [=](const QString& text) {
-    mStorage->type = Types::StringToPropertyTypes(text);
-    if (mStorage->type == Types::PropertyTypes::ENUM)
+    mStorage->setType(Types::StringToPropertyTypes(text));
+    if (mStorage->gettype() == Types::PropertyTypes::ENUM)
       addEnumField(parent);
     else
       removeEnumField();
@@ -127,12 +127,12 @@ void FieldDialog::createArgumentInput(QWidget* parent)
   layout()->addWidget(nameLabel);
 
   QLineEdit* name = new QLineEdit(parent);
-  name->setText(mStorage->defaultValue.toString());
+  name->setText(mStorage->getdefaultValue().toString());
   name->setFocusPolicy(Qt::ClickFocus);
 
   connect(name, &QLineEdit::editingFinished, this, [=]() {
     LOG_DEBUG("Setting default to %s", qPrintable(name->text()));
-    mStorage->defaultValue = name->text();
+    mStorage->setDefaultValue(name->text());
   });
   layout()->addWidget(name);
 }
@@ -214,48 +214,48 @@ void FieldDialog::addEnumField(QWidget* parent)
   QLineEdit* input = new QLineEdit(group);
   input->setFocusPolicy(Qt::StrongFocus);
 
-  PropertiesConfig foundName;
-  PropertiesConfig foundValues;
-  for (const auto& opt : mStorage->options)
+  PropertyInfo foundName;
+  PropertyInfo foundValues;
+  for (const auto& opt : mStorage->getoptions())
   {
-    if (opt->id == "name")
-      foundName = *opt;
-    if (opt->id == "values")
-      foundValues = *opt;
+    if (opt->getid() == "name")
+      foundName = *std::dynamic_pointer_cast<PropertyInfo>(opt);
+    if (opt->getid() == "values")
+      foundValues = *std::dynamic_pointer_cast<PropertyInfo>(opt);
   }
 
-  if (foundName.id.isEmpty())
+  if (foundName.getid().isEmpty())
   {
-    PropertiesConfig enumName;
-    enumName.id = "name";
-    enumName.type = Types::PropertyTypes::STRING;
-    mStorage->options.push_back(std::make_shared<PropertiesConfig>(enumName));
+    PropertyInfo enumName;
+    enumName.setId("name");
+    enumName.setType(Types::PropertyTypes::STRING);
+    mStorage->addOption(std::make_shared<PropertyInfo>(enumName));
   }
   else
   {
-    name->setText(foundName.defaultValue.toString());
+    name->setText(foundName.getdefaultValue().toString());
   }
 
-  if (foundValues.options.isEmpty())
+  if (foundValues.getoptions().isEmpty())
   {
-    PropertiesConfig enumValues;
-    enumValues.id = "values";
-    enumValues.type = Types::PropertyTypes::LIST;
-    mStorage->options.push_back(std::make_shared<PropertiesConfig>(enumValues));
+    PropertyInfo enumValues;
+    enumValues.setId("values");
+    enumValues.setType(Types::PropertyTypes::LIST);
+    mStorage->addOption(std::make_shared<PropertyInfo>(enumValues));
   }
   else
   {
-    for (const auto& opt : foundValues.options)
-      listWidget->addItem(opt->id);
+    for (const auto& opt : foundValues.getoptions())
+      listWidget->addItem(opt->getid());
   }
 
   connect(name, &QLineEdit::editingFinished, this, [=]() {
-    for (auto& opt : mStorage->options)
+    for (auto& opt : mStorage->getoptions())
     {
-      if (opt->id != "name")
+      if (opt->getid() != "name")
         continue;
 
-      opt->defaultValue = name->text();
+      std::dynamic_pointer_cast<PropertyInfo>(opt)->setDefaultValue(name->text());
       break;
     }
   });
@@ -263,14 +263,14 @@ void FieldDialog::addEnumField(QWidget* parent)
   connect(input, &QLineEdit::returnPressed, this, [=]() {
     if (!input->text().isEmpty())
     {
-      for (auto& opt : mStorage->options)
+      for (auto& opt : mStorage->getoptions())
       {
-        if (opt->id == "values")
+        if (opt->getid() == "values")
         {
-          PropertiesConfig option;
-          option.id = input->text();
+          PropertyInfo option;
+          option.setId(input->text());
 
-          opt->options.push_back(std::make_shared<PropertiesConfig>(option));
+          std::dynamic_pointer_cast<PropertyInfo>(opt)->addOption(std::make_shared<PropertyInfo>(option));
           break;
         }
       }

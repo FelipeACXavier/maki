@@ -6,8 +6,25 @@
 #include <QVector>
 
 #include "config_base.h"
-#include "property_config.h"
 #include "types.h"
+
+class PropertyConfig : public ConfigBase
+{
+public:
+  PropertyConfig();
+  PropertyConfig(const QJsonObject& object);
+
+  QString id = "";
+  QVariant defaultValue;
+  QList<PropertyConfig> options = {};
+  Types::PropertyTypes type = Types::PropertyTypes::UNKNOWN;
+
+  friend QDataStream& operator<<(QDataStream& out, const PropertyConfig& config);
+  friend QDataStream& operator>>(QDataStream& in, PropertyConfig& config);
+
+private:
+  QVariant toDefault(const QJsonObject& object, Types::PropertyTypes objectType);
+};
 
 class TransitionConfig : public ConfigBase
 {
@@ -32,7 +49,7 @@ public:
   QString name = "";
   Types::ConnectorType type = Types::ConnectorType::UNKNOWN;
   Types::PropertyTypes returnType = Types::PropertyTypes::UNKNOWN;
-  QList<PropertiesConfig> arguments = {};
+  QList<PropertyConfig> arguments = {};
   bool modifiable = true;
 
   friend QDataStream& operator<<(QDataStream& out, const FlowConfig& config);
@@ -115,7 +132,7 @@ public:
   HelpConfig help;
   BehaviourConfig behaviour;
   QVector<ControlsConfig> controls;
-  QVector<PropertiesConfig> properties;
+  QVector<PropertyConfig> properties;
   QVector<FlowConfig> events;
   QVector<TransitionConfig> transitions;
 

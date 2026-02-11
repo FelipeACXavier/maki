@@ -5,7 +5,7 @@
 #include <QLineEdit>
 #include <QTableView>
 
-#include "property_config.h"
+#include "property_info.h"
 
 class QStandardItem;
 class QStandardItemModel;
@@ -16,9 +16,9 @@ class FieldDialog : public QDialog
 public:
   FieldDialog(const QString& title, QWidget* parent = nullptr);
 
-  void setup(std::shared_ptr<PropertiesConfig> config);
+  void setup(std::shared_ptr<PropertyInfo> config);
 
-  std::shared_ptr<PropertiesConfig> getInfo() const;
+  std::shared_ptr<PropertyInfo> getInfo() const;
   QString getName() const;
   QString getType() const;
   QString getReturnType() const;
@@ -28,7 +28,7 @@ protected:
   void keyPressEvent(QKeyEvent* event) override;
 
 private:
-  std::shared_ptr<PropertiesConfig> mStorage;
+  std::shared_ptr<PropertyInfo> mStorage;
   int mEnterCount;
 
   void populateNodeList();

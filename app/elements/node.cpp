@@ -141,7 +141,7 @@ QPainterPath NodeItem::shape() const
   return NodeBase::nodeShape(boundingRect());
 }
 
-QVector<PropertiesConfig> NodeItem::configurationProperties() const
+QVector<PropertyConfig> NodeItem::configurationProperties() const
 {
   return config()->properties;
 }
@@ -216,12 +216,12 @@ VoidResult NodeItem::setField(const QString& key, const QJsonObject& property)
   if (!mStorage)
     return VoidResult::Failed("Storage is not set");
 
-  mStorage->setField(key, std::dynamic_pointer_cast<IProperty>(std::make_shared<PropertiesConfig>(property)));
+  mStorage->setField(key, std::dynamic_pointer_cast<IProperty>(std::make_shared<PropertyInfo>(property)));
 
   return VoidResult();
 }
 
-VoidResult NodeItem::setField(const QString& key, std::shared_ptr<PropertiesConfig> property)
+VoidResult NodeItem::setField(const QString& key, std::shared_ptr<PropertyInfo> property)
 {
   if (!mStorage)
     return VoidResult::Failed("Storage is not set");
@@ -231,10 +231,10 @@ VoidResult NodeItem::setField(const QString& key, std::shared_ptr<PropertiesConf
   return VoidResult();
 }
 
-PropertiesConfig NodeItem::getField(const QString& key) const
+PropertyInfo NodeItem::getField(const QString& key) const
 {
   if (!mStorage)
-    return PropertiesConfig();
+    return PropertyInfo();
 
   return mStorage->getField(key);
 }

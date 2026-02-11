@@ -42,7 +42,7 @@ public:
   QString behaviour() const;
   QVector<ControlsConfig> controls() const;
   QMap<QString, QVariant> properties() const;
-  QVector<PropertiesConfig> configurationProperties() const;
+  QVector<PropertyConfig> configurationProperties() const;
 
   Types::LibraryTypes function() const;
 
@@ -60,9 +60,9 @@ public:
   QPointF edgePointToward(const QPointF& targetScenePos) const;
 
   QVector<std::shared_ptr<IProperty>> fields() const;
-  PropertiesConfig getField(const QString& key) const;
+  PropertyInfo getField(const QString& key) const;
   VoidResult setField(const QString& key, const QJsonObject& property);
-  VoidResult setField(const QString& key, std::shared_ptr<PropertiesConfig> property);
+  VoidResult setField(const QString& key, std::shared_ptr<PropertyInfo> property);
   void removeField(const QString& key);
 
   void setEvent(int index, const FlowConfig& event);

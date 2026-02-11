@@ -8,6 +8,105 @@
 #include "keys.h"
 #include "string_helpers.h"
 
+PropertyConfig::PropertyConfig()
+{
+}
+
+PropertyConfig::PropertyConfig(const QJsonObject& object)
+{
+  if (!object.contains("id"))
+  {
+    setInvalid("Missing id attribute in property");
+    return;
+  }
+
+  if (!object.contains("type"))
+  {
+    setInvalid("Missing type attribute in property");
+    return;
+  }
+
+  id = object["id"].toString();
+  type = Types::StringToPropertyTypes(object["type"].toString());
+  if (type == Types::PropertyTypes::UNKNOWN)
+  {
+    setInvalid("Invalid property type: " + object["type"].toString() + " for " + id);
+    return;
+  }
+
+  if (object.contains(ConfigKeys::OPTIONS))
+  {
+    // if (type == Types::PropertyTypes::COMPONENT_SELECT && object["options"].toArray().size() != 1)
+    // {
+    //   setInvalid("We only support one option for now");
+    //   return;
+    // }
+
+    for (const auto& option : object[ConfigKeys::OPTIONS].toArray())
+      options.push_back(PropertyConfig(option.toObject()));
+  }
+  else if (type == Types::PropertyTypes::SELECT)
+  {
+    setInvalid("Invalid config for " + id + ". " + object["type"].toString() + " type must have options");
+    return;
+  }
+
+  // Set default later for easier comparison
+  defaultValue = toDefault(object, type);
+  if (!defaultValue.isValid())
+    setInvalid("Invalid default value for " + id);
+}
+
+QVariant PropertyConfig::toDefault(const QJsonObject& object, Types::PropertyTypes objectType)
+{
+  if (objectType == Types::PropertyTypes::STRING)
+    return object.contains("default") ? object["default"].toString() : QVariant(QString(""));
+  else if (objectType == Types::PropertyTypes::INTEGER)
+    return object.contains("default") ? object["default"].toInt() : QVariant(qint32(0));
+  else if (objectType == Types::PropertyTypes::REAL)
+    return object.contains("default") ? object["default"].toDouble() : QVariant(qreal(0));
+  else if (objectType == Types::PropertyTypes::BOOLEAN)
+    return object.contains("default") ? object["default"].toBool() : QVariant(false);
+  else if (objectType == Types::PropertyTypes::LIST)
+    return object.contains("default") ? object["default"].toArray().toVariantList() : QVariantList();
+  else if (objectType == Types::PropertyTypes::COLOR)
+    return object.contains("default") ? object["default"].toString() : QVariant(QString("#050505"));
+  else if (objectType == Types::PropertyTypes::COMPONENT_SELECT)
+  {
+    if (!object.contains(ConfigKeys::OPTIONS))
+      return toDefault(object, Types::PropertyTypes::STRING);
+
+    QJsonObject defaultObject;
+    QJsonArray array;
+    for (const auto& option : options)
+    {
+      // A component select with options must be able to hold its on data as well as the data option
+      QJsonObject propOption;
+      propOption[ConfigKeys::DATA] = "";
+      propOption["data_id"] = "";
+
+      propOption[ConfigKeys::ID] = option.id;
+      propOption[ConfigKeys::TYPE] = Types::PropertyTypesToString(option.type);
+      propOption[ConfigKeys::OPTION_DATA] = option.defaultValue.toString();
+      propOption["option_data_id"] = "";
+
+      array.append(propOption);
+    }
+
+    defaultObject[ConfigKeys::OPTIONS] = array;
+
+    return defaultObject;
+  }
+  else if (objectType == Types::PropertyTypes::EVENT_SELECT)
+    return toDefault(object, Types::PropertyTypes::STRING);
+  else if (objectType == Types::PropertyTypes::SELECT)
+    return toDefault(object, Types::PropertyTypes::STRING);
+  else if (objectType == Types::PropertyTypes::ENUM)
+    return toDefault(object, Types::PropertyTypes::STRING);
+
+  return QVariant();
+}
+
 TransitionConfig::TransitionConfig()
 {
 }
@@ -62,7 +161,7 @@ FlowConfig::FlowConfig(const QJsonObject& object)
   }
 
   for (const auto& arg : object[ConfigKeys::ARGUMENTS].toArray())
-    arguments.push_back(PropertiesConfig(arg.toObject()));
+    arguments.push_back(PropertyConfig(arg.toObject()));
 
   if (object.contains(ConfigKeys::MODIFIABLE))
     modifiable = object[ConfigKeys::MODIFIABLE].toBool();
@@ -206,7 +305,7 @@ NodeConfig::NodeConfig(const QJsonObject& object)
   {
     for (const auto& property : object["properties"].toArray())
     {
-      auto prop = PropertiesConfig(property.toObject());
+      auto prop = PropertyConfig(property.toObject());
       if (!prop.isValid())
         setInvalid(prop.errorMessage);
 
@@ -380,5 +479,27 @@ QDataStream& operator<<(QDataStream& out, const TransitionConfig& config)
 
 QDataStream& operator>>(QDataStream& in, TransitionConfig& config)
 {
+  return in;
+}
+
+// ===========================================================================================================
+// PropertyConfig
+QDataStream& operator<<(QDataStream& out, const PropertyConfig& config)
+{
+  out << config.id;
+  out << config.defaultValue;
+  out << config.type;
+  out << config.options;
+
+  return out;
+}
+
+QDataStream& operator>>(QDataStream& in, PropertyConfig& config)
+{
+  in >> config.id;
+  in >> config.defaultValue;
+  in >> config.type;
+  in >> config.options;
+
   return in;
 }

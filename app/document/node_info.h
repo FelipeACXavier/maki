@@ -9,6 +9,7 @@
 
 #include "config.h"
 #include "idocument.h"
+#include "property_info.h"
 
 class NodeSaveInfo : public INode
 {
@@ -41,7 +42,7 @@ public:
   void addProperty(const QString& key, const QVariant& value);
   void removeProperty(const QString& key);
 
-  PropertiesConfig getField(const QString& key) const;
+  PropertyInfo getField(const QString& key) const;
   void setField(const QString& key, std::shared_ptr<IProperty> property);
   void addField(std::shared_ptr<IProperty> property);
   void removeField(const QString& key);

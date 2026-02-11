@@ -210,9 +210,9 @@ VoidResult PropertiesMenu::loadControls(NodeItem* node)
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::loadPropertyInt(const PropertiesConfig& property, NodeItem* node)
+VoidResult PropertiesMenu::loadPropertyInt(const PropertyInfo& property, NodeItem* node)
 {
-  QString label = ToLabel(property.id);
+  QString label = ToLabel(property.getid());
   QLabel* nameLabel = new QLabel(label);
   nameLabel->setObjectName("PropertyLabel");
   nameLabel->setFont(Fonts::Label);
@@ -221,7 +221,7 @@ VoidResult PropertiesMenu::loadPropertyInt(const PropertiesConfig& property, Nod
   widget->setFont(Fonts::Property);
   QIntValidator* validator = new QIntValidator(INT32_MIN, INT32_MIN, widget);
 
-  auto result = node->getProperty(property.id);
+  auto result = node->getProperty(property.getid());
   if (!result.isValid())
     return VoidResult::Failed("Failed to get default value");
 
@@ -232,7 +232,7 @@ VoidResult PropertiesMenu::loadPropertyInt(const PropertiesConfig& property, Nod
     bool ok;
     int newValue = widget->text().toInt(&ok);
     if (ok)
-      node->setProperty(property.id, newValue);
+      node->setProperty(property.getid(), newValue);
     else
       LOG_WARNING("Failed to set property of node %s to %d (%s)", qPrintable(node->nodeId()), newValue, qPrintable(widget->text()));
   });
@@ -243,9 +243,9 @@ VoidResult PropertiesMenu::loadPropertyInt(const PropertiesConfig& property, Nod
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::loadPropertyReal(const PropertiesConfig& property, NodeItem* node)
+VoidResult PropertiesMenu::loadPropertyReal(const PropertyInfo& property, NodeItem* node)
 {
-  QString label = ToLabel(property.id);
+  QString label = ToLabel(property.getid());
   QLabel* nameLabel = new QLabel(label);
   nameLabel->setObjectName("PropertyLabel");
   nameLabel->setFont(Fonts::Label);
@@ -255,7 +255,7 @@ VoidResult PropertiesMenu::loadPropertyReal(const PropertiesConfig& property, No
   QLineEdit* widget = new QLineEdit(this);
   QDoubleValidator* validator = new QDoubleValidator(DBL_MIN, DBL_MAX, 6, widget);
 
-  auto result = node->getProperty(property.id);
+  auto result = node->getProperty(property.getid());
   if (!result.isValid())
     return VoidResult::Failed("Failed to get default value");
 
@@ -266,7 +266,7 @@ VoidResult PropertiesMenu::loadPropertyReal(const PropertiesConfig& property, No
     bool ok;
     qreal newValue = widget->text().toDouble(&ok);
     if (ok)
-      node->setProperty(property.id, newValue);
+      node->setProperty(property.getid(), newValue);
     else
       LOG_WARNING("Failed to set property. Not a valid number");
   });
@@ -277,9 +277,9 @@ VoidResult PropertiesMenu::loadPropertyReal(const PropertiesConfig& property, No
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::loadPropertyColor(const PropertiesConfig& property, NodeItem* node)
+VoidResult PropertiesMenu::loadPropertyColor(const PropertyInfo& property, NodeItem* node)
 {
-  QString label = ToLabel(property.id);
+  QString label = ToLabel(property.getid());
   QLabel* nameLabel = new QLabel(label);
   nameLabel->setObjectName("PropertyLabel");
   nameLabel->setFont(Fonts::Label);
@@ -291,7 +291,7 @@ VoidResult PropertiesMenu::loadPropertyColor(const PropertiesConfig& property, N
   holder->setLayout(holderLayout);
 
   QPushButton* widget = new QPushButton(this);
-  auto result = node->getProperty(property.id);
+  auto result = node->getProperty(property.getid());
   if (!result.isValid())
     return VoidResult::Failed("Failed to get default value");
 
@@ -313,7 +313,7 @@ VoidResult PropertiesMenu::loadPropertyColor(const PropertiesConfig& property, N
                                       .arg(result.toString()));
 
     node->config()->body.backgroundColor = color;
-    node->setProperty(property.id, color.name());
+    node->setProperty(property.getid(), color.name());
     colorPreviewLabel->update();
   });
 
@@ -329,20 +329,20 @@ VoidResult PropertiesMenu::loadPropertyColor(const PropertiesConfig& property, N
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::loadPropertySelect(const PropertiesConfig& property, NodeItem* node)
+VoidResult PropertiesMenu::loadPropertySelect(const PropertyInfo& property, NodeItem* node)
 {
-  QString label = ToLabel(property.id);
+  QString label = ToLabel(property.getid());
   QLabel* nameLabel = new QLabel(label);
   nameLabel->setObjectName("PropertyLabel");
   nameLabel->setFont(Fonts::Label);
 
   QComboBox* widget = new QComboBox(this);
 
-  auto options = property.options;
+  auto options = property.getoptions();
   for (const auto& option : options)
-    widget->addItem(option->id);
+    widget->addItem(option->getid());
 
-  auto result = node->getProperty(property.id);
+  auto result = node->getProperty(property.getid());
   if (!result.isValid())
     return VoidResult::Failed("Failed to get default value");
 
@@ -350,7 +350,7 @@ VoidResult PropertiesMenu::loadPropertySelect(const PropertiesConfig& property, 
   widget->setFont(Fonts::Property);
 
   connect(widget, &QComboBox::currentTextChanged, this, [=](const QString& text) {
-    node->setProperty(property.id, text);
+    node->setProperty(property.getid(), text);
   });
 
   layout()->addWidget(nameLabel);
@@ -359,9 +359,9 @@ VoidResult PropertiesMenu::loadPropertySelect(const PropertiesConfig& property, 
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::loadPropertyString(const PropertiesConfig& property, NodeItem* node)
+VoidResult PropertiesMenu::loadPropertyString(const PropertyInfo& property, NodeItem* node)
 {
-  QString label = ToLabel(property.id);
+  QString label = ToLabel(property.getid());
   QLabel* nameLabel = new QLabel(label);
   nameLabel->setObjectName("PropertyLabel");
   nameLabel->setFont(Fonts::Label);
@@ -369,13 +369,13 @@ VoidResult PropertiesMenu::loadPropertyString(const PropertiesConfig& property, 
   QLineEdit* widget = new QLineEdit(this);
   widget->setFont(Fonts::Property);
 
-  auto result = node->getProperty(property.id);
+  auto result = node->getProperty(property.getid());
   if (!result.isValid())
     return VoidResult::Failed("Failed to get default value");
 
   widget->setText(result.toString());
   connect(widget, &QLineEdit::editingFinished, this, [=]() {
-    node->setProperty(property.id, widget->text());
+    node->setProperty(property.getid(), widget->text());
   });
 
   layout()->addWidget(nameLabel);
@@ -383,9 +383,9 @@ VoidResult PropertiesMenu::loadPropertyString(const PropertiesConfig& property, 
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::loadPropertyBoolean(const PropertiesConfig& property, NodeItem* node)
+VoidResult PropertiesMenu::loadPropertyBoolean(const PropertyInfo& property, NodeItem* node)
 {
-  QString label = ToLabel(property.id);
+  QString label = ToLabel(property.getid());
   QLabel* nameLabel = new QLabel(label);
   nameLabel->setObjectName("PropertyLabel");
   nameLabel->setFont(Fonts::Label);
@@ -393,13 +393,13 @@ VoidResult PropertiesMenu::loadPropertyBoolean(const PropertiesConfig& property,
   layout()->addWidget(nameLabel);
 
   QCheckBox* widget = new QCheckBox(this);
-  auto result = node->getProperty(property.id);
+  auto result = node->getProperty(property.getid());
   if (!result.isValid())
     return VoidResult::Failed("Failed to get default value");
 
   widget->setChecked(result.toBool());
   connect(widget, &QCheckBox::checkStateChanged, this, [=](Qt::CheckState state) {
-    node->setProperty(property.id, state);
+    node->setProperty(property.getid(), state);
   });
 
   widget->setFont(Fonts::Property);
@@ -409,7 +409,7 @@ VoidResult PropertiesMenu::loadPropertyBoolean(const PropertiesConfig& property,
 }
 
 // TODO(felaze): The component and the event fields are always dependent on each other for now
-VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertiesConfig& property, NodeItem* node)
+VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertyInfo& property, NodeItem* node)
 {
   if (!mStorage)
     return VoidResult::Failed("No storage assigned to properties menu");
@@ -428,37 +428,37 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertiesConfig& p
   widget->setFont(Fonts::Property);
   layout()->addWidget(widget);
 
-  if (property.options.empty())
+  if (property.getoptions().empty())
   {
     // Make sure the widget shows the current selected component if it exists
-    auto currentValue = node->getProperty(property.id);
+    auto currentValue = node->getProperty(property.getid());
     if (currentValue.isValid())
       widget->setCurrentText(currentValue.toString());
     else
       widget->setCurrentText("-");
 
     connect(widget, &QComboBox::currentTextChanged, this, [=](const QString& text) {
-      node->setProperty(property.id, text);
+      node->setProperty(property.getid(), text);
     });
   }
   else
   {
-    for (int i = 0; i < property.options.size(); ++i)
+    for (int i = 0; i < property.getoptions().size(); ++i)
     {
-      const auto option = property.options.at(i);
-      QString eventLabel = ToLabel(option->id);
+      const auto option = property.getoptions().at(i);
+      QString eventLabel = ToLabel(option->getid());
       QLabel* nameEventLabel = new QLabel(eventLabel);
 
       nameEventLabel->setFont(Fonts::Label);
       layout()->addWidget(nameEventLabel);
 
-      if (option->type == Types::PropertyTypes::EVENT_SELECT)
+      if (option->gettype() == Types::PropertyTypes::EVENT_SELECT)
       {
         QComboBox* eventWidget = new QComboBox(this);
-        eventWidget->setObjectName(option->id);
+        eventWidget->setObjectName(option->getid());
 
         // Set starting values
-        auto value = node->getProperty(property.id);
+        auto value = node->getProperty(property.getid());
         if (value.isValid())
         {
           QJsonObject object = value.toJsonObject();
@@ -480,7 +480,7 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertiesConfig& p
           if (text.isEmpty())
             return;
 
-          auto value = node->getProperty(property.id);
+          auto value = node->getProperty(property.getid());
           if (!value.isValid())
             return;
 
@@ -494,7 +494,7 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertiesConfig& p
           array[i] = item;
           object[ConfigKeys::OPTIONS] = array;
 
-          node->setProperty(property.id, object);
+          node->setProperty(property.getid(), object);
         });
 
         eventWidget->setFont(Fonts::Property);
@@ -510,7 +510,7 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertiesConfig& p
             eventWidget->addItem(event->getname(), event->getid());
 
           // Set the component
-          auto value = node->getProperty(property.id);
+          auto value = node->getProperty(property.getid());
           if (!value.isValid())
             return;
 
@@ -527,16 +527,16 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertiesConfig& p
           array[i] = item;
           object[ConfigKeys::OPTIONS] = array;
 
-          node->setProperty(property.id, object);
+          node->setProperty(property.getid(), object);
         });
       }
-      else if (option->type == Types::PropertyTypes::STRING)
+      else if (option->gettype() == Types::PropertyTypes::STRING)
       {
         QLineEdit* eventWidget = new QLineEdit(this);
-        eventWidget->setObjectName(option->id);
+        eventWidget->setObjectName(option->getid());
 
         // Set starting values
-        auto value = node->getProperty(property.id);
+        auto value = node->getProperty(property.getid());
         if (value.isValid())
         {
           QJsonObject object = value.toJsonObject();
@@ -550,7 +550,7 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertiesConfig& p
         }
 
         connect(eventWidget, &QLineEdit::editingFinished, this, [i, node, property, eventWidget]() {
-          auto value = node->getProperty(property.id);
+          auto value = node->getProperty(property.getid());
           if (!value.isValid())
             return;
 
@@ -564,7 +564,7 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertiesConfig& p
           array[i] = item;
           object[ConfigKeys::OPTIONS] = array;
 
-          node->setProperty(property.id, object);
+          node->setProperty(property.getid(), object);
         });
 
         eventWidget->setFont(Fonts::Property);
@@ -577,7 +577,7 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertiesConfig& p
           eventWidget->clear();
 
           // Set the component
-          auto value = node->getProperty(property.id);
+          auto value = node->getProperty(property.getid());
           if (!value.isValid())
             return;
 
@@ -598,7 +598,7 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertiesConfig& p
           // object[ConfigKeys::OPTION_DATA] = eventWidget->text();
           // object["option_data_id"] = events.size() > 0 ? eventWidget->currentData().toString() : "";
 
-          node->setProperty(property.id, object);
+          node->setProperty(property.getid(), object);
         });
       }
       else
@@ -611,23 +611,23 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertiesConfig& p
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::loadPropertyEventSelect(const PropertiesConfig& property, NodeItem* node)
+VoidResult PropertiesMenu::loadPropertyEventSelect(const PropertyInfo& property, NodeItem* node)
 {
   if (!mStorage)
     return VoidResult::Failed("No storage assigned to properties menu");
 
   QComboBox* widget = new QComboBox(this);
-  widget->setObjectName(property.id);
+  widget->setObjectName(property.getid());
 
   // Make sure the widget shows the current selected component if it exists
-  auto currentValue = node->getProperty(property.id);
+  auto currentValue = node->getProperty(property.getid());
   if (currentValue.isValid())
     widget->setCurrentText(currentValue.toString());
   else
     widget->setCurrentText("-");
 
   connect(widget, &QComboBox::currentTextChanged, this, [=](const QString& text) {
-    node->setProperty(property.id, text);
+    node->setProperty(property.getid(), text);
   });
 
   widget->setFont(Fonts::Property);
@@ -636,9 +636,9 @@ VoidResult PropertiesMenu::loadPropertyEventSelect(const PropertiesConfig& prope
   return VoidResult();
 }
 
-QLineEdit* PropertiesMenu::loadPropertyEventArguments(const PropertiesConfig& property, NodeItem* node, const QString& propertyId, const QString& eventName, QComboBox* eventWidget)
+QLineEdit* PropertiesMenu::loadPropertyEventArguments(const PropertyInfo& property, NodeItem* node, const QString& propertyId, const QString& eventName, QComboBox* eventWidget)
 {
-  QString label = ToLabel(property.id);
+  QString label = ToLabel(property.getid());
   QLabel* nameLabel = new QLabel(label);
 
   nameLabel->setFont(Fonts::Label);
@@ -894,7 +894,7 @@ VoidResult PropertiesMenu::loadControlAddState(const ControlsConfig& control, No
   tableView->setModel(model);
 
   for (const auto& field : node->fields())
-    addStateToTable(model, model->rowCount(), std::dynamic_pointer_cast<PropertiesConfig>(field));
+    addStateToTable(model, model->rowCount(), std::dynamic_pointer_cast<PropertyInfo>(field));
 
   connect(tableView, &QTableView::doubleClicked, [this, tableView, node](const QModelIndex& index) {
     openFieldDialog(tableView, node, index.row());
@@ -1005,12 +1005,12 @@ void PropertiesMenu::openFieldDialog(QTableView* tableView, NodeItem* node, int 
   // Open the dialog
   mCurrentDialog = new FieldDialog(tr("Edit field"), this);
 
-  auto config = row < node->fields().size() ? node->fields().at(row) : std::make_shared<PropertiesConfig>();
-  qobject_cast<FieldDialog*>(mCurrentDialog)->setup(std::dynamic_pointer_cast<PropertiesConfig>(config));
+  auto config = row < node->fields().size() ? node->fields().at(row) : std::make_shared<PropertyInfo>();
+  qobject_cast<FieldDialog*>(mCurrentDialog)->setup(std::dynamic_pointer_cast<PropertyInfo>(config));
 
   connect(mCurrentDialog, &QDialog::accepted, [this, tableView, node, row] {
     auto info = qobject_cast<FieldDialog*>(mCurrentDialog)->getInfo();
-    node->setField(info->id, info);
+    node->setField(info->getid(), info);
     addStateToTable((QStandardItemModel*)tableView->model(), row, info);
   });
   connect(mCurrentDialog, &QDialog::rejected, [this] {
@@ -1048,7 +1048,7 @@ void PropertiesMenu::addEventToTable(QStandardItemModel* model, int row, std::sh
   model->setItem(row, 3, new QStandardItem(args));
 }
 
-void PropertiesMenu::addStateToTable(QStandardItemModel* model, int row, std::shared_ptr<PropertiesConfig> field)
+void PropertiesMenu::addStateToTable(QStandardItemModel* model, int row, std::shared_ptr<PropertyInfo> field)
 {
   if (row >= model->rowCount())
     model->insertRow(row);

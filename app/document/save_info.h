@@ -14,6 +14,7 @@
 #include "canvas_info.h"
 #include "flow_info.h"
 #include "node_info.h"
+#include "property_info.h"
 #include "transition_info.h"
 
 class SaveInfo : public IDocument

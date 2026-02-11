@@ -138,15 +138,15 @@ void NodeSaveInfo::removeProperty(const QString& key)
   mProperties.remove(key);
 }
 
-PropertiesConfig NodeSaveInfo::getField(const QString& key) const
+PropertyInfo NodeSaveInfo::getField(const QString& key) const
 {
   for (const auto& field : getfields())
   {
     if (field->getid() == key)
-      return *std::dynamic_pointer_cast<PropertiesConfig>(field);
+      return *std::dynamic_pointer_cast<PropertyInfo>(field);
   }
 
-  return PropertiesConfig();
+  return PropertyInfo();
 }
 
 void NodeSaveInfo::setField(const QString& key, std::shared_ptr<IProperty> property)
@@ -172,14 +172,7 @@ void NodeSaveInfo::addField(std::shared_ptr<IProperty> property)
 
 void NodeSaveInfo::removeField(const QString& key)
 {
-  for (auto iter = mFields.begin(); iter < mFields.end(); ++iter)
-  {
-    if ((*iter)->getid() != key)
-      continue;
-
-    mFields.erase(iter);
-    return;
-  }
+  mFields.removeIf([key](std::shared_ptr<IProperty> info) { return info->getid() == key; });
 }
 
 void NodeSaveInfo::addTransition(std::shared_ptr<ITransition> transition)
@@ -238,7 +231,7 @@ QJsonObject NodeSaveInfo::toJson() const
 
   QJsonArray fieldArray;
   for (const auto& field : getfields())
-    fieldArray.append(std::dynamic_pointer_cast<PropertiesConfig>(field)->toJson());
+    fieldArray.append(std::dynamic_pointer_cast<PropertyInfo>(field)->toJson());
 
   QJsonArray transitionArray;
   for (const auto& transition : gettransitions())
@@ -289,7 +282,7 @@ NodeSaveInfo NodeSaveInfo::fromJson(const QJsonObject& data)
   if (data.contains(ConfigKeys::FIELDS))
   {
     for (const auto& node : data[ConfigKeys::FIELDS].toArray())
-      info.addField(std::make_shared<PropertiesConfig>(PropertiesConfig::fromJson(node.toObject())));
+      info.addField(std::make_shared<PropertyInfo>(PropertyInfo::fromJson(node.toObject())));
   }
 
   if (data.contains(ConfigKeys::TRANSITIONS))
@@ -441,7 +434,7 @@ QDataStream& operator>>(QDataStream& in, NodeSaveInfo& info)
   for (const auto& transition : transitions)
     info.addTransition(std::dynamic_pointer_cast<ITransition>(transition));
 
-  QVector<std::shared_ptr<PropertiesConfig>> fields;
+  QVector<std::shared_ptr<PropertyInfo>> fields;
   in >> fields;
   for (const auto& field : fields)
     info.addField(std::dynamic_pointer_cast<IProperty>(field));

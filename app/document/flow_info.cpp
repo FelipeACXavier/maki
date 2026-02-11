@@ -28,7 +28,7 @@ FlowSaveInfo::FlowSaveInfo(const FlowConfig& config)
   setReturnType(config.returnType);
   setModifiable(config.modifiable);
   for (const auto& arg : config.arguments)
-    addArgument(std::make_shared<PropertiesConfig>(arg));
+    addArgument(std::make_shared<PropertyInfo>(arg));
 }
 
 QString FlowSaveInfo::getid() const
@@ -145,7 +145,7 @@ QJsonObject FlowSaveInfo::toJson() const
 
   QJsonArray optionArray;
   for (const auto& arg : getarguments())
-    optionArray.append(std::dynamic_pointer_cast<PropertiesConfig>(arg)->toJson());
+    optionArray.append(std::dynamic_pointer_cast<PropertyInfo>(arg)->toJson());
 
   data[ConfigKeys::ARGUMENTS] = optionArray;
 
@@ -170,7 +170,7 @@ FlowSaveInfo FlowSaveInfo::fromJson(const QJsonObject& data)
   info.setOwner(data[ConfigKeys::OWNER].toString());
 
   for (const auto& argument : data[ConfigKeys::ARGUMENTS].toArray())
-    info.addArgument(std::make_shared<PropertiesConfig>(PropertiesConfig::fromJson(argument.toObject())));
+    info.addArgument(std::make_shared<PropertyInfo>(PropertyInfo::fromJson(argument.toObject())));
 
   for (const auto& node : data[ConfigKeys::NODES].toArray())
     info.addNode(std::make_shared<NodeSaveInfo>(NodeSaveInfo::fromJson(node.toObject())));

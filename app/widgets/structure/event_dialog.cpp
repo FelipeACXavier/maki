@@ -197,7 +197,7 @@ void EventDialog::createArgumentInput(QWidget* parent)
     model->setItem(newRow, 1, new QStandardItem(""));
 
     // Create new argument in the storage as well
-    mStorage->addArgument(std::make_shared<PropertiesConfig>());
+    mStorage->addArgument(std::make_shared<PropertyInfo>());
   });
 
   button->setFocusPolicy(Qt::NoFocus);
@@ -225,9 +225,9 @@ void EventDialog::updateArgumentTable(QStandardItem* item)
     return;
 
   if (column == 0)
-    std::dynamic_pointer_cast<PropertiesConfig>(mStorage->getArgument(row))->id = text;
+    std::dynamic_pointer_cast<PropertyInfo>(mStorage->getArgument(row))->setId(text);
   else if (column == 1)
-    std::dynamic_pointer_cast<PropertiesConfig>(mStorage->getArgument(row))->type = Types::StringToPropertyTypes(text);
+    std::dynamic_pointer_cast<PropertyInfo>(mStorage->getArgument(row))->setType(Types::StringToPropertyTypes(text));
 }
 
 void EventDialog::keyPressEvent(QKeyEvent* event)
