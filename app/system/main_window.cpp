@@ -24,6 +24,7 @@
 #include "elements/flow.h"
 #include "elements/node.h"
 #include "library_container.h"
+#include "library_scene.h"
 #include "local_server_tab.h"
 #include "logging.h"
 #include "notifications.h"
@@ -349,6 +350,11 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
     toolbox = mBehaviourToolBox;
 
   LibraryContainer* sidebarview = LibraryContainer::create(name, toolbox);
+  LibraryScene* sidebarScene = dynamic_cast<LibraryScene*>(sidebarview->scene());
+  connect(sidebarScene, &LibraryScene::libraryNodeSelected, [this](const QString& nodeType) {
+    if (auto info = mConfigTable->get(nodeType))
+      mInfoText->setHtml(createInformationMessage(*info));
+  });
 
   auto nodes = config["nodes"];
   if (!nodes.isArray())
@@ -424,10 +430,6 @@ void MainWindow::onActionSave()
     return;
   }
 
-  // QJsonDocument doc(mStorage->toJson());
-  // QByteArray jsonBytes = doc.toJson(QJsonDocument::Indented);
-  // qDebug().noquote() << jsonBytes;
-
   mSaveHandler->save(rootCanvas());
 }
 
@@ -469,7 +471,10 @@ void MainWindow::onActionLoad()
 void MainWindow::onNodeSelected(NodeItem* node, bool selected)
 {
   if (node)
-    mInfoText->setText(node->help().message);
+  {
+    if (auto info = mConfigTable->get(node->nodeType()))
+      mInfoText->setHtml(createInformationMessage(*info));
+  }
 
   LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeSelected(node, selected));
 }

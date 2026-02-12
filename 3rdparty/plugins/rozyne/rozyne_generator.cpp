@@ -22,7 +22,7 @@ bool RozyneGenerator::setup()
 
 bool RozyneGenerator::tearDown()
 {
-  if (!mDaemon)
+  if (mDaemon == nullptr)
     return true;
 
   if (mDaemon->state() == QProcess::Running)
@@ -30,8 +30,14 @@ bool RozyneGenerator::tearDown()
     mDaemon->terminate();
 
     if (!mDaemon->waitForFinished(2500))
+    {
       mDaemon->kill();
+      mDaemon->waitForFinished();
+    }
   }
+
+  mDaemon->deleteLater();
+  mDaemon = nullptr;
 
   return true;
 }

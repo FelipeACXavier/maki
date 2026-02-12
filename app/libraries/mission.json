@@ -16,16 +16,21 @@
             "height": 250,
             "z-index": -2
           },
+          "help": {
+            "message": "Represents a Task in a single system. Tasks must be populated with Capabilities."
+          },
           "properties": [
             {
               "id": "name",
               "type": "string",
-              "default": "Component"
+              "default": "Component",
+              "info": "The name of the block"
             },
             {
               "id": "color",
               "type": "color",
-              "default": "#202020"
+              "default": "#202020",
+              "info": "The color of the block"
             }
           ],
           "controls": [
@@ -43,25 +48,29 @@
               "id": "start",
               "type": "in",
               "returnType": "void",
-              "modifiable": true
+              "modifiable": true,
+              "info": "Called to start the task"
             },
             {
               "id": "abort",
               "type": "in",
               "returnType": "void",
-              "modifiable": false
+              "modifiable": false,
+              "info": "Called to abort the task when it is running"
             },
             {
               "id": "done",
               "type": "out",
               "returnType": "void",
-              "modifiable": false
+              "modifiable": false,
+              "info": "Emitted when the task is completed successfully"
             },
             {
               "id": "failed",
               "type": "out",
               "returnType": "void",
-              "modifiable": false
+              "modifiable": false,
+              "info": "Emitted when the task is completed unsuccessfully"
             }
           ]
         },

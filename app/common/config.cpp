@@ -51,6 +51,9 @@ PropertyConfig::PropertyConfig(const QJsonObject& object)
     return;
   }
 
+  if (object.contains(ConfigKeys::INFO))
+    info = object[ConfigKeys::INFO].toString();
+
   // Set default later for easier comparison
   defaultValue = toDefault(object, type);
   if (!defaultValue.isValid())
@@ -165,6 +168,9 @@ FlowConfig::FlowConfig(const QJsonObject& object)
 
   if (object.contains(ConfigKeys::MODIFIABLE))
     modifiable = object[ConfigKeys::MODIFIABLE].toBool();
+
+  if (object.contains(ConfigKeys::INFO))
+    info = object[ConfigKeys::INFO].toString();
 }
 
 ControlsConfig::ControlsConfig()
@@ -457,6 +463,7 @@ QDataStream& operator<<(QDataStream& out, const FlowConfig& config)
   out << config.type;
   out << config.returnType;
   out << config.arguments;
+  out << config.info;
 
   return out;
 }
@@ -490,6 +497,7 @@ QDataStream& operator<<(QDataStream& out, const PropertyConfig& config)
   out << config.defaultValue;
   out << config.type;
   out << config.options;
+  out << config.info;
 
   return out;
 }
@@ -500,6 +508,7 @@ QDataStream& operator>>(QDataStream& in, PropertyConfig& config)
   in >> config.defaultValue;
   in >> config.type;
   in >> config.options;
+  in >> config.info;
 
   return in;
 }

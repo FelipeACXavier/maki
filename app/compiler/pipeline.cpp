@@ -173,7 +173,7 @@ void Pipeline::onErrorOccurred(QProcess::ProcessError error)
     return;
   }
 
-  qDebug() << "QProcess error:" << error << "errorString:" << mRunningProcess.process->errorString();
+  // qDebug() << "QProcess error:" << error << "errorString:" << mRunningProcess.process->errorString();
 
   emit errorOccurred(error);
   mProcesses.clear();

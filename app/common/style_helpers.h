@@ -7,6 +7,7 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
+#include "config.h"
 #include "logging.h"
 
 void addClass(QWidget* object, const QString& className);
@@ -47,3 +48,6 @@ struct TreeWidgetWithIcon
 
 void updateIconTheme(QList<WidgetWithIcon>& icons);
 void updateTreeIconTheme(QList<TreeWidgetWithIcon>& icons);
+
+QString htmlEscape(const QString& s);
+QString createInformationMessage(const NodeConfig& node);

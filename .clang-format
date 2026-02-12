@@ -30,3 +30,5 @@ AllowShortFunctionsOnASingleLine: None
 BreakConstructorInitializers: BeforeComma
 AllowShortIfStatementsOnASingleLine: false
 ConstructorInitializerAllOnOneLineOrOnePerLine: false
+AlwaysBreakBeforeMultilineStrings: false
+BreakAdjacentStringLiterals: true

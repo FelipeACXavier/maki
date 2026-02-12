@@ -187,3 +187,118 @@ void updateTreeIconTheme(QList<TreeWidgetWithIcon>& icons)
     }
   }
 }
+
+QString htmlEscape(const QString& s)
+{
+  return s.toHtmlEscaped();
+}
+
+QString createInformationMessage(const NodeConfig& node)
+{
+  QString out;
+  out += R"(
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { font-family: sans-serif; font-size: 14pt; }
+  p  { margin: 0 0 0 8px; }
+
+  table.info {
+    width: 80%;
+    border-collapse: collapse;
+    margin: 6px 0 12px 0;
+  }
+  table.info td {
+    border-bottom: 1px solid #999;
+    padding: 6px 8px;
+    vertical-align: top;
+  }
+  table.info th {
+    font-weight: 600;
+    text-align: left;
+    padding: 6px 8px;
+    vertical-align: top;
+    border-bottom: 4px solid #999;
+  }
+  .section-title {
+    font-size: 20pt;
+    margin: 8px 0 8px 0;
+  }
+</style>
+</head>
+<body>
+)";
+
+  // Title / message
+  if (!node.help.message.isEmpty())
+  {
+    out += "<h3>Description</h3>";
+    out += "<p> Info: " + htmlEscape(node.help.message) + "</p>";
+    out += "<p> Type: " + htmlEscape(node.type) + "</p>";
+  }
+
+  // Properties
+  if (!node.properties.isEmpty())
+  {
+    out += "<h4 class='section-title'>Properties</h4>";
+    out += R"(
+      <table class="info">
+        <thead>
+          <tr>
+            <th width="10%">Id</th>
+            <th width="10%">Type</th>
+            <th width="30%">Default</th>
+            <th width="50%">Info</th>
+          </tr>
+        </thead>
+        <tbody>
+      )";
+
+    for (const auto& prop : node.properties)
+    {
+      out += "<tr>";
+      out += "<td>" + htmlEscape(prop.id) + "</td>";
+      out += "<td>" + htmlEscape(Types::PropertyTypesToString(prop.type)) + "</td>";
+      out += "<td>" + htmlEscape(prop.defaultValue.isValid() ? prop.defaultValue.toString() : "\"\"") + "</td>";
+      out += "<td>" + htmlEscape(prop.info) + "</td>";
+      out += "</tr>";
+    }
+
+    out += "</tbody></table>";
+  }
+
+  // Events
+  if (!node.events.isEmpty())
+  {
+    out += "<h4 class='section-title'>Events</h4>";
+    out += R"(
+      <table class="info">
+        <thead>
+          <tr>
+            <th width="20%">Id</th>
+            <th width="10%">Type</th>
+            <th width="20%">Return Type</th>
+            <th width="50%">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+      )";
+
+    for (const auto& e : node.events)
+    {
+      out += "<tr>";
+      out += "<td>" + htmlEscape(e.name) + "</td>";
+      out += "<td>" + htmlEscape(Types::ConnectorTypeToString(e.type)) + "</td>";
+      out += "<td>" + htmlEscape(Types::PropertyTypesToString(e.returnType)) + "</td>";
+      out += "<td>" + htmlEscape(e.info) + "</td>";
+      out += "</tr>";
+    }
+
+    out += "</tbody></table>";
+  }
+
+  out += "</body></html>";
+  return out;
+}

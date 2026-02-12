@@ -5,12 +5,12 @@
 
 #include "config.h"
 #include "elements/draggable.h"
-#include "logging.h"
+#include "library_scene.h"
 
 static const int PADDING = 15;
 
-LibraryContainer::LibraryContainer(QGraphicsScene* scene)
-    : QGraphicsView(scene)
+LibraryContainer::LibraryContainer(QWidget* parent)
+    : QGraphicsView(parent)
     , mLastItemY(0)
 {
   setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -24,11 +24,12 @@ LibraryContainer* LibraryContainer::create(const QString& name, QToolBox* parent
   QVBoxLayout* layout = new QVBoxLayout(sidebarContainer);
   layout->setContentsMargins(0, 0, 0, 0);
 
-  QGraphicsScene* scene = new QGraphicsScene();
+  auto container = new LibraryContainer(parent);
+
   // Not sure why, but setting a small width makes sure that the nodes are centered
+  LibraryScene* scene = new LibraryScene(container);
   scene->setSceneRect(0, 0, 50, 500);
 
-  auto container = new LibraryContainer(scene);
   container->setScene(scene);
   container->setAlignment(Qt::AlignLeft | Qt::AlignTop);
 

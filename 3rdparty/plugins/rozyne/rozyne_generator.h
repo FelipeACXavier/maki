@@ -34,6 +34,9 @@ private:
   QList<QString> mGeneratedFiles = {};
   maki::IHostServices* mServices = nullptr;
 
+  QVector<QString> mGeneratedIds = {};
+  QProcess* mDaemon = nullptr;
+
   struct Argument
   {
     QString name = "";
@@ -66,7 +69,4 @@ private:
 
   // Setup
   bool startDaemon();
-
-  QVector<QString> mGeneratedIds;
-  QProcess* mDaemon;
 };

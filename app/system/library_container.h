@@ -8,8 +8,9 @@
 
 class LibraryContainer : public QGraphicsView
 {
+  Q_OBJECT
 public:
-  LibraryContainer(QGraphicsScene* scene);
+  LibraryContainer(QWidget* parent = nullptr);
 
   static LibraryContainer* create(const QString& name, QToolBox* parent);
 

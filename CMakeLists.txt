@@ -42,8 +42,10 @@ else()
   add_compile_options(-Wall)
 
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+      message("Compiling with debug symbols")
       add_compile_options(-g -O0)
   elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
+      message("Compiling in release version")
       add_compile_options(-O2)
   endif()
 endif()
@@ -59,7 +61,7 @@ find_package(Qt6 REQUIRED COMPONENTS
   WebEngineWidgets
 )
 
-qt_standard_project_setup(REQUIRES ${QT_VERSION})
+# qt_standard_project_setup(REQUIRES ${QT_VERSION})
 
 # -----------------------------------------
 # Some variables
@@ -78,6 +80,7 @@ if (DEPLOY_TARGET STREQUAL "auto")
 endif()
 
 message(STATUS "Deploy target: ${DEPLOY_TARGET}")
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 if (CMAKE_TOOLCHAIN_FILE)
   message(STATUS "Using toolchain file: ${CMAKE_TOOLCHAIN_FILE}")

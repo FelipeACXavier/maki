@@ -582,7 +582,6 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertyInfo& prope
             return;
 
           QJsonObject object = value.toJsonObject();
-          qDebug() << "Object: " << object;
           object[ConfigKeys::DATA] = text;
           object["data_id"] = widget->currentData().toString();
 
@@ -827,7 +826,6 @@ VoidResult PropertiesMenu::loadControlAddEvent(const ControlsConfig& control, No
   model->setHorizontalHeaderItem(3, new QStandardItem("Argument"));
 
   tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-  tableView->setContextMenuPolicy(Qt::CustomContextMenu);
 
   // We do not support editing values in the table directly. I want to avoid issues caused by a wrong click
   // Instead, we open a dialog with a complete overview of the event.
@@ -835,11 +833,32 @@ VoidResult PropertiesMenu::loadControlAddEvent(const ControlsConfig& control, No
   tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
   tableView->setModel(model);
 
+  // tableView->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+  // tableView->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+  // tableView->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+  // tableView->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Stretch);
+
+  // tableView->setContextMenuPolicy(Qt::CustomContextMenu);
+  // tableView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  // tableView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
   for (const std::shared_ptr<IFlow>& event : node->events())
   {
     // LOG_INFO("Setting events for %s (%d): %s", qPrintable(node->nodeName()), model->rowCount(), qPrintable(event->getname()));
     addEventToTable(model, model->rowCount(), std::dynamic_pointer_cast<FlowSaveInfo>(event));
   }
+
+  // tableView->resizeRowsToContents();
+
+  // int height = tableView->horizontalHeader()->height();
+  // for (int i = 0; i < tableView->model()->rowCount(); ++i)
+  //   height += tableView->rowHeight(i);
+
+  // if (!tableView->horizontalHeader()->isHidden())
+  //   height += 2;
+
+  // tableView->setFixedHeight(height);
+  // tableView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
   connect(tableView, &QTableView::customContextMenuRequested, [this, tableView, node](const QPoint& pos) {
     showEventContextMenu(tableView, node, pos);

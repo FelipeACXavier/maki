@@ -9,12 +9,15 @@
 #include <QUuid>
 
 #include "app_configs.h"
+#include "logging.h"
 #include "save_info.h"
 #include "theme.h"
 
 DraggableItem::DraggableItem(const QString& nodeId, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
     : NodeBase(QUuid::createUuid().toString(), nodeId, nodeConfig, parent)
 {
+  setFlag(QGraphicsItem::ItemIsSelectable, true);
+
   if (!config()->body.iconPath.isEmpty())
   {
     QPixmap icon(config()->body.iconPath);
@@ -45,7 +48,7 @@ void DraggableItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* sty
   Q_UNUSED(widget);
   NodeBase::paintNode((style && style->state == QStyle::State_Active) ? boundingRect() : scaledRect(),
                       config()->body.backgroundColor,
-                      QPen(Config::FOREGROUND),
+                      isSelected() ? QPen(Config::HIGHLIGHT, 2.0) : QPen(Config::FOREGROUND, 1.0),
                       painter);
 }
 
@@ -62,7 +65,7 @@ void DraggableItem::adjustWidth(int width)
   updateLabelPosition();
 }
 
-void DraggableItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
+void DraggableItem::startDrag(QGraphicsSceneMouseEvent* event)
 {
   // Draggable pixmap from the scale
   QPixmap pixmap(scaledRect().size().toSize());
@@ -98,4 +101,10 @@ void DraggableItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 
   // Nicety, let's make the cursor show a drag action
   setCursor(Qt::ClosedHandCursor);
+}
+
+void DraggableItem::handleClick(QGraphicsSceneMouseEvent* event)
+{
+  setSelected(true);
+  update();
 }

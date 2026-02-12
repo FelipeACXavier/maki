@@ -18,6 +18,7 @@ public:
   QVariant defaultValue;
   QList<PropertyConfig> options = {};
   Types::PropertyTypes type = Types::PropertyTypes::UNKNOWN;
+  QString info = "";
 
   friend QDataStream& operator<<(QDataStream& out, const PropertyConfig& config);
   friend QDataStream& operator>>(QDataStream& in, PropertyConfig& config);
@@ -51,6 +52,7 @@ public:
   Types::PropertyTypes returnType = Types::PropertyTypes::UNKNOWN;
   QList<PropertyConfig> arguments = {};
   bool modifiable = true;
+  QString info = "";
 
   friend QDataStream& operator<<(QDataStream& out, const FlowConfig& config);
   friend QDataStream& operator>>(QDataStream& in, FlowConfig& config);

@@ -28,11 +28,11 @@ public:
   int type() const override;
   void adjustWidth(int width);
 
+  void startDrag(QGraphicsSceneMouseEvent* event);
+  void handleClick(QGraphicsSceneMouseEvent* event);
+
   QPainterPath shape() const override;
   void paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget) override;
 
   QRectF boundingRect() const override;
-
-protected:
-  void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
 };
