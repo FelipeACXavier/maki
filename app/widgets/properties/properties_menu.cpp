@@ -298,6 +298,7 @@ VoidResult PropertiesMenu::loadPropertyColor(const PropertyInfo& property, NodeI
   QColor selectedColor = QColor::fromString(result.toString());
 
   QLabel* colorPreviewLabel = new QLabel(this);
+  colorPreviewLabel->setFixedSize({widget->height(), widget->height()});
   colorPreviewLabel->setObjectName("PropertyColorPreview");
   applyStyle(colorPreviewLabel, QStringLiteral(
                                     "QLabel#PropertyColorPreview { background-color: %1; }")
@@ -310,9 +311,8 @@ VoidResult PropertiesMenu::loadPropertyColor(const PropertyInfo& property, NodeI
 
     applyStyle(colorPreviewLabel, QStringLiteral(
                                       "QLabel#PropertyColorPreview { background-color: %1; }")
-                                      .arg(result.toString()));
+                                      .arg(color.name()));
 
-    node->config()->body.backgroundColor = color;
     node->setProperty(property.getid(), color.name());
     colorPreviewLabel->update();
   });
