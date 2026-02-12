@@ -180,6 +180,11 @@ void MainWindow::bind()
   connect(mGenerationButton, &QPushButton::pressed, this, &MainWindow::onActionGenerate);
   connect(mSimulateButton, &QPushButton::pressed, this, &MainWindow::onActionSimulate);
 
+  // View actions =============================================================
+  mOpenComponentsPanel->setShortcut(QKeySequence(Qt::Key_F7));
+  mOpenInfoPanel->setShortcut(QKeySequence(Qt::Key_F8));
+  mOpenPropertiesPanel->setShortcut(QKeySequence(Qt::Key_F9));
+
   // Diagram actions =============================================================
   connect(mActionGenerate, &QAction::triggered, this, &MainWindow::onActionGenerate);
   mActionGenerate->setShortcut(QKeySequence(Qt::Key_F5));

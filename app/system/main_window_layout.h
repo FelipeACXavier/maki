@@ -75,30 +75,47 @@ protected:
   // File menu
   QAction* mActionNew;
   QAction* mActionOpen;
+  QAction* mActionOpenRecent;
   QAction* mActionSave;
   QAction* mActionSaveAs;
 
-  QAction* mImportLibrary;
-  QAction* mInstallPlugin;
+  QAction* mActionImportLibrary;
+  QAction* mActionInstallPlugin;
+
+  QAction* mActionExit;
 
   // Edit menu
   QUndoGroup* mUndoGroup = nullptr;
   QAction* mActionUndo;
   QAction* mActionRedo;
 
+  QAction* mActionCopy;
+  QAction* mActionPaste;
+  QAction* mActionCut;
+  QAction* mActionDelete;
+
   // View menu
+  QAction* mActionZoomIn;
+  QAction* mActionZoomOut;
+  QAction* mActionResetZoom;
+  QAction* mActionFitToScreen;
+
   QAction* mOpenComponentsPanel;
   QAction* mOpenPropertiesPanel;
   QAction* mOpenInfoPanel;
 
   // Diagram menu
-  QAction* mActionGenerate;
   QMenu* mGeneratorMenu;
 
-  // Settings menu
-  QAction* mOpenAllSettings;
+  QAction* mActionGenerate;
+  QAction* mActionSimulate;
 
   // Help menu
+  QAction* mActionDocumentation;
+  QAction* mActionQuickStartGuide;
+  QAction* mOpenAllSettings;
+  QAction* mActionShortcuts;
+  QAction* mActionReportIssue;
   QAction* mAboutAction;
 
 protected:
@@ -121,4 +138,6 @@ private:
 
   void applyTheme();
   QWidget* createHeaderComboBox(QComboBox* comboBox, const QString& iconPath, const QString& tooltip);
+
+  void togglePanelVisibility(QWidget* panel, QAction* action);
 };

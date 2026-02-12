@@ -77,6 +77,7 @@ VoidResult SystemMenu::onNodeRemoved(const QString& flowId, NodeItem* node)
     if (!parent)
     {
       takeTopLevelItem(indexOfTopLevelItem(item));
+      mIcons.removeIf([item](TreeWidgetWithIcon treeItem) { return treeItem.widget == item; });
       delete item;
       return VoidResult();
     }
@@ -86,6 +87,7 @@ VoidResult SystemMenu::onNodeRemoved(const QString& flowId, NodeItem* node)
       return VoidResult::Failed("The parent node is not on the tree");
 
     parentItem->removeChild(item);
+    mIcons.removeIf([item](TreeWidgetWithIcon treeItem) { return treeItem.widget == item; });
     delete item;
   }
   else
@@ -102,6 +104,7 @@ VoidResult SystemMenu::onNodeRemoved(const QString& flowId, NodeItem* node)
       return VoidResult::Failed("Item is in the tree but it is not a node");
 
     flow->removeChild(component);
+    mIcons.removeIf([component](TreeWidgetWithIcon treeItem) { return treeItem.widget == component; });
   }
 
   return VoidResult();
@@ -184,6 +187,7 @@ VoidResult SystemMenu::onFlowRemoved(const QString& flowId, const QString& nodeI
     return VoidResult::Failed("No flow to delete");
 
   nodeItem->removeChild(flowItem);
+  mIcons.removeIf([flowItem](TreeWidgetWithIcon treeItem) { return treeItem.widget == flowItem; });
   delete flowItem;
 
   return VoidResult();
@@ -200,11 +204,6 @@ void SystemMenu::populateItem(QTreeWidgetItem* item, NodeItem* node)
 VoidResult SystemMenu::addRootNode(NodeItem* node)
 {
   QTreeWidgetItem* item = new QTreeWidgetItem(this);
-  // TODO(felaze): Add proper icons per type
-  // - Task
-  // - Capabilities
-  // - Strategy
-  // - Strategy nodes
   mIcons.append({item, ":/icons/structure.svg"});
   populateItem(item, node);
   addTopLevelItem(item);

@@ -307,61 +307,156 @@ void MainWindowLayout::buildMenuBar()
   mActionOpen = new QAction(tr("Open"), this);
   file->addAction(mActionOpen);
 
+  mActionOpenRecent = new QAction(tr("Open Recent"), this);
+  file->addAction(mActionOpenRecent);
+
+  file->addSeparator();
+
   mActionSave = new QAction(tr("Save"), this);
   file->addAction(mActionSave);
 
   mActionSaveAs = new QAction(tr("Save As"), this);
   file->addAction(mActionSaveAs);
 
-  file->addSection("Installs");
+  file->addSeparator();
 
-  mImportLibrary = new QAction(tr("Install library"), this);
-  file->addAction(mImportLibrary);
+  mActionImportLibrary = new QAction(tr("Install library"), this);
+  file->addAction(mActionImportLibrary);
 
-  mInstallPlugin = new QAction(tr("Install plugin"), this);
-  file->addAction(mInstallPlugin);
+  mActionInstallPlugin = new QAction(tr("Install plugin"), this);
+  file->addAction(mActionInstallPlugin);
+
+  file->addSeparator();
+  mActionExit = new QAction(tr("Exit"), this);
+  file->addAction(mActionExit);
 
   // ----------------------------------------------------------
   // Edit menu
   QMenu* edit = mMenuBar->addMenu(tr("Edit"));
-  mActionUndo = mUndoGroup->createUndoAction(this, tr("&Undo"));
+  mActionUndo = mUndoGroup->createUndoAction(this, tr("Undo"));
   edit->addAction(mActionUndo);
 
-  mActionRedo = mUndoGroup->createRedoAction(this, tr("&Redo"));
+  mActionRedo = mUndoGroup->createRedoAction(this, tr("Redo"));
   edit->addAction(mActionRedo);
+
+  mActionCopy = new QAction(tr("Copy"), this);
+  mActionCopy->setEnabled(false);
+  edit->addAction(mActionCopy);
+
+  mActionPaste = new QAction(tr("Paste"), this);
+  mActionPaste->setEnabled(false);
+  edit->addAction(mActionPaste);
+
+  mActionCut = new QAction(tr("Cut"), this);
+  mActionCut->setEnabled(false);
+  edit->addAction(mActionCut);
+
+  mActionDelete = new QAction(tr("Delete"), this);
+  mActionDelete->setEnabled(false);
+  edit->addAction(mActionDelete);
 
   // ----------------------------------------------------------
   // View menu
   QMenu* view = mMenuBar->addMenu(tr("View"));
-  mOpenComponentsPanel = new QAction(tr("Components panel"), this);
-  view->addAction(mOpenComponentsPanel);
 
-  mOpenPropertiesPanel = new QAction(tr("Properties panel"), this);
-  view->addAction(mOpenPropertiesPanel);
+  mActionZoomIn = new QAction(tr("Zoom In"), this);
+  mActionZoomIn->setEnabled(false);
+  view->addAction(mActionZoomIn);
+
+  mActionZoomOut = new QAction(tr("Zoom Out"), this);
+  mActionZoomOut->setEnabled(false);
+  view->addAction(mActionZoomOut);
+
+  mActionResetZoom = new QAction(tr("Reset Zoom"), this);
+  mActionResetZoom->setEnabled(false);
+  view->addAction(mActionResetZoom);
+
+  mActionFitToScreen = new QAction(tr("Fit to Screen"), this);
+  mActionFitToScreen->setEnabled(false);
+  view->addAction(mActionFitToScreen);
+
+  view->addSeparator();
+
+  mActionZoomIn = new QAction(tr("Toogle Grid"), this);
+  mActionZoomIn->setEnabled(false);
+  view->addAction(mActionZoomIn);
+
+  mActionZoomIn = new QAction(tr("Toogle Snap to Grid"), this);
+  mActionZoomIn->setEnabled(false);
+  view->addAction(mActionZoomIn);
+
+  view->addSection(tr("Hide"));
 
   mOpenInfoPanel = new QAction(tr("Information panel"), this);
+  mOpenInfoPanel->setIcon(addIconWithColor(":/icons/invisible.svg", Qt::white));
   view->addAction(mOpenInfoPanel);
+  connect(mOpenInfoPanel, &QAction::triggered, [this] {
+    togglePanelVisibility(mBottomPanel, mOpenInfoPanel);
+  });
+
+  mOpenComponentsPanel = new QAction(tr("Components panel"), this);
+  mOpenComponentsPanel->setIcon(addIconWithColor(":/icons/invisible.svg", Qt::white));
+  view->addAction(mOpenComponentsPanel);
+  connect(mOpenComponentsPanel, &QAction::triggered, [this] {
+    togglePanelVisibility(mLeftPanel, mOpenComponentsPanel);
+  });
+
+  mOpenPropertiesPanel = new QAction(tr("Properties panel"), this);
+  mOpenPropertiesPanel->setIcon(addIconWithColor(":/icons/invisible.svg", Qt::white));
+  view->addAction(mOpenPropertiesPanel);
+  connect(mOpenPropertiesPanel, &QAction::triggered, [this] {
+    togglePanelVisibility(mRightPanel, mOpenPropertiesPanel);
+  });
 
   // ----------------------------------------------------------
   // Diagram menu
   QMenu* window = mMenuBar->addMenu(tr("Diagram"));
 
-  mActionGenerate = new QAction(tr("Generate"), this);
+  // mActionAddTask = new QAction(tr("Add Node"), this);
+  // view->addAction(mOpenPropertiesPanel);
+
+  // ----------------------------------------------------------
+  // Diagram menu
+  QMenu* tools = mMenuBar->addMenu(tr("Tools"));
+
+  mGeneratorMenu = new QMenu(tr("Generator"));
+  tools->addMenu(mGeneratorMenu);
+
+  mActionGenerate = new QAction(tr("Verify"), this);
   window->addAction(mActionGenerate);
+
+  mActionSimulate = new QAction(tr("Simulate"), this);
+  window->addAction(mActionSimulate);
 
   // ----------------------------------------------------------
   // Settings menu
-  QMenu* settings = mMenuBar->addMenu(tr("Settings"));
-  mGeneratorMenu = new QMenu(tr("Generator"));
-  settings->addMenu(mGeneratorMenu);
-
-  mOpenAllSettings = new QAction(tr("Open all settings"), this);
-  settings->addAction(mOpenAllSettings);
+  // QMenu* settings = mMenuBar->addMenu(tr("Settings"));
 
   // ----------------------------------------------------------
   // Help menu
   QMenu* help = mMenuBar->addMenu(tr("Help"));
+
+  mActionDocumentation = new QAction(tr("Documentation"), this);
+  mActionDocumentation->setEnabled(false);
+  help->addAction(mActionDocumentation);
+
+  mActionQuickStartGuide = new QAction(tr("Quick Start Guide"), this);
+  mActionQuickStartGuide->setEnabled(false);
+  help->addAction(mActionQuickStartGuide);
+
+  mOpenAllSettings = new QAction(tr("Open All Settings"), this);
+  help->addAction(mOpenAllSettings);
+
+  mActionShortcuts = new QAction(tr("Shortcuts"), this);
+  mActionShortcuts->setEnabled(false);
+  help->addAction(mActionShortcuts);
+
+  mActionReportIssue = new QAction(tr("Report Issue"), this);
+  mActionReportIssue->setEnabled(false);
+  help->addAction(mActionReportIssue);
+
   mAboutAction = new QAction(tr("About"), this);
+  mAboutAction->setEnabled(false);
   help->addAction(mAboutAction);
 
   setMenuBar(mMenuBar);
@@ -566,7 +661,7 @@ void MainWindowLayout::applyTheme()
       }
     }
 
-    mRightPanel->setMinimumWidth(std::max(navigationTabWidth, propertiesTabWidth));
+    mRightPanel->setMinimumWidth(2 * std::max(navigationTabWidth, propertiesTabWidth));
 
     // Set initial height ratio
     mRightPanel->setSizes({400, 600});
@@ -627,4 +722,18 @@ void MainWindowLayout::toggleGenerationButton(bool running)
 
 void MainWindowLayout::toggleDeployButton(bool running)
 {
+}
+
+void MainWindowLayout::togglePanelVisibility(QWidget* panel, QAction* action)
+{
+  if (panel->isHidden())
+  {
+    panel->show();
+    action->setIcon(addIconWithColor(":/icons/invisible.svg", Qt::white));
+  }
+  else
+  {
+    panel->hide();
+    action->setIcon(addIconWithColor(":/icons/visible.svg", Qt::white));
+  }
 }
