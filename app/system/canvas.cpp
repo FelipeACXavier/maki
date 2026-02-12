@@ -1139,27 +1139,6 @@ void Canvas::onRemoveNode(const QString& nodeId)
   triggerNodeRemoval(node);
 }
 
-void Canvas::onSelectNode(const QList<QString>& nodeIds)
-{
-  clearSelectedNodes();
-
-  for (const auto& nodeId : nodeIds)
-  {
-    auto node = findNodeWithId(nodeId);
-    if (node)
-      node->setSelected(true);
-
-    emit nodeSelected(nodeIds.size() == 1 ? node : nullptr, nodeIds.size() == 1);
-  }
-}
-
-void Canvas::onRenameNode(const QString& nodeId, const QString& name)
-{
-  auto node = findNodeWithId(nodeId);
-  if (node)
-    node->setProperty("name", name);
-}
-
 // ==========================================================================================
 // Flow
 void Canvas::populate(Flow* flow)

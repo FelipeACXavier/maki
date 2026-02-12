@@ -3,6 +3,7 @@
 #include <QIcon>
 #include <QList>
 #include <QString>
+#include <QTreeWidgetItem>
 #include <QVBoxLayout>
 #include <QWidget>
 
@@ -37,4 +38,12 @@ struct WidgetWithIcon
   QColor color;
 };
 
+struct TreeWidgetWithIcon
+{
+  QTreeWidgetItem* widget;
+  QString path;
+  QColor color;
+};
+
 void updateIconTheme(QList<WidgetWithIcon>& icons);
+void updateTreeIconTheme(QList<TreeWidgetWithIcon>& icons);

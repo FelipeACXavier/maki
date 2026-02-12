@@ -175,3 +175,15 @@ void updateIconTheme(QList<WidgetWithIcon>& icons)
     }
   }
 }
+
+void updateTreeIconTheme(QList<TreeWidgetWithIcon>& icons)
+{
+  for (auto& item : icons)
+  {
+    if (item.widget)
+    {
+      QColor color = item.color.isValid() ? item.color : Config::FOREGROUND;
+      item.widget->setIcon(0, addIconWithColor(item.path, color));
+    }
+  }
+}

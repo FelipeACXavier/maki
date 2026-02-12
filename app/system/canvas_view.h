@@ -4,6 +4,8 @@
 #include <QKeyEvent>
 #include <QWheelEvent>
 
+#include "widgets/settings_manager.h"
+
 class Canvas;
 
 class CanvasView : public QGraphicsView
@@ -21,6 +23,8 @@ public:
   void centerOn(const QPointF& pos);
   void centerOn(const QGraphicsItem* item);
 
+  void onSettingsChanged(const AppearanceSettings& settings);
+
 protected:
   void keyPressEvent(QKeyEvent*) override;
   void keyReleaseEvent(QKeyEvent*) override;
@@ -36,6 +40,7 @@ private:
   // Flags to determine if zooming or panning should be done.
   bool mDoMousePanning;
   bool mDoKeyZoom;
+  bool mShowGrid;
 
   QPoint mLastMousePos;
   QPointF mCenterPoint;

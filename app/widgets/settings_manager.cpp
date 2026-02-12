@@ -91,7 +91,10 @@ void SettingsManager::setGeneral(const GeneralSettings& s)
 
 void SettingsManager::setAppearance(const AppearanceSettings& s)
 {
-  bool changed = (s.theme != mAppearance.theme);
+  bool changed = (s.theme != mAppearance.theme) ||
+                 (s.nativeMenuBar != mAppearance.nativeMenuBar) ||
+                 (s.showCanvasGrid != mAppearance.showCanvasGrid);
+
   mAppearance = s;
   save();
 

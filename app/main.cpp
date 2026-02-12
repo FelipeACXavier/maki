@@ -35,17 +35,26 @@ void loadApplicationFonts()
 int main(int argc, char* argv[])
 {
   QApplication app(argc, argv);
-  app.setApplicationName(Config::APPLICATION_NAME);
   app.setApplicationDisplayName(Config::APPLICATION_NAME);
+  app.setApplicationName(Config::APPLICATION_NAME);
   app.setApplicationVersion(Config::VERSION);
   app.setOrganizationName(Config::ORGANIZATION_NAME);
 
+  QCoreApplication::setOrganizationName(Config::ORGANIZATION_NAME);
+  QCoreApplication::setApplicationVersion(Config::VERSION);
+  QCoreApplication::setApplicationName(Config::APPLICATION_NAME);        // internal id-ish
+  QGuiApplication::setDesktopFileName(Config::APPLICATION_NAME);         // matches maki.desktop
+  QGuiApplication::setApplicationDisplayName(Config::APPLICATION_NAME);  // human name
+
   app.setWindowIcon(QIcon(":/app_icons/maki.png"));
+
+  QGuiApplication::setDesktopFileName(Config::APPLICATION_NAME);
 
   loadApplicationFonts();
 
   QApplication::setFont(Fonts::Main);
   MainWindow system(&app);
+  system.setWindowTitle(Config::APPLICATION_NAME);
 
   auto started = system.start();
   if (!started.IsSuccess())

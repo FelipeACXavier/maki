@@ -65,6 +65,9 @@
     <file alias="uncheck-dark.svg">assets/icons/fontawesome/svgs/solid/toggle-off-dark.svg</file>
     <file alias="limit-dark.svg">assets/icons/fontawesome/svgs/solid/minus-dark.svg</file>
     <file alias="verify.svg">assets/icons/fontawesome/svgs/solid/shield-cat.svg</file>
+    <!-- Tree tcons -->
+    <file alias="capability.svg">assets/icons/fontawesome/svgs/solid/puzzle-piece.svg</file>
+    <file alias="flow_block.svg">assets/icons/fontawesome/svgs/solid/scroll.svg</file>
   </qresource>
   <qresource prefix="/app_icons">
     <file alias="maki.png">assets/app_icon/maki_icon_only.png</file>

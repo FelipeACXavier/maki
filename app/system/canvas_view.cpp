@@ -31,6 +31,7 @@ CanvasView::CanvasView(QWidget* parent)
   mPanSpeed = 1;
   mDoMousePanning = false;
   mDoKeyZoom = false;
+  mShowGrid = true;
 
   mMinZoom = 0.2;
   mMaxZoom = 10;
@@ -58,6 +59,11 @@ void CanvasView::centerOn(const QPointF& pos)
 {
   mCenterPoint = pos;
   QGraphicsView::centerOn(mCenterPoint);
+}
+
+void CanvasView::onSettingsChanged(const AppearanceSettings& settings)
+{
+  mShowGrid = settings.showCanvasGrid;
 }
 
 void CanvasView::setScale(qreal scale)
@@ -219,6 +225,9 @@ void CanvasView::pan(QPointF delta)
 
 void CanvasView::drawBackground(QPainter* p, const QRectF& /* rect */)
 {
+  if (!mShowGrid)
+    return;
+
   // Save so we dont affect the following calls
   p->save();
   p->setWorldTransform(QTransform());

@@ -131,8 +131,14 @@ void MainWindow::onThemeChanged(const QString& t, const QList<Config::ThemeInfo>
   {
     QWidget* w = mCanvasPanel->widget(i);
     if (auto canvas = qobject_cast<CanvasView*>(w))
+    {
+      canvas->onSettingsChanged(mSettingsManager->appearance());
       static_cast<Canvas*>(canvas->scene())->themeChanged();
+    }
   }
+
+  if (mSystemMenu)
+    mSystemMenu->onThemeChanged(mSettingsManager->appearance());
 
   MainWindowLayout::onThemeChanged(mSettingsManager->appearance());
 }
@@ -196,11 +202,12 @@ void MainWindow::bind()
   connect(rootCanvas(), &Canvas::flowRemoved, this, &MainWindow::onFlowRemoved);
   // connect(rootCanvas(), &Canvas::createEvent, mFieldsMenu, &FieldsMenu::onCreateEvent);
 
-  // connect(mFieldsMenu, &FieldsMenu::flowSelected, rootCanvas(), &Canvas::onFlowSelected);
   connect(mPropertiesMenu, &PropertiesMenu::flowSelected, rootCanvas(), &Canvas::onFlowSelected);
 
-  connect(mFlowMenu, &FlowMenu::flowSelected, rootCanvas(), &Canvas::onFlowSelected);
-  connect(mFlowMenu, &FlowMenu::flowRemoved, rootCanvas(), &Canvas::onFlowRemoved);
+  connect(mSystemMenu, &SystemMenu::flowSelected, rootCanvas(), &Canvas::onFlowSelected);
+  connect(mSystemMenu, &SystemMenu::flowRemoved, rootCanvas(), &Canvas::onFlowRemoved);
+  connect(mSystemMenu, &SystemMenu::nodeRemoved, rootCanvas(), &Canvas::onRemoveNode);
+  connect(mSystemMenu, &SystemMenu::nodeFocused, rootCanvas(), &Canvas::onFocusNode);
 
   if (mGenerator)
   {
@@ -224,11 +231,6 @@ void MainWindow::bindCanvas()
 
   connect(canvas(), &Canvas::createEvent, mPropertiesMenu, &PropertiesMenu::onCreateEvent);
   connect(canvas(), &Canvas::transitionSelected, mPropertiesMenu, &PropertiesMenu::onTransitionSelected);
-
-  connect(mSystemMenu, &SystemMenu::nodeRemoved, canvas(), &Canvas::onRemoveNode);
-  connect(mSystemMenu, &SystemMenu::nodeSelected, canvas(), &Canvas::onSelectNode);
-  connect(mSystemMenu, &SystemMenu::nodeRenamed, canvas(), &Canvas::onRenameNode);
-  connect(mSystemMenu, &SystemMenu::nodeFocused, canvas(), &Canvas::onFocusNode);
 }
 
 void MainWindow::unbindCanvas()
@@ -237,12 +239,9 @@ void MainWindow::unbindCanvas()
   disconnect(canvas(), &Canvas::nodeAdded, this, &MainWindow::onNodeAdded);
   disconnect(canvas(), &Canvas::nodeRemoved, this, &MainWindow::onNodeRemoved);
   disconnect(canvas(), &Canvas::nodeModified, this, &MainWindow::onNodeModified);
-  disconnect(canvas(), &Canvas::createEvent, mPropertiesMenu, &PropertiesMenu::onCreateEvent);
 
-  disconnect(mSystemMenu, &SystemMenu::nodeRemoved, canvas(), &Canvas::onRemoveNode);
-  disconnect(mSystemMenu, &SystemMenu::nodeSelected, canvas(), &Canvas::onSelectNode);
-  disconnect(mSystemMenu, &SystemMenu::nodeRenamed, canvas(), &Canvas::onRenameNode);
-  disconnect(mSystemMenu, &SystemMenu::nodeFocused, canvas(), &Canvas::onFocusNode);
+  disconnect(canvas(), &Canvas::createEvent, mPropertiesMenu, &PropertiesMenu::onCreateEvent);
+  disconnect(canvas(), &Canvas::transitionSelected, mPropertiesMenu, &PropertiesMenu::onTransitionSelected);
 }
 
 void MainWindow::bindShortcuts()
@@ -468,7 +467,6 @@ void MainWindow::onNodeSelected(NodeItem* node, bool selected)
     mInfoText->setText(node->help().message);
 
   LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeSelected(node, selected));
-  // LOG_WARN_ON_FAILURE(mFieldsMenu->onNodeSelected(node, selected));
 }
 
 void MainWindow::onNodeAdded(NodeItem* node)
@@ -479,16 +477,8 @@ void MainWindow::onNodeAdded(NodeItem* node)
     return;
   }
 
-  if (canvas()->type() == Types::LibraryTypes::STRUCTURAL)
-  {
-    LOG_WARN_ON_FAILURE(mSystemMenu->onNodeAdded(node));
-    LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeAdded(node));
-    // LOG_WARN_ON_FAILURE(mFieldsMenu->onNodeAdded(node));
-  }
-  else
-  {
-    LOG_WARN_ON_FAILURE(mFlowMenu->onNodeAdded(canvas()->id(), node));
-  }
+  LOG_WARN_ON_FAILURE(mSystemMenu->onNodeAdded(canvas()->id(), node));
+  LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeAdded(node));
 }
 
 void MainWindow::onNodeRemoved(NodeItem* node)
@@ -499,13 +489,8 @@ void MainWindow::onNodeRemoved(NodeItem* node)
     return;
   }
 
+  LOG_WARN_ON_FAILURE(mSystemMenu->onNodeRemoved(canvas()->id(), node));
   LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeRemoved(node));
-  // LOG_WARN_ON_FAILURE(mFieldsMenu->onNodeRemoved(node));
-
-  if (canvas()->type() == Types::LibraryTypes::STRUCTURAL)
-    LOG_WARN_ON_FAILURE(mSystemMenu->onNodeRemoved(node));
-  else
-    LOG_WARN_ON_FAILURE(mFlowMenu->onNodeRemoved(canvas()->id(), node));
 }
 
 void MainWindow::onNodeModified(NodeItem* node)
@@ -516,10 +501,7 @@ void MainWindow::onNodeModified(NodeItem* node)
     return;
   }
 
-  if (canvas()->type() == Types::LibraryTypes::STRUCTURAL)
-    LOG_WARN_ON_FAILURE(mSystemMenu->onNodeModified(node));
-  else
-    LOG_WARN_ON_FAILURE(mFlowMenu->onNodeModified(canvas()->id(), node));
+  LOG_WARN_ON_FAILURE(mSystemMenu->onNodeModified(canvas()->id(), node));
 }
 
 void MainWindow::onCanvasTabChanged(int index)
@@ -693,6 +675,11 @@ void MainWindow::addBrowserTab()
   mLocalServerTab->show();
 }
 
+void MainWindow::onFlowAdded(Flow* flow, NodeItem* node)
+{
+  LOG_WARN_ON_FAILURE(mSystemMenu->onFlowAdded(flow, node));
+}
+
 void MainWindow::onFlowRemoved(const QString& flowId, const QString& nodeId)
 {
   if (mActiveCanvas->id() == flowId)
@@ -702,12 +689,7 @@ void MainWindow::onFlowRemoved(const QString& flowId, const QString& nodeId)
     mCanvasPanel->removeTab(oldTab);
   }
 
-  LOG_WARN_ON_FAILURE(mFlowMenu->onFlowRemoved(flowId, nodeId));
-}
-
-void MainWindow::onFlowAdded(Flow* flow, NodeItem* node)
-{
-  LOG_WARN_ON_FAILURE(mFlowMenu->onFlowAdded(flow, node));
+  LOG_WARN_ON_FAILURE(mSystemMenu->onFlowRemoved(flowId, nodeId));
 }
 
 int MainWindow::libraryTypeToIndex(Types::LibraryTypes type) const

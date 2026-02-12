@@ -64,12 +64,9 @@ protected:
   QSplitter* mRightPanel;
   QTabWidget* mNavigationTab;
   SystemMenu* mSystemMenu;
-  FlowMenu* mFlowMenu;
 
   QTabWidget* mPropertiesTab;
   PropertiesMenu* mPropertiesMenu;
-  // FieldsMenu* mFieldsMenu;
-  // BehaviourMenu* mBehaviourMenu;
 
   // === Menu Bar ===
   QMenuBar* mMenuBar;
@@ -80,6 +77,9 @@ protected:
   QAction* mActionOpen;
   QAction* mActionSave;
   QAction* mActionSaveAs;
+
+  QAction* mImportLibrary;
+  QAction* mInstallPlugin;
 
   // Edit menu
   QUndoGroup* mUndoGroup = nullptr;

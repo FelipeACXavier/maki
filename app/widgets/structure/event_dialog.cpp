@@ -90,7 +90,7 @@ void EventDialog::createNameInput(QWidget* parent)
   name->setFocusPolicy(mStorage->getmodifiable() ? Qt::StrongFocus : Qt::NoFocus);
   name->setReadOnly(!mStorage->getmodifiable());
 
-  connect(name, &QLineEdit::editingFinished, this, [=]() { mStorage->getname() = name->text(); });
+  connect(name, &QLineEdit::editingFinished, this, [=]() { mStorage->setName(name->text()); });
   layout()->addWidget(name);
 }
 

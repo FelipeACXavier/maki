@@ -267,37 +267,23 @@ void MainWindowLayout::buildRightPanel()
 
   mNavigationTab->addTab(mSystemMenu, tr("System"));
 
-  mFlowMenu = new FlowMenu(mNavigationTab);
-
-  QTreeWidgetItem* systemFlows = new QTreeWidgetItem(mFlowMenu);
-  systemFlows->setText(0, tr("System flows"));
-  mFlowMenu->addTopLevelItem(systemFlows);
-
-  QTreeWidgetItem* componentFlows = new QTreeWidgetItem(mFlowMenu);
-  componentFlows->setText(0, tr("Component flows"));
-  mFlowMenu->addTopLevelItem(componentFlows);
-
-  mNavigationTab->addTab(mFlowMenu, tr("Flow"));
-
   mIcons.append({mNavigationTab->tabBar(), ":/icons/system.svg", 0});
   mIcons.append({mNavigationTab->tabBar(), ":/icons/flows.svg", 1});
 
   // ----------------------------------------------------------------------
   // Properties Menu
   mPropertiesTab = new QTabWidget();
+  mPropertiesTab->setMinimumHeight(500);
 
   mPropertiesMenu = new PropertiesMenu(mPropertiesTab);
   mPropertiesTab->addTab(mPropertiesMenu, tr("Properties"));
 
-  // mFieldsMenu = new FieldsMenu(mPropertiesTab);
-  // mPropertiesTab->addTab(mFieldsMenu, tr("Events"));
-
-  // mBehaviourMenu = new BehaviourMenu(mPropertiesTab);
-  // mPropertiesTab->addTab(mBehaviourMenu, tr("Behaviour"));
-
   mIcons.append({mPropertiesTab->tabBar(), ":/icons/properties.svg", 0});
   mIcons.append({mPropertiesTab->tabBar(), ":/icons/fields.svg", 1});
   mIcons.append({mPropertiesTab->tabBar(), ":/icons/behaviour.svg", 2});
+
+  mNavigationTab->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+  mPropertiesTab->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
   mRightPanel->addWidget(mNavigationTab);
   mRightPanel->addWidget(mPropertiesTab);
@@ -326,6 +312,14 @@ void MainWindowLayout::buildMenuBar()
 
   mActionSaveAs = new QAction(tr("Save As"), this);
   file->addAction(mActionSaveAs);
+
+  file->addSection("Installs");
+
+  mImportLibrary = new QAction(tr("Install library"), this);
+  file->addAction(mImportLibrary);
+
+  mInstallPlugin = new QAction(tr("Install plugin"), this);
+  file->addAction(mInstallPlugin);
 
   // ----------------------------------------------------------
   // Edit menu
@@ -573,6 +567,9 @@ void MainWindowLayout::applyTheme()
     }
 
     mRightPanel->setMinimumWidth(std::max(navigationTabWidth, propertiesTabWidth));
+
+    // Set initial height ratio
+    mRightPanel->setSizes({400, 600});
   }
 }
 

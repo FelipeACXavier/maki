@@ -331,6 +331,7 @@ void SettingsDialog::saveToSettings()
   appearance.showCanvasGrid = mShowGrid->isChecked();
   appearance.nodeCornerRadius = mNodeCornerRadius->value();
   appearance.theme = mThemeCombo->currentData().toString();
+  appearance.nativeMenuBar = mNativeMenuBar->isChecked();
 
   GenerationSettings generation;
   generation.generationDir = mGenerationDirEdit->text();
