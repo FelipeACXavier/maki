@@ -137,6 +137,7 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
   if (event->button() == Qt::LeftButton)
   {
     mStartDragPosition = event->scenePos();
+    mMouseDown = true;
 
     QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
     if (item && item->type() == NodeItem::Type)
@@ -213,15 +214,15 @@ bool Canvas::nodeClickHandler(QGraphicsSceneMouseEvent* event, QGraphicsItem* it
     event->accept();
     return false;
   }
-  else
-  {
-    // We cannot clear if there are multiple nodes selected
-    if (selectedItems().size() < 2)
-      clearSelectedNodes();
+  // else
+  // {
+  //   // We cannot clear if there are multiple nodes selected
+  //   if (selectedItems().size() < 2)
+  //     clearSelectedNodes();
 
-    nodeClicked(node);
-    selectNode(node, true);
-  }
+  //   nodeClicked(node);
+  //   selectNode(node, true);
+  // }
 
   return true;
 }
@@ -241,6 +242,12 @@ void Canvas::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
   if (mTransition)
   {
     mTransition->move(Constants::TMP_CONNECTION_ID, event->scenePos());
+  }
+  else if (mMouseDown)
+  {
+    const int dist = (event->scenePos() - event->buttonDownScreenPos(Qt::LeftButton)).manhattanLength();
+    if (!mDragging && dist >= 400)
+      mDragging = true;
   }
   // else if (event->buttons() & Qt::LeftButton)
   // {
@@ -333,7 +340,6 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     if (event->button() == Qt::LeftButton)
     {
       QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
-      LOG_INFO("Dropping transition: %d", item ? item->type() : -1);
       if (item && (item->type() == NodeItem::Type || item->type() == QGraphicsTextItem::Type))
       {
         NodeItem* node = static_cast<NodeItem*>(item->type() == QGraphicsTextItem::Type ? item->parentItem() : item);
@@ -348,6 +354,24 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 
       mTransition = nullptr;
       mNode = nullptr;
+    }
+  }
+  else if (QGraphicsItem* item = itemAt(event->scenePos(), QTransform()))
+  {
+    if (item && item->type() == NodeItem::Type && !mDragging)
+    {
+      NodeItem* node = static_cast<NodeItem*>(item);
+
+      // We cannot clear if there are multiple nodes selected
+      if (selectedItems().size() < 2)
+        clearSelectedNodes();
+
+      nodeClicked(node);
+      selectNode(node, true);
+    }
+    else
+    {
+      clearSelection();
     }
   }
   else
@@ -370,6 +394,9 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
       }
     }
   }
+
+  mMouseDown = false;
+  mDragging = false;
 
   QGraphicsScene::mouseReleaseEvent(event);  // Allow normal item drop behavior
 }

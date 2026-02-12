@@ -103,8 +103,10 @@ private:
   TransitionItem* mTransition = nullptr;
   NodeItem* mNode = nullptr;
   QPointF mStartDragPosition;
+  bool mDragging = false;
+  bool mMouseDown = false;
 
-  QTimer* mHoverTimer;
+  QTimer* mHoverTimer = nullptr;
   QUndoStack* mUndoStack = nullptr;
 
   struct CopiedNode
