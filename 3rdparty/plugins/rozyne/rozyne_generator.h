@@ -5,6 +5,7 @@
 #include <QProcess>
 
 #include "generator_plugin.h"
+#include "isettings.h"
 
 class INode;
 class IFlow;
@@ -21,6 +22,7 @@ public:
   void setHostServices(maki::IHostServices* services) override;
 
   QString languageName() const override;
+  maki::PluginVersion version() const override;
 
   QString verify(const QString& outputFolder) override;
   QString simulate(const QString& outputFolder) override;
@@ -33,6 +35,7 @@ private:
   QVector<QString> mImports;
   QList<QString> mGeneratedFiles = {};
   maki::IHostServices* mServices = nullptr;
+  QVector<maki::SettingField> mSettings = {};
 
   QVector<QString> mGeneratedIds = {};
   QProcess* mDaemon = nullptr;
@@ -69,4 +72,5 @@ private:
 
   // Setup
   bool startDaemon();
+  void buildSettings();
 };

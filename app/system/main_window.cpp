@@ -21,8 +21,10 @@
 #include "behaviour_canvas.h"
 #include "canvas.h"
 #include "canvas_view.h"
+#include "compiler/pipeline.h"
 #include "elements/flow.h"
 #include "elements/node.h"
+#include "host_services.h"
 #include "library_container.h"
 #include "library_scene.h"
 #include "local_server_tab.h"
@@ -87,13 +89,17 @@ VoidResult MainWindow::start()
 
   LOG_DEBUG("Starting the main window");
 
-  mGenerator = new Generator(mStorage, this);
+  LOG_INFO("Using application path: %s", qPrintable(QCoreApplication::applicationDirPath()));
   mSaveHandler = std::make_unique<SaveHandler>(this);
   mPluginManager = std::make_unique<PluginManager>(this);
   mSettingsManager = std::make_shared<SettingsManager>();
   mNotificationManager = new NotificationManager(mCanvasPanel);
 
-  mProcessTab = new ProcessTab(mGenerator->pipeline(), mCanvasPanel);
+  mPipeline = new Pipeline(this);
+  mGenerator = new Generator(mPipeline, this);
+  mHostServices = new HostServices(mStorage.get(), mPipeline, mSettingsManager.get(), QCoreApplication::applicationDirPath(), this);
+
+  mProcessTab = new ProcessTab(mPipeline, mCanvasPanel);
   mProcessTab->hide();
 
   mLocalServerTab = new LocalServerTab(mCanvasPanel);
@@ -158,7 +164,7 @@ void MainWindow::startUI()
   mUndoGroup->setActiveStack(canvas->undoStack());
 
   if (mPluginManager)
-    mPluginManager->start(mGeneratorMenu, mGeneratorOption);
+    mPluginManager->start(mGeneratorMenu, mGeneratorOption, mHostServices);
 }
 
 void MainWindow::bind()

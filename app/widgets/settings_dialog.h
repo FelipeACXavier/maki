@@ -10,7 +10,7 @@ class QSpinBox;
 class QCheckBox;
 class QComboBox;
 class QStackedWidget;
-class QListWidget;
+class QTreeWidget;
 class QLineEdit;
 class QToolButton;
 class QVBoxLayout;
@@ -25,10 +25,16 @@ private slots:
   void apply();
 
 private:
+  struct SelectorPage
+  {
+    QTreeWidgetItem* selector;
+    QWidget* page;
+  };
+
   // ------------------------------------------
   // Layouting
   QStackedWidget* mPages = nullptr;
-  QListWidget* mPageSelector = nullptr;
+  QTreeWidget* mPageSelector = nullptr;
 
   // ------------------------------------------
   // Actual settings
@@ -53,14 +59,20 @@ private:
   QToolButton* mGenerationBrowseBtn = nullptr;
   QToolButton* mGenerationResetBtn = nullptr;
 
+  // Plugins
+  QVector<PluginInfo> mPluginSettings;
+
   // ------------------------------------------
   // Methods
   void saveToSettings();
   void loadFromSettings();
 
-  QWidget* addPage(const QString& pageName, const QString& iconNeame, std::function<void()> resetCallback);
+  SelectorPage addPage(const QString& pageName, const QString& iconNeame, std::function<void()> resetCallback, QTreeWidgetItem* parent = nullptr);
 
   VoidResult createGeneralPage();
   VoidResult createAppearancePage();
   VoidResult createGenerationPage();
+  VoidResult createPluginPages();
+
+  void updatePluginSetting(const QString& pluginId, const QString& key, QVariant value);
 };

@@ -4,18 +4,15 @@
 
 #include "elements/node.h"
 #include "generator_plugin.h"
-#include "host_services.h"
 #include "logging.h"
 #include "pipeline.h"
 
-Generator::Generator(std::shared_ptr<SaveInfo> storage, QObject* parent)
+Generator::Generator(Pipeline* pipeline, QObject* parent)
     : QObject(parent)
+    , mPipeline(pipeline)
 {
-  mPipeline = new Pipeline(this);
   connect(mPipeline, &Pipeline::openClient, [this](const QString& url) { emit openClient(url); });
   connect(mPipeline, &Pipeline::finishedLast, [this] { emit generationEnded(); });
-
-  mServices = new HostServices(storage.get(), mPipeline, "/home/ubuntu");
 }
 
 Pipeline* Generator::pipeline() const
@@ -25,19 +22,16 @@ Pipeline* Generator::pipeline() const
 
 VoidResult Generator::generate(const QString& outputDir, maki::IGeneratorPlugin* generator)
 {
-  LOG_INFO("[VERIFY] SetHostServices");
-  generator->setHostServices(mServices);
-
   LOG_INFO("[VERIFY] SetName");
-  mPipeline->setName(generator->languageName());
+  pipeline()->setName(generator->languageName());
 
   LOG_INFO("[VERIFY] Verify");
   QString text = generator->verify(outputDir);
 
   LOG_INFO("[VERIFY] started");
-  emit generationStarted(mPipeline);
+  emit generationStarted(pipeline());
 
-  auto ran = mPipeline->start();
+  auto ran = pipeline()->start();
   if (!ran.IsSuccess())
     return VoidResult::Failed("Failed to run pipeline: " + ran.ErrorMessage());
 
@@ -46,15 +40,13 @@ VoidResult Generator::generate(const QString& outputDir, maki::IGeneratorPlugin*
 
 VoidResult Generator::simulate(const QString& outputDir, maki::IGeneratorPlugin* generator)
 {
-  generator->setHostServices(mServices);
-
-  mPipeline->setName(generator->languageName());
+  pipeline()->setName(generator->languageName());
 
   QString text = generator->simulate(outputDir);
 
-  emit generationStarted(mPipeline);
+  emit generationStarted(pipeline());
 
-  auto ran = mPipeline->start();
+  auto ran = pipeline()->start();
   if (!ran.IsSuccess())
     return VoidResult::Failed("Failed to run pipeline: " + ran.ErrorMessage());
 
@@ -87,7 +79,7 @@ VoidResult Generator::generatePipeline(const QString& outputDir, const QStringLi
     generate->setProgram(command);
     generate->setArguments(arguments);
 
-    mPipeline->add(generate, maki::OnFail::STOP);
+    pipeline()->add(generate, maki::OnFail::STOP);
   }
 
   output.append(dir.absolutePath());
@@ -120,7 +112,7 @@ VoidResult Generator::verifyPipeline(const QStringList& input, QStringList& outp
       generate->setProgram(command);
       generate->setArguments(arguments);
 
-      mPipeline->add(generate, maki::OnFail::STOP);
+      pipeline()->add(generate, maki::OnFail::STOP);
     }
   }
 
@@ -152,7 +144,7 @@ VoidResult Generator::simulatePipeline(const QStringList& input, QStringList& ou
       generate->setProgram(command);
       generate->setArguments(arguments);
 
-      mPipeline->add(generate, maki::OnFail::STOP, "http://localhost:3000/trace");
+      pipeline()->add(generate, maki::OnFail::STOP, "http://localhost:3000/trace");
       output.append(fullPath);
     }
   }

@@ -5,6 +5,7 @@
 #include "generator_plugin.h"
 
 class QComboBox;
+class HostServices;
 
 class PluginManager : public QObject
 {
@@ -14,7 +15,7 @@ public:
 
   virtual ~PluginManager();
 
-  void start(QMenu* menu, QComboBox* comboBox);
+  void start(QMenu* menu, QComboBox* comboBox, HostServices* services);
 
   maki::IGeneratorPlugin* currentPlugin() const;
   maki::IGeneratorPlugin* pluginByLanguage(const QString& language) const;

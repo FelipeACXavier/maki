@@ -7,6 +7,7 @@
 #include <QPluginLoader>
 
 #include "common/style_helpers.h"
+#include "host_services.h"
 #include "logging.h"
 
 PluginManager::PluginManager(QObject* parent)
@@ -21,7 +22,7 @@ PluginManager::~PluginManager()
     mPlugin->tearDown();
 }
 
-void PluginManager::start(QMenu* menu, QComboBox* comboBox)
+void PluginManager::start(QMenu* menu, QComboBox* comboBox, HostServices* services)
 {
   if (!menu)
   {
@@ -61,6 +62,7 @@ void PluginManager::start(QMenu* menu, QComboBox* comboBox)
       continue;
 
     LOG_DEBUG("Loaded plugin for language: %s", qPrintable(codeGen->languageName()));
+    codeGen->setHostServices(services);
 
     QAction* action = menu->addAction(codeGen->languageName());
     connect(action, &QAction::triggered, [this, codeGen] { setPlugin(codeGen); });

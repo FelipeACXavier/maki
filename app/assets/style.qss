@@ -269,6 +269,10 @@ QLineEdit:hover {
   border-color: @selection_bg;
 }
 
+QLineEdit[invalid="true"] {
+  border-bottom: 2px solid #d32f2f;
+}
+
 /* ===============================
    COMBO BOX
    =============================== */
@@ -532,18 +536,18 @@ QFrame#HLine {
 /* ===============================
    QLISTWIDGET
    =============================== */
-QListWidget#SettingsList {
+QTreeWidget#SettingsList {
   padding: 5px 1px;
   margin-right: 0px;
   padding-right: 0px;
 }
 
-QListWidget#SettingsList::item {
+QTreeWidget#SettingsList::item {
   padding: 5px;
   border-bottom: 2px solid @background;
 }
 
-QListWidget#SettingsList::item:selected {
+QTreeWidget#SettingsList::item:selected {
   color: @foreground;
   background: @background;
 

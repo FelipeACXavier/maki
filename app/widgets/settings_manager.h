@@ -6,6 +6,8 @@
 #include <QSettings>
 
 #include "common/theme.h"
+#include "generator_plugin.h"
+#include "isettings.h"
 
 namespace Config
 {
@@ -36,7 +38,15 @@ struct GenerationSettings
   QStringList pluginSearchPaths;
 };
 
-class SettingsManager : public QObject
+struct PluginInfo
+{
+  QString name;
+  bool enabled;
+  maki::PluginVersion version;
+  QVector<maki::SettingField> settings;
+};
+
+class SettingsManager : public QObject, public maki::ISettings
 {
   Q_OBJECT
 public:
@@ -45,10 +55,14 @@ public:
   GeneralSettings general() const;
   AppearanceSettings appearance() const;
   GenerationSettings generation() const;
+  QVector<PluginInfo> plugins() const;
 
   void setGeneral(const GeneralSettings& s);
   void setAppearance(const AppearanceSettings& s);
   void setGeneration(const GenerationSettings& s);
+  void setPlugins(const QVector<PluginInfo>& s);
+
+  VoidResult registerSettings(const QString& id, const maki::PluginVersion version, const QVector<maki::SettingField>& settings) override;
 
   void load();
   void save();
@@ -63,6 +77,8 @@ private:
   GeneralSettings mGeneral;
   AppearanceSettings mAppearance;
   GenerationSettings mGeneration;
+
+  QVector<PluginInfo> mPluginSettings;
 
   QList<Config::ThemeInfo> mAvailableThemes;
 };

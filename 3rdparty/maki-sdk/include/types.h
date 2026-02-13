@@ -1,7 +1,5 @@
 #pragma once
 
-// #include <QJsonObject>
-// #include <QJsonValueConstRef>
 #include <QPointF>
 #include <QString>
 

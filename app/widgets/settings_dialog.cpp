@@ -5,19 +5,24 @@
 #include <QDialogButtonBox>
 #include <QFileDialog>
 #include <QHBoxLayout>
+#include <QHeaderView>
 #include <QLabel>
 #include <QLineEdit>
 #include <QList>
-#include <QListWidget>
 #include <QPushButton>
 #include <QScreen>
 #include <QSpinBox>
 #include <QStackedWidget>
+#include <QStandardItemModel>
+#include <QTableView>
 #include <QToolButton>
+#include <QTreeWidget>
+#include <QTreeWidgetItem>
 #include <QVBoxLayout>
 
 #include "logging.h"
 #include "style_helpers.h"
+#include "widget_factory.h"
 
 SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsManager> manager, QWidget* parent)
     : BaseDialog(title, parent)
@@ -29,13 +34,16 @@ SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsMan
   connect(mSettingsManager.get(), &SettingsManager::themeChanged, this, &BaseDialog::onThemeChanged);
 
   // Left: navigation list
-  mPageSelector = new QListWidget(this);
+  mPageSelector = new QTreeWidget(this);
   mPageSelector->setObjectName("SettingsList");
-  mPageSelector->setViewMode(QListView::ListMode);
-  mPageSelector->setMovement(QListView::Static);
+  mPageSelector->setHeaderHidden(true);
   mPageSelector->setIconSize(QSize(16, 16));
-  mPageSelector->setSpacing(4);
+  mPageSelector->setIndentation(14);
+  mPageSelector->setRootIsDecorated(true);
+  mPageSelector->setItemsExpandable(true);
+  mPageSelector->setExpandsOnDoubleClick(false);  // single click selects
   mPageSelector->setFocusPolicy(Qt::NoFocus);
+  mPageSelector->setUniformRowHeights(true);
 
   // Right: stacked mPages
   mPages = new QStackedWidget(this);
@@ -44,14 +52,24 @@ SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsMan
   LOG_WARN_ON_FAILURE(createGeneralPage());
   LOG_WARN_ON_FAILURE(createAppearancePage());
   LOG_WARN_ON_FAILURE(createGenerationPage());
+  LOG_WARN_ON_FAILURE(createPluginPages());
 
-  mPageSelector->setCurrentRow(0);
+  // mPageSelector->setCurrentRow(0);
 
   mainLayout->addWidget(mPageSelector, 1);
   mainLayout->addWidget(mPages, 4);
 
   // Select page when user clicks an item
-  connect(mPageSelector, &QListWidget::currentRowChanged, mPages, &QStackedWidget::setCurrentIndex);
+  // connect(mPageSelector, &QListWidget::currentRowChanged, mPages, &QStackedWidget::setCurrentIndex);
+  connect(mPageSelector, &QTreeWidget::currentItemChanged, this, [this](QTreeWidgetItem* current, QTreeWidgetItem* /* previous */) {
+    if (!current)
+      return;
+
+    // Non-leaf category items may not map to a page.
+    const auto pageIndex = current->data(0, Qt::UserRole).toInt();
+    if (pageIndex >= 0)
+      mPages->setCurrentIndex(pageIndex);
+  });
 
   // Buttons
   auto buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
@@ -83,18 +101,13 @@ SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsMan
   updateIconTheme(mIcons);
 }
 
-QWidget* SettingsDialog::addPage(const QString& pageName, const QString& iconName, std::function<void()> resetCallback)
+SettingsDialog::SelectorPage SettingsDialog::addPage(const QString& pageName, const QString& iconName, std::function<void()> resetCallback, QTreeWidgetItem* parent)
 {
-  // Update the selector with new page
-  auto selector = new QListWidgetItem(addIconWithColor(iconName, Config::FOREGROUND), pageName, mPageSelector);
-  mPageSelector->addItem(selector);
-
-  // Create base page layout
   QWidget* page = new QWidget;
   page->setObjectName("SettingsPage");
 
   QVBoxLayout* layout = new QVBoxLayout(page);
-  layout->setContentsMargins(10, 10, 10, 10);
+  layout->setContentsMargins(6, 6, 6, 6);
 
   auto* headerRow = new QHBoxLayout();
   QLabel* titleIcon = new QLabel();
@@ -131,14 +144,20 @@ QWidget* SettingsDialog::addPage(const QString& pageName, const QString& iconNam
   layout->addLayout(contentLayout);
 
   // Add page to the collection of pages
-  mPages->addWidget(page);
+  int index = mPages->addWidget(page);
 
-  return page;
+  // Update the selector with new page
+  auto* selector = parent == nullptr ? new QTreeWidgetItem(mPageSelector) : new QTreeWidgetItem(parent);
+  selector->setText(0, pageName);
+  selector->setIcon(0, addIconWithColor(iconName, Config::FOREGROUND));
+  selector->setData(0, Qt::UserRole, index);
+
+  return SelectorPage{selector, page};
 }
 
 VoidResult SettingsDialog::createGeneralPage()
 {
-  auto page = addPage(tr("General"), ":/icons/general.svg", [this] {
+  auto [selector, page] = addPage(tr("General"), ":/icons/general.svg", [this] {
     mSettingsManager->setGeneral(GeneralSettings());
     loadFromSettings();
   });
@@ -171,7 +190,7 @@ VoidResult SettingsDialog::createGeneralPage()
 
 VoidResult SettingsDialog::createAppearancePage()
 {
-  auto page = addPage(tr("Appearance"), ":/icons/appearance.svg", [this] {
+  auto [selector, page] = addPage(tr("Appearance"), ":/icons/appearance.svg", [this] {
     mSettingsManager->setAppearance(AppearanceSettings());
     loadFromSettings();
   });
@@ -230,7 +249,7 @@ VoidResult SettingsDialog::createAppearancePage()
 
 VoidResult SettingsDialog::createGenerationPage()
 {
-  QWidget* page = addPage(tr("Generation"), ":/icons/generator.svg", [this] {
+  auto [selector, page] = addPage(tr("Generation"), ":/icons/generator.svg", [this] {
     mSettingsManager->setGeneration(GenerationSettings());
     loadFromSettings();
   });
@@ -252,6 +271,7 @@ VoidResult SettingsDialog::createGenerationPage()
   mGenerationDirEdit->setPlaceholderText(mSettingsManager->generation().generationDir);
 
   auto* hint = new QLabel(tr("\"/generated/<plugin name>\" will be appended to this path"), page);
+  hint->setFont(Fonts::Hint);
   hint->setObjectName("HintLabel");
 
   mGenerationBrowseBtn = new QToolButton(pathRow);
@@ -274,6 +294,137 @@ VoidResult SettingsDialog::createGenerationPage()
 
   QVBoxLayout* layout = page->findChild<QVBoxLayout*>("ContentArea");
   layout->addWidget(pathRow);
+  layout->addStretch();
+
+  return VoidResult();
+}
+
+VoidResult SettingsDialog::createPluginPages()
+{
+  // -----------------------------------------------------------------
+  // Load Plugin settings
+  mPluginSettings = mSettingsManager->plugins();
+  LOG_DEBUG("Loaded from settings with %d plugins", mPluginSettings.size());
+
+  // Add top level plugin page
+  auto [topSelector, topPage] = addPage(tr("Plugins"), ":/icons/plugin.svg", [this] {
+    // mSettingsManager->setGeneration(GenerationSettings());
+    // loadFromSettings();
+  });
+
+  // -------------------------------------------------------------------------
+  // Plugins table
+  auto* tableLabel = new QLabel(tr("Installed plugins"), topPage);
+
+  QTableView* table = new QTableView(topPage);
+  QStandardItemModel* model = new QStandardItemModel(0, 3);
+
+  model->setHorizontalHeaderItem(0, new QStandardItem("Name"));
+  model->setHorizontalHeaderItem(1, new QStandardItem("Version"));
+  model->setHorizontalHeaderItem(2, new QStandardItem("Enabled"));
+
+  table->setModel(model);
+
+  table->verticalHeader()->setVisible(false);
+  table->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft);
+  table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+  table->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+  table->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+  table->setSelectionMode(QAbstractItemView::ExtendedSelection);
+  table->setSelectionBehavior(QAbstractItemView::SelectRows);
+  table->setAlternatingRowColors(true);
+
+  // -------------------------------------------------------------------------
+  // Add new plugin
+  auto* buttonRow = new QHBoxLayout();
+
+  auto* addBtn = new QPushButton("Add", topPage);
+  addBtn->setFixedWidth(200);
+  addIcon(addBtn, ":/icons/plus.svg");
+
+  auto* removeBtn = new QPushButton("Remove", topPage);
+  addIcon(removeBtn, ":/icons/clear.svg");
+  removeBtn->setFixedWidth(200);
+  removeBtn->setEnabled(false);
+
+  connect(table->selectionModel(), &QItemSelectionModel::selectionChanged, topPage, [=]() {
+    removeBtn->setEnabled(table->selectionModel()->hasSelection());
+  });
+
+  buttonRow->addStretch();
+  buttonRow->addWidget(addBtn);
+  buttonRow->addWidget(removeBtn);
+
+  // -------------------------------------------------------------------------
+  // Go through all the plugins and build the page
+  for (const auto& plugin : mPluginSettings)
+  {
+    auto pluginId = plugin.name;
+    auto settings = plugin.settings;
+
+    int newRow = model->rowCount();
+    model->insertRow(newRow);
+
+    QStandardItem* nameItem = new QStandardItem(pluginId);
+    nameItem->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+    model->setItem(newRow, 0, nameItem);
+
+    QStandardItem* versionItem = new QStandardItem(plugin.version.toString());
+    versionItem->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+    model->setItem(newRow, 1, versionItem);
+
+    QStandardItem* item = new QStandardItem(true);
+    item->setCheckable(true);
+    item->setCheckState(Qt::Checked);
+    item->setTextAlignment(Qt::AlignCenter);
+    item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled | Qt::ItemIsUserCheckable);
+    model->setItem(newRow, 2, item);
+
+    auto [selector, page] = addPage(pluginId, ":/icons/plugin.svg", [this] {
+      // mSettingsManager->setGeneration(GenerationSettings());
+      // loadFromSettings();
+    },
+                                    topSelector);
+
+    QVBoxLayout* layout = page->findChild<QVBoxLayout*>("ContentArea");
+    layout->setSpacing(2);
+
+    for (const auto& setting : settings)
+    {
+      if (setting.getType() == Types::PropertyTypes::INTEGER)
+      {
+        int min = setting.getMetadata().contains("min") ? setting.getMetadata()["min"].toInt() : INT32_MIN;
+        int max = setting.getMetadata().contains("max") ? setting.getMetadata()["max"].toInt() : INT32_MAX;
+        auto* field = new maki::IntegerWidget(setting.getLabel(), setting.getDefaultValue().toString(), page, min, max);
+        field->addDescription(setting.getDescription());
+
+        connect(field, &maki::IntegerWidget::valueChanged, this, [this, pluginId, setting](const int value) {
+          updatePluginSetting(pluginId, setting.getKey(), value);
+        });
+
+        layout->addWidget(field);
+      }
+      else if (setting.getType() == Types::PropertyTypes::BOOLEAN)
+      {
+        auto* field = new maki::BooleanWidget(setting.getLabel(), setting.getDefaultValue().toBool(), page);
+        field->addDescription(setting.getDescription());
+
+        connect(field, &maki::BooleanWidget::valueChanged, this, [this, pluginId, setting](const int value) {
+          updatePluginSetting(pluginId, setting.getKey(), value);
+        });
+
+        layout->addWidget(field);
+      }
+    }
+
+    // Make sure the widgets are pushed up
+    layout->addStretch();
+  }
+
+  QVBoxLayout* layout = topPage->findChild<QVBoxLayout*>("ContentArea");
+  layout->addWidget(tableLabel);
+  layout->addWidget(table);
+  layout->addLayout(buttonRow);
   layout->addStretch();
 
   return VoidResult();
@@ -339,9 +490,26 @@ void SettingsDialog::saveToSettings()
   mSettingsManager->setGeneral(general);
   mSettingsManager->setAppearance(appearance);
   mSettingsManager->setGeneration(generation);
+  mSettingsManager->setPlugins(mPluginSettings);
 }
 
 void SettingsDialog::apply()
 {
   saveToSettings();
+}
+
+void SettingsDialog::updatePluginSetting(const QString& pluginId, const QString& key, QVariant value)
+{
+  for (auto& plugin : mPluginSettings)
+  {
+    if (plugin.name != pluginId)
+      continue;
+
+    for (auto& set : plugin.settings)
+      if (set.getKey() == key)
+      {
+        set.setValue(value);
+        return;
+      }
+  }
 }

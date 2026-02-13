@@ -9,13 +9,12 @@ class IGeneratorPlugin;
 }
 
 class Pipeline;
-class HostServices;
 
 class Generator : public QObject
 {
   Q_OBJECT
 public:
-  Generator(std::shared_ptr<SaveInfo> storage, QObject* parent = nullptr);
+  Generator(Pipeline* pipeline, QObject* parent = nullptr);
 
   VoidResult generate(const QString& outputDir, maki::IGeneratorPlugin* generator);
   VoidResult simulate(const QString& outputDir, maki::IGeneratorPlugin* generator);
@@ -30,7 +29,6 @@ signals:
 
 private:
   Pipeline* mPipeline = nullptr;
-  HostServices* mServices = nullptr;
 
   VoidResult generatePipeline(const QString& outputDir, const QStringList& input, QStringList& output);
   VoidResult verifyPipeline(const QStringList& input, QStringList& output);

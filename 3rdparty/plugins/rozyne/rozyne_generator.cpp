@@ -9,6 +9,7 @@
 
 #include "idocument.h"
 #include "ipipeline.h"
+#include "isettings.h"
 #include "keys.h"
 #include "logging.h"
 #include "string_helpers.h"
@@ -42,14 +43,91 @@ bool RozyneGenerator::tearDown()
   return true;
 }
 
+void RozyneGenerator::buildSettings()
+{
+  // -d, --debug             enable debug ouput
+  // -b, --view-port=PORT    browser view listen PORT [3002]
+  // -e, --editor-port=PORT  editor listen PORT [3003]
+  // -h, --help              display this help and exit
+  // -i, --ide-port=PORT     ide command listen PORT [3001]
+  // -l, --log-file=LOG      write output to LOG
+  // -v, --verbose           be more verbose, show progress
+  // -w, --http-port=PORT    web server http listen PORT [3000]
+
+  maki::SettingField httpPort;
+  httpPort.setKey("httpPort");
+  httpPort.setLabel("HTTP Port");
+  httpPort.setDescription("Web server HTTP port");
+  httpPort.setDefaultValue(3000);
+
+  QVariantMap httpMetadata;
+  httpMetadata["min"] = 3000;
+  httpMetadata["max"] = 4000;
+  httpPort.setMetadata(httpMetadata);
+
+  httpPort.setType(Types::PropertyTypes::INTEGER);
+  mSettings.push_back(httpPort);
+
+  maki::SettingField idePort;
+  idePort.setKey("idePort");
+  idePort.setLabel("IDE Port");
+  idePort.setDescription("IDE command listen port");
+  idePort.setDefaultValue(3001);
+  idePort.setType(Types::PropertyTypes::INTEGER);
+  mSettings.push_back(idePort);
+
+  maki::SettingField viewPort;
+  viewPort.setKey("viewPort");
+  viewPort.setLabel("View Port");
+  viewPort.setDescription("Browser view listen port");
+  viewPort.setDefaultValue(3002);
+  viewPort.setType(Types::PropertyTypes::INTEGER);
+  mSettings.push_back(viewPort);
+
+  maki::SettingField editorPort;
+  editorPort.setKey("editorPort");
+  editorPort.setLabel("Editor Port");
+  editorPort.setDescription("Editor listen port");
+  editorPort.setDefaultValue(3003);
+  editorPort.setType(Types::PropertyTypes::INTEGER);
+  mSettings.push_back(editorPort);
+
+  maki::SettingField debug;
+  debug.setKey("debug");
+  debug.setLabel("Debug");
+  debug.setDescription("Enable debug output");
+  debug.setDefaultValue(false);
+  debug.setType(Types::PropertyTypes::BOOLEAN);
+  mSettings.push_back(debug);
+
+  maki::SettingField verbose;
+  verbose.setKey("verbose");
+  verbose.setLabel("Verbose");
+  verbose.setDescription("Be more verbose, show progress");
+  verbose.setDefaultValue(false);
+  verbose.setType(Types::PropertyTypes::BOOLEAN);
+  mSettings.push_back(verbose);
+}
+
 void RozyneGenerator::setHostServices(maki::IHostServices* services)
 {
   mServices = services;
+
+  buildSettings();
+
+  // Setup settings
+  if (auto service = mServices->settings())
+    service->registerSettings(languageName(), version(), mSettings);
 }
 
 QString RozyneGenerator::languageName() const
 {
   return "KODA";
+}
+
+maki::PluginVersion RozyneGenerator::version() const
+{
+  return {"0", "0", "1"};
 }
 
 QString RozyneGenerator::simulate(const QString& outputFolder)

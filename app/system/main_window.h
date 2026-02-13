@@ -18,11 +18,12 @@
 #include "widgets/notification_manager.h"
 
 class NodeItem;
-class SaveHandler;
-class PluginManager;
-class SettingsManager;
 class Pipeline;
+class SaveHandler;
+class HostServices;
+class PluginManager;
 class LocalServerTab;
+class SettingsManager;
 class NotificationManager;
 
 class MainWindow : public MainWindowLayout
@@ -52,7 +53,9 @@ private:
   std::shared_ptr<ConfigurationTable> mConfigTable;
   std::shared_ptr<SettingsManager> mSettingsManager;
 
+  Pipeline* mPipeline = nullptr;
   Generator* mGenerator = nullptr;
+  HostServices* mHostServices = nullptr;
   Canvas* mActiveCanvas = nullptr;
   ProcessTab* mProcessTab = nullptr;
   LocalServerTab* mLocalServerTab = nullptr;

@@ -1,4 +1,3 @@
-// maki_pipeline_api.h  (in SDK)
 #pragma once
 #include <QProcess>
 #include <QString>
@@ -20,8 +19,6 @@ class IPipeline
 {
 public:
   virtual ~IPipeline() = default;
-
-  // “Command step” API: stable, testable, no QProcess dependency required
   virtual VoidResult add(QProcess* process, OnFail onFail, const QString& options = {}) = 0;
 };
 

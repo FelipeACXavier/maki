@@ -36,6 +36,7 @@ public:
   static const QFont Main;
   static const QFont Property;
   static const QFont Label;
+  static const QFont Hint;
   static const QFont SmallTab;
   static const QFont MonoSpace;
   static constexpr float MaxSize = 10000.0;
