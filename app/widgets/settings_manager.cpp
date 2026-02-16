@@ -93,10 +93,12 @@ void SettingsManager::save()
     mSettings.setValue("name", plugin.name);
     mSettings.setValue("version", plugin.version.toString());
     mSettings.setValue("enabled", plugin.enabled);
+    int index = 0;
     for (const auto& setting : plugin.settings)
     {
       mSettings.beginGroup(setting.getKey());
       mSettings.setValue("key", setting.getKey());
+      mSettings.setValue("index", index);
       mSettings.setValue("label", setting.getLabel());
       mSettings.setValue("description", setting.getDescription());
       mSettings.setValue("value", setting.getValue());
@@ -109,6 +111,7 @@ void SettingsManager::save()
         if (setting.getMetadata().contains("max"))
           mSettings.setValue("max", setting.getMetadata()["max"]);
       }
+      index++;
       mSettings.endGroup();  // setting.key
     }
     mSettings.endGroup();  // plugin.name
@@ -183,6 +186,8 @@ VoidResult SettingsManager::registerSettings(const QString& id, const maki::Plug
     {
       mSettings.beginGroup(sg);
 
+      int index = mSettings.value("index", 0).toInt();
+
       maki::SettingField setting;
       setting.setKey(mSettings.value("key", setting.getKey()).toString());
       setting.setLabel(mSettings.value("label", setting.getLabel()).toString());
@@ -204,7 +209,7 @@ VoidResult SettingsManager::registerSettings(const QString& id, const maki::Plug
         setting.setMetadata(metdata);
       }
 
-      info.settings.push_back(setting);
+      info.settings.insert(index, setting);
       mSettings.endGroup();  // setting.name
     }
     mPluginSettings.push_back(info);
