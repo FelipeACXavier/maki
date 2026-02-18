@@ -227,6 +227,7 @@ QString RozyneGenerator::verify(const QString& outputFolder)
         "Main.rsc",                    // Entrypoint for KODA
         file,                          // Input
         mOutputFolder.absolutePath(),  // Output
+        "ros"                          // Generator type
     };
 
     QProcess* generate = new QProcess(this);
@@ -503,8 +504,8 @@ QString RozyneGenerator::generateComponent(const INode& node, const QString& inc
   QString args = arguments;
   for (const auto& state : node.getfields())
   {
-    bodyCode += "    " + Types::PropertyTypesToString(state->gettype()) + " " + state->getid() + "_ = " + state->getid() + " : " + state->getdefaultValue().toString() + "\n";
-    args += Types::PropertyTypesToString(state->gettype()) + " " + state->getid() + ", ";
+    bodyCode += "    " + PropertyTypesToString(state->gettype()) + " " + state->getid() + "_ = " + state->getid() + " : " + state->getdefaultValue().toString() + "\n";
+    args += PropertyTypesToString(state->gettype()) + " " + state->getid() + ", ";
   }
 
   if (!node.getfields().empty())
@@ -825,4 +826,26 @@ bool RozyneGenerator::startDaemon()
   mDaemon->start("ide", {"daemon"});
 
   return mDaemon->waitForStarted();
+}
+
+QString RozyneGenerator::PropertyTypesToString(Types::PropertyTypes type) const
+{
+  if (type == Types::PropertyTypes::STRING)
+    return "string";
+  else if (type == Types::PropertyTypes::INTEGER)
+    return "int";
+  else if (type == Types::PropertyTypes::REAL)
+    return "float";
+  else if (type == Types::PropertyTypes::BOOLEAN)
+    return "boolean";
+  else if (type == Types::PropertyTypes::SELECT)
+    return "select";
+  else if (type == Types::PropertyTypes::LIST)
+    return "list";
+  else if (type == Types::PropertyTypes::COLOR)
+    return "color";
+  else if (type == Types::PropertyTypes::VOID)
+    return "void";
+
+  return "unknown";
 }

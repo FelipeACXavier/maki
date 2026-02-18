@@ -74,4 +74,5 @@ private:
   // Setup
   bool startDaemon();
   void buildSettings();
+  QString PropertyTypesToString(Types::PropertyTypes type) const;
 };

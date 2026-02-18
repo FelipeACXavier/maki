@@ -275,6 +275,10 @@
                 {
                   "id": "y",
                   "type": "float"
+                },
+                {
+                  "id": "yaw",
+                  "type": "float"
                 }
               ]
             }
@@ -292,6 +296,10 @@
                   },
                   {
                     "id": "y",
+                    "type": "float"
+                  },
+                  {
+                    "id": "yaw",
                     "type": "float"
                   }
               ]
@@ -314,6 +322,10 @@
                   },
                   {
                     "id": "y",
+                    "type": "float"
+                  },
+                  {
+                    "id": "yaw",
                     "type": "float"
                   }
               ]

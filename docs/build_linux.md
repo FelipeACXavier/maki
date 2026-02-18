@@ -9,9 +9,10 @@ A Dockerfile is provided to ensure everyone has the same build and run environme
 1. Build the docker container, this shouldn't take long (30 minutes or so), since we use precompiled QT libraries. In any case, thi only needs to be done once.
 
 ```bash
-docker build --build-arg QT_BUILD_TYPE=release \
-       -f docker/Dockerfile \
-       -t maki:v1.0.0 .
+docker build . \
+  --build-arg USERNAME=$(id -un) \
+  -f docker/maki \
+  -t maki:v1.0.0
 ```
 
 2. Run the docker image
@@ -26,6 +27,7 @@ docker run -it \
   --device /dev/dri \
   -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
   -v .:/home/ubuntu/maki:rw \
+  -v ~/ros2_ws:/home/$(id -un)/ros2_ws:rw \
   maki:v1.0.0
 ```
 
