@@ -19,7 +19,7 @@ CURR_DIR=`pwd`
 SOURCE_DIR=$CURR_DIR
 # Use QT version from the single source of truth file
 QT_VERSION="$(tr -d ' \n' < $CURR_DIR/.qt-version)"
-BUILD_PATH="$SOURCE_DIR/build/linux"
+BUILD_PATH="$SOURCE_DIR/build/linux/debug"
 PREFIX_PATH="$HOME/Qt/$QT_VERSION/gcc_64"
 INSTALL_PREFIX="$SOURCE_DIR/release/linux"
 
@@ -42,6 +42,7 @@ while [[ $# -gt 0 ]]; do
       ;;
       --release)
       BUILD_TYPE="Release"
+      BUILD_PATH="$SOURCE_DIR/build/linux/release"
       shift
       ;;
       *)

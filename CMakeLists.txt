@@ -8,8 +8,6 @@ option(DEBUG "Build with debug symbols" OFF)
 set(LOCAL_QT_PATH "" CACHE PATH "Qt path on this machine")
 set(LOCAL_PROJECT_PATH "" CACHE PATH "Project path on this machine")
 
-set(LINUX_BUILD_DIR "${CMAKE_SOURCE_DIR}/build/linux")
-
 set(DEPLOY_TARGET "auto" CACHE STRING "Deployment target (auto|linux|windows)")
 set_property(CACHE DEPLOY_TARGET PROPERTY STRINGS auto linux windows)
 
@@ -43,9 +41,11 @@ else()
 
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
       message("Compiling with debug symbols")
+      set(LINUX_BUILD_DIR "${CMAKE_SOURCE_DIR}/build/linux/debug")
       add_compile_options(-g -O0)
   elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
       message("Compiling in release version")
+      set(LINUX_BUILD_DIR "${CMAKE_SOURCE_DIR}/build/linux/release")
       add_compile_options(-O2)
   endif()
 endif()
