@@ -182,6 +182,7 @@ VoidResult SettingsManager::registerSettings(const QString& id, const maki::Plug
     exists = true;
 
     const QStringList settingGroups = mSettings.childGroups();
+    info.settings.resize(settingGroups.size());
     for (const QString& sg : settingGroups)
     {
       mSettings.beginGroup(sg);
