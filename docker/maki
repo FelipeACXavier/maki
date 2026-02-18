@@ -3,10 +3,10 @@ FROM ubuntu:24.04 AS builder
 # -----------------------------------------------------------------------------------------------------------
 # Arguments
 ARG QT_VERSION=6.8.3
-ARG QT_BUILD_TYPE=debug
 ARG NODE_VERSION=23.8.0
 ARG NVM_VERSION=v0.40.2
-ARG HOME=/home/ubuntu
+ARG USERNAME=ubuntu
+ARG HOME=/home/${USERNAME}
 ARG TOOLCHAIN_FILE=toolchain-mingw64.cmake
 
 # -----------------------------------------------------------------------------------------------------------
@@ -24,7 +24,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   python3-html5lib \
   python3.12-venv \
   g++-13 \
-  # mingw-w64 \
   ccache \
   libasio-dev \
   libgl1-mesa-dri \
@@ -44,6 +43,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # -----------------------------------------------------------------------------------------------------------
 # Niceties
+ARG UID=1000
+ARG GID=1000
+RUN groupadd -g ${GID} ${USERNAME} \
+ && useradd -m -u ${UID} -g ${GID} -s /bin/bash ${USERNAME} \
+ && mkdir -p /home/${USERNAME}/.ros \
+ && chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}
+
 # Make sure the fonts are loaded
 RUN fc-cache -f
 
@@ -56,7 +62,7 @@ ENV LANG=en_US.UTF-8
 ENV LANGUAGE=en_US.UTF-8
 
 # Make sure we are signed in as ubuntu
-USER ubuntu
+USER ${USERNAME}
 WORKDIR ${HOME}
 
 # Let's install node, just in case...
@@ -66,7 +72,7 @@ RUN bash -c "source $NVM_DIR/nvm.sh && nvm install $NODE_VERSION"
 
 # -----------------------------------------------------------------------------------------------------------
 # We now need to install qt
-USER ubuntu
+USER ${USERNAME}
 RUN python3 -m venv env
 RUN ${HOME}/env/bin/pip install --no-cache-dir aqtinstall
 
@@ -119,7 +125,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
 
 # Install dezyne
-USER ubuntu
+USER ${USERNAME}
 
 WORKDIR ${HOME}
 COPY scripts/install_dezyne.sh ${HOME}/install_dezyne.sh
@@ -131,13 +137,21 @@ WORKDIR ${HOME}/gf
 RUN ./build.sh
 
 # Install KODA
-USER ubuntu
+USER ${USERNAME}
 WORKDIR ${HOME}
 RUN wget https://update.rascal-mpl.org/console/rascal-0.40.9.jar -O rascal-0.40.9.jar
 # Rascal can now be used with:
 # java -jar ~/rascal-0.40.9.jar Main.rsc <input>  <output>
 
 RUN git clone https://github.com/FelipeACXavier/KODA.git
+
+# -----------------------------------------------------------------------------------------------------------
+# Make the shell look a bit nicer
+RUN echo "function custom_prompt() {" >> /home/${USERNAME}/.bashrc \
+ && echo "  PS1='\\[\\e[32m\\]\\u@\\h\\[\\e[00m\\]:\\[\\e[34m\\]\\w \\[\\e[93m\\][docker:maki]\\[\\e[00m\\]\\n> '" >> /home/${USERNAME}/.bashrc \
+ && echo "}" >> /home/${USERNAME}/.bashrc \
+ && echo "PROMPT_DIRTRIM=2" >> /home/${USERNAME}/.bashrc \
+ && echo "PROMPT_COMMAND=\"custom_prompt\"" >> /home/${USERNAME}/.bashrc
 
 # -----------------------------------------------------------------------------------------------------------
 # Cd to the maki directory and end

@@ -1,0 +1,192 @@
+# FROM ubuntu:24.04 AS builder
+FROM osrf/ros:humble-desktop-full
+
+# -----------------------------------------------------------------------------------------------------------
+# Arguments
+ARG QT_VERSION=6.8.3
+ARG NODE_VERSION=23.8.0
+ARG NVM_VERSION=v0.40.2
+ARG USERNAME=ubuntu
+ARG HOME=/home/${USERNAME}
+ARG TOOLCHAIN_FILE=toolchain-mingw64.cmake
+
+# -----------------------------------------------------------------------------------------------------------
+# Essential packages
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  # MAKI packages
+  build-essential \
+  cmake \
+  git \
+  ca-certificates \
+  wget \
+  ninja-build \
+  python3 \
+  python3-pip \
+  python3-html5lib \
+  python3-venv \
+  g++-13 \
+  ccache \
+  libasio-dev \
+  libgl1-mesa-dri \
+  libgl1-mesa-dev \
+  libx11-dev libx11-xcb-dev libxrender-dev libxi-dev \
+  libxcb1 libx11-xcb1 '^libxcb.*-dev' \
+  libxcb-cursor0 \
+  libxkbcommon-x11-0 libxkbcommon-dev libxkbcommon-x11-dev \
+  pkg-config \
+  locales \
+  language-pack-en-base language-pack-en \
+  language-pack-nl-base language-pack-nl \
+  fontconfig \
+  fonts-dejavu-core \
+  libfreetype6-dev libfontconfig1-dev libharfbuzz-dev \
+  # ROS Packages
+  libgl1-mesa-glx \
+  libgl1-mesa-dri \
+  mesa-utils \
+  python3-colcon-common-extensions \
+  python3-rosdep \
+  vim \
+  ros-humble-gazebo-* \
+  ros-humble-gazebo-ros-pkgs \
+  ros-humble-turtlebot3-gazebo \
+  ros-humble-cartographer \
+  ros-humble-cartographer-ros \
+  ros-humble-navigation2 \
+  ros-humble-nav2-bringup \
+  ros-humble-rviz2 \
+  ros-humble-dynamixel-sdk \
+  ros-humble-ros2-control \
+  ros-humble-ros2-controllers \
+  ros-humble-gripper-controllers \
+  ros-humble-moveit* \
+  libopencv-dev \
+  && rm -rf /var/lib/apt/lists/*
+
+# -----------------------------------------------------------------------------------------------------------
+# Niceties
+ARG UID=1000
+ARG GID=1000
+RUN groupadd -g ${GID} ${USERNAME} \
+ && useradd -m -u ${UID} -g ${GID} -s /bin/bash ${USERNAME} \
+ && mkdir -p /home/${USERNAME}/.ros \
+ && chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}
+
+# Make sure the fonts are loaded
+RUN fc-cache -f
+
+# Set the locale
+RUN git clone https://github.com/PanderMusubi/locale-en-nl.git
+RUN cd ./locale-en-nl && ./add.sh
+
+ENV LC_ALL=en_NL.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US.UTF-8
+
+# Make sure we are signed in as ubuntu
+USER ${USERNAME}
+WORKDIR ${HOME}
+
+# Let's install node, just in case...
+RUN wget -O - https://raw.githubusercontent.com/nvm-sh/nvm/${NVM_VERSION}/install.sh | bash
+ENV NVM_DIR=${HOME}/.nvm
+RUN bash -c "source $NVM_DIR/nvm.sh && nvm install $NODE_VERSION"
+
+# -----------------------------------------------------------------------------------------------------------
+# We now need to install qt
+USER ${USERNAME}
+RUN python3 -m venv env
+RUN ${HOME}/env/bin/pip install --no-cache-dir aqtinstall
+
+RUN mkdir -p ${HOME}/Qt && \
+    ${HOME}/env/bin/python3 -m aqt install-qt \
+      linux \
+      desktop \
+      "${QT_VERSION}" \
+      linux_gcc_64 \
+      -m qtwebengine qtpdf qtwebchannel qtpositioning \
+      -O ${HOME}/Qt
+
+# -----------------------------------------------------------------------------------------------------------\
+# Install extra packages
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  zip \
+  unzip \
+  gdb \
+  libgl1-mesa-dev \
+  libgles2-mesa-dev \
+  mesa-common-dev \
+  libnss3-dev \
+  libglib2.0-dev \
+  libharfbuzz-dev \
+  libudev-dev \
+  libpng-dev \
+  libtiff-dev \
+  libicu-dev \
+  libopus-dev \
+  libvpx-dev \
+  libavutil-dev \
+  libavcodec-dev \
+  libavformat-dev \
+  libswresample-dev \
+  libswscale-dev \
+  libre2-dev \
+  libopenh264-dev \
+  zlib1g-dev \
+  libssl-dev \
+  libdbus-1-dev \
+  libxcomposite-dev \
+  libxdamage-dev \
+  libxrandr-dev \
+  libxtst-dev \
+  libasound2-dev \
+  libxkbfile-dev \
+  # Should be Java 21
+  default-jdk \
+  && rm -rf /var/lib/apt/lists/*
+
+# Install dezyne
+USER ${USERNAME}
+
+WORKDIR ${HOME}
+COPY scripts/install_dezyne.sh ${HOME}/install_dezyne.sh
+RUN ${HOME}/install_dezyne.sh
+
+# Install gf2 for debugging
+RUN git clone https://github.com/nakst/gf.git
+WORKDIR ${HOME}/gf
+RUN ./build.sh
+
+# Install KODA
+USER ${USERNAME}
+WORKDIR ${HOME}
+RUN wget https://update.rascal-mpl.org/console/rascal-0.40.9.jar -O rascal-0.40.9.jar
+# Rascal can now be used with:
+# java -jar ~/rascal-0.40.9.jar Main.rsc <input>  <output>
+
+RUN git clone https://github.com/FelipeACXavier/KODA.git
+
+# -----------------------------------------------------------------------------------------------------------
+# ROS Setup
+# Source ROS in interactive shells for this user
+RUN echo 'source /opt/ros/${ROS_DISTRO}/setup.bash'  >> /home/${USERNAME}/.bashrc \
+ && echo 'source /usr/share/gazebo/setup.sh'         >> /home/${USERNAME}/.bashrc \
+ && echo 'export XDG_RUNTIME_DIR=/tmp/runtime-$USER' >> /home/${USERNAME}/.bashrc \
+ && echo 'mkdir -p "$XDG_RUNTIME_DIR"; chmod 700 "$XDG_RUNTIME_DIR"' >> /home/${USERNAME}/.bashrc
+
+RUN echo "function custom_prompt() {" >> /home/${USERNAME}/.bashrc \
+ && echo "  PS1='\\[\\e[32m\\]\\u@\\h\\[\\e[00m\\]:\\[\\e[34m\\]\\w \\[\\e[93m\\][docker:maki-ros]\\[\\e[00m\\]\\n> '" >> /home/${USERNAME}/.bashrc \
+ && echo "}" >> /home/${USERNAME}/.bashrc \
+ && echo "PROMPT_DIRTRIM=2" >> /home/${USERNAME}/.bashrc \
+ && echo "PROMPT_COMMAND=\"custom_prompt\"" >> /home/${USERNAME}/.bashrc
+
+# -----------------------------------------------------------------------------------------------------------
+ENV TURTLEBOT3_MODEL=waffle_pi
+
+# Cd to the maki directory and end
+WORKDIR ${HOME}/maki
+
+ENTRYPOINT ["/ros_entrypoint.sh"]
+CMD ["bash"]
