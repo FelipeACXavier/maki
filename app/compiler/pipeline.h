@@ -2,6 +2,7 @@
 
 #include <QProcess>
 #include <QVector>
+#include <mutex>
 
 #include "ipipeline.h"
 #include "result.h"
@@ -17,6 +18,10 @@ public:
 
   QString name() const;
   void setName(const QString& name);
+
+  int size() const;
+  bool isRunning() const;
+  VoidResult abort();
 
 signals:
   // Emitted when the process finishes (so the owner can react, e.g. rename/close tab)
@@ -42,6 +47,15 @@ private:
     maki::OnFail onFail = maki::OnFail::STOP;
     QString options = "";
   };
+
+  enum class State
+  {
+    Idle,
+    Running,
+    Aborting
+  } mState;
+
+  mutable std::mutex mStateMutex;
 
   QString mName;
   PipelineProcess mRunningProcess;

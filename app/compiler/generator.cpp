@@ -22,6 +22,12 @@ Pipeline* Generator::pipeline() const
 
 VoidResult Generator::generate(const QString& outputDir, maki::IGeneratorPlugin* generator)
 {
+  if (pipeline()->isRunning())
+  {
+    LOG_INFO("Pipeline is running aborting");
+    return pipeline()->abort();
+  }
+
   LOG_INFO("[VERIFY] SetName");
   pipeline()->setName(generator->languageName());
 
@@ -31,6 +37,7 @@ VoidResult Generator::generate(const QString& outputDir, maki::IGeneratorPlugin*
   LOG_INFO("[VERIFY] started");
   emit generationStarted(pipeline());
 
+  LOG_INFO("[VERIFY] starting pipeline with %d items", pipeline()->size());
   auto ran = pipeline()->start();
   if (!ran.IsSuccess())
     return VoidResult::Failed("Failed to run pipeline: " + ran.ErrorMessage());
@@ -40,6 +47,9 @@ VoidResult Generator::generate(const QString& outputDir, maki::IGeneratorPlugin*
 
 VoidResult Generator::simulate(const QString& outputDir, maki::IGeneratorPlugin* generator)
 {
+  if (pipeline()->isRunning())
+    return pipeline()->abort();
+
   pipeline()->setName(generator->languageName());
 
   QString text = generator->simulate(outputDir);

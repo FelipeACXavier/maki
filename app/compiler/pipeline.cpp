@@ -11,6 +11,7 @@ static const QRegularExpression ansiRe("\x1B\\[[0-9;?]*[ -/]*[@-~]", QRegularExp
 
 Pipeline::Pipeline(QObject* parent)
     : QObject(parent)
+    , mState(State::Idle)
     , mName("")
     , mRunningProcess({nullptr, maki::OnFail::STOP, ""})
 {
@@ -26,11 +27,55 @@ void Pipeline::setName(const QString& name)
   mName = name;
 }
 
+int Pipeline::size() const
+{
+  return mProcesses.size();
+}
+
+bool Pipeline::isRunning() const
+{
+  std::unique_lock<std::mutex> lock(mStateMutex);
+  return mState != State::Idle;
+}
+
+VoidResult Pipeline::abort()
+{
+  // Nothing to abort
+  if (!mRunningProcess.process)
+    return VoidResult();
+
+  {
+    std::unique_lock<std::mutex> lock(mStateMutex);
+    mState = State::Aborting;
+  }
+
+  // Abort the running process
+  if (mRunningProcess.process->state() == QProcess::Running)
+  {
+    mRunningProcess.process->terminate();
+
+    if (!mRunningProcess.process->waitForFinished(2500))
+    {
+      mRunningProcess.process->kill();
+      mRunningProcess.process->waitForFinished();
+    }
+  }
+
+  mProcesses.clear();
+
+  {
+    std::unique_lock<std::mutex> lock(mStateMutex);
+    mState = State::Idle;
+  }
+
+  return VoidResult();
+}
+
 VoidResult Pipeline::add(QProcess* process, maki::OnFail onFail, const QString& options)
 {
   QString exe = QStandardPaths::findExecutable(process->program());
   if (exe.isEmpty())
-    return VoidResult::Failed("Executable not found in PATH");
+    return VoidResult::Failed("Executable not found in PATH: " + process->program().toStdString());
 
   connect(process, &QProcess::finished, this, &Pipeline::onFinished);
   connect(process, &QProcess::readyReadStandardOutput, this, &Pipeline::onReadyReadStandardOutput);
@@ -48,19 +93,32 @@ VoidResult Pipeline::start()
   if (mProcesses.isEmpty())
     return VoidResult();
 
+  {
+    std::unique_lock<std::mutex> lock(mStateMutex);
+    if (mState == State::Aborting)
+    {
+      LOG_DEBUG("Trying to start during abort");
+      return VoidResult();
+    }
+  }
+
   mRunningProcess = mProcesses.first();
   const QString name = mRunningProcess.process->program();
   const QStringList args = mRunningProcess.process->arguments();
 
   emit startingProcess(name, args);
   mRunningProcess.process->start();
-  // mRunningProcess.process->startDetached();
 
   // This makes the ide work
   mRunningProcess.process->closeWriteChannel();
 
   if (!mRunningProcess.process->waitForStarted())
-    LOG_WARNING("Command not found or not executable!");
+    return VoidResult::Failed("Command not found or not executable! ");
+
+  {
+    std::unique_lock<std::mutex> lock(mStateMutex);
+    mState = State::Running;
+  }
 
   return VoidResult();
 }
@@ -69,7 +127,13 @@ void Pipeline::startNextOrEnd(int exitCode, QProcess::ExitStatus status)
 {
   if (mProcesses.isEmpty())
   {
+    mRunningProcess.process = nullptr;
     emit finishedLast();
+
+    {
+      std::unique_lock<std::mutex> lock(mStateMutex);
+      mState = State::Idle;
+    }
   }
   else
   {
@@ -173,8 +237,22 @@ void Pipeline::onErrorOccurred(QProcess::ProcessError error)
     return;
   }
 
+  {
+    std::unique_lock<std::mutex> lock(mStateMutex);
+    if (mState == State::Aborting)
+    {
+      LOG_DEBUG("Process error during abort");
+      return;
+    }
+  }
+
   // qDebug() << "QProcess error:" << error << "errorString:" << mRunningProcess.process->errorString();
 
   emit errorOccurred(error);
   mProcesses.clear();
+
+  {
+    std::unique_lock<std::mutex> lock(mStateMutex);
+    mState = State::Idle;
+  }
 }

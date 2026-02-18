@@ -713,7 +713,7 @@ void MainWindowLayout::toggleGenerationButton(bool running)
     {
       mGenerationButton->setToolTip("Run with the selected options");
       updateProperty(mProcessTabButton, Config::HAS_ACTIVITY, false);
-      it->path = ":/icons/play.svg";
+      it->path = ":/icons/verify.svg";
     }
   }
 
