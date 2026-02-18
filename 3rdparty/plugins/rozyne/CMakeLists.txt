@@ -25,7 +25,6 @@ target_include_directories(${PLUGIN_NAME} PRIVATE
   ${CMAKE_SOURCE_DIR}/app
 )
 
-# Put the built .so/.dll in a plugins folder next to your app
 set_target_properties(${PLUGIN_NAME} PROPERTIES
   LIBRARY_OUTPUT_DIRECTORY ${PLUGINS_FOLDER}
   RUNTIME_OUTPUT_DIRECTORY ${PLUGINS_FOLDER}

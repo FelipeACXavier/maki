@@ -34,6 +34,7 @@ private:
   QDir mDezyneOutputFolder;
   QVector<QString> mImports;
   QList<QString> mGeneratedFiles = {};
+  QList<QString> mGeneratedDznFiles = {};
   maki::IHostServices* mServices = nullptr;
   QVector<maki::SettingField> mSettings = {};
 

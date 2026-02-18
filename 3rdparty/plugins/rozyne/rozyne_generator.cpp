@@ -1,5 +1,6 @@
 #include "rozyne_generator.h"
 
+#include <QApplication>
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonArray>
@@ -150,15 +151,14 @@ QString RozyneGenerator::simulate(const QString& outputFolder)
     return "";
   }
 
-  QStringList files = mDezyneOutputFolder.entryList(QDir::Files | QDir::NoDotAndDotDot);
-  if (files.empty())
+  if (mGeneratedDznFiles.empty())
   {
     // Generate and then simulate
   }
   else
   {
     // Simulate
-    for (const QString& f : files)
+    for (const QString& f : mGeneratedDznFiles)
     {
       auto fullPath = mDezyneOutputFolder.absoluteFilePath(f);
       if (!fullPath.contains("_task"))
@@ -173,7 +173,7 @@ QString RozyneGenerator::simulate(const QString& outputFolder)
       generate->setProgram(command);
       generate->setArguments(arguments);
 
-      mServices->pipeline()->add(generate, maki::OnFail::STOP, "http://localhost:3000/trace");
+      mServices->pipeline()->add(generate, maki::OnFail::OPEN_BROWSER, "http://localhost:3000/trace");
     }
   }
 
@@ -200,8 +200,11 @@ QString RozyneGenerator::verify(const QString& outputFolder)
     return "";
   }
 
+  mGeneratedDznFiles = {};
+  mGeneratedFiles = {};
+
   // Create output folder
-  mOutputFolder = QDir(outputFolder + "/generated");
+  mOutputFolder = QDir(outputFolder + "/" + languageName());
   if (!mOutputFolder.exists())
     mOutputFolder.mkpath(".");
 
@@ -209,7 +212,7 @@ QString RozyneGenerator::verify(const QString& outputFolder)
   generateKoda(outputFolder);
 
   // Compile Koda to Dezyne
-  mDezyneOutputFolder = QDir(mOutputFolder.absolutePath() + "/dezyne");
+  mDezyneOutputFolder = QDir(mOutputFolder.absolutePath() + "/models");
   if (!mDezyneOutputFolder.exists())
     mDezyneOutputFolder.mkpath(".");
 
@@ -220,33 +223,34 @@ QString RozyneGenerator::verify(const QString& outputFolder)
     const QString command = "java";
     const QStringList arguments = {
         "-jar",
-        "/home/ubuntu/rascal-0.40.9.jar",
-        "Main.rsc",                          // Entrypoint for KODA
-        file,                                // Input
-        mDezyneOutputFolder.absolutePath(),  // Output
+        QDir::homePath() + "/rascal-0.40.9.jar",
+        "Main.rsc",                    // Entrypoint for KODA
+        file,                          // Input
+        mOutputFolder.absolutePath(),  // Output
     };
 
     QProcess* generate = new QProcess(this);
-    generate->setWorkingDirectory("/home/ubuntu/KODA");
+    generate->setWorkingDirectory(QDir::homePath() + "/" + languageName());
     generate->setProgram(command);
     generate->setArguments(arguments);
 
     mServices->pipeline()->add(generate, maki::OnFail::STOP);
   }
 
-  // Verify the Dezyne code
-  QStringList files = mDezyneOutputFolder.entryList(QDir::Files | QDir::NoDotAndDotDot);
-  for (const QString& f : files)
+  // TODO: We need to find a better solution for this, we cannot allow plugins to execute any scripts
+  LOG_INFO("Running generate script");
+
+  // QStringList files = mDezyneOutputFolder.entryList(QDir::Files | QDir::NoDotAndDotDot);
+  for (const QString& f : mGeneratedDznFiles)
   {
     auto fullPath = mDezyneOutputFolder.absoluteFilePath(f);
-    if (fullPath.contains("/a_") || fullPath.contains("types"))
-      continue;
+    // if (fullPath.contains("/a_") || fullPath.contains("types"))
+    // continue;
 
     LOG_INFO("Will verify file: %s", qPrintable(fullPath));
 
     const QString command = "ide";
     const QStringList arguments = {"verify", fullPath};
-
     QProcess* generate = new QProcess(this);
     generate->setProgram(command);
     generate->setArguments(arguments);
@@ -366,6 +370,10 @@ QString RozyneGenerator::generateCapability(const INode& node)
   }
 
   QString name = node.getproperties()["name"].toString();
+
+  // mGeneratedDznFiles += QString::fromStdString("c" + ToLowerCase(name.toStdString(), 0, 1) + ".dzn");
+  mGeneratedDznFiles += QString::fromStdString("i" + ToLowerCase(name.toStdString(), 0, 1) + ".dzn");
+
   args.chop(2);
   code += "capability " + name + "(" + args + ") {\n";
 
@@ -426,6 +434,8 @@ QString RozyneGenerator::generateComponent(const INode& node, const QString& inc
 
   // Generate necessary wrappers
   QString name = fixCase(node.getproperties()["name"].toString());
+  mGeneratedDznFiles += QString::fromStdString("c" + ToLowerCase(name.toStdString(), 0, 1) + ".dzn");
+  mGeneratedDznFiles += QString::fromStdString("c" + ToLowerCase(name.toStdString(), 0, 1) + "_task.dzn");
 
   // Create a file for each top level component
   QString fileName = mOutputFolder.filePath(name + ".kd");
