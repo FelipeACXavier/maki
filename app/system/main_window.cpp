@@ -31,6 +31,8 @@
 #include "logging.h"
 #include "notifications.h"
 #include "plugin_manager.h"
+#include "plugin_tab.h"
+#include "plugin_view.h"
 #include "process_tab.h"
 #include "save_handler.h"
 #include "structure_canvas.h"
@@ -97,13 +99,17 @@ VoidResult MainWindow::start()
 
   mPipeline = new Pipeline(this);
   mGenerator = new Generator(mPipeline, this);
-  mHostServices = new HostServices(mStorage.get(), mPipeline, mSettingsManager.get(), QCoreApplication::applicationDirPath(), this);
 
   mProcessTab = new ProcessTab(mPipeline, mCanvasPanel);
   mProcessTab->hide();
 
   mLocalServerTab = new LocalServerTab(mCanvasPanel);
   mLocalServerTab->hide();
+
+  mPluginTab = new PluginTab(this);
+
+  mHostServices = new HostServices(mStorage.get(), mPipeline, mSettingsManager.get(), QCoreApplication::applicationDirPath(), this);
+  mHostServices->setPluginTab(mPluginTab);
 
   startUI();
   bind();
@@ -146,6 +152,8 @@ void MainWindow::onThemeChanged(const QString& t, const QList<Config::ThemeInfo>
 
   if (mSystemMenu)
     mSystemMenu->onThemeChanged(mSettingsManager->appearance());
+  if (mPluginTab)
+    mPluginTab->onThemeChanged();
 
   MainWindowLayout::onThemeChanged(mSettingsManager->appearance());
 }
@@ -191,6 +199,9 @@ void MainWindow::bind()
   mOpenComponentsPanel->setShortcut(QKeySequence(Qt::Key_F7));
   mOpenInfoPanel->setShortcut(QKeySequence(Qt::Key_F8));
   mOpenPropertiesPanel->setShortcut(QKeySequence(Qt::Key_F9));
+
+  connect(mOpenPluginTab, &QAction::triggered, this, &MainWindow::addPluginTab);
+  mOpenPluginTab->setShortcut(QKeySequence(Qt::Key_F10));
 
   // Diagram actions =============================================================
   connect(mActionGenerate, &QAction::triggered, this, &MainWindow::onActionGenerate);
@@ -571,6 +582,10 @@ void MainWindow::closeCanvasTab(int index)
       }
     }
   }
+  else if (PluginView* tab = qobject_cast<PluginView*>(mCanvasPanel->widget(index)))
+  {
+    LOG_DEBUG("Removing plugin view");
+  }
   else if (ProcessTab* tab = qobject_cast<ProcessTab*>(mCanvasPanel->widget(index)))
   {
     tab->hide();
@@ -689,6 +704,23 @@ void MainWindow::addBrowserTab()
   mCanvasPanel->setCurrentWidget(mLocalServerTab);
   mLocalServerTab->connectToServer("http://localhost:3000/trace");
   mLocalServerTab->show();
+}
+
+void MainWindow::addPluginTab()
+{
+  if (!mPluginTab)
+  {
+    LOG_WARNING("No plugin tab to be added");
+    return;
+  }
+
+  auto view = mPluginTab->getView();
+  // for (int i = 1; i < mCanvasPanel->count(); ++i)
+  //   if (qobject_cast<LocalServerTab*>(mCanvasPanel->widget(i)))
+  //     return;
+
+  mCanvasPanel->addTab(view, "Plugin view");
+  mCanvasPanel->setCurrentWidget(view);
 }
 
 void MainWindow::onFlowAdded(Flow* flow, NodeItem* node)

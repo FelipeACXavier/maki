@@ -13,6 +13,7 @@
 namespace Config
 {
 
+maki::ThemeVars SYSTEM_THEME = maki::ThemeVars{};
 QColor FOREGROUND = QColor("#000000");
 QColor HIGHLIGHT = QColor("#000000");
 
@@ -25,7 +26,7 @@ QString loadFile(const QString& path)
   return QString::fromUtf8(f.readAll());
 }
 
-QString applyThemeVars(QString qss, const ThemeVars& t)
+QString applyThemeVars(QString qss, const maki::ThemeVars& t)
 {
   for (auto it = THEME_KEY_MAP.begin(); it != THEME_KEY_MAP.end(); ++it)
   {
@@ -61,7 +62,7 @@ void applyThemeToApp(QApplication* app, const QString& theme, const QList<Config
   }
 
   auto base = loadFile(":/themes/style.qss");
-  SYSTEM_THEME = loadThemeVarsFromFile(it->filePath);
+  Config::SYSTEM_THEME = loadThemeVarsFromFile(it->filePath);
   auto foreground = getValueFromTheme("@foreground");
   if (foreground.isValid())
     Config::FOREGROUND = QColor(foreground.toString());
@@ -79,9 +80,9 @@ void applyThemeToApp(QApplication* app, const QString& theme, const QList<Config
   app->setStyleSheet(styled);
 }
 
-ThemeVars loadThemeVarsFromFile(const QString& filePath)
+maki::ThemeVars loadThemeVarsFromFile(const QString& filePath)
 {
-  ThemeVars vars;  // start from defaults
+  maki::ThemeVars vars;  // start from defaults
 
   QFile themeFile(filePath);
   if (!themeFile.open(QIODevice::ReadOnly | QIODevice::Text))

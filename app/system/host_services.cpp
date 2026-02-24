@@ -8,8 +8,14 @@ HostServices::HostServices(IDocument* document, maki::IPipeline* pipeline, maki:
     , mDocument(document)
     , mPipeline(pipeline)
     , mSettings(settings)
+    , mPluginTab(nullptr)
     , mRoot(root)
 {
+}
+
+void HostServices::setPluginTab(maki::ITab* tab)
+{
+  mPluginTab = tab;
 }
 
 IDocument* HostServices::document() const
@@ -25,6 +31,11 @@ maki::ISettings* HostServices::settings() const
 maki::IPipeline* HostServices::pipeline() const
 {
   return mPipeline;
+}
+
+maki::ITab* HostServices::pluginTab() const
+{
+  return mPluginTab;
 }
 
 QString HostServices::projectRoot() const

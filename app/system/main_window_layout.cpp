@@ -385,28 +385,35 @@ void MainWindowLayout::buildMenuBar()
   mActionZoomIn->setEnabled(false);
   view->addAction(mActionZoomIn);
 
-  view->addSection(tr("Hide"));
+  QMenu* showMenu = view->addMenu(tr("Show/Hide"));
+  view->addMenu(showMenu);
 
   mOpenInfoPanel = new QAction(tr("Information panel"), this);
   mOpenInfoPanel->setIcon(addIconWithColor(":/icons/invisible.svg", Qt::white));
-  view->addAction(mOpenInfoPanel);
+  showMenu->addAction(mOpenInfoPanel);
   connect(mOpenInfoPanel, &QAction::triggered, [this] {
     togglePanelVisibility(mBottomPanel, mOpenInfoPanel);
   });
 
   mOpenComponentsPanel = new QAction(tr("Components panel"), this);
   mOpenComponentsPanel->setIcon(addIconWithColor(":/icons/invisible.svg", Qt::white));
-  view->addAction(mOpenComponentsPanel);
+  showMenu->addAction(mOpenComponentsPanel);
   connect(mOpenComponentsPanel, &QAction::triggered, [this] {
     togglePanelVisibility(mLeftPanel, mOpenComponentsPanel);
   });
 
   mOpenPropertiesPanel = new QAction(tr("Properties panel"), this);
   mOpenPropertiesPanel->setIcon(addIconWithColor(":/icons/invisible.svg", Qt::white));
-  view->addAction(mOpenPropertiesPanel);
+  showMenu->addAction(mOpenPropertiesPanel);
   connect(mOpenPropertiesPanel, &QAction::triggered, [this] {
     togglePanelVisibility(mRightPanel, mOpenPropertiesPanel);
   });
+
+  QMenu* specialTabsMenu = view->addMenu(tr("Special tabs"));
+  view->addMenu(specialTabsMenu);
+
+  mOpenPluginTab = new QAction(tr("Open plugin tab"), this);
+  specialTabsMenu->addAction(mOpenPluginTab);
 
   // ----------------------------------------------------------
   // Diagram menu

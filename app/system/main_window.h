@@ -25,6 +25,7 @@ class PluginManager;
 class LocalServerTab;
 class SettingsManager;
 class NotificationManager;
+class PluginTab;
 
 class MainWindow : public MainWindowLayout
 {
@@ -59,6 +60,7 @@ private:
   Canvas* mActiveCanvas = nullptr;
   ProcessTab* mProcessTab = nullptr;
   LocalServerTab* mLocalServerTab = nullptr;
+  PluginTab* mPluginTab = nullptr;
   NotificationManager* mNotificationManager = nullptr;
 
   logging::LogLevel mLogLevel;
@@ -90,6 +92,7 @@ private:
 
   void addProcessTab();
   void addBrowserTab();
+  void addPluginTab();
 
   // ================================================
   // Actions
