@@ -93,12 +93,13 @@ void SettingsManager::save()
     mSettings.setValue("name", plugin.name);
     mSettings.setValue("version", plugin.version.toString());
     mSettings.setValue("enabled", plugin.enabled);
-    int index = 0;
-    for (const auto& setting : plugin.settings)
+    for (int i = 0; i < plugin.settings.size(); ++i)
     {
+      const auto setting = plugin.settings.at(i);
+      LOG_INFO("Saving value: %d %s", i, qPrintable(setting.getKey()));
       mSettings.beginGroup(setting.getKey());
       mSettings.setValue("key", setting.getKey());
-      mSettings.setValue("index", index);
+      mSettings.setValue("index", i);
       mSettings.setValue("label", setting.getLabel());
       mSettings.setValue("description", setting.getDescription());
       mSettings.setValue("value", setting.getValue());
@@ -111,7 +112,6 @@ void SettingsManager::save()
         if (setting.getMetadata().contains("max"))
           mSettings.setValue("max", setting.getMetadata()["max"]);
       }
-      index++;
       mSettings.endGroup();  // setting.key
     }
     mSettings.endGroup();  // plugin.name
@@ -210,7 +210,8 @@ VoidResult SettingsManager::registerSettings(const QString& id, const maki::Plug
         setting.setMetadata(metdata);
       }
 
-      info.settings.insert(index, setting);
+      LOG_INFO("Adding setting %s to index %d of %d", qPrintable(setting.getKey()), index, info.settings.size());
+      info.settings[index] = setting;
       mSettings.endGroup();  // setting.name
     }
     mPluginSettings.push_back(info);
