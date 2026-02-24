@@ -4,22 +4,31 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonArray>
+#include <QJsonDocument>
 #include <QJsonObject>
 #include <QProcess>
 #include <QTextStream>
 
+#include "dezyne_simulator.h"
 #include "idocument.h"
 #include "ipipeline.h"
 #include "isettings.h"
+#include "itab.h"
 #include "keys.h"
 #include "logging.h"
+#include "simulation_scene.h"
 #include "string_helpers.h"
 #include "types.h"
 
 bool RozyneGenerator::setup()
 {
+  mSimulator = new DezyneSimulator(this);
+
+  connect(mSimulator, &DezyneSimulator::simulationStarted, this, &RozyneGenerator::simulationStarted);
+  connect(mSimulator, &DezyneSimulator::simulationUpdated, this, &RozyneGenerator::simulationUpdated);
+
   // Start the ide daemon on a specific port
-  return startDaemon();
+  return true;  // startDaemon();
 }
 
 bool RozyneGenerator::tearDown()
@@ -135,47 +144,62 @@ QString RozyneGenerator::simulate(const QString& outputFolder)
 {
   LOG_INFO("Running simulation");
 
-  if (mServices == nullptr)
+  if (mServices->pluginTab() == nullptr)
   {
-    LOG_ERROR("Cannot proceed with simulation, no services provided");
-    return "";
-  }
-  else if (mServices->pipeline() == nullptr)
-  {
-    LOG_ERROR("Cannot proceed with simulation, no pipeline provided");
-    return "";
-  }
-  else if (mServices->document() == nullptr)
-  {
-    LOG_ERROR("Cannot proceed with simulation, no document provided");
+    LOG_ERROR("Cannot proceed with simulation, no plugin tab provided");
     return "";
   }
 
-  if (mGeneratedDznFiles.empty())
-  {
-    // Generate and then simulate
-  }
-  else
-  {
-    // Simulate
-    for (const QString& f : mGeneratedDznFiles)
-    {
-      auto fullPath = mDezyneOutputFolder.absoluteFilePath(f);
-      if (!fullPath.contains("_task"))
-        continue;
+  mSimulator->setWorkingDirectory("/home/felaze/Documents/PhD/Programs/behaviour_tree/monorepo");
+  mSimulator->setSimulationModel("/home/felaze/Documents/PhD/Programs/behaviour_tree/examples/task.dzn");
+  QList<QString> includes = {
+      "/home/felaze/Documents/PhD/Programs/behaviour_tree"
+      "/home/felaze/Documents/PhD/Programs/behaviour_tree/examples"};
+  mSimulator->setSimulationIncludes(includes);
 
-      LOG_INFO("Will simulate: %s", qPrintable(fullPath));
+  mSimulator->startSimulation();
 
-      const QString command = "ide";
-      const QStringList arguments = {"simulate", fullPath};
+  // if (mServices == nullptr)
+  // {
+  //   LOG_ERROR("Cannot proceed with simulation, no services provided");
+  //   return "";
+  // }
+  // else if (mServices->pipeline() == nullptr)
+  // {
+  //   LOG_ERROR("Cannot proceed with simulation, no pipeline provided");
+  //   return "";
+  // }
+  // else if (mServices->document() == nullptr)
+  // {
+  //   LOG_ERROR("Cannot proceed with simulation, no document provided");
+  //   return "";
+  // }
 
-      QProcess* generate = new QProcess(this);
-      generate->setProgram(command);
-      generate->setArguments(arguments);
+  // if (mGeneratedDznFiles.empty())
+  // {
+  //   // Generate and then simulate
+  // }
+  // else
+  // {
+  //   // Simulate
+  //   for (const QString& f : mGeneratedDznFiles)
+  //   {
+  //     auto fullPath = mDezyneOutputFolder.absoluteFilePath(f);
+  //     if (!fullPath.contains("_task"))
+  //       continue;
 
-      mServices->pipeline()->add(generate, maki::OnFail::OPEN_BROWSER, "http://localhost:3000/trace");
-    }
-  }
+  //     LOG_INFO("Will simulate: %s", qPrintable(fullPath));
+
+  //     const QString command = "ide";
+  //     const QStringList arguments = {"simulate", fullPath};
+
+  //     QProcess* generate = new QProcess(this);
+  //     generate->setProgram(command);
+  //     generate->setArguments(arguments);
+
+  //     mServices->pipeline()->add(generate, maki::OnFail::OPEN_BROWSER, "http://localhost:3000/trace");
+  //   }
+  // }
 
   return "";
 }
@@ -395,13 +419,13 @@ QString RozyneGenerator::generateCapability(const INode& node)
 
     QString args = "";
     for (const auto& arg : f->getarguments())
-      args += PropertyTypesToString(arg->gettype()) + " " + arg->getid() + ", ";
+      args += Types::PropertyTypesToString(arg->gettype()) + " " + arg->getid() + ", ";
 
     args.chop(2);
     if (type == "async")
       qualifier = inIndex == 0 ? QStringLiteral("  trigger:") : QStringLiteral("  abort:");
 
-    code += qualifier + "  " + PropertyTypesToString(f->getreturnType()) + " " + f->getname() + "(" + args + ");\n";
+    code += qualifier + "  " + Types::PropertyTypesToString(f->getreturnType()) + " " + f->getname() + "(" + args + ");\n";
     inIndex++;
   }
 
@@ -413,13 +437,13 @@ QString RozyneGenerator::generateCapability(const INode& node)
 
     QString args = "";
     for (auto& arg : f->getarguments())
-      args += PropertyTypesToString(arg->gettype()) + " " + arg->getid() + ", ";
+      args += Types::PropertyTypesToString(arg->gettype()) + " " + arg->getid() + ", ";
 
     args.chop(2);
     if (type == "async")
       qualifier = outIndex == 0 ? QStringLiteral("  return:") : QStringLiteral("  error:");
 
-    code += qualifier + "  " + PropertyTypesToString(f->getreturnType()) + " " + f->getname() + "(" + args + ");\n";
+    code += qualifier + "  " + Types::PropertyTypesToString(f->getreturnType()) + " " + f->getname() + "(" + args + ");\n";
     outIndex++;
   }
 
@@ -461,7 +485,7 @@ QString RozyneGenerator::generateComponent(const INode& node, const QString& inc
 
     QString args = "";
     for (auto& arg : f->getarguments())
-      args += PropertyTypesToString(arg->gettype()) + " " + arg->getid() + ", ";
+      args += Types::PropertyTypesToString(arg->gettype()) + " " + arg->getid() + ", ";
 
     args.chop(2);
     QString qualifier = "";
@@ -470,7 +494,7 @@ QString RozyneGenerator::generateComponent(const INode& node, const QString& inc
     else
       qualifier = index == 2 ? QStringLiteral("  return:") : QStringLiteral("  error:");
 
-    bodyCode += qualifier + "  " + PropertyTypesToString(f->getreturnType()) + " " + f->getname() + "(" + args + ");\n";
+    bodyCode += qualifier + "  " + Types::PropertyTypesToString(f->getreturnType()) + " " + f->getname() + "(" + args + ");\n";
     index++;
   }
 
@@ -504,8 +528,8 @@ QString RozyneGenerator::generateComponent(const INode& node, const QString& inc
   QString args = arguments;
   for (const auto& state : node.getfields())
   {
-    bodyCode += "    " + PropertyTypesToString(state->gettype()) + " " + state->getid() + "_ = " + state->getid() + " : " + state->getdefaultValue().toString() + "\n";
-    args += PropertyTypesToString(state->gettype()) + " " + state->getid() + ", ";
+    bodyCode += "    " + Types::PropertyTypesToString(state->gettype()) + " " + state->getid() + "_ = " + state->getid() + " : " + state->getdefaultValue().toString() + "\n";
+    args += Types::PropertyTypesToString(state->gettype()) + " " + state->getid() + ", ";
   }
 
   if (!node.getfields().empty())
@@ -828,24 +852,29 @@ bool RozyneGenerator::startDaemon()
   return mDaemon->waitForStarted();
 }
 
-QString RozyneGenerator::PropertyTypesToString(Types::PropertyTypes type) const
+void RozyneGenerator::simulationStarted()
 {
-  if (type == Types::PropertyTypes::STRING)
-    return "string";
-  else if (type == Types::PropertyTypes::INTEGER)
-    return "int";
-  else if (type == Types::PropertyTypes::REAL)
-    return "float";
-  else if (type == Types::PropertyTypes::BOOLEAN)
-    return "boolean";
-  else if (type == Types::PropertyTypes::SELECT)
-    return "select";
-  else if (type == Types::PropertyTypes::LIST)
-    return "list";
-  else if (type == Types::PropertyTypes::COLOR)
-    return "color";
-  else if (type == Types::PropertyTypes::VOID)
-    return "void";
+  LOG_INFO("Simulation started");
+}
 
-  return "unknown";
+void RozyneGenerator::simulationUpdated(const QJsonObject& obj)
+{
+  auto theme = mServices->pluginTab()->currentTheme();
+  auto fonts = mServices->pluginTab()->labelFont();
+
+  TraceSceneBuilder builder(theme, fonts, TraceSceneBuilder::Style{});
+  auto clickHandler = [this](const QString& instance, const QString& labelText, const QString& role, bool illegal) {
+    LOG_DEBUG("Sending data: %s %s %s", qPrintable(instance), qPrintable(labelText), qPrintable(role));
+    mSimulator->triggerEvent(labelText);
+  };
+
+  QGraphicsScene* scene = new QGraphicsScene();
+  QString err;
+  if (!builder.buildScene(obj, scene, clickHandler, &err))
+  {
+    LOG_ERROR("Failed to build scene: %s", qPrintable(err));
+    return;
+  }
+
+  mServices->pluginTab()->create(scene);
 }

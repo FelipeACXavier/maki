@@ -45,6 +45,11 @@ while [[ $# -gt 0 ]]; do
       BUILD_PATH="$SOURCE_DIR/build/linux/release"
       shift
       ;;
+      --prefix)
+      PREFIX_PATH="$2"
+      shift
+      shift
+      ;;
       *)
       printHelp $0
       exit 1

@@ -9,6 +9,7 @@
 
 class INode;
 class IFlow;
+class DezyneSimulator;
 
 class RozyneGenerator : public QObject, public maki::IGeneratorPlugin
 {
@@ -40,6 +41,7 @@ private:
 
   QVector<QString> mGeneratedIds = {};
   QProcess* mDaemon = nullptr;
+  DezyneSimulator* mSimulator = nullptr;
 
   struct Argument
   {
@@ -71,8 +73,9 @@ private:
   QString fixCase(const QString& name);
   std::shared_ptr<INode> findDestination(const QString& nodeId, const IFlow& flow) const;
 
+  void simulationStarted();
+  void simulationUpdated(const QJsonObject& obj);
   // Setup
   bool startDaemon();
   void buildSettings();
-  QString PropertyTypesToString(Types::PropertyTypes type) const;
 };

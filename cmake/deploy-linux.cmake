@@ -50,8 +50,8 @@ else()
 endif()
 
 # TODO: Make this more robust
-file(COPY_FILE "${CMAKE_PREFIX_PATH}/lib/libQt6XcbQpa.so.6.8.3" "${CMAKE_INSTALL_PREFIX}/lib/libQt6XcbQpa.so.6")
-file(COPY_FILE "${CMAKE_PREFIX_PATH}/lib/libQt6Svg.so.6.8.3" "${CMAKE_INSTALL_PREFIX}/lib/libQt6Svg.so.6")
+# file(COPY_FILE "${CMAKE_PREFIX_PATH}/lib/libQt6XcbQpa.so.6.8.3" "${CMAKE_INSTALL_PREFIX}/lib/libQt6XcbQpa.so.6")
+# file(COPY_FILE "${CMAKE_PREFIX_PATH}/lib/libQt6Svg.so.6.8.3" "${CMAKE_INSTALL_PREFIX}/lib/libQt6Svg.so.6")
 
 # Copy the stuff needed by qtwebengine
 file(GLOB QTWEBENGINE_PAKS
