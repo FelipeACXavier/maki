@@ -20,7 +20,7 @@ DezyneSimulator::DezyneSimulator(QObject* parent)
   QObject::connect(mClient, &DezyneClient::messageReceivedJson, this, &DezyneSimulator::onMessageReceived);
 }
 
-VoidResult DezyneSimulator::startSimulation()
+VoidResult DezyneSimulator::startSimulation(const QString& id)
 {
   if (mModel.isEmpty())
     return VoidResult::Failed("No model defined");
@@ -30,6 +30,8 @@ VoidResult DezyneSimulator::startSimulation()
   LOG_DEBUG("Connecting to daemon");
 
   mState = State::Starting;
+  // TODO(felaze): Update once the daemon is fixed
+  // mSimulationId = id;
 
   mClient->setUrl(QUrl("ws://localhost:3001"));
   mClient->connectToServer();

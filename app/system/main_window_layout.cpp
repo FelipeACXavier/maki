@@ -409,11 +409,8 @@ void MainWindowLayout::buildMenuBar()
     togglePanelVisibility(mRightPanel, mOpenPropertiesPanel);
   });
 
-  QMenu* specialTabsMenu = view->addMenu(tr("Special tabs"));
-  view->addMenu(specialTabsMenu);
-
-  mOpenPluginTab = new QAction(tr("Open plugin tab"), this);
-  specialTabsMenu->addAction(mOpenPluginTab);
+  mSpecialTabsMenu = view->addMenu(tr("Special tabs"));
+  view->addMenu(mSpecialTabsMenu);
 
   // ----------------------------------------------------------
   // Diagram menu

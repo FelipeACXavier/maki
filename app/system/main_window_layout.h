@@ -104,7 +104,7 @@ protected:
   QAction* mOpenPropertiesPanel;
   QAction* mOpenInfoPanel;
 
-  QAction* mOpenPluginTab;
+  QMenu* mSpecialTabsMenu;
 
   // Diagram menu
   QMenu* mGeneratorMenu;

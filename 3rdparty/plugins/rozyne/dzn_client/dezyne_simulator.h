@@ -12,7 +12,7 @@ class DezyneSimulator : public QObject
 public:
   DezyneSimulator(QObject* parent = nullptr);
 
-  VoidResult startSimulation();
+  VoidResult startSimulation(const QString& id);
   void stopSimulation();
 
   void setSimulationModel(const QString& model);

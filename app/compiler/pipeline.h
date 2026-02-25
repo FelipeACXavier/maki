@@ -13,7 +13,7 @@ class Pipeline : public QObject, public maki::IPipeline
 public:
   Pipeline(QObject* parent = nullptr);
 
-  VoidResult add(QProcess* process, maki::OnFail onFail, const QString& options = {}) override;
+  VoidResult add(QProcess* process, maki::OnFail onFail, std::function<void()> callback = nullptr) override;
   VoidResult start();
 
   QString name() const;
@@ -32,8 +32,6 @@ signals:
   void readyReadStandardError(const QByteArray& message);
   void errorOccurred(QProcess::ProcessError error);
 
-  void openClient(const QString& url);
-
 private slots:
   void onReadyReadStandardOutput();
   void onReadyReadStandardError();
@@ -45,7 +43,7 @@ private:
   {
     QProcess* process = nullptr;
     maki::OnFail onFail = maki::OnFail::STOP;
-    QString options = "";
+    std::function<void()> onFinish;
   };
 
   enum class State

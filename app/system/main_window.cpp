@@ -106,7 +106,7 @@ VoidResult MainWindow::start()
   mLocalServerTab = new LocalServerTab(mCanvasPanel);
   mLocalServerTab->hide();
 
-  mPluginTab = new PluginTab(this);
+  mPluginTab = new PluginTab(mSpecialTabsMenu, this);
 
   mHostServices = new HostServices(mStorage.get(), mPipeline, mSettingsManager.get(), QCoreApplication::applicationDirPath(), this);
   mHostServices->setPluginTab(mPluginTab);
@@ -200,8 +200,7 @@ void MainWindow::bind()
   mOpenInfoPanel->setShortcut(QKeySequence(Qt::Key_F8));
   mOpenPropertiesPanel->setShortcut(QKeySequence(Qt::Key_F9));
 
-  connect(mOpenPluginTab, &QAction::triggered, this, &MainWindow::addPluginTab);
-  mOpenPluginTab->setShortcut(QKeySequence(Qt::Key_F10));
+  connect(mPluginTab, &PluginTab::openView, this, &MainWindow::addPluginTab);
 
   // Diagram actions =============================================================
   connect(mActionGenerate, &QAction::triggered, this, &MainWindow::onActionGenerate);
@@ -582,10 +581,10 @@ void MainWindow::closeCanvasTab(int index)
       }
     }
   }
-  else if (PluginView* tab = qobject_cast<PluginView*>(mCanvasPanel->widget(index)))
-  {
-    LOG_DEBUG("Removing plugin view");
-  }
+  // else if (PluginView* tab = qobject_cast<PluginView*>(mCanvasPanel->widget(index)))
+  // {
+  //   Q_UNUSED(tab);
+  // }
   else if (ProcessTab* tab = qobject_cast<ProcessTab*>(mCanvasPanel->widget(index)))
   {
     tab->hide();
@@ -706,20 +705,9 @@ void MainWindow::addBrowserTab()
   mLocalServerTab->show();
 }
 
-void MainWindow::addPluginTab()
+void MainWindow::addPluginTab(const QString& name, PluginView* view)
 {
-  if (!mPluginTab)
-  {
-    LOG_WARNING("No plugin tab to be added");
-    return;
-  }
-
-  auto view = mPluginTab->getView();
-  // for (int i = 1; i < mCanvasPanel->count(); ++i)
-  //   if (qobject_cast<LocalServerTab*>(mCanvasPanel->widget(i)))
-  //     return;
-
-  mCanvasPanel->addTab(view, "Plugin view");
+  mCanvasPanel->addTab(view, name);
   mCanvasPanel->setCurrentWidget(view);
 }
 

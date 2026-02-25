@@ -26,8 +26,8 @@ public:
   QString languageName() const override;
   maki::PluginVersion version() const override;
 
-  QString verify(const QString& outputFolder) override;
-  QString simulate(const QString& outputFolder) override;
+  VoidResult verify(const QString& outputFolder) override;
+  VoidResult simulate(const QString& outputFolder) override;
 
   QList<QString> generatedFiles() const override;
 
@@ -75,6 +75,7 @@ private:
   QString fixCase(const QString& name);
   std::shared_ptr<INode> findDestination(const QString& nodeId, const IFlow& flow) const;
 
+  void startSimulation();
   void simulationStarted();
   void simulationUpdated(const QJsonObject& obj);
   VoidResult createSimulationScene(QGraphicsScene* scene, const QJsonObject& obj);

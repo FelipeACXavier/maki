@@ -13,7 +13,7 @@ Pipeline::Pipeline(QObject* parent)
     : QObject(parent)
     , mState(State::Idle)
     , mName("")
-    , mRunningProcess({nullptr, maki::OnFail::STOP, ""})
+    , mRunningProcess({nullptr, maki::OnFail::STOP, nullptr})
 {
 }
 
@@ -71,7 +71,7 @@ VoidResult Pipeline::abort()
   return VoidResult();
 }
 
-VoidResult Pipeline::add(QProcess* process, maki::OnFail onFail, const QString& options)
+VoidResult Pipeline::add(QProcess* process, maki::OnFail onFail, std::function<void()> callback)
 {
   QString exe = QStandardPaths::findExecutable(process->program());
   if (exe.isEmpty())
@@ -82,8 +82,12 @@ VoidResult Pipeline::add(QProcess* process, maki::OnFail onFail, const QString& 
   connect(process, &QProcess::readyReadStandardError, this, &Pipeline::onReadyReadStandardError);
   connect(process, &QProcess::errorOccurred, this, &Pipeline::onErrorOccurred);
 
-  mProcesses.append({process, onFail});
-  mProcesses.last().options = options;
+  PipelineProcess pp;
+  pp.process = process;
+  pp.onFail = onFail;
+  pp.onFinish = callback;
+
+  mProcesses.append(pp);
 
   return VoidResult();
 }
@@ -202,11 +206,8 @@ void Pipeline::onFinished(int exitCode, QProcess::ExitStatus status)
   LOG_DEBUG("Process finished: %s", qPrintable(mRunningProcess.process->program()));
   emit finished(exitCode, status);
 
-  if (!mRunningProcess.options.isEmpty())
-  {
-    LOG_DEBUG("Opening client: %s", qPrintable(mRunningProcess.options));
-    emit openClient(mRunningProcess.options);
-  }
+  if (mRunningProcess.onFinish)
+    mRunningProcess.onFinish();
 
   mProcesses.removeFirst();
 

@@ -12,14 +12,14 @@ enum class OnFail
 {
   STOP = 0,
   CONTINUE,
-  OPEN_BROWSER
+  EXECUTE
 };
 
 class IPipeline
 {
 public:
   virtual ~IPipeline() = default;
-  virtual VoidResult add(QProcess* process, OnFail onFail, const QString& options = {}) = 0;
+  virtual VoidResult add(QProcess* process, OnFail onFail, std::function<void()> callback = nullptr) = 0;
 };
 
 }  // namespace maki

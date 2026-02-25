@@ -7,6 +7,7 @@
 #include <QString>
 
 #include "ihost_services.h"
+#include "result.h"
 
 namespace maki
 {
@@ -61,8 +62,8 @@ public:
   virtual QString languageName() const = 0;
   virtual PluginVersion version() const = 0;
 
-  virtual QString verify(const QString& outputFolder) = 0;
-  virtual QString simulate(const QString& outputFolder) = 0;
+  virtual VoidResult verify(const QString& outputFolder) = 0;
+  virtual VoidResult simulate(const QString& outputFolder) = 0;
 
   virtual QList<QString> generatedFiles() const = 0;
 };

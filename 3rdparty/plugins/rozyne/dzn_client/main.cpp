@@ -22,7 +22,7 @@ int main(int argc, char** argv)
       "/home/felaze/Documents/PhD/Programs/behaviour_tree/examples"};
   simulator->setSimulationIncludes(includes);
 
-  simulator->startSimulation();
+  simulator->startSimulation("sim-12345");
 
   return app.exec();
 }

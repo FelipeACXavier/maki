@@ -26,6 +26,7 @@ class LocalServerTab;
 class SettingsManager;
 class NotificationManager;
 class PluginTab;
+class PluginView;
 
 class MainWindow : public MainWindowLayout
 {
@@ -92,7 +93,7 @@ private:
 
   void addProcessTab();
   void addBrowserTab();
-  void addPluginTab();
+  void addPluginTab(const QString& name, PluginView* view);
 
   // ================================================
   // Actions

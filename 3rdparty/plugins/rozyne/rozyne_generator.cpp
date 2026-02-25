@@ -130,7 +130,7 @@ void RozyneGenerator::setHostServices(maki::IHostServices* services)
     service->registerSettings(languageName(), version(), mSettings);
 
   if (auto pluginTab = mServices->pluginTab())
-    pluginTab->registerAppearenceUpdate([this](QGraphicsScene* scene) {
+    pluginTab->registerAppearenceUpdate(languageName(), [this](QGraphicsScene* scene) {
       return createSimulationScene(scene, mLastUpdate);
     });
 }
@@ -145,89 +145,71 @@ maki::PluginVersion RozyneGenerator::version() const
   return {"0", "0", "1"};
 }
 
-QString RozyneGenerator::simulate(const QString& outputFolder)
+VoidResult RozyneGenerator::simulate(const QString& outputFolder)
 {
   LOG_INFO("Running simulation");
 
-  if (mServices->pluginTab() == nullptr)
+  if (mServices == nullptr)
+    return VoidResult::Failed("Cannot proceed with simulation, no services provided");
+  else if (mServices->pipeline() == nullptr)
+    return VoidResult::Failed("Cannot proceed with simulation, no pipeline provided");
+  else if (mServices->pluginTab() == nullptr)
+    return VoidResult::Failed("Cannot proceed with simulation, no plugin tab provided");
+  else if (mServices->document() == nullptr)
+    return VoidResult::Failed("Cannot proceed with simulation, no document provided");
+
+  if (mGeneratedDznFiles.empty())
   {
-    LOG_ERROR("Cannot proceed with simulation, no plugin tab provided");
-    return "";
+    RETURN_ON_FAILURE(verify(outputFolder));
+
+    // Start simulation after verification is done
+    const QString command = "echo";
+    const QStringList arguments = {"\"Running sim\""};
+    QProcess* generate = new QProcess(this);
+    generate->setProgram(command);
+    generate->setArguments(arguments);
+
+    mServices->pipeline()->add(generate, maki::OnFail::EXECUTE, [this]() { startSimulation(); });
+  }
+  else
+  {
+    startSimulation();
   }
 
-  mSimulator->setWorkingDirectory("/home/felaze/Documents/PhD/Programs/behaviour_tree/monorepo");
-  mSimulator->setSimulationModel("/home/felaze/Documents/PhD/Programs/behaviour_tree/examples/task.dzn");
-  QList<QString> includes = {
-      "/home/felaze/Documents/PhD/Programs/behaviour_tree"
-      "/home/felaze/Documents/PhD/Programs/behaviour_tree/examples"};
-  mSimulator->setSimulationIncludes(includes);
-
-  mSimulator->startSimulation();
-
-  // if (mServices == nullptr)
-  // {
-  //   LOG_ERROR("Cannot proceed with simulation, no services provided");
-  //   return "";
-  // }
-  // else if (mServices->pipeline() == nullptr)
-  // {
-  //   LOG_ERROR("Cannot proceed with simulation, no pipeline provided");
-  //   return "";
-  // }
-  // else if (mServices->document() == nullptr)
-  // {
-  //   LOG_ERROR("Cannot proceed with simulation, no document provided");
-  //   return "";
-  // }
-
-  // if (mGeneratedDznFiles.empty())
-  // {
-  //   // Generate and then simulate
-  // }
-  // else
-  // {
-  //   // Simulate
-  //   for (const QString& f : mGeneratedDznFiles)
-  //   {
-  //     auto fullPath = mDezyneOutputFolder.absoluteFilePath(f);
-  //     if (!fullPath.contains("_task"))
-  //       continue;
-
-  //     LOG_INFO("Will simulate: %s", qPrintable(fullPath));
-
-  //     const QString command = "ide";
-  //     const QStringList arguments = {"simulate", fullPath};
-
-  //     QProcess* generate = new QProcess(this);
-  //     generate->setProgram(command);
-  //     generate->setArguments(arguments);
-
-  //     mServices->pipeline()->add(generate, maki::OnFail::OPEN_BROWSER, "http://localhost:3000/trace");
-  //   }
-  // }
-
-  return "";
+  return VoidResult();
 }
 
-QString RozyneGenerator::verify(const QString& outputFolder)
+void RozyneGenerator::startSimulation()
+{
+  for (const QString& f : mGeneratedDznFiles)
+  {
+    auto fullPath = mDezyneOutputFolder.absoluteFilePath(f);
+    if (!fullPath.contains("_task"))
+      continue;
+
+    LOG_INFO("Will simulate: %s", qPrintable(fullPath));
+
+    mSimulator->setWorkingDirectory(mDezyneOutputFolder.absolutePath());
+    mSimulator->setSimulationModel(fullPath);
+
+    QList<QString> includes = {mDezyneOutputFolder.absolutePath()};
+    mSimulator->setSimulationIncludes(includes);
+
+    mSimulator->startSimulation(QUuid::createUuid().toString());
+    mServices->pluginTab()->openScene(languageName());
+  }
+}
+
+VoidResult RozyneGenerator::verify(const QString& outputFolder)
 {
   LOG_INFO("Running verification");
 
   if (mServices == nullptr)
-  {
-    LOG_ERROR("Cannot proceed with verification, no services provided");
-    return "";
-  }
+    return VoidResult::Failed("Cannot proceed with verification, no services provided");
   else if (mServices->pipeline() == nullptr)
-  {
-    LOG_ERROR("Cannot proceed with verification, no pipeline provided");
-    return "";
-  }
+    return VoidResult::Failed("Cannot proceed with verification, no pipeline provided");
   else if (mServices->document() == nullptr)
-  {
-    LOG_ERROR("Cannot proceed with verification, no document provided");
-    return "";
-  }
+    return VoidResult::Failed("Cannot proceed with verification, no document provided");
 
   mGeneratedDznFiles = {};
   mGeneratedFiles = {};
@@ -260,7 +242,8 @@ QString RozyneGenerator::verify(const QString& outputFolder)
     };
 
     QProcess* generate = new QProcess(this);
-    generate->setWorkingDirectory(QDir::homePath() + "/" + languageName());
+    // generate->setWorkingDirectory(QDir::homePath() + "/" + languageName());
+    generate->setWorkingDirectory("/home/felaze/Documents/PhD/Programs/DSL/koda");
     generate->setProgram(command);
     generate->setArguments(arguments);
 
@@ -279,7 +262,7 @@ QString RozyneGenerator::verify(const QString& outputFolder)
 
     LOG_INFO("Will verify file: %s", qPrintable(fullPath));
 
-    const QString command = "ide";
+    const QString command = "/home/felaze/Documents/PhD/Programs/behaviour_tree/dezyne-2.19.2-persistent.1-2614/dzn";
     const QStringList arguments = {"verify", fullPath};
     QProcess* generate = new QProcess(this);
     generate->setProgram(command);
@@ -288,7 +271,7 @@ QString RozyneGenerator::verify(const QString& outputFolder)
     mServices->pipeline()->add(generate, maki::OnFail::STOP);
   }
 
-  return "";
+  return VoidResult();
 }
 
 QString RozyneGenerator::generateKoda(const QString& outputFolder)
@@ -865,7 +848,7 @@ void RozyneGenerator::simulationStarted()
 void RozyneGenerator::simulationUpdated(const QJsonObject& obj)
 {
   mLastUpdate = obj;
-  mServices->pluginTab()->updateScene();
+  mServices->pluginTab()->updateScene(languageName());
 }
 
 VoidResult RozyneGenerator::createSimulationScene(QGraphicsScene* scene, const QJsonObject& obj)

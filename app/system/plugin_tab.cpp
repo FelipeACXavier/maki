@@ -1,32 +1,38 @@
 #include "plugin_tab.h"
 
+#include <QMenu>
+
 #include "logging.h"
 #include "plugin_view.h"
 #include "theme.h"
 
-PluginTab::PluginTab(QObject* parent)
+PluginTab::PluginTab(QMenu* menu, QObject* parent)
     : QObject(parent)
+    , mMenu(menu)
 {
-  mView = new PluginView();
-  mScene = new QGraphicsScene(mView);
-  mView->setScene(mScene);
 }
 
-PluginView* PluginTab::getView() const
+void PluginTab::updateScene(const QString& name)
 {
-  return mView;
+  if (mTabs.find(name) == mTabs.end())
+    return;
+
+  if (!mTabs[name].callback)
+    return;
+
+  LOG_WARN_ON_FAILURE(mTabs[name].callback(mTabs[name].scene));
+  mTabs[name].view->fitInView(mTabs[name].scene->sceneRect(), Qt::KeepAspectRatio);
 }
 
-void PluginTab::updateScene()
+void PluginTab::openScene(const QString& name)
 {
-  for (const auto& callback : mCallbacks)
-  {
-    if (callback)
-    {
-      LOG_WARN_ON_FAILURE(callback(mScene));
-      mView->fitInView(mScene->sceneRect(), Qt::KeepAspectRatio);
-    }
-  }
+  LOG_DEBUG("Opening scene");
+
+  if (mTabs.find(name) == mTabs.end())
+    return;
+
+  auto title = name + " view";
+  emit openView(title, mTabs[name].view);
 }
 
 maki::ThemeVars PluginTab::currentTheme()
@@ -46,10 +52,28 @@ maki::ThemeFonts PluginTab::labelFont()
 
 void PluginTab::onThemeChanged()
 {
-  updateScene();
+  for (auto it = mTabs.constBegin(); it != mTabs.constEnd(); ++it)
+    updateScene(it.key());
 }
 
-void PluginTab::registerAppearenceUpdate(std::function<VoidResult(QGraphicsScene* scene)> callback)
+void PluginTab::registerAppearenceUpdate(const QString& name, std::function<VoidResult(QGraphicsScene* scene)> callback)
 {
-  mCallbacks.push_back(callback);
+  if (mTabs.find(name) != mTabs.end())
+  {
+    LOG_WARNING("Plugin already registered, ignoring registration");
+    return;
+  }
+
+  PluginData pd;
+  pd.view = new PluginView();
+  pd.scene = new QGraphicsScene(pd.view);
+  pd.view->setScene(pd.scene);
+  pd.callback = callback;
+
+  mTabs[name] = pd;
+
+  auto action = new QAction(tr("Open") + " " + name, this);
+  connect(action, &QAction::triggered, [this, name] { openScene(name); });
+
+  mMenu->addAction(action);
 }

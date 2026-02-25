@@ -100,10 +100,11 @@ class ITab
 {
 public:
   virtual ~ITab() = default;
-  virtual void updateScene() = 0;
+  virtual void updateScene(const QString& name) = 0;
+  virtual void openScene(const QString& name) = 0;
   virtual ThemeVars currentTheme() = 0;
   virtual ThemeFonts labelFont() = 0;
-  virtual void registerAppearenceUpdate(std::function<VoidResult(QGraphicsScene* scene)> callback) = 0;
+  virtual void registerAppearenceUpdate(const QString& name, std::function<VoidResult(QGraphicsScene* scene)> callback) = 0;
 };
 
 }  // namespace maki

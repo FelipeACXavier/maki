@@ -25,12 +25,7 @@ public:
 signals:
   void generationStarted(Pipeline* pipeline);
   void generationEnded();
-  void openClient(const QString& url);
 
 private:
   Pipeline* mPipeline = nullptr;
-
-  VoidResult generatePipeline(const QString& outputDir, const QStringList& input, QStringList& output);
-  VoidResult verifyPipeline(const QStringList& input, QStringList& output);
-  VoidResult simulatePipeline(const QStringList& input, QStringList& output);
 };

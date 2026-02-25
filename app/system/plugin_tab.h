@@ -16,19 +16,27 @@ class PluginTab : public QObject, public maki::ITab
 {
   Q_OBJECT
 public:
-  PluginTab(QObject* parent = nullptr);
+  PluginTab(QMenu* menu, QObject* parent = nullptr);
 
-  void updateScene() override;
+  void updateScene(const QString& name) override;
+  void openScene(const QString& name) override;
   maki::ThemeVars currentTheme() override;
   maki::ThemeFonts labelFont() override;
-  void registerAppearenceUpdate(std::function<VoidResult(QGraphicsScene* scene)> callback) override;
+  void registerAppearenceUpdate(const QString& name, std::function<VoidResult(QGraphicsScene* scene)> callback) override;
 
   void onThemeChanged();
 
-  PluginView* getView() const;
+signals:
+  void openView(const QString& name, PluginView* view);
 
 private:
-  PluginView* mView;
-  QGraphicsScene* mScene;
-  QVector<std::function<VoidResult(QGraphicsScene* scene)>> mCallbacks;
+  struct PluginData
+  {
+    PluginView* view;
+    QGraphicsScene* scene;
+    std::function<VoidResult(QGraphicsScene* scene)> callback;
+  };
+
+  QMenu* mMenu;
+  QMap<QString, PluginData> mTabs;
 };
