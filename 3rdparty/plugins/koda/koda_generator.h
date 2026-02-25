@@ -12,10 +12,10 @@ class INode;
 class IFlow;
 class DezyneSimulator;
 
-class RozyneGenerator : public QObject, public maki::IGeneratorPlugin
+class KodaGenerator : public QObject, public maki::IGeneratorPlugin
 {
   Q_OBJECT
-  Q_PLUGIN_METADATA(IID MAKI_GENERATORPLUGIN_IID FILE "rozyne_generator.json")
+  Q_PLUGIN_METADATA(IID MAKI_GENERATORPLUGIN_IID FILE "koda_generator.json")
   Q_INTERFACES(maki::IGeneratorPlugin)
 
 public:

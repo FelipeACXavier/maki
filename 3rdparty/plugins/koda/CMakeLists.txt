@@ -1,6 +1,6 @@
 # plugins/cppgenerator/CMakeLists.txt
 cmake_minimum_required(VERSION 3.21)
-set(PLUGIN_NAME rozyne_generatorplugin)
+set(PLUGIN_NAME koda_generatorplugin)
 
 project(${PLUGIN_NAME})
 find_package(Qt6 REQUIRED COMPONENTS Core)
@@ -22,9 +22,9 @@ add_library(${PLUGIN_NAME} SHARED
   dzn_client/simulation_scene.cpp
   dzn_client/simulation_label_item.cpp
   dzn_client/component_model.cpp
-  rozyne_generator.cpp
-  rozyne_generator.h
-  rozyne_generator.json
+  koda_generator.cpp
+  koda_generator.h
+  koda_generator.json
 )
 
 target_link_libraries(${PLUGIN_NAME} PRIVATE

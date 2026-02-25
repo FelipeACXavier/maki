@@ -1,4 +1,4 @@
-#include "rozyne_generator.h"
+#include "koda_generator.h"
 
 #include <QApplication>
 #include <QFile>
@@ -20,18 +20,18 @@
 #include "string_helpers.h"
 #include "types.h"
 
-bool RozyneGenerator::setup()
+bool KodaGenerator::setup()
 {
   mSimulator = new DezyneSimulator(this);
 
-  connect(mSimulator, &DezyneSimulator::simulationStarted, this, &RozyneGenerator::simulationStarted);
-  connect(mSimulator, &DezyneSimulator::simulationUpdated, this, &RozyneGenerator::simulationUpdated);
+  connect(mSimulator, &DezyneSimulator::simulationStarted, this, &KodaGenerator::simulationStarted);
+  connect(mSimulator, &DezyneSimulator::simulationUpdated, this, &KodaGenerator::simulationUpdated);
 
   // Start the ide daemon on a specific port
   return true;  // startDaemon();
 }
 
-bool RozyneGenerator::tearDown()
+bool KodaGenerator::tearDown()
 {
   if (mDaemon == nullptr)
     return true;
@@ -53,7 +53,7 @@ bool RozyneGenerator::tearDown()
   return true;
 }
 
-void RozyneGenerator::buildSettings()
+void KodaGenerator::buildSettings()
 {
   // -d, --debug             enable debug ouput
   // -b, --view-port=PORT    browser view listen PORT [3002]
@@ -119,7 +119,7 @@ void RozyneGenerator::buildSettings()
   mSettings.push_back(verbose);
 }
 
-void RozyneGenerator::setHostServices(maki::IHostServices* services)
+void KodaGenerator::setHostServices(maki::IHostServices* services)
 {
   mServices = services;
 
@@ -135,17 +135,17 @@ void RozyneGenerator::setHostServices(maki::IHostServices* services)
     });
 }
 
-QString RozyneGenerator::languageName() const
+QString KodaGenerator::languageName() const
 {
   return "KODA";
 }
 
-maki::PluginVersion RozyneGenerator::version() const
+maki::PluginVersion KodaGenerator::version() const
 {
   return {"0", "0", "1"};
 }
 
-VoidResult RozyneGenerator::simulate(const QString& outputFolder)
+VoidResult KodaGenerator::simulate(const QString& outputFolder)
 {
   LOG_INFO("Running simulation");
 
@@ -179,7 +179,7 @@ VoidResult RozyneGenerator::simulate(const QString& outputFolder)
   return VoidResult();
 }
 
-void RozyneGenerator::startSimulation()
+void KodaGenerator::startSimulation()
 {
   for (const QString& f : mGeneratedDznFiles)
   {
@@ -200,7 +200,7 @@ void RozyneGenerator::startSimulation()
   }
 }
 
-VoidResult RozyneGenerator::verify(const QString& outputFolder)
+VoidResult KodaGenerator::verify(const QString& outputFolder)
 {
   LOG_INFO("Running verification");
 
@@ -274,7 +274,7 @@ VoidResult RozyneGenerator::verify(const QString& outputFolder)
   return VoidResult();
 }
 
-QString RozyneGenerator::generateKoda(const QString& outputFolder)
+QString KodaGenerator::generateKoda(const QString& outputFolder)
 {
   mGeneratedFiles.clear();
 
@@ -306,13 +306,13 @@ QString RozyneGenerator::generateKoda(const QString& outputFolder)
   return code;
 }
 
-QList<QString> RozyneGenerator::generatedFiles() const
+QList<QString> KodaGenerator::generatedFiles() const
 {
   return mGeneratedFiles;
 }
 
 // Add function per block type
-QString RozyneGenerator::generateNode(const INode& node)
+QString KodaGenerator::generateNode(const INode& node)
 {
   QString code = "";
   QString type = node.getnodeId();
@@ -326,7 +326,7 @@ QString RozyneGenerator::generateNode(const INode& node)
   return code;
 }
 
-QString RozyneGenerator::generateBehaviourNode(const INode& node, const Argument& arg, const IFlow& flow, const QString& format)
+QString KodaGenerator::generateBehaviourNode(const INode& node, const Argument& arg, const IFlow& flow, const QString& format)
 {
   QString code = "";
   QString type = node.getnodeId();
@@ -352,7 +352,7 @@ QString RozyneGenerator::generateBehaviourNode(const INode& node, const Argument
   return code;
 }
 
-QString RozyneGenerator::generateTransitions(const INode& node, const Argument& arg, const IFlow& flow, const QString& format)
+QString KodaGenerator::generateTransitions(const INode& node, const Argument& arg, const IFlow& flow, const QString& format)
 {
   QString code = "";
 
@@ -366,7 +366,7 @@ QString RozyneGenerator::generateTransitions(const INode& node, const Argument& 
   return code;
 }
 
-QString RozyneGenerator::generateCapability(const INode& node)
+QString KodaGenerator::generateCapability(const INode& node)
 {
   QString code = "";
 
@@ -441,7 +441,7 @@ QString RozyneGenerator::generateCapability(const INode& node)
   return code;
 }
 
-QString RozyneGenerator::generateComponent(const INode& node, const QString& incomingCode, const QString& arguments)
+QString KodaGenerator::generateComponent(const INode& node, const QString& incomingCode, const QString& arguments)
 {
   QString code = "";
 
@@ -550,7 +550,7 @@ QString RozyneGenerator::generateComponent(const INode& node, const QString& inc
   return code;
 }
 
-QString RozyneGenerator::generateStart(const QString& parent, const INode& node, const IFlow& flow, const QString& format)
+QString KodaGenerator::generateStart(const QString& parent, const INode& node, const IFlow& flow, const QString& format)
 {
   QString code = "    " + flow.getname() + ": ";
 
@@ -561,14 +561,14 @@ QString RozyneGenerator::generateStart(const QString& parent, const INode& node,
   return code;
 }
 
-QString RozyneGenerator::generateEnd(const INode& node, const Argument& arg, const IFlow& flow, const QString& format)
+QString KodaGenerator::generateEnd(const INode& node, const Argument& arg, const IFlow& flow, const QString& format)
 {
   QString code = "";
   code += "end";
   return code;
 }
 
-QString RozyneGenerator::generateError(const INode& node, const Argument& arg, const IFlow& flow, const QString& format)
+QString KodaGenerator::generateError(const INode& node, const Argument& arg, const IFlow& flow, const QString& format)
 {
   QString code = "";
   if (arg.name.isEmpty())
@@ -578,7 +578,7 @@ QString RozyneGenerator::generateError(const INode& node, const Argument& arg, c
   return code;
 }
 
-QString RozyneGenerator::generateAsyncTask(const INode& node, const Argument& arg, const IFlow& flow, const QString& format)
+QString KodaGenerator::generateAsyncTask(const INode& node, const Argument& arg, const IFlow& flow, const QString& format)
 {
   QString code = "";
   QJsonObject object = node.getproperties()["component"].toJsonObject();
@@ -653,7 +653,7 @@ QString RozyneGenerator::generateAsyncTask(const INode& node, const Argument& ar
   return code;
 }
 
-QString RozyneGenerator::generateSyncTask(const INode& node, const Argument& arg, const IFlow& flow, const QString& format)
+QString KodaGenerator::generateSyncTask(const INode& node, const Argument& arg, const IFlow& flow, const QString& format)
 {
   QString code = "";
   QJsonObject object = node.getproperties()["component"].toJsonObject();
@@ -686,7 +686,7 @@ QString RozyneGenerator::generateSyncTask(const INode& node, const Argument& arg
   return code;
 }
 
-QString RozyneGenerator::generateWithin(const INode& node, const Argument& arg, const IFlow& flow, const QString& format)
+QString KodaGenerator::generateWithin(const INode& node, const Argument& arg, const IFlow& flow, const QString& format)
 {
   QString code = "";
   int val = node.getproperties()["timeout"].toInt();
@@ -744,7 +744,7 @@ QString RozyneGenerator::generateWithin(const INode& node, const Argument& arg, 
   return code;
 }
 
-QString RozyneGenerator::generateRepeat(const INode& node, const Argument& arg, const IFlow& flow, const QString& format)
+QString KodaGenerator::generateRepeat(const INode& node, const Argument& arg, const IFlow& flow, const QString& format)
 {
   QString code = "";
   QJsonObject object = node.getproperties()["component"].toJsonObject();
@@ -772,7 +772,7 @@ QString RozyneGenerator::generateRepeat(const INode& node, const Argument& arg, 
   return code;
 }
 
-QString RozyneGenerator::generateStrategy(const INode& node, const Argument& arg, const IFlow& flow, const QString& format)
+QString KodaGenerator::generateStrategy(const INode& node, const Argument& arg, const IFlow& flow, const QString& format)
 {
   QString code = "";
   QJsonObject object = node.getproperties()["component"].toJsonObject();
@@ -791,7 +791,7 @@ QString RozyneGenerator::generateStrategy(const INode& node, const Argument& arg
   return code;
 }
 
-std::shared_ptr<INode> RozyneGenerator::findDestination(const QString& nodeId, const IFlow& flow) const
+std::shared_ptr<INode> KodaGenerator::findDestination(const QString& nodeId, const IFlow& flow) const
 {
   for (const auto& dst : flow.getnodes())
   {
@@ -803,12 +803,12 @@ std::shared_ptr<INode> RozyneGenerator::findDestination(const QString& nodeId, c
   return nullptr;
 }
 
-QString RozyneGenerator::fixCase(const QString& name)
+QString KodaGenerator::fixCase(const QString& name)
 {
   return name.toLower().replace(" ", "_");
 }
 
-bool RozyneGenerator::startDaemon()
+bool KodaGenerator::startDaemon()
 {
   mDaemon = new QProcess(this);
 
@@ -840,18 +840,18 @@ bool RozyneGenerator::startDaemon()
   return mDaemon->waitForStarted();
 }
 
-void RozyneGenerator::simulationStarted()
+void KodaGenerator::simulationStarted()
 {
   LOG_INFO("Simulation started");
 }
 
-void RozyneGenerator::simulationUpdated(const QJsonObject& obj)
+void KodaGenerator::simulationUpdated(const QJsonObject& obj)
 {
   mLastUpdate = obj;
   mServices->pluginTab()->updateScene(languageName());
 }
 
-VoidResult RozyneGenerator::createSimulationScene(QGraphicsScene* scene, const QJsonObject& obj)
+VoidResult KodaGenerator::createSimulationScene(QGraphicsScene* scene, const QJsonObject& obj)
 {
   // Nothing to render
   if (obj.isEmpty())

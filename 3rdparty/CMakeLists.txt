@@ -9,4 +9,4 @@ add_subdirectory(CppHelpers)
 add_subdirectory(maki-sdk)
 
 # Build-in plugins
-add_subdirectory(plugins/rozyne)
+add_subdirectory(plugins/koda)
