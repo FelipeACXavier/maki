@@ -56,7 +56,7 @@ void PluginTab::onThemeChanged()
     updateScene(it.key());
 }
 
-void PluginTab::registerAppearenceUpdate(const QString& name, std::function<VoidResult(QGraphicsScene* scene)> callback)
+void PluginTab::registerPlugin(const QString& name, std::function<VoidResult(QGraphicsScene* scene)> callback)
 {
   if (mTabs.find(name) != mTabs.end())
   {

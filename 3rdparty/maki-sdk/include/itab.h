@@ -104,7 +104,7 @@ public:
   virtual void openScene(const QString& name) = 0;
   virtual ThemeVars currentTheme() = 0;
   virtual ThemeFonts labelFont() = 0;
-  virtual void registerAppearenceUpdate(const QString& name, std::function<VoidResult(QGraphicsScene* scene)> callback) = 0;
+  virtual void registerPlugin(const QString& name, std::function<VoidResult(QGraphicsScene* scene)> callback) = 0;
 };
 
 }  // namespace maki

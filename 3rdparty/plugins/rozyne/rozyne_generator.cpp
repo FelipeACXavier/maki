@@ -130,7 +130,7 @@ void RozyneGenerator::setHostServices(maki::IHostServices* services)
     service->registerSettings(languageName(), version(), mSettings);
 
   if (auto pluginTab = mServices->pluginTab())
-    pluginTab->registerAppearenceUpdate(languageName(), [this](QGraphicsScene* scene) {
+    pluginTab->registerPlugin(languageName(), [this](QGraphicsScene* scene) {
       return createSimulationScene(scene, mLastUpdate);
     });
 }

@@ -22,7 +22,7 @@ public:
   void openScene(const QString& name) override;
   maki::ThemeVars currentTheme() override;
   maki::ThemeFonts labelFont() override;
-  void registerAppearenceUpdate(const QString& name, std::function<VoidResult(QGraphicsScene* scene)> callback) override;
+  void registerPlugin(const QString& name, std::function<VoidResult(QGraphicsScene* scene)> callback) override;
 
   void onThemeChanged();
 
