@@ -128,6 +128,11 @@ void RozyneGenerator::setHostServices(maki::IHostServices* services)
   // Setup settings
   if (auto service = mServices->settings())
     service->registerSettings(languageName(), version(), mSettings);
+
+  if (auto pluginTab = mServices->pluginTab())
+    pluginTab->registerAppearenceUpdate([this](QGraphicsScene* scene) {
+      return createSimulationScene(scene, mLastUpdate);
+    });
 }
 
 QString RozyneGenerator::languageName() const
@@ -859,22 +864,28 @@ void RozyneGenerator::simulationStarted()
 
 void RozyneGenerator::simulationUpdated(const QJsonObject& obj)
 {
+  mLastUpdate = obj;
+  mServices->pluginTab()->updateScene();
+}
+
+VoidResult RozyneGenerator::createSimulationScene(QGraphicsScene* scene, const QJsonObject& obj)
+{
+  // Nothing to render
+  if (obj.isEmpty())
+    return VoidResult();
+
   auto theme = mServices->pluginTab()->currentTheme();
   auto fonts = mServices->pluginTab()->labelFont();
 
   TraceSceneBuilder builder(theme, fonts, TraceSceneBuilder::Style{});
-  auto clickHandler = [this](const QString& instance, const QString& labelText, const QString& role, bool illegal) {
-    LOG_DEBUG("Sending data: %s %s %s", qPrintable(instance), qPrintable(labelText), qPrintable(role));
+  auto clickHandler = [this](const QString& instance, const QString& labelText, bool illegal) {
+    LOG_DEBUG("Sending data: %s %s", qPrintable(instance), qPrintable(labelText));
     mSimulator->triggerEvent(labelText);
   };
 
-  QGraphicsScene* scene = new QGraphicsScene();
   QString err;
   if (!builder.buildScene(obj, scene, clickHandler, &err))
-  {
-    LOG_ERROR("Failed to build scene: %s", qPrintable(err));
-    return;
-  }
+    return VoidResult::Failed("Failed to build scene: " + err.toStdString());
 
-  mServices->pluginTab()->create(scene);
+  return VoidResult();
 }

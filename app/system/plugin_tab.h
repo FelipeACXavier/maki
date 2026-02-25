@@ -18,9 +18,10 @@ class PluginTab : public QObject, public maki::ITab
 public:
   PluginTab(QObject* parent = nullptr);
 
-  VoidResult create(QGraphicsScene* tabContent) override;
+  void updateScene() override;
   maki::ThemeVars currentTheme() override;
   maki::ThemeFonts labelFont() override;
+  void registerAppearenceUpdate(std::function<VoidResult(QGraphicsScene* scene)> callback) override;
 
   void onThemeChanged();
 
@@ -28,4 +29,6 @@ public:
 
 private:
   PluginView* mView;
+  QGraphicsScene* mScene;
+  QVector<std::function<VoidResult(QGraphicsScene* scene)>> mCallbacks;
 };

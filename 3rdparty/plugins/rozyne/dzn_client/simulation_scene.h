@@ -64,7 +64,7 @@ public:
     QColor labelIllegalText = QColor("#8B1E1E");
   };
 
-  using LabelClickHandler = std::function<void(const QString& instance, const QString& labelText, const QString& role, bool illegal)>;
+  using LabelClickHandler = std::function<void(const QString& instance, const QString& labelText, bool illegal)>;
 
   TraceSceneBuilder(maki::ThemeVars theme, const maki::ThemeFonts& font, Style style);
 

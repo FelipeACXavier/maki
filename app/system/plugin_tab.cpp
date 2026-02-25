@@ -1,5 +1,6 @@
 #include "plugin_tab.h"
 
+#include "logging.h"
 #include "plugin_view.h"
 #include "theme.h"
 
@@ -7,6 +8,8 @@ PluginTab::PluginTab(QObject* parent)
     : QObject(parent)
 {
   mView = new PluginView();
+  mScene = new QGraphicsScene(mView);
+  mView->setScene(mScene);
 }
 
 PluginView* PluginTab::getView() const
@@ -14,12 +17,16 @@ PluginView* PluginTab::getView() const
   return mView;
 }
 
-VoidResult PluginTab::create(QGraphicsScene* tabContent)
+void PluginTab::updateScene()
 {
-  mView->setScene(tabContent);
-  mView->fitInView(tabContent->sceneRect(), Qt::KeepAspectRatio);
-
-  return VoidResult();
+  for (const auto& callback : mCallbacks)
+  {
+    if (callback)
+    {
+      LOG_WARN_ON_FAILURE(callback(mScene));
+      mView->fitInView(mScene->sceneRect(), Qt::KeepAspectRatio);
+    }
+  }
 }
 
 maki::ThemeVars PluginTab::currentTheme()
@@ -39,4 +46,10 @@ maki::ThemeFonts PluginTab::labelFont()
 
 void PluginTab::onThemeChanged()
 {
+  updateScene();
+}
+
+void PluginTab::registerAppearenceUpdate(std::function<VoidResult(QGraphicsScene* scene)> callback)
+{
+  mCallbacks.push_back(callback);
 }

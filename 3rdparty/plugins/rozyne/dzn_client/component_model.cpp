@@ -38,8 +38,6 @@ ComponentNode* ComponentNode::findOrAddChild(const QString& childName, const QSt
   n->parent = this;
   n->role = role;
 
-  LOG_INFO("Adding child: %s with role: %s", qPrintable(childName), qPrintable(role));
-
   if (fullPath.isEmpty())
     n->fullPath = childName;
   else
@@ -61,26 +59,13 @@ static ComponentNode* ensurePath(ComponentNode* root, const QString& fullInstanc
 
 QRectF ComponentNode::computeLayout(ComponentTreeModel* model, const maki::ThemeFonts& fonts, int indent)
 {
-  LOG_INFO("%sCompute layout of %s", std::string(indent, ' ').c_str(), qPrintable(fullPath));
-
   // If there are children, compute the size of the children
-  LeafLifeline* lifeline = nullptr;
-  for (const auto& leaf : model->leaves)
-  {
-    LOG_INFO("%s  Has lifeline %s vs %s?", std::string(indent, ' ').c_str(), qPrintable(leaf->instance), qPrintable(fullPath));
-    if (leaf->instance == fullPath)
-    {
-      lifeline = leaf.get();
-      break;
-    }
-  }
-
+  auto lifeline = model->lifelineOfNode(fullPath);
   QFontMetricsF fmLabel(fonts.label);
   const auto labelWidth = fmLabel.horizontalAdvance(name);
   const auto labelHeight = fmLabel.height();
 
-  QRectF bounds;  // null rect (isNull() true)
-
+  QRectF bounds;
   auto unite = [&](const QRectF& r) {
     if (r.isNull() || r.isEmpty())
       return;
@@ -89,15 +74,11 @@ QRectF ComponentNode::computeLayout(ComponentTreeModel* model, const maki::Theme
   };
 
   for (auto& child : children)
-  {
-    const QRectF childRect = child->computeLayout(model, fonts, indent + 2);
-    unite(childRect);
-  }
+    unite(child->computeLayout(model, fonts, indent + 2));
 
   if (bounds.isNull())
   {
     assert(lifeline != nullptr);
-    // NOTE: pick some anchor; here we keep it at (0,0) so caller can place it
     rect = lifeline->rect;
     labelRect = lifeline->labelRect;
   }
@@ -107,16 +88,12 @@ QRectF ComponentNode::computeLayout(ComponentTreeModel* model, const maki::Theme
     const qreal headerPadX = padding;
 
     QRectF groupRect = bounds.adjusted(-headerPadX, -(headerPadY + padding), headerPadX, padding);
-
-    // Ensure it's at least wide enough for the title row
     groupRect.setWidth(qMax(groupRect.width(), labelWidth + 3 * padding));
 
-    // 7) Store as this node's rect
     labelRect = QRectF(groupRect.left() + padding, groupRect.top() + padding, groupRect.width(), labelHeight);
     rect = groupRect;
   }
 
-  LOG_INFO("%sDone compute layout of %s (%lf x %lf)", std::string(indent, ' ').c_str(), qPrintable(fullPath), rect.width(), rect.height());
   return rect;
 }
 
@@ -125,13 +102,11 @@ ComponentTreeModel buildComponentTree(const QVector<RawLifeline>& raw, const mak
   ComponentTreeModel model;
   model.root = std::make_shared<ComponentNode>();
   model.root->fullPath = "";
-  model.root->name = "root";
+  model.root->name = ROOT_NODE;
 
-  // 1) Ensure all paths exist (including requires entries, so groups are complete)
   for (const auto& ll : raw)
     ensurePath(model.root.get(), ll.instance, ll.role);
 
-  // 2) Create leaf lifelines (columns) for leaf roles
   for (const auto& ll : raw)
   {
     if (!isLeafRole(ll.role))
@@ -140,32 +115,16 @@ ComponentTreeModel buildComponentTree(const QVector<RawLifeline>& raw, const mak
     auto leaf = std::make_shared<LeafLifeline>();
     leaf->instance = ll.instance;
     leaf->shortName = RawLifeline::Label::lastSegment(ll.instance);
-    leaf->role = ll.role;
     leaf->stateText = ll.stateText;
     leaf->directLabels = ll.labels;
 
-    model.leafByInstance.insert(leaf->instance, leaf.get());
+    model.leafByInstance.insert(leaf->instance, leaf);
 
     model.leaves.push_back(leaf);
   }
 
-  // Attach leaves to all ancestors for group-span rendering
-  auto attachLeafToAncestors = [&](LeafLifeline* leaf) {
-    ComponentNode* node = ensurePath(model.root.get(), leaf->instance, leaf->role);
-    for (ComponentNode* cur = node; cur; cur = cur->parent)
-    {
-      if (leaf->shortName == cur->name)
-        continue;
-
-      cur->leavesInSubtree.push_back(leaf);
-    }
-  };
-
-  for (auto& leafPtr : model.leaves)
-    attachLeafToAncestors(leafPtr.get());
-
-  model.print();
-
+  // Uncomment to debug
+  // model.print();
   model.computeLayout(fonts);
 
   return model;
@@ -217,7 +176,15 @@ void ComponentTreeModel::computeLayout(const maki::ThemeFonts& fonts)
   root->computeLayout(this, fonts, 0);
 }
 
-LeafLifeline* ComponentTreeModel::resolveToLeaf(const QString& endpoint) const
+std::shared_ptr<LeafLifeline> ComponentTreeModel::lifelineOfNode(const QString& endpoint) const
+{
+  if (leafByInstance.contains(endpoint))
+    return leafByInstance.value(endpoint);
+
+  return nullptr;
+}
+
+std::shared_ptr<LeafLifeline> ComponentTreeModel::resolveToLeaf(const QString& endpoint) const
 {
   if (leafByInstance.contains(endpoint))
     return leafByInstance.value(endpoint);
@@ -234,6 +201,7 @@ LeafLifeline* ComponentTreeModel::resolveToLeaf(const QString& endpoint) const
 
     cur = cur.left(dot);
   }
+
   return nullptr;
 }
 

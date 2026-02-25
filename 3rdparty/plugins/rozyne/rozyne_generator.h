@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QDir>
+#include <QJsonObject>
 #include <QObject>
 #include <QProcess>
 
@@ -42,6 +43,7 @@ private:
   QVector<QString> mGeneratedIds = {};
   QProcess* mDaemon = nullptr;
   DezyneSimulator* mSimulator = nullptr;
+  QJsonObject mLastUpdate;
 
   struct Argument
   {
@@ -75,6 +77,8 @@ private:
 
   void simulationStarted();
   void simulationUpdated(const QJsonObject& obj);
+  VoidResult createSimulationScene(QGraphicsScene* scene, const QJsonObject& obj);
+
   // Setup
   bool startDaemon();
   void buildSettings();

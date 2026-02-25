@@ -8,7 +8,6 @@
 #include <QPainterPath>
 #include <QPen>
 
-#include "logging.h"
 #include "simulation_label_item.h"
 
 static void addArrow(QGraphicsScene* scene, QPointF from, QPointF to, const QPen& pen, qreal headSize, bool dashed)
@@ -148,9 +147,7 @@ QVector<RawLifeline::State> TraceSceneBuilder::extractStateForInstance(const QJs
 
 qreal TraceSceneBuilder::renderHeader(QGraphicsScene* scene, const ComponentTreeModel& model, ComponentNode* node, QHash<QString, qreal>& outXByLeafInstance) const
 {
-  LOG_INFO("Rendering %s", qPrintable(node->fullPath));
-
-  auto* leaf = model.resolveToLeaf(node->fullPath);
+  auto leaf = model.resolveToLeaf(node->fullPath);
   outXByLeafInstance.insert(node->fullPath, node->rect.center().x());
 
   const QColor fill = headerFillForRole(node->role, leaf != nullptr);
@@ -159,7 +156,7 @@ qreal TraceSceneBuilder::renderHeader(QGraphicsScene* scene, const ComponentTree
   qreal outDiagramTopY = 0;
 
   // Render this
-  if (node->name != "root")
+  if (node->name != ROOT_NODE)
   {
     QPen headerPen(mStyle.headerBorder);
     headerPen.setWidthF(1.2);
@@ -186,11 +183,8 @@ qreal TraceSceneBuilder::renderHeader(QGraphicsScene* scene, const ComponentTree
 void TraceSceneBuilder::renderBottomLabels(QGraphicsScene* scene, const ComponentTreeModel& model, const QHash<QString, qreal>& xByLeafInstance,
                                            qreal lineTopY, qreal diagramBottomY, LabelClickHandler clickHandler) const
 {
-  // for (const auto& leafPtr : model.leaves)
-  for (int i = 0; i < model.leaves.size(); ++i)
+  for (const auto& leaf : model.leaves)
   {
-    const auto& leafPtr = model.leaves.at(i);
-    const LeafLifeline* leaf = leafPtr.get();
     if (!xByLeafInstance.contains(leaf->instance))
       continue;
 
@@ -201,7 +195,6 @@ void TraceSceneBuilder::renderBottomLabels(QGraphicsScene* scene, const Componen
     auto addClickable = [&](const RawLifeline::Label& label) {
       TraceLabelItem::Payload payload;
       payload.instance = leaf->instance;
-      payload.role = "";
       payload.text = label.text;
       payload.call = RawLifeline::Label::lastSegment(label.text);
       payload.illegal = label.illegal;
@@ -212,7 +205,7 @@ void TraceSceneBuilder::renderBottomLabels(QGraphicsScene* scene, const Componen
 
       item->clicked = [clickHandler](TraceLabelItem::Payload p) {
         if (clickHandler)
-          clickHandler(p.instance, p.text, p.role, p.illegal);
+          clickHandler(p.instance, p.text, p.illegal);
       };
 
       y += label.rect.height();
@@ -283,8 +276,8 @@ qreal TraceSceneBuilder::renderEvents(QGraphicsScene* scene, const ComponentTree
     const Endpoint toEp = byKey.value(toKey);
 
     // Resolve endpoints to leaf lifelines (THIS is where groups matter)
-    LeafLifeline* fromLeaf = model.resolveToLeaf(fromEp.instance);
-    LeafLifeline* toLeaf = model.resolveToLeaf(toEp.instance);
+    const auto fromLeaf = model.resolveToLeaf(fromEp.instance);
+    const auto toLeaf = model.resolveToLeaf(toEp.instance);
 
     if (!fromLeaf || !toLeaf)
       continue;
@@ -340,8 +333,7 @@ QColor TraceSceneBuilder::headerFillForRole(const QString& role, bool isLeaf) co
   return mStyle.headerFillDefault;
 }
 
-void TraceSceneBuilder::addRoundedRect(QGraphicsScene* scene, const QRectF& r, qreal radius,
-                                       const QPen& pen, const QBrush& brush) const
+void TraceSceneBuilder::addRoundedRect(QGraphicsScene* scene, const QRectF& r, qreal radius, const QPen& pen, const QBrush& brush) const
 {
   // QGraphicsRectItem doesn't do rounded corners directly, so draw a path.
   QPainterPath path;

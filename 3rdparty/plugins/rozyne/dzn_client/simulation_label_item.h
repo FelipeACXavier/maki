@@ -12,7 +12,6 @@ public:
   {
     QString text;      // Full label
     QString instance;  // e.g. api in "api.abort"
-    QString role;      // e.g. provides/component/etc.
     QString call;      // e.g. abort in api.abort
     bool illegal = false;
 

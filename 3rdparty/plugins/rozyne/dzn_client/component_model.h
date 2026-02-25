@@ -40,7 +40,6 @@ struct LeafLifeline
 {
   QString instance;   // leaf column instance e.g. "sut.ticket" or "sut.reject_flow.s0"
   QString shortName;  // e.g. "ticket", "s0"
-  QString role;       // provides/component/foreign
   QVector<RawLifeline::State> stateText;
 
   QVector<RawLifeline::Label> directLabels;
@@ -57,8 +56,6 @@ struct ComponentNode
   QString role;
   QVector<std::shared_ptr<ComponentNode>> children;
 
-  QVector<LeafLifeline*> leavesInSubtree;
-
   QRectF rect = QRectF();
   QRectF labelRect = QRectF();
 
@@ -71,12 +68,14 @@ struct ComponentTreeModel
 {
   std::shared_ptr<ComponentNode> root;
 
-  QVector<std::shared_ptr<LeafLifeline>> leaves;  // owns
-  QHash<QString, LeafLifeline*> leafByInstance;   // "sut.ticket" -> leaf
+  QVector<std::shared_ptr<LeafLifeline>> leaves;                 // owns
+  QHash<QString, std::shared_ptr<LeafLifeline>> leafByInstance;  // "sut.ticket" -> leaf
 
-  LeafLifeline* resolveToLeaf(const QString& endpoint) const;
+  std::shared_ptr<LeafLifeline> lifelineOfNode(const QString& endpoint) const;
+  std::shared_ptr<LeafLifeline> resolveToLeaf(const QString& endpoint) const;
   void computeLayout(const maki::ThemeFonts& fonts);
   void print() const;
 };
 
+static const QString ROOT_NODE = "root";
 ComponentTreeModel buildComponentTree(const QVector<RawLifeline>& raw, const maki::ThemeFonts& fonts);
