@@ -56,25 +56,18 @@ bool TraceSceneBuilder::buildScene(const QJsonObject& traceUpdateMsg, QGraphicsS
     return false;
 
   // NEW: Build ownership model
-  ComponentTreeModel model = buildComponentTree(raw);
+  ComponentTreeModel model = buildComponentTree(raw, mFonts);
 
   // Layout maps for leaf lifelines only
   QHash<QString, qreal> xByLeafInstance;
-  qreal diagramTopY = 0;
-  qreal diagramBottomY = 0;
 
-  qreal lineTop = mStyle.topMargin + mStyle.headerHeight + mStyle.headerToLifelineGap;
-  renderHeadersAndLifelines(scene, model, xByLeafInstance, diagramTopY, diagramBottomY);
-
-  // NEW: draw ownership group boxes above headers
-  const qreal headersTopY = mStyle.topMargin;
-  renderOwnershipGroups(scene, model, xByLeafInstance, headersTopY);
-
-  auto maxEventY = renderEvents(scene, model, traceUpdateMsg.value("events").toArray(), traceUpdateMsg.value("lifelines").toArray(), xByLeafInstance, diagramTopY);
+  const auto headerBottom = renderHeader(scene, model, model.root.get(), xByLeafInstance);
+  const auto lifelineBottom = renderEvents(scene, model, traceUpdateMsg.value("events").toArray(), traceUpdateMsg.value("lifelines").toArray(), xByLeafInstance, headerBottom);
 
   // Bottom clickable labels: direct labels + requires replies attached to their leaf
-  const qreal labelsTopY = std::max(diagramBottomY, maxEventY + 40);
-  renderBottomLabels(scene, model, xByLeafInstance, lineTop, labelsTopY, clickHandler);
+  const qreal lifelineTopY = headerBottom + mStyle.headerToLifelineGap;
+  const qreal lifelineBottomY = lifelineBottom + mStyle.headerToLifelineGap;
+  renderBottomLabels(scene, model, xByLeafInstance, lifelineTopY, lifelineBottomY, clickHandler);
 
   const QRectF items = scene->itemsBoundingRect();
   QRectF rect = items.adjusted(-20, -20, 20, 20);
@@ -125,14 +118,6 @@ bool TraceSceneBuilder::parseTraceUpdate(const QJsonObject& traceData, QVector<R
   return true;
 }
 
-int TraceSceneBuilder::subtreeMaxDepth(const ComponentNode* n)
-{
-  int maxD = 0;
-  for (const auto& c : n->children)
-    maxD = qMax(maxD, 1 + subtreeMaxDepth(c.get()));
-  return maxD;
-}
-
 QVector<RawLifeline::State> TraceSceneBuilder::extractStateForInstance(const QJsonObject& traceData, const QString& instance) const
 {
   const QJsonArray hack = traceData.value("states").toArray();
@@ -161,125 +146,46 @@ QVector<RawLifeline::State> TraceSceneBuilder::extractStateForInstance(const QJs
   return states;
 }
 
-void TraceSceneBuilder::renderHeadersAndLifelines(QGraphicsScene* scene, const ComponentTreeModel& model,
-                                                  QHash<QString, qreal>& outXByLeafInstance, qreal& outDiagramTopY, qreal& outDiagramBottomY) const
+qreal TraceSceneBuilder::renderHeader(QGraphicsScene* scene, const ComponentTreeModel& model, ComponentNode* node, QHash<QString, qreal>& outXByLeafInstance) const
 {
-  const qreal top = mStyle.topMargin;
-  const qreal left = mStyle.leftMargin;
+  LOG_INFO("Rendering %s", qPrintable(node->fullPath));
 
-  const qreal headerW = mStyle.headerWidth;
-  const qreal headerH = mStyle.headerHeight;
+  auto* leaf = model.resolveToLeaf(node->fullPath);
+  outXByLeafInstance.insert(node->fullPath, node->rect.center().x());
 
-  outDiagramTopY = top + headerH + mStyle.headerToLifelineGap;
-  outDiagramBottomY = outDiagramTopY + 220;
+  const QColor fill = headerFillForRole(node->role, leaf != nullptr);
 
-  QFontMetricsF fm(mFonts.hint);  // the font you use for state lines
-  const qreal lineH = fm.height();
+  // Only draw if we are not the root node
+  qreal outDiagramTopY = 0;
 
-  for (int i = 0; i < model.leaves.size(); ++i)
+  // Render this
+  if (node->name != "root")
   {
-    const LeafLifeline* leaf = model.leaves[i].get();
-
-    const qreal cx = left + i * mStyle.columnWidth;
-    outXByLeafInstance.insert(leaf->instance, cx);
-
-    QRectF headerRect(cx - headerW / 2.0, top, headerW, headerH);
-    const QColor fill = headerFillForRole(leaf->role);
-
     QPen headerPen(mStyle.headerBorder);
     headerPen.setWidthF(1.2);
-    addRoundedRect(scene, headerRect, mStyle.headerRadius, headerPen, QBrush(fill));
+    addRoundedRect(scene, node->rect, mStyle.headerRadius, headerPen, QBrush(fill));
+    addCenteredText(scene, node->labelRect, node->name, mFonts.label);
 
-    // Show short name in header (matches your "s0", "ticket")
-    addCenteredText(scene, headerRect.adjusted(8, 4, -8, -headerH / 2.0), leaf->shortName, mFonts.label);
-
-    for (int i = 0; i < leaf->stateText.size(); ++i)
+    for (int j = 0; leaf && j < leaf->stateText.size(); ++j)
     {
-      const auto& state = leaf->stateText.at(i);  // assume {name, state/value}
+      const auto& state = leaf->stateText.at(j);
       const QString st = QStringLiteral("%1:%2").arg(state.name, state.state);
-
-      addCenteredText(scene, headerRect.adjusted(8, (headerH / 2.0 - 2) + i * lineH, -8, -4), st, mFonts.hint);
-    }
-  }
-}
-
-void TraceSceneBuilder::renderOwnershipGroups(QGraphicsScene* scene, const ComponentTreeModel& model,
-                                              const QHash<QString, qreal>& xByLeafInstance, qreal headersTopY) const
-{
-  if (!model.root)
-    return;
-
-  // We stack groups above headers, deeper nodes closer to headers.
-  // Determine depth by counting segments in fullPath.
-  auto depthOf = [](const QString& fullPath) -> int {
-    if (fullPath.isEmpty())
-      return 0;
-
-    return fullPath.count('.') + 1;
-  };
-
-  // Collect nodes (preorder)
-  QVector<const ComponentNode*> nodes;
-  std::function<void(const ComponentNode*)> walk = [&](const ComponentNode* n) {
-    if (!n)
-      return;
-    if (!n->fullPath.isEmpty())
-      nodes.push_back(n);
-    for (const auto& c : n->children)
-      walk(c.get());
-  };
-  walk(model.root.get());
-
-  // Sort by depth descending: deepest group drawn lowest (near headers)
-  std::sort(nodes.begin(), nodes.end(), [&](const ComponentNode* a, const ComponentNode* b) {
-    return depthOf(a->fullPath) > depthOf(b->fullPath);
-  });
-
-  QPen pen(QColor(mTheme.foreground));
-  pen.setWidthF(1.0);
-
-  for (const ComponentNode* n : nodes)
-  {
-    // Find x-range
-    qreal xMin = std::numeric_limits<qreal>::infinity();
-    qreal xMax = -std::numeric_limits<qreal>::infinity();
-
-    for (const LeafLifeline* leaf : n->leavesInSubtree)
-    {
-      if (!leaf)
-        continue;
-
-      if (!xByLeafInstance.contains(leaf->instance))
-        continue;
-
-      const qreal x = xByLeafInstance.value(leaf->instance);
-      xMin = qMin(xMin, x);
-      xMax = qMax(xMax, x);
+      addCenteredText(scene, state.rect, st, mFonts.hint);
     }
 
-    if (!std::isfinite(xMin) || !std::isfinite(xMax))
-      continue;
-
-    const int depth = depthOf(n->fullPath);
-
-    // y position stacked above headers
-    const qreal h = mStyle.groupHeight;
-    const qreal y = headersTopY - mStyle.groupTopMargin - depth * (h + mStyle.groupVSpacing);
-
-    const qreal pad = mStyle.headerWidth / 2.0;
-    QRectF r(xMin - pad, y, (xMax - xMin) + 2 * pad, h);
-
-    addRoundedRect(scene, r, mStyle.groupRadius, pen, QBrush(mStyle.groupFill));
-    addCenteredText(scene, r, n->name, mFonts.label, mStyle.groupText);
+    outDiagramTopY = node->rect.bottom();
   }
+
+  // Render the children
+  for (const auto& child : node->children)
+    outDiagramTopY = qMax<qreal>(outDiagramTopY, renderHeader(scene, model, child.get(), outXByLeafInstance));
+
+  return outDiagramTopY;
 }
 
 void TraceSceneBuilder::renderBottomLabels(QGraphicsScene* scene, const ComponentTreeModel& model, const QHash<QString, qreal>& xByLeafInstance,
                                            qreal lineTopY, qreal diagramBottomY, LabelClickHandler clickHandler) const
 {
-  const qreal baseY = diagramBottomY + 40;
-  const qreal h = mStyle.labelBoxHeight;
-
   // for (const auto& leafPtr : model.leaves)
   for (int i = 0; i < model.leaves.size(); ++i)
   {
@@ -289,48 +195,40 @@ void TraceSceneBuilder::renderBottomLabels(QGraphicsScene* scene, const Componen
       continue;
 
     const qreal cx = xByLeafInstance.value(leaf->instance);
-    qreal y = baseY;
+    qreal y = diagramBottomY + mStyle.headerToLifelineGap;
 
     QFontMetrics fm(mFonts.hint);
-    auto addClickable = [&](const QString& text, bool illegal, const QString& operation) {
-      qreal textWidth = fm.horizontalAdvance(text);
-
-      // Add horizontal padding
-      qreal w = textWidth + mStyle.labelBoxHMargin * 2.0;
-
-      // Clamp to column width
-      w = qMin<qreal>(w, mStyle.columnWidth - 16);
-      w = qMax<qreal>(w, 60);
-
-      QRectF r(cx - w / 2.0, y, w, h);
-
+    auto addClickable = [&](const RawLifeline::Label& label) {
       TraceLabelItem::Payload payload;
       payload.instance = leaf->instance;
-      payload.role = operation;
-      payload.text = text;
-      payload.call = RawLifeline::Label::lastSegment(text);
-      payload.illegal = illegal;
+      payload.role = "";
+      payload.text = label.text;
+      payload.call = RawLifeline::Label::lastSegment(label.text);
+      payload.illegal = label.illegal;
 
-      auto* item = new TraceLabelItem(r, mButtonStyle, payload);
+      // We need to move both the top and the bottom according to y
+      auto* item = new TraceLabelItem(label.rect.adjusted(0, y, 0, y), mButtonStyle, payload);
       scene->addItem(item);
 
       item->clicked = [clickHandler](TraceLabelItem::Payload p) {
-        clickHandler(p.instance, p.text, p.role, p.illegal);
+        if (clickHandler)
+          clickHandler(p.instance, p.text, p.role, p.illegal);
       };
 
-      y += h + mStyle.labelVSpacing;
+      y += label.rect.height();
     };
 
     // Lifeline
     QPen linePen(mStyle.lifelineColour);
     linePen.setWidthF(1.0);
-    const qreal y1 = lineTopY + mStyle.lifelineTopPadding;
+
+    const qreal y1 = lineTopY;
     const qreal y2 = diagramBottomY;
     scene->addLine(QLineF(cx, y1, cx, y2), linePen);
 
     // Direct labels
-    for (const auto& lab : leaf->directLabels)
-      addClickable(lab.text, lab.illegal, "");
+    for (const auto& label : leaf->directLabels)
+      addClickable(label);
   }
 }
 
@@ -338,7 +236,7 @@ qreal TraceSceneBuilder::renderEvents(QGraphicsScene* scene, const ComponentTree
                                       const QJsonArray& lifelinesJson, const QHash<QString, qreal>& xByLeafInstance, qreal diagramTopY) const
 {
   if (events.isEmpty())
-    return diagramTopY;
+    return diagramTopY + 2 * mStyle.headerToLifelineGap;
 
   // 1) Build activityKey -> (instance, time)
   struct Endpoint
@@ -397,12 +295,12 @@ qreal TraceSceneBuilder::renderEvents(QGraphicsScene* scene, const ComponentTree
     const qreal x1 = xByLeafInstance.value(fromLeaf->instance);
     const qreal x2 = xByLeafInstance.value(toLeaf->instance);
 
-    const int t = fromEp.time;  // or min(fromEp.time, toEp.time)
+    const int t = fromEp.time + 1;
     const int k = countAtTime.value(t, 0);
     countAtTime.insert(t, k + 1);
 
     const qreal y = diagramTopY + t * mStyle.timeStepHeight + k * mStyle.eventVSpacing;
-    maxY = std::max(maxY, y);
+    maxY = qMax<qreal>(maxY, y);
 
     const QString text = e.value("text").toString();
     const QString type = e.value("type").toString();
@@ -417,6 +315,7 @@ qreal TraceSceneBuilder::renderEvents(QGraphicsScene* scene, const ComponentTree
       auto* label = scene->addSimpleText(text);
       label->setBrush(QColor(mTheme.foreground));
       label->setFont(mFonts.hint);
+
       const qreal midX = (x1 + x2) / 2.0;
       label->setPos(midX - label->boundingRect().width() / 2.0, y - fm.height());
       label->setZValue(5);
@@ -426,14 +325,17 @@ qreal TraceSceneBuilder::renderEvents(QGraphicsScene* scene, const ComponentTree
   return maxY;
 }
 
-QColor TraceSceneBuilder::headerFillForRole(const QString& role) const
+QColor TraceSceneBuilder::headerFillForRole(const QString& role, bool isLeaf) const
 {
   if (role == "component")
-    return mStyle.headerFillComponent;
+    return isLeaf ? QColor("#AEE8A0") : QColor("#C9FFC9");
   if (role == "foreign")
-    return mStyle.headerFillForeign;
+    return QColor("#E5FFE5");
   if (role == "requires")
-    return mStyle.headerFillRequires;
+    return QColor("#FFF7A8");
+  if (role == "provides")
+    return QColor("#FFF7A8");
+
   // provides or unknown
   return mStyle.headerFillDefault;
 }

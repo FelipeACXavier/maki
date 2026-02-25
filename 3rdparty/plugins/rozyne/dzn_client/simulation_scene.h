@@ -25,7 +25,7 @@ public:
     qreal headerWidth = 130;
     qreal headerHeight = 44;
     qreal headerRadius = 10;
-    qreal headerToLifelineGap = 18;
+    qreal headerToLifelineGap = 20;
 
     qreal lifelineTopPadding = 8;
     qreal lifelineBottomPadding = 18;
@@ -52,10 +52,7 @@ public:
     QColor groupText = QColor("#555555");
 
     // Fonts
-    QColor headerFillDefault = QColor("#FFF7A8");    // warm yellow
-    QColor headerFillComponent = QColor("#CFF2C9");  // light green (component)
-    QColor headerFillForeign = QColor("#FFF7A8");    // keep yellow
-    QColor headerFillRequires = QColor("#FFF7A8");   // keep yellow
+    QColor headerFillDefault = QColor("#FFF7A8");  // warm yellow
     QColor headerBorder = QColor("#8A8A8A");
 
     QColor lifelineColour = QColor("#D0D0D0");
@@ -85,8 +82,7 @@ private:
   QVector<RawLifeline::State> extractStateForInstance(const QJsonObject& traceData, const QString& instance) const;
 
   // Rendering
-  void renderHeadersAndLifelines(QGraphicsScene* scene, const ComponentTreeModel& model,
-                                 QHash<QString, qreal>& outXByLeafInstance, qreal& outDiagramTopY, qreal& outDiagramBottomY) const;
+  qreal renderHeader(QGraphicsScene* scene, const ComponentTreeModel& model, ComponentNode* node, QHash<QString, qreal>& outXByLeafInstance) const;
 
   void renderBottomLabels(QGraphicsScene* scene, const ComponentTreeModel& model, const QHash<QString, qreal>& xByLeafInstance,
                           qreal lineTopY, qreal diagramBottomY, LabelClickHandler clickHandler) const;
@@ -94,12 +90,8 @@ private:
   qreal renderEvents(QGraphicsScene* scene, const ComponentTreeModel& model, const QJsonArray& events,
                      const QJsonArray& lifelinesJson, const QHash<QString, qreal>& xByLeafInstance, qreal diagramTopY) const;
 
-  void renderOwnershipGroups(QGraphicsScene* scene, const ComponentTreeModel& model, const QHash<QString, qreal>& xByLeafInstance, qreal headersTopY) const;
-
-  int subtreeMaxDepth(const ComponentNode* n);
-
   // Helpers
-  QColor headerFillForRole(const QString& role) const;
+  QColor headerFillForRole(const QString& role, bool isLeaf) const;
 
   void addRoundedRect(QGraphicsScene* scene, const QRectF& r, qreal radius, const QPen& pen, const QBrush& brush) const;
   void addCenteredText(QGraphicsScene* scene, const QRectF& within, const QString& text, const QFont& font, const QColor& colour = Qt::black) const;

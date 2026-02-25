@@ -1,9 +1,14 @@
 #pragma once
 
 #include <QHash>
+#include <QRectF>
 #include <QString>
 #include <QVector>
 #include <memory>
+
+#include "itab.h"
+
+struct ComponentTreeModel;
 
 struct RawLifeline
 {
@@ -15,6 +20,7 @@ struct RawLifeline
     QString text;
     QString role;
     bool illegal = false;
+    QRectF rect = QRectF();
 
     static QString lastSegment(const QString& instance);
   };
@@ -23,6 +29,7 @@ struct RawLifeline
   {
     QString name;
     QString state;
+    QRectF rect = QRectF();
   };
 
   QVector<State> stateText;
@@ -37,6 +44,9 @@ struct LeafLifeline
   QVector<RawLifeline::State> stateText;
 
   QVector<RawLifeline::Label> directLabels;
+
+  QRectF rect = QRectF();
+  QRectF labelRect = QRectF();
 };
 
 struct ComponentNode
@@ -44,12 +54,16 @@ struct ComponentNode
   QString fullPath;  // e.g. "sut.reject_flow"
   QString name;      // e.g. "reject_flow"
   ComponentNode* parent = nullptr;
+  QString role;
   QVector<std::shared_ptr<ComponentNode>> children;
 
   QVector<LeafLifeline*> leavesInSubtree;
 
-  ComponentNode* findOrAddChild(const QString& childName);
+  QRectF rect = QRectF();
+  QRectF labelRect = QRectF();
 
+  ComponentNode* findOrAddChild(const QString& childName, const QString& role);
+  QRectF computeLayout(ComponentTreeModel* model, const maki::ThemeFonts& fonts, int indent);
   void print(int level) const;
 };
 
@@ -61,8 +75,8 @@ struct ComponentTreeModel
   QHash<QString, LeafLifeline*> leafByInstance;   // "sut.ticket" -> leaf
 
   LeafLifeline* resolveToLeaf(const QString& endpoint) const;
-
+  void computeLayout(const maki::ThemeFonts& fonts);
   void print() const;
 };
 
-ComponentTreeModel buildComponentTree(const QVector<RawLifeline>& raw);
+ComponentTreeModel buildComponentTree(const QVector<RawLifeline>& raw, const maki::ThemeFonts& fonts);
