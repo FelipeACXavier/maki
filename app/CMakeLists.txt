@@ -137,6 +137,21 @@ qt_add_executable(${APPLICATION_NAME}
     ${COMPILER_FILES}
 )
 
+if (MSVC)
+else()
+  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_options(${APPLICATION_NAME} PRIVATE
+      -fsanitize=address,undefined
+      -fno-omit-frame-pointer
+      -g
+    )
+    target_link_options(${APPLICATION_NAME} PRIVATE
+      -fsanitize=address,undefined
+    )
+  endif()
+endif()
+
+
 set_target_properties(${APPLICATION_NAME} PROPERTIES
     WIN32_EXECUTABLE TRUE
     MACOSX_BUNDLE TRUE

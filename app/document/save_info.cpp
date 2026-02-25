@@ -38,7 +38,7 @@ QVector<std::shared_ptr<NodeSaveInfo>> SaveInfo::findFamilyOfConstruct(const QSt
 {
   for (const auto& node : nodes)
   {
-    LOG_INFO("Looking into: %s %s", qPrintable(node->getid()), qPrintable(node->getnodeId()));
+    LOG_TRACE("Looking into: %s %s", qPrintable(node->getid()), qPrintable(node->getnodeId()));
     auto parent = findParentOfConstruct(nodeId, node);
     if (parent)
     {
@@ -62,11 +62,11 @@ std::shared_ptr<NodeSaveInfo> SaveInfo::findParentOfConstruct(const QString& nod
   if (!node)
     return nullptr;
 
-  LOG_INFO("Node info: %s %d %d", qPrintable(node->getnodeId()), node->getchildren().size(), node->getflows().size());
+  LOG_TRACE("Node info: %s %d %d", qPrintable(node->getnodeId()), node->getchildren().size(), node->getflows().size());
 
   for (const auto& flow : node->getflows())
   {
-    LOG_INFO("Looking into flow: %s", qPrintable(flow->getname()));
+    LOG_TRACE("Looking into flow: %s", qPrintable(flow->getname()));
     for (const auto& construct : flow->getnodes())
     {
       if (construct->getid() != nodeId)

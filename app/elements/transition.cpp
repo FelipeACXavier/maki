@@ -35,6 +35,10 @@ TransitionItem::TransitionItem(std::shared_ptr<TransitionSaveInfo> storage)
 
 TransitionItem::~TransitionItem()
 {
+}
+
+void TransitionItem::detach()
+{
   if (mSource != nullptr)
     mSource->removeTransition(this);
   if (mDestination != nullptr)

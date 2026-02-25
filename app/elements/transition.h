@@ -34,6 +34,7 @@ public:
   void setStart(const QString& id, const QPointF& point, const QPointF& controlShift);
   void setEnd(const QString& id, const QPointF& point, const QPointF& controlShift);
   void done(NodeItem* source, NodeItem* destination);
+  void detach();
 
   NodeItem* source() const;
   NodeItem* destination() const;

@@ -83,9 +83,6 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
 
 NodeItem::~NodeItem()
 {
-  // auto copy = transitions();
-  // for (auto& item : copy)
-  //   delete item;
 }
 
 int NodeItem::type() const

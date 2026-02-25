@@ -749,7 +749,10 @@ void Canvas::deleteSelectedItems()
     {
       TransitionItem* transition = static_cast<TransitionItem*>(item);
       if (!(transition->source() && transition->source()->isSelected()) && !(transition->destination() && transition->destination()->isSelected()))
+      {
+        transition->detach();
         connectionsToDelete.append(item);
+      }
     }
   }
 
@@ -810,10 +813,11 @@ QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
     node->parentNode()->childRemoved(node);
 
   auto transtionsToDelete = node->transitions();
-  for (TransitionItem* transtion : transtionsToDelete)
+  for (TransitionItem* transition : transtionsToDelete)
   {
-    removeItem(transtion);
-    itemsToRemove.append(transtion);
+    transition->detach();
+    removeItem(transition);
+    itemsToRemove.append(transition);
   }
 
   auto toDelete = node->children();
