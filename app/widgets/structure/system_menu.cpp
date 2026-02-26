@@ -26,10 +26,10 @@ SystemMenu::SystemMenu(QWidget* parent)
 
 VoidResult SystemMenu::onNodeAdded(const QString& flowId, NodeItem* node)
 {
-  LOG_DEBUG("Node added to system menu: %s - %s (%s)", qPrintable(node->id()), qPrintable(node->nodeType()), qPrintable(flowId));
+  LOG_TRACE("Node added to system menu: %s - %s (%s)", qPrintable(node->id()), qPrintable(node->nodeType()), qPrintable(flowId));
 
   // Check if we are adding a structural node
-  if (flowId == "MainSystemCanvas")
+  if (flowId == Config::MAIN_CANVAS)
   {
     auto parent = static_cast<NodeItem*>(node->parentNode());
     if (!parent)
@@ -65,9 +65,9 @@ VoidResult SystemMenu::onNodeAdded(const QString& flowId, NodeItem* node)
 
 VoidResult SystemMenu::onNodeRemoved(const QString& flowId, NodeItem* node)
 {
-  LOG_DEBUG("Node removed: %s (%s)", qPrintable(node->id()), qPrintable(flowId));
+  LOG_TRACE("Node removed: %s (%s)", qPrintable(node->id()), qPrintable(flowId));
 
-  if (flowId == "MainSystemCanvas")
+  if (flowId == Config::MAIN_CANVAS)
   {
     auto item = getItemById(node->id());
     if (!item)
@@ -112,7 +112,7 @@ VoidResult SystemMenu::onNodeRemoved(const QString& flowId, NodeItem* node)
 
 VoidResult SystemMenu::onNodeModified(const QString& flowId, NodeItem* node)
 {
-  if (flowId == "MainSystemCanvas")
+  if (flowId == Config::MAIN_CANVAS)
   {
     auto item = getItemById(node->id());
     if (!item)

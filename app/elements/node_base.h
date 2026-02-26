@@ -16,6 +16,7 @@ public:
   };
 
   NodeBase(const QString& id, const QString& nodeId, std::shared_ptr<NodeConfig> config, QGraphicsItem* parent);
+  virtual ~NodeBase();
 
   QString id() const;
   virtual int type() const override;

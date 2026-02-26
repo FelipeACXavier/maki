@@ -205,9 +205,9 @@ void NodeSaveInfo::addChild(std::shared_ptr<INode> child)
   mChildren.push_back(child);
 }
 
-void NodeSaveInfo::removeChild(std::shared_ptr<INode> child)
+void NodeSaveInfo::removeChild(const QString& childId)
 {
-  mChildren.removeIf([child](std::shared_ptr<INode> info) { return info->getid() == child->getid(); });
+  mChildren.removeIf([childId](std::shared_ptr<INode> info) { return info->getid() == childId; });
 }
 
 void NodeSaveInfo::clearChildren()

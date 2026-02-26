@@ -786,16 +786,34 @@ void Canvas::removeNode(const NodeSaveInfo info)
     return;
 
   auto toRemove = removeNode(node);
-  QTimer::singleShot(0, this, [toRemove]() {
-    for (QGraphicsItem* item : toRemove)
-      delete item;
-  });
+  QMetaObject::invokeMethod(this, [toRemove = std::move(toRemove)]() mutable {
+    for (int i = toRemove.size() - 1; i >= 0; --i)
+    {
+      if (auto node = static_cast<NodeItem*>(toRemove[i]))
+        LOG_INFO("Deleting: %s, has parent: %d", qPrintable(node->id()), node->parentNode() != nullptr);
+
+      delete toRemove[i];
+    } }, Qt::QueuedConnection);
+
+  // QTimer::singleShot(0, this, [toRemove]() {
+  //   // Delete children before parents (important if parent owns child QGraphicsItems)
+  //   for (int i = toRemove.size() - 1; i >= 0; --i)
+  //   {
+  //     if (auto node = static_cast<NodeItem*>(toRemove[i]))
+  //       LOG_INFO("Deleting: %s, has parent: %d", qPrintable(node->id()), node->parentNode() != nullptr);
+
+  //     delete toRemove[i];
+  //   }
+  // });
 }
 
 QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
 {
   if (!node)
     return {};
+
+  // Remove the item from the scene before anything
+  removeItem(node);
 
   LOG_TRACE("Removing node: %s", qPrintable(node->id()));
 
@@ -824,10 +842,9 @@ QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
   for (NodeItem* child : toDelete)
     itemsToRemove += removeNode(child);  // Do not create undo for children
 
-  emit nodeRemoved(node);
-
-  removeItem(node);
   mSelectedNodes.removeAll(node);
+
+  emit nodeRemoved(node);
 
   // Since this function can be called in loops or recusively, we do not perform the deletion of the pointer.
   // Deletion is the responsibility of the outer caller

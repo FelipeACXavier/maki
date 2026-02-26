@@ -272,7 +272,7 @@ void NodeItem::addChild(NodeItem* node, std::shared_ptr<NodeSaveInfo> info)
 
 void NodeItem::childRemoved(NodeItem* child)
 {
-  mStorage->removeChild(std::make_shared<NodeSaveInfo>(child->saveInfo()));
+  mStorage->removeChild(child->id());
   mChildrenNodes.removeAll(child);
 }
 

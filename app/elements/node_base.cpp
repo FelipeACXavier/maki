@@ -26,6 +26,10 @@ NodeBase::NodeBase(const QString& id, const QString& nodeId, std::shared_ptr<Nod
   mScaledBounds = QRectF(0, 0, config()->body.width * scaleFactor, config()->body.height * scaleFactor);
 }
 
+NodeBase::~NodeBase()
+{
+}
+
 QString NodeBase::id() const
 {
   return mId;

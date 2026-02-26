@@ -168,9 +168,7 @@ void MainWindow::onThemeChanged(const QString& t, const QList<Config::ThemeInfo>
 void MainWindow::startUI()
 {
   CanvasView* currentCanvas = static_cast<CanvasView*>(mCanvasPanel->currentWidget());
-
-  // TODO(felaze): Shouldn't be hard-coded
-  StructureCanvas* canvas = new StructureCanvas("MainSystemCanvas", mStorage, mConfigTable, currentCanvas);
+  StructureCanvas* canvas = new StructureCanvas(Config::MAIN_CANVAS, mStorage, mConfigTable, currentCanvas);
 
   mActiveCanvas = canvas;
   currentCanvas->setScene(canvas);

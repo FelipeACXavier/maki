@@ -12,6 +12,8 @@ static const QString ORGANIZATION_NAME = QString("Savant"_L1);
 static const QString APPLICATION_NAME = QString("MAKI"_L1);
 static const QString VERSION = QString("0.0.1"_L1);
 
+static const QString MAIN_CANVAS = QString("MainSystemCanvas"_L1);
+
 static const int GRID_SIZE = 20;
 static const int CONNECTOR_RADIUS = 5;
 static const qreal MINIMUM_NODE_SIZE = 50;

@@ -55,7 +55,7 @@ public:
   void removeFlow(const QString& flowId);
 
   void addChild(std::shared_ptr<INode> child);
-  void removeChild(std::shared_ptr<INode> child);
+  void removeChild(const QString& childId);
   void clearChildren();
 
   QJsonObject toJson() const;
