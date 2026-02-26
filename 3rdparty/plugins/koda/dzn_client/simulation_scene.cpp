@@ -38,9 +38,9 @@ TraceSceneBuilder::TraceSceneBuilder(maki::ThemeVars theme, const maki::ThemeFon
     , mFonts(fonts)
 {
   mButtonStyle = new TraceLabelItem::Style{
-      QColor(theme.button_pressed_bg),
       QColor(theme.selection_bg),
-      QColor(theme.button_bg),
+      QColor(theme.selection_bg),
+      QColor(theme.input_bg),
       QPen(QColor(theme.foreground), 1),
       QPen(QColor(theme.foreground), 2),
       fonts.hint};
@@ -217,7 +217,8 @@ void TraceSceneBuilder::renderBottomLabels(QGraphicsScene* scene, const Componen
 
     const qreal y1 = lineTopY;
     const qreal y2 = diagramBottomY;
-    scene->addLine(QLineF(cx, y1, cx, y2), linePen);
+    auto line = scene->addLine(QLineF(cx, y1, cx, y2), linePen);
+    line->setZValue(-1);
 
     // Direct labels
     for (const auto& label : leaf->directLabels)
@@ -299,6 +300,19 @@ qreal TraceSceneBuilder::renderEvents(QGraphicsScene* scene, const ComponentTree
     const QString type = e.value("type").toString();
 
     const bool dashed = (type == "out" || type == "return");
+
+    if (type == "error")
+    {
+      const auto msg = e.value("messages").toArray().first().toObject();
+      const QString text = msg["text"].toString();
+
+      qreal width = fm.horizontalAdvance(text) + 5;
+      qreal height = fm.height() + 5;
+      QRectF rect = QRectF(x2 + 5, y - height, width, height);
+
+      addRoundedRect(scene, rect, mStyle.headerRadius, QPen(QColor(mTheme.error_color)), QBrush(QColor("#FD9A99")));
+      addCenteredText(scene, rect, text, mFonts.hint);
+    }
 
     addArrow(scene, QPointF(x1, y), QPointF(x2, y), pen, mStyle.arrowHeadSize, dashed);
 

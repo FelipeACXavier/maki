@@ -252,8 +252,6 @@ VoidResult KodaGenerator::verify(const QString& outputFolder)
 
   // TODO: We need to find a better solution for this, we cannot allow plugins to execute any scripts
   LOG_INFO("Running generate script");
-
-  // QStringList files = mDezyneOutputFolder.entryList(QDir::Files | QDir::NoDotAndDotDot);
   for (const QString& f : mGeneratedDznFiles)
   {
     auto fullPath = mDezyneOutputFolder.absoluteFilePath(f);
@@ -856,6 +854,9 @@ VoidResult KodaGenerator::createSimulationScene(QGraphicsScene* scene, const QJs
   // Nothing to render
   if (obj.isEmpty())
     return VoidResult();
+
+  auto pretty = QJsonDocument(obj).toJson(QJsonDocument::Indented);
+  LOG_DEBUG("Received message: %s", qPrintable(pretty));
 
   auto theme = mServices->pluginTab()->currentTheme();
   auto fonts = mServices->pluginTab()->labelFont();
