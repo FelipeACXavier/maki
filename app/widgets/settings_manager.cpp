@@ -1,14 +1,32 @@
 // SettingsManager.cpp
 #include "settings_manager.h"
 
+#include <QFile>
+
 #include "common/app_configs.h"
 #include "logging.h"
 
+#define LOAD_SETTING(MEMBER, FIELD, TYPE)                            \
+  do                                                                 \
+  {                                                                  \
+    auto tmp##FIELD = mSettings.value("" #FIELD);                    \
+    if (!tmp##FIELD.isValid())                                       \
+    {                                                                \
+      LOG_ERROR("Settings are corrupted field is invalid: " #FIELD); \
+      return;                                                        \
+    }                                                                \
+    MEMBER.FIELD = tmp##FIELD.to##TYPE();                            \
+  } while (false);
+
+#define SAVE_SETTING(MEMBER, FIELD)              \
+  do                                             \
+  {                                              \
+    mSettings.setValue("" #FIELD, MEMBER.FIELD); \
+  } while (false);
+
 SettingsManager::SettingsManager(QObject* parent)
     : QObject(parent)
-    ,
-    // organisation & app name: adjust to yours
-    mSettings(Config::ORGANIZATION_NAME, Config::APPLICATION_NAME)
+    , mSettings(Config::ORGANIZATION_NAME, Config::APPLICATION_NAME)
 {
   mAvailableThemes = Config::discoverThemes();
   load();
@@ -41,49 +59,81 @@ QList<Config::ThemeInfo> SettingsManager::availableThemes() const
 
 void SettingsManager::load()
 {
+  if (!QFile(mSettings.fileName()).exists())
+    return;
+
+  LOG_DEBUG("Loading from: %s", qPrintable(mSettings.fileName()));
   mSettings.beginGroup("General");
-  mGeneral.restoreLastSession = mSettings.value("restoreLastSession", mGeneral.restoreLastSession).toBool();
-  mGeneral.autosaveEnabled = mSettings.value("autosaveEnabled", mGeneral.autosaveEnabled).toBool();
-  mGeneral.autosaveIntervalMinutes = mSettings.value("autosaveIntervalMinutes", mGeneral.autosaveIntervalMinutes).toInt();
-  mGeneral.confirmOnCloseWithExecution = mSettings.value("confirmOnCloseWithExecution", mGeneral.confirmOnCloseWithExecution).toBool();
-  mGeneral.enableDebugLogs = mSettings.value("enableDebugLogs", mGeneral.enableDebugLogs).toBool();
+  LOAD_SETTING(mGeneral, restoreLastSession, Bool);
+  LOAD_SETTING(mGeneral, restoreLastSession, Bool);
+  LOAD_SETTING(mGeneral, autosaveEnabled, Bool);
+  LOAD_SETTING(mGeneral, autosaveIntervalMinutes, Int);
+  LOAD_SETTING(mGeneral, confirmOnCloseWithExecution, Bool);
+  LOAD_SETTING(mGeneral, enableDebugLogs, Bool);
+  LOAD_SETTING(mGeneral, recentHistorySize, Int);
+
+  mSettings.beginGroup("RecentFiles");
+  const QStringList recentFiles = mSettings.childKeys();
+  mGeneral.recentFiles.resize(recentFiles.size());
+  for (const auto& key : recentFiles)
+  {
+    bool ok = false;
+    auto index = key.toInt(&ok);
+    auto file = mSettings.value(key, "").toString();
+    if (!ok || file.isEmpty())
+    {
+      LOG_ERROR("Corrupted save");
+      mGeneral.recentFiles.clear();
+      break;
+    }
+
+    mGeneral.recentFiles[index] = file;
+  }
+  mSettings.endGroup();
   mSettings.endGroup();
 
   mSettings.beginGroup("Appearance");
-  mAppearance.theme = mSettings.value("theme", mAppearance.theme).toString();
-  mAppearance.uiScalePercent = mSettings.value("uiScalePercent", mAppearance.uiScalePercent).toInt();
-  mAppearance.showCanvasGrid = mSettings.value("showCanvasGrid", mAppearance.showCanvasGrid).toBool();
-  mAppearance.nativeMenuBar = mSettings.value("nativeMenuBar", mAppearance.nativeMenuBar).toBool();
-  mAppearance.nodeCornerRadius = mSettings.value("nodeCornerRadius", mAppearance.nodeCornerRadius).toInt();
+  LOAD_SETTING(mAppearance, theme, String);
+  LOAD_SETTING(mAppearance, uiScalePercent, Int);
+  LOAD_SETTING(mAppearance, showCanvasGrid, Bool);
+  LOAD_SETTING(mAppearance, nativeMenuBar, Bool);
+  LOAD_SETTING(mAppearance, nodeCornerRadius, Int);
   mSettings.endGroup();
 
   mSettings.beginGroup("Generation");
-  mGeneration.generationDir = mSettings.value("generationDir", mGeneration.generationDir).toString();
-  mGeneration.pluginSearchPaths = mSettings.value("pluginSearchPaths").toStringList();
+  LOAD_SETTING(mGeneration, generationDir, String);
+  LOAD_SETTING(mGeneration, pluginSearchPaths, StringList);
   mSettings.endGroup();
 }
 
 void SettingsManager::save()
 {
   mSettings.beginGroup("General");
-  mSettings.setValue("restoreLastSession", mGeneral.restoreLastSession);
-  mSettings.setValue("autosaveEnabled", mGeneral.autosaveEnabled);
-  mSettings.setValue("autosaveIntervalMinutes", mGeneral.autosaveIntervalMinutes);
-  mSettings.setValue("confirmOnCloseWithExecution", mGeneral.confirmOnCloseWithExecution);
-  mSettings.setValue("enableDebugLogs", mGeneral.enableDebugLogs);
-  mSettings.endGroup();
+  SAVE_SETTING(mGeneral, restoreLastSession);
+  SAVE_SETTING(mGeneral, autosaveEnabled);
+  SAVE_SETTING(mGeneral, autosaveIntervalMinutes);
+  SAVE_SETTING(mGeneral, confirmOnCloseWithExecution);
+  SAVE_SETTING(mGeneral, enableDebugLogs);
+  SAVE_SETTING(mGeneral, recentHistorySize);
+  mSettings.beginGroup("RecentFiles");
+  for (int i = 0; i < mGeneral.recentFiles.size(); ++i)
+  {
+    mSettings.setValue(QString("%1").arg(i), mGeneral.recentFiles.at(i));
+  }
+  mSettings.endGroup();  // RecentFiles
+  mSettings.endGroup();  // General
 
   mSettings.beginGroup("Appearance");
-  mSettings.setValue("theme", mAppearance.theme);
-  mSettings.setValue("uiScalePercent", mAppearance.uiScalePercent);
-  mSettings.setValue("showCanvasGrid", mAppearance.showCanvasGrid);
-  mSettings.setValue("nativeMenuBar", mAppearance.nativeMenuBar);
-  mSettings.setValue("nodeCornerRadius", mAppearance.nodeCornerRadius);
-  mSettings.endGroup();
+  SAVE_SETTING(mAppearance, theme);
+  SAVE_SETTING(mAppearance, uiScalePercent);
+  SAVE_SETTING(mAppearance, showCanvasGrid);
+  SAVE_SETTING(mAppearance, nativeMenuBar);
+  SAVE_SETTING(mAppearance, nodeCornerRadius);
+  mSettings.endGroup();  // Appearance
 
   mSettings.beginGroup("Generation");
-  mSettings.setValue("generationDir", mGeneration.generationDir);
-  mSettings.setValue("pluginSearchPaths", mGeneration.pluginSearchPaths);
+  SAVE_SETTING(mGeneration, generationDir);
+  SAVE_SETTING(mGeneration, pluginSearchPaths);
   mSettings.endGroup();
 
   mSettings.beginGroup("Plugins");
@@ -96,7 +146,6 @@ void SettingsManager::save()
     for (int i = 0; i < plugin.settings.size(); ++i)
     {
       const auto setting = plugin.settings.at(i);
-      LOG_INFO("Saving value: %d %s", i, qPrintable(setting.getKey()));
       mSettings.beginGroup(setting.getKey());
       mSettings.setValue("key", setting.getKey());
       mSettings.setValue("index", i);
@@ -149,6 +198,19 @@ void SettingsManager::setGeneration(const GenerationSettings& s)
 void SettingsManager::setPlugins(const QVector<PluginInfo>& s)
 {
   mPluginSettings = s;
+  save();
+}
+
+void SettingsManager::addRecentFile(const QString& s)
+{
+  // Check if the files was already added
+  if (mGeneral.recentFiles.contains(s))
+    return;
+
+  mGeneral.recentFiles.push_front(s);
+  if (mGeneral.recentFiles.size() >= mGeneral.recentHistorySize)
+    mGeneral.recentFiles.pop_back();
+
   save();
 }
 

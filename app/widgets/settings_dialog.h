@@ -15,6 +15,11 @@ class QLineEdit;
 class QToolButton;
 class QVBoxLayout;
 
+namespace maki
+{
+class IntegerWidget;
+}
+
 class SettingsDialog : public BaseDialog
 {
   Q_OBJECT
@@ -46,6 +51,7 @@ private:
   QSpinBox* mAutosaveMinutes = nullptr;
   QCheckBox* mConfirmOnClose = nullptr;
   QCheckBox* mEnableDebugLogs = nullptr;
+  maki::IntegerWidget* mRecentHistorySize = nullptr;
 
   // Appearance
   QComboBox* mThemeCombo = nullptr;

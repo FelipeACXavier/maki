@@ -169,6 +169,8 @@ VoidResult SettingsDialog::createGeneralPage()
   mAutosaveMinutes->setRange(1, 120);
   mAutosaveMinutes->setSuffix(tr(" min"));
 
+  mRecentHistorySize = new maki::IntegerWidget("Recent History Size", QString("%1").arg(mSettingsManager->general().recentHistorySize), page, INT32_MIN, INT32_MAX);
+
   auto autosaveLayout = new QHBoxLayout;
   autosaveLayout->addWidget(new QLabel(tr("Autosave interval:"), page));
   autosaveLayout->addWidget(mAutosaveMinutes);
@@ -183,6 +185,7 @@ VoidResult SettingsDialog::createGeneralPage()
   layout->addLayout(autosaveLayout);
   layout->addWidget(mConfirmOnClose);
   layout->addWidget(mEnableDebugLogs);
+  layout->addWidget(mRecentHistorySize);
   layout->addStretch();
 
   return VoidResult();
@@ -476,6 +479,7 @@ void SettingsDialog::saveToSettings()
   general.autosaveIntervalMinutes = mAutosaveMinutes->value();
   general.confirmOnCloseWithExecution = mConfirmOnClose->isChecked();
   general.enableDebugLogs = mEnableDebugLogs->isChecked();
+  general.recentHistorySize = mRecentHistorySize->getValue();
 
   AppearanceSettings appearance;
   appearance.uiScalePercent = mUiScale->value();

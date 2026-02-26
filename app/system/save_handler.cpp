@@ -87,13 +87,19 @@ VoidResult SaveHandler::saveToFile(Canvas* canvas)
   file.flush();
   file.close();
 
+  emit fileSaved(mCurrentFile);
+
   return VoidResult();
 }
 
 Result<SaveInfo> SaveHandler::load()
 {
   QString fileName = openAtCenter(Function::LOAD);
+  return load(fileName);
+}
 
+Result<SaveInfo> SaveHandler::load(const QString& fileName)
+{
   if (fileName.isEmpty())
     return Result<SaveInfo>::Failed("Not loading diagram");
 
@@ -123,6 +129,8 @@ Result<SaveInfo> SaveHandler::load()
     file.close();
   }
 
+  emit fileLoaded(fileName);
+
   return info;
 }
 
@@ -142,6 +150,7 @@ QString SaveHandler::openAtCenter(Function function)
   QFileDialog dialog(mParentWidget);
 
   QRect parentGeometry = mParentWidget->geometry();
+  dialog.setMinimumSize({parentGeometry.width() / 2, parentGeometry.height() / 2});
 
   // Calculate the center of the parent (main window)
   int x = parentGeometry.left() + (parentGeometry.width() - dialog.width()) / 2;

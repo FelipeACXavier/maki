@@ -21,12 +21,17 @@ public:
 
   void newFileCreated();
   Result<SaveInfo> load();
+  Result<SaveInfo> load(const QString& fileToLoad);
 
   enum class Function
   {
     SAVE,
     LOAD
   };
+
+signals:
+  void fileLoaded(const QString& file);
+  void fileSaved(const QString& file);
 
 private:
   QString mLastDir;

@@ -21,11 +21,13 @@ struct GeneralSettings
   int autosaveIntervalMinutes = 5;
   bool confirmOnCloseWithExecution = true;
   bool enableDebugLogs = true;
+  int recentHistorySize = 10;
+  QVector<QString> recentFiles = {};
 };
 
 struct AppearanceSettings
 {
-  QString theme = "system";
+  QString theme = "dark";
   int uiScalePercent = 100;  // 100%, 110%, ...
   bool showCanvasGrid = true;
   bool nativeMenuBar = true;
@@ -35,7 +37,13 @@ struct AppearanceSettings
 struct GenerationSettings
 {
   QString generationDir = QCoreApplication::applicationDirPath();
-  QStringList pluginSearchPaths;
+  QStringList pluginSearchPaths = {
+#ifdef Q_OS_WIN
+      QCoreApplication::applicationDirPath() + "/plugins"
+#else
+      QCoreApplication::applicationDirPath() + "/../plugins"
+#endif
+  };
 };
 
 struct PluginInfo
@@ -71,6 +79,9 @@ public:
 
 signals:
   void themeChanged(const QString& theme, const QList<Config::ThemeInfo>& availableThemes);
+
+public slots:
+  void addRecentFile(const QString& s);
 
 private:
   QSettings mSettings;
