@@ -1,0 +1,51 @@
+# Light theme: Minimal Grey
+background: #F7F7F8
+foreground: #1F2328
+faded_foreground: #6B7280
+highlight: #2563EB
+selection_fg: #FFFFFF
+selection_bg: #2563EB
+border_radius: 8
+icon_size: 16
+
+info_color: #0EA5E9
+error_color: #DC2626
+warning_color: #F59E0B
+
+notification_width: 360
+min_notification_height: 56
+max_notification_height: 180
+notification_left_margin: 16
+notification_top_margin: 16
+notification_between_margin: 10
+
+scrollbar_handle: #D1D5DB
+scrollbar_handle_hover: #C0C6CF
+
+button_size: 30
+
+input_bg: #FFFFFF
+input_border: #D1D5DB
+input_focus_border: #2563EB
+combobox_bg: #F0F2F5
+control_border: #D1D5DB
+
+combobox_hover_border: #2563EB
+arrow_icon_up: :/icons/arrow-up.svg
+arrow_icon_down: :/icons/arrow-down.svg
+arrow_icon_right: :/icons/arrow-right.svg
+
+uncheck_icon: :/icons/uncheck.svg
+check_icon: :/icons/check.svg
+limit_icon: :/icons/limit.svg
+
+tab_bg: #F0F2F5
+tab_border_color: #D1D5DB
+tab_selected_bg: #FFFFFF
+
+menu_bg: #F7F7F8
+menu_border: #D1D5DB
+
+toolbar_bg: #F0F2F5
+toolbar_border: #D1D5DB
+toolbutton_hover_bg: #E5E7EB

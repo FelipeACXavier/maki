@@ -1,0 +1,51 @@
+# Light theme: Lavender
+background: #FBFAFF
+foreground: #1F1B2E
+faded_foreground: #6B7280
+highlight: #7C3AED
+selection_fg: #FBFAFF
+selection_bg: #7C3AED
+border_radius: 8
+icon_size: 16
+
+info_color: #2563EB
+error_color: #DC2626
+warning_color: #F59E0B
+
+notification_width: 360
+min_notification_height: 56
+max_notification_height: 180
+notification_left_margin: 16
+notification_top_margin: 16
+notification_between_margin: 10
+
+scrollbar_handle: #D8D3F2
+scrollbar_handle_hover: #CFC7EC
+
+button_size: 30
+
+input_bg: #FFFFFF
+input_border: #D8D3F2
+input_focus_border: #7C3AED
+combobox_bg: #F1EEFF
+control_border: #D8D3F2
+
+combobox_hover_border: #7C3AED
+arrow_icon_up: :/icons/arrow-up.svg
+arrow_icon_down: :/icons/arrow-down.svg
+arrow_icon_right: :/icons/arrow-right.svg
+
+uncheck_icon: :/icons/uncheck.svg
+check_icon: :/icons/check.svg
+limit_icon: :/icons/limit.svg
+
+tab_bg: #F1EEFF
+tab_border_color: #D8D3F2
+tab_selected_bg: #FFFFFF
+
+menu_bg: #FBFAFF
+menu_border: #D8D3F2
+
+toolbar_bg: #F4F2FF
+toolbar_border: #D8D3F2
+toolbutton_hover_bg: #EAE7FF

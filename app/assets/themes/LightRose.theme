@@ -1,0 +1,51 @@
+# Light theme: Rose
+background: #FFF7FA
+foreground: #2A1820
+faded_foreground: #6B5E66
+highlight: #DB2777
+selection_fg: #FFF7FA
+selection_bg: #DB2777
+border_radius: 8
+icon_size: 16
+
+info_color: #0EA5E9
+error_color: #DC2626
+warning_color: #F59E0B
+
+notification_width: 360
+min_notification_height: 56
+max_notification_height: 180
+notification_left_margin: 16
+notification_top_margin: 16
+notification_between_margin: 10
+
+scrollbar_handle: #F0CFE0
+scrollbar_handle_hover: #E6BFD5
+
+button_size: 30
+
+input_bg: #FFFFFF
+input_border: #F0CFE0
+input_focus_border: #DB2777
+combobox_bg: #FFE8F2
+control_border: #F0CFE0
+
+combobox_hover_border: #DB2777
+arrow_icon_up: :/icons/arrow-up.svg
+arrow_icon_down: :/icons/arrow-down.svg
+arrow_icon_right: :/icons/arrow-right.svg
+
+uncheck_icon: :/icons/uncheck.svg
+check_icon: :/icons/check.svg
+limit_icon: :/icons/limit.svg
+
+tab_bg: #FFE8F2
+tab_border_color: #F0CFE0
+tab_selected_bg: #FFFFFF
+
+menu_bg: #FFF7FA
+menu_border: #F0CFE0
+
+toolbar_bg: #FFF0F6
+toolbar_border: #F0CFE0
+toolbutton_hover_bg: #FFE1EE

@@ -31,6 +31,9 @@ void updateProperty(QWidget* widget, const QString& property, bool value);
 void applyStyle(QWidget* widget, const QString& style);
 void addSectionLabel(QMenu* menu, const QString& text);
 
+QString elideLeft(const QString& text, const QWidget* const component);
+QString elideRight(const QString& text, const QWidget* const component);
+
 struct WidgetWithIcon
 {
   QWidget* widget;

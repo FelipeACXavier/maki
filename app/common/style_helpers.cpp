@@ -302,3 +302,15 @@ QString createInformationMessage(const NodeConfig& node)
   out += "</body></html>";
   return out;
 }
+
+QString elideLeft(const QString& text, const QWidget* const component)
+{
+  QFontMetrics fm(component->font());
+  return fm.elidedText(text, Qt::ElideLeft, component->maximumWidth());
+}
+
+QString elideRight(const QString& text, const QWidget* const component)
+{
+  QFontMetrics fm(component->font());
+  return fm.elidedText(text, Qt::ElideRight, component->maximumWidth());
+}

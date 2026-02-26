@@ -1,0 +1,51 @@
+# Dark theme: One Dark
+background: #282C34
+foreground: #ABB2BF
+faded_foreground: #7F8896
+highlight: #61AFEF
+selection_fg: #282C34
+selection_bg: #ABB2BF
+border_radius: 8
+icon_size: 16
+
+info_color: #56B6C2
+error_color: #E06C75
+warning_color: #E5C07B
+
+notification_width: 360
+min_notification_height: 56
+max_notification_height: 180
+notification_left_margin: 16
+notification_top_margin: 16
+notification_between_margin: 10
+
+scrollbar_handle: #4B5263
+scrollbar_handle_hover: #5A6275
+
+button_size: 30
+
+input_bg: #21252B
+input_border: #3A404D
+input_focus_border: #61AFEF
+combobox_bg: #3A404D
+control_border: #4B5263
+
+combobox_hover_border: #56B6C2
+arrow_icon_up: :/icons/arrow-up-dark.svg
+arrow_icon_down: :/icons/arrow-down-dark.svg
+arrow_icon_right: :/icons/arrow-right-dark.svg
+
+uncheck_icon: :/icons/uncheck-dark.svg
+check_icon: :/icons/check-dark.svg
+limit_icon: :/icons/limit-dark.svg
+
+tab_bg: #3A404D
+tab_border_color: #4B5263
+tab_selected_bg: #282C34
+
+menu_bg: #282C34
+menu_border: #4B5263
+
+toolbar_bg: #262A32
+toolbar_border: #4B5263
+toolbutton_hover_bg: #3A404D

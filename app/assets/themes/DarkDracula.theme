@@ -1,0 +1,51 @@
+# Dark theme: Dracula-ish
+background: #282A36
+foreground: #F8F8F2
+faded_foreground: #B8B8B2
+highlight: #BD93F9
+selection_fg: #F8F8F2
+selection_bg: #44475A
+border_radius: 8
+icon_size: 16
+
+info_color: #8BE9FD
+error_color: #FF5555
+warning_color: #FFB86C
+
+notification_width: 360
+min_notification_height: 56
+max_notification_height: 180
+notification_left_margin: 16
+notification_top_margin: 16
+notification_between_margin: 10
+
+scrollbar_handle: #44475A
+scrollbar_handle_hover: #565A72
+
+button_size: 30
+
+input_bg: #1F202A
+input_border: #3A3C4E
+input_focus_border: #8BE9FD
+combobox_bg: #3A3C4E
+control_border: #44475A
+
+combobox_hover_border: #BD93F9
+arrow_icon_up: :/icons/arrow-up-dark.svg
+arrow_icon_down: :/icons/arrow-down-dark.svg
+arrow_icon_right: :/icons/arrow-right-dark.svg
+
+uncheck_icon: :/icons/uncheck-dark.svg
+check_icon: :/icons/check-dark.svg
+limit_icon: :/icons/limit-dark.svg
+
+tab_bg: #3A3C4E
+tab_border_color: #44475A
+tab_selected_bg: #282A36
+
+menu_bg: #282A36
+menu_border: #44475A
+
+toolbar_bg: #252734
+toolbar_border: #44475A
+toolbutton_hover_bg: #3A3C4E

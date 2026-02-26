@@ -457,8 +457,8 @@ QToolButton:hover {
 }
 
 QToolButton:pressed {
-  background: @button_pressed_bg;
-  color: @button_pressed_fg;
+  background: @selection_bg;
+  color: @selection_fg;
 }
 
 QToolBar#LogToolBar {

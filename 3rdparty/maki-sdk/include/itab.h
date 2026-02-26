@@ -34,12 +34,7 @@ struct ThemeVars
   QString scrollbar_handle_hover = "#b0b0b0";
 
   // QButton
-  QString button_bg = "#e0e0e0";
-  QString button_border = "#b0b0b0";
-  QString button_bg_hover = "#d4d4d4";
-  QString button_pressed_bg = "#4a6ea9";
-  QString button_pressed_border = "#315b9b";
-  QString button_pressed_fg = "#ffffff";
+  QString button_size = "30px";
 
   QString input_bg = "#ffffff";
   QString input_border = "#b0b0b0";
@@ -55,6 +50,7 @@ struct ThemeVars
   QString check_icon = ":/icons/check.svg";
   QString uncheck_icon = ":/icons/uncheck.svg";
   QString limit_icon = ":/icons/limit.svg";
+  QString icon_size = "18px";
 
   // QTabBar
   QString left_tab_width = "100px";

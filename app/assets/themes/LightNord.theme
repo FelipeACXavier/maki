@@ -1,0 +1,51 @@
+# Light theme: Nord Snow
+background: #ECEFF4
+foreground: #2E3440
+faded_foreground: #4C566A
+highlight: #5E81AC
+selection_fg: #ECEFF4
+selection_bg: #5E81AC
+border_radius: 8
+icon_size: 16
+
+info_color: #5E81AC
+error_color: #BF616A
+warning_color: #D08770
+
+notification_width: 360
+min_notification_height: 56
+max_notification_height: 180
+notification_left_margin: 16
+notification_top_margin: 16
+notification_between_margin: 10
+
+scrollbar_handle: #C7CDD6
+scrollbar_handle_hover: #B8C0CC
+
+button_size: 30
+
+input_bg: #FFFFFF
+input_border: #C7CDD6
+input_focus_border: #5E81AC
+combobox_bg: #E5E9F0
+control_border: #C7CDD6
+
+combobox_hover_border: #5E81AC
+arrow_icon_up: :/icons/arrow-up.svg
+arrow_icon_down: :/icons/arrow-down.svg
+arrow_icon_right: :/icons/arrow-right.svg
+
+uncheck_icon: :/icons/uncheck.svg
+check_icon: :/icons/check.svg
+limit_icon: :/icons/limit.svg
+
+tab_bg: #E5E9F0
+tab_border_color: #C7CDD6
+tab_selected_bg: #FFFFFF
+
+menu_bg: #ECEFF4
+menu_border: #C7CDD6
+
+toolbar_bg: #E5E9F0
+toolbar_border: #C7CDD6
+toolbutton_hover_bg: #D8DEE9

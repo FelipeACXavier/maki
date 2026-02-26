@@ -1,0 +1,51 @@
+# Dark theme: Emerald
+background: #0F172A
+foreground: #E2E8F0
+faded_foreground: #94A3B8
+highlight: #34D399
+selection_fg: #0F172A
+selection_bg: #A7F3D0
+border_radius: 8
+icon_size: 16
+
+info_color: #22C55E
+error_color: #FB7185
+warning_color: #FBBF24
+
+notification_width: 360
+min_notification_height: 56
+max_notification_height: 180
+notification_left_margin: 16
+notification_top_margin: 16
+notification_between_margin: 10
+
+scrollbar_handle: #334155
+scrollbar_handle_hover: #475569
+
+button_size: 30
+
+input_bg: #0B1224
+input_border: #1F2A44
+input_focus_border: #34D399
+combobox_bg: #1F2A44
+control_border: #334155
+
+combobox_hover_border: #A7F3D0
+arrow_icon_up: :/icons/arrow-up-dark.svg
+arrow_icon_down: :/icons/arrow-down-dark.svg
+arrow_icon_right: :/icons/arrow-right-dark.svg
+
+uncheck_icon: :/icons/uncheck-dark.svg
+check_icon: :/icons/check-dark.svg
+limit_icon: :/icons/limit-dark.svg
+
+tab_bg: #1F2A44
+tab_border_color: #334155
+tab_selected_bg: #0F172A
+
+menu_bg: #0F172A
+menu_border: #334155
+
+toolbar_bg: #0D1528
+toolbar_border: #334155
+toolbutton_hover_bg: #1F2A44

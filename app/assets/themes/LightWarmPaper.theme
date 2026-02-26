@@ -1,0 +1,51 @@
+# Light theme: Warm Paper
+background: #FAF4E8
+foreground: #2A2A2A
+faded_foreground: #6B5E4A
+highlight: #C0841A
+selection_fg: #FAF4E8
+selection_bg: #C0841A
+border_radius: 8
+icon_size: 16
+
+info_color: #2F855A
+error_color: #C53030
+warning_color: #B7791F
+
+notification_width: 360
+min_notification_height: 56
+max_notification_height: 180
+notification_left_margin: 16
+notification_top_margin: 16
+notification_between_margin: 10
+
+scrollbar_handle: #D8CBB4
+scrollbar_handle_hover: #CDBFA6
+
+button_size: 30
+
+input_bg: #FFFFFF
+input_border: #D8CBB4
+input_focus_border: #C0841A
+combobox_bg: #F1E6D2
+control_border: #D8CBB4
+
+combobox_hover_border: #C0841A
+arrow_icon_up: :/icons/arrow-up.svg
+arrow_icon_down: :/icons/arrow-down.svg
+arrow_icon_right: :/icons/arrow-right.svg
+
+uncheck_icon: :/icons/uncheck.svg
+check_icon: :/icons/check.svg
+limit_icon: :/icons/limit.svg
+
+tab_bg: #F1E6D2
+tab_border_color: #D8CBB4
+tab_selected_bg: #FFFFFF
+
+menu_bg: #FAF4E8
+menu_border: #D8CBB4
+
+toolbar_bg: #F5EBD9
+toolbar_border: #D8CBB4
+toolbutton_hover_bg: #EFE0C8

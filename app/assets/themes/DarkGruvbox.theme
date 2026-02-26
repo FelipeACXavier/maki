@@ -1,0 +1,51 @@
+# Dark theme: Gruvbox
+background: #282828
+foreground: #EBDBB2
+faded_foreground: #BDAE93
+highlight: #D79921
+selection_fg: #282828
+selection_bg: #FABD2F
+border_radius: 8
+icon_size: 16
+
+info_color: #83A598
+error_color: #FB4934
+warning_color: #FE8019
+
+notification_width: 360
+min_notification_height: 56
+max_notification_height: 180
+notification_left_margin: 16
+notification_top_margin: 16
+notification_between_margin: 10
+
+scrollbar_handle: #504945
+scrollbar_handle_hover: #665C54
+
+button_size: 30
+
+input_bg: #1D2021
+input_border: #3C3836
+input_focus_border: #83A598
+combobox_bg: #3C3836
+control_border: #504945
+
+combobox_hover_border: #D79921
+arrow_icon_up: :/icons/arrow-up-dark.svg
+arrow_icon_down: :/icons/arrow-down-dark.svg
+arrow_icon_right: :/icons/arrow-right-dark.svg
+
+uncheck_icon: :/icons/uncheck-dark.svg
+check_icon: :/icons/check-dark.svg
+limit_icon: :/icons/limit-dark.svg
+
+tab_bg: #3C3836
+tab_border_color: #504945
+tab_selected_bg: #282828
+
+menu_bg: #282828
+menu_border: #504945
+
+toolbar_bg: #242424
+toolbar_border: #504945
+toolbutton_hover_bg: #3C3836

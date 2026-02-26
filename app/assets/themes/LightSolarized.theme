@@ -1,0 +1,51 @@
+# Light theme: Solarized Light
+background: #FDF6E3
+foreground: #073642
+faded_foreground: #586E75
+highlight: #268BD2
+selection_fg: #FDF6E3
+selection_bg: #268BD2
+border_radius: 8
+icon_size: 16
+
+info_color: #2AA198
+error_color: #DC322F
+warning_color: #B58900
+
+notification_width: 360
+min_notification_height: 56
+max_notification_height: 180
+notification_left_margin: 16
+notification_top_margin: 16
+notification_between_margin: 10
+
+scrollbar_handle: #D8D2C0
+scrollbar_handle_hover: #CFC8B3
+
+button_size: 30
+
+input_bg: #FFFFFF
+input_border: #D8D2C0
+input_focus_border: #268BD2
+combobox_bg: #EEE8D5
+control_border: #D8D2C0
+
+combobox_hover_border: #2AA198
+arrow_icon_up: :/icons/arrow-up.svg
+arrow_icon_down: :/icons/arrow-down.svg
+arrow_icon_right: :/icons/arrow-right.svg
+
+uncheck_icon: :/icons/uncheck.svg
+check_icon: :/icons/check.svg
+limit_icon: :/icons/limit.svg
+
+tab_bg: #EEE8D5
+tab_border_color: #D8D2C0
+tab_selected_bg: #FFFFFF
+
+menu_bg: #FDF6E3
+menu_border: #D8D2C0
+
+toolbar_bg: #F5EEDB
+toolbar_border: #D8D2C0
+toolbutton_hover_bg: #EEE8D5
