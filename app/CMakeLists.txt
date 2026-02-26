@@ -78,6 +78,7 @@ file(GLOB APP_ICON_FILES
   ${FONT_AWESOME_PATH}/eye.svg
   ${FONT_AWESOME_PATH}/eye-slash.svg
   ${FONT_AWESOME_PATH}/plug.svg
+  ${FONT_AWESOME_PATH}/rectangle-list.svg
 )
 
 add_custom_target(copy_icons ALL

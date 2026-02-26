@@ -58,6 +58,11 @@ IntegerWidget::IntegerWidget(const QString& label, const QString& placeholder, Q
   mInputField = new QLineEdit(this);
   mInputField->setPlaceholderText(placeholder);
 
+  bool valid = false;
+  auto intPlaceholder = placeholder.toInt(&valid);
+  if (valid)
+    mValue = intPlaceholder;
+
   QIntValidator* validator = new QIntValidator(min, max, this);
   mInputField->setValidator(validator);
 
@@ -68,11 +73,17 @@ IntegerWidget::IntegerWidget(const QString& label, const QString& placeholder, Q
     updateProperty(mInputField, Config::INVALID, (state != QValidator::Acceptable));
   });
   connect(mInputField, &QLineEdit::editingFinished, this, [this]() {
-    emit valueChanged(mInputField->text().toInt());
+    mValue = mInputField->text().toInt();
+    emit valueChanged(mValue);
   });
 
   layout()->addWidget(labelWidget);
   layout()->addWidget(mInputField);
+}
+
+int IntegerWidget::getValue() const
+{
+  return mValue;
 }
 
 void IntegerWidget::addDescription(const QString& label)

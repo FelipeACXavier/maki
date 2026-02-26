@@ -24,8 +24,9 @@ public:
 
 signals:
   void generationStarted(Pipeline* pipeline);
-  void generationEnded();
+  void generationEnded(const QString& outputFolder);
 
 private:
   Pipeline* mPipeline = nullptr;
+  QString mGenerationFolder;
 };

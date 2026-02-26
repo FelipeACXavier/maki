@@ -25,12 +25,13 @@ public:
   IntegerWidget(const QString& label, const QString& placeholder, QWidget* parent, int min = INT32_MIN, int max = INT32_MAX);
 
   void addDescription(const QString& label);
-
+  int getValue() const;
 signals:
   void valueChanged(const int value);
 
 private:
   QLineEdit* mInputField;
+  int mValue = 0;
 };
 
 // TODO

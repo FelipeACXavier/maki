@@ -2,6 +2,9 @@
 
 #include <QMainWindow>
 
+#include "style_helpers.h"
+#include "widgets/settings_manager.h"
+
 class QWidget;
 class QSplitter;
 class QTabWidget;
@@ -17,9 +20,7 @@ class QPushButton;
 class PropertiesMenu;
 class ProcessTab;
 class QUndoGroup;
-
-#include "style_helpers.h"
-#include "widgets/settings_manager.h"
+class GeneratedFilesPanel;
 
 class MainWindowLayout : public QMainWindow
 {
@@ -64,6 +65,7 @@ protected:
   QSplitter* mRightPanel;
   QTabWidget* mNavigationTab;
   SystemMenu* mSystemMenu;
+  GeneratedFilesPanel* mFileMenu;
 
   QTabWidget* mPropertiesTab;
   PropertiesMenu* mPropertiesMenu;
@@ -75,7 +77,7 @@ protected:
   // File menu
   QAction* mActionNew;
   QAction* mActionOpen;
-  QAction* mActionOpenRecent;
+  QMenu* mActionOpenRecent;
   QAction* mActionSave;
   QAction* mActionSaveAs;
 

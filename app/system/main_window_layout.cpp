@@ -29,8 +29,12 @@
 #include "theme.h"
 #include "widgets/behaviour_menu.h"
 #include "widgets/properties/properties_menu.h"
+#include "widgets/structure/file_menu.h"
 #include "widgets/structure/flow_menu.h"
 #include "widgets/structure/system_menu.h"
+
+static constexpr int MINIMUM_MENU_WIDTH = 250;
+static constexpr int MAXIMUM_MENU_WIDTH = 400;
 
 MainWindowLayout::MainWindowLayout(QWidget* parent)
     : QMainWindow(parent)
@@ -247,7 +251,7 @@ void MainWindowLayout::buildRightPanel()
 {
   mRightPanel = new QSplitter(Qt::Vertical);
   mRightPanel->setMinimumWidth(250);
-  mRightPanel->setMaximumWidth(400);
+  mRightPanel->setMaximumWidth(MAXIMUM_MENU_WIDTH);
 
   // ----------------------------------------------------------------------
   // Navigation Menu
@@ -266,9 +270,11 @@ void MainWindowLayout::buildRightPanel()
   mSystemMenu->header()->setSectionsMovable(false);
 
   mNavigationTab->addTab(mSystemMenu, tr("System"));
-
   mIcons.append({mNavigationTab->tabBar(), ":/icons/system.svg", 0});
-  mIcons.append({mNavigationTab->tabBar(), ":/icons/flows.svg", 1});
+
+  mFileMenu = new GeneratedFilesPanel(mNavigationTab);
+  mNavigationTab->addTab(mFileMenu, tr("Files"));
+  mIcons.append({mNavigationTab->tabBar(), ":/icons/rectangle-list.svg", 1});
 
   // ----------------------------------------------------------------------
   // Properties Menu
@@ -307,8 +313,8 @@ void MainWindowLayout::buildMenuBar()
   mActionOpen = new QAction(tr("Open"), this);
   file->addAction(mActionOpen);
 
-  mActionOpenRecent = new QAction(tr("Open Recent"), this);
-  file->addAction(mActionOpenRecent);
+  mActionOpenRecent = file->addMenu(tr("Open Recent"));
+  mActionOpenRecent->setMaximumWidth(MAXIMUM_MENU_WIDTH);
 
   file->addSeparator();
 
@@ -634,7 +640,7 @@ void MainWindowLayout::applyTheme()
       int count = mNavigationTab->tabBar()->count();
       if (tabWidth.isValid() && tabPadding.isValid() && tabBorderSize.isValid())
       {
-        navigationTabWidth = (count * tabWidth.toInt()) + (2 * count * tabPadding.toInt()) + (2 * count * tabBorderSize.toInt());
+        navigationTabWidth = (count * 50) + (2 * count * tabPadding.toInt()) + (2 * count * tabBorderSize.toInt());
         mNavigationTab->setMinimumWidth(navigationTabWidth);
       }
       else
@@ -668,7 +674,7 @@ void MainWindowLayout::applyTheme()
     mRightPanel->setMinimumWidth(2 * std::max(navigationTabWidth, propertiesTabWidth));
 
     // Set initial height ratio
-    mRightPanel->setSizes({400, 600});
+    mRightPanel->setSizes({MAXIMUM_MENU_WIDTH, 600});
   }
 }
 

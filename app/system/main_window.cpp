@@ -6,6 +6,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QListWidgetItem>
+#include <QMenu>
 #include <QPushButton>
 #include <QRegularExpression>
 #include <QRegularExpressionValidator>
@@ -42,6 +43,7 @@
 #include "widgets/properties/properties_menu.h"
 #include "widgets/settings_dialog.h"
 #include "widgets/settings_manager.h"
+#include "widgets/structure/file_menu.h"
 #include "widgets/structure/flow_menu.h"
 #include "widgets/structure/system_menu.h"
 
@@ -94,7 +96,7 @@ VoidResult MainWindow::start()
   LOG_INFO("Using application path: %s", qPrintable(QCoreApplication::applicationDirPath()));
   mSaveHandler = std::make_unique<SaveHandler>(this);
   mPluginManager = std::make_unique<PluginManager>(this);
-  mSettingsManager = std::make_shared<SettingsManager>();
+  mSettingsManager = std::make_shared<SettingsManager>(mActionOpenRecent);
   mNotificationManager = new NotificationManager(mCanvasPanel);
 
   mPipeline = new Pipeline(this);
@@ -127,6 +129,11 @@ VoidResult MainWindow::start()
   if (mSettingsManager)
   {
     onThemeChanged(mSettingsManager->appearance().theme, mSettingsManager->availableThemes());
+    for (const auto& file : mSettingsManager->general().recentFiles)
+    {
+      QAction* action = mActionOpenRecent->addAction(elideLeft(file, mActionOpenRecent));
+      connect(action, &QAction::triggered, [this, file] { onActionLoad(file); });
+    }
     connect(mSettingsManager.get(), &SettingsManager::themeChanged, this, &MainWindow::onThemeChanged);
   }
 
@@ -183,7 +190,7 @@ void MainWindow::bind()
   connect(mActionNew, &QAction::triggered, this, &MainWindow::onActionNew);
   mActionNew->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_N));
 
-  connect(mActionOpen, &QAction::triggered, this, &MainWindow::onActionLoad);
+  connect(mActionOpen, &QAction::triggered, [this] { onActionLoad(""); });
   mActionOpen->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_O));
 
   connect(mActionSave, &QAction::triggered, this, &MainWindow::onActionSave);
@@ -205,6 +212,7 @@ void MainWindow::bind()
   // Diagram actions =============================================================
   connect(mActionGenerate, &QAction::triggered, this, &MainWindow::onActionGenerate);
   mActionGenerate->setShortcut(QKeySequence(Qt::Key_F5));
+  mActionSimulate->setShortcut(QKeySequence(Qt::Key_F6));
 
   // Setting actions =============================================================
   connect(mOpenAllSettings, &QAction::triggered, this, [this] {
@@ -231,10 +239,18 @@ void MainWindow::bind()
   connect(mSystemMenu, &SystemMenu::nodeRemoved, rootCanvas(), &Canvas::onRemoveNode);
   connect(mSystemMenu, &SystemMenu::nodeFocused, rootCanvas(), &Canvas::onFocusNode);
 
+  connect(mFileMenu, &GeneratedFilesPanel::openExternallyRequested, this, &MainWindow::addEditorTab);
+
+  connect(mSaveHandler.get(), &SaveHandler::fileLoaded, mSettingsManager.get(), &SettingsManager::addRecentFile);
+  connect(mSaveHandler.get(), &SaveHandler::fileSaved, mSettingsManager.get(), &SettingsManager::addRecentFile);
+
   if (mGenerator)
   {
     connect(mGenerator, &Generator::generationStarted, [this] { toggleGenerationButton(true); });
-    connect(mGenerator, &Generator::generationEnded, [this] { toggleGenerationButton(false); });
+    connect(mGenerator, &Generator::generationEnded, [this](const QString& outputFolder) {
+      mFileMenu->setGenerationRoot(outputFolder);
+      toggleGenerationButton(false);
+    });
   }
 
   connect(mProcessTabButton, &QPushButton::pressed, this, &MainWindow::addProcessTab);
@@ -460,7 +476,7 @@ void MainWindow::onActionSaveAs()
   mSaveHandler->saveFileAs(rootCanvas());
 }
 
-void MainWindow::onActionLoad()
+void MainWindow::onActionLoad(const QString& filename)
 {
   if (!mSaveHandler)
   {
@@ -468,7 +484,7 @@ void MainWindow::onActionLoad()
     return;
   }
 
-  auto loaded = mSaveHandler->load();
+  auto loaded = filename.isEmpty() ? mSaveHandler->load() : mSaveHandler->load(filename);
   if (!loaded.IsSuccess())
   {
     LOG_ERROR(loaded.ErrorMessage());
@@ -585,6 +601,11 @@ void MainWindow::closeCanvasTab(int index)
   // {
   //   Q_UNUSED(tab);
   // }
+  else if (QPlainTextEdit* tab = qobject_cast<QPlainTextEdit*>(mCanvasPanel->widget(index)))
+  {
+    LOG_DEBUG("Closing editor tab");
+    Q_UNUSED(tab);
+  }
   else if (ProcessTab* tab = qobject_cast<ProcessTab*>(mCanvasPanel->widget(index)))
   {
     tab->hide();
@@ -709,6 +730,12 @@ void MainWindow::addPluginTab(const QString& name, PluginView* view)
 {
   mCanvasPanel->addTab(view, name);
   mCanvasPanel->setCurrentWidget(view);
+}
+
+void MainWindow::addEditorTab(QPlainTextEdit* editorTab)
+{
+  mCanvasPanel->addTab(editorTab, "File viewer");
+  mCanvasPanel->setCurrentWidget(editorTab);
 }
 
 void MainWindow::onFlowAdded(Flow* flow, NodeItem* node)

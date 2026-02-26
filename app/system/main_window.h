@@ -27,6 +27,7 @@ class SettingsManager;
 class NotificationManager;
 class PluginTab;
 class PluginView;
+class QPlainTextEdit;
 
 class MainWindow : public MainWindowLayout
 {
@@ -94,11 +95,12 @@ private:
   void addProcessTab();
   void addBrowserTab();
   void addPluginTab(const QString& name, PluginView* view);
+  void addEditorTab(QPlainTextEdit* view);
 
   // ================================================
   // Actions
   void onActionNew();
-  void onActionLoad();
+  void onActionLoad(const QString& filename);
   void onActionSave();
   void onActionSaveAs();
   void onActionGenerate();

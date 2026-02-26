@@ -10,8 +10,9 @@
 Generator::Generator(Pipeline* pipeline, QObject* parent)
     : QObject(parent)
     , mPipeline(pipeline)
+    , mGenerationFolder("")
 {
-  connect(mPipeline, &Pipeline::finishedLast, [this] { emit generationEnded(); });
+  connect(mPipeline, &Pipeline::finishedLast, [this] { emit generationEnded(mGenerationFolder); });
 }
 
 Pipeline* Generator::pipeline() const
@@ -27,6 +28,7 @@ VoidResult Generator::generate(const QString& outputDir, maki::IGeneratorPlugin*
     return pipeline()->abort();
   }
 
+  mGenerationFolder = outputDir + "/" + generator->languageName();
   pipeline()->setName(generator->languageName());
 
   RETURN_ON_FAILURE(generator->verify(outputDir));
@@ -44,6 +46,8 @@ VoidResult Generator::simulate(const QString& outputDir, maki::IGeneratorPlugin*
 {
   if (pipeline()->isRunning())
     return pipeline()->abort();
+
+  mGenerationFolder = outputDir + "/" + generator->languageName();
 
   pipeline()->setName(generator->languageName());
 
