@@ -37,10 +37,10 @@ void EventDialog::setup(std::shared_ptr<FlowSaveInfo> event)
   layout()->setContentsMargins(10, 0, 10, 0);
   layout()->setAlignment(Qt::AlignCenter);
 
-  createNameInput(this);
-  createTypeInput(this);
-  createReturnTypeInput(this);
-  createArgumentInput(this);
+  createNameInput();
+  createTypeInput();
+  createReturnTypeInput();
+  createArgumentInput();
 
   layout()->setContentsMargins(10, 5, 10, 5);
 
@@ -53,9 +53,9 @@ void EventDialog::setup(std::shared_ptr<FlowSaveInfo> event)
   connect(buttonBox, &QDialogButtonBox::rejected, this, &EventDialog::reject);
 }
 
-void EventDialog::createNameInput(QWidget* parent)
+void EventDialog::createNameInput()
 {
-  auto name = new maki::StringWidget(tr("Event name"), mStorage->getname(), parent);
+  auto name = new maki::StringWidget(tr("Event name"), mStorage->getname(), this);
   name->widget()->setFocusPolicy(mStorage->getmodifiable() ? Qt::StrongFocus : Qt::NoFocus);
   name->widget()->setReadOnly(!mStorage->getmodifiable());
 
@@ -63,9 +63,9 @@ void EventDialog::createNameInput(QWidget* parent)
   layout()->addWidget(name);
 }
 
-void EventDialog::createTypeInput(QWidget* parent)
+void EventDialog::createTypeInput()
 {
-  auto type = new maki::SelectorWidget(tr("Event type"), parent);
+  auto type = new maki::SelectorWidget(tr("Event type"), this);
   type->setFocusPolicy(mStorage->getmodifiable() ? Qt::ClickFocus : Qt::NoFocus);
   type->setEnabled(mStorage->getmodifiable());
 
@@ -90,11 +90,11 @@ void EventDialog::createTypeInput(QWidget* parent)
   layout()->addWidget(type);
 }
 
-void EventDialog::createReturnTypeInput(QWidget* parent)
+void EventDialog::createReturnTypeInput()
 {
-  auto typeBox = new maki::TypeSelectionWidget(parent);
+  auto typeBox = new maki::TypeSelectionWidget(this);
 
-  auto returnType = new maki::SelectorWidget(tr("Return type"), typeBox, parent);
+  auto returnType = new maki::SelectorWidget(tr("Return type"), typeBox, this);
   returnType->setFocusPolicy(mStorage->getmodifiable() ? Qt::ClickFocus : Qt::NoFocus);
   returnType->setEnabled(mStorage->getmodifiable());
 
@@ -104,7 +104,7 @@ void EventDialog::createReturnTypeInput(QWidget* parent)
 
   if (mStorage->getreturnType() == Types::PropertyTypes::UNKNOWN)
   {
-    returnType->setValue(Types::PropertyTypesToString((Types::PropertyTypes)((uint16_t)Types::PropertyTypes::UNKNOWN + 1)));
+    returnType->setValue(Types::PropertyTypesToString(Types::PropertyTypes::INTEGER));
     mStorage->setReturnType(Types::StringToPropertyTypes(returnType->getValue()));
   }
   else
@@ -115,14 +115,14 @@ void EventDialog::createReturnTypeInput(QWidget* parent)
   layout()->addWidget(returnType);
 }
 
-void EventDialog::createArgumentInput(QWidget* parent)
+void EventDialog::createArgumentInput()
 {
-  QLabel* argumentLabel = new QLabel(tr("Arguments"), parent);
+  QLabel* argumentLabel = new QLabel(tr("Arguments"), this);
   argumentLabel->setObjectName("PropertyLabel");
   layout()->addWidget(argumentLabel);
 
   // Create table to hold the arguments
-  QTableView* args = new QTableView(parent);
+  QTableView* args = new QTableView(this);
   QStandardItemModel* model = new QStandardItemModel(0, 2);
   args->verticalHeader()->setVisible(false);
   args->setFocusPolicy(Qt::ClickFocus);
@@ -133,7 +133,7 @@ void EventDialog::createArgumentInput(QWidget* parent)
   args->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
   args->setContextMenuPolicy(Qt::CustomContextMenu);
 
-  addDynamicWidget((QVBoxLayout*)layout(), args, parent);
+  addDynamicWidget((QVBoxLayout*)layout(), args, this);
 
   if (mStorage->getmodifiable())
     args->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::EditKeyPressed);
@@ -146,12 +146,30 @@ void EventDialog::createArgumentInput(QWidget* parent)
     int newRow = model->rowCount();
     model->insertRow(newRow);
     model->setItem(newRow, 0, new QStandardItem(field->getid()));
-    args->setIndexWidget(model->index(newRow, 1), new maki::TypeSelectionWidget(Types::PropertyTypesToString(field->gettype()), args));
+
+    auto box = new maki::TypeSelectionWidget(Types::PropertyTypesToString(field->gettype()), args);
+    args->setIndexWidget(model->index(newRow, 1), box);
+    connect(box, &QComboBox::currentTextChanged, this, [this, newRow](const QString& value) {
+      updateArgumentTable(newRow, 1, value);
+    });
   }
 
-  connect(model, &QStandardItemModel::itemChanged, this, &EventDialog::updateArgumentTable);
+  connect(model, &QStandardItemModel::itemChanged, this, [this](QStandardItem* item) {
+    if (!item)
+      return;
 
-  QPushButton* button = new QPushButton(parent);
+    int row = item->row();
+    if (row >= mStorage->getarguments().size())
+      return;
+
+    auto text = item->text();
+    if (text.isNull() || text.isEmpty())
+      return;
+
+    updateArgumentTable(row, item->column(), text);
+  });
+
+  QPushButton* button = new QPushButton(this);
   button->setObjectName("TextAndIcon");
 
   button->setEnabled(mStorage->getmodifiable());
@@ -159,7 +177,12 @@ void EventDialog::createArgumentInput(QWidget* parent)
     int newRow = model->rowCount();
     model->insertRow(newRow);
     model->setItem(newRow, 0, new QStandardItem(""));
-    args->setIndexWidget(model->index(newRow, 1), new maki::TypeSelectionWidget(args));
+
+    auto box = new maki::TypeSelectionWidget(args);
+    args->setIndexWidget(model->index(newRow, 1), box);
+    connect(box, &QComboBox::currentTextChanged, this, [this, newRow](const QString& value) {
+      updateArgumentTable(newRow, 1, value);
+    });
 
     // Create new argument in the storage as well
     mStorage->addArgument(std::make_shared<PropertyInfo>());
@@ -174,23 +197,9 @@ void EventDialog::createArgumentInput(QWidget* parent)
   layout()->addWidget(button);
 }
 
-void EventDialog::updateArgumentTable(QStandardItem* item)
+void EventDialog::updateArgumentTable(int row, int column, const QString& text)
 {
-  if (!item)
-    return;
-
-  int row = item->row();
-  if (row >= mStorage->getarguments().size())
-  {
-    LOG_WARNING("Tried to modify argument that does not exist");
-    return;
-  }
-
-  int column = item->column();
-  auto text = item->text();
-  if (text.isNull() || text.isEmpty())
-    return;
-
+  LOG_INFO("updateArgumentTable: %s", qPrintable(text));
   if (column == 0)
     std::dynamic_pointer_cast<PropertyInfo>(mStorage->getArgument(row))->setId(text);
   else if (column == 1)

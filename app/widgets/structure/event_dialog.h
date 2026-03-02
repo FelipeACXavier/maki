@@ -33,9 +33,9 @@ private:
   int mEnterCount;
 
   void populateNodeList();
-  void createNameInput(QWidget* parent);
-  void createTypeInput(QWidget* parent);
-  void createReturnTypeInput(QWidget* parent);
-  void createArgumentInput(QWidget* parent);
-  void updateArgumentTable(QStandardItem* item);
+  void createNameInput();
+  void createTypeInput();
+  void createReturnTypeInput();
+  void createArgumentInput();
+  void updateArgumentTable(int row, int column, const QString& text);
 };
