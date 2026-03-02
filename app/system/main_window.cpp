@@ -135,6 +135,9 @@ VoidResult MainWindow::start()
       connect(action, &QAction::triggered, [this, file] { onActionLoad(file); });
     }
     connect(mSettingsManager.get(), &SettingsManager::themeChanged, this, &MainWindow::onThemeChanged);
+
+    if (!mSettingsManager->general().showWelcomeMessage)
+      mInfoText->clear();
   }
 
   LOG_DEBUG("Main window started");
@@ -504,6 +507,13 @@ void MainWindow::onNodeSelected(NodeItem* node, bool selected)
   {
     if (auto info = mConfigTable->get(node->nodeType()))
       mInfoText->setHtml(createInformationMessage(*info));
+  }
+  else
+  {
+    if (mSettingsManager->general().showWelcomeMessage)
+      mInfoText->setHtml(createDefaultMessage());
+    else
+      mInfoText->clear();
   }
 
   LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeSelected(node, selected));

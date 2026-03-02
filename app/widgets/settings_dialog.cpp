@@ -163,10 +163,12 @@ VoidResult SettingsDialog::createGeneralPage()
 
   mRestoreLastSession = new maki::BooleanWidget(tr("Restore last session on startup"), generalSettings.restoreLastSession, page);
   mConfirmOnClose = new maki::BooleanWidget(tr("Confirm before closing editor with running execution"), generalSettings.confirmOnCloseWithExecution, page);
+  mShowWelcomeMessage = new maki::BooleanWidget(tr("Show welcome message"), generalSettings.showWelcomeMessage, page);
 
   auto closingLayout = new maki::WidgetGroup(tr("Opening/Closing"), page);
   closingLayout->addWidget(mRestoreLastSession);
   closingLayout->addWidget(mConfirmOnClose);
+  closingLayout->addWidget(mShowWelcomeMessage);
   closingLayout->addWidget(mRecentHistorySize);
 
   mEnableDebugLogs = new maki::BooleanWidget(tr("Enable debug logs"), generalSettings.enableDebugLogs, page);
@@ -414,6 +416,7 @@ void SettingsDialog::saveToSettings()
   general.autosaveEnabled = mAutosaveEnabled->getValue();
   general.enableDebugLogs = mEnableDebugLogs->getValue();
   general.recentHistorySize = mRecentHistorySize->getValue();
+  general.showWelcomeMessage = mShowWelcomeMessage->getValue();
   general.restoreLastSession = mRestoreLastSession->getValue();
   general.autosaveIntervalMinutes = mAutosaveMinutes->getValue();
   general.confirmOnCloseWithExecution = mConfirmOnClose->getValue();

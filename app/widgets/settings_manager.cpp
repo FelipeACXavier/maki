@@ -9,7 +9,7 @@
 #define LOAD_SETTING(MEMBER, FIELD, TYPE)                            \
   do                                                                 \
   {                                                                  \
-    auto tmp##FIELD = mSettings.value("" #FIELD);                    \
+    auto tmp##FIELD = mSettings.value("" #FIELD, MEMBER.FIELD);      \
     if (!tmp##FIELD.isValid())                                       \
     {                                                                \
       LOG_ERROR("Settings are corrupted field is invalid: " #FIELD); \
@@ -71,6 +71,7 @@ void SettingsManager::load()
   LOAD_SETTING(mGeneral, confirmOnCloseWithExecution, Bool);
   LOAD_SETTING(mGeneral, enableDebugLogs, Bool);
   LOAD_SETTING(mGeneral, recentHistorySize, Int);
+  LOAD_SETTING(mGeneral, showWelcomeMessage, Bool);
 
   mSettings.beginGroup("RecentFiles");
   const QStringList recentFiles = mSettings.childKeys();
@@ -115,6 +116,7 @@ void SettingsManager::save()
   SAVE_SETTING(mGeneral, confirmOnCloseWithExecution);
   SAVE_SETTING(mGeneral, enableDebugLogs);
   SAVE_SETTING(mGeneral, recentHistorySize);
+  SAVE_SETTING(mGeneral, showWelcomeMessage);
   mSettings.beginGroup("RecentFiles");
   for (int i = 0; i < mGeneral.recentFiles.size(); ++i)
   {

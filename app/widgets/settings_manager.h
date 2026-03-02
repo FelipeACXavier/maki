@@ -22,6 +22,7 @@ struct GeneralSettings
   bool confirmOnCloseWithExecution = true;
   bool enableDebugLogs = true;
   int recentHistorySize = 10;
+  bool showWelcomeMessage = true;
   QVector<QString> recentFiles = {};
 };
 

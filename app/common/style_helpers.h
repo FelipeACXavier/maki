@@ -55,3 +55,4 @@ void updateTreeIconTheme(QList<TreeWidgetWithIcon>& icons);
 
 QString htmlEscape(const QString& s);
 QString createInformationMessage(const NodeConfig& node);
+QString createDefaultMessage();

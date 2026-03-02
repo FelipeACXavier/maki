@@ -64,6 +64,7 @@ private:
   maki::BooleanWidget* mConfirmOnClose = nullptr;
   maki::BooleanWidget* mEnableDebugLogs = nullptr;
   maki::IntegerWidget* mRecentHistorySize = nullptr;
+  maki::BooleanWidget* mShowWelcomeMessage = nullptr;
 
   // Appearance
   maki::SelectorWidget* mThemeCombo = nullptr;
