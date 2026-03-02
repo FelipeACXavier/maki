@@ -8,108 +8,11 @@ add_subdirectory(document)
 qt_standard_project_setup()
 
 # ------------------------------------------------------------------------------------------------------------
-# Fonts
-file(GLOB APP_FONT_FILES
-  ${CMAKE_CURRENT_SOURCE_DIR}/assets/fonts/dejavu/*.ttf
-  ${CMAKE_CURRENT_SOURCE_DIR}/assets/fonts/geist/*.ttf
-  ${CMAKE_CURRENT_SOURCE_DIR}/assets/fonts/jetbrains_mono/*.ttf
-)
-
-set(FONT_BUILD_DIR "${CMAKE_BINARY_DIR}/share/fonts")
-
-add_custom_target(copy_fonts ALL
-  COMMENT "Copying fonts to ${FONT_BUILD_DIR}"
-  COMMAND ${CMAKE_COMMAND} -E make_directory ${FONT_BUILD_DIR}
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different ${APP_FONT_FILES} ${FONT_BUILD_DIR}
-  DEPENDS ${APP_FONT_FILES}
-)
-
-install(FILES ${APP_FONT_FILES}
-  DESTINATION "${CMAKE_INSTALL_DATADIR}/fonts"
-)
-
-# ------------------------------------------------------------------------------------------------------------
-# Icons
-set(FONT_AWESOME_PATH "${CMAKE_CURRENT_SOURCE_DIR}/assets/icons/fontawesome/svgs/solid")
-set(ICON_BUILD_DIR "${CMAKE_BINARY_DIR}/share/icons")
-file(GLOB APP_ICON_FILES
-  ${FONT_AWESOME_PATH}/circle-nodes.svg
-  ${FONT_AWESOME_PATH}/cubes.svg
-  ${FONT_AWESOME_PATH}/vector-square.svg
-  ${FONT_AWESOME_PATH}/xmark.svg
-  ${FONT_AWESOME_PATH}/circle-xmark.svg
-  ${FONT_AWESOME_PATH}/equals.svg
-  ${FONT_AWESOME_PATH}/plus.svg
-  ${FONT_AWESOME_PATH}/circle-play.svg
-  ${FONT_AWESOME_PATH}/circle-pause.svg
-  ${FONT_AWESOME_PATH}/bullseye.svg
-  ${FONT_AWESOME_PATH}/rocket.svg
-  ${FONT_AWESOME_PATH}/terminal.svg
-  ${FONT_AWESOME_PATH}/display.svg
-  ${FONT_AWESOME_PATH}/diagram-next.svg
-  ${FONT_AWESOME_PATH}/newspaper.svg
-  ${FONT_AWESOME_PATH}/folder-tree.svg
-  ${FONT_AWESOME_PATH}/code-branch.svg
-  ${FONT_AWESOME_PATH}/sliders.svg
-  ${FONT_AWESOME_PATH}/rectangle-list.svg
-  ${FONT_AWESOME_PATH}/gear.svg
-  ${FONT_AWESOME_PATH}/paint-roller.svg
-  ${FONT_AWESOME_PATH}/trash.svg
-  ${FONT_AWESOME_PATH}/temperature-half.svg
-  ${FONT_AWESOME_PATH}/circle-info.svg
-  ${FONT_AWESOME_PATH}/triangle-exclamation.svg
-  ${FONT_AWESOME_PATH}/circle-xmark.svg
-  ${FONT_AWESOME_PATH}/arrow-rotate-left.svg
-  ${FONT_AWESOME_PATH}/circle-check.svg
-  ${FONT_AWESOME_PATH}/circle-xmark.svg
-  ${FONT_AWESOME_PATH}/caret-right.svg
-  ${FONT_AWESOME_PATH}/chevron-up.svg
-  ${FONT_AWESOME_PATH}/chevron-down.svg
-  ${FONT_AWESOME_PATH}/chevron-right.svg
-  ${FONT_AWESOME_PATH}/toggle-on.svg
-  ${FONT_AWESOME_PATH}/toggle-off.svg
-  ${FONT_AWESOME_PATH}/minus.svg
-  ${FONT_AWESOME_PATH}/chevron-up-dark.svg
-  ${FONT_AWESOME_PATH}/chevron-down-dark.svg
-  ${FONT_AWESOME_PATH}/toggle-on-dark.svg
-  ${FONT_AWESOME_PATH}/toggle-off-dark.svg
-  ${FONT_AWESOME_PATH}/minus-dark.svg
-  ${FONT_AWESOME_PATH}/shield-cat.svg
-  ${FONT_AWESOME_PATH}/eye.svg
-  ${FONT_AWESOME_PATH}/eye-slash.svg
-  ${FONT_AWESOME_PATH}/plug.svg
-  ${FONT_AWESOME_PATH}/rectangle-list.svg
-)
-
-add_custom_target(copy_icons ALL
-  COMMENT "Copying fonts to ${ICON_BUILD_DIR}"
-  COMMAND ${CMAKE_COMMAND} -E make_directory ${ICON_BUILD_DIR}
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different ${APP_ICON_FILES} ${ICON_BUILD_DIR}
-  DEPENDS ${APP_ICON_FILES}
-)
-
-install(FILES ${APP_ICON_FILES}
-  DESTINATION "${CMAKE_INSTALL_DATADIR}/icons"
-)
-
-# ------------------------------------------------------------------------------------------------------------
-# Themes
-file(GLOB APP_THEME_FILES
-  ${CMAKE_CURRENT_SOURCE_DIR}/assets/themes/*.theme
-)
-
-set(THEME_BUILD_DIR ${CMAKE_BINARY_DIR}/share/themes)
-
-add_custom_target(copy_themes ALL
-  COMMENT "Copying themes to ${THEME_BUILD_DIR}"
-  COMMAND ${CMAKE_COMMAND} -E make_directory ${THEME_BUILD_DIR}
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different ${APP_THEME_FILES} ${THEME_BUILD_DIR}
-  DEPENDS ${APP_THEME_FILES}
-)
-
-install(FILES ${APP_THEME_FILES}
-  DESTINATION "${CMAKE_INSTALL_DATADIR}/themes"
-)
+include(${CMAKE_SOURCE_DIR}/cmake/copy_fonts.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/copy_icons.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/copy_themes.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/doxygen.cmake) 
+maki_enable_doxygen_docs()
 
 # ------------------------------------------------------------------------------------------------------------
 # Main application
@@ -172,6 +75,10 @@ target_link_libraries(${APPLICATION_NAME} PRIVATE
 )
 
 add_dependencies(${APPLICATION_NAME} copy_fonts copy_themes copy_icons)
+
+if(TARGET doc_doxygen)
+  add_dependencies(${APPLICATION_NAME} doc_doxygen)
+endif()
 
 install(TARGETS ${APPLICATION_NAME}
     BUNDLE  DESTINATION .

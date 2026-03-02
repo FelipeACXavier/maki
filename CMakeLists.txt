@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.22)
 set(APPLICATION_NAME maki)
 
 option(DEBUG "Build with debug symbols" OFF)
+option(BUILD_DOC "Build documentation" ON)
 
 # Paths as configurable cache variables
 set(LOCAL_QT_PATH "" CACHE PATH "Qt path on this machine")
