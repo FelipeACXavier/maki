@@ -37,14 +37,14 @@ control_border: #CFCFCF
 
 # Combo box
 combobox_hover_border: #E95420
-arrow_icon_up: :/icons/arrow-up-light.svg
-arrow_icon_down: :/icons/arrow-down-light.svg
-arrow_icon_right: :/icons/arrow-right-light.svg
+arrow_icon_up: :/icons/arrow-up.svg
+arrow_icon_down: :/icons/arrow-down.svg
+arrow_icon_right: :/icons/arrow-right.svg
 
 # Checkbox
-uncheck_icon: :/icons/uncheck-light.svg
-check_icon: :/icons/check-light.svg
-limit_icon: :/icons/limit-light.svg
+uncheck_icon: :/icons/uncheck.svg
+check_icon: :/icons/check.svg
+limit_icon: :/icons/limit.svg
 
 # Tabs (unchanged structure)
 tab_bg: #F2F2F2

@@ -5,11 +5,6 @@ selection_bg: #264f78
 selection_fg: #ffffff
 scrollbar_handle: #3c3c3c
 scrollbar_handle_hover: #454545
-button_border: #3f3f3f
-button_bg_hover: #3a3a3a
-button_pressed_bg: #0e639c
-button_pressed_border: #1177bb
-button_pressed_fg: #ffffff
 input_bg: #252526
 input_border: #3f3f46
 input_focus_border: #007acc

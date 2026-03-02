@@ -7,6 +7,7 @@ selection_fg: #FFFFFF
 selection_bg: #E95420
 border_radius: 8
 icon_size: 16
+eyedropper_icon: :/icons/eye-dropper-dark.svg
 
 # General Colors
 info_color: #4AA3FF

@@ -56,6 +56,7 @@
     <file alias="arrow-up.svg">assets/icons/fontawesome/svgs/solid/chevron-up.svg</file>
     <file alias="arrow-down.svg">assets/icons/fontawesome/svgs/solid/chevron-down.svg</file>
     <file alias="arrow-right.svg">assets/icons/fontawesome/svgs/solid/chevron-right.svg</file>
+    <file alias="arrow-right-dark.svg">assets/icons/fontawesome/svgs/solid/arrow-right-dark.svg</file>
     <file alias="check.svg">assets/icons/fontawesome/svgs/solid/toggle-on.svg</file>
     <file alias="uncheck.svg">assets/icons/fontawesome/svgs/solid/toggle-off.svg</file>
     <file alias="limit.svg">assets/icons/fontawesome/svgs/solid/minus.svg</file>
@@ -69,6 +70,8 @@
     <file alias="invisible.svg">assets/icons/fontawesome/svgs/solid/eye-slash.svg</file>
     <file alias="plugin.svg">assets/icons/fontawesome/svgs/solid/plug.svg</file>
     <file alias="rectangle-list.svg">assets/icons/fontawesome/svgs/solid/rectangle-list.svg</file>
+    <file alias="eye-dropper.svg">assets/icons/fontawesome/svgs/solid/eye-dropper.svg</file>
+    <file alias="eye-dropper-dark.svg">assets/icons/fontawesome/svgs/solid/eye-dropper-dark.svg</file>
     <!-- Tree tcons -->
     <file alias="capability.svg">assets/icons/fontawesome/svgs/solid/puzzle-piece.svg</file>
     <file alias="flow_block.svg">assets/icons/fontawesome/svgs/solid/scroll.svg</file>
