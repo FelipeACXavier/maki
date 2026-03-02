@@ -8,6 +8,7 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QStandardItemModel>
+#include <QStyledItemDelegate>
 #include <QTimer>
 #include <QVBoxLayout>
 
@@ -16,9 +17,10 @@
 #include "logging.h"
 #include "save_info.h"
 #include "style_helpers.h"
+#include "widgets/widget_factory.h"
 
 EventDialog::EventDialog(const QString& title, QWidget* parent)
-    : BaseDialog(title, parent)
+    : BaseDialog(title, 0.8, 0.4, parent)
     , mEnterCount(0)
 {
 }
@@ -32,121 +34,84 @@ void EventDialog::setup(std::shared_ptr<FlowSaveInfo> event)
 {
   mStorage = event;
 
-  QWidget* controls = new QWidget(this);
-  QHBoxLayout* controlLayout = new QHBoxLayout(controls);
-  controlLayout->setContentsMargins(10, 0, 10, 0);
+  layout()->setContentsMargins(10, 0, 10, 0);
   layout()->setAlignment(Qt::AlignCenter);
 
-  controls->setLayout(controlLayout);
-  layout()->addWidget(controls);
-
-  createNameInput(controls);
-  createTypeInput(controls);
-  createReturnTypeInput(controls);
-  createArgumentInput(controls);
+  createNameInput(this);
+  createTypeInput(this);
+  createReturnTypeInput(this);
+  createArgumentInput(this);
 
   layout()->setContentsMargins(10, 5, 10, 5);
 
   static_cast<QVBoxLayout*>(layout())->addStretch();
 
-  // Create a button box for OK and Cancel buttons
-  QDialogButtonBox* buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, controls);
-  layout()->addWidget(buttonBox);
+  updateIconTheme(mIcons);
 
-  auto okButton = buttonBox->button(QDialogButtonBox::Ok);
-  if (okButton)
-  {
-    okButton->setDefault(false);
-    okButton->setAutoDefault(false);
-
-    okButton->setObjectName("TextAndIcon");
-    okButton->setText(" Ok");
-    okButton->setIcon(addIconWithColor(":/icons/accept.svg", Config::FOREGROUND));
-  }
-
-  auto* cancelBtn = buttonBox->button(QDialogButtonBox::Cancel);
-  if (cancelBtn)
-  {
-    cancelBtn->setObjectName("TextAndIcon");
-    cancelBtn->setText(" Cancel");
-    cancelBtn->setIcon(addIconWithColor(":/icons/reject.svg", Config::FOREGROUND));
-  }
-
-  // Connect buttons to appropriate slots
+  auto buttonBox = createButtons("Apply", "Cancel");
   connect(buttonBox, &QDialogButtonBox::accepted, this, &EventDialog::accept);
   connect(buttonBox, &QDialogButtonBox::rejected, this, &EventDialog::reject);
-
-  updateIconTheme(mIcons);
 }
 
 void EventDialog::createNameInput(QWidget* parent)
 {
-  QLabel* nameLabel = new QLabel(tr("Event name"), parent);
-  nameLabel->setObjectName("PropertyLabel");
-  layout()->addWidget(nameLabel);
+  auto name = new maki::StringWidget(tr("Event name"), mStorage->getname(), parent);
+  name->widget()->setFocusPolicy(mStorage->getmodifiable() ? Qt::StrongFocus : Qt::NoFocus);
+  name->widget()->setReadOnly(!mStorage->getmodifiable());
 
-  QLineEdit* name = new QLineEdit(parent);
-  name->setText(mStorage->getname());
-  name->setFocusPolicy(mStorage->getmodifiable() ? Qt::StrongFocus : Qt::NoFocus);
-  name->setReadOnly(!mStorage->getmodifiable());
-
-  connect(name, &QLineEdit::editingFinished, this, [=]() { mStorage->setName(name->text()); });
+  connect(name, &maki::StringWidget::valueChanged, this, [this](const QString& text) { mStorage->setName(text); });
   layout()->addWidget(name);
 }
 
 void EventDialog::createTypeInput(QWidget* parent)
 {
-  QLabel* eventTypeLabel = new QLabel(tr("Event type"), parent);
-  eventTypeLabel->setObjectName("PropertyLabel");
-  layout()->addWidget(eventTypeLabel);
-
-  QComboBox* type = new QComboBox(parent);
+  auto type = new maki::SelectorWidget(tr("Event type"), parent);
   type->setFocusPolicy(mStorage->getmodifiable() ? Qt::ClickFocus : Qt::NoFocus);
   type->setEnabled(mStorage->getmodifiable());
 
   for (uint16_t i = (uint16_t)Types::ConnectorType::UNKNOWN + 1; i < (uint16_t)Types::ConnectorType::END; ++i)
-    type->addItem(Types::ConnectorTypeToString((Types::ConnectorType)i));
+  {
+    auto id = Types::ConnectorTypeToString((Types::ConnectorType)i);
+    type->addItem(id, id);
+  }
+
+  connect(type, &maki::SelectorWidget::valueChanged, this, [=](const QString& text) { mStorage->setType(Types::StringToConnectorType(text)); });
 
   if (mStorage->gettype() == Types::ConnectorType::UNKNOWN)
   {
-    type->setCurrentIndex(0);
-    mStorage->setType(Types::StringToConnectorType(type->currentText()));
+    type->setValue(Types::ConnectorTypeToString((Types::ConnectorType)((uint16_t)Types::ConnectorType::UNKNOWN + 1)));
+    mStorage->setType(Types::StringToConnectorType(type->getValue()));
   }
   else
   {
-    type->setCurrentText(Types::ConnectorTypeToString(mStorage->gettype()));
+    type->setValue(Types::ConnectorTypeToString(mStorage->gettype()));
   }
 
-  connect(type, &QComboBox::currentTextChanged, this, [=](const QString& text) { mStorage->setType(Types::StringToConnectorType(text)); });
   layout()->addWidget(type);
 }
 
 void EventDialog::createReturnTypeInput(QWidget* parent)
 {
-  QLabel* returnTypeLabel = new QLabel(tr("Return type"), parent);
-  returnTypeLabel->setObjectName("PropertyLabel");
-  layout()->addWidget(returnTypeLabel);
+  auto typeBox = new maki::TypeSelectionWidget(parent);
 
-  QComboBox* returnType = new QComboBox(parent);
+  auto returnType = new maki::SelectorWidget(tr("Return type"), typeBox, parent);
   returnType->setFocusPolicy(mStorage->getmodifiable() ? Qt::ClickFocus : Qt::NoFocus);
   returnType->setEnabled(mStorage->getmodifiable());
 
-  for (uint16_t i = (uint16_t)Types::PropertyTypes::UNKNOWN + 1; i < (uint16_t)Types::PropertyTypes::END; ++i)
-    returnType->addItem(Types::PropertyTypesToString((Types::PropertyTypes)i));
+  connect(returnType, &maki::SelectorWidget::valueChanged, this, [this](const QString& text) {
+    mStorage->setReturnType(Types::StringToPropertyTypes(text));
+  });
 
   if (mStorage->getreturnType() == Types::PropertyTypes::UNKNOWN)
   {
-    returnType->setCurrentIndex(0);
-    mStorage->setReturnType(Types::StringToPropertyTypes(returnType->currentText()));
+    returnType->setValue(Types::PropertyTypesToString((Types::PropertyTypes)((uint16_t)Types::PropertyTypes::UNKNOWN + 1)));
+    mStorage->setReturnType(Types::StringToPropertyTypes(returnType->getValue()));
   }
   else
   {
-    returnType->setCurrentText(Types::PropertyTypesToString(mStorage->getreturnType()));
+    returnType->setValue(Types::PropertyTypesToString(mStorage->getreturnType()));
   }
 
-  connect(returnType, &QComboBox::currentTextChanged, this, [=](const QString& text) {
-    mStorage->setReturnType(Types::StringToPropertyTypes(text));
-  });
   layout()->addWidget(returnType);
 }
 
@@ -181,7 +146,7 @@ void EventDialog::createArgumentInput(QWidget* parent)
     int newRow = model->rowCount();
     model->insertRow(newRow);
     model->setItem(newRow, 0, new QStandardItem(field->getid()));
-    model->setItem(newRow, 1, new QStandardItem(Types::PropertyTypesToString(field->gettype())));
+    args->setIndexWidget(model->index(newRow, 1), new maki::TypeSelectionWidget(Types::PropertyTypesToString(field->gettype()), args));
   }
 
   connect(model, &QStandardItemModel::itemChanged, this, &EventDialog::updateArgumentTable);
@@ -194,7 +159,7 @@ void EventDialog::createArgumentInput(QWidget* parent)
     int newRow = model->rowCount();
     model->insertRow(newRow);
     model->setItem(newRow, 0, new QStandardItem(""));
-    model->setItem(newRow, 1, new QStandardItem(""));
+    args->setIndexWidget(model->index(newRow, 1), new maki::TypeSelectionWidget(args));
 
     // Create new argument in the storage as well
     mStorage->addArgument(std::make_shared<PropertyInfo>());
@@ -204,6 +169,8 @@ void EventDialog::createArgumentInput(QWidget* parent)
   button->setText(tr(" Add argument"));
   button->setIcon(addIconWithColor(":/icons/plus.svg", Config::FOREGROUND));
   button->setMaximumWidth(250);
+
+  layout()->addWidget(args);
   layout()->addWidget(button);
 }
 

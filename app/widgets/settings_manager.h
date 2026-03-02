@@ -27,7 +27,7 @@ struct GeneralSettings
 
 struct AppearanceSettings
 {
-  QString theme = "dark";
+  QString theme = "Dark";
   int uiScalePercent = 100;  // 100%, 110%, ...
   bool showCanvasGrid = true;
   bool nativeMenuBar = true;

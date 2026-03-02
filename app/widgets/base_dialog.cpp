@@ -1,5 +1,7 @@
 #include "base_dialog.h"
 
+#include <QDialogButtonBox>
+#include <QPushButton>
 #include <QRect>
 #include <QScreen>
 #include <QString>
@@ -9,12 +11,10 @@
 #include "style_helpers.h"
 #include "theme.h"
 
-constexpr double TargetRatio = 1.4;  // width / height, we want wider than taller
 constexpr double MinScreenFraction = 0.40;
 constexpr double TargetScreenFraction = 0.50;
-constexpr double MaxScreenFraction = 0.70;
 
-BaseDialog::BaseDialog(const QString& title, QWidget* parent)
+BaseDialog::BaseDialog(const QString& title, double ratio, double screenFraction, QWidget* parent)
     : QDialog(parent)
 {
   setWindowTitle(title);
@@ -23,10 +23,10 @@ BaseDialog::BaseDialog(const QString& title, QWidget* parent)
   QVBoxLayout* layout = new QVBoxLayout();
   setLayout(layout);
 
-  setSize();
+  setSize(ratio, screenFraction);
 }
 
-void BaseDialog::setSize()
+void BaseDialog::setSize(double ratio, double screenFraction)
 {
   // Set the dialog size dynamically
   QScreen* screen = this->screen();
@@ -37,20 +37,15 @@ void BaseDialog::setSize()
   int screenW = avail.width();
   int screenH = avail.height();
 
-  // --- STEP 1: Target height from screen fraction ---
   int targetH = int(screenH * TargetScreenFraction);
 
-  // Clamp if screen is too small or too large
-  targetH = qBound(int(screenH * MinScreenFraction), targetH, int(screenH * MaxScreenFraction));
+  targetH = qBound(int(screenH * MinScreenFraction), targetH, int(screenH * screenFraction));
 
-  // --- STEP 2: Compute width from aspect ratio ---
-  int targetW = int(targetH * TargetRatio);
-
-  // --- STEP 3: Ensure width fits the screen ---
-  if (targetW > int(screenW * MaxScreenFraction))  // leave some margin
+  int targetW = int(targetH * ratio);
+  if (targetW > int(screenW * screenFraction))
   {
-    targetW = int(screenW * MaxScreenFraction);
-    targetH = int(targetW / TargetRatio);
+    targetW = int(screenW * screenFraction);
+    targetH = int(targetW / ratio);
   }
 
   resize(targetW, targetH);
@@ -69,4 +64,43 @@ void BaseDialog::addIcon(QWidget* widget, const QString& iconPath)
 void BaseDialog::onThemeChanged()
 {
   updateIconTheme(mIcons);
+}
+
+QDialogButtonBox* BaseDialog::createButtons(const QString& ok, const QString& cancel)
+{
+  QDialogButtonBox* buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
+  layout()->addWidget(buttonBox);
+
+  auto okButton = buttonBox->button(QDialogButtonBox::Ok);
+
+  QFontMetricsF metrics(Fonts::Main);
+  if (okButton)
+  {
+    okButton->setDefault(false);
+    okButton->setAutoDefault(false);
+
+    okButton->setFont(Fonts::Main);
+    okButton->setObjectName("TextAndIcon");
+    okButton->setText(" " + ok);
+
+    auto textWidth = metrics.horizontalAdvance(okButton->text());
+    okButton->setFixedWidth(qMax<int>(100, textWidth));
+
+    addIcon(okButton, ":/icons/accept.svg");
+  }
+
+  auto* cancelBtn = buttonBox->button(QDialogButtonBox::Cancel);
+  if (cancelBtn)
+  {
+    cancelBtn->setFont(Fonts::Main);
+    cancelBtn->setObjectName("TextAndIcon");
+    cancelBtn->setText(" " + cancel);
+
+    auto textWidth = metrics.horizontalAdvance(cancelBtn->text());
+    cancelBtn->setFixedWidth(qMax<int>(100, textWidth));
+
+    addIcon(cancelBtn, ":/icons/reject.svg");
+  }
+
+  return buttonBox;
 }

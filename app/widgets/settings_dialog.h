@@ -5,6 +5,7 @@
 #include "base_dialog.h"
 #include "result.h"
 #include "settings_manager.h"
+#include "widgets/widget_factory.h"
 
 class QSpinBox;
 class QCheckBox;
@@ -18,8 +19,16 @@ class QVBoxLayout;
 namespace maki
 {
 class IntegerWidget;
-}
+class BooleanWidget;
+class SpinWidget;
+class SelectorWidget;
+class StringWidget;
+class ButtonWidget;
+}  // namespace maki
 
+/**
+ * Provides a dialog that allows the user to set and view the application settings.
+ */
 class SettingsDialog : public BaseDialog
 {
   Q_OBJECT
@@ -27,6 +36,9 @@ public:
   SettingsDialog(const QString& title, std::shared_ptr<SettingsManager> manager, QWidget* parent = nullptr);
 
 private slots:
+  /**
+   * Called when the user confirms the new settings.
+   */
   void apply();
 
 private:
@@ -46,24 +58,23 @@ private:
   std::shared_ptr<SettingsManager> mSettingsManager = nullptr;
 
   // General
-  QCheckBox* mRestoreLastSession = nullptr;
-  QCheckBox* mAutosaveEnabled = nullptr;
-  QSpinBox* mAutosaveMinutes = nullptr;
-  QCheckBox* mConfirmOnClose = nullptr;
-  QCheckBox* mEnableDebugLogs = nullptr;
+  maki::BooleanWidget* mRestoreLastSession = nullptr;
+  maki::BooleanWidget* mAutosaveEnabled = nullptr;
+  maki::SpinWidget* mAutosaveMinutes = nullptr;
+  maki::BooleanWidget* mConfirmOnClose = nullptr;
+  maki::BooleanWidget* mEnableDebugLogs = nullptr;
   maki::IntegerWidget* mRecentHistorySize = nullptr;
 
   // Appearance
-  QComboBox* mThemeCombo = nullptr;
-  QSpinBox* mUiScale = nullptr;
-  QCheckBox* mNativeMenuBar = nullptr;
-  QCheckBox* mShowGrid = nullptr;
-  QSpinBox* mNodeCornerRadius = nullptr;
+  maki::SelectorWidget* mThemeCombo = nullptr;
+  maki::SpinWidget* mUiScale = nullptr;
+  maki::BooleanWidget* mNativeMenuBar = nullptr;
+  maki::BooleanWidget* mShowGrid = nullptr;
+  maki::SpinWidget* mNodeCornerRadius = nullptr;
 
   // Generation
-  QLineEdit* mGenerationDirEdit = nullptr;
-  QToolButton* mGenerationBrowseBtn = nullptr;
-  QToolButton* mGenerationResetBtn = nullptr;
+  maki::StringWidget* mGenerationDirEdit = nullptr;
+  maki::ButtonWidget* mGenerationBrowseBtn = nullptr;
 
   // Plugins
   QVector<PluginInfo> mPluginSettings;
@@ -71,8 +82,15 @@ private:
   // ------------------------------------------
   // Methods
   void saveToSettings();
-  void loadFromSettings();
 
+  /**
+   * Construct the standard settings page and assign the selector accordingly.
+   * @param pageName This will be the page title and the text in the selector.
+   * @param iconName The icon of the page. It will be reflected in the selector.
+   * @param resetCallback The callback for when the user clicks the reset button.
+   * @param parent The parent widget.
+   * @return A struct with pointers to the create page and the respective selector. It can be assigned as auto[page, selector] = addPage(...);
+   */
   SelectorPage addPage(const QString& pageName, const QString& iconNeame, std::function<void()> resetCallback, QTreeWidgetItem* parent = nullptr);
 
   VoidResult createGeneralPage();

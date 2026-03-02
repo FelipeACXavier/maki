@@ -27,10 +27,8 @@
 #include "style_helpers.h"
 #include "system/canvas_view.h"
 #include "theme.h"
-#include "widgets/behaviour_menu.h"
 #include "widgets/properties/properties_menu.h"
 #include "widgets/structure/file_menu.h"
-#include "widgets/structure/flow_menu.h"
 #include "widgets/structure/system_menu.h"
 
 static constexpr int MINIMUM_MENU_WIDTH = 250;
@@ -250,7 +248,7 @@ void MainWindowLayout::buildCentralPanel()
 void MainWindowLayout::buildRightPanel()
 {
   mRightPanel = new QSplitter(Qt::Vertical);
-  mRightPanel->setMinimumWidth(250);
+  mRightPanel->setMinimumWidth(MINIMUM_MENU_WIDTH);
   mRightPanel->setMaximumWidth(MAXIMUM_MENU_WIDTH);
 
   // ----------------------------------------------------------------------
@@ -395,21 +393,21 @@ void MainWindowLayout::buildMenuBar()
   view->addMenu(showMenu);
 
   mOpenInfoPanel = new QAction(tr("Information panel"), this);
-  mOpenInfoPanel->setIcon(addIconWithColor(":/icons/invisible.svg", Qt::white));
+  mIcons.append({mOpenInfoPanel, ":/icons/invisible.svg"});
   showMenu->addAction(mOpenInfoPanel);
   connect(mOpenInfoPanel, &QAction::triggered, [this] {
     togglePanelVisibility(mBottomPanel, mOpenInfoPanel);
   });
 
   mOpenComponentsPanel = new QAction(tr("Components panel"), this);
-  mOpenComponentsPanel->setIcon(addIconWithColor(":/icons/invisible.svg", Qt::white));
+  mIcons.append({mOpenComponentsPanel, ":/icons/invisible.svg"});
   showMenu->addAction(mOpenComponentsPanel);
   connect(mOpenComponentsPanel, &QAction::triggered, [this] {
     togglePanelVisibility(mLeftPanel, mOpenComponentsPanel);
   });
 
   mOpenPropertiesPanel = new QAction(tr("Properties panel"), this);
-  mOpenPropertiesPanel->setIcon(addIconWithColor(":/icons/invisible.svg", Qt::white));
+  mIcons.append({mOpenPropertiesPanel, ":/icons/invisible.svg"});
   showMenu->addAction(mOpenPropertiesPanel);
   connect(mOpenPropertiesPanel, &QAction::triggered, [this] {
     togglePanelVisibility(mRightPanel, mOpenPropertiesPanel);

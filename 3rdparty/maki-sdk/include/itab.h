@@ -50,6 +50,7 @@ struct ThemeVars
   QString check_icon = ":/icons/check.svg";
   QString uncheck_icon = ":/icons/uncheck.svg";
   QString limit_icon = ":/icons/limit.svg";
+  QString eyedropper_icon = ":/icons/eye-dropper.svg";
   QString icon_size = "18px";
 
   // QTabBar

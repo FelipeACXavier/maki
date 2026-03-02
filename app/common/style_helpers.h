@@ -36,10 +36,11 @@ QString elideRight(const QString& text, const QWidget* const component);
 
 struct WidgetWithIcon
 {
-  QWidget* widget;
+  QObject* widget;
   QString path;
   int index;
   QColor color;
+  QModelIndex mindex;
 };
 
 struct TreeWidgetWithIcon

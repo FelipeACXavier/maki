@@ -7,6 +7,7 @@
 #include <QPushButton>
 #include <QStyle>
 #include <QTabBar>
+#include <QTreeWidgetItem>
 #include <QVariant>
 #include <QWidgetAction>
 
@@ -167,6 +168,15 @@ void updateIconTheme(QList<WidgetWithIcon>& icons)
       {
         if (item.index < tabBar->count())
           tabBar->setTabIcon(item.index, addIconWithColor(item.path, color));
+      }
+      else if (auto action = qobject_cast<QAction*>(item.widget))
+      {
+        action->setIcon(addIconWithColor(item.path, color));
+      }
+      else if (auto tree = static_cast<QTreeWidget*>(item.widget))
+      {
+        if (auto widget = tree->itemFromIndex(item.mindex))
+          widget->setIcon(0, addIconWithColor(item.path, color));
       }
       else
       {

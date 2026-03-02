@@ -105,8 +105,8 @@ VoidResult MainWindow::start()
   mProcessTab = new ProcessTab(mPipeline, mCanvasPanel);
   mProcessTab->hide();
 
-  mLocalServerTab = new LocalServerTab(mCanvasPanel);
-  mLocalServerTab->hide();
+  // mLocalServerTab = new LocalServerTab(mCanvasPanel);
+  // mLocalServerTab->hide();
 
   mPluginTab = new PluginTab(mSpecialTabsMenu, this);
 

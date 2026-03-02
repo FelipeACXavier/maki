@@ -72,7 +72,7 @@ void PluginTab::registerPlugin(const QString& name, std::function<VoidResult(QGr
 
   mTabs[name] = pd;
 
-  auto action = new QAction(tr("Open") + " " + name, this);
+  auto action = new QAction(tr("Open") + " " + name, mMenu);
   connect(action, &QAction::triggered, [this, name] { openScene(name); });
 
   mMenu->addAction(action);

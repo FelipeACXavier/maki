@@ -22,10 +22,11 @@
 
 #include "logging.h"
 #include "style_helpers.h"
+#include "theme.h"
 #include "widget_factory.h"
 
 SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsManager> manager, QWidget* parent)
-    : BaseDialog(title, parent)
+    : BaseDialog(title, 1.4, 0.7, parent)
     , mSettingsManager(manager)
 {
   auto* mainLayout = new QHBoxLayout();
@@ -54,13 +55,10 @@ SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsMan
   LOG_WARN_ON_FAILURE(createGenerationPage());
   LOG_WARN_ON_FAILURE(createPluginPages());
 
-  // mPageSelector->setCurrentRow(0);
-
   mainLayout->addWidget(mPageSelector, 1);
   mainLayout->addWidget(mPages, 4);
 
   // Select page when user clicks an item
-  // connect(mPageSelector, &QListWidget::currentRowChanged, mPages, &QStackedWidget::setCurrentIndex);
   connect(mPageSelector, &QTreeWidget::currentItemChanged, this, [this](QTreeWidgetItem* current, QTreeWidgetItem* /* previous */) {
     if (!current)
       return;
@@ -71,34 +69,13 @@ SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsMan
       mPages->setCurrentIndex(pageIndex);
   });
 
-  // Buttons
-  auto buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
-  auto* okBtn = buttonBox->button(QDialogButtonBox::Ok);
-  auto* cancelBtn = buttonBox->button(QDialogButtonBox::Cancel);
-
-  if (okBtn)
-  {
-    okBtn->setObjectName("TextAndIcon");
-    okBtn->setText(" Apply");
-    addIcon(okBtn, ":/icons/accept.svg");
-  }
-
-  if (cancelBtn)
-  {
-    cancelBtn->setObjectName("TextAndIcon");
-    cancelBtn->setText(" Close");
-    addIcon(cancelBtn, ":/icons/reject.svg");
-  }
-
   layout()->addLayout(mainLayout);
-  layout()->addWidget(buttonBox);
 
+  auto buttonBox = createButtons("Apply", "Close");
   connect(buttonBox, &QDialogButtonBox::accepted, this, &SettingsDialog::apply);
   connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
-  loadFromSettings();
-
-  updateIconTheme(mIcons);
+  apply();
 }
 
 SettingsDialog::SelectorPage SettingsDialog::addPage(const QString& pageName, const QString& iconName, std::function<void()> resetCallback, QTreeWidgetItem* parent)
@@ -110,8 +87,10 @@ SettingsDialog::SelectorPage SettingsDialog::addPage(const QString& pageName, co
   layout->setContentsMargins(6, 6, 6, 6);
 
   auto* headerRow = new QHBoxLayout();
+  headerRow->setContentsMargins(10, 0, 10, 0);
+
   QLabel* titleIcon = new QLabel();
-  titleIcon->setPixmap(applyColorToIcon(iconName, Config::FOREGROUND).scaled(16, 16, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+  addIcon(titleIcon, iconName);
 
   QLabel* title = new QLabel(pageName);
   title->setObjectName("PageTitle");
@@ -146,46 +125,58 @@ SettingsDialog::SelectorPage SettingsDialog::addPage(const QString& pageName, co
   // Add page to the collection of pages
   int index = mPages->addWidget(page);
 
-  // Update the selector with new page
+  // Update the selector with new page)
   auto* selector = parent == nullptr ? new QTreeWidgetItem(mPageSelector) : new QTreeWidgetItem(parent);
   selector->setText(0, pageName);
-  selector->setIcon(0, addIconWithColor(iconName, Config::FOREGROUND));
   selector->setData(0, Qt::UserRole, index);
+  mIcons.append({mPageSelector, iconName, 0, Config::FOREGROUND, mPageSelector->indexFromItem(selector)});
 
   return SelectorPage{selector, page};
 }
 
 VoidResult SettingsDialog::createGeneralPage()
 {
+  auto generalSettings = mSettingsManager->general();
   auto [selector, page] = addPage(tr("General"), ":/icons/general.svg", [this] {
-    mSettingsManager->setGeneral(GeneralSettings());
-    loadFromSettings();
+    auto defaultSettings = GeneralSettings();
+
+    mAutosaveMinutes->setValue(defaultSettings.autosaveIntervalMinutes);
+    mAutosaveEnabled->setValue(defaultSettings.autosaveEnabled);
+    mRecentHistorySize->setValue(defaultSettings.recentHistorySize);
+    mRestoreLastSession->setValue(defaultSettings.restoreLastSession);
+    mConfirmOnClose->setValue(defaultSettings.confirmOnCloseWithExecution);
+    mEnableDebugLogs->setValue(defaultSettings.enableDebugLogs);
+
+    mSettingsManager->setGeneral(defaultSettings);
   });
 
-  mRestoreLastSession = new QCheckBox(tr("Restore last session on startup"), page);
-  mAutosaveEnabled = new QCheckBox(tr("Enable autosave"), page);
+  mAutosaveMinutes = new maki::SpinWidget(tr("Autosave interval"), generalSettings.autosaveIntervalMinutes, page, 1, 120);
+  mAutosaveMinutes->addDescription("Between 1 and 120 minutes");
+  mAutosaveMinutes->setSuffix(" minutes");
+  mAutosaveEnabled = new maki::BooleanWidget(tr("Enable autosave"), generalSettings.autosaveEnabled, page);
 
-  mAutosaveMinutes = new QSpinBox(page);
-  mAutosaveMinutes->setRange(1, 120);
-  mAutosaveMinutes->setSuffix(tr(" min"));
+  auto autoSaveLayout = new maki::WidgetGroup(tr("Autosave"), page);
+  autoSaveLayout->addWidget(mAutosaveEnabled);
+  autoSaveLayout->addWidget(mAutosaveMinutes);
 
-  mRecentHistorySize = new maki::IntegerWidget("Recent History Size", QString("%1").arg(mSettingsManager->general().recentHistorySize), page, INT32_MIN, INT32_MAX);
+  mRecentHistorySize = new maki::IntegerWidget(tr("Recent History Size"), QString("%1").arg(generalSettings.recentHistorySize), page, INT32_MIN, INT32_MAX);
 
-  auto autosaveLayout = new QHBoxLayout;
-  autosaveLayout->addWidget(new QLabel(tr("Autosave interval:"), page));
-  autosaveLayout->addWidget(mAutosaveMinutes);
-  autosaveLayout->addStretch();
+  mRestoreLastSession = new maki::BooleanWidget(tr("Restore last session on startup"), generalSettings.restoreLastSession, page);
+  mConfirmOnClose = new maki::BooleanWidget(tr("Confirm before closing editor with running execution"), generalSettings.confirmOnCloseWithExecution, page);
 
-  mConfirmOnClose = new QCheckBox(tr("Confirm before closing editor with running execution"), page);
-  mEnableDebugLogs = new QCheckBox(tr("Enable debug logs"), page);
+  auto closingLayout = new maki::WidgetGroup(tr("Opening/Closing"), page);
+  closingLayout->addWidget(mRestoreLastSession);
+  closingLayout->addWidget(mConfirmOnClose);
+  closingLayout->addWidget(mRecentHistorySize);
+
+  mEnableDebugLogs = new maki::BooleanWidget(tr("Enable debug logs"), generalSettings.enableDebugLogs, page);
+  auto logLayout = new maki::WidgetGroup(tr("Logging and Notifications"), page);
+  logLayout->addWidget(mEnableDebugLogs);
 
   QVBoxLayout* layout = page->findChild<QVBoxLayout*>("ContentArea");
-  layout->addWidget(mRestoreLastSession);
-  layout->addWidget(mAutosaveEnabled);
-  layout->addLayout(autosaveLayout);
-  layout->addWidget(mConfirmOnClose);
-  layout->addWidget(mEnableDebugLogs);
-  layout->addWidget(mRecentHistorySize);
+  layout->addWidget(autoSaveLayout);
+  layout->addWidget(closingLayout);
+  layout->addWidget(logLayout);
   layout->addStretch();
 
   return VoidResult();
@@ -193,14 +184,21 @@ VoidResult SettingsDialog::createGeneralPage()
 
 VoidResult SettingsDialog::createAppearancePage()
 {
+  auto appearance = mSettingsManager->appearance();
   auto [selector, page] = addPage(tr("Appearance"), ":/icons/appearance.svg", [this] {
-    mSettingsManager->setAppearance(AppearanceSettings());
-    loadFromSettings();
+    auto defaultSettings = AppearanceSettings();
+
+    mThemeCombo->setValue(defaultSettings.theme);
+    mNativeMenuBar->setValue(defaultSettings.nativeMenuBar);
+    mUiScale->setValue(defaultSettings.uiScalePercent);
+    mNodeCornerRadius->setValue(defaultSettings.nodeCornerRadius);
+    mShowGrid->setValue(defaultSettings.showCanvasGrid);
+
+    mSettingsManager->setAppearance(defaultSettings);
   });
 
-  mThemeCombo = new QComboBox(page);
-
   // First entry: system theme (no QSS)
+  mThemeCombo = new maki::SelectorWidget(tr("Theme"), page);
   mThemeCombo->addItem(tr("System theme"), "system");
 
   // Then all discovered themes
@@ -212,39 +210,35 @@ VoidResult SettingsDialog::createAppearancePage()
 
     mThemeCombo->addItem(label, info.id);
   }
+  mThemeCombo->setValue(appearance.theme);
 
-  auto themeLayout = new QHBoxLayout();
-  themeLayout->addWidget(new QLabel(tr("Theme:"), page));
+  mNativeMenuBar = new maki::BooleanWidget(tr("Use native menubar"), appearance.nativeMenuBar, page);
+
+  auto themeLayout = new maki::WidgetGroup(tr("Theming"), page);
   themeLayout->addWidget(mThemeCombo);
-  themeLayout->addStretch();
+  themeLayout->addWidget(mNativeMenuBar);
 
-  mNativeMenuBar = new QCheckBox(tr("Use native menubar"), page);
+  auto colorSelector = new maki::ColorWidget(tr("Test color"), "#A52429", page);
+  themeLayout->addWidget(colorSelector);
 
-  mUiScale = new QSpinBox(page);
-  mUiScale->setRange(80, 200);
+  mIcons.append({colorSelector->widget(), Config::getValueFromTheme("@eyedropper_icon").toString()});
+
+  mUiScale = new maki::SpinWidget(tr("UI scale"), appearance.uiScalePercent, page, 80, 200);
   mUiScale->setSuffix(tr(" %"));
 
-  auto scaleLayout = new QHBoxLayout();
-  scaleLayout->addWidget(new QLabel(tr("UI scale:"), page));
-  scaleLayout->addWidget(mUiScale);
-  scaleLayout->addStretch();
+  mNodeCornerRadius = new maki::SpinWidget(tr("Node corner radius"), appearance.nodeCornerRadius, page, 0, 30);
+  mNodeCornerRadius->setSuffix(tr(" pixels"));
 
-  mShowGrid = new QCheckBox(tr("Show canvas grid"), page);
+  mShowGrid = new maki::BooleanWidget(tr("Show canvas grid"), appearance.showCanvasGrid, page);
 
-  mNodeCornerRadius = new QSpinBox(page);
-  mNodeCornerRadius->setRange(0, 30);
-
-  auto radiusLayout = new QHBoxLayout();
-  radiusLayout->addWidget(new QLabel(tr("Node corner radius:"), page));
-  radiusLayout->addWidget(mNodeCornerRadius);
-  radiusLayout->addStretch();
+  auto editorLayout = new maki::WidgetGroup(tr("Theming"), page);
+  editorLayout->addWidget(mUiScale);
+  editorLayout->addWidget(mShowGrid);
+  editorLayout->addWidget(mNodeCornerRadius);
 
   QVBoxLayout* layout = page->findChild<QVBoxLayout*>("ContentArea");
-  layout->addLayout(themeLayout);
-  layout->addWidget(mNativeMenuBar);
-  layout->addLayout(scaleLayout);
-  layout->addWidget(mShowGrid);
-  layout->addLayout(radiusLayout);
+  layout->addWidget(themeLayout);
+  layout->addWidget(editorLayout);
   layout->addStretch();
 
   return VoidResult();
@@ -252,47 +246,30 @@ VoidResult SettingsDialog::createAppearancePage()
 
 VoidResult SettingsDialog::createGenerationPage()
 {
+  auto generation = mSettingsManager->generation();
   auto [selector, page] = addPage(tr("Generation"), ":/icons/generator.svg", [this] {
     mSettingsManager->setGeneration(GenerationSettings());
-    loadFromSettings();
   });
 
-  // Row: text field + "Browse…" button
-  auto* label = new QLabel(tr("Default generation output folder"), page);
-
   auto* pathRow = new QWidget(page);
-  auto* colLayout = new QVBoxLayout(pathRow);
-  colLayout->setSpacing(0);
 
-  auto* rowLayout = new QHBoxLayout();
-  rowLayout->setContentsMargins(0, 0, 0, 0);
+  mGenerationDirEdit = new maki::StringWidget(tr("Generation output folder"), generation.generationDir, pathRow);
+  mGenerationDirEdit->addDescription(tr("\"/generated/<plugin name>\" will be appended to this path"));
 
-  mGenerationDirEdit = new QLineEdit(pathRow);
-  mGenerationDirEdit->setObjectName("generationPathEdit");
-
-  // This is the "faded default value"
-  mGenerationDirEdit->setPlaceholderText(mSettingsManager->generation().generationDir);
-
-  auto* hint = new QLabel(tr("\"/generated/<plugin name>\" will be appended to this path"), page);
-  hint->setFont(Fonts::Hint);
-  hint->setObjectName("HintLabel");
-
-  mGenerationBrowseBtn = new QToolButton(pathRow);
-  mGenerationBrowseBtn->setText("…");
+  mGenerationBrowseBtn = new maki::ButtonWidget("...", pathRow);
   mGenerationBrowseBtn->setToolTip(tr("Choose folder"));
+
+  auto* rowLayout = new QHBoxLayout(pathRow);
+  rowLayout->setContentsMargins(0, 0, 0, 0);
 
   rowLayout->addWidget(mGenerationDirEdit, /*stretch=*/1);
   rowLayout->addWidget(mGenerationBrowseBtn);
 
-  colLayout->addWidget(label);
-  colLayout->addLayout(rowLayout);
-  colLayout->addWidget(hint);
-
   // hook up buttons
-  connect(mGenerationBrowseBtn, &QToolButton::clicked, this, [this] {
+  connect(mGenerationBrowseBtn, &maki::ButtonWidget::valueChanged, this, [this] {
     const QString dir = QFileDialog::getExistingDirectory(this, tr("Select default generation folder"));
     if (!dir.isEmpty())
-      mGenerationDirEdit->setText(dir);
+      mGenerationDirEdit->setValue(dir);
   });
 
   QVBoxLayout* layout = page->findChild<QVBoxLayout*>("ContentArea");
@@ -312,7 +289,6 @@ VoidResult SettingsDialog::createPluginPages()
   // Add top level plugin page
   auto [topSelector, topPage] = addPage(tr("Plugins"), ":/icons/plugin.svg", [this] {
     // mSettingsManager->setGeneration(GenerationSettings());
-    // loadFromSettings();
   });
 
   // -------------------------------------------------------------------------
@@ -341,11 +317,11 @@ VoidResult SettingsDialog::createPluginPages()
   // Add new plugin
   auto* buttonRow = new QHBoxLayout();
 
-  auto* addBtn = new QPushButton("Add", topPage);
+  auto* addBtn = new maki::ButtonWidget("Add", topPage);
   addBtn->setFixedWidth(200);
   addIcon(addBtn, ":/icons/plus.svg");
 
-  auto* removeBtn = new QPushButton("Remove", topPage);
+  auto* removeBtn = new maki::ButtonWidget("Remove", topPage);
   addIcon(removeBtn, ":/icons/clear.svg");
   removeBtn->setFixedWidth(200);
   removeBtn->setEnabled(false);
@@ -383,9 +359,8 @@ VoidResult SettingsDialog::createPluginPages()
     item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled | Qt::ItemIsUserCheckable);
     model->setItem(newRow, 2, item);
 
-    auto [selector, page] = addPage(pluginId, ":/icons/plugin.svg", [this] {
+    auto [selector, page] = addPage(pluginId, ":/icons/plugin.svg", [] {
       // mSettingsManager->setGeneration(GenerationSettings());
-      // loadFromSettings();
     },
                                     topSelector);
 
@@ -433,63 +408,25 @@ VoidResult SettingsDialog::createPluginPages()
   return VoidResult();
 }
 
-void SettingsDialog::loadFromSettings()
-{
-  if (!mSettingsManager)
-  {
-    LOG_ERROR("Something went wrong with the setting manager");
-    return;
-  }
-
-  const auto general = mSettingsManager->general();
-  const auto appearance = mSettingsManager->appearance();
-  const auto generation = mSettingsManager->generation();
-
-  // -----------------------------------------------------------------
-  // Load General settings
-  mRestoreLastSession->setChecked(general.restoreLastSession);
-  mAutosaveEnabled->setChecked(general.autosaveEnabled);
-  mAutosaveMinutes->setValue(general.autosaveIntervalMinutes);
-  mConfirmOnClose->setChecked(general.confirmOnCloseWithExecution);
-  mEnableDebugLogs->setChecked(general.enableDebugLogs);
-
-  // -----------------------------------------------------------------
-  // Load Appearance settings
-  int themeIndex = mThemeCombo->findData(appearance.theme);
-  if (themeIndex < 0)
-    themeIndex = 0;  // fallback to "system"
-
-  mThemeCombo->setCurrentIndex(themeIndex);
-
-  mUiScale->setValue(appearance.uiScalePercent);
-  mShowGrid->setChecked(appearance.showCanvasGrid);
-  mNodeCornerRadius->setValue(appearance.nodeCornerRadius);
-  mNativeMenuBar->setChecked(appearance.nativeMenuBar);
-
-  // -----------------------------------------------------------------
-  // Load Generation settings
-  mGenerationDirEdit->setText(generation.generationDir);
-}
-
 void SettingsDialog::saveToSettings()
 {
   GeneralSettings general;
-  general.restoreLastSession = mRestoreLastSession->isChecked();
-  general.autosaveEnabled = mAutosaveEnabled->isChecked();
-  general.autosaveIntervalMinutes = mAutosaveMinutes->value();
-  general.confirmOnCloseWithExecution = mConfirmOnClose->isChecked();
-  general.enableDebugLogs = mEnableDebugLogs->isChecked();
+  general.autosaveEnabled = mAutosaveEnabled->getValue();
+  general.enableDebugLogs = mEnableDebugLogs->getValue();
   general.recentHistorySize = mRecentHistorySize->getValue();
+  general.restoreLastSession = mRestoreLastSession->getValue();
+  general.autosaveIntervalMinutes = mAutosaveMinutes->getValue();
+  general.confirmOnCloseWithExecution = mConfirmOnClose->getValue();
 
   AppearanceSettings appearance;
-  appearance.uiScalePercent = mUiScale->value();
-  appearance.showCanvasGrid = mShowGrid->isChecked();
-  appearance.nodeCornerRadius = mNodeCornerRadius->value();
-  appearance.theme = mThemeCombo->currentData().toString();
-  appearance.nativeMenuBar = mNativeMenuBar->isChecked();
+  appearance.theme = mThemeCombo->getValue();
+  appearance.uiScalePercent = mUiScale->getValue();
+  appearance.showCanvasGrid = mShowGrid->getValue();
+  appearance.nativeMenuBar = mNativeMenuBar->getValue();
+  appearance.nodeCornerRadius = mNodeCornerRadius->getValue();
 
   GenerationSettings generation;
-  generation.generationDir = mGenerationDirEdit->text();
+  generation.generationDir = mGenerationDirEdit->getValue();
 
   mSettingsManager->setGeneral(general);
   mSettingsManager->setAppearance(appearance);
@@ -500,6 +437,7 @@ void SettingsDialog::saveToSettings()
 void SettingsDialog::apply()
 {
   saveToSettings();
+  updateIconTheme(mIcons);
 }
 
 void SettingsDialog::updatePluginSetting(const QString& pluginId, const QString& key, QVariant value)

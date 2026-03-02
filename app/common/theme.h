@@ -70,14 +70,15 @@ const QHash<QString, QString maki::ThemeVars::*> THEME_KEY_MAP = {
 
     // Combo box
     DECLARE_KEY(combobox_hover_border),
+
+    // Icons
     DECLARE_KEY(arrow_icon_up),
     DECLARE_KEY(arrow_icon_down),
     DECLARE_KEY(arrow_icon_right),
-
-    // Checkbox
     DECLARE_KEY(uncheck_icon),
     DECLARE_KEY(check_icon),
     DECLARE_KEY(limit_icon),
+    DECLARE_KEY(eyedropper_icon),
 
     // Tabs
     DECLARE_KEY(tab_bg),
