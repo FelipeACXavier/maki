@@ -785,26 +785,18 @@ void Canvas::removeNode(const NodeSaveInfo info)
   if (!node)
     return;
 
-  auto toRemove = removeNode(node);
-  QMetaObject::invokeMethod(this, [toRemove = std::move(toRemove)]() mutable {
+  QTimer::singleShot(0, this, [this, node]() {
+    auto toRemove = removeNode(node);
+
+    // Delete children before parents (important if parent owns child QGraphicsItems)
     for (int i = toRemove.size() - 1; i >= 0; --i)
     {
       if (auto node = static_cast<NodeItem*>(toRemove[i]))
         LOG_INFO("Deleting: %s, has parent: %d", qPrintable(node->id()), node->parentNode() != nullptr);
 
       delete toRemove[i];
-    } }, Qt::QueuedConnection);
-
-  // QTimer::singleShot(0, this, [toRemove]() {
-  //   // Delete children before parents (important if parent owns child QGraphicsItems)
-  //   for (int i = toRemove.size() - 1; i >= 0; --i)
-  //   {
-  //     if (auto node = static_cast<NodeItem*>(toRemove[i]))
-  //       LOG_INFO("Deleting: %s, has parent: %d", qPrintable(node->id()), node->parentNode() != nullptr);
-
-  //     delete toRemove[i];
-  //   }
-  // });
+    }
+  });
 }
 
 QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
@@ -812,8 +804,11 @@ QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
   if (!node)
     return {};
 
-  // Remove the item from the scene before anything
   removeItem(node);
+
+  // Clear any potential callback
+  node->nodeModified = nullptr;
+  node->flowAdded = nullptr;
 
   LOG_TRACE("Removing node: %s", qPrintable(node->id()));
 

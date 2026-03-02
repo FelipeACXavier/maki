@@ -3,7 +3,6 @@
 #include <QGraphicsSceneMouseEvent>
 
 #include "elements/draggable.h"
-#include "logging.h"
 
 static const int MIN_DRAG_DISTANCE = 200;
 
@@ -52,7 +51,6 @@ void LibraryScene::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 
   // Use screenPos so it feels right across view transforms/zoom; scenePos is also ok.
   const int dist = (event->scenePos() - event->buttonDownScreenPos(Qt::LeftButton)).manhattanLength();
-  LOG_INFO("Dragged distance: %d", dist);
   if (mClickedItem && !mDragging && dist >= MIN_DRAG_DISTANCE)
   {
     mDragging = true;
@@ -94,7 +92,6 @@ void LibraryScene::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 
 void LibraryScene::clearSelectedNodes()
 {
-  LOG_INFO("Clearing all nodes");
   for (QGraphicsItem* item : selectedItems())
   {
     if (item->type() == DraggableItem::Type)
