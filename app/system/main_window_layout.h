@@ -1,5 +1,7 @@
 #pragma once
 
+#include <qlineedit.h>
+
 #include <QMainWindow>
 
 #include "style_helpers.h"
@@ -11,8 +13,6 @@ class QTabWidget;
 
 class SystemMenu;
 class FlowMenu;
-// class FieldsMenu;
-// class BehaviourMenu;
 class QTextBrowser;
 class QToolBox;
 class QComboBox;
@@ -21,6 +21,11 @@ class PropertiesMenu;
 class ProcessTab;
 class QUndoGroup;
 class GeneratedFilesPanel;
+
+namespace maki
+{
+class SearchWidget;
+}
 
 class MainWindowLayout : public QMainWindow
 {
@@ -35,12 +40,14 @@ protected:
   QSplitter* mMainSplitter;
 
   // === Left Panel ===
-  QTabWidget* mLeftPanel;
+  QTabWidget* mPalette;
   QWidget* mStructureTab;
   QToolBox* mStructureToolBox;
 
   QWidget* mBehaviourTab;
   QToolBox* mBehaviourToolBox;
+  maki::SearchWidget* mPaletteSearch;
+  QSplitter* mLeftPanel;
 
   // === Central Panel ===
   QPushButton* mGenerationButton;

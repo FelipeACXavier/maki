@@ -9,7 +9,6 @@
 #include <QStringLiteral>
 
 #include "common/theme.h"
-#include "compiler/generator.h"
 #include "config_table.h"
 #include "json.h"
 #include "logging.h"
@@ -17,8 +16,12 @@
 #include "result.h"
 #include "widgets/notification_manager.h"
 
+class Flow;
+class Canvas;
 class NodeItem;
 class Pipeline;
+class Generator;
+class SaveInfo;
 class SaveHandler;
 class HostServices;
 class PluginManager;

@@ -30,6 +30,7 @@
 #include "widgets/properties/properties_menu.h"
 #include "widgets/structure/file_menu.h"
 #include "widgets/structure/system_menu.h"
+#include "widgets/widget_factory.h"
 
 static constexpr int MINIMUM_MENU_WIDTH = 250;
 static constexpr int MAXIMUM_MENU_WIDTH = 400;
@@ -67,29 +68,45 @@ void MainWindowLayout::buildMainWindow()
 
 void MainWindowLayout::buildLeftPanel()
 {
-  mLeftPanel = new QTabWidget();
+  mLeftPanel = new QSplitter(Qt::Vertical, mMainSplitter);
+  mPalette = new QTabWidget(mLeftPanel);
 
   mStructureTab = new QWidget();
   QVBoxLayout* structureLayout = new QVBoxLayout(mStructureTab);
   mStructureToolBox = new QToolBox(mStructureTab);
   structureLayout->addWidget(mStructureToolBox);
   mStructureTab->setLayout(structureLayout);
-  mLeftPanel->addTab(mStructureTab, tr("Structure"));
+  mPalette->addTab(mStructureTab, tr("Structure"));
 
   mBehaviourTab = new QWidget();
   QVBoxLayout* behaviourLayout = new QVBoxLayout(mBehaviourTab);
   mBehaviourToolBox = new QToolBox(mBehaviourTab);
   behaviourLayout->addWidget(mBehaviourToolBox);
   mBehaviourTab->setLayout(behaviourLayout);
-  mLeftPanel->addTab(mBehaviourTab, tr("Behaviour"));
+  mPalette->addTab(mBehaviourTab, tr("Behaviour"));
 
-  mLeftPanel->setTabToolTip(0, tr("Structure"));
-  mLeftPanel->setTabToolTip(1, tr("Component behaviour"));
+  mPalette->setTabToolTip(0, tr("Structure"));
+  mPalette->setTabToolTip(1, tr("Component behaviour"));
 
-  mIcons.append({mLeftPanel->tabBar(), ":/icons/structure.svg", 0});
-  mIcons.append({mLeftPanel->tabBar(), ":/icons/behaviour.svg", 1});
+  mIcons.append({mPalette->tabBar(), ":/icons/structure.svg", 0});
+  mIcons.append({mPalette->tabBar(), ":/icons/behaviour.svg", 1});
 
-  mLeftPanel->tabBar()->setIconSize(QSize(18, 18));
+  mPalette->tabBar()->setIconSize(QSize(18, 18));
+
+  mPaletteSearch = new maki::SearchWidget(tr("Filter nodes"), mLeftPanel);
+  mPaletteSearch->hide();
+  mIcons.append(mPaletteSearch->icon());
+
+  connect(mPaletteSearch, &maki::SearchWidget::dismissed, this, [this] {
+    mPaletteSearch->hide();
+    if (mPalette->currentIndex() == 0)
+      mStructureToolBox->setFocus();
+    else
+      mBehaviourToolBox->setFocus();
+  });
+
+  mLeftPanel->addWidget(mPalette);
+  mLeftPanel->addWidget(mPaletteSearch);
 
   mMainSplitter->addWidget(mLeftPanel);
 }
@@ -319,6 +336,8 @@ void MainWindowLayout::buildMenuBar()
 
   mActionRedo = mUndoGroup->createRedoAction(this, tr("Redo"));
   edit->addAction(mActionRedo);
+
+  edit->addSeparator();
 
   mActionCopy = new QAction(tr("Copy"), this);
   mActionCopy->setEnabled(false);
@@ -560,22 +579,22 @@ void MainWindowLayout::buildLogTab()
 
 void MainWindowLayout::applyTheme()
 {
-  if (mLeftPanel)
+  if (mLeftPanel && mPalette)
   {
-    mLeftPanel->setObjectName("LeftPanel");
     mLeftPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    mLeftPanel->tabBar()->setExpanding(true);
+    mPalette->setObjectName("LeftPanel");
+    mPalette->tabBar()->setExpanding(true);
 
     auto tabWidth = Config::getValueFromTheme("@left_tab_width");
     auto tabPadding = Config::getValueFromTheme("@tab_w_padding");
     auto tabBorderSize = Config::getValueFromTheme("@tab_border_size");
 
-    int count = mLeftPanel->tabBar()->count();
+    int count = mPalette->tabBar()->count();
     if (tabWidth.isValid() && tabPadding.isValid() && tabBorderSize.isValid())
     {
       int width = (count * tabWidth.toInt()) + (2 * count * tabPadding.toInt()) + (2 * count * tabBorderSize.toInt());
-      mLeftPanel->setMaximumWidth(width);
-      mLeftPanel->setFixedWidth(width);
+      mPalette->setMaximumWidth(width);
+      mPalette->setFixedWidth(width);
     }
     else
     {
@@ -602,20 +621,20 @@ void MainWindowLayout::applyTheme()
     int navigationTabWidth = 0;
     int propertiesTabWidth = 0;
 
+    auto tabWidth = Config::getValueFromTheme("@right_tab_width");
+    auto tabPadding = Config::getValueFromTheme("@tab_w_padding");
+    auto tabBorderSize = Config::getValueFromTheme("@tab_border_size");
+
     if (mNavigationTab)
     {
       mNavigationTab->setObjectName("RightPanel");
       mNavigationTab->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
       mNavigationTab->tabBar()->setExpanding(true);
 
-      auto tabWidth = Config::getValueFromTheme("@right_tab_width");
-      auto tabPadding = Config::getValueFromTheme("@tab_w_padding");
-      auto tabBorderSize = Config::getValueFromTheme("@tab_border_size");
-
       int count = mNavigationTab->tabBar()->count();
       if (tabWidth.isValid() && tabPadding.isValid() && tabBorderSize.isValid())
       {
-        navigationTabWidth = (count * 50) + (2 * count * tabPadding.toInt()) + (2 * count * tabBorderSize.toInt());
+        navigationTabWidth = (count * tabWidth.toInt()) + (2 * count * tabPadding.toInt()) + (2 * count * tabBorderSize.toInt());
         mNavigationTab->setMinimumWidth(navigationTabWidth);
       }
       else
@@ -630,10 +649,6 @@ void MainWindowLayout::applyTheme()
       mPropertiesTab->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
       mPropertiesTab->tabBar()->setExpanding(true);
 
-      auto tabWidth = Config::getValueFromTheme("@right_tab_width");
-      auto tabPadding = Config::getValueFromTheme("@tab_w_padding");
-      auto tabBorderSize = Config::getValueFromTheme("@tab_border_size");
-
       int count = mPropertiesTab->tabBar()->count();
       if (tabWidth.isValid() && tabPadding.isValid() && tabBorderSize.isValid())
       {
@@ -646,7 +661,7 @@ void MainWindowLayout::applyTheme()
       }
     }
 
-    mRightPanel->setMinimumWidth(2 * std::max(navigationTabWidth, propertiesTabWidth));
+    mRightPanel->setMinimumWidth(std::max(navigationTabWidth, propertiesTabWidth));
 
     // Set initial height ratio
     mRightPanel->setSizes({MAXIMUM_MENU_WIDTH, 600});

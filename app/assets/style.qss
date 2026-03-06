@@ -13,6 +13,15 @@ QWidget#SettingsPage {
   border-left: 1px solid @selection_bg;
 }
 
+QGraphicsView {
+  border: none;
+  border-radius: @border_radius;
+}
+
+QGraphicsView:focus {
+  border-bottom: 2px solid @selection_bg;
+}
+
 /* ===============================
    SCROLLBARS
    =============================== */

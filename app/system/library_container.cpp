@@ -14,7 +14,7 @@ LibraryContainer::LibraryContainer(QWidget* parent)
     , mLastItemY(0)
 {
   setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-  setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+  setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 }
 
 LibraryContainer* LibraryContainer::create(const QString& name, QToolBox* parent)

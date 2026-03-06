@@ -12,6 +12,7 @@
 #include <QIntValidator>
 #include <QLabel>
 #include <QLineEdit>
+#include <QShortcut>
 #include <QSpinBox>
 
 #include "app_configs.h"
@@ -499,6 +500,65 @@ TypeSelectionWidget::TypeSelectionWidget(const QString& initial, QWidget* parent
   int index = findData(initial);
   if (index >= 0)
     setCurrentIndex(index);
+}
+
+// =========================================================================================================
+SearchWidget::SearchWidget(const QString& placeholder, QWidget* parent)
+{
+  setMaximumHeight(40);
+
+  auto* searchLayout = new QHBoxLayout(this);
+  searchLayout->setContentsMargins(0, 0, 0, 0);
+  searchLayout->setSpacing(0);
+
+  mIcon = new QLabel(this);
+  mIcon->setAlignment(Qt::AlignCenter);
+  mIcon->setFixedSize(16, 16);
+
+  mInputField = new QLineEdit(this);
+  mInputField->setPlaceholderText(placeholder);
+  mInputField->setFocusPolicy(Qt::FocusPolicy::ClickFocus);
+  mInputField->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+  mValue = placeholder;
+
+  connect(mInputField, &QLineEdit::editingFinished, this, [this]() {
+    mValue = mInputField->text();
+    emit valueChanged(mValue);
+  });
+
+  auto* esc = new QShortcut(QKeySequence(Qt::Key_Escape), this);
+  connect(esc, &QShortcut::activated, this, [this]() { emit dismissed(); });
+
+  layout()->addWidget(mIcon);
+  layout()->addWidget(mInputField);
+}
+
+WidgetWithIcon SearchWidget::icon() const
+{
+  return {mIcon, ":/icons/magnifying-glass.svg"};
+}
+
+QLineEdit* SearchWidget::widget() const
+{
+  return mInputField;
+}
+
+void SearchWidget::addDescription(const QString& label)
+{
+  auto* hint = new QLabel(label, this);
+  hint->setFont(Fonts::Hint);
+  layout()->addWidget(hint);
+}
+
+QString SearchWidget::getValue() const
+{
+  return mValue;
+}
+
+void SearchWidget::setValue(const QString& value)
+{
+  mValue = value;
+  mInputField->setText(value);
 }
 
 }  // namespace maki

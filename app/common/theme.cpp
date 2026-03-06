@@ -46,7 +46,7 @@ void applyThemeToApp(QApplication* app, const QString& theme, const QList<Config
   if (!app)
     return;
 
-  if (theme == "system")
+  if (theme == "System theme")
   {
     app->setStyleSheet({});
     app->setPalette(app->style()->standardPalette());

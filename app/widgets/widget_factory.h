@@ -1,14 +1,12 @@
 #pragma once
 
-#include <qcombobox.h>
-#include <qpagesize.h>
-#include <qpushbutton.h>
-
+#include <QComboBox>
 #include <QWidget>
+
+#include "style_helpers.h"
 
 class QLineEdit;
 class QSpinBox;
-class QComboBox;
 class QPushButton;
 class QLabel;
 class QCheckBox;
@@ -184,6 +182,29 @@ class TypeSelectionWidget : public QComboBox
 public:
   TypeSelectionWidget(QWidget* parent);
   TypeSelectionWidget(const QString& initial, QWidget* parent);
+};
+
+class SearchWidget : public QWidget
+{
+  Q_OBJECT
+public:
+  SearchWidget(const QString& placeholder, QWidget* parent);
+
+  void addDescription(const QString& label);
+  void setValue(const QString& value);
+  QString getValue() const;
+
+  QLineEdit* widget() const;
+  WidgetWithIcon icon() const;
+
+signals:
+  void valueChanged(const QString& value);
+  void dismissed();
+
+private:
+  QLineEdit* mInputField;
+  QLabel* mIcon;
+  QString mValue;
 };
 
 // TODO

@@ -22,6 +22,7 @@
 #include "behaviour_canvas.h"
 #include "canvas.h"
 #include "canvas_view.h"
+#include "compiler/generator.h"
 #include "compiler/pipeline.h"
 #include "elements/flow.h"
 #include "elements/node.h"
@@ -97,6 +98,7 @@ VoidResult MainWindow::start()
   mSaveHandler = std::make_unique<SaveHandler>(this);
   mPluginManager = std::make_unique<PluginManager>(this);
   mSettingsManager = std::make_shared<SettingsManager>(mActionOpenRecent);
+  // TODO(felaze): Check leaks here
   mNotificationManager = new NotificationManager(mCanvasPanel);
 
   mPipeline = new Pipeline(this);
@@ -122,7 +124,7 @@ VoidResult MainWindow::start()
   RETURN_ON_FAILURE(loadElements());
 
   // Set initial tabs
-  mLeftPanel->setCurrentIndex(0);
+  mPalette->setCurrentIndex(0);
   mNavigationTab->setCurrentIndex(0);
   mPropertiesTab->setCurrentIndex(0);
 
@@ -183,9 +185,63 @@ void MainWindow::startUI()
     mPluginManager->start(mGeneratorMenu, mGeneratorOption, mHostServices);
 }
 
+static QWidget* findAncestor(QWidget* w, const QMetaObject* type)
+{
+  while (w)
+  {
+    if (w->metaObject()->inherits(type))
+      return w;
+    w = w->parentWidget();
+  }
+  return nullptr;
+}
+
 void MainWindow::bind()
 {
   LOG_DEBUG("Binding UI callbacks");
+
+  // General actions =============================================================
+  auto* findAction = new QAction(tr("Find"), this);
+  findAction->setShortcut(QKeySequence::Find);
+  findAction->setShortcutContext(Qt::ApplicationShortcut);
+  addAction(findAction);
+
+  connect(findAction, &QAction::triggered, this, [this] {
+    QWidget* fw = QApplication::focusWidget();
+    if (!fw)
+      return;
+
+    LOG_INFO("Focused on: %s", qPrintable(fw->metaObject()->className()));
+
+    // 1) If focus is in the node library panel -> search there
+    if (QToolBox* lib = qobject_cast<QToolBox*>(findAncestor(fw, &QToolBox::staticMetaObject)))
+    {
+      if (lib == mStructureToolBox || lib == mBehaviourToolBox)
+      {
+        LOG_DEBUG("Finding in palette");
+        mPaletteSearch->show();
+        mPaletteSearch->widget()->setFocus(Qt::ShortcutFocusReason);
+        return;
+      }
+    }
+
+    if (auto* search = qobject_cast<maki::SearchWidget*>(findAncestor(fw, &maki::SearchWidget::staticMetaObject)))
+    {
+      Q_UNUSED(search);
+      LOG_DEBUG("Finding in palette");
+      mPaletteSearch->show();
+      mPaletteSearch->widget()->setFocus(Qt::ShortcutFocusReason);
+      return;
+    }
+
+    // 2) If focus is in the canvas -> search there
+    if (auto* canvas = qobject_cast<CanvasView*>(findAncestor(fw, &CanvasView::staticMetaObject)))
+    {
+      Q_UNUSED(canvas);
+      LOG_DEBUG("Finding in canvas");
+      return;
+    }
+  });
 
   // File actions =============================================================
   connect(mActionNew, &QAction::triggered, this, &MainWindow::onActionNew);
@@ -391,8 +447,7 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
 
   auto nodes = config["nodes"];
   if (!nodes.isArray())
-    return VoidResult::Failed(
-        "nodes must be in a list in the format \"nodes\": []");
+    return VoidResult::Failed("nodes must be in a list in the format \"nodes\": []");
 
   // Every library has a bunch of elements, here we add them.
   for (const auto& value : nodes.toArray())
@@ -572,7 +627,7 @@ void MainWindow::onCanvasTabChanged(int index)
 
   auto libIndex = libraryTypeToIndex(mActiveCanvas->type());
   mNavigationTab->setCurrentIndex(libIndex);
-  mLeftPanel->setCurrentIndex(libIndex);
+  mPalette->setCurrentIndex(libIndex);
 
   auto activeStack = mActiveCanvas->undoStack();
   if (!mUndoGroup->stacks().contains(activeStack))
@@ -601,7 +656,7 @@ void MainWindow::closeCanvasTab(int index)
 
         auto libIndex = libraryTypeToIndex(mActiveCanvas->type());
         mNavigationTab->setCurrentIndex(libIndex);
-        mLeftPanel->setCurrentIndex(libIndex);
+        mPalette->setCurrentIndex(libIndex);
       }
     }
   }
@@ -686,7 +741,7 @@ void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
   // Change to respective tabs
   auto index = libraryTypeToIndex(canvas->type());
   mNavigationTab->setCurrentIndex(index);
-  mLeftPanel->setCurrentIndex(index);
+  mPalette->setCurrentIndex(index);
 
   // Add default start and end nodes to flow
   canvas->populate(flow);

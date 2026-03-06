@@ -72,6 +72,7 @@
     <file alias="rectangle-list.svg">assets/icons/fontawesome/svgs/solid/rectangle-list.svg</file>
     <file alias="eye-dropper.svg">assets/icons/fontawesome/svgs/solid/eye-dropper.svg</file>
     <file alias="eye-dropper-dark.svg">assets/icons/fontawesome/svgs/solid/eye-dropper-dark.svg</file>
+    <file alias="magnifying-glass.svg">assets/icons/fontawesome/svgs/solid/magnifying-glass.svg</file>
     <!-- Tree tcons -->
     <file alias="capability.svg">assets/icons/fontawesome/svgs/solid/puzzle-piece.svg</file>
     <file alias="flow_block.svg">assets/icons/fontawesome/svgs/solid/scroll.svg</file>
