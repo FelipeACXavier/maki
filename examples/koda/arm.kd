@@ -1,0 +1,69 @@
+capability Conveyor() {
+  action "conveyor" ""{
+    trigger:  void move();
+    abort:    void stop();
+    return:   void done();
+    error:    void failed();
+  }
+}
+
+capability RobotArm(string pick) {
+  action "arm" "" {
+    trigger:  void act(string pick);
+    abort:    void stop();
+    return:   void done();
+    error:    void failed();
+  }
+}
+
+capability ImageInspector() {
+  service "image/start" ""{
+    in: void start();
+  }
+  service "image/stop" ""{
+    in: void stop();
+  }
+  service "image/invalid" ""{
+    out: void invalid();
+  }
+}
+
+capability SensorModule() {
+  service "poll" ""{
+    in: void poll();
+  }
+}
+
+capability Ticket() {
+  service "ticket/create" ""{
+    in: void create();
+  }
+}
+
+task QualityCheckCell(arm req RobotArm, conveyor req Conveyor, 
+                      image req ImageInspector, ticket req Ticket) {
+  trigger: void start();
+  return:  void done();
+  abort:   void abort();
+  error:   void failed();
+
+  strategy {
+    abrt: conveyor.stop() --> image.stop() --> arm.stop() --> end;
+
+    reject: ( arm("reject_location")
+              on error abrt
+              on abort abrt ) --> ticket.create();
+
+    detected: conveyor.stop() -->
+        ( arm("pick_location")
+          on error abrt
+          on abort abrt ) --> reject;
+
+    main: repeat( image.start() -->
+      ( conveyor()
+        on error abrt
+        on abort abrt
+        on image.invalid() detected )
+    );
+  }
+}

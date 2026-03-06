@@ -1,0 +1,81 @@
+capability Drive(float x, float y, float yaw) {
+  action "/navigate_to_pose" "nav2_msgs::action::NavigateToPose::Goal" {
+    trigger: void to_position(float x, float y, float yaw);
+    abort: void cancel();
+    return: void in_position(float x, float y, float yaw);
+    error: void path_blocked();
+  }
+}
+
+capability Vision() {
+  action "/recognize" "std_msgs::String" {
+    trigger: void recognize();
+    return: void found();
+    abort: void cancel();
+  }
+}
+
+capability Grip(int grip) {
+  action "/handler/action" "std_msgs::String" {
+    trigger: void handle(int grip);
+    return: void handled();
+    error: void failed();
+    abort: void cancel();
+  }
+}
+
+capability Initialpose() {
+  action "/initialpose" "std_msgs::String" {
+    trigger: void set_position();
+    abort: void cancel();
+    return: void position_set();
+    error: void failed();
+  }
+}
+
+capability ApproachDepart(boolean approach) {
+  action "/initialpose" "std_msgs::String" {
+    trigger: void start(boolean approach);
+    abort: void cancel();
+    return: void finished();
+    error: void failed();
+  }
+}
+
+task PickAndDropWithApproach (drive req Drive, vision req Vision,
+                  grip req Grip, initialpose req Initialpose, approach req ApproachDepart,
+                  float x1, float y1, float x2, float y2, float yaw1, float yaw2)
+{
+  trigger: void start(float x1, float y1, float yaw1, float x2, float y2, float yaw2);
+  return: void done();
+  abort: void abort();
+  error: void failed();
+
+  vars {
+    float x1_ = x1 : 0.0
+    float y1_ = y1 : 0.0
+    float yaw1_ = yaw1 : 0.0
+    float x2_ = x2 : 0.0
+    float y2_ = y2 : 0.0
+    float yaw2_ = yaw2 : 0.0
+  }
+
+  strategy {
+    err: drive.abort() --> vision.abort() --> grip.abort() --> initialpose.abort() --> end;
+
+    pick: (within 30 do (vision() on abort err) else (err)) -->
+          (grip(true) on error err on abort err) -->
+          (approach(false) on error err on abort err);
+
+    drop: (within 30 do (vision() on abort err) else (err)) -->
+          (grip(false) on error err on abort err) -->
+          (approach(false) on error err on abort err);
+
+    go [x, y, yaw]: (drive(x, y, yaw) on error err on abort err) -->
+                    (approach(true) on error err on abort err);
+
+    loop: go(x1_, y1_, yaw1_) --> pick --> go(x2_, y2_, yaw2_) --> drop;
+
+    main: (within 10 do (initialpose() on abort err on error err) else (err)) --> repeat(loop);
+  }
+}
