@@ -42,14 +42,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
 
 # -----------------------------------------------------------------------------------------------------------
-# Niceties
-ARG UID=1000
-ARG GID=1000
-RUN groupadd -g ${GID} ${USERNAME} \
- && useradd -m -u ${UID} -g ${GID} -s /bin/bash ${USERNAME} \
- && mkdir -p /home/${USERNAME}/.ros \
- && chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}
-
 # Make sure the fonts are loaded
 RUN fc-cache -f
 
