@@ -32,7 +32,7 @@ jobs:
           # Repo root as context
           context: .
           # Dockerfile outside root (adjust path if needed)
-          file: ./docker/Dockerfile
+          file: ./docker/maki
           push: true
           # Centralised image tag (e.g. dev:qt6.5)
           tags: ghcr.io/felipeacxavier/maki/dev:${{ vars.QT_DEV_TAG }}
