@@ -59,6 +59,110 @@ jobs:
           path: build/linux/debug
 
   # ====================================================================================
+  # 3) Build the Windows version
+  # build-windows:
+  #   name: Build Windows
+  #   runs-on: windows-latest
+  #   defaults:
+  #     run:
+  #       shell: pwsh
+  #       working-directory: ${{ github.workspace }}
+
+  #   steps:
+  #     # 1) Checkout code
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #       with:
+  #         submodules: recursive
+  #         fetch-depth: 1
+
+  #     - name: Set up Python
+  #       uses: actions/setup-python@v4
+  #       with:
+  #         python-version: "3.12"
+
+  #     # 2) Setup tools in windows machine
+  #     - name: Setup tools script Windows
+  #       run: |
+  #         ./scripts/windows/setup_tools.ps1
+
+  #     # 3) Setup windows machine
+  #     - name: Setup script Windows
+  #       run: |
+  #         ./scripts/windows/setup.ps1
+
+  #     # 4) Build for given target
+  #     - name: Build script Windows
+  #       run: |
+  #         ./scripts/windows/build.ps1
+
+  #     # 5) Build for given target
+  #     - name: Upload build artefacts
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: windows-build
+  #         path: build/windows/
+
+  # ====================================================================================
+  # 4) Build documentation for Pages
+  build-docs:
+    name: Build Docs
+    runs-on: self-hosted
+
+    container:
+      image: ghcr.io/felipeacxavier/maki/dev:${{ vars.QT_DEV_TAG }}
+
+    env:
+      HOME: /home/ubuntu
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ github.workspace }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Symlink repo to $HOME/maki for scripts
+        run: |
+          mkdir -p "$HOME"
+          ln -s "$GITHUB_WORKSPACE" "$HOME/maki" || true
+
+      - name: Build docs
+        run: |
+          chmod +x ./scripts/linux/build.sh
+          ./scripts/linux/build.sh --docs
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./build/linux/debug/docs/html
+
+  # ====================================================================================
+  # 4) Deploy documentation to GitHub Pages
+  deploy-docs:
+    name: Deploy Docs
+    needs: build-docs
+    runs-on: self-hosted
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  # ====================================================================================
   # 2) Test the linux version
   # test-linux:
   #   runs-on: self-hosted
@@ -100,51 +204,6 @@ jobs:
   #       run: |
   #         chmod +x ./scripts/linux/run-tests.sh
   #         ./scripts/linux/run-tests.sh
-
-  # ====================================================================================
-  # 3) Build the Windows version
-  build-windows:
-    name: Build Windows
-    runs-on: windows-latest
-    defaults:
-      run:
-        shell: pwsh
-        working-directory: ${{ github.workspace }}
-
-    steps:
-      # 1) Checkout code
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 1
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.12"
-
-      # 2) Setup tools in windows machine
-      - name: Setup tools script Windows
-        run: |
-          ./scripts/windows/setup_tools.ps1
-
-      # 3) Setup windows machine
-      - name: Setup script Windows
-        run: |
-          ./scripts/windows/setup.ps1
-
-      # 4) Build for given target
-      - name: Build script Windows
-        run: |
-          ./scripts/windows/build.ps1
-
-      # 5) Build for given target
-      - name: Upload build artefacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-build
-          path: build/windows/
 
   # ====================================================================================
   # 4) Test the Windows version

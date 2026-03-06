@@ -12,6 +12,7 @@ function printHelp()
   echo ""
 }
 
+DOCS=0
 CLEAN=0
 BUILD_TYPE="Debug"
 TARGET="linux"
@@ -39,6 +40,10 @@ while [[ $# -gt 0 ]]; do
       ;;
       --clean)
       CLEAN=1
+      shift
+      ;;
+      --docs)
+      DOCS=1
       shift
       ;;
       --release)
@@ -90,7 +95,9 @@ else
     -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
     $EXTRA_ARGS
 
-  if [ "$BUILD_TYPE" == "Release" ]; then
+  if [ $DOCS -eq 1 ]; then
+    cmake --build "$BUILD_PATH" -j 4 --target docs
+  elif [ "$BUILD_TYPE" == "Release" ]; then
     cmake --build "$BUILD_PATH" -j 4 --target deploy-linux
   else
     cmake --build "$BUILD_PATH" -j 4

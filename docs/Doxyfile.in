@@ -1,4 +1,4 @@
-OUTPUT_DIRECTORY       = @CMAKE_SOURCE_DIR@/docs
+OUTPUT_DIRECTORY       = @CMAKE_CURRENT_BINARY_DIR@/../docs
 INPUT                  = @CMAKE_SOURCE_DIR@/app
 RECURSIVE              = YES
 

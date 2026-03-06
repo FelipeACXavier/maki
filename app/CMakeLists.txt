@@ -11,8 +11,7 @@ qt_standard_project_setup()
 include(${CMAKE_SOURCE_DIR}/cmake/copy_fonts.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/copy_icons.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/copy_themes.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/doxygen.cmake) 
-maki_enable_doxygen_docs()
+include(${CMAKE_SOURCE_DIR}/cmake/doxygen.cmake)
 
 # ------------------------------------------------------------------------------------------------------------
 # Main application
@@ -75,10 +74,6 @@ target_link_libraries(${APPLICATION_NAME} PRIVATE
 )
 
 add_dependencies(${APPLICATION_NAME} copy_fonts copy_themes copy_icons)
-
-if(TARGET doc_doxygen)
-  add_dependencies(${APPLICATION_NAME} doc_doxygen)
-endif()
 
 install(TARGETS ${APPLICATION_NAME}
     BUNDLE  DESTINATION .
