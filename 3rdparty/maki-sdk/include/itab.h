@@ -57,7 +57,7 @@ struct ThemeVars
   QString left_tab_width = "100px";
   QString canvas_tab_width = "200px";
   QString canvas_tab_height = "24px";
-  QString info_tab_width = "50px";
+  QString info_tab_width = "75px";
   QString right_tab_width = "100px";
   QString tab_border_size = "1px";
   QString tab_border_style = "solid";
