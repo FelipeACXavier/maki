@@ -145,6 +145,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libxkbfile-dev \
   # Should be Java 21
   default-jdk \
+  doxygen \
   && rm -rf /var/lib/apt/lists/*
 
 # Install dezyne
