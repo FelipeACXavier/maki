@@ -115,6 +115,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   # Should be Java 21
   default-jdk \
   doxygen \
+  libantlr4-runtime-dev \
   && rm -rf /var/lib/apt/lists/*
 
 # Install dezyne
