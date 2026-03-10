@@ -1,4 +1,4 @@
-# Windows setup
+@page building_windows Building Windows
 
 > [!IMPORTANT]
 > I haven't fully checked the process in Windows. The instructions below indicate how it **should** work, but there are not guarantees.

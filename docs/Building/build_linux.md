@@ -1,4 +1,4 @@
-# Linux setup
+@page building_linux Building Linux
 
 The linux setup has been tests on Ubuntu 24.04, that is also what we use in the docker. When I have time, I will try to make releases for other distros.
 

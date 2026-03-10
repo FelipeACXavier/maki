@@ -92,7 +92,7 @@ private:
    * @param parent The parent widget.
    * @return A struct with pointers to the create page and the respective selector. It can be assigned as auto[page, selector] = addPage(...);
    */
-  SelectorPage addPage(const QString& pageName, const QString& iconNeame, std::function<void()> resetCallback, QTreeWidgetItem* parent = nullptr);
+  SelectorPage addPage(const QString& pageName, const QString& iconName, std::function<void()> resetCallback, QTreeWidgetItem* parent = nullptr);
 
   VoidResult createGeneralPage();
   VoidResult createAppearancePage();

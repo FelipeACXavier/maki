@@ -1,6 +1,12 @@
 OUTPUT_DIRECTORY       = @CMAKE_CURRENT_BINARY_DIR@/../docs
-INPUT                  = @CMAKE_SOURCE_DIR@/app
+INPUT                  = @CMAKE_SOURCE_DIR@/app @CMAKE_SOURCE_DIR@/docs 
+IMAGE_PATH             = @CMAKE_SOURCE_DIR@/docs/Figures
 RECURSIVE              = YES
+
+PROJECT_NAME           = Maki
+PROJECT_LOGO           = @CMAKE_SOURCE_DIR@/app/assets/app_icon/maki_icon_only.png
+PROJECT_ICON           = @CMAKE_SOURCE_DIR@/app/assets/app_icon/maki_icon_only.png
+USE_MDFILE_AS_MAINPAGE = @CMAKE_SOURCE_DIR@/docs/mainpage.md
 
 GENERATE_HTML          = YES
 GENERATE_LATEX         = NO

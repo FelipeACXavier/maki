@@ -25,8 +25,8 @@ git submodule update --init --recursive
 
 3. After this step, we follow OS specific instructions:
 
-  - [Linux](./docs/build_linux.md)
-  - [Windows](./docs/build_windows.md)
+  - [Linux](./docs/Building/build_linux.md)
+  - [Windows](./docs/Building/build_windows.md)
 
 
 ## Examples:
