@@ -13,6 +13,7 @@ GENERATE_LATEX         = NO
 GENERATE_MAN           = NO
 GENERATE_XML           = NO
 GENERATE_RTF           = NO
+DOT_IMAGE_FORMAT       = svg
 
 EXTRACT_PRIVATE        = YES
 HIDE_UNDOC_MEMBERS     = YES
