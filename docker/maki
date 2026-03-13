@@ -116,6 +116,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   default-jdk \
   doxygen \
   libantlr4-runtime-dev \
+  graphviz \
   && rm -rf /var/lib/apt/lists/*
 
 # Install dezyne
