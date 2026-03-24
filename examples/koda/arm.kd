@@ -28,12 +28,6 @@ capability ImageInspector() {
   }
 }
 
-capability SensorModule() {
-  service "poll" ""{
-    in: void poll();
-  }
-}
-
 capability Ticket() {
   service "ticket/create" ""{
     in: void create();

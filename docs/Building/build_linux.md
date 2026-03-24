@@ -6,6 +6,36 @@ The linux setup has been tests on Ubuntu 24.04, that is also what we use in the 
 
 A Dockerfile is provided to ensure everyone has the same build and run environment. Note that there is no specific run image though. To build the application, follow the instructions below:
 
+<ol>
+  <li>
+    Build the docker container, this shouldn't take long (30 minutes or so), since we use precompiled QT libraries. In any case, thi only needs to be done once.
+
+    <pre><code class="language-bash">
+      docker build . \
+      --build-arg USERNAME=$(id -un) \
+      -f docker/maki \
+      -t maki:v1.0.0
+     </code></pre>
+  </li>
+  <li>
+    Run the docker image.
+
+    <pre>
+    <code class="language-bash">
+    docker run -it \
+  --name maki \
+  --user 1000:1000 \
+  --net=host \
+  -e DISPLAY=:0 \
+  -e QT_X11_NO_MITSHM=1 \
+  --device /dev/dri \
+  -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
+  -v .:/home/$(id -un)/maki:rw \
+  -v ~/ros2_ws:/home/$(id -un)/ros2_ws:rw \
+  maki:v1.0.0</code></pre>
+  </li>
+</ol>
+
 1. Build the docker container, this shouldn't take long (30 minutes or so), since we use precompiled QT libraries. In any case, thi only needs to be done once.
 
 ```bash

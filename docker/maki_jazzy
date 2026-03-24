@@ -164,7 +164,6 @@ RUN git clone https://github.com/FelipeACXavier/KODA.git
 # ROS Setup
 # Source ROS in interactive shells for this user
 RUN echo 'source /opt/ros/${ROS_DISTRO}/setup.bash'  >> /home/${USERNAME}/.bashrc \
- && echo 'source /usr/share/gazebo/setup.sh'         >> /home/${USERNAME}/.bashrc \
  && echo 'export XDG_RUNTIME_DIR=/tmp/runtime-$USER' >> /home/${USERNAME}/.bashrc \
  && echo 'mkdir -p "$XDG_RUNTIME_DIR"; chmod 700 "$XDG_RUNTIME_DIR"' >> /home/${USERNAME}/.bashrc
 
@@ -174,7 +173,12 @@ RUN echo "function custom_prompt() {" >> /home/${USERNAME}/.bashrc \
  && echo "PROMPT_DIRTRIM=2" >> /home/${USERNAME}/.bashrc \
  && echo "PROMPT_COMMAND=\"custom_prompt\"" >> /home/${USERNAME}/.bashrc
 
+USER root
+RUN groupadd -g 992 render || true
+RUN usermod -aG 44,992 ubuntu || true
+
 # -----------------------------------------------------------------------------------------------------------
+USER ${USERNAME}
 ENV TURTLEBOT3_MODEL=waffle_pi
 
 # Cd to the maki directory and end

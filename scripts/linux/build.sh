@@ -9,6 +9,8 @@ function printHelp()
   echo "    --local-qt          | Path to the local Qt installation"
   echo "    --local-project     | Path to the local project"
   echo "    --clean             | Clean the build directory"
+  echo "    --prefix            | CMake QT install prefix"
+  echo "    --docs              | Build docs"
   echo ""
 }
 
@@ -56,7 +58,7 @@ while [[ $# -gt 0 ]]; do
       shift
       shift
       ;;
-      --help)
+      --help|-h)
       printHelp $0
       exit 0
       ;;
