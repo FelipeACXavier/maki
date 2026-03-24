@@ -16,6 +16,8 @@ struct Flow;
 struct VarDef;
 struct RosDef;     // trigger/return/abort/error/in/out blocks
 struct ActionDef;  // action/service/topic blocks
+struct VarsBlock;
+struct StrategyBlock;
 
 struct Strategy;   // fwd
 struct Expr;       // fwd
@@ -77,24 +79,8 @@ struct Argument
 };
 
 // ---------- Statements ----------
-struct StrategyBlock
-{
-  std::vector<std::shared_ptr<Flow>> flows;
-  Span span;
-
-  void print(const std::string& prefix, const bool last) const;
-};
-struct VarsBlock
-{
-  std::vector<std::shared_ptr<VarDef>> vars;
-  Span span;
-
-  void print(const std::string& prefix, const bool last) const;
-};
-
 struct Statement
 {
-  // extend as you implement more statement kinds
   std::variant<
       std::shared_ptr<StrategyBlock>,
       std::shared_ptr<VarsBlock>,
@@ -109,7 +95,7 @@ struct Statement
 struct Flow
 {
   std::string name;
-  std::vector<std::string> tags;  // optional [a,b,c]
+  std::vector<std::string> tags;
   std::shared_ptr<Strategy> strategy;
   Span span;
 
@@ -189,6 +175,22 @@ struct ActionDef
   void print(const std::string& prefix, const bool last) const;
 };
 
+struct StrategyBlock
+{
+  std::vector<std::shared_ptr<Flow>> flows;
+  Span span;
+
+  void print(const std::string& prefix, const bool last) const;
+};
+
+struct VarsBlock
+{
+  std::vector<std::shared_ptr<VarDef>> vars;
+  Span span;
+
+  void print(const std::string& prefix, const bool last) const;
+};
+
 // ---------- Strategy ----------
 struct StrategyHandler
 {
@@ -212,8 +214,7 @@ struct Strategy
 {
   struct Seq
   {
-    std::shared_ptr<Strategy> a;
-    std::shared_ptr<Strategy> b;
+    std::vector<std::shared_ptr<Strategy>> alts;
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };

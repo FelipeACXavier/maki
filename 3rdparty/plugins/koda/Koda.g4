@@ -128,7 +128,7 @@ timeUnit
 // =============================================================================
 
 strategy
-  : strategy ARROW strategy                                      # stratSeq
+  : strategy (ARROW strategy)+                                   # stratSeq
   | JOIN   LPAREN strategy (PIPE strategy)+ RPAREN               # stratJoin
   | EITHER LPAREN strategy (PIPE strategy)+ RPAREN               # stratEither
   | LET IDENT ASSIGN eventStatement                              # stratLet

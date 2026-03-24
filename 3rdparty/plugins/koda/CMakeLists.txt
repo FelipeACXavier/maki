@@ -53,6 +53,7 @@ add_executable(${COMPILER_NAME}
   ast/main.cpp
   ast/ast.cpp
   ast/cst2ast.cpp
+  ast/koda_compiler.cpp
   parser/KodaParser.cpp
   parser/KodaLexer.cpp
   parser/KodaVisitor.cpp

@@ -17,12 +17,12 @@
       obj->CALL;                             \
   }
 
-#define LOG_TREE(TITLE)        \
-  LOG_INFO("%s%s %s%s:",       \
-           prefix.c_str(),     \
-           tree::branch(last), \
-           TITLE,              \
-           gPrintSpan ? span.toString().c_str() : "");
+#define LOG_TREE(TITLE)       \
+  LOG_RAW("{}{} {}{}:",       \
+          prefix,             \
+          tree::branch(last), \
+          TITLE,              \
+          gPrintSpan ? span.toString() : "");
 
 namespace tree
 {
@@ -53,7 +53,7 @@ std::string Span::toString() const
 // =============================================================
 void System::print() const
 {
-  LOG_INFO("  System");
+  LOG_RAW("  System");
   for (uint32_t i = 0; i < components.size(); ++i)
     components.at(i)->print(" ", i == components.size() - 1);
 }
@@ -70,7 +70,7 @@ std::string Component::toString() const
 
 void printString(const std::string& prefix, const bool last, const std::string& message)
 {
-  LOG_INFO("%s%s %s", prefix.c_str(), tree::branch(last), message.c_str());
+  LOG_RAW("{}{} {}", prefix.c_str(), tree::branch(last), message.c_str());
 }
 
 void Component::print(const std::string& prefix, const bool last) const
@@ -218,7 +218,7 @@ void EventDef::print(const std::string& prefix, const bool last) const
 
 void EventDefComponent::print(const std::string& prefix, const bool last) const
 {
-  LOG_INFO("%s%s%s %s", prefix.c_str(), tree::branch(last), kind.c_str(), text.c_str());
+  LOG_RAW("{}{}{} {}", prefix.c_str(), tree::branch(last), kind.c_str(), text.c_str());
 }
 
 // -------------------------------------------------------------
@@ -259,10 +259,8 @@ void Strategy::Seq::print(const std::string& prefix, const bool last, const Span
 {
   LOG_TREE("Seq");
   const std::string childPrefix = prefix + tree::carry(last);
-  if (a != nullptr)
-    a->print(childPrefix, false);
-  if (b != nullptr)
-    b->print(childPrefix, true);
+  for (uint32_t i = 0; i < alts.size(); ++i)
+    alts.at(i)->print(childPrefix, i == alts.size() - 1);
 }
 
 void Strategy::Join::print(const std::string& prefix, const bool last, const Span& span) const

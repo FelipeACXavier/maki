@@ -1,0 +1,43 @@
+import iaction.dzn;
+import ialarm.dzn;
+
+import sequence.dzn;
+import parallel.dzn;
+import within.dzn;
+import every.dzn;
+import repeat.dzn;
+
+import action_arbiter_2.dzn;
+import signal_arbitrer.dzn;
+import handler.dzn;
+
+component BehaviourTree {
+  provides iaction api;
+
+  requires iaction action_1;
+  // provides isignal signal_1;
+
+  requires iaction action_2;
+  requires iaction action_3;
+  requires iaction action_4;
+  requires iaction action_5;
+
+  system {
+    sequence s0;
+    parallel p0;
+    sequence s1;
+    sequence s2;
+
+    api <=> s0.api;
+    s0.action1 <=> action_1;
+    s0.action2 <=> p0.api;
+
+    p0.action1 <=> s1.api;
+    p0.action2 <=> s2.api;
+
+    s1.action1 <=> action_2;
+    s1.action2 <=> action_3;
+    s2.action1 <=> action_4;
+    s2.action2 <=> action_5;
+  }
+}

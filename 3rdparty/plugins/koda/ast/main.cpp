@@ -1,26 +1,31 @@
 #include <memory>
 
-#include "KodaLexer.h"
-#include "KodaParser.h"
-#include "antlr4-runtime.h"
-#include "ast.h"
-#include "cst2ast.h"
+#include "koda_compiler.h"
+#include "logging.h"
+#include "result.h"
 
 int main(int argc, const char* argv[])
 {
   koda::gPrintSpan = false;
 
-  std::ifstream stream;
-  stream.open(argv[1]);
-  antlr4::ANTLRInputStream input(stream);
-  KodaLexer lexer(&input);
-  antlr4::CommonTokenStream tokens(&lexer);
-  KodaParser parser(&tokens);
+  if (argc < 2)
+  {
+    LOG_ERROR("No input file provided");
+    return -1;
+  }
 
-  KodaParser::SystemContext* tree = parser.system();
-  KodaCST2AST visitor;
-  auto system = std::any_cast<koda::System>(visitor.visitSystem(tree));
+  koda::Compiler compiler;
+  auto parsed = compiler.parse(argv[1]);
+  LOG_ERROR_ON_FAILURE(parsed);
+  if (!parsed.IsSuccess())
+    return -1;
 
-  system.print();
+  compiler.printAST();
+
+  auto generated = compiler.generate();
+  LOG_ERROR_ON_FAILURE(generated);
+  if (!generated.IsSuccess())
+    return -1;
+
   return 0;
 }

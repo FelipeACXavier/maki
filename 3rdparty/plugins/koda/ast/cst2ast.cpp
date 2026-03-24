@@ -271,8 +271,16 @@ std::any KodaCST2AST::visitStratSeq(KodaParser::StratSeqContext* ctx)
 {
   LOG_DEBUG("Visiting Stategy sequence");
   auto value = std::make_shared<koda::Strategy::Seq>();
-  value->a = std::any_cast<koda::PStrategy>(visit(ctx->strategy(0)));
-  value->b = std::any_cast<koda::PStrategy>(visit(ctx->strategy(1)));
+
+  // We flatten the tree in case of a sequence of strategies
+  for (auto* s : ctx->strategy())
+  {
+    auto child = std::any_cast<koda::PStrategy>(visit(s));
+    if (auto* childSeq = std::get_if<koda::PSeq>(&child->v))
+      value->alts.insert(value->alts.end(), (*childSeq)->alts.begin(), (*childSeq)->alts.end());
+    else
+      value->alts.push_back(child);
+  }
 
   auto node = std::make_shared<koda::Strategy>();
   node->span = spanOf(ctx);
@@ -454,6 +462,7 @@ std::any KodaCST2AST::visitHandlerOnEmitter(KodaParser::HandlerOnEmitterContext*
   LOG_DEBUG("Visiting on signal");
   auto value = std::make_shared<koda::StrategyHandler>();
   value->kind = koda::StrategyHandler::Kind::OnEmitter;
+  value->emitter = std::any_cast<koda::PEventCall>(visit(ctx->eventStatement()));
   value->body = std::any_cast<koda::PStrategy>(visit(ctx->strategy()));
   value->span = spanOf(ctx);
 

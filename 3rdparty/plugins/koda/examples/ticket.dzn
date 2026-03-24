@@ -1,0 +1,7 @@
+import types.dzn;
+
+import iaction.dzn;
+
+component cticket {
+  provides iaction create;
+}

@@ -663,7 +663,8 @@ public:
 
     std::vector<StrategyContext *> strategy();
     StrategyContext* strategy(size_t i);
-    antlr4::tree::TerminalNode *ARROW();
+    std::vector<antlr4::tree::TerminalNode *> ARROW();
+    antlr4::tree::TerminalNode* ARROW(size_t i);
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
