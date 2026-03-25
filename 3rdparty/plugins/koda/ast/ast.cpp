@@ -250,6 +250,7 @@ void Strategy::print(const std::string& prefix, const bool last) const
   ELSE_IF_ALT(PGuard, v, print(prefix, last, span))
   ELSE_IF_ALT(PEvery, v, print(prefix, last, span))
   ELSE_IF_ALT(PEnd, v, print(prefix, last, span))
+  ELSE_IF_ALT(PContinue, v, print(prefix, last, span))
   ELSE_IF_ALT(PRef, v, print(prefix, last, span))
   ELSE_IF_ALT(PTaskCall, v, print(prefix, last, span))
   ELSE_IF_ALT(PParen, v, print(prefix, last, span))
@@ -333,6 +334,11 @@ void Strategy::End::print(const std::string& prefix, const bool last, const Span
   LOG_TREE("End");
 }
 
+void Strategy::Continue::print(const std::string& prefix, const bool last, const Span& span) const
+{
+  LOG_TREE("Continue");
+}
+
 void Strategy::Ref::print(const std::string& prefix, const bool last, const Span& span) const
 {
   LOG_TREE("Reference");
@@ -367,6 +373,8 @@ std::string StrategyHandler::toString() const
     return "On Abort";
   else if (kind == Kind::OnEmitter)
     return "On Emitter";
+  else if (kind == Kind::OnEmitterContinue)
+    return "On Emitter Continue";
   else
     return "Unknown";
 }

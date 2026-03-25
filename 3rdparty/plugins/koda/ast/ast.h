@@ -199,7 +199,8 @@ struct StrategyHandler
     Unknown = 0,
     OnError,
     OnAbort,
-    OnEmitter
+    OnEmitter,
+    OnEmitterContinue
   };
   Kind kind;
   std::shared_ptr<EventCall> emitter;  // only for OnEmitter
@@ -277,6 +278,10 @@ struct Strategy
   {
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
+  struct Continue
+  {
+    void print(const std::string& prefix, const bool last, const Span& span) const;
+  };
   struct Ref
   {
     std::string name;
@@ -306,6 +311,7 @@ struct Strategy
       std::shared_ptr<Guard>,
       std::shared_ptr<Every>,
       std::shared_ptr<End>,
+      std::shared_ptr<Continue>,
       std::shared_ptr<Ref>,
       std::shared_ptr<TaskCall>,
       std::shared_ptr<Paren>>
@@ -438,6 +444,7 @@ typedef std::shared_ptr<Strategy::Repeat> PRepeat;
 typedef std::shared_ptr<Strategy::Guard> PGuard;
 typedef std::shared_ptr<Strategy::Every> PEvery;
 typedef std::shared_ptr<Strategy::End> PEnd;
+typedef std::shared_ptr<Strategy::Continue> PContinue;
 typedef std::shared_ptr<Strategy::Ref> PRef;
 typedef std::shared_ptr<Strategy::TaskCall> PTaskCall;
 typedef std::shared_ptr<Strategy::Paren> PParen;

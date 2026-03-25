@@ -38,7 +38,7 @@ capability Ventilation(string up) {
 }
 
 task AirQuality (bridge req Bridge, co2sensor req Co2Sensor, envsensor req EnvSensor, 
-                 light req Light, ventilation req Ventilation, string zone)
+                 light req Light, vent req Ventilation, string zone)
 {
   trigger: void start(string zone);
   return:  void done();
@@ -51,10 +51,10 @@ task AirQuality (bridge req Bridge, co2sensor req Co2Sensor, envsensor req EnvSe
   }
 
   strategy {
-    err:  ventilation.abort() --> light.set("Alert") --> end;
-    abrt: ventilation.abort() --> end;
+    err:  vent.stop() --> light.set("Alert") --> end;
+    abrt: vent.stop() --> end;
 
-    ventilation [mode]: within 300 do ( ventilation(mode)
+    ventilation [mode]: within 300 do ( vent(mode)
           on error err
           on abort abrt
           on envsensor.present() ( light.set("On") --> continue )
@@ -63,9 +63,9 @@ task AirQuality (bridge req Bridge, co2sensor req Co2Sensor, envsensor req EnvSe
 
     main: every 10 { bridge.poll(zone_) }
       on abort ( abrt )
-      on envsensor.present() ( light.set("On") )
-      on envsensor.empty() ( light.set("Off") )
-      on co2sensor.high() ( ventilation("down") )
-      on co2sensor.normal() ( ventilation("up") );
+      on envsensor.present() ( light.set("On") --> continue )
+      on envsensor.empty() ( light.set("Off") --> continue )
+      on co2sensor.high() ( ventilation("down") --> continue )
+      on co2sensor.normal() ( ventilation("up") --> continue );
   }
 }

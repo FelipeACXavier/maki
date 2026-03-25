@@ -16,13 +16,13 @@ koda::System KodaCST2AST::build(KodaParser::SystemContext* ctx)
 
 std::any KodaCST2AST::visitSystem(KodaParser::SystemContext* ctx)
 {
-  LOG_DEBUG("Visiting system");
+  // LOG_DEBUG("Visiting system");
   koda::System sys;
 
   for (auto* c : ctx->topLevelComponent())
     sys.components.push_back(std::any_cast<koda::PComponent>(visit(c)));
 
-  LOG_DEBUG("Done visiting system");
+  // LOG_DEBUG("Done visiting system");
   return sys;
 }
 
@@ -38,20 +38,20 @@ std::any KodaCST2AST::visitTopLevelComponent(KodaParser::TopLevelComponentContex
 
   c->name = ctx->IDENT()->getText();
 
-  LOG_DEBUG("Visiting top level component: %s", c->name.c_str());
+  // LOG_DEBUG("Visiting top level component: %s", c->name.c_str());
   if (auto* al = ctx->argumentList())
     c->args = std::any_cast<std::vector<koda::PArgument>>(visit(al));
 
   for (auto* st : ctx->statement())
     c->statements.push_back(std::any_cast<koda::PStatement>(visit(st)));
 
-  LOG_DEBUG("Done visiting top level component: %s", c->name.c_str());
+  // LOG_DEBUG("Done visiting top level component: %s", c->name.c_str());
   return c;
 }
 
 std::any KodaCST2AST::visitArgumentList(KodaParser::ArgumentListContext* ctx)
 {
-  LOG_DEBUG("Visiting argument list");
+  // LOG_DEBUG("Visiting argument list");
   std::vector<koda::PArgument> out;
   for (auto* a : ctx->argument())
     out.push_back(std::any_cast<koda::PArgument>(visit(a)));
@@ -61,7 +61,7 @@ std::any KodaCST2AST::visitArgumentList(KodaParser::ArgumentListContext* ctx)
 
 std::any KodaCST2AST::visitArgPlain(KodaParser::ArgPlainContext* ctx)
 {
-  LOG_DEBUG("Visiting arg plain");
+  // LOG_DEBUG("Visiting arg plain");
   auto a = std::make_shared<koda::Argument>();
   a->kind = koda::Argument::Kind::Plain;
   a->a = ctx->IDENT(0)->getText();
@@ -72,7 +72,7 @@ std::any KodaCST2AST::visitArgPlain(KodaParser::ArgPlainContext* ctx)
 
 std::any KodaCST2AST::visitArgReq(KodaParser::ArgReqContext* ctx)
 {
-  LOG_DEBUG("Visiting arg req");
+  // LOG_DEBUG("Visiting arg req");
   auto a = std::make_shared<koda::Argument>();
   a->kind = koda::Argument::Kind::Req;
   a->a = ctx->IDENT(0)->getText();
@@ -83,7 +83,7 @@ std::any KodaCST2AST::visitArgReq(KodaParser::ArgReqContext* ctx)
 
 std::any KodaCST2AST::visitArgPro(KodaParser::ArgProContext* ctx)
 {
-  LOG_DEBUG("Visiting arg pro");
+  // LOG_DEBUG("Visiting arg pro");
   auto a = std::make_shared<koda::Argument>();
   a->kind = koda::Argument::Kind::Pro;
   a->a = ctx->IDENT(0)->getText();
@@ -98,7 +98,7 @@ std::any KodaCST2AST::visitArgPro(KodaParser::ArgProContext* ctx)
 
 std::any KodaCST2AST::visitStatement(KodaParser::StatementContext* ctx)
 {
-  LOG_DEBUG("Visiting statement");
+  // LOG_DEBUG("Visiting statement");
   auto s = std::make_shared<koda::Statement>();
   s->span = spanOf(ctx);
 
@@ -117,27 +117,27 @@ std::any KodaCST2AST::visitStatement(KodaParser::StatementContext* ctx)
   else
     throw std::runtime_error("Unknown statement kind");
 
-  LOG_DEBUG("Done visiting statement");
+  // LOG_DEBUG("Done visiting statement");
 
   return s;
 }
 
 std::any KodaCST2AST::visitTasksBlock(KodaParser::TasksBlockContext* ctx)
 {
-  LOG_DEBUG("Visiting tasks block");
+  // LOG_DEBUG("Visiting tasks block");
   auto sb = std::make_shared<koda::StrategyBlock>();
   sb->span = spanOf(ctx);
 
   for (auto* f : ctx->flow())
     sb->flows.push_back(std::any_cast<koda::PFlow>(visit(f)));
 
-  LOG_DEBUG("Done visiting tasks block");
+  // LOG_DEBUG("Done visiting tasks block");
   return sb;
 }
 
 std::any KodaCST2AST::visitFlow(KodaParser::FlowContext* ctx)
 {
-  LOG_DEBUG("Visiting flow");
+  // LOG_DEBUG("Visiting flow");
   auto f = std::make_shared<koda::Flow>();
   f->span = spanOf(ctx);
   f->name = ctx->IDENT()->getText();
@@ -146,13 +146,13 @@ std::any KodaCST2AST::visitFlow(KodaParser::FlowContext* ctx)
     f->tags = std::any_cast<std::vector<std::string>>(visit(ctx->identList()));
 
   f->strategy = std::any_cast<koda::PStrategy>(visit(ctx->strategy()));
-  LOG_DEBUG("Done visiting flow");
+  // LOG_DEBUG("Done visiting flow");
   return f;
 }
 
 std::any KodaCST2AST::visitIdentList(KodaParser::IdentListContext* ctx)
 {
-  LOG_DEBUG("Visiting ident list");
+  // LOG_DEBUG("Visiting ident list");
   std::vector<std::string> out;
   for (auto* t : ctx->IDENT())
     out.push_back(t->getText());
@@ -162,7 +162,7 @@ std::any KodaCST2AST::visitIdentList(KodaParser::IdentListContext* ctx)
 
 std::any KodaCST2AST::visitVarsBlock(KodaParser::VarsBlockContext* ctx)
 {
-  LOG_DEBUG("Visiting vars block");
+  // LOG_DEBUG("Visiting vars block");
   auto vb = std::make_shared<koda::VarsBlock>();
   vb->span = spanOf(ctx);
 
@@ -174,14 +174,14 @@ std::any KodaCST2AST::visitVarsBlock(KodaParser::VarsBlockContext* ctx)
 
 std::any KodaCST2AST::visitVariableStatement(KodaParser::VariableStatementContext* ctx)
 {
-  LOG_DEBUG("Visiting variable statement");
+  // LOG_DEBUG("Visiting variable statement");
   auto v = std::make_shared<koda::VarDef>();
   v->span = spanOf(ctx);
   v->varType = ctx->IDENT(0)->getText();
   v->name = ctx->IDENT(1)->getText();
-  LOG_DEBUG("Visiting first expression of variable statement");
+  // LOG_DEBUG("Visiting first expression of variable statement");
   v->init = std::any_cast<koda::PExpr>(visit(ctx->expression(0)));
-  LOG_DEBUG("Visiting second expression of variable statement");
+  // LOG_DEBUG("Visiting second expression of variable statement");
   v->fallback = std::any_cast<koda::PExpr>(visit(ctx->expression(1)));
 
   return v;
@@ -190,19 +190,19 @@ std::any KodaCST2AST::visitVariableStatement(KodaParser::VariableStatementContex
 // Action/service/topic blocks mapped to same IR (ActionDef)
 std::any KodaCST2AST::visitActionBlock(KodaParser::ActionBlockContext* ctx)
 {
-  LOG_DEBUG("Visiting action block");
+  // LOG_DEBUG("Visiting action block");
   return buildActionLike(ctx, koda::ActionDef::Kind::Action);
 }
 
 std::any KodaCST2AST::visitServiceBlock(KodaParser::ServiceBlockContext* ctx)
 {
-  LOG_DEBUG("Visiting service block");
+  // LOG_DEBUG("Visiting service block");
   return buildActionLike(ctx, koda::ActionDef::Kind::Service);
 }
 
 std::any KodaCST2AST::visitTopicBlock(KodaParser::TopicBlockContext* ctx)
 {
-  LOG_DEBUG("Visiting topic block");
+  // LOG_DEBUG("Visiting topic block");
   return buildActionLike(ctx, koda::ActionDef::Kind::Topic);
 }
 
@@ -212,7 +212,7 @@ std::any KodaCST2AST::visitTopicBlock(KodaParser::TopicBlockContext* ctx)
 
 std::any KodaCST2AST::visitRosDefStatement(KodaParser::RosDefStatementContext* ctx)
 {
-  LOG_DEBUG("Visiting ROS def statement");
+  // LOG_DEBUG("Visiting ROS def statement");
   auto r = std::make_shared<koda::RosDef>();
   r->span = spanOf(ctx);
   if (ctx->TRIGGER())
@@ -237,7 +237,7 @@ std::any KodaCST2AST::visitRosDefStatement(KodaParser::RosDefStatementContext* c
 
 std::any KodaCST2AST::visitEventDefStatement(KodaParser::EventDefStatementContext* ctx)
 {
-  LOG_DEBUG("Visiting event def statement");
+  // LOG_DEBUG("Visiting event def statement");
 
   auto d = std::make_shared<koda::EventDef>();
   d->span = spanOf(ctx);
@@ -269,7 +269,7 @@ std::any KodaCST2AST::visitEventDefStatement(KodaParser::EventDefStatementContex
 
 std::any KodaCST2AST::visitStratSeq(KodaParser::StratSeqContext* ctx)
 {
-  LOG_DEBUG("Visiting Stategy sequence");
+  // LOG_DEBUG("Visiting Stategy sequence");
   auto value = std::make_shared<koda::Strategy::Seq>();
 
   // We flatten the tree in case of a sequence of strategies
@@ -277,14 +277,21 @@ std::any KodaCST2AST::visitStratSeq(KodaParser::StratSeqContext* ctx)
   {
     auto child = std::any_cast<koda::PStrategy>(visit(s));
     // TODO: For now, we don't handle the end, fix this
-    if (auto* end = std::get_if<koda::PEnd>(&child->v))
+    if (std::get_if<koda::PEnd>(&child->v))
       continue;
+
+    // if (std::get_if<koda::PContinue>(&child->v))
+    //   continue;
 
     if (auto* childSeq = std::get_if<koda::PSeq>(&child->v))
       value->alts.insert(value->alts.end(), (*childSeq)->alts.begin(), (*childSeq)->alts.end());
     else
       value->alts.push_back(child);
   }
+
+  // No point in having a sequence if we only have one action in the sequence
+  if (value->alts.size() == 1)
+    return value->alts.at(0);
 
   auto node = std::make_shared<koda::Strategy>();
   node->span = spanOf(ctx);
@@ -294,7 +301,7 @@ std::any KodaCST2AST::visitStratSeq(KodaParser::StratSeqContext* ctx)
 
 std::any KodaCST2AST::visitStratJoin(KodaParser::StratJoinContext* ctx)
 {
-  LOG_DEBUG("Visiting Join sequence");
+  // LOG_DEBUG("Visiting Join sequence");
   auto value = std::make_shared<koda::Strategy::Join>();
   for (auto* s : ctx->strategy())
     value->alts.push_back(std::any_cast<koda::PStrategy>(visit(s)));
@@ -307,7 +314,7 @@ std::any KodaCST2AST::visitStratJoin(KodaParser::StratJoinContext* ctx)
 
 std::any KodaCST2AST::visitStratEither(KodaParser::StratEitherContext* ctx)
 {
-  LOG_DEBUG("Visiting Either sequence");
+  // LOG_DEBUG("Visiting Either sequence");
   auto value = std::make_shared<koda::Strategy::Either>();
   for (auto* s : ctx->strategy())
     value->alts.push_back(std::any_cast<koda::PStrategy>(visit(s)));
@@ -320,7 +327,7 @@ std::any KodaCST2AST::visitStratEither(KodaParser::StratEitherContext* ctx)
 
 std::any KodaCST2AST::visitStratWithin(KodaParser::StratWithinContext* ctx)
 {
-  LOG_DEBUG("Visiting Within");
+  // LOG_DEBUG("Visiting Within");
   auto value = std::make_shared<koda::Strategy::Within>();
   value->seconds = std::stoi(ctx->NATURAL()->getText());
   value->a = std::any_cast<koda::PStrategy>(visit(ctx->strategy(0)));
@@ -334,7 +341,7 @@ std::any KodaCST2AST::visitStratWithin(KodaParser::StratWithinContext* ctx)
 
 std::any KodaCST2AST::visitStratIfElse(KodaParser::StratIfElseContext* ctx)
 {
-  LOG_DEBUG("Visiting If-Else");
+  // LOG_DEBUG("Visiting If-Else");
   auto value = std::make_shared<koda::Strategy::IfElse>();
   // value->seconds = std::stoi(ctx->NATURAL()->getText());
   value->a = std::any_cast<koda::PStrategy>(visit(ctx->strategy(0)));
@@ -348,7 +355,7 @@ std::any KodaCST2AST::visitStratIfElse(KodaParser::StratIfElseContext* ctx)
 
 std::any KodaCST2AST::visitStratRepeat(KodaParser::StratRepeatContext* ctx)
 {
-  LOG_DEBUG("Visiting Repeat");
+  // LOG_DEBUG("Visiting Repeat");
   auto value = std::make_shared<koda::Strategy::Repeat>();
   value->a = std::any_cast<koda::PStrategy>(visit(ctx->strategy()));
 
@@ -360,7 +367,7 @@ std::any KodaCST2AST::visitStratRepeat(KodaParser::StratRepeatContext* ctx)
 
 std::any KodaCST2AST::visitStratEvery(KodaParser::StratEveryContext* ctx)
 {
-  LOG_DEBUG("Visiting Every");
+  // LOG_DEBUG("Visiting Every");
   auto value = std::make_shared<koda::Strategy::Every>();
   value->seconds = std::stoi(ctx->NATURAL()->getText());
   value->a = std::any_cast<koda::PStrategy>(visit(ctx->strategy()));
@@ -375,7 +382,7 @@ std::any KodaCST2AST::visitStratEvery(KodaParser::StratEveryContext* ctx)
 
 std::any KodaCST2AST::visitStratGuard(KodaParser::StratGuardContext* ctx)
 {
-  LOG_DEBUG("Visiting Guard");
+  // LOG_DEBUG("Visiting Guard");
   auto value = std::make_shared<koda::Strategy::Guard>();
   value->cond = std::any_cast<koda::PExpr>(visit(ctx->expression()));
 
@@ -388,8 +395,19 @@ std::any KodaCST2AST::visitStratGuard(KodaParser::StratGuardContext* ctx)
 
 std::any KodaCST2AST::visitStratEnd(KodaParser::StratEndContext* ctx)
 {
-  LOG_DEBUG("Visiting End");
+  // LOG_DEBUG("Visiting End");
   auto value = std::make_shared<koda::Strategy::End>();
+  auto node = std::make_shared<koda::Strategy>();
+  node->span = spanOf(ctx);
+  node->v = value;
+
+  return node;
+}
+
+std::any KodaCST2AST::visitStratContinue(KodaParser::StratContinueContext* ctx)
+{
+  // LOG_DEBUG("Visiting Continue");
+  auto value = std::make_shared<koda::Strategy::Continue>();
   auto node = std::make_shared<koda::Strategy>();
   node->span = spanOf(ctx);
   node->v = value;
@@ -399,7 +417,7 @@ std::any KodaCST2AST::visitStratEnd(KodaParser::StratEndContext* ctx)
 
 std::any KodaCST2AST::visitStratRef(KodaParser::StratRefContext* ctx)
 {
-  LOG_DEBUG("Visiting Reference");
+  // LOG_DEBUG("Visiting Reference");
   auto value = std::make_shared<koda::Strategy::Ref>();
   value->name = ctx->identifier()->getText();
 
@@ -412,7 +430,7 @@ std::any KodaCST2AST::visitStratRef(KodaParser::StratRefContext* ctx)
 
 std::any KodaCST2AST::visitStratParen(KodaParser::StratParenContext* ctx)
 {
-  LOG_DEBUG("Visiting Parenthesis");
+  // LOG_DEBUG("Visiting Parenthesis");
   auto value = std::make_shared<koda::Strategy::Paren>();
   value->a = std::any_cast<koda::PStrategy>(visit(ctx->strategy()));
 
@@ -425,7 +443,7 @@ std::any KodaCST2AST::visitStratParen(KodaParser::StratParenContext* ctx)
 
 std::any KodaCST2AST::visitStratTask(KodaParser::StratTaskContext* ctx)
 {
-  LOG_DEBUG("Visiting Task");
+  // LOG_DEBUG("Visiting Task");
   auto value = std::make_shared<koda::Strategy::TaskCall>();
   value->call = std::any_cast<koda::PEventCall>(visit(ctx->eventStatement()));
   for (auto h : ctx->strategyHandler())
@@ -440,7 +458,7 @@ std::any KodaCST2AST::visitStratTask(KodaParser::StratTaskContext* ctx)
 
 std::any KodaCST2AST::visitHandlerOnError(KodaParser::HandlerOnErrorContext* ctx)
 {
-  LOG_DEBUG("Visiting On error");
+  // LOG_DEBUG("Visiting On error");
 
   auto value = std::make_shared<koda::StrategyHandler>();
   value->kind = koda::StrategyHandler::Kind::OnError;
@@ -452,7 +470,7 @@ std::any KodaCST2AST::visitHandlerOnError(KodaParser::HandlerOnErrorContext* ctx
 
 std::any KodaCST2AST::visitHandlerOnAbort(KodaParser::HandlerOnAbortContext* ctx)
 {
-  LOG_DEBUG("Visiting on abort");
+  // LOG_DEBUG("Visiting on abort");
   auto value = std::make_shared<koda::StrategyHandler>();
   value->kind = koda::StrategyHandler::Kind::OnAbort;
   value->body = std::any_cast<koda::PStrategy>(visit(ctx->strategy()));
@@ -463,11 +481,14 @@ std::any KodaCST2AST::visitHandlerOnAbort(KodaParser::HandlerOnAbortContext* ctx
 
 std::any KodaCST2AST::visitHandlerOnEmitter(KodaParser::HandlerOnEmitterContext* ctx)
 {
-  LOG_DEBUG("Visiting on signal");
+  // LOG_DEBUG("Visiting on signal");
   auto value = std::make_shared<koda::StrategyHandler>();
   value->kind = koda::StrategyHandler::Kind::OnEmitter;
   value->emitter = std::any_cast<koda::PEventCall>(visit(ctx->eventStatement()));
   value->body = std::any_cast<koda::PStrategy>(visit(ctx->strategy()));
+  if (containsContinue(value->body))
+    value->kind = koda::StrategyHandler::Kind::OnEmitterContinue;
+
   value->span = spanOf(ctx);
 
   return value;
@@ -479,7 +500,7 @@ std::any KodaCST2AST::visitHandlerOnEmitter(KodaParser::HandlerOnEmitterContext*
 
 std::any KodaCST2AST::visitEvCall(KodaParser::EvCallContext* ctx)
 {
-  LOG_DEBUG("Visiting event call");
+  // LOG_DEBUG("Visiting event call");
   auto c = std::make_shared<koda::EventCall>();
   c->span = spanOf(ctx);
   c->receiver = "";
@@ -493,7 +514,7 @@ std::any KodaCST2AST::visitEvCall(KodaParser::EvCallContext* ctx)
 
 std::any KodaCST2AST::visitEvQualifiedCall(KodaParser::EvQualifiedCallContext* ctx)
 {
-  LOG_DEBUG("Visiting qualified call");
+  // LOG_DEBUG("Visiting qualified call");
   auto c = std::make_shared<koda::EventCall>();
   c->span = spanOf(ctx);
   c->receiver = ctx->identifier(0)->getText();
@@ -507,7 +528,7 @@ std::any KodaCST2AST::visitEvQualifiedCall(KodaParser::EvQualifiedCallContext* c
 
 std::any KodaCST2AST::visitExprList(KodaParser::ExprListContext* ctx)
 {
-  LOG_DEBUG("Visiting Expression list");
+  // LOG_DEBUG("Visiting Expression list");
   std::vector<koda::PExpr> out;
   for (auto* e : ctx->expression())
     out.push_back(std::any_cast<koda::PExpr>(visit(e)));
@@ -544,7 +565,7 @@ std::any KodaCST2AST::visitIdentifier(KodaParser::IdentifierContext* ctx)
 
 std::any KodaCST2AST::visitExprId(KodaParser::ExprIdContext* ctx)
 {
-  LOG_DEBUG("Visiting Expression id");
+  // LOG_DEBUG("Visiting Expression id");
   auto s = std::make_shared<koda::Expr::Id>();
   s->value = unquoteString(ctx->IDENT()->getText());
 
@@ -556,7 +577,7 @@ std::any KodaCST2AST::visitExprId(KodaParser::ExprIdContext* ctx)
 
 std::any KodaCST2AST::visitExprString(KodaParser::ExprStringContext* ctx)
 {
-  LOG_DEBUG("Visiting Expression string");
+  // LOG_DEBUG("Visiting Expression string");
   auto s = std::make_shared<koda::Expr::Str>();
   s->value = unquoteString(ctx->STRING()->getText());
 
@@ -569,7 +590,7 @@ std::any KodaCST2AST::visitExprString(KodaParser::ExprStringContext* ctx)
 
 std::any KodaCST2AST::visitExprInt(KodaParser::ExprIntContext* ctx)
 {
-  LOG_DEBUG("Visiting Expression int");
+  // LOG_DEBUG("Visiting Expression int");
   auto s = std::make_shared<koda::Expr::Int>();
   s->value = std::stoll(ctx->NATURAL()->getText());
 
@@ -582,7 +603,7 @@ std::any KodaCST2AST::visitExprInt(KodaParser::ExprIntContext* ctx)
 
 std::any KodaCST2AST::visitExprFloat(KodaParser::ExprFloatContext* ctx)
 {
-  LOG_DEBUG("Visiting Expression float");
+  // LOG_DEBUG("Visiting Expression float");
   auto s = std::make_shared<koda::Expr::Float>();
   s->value = std::stod(ctx->REAL()->getText());
 
@@ -595,7 +616,7 @@ std::any KodaCST2AST::visitExprFloat(KodaParser::ExprFloatContext* ctx)
 
 std::any KodaCST2AST::visitExprCall(KodaParser::ExprCallContext* ctx)
 {
-  LOG_DEBUG("Visiting Expression call");
+  // LOG_DEBUG("Visiting Expression call");
   auto s = std::make_shared<koda::Expr::Call>();
   s->value = std::any_cast<koda::PEventCall>(visit(ctx->eventStatement()));
 
@@ -608,7 +629,7 @@ std::any KodaCST2AST::visitExprCall(KodaParser::ExprCallContext* ctx)
 
 std::any KodaCST2AST::visitExprParen(KodaParser::ExprParenContext* ctx)
 {
-  LOG_DEBUG("Visiting Expression parenthesis");
+  // LOG_DEBUG("Visiting Expression parenthesis");
   auto s = std::make_shared<koda::Expr::Paren>();
   s->value = std::any_cast<koda::PExpr>(visit(ctx->expression()));
 
@@ -616,7 +637,7 @@ std::any KodaCST2AST::visitExprParen(KodaParser::ExprParenContext* ctx)
   exp->span = spanOf(ctx);
   exp->v = s;
 
-  LOG_DEBUG("Done visiting Expression Par");
+  // LOG_DEBUG("Done visiting Expression Par");
   return exp;
 }
 
@@ -629,7 +650,7 @@ std::any KodaCST2AST::visitExprOr(KodaParser::ExprOrContext* ctx)
   if (ctx->OR().empty())
     return left;
 
-  LOG_DEBUG("Visiting Expression Or");
+  // LOG_DEBUG("Visiting Expression Or");
   auto s = std::make_shared<koda::Expr::BinOp>();
   s->operation = koda::Expr::BinOp::Kind::Disjunction;
 
@@ -641,7 +662,7 @@ std::any KodaCST2AST::visitExprOr(KodaParser::ExprOrContext* ctx)
   exp->span = spanOf(ctx);
   exp->v = s;
 
-  LOG_DEBUG("Done visiting Expression Or");
+  // LOG_DEBUG("Done visiting Expression Or");
   return exp;
 }
 
@@ -654,7 +675,7 @@ std::any KodaCST2AST::visitExprAnd(KodaParser::ExprAndContext* ctx)
   if (ctx->AND().empty())
     return left;
 
-  LOG_DEBUG("Visiting Expression And");
+  // LOG_DEBUG("Visiting Expression And");
   auto s = std::make_shared<koda::Expr::BinOp>();
   s->operation = koda::Expr::BinOp::Kind::Conjunction;
 
@@ -666,7 +687,7 @@ std::any KodaCST2AST::visitExprAnd(KodaParser::ExprAndContext* ctx)
   exp->span = spanOf(ctx);
   exp->v = s;
 
-  LOG_DEBUG("Done visiting Expression And");
+  // LOG_DEBUG("Done visiting Expression And");
   return exp;
 }
 
@@ -697,7 +718,7 @@ std::any KodaCST2AST::visitExprCmp(KodaParser::ExprCmpContext* ctx)
   if (!ctx->compOp())
     return left;
 
-  LOG_DEBUG("Visiting Expression Cmp");
+  // LOG_DEBUG("Visiting Expression Cmp");
   auto s = std::make_shared<koda::Expr::BinOp>();
   s->operation = std::any_cast<koda::Expr::BinOp::Kind>(visit(ctx->compOp()));
   s->a = left;
@@ -709,7 +730,7 @@ std::any KodaCST2AST::visitExprCmp(KodaParser::ExprCmpContext* ctx)
   exp->span = spanOf(ctx);
   exp->v = s;
 
-  LOG_DEBUG("Done visiting Expression Cmp");
+  // LOG_DEBUG("Done visiting Expression Cmp");
   return exp;
 }
 
@@ -718,7 +739,7 @@ std::any KodaCST2AST::visitExprNot(KodaParser::ExprNotContext* ctx)
   if (ctx->exprAdd())
     return visit(ctx->exprAdd());
 
-  LOG_DEBUG("Visiting Expression Not");
+  // LOG_DEBUG("Visiting Expression Not");
   auto s = std::make_shared<koda::Expr::BinOp>();
   s->operation = koda::Expr::BinOp::Kind::Negation;
   if (ctx->exprNot())
@@ -728,7 +749,7 @@ std::any KodaCST2AST::visitExprNot(KodaParser::ExprNotContext* ctx)
   exp->span = spanOf(ctx);
   exp->v = s;
 
-  LOG_DEBUG("Done visiting Expression Not");
+  // LOG_DEBUG("Done visiting Expression Not");
   return exp;
 }
 
@@ -741,7 +762,7 @@ std::any KodaCST2AST::visitExprAdd(KodaParser::ExprAddContext* ctx)
   if (ctx->PLUS().empty() && ctx->MINUS().empty())
     return left;
 
-  LOG_DEBUG("Visiting Expression Add");
+  // LOG_DEBUG("Visiting Expression Add");
   auto s = std::make_shared<koda::Expr::BinOp>();
   if (!ctx->PLUS().empty())
     s->operation = koda::Expr::BinOp::Kind::Addition;
@@ -757,7 +778,7 @@ std::any KodaCST2AST::visitExprAdd(KodaParser::ExprAddContext* ctx)
   exp->span = spanOf(ctx);
   exp->v = s;
 
-  LOG_DEBUG("Done visiting Expression Add");
+  // LOG_DEBUG("Done visiting Expression Add");
   return exp;
 }
 
@@ -770,7 +791,7 @@ std::any KodaCST2AST::visitExprMul(KodaParser::ExprMulContext* ctx)
   if (ctx->STAR().empty() && ctx->SLASH().empty())
     return left;
 
-  LOG_DEBUG("Visiting Expression Mul");
+  // LOG_DEBUG("Visiting Expression Mul");
   auto s = std::make_shared<koda::Expr::BinOp>();
   if (!ctx->STAR().empty())
     s->operation = koda::Expr::BinOp::Kind::Multiplication;
@@ -785,7 +806,7 @@ std::any KodaCST2AST::visitExprMul(KodaParser::ExprMulContext* ctx)
   exp->span = spanOf(ctx);
   exp->v = s;
 
-  LOG_DEBUG("Done visiting Expression Mul");
+  // LOG_DEBUG("Done visiting Expression Mul");
   return exp;
 }
 
@@ -794,7 +815,7 @@ std::any KodaCST2AST::visitExprUnary(KodaParser::ExprUnaryContext* ctx)
   if (!ctx->MINUS())
     return visit(ctx->exprPrimary());
 
-  LOG_DEBUG("Visiting Expression Unary");
+  // LOG_DEBUG("Visiting Expression Unary");
 
   auto s = std::make_shared<koda::Expr::BinOp>();
   s->operation = koda::Expr::BinOp::Kind::Unary;
@@ -805,7 +826,7 @@ std::any KodaCST2AST::visitExprUnary(KodaParser::ExprUnaryContext* ctx)
   exp->span = spanOf(ctx);
   exp->v = s;
 
-  LOG_DEBUG("Done visiting Expression Unary");
+  // LOG_DEBUG("Done visiting Expression Unary");
   return exp;
 }
 
@@ -825,4 +846,79 @@ std::any KodaCST2AST::buildActionLike(CtxT* ctx, koda::ActionDef::Kind kind)
     a->rosDefs.push_back(std::any_cast<koda::PRosDef>(visit(r)));
 
   return a;
+}
+
+bool KodaCST2AST::containsContinue(koda::PStrategy s)
+{
+  if (!s)
+    return false;
+
+  return std::visit([&](auto&& node) -> bool {
+    using T = std::decay_t<decltype(node)>;
+
+    // --- Ref ---
+    if constexpr (std::is_same_v<T, koda::PContinue>)
+    {
+      return true;
+    }
+    // --- Seq / Join / Either ---
+    else if constexpr (std::is_same_v<T, koda::PSeq> || std::is_same_v<T, koda::PJoin> || std::is_same_v<T, koda::PEither>)
+    {
+      if (!node)
+        return false;
+
+      for (const auto& child : node->alts)
+        if (child && containsContinue(child))
+          return true;
+
+      return false;
+    }
+    // --- Unary wrappers ---
+    else if constexpr (std::is_same_v<T, std::shared_ptr<koda::Strategy::Paren>> ||
+                       std::is_same_v<T, std::shared_ptr<koda::Strategy::Repeat>>)
+    {
+      return node && node->a && containsContinue(node->a);
+    }
+    // --- Binary ---
+    else if constexpr (std::is_same_v<T, koda::PWithin> || std::is_same_v<T, koda::PIfElse>)
+    {
+      return node && ((node->a && containsContinue(node->a)) ||
+                      (node->b && containsContinue(node->b)));
+    }
+    // --- Every ---
+    else if constexpr (std::is_same_v<T, std::shared_ptr<koda::Strategy::Every>>)
+    {
+      if (!node)
+        return false;
+
+      if (node->a && containsContinue(node->a))
+        return true;
+
+      for (const auto& h : node->handlers)
+      {
+        if (h && h->body && containsContinue(h->body))
+          return true;
+      }
+      return false;
+    }
+    // --- TaskCall ---
+    else if constexpr (std::is_same_v<T, std::shared_ptr<koda::Strategy::TaskCall>>)
+    {
+      if (!node)
+        return false;
+
+      for (const auto& h : node->handlers)
+      {
+        if (h && h->body && containsContinue(h->body))
+          return true;
+      }
+      return false;
+    }
+    // --- Let / Guard / End ---
+    else
+    {
+      return false;
+    }
+  },
+                    s->v);
 }

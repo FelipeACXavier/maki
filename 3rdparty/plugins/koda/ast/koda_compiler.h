@@ -1,6 +1,7 @@
 #pragma once
 
 #include <deque>
+#include <format>
 #include <fstream>
 #include <map>
 #include <set>
@@ -18,19 +19,37 @@ struct ReturnValue
   std::map<std::string, std::string> args;
 };
 
+struct CompilerOptions
+{
+  std::string inputFile;
+  std::string outputDir = "./out";
+
+  int verbose = 0;
+  bool showHelp = false;
+  bool dryRun = false;
+  bool showVersion = false;
+};
+
 class Compiler
 {
 public:
-  Compiler();
+  Compiler(const CompilerOptions& options);
 
   VoidResult parse(const std::string& filename);
   VoidResult generate();
 
   void printAST() const;
 
+  struct PortRef
+  {
+    std::string instance;  // e.g. "main"
+    std::string port;      // e.g. "drive"
+  };
+
 private:
   System mAST;
   std::ofstream mCurrentFile;
+  const CompilerOptions mOptions;
 
   struct Composition
   {
@@ -106,27 +125,37 @@ private:
     std::string name;
   };
 
-  struct PortRef
-  {
-    std::string instance;  // e.g. "main"
-    std::string port;      // e.g. "drive"
-  };
-
   struct Instance
   {
     std::string type;  // e.g. "cmain"
     std::string name;  // e.g. "main"
+
+    bool operator<(const Instance& other) const
+    {
+      if (type != other.type)
+        return type < other.type;
+
+      return name < other.name;
+    }
   };
 
   struct Connection
   {
+    enum class Type
+    {
+      Unknown,
+      Action,
+      Signal
+    };
+
     PortRef lhs;
     PortRef rhs;
+    Type type;
   };
 
   struct TopLevelSystem
   {
-    std::vector<Instance> instances;
+    std::set<Instance> instances;
     std::vector<Connection> connections;
   };
 
@@ -135,6 +164,10 @@ private:
     uint32_t sequence = 0;
     uint32_t join = 0;
     uint32_t repeat = 0;
+    uint32_t within = 0;
+    uint32_t every = 0;
+    uint32_t alarm = 0;
+
     uint32_t arbiter = 0;
     uint32_t abortHandler = 0;
     uint32_t errorHandler = 0;
@@ -174,6 +207,9 @@ private:
       sequence = 0;
       join = 0;
       repeat = 0;
+      within = 0;
+      every = 0;
+
       arbiter = 0;
       abortHandler = 0;
       errorHandler = 0;
@@ -249,6 +285,7 @@ private:
   Result<ReturnValue> generateGuard(PGuard strategy, Environment& env);
   Result<ReturnValue> generateEvery(PEvery strategy, Environment& env);
   Result<ReturnValue> generateEnd(PEnd strategy, Environment& env);
+  Result<ReturnValue> generateContinue(PContinue strategy, Environment& env);
   Result<ReturnValue> generateRef(PRef strategy, Environment& env);
   Result<ReturnValue> generateTaskCall(PTaskCall strategy, Environment& env);
   Result<ReturnValue> generateParen(PParen strategy, Environment& env);
@@ -266,6 +303,7 @@ private:
   Result<ReturnValue> generateStatement(PStatement statement, Environment& env);
 
   std::string componentName(const std::string& name) const;
+  std::string flowName(const std::string& name) const;
   std::string toFilename(const std::string& name) const;
   std::string createPort(const Action& action, bool in) const;
   VoidResult createSequenceComponent(uint32_t instances);
@@ -274,8 +312,25 @@ private:
   void createSequenceDoneRecursion(bool fromIdle, uint32_t start, uint32_t instances, std::ofstream& file, const std::string& indent);
 
   void connectWithArbiter(Environment& env);
+  void connectWithArbiter(const std::map<std::string, uint32_t>& connections, Environment& env);
 
   PortRef portFromString(const std::string& ref) const;
 };
 
 }  // namespace koda
+
+template <>
+struct std::formatter<koda::Compiler::PortRef>
+{
+  // No custom format options for now
+  constexpr auto parse(std::format_parse_context& ctx)
+  {
+    return ctx.begin();
+  }
+
+  template <typename FormatContext>
+  auto format(const koda::Compiler::PortRef& i, FormatContext& ctx) const
+  {
+    return std::format_to(ctx.out(), "{} {}", i.instance, i.port);
+  }
+};

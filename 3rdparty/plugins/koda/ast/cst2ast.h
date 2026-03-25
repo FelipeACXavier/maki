@@ -70,6 +70,7 @@ public:
   std::any visitStratEvery(KodaParser::StratEveryContext* ctx) override;
   std::any visitStratGuard(KodaParser::StratGuardContext* ctx) override;
   std::any visitStratEnd(KodaParser::StratEndContext* ctx) override;
+  std::any visitStratContinue(KodaParser::StratContinueContext* ctx) override;
   std::any visitStratRef(KodaParser::StratRefContext* ctx) override;
   std::any visitStratParen(KodaParser::StratParenContext* ctx) override;
   std::any visitStratTask(KodaParser::StratTaskContext* ctx) override;
@@ -110,4 +111,6 @@ private:
   // Build ActionDef / ServiceDef / TopicDef using the same field extraction.
   template <typename CtxT>
   std::any buildActionLike(CtxT* ctx, koda::ActionDef::Kind kind);
+
+  bool containsContinue(koda::PStrategy s);
 };
