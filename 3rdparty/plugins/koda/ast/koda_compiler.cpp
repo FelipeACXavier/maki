@@ -305,29 +305,32 @@ void Compiler::connectWithArbiter(const std::map<std::string, uint32_t>& connect
   for (auto it = connections.cbegin(); it != connections.cend(); ++it)
   {
     // Create arbitrer for n strategies
-    if (it->second > 1)
+    auto occurences = it->second;
+    if (occurences < 2)
+      continue;
+
+    // Create arbitrer
+    createActionArbiterComponent(occurences);
+
+    int count = 0;
+    env.includes.insert(std::format("action_arbiter{}.dzn", occurences));
+
+    auto id = env.arbiter++;
+    env.definitions.push_back(std::format("caction_arbiter{} arbitrer{}", occurences, id));
+
+    auto [instance, port] = portFromString(it->first);
+    LOG_RAW("{} {} has {} connections", instance, port, it->second);
+
+    // Change current links to the arbitrer
+    for (auto& statement : env.core)
     {
-      // Create arbitrer
-      int count = 0;
-      env.includes.insert("action_arbiter.dzn");
-
-      auto id = env.arbiter++;
-      env.definitions.push_back(std::format("caction_arbiter arbitrer{}", id));
-
-      auto [instance, port] = portFromString(it->first);
-      LOG_RAW("{} {} has {} connections", instance, port, it->second);
-
-      // Change current links to the arbitrer
-      for (auto& statement : env.core)
-      {
-        auto index0 = statement.find(instance);
-        if (index0 != std::string::npos)
-          statement.replace(index0, instance.size(), std::format("arbitrer{}.client{}", id, ++count));
-      }
-
-      // Connect arbitrer to the component
-      env.core.push_back(std::format("arbitrer{}.resource <=> {}", id, instance));
+      auto index0 = statement.find(instance);
+      if (index0 != std::string::npos)
+        statement.replace(index0, instance.size(), std::format("arbitrer{}.client{}", id, count++));
     }
+
+    // Connect arbitrer to the component
+    env.core.push_back(std::format("arbitrer{}.resource <=> {}", id, instance));
   }
 }
 
