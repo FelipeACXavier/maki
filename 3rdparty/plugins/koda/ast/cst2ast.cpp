@@ -276,6 +276,10 @@ std::any KodaCST2AST::visitStratSeq(KodaParser::StratSeqContext* ctx)
   for (auto* s : ctx->strategy())
   {
     auto child = std::any_cast<koda::PStrategy>(visit(s));
+    // TODO: For now, we don't handle the end, fix this
+    if (auto* end = std::get_if<koda::PEnd>(&child->v))
+      continue;
+
     if (auto* childSeq = std::get_if<koda::PSeq>(&child->v))
       value->alts.insert(value->alts.end(), (*childSeq)->alts.begin(), (*childSeq)->alts.end());
     else

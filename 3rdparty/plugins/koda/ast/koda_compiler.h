@@ -106,6 +106,30 @@ private:
     std::string name;
   };
 
+  struct PortRef
+  {
+    std::string instance;  // e.g. "main"
+    std::string port;      // e.g. "drive"
+  };
+
+  struct Instance
+  {
+    std::string type;  // e.g. "cmain"
+    std::string name;  // e.g. "main"
+  };
+
+  struct Connection
+  {
+    PortRef lhs;
+    PortRef rhs;
+  };
+
+  struct TopLevelSystem
+  {
+    std::vector<Instance> instances;
+    std::vector<Connection> connections;
+  };
+
   struct Environment
   {
     uint32_t sequence = 0;
@@ -130,6 +154,20 @@ private:
     Capability currentCapability;
     std::map<std::string, Flow> flows;
     std::map<std::string, Capability> capabilities;
+    std::map<std::string, std::string> capabilityMap;
+
+    TopLevelSystem system;
+
+    std::optional<Capability> getCapability(const std::string& key) const
+    {
+      if (!capabilityMap.contains(key))
+        return std::nullopt;
+
+      if (!capabilities.contains(capabilityMap.at(key)))
+        return std::nullopt;
+
+      return capabilities.at(capabilityMap.at(key));
+    }
 
     void clear()
     {
@@ -167,8 +205,9 @@ private:
       LOG_RAW("Definitions count: {}", definitions.size());
       LOG_RAW("Core count: {}", core.size());
 
+      LOG_RAW("Capabilities:");
       for (auto it = capabilities.cbegin(); it != capabilities.cend(); ++it)
-        it->second.print();
+        LOG_RAW("  {}: {}", it->first, it->second.name);
 
       if (!asyncCalls.empty())
         LOG_RAW("Async Calls:");
@@ -215,7 +254,7 @@ private:
   Result<ReturnValue> generateParen(PParen strategy, Environment& env);
 
   Result<ReturnValue> generateStrategyHandler(PStrategyHandler handler, Environment& env);
-  Result<ReturnValue> generateEventCall(PEventCall call, Environment& env);
+  Result<ReturnValue> generateEventCall(PEventCall call, Environment& env, bool isSignal);
 
   Result<ReturnValue> generateStrategyBlock(PStrategyBlock strategy, Environment& env);
   Result<ReturnValue> generateActionDef(PActionDef action, Environment& env);
@@ -230,7 +269,13 @@ private:
   std::string toFilename(const std::string& name) const;
   std::string createPort(const Action& action, bool in) const;
   VoidResult createSequenceComponent(uint32_t instances);
+  VoidResult createActionArbiterComponent(uint32_t instances);
+
   void createSequenceDoneRecursion(bool fromIdle, uint32_t start, uint32_t instances, std::ofstream& file, const std::string& indent);
+
+  void connectWithArbiter(Environment& env);
+
+  PortRef portFromString(const std::string& ref) const;
 };
 
 }  // namespace koda

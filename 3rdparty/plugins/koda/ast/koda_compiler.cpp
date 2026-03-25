@@ -91,8 +91,19 @@ void Compiler::printAST() const
 
 Result<koda::ReturnValue> Compiler::generateTask(PComponent task, Environment& env)
 {
+  for (const auto& arg : task->args)
+  {
+    auto name = arg->a;
+    auto type = arg->b;
+    if (env.capabilities.contains(type))
+      env.capabilityMap[name] = type;
+  }
+
   for (auto& statement : task->statements)
     RETURN_ON_FAILURE(generateStatement(statement, env));
+
+  env.includes = {};
+  connectWithArbiter(env);
 
   // With the flows for this task defined, we can now connect all flows into a complete strategy
   std::string filename = std::format("/home/felaze/Documents/PhD/Programs/maki/generated/{}_task.dzn", toFilename(task->name));
@@ -104,6 +115,9 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, Environment& e
   // Imports
   file << "import iaction.dzn;\n";
   file << "import isignal.dzn;\n\n";
+  for (const auto& inc : env.includes)
+    file << std::format("import {};\n", inc);
+  file << "\n";
 
   // Capabilities
   for (const auto& cap : env.capabilities)
@@ -118,18 +132,28 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, Environment& e
   file << std::format("component {} {{\n", componentName(task->name));
   file << "  provides iaction api;\n\n";
   file << "  system {\n";
-  // Capabilities
-  for (const auto& cap : env.capabilities)
-    file << std::format("    {} {};\n", componentName(cap.second.name), toFilename(cap.second.name));
-  file << "\n";
 
-  // Flows
-  for (const auto& flow : env.flows)
-    file << std::format("    {} {};\n", componentName(flow.second.name), toFilename(flow.second.name));
-  file << "\n";
+  for (const auto& instance : env.system.instances)
+    file << std::format("    {} {};\n", instance.type, instance.name);
 
   // Helpers
-  file << "  }";
+
+  file << "\n    api <=> main.api;\n\n";
+
+  // Connections
+  std::string s = env.system.connections.at(0).lhs.instance;
+  for (const auto& conn : env.system.connections)
+  {
+    if (conn.lhs.instance != s)
+    {
+      file << "\n";
+      s = conn.lhs.instance;
+    }
+
+    file << std::format("    {}.{} <=> {}.{};\n", conn.lhs.instance, conn.lhs.port, conn.rhs.instance, conn.rhs.port);
+  }
+
+  file << "  }\n";
   file << "}";
 
   // Component
@@ -151,6 +175,7 @@ Result<koda::ReturnValue> Compiler::generateCapability(PComponent capability, En
     RETURN_ON_FAILURE(generateStatement(statement, env));
 
   env.capabilities[capability->name] = env.currentCapability;
+  env.system.instances.push_back({componentName(capability->name), toFilename(capability->name)});
 
   // Then we proceed with the creation of the file itself
   std::string filename = std::format("/home/felaze/Documents/PhD/Programs/maki/generated/{}.dzn", toFilename(capability->name));
@@ -284,6 +309,7 @@ Result<koda::ReturnValue> Compiler::generateFlow(PFlow flow, Environment& env)
   auto ret = generateStrategy(flow->strategy, env);
 
   env.flows[flow->name] = Flow{flow->name};
+  env.system.instances.push_back({componentName(flow->name), toFilename(flow->name)});
 
   // ------------------------------------------------------------
   // Check the need for arbitrers and create them
@@ -316,6 +342,52 @@ Result<koda::ReturnValue> Compiler::generateFlow(PFlow flow, Environment& env)
   // Print everything to a file
   env.core.push_front(std::format("api <=> {}", ret.Value().name));
   env.includes.insert("iaction.dzn");
+
+  for (const auto& c : env.asyncCalls)
+  {
+    auto cap = env.getCapability(c.first);
+    if (!cap)
+      return Result<koda::ReturnValue>::Failed("Could not find capability: " + c.first);
+
+    PortRef in = {flow->name, c.first};
+    PortRef out = {toFilename(cap->name), cap->trigger->name};
+
+    env.system.connections.push_back(Connection{in, out});
+  }
+
+  for (const auto& c : env.syncCalls)
+  {
+    auto [instance, port] = portFromString(c.first);
+    auto cap = env.getCapability(instance);
+    if (!cap)
+      return Result<koda::ReturnValue>::Failed("Could not find capability: " + c.first);
+
+    PortRef in = {flow->name, instance};
+    PortRef out = {toFilename(cap->name), port};
+
+    env.system.connections.push_back(Connection{in, out});
+  }
+
+  for (const auto& c : env.signals)
+  {
+    auto [instance, port] = portFromString(c.first);
+    auto cap = env.getCapability(instance);
+    if (!cap)
+      return Result<koda::ReturnValue>::Failed("Could not find capability: " + c.first);
+
+    PortRef in = {flow->name, port};
+    PortRef out = {toFilename(cap->name), port};
+
+    env.system.connections.push_back(Connection{in, out});
+  }
+
+  for (const auto& c : env.strategies)
+  {
+    PortRef in = {flow->name, c.first};
+    PortRef out = {c.first, "api"};
+
+    env.system.connections.push_back(Connection{in, out});
+  }
 
   for (const auto& i : env.includes)
     mCurrentFile << "import " + i + ";\n";
@@ -454,7 +526,7 @@ Result<koda::ReturnValue> Compiler::generateEnd(PEnd strategy, Environment& env)
 
 Result<koda::ReturnValue> Compiler::generateRef(PRef strategy, Environment& env)
 {
-  INCREMENT_MAP(env.strategies, strategy->name);
+  INCREMENT_MAP(env.strategies, strategy->name)
   env.requiresPorts.insert(std::format("iaction {}", strategy->name));
 
   return koda::ReturnValue{strategy->name};
@@ -463,13 +535,25 @@ Result<koda::ReturnValue> Compiler::generateRef(PRef strategy, Environment& env)
 Result<koda::ReturnValue> Compiler::generateTaskCall(PTaskCall strategy, Environment& env)
 {
   ReturnValue expr;
-  ASSIGN_OR_RETURN_ON_FAILURE(expr, generateEventCall(strategy->call, env));
+  ASSIGN_OR_RETURN_ON_FAILURE(expr, generateEventCall(strategy->call, env, false));
 
   if (strategy->handlers.empty())
     return expr;
 
   for (auto& handler : strategy->handlers)
   {
+    if (handler->kind != koda::StrategyHandler::Kind::OnEmitter)
+      continue;
+
+    env.previousCall = expr.name;
+    ASSIGN_OR_RETURN_ON_FAILURE(expr, generateStrategyHandler(handler, env));
+  }
+
+  for (auto& handler : strategy->handlers)
+  {
+    if (handler->kind == koda::StrategyHandler::Kind::OnEmitter)
+      continue;
+
     env.previousCall = expr.name;
     ASSIGN_OR_RETURN_ON_FAILURE(expr, generateStrategyHandler(handler, env));
   }
@@ -494,7 +578,7 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
     if (handler->emitter)
     {
       ReturnValue expr;
-      ASSIGN_OR_RETURN_ON_FAILURE(expr, generateEventCall(handler->emitter, env));
+      ASSIGN_OR_RETURN_ON_FAILURE(expr, generateEventCall(handler->emitter, env, false));
     }
 
     if (handler->body)
@@ -517,7 +601,7 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
     if (handler->emitter)
     {
       ReturnValue expr;
-      ASSIGN_OR_RETURN_ON_FAILURE(expr, generateEventCall(handler->emitter, env));
+      ASSIGN_OR_RETURN_ON_FAILURE(expr, generateEventCall(handler->emitter, env, false));
     }
 
     if (handler->body)
@@ -538,7 +622,7 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
     env.definitions.push_back(std::format("csignal_handler sh{}", id));
 
     ReturnValue expr;
-    ASSIGN_OR_RETURN_ON_FAILURE(expr, generateEventCall(handler->emitter, env));
+    ASSIGN_OR_RETURN_ON_FAILURE(expr, generateEventCall(handler->emitter, env, true));
 
     env.includes.insert("isignal.dzn");
     env.requiresPorts.insert("isignal " + expr.call);
@@ -556,18 +640,22 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
   return koda::ReturnValue{};
 }
 
-Result<koda::ReturnValue> Compiler::generateEventCall(PEventCall call, Environment& env)
+Result<koda::ReturnValue> Compiler::generateEventCall(PEventCall call, Environment& env, bool isSignal)
 {
   if (call->receiver.empty())
   {
-    INCREMENT_MAP(env.asyncCalls, call->name);
+    INCREMENT_MAP(env.asyncCalls, call->name)
     env.requiresPorts.insert(std::format("iaction {}", call->name));
     return koda::ReturnValue{call->name};
   }
   else
   {
     auto event = std::format("{}.{}", call->receiver, call->name);
-    INCREMENT_MAP(env.syncCalls, event);
+    if (isSignal)
+      INCREMENT_MAP(env.signals, event)
+    else
+      INCREMENT_MAP(env.syncCalls, event)
+
     env.requiresPorts.insert(std::format("iaction {}", call->receiver));
     return koda::ReturnValue{call->receiver, call->name};
   }
@@ -684,6 +772,158 @@ VoidResult Compiler::createSequenceComponent(uint32_t instances)
   file << "  }\n";
   file << "}\n";
 
+  file.close();
+
+  return VoidResult();
+}
+
+VoidResult Compiler::createActionArbiterComponent(uint32_t instances)
+{
+  std::string filename = std::format("/home/felaze/Documents/PhD/Programs/maki/generated/action_arbiter{}.dzn", instances);
+
+  std::ofstream file;
+  file.open(filename);
+  if (!file.is_open())
+    return VoidResult::Failed("Failed to open: " + filename);
+
+  file << "import types.dzn;\n";
+  file << "import iaction.dzn;\n\n";
+
+  file << std::format("component caction_arbiter{} {{\n", instances);
+  for (uint32_t i = 0; i < instances; ++i)
+    file << std::format("  provides iaction client{};\n", i);
+
+  file << "\n  requires iaction resource;\n\n";
+
+  file << "  behaviour {\n";
+  file << "    enum Owner { None, ";
+  for (uint32_t i = 0; i < instances; ++i)
+    file << std::format("C{}{}", i, (i + 1 == instances ? "" : ", "));
+  file << "};\n";
+  file << "    Owner owner = Owner.None;\n";
+  file << "    Owner pending = Owner.None;\n";
+  file << "    bool erroring = false;\n";
+  file << "    bool succeeding = false;\n\n";
+
+  file << "    Result handleAbort()\n";
+  file << "    {\n";
+  file << "      Result ret = resource.abort();\n";
+  file << "      if (ret.Success)\n";
+  file << "      {\n";
+  file << "        owner = Owner.None;\n";
+  file << "        pending = Owner.None;\n";
+  file << "      }\n\n";
+
+  file << "      return ret;\n";
+  file << "    }\n\n";
+
+  file << "    [owner.None] {\n";
+  for (uint32_t i = 0; i < instances; ++i)
+  {
+    file << std::format("      on client{}.trigger(): {{\n", i);
+    file << "        if (erroring) {\n";
+    file << "          reply(Result.Failure);\n";
+    file << "        } else {\n";
+    file << "          Result ret = resource.trigger();\n";
+    file << "          if (!ret.Done)\n";
+    file << std::format("            owner = Owner.C{};\n", i);
+    file << "          reply(ret);\n";
+    file << "        }\n";
+    file << "      }\n";
+    file << std::format("      on client{}.abort(): {{\n", i);
+    file << std::format("        if (client{}.state.Error)\n", i);
+    file << "          reply(Result.Error);\n";
+    file << "        else\n";
+    file << "          reply(Result.Success);\n";
+    file << "      }\n";
+    file << std::format("      on client{}.reset(): {{ reply(Result.Success); }}\n\n", i);
+  }
+  file << "    }\n\n";
+
+  file << "    on resource.success(): {\n";
+  file << "      succeeding = true;\n";
+  file << "      defer () {\n";
+  for (uint32_t i = 0; i < instances; ++i)
+  {
+    file << std::format("        if (owner.C{} || pending.C{})\n", i, i);
+    file << std::format("          client{}.success();\n", i);
+  }
+  file << "\n";
+  file << "        owner = Owner.None;\n";
+  file << "        pending = Owner.None;\n";
+  file << "        succeeding = false;\n";
+  file << "      }\n";
+  file << "    }\n\n";
+
+  file << "    on resource.failure(): {\n";
+  file << "      erroring = true;\n";
+  file << "      defer () {\n";
+  for (uint32_t i = 0; i < instances; ++i)
+  {
+    file << std::format("        if (owner.C{} || pending.C{})\n", i, i);
+    file << std::format("          client{}.failure();\n", i);
+  }
+  file << "\n";
+  file << "        pending = Owner.None;\n";
+  file << "        erroring = false;\n";
+  file << "      }\n";
+  file << "    }\n\n";
+
+  for (uint32_t i = 0; i < instances; ++i)
+  {
+    file << std::format("    [owner.C{}] {{\n", i);
+    file << std::format("      on client{}.abort(): {{\n", i);
+    file << "        if (erroring)\n";
+    file << "          reply(Result.Error);\n";
+    file << "        else if (succeeding)\n";
+    file << "          reply(Result.Success);\n";
+    file << "        else\n";
+    file << "          reply(handleAbort());\n";
+    file << "      }\n\n";
+
+    file << std::format("      on client{}.reset(): {{\n", i);
+    file << "        Result ret = resource.reset();\n";
+    file << "        if (ret.Success)\n";
+    file << "        {\n";
+    file << "          owner = Owner.None;\n";
+    file << "          pending = Owner.None;\n";
+    file << "        }\n";
+    file << "        reply(ret);\n";
+    file << "      }\n\n";
+
+    for (uint32_t j = 0; j < instances; ++j)
+    {
+      if (j == i)
+        continue;
+
+      file << std::format("      on client{}.abort(): {{\n", j);
+      file << std::format("        if (client{}.state.Error)\n", j);
+      file << "          reply(Result.Error);\n";
+      file << std::format("        else if (client{}.state.Idle)\n", j);
+      file << "          reply(Result.Success);\n";
+      file << "        else\n";
+      file << "          reply(Result.Running);\n";
+      file << "      }\n\n";
+
+      file << std::format("      on client{}.reset(): {{ reply(Result.Failure); }}\n\n", j);
+
+      file << std::format("      on client{}.trigger(): {{\n", j);
+      file << "        if (resource.state.Error) {\n";
+      file << "          reply(Result.Failure);\n";
+      file << "        } else {\n";
+      file << std::format("          pending = Owner.C{};\n", j);
+      file << "          reply(Result.Success);\n";
+      file << "        }\n";
+      file << "      }\n";
+    }
+    file << "    }\n";
+  }
+
+  file << "  }\n";
+  file << "}\n";
+
+  file.close();
+
   return VoidResult();
 }
 
@@ -731,6 +971,70 @@ std::string Compiler::toFilename(const std::string& name) const
 std::string Compiler::componentName(const std::string& name) const
 {
   return "c" + toFilename(name);
+}
+
+void Compiler::connectWithArbiter(Environment& env)
+{
+  std::map<std::string, std::vector<PortRef>> refs;
+  for (const auto& conn : env.system.connections)
+  {
+    auto in = conn.lhs;
+    auto out = conn.rhs;
+
+    // auto inId = std::format("{}.{}", in.instance, in.port);
+    // if (refs.contains(inId))
+    //   refs[inId].push_back(out);
+    // else
+    //   refs[inId] = {out};
+
+    auto outId = std::format("{}.{}", out.instance, out.port);
+    if (refs.contains(outId))
+      refs[outId].push_back(in);
+    else
+      refs[outId] = {in};
+  }
+
+  uint32_t arbiterId = 0;
+  for (const auto& ref : refs)
+  {
+    // If there is only one connection, we don't need to create an arbiter
+    if (ref.second.size() < 2)
+      continue;
+
+    createActionArbiterComponent(ref.second.size());
+
+    auto id = arbiterId++;
+    auto arbiter = std::format("arbiter{}_{}", ref.second.size(), id);
+    env.system.instances.push_back({std::format("caction_arbiter{}", ref.second.size()), arbiter});
+    env.includes.insert(std::format("action_arbiter{}.dzn", ref.second.size()));
+
+    auto [instance, port] = portFromString(ref.first);
+
+    uint32_t clientId = 0;
+    for (auto& conn : env.system.connections)
+    {
+      if (conn.rhs.instance == instance && conn.rhs.port == port)
+      {
+        conn.rhs.instance = arbiter;
+        conn.rhs.port = std::format("client{}", clientId++);
+      }
+
+      // Do we need this anywhere?
+      // if (conn.lhs.instance == instance && conn.lhs.port == port)
+      // {
+      //   conn.lhs.instance = arbiter;
+      //   conn.lhs.port = "resource";
+      // }
+    }
+
+    env.system.connections.push_back({{arbiter, "resource"}, {instance, port}});
+  }
+}
+
+Compiler::PortRef Compiler::portFromString(const std::string& ref) const
+{
+  int index = ref.find_first_of(".");
+  return PortRef{ref.substr(0, index), ref.substr(index + 1, ref.size() - index)};
 }
 
 }  // namespace koda
