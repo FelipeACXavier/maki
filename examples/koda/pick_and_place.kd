@@ -42,7 +42,7 @@ task PickAndDrop (drive req Drive, vision req Vision,
   }
 
   strategy {
-    err: drive.abort() --> grip.abort() --> end;
+    err: vision.cancel() --> drive.cancel() --> grip.cancel() --> end;
 
     pick: (vision() on abort err) --> (grip(true) on error err on abort err);
     drop: grip(false) on error err on abort err;
