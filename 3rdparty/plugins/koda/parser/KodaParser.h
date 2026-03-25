@@ -14,16 +14,16 @@ public:
   enum {
     TASK = 1, CAPABILITY = 2, STRATEGY = 3, VARS = 4, ACTION = 5, SERVICE = 6, 
     TOPIC = 7, TRIGGER = 8, RETURN = 9, ABORT = 10, ERROR = 11, IN = 12, 
-    OUT = 13, ON = 14, REQ = 15, PRO = 16, END = 17, REPEAT = 18, JOIN = 19, 
-    EITHER = 20, LET = 21, WITHIN = 22, DO = 23, ELSE = 24, IF = 25, THEN = 26, 
-    GUARD = 27, EVERY = 28, TIMEOUT = 29, ALLOWED = 30, REPLY = 31, AFTER = 32, 
-    ONCE = 33, ALWAYS = 34, MISSION = 35, IDLE = 36, S = 37, MS = 38, US = 39, 
-    NS = 40, ARROW = 41, PIPE = 42, EQ = 43, NEQ = 44, LEQ = 45, GEQ = 46, 
-    LT = 47, GT = 48, ASSIGN = 49, COLON = 50, COMMA = 51, SEMI = 52, DOT = 53, 
-    PLUS = 54, MINUS = 55, STAR = 56, SLASH = 57, NOT = 58, AND = 59, OR = 60, 
-    LPAREN = 61, RPAREN = 62, LBRACE = 63, RBRACE = 64, LBRACK = 65, RBRACK = 66, 
-    NATURAL = 67, REAL = 68, IDENT = 69, STRING = 70, ANY = 71, LINE_COMMENT = 72, 
-    BLOCK_COMMENT = 73, WS = 74
+    OUT = 13, ON = 14, REQ = 15, PRO = 16, END = 17, CONTINUE = 18, REPEAT = 19, 
+    JOIN = 20, EITHER = 21, LET = 22, WITHIN = 23, DO = 24, ELSE = 25, IF = 26, 
+    THEN = 27, GUARD = 28, EVERY = 29, TIMEOUT = 30, ALLOWED = 31, REPLY = 32, 
+    AFTER = 33, ONCE = 34, ALWAYS = 35, MISSION = 36, IDLE = 37, S = 38, 
+    MS = 39, US = 40, NS = 41, ARROW = 42, PIPE = 43, EQ = 44, NEQ = 45, 
+    LEQ = 46, GEQ = 47, LT = 48, GT = 49, ASSIGN = 50, COLON = 51, COMMA = 52, 
+    SEMI = 53, DOT = 54, PLUS = 55, MINUS = 56, STAR = 57, SLASH = 58, NOT = 59, 
+    AND = 60, OR = 61, LPAREN = 62, RPAREN = 63, LBRACE = 64, RBRACE = 65, 
+    LBRACK = 66, RBRACK = 67, NATURAL = 68, REAL = 69, IDENT = 70, STRING = 71, 
+    ANY = 72, LINE_COMMENT = 73, BLOCK_COMMENT = 74, WS = 75
   };
 
   enum {
@@ -741,6 +741,15 @@ public:
     std::vector<StrategyContext *> strategy();
     StrategyContext* strategy(size_t i);
     antlr4::tree::TerminalNode *ELSE();
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  StratContinueContext : public StrategyContext {
+  public:
+    StratContinueContext(StrategyContext *ctx);
+
+    antlr4::tree::TerminalNode *CONTINUE();
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };

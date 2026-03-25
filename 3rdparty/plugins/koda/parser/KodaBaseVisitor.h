@@ -183,6 +183,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitStratContinue(KodaParser::StratContinueContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitHandlerOnError(KodaParser::HandlerOnErrorContext *ctx) override {
     return visitChildren(ctx);
   }

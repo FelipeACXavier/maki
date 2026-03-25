@@ -138,7 +138,8 @@ strategy
   | GUARD LBRACE expression RBRACE                               # stratGuard
   | EVERY NATURAL LBRACE strategy RBRACE strategyHandler*        # stratEvery
   | END                                                          # stratEnd
-  | identifier                                                        # stratRef
+  | CONTINUE                                                     # stratContinue
+  | identifier                                                   # stratRef
   | eventStatement strategyHandler*                              # stratTask
   | LPAREN strategy RPAREN                                       # stratParen
   ;
@@ -251,6 +252,7 @@ REQ        : 'req';
 PRO        : 'pro';
 
 END        : 'end';
+CONTINUE   : 'continue';
 REPEAT     : 'repeat';
 JOIN       : 'join';
 EITHER     : 'either';

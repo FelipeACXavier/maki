@@ -103,6 +103,8 @@ public:
 
     virtual std::any visitStratWithin(KodaParser::StratWithinContext *context) = 0;
 
+    virtual std::any visitStratContinue(KodaParser::StratContinueContext *context) = 0;
+
     virtual std::any visitHandlerOnError(KodaParser::HandlerOnErrorContext *context) = 0;
 
     virtual std::any visitHandlerOnAbort(KodaParser::HandlerOnAbortContext *context) = 0;
