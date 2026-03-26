@@ -50,31 +50,32 @@ else()
 endif()
 
 # TODO: Make this more robust
-# file(COPY_FILE "${CMAKE_PREFIX_PATH}/lib/libQt6XcbQpa.so.6.8.3" "${CMAKE_INSTALL_PREFIX}/lib/libQt6XcbQpa.so.6")
-# file(COPY_FILE "${CMAKE_PREFIX_PATH}/lib/libQt6Svg.so.6.8.3" "${CMAKE_INSTALL_PREFIX}/lib/libQt6Svg.so.6")
+file(COPY_FILE "${CMAKE_PREFIX_PATH}/lib/libQt6XcbQpa.so.6.8.3" "${CMAKE_INSTALL_PREFIX}/lib/libQt6XcbQpa.so.6")
+file(COPY_FILE "${CMAKE_PREFIX_PATH}/lib/libQt6Svg.so.6.8.3" "${CMAKE_INSTALL_PREFIX}/lib/libQt6Svg.so.6")
 
+# Hopefully we never need this awful creation again, but I will keep it here just in case
 # Copy the stuff needed by qtwebengine
-file(GLOB QTWEBENGINE_PAKS
-  ${CMAKE_PREFIX_PATH}/resources/qtwebengine_*.pak
-)
+# file(GLOB QTWEBENGINE_PAKS
+#   ${CMAKE_PREFIX_PATH}/resources/qtwebengine_*.pak
+# )
 
-set(QTWEBENGINE_FILES
-  "${QTWEBENGINE_PAKS}"
-  "${CMAKE_PREFIX_PATH}/resources/icudtl.dat"
-  "${CMAKE_PREFIX_PATH}/resources/v8_context_snapshot.bin"
-)
+# set(QTWEBENGINE_FILES
+#   "${QTWEBENGINE_PAKS}"
+#   "${CMAKE_PREFIX_PATH}/resources/icudtl.dat"
+#   "${CMAKE_PREFIX_PATH}/resources/v8_context_snapshot.bin"
+# )
 
-file(COPY
-  ${QTWEBENGINE_FILES}
-  DESTINATION "${CMAKE_INSTALL_PREFIX}/resources"
-)
+# file(COPY
+#   ${QTWEBENGINE_FILES}
+#   DESTINATION "${CMAKE_INSTALL_PREFIX}/resources"
+# )
 
-file(COPY
-  "${CMAKE_PREFIX_PATH}/translations/qtwebengine_locales"
-  DESTINATION "${CMAKE_INSTALL_PREFIX}/translations/"
-)
+# file(COPY
+#   "${CMAKE_PREFIX_PATH}/translations/qtwebengine_locales"
+#   DESTINATION "${CMAKE_INSTALL_PREFIX}/translations/"
+# )
 
-file(COPY
-  "${CMAKE_PREFIX_PATH}/libexec/QtWebEngineProcess"
-  DESTINATION "${CMAKE_INSTALL_PREFIX}/libexec/"
-)
+# file(COPY
+#   "${CMAKE_PREFIX_PATH}/libexec/QtWebEngineProcess"
+#   DESTINATION "${CMAKE_INSTALL_PREFIX}/libexec/"
+# )

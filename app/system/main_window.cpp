@@ -15,7 +15,6 @@
 #include <QTextBlock>
 #include <QTextBrowser>
 #include <QUndoGroup>
-#include <QWebEngineProfile>
 #include <QWidget>
 
 #include "app_configs.h"
@@ -30,7 +29,6 @@
 #include "keys.h"
 #include "library_container.h"
 #include "library_scene.h"
-#include "local_server_tab.h"
 #include "logging.h"
 #include "notifications.h"
 #include "plugin_manager.h"
@@ -102,9 +100,6 @@ VoidResult MainWindow::start()
 
   mProcessTab = new ProcessTab(mPipeline, mCanvasPanel);
   mProcessTab->hide();
-
-  // mLocalServerTab = new LocalServerTab(mCanvasPanel);
-  // mLocalServerTab->hide();
 
   mPluginTab = new PluginTab(mSpecialTabsMenu, this);
 
@@ -316,7 +311,6 @@ void MainWindow::bind()
   }
 
   connect(mProcessTabButton, &QPushButton::pressed, this, &MainWindow::addProcessTab);
-  connect(mBrowserTabButton, &QPushButton::pressed, this, &MainWindow::addBrowserTab);
 
   // Canvas stuff =============================================================
   bindCanvas();
@@ -674,10 +668,6 @@ void MainWindow::closeCanvasTab(int index)
   {
     tab->hide();
   }
-  else if (LocalServerTab* tab = qobject_cast<LocalServerTab*>(mCanvasPanel->widget(index)))
-  {
-    tab->hide();
-  }
 
   mCanvasPanel->removeTab(index);
 }
@@ -769,25 +759,6 @@ void MainWindow::addProcessTab()
   mCanvasPanel->addTab(mProcessTab, "Process view");
   mCanvasPanel->setCurrentWidget(mProcessTab);
   mProcessTab->show();
-}
-
-void MainWindow::addBrowserTab()
-{
-  if (!mLocalServerTab)
-  {
-    LOG_WARNING("No browser tab to be added");
-    return;
-  }
-
-  // Check if process tab was already added
-  for (int i = 1; i < mCanvasPanel->count(); ++i)
-    if (qobject_cast<LocalServerTab*>(mCanvasPanel->widget(i)))
-      return;
-
-  mCanvasPanel->addTab(mLocalServerTab, "Simulation view");
-  mCanvasPanel->setCurrentWidget(mLocalServerTab);
-  mLocalServerTab->connectToServer("http://localhost:3000/trace");
-  mLocalServerTab->show();
 }
 
 void MainWindow::addPluginTab(const QString& name, PluginView* view)

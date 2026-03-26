@@ -25,7 +25,6 @@ class SaveInfo;
 class SaveHandler;
 class HostServices;
 class PluginManager;
-class LocalServerTab;
 class SettingsManager;
 class NotificationManager;
 class PluginTab;
@@ -63,7 +62,6 @@ private:
   HostServices* mHostServices = nullptr;
   Canvas* mActiveCanvas = nullptr;
   ProcessTab* mProcessTab = nullptr;
-  LocalServerTab* mLocalServerTab = nullptr;
   PluginTab* mPluginTab = nullptr;
   NotificationManager* mNotificationManager = nullptr;
 

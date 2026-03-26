@@ -59,8 +59,6 @@ find_package(Qt6 REQUIRED COMPONENTS
   Svg
   Widgets
   SvgWidgets
-  WebEngineCore
-  WebEngineWidgets
 )
 
 # qt_standard_project_setup(REQUIRES ${QT_VERSION})
