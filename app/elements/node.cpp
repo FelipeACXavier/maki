@@ -64,14 +64,8 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
   }
 
   // Add icon if it exists
-  LOG_INFO("Icon path: %s", qPrintable(mStorage->getIcon()));
-
   if (!mStorage->getIcon().isEmpty())
-  {
-    // QSize newSize = mStorage->getPixmap().size() / baseScale();
-    // setPixmap(mStorage->getPixmap().scaled(newSize, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     setIcon(mStorage->getIcon(), config()->body.iconColor);
-  }
 
   qreal labelSize = qMax(Fonts::BaseSize, mSize.width() / Fonts::BaseFactor);
   setLabel(getProperty("name").toString(), labelSize);

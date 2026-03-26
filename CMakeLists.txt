@@ -58,6 +58,7 @@ find_package(Qt6 REQUIRED COMPONENTS
   Gui
   Svg
   Widgets
+  SvgWidgets
   WebEngineCore
   WebEngineWidgets
 )

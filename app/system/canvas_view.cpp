@@ -233,7 +233,11 @@ void CanvasView::drawBackground(QPainter* p, const QRectF& /* rect */)
   p->setWorldTransform(QTransform());
   p->setRenderHint(QPainter::Antialiasing, false);
 
-  QPen pen(Qt::gray, 0.5, Qt::DotLine);
+  // QPen pen(Qt::gray, 0.5, Qt::DotLine);
+  QPen pen(Qt::gray, 0.5);
+  pen.setStyle(Qt::CustomDashLine);
+  pen.setDashPattern({1, 4});
+
   pen.setCapStyle(Qt::SquareCap);
   pen.setCosmetic(true);  // Keep line thickness fixed
 

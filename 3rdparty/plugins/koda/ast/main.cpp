@@ -1,4 +1,5 @@
 #include <filesystem>
+#include <iostream>
 #include <memory>
 
 #include "koda_compiler.h"

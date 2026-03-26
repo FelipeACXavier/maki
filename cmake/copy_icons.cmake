@@ -1,5 +1,6 @@
 # cmake/copy_icons.cmake
 
+set(MISSION_PATH "${CMAKE_CURRENT_SOURCE_DIR}/assets/icons/mission")
 set(FONT_AWESOME_PATH "${CMAKE_CURRENT_SOURCE_DIR}/assets/icons/fontawesome/svgs/solid")
 set(ICON_BUILD_DIR "${CMAKE_BINARY_DIR}/share/icons")
 
@@ -50,6 +51,19 @@ file(GLOB APP_ICON_FILES
   ${FONT_AWESOME_PATH}/eye-slash.svg
   ${FONT_AWESOME_PATH}/plug.svg
   ${FONT_AWESOME_PATH}/rectangle-list.svg
+  ${FONT_AWESOME_PATH}/angle-right.svg
+  ${FONT_AWESOME_PATH}/angles-right.svg
+  ${MISSION_PATH}/koda_async.svg
+  ${MISSION_PATH}/koda_continue.svg
+  ${MISSION_PATH}/koda_every.svg
+  ${MISSION_PATH}/koda_failure.svg
+  ${MISSION_PATH}/koda_join.svg
+  ${MISSION_PATH}/koda_repeat.svg
+  ${MISSION_PATH}/koda_start.svg
+  ${MISSION_PATH}/koda_strategy.svg
+  ${MISSION_PATH}/koda_success.svg
+  ${MISSION_PATH}/koda_sync.svg
+  ${MISSION_PATH}/koda_within.svg
 )
 
 add_custom_target(copy_icons ALL
