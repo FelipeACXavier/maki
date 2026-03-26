@@ -5,19 +5,19 @@
 
 ## Building
 
-1. Run the setup script to install the necessary tools (this only needs to be done once).
+<ol start="1"> <li>Run the setup script to install the necessary tools (this only needs to be done once).</li></ol>
 
 ```powershell
-.\scripts\windows\seyup.ps1
+.\scripts\windows\setup.ps1
 ```
 
-2. Once that is done, we can build the app
+<ol start="2"> <li>Once that is done, we can build the app</li></ol>
 
 ```powershell
 .\scripts\windows\build.ps1
 ```
 
-3. Finally, to install the tool
+<ol start="3"> <li>Finally, to install the tool</li></ol>
 
 ```powershell
 .\scripts\windows\release.ps1
