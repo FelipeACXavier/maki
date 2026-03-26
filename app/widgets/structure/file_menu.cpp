@@ -13,7 +13,6 @@ GeneratedFilesPanel::GeneratedFilesPanel(QWidget* parent)
 {
   mModel = new QFileSystemModel(this);
   mModel->setFilter(QDir::AllEntries | QDir::NoDotAndDotDot);
-  mModel->setRootPath(QCoreApplication::applicationDirPath());
   mModel->sort(0, Qt::SortOrder::AscendingOrder);
 
   mProxy = new FileTypeProxyModel(this);
@@ -88,11 +87,22 @@ GeneratedFilesPanel::GeneratedFilesPanel(QWidget* parent)
 
     openPathInEditor(path);
   });
+
+  setGenerationRoot(QCoreApplication::applicationDirPath());
 }
 
 void GeneratedFilesPanel::setGenerationRoot(const QString& dir)
 {
-  mRootDir = QFileInfo(dir).absoluteFilePath();
+  LOG_DEBUG("Setting root directory: %s", qPrintable(dir));
+
+  auto info = QDir(dir);
+  if (!info.exists())
+  {
+    LOG_DEBUG("Root directory does not exist, creating it");
+    info.mkpath(".");
+  }
+
+  mRootDir = info.path();
 
   mModel->setRootPath(mRootDir);
   mModel->sort(0, Qt::SortOrder::AscendingOrder);

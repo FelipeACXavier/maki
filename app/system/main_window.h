@@ -91,6 +91,7 @@ private:
   int libraryTypeToIndex(Types::LibraryTypes type) const;
 
   void onThemeChanged(const QString& t, const QList<Config::ThemeInfo>& at);
+  void onSettingsChanged();
 
   void handleLogging(const QString& message, QTextBrowser* textBrowser);
 

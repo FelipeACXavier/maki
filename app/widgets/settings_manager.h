@@ -8,6 +8,7 @@
 #include "common/theme.h"
 #include "generator_plugin.h"
 #include "isettings.h"
+#include "style_helpers.h"
 
 namespace Config
 {
@@ -24,6 +25,17 @@ struct GeneralSettings
   int recentHistorySize = 10;
   bool showWelcomeMessage = true;
   QVector<QString> recentFiles = {};
+
+  bool operator!=(const GeneralSettings& s)
+  {
+    return restoreLastSession != s.restoreLastSession ||
+           autosaveEnabled != s.autosaveEnabled ||
+           autosaveIntervalMinutes != s.autosaveIntervalMinutes ||
+           confirmOnCloseWithExecution != s.confirmOnCloseWithExecution ||
+           enableDebugLogs != s.enableDebugLogs ||
+           recentHistorySize != s.recentHistorySize ||
+           showWelcomeMessage != s.showWelcomeMessage;
+  }
 };
 
 struct AppearanceSettings
@@ -33,18 +45,27 @@ struct AppearanceSettings
   bool showCanvasGrid = true;
   bool nativeMenuBar = true;
   int nodeCornerRadius = 8;
+
+  bool operator!=(const AppearanceSettings& s)
+  {
+    return theme != s.theme ||
+           uiScalePercent != s.uiScalePercent ||
+           showCanvasGrid != s.showCanvasGrid ||
+           nativeMenuBar != s.nativeMenuBar ||
+           nodeCornerRadius != s.nodeCornerRadius;
+  }
 };
 
 struct GenerationSettings
 {
-  QString generationDir = QCoreApplication::applicationDirPath();
-  QStringList pluginSearchPaths = {
-#ifdef Q_OS_WIN
-      QCoreApplication::applicationDirPath() + "/plugins"
-#else
-      QCoreApplication::applicationDirPath() + "/../plugins"
-#endif
-  };
+  QString generationDir = QCoreApplication::applicationDirPath() + "/generation";
+  QStringList pluginSearchPaths = {getDirPathFor("plugins")};
+
+  bool operator!=(const GenerationSettings& s)
+  {
+    return generationDir != s.generationDir ||
+           pluginSearchPaths != s.pluginSearchPaths;
+  }
 };
 
 struct PluginInfo
@@ -80,6 +101,7 @@ public:
 
 signals:
   void themeChanged(const QString& theme, const QList<Config::ThemeInfo>& availableThemes);
+  void settingsChanged();
 
 public slots:
   void addRecentFile(const QString& s);

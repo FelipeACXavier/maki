@@ -256,7 +256,10 @@ VoidResult SettingsDialog::createGenerationPage()
   auto* pathRow = new QWidget(page);
 
   mGenerationDirEdit = new maki::StringWidget(tr("Generation output folder"), generation.generationDir, pathRow);
-  mGenerationDirEdit->addDescription(tr("\"/generated/<plugin name>\" will be appended to this path"));
+  mGenerationDirEdit->addDescription(tr("\"/<plugin name>\" will be appended to this path"));
+
+  if (generation.generationDir != GenerationSettings().generationDir)
+    mGenerationDirEdit->setValue(generation.generationDir);
 
   mGenerationBrowseBtn = new maki::ButtonWidget("...", pathRow);
   mGenerationBrowseBtn->setToolTip(tr("Choose folder"));

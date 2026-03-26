@@ -126,6 +126,8 @@ VoidResult MainWindow::start()
 
   if (mSettingsManager)
   {
+    mFileMenu->setGenerationRoot(mSettingsManager->generation().generationDir);
+
     onThemeChanged(mSettingsManager->appearance().theme, mSettingsManager->availableThemes());
     for (const auto& file : mSettingsManager->general().recentFiles)
     {
@@ -133,6 +135,7 @@ VoidResult MainWindow::start()
       connect(action, &QAction::triggered, [this, file] { onActionLoad(file); });
     }
     connect(mSettingsManager.get(), &SettingsManager::themeChanged, this, &MainWindow::onThemeChanged);
+    connect(mSettingsManager.get(), &SettingsManager::settingsChanged, this, &MainWindow::onSettingsChanged);
 
     if (!mSettingsManager->general().showWelcomeMessage)
       mInfoText->clear();
@@ -164,6 +167,12 @@ void MainWindow::onThemeChanged(const QString& t, const QList<Config::ThemeInfo>
     mPluginTab->onThemeChanged();
 
   MainWindowLayout::onThemeChanged(mSettingsManager->appearance());
+}
+
+void MainWindow::onSettingsChanged()
+{
+  if (mFileMenu)
+    mFileMenu->setGenerationRoot(mSettingsManager->generation().generationDir);
 }
 
 void MainWindow::startUI()

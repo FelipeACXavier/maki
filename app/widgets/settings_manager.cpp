@@ -174,15 +174,18 @@ void SettingsManager::save()
 
 void SettingsManager::setGeneral(const GeneralSettings& s)
 {
+  bool changed = mGeneral != s;
+
   mGeneral = s;
   save();
+
+  if (changed)
+    emit settingsChanged();
 }
 
 void SettingsManager::setAppearance(const AppearanceSettings& s)
 {
-  bool changed = (s.theme != mAppearance.theme) ||
-                 (s.nativeMenuBar != mAppearance.nativeMenuBar) ||
-                 (s.showCanvasGrid != mAppearance.showCanvasGrid);
+  bool changed = (mAppearance != s);
 
   mAppearance = s;
   save();
@@ -193,8 +196,13 @@ void SettingsManager::setAppearance(const AppearanceSettings& s)
 
 void SettingsManager::setGeneration(const GenerationSettings& s)
 {
+  bool changed = mGeneration != s;
+
   mGeneration = s;
   save();
+
+  if (changed)
+    emit settingsChanged();
 }
 
 void SettingsManager::setPlugins(const QVector<PluginInfo>& s)
