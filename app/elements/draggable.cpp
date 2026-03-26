@@ -11,6 +11,7 @@
 #include "app_configs.h"
 #include "logging.h"
 #include "save_info.h"
+#include "style_helpers.h"
 #include "theme.h"
 
 DraggableItem::DraggableItem(const QString& nodeId, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
@@ -20,13 +21,14 @@ DraggableItem::DraggableItem(const QString& nodeId, std::shared_ptr<NodeConfig> 
 
   if (!config()->body.iconPath.isEmpty())
   {
-    QPixmap icon(config()->body.iconPath);
-    setPixmap(icon.scaled(scaledRect().size().toSize() * config()->body.iconScale, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    // auto icon = getIconPathFor(config()->body.iconPath);
+    // auto pixmap = applyColorToIcon(icon, config()->body.iconColor);
+    // auto scale = scaledRect().size().toSize() * config()->body.iconScale;
+    // setPixmap(pixmap.scaled(scale, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    setIcon(getIconPathFor(config()->body.iconPath), config()->body.iconColor);
   }
-  else
-  {
-    setLabel(config()->type, Fonts::BaseSize);
-  }
+
+  setLabel(config()->type, Fonts::BaseSize);
 }
 
 DraggableItem::~DraggableItem()
@@ -83,6 +85,7 @@ void DraggableItem::startDrag(QGraphicsSceneMouseEvent* event)
   NodeSaveInfo info;
   info.setNodeId(nodeId());
   info.setPixmap(nodePixmap());
+  info.setIcon(nodeIcon());
   info.setSize(QSize(config()->body.width, config()->body.height));
 
   QByteArray data;

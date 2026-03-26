@@ -60,6 +60,11 @@ QPixmap NodeSaveInfo::getPixmap() const
   return mPixmap;
 }
 
+QString NodeSaveInfo::getIcon() const
+{
+  return mIconPath;
+}
+
 QVector<std::shared_ptr<IProperty>> NodeSaveInfo::getfields() const
 {
   return mFields;
@@ -108,6 +113,11 @@ void NodeSaveInfo::setPosition(const QPointF& arg)
 void NodeSaveInfo::setPixmap(const QPixmap& arg)
 {
   mPixmap = arg;
+}
+
+void NodeSaveInfo::setIcon(const QString& arg)
+{
+  mIconPath = arg;
 }
 
 void NodeSaveInfo::setSize(const QSizeF& arg)
@@ -262,6 +272,8 @@ QJsonObject NodeSaveInfo::toJson() const
 
   data[ConfigKeys::PIXMAP] = JSON::fromPixmap(getPixmap());
 
+  data[ConfigKeys::ICON_PATH] = getIcon();
+
   return data;
 }
 
@@ -311,6 +323,7 @@ NodeSaveInfo NodeSaveInfo::fromJson(const QJsonObject& data)
   }
 
   info.setPixmap(JSON::toPixmap(data[ConfigKeys::PIXMAP].toObject()));
+  info.setIcon(data[ConfigKeys::ICON_PATH].toString());
 
   return info;
 }
@@ -384,6 +397,7 @@ QDataStream& operator<<(QDataStream& out, const NodeSaveInfo& info)
   info.getPixmap().save(&buffer, "PNG");
 
   out << pixmapData;
+  out << info.getIcon();
 
   return out;
 }
@@ -445,6 +459,10 @@ QDataStream& operator>>(QDataStream& in, NodeSaveInfo& info)
 
   pixmap.loadFromData(pixmapData, "PNG");
   info.setPixmap(pixmap);
+
+  QString iconPath;
+  in >> iconPath;
+  info.setIcon(iconPath);
 
   return in;
 }

@@ -1,6 +1,7 @@
 #include "library_scene.h"
 
 #include <QGraphicsSceneMouseEvent>
+#include <QGraphicsSvgItem>
 
 #include "elements/draggable.h"
 
@@ -20,22 +21,25 @@ void LibraryScene::mousePressEvent(QGraphicsSceneMouseEvent* event)
     clearSelectedNodes();
 
     QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
-    if (item && item->type() == DraggableItem::Type)
+    if (item)
     {
-      mClickedItem = static_cast<DraggableItem*>(item);
+      if (item->type() == DraggableItem::Type)
+        mClickedItem = static_cast<DraggableItem*>(item);
+      else if (item->type() == QGraphicsSvgItem::Type)
+        mClickedItem = static_cast<DraggableItem*>(item->parentItem());
 
-      // mPressed = true;
-      mDragging = false;
-      mPressScenePos = event->scenePos();
+      if (mClickedItem)
+      {
+        // mPressed = true;
+        mDragging = false;
+        mPressScenePos = event->scenePos();
 
-      dynamic_cast<QGraphicsView*>(parent())->setCursor(Qt::OpenHandCursor);
+        dynamic_cast<QGraphicsView*>(parent())->setCursor(Qt::OpenHandCursor);
 
-      event->accept();
-      return;
+        event->accept();
+        return;
+      }
     }
-  }
-  else
-  {
   }
 
   QGraphicsScene::mousePressEvent(event);
@@ -99,4 +103,5 @@ void LibraryScene::clearSelectedNodes()
   }
 
   clearSelection();
+  mClickedItem = nullptr;
 }

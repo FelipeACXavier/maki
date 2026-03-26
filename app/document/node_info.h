@@ -29,12 +29,14 @@ public:
   qreal getScale() const;
   QSizeF getSize() const;
   QPixmap getPixmap() const;
+  QString getIcon() const;
 
   void setId(const QString& arg);
   void setNodeId(const QString& arg);
   void setParentId(const QString& arg);
   void setPosition(const QPointF& arg);
   void setPixmap(const QPixmap& arg);
+  void setIcon(const QString& iconPath);
   void setSize(const QSizeF& arg);
   void setScale(qreal arg);
 
@@ -74,6 +76,7 @@ private:
   qreal mScale;
 
   QPixmap mPixmap;
+  QString mIconPath;
 
   QMap<QString, QVariant> mProperties;
   QVector<std::shared_ptr<INode>> mChildren;

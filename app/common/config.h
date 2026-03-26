@@ -105,6 +105,7 @@ public:
   Types::Shape shape = Types::Shape::ROUNDED_RECTANGLE;
 
   QColor textColor = Qt::black;
+  QColor iconColor = Qt::black;
   QColor backgroundColor = Qt::lightGray;
   QColor borderColor = Qt::black;
 

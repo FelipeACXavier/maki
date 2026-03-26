@@ -18,6 +18,7 @@ static const QString PARENT_ID = "parentId";
 static const QString MODIFIABLE = "modifiable";
 static const QString OWNER = "owner";
 static const QString INFO = "info";
+static const QString LIBRARIES = "libraries";
 
 static const QString FIELDS = "fields";
 static const QString EVENTS = "events";
@@ -36,6 +37,7 @@ static const QString Y = "y";
 static const QString WIDTH = "width";
 static const QString HEIGHT = "height";
 static const QString PIXMAP = "pixmap";
+static const QString ICON_PATH = "iconPath";
 static const QString DATA = "data";
 static const QString OPTION_DATA = "option_data";
 

@@ -236,6 +236,9 @@ BodyConfig::BodyConfig(const QJsonObject& object)
   if (object.contains("textColor"))
     textColor = QColor(object["textColor"].toString());
 
+  if (object.contains("iconColor"))
+    iconColor = QColor(object["iconColor"].toString());
+
   if (object.contains("borderColor"))
     borderColor = QColor(object["borderColor"].toString());
 
@@ -394,6 +397,7 @@ QDataStream& operator<<(QDataStream& out, const BodyConfig& config)
 {
   out << config.shape;
   out << config.textColor;
+  out << config.iconColor;
   out << config.backgroundColor;
   out << config.borderColor;
   out << config.width;

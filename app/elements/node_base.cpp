@@ -1,7 +1,9 @@
 #include "node_base.h"
 
+#include <QGraphicsColorizeEffect>
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
+#include <QSvgRenderer>
 #include <QTextDocument>
 #include <QtGlobal>
 
@@ -28,6 +30,8 @@ NodeBase::NodeBase(const QString& id, const QString& nodeId, std::shared_ptr<Nod
 
 NodeBase::~NodeBase()
 {
+  if (mPixmapItem)
+    delete mPixmapItem;
 }
 
 QString NodeBase::id() const
@@ -108,7 +112,7 @@ void NodeBase::paintNode(const QRectF& bounds, const QColor& background, const Q
   }
   else
   {
-    painter->drawRoundedRect(drawingBounds, 5, 5);  // 10 is the radius of the corners
+    painter->drawRoundedRect(drawingBounds, 5, 5);
   }
 
   paintPixmap(painter);
@@ -226,6 +230,42 @@ void NodeBase::setPixmap(const QPixmap& pixmap)
   mPixmapItem = new QGraphicsPixmapItem(pixmap);
 }
 
+void NodeBase::setIcon(const QString& path, const QColor& iconColor)
+{
+  mIconPath = path;
+  mIconItem = new QGraphicsSvgItem(mIconPath, this);
+
+  QRectF nodeRect = boundingRect();
+  QRectF svgRect = mIconItem->boundingRect();
+
+  constexpr qreal padding = 2.0;
+
+  // available space inside the node
+  QRectF contentRect = nodeRect.adjusted(padding, padding, -padding, -padding);
+
+  // scale SVG to fit inside contentRect while keeping aspect ratio
+  qreal sx = contentRect.width() / svgRect.width();
+  qreal sy = contentRect.height() / svgRect.height();
+  qreal scale = std::min(sx, sy);
+
+  mIconItem->setScale(scale);
+
+  // after scaling, compute displayed size
+  QSizeF scaledSize(svgRect.width() * scale, svgRect.height() * scale);
+
+  // centre inside contentRect
+  qreal x = contentRect.x() + (contentRect.width() - scaledSize.width()) / 2.0;
+  qreal y = contentRect.y() + (contentRect.height() - scaledSize.height()) / 2.0;
+
+  mIconItem->setPos(x, y);
+
+  auto* effect = new QGraphicsColorizeEffect();
+  effect->setColor(iconColor);
+  effect->setStrength(1.0);
+
+  mIconItem->setGraphicsEffect(effect);
+}
+
 qreal NodeBase::computeScaleFactor() const
 {
   qreal widthScale = (config()->body.width > MAX_WIDTH)
@@ -241,8 +281,27 @@ qreal NodeBase::computeScaleFactor() const
 
 QPixmap NodeBase::nodePixmap() const
 {
-  if (mPixmapItem)
-    return mPixmapItem->pixmap();
+  if (!mIconItem || !mIconItem->renderer() || !mIconItem->renderer()->isValid())
+    return QPixmap();
 
-  return QPixmap();
+  QPixmap pixmap(mIconItem->boundingRect().size().toSize());
+  pixmap.fill(Qt::transparent);
+
+  QPainter painter(&pixmap);
+  mIconItem->renderer()->render(&painter, QRectF(QPointF(0, 0), mIconItem->boundingRect().size().toSize()));
+
+  return pixmap;
+
+  // if (mPixmapItem)
+  //   return mPixmapItem->pixmap();
+
+  // return QPixmap();
+}
+
+QString NodeBase::nodeIcon() const
+{
+  if (mIconItem && !mIconPath.isEmpty())
+    return mIconPath;
+
+  return QString();
 }

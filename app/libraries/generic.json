@@ -3,7 +3,7 @@
   "author": "Felipe Xavier",
   "libraries": [
     {
-      "type": "structure",
+      "type": "structural",
       "nodes": [
         {
           "type": "System",
@@ -173,7 +173,7 @@
       ]
     },
     {
-      "type": "internal behaviour",
+      "type": "behavioural",
       "nodes": [
         {
           "type": "Start",

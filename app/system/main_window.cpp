@@ -27,6 +27,7 @@
 #include "elements/flow.h"
 #include "elements/node.h"
 #include "host_services.h"
+#include "keys.h"
 #include "library_container.h"
 #include "library_scene.h"
 #include "local_server_tab.h"
@@ -373,10 +374,10 @@ VoidResult MainWindow::loadElements()
 {
   LOG_DEBUG("Loading the elements");
 
-  if (!mConfig.contains("libraries"))
+  if (!mConfig.contains(ConfigKeys::LIBRARIES))
     return VoidResult::Failed("Not a single library was specified");
 
-  auto libraries = mConfig["libraries"];
+  auto libraries = mConfig[ConfigKeys::LIBRARIES];
   if (!libraries.isArray())
     return VoidResult::Failed("Libraries must be in a list in the format \"libraries\": []");
 
@@ -393,7 +394,7 @@ VoidResult MainWindow::loadElements()
 
     auto libConfig = libRead.Value();
 
-    RETURN_ON_FAILURE(loadLibrary(libConfig));
+    LOG_ERROR_ON_FAILURE(loadLibrary(libConfig));
   }
 
   return VoidResult();
@@ -401,21 +402,21 @@ VoidResult MainWindow::loadElements()
 
 VoidResult MainWindow::loadLibrary(const JSON& config)
 {
-  if (!config.contains("name"))
+  if (!config.contains(ConfigKeys::NAME))
     return VoidResult::Failed("Packages must have a name");
 
-  if (!config.contains("libraries"))
+  if (!config.contains(ConfigKeys::LIBRARIES))
     return VoidResult::Failed("Packages must have libraries");
 
-  QString name = config["name"].toString();
-  auto libraries = config["libraries"].toArray();
+  QString name = config[ConfigKeys::NAME].toString();
+  auto libraries = config[ConfigKeys::LIBRARIES].toArray();
   for (const auto& value : libraries)
   {
     if (!value.isObject())
       return VoidResult::Failed("Invalid library format");
 
     QJsonObject library = value.toObject();
-    RETURN_ON_FAILURE(loadElementLibrary(name, library));
+    LOG_ERROR_ON_FAILURE(loadElementLibrary(name, library));
   }
 
   return VoidResult();
@@ -423,29 +424,30 @@ VoidResult MainWindow::loadLibrary(const JSON& config)
 
 VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& config)
 {
-  if (!config.contains("type"))
+  if (!config.contains(ConfigKeys::TYPE))
     return VoidResult::Failed("Libraries must have a type");
 
-  QString type = config["type"].toString();
+  QString libraryName = config.contains(ConfigKeys::NAME) ? config[ConfigKeys::NAME].toString() : name;
+  QString type = config[ConfigKeys::TYPE].toString();
 
-  LOG_DEBUG("Loading library: %s", qPrintable(name));
+  LOG_DEBUG("Loading library: %s of %s", qPrintable(libraryName), qPrintable(name));
 
   // Every library is added to a new item in the toolbox.
   // We load those dynamically on startup.
   QToolBox* toolbox = nullptr;
-  if (type == "structure")
+  if (type == ConfigKeys::STRUCTURAL)
     toolbox = mStructureToolBox;
   else
     toolbox = mBehaviourToolBox;
 
-  LibraryContainer* sidebarview = LibraryContainer::create(name, toolbox);
+  LibraryContainer* sidebarview = LibraryContainer::create(libraryName, toolbox);
   LibraryScene* sidebarScene = dynamic_cast<LibraryScene*>(sidebarview->scene());
   connect(sidebarScene, &LibraryScene::libraryNodeSelected, [this](const QString& nodeType) {
     if (auto info = mConfigTable->get(nodeType))
       mInfoText->setHtml(createInformationMessage(*info));
   });
 
-  auto nodes = config["nodes"];
+  auto nodes = config[ConfigKeys::NODES];
   if (!nodes.isArray())
     return VoidResult::Failed("nodes must be in a list in the format \"nodes\": []");
 
@@ -463,7 +465,7 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
       return VoidResult::Failed(config->errorMessage.toStdString());
 
     // Initialize the library type
-    if (type == "structure")
+    if (type == ConfigKeys::STRUCTURAL)
       config->libraryType = Types::LibraryTypes::STRUCTURAL;
     else
       config->libraryType = Types::LibraryTypes::BEHAVIOUR;
@@ -471,7 +473,8 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
     auto id = QStringLiteral("%1::%2").arg(name, config->type);
     sidebarview->addNode(id, config);
 
-    RETURN_ON_FAILURE(mConfigTable->add(id, config));
+    LOG_TRACE("Adding key: %s to the config table", qPrintable(id));
+    LOG_ERROR_ON_FAILURE(mConfigTable->add(id, config));
   }
 
   return VoidResult();

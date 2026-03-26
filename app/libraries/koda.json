@@ -1,12 +1,13 @@
 {
-  "name": "Mission",
+  "name": "Koda",
   "author": "Felipe Xavier",
   "libraries": [
     {
-      "type": "structure",
+      "type": "structural",
+      "name": "Koda",
       "nodes": [
         {
-          "type": "Component",
+          "type": "Task",
           "body": {
             "shape": "Rectangle",
             "textColor": "#FFFFFF",
@@ -23,7 +24,7 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Component",
+              "default": "Task",
               "info": "The name of the block"
             },
             {
@@ -74,6 +75,62 @@
             }
           ]
         },
+        {
+          "type": "Timer",
+          "body": {
+            "shape": "Rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#008585",
+            "borderColor": "#FFFFFF",
+            "width": 500,
+            "height": 500,
+            "z-index": -2
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Timer"
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#008585"
+            }
+          ],
+          "controls": [
+            {
+              "id": "Add event",
+              "type": "add event"
+            }
+          ],
+          "events": [
+            {
+              "id": "set",
+              "type": "in",
+              "returnType": "void",
+              "modifiable": false
+            },
+            {
+              "id": "reset",
+              "type": "in",
+              "returnType": "void",
+              "modifiable": false
+            },
+            {
+              "id": "timeout",
+              "type": "out",
+              "returnType": "void",
+              "modifiable": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "structural",
+      "name": "ROS 2 Capabilities",
+      "nodes": [
         {
           "type": "Siren",
           "body": {
@@ -337,57 +394,13 @@
               "modifiable": false
             }
           ]
-        },
-        {
-          "type": "Timer",
-          "body": {
-            "shape": "Rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#008585",
-            "borderColor": "#FFFFFF",
-            "width": 500,
-            "height": 500,
-            "z-index": -2
-          },
-          "properties": [
-            {
-              "id": "name",
-              "type": "string",
-              "default": "Timer"
-            },
-            {
-              "id": "color",
-              "type": "color",
-              "default": "#008585"
-            }
-          ],
-          "controls": [
-            {
-              "id": "Add event",
-              "type": "add event"
-            }
-          ],
-          "events": [
-            {
-              "id": "set",
-              "type": "in",
-              "returnType": "void",
-              "modifiable": false
-            },
-            {
-              "id": "reset",
-              "type": "in",
-              "returnType": "void",
-              "modifiable": false
-            },
-            {
-              "id": "timeout",
-              "type": "out",
-              "returnType": "void",
-              "modifiable": true
-            }
-          ]
-        },
+        }
+      ]
+    },
+    {
+      "name": "IoT Capabilities",
+      "type": "structural",
+      "nodes": [
         {
           "type": "Bridge",
           "body": {
@@ -654,7 +667,7 @@
       ]
     },
     {
-      "type": "internal behaviour",
+      "type": "behavioural",
       "nodes": [
         {
           "type": "Start",

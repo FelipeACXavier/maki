@@ -150,7 +150,7 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
       if (!transitionClickHandler(event, item))
         return;
     }
-    else if (item && item->type() == QGraphicsTextItem::Type)
+    else if (item && (item->type() == QGraphicsTextItem::Type || item->type() == QGraphicsSvgItem::Type))
     {
       auto parent = item->parentItem();
       if (parent && parent->type() == NodeItem::Type)
@@ -340,12 +340,20 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     if (event->button() == Qt::LeftButton)
     {
       QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
-      if (item && (item->type() == NodeItem::Type || item->type() == QGraphicsTextItem::Type))
+      if (item)
       {
-        NodeItem* node = static_cast<NodeItem*>(item->type() == QGraphicsTextItem::Type ? item->parentItem() : item);
+        NodeItem* node = nullptr;
 
-        mTransition->setEnd(node->id(), node->mapToScene(node->boundingRect().center()), {0, 0});
-        mTransition->done(mNode, node);
+        if (item->type() == NodeItem::Type)
+          node = static_cast<NodeItem*>(item);
+        else if (item->type() == QGraphicsTextItem::Type || item->type() == QGraphicsSvgItem::Type)
+          node = static_cast<NodeItem*>(item->parentItem());
+
+        if (node)
+        {
+          mTransition->setEnd(node->id(), node->mapToScene(node->boundingRect().center()), {0, 0});
+          mTransition->done(mNode, node);
+        }
       }
       else
       {
@@ -624,7 +632,7 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     // =============================================
     addSectionLabel(&menu, "Creation");
 
-    QAction* newEventAction = menu.addAction(tr("New task"));
+    QAction* newEventAction = menu.addAction(tr("New flow"));
     newEventAction->setEnabled(node != nullptr || items.size() > 0);
     QObject::connect(newEventAction, &QAction::triggered, [this, node]() {
       emit createEvent(node);

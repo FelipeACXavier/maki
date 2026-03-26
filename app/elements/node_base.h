@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QGraphicsItem>
+#include <QGraphicsSvgItem>
 #include <QString>
 
 #include "config.h"
@@ -35,6 +36,7 @@ public:
   void paintNode(const QRectF& bounds, const QColor& background, const QPen& text, QPainter* painter);
 
   virtual QPixmap nodePixmap() const;
+  virtual QString nodeIcon() const;
   virtual void toggleLabelVisibility();
 
 protected:
@@ -42,9 +44,12 @@ protected:
 
   QGraphicsTextItem* mLabel = nullptr;
   QGraphicsPixmapItem* mPixmapItem = nullptr;
+  QString mIconPath = "";
+  QGraphicsSvgItem* mIconItem = nullptr;
 
   virtual void updateLabelPosition();
   virtual void setPixmap(const QPixmap& pixmap);
+  virtual void setIcon(const QString& path, const QColor& iconColor);
   virtual void setLabel(const QString& name, qreal fontSize);
   virtual void setLabelName(const QString& name);
   virtual void setLabelSize(qreal fontSize, const QSizeF& boundingSize);
