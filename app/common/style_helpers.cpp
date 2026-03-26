@@ -125,6 +125,11 @@ QString getIconPathFor(const QString& path)
   return getDirPathFor("share/icons/" + path);
 }
 
+QString getLibPath()
+{
+  return getDirPathFor("share/libraries");
+}
+
 void updateProperty(QWidget* widget, const QString& property, bool value)
 {
   widget->setProperty(property.toStdString().c_str(), value);

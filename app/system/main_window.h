@@ -53,7 +53,6 @@ private slots:
   void onFlowRemoved(const QString& flowId, const QString& nodeId);
 
 private:
-  JSON mConfig;
   std::unique_ptr<SaveHandler> mSaveHandler;
   std::unique_ptr<PluginManager> mPluginManager;
   std::shared_ptr<ConfigurationTable> mConfigTable;

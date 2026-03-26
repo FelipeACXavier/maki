@@ -11,6 +11,7 @@ qt_standard_project_setup()
 include(${CMAKE_SOURCE_DIR}/cmake/copy_fonts.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/copy_icons.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/copy_themes.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/copy_libraries.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/doxygen.cmake)
 
 # ------------------------------------------------------------------------------------------------------------
@@ -74,7 +75,7 @@ target_link_libraries(${APPLICATION_NAME} PRIVATE
     libmaki
 )
 
-add_dependencies(${APPLICATION_NAME} copy_fonts copy_themes copy_icons)
+add_dependencies(${APPLICATION_NAME} copy_fonts copy_themes copy_icons copy_libraries)
 
 install(TARGETS ${APPLICATION_NAME}
     BUNDLE  DESTINATION .

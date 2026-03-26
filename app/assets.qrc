@@ -2,13 +2,6 @@
 <RCC>
   <qresource prefix="/">
     <file alias="themes/style.qss">assets/style.qss</file>
-    <file>assets/config.json</file>
-    <file>libraries/generic.json</file>
-    <file>libraries/math.json</file>
-    <file>libraries/grpc.json</file>
-    <file>libraries/koda.json</file>
-    <file>libraries/serial.json</file>
-    <file>libraries/utilities.json</file>
     <file>assets/branch-closed.png</file>
     <file>assets/branch-end.png</file>
     <file>assets/branch-more.png</file>

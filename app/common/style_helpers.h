@@ -27,6 +27,7 @@ void addDynamicWidget(QVBoxLayout* layout, QWidget* dynamicWidget, QWidget* pare
 
 QString getDirPathFor(const QString& path);
 QString getIconPathFor(const QString& path);
+QString getLibPath();
 
 void updateProperty(QWidget* widget, const QString& property, bool value);
 void applyStyle(QWidget* widget, const QString& style);

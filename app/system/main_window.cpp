@@ -85,11 +85,6 @@ VoidResult MainWindow::start()
       mNotificationManager->showNotification(QString::fromStdString(header), QString::fromStdString(message), level);
   };
 
-  auto configRead = JSON::fromFile(":/assets/config.json");
-  if (!configRead.IsSuccess())
-    return VoidResult::Failed(configRead);
-
-  mConfig = configRead.Value();
   mConfigTable = std::make_shared<ConfigurationTable>();
   mStorage = std::make_shared<SaveInfo>();
 
@@ -374,26 +369,20 @@ VoidResult MainWindow::loadElements()
 {
   LOG_DEBUG("Loading the elements");
 
-  if (!mConfig.contains(ConfigKeys::LIBRARIES))
-    return VoidResult::Failed("Not a single library was specified");
+  auto libDir = QDir(getLibPath());
+  QStringList files = libDir.entryList(QDir::Files);
 
-  auto libraries = mConfig[ConfigKeys::LIBRARIES];
-  if (!libraries.isArray())
-    return VoidResult::Failed("Libraries must be in a list in the format \"libraries\": []");
-
-  for (const auto& library : libraries.toArray())
+  for (const auto& file : files)
   {
-    QString fileName = QStringLiteral(":/libraries/%1.json").arg(library.toString());
-
+    const auto fileName = libDir.absoluteFilePath(file);
     auto libRead = JSON::fromFile(fileName);
     if (!libRead.IsSuccess())
       return VoidResult::Failed(
-          QStringLiteral("Failed to open configuration: %1")
+          QStringLiteral("Failed to open library: %1")
               .arg(fileName)
               .toStdString());
 
     auto libConfig = libRead.Value();
-
     LOG_ERROR_ON_FAILURE(loadLibrary(libConfig));
   }
 

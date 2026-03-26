@@ -20,7 +20,6 @@ GeneratedFilesPanel::GeneratedFilesPanel(QWidget* parent)
   mProxy->setSourceModel(mModel);
 
   setModel(mProxy);
-  // setModel(mModel);
   setHeaderHidden(false);
   setSortingEnabled(true);
   setUniformRowHeights(true);
