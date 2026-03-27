@@ -777,20 +777,6 @@ VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)
 
   mCurrentNode = transition->id();
 
-  QLabel* nameLabel = new QLabel("Label");
-
-  nameLabel->setFont(Fonts::Label);
-  layout()->addWidget(nameLabel);
-
-  QLineEdit* widget = new QLineEdit(this);
-  widget->setText(transition->getName());
-  connect(widget, &QLineEdit::returnPressed, this, [=]() {
-    transition->setName(widget->text());
-  });
-
-  widget->setFont(Fonts::Property);
-  layout()->addWidget(widget);
-
   auto source = transition->source();
   if (source == nullptr)
     return VoidResult::Failed("Transition with no source");
@@ -800,6 +786,12 @@ VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)
   layout()->addWidget(comboLabel);
 
   QComboBox* eventWidget = new QComboBox(this);
+  eventWidget->setPlaceholderText("-");
+  eventWidget->setCurrentIndex(-1);
+
+  eventWidget->addItem("on error", "on error");
+  eventWidget->addItem("on abort", "on abort");
+
   auto callers = mStorage->getPossibleCallers(source->id());
   for (const auto& caller : callers)
   {
@@ -807,18 +799,29 @@ VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)
     if (name.isNull() || !name.isValid())
       continue;
 
-    auto events = mStorage->getEventsFromNode(caller->getid());
+    auto events = mStorage->getEventsOfTypeFromNode(caller->getid(), Types::CallType::OUT);
     for (const auto& event : events)
       eventWidget->addItem(name.toString() + "." + event->getname(), event->getid());
 
     eventWidget->setCurrentText(transition->getEvent());
   }
 
-  connect(eventWidget, &QComboBox::currentTextChanged, this, [=](const QString& text) {
+  connect(eventWidget, &QComboBox::currentTextChanged, this, [transition](const QString& text) {
     transition->setEvent(text);
+    transition->setName(text);
+  });
+
+  QPushButton* button = new QPushButton(this);
+  button->setText(tr("Reset"));
+  connect(button, &QPushButton::pressed, this, [transition, eventWidget]() {
+    transition->setEvent("");
+    transition->setName("");
+    eventWidget->setPlaceholderText("-");
+    eventWidget->setCurrentIndex(-1);
   });
 
   layout()->addWidget(eventWidget);
+  layout()->addWidget(button);
 
   static_cast<QVBoxLayout*>(layout())->addStretch();
 

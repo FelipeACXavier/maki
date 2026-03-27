@@ -621,7 +621,6 @@ void MainWindow::onCanvasTabChanged(int index)
   bindCanvas();
 
   auto libIndex = libraryTypeToIndex(mActiveCanvas->type());
-  mNavigationTab->setCurrentIndex(libIndex);
   mPalette->setCurrentIndex(libIndex);
 
   auto activeStack = mActiveCanvas->undoStack();
@@ -650,7 +649,6 @@ void MainWindow::closeCanvasTab(int index)
         bindCanvas();
 
         auto libIndex = libraryTypeToIndex(mActiveCanvas->type());
-        mNavigationTab->setCurrentIndex(libIndex);
         mPalette->setCurrentIndex(libIndex);
       }
     }
@@ -731,7 +729,6 @@ void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
 
   // Change to respective tabs
   auto index = libraryTypeToIndex(canvas->type());
-  mNavigationTab->setCurrentIndex(index);
   mPalette->setCurrentIndex(index);
 
   // Add default start and end nodes to flow

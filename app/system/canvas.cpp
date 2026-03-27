@@ -554,9 +554,9 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 
     menu.addMenu(createAlignMenu(itemIds));
   }
-  else if (item->type() == NodeItem::Type)
+  else if (item->type() == NodeItem::Type || item->type() == QGraphicsSvgItem::Type)
   {
-    NodeItem* node = static_cast<NodeItem*>(item);
+    NodeItem* node = static_cast<NodeItem*>(item->type() == NodeItem::Type ? item : item->parentItem());
 
     // =============================================
     addSectionLabel(&menu, "Creation");
