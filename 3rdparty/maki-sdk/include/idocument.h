@@ -26,7 +26,7 @@ public:
   virtual QString getowner() const = 0;
   virtual bool getmodifiable() const = 0;
 
-  virtual Types::ConnectorType gettype() const = 0;
+  virtual Types::CallType gettype() const = 0;
   virtual Types::PropertyTypes getreturnType() const = 0;
   virtual QVector<std::shared_ptr<IProperty>> getarguments() const = 0;
 

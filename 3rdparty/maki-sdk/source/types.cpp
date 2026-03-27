@@ -27,7 +27,71 @@ QString Types::ConnectorTypeToString(Types::ConnectorType type)
 }
 
 // =====================================================================================
+// Call type
+Types::CallType Types::StringToCallType(const QString& type)
+{
+  if (type == "trigger")
+    return Types::CallType::TRIGGER;
+  else if (type == "abort")
+    return Types::CallType::ABORT;
+  else if (type == "error")
+    return Types::CallType::ERROR;
+  else if (type == "return")
+    return Types::CallType::RETURN;
+  else if (type == "user")
+    return Types::CallType::USER;
+  else if (type == "in")
+    return Types::CallType::IN;
+  else if (type == "out")
+    return Types::CallType::OUT;
+
+  return Types::CallType::UNKNOWN;
+}
+
+QString Types::CallTypeToString(CallType type)
+{
+  if (type == Types::CallType::TRIGGER)
+    return "trigger";
+  else if (type == Types::CallType::ABORT)
+    return "abort";
+  else if (type == Types::CallType::ERROR)
+    return "error";
+  else if (type == Types::CallType::RETURN)
+    return "return";
+  else if (type == Types::CallType::USER)
+    return "user";
+  else if (type == Types::CallType::IN)
+    return "in";
+  else if (type == Types::CallType::OUT)
+    return "out";
+
+  return "unknown";
+}
+
+// =====================================================================================
 // Property type
+Types::PropertyTypes Types::plus(PropertyTypes type, uint16_t amount)
+{
+  uint16_t sum = ((uint16_t)type + amount);
+  if (sum < (uint16_t)Types::PropertyTypes::UNKNOWN)
+    return Types::PropertyTypes::UNKNOWN;
+  if (sum >= (uint16_t)Types::PropertyTypes::END)
+    return Types::PropertyTypes::UNKNOWN;
+
+  return (PropertyTypes)sum;
+}
+
+Types::PropertyTypes Types::minus(PropertyTypes type, uint16_t amount)
+{
+  uint16_t sum = ((uint16_t)type - amount);
+  if (sum < (uint16_t)Types::PropertyTypes::UNKNOWN)
+    return Types::PropertyTypes::UNKNOWN;
+  if (sum >= (uint16_t)Types::PropertyTypes::END)
+    return Types::PropertyTypes::UNKNOWN;
+
+  return (PropertyTypes)sum;
+}
+
 QString Types::PropertyTypesToString(Types::PropertyTypes type)
 {
   if (type == Types::PropertyTypes::STRING)
@@ -52,6 +116,10 @@ QString Types::PropertyTypesToString(Types::PropertyTypes type)
     return "event_select";
   else if (type == Types::PropertyTypes::ENUM)
     return "enum";
+  else if (type == Types::PropertyTypes::TRIGGER_CALL)
+    return "trigger_call";
+  else if (type == Types::PropertyTypes::USER_CALL)
+    return "user_call";
 
   return "unknown";
 }
@@ -80,6 +148,10 @@ Types::PropertyTypes Types::StringToPropertyTypes(const QString& type)
     return Types::PropertyTypes::COMPONENT_SELECT;
   else if (type == "enum")
     return Types::PropertyTypes::ENUM;
+  else if (type == "trigger_call")
+    return Types::PropertyTypes::TRIGGER_CALL;
+  else if (type == "user_call")
+    return Types::PropertyTypes::USER_CALL;
 
   return Types::PropertyTypes::UNKNOWN;
 }

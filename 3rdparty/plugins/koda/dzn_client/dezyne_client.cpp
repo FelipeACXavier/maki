@@ -87,6 +87,7 @@ void DezyneClient::connectToServer()
   if (state() == QAbstractSocket::ConnectingState ||
       state() == QAbstractSocket::ConnectedState)
   {
+    emit connected();
     return;
   }
 
@@ -207,6 +208,7 @@ void DezyneClient::startPingTimer()
     return;
   if (mPingTimer.isActive())
     mPingTimer.stop();
+
   mPingTimer.start(mPingIntervalMs);
 }
 

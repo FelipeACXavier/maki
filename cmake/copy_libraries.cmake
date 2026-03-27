@@ -4,7 +4,6 @@ set(SRC_LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libraries")
 set(BUILD_LIB_DIR "${CMAKE_BINARY_DIR}/share/libraries")
 
 file(GLOB APP_LIB_FILES
-  ${SRC_LIB_DIR}/generic.json
   ${SRC_LIB_DIR}/koda.json
 )
 

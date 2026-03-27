@@ -45,6 +45,22 @@ enum class ConnectorType
 ConnectorType StringToConnectorType(const QString& type);
 QString ConnectorTypeToString(ConnectorType type);
 
+enum class CallType
+{
+  UNKNOWN = 0,
+  TRIGGER,
+  ABORT,
+  ERROR,
+  RETURN,
+  USER,
+  IN,
+  OUT,
+  END
+};
+
+CallType StringToCallType(const QString& type);
+QString CallTypeToString(CallType type);
+
 enum class PropertyTypes
 {
   UNKNOWN = 0,
@@ -52,16 +68,20 @@ enum class PropertyTypes
   INTEGER,
   REAL,
   BOOLEAN,
-  SELECT,
   LIST,
+  VOID,  // Should always be the separattor bewtween "normal" types and MAKI types
+  ENUM,
   COLOR,
-  VOID,
+  SELECT,
   COMPONENT_SELECT,
   EVENT_SELECT,
-  ENUM,
+  TRIGGER_CALL,
+  USER_CALL,
   END
 };
 
+PropertyTypes plus(PropertyTypes type, uint16_t amount);
+PropertyTypes minus(PropertyTypes type, uint16_t amount);
 PropertyTypes StringToPropertyTypes(const QString& type);
 QString PropertyTypesToString(PropertyTypes type);
 

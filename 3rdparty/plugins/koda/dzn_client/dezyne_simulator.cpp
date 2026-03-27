@@ -22,7 +22,9 @@ DezyneSimulator::DezyneSimulator(QObject* parent)
 
 VoidResult DezyneSimulator::startSimulation(const QString& id)
 {
-  if (mModel.isEmpty())
+  if (!mClient)
+    return VoidResult::Failed("No client available");
+  else if (mModel.isEmpty())
     return VoidResult::Failed("No model defined");
   else if (mWorkDir.isEmpty())
     return VoidResult::Failed("No working directory defined");
@@ -30,6 +32,7 @@ VoidResult DezyneSimulator::startSimulation(const QString& id)
   LOG_DEBUG("Connecting to daemon");
 
   mState = State::Starting;
+
   // TODO(felaze): Update once the daemon is fixed
   // mSimulationId = id;
 
@@ -73,6 +76,12 @@ void DezyneSimulator::setSimulationIncludes(const QList<QString>& path)
 void DezyneSimulator::onConnected()
 {
   LOG_DEBUG("Connected to Dezyne daemon");
+  if (mModel.isEmpty())
+  {
+    LOG_DEBUG("No model, not starting the simulation");
+    return;
+  }
+
   QJsonObject object;
   object["id"] = QUuid::createUuid().toString();
   object["type"] = "START_SIMULATION_COMMAND";
@@ -111,6 +120,8 @@ void DezyneSimulator::onError(const QString& error)
 
 void DezyneSimulator::onMessageReceived(const QJsonObject& obj)
 {
+  LOG_DEBUG("Message received");
+
   if (!obj.contains("type"))
   {
     LOG_WARNING("Message with no type");

@@ -1,10 +1,10 @@
 {
     "canvas": {
         "position": {
-            "x": -265.7142857142857,
-            "y": 357.14285714285717
+            "x": 0,
+            "y": 0
         },
-        "scale": 0.35
+        "scale": 1
     },
     "structural": [
         {
@@ -29,22 +29,22 @@
                                     "type": 3
                                 }
                             ],
-                            "id": "{65caa4cd-9f43-482d-9903-9dd42d0d89c2}",
+                            "id": "{36ebae66-7d6c-413f-9b29-6a024f7ce424}",
                             "modifiable": false,
                             "name": "to_position",
                             "owner": "",
                             "returnType": "void",
-                            "type": "in"
+                            "type": "trigger"
                         },
                         {
                             "arguments": [
                             ],
-                            "id": "{1b1bceb2-3934-4df2-a505-8b97a9e03f3a}",
+                            "id": "{ea33e4d9-1bda-4864-befa-f9b704adc48d}",
                             "modifiable": false,
                             "name": "abort",
                             "owner": "",
                             "returnType": "void",
-                            "type": "in"
+                            "type": "abort"
                         },
                         {
                             "arguments": [
@@ -64,33 +64,34 @@
                                     "type": 3
                                 }
                             ],
-                            "id": "{777d6468-3160-44db-8219-63acf315d118}",
+                            "id": "{e4bde360-5fcf-4aeb-91b8-13da5988602f}",
                             "modifiable": false,
                             "name": "in_position",
                             "owner": "",
                             "returnType": "void",
-                            "type": "out"
+                            "type": "return"
                         },
                         {
                             "arguments": [
                             ],
-                            "id": "{118ee04d-83db-4832-86de-adcb8dbecceb}",
+                            "id": "{1ac44ec5-3133-4191-add6-c32c1142f947}",
                             "modifiable": false,
                             "name": "path_blocked",
                             "owner": "",
                             "returnType": "void",
-                            "type": "out"
+                            "type": "error"
                         }
                     ],
-                    "id": "{3dc4e244-1ea0-4e7e-92ff-ebcf3b6648f2}",
-                    "nodeId": "Mission::Drive",
-                    "parentId": "{d9929bf1-c612-4843-aff8-1daeca5c3386}",
+                    "iconPath": "",
+                    "id": "{1d055807-7518-45a0-8bed-c7bc879faf3a}",
+                    "nodeId": "Koda::Drive",
+                    "parentId": "{c08d1b32-f9f2-4e12-8a52-e6367b57d2f1}",
                     "pixmap": {
                         "data": ""
                     },
                     "position": {
-                        "x": 24.5,
-                        "y": 194.5
+                        "x": -422,
+                        "y": -160.5
                     },
                     "properties": {
                         "arguments": [
@@ -111,85 +112,10 @@
                         "name": "Drive",
                         "type": "action \"/navigate_to_pose\" \"nav2_msgs::action::NavigateToPose::Goal\""
                     },
-                    "scale": 0.9823182711198428,
+                    "scale": 4.310344827586207,
                     "size": {
-                        "height": 509,
-                        "width": 569
-                    }
-                },
-                {
-                    "flows": [
-                        {
-                            "arguments": [
-                                {
-                                    "default": 0,
-                                    "id": "grip",
-                                    "type": 2
-                                }
-                            ],
-                            "id": "{bd3a2a82-0e78-48f4-a019-931fe4e96940}",
-                            "modifiable": false,
-                            "name": "handle",
-                            "owner": "",
-                            "returnType": "void",
-                            "type": "in"
-                        },
-                        {
-                            "arguments": [
-                            ],
-                            "id": "{a9e1c446-f6ab-4f2c-99e5-52e591a75593}",
-                            "modifiable": false,
-                            "name": "cancel",
-                            "owner": "",
-                            "returnType": "void",
-                            "type": "in"
-                        },
-                        {
-                            "arguments": [
-                            ],
-                            "id": "{2f7b2c87-6bee-4dfb-bb74-27626c6f10f4}",
-                            "modifiable": false,
-                            "name": "handled",
-                            "owner": "",
-                            "returnType": "void",
-                            "type": "out"
-                        },
-                        {
-                            "arguments": [
-                            ],
-                            "id": "{38183543-74c5-4d0b-b8f3-231149d9bd07}",
-                            "modifiable": false,
-                            "name": "failed",
-                            "owner": "",
-                            "returnType": "void",
-                            "type": "out"
-                        }
-                    ],
-                    "id": "{bc12fb7d-2cbc-409d-8009-88d4cdfbe6f8}",
-                    "nodeId": "Mission::Grip",
-                    "parentId": "{d9929bf1-c612-4843-aff8-1daeca5c3386}",
-                    "pixmap": {
-                        "data": ""
-                    },
-                    "position": {
-                        "x": -735.5,
-                        "y": -11
-                    },
-                    "properties": {
-                        "arguments": [
-                            {
-                                "id": "grip",
-                                "type": "int"
-                            }
-                        ],
-                        "color": "#cc7a3d",
-                        "name": "Grip",
-                        "type": "action \"/handler/action\" \"std_msgs::String\""
-                    },
-                    "scale": 1.3227513227513228,
-                    "size": {
-                        "height": 378,
-                        "width": 409
+                        "height": 119,
+                        "width": 116
                     }
                 },
                 {
@@ -197,700 +123,151 @@
                         {
                             "arguments": [
                             ],
-                            "id": "{cfc7c4ae-8376-495b-9465-fa226a7f63be}",
+                            "id": "{c13749af-b869-4d30-9bfe-c5bdde47b941}",
                             "modifiable": false,
                             "name": "recognize",
                             "owner": "",
                             "returnType": "void",
-                            "type": "in"
+                            "type": "trigger"
                         },
                         {
                             "arguments": [
                             ],
-                            "id": "{a3c702ad-07fe-485c-8f8a-647047b0c115}",
+                            "id": "{e03579e1-7e47-4d35-b40d-16c43efda519}",
                             "modifiable": false,
                             "name": "cancel",
                             "owner": "",
                             "returnType": "void",
-                            "type": "in"
+                            "type": "abort"
                         },
                         {
                             "arguments": [
                             ],
-                            "id": "{c26aba3f-7cfc-4e4f-97ef-3a6ab82dce53}",
+                            "id": "{dbb7ff11-2981-44d7-b2df-90e7886e2714}",
                             "modifiable": false,
                             "name": "found",
                             "owner": "",
                             "returnType": "void",
-                            "type": "out"
+                            "type": "return"
                         }
                     ],
-                    "id": "{d9fe6104-5cab-4282-92b7-60ed44117c6a}",
-                    "nodeId": "Mission::Vision",
-                    "parentId": "{d9929bf1-c612-4843-aff8-1daeca5c3386}",
+                    "iconPath": "",
+                    "id": "{ce8124f1-0ab3-400d-a666-9fb891e2de51}",
+                    "nodeId": "Koda::Vision",
+                    "parentId": "{c08d1b32-f9f2-4e12-8a52-e6367b57d2f1}",
                     "pixmap": {
                         "data": ""
                     },
                     "position": {
-                        "x": -710,
-                        "y": 670
+                        "x": -164.5,
+                        "y": -147.5
                     },
                     "properties": {
                         "color": "#e6c994",
                         "name": "Vision",
                         "type": "action \"/recognize\" \"std_msgs::String\""
                     },
-                    "scale": 0.3,
+                    "scale": 3.4482758620689653,
                     "size": {
-                        "height": 500,
-                        "width": 500
+                        "height": 145,
+                        "width": 191
                     }
-                }
-            ],
-            "fields": [
-                {
-                    "default": 0,
-                    "id": "x1",
-                    "type": 3
                 },
                 {
-                    "default": 0,
-                    "id": "y1",
-                    "type": 3
-                },
-                {
-                    "default": 0,
-                    "id": "x2",
-                    "type": 3
-                },
-                {
-                    "default": 0,
-                    "id": "y2",
-                    "type": 3
-                },
-                {
-                    "default": 0,
-                    "id": "yaw1",
-                    "type": 3
-                },
-                {
-                    "default": 0,
-                    "id": "yaw2",
-                    "type": 3
+                    "flows": [
+                        {
+                            "arguments": [
+                                {
+                                    "default": false,
+                                    "id": "grip",
+                                    "type": 4
+                                }
+                            ],
+                            "id": "{e988c09f-9a55-4f04-a06f-df9145f2376d}",
+                            "modifiable": false,
+                            "name": "handle",
+                            "owner": "",
+                            "returnType": "void",
+                            "type": "trigger"
+                        },
+                        {
+                            "arguments": [
+                            ],
+                            "id": "{66324ea2-90c9-4c01-bca1-42b3d5e6be6d}",
+                            "modifiable": false,
+                            "name": "cancel",
+                            "owner": "",
+                            "returnType": "void",
+                            "type": "abort"
+                        },
+                        {
+                            "arguments": [
+                            ],
+                            "id": "{34bc9ab7-77a7-4a96-8058-14d8cb008dc9}",
+                            "modifiable": false,
+                            "name": "handled",
+                            "owner": "",
+                            "returnType": "void",
+                            "type": "return"
+                        },
+                        {
+                            "arguments": [
+                            ],
+                            "id": "{fd587919-f080-4b2c-a8e9-ed9db8e997a1}",
+                            "modifiable": false,
+                            "name": "failed",
+                            "owner": "",
+                            "returnType": "void",
+                            "type": "error"
+                        }
+                    ],
+                    "iconPath": "",
+                    "id": "{86aa746a-c877-457b-8913-809213c16388}",
+                    "nodeId": "Koda::Grip",
+                    "parentId": "{c08d1b32-f9f2-4e12-8a52-e6367b57d2f1}",
+                    "pixmap": {
+                        "data": ""
+                    },
+                    "position": {
+                        "x": -413,
+                        "y": 72
+                    },
+                    "properties": {
+                        "arguments": [
+                            {
+                                "id": "grip",
+                                "type": "boolean"
+                            }
+                        ],
+                        "color": "#cc7a3d",
+                        "name": "Grip",
+                        "type": "action \"/handler/action\" \"std_msgs::String\""
+                    },
+                    "scale": 2.8735632183908044,
+                    "size": {
+                        "height": 184,
+                        "width": 174
+                    }
                 }
             ],
             "flows": [
                 {
                     "arguments": [
-                        {
-                            "default": 0,
-                            "id": "x1",
-                            "type": 3
-                        },
-                        {
-                            "default": 0,
-                            "id": "y1",
-                            "type": 3
-                        },
-                        {
-                            "default": 0,
-                            "id": "x2",
-                            "type": 3
-                        },
-                        {
-                            "default": 0,
-                            "id": "y2",
-                            "type": 3
-                        },
-                        {
-                            "default": 0,
-                            "id": "yaw1",
-                            "type": 3
-                        },
-                        {
-                            "default": 0,
-                            "id": "yaw2",
-                            "type": 3
-                        }
                     ],
-                    "id": "{24c23024-094b-4349-aac9-5c56b0555615}",
-                    "modifiable": false,
-                    "name": "start",
-                    "owner": "",
-                    "returnType": "void",
-                    "type": "in"
-                },
-                {
-                    "arguments": [
-                    ],
-                    "id": "{70c72151-7e82-4bdb-a08e-943160a6bc9a}",
-                    "modifiable": false,
-                    "name": "done",
-                    "owner": "",
-                    "returnType": "void",
-                    "type": "out"
-                },
-                {
-                    "arguments": [
-                    ],
-                    "id": "{0f3fb6bf-d7c5-4449-a872-d88ad9a3c01c}",
-                    "modifiable": false,
-                    "name": "failed",
-                    "owner": "",
-                    "returnType": "void",
-                    "type": "out"
-                },
-                {
-                    "arguments": [
-                    ],
-                    "id": "{7b330889-b23f-4a1a-b094-504d53235bd9}",
-                    "modifiable": true,
-                    "name": "loop",
-                    "nodes": [
-                        {
-                            "id": "{d1a878e1-e833-4deb-b8fb-57e78997f33d}",
-                            "nodeId": "Mission::Start",
-                            "parentId": "",
-                            "pixmap": {
-                                "data": ""
-                            },
-                            "position": {
-                                "x": -735,
-                                "y": -255
-                            },
-                            "properties": {
-                                "mode": "signal",
-                                "name": "Start"
-                            },
-                            "scale": 1,
-                            "size": {
-                                "height": 50,
-                                "width": 50
-                            },
-                            "transitions": [
-                                {
-                                    "destination": {
-                                        "id": "{f9d10462-46be-4c76-9928-fa23e871c2a1}",
-                                        "position": {
-                                            "x": 0,
-                                            "y": 0
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    },
-                                    "events": "",
-                                    "id": "{b066dc7f-75e1-4f3f-b0f1-742e0d2fa67e}",
-                                    "label": "",
-                                    "source": {
-                                        "id": "{d1a878e1-e833-4deb-b8fb-57e78997f33d}",
-                                        "position": {
-                                            "x": -710,
-                                            "y": -255
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    }
-                                }
-                            ]
-                        },
-                        {
-                            "id": "{f9d10462-46be-4c76-9928-fa23e871c2a1}",
-                            "nodeId": "Mission::Async task",
-                            "parentId": "",
-                            "pixmap": {
-                                "data": ""
-                            },
-                            "position": {
-                                "x": -530,
-                                "y": -255
-                            },
-                            "properties": {
-                                "color": "#202020",
-                                "component": {
-                                    "data": "Drive",
-                                    "data_id": "{3dc4e244-1ea0-4e7e-92ff-ebcf3b6648f2}",
-                                    "options": [
-                                        {
-                                            "data": "x1_, y1_, yaw1_",
-                                            "data_id": "",
-                                            "id": "argument",
-                                            "option_data": "",
-                                            "option_data_id": "",
-                                            "type": "string"
-                                        }
-                                    ]
-                                },
-                                "name": "Drive to pick"
-                            },
-                            "scale": 1,
-                            "size": {
-                                "height": 50,
-                                "width": 100
-                            },
-                            "transitions": [
-                                {
-                                    "destination": {
-                                        "id": "{600d7a41-6b41-4720-99c6-dfcf7a0474bd}",
-                                        "position": {
-                                            "x": 0,
-                                            "y": 0
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    },
-                                    "events": "",
-                                    "id": "{df7c208d-248d-4adc-a163-28aea2242fb6}",
-                                    "label": "",
-                                    "source": {
-                                        "id": "{f9d10462-46be-4c76-9928-fa23e871c2a1}",
-                                        "position": {
-                                            "x": -480,
-                                            "y": -255
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    }
-                                },
-                                {
-                                    "destination": {
-                                        "id": "{501406ae-964f-4777-bbeb-13d96dcdd62e}",
-                                        "position": {
-                                            "x": 0,
-                                            "y": 0
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    },
-                                    "events": "",
-                                    "id": "{57b08d4f-2a38-4cdb-ad5e-1f0e1f9d86f1}",
-                                    "label": "on abort",
-                                    "source": {
-                                        "id": "{f9d10462-46be-4c76-9928-fa23e871c2a1}",
-                                        "position": {
-                                            "x": -530,
-                                            "y": -205
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    }
-                                },
-                                {
-                                    "destination": {
-                                        "id": "{fbd6a8c8-924d-4004-94e8-8a8f34239274}",
-                                        "position": {
-                                            "x": 0,
-                                            "y": 0
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    },
-                                    "events": "",
-                                    "id": "{ef0d1d16-86bb-42e9-91de-23cbdcc357fb}",
-                                    "label": "on error",
-                                    "source": {
-                                        "id": "{f9d10462-46be-4c76-9928-fa23e871c2a1}",
-                                        "position": {
-                                            "x": -500.43181681862416,
-                                            "y": -214.67975020721474
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    }
-                                }
-                            ]
-                        },
-                        {
-                            "id": "{600d7a41-6b41-4720-99c6-dfcf7a0474bd}",
-                            "nodeId": "Mission::Strategy",
-                            "parentId": "",
-                            "pixmap": {
-                                "data": ""
-                            },
-                            "position": {
-                                "x": -310,
-                                "y": -255
-                            },
-                            "properties": {
-                                "color": "#202020",
-                                "component": {
-                                    "data": "PickAndPlace",
-                                    "data_id": "{d9929bf1-c612-4843-aff8-1daeca5c3386}",
-                                    "options": [
-                                        {
-                                            "data": "pick",
-                                            "data_id": "",
-                                            "id": "event",
-                                            "option_data": "",
-                                            "option_data_id": "{46c5f8ae-c5e1-4a3a-9225-c73d927b67bd}",
-                                            "type": "event_select"
-                                        },
-                                        {
-                                            "data": "true",
-                                            "data_id": "",
-                                            "id": "argument",
-                                            "option_data": "",
-                                            "option_data_id": "",
-                                            "type": "string"
-                                        }
-                                    ]
-                                },
-                                "name": "Pick up"
-                            },
-                            "scale": 1,
-                            "size": {
-                                "height": 50,
-                                "width": 100
-                            },
-                            "transitions": [
-                                {
-                                    "destination": {
-                                        "id": "{8a5d8832-6b78-48e5-a481-aa805e738aaf}",
-                                        "position": {
-                                            "x": 0,
-                                            "y": 0
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    },
-                                    "events": "",
-                                    "id": "{1044e681-fec5-4962-b0e4-a4ed92d1edd3}",
-                                    "label": "",
-                                    "source": {
-                                        "id": "{600d7a41-6b41-4720-99c6-dfcf7a0474bd}",
-                                        "position": {
-                                            "x": -260,
-                                            "y": -255
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    }
-                                }
-                            ]
-                        },
-                        {
-                            "id": "{8a5d8832-6b78-48e5-a481-aa805e738aaf}",
-                            "nodeId": "Mission::Async task",
-                            "parentId": "",
-                            "pixmap": {
-                                "data": ""
-                            },
-                            "position": {
-                                "x": -30,
-                                "y": -255
-                            },
-                            "properties": {
-                                "color": "#202020",
-                                "component": {
-                                    "data": "Drive",
-                                    "data_id": "{3dc4e244-1ea0-4e7e-92ff-ebcf3b6648f2}",
-                                    "options": [
-                                        {
-                                            "data": "x2_, y2_, yaw2_",
-                                            "data_id": "",
-                                            "id": "argument",
-                                            "option_data": "",
-                                            "option_data_id": "",
-                                            "type": "string"
-                                        }
-                                    ]
-                                },
-                                "name": "Drive to drop"
-                            },
-                            "scale": 1,
-                            "size": {
-                                "height": 50,
-                                "width": 100
-                            },
-                            "transitions": [
-                                {
-                                    "destination": {
-                                        "id": "{ef26960f-5ebf-4ebe-81a2-e6ac9393e911}",
-                                        "position": {
-                                            "x": 0,
-                                            "y": 0
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    },
-                                    "events": "",
-                                    "id": "{6a2e55f7-625d-4b96-874b-edc3f9c82706}",
-                                    "label": "",
-                                    "source": {
-                                        "id": "{8a5d8832-6b78-48e5-a481-aa805e738aaf}",
-                                        "position": {
-                                            "x": 20,
-                                            "y": -255
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    }
-                                },
-                                {
-                                    "destination": {
-                                        "id": "{5a1e72a9-5ea8-46fe-81f5-2a04ad12213a}",
-                                        "position": {
-                                            "x": 0,
-                                            "y": 0
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    },
-                                    "events": "",
-                                    "id": "{73e189aa-e931-4c0c-b9e2-5ac8e2617de8}",
-                                    "label": "on abort",
-                                    "source": {
-                                        "id": "{8a5d8832-6b78-48e5-a481-aa805e738aaf}",
-                                        "position": {
-                                            "x": -30,
-                                            "y": -205
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    }
-                                },
-                                {
-                                    "destination": {
-                                        "id": "{e67f1172-2164-4d32-a743-3b5006a9477f}",
-                                        "position": {
-                                            "x": 0,
-                                            "y": 0
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    },
-                                    "events": "",
-                                    "id": "{d2d15227-f973-4787-993f-279e13e4c954}",
-                                    "label": "on error",
-                                    "source": {
-                                        "id": "{8a5d8832-6b78-48e5-a481-aa805e738aaf}",
-                                        "position": {
-                                            "x": 2.7465269208920944,
-                                            "y": -217.2155458605091
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    }
-                                }
-                            ]
-                        },
-                        {
-                            "id": "{ef26960f-5ebf-4ebe-81a2-e6ac9393e911}",
-                            "nodeId": "Mission::Strategy",
-                            "parentId": "",
-                            "pixmap": {
-                                "data": ""
-                            },
-                            "position": {
-                                "x": 230,
-                                "y": -255
-                            },
-                            "properties": {
-                                "color": "#202020",
-                                "component": {
-                                    "options": [
-                                        {
-                                            "data": "drop",
-                                            "data_id": "",
-                                            "id": "event",
-                                            "option_data": "",
-                                            "option_data_id": "{fe4be220-5971-487d-b19d-cd53864cb837}",
-                                            "type": "event_select"
-                                        }
-                                    ]
-                                },
-                                "name": "Drop"
-                            },
-                            "scale": 1,
-                            "size": {
-                                "height": 50,
-                                "width": 100
-                            }
-                        },
-                        {
-                            "id": "{501406ae-964f-4777-bbeb-13d96dcdd62e}",
-                            "nodeId": "Mission::Strategy",
-                            "parentId": "",
-                            "pixmap": {
-                                "data": ""
-                            },
-                            "position": {
-                                "x": -530,
-                                "y": 45
-                            },
-                            "properties": {
-                                "color": "#ffff7f",
-                                "component": {
-                                    "options": [
-                                        {
-                                            "data": "err",
-                                            "data_id": "",
-                                            "id": "event",
-                                            "option_data": "",
-                                            "option_data_id": "{5af902ad-4b9c-43f3-b0cb-294c35f920ff}",
-                                            "type": "event_select"
-                                        }
-                                    ]
-                                },
-                                "name": "Abort"
-                            },
-                            "scale": 1.3045131722572083,
-                            "size": {
-                                "height": 50,
-                                "width": 100
-                            }
-                        },
-                        {
-                            "id": "{5a1e72a9-5ea8-46fe-81f5-2a04ad12213a}",
-                            "nodeId": "Mission::Strategy",
-                            "parentId": "",
-                            "pixmap": {
-                                "data": ""
-                            },
-                            "position": {
-                                "x": -30,
-                                "y": 45
-                            },
-                            "properties": {
-                                "color": "#ffff7f",
-                                "component": {
-                                    "options": [
-                                        {
-                                            "data": "err",
-                                            "data_id": "",
-                                            "id": "event",
-                                            "option_data": "",
-                                            "option_data_id": "{5af902ad-4b9c-43f3-b0cb-294c35f920ff}",
-                                            "type": "event_select"
-                                        }
-                                    ]
-                                },
-                                "name": "Abort"
-                            },
-                            "scale": 1.3045131722572083,
-                            "size": {
-                                "height": 50,
-                                "width": 100
-                            }
-                        },
-                        {
-                            "id": "{e67f1172-2164-4d32-a743-3b5006a9477f}",
-                            "nodeId": "Mission::Strategy",
-                            "parentId": "",
-                            "pixmap": {
-                                "data": ""
-                            },
-                            "position": {
-                                "x": 230,
-                                "y": 45
-                            },
-                            "properties": {
-                                "color": "#ff0000",
-                                "component": {
-                                    "options": [
-                                        {
-                                            "data": "err",
-                                            "data_id": "",
-                                            "id": "event",
-                                            "option_data": "",
-                                            "option_data_id": "{5af902ad-4b9c-43f3-b0cb-294c35f920ff}",
-                                            "type": "event_select"
-                                        }
-                                    ]
-                                },
-                                "name": "Error"
-                            },
-                            "scale": 1,
-                            "size": {
-                                "height": 50,
-                                "width": 100
-                            }
-                        },
-                        {
-                            "id": "{fbd6a8c8-924d-4004-94e8-8a8f34239274}",
-                            "nodeId": "Mission::Strategy",
-                            "parentId": "",
-                            "pixmap": {
-                                "data": ""
-                            },
-                            "position": {
-                                "x": -310,
-                                "y": 45
-                            },
-                            "properties": {
-                                "color": "#ff0000",
-                                "component": {
-                                    "options": [
-                                        {
-                                            "data": "err",
-                                            "data_id": "",
-                                            "id": "event",
-                                            "option_data": "",
-                                            "option_data_id": "{5af902ad-4b9c-43f3-b0cb-294c35f920ff}",
-                                            "type": "event_select"
-                                        }
-                                    ]
-                                },
-                                "name": "Error"
-                            },
-                            "scale": 1,
-                            "size": {
-                                "height": 50,
-                                "width": 100
-                            }
-                        }
-                    ],
-                    "owner": "{d9929bf1-c612-4843-aff8-1daeca5c3386}",
-                    "returnType": "string",
-                    "type": "in"
-                },
-                {
-                    "arguments": [
-                    ],
-                    "id": "{f299b5b2-e904-4bce-b46a-c923f2208070}",
+                    "id": "{50ef0850-47d5-4712-b218-183142e10aee}",
                     "modifiable": true,
                     "name": "main",
                     "nodes": [
                         {
-                            "id": "{f2c2e0fe-3003-4b1a-8c05-4349657d8aec}",
-                            "nodeId": "Mission::Start",
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_start.svg",
+                            "id": "{6c3289c5-55db-4ae2-8e75-b20974a6f333}",
+                            "nodeId": "Koda::Start",
                             "parentId": "",
                             "pixmap": {
-                                "data": ""
+                                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAo0lEQVR4nO3T2wmEQBSD4bBF2NnapKVZxPgahBWve2TyfzCvckiiBAAAAAAAAAD3mSQN1UdUapJmSWP1IVWavcg1tNWLW8M6gLg1/AogZg1bAUSsYU8AXa9hbwDdruFoAN2t4UwAXa3hSgB/WcPnyY/fpFUfcAW/wIk3S/pWHPuEyNZdZOsusnUX2bqLbN1Ftu4iW3eRrbvI1gEAAAAAAAC81wLmv8ckCrfr0gAAAABJRU5ErkJggg=="
                             },
                             "position": {
-                                "x": -675,
+                                "x": -635,
                                 "y": -55
                             },
                             "properties": {
@@ -905,10 +282,10 @@
                             "transitions": [
                                 {
                                     "destination": {
-                                        "id": "{d2f256fa-814b-44b2-b47e-27800b0fbbde}",
+                                        "id": "{d756dd04-5a8f-4b3b-a154-a91f6148f469}",
                                         "position": {
-                                            "x": 0,
-                                            "y": 0
+                                            "x": -439.98563940539736,
+                                            "y": -51.69467185432877
                                         },
                                         "shift": {
                                             "x": 0,
@@ -916,13 +293,13 @@
                                         }
                                     },
                                     "events": "",
-                                    "id": "{9522a592-f1e1-40e4-b3f9-b6053d513b65}",
+                                    "id": "{86df1b33-4b3a-4e82-b54f-077567e6196f}",
                                     "label": "",
                                     "source": {
-                                        "id": "{f2c2e0fe-3003-4b1a-8c05-4349657d8aec}",
+                                        "id": "{6c3289c5-55db-4ae2-8e75-b20974a6f333}",
                                         "position": {
-                                            "x": -650.0056567485734,
-                                            "y": -54.468205462735604
+                                            "x": -610.0035901486507,
+                                            "y": -54.57633203641781
                                         },
                                         "shift": {
                                             "x": 0,
@@ -933,30 +310,23 @@
                             ]
                         },
                         {
-                            "id": "{d2f256fa-814b-44b2-b47e-27800b0fbbde}",
-                            "nodeId": "Mission::Repeat",
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_repeat.svg",
+                            "id": "{d756dd04-5a8f-4b3b-a154-a91f6148f469}",
+                            "nodeId": "Koda::Repeat",
                             "parentId": "",
                             "pixmap": {
-                                "data": ""
+                                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAADgUlEQVR4nO3aS2hcVRzH8U8nKb5AKabB0HQjvkArFhroQl3pxhatutCFBaXowkdbulJBnYWCYFwpKN0IKiI+wIrUjQspWAQFixEVdOEDtVWrKVJqo01c/CfMvdN5JNzHWHK+cMide2fO73/P456b8/+RSCQSiURipbJq2AFgFFdhHdZiHA3M4k/8gM9xfFgBVsEEduFdHMPCgDKPr/AibsTq+kMuhym8ijmDb7pfOYppTBYNqK4psB7P4+Ye17/Gt/gNv4sevwBrcCmuxFldfvevaNBH8Uu5IZdDQwz1v+R78CRewa1i3g9iFNfgMXzm9BFxDA9gpEN7a6s0it/K8jkHb8kHOotHLO2m+zGFN3Cqo/4PMNb6ztbM+S0F9ZbNWhzsCO41XFSyzoYuOt9hI5qZc82SdftyPmbkh/sdFeo18CD+kZ8Sew2hAUaxPyP8B66rSftaHMlonzCEBpiW7/nNdQm3uAyH5adE3wYYLVF8I/ZkPt+Hj0usvxcN3IRNrc9v4x7xEF6k8uV+FQ5ot/jLVQtmyD7te5V3ev24rPXxFu25fhwPl1RvWcz0ulDWFNiROX4GP5dU71LYL0bBVJdrV7RieaLKAMa0l6B58V/diuJe7bn24XBDWT5lPAP+zhw/V0J9ZyTbcNewg0gkEolEIpFIJBKJpTIy+Cv/S7bjYpFSW3Hcrr3/sL1oZUPJmRVkZ+b47KFFMSQmxbbbgtiGu7Bohf02RRt4VpgZus21T8WG5HzRIJbBDu09/veFT6AynjR4v73OrOs6seW+qL2tjEr7PQM2lCFQIk/j3NbxAewro9J+U+CQvKPjBF4SLg74RAzDOrhbe89xAbtbfyul6fQhf1gkIOtks0i0LsYwXZdwMyOaTTUfEanoOrhepNgXtd9T48tbMyO8V97ONidMCVW+R9wp3/MzwnxRG82MeFOkv7+XnxIHcXXJuhN4vUPnI23vT210MxmNCSNSNrhTwrDULTm5HMaF3a3TOPmmfK6/NhrixrfID/UR3K+7w/MQHheWtqVknsdxm/D6ZYf7grDW7VTx63oR58QEnhLLUzfr6kl8iW+E53dWNN6YcJFdgst71L0PD+HHAvHVxqTwBBxVzP46J8yTm5yhrMYNeEH0fKeJsVuZFfaVXWJE1U6V5qHzxAqxXnh+14hG+VW8Tf6EL1rnEolEIpFIJGrnP7NtLPjOuHgXAAAAAElFTkSuQmCC"
                             },
                             "position": {
-                                "x": -440,
-                                "y": -50
+                                "x": -340,
+                                "y": -55
                             },
                             "properties": {
                                 "component": {
                                     "options": [
-                                        {
-                                            "data": "loop",
-                                            "data_id": "",
-                                            "id": "event",
-                                            "option_data": "",
-                                            "option_data_id": "{7b330889-b23f-4a1a-b094-504d53235bd9}",
-                                            "type": "event_select"
-                                        }
                                     ]
                                 },
-                                "name": "Repeat main loop"
+                                "name": "Repeat"
                             },
                             "scale": 1,
                             "size": {
@@ -965,27 +335,514 @@
                             }
                         }
                     ],
-                    "owner": "{d9929bf1-c612-4843-aff8-1daeca5c3386}",
-                    "returnType": "string",
-                    "type": "in"
+                    "owner": "{c08d1b32-f9f2-4e12-8a52-e6367b57d2f1}",
+                    "returnType": "void",
+                    "type": "user"
                 },
                 {
                     "arguments": [
                     ],
-                    "id": "{46c5f8ae-c5e1-4a3a-9225-c73d927b67bd}",
+                    "id": "{aba632bb-09ab-47a6-9d1b-90fd1cbdad51}",
+                    "modifiable": true,
+                    "name": "loop",
+                    "nodes": [
+                        {
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_start.svg",
+                            "id": "{60f962c3-0501-4758-9f24-96f150fc9acb}",
+                            "nodeId": "Koda::Start",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAo0lEQVR4nO3T2wmEQBSD4bBF2NnapKVZxPgahBWve2TyfzCvckiiBAAAAAAAAAD3mSQN1UdUapJmSWP1IVWavcg1tNWLW8M6gLg1/AogZg1bAUSsYU8AXa9hbwDdruFoAN2t4UwAXa3hSgB/WcPnyY/fpFUfcAW/wIk3S/pWHPuEyNZdZOsusnUX2bqLbN1Ftu4iW3eRrbvI1gEAAAAAAAC81wLmv8ckCrfr0gAAAABJRU5ErkJggg=="
+                            },
+                            "position": {
+                                "x": -675,
+                                "y": 45
+                            },
+                            "properties": {
+                                "mode": "signal",
+                                "name": "Start"
+                            },
+                            "scale": 1,
+                            "size": {
+                                "height": 50,
+                                "width": 50
+                            },
+                            "transitions": [
+                                {
+                                    "destination": {
+                                        "id": "{9b95d09e-8f48-448a-b34e-bce75a0fd75f}",
+                                        "position": {
+                                            "x": -540,
+                                            "y": 45
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "",
+                                    "id": "{26bae33d-1876-446b-9df5-a9cbc2a0cf47}",
+                                    "label": "",
+                                    "source": {
+                                        "id": "{60f962c3-0501-4758-9f24-96f150fc9acb}",
+                                        "position": {
+                                            "x": -650,
+                                            "y": 45
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_async.svg",
+                            "id": "{9b95d09e-8f48-448a-b34e-bce75a0fd75f}",
+                            "nodeId": "Koda::Async task",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAACgklEQVR4nO2ZvW4UMRCAv13RQ4o0lxYkSkAgLhIFFRGnBfEKiFBAjSgRvEdIXuFIgDu6IApAQJSeMkABRbgXAAr7tMbr3fU5a99JN59kyd7zeMaj8fjnQBAEQRAEQRAEQRAEYcnI5m0AkAMDXX8N/Emp/JRnvwzo63K6pe8E+KDLX4+xB8Ceru8Am1SdEFN/K2vAWA82SxkDPY/xC0tuGxUVqfQ3sgb8ClA+LT89jMhRk3Y5Ibr+phyQASNgQ7d/AENtUBOrwB1D8RvgJs3hmANbwF3j2w7KATcS6HeyTunJ78DKDLIrWmYq3/eQcUVCdP1NSdAUGgLHMxhwDLwAHuj2U1RSauMIOAQuWN93A/QPgYe6vV6nv8kBZrZtCzsXZ4z6BuVSCuF8gIxpc+3Okdf9sCz4ngNC+GrU3wL7HjIZcJvqEnjXkU0VYjrAzLr7qDzQxHQnsCcPEU+Hi7IEXNvgYQrFMSPAl7ozwBHuaOhc+bwZUJ38Jh2d49uYRwTYtz+TustQNFI7wA73AuWEQrdHLOh1uAtcax3UhF8ltOM/UuWADHeiGyXSX0uqCLgFXDTa28B9Eoe7i1QRYE7+OQsyeYgbAa63hgPUNfUJ8JlyFxgAl62+11vG6oSYDjjn+HZJlykFanJ7jr4mZ7syymYRDkJzpSkCJkZ9NWDs345vB8BL1CnvE+UuUABXrL59yjeECbNj2hwi3+mTmFm28Iu8JE9yqR5FvwH3jD4+22BX+seoJBt0t+ihnpZP+iydo7Y/87fHCfWfiB5hf0yMLOX2q+9uYv1OfPfXDLiKWpc+f029Bz5SDbsceARcA54BXxLrFwRBEARBEARBEARBEJaef+gEFWJs2rViAAAAAElFTkSuQmCC"
+                            },
+                            "position": {
+                                "x": -490,
+                                "y": 45
+                            },
+                            "properties": {
+                                "Capability": {
+                                    "data": "Drive",
+                                    "options": [
+                                    ]
+                                },
+                                "color": "#202020",
+                                "name": "Async task"
+                            },
+                            "scale": 1,
+                            "size": {
+                                "height": 50,
+                                "width": 100
+                            },
+                            "transitions": [
+                                {
+                                    "destination": {
+                                        "id": "{6c1be2b9-3144-44b4-8dd2-eb86c764d51a}",
+                                        "position": {
+                                            "x": -320,
+                                            "y": 45
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "",
+                                    "id": "{ea7e359c-5989-4ecb-8697-37a0c9ebae70}",
+                                    "label": "",
+                                    "source": {
+                                        "id": "{9b95d09e-8f48-448a-b34e-bce75a0fd75f}",
+                                        "position": {
+                                            "x": -440,
+                                            "y": 45
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                },
+                                {
+                                    "destination": {
+                                        "id": "{c43cdbdc-89c5-4353-8303-0c356d74c801}",
+                                        "position": {
+                                            "x": -393.94260653402864,
+                                            "y": 221.1052213542808
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "on abort",
+                                    "id": "{f8296b53-c1a9-4c68-9906-e37e2998c667}",
+                                    "label": "on abort",
+                                    "source": {
+                                        "id": "{9b95d09e-8f48-448a-b34e-bce75a0fd75f}",
+                                        "position": {
+                                            "x": -466.05739346597136,
+                                            "y": 88.89477864571921
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                },
+                                {
+                                    "destination": {
+                                        "id": "{d752dca8-6c33-4a6d-ac57-332a002b6a4d}",
+                                        "position": {
+                                            "x": -569.3098527849409,
+                                            "y": 219.48167612686976
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "on error",
+                                    "id": "{ed3e4806-5d55-4c26-b9df-0bfc14905ef1}",
+                                    "label": "on error",
+                                    "source": {
+                                        "id": "{9b95d09e-8f48-448a-b34e-bce75a0fd75f}",
+                                        "position": {
+                                            "x": -510.6901472150592,
+                                            "y": 90.51832387313024
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_strategy.svg",
+                            "id": "{6c1be2b9-3144-44b4-8dd2-eb86c764d51a}",
+                            "nodeId": "Koda::Strategy",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAACvUlEQVR4nO2ZMW8TMRSAv4vYERJZkpmNoQOo7YBgi4gQyl8IdOrWnYE/0a2QvxAJkaZbERItgqFDN8ZKGehQ5Q+kDPZxbjn7fOn5ziHvk6z4cs8+v3fv2e9sEARBEARBEARBENaPpOkBlCQBtnS5b5GZA6e6XNc0rlroAlOUUj5lCnQaGWkAusAl/sqn5TcFRliFEEiAQ6Cnr2fAGGWQPNrAgEzxI+AllnDwNUCTsbcNfNP1GfAYuCpo8wA4JzPCth7XUjQde3tG3/sl2u0b7fZsQvcKOukCZ8DDEg/u6TYbqDd2V0yPs7l9HqaszWudBkiAD2TKl4m9NvARR+zFgssAW9yceHxi7x1Z7PWATYpjrwX0dX0CLDzln1ju/9T9eFFkgJQxxcqjZcbArr72mXz6wCddHwE7uI1gytt4VXD/Ly3HvaCxZ2EIHOAeV6UUTYJ1MEG9+aG+Tn9tnjBBveGnlv5+oPIG2/0bxGCABUpZyDdCnvxnXe5MDAYAtxEuQj44FgOA3QhnIR9a22TjSWqEkfHfRsgHhvAA8/viBfB+iT4uyLJJkxY15gHL8sioP9elKp5RYx6wFoTwgF9G/QtwvEQfCfCaf0PgKyuQB5gfP8eUnwNaqGwwb/JbUHEeEFsIpMoPjf+CLoMx5QF5yo9QK0KwpTAWD7Apv0Pg/YQYPMClfN7HUPR5QFn6+CufyteSB8yNetu3w1uyc6tUPj4bIpXi8gBzJ2eA2u7y2Y4eGNcnHmNI13VQ63eR8rXlAaeoQ4Ueao/vnHIHElPgu8cY0nXdl9r2A66BN6h1uI1SbNchb3IJvCXyHWEoXgZnqDX4qESfU6o7E4DAc1GZo7FN1C6v62jsBOX2K3M0tg6Ho1PU0hl9OLrooI66Kz8eXyU6lDukPcRD+VUIAZMm5yJBEARBEARBEAThv+EP/2TlnGp9kAQAAAAASUVORK5CYII="
+                            },
+                            "position": {
+                                "x": -270,
+                                "y": 45
+                            },
+                            "properties": {
+                                "color": "#202020",
+                                "component": {
+                                    "options": [
+                                        {
+                                            "data": "drop"
+                                        }
+                                    ]
+                                },
+                                "name": "Strategy"
+                            },
+                            "scale": 1.15,
+                            "size": {
+                                "height": 50,
+                                "width": 100
+                            },
+                            "transitions": [
+                                {
+                                    "destination": {
+                                        "id": "{f0455e87-748a-4bec-b2be-fb2487247e9a}",
+                                        "position": {
+                                            "x": -80,
+                                            "y": 45
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "",
+                                    "id": "{dca6a6a3-038c-4f61-8381-1a1d4ef97207}",
+                                    "label": "",
+                                    "source": {
+                                        "id": "{6c1be2b9-3144-44b4-8dd2-eb86c764d51a}",
+                                        "position": {
+                                            "x": -220,
+                                            "y": 45
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_strategy.svg",
+                            "id": "{9335d600-8301-4230-a284-bb362c164f2d}",
+                            "nodeId": "Koda::Strategy",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAACvUlEQVR4nO2ZMW8TMRSAv4vYERJZkpmNoQOo7YBgi4gQyl8IdOrWnYE/0a2QvxAJkaZbERItgqFDN8ZKGehQ5Q+kDPZxbjn7fOn5ziHvk6z4cs8+v3fv2e9sEARBEARBEARBENaPpOkBlCQBtnS5b5GZA6e6XNc0rlroAlOUUj5lCnQaGWkAusAl/sqn5TcFRliFEEiAQ6Cnr2fAGGWQPNrAgEzxI+AllnDwNUCTsbcNfNP1GfAYuCpo8wA4JzPCth7XUjQde3tG3/sl2u0b7fZsQvcKOukCZ8DDEg/u6TYbqDd2V0yPs7l9HqaszWudBkiAD2TKl4m9NvARR+zFgssAW9yceHxi7x1Z7PWATYpjrwX0dX0CLDzln1ju/9T9eFFkgJQxxcqjZcbArr72mXz6wCddHwE7uI1gytt4VXD/Ly3HvaCxZ2EIHOAeV6UUTYJ1MEG9+aG+Tn9tnjBBveGnlv5+oPIG2/0bxGCABUpZyDdCnvxnXe5MDAYAtxEuQj44FgOA3QhnIR9a22TjSWqEkfHfRsgHhvAA8/viBfB+iT4uyLJJkxY15gHL8sioP9elKp5RYx6wFoTwgF9G/QtwvEQfCfCaf0PgKyuQB5gfP8eUnwNaqGwwb/JbUHEeEFsIpMoPjf+CLoMx5QF5yo9QK0KwpTAWD7Apv0Pg/YQYPMClfN7HUPR5QFn6+CufyteSB8yNetu3w1uyc6tUPj4bIpXi8gBzJ2eA2u7y2Y4eGNcnHmNI13VQ63eR8rXlAaeoQ4Ueao/vnHIHElPgu8cY0nXdl9r2A66BN6h1uI1SbNchb3IJvCXyHWEoXgZnqDX4qESfU6o7E4DAc1GZo7FN1C6v62jsBOX2K3M0tg6Ho1PU0hl9OLrooI66Kz8eXyU6lDukPcRD+VUIAZMm5yJBEARBEARBEAThv+EP/2TlnGp9kAQAAAAASUVORK5CYII="
+                            },
+                            "position": {
+                                "x": 190,
+                                "y": 45
+                            },
+                            "properties": {
+                                "color": "#202020",
+                                "component": {
+                                    "options": [
+                                        {
+                                            "data": "drop"
+                                        }
+                                    ]
+                                },
+                                "name": "Strategy"
+                            },
+                            "scale": 1.15,
+                            "size": {
+                                "height": 50,
+                                "width": 100
+                            }
+                        },
+                        {
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_async.svg",
+                            "id": "{f0455e87-748a-4bec-b2be-fb2487247e9a}",
+                            "nodeId": "Koda::Async task",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAACgklEQVR4nO2ZvW4UMRCAv13RQ4o0lxYkSkAgLhIFFRGnBfEKiFBAjSgRvEdIXuFIgDu6IApAQJSeMkABRbgXAAr7tMbr3fU5a99JN59kyd7zeMaj8fjnQBAEQRAEQRAEQRAEYcnI5m0AkAMDXX8N/Emp/JRnvwzo63K6pe8E+KDLX4+xB8Ceru8Am1SdEFN/K2vAWA82SxkDPY/xC0tuGxUVqfQ3sgb8ClA+LT89jMhRk3Y5Ibr+phyQASNgQ7d/AENtUBOrwB1D8RvgJs3hmANbwF3j2w7KATcS6HeyTunJ78DKDLIrWmYq3/eQcUVCdP1NSdAUGgLHMxhwDLwAHuj2U1RSauMIOAQuWN93A/QPgYe6vV6nv8kBZrZtCzsXZ4z6BuVSCuF8gIxpc+3Okdf9sCz4ngNC+GrU3wL7HjIZcJvqEnjXkU0VYjrAzLr7qDzQxHQnsCcPEU+Hi7IEXNvgYQrFMSPAl7ozwBHuaOhc+bwZUJ38Jh2d49uYRwTYtz+TustQNFI7wA73AuWEQrdHLOh1uAtcax3UhF8ltOM/UuWADHeiGyXSX0uqCLgFXDTa28B9Eoe7i1QRYE7+OQsyeYgbAa63hgPUNfUJ8JlyFxgAl62+11vG6oSYDjjn+HZJlykFanJ7jr4mZ7syymYRDkJzpSkCJkZ9NWDs345vB8BL1CnvE+UuUABXrL59yjeECbNj2hwi3+mTmFm28Iu8JE9yqR5FvwH3jD4+22BX+seoJBt0t+ihnpZP+iydo7Y/87fHCfWfiB5hf0yMLOX2q+9uYv1OfPfXDLiKWpc+f029Bz5SDbsceARcA54BXxLrFwRBEARBEARBEARBEJaef+gEFWJs2rViAAAAAElFTkSuQmCC"
+                            },
+                            "position": {
+                                "x": -30,
+                                "y": 45
+                            },
+                            "properties": {
+                                "Capability": {
+                                    "data": "Drive",
+                                    "options": [
+                                    ]
+                                },
+                                "color": "#202020",
+                                "name": "Async task"
+                            },
+                            "scale": 1.15,
+                            "size": {
+                                "height": 50,
+                                "width": 100
+                            },
+                            "transitions": [
+                                {
+                                    "destination": {
+                                        "id": "{9335d600-8301-4230-a284-bb362c164f2d}",
+                                        "position": {
+                                            "x": 140,
+                                            "y": 45
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "",
+                                    "id": "{ee6b7971-5515-49b0-a63e-5ad1fe9efd3f}",
+                                    "label": "",
+                                    "source": {
+                                        "id": "{f0455e87-748a-4bec-b2be-fb2487247e9a}",
+                                        "position": {
+                                            "x": 20,
+                                            "y": 45
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                },
+                                {
+                                    "destination": {
+                                        "id": "{8d58579e-6687-4c6d-9a4c-b1f0858aa2a8}",
+                                        "position": {
+                                            "x": -91.43046618229482,
+                                            "y": 198.57616545573703
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "on error",
+                                    "id": "{b12c1355-8c7c-4337-8121-b976b748cd8a}",
+                                    "label": "on error",
+                                    "source": {
+                                        "id": "{f0455e87-748a-4bec-b2be-fb2487247e9a}",
+                                        "position": {
+                                            "x": -48.569533817705185,
+                                            "y": 91.42383454426297
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                },
+                                {
+                                    "destination": {
+                                        "id": "{7d628db8-b0fc-40aa-9561-b8214b30aa4d}",
+                                        "position": {
+                                            "x": 98.76524762227879,
+                                            "y": 205.95655952784847
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "on abort",
+                                    "id": "{223611be-cffb-4240-a24b-f03635717906}",
+                                    "label": "on abort",
+                                    "source": {
+                                        "id": "{f0455e87-748a-4bec-b2be-fb2487247e9a}",
+                                        "position": {
+                                            "x": 1.2347523777212146,
+                                            "y": 84.04344047215152
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_strategy.svg",
+                            "id": "{c43cdbdc-89c5-4353-8303-0c356d74c801}",
+                            "nodeId": "Koda::Strategy",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAACvUlEQVR4nO2ZMW8TMRSAv4vYERJZkpmNoQOo7YBgi4gQyl8IdOrWnYE/0a2QvxAJkaZbERItgqFDN8ZKGehQ5Q+kDPZxbjn7fOn5ziHvk6z4cs8+v3fv2e9sEARBEARBEARBENaPpOkBlCQBtnS5b5GZA6e6XNc0rlroAlOUUj5lCnQaGWkAusAl/sqn5TcFRliFEEiAQ6Cnr2fAGGWQPNrAgEzxI+AllnDwNUCTsbcNfNP1GfAYuCpo8wA4JzPCth7XUjQde3tG3/sl2u0b7fZsQvcKOukCZ8DDEg/u6TYbqDd2V0yPs7l9HqaszWudBkiAD2TKl4m9NvARR+zFgssAW9yceHxi7x1Z7PWATYpjrwX0dX0CLDzln1ju/9T9eFFkgJQxxcqjZcbArr72mXz6wCddHwE7uI1gytt4VXD/Ly3HvaCxZ2EIHOAeV6UUTYJ1MEG9+aG+Tn9tnjBBveGnlv5+oPIG2/0bxGCABUpZyDdCnvxnXe5MDAYAtxEuQj44FgOA3QhnIR9a22TjSWqEkfHfRsgHhvAA8/viBfB+iT4uyLJJkxY15gHL8sioP9elKp5RYx6wFoTwgF9G/QtwvEQfCfCaf0PgKyuQB5gfP8eUnwNaqGwwb/JbUHEeEFsIpMoPjf+CLoMx5QF5yo9QK0KwpTAWD7Apv0Pg/YQYPMClfN7HUPR5QFn6+CufyteSB8yNetu3w1uyc6tUPj4bIpXi8gBzJ2eA2u7y2Y4eGNcnHmNI13VQ63eR8rXlAaeoQ4Ueao/vnHIHElPgu8cY0nXdl9r2A66BN6h1uI1SbNchb3IJvCXyHWEoXgZnqDX4qESfU6o7E4DAc1GZo7FN1C6v62jsBOX2K3M0tg6Ho1PU0hl9OLrooI66Kz8eXyU6lDukPcRD+VUIAZMm5yJBEARBEARBEAThv+EP/2TlnGp9kAQAAAAASUVORK5CYII="
+                            },
+                            "position": {
+                                "x": -370,
+                                "y": 265
+                            },
+                            "properties": {
+                                "color": "#c7bf6b",
+                                "component": {
+                                    "options": [
+                                        {
+                                            "data": "abrt"
+                                        }
+                                    ]
+                                },
+                                "name": "Strategy"
+                            },
+                            "scale": 1.5,
+                            "size": {
+                                "height": 50,
+                                "width": 100
+                            }
+                        },
+                        {
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_strategy.svg",
+                            "id": "{d752dca8-6c33-4a6d-ac57-332a002b6a4d}",
+                            "nodeId": "Koda::Strategy",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAACvUlEQVR4nO2ZMW8TMRSAv4vYERJZkpmNoQOo7YBgi4gQyl8IdOrWnYE/0a2QvxAJkaZbERItgqFDN8ZKGehQ5Q+kDPZxbjn7fOn5ziHvk6z4cs8+v3fv2e9sEARBEARBEARBENaPpOkBlCQBtnS5b5GZA6e6XNc0rlroAlOUUj5lCnQaGWkAusAl/sqn5TcFRliFEEiAQ6Cnr2fAGGWQPNrAgEzxI+AllnDwNUCTsbcNfNP1GfAYuCpo8wA4JzPCth7XUjQde3tG3/sl2u0b7fZsQvcKOukCZ8DDEg/u6TYbqDd2V0yPs7l9HqaszWudBkiAD2TKl4m9NvARR+zFgssAW9yceHxi7x1Z7PWATYpjrwX0dX0CLDzln1ju/9T9eFFkgJQxxcqjZcbArr72mXz6wCddHwE7uI1gytt4VXD/Ly3HvaCxZ2EIHOAeV6UUTYJ1MEG9+aG+Tn9tnjBBveGnlv5+oPIG2/0bxGCABUpZyDdCnvxnXe5MDAYAtxEuQj44FgOA3QhnIR9a22TjSWqEkfHfRsgHhvAA8/viBfB+iT4uyLJJkxY15gHL8sioP9elKp5RYx6wFoTwgF9G/QtwvEQfCfCaf0PgKyuQB5gfP8eUnwNaqGwwb/JbUHEeEFsIpMoPjf+CLoMx5QF5yo9QK0KwpTAWD7Apv0Pg/YQYPMClfN7HUPR5QFn6+CufyteSB8yNetu3w1uyc6tUPj4bIpXi8gBzJ2eA2u7y2Y4eGNcnHmNI13VQ63eR8rXlAaeoQ4Ueao/vnHIHElPgu8cY0nXdl9r2A66BN6h1uI1SbNchb3IJvCXyHWEoXgZnqDX4qESfU6o7E4DAc1GZo7FN1C6v62jsBOX2K3M0tg6Ho1PU0hl9OLrooI66Kz8eXyU6lDukPcRD+VUIAZMm5yJBEARBEARBEAThv+EP/2TlnGp9kAQAAAAASUVORK5CYII="
+                            },
+                            "position": {
+                                "x": -590,
+                                "y": 265
+                            },
+                            "properties": {
+                                "color": "#99171a",
+                                "component": {
+                                    "options": [
+                                        {
+                                            "data": "abrt"
+                                        }
+                                    ]
+                                },
+                                "name": "Strategy"
+                            },
+                            "scale": 1.5,
+                            "size": {
+                                "height": 50,
+                                "width": 100
+                            }
+                        },
+                        {
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_strategy.svg",
+                            "id": "{8d58579e-6687-4c6d-9a4c-b1f0858aa2a8}",
+                            "nodeId": "Koda::Strategy",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAACvUlEQVR4nO2ZMW8TMRSAv4vYERJZkpmNoQOo7YBgi4gQyl8IdOrWnYE/0a2QvxAJkaZbERItgqFDN8ZKGehQ5Q+kDPZxbjn7fOn5ziHvk6z4cs8+v3fv2e9sEARBEARBEARBENaPpOkBlCQBtnS5b5GZA6e6XNc0rlroAlOUUj5lCnQaGWkAusAl/sqn5TcFRliFEEiAQ6Cnr2fAGGWQPNrAgEzxI+AllnDwNUCTsbcNfNP1GfAYuCpo8wA4JzPCth7XUjQde3tG3/sl2u0b7fZsQvcKOukCZ8DDEg/u6TYbqDd2V0yPs7l9HqaszWudBkiAD2TKl4m9NvARR+zFgssAW9yceHxi7x1Z7PWATYpjrwX0dX0CLDzln1ju/9T9eFFkgJQxxcqjZcbArr72mXz6wCddHwE7uI1gytt4VXD/Ly3HvaCxZ2EIHOAeV6UUTYJ1MEG9+aG+Tn9tnjBBveGnlv5+oPIG2/0bxGCABUpZyDdCnvxnXe5MDAYAtxEuQj44FgOA3QhnIR9a22TjSWqEkfHfRsgHhvAA8/viBfB+iT4uyLJJkxY15gHL8sioP9elKp5RYx6wFoTwgF9G/QtwvEQfCfCaf0PgKyuQB5gfP8eUnwNaqGwwb/JbUHEeEFsIpMoPjf+CLoMx5QF5yo9QK0KwpTAWD7Apv0Pg/YQYPMClfN7HUPR5QFn6+CufyteSB8yNetu3w1uyc6tUPj4bIpXi8gBzJ2eA2u7y2Y4eGNcnHmNI13VQ63eR8rXlAaeoQ4Ueao/vnHIHElPgu8cY0nXdl9r2A66BN6h1uI1SbNchb3IJvCXyHWEoXgZnqDX4qESfU6o7E4DAc1GZo7FN1C6v62jsBOX2K3M0tg6Ho1PU0hl9OLrooI66Kz8eXyU6lDukPcRD+VUIAZMm5yJBEARBEARBEAThv+EP/2TlnGp9kAQAAAAASUVORK5CYII="
+                            },
+                            "position": {
+                                "x": -110,
+                                "y": 245
+                            },
+                            "properties": {
+                                "color": "#99171a",
+                                "component": {
+                                    "options": [
+                                        {
+                                            "data": "abrt"
+                                        }
+                                    ]
+                                },
+                                "name": "Strategy"
+                            },
+                            "scale": 1.5,
+                            "size": {
+                                "height": 50,
+                                "width": 100
+                            }
+                        },
+                        {
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_strategy.svg",
+                            "id": "{7d628db8-b0fc-40aa-9561-b8214b30aa4d}",
+                            "nodeId": "Koda::Strategy",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAACvUlEQVR4nO2ZMW8TMRSAv4vYERJZkpmNoQOo7YBgi4gQyl8IdOrWnYE/0a2QvxAJkaZbERItgqFDN8ZKGehQ5Q+kDPZxbjn7fOn5ziHvk6z4cs8+v3fv2e9sEARBEARBEARBENaPpOkBlCQBtnS5b5GZA6e6XNc0rlroAlOUUj5lCnQaGWkAusAl/sqn5TcFRliFEEiAQ6Cnr2fAGGWQPNrAgEzxI+AllnDwNUCTsbcNfNP1GfAYuCpo8wA4JzPCth7XUjQde3tG3/sl2u0b7fZsQvcKOukCZ8DDEg/u6TYbqDd2V0yPs7l9HqaszWudBkiAD2TKl4m9NvARR+zFgssAW9yceHxi7x1Z7PWATYpjrwX0dX0CLDzln1ju/9T9eFFkgJQxxcqjZcbArr72mXz6wCddHwE7uI1gytt4VXD/Ly3HvaCxZ2EIHOAeV6UUTYJ1MEG9+aG+Tn9tnjBBveGnlv5+oPIG2/0bxGCABUpZyDdCnvxnXe5MDAYAtxEuQj44FgOA3QhnIR9a22TjSWqEkfHfRsgHhvAA8/viBfB+iT4uyLJJkxY15gHL8sioP9elKp5RYx6wFoTwgF9G/QtwvEQfCfCaf0PgKyuQB5gfP8eUnwNaqGwwb/JbUHEeEFsIpMoPjf+CLoMx5QF5yo9QK0KwpTAWD7Apv0Pg/YQYPMClfN7HUPR5QFn6+CufyteSB8yNetu3w1uyc6tUPj4bIpXi8gBzJ2eA2u7y2Y4eGNcnHmNI13VQ63eR8rXlAaeoQ4Ueao/vnHIHElPgu8cY0nXdl9r2A66BN6h1uI1SbNchb3IJvCXyHWEoXgZnqDX4qESfU6o7E4DAc1GZo7FN1C6v62jsBOX2K3M0tg6Ho1PU0hl9OLrooI66Kz8eXyU6lDukPcRD+VUIAZMm5yJBEARBEARBEAThv+EP/2TlnGp9kAQAAAAASUVORK5CYII="
+                            },
+                            "position": {
+                                "x": 130,
+                                "y": 245
+                            },
+                            "properties": {
+                                "color": "#c7bf6b",
+                                "component": {
+                                    "options": [
+                                        {
+                                            "data": "abrt"
+                                        }
+                                    ]
+                                },
+                                "name": "Strategy"
+                            },
+                            "scale": 1.5,
+                            "size": {
+                                "height": 50,
+                                "width": 100
+                            }
+                        }
+                    ],
+                    "owner": "{c08d1b32-f9f2-4e12-8a52-e6367b57d2f1}",
+                    "returnType": "void",
+                    "type": "user"
+                },
+                {
+                    "arguments": [
+                    ],
+                    "id": "{adf53eb3-5945-4cd2-925f-4e27169c1e75}",
                     "modifiable": true,
                     "name": "pick",
                     "nodes": [
                         {
-                            "id": "{89babe53-4fbb-44ed-bf78-5ed99c6b59f0}",
-                            "nodeId": "Mission::Start",
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_start.svg",
+                            "id": "{86b6f840-bd26-45b0-8fbe-cd85f02c3711}",
+                            "nodeId": "Koda::Start",
                             "parentId": "",
                             "pixmap": {
-                                "data": ""
+                                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAo0lEQVR4nO3T2wmEQBSD4bBF2NnapKVZxPgahBWve2TyfzCvckiiBAAAAAAAAAD3mSQN1UdUapJmSWP1IVWavcg1tNWLW8M6gLg1/AogZg1bAUSsYU8AXa9hbwDdruFoAN2t4UwAXa3hSgB/WcPnyY/fpFUfcAW/wIk3S/pWHPuEyNZdZOsusnUX2bqLbN1Ftu4iW3eRrbvI1gEAAAAAAAC81wLmv8ckCrfr0gAAAABJRU5ErkJggg=="
                             },
                             "position": {
-                                "x": -895,
-                                "y": -95
+                                "x": -715,
+                                "y": -35
                             },
                             "properties": {
                                 "mode": "signal",
@@ -999,7 +856,7 @@
                             "transitions": [
                                 {
                                     "destination": {
-                                        "id": "{16c4b931-ba93-4e19-81fe-1c7c0b5bad69}",
+                                        "id": "{26249dae-530a-4cd6-8613-3d034a421860}",
                                         "position": {
                                             "x": 0,
                                             "y": 0
@@ -1010,13 +867,13 @@
                                         }
                                     },
                                     "events": "",
-                                    "id": "{208d0463-c466-42b2-8ead-bf766561040e}",
+                                    "id": "{ffaf2367-908a-4049-90d7-a0219e68c79f}",
                                     "label": "",
                                     "source": {
-                                        "id": "{89babe53-4fbb-44ed-bf78-5ed99c6b59f0}",
+                                        "id": "{86b6f840-bd26-45b0-8fbe-cd85f02c3711}",
                                         "position": {
-                                            "x": -870,
-                                            "y": -95
+                                            "x": -690,
+                                            "y": -35
                                         },
                                         "shift": {
                                             "x": 0,
@@ -1027,276 +884,27 @@
                             ]
                         },
                         {
-                            "id": "{5b255e1d-47d0-4d90-86b5-209205a288bc}",
-                            "nodeId": "Mission::Async task",
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_async.svg",
+                            "id": "{26249dae-530a-4cd6-8613-3d034a421860}",
+                            "nodeId": "Koda::Async task",
                             "parentId": "",
                             "pixmap": {
-                                "data": ""
+                                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAACgklEQVR4nO2ZvW4UMRCAv13RQ4o0lxYkSkAgLhIFFRGnBfEKiFBAjSgRvEdIXuFIgDu6IApAQJSeMkABRbgXAAr7tMbr3fU5a99JN59kyd7zeMaj8fjnQBAEQRAEQRAEQRAEYcnI5m0AkAMDXX8N/Emp/JRnvwzo63K6pe8E+KDLX4+xB8Ceru8Am1SdEFN/K2vAWA82SxkDPY/xC0tuGxUVqfQ3sgb8ClA+LT89jMhRk3Y5Ibr+phyQASNgQ7d/AENtUBOrwB1D8RvgJs3hmANbwF3j2w7KATcS6HeyTunJ78DKDLIrWmYq3/eQcUVCdP1NSdAUGgLHMxhwDLwAHuj2U1RSauMIOAQuWN93A/QPgYe6vV6nv8kBZrZtCzsXZ4z6BuVSCuF8gIxpc+3Okdf9sCz4ngNC+GrU3wL7HjIZcJvqEnjXkU0VYjrAzLr7qDzQxHQnsCcPEU+Hi7IEXNvgYQrFMSPAl7ozwBHuaOhc+bwZUJ38Jh2d49uYRwTYtz+TustQNFI7wA73AuWEQrdHLOh1uAtcax3UhF8ltOM/UuWADHeiGyXSX0uqCLgFXDTa28B9Eoe7i1QRYE7+OQsyeYgbAa63hgPUNfUJ8JlyFxgAl62+11vG6oSYDjjn+HZJlykFanJ7jr4mZ7syymYRDkJzpSkCJkZ9NWDs345vB8BL1CnvE+UuUABXrL59yjeECbNj2hwi3+mTmFm28Iu8JE9yqR5FvwH3jD4+22BX+seoJBt0t+ihnpZP+iydo7Y/87fHCfWfiB5hf0yMLOX2q+9uYv1OfPfXDLiKWpc+f029Bz5SDbsceARcA54BXxLrFwRBEARBEARBEARBEJaef+gEFWJs2rViAAAAAElFTkSuQmCC"
                             },
                             "position": {
-                                "x": -570,
-                                "y": -175
-                            },
-                            "properties": {
-                                "color": "#202020",
-                                "component": {
-                                    "data": "Vision",
-                                    "data_id": "{93b2bd88-d785-45f2-846a-a62bafe09cc5}",
-                                    "options": [
-                                        {
-                                            "data": "",
-                                            "data_id": "",
-                                            "id": "argument",
-                                            "option_data": "",
-                                            "option_data_id": "",
-                                            "type": "string"
-                                        }
-                                    ]
-                                },
-                                "name": "Find object"
-                            },
-                            "scale": 1,
-                            "size": {
-                                "height": 50,
-                                "width": 100
-                            },
-                            "transitions": [
-                                {
-                                    "destination": {
-                                        "id": "{9a9dac6d-3eb1-4d9b-9673-6e8cb4a541f0}",
-                                        "position": {
-                                            "x": 0,
-                                            "y": 0
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    },
-                                    "events": "",
-                                    "id": "{e3890ba6-1575-43c6-ae01-12c339c5107d}",
-                                    "label": "on abort",
-                                    "source": {
-                                        "id": "{5b255e1d-47d0-4d90-86b5-209205a288bc}",
-                                        "position": {
-                                            "x": -520,
-                                            "y": -175
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    }
-                                }
-                            ]
-                        },
-                        {
-                            "id": "{7feae9f0-a43a-4628-9b5b-e80117b49fd4}",
-                            "nodeId": "Mission::Async task",
-                            "parentId": "",
-                            "pixmap": {
-                                "data": ""
-                            },
-                            "position": {
-                                "x": -270,
-                                "y": -95
-                            },
-                            "properties": {
-                                "color": "#202020",
-                                "component": {
-                                    "data": "Grip",
-                                    "data_id": "{bc12fb7d-2cbc-409d-8009-88d4cdfbe6f8}",
-                                    "options": [
-                                        {
-                                            "data": "true",
-                                            "data_id": "",
-                                            "id": "argument",
-                                            "option_data": "",
-                                            "option_data_id": "",
-                                            "type": "string"
-                                        }
-                                    ]
-                                },
-                                "name": "Pick up"
-                            },
-                            "scale": 1,
-                            "size": {
-                                "height": 50,
-                                "width": 100
-                            },
-                            "transitions": [
-                                {
-                                    "destination": {
-                                        "id": "{28d1d1a3-77c8-484a-9146-9b8a11edb38f}",
-                                        "position": {
-                                            "x": 0,
-                                            "y": 0
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    },
-                                    "events": "",
-                                    "id": "{ebc17e02-c268-46d7-9ee0-f0df70c1c261}",
-                                    "label": "on error",
-                                    "source": {
-                                        "id": "{7feae9f0-a43a-4628-9b5b-e80117b49fd4}",
-                                        "position": {
-                                            "x": -222.10868573894243,
-                                            "y": -80.63260572168272
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    }
-                                },
-                                {
-                                    "destination": {
-                                        "id": "{0ab495dc-cc6b-48b6-9aab-51727ced9d6e}",
-                                        "position": {
-                                            "x": 0,
-                                            "y": 0
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    },
-                                    "events": "",
-                                    "id": "{99e69f93-745b-48d8-a4da-1cb1ee1642f5}",
-                                    "label": "on abort",
-                                    "source": {
-                                        "id": "{7feae9f0-a43a-4628-9b5b-e80117b49fd4}",
-                                        "position": {
-                                            "x": -222.10868573894243,
-                                            "y": -109.36739427831728
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    }
-                                }
-                            ]
-                        },
-                        {
-                            "id": "{9a9dac6d-3eb1-4d9b-9673-6e8cb4a541f0}",
-                            "nodeId": "Mission::Strategy",
-                            "parentId": "",
-                            "pixmap": {
-                                "data": ""
-                            },
-                            "position": {
-                                "x": -390,
-                                "y": -175
-                            },
-                            "properties": {
-                                "color": "#ffff7f",
-                                "component": {
-                                    "options": [
-                                        {
-                                            "data": "err",
-                                            "data_id": "",
-                                            "id": "event",
-                                            "option_data": "",
-                                            "option_data_id": "{5af902ad-4b9c-43f3-b0cb-294c35f920ff}",
-                                            "type": "event_select"
-                                        }
-                                    ]
-                                },
-                                "name": "Abort"
-                            },
-                            "scale": 1,
-                            "size": {
-                                "height": 50,
-                                "width": 100
-                            }
-                        },
-                        {
-                            "id": "{28d1d1a3-77c8-484a-9146-9b8a11edb38f}",
-                            "nodeId": "Mission::Strategy",
-                            "parentId": "",
-                            "pixmap": {
-                                "data": ""
-                            },
-                            "position": {
-                                "x": -70,
+                                "x": -475,
                                 "y": -35
                             },
                             "properties": {
-                                "color": "#ff0000",
-                                "component": {
+                                "Capability": {
+                                    "data": "Vision",
                                     "options": [
-                                        {
-                                            "data": "err",
-                                            "data_id": "",
-                                            "id": "event",
-                                            "option_data": "",
-                                            "option_data_id": "{5af902ad-4b9c-43f3-b0cb-294c35f920ff}",
-                                            "type": "event_select"
-                                        }
                                     ]
                                 },
-                                "name": "Error"
-                            },
-                            "scale": 1,
-                            "size": {
-                                "height": 50,
-                                "width": 100
-                            }
-                        },
-                        {
-                            "id": "{0ab495dc-cc6b-48b6-9aab-51727ced9d6e}",
-                            "nodeId": "Mission::Strategy",
-                            "parentId": "",
-                            "pixmap": {
-                                "data": ""
-                            },
-                            "position": {
-                                "x": -70,
-                                "y": -155
-                            },
-                            "properties": {
-                                "color": "#ffff7f",
-                                "component": {
-                                    "options": [
-                                        {
-                                            "data": "err",
-                                            "data_id": "",
-                                            "id": "event",
-                                            "option_data": "",
-                                            "option_data_id": "{5af902ad-4b9c-43f3-b0cb-294c35f920ff}",
-                                            "type": "event_select"
-                                        }
-                                    ]
-                                },
-                                "name": "Abort"
-                            },
-                            "scale": 1,
-                            "size": {
-                                "height": 50,
-                                "width": 100
-                            }
-                        },
-                        {
-                            "id": "{16c4b931-ba93-4e19-81fe-1c7c0b5bad69}",
-                            "nodeId": "Mission::Within",
-                            "parentId": "",
-                            "pixmap": {
-                                "data": ""
-                            },
-                            "position": {
-                                "x": -750,
-                                "y": -95
-                            },
-                            "properties": {
                                 "color": "#202020",
-                                "name": "Timeout 30s",
-                                "timeout": 30
+                                "name": "Async task"
                             },
-                            "scale": 1.6105101745343284,
+                            "scale": 1,
                             "size": {
                                 "height": 50,
                                 "width": 100
@@ -1304,7 +912,7 @@
                             "transitions": [
                                 {
                                     "destination": {
-                                        "id": "{5b255e1d-47d0-4d90-86b5-209205a288bc}",
+                                        "id": "{9377c055-2e28-487f-95d9-10985aea6376}",
                                         "position": {
                                             "x": 0,
                                             "y": 0
@@ -1315,67 +923,40 @@
                                         }
                                     },
                                     "events": "",
-                                    "id": "{a610dd51-1720-4087-a20f-252a0e2d2de1}",
-                                    "label": "do",
-                                    "source": {
-                                        "id": "{16c4b931-ba93-4e19-81fe-1c7c0b5bad69}",
-                                        "position": {
-                                            "x": -704.3094225689872,
-                                            "y": -115.30692330267237
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    }
-                                },
-                                {
-                                    "destination": {
-                                        "id": "{62f6dcdc-daa5-47f0-b2b4-0c6c6332f4b8}",
-                                        "position": {
-                                            "x": 0,
-                                            "y": 0
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    },
-                                    "events": "",
-                                    "id": "{3bf74afb-a780-459b-a300-080f2814e73b}",
-                                    "label": "else",
-                                    "source": {
-                                        "id": "{16c4b931-ba93-4e19-81fe-1c7c0b5bad69}",
-                                        "position": {
-                                            "x": -705.2786404500042,
-                                            "y": -72.63932022500211
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    }
-                                },
-                                {
-                                    "destination": {
-                                        "id": "{7feae9f0-a43a-4628-9b5b-e80117b49fd4}",
-                                        "position": {
-                                            "x": 0,
-                                            "y": 0
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    },
-                                    "events": "",
-                                    "id": "{78ade83a-50c7-4ec4-9c70-c2e297886ae6}",
+                                    "id": "{70de00ad-7a9f-48b1-8d1c-4c15ecaebbf3}",
                                     "label": "",
                                     "source": {
-                                        "id": "{16c4b931-ba93-4e19-81fe-1c7c0b5bad69}",
+                                        "id": "{26249dae-530a-4cd6-8613-3d034a421860}",
                                         "position": {
-                                            "x": -700,
-                                            "y": -95
+                                            "x": -440,
+                                            "y": -35
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                },
+                                {
+                                    "destination": {
+                                        "id": "{35fd9f2b-3793-4727-90f6-238669e20440}",
+                                        "position": {
+                                            "x": 0,
+                                            "y": 0
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "",
+                                    "id": "{4bf067fa-c193-423c-898e-29b092870656}",
+                                    "label": "on error",
+                                    "source": {
+                                        "id": "{26249dae-530a-4cd6-8613-3d034a421860}",
+                                        "position": {
+                                            "x": -453.64968472960857,
+                                            "y": 10.21243233729954
                                         },
                                         "shift": {
                                             "x": 0,
@@ -1386,278 +967,200 @@
                             ]
                         },
                         {
-                            "id": "{62f6dcdc-daa5-47f0-b2b4-0c6c6332f4b8}",
-                            "nodeId": "Mission::Strategy",
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_async.svg",
+                            "id": "{9377c055-2e28-487f-95d9-10985aea6376}",
+                            "nodeId": "Koda::Async task",
                             "parentId": "",
                             "pixmap": {
-                                "data": ""
+                                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAACgklEQVR4nO2ZvW4UMRCAv13RQ4o0lxYkSkAgLhIFFRGnBfEKiFBAjSgRvEdIXuFIgDu6IApAQJSeMkABRbgXAAr7tMbr3fU5a99JN59kyd7zeMaj8fjnQBAEQRAEQRAEQRAEYcnI5m0AkAMDXX8N/Emp/JRnvwzo63K6pe8E+KDLX4+xB8Ceru8Am1SdEFN/K2vAWA82SxkDPY/xC0tuGxUVqfQ3sgb8ClA+LT89jMhRk3Y5Ibr+phyQASNgQ7d/AENtUBOrwB1D8RvgJs3hmANbwF3j2w7KATcS6HeyTunJ78DKDLIrWmYq3/eQcUVCdP1NSdAUGgLHMxhwDLwAHuj2U1RSauMIOAQuWN93A/QPgYe6vV6nv8kBZrZtCzsXZ4z6BuVSCuF8gIxpc+3Okdf9sCz4ngNC+GrU3wL7HjIZcJvqEnjXkU0VYjrAzLr7qDzQxHQnsCcPEU+Hi7IEXNvgYQrFMSPAl7ozwBHuaOhc+bwZUJ38Jh2d49uYRwTYtz+TustQNFI7wA73AuWEQrdHLOh1uAtcax3UhF8ltOM/UuWADHeiGyXSX0uqCLgFXDTa28B9Eoe7i1QRYE7+OQsyeYgbAa63hgPUNfUJ8JlyFxgAl62+11vG6oSYDjjn+HZJlykFanJ7jr4mZ7syymYRDkJzpSkCJkZ9NWDs345vB8BL1CnvE+UuUABXrL59yjeECbNj2hwi3+mTmFm28Iu8JE9yqR5FvwH3jD4+22BX+seoJBt0t+ihnpZP+iydo7Y/87fHCfWfiB5hf0yMLOX2q+9uYv1OfPfXDLiKWpc+f029Bz5SDbsceARcA54BXxLrFwRBEARBEARBEARBEJaef+gEFWJs2rViAAAAAElFTkSuQmCC"
                             },
                             "position": {
-                                "x": -590,
-                                "y": -15
+                                "x": -150,
+                                "y": -35
                             },
                             "properties": {
-                                "color": "#ff0000",
-                                "component": {
+                                "Capability": {
+                                    "data": "Grip",
                                     "options": [
                                         {
-                                            "data": "err",
-                                            "data_id": "",
-                                            "id": "event",
-                                            "option_data": "",
-                                            "option_data_id": "{5af902ad-4b9c-43f3-b0cb-294c35f920ff}",
-                                            "type": "event_select"
+                                            "data": true
                                         }
                                     ]
                                 },
-                                "name": "Error"
+                                "color": "#202020",
+                                "name": "Async task"
                             },
                             "scale": 1,
+                            "size": {
+                                "height": 50,
+                                "width": 100
+                            },
+                            "transitions": [
+                                {
+                                    "destination": {
+                                        "id": "{c99cb449-1b9f-43cb-807c-0d28f5df4e50}",
+                                        "position": {
+                                            "x": 0,
+                                            "y": 0
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "",
+                                    "id": "{2438e65b-524a-4979-928d-68b24ca2b835}",
+                                    "label": "on error",
+                                    "source": {
+                                        "id": "{9377c055-2e28-487f-95d9-10985aea6376}",
+                                        "position": {
+                                            "x": -123.08928685939857,
+                                            "y": 7.140402445447307
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                },
+                                {
+                                    "destination": {
+                                        "id": "{9a323cb4-196f-4209-a158-376284fb0b23}",
+                                        "position": {
+                                            "x": 0,
+                                            "y": 0
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "",
+                                    "id": "{02e8c0e4-aba2-4fa8-b549-dfc2dcf69333}",
+                                    "label": "on abort",
+                                    "source": {
+                                        "id": "{9377c055-2e28-487f-95d9-10985aea6376}",
+                                        "position": {
+                                            "x": -154.19392253135152,
+                                            "y": 14.823799672455955
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_strategy.svg",
+                            "id": "{35fd9f2b-3793-4727-90f6-238669e20440}",
+                            "nodeId": "Koda::Strategy",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAACvUlEQVR4nO2ZMW8TMRSAv4vYERJZkpmNoQOo7YBgi4gQyl8IdOrWnYE/0a2QvxAJkaZbERItgqFDN8ZKGehQ5Q+kDPZxbjn7fOn5ziHvk6z4cs8+v3fv2e9sEARBEARBEARBENaPpOkBlCQBtnS5b5GZA6e6XNc0rlroAlOUUj5lCnQaGWkAusAl/sqn5TcFRliFEEiAQ6Cnr2fAGGWQPNrAgEzxI+AllnDwNUCTsbcNfNP1GfAYuCpo8wA4JzPCth7XUjQde3tG3/sl2u0b7fZsQvcKOukCZ8DDEg/u6TYbqDd2V0yPs7l9HqaszWudBkiAD2TKl4m9NvARR+zFgssAW9yceHxi7x1Z7PWATYpjrwX0dX0CLDzln1ju/9T9eFFkgJQxxcqjZcbArr72mXz6wCddHwE7uI1gytt4VXD/Ly3HvaCxZ2EIHOAeV6UUTYJ1MEG9+aG+Tn9tnjBBveGnlv5+oPIG2/0bxGCABUpZyDdCnvxnXe5MDAYAtxEuQj44FgOA3QhnIR9a22TjSWqEkfHfRsgHhvAA8/viBfB+iT4uyLJJkxY15gHL8sioP9elKp5RYx6wFoTwgF9G/QtwvEQfCfCaf0PgKyuQB5gfP8eUnwNaqGwwb/JbUHEeEFsIpMoPjf+CLoMx5QF5yo9QK0KwpTAWD7Apv0Pg/YQYPMClfN7HUPR5QFn6+CufyteSB8yNetu3w1uyc6tUPj4bIpXi8gBzJ2eA2u7y2Y4eGNcnHmNI13VQ63eR8rXlAaeoQ4Ueao/vnHIHElPgu8cY0nXdl9r2A66BN6h1uI1SbNchb3IJvCXyHWEoXgZnqDX4qESfU6o7E4DAc1GZo7FN1C6v62jsBOX2K3M0tg6Ho1PU0hl9OLrooI66Kz8eXyU6lDukPcRD+VUIAZMm5yJBEARBEARBEAThv+EP/2TlnGp9kAQAAAAASUVORK5CYII="
+                            },
+                            "position": {
+                                "x": -378.5714285714286,
+                                "y": 132.42857142857142
+                            },
+                            "properties": {
+                                "color": "#99171a",
+                                "component": {
+                                    "options": [
+                                        {
+                                            "data": "abrt"
+                                        }
+                                    ]
+                                },
+                                "name": "Strategy"
+                            },
+                            "scale": 1.1,
+                            "size": {
+                                "height": 50,
+                                "width": 100
+                            }
+                        },
+                        {
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_strategy.svg",
+                            "id": "{c99cb449-1b9f-43cb-807c-0d28f5df4e50}",
+                            "nodeId": "Koda::Strategy",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAACvUlEQVR4nO2ZMW8TMRSAv4vYERJZkpmNoQOo7YBgi4gQyl8IdOrWnYE/0a2QvxAJkaZbERItgqFDN8ZKGehQ5Q+kDPZxbjn7fOn5ziHvk6z4cs8+v3fv2e9sEARBEARBEARBENaPpOkBlCQBtnS5b5GZA6e6XNc0rlroAlOUUj5lCnQaGWkAusAl/sqn5TcFRliFEEiAQ6Cnr2fAGGWQPNrAgEzxI+AllnDwNUCTsbcNfNP1GfAYuCpo8wA4JzPCth7XUjQde3tG3/sl2u0b7fZsQvcKOukCZ8DDEg/u6TYbqDd2V0yPs7l9HqaszWudBkiAD2TKl4m9NvARR+zFgssAW9yceHxi7x1Z7PWATYpjrwX0dX0CLDzln1ju/9T9eFFkgJQxxcqjZcbArr72mXz6wCddHwE7uI1gytt4VXD/Ly3HvaCxZ2EIHOAeV6UUTYJ1MEG9+aG+Tn9tnjBBveGnlv5+oPIG2/0bxGCABUpZyDdCnvxnXe5MDAYAtxEuQj44FgOA3QhnIR9a22TjSWqEkfHfRsgHhvAA8/viBfB+iT4uyLJJkxY15gHL8sioP9elKp5RYx6wFoTwgF9G/QtwvEQfCfCaf0PgKyuQB5gfP8eUnwNaqGwwb/JbUHEeEFsIpMoPjf+CLoMx5QF5yo9QK0KwpTAWD7Apv0Pg/YQYPMClfN7HUPR5QFn6+CufyteSB8yNetu3w1uyc6tUPj4bIpXi8gBzJ2eA2u7y2Y4eGNcnHmNI13VQ63eR8rXlAaeoQ4Ueao/vnHIHElPgu8cY0nXdl9r2A66BN6h1uI1SbNchb3IJvCXyHWEoXgZnqDX4qESfU6o7E4DAc1GZo7FN1C6v62jsBOX2K3M0tg6Ho1PU0hl9OLrooI66Kz8eXyU6lDukPcRD+VUIAZMm5yJBEARBEARBEAThv+EP/2TlnGp9kAQAAAAASUVORK5CYII="
+                            },
+                            "position": {
+                                "x": 95.18681318681317,
+                                "y": -92.01098901098908
+                            },
+                            "properties": {
+                                "color": "#99171a",
+                                "component": {
+                                    "options": [
+                                        {
+                                            "data": "abrt"
+                                        }
+                                    ]
+                                },
+                                "name": "Strategy"
+                            },
+                            "scale": 1.1,
+                            "size": {
+                                "height": 50,
+                                "width": 100
+                            }
+                        },
+                        {
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_strategy.svg",
+                            "id": "{9a323cb4-196f-4209-a158-376284fb0b23}",
+                            "nodeId": "Koda::Strategy",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAACvUlEQVR4nO2ZMW8TMRSAv4vYERJZkpmNoQOo7YBgi4gQyl8IdOrWnYE/0a2QvxAJkaZbERItgqFDN8ZKGehQ5Q+kDPZxbjn7fOn5ziHvk6z4cs8+v3fv2e9sEARBEARBEARBENaPpOkBlCQBtnS5b5GZA6e6XNc0rlroAlOUUj5lCnQaGWkAusAl/sqn5TcFRliFEEiAQ6Cnr2fAGGWQPNrAgEzxI+AllnDwNUCTsbcNfNP1GfAYuCpo8wA4JzPCth7XUjQde3tG3/sl2u0b7fZsQvcKOukCZ8DDEg/u6TYbqDd2V0yPs7l9HqaszWudBkiAD2TKl4m9NvARR+zFgssAW9yceHxi7x1Z7PWATYpjrwX0dX0CLDzln1ju/9T9eFFkgJQxxcqjZcbArr72mXz6wCddHwE7uI1gytt4VXD/Ly3HvaCxZ2EIHOAeV6UUTYJ1MEG9+aG+Tn9tnjBBveGnlv5+oPIG2/0bxGCABUpZyDdCnvxnXe5MDAYAtxEuQj44FgOA3QhnIR9a22TjSWqEkfHfRsgHhvAA8/viBfB+iT4uyLJJkxY15gHL8sioP9elKp5RYx6wFoTwgF9G/QtwvEQfCfCaf0PgKyuQB5gfP8eUnwNaqGwwb/JbUHEeEFsIpMoPjf+CLoMx5QF5yo9QK0KwpTAWD7Apv0Pg/YQYPMClfN7HUPR5QFn6+CufyteSB8yNetu3w1uyc6tUPj4bIpXi8gBzJ2eA2u7y2Y4eGNcnHmNI13VQ63eR8rXlAaeoQ4Ueao/vnHIHElPgu8cY0nXdl9r2A66BN6h1uI1SbNchb3IJvCXyHWEoXgZnqDX4qESfU6o7E4DAc1GZo7FN1C6v62jsBOX2K3M0tg6Ho1PU0hl9OLrooI66Kz8eXyU6lDukPcRD+VUIAZMm5yJBEARBEARBEAThv+EP/2TlnGp9kAQAAAAASUVORK5CYII="
+                            },
+                            "position": {
+                                "x": 100.3956043956045,
+                                "y": 46.64835164835168
+                            },
+                            "properties": {
+                                "color": "#929950",
+                                "component": {
+                                    "options": [
+                                        {
+                                            "data": "abrt"
+                                        }
+                                    ]
+                                },
+                                "name": "Strategy"
+                            },
+                            "scale": 1.1,
                             "size": {
                                 "height": 50,
                                 "width": 100
                             }
                         }
                     ],
-                    "owner": "{d9929bf1-c612-4843-aff8-1daeca5c3386}",
-                    "returnType": "string",
-                    "type": "in"
+                    "owner": "{c08d1b32-f9f2-4e12-8a52-e6367b57d2f1}",
+                    "returnType": "integer",
+                    "type": "user"
                 },
                 {
                     "arguments": [
                     ],
-                    "id": "{fe4be220-5971-487d-b19d-cd53864cb837}",
+                    "id": "{75fef2fd-e6e3-4112-8853-2e173f1db329}",
                     "modifiable": true,
                     "name": "drop",
                     "nodes": [
                         {
-                            "id": "{7f860d70-2057-4090-ab1f-daada5f8e5d7}",
-                            "nodeId": "Mission::Start",
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_start.svg",
+                            "id": "{9bc41048-4974-4a8c-90ed-f2ac44b8918c}",
+                            "nodeId": "Koda::Start",
                             "parentId": "",
                             "pixmap": {
-                                "data": ""
+                                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAo0lEQVR4nO3T2wmEQBSD4bBF2NnapKVZxPgahBWve2TyfzCvckiiBAAAAAAAAAD3mSQN1UdUapJmSWP1IVWavcg1tNWLW8M6gLg1/AogZg1bAUSsYU8AXa9hbwDdruFoAN2t4UwAXa3hSgB/WcPnyY/fpFUfcAW/wIk3S/pWHPuEyNZdZOsusnUX2bqLbN1Ftu4iW3eRrbvI1gEAAAAAAAC81wLmv8ckCrfr0gAAAABJRU5ErkJggg=="
                             },
                             "position": {
-                                "x": -655,
-                                "y": 5
-                            },
-                            "properties": {
-                                "mode": "signal",
-                                "name": "Start"
-                            },
-                            "scale": 1,
-                            "size": {
-                                "height": 50,
-                                "width": 50
-                            },
-                            "transitions": [
-                                {
-                                    "destination": {
-                                        "id": "{f9dd1d5e-8321-4f1a-9228-15ed940dd2da}",
-                                        "position": {
-                                            "x": 0,
-                                            "y": 0
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    },
-                                    "events": "",
-                                    "id": "{1a46606e-1ab7-4d85-b9c0-1cbc7ba10fc4}",
-                                    "label": "",
-                                    "source": {
-                                        "id": "{7f860d70-2057-4090-ab1f-daada5f8e5d7}",
-                                        "position": {
-                                            "x": -630,
-                                            "y": 5
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    }
-                                }
-                            ]
-                        },
-                        {
-                            "id": "{f9dd1d5e-8321-4f1a-9228-15ed940dd2da}",
-                            "nodeId": "Mission::Async task",
-                            "parentId": "",
-                            "pixmap": {
-                                "data": ""
-                            },
-                            "position": {
-                                "x": -410,
-                                "y": 5
-                            },
-                            "properties": {
-                                "color": "#202020",
-                                "component": {
-                                    "data": "Grip",
-                                    "data_id": "{bc12fb7d-2cbc-409d-8009-88d4cdfbe6f8}",
-                                    "options": [
-                                        {
-                                            "data": "false",
-                                            "data_id": "",
-                                            "id": "argument",
-                                            "option_data": "",
-                                            "option_data_id": "",
-                                            "type": "string"
-                                        }
-                                    ]
-                                },
-                                "name": "drop off"
-                            },
-                            "scale": 1,
-                            "size": {
-                                "height": 50,
-                                "width": 100
-                            },
-                            "transitions": [
-                                {
-                                    "destination": {
-                                        "id": "{04f5a7fe-9043-459b-8b49-8009fbc38dd0}",
-                                        "position": {
-                                            "x": 0,
-                                            "y": 0
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    },
-                                    "events": "",
-                                    "id": "{564b2b6f-1094-4e62-9660-97b0c45c67bc}",
-                                    "label": "on error",
-                                    "source": {
-                                        "id": "{f9dd1d5e-8321-4f1a-9228-15ed940dd2da}",
-                                        "position": {
-                                            "x": -362.91290442025814,
-                                            "y": -11.816819849907812
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    }
-                                },
-                                {
-                                    "destination": {
-                                        "id": "{dad34b86-96d0-4697-bc63-18b7f07154fd}",
-                                        "position": {
-                                            "x": 0,
-                                            "y": 0
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    },
-                                    "events": "",
-                                    "id": "{dbb638a6-8fe6-4612-ad54-f9e407f37385}",
-                                    "label": "on abort",
-                                    "source": {
-                                        "id": "{f9dd1d5e-8321-4f1a-9228-15ed940dd2da}",
-                                        "position": {
-                                            "x": -362.91290442025814,
-                                            "y": 21.816819849907812
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    }
-                                }
-                            ]
-                        },
-                        {
-                            "id": "{04f5a7fe-9043-459b-8b49-8009fbc38dd0}",
-                            "nodeId": "Mission::Strategy",
-                            "parentId": "",
-                            "pixmap": {
-                                "data": ""
-                            },
-                            "position": {
-                                "x": -130,
-                                "y": -95
-                            },
-                            "properties": {
-                                "color": "#ff0000",
-                                "component": {
-                                    "options": [
-                                        {
-                                            "data": "err",
-                                            "data_id": "",
-                                            "id": "event",
-                                            "option_data": "",
-                                            "option_data_id": "{5af902ad-4b9c-43f3-b0cb-294c35f920ff}",
-                                            "type": "event_select"
-                                        }
-                                    ]
-                                },
-                                "name": "Error"
-                            },
-                            "scale": 1,
-                            "size": {
-                                "height": 50,
-                                "width": 100
-                            }
-                        },
-                        {
-                            "id": "{dad34b86-96d0-4697-bc63-18b7f07154fd}",
-                            "nodeId": "Mission::Strategy",
-                            "parentId": "",
-                            "pixmap": {
-                                "data": ""
-                            },
-                            "position": {
-                                "x": -130,
-                                "y": 105
-                            },
-                            "properties": {
-                                "color": "#ffff7f",
-                                "component": {
-                                    "options": [
-                                        {
-                                            "data": "err",
-                                            "data_id": "",
-                                            "id": "event",
-                                            "option_data": "",
-                                            "option_data_id": "{5af902ad-4b9c-43f3-b0cb-294c35f920ff}",
-                                            "type": "event_select"
-                                        }
-                                    ]
-                                },
-                                "name": "Abort"
-                            },
-                            "scale": 1,
-                            "size": {
-                                "height": 50,
-                                "width": 100
-                            }
-                        }
-                    ],
-                    "owner": "{d9929bf1-c612-4843-aff8-1daeca5c3386}",
-                    "returnType": "string",
-                    "type": "in"
-                },
-                {
-                    "arguments": [
-                    ],
-                    "id": "{5af902ad-4b9c-43f3-b0cb-294c35f920ff}",
-                    "modifiable": true,
-                    "name": "err",
-                    "nodes": [
-                        {
-                            "id": "{e872eef7-0de2-422c-93ba-48920f57f17a}",
-                            "nodeId": "Mission::Start",
-                            "parentId": "",
-                            "pixmap": {
-                                "data": ""
-                            },
-                            "position": {
-                                "x": -755,
+                                "x": -695,
                                 "y": -15
                             },
                             "properties": {
@@ -1672,7 +1175,7 @@
                             "transitions": [
                                 {
                                     "destination": {
-                                        "id": "{01699586-93b5-435c-b778-9e438f03fc87}",
+                                        "id": "{0d56d63b-bc42-41e7-9c4d-026ecc5c20d0}",
                                         "position": {
                                             "x": 0,
                                             "y": 0
@@ -1683,12 +1186,12 @@
                                         }
                                     },
                                     "events": "",
-                                    "id": "{caa95a35-ead0-4cdc-9d6f-c9319ffbb931}",
+                                    "id": "{674c8ab6-2e3d-4fb5-b6e4-8a402e8f343c}",
                                     "label": "",
                                     "source": {
-                                        "id": "{e872eef7-0de2-422c-93ba-48920f57f17a}",
+                                        "id": "{9bc41048-4974-4a8c-90ed-f2ac44b8918c}",
                                         "position": {
-                                            "x": -730,
+                                            "x": -670,
                                             "y": -15
                                         },
                                         "shift": {
@@ -1700,113 +1203,139 @@
                             ]
                         },
                         {
-                            "id": "{01699586-93b5-435c-b778-9e438f03fc87}",
-                            "nodeId": "Mission::Sync task",
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_async.svg",
+                            "id": "{0d56d63b-bc42-41e7-9c4d-026ecc5c20d0}",
+                            "nodeId": "Koda::Async task",
                             "parentId": "",
                             "pixmap": {
-                                "data": ""
+                                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAACgklEQVR4nO2ZvW4UMRCAv13RQ4o0lxYkSkAgLhIFFRGnBfEKiFBAjSgRvEdIXuFIgDu6IApAQJSeMkABRbgXAAr7tMbr3fU5a99JN59kyd7zeMaj8fjnQBAEQRAEQRAEQRAEYcnI5m0AkAMDXX8N/Emp/JRnvwzo63K6pe8E+KDLX4+xB8Ceru8Am1SdEFN/K2vAWA82SxkDPY/xC0tuGxUVqfQ3sgb8ClA+LT89jMhRk3Y5Ibr+phyQASNgQ7d/AENtUBOrwB1D8RvgJs3hmANbwF3j2w7KATcS6HeyTunJ78DKDLIrWmYq3/eQcUVCdP1NSdAUGgLHMxhwDLwAHuj2U1RSauMIOAQuWN93A/QPgYe6vV6nv8kBZrZtCzsXZ4z6BuVSCuF8gIxpc+3Okdf9sCz4ngNC+GrU3wL7HjIZcJvqEnjXkU0VYjrAzLr7qDzQxHQnsCcPEU+Hi7IEXNvgYQrFMSPAl7ozwBHuaOhc+bwZUJ38Jh2d49uYRwTYtz+TustQNFI7wA73AuWEQrdHLOh1uAtcax3UhF8ltOM/UuWADHeiGyXSX0uqCLgFXDTa28B9Eoe7i1QRYE7+OQsyeYgbAa63hgPUNfUJ8JlyFxgAl62+11vG6oSYDjjn+HZJlykFanJ7jr4mZ7syymYRDkJzpSkCJkZ9NWDs345vB8BL1CnvE+UuUABXrL59yjeECbNj2hwi3+mTmFm28Iu8JE9yqR5FvwH3jD4+22BX+seoJBt0t+ihnpZP+iydo7Y/87fHCfWfiB5hf0yMLOX2q+9uYv1OfPfXDLiKWpc+f029Bz5SDbsceARcA54BXxLrFwRBEARBEARBEARBEJaef+gEFWJs2rViAAAAAElFTkSuQmCC"
+                            },
+                            "position": {
+                                "x": -444,
+                                "y": -17
+                            },
+                            "properties": {
+                                "Capability": {
+                                    "data": "Grip",
+                                    "options": [
+                                    ]
+                                },
+                                "color": "#202020",
+                                "name": "Async task"
+                            },
+                            "scale": 1,
+                            "size": {
+                                "height": 50,
+                                "width": 100
+                            }
+                        }
+                    ],
+                    "owner": "{c08d1b32-f9f2-4e12-8a52-e6367b57d2f1}",
+                    "returnType": "integer",
+                    "type": "user"
+                },
+                {
+                    "arguments": [
+                    ],
+                    "id": "{bf78cf99-e595-4069-94bf-6547707f7af3}",
+                    "modifiable": true,
+                    "name": "abrt",
+                    "nodes": [
+                        {
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_start.svg",
+                            "id": "{c313db5e-8e51-483c-98f1-e92619856867}",
+                            "nodeId": "Koda::Start",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAo0lEQVR4nO3T2wmEQBSD4bBF2NnapKVZxPgahBWve2TyfzCvckiiBAAAAAAAAAD3mSQN1UdUapJmSWP1IVWavcg1tNWLW8M6gLg1/AogZg1bAUSsYU8AXa9hbwDdruFoAN2t4UwAXa3hSgB/WcPnyY/fpFUfcAW/wIk3S/pWHPuEyNZdZOsusnUX2bqLbN1Ftu4iW3eRrbvI1gEAAAAAAAC81wLmv8ckCrfr0gAAAABJRU5ErkJggg=="
+                            },
+                            "position": {
+                                "x": -775,
+                                "y": -115
+                            },
+                            "properties": {
+                                "mode": "signal",
+                                "name": "Start"
+                            },
+                            "scale": 1,
+                            "size": {
+                                "height": 50,
+                                "width": 50
+                            },
+                            "transitions": [
+                                {
+                                    "destination": {
+                                        "id": "{5b3f4250-76a7-41c8-b078-e1ffe9517563}",
+                                        "position": {
+                                            "x": -640,
+                                            "y": -115
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "",
+                                    "id": "{ead2f6e3-0ec5-4e06-91bf-412dfa79f25b}",
+                                    "label": "",
+                                    "source": {
+                                        "id": "{c313db5e-8e51-483c-98f1-e92619856867}",
+                                        "position": {
+                                            "x": -750,
+                                            "y": -115
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_success.svg",
+                            "id": "{cc5e9fc6-3376-4605-bac6-df51683c2cf7}",
+                            "nodeId": "Koda::Success",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAADLElEQVR4nO2aTU8TQRiAn7INnPDOR4wpXCDe/AO0F0jA6IGkd+Hei5TfAAoX+A16ROGif4HEkFgvkFjRtHDxphcNQQ87G2fanenu7EdXOk/yJtvtu+/Xzs7M7gw4HA6Hw+FwOByOUaSUs78x4AEwC8wA0+L8FdAFOsAlcJtzXJlSBmrAIX6SfwZIV+jWxLX/LR6wSbSkTcXYELYyIatHYAV4ATwM+e8b8Bm4FgIwJWQOuB9yzSdgC3iXeqQp4+En3nsnT4EmsIC56CWh0xTX9NrZJcPWkJR7wAlqwB+BVexaWklc2+qxeQJMphBvqkwCZ/wL8gZokM7d8oStG8n+GQUqgod6578DSxn4qQrbgZ9jCvI47KImP5+hr3nUIuxk6CsSK6jNfikHn1XUx2E5B5+hlPGHpyCQRoRrJoA68Bq4AH4KuRDn6kJnEA3Jb4shPQqbqL39oCDWgTb9Q1uvtIWuCQ91dNiwyiABZdQZ3qpB1wP2GZx4r+xjLuqapNsl52lzTXJ+inmct0k+kD2D3RLqZKlqnY0Fh5LjpkFvHfvkAzE9DtuS3oF1NjEZQ23+Cxq9CeALyQvQBsY1PhYlvY6ILXMqktNL9M2/TvLkA6lrfJSAr5JeJW4yNhWblY6DXj2Mpxa2dTzRnA9aSMBMXMM2BZCdXGu14JGFbRtbcgy5FGBaOjYVYNrwXxKfveRegDuFTQGupOOpiHpJMdmSY+jGNWxTANmJqQAfLGzb2Mq9AB3peA79MPjGwraOt5rzJdShL3YBbIgzEYry8jPUiZBNC7gFjqTfjzV6vzBPk6OyBfzW/Cf7PiLHBZWRfxmK+zq8h13yhX0dhhH/IBIWRJRPYuP4LzavgHPgh5Bzca6OvsOTKcQnMRjxj6IBI/1ZHMIXRrLokWsUdGEERnxpLGCS/sXRFv5wZbs4ukb/4ugxBUw+wEPtE+TJ0jb+1HXQ8vii0A1bHt8h5Waf1QaJZeAl+g0SbcI3SFTQb5B4DrxPPdIM8fAnKEm3yDyjQJ2dDWX8UeEA/41tUNIdoVslh+ntsLbJzUgC/p0O5JI7tk3O4XA4HA6Hw+FwFI+/yMW9Rq3ZYIsAAAAASUVORK5CYII="
+                            },
+                            "position": {
+                                "x": 160,
+                                "y": -115
+                            },
+                            "properties": {
+                                "name": "Success"
+                            },
+                            "scale": 1,
+                            "size": {
+                                "height": 50,
+                                "width": 50
+                            }
+                        },
+                        {
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_sync.svg",
+                            "id": "{5b3f4250-76a7-41c8-b078-e1ffe9517563}",
+                            "nodeId": "Koda::Sync task",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAB8ElEQVR4nO2ZvU7DMBRGTyt2xMBCZ3Y26IBgQ1QI8QqV+iA8CFJfoRKiLVsRA7CxMyIYYEB9gcIQh1r9cZs0dgz9jmTViXL9XTv32qkNQgghhBBCCCGEEGK9qGR47sCUzQXPDoFHU77zuxaPfg3om8aylD6w89f1a8BnDvG0fKzohHd9VwpUgB5wYq7fgY5xyMU2cGEJ3wKnZA/HsvWpMx7JN2Arg+2WsUntD7KKh9KvOhqxjTrAVwYHvoxNSj2DbVD9DUcj9my7KOxmYdu4Zu4q0DD1LjAKqe+KgFA0gGtTrgjskysCyqBpfluhBGOIgC7Qtq6bJJGw7EfaSsQQASPGb7xp/T6HEI8hAmA8CHYk7IUQ9hkBdggfA5dL2LySvPnJznt7UT4HYNeqH5mSl8MVfZlLLClQGj4j4MWq3wGDJWwqwDnTKXBfkE9T+BwA+8/HgMVzQJVk+Zs1+Y1m3CuEWFIg7XzTuhdkGYzhO2BW59skK4L3pTCGCGgw3fkWxW2nOYlhAGzSznvL+UliSIEucGbqPQJ2HtwDMLTq2znatm2Gc59KOnxTov5c1mJLLMSmaJ9koitrUzSvPphGPihvW7xs/V8n8hxM9IoQ962f5WhsnyQvlzmaegCeKPZorEx9IYQQQgghhBBCCPFv+AEtAOydvKikkwAAAABJRU5ErkJggg=="
                             },
                             "position": {
                                 "x": -590,
-                                "y": -15
+                                "y": -115
                             },
                             "properties": {
-                                "color": "#202020",
-                                "component": {
+                                "Capability": {
                                     "data": "Drive",
-                                    "data_id": "{3dc4e244-1ea0-4e7e-92ff-ebcf3b6648f2}",
                                     "options": [
                                         {
-                                            "data": "abort",
-                                            "data_id": "",
-                                            "id": "event",
-                                            "option_data": "",
-                                            "option_data_id": "{1b1bceb2-3934-4df2-a505-8b97a9e03f3a}",
-                                            "type": "event_select"
-                                        },
-                                        {
-                                            "data": "",
-                                            "data_id": "",
-                                            "id": "argument",
-                                            "option_data": "",
-                                            "option_data_id": "",
-                                            "type": "string"
+                                            "data": "abort"
                                         }
                                     ]
                                 },
-                                "name": "Abort drive"
-                            },
-                            "scale": 1,
-                            "size": {
-                                "height": 50,
-                                "width": 100
-                            },
-                            "transitions": [
-                                {
-                                    "destination": {
-                                        "id": "{d60542f4-e2d8-424f-ac58-378734e5f74d}",
-                                        "position": {
-                                            "x": 0,
-                                            "y": 0
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    },
-                                    "events": "",
-                                    "id": "{0673c4c3-b231-499c-a8ac-5beba7bd1314}",
-                                    "label": "",
-                                    "source": {
-                                        "id": "{01699586-93b5-435c-b778-9e438f03fc87}",
-                                        "position": {
-                                            "x": -540,
-                                            "y": -15
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    }
-                                }
-                            ]
-                        },
-                        {
-                            "id": "{d60542f4-e2d8-424f-ac58-378734e5f74d}",
-                            "nodeId": "Mission::Sync task",
-                            "parentId": "",
-                            "pixmap": {
-                                "data": ""
-                            },
-                            "position": {
-                                "x": -430,
-                                "y": -15
-                            },
-                            "properties": {
                                 "color": "#202020",
-                                "component": {
-                                    "data": "Grip",
-                                    "data_id": "{bc12fb7d-2cbc-409d-8009-88d4cdfbe6f8}",
-                                    "options": [
-                                        {
-                                            "data": "cancel",
-                                            "data_id": "",
-                                            "id": "event",
-                                            "option_data": "",
-                                            "option_data_id": "{a9e1c446-f6ab-4f2c-99e5-52e591a75593}",
-                                            "type": "event_select"
-                                        },
-                                        {
-                                            "data": "",
-                                            "data_id": "",
-                                            "id": "argument",
-                                            "option_data": "",
-                                            "option_data_id": "",
-                                            "type": "string"
-                                        }
-                                    ]
-                                },
-                                "name": "Abort grip"
+                                "name": "Sync task"
                             },
                             "scale": 1,
                             "size": {
@@ -1816,24 +1345,24 @@
                             "transitions": [
                                 {
                                     "destination": {
-                                        "id": "{668a71ea-915f-47c4-80de-33ca17cf7b22}",
-                                        "position": {
-                                            "x": 0,
-                                            "y": 0
-                                        },
-                                        "shift": {
-                                            "x": 0,
-                                            "y": 0
-                                        }
-                                    },
-                                    "events": "",
-                                    "id": "{c3d16e75-bf70-4c7d-bd17-eccc3dcbc7c5}",
-                                    "label": "",
-                                    "source": {
-                                        "id": "{d60542f4-e2d8-424f-ac58-378734e5f74d}",
+                                        "id": "{d7586ca1-25c6-4655-b50c-c7273fba0a4a}",
                                         "position": {
                                             "x": -380,
-                                            "y": -15
+                                            "y": -115
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "",
+                                    "id": "{21a00621-3726-4060-932a-0783a66bd098}",
+                                    "label": "",
+                                    "source": {
+                                        "id": "{5b3f4250-76a7-41c8-b078-e1ffe9517563}",
+                                        "position": {
+                                            "x": -540,
+                                            "y": -115
                                         },
                                         "shift": {
                                             "x": 0,
@@ -1844,41 +1373,28 @@
                             ]
                         },
                         {
-                            "id": "{668a71ea-915f-47c4-80de-33ca17cf7b22}",
-                            "nodeId": "Mission::Sync task",
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_sync.svg",
+                            "id": "{d7586ca1-25c6-4655-b50c-c7273fba0a4a}",
+                            "nodeId": "Koda::Sync task",
                             "parentId": "",
                             "pixmap": {
-                                "data": ""
+                                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAB8ElEQVR4nO2ZvU7DMBRGTyt2xMBCZ3Y26IBgQ1QI8QqV+iA8CFJfoRKiLVsRA7CxMyIYYEB9gcIQh1r9cZs0dgz9jmTViXL9XTv32qkNQgghhBBCCCGEEGK9qGR47sCUzQXPDoFHU77zuxaPfg3om8aylD6w89f1a8BnDvG0fKzohHd9VwpUgB5wYq7fgY5xyMU2cGEJ3wKnZA/HsvWpMx7JN2Arg+2WsUntD7KKh9KvOhqxjTrAVwYHvoxNSj2DbVD9DUcj9my7KOxmYdu4Zu4q0DD1LjAKqe+KgFA0gGtTrgjskysCyqBpfluhBGOIgC7Qtq6bJJGw7EfaSsQQASPGb7xp/T6HEI8hAmA8CHYk7IUQ9hkBdggfA5dL2LySvPnJznt7UT4HYNeqH5mSl8MVfZlLLClQGj4j4MWq3wGDJWwqwDnTKXBfkE9T+BwA+8/HgMVzQJVk+Zs1+Y1m3CuEWFIg7XzTuhdkGYzhO2BW59skK4L3pTCGCGgw3fkWxW2nOYlhAGzSznvL+UliSIEucGbqPQJ2HtwDMLTq2znatm2Gc59KOnxTov5c1mJLLMSmaJ9koitrUzSvPphGPihvW7xs/V8n8hxM9IoQ962f5WhsnyQvlzmaegCeKPZorEx9IYQQQgghhBBCCPFv+AEtAOydvKikkwAAAABJRU5ErkJggg=="
                             },
                             "position": {
-                                "x": -250,
-                                "y": -15
+                                "x": -330,
+                                "y": -115
                             },
                             "properties": {
-                                "color": "#202020",
-                                "component": {
+                                "Capability": {
                                     "data": "Vision",
-                                    "data_id": "{93b2bd88-d785-45f2-846a-a62bafe09cc5}",
                                     "options": [
                                         {
-                                            "data": "cancel",
-                                            "data_id": "",
-                                            "id": "event",
-                                            "option_data": "",
-                                            "option_data_id": "{f84f0ff6-a095-4747-8852-f1248eb2e4bc}",
-                                            "type": "event_select"
-                                        },
-                                        {
-                                            "data": "",
-                                            "data_id": "",
-                                            "id": "argument",
-                                            "option_data": "",
-                                            "option_data_id": "",
-                                            "type": "string"
+                                            "data": "cancel"
                                         }
                                     ]
                                 },
-                                "name": "Abort vision"
+                                "color": "#202020",
+                                "name": "Sync task"
                             },
                             "scale": 1,
                             "size": {
@@ -1888,10 +1404,10 @@
                             "transitions": [
                                 {
                                     "destination": {
-                                        "id": "{8da832fe-ff61-4357-b15e-aa94f58c8494}",
+                                        "id": "{e38a0a29-cf72-4beb-9df7-ecb704573bea}",
                                         "position": {
-                                            "x": 0,
-                                            "y": 0
+                                            "x": -120,
+                                            "y": -115
                                         },
                                         "shift": {
                                             "x": 0,
@@ -1899,13 +1415,13 @@
                                         }
                                     },
                                     "events": "",
-                                    "id": "{9987a76b-520b-48a2-8c82-0b43efb2a78c}",
+                                    "id": "{af6fafa5-0840-4f3a-9626-9d110a0c16cf}",
                                     "label": "",
                                     "source": {
-                                        "id": "{668a71ea-915f-47c4-80de-33ca17cf7b22}",
+                                        "id": "{d7586ca1-25c6-4655-b50c-c7273fba0a4a}",
                                         "position": {
-                                            "x": -200,
-                                            "y": -15
+                                            "x": -280,
+                                            "y": -115
                                         },
                                         "shift": {
                                             "x": 0,
@@ -1916,59 +1432,89 @@
                             ]
                         },
                         {
-                            "id": "{8da832fe-ff61-4357-b15e-aa94f58c8494}",
-                            "nodeId": "Mission::End",
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_sync.svg",
+                            "id": "{e38a0a29-cf72-4beb-9df7-ecb704573bea}",
+                            "nodeId": "Koda::Sync task",
                             "parentId": "",
                             "pixmap": {
-                                "data": ""
+                                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAB8ElEQVR4nO2ZvU7DMBRGTyt2xMBCZ3Y26IBgQ1QI8QqV+iA8CFJfoRKiLVsRA7CxMyIYYEB9gcIQh1r9cZs0dgz9jmTViXL9XTv32qkNQgghhBBCCCGEEGK9qGR47sCUzQXPDoFHU77zuxaPfg3om8aylD6w89f1a8BnDvG0fKzohHd9VwpUgB5wYq7fgY5xyMU2cGEJ3wKnZA/HsvWpMx7JN2Arg+2WsUntD7KKh9KvOhqxjTrAVwYHvoxNSj2DbVD9DUcj9my7KOxmYdu4Zu4q0DD1LjAKqe+KgFA0gGtTrgjskysCyqBpfluhBGOIgC7Qtq6bJJGw7EfaSsQQASPGb7xp/T6HEI8hAmA8CHYk7IUQ9hkBdggfA5dL2LySvPnJznt7UT4HYNeqH5mSl8MVfZlLLClQGj4j4MWq3wGDJWwqwDnTKXBfkE9T+BwA+8/HgMVzQJVk+Zs1+Y1m3CuEWFIg7XzTuhdkGYzhO2BW59skK4L3pTCGCGgw3fkWxW2nOYlhAGzSznvL+UliSIEucGbqPQJ2HtwDMLTq2znatm2Gc59KOnxTov5c1mJLLMSmaJ9koitrUzSvPphGPihvW7xs/V8n8hxM9IoQ962f5WhsnyQvlzmaegCeKPZorEx9IYQQQgghhBBCCPFv+AEtAOydvKikkwAAAABJRU5ErkJggg=="
                             },
                             "position": {
-                                "x": -95,
-                                "y": -15
+                                "x": -70,
+                                "y": -115
                             },
                             "properties": {
-                                "name": "End"
+                                "Capability": {
+                                    "data": "Grip",
+                                    "options": [
+                                        {
+                                            "data": "cancel"
+                                        }
+                                    ]
+                                },
+                                "color": "#202020",
+                                "name": "Sync task"
                             },
                             "scale": 1,
                             "size": {
                                 "height": 50,
-                                "width": 50
-                            }
+                                "width": 100
+                            },
+                            "transitions": [
+                                {
+                                    "destination": {
+                                        "id": "{cc5e9fc6-3376-4605-bac6-df51683c2cf7}",
+                                        "position": {
+                                            "x": 300,
+                                            "y": -115
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "",
+                                    "id": "{66470d3b-15cb-4e62-a4ee-88330193a345}",
+                                    "label": "",
+                                    "source": {
+                                        "id": "{e38a0a29-cf72-4beb-9df7-ecb704573bea}",
+                                        "position": {
+                                            "x": -20,
+                                            "y": -115
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     ],
-                    "owner": "{d9929bf1-c612-4843-aff8-1daeca5c3386}",
-                    "returnType": "string",
-                    "type": "in"
-                },
-                {
-                    "arguments": [
-                    ],
-                    "id": "{ace9f6fb-ffd0-47fb-9186-b869cbd70b20}",
-                    "modifiable": false,
-                    "name": "abort",
-                    "owner": "",
-                    "returnType": "void",
-                    "type": "in"
+                    "owner": "{c08d1b32-f9f2-4e12-8a52-e6367b57d2f1}",
+                    "returnType": "integer",
+                    "type": "user"
                 }
             ],
-            "id": "{d9929bf1-c612-4843-aff8-1daeca5c3386}",
-            "nodeId": "Mission::Component",
+            "iconPath": "",
+            "id": "{c08d1b32-f9f2-4e12-8a52-e6367b57d2f1}",
+            "nodeId": "Generic::System",
             "parentId": "",
             "pixmap": {
                 "data": ""
             },
             "position": {
-                "x": -321,
-                "y": 364.75
+                "x": -284.5,
+                "y": -17.5
             },
             "properties": {
-                "color": "#88abbe",
-                "name": "PickAndPlace"
+                "color": "#202020",
+                "name": "System"
             },
-            "scale": 0.16784155756965424,
+            "scale": 0.5617977528089888,
             "size": {
-                "height": 1489.5,
-                "width": 1638
+                "height": 445,
+                "width": 471
             }
         }
     ]

@@ -27,6 +27,8 @@ bool KodaGenerator::setup()
   connect(mSimulator, &DezyneSimulator::simulationStarted, this, &KodaGenerator::simulationStarted);
   connect(mSimulator, &DezyneSimulator::simulationUpdated, this, &KodaGenerator::simulationUpdated);
 
+  // LOG_ERROR_ON_FAILURE(mSimulator->startSimulation(QUuid::createUuid().toString()));
+
   // Start the ide daemon on a specific port
   return true;  // startDaemon();
 }
@@ -130,9 +132,11 @@ void KodaGenerator::setHostServices(maki::IHostServices* services)
     service->registerSettings(languageName(), version(), mSettings);
 
   if (auto pluginTab = mServices->pluginTab())
+  {
     pluginTab->registerPlugin(languageName(), [this](QGraphicsScene* scene) {
       return createSimulationScene(scene, mLastUpdate);
     });
+  }
 }
 
 QString KodaGenerator::languageName() const
@@ -222,6 +226,8 @@ VoidResult KodaGenerator::verify(const QString& outputFolder)
   // Generate Koda from the model
   generateKoda(outputFolder);
 
+  return VoidResult();
+
   // Compile Koda to Dezyne
   mDezyneOutputFolder = QDir(mOutputFolder.absolutePath() + "/models");
   if (!mDezyneOutputFolder.exists())
@@ -260,7 +266,7 @@ VoidResult KodaGenerator::verify(const QString& outputFolder)
 
     LOG_INFO("Will verify file: %s", qPrintable(fullPath));
 
-    const QString command = "/home/felaze/Documents/PhD/Programs/behaviour_tree/dezyne-2.19.2-persistent.1-2614/dzn";
+    const QString command = "dzn";
     const QStringList arguments = {"verify", fullPath};
     QProcess* generate = new QProcess(this);
     generate->setProgram(command);
@@ -281,7 +287,7 @@ QString KodaGenerator::generateKoda(const QString& outputFolder)
 
   for (const auto& node : mServices->document()->getnodes())
   {
-    if (node->getnodeId() != "Mission::Component")
+    if (node->getnodeId() != "Koda::Task")
       continue;
 
     // TODO(felaze): Create file at this level
@@ -332,19 +338,19 @@ QString KodaGenerator::generateBehaviourNode(const INode& node, const Argument& 
 
   // LOG_DEBUG("Generating code for %s with %s", qPrintable(type), qPrintable(arg.name));
 
-  if (type == "Mission::End")
+  if (type == "Koda::End")
     code += generateEnd(node, arg, flow, format);
-  else if (type == "Mission::Error")
+  else if (type == "Koda::Error")
     code += generateError(node, arg, flow, format);
-  else if (type == "Mission::Async task")
+  else if (type == "Koda::Async task")
     code += generateAsyncTask(node, arg, flow, format);
-  else if (type == "Mission::Sync task")
+  else if (type == "Koda::Sync task")
     code += generateSyncTask(node, arg, flow, format);
-  else if (type == "Mission::Strategy")
+  else if (type == "Koda::Strategy")
     code += generateStrategy(node, arg, flow, format);
-  else if (type == "Mission::Within")
+  else if (type == "Koda::Within")
     code += generateWithin(node, arg, flow, format);
-  else if (type == "Mission::Repeat")
+  else if (type == "Koda::Repeat")
     code += generateRepeat(node, arg, flow, format);
 
   return code;
@@ -396,11 +402,10 @@ QString KodaGenerator::generateCapability(const INode& node)
 
   code += "  " + rosType + "{\n";
 
-  int inIndex = 0;
   QString qualifier = "  ";
   for (const auto& f : node.getflows())
   {
-    if (f->gettype() != Types::ConnectorType::IN)
+    if (f->gettype() != Types::CallType::RETURN && f->gettype() != Types::CallType::ABORT && f->gettype() != Types::CallType::IN)
       continue;
 
     QString args = "";
@@ -409,16 +414,19 @@ QString KodaGenerator::generateCapability(const INode& node)
 
     args.chop(2);
     if (type == "async")
-      qualifier = inIndex == 0 ? QStringLiteral("  trigger:") : QStringLiteral("  abort:");
+    {
+      if (f->gettype() == Types::CallType::RETURN)
+        qualifier = QStringLiteral("  trigger:");
+      else if (f->gettype() == Types::CallType::ABORT)
+        qualifier = QStringLiteral("  abort:");
+    }
 
     code += qualifier + "  " + Types::PropertyTypesToString(f->getreturnType()) + " " + f->getname() + "(" + args + ");\n";
-    inIndex++;
   }
 
-  int outIndex = 0;
   for (const auto& f : node.getflows())
   {
-    if (f->gettype() != Types::ConnectorType::OUT)
+    if (f->gettype() != Types::CallType::RETURN && f->gettype() != Types::CallType::ABORT && f->gettype() != Types::CallType::OUT)
       continue;
 
     QString args = "";
@@ -427,10 +435,14 @@ QString KodaGenerator::generateCapability(const INode& node)
 
     args.chop(2);
     if (type == "async")
-      qualifier = outIndex == 0 ? QStringLiteral("  return:") : QStringLiteral("  error:");
+    {
+      if (f->gettype() == Types::CallType::RETURN)
+        qualifier = QStringLiteral("  return:");
+      else if (f->gettype() == Types::CallType::ERROR)
+        qualifier = QStringLiteral("  error:");
+    }
 
     code += qualifier + "  " + Types::PropertyTypesToString(f->getreturnType()) + " " + f->getname() + "(" + args + ");\n";
-    outIndex++;
   }
 
   code += "  }\n";
@@ -475,10 +487,14 @@ QString KodaGenerator::generateComponent(const INode& node, const QString& incom
 
     args.chop(2);
     QString qualifier = "";
-    if (f->gettype() == Types::ConnectorType::IN)
-      qualifier = index == 0 ? QStringLiteral("  trigger:") : QStringLiteral("  abort:");
-    else
-      qualifier = index == 2 ? QStringLiteral("  return:") : QStringLiteral("  error:");
+    if (f->gettype() == Types::CallType::RETURN)
+      qualifier = QStringLiteral("  trigger:");
+    else if (f->gettype() == Types::CallType::ABORT)
+      qualifier = QStringLiteral("  abort:");
+    else if (f->gettype() == Types::CallType::RETURN)
+      qualifier = QStringLiteral("  return:");
+    else if (f->gettype() == Types::CallType::ERROR)
+      qualifier = QStringLiteral("  error:");
 
     bodyCode += qualifier + "  " + Types::PropertyTypesToString(f->getreturnType()) + " " + f->getname() + "(" + args + ");\n";
     index++;
@@ -493,7 +509,7 @@ QString KodaGenerator::generateComponent(const INode& node, const QString& incom
     // Find the start node
     for (const auto& n : f->getnodes())
     {
-      if (n->getnodeId() != "Mission::Start")
+      if (n->getnodeId() != "Koda::Start")
         continue;
 
       code += generateStart(node.getproperties()[ConfigKeys::NAME].toString(), *n, *f, "    ");
@@ -845,6 +861,7 @@ void KodaGenerator::simulationStarted()
 
 void KodaGenerator::simulationUpdated(const QJsonObject& obj)
 {
+  LOG_DEBUG("Simulation updated");
   mLastUpdate = obj;
   mServices->pluginTab()->updateScene(languageName());
 }
@@ -855,8 +872,8 @@ VoidResult KodaGenerator::createSimulationScene(QGraphicsScene* scene, const QJs
   if (obj.isEmpty())
     return VoidResult();
 
-  auto pretty = QJsonDocument(obj).toJson(QJsonDocument::Indented);
-  LOG_DEBUG("Received message: %s", qPrintable(pretty));
+  // auto pretty = QJsonDocument(obj).toJson(QJsonDocument::Indented);
+  // LOG_DEBUG("Received message: %s", qPrintable(pretty));
 
   auto theme = mServices->pluginTab()->currentTheme();
   auto fonts = mServices->pluginTab()->labelFont();
