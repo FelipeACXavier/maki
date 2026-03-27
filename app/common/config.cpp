@@ -76,28 +76,8 @@ QVariant PropertyConfig::toDefault(const QJsonObject& object, Types::PropertyTyp
     return object.contains("default") ? object["default"].toString() : QVariant(QString("#050505"));
   else if (objectType == Types::PropertyTypes::COMPONENT_SELECT)
   {
-    if (!object.contains(ConfigKeys::OPTIONS))
-      return toDefault(object, Types::PropertyTypes::STRING);
-
     QJsonObject defaultObject;
-    QJsonArray array;
-    for (const auto& option : options)
-    {
-      // A component select with options must be able to hold its on data as well as the data option
-      QJsonObject propOption;
-      propOption[ConfigKeys::DATA] = "";
-      propOption["data_id"] = "";
-
-      propOption[ConfigKeys::ID] = option.id;
-      propOption[ConfigKeys::TYPE] = Types::PropertyTypesToString(option.type);
-      propOption[ConfigKeys::OPTION_DATA] = option.defaultValue.toString();
-      propOption["option_data_id"] = "";
-
-      array.append(propOption);
-    }
-
-    defaultObject[ConfigKeys::OPTIONS] = array;
-
+    defaultObject[ConfigKeys::OPTIONS] = QJsonArray();
     return defaultObject;
   }
   else if (objectType == Types::PropertyTypes::EVENT_SELECT)
@@ -105,6 +85,10 @@ QVariant PropertyConfig::toDefault(const QJsonObject& object, Types::PropertyTyp
   else if (objectType == Types::PropertyTypes::SELECT)
     return toDefault(object, Types::PropertyTypes::STRING);
   else if (objectType == Types::PropertyTypes::ENUM)
+    return toDefault(object, Types::PropertyTypes::STRING);
+  else if (objectType == Types::PropertyTypes::TRIGGER_CALL)
+    return toDefault(object, Types::PropertyTypes::STRING);
+  else if (objectType == Types::PropertyTypes::USER_CALL)
     return toDefault(object, Types::PropertyTypes::STRING);
 
   return QVariant();
@@ -149,8 +133,8 @@ FlowConfig::FlowConfig(const QJsonObject& object)
   }
 
   name = object[ConfigKeys::ID].toString();
-  type = Types::StringToConnectorType(object[ConfigKeys::TYPE].toString());
-  if (type == Types::ConnectorType::UNKNOWN)
+  type = Types::StringToCallType(object[ConfigKeys::TYPE].toString());
+  if (type == Types::CallType::UNKNOWN)
   {
     setInvalid("Invalid type: " + object[ConfigKeys::TYPE].toString() + " for " + name);
     return;

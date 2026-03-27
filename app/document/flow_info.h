@@ -18,7 +18,7 @@ public:
   QString getname() const override;
   QString getowner() const override;
   bool getmodifiable() const override;
-  Types::ConnectorType gettype() const override;
+  Types::CallType gettype() const override;
   Types::PropertyTypes getreturnType() const override;
   QVector<std::shared_ptr<IProperty>> getarguments() const override;
   QVector<std::shared_ptr<INode>> getnodes() const override;
@@ -27,7 +27,7 @@ public:
   void setName(const QString& arg);
   void setOwner(const QString& arg);
   void setModifiable(bool arg);
-  void setType(Types::ConnectorType arg);
+  void setType(Types::CallType arg);
   void setReturnType(Types::PropertyTypes arg);
   void addArgument(std::shared_ptr<IProperty> arg);
   void setArgument(uint32_t index, std::shared_ptr<IProperty> arg);
@@ -48,7 +48,7 @@ private:
   QString mOwner;
   bool mModifiable;
 
-  Types::ConnectorType mType;
+  Types::CallType mType;
   Types::PropertyTypes mReturnType;
   QVector<std::shared_ptr<INode>> mNodes;
   QVector<std::shared_ptr<IProperty>> mArguments;

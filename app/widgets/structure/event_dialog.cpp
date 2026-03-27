@@ -55,7 +55,7 @@ void EventDialog::setup(std::shared_ptr<FlowSaveInfo> event)
 
 void EventDialog::createNameInput()
 {
-  auto name = new maki::StringWidget(tr("Event name"), mStorage->getname(), this);
+  auto name = new maki::StringWidget(tr("Event name"), mStorage->getname(), {maki::WidgetAlignment::Type::VERTICAL}, this);
   name->widget()->setFocusPolicy(mStorage->getmodifiable() ? Qt::StrongFocus : Qt::NoFocus);
   name->widget()->setReadOnly(!mStorage->getmodifiable());
 
@@ -69,22 +69,20 @@ void EventDialog::createTypeInput()
   type->setFocusPolicy(mStorage->getmodifiable() ? Qt::ClickFocus : Qt::NoFocus);
   type->setEnabled(mStorage->getmodifiable());
 
-  for (uint16_t i = (uint16_t)Types::ConnectorType::UNKNOWN + 1; i < (uint16_t)Types::ConnectorType::END; ++i)
-  {
-    auto id = Types::ConnectorTypeToString((Types::ConnectorType)i);
-    type->addItem(id, id);
-  }
+  // Currently, the user can only create USER calls
+  auto id = Types::CallTypeToString(Types::CallType::USER);
+  type->addItem(id, id);
 
-  connect(type, &maki::SelectorWidget::valueChanged, this, [=](const QString& text) { mStorage->setType(Types::StringToConnectorType(text)); });
+  connect(type, &maki::SelectorWidget::valueChanged, this, [this](const QString& text) { mStorage->setType(Types::StringToCallType(text)); });
 
-  if (mStorage->gettype() == Types::ConnectorType::UNKNOWN)
+  if (mStorage->gettype() == Types::CallType::UNKNOWN)
   {
-    type->setValue(Types::ConnectorTypeToString((Types::ConnectorType)((uint16_t)Types::ConnectorType::UNKNOWN + 1)));
-    mStorage->setType(Types::StringToConnectorType(type->getValue()));
+    type->setValue(Types::CallTypeToString((Types::CallType)((uint16_t)Types::CallType::UNKNOWN + 1)));
+    mStorage->setType(Types::StringToCallType(type->getValue()));
   }
   else
   {
-    type->setValue(Types::ConnectorTypeToString(mStorage->gettype()));
+    type->setValue(Types::CallTypeToString(mStorage->gettype()));
   }
 
   layout()->addWidget(type);
@@ -92,7 +90,7 @@ void EventDialog::createTypeInput()
 
 void EventDialog::createReturnTypeInput()
 {
-  auto typeBox = new maki::TypeSelectionWidget(this);
+  auto typeBox = new maki::TypeSelectionWidget(Types::PropertyTypesToString(Types::PropertyTypes::VOID), this);
 
   auto returnType = new maki::SelectorWidget(tr("Return type"), typeBox, this);
   returnType->setFocusPolicy(mStorage->getmodifiable() ? Qt::ClickFocus : Qt::NoFocus);
@@ -104,7 +102,6 @@ void EventDialog::createReturnTypeInput()
 
   if (mStorage->getreturnType() == Types::PropertyTypes::UNKNOWN)
   {
-    returnType->setValue(Types::PropertyTypesToString(Types::PropertyTypes::INTEGER));
     mStorage->setReturnType(Types::StringToPropertyTypes(returnType->getValue()));
   }
   else
@@ -139,16 +136,26 @@ void EventDialog::createArgumentInput()
     args->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::EditKeyPressed);
   else
     args->setEditTriggers(QAbstractItemView::NoEditTriggers);
+
   args->setModel(model);
 
   for (const auto& field : mStorage->getarguments())
   {
     int newRow = model->rowCount();
     model->insertRow(newRow);
-    model->setItem(newRow, 0, new QStandardItem(field->getid()));
+
+    auto nameItem = new QStandardItem(field->getid());
+    nameItem->setEnabled(mStorage->getmodifiable());
 
     auto box = new maki::TypeSelectionWidget(Types::PropertyTypesToString(field->gettype()), args);
+    box->setEnabled(mStorage->getmodifiable());
+
+    model->setItem(newRow, 0, nameItem);
     args->setIndexWidget(model->index(newRow, 1), box);
+
+    if (!mStorage->getmodifiable())
+      continue;
+
     connect(box, &QComboBox::currentTextChanged, this, [this, newRow](const QString& value) {
       updateArgumentTable(newRow, 1, value);
     });
@@ -173,7 +180,7 @@ void EventDialog::createArgumentInput()
   button->setObjectName("TextAndIcon");
 
   button->setEnabled(mStorage->getmodifiable());
-  connect(button, &QPushButton::pressed, this, [=]() {
+  connect(button, &QPushButton::pressed, this, [this, model, args]() {
     int newRow = model->rowCount();
     model->insertRow(newRow);
     model->setItem(newRow, 0, new QStandardItem(""));

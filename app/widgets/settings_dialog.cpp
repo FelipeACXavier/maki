@@ -150,20 +150,21 @@ VoidResult SettingsDialog::createGeneralPage()
     mSettingsManager->setGeneral(defaultSettings);
   });
 
+  maki::WidgetAlignment alignment = {maki::WidgetAlignment::Type::VERTICAL};
   mAutosaveMinutes = new maki::SpinWidget(tr("Autosave interval"), generalSettings.autosaveIntervalMinutes, page, 1, 120);
   mAutosaveMinutes->addDescription("Between 1 and 120 minutes");
   mAutosaveMinutes->setSuffix(" minutes");
-  mAutosaveEnabled = new maki::BooleanWidget(tr("Enable autosave"), generalSettings.autosaveEnabled, page);
+  mAutosaveEnabled = new maki::BooleanWidget(tr("Enable autosave"), generalSettings.autosaveEnabled, alignment, page);
 
   auto autoSaveLayout = new maki::WidgetGroup(tr("Autosave"), page);
   autoSaveLayout->addWidget(mAutosaveEnabled);
   autoSaveLayout->addWidget(mAutosaveMinutes);
 
-  mRecentHistorySize = new maki::IntegerWidget(tr("Recent History Size"), QString("%1").arg(generalSettings.recentHistorySize), page, INT32_MIN, INT32_MAX);
+  mRecentHistorySize = new maki::IntegerWidget(tr("Recent History Size"), QString("%1").arg(generalSettings.recentHistorySize), alignment, page, INT32_MIN, INT32_MAX);
 
-  mRestoreLastSession = new maki::BooleanWidget(tr("Restore last session on startup"), generalSettings.restoreLastSession, page);
-  mConfirmOnClose = new maki::BooleanWidget(tr("Confirm before closing editor with running execution"), generalSettings.confirmOnCloseWithExecution, page);
-  mShowWelcomeMessage = new maki::BooleanWidget(tr("Show welcome message"), generalSettings.showWelcomeMessage, page);
+  mRestoreLastSession = new maki::BooleanWidget(tr("Restore last session on startup"), generalSettings.restoreLastSession, alignment, page);
+  mConfirmOnClose = new maki::BooleanWidget(tr("Confirm before closing editor with running execution"), generalSettings.confirmOnCloseWithExecution, alignment, page);
+  mShowWelcomeMessage = new maki::BooleanWidget(tr("Show welcome message"), generalSettings.showWelcomeMessage, alignment, page);
 
   auto closingLayout = new maki::WidgetGroup(tr("Opening/Closing"), page);
   closingLayout->addWidget(mRestoreLastSession);
@@ -171,7 +172,7 @@ VoidResult SettingsDialog::createGeneralPage()
   closingLayout->addWidget(mShowWelcomeMessage);
   closingLayout->addWidget(mRecentHistorySize);
 
-  mEnableDebugLogs = new maki::BooleanWidget(tr("Enable debug logs"), generalSettings.enableDebugLogs, page);
+  mEnableDebugLogs = new maki::BooleanWidget(tr("Enable debug logs"), generalSettings.enableDebugLogs, alignment, page);
   auto logLayout = new maki::WidgetGroup(tr("Logging and Notifications"), page);
   logLayout->addWidget(mEnableDebugLogs);
 
@@ -214,7 +215,8 @@ VoidResult SettingsDialog::createAppearancePage()
   }
   mThemeCombo->setValue(appearance.theme);
 
-  mNativeMenuBar = new maki::BooleanWidget(tr("Use native menubar"), appearance.nativeMenuBar, page);
+  maki::WidgetAlignment alignment = {maki::WidgetAlignment::Type::VERTICAL};
+  mNativeMenuBar = new maki::BooleanWidget(tr("Use native menubar"), appearance.nativeMenuBar, alignment, page);
 
   auto themeLayout = new maki::WidgetGroup(tr("Theming"), page);
   themeLayout->addWidget(mThemeCombo);
@@ -231,7 +233,7 @@ VoidResult SettingsDialog::createAppearancePage()
   mNodeCornerRadius = new maki::SpinWidget(tr("Node corner radius"), appearance.nodeCornerRadius, page, 0, 30);
   mNodeCornerRadius->setSuffix(tr(" pixels"));
 
-  mShowGrid = new maki::BooleanWidget(tr("Show canvas grid"), appearance.showCanvasGrid, page);
+  mShowGrid = new maki::BooleanWidget(tr("Show canvas grid"), appearance.showCanvasGrid, alignment, page);
 
   auto editorLayout = new maki::WidgetGroup(tr("Theming"), page);
   editorLayout->addWidget(mUiScale);
@@ -255,7 +257,7 @@ VoidResult SettingsDialog::createGenerationPage()
 
   auto* pathRow = new QWidget(page);
 
-  mGenerationDirEdit = new maki::StringWidget(tr("Generation output folder"), generation.generationDir, pathRow);
+  mGenerationDirEdit = new maki::StringWidget(tr("Generation output folder"), generation.generationDir, {maki::WidgetAlignment::Type::VERTICAL}, pathRow);
   mGenerationDirEdit->addDescription(tr("\"/<plugin name>\" will be appended to this path"));
 
   if (generation.generationDir != GenerationSettings().generationDir)
@@ -331,7 +333,7 @@ VoidResult SettingsDialog::createPluginPages()
   removeBtn->setFixedWidth(200);
   removeBtn->setEnabled(false);
 
-  connect(table->selectionModel(), &QItemSelectionModel::selectionChanged, topPage, [=]() {
+  connect(table->selectionModel(), &QItemSelectionModel::selectionChanged, topPage, [removeBtn, table]() {
     removeBtn->setEnabled(table->selectionModel()->hasSelection());
   });
 
@@ -372,13 +374,14 @@ VoidResult SettingsDialog::createPluginPages()
     QVBoxLayout* layout = page->findChild<QVBoxLayout*>("ContentArea");
     layout->setSpacing(2);
 
+    maki::WidgetAlignment alignment = {maki::WidgetAlignment::Type::VERTICAL};
     for (const auto& setting : settings)
     {
       if (setting.getType() == Types::PropertyTypes::INTEGER)
       {
         int min = setting.getMetadata().contains("min") ? setting.getMetadata()["min"].toInt() : INT32_MIN;
         int max = setting.getMetadata().contains("max") ? setting.getMetadata()["max"].toInt() : INT32_MAX;
-        auto* field = new maki::IntegerWidget(setting.getLabel(), setting.getDefaultValue().toString(), page, min, max);
+        auto* field = new maki::IntegerWidget(setting.getLabel(), setting.getDefaultValue().toString(), alignment, page, min, max);
         field->addDescription(setting.getDescription());
 
         connect(field, &maki::IntegerWidget::valueChanged, this, [this, pluginId, setting](const int value) {
@@ -389,7 +392,7 @@ VoidResult SettingsDialog::createPluginPages()
       }
       else if (setting.getType() == Types::PropertyTypes::BOOLEAN)
       {
-        auto* field = new maki::BooleanWidget(setting.getLabel(), setting.getDefaultValue().toBool(), page);
+        auto* field = new maki::BooleanWidget(setting.getLabel(), setting.getDefaultValue().toBool(), alignment, page);
         field->addDescription(setting.getDescription());
 
         connect(field, &maki::BooleanWidget::valueChanged, this, [this, pluginId, setting](const int value) {

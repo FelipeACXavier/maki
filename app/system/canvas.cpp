@@ -249,84 +249,6 @@ void Canvas::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
     if (!mDragging && dist >= 400)
       mDragging = true;
   }
-  // else if (event->buttons() & Qt::LeftButton)
-  // {
-  //   QList<QGraphicsItem*> draggedItems = selectedItems();
-
-  //   if (draggedItems.size() > 0)
-  //   {
-  //     // Check for collision or proximity with other nodes
-  //     QList<QGraphicsItem*> itemsUnder = items(event->scenePos(), Qt::IntersectsItemShape, Qt::DescendingOrder);
-
-  //     if (itemsUnder.size() > 1)
-  //     {
-  //       for (QGraphicsItem* target : itemsUnder)
-  //       {
-  //         if (draggedItems.contains(target) || target->type() != NodeItem::Type)
-  //           continue;
-
-  //         NodeItem* targetNode = static_cast<NodeItem*>(target);
-
-  //         if (mHoveredNode != targetNode)
-  //         {
-  //           mHoveredNode = targetNode;
-  //           mHoverTimer->stop();
-  //           mHoverTimer->disconnect();
-  //           connect(mHoverTimer, &QTimer::timeout, this, [=]() {
-  //             if (!mHoveredNode)
-  //               return;
-
-  //             if (!(QApplication::mouseButtons() & Qt::LeftButton))
-  //               return;
-
-  //             bool shouldAsk = false;
-  //             for (const auto& item : draggedItems)
-  //             {
-  //               if (item->type() != NodeItem::Type)
-  //                 continue;
-
-  //               auto node = static_cast<NodeItem*>(item);
-
-  //               if (node->parentNode() != mHoveredNode)
-  //               {
-  //                 shouldAsk = true;
-  //                 break;
-  //               }
-  //             }
-
-  //             if (!shouldAsk)
-  //               return;
-
-  //             if (QMessageBox::question(nullptr, "Make Child", "Make this node a child of the hovered node?") == QMessageBox::Yes)
-  //             {
-  //               for (const auto& item : draggedItems)
-  //               {
-  //                 if (item->type() != NodeItem::Type)
-  //                   continue;
-
-  //                 auto node = static_cast<NodeItem*>(item);
-  //                 if (node->parentNode())
-  //                   continue;
-
-  //                 // If item is a NodeItem and it has no parent, make this node the parent
-  //                 node->setParent(mHoveredNode);
-  //                 mHoveredNode->addChild(node);
-  //               }
-  //             }
-  //           });
-  //           mHoverTimer->start(1000);
-  //         }
-
-  //         break;
-  //       }
-  //     }
-  //     else if (mHoveredNode)
-  //     {
-  //       mHoverTimer->stop();
-  //       mHoveredNode = nullptr;
-  //     }
-  //   }
-  // }
 
   QGraphicsScene::mouseMoveEvent(event);
 }
@@ -366,16 +288,23 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
   }
   else if (QGraphicsItem* item = itemAt(event->scenePos(), QTransform()))
   {
-    if (item && item->type() == NodeItem::Type && !mDragging)
+    if (item && !mDragging)
     {
-      NodeItem* node = static_cast<NodeItem*>(item);
+      NodeItem* node = nullptr;
+      if (item->type() == NodeItem::Type)
+        node = static_cast<NodeItem*>(item);
+      else if ((item->type() == QGraphicsTextItem::Type || item->type() == QGraphicsSvgItem::Type) && item->parentItem()->type() == NodeItem::Type)
+        node = static_cast<NodeItem*>(item->parentItem());
 
-      // We cannot clear if there are multiple nodes selected
-      if (selectedItems().size() < 2)
-        clearSelectedNodes();
+      if (node)
+      {
+        // We cannot clear if there are multiple nodes selected
+        if (selectedItems().size() < 2)
+          clearSelectedNodes();
 
-      nodeClicked(node);
-      selectNode(node, true);
+        nodeClicked(node);
+        selectNode(node, true);
+      }
     }
     else
     {
@@ -799,7 +728,7 @@ void Canvas::removeNode(const NodeSaveInfo info)
     // Delete children before parents (important if parent owns child QGraphicsItems)
     for (int i = toRemove.size() - 1; i >= 0; --i)
     {
-      if (auto node = static_cast<NodeItem*>(toRemove[i]))
+      if (auto node = dynamic_cast<NodeItem*>(toRemove[i]))
         LOG_INFO("Deleting: %s, has parent: %d", qPrintable(node->id()), node->parentNode() != nullptr);
 
       delete toRemove[i];

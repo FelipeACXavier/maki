@@ -38,6 +38,8 @@ public:
   QVector<std::shared_ptr<NodeSaveInfo>> getPossibleStates(const QString& nodeId) const;
   QVector<std::shared_ptr<NodeSaveInfo>> getPossibleCallers(const QString& nodeId) const;
   QVector<std::shared_ptr<FlowSaveInfo>> getEventsFromNode(const QString& nodeId) const;
+  QVector<std::shared_ptr<FlowSaveInfo>> getEventsOfTypeFromNode(const QString& nodeId, Types::CallType type) const;
+  std::shared_ptr<FlowSaveInfo> getEventFromNode(const QString& nodeId, const QString& flowName) const;
 
   std::shared_ptr<NodeSaveInfo> getNodeWithId(const QString& nodeId);
   std::shared_ptr<FlowSaveInfo> getFlowWithId(const QString& flowId);

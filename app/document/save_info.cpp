@@ -129,6 +129,32 @@ QVector<std::shared_ptr<FlowSaveInfo>> SaveInfo::getEventsFromNode(const QString
   return getEventsFromNode(nodeId, getnodes());
 }
 
+QVector<std::shared_ptr<FlowSaveInfo>> SaveInfo::getEventsOfTypeFromNode(const QString& nodeId, Types::CallType type) const
+{
+  auto events = getEventsFromNode(nodeId, getnodes());
+  for (auto it = events.begin(); it != events.end();)
+  {
+    if ((*it)->gettype() != type)
+      it = events.erase(it);
+    else
+      ++it;
+  }
+
+  return events;
+}
+
+std::shared_ptr<FlowSaveInfo> SaveInfo::getEventFromNode(const QString& nodeId, const QString& flowName) const
+{
+  auto events = getEventsFromNode(nodeId, getnodes());
+  for (const auto& event : events)
+  {
+    if (event->getname() == flowName)
+      return event;
+  }
+
+  return nullptr;
+}
+
 std::shared_ptr<NodeSaveInfo> SaveInfo::getNodeWithId(const QString& nodeId)
 {
   return getNodeWithId(nodeId, getnodes());

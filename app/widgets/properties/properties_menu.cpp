@@ -4,6 +4,7 @@
 #include <QColorDialog>
 #include <QComboBox>
 #include <QDoubleValidator>
+#include <QFormLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QHeaderView>
@@ -32,6 +33,83 @@
 #include "logging.h"
 #include "style_helpers.h"
 #include "types.h"
+#include "widgets/widget_factory.h"
+
+static const int EVENT_INDEX = 0;
+static const int ARG_INDEX = 1;
+
+#define UPDATE_PROPERTY(node, id, value)                  \
+  do                                                      \
+  {                                                       \
+    auto propValue = node->getProperty(property.getid()); \
+    if (!propValue.isValid())                             \
+    {                                                     \
+      LOG_WARNING("Property is not valid");               \
+      return;                                             \
+    }                                                     \
+                                                          \
+    QJsonObject object = propValue.toJsonObject();        \
+    object[ConfigKeys::DATA] = text;                      \
+    object[ConfigKeys::OPTIONS] = QJsonArray();           \
+                                                          \
+    node->setProperty(property.getid(), object);          \
+  } while (false);
+
+#define UPDATE_PROPERTY_ARG(node, id, index, value)           \
+  do                                                          \
+  {                                                           \
+    auto propValue = node->getProperty(id);                   \
+    if (!propValue.isValid())                                 \
+    {                                                         \
+      LOG_WARNING("Property is not valid");                   \
+      return;                                                 \
+    }                                                         \
+                                                              \
+    QJsonObject object = propValue.toJsonObject();            \
+    QJsonArray array = object[ConfigKeys::OPTIONS].toArray(); \
+                                                              \
+    QJsonObject item;                                         \
+    item[ConfigKeys::DATA] = value;                           \
+    if (index == EVENT_INDEX)                                 \
+      array = QJsonArray();                                   \
+                                                              \
+    if (index < array.size())                                 \
+      array[index] = item;                                    \
+    else                                                      \
+      array.push_back(item);                                  \
+                                                              \
+    object[ConfigKeys::OPTIONS] = array;                      \
+    node->setProperty(id, object);                            \
+  } while (false);
+
+void clearLayout(QLayout* layout)
+{
+  if (!layout)
+    return;
+
+  while (layout->count() > 0)
+  {
+    QLayoutItem* item = layout->takeAt(0);
+    if (!item)
+      break;
+
+    if (QLayout* childLayout = item->layout())
+    {
+      clearLayout(childLayout);
+      delete item;  // do NOT delete childLayout separately
+      continue;
+    }
+
+    if (QWidget* widget = item->widget())
+    {
+      widget->deleteLater();  // or delete widget;
+      delete item;
+      continue;
+    }
+
+    delete item;  // spacer etc.
+  }
+}
 
 PropertiesMenu::PropertiesMenu(QWidget* parent)
     : QFrame(parent)
@@ -49,21 +127,6 @@ VoidResult PropertiesMenu::start(std::shared_ptr<SaveInfo> storage)
   return VoidResult();
 }
 
-void PropertiesMenu::clear()
-{
-  if (!layout())
-    return;
-
-  // Remove and delete all child widgets
-  while (QLayoutItem* item = layout()->takeAt(0))
-  {
-    if (QWidget* widget = item->widget())
-      widget->deleteLater();
-
-    delete item;
-  }
-}
-
 VoidResult PropertiesMenu::onNodeAdded(NodeItem* /* node */)
 {
   return VoidResult();
@@ -78,7 +141,7 @@ VoidResult PropertiesMenu::onNodeRemoved(NodeItem* node)
   if (node->id() != mCurrentNode)
     return VoidResult();
 
-  clear();
+  clearLayout(layout());
   mCurrentNode.clear();
 
   return VoidResult();
@@ -92,7 +155,7 @@ VoidResult PropertiesMenu::onNodeModified(NodeItem* node)
 VoidResult PropertiesMenu::onNodeSelected(NodeItem* node, bool selected)
 {
   // Clear the frame
-  clear();
+  clearLayout(layout());
 
   if (!node)
     return VoidResult();
@@ -228,7 +291,7 @@ VoidResult PropertiesMenu::loadPropertyInt(const PropertyInfo& property, NodeIte
   widget->setText(result.toString());
   widget->setValidator(validator);
 
-  connect(widget, &QLineEdit::editingFinished, this, [=]() {
+  connect(widget, &QLineEdit::editingFinished, this, [node, widget, property]() {
     bool ok;
     int newValue = widget->text().toInt(&ok);
     if (ok)
@@ -262,7 +325,7 @@ VoidResult PropertiesMenu::loadPropertyReal(const PropertyInfo& property, NodeIt
   widget->setText(result.toString());
   widget->setValidator(validator);
 
-  connect(widget, &QLineEdit::returnPressed, this, [=]() {
+  connect(widget, &QLineEdit::returnPressed, this, [node, widget, property]() {
     bool ok;
     qreal newValue = widget->text().toDouble(&ok);
     if (ok)
@@ -304,7 +367,7 @@ VoidResult PropertiesMenu::loadPropertyColor(const PropertyInfo& property, NodeI
                                     "QLabel#PropertyColorPreview { background-color: %1; }")
                                     .arg(result.toString()));
 
-  connect(widget, &QPushButton::pressed, [=]() {
+  connect(widget, &QPushButton::pressed, [this, node, colorPreviewLabel, property, selectedColor]() {
     QColor color = QColorDialog::getColor(selectedColor, this, "Background Color");
     if (!color.isValid())
       return;
@@ -408,14 +471,18 @@ VoidResult PropertiesMenu::loadPropertyBoolean(const PropertyInfo& property, Nod
   return VoidResult();
 }
 
-// TODO(felaze): The component and the event fields are always dependent on each other for now
 VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertyInfo& property, NodeItem* node)
 {
   if (!mStorage)
     return VoidResult::Failed("No storage assigned to properties menu");
 
-  QComboBox* widget = new QComboBox(this);
+  QLabel* nameLabel = new QLabel(ToLabel(property.getid()));
+  nameLabel->setObjectName("PropertyLabel");
+  nameLabel->setFont(Fonts::Label);
 
+  layout()->addWidget(nameLabel);
+
+  QComboBox* widget = new QComboBox(this);
   for (const auto& child : mStorage->getPossibleCallers(node->id()))
   {
     auto name = child->getProperty(ConfigKeys::NAME);
@@ -425,186 +492,222 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertyInfo& prope
     widget->addItem(name.toString(), child->getid());
   }
 
+  // Make sure the widget shows the current selected component if it exists
+  auto propertyValue = node->getProperty(property.getid());
+  if (propertyValue.isValid())
+  {
+    auto object = propertyValue.toJsonObject();
+    if (object.contains(ConfigKeys::DATA))
+      widget->setCurrentText(object[ConfigKeys::DATA].toString());
+    else
+      widget->setCurrentIndex(0);
+  }
+  else
+  {
+    widget->setCurrentText("-");
+  }
+
   widget->setFont(Fonts::Property);
   layout()->addWidget(widget);
 
   if (property.getoptions().empty())
   {
-    // Make sure the widget shows the current selected component if it exists
-    auto currentValue = node->getProperty(property.getid());
-    if (currentValue.isValid())
-      widget->setCurrentText(currentValue.toString());
-    else
-      widget->setCurrentText("-");
-
-    connect(widget, &QComboBox::currentTextChanged, this, [=](const QString& text) {
-      node->setProperty(property.getid(), text);
+    connect(widget, &QComboBox::currentTextChanged, this, [node, property](const QString& text) {
+      UPDATE_PROPERTY(node, property.getid(), text)
+      LOG_TRACE("Setting value to %s", qPrintable(text));
     });
   }
   else
   {
-    for (int i = 0; i < property.getoptions().size(); ++i)
+    for (const auto& option : property.getoptions())
     {
-      const auto option = property.getoptions().at(i);
-      QString eventLabel = ToLabel(option->getid());
-      QLabel* nameEventLabel = new QLabel(eventLabel);
-
-      nameEventLabel->setFont(Fonts::Label);
-      layout()->addWidget(nameEventLabel);
-
       if (option->gettype() == Types::PropertyTypes::EVENT_SELECT)
-      {
-        QComboBox* eventWidget = new QComboBox(this);
-        eventWidget->setObjectName(option->getid());
-
-        // Set starting values
-        auto value = node->getProperty(property.getid());
-        if (value.isValid())
-        {
-          QJsonObject object = value.toJsonObject();
-          widget->setCurrentText(object[ConfigKeys::DATA].toString());
-
-          auto events = mStorage->getEventsFromNode(widget->currentData().toString());
+        LOG_WARN_ON_FAILURE(loadFieldEventSelect(widget, option->getid(), property, node, [this](const QString& nodeId, QComboBox* eventWidget) {
+          eventWidget->clear();
+          auto events = mStorage->getEventsFromNode(nodeId);
           for (const auto& event : events)
             eventWidget->addItem(event->getname(), event->getid());
-
-          eventWidget->setCurrentText(object[ConfigKeys::OPTIONS][i][ConfigKeys::DATA].toString());
-        }
-        else
-        {
-          widget->setCurrentText("-");
-          // eventWidget->setCurrentText("-");
-        }
-
-        connect(eventWidget, &QComboBox::currentTextChanged, this, [node, i, property, eventWidget](const QString& text) {
-          if (text.isEmpty())
-            return;
-
-          auto value = node->getProperty(property.getid());
-          if (!value.isValid())
-            return;
-
-          QJsonObject object = value.toJsonObject();
-          QJsonArray array = object[ConfigKeys::OPTIONS].toArray();
-          QJsonObject item = array[i].toObject();
-
-          item[ConfigKeys::DATA] = text;
-          item["option_data_id"] = eventWidget->currentData().toString();
-
-          array[i] = item;
-          object[ConfigKeys::OPTIONS] = array;
-
-          node->setProperty(property.getid(), object);
-        });
-
-        eventWidget->setFont(Fonts::Property);
-        layout()->addWidget(eventWidget);
-
-        connect(widget, &QComboBox::currentTextChanged, this, [this, i, widget, eventWidget, node, property](const QString& text) {
-          if (text.isEmpty())
-            return;
-
+        }));
+      else if (option->gettype() == Types::PropertyTypes::TRIGGER_CALL)
+        LOG_WARN_ON_FAILURE(loadFieldTriggerCall(widget, option->getid(), property, node));
+      else if (option->gettype() == Types::PropertyTypes::USER_CALL)
+        LOG_WARN_ON_FAILURE(loadFieldEventSelect(widget, option->getid(), property, node, [this](const QString& nodeId, QComboBox* eventWidget) {
           eventWidget->clear();
-          auto events = mStorage->getEventsFromNode(widget->currentData().toString());
+          auto events = mStorage->getEventsOfTypeFromNode(nodeId, Types::CallType::USER);
           for (const auto& event : events)
             eventWidget->addItem(event->getname(), event->getid());
-
-          // Set the component
-          auto value = node->getProperty(property.getid());
-          if (!value.isValid())
-            return;
-
-          QJsonObject object = value.toJsonObject();
-          object[ConfigKeys::DATA] = text;
-          object["data_id"] = widget->currentData().toString();
-
-          QJsonArray array = object[ConfigKeys::OPTIONS].toArray();
-          QJsonObject item = array[i].toObject();
-
-          item[ConfigKeys::DATA] = events.size() > 0 ? events.at(0)->getname() : "";
-          item["option_data_id"] = events.size() > 0 ? eventWidget->currentData().toString() : "";
-
-          array[i] = item;
-          object[ConfigKeys::OPTIONS] = array;
-
-          node->setProperty(property.getid(), object);
-        });
-      }
-      else if (option->gettype() == Types::PropertyTypes::STRING)
-      {
-        QLineEdit* eventWidget = new QLineEdit(this);
-        eventWidget->setObjectName(option->getid());
-
-        // Set starting values
-        auto value = node->getProperty(property.getid());
-        if (value.isValid())
-        {
-          QJsonObject object = value.toJsonObject();
-          widget->setCurrentText(object[ConfigKeys::DATA].toString());
-          eventWidget->setText(object[ConfigKeys::OPTIONS][i][ConfigKeys::DATA].toString());
-        }
-        else
-        {
-          widget->setCurrentText("-");
-          // eventWidget->setCurrentText("-");
-        }
-
-        connect(eventWidget, &QLineEdit::editingFinished, this, [i, node, property, eventWidget]() {
-          auto value = node->getProperty(property.getid());
-          if (!value.isValid())
-            return;
-
-          QJsonObject object = value.toJsonObject();
-          QJsonArray array = object[ConfigKeys::OPTIONS].toArray();
-          QJsonObject item = array[i].toObject();
-
-          item[ConfigKeys::DATA] = eventWidget->text();
-          // object["option_data_id"] = eventWidget->currentData().toString();
-
-          array[i] = item;
-          object[ConfigKeys::OPTIONS] = array;
-
-          node->setProperty(property.getid(), object);
-        });
-
-        eventWidget->setFont(Fonts::Property);
-        layout()->addWidget(eventWidget);
-
-        connect(widget, &QComboBox::currentTextChanged, this, [i, widget, eventWidget, node, property](const QString& text) {
-          if (text.isEmpty())
-            return;
-
-          eventWidget->clear();
-
-          // Set the component
-          auto value = node->getProperty(property.getid());
-          if (!value.isValid())
-            return;
-
-          QJsonObject object = value.toJsonObject();
-          object[ConfigKeys::DATA] = text;
-          object["data_id"] = widget->currentData().toString();
-
-          QJsonArray array = object[ConfigKeys::OPTIONS].toArray();
-          QJsonObject item = array[i].toObject();
-
-          item[ConfigKeys::DATA] = eventWidget->text();
-          // object["option_data_id"] = eventWidget->currentData().toString();
-
-          array[i] = item;
-          object[ConfigKeys::OPTIONS] = array;
-
-          // object[ConfigKeys::OPTION_DATA] = eventWidget->text();
-          // object["option_data_id"] = events.size() > 0 ? eventWidget->currentData().toString() : "";
-
-          node->setProperty(property.getid(), object);
-        });
-      }
+        }));
       else
-      {
         LOG_WARNING("Configuration is not supported");
-      }
     }
+  }
+
+  return VoidResult();
+}
+
+VoidResult PropertiesMenu::loadFieldEventSelect(QComboBox* componentSelect, const QString& optionId, const PropertyInfo& property, NodeItem* node,
+                                                std::function<void(const QString& nodeId, QComboBox* eventWidget)> populate)
+{
+  QLabel* nameEventLabel = new QLabel(ToLabel(optionId));
+  nameEventLabel->setFont(Fonts::Label);
+
+  QComboBox* eventWidget = new QComboBox(this);
+  eventWidget->setObjectName(optionId);
+  eventWidget->setFont(Fonts::Property);
+
+  auto* vlayout = new QFormLayout();
+
+  // Set starting values
+  auto propertyValue = node->getProperty(property.getid());
+  if (propertyValue.isValid())
+  {
+    // Based on the component, we can then set the current event
+    auto currentComponentId = componentSelect->currentData().toString();
+    populate(currentComponentId, eventWidget);
+
+    QJsonObject object = propertyValue.toJsonObject();
+    if (object[ConfigKeys::OPTIONS].toArray().size() > EVENT_INDEX)
+      eventWidget->setCurrentText(object[ConfigKeys::OPTIONS][EVENT_INDEX][ConfigKeys::DATA].toString());
+    else
+      eventWidget->setCurrentIndex(0);
+
+    // Finally, based on the event, we can set the arguments
+    auto currentEventName = eventWidget->currentText();
+    LOG_WARN_ON_FAILURE(loadEventArguments(currentComponentId, currentEventName, property, node, Types::CallType::UNKNOWN, vlayout));
+  }
+
+  connect(eventWidget, &QComboBox::currentTextChanged, this, [this, node, property, componentSelect, vlayout](const QString& text) {
+    if (text.isEmpty())
+      return;
+
+    clearLayout(vlayout);
+    UPDATE_PROPERTY_ARG(node, property.getid(), EVENT_INDEX, text)
+    LOG_WARN_ON_FAILURE(loadEventArguments(componentSelect->currentData().toString(), text, property, node, Types::CallType::UNKNOWN, vlayout));
+  });
+
+  connect(componentSelect, &QComboBox::currentTextChanged, this, [componentSelect, populate, eventWidget, node, property](const QString& text) {
+    if (text.isEmpty())
+      return;
+
+    populate(componentSelect->currentData().toString(), eventWidget);
+    UPDATE_PROPERTY(node, property.getid(), text)
+  });
+
+  // Add everything to the layout
+  layout()->addWidget(nameEventLabel);
+  layout()->addWidget(eventWidget);
+  static_cast<QVBoxLayout*>(layout())->addLayout(vlayout);
+
+  return VoidResult();
+}
+
+VoidResult PropertiesMenu::loadFieldTriggerCall(QComboBox* componentSelect, const QString& optionId, const PropertyInfo& property, NodeItem* node)
+{
+  auto* vlayout = new QFormLayout();
+  auto currentComponentId = componentSelect->currentData().toString();
+  LOG_WARN_ON_FAILURE(loadEventArguments(currentComponentId, "", property, node, Types::CallType::TRIGGER, vlayout));
+
+  connect(componentSelect, &QComboBox::currentTextChanged, this, [this, componentSelect, vlayout, node, property](const QString& text) {
+    if (text.isEmpty())
+      return;
+
+    clearLayout(vlayout);
+
+    UPDATE_PROPERTY(node, property.getid(), text)
+    LOG_WARN_ON_FAILURE(loadEventArguments(componentSelect->currentData().toString(), "", property, node, Types::CallType::TRIGGER, vlayout));
+  });
+
+  static_cast<QVBoxLayout*>(layout())->addLayout(vlayout);
+
+  return VoidResult();
+}
+
+VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QString& flowName, const PropertyInfo& property, NodeItem* node, Types::CallType callType, QFormLayout* formLayout)
+{
+  std::shared_ptr<FlowSaveInfo> event = nullptr;
+  if (callType == Types::CallType::UNKNOWN)
+  {
+    event = mStorage->getEventFromNode(nodeId, flowName);
+  }
+  else
+  {
+    auto events = mStorage->getEventsOfTypeFromNode(nodeId, callType);
+    if (events.isEmpty())
+      return VoidResult::Failed("Component does not have any flows");
+
+    event = events.first();
+  }
+
+  if (!event)
+    return VoidResult::Failed("Component does not have flow: " + flowName.toStdString());
+
+  auto jsonValue = node->getProperty(property.getid());
+  if (!jsonValue.isValid())
+    return VoidResult::Failed("Property is not valid");
+
+  if (event->getarguments().isEmpty())
+    return VoidResult();
+
+  LOG_TRACE("Loading %s with args: %d", qPrintable(event->getname()), event->getarguments().size());
+
+  int index = ARG_INDEX;
+  maki::WidgetAlignment alignment = {maki::WidgetAlignment::Type::FORM, formLayout};
+  QJsonArray argArray = jsonValue.toJsonObject()[ConfigKeys::OPTIONS].toArray();
+
+  for (const auto& arg : event->getarguments())
+  {
+    QJsonObject jsonItem = index < argArray.size() ? argArray[index].toObject() : QJsonObject();
+
+    if (arg->gettype() == Types::PropertyTypes::INTEGER)
+    {
+      auto* field = new maki::IntegerWidget(arg->getid(), arg->getdefaultValue().toString(), alignment, this);
+      if (jsonItem.contains(ConfigKeys::DATA))
+        field->setValue(jsonItem[ConfigKeys::DATA].toInt());
+
+      connect(field, &maki::IntegerWidget::valueChanged, this, [property, node, index](const int value) {
+        UPDATE_PROPERTY_ARG(node, property.getid(), index, value)
+        LOG_TRACE("Set property %s argument (%d) to %d", qPrintable(property.getid()), index, value);
+      });
+    }
+    else if (arg->gettype() == Types::PropertyTypes::REAL)
+    {
+      auto* field = new maki::FloatWidget(arg->getid(), arg->getdefaultValue().toString(), alignment, this);
+      if (jsonItem.contains(ConfigKeys::DATA))
+        field->setValue(jsonItem[ConfigKeys::DATA].toDouble());
+
+      connect(field, &maki::FloatWidget::valueChanged, this, [property, node, index](const qreal value) {
+        UPDATE_PROPERTY_ARG(node, property.getid(), index, value)
+        LOG_TRACE("Set property %s argument (%d) to %.2f", qPrintable(property.getid()), index, value);
+      });
+    }
+    else if (arg->gettype() == Types::PropertyTypes::STRING)
+    {
+      auto* field = new maki::StringWidget(arg->getid(), arg->getdefaultValue().toString(), alignment, this);
+      if (jsonItem.contains(ConfigKeys::DATA))
+        field->setValue(jsonItem[ConfigKeys::DATA].toString());
+
+      connect(field, &maki::StringWidget::valueChanged, this, [property, node, index](const QString& value) {
+        UPDATE_PROPERTY_ARG(node, property.getid(), index, value)
+        LOG_TRACE("Set property %s argument (%d) to %s", qPrintable(property.getid()), index, qPrintable(value));
+      });
+    }
+    else if (arg->gettype() == Types::PropertyTypes::BOOLEAN)
+    {
+      auto* field = new maki::BooleanWidget(arg->getid(), arg->getdefaultValue().toBool(), alignment, this);
+      if (jsonItem.contains(ConfigKeys::DATA))
+        field->setValue(jsonItem[ConfigKeys::DATA].toBool());
+
+      connect(field, &maki::BooleanWidget::valueChanged, this, [property, node, index](const bool value) {
+        UPDATE_PROPERTY_ARG(node, property.getid(), index, value)
+        LOG_TRACE("Set property %s argument (%d) to %d", qPrintable(property.getid()), index, value);
+      });
+    }
+    else
+    {
+      LOG_WARNING("No support for argument of type: %s", qPrintable(Types::PropertyTypesToString(arg->gettype())));
+    }
+
+    ++index;
   }
 
   return VoidResult();
@@ -667,7 +770,7 @@ QLineEdit* PropertiesMenu::loadPropertyEventArguments(const PropertyInfo& proper
 VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)
 {
   // Clear the frame
-  clear();
+  clearLayout(layout());
 
   if (!transition)
     return VoidResult();
@@ -873,7 +976,7 @@ VoidResult PropertiesMenu::loadControlAddEvent(const ControlsConfig& control, No
     return VoidResult();
 
   QPushButton* button = new QPushButton(parent);
-  connect(button, &QPushButton::pressed, this, [=]() {
+  connect(button, &QPushButton::pressed, this, [this, tableView, node, model]() {
     openEventDialog(tableView, node, model->rowCount());
   });
 
@@ -924,7 +1027,7 @@ VoidResult PropertiesMenu::loadControlAddState(const ControlsConfig& control, No
   });
 
   QPushButton* button = new QPushButton(parent);
-  connect(button, &QPushButton::pressed, this, [=]() {
+  connect(button, &QPushButton::pressed, this, [this, tableView, node, model]() {
     openFieldDialog(tableView, node, model->rowCount());
   });
 
@@ -983,7 +1086,7 @@ void PropertiesMenu::showEventContextMenu(QTableView* tableView, NodeItem* node,
     openEventDialog(tableView, node, row);
   });
 
-  QAction* actionDelete = contextMenu.addAction(tr("Delete"));
+  // QAction* actionDelete = contextMenu.addAction(tr("Delete"));
   // connect(actionDelete, &QAction::triggered, this, [row, tableView, node] {
   //   auto key = static_cast<QStandardItemModel*>(tableView->model())->item(row, 0);
   //   if (key && !key->text().isNull())
@@ -1051,8 +1154,13 @@ void PropertiesMenu::addEventToTable(QStandardItemModel* model, int row, std::sh
   indexItem->setData(event->getid(), Qt::UserRole);
   indexItem->setData(event->getmodifiable(), Qt::UserRole + 1);
 
+  LOG_DEBUG("Adding event %s of type %s and return %s to event table",
+            qPrintable(event->getname()),
+            qPrintable(Types::CallTypeToString(event->gettype())),
+            qPrintable(Types::PropertyTypesToString(event->getreturnType())));
+
   model->setItem(row, 0, indexItem);
-  model->setItem(row, 1, new QStandardItem(Types::ConnectorTypeToString(event->gettype())));
+  model->setItem(row, 1, new QStandardItem(Types::CallTypeToString(event->gettype())));
   model->setItem(row, 2, new QStandardItem(Types::PropertyTypesToString(event->getreturnType())));
 
   if (event->getarguments().isEmpty())

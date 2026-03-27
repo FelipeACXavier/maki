@@ -48,7 +48,7 @@ public:
   FlowConfig(const QJsonObject& object);
 
   QString name = "";
-  Types::ConnectorType type = Types::ConnectorType::UNKNOWN;
+  Types::CallType type = Types::CallType::UNKNOWN;
   Types::PropertyTypes returnType = Types::PropertyTypes::UNKNOWN;
   QList<PropertyConfig> arguments = {};
   bool modifiable = true;

@@ -47,28 +47,28 @@
           "events": [
             {
               "id": "start",
-              "type": "in",
+              "type": "trigger",
               "returnType": "void",
               "modifiable": true,
               "info": "Called to start the task"
             },
             {
               "id": "abort",
-              "type": "in",
+              "type": "abort",
               "returnType": "void",
               "modifiable": false,
               "info": "Called to abort the task when it is running"
             },
             {
               "id": "done",
-              "type": "out",
+              "type": "return",
               "returnType": "void",
               "modifiable": false,
               "info": "Emitted when the task is completed successfully"
             },
             {
               "id": "failed",
-              "type": "out",
+              "type": "error",
               "returnType": "void",
               "modifiable": false,
               "info": "Emitted when the task is completed unsuccessfully"
@@ -162,13 +162,13 @@
           "events": [
             {
               "id": "start",
-              "type": "in",
+              "type": "trigger",
               "returnType": "void",
               "modifiable": false
             },
             {
               "id": "stop",
-              "type": "in",
+              "type": "abort",
               "returnType": "void",
               "modifiable": false
             }
@@ -215,7 +215,7 @@
           "events": [
             {
               "id": "handle",
-              "type": "in",
+              "type": "trigger",
               "returnType": "void",
               "modifiable": false,
               "arguments": [
@@ -227,19 +227,19 @@
             },
             {
               "id": "cancel",
-              "type": "in",
+              "type": "abort",
               "returnType": "void",
               "modifiable": false
             },
             {
               "id": "handled",
-              "type": "out",
+              "type": "return",
               "returnType": "void",
               "modifiable": false
             },
             {
               "id": "failed",
-              "type": "out",
+              "type": "error",
               "returnType": "void",
               "modifiable": false
             }
@@ -276,19 +276,19 @@
           "events": [
             {
               "id": "recognize",
-              "type": "in",
+              "type": "trigger",
               "returnType": "void",
               "modifiable": false
             },
             {
               "id": "cancel",
-              "type": "in",
+              "type": "abort",
               "returnType": "void",
               "modifiable": false
             },
             {
               "id": "found",
-              "type": "out",
+              "type": "return",
               "returnType": "void",
               "modifiable": false
             }
@@ -343,7 +343,7 @@
           "events": [
             {
               "id": "to_position",
-              "type": "in",
+              "type": "trigger",
               "returnType": "void",
               "modifiable": false,
               "arguments": [
@@ -363,13 +363,13 @@
             },
             {
               "id": "abort",
-              "type": "in",
+              "type": "abort",
               "returnType": "void",
               "modifiable": false
             },
             {
               "id": "in_position",
-              "type": "out",
+              "type": "return",
               "returnType": "void",
               "modifiable": false,
               "arguments": [
@@ -389,7 +389,7 @@
             },
             {
               "id": "path_blocked",
-              "type": "out",
+              "type": "error",
               "returnType": "void",
               "modifiable": false
             }
@@ -634,7 +634,7 @@
           "events": [
             {
               "id": "solve",
-              "type": "in",
+              "type": "trigger",
               "returnType": "void",
               "modifiable": false,
               "arguments": [
@@ -646,19 +646,19 @@
             },
             {
               "id": "done",
-              "type": "out",
+              "type": "return",
               "returnType": "void",
               "modifiable": false
             },
             {
               "id": "stop",
-              "type": "in",
+              "type": "abort",
               "returnType": "void",
               "modifiable": false
             },
             {
               "id": "failed",
-              "type": "out",
+              "type": "error",
               "returnType": "void",
               "modifiable": false
             }
@@ -838,12 +838,12 @@
               "default": "#202020"
             },
             {
-              "id": "component",
+              "id": "Capability",
               "type": "component_select",
               "options": [
                 {
-                  "id": "argument",
-                  "type": "string"
+                  "id": "arguments",
+                  "type": "trigger_call"
                 }
               ]
             }
@@ -876,16 +876,12 @@
               "default": "#202020"
             },
             {
-              "id": "component",
+              "id": "Capability",
               "type": "component_select",
               "options": [
                 {
                   "id": "event",
                   "type": "event_select"
-                },
-                {
-                  "id": "argument",
-                  "type": "string"
                 }
               ]
             }
@@ -922,8 +918,8 @@
               "type": "component_select",
               "options": [
                 {
-                  "id": "event",
-                  "type": "event_select"
+                  "id": "strategy",
+                  "type": "user_call"
                 }
               ]
             }
@@ -1017,8 +1013,8 @@
               "type": "component_select",
               "options": [
                 {
-                  "id": "event",
-                  "type": "event_select"
+                  "id": "strategy",
+                  "type": "user_call"
                 }
               ]
             }

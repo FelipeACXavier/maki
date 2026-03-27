@@ -10,9 +10,23 @@ class QSpinBox;
 class QPushButton;
 class QLabel;
 class QCheckBox;
+class QFormLayout;
 
 namespace maki
 {
+struct WidgetAlignment
+{
+  enum class Type
+  {
+    UNKNOWN = 0,
+    INLINE,
+    VERTICAL,
+    FORM
+  } type;
+
+  QFormLayout* layout;
+};
+
 class WidgetGroup : public QWidget
 {
 public:
@@ -25,7 +39,7 @@ class BooleanWidget : public QWidget
 {
   Q_OBJECT
 public:
-  BooleanWidget(const QString& label, bool value, QWidget* parent);
+  BooleanWidget(const QString& label, bool value, WidgetAlignment alignment, QWidget* parent);
 
   void addDescription(const QString& label);
   void setValue(const bool value);
@@ -43,7 +57,7 @@ class StringWidget : public QWidget
 {
   Q_OBJECT
 public:
-  StringWidget(const QString& label, const QString& placeholder, QWidget* parent);
+  StringWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent);
 
   void addDescription(const QString& label);
   void setValue(const QString& value);
@@ -62,7 +76,7 @@ class IntegerWidget : public QWidget
 {
   Q_OBJECT
 public:
-  IntegerWidget(const QString& label, const QString& placeholder, QWidget* parent, int min = INT32_MIN, int max = INT32_MAX);
+  IntegerWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent, int min = INT32_MIN, int max = INT32_MAX);
 
   void addDescription(const QString& label);
   void setValue(const int value);
@@ -80,7 +94,7 @@ class FloatWidget : public QWidget
 {
   Q_OBJECT
 public:
-  FloatWidget(const QString& label, const QString& placeholder, QWidget* parent, qreal min = std::numeric_limits<qreal>::min(), qreal max = std::numeric_limits<qreal>::max());
+  FloatWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent, qreal min = std::numeric_limits<qreal>::min(), qreal max = std::numeric_limits<qreal>::max());
 
   void addDescription(const QString& label);
   void setValue(const qreal value);
@@ -182,6 +196,7 @@ class TypeSelectionWidget : public QComboBox
 public:
   TypeSelectionWidget(QWidget* parent);
   TypeSelectionWidget(const QString& initial, QWidget* parent);
+  TypeSelectionWidget(const QString& initial, Types::PropertyTypes last, QWidget* parent);
 };
 
 class SearchWidget : public QWidget

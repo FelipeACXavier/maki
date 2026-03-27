@@ -13,7 +13,7 @@ FlowSaveInfo::FlowSaveInfo()
     , mName("")
     , mOwner("")
     , mModifiable(true)
-    , mType(Types::ConnectorType::UNKNOWN)
+    , mType(Types::CallType::UNKNOWN)
     , mReturnType(Types::PropertyTypes::UNKNOWN)
     , mNodes({})
     , mArguments({})
@@ -51,7 +51,7 @@ bool FlowSaveInfo::getmodifiable() const
   return mModifiable;
 }
 
-Types::ConnectorType FlowSaveInfo::gettype() const
+Types::CallType FlowSaveInfo::gettype() const
 {
   return mType;
 }
@@ -91,7 +91,7 @@ void FlowSaveInfo::setModifiable(bool arg)
   mModifiable = arg;
 }
 
-void FlowSaveInfo::setType(Types::ConnectorType arg)
+void FlowSaveInfo::setType(Types::CallType arg)
 {
   mType = arg;
 }
@@ -139,7 +139,7 @@ QJsonObject FlowSaveInfo::toJson() const
   data[ConfigKeys::ID] = getid();
   data[ConfigKeys::NAME] = getname();
   data[ConfigKeys::MODIFIABLE] = getmodifiable();
-  data[ConfigKeys::TYPE] = Types::ConnectorTypeToString(gettype());
+  data[ConfigKeys::TYPE] = Types::CallTypeToString(gettype());
   data[ConfigKeys::RETURN_TYPE] = Types::PropertyTypesToString(getreturnType());
   data[ConfigKeys::OWNER] = getowner();
 
@@ -165,7 +165,7 @@ FlowSaveInfo FlowSaveInfo::fromJson(const QJsonObject& data)
   info.setId(data[ConfigKeys::ID].toString());
   info.setName(data[ConfigKeys::NAME].toString());
   info.setModifiable(data[ConfigKeys::MODIFIABLE].toBool());
-  info.setType(Types::StringToConnectorType(data[ConfigKeys::TYPE].toString()));
+  info.setType(Types::StringToCallType(data[ConfigKeys::TYPE].toString()));
   info.setReturnType(Types::StringToPropertyTypes(data[ConfigKeys::RETURN_TYPE].toString()));
   info.setOwner(data[ConfigKeys::OWNER].toString());
 
@@ -257,7 +257,7 @@ QDataStream& operator>>(QDataStream& in, FlowSaveInfo& info)
   in >> modifiable;
   info.setModifiable(modifiable);
 
-  Types::ConnectorType type;
+  Types::CallType type;
   in >> type;
   info.setType(type);
 

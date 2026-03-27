@@ -17,8 +17,9 @@ class QTableView;
 class QHBoxLayout;
 class TransitionItem;
 class QStandardItemModel;
+class QFormLayout;
 
-struct FlowSaveInfo;
+class FlowSaveInfo;
 
 class PropertiesMenu : public QFrame, public MenuBase
 {
@@ -50,8 +51,6 @@ private:
   QDialog* mCurrentDialog;
   std::shared_ptr<SaveInfo> mStorage;
 
-  void clear();
-
   // Property related actions
   VoidResult loadProperties(NodeItem* node);
   VoidResult loadPropertyInt(const PropertyInfo& property, NodeItem* node);
@@ -78,4 +77,11 @@ private:
 
   void openFieldDialog(QTableView* tableView, NodeItem* node, int row);
   void addStateToTable(QStandardItemModel* model, int row, std::shared_ptr<PropertyInfo> event);
+
+  VoidResult loadEventArguments(const QString& nodeId, const QString& flowName, const PropertyInfo& property, NodeItem* node, Types::CallType callType, QFormLayout* formLayout);
+
+  // Component select fields
+  VoidResult loadFieldEventSelect(QComboBox* componentSelect, const QString& optionId, const PropertyInfo& property, NodeItem* node,
+                                  std::function<void(const QString& nodeId, QComboBox* eventWidget)> populate);
+  VoidResult loadFieldTriggerCall(QComboBox* componentSelect, const QString& optionId, const PropertyInfo& property, NodeItem* node);
 };

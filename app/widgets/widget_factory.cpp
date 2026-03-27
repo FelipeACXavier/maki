@@ -8,6 +8,7 @@
 #include <QColorDialog>
 #include <QComboBox>
 #include <QDoubleValidator>
+#include <QFormLayout>
 #include <QHBoxLayout>
 #include <QIntValidator>
 #include <QLabel>
@@ -57,22 +58,9 @@ void WidgetGroup::addWidget(QWidget* widget)
 }
 
 // =========================================================================================================
-BooleanWidget::BooleanWidget(const QString& label, bool value, QWidget* parent)
+BooleanWidget::BooleanWidget(const QString& label, bool value, WidgetAlignment alignment, QWidget* parent)
     : QWidget(parent)
 {
-  auto* vlayout = new QVBoxLayout(this);
-  vlayout->setContentsMargins(0, 0, 0, WIDGET_SPACING);
-  vlayout->setSpacing(WIDGET_SPACING);
-
-  auto* hlayout = new QHBoxLayout();
-  hlayout->setContentsMargins(0, 0, WIDGET_SPACING, 0);
-  hlayout->setSpacing(WIDGET_SPACING);
-  hlayout->setAlignment(Qt::AlignLeft);
-
-  auto* title = new QLabel(label, this);
-  title->setFont(Fonts::Main);
-  title->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
-
   mInputField = new QCheckBox(this);
   mInputField->setCheckState(value ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
   connect(mInputField, &QCheckBox::checkStateChanged, this, [this](Qt::CheckState state) {
@@ -81,10 +69,31 @@ BooleanWidget::BooleanWidget(const QString& label, bool value, QWidget* parent)
   });
 
   mValue = value;
-  hlayout->addWidget(title);
-  hlayout->addStretch();
-  hlayout->addWidget(mInputField);
-  vlayout->addLayout(hlayout);
+
+  if (alignment.type == WidgetAlignment::Type::FORM)
+  {
+    alignment.layout->addRow("&" + label, mInputField);
+  }
+  else
+  {
+    auto* vlayout = new QVBoxLayout(this);
+    vlayout->setContentsMargins(0, 0, 0, WIDGET_SPACING);
+    vlayout->setSpacing(WIDGET_SPACING);
+
+    auto* hlayout = new QHBoxLayout();
+    hlayout->setContentsMargins(0, 0, WIDGET_SPACING, 0);
+    hlayout->setSpacing(WIDGET_SPACING);
+    hlayout->setAlignment(Qt::AlignLeft);
+
+    auto* title = new QLabel(label, this);
+    title->setFont(Fonts::Main);
+    title->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
+
+    hlayout->addWidget(title);
+    hlayout->addStretch();
+    hlayout->addWidget(mInputField);
+    vlayout->addLayout(hlayout);
+  }
 }
 
 void maki::BooleanWidget::setValue(const bool value)
@@ -107,15 +116,8 @@ void maki::BooleanWidget::addDescription(const QString& label)
 }
 
 // =========================================================================================================
-StringWidget::StringWidget(const QString& label, const QString& placeholder, QWidget* parent)
+StringWidget::StringWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent)
 {
-  auto* vLayout = new QVBoxLayout(this);
-  vLayout->setContentsMargins(0, 0, 0, WIDGET_SPACING);
-  vLayout->setSpacing(WIDGET_SPACING);
-
-  auto* labelWidget = new QLabel(label, this);
-  labelWidget->setFont(Fonts::Main);
-
   mInputField = new QLineEdit(this);
   mInputField->setPlaceholderText(placeholder);
 
@@ -126,8 +128,31 @@ StringWidget::StringWidget(const QString& label, const QString& placeholder, QWi
     emit valueChanged(mValue);
   });
 
-  layout()->addWidget(labelWidget);
-  layout()->addWidget(mInputField);
+  if (alignment.type == WidgetAlignment::Type::FORM)
+  {
+    alignment.layout->addRow("&" + label, mInputField);
+  }
+  else
+  {
+    if (alignment.type == WidgetAlignment::Type::INLINE)
+    {
+      auto* hLayout = new QHBoxLayout(this);
+      hLayout->setContentsMargins(0, 0, 0, WIDGET_SPACING);
+      hLayout->setSpacing(WIDGET_SPACING);
+    }
+    else if (alignment.type == WidgetAlignment::Type::VERTICAL)
+    {
+      auto* vLayout = new QVBoxLayout(this);
+      vLayout->setContentsMargins(0, 0, 0, WIDGET_SPACING);
+      vLayout->setSpacing(WIDGET_SPACING);
+    }
+
+    auto* labelWidget = new QLabel(label, this);
+    labelWidget->setFont(Fonts::Main);
+
+    layout()->addWidget(labelWidget);
+    layout()->addWidget(mInputField);
+  }
 }
 
 QLineEdit* StringWidget::widget() const
@@ -154,16 +179,9 @@ void StringWidget::setValue(const QString& value)
 }
 
 // ========================================================================================================================================
-IntegerWidget::IntegerWidget(const QString& label, const QString& placeholder, QWidget* parent, int min, int max)
+IntegerWidget::IntegerWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent, int min, int max)
     : QWidget(parent)
 {
-  auto* vLayout = new QVBoxLayout(this);
-  vLayout->setContentsMargins(0, 0, 0, WIDGET_SPACING);
-  vLayout->setSpacing(WIDGET_SPACING);
-
-  auto* labelWidget = new QLabel(label, this);
-  labelWidget->setFont(Fonts::Main);
-
   mInputField = new QLineEdit(this);
   mInputField->setPlaceholderText(placeholder);
 
@@ -186,8 +204,31 @@ IntegerWidget::IntegerWidget(const QString& label, const QString& placeholder, Q
     emit valueChanged(mValue);
   });
 
-  layout()->addWidget(labelWidget);
-  layout()->addWidget(mInputField);
+  if (alignment.type == WidgetAlignment::Type::FORM)
+  {
+    alignment.layout->addRow("&" + label, mInputField);
+  }
+  else
+  {
+    if (alignment.type == WidgetAlignment::Type::INLINE)
+    {
+      auto* hLayout = new QHBoxLayout(this);
+      hLayout->setContentsMargins(0, 0, 0, WIDGET_SPACING);
+      hLayout->setSpacing(WIDGET_SPACING);
+    }
+    else if (alignment.type == WidgetAlignment::Type::VERTICAL)
+    {
+      auto* vLayout = new QVBoxLayout(this);
+      vLayout->setContentsMargins(0, 0, 0, WIDGET_SPACING);
+      vLayout->setSpacing(WIDGET_SPACING);
+    }
+
+    auto* labelWidget = new QLabel(label, this);
+    labelWidget->setFont(Fonts::Main);
+
+    layout()->addWidget(labelWidget);
+    layout()->addWidget(mInputField);
+  }
 }
 
 void maki::IntegerWidget::setValue(const int value)
@@ -209,16 +250,9 @@ void IntegerWidget::addDescription(const QString& label)
 }
 
 // ========================================================================================================================================
-FloatWidget::FloatWidget(const QString& label, const QString& placeholder, QWidget* parent, qreal min, qreal max)
+FloatWidget::FloatWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent, qreal min, qreal max)
     : QWidget(parent)
 {
-  auto* vLayout = new QVBoxLayout(this);
-  vLayout->setContentsMargins(0, 0, 0, WIDGET_SPACING);
-  vLayout->setSpacing(WIDGET_SPACING);
-
-  auto* labelWidget = new QLabel(label, this);
-  labelWidget->setFont(Fonts::Main);
-
   mInputField = new QLineEdit(this);
   mInputField->setPlaceholderText(placeholder);
 
@@ -228,6 +262,9 @@ FloatWidget::FloatWidget(const QString& label, const QString& placeholder, QWidg
     mValue = intPlaceholder;
 
   QDoubleValidator* validator = new QDoubleValidator(min, max, 6, this);
+  validator->setNotation(QDoubleValidator::StandardNotation);
+  validator->setLocale(QLocale::C);  // Use dot instead of comma
+
   mInputField->setValidator(validator);
 
   connect(mInputField, &QLineEdit::textEdited, this, [this](const QString& text) {
@@ -237,12 +274,35 @@ FloatWidget::FloatWidget(const QString& label, const QString& placeholder, QWidg
     updateProperty(mInputField, Config::INVALID, (state != QValidator::Acceptable));
   });
   connect(mInputField, &QLineEdit::editingFinished, this, [this]() {
-    mValue = mInputField->text().toInt();
+    mValue = mInputField->text().toDouble();
     emit valueChanged(mValue);
   });
 
-  layout()->addWidget(labelWidget);
-  layout()->addWidget(mInputField);
+  if (alignment.type == WidgetAlignment::Type::FORM)
+  {
+    alignment.layout->addRow("&" + label, mInputField);
+  }
+  else
+  {
+    if (alignment.type == WidgetAlignment::Type::INLINE)
+    {
+      auto* hLayout = new QHBoxLayout(this);
+      hLayout->setContentsMargins(0, 0, 0, WIDGET_SPACING);
+      hLayout->setSpacing(WIDGET_SPACING);
+    }
+    else if (alignment.type == WidgetAlignment::Type::VERTICAL)
+    {
+      auto* vLayout = new QVBoxLayout(this);
+      vLayout->setContentsMargins(0, 0, 0, WIDGET_SPACING);
+      vLayout->setSpacing(WIDGET_SPACING);
+    }
+
+    auto* labelWidget = new QLabel(label, this);
+    labelWidget->setFont(Fonts::Main);
+
+    layout()->addWidget(labelWidget);
+    layout()->addWidget(mInputField);
+  }
 }
 
 void maki::FloatWidget::setValue(const qreal value)
@@ -343,6 +403,8 @@ SelectorWidget::SelectorWidget(const QString& label, QComboBox* comboBox, QWidge
     mValue = value;
     emit valueChanged(mValue);
   });
+
+  mValue = mInputField->currentText();
 
   hlayout->addWidget(labelWidget);
   hlayout->addStretch();
@@ -481,14 +543,22 @@ QColor ColorWidget::getValue() const
 
 // =========================================================================================================
 TypeSelectionWidget::TypeSelectionWidget(QWidget* parent)
-    : TypeSelectionWidget("", parent)
+    : TypeSelectionWidget("", Types::PropertyTypes::VOID, parent)
 {
 }
 
 TypeSelectionWidget::TypeSelectionWidget(const QString& initial, QWidget* parent)
+    : TypeSelectionWidget(initial, Types::PropertyTypes::VOID, parent)
+{
+}
+
+TypeSelectionWidget::TypeSelectionWidget(const QString& initial, Types::PropertyTypes last, QWidget* parent)
     : QComboBox(parent)
 {
-  for (uint16_t i = (uint16_t)Types::PropertyTypes::UNKNOWN + 1; i < (uint16_t)Types::PropertyTypes::END; ++i)
+  uint16_t start = (uint16_t)Types::PropertyTypes::UNKNOWN + 1;
+  uint16_t end = (uint16_t)last + 1;
+
+  for (uint16_t i = start; i < end; ++i)
   {
     auto id = Types::PropertyTypesToString((Types::PropertyTypes)i);
     addItem(id, id);

@@ -17,6 +17,7 @@
 #include "logging.h"
 #include "save_info.h"
 #include "style_helpers.h"
+#include "widgets/widget_factory.h"
 
 FieldDialog::FieldDialog(const QString& title, QWidget* parent)
     : QDialog(parent)
@@ -73,51 +74,33 @@ void FieldDialog::setup(std::shared_ptr<PropertyInfo> config)
 
 void FieldDialog::createNameInput(QWidget* parent)
 {
-  QLabel* nameLabel = new QLabel(tr("Field name"), parent);
-  layout()->addWidget(nameLabel);
-
-  QLineEdit* name = new QLineEdit(parent);
-  name->setText(mStorage->getid());
-  name->setFocusPolicy(Qt::ClickFocus);
-
-  connect(name, &QLineEdit::editingFinished, this, [=]() { mStorage->setId(name->text()); });
+  auto name = new maki::StringWidget(tr("Field name"), mStorage->getid(), {maki::WidgetAlignment::Type::VERTICAL}, this);
+  connect(name, &maki::StringWidget::valueChanged, this, [this](const QString& text) { mStorage->setId(text); });
   layout()->addWidget(name);
 }
 
 void FieldDialog::createTypeInput(QWidget* parent)
 {
-  QLabel* returnTypeLabel = new QLabel(tr("Field type"), parent);
-  layout()->addWidget(returnTypeLabel);
+  auto typeBox = new maki::TypeSelectionWidget(Types::PropertyTypesToString(Types::PropertyTypes::REAL), Types::minus(Types::PropertyTypes::VOID, 1), this);
 
-  QComboBox* returnType = new QComboBox(parent);
-  returnType->setObjectName("TypeField");
-  returnType->setFocusPolicy(Qt::ClickFocus);
+  auto type = new maki::SelectorWidget(tr("Return type"), typeBox, this);
+  type->setObjectName("TypeField");
 
-  for (uint16_t i = (uint16_t)Types::PropertyTypes::UNKNOWN + 1; i < (uint16_t)Types::PropertyTypes::END; ++i)
-    returnType->addItem(Types::PropertyTypesToString((Types::PropertyTypes)i));
+  connect(type, &maki::SelectorWidget::valueChanged, this, [this, parent](const QString& text) {
+    auto fieldType = Types::StringToPropertyTypes(text);
+    mStorage->setType(fieldType);
+  });
 
   if (mStorage->gettype() == Types::PropertyTypes::UNKNOWN)
   {
-    returnType->setCurrentIndex(0);
-    mStorage->setType(Types::StringToPropertyTypes(returnType->currentText()));
+    mStorage->setType(Types::StringToPropertyTypes(type->getValue()));
   }
   else
   {
-    returnType->setCurrentText(Types::PropertyTypesToString(mStorage->gettype()));
+    type->setValue(Types::PropertyTypesToString(mStorage->gettype()));
   }
 
-  layout()->addWidget(returnType);
-
-  if (mStorage->gettype() == Types::PropertyTypes::ENUM)
-    addEnumField(parent);
-
-  connect(returnType, &QComboBox::currentTextChanged, this, [=](const QString& text) {
-    mStorage->setType(Types::StringToPropertyTypes(text));
-    if (mStorage->gettype() == Types::PropertyTypes::ENUM)
-      addEnumField(parent);
-    else
-      removeEnumField();
-  });
+  layout()->addWidget(type);
 }
 
 void FieldDialog::createArgumentInput(QWidget* parent)
@@ -137,28 +120,28 @@ void FieldDialog::createArgumentInput(QWidget* parent)
   layout()->addWidget(name);
 }
 
-void FieldDialog::updateArgumentTable(QStandardItem* item)
-{
-  // if (!item)
-  //   return;
+// void FieldDialog::updateArgumentTable(QStandardItem* item)
+// {
+//   if (!item)
+//     return;
 
-  // int row = item->row();
-  // if (row >= mStorage->arguments.size())
-  // {
-  //   LOG_WARNING("Tried to modify argument that does not exist");
-  //   return;
-  // }
+//   int row = item->row();
+//   if (row >= mStorage->arguments.size())
+//   {
+//     LOG_WARNING("Tried to modify argument that does not exist");
+//     return;
+//   }
 
-  // int column = item->column();
-  // auto text = item->text();
-  // if (text.isNull() || text.isEmpty())
-  //   return;
+//   int column = item->column();
+//   auto text = item->text();
+//   if (text.isNull() || text.isEmpty())
+//     return;
 
-  // if (column == 0)
-  //   mStorage->arguments[row].id = text;
-  // else if (column == 1)
-  //   mStorage->arguments[row].type = Types::StringToPropertyTypes(text);
-}
+//   if (column == 0)
+//     mStorage->arguments[row].id = text;
+//   else if (column == 1)
+//     mStorage->arguments[row].type = Types::StringToPropertyTypes(text);
+// }
 
 void FieldDialog::keyPressEvent(QKeyEvent* event)
 {
@@ -184,123 +167,123 @@ void FieldDialog::keyPressEvent(QKeyEvent* event)
   QDialog::keyPressEvent(event);
 }
 
-void FieldDialog::addEnumField(QWidget* parent)
-{
-  int index = layout()->count();
-  for (int i = 0; i < layout()->count(); ++i)
-  {
-    QLayoutItem* item = layout()->itemAt(i);
-    QWidget* widget = item->widget();
-    if (widget && widget->objectName() == "TypeField")
-    {
-      index = i;
-      break;
-    }
-  }
+// void FieldDialog::addEnumField(QWidget* parent)
+// {
+//   int index = layout()->count();
+//   for (int i = 0; i < layout()->count(); ++i)
+//   {
+//     QLayoutItem* item = layout()->itemAt(i);
+//     QWidget* widget = item->widget();
+//     if (widget && widget->objectName() == "TypeField")
+//     {
+//       index = i;
+//       break;
+//     }
+//   }
 
-  QGroupBox* group = new QGroupBox("Settings", parent);
-  QVBoxLayout* groupLayout = new QVBoxLayout(group);
-  group->setObjectName("EnumGroup");
-  group->setTitle("Enum options");
+//   QGroupBox* group = new QGroupBox("Settings", parent);
+//   QVBoxLayout* groupLayout = new QVBoxLayout(group);
+//   group->setObjectName("EnumGroup");
+//   group->setTitle("Enum options");
 
-  QLabel* enumNameLabel = new QLabel(tr("Enum name"), group);
-  QLineEdit* name = new QLineEdit(parent);
-  name->setFocusPolicy(Qt::StrongFocus);
+//   QLabel* enumNameLabel = new QLabel(tr("Enum name"), group);
+//   QLineEdit* name = new QLineEdit(parent);
+//   name->setFocusPolicy(Qt::StrongFocus);
 
-  QLabel* enumTypeLabel = new QLabel(tr("Enum values"), group);
+//   QLabel* enumTypeLabel = new QLabel(tr("Enum values"), group);
 
-  QListWidget* listWidget = new QListWidget(group);
+//   QListWidget* listWidget = new QListWidget(group);
 
-  QLineEdit* input = new QLineEdit(group);
-  input->setFocusPolicy(Qt::StrongFocus);
+//   QLineEdit* input = new QLineEdit(group);
+//   input->setFocusPolicy(Qt::StrongFocus);
 
-  PropertyInfo foundName;
-  PropertyInfo foundValues;
-  for (const auto& opt : mStorage->getoptions())
-  {
-    if (opt->getid() == "name")
-      foundName = *std::dynamic_pointer_cast<PropertyInfo>(opt);
-    if (opt->getid() == "values")
-      foundValues = *std::dynamic_pointer_cast<PropertyInfo>(opt);
-  }
+//   PropertyInfo foundName;
+//   PropertyInfo foundValues;
+//   for (const auto& opt : mStorage->getoptions())
+//   {
+//     if (opt->getid() == "name")
+//       foundName = *std::dynamic_pointer_cast<PropertyInfo>(opt);
+//     if (opt->getid() == "values")
+//       foundValues = *std::dynamic_pointer_cast<PropertyInfo>(opt);
+//   }
 
-  if (foundName.getid().isEmpty())
-  {
-    PropertyInfo enumName;
-    enumName.setId("name");
-    enumName.setType(Types::PropertyTypes::STRING);
-    mStorage->addOption(std::make_shared<PropertyInfo>(enumName));
-  }
-  else
-  {
-    name->setText(foundName.getdefaultValue().toString());
-  }
+//   if (foundName.getid().isEmpty())
+//   {
+//     PropertyInfo enumName;
+//     enumName.setId("name");
+//     enumName.setType(Types::PropertyTypes::STRING);
+//     mStorage->addOption(std::make_shared<PropertyInfo>(enumName));
+//   }
+//   else
+//   {
+//     name->setText(foundName.getdefaultValue().toString());
+//   }
 
-  if (foundValues.getoptions().isEmpty())
-  {
-    PropertyInfo enumValues;
-    enumValues.setId("values");
-    enumValues.setType(Types::PropertyTypes::LIST);
-    mStorage->addOption(std::make_shared<PropertyInfo>(enumValues));
-  }
-  else
-  {
-    for (const auto& opt : foundValues.getoptions())
-      listWidget->addItem(opt->getid());
-  }
+//   if (foundValues.getoptions().isEmpty())
+//   {
+//     PropertyInfo enumValues;
+//     enumValues.setId("values");
+//     enumValues.setType(Types::PropertyTypes::LIST);
+//     mStorage->addOption(std::make_shared<PropertyInfo>(enumValues));
+//   }
+//   else
+//   {
+//     for (const auto& opt : foundValues.getoptions())
+//       listWidget->addItem(opt->getid());
+//   }
 
-  connect(name, &QLineEdit::editingFinished, this, [=]() {
-    for (auto& opt : mStorage->getoptions())
-    {
-      if (opt->getid() != "name")
-        continue;
+//   connect(name, &QLineEdit::editingFinished, this, [=]() {
+//     for (auto& opt : mStorage->getoptions())
+//     {
+//       if (opt->getid() != "name")
+//         continue;
 
-      std::dynamic_pointer_cast<PropertyInfo>(opt)->setDefaultValue(name->text());
-      break;
-    }
-  });
+//       std::dynamic_pointer_cast<PropertyInfo>(opt)->setDefaultValue(name->text());
+//       break;
+//     }
+//   });
 
-  connect(input, &QLineEdit::returnPressed, this, [=]() {
-    if (!input->text().isEmpty())
-    {
-      for (auto& opt : mStorage->getoptions())
-      {
-        if (opt->getid() == "values")
-        {
-          PropertyInfo option;
-          option.setId(input->text());
+//   connect(input, &QLineEdit::returnPressed, this, [=]() {
+//     if (!input->text().isEmpty())
+//     {
+//       for (auto& opt : mStorage->getoptions())
+//       {
+//         if (opt->getid() == "values")
+//         {
+//           PropertyInfo option;
+//           option.setId(input->text());
 
-          std::dynamic_pointer_cast<PropertyInfo>(opt)->addOption(std::make_shared<PropertyInfo>(option));
-          break;
-        }
-      }
+//           std::dynamic_pointer_cast<PropertyInfo>(opt)->addOption(std::make_shared<PropertyInfo>(option));
+//           break;
+//         }
+//       }
 
-      listWidget->addItem(input->text());
-      input->clear();
-      input->focusWidget();
-    }
-  });
+//       listWidget->addItem(input->text());
+//       input->clear();
+//       input->focusWidget();
+//     }
+//   });
 
-  groupLayout->addWidget(enumNameLabel);
-  groupLayout->addWidget(name);
-  groupLayout->addWidget(enumTypeLabel);
-  groupLayout->addWidget(input);
-  groupLayout->addWidget(listWidget);
+//   groupLayout->addWidget(enumNameLabel);
+//   groupLayout->addWidget(name);
+//   groupLayout->addWidget(enumTypeLabel);
+//   groupLayout->addWidget(input);
+//   groupLayout->addWidget(listWidget);
 
-  static_cast<QVBoxLayout*>(layout())->insertWidget(++index, group);
-}
+//   static_cast<QVBoxLayout*>(layout())->insertWidget(++index, group);
+// }
 
-void FieldDialog::removeEnumField()
-{
-  for (int i = 0; i < layout()->count(); ++i)
-  {
-    QLayoutItem* item = layout()->itemAt(i);
-    QWidget* widget = item->widget();
-    if (widget && widget->objectName() == "EnumGroup")
-    {
-      layout()->removeWidget(widget);
-      delete widget;
-      break;
-    }
-  }
-}
+// void FieldDialog::removeEnumField()
+// {
+//   for (int i = 0; i < layout()->count(); ++i)
+//   {
+//     QLayoutItem* item = layout()->itemAt(i);
+//     QWidget* widget = item->widget();
+//     if (widget && widget->objectName() == "EnumGroup")
+//     {
+//       layout()->removeWidget(widget);
+//       delete widget;
+//       break;
+//     }
+//   }
+// }

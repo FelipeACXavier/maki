@@ -310,7 +310,7 @@ QString createInformationMessage(const NodeConfig& node)
     {
       out += "<tr>";
       out += "<td>" + htmlEscape(e.name) + "</td>";
-      out += "<td>" + htmlEscape(Types::ConnectorTypeToString(e.type)) + "</td>";
+      out += "<td>" + htmlEscape(Types::CallTypeToString(e.type)) + "</td>";
       out += "<td>" + htmlEscape(Types::PropertyTypesToString(e.returnType)) + "</td>";
       out += "<td>" + htmlEscape(e.info) + "</td>";
       out += "</tr>";

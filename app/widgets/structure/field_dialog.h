@@ -35,8 +35,4 @@ private:
   void createNameInput(QWidget* parent);
   void createTypeInput(QWidget* parent);
   void createArgumentInput(QWidget* parent);
-  void updateArgumentTable(QStandardItem* item);
-
-  void addEnumField(QWidget* parent);
-  void removeEnumField();
 };
