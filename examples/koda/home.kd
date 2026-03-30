@@ -29,12 +29,12 @@ capability Light(string scene) {
 }
 
 capability Ventilation(string up) {
-    action "ventilation" "" {
-      trigger: void solve(string up);
-      return: void done();
-      abort: void stop();
-      error: void failed();
-    }
+  action "ventilation" "" {
+    trigger: void solve(string up);
+    return: void done();
+    abort: void stop();
+    error: void failed();
+  }
 }
 
 task AirQuality (bridge req Bridge, co2sensor req Co2Sensor, envsensor req EnvSensor, 

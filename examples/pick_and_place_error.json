@@ -1,0 +1,1915 @@
+{
+    "canvas": {
+        "position": {
+            "x": -265.7142857142857,
+            "y": 357.14285714285717
+        },
+        "scale": 0.35
+    },
+    "structural": [
+        {
+            "children": [
+                {
+                    "flows": [
+                        {
+                            "arguments": [
+                                {
+                                    "default": 0,
+                                    "id": "grip",
+                                    "type": 2
+                                }
+                            ],
+                            "id": "{bd3a2a82-0e78-48f4-a019-931fe4e96940}",
+                            "modifiable": false,
+                            "name": "handle",
+                            "owner": "",
+                            "returnType": "void",
+                            "type": "in"
+                        },
+                        {
+                            "arguments": [
+                            ],
+                            "id": "{a9e1c446-f6ab-4f2c-99e5-52e591a75593}",
+                            "modifiable": false,
+                            "name": "cancel",
+                            "owner": "",
+                            "returnType": "void",
+                            "type": "in"
+                        },
+                        {
+                            "arguments": [
+                            ],
+                            "id": "{2f7b2c87-6bee-4dfb-bb74-27626c6f10f4}",
+                            "modifiable": false,
+                            "name": "handled",
+                            "owner": "",
+                            "returnType": "void",
+                            "type": "out"
+                        },
+                        {
+                            "arguments": [
+                            ],
+                            "id": "{38183543-74c5-4d0b-b8f3-231149d9bd07}",
+                            "modifiable": false,
+                            "name": "failed",
+                            "owner": "",
+                            "returnType": "void",
+                            "type": "out"
+                        }
+                    ],
+                    "id": "{bc12fb7d-2cbc-409d-8009-88d4cdfbe6f8}",
+                    "nodeId": "Mission::Grip",
+                    "parentId": "{d9929bf1-c612-4843-aff8-1daeca5c3386}",
+                    "pixmap": {
+                        "data": ""
+                    },
+                    "position": {
+                        "x": -735.5,
+                        "y": -11
+                    },
+                    "properties": {
+                        "arguments": [
+                            {
+                                "id": "grip",
+                                "type": "int"
+                            }
+                        ],
+                        "color": "#cc7a3d",
+                        "name": "Grip",
+                        "type": "action \"/handler/action\" \"std_msgs::String\""
+                    },
+                    "scale": 1.3227513227513228,
+                    "size": {
+                        "height": 378,
+                        "width": 409
+                    }
+                },
+                {
+                    "flows": [
+                        {
+                            "arguments": [
+                            ],
+                            "id": "{cfc7c4ae-8376-495b-9465-fa226a7f63be}",
+                            "modifiable": false,
+                            "name": "recognize",
+                            "owner": "",
+                            "returnType": "void",
+                            "type": "in"
+                        },
+                        {
+                            "arguments": [
+                            ],
+                            "id": "{a3c702ad-07fe-485c-8f8a-647047b0c115}",
+                            "modifiable": false,
+                            "name": "cancel",
+                            "owner": "",
+                            "returnType": "void",
+                            "type": "in"
+                        },
+                        {
+                            "arguments": [
+                            ],
+                            "id": "{c26aba3f-7cfc-4e4f-97ef-3a6ab82dce53}",
+                            "modifiable": false,
+                            "name": "found",
+                            "owner": "",
+                            "returnType": "void",
+                            "type": "out"
+                        }
+                    ],
+                    "id": "{d9fe6104-5cab-4282-92b7-60ed44117c6a}",
+                    "nodeId": "Mission::Vision",
+                    "parentId": "{d9929bf1-c612-4843-aff8-1daeca5c3386}",
+                    "pixmap": {
+                        "data": ""
+                    },
+                    "position": {
+                        "x": -710,
+                        "y": 670
+                    },
+                    "properties": {
+                        "color": "#e6c994",
+                        "name": "Vision",
+                        "type": "action \"/recognize\" \"std_msgs::String\""
+                    },
+                    "scale": 0.3,
+                    "size": {
+                        "height": 500,
+                        "width": 500
+                    }
+                },
+                {
+                    "flows": [
+                        {
+                            "arguments": [
+                                {
+                                    "default": 0,
+                                    "id": "x",
+                                    "type": 3
+                                },
+                                {
+                                    "default": 0,
+                                    "id": "y",
+                                    "type": 3
+                                },
+                                {
+                                    "default": 0,
+                                    "id": "yaw",
+                                    "type": 3
+                                }
+                            ],
+                            "id": "{65caa4cd-9f43-482d-9903-9dd42d0d89c2}",
+                            "modifiable": false,
+                            "name": "to_position",
+                            "owner": "",
+                            "returnType": "void",
+                            "type": "in"
+                        },
+                        {
+                            "arguments": [
+                            ],
+                            "id": "{1b1bceb2-3934-4df2-a505-8b97a9e03f3a}",
+                            "modifiable": false,
+                            "name": "abort",
+                            "owner": "",
+                            "returnType": "void",
+                            "type": "in"
+                        },
+                        {
+                            "arguments": [
+                                {
+                                    "default": 0,
+                                    "id": "x",
+                                    "type": 3
+                                },
+                                {
+                                    "default": 0,
+                                    "id": "y",
+                                    "type": 3
+                                },
+                                {
+                                    "default": 0,
+                                    "id": "yaw",
+                                    "type": 3
+                                }
+                            ],
+                            "id": "{777d6468-3160-44db-8219-63acf315d118}",
+                            "modifiable": false,
+                            "name": "in_position",
+                            "owner": "",
+                            "returnType": "void",
+                            "type": "out"
+                        },
+                        {
+                            "arguments": [
+                            ],
+                            "id": "{118ee04d-83db-4832-86de-adcb8dbecceb}",
+                            "modifiable": false,
+                            "name": "path_blocked",
+                            "owner": "",
+                            "returnType": "void",
+                            "type": "out"
+                        }
+                    ],
+                    "id": "{3dc4e244-1ea0-4e7e-92ff-ebcf3b6648f2}",
+                    "nodeId": "Mission::Drive",
+                    "parentId": "{d9929bf1-c612-4843-aff8-1daeca5c3386}",
+                    "pixmap": {
+                        "data": ""
+                    },
+                    "position": {
+                        "x": 24.5,
+                        "y": 194.5
+                    },
+                    "properties": {
+                        "arguments": [
+                            {
+                                "id": "x",
+                                "type": "float"
+                            },
+                            {
+                                "id": "y",
+                                "type": "float"
+                            },
+                            {
+                                "id": "yaw",
+                                "type": "float"
+                            }
+                        ],
+                        "color": "#74a892",
+                        "name": "Drive",
+                        "type": "action \"/navigate_to_pose\" \"nav2_msgs::action::NavigateToPose::Goal\""
+                    },
+                    "scale": 0.9823182711198428,
+                    "size": {
+                        "height": 509,
+                        "width": 569
+                    }
+                }
+            ],
+            "fields": [
+                {
+                    "default": 0,
+                    "id": "x1",
+                    "type": 3
+                },
+                {
+                    "default": 0,
+                    "id": "y1",
+                    "type": 3
+                },
+                {
+                    "default": 0,
+                    "id": "x2",
+                    "type": 3
+                },
+                {
+                    "default": 0,
+                    "id": "y2",
+                    "type": 3
+                },
+                {
+                    "default": 0,
+                    "id": "yaw1",
+                    "type": 3
+                },
+                {
+                    "default": 0,
+                    "id": "yaw2",
+                    "type": 3
+                }
+            ],
+            "flows": [
+                {
+                    "arguments": [
+                        {
+                            "default": 0,
+                            "id": "x1",
+                            "type": 3
+                        },
+                        {
+                            "default": 0,
+                            "id": "y1",
+                            "type": 3
+                        },
+                        {
+                            "default": 0,
+                            "id": "x2",
+                            "type": 3
+                        },
+                        {
+                            "default": 0,
+                            "id": "y2",
+                            "type": 3
+                        },
+                        {
+                            "default": 0,
+                            "id": "yaw1",
+                            "type": 3
+                        },
+                        {
+                            "default": 0,
+                            "id": "yaw2",
+                            "type": 3
+                        }
+                    ],
+                    "id": "{24c23024-094b-4349-aac9-5c56b0555615}",
+                    "modifiable": false,
+                    "name": "start",
+                    "owner": "",
+                    "returnType": "void",
+                    "type": "in"
+                },
+                {
+                    "arguments": [
+                    ],
+                    "id": "{70c72151-7e82-4bdb-a08e-943160a6bc9a}",
+                    "modifiable": false,
+                    "name": "done",
+                    "owner": "",
+                    "returnType": "void",
+                    "type": "out"
+                },
+                {
+                    "arguments": [
+                    ],
+                    "id": "{0f3fb6bf-d7c5-4449-a872-d88ad9a3c01c}",
+                    "modifiable": false,
+                    "name": "failed",
+                    "owner": "",
+                    "returnType": "void",
+                    "type": "out"
+                },
+                {
+                    "arguments": [
+                    ],
+                    "id": "{7b330889-b23f-4a1a-b094-504d53235bd9}",
+                    "modifiable": true,
+                    "name": "loop",
+                    "nodes": [
+                        {
+                            "id": "{d1a878e1-e833-4deb-b8fb-57e78997f33d}",
+                            "nodeId": "Mission::Start",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": ""
+                            },
+                            "position": {
+                                "x": -735,
+                                "y": -255
+                            },
+                            "properties": {
+                                "mode": "signal",
+                                "name": "Start"
+                            },
+                            "scale": 1,
+                            "size": {
+                                "height": 50,
+                                "width": 50
+                            },
+                            "transitions": [
+                                {
+                                    "destination": {
+                                        "id": "{f9d10462-46be-4c76-9928-fa23e871c2a1}",
+                                        "position": {
+                                            "x": -580,
+                                            "y": -255
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "",
+                                    "id": "{b066dc7f-75e1-4f3f-b0f1-742e0d2fa67e}",
+                                    "label": "",
+                                    "source": {
+                                        "id": "{d1a878e1-e833-4deb-b8fb-57e78997f33d}",
+                                        "position": {
+                                            "x": -710,
+                                            "y": -255
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "{f9d10462-46be-4c76-9928-fa23e871c2a1}",
+                            "nodeId": "Mission::Async task",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": ""
+                            },
+                            "position": {
+                                "x": -530,
+                                "y": -255
+                            },
+                            "properties": {
+                                "color": "#202020",
+                                "component": {
+                                    "data": "Drive",
+                                    "data_id": "{3dc4e244-1ea0-4e7e-92ff-ebcf3b6648f2}",
+                                    "options": [
+                                        {
+                                            "data": "x1_, y1_, yaw1_",
+                                            "data_id": "",
+                                            "id": "argument",
+                                            "option_data": "",
+                                            "option_data_id": "",
+                                            "type": "string"
+                                        }
+                                    ]
+                                },
+                                "name": "Drive to pick"
+                            },
+                            "scale": 1,
+                            "size": {
+                                "height": 50,
+                                "width": 100
+                            },
+                            "transitions": [
+                                {
+                                    "destination": {
+                                        "id": "{600d7a41-6b41-4720-99c6-dfcf7a0474bd}",
+                                        "position": {
+                                            "x": -360,
+                                            "y": -255
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "",
+                                    "id": "{df7c208d-248d-4adc-a163-28aea2242fb6}",
+                                    "label": "",
+                                    "source": {
+                                        "id": "{f9d10462-46be-4c76-9928-fa23e871c2a1}",
+                                        "position": {
+                                            "x": -480,
+                                            "y": -255
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                },
+                                {
+                                    "destination": {
+                                        "id": "{fbd6a8c8-924d-4004-94e8-8a8f34239274}",
+                                        "position": {
+                                            "x": -339.56818318137584,
+                                            "y": 4.679750207214724
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "",
+                                    "id": "{ef0d1d16-86bb-42e9-91de-23cbdcc357fb}",
+                                    "label": "on error",
+                                    "source": {
+                                        "id": "{f9d10462-46be-4c76-9928-fa23e871c2a1}",
+                                        "position": {
+                                            "x": -500.43181681862416,
+                                            "y": -214.67975020721474
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "{600d7a41-6b41-4720-99c6-dfcf7a0474bd}",
+                            "nodeId": "Mission::Strategy",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": ""
+                            },
+                            "position": {
+                                "x": -310,
+                                "y": -255
+                            },
+                            "properties": {
+                                "color": "#202020",
+                                "component": {
+                                    "data": "PickAndPlace",
+                                    "data_id": "{d9929bf1-c612-4843-aff8-1daeca5c3386}",
+                                    "options": [
+                                        {
+                                            "data": "pick",
+                                            "data_id": "",
+                                            "id": "event",
+                                            "option_data": "",
+                                            "option_data_id": "{46c5f8ae-c5e1-4a3a-9225-c73d927b67bd}",
+                                            "type": "event_select"
+                                        },
+                                        {
+                                            "data": "true",
+                                            "data_id": "",
+                                            "id": "argument",
+                                            "option_data": "",
+                                            "option_data_id": "",
+                                            "type": "string"
+                                        }
+                                    ]
+                                },
+                                "name": "Pick up"
+                            },
+                            "scale": 1,
+                            "size": {
+                                "height": 50,
+                                "width": 100
+                            },
+                            "transitions": [
+                                {
+                                    "destination": {
+                                        "id": "{8a5d8832-6b78-48e5-a481-aa805e738aaf}",
+                                        "position": {
+                                            "x": -80,
+                                            "y": -255
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "",
+                                    "id": "{1044e681-fec5-4962-b0e4-a4ed92d1edd3}",
+                                    "label": "",
+                                    "source": {
+                                        "id": "{600d7a41-6b41-4720-99c6-dfcf7a0474bd}",
+                                        "position": {
+                                            "x": -260,
+                                            "y": -255
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "{8a5d8832-6b78-48e5-a481-aa805e738aaf}",
+                            "nodeId": "Mission::Async task",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": ""
+                            },
+                            "position": {
+                                "x": -30,
+                                "y": -255
+                            },
+                            "properties": {
+                                "color": "#202020",
+                                "component": {
+                                    "data": "Drive",
+                                    "data_id": "{3dc4e244-1ea0-4e7e-92ff-ebcf3b6648f2}",
+                                    "options": [
+                                        {
+                                            "data": "x2_, y2_, yaw2_",
+                                            "data_id": "",
+                                            "id": "argument",
+                                            "option_data": "",
+                                            "option_data_id": "",
+                                            "type": "string"
+                                        }
+                                    ]
+                                },
+                                "name": "Drive to drop"
+                            },
+                            "scale": 1,
+                            "size": {
+                                "height": 50,
+                                "width": 100
+                            },
+                            "transitions": [
+                                {
+                                    "destination": {
+                                        "id": "{ef26960f-5ebf-4ebe-81a2-e6ac9393e911}",
+                                        "position": {
+                                            "x": 180,
+                                            "y": -255
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "",
+                                    "id": "{6a2e55f7-625d-4b96-874b-edc3f9c82706}",
+                                    "label": "",
+                                    "source": {
+                                        "id": "{8a5d8832-6b78-48e5-a481-aa805e738aaf}",
+                                        "position": {
+                                            "x": 20,
+                                            "y": -255
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                },
+                                {
+                                    "destination": {
+                                        "id": "{5a1e72a9-5ea8-46fe-81f5-2a04ad12213a}",
+                                        "position": {
+                                            "x": -30,
+                                            "y": -5
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "",
+                                    "id": "{73e189aa-e931-4c0c-b9e2-5ac8e2617de8}",
+                                    "label": "on abort",
+                                    "source": {
+                                        "id": "{8a5d8832-6b78-48e5-a481-aa805e738aaf}",
+                                        "position": {
+                                            "x": -30,
+                                            "y": -205
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                },
+                                {
+                                    "destination": {
+                                        "id": "{e67f1172-2164-4d32-a743-3b5006a9477f}",
+                                        "position": {
+                                            "x": 197.2534730791079,
+                                            "y": 7.215545860509124
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "",
+                                    "id": "{d2d15227-f973-4787-993f-279e13e4c954}",
+                                    "label": "on error",
+                                    "source": {
+                                        "id": "{8a5d8832-6b78-48e5-a481-aa805e738aaf}",
+                                        "position": {
+                                            "x": 2.7465269208920944,
+                                            "y": -217.2155458605091
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "{ef26960f-5ebf-4ebe-81a2-e6ac9393e911}",
+                            "nodeId": "Mission::Strategy",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": ""
+                            },
+                            "position": {
+                                "x": 230,
+                                "y": -255
+                            },
+                            "properties": {
+                                "color": "#202020",
+                                "component": {
+                                    "options": [
+                                        {
+                                            "data": "drop",
+                                            "data_id": "",
+                                            "id": "event",
+                                            "option_data": "",
+                                            "option_data_id": "{fe4be220-5971-487d-b19d-cd53864cb837}",
+                                            "type": "event_select"
+                                        }
+                                    ]
+                                },
+                                "name": "Drop"
+                            },
+                            "scale": 1,
+                            "size": {
+                                "height": 50,
+                                "width": 100
+                            }
+                        },
+                        {
+                            "id": "{5a1e72a9-5ea8-46fe-81f5-2a04ad12213a}",
+                            "nodeId": "Mission::Strategy",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": ""
+                            },
+                            "position": {
+                                "x": -30,
+                                "y": 45
+                            },
+                            "properties": {
+                                "color": "#ffff7f",
+                                "component": {
+                                    "options": [
+                                        {
+                                            "data": "err",
+                                            "data_id": "",
+                                            "id": "event",
+                                            "option_data": "",
+                                            "option_data_id": "{5af902ad-4b9c-43f3-b0cb-294c35f920ff}",
+                                            "type": "event_select"
+                                        }
+                                    ]
+                                },
+                                "name": "Abort"
+                            },
+                            "scale": 1.3045131722572083,
+                            "size": {
+                                "height": 50,
+                                "width": 100
+                            }
+                        },
+                        {
+                            "id": "{e67f1172-2164-4d32-a743-3b5006a9477f}",
+                            "nodeId": "Mission::Strategy",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": ""
+                            },
+                            "position": {
+                                "x": 230,
+                                "y": 45
+                            },
+                            "properties": {
+                                "color": "#ff0000",
+                                "component": {
+                                    "options": [
+                                        {
+                                            "data": "err",
+                                            "data_id": "",
+                                            "id": "event",
+                                            "option_data": "",
+                                            "option_data_id": "{5af902ad-4b9c-43f3-b0cb-294c35f920ff}",
+                                            "type": "event_select"
+                                        }
+                                    ]
+                                },
+                                "name": "Error"
+                            },
+                            "scale": 1,
+                            "size": {
+                                "height": 50,
+                                "width": 100
+                            }
+                        },
+                        {
+                            "id": "{fbd6a8c8-924d-4004-94e8-8a8f34239274}",
+                            "nodeId": "Mission::Strategy",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": ""
+                            },
+                            "position": {
+                                "x": -310,
+                                "y": 45
+                            },
+                            "properties": {
+                                "color": "#ff0000",
+                                "component": {
+                                    "options": [
+                                        {
+                                            "data": "err",
+                                            "data_id": "",
+                                            "id": "event",
+                                            "option_data": "",
+                                            "option_data_id": "{5af902ad-4b9c-43f3-b0cb-294c35f920ff}",
+                                            "type": "event_select"
+                                        }
+                                    ]
+                                },
+                                "name": "Error"
+                            },
+                            "scale": 1,
+                            "size": {
+                                "height": 50,
+                                "width": 100
+                            }
+                        }
+                    ],
+                    "owner": "{d9929bf1-c612-4843-aff8-1daeca5c3386}",
+                    "returnType": "string",
+                    "type": "in"
+                },
+                {
+                    "arguments": [
+                    ],
+                    "id": "{f299b5b2-e904-4bce-b46a-c923f2208070}",
+                    "modifiable": true,
+                    "name": "main",
+                    "nodes": [
+                        {
+                            "id": "{f2c2e0fe-3003-4b1a-8c05-4349657d8aec}",
+                            "nodeId": "Mission::Start",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": ""
+                            },
+                            "position": {
+                                "x": -675,
+                                "y": -55
+                            },
+                            "properties": {
+                                "mode": "signal",
+                                "name": "Start"
+                            },
+                            "scale": 1,
+                            "size": {
+                                "height": 50,
+                                "width": 50
+                            },
+                            "transitions": [
+                                {
+                                    "destination": {
+                                        "id": "{d2f256fa-814b-44b2-b47e-27800b0fbbde}",
+                                        "position": {
+                                            "x": 0,
+                                            "y": 0
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "",
+                                    "id": "{9522a592-f1e1-40e4-b3f9-b6053d513b65}",
+                                    "label": "",
+                                    "source": {
+                                        "id": "{f2c2e0fe-3003-4b1a-8c05-4349657d8aec}",
+                                        "position": {
+                                            "x": -650.0056567485734,
+                                            "y": -54.468205462735604
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "{d2f256fa-814b-44b2-b47e-27800b0fbbde}",
+                            "nodeId": "Mission::Repeat",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": ""
+                            },
+                            "position": {
+                                "x": -440,
+                                "y": -50
+                            },
+                            "properties": {
+                                "component": {
+                                    "options": [
+                                        {
+                                            "data": "loop",
+                                            "data_id": "",
+                                            "id": "event",
+                                            "option_data": "",
+                                            "option_data_id": "{7b330889-b23f-4a1a-b094-504d53235bd9}",
+                                            "type": "event_select"
+                                        }
+                                    ]
+                                },
+                                "name": "Repeat main loop"
+                            },
+                            "scale": 1,
+                            "size": {
+                                "height": 100,
+                                "width": 200
+                            }
+                        }
+                    ],
+                    "owner": "{d9929bf1-c612-4843-aff8-1daeca5c3386}",
+                    "returnType": "string",
+                    "type": "in"
+                },
+                {
+                    "arguments": [
+                    ],
+                    "id": "{46c5f8ae-c5e1-4a3a-9225-c73d927b67bd}",
+                    "modifiable": true,
+                    "name": "pick",
+                    "nodes": [
+                        {
+                            "id": "{89babe53-4fbb-44ed-bf78-5ed99c6b59f0}",
+                            "nodeId": "Mission::Start",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": ""
+                            },
+                            "position": {
+                                "x": -895,
+                                "y": -95
+                            },
+                            "properties": {
+                                "mode": "signal",
+                                "name": "Start"
+                            },
+                            "scale": 1,
+                            "size": {
+                                "height": 50,
+                                "width": 50
+                            },
+                            "transitions": [
+                                {
+                                    "destination": {
+                                        "id": "{16c4b931-ba93-4e19-81fe-1c7c0b5bad69}",
+                                        "position": {
+                                            "x": 0,
+                                            "y": 0
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "",
+                                    "id": "{208d0463-c466-42b2-8ead-bf766561040e}",
+                                    "label": "",
+                                    "source": {
+                                        "id": "{89babe53-4fbb-44ed-bf78-5ed99c6b59f0}",
+                                        "position": {
+                                            "x": -870,
+                                            "y": -95
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "{5b255e1d-47d0-4d90-86b5-209205a288bc}",
+                            "nodeId": "Mission::Async task",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": ""
+                            },
+                            "position": {
+                                "x": -570,
+                                "y": -175
+                            },
+                            "properties": {
+                                "color": "#202020",
+                                "component": {
+                                    "data": "Vision",
+                                    "data_id": "{93b2bd88-d785-45f2-846a-a62bafe09cc5}",
+                                    "options": [
+                                        {
+                                            "data": "",
+                                            "data_id": "",
+                                            "id": "argument",
+                                            "option_data": "",
+                                            "option_data_id": "",
+                                            "type": "string"
+                                        }
+                                    ]
+                                },
+                                "name": "Find object"
+                            },
+                            "scale": 1,
+                            "size": {
+                                "height": 50,
+                                "width": 100
+                            },
+                            "transitions": [
+                                {
+                                    "destination": {
+                                        "id": "{9a9dac6d-3eb1-4d9b-9673-6e8cb4a541f0}",
+                                        "position": {
+                                            "x": 0,
+                                            "y": 0
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "",
+                                    "id": "{e3890ba6-1575-43c6-ae01-12c339c5107d}",
+                                    "label": "on abort",
+                                    "source": {
+                                        "id": "{5b255e1d-47d0-4d90-86b5-209205a288bc}",
+                                        "position": {
+                                            "x": -520,
+                                            "y": -175
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "{7feae9f0-a43a-4628-9b5b-e80117b49fd4}",
+                            "nodeId": "Mission::Async task",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": ""
+                            },
+                            "position": {
+                                "x": -270,
+                                "y": -95
+                            },
+                            "properties": {
+                                "color": "#202020",
+                                "component": {
+                                    "data": "Grip",
+                                    "data_id": "{bc12fb7d-2cbc-409d-8009-88d4cdfbe6f8}",
+                                    "options": [
+                                        {
+                                            "data": "true",
+                                            "data_id": "",
+                                            "id": "argument",
+                                            "option_data": "",
+                                            "option_data_id": "",
+                                            "type": "string"
+                                        }
+                                    ]
+                                },
+                                "name": "Pick up"
+                            },
+                            "scale": 1,
+                            "size": {
+                                "height": 50,
+                                "width": 100
+                            },
+                            "transitions": [
+                                {
+                                    "destination": {
+                                        "id": "{28d1d1a3-77c8-484a-9146-9b8a11edb38f}",
+                                        "position": {
+                                            "x": 0,
+                                            "y": 0
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "",
+                                    "id": "{ebc17e02-c268-46d7-9ee0-f0df70c1c261}",
+                                    "label": "on error",
+                                    "source": {
+                                        "id": "{7feae9f0-a43a-4628-9b5b-e80117b49fd4}",
+                                        "position": {
+                                            "x": -222.10868573894243,
+                                            "y": -80.63260572168272
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                },
+                                {
+                                    "destination": {
+                                        "id": "{0ab495dc-cc6b-48b6-9aab-51727ced9d6e}",
+                                        "position": {
+                                            "x": 0,
+                                            "y": 0
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "",
+                                    "id": "{99e69f93-745b-48d8-a4da-1cb1ee1642f5}",
+                                    "label": "on abort",
+                                    "source": {
+                                        "id": "{7feae9f0-a43a-4628-9b5b-e80117b49fd4}",
+                                        "position": {
+                                            "x": -222.10868573894243,
+                                            "y": -109.36739427831728
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "{9a9dac6d-3eb1-4d9b-9673-6e8cb4a541f0}",
+                            "nodeId": "Mission::Strategy",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": ""
+                            },
+                            "position": {
+                                "x": -390,
+                                "y": -175
+                            },
+                            "properties": {
+                                "color": "#ffff7f",
+                                "component": {
+                                    "options": [
+                                        {
+                                            "data": "err",
+                                            "data_id": "",
+                                            "id": "event",
+                                            "option_data": "",
+                                            "option_data_id": "{5af902ad-4b9c-43f3-b0cb-294c35f920ff}",
+                                            "type": "event_select"
+                                        }
+                                    ]
+                                },
+                                "name": "Abort"
+                            },
+                            "scale": 1,
+                            "size": {
+                                "height": 50,
+                                "width": 100
+                            }
+                        },
+                        {
+                            "id": "{28d1d1a3-77c8-484a-9146-9b8a11edb38f}",
+                            "nodeId": "Mission::Strategy",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": ""
+                            },
+                            "position": {
+                                "x": -70,
+                                "y": -35
+                            },
+                            "properties": {
+                                "color": "#ff0000",
+                                "component": {
+                                    "options": [
+                                        {
+                                            "data": "err",
+                                            "data_id": "",
+                                            "id": "event",
+                                            "option_data": "",
+                                            "option_data_id": "{5af902ad-4b9c-43f3-b0cb-294c35f920ff}",
+                                            "type": "event_select"
+                                        }
+                                    ]
+                                },
+                                "name": "Error"
+                            },
+                            "scale": 1,
+                            "size": {
+                                "height": 50,
+                                "width": 100
+                            }
+                        },
+                        {
+                            "id": "{0ab495dc-cc6b-48b6-9aab-51727ced9d6e}",
+                            "nodeId": "Mission::Strategy",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": ""
+                            },
+                            "position": {
+                                "x": -70,
+                                "y": -155
+                            },
+                            "properties": {
+                                "color": "#ffff7f",
+                                "component": {
+                                    "options": [
+                                        {
+                                            "data": "err",
+                                            "data_id": "",
+                                            "id": "event",
+                                            "option_data": "",
+                                            "option_data_id": "{5af902ad-4b9c-43f3-b0cb-294c35f920ff}",
+                                            "type": "event_select"
+                                        }
+                                    ]
+                                },
+                                "name": "Abort"
+                            },
+                            "scale": 1,
+                            "size": {
+                                "height": 50,
+                                "width": 100
+                            }
+                        },
+                        {
+                            "id": "{16c4b931-ba93-4e19-81fe-1c7c0b5bad69}",
+                            "nodeId": "Mission::Within",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": ""
+                            },
+                            "position": {
+                                "x": -750,
+                                "y": -95
+                            },
+                            "properties": {
+                                "color": "#202020",
+                                "name": "Timeout 30s",
+                                "timeout": 30
+                            },
+                            "scale": 1.6105101745343284,
+                            "size": {
+                                "height": 50,
+                                "width": 100
+                            },
+                            "transitions": [
+                                {
+                                    "destination": {
+                                        "id": "{5b255e1d-47d0-4d90-86b5-209205a288bc}",
+                                        "position": {
+                                            "x": 0,
+                                            "y": 0
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "",
+                                    "id": "{a610dd51-1720-4087-a20f-252a0e2d2de1}",
+                                    "label": "do",
+                                    "source": {
+                                        "id": "{16c4b931-ba93-4e19-81fe-1c7c0b5bad69}",
+                                        "position": {
+                                            "x": -704.3094225689872,
+                                            "y": -115.30692330267237
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                },
+                                {
+                                    "destination": {
+                                        "id": "{62f6dcdc-daa5-47f0-b2b4-0c6c6332f4b8}",
+                                        "position": {
+                                            "x": 0,
+                                            "y": 0
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "",
+                                    "id": "{3bf74afb-a780-459b-a300-080f2814e73b}",
+                                    "label": "else",
+                                    "source": {
+                                        "id": "{16c4b931-ba93-4e19-81fe-1c7c0b5bad69}",
+                                        "position": {
+                                            "x": -705.2786404500042,
+                                            "y": -72.63932022500211
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                },
+                                {
+                                    "destination": {
+                                        "id": "{7feae9f0-a43a-4628-9b5b-e80117b49fd4}",
+                                        "position": {
+                                            "x": 0,
+                                            "y": 0
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "",
+                                    "id": "{78ade83a-50c7-4ec4-9c70-c2e297886ae6}",
+                                    "label": "",
+                                    "source": {
+                                        "id": "{16c4b931-ba93-4e19-81fe-1c7c0b5bad69}",
+                                        "position": {
+                                            "x": -700,
+                                            "y": -95
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "{62f6dcdc-daa5-47f0-b2b4-0c6c6332f4b8}",
+                            "nodeId": "Mission::Strategy",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": ""
+                            },
+                            "position": {
+                                "x": -590,
+                                "y": -15
+                            },
+                            "properties": {
+                                "color": "#ff0000",
+                                "component": {
+                                    "options": [
+                                        {
+                                            "data": "err",
+                                            "data_id": "",
+                                            "id": "event",
+                                            "option_data": "",
+                                            "option_data_id": "{5af902ad-4b9c-43f3-b0cb-294c35f920ff}",
+                                            "type": "event_select"
+                                        }
+                                    ]
+                                },
+                                "name": "Error"
+                            },
+                            "scale": 1,
+                            "size": {
+                                "height": 50,
+                                "width": 100
+                            }
+                        }
+                    ],
+                    "owner": "{d9929bf1-c612-4843-aff8-1daeca5c3386}",
+                    "returnType": "string",
+                    "type": "in"
+                },
+                {
+                    "arguments": [
+                    ],
+                    "id": "{fe4be220-5971-487d-b19d-cd53864cb837}",
+                    "modifiable": true,
+                    "name": "drop",
+                    "nodes": [
+                        {
+                            "id": "{7f860d70-2057-4090-ab1f-daada5f8e5d7}",
+                            "nodeId": "Mission::Start",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": ""
+                            },
+                            "position": {
+                                "x": -655,
+                                "y": 5
+                            },
+                            "properties": {
+                                "mode": "signal",
+                                "name": "Start"
+                            },
+                            "scale": 1,
+                            "size": {
+                                "height": 50,
+                                "width": 50
+                            },
+                            "transitions": [
+                                {
+                                    "destination": {
+                                        "id": "{f9dd1d5e-8321-4f1a-9228-15ed940dd2da}",
+                                        "position": {
+                                            "x": 0,
+                                            "y": 0
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "",
+                                    "id": "{1a46606e-1ab7-4d85-b9c0-1cbc7ba10fc4}",
+                                    "label": "",
+                                    "source": {
+                                        "id": "{7f860d70-2057-4090-ab1f-daada5f8e5d7}",
+                                        "position": {
+                                            "x": -630,
+                                            "y": 5
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "{f9dd1d5e-8321-4f1a-9228-15ed940dd2da}",
+                            "nodeId": "Mission::Async task",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": ""
+                            },
+                            "position": {
+                                "x": -410,
+                                "y": 5
+                            },
+                            "properties": {
+                                "color": "#202020",
+                                "component": {
+                                    "data": "Grip",
+                                    "data_id": "{bc12fb7d-2cbc-409d-8009-88d4cdfbe6f8}",
+                                    "options": [
+                                        {
+                                            "data": "false",
+                                            "data_id": "",
+                                            "id": "argument",
+                                            "option_data": "",
+                                            "option_data_id": "",
+                                            "type": "string"
+                                        }
+                                    ]
+                                },
+                                "name": "drop off"
+                            },
+                            "scale": 1,
+                            "size": {
+                                "height": 50,
+                                "width": 100
+                            },
+                            "transitions": [
+                                {
+                                    "destination": {
+                                        "id": "{04f5a7fe-9043-459b-8b49-8009fbc38dd0}",
+                                        "position": {
+                                            "x": 0,
+                                            "y": 0
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "",
+                                    "id": "{564b2b6f-1094-4e62-9660-97b0c45c67bc}",
+                                    "label": "on error",
+                                    "source": {
+                                        "id": "{f9dd1d5e-8321-4f1a-9228-15ed940dd2da}",
+                                        "position": {
+                                            "x": -362.91290442025814,
+                                            "y": -11.816819849907812
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                },
+                                {
+                                    "destination": {
+                                        "id": "{dad34b86-96d0-4697-bc63-18b7f07154fd}",
+                                        "position": {
+                                            "x": 0,
+                                            "y": 0
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "",
+                                    "id": "{dbb638a6-8fe6-4612-ad54-f9e407f37385}",
+                                    "label": "on abort",
+                                    "source": {
+                                        "id": "{f9dd1d5e-8321-4f1a-9228-15ed940dd2da}",
+                                        "position": {
+                                            "x": -362.91290442025814,
+                                            "y": 21.816819849907812
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "{04f5a7fe-9043-459b-8b49-8009fbc38dd0}",
+                            "nodeId": "Mission::Strategy",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": ""
+                            },
+                            "position": {
+                                "x": -130,
+                                "y": -95
+                            },
+                            "properties": {
+                                "color": "#ff0000",
+                                "component": {
+                                    "options": [
+                                        {
+                                            "data": "err",
+                                            "data_id": "",
+                                            "id": "event",
+                                            "option_data": "",
+                                            "option_data_id": "{5af902ad-4b9c-43f3-b0cb-294c35f920ff}",
+                                            "type": "event_select"
+                                        }
+                                    ]
+                                },
+                                "name": "Error"
+                            },
+                            "scale": 1,
+                            "size": {
+                                "height": 50,
+                                "width": 100
+                            }
+                        },
+                        {
+                            "id": "{dad34b86-96d0-4697-bc63-18b7f07154fd}",
+                            "nodeId": "Mission::Strategy",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": ""
+                            },
+                            "position": {
+                                "x": -130,
+                                "y": 105
+                            },
+                            "properties": {
+                                "color": "#ffff7f",
+                                "component": {
+                                    "options": [
+                                        {
+                                            "data": "err",
+                                            "data_id": "",
+                                            "id": "event",
+                                            "option_data": "",
+                                            "option_data_id": "{5af902ad-4b9c-43f3-b0cb-294c35f920ff}",
+                                            "type": "event_select"
+                                        }
+                                    ]
+                                },
+                                "name": "Abort"
+                            },
+                            "scale": 1,
+                            "size": {
+                                "height": 50,
+                                "width": 100
+                            }
+                        }
+                    ],
+                    "owner": "{d9929bf1-c612-4843-aff8-1daeca5c3386}",
+                    "returnType": "string",
+                    "type": "in"
+                },
+                {
+                    "arguments": [
+                    ],
+                    "id": "{5af902ad-4b9c-43f3-b0cb-294c35f920ff}",
+                    "modifiable": true,
+                    "name": "err",
+                    "nodes": [
+                        {
+                            "id": "{e872eef7-0de2-422c-93ba-48920f57f17a}",
+                            "nodeId": "Mission::Start",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": ""
+                            },
+                            "position": {
+                                "x": -755,
+                                "y": -15
+                            },
+                            "properties": {
+                                "mode": "signal",
+                                "name": "Start"
+                            },
+                            "scale": 1,
+                            "size": {
+                                "height": 50,
+                                "width": 50
+                            },
+                            "transitions": [
+                                {
+                                    "destination": {
+                                        "id": "{01699586-93b5-435c-b778-9e438f03fc87}",
+                                        "position": {
+                                            "x": 0,
+                                            "y": 0
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "",
+                                    "id": "{caa95a35-ead0-4cdc-9d6f-c9319ffbb931}",
+                                    "label": "",
+                                    "source": {
+                                        "id": "{e872eef7-0de2-422c-93ba-48920f57f17a}",
+                                        "position": {
+                                            "x": -730,
+                                            "y": -15
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "{01699586-93b5-435c-b778-9e438f03fc87}",
+                            "nodeId": "Mission::Sync task",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": ""
+                            },
+                            "position": {
+                                "x": -590,
+                                "y": -15
+                            },
+                            "properties": {
+                                "color": "#202020",
+                                "component": {
+                                    "data": "Drive",
+                                    "data_id": "{3dc4e244-1ea0-4e7e-92ff-ebcf3b6648f2}",
+                                    "options": [
+                                        {
+                                            "data": "abort",
+                                            "data_id": "",
+                                            "id": "event",
+                                            "option_data": "",
+                                            "option_data_id": "{1b1bceb2-3934-4df2-a505-8b97a9e03f3a}",
+                                            "type": "event_select"
+                                        },
+                                        {
+                                            "data": "",
+                                            "data_id": "",
+                                            "id": "argument",
+                                            "option_data": "",
+                                            "option_data_id": "",
+                                            "type": "string"
+                                        }
+                                    ]
+                                },
+                                "name": "Abort drive"
+                            },
+                            "scale": 1,
+                            "size": {
+                                "height": 50,
+                                "width": 100
+                            },
+                            "transitions": [
+                                {
+                                    "destination": {
+                                        "id": "{d60542f4-e2d8-424f-ac58-378734e5f74d}",
+                                        "position": {
+                                            "x": 0,
+                                            "y": 0
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "",
+                                    "id": "{0673c4c3-b231-499c-a8ac-5beba7bd1314}",
+                                    "label": "",
+                                    "source": {
+                                        "id": "{01699586-93b5-435c-b778-9e438f03fc87}",
+                                        "position": {
+                                            "x": -540,
+                                            "y": -15
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "{d60542f4-e2d8-424f-ac58-378734e5f74d}",
+                            "nodeId": "Mission::Sync task",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": ""
+                            },
+                            "position": {
+                                "x": -430,
+                                "y": -15
+                            },
+                            "properties": {
+                                "color": "#202020",
+                                "component": {
+                                    "data": "Grip",
+                                    "data_id": "{bc12fb7d-2cbc-409d-8009-88d4cdfbe6f8}",
+                                    "options": [
+                                        {
+                                            "data": "cancel",
+                                            "data_id": "",
+                                            "id": "event",
+                                            "option_data": "",
+                                            "option_data_id": "{a9e1c446-f6ab-4f2c-99e5-52e591a75593}",
+                                            "type": "event_select"
+                                        },
+                                        {
+                                            "data": "",
+                                            "data_id": "",
+                                            "id": "argument",
+                                            "option_data": "",
+                                            "option_data_id": "",
+                                            "type": "string"
+                                        }
+                                    ]
+                                },
+                                "name": "Abort grip"
+                            },
+                            "scale": 1,
+                            "size": {
+                                "height": 50,
+                                "width": 100
+                            },
+                            "transitions": [
+                                {
+                                    "destination": {
+                                        "id": "{668a71ea-915f-47c4-80de-33ca17cf7b22}",
+                                        "position": {
+                                            "x": 0,
+                                            "y": 0
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "",
+                                    "id": "{c3d16e75-bf70-4c7d-bd17-eccc3dcbc7c5}",
+                                    "label": "",
+                                    "source": {
+                                        "id": "{d60542f4-e2d8-424f-ac58-378734e5f74d}",
+                                        "position": {
+                                            "x": -380,
+                                            "y": -15
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "{668a71ea-915f-47c4-80de-33ca17cf7b22}",
+                            "nodeId": "Mission::Sync task",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": ""
+                            },
+                            "position": {
+                                "x": -250,
+                                "y": -15
+                            },
+                            "properties": {
+                                "color": "#202020",
+                                "component": {
+                                    "data": "Vision",
+                                    "data_id": "{93b2bd88-d785-45f2-846a-a62bafe09cc5}",
+                                    "options": [
+                                        {
+                                            "data": "cancel",
+                                            "data_id": "",
+                                            "id": "event",
+                                            "option_data": "",
+                                            "option_data_id": "{f84f0ff6-a095-4747-8852-f1248eb2e4bc}",
+                                            "type": "event_select"
+                                        },
+                                        {
+                                            "data": "",
+                                            "data_id": "",
+                                            "id": "argument",
+                                            "option_data": "",
+                                            "option_data_id": "",
+                                            "type": "string"
+                                        }
+                                    ]
+                                },
+                                "name": "Abort vision"
+                            },
+                            "scale": 1,
+                            "size": {
+                                "height": 50,
+                                "width": 100
+                            },
+                            "transitions": [
+                                {
+                                    "destination": {
+                                        "id": "{8da832fe-ff61-4357-b15e-aa94f58c8494}",
+                                        "position": {
+                                            "x": 0,
+                                            "y": 0
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    },
+                                    "events": "",
+                                    "id": "{9987a76b-520b-48a2-8c82-0b43efb2a78c}",
+                                    "label": "",
+                                    "source": {
+                                        "id": "{668a71ea-915f-47c4-80de-33ca17cf7b22}",
+                                        "position": {
+                                            "x": -200,
+                                            "y": -15
+                                        },
+                                        "shift": {
+                                            "x": 0,
+                                            "y": 0
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "{8da832fe-ff61-4357-b15e-aa94f58c8494}",
+                            "nodeId": "Mission::End",
+                            "parentId": "",
+                            "pixmap": {
+                                "data": ""
+                            },
+                            "position": {
+                                "x": -95,
+                                "y": -15
+                            },
+                            "properties": {
+                                "name": "End"
+                            },
+                            "scale": 1,
+                            "size": {
+                                "height": 50,
+                                "width": 50
+                            }
+                        }
+                    ],
+                    "owner": "{d9929bf1-c612-4843-aff8-1daeca5c3386}",
+                    "returnType": "string",
+                    "type": "in"
+                },
+                {
+                    "arguments": [
+                    ],
+                    "id": "{ace9f6fb-ffd0-47fb-9186-b869cbd70b20}",
+                    "modifiable": false,
+                    "name": "abort",
+                    "owner": "",
+                    "returnType": "void",
+                    "type": "in"
+                }
+            ],
+            "id": "{d9929bf1-c612-4843-aff8-1daeca5c3386}",
+            "nodeId": "Mission::Component",
+            "parentId": "",
+            "pixmap": {
+                "data": ""
+            },
+            "position": {
+                "x": -321,
+                "y": 364.75
+            },
+            "properties": {
+                "color": "#88abbe",
+                "name": "PickAndPlace"
+            },
+            "scale": 0.16784155756965424,
+            "size": {
+                "height": 1489.5,
+                "width": 1638
+            }
+        }
+    ]
+}
