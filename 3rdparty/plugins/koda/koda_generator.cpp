@@ -714,6 +714,7 @@ QString KodaGenerator::createArguments(const QJsonArray& options) const
     const auto arg = options.at(i).toObject();
     const auto isVariable = arg[ConfigKeys::IS_VARIABLE].toBool();
 
+    // TODO(felaze): An underscore should only be added if we are refering to a state variable
     args += QStringLiteral("%1%2, ").arg(arg[ConfigKeys::DATA].toString(), isVariable ? "_" : "");
   }
 

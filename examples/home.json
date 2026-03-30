@@ -429,7 +429,7 @@
                     "arguments": [
                         {
                             "id": "zone",
-                            "type": 0
+                            "type": 1
                         }
                     ],
                     "id": "{ec9750e5-12a7-48f0-88f7-2832fbf47234}",
