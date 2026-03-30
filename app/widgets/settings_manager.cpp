@@ -282,7 +282,7 @@ VoidResult SettingsManager::registerSettings(const QString& id, const maki::Plug
         setting.setMetadata(metdata);
       }
 
-      LOG_INFO("Adding setting %s to index %d of %d", qPrintable(setting.getKey()), index, info.settings.size());
+      LOG_TRACE("Adding setting %s to index %d of %d", qPrintable(setting.getKey()), index, info.settings.size());
       info.settings[index] = setting;
       mSettings.endGroup();  // setting.name
     }

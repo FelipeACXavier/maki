@@ -210,7 +210,6 @@ VoidResult PropertiesMenu::onCreateEvent(NodeItem* node)
 
   // tabWidget->setCurrentIndex(1);
 
-  LOG_INFO("Creating event");
   onNodeSelected(node, true);
 
   auto table = findChild<QTableView*>("EventTable");
@@ -257,6 +256,8 @@ VoidResult PropertiesMenu::loadProperties(NodeItem* node)
     else if (property.type == Types::PropertyTypes::COMPONENT_SELECT)
       LOG_WARN_ON_FAILURE(loadPropertyComponentSelect(property, node));
     else if (property.type == Types::PropertyTypes::LIST)
+      continue;
+    else if (property.type == Types::PropertyTypes::VOID)
       continue;
     else
       LOG_WARNING("Property %s (%d) without a type, how is that possible?", qPrintable(property.id), (int)property.type);
@@ -685,7 +686,7 @@ VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QStri
         bool isLiteral = false;
         (void)value.toDouble(&isLiteral);
         UPDATE_PROPERTY_ARG(node, property.getid(), index, value, Types::PropertyTypes::REAL, !isLiteral)
-        LOG_DEBUG("Set property %s argument (%d) to %s", qPrintable(property.getid()), index, qPrintable(value));
+        LOG_TRACE("Set property %s argument (%d) to %s", qPrintable(property.getid()), index, qPrintable(value));
       });
     }
     else if (argType == Types::PropertyTypes::STRING)
@@ -699,7 +700,7 @@ VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QStri
       connect(field, &maki::StringWidget::valueChanged, this, [property, node, index](const QString& value) {
         bool isLiteral = value.size() > 2 && value.startsWith('"') && value.endsWith('"');
         UPDATE_PROPERTY_ARG(node, property.getid(), index, value, Types::PropertyTypes::STRING, !isLiteral)
-        LOG_DEBUG("Set property %s argument (%d) to %s", qPrintable(property.getid()), index, qPrintable(value));
+        LOG_TRACE("Set property %s argument (%d) to %s", qPrintable(property.getid()), index, qPrintable(value));
       });
     }
     else if (arg->gettype() == Types::PropertyTypes::BOOLEAN)
@@ -711,7 +712,7 @@ VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QStri
       connect(field, &maki::StringWidget::valueChanged, this, [property, node, index](const QString& value) {
         bool isLiteral = value == "true" || value == "false" || value == "True" || value == "False";
         UPDATE_PROPERTY_ARG(node, property.getid(), index, value, Types::PropertyTypes::BOOLEAN, !isLiteral)
-        LOG_DEBUG("Set property %s argument (%d) to %s", qPrintable(property.getid()), index, qPrintable(value));
+        LOG_TRACE("Set property %s argument (%d) to %s", qPrintable(property.getid()), index, qPrintable(value));
       });
     }
     else
@@ -828,7 +829,7 @@ VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)
   connect(eventWidget, &QComboBox::currentTextChanged, this, [transition, eventWidget](const QString& text) {
     transition->setEvent(text);
     transition->setName(eventWidget->currentData().toString());
-    LOG_INFO("Setting transition to: %s and %s", qPrintable(text), qPrintable(eventWidget->currentData().toString()));
+    LOG_TRACE("Setting transition to: %s and %s", qPrintable(text), qPrintable(eventWidget->currentData().toString()));
   });
 
   QPushButton* button = new QPushButton(this);
@@ -907,7 +908,6 @@ VoidResult PropertiesMenu::loadControlAddField(const ControlsConfig& control, No
     if (json["type"] == "list")
       json["default"] = JSON::toArray(json["default"], ',');
 
-    // LOG_INFO("Setting: %s %s %s", qPrintable(json["id"].toString()), qPrintable(json["default"].toString()), qPrintable(json["type"].toString()));
     LOG_ERROR_ON_FAILURE(node->setField(json["id"].toString(), json));
   });
 
@@ -1177,7 +1177,7 @@ void PropertiesMenu::addEventToTable(QStandardItemModel* model, int row, std::sh
   indexItem->setData(event->getid(), Qt::UserRole);
   indexItem->setData(event->getmodifiable(), Qt::UserRole + 1);
 
-  LOG_DEBUG("Adding event %s of type %s and return %s to event table",
+  LOG_TRACE("Adding event %s of type %s and return %s to event table",
             qPrintable(event->getname()),
             qPrintable(Types::CallTypeToString(event->gettype())),
             qPrintable(Types::PropertyTypesToString(event->getreturnType())));
