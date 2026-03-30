@@ -65,7 +65,7 @@ VoidResult SystemMenu::onNodeAdded(const QString& flowId, NodeItem* node)
 
 VoidResult SystemMenu::onNodeRemoved(const QString& flowId, const QString& nodeId, const QString& parentId)
 {
-  LOG_TRACE("Node removed: %s (%s)", qPrintable(nodeId), qPrintable(flowId));
+  LOG_DEBUG("Node removed: %s (%s)", qPrintable(nodeId), qPrintable(flowId));
 
   if (flowId == Config::MAIN_CANVAS)
   {

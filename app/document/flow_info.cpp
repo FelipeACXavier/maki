@@ -173,7 +173,6 @@ QJsonObject FlowSaveInfo::toJson() const
 
 FlowSaveInfo FlowSaveInfo::fromJson(const QJsonObject& data)
 {
-  qDebug() << data;
   FlowSaveInfo info;
   info.setId(data[ConfigKeys::ID].toString());
   info.setName(data[ConfigKeys::NAME].toString());
