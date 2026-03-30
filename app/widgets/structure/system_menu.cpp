@@ -175,18 +175,32 @@ VoidResult SystemMenu::onFlowAdded(Flow* flow, NodeItem* node)
   return VoidResult();
 }
 
+void collectTreeItems(QTreeWidgetItem* item, QSet<QTreeWidgetItem*>& out)
+{
+  if (!item)
+    return;
+
+  out.insert(item);
+  for (int i = 0; i < item->childCount(); ++i)
+    collectTreeItems(item->child(i), out);
+}
+
 VoidResult SystemMenu::onFlowRemoved(const QString& flowId, const QString& nodeId)
 {
   auto nodeItem = getItemById(nodeId);
   if (nodeItem == nullptr)
-    return VoidResult::Failed("No node to delete");
+    return VoidResult();
 
   auto flowItem = getItemById(flowId);
   if (flowItem == nullptr)
-    return VoidResult::Failed("No flow to delete");
+    return VoidResult();
+
+  // If a flow is removed, all the icons from the child nodes also need to be removed
+  QSet<QTreeWidgetItem*> itemsToRemove = {flowItem};
+  collectTreeItems(flowItem, itemsToRemove);
 
   nodeItem->removeChild(flowItem);
-  mIcons.removeIf([flowItem](TreeWidgetWithIcon treeItem) { return treeItem.widget == flowItem; });
+  mIcons.removeIf([&itemsToRemove](const TreeWidgetWithIcon& treeItem) { return itemsToRemove.contains(treeItem.widget); });
   delete flowItem;
 
   return VoidResult();
