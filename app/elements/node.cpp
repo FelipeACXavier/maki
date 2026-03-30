@@ -301,6 +301,7 @@ void NodeItem::applySize(const QSizeF& size)
   if (size == mSize)
     return;
 
+  prepareGeometryChange();
   mSize = size;
   mStorage->setSize(mSize);
 
@@ -310,7 +311,6 @@ void NodeItem::applySize(const QSizeF& size)
   qreal newFontSize = qMax(Fonts::BaseSize, mSize.width() / Fonts::BaseFactor);
 
   setLabelSize(newFontSize, mSize);
-  prepareGeometryChange();
   update();
 }
 
@@ -396,7 +396,7 @@ void NodeItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
     applySize(clampedSize);
 
     // After the parent resizes, keep children inside
-    for (auto* child : mChildrenNodes)
+    for (auto* child : children())
     {
       auto* nodeChild = static_cast<NodeItem*>(child);
       nodeChild->fitInsideParent(10);
@@ -488,10 +488,11 @@ QVariant NodeItem::itemChange(GraphicsItemChange change, const QVariant& value)
 
 void NodeItem::updatePosition(const QPointF& newPosition)
 {
+  prepareGeometryChange();
   setPos(newPosition);
 
   QPointF delta = newPosition - mLastPosition;
-  for (auto* child : mChildrenNodes)
+  for (auto* child : children())
   {
     auto childNode = static_cast<NodeItem*>(child);
     childNode->updatePosition(childNode->pos() + delta);
@@ -574,6 +575,7 @@ void NodeItem::addTransition(TransitionItem* transition)
   if (!found)
     mTransitions.push_back(transition);
 
+  prepareGeometryChange();
   updateExtrasPosition();
 }
 
@@ -625,6 +627,11 @@ TransitionConfig NodeItem::nextTransition() const
     return TransitionConfig();
 
   return config()->transitions.at(index);
+}
+
+QVector<TransitionConfig> NodeItem::configTransitions() const
+{
+  return config()->transitions;
 }
 
 QVector<Flow*> NodeItem::flows() const

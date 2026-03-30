@@ -82,6 +82,7 @@ public:
 
   bool canAddTransition() const;
   TransitionConfig nextTransition() const;
+  QVector<TransitionConfig> configTransitions() const;
 
   void applySize(const QSizeF& size);
   void updatePosition(const QPointF& position);
