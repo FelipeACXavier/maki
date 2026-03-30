@@ -1,0 +1,11 @@
+import types.dzn;
+
+interface isignal {
+  // in void raise();
+  out void raise();
+
+  behavior {
+    // on raise: {}
+    on inevitable: { raise; }
+  }
+}

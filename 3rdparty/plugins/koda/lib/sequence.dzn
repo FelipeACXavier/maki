@@ -1,0 +1,112 @@
+import types.dzn;
+import iaction.dzn;
+
+component csequence {
+  provides iaction api;
+
+  requires iaction action1;
+  requires iaction action2;
+
+  behaviour {
+    enum State { Idle, Action1, Action2, Error };
+    State state = State.Idle;
+
+    [state.Idle] {
+      on api.trigger(): {
+        Result ret = action1.trigger();
+        if (ret.Success) {
+          state = State.Action1;
+        } else if (ret.Done) {
+          ret = action2.trigger();
+          if (ret.Success) {
+            state = State.Action2;
+          } else if (ret.Failure) {
+            state = State.Error;
+          }
+        } else {
+          state = State.Error;
+        }
+
+        reply(ret);
+      }
+
+      // on api.abort(): { reply(Result.Success); }
+    }
+
+    [state.Action1] {
+      on action1.success(): {
+        Result res2 = action2.trigger();
+        if (res2.Success) {
+          state = State.Action2;
+        } else if (res2.Done) {
+          api.success();
+          state = State.Idle;
+        } else {
+          api.failure();
+          state = State.Error;
+        }
+      }
+
+      on action1.failure(): {
+        api.failure();
+        state = State.Error;
+      }
+
+      on api.abort(): {
+        Result res = action1.abort();
+        if (res.Success)
+          state = State.Idle;
+        else if (res.Failure)
+          state = State.Error;
+
+        reply(res);
+      }
+    }
+
+    [state.Action2] {
+      on action2.success(): {
+        api.success();
+        state = State.Idle;
+      }
+
+      on action2.failure(): {
+        api.failure();
+        state = State.Error;
+      }
+
+      on api.abort(): {
+        Result res = action2.abort();
+        if (res.Success)
+          state = State.Idle;
+        else if (res.Failure)
+          state = State.Error;
+
+        reply(res);
+      }
+    }
+
+    [state.Error] {
+      on api.reset(): {
+        if (action1.state.Error) {
+          Result ret = action1.reset();
+          if (ret.Success)
+            state = State.Idle;
+          reply(ret);
+        } else if (action2.state.Error) {
+          Result ret = action2.reset();
+          if (ret.Success)
+            state = State.Idle;
+          reply(ret);
+        }
+
+      }
+
+      on api.abort(): {
+        if (action1.state.Error)
+          reply(action1.abort());
+        else if (action2.state.Error)
+          reply(action2.abort());
+      }
+    }
+  }
+}

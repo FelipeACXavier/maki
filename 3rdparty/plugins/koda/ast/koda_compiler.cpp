@@ -7,6 +7,7 @@
 #include "KodaParser.h"
 #include "antlr4-runtime.h"
 #include "cst2ast.h"
+#include "error_listener.h"
 
 #define IF_ALT(ALT, OBJ, CALL, ARGS)    \
   if (std::holds_alternative<ALT>(OBJ)) \
@@ -34,29 +35,53 @@
 namespace koda
 {
 
-Compiler::Compiler(const CompilerOptions& options)
-    : mOptions(options)
+std::string toFlowVariable(const std::string& name)
+{
+  if (name.find("alarm") != std::string::npos)
+    return name;
+
+  return name == "main" ? "main" : "f_" + name;
+};
+
+Compiler::Compiler()
 {
 }
 
-VoidResult Compiler::parse(const std::string& filename)
+VoidResult Compiler::parse(const CompilerOptions& options)
 {
+  mOptions = options;
+
   std::ifstream stream;
-  stream.open(filename);
+  stream.open(mOptions.inputFile);
   if (!stream.is_open())
-    return VoidResult::Failed("Failed to open: " + filename);
+    return VoidResult::Failed("Failed to open: " + mOptions.inputFile);
 
   antlr4::ANTLRInputStream input(stream);
   KodaLexer lexer(&input);
   antlr4::CommonTokenStream tokens(&lexer);
   KodaParser parser(&tokens);
 
+  CollectingErrorListener errorListener;
+  parser.removeErrorListeners();
+  parser.addErrorListener(&errorListener);
+
   KodaCST2AST visitor;
   KodaParser::SystemContext* tree = parser.system();
+  if (errorListener.hasErrors() || tree == nullptr)
+  {
+    for (const auto& err : errorListener.errors)
+      LOG_WARNING(err);
+
+    return VoidResult::Failed("Failed to parse input file");
+  }
+
   try
   {
     mAST = std::any_cast<koda::System>(visitor.visitSystem(tree));
   } catch (const std::bad_any_cast& e)
+  {
+    return VoidResult::Failed(std::string("Failed to parse. Issue: ") + e.what());
+  } catch (const std::invalid_argument& e)
   {
     return VoidResult::Failed(std::string("Failed to parse. Issue: ") + e.what());
   }
@@ -105,6 +130,95 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, Environment& e
 
   for (auto& statement : task->statements)
     RETURN_ON_FAILURE(generateStatement(statement, env));
+
+  for (const auto& f : env.flows)
+  {
+    const auto flow = f.second;
+    const auto flowName = flow.name;
+    for (const auto& c : flow.asyncCalls)
+    {
+      auto cap = env.getCapability(c.first);
+      std::string name = "";
+      std::string trigger = "";
+      if (!cap)
+      {
+        for (const auto& f : env.flows)
+          LOG_RAW("{} is a flow - {}", f.second.name, c.first);
+
+        // Sometimes strategies are parsed as async calls...
+        if (!env.flows.contains(c.first))
+          return Result<koda::ReturnValue>::Failed("Could not find async capability: " + c.first);
+
+        auto tmp = env.flows.at(c.first);
+        name = toFlowVariable(tmp.name);
+        trigger = "api";
+      }
+      else
+      {
+        name = cap->name;
+        trigger = cap->trigger->name;
+      }
+
+      PortRef in = {toFlowVariable(flowName), c.first};
+      PortRef out = {toFilename(name), trigger};
+
+      LOG_RAW("asyncCalls - In: {} Out: {}", in, out);
+
+      env.system.connections.push_back(Connection{in, out, Connection::Type::Action});
+    }
+
+    for (const auto& c : flow.syncCalls)
+    {
+      auto [instance, port] = portFromString(c.first);
+      auto cap = env.getCapability(instance);
+      std::string name = "";
+      if (!cap)
+      {
+        for (const auto& f : env.flows)
+          LOG_RAW("{} is a flow - {}", f.second.name, instance);
+
+        // Sometimes strategies are parsed as async calls...
+        if (!env.flows.contains(instance))
+          return Result<koda::ReturnValue>::Failed("Could not find sync capability: " + c.first);
+
+        auto tmp = env.flows.at(instance);
+        name = tmp.name;
+      }
+      else
+      {
+        name = cap->name;
+      }
+
+      PortRef in = {toFlowVariable(flowName), instance};
+      PortRef out = {toFilename(cap->name), port};
+
+      LOG_RAW("syncCalls - In: {} Out: {}", in, out);
+      env.system.connections.push_back(Connection{in, out, Connection::Type::Action});
+    }
+
+    for (const auto& c : flow.signalCalls)
+    {
+      auto [instance, port] = portFromString(c.first);
+      auto cap = env.getCapability(instance);
+      if (!cap)
+        return Result<koda::ReturnValue>::Failed("Could not find signal capability: " + c.first);
+
+      PortRef in = {toFlowVariable(flowName), port};
+      PortRef out = {toFilename(cap->name), port};
+
+      LOG_RAW("signalCalls - In: {} Out: {}", in, out);
+      env.system.connections.push_back(Connection{in, out, Connection::Type::Signal});
+    }
+
+    for (const auto& c : flow.strategies)
+    {
+      PortRef in = {toFlowVariable(flowName), c.first};
+      PortRef out = {toFlowVariable(c.first), "api"};
+
+      LOG_RAW("strategy - In: {} Out: {}", in, out);
+      env.system.connections.push_back(Connection{in, out, Connection::Type::Action});
+    }
+  }
 
   env.includes = {};
   connectWithArbiter(env);
@@ -338,13 +452,6 @@ Result<koda::ReturnValue> Compiler::generateFlow(PFlow flow, Environment& env)
 {
   LOG_RAW("Generating flow: {}", flow->name);
 
-  auto toFlowVariable = [](const std::string& name) {
-    if (name.find("alarm") != std::string::npos)
-      return name;
-
-    return name == "main" ? "main" : "f_" + name;
-  };
-
   // There is one file per flow, so here we create a new file
   // The name of the file matches the flow + c.
   // For example, loop = cloop
@@ -357,105 +464,22 @@ Result<koda::ReturnValue> Compiler::generateFlow(PFlow flow, Environment& env)
   env.clear();
   auto ret = generateStrategy(flow->strategy, env);
 
-  env.flows[flow->name] = Flow{flow->name};
+  env.flows[flow->name] = Flow{flow->name, env.syncCalls, env.asyncCalls, env.signalCalls, env.strategies};
   env.system.instances.insert({flowName(flow->name), toFlowVariable(toFilename(flow->name))});
-  env.print();
+  if (mOptions.verbose > 0)
+    env.print();
 
   // ------------------------------------------------------------
   // Check the need for arbitrers and create them
   connectWithArbiter(env.strategies, env);
   connectWithArbiter(env.asyncCalls, env);
   connectWithArbiter(env.syncCalls, env);
-  connectWithArbiter(env.signals, env);
+  connectWithArbiter(env.signalCalls, env);
 
   // ------------------------------------------------------------
   // Print everything to a file
   env.core.push_front(std::format("api <=> {}", ret.Value().name));
   env.includes.insert("iaction.dzn");
-
-  for (const auto& c : env.asyncCalls)
-  {
-    auto cap = env.getCapability(c.first);
-    std::string name = "";
-    std::string trigger = "";
-    if (!cap)
-    {
-      for (const auto& f : env.flows)
-        LOG_RAW("{} is a flow - {}", f.second.name, c.first);
-
-      // Sometimes strategies are parsed as async calls...
-      if (!env.flows.contains(c.first))
-        return Result<koda::ReturnValue>::Failed("Could not find capability: " + c.first);
-
-      auto tmp = env.flows.at(c.first);
-      name = toFlowVariable(tmp.name);
-      trigger = "api";
-    }
-    else
-    {
-      name = cap->name;
-      trigger = cap->trigger->name;
-    }
-
-    PortRef in = {toFlowVariable(flow->name), c.first};
-    PortRef out = {toFilename(name), trigger};
-
-    LOG_RAW("asyncCalls - In: {} Out: {}", in, out);
-
-    env.system.connections.push_back(Connection{in, out, Connection::Type::Action});
-  }
-
-  for (const auto& c : env.syncCalls)
-  {
-    auto [instance, port] = portFromString(c.first);
-    auto cap = env.getCapability(instance);
-    std::string name = "";
-    if (!cap)
-    {
-      for (const auto& f : env.flows)
-        LOG_RAW("{} is a flow - {}", f.second.name, instance);
-
-      // Sometimes strategies are parsed as async calls...
-      if (!env.flows.contains(instance))
-        return Result<koda::ReturnValue>::Failed("Could not find capability: " + c.first);
-
-      auto tmp = env.flows.at(instance);
-      name = tmp.name;
-    }
-    else
-    {
-      name = cap->name;
-    }
-
-    PortRef in = {toFlowVariable(flow->name), instance};
-    PortRef out = {toFilename(cap->name), port};
-
-    LOG_RAW("syncCalls - In: {} Out: {}", in, out);
-    env.system.connections.push_back(Connection{in, out, Connection::Type::Action});
-  }
-
-  for (const auto& c : env.signals)
-  {
-    auto [instance, port] = portFromString(c.first);
-    auto cap = env.getCapability(instance);
-    if (!cap)
-      return Result<koda::ReturnValue>::Failed("Could not find capability: " + c.first);
-
-    PortRef in = {toFlowVariable(flow->name), port};
-    PortRef out = {toFilename(cap->name), port};
-
-    LOG_RAW("signals - In: {} Out: {}", in, out);
-    env.system.connections.push_back(Connection{in, out, Connection::Type::Signal});
-  }
-
-  for (const auto& c : env.strategies)
-  {
-    PortRef in = {toFlowVariable(flow->name), c.first};
-    PortRef out = {toFlowVariable(c.first), "api"};
-
-    LOG_RAW("strategy - In: {} Out: {}", in, out);
-    env.system.connections.push_back(Connection{in, out, Connection::Type::Action});
-  }
 
   for (const auto& i : env.includes)
     mCurrentFile << "import " + i + ";\n";
@@ -823,7 +847,7 @@ Result<koda::ReturnValue> Compiler::generateEventCall(PEventCall call, Environme
     auto event = std::format("{}.{}", call->receiver, call->name);
     if (isSignal)
     {
-      INCREMENT_MAP(env.signals, event)
+      INCREMENT_MAP(env.signalCalls, event)
     }
     else
     {

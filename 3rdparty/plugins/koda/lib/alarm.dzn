@@ -1,0 +1,6 @@
+import ialarm.dzn;
+
+component calarm
+{
+  provides ialarm api;
+}

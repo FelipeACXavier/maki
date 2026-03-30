@@ -33,9 +33,9 @@ struct CompilerOptions
 class Compiler
 {
 public:
-  Compiler(const CompilerOptions& options);
+  Compiler();
 
-  VoidResult parse(const std::string& filename);
+  VoidResult parse(const CompilerOptions& options);
   VoidResult generate();
 
   void printAST() const;
@@ -49,7 +49,7 @@ public:
 private:
   System mAST;
   std::ofstream mCurrentFile;
-  const CompilerOptions mOptions;
+  CompilerOptions mOptions;
 
   struct Composition
   {
@@ -123,6 +123,11 @@ private:
   struct Flow
   {
     std::string name;
+
+    std::map<std::string, uint32_t> syncCalls;
+    std::map<std::string, uint32_t> asyncCalls;
+    std::map<std::string, uint32_t> signalCalls;
+    std::map<std::string, uint32_t> strategies;
   };
 
   struct Instance
@@ -176,7 +181,7 @@ private:
     std::string previousCall = "";
     std::map<std::string, uint32_t> syncCalls;
     std::map<std::string, uint32_t> asyncCalls;
-    std::map<std::string, uint32_t> signals;
+    std::map<std::string, uint32_t> signalCalls;
     std::map<std::string, uint32_t> strategies;
 
     std::set<std::string> includes = {};
@@ -218,7 +223,7 @@ private:
       previousCall = "";
       syncCalls = {};
       asyncCalls = {};
-      signals = {};
+      signalCalls = {};
       strategies = {};
 
       includes = {};
@@ -255,15 +260,26 @@ private:
       for (auto it = syncCalls.cbegin(); it != syncCalls.cend(); ++it)
         LOG_RAW("  {}: {}", it->first, it->second);
 
-      if (!signals.empty())
+      if (!signalCalls.empty())
         LOG_RAW("Signals:");
-      for (auto it = signals.cbegin(); it != signals.cend(); ++it)
+      for (auto it = signalCalls.cbegin(); it != signalCalls.cend(); ++it)
         LOG_RAW("  {}: {}", it->first, it->second);
 
       if (!strategies.empty())
         LOG_RAW("Strategies:");
       for (auto it = strategies.cbegin(); it != strategies.cend(); ++it)
         LOG_RAW("  {}: {}", it->first, it->second);
+
+      if (!flows.empty())
+        LOG_RAW("Flows:");
+      for (auto it = flows.cbegin(); it != flows.cend(); ++it)
+        LOG_RAW("  {}: {}", it->first, it->second.name);
+
+      if (!capabilityMap.empty())
+        LOG_RAW("CapMap:");
+      for (auto it = capabilityMap.cbegin(); it != capabilityMap.cend(); ++it)
+        LOG_RAW("  {}: {}", it->first, it->second);
+
       LOG_RAW("---------------------------------------");
     }
   };

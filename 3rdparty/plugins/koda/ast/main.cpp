@@ -128,8 +128,8 @@ int main(int argc, const char* argv[])
 
   koda::gPrintSpan = (options.verbose > 1);
 
-  koda::Compiler compiler(options);
-  auto parsed = compiler.parse(options.inputFile);
+  koda::Compiler compiler;
+  auto parsed = compiler.parse(options);
   LOG_ERROR_ON_FAILURE(parsed);
   if (!parsed.IsSuccess())
     return -1;

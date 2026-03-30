@@ -1,0 +1,181 @@
+import types.dzn;
+import iaction.dzn;
+import isignal.dzn;
+
+component csignal_continue {
+  provides iaction api;
+  requires isignal signal;
+
+  requires iaction action;
+  requires iaction handler;
+
+  behaviour {
+    enum State { Idle, Running, Handling, Error };
+    subint Completed {0..2};
+
+    State state = State.Idle;
+    Completed completed = 0;
+    bool erroring = false;
+
+    [state.Idle] {
+      on api.trigger(): {
+        Result res1 = action.trigger();
+        if (res1.Success) {
+          completed = 0;
+          state = State.Running;
+          reply(res1);
+        } else if (res1.Done) {
+          reply(Result.Done);
+        } else {
+          state = State.Error;
+          reply(Result.Failure);
+        }
+      }
+
+      on signal.raise(): {}
+    }
+
+    [state.Running] {
+      on signal.raise(): {
+        Result res1 = handler.trigger();
+        if (res1.Success) {
+          completed = 0;
+          state = State.Handling;
+        } else if (res1.Failure) {
+          // In case of failure, we abort everything for now
+          res1 = action.abort();
+
+          erroring = true;
+          defer () {
+            erroring = false;
+            api.failure();
+          }
+
+          state = State.Error;
+        }
+      }
+
+      on action.success(): {
+        api.success();
+        state = State.Idle;
+      }
+
+      on action.failure(): {
+        api.failure();
+        state = State.Error;
+      }
+
+      on api.abort(): {
+        Result ret1 = action.abort();
+        if (ret1.Success) {
+          state = State.Idle;
+          reply(Result.Success);
+        } else if (ret1.Failure) {
+          state = State.Error;
+          reply(Result.Failure);
+        } else {
+          reply(Result.Running);
+        }
+      }
+    }
+
+    [state.Handling] {
+      // Already handling, do nothing
+      on signal.raise(): {}
+
+      on handler.success(): {
+        if (action.state.Running) {
+          state = State.Running;
+        } else {
+          api.success();
+          state = State.Idle;
+        }
+      }
+
+      on handler.failure(): {
+        if (action.state.Running)
+          Result res = action.abort();
+
+        api.failure();
+        state = State.Error;
+      }
+
+      on action.success(): {
+        if (!handler.state.Running) {
+          api.success();
+          state = State.Idle;
+        }
+      }
+
+      on action.failure(): {
+        if (handler.state.Running)
+          Result res = handler.abort();
+
+        api.failure();
+        state = State.Error;
+      }
+
+      on api.abort(): {
+        Result ret1 = Result.Success;
+        Result ret2 = Result.Success;
+
+        if (action.state.Running) {
+          ret1 = action.abort();
+        }
+
+        if (handler.state.Running) {
+          ret2 = handler.abort();
+        }
+
+        if (ret1.Success && ret2.Success) {
+          state = State.Idle;
+          reply(Result.Success);
+        } else if (ret1.Failure || ret2.Failure) {
+          state = State.Error;
+          reply(Result.Failure);
+        } else {
+          reply(Result.Running);
+        }
+      }
+    }
+
+    [state.Error] {
+      on api.reset(): {
+        Result ret1 = Result.Success;
+        Result ret2 = Result.Success;
+
+        if (action.state.Error) {
+          ret1 = action.reset();
+        } else if (action.state.Running) {
+          ret1 = action.abort();
+        }
+
+        if (handler.state.Error) {
+          ret2 = handler.reset();
+        } else if (handler.state.Running) {
+          ret2 = handler.abort();
+        }
+
+        if (ret1.Success && ret2.Success) {
+          state = State.Idle;
+          reply(Result.Success);
+        } else {
+          reply(Result.Failure);
+        }
+      }
+
+      on signal.raise(): {}
+      on api.abort(): {
+        if (erroring)
+          reply(Result.Running);
+        else
+          reply(Result.Error);
+      }
+
+      on action.success(): {}
+      on action.failure(): {}
+      on handler.success(): {}
+      on handler.failure(): {}
+    }
+  }
+}

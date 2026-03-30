@@ -1,0 +1,13 @@
+enum Result {
+  Unknown,
+  Success,
+  Failure,
+  Running,
+  Done,
+  Pending,
+  Error
+};
+
+extern float $float$;
+extern int $int$;
+extern boolean $bool$;

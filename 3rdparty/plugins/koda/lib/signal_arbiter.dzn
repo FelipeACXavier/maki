@@ -1,0 +1,15 @@
+import isignal.dzn;
+
+component csignal_arbiter {
+  provides isignal client0;
+  provides isignal client1;
+
+  requires isignal resource;
+
+  behavior {
+    on resource.raise(): {
+      client0.raise();
+      client1.raise();
+    }
+  }
+}

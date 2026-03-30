@@ -1,0 +1,147 @@
+import types.dzn;
+import iaction.dzn;
+
+component cparallel {
+  provides iaction api;
+
+  requires iaction action1;
+  requires iaction action2;
+
+  behaviour {
+    enum State { Idle, Running, Error };
+    subint Completed {0..2};
+
+    State state = State.Idle;
+    Completed completed = 0;
+
+    [state.Idle] {
+      on api.trigger(): {
+        Result res1 = action1.trigger();
+        if (res1.Success) {
+          res1 = action2.trigger();
+          if (res1.Success) {
+            completed = 0;
+            state = State.Running;
+            reply(res1);
+          } else if (res1.Done) {
+            completed = 1;
+            state = State.Running;
+            reply(Result.Success);
+          } else {
+            Result abrt = action1.abort();
+            state = State.Error;
+            reply(Result.Failure);
+          }
+        } else if (res1.Done) {
+          res1 = action2.trigger();
+          if (res1.Success) {
+            state = State.Running;
+            completed = 1;
+            reply(Result.Success);
+          } else if (res1.Done) {
+            completed = 0;
+            reply(Result.Done);
+          } else {
+            state = State.Error;
+            reply(Result.Failure);
+          }
+        } else {
+          state = State.Error;
+          reply(res1);
+        }
+      }
+
+      // on api.abort(): { reply(Result.Success); }
+    }
+
+    [state.Running] {
+      on action1.success(): {
+        completed = completed + 1;
+        if (completed == 2) {
+          api.success();
+          state = State.Idle;
+        }
+      }
+
+      on action1.failure(): {
+        if (action2.state.Running) {
+          Result abrt = action2.abort();
+        }
+        api.failure();
+        state = State.Error;
+      }
+
+      on action2.success(): {
+        completed = completed + 1;
+        if (completed == 2) {
+          api.success();
+          state = State.Idle;
+        }
+      }
+
+      on action2.failure(): {
+        if (action1.state.Running) {
+          Result abrt = action1.abort();
+        }
+        api.failure();
+        state = State.Error;
+      }
+
+      on api.abort(): {
+        Result ret1 = Result.Success;
+        Result ret2 = Result.Success;
+
+        if (action1.state.Running) {
+          ret1 = action1.abort();
+        }
+
+        if (action2.state.Running) {
+          ret2 = action2.abort();
+        }
+
+        if (ret1.Success && ret2.Success) {
+          state = State.Idle;
+          reply(Result.Success);
+        } else if (ret1.Failure || ret2.Failure) {
+          state = State.Error;
+          reply(Result.Failure);
+        } else {
+          reply(Result.Running);
+        }
+      }
+    }
+
+    [state.Error] {
+      on api.reset(): {
+        Result ret1 = Result.Success;
+        Result ret2 = Result.Success;
+
+        if (action1.state.Error) {
+          ret1 = action1.reset();
+        } else if (action1.state.Running) {
+          ret1 = action1.abort();
+        }
+
+        if (action2.state.Error) {
+          ret2 = action2.reset();
+        } else if (action2.state.Running) {
+          ret2 = action2.abort();
+        }
+
+        if (ret1.Success && ret2.Success) {
+          state = State.Idle;
+          reply(Result.Success);
+        } else {
+          reply(Result.Failure);
+        }
+      }
+
+      on api.abort(): { reply(Result.Error); }
+
+      on action1.success(): {}
+      on action1.failure(): {}
+      on action2.success(): {}
+      on action2.failure(): {}
+    }
+  }
+}

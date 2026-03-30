@@ -16,9 +16,11 @@ koda::System KodaCST2AST::build(KodaParser::SystemContext* ctx)
 
 std::any KodaCST2AST::visitSystem(KodaParser::SystemContext* ctx)
 {
+  if (!ctx)
+    throw std::invalid_argument("No KodaParser::SystemContext provided");
+
   // LOG_DEBUG("Visiting system");
   koda::System sys;
-
   for (auto* c : ctx->topLevelComponent())
     sys.components.push_back(std::any_cast<koda::PComponent>(visit(c)));
 

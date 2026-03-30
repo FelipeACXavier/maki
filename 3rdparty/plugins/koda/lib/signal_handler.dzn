@@ -1,0 +1,154 @@
+import types.dzn;
+import iaction.dzn;
+import isignal.dzn;
+
+component csignal_handler {
+  provides iaction api;
+  requires isignal signal;
+
+  requires iaction action;
+  requires iaction handler;
+
+  behaviour {
+    enum State { State0, State1, State2, Error };
+    State state = State.State0;
+    bool erroring = false;
+    bool succeeding = false;
+
+    [state.State0] {
+      on api.trigger(): {
+        Result res1 = action.trigger();
+        if (res1.Success)
+          state = State.State1;
+        else if (res1.Failure)
+          state = State.Error;
+
+        reply(res1);
+      }
+
+      on signal.raise(): {}
+
+      on api.abort(): {
+        succeeding = false;
+        reply(Result.Success);
+      }
+    }
+
+    [state.State1] {
+      on action.failure(): {
+        api.failure();
+        state = State.Error;
+      }
+
+      on action.success(): {
+        api.success();
+        state = State.State0;
+      }
+
+      on signal.raise(): {
+        Result aborted = action.abort();
+        if (aborted.Success) {
+          Result handled = handler.trigger();
+          if (handled.Success) {
+            state = State.State2;
+          } else if (handled.Done) {
+            succeeding = true;
+            defer (succeeding) {
+              succeeding = false;
+              api.success();
+            }
+            state = State.State0;
+          } else {
+            // Sync signals in a port must only be called in callbacks of
+            // the same port, so this won't work
+            // The arguments are things to watch for and in case one of them
+            // changes, flush the defer queue. Without arguments, we are actually
+            // saying "watch for all variables in this component"
+            erroring = true;
+            defer () {
+              erroring = false;
+              api.failure();
+            }
+            state = State.Error;
+          }
+        } else if (aborted.Failure) {
+          erroring = true;
+          defer () {
+            erroring = false;
+            api.failure();
+          }
+          state = State.Error;
+        }
+      }
+
+      on api.abort(): {
+        Result res = action.abort();
+        if (res.Success)
+          state = State.State0;
+        else if (res.Failure)
+          state = State.Error;
+
+        reply(res);
+      }
+    }
+
+    [state.State2] {
+      on handler.success(): {
+        api.success();
+        state = State.State0;
+      }
+
+      on handler.failure(): {
+        api.failure();
+        state = State.Error;
+      }
+
+      on api.abort(): {
+        Result res = handler.abort();
+        if (res.Success)
+          state = State.State0;
+        else if (res.Failure)
+          state = State.Error;
+
+        reply(res);
+      }
+
+      on signal.raise(): {}
+    }
+
+    [state.Error] {
+      on api.reset(): {
+        Result ret1 = Result.Success;
+        Result ret2 = Result.Success;
+
+        if (action.state.Error) {
+          ret1 = action.reset();
+        }
+
+        if (handler.state.Error) {
+          ret2 = handler.reset();
+        }
+
+        if (ret1.Success && ret2.Success) {
+          state = State.State0;
+          reply(Result.Success);
+        } else {
+          reply(Result.Failure);
+        }
+      }
+
+      on signal.raise(): {}
+      on api.abort(): {
+        if (erroring)
+          reply(Result.Running);
+        else
+          reply(Result.Error);
+      }
+
+      on action.success(): {}
+      on action.failure(): {}
+      on handler.success(): {}
+      on handler.failure(): {}
+    }
+  }
+}

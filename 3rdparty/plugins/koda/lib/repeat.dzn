@@ -1,0 +1,67 @@
+import types.dzn;
+import iaction.dzn;
+
+component crepeat {
+  provides iaction api;
+
+  requires iaction action1;
+
+  behaviour {
+    enum State { Idle, Running, Error };
+    State state = State.Idle;
+
+    [state.Idle] {
+      on api.trigger(): {
+        Result ret = action1.trigger();
+        if (ret.Success)
+          state = State.Running;
+        else if (ret.Failure)
+          state = State.Error;
+
+        reply(ret);
+      }
+
+      // on api.abort(): { reply(Result.Success); }
+    }
+
+    [state.Running] {
+      on action1.success(): {
+        Result res1 = action1.trigger();
+        if (res1.Failure) {
+          api.failure();
+          state = State.Error;
+        } else if (res1.Done) { // This should never happen
+          api.success();
+          state = State.Idle;
+        }
+      }
+
+      on action1.failure(): {
+        api.failure();
+        state = State.Error;
+      }
+
+      on api.abort(): {
+        Result res = action1.abort();
+        if (res.Success)
+          state = State.Idle;
+        else if (res.Failure)
+          state = State.Error;
+
+        reply(res);
+      }
+    }
+
+    [state.Error] {
+      on api.reset(): {
+        Result reset = action1.reset();
+        if (reset.Success)
+          state = State.Idle;
+
+        reply(reset);
+      }
+
+      on api.abort(): { reply(Result.Error); }
+    }
+  }
+}

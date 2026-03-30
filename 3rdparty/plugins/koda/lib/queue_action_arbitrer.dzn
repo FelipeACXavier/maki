@@ -1,0 +1,194 @@
+import types.dzn;
+import iaction.dzn;
+
+component cqueue_action_arbiter {
+  provides iaction client1;
+  provides iaction client2;
+
+  requires iaction resource;
+
+  behaviour {
+    enum Owner { None, C1, C2 };
+    Owner owner = Owner.None;
+    Owner pending = Owner.None;
+    bool erroring = false;
+    bool succeeding = false;
+
+    Result handleAbort()
+    {
+      Result ret = resource.abort();
+      if (ret.Success)
+      {
+        owner = Owner.None;
+        pending = Owner.None;
+      }
+
+      return ret;
+    }
+
+    [owner.None] {
+      on client1.trigger(): {
+        if (erroring) {
+          reply(Result.Failure);
+        } else {
+          Result ret = resource.trigger();
+          if (!ret.Done)
+            owner = Owner.C1;
+          reply(ret);
+        }
+      }
+      on client2.trigger(): {
+        if (erroring) {
+          reply(Result.Failure);
+        } else {
+          Result ret = resource.trigger();
+          if (!ret.Done)
+            owner = Owner.C2;
+          reply(ret);
+        }
+      }
+
+      on client1.abort(): {
+        if (client1.state.Error)
+          reply(Result.Error);
+        else
+          reply(Result.Success);
+      }
+      on client2.abort(): {
+        if (client2.state.Error)
+          reply(Result.Error);
+        else
+          reply(Result.Success);
+      }
+
+      on client1.reset(): { reply(Result.Success); }
+      on client2.reset(): { reply(Result.Success); }
+    }
+
+    on resource.success(): {
+      if (owner.C1) client1.success();
+      if (owner.C2) client2.success();
+
+      if (pending.C1) {
+        Result ret = resource.trigger();
+        if (ret.Failure) {
+          erroring = true;
+          defer () {
+            erroring = false;
+            client1.failure();
+          }
+        } else if (ret.Done) {
+          pending = Owner.None;
+        }
+      }
+
+      if (pending.C2) {
+        Result ret = resource.trigger();
+        if (ret.Failure) {
+          erroring = true;
+          defer () {
+            erroring = false;
+            client2.failure();
+          }
+        } else if (ret.Done) {
+          pending = Owner.None;
+        }
+      }
+
+      owner = pending;
+      pending = Owner.None;
+    }
+
+    on resource.failure(): {
+      erroring = true;
+      defer () {
+        if (owner.C1 || pending.C1)
+          client1.failure();
+        if (owner.C2 || pending.C2)
+          client2.failure();
+
+        pending = Owner.None;
+        erroring = false;
+      }
+    }
+
+    [owner.C1] {
+      on client1.abort(): {
+        if (erroring)
+          reply(Result.Error);
+        else if (succeeding)
+          reply(Result.Success);
+        else
+          reply(handleAbort());
+      }
+
+      on client2.abort(): {
+        if (client2.state.Error)
+          reply(Result.Error);
+        else if (client2.state.Idle)
+          reply(Result.Success);
+        else
+          reply(Result.Running);
+      }
+
+      on client1.reset(): {
+        Result ret = resource.reset();
+        if (ret.Success)
+        {
+          owner = Owner.None;
+          pending = Owner.None;
+        }
+        reply(ret);
+      }
+
+      on client2.reset(): { reply(Result.Failure); }
+
+      on client2.trigger(): {
+        if (resource.state.Error) {
+          reply(Result.Failure);
+        } else {
+          pending = Owner.C2;
+          reply(Result.Success);
+        }
+      }
+    }
+    [owner.C2] {
+      on client2.abort(): {
+        if (erroring)
+          reply(Result.Success);
+        else if (succeeding)
+          reply(Result.Success);
+        else
+          reply(handleAbort());
+      }
+      on client1.abort(): {
+        if (client1.state.Error)
+          reply(Result.Error);
+        else if (client1.state.Idle)
+          reply(Result.Success);
+        else
+          reply(Result.Success);
+      }
+
+      on client2.reset(): {
+          Result ret = resource.reset();
+          if (ret.Success)
+          {
+            owner = Owner.None;
+            pending = Owner.None;
+          }
+          reply(ret);
+      }
+      on client1.reset(): { reply(Result.Failure); }
+
+      on client1.trigger(): {
+        if (resource.state.Error) {
+          reply(Result.Failure);
+        } else {
+          pending = Owner.C1;
+          reply(Result.Success);
+        }
+      }
+    }
+  }
+}

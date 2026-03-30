@@ -1,0 +1,80 @@
+import types.dzn;
+import iaction.dzn;
+import ialarm.dzn;
+
+component cevery {
+  provides iaction api;
+
+  requires ialarm alarm;
+  requires iaction action1;
+
+  behaviour {
+    enum State { State0, State1, State2, Error };
+    State state = State.State0;
+
+    [state.State0] {
+      on api.trigger(): {
+        alarm.set($30$);
+        state = State.State1;
+
+        reply(Result.Success);
+      }
+
+      // on api.abort(): { reply(Result.Success); }
+    }
+
+    [state.State1] {
+      on alarm.timeout(): {
+        Result triggered = action1.trigger();
+        if (triggered.Failed) {
+          api.failure();
+          state = State.Error;
+        } else {
+          state = State.State2;
+        }
+      }
+
+      on api.abort(): {
+        alarm.reset();
+        state = State.State0;
+        reply(Result.Success);
+      }
+    }
+
+    [state.State2] {
+      on action1.success(): {
+        alarm.set($30$);
+        state = State.State1;
+      }
+
+      on action1.failure(): {
+        api.failure();
+        state = State.Error;
+      }
+
+      on api.abort(): {
+        alarm.reset();
+
+        Result res = action1.abort();
+        if (res.Success)
+          state = State.State0;
+        else if (res.Failure)
+          state = State.Error;
+
+        reply(res);
+      }
+    }
+
+    [state.Error] {
+      on api.reset(): {
+        Result reset = action1.reset();
+        if (reset.Success)
+          state = State.State0;
+
+        reply(reset);
+      }
+
+      on api.abort(): { reply(Result.Error); }
+    }
+  }
+}

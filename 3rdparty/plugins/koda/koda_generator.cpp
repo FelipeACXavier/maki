@@ -1,6 +1,7 @@
 #include "koda_generator.h"
 
 #include <QApplication>
+#include <QDirIterator>
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonArray>
@@ -18,7 +19,69 @@
 #include "logging.h"
 #include "simulation_scene.h"
 #include "string_helpers.h"
+#include "style_helpers.h"
 #include "types.h"
+
+#ifdef USE_ANTLR
+#include "ast/koda_compiler.h"
+#endif
+
+#define ADD_VARIABLE_OR_VALUE(array, arg, isVariable)                                               \
+  do                                                                                                \
+  {                                                                                                 \
+    if (isVariable)                                                                                 \
+      args += QStringLiteral("%1%2, ").arg(arg[ConfigKeys::DATA].toString(), isVariable ? "_", ""); \
+    else                                                                                            \
+      args += QStringLiteral("%1, ").arg(arg[ConfigKeys::DATA].toString());                         \
+  } while (false);
+
+// TODO: Use std::filesystem instead
+bool copyDirectory(const QString& sourceDir, const QString& targetDir)
+{
+  QDir src(sourceDir);
+  if (!src.exists())
+  {
+    LOG_ERROR("Source folder does not exist %s", qPrintable(sourceDir));
+    return false;
+  }
+
+  if (!QDir().mkpath(targetDir))
+  {
+    LOG_ERROR("Could not create destination dir %s", qPrintable(targetDir));
+    return false;
+  }
+
+  QDirIterator it(sourceDir, QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
+  while (it.hasNext())
+  {
+    it.next();
+    QFileInfo info = it.fileInfo();
+
+    QString relativePath = src.relativeFilePath(info.absoluteFilePath());
+    QString outPath = QDir(targetDir).filePath(relativePath);
+
+    if (info.isDir())
+    {
+      if (!QDir().mkpath(outPath))
+      {
+        LOG_ERROR("Could not create sub-dir %s", qPrintable(outPath));
+        return false;
+      }
+    }
+    else if (info.isFile())
+    {
+      QDir().mkpath(QFileInfo(outPath).absolutePath());
+      QFile::remove(outPath);  // because QFile::copy won't overwrite
+      if (!QFile::copy(info.absoluteFilePath(), outPath))
+      {
+        LOG_ERROR("Could not copy file %s to %s", qPrintable(info.absoluteFilePath()), qPrintable(outPath));
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
 
 bool KodaGenerator::setup()
 {
@@ -141,7 +204,11 @@ void KodaGenerator::setHostServices(maki::IHostServices* services)
 
 QString KodaGenerator::languageName() const
 {
+#ifdef USE_ANTLR
+  return "KODA_ANTLR";
+#else
   return "KODA";
+#endif
 }
 
 maki::PluginVersion KodaGenerator::version() const
@@ -226,14 +293,41 @@ VoidResult KodaGenerator::verify(const QString& outputFolder)
   // Generate Koda from the model
   generateKoda(outputFolder);
 
-  return VoidResult();
-
   // Compile Koda to Dezyne
   mDezyneOutputFolder = QDir(mOutputFolder.absolutePath() + "/models");
   if (!mDezyneOutputFolder.exists())
     mDezyneOutputFolder.mkpath(".");
 
-  LOG_INFO("Compiling Koda to Dezyne: %s %d", qPrintable(mDezyneOutputFolder.absolutePath()), mGeneratedFiles.size());
+  QStringList includeFolders = {};
+
+  LOG_INFO("Compiling %s to Dezyne: %s %d", qPrintable(languageName()), qPrintable(mDezyneOutputFolder.absolutePath()), mGeneratedFiles.size());
+#ifdef USE_ANTLR
+  // First, we compile the program
+  koda::Compiler compiler;
+  for (const auto& file : mGeneratedFiles)
+  {
+    koda::CompilerOptions options;
+    options.inputFile = file.toStdString();
+    options.outputDir = mDezyneOutputFolder.absolutePath().toStdString();
+    RETURN_ON_FAILURE(compiler.parse(options));
+    RETURN_ON_FAILURE(compiler.generate());
+  }
+
+  // Then we make sure the dezyne libraries are available
+  QString libSrcPath = getDirPathFor("share/plugins/" + languageName() + "/lib");
+  QString libDstPath = mDezyneOutputFolder.absolutePath() + "/lib";
+  if (!copyDirectory(libSrcPath, libDstPath))
+    return VoidResult::Failed("Could not copy dezyne libraries to output folder");
+
+  // Make sure the correct file are included
+  includeFolders << mDezyneOutputFolder.absolutePath();
+  includeFolders << libDstPath;
+
+  // Finally, set the files to be verified
+  QStringList filters;
+  filters << "*.dzn";
+  mGeneratedDznFiles = mDezyneOutputFolder.entryList(filters, QDir::Files);
+#else
   for (const auto& file : mGeneratedFiles)
   {
     LOG_DEBUG("Will generate Dezyne from KODA file: %s", qPrintable(file));
@@ -248,26 +342,28 @@ VoidResult KodaGenerator::verify(const QString& outputFolder)
     };
 
     QProcess* generate = new QProcess(this);
-    // generate->setWorkingDirectory(QDir::homePath() + "/" + languageName());
     generate->setWorkingDirectory("/home/felaze/Documents/PhD/Programs/DSL/koda");
     generate->setProgram(command);
     generate->setArguments(arguments);
 
     mServices->pipeline()->add(generate, maki::OnFail::STOP);
   }
+#endif
 
-  // TODO: We need to find a better solution for this, we cannot allow plugins to execute any scripts
-  LOG_INFO("Running generate script");
+  // TODO: We need to find a better solution for this, we shouldn't allow plugins to execute any scripts
   for (const QString& f : mGeneratedDznFiles)
   {
     auto fullPath = mDezyneOutputFolder.absoluteFilePath(f);
-    // if (fullPath.contains("/a_") || fullPath.contains("types"))
-    // continue;
+    if (fullPath.contains("/a_") || fullPath.contains("types"))
+      continue;
 
     LOG_INFO("Will verify file: %s", qPrintable(fullPath));
 
     const QString command = "dzn";
-    const QStringList arguments = {"verify", fullPath};
+    QStringList arguments = {"verify", fullPath};
+    for (const auto& inc : includeFolders)
+      arguments << "-I" << inc;
+
     QProcess* generate = new QProcess(this);
     generate->setProgram(command);
     generate->setArguments(arguments);
@@ -291,12 +387,12 @@ QString KodaGenerator::generateKoda(const QString& outputFolder)
       continue;
 
     // TODO(felaze): Create file at this level
-    LOG_DEBUG("Generating code for top level node %s %s %d", qPrintable(node->getproperties()["name"].toString()), qPrintable(node->getnodeId()), node->getchildren().size());
+    LOG_DEBUG("Generating code for top level node %s %s %d", qPrintable(node->getproperties()[ConfigKeys::NAME].toString()), qPrintable(node->getnodeId()), node->getchildren().size());
 
     QString args = "";
     for (const auto& child : node->getchildren())
     {
-      auto capabilityId = child->getproperties()["name"].toString();
+      auto capabilityId = child->getproperties()[ConfigKeys::NAME].toString();
       LOG_DEBUG("Generating code for capability %s %s %d", qPrintable(capabilityId), qPrintable(child->getnodeId()), child->getchildren().size());
       code += generateCapability(*child);
       args += fixCase(capabilityId) + " req " + capabilityId + ", ";
@@ -320,7 +416,7 @@ QString KodaGenerator::generateNode(const INode& node)
 {
   QString code = "";
   QString type = node.getnodeId();
-  QString name = node.getproperties()["name"].toString();
+  QString name = node.getproperties()[ConfigKeys::NAME].toString();
 
   LOG_DEBUG("Generating code for %s", qPrintable(type));
 
@@ -334,14 +430,16 @@ QString KodaGenerator::generateBehaviourNode(const INode& node, const Argument& 
 {
   QString code = "";
   QString type = node.getnodeId();
-  QString name = node.getproperties()["name"].toString();
+  QString name = node.getproperties()[ConfigKeys::NAME].toString();
 
   // LOG_DEBUG("Generating code for %s with %s", qPrintable(type), qPrintable(arg.name));
 
-  if (type == "Koda::End")
-    code += generateEnd(node, arg, flow, format);
+  if (type == "Koda::Success")
+    code += generateSuccess(node, arg, flow, format);
   else if (type == "Koda::Error")
     code += generateError(node, arg, flow, format);
+  else if (type == "Koda::Continue")
+    code += generateContinue(node, arg, flow, format);
   else if (type == "Koda::Async task")
     code += generateAsyncTask(node, arg, flow, format);
   else if (type == "Koda::Sync task")
@@ -352,6 +450,8 @@ QString KodaGenerator::generateBehaviourNode(const INode& node, const Argument& 
     code += generateWithin(node, arg, flow, format);
   else if (type == "Koda::Repeat")
     code += generateRepeat(node, arg, flow, format);
+  else if (type == "Koda::Every")
+    code += generateEvery(node, arg, flow, format);
 
   return code;
 }
@@ -376,76 +476,73 @@ QString KodaGenerator::generateCapability(const INode& node)
 
   // qDebug() << node.properties;
   QString args = "";
-  if (node.getproperties().contains("arguments"))
+  if (node.getproperties().contains(ConfigKeys::ARGUMENTS))
   {
-    auto list = node.getproperties()["arguments"].toList();
+    auto list = node.getproperties()[ConfigKeys::ARGUMENTS].toList();
     for (const auto& l : list)
     {
       auto l0 = l.toMap();
-      args += l0["type"].toString() + " " + l0["id"].toString() + ", ";
+      args += l0[ConfigKeys::TYPE].toString() + " " + l0[ConfigKeys::ID].toString() + ", ";
     }
   }
 
-  QString name = node.getproperties()["name"].toString();
+  QString name = node.getproperties()[ConfigKeys::NAME].toString();
 
   // mGeneratedDznFiles += QString::fromStdString("c" + ToLowerCase(name.toStdString(), 0, 1) + ".dzn");
-  mGeneratedDznFiles += QString::fromStdString("i" + ToLowerCase(name.toStdString(), 0, 1) + ".dzn");
+  mGeneratedDznFiles += QString::fromStdString("i" + ToLowerCase(name.toStdString(), 0, name.size() - 1) + ".dzn");
 
   args.chop(2);
   code += "capability " + name + "(" + args + ") {\n";
 
-  QString type = "async";
-  QString rosType = node.getproperties()["type"].toString();
-  auto typeComponents = Split(rosType.toStdString(), ' ');
-  if (typeComponents.size() == 3 && typeComponents.at(0) != "action")
-    type = "sync";
-
-  code += "  " + rosType + "{\n";
-
-  QString qualifier = "  ";
-  for (const auto& f : node.getflows())
+  auto typeArray = node.getproperties()[ConfigKeys::TYPE].toJsonObject()[ConfigKeys::OPTIONS].toArray();
+  for (int i = 0; i < typeArray.size(); ++i)
   {
-    if (f->gettype() != Types::CallType::RETURN && f->gettype() != Types::CallType::ABORT && f->gettype() != Types::CallType::IN)
-      continue;
-
-    QString args = "";
-    for (const auto& arg : f->getarguments())
-      args += Types::PropertyTypesToString(arg->gettype()) + " " + arg->getid() + ", ";
-
-    args.chop(2);
-    if (type == "async")
+    const auto item = typeArray.at(i).toObject();
+    auto callType = item[ConfigKeys::ID].toString();
+    auto callOptions = item[ConfigKeys::OPTIONS].toArray();
+    if (callOptions.size() < 2)
     {
-      if (f->gettype() == Types::CallType::RETURN)
-        qualifier = QStringLiteral("  trigger:");
+      LOG_WARNING("Capability %s does not follow the expected format", qPrintable(name));
+      continue;
+    }
+
+    auto callRoute = callOptions.at(0).toObject()[ConfigKeys::DEFAULT].toString();
+    auto callMessage = callOptions.at(1).toObject()[ConfigKeys::DEFAULT].toString();
+    code += std::format("  {} \"{}\" \"{}\" {{\n", callType.toStdString(), callRoute.toStdString(), callMessage.toStdString());
+
+    QString qualifier = "  ";
+    for (const auto& f : node.getflows())
+    {
+      LOG_DEBUG("%s match: %d %d", qPrintable(f->getname()), f->getlinksTo(), i);
+      if (f->getlinksTo() != i)
+      {
+        continue;
+      }
+
+      QString args = "";
+      for (const auto& arg : f->getarguments())
+        args += Types::PropertyTypesToString(arg->gettype()) + " " + arg->getid() + ", ";
+
+      args.chop(2);
+      if (f->gettype() == Types::CallType::TRIGGER)
+        qualifier = "    trigger: ";
       else if (f->gettype() == Types::CallType::ABORT)
-        qualifier = QStringLiteral("  abort:");
-    }
-
-    code += qualifier + "  " + Types::PropertyTypesToString(f->getreturnType()) + " " + f->getname() + "(" + args + ");\n";
-  }
-
-  for (const auto& f : node.getflows())
-  {
-    if (f->gettype() != Types::CallType::RETURN && f->gettype() != Types::CallType::ABORT && f->gettype() != Types::CallType::OUT)
-      continue;
-
-    QString args = "";
-    for (auto& arg : f->getarguments())
-      args += Types::PropertyTypesToString(arg->gettype()) + " " + arg->getid() + ", ";
-
-    args.chop(2);
-    if (type == "async")
-    {
-      if (f->gettype() == Types::CallType::RETURN)
-        qualifier = QStringLiteral("  return:");
+        qualifier = "    abort: ";
+      else if (f->gettype() == Types::CallType::IN)
+        qualifier = "    in: ";
+      else if (f->gettype() == Types::CallType::RETURN)
+        qualifier = "    return: ";
       else if (f->gettype() == Types::CallType::ERROR)
-        qualifier = QStringLiteral("  error:");
+        qualifier = "    error: ";
+      else if (f->gettype() == Types::CallType::OUT)
+        qualifier = "    out: ";
+
+      code += qualifier + Types::PropertyTypesToString(f->getreturnType()) + " " + f->getname() + "(" + args + ");\n";
     }
 
-    code += qualifier + "  " + Types::PropertyTypesToString(f->getreturnType()) + " " + f->getname() + "(" + args + ");\n";
+    code += "  }\n";
   }
 
-  code += "  }\n";
   code += "}\n";
 
   return code;
@@ -456,9 +553,9 @@ QString KodaGenerator::generateComponent(const INode& node, const QString& incom
   QString code = "";
 
   // Generate necessary wrappers
-  QString name = fixCase(node.getproperties()["name"].toString());
-  mGeneratedDznFiles += QString::fromStdString("c" + ToLowerCase(name.toStdString(), 0, 1) + ".dzn");
-  mGeneratedDznFiles += QString::fromStdString("c" + ToLowerCase(name.toStdString(), 0, 1) + "_task.dzn");
+  QString name = fixCase(node.getproperties()[ConfigKeys::NAME].toString());
+  mGeneratedDznFiles += QString::fromStdString("c" + ToLowerCase(name.toStdString(), 0, name.size() - 1) + ".dzn");
+  mGeneratedDznFiles += QString::fromStdString("c" + ToLowerCase(name.toStdString(), 0, name.size() - 1) + "_task.dzn");
 
   // Create a file for each top level component
   QString fileName = mOutputFolder.filePath(name + ".kd");
@@ -487,7 +584,7 @@ QString KodaGenerator::generateComponent(const INode& node, const QString& incom
 
     args.chop(2);
     QString qualifier = "";
-    if (f->gettype() == Types::CallType::RETURN)
+    if (f->gettype() == Types::CallType::TRIGGER)
       qualifier = QStringLiteral("  trigger:");
     else if (f->gettype() == Types::CallType::ABORT)
       qualifier = QStringLiteral("  abort:");
@@ -550,7 +647,7 @@ QString KodaGenerator::generateComponent(const INode& node, const QString& incom
   // - The generation should use more inheritance, a lot of the code here is repeated
   // for (const auto& child : node.children)
   // {
-  //   auto childName = fixCase(child->getproperties["name"].toString());
+  //   auto childName = fixCase(child->getproperties[ConfigKeys::NAME].toString());
   //   out << "  requires i" + childName + " " + childName + ";\n";
   // }
 
@@ -566,7 +663,16 @@ QString KodaGenerator::generateComponent(const INode& node, const QString& incom
 
 QString KodaGenerator::generateStart(const QString& parent, const INode& node, const IFlow& flow, const QString& format)
 {
-  QString code = "    " + flow.getname() + ": ";
+  QString args = "";
+  for (auto& arg : flow.getarguments())
+    args += arg->getid() + ", ";
+  args.chop(2);
+
+  auto strategy = flow.getname();
+  if (strategy != "main")
+    strategy = "f" + strategy;
+
+  QString code = "    " + strategy + (args.isEmpty() ? "" : "[" + args + "]") + ": ";
 
   Argument arg;
   code += generateTransitions(node, arg, flow, "  " + format);
@@ -575,10 +681,17 @@ QString KodaGenerator::generateStart(const QString& parent, const INode& node, c
   return code;
 }
 
-QString KodaGenerator::generateEnd(const INode& node, const Argument& arg, const IFlow& flow, const QString& format)
+QString KodaGenerator::generateSuccess(const INode& node, const Argument& arg, const IFlow& flow, const QString& format)
 {
   QString code = "";
   code += "end";
+  return code;
+}
+
+QString KodaGenerator::generateContinue(const INode& node, const Argument& arg, const IFlow& flow, const QString& format)
+{
+  QString code = "";
+  code += "continue";
   return code;
 }
 
@@ -592,17 +705,31 @@ QString KodaGenerator::generateError(const INode& node, const Argument& arg, con
   return code;
 }
 
+QString KodaGenerator::createArguments(const QJsonArray& options) const
+{
+  QString args = "";
+
+  for (int i = 1; i < options.size(); ++i)
+  {
+    const auto arg = options.at(i).toObject();
+    const auto isVariable = arg[ConfigKeys::IS_VARIABLE].toBool();
+
+    args += QStringLiteral("%1%2, ").arg(arg[ConfigKeys::DATA].toString(), isVariable ? "_" : "");
+  }
+
+  args.chop(2);
+  return args;
+}
+
 QString KodaGenerator::generateAsyncTask(const INode& node, const Argument& arg, const IFlow& flow, const QString& format)
 {
   QString code = "";
-  QJsonObject object = node.getproperties()["component"].toJsonObject();
-  QString val = object["data"].toString();
-  QJsonArray options = object["options"].toArray();
-  QString args = options.size() > 0 ? options[0].toObject()["data"].toString() : "";
+  QJsonObject object = node.getproperties()["capability"].toJsonObject();
+  QString val = object[ConfigKeys::DATA].toString();
+  QJsonArray options = object[ConfigKeys::OPTIONS].toArray();
+  QString args = createArguments(options);
 
-  // qDebug() << format + "generateAsyncTask (" + val + "): " << options;
-
-  auto fixed = QString::fromStdString(ToLowerCase(val.toStdString(), 0, 1));
+  auto fixed = QString::fromStdString(ToLowerCase(val.toStdString(), 0, val.size() - 1));
   code += "(" + fixed + "(" + args + ")";
   for (const auto& transition : node.gettransitions())
   {
@@ -640,7 +767,7 @@ QString KodaGenerator::generateAsyncTask(const INode& node, const Argument& arg,
     auto dst = findDestination(transition->getdstId(), flow);
     if (dst != nullptr)
     {
-      code += " on " + QString::fromStdString(ToLowerCase(transition->getevent().toStdString(), 0, 1)) + "() (";
+      code += " on " + QString::fromStdString(ToLowerCase(transition->getevent().toStdString(), 0, transition->getevent().size() - 1)) + "() (";
       code += generateBehaviourNode(*dst, arg, flow, format);
       code += ")";
     }
@@ -670,26 +797,23 @@ QString KodaGenerator::generateAsyncTask(const INode& node, const Argument& arg,
 QString KodaGenerator::generateSyncTask(const INode& node, const Argument& arg, const IFlow& flow, const QString& format)
 {
   QString code = "";
-  QJsonObject object = node.getproperties()["component"].toJsonObject();
-  QString val = object["data"].toString();
-  QJsonArray options = object["options"].toArray();
+  QJsonObject object = node.getproperties()["capability"].toJsonObject();
+  QString val = object[ConfigKeys::DATA].toString();
+  QJsonArray options = object[ConfigKeys::OPTIONS].toArray();
 
   QString method = "";
   QString args = "";
-  for (const auto& opt : options)
+  for (uint32_t i = 0; i < options.size(); ++i)
   {
-    QJsonObject obj = opt.toObject();
-    if (obj["id"] == "event")
-      method = obj["data"].toString();
-    else if (obj["id"] == "argument")
-      args = obj["data"].toString();
+    QJsonObject obj = options.at(i).toObject();
+    if (i == 0)
+      method = obj[ConfigKeys::DATA].toString();
+    else
+      args += obj[ConfigKeys::DATA].toString() + ", ";
   }
+  args.chop(2);
 
-  // qDebug() << "Sync: " << node.properties;
-
-  // qDebug() << format + "generateSyncTask (" + node.properties["name"].toString() + "): " << val["data"].toString() << " " << val["option_data"].toString();
-
-  auto fixed = QString::fromStdString(ToLowerCase(val.toStdString(), 0, 1));
+  auto fixed = QString::fromStdString(ToLowerCase(val.toStdString(), 0, val.size() - 1));
   code += fixed + "." + method + "(" + args + ")";
 
   if (node.gettransitions().size() > 0)
@@ -704,15 +828,6 @@ QString KodaGenerator::generateWithin(const INode& node, const Argument& arg, co
 {
   QString code = "";
   int val = node.getproperties()["timeout"].toInt();
-
-  // qDebug() << node.properties;
-
-  // QJsonObject object = node.properties["component"].toJsonObject();
-  // QString val = object["data"].toString();
-  // QJsonArray options = object["options"].toArray();
-  // QString strategy = options.size() > 0 ? options[0].toObject()["data"].toString() : "";
-
-  // qDebug() << format + "generateWithin (" + node.properties["name"].toString() + "): " << val;
 
   code += "(within " + QString::number(val) + " do (";
 
@@ -740,11 +855,55 @@ QString KodaGenerator::generateWithin(const INode& node, const Argument& arg, co
     }
   }
 
-  code += "))";
+  code += ")";
 
   for (const auto& transition : node.gettransitions())
   {
-    if (transition->getlabel() == "do" || transition->getlabel() == "else")
+    if (transition->getlabel() != "on error")
+      continue;
+
+    auto dst = findDestination(transition->getdstId(), flow);
+    if (dst != nullptr)
+    {
+      code += "  on error (";
+      code += generateBehaviourNode(*dst, arg, flow, format);
+      code += ")";
+    }
+  }
+
+  for (const auto& transition : node.gettransitions())
+  {
+    if (transition->getlabel() != "on abort")
+      continue;
+
+    auto dst = findDestination(transition->getdstId(), flow);
+    if (dst != nullptr)
+    {
+      code += "  on abort (";
+      code += generateBehaviourNode(*dst, arg, flow, format);
+      code += ")";
+    }
+  }
+
+  for (const auto& transition : node.gettransitions())
+  {
+    if (transition->getlabel() != "on")
+      continue;
+
+    auto dst = findDestination(transition->getdstId(), flow);
+    if (dst != nullptr)
+    {
+      code += "  on " + QString::fromStdString(ToLowerCase(transition->getevent().toStdString(), 0, transition->getevent().size() - 1)) + "() (";
+      code += generateBehaviourNode(*dst, arg, flow, format);
+      code += ")";
+    }
+  }
+
+  code += ")";
+
+  for (const auto& transition : node.gettransitions())
+  {
+    if (transition->getlabel() != "")
       continue;
 
     auto dst = findDestination(transition->getdstId(), flow);
@@ -758,30 +917,83 @@ QString KodaGenerator::generateWithin(const INode& node, const Argument& arg, co
   return code;
 }
 
+QString KodaGenerator::generateEvery(const INode& node, const Argument& arg, const IFlow& flow, const QString& format)
+{
+  QString code = "";
+  int val = node.getproperties()["rate"].toInt();
+
+  code += "(every " + QString::number(val) + " { ";
+
+  for (const auto& transition : node.gettransitions())
+  {
+    if (transition->getlabel() != "")
+      continue;
+
+    auto dst = findDestination(transition->getdstId(), flow);
+    if (dst != nullptr)
+      code += generateBehaviourNode(*dst, arg, flow, format);
+
+    break;
+  }
+
+  code += " }";
+
+  for (const auto& transition : node.gettransitions())
+  {
+    if (transition->getlabel() != "on error")
+      continue;
+
+    auto dst = findDestination(transition->getdstId(), flow);
+    if (dst != nullptr)
+    {
+      code += "\n  on error (";
+      code += generateBehaviourNode(*dst, arg, flow, format);
+      code += ")";
+    }
+  }
+
+  for (const auto& transition : node.gettransitions())
+  {
+    if (transition->getlabel() != "on abort")
+      continue;
+
+    auto dst = findDestination(transition->getdstId(), flow);
+    if (dst != nullptr)
+    {
+      code += "\n  on abort (";
+      code += generateBehaviourNode(*dst, arg, flow, format);
+      code += ")";
+    }
+  }
+
+  for (const auto& transition : node.gettransitions())
+  {
+    if (transition->getlabel() != "on")
+      continue;
+
+    auto dst = findDestination(transition->getdstId(), flow);
+    if (dst != nullptr)
+    {
+      code += "\n  on " + QString::fromStdString(ToLowerCase(transition->getevent().toStdString(), 0, transition->getevent().size() - 1)) + "() (";
+      code += generateBehaviourNode(*dst, arg, flow, format);
+      code += ")";
+    }
+  }
+
+  code += ")";
+
+  return code;
+}
+
 QString KodaGenerator::generateRepeat(const INode& node, const Argument& arg, const IFlow& flow, const QString& format)
 {
   QString code = "";
   QJsonObject object = node.getproperties()["component"].toJsonObject();
-  QString val = object["data"].toString();
-  QJsonArray options = object["options"].toArray();
-  QString strategy = options.size() > 0 ? options[0].toObject()["data"].toString() : "";
-
-  // qDebug() << "Repeat: " << node.properties;
-  // qDebug() << format + "generateRepeat (" + node.properties["name"].toString() + "): " << val;
-
-  // if (node.transitions.size() != 1)
-  // {
-  //   LOG_ERROR("%s must have one transition", qPrintable(node.nodeId));
-  //   return code;
-  // }
+  QString val = object[ConfigKeys::DATA].toString();
+  QJsonArray options = object[ConfigKeys::OPTIONS].toArray();
+  QString strategy = options.size() > 0 ? options[0].toObject()[ConfigKeys::DATA].toString() : "";
 
   code += "repeat(" + strategy + ")";
-
-  // auto doTransition = node.transitions.at(0);
-  // auto dstDo = findDestination(doTransition->getdstId, flow);
-  // if (dstDo != nullptr)
-  //     code += generateBehaviourNode(*dstDo, arg, flow, format);
-  // code += ")";
 
   return code;
 }
@@ -790,13 +1002,21 @@ QString KodaGenerator::generateStrategy(const INode& node, const Argument& arg, 
 {
   QString code = "";
   QJsonObject object = node.getproperties()["component"].toJsonObject();
-  QJsonArray options = object["options"].toArray();
-  QString strategy = options.size() > 0 ? options[0].toObject()["data"].toString() : "";
+  QJsonArray options = object[ConfigKeys::OPTIONS].toArray();
+  QString strategy = options.size() > 0 ? options[0].toObject()[ConfigKeys::DATA].toString() : "";
 
-  // qDebug() << "Strategy: " << node.properties;
+  QString args = "";
+  for (uint32_t i = 1; i < options.size(); ++i)
+  {
+    QJsonObject obj = options.at(i).toObject();
+    args += obj[ConfigKeys::DATA].toString() + ", ";
+  }
+  args.chop(2);
 
-  // qDebug() << format + "generateStrategy (" << node.properties["name"] << "): " << val["option_data"].toString();
-  code += strategy;
+  if (strategy != "main")
+    strategy = "f" + strategy;
+
+  code += strategy + (args.isEmpty() ? "" : "(" + args + ")");
   if (node.gettransitions().size() > 0)
     code += " --> ";
 

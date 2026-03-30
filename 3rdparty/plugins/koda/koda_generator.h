@@ -14,9 +14,15 @@ class DezyneSimulator;
 
 class KodaGenerator : public QObject, public maki::IGeneratorPlugin
 {
+#ifdef USE_ANTLR
+  Q_OBJECT
+  Q_PLUGIN_METADATA(IID MAKI_GENERATORPLUGIN_IID FILE "koda_generator_antlr.json")
+  Q_INTERFACES(maki::IGeneratorPlugin)
+#else
   Q_OBJECT
   Q_PLUGIN_METADATA(IID MAKI_GENERATORPLUGIN_IID FILE "koda_generator.json")
   Q_INTERFACES(maki::IGeneratorPlugin)
+#endif
 
 public:
   bool setup() override;
@@ -62,18 +68,21 @@ private:
   QString generateCapability(const INode& node);
 
   QString generateStart(const QString& parent, const INode& node, const IFlow& flow, const QString& format);
-  QString generateEnd(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
+  QString generateSuccess(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
   QString generateError(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
+  QString generateContinue(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
 
   QString generateAsyncTask(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
   QString generateSyncTask(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
   QString generateWithin(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
+  QString generateEvery(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
   QString generateRepeat(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
   QString generateStrategy(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
 
   // Helpers
   QString fixCase(const QString& name);
   std::shared_ptr<INode> findDestination(const QString& nodeId, const IFlow& flow) const;
+  QString createArguments(const QJsonArray& options) const;
 
   void startSimulation();
   void simulationStarted();

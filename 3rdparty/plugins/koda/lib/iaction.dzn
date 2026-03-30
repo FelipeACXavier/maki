@@ -1,0 +1,36 @@
+import types.dzn;
+
+interface iaction {
+  in Result trigger();
+  in Result abort();
+  in Result reset();
+
+  out void success();
+  out void failure();
+
+  behavior {
+    enum State { Idle, Running, Error };
+    State state = State.Idle;
+
+    [state.Idle] {
+      on trigger: { state = State.Running; reply(Result.Success); }
+      on trigger: { state = State.Error; reply(Result.Failure); }
+      on trigger: { reply(Result.Done); }
+    }
+
+    [state.Running] {
+      on abort: { state = State.Idle; reply(Result.Success); }
+      on abort: { state = State.Error; reply(Result.Failure); }
+      on abort: { reply(Result.Running); }
+
+      on optional: { state = State.Idle; success; }
+      on optional: { state = State.Error; failure; }
+    }
+
+    [state.Error] {
+      on reset: { state = State.Idle; reply(Result.Success); }
+      on reset: { reply(Result.Failure); }
+      on abort: { reply(Result.Error); }
+    }
+  }
+}

@@ -1,0 +1,24 @@
+import types.dzn;
+
+interface ialarm
+{
+  in void set(int millis);
+  in void reset();
+  out void timeout();
+
+  behavior {
+    enum State { Idle, Running };
+    State state = State.Idle;
+
+    [state.Idle] {
+      on set: { state = State.Running; }
+      on reset: {}
+    }
+
+    [state.Running] {
+      on set: {}
+      on reset: { state = State.Idle; }
+      on optional: { timeout; state = State.Idle; }
+    }
+  }
+}
