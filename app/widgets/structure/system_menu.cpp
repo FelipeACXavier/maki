@@ -63,18 +63,17 @@ VoidResult SystemMenu::onNodeAdded(const QString& flowId, NodeItem* node)
   return VoidResult();
 }
 
-VoidResult SystemMenu::onNodeRemoved(const QString& flowId, NodeItem* node)
+VoidResult SystemMenu::onNodeRemoved(const QString& flowId, const QString& nodeId, const QString& parentId)
 {
-  LOG_TRACE("Node removed: %s (%s)", qPrintable(node->id()), qPrintable(flowId));
+  LOG_TRACE("Node removed: %s (%s)", qPrintable(nodeId), qPrintable(flowId));
 
   if (flowId == Config::MAIN_CANVAS)
   {
-    auto item = getItemById(node->id());
+    auto item = getItemById(nodeId);
     if (!item)
       return VoidResult::Failed("Node is not in the tree");
 
-    auto parent = static_cast<NodeItem*>(node->parentNode());
-    if (!parent)
+    if (parentId.isEmpty())
     {
       takeTopLevelItem(indexOfTopLevelItem(item));
       mIcons.removeIf([item](TreeWidgetWithIcon treeItem) { return treeItem.widget == item; });
@@ -82,7 +81,7 @@ VoidResult SystemMenu::onNodeRemoved(const QString& flowId, NodeItem* node)
       return VoidResult();
     }
 
-    auto parentItem = getItemById(parent->id());
+    auto parentItem = getItemById(parentId);
     if (!parentItem)
       return VoidResult::Failed("The parent node is not on the tree");
 
@@ -96,7 +95,7 @@ VoidResult SystemMenu::onNodeRemoved(const QString& flowId, NodeItem* node)
     if (!flow)
       return VoidResult::Failed("Flow is not in the tree");
 
-    auto component = getItemById(node->id());
+    auto component = getItemById(nodeId);
     if (!component)
       return VoidResult::Failed("The node is not in the tree");
 

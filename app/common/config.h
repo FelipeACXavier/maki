@@ -35,6 +35,7 @@ public:
 
   QString id = "";
   QString label = "";
+  QString event = "";
   bool modifiable = true;
 
   friend QDataStream& operator<<(QDataStream& out, const TransitionConfig& config);
@@ -53,6 +54,7 @@ public:
   QList<PropertyConfig> arguments = {};
   bool modifiable = true;
   QString info = "";
+  int linksTo = INT32_MAX;
 
   friend QDataStream& operator<<(QDataStream& out, const FlowConfig& config);
   friend QDataStream& operator>>(QDataStream& in, FlowConfig& config);

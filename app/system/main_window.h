@@ -44,7 +44,7 @@ public:
 private slots:
   void onNodeSelected(NodeItem* node, bool selected);
   void onNodeAdded(NodeItem* node);
-  void onNodeRemoved(NodeItem* node);
+  void onNodeRemoved(const QString& nodeId, const QString& parentId);
   void onNodeModified(NodeItem* node);
 
   void onOpenFlow(Flow* flow, NodeItem* node);

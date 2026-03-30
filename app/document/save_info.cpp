@@ -79,22 +79,23 @@ std::shared_ptr<NodeSaveInfo> SaveInfo::findParentOfConstruct(const QString& nod
   return nullptr;
 }
 
-void SaveInfo::findStatesOfConstruct(QVector<std::shared_ptr<NodeSaveInfo>>& toReturn, QVector<std::shared_ptr<INode>> nodes) const
+QVector<std::shared_ptr<IProperty>> SaveInfo::getPossibleStates(const QString& nodeId) const
 {
-  // for (const auto& node : nodes)
-  // {
-  //   if (!node->getfields().isEmpty())
-  //     toReturn.push_back(std::static_pointer_cast<NodeSaveInfo>(node));
+  for (const auto& node : getnodes())
+  {
+    for (const auto& flow : node->getflows())
+    {
+      for (const auto& child : flow->getnodes())
+      {
+        if (child->getid() != nodeId)
+          continue;
 
-  //   findStatesOfConstruct(toReturn, node->getchildren());
-  // }
-}
+        return node->getfields();
+      }
+    }
+  }
 
-QVector<std::shared_ptr<NodeSaveInfo>> SaveInfo::getPossibleStates(const QString& nodeId) const
-{
-  QVector<std::shared_ptr<NodeSaveInfo>> toReturn;
-  findStatesOfConstruct(toReturn, getnodes());
-  return toReturn;
+  return QVector<std::shared_ptr<IProperty>>();
 }
 
 QVector<std::shared_ptr<NodeSaveInfo>> SaveInfo::getPossibleCallers(const QString& nodeId) const

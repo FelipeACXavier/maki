@@ -18,6 +18,7 @@ public:
   QString getname() const override;
   QString getowner() const override;
   bool getmodifiable() const override;
+  int getlinksTo() const override;
   Types::CallType gettype() const override;
   Types::PropertyTypes getreturnType() const override;
   QVector<std::shared_ptr<IProperty>> getarguments() const override;
@@ -27,6 +28,7 @@ public:
   void setName(const QString& arg);
   void setOwner(const QString& arg);
   void setModifiable(bool arg);
+  void setLinksTo(int arg);
   void setType(Types::CallType arg);
   void setReturnType(Types::PropertyTypes arg);
   void addArgument(std::shared_ptr<IProperty> arg);
@@ -47,6 +49,7 @@ private:
   QString mName;
   QString mOwner;
   bool mModifiable;
+  int mLinksTo;
 
   Types::CallType mType;
   Types::PropertyTypes mReturnType;

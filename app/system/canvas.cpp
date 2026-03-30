@@ -34,6 +34,7 @@ Canvas::Canvas(const QString& canvasId, std::shared_ptr<SaveInfo> storage, std::
     , mStorage(storage)
 {
   setBackgroundBrush(Qt::transparent);
+  // setItemIndexMethod(ItemIndexMethod::NoIndex);
 
   mHoverTimer = new QTimer(this);
   mHoverTimer->setSingleShot(true);
@@ -184,20 +185,17 @@ bool Canvas::nodeClickHandler(QGraphicsSceneMouseEvent* event, QGraphicsItem* it
   NodeItem* node = static_cast<NodeItem*>(item);
   if (isModifierSet(event, Qt::AltModifier))
   {
-    if (!node->canAddTransition())
-    {
-      LOG_WARNING("Node already has the maximum number of transitions");
-      return false;
-    }
-
     mNode = node;
     auto info = std::make_shared<TransitionSaveInfo>();
     mTransition = new TransitionItem(std::make_shared<TransitionSaveInfo>());
     mTransition->setZValue(node->zValue() - 1);
     LOG_INFO("Node: %s ZValue: %f %f", qPrintable(node->nodeId()), node->zValue(), mTransition->zValue());
 
-    auto config = node->nextTransition();
-    mTransition->setName(config.label);
+    if (node->canAddTransition())
+    {
+      auto config = node->nextTransition();
+      mTransition->setEvent(config.event);
+    }
 
     mTransition->setStart(node->id(), node->mapToScene(node->boundingRect().center()), {0, 0});
     mTransition->setEnd(Constants::TMP_CONNECTION_ID, event->scenePos(), {0, 0});
@@ -729,7 +727,7 @@ void Canvas::removeNode(const NodeSaveInfo info)
     for (int i = toRemove.size() - 1; i >= 0; --i)
     {
       if (auto node = dynamic_cast<NodeItem*>(toRemove[i]))
-        LOG_INFO("Deleting: %s, has parent: %d", qPrintable(node->id()), node->parentNode() != nullptr);
+        LOG_DEBUG("Deleting: %s, has parent: %d", qPrintable(node->id()), node->parentNode() != nullptr);
 
       delete toRemove[i];
     }
@@ -759,8 +757,9 @@ QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
     emit flowRemoved(flow->id(), node->id());
   }
 
-  if (node->parentNode())
-    node->parentNode()->childRemoved(node);
+  auto parent = node->parentNode();
+  if (parent)
+    parent->childRemoved(node);
 
   auto transtionsToDelete = node->transitions();
   for (TransitionItem* transition : transtionsToDelete)
@@ -776,7 +775,7 @@ QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
 
   mSelectedNodes.removeAll(node);
 
-  emit nodeRemoved(node);
+  emit nodeRemoved(node->id(), parent ? parent->id() : "");
 
   // Since this function can be called in loops or recusively, we do not perform the deletion of the pointer.
   // Deletion is the responsibility of the outer caller

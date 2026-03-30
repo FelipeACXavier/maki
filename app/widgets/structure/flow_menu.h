@@ -20,7 +20,7 @@ public:
   VoidResult onFlowRemoved(const QString& flowId, const QString& nodeId);
 
   VoidResult onNodeAdded(const QString& flowId, NodeItem* node);
-  VoidResult onNodeRemoved(const QString& flowId, NodeItem* node);
+  VoidResult onNodeRemoved(const QString& flowId, const QString& nodeId);
   VoidResult onNodeModified(const QString& flowId, NodeItem* node);
   VoidResult onNodeSelected(const QString& flowId, NodeItem* node, bool selected);
 

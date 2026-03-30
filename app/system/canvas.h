@@ -73,7 +73,7 @@ protected:
 signals:
   void nodeSelected(NodeItem* node, bool selected);
   void nodeAdded(NodeItem* node);
-  void nodeRemoved(NodeItem* node);
+  void nodeRemoved(const QString& nodeId, const QString& parentId);
   void nodeModified(NodeItem* node);
 
   void transitionSelected(TransitionItem* transtion);

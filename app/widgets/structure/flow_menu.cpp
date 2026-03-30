@@ -117,13 +117,13 @@ VoidResult FlowMenu::onNodeAdded(const QString& flowId, NodeItem* node)
   return VoidResult();
 }
 
-VoidResult FlowMenu::onNodeRemoved(const QString& flowId, NodeItem* node)
+VoidResult FlowMenu::onNodeRemoved(const QString& flowId, const QString& nodeId)
 {
   auto flow = getItemById(flowId);
   if (!flow)
     return VoidResult::Failed("Flow is not in the tree");
 
-  auto component = getItemById(node->id());
+  auto component = getItemById(nodeId);
   if (!component)
     return VoidResult::Failed("The node is not in the tree");
 

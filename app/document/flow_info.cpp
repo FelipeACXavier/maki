@@ -27,6 +27,7 @@ FlowSaveInfo::FlowSaveInfo(const FlowConfig& config)
   setType(config.type);
   setReturnType(config.returnType);
   setModifiable(config.modifiable);
+  setLinksTo(config.linksTo);
   for (const auto& arg : config.arguments)
     addArgument(std::make_shared<PropertyInfo>(arg));
 }
@@ -54,6 +55,11 @@ bool FlowSaveInfo::getmodifiable() const
 Types::CallType FlowSaveInfo::gettype() const
 {
   return mType;
+}
+
+int FlowSaveInfo::getlinksTo() const
+{
+  return mLinksTo;
 }
 
 Types::PropertyTypes FlowSaveInfo::getreturnType() const
@@ -89,6 +95,11 @@ void FlowSaveInfo::setOwner(const QString& arg)
 void FlowSaveInfo::setModifiable(bool arg)
 {
   mModifiable = arg;
+}
+
+void FlowSaveInfo::setLinksTo(int arg)
+{
+  mLinksTo = arg;
 }
 
 void FlowSaveInfo::setType(Types::CallType arg)
@@ -142,6 +153,7 @@ QJsonObject FlowSaveInfo::toJson() const
   data[ConfigKeys::TYPE] = Types::CallTypeToString(gettype());
   data[ConfigKeys::RETURN_TYPE] = Types::PropertyTypesToString(getreturnType());
   data[ConfigKeys::OWNER] = getowner();
+  data["linksTo"] = getlinksTo();
 
   QJsonArray optionArray;
   for (const auto& arg : getarguments())
@@ -161,10 +173,12 @@ QJsonObject FlowSaveInfo::toJson() const
 
 FlowSaveInfo FlowSaveInfo::fromJson(const QJsonObject& data)
 {
+  qDebug() << data;
   FlowSaveInfo info;
   info.setId(data[ConfigKeys::ID].toString());
   info.setName(data[ConfigKeys::NAME].toString());
   info.setModifiable(data[ConfigKeys::MODIFIABLE].toBool());
+  info.setLinksTo(data["linksTo"].toInt());
   info.setType(Types::StringToCallType(data[ConfigKeys::TYPE].toString()));
   info.setReturnType(Types::StringToPropertyTypes(data[ConfigKeys::RETURN_TYPE].toString()));
   info.setOwner(data[ConfigKeys::OWNER].toString());
@@ -234,6 +248,7 @@ QDataStream& operator<<(QDataStream& out, const FlowSaveInfo& info)
   out << info.gettype();
   out << info.getreturnType();
   out << info.getowner();
+  out << info.getlinksTo();
 
   out << info.getarguments();
 
@@ -268,6 +283,10 @@ QDataStream& operator>>(QDataStream& in, FlowSaveInfo& info)
   QString owner;
   in >> owner;
   info.setOwner(owner);
+
+  int linksTo;
+  in >> linksTo;
+  info.setLinksTo(linksTo);
 
   QVector<std::shared_ptr<IProperty>> arguments;
   in >> arguments;

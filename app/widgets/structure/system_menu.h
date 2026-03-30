@@ -18,7 +18,7 @@ public:
   SystemMenu(QWidget* parent);
 
   VoidResult onNodeAdded(const QString& flowId, NodeItem* node);
-  VoidResult onNodeRemoved(const QString& flowId, NodeItem* node);
+  VoidResult onNodeRemoved(const QString& flowId, const QString& nodeId, const QString& parentId);
   VoidResult onNodeModified(const QString& flowId, NodeItem* node);
   VoidResult onNodeSelected(const QString& flowId, NodeItem* node, bool selected);
 

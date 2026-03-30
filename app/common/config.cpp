@@ -36,12 +36,6 @@ PropertyConfig::PropertyConfig(const QJsonObject& object)
 
   if (object.contains(ConfigKeys::OPTIONS))
   {
-    // if (type == Types::PropertyTypes::COMPONENT_SELECT && object["options"].toArray().size() != 1)
-    // {
-    //   setInvalid("We only support one option for now");
-    //   return;
-    // }
-
     for (const auto& option : object[ConfigKeys::OPTIONS].toArray())
       options.push_back(PropertyConfig(option.toObject()));
   }
@@ -90,6 +84,8 @@ QVariant PropertyConfig::toDefault(const QJsonObject& object, Types::PropertyTyp
     return toDefault(object, Types::PropertyTypes::STRING);
   else if (objectType == Types::PropertyTypes::USER_CALL)
     return toDefault(object, Types::PropertyTypes::STRING);
+  else if (objectType == Types::PropertyTypes::VOID)
+    return object;
 
   return QVariant();
 }
@@ -112,6 +108,9 @@ TransitionConfig::TransitionConfig(const QJsonObject& object)
 
   if (object.contains(ConfigKeys::MODIFIABLE))
     modifiable = object[ConfigKeys::MODIFIABLE].toBool();
+
+  if (object.contains(ConfigKeys::EVENT))
+    event = object[ConfigKeys::EVENT].toString();
 }
 
 FlowConfig::FlowConfig()
@@ -155,6 +154,9 @@ FlowConfig::FlowConfig(const QJsonObject& object)
 
   if (object.contains(ConfigKeys::INFO))
     info = object[ConfigKeys::INFO].toString();
+
+  if (object.contains("linksTo"))
+    linksTo = object["linksTo"].toInt();
 }
 
 ControlsConfig::ControlsConfig()
@@ -318,9 +320,9 @@ NodeConfig::NodeConfig(const QJsonObject& object)
     }
   }
 
-  if (object.contains("events"))
+  if (object.contains(ConfigKeys::EVENTS))
   {
-    for (const auto& control : object["events"].toArray())
+    for (const auto& control : object[ConfigKeys::EVENTS].toArray())
     {
       auto ctrl = FlowConfig(control.toObject());
       if (!ctrl.isValid())
@@ -452,6 +454,7 @@ QDataStream& operator<<(QDataStream& out, const FlowConfig& config)
   out << config.returnType;
   out << config.arguments;
   out << config.info;
+  out << config.linksTo;
 
   return out;
 }
@@ -468,12 +471,18 @@ QDataStream& operator<<(QDataStream& out, const TransitionConfig& config)
   out << config.id;
   out << config.label;
   out << config.modifiable;
+  out << config.event;
 
   return out;
 }
 
 QDataStream& operator>>(QDataStream& in, TransitionConfig& config)
 {
+  in >> config.id;
+  in >> config.label;
+  in >> config.modifiable;
+  in >> config.event;
+
   return in;
 }
 

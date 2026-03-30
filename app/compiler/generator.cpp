@@ -33,8 +33,10 @@ VoidResult Generator::generate(const QString& outputDir, maki::IGeneratorPlugin*
 
   RETURN_ON_FAILURE(generator->verify(outputDir));
 
-  emit generationStarted(pipeline());
+  if (pipeline()->size() > 0)
+    emit generationStarted(pipeline());
 
+  LOG_DEBUG("Running generation pipeline");
   auto ran = pipeline()->start();
   if (!ran.IsSuccess())
     return VoidResult::Failed("Failed to run pipeline: " + ran.ErrorMessage());

@@ -30,7 +30,7 @@ public:
   VoidResult start(std::shared_ptr<SaveInfo> storage);
 
   VoidResult onNodeAdded(NodeItem* node) override;
-  VoidResult onNodeRemoved(NodeItem* node) override;
+  VoidResult onNodeRemoved(const QString& nodeId) override;
   VoidResult onNodeModified(NodeItem* node) override;
   VoidResult onNodeSelected(NodeItem* node, bool selected) override;
 

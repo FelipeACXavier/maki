@@ -35,7 +35,7 @@ public:
   friend QDataStream& operator<<(QDataStream& out, const SaveInfo& info);
   friend QDataStream& operator>>(QDataStream& in, SaveInfo& info);
 
-  QVector<std::shared_ptr<NodeSaveInfo>> getPossibleStates(const QString& nodeId) const;
+  QVector<std::shared_ptr<IProperty>> getPossibleStates(const QString& nodeId) const;
   QVector<std::shared_ptr<NodeSaveInfo>> getPossibleCallers(const QString& nodeId) const;
   QVector<std::shared_ptr<FlowSaveInfo>> getEventsFromNode(const QString& nodeId) const;
   QVector<std::shared_ptr<FlowSaveInfo>> getEventsOfTypeFromNode(const QString& nodeId, Types::CallType type) const;
@@ -50,7 +50,6 @@ private:
 
   QVector<std::shared_ptr<NodeSaveInfo>> findFamilyOfConstruct(const QString& nodeId, QVector<std::shared_ptr<INode>> nodes) const;
   std::shared_ptr<NodeSaveInfo> findParentOfConstruct(const QString& nodeId, const std::shared_ptr<INode> node) const;
-  void findStatesOfConstruct(QVector<std::shared_ptr<NodeSaveInfo>>& toReturn, QVector<std::shared_ptr<INode>> nodes) const;
 
   QVector<std::shared_ptr<FlowSaveInfo>> getEventsFromNode(const QString& nodeId, QVector<std::shared_ptr<INode>> nodes) const;
   std::shared_ptr<NodeSaveInfo> getNodeWithId(const QString& nodeId, const QVector<std::shared_ptr<INode>>& nodes);

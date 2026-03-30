@@ -17,7 +17,7 @@ public:
   BehaviourMenu(QWidget* parent);
 
   VoidResult onNodeSelected(NodeItem* node, bool selected);
-  VoidResult onNodeRemoved(NodeItem* node);
+  VoidResult onNodeRemoved(const QString& nodeId);
 
   std::function<QList<NodeItem*>()> mGetAvailableNodes;
 

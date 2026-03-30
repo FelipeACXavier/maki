@@ -3,6 +3,7 @@
 #include <QCheckBox>
 #include <QColorDialog>
 #include <QComboBox>
+#include <QCompleter>
 #include <QDoubleValidator>
 #include <QFormLayout>
 #include <QGroupBox>
@@ -37,6 +38,7 @@
 
 static const int EVENT_INDEX = 0;
 static const int ARG_INDEX = 1;
+static const int CLEAR_INDEX = INT32_MAX;
 
 #define UPDATE_PROPERTY(node, id, value)                  \
   do                                                      \
@@ -55,31 +57,54 @@ static const int ARG_INDEX = 1;
     node->setProperty(property.getid(), object);          \
   } while (false);
 
-#define UPDATE_PROPERTY_ARG(node, id, index, value)           \
-  do                                                          \
-  {                                                           \
-    auto propValue = node->getProperty(id);                   \
-    if (!propValue.isValid())                                 \
-    {                                                         \
-      LOG_WARNING("Property is not valid");                   \
-      return;                                                 \
-    }                                                         \
-                                                              \
-    QJsonObject object = propValue.toJsonObject();            \
-    QJsonArray array = object[ConfigKeys::OPTIONS].toArray(); \
-                                                              \
-    QJsonObject item;                                         \
-    item[ConfigKeys::DATA] = value;                           \
-    if (index == EVENT_INDEX)                                 \
-      array = QJsonArray();                                   \
-                                                              \
-    if (index < array.size())                                 \
-      array[index] = item;                                    \
-    else                                                      \
-      array.push_back(item);                                  \
-                                                              \
-    object[ConfigKeys::OPTIONS] = array;                      \
-    node->setProperty(id, object);                            \
+#define UPDATE_PROPERTY_ARG(node, id, index, value, type, isVariable) \
+  do                                                                  \
+  {                                                                   \
+    auto propValue = node->getProperty(id);                           \
+    if (propValue.isValid())                                          \
+    {                                                                 \
+      QJsonObject object = propValue.toJsonObject();                  \
+      QJsonArray array = object[ConfigKeys::OPTIONS].toArray();       \
+                                                                      \
+      QJsonObject item;                                               \
+      item[ConfigKeys::DATA] = value;                                 \
+      item[ConfigKeys::TYPE] = Types::PropertyTypesToString(type);    \
+      item[ConfigKeys::IS_VARIABLE] = isVariable;                     \
+      if (index == CLEAR_INDEX)                                       \
+        array = QJsonArray();                                         \
+                                                                      \
+      if (index < array.size())                                       \
+        array[index] = item;                                          \
+      else                                                            \
+        array.push_back(item);                                        \
+                                                                      \
+      object[ConfigKeys::OPTIONS] = array;                            \
+      node->setProperty(id, object);                                  \
+    }                                                                 \
+    else                                                              \
+    {                                                                 \
+      LOG_WARNING("Property is not valid");                           \
+    }                                                                 \
+  } while (false);
+
+#define ADD_COMPLETER(FIELD, NODE, TYPE)                         \
+  do                                                             \
+  {                                                              \
+    QStringList variables = {};                                  \
+    auto parentStates = mStorage->getPossibleStates(NODE->id()); \
+    for (const auto& state : parentStates)                       \
+    {                                                            \
+      if (!state)                                                \
+        continue;                                                \
+                                                                 \
+      if (state->gettype() == TYPE)                              \
+        variables.append(state->getid());                        \
+    }                                                            \
+                                                                 \
+    QCompleter* completer = new QCompleter(variables, FIELD);    \
+    completer->setCompletionMode(QCompleter::PopupCompletion);   \
+    completer->setCaseSensitivity(Qt::CaseInsensitive);          \
+    FIELD->widget()->setCompleter(completer);                    \
   } while (false);
 
 void clearLayout(QLayout* layout)
@@ -132,13 +157,10 @@ VoidResult PropertiesMenu::onNodeAdded(NodeItem* /* node */)
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::onNodeRemoved(NodeItem* node)
+VoidResult PropertiesMenu::onNodeRemoved(const QString& nodeId)
 {
-  if (!node)
-    return VoidResult();
-
   // Clear the frame
-  if (node->id() != mCurrentNode)
+  if (nodeId != mCurrentNode)
     return VoidResult();
 
   clearLayout(layout());
@@ -275,32 +297,19 @@ VoidResult PropertiesMenu::loadControls(NodeItem* node)
 
 VoidResult PropertiesMenu::loadPropertyInt(const PropertyInfo& property, NodeItem* node)
 {
-  QString label = ToLabel(property.getid());
-  QLabel* nameLabel = new QLabel(label);
-  nameLabel->setObjectName("PropertyLabel");
-  nameLabel->setFont(Fonts::Label);
-
-  QLineEdit* widget = new QLineEdit(this);
-  widget->setFont(Fonts::Property);
-  QIntValidator* validator = new QIntValidator(INT32_MIN, INT32_MIN, widget);
-
   auto result = node->getProperty(property.getid());
-  if (!result.isValid())
-    return VoidResult::Failed("Failed to get default value");
+  if (result.isNull())
+    return VoidResult::Failed("Failed to get property " + property.getid().toStdString() + " of " + node->nodeName().toStdString());
 
-  widget->setText(result.toString());
-  widget->setValidator(validator);
+  maki::WidgetAlignment alignment = {maki::WidgetAlignment::Type::VERTICAL};
+  auto widget = new maki::IntegerWidget(ToLabel(property.getid()), "", alignment, this);
+  if (result.isValid())
+    widget->setValue(result.toInt());
 
-  connect(widget, &QLineEdit::editingFinished, this, [node, widget, property]() {
-    bool ok;
-    int newValue = widget->text().toInt(&ok);
-    if (ok)
-      node->setProperty(property.getid(), newValue);
-    else
-      LOG_WARNING("Failed to set property of node %s to %d (%s)", qPrintable(node->nodeId()), newValue, qPrintable(widget->text()));
+  connect(widget, &maki::IntegerWidget::valueChanged, this, [node, property](const int value) {
+    node->setProperty(property.getid(), value);
   });
 
-  layout()->addWidget(nameLabel);
   layout()->addWidget(widget);
 
   return VoidResult();
@@ -308,33 +317,19 @@ VoidResult PropertiesMenu::loadPropertyInt(const PropertyInfo& property, NodeIte
 
 VoidResult PropertiesMenu::loadPropertyReal(const PropertyInfo& property, NodeItem* node)
 {
-  QString label = ToLabel(property.getid());
-  QLabel* nameLabel = new QLabel(label);
-  nameLabel->setObjectName("PropertyLabel");
-  nameLabel->setFont(Fonts::Label);
-
-  layout()->addWidget(nameLabel);
-
-  QLineEdit* widget = new QLineEdit(this);
-  QDoubleValidator* validator = new QDoubleValidator(DBL_MIN, DBL_MAX, 6, widget);
-
   auto result = node->getProperty(property.getid());
-  if (!result.isValid())
-    return VoidResult::Failed("Failed to get default value");
+  if (result.isNull())
+    return VoidResult::Failed("Failed to get property " + property.getid().toStdString() + " of " + node->nodeName().toStdString());
 
-  widget->setText(result.toString());
-  widget->setValidator(validator);
+  maki::WidgetAlignment alignment = {maki::WidgetAlignment::Type::VERTICAL};
+  auto widget = new maki::FloatWidget(ToLabel(property.getid()), "", alignment, this);
+  if (result.isValid())
+    widget->setValue(result.toInt());
 
-  connect(widget, &QLineEdit::returnPressed, this, [node, widget, property]() {
-    bool ok;
-    qreal newValue = widget->text().toDouble(&ok);
-    if (ok)
-      node->setProperty(property.getid(), newValue);
-    else
-      LOG_WARNING("Failed to set property. Not a valid number");
+  connect(widget, &maki::FloatWidget::valueChanged, this, [node, property](const qreal value) {
+    node->setProperty(property.getid(), value);
   });
 
-  widget->setFont(Fonts::Property);
   layout()->addWidget(widget);
 
   return VoidResult();
@@ -573,6 +568,10 @@ VoidResult PropertiesMenu::loadFieldEventSelect(QComboBox* componentSelect, cons
 
     // Finally, based on the event, we can set the arguments
     auto currentEventName = eventWidget->currentText();
+
+    // Make sure we set the property even if nothing was selected yet
+    UPDATE_PROPERTY_ARG(node, property.getid(), EVENT_INDEX, currentEventName, Types::PropertyTypes::EVENT_SELECT, false)
+
     LOG_WARN_ON_FAILURE(loadEventArguments(currentComponentId, currentEventName, property, node, Types::CallType::UNKNOWN, vlayout));
   }
 
@@ -581,7 +580,7 @@ VoidResult PropertiesMenu::loadFieldEventSelect(QComboBox* componentSelect, cons
       return;
 
     clearLayout(vlayout);
-    UPDATE_PROPERTY_ARG(node, property.getid(), EVENT_INDEX, text)
+    UPDATE_PROPERTY_ARG(node, property.getid(), CLEAR_INDEX, text, Types::PropertyTypes::EVENT_SELECT, false)
     LOG_WARN_ON_FAILURE(loadEventArguments(componentSelect->currentData().toString(), text, property, node, Types::CallType::UNKNOWN, vlayout));
   });
 
@@ -658,48 +657,61 @@ VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QStri
   {
     QJsonObject jsonItem = index < argArray.size() ? argArray[index].toObject() : QJsonObject();
 
-    if (arg->gettype() == Types::PropertyTypes::INTEGER)
+    const auto argType = arg->gettype();
+    if (argType == Types::PropertyTypes::INTEGER)
     {
-      auto* field = new maki::IntegerWidget(arg->getid(), arg->getdefaultValue().toString(), alignment, this);
+      auto* field = new maki::StringWidget(arg->getid(), arg->getdefaultValue().toString(), alignment, this);
+      ADD_COMPLETER(field, node, argType);
       if (jsonItem.contains(ConfigKeys::DATA))
-        field->setValue(jsonItem[ConfigKeys::DATA].toInt());
+        field->setValue(jsonItem[ConfigKeys::DATA].toString());
 
-      connect(field, &maki::IntegerWidget::valueChanged, this, [property, node, index](const int value) {
-        UPDATE_PROPERTY_ARG(node, property.getid(), index, value)
-        LOG_TRACE("Set property %s argument (%d) to %d", qPrintable(property.getid()), index, value);
+      connect(field, &maki::StringWidget::valueChanged, this, [property, node, index](const QString& value) {
+        bool isLiteral = false;
+        (void)value.toInt(&isLiteral);
+
+        UPDATE_PROPERTY_ARG(node, property.getid(), index, value, Types::PropertyTypes::INTEGER, !isLiteral)
+        LOG_DEBUG("Set property %s argument (%d) to %s", qPrintable(property.getid()), index, qPrintable(value));
       });
     }
-    else if (arg->gettype() == Types::PropertyTypes::REAL)
+    else if (argType == Types::PropertyTypes::REAL)
     {
-      auto* field = new maki::FloatWidget(arg->getid(), arg->getdefaultValue().toString(), alignment, this);
+      auto* field = new maki::StringWidget(arg->getid(), arg->getdefaultValue().toString(), alignment, this);
       if (jsonItem.contains(ConfigKeys::DATA))
-        field->setValue(jsonItem[ConfigKeys::DATA].toDouble());
+        field->setValue(jsonItem[ConfigKeys::DATA].toString());
 
-      connect(field, &maki::FloatWidget::valueChanged, this, [property, node, index](const qreal value) {
-        UPDATE_PROPERTY_ARG(node, property.getid(), index, value)
-        LOG_TRACE("Set property %s argument (%d) to %.2f", qPrintable(property.getid()), index, value);
+      ADD_COMPLETER(field, node, argType);
+
+      connect(field, &maki::StringWidget::valueChanged, this, [property, node, index](const QString& value) {
+        bool isLiteral = false;
+        (void)value.toDouble(&isLiteral);
+        UPDATE_PROPERTY_ARG(node, property.getid(), index, value, Types::PropertyTypes::REAL, !isLiteral)
+        LOG_DEBUG("Set property %s argument (%d) to %s", qPrintable(property.getid()), index, qPrintable(value));
       });
     }
-    else if (arg->gettype() == Types::PropertyTypes::STRING)
+    else if (argType == Types::PropertyTypes::STRING)
+    {
+      auto* field = new maki::StringWidget(arg->getid(), arg->getdefaultValue().toString(), alignment, this);
+      if (jsonItem.contains(ConfigKeys::DATA))
+        field->setValue(jsonItem[ConfigKeys::DATA].toString());
+
+      ADD_COMPLETER(field, node, argType);
+
+      connect(field, &maki::StringWidget::valueChanged, this, [property, node, index](const QString& value) {
+        bool isLiteral = value.size() > 2 && value.startsWith('"') && value.endsWith('"');
+        UPDATE_PROPERTY_ARG(node, property.getid(), index, value, Types::PropertyTypes::STRING, !isLiteral)
+        LOG_DEBUG("Set property %s argument (%d) to %s", qPrintable(property.getid()), index, qPrintable(value));
+      });
+    }
+    else if (arg->gettype() == Types::PropertyTypes::BOOLEAN)
     {
       auto* field = new maki::StringWidget(arg->getid(), arg->getdefaultValue().toString(), alignment, this);
       if (jsonItem.contains(ConfigKeys::DATA))
         field->setValue(jsonItem[ConfigKeys::DATA].toString());
 
       connect(field, &maki::StringWidget::valueChanged, this, [property, node, index](const QString& value) {
-        UPDATE_PROPERTY_ARG(node, property.getid(), index, value)
-        LOG_TRACE("Set property %s argument (%d) to %s", qPrintable(property.getid()), index, qPrintable(value));
-      });
-    }
-    else if (arg->gettype() == Types::PropertyTypes::BOOLEAN)
-    {
-      auto* field = new maki::BooleanWidget(arg->getid(), arg->getdefaultValue().toBool(), alignment, this);
-      if (jsonItem.contains(ConfigKeys::DATA))
-        field->setValue(jsonItem[ConfigKeys::DATA].toBool());
-
-      connect(field, &maki::BooleanWidget::valueChanged, this, [property, node, index](const bool value) {
-        UPDATE_PROPERTY_ARG(node, property.getid(), index, value)
-        LOG_TRACE("Set property %s argument (%d) to %d", qPrintable(property.getid()), index, value);
+        bool isLiteral = value == "true" || value == "false" || value == "True" || value == "False";
+        UPDATE_PROPERTY_ARG(node, property.getid(), index, value, Types::PropertyTypes::BOOLEAN, !isLiteral)
+        LOG_DEBUG("Set property %s argument (%d) to %s", qPrintable(property.getid()), index, qPrintable(value));
       });
     }
     else
@@ -789,9 +801,15 @@ VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)
   eventWidget->setPlaceholderText("-");
   eventWidget->setCurrentIndex(-1);
 
+  // First, we add the node specific transitions
+  for (const auto& t : source->configTransitions())
+    eventWidget->addItem(t.event, t.event);
+
+  // Then the generic handlers
   eventWidget->addItem("on error", "on error");
   eventWidget->addItem("on abort", "on abort");
 
+  // Finally, the rest of the signals
   auto callers = mStorage->getPossibleCallers(source->id());
   for (const auto& caller : callers)
   {
@@ -801,14 +819,16 @@ VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)
 
     auto events = mStorage->getEventsOfTypeFromNode(caller->getid(), Types::CallType::OUT);
     for (const auto& event : events)
-      eventWidget->addItem(name.toString() + "." + event->getname(), event->getid());
-
-    eventWidget->setCurrentText(transition->getEvent());
+      eventWidget->addItem(name.toString() + "." + event->getname(), "on");
   }
 
-  connect(eventWidget, &QComboBox::currentTextChanged, this, [transition](const QString& text) {
+  // Set the initial value
+  eventWidget->setCurrentText(transition->getEvent());
+
+  connect(eventWidget, &QComboBox::currentTextChanged, this, [transition, eventWidget](const QString& text) {
     transition->setEvent(text);
-    transition->setName(text);
+    transition->setName(eventWidget->currentData().toString());
+    LOG_INFO("Setting transition to: %s and %s", qPrintable(text), qPrintable(eventWidget->currentData().toString()));
   });
 
   QPushButton* button = new QPushButton(this);

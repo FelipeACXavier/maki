@@ -581,16 +581,10 @@ void MainWindow::onNodeAdded(NodeItem* node)
   LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeAdded(node));
 }
 
-void MainWindow::onNodeRemoved(NodeItem* node)
+void MainWindow::onNodeRemoved(const QString& nodeId, const QString& parentId)
 {
-  if (!node)
-  {
-    LOG_WARNING("A node was removed but no node was provided");
-    return;
-  }
-
-  LOG_WARN_ON_FAILURE(mSystemMenu->onNodeRemoved(canvas()->id(), node));
-  LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeRemoved(node));
+  LOG_WARN_ON_FAILURE(mSystemMenu->onNodeRemoved(canvas()->id(), nodeId, parentId));
+  LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeRemoved(nodeId));
 }
 
 void MainWindow::onNodeModified(NodeItem* node)

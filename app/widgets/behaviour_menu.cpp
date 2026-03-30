@@ -31,7 +31,7 @@ VoidResult BehaviourMenu::onNodeSelected(NodeItem* node, bool selected)
   return VoidResult();
 }
 
-VoidResult BehaviourMenu::onNodeRemoved(NodeItem* node)
+VoidResult BehaviourMenu::onNodeRemoved(const QString& nodeId)
 {
   return VoidResult();
 }

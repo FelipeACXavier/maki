@@ -20,6 +20,7 @@ static const QString OWNER = "owner";
 static const QString INFO = "info";
 static const QString LIBRARIES = "libraries";
 static const QString IS_VARIABLE = "isVariable";
+static const QString EVENT = "event";
 
 static const QString FIELDS = "fields";
 static const QString EVENTS = "events";

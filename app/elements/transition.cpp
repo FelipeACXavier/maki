@@ -27,7 +27,7 @@ TransitionItem::TransitionItem(std::shared_ptr<TransitionSaveInfo> storage)
 
   mLabel = new QGraphicsTextItem(this);
   mLabel->setFont(Fonts::Property);
-  mLabel->setPlainText(mStorage->getlabel());
+  mLabel->setPlainText(mStorage->getevent());
   updateLabelPosition();
 
   mStorage->setId(id());
@@ -208,12 +208,7 @@ QString TransitionItem::getName() const
 
 void TransitionItem::setName(const QString& name)
 {
-  if (!mLabel)
-    return;
-
-  mLabel->setPlainText(name);
   mStorage->setLabel(name);
-  updateLabelPosition();
 }
 
 void TransitionItem::updateLabelPosition()
@@ -251,4 +246,10 @@ QString TransitionItem::getEvent() const
 void TransitionItem::setEvent(const QString& name)
 {
   mStorage->setEvent(name);
+
+  if (!mLabel)
+    return;
+
+  mLabel->setPlainText(name);
+  updateLabelPosition();
 }

@@ -178,7 +178,6 @@ void EventDialog::createArgumentInput()
 
   QPushButton* button = new QPushButton(this);
   button->setObjectName("TextAndIcon");
-
   button->setEnabled(mStorage->getmodifiable());
   connect(button, &QPushButton::pressed, this, [this, model, args]() {
     int newRow = model->rowCount();
@@ -200,8 +199,32 @@ void EventDialog::createArgumentInput()
   button->setIcon(addIconWithColor(":/icons/plus.svg", Config::FOREGROUND));
   button->setMaximumWidth(250);
 
+  QPushButton* deletebutton = new QPushButton(this);
+  deletebutton->setObjectName("TextAndIcon");
+  deletebutton->setEnabled(mStorage->getmodifiable());
+  connect(deletebutton, &QPushButton::pressed, this, [this, model, args]() {
+    QModelIndex index = args->currentIndex();
+    if (!index.isValid())
+      return;
+
+    int row = index.row();
+    model->removeRow(row);
+    if (auto property = mStorage->getArgument(row))
+      mStorage->removeArgument(property);
+  });
+
+  deletebutton->setFocusPolicy(Qt::NoFocus);
+  deletebutton->setText(tr(" Remove argument"));
+  deletebutton->setIcon(addIconWithColor(":/icons/clear.svg", Config::FOREGROUND));
+  deletebutton->setMaximumWidth(250);
+
+  QHBoxLayout* buttonLayout = new QHBoxLayout();
+  buttonLayout->addStretch();
+  buttonLayout->addWidget(button);
+  buttonLayout->addWidget(deletebutton);
+
   layout()->addWidget(args);
-  layout()->addWidget(button);
+  layout()->addLayout(buttonLayout);
 }
 
 void EventDialog::updateArgumentTable(int row, int column, const QString& text)

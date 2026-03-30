@@ -65,12 +65,19 @@ void PluginManager::start(QMenu* menu, QComboBox* comboBox, HostServices* servic
     codeGen->setHostServices(services);
 
     QAction* action = menu->addAction(codeGen->languageName());
-    connect(action, &QAction::triggered, [this, codeGen] { setPlugin(codeGen); });
+    connect(action, &QAction::triggered, [this, codeGen, comboBox] {
+      setPlugin(codeGen);
+      if (codeGen)
+        comboBox->setCurrentText(codeGen->languageName());
+    });
 
     comboBox->addItem(codeGen->languageName(), codeGen->languageName());
-
     mPlugins.append(codeGen);
   }
+
+  connect(comboBox, &QComboBox::currentTextChanged, [this](const QString& text) {
+    setPlugin(pluginByLanguage(text));
+  });
 
   // Set default plugin
   setPlugin(mPlugins.front());
@@ -79,11 +86,19 @@ void PluginManager::start(QMenu* menu, QComboBox* comboBox, HostServices* servic
 
 void PluginManager::setPlugin(maki::IGeneratorPlugin* plugin)
 {
+  if (!plugin)
+  {
+    LOG_WARNING("Trying to set plugin that doesn't exist");
+    return;
+  }
+
   if (mPlugin)
     mPlugin->tearDown();
 
   mPlugin = plugin;
   plugin->setup();
+
+  LOG_DEBUG("Setting plugin: %s", qPrintable(plugin->languageName()));
 }
 
 maki::IGeneratorPlugin* PluginManager::currentPlugin() const

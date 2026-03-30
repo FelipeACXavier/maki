@@ -86,7 +86,7 @@ void FieldDialog::createTypeInput(QWidget* parent)
   auto type = new maki::SelectorWidget(tr("Return type"), typeBox, this);
   type->setObjectName("TypeField");
 
-  connect(type, &maki::SelectorWidget::valueChanged, this, [this, parent](const QString& text) {
+  connect(type, &maki::SelectorWidget::valueChanged, this, [this](const QString& text) {
     auto fieldType = Types::StringToPropertyTypes(text);
     mStorage->setType(fieldType);
   });
@@ -113,7 +113,7 @@ void FieldDialog::createArgumentInput(QWidget* parent)
   name->setText(mStorage->getdefaultValue().toString());
   name->setFocusPolicy(Qt::ClickFocus);
 
-  connect(name, &QLineEdit::editingFinished, this, [=]() {
+  connect(name, &QLineEdit::editingFinished, this, [this, name]() {
     LOG_DEBUG("Setting default to %s", qPrintable(name->text()));
     mStorage->setDefaultValue(name->text());
   });
