@@ -30,6 +30,7 @@ class NotificationManager;
 class PluginTab;
 class PluginView;
 class QPlainTextEdit;
+class Logger;
 
 class MainWindow : public MainWindowLayout
 {
@@ -64,6 +65,7 @@ private:
   ProcessTab* mProcessTab = nullptr;
   PluginTab* mPluginTab = nullptr;
   NotificationManager* mNotificationManager = nullptr;
+  Logger* mLogger = nullptr;
 
   logging::LogLevel mLogLevel;
 

@@ -12,6 +12,7 @@
 
 #include "dezyne_simulator.h"
 #include "idocument.h"
+#include "ilogging.h"
 #include "ipipeline.h"
 #include "isettings.h"
 #include "itab.h"
@@ -195,11 +196,12 @@ void KodaGenerator::setHostServices(maki::IHostServices* services)
     service->registerSettings(languageName(), version(), mSettings);
 
   if (auto pluginTab = mServices->pluginTab())
-  {
     pluginTab->registerPlugin(languageName(), [this](QGraphicsScene* scene) {
       return createSimulationScene(scene, mLastUpdate);
     });
-  }
+
+  if (auto logger = mServices->logger())
+    logger->registerPlugin(languageName(), logging::gLogToStream);
 }
 
 QString KodaGenerator::languageName() const
@@ -290,8 +292,19 @@ VoidResult KodaGenerator::verify(const QString& outputFolder)
   if (!mOutputFolder.exists())
     mOutputFolder.mkpath(".");
 
+  // Clear the errors before generation
+  mErrors = {};
+
   // Generate Koda from the model
   generateKoda(outputFolder);
+
+  if (!mErrors.isEmpty())
+  {
+    for (const auto& error : mErrors)
+      LOG_WARNING("%s", qPrintable(error.message));
+
+    return VoidResult::Failed("Failed to generate KODA file");
+  }
 
   // Compile Koda to Dezyne
   mDezyneOutputFolder = QDir(mOutputFolder.absolutePath() + "/models");
@@ -727,6 +740,18 @@ QString KodaGenerator::generateAsyncTask(const INode& node, const Argument& arg,
   QString code = "";
   QJsonObject object = node.getproperties()["capability"].toJsonObject();
   QString val = object[ConfigKeys::DATA].toString();
+  if (val.isEmpty())
+  {
+    mErrors.push_back({node.getid(),
+                       node.getnodeId(),
+                       flow.getid(),
+                       QString("AsyncTask component does not have a valid capability")});
+    return code;
+  }
+
+  // TODO: Check validity
+  // - Arguments match the expectation
+  // - Transitions are valid
   QJsonArray options = object[ConfigKeys::OPTIONS].toArray();
   QString args = createArguments(options);
 
@@ -800,8 +825,28 @@ QString KodaGenerator::generateSyncTask(const INode& node, const Argument& arg, 
   QString code = "";
   QJsonObject object = node.getproperties()["capability"].toJsonObject();
   QString val = object[ConfigKeys::DATA].toString();
-  QJsonArray options = object[ConfigKeys::OPTIONS].toArray();
+  if (val.isEmpty())
+  {
+    mErrors.push_back({node.getid(),
+                       node.getnodeId(),
+                       flow.getid(),
+                       QString("SyncTask component does not have a valid capability")});
+    return code;
+  }
 
+  QJsonArray options = object[ConfigKeys::OPTIONS].toArray();
+  if (val.isEmpty())
+  {
+    mErrors.push_back({node.getid(),
+                       node.getnodeId(),
+                       flow.getid(),
+                       QString("SyncTask component %1 is missing an associated call").arg(val)});
+    return code;
+  }
+
+  // TODO: Check validity
+  // - Arguments match the expectation
+  // - Transitions are valid
   QString method = "";
   QString args = "";
   for (uint32_t i = 0; i < options.size(); ++i)
@@ -989,10 +1034,19 @@ QString KodaGenerator::generateEvery(const INode& node, const Argument& arg, con
 QString KodaGenerator::generateRepeat(const INode& node, const Argument& arg, const IFlow& flow, const QString& format)
 {
   QString code = "";
-  QJsonObject object = node.getproperties()["component"].toJsonObject();
+  QJsonObject object = node.getproperties()["strategy"].toJsonObject();
   QString val = object[ConfigKeys::DATA].toString();
   QJsonArray options = object[ConfigKeys::OPTIONS].toArray();
-  QString strategy = options.size() > 0 ? options[0].toObject()[ConfigKeys::DATA].toString() : "";
+  if (options.isEmpty())
+  {
+    mErrors.push_back({node.getid(),
+                       node.getnodeId(),
+                       flow.getid(),
+                       QString("Repeat component %1 does not have an associated flow").arg(val)});
+    return code;
+  }
+
+  QString strategy = options[0].toObject()[ConfigKeys::DATA].toString();
 
   code += "repeat(" + strategy + ")";
 
@@ -1002,9 +1056,19 @@ QString KodaGenerator::generateRepeat(const INode& node, const Argument& arg, co
 QString KodaGenerator::generateStrategy(const INode& node, const Argument& arg, const IFlow& flow, const QString& format)
 {
   QString code = "";
-  QJsonObject object = node.getproperties()["component"].toJsonObject();
+  QJsonObject object = node.getproperties()["strategy"].toJsonObject();
+  QString val = object[ConfigKeys::DATA].toString();
   QJsonArray options = object[ConfigKeys::OPTIONS].toArray();
-  QString strategy = options.size() > 0 ? options[0].toObject()[ConfigKeys::DATA].toString() : "";
+  if (options.isEmpty())
+  {
+    mErrors.push_back({node.getid(),
+                       node.getnodeId(),
+                       flow.getid(),
+                       QString("Strategy component %1 does not have an associated flow").arg(val)});
+    return code;
+  }
+
+  QString strategy = options[0].toObject()[ConfigKeys::DATA].toString();
 
   QString args = "";
   for (uint32_t i = 1; i < options.size(); ++i)

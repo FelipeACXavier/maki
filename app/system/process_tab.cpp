@@ -56,9 +56,9 @@ void ProcessTab::onStartingProcess(const QString& process, const QStringList& ar
   appendText(QString("> %1 %2\n\n").arg(process, arguments.join(' ')));
 }
 
-void ProcessTab::onErrorOccurred(QProcess::ProcessError error)
+void ProcessTab::onErrorOccurred(QProcess::ProcessError error, const QString& message)
 {
-  appendText(QString("\n[Process error: %1]\n").arg(static_cast<int>(error)));
+  appendText(QString("\n[Process error: %1] %2\n").arg(static_cast<int>(error)).arg(message));
   emit processFinished(1, QProcess::ExitStatus::CrashExit);
 }
 

@@ -29,6 +29,7 @@
 #include "keys.h"
 #include "library_container.h"
 #include "library_scene.h"
+#include "logger.h"
 #include "logging.h"
 #include "notifications.h"
 #include "plugin_manager.h"
@@ -69,13 +70,9 @@ VoidResult MainWindow::start()
     QString logMessage = toQT(ts, level, message);
     handleLogging(logMessage, mLogText);
     if (level == logging::LogLevel::Error)
-    {
       handleLogging(logMessage, mErrorLogText);
-    }
     else if (level == logging::LogLevel::Warning)
-    {
       handleLogging(logMessage, mWarningLogText);
-    }
   };
 
   notification::gNotificationStream = [this](logging::LogLevel level, const std::string& header, const std::string& message) {
@@ -94,6 +91,7 @@ VoidResult MainWindow::start()
   mSettingsManager = std::make_shared<SettingsManager>(mActionOpenRecent);
   // TODO(felaze): Check leaks here
   mNotificationManager = new NotificationManager(mCanvasPanel);
+  mLogger = new Logger(this);
 
   mPipeline = new Pipeline(this);
   mGenerator = new Generator(mPipeline, this);
@@ -105,6 +103,7 @@ VoidResult MainWindow::start()
 
   mHostServices = new HostServices(mStorage.get(), mPipeline, mSettingsManager.get(), QCoreApplication::applicationDirPath(), this);
   mHostServices->setPluginTab(mPluginTab);
+  mHostServices->setLogger(mLogger);
 
   startUI();
   bind();

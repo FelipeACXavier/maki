@@ -51,6 +51,16 @@ private:
   DezyneSimulator* mSimulator = nullptr;
   QJsonObject mLastUpdate;
 
+  struct Error
+  {
+    QString nodeId;
+    QString nodeType;
+    QString flowId;
+    QString message;
+  };
+
+  QVector<Error> mErrors;
+
   struct Argument
   {
     QString name = "";

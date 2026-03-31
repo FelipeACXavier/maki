@@ -1,7 +1,9 @@
 #include "host_services.h"
 
 #include "idocument.h"
+#include "ilogging.h"
 #include "ipipeline.h"
+#include "itab.h"
 
 HostServices::HostServices(IDocument* document, maki::IPipeline* pipeline, maki::ISettings* settings, const QString& root, QObject* parent)
     : QObject(parent)
@@ -16,6 +18,11 @@ HostServices::HostServices(IDocument* document, maki::IPipeline* pipeline, maki:
 void HostServices::setPluginTab(maki::ITab* tab)
 {
   mPluginTab = tab;
+}
+
+void HostServices::setLogger(maki::ILogging* logger)
+{
+  mLogger = logger;
 }
 
 IDocument* HostServices::document() const
@@ -41,4 +48,9 @@ maki::ITab* HostServices::pluginTab() const
 QString HostServices::projectRoot() const
 {
   return mRoot;
+}
+
+maki::ILogging* HostServices::logger() const
+{
+  return mLogger;
 }

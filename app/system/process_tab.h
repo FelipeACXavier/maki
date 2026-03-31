@@ -23,7 +23,7 @@ private slots:
   void onFinishedLast();
   void onReadyReadStandardOutput(const QByteArray& message);
   void onReadyReadStandardError(const QByteArray& message);
-  void onErrorOccurred(QProcess::ProcessError error);
+  void onErrorOccurred(QProcess::ProcessError error, const QString& process);
 
 private:
   QTextBrowser* mOutput;
