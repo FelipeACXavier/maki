@@ -15,6 +15,8 @@ public:
   void setExpanded(bool expanded);
   bool isExpanded() const;
 
+  QWidget* content() const;
+
 private:
   QToolButton* mToggleButton = nullptr;
   QWidget* mContent = nullptr;

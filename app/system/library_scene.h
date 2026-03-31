@@ -13,6 +13,10 @@ class LibraryScene : public QGraphicsScene
 public:
   LibraryScene(QObject* parent = nullptr);
 
+  QRectF visibleItemsBounds() const;
+  bool filterNodes(const QString& query);
+  void relayoutVisibleItems();
+
 signals:
   void libraryNodeSelected(const QString& nodeType);
 

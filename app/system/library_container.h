@@ -15,6 +15,8 @@ public:
 
   VoidResult addNode(const QString& id, std::shared_ptr<NodeConfig> config);
 
+  bool filterNodes(const QString& query);
+
 protected:
   void resizeEvent(QResizeEvent* event) override;
 

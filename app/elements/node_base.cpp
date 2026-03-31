@@ -12,8 +12,8 @@
 #include "node.h"
 #include "theme.h"
 
-const qreal MAX_WIDTH = 100.0;
-const qreal MAX_HEIGHT = 100.0;
+const qreal MAX_WIDTH = 80.0;
+const qreal MAX_HEIGHT = 80.0;
 
 NodeBase::NodeBase(const QString& id, const QString& nodeId, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
     : QGraphicsItem(parent)

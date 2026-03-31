@@ -48,7 +48,7 @@ void LibraryContainer::updateSceneSize()
   if (!scene())
     return;
 
-  QRectF bounds = scene()->itemsBoundingRect();
+  QRectF bounds = qobject_cast<LibraryScene*>(scene())->visibleItemsBounds();
   const int contentHeight = qCeil(bounds.height()) + 20;
 
   scene()->setSceneRect(0, 0, viewport()->width(), contentHeight);
@@ -90,4 +90,16 @@ void LibraryContainer::adjustNodePositions()
 
     dynamic_cast<DraggableItem*>(item)->adjustWidth(viewport()->width());
   }
+}
+
+bool LibraryContainer::filterNodes(const QString& query)
+{
+  auto* libraryScene = qobject_cast<LibraryScene*>(scene());
+  if (!libraryScene)
+    return false;
+
+  const bool hasMatches = libraryScene->filterNodes(query);
+  updateSceneSize();
+
+  return hasMatches;
 }

@@ -217,7 +217,8 @@ void MainWindow::bind()
     // 1) If focus is in the node library panel -> search there
     if (QScrollArea* lib = qobject_cast<QScrollArea*>(findAncestor(fw, &QScrollArea::staticMetaObject)))
     {
-      if (lib == mStructureScrollArea || lib == mBehaviourScrollArea)
+      // For now, we only search in the structure tab
+      if (lib == mStructureScrollArea)
       {
         LOG_DEBUG("Finding in palette");
         mPaletteSearch->show();
@@ -225,13 +226,14 @@ void MainWindow::bind()
         return;
       }
     }
-
     if (auto* search = qobject_cast<maki::SearchWidget*>(findAncestor(fw, &maki::SearchWidget::staticMetaObject)))
     {
-      Q_UNUSED(search);
-      LOG_DEBUG("Finding in palette");
-      mPaletteSearch->show();
-      mPaletteSearch->widget()->setFocus(Qt::ShortcutFocusReason);
+      if (search == mPaletteSearch)
+      {
+        LOG_DEBUG("Finding in palette");
+        mPaletteSearch->show();
+        mPaletteSearch->widget()->setFocus(Qt::ShortcutFocusReason);
+      }
       return;
     }
 
@@ -312,6 +314,21 @@ void MainWindow::bind()
   }
 
   connect(mProcessTabButton, &QPushButton::pressed, this, &MainWindow::addProcessTab);
+
+  // Search stuff =============================================================
+  connect(mPaletteSearch, &maki::SearchWidget::valueChanged, [this](const QString& query) {
+    // This is inefficient and might cause some issues in the future since the search is done on every input change.
+    // Still, it is enough for now
+    QList<SectionWidget*> sections = mStructureTab->findChildren<SectionWidget*>();
+    for (const auto& section : sections)
+    {
+      if (auto* library = qobject_cast<LibraryContainer*>(section->content()))
+      {
+        const bool hasMatches = library->filterNodes(query);
+        section->setExpanded(hasMatches || query.isEmpty());
+      }
+    }
+  });
 
   // Canvas stuff =============================================================
   bindCanvas();

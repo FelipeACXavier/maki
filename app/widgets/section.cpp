@@ -57,3 +57,8 @@ bool SectionWidget::isExpanded() const
 {
   return mToggleButton->isChecked();
 }
+
+QWidget* SectionWidget::content() const
+{
+  return mContent;
+}
