@@ -36,8 +36,8 @@ Canvas::Canvas(const QString& canvasId, std::shared_ptr<SaveInfo> storage, std::
   setBackgroundBrush(Qt::transparent);
   // setItemIndexMethod(ItemIndexMethod::NoIndex);
 
-  mHoverTimer = new QTimer(this);
-  mHoverTimer->setSingleShot(true);
+  // mHoverTimer = new QTimer(this);
+  // mHoverTimer->setSingleShot(true);
 
   mUndoStack = new QUndoStack(this);
   mUndoStack->setUndoLimit(20);
@@ -890,13 +890,15 @@ void Canvas::clearCanvas()
     if (node->parentNode())
       continue;
 
-    toRemove = removeNode(node);
+    toRemove += removeNode(node);
   }
 
   QTimer::singleShot(0, this, [toRemove]() {
     for (QGraphicsItem* item : toRemove)
       delete item;
   });
+
+  LOG_DEBUG("Number of items after clearCanvas: %d", items().size());
 }
 
 void Canvas::selectNode(NodeItem* node, bool select)
@@ -963,6 +965,8 @@ VoidResult Canvas::loadFromSave(const SaveInfo& info)
   parentView()->zoom(canvasInfo.scale() / parentView()->getScale());
   parentView()->setScale(canvasInfo.scale());
   parentView()->centerOn(canvasInfo.center());
+
+  LOG_DEBUG("Loading canvas from save with %d nodes", info.getnodes().size());
 
   return loadFromSave(info.getnodes(), nullptr);
 }

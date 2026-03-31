@@ -101,7 +101,7 @@ VoidResult MainWindow::start()
 
   mPluginTab = new PluginTab(mSpecialTabsMenu, this);
 
-  mHostServices = new HostServices(mStorage.get(), mPipeline, mSettingsManager.get(), QCoreApplication::applicationDirPath(), this);
+  mHostServices = new HostServices(mStorage, mPipeline, mSettingsManager.get(), QCoreApplication::applicationDirPath(), this);
   mHostServices->setPluginTab(mPluginTab);
   mHostServices->setLogger(mLogger);
 
@@ -481,6 +481,7 @@ void MainWindow::onActionNew()
 
   // Repopulate the canvas
   SaveInfo emptySave;
+  *mStorage = emptySave;
 
   // Gotta make sure we don't save over an old file
   mSaveHandler->newFileCreated();
@@ -545,8 +546,11 @@ void MainWindow::onActionLoad(const QString& filename)
   for (int i = 1; i < mCanvasPanel->count(); ++i)
     closeCanvasTab(i);
 
-  // Repopulate the canvas
   auto info = loaded.Value();
+  // Clear the storage
+  *mStorage = SaveInfo();
+
+  // Repopulate the canvas (and the storage)
   canvas()->loadFromSave(info);
 }
 
