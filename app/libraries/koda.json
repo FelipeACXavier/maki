@@ -792,6 +792,331 @@
               "modifiable": false
             }
           ]
+        },
+        {
+          "type": "Conveyor",
+          "body": {
+            "shape": "Rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#bb2c1e",
+            "borderColor": "#FFFFFF",
+            "width": 500,
+            "height": 500,
+            "z-index": -2
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Conveyor"
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#7ebb9c"
+            },
+            {
+              "id": "type",
+              "type": "void",
+              "options": [
+                {
+                  "id": "action",
+                  "type": "string",
+                  "options": [
+                    {
+                      "id": "route",
+                      "type": "string",
+                      "default": "conveyor"
+                    },
+                    {
+                      "id": "message",
+                      "type": "string",
+                      "default": ""
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "events": [
+            {
+              "id": "move",
+              "type": "trigger",
+              "returnType": "void",
+              "modifiable": false,
+              "linksTo": 0,
+              "arguments": []
+            },
+            {
+              "id": "done",
+              "type": "return",
+              "returnType": "void",
+              "linksTo": 0,
+              "modifiable": false
+            },
+            {
+              "id": "stop",
+              "type": "abort",
+              "returnType": "void",
+              "linksTo": 0,
+              "modifiable": false
+            },
+            {
+              "id": "failed",
+              "type": "error",
+              "returnType": "void",
+              "linksTo": 0,
+              "modifiable": false
+            }
+          ]
+        },
+        {
+          "type": "RobotArm",
+          "body": {
+            "shape": "Rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#d73800",
+            "borderColor": "#FFFFFF",
+            "width": 500,
+            "height": 500,
+            "z-index": -2
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "RobotArm"
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#7ebb9c"
+            },
+            {
+              "id": "type",
+              "type": "void",
+              "options": [
+                {
+                  "id": "action",
+                  "type": "string",
+                  "options": [
+                    {
+                      "id": "route",
+                      "type": "string",
+                      "default": "arm"
+                    },
+                    {
+                      "id": "message",
+                      "type": "string",
+                      "default": ""
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "arguments",
+              "type": "list",
+              "default": [
+                {
+                  "id": "pick",
+                  "type": "string"
+                }
+              ]
+            }
+          ],
+          "events": [
+            {
+              "id": "act",
+              "type": "trigger",
+              "returnType": "void",
+              "modifiable": false,
+              "linksTo": 0,
+              "arguments": [
+                {
+                  "id": "pick",
+                  "type": "string"
+                }
+              ]
+            },
+            {
+              "id": "done",
+              "type": "return",
+              "returnType": "void",
+              "linksTo": 0,
+              "modifiable": false
+            },
+            {
+              "id": "stop",
+              "type": "abort",
+              "returnType": "void",
+              "linksTo": 0,
+              "modifiable": false
+            },
+            {
+              "id": "failed",
+              "type": "error",
+              "returnType": "void",
+              "linksTo": 0,
+              "modifiable": false
+            }
+          ]
+        },
+        {
+          "type": "ImageInspector",
+          "body": {
+            "shape": "Rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#e5c185",
+            "borderColor": "#FFFFFF",
+            "width": 500,
+            "height": 500,
+            "z-index": -2
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "ImageInspector"
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#d73800"
+            },
+            {
+              "id": "type",
+              "type": "void",
+              "options": [
+                {
+                  "id": "service",
+                  "type": "string",
+                  "options": [
+                    {
+                      "id": "route",
+                      "type": "string",
+                      "default": "image/start"
+                    },
+                    {
+                      "id": "message",
+                      "type": "string",
+                      "default": ""
+                    }
+                  ]
+                },
+                {
+                  "id": "service",
+                  "type": "string",
+                  "options": [
+                    {
+                      "id": "route",
+                      "type": "string",
+                      "default": "image/stop"
+                    },
+                    {
+                      "id": "message",
+                      "type": "string",
+                      "default": ""
+                    }
+                  ]
+                },
+                {
+                  "id": "service",
+                  "type": "string",
+                  "options": [
+                    {
+                      "id": "route",
+                      "type": "string",
+                      "default": "image/invalid"
+                    },
+                    {
+                      "id": "message",
+                      "type": "string",
+                      "default": ""
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "events": [
+            {
+              "id": "start",
+              "type": "in",
+              "returnType": "void",
+              "modifiable": false,
+              "linksTo": 0
+            },
+            {
+              "id": "stop",
+              "type": "in",
+              "returnType": "void",
+              "modifiable": false,
+              "linksTo": 1
+            },
+            {
+              "id": "invalid",
+              "type": "out",
+              "returnType": "void",
+              "modifiable": false,
+              "linksTo": 2
+            }
+          ]
+        },
+        {
+          "type": "TicketCreation",
+          "body": {
+            "shape": "Rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#fbf2c4",
+            "borderColor": "#FFFFFF",
+            "width": 500,
+            "height": 500,
+            "z-index": -2
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "TicketCreation"
+            },
+            {
+              "id": "color",
+              "type": "color",
+              "default": "#d73800"
+            },
+            {
+              "id": "type",
+              "type": "void",
+              "options": [
+                {
+                  "id": "service",
+                  "type": "string",
+                  "options": [
+                    {
+                      "id": "route",
+                      "type": "string",
+                      "default": "ticket/create"
+                    },
+                    {
+                      "id": "message",
+                      "type": "string",
+                      "default": ""
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "events": [
+            {
+              "id": "create",
+              "type": "in",
+              "returnType": "void",
+              "modifiable": false,
+              "linksTo": 0
+            }
+          ]
         }
       ]
     },
@@ -1043,7 +1368,7 @@
               "default": "#202020"
             },
             {
-              "id": "component",
+              "id": "strategy",
               "type": "component_select",
               "options": [
                 {
@@ -1152,7 +1477,7 @@
               "default": "Repeat"
             },
             {
-              "id": "component",
+              "id": "strategy",
               "type": "component_select",
               "options": [
                 {

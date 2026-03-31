@@ -314,7 +314,7 @@
                         "arguments": [
                             {
                                 "id": "up",
-                                "type": "boolean"
+                                "type": "string"
                             }
                         ],
                         "color": "#7ebb9c",
@@ -765,7 +765,7 @@
                             },
                             "properties": {
                                 "color": "#b3ad00",
-                                "component": {
+                                "strategy": {
                                     "options": [
                                         {
                                             "data": "abrt",
@@ -970,7 +970,7 @@
                             },
                             "properties": {
                                 "color": "#202020",
-                                "component": {
+                                "strategy": {
                                     "data": "Home",
                                     "options": [
                                         {
@@ -1036,7 +1036,7 @@
                             },
                             "properties": {
                                 "color": "#202020",
-                                "component": {
+                                "strategy": {
                                     "options": [
                                         {
                                             "data": "ventilation",
@@ -1395,7 +1395,7 @@
                             },
                             "properties": {
                                 "color": "#550000",
-                                "component": {
+                                "strategy": {
                                     "options": [
                                         {
                                             "data": "err",
@@ -1426,7 +1426,7 @@
                             },
                             "properties": {
                                 "color": "#abab00",
-                                "component": {
+                                "strategy": {
                                     "options": [
                                         {
                                             "data": "abrt",
