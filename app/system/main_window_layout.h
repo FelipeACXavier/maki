@@ -14,13 +14,14 @@ class QTabWidget;
 class SystemMenu;
 class FlowMenu;
 class QTextBrowser;
-class QToolBox;
 class QComboBox;
 class QPushButton;
 class PropertiesMenu;
 class ProcessTab;
 class QUndoGroup;
 class GeneratedFilesPanel;
+class SectionWidget;
+class QScrollArea;
 
 namespace maki
 {
@@ -42,10 +43,10 @@ protected:
   // === Left Panel ===
   QTabWidget* mPalette;
   QWidget* mStructureTab;
-  QToolBox* mStructureToolBox;
+  QScrollArea* mStructureScrollArea;
 
   QWidget* mBehaviourTab;
-  QToolBox* mBehaviourToolBox;
+  QScrollArea* mBehaviourScrollArea;
   maki::SearchWidget* mPaletteSearch;
   QSplitter* mLeftPanel;
 

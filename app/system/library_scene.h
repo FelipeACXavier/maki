@@ -5,7 +5,7 @@
 #include <QGraphicsScene>
 #include <QMouseEvent>
 
-class DraggableItem;
+#include "elements/draggable.h"
 
 class LibraryScene : public QGraphicsScene
 {

@@ -19,6 +19,8 @@ static const int CONNECTOR_RADIUS = 5;
 static const qreal MINIMUM_NODE_SIZE = 50;
 static const qreal OPACITY_THRESHOLD = 0.25;
 
+static const int CONTENT_PADDING = 5;
+
 }  // namespace Config
 
 namespace Constants

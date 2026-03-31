@@ -10,6 +10,7 @@
 #include <QPushButton>
 #include <QRegularExpression>
 #include <QRegularExpressionValidator>
+#include <QScrollArea>
 #include <QShortcut>
 #include <QString>
 #include <QTextBlock>
@@ -42,6 +43,7 @@
 #include "system/main_window_layout.h"
 #include "widgets/notification_manager.h"
 #include "widgets/properties/properties_menu.h"
+#include "widgets/section.h"
 #include "widgets/settings_dialog.h"
 #include "widgets/settings_manager.h"
 #include "widgets/structure/file_menu.h"
@@ -213,9 +215,9 @@ void MainWindow::bind()
     LOG_INFO("Focused on: %s", qPrintable(fw->metaObject()->className()));
 
     // 1) If focus is in the node library panel -> search there
-    if (QToolBox* lib = qobject_cast<QToolBox*>(findAncestor(fw, &QToolBox::staticMetaObject)))
+    if (QScrollArea* lib = qobject_cast<QScrollArea*>(findAncestor(fw, &QScrollArea::staticMetaObject)))
     {
-      if (lib == mStructureToolBox || lib == mBehaviourToolBox)
+      if (lib == mStructureScrollArea || lib == mBehaviourScrollArea)
       {
         LOG_DEBUG("Finding in palette");
         mPaletteSearch->show();
@@ -388,6 +390,10 @@ VoidResult MainWindow::loadElements()
     LOG_ERROR_ON_FAILURE(loadLibrary(libConfig));
   }
 
+  // Once we are done with the libraries, we can make sure they are positioned on the top
+  dynamic_cast<QVBoxLayout*>(mStructureTab->layout())->addStretch();
+  dynamic_cast<QVBoxLayout*>(mBehaviourTab->layout())->addStretch();
+
   return VoidResult();
 }
 
@@ -425,11 +431,12 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
 
   // Every library is added to a new item in the toolbox.
   // We load those dynamically on startup.
-  QToolBox* toolbox = nullptr;
+  QWidget* toolbox = nullptr;
+  // SectionWidget* toolbox = nullptr;
   if (type == ConfigKeys::STRUCTURAL)
-    toolbox = mStructureToolBox;
+    toolbox = mStructureTab;
   else
-    toolbox = mBehaviourToolBox;
+    toolbox = mBehaviourTab;
 
   LibraryContainer* sidebarview = LibraryContainer::create(libraryName, toolbox);
   LibraryScene* sidebarScene = dynamic_cast<LibraryScene*>(sidebarview->scene());

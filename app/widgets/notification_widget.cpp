@@ -6,12 +6,10 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
+#include "app_configs.h"
 #include "logging.h"
 #include "style_helpers.h"
 #include "theme.h"
-
-static const int HEADER_MARGIN = 6;
-static const int TEXT_MARGIN = 6;
 
 NotificationWidget::NotificationWidget(const QString& title, const QString& text, logging::LogLevel level, QWidget* parent)
     : QFrame(parent)
@@ -50,7 +48,9 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
 
   // Header
   auto* headerLayout = new QHBoxLayout(header);
-  headerLayout->setContentsMargins(HEADER_MARGIN, HEADER_MARGIN, HEADER_MARGIN, HEADER_MARGIN);
+  headerLayout->setContentsMargins(
+      Config::CONTENT_PADDING, Config::CONTENT_PADDING,
+      Config::CONTENT_PADDING, Config::CONTENT_PADDING);
   headerLayout->setSpacing(0);
 
   QLabel* titleLabel = new QLabel(title.size() > 1 ? title : "Notification", this);
@@ -67,7 +67,7 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
   mCloseButton->setIcon(addIconWithColor(":/icons/close.svg", Config::FOREGROUND));
 
   headerLayout->addWidget(titleIcon, 0, Qt::AlignVCenter);
-  headerLayout->addSpacing(HEADER_MARGIN);
+  headerLayout->addSpacing(Config::CONTENT_PADDING);
   headerLayout->addWidget(titleLabel, 0, Qt::AlignVCenter);
   headerLayout->addStretch();
   headerLayout->addWidget(mCloseButton, 0, Qt::AlignVCenter);
@@ -78,7 +78,9 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
   body->setObjectName("NotificationBody");
 
   auto* bodyLayout = new QVBoxLayout(body);
-  bodyLayout->setContentsMargins(TEXT_MARGIN, TEXT_MARGIN, TEXT_MARGIN, TEXT_MARGIN);
+  bodyLayout->setContentsMargins(
+      Config::CONTENT_PADDING, Config::CONTENT_PADDING,
+      Config::CONTENT_PADDING, Config::CONTENT_PADDING);
   bodyLayout->setAlignment(Qt::AlignVCenter);
   bodyLayout->setSpacing(0);
 
@@ -89,7 +91,7 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
 
   const auto width = Config::getValueFromTheme("@notification_width");
   if (width.isValid())
-    label->setMinimumWidth(width.toInt() - 2 * TEXT_MARGIN);
+    label->setMinimumWidth(width.toInt() - 2 * Config::CONTENT_PADDING);
 
   label->setMinimumHeight(2 * label->fontMetrics().height());
 

@@ -3,8 +3,6 @@
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsSvgItem>
 
-#include "elements/draggable.h"
-
 static const int MIN_DRAG_DISTANCE = 200;
 
 LibraryScene::LibraryScene(QObject* parent)

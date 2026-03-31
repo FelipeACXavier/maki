@@ -1,7 +1,6 @@
 #pragma once
 
 #include <QGraphicsView>
-#include <QToolBox>
 
 #include "config.h"
 #include "result.h"
@@ -12,7 +11,7 @@ class LibraryContainer : public QGraphicsView
 public:
   LibraryContainer(QWidget* parent = nullptr);
 
-  static LibraryContainer* create(const QString& name, QToolBox* parent);
+  static LibraryContainer* create(const QString& name, QWidget* parent);
 
   VoidResult addNode(const QString& id, std::shared_ptr<NodeConfig> config);
 

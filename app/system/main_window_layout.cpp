@@ -9,6 +9,7 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QPushButton>
+#include <QScrollArea>
 #include <QSplitter>
 #include <QStackedWidget>
 #include <QStyledItemDelegate>
@@ -16,7 +17,6 @@
 #include <QTextBrowser>
 #include <QTimer>
 #include <QToolBar>
-#include <QToolBox>
 #include <QToolButton>
 #include <QUndoGroup>
 #include <QVBoxLayout>
@@ -28,6 +28,7 @@
 #include "system/canvas_view.h"
 #include "theme.h"
 #include "widgets/properties/properties_menu.h"
+#include "widgets/section.h"
 #include "widgets/structure/file_menu.h"
 #include "widgets/structure/system_menu.h"
 #include "widgets/widget_factory.h"
@@ -73,17 +74,37 @@ void MainWindowLayout::buildLeftPanel()
 
   mStructureTab = new QWidget();
   QVBoxLayout* structureLayout = new QVBoxLayout(mStructureTab);
-  mStructureToolBox = new QToolBox(mStructureTab);
-  structureLayout->addWidget(mStructureToolBox);
+  structureLayout->setAlignment(Qt::AlignTop);
+  structureLayout->setContentsMargins(
+      Config::CONTENT_PADDING, Config::CONTENT_PADDING,
+      Config::CONTENT_PADDING, Config::CONTENT_PADDING);
   mStructureTab->setLayout(structureLayout);
-  mPalette->addTab(mStructureTab, tr("Structure"));
+
+  mStructureScrollArea = new QScrollArea(this);
+  mStructureScrollArea->setWidgetResizable(true);
+  mStructureScrollArea->setFrameShape(QFrame::NoFrame);
+  mStructureScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  mStructureScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+  mStructureScrollArea->setWidget(mStructureTab);
+
+  mPalette->addTab(mStructureScrollArea, tr("Structure"));
 
   mBehaviourTab = new QWidget();
   QVBoxLayout* behaviourLayout = new QVBoxLayout(mBehaviourTab);
-  mBehaviourToolBox = new QToolBox(mBehaviourTab);
-  behaviourLayout->addWidget(mBehaviourToolBox);
+  behaviourLayout->setAlignment(Qt::AlignTop);
+  behaviourLayout->setContentsMargins(
+      Config::CONTENT_PADDING, Config::CONTENT_PADDING,
+      Config::CONTENT_PADDING, Config::CONTENT_PADDING);
   mBehaviourTab->setLayout(behaviourLayout);
-  mPalette->addTab(mBehaviourTab, tr("Behaviour"));
+
+  mBehaviourScrollArea = new QScrollArea(this);
+  mBehaviourScrollArea->setWidgetResizable(true);
+  mBehaviourScrollArea->setFrameShape(QFrame::NoFrame);
+  mBehaviourScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  mBehaviourScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+  mBehaviourScrollArea->setWidget(mBehaviourTab);
+
+  mPalette->addTab(mBehaviourScrollArea, tr("Behaviour"));
 
   mPalette->setTabToolTip(0, tr("Structure"));
   mPalette->setTabToolTip(1, tr("Component behaviour"));
@@ -100,9 +121,9 @@ void MainWindowLayout::buildLeftPanel()
   connect(mPaletteSearch, &maki::SearchWidget::dismissed, this, [this] {
     mPaletteSearch->hide();
     if (mPalette->currentIndex() == 0)
-      mStructureToolBox->setFocus();
+      mStructureScrollArea->setFocus();
     else
-      mBehaviourToolBox->setFocus();
+      mBehaviourScrollArea->setFocus();
   });
 
   mLeftPanel->addWidget(mPalette);

@@ -4,8 +4,8 @@
 #include <QVBoxLayout>
 
 #include "config.h"
-#include "elements/draggable.h"
 #include "library_scene.h"
+#include "widgets/section.h"
 
 static const int PADDING = 15;
 
@@ -13,41 +13,46 @@ LibraryContainer::LibraryContainer(QWidget* parent)
     : QGraphicsView(parent)
     , mLastItemY(0)
 {
+  // We don't want to scroll our inner container, only the outer widget should be scrollable
   setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 }
 
-LibraryContainer* LibraryContainer::create(const QString& name, QToolBox* parent)
+LibraryContainer* LibraryContainer::create(const QString& name, QWidget* parent)
 {
-  // A QGraphicsScene must be contained in a QWidget before it can be added to the toolbox
-  QWidget* sidebarContainer = new QWidget;
-  QVBoxLayout* layout = new QVBoxLayout(sidebarContainer);
-  layout->setContentsMargins(0, 0, 0, 0);
-
   auto container = new LibraryContainer(parent);
 
   // Not sure why, but setting a small width makes sure that the nodes are centered
   LibraryScene* scene = new LibraryScene(container);
   scene->setSceneRect(0, 0, 50, 500);
+  container->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  container->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
   container->setScene(scene);
   container->setAlignment(Qt::AlignLeft | Qt::AlignTop);
 
   // Set the layout so the view covers the entire toolbox
-  container->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+  container->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
-  layout->addWidget(container);
-  sidebarContainer->setLayout(layout);
+  // A QGraphicsScene must be contained in a QWidget before it can be added to the toolbox
+  auto sidebarContainer = new SectionWidget(parent);
+  sidebarContainer->addItem(container, name);
 
-  parent->addItem(sidebarContainer, name);
+  parent->layout()->addWidget(sidebarContainer);
 
   return container;
 }
 
 void LibraryContainer::updateSceneSize()
 {
+  if (!scene())
+    return;
+
   QRectF bounds = scene()->itemsBoundingRect();
-  scene()->setSceneRect(0, 0, width(), bounds.height() + 20);
+  const int contentHeight = qCeil(bounds.height()) + 20;
+
+  scene()->setSceneRect(0, 0, viewport()->width(), contentHeight);
+  setFixedHeight(contentHeight + frameWidth() * 2);
 }
 
 VoidResult LibraryContainer::addNode(const QString& id, std::shared_ptr<NodeConfig> config)
