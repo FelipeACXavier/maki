@@ -56,5 +56,6 @@ private:
       "txt",
       "py",
       "cc",
-      "dzn"};
+      "dzn",
+      "kd"};
 };

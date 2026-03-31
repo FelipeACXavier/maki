@@ -15,9 +15,6 @@ warning_color: #F59E0B
 notification_width: 360
 min_notification_height: 56
 max_notification_height: 180
-notification_left_margin: 16
-notification_top_margin: 16
-notification_between_margin: 10
 
 scrollbar_handle: #D8D3F2
 scrollbar_handle_hover: #CFC7EC

@@ -47,7 +47,7 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
 
   // Header
   auto* headerLayout = new QHBoxLayout(header);
-  headerLayout->setContentsMargins(6, 0, 6, 0);
+  headerLayout->setContentsMargins(6, 6, 6, 6);
   headerLayout->setSpacing(0);
 
   QLabel* titleLabel = new QLabel(title.size() > 1 ? title : "Notification", this);
@@ -74,7 +74,7 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
   body->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
   body->setObjectName("NotificationBody");
 
-  auto* bodyLayout = new QHBoxLayout(body);
+  auto* bodyLayout = new QVBoxLayout(body);
   bodyLayout->setContentsMargins(6, 6, 6, 6);
   bodyLayout->setSpacing(0);
 
@@ -103,7 +103,7 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
   connect(mCloseButton, &QPushButton::clicked, this, &NotificationWidget::hideAnimated);
 
   mAutoCloseTimer.setSingleShot(true);
-  mAutoCloseTimer.setInterval(4000);
+  mAutoCloseTimer.setInterval(3000);
 
   connect(&mAutoCloseTimer, &QTimer::timeout, this, &NotificationWidget::hideAnimated);
 }

@@ -572,6 +572,7 @@ NotificationWidget {
   background-color: @background;
 
   min-width: 300px;
+  max-width: 300px;
   max-width: @notification_width;
   min-height: @min_notification_height;
   max-height: @max_notification_height;
@@ -579,6 +580,7 @@ NotificationWidget {
   padding: 0px;
   font-size: 16px;
 
+  /* Total width = max-width + 2 * border */
   border: 2px solid @foreground;
   border-radius: @border_radius;
 }
@@ -624,7 +626,7 @@ NotificationWidget[level="info"] {
 }
 
 QWidget#NotificationHeader[level="info"] {
-  border-bottom: px solid @info_color;
+  border-bottom: 2px solid @info_color;
 }
 
 NotificationWidget[level="error"] {

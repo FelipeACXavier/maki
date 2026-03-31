@@ -21,6 +21,7 @@ private slots:
 
 private:
   void repositionToasts();
+  bool eventFilter(QObject* watched, QEvent* event);
 
   QPointer<QWidget> mParentWindow;
   QList<NotificationWidget*> mToasts;
