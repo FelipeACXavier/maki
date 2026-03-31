@@ -255,11 +255,12 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
   parentView()->setDragMode(QGraphicsView::RubberBandDrag);
 
+  QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
+
   if (mTransition)
   {
     if (event->button() == Qt::LeftButton)
     {
-      QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
       if (item)
       {
         NodeItem* node = nullptr;
@@ -274,19 +275,19 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
           mTransition->setEnd(node->id(), node->mapToScene(node->boundingRect().center()), {0, 0});
           mTransition->done(mNode, node);
         }
-      }
-      else
-      {
-        removeItem(mTransition);
+        else
+        {
+          removeItem(mTransition);
+        }
       }
 
       mTransition = nullptr;
       mNode = nullptr;
     }
   }
-  else if (QGraphicsItem* item = itemAt(event->scenePos(), QTransform()))
+  else if (item)
   {
-    if (item && !mDragging)
+    if (!mDragging)
     {
       NodeItem* node = nullptr;
       if (item->type() == NodeItem::Type)

@@ -168,20 +168,12 @@ QVariant NodeItem::getProperty(const QString& key) const
 
 void NodeItem::setProperty(const QString& key, QVariant value)
 {
-  LOG_INFO("[%s] Setting property of node: %s", qPrintable(id()), qPrintable(nodeId()));
+  LOG_DEBUG("[%s] Setting property %s of node: %s", qPrintable(id()), qPrintable(key), qPrintable(nodeId()));
   if (!mStorage)
     return;
 
-  // if (mStorage->properties.find(key) == mStorage->properties.end())
-  // {
-  //   LOG_WARNING("Tried to update property %s but it does not exist", qPrintable(key));
-  //   return;
-  // }
-
   // TODO(felaze): We should check for success here
   mStorage->addProperty(key, value);
-
-  // mStorage->properties[key] = value;
 
   if (key == "name")
     setLabelName(value.toString());
