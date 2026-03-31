@@ -111,7 +111,7 @@ signals:
   /**
    * @brief Emitted when the last process in the pipeline finishes.
    */
-  void finishedLast();
+  void finishedLast(int exitCode, const QString& message);
 
   /**
    * @brief Emitted when new data is available on the standard output stream.
@@ -132,7 +132,7 @@ signals:
    *
    * @param error Error reported by QProcess.
    */
-  void errorOccurred(QProcess::ProcessError error);
+  void errorOccurred(QProcess::ProcessError error, const QString& message);
 
 private slots:
   /**

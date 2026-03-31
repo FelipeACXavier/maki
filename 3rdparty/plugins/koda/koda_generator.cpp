@@ -399,7 +399,6 @@ QString KodaGenerator::generateKoda(const QString& outputFolder)
     if (node->getnodeId() != "Koda::Task")
       continue;
 
-    // TODO(felaze): Create file at this level
     LOG_DEBUG("Generating code for top level node %s %s %d", qPrintable(node->getproperties()[ConfigKeys::NAME].toString()), qPrintable(node->getnodeId()), node->getchildren().size());
 
     QString args = "";
@@ -992,7 +991,7 @@ QString KodaGenerator::generateEvery(const INode& node, const Argument& arg, con
     auto dst = findDestination(transition->getdstId(), flow);
     if (dst != nullptr)
     {
-      code += "\n  on error (";
+      code += "\n      on error (";
       code += generateBehaviourNode(*dst, arg, flow, format);
       code += ")";
     }
@@ -1006,7 +1005,7 @@ QString KodaGenerator::generateEvery(const INode& node, const Argument& arg, con
     auto dst = findDestination(transition->getdstId(), flow);
     if (dst != nullptr)
     {
-      code += "\n  on abort (";
+      code += "\n      on abort (";
       code += generateBehaviourNode(*dst, arg, flow, format);
       code += ")";
     }
@@ -1020,13 +1019,13 @@ QString KodaGenerator::generateEvery(const INode& node, const Argument& arg, con
     auto dst = findDestination(transition->getdstId(), flow);
     if (dst != nullptr)
     {
-      code += "\n  on " + QString::fromStdString(ToLowerCase(transition->getevent().toStdString(), 0, transition->getevent().size() - 1)) + "() (";
+      code += "\n      on " + QString::fromStdString(ToLowerCase(transition->getevent().toStdString(), 0, transition->getevent().size() - 1)) + "() (";
       code += generateBehaviourNode(*dst, arg, flow, format);
       code += ")";
     }
   }
 
-  code += ")";
+  code += "\n    )";
 
   return code;
 }

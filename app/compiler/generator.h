@@ -98,4 +98,6 @@ private:
 
   /// Directory where generated artifacts are stored.
   QString mGenerationFolder;
+
+  std::string notificationHeader(const QString& languageName) const;
 };

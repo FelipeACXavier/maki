@@ -51,6 +51,8 @@ VoidResult Compiler::parse(const CompilerOptions& options)
 {
   mOptions = options;
 
+  LOG_DEBUG("Compiling %s", options.inputFile.c_str());
+
   std::ifstream stream;
   stream.open(mOptions.inputFile);
   if (!stream.is_open())

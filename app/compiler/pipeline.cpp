@@ -129,15 +129,33 @@ VoidResult Pipeline::start()
 
 void Pipeline::startNextOrEnd(int exitCode, QProcess::ExitStatus status)
 {
+  mRunningProcess.process = nullptr;
+
+  bool aborting = false;
+  {
+    std::unique_lock<std::mutex> lock(mStateMutex);
+    aborting = mState == State::Aborting;
+  }
+
+  if (exitCode != SUCCESS)
+  {
+    // On failure, we clear the queue manually
+    // There is no "continue" after failure option yet
+    emit finishedLast(exitCode, aborting ? "Aborted" : "Error");
+    mProcesses.clear();
+
+    std::unique_lock<std::mutex> lock(mStateMutex);
+    mState = State::Idle;
+
+    return;
+  }
+
   if (mProcesses.isEmpty())
   {
-    mRunningProcess.process = nullptr;
-    emit finishedLast();
+    emit finishedLast(exitCode, "Success");
 
-    {
-      std::unique_lock<std::mutex> lock(mStateMutex);
-      mState = State::Idle;
-    }
+    std::unique_lock<std::mutex> lock(mStateMutex);
+    mState = State::Idle;
   }
   else
   {
@@ -211,23 +229,9 @@ void Pipeline::onFinished(int exitCode, QProcess::ExitStatus status)
 
   mProcesses.removeFirst();
 
-  // In case of success
-  if (exitCode == SUCCESS)
-  {
-    startNextOrEnd(exitCode, status);
-  }
-  else
-  {
-    if (mRunningProcess.onFail == maki::OnFail::CONTINUE)
-    {
-      startNextOrEnd(SUCCESS, status);
-    }
-    else
-    {
-      emit finishedLast();
-      mProcesses.clear();
-    }
-  }
+  startNextOrEnd(
+      (exitCode == SUCCESS || mRunningProcess.onFail == maki::OnFail::CONTINUE) ? SUCCESS : exitCode,
+      status);
 }
 
 void Pipeline::onErrorOccurred(QProcess::ProcessError error)
@@ -247,7 +251,30 @@ void Pipeline::onErrorOccurred(QProcess::ProcessError error)
     }
   }
 
-  emit errorOccurred(error);
+  QString errorMessage = "";
+  switch (error)
+  {
+    case QProcess::ProcessError::FailedToStart:
+      errorMessage = "Process failed to start";
+      break;
+    case QProcess::ProcessError::Crashed:
+      errorMessage = "Process crashed";
+      break;
+    case QProcess::ProcessError::Timedout:
+      errorMessage = "Process timed out";
+      break;
+    case QProcess::ProcessError::ReadError:
+      errorMessage = "Could not read location";
+      break;
+    case QProcess::ProcessError::WriteError:
+      errorMessage = "Could not write location";
+      break;
+    case QProcess::ProcessError::UnknownError:
+      errorMessage = "Unknown process error";
+    default:
+      break;
+  }
+  emit errorOccurred(error, errorMessage);
   mProcesses.clear();
 
   {

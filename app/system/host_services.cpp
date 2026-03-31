@@ -5,7 +5,7 @@
 #include "ipipeline.h"
 #include "itab.h"
 
-HostServices::HostServices(IDocument* document, maki::IPipeline* pipeline, maki::ISettings* settings, const QString& root, QObject* parent)
+HostServices::HostServices(std::shared_ptr<IDocument> document, maki::IPipeline* pipeline, maki::ISettings* settings, const QString& root, QObject* parent)
     : QObject(parent)
     , mDocument(document)
     , mPipeline(pipeline)
@@ -27,7 +27,7 @@ void HostServices::setLogger(maki::ILogging* logger)
 
 IDocument* HostServices::document() const
 {
-  return mDocument;
+  return mDocument.get();
 }
 
 maki::ISettings* HostServices::settings() const

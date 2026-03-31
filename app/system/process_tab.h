@@ -20,7 +20,7 @@ signals:
 private slots:
   void onStartingProcess(const QString& process, const QStringList& arguments);
   void onFinished(int exitCode, QProcess::ExitStatus status);
-  void onFinishedLast();
+  void onFinishedLast(int exitCode, const QString& message);
   void onReadyReadStandardOutput(const QByteArray& message);
   void onReadyReadStandardError(const QByteArray& message);
   void onErrorOccurred(QProcess::ProcessError error, const QString& process);

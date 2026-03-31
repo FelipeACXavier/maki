@@ -45,7 +45,7 @@ void ProcessTab::onFinished(int exitCode, QProcess::ExitStatus status)
   appendText(QString("[Process finished with code %1]\n").arg(exitCode));
 }
 
-void ProcessTab::onFinishedLast()
+void ProcessTab::onFinishedLast(int /* exitCode */, const QString& /* message */)
 {
   appendText(QString("Finished all process in the pipeline\n"));
   emit processFinished(0, QProcess::ExitStatus::NormalExit);

@@ -18,7 +18,7 @@ class HostServices : public QObject, public maki::IHostServices
 {
   Q_OBJECT
 public:
-  HostServices(IDocument* document, maki::IPipeline* pipeline, maki::ISettings* settings, const QString& root, QObject* parent = nullptr);
+  HostServices(std::shared_ptr<IDocument> document, maki::IPipeline* pipeline, maki::ISettings* settings, const QString& root, QObject* parent = nullptr);
 
   void setPluginTab(maki::ITab* tab);
   void setLogger(maki::ILogging* logger);
@@ -31,7 +31,7 @@ public:
   maki::ILogging* logger() const override;
 
 private:
-  IDocument* mDocument;
+  std::shared_ptr<IDocument> mDocument;
   maki::IPipeline* mPipeline;
   maki::ISettings* mSettings;
   maki::ITab* mPluginTab;
