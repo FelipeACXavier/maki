@@ -10,9 +10,12 @@
 #include "style_helpers.h"
 #include "theme.h"
 
+static const int HEADER_MARGIN = 6;
+static const int TEXT_MARGIN = 6;
+
 NotificationWidget::NotificationWidget(const QString& title, const QString& text, logging::LogLevel level, QWidget* parent)
     : QFrame(parent)
-    , m_opacity(0.0)
+    , mOpacity(0.0)
 {
   setObjectName("NotificationToast");
   setFrameShape(QFrame::NoFrame);
@@ -47,7 +50,7 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
 
   // Header
   auto* headerLayout = new QHBoxLayout(header);
-  headerLayout->setContentsMargins(6, 6, 6, 6);
+  headerLayout->setContentsMargins(HEADER_MARGIN, HEADER_MARGIN, HEADER_MARGIN, HEADER_MARGIN);
   headerLayout->setSpacing(0);
 
   QLabel* titleLabel = new QLabel(title.size() > 1 ? title : "Notification", this);
@@ -64,7 +67,7 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
   mCloseButton->setIcon(addIconWithColor(":/icons/close.svg", Config::FOREGROUND));
 
   headerLayout->addWidget(titleIcon, 0, Qt::AlignVCenter);
-  headerLayout->addSpacing(6);
+  headerLayout->addSpacing(HEADER_MARGIN);
   headerLayout->addWidget(titleLabel, 0, Qt::AlignVCenter);
   headerLayout->addStretch();
   headerLayout->addWidget(mCloseButton, 0, Qt::AlignVCenter);
@@ -75,13 +78,22 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
   body->setObjectName("NotificationBody");
 
   auto* bodyLayout = new QVBoxLayout(body);
-  bodyLayout->setContentsMargins(6, 6, 6, 6);
+  bodyLayout->setContentsMargins(TEXT_MARGIN, TEXT_MARGIN, TEXT_MARGIN, TEXT_MARGIN);
+  bodyLayout->setAlignment(Qt::AlignVCenter);
   bodyLayout->setSpacing(0);
 
-  mLabel = new QLabel(text, this);
-  mLabel->setWordWrap(true);
+  QLabel* label = new QLabel(text, this);
+  label->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+  label->setWordWrap(true);
+  label->setFont(Fonts::Main);
 
-  bodyLayout->addWidget(mLabel);
+  const auto width = Config::getValueFromTheme("@notification_width");
+  if (width.isValid())
+    label->setMinimumWidth(width.toInt() - 2 * TEXT_MARGIN);
+
+  label->setMinimumHeight(2 * label->fontMetrics().height());
+
+  bodyLayout->addWidget(label);
 
   auto layout = new QVBoxLayout(this);
   layout->setContentsMargins(0, 0, 0, 0);
@@ -110,12 +122,12 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
 
 qreal NotificationWidget::opacity() const
 {
-  return m_opacity;
+  return mOpacity;
 }
 
 void NotificationWidget::setOpacity(qreal o)
 {
-  m_opacity = o;
+  mOpacity = o;
   if (auto* eff = qobject_cast<QGraphicsOpacityEffect*>(graphicsEffect()))
     eff->setOpacity(o);
 

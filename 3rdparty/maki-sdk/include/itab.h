@@ -22,10 +22,10 @@ struct ThemeVars
   QString warning_color = "#E5C07B";
 
   // Notifications
-  QString notification_width = "300";
+  QString notification_width = "325";
   QString min_notification_height = "100";
   QString max_notification_height = "500";
-  QString notification_top_margin = "55";
+  QString notification_top_margin = "50";
   QString notification_left_margin = "10";
   QString notification_between_margin = "10";
 

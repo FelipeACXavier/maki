@@ -571,8 +571,7 @@ NotificationWidget {
   color: @foreground;
   background-color: @background;
 
-  min-width: 300px;
-  max-width: 300px;
+  min-width: @notification_width;
   max-width: @notification_width;
   min-height: @min_notification_height;
   max-height: @max_notification_height;
@@ -622,27 +621,27 @@ QWidget#NotificationBody {
 }
 
 NotificationWidget[level="info"] {
-  border: 2px solid @info_color;
+  border: 1px solid @info_color;
 }
 
 QWidget#NotificationHeader[level="info"] {
-  border-bottom: 2px solid @info_color;
+  border-bottom: 1px solid @info_color;
 }
 
 NotificationWidget[level="error"] {
-  border: 2px solid @error_color;
+  border: 1px solid @error_color;
 }
 
 QWidget#NotificationHeader[level="error"] {
-  border-bottom: 2px solid @error_color;
+  border-bottom: 1px solid @error_color;
 }
 
 NotificationWidget[level="warning"] {
-  border: 2px solid @warning_color;
+  border: 1px solid @warning_color;
 }
 
 QWidget#NotificationHeader[level="warning"] {
-  border-bottom: 2px solid @warning_color;
+  border-bottom: 1px solid @warning_color;
 }
 
 /* ===============================

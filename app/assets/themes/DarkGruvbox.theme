@@ -13,7 +13,7 @@ info_color: #83A598
 error_color: #FB4934
 warning_color: #FE8019
 
-notification_width: 360
+notification_width: 300
 min_notification_height: 56
 max_notification_height: 180
 

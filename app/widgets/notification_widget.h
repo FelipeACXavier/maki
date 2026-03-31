@@ -29,9 +29,8 @@ public slots:
   void hideAnimated();
 
 private:
-  QLabel* mLabel = nullptr;
   QPushButton* mCloseButton = nullptr;
   QPropertyAnimation* mFadeAnim = nullptr;
   QTimer mAutoCloseTimer;
-  qreal m_opacity = 1.0;
+  qreal mOpacity = 1.0;
 };
