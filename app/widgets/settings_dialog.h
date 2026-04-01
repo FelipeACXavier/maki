@@ -24,6 +24,7 @@ class SpinWidget;
 class SelectorWidget;
 class StringWidget;
 class ButtonWidget;
+class GridGroup;
 }  // namespace maki
 
 /**
@@ -72,6 +73,8 @@ private:
   maki::BooleanWidget* mNativeMenuBar = nullptr;
   maki::BooleanWidget* mShowGrid = nullptr;
   maki::SpinWidget* mNodeCornerRadius = nullptr;
+  maki::GridGroup* mColorGrid = nullptr;
+  maki::StringWidget* mUserThemeName = nullptr;
 
   // Generation
   maki::StringWidget* mGenerationDirEdit = nullptr;
@@ -79,6 +82,9 @@ private:
 
   // Plugins
   QVector<PluginInfo> mPluginSettings;
+
+  // User theme
+  maki::ThemeVars mTheme;
 
   // ------------------------------------------
   // Methods
@@ -100,4 +106,7 @@ private:
   VoidResult createPluginPages();
 
   void updatePluginSetting(const QString& pluginId, const QString& key, QVariant value);
+  void updateColorGrid();
+  QString toColorLabel(QString label) const;
+  maki::ColorWidget* widgetByLabel(const QString& label, const QGridLayout* grid) const;
 };

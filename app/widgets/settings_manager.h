@@ -25,8 +25,10 @@ struct GeneralSettings
   int recentHistorySize = 10;
   bool showWelcomeMessage = true;
   QVector<QString> recentFiles = {};
+  QString language = ""
 
-  bool operator!=(const GeneralSettings& s)
+      bool
+      operator!=(const GeneralSettings& s)
   {
     return restoreLastSession != s.restoreLastSession ||
            autosaveEnabled != s.autosaveEnabled ||
@@ -45,6 +47,7 @@ struct AppearanceSettings
   bool showCanvasGrid = true;
   bool nativeMenuBar = true;
   int nodeCornerRadius = 8;
+  maki::ThemeVars themeVars;
 
   bool operator!=(const AppearanceSettings& s)
   {
@@ -52,7 +55,8 @@ struct AppearanceSettings
            uiScalePercent != s.uiScalePercent ||
            showCanvasGrid != s.showCanvasGrid ||
            nativeMenuBar != s.nativeMenuBar ||
-           nodeCornerRadius != s.nodeCornerRadius;
+           nodeCornerRadius != s.nodeCornerRadius ||
+           themeVars != s.themeVars;
   }
 };
 

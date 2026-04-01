@@ -102,10 +102,10 @@ void MainWindowLayout::buildLeftPanel()
   mBehaviourScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
   mBehaviourScrollArea->setWidget(mBehaviourTab);
 
-  mPalette->addTab(mBehaviourScrollArea, tr("Behaviour"));
+  mPalette->addTab(mBehaviourScrollArea, tr("Behavior"));
 
   mPalette->setTabToolTip(0, tr("Structure"));
-  mPalette->setTabToolTip(1, tr("Component behaviour"));
+  mPalette->setTabToolTip(1, tr("Component behavior"));
 
   mIcons.append({mPalette->tabBar(), ":/icons/structure.svg", 0});
   mIcons.append({mPalette->tabBar(), ":/icons/behaviour.svg", 1});
@@ -396,11 +396,11 @@ void MainWindowLayout::buildMenuBar()
 
   view->addSeparator();
 
-  mActionZoomIn = new QAction(tr("Toogle Grid"), this);
+  mActionZoomIn = new QAction(tr("Toggle Grid"), this);
   mActionZoomIn->setEnabled(false);
   view->addAction(mActionZoomIn);
 
-  mActionZoomIn = new QAction(tr("Toogle Snap to Grid"), this);
+  mActionZoomIn = new QAction(tr("Toggle Snap to Grid"), this);
   mActionZoomIn->setEnabled(false);
   view->addAction(mActionZoomIn);
 

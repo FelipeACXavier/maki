@@ -698,7 +698,7 @@ void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
   {
     QInputDialog* dialog = new QInputDialog(this);
     dialog->setWindowTitle(tr("Flow name"));
-    dialog->setLabelText(tr("Enter a name for the new flow:"));
+    dialog->setLabelText(tr("Enter a name for the new flow") + ":");
     dialog->setTextValue(tr(""));
 
     // Set a validator: allow only alphanumerics and spaces

@@ -27,12 +27,34 @@ struct WidgetAlignment
   QFormLayout* layout;
 };
 
+class GridGroup : public QWidget
+{
+public:
+  GridGroup(const QString& label, int rows, int cols, QWidget* parent);
+
+  void addWidget(QWidget* widget);
+  void addLayout(QLayout* layout);
+
+  QWidget* widget() const;
+
+private:
+  QWidget* mContent;
+  const int mRows;
+  const int mCols;
+
+  int mCurrentRow;
+  int mCurrentCol;
+};
+
 class WidgetGroup : public QWidget
 {
 public:
   WidgetGroup(const QString& label, QWidget* parent);
 
   void addWidget(QWidget* widget);
+  void addLayout(QLayout* layout);
+  void addSpacing(int spacing);
+  void addStretch();
 };
 
 class BooleanWidget : public QWidget
@@ -179,15 +201,26 @@ public:
   void setToolTip(const QString& tooltip);
 
   QColor getValue() const;
+  void setValue(const QColor& color);
+
+  QString getLabel() const;
   QPushButton* widget() const;
 
 signals:
   void valueChanged(const QColor& value);
 
+protected:
+  void resizeEvent(QResizeEvent* event) override;
+
 private:
+  QLabel* mLabel;
+  QString mFullLabel;
+
   QLabel* mPreview;
   QPushButton* mButton;
   QColor mValue;
+
+  void updateElidedLabel();
 };
 
 class TypeSelectionWidget : public QComboBox

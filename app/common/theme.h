@@ -122,6 +122,7 @@ QVariant getValueFromTheme(const QString& key);
 QString loadFile(const QString& path);
 void applyThemeToApp(QApplication* app, const QString& theme, const QList<Config::ThemeInfo>& availableThemes);
 maki::ThemeVars loadThemeVarsFromFile(const QString& filePath);
+VoidResult saveThemeVarsToFile(const QString& name, const maki::ThemeVars& theme);
 
 // ------------------------------------------------------------
 // Theme search stuff

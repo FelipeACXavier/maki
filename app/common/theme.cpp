@@ -28,7 +28,7 @@ QString loadFile(const QString& path)
 
 QString applyThemeVars(QString qss, const maki::ThemeVars& t)
 {
-  for (auto it = THEME_KEY_MAP.begin(); it != THEME_KEY_MAP.end(); ++it)
+  for (auto it = Config::THEME_KEY_MAP.begin(); it != Config::THEME_KEY_MAP.end(); ++it)
   {
     const QString& varName = it.key();  // e.g. "@button_bg"
 
@@ -123,8 +123,8 @@ maki::ThemeVars loadThemeVarsFromFile(const QString& filePath)
       continue;
     }
 
-    auto it = THEME_KEY_MAP.find("@" + key);
-    if (it == THEME_KEY_MAP.end())
+    auto it = Config::THEME_KEY_MAP.find("@" + key);
+    if (it == Config::THEME_KEY_MAP.end())
     {
       LOG_WARNING("Unknown theme key %s at line %d", qPrintable(key), lineNumber);
       continue;
@@ -136,6 +136,25 @@ maki::ThemeVars loadThemeVarsFromFile(const QString& filePath)
   }
 
   return vars;
+}
+
+VoidResult saveThemeVarsToFile(const QString& name, const maki::ThemeVars& theme)
+{
+  const QString filePath = userThemesDir() + "/" + name + ".theme";
+  QFile themeFile(filePath);
+  if (!themeFile.open(QIODevice::WriteOnly | QIODevice::Text))
+    return VoidResult::Failed("Could not open theme file: " + filePath.toStdString());
+
+  LOG_DEBUG("Creating theme: %s", qPrintable(filePath));
+  QTextStream out(&themeFile);
+  for (auto it = Config::THEME_KEY_MAP.cbegin(); it != Config::THEME_KEY_MAP.cend(); ++it)
+  {
+    QString key = it.key();
+    QString value = theme.*(it.value());
+    out << key.replace("@", "") << ": " << value << "\n";
+  }
+
+  return VoidResult();
 }
 
 QString installThemesDir()
@@ -196,8 +215,8 @@ QList<ThemeInfo> discoverThemes()
 
 QVariant getValueFromTheme(const QString& key)
 {
-  auto it = THEME_KEY_MAP.constFind(key.trimmed());
-  if (it == THEME_KEY_MAP.constEnd())
+  auto it = Config::THEME_KEY_MAP.constFind(key.trimmed());
+  if (it == Config::THEME_KEY_MAP.constEnd())
     return QVariant();
 
   QString rawValue = SYSTEM_THEME.*(it.value());

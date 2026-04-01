@@ -564,14 +564,15 @@ QTreeWidget#SettingsList {
 
 QTreeWidget#SettingsList::item {
   padding: 5px;
-  border-bottom: 2px solid @background;
+  border: none;
+}
+
+QTreeWidget#SettingsList::item:hover {
+  background: @selection_bg;
 }
 
 QTreeWidget#SettingsList::item:selected {
-  color: @foreground;
-  background: @background;
-
-  border-bottom: 2px solid @selection_bg;
+  background: @selection_bg;
 }
 
 /* ===============================

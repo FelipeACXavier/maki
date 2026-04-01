@@ -82,6 +82,8 @@ struct ThemeVars
   QString tooltip_border_size = "1px";
   QString tooltip_border_style = "solid";
   QString tooltip_border_color = "#b0b0b0";
+
+  bool operator==(const ThemeVars& other) const = default;
 };
 
 struct ThemeFonts

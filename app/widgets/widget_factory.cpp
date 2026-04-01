@@ -27,6 +27,75 @@ namespace maki
 {
 
 // =========================================================================================================
+GridGroup::GridGroup(const QString& label, int rows, int cols, QWidget* parent)
+    : QWidget(parent)
+    , mRows(rows)
+    , mCols(cols)
+    , mCurrentRow(0)
+    , mCurrentCol(0)
+{
+  auto* vLayout = new QVBoxLayout(this);
+  vLayout->setContentsMargins(0, 0, 0, 0);
+  vLayout->setSpacing(WIDGET_SPACING);
+  vLayout->setAlignment(Qt::AlignLeft);
+
+  auto* title = new QLabel(label, this);
+  title->setFont(Fonts::Label);
+  title->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
+
+  auto* line = new QFrame(this);
+  line->setFrameShape(QFrame::HLine);
+  // line->setFrameShadow(QFrame::Sunken);
+
+  mContent = new QWidget(this);
+  auto* gridLayout = new QGridLayout(mContent);
+  gridLayout->setContentsMargins(Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING);
+  gridLayout->setSpacing(Config::CONTENT_PADDING);
+
+  vLayout->addWidget(title);
+  vLayout->addWidget(line);
+  vLayout->addSpacing(2 * WIDGET_SPACING);
+  vLayout->addWidget(mContent);
+}
+
+QWidget* GridGroup::widget() const
+{
+  return mContent;
+}
+
+void GridGroup::addWidget(QWidget* widget)
+{
+  if (mCurrentRow >= mRows)
+  {
+    LOG_WARNING("Grid full");
+    return;
+  }
+
+  qobject_cast<QGridLayout*>(mContent->layout())->addWidget(widget, mCurrentRow, mCurrentCol++);
+  if (mCurrentCol == mCols)
+  {
+    mCurrentCol = 0;
+    mCurrentRow++;
+  }
+}
+
+void GridGroup::addLayout(QLayout* layout)
+{
+  if (mCurrentRow >= mRows)
+  {
+    LOG_WARNING("Grid full");
+    return;
+  }
+
+  qobject_cast<QGridLayout*>(mContent->layout())->addLayout(layout, mCurrentRow, mCurrentCol++);
+  if (mCurrentCol == mCols)
+  {
+    mCurrentCol = 0;
+    mCurrentRow++;
+  }
+}
+
+// =========================================================================================================
 WidgetGroup::WidgetGroup(const QString& label, QWidget* parent)
     : QWidget(parent)
 {
@@ -54,7 +123,22 @@ void WidgetGroup::addWidget(QWidget* widget)
   hlayout->setContentsMargins(WIDGET_PADDING, 0, 0, 0);
   hlayout->addWidget(widget);
 
-  static_cast<QVBoxLayout*>(layout())->addLayout(hlayout);
+  static_cast<QVBoxLayout*>(this->layout())->addLayout(hlayout);
+}
+
+void WidgetGroup::addLayout(QLayout* layout)
+{
+  static_cast<QVBoxLayout*>(this->layout())->addLayout(layout);
+}
+
+void WidgetGroup::addSpacing(int spacing)
+{
+  static_cast<QVBoxLayout*>(this->layout())->addSpacing(spacing);
+}
+
+void WidgetGroup::addStretch()
+{
+  static_cast<QVBoxLayout*>(this->layout())->addStretch();
 }
 
 // =========================================================================================================
@@ -429,7 +513,10 @@ void SelectorWidget::setValue(const QString& data)
 {
   int index = mInputField->findData(data);
   if (index >= 0)
+  {
     mInputField->setCurrentIndex(index);
+    mValue = mInputField->currentText();
+  }
 }
 
 QString SelectorWidget::getValue() const
@@ -439,7 +526,9 @@ QString SelectorWidget::getValue() const
 
 void SelectorWidget::addItem(const QString& name, const QString& value)
 {
-  mInputField->addItem(name, value);
+  int index = mInputField->findData(name);
+  if (index < 0)
+    mInputField->addItem(name, value);
 }
 
 // =========================================================================================================
@@ -488,18 +577,15 @@ ColorWidget::ColorWidget(const QString& label, const QString& placeholder, QWidg
   hlayout->setContentsMargins(0, 0, 0, 0);
   hlayout->setSpacing(WIDGET_SPACING);
 
-  auto* labelWidget = new QLabel(label, this);
-  labelWidget->setFont(Fonts::Main);
-
-  mValue = QColor::fromString(placeholder);
+  mFullLabel = label;
+  mLabel = new QLabel(mFullLabel, this);
+  mLabel->setFont(Fonts::Main);
 
   mPreview = new QLabel(this);
   mPreview->setFixedSize({16, 16});
   mPreview->setObjectName("PropertyColorPreview");
 
-  applyStyle(mPreview, QStringLiteral(
-                           "QLabel#PropertyColorPreview { background-color: %1; }")
-                           .arg(placeholder));
+  setValue(QColor::fromString(placeholder));
 
   mButton = new QPushButton(this);
   connect(mButton, &QPushButton::pressed, [this, label]() {
@@ -507,21 +593,19 @@ ColorWidget::ColorWidget(const QString& label, const QString& placeholder, QWidg
     if (!color.isValid())
       return;
 
-    applyStyle(mPreview, QStringLiteral(
-                             "QLabel#PropertyColorPreview { background-color: %1; }")
-                             .arg(color.name()));
-
-    mValue = color;
-    mPreview->update();
+    setValue(color);
     emit valueChanged(color);
   });
 
-  hlayout->addWidget(labelWidget);
+  hlayout->addWidget(mLabel);
   hlayout->addStretch();
   hlayout->addWidget(mPreview);
+  hlayout->addSpacing(2 * WIDGET_SPACING);
   hlayout->addWidget(mButton);
 
   vlayout->addLayout(hlayout);
+
+  updateElidedLabel();
 }
 
 QPushButton* ColorWidget::widget() const
@@ -539,6 +623,49 @@ void ColorWidget::addDescription(const QString& label)
 QColor ColorWidget::getValue() const
 {
   return mValue;
+}
+
+void ColorWidget::setValue(const QColor& color)
+{
+  mValue = color;
+  applyStyle(mPreview, QStringLiteral(
+                           "QLabel#PropertyColorPreview { background-color: %1; }")
+                           .arg(color.name()));
+  mPreview->update();
+}
+
+QString ColorWidget::getLabel() const
+{
+  return mFullLabel;
+}
+
+void ColorWidget::resizeEvent(QResizeEvent* event)
+{
+  QWidget::resizeEvent(event);
+  updateElidedLabel();
+}
+
+void ColorWidget::updateElidedLabel()
+{
+  if (!mLabel)
+    return;
+
+  QFontMetrics fm(mLabel->font());
+
+  int reservedWidth = 2 * WIDGET_SPACING;
+  if (mPreview)
+    reservedWidth += mPreview->width();
+  if (mButton)
+    reservedWidth += mButton->width();
+
+  auto* layout = qobject_cast<QHBoxLayout*>(mLabel->parentWidget()->layout());
+  if (layout)
+    reservedWidth += 2 * layout->spacing();
+
+  int availableWidth = width() - reservedWidth - 10;
+  mLabel->setMaximumWidth(qMax(availableWidth, 25));
+
+  mLabel->setText(elideRight(mFullLabel, mLabel));
 }
 
 // =========================================================================================================

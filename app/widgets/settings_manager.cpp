@@ -185,13 +185,19 @@ void SettingsManager::setGeneral(const GeneralSettings& s)
 
 void SettingsManager::setAppearance(const AppearanceSettings& s)
 {
+  // Rediscover incase the user created a new theme
+  mAvailableThemes = Config::discoverThemes();
+
   bool changed = (mAppearance != s);
 
   mAppearance = s;
   save();
 
   if (changed)
+  {
+    LOG_DEBUG("Appearence settings changed: %s", qPrintable(mAppearance.theme));
     emit themeChanged(mAppearance.theme, mAvailableThemes);
+  }
 }
 
 void SettingsManager::setGeneration(const GenerationSettings& s)

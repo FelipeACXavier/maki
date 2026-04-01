@@ -11,6 +11,7 @@
 #include <QList>
 #include <QPushButton>
 #include <QScreen>
+#include <QScrollArea>
 #include <QSpinBox>
 #include <QStackedWidget>
 #include <QStandardItemModel>
@@ -45,9 +46,11 @@ SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsMan
   mPageSelector->setExpandsOnDoubleClick(false);  // single click selects
   mPageSelector->setFocusPolicy(Qt::NoFocus);
   mPageSelector->setUniformRowHeights(true);
+  mPageSelector->setFixedWidth(size().width() / 5);
 
   // Right: stacked mPages
   mPages = new QStackedWidget(this);
+  mPages->setFixedWidth(size().width() / 5 * 4);
 
   // Add categories
   LOG_WARN_ON_FAILURE(createGeneralPage());
@@ -55,8 +58,8 @@ SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsMan
   LOG_WARN_ON_FAILURE(createGenerationPage());
   LOG_WARN_ON_FAILURE(createPluginPages());
 
-  mainLayout->addWidget(mPageSelector, 1);
-  mainLayout->addWidget(mPages, 4);
+  mainLayout->addWidget(mPageSelector);
+  mainLayout->addWidget(mPages);
 
   // Select page when user clicks an item
   connect(mPageSelector, &QTreeWidget::currentItemChanged, this, [this](QTreeWidgetItem* current, QTreeWidgetItem* /* previous */) {
@@ -97,7 +100,7 @@ SettingsDialog::SelectorPage SettingsDialog::addPage(const QString& pageName, co
 
   auto* resetButton = new QPushButton(page);
   resetButton->setObjectName("TextAndIcon");
-  resetButton->setText(tr(" Reset"));
+  resetButton->setText(" " + tr("Reset"));
   resetButton->setToolTip(tr("Reset settings for this page"));
   addIcon(resetButton, ":/icons/reset.svg");
 
@@ -114,13 +117,22 @@ SettingsDialog::SelectorPage SettingsDialog::addPage(const QString& pageName, co
   line->setFrameShadow(QFrame::Sunken);
 
   // Content layout
-  auto contentLayout = new QVBoxLayout();
+  auto scrollArea = new QScrollArea(this);
+  scrollArea->setWidgetResizable(true);
+  scrollArea->setFrameShape(QFrame::NoFrame);
+  scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+
+  auto content = new QWidget(this);
+  auto contentLayout = new QVBoxLayout(content);
   contentLayout->setContentsMargins(20, 5, 5, 5);
   contentLayout->setObjectName("ContentArea");
 
+  scrollArea->setWidget(content);
+
   layout->addLayout(headerRow);
   layout->addWidget(line);
-  layout->addLayout(contentLayout);
+  layout->addWidget(scrollArea);
 
   // Add page to the collection of pages
   int index = mPages->addWidget(page);
@@ -187,6 +199,7 @@ VoidResult SettingsDialog::createGeneralPage()
 
 VoidResult SettingsDialog::createAppearancePage()
 {
+  mTheme = Config::SYSTEM_THEME;
   auto appearance = mSettingsManager->appearance();
   auto [selector, page] = addPage(tr("Appearance"), ":/icons/appearance.svg", [this] {
     auto defaultSettings = AppearanceSettings();
@@ -208,8 +221,8 @@ VoidResult SettingsDialog::createAppearancePage()
   for (const Config::ThemeInfo& info : mSettingsManager->availableThemes())
   {
     QString label = info.displayName;
-    if (info.isUser)
-      label += tr(" (user)");
+    // if (info.isUser)
+    //   label += tr(" (user)");
 
     mThemeCombo->addItem(label, info.id);
   }
@@ -222,20 +235,56 @@ VoidResult SettingsDialog::createAppearancePage()
   themeLayout->addWidget(mThemeCombo);
   themeLayout->addWidget(mNativeMenuBar);
 
-  auto colorSelector = new maki::ColorWidget(tr("Test color"), "#A52429", page);
-  themeLayout->addWidget(colorSelector);
+  // Color pickers
+  QMap<QString, QString> colors = {};
+  for (auto it = Config::THEME_KEY_MAP.cbegin(); it != Config::THEME_KEY_MAP.cend(); ++it)
+  {
+    QString key = it.key();
+    QString value = Config::SYSTEM_THEME.*(it.value());
 
-  mIcons.append({colorSelector->widget(), Config::getValueFromTheme("@eyedropper_icon").toString()});
+    QColor color(value);
+    if (color.isValid())
+      colors[key] = value;
+  }
+
+  int cols = 3;
+  int rows = qCeil(colors.size() / cols) + 1;
+  mColorGrid = new maki::GridGroup(tr("Colors"), rows, cols, page);
+  for (auto it = colors.constBegin(); it != colors.constEnd(); ++it)
+  {
+    QString key = it.key();
+    QString label = toColorLabel(it.key());
+
+    auto colorSelector = new maki::ColorWidget(label, it.value(), page);
+    connect(colorSelector, &maki::ColorWidget::valueChanged, [this, key](const QColor& color) {
+      LOG_DEBUG("Looking for %s", qPrintable(key));
+      auto mapIt = Config::THEME_KEY_MAP.find(key);
+      if (mapIt == Config::THEME_KEY_MAP.end())
+        return;
+
+      LOG_DEBUG("Setting %s to %s", qPrintable(key), qPrintable(color.name()));
+      mTheme.*(mapIt.value()) = color.name();
+    });
+    mIcons.append({colorSelector->widget(), Config::getValueFromTheme("@eyedropper_icon").toString()});
+    mColorGrid->addWidget(colorSelector);
+  }
+
+  mUserThemeName = new maki::StringWidget(tr("Theme name"), "User", alignment, page);
+  mUserThemeName->addDescription(tr("The theme will be installed in") + ": " + Config::userThemesDir());
+
+  themeLayout->addWidget(mColorGrid);
+  themeLayout->addSpacing(2);
+  themeLayout->addWidget(mUserThemeName);
 
   mUiScale = new maki::SpinWidget(tr("UI scale"), appearance.uiScalePercent, page, 80, 200);
-  mUiScale->setSuffix(tr(" %"));
+  mUiScale->setSuffix(" %");
 
   mNodeCornerRadius = new maki::SpinWidget(tr("Node corner radius"), appearance.nodeCornerRadius, page, 0, 30);
-  mNodeCornerRadius->setSuffix(tr(" pixels"));
+  mNodeCornerRadius->setSuffix(" pixels");
 
   mShowGrid = new maki::BooleanWidget(tr("Show canvas grid"), appearance.showCanvasGrid, alignment, page);
 
-  auto editorLayout = new maki::WidgetGroup(tr("Theming"), page);
+  auto editorLayout = new maki::WidgetGroup(tr("UI changes"), page);
   editorLayout->addWidget(mUiScale);
   editorLayout->addWidget(mShowGrid);
   editorLayout->addWidget(mNodeCornerRadius);
@@ -428,6 +477,16 @@ void SettingsDialog::saveToSettings()
   general.confirmOnCloseWithExecution = mConfirmOnClose->getValue();
 
   AppearanceSettings appearance;
+  if (mTheme != Config::SYSTEM_THEME)
+  {
+    const auto themeName = mUserThemeName->getValue();
+    mThemeCombo->addItem(themeName, themeName.toLower());
+    mThemeCombo->setValue(themeName);
+
+    Config::saveThemeVarsToFile(themeName, mTheme);
+  }
+
+  appearance.themeVars = mTheme;
   appearance.theme = mThemeCombo->getValue();
   appearance.uiScalePercent = mUiScale->getValue();
   appearance.showCanvasGrid = mShowGrid->getValue();
@@ -446,6 +505,7 @@ void SettingsDialog::saveToSettings()
 void SettingsDialog::apply()
 {
   saveToSettings();
+  updateColorGrid();
   updateIconTheme(mIcons);
 }
 
@@ -462,5 +522,53 @@ void SettingsDialog::updatePluginSetting(const QString& pluginId, const QString&
         set.setValue(value);
         return;
       }
+  }
+}
+
+QString SettingsDialog::toColorLabel(QString label) const
+{
+  return ToLabel(label.replace("@", "").replace("_", " "));
+}
+
+maki::ColorWidget* SettingsDialog::widgetByLabel(const QString& label, const QGridLayout* grid) const
+{
+  for (int i = 0; i < grid->count(); ++i)
+  {
+    QLayoutItem* item = grid->itemAt(i);
+    if (!item)
+      continue;
+
+    QWidget* widget = item->widget();
+    if (!widget)
+      continue;
+
+    if (maki::ColorWidget* color = qobject_cast<maki::ColorWidget*>(widget))
+    {
+      if (color->getLabel() == toColorLabel(label))
+        return color;
+    }
+  }
+
+  return nullptr;
+}
+
+void SettingsDialog::updateColorGrid()
+{
+  if (!mColorGrid || !mColorGrid->widget())
+    return;
+
+  auto* grid = qobject_cast<QGridLayout*>(mColorGrid->widget()->layout());
+  for (auto it = Config::THEME_KEY_MAP.cbegin(); it != Config::THEME_KEY_MAP.cend(); ++it)
+  {
+    QString key = it.key();
+    QString value = Config::SYSTEM_THEME.*(it.value());
+
+    QColor color(value);
+    if (color.isValid())
+    {
+      auto widget = widgetByLabel(key, grid);
+      if (widget)
+        widget->setValue(color);
+    }
   }
 }
