@@ -1,7 +1,0 @@
-import types.dzn;
-
-import iaction.dzn;
-
-component cimage {
-  provides iaction stop;
-}
