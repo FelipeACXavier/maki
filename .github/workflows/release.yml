@@ -55,44 +55,45 @@ jobs:
 
   # ==========================================================================================
   # 2) Create a windows release
-  build-windows:
-    name: Build Windows
-    runs-on: windows-latest
-    defaults:
-      run:
-        shell: pwsh
-        working-directory: ${{ github.workspace }}
+  # build-windows:
+  #   name: Build Windows
+  #   runs-on: windows-latest
+  #   defaults:
+  #     run:
+  #       shell: pwsh
+  #       working-directory: ${{ github.workspace }}
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 1
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #       with:
+  #         submodules: recursive
+  #         fetch-depth: 1
 
-      # --------------------------------------------------------------------------------------
-      # Create the package
-      - name: Set up Windows
-        run: |
-          ./scripts/windows/setup.ps1
+  #     # --------------------------------------------------------------------------------------
+  #     # Create the package
+  #     - name: Set up Windows
+  #       run: |
+  #         ./scripts/windows/setup.ps1
 
-      - name: Build Windows
-        run: |
-          ./scripts/windows/release.ps1
+  #     - name: Build Windows
+  #       run: |
+  #         ./scripts/windows/release.ps1
 
-      # --------------------------------------------------------------------------------------
-      # Upload artifact for next job
-      - name: Upload Windows artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-release
-          path: release/maki-windows.zip
+  #     # --------------------------------------------------------------------------------------
+  #     # Upload artifact for next job
+  #     - name: Upload Windows artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: windows-release
+  #         path: release/maki-windows.zip
 
   # ==========================================================================================
   # 3) Publish GitHub Release
   release:
     name: Create GitHub Linux Release
-    needs: [build-linux, build-windows]
+    # needs: [build-linux, build-windows]
+    needs: [build-linux]
     runs-on: self-hosted
 
     steps:
@@ -102,18 +103,18 @@ jobs:
           name: linux-release
           path: ./release
 
-      - name: Download Windows artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-release
-          path: ./release
+      # - name: Download Windows artifact
+      #   uses: actions/download-artifact@v4
+      #   with:
+      #     name: windows-release
+      #     path: ./release
+      # Move this below ./release/maki-windows.zip
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             ./release/maki-linux.tar.gz
-            ./release/maki-windows.zip
           generate_release_notes: true
           prerelease: ${{ contains(github.ref_name, '-') }}
         env:
