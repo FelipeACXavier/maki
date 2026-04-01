@@ -74,7 +74,6 @@ void MainWindowLayout::buildLeftPanel()
 
   mStructureTab = new QWidget();
   QVBoxLayout* structureLayout = new QVBoxLayout(mStructureTab);
-  structureLayout->setAlignment(Qt::AlignTop);
   structureLayout->setContentsMargins(
       Config::CONTENT_PADDING, Config::CONTENT_PADDING,
       Config::CONTENT_PADDING, Config::CONTENT_PADDING);
@@ -91,7 +90,6 @@ void MainWindowLayout::buildLeftPanel()
 
   mBehaviourTab = new QWidget();
   QVBoxLayout* behaviourLayout = new QVBoxLayout(mBehaviourTab);
-  behaviourLayout->setAlignment(Qt::AlignTop);
   behaviourLayout->setContentsMargins(
       Config::CONTENT_PADDING, Config::CONTENT_PADDING,
       Config::CONTENT_PADDING, Config::CONTENT_PADDING);

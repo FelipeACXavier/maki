@@ -23,6 +23,15 @@ QGraphicsView[hasActivity="true"]:focus {
   border-bottom: 2px solid @selection_bg;
 }
 
+LibraryContainer {
+  /* border-radius: @border_radius; */
+  /* border-top: 1px solid @selection_bg; */
+}
+
+QLabel#SectionLabel {
+  border-bottom: 1px solid @selection_bg;
+}
+
 /* ===============================
    SCROLLBARS
    =============================== */

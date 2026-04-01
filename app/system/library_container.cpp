@@ -20,16 +20,15 @@ LibraryContainer::LibraryContainer(QWidget* parent)
 
 LibraryContainer* LibraryContainer::create(const QString& name, QWidget* parent)
 {
-  auto container = new LibraryContainer(parent);
+  auto container = new LibraryContainer();
 
   // Not sure why, but setting a small width makes sure that the nodes are centered
   LibraryScene* scene = new LibraryScene(container);
   scene->setSceneRect(0, 0, 50, 500);
+
   container->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   container->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-
   container->setScene(scene);
-  container->setAlignment(Qt::AlignLeft | Qt::AlignTop);
 
   // Set the layout so the view covers the entire toolbox
   container->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
@@ -53,6 +52,9 @@ void LibraryContainer::updateSceneSize()
 
   scene()->setSceneRect(0, 0, viewport()->width(), contentHeight);
   setFixedHeight(contentHeight + frameWidth() * 2);
+
+  if (SectionWidget* parent = qobject_cast<SectionWidget*>(this->parent()->parent()))
+    parent->updateContentHeight(contentHeight + frameWidth() * 2);
 }
 
 VoidResult LibraryContainer::addNode(const QString& id, std::shared_ptr<NodeConfig> config)
