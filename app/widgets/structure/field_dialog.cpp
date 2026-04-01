@@ -56,7 +56,7 @@ void FieldDialog::setup(std::shared_ptr<PropertyInfo> config)
 
   layout()->setContentsMargins(10, 5, 10, 5);
 
-  static_cast<QVBoxLayout*>(layout())->addStretch();
+  qobject_cast<QVBoxLayout*>(layout())->addStretch();
 
   // Create a button box for OK and Cancel buttons
   QDialogButtonBox* buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, controls);

@@ -73,6 +73,7 @@ void SettingsManager::load()
   LOAD_SETTING(mGeneral, recentHistorySize, Int);
   LOAD_SETTING(mGeneral, showWelcomeMessage, Bool);
   LOAD_SETTING(mGeneral, language, String);
+  LOAD_SETTING(mGeneral, lastOpenFileDir, String);
 
   mSettings.beginGroup("RecentFiles");
   const QStringList recentFiles = mSettings.childKeys();
@@ -119,6 +120,7 @@ void SettingsManager::save()
   SAVE_SETTING(mGeneral, recentHistorySize);
   SAVE_SETTING(mGeneral, showWelcomeMessage);
   SAVE_SETTING(mGeneral, language);
+  SAVE_SETTING(mGeneral, lastOpenFileDir);
   mSettings.beginGroup("RecentFiles");
   for (int i = 0; i < mGeneral.recentFiles.size(); ++i)
   {

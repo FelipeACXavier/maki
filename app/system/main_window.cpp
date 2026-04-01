@@ -126,6 +126,7 @@ VoidResult MainWindow::start()
   {
     mFileMenu->setGenerationRoot(mSettingsManager->generation().generationDir);
     mLanguageManager->setLanguage(mSettingsManager->general().language);
+    mSaveHandler->setLastDir(mSettingsManager->general().lastOpenFileDir);
 
     onThemeChanged(mSettingsManager->appearance().theme, mSettingsManager->availableThemes());
     for (const auto& file : mSettingsManager->general().recentFiles)
@@ -593,6 +594,10 @@ void MainWindow::onActionLoad(const QString& filename)
 
   // Repopulate the canvas (and the storage)
   canvas()->loadFromSave(info);
+
+  GeneralSettings general = mSettingsManager->general();
+  general.lastOpenFileDir = mSaveHandler->lastDir();
+  mSettingsManager->setGeneral(general);
 }
 
 void MainWindow::onNodeSelected(NodeItem* node, bool selected)

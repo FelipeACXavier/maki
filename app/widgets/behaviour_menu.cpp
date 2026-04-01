@@ -86,7 +86,7 @@ void BehaviourMenu::addDynamicWidget(QWidget* dynamicWidget, QWidget* parent)
     if (widget != parent)
       continue;
 
-    static_cast<QVBoxLayout*>(layout())->insertWidget(i - 1, dynamicWidget);
+    qobject_cast<QVBoxLayout*>(layout())->insertWidget(i - 1, dynamicWidget);
     break;
   }
 }

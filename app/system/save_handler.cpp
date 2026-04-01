@@ -25,6 +25,19 @@ void SaveHandler::newFileCreated()
   mCurrentFile.clear();
 }
 
+QString SaveHandler::lastDir() const
+{
+  return mLastDir;
+}
+
+void SaveHandler::setLastDir(const QString& dir)
+{
+  if (dir.isEmpty())
+    mLastDir = QDir::homePath();
+  else
+    mLastDir = dir;
+}
+
 VoidResult SaveHandler::save(Canvas* canvas)
 {
   if (mCurrentFile.isEmpty() || mCurrentFile.isNull())
@@ -149,18 +162,15 @@ QString SaveHandler::openAtCenter(Function function)
 {
   QFileDialog dialog(mParentWidget);
 
-  QRect parentGeometry = mParentWidget->geometry();
-  dialog.setMinimumSize({parentGeometry.width() / 2, parentGeometry.height() / 2});
+  dialog.setAcceptMode(function == Function::SAVE ? QFileDialog::AcceptSave : QFileDialog::AcceptOpen);
+  dialog.setWindowTitle(function == Function::SAVE ? tr("Save diagram") : tr("Open diagram"));
+  dialog.setDirectory(mLastDir);
+  dialog.setNameFilter(tr("All Files (*);;MAKI diagram (*.json)"));
+  dialog.setOption(QFileDialog::DontUseNativeDialog, false);
+  dialog.setFont(Fonts::Main);
 
-  // Calculate the center of the parent (main window)
-  int x = parentGeometry.left() + (parentGeometry.width() - dialog.width()) / 2;
-  int y = parentGeometry.top() + (parentGeometry.height() - dialog.height()) / 2;
+  if (dialog.exec() != QDialog::Accepted)
+    return QString();
 
-  // Set the position of the dialog to the center of the main window
-  dialog.move(x, y);
-
-  if (function == Function::SAVE)
-    return dialog.getSaveFileName(mParentWidget, tr("Save diagram"), mLastDir, tr("All Files (*);;Low-Code platform (*.lcp)"));
-
-  return dialog.getOpenFileName(mParentWidget, tr("Open diagram"), mLastDir, tr("All Files (*);;Low-Code platform (*.lcp)"));
+  return dialog.selectedFiles().value(0);
 }

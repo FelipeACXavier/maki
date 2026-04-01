@@ -19,6 +19,8 @@ public:
   VoidResult saveToFile(Canvas* canvas);
   VoidResult saveFileAs(Canvas* canvas);
 
+  QString lastDir() const;
+  void setLastDir(const QString& dir);
   void newFileCreated();
   Result<SaveInfo> load();
   Result<SaveInfo> load(const QString& fileToLoad);

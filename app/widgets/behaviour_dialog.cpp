@@ -45,7 +45,7 @@ void BehaviourDialog::setup(const QList<NodeItem*>& nodes)
   mListWidget = new QListWidget(this);
   layout()->addWidget(mListWidget);
 
-  static_cast<QVBoxLayout*>(layout())->addStretch();
+  qobject_cast<QVBoxLayout*>(layout())->addStretch();
 
   // Create a button box for OK and Cancel buttons
   QDialogButtonBox* buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);

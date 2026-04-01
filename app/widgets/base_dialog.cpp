@@ -55,7 +55,7 @@ void BaseDialog::setSize(double ratio, double screenFraction)
 
 QVBoxLayout* BaseDialog::layout()
 {
-  return static_cast<QVBoxLayout*>(QDialog::layout());
+  return qobject_cast<QVBoxLayout*>(QDialog::layout());
 }
 
 void BaseDialog::addIcon(QWidget* widget, const QString& iconPath)

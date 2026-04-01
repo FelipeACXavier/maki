@@ -44,7 +44,7 @@ void EventDialog::setup(std::shared_ptr<FlowSaveInfo> event)
 
   layout()->setContentsMargins(10, 5, 10, 5);
 
-  static_cast<QVBoxLayout*>(layout())->addStretch();
+  qobject_cast<QVBoxLayout*>(layout())->addStretch();
 
   updateIconTheme(mIcons);
 

@@ -25,6 +25,7 @@ struct GeneralSettings
   int recentHistorySize = 10;
   bool showWelcomeMessage = true;
   QVector<QString> recentFiles = {};
+  QString lastOpenFileDir = "";
   QString language = "en_US";
 
   bool operator!=(const GeneralSettings& s)

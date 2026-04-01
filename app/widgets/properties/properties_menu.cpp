@@ -187,7 +187,7 @@ VoidResult PropertiesMenu::onNodeSelected(NodeItem* node, bool selected)
   RETURN_ON_FAILURE(loadProperties(node));
   RETURN_ON_FAILURE(loadControls(node));
 
-  static_cast<QVBoxLayout*>(layout())->addStretch();
+  qobject_cast<QVBoxLayout*>(layout())->addStretch();
 
   return VoidResult();
 }
@@ -596,7 +596,7 @@ VoidResult PropertiesMenu::loadFieldEventSelect(QComboBox* componentSelect, cons
   // Add everything to the layout
   layout()->addWidget(nameEventLabel);
   layout()->addWidget(eventWidget);
-  static_cast<QVBoxLayout*>(layout())->addLayout(vlayout);
+  qobject_cast<QVBoxLayout*>(layout())->addLayout(vlayout);
 
   return VoidResult();
 }
@@ -617,7 +617,7 @@ VoidResult PropertiesMenu::loadFieldTriggerCall(QComboBox* componentSelect, cons
     LOG_WARN_ON_FAILURE(loadEventArguments(componentSelect->currentData().toString(), "", property, node, Types::CallType::TRIGGER, vlayout));
   });
 
-  static_cast<QVBoxLayout*>(layout())->addLayout(vlayout);
+  qobject_cast<QVBoxLayout*>(layout())->addLayout(vlayout);
 
   return VoidResult();
 }
@@ -844,7 +844,7 @@ VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)
   layout()->addWidget(eventWidget);
   layout()->addWidget(button);
 
-  static_cast<QVBoxLayout*>(layout())->addStretch();
+  qobject_cast<QVBoxLayout*>(layout())->addStretch();
 
   return VoidResult();
 }

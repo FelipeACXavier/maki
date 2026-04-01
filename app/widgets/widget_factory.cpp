@@ -123,22 +123,22 @@ void WidgetGroup::addWidget(QWidget* widget)
   hlayout->setContentsMargins(WIDGET_PADDING, 0, 0, 0);
   hlayout->addWidget(widget);
 
-  static_cast<QVBoxLayout*>(this->layout())->addLayout(hlayout);
+  qobject_cast<QVBoxLayout*>(this->layout())->addLayout(hlayout);
 }
 
 void WidgetGroup::addLayout(QLayout* layout)
 {
-  static_cast<QVBoxLayout*>(this->layout())->addLayout(layout);
+  qobject_cast<QVBoxLayout*>(this->layout())->addLayout(layout);
 }
 
 void WidgetGroup::addSpacing(int spacing)
 {
-  static_cast<QVBoxLayout*>(this->layout())->addSpacing(spacing);
+  qobject_cast<QVBoxLayout*>(this->layout())->addSpacing(spacing);
 }
 
 void WidgetGroup::addStretch()
 {
-  static_cast<QVBoxLayout*>(this->layout())->addStretch();
+  qobject_cast<QVBoxLayout*>(this->layout())->addStretch();
 }
 
 // =========================================================================================================

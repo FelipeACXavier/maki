@@ -183,14 +183,14 @@ void updateIconTheme(QList<WidgetWithIcon>& icons)
       {
         action->setIcon(addIconWithColor(item.path, color));
       }
-      else if (auto tree = static_cast<QTreeWidget*>(item.widget))
+      else if (auto tree = qobject_cast<QTreeWidget*>(item.widget))
       {
-        if (auto widget = tree->itemFromIndex(item.mindex))
+        if (QTreeWidgetItem* widget = tree->itemFromIndex(item.mindex))
           widget->setIcon(0, addIconWithColor(item.path, color));
       }
       else
       {
-        LOG_WARNING("Unsupported widget");
+        LOG_WARNING("Unsupported widget: %s", item.widget->metaObject()->className());
       }
     }
   }
