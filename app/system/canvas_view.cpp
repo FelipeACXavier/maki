@@ -10,6 +10,16 @@
 static constexpr qreal DEFAULT_ZOOM = 1.0;
 
 CanvasView::CanvasView(QWidget* parent)
+    // TODO(felaze): make these configurable
+    : mDoMousePanning(false)
+    , mDoKeyZoom(false)
+    , mShowGrid(true)
+    , mPanSpeed(1)
+    , mZoomDelta(0.2)
+    , mZoomKey(Qt::Key_Control)
+    , mMinZoom(0.2)
+    , mMaxZoom(10)
+    , mPanButton(Qt::MiddleButton)
 {
   setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -26,18 +36,7 @@ CanvasView::CanvasView(QWidget* parent)
   setMaxSize();
   centerOn({0, 0});
 
-  // TODO(felaze): make these configurable
-  mZoomDelta = 0.2;
-  mPanSpeed = 1;
-  mDoMousePanning = false;
-  mDoKeyZoom = false;
-  mShowGrid = true;
-
-  mMinZoom = 0.2;
-  mMaxZoom = 10;
-
-  mPanButton = Qt::MiddleButton;
-  mZoomKey = Qt::Key_Control;
+  updateProperty(this, Config::HAS_ACTIVITY, true);
 }
 
 qreal CanvasView::getScale() const

@@ -3,10 +3,21 @@
 #include <QShortcut>
 
 #include "app_configs.h"
+#include "style_helpers.h"
+#include "theme.h"
 
 static constexpr qreal DEFAULT_ZOOM = 1.0;
 
 PluginView::PluginView(QWidget* parent)
+    // TODO(felaze): this class should inherit from CanvasView
+    : mDoMousePanning(false)
+    , mDoKeyZoom(false)
+    , mPanSpeed(1)
+    , mZoomDelta(0.2)
+    , mZoomKey(Qt::Key_Control)
+    , mMinZoom(0.2)
+    , mMaxZoom(10)
+    , mPanButton(Qt::MiddleButton)
 {
   setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -23,17 +34,7 @@ PluginView::PluginView(QWidget* parent)
   setMaxSize();
   centerOn({0, 0});
 
-  // TODO(felaze): make these configurable
-  mZoomDelta = 0.2;
-  mPanSpeed = 1;
-  mDoMousePanning = false;
-  mDoKeyZoom = false;
-
-  mMinZoom = 0.2;
-  mMaxZoom = 10;
-
-  mPanButton = Qt::MiddleButton;
-  mZoomKey = Qt::Key_Control;
+  updateProperty(this, Config::HAS_ACTIVITY, true);
 }
 
 qreal PluginView::getScale() const

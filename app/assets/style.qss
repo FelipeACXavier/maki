@@ -7,6 +7,7 @@ QWidget {
   color: @foreground;
   selection-background-color: @selection_bg;
   selection-color: @selection_fg;
+  /* border: 1px solid #FF0000 */
 }
 
 QWidget#SettingsPage {
@@ -18,7 +19,7 @@ QGraphicsView {
   border-radius: @border_radius;
 }
 
-QGraphicsView:focus {
+QGraphicsView[hasActivity="true"]:focus {
   border-bottom: 2px solid @selection_bg;
 }
 
