@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "base_dialog.h"
+#include "language_manager.h"
 #include "result.h"
 #include "settings_manager.h"
 #include "widgets/widget_factory.h"
@@ -34,7 +35,7 @@ class SettingsDialog : public BaseDialog
 {
   Q_OBJECT
 public:
-  SettingsDialog(const QString& title, std::shared_ptr<SettingsManager> manager, QWidget* parent = nullptr);
+  SettingsDialog(const QString& title, std::shared_ptr<SettingsManager> manager, std::shared_ptr<LanguageManager> languageManager, QWidget* parent = nullptr);
 
 private slots:
   /**
@@ -57,6 +58,7 @@ private:
   // ------------------------------------------
   // Actual settings
   std::shared_ptr<SettingsManager> mSettingsManager = nullptr;
+  std::shared_ptr<LanguageManager> mLanguageManager = nullptr;
 
   // General
   maki::BooleanWidget* mRestoreLastSession = nullptr;
@@ -66,6 +68,7 @@ private:
   maki::BooleanWidget* mEnableDebugLogs = nullptr;
   maki::IntegerWidget* mRecentHistorySize = nullptr;
   maki::BooleanWidget* mShowWelcomeMessage = nullptr;
+  maki::SelectorWidget* mLanguageCombo = nullptr;
 
   // Appearance
   maki::SelectorWidget* mThemeCombo = nullptr;

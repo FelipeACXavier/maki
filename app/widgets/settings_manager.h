@@ -25,10 +25,9 @@ struct GeneralSettings
   int recentHistorySize = 10;
   bool showWelcomeMessage = true;
   QVector<QString> recentFiles = {};
-  QString language = ""
+  QString language = "en_US";
 
-      bool
-      operator!=(const GeneralSettings& s)
+  bool operator!=(const GeneralSettings& s)
   {
     return restoreLastSession != s.restoreLastSession ||
            autosaveEnabled != s.autosaveEnabled ||
@@ -36,7 +35,8 @@ struct GeneralSettings
            confirmOnCloseWithExecution != s.confirmOnCloseWithExecution ||
            enableDebugLogs != s.enableDebugLogs ||
            recentHistorySize != s.recentHistorySize ||
-           showWelcomeMessage != s.showWelcomeMessage;
+           showWelcomeMessage != s.showWelcomeMessage ||
+           language != s.language;
   }
 };
 

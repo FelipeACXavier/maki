@@ -45,6 +45,15 @@ struct WidgetWithIcon
   QModelIndex mindex;
 };
 
+struct TranslatableWidget
+{
+  QObject* widget;
+  const char* text;
+  int index;
+  bool tooltip = false;
+  QModelIndex mindex;
+};
+
 struct TreeWidgetWithIcon
 {
   QTreeWidgetItem* widget;

@@ -31,6 +31,7 @@ class PluginTab;
 class PluginView;
 class QPlainTextEdit;
 class Logger;
+class LanguageManager;
 
 class MainWindow : public MainWindowLayout
 {
@@ -52,11 +53,14 @@ private slots:
   void onFlowAdded(Flow* flow, NodeItem* node);
   void onFlowRemoved(const QString& flowId, const QString& nodeId);
 
+  void changeEvent(QEvent* event) override;
+
 private:
   std::unique_ptr<SaveHandler> mSaveHandler;
   std::unique_ptr<PluginManager> mPluginManager;
   std::shared_ptr<ConfigurationTable> mConfigTable;
   std::shared_ptr<SettingsManager> mSettingsManager;
+  std::shared_ptr<LanguageManager> mLanguageManager;
 
   Pipeline* mPipeline = nullptr;
   Generator* mGenerator = nullptr;

@@ -41,6 +41,7 @@
 #include "structure_canvas.h"
 #include "style_helpers.h"
 #include "system/main_window_layout.h"
+#include "widgets/language_manager.h"
 #include "widgets/notification_manager.h"
 #include "widgets/properties/properties_menu.h"
 #include "widgets/section.h"
@@ -91,6 +92,7 @@ VoidResult MainWindow::start()
   mSaveHandler = std::make_unique<SaveHandler>(this);
   mPluginManager = std::make_unique<PluginManager>(this);
   mSettingsManager = std::make_shared<SettingsManager>(mActionOpenRecent);
+  mLanguageManager = std::make_shared<LanguageManager>();
   // TODO(felaze): Check leaks here
   mNotificationManager = new NotificationManager(mCanvasPanel);
   mLogger = new Logger(this);
@@ -123,6 +125,7 @@ VoidResult MainWindow::start()
   if (mSettingsManager)
   {
     mFileMenu->setGenerationRoot(mSettingsManager->generation().generationDir);
+    mLanguageManager->setLanguage(mSettingsManager->general().language);
 
     onThemeChanged(mSettingsManager->appearance().theme, mSettingsManager->availableThemes());
     for (const auto& file : mSettingsManager->general().recentFiles)
@@ -169,6 +172,9 @@ void MainWindow::onSettingsChanged()
 {
   if (mFileMenu)
     mFileMenu->setGenerationRoot(mSettingsManager->generation().generationDir);
+
+  if (mLanguageManager)
+    mLanguageManager->setLanguage(mSettingsManager->general().language);
 }
 
 void MainWindow::startUI()
@@ -277,7 +283,7 @@ void MainWindow::bind()
   // Setting actions =============================================================
   connect(mOpenAllSettings, &QAction::triggered, this, [this] {
     LOG_INFO("Opening all settings");
-    SettingsDialog* settingsDialog = new SettingsDialog("Configurations", mSettingsManager, this);
+    SettingsDialog* settingsDialog = new SettingsDialog("Configurations", mSettingsManager, mLanguageManager, this);
     settingsDialog->setAttribute(Qt::WA_DeleteOnClose);
     settingsDialog->show();
   });
@@ -314,6 +320,7 @@ void MainWindow::bind()
   }
 
   connect(mProcessTabButton, &QPushButton::pressed, this, &MainWindow::addProcessTab);
+  // connect(mLanguageManager, &LanguageManager::languageChanged, [this](const QString& code) {});
 
   // Search stuff =============================================================
   connect(mPaletteSearch, &maki::SearchWidget::valueChanged, [this](const QString& query) {
@@ -332,6 +339,16 @@ void MainWindow::bind()
 
   // Canvas stuff =============================================================
   bindCanvas();
+}
+
+void MainWindow::changeEvent(QEvent* event)
+{
+  QMainWindow::changeEvent(event);
+  if (event->type() == QEvent::LanguageChange)
+  {
+    LOG_DEBUG("Language changed");
+    onLanguageChanged();
+  }
 }
 
 void MainWindow::bindCanvas()

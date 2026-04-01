@@ -132,12 +132,14 @@ protected:
 
 protected:
   void onThemeChanged(const AppearanceSettings& settings);
+  void onLanguageChanged();
 
   void toggleGenerationButton(bool running);
   void toggleDeployButton(bool running);
 
 private:
   QList<WidgetWithIcon> mIcons;
+  QList<TranslatableWidget> mTranslatable;
 
   void buildMainWindow();
 
@@ -152,4 +154,5 @@ private:
   QWidget* createHeaderComboBox(QComboBox* comboBox, const QString& iconPath, const QString& tooltip);
 
   void togglePanelVisibility(QWidget* panel, QAction* action);
+  int setTabBarWidth(QTabBar* bar, int minWidth, int minBorder, int minPadding);
 };

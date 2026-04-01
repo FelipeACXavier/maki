@@ -26,9 +26,10 @@
 #include "theme.h"
 #include "widget_factory.h"
 
-SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsManager> manager, QWidget* parent)
+SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsManager> manager, std::shared_ptr<LanguageManager> languageManager, QWidget* parent)
     : BaseDialog(title, 1.4, 0.7, parent)
     , mSettingsManager(manager)
+    , mLanguageManager(languageManager)
 {
   auto* mainLayout = new QHBoxLayout();
   mainLayout->setSpacing(0);
@@ -162,6 +163,15 @@ VoidResult SettingsDialog::createGeneralPage()
     mSettingsManager->setGeneral(defaultSettings);
   });
 
+  auto languageLayout = new maki::WidgetGroup(tr("Language"), page);
+  mLanguageCombo = new maki::SelectorWidget(tr("Set language"), page);
+  for (const LanguageManager::LanguageOption& info : mLanguageManager->availableLanguages())
+    mLanguageCombo->addItem(info.label, info.code);
+
+  mLanguageCombo->setValue(generalSettings.language);
+
+  languageLayout->addWidget(mLanguageCombo);
+
   maki::WidgetAlignment alignment = {maki::WidgetAlignment::Type::VERTICAL};
   mAutosaveMinutes = new maki::SpinWidget(tr("Autosave interval"), generalSettings.autosaveIntervalMinutes, page, 1, 120);
   mAutosaveMinutes->addDescription("Between 1 and 120 minutes");
@@ -189,6 +199,7 @@ VoidResult SettingsDialog::createGeneralPage()
   logLayout->addWidget(mEnableDebugLogs);
 
   QVBoxLayout* layout = page->findChild<QVBoxLayout*>("ContentArea");
+  layout->addWidget(languageLayout);
   layout->addWidget(autoSaveLayout);
   layout->addWidget(closingLayout);
   layout->addWidget(logLayout);
@@ -468,6 +479,7 @@ VoidResult SettingsDialog::createPluginPages()
 void SettingsDialog::saveToSettings()
 {
   GeneralSettings general;
+  general.language = mLanguageCombo->getValue();
   general.autosaveEnabled = mAutosaveEnabled->getValue();
   general.enableDebugLogs = mEnableDebugLogs->getValue();
   general.recentHistorySize = mRecentHistorySize->getValue();

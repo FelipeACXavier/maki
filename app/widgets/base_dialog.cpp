@@ -70,7 +70,7 @@ void BaseDialog::onThemeChanged()
 
 QDialogButtonBox* BaseDialog::createButtons(const QString& ok, const QString& cancel)
 {
-  QDialogButtonBox* buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
+  QDialogButtonBox* buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Close, this);
   layout()->addWidget(buttonBox);
 
   auto okButton = buttonBox->button(QDialogButtonBox::Ok);
@@ -91,7 +91,7 @@ QDialogButtonBox* BaseDialog::createButtons(const QString& ok, const QString& ca
     addIcon(okButton, ":/icons/accept.svg");
   }
 
-  auto* cancelBtn = buttonBox->button(QDialogButtonBox::Cancel);
+  auto* cancelBtn = buttonBox->button(QDialogButtonBox::Close);
   if (cancelBtn)
   {
     cancelBtn->setFont(Fonts::Main);
