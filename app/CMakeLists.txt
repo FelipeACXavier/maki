@@ -13,6 +13,7 @@ include(${CMAKE_SOURCE_DIR}/cmake/copy_icons.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/copy_themes.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/copy_libraries.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/doxygen.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/copy_translations.cmake)
 
 # ------------------------------------------------------------------------------------------------------------
 # Main application
@@ -29,7 +30,16 @@ file(GLOB STRUCTURAL_WIDGET_FILES ${CMAKE_CURRENT_SOURCE_DIR}/widgets/structure/
 file(GLOB PROPERTY_WIDGET_FILES ${CMAKE_CURRENT_SOURCE_DIR}/widgets/properties/*.cpp)
 file(GLOB COMPILER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/compiler/*.cpp)
 
-# message("view files: ${VIEW_FILES}")
+file(GLOB TS_FILES ${CMAKE_CURRENT_SOURCE_DIR}/translations/*.ts)
+
+set(QM_OUTPUT_DIR ${CMAKE_BINARY_DIR}/share/translations)
+
+qt_add_translations(${APPLICATION_NAME}
+    TS_FILES ${TS_FILES}
+    QM_FILES_OUTPUT_VARIABLE QM_FILES
+    OUTPUT_LOCATION ${QM_OUTPUT_DIR}
+)
+
 qt_add_executable(${APPLICATION_NAME}
     main.cpp
     assets.qrc
@@ -73,7 +83,7 @@ target_link_libraries(${APPLICATION_NAME} PRIVATE
     libmaki
 )
 
-add_dependencies(${APPLICATION_NAME} copy_fonts copy_themes copy_icons copy_libraries)
+add_dependencies(${APPLICATION_NAME} copy_fonts copy_themes copy_icons copy_libraries copy_translations)
 
 install(TARGETS ${APPLICATION_NAME}
     BUNDLE  DESTINATION .
