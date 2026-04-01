@@ -129,7 +129,7 @@ qreal NotificationWidget::opacity() const
 
 void NotificationWidget::setOpacity(qreal o)
 {
-  mOpacity = o;
+  mOpacity = std::clamp(o, 0.0, 1.0);
   if (auto* eff = qobject_cast<QGraphicsOpacityEffect*>(graphicsEffect()))
     eff->setOpacity(o);
 

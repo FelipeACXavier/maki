@@ -1,4 +1,3 @@
-
 // notificationwidget.h
 #pragma once
 
@@ -10,27 +9,74 @@
 
 #include "logging.h"
 
+/**
+ * @class NotificationWidget
+ * @brief A transient UI widget for displaying notifications with animation and auto-dismiss support.
+ *
+ * This widget displays a message with a title and severity level, and supports:
+ * - Fade-in and fade-out animations
+ * - Automatic dismissal via timer
+ * - Manual dismissal via a close button
+ *
+ * The widget exposes an opacity property used for animation.
+ */
 class NotificationWidget : public QFrame
 {
   Q_OBJECT
+
+  /**
+   * @property opacity
+   * @brief Controls the visual opacity of the widget.
+   *
+   * This property is typically animated using QPropertyAnimation
+   * to create fade-in and fade-out effects.
+   */
   Q_PROPERTY(qreal opacity READ opacity WRITE setOpacity)
 
 public:
+  /**
+   * @brief Constructs a notification widget.
+   *
+   * @param title The title of the notification.
+   * @param text The main message text.
+   * @param level The log level determining the visual style (e.g., info, warning, error).
+   * @param parent The parent widget.
+   */
   NotificationWidget(const QString& title, const QString& text, logging::LogLevel level, QWidget* parent = nullptr);
 
+  /**
+   * @brief Returns the current opacity of the widget.
+   * @return The opacity value in the range [0.0, 1.0].
+   */
   qreal opacity() const;
+
+  /**
+   * @brief Sets the opacity of the widget.
+   * @param o The opacity value to set (typically between 0.0 and 1.0).
+   */
   void setOpacity(qreal o);
 
 signals:
+  /**
+   * @brief Emitted when the notification is dismissed.
+   * @param self Pointer to this notification widget.
+   */
   void dismissed(NotificationWidget* self);
 
 public slots:
+  /**
+   * @brief Shows the notification with a fade-in animation.
+   */
   void showAnimated();
+
+  /**
+   * @brief Hides the notification with a fade-out animation.
+   */
   void hideAnimated();
 
 private:
-  QPushButton* mCloseButton = nullptr;
-  QPropertyAnimation* mFadeAnim = nullptr;
-  QTimer mAutoCloseTimer;
-  qreal mOpacity = 1.0;
+  QPushButton* mCloseButton = nullptr;      ///< Button used to manually dismiss the notification.
+  QPropertyAnimation* mFadeAnim = nullptr;  ///< Animation used to control opacity transitions.
+  QTimer mAutoCloseTimer;                   ///< Timer used to automatically dismiss the notification.
+  qreal mOpacity = 1.0;                     ///< Current opacity value of the widget.
 };

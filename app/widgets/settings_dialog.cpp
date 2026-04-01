@@ -169,6 +169,7 @@ VoidResult SettingsDialog::createGeneralPage()
     mLanguageCombo->addItem(info.label, info.code);
 
   mLanguageCombo->setValue(generalSettings.language);
+  mLanguageCombo->addDescription(tr("Requires a restart to take full effect"));
 
   languageLayout->addWidget(mLanguageCombo);
 
