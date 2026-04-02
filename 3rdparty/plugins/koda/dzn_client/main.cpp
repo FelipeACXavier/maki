@@ -1,5 +1,3 @@
-#include <unistd.h>
-
 #include <QCoreApplication>
 #include <QDebug>
 #include <QEventLoop>

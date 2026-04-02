@@ -3,7 +3,12 @@ cmake_minimum_required(VERSION 3.21)
 set(PLUGIN_NAME koda_generatorplugin)
 
 project(${PLUGIN_NAME})
-find_package(Qt6 REQUIRED COMPONENTS Core)
+if (MSVC)
+set(antlr4-runtime_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg_installed/x64-windows/share/antlr4-runtime")
+endif()
+
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets WebSockets)
+find_package(antlr4-runtime CONFIG REQUIRED)
 
 set(CMAKE_AUTOMOC ON)
 
@@ -25,6 +30,9 @@ add_executable(${COMPILER_NAME}
   ${KODA_COMPILER_FILES}
 )
 
+if (MSVC)
+set(ANTLR4_RUNTIME_LIBRARY antlr4_shared)
+else()
 find_path(ANTLR4_RUNTIME_INCLUDE_DIR
   NAMES antlr4-runtime.h
   PATH_SUFFIXES antlr4-runtime
@@ -35,9 +43,11 @@ find_library(ANTLR4_RUNTIME_LIBRARY
   NAMES antlr4-runtime
   PATHS /usr/lib /usr/lib/x86_64-linux-gnu /usr/local/lib
 )
+endif()
 
 target_link_libraries(${COMPILER_NAME} PRIVATE
-  ${ANTLR4_RUNTIME_LIBRARY}
+  # ${ANTLR4_RUNTIME_LIBRARY}
+  antlr4_shared
   libcommon
   libcpphelpers
 )
@@ -50,13 +60,6 @@ target_include_directories(${COMPILER_NAME} PRIVATE
 
 # ==================================================================
 # Dezyne client
-find_package(Qt6 REQUIRED COMPONENTS
-  Core
-  Gui
-  Widgets
-  WebSockets
-)
-
 set(DZN_CLIENT_NAME "dzn_client")
 add_executable(${DZN_CLIENT_NAME}
   dzn_client/main.cpp
@@ -154,6 +157,13 @@ function(add_koda_plugin TARGET_NAME USE_ANTLR_ENABLED)
   set_target_properties(${TARGET_NAME} PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${PLUGINS_FOLDER}
     RUNTIME_OUTPUT_DIRECTORY ${PLUGINS_FOLDER}
+  )
+
+  set_target_properties(${TARGET_NAME} PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/plugins"
+    RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/plugins"
+    RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_BINARY_DIR}/plugins"
+    RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_BINARY_DIR}/plugins"
   )
 endfunction()
 
