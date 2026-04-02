@@ -27,16 +27,31 @@ string(STRIP "${QT_VERSION_RAW}" QT_VERSION)
 
 message(STATUS "Using Qt version from .qt-version: ${QT_VERSION}")
 
+project(${APPLICATION_NAME} LANGUAGES CXX)
+
+set(QT_REQUIRED_PACKAGES
+  Core
+  Gui
+  Svg
+  Widgets
+  SvgWidgets
+  LinguistTools
+)
+
 # Comment out to allow casting from literal string to QString
 # add_compile_definitions(QT_NO_CAST_FROM_ASCII)
 if (MSVC)
-  add_compile_options(/W4)
+  add_compile_options(/W4 /MP)
 
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
       add_compile_options(/Zi /Od)
   elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
       add_compile_options(/O2)
   endif()
+
+  find_package(Qt6 ${QT_VERSION} REQUIRED COMPONENTS
+    ${QT_REQUIRED_PACKAGES}
+  )
 else()
   add_compile_options(-Wall)
 
@@ -49,18 +64,12 @@ else()
       set(LINUX_BUILD_DIR "${CMAKE_SOURCE_DIR}/build/linux/release")
       add_compile_options(-O2)
   endif()
+
+  find_package(Qt6 REQUIRED COMPONENTS
+    ${QT_REQUIRED_PACKAGES}
+  )
 endif()
 
-project(${APPLICATION_NAME} LANGUAGES CXX)
-
-find_package(Qt6 REQUIRED COMPONENTS
-  Core
-  Gui
-  Svg
-  Widgets
-  SvgWidgets
-  LinguistTools
-)
 
 # qt_standard_project_setup(REQUIRES ${QT_VERSION})
 
@@ -96,22 +105,6 @@ if (DEPLOY_TARGET STREQUAL "linux")
     set(CMAKE_BUILD_WITH_INSTALL_RPATH OFF)
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
   endif()
-endif()
-
-# Windows stuff
-if (DEPLOY_TARGET STREQUAL "windows" AND WIN32 AND NOT CMAKE_CROSSCOMPILING)
-  # You can refine this hint based on your Qt install location
-  find_program(QT_WINDEPLOYQT_EXECUTABLE
-    NAMES windeployqt windeployqt.exe
-  )
-
-  if (QT_WINDEPLOYQT_EXECUTABLE)
-    message(STATUS "Found windeployqt: ${QT_WINDEPLOYQT_EXECUTABLE}")
-  else()
-    message(WARNING "windeployqt not found; 'deploy-windows' target will be unavailable")
-  endif()
-
-  # We'll hook this up to a target in app/CMakeLists (see below)
 endif()
 
 add_subdirectory(3rdparty)
