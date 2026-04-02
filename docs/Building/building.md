@@ -2,17 +2,17 @@
 
 To build and install the application, follow the instructions below:
 
-1. Clone this repository and move into it
+<ol start="1"> <li>Clone this repository and move into it.</li></ol>
 
 ```bash
 git clone https://github.com/FelipeACXavier/maki.git && cd maki
 ```
-2. Then clone the submodules:
+<ol start="2"> <li>Then clone the submodules:</li></ol>
 
 ```bash
 git submodule update --init --recursive
 ```
-3. After this step, we follow OS specific instructions:
+<ol start="3"> <li>After this step, we follow OS specific instructions:</li></ol>
 
   - @subpage building_windows
   - @subpage building_linux
