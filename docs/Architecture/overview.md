@@ -6,15 +6,11 @@ The use cases capture the main interactions supported by the platform from the p
 
 \image html ./Figures/use_cases.webp width=75%
 
-<hr>
-
 # Functional decomposition
 
 The functional decomposition breaks the platform down into its main responsibilities and logical subsystems. Rather than focusing on implementation details, it highlights which core functions the system must provide and how these functions relate to one another. This view is useful for reasoning about separation of concerns, maintainability, and the overall internal organisation of the platform.
 
 \image html ./Figures/decomposition.webp width=75%
-
-<hr>
 
 # Reference architecture
 
@@ -72,7 +68,6 @@ It can be viewed as a data layer.
 </table>
 
 # Solution architecture
-<hr>
 
 The solution architecture shows how the reference architecture is realised in the concrete implementation of the platform. It maps the abstract architectural concepts onto specific modules, technologies, and runtime elements, making the design actionable from an engineering perspective. This view helps clarify how the system is actually built and how its different parts collaborate in practice.
 

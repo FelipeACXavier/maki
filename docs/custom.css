@@ -1,0 +1,19 @@
+html {
+  /* --primary-color: #c6002b;
+  --primary-dark-color: #8f001f;
+  --primary-light-color: #e04a5f;
+
+  --page-background-color: #ffffff;
+  --page-foreground-color: #2a2a2a;
+  --page-secondary-foreground-color: #6a6a6a; */
+}
+
+html.dark-mode {
+  /* --primary-color: #ff4b5c;
+  --primary-dark-color: #c6002b;
+  --primary-light-color: #ff7a86;
+
+  --page-background-color: #1b1b1d;
+  --page-foreground-color: #e6e6e6;
+  --page-secondary-foreground-color: #a0a0a0; */
+}
