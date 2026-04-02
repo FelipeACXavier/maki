@@ -85,17 +85,17 @@ target_link_libraries(${APPLICATION_NAME} PRIVATE
 
 add_dependencies(${APPLICATION_NAME} copy_fonts copy_themes copy_icons copy_libraries copy_translations)
 
-install(TARGETS ${APPLICATION_NAME}
-    BUNDLE  DESTINATION .
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-)
-
 # ------------------------------------------------------------------------------------------------------------
 # Linux deployment
 if (DEPLOY_TARGET STREQUAL "linux" AND UNIX AND NOT APPLE)
   # Where Qt is installed in the container
   set(QT_RUNTIME_PREFIX "${CMAKE_PREFIX_PATH}" CACHE PATH "Qt runtime prefix (Qt install dir)")
+
+  install(TARGETS ${APPLICATION_NAME}
+    BUNDLE  DESTINATION .
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )
 
   add_custom_target(deploy-linux
     # 1. Regular install into CMAKE_INSTALL_PREFIX (e.g. /dist)
@@ -128,29 +128,45 @@ endif()
 # TODO: Test this with a windows machine
 # Windows deployment
 if (DEPLOY_TARGET STREQUAL "windows" AND WIN32 AND NOT CMAKE_CROSSCOMPILING)
+  # Make sure windeployqt is available
+  find_program(QT_WINDEPLOYQT_EXECUTABLE NAMES windeployqt windeployqt.exe)
+
+  install(TARGETS ${APPLICATION_NAME}
+    BUNDLE  DESTINATION .
+    RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )
+
+  if (QT_WINDEPLOYQT_EXECUTABLE)
+    message(STATUS "Found windeployqt: ${QT_WINDEPLOYQT_EXECUTABLE}")
+    add_custom_command(TARGET ${APPLICATION_NAME} POST_BUILD
+      COMMAND $<$<CONFIG:Debug>:"${QT_WINDEPLOYQT_EXECUTABLE}">
+              $<$<CONFIG:Debug>:--dir ${CMAKE_BINARY_DIR}/bin>
+              $<$<CONFIG:Debug>:--verbose 1>
+              $<$<CONFIG:Debug>:"$<TARGET_FILE:${APPLICATION_NAME}>">
+
+      COMMENT "Running windeployqt for $<TARGET_FILE_NAME:${APPLICATION_NAME}>"
+      VERBATIM
+    )
+  else()
+    message(WARNING "windeployqt not found; 'deploy-windows' target will be unavailable")
+  endif()
+
   if (QT_WINDEPLOYQT_EXECUTABLE)
     add_custom_target(deploy-windows
+      # Create final binary dir
+      COMMAND "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --target install --config Release
+
       # 1. Run windeployqt
-      COMMAND "${QT_WINDEPLOYQT_EXECUTABLE}" --release
+      COMMAND "${QT_WINDEPLOYQT_EXECUTABLE}"
+              --release
               --dir "${CMAKE_INSTALL_PREFIX}"
-              "${CMAKE_BINARY_DIR}/Release/${APPLICATION_NAME}.exe"
+              --verbose 1
+              "${CMAKE_INSTALL_PREFIX}/$<TARGET_FILE_NAME:${APPLICATION_NAME}>"
 
-      # 2. Copy our language plugins
       COMMAND "${CMAKE_COMMAND}" -E copy_directory
-              "${PLUGINS_FOLDER}/Release"
+              "${PLUGINS_FOLDER}"
               "${CMAKE_INSTALL_PREFIX}/plugins"
-
-      # 3. Copy the themes
-      COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/share/themes
-      COMMAND "${CMAKE_COMMAND}" -E copy_directory
-              "${THEME_BUILD_DIR}"
-              "${CMAKE_INSTALL_PREFIX}/share/themes"
-
-      # 4. Copy the fonts
-      COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/share/fonts
-      COMMAND "${CMAKE_COMMAND}" -E copy_directory
-              "${FONT_BUILD_DIR}"
-              "${CMAKE_INSTALL_PREFIX}/share/fonts"
 
       COMMENT "Running windeployqt for ${APPLICATION_NAME}"
     )

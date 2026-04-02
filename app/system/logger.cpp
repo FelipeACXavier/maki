@@ -5,7 +5,7 @@ Logger::Logger(QObject* parent)
 {
 }
 
-void Logger::registerPlugin(const QString& name, maki::LogFunction& callback)
+void Logger::registerPlugin(const QString& /* name */, maki::LogFunction& callback)
 {
   callback = logging::gLogToStream;
 }

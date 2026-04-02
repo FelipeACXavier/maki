@@ -1,8 +1,6 @@
 # Define project name
 project(libdocument VERSION 1.0)
 
-add_compile_options(-O3)
-
 include(GNUInstallDirs)
 
 file(GLOB SOURCES

@@ -6,10 +6,9 @@
 
 #include "widgets/base_dialog.h"
 
+class FlowSaveInfo;
 class QStandardItem;
 class QStandardItemModel;
-
-struct FlowSaveInfo;
 
 class EventDialog : public BaseDialog
 {

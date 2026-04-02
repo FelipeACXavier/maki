@@ -6,8 +6,7 @@
 #include "ids.h"
 
 class NodeItem;
-
-struct TransitionSaveInfo;
+class TransitionSaveInfo;
 
 class TransitionItem : public QGraphicsPathItem
 {
