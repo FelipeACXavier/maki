@@ -74,7 +74,8 @@ VoidResult Generator::simulate(const QString& outputDir, maki::IGeneratorPlugin*
     return simulated;
   }
 
-  emit generationStarted(pipeline());
+  if (pipeline()->size() > 0)
+    emit generationStarted(pipeline());
 
   auto ran = pipeline()->start();
   if (!ran.IsSuccess())

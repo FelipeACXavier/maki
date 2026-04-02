@@ -254,6 +254,14 @@ VoidResult KodaGenerator::simulate(const QString& outputFolder)
 
 void KodaGenerator::startSimulation()
 {
+  // Always include the output folder
+  QList<QString> includeFolders = {mDezyneOutputFolder.absolutePath()};
+
+#if USE_ANTLR
+  // Make sure the libraries are also included
+  includeFolders << mDezyneOutputFolder.absolutePath() + "/lib";
+#endif
+
   for (const QString& f : mGeneratedDznFiles)
   {
     auto fullPath = mDezyneOutputFolder.absoluteFilePath(f);
@@ -265,8 +273,7 @@ void KodaGenerator::startSimulation()
     mSimulator->setWorkingDirectory(mDezyneOutputFolder.absolutePath());
     mSimulator->setSimulationModel(fullPath);
 
-    QList<QString> includes = {mDezyneOutputFolder.absolutePath()};
-    mSimulator->setSimulationIncludes(includes);
+    mSimulator->setSimulationIncludes(includeFolders);
 
     mSimulator->startSimulation(QUuid::createUuid().toString());
     mServices->pluginTab()->openScene(languageName());
@@ -308,8 +315,11 @@ VoidResult KodaGenerator::verify(const QString& outputFolder)
 
   // Compile Koda to Dezyne
   mDezyneOutputFolder = QDir(mOutputFolder.absolutePath() + "/models");
-  if (!mDezyneOutputFolder.exists())
-    mDezyneOutputFolder.mkpath(".");
+  // Make sure the output is clean before the next generation
+  if (mDezyneOutputFolder.exists())
+    mDezyneOutputFolder.removeRecursively();
+
+  mDezyneOutputFolder.mkpath(".");
 
   QStringList includeFolders = {};
 
@@ -339,7 +349,15 @@ VoidResult KodaGenerator::verify(const QString& outputFolder)
   // Finally, set the files to be verified
   QStringList filters;
   filters << "*.dzn";
-  mGeneratedDznFiles = mDezyneOutputFolder.entryList(filters, QDir::Files);
+  auto files = mDezyneOutputFolder.entryList(filters, QDir::Files);
+
+  // Keep only files NOT containing "arbiter" for now
+  QStringList filtered;
+  for (const QString& f : files)
+    if (!f.contains("arbiter", Qt::CaseInsensitive))
+      filtered << f;
+
+  mGeneratedDznFiles = filtered;
 #else
   for (const auto& file : mGeneratedFiles)
   {
@@ -371,8 +389,11 @@ VoidResult KodaGenerator::verify(const QString& outputFolder)
       continue;
 
     LOG_INFO("Will verify file: %s", qPrintable(fullPath));
-
+#ifdef USE_ANTLR
+    const QString command = "ide";
+#else
     const QString command = "dzn";
+#endif
     QStringList arguments = {"verify", fullPath};
     for (const auto& inc : includeFolders)
       arguments << "-I" << inc;
@@ -1046,6 +1067,8 @@ QString KodaGenerator::generateRepeat(const INode& node, const Argument& arg, co
   }
 
   QString strategy = options[0].toObject()[ConfigKeys::DATA].toString();
+  if (strategy != "main")
+    strategy = "f" + strategy;
 
   code += "repeat(" + strategy + ")";
 

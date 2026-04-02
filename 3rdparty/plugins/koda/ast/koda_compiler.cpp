@@ -144,9 +144,6 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, Environment& e
       std::string trigger = "";
       if (!cap)
       {
-        for (const auto& f : env.flows)
-          LOG_RAW("{} is a flow - {}", f.second.name, c.first);
-
         // Sometimes strategies are parsed as async calls...
         if (!env.flows.contains(c.first))
           return Result<koda::ReturnValue>::Failed("Could not find async capability: " + c.first);
@@ -164,7 +161,8 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, Environment& e
       PortRef in = {toFlowVariable(flowName), c.first};
       PortRef out = {toFilename(name), trigger};
 
-      LOG_RAW("asyncCalls - In: {} Out: {}", in, out);
+      if (mOptions.verbose > 1)
+        LOG_RAW("asyncCalls - In: {} Out: {}", in, out);
 
       env.system.connections.push_back(Connection{in, out, Connection::Type::Action});
     }
@@ -176,9 +174,6 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, Environment& e
       std::string name = "";
       if (!cap)
       {
-        for (const auto& f : env.flows)
-          LOG_RAW("{} is a flow - {}", f.second.name, instance);
-
         // Sometimes strategies are parsed as async calls...
         if (!env.flows.contains(instance))
           return Result<koda::ReturnValue>::Failed("Could not find sync capability: " + c.first);
@@ -194,7 +189,8 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, Environment& e
       PortRef in = {toFlowVariable(flowName), instance};
       PortRef out = {toFilename(cap->name), port};
 
-      LOG_RAW("syncCalls - In: {} Out: {}", in, out);
+      if (mOptions.verbose > 1)
+        LOG_RAW("syncCalls - In: {} Out: {}", in, out);
       env.system.connections.push_back(Connection{in, out, Connection::Type::Action});
     }
 
@@ -208,7 +204,8 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, Environment& e
       PortRef in = {toFlowVariable(flowName), port};
       PortRef out = {toFilename(cap->name), port};
 
-      LOG_RAW("signalCalls - In: {} Out: {}", in, out);
+      if (mOptions.verbose > 1)
+        LOG_RAW("signalCalls - In: {} Out: {}", in, out);
       env.system.connections.push_back(Connection{in, out, Connection::Type::Signal});
     }
 
@@ -217,7 +214,8 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, Environment& e
       PortRef in = {toFlowVariable(flowName), c.first};
       PortRef out = {toFlowVariable(c.first), "api"};
 
-      LOG_RAW("strategy - In: {} Out: {}", in, out);
+      if (mOptions.verbose > 1)
+        LOG_RAW("strategy - In: {} Out: {}", in, out);
       env.system.connections.push_back(Connection{in, out, Connection::Type::Action});
     }
   }
@@ -290,7 +288,8 @@ Result<koda::ReturnValue> Compiler::generateCapability(PComponent capability, En
 {
   // Here, we must create the external components that will be implemented in C++, e.g.:
   // First, we go through the AST to build the strategy environment
-  LOG_RAW("Compiling capability: {}", capability->name);
+  if (mOptions.verbose > 0)
+    LOG_RAW("Compiling capability: {}", capability->name);
 
   env.currentCapability = Capability{};
   env.currentCapability.name = capability->name;
@@ -435,7 +434,8 @@ void Compiler::connectWithArbiter(const std::map<std::string, uint32_t>& connect
     env.definitions.push_back(std::format("caction_arbiter{} arbitrer{}", occurences, id));
 
     auto [instance, port] = portFromString(it->first);
-    LOG_RAW("{} {} has {} connections", instance, port, it->second);
+    if (mOptions.verbose > 0)
+      LOG_RAW("Arbiter evaluation, {} {} has {} connections", instance, port, it->second);
 
     // Change current links to the arbitrer
     for (auto& statement : env.core)
@@ -452,7 +452,8 @@ void Compiler::connectWithArbiter(const std::map<std::string, uint32_t>& connect
 
 Result<koda::ReturnValue> Compiler::generateFlow(PFlow flow, Environment& env)
 {
-  LOG_RAW("Generating flow: {}", flow->name);
+  if (mOptions.verbose > 0)
+    LOG_RAW("Generating flow: {}", flow->name);
 
   // There is one file per flow, so here we create a new file
   // The name of the file matches the flow + c.
@@ -840,7 +841,6 @@ Result<koda::ReturnValue> Compiler::generateEventCall(PEventCall call, Environme
   if (call->receiver.empty())
   {
     INCREMENT_MAP(env.asyncCalls, call->name)
-    LOG_RAW("Adding strategy: {}", call->name);
     env.requiresPorts.insert(std::format("iaction {}", call->name));
     return koda::ReturnValue{call->name};
   }
@@ -1149,6 +1149,9 @@ void Compiler::createSequenceDoneRecursion(bool fromIdle, uint32_t start, uint32
     file << std::format("{}}} else if (ret.Done) {{\n", indent);
     createSequenceDoneRecursion(fromIdle, start + 1, instances, file, indent + "  ");
     file << std::format("{}}} else if (ret.Failure) {{\n", indent);
+    if (!fromIdle)
+      file << std::format("{}  api.failure();\n", indent);
+
     file << std::format("{}  state = State.Error;\n", indent);
     file << std::format("{}}}\n", indent);
   }

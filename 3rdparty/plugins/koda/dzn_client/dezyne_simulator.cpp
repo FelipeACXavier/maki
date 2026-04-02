@@ -98,8 +98,8 @@ void DezyneSimulator::onConnected()
   QJsonArray importPath;
   for (const auto& path : mIncludes)
     importPath.append(path);
-  importPath.append("/home/felaze/Documents/PhD/Programs/behaviour_tree/monorepo/../");
-  importPath.append("/home/felaze/Documents/PhD/Programs/behaviour_tree/monorepo/../examples");
+  // importPath.append("/home/felaze/Documents/PhD/Programs/behaviour_tree/monorepo/../");
+  // importPath.append("/home/felaze/Documents/PhD/Programs/behaviour_tree/monorepo/../examples");
 
   object["importPath"] = importPath;
 
