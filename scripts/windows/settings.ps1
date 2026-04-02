@@ -1,7 +1,7 @@
 <#
   scripts/windows/settings.ps1
 
-  Contains all the shared variables needed for the setup, buid and release scripts
+  Contains all the shared variables needed for the setup, build and release scripts
   Run this as .\settings.ps1
 #>
 
@@ -19,15 +19,18 @@ $QtRoot           = "C:\Qt"
 $QtBase           = Join-Path $QtRoot "$QtVersion\$QtArchPath"
 $QtBin            = Join-Path $QtBase "bin"
 $WindeployqtPath  = Join-Path $QtBin "windeployqt.exe"
+$AQT              = Join-Path $home "\AppData\Roaming\Python\Python312\Scripts\aqt.exe"
+
+$VcPkgPath        = "C:\vcpkg"
 
 $PythonVersion    = "3.12"
 $PythonHome       = "C:\Python312"
 $Python           = "python$PythonVersion"
 
-$BuildPath      = "$RepoRoot\build\windows"
+$BuildPath        = "$RepoRoot\build\windows"
 $InstallPath      = "$RepoRoot\release\windows"
 
-$BuildType = "Release"
+$BuildType        = "Debug"
 
 # ------------------------------------------------------
 # Environment

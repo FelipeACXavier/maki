@@ -37,17 +37,19 @@ if (-not $choco) {
 # ------------------------------------------------------
 $packages = @(
     "cmake",
-    "ninja"
+    "ninja",
+    "python"
 )
 
 LogDebug "==> Ensuring base tools are installed: $($packages -join ', ')"
 foreach ($pkg in $packages) {
     LogDebug "  - $pkg"
-    choco install $pkg -y --no-progress | Out-Null
+    if ($pkg == "python") {
+      choco install python --version=$PythonVersion -y --no-progress | Out-Null
+    } else {
+      choco install $pkg -y --no-progress | Out-Null
+    }
 }
-
-LogDebug "  - python"
-choco install python --version=$PythonVersion -y --no-progress | Out-Null
 
 LogInfo "==> Base tools installed/updated."
 
@@ -63,6 +65,19 @@ try {
   & $Python -m pip install --user aqtinstall
 } catch {
   Fail "Failed to install aqtinstall."
+}
+
+# ------------------------------------------------------
+# Ensure vcpkg
+# ------------------------------------------------------
+$vcpkg = Get-Command vcpkg -ErrorAction SilentlyContinue
+if (-not $choco) {
+  LogWarning "VcPkg not found. Installing..."
+  git clone https://github.com/microsoft/vcpkg $VcPkgPath
+  & "$VcPkgPath\bootstrap-vcpkg.bat"
+  if ($LASTEXITCODE -ne 0) {
+    Fail "Failed to install vcpkg"
+  }
 }
 
 exit 0

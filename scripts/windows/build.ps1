@@ -10,12 +10,33 @@
   where MSVC, CMake, Ninja are available on PATH.
 #>
 
+param(
+  [switch]$Clean,
+  [switch]$Release
+)
+
 # ------------------------------------------------------
 # Load shared settings
 # ------------------------------------------------------
 $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 $SettingsPath = Join-Path $RepoRoot "scripts\windows\settings.ps1"
 . $SettingsPath
+
+$BuildType = if ($Release) { "Release" } else { "Debug" }
+$BuildPath = Join-Path $BuildPath "$BuildType"
+
+LogDebug "RepoRoot: $RepoRoot"
+LogDebug "BuildPath: $BuildPath"
+LogDebug "QtBase: $QtBase"
+LogDebug "InstallPath: $InstallPath"
+
+if ($Clean) {
+  Write-Host "Cleaning build directory: $BuildPath"
+  if (Test-Path $BuildPath) {
+    Remove-Item -Recurse -Force $BuildPath
+  }
+  exit 0
+}
 
 LogInfo "==> Windows build script starting..."
 
@@ -37,22 +58,33 @@ if (-not (Test-Path $BuildPath)) {
     New-Item -ItemType Directory -Path $BuildPath | Out-Null
 }
 
-try {
-  cmake -S "$RepoRoot" -B "$BuildPath" `
-    -DDEPLOY_TARGET="windows" `
-    -DCMAKE_PREFIX_PATH="$QtBase" `
-    -DCMAKE_INSTALL_PREFIX="$InstallPath" `
-} catch {
+cmake -S "$RepoRoot" -B "$BuildPath" `
+  -A x64 `
+  -DDEPLOY_TARGET="windows" `
+  -DCMAKE_PREFIX_PATH="$QtBase" `
+  -DCMAKE_INSTALL_PREFIX="$InstallPath" `
+  -DCMAKE_BUILD_TYPE="$BuildType" `
+  -DCMAKE_TOOLCHAIN_FILE="$VcPkgPath\scripts\buildsystems\vcpkg.cmake"
+
+if ($LASTEXITCODE -ne 0) {
   Fail "CMake configure failed."
 }
 
 LogDebug "==> Building ($BuildType)..."
-try {
+if ($Release) {
   cmake --build "$BuildPath" `
-        --config Release `
+        --config $BuildType `
+        --parallel 4 `
+        --target deploy-windows
+} else {
+  cmake --build "$BuildPath" `
+        --config $BuildType `
         --parallel 4
-} catch {
-  Fail "Build failed."
+}
+
+
+if ($LASTEXITCODE -ne 0) {
+  Fail "CMake configure failed."
 }
 
 LogInfo "==> build_windows.ps1 finished successfully." -ForegroundColor Green
