@@ -1,14 +1,14 @@
 #pragma once
 
 #include <QDir>
-#include <QWidget>
 #include <QJsonArray>
+#include <QWidget>
 
 #include "generator_plugin.h"
-#include "result.h"
 #include "json.h"
 #include "keys.h"
 #include "logging.h"
+#include "result.h"
 
 class QComboBox;
 class HostServices;
@@ -34,8 +34,13 @@ public:
       manifest.name = data[ConfigKeys::NAME].toString();
     if (data.contains("version"))
       manifest.version = data["version"].toString();
-    if (data.contains("entryPoint"))
-      manifest.entryPoint = data["entryPoint"].toString();
+#ifdef Q_OS_WIN
+    if (data.contains("entryPointDLL"))
+      manifest.entryPoint = data["entryPointDLL"].toString();
+#else
+    if (data.contains("entryPointSO"))
+      manifest.entryPoint = data["entryPointSO"].toString();
+#endif
     if (data.contains("icon"))
       manifest.icon = data["icon"].toString();
 

@@ -33,10 +33,11 @@ QString AppPaths::userCacheDir()
 QString AppPaths::bundledAssetDir()
 {
 #if defined(Q_OS_MACOS)
-  // Adjust later if you move assets into app bundle Resources
   return QDir(appDir()).filePath("../Resources/assets");
-#else
+#elif defined(Q_OS_WIN)
   return QDir(appDir()).filePath("assets");
+#else
+  return QDir(appDir()).filePath("../assets");
 #endif
 }
 
@@ -44,8 +45,10 @@ QString AppPaths::bundledPluginDir()
 {
 #if defined(Q_OS_MACOS)
   return QDir(appDir()).filePath("../Resources/plugins");
-#else
+#elif defined(Q_OS_WIN)
   return QDir(appDir()).filePath("plugins");
+#else
+  return QDir(appDir()).filePath("../plugins");
 #endif
 }
 
@@ -122,7 +125,7 @@ QString AppPaths::findPluginRoot(const QString& pluginIdOrFolderName)
 
 QStringList AppPaths::envOverridePaths(const QString& name)
 {
-  const QString raw = QString::fromLocal8Bit( qgetenv(qPrintable(name))).trimmed();
+  const QString raw = QString::fromLocal8Bit(qgetenv(qPrintable(name))).trimmed();
   if (raw.isEmpty())
     return {};
 

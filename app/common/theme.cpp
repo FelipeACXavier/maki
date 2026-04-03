@@ -7,9 +7,9 @@
 #include <QStandardPaths>
 #include <QStyle>
 
+#include "app_paths.h"
 #include "logging.h"
 #include "style_helpers.h"
-#include "app_paths.h"
 
 namespace Config
 {

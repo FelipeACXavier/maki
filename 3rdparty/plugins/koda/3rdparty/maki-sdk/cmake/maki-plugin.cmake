@@ -35,7 +35,7 @@ function(maki_stage_plugin)
 
   if (BUILD_PLUGINS)
     set(_plugin_root_build "${CMAKE_BINARY_DIR}/plugins/${MAKI_PLUGIN_ID}")
-    set(_plugin_root_install "${CMAKE_INSTALL_PREFIX}/maki/plugins/${MAKI_PLUGIN_ID}")
+    set(_plugin_root_install "${CMAKE_INSTALL_PREFIX}/plugins/${MAKI_PLUGIN_ID}")
   else ()
     set(_plugin_root_build "${CMAKE_BINARY_DIR}/${MAKI_TARGET}")
     set(_plugin_root_install "${CMAKE_INSTALL_PREFIX}/plugins/${MAKI_TARGET}")

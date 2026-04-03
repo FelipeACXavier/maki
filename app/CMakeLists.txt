@@ -31,16 +31,6 @@ file(GLOB STRUCTURAL_WIDGET_FILES ${CMAKE_CURRENT_SOURCE_DIR}/widgets/structure/
 file(GLOB PROPERTY_WIDGET_FILES ${CMAKE_CURRENT_SOURCE_DIR}/widgets/properties/*.cpp)
 file(GLOB COMPILER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/compiler/*.cpp)
 
-file(GLOB TS_FILES ${CMAKE_CURRENT_SOURCE_DIR}/translations/*.ts)
-
-set(QM_OUTPUT_DIR ${CMAKE_BINARY_DIR}/share/translations)
-
-qt_add_translations(${APPLICATION_NAME}
-    TS_FILES ${TS_FILES}
-    QM_FILES_OUTPUT_VARIABLE QM_FILES
-    OUTPUT_LOCATION ${QM_OUTPUT_DIR}
-)
-
 qt_add_executable(${APPLICATION_NAME}
     main.cpp
     assets.qrc
@@ -96,25 +86,27 @@ add_dependencies(${APPLICATION_NAME}
   copy_translations
 )
 
-install(TARGETS ${APPLICATION_NAME}
-  BUNDLE  DESTINATION .
-  RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-)
-
 # ------------------------------------------------------------------------------------------------------------
 # Linux deployment
 if (DEPLOY_TARGET STREQUAL "linux" AND UNIX AND NOT APPLE)
   # Where Qt is installed in the container
   set(QT_RUNTIME_PREFIX "${CMAKE_PREFIX_PATH}" CACHE PATH "Qt runtime prefix (Qt install dir)")
 
+  install(TARGETS ${APPLICATION_NAME}
+    BUNDLE  DESTINATION .
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )
+
   add_custom_target(deploy-linux
+    COMMAND "${CMAKE_COMMAND}" -E make_directory "${CMAKE_INSTALL_PREFIX}"
+
     # 1. Regular install into CMAKE_INSTALL_PREFIX (e.g. /dist)
     COMMAND "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --target install
 
-    # 3. Copy our language plugins
+    COMMAND "${CMAKE_COMMAND}" -E make_directory "${CMAKE_INSTALL_PREFIX}/plugins"
     COMMAND "${CMAKE_COMMAND}" -E copy_directory
-            "${PLUGINS_FOLDER}"
+            "${QT_RUNTIME_PREFIX}/plugins"
             "${CMAKE_INSTALL_PREFIX}/plugins"
 
     # 4. Call CMake script to run ldd and copy only needed Qt libs
@@ -135,6 +127,12 @@ endif()
 if (DEPLOY_TARGET STREQUAL "windows" AND WIN32 AND NOT CMAKE_CROSSCOMPILING)
   # Make sure windeployqt is available
   find_program(QT_WINDEPLOYQT_EXECUTABLE NAMES windeployqt windeployqt.exe)
+
+  install(TARGETS ${APPLICATION_NAME}
+    BUNDLE  DESTINATION .
+    RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )
 
   if (QT_WINDEPLOYQT_EXECUTABLE)
     # Execute windeployqt as a postscript only  if running in debug mode

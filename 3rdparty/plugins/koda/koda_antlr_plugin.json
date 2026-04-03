@@ -2,7 +2,8 @@
   "id": "com.maki.koda_antler",
   "name": "KODA Antlr",
   "version": "0.0.1",
-  "entryPoint": "bin/koda_generatorplugin_antlr.dll",
+  "entryPointDLL": "bin/koda_generatorplugin_antlr.dll",
+  "entryPointSO": "bin/koda_generatorplugin_antlr.so",
   "icon": "assets/icons/plugin.svg",
   "libraries": [
     "antler-runtime.dll"
