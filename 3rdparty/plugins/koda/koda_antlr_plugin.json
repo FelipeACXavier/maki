@@ -1,0 +1,10 @@
+{
+  "id": "com.maki.koda_antler",
+  "name": "KODA Antlr",
+  "version": "0.0.1",
+  "entryPoint": "bin/koda_generatorplugin_antlr.dll",
+  "icon": "assets/icons/plugin.svg",
+  "libraries": [
+    "antler-runtime.dll"
+  ]
+}

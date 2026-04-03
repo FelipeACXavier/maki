@@ -28,6 +28,8 @@ public:
   bool setup() override;
   bool tearDown() override;
   void setHostServices(maki::IHostServices* services) override;
+  void setName(const QString& name) override;
+  void setVersion(const QString& name) override;
 
   QString languageName() const override;
   maki::PluginVersion version() const override;
@@ -45,6 +47,9 @@ private:
   QList<QString> mGeneratedDznFiles = {};
   maki::IHostServices* mServices = nullptr;
   QVector<maki::SettingField> mSettings = {};
+
+  maki::PluginVersion mVersion;
+  QString mName;
 
   QVector<QString> mGeneratedIds = {};
   QProcess* mDaemon = nullptr;
