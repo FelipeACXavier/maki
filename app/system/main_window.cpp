@@ -19,6 +19,7 @@
 #include <QWidget>
 
 #include "app_configs.h"
+#include "app_paths.h"
 #include "behaviour_canvas.h"
 #include "canvas.h"
 #include "canvas_view.h"
@@ -190,7 +191,7 @@ void MainWindow::startUI()
   mUndoGroup->setActiveStack(canvas->undoStack());
 
   if (mPluginManager)
-    mPluginManager->start(mGeneratorMenu, mGeneratorOption, mHostServices);
+    LOG_WARN_ON_FAILURE(mPluginManager->start(mGeneratorMenu, mGeneratorOption, mHostServices));
 }
 
 static QWidget* findAncestor(QWidget* w, const QMetaObject* type)
@@ -408,21 +409,24 @@ VoidResult MainWindow::loadElements()
 {
   LOG_DEBUG("Loading the elements");
 
-  auto libDir = QDir(getLibPath());
-  QStringList files = libDir.entryList(QDir::Files);
-
-  for (const auto& file : files)
+  auto libPaths = AppPaths::libraries();
+  for (const auto& path : libPaths)
   {
-    const auto fileName = libDir.absoluteFilePath(file);
-    auto libRead = JSON::fromFile(fileName);
-    if (!libRead.IsSuccess())
-      return VoidResult::Failed(
-          QStringLiteral("Failed to open library: %1")
-              .arg(fileName)
-              .toStdString());
+    QDir libDir(path);
+    QStringList files = libDir.entryList(QDir::Files);
+    for (const auto& file : files)
+    {
+      const auto fileName = libDir.absoluteFilePath(file);
+      auto libRead = JSON::fromFile(fileName);
+      if (!libRead.IsSuccess())
+        return VoidResult::Failed(
+            QStringLiteral("Failed to open library: %1")
+                .arg(fileName)
+                .toStdString());
 
-    auto libConfig = libRead.Value();
-    LOG_ERROR_ON_FAILURE(loadLibrary(libConfig));
+      auto libConfig = libRead.Value();
+      LOG_ERROR_ON_FAILURE(loadLibrary(libConfig));
+    }
   }
 
   // Once we are done with the libraries, we can make sure they are positioned on the top

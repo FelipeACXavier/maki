@@ -4,10 +4,13 @@ set(APPLICATION_NAME maki)
 
 option(DEBUG "Build with debug symbols" OFF)
 option(BUILD_DOC "Build documentation" ON)
+option(BUILD_PLUGINS "Build plugins as part of the application" OFF)
 
 # Paths as configurable cache variables
 set(LOCAL_QT_PATH "" CACHE PATH "Qt path on this machine")
 set(LOCAL_PROJECT_PATH "" CACHE PATH "Project path on this machine")
+set(BUILD_ASSET_DIR "${CMAKE_BINARY_DIR}/assets")
+set(RELEASE_ASSET_DIR "${CMAKE_INSTALL_PREFIX}/assets")
 
 set(DEPLOY_TARGET "auto" CACHE STRING "Deployment target (auto|linux|windows)")
 set_property(CACHE DEPLOY_TARGET PROPERTY STRINGS auto linux windows)

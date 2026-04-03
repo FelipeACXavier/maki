@@ -13,6 +13,7 @@
 #include "save_info.h"
 #include "style_helpers.h"
 #include "theme.h"
+#include "app_paths.h"
 
 DraggableItem::DraggableItem(const QString& nodeId, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
     : NodeBase(QUuid::createUuid().toString(), nodeId, nodeConfig, parent)
@@ -21,11 +22,7 @@ DraggableItem::DraggableItem(const QString& nodeId, std::shared_ptr<NodeConfig> 
 
   if (!config()->body.iconPath.isEmpty())
   {
-    // auto icon = getIconPathFor(config()->body.iconPath);
-    // auto pixmap = applyColorToIcon(icon, config()->body.iconColor);
-    // auto scale = scaledRect().size().toSize() * config()->body.iconScale;
-    // setPixmap(pixmap.scaled(scale, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-    setIcon(getIconPathFor(config()->body.iconPath), config()->body.iconColor);
+    setIcon(AppPaths::icon(config()->body.iconPath), config()->body.iconColor);
   }
 
   setLabel(config()->type, Fonts::BaseSize);

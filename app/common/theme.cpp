@@ -9,6 +9,7 @@
 
 #include "logging.h"
 #include "style_helpers.h"
+#include "app_paths.h"
 
 namespace Config
 {
@@ -140,7 +141,7 @@ maki::ThemeVars loadThemeVarsFromFile(const QString& filePath)
 
 VoidResult saveThemeVarsToFile(const QString& name, const maki::ThemeVars& theme)
 {
-  const QString filePath = userThemesDir() + "/" + name + ".theme";
+  const QString filePath = AppPaths::userThemes() + "/" + name + ".theme";
   QFile themeFile(filePath);
   if (!themeFile.open(QIODevice::WriteOnly | QIODevice::Text))
     return VoidResult::Failed("Could not open theme file: " + filePath.toStdString());
@@ -157,30 +158,11 @@ VoidResult saveThemeVarsToFile(const QString& name, const maki::ThemeVars& theme
   return VoidResult();
 }
 
-QString installThemesDir()
-{
-  return getDirPathFor("share/themes");
-}
-
-QString userThemesDir()
-{
-  // e.g. ~/.config/MakiEditor/themes
-  const QString config = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
-  return config + "/themes";
-}
-
 QList<ThemeInfo> discoverThemes()
 {
-  QString installDir = installThemesDir();
-  QString userDir = userThemesDir();
-
-  LOG_DEBUG("Looking for themes in: %s and %s", qPrintable(installDir), qPrintable(userDir));
-
-  // Ensure user dir exists so users know where to drop files
-  QDir().mkpath(userDir);
-
-  QStringList searchDirs;
-  searchDirs << installDir << userDir;
+  QStringList searchDirs = AppPaths::themes();
+  for (const auto& path : searchDirs)
+    LOG_DEBUG("Looking for themes in: %s", qPrintable(path));
 
   QMap<QString, ThemeInfo> byId;  // key = id, user themes can override builtin
 
@@ -190,7 +172,7 @@ QList<ThemeInfo> discoverThemes()
     if (!dir.exists())
       continue;
 
-    const bool isUser = (dirPath == userDir);
+    const bool isUser = (dirPath == AppPaths::userThemes());
     const QFileInfoList files = dir.entryInfoList(QStringList() << "*.theme", QDir::Files);
 
     for (const QFileInfo& fi : files)

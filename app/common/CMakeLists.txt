@@ -22,6 +22,10 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     libmaki
 )
 
+if (CMAKE_BUILD_TYPE STREQUAL "Debug" AND BUILD_PLUGINS)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE DEV_BUILD=1)
+endif()
+
 target_include_directories(${PROJECT_NAME}
  PUBLIC
   ${PROJECT_SOURCE_DIR}

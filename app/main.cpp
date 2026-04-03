@@ -11,19 +11,24 @@
 #include "logging.h"
 #include "system/main_window.h"
 #include "widgets/settings_manager.h"
+#include "app_paths.h"
 
 using namespace Qt::StringLiterals;
 
 void loadApplicationFonts()
 {
-  QDir fontDir(getDirPathFor("share/fonts"));
-  const QStringList files = fontDir.entryList({"*.ttf", "*.otf"}, QDir::Files);
-
-  for (const QString& file : files)
+  auto fontPaths = AppPaths::fonts();
+  for (const auto& path : fontPaths)
   {
-    const QString fullPath = fontDir.filePath(file);
-    if (QFontDatabase::addApplicationFont(fullPath) == -1)
-      LOG_WARNING("Failed to load font %s", qPrintable(fullPath));
+    QDir fontDir(path);
+    const QStringList files = fontDir.entryList({"*.ttf", "*.otf"}, QDir::Files);
+
+    for (const QString& file : files)
+    {
+      const QString fullPath = fontDir.filePath(file);
+      if (QFontDatabase::addApplicationFont(fullPath) == -1)
+        LOG_WARNING("Failed to load font %s", qPrintable(fullPath));
+    }
   }
 
   // Uncomment if you need to know what fonts are available

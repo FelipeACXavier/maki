@@ -5,6 +5,7 @@
 #include <QObject>
 #include <QSettings>
 
+#include "app_paths.h"
 #include "common/theme.h"
 #include "generator_plugin.h"
 #include "isettings.h"
@@ -64,7 +65,7 @@ struct AppearanceSettings
 struct GenerationSettings
 {
   QString generationDir = QCoreApplication::applicationDirPath() + "/generation";
-  QStringList pluginSearchPaths = {getDirPathFor("plugins")};
+  QStringList pluginSearchPaths = {AppPaths::pluginSearchPaths()};
 
   bool operator!=(const GenerationSettings& s)
   {

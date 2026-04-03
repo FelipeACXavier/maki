@@ -25,10 +25,6 @@ QString toQT(std::chrono::system_clock::time_point ts, logging::LogLevel level, 
 
 void addDynamicWidget(QVBoxLayout* layout, QWidget* dynamicWidget, QWidget* parent);
 
-QString getDirPathFor(const QString& path);
-QString getIconPathFor(const QString& path);
-QString getLibPath();
-
 void updateProperty(QWidget* widget, const QString& property, bool value);
 void applyStyle(QWidget* widget, const QString& style);
 void addSectionLabel(QMenu* menu, const QString& text);

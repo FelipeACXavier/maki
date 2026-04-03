@@ -8,29 +8,31 @@
 
 #include "logging.h"
 #include "style_helpers.h"
+#include "app_paths.h"
 
 LanguageManager::LanguageManager(QObject* parent)
     : QObject(parent)
 {
-  QString installDir = translationDir();
-
-  LOG_DEBUG("Looking for languages in: %s", qPrintable(installDir));
-
-  // Ensure user dir exists so users know where to drop files
-  QDir dir(installDir);
-  if (!dir.exists())
-    return;
-
-  const QFileInfoList files = dir.entryInfoList(QStringList() << "*.qm", QDir::Files);
-
-  for (const QFileInfo& fi : files)
+  for (const auto& path : AppPaths::translations())
   {
-    LanguageManager::LanguageOption option;
-    auto name = fi.baseName().remove("maki_");
-    option.code = name;
-    option.label = name;
+    LOG_DEBUG("Looking for languages in: %s", qPrintable(path));
 
-    mAvailableLanguages.push_back(option);
+    // Ensure user dir exists so users know where to drop files
+    QDir dir(path);
+    if (!dir.exists())
+      return;
+
+    const QFileInfoList files = dir.entryInfoList(QStringList() << "*.qm", QDir::Files);
+
+    for (const QFileInfo& fi : files)
+    {
+      LanguageManager::LanguageOption option;
+      auto name = fi.baseName().remove("maki_");
+      option.code = name;
+      option.label = name;
+
+      mAvailableLanguages.push_back(option);
+    }
   }
 }
 
@@ -44,17 +46,15 @@ QString LanguageManager::currentLanguage() const
   return mCurrentLanguage;
 }
 
-QString LanguageManager::translationDir() const
-{
-  // Adjust to your app layout
-  return getDirPathFor("share/translations");
-}
-
 QString LanguageManager::qmFileForCode(const QString& code) const
 {
   // Example filenames:
+  auto paths = AppPaths::translations();
+  if (paths.isEmpty())
+    return QString();
+
   // maki_nl_NL.qm, maki_pt_BR.qm, maki_fr_FR.qm
-  return translationDir() + "/maki_" + code + ".qm";
+  return paths.at(0) + "/maki_" + code + ".qm";
 }
 
 bool LanguageManager::setLanguage(const QString& code)

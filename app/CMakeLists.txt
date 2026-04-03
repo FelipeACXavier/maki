@@ -8,6 +8,7 @@ add_subdirectory(document)
 qt_standard_project_setup()
 
 # ------------------------------------------------------------------------------------------------------------
+include(GNUInstallDirs)
 include(${CMAKE_SOURCE_DIR}/cmake/copy_fonts.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/copy_icons.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/copy_themes.cmake)
@@ -51,6 +52,10 @@ qt_add_executable(${APPLICATION_NAME}
     ${COMPILER_FILES}
 )
 
+if (CMAKE_BUILD_TYPE STREQUAL "Debug" AND BUILD_PLUGINS)
+  target_compile_definitions(${APPLICATION_NAME} PRIVATE DEV_BUILD=1)
+endif()
+
 if (MSVC)
 else()
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -83,7 +88,19 @@ target_link_libraries(${APPLICATION_NAME} PRIVATE
     libmaki
 )
 
-add_dependencies(${APPLICATION_NAME} copy_fonts copy_themes copy_icons copy_libraries copy_translations)
+add_dependencies(${APPLICATION_NAME}
+  copy_fonts
+  copy_themes
+  copy_icons
+  copy_libraries
+  copy_translations
+)
+
+install(TARGETS ${APPLICATION_NAME}
+  BUNDLE  DESTINATION .
+  RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
 
 # ------------------------------------------------------------------------------------------------------------
 # Linux deployment
@@ -91,21 +108,9 @@ if (DEPLOY_TARGET STREQUAL "linux" AND UNIX AND NOT APPLE)
   # Where Qt is installed in the container
   set(QT_RUNTIME_PREFIX "${CMAKE_PREFIX_PATH}" CACHE PATH "Qt runtime prefix (Qt install dir)")
 
-  install(TARGETS ${APPLICATION_NAME}
-    BUNDLE  DESTINATION .
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  )
-
   add_custom_target(deploy-linux
     # 1. Regular install into CMAKE_INSTALL_PREFIX (e.g. /dist)
     COMMAND "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --target install
-
-    # 2. Copy Qt plugins (platforms, imageformats, etc.)
-    COMMAND "${CMAKE_COMMAND}" -E make_directory "${CMAKE_INSTALL_PREFIX}/plugins"
-    COMMAND "${CMAKE_COMMAND}" -E copy_directory
-            "${QT_RUNTIME_PREFIX}/plugins"
-            "${CMAKE_INSTALL_PREFIX}/plugins"
 
     # 3. Copy our language plugins
     COMMAND "${CMAKE_COMMAND}" -E copy_directory
@@ -131,21 +136,31 @@ if (DEPLOY_TARGET STREQUAL "windows" AND WIN32 AND NOT CMAKE_CROSSCOMPILING)
   # Make sure windeployqt is available
   find_program(QT_WINDEPLOYQT_EXECUTABLE NAMES windeployqt windeployqt.exe)
 
-  install(TARGETS ${APPLICATION_NAME}
-    BUNDLE  DESTINATION .
-    RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  )
-
   if (QT_WINDEPLOYQT_EXECUTABLE)
+    # Execute windeployqt as a postscript only  if running in debug mode
+    # In release mode, the deploy-windows rule handles windeployqt
     message(STATUS "Found windeployqt: ${QT_WINDEPLOYQT_EXECUTABLE}")
     add_custom_command(TARGET ${APPLICATION_NAME} POST_BUILD
-      COMMAND $<$<CONFIG:Debug>:"${QT_WINDEPLOYQT_EXECUTABLE}">
-              $<$<CONFIG:Debug>:--dir ${CMAKE_BINARY_DIR}/bin>
-              $<$<CONFIG:Debug>:--verbose 1>
-              $<$<CONFIG:Debug>:"$<TARGET_FILE:${APPLICATION_NAME}>">
+      # Make sure the target directory exists
+      COMMAND "${CMAKE_COMMAND}" -E make_directory "${CMAKE_BINARY_DIR}/bin"
 
-      COMMENT "Running windeployqt for $<TARGET_FILE_NAME:${APPLICATION_NAME}>"
+      # Run windeployqt so the libraries are all in place
+      COMMAND $<$<CONFIG:Debug>:${QT_WINDEPLOYQT_EXECUTABLE}>
+              $<$<CONFIG:Debug>:--dir>
+              $<$<CONFIG:Debug>:${CMAKE_BINARY_DIR}/bin>
+              $<$<CONFIG:Debug>:$<TARGET_FILE:${APPLICATION_NAME}>>
+
+      # Copy the executable to the output dir
+      COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+              "$<TARGET_FILE:${APPLICATION_NAME}>"
+              "${CMAKE_BINARY_DIR}/bin/$<TARGET_FILE_NAME:${APPLICATION_NAME}>"
+
+      # Copy debug assets
+      COMMAND "${CMAKE_COMMAND}" -E copy_directory
+              "${BUILD_ASSET_DIR}"
+              "${CMAKE_BINARY_DIR}/bin/assets"
+
+      COMMENT "Running ${QT_WINDEPLOYQT_EXECUTABLE} for $<TARGET_FILE_NAME:${APPLICATION_NAME}>"
       VERBATIM
     )
   else()
@@ -163,10 +178,6 @@ if (DEPLOY_TARGET STREQUAL "windows" AND WIN32 AND NOT CMAKE_CROSSCOMPILING)
               --dir "${CMAKE_INSTALL_PREFIX}"
               --verbose 1
               "${CMAKE_INSTALL_PREFIX}/$<TARGET_FILE_NAME:${APPLICATION_NAME}>"
-
-      COMMAND "${CMAKE_COMMAND}" -E copy_directory
-              "${PLUGINS_FOLDER}"
-              "${CMAKE_INSTALL_PREFIX}/plugins"
 
       COMMENT "Running windeployqt for ${APPLICATION_NAME}"
     )

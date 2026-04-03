@@ -1,28 +1,79 @@
 #pragma once
 
+#include <QDir>
 #include <QWidget>
+#include <QJsonArray>
 
 #include "generator_plugin.h"
+#include "result.h"
+#include "json.h"
+#include "keys.h"
+#include "logging.h"
 
 class QComboBox;
 class HostServices;
+
+class Manifest
+{
+public:
+  QString id;
+  QString name;
+  QString version;
+  QString entryPoint;
+  QString icon;
+  QString path;
+  QStringList libs;
+
+  static Manifest fromJson(const QString& path, const JSON& data)
+  {
+    Manifest manifest;
+
+    if (data.contains(ConfigKeys::ID))
+      manifest.id = data[ConfigKeys::ID].toString();
+    if (data.contains(ConfigKeys::NAME))
+      manifest.name = data[ConfigKeys::NAME].toString();
+    if (data.contains("version"))
+      manifest.version = data["version"].toString();
+    if (data.contains("entryPoint"))
+      manifest.entryPoint = data["entryPoint"].toString();
+    if (data.contains("icon"))
+      manifest.icon = data["icon"].toString();
+
+    for (const auto& argument : data["libraries"].toArray())
+      manifest.libs.push_back(argument.toString());
+
+    manifest.path = path + "/" + manifest.entryPoint;
+
+    return manifest;
+  }
+};
 
 class PluginManager : public QObject
 {
   Q_OBJECT
 public:
+  struct Plugin
+  {
+    maki::IGeneratorPlugin* plugin;
+    Manifest manifest;
+  };
+
   PluginManager(QObject* parent = nullptr);
 
   virtual ~PluginManager();
 
-  void start(QMenu* menu, QComboBox* comboBox, HostServices* services);
+  VoidResult start(QMenu* menu, QComboBox* comboBox, HostServices* services);
 
   maki::IGeneratorPlugin* currentPlugin() const;
   maki::IGeneratorPlugin* pluginByLanguage(const QString& language) const;
 
 private:
   maki::IGeneratorPlugin* mPlugin;
-  QVector<maki::IGeneratorPlugin*> mPlugins;
+  QVector<Plugin> mPlugins;
 
-  void setPlugin(maki::IGeneratorPlugin* plugin);
+  VoidResult loadPlugin(const Manifest& path, QMenu* menu, QComboBox* comboBox, HostServices* services);
+  bool setPlugin(const QString& language);
+
+  Result<Manifest> getPluginManifest(const QDir& path) const;
+  VoidResult loadPluginLibraryDir(const Manifest& manifest);
 };

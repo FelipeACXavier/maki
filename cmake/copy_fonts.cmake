@@ -6,7 +6,7 @@ file(GLOB APP_FONT_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/assets/fonts/jetbrains_mono/*.ttf
 )
 
-set(FONT_BUILD_DIR "${CMAKE_BINARY_DIR}/share/fonts")
+set(FONT_BUILD_DIR "${BUILD_ASSET_DIR}/fonts")
 
 add_custom_target(copy_fonts ALL
   COMMENT "Copying fonts to ${FONT_BUILD_DIR}"
@@ -16,5 +16,5 @@ add_custom_target(copy_fonts ALL
 )
 
 install(FILES ${APP_FONT_FILES}
-  DESTINATION "${CMAKE_INSTALL_DATADIR}/fonts"
+  DESTINATION "${RELEASE_ASSET_DIR}/fonts"
 )

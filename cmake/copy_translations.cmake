@@ -3,7 +3,7 @@
 file(GLOB TS_FILES ${CMAKE_CURRENT_SOURCE_DIR}/translations/*.ts)
 
 set(QM_OUTPUT_DIR "${CMAKE_BINARY_DIR}/translations")
-set(QM_OUTPUT_COPY_DIR "${CMAKE_BINARY_DIR}/share/translations")
+set(QM_OUTPUT_COPY_DIR "${BUILD_ASSET_DIR}/translations")
 
 qt_add_translations(${APPLICATION_NAME}
     TS_FILES ${TS_FILES}
@@ -19,5 +19,5 @@ add_custom_target(copy_translations ALL
 )
 
 install(FILES ${QM_FILES}
-  DESTINATION "${CMAKE_INSTALL_DATADIR}/translations"
+  DESTINATION "${RELEASE_ASSET_DIR}/translations"
 )

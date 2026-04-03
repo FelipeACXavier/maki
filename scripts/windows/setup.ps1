@@ -43,7 +43,7 @@ if (Test-Path $WindeployqtPath) {
     }
 
     &  $AQT install-qt windows desktop $QtVersion $QtArch `
-        -m qtwebengine qtpdf qtwebchannel qtpositioning qtwebsockets `
+        -m qtpdf qtwebchannel qtpositioning qtwebsockets `
         -O $QtRoot `
 
     if ($LASTEXITCODE -ne 0) {

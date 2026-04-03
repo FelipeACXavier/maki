@@ -21,6 +21,7 @@
 #include <QTreeWidgetItem>
 #include <QVBoxLayout>
 
+#include "app_paths.h"
 #include "logging.h"
 #include "style_helpers.h"
 #include "theme.h"
@@ -282,7 +283,7 @@ VoidResult SettingsDialog::createAppearancePage()
   }
 
   mUserThemeName = new maki::StringWidget(tr("Theme name"), "User", alignment, page);
-  mUserThemeName->addDescription(tr("The theme will be installed in") + ": " + Config::userThemesDir());
+  mUserThemeName->addDescription(tr("The theme will be installed in") + ": " + AppPaths::userThemes());
 
   themeLayout->addWidget(mColorGrid);
   themeLayout->addSpacing(2);

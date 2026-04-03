@@ -126,8 +126,6 @@ VoidResult saveThemeVarsToFile(const QString& name, const maki::ThemeVars& theme
 
 // ------------------------------------------------------------
 // Theme search stuff
-QString installThemesDir();
-QString userThemesDir();
 QList<ThemeInfo> discoverThemes();
 
 }  // namespace Config

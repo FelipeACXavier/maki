@@ -111,25 +111,6 @@ void addDynamicWidget(QVBoxLayout* layout, QWidget* dynamicWidget, QWidget* pare
   }
 }
 
-QString getDirPathFor(const QString& path)
-{
-#ifdef Q_OS_WIN
-  return QCoreApplication::applicationDirPath() + "/" + path;
-#else
-  return QCoreApplication::applicationDirPath() + "/../" + path;
-#endif
-}
-
-QString getIconPathFor(const QString& path)
-{
-  return getDirPathFor("share/icons/" + path);
-}
-
-QString getLibPath()
-{
-  return getDirPathFor("share/libraries");
-}
-
 void updateProperty(QWidget* widget, const QString& property, bool value)
 {
   widget->setProperty(property.toStdString().c_str(), value);

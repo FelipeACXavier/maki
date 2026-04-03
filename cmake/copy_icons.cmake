@@ -2,7 +2,7 @@
 
 set(MISSION_PATH "${CMAKE_CURRENT_SOURCE_DIR}/assets/icons/mission")
 set(FONT_AWESOME_PATH "${CMAKE_CURRENT_SOURCE_DIR}/assets/icons/fontawesome/svgs/solid")
-set(ICON_BUILD_DIR "${CMAKE_BINARY_DIR}/share/icons")
+set(ICON_BUILD_DIR "${BUILD_ASSET_DIR}/icons")
 
 file(GLOB APP_ICON_FILES
   ${FONT_AWESOME_PATH}/circle-nodes.svg
@@ -67,12 +67,12 @@ file(GLOB APP_ICON_FILES
 )
 
 add_custom_target(copy_icons ALL
-  COMMENT "Copying fonts to ${ICON_BUILD_DIR}"
+  COMMENT "Copying icons to ${ICON_BUILD_DIR}"
   COMMAND ${CMAKE_COMMAND} -E make_directory ${ICON_BUILD_DIR}
   COMMAND ${CMAKE_COMMAND} -E copy_if_different ${APP_ICON_FILES} ${ICON_BUILD_DIR}
   DEPENDS ${APP_ICON_FILES}
 )
 
 install(FILES ${APP_ICON_FILES}
-  DESTINATION "${CMAKE_INSTALL_DATADIR}/icons"
+  DESTINATION "${RELEASE_ASSET_DIR}/icons"
 )
