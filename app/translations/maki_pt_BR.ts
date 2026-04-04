@@ -87,6 +87,10 @@
         <source>Enter a name for the new flow</source>
         <translation>Digite um nome para o novo fluxo</translation>
     </message>
+    <message>
+        <source>Settings</source>
+        <translation>Configurações</translation>
+    </message>
 </context>
 <context>
     <name>MainWindowLayout</name>
@@ -99,16 +103,8 @@
         <translation>Comportamento</translation>
     </message>
     <message>
-        <source>Component behavior</source>
-        <translation type="vanished">Comportamento do componente</translation>
-    </message>
-    <message>
         <source>Filter nodes</source>
         <translation>Filtrar nós</translation>
-    </message>
-    <message>
-        <source>Show process tab</source>
-        <translation>Mostrar aba de processo</translation>
     </message>
     <message>
         <source>Show simulation tab</source>
@@ -302,6 +298,10 @@
         <source>Log</source>
         <translation>Log</translation>
     </message>
+    <message>
+        <source>Generation</source>
+        <translation>Geração</translation>
+    </message>
 </context>
 <context>
     <name>PluginTab</name>
@@ -363,12 +363,12 @@
         <translation>Salvar diagrama</translation>
     </message>
     <message>
-        <source>All Files (*);;Low-Code platform (*.lcp)</source>
-        <translation>Todos os arquivos (*);;Plataforma Low-Code (*.lcp)</translation>
-    </message>
-    <message>
         <source>Open diagram</source>
         <translation>Abrir diagrama</translation>
+    </message>
+    <message>
+        <source>All Files (*);;MAKI diagram (*.json)</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -466,10 +466,6 @@
         <translation>Raio dos cantos dos nós</translation>
     </message>
     <message>
-        <source>pixels</source>
-        <translation type="vanished">pixels</translation>
-    </message>
-    <message>
         <source>Show canvas grid</source>
         <translation>Mostrar grade do canvas</translation>
     </message>
@@ -512,6 +508,10 @@
     <message>
         <source>Set language</source>
         <translation>Selecionar lingua</translation>
+    </message>
+    <message>
+        <source>Requires a restart to take full effect</source>
+        <translation>É necessário reiniciar para que as alterações tenham efeito.</translation>
     </message>
 </context>
 <context>

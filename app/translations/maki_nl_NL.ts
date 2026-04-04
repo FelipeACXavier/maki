@@ -87,6 +87,10 @@
         <source>Enter a name for the new flow</source>
         <translation>Voer een naam in voor de nieuwe flow</translation>
     </message>
+    <message>
+        <source>Settings</source>
+        <translation>Instellingen</translation>
+    </message>
 </context>
 <context>
     <name>MainWindowLayout</name>
@@ -99,16 +103,8 @@
         <translation>Gedrag</translation>
     </message>
     <message>
-        <source>Component behaviour</source>
-        <translation type="vanished">Componentgedrag</translation>
-    </message>
-    <message>
         <source>Filter nodes</source>
         <translation>Nodes filteren</translation>
-    </message>
-    <message>
-        <source>Show process tab</source>
-        <translation>Proces-tabblad tonen</translation>
     </message>
     <message>
         <source>Show simulation tab</source>
@@ -302,6 +298,10 @@
         <source>Log</source>
         <translation>Logboek</translation>
     </message>
+    <message>
+        <source>Generation</source>
+        <translation>Generatie</translation>
+    </message>
 </context>
 <context>
     <name>PluginTab</name>
@@ -363,12 +363,12 @@
         <translation>Diagram opslaan</translation>
     </message>
     <message>
-        <source>All Files (*);;Low-Code platform (*.lcp)</source>
-        <translation>Alle bestanden (*);;Low-Code platform (*.lcp)</translation>
-    </message>
-    <message>
         <source>Open diagram</source>
         <translation>Diagram openen</translation>
+    </message>
+    <message>
+        <source>All Files (*);;MAKI diagram (*.json)</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -466,10 +466,6 @@
         <translation>Hoekradius van nodes</translation>
     </message>
     <message>
-        <source>pixels</source>
-        <translation type="vanished">pixels</translation>
-    </message>
-    <message>
         <source>Show canvas grid</source>
         <translation>Raster tonen</translation>
     </message>
@@ -484,10 +480,6 @@
     <message>
         <source>Generation output folder</source>
         <translation>Uitvoermap voor generatie</translation>
-    </message>
-    <message>
-        <source>&quot;//&lt;plugin name&gt;&quot; will be appended to this path</source>
-        <translation type="vanished">&quot;//&lt;plugin naam&gt;&quot; wordt toegevoegd aan dit pad</translation>
     </message>
     <message>
         <source>Choose folder</source>
@@ -516,6 +508,10 @@
     <message>
         <source>&quot;/&lt;plugin name&gt;&quot; will be appended to this path</source>
         <translation>&quot;/&lt;pluginnaam&gt;&quot; wordt aan dit pad toegevoegd</translation>
+    </message>
+    <message>
+        <source>Requires a restart to take full effect</source>
+        <translation>Een herstart is vereist om het effect te bereiken.&gt;</translation>
     </message>
 </context>
 <context>

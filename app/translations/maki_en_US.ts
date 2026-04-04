@@ -91,17 +91,22 @@
 <context>
     <name>MainWindow</name>
     <message>
-        <location filename="../system/main_window.cpp" line="211"/>
+        <location filename="../system/main_window.cpp" line="214"/>
         <source>Find</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window.cpp" line="717"/>
+        <location filename="../system/main_window.cpp" line="289"/>
+        <source>Settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../system/main_window.cpp" line="737"/>
         <source>Flow name</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window.cpp" line="718"/>
+        <location filename="../system/main_window.cpp" line="738"/>
         <source>Enter a name for the new flow</source>
         <translation type="unfinished"></translation>
     </message>
@@ -109,262 +114,262 @@
 <context>
     <name>MainWindowLayout</name>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="89"/>
+        <location filename="../system/main_window_layout.cpp" line="92"/>
         <source>Structure</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="106"/>
+        <location filename="../system/main_window_layout.cpp" line="109"/>
         <source>Behavior</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="114"/>
+        <location filename="../system/main_window_layout.cpp" line="117"/>
         <source>Filter nodes</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="200"/>
-        <source>Show process tab</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../system/main_window_layout.cpp" line="209"/>
+        <location filename="../system/main_window_layout.cpp" line="203"/>
         <source>Show simulation tab</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="251"/>
+        <location filename="../system/main_window_layout.cpp" line="244"/>
         <source>Info</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="276"/>
+        <location filename="../system/main_window_layout.cpp" line="251"/>
+        <source>Generation</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../system/main_window_layout.cpp" line="272"/>
         <source>Name</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="276"/>
+        <location filename="../system/main_window_layout.cpp" line="272"/>
         <source>Type</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="286"/>
+        <location filename="../system/main_window_layout.cpp" line="282"/>
         <source>System</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="291"/>
+        <location filename="../system/main_window_layout.cpp" line="287"/>
         <source>Files</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="301"/>
+        <location filename="../system/main_window_layout.cpp" line="297"/>
         <source>Properties</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="325"/>
+        <location filename="../system/main_window_layout.cpp" line="321"/>
         <source>File</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="328"/>
+        <location filename="../system/main_window_layout.cpp" line="324"/>
         <source>New</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="332"/>
+        <location filename="../system/main_window_layout.cpp" line="328"/>
         <source>Open</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="336"/>
+        <location filename="../system/main_window_layout.cpp" line="332"/>
         <source>Open Recent</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="342"/>
+        <location filename="../system/main_window_layout.cpp" line="338"/>
         <source>Save</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="346"/>
+        <location filename="../system/main_window_layout.cpp" line="342"/>
         <source>Save As</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="352"/>
+        <location filename="../system/main_window_layout.cpp" line="348"/>
         <source>Install library</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="356"/>
+        <location filename="../system/main_window_layout.cpp" line="352"/>
         <source>Install plugin</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="361"/>
+        <location filename="../system/main_window_layout.cpp" line="357"/>
         <source>Exit</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="367"/>
+        <location filename="../system/main_window_layout.cpp" line="363"/>
         <source>Edit</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="370"/>
+        <location filename="../system/main_window_layout.cpp" line="366"/>
         <source>Undo</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="374"/>
+        <location filename="../system/main_window_layout.cpp" line="370"/>
         <source>Redo</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="380"/>
+        <location filename="../system/main_window_layout.cpp" line="376"/>
         <source>Copy</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="385"/>
+        <location filename="../system/main_window_layout.cpp" line="381"/>
         <source>Paste</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="390"/>
+        <location filename="../system/main_window_layout.cpp" line="386"/>
         <source>Cut</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="395"/>
+        <location filename="../system/main_window_layout.cpp" line="391"/>
         <source>Delete</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="402"/>
+        <location filename="../system/main_window_layout.cpp" line="398"/>
         <source>View</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="405"/>
+        <location filename="../system/main_window_layout.cpp" line="401"/>
         <source>Zoom In</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="410"/>
+        <location filename="../system/main_window_layout.cpp" line="406"/>
         <source>Zoom Out</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="415"/>
+        <location filename="../system/main_window_layout.cpp" line="411"/>
         <source>Reset Zoom</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="420"/>
+        <location filename="../system/main_window_layout.cpp" line="416"/>
         <source>Fit to Screen</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="427"/>
+        <location filename="../system/main_window_layout.cpp" line="423"/>
         <source>Toggle Grid</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="432"/>
+        <location filename="../system/main_window_layout.cpp" line="428"/>
         <source>Toggle Snap to Grid</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="437"/>
+        <location filename="../system/main_window_layout.cpp" line="433"/>
         <source>Show/Hide</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="441"/>
+        <location filename="../system/main_window_layout.cpp" line="437"/>
         <source>Information panel</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="449"/>
+        <location filename="../system/main_window_layout.cpp" line="445"/>
         <source>Components panel</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="457"/>
+        <location filename="../system/main_window_layout.cpp" line="453"/>
         <source>Properties panel</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="465"/>
+        <location filename="../system/main_window_layout.cpp" line="461"/>
         <source>Special tabs</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="471"/>
+        <location filename="../system/main_window_layout.cpp" line="467"/>
         <source>Diagram</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="479"/>
+        <location filename="../system/main_window_layout.cpp" line="475"/>
         <source>Tools</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="482"/>
+        <location filename="../system/main_window_layout.cpp" line="478"/>
         <source>Generator</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="486"/>
+        <location filename="../system/main_window_layout.cpp" line="482"/>
         <source>Verify</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="490"/>
+        <location filename="../system/main_window_layout.cpp" line="486"/>
         <source>Simulate</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="500"/>
+        <location filename="../system/main_window_layout.cpp" line="496"/>
         <source>Help</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="503"/>
+        <location filename="../system/main_window_layout.cpp" line="499"/>
         <source>Documentation</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="508"/>
+        <location filename="../system/main_window_layout.cpp" line="504"/>
         <source>Quick Start Guide</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="513"/>
+        <location filename="../system/main_window_layout.cpp" line="509"/>
         <source>Open All Settings</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="517"/>
+        <location filename="../system/main_window_layout.cpp" line="513"/>
         <source>Shortcuts</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="522"/>
+        <location filename="../system/main_window_layout.cpp" line="518"/>
         <source>Report Issue</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="527"/>
+        <location filename="../system/main_window_layout.cpp" line="523"/>
         <source>About</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="643"/>
+        <location filename="../system/main_window_layout.cpp" line="639"/>
         <source>Log</source>
         <translation type="unfinished"></translation>
     </message>
@@ -438,18 +443,17 @@
 <context>
     <name>SaveHandler</name>
     <message>
-        <location filename="../system/save_handler.cpp" line="163"/>
+        <location filename="../system/save_handler.cpp" line="167"/>
         <source>Save diagram</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/save_handler.cpp" line="163"/>
-        <location filename="../system/save_handler.cpp" line="165"/>
-        <source>All Files (*);;Low-Code platform (*.lcp)</source>
+        <location filename="../system/save_handler.cpp" line="169"/>
+        <source>All Files (*);;MAKI diagram (*.json)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/save_handler.cpp" line="165"/>
+        <location filename="../system/save_handler.cpp" line="167"/>
         <source>Open diagram</source>
         <translation type="unfinished"></translation>
     </message>
@@ -457,172 +461,177 @@
 <context>
     <name>SettingsDialog</name>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="104"/>
+        <location filename="../widgets/settings_dialog.cpp" line="105"/>
         <source>Reset</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="105"/>
+        <location filename="../widgets/settings_dialog.cpp" line="106"/>
         <source>Reset settings for this page</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="153"/>
+        <location filename="../widgets/settings_dialog.cpp" line="154"/>
         <source>General</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="166"/>
+        <location filename="../widgets/settings_dialog.cpp" line="167"/>
         <source>Language</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="167"/>
+        <location filename="../widgets/settings_dialog.cpp" line="168"/>
         <source>Set language</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="176"/>
+        <location filename="../widgets/settings_dialog.cpp" line="173"/>
+        <source>Requires a restart to take full effect</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../widgets/settings_dialog.cpp" line="178"/>
         <source>Autosave interval</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="179"/>
+        <location filename="../widgets/settings_dialog.cpp" line="181"/>
         <source>Enable autosave</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="181"/>
+        <location filename="../widgets/settings_dialog.cpp" line="183"/>
         <source>Autosave</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="185"/>
+        <location filename="../widgets/settings_dialog.cpp" line="187"/>
         <source>Recent History Size</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="187"/>
+        <location filename="../widgets/settings_dialog.cpp" line="189"/>
         <source>Restore last session on startup</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="188"/>
+        <location filename="../widgets/settings_dialog.cpp" line="190"/>
         <source>Confirm before closing editor with running execution</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="189"/>
+        <location filename="../widgets/settings_dialog.cpp" line="191"/>
         <source>Show welcome message</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="191"/>
+        <location filename="../widgets/settings_dialog.cpp" line="193"/>
         <source>Opening/Closing</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="197"/>
+        <location filename="../widgets/settings_dialog.cpp" line="199"/>
         <source>Enable debug logs</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="198"/>
+        <location filename="../widgets/settings_dialog.cpp" line="200"/>
         <source>Logging and Notifications</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="214"/>
+        <location filename="../widgets/settings_dialog.cpp" line="217"/>
         <source>Appearance</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="227"/>
+        <location filename="../widgets/settings_dialog.cpp" line="230"/>
         <source>Theme</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="228"/>
+        <location filename="../widgets/settings_dialog.cpp" line="231"/>
         <source>System theme</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="242"/>
+        <location filename="../widgets/settings_dialog.cpp" line="245"/>
         <source>Use native menubar</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="244"/>
+        <location filename="../widgets/settings_dialog.cpp" line="247"/>
         <source>Theming</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="262"/>
+        <location filename="../widgets/settings_dialog.cpp" line="265"/>
         <source>Colors</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="282"/>
+        <location filename="../widgets/settings_dialog.cpp" line="285"/>
         <source>Theme name</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="283"/>
+        <location filename="../widgets/settings_dialog.cpp" line="286"/>
         <source>The theme will be installed in</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="289"/>
+        <location filename="../widgets/settings_dialog.cpp" line="292"/>
         <source>UI scale</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="292"/>
+        <location filename="../widgets/settings_dialog.cpp" line="295"/>
         <source>Node corner radius</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="295"/>
+        <location filename="../widgets/settings_dialog.cpp" line="298"/>
         <source>Show canvas grid</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="297"/>
+        <location filename="../widgets/settings_dialog.cpp" line="300"/>
         <source>UI changes</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="313"/>
+        <location filename="../widgets/settings_dialog.cpp" line="316"/>
         <source>Generation</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="319"/>
+        <location filename="../widgets/settings_dialog.cpp" line="322"/>
         <source>Generation output folder</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="320"/>
+        <location filename="../widgets/settings_dialog.cpp" line="323"/>
         <source>&quot;/&lt;plugin name&gt;&quot; will be appended to this path</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="326"/>
+        <location filename="../widgets/settings_dialog.cpp" line="329"/>
         <source>Choose folder</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="336"/>
+        <location filename="../widgets/settings_dialog.cpp" line="339"/>
         <source>Select default generation folder</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="356"/>
+        <location filename="../widgets/settings_dialog.cpp" line="359"/>
         <source>Plugins</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="362"/>
+        <location filename="../widgets/settings_dialog.cpp" line="365"/>
         <source>Installed plugins</source>
         <translation type="unfinished"></translation>
     </message>
