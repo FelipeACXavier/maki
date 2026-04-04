@@ -286,7 +286,7 @@ void MainWindow::bind()
   // Setting actions =============================================================
   connect(mOpenAllSettings, &QAction::triggered, this, [this] {
     LOG_INFO("Opening all settings");
-    SettingsDialog* settingsDialog = new SettingsDialog("Configurations", mSettingsManager, mLanguageManager, this);
+    SettingsDialog* settingsDialog = new SettingsDialog(tr("Settings"), mSettingsManager, mLanguageManager, this);
     settingsDialog->setAttribute(Qt::WA_DeleteOnClose);
     settingsDialog->show();
   });

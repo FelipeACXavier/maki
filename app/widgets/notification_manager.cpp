@@ -1,5 +1,6 @@
 #include "notification_manager.h"
 
+#include <QGraphicsDropShadowEffect>
 #include <QGuiApplication>
 #include <QScreen>
 
@@ -20,6 +21,12 @@ void NotificationManager::showNotification(const QString& header, const QString&
 
   auto* toast = new NotificationWidget(header, text, level, mParentWindow);
   toast->hide();
+
+  auto* shadow = new QGraphicsDropShadowEffect(toast);
+  shadow->setBlurRadius(24);
+  shadow->setOffset(0, 4);
+  shadow->setColor(QColor(0, 0, 0, 90));
+  toast->setGraphicsEffect(shadow);
 
   connect(toast, &NotificationWidget::dismissed, this, &NotificationManager::onToastDismissed);
 
