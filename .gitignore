@@ -4,6 +4,7 @@ build/
 release/
 generated/
 .cache
+.flatpak-builder
 
 compile_commands.json
 
