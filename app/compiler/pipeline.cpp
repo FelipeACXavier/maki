@@ -17,6 +17,11 @@ Pipeline::Pipeline(QObject* parent)
 {
 }
 
+Pipeline::~Pipeline()
+{
+  abort();
+}
+
 QString Pipeline::name() const
 {
   return mName;

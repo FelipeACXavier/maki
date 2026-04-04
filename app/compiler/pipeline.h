@@ -29,6 +29,11 @@ public:
   Pipeline(QObject* parent = nullptr);
 
   /**
+   * @brief Destructs a Pipeline instance.
+   */
+  ~Pipeline();
+
+  /**
    * @brief Adds a process to the pipeline.
    *
    * The process will be executed in the order it was added. The behavior in
