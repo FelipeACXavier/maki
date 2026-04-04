@@ -161,13 +161,13 @@ void SaveHandler::storeFilename(const QString& fileName)
 QString SaveHandler::openAtCenter(Function function)
 {
   QFileDialog dialog(mParentWidget);
+  dialog.setOption(QFileDialog::DontUseNativeDialog, false);
 
   dialog.setAcceptMode(function == Function::SAVE ? QFileDialog::AcceptSave : QFileDialog::AcceptOpen);
   dialog.setWindowTitle(function == Function::SAVE ? tr("Save diagram") : tr("Open diagram"));
   dialog.setDirectory(mLastDir);
   dialog.setNameFilter(tr("All Files (*);;MAKI diagram (*.json)"));
-  dialog.setOption(QFileDialog::DontUseNativeDialog, false);
-  dialog.setFont(Fonts::Main);
+  // dialog.setFont(Fonts::Main);
 
   if (dialog.exec() != QDialog::Accepted)
     return QString();

@@ -5,13 +5,13 @@
 #include <QMessageBox>
 #include <QUrl>
 
+#include "app_paths.h"
 #include "common/app_configs.h"
 #include "common/style_helpers.h"
 #include "common/theme.h"
 #include "logging.h"
 #include "system/main_window.h"
 #include "widgets/settings_manager.h"
-#include "app_paths.h"
 
 using namespace Qt::StringLiterals;
 
@@ -39,6 +39,13 @@ void loadApplicationFonts()
 
 int main(int argc, char* argv[])
 {
+// TODO: Check how this behaves in different distributions
+#ifdef Q_OS_LINUX
+  // This makes sure that the system file picker is used
+  if (qEnvironmentVariableIsEmpty("QT_QPA_PLATFORMTHEME"))
+    qputenv("QT_QPA_PLATFORMTHEME", "xdgdesktopportal");
+#endif
+
   QApplication app(argc, argv);
   app.setApplicationDisplayName(Config::APPLICATION_NAME);
   app.setApplicationName(Config::APPLICATION_NAME);
@@ -50,6 +57,7 @@ int main(int argc, char* argv[])
   QCoreApplication::setApplicationName(Config::APPLICATION_NAME);        // internal id-ish
   QGuiApplication::setDesktopFileName(Config::APPLICATION_NAME);         // matches maki.desktop
   QGuiApplication::setApplicationDisplayName(Config::APPLICATION_NAME);  // human name
+  QCoreApplication::setAttribute(Qt::AA_DontUseNativeDialogs, false);
 
   app.setWindowIcon(QIcon(":/app_icons/maki.png"));
 
