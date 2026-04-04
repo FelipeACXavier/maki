@@ -335,9 +335,6 @@ void MainWindow::bind()
     });
   }
 
-  connect(mProcessTabButton, &QPushButton::pressed, this, &MainWindow::addProcessTab);
-  // connect(mLanguageManager, &LanguageManager::languageChanged, [this](const QString& code) {});
-
   // Search stuff =============================================================
   connect(mPaletteSearch, &maki::SearchWidget::valueChanged, [this](const QString& query) {
     // This is inefficient and might cause some issues in the future since the search is done on every input change.
@@ -799,24 +796,6 @@ void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
   LOG_DEBUG("Set tab property to %s", qPrintable(flow->id()));
   mCanvasPanel->addTab(newView, flowName);
   mCanvasPanel->setCurrentWidget(newView);
-}
-
-void MainWindow::addProcessTab()
-{
-  // if (!mProcessTab)
-  // {
-  //   LOG_WARNING("No process tab to be added");
-  //   return;
-  // }
-
-  // // Check if process tab was already added
-  // for (int i = 1; i < mCanvasPanel->count(); ++i)
-  //   if (qobject_cast<ProcessTab*>(mCanvasPanel->widget(i)))
-  //     return;
-
-  // mCanvasPanel->addTab(mProcessTab, "Process view");
-  // mCanvasPanel->setCurrentWidget(mProcessTab);
-  // mProcessTab->show();
 }
 
 void MainWindow::addPluginTab(const QString& name, PluginView* view)

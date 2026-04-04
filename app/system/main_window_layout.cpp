@@ -198,15 +198,6 @@ void MainWindowLayout::buildCentralPanel()
   layout->setSpacing(4);
 
   // First button
-  // mProcessTabButton = new QPushButton(corner);
-  // mProcessTabButton->setObjectName("MainWindowButton");
-  // mProcessTabButton->setToolTip(tr("Show process tab"));
-  // mTranslatable.push_back({mProcessTabButton, "Show process tab", 0, true});
-
-  // connect(mProcessTabButton, &QPushButton::pressed, [this] { updateProperty(mProcessTabButton, Config::HAS_ACTIVITY, false); });
-  // mIcons.append({mProcessTabButton, ":/icons/terminal.svg"});
-
-  // Second button
   mBrowserTabButton = new QPushButton(corner);
   mBrowserTabButton->setObjectName("MainWindowButton");
   mBrowserTabButton->setToolTip(tr("Show simulation tab"));
@@ -214,7 +205,6 @@ void MainWindowLayout::buildCentralPanel()
   connect(mBrowserTabButton, &QPushButton::pressed, [this] { updateProperty(mBrowserTabButton, Config::HAS_ACTIVITY, false); });
   mIcons.append({mBrowserTabButton, ":/icons/display.svg"});
 
-  // layout->addWidget(mProcessTabButton);
   layout->addWidget(mBrowserTabButton);
 
   // Add the whole widget to the corner
@@ -234,7 +224,6 @@ void MainWindowLayout::buildCentralPanel()
   mCentralSplitter->addWidget(canvasContainer);
 
   mBottomPanel = new BadgedTabWidget();
-
   mBottomPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
   mBottomPanel->setMinimumHeight(320);
 
@@ -845,13 +834,11 @@ void MainWindowLayout::toggleGenerationButton(bool running)
     if (running)
     {
       mGenerationButton->setToolTip("Cancel current generation");
-      // updateProperty(mProcessTabButton, Config::HAS_ACTIVITY, true);
       it->path = ":/icons/pause.svg";
     }
     else
     {
       mGenerationButton->setToolTip("Run with the selected options");
-      // updateProperty(mProcessTabButton, Config::HAS_ACTIVITY, false);
       it->path = ":/icons/verify.svg";
     }
   }

@@ -60,7 +60,6 @@ protected:
 
   QSplitter* mCentralSplitter;
   QTabWidget* mCanvasPanel;
-  QPushButton* mProcessTabButton;
   QPushButton* mBrowserTabButton;
 
   BadgedTabWidget* mBottomPanel;

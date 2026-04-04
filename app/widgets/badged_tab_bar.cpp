@@ -32,11 +32,11 @@ void BadgedTabBar::setTabBadgeCount(int index)
   const auto infoColor = Config::getValueFromTheme("@info_color");
 
   TabBadge badge = mBadges[index];
-  LOG_INFO("setTabBadgeCount: %d %d %d", badge.count, index, (int)badge.level);
 
   badge.visible = true;
   badge.foreground = Config::FOREGROUND;
   badge.text = QString::number(++badge.count);
+  // Do not override error badges
   if (badge.level >= logging::LogLevel::Warning)
   {
     badge.background = infoColor.isValid() ? QColor(infoColor.toString()) : Config::HIGHLIGHT;
@@ -57,7 +57,6 @@ void BadgedTabBar::setTabErrorBadgeCount(int index)
     return;
 
   TabBadge badge = mBadges[index];
-  LOG_INFO("setTabErrorBadgeCount: %d %d %d", badge.count, index, (int)badge.level);
 
   badge.visible = true;
   badge.foreground = Config::FOREGROUND;
@@ -76,11 +75,15 @@ void BadgedTabBar::setTabDot(int index)
 
   const auto infoColor = Config::getValueFromTheme("@info_color");
 
-  TabBadge badge;
+  TabBadge badge = mBadges[index];
   badge.visible = true;
   badge.text.clear();
-  badge.background = infoColor.isValid() ? QColor(infoColor.toString()) : Config::HIGHLIGHT;
   badge.foreground = Config::FOREGROUND;
+  if (badge.level >= logging::LogLevel::Warning)
+  {
+    badge.background = infoColor.isValid() ? QColor(infoColor.toString()) : Config::HIGHLIGHT;
+    badge.level = logging::LogLevel::Warning;
+  }
 
   mBadges[index] = badge;
   update();
@@ -93,11 +96,12 @@ void BadgedTabBar::setTabErrorDot(int index)
 
   const auto errorColor = Config::getValueFromTheme("@error_color");
 
-  TabBadge badge;
+  TabBadge badge = mBadges[index];
   badge.visible = true;
   badge.text.clear();
   badge.background = QColor(errorColor.isValid() ? errorColor.toString() : "#DC6C6D");
   badge.foreground = Config::FOREGROUND;
+  badge.level = logging::LogLevel::Error;
 
   mBadges[index] = badge;
   update();
@@ -108,7 +112,6 @@ void BadgedTabBar::paintEvent(QPaintEvent* event)
   Q_UNUSED(event);
 
   QStylePainter painter(this);
-
   for (int i = 0; i < count(); ++i)
   {
     QStyleOptionTab option;
@@ -116,12 +119,9 @@ void BadgedTabBar::paintEvent(QPaintEvent* event)
     painter.drawControl(QStyle::CE_TabBarTabShape, option);
     painter.drawControl(QStyle::CE_TabBarTabLabel, option);
 
-    if (mBadges.contains(i))
-    {
-      const TabBadge& badge = mBadges[i];
-      if (badge.visible)
-        paintBadge(painter, i, tabRect(i), badge);
-    }
+    const TabBadge& badge = mBadges[i];
+    if (badge.visible)
+      paintBadge(painter, i, tabRect(i), badge);
   }
 }
 

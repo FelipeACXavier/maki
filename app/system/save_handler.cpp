@@ -167,7 +167,6 @@ QString SaveHandler::openAtCenter(Function function)
   dialog.setWindowTitle(function == Function::SAVE ? tr("Save diagram") : tr("Open diagram"));
   dialog.setDirectory(mLastDir);
   dialog.setNameFilter(tr("All Files (*);;MAKI diagram (*.json)"));
-  // dialog.setFont(Fonts::Main);
 
   if (dialog.exec() != QDialog::Accepted)
     return QString();

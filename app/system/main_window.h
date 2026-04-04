@@ -98,7 +98,6 @@ private:
 
   void handleLogging(const QString& message, QTextBrowser* textBrowser);
 
-  void addProcessTab();
   void addBrowserTab();
   void addPluginTab(const QString& name, PluginView* view);
   void addEditorTab(QPlainTextEdit* view);
