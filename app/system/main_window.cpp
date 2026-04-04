@@ -42,6 +42,8 @@
 #include "structure_canvas.h"
 #include "style_helpers.h"
 #include "system/main_window_layout.h"
+#include "widgets/badged_tab_bar.h"
+#include "widgets/badged_tab_widget.h"
 #include "widgets/language_manager.h"
 #include "widgets/notification_manager.h"
 #include "widgets/properties/properties_menu.h"
@@ -101,14 +103,13 @@ VoidResult MainWindow::start()
   mPipeline = new Pipeline(this);
   mGenerator = new Generator(mPipeline, this);
 
-  mProcessTab = new ProcessTab(mPipeline, mCanvasPanel);
-  mProcessTab->hide();
-
   mPluginTab = new PluginTab(mSpecialTabsMenu, this);
 
   mHostServices = new HostServices(mStorage, mPipeline, mSettingsManager.get(), QCoreApplication::applicationDirPath(), this);
   mHostServices->setPluginTab(mPluginTab);
   mHostServices->setLogger(mLogger);
+
+  mProcessTab->setPipeline(mPipeline);
 
   startUI();
   bind();
@@ -311,6 +312,19 @@ void MainWindow::bind()
 
   connect(mSaveHandler.get(), &SaveHandler::fileLoaded, mSettingsManager.get(), &SettingsManager::addRecentFile);
   connect(mSaveHandler.get(), &SaveHandler::fileSaved, mSettingsManager.get(), &SettingsManager::addRecentFile);
+
+  connect(mProcessTab, &ProcessTab::processStarted, [this] {
+    if (mBottomPanel && mBottomPanel->currentIndex() != MainWindowLayout::PROCESS_TAB_INDEX)
+      mBottomPanel->badgedTabBar()->setTabDot(MainWindowLayout::PROCESS_TAB_INDEX);
+  });
+  connect(mProcessTab, &ProcessTab::processFinished, [this](int exitCode, QProcess::ExitStatus /* status */) {
+    if (mBottomPanel && exitCode != 0 && mBottomPanel->currentIndex() != MainWindowLayout::PROCESS_TAB_INDEX)
+      mBottomPanel->badgedTabBar()->setTabErrorDot(MainWindowLayout::PROCESS_TAB_INDEX);
+  });
+  connect(mBottomPanel, &QTabWidget::currentChanged, this, [this](int index) {
+    if (mBottomPanel)
+      mBottomPanel->badgedTabBar()->clearTabBadge(index);
+  });
 
   if (mGenerator)
   {
@@ -789,20 +803,20 @@ void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
 
 void MainWindow::addProcessTab()
 {
-  if (!mProcessTab)
-  {
-    LOG_WARNING("No process tab to be added");
-    return;
-  }
+  // if (!mProcessTab)
+  // {
+  //   LOG_WARNING("No process tab to be added");
+  //   return;
+  // }
 
-  // Check if process tab was already added
-  for (int i = 1; i < mCanvasPanel->count(); ++i)
-    if (qobject_cast<ProcessTab*>(mCanvasPanel->widget(i)))
-      return;
+  // // Check if process tab was already added
+  // for (int i = 1; i < mCanvasPanel->count(); ++i)
+  //   if (qobject_cast<ProcessTab*>(mCanvasPanel->widget(i)))
+  //     return;
 
-  mCanvasPanel->addTab(mProcessTab, "Process view");
-  mCanvasPanel->setCurrentWidget(mProcessTab);
-  mProcessTab->show();
+  // mCanvasPanel->addTab(mProcessTab, "Process view");
+  // mCanvasPanel->setCurrentWidget(mProcessTab);
+  // mProcessTab->show();
 }
 
 void MainWindow::addPluginTab(const QString& name, PluginView* view)
@@ -862,6 +876,14 @@ void MainWindow::handleLogging(const QString& message, QTextBrowser* textBrowser
       QTextBlock block = doc->begin();
       textBrowser->textCursor().setPosition(block.position());
       textBrowser->textCursor().removeSelectedText();
+    }
+
+    if (mBottomPanel->currentIndex() != MainWindowLayout::LOG_TAB_INDEX)
+    {
+      if (textBrowser == mErrorLogText)
+        mBottomPanel->badgedTabBar()->setTabErrorBadgeCount(MainWindowLayout::LOG_TAB_INDEX);
+      else if (textBrowser == mWarningLogText)
+        mBottomPanel->badgedTabBar()->setTabBadgeCount(MainWindowLayout::LOG_TAB_INDEX);
     }
   }
 }

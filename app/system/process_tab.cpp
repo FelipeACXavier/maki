@@ -10,9 +10,8 @@
 #include "compiler/pipeline.h"
 #include "logging.h"
 
-ProcessTab::ProcessTab(Pipeline* pipeline, QWidget* parent)
+ProcessTab::ProcessTab(QWidget* parent)
     : QWidget(parent)
-    , mPipeline(pipeline)
 {
   mOutput = new QTextBrowser(this);
   mOutput->setReadOnly(true);
@@ -21,6 +20,14 @@ ProcessTab::ProcessTab(Pipeline* pipeline, QWidget* parent)
   auto* layout = new QVBoxLayout(this);
   layout->setContentsMargins(0, 0, 0, 0);
   layout->addWidget(mOutput);
+}
+
+void ProcessTab::setPipeline(Pipeline* pipeline)
+{
+  if (!pipeline)
+    return;
+
+  mPipeline = pipeline;
 
   connect(mPipeline, &Pipeline::startingProcess, this, &ProcessTab::onStartingProcess);
   connect(mPipeline, &Pipeline::finished, this, &ProcessTab::onFinished);
@@ -45,15 +52,17 @@ void ProcessTab::onFinished(int exitCode, QProcess::ExitStatus status)
   appendText(QString("[Process finished with code %1]\n").arg(exitCode));
 }
 
-void ProcessTab::onFinishedLast(int /* exitCode */, const QString& /* message */)
+void ProcessTab::onFinishedLast(int exitCode, const QString& /* message */)
 {
   appendText(QString("Finished all process in the pipeline\n"));
-  emit processFinished(0, QProcess::ExitStatus::NormalExit);
+  emit processFinished(exitCode, QProcess::ExitStatus::NormalExit);
 }
 
 void ProcessTab::onStartingProcess(const QString& process, const QStringList& arguments)
 {
   appendText(QString("> %1 %2\n\n").arg(process, arguments.join(' ')));
+
+  emit processStarted();
 }
 
 void ProcessTab::onErrorOccurred(QProcess::ProcessError error, const QString& message)

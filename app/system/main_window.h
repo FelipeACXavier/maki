@@ -66,7 +66,6 @@ private:
   Generator* mGenerator = nullptr;
   HostServices* mHostServices = nullptr;
   Canvas* mActiveCanvas = nullptr;
-  ProcessTab* mProcessTab = nullptr;
   PluginTab* mPluginTab = nullptr;
   NotificationManager* mNotificationManager = nullptr;
   Logger* mLogger = nullptr;

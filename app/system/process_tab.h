@@ -11,10 +11,13 @@ class ProcessTab : public QWidget
 {
   Q_OBJECT
 public:
-  explicit ProcessTab(Pipeline* pipeline, QWidget* parent = nullptr);
+  explicit ProcessTab(QWidget* parent = nullptr);
+
+  void setPipeline(Pipeline* pipeline);
 
 signals:
   // Emitted when the process finishes (so the owner can react, e.g. rename/close tab)
+  void processStarted();
   void processFinished(int exitCode, QProcess::ExitStatus status);
 
 private slots:

@@ -22,6 +22,7 @@ class QUndoGroup;
 class GeneratedFilesPanel;
 class SectionWidget;
 class QScrollArea;
+class BadgedTabWidget;
 
 namespace maki
 {
@@ -62,12 +63,13 @@ protected:
   QPushButton* mProcessTabButton;
   QPushButton* mBrowserTabButton;
 
-  QTabWidget* mBottomPanel;
+  BadgedTabWidget* mBottomPanel;
   QTextBrowser* mInfoText;
   QTextBrowser* mLogText;
   QTextBrowser* mErrorLogText;
   QTextBrowser* mWarningLogText;
   QComboBox* mLogLevelComboBox;
+  ProcessTab* mProcessTab;
 
   // === Right Panel ===
   QSplitter* mRightPanel;
@@ -129,6 +131,9 @@ protected:
   QAction* mActionShortcuts;
   QAction* mActionReportIssue;
   QAction* mAboutAction;
+
+  int LOG_TAB_INDEX = 0;
+  int PROCESS_TAB_INDEX = 0;
 
 protected:
   void onThemeChanged(const AppearanceSettings& settings);
