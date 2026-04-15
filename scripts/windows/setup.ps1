@@ -29,34 +29,12 @@ if ($PSVersionTable.PSEdition -ne "Desktop" -and $env:OS -notlike "*Windows*") {
 # Install Qt via aqtinstall
 # ------------------------------------------------------
 LogDebug "Using Qt version: $QtVersion"
-$env:PATH = "$PythonHome;$PythonHome\Scripts;$env:PATH"
-
 LogDebug "==> Using aqt: $AQT"
 
-if (Test-Path $WindeployqtPath) {
-    LogDebug "==> Qt already installed at: $QtBase"
-} else {
-    LogDebug "==> Installing Qt $QtVersion ($QtArch)..."
-
-    if (-not (Test-Path $QtRoot)) {
-        New-Item -ItemType Directory -Path $QtRoot | Out-Null
-    }
-
-    &  $AQT install-qt windows desktop $QtVersion $QtArch `
-        -m qtpdf qtwebchannel qtpositioning qtwebsockets `
-        -O $QtRoot `
-
-    if ($LASTEXITCODE -ne 0) {
-      Fail "Qt installation failed."
-    }
-
-    if (-not (Test-Path $WindeployqtPath)) {
-        Fail "Qt installation completed but windeployqt.exe not found. Something went wrong."
-    }
-}
+EnsureWindowsQt
 
 $env:PATH = "$QtBin;$env:PATH"
-LogInfo "Qt successfully installed at: $QtBase"
+LogInfo "Qt ready at: $QtBase"
 
 # ------------------------------------------------------
 # Check for C++ compiler (MSVC)

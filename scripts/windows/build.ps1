@@ -46,6 +46,15 @@ LogInfo "==> Windows build script starting..."
 LogInfo "Using Qt version: $QtVersion"
 LogDebug "Repo root: $RepoRoot"
 
+EnsureWindowsQt
+
+# CMake / vcpkg: explicit Qt6_DIR avoids find_package missing system Qt
+$Qt6DirForCmake = ((Join-Path $QtBase "lib\cmake\Qt6") -replace '\\', '/')
+
+# Koda plugin: use its vcpkg.json so antlr4 installs to 3rdparty/plugins/koda/vcpkg_installed
+$KodaVcpkgManifest = (Join-Path $RepoRoot "3rdparty\plugins\koda")
+$KodaVcpkgManifestForCmake = ($KodaVcpkgManifest -replace '\\', '/')
+
 # ------------------------------------------------------
 # Configure & build with CMake
 # ------------------------------------------------------
@@ -62,6 +71,8 @@ cmake -S "$RepoRoot" -B "$BuildPath" `
   -A x64 `
   -DDEPLOY_TARGET="windows" `
   -DCMAKE_PREFIX_PATH="$QtBase" `
+  -DQt6_DIR="$Qt6DirForCmake" `
+  -DVCPKG_MANIFEST_DIR="$KodaVcpkgManifestForCmake" `
   -DCMAKE_INSTALL_PREFIX="$InstallPath" `
   -DCMAKE_BUILD_TYPE="$BuildType" `
   -DCMAKE_TOOLCHAIN_FILE="$VcPkgPath\scripts\buildsystems\vcpkg.cmake"
@@ -84,9 +95,9 @@ if ($Release) {
 
 
 if ($LASTEXITCODE -ne 0) {
-  Fail "CMake configure failed."
+  Fail "CMake build failed."
 }
 
-LogInfo "==> build_windows.ps1 finished successfully." -ForegroundColor Green
+LogInfo "==> build_windows.ps1 finished successfully."
 LogInfo "Build directory: $BuildPath"
 exit 0

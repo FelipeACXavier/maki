@@ -44,7 +44,7 @@ $packages = @(
 LogDebug "==> Ensuring base tools are installed: $($packages -join ', ')"
 foreach ($pkg in $packages) {
     LogDebug "  - $pkg"
-    if ($pkg == "python") {
+    if ($pkg -eq "python") {
       choco install python --version=$PythonVersion -y --no-progress | Out-Null
     } else {
       choco install $pkg -y --no-progress | Out-Null
@@ -61,17 +61,17 @@ $env:PATH = "$PythonHome;$PythonHome\Scripts;$env:PATH"
 
 LogDebug "==> Running with $Python"
 LogDebug "==> Ensuring aqtinstall is installed..."
-try {
-  & $Python -m pip install --user aqtinstall
-} catch {
-  Fail "Failed to install aqtinstall."
-}
+# try {
+#   & $Python -m pip install --user aqtinstall
+# } catch {
+#   Fail "Failed to install aqtinstall."
+# }
 
 # ------------------------------------------------------
 # Ensure vcpkg
 # ------------------------------------------------------
 $vcpkg = Get-Command vcpkg -ErrorAction SilentlyContinue
-if (-not $choco) {
+if (-not $vcpkg) {
   LogWarning "VcPkg not found. Installing..."
   git clone https://github.com/microsoft/vcpkg $VcPkgPath
   & "$VcPkgPath\bootstrap-vcpkg.bat"

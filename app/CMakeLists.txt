@@ -14,7 +14,6 @@ include(${CMAKE_SOURCE_DIR}/cmake/copy_icons.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/copy_themes.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/copy_libraries.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/doxygen.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/copy_translations.cmake)
 
 # ------------------------------------------------------------------------------------------------------------
 # Main application
@@ -77,6 +76,9 @@ target_link_libraries(${APPLICATION_NAME} PRIVATE
     libcpphelpers
     libmaki
 )
+
+# qt_add_translations must run after the executable target exists (Qt 6 deferred IDE hooks).
+include(${CMAKE_SOURCE_DIR}/cmake/copy_translations.cmake)
 
 add_dependencies(${APPLICATION_NAME}
   copy_fonts

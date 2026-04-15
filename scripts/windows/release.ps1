@@ -10,6 +10,10 @@
   Run this after build_windows.ps1.
 #>
 
+param(
+  [switch]$Release
+)
+
 # ------------------------------------------------------
 # Load shared settings
 # ------------------------------------------------------
@@ -17,10 +21,15 @@ $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 $SettingsPath = Join-Path $RepoRoot "scripts\windows\settings.ps1"
 . $SettingsPath
 
+$BuildType = if ($Release) { "Release" } else { "Debug" }
+# Match build.ps1: CMake build tree is build/windows/<Config> (not build/windows alone)
+$CMakeBuildDir = Join-Path $BuildPath $BuildType
+
 Write-Host "==> Windows release script starting..." -ForegroundColor Cyan
 
 LogInfo "Using Qt version: $QtVersion"
 LogDebug "Repo root: $RepoRoot"
+LogDebug "CMake build dir: $CMakeBuildDir"
 
 # ------------------------------------------------------
 # Configuration
@@ -36,24 +45,23 @@ if (-not (Test-Path $QtBin)) {
 if (-not (Test-Path $WindeployqtPath)) {
     Fail "windeployqt not found at '$WindeployqtPath'."
 }
-if (-not (Test-Path $BuildPath)) {
-    Fail "Build directory '$BuildPath' not found. Run build.ps1 first."
+if (-not (Test-Path $CMakeBuildDir)) {
+    Fail "Build directory '$CMakeBuildDir' not found. Run scripts\windows\build.ps1 first."
 }
 
 $env:PATH = "$QtBin;$env:PATH"
 
 # ------------------------------------------------------
-# Locate the executable
+# Locate the executable (POST_BUILD copies to <build>/<Config>/bin/)
 # ------------------------------------------------------
-$ExePath = Join-Path $BuildPath $ExeName
-if (-not (Test-Path $ExePath)) {
-    # Try config-specific subdir
-    $ExePathConfig = Join-Path (Join-Path $BuildPath $BuildType) $ExeName
-    if (Test-Path $ExePathConfig) {
-        $ExePath = $ExePathConfig
-    } else {
-        Fail "Could not find executable '$ExeName' in '$BuildPath' or '$BuildPath\$BuildType'."
-    }
+$ExeCandidates = @(
+  (Join-Path $CMakeBuildDir "bin\$ExeName")
+  (Join-Path $CMakeBuildDir $ExeName)
+  (Join-Path $BuildPath $ExeName)
+)
+$ExePath = $ExeCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+if (-not $ExePath) {
+    Fail "Could not find '$ExeName'. Tried: $($ExeCandidates -join ', ')."
 }
 
 Write-Host "Executable: $ExePath" -ForegroundColor Green
@@ -67,12 +75,15 @@ if (-not (Test-Path $InstallPath)) {
 
 Write-Host "==> Running windeployqt into '$InstallPath'..." -ForegroundColor Cyan
 try {
-  cmake --build "$BuildPath" `
+  cmake --build "$CMakeBuildDir" `
         --config "$BuildType" `
         --parallel 4 `
         --target deploy-windows
 } catch {
   Fail "Build failed."
+}
+if ($LASTEXITCODE -ne 0) {
+  Fail "cmake --build deploy-windows failed (exit $LASTEXITCODE)."
 }
 
 # Ensure exe itself is in the dist dir

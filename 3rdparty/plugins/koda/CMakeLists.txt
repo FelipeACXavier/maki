@@ -8,10 +8,22 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Hint antlr4-runtime when building inside MAKI (BUILD_PLUGINS ON): vcpkg manifest lives in this dir.
+if (MSVC AND NOT antlr4-runtime_DIR)
+  set(_koda_antlr "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg_installed/x64-windows/share/antlr4-runtime")
+  if (EXISTS "${_koda_antlr}/antlr4-runtimeConfig.cmake" OR EXISTS "${_koda_antlr}/antlr4-runtime-config.cmake")
+    set(antlr4-runtime_DIR "${_koda_antlr}")
+  elseif (DEFINED ENV{VCPKG_ROOT})
+    set(_global_antlr "$ENV{VCPKG_ROOT}/installed/x64-windows/share/antlr4-runtime")
+    if (EXISTS "${_global_antlr}/antlr4-runtimeConfig.cmake" OR EXISTS "${_global_antlr}/antlr4-runtime-config.cmake")
+      set(antlr4-runtime_DIR "${_global_antlr}")
+    endif()
+  endif()
+endif()
+
 # If we are building with MAKI (with BUILD_PLUGINS), then just use MAKI's settings
 if (NOT BUILD_PLUGINS)
   if (MSVC)
-    set(antlr4-runtime_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg_installed/x64-windows/share/antlr4-runtime")
     add_compile_options(/W4 /MP)
 
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
