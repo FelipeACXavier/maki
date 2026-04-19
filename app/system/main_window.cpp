@@ -20,6 +20,7 @@
 
 #include "app_configs.h"
 #include "app_paths.h"
+#include "config.h"
 #include "behaviour_canvas.h"
 #include "canvas.h"
 #include "canvas_view.h"
@@ -508,21 +509,21 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
     QJsonObject node = value.toObject();
 
     // Parse config and make sure it is valid before continuing
-    auto config = std::make_shared<NodeConfig>(node);
-    if (!config->isValid())
-      return VoidResult::Failed(config->errorMessage.toStdString());
+    auto nodeConfig = std::make_shared<NodeConfig>(node);
+    if (!nodeConfig->isValid())
+      return VoidResult::Failed(nodeConfig->errorMessage.toStdString());
 
     // Initialize the library type
     if (type == ConfigKeys::STRUCTURAL)
-      config->libraryType = Types::LibraryTypes::STRUCTURAL;
+      nodeConfig->libraryType = Types::LibraryTypes::STRUCTURAL;
     else
-      config->libraryType = Types::LibraryTypes::BEHAVIOUR;
+      nodeConfig->libraryType = Types::LibraryTypes::BEHAVIOUR;
 
-    auto id = QStringLiteral("%1::%2").arg(name, config->type);
-    sidebarview->addNode(id, config);
+    auto id = QStringLiteral("%1::%2").arg(name, nodeConfig->type);
+    sidebarview->addNode(id, nodeConfig);
 
     LOG_TRACE("Adding key: %s to the config table", qPrintable(id));
-    LOG_ERROR_ON_FAILURE(mConfigTable->add(id, config));
+    LOG_ERROR_ON_FAILURE(mConfigTable->add(id, nodeConfig));
   }
 
   return VoidResult();

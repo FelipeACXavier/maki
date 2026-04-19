@@ -117,6 +117,8 @@ public:
   int borderRadius = 10;
 
   QString iconPath = "";
+  // nodeSvg replaces shape + icon if set
+  QString nodeSvg = "";
   qreal iconScale = 1;
 
   friend QDataStream& operator<<(QDataStream& out, const BodyConfig& config);

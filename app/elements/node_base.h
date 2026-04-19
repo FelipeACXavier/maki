@@ -3,8 +3,11 @@
 #include <QGraphicsItem>
 #include <QGraphicsSvgItem>
 #include <QString>
+#include <memory>
 
 #include "config.h"
+
+class QSvgRenderer;
 #include "ids.h"
 #include "result.h"
 
@@ -63,6 +66,9 @@ private:
   const QString mNodeId;
 
   QRectF mScaledBounds;
+
+  // mutable std::unique_ptr<QSvgRenderer> mShapeSvgRenderer;
+  mutable std::unique_ptr<QSvgRenderer> mNodeSvgRenderer;
 
   qreal computeScaleFactor() const;
 };

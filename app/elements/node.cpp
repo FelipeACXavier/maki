@@ -63,8 +63,8 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
     mStorage->addFlow(std::make_shared<FlowSaveInfo>(event));
   }
 
-  // Add icon if it exists
-  if (!mStorage->getIcon().isEmpty())
+  // node svg replaces icon if set 
+  if (config()->body.nodeSvg.isEmpty() && !mStorage->getIcon().isEmpty())
     setIcon(mStorage->getIcon(), config()->body.iconColor);
 
   qreal labelSize = qMax(Fonts::BaseSize, mSize.width() / Fonts::BaseFactor);

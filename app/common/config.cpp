@@ -237,6 +237,9 @@ BodyConfig::BodyConfig(const QJsonObject& object)
   if (object.contains("icon"))
     iconPath = object["icon"].toString();
 
+  if (object.contains("nodeSvg"))
+    nodeSvg = object["nodeSvg"].toString();
+
   if (object.contains("scale"))
     iconScale = object["scale"].toDouble();
 
@@ -391,6 +394,7 @@ QDataStream& operator<<(QDataStream& out, const BodyConfig& config)
   out << config.zIndex;
   out << config.borderRadius;
   out << config.iconPath;
+  out << config.nodeSvg;
   out << config.iconScale;
 
   return out;

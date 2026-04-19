@@ -1126,15 +1126,16 @@
         {
           "type": "Start",
           "body": {
-            "shape": "Ellipse",
+            "shape": "startShape",
             "textColor": "#FFFFFF",
             "backgroundColor": "#ffc300",
             "borderColor": "#FFFFFF",
-            "width": 50,
-            "height": 50,
+            "width": 100,
+            "height": 100,
             "iconColor": "#FFFFFF",
-            "iconScale": 0.8,
-            "icon": "koda_start.svg"
+            "iconScale": 1.0,
+            "icon": "",
+            "nodeSvg": "node_start.svg"
           },
           "properties": [
             {
@@ -1167,21 +1168,22 @@
           ],
           "behaviour": {},
           "help": {
-            "message": "Start of a behavioural flow. This can be a reaction to an event or a timed action"
+            "message": "Start of a behavioural flow. This can be a reaction to an event or a timed action."
           }
         },
         {
           "type": "Success",
           "body": {
-            "shape": "Ellipse",
+            "shape": "endShape",
             "textColor": "#FFFFFF",
             "backgroundColor": "#6a994e",
             "borderColor": "#FFFFFF",
-            "width": 50,
-            "height": 50,
+            "width": 100,
+            "height": 100,
             "iconColor": "#FFFFFF",
             "iconScale": 0.8,
-            "icon": "koda_success.svg"
+            "icon": "koda_success.svg",
+            "nodeSvg": "node_success.svg"
           },
           "properties": [
             {
@@ -1205,15 +1207,16 @@
         {
           "type": "Failure",
           "body": {
-            "shape": "Ellipse",
+            "shape": "endShape",
             "textColor": "#FFFFFF",
             "backgroundColor": "#bc4749",
             "borderColor": "#FFFFFF",
-            "width": 50,
-            "height": 50,
+            "width": 100,
+            "height": 100,
             "iconColor": "#FFFFFF",
             "iconScale": 0.8,
-            "icon": "koda_failure.svg"
+            "icon": "koda_failure.svg",
+            "nodeSvg": "node_failure.svg"
           },
           "properties": [
             {
@@ -1237,12 +1240,12 @@
         {
           "type": "Continue",
           "body": {
-            "shape": "Ellipse",
+            "shape": "endShape",
             "textColor": "#FFFFFF",
             "backgroundColor": "#FF6D7A",
             "borderColor": "#FFFFFF",
-            "width": 50,
-            "height": 50,
+            "width": 100,
+            "height": 100,
             "iconColor": "#FFFFFF",
             "iconScale": 0.8,
             "icon": "koda_continue.svg"
@@ -1351,10 +1354,11 @@
             "borderColor": "#FFFFFF",
             "borderRadius": 10,
             "width": 100,
-            "height": 50,
+            "height": 100,
             "iconColor": "#FFFFFF",
             "iconScale": 0.8,
-            "icon": "koda_strategy.svg"
+            "icon": "koda_strategy.svg",
+            "nodeSvg": "node_strategy.svg"	
           },
           "properties": [
             {
@@ -1387,11 +1391,12 @@
             "textColor": "#FFFFFF",
             "backgroundColor": "#74a892",
             "borderColor": "#FFFFFF",
-            "width": 50,
-            "height": 50,
+            "width": 100,
+            "height": 100,
             "iconColor": "#FFFFFF",
             "iconScale": 0.8,
-            "icon": "koda_join.svg"
+            "icon": "koda_join.svg",
+            "nodeSvg": "node_join.svg"
           },
           "properties": [
             {
@@ -1416,10 +1421,11 @@
             "borderColor": "#FFFFFF",
             "borderRadius": 10,
             "width": 100,
-            "height": 50,
+            "height": 100,
             "iconColor": "#FFFFFF",
             "iconScale": 0.8,
-            "icon": "koda_within.svg"
+            "icon": "koda_within.svg",
+            "nodeSvg": "node_within.svg"
           },
           "properties": [
             {
@@ -1464,11 +1470,12 @@
             "backgroundColor": "#202020",
             "borderColor": "#FFFFFF",
             "borderRadius": 10,
-            "width": 200,
+            "width": 100,
             "height": 100,
             "iconColor": "#FFFFFF",
             "iconScale": 0.8,
-            "icon": "koda_repeat.svg"
+            "icon": "koda_repeat.svg",
+            "nodeSvg": "node_repeat.svg"
           },
           "properties": [
             {
@@ -1501,10 +1508,11 @@
             "borderColor": "#FFFFFF",
             "borderRadius": 10,
             "width": 100,
-            "height": 50,
+            "height": 100,
             "iconColor": "#FFFFFF",
             "iconScale": 0.8,
-            "icon": "koda_every.svg"
+            "icon": "koda_every.svg",
+            "nodeSvg": "node_every.svg"
           },
           "properties": [
             {
