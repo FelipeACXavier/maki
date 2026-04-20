@@ -347,18 +347,18 @@
               "returnType": "void",
               "modifiable": false,
               "arguments": [
-                  {
-                    "id": "x",
-                    "type": "float"
-                  },
-                  {
-                    "id": "y",
-                    "type": "float"
-                  },
-                  {
-                    "id": "yaw",
-                    "type": "float"
-                  }
+                {
+                  "id": "x",
+                  "type": "float"
+                },
+                {
+                  "id": "y",
+                  "type": "float"
+                },
+                {
+                  "id": "yaw",
+                  "type": "float"
+                }
               ]
             },
             {
@@ -373,18 +373,18 @@
               "returnType": "void",
               "modifiable": false,
               "arguments": [
-                  {
-                    "id": "x",
-                    "type": "float"
-                  },
-                  {
-                    "id": "y",
-                    "type": "float"
-                  },
-                  {
-                    "id": "yaw",
-                    "type": "float"
-                  }
+                {
+                  "id": "x",
+                  "type": "float"
+                },
+                {
+                  "id": "y",
+                  "type": "float"
+                },
+                {
+                  "id": "yaw",
+                  "type": "float"
+                }
               ]
             },
             {
@@ -465,10 +465,10 @@
               "modifiable": false,
               "linksTo": 0,
               "arguments": [
-                  {
-                    "id": "zone",
-                    "type": "string"
-                  }
+                {
+                  "id": "zone",
+                  "type": "string"
+                }
               ]
             }
           ]
@@ -1169,7 +1169,10 @@
           "behaviour": {},
           "help": {
             "message": "Start of a behavioural flow. This can be a reaction to an event or a timed action."
-          }
+          },
+          "ports": [
+            "out"
+          ]
         },
         {
           "type": "Success",
@@ -1202,7 +1205,10 @@
           "behaviour": {},
           "help": {
             "message": "End of a happy behavioural flow. This must always be present in a flow"
-          }
+          },
+          "ports": [
+            "in"
+          ]
         },
         {
           "type": "Failure",
@@ -1235,7 +1241,10 @@
           "behaviour": {},
           "help": {
             "message": "End of an errored behavioural flow. This indicates the flow of a bad behaviour."
-          }
+          },
+          "ports": [
+            "in"
+          ]
         },
         {
           "type": "Continue",
@@ -1248,7 +1257,8 @@
             "height": 100,
             "iconColor": "#FFFFFF",
             "iconScale": 0.8,
-            "icon": "koda_continue.svg"
+            "icon": "koda_continue.svg",
+            "nodeSvg": "node_continue.svg"
           },
           "properties": [
             {
@@ -1267,7 +1277,10 @@
           "behaviour": {},
           "help": {
             "message": "Used with signal handlers to indicate that the main behaviour should continue executing after the signal was handled."
-          }
+          },
+          "ports": [
+            "in"
+          ]
         },
         {
           "type": "Async task",
@@ -1305,7 +1318,11 @@
               ]
             }
           ],
-          "controls": []
+          "controls": [],
+          "ports": [
+            "in",
+            "out"
+          ]
         },
         {
           "type": "Sync task",
@@ -1343,7 +1360,11 @@
               ]
             }
           ],
-          "controls": []
+          "controls": [],
+          "ports": [
+            "in",
+            "out"
+          ]
         },
         {
           "type": "Strategy",
@@ -1358,7 +1379,7 @@
             "iconColor": "#FFFFFF",
             "iconScale": 0.8,
             "icon": "koda_strategy.svg",
-            "nodeSvg": "node_strategy.svg"	
+            "nodeSvg": "node_strategy.svg"
           },
           "properties": [
             {
@@ -1382,7 +1403,11 @@
               ]
             }
           ],
-          "controls": []
+          "controls": [],
+          "ports": [
+            "in",
+            "out"
+          ]
         },
         {
           "type": "Join",
@@ -1410,7 +1435,11 @@
               "default": "#74a892"
             }
           ],
-          "controls": []
+          "controls": [],
+          "ports": [
+            "in",
+            "out"
+          ]
         },
         {
           "type": "Within",
@@ -1460,7 +1489,11 @@
           "behaviour": {},
           "help": {
             "message": "Performs the \"do\" strategy and if it does not conclude within the set time, it will trigger the \"else\" strategy."
-          }
+          },
+          "ports": [
+            "in",
+            "out"
+          ]
         },
         {
           "type": "Repeat",
@@ -1497,7 +1530,11 @@
           "behaviour": {},
           "help": {
             "message": "Repeats the contained strategy forever"
-          }
+          },
+          "ports": [
+            "in",
+            "out"
+          ]
         },
         {
           "type": "Every",
@@ -1533,7 +1570,11 @@
           "behaviour": {},
           "help": {
             "message": "Performs the \"do\" strategy and if it does not conclude within the set time, it will trigger the \"else\" strategy."
-          }
+          },
+          "ports": [
+            "in",
+            "out"
+          ]
         }
       ]
     }

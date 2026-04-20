@@ -13,6 +13,7 @@
 #include "transition.h"
 #include "types.h"
 
+class PortItem;
 class Flow;
 class QGraphicsSceneMouseEvent;
 
@@ -57,7 +58,8 @@ public:
   QVector<TransitionItem*> transitions() const;
   void addTransition(TransitionItem* transition);
   void removeTransition(TransitionItem* transition);
-  QPointF edgePointToward(const QPointF& targetScenePos) const;
+  /** @param fromOutgoingPort true = out-port anchor (source side), false = in-port anchor (target side). */
+  QPointF edgePointToward(const QPointF& targetScenePos, bool fromOutgoingPort) const;
 
   QVector<std::shared_ptr<IProperty>> fields() const;
   PropertyInfo getField(const QString& key) const;
@@ -114,6 +116,9 @@ private:
   QVector<NodeItem*> mChildrenNodes;
   QVector<TransitionItem*> mTransitions;
 
+  PortItem* mInPort = nullptr;
+  PortItem* mOutPort = nullptr;
+
   qreal mBaseScale;
   QSizeF mSize{0, 0};
   QPointF mDragStartPos{0, 0};
@@ -124,6 +129,7 @@ private:
   QSizeF mResizeStartSize{0, 0};
 
   void updateExtrasPosition();
+  void updatePortPositions();
 
   QSizeF clampSize(qreal width, qreal height) const;
   QPointF clampPosInside(const QRectF& inner, const QRectF& childSceneRect) const;

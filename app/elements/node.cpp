@@ -13,6 +13,7 @@
 
 #include "app_configs.h"
 #include "flow.h"
+#include "port.h"
 #include "logging.h"
 #include "style_helpers.h"
 #include "system/canvas.h"
@@ -69,6 +70,15 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
 
   qreal labelSize = qMax(Fonts::BaseSize, mSize.width() / Fonts::BaseFactor);
   setLabel(getProperty("name").toString(), labelSize);
+
+  if (config()->libraryType == Types::LibraryTypes::BEHAVIOUR)
+  {
+    if (config()->hasInPort)
+      mInPort = new PortItem(PortItem::In, this);
+    if (config()->hasOutPort)
+      mOutPort = new PortItem(PortItem::Out, this);
+    updatePortPositions();
+  }
 
   updatePosition(snapToGrid(initialPosition - boundingRect().center(), Config::GRID_SIZE));
   mLastPosition = pos();
@@ -303,6 +313,7 @@ void NodeItem::applySize(const QSizeF& size)
   qreal newFontSize = qMax(Fonts::BaseSize, mSize.width() / Fonts::BaseFactor);
 
   setLabelSize(newFontSize, mSize);
+  updatePortPositions();
   update();
 }
 
@@ -498,10 +509,21 @@ void NodeItem::updatePosition(const QPointF& newPosition)
 
 void NodeItem::updateExtrasPosition()
 {
+  updatePortPositions();
   for (auto& transition : transitions())
     transition->updatePath();
 
   updateLabelPosition();
+}
+
+void NodeItem::updatePortPositions()
+{
+  const qreal w = boundingRect().width();
+  const qreal h = boundingRect().height();
+  if (mInPort)
+    mInPort->setPos(-PortItem::kSize - PortItem::kGap, (h - PortItem::kSize) / 2.0);
+  if (mOutPort)
+    mOutPort->setPos(w + PortItem::kGap, (h - PortItem::kSize) / 2.0);
 }
 
 // Slots
@@ -579,8 +601,13 @@ void NodeItem::removeTransition(TransitionItem* transition)
   });
 }
 
-QPointF NodeItem::edgePointToward(const QPointF& targetScenePos) const
+QPointF NodeItem::edgePointToward(const QPointF& targetScenePos, bool fromOutgoingPort) const
 {
+  if (fromOutgoingPort && mOutPort)
+    return mOutPort->anchorScenePos();
+  if (!fromOutgoingPort && mInPort)
+    return mInPort->anchorScenePos();
+
   QPointF center = sceneBoundingRect().center();
   QPointF dir = targetScenePos - center;
 

@@ -18,6 +18,7 @@
 #include "config_table.h"
 #include "elements/flow.h"
 #include "elements/node.h"
+#include "elements/port.h"
 #include "elements/transition.h"
 #include "logging.h"
 #include "result.h"
@@ -141,6 +142,34 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
     mMouseDown = true;
 
     QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
+    if (item && item->type() == Types::PORT)
+    {
+      auto* port = static_cast<PortItem*>(item);
+      if (port->kind() == PortItem::Out)
+      {
+        NodeItem* node = port->nodeItem();
+        if (node && node->canAddTransition())
+        {
+          mNode = node;
+          mTransition = new TransitionItem(std::make_shared<TransitionSaveInfo>());
+          mTransition->setZValue(node->zValue() - 1);
+          LOG_INFO("Node: %s ZValue: %f %f", qPrintable(node->nodeId()), node->zValue(), mTransition->zValue());
+
+          auto config = node->nextTransition();
+          mTransition->setEvent(config.event);
+
+          mTransition->setStart(node->id(), port->anchorScenePos(), {0, 0});
+          mTransition->setEnd(Constants::TMP_CONNECTION_ID, event->scenePos(), {0, 0});
+
+          addItem(mTransition);
+          parentView()->setDragMode(QGraphicsView::NoDrag);
+          event->accept();
+          return;
+        }
+      }
+      QGraphicsScene::mousePressEvent(event);
+      return;
+    }
     if (item && item->type() == NodeItem::Type)
     {
       if (!nodeClickHandler(event, item))
@@ -183,29 +212,7 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
 bool Canvas::nodeClickHandler(QGraphicsSceneMouseEvent* event, QGraphicsItem* item)
 {
   NodeItem* node = static_cast<NodeItem*>(item);
-  if (isModifierSet(event, Qt::AltModifier))
-  {
-    mNode = node;
-    auto info = std::make_shared<TransitionSaveInfo>();
-    mTransition = new TransitionItem(std::make_shared<TransitionSaveInfo>());
-    mTransition->setZValue(node->zValue() - 1);
-    LOG_INFO("Node: %s ZValue: %f %f", qPrintable(node->nodeId()), node->zValue(), mTransition->zValue());
-
-    if (node->canAddTransition())
-    {
-      auto config = node->nextTransition();
-      mTransition->setEvent(config.event);
-    }
-
-    mTransition->setStart(node->id(), node->mapToScene(node->boundingRect().center()), {0, 0});
-    mTransition->setEnd(Constants::TMP_CONNECTION_ID, event->scenePos(), {0, 0});
-
-    addItem(mTransition);
-    parentView()->setDragMode(QGraphicsView::NoDrag);
-    event->accept();
-    return false;
-  }
-  else if (isModifierSet(event, Qt::ControlModifier))
+  if (isModifierSet(event, Qt::ControlModifier))
   {
     nodeClicked(node);
     selectNode(node, !node->isSelected());
@@ -261,25 +268,24 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
   {
     if (event->button() == Qt::LeftButton)
     {
-      if (item)
+      bool completed = false;
+      if (item && item->type() == Types::PORT)
       {
-        NodeItem* node = nullptr;
-
-        if (item->type() == NodeItem::Type)
-          node = static_cast<NodeItem*>(item);
-        else if (item->type() == QGraphicsTextItem::Type || item->type() == QGraphicsSvgItem::Type)
-          node = static_cast<NodeItem*>(item->parentItem());
-
-        if (node)
+        auto* port = static_cast<PortItem*>(item);
+        if (port->kind() == PortItem::In)
         {
-          mTransition->setEnd(node->id(), node->mapToScene(node->boundingRect().center()), {0, 0});
-          mTransition->done(mNode, node);
-        }
-        else
-        {
-          removeItem(mTransition);
+          NodeItem* dest = port->nodeItem();
+          if (dest && mNode && dest != mNode)
+          {
+            mTransition->setEnd(dest->id(), port->anchorScenePos(), {0, 0});
+            mTransition->done(mNode, dest);
+            completed = true;
+          }
         }
       }
+
+      if (!completed)
+        removeItem(mTransition);
 
       mTransition = nullptr;
       mNode = nullptr;
@@ -294,6 +300,8 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
         node = static_cast<NodeItem*>(item);
       else if ((item->type() == QGraphicsTextItem::Type || item->type() == QGraphicsSvgItem::Type) && item->parentItem()->type() == NodeItem::Type)
         node = static_cast<NodeItem*>(item->parentItem());
+      else if (item->type() == Types::PORT)
+        node = static_cast<PortItem*>(item)->nodeItem();
 
       if (node)
       {

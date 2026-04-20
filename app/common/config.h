@@ -143,6 +143,9 @@ public:
   QVector<FlowConfig> events;
   QVector<TransitionConfig> transitions;
 
+  bool hasInPort = false;
+  bool hasOutPort = false;
+
   Types::LibraryTypes libraryType = Types::LibraryTypes::UNKNOWN;
 
   friend QDataStream& operator<<(QDataStream& out, const NodeConfig& config);
