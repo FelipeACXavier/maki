@@ -47,7 +47,7 @@ ComponentNode* ComponentNode::findOrAddChild(const QString& childName, const QSt
   return n.get();
 }
 
-static ComponentNode* ensurePath(ComponentNode* root, const QString& fullInstance, const QString& role)
+static ComponentNode* ensurePath(ComponentTreeModel* model, ComponentNode* root, const QString& fullInstance, const QString& role)
 {
   ComponentNode* cur = root;
   const auto parts = splitPath(fullInstance);
@@ -57,70 +57,143 @@ static ComponentNode* ensurePath(ComponentNode* root, const QString& fullInstanc
   return cur;
 }
 
-QRectF ComponentNode::computeLayout(ComponentTreeModel* model, const maki::ThemeFonts& fonts, int indent)
+QRectF ComponentNode::computeLayout(ComponentTreeModel* model,
+                                    const maki::ThemeFonts& fonts,
+                                    int indent)
 {
-  // If there are children, compute the size of the children
   auto lifeline = model->lifelineOfNode(fullPath);
+
   QFontMetricsF fmLabel(fonts.label);
-  const auto labelWidth = fmLabel.horizontalAdvance(name);
-  const auto labelHeight = fmLabel.height();
+  QFontMetricsF fmHint(fonts.hint);
 
-  QRectF bounds;
-  auto unite = [&](const QRectF& r) {
-    if (r.isNull() || r.isEmpty())
-      return;
+  const qreal labelWidth = fmLabel.horizontalAdvance(name);
+  const qreal labelHeight = fmLabel.height();
 
-    bounds = bounds.isNull() ? r : bounds.united(r);
-  };
+  const qreal lineH = fmHint.height();
+  const bool collapsed = !children.empty() && model->isCollapsed(fullPath);
 
-  for (auto& child : children)
-    unite(child->computeLayout(model, fonts, indent + 2));
+  // Case 1: collapsed group becomes one visible column
+  if (collapsed)
+  {
+    qreal width = qMax<qreal>(labelWidth + 4 * padding, 90);
+    qreal height = 2 * padding + labelHeight;
 
-  if (bounds.isNull())
+    const qreal cx = model->takeNextColumnX(width);
+
+    rect = QRectF(cx, padding, width, height);
+    labelRect = QRectF(cx, 2 * padding, width, labelHeight);
+
+    auto leafLifeline = model->ensureVisualLifeline(fullPath);
+    leafLifeline->instance = fullPath;
+    leafLifeline->shortName = RawLifeline::Label::lastSegment(fullPath);
+
+    const auto child = children.at(0);
+    auto childLifeline = model->lifelineOfNode(child->fullPath);
+    if (childLifeline)
+    {
+      leafLifeline->directLabels += childLifeline->directLabels;
+
+      for (int i = 0; i < leafLifeline->directLabels.size(); ++i)
+        leafLifeline->directLabels[i].rect = QRectF(cx, i * lineH, width, lineH);
+    }
+
+    return rect;
+  }
+
+  // Case 2: actual leaf lifeline
+  if (children.empty())
   {
     assert(lifeline != nullptr);
+    qreal width = fmLabel.horizontalAdvance(lifeline->shortName);
+    qreal height = 2 * padding + labelHeight;
+
+    for (const auto& state : lifeline->stateText)
+    {
+      const QString st = QStringLiteral("%1:%2").arg(state.name, state.state);
+      width = qMax<qreal>(width, fmHint.horizontalAdvance(st) + padding);
+      height += lineH;
+    }
+
+    for (const auto& event : lifeline->directLabels)
+      width = qMax<qreal>(width, fmHint.horizontalAdvance(event.text) + padding);
+
+    const qreal cx = model->takeNextColumnX(width);
+
+    for (int i = 0; i < lifeline->stateText.size(); ++i)
+    {
+      lifeline->stateText[i].rect =
+          QRectF(cx, 2 * padding + labelHeight + i * lineH, width, lineH);
+    }
+
+    for (int i = 0; i < lifeline->directLabels.size(); ++i)
+      lifeline->directLabels[i].rect = QRectF(cx, i * lineH, width, lineH);
+
+    lifeline->rect = QRectF(cx, padding, width, height);
+    lifeline->labelRect = QRectF(cx, 2 * padding, width, labelHeight);
+
     rect = lifeline->rect;
     labelRect = lifeline->labelRect;
+
+    return rect;
   }
-  else
+
+  // Case 3: expanded group wraps visible children
+  QRectF bounds;
+
+  for (auto& child : children)
   {
-    const qreal headerPadY = padding + labelHeight;  // room for title/toggle
-    const qreal headerPadX = padding;
+    QRectF childRect = child->computeLayout(model, fonts, indent + 2);
 
-    QRectF groupRect = bounds.adjusted(-headerPadX, -(headerPadY + padding), headerPadX, padding);
-    groupRect.setWidth(qMax(groupRect.width(), labelWidth + 3 * padding));
-
-    labelRect = QRectF(groupRect.left() + padding, groupRect.top() + padding, groupRect.width(), labelHeight);
-    rect = groupRect;
+    if (!childRect.isNull() && !childRect.isEmpty())
+      bounds = bounds.isNull() ? childRect : bounds.united(childRect);
   }
+
+  const qreal headerPadY = padding + labelHeight;
+  const qreal headerPadX = padding;
+
+  QRectF groupRect = bounds.adjusted(
+      -headerPadX,
+      -(headerPadY + padding),
+      headerPadX,
+      padding);
+
+  groupRect.setWidth(qMax(groupRect.width(), labelWidth + 3 * padding));
+
+  labelRect = QRectF(
+      groupRect.left() + padding,
+      groupRect.top() + padding,
+      groupRect.width(),
+      labelHeight);
+
+  rect = groupRect;
 
   return rect;
 }
 
-ComponentTreeModel buildComponentTree(const QVector<RawLifeline>& raw, const maki::ThemeFonts& fonts)
+ComponentTreeModel buildComponentTree(const QVector<RawLifeline>& raw, const maki::ThemeFonts& fonts, const QSet<QString>& collapsed)
 {
   ComponentTreeModel model;
   model.root = std::make_shared<ComponentNode>();
   model.root->fullPath = "";
   model.root->name = ROOT_NODE;
+  model.collapsedComponents = collapsed;
 
   for (const auto& ll : raw)
-    ensurePath(model.root.get(), ll.instance, ll.role);
+    ensurePath(&model, model.root.get(), ll.instance, ll.role);
 
   for (const auto& ll : raw)
   {
     if (!isLeafRole(ll.role))
       continue;
 
-    auto leaf = std::make_shared<LeafLifeline>();
-    leaf->instance = ll.instance;
-    leaf->shortName = RawLifeline::Label::lastSegment(ll.instance);
-    leaf->stateText = ll.stateText;
-    leaf->directLabels = ll.labels;
+    auto leafLifeline = std::make_shared<LeafLifeline>();
+    leafLifeline->instance = ll.instance;
+    leafLifeline->shortName = RawLifeline::Label::lastSegment(ll.instance);
+    leafLifeline->stateText = ll.stateText;
+    leafLifeline->directLabels = ll.labels;
 
-    model.leafByInstance.insert(leaf->instance, leaf);
-
-    model.leaves.push_back(leaf);
+    model.leafByInstance.insert(leafLifeline->instance, leafLifeline);
+    model.leaves.push_back(leafLifeline);
   }
 
   // Uncomment to debug
@@ -130,17 +203,33 @@ ComponentTreeModel buildComponentTree(const QVector<RawLifeline>& raw, const mak
   return model;
 }
 
+std::shared_ptr<LeafLifeline> ComponentTreeModel::ensureVisualLifeline(const QString& instance)
+{
+  auto lifeline = lifelineOfNode(instance);
+  if (lifeline)
+    return lifeline;
+
+  auto layout = std::make_shared<LeafLifeline>();
+
+  syntheticLeaves.push_back(layout);
+  leafByInstance.insert(instance, layout);
+
+  return layout;
+}
+
 void ComponentTreeModel::computeLayout(const maki::ThemeFonts& fonts)
 {
   QFontMetricsF fmHint(fonts.hint);
   QFontMetricsF fmLabel(fonts.label);
-  qreal lastWidth = 0;
+  // qreal lastWidth = 0;
+
+  mLastWidth = 0;
 
   for (auto& leaf : leaves)
   {
     const qreal lineH = fmHint.height();
     const qreal labelHeight = fmLabel.height();
-    const qreal cx = componentMargin + lastWidth;
+    const qreal cx = componentMargin + mLastWidth;
 
     qreal width = fmLabel.horizontalAdvance(leaf->shortName);
     qreal height = (2 * padding) + labelHeight;
@@ -169,7 +258,8 @@ void ComponentTreeModel::computeLayout(const maki::ThemeFonts& fonts)
 
     leaf->rect = QRectF(cx, padding, width, height);
     leaf->labelRect = QRectF(cx, 2 * padding, width, labelHeight);
-    lastWidth += width + componentMargin;
+    // lastWidth += width + componentMargin;
+    mLastWidth += width + componentMargin;
   }
 
   // Compute groups
@@ -203,6 +293,38 @@ std::shared_ptr<LeafLifeline> ComponentTreeModel::resolveToLeaf(const QString& e
   }
 
   return nullptr;
+}
+
+bool ComponentTreeModel::isCollapsed(const QString& path) const
+{
+  return collapsedComponents.contains(path);
+}
+
+qreal ComponentTreeModel::takeNextColumnX(qreal width)
+{
+  const qreal x = componentMargin + mLastWidth;
+  mLastWidth += width + componentMargin;
+  return x;
+}
+
+QString ComponentTreeModel::resolveToVisibleInstance(const QString& endpoint) const
+{
+  QString cur = endpoint;
+
+  while (!cur.isEmpty())
+  {
+    if (isCollapsed(cur))
+      return cur;
+
+    const int dot = cur.lastIndexOf('.');
+    if (dot < 0)
+      break;
+
+    cur = cur.left(dot);
+  }
+
+  auto leaf = resolveToLeaf(endpoint);
+  return leaf ? leaf->instance : endpoint;
 }
 
 void ComponentTreeModel::print() const

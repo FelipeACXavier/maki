@@ -77,12 +77,17 @@ private:
   maki::ThemeFonts mFonts;
   TraceLabelItem::Style* mButtonStyle;
 
+  QSet<QString> mCollapsedComponents;
+  QJsonObject mLastTraceUpdateMsg;
+  QGraphicsScene* mLastScene = nullptr;
+  LabelClickHandler mLastClickHandler;
+
   // Parsing
   bool parseTraceUpdate(const QJsonObject& msg, QVector<RawLifeline>& out, QString* errorOut) const;
   QVector<RawLifeline::State> extractStateForInstance(const QJsonObject& traceData, const QString& instance) const;
 
   // Rendering
-  qreal renderHeader(QGraphicsScene* scene, const ComponentTreeModel& model, ComponentNode* node, QHash<QString, qreal>& outXByLeafInstance) const;
+  qreal renderHeader(QGraphicsScene* scene, const ComponentTreeModel& model, ComponentNode* node, QHash<QString, qreal>& outXByLeafInstance);
 
   void renderBottomLabels(QGraphicsScene* scene, const ComponentTreeModel& model, const QHash<QString, qreal>& xByLeafInstance,
                           qreal lineTopY, qreal diagramBottomY, LabelClickHandler clickHandler) const;

@@ -1227,14 +1227,16 @@ VoidResult KodaGenerator::createSimulationScene(QGraphicsScene* scene, const QJs
   auto theme = mServices->pluginTab()->currentTheme();
   auto fonts = mServices->pluginTab()->labelFont();
 
-  TraceSceneBuilder builder(theme, fonts, TraceSceneBuilder::Style{});
+  if (!mTraceBuilder)
+    mTraceBuilder = std::make_unique<TraceSceneBuilder>(theme, fonts, TraceSceneBuilder::Style{});
+
   auto clickHandler = [this](const QString& instance, const QString& labelText, bool illegal) {
     LOG_DEBUG("Sending data: %s %s", qPrintable(instance), qPrintable(labelText));
     mSimulator->triggerEvent(labelText);
   };
 
   QString err;
-  if (!builder.buildScene(obj, scene, clickHandler, &err))
+  if (!mTraceBuilder->buildScene(obj, scene, clickHandler, &err))
     return VoidResult::Failed("Failed to build scene: " + err.toStdString());
 
   return VoidResult();

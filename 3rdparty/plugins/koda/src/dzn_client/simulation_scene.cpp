@@ -7,7 +7,9 @@
 #include <QJsonValue>
 #include <QPainterPath>
 #include <QPen>
+#include <QToolButton>
 
+#include "logging.h"
 #include "simulation_label_item.h"
 
 static void addArrow(QGraphicsScene* scene, QPointF from, QPointF to, const QPen& pen, qreal headSize, bool dashed)
@@ -36,6 +38,7 @@ TraceSceneBuilder::TraceSceneBuilder(maki::ThemeVars theme, const maki::ThemeFon
     : mStyle(style)
     , mTheme(theme)
     , mFonts(fonts)
+    , mCollapsedComponents({})
 {
   mButtonStyle = new TraceLabelItem::Style{
       QColor(theme.selection_bg),
@@ -50,12 +53,17 @@ bool TraceSceneBuilder::buildScene(const QJsonObject& traceUpdateMsg, QGraphicsS
 {
   scene->clear();
 
+  mLastTraceUpdateMsg = traceUpdateMsg;
+  mLastScene = scene;
+  mLastClickHandler = clickHandler;
+
   QVector<RawLifeline> raw;
   if (!parseTraceUpdate(traceUpdateMsg, raw, errorOut))
     return false;
 
   // NEW: Build ownership model
-  ComponentTreeModel model = buildComponentTree(raw, mFonts);
+  ComponentTreeModel model = buildComponentTree(raw, mFonts, mCollapsedComponents);
+  mCollapsedComponents = model.collapsedComponents;
 
   // Layout maps for leaf lifelines only
   QHash<QString, qreal> xByLeafInstance;
@@ -145,7 +153,7 @@ QVector<RawLifeline::State> TraceSceneBuilder::extractStateForInstance(const QJs
   return states;
 }
 
-qreal TraceSceneBuilder::renderHeader(QGraphicsScene* scene, const ComponentTreeModel& model, ComponentNode* node, QHash<QString, qreal>& outXByLeafInstance) const
+qreal TraceSceneBuilder::renderHeader(QGraphicsScene* scene, const ComponentTreeModel& model, ComponentNode* node, QHash<QString, qreal>& outXByLeafInstance)
 {
   auto leaf = model.resolveToLeaf(node->fullPath);
   outXByLeafInstance.insert(node->fullPath, node->rect.center().x());
@@ -156,11 +164,33 @@ qreal TraceSceneBuilder::renderHeader(QGraphicsScene* scene, const ComponentTree
   qreal outDiagramTopY = 0;
 
   // Render this
+  const bool collapsed = model.isCollapsed(node->fullPath);
+
   if (node->name != ROOT_NODE)
   {
     QPen headerPen(mStyle.headerBorder);
     headerPen.setWidthF(1.2);
     addRoundedRect(scene, node->rect, mStyle.headerRadius, headerPen, QBrush(fill));
+
+    if (!node->children.empty())
+    {
+      const QRectF buttonRect(node->rect.right() - 14 - 4, node->rect.top() + 4, 14, 14);
+
+      auto* button = new TraceCollapseItem(buttonRect, collapsed ? "+" : "-");
+      scene->addItem(button);
+
+      auto path = node->fullPath;
+      button->clicked = [this, path]() {
+        if (mCollapsedComponents.contains(path))
+          mCollapsedComponents.remove(path);
+        else
+          mCollapsedComponents.insert(path);
+
+        if (mLastScene)
+          buildScene(mLastTraceUpdateMsg, mLastScene, mLastClickHandler);
+      };
+    }
+
     addCenteredText(scene, node->labelRect, node->name, mFonts.label);
 
     for (int j = 0; leaf && j < leaf->stateText.size(); ++j)
@@ -173,9 +203,10 @@ qreal TraceSceneBuilder::renderHeader(QGraphicsScene* scene, const ComponentTree
     outDiagramTopY = node->rect.bottom();
   }
 
-  // Render the children
-  for (const auto& child : node->children)
-    outDiagramTopY = qMax<qreal>(outDiagramTopY, renderHeader(scene, model, child.get(), outXByLeafInstance));
+  // Render the children if the parent is not collapsed
+  if (!collapsed)
+    for (const auto& child : node->children)
+      outDiagramTopY = qMax<qreal>(outDiagramTopY, renderHeader(scene, model, child.get(), outXByLeafInstance));
 
   return outDiagramTopY;
 }
@@ -183,7 +214,8 @@ qreal TraceSceneBuilder::renderHeader(QGraphicsScene* scene, const ComponentTree
 void TraceSceneBuilder::renderBottomLabels(QGraphicsScene* scene, const ComponentTreeModel& model, const QHash<QString, qreal>& xByLeafInstance,
                                            qreal lineTopY, qreal diagramBottomY, LabelClickHandler clickHandler) const
 {
-  for (const auto& leaf : model.leaves)
+  auto leaves = model.leaves + model.syntheticLeaves;
+  for (const auto& leaf : leaves)
   {
     if (!xByLeafInstance.contains(leaf->instance))
       continue;
@@ -236,6 +268,7 @@ qreal TraceSceneBuilder::renderEvents(QGraphicsScene* scene, const ComponentTree
   struct Endpoint
   {
     QString instance;
+    // We ignore this for now due to collapse function
     int time = 0;
   };
   QHash<int, Endpoint> byKey;
@@ -260,6 +293,7 @@ qreal TraceSceneBuilder::renderEvents(QGraphicsScene* scene, const ComponentTree
   QPen pen(QColor(mTheme.foreground));
   pen.setWidthF(1.3);
 
+  int time = 0;
   QHash<int, int> countAtTime;  // spacing when multiple events share the same time
 
   qreal maxY = diagramTopY;
@@ -283,13 +317,16 @@ qreal TraceSceneBuilder::renderEvents(QGraphicsScene* scene, const ComponentTree
     if (!fromLeaf || !toLeaf)
       continue;
 
-    if (!xByLeafInstance.contains(fromLeaf->instance) || !xByLeafInstance.contains(toLeaf->instance))
+    const QString fromVisible = model.resolveToVisibleInstance(fromLeaf->instance);
+    const QString toVisible = model.resolveToVisibleInstance(toLeaf->instance);
+
+    if (!xByLeafInstance.contains(fromVisible) || !xByLeafInstance.contains(toVisible) || fromVisible == toVisible)
       continue;
 
-    const qreal x1 = xByLeafInstance.value(fromLeaf->instance);
-    const qreal x2 = xByLeafInstance.value(toLeaf->instance);
+    const qreal x1 = xByLeafInstance.value(fromVisible);
+    const qreal x2 = xByLeafInstance.value(toVisible);
 
-    const int t = fromEp.time + 1;
+    const int t = ++time;
     const int k = countAtTime.value(t, 0);
     countAtTime.insert(t, k + 1);
 

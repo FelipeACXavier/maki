@@ -60,3 +60,29 @@ private:
   bool mHovered = false;
   bool mPressed = false;
 };
+
+class TraceCollapseItem : public QGraphicsObject
+{
+public:
+  explicit TraceCollapseItem(const QRectF& rect, QString text, QGraphicsItem* parent = nullptr);
+
+  QRectF boundingRect() const override
+  {
+    return mRect;
+  }
+  void paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*) override;
+
+  std::function<void()> clicked;
+
+protected:
+  void hoverEnterEvent(QGraphicsSceneHoverEvent*) override;
+  void hoverLeaveEvent(QGraphicsSceneHoverEvent*) override;
+  void mousePressEvent(QGraphicsSceneMouseEvent* e) override;
+  void mouseReleaseEvent(QGraphicsSceneMouseEvent* e) override;
+
+private:
+  QRectF mRect;
+  QString mText;
+  bool mHovered = false;
+  bool mPressed = false;
+};

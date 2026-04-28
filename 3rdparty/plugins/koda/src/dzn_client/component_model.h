@@ -2,6 +2,7 @@
 
 #include <QHash>
 #include <QRectF>
+#include <QSet>
 #include <QString>
 #include <QVector>
 #include <memory>
@@ -68,8 +69,17 @@ struct ComponentTreeModel
 {
   std::shared_ptr<ComponentNode> root;
 
-  QVector<std::shared_ptr<LeafLifeline>> leaves;                 // owns
+  QVector<std::shared_ptr<LeafLifeline>> leaves;  // owns
+  QVector<std::shared_ptr<LeafLifeline>> syntheticLeaves;
   QHash<QString, std::shared_ptr<LeafLifeline>> leafByInstance;  // "sut.ticket" -> leaf
+
+  QSet<QString> collapsedComponents;
+  qreal mLastWidth = 0;
+
+  bool isCollapsed(const QString& path) const;
+  qreal takeNextColumnX(qreal width);
+  QString resolveToVisibleInstance(const QString& endpoint) const;
+  std::shared_ptr<LeafLifeline> ensureVisualLifeline(const QString& instance);
 
   std::shared_ptr<LeafLifeline> lifelineOfNode(const QString& endpoint) const;
   std::shared_ptr<LeafLifeline> resolveToLeaf(const QString& endpoint) const;
@@ -78,4 +88,4 @@ struct ComponentTreeModel
 };
 
 static const QString ROOT_NODE = "root";
-ComponentTreeModel buildComponentTree(const QVector<RawLifeline>& raw, const maki::ThemeFonts& fonts);
+ComponentTreeModel buildComponentTree(const QVector<RawLifeline>& raw, const maki::ThemeFonts& fonts, const QSet<QString>& collapsed);

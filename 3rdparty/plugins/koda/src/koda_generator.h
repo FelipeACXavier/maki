@@ -4,9 +4,11 @@
 #include <QJsonObject>
 #include <QObject>
 #include <QProcess>
+#include <memory>
 
 #include "generator_plugin.h"
 #include "isettings.h"
+#include "simulation_scene.h"
 
 class INode;
 class IFlow;
@@ -57,6 +59,8 @@ private:
   QProcess* mDaemon = nullptr;
   DezyneSimulator* mSimulator = nullptr;
   QJsonObject mLastUpdate;
+
+  std::unique_ptr<TraceSceneBuilder> mTraceBuilder;
 
   struct Error
   {
