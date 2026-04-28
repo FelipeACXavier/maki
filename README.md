@@ -1,6 +1,6 @@
 # MAKI
 
-<img align="right" src="./app/assets/app_icon/maki_icon.png" height="150">
+<img align="right" src="./app/assets/app_icon/maki_icon_only.png" height="150">
 
 [![Build dev Docker image](https://github.com/FelipeACXavier/maki/actions/workflows/build-dev-image.yaml/badge.svg)](https://github.com/FelipeACXavier/maki/actions/workflows/build-dev-image.yaml)
 [![CI](https://github.com/FelipeACXavier/maki/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/FelipeACXavier/maki/actions/workflows/ci.yml)
