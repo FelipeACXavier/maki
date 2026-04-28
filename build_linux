@@ -1,0 +1,21 @@
+RELEASE=""
+
+while [[ $# -gt 0 ]]; do
+  key="$1"
+  case $key in
+      --release)
+      RELEASE="--release"
+      shift
+      ;;
+      *)
+      exit 1
+      ;;
+  esac
+done
+
+./scripts/linux/build.sh \
+  --local-qt /home/felaze/Programs/Qt/6.8.2/gcc_64 \
+  --local-project /home/felaze/Documents/PhD/Programs/maki \
+  $RELEASE
+
+cp ./build/linux/debug/compile_commands.json ./

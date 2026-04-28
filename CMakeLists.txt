@@ -59,7 +59,6 @@ else()
   add_compile_options(-Wall)
 
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-      message("Compiling with debug symbols")
       set(LINUX_BUILD_DIR "${CMAKE_SOURCE_DIR}/build/linux/debug")
       add_compile_options(-g -O0)
   elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
