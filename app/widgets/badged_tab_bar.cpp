@@ -6,6 +6,9 @@
 
 #include "theme.h"
 
+static const int DIAMETER = 10;
+static const int SHIFT = 5;
+
 BadgedTabBar::BadgedTabBar(QWidget* parent)
     : QTabBar(parent)
 {
@@ -136,13 +139,12 @@ void BadgedTabBar::paintBadge(QPainter& painter, int index, const QRect& tabRect
 
   if (dotOnly)
   {
-    const int diameter = 10;
-    const int x = tabRect.right() - diameter;
-    const int y = tabRect.top();
+    const int x = tabRect.right() - DIAMETER - SHIFT;
+    const int y = tabRect.top() + SHIFT;
 
     painter.setPen(Qt::NoPen);
     painter.setBrush(badge.background);
-    painter.drawEllipse(QRect(x, y, diameter, diameter));
+    painter.drawEllipse(QRect(x, y, DIAMETER, DIAMETER));
   }
   else
   {
@@ -156,8 +158,8 @@ void BadgedTabBar::paintBadge(QPainter& painter, int index, const QRect& tabRect
     const int h = 16;
     const int w = qMax(16, textWidth + 10);
 
-    const int x = tabRect.right() - w - 8;
-    const int y = tabRect.top() + 5;
+    const int x = tabRect.right() - w - SHIFT;
+    const int y = tabRect.top() + SHIFT;
 
     QRect badgeRect(x, y, w, h);
 

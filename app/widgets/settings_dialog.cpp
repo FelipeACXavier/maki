@@ -356,7 +356,7 @@ VoidResult SettingsDialog::createPluginPages()
   LOG_DEBUG("Loaded from settings with %d plugins", mPluginSettings.size());
 
   // Add top level plugin page
-  auto [topSelector, topPage] = addPage(tr("Plugins"), ":/icons/plugin.svg", [this] {
+  auto [topSelector, topPage] = addPage(tr("Plugins"), ":/icons/plugin.svg", [] {
     // mSettingsManager->setGeneration(GenerationSettings());
   });
 
@@ -380,7 +380,7 @@ VoidResult SettingsDialog::createPluginPages()
   table->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
   table->setSelectionMode(QAbstractItemView::ExtendedSelection);
   table->setSelectionBehavior(QAbstractItemView::SelectRows);
-  table->setAlternatingRowColors(true);
+  table->setAlternatingRowColors(false);
 
   // -------------------------------------------------------------------------
   // Add new plugin
@@ -454,7 +454,7 @@ VoidResult SettingsDialog::createPluginPages()
       }
       else if (setting.getType() == Types::PropertyTypes::BOOLEAN)
       {
-        auto* field = new maki::BooleanWidget(setting.getLabel(), setting.getDefaultValue().toBool(), alignment, page);
+        auto* field = new maki::BooleanWidget(setting.getLabel(), setting.getValue().toBool(), alignment, page);
         field->addDescription(setting.getDescription());
 
         connect(field, &maki::BooleanWidget::valueChanged, this, [this, pluginId, setting](const int value) {

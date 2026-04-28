@@ -80,6 +80,7 @@ struct PluginInfo
   bool enabled;
   maki::PluginVersion version;
   QVector<maki::SettingField> settings;
+  maki::SettingsFunction callback;
 };
 
 class SettingsManager : public QObject, public maki::ISettings
@@ -98,7 +99,10 @@ public:
   void setGeneration(const GenerationSettings& s);
   void setPlugins(const QVector<PluginInfo>& s);
 
-  VoidResult registerSettings(const QString& id, const maki::PluginVersion version, const QVector<maki::SettingField>& settings) override;
+  QVector<maki::SettingField> getPluginSettings(const QString& id) const override;
+  VoidResult registerSettings(const QString& id, const maki::PluginVersion version,
+                              const QVector<maki::SettingField>& settings,
+                              maki::SettingsFunction callback) override;
 
   void load();
   void save();

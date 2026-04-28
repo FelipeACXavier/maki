@@ -76,7 +76,7 @@ private:
   maki::IGeneratorPlugin* mPlugin;
   QVector<Plugin> mPlugins;
 
-  VoidResult loadPlugin(const Manifest& path, QMenu* menu, QComboBox* comboBox, HostServices* services);
+  VoidResult loadPlugin(const QDir& pluginDir, const Manifest& path, QMenu* menu, QComboBox* comboBox, HostServices* services);
   bool setPlugin(const QString& language);
 
   Result<Manifest> getPluginManifest(const QDir& path) const;

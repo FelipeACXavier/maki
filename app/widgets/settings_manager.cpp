@@ -217,7 +217,17 @@ void SettingsManager::setGeneration(const GenerationSettings& s)
 
 void SettingsManager::setPlugins(const QVector<PluginInfo>& s)
 {
-  mPluginSettings = s;
+  for (int i = 0; i < s.size(); ++i)
+  {
+    auto update = s.at(i);
+    auto current = mPluginSettings.at(i);
+    if (update.name == current.name && update.version == current.version)
+    {
+      mPluginSettings[i] = update;
+      if (mPluginSettings[i].callback)
+        mPluginSettings[i].callback(mPluginSettings[i].settings);
+    }
+  }
   save();
 }
 
@@ -234,7 +244,20 @@ void SettingsManager::addRecentFile(const QString& s)
   save();
 }
 
-VoidResult SettingsManager::registerSettings(const QString& id, const maki::PluginVersion version, const QVector<maki::SettingField>& settings)
+QVector<maki::SettingField> SettingsManager::getPluginSettings(const QString& id) const
+{
+  for (const auto& plugin : mPluginSettings)
+  {
+    if (plugin.name == id)
+      return plugin.settings;
+  }
+
+  return {};
+}
+
+VoidResult SettingsManager::registerSettings(const QString& id, const maki::PluginVersion version,
+                                             const QVector<maki::SettingField>& settings,
+                                             maki::SettingsFunction callback)
 {
   // Since the plugin is registered, we try to load the save settings
   bool exists = false;
@@ -252,17 +275,16 @@ VoidResult SettingsManager::registerSettings(const QString& id, const maki::Plug
     info.name = mSettings.value("name", info.name).toString();
     info.enabled = mSettings.value("enabled", info.enabled).toBool();
     info.version = maki::PluginVersion::fromString(mSettings.value("version", "").toString());
+    info.callback = callback;
 
-    // We not need to check to see if the versions match
+    // We need to check to see if the versions match
+    // TODO(felaze): Prompt user
     if (info.version != version)
-    {
-      // TODO(felaze): Prompt user
-      LOG_WARNING("Versions are different. Saved: %s Registering: %s",
-                  qPrintable(info.version.toString()), qPrintable(version.toString()));
-    }
+      LOG_WARNING("Versions are different. Saved: %s Registering: %s", qPrintable(info.version.toString()), qPrintable(version.toString()));
 
     exists = true;
 
+    // TODO: We need to take into account incoming settings as well
     const QStringList settingGroups = mSettings.childGroups();
     info.settings.resize(settingGroups.size());
     for (const QString& sg : settingGroups)
@@ -302,7 +324,14 @@ VoidResult SettingsManager::registerSettings(const QString& id, const maki::Plug
   mSettings.endGroup();
 
   if (!exists)
-    mPluginSettings.append({id, true, version, settings});
+  {
+    LOG_DEBUG("Registering plugin \"%s\" settings", qPrintable(id));
+    mPluginSettings.append({id, true, version, settings, callback});
+  }
+  else
+  {
+    LOG_DEBUG("Settings for plugin \"%s\" are already registered", qPrintable(id));
+  }
 
   return VoidResult();
 }

@@ -52,7 +52,7 @@ VoidResult PluginManager::start(QMenu* menu, QComboBox* comboBox, HostServices* 
       }
 
       Manifest manifest = manifestResult.Value();
-      LOG_WARN_ON_FAILURE(loadPlugin(manifest, menu, comboBox, services));
+      LOG_WARN_ON_FAILURE(loadPlugin(pluginsDir, manifest, menu, comboBox, services));
     }
   }
 
@@ -74,7 +74,7 @@ VoidResult PluginManager::start(QMenu* menu, QComboBox* comboBox, HostServices* 
   return VoidResult();
 }
 
-VoidResult PluginManager::loadPlugin(const Manifest& manifest, QMenu* menu, QComboBox* comboBox, HostServices* services)
+VoidResult PluginManager::loadPlugin(const QDir& pluginDir, const Manifest& manifest, QMenu* menu, QComboBox* comboBox, HostServices* services)
 {
   if (manifest.entryPoint.isEmpty())
     return VoidResult::Failed("No entry point defined in manifest");
@@ -113,6 +113,11 @@ VoidResult PluginManager::loadPlugin(const Manifest& manifest, QMenu* menu, QCom
   codeGen->setName(manifest.name);
   codeGen->setVersion(manifest.version);
   codeGen->setHostServices(services);
+
+  QDir assets = QDir(pluginDir.absoluteFilePath("assets"));
+  LOG_DEBUG("Using asset path: %s", qPrintable(assets.absolutePath()));
+  if (assets.exists())
+    codeGen->setAssetDir(assets);
 
   mPlugins.append({codeGen, manifest});
   LOG_DEBUG("Loaded plugin for language: %s", qPrintable(pluginName));
@@ -185,25 +190,25 @@ VoidResult PluginManager::loadPluginLibraryDir(const Manifest& manifest)
   if (!cookie)
     return VoidResult::Failed("Failed to add DLL directory: " + pluginDir.toStdString());
 
-  // const QString pluginDir = QFileInfo(manifest.path).absolutePath();
-  // LOG_DEBUG("Adding DLL path to PATH: %s", qPrintable(pluginDir));
+    // const QString pluginDir = QFileInfo(manifest.path).absolutePath();
+    // LOG_DEBUG("Adding DLL path to PATH: %s", qPrintable(pluginDir));
 
-  // QString path = qEnvironmentVariable("PATH");
-  // const QString normalisedPluginDir = QDir(pluginDir).absolutePath();
+    // QString path = qEnvironmentVariable("PATH");
+    // const QString normalisedPluginDir = QDir(pluginDir).absolutePath();
 
-  // const QStringList parts = path.split(';', Qt::SkipEmptyParts);
-  // bool alreadyPresent = false;
-  // for (const QString& part : parts)
-  // {
-  //   if (QDir(part).absolutePath().compare(normalisedPluginDir, Qt::CaseInsensitive) == 0)
-  //   {
-  //     alreadyPresent = true;
-  //     break;
-  //   }
-  // }
+    // const QStringList parts = path.split(';', Qt::SkipEmptyParts);
+    // bool alreadyPresent = false;
+    // for (const QString& part : parts)
+    // {
+    //   if (QDir(part).absolutePath().compare(normalisedPluginDir, Qt::CaseInsensitive) == 0)
+    //   {
+    //     alreadyPresent = true;
+    //     break;
+    //   }
+    // }
 
-  // if (!alreadyPresent)
-  //   qputenv("PATH", (normalisedPluginDir + ";" + path).toLocal8Bit());
+    // if (!alreadyPresent)
+    //   qputenv("PATH", (normalisedPluginDir + ";" + path).toLocal8Bit());
 
 #endif
   return VoidResult();
