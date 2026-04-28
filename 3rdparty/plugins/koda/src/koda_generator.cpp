@@ -9,6 +9,7 @@
 #include <QJsonObject>
 #include <QProcess>
 #include <QTextStream>
+#include <filesystem>
 
 #include "dezyne_simulator.h"
 #include "idocument.h"
@@ -25,61 +26,27 @@
 #include "ast/koda_compiler.h"
 #endif
 
-#define ADD_VARIABLE_OR_VALUE(array, arg, isVariable)                                               \
-  do                                                                                                \
-  {                                                                                                 \
-    if (isVariable)                                                                                 \
-      args += QStringLiteral("%1%2, ").arg(arg["data"].toString(), isVariable ? "_", ""); \
-    else                                                                                            \
-      args += QStringLiteral("%1, ").arg(arg["data"].toString());                         \
-  } while (false);
-
-// TODO: Use std::filesystem instead
-bool copyDirectory(const QString& sourceDir, const QString& targetDir)
+VoidResult copyDirectory(const QString& sourceDir, const QString& targetDir)
 {
-  QDir src(sourceDir);
-  if (!src.exists())
-  {
-    LOG_ERROR("Source folder does not exist %s", qPrintable(sourceDir));
-    return false;
-  }
+  namespace fs = std::filesystem;
 
-  if (!QDir().mkpath(targetDir))
-  {
-    LOG_ERROR("Could not create destination dir %s", qPrintable(targetDir));
-    return false;
-  }
+  fs::path libSrcPath = sourceDir.toStdString();
+  fs::path libDstPath = targetDir.toStdString();
 
-  QDirIterator it(sourceDir, QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
-  while (it.hasNext())
-  {
-    it.next();
-    QFileInfo info = it.fileInfo();
+  std::error_code ec;
+  if (!fs::exists(libSrcPath, ec))
+    return VoidResult::Failed("Dezyne library source folder does not exist: " + libSrcPath.string());
 
-    QString relativePath = src.relativeFilePath(info.absoluteFilePath());
-    QString outPath = QDir(targetDir).filePath(relativePath);
+  // Make sure the files exist
+  fs::create_directories(libDstPath, ec);
+  if (ec)
+    return VoidResult::Failed("Could not create Dezyne library output folder: " + libDstPath.string());
 
-    if (info.isDir())
-    {
-      if (!QDir().mkpath(outPath))
-      {
-        LOG_ERROR("Could not create sub-dir %s", qPrintable(outPath));
-        return false;
-      }
-    }
-    else if (info.isFile())
-    {
-      QDir().mkpath(QFileInfo(outPath).absolutePath());
-      QFile::remove(outPath);  // because QFile::copy won't overwrite
-      if (!QFile::copy(info.absoluteFilePath(), outPath))
-      {
-        LOG_ERROR("Could not copy file %s to %s", qPrintable(info.absoluteFilePath()), qPrintable(outPath));
-        return false;
-      }
-    }
-  }
+  fs::copy(libSrcPath, libDstPath, fs::copy_options::recursive | fs::copy_options::overwrite_existing, ec);
+  if (ec)
+    return VoidResult::Failed("Could not copy Dezyne libraries to output folder: " + ec.message());
 
-  return true;
+  return VoidResult();
 }
 
 bool KodaGenerator::setup()
@@ -92,7 +59,7 @@ bool KodaGenerator::setup()
   // LOG_ERROR_ON_FAILURE(mSimulator->startSimulation(QUuid::createUuid().toString()));
 
   // Start the ide daemon on a specific port
-  return true;  // startDaemon();
+  return startDaemon();
 }
 
 bool KodaGenerator::tearDown()
@@ -181,6 +148,14 @@ void KodaGenerator::buildSettings()
   verbose.setDefaultValue(false);
   verbose.setType(Types::PropertyTypes::BOOLEAN);
   mSettings.push_back(verbose);
+
+  maki::SettingField taskOnly;
+  taskOnly.setKey("taskOnly");
+  taskOnly.setLabel("Task only");
+  taskOnly.setDescription("Only verify the top level task");
+  taskOnly.setDefaultValue(false);
+  taskOnly.setType(Types::PropertyTypes::BOOLEAN);
+  mSettings.push_back(taskOnly);
 }
 
 void KodaGenerator::setHostServices(maki::IHostServices* services)
@@ -191,7 +166,16 @@ void KodaGenerator::setHostServices(maki::IHostServices* services)
 
   // Setup settings
   if (auto service = mServices->settings())
-    service->registerSettings(languageName(), version(), mSettings);
+  {
+    service->registerSettings(languageName(), version(), mSettings, [this](const QVector<maki::SettingField>& settings) {
+      LOG_DEBUG("Updating settings of %s plugin", qPrintable(languageName()));
+      mSettings = settings;
+    });
+
+    auto settings = service->getPluginSettings(languageName());
+    if (!settings.isEmpty())
+      mSettings = settings;
+  }
 
   if (auto pluginTab = mServices->pluginTab())
     pluginTab->registerPlugin(languageName(), [this](QGraphicsScene* scene) {
@@ -210,6 +194,11 @@ void KodaGenerator::setName(const QString& name)
 void KodaGenerator::setVersion(const QString& version)
 {
   mVersion = maki::PluginVersion::fromString(version);
+}
+
+void KodaGenerator::setAssetDir(const QDir& dir)
+{
+  mAssetDir = dir;
 }
 
 QString KodaGenerator::languageName() const
@@ -287,7 +276,6 @@ void KodaGenerator::startSimulation()
     mSimulator->setSimulationIncludes(includeFolders);
 
     mSimulator->startSimulation(QUuid::createUuid().toString());
-    mServices->pluginTab()->openScene(languageName());
   }
 }
 
@@ -347,28 +335,38 @@ VoidResult KodaGenerator::verify(const QString& outputFolder)
     RETURN_ON_FAILURE(compiler.generate());
   }
 
-  // Then we make sure the dezyne libraries are available
-  QString libSrcPath = ""; // getDirPathFor("share/plugins/" + languageName() + "/lib");
-  QString libDstPath = mDezyneOutputFolder.absolutePath() + "/lib";
-  if (!copyDirectory(libSrcPath, libDstPath))
-    return VoidResult::Failed("Could not copy dezyne libraries to output folder");
-
   // Make sure the correct file are included
   includeFolders << mDezyneOutputFolder.absolutePath();
-  includeFolders << libDstPath;
+
+  // Then we make sure the dezyne libraries are available
+  if (mAssetDir)
+  {
+    LOG_DEBUG("Using asset dir: %s", qPrintable(mAssetDir->absolutePath()));
+    QString libSrcPath = mAssetDir->absoluteFilePath("lib");
+    QString libDstPath = mDezyneOutputFolder.absolutePath() + "/lib";
+    RETURN_ON_FAILURE(copyDirectory(libSrcPath, libDstPath));
+    includeFolders << libDstPath;
+  }
 
   // Finally, set the files to be verified
   QStringList filters;
   filters << "*.dzn";
-  auto files = mDezyneOutputFolder.entryList(filters, QDir::Files);
+  mGeneratedDznFiles = mDezyneOutputFolder.entryList(filters, QDir::Files);
 
   // Keep only files NOT containing "arbiter" for now
-  QStringList filtered;
-  for (const QString& f : files)
-    if (!f.contains("arbiter", Qt::CaseInsensitive))
-      filtered << f;
+  // QStringList filtered;
+  // auto taskOnly = getSetting("taskOnly");
+  // for (const QString& f : files)
+  // {
+  //   if (!f.contains("arbiter", Qt::CaseInsensitive))
+  //     filtered << f;
 
-  mGeneratedDznFiles = filtered;
+  //   LOG_DEBUG("Task only: %d %d %d - %s", taskOnly.getValue().isValid(), taskOnly.getValue().toBool(), f.contains("_task", Qt::CaseInsensitive), qPrintable(f));
+  //   if (taskOnly.getValue().isValid() && taskOnly.getValue().toBool() && f.contains("_task", Qt::CaseInsensitive))
+  //     filtered << f;
+  // }
+
+  // mGeneratedDznFiles = filtered;
 #else
   for (const auto& file : mGeneratedFiles)
   {
@@ -393,10 +391,15 @@ VoidResult KodaGenerator::verify(const QString& outputFolder)
 #endif
 
   // TODO: We need to find a better solution for this, we shouldn't allow plugins to execute any scripts
+  auto taskOnly = getSetting("taskOnly");
   for (const QString& f : mGeneratedDznFiles)
   {
     auto fullPath = mDezyneOutputFolder.absoluteFilePath(f);
     if (fullPath.contains("/a_") || fullPath.contains("types"))
+      continue;
+    if (fullPath.contains("/arbiter"))
+      continue;
+    if (taskOnly.getValue().isValid() && taskOnly.getValue().toBool() && !f.contains("_task"))
       continue;
 
     LOG_INFO("Will verify file: %s", qPrintable(fullPath));
@@ -518,7 +521,6 @@ QString KodaGenerator::generateCapability(const INode& node)
 {
   QString code = "";
 
-  // qDebug() << node.properties;
   QString args = "";
   if (node.getproperties().contains("arguments"))
   {
@@ -539,6 +541,12 @@ QString KodaGenerator::generateCapability(const INode& node)
   code += "capability " + name + "(" + args + ") {\n";
 
   auto typeArray = node.getproperties()["type"].toJsonObject()["options"].toArray();
+  if (typeArray.isEmpty())
+  {
+    LOG_WARNING("Type options of %s is empty", qPrintable(name));
+    return code;
+  }
+
   for (int i = 0; i < typeArray.size(); ++i)
   {
     const auto item = typeArray.at(i).toObject();
@@ -1145,36 +1153,59 @@ bool KodaGenerator::startDaemon()
   mDaemon = new QProcess(this);
 
   connect(mDaemon, &QProcess::started, this, []() {
-    qDebug() << "Process started";
+    LOG_DEBUG("Process started");
   });
 
   connect(mDaemon, &QProcess::readyReadStandardOutput, this, [this]() {
-    qDebug() << mDaemon->readAllStandardOutput();
+    LOG_DEBUG(mDaemon->readAllStandardOutput().trimmed().toStdString());
   });
 
   connect(mDaemon, &QProcess::readyReadStandardError, this, [this]() {
-    qDebug() << mDaemon->readAllStandardError();
+    LOG_DEBUG(mDaemon->readAllStandardError().trimmed().toStdString());
   });
 
   connect(mDaemon, &QProcess::finished, this, [this](int exitCode, QProcess::ExitStatus status) {
-    qDebug() << "Finished:" << exitCode << status;
+    LOG_DEBUG("Finished with code %d and status %d", exitCode, (int)status);
     if (exitCode != 0)
       mDaemon->deleteLater();  // important
   });
 
   connect(mDaemon, &QProcess::errorOccurred, this, [](QProcess::ProcessError e) {
-    qWarning() << "Process error:" << e;
+    LOG_WARNING("Process error: %d", (int)e);
   });
 
   // Non-blocking start
-  mDaemon->start("ide", {"daemon"});
+  QStringList arguments = {"daemon"};
+  auto debug = getSetting("debug");
+  if (debug.getValue().isValid() && debug.getValue().toBool())
+    arguments.push_back("--debug");
+
+  mDaemon->setProgram("ide");
+  mDaemon->setArguments(arguments);
+  mDaemon->start();
 
   return mDaemon->waitForStarted();
 }
 
 void KodaGenerator::simulationStarted()
 {
-  LOG_INFO("Simulation started");
+  if (!mServices)
+    return;
+
+  if (auto pluginTab = mServices->pluginTab())
+  {
+    LOG_INFO("Simulation started");
+    pluginTab->openScene(languageName());
+  }
+}
+
+maki::SettingField KodaGenerator::getSetting(const QString& key) const
+{
+  for (const auto& s : mSettings)
+    if (s.getKey() == key)
+      return s;
+
+  return maki::SettingField();
 }
 
 void KodaGenerator::simulationUpdated(const QJsonObject& obj)

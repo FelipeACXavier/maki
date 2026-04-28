@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QDir>
 #include <QGraphicsItem>
 #include <QList>
 #include <QMetaType>
@@ -60,6 +61,7 @@ public:
   virtual void setHostServices(maki::IHostServices* services) = 0;
   virtual void setName(const QString& name) = 0;
   virtual void setVersion(const QString& name) = 0;
+  virtual void setAssetDir(const QDir& dir) = 0;
 
   virtual QString languageName() const = 0;
   virtual PluginVersion version() const = 0;

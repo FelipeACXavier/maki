@@ -4,8 +4,5 @@
   "version": "0.0.1",
   "entryPointDLL": "bin/koda_generatorplugin.dll",
   "entryPointSO": "bin/koda_generatorplugin.so",
-  "icon": "assets/icons/plugin.svg",
-  "libs": [
-    "antlr4-runtime.dll"
-  ]
+  "icon": "assets/icon.png"
 }

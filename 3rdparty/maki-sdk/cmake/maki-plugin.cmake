@@ -10,6 +10,8 @@ function(maki_stage_plugin)
     TARGET
     METADATA
     ASSET_DIR
+    ASSET_BUILD_DST_DIR
+    ASSET_INSTALL_DST_DIR
   )
   set(multiValueArgs
     BIN_TARGETS
@@ -29,8 +31,8 @@ function(maki_stage_plugin)
     message(FATAL_ERROR "maki_stage_plugin: target '${MAKI_TARGET}' does not exist")
   endif()
 
-  message(INFO "Staging plugin: ${MAKI_PLUGIN_ID}")
-  message(INFO "Target: ${MAKI_TARGET}")
+  message(STATUS " Staging plugin: ${MAKI_PLUGIN_ID}")
+  message(STATUS " Target: ${MAKI_TARGET}")
 
   if (BUILD_PLUGINS)
     set(_plugin_root_build "${CMAKE_BINARY_DIR}/plugins/${MAKI_PLUGIN_ID}")
@@ -113,6 +115,8 @@ function(maki_stage_plugin)
 
   # Asset directory
   if(MAKI_ASSET_DIR)
+    message(STATUS " Will copy assets to: ${_plugin_assets_build}")
+
     add_custom_command(TARGET ${MAKI_TARGET} POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E make_directory "${_plugin_assets_build}"
       COMMAND ${CMAKE_COMMAND} -E copy_directory

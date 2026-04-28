@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "entryPointDLL": "bin/koda_generatorplugin_antlr.dll",
   "entryPointSO": "bin/koda_generatorplugin_antlr.so",
-  "icon": "assets/icons/plugin.svg",
+  "icon": "assets/icon.png",
   "libraries": [
     "antler-runtime.dll"
   ]

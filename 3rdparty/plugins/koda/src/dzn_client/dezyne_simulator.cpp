@@ -122,6 +122,9 @@ void DezyneSimulator::onMessageReceived(const QJsonObject& obj)
 {
   LOG_DEBUG("Message received");
 
+  // auto pretty = QJsonDocument(obj).toJson(QJsonDocument::Indented);
+  // LOG_DEBUG("Received message: %s", qPrintable(pretty));
+
   if (!obj.contains("type"))
   {
     LOG_WARNING("Message with no type");
@@ -131,7 +134,7 @@ void DezyneSimulator::onMessageReceived(const QJsonObject& obj)
   auto type = obj["type"].toString();
   if (type == "SIMULATION_STATUS_RESPONSE")
     handleSimulationStarted(obj);
-  else if (type == "traceUpdate")
+  else if (type == "TRACE_UPDATE")
     handleSimulationUpdate(obj);
 }
 

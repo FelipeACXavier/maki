@@ -27,7 +27,7 @@ if (NOT BUILD_PLUGINS)
     add_compile_options(-Wall)
 
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-        message("Compiling with debug symbols")
+        message(STATUS "Compiling with debug symbols")
         set(LINUX_BUILD_DIR "${CMAKE_SOURCE_DIR}/build/linux/debug")
         add_compile_options(-g -O0)
     elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -186,6 +186,7 @@ endfunction()
 
 include(${CMAKE_SOURCE_DIR}/3rdparty/maki-sdk/cmake/maki-plugin.cmake)
 
+# If we are building with MAKI, then use the MAKI sdk instead of the 3rdparty one
 if (NOT BUILD_PLUGINS)
 add_subdirectory(3rdparty)
 endif()

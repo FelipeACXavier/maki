@@ -83,12 +83,18 @@ private:
   QVariantMap mMetadata;
 };
 
+typedef std::function<void(QVector<SettingField> settings)> SettingsFunction;
+
 class ISettings
 {
 public:
   virtual ~ISettings() = default;
 
-  virtual VoidResult registerSettings(const QString& id, const maki::PluginVersion version, const QVector<SettingField>& settings) = 0;
+  virtual VoidResult registerSettings(const QString& id,
+                                      const maki::PluginVersion version,
+                                      const QVector<SettingField>& settings,
+                                      SettingsFunction callback) = 0;
+  virtual QVector<maki::SettingField> getPluginSettings(const QString& id) const = 0;
 };
 
 }  // namespace maki

@@ -30,6 +30,7 @@ public:
   void setHostServices(maki::IHostServices* services) override;
   void setName(const QString& name) override;
   void setVersion(const QString& name) override;
+  void setAssetDir(const QDir& dir) override;
 
   QString languageName() const override;
   maki::PluginVersion version() const override;
@@ -50,6 +51,7 @@ private:
 
   maki::PluginVersion mVersion;
   QString mName;
+  std::optional<QDir> mAssetDir;
 
   QVector<QString> mGeneratedIds = {};
   QProcess* mDaemon = nullptr;
@@ -107,4 +109,6 @@ private:
   // Setup
   bool startDaemon();
   void buildSettings();
+
+  maki::SettingField getSetting(const QString& key) const;
 };
