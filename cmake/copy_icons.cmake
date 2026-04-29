@@ -75,6 +75,8 @@ file(GLOB APP_ICON_FILES
   ${MISSION_PATH}/node_repeat.svg
   ${MISSION_PATH}/node_every.svg
   ${MISSION_PATH}/node_continue.svg
+  ${MISSION_PATH}/node_task.svg
+  ${MISSION_PATH}/node_subtask_placeholder.svg
   ${MISSION_PATH}/port_in.svg
   ${MISSION_PATH}/port_out.svg
   ${SHAPES_PATH}/shape_start.svg

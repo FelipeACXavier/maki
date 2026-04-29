@@ -9,12 +9,13 @@
         {
           "type": "Task",
           "body": {
-            "shape": "Rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#202020",
-            "borderColor": "#FFFFFF",
-            "width": 250,
-            "height": 250,
+            "shape": "rounded rectangle",
+            "textColor": "#000000",
+            "backgroundColor": "#FFFFFF",
+            "borderColor": "#000000",
+            "width": 324,
+            "height": 300,
+            "borderRadius": 28,
             "z-index": -2
           },
           "help": {
@@ -1517,7 +1518,7 @@
               "default": "Repeat"
             },
             {
-              "id": "strategy",
+              "id": "capability",
               "type": "component_select",
               "options": [
                 {
