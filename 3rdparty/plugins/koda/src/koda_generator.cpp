@@ -11,14 +11,14 @@
 #include <QTextStream>
 #include <filesystem>
 
-#include "dezyne_simulator.h"
+#include "dzn_client/dezyne_simulator.h"
+#include "dzn_client/simulation_scene.h"
 #include "idocument.h"
 #include "ilogging.h"
 #include "ipipeline.h"
 #include "isettings.h"
 #include "itab.h"
 #include "logging.h"
-#include "simulation_scene.h"
 #include "string_helpers.h"
 #include "types.h"
 
@@ -621,7 +621,6 @@ QString KodaGenerator::generateComponent(const INode& node, const QString& incom
   mGeneratedFiles.append(fileName);
 
   // Generate flows
-  int index = 0;
   QString bodyCode = "";
   for (const auto& f : node.getflows())
   {
@@ -646,7 +645,6 @@ QString KodaGenerator::generateComponent(const INode& node, const QString& incom
       qualifier = QStringLiteral("  error:");
 
     bodyCode += qualifier + "  " + Types::PropertyTypesToString(f->getreturnType()) + " " + f->getname() + "(" + args + ");\n";
-    index++;
   }
 
   for (const auto& f : node.getflows())

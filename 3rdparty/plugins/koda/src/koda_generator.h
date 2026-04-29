@@ -6,9 +6,9 @@
 #include <QProcess>
 #include <memory>
 
+#include "dzn_client/simulation_scene.h"
 #include "generator_plugin.h"
 #include "isettings.h"
-#include "simulation_scene.h"
 
 class INode;
 class IFlow;
