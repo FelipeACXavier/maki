@@ -70,6 +70,21 @@ protected:
 
   virtual void updateParent(NodeItem* node, std::shared_ptr<NodeSaveInfo> storage, bool adding);
 
+  enum class NodeCreation
+  {
+    Dropping,
+    Pasting,
+    Loading,
+    Populating
+  };
+
+  NodeItem* createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo> info, const QPointF& position, NodeItem* parent);
+
+  std::shared_ptr<ConfigurationTable> configurationTable() const
+  {
+    return mConfigTable;
+  }
+
 signals:
   void nodeSelected(NodeItem* node, bool selected);
   void nodeAdded(NodeItem* node);
@@ -91,13 +106,6 @@ public slots:
   void onFlowRemoved(const QString& flowId, const QString& nodeId);
 
 private:
-  enum class NodeCreation
-  {
-    Dropping,
-    Pasting,
-    Loading,
-    Populating
-  };
   // TODO(felaze): Move connection behaviour to a separate class
   NodeItem* mHoveredNode = nullptr;
   TransitionItem* mTransition = nullptr;
@@ -126,7 +134,6 @@ private:
   void selectNode(NodeItem* node, bool select);
 
   CanvasView* parentView() const;
-  NodeItem* createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo> info, const QPointF& position, NodeItem* parent);
 
   NodeItem* findNodeWithId(const QString& id) const;
   QList<NodeItem*> selectedNodes() const;

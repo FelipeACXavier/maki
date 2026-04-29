@@ -15,6 +15,18 @@
 #include "theme.h"
 #include "app_paths.h"
 
+namespace
+{
+constexpr qreal kTaskCornerRadius = 28.0;
+constexpr qreal kTaskInnerPadding = 6.0;
+constexpr qreal kTaskSlotDiameterFactor = 0.30;
+constexpr qreal kTaskSlotTopY = 0.30;
+constexpr qreal kTaskSlotBottomY = 0.70;
+constexpr qreal kTaskSlotLeftX = 0.30;
+constexpr qreal kTaskSlotRightX = 0.70;
+const QColor kTaskSlotColor = QColor("#d9d9d9");
+}  // namespace
+
 DraggableItem::DraggableItem(const QString& nodeId, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
     : NodeBase(QUuid::createUuid().toString(), nodeId, nodeConfig, parent)
 {
@@ -45,7 +57,34 @@ QRectF DraggableItem::boundingRect() const
 void DraggableItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget)
 {
   Q_UNUSED(widget);
-  NodeBase::paintNode((style && style->state == QStyle::State_Active) ? boundingRect() : scaledRect(),
+  const QRectF rect = (style && style->state == QStyle::State_Active) ? boundingRect() : scaledRect();
+
+  if (config()->libraryType == Types::LibraryTypes::STRUCTURAL && config()->type == QStringLiteral("Task"))
+  {
+    painter->setRenderHint(QPainter::Antialiasing, true);
+    painter->setPen(isSelected() ? QPen(Config::HIGHLIGHT, 2.0) : QPen(Config::FOREGROUND, 1.0));
+    painter->setBrush(Qt::NoBrush);
+
+    const QRectF bodyRect = rect.adjusted(kTaskInnerPadding, kTaskInnerPadding, -kTaskInnerPadding, -kTaskInnerPadding);
+    painter->drawRoundedRect(bodyRect, kTaskCornerRadius, kTaskCornerRadius);
+
+    const qreal slotDiameter = qMin(bodyRect.width(), bodyRect.height()) * kTaskSlotDiameterFactor;
+    const qreal slotRadius = slotDiameter * 0.5;
+    painter->setPen(Qt::NoPen);
+    painter->setBrush(kTaskSlotColor);
+
+    const QVector<QPointF> centers = {
+        QPointF(bodyRect.left() + bodyRect.width() * kTaskSlotLeftX, bodyRect.top() + bodyRect.height() * kTaskSlotTopY),
+        QPointF(bodyRect.left() + bodyRect.width() * kTaskSlotRightX, bodyRect.top() + bodyRect.height() * kTaskSlotTopY),
+        QPointF(bodyRect.left() + bodyRect.width() * kTaskSlotLeftX, bodyRect.top() + bodyRect.height() * kTaskSlotBottomY),
+        QPointF(bodyRect.left() + bodyRect.width() * kTaskSlotRightX, bodyRect.top() + bodyRect.height() * kTaskSlotBottomY),
+    };
+    for (const QPointF& c : centers)
+      painter->drawEllipse(c, slotRadius, slotRadius);
+    return;
+  }
+
+  NodeBase::paintNode(rect,
                       config()->body.backgroundColor,
                       isSelected() ? QPen(Config::HIGHLIGHT, 2.0) : QPen(Config::FOREGROUND, 1.0),
                       painter);

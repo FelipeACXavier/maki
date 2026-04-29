@@ -16,6 +16,8 @@
 class PortItem;
 class Flow;
 class QGraphicsSceneMouseEvent;
+class SubtaskConnector;
+class StructureCanvas;
 
 class NodeItem : public NodeBase
 {
@@ -73,6 +75,22 @@ public:
   void addParent(NodeItem* node);
   void addChild(NodeItem* node, std::shared_ptr<NodeSaveInfo> info);
   void childRemoved(NodeItem* child);
+
+  /** Structural "Task" node from library (container with capability slots + subtasks). */
+  bool isTaskContainer() const;
+  /** Task nested under another Task in the system view. */
+  bool isStructuralSubtask() const;
+  /** Non-Task structural child of a Task (capability / timer / etc.): drawn as inset circle. */
+  bool rendersAsInsetCapability() const;
+
+  QVector<NodeItem*> structuralSubtaskChildren() const;
+  QVector<NodeItem*> structuralCapabilityChildren() const;
+
+  void layoutSubtasks();
+  void relayoutCapabilitySlots();
+  void ensureSubtaskConnector(StructureCanvas* canvas);
+  void destroySubtaskConnector();
+  void syncSubtaskConnector();
 
   QVector<Flow*> flows() const;
   Flow* createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo> info);
@@ -135,4 +153,9 @@ private:
   QPointF clampPosInside(const QRectF& inner, const QRectF& childSceneRect) const;
   void fitInsideParent(qreal padding);
   QRectF parentInnerSceneRect(qreal padding) const;
+  NodeItem* rootStructuralTask() const;
+
+  SubtaskConnector* mSubtaskConnector = nullptr;
+  QPointF mTreeDragRootStartPos{0, 0};
+  QPointF mTreeDragStartScenePos{0, 0};
 };
