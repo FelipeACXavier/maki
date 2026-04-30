@@ -45,6 +45,7 @@
 #include "widgets/badged_tab_bar.h"
 #include "widgets/badged_tab_widget.h"
 #include "widgets/language_manager.h"
+#include "widgets/log_table_widget.h"
 #include "widgets/notification_manager.h"
 #include "widgets/properties/properties_menu.h"
 #include "widgets/section.h"
@@ -74,11 +75,13 @@ VoidResult MainWindow::start()
       return;
 
     QString logMessage = toQT(ts, level, message);
-    handleLogging(logMessage, mLogText);
-    if (level == logging::LogLevel::Error)
-      handleLogging(logMessage, mErrorLogText);
-    else if (level == logging::LogLevel::Warning)
-      handleLogging(logMessage, mWarningLogText);
+    if (mLogTable)
+      mLogTable->append(level, filename, line, message);
+    // handleLogging(logMessage, mLogText);
+    // if (level == logging::LogLevel::Error)
+    //   handleLogging(logMessage, mErrorLogText);
+    // else if (level == logging::LogLevel::Warning)
+    //   handleLogging(logMessage, mWarningLogText);
   };
 
   notification::gNotificationStream = [this](logging::LogLevel level, const std::string& header, const std::string& message) {
@@ -843,26 +846,4 @@ int MainWindow::libraryTypeToIndex(Types::LibraryTypes type) const
 
 void MainWindow::handleLogging(const QString& message, QTextBrowser* textBrowser)
 {
-  if (textBrowser)
-  {
-    textBrowser->append(message);
-
-    // Check if the number of lines exceeds the maximum limit
-    QTextDocument* doc = textBrowser->document();
-    if (doc->blockCount() > 100)
-    {
-      // Remove the first block (top line) to limit the number of lines
-      QTextBlock block = doc->begin();
-      textBrowser->textCursor().setPosition(block.position());
-      textBrowser->textCursor().removeSelectedText();
-    }
-
-    if (mBottomPanel->currentIndex() != MainWindowLayout::LOG_TAB_INDEX)
-    {
-      if (textBrowser == mErrorLogText)
-        mBottomPanel->badgedTabBar()->setTabErrorBadgeCount(MainWindowLayout::LOG_TAB_INDEX);
-      else if (textBrowser == mWarningLogText)
-        mBottomPanel->badgedTabBar()->setTabBadgeCount(MainWindowLayout::LOG_TAB_INDEX);
-    }
-  }
 }

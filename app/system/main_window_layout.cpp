@@ -30,6 +30,7 @@
 #include "theme.h"
 #include "widgets/badged_tab_bar.h"
 #include "widgets/badged_tab_widget.h"
+#include "widgets/log_table_widget.h"
 #include "widgets/properties/properties_menu.h"
 #include "widgets/section.h"
 #include "widgets/structure/file_menu.h"
@@ -530,113 +531,87 @@ void MainWindowLayout::buildMenuBar()
 
 void MainWindowLayout::buildLogTab()
 {
-  QWidget* logContainer = new QWidget(mBottomPanel);
-  QVBoxLayout* logLayout = new QVBoxLayout(logContainer);
-  logLayout->setContentsMargins(2, 2, 2, 2);
-  logLayout->setSpacing(0);
+  // QWidget* logContainer = new QWidget(mBottomPanel);
+  // QVBoxLayout* logLayout = new QVBoxLayout(logContainer);
+  // logLayout->setContentsMargins(2, 2, 2, 2);
+  // logLayout->setSpacing(0);
 
-  // Toolbar
-  QToolBar* logToolBar = new QToolBar(logContainer);
-  logToolBar->setObjectName("LogToolBar");
-  logToolBar->setMovable(false);
-  logToolBar->setFloatable(false);
-  logToolBar->setFont(Fonts::SmallTab);
+  // // Toolbar
+  // QToolBar* logToolBar = new QToolBar(logContainer);
+  // logToolBar->setObjectName("LogToolBar");
+  // logToolBar->setMovable(false);
+  // logToolBar->setFloatable(false);
+  // logToolBar->setFont(Fonts::SmallTab);
 
-  // =======================================================================================
-  // Log level selector
-  QPushButton* errorButton = new QPushButton("");
-  errorButton->setObjectName("TextAndIcon");
-  errorButton->setText(" Errors");
-  errorButton->setCheckable(true);
-  errorButton->setToolTip("View only the errors");
-  errorButton->setToolTipDuration(2000);
-  mIcons.append({errorButton, ":/icons/error.svg", 0, QColor("red")});
-
-  QPushButton* warningButton = new QPushButton("");
-  warningButton->setObjectName("TextAndIcon");
-  warningButton->setText(" Warnings");
-  warningButton->setCheckable(true);
-  warningButton->setToolTip("View only the warnings");
-  warningButton->setToolTipDuration(2000);
-  mIcons.append({warningButton, ":/icons/warning.svg", 0, QColor("yellow")});
-
-  QStackedWidget* logViews = new QStackedWidget();
-
-  mLogText = new QTextBrowser(logContainer);
-  mLogText->setFont(Fonts::MonoSpace);
-
-  mErrorLogText = new QTextBrowser(logContainer);
-  mErrorLogText->setFont(Fonts::MonoSpace);
-
-  mWarningLogText = new QTextBrowser(logContainer);
-  mWarningLogText->setFont(Fonts::MonoSpace);
+  mLogTable = new LogTableWidget(mBottomPanel);
 
   // =======================================================================================
   // Clear button
-  QPushButton* clearButton = new QPushButton();
-  clearButton->setToolTip("Clear the logs");
-  clearButton->setToolTipDuration(2000);
-  mIcons.append({clearButton, ":/icons/clear.svg"});
+  // QPushButton* clearButton = new QPushButton();
+  // clearButton->setToolTip("Clear the logs");
+  // clearButton->setToolTipDuration(2000);
+  // mIcons.append({clearButton, ":/icons/clear.svg"});
 
-  connect(clearButton, &QPushButton::pressed, this, [this]() {
-    mLogText->clear();
-    mErrorLogText->clear();
-    mWarningLogText->clear();
-  });
+  // connect(clearButton, &QPushButton::pressed, this, [this]() {
+  //   mLogText->clear();
+  //   mErrorLogText->clear();
+  //   mWarningLogText->clear();
+  // });
 
   // =======================================================================================
   // Set the layout
-  QWidget* group = new QWidget();
-  QHBoxLayout* layout = new QHBoxLayout(group);
-  layout->setContentsMargins(0, 0, 0, 0);
-  layout->setSpacing(5);
-  layout->setAlignment(Qt::AlignCenter);
+  // QWidget* group = new QWidget();
+  // QHBoxLayout* layout = new QHBoxLayout(group);
+  // layout->setContentsMargins(0, 0, 0, 0);
+  // layout->setSpacing(5);
+  // layout->setAlignment(Qt::AlignCenter);
 
-  layout->addWidget(errorButton);
-  layout->addWidget(warningButton);
-  layout->addStretch();
-  layout->addWidget(clearButton);
+  // layout->addWidget(errorButton);
+  // layout->addWidget(warningButton);
+  // layout->addStretch();
+  // layout->addWidget(clearButton);
 
-  logToolBar->addWidget(group);
+  // logToolBar->addWidget(group);
 
-  logViews->addWidget(mLogText);
-  logViews->addWidget(mErrorLogText);
-  logViews->addWidget(mWarningLogText);
+  // logViews->addWidget(mLogText);
+  // logViews->addWidget(mErrorLogText);
+  // logViews->addWidget(mWarningLogText);
 
   // TODO: Make these indices less magical
-  connect(errorButton, &QPushButton::toggled, this, [logViews, warningButton](bool checked) {
-    if (checked)
-    {
-      // Highest priority
-      logViews->setCurrentIndex(1);
-    }
-    else
-    {
-      if (warningButton->isChecked())
-        logViews->setCurrentIndex(2);
-      else
-        logViews->setCurrentIndex(0);
-    }
-  });
+  // connect(errorButton, &QPushButton::toggled, this, [logViews, warningButton](bool checked) {
+  //   if (checked)
+  //   {
+  //     // Highest priority
+  //     logViews->setCurrentIndex(1);
+  //   }
+  //   else
+  //   {
+  //     if (warningButton->isChecked())
+  //       logViews->setCurrentIndex(2);
+  //     else
+  //       logViews->setCurrentIndex(0);
+  //   }
+  // });
 
-  connect(warningButton, &QPushButton::toggled, this, [logViews, errorButton](bool checked) {
-    if (checked)
-    {
-      if (!errorButton->isChecked())
-        logViews->setCurrentIndex(2);
-    }
-    else
-    {
-      logViews->setCurrentIndex(0);
-    }
-  });
+  // connect(warningButton, &QPushButton::toggled, this, [logViews, errorButton](bool checked) {
+  //   if (checked)
+  //   {
+  //     if (!errorButton->isChecked())
+  //       logViews->setCurrentIndex(2);
+  //   }
+  //   else
+  //   {
+  //     logViews->setCurrentIndex(0);
+  //   }
+  // });
 
   // Assemble the complete tab
-  logLayout->addWidget(logToolBar);
-  logLayout->addSpacing(2);
-  logLayout->addWidget(logViews);
+  // logLayout->addWidget(logToolBar);
+  // logLayout->addSpacing(2);
+  // logLayout->addWidget(logViews);
+  // logLayout->addWidget(mLogTable);
 
-  LOG_TAB_INDEX = mBottomPanel->addTab(logContainer, tr("Log"));
+  LOG_TAB_INDEX = mBottomPanel->addTab(mLogTable, tr("Log"));
   mIcons.append({mBottomPanel->tabBar(), ":/icons/logs.svg", LOG_TAB_INDEX});
 }
 

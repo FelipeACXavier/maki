@@ -23,6 +23,7 @@ class GeneratedFilesPanel;
 class SectionWidget;
 class QScrollArea;
 class BadgedTabWidget;
+class LogTableWidget;
 
 namespace maki
 {
@@ -63,11 +64,8 @@ protected:
   QPushButton* mBrowserTabButton;
 
   BadgedTabWidget* mBottomPanel;
+  LogTableWidget* mLogTable;
   QTextBrowser* mInfoText;
-  QTextBrowser* mLogText;
-  QTextBrowser* mErrorLogText;
-  QTextBrowser* mWarningLogText;
-  QComboBox* mLogLevelComboBox;
   ProcessTab* mProcessTab;
 
   // === Right Panel ===
