@@ -9,6 +9,39 @@
 
 #include "expanding_widget.h"
 
+class CenterIconDelegate : public QStyledItemDelegate
+{
+public:
+  using QStyledItemDelegate::QStyledItemDelegate;
+
+  void paint(QPainter* painter,
+             const QStyleOptionViewItem& option,
+             const QModelIndex& index) const override
+  {
+    QStyleOptionViewItem opt(option);
+    initStyleOption(&opt, index);
+
+    opt.text.clear();
+    opt.icon = QIcon();
+    opt.features &= ~QStyleOptionViewItem::HasDisplay;
+    opt.features &= ~QStyleOptionViewItem::HasDecoration;
+
+    opt.widget->style()->drawControl(QStyle::CE_ItemViewItem, &opt, painter, opt.widget);
+
+    const auto icon = qvariant_cast<QIcon>(
+        index.data(Qt::DecorationRole));
+
+    if (icon.isNull())
+      return;
+
+    const QSize iconSize = opt.decorationSize.isValid() ? opt.decorationSize : QSize(16, 16);
+
+    const QRect iconRect = QStyle::alignedRect(opt.direction, Qt::AlignCenter, iconSize, option.rect);
+
+    icon.paint(painter, iconRect, Qt::AlignCenter);
+  }
+};
+
 LogTableWidget::LogTableWidget(QWidget* parent)
     : QWidget(parent)
 {
@@ -40,6 +73,8 @@ LogTableWidget::LogTableWidget(QWidget* parent)
   mTable = new QTableView(this);
   mTable->setModel(mProxy);
   mTable->setItemDelegate(mHighlightDelegate);
+  mTable->setItemDelegateForColumn(LogTableModel::LevelColumn, new CenterIconDelegate(mTable));
+
   mTable->setSelectionBehavior(QAbstractItemView::SelectRows);
   mTable->setSelectionMode(QAbstractItemView::SingleSelection);
   mTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -172,7 +207,12 @@ void LogTableWidget::onClicked(const QModelIndex& index)
 
 void LogTableWidget::append(logging::LogLevel level, const QString& file, const uint32_t line, const QString& message)
 {
-  mModel->append(level, "MAKI", file, line, message);
+  // Remove new lines so the text fits nicely in the table
+  auto cleaned = message;
+  cleaned.replace("\r\n", " ");
+  cleaned.replace("\n", " ");
+  cleaned.replace("\r", " ");
+  mModel->append(level, "MAKI", file, line, cleaned);
 
   const QModelIndex lastSourceIndex = mModel->index(mModel->rowCount() - 1, 0);
   const QModelIndex lastProxyIndex = mProxy->mapFromSource(lastSourceIndex);

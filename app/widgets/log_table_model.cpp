@@ -37,7 +37,7 @@ QVariant LogTableModel::data(const QModelIndex& index, int role) const
     else if (role == Qt::DecorationRole)
       return toIcon(entry.level);
     else if (role == Qt::DisplayRole)
-      return {};  // no visible text
+      return {};
   }
 
   if (role == Qt::DisplayRole)
@@ -148,9 +148,9 @@ QIcon LogTableModel::toIcon(logging::LogLevel level) const
     case logging::LogLevel::Trace:
       return addIconWithColor(":/icons/trace.svg", QColor("purple"));
     case logging::LogLevel::Debugging:
-      return addIconWithColor(":/icons/debug.svg", QColor("blue"));
+      return addIconWithColor(":/icons/debug.svg", QColor("green"));
     case logging::LogLevel::Info:
-      return addIconWithColor(":/icons/info.svg", QColor("green"));
+      return addIconWithColor(":/icons/info.svg", QColor("blue"));
     case logging::LogLevel::Warning:
       return addIconWithColor(":/icons/warning.svg", QColor("yellow"));
     case logging::LogLevel::Error:
