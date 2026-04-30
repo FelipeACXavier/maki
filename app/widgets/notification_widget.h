@@ -7,6 +7,7 @@
 #include <QPushButton>
 #include <QTimer>
 
+#include "frame.h"
 #include "logging.h"
 
 /**
@@ -20,7 +21,7 @@
  *
  * The widget exposes an opacity property used for animation.
  */
-class NotificationWidget : public QFrame
+class NotificationWidget : public StyledFrame
 {
   Q_OBJECT
 

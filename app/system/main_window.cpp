@@ -324,19 +324,6 @@ void MainWindow::bind()
   connect(mSaveHandler.get(), &SaveHandler::fileLoaded, mSettingsManager.get(), &SettingsManager::addRecentFile);
   connect(mSaveHandler.get(), &SaveHandler::fileSaved, mSettingsManager.get(), &SettingsManager::addRecentFile);
 
-  // connect(mProcessTab, &ProcessTab::processStarted, [this] {
-  //   if (mBottomPanel && mBottomPanel->currentIndex() != MainWindowLayout::PROCESS_TAB_INDEX)
-  //     mBottomPanel->badgedTabBar()->setTabDot(MainWindowLayout::PROCESS_TAB_INDEX);
-  // });
-  // connect(mProcessTab, &ProcessTab::processFinished, [this](int exitCode, QProcess::ExitStatus /* status */) {
-  //   if (mBottomPanel && exitCode != 0 && mBottomPanel->currentIndex() != MainWindowLayout::PROCESS_TAB_INDEX)
-  //     mBottomPanel->badgedTabBar()->setTabErrorDot(MainWindowLayout::PROCESS_TAB_INDEX);
-  // });
-  // connect(mBottomPanel, &QTabWidget::currentChanged, this, [this](int index) {
-  //   if (mBottomPanel)
-  //     mBottomPanel->badgedTabBar()->clearTabBadge(index);
-  // });
-
   if (mGenerator)
   {
     connect(mGenerator, &Generator::generationStarted, [this] { toggleGenerationButton(true); });

@@ -5,68 +5,66 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QVBoxLayout>
+#include <oclero/qlementine/widgets/Label.hpp>
+#include <oclero/qlementine/widgets/StatusBadgeWidget.hpp>
 
 #include "app_configs.h"
 #include "logging.h"
 #include "style_helpers.h"
-#include "theme.h"
 
 NotificationWidget::NotificationWidget(const QString& title, const QString& text, logging::LogLevel level, QWidget* parent)
-    : QFrame(parent)
+    : StyledFrame(parent)
     , mOpacity(0.0)
 {
-  setObjectName("NotificationToast");
-  setFrameShape(QFrame::NoFrame);
+  const auto* qlementineStyle = oclero::qlementine::appStyle();
+  const auto theme = qlementineStyle->theme();
+
+  setBackgroundRole(StyledFrame::BackgroundRole::Base);
+  setBorderRole(StyledFrame::BorderRole::Custom);
+  setRadius(theme.borderRadius);
+  setBorderWidth(theme.borderWidth);
   setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
 
-  auto header = new QWidget(this);
-  header->setObjectName("NotificationHeader");
-
-  // Use dynamic property for theming based on level
-  QString iconPath = "";
-  switch (level)
-  {
-    case logging::LogLevel::Warning:
-      iconPath = ":/icons/warning.svg";
-      setProperty("level", "warning");
-      header->setProperty("level", "warning");
-      break;
-    case logging::LogLevel::Error:
-      iconPath = ":/icons/error.svg";
-      setProperty("level", "error");
-      header->setProperty("level", "error");
-      break;
-    case logging::LogLevel::Trace:
-    case logging::LogLevel::Debugging:
-    case logging::LogLevel::Info:
-    default:
-      iconPath = ":/icons/info.svg";
-      setProperty("level", "info");
-      header->setProperty("level", "info");
-      break;
-  }
+  auto header = new StyledFrame(this);
+  header->setBackgroundRole(StyledFrame::BackgroundRole::Midlight);
+  header->setBorderRole(StyledFrame::BorderRole::None);
+  header->setBorderWidth(2 * theme.borderWidth);
 
   // Header
   auto* headerLayout = new QHBoxLayout(header);
   headerLayout->setContentsMargins(
       Config::CONTENT_PADDING, Config::CONTENT_PADDING,
       Config::CONTENT_PADDING, Config::CONTENT_PADDING);
-  headerLayout->setSpacing(0);
+  headerLayout->setSpacing(5);
 
-  QLabel* titleLabel = new QLabel(title.size() > 1 ? title : "Notification", this);
-  titleLabel->setObjectName("NotificationTitle");
+  auto* titleLabel = new oclero::qlementine::Label(title.size() > 1 ? title : "Notification", header);
+  titleLabel->setRole(oclero::qlementine::TextRole::H3);
   titleLabel->setContentsMargins(0, 0, 0, 0);
   titleLabel->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
 
-  QLabel* titleIcon = new QLabel();
-  titleIcon->setPixmap(applyColorToIcon(iconPath, Config::FOREGROUND).scaled(16, 16, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+  auto* statusBadge = new oclero::qlementine::StatusBadgeWidget(header);
+  switch (level)
+  {
+    case logging::LogLevel::Warning:
+      setCustomBorderColor(theme.statusColorWarning);
+      statusBadge->setBadge(oclero::qlementine::StatusBadge::Warning);
+      break;
+    case logging::LogLevel::Error:
+      setCustomBorderColor(theme.statusColorError);
+      statusBadge->setBadge(oclero::qlementine::StatusBadge::Error);
+      break;
+    default:
+      setCustomBorderColor(theme.statusColorSuccess);
+      statusBadge->setBadge(oclero::qlementine::StatusBadge::Info);
+      break;
+  }
+  statusBadge->setBadgeSize(oclero::qlementine::StatusBadgeSize::Medium);
 
-  mCloseButton = new QPushButton(this);
-  mCloseButton->setObjectName("FlatButton");
+  mCloseButton = new QPushButton(header);
   mCloseButton->setFlat(true);
-  mCloseButton->setIcon(addIconWithColor(":/icons/close.svg", Config::FOREGROUND));
+  mCloseButton->setIcon(QIcon(":/icons/close.svg"));
 
-  headerLayout->addWidget(titleIcon, 0, Qt::AlignVCenter);
+  headerLayout->addWidget(statusBadge, 0, Qt::AlignVCenter);
   headerLayout->addSpacing(Config::CONTENT_PADDING);
   headerLayout->addWidget(titleLabel, 0, Qt::AlignVCenter);
   headerLayout->addStretch();
@@ -75,7 +73,6 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
   // Body
   auto body = new QWidget(this);
   body->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
-  body->setObjectName("NotificationBody");
 
   auto* bodyLayout = new QVBoxLayout(body);
   bodyLayout->setContentsMargins(
@@ -84,18 +81,14 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
   bodyLayout->setAlignment(Qt::AlignVCenter);
   bodyLayout->setSpacing(0);
 
-  QLabel* label = new QLabel(text, this);
-  label->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-  label->setWordWrap(true);
-  label->setFont(Fonts::Main);
+  auto* notificationText = new oclero::qlementine::Label(text, body);
+  notificationText->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+  notificationText->setWordWrap(true);
+  notificationText->setRole(oclero::qlementine::TextRole::Default);
+  notificationText->setMinimumWidth(300 - 2 * Config::CONTENT_PADDING);
+  notificationText->setMinimumHeight(2 * notificationText->fontMetrics().height());
 
-  const auto width = Config::getValueFromTheme("@notification_width");
-  if (width.isValid())
-    label->setMinimumWidth(width.toInt() - 2 * Config::CONTENT_PADDING);
-
-  label->setMinimumHeight(2 * label->fontMetrics().height());
-
-  bodyLayout->addWidget(label);
+  bodyLayout->addWidget(notificationText);
 
   auto layout = new QVBoxLayout(this);
   layout->setContentsMargins(0, 0, 0, 0);

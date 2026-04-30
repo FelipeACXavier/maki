@@ -69,9 +69,9 @@ int main(int argc, char* argv[])
 
   QGuiApplication::setDesktopFileName(Config::APPLICATION_NAME);
 
-  loadApplicationFonts();
+  // loadApplicationFonts();
 
-  QApplication::setFont(Fonts::Main);
+  // QApplication::setFont(Fonts::Main);
   auto* themeManager = new oclero::qlementine::ThemeManager(style);
 
   MainWindow system(&app, themeManager);
