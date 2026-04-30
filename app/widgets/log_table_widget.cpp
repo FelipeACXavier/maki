@@ -66,11 +66,13 @@ LogTableWidget::LogTableWidget(QWidget* parent)
   // Save the height
   mDefaultRowHeight = mTable->verticalHeader()->defaultSectionSize();
 
-  QPushButton* previousButton = new QPushButton("↑", this);
+  QPushButton* previousButton = new QPushButton(this);
+  previousButton->setIcon(QIcon(":/icons/arrow-up.svg"));
   previousButton->setFixedWidth(30);
   previousButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
-  QPushButton* nextButton = new QPushButton("↓", this);
+  QPushButton* nextButton = new QPushButton(this);
+  nextButton->setIcon(QIcon(":/icons/arrow-down.svg"));
   nextButton->setFixedWidth(30);
   nextButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 

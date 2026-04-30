@@ -231,13 +231,13 @@ VoidResult SettingsDialog::createAppearancePage()
   mThemeCombo->addItem(tr("System theme"), "system");
 
   // Then all discovered themes
-  for (const Config::ThemeInfo& info : mSettingsManager->availableThemes())
+  for (const auto& info : mSettingsManager->availableThemes())
   {
-    QString label = info.displayName;
+    QString label = info.meta.name;
     // if (info.isUser)
     //   label += tr(" (user)");
 
-    mThemeCombo->addItem(label, info.id);
+    mThemeCombo->addItem(label, info.meta.name);
   }
   mThemeCombo->setValue(appearance.theme);
 
@@ -249,43 +249,43 @@ VoidResult SettingsDialog::createAppearancePage()
   themeLayout->addWidget(mNativeMenuBar);
 
   // Color pickers
-  QMap<QString, QString> colors = {};
-  for (auto it = Config::THEME_KEY_MAP.cbegin(); it != Config::THEME_KEY_MAP.cend(); ++it)
-  {
-    QString key = it.key();
-    QString value = Config::SYSTEM_THEME.*(it.value());
+  // QMap<QString, QString> colors = {};
+  // for (auto it = Config::THEME_KEY_MAP.cbegin(); it != Config::THEME_KEY_MAP.cend(); ++it)
+  // {
+  //   QString key = it.key();
+  //   QString value = Config::SYSTEM_THEME.*(it.value());
 
-    QColor color(value);
-    if (color.isValid())
-      colors[key] = value;
-  }
+  //   QColor color(value);
+  //   if (color.isValid())
+  //     colors[key] = value;
+  // }
 
-  int cols = 3;
-  int rows = qCeil(colors.size() / cols) + 1;
-  mColorGrid = new maki::GridGroup(tr("Colors"), rows, cols, page);
-  for (auto it = colors.constBegin(); it != colors.constEnd(); ++it)
-  {
-    QString key = it.key();
-    QString label = toColorLabel(it.key());
+  // int cols = 3;
+  // int rows = qCeil(colors.size() / cols) + 1;
+  // mColorGrid = new maki::GridGroup(tr("Colors"), rows, cols, page);
+  // for (auto it = colors.constBegin(); it != colors.constEnd(); ++it)
+  // {
+  //   QString key = it.key();
+  //   QString label = toColorLabel(it.key());
 
-    auto colorSelector = new maki::ColorWidget(label, it.value(), page);
-    connect(colorSelector, &maki::ColorWidget::valueChanged, [this, key](const QColor& color) {
-      LOG_DEBUG("Looking for %s", qPrintable(key));
-      auto mapIt = Config::THEME_KEY_MAP.find(key);
-      if (mapIt == Config::THEME_KEY_MAP.end())
-        return;
+  //   auto colorSelector = new maki::ColorWidget(label, it.value(), page);
+  //   connect(colorSelector, &maki::ColorWidget::valueChanged, [this, key](const QColor& color) {
+  //     LOG_DEBUG("Looking for %s", qPrintable(key));
+  //     auto mapIt = Config::THEME_KEY_MAP.find(key);
+  //     if (mapIt == Config::THEME_KEY_MAP.end())
+  //       return;
 
-      LOG_DEBUG("Setting %s to %s", qPrintable(key), qPrintable(color.name()));
-      mTheme.*(mapIt.value()) = color.name();
-    });
-    mIcons.append({colorSelector->widget(), Config::getValueFromTheme("@eyedropper_icon").toString()});
-    mColorGrid->addWidget(colorSelector);
-  }
+  //     LOG_DEBUG("Setting %s to %s", qPrintable(key), qPrintable(color.name()));
+  //     mTheme.*(mapIt.value()) = color.name();
+  //   });
+  //   mIcons.append({colorSelector->widget(), Config::getValueFromTheme("@eyedropper_icon").toString()});
+  //   mColorGrid->addWidget(colorSelector);
+  // }
 
   mUserThemeName = new maki::StringWidget(tr("Theme name"), "User", alignment, page);
   mUserThemeName->addDescription(tr("The theme will be installed in") + ": " + AppPaths::userThemes());
 
-  themeLayout->addWidget(mColorGrid);
+  // themeLayout->addWidget(mColorGrid);
   themeLayout->addSpacing(2);
   themeLayout->addWidget(mUserThemeName);
 
@@ -491,14 +491,14 @@ void SettingsDialog::saveToSettings()
   general.confirmOnCloseWithExecution = mConfirmOnClose->getValue();
 
   AppearanceSettings appearance;
-  if (mTheme != Config::SYSTEM_THEME)
-  {
-    const auto themeName = mUserThemeName->getValue();
-    mThemeCombo->addItem(themeName, themeName.toLower());
-    mThemeCombo->setValue(themeName);
+  // if (mTheme != Config::SYSTEM_THEME)
+  // {
+  //   const auto themeName = mUserThemeName->getValue();
+  //   mThemeCombo->addItem(themeName, themeName.toLower());
+  //   mThemeCombo->setValue(themeName);
 
-    Config::saveThemeVarsToFile(themeName, mTheme);
-  }
+  //   Config::saveThemeVarsToFile(themeName, mTheme);
+  // }
 
   appearance.themeVars = mTheme;
   appearance.theme = mThemeCombo->getValue();

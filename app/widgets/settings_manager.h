@@ -4,6 +4,7 @@
 #include <QApplication>
 #include <QObject>
 #include <QSettings>
+#include <oclero/qlementine.hpp>
 
 #include "app_paths.h"
 #include "common/theme.h"
@@ -87,7 +88,7 @@ class SettingsManager : public QObject, public maki::ISettings
 {
   Q_OBJECT
 public:
-  SettingsManager(QObject* parent = nullptr);
+  SettingsManager(oclero::qlementine::ThemeManager* themeManager, QObject* parent = nullptr);
 
   GeneralSettings general() const;
   AppearanceSettings appearance() const;
@@ -107,10 +108,10 @@ public:
   void load();
   void save();
 
-  QList<Config::ThemeInfo> availableThemes() const;
+  std::vector<oclero::qlementine::Theme> availableThemes() const;
 
 signals:
-  void themeChanged(const QString& theme, const QList<Config::ThemeInfo>& availableThemes);
+  void themeChanged(const QString& theme);
   void settingsChanged();
 
 public slots:
@@ -124,5 +125,5 @@ private:
 
   QVector<PluginInfo> mPluginSettings;
 
-  QList<Config::ThemeInfo> mAvailableThemes;
+  oclero::qlementine::ThemeManager* mThemeManager;
 };

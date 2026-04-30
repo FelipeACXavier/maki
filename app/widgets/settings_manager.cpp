@@ -24,11 +24,12 @@
     mSettings.setValue("" #FIELD, MEMBER.FIELD); \
   } while (false);
 
-SettingsManager::SettingsManager(QObject* parent)
+SettingsManager::SettingsManager(oclero::qlementine::ThemeManager* themeManager, QObject* parent)
     : QObject(parent)
     , mSettings(Config::ORGANIZATION_NAME, Config::APPLICATION_NAME)
+    , mThemeManager(themeManager)
 {
-  mAvailableThemes = Config::discoverThemes();
+  // mAvailableThemes = Config::discoverThemes();
   load();
 }
 
@@ -52,9 +53,9 @@ QVector<PluginInfo> SettingsManager::plugins() const
   return mPluginSettings;
 }
 
-QList<Config::ThemeInfo> SettingsManager::availableThemes() const
+std::vector<oclero::qlementine::Theme> SettingsManager::availableThemes() const
 {
-  return mAvailableThemes;
+  return mThemeManager->themes();
 }
 
 void SettingsManager::load()
@@ -190,7 +191,7 @@ void SettingsManager::setGeneral(const GeneralSettings& s)
 void SettingsManager::setAppearance(const AppearanceSettings& s)
 {
   // Rediscover incase the user created a new theme
-  mAvailableThemes = Config::discoverThemes();
+  // mAvailableThemes = Config::discoverThemes();
 
   bool changed = (mAppearance != s);
 
@@ -200,7 +201,7 @@ void SettingsManager::setAppearance(const AppearanceSettings& s)
   if (changed)
   {
     LOG_DEBUG("Appearence settings changed: %s", qPrintable(mAppearance.theme));
-    emit themeChanged(mAppearance.theme, mAvailableThemes);
+    emit themeChanged(mAppearance.theme);
   }
 }
 
