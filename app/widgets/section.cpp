@@ -19,7 +19,7 @@ SectionWidget::SectionWidget(QWidget* parent)
   layout->setSpacing(0);
 
   // Wrap the actual content in an animatable container
-  mContentArea = new CollapsibleArea(this);
+  mContentArea = new CollapsibleAreaHeight(this);
   QVBoxLayout* contentLayout = new QVBoxLayout(mContentArea);
   contentLayout->setContentsMargins(0, 0, 0, 0);
   contentLayout->setSpacing(0);

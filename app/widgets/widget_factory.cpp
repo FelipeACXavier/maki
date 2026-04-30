@@ -732,7 +732,7 @@ SearchWidget::SearchWidget(const QString& placeholder, QWidget* parent)
 
 WidgetWithIcon SearchWidget::icon() const
 {
-  return {mIcon, ":/icons/magnifying-glass.svg"};
+  return {mIcon, ":/icons/search.svg"};
 }
 
 QLineEdit* SearchWidget::widget() const
