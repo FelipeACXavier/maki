@@ -38,9 +38,13 @@
     <file alias="appearance.svg">assets/icons/fontawesome/svgs/solid/paint-roller.svg</file>
     <file alias="clear.svg">assets/icons/fontawesome/svgs/solid/trash.svg</file>
     <file alias="log-level.svg">assets/icons/fontawesome/svgs/solid/temperature-half.svg</file>
+    <!-- Log levels -->
     <file alias="info.svg">assets/icons/fontawesome/svgs/solid/circle-info.svg</file>
-    <file alias="warning.svg">assets/icons/fontawesome/svgs/solid/triangle-exclamation.svg</file>
+    <file alias="warning.svg">assets/icons/fontawesome/svgs/solid/circle-exclamation.svg</file>
     <file alias="error.svg">assets/icons/fontawesome/svgs/solid/circle-xmark.svg</file>
+    <file alias="debug.svg">assets/icons/fontawesome/svgs/solid/circle-question.svg</file>
+    <file alias="trace.svg">assets/icons/fontawesome/svgs/solid/shield-halved.svg</file>
+    <!-- Prompt -->
     <file alias="reset.svg">assets/icons/fontawesome/svgs/solid/arrow-rotate-left.svg</file>
     <file alias="accept.svg">assets/icons/fontawesome/svgs/solid/circle-check.svg</file>
     <file alias="reject.svg">assets/icons/fontawesome/svgs/solid/circle-xmark.svg</file>
@@ -64,7 +68,8 @@
     <file alias="rectangle-list.svg">assets/icons/fontawesome/svgs/solid/rectangle-list.svg</file>
     <file alias="eye-dropper.svg">assets/icons/fontawesome/svgs/solid/eye-dropper.svg</file>
     <file alias="eye-dropper-dark.svg">assets/icons/fontawesome/svgs/solid/eye-dropper-dark.svg</file>
-    <file alias="magnifying-glass.svg">assets/icons/fontawesome/svgs/solid/magnifying-glass.svg</file>
+    <file alias="search.svg">assets/icons/fontawesome/svgs/solid/magnifying-glass.svg</file>
+    <file alias="filter.svg">assets/icons/fontawesome/svgs/solid/filter.svg</file>
     <!-- Tree tcons -->
     <file alias="capability.svg">assets/icons/fontawesome/svgs/solid/puzzle-piece.svg</file>
     <file alias="flow_block.svg">assets/icons/fontawesome/svgs/solid/scroll.svg</file>
