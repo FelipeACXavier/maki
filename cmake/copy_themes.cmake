@@ -2,6 +2,7 @@
 
 file(GLOB APP_THEME_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/assets/themes/*.theme
+  ${CMAKE_CURRENT_SOURCE_DIR}/assets/themes/*.json
 )
 
 set(THEME_BUILD_DIR ${BUILD_ASSET_DIR}/themes)

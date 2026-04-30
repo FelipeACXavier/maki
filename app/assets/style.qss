@@ -375,43 +375,6 @@ QComboBox#HeaderComboBox:on {
    TAB WIDGETS
    =============================== */
 
-QTabWidget::pane {
-  border: 1px @tab_border_style @tab_border_color;
-}
-
-QTabBar::tab {
-  background: @tab_bg;
-  border: @tab_border_size @tab_border_style @tab_border_color;
-  border-bottom: 3px @tab_border_style @tab_border_color;
-  border-top-left-radius: @border_radius;
-  border-top-right-radius: @border_radius;
-
-  padding: @tab_h_padding @tab_w_padding;
-  margin: 0px;
-}
-
-QTabBar::tab:selected {
-  background: @tab_selected_bg;
-  border-bottom-color: @selection_bg;
-}
-
-QTabWidget#LeftPanel QTabBar::tab {
-  width: @left_tab_width;
-}
-
-QTabWidget#RightPanel QTabBar::tab {
-  width: @right_tab_width;
-}
-
-QTabWidget#CanvasPanel QTabBar::tab {
-  width: @canvas_tab_width;
-  height: @canvas_tab_height;
-}
-
-QTabWidget#InfoPanel QTabBar::tab {
-  width: @info_tab_width;
-}
-
 /* ===============================
    MENUS
    =============================== */
