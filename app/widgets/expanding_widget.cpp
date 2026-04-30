@@ -17,6 +17,7 @@ ExpandingWidget::ExpandingWidget(Direction direction, QWidget* parent)
 
   mSearchArea = new CollapsibleAreaWidth(this);
   mSearchArea->setContentWidth(0);
+  mSearchArea->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
 
   auto* searchLayout = new QHBoxLayout(mSearchArea);
   searchLayout->setContentsMargins(0, 0, 0, 0);
@@ -42,6 +43,7 @@ ExpandingWidget::ExpandingWidget(Direction direction, QWidget* parent)
 void ExpandingWidget::setExpandedWidth(int width)
 {
   mExpandedWidth = width;
+  mSearchArea->setMaximumWidth(width);
 }
 
 void ExpandingWidget::setButtonIcon(const QIcon& icon)
@@ -67,7 +69,6 @@ void ExpandingWidget::setExpanded(bool expanded)
   mAnimation->setEndValue(expanded ? mExpandedWidth : 0);
   mAnimation->start();
 
-  LOG_DEBUG("%s", expanded ? "Expanding area" : "Collapsing area");
   if (expanded)
     emit areaExpanded(mButton);
   else
