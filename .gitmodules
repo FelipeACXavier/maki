@@ -6,3 +6,6 @@
 	path = 3rdparty/doxygen-awesome-css
 	url = https://github.com/jothepro/doxygen-awesome-css.git
 	branch = v2.4.1
+[submodule "3rdparty/qclementine"]
+	path = 3rdparty/qclementine
+	url = https://github.com/oclero/qlementine.git

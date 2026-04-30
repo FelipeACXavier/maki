@@ -8,6 +8,9 @@ set(CPPHELPERS_FILE_SYSTEM OFF CACHE BOOL "Disable file system helpers in CppHel
 add_subdirectory(CppHelpers)
 add_subdirectory(maki-sdk)
 
+set(QLEMENTINE_SHOWCASE ON)
+add_subdirectory(qclementine)
+
 # Build-in plugins
 if (BUILD_PLUGINS)
 add_subdirectory(plugins/koda)
