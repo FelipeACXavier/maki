@@ -1,5 +1,7 @@
 #include "main_window.h"
 
+#include <qaction.h>
+
 #include <QComboBox>
 #include <QDrag>
 #include <QInputDialog>
@@ -17,6 +19,7 @@
 #include <QTextBrowser>
 #include <QUndoGroup>
 #include <QWidget>
+#include <oclero/qlementine/widgets/AboutDialog.hpp>
 
 #include "app_configs.h"
 #include "app_paths.h"
@@ -55,9 +58,10 @@
 #include "widgets/structure/flow_menu.h"
 #include "widgets/structure/system_menu.h"
 
-MainWindow::MainWindow(QApplication* app, QWidget* parent)
+MainWindow::MainWindow(QApplication* app, oclero::qlementine::ThemeManager* themeManager, QWidget* parent)
     : MainWindowLayout(parent)
     , mActiveCanvas(nullptr)
+    , mThemeManager(themeManager)
     , mApp(app)
 {
 }
@@ -74,20 +78,18 @@ VoidResult MainWindow::start()
     if (level > mLogLevel)
       return;
 
-    QString logMessage = toQT(ts, level, message);
+    // QString logMessage = toQT(ts, level, message);
     if (mLogTable)
       mLogTable->append(level, filename, line, message);
-    // handleLogging(logMessage, mLogText);
-    // if (level == logging::LogLevel::Error)
-    //   handleLogging(logMessage, mErrorLogText);
-    // else if (level == logging::LogLevel::Warning)
-    //   handleLogging(logMessage, mWarningLogText);
   };
 
   notification::gNotificationStream = [this](logging::LogLevel level, const std::string& header, const std::string& message) {
     if (mNotificationManager)
       mNotificationManager->showNotification(QString::fromStdString(header), QString::fromStdString(message), level);
   };
+
+  for (const auto& t : AppPaths::themes())
+    mThemeManager->loadDirectory(t);
 
   mConfigTable = std::make_shared<ConfigurationTable>();
   mStorage = std::make_shared<SaveInfo>();
@@ -97,7 +99,7 @@ VoidResult MainWindow::start()
   LOG_INFO("Using application path: %s", qPrintable(QCoreApplication::applicationDirPath()));
   mSaveHandler = std::make_unique<SaveHandler>(this);
   mPluginManager = std::make_unique<PluginManager>(this);
-  mSettingsManager = std::make_shared<SettingsManager>(mActionOpenRecent);
+  mSettingsManager = std::make_shared<SettingsManager>(mThemeManager, this);
   mLanguageManager = std::make_shared<LanguageManager>();
   // TODO(felaze): Check leaks here
   mNotificationManager = new NotificationManager(mCanvasPanel);
@@ -133,13 +135,15 @@ VoidResult MainWindow::start()
     mLanguageManager->setLanguage(mSettingsManager->general().language);
     mSaveHandler->setLastDir(mSettingsManager->general().lastOpenFileDir);
 
-    onThemeChanged(mSettingsManager->appearance().theme, mSettingsManager->availableThemes());
+    // onThemeChanged(mSettingsManager->appearance().theme, mSettingsManager->availableThemes());
+    mThemeManager->setCurrentTheme(mSettingsManager->appearance().theme);
+
     for (const auto& file : mSettingsManager->general().recentFiles)
     {
       QAction* action = mActionOpenRecent->addAction(elideLeft(file, mActionOpenRecent));
       connect(action, &QAction::triggered, [this, file] { onActionLoad(file); });
     }
-    connect(mSettingsManager.get(), &SettingsManager::themeChanged, this, &MainWindow::onThemeChanged);
+    connect(mSettingsManager.get(), &SettingsManager::themeChanged, mThemeManager, &oclero::qlementine::ThemeManager::setCurrentTheme);
     connect(mSettingsManager.get(), &SettingsManager::settingsChanged, this, &MainWindow::onSettingsChanged);
 
     if (!mSettingsManager->general().showWelcomeMessage)
@@ -153,7 +157,9 @@ VoidResult MainWindow::start()
 
 void MainWindow::onThemeChanged(const QString& t, const QList<Config::ThemeInfo>& at)
 {
-  Config::applyThemeToApp(mApp, t, at);
+  return;
+
+  // Config::applyThemeToApp(mApp, t, at);
 
   // Update all items in all canvases
   for (int i = 0; i < mCanvasPanel->count(); ++i)
@@ -295,6 +301,8 @@ void MainWindow::bind()
   });
   mOpenAllSettings->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_Comma));
 
+  connect(mAboutAction, &QAction::triggered, this, &MainWindow::showAboutDialog);
+
   // Internal actions =============================================================
   connect(mCanvasPanel, &QTabWidget::currentChanged, this, &MainWindow::onCanvasTabChanged);
   connect(mCanvasPanel, &QTabWidget::tabCloseRequested, this, &MainWindow::closeCanvasTab);
@@ -316,18 +324,18 @@ void MainWindow::bind()
   connect(mSaveHandler.get(), &SaveHandler::fileLoaded, mSettingsManager.get(), &SettingsManager::addRecentFile);
   connect(mSaveHandler.get(), &SaveHandler::fileSaved, mSettingsManager.get(), &SettingsManager::addRecentFile);
 
-  connect(mProcessTab, &ProcessTab::processStarted, [this] {
-    if (mBottomPanel && mBottomPanel->currentIndex() != MainWindowLayout::PROCESS_TAB_INDEX)
-      mBottomPanel->badgedTabBar()->setTabDot(MainWindowLayout::PROCESS_TAB_INDEX);
-  });
-  connect(mProcessTab, &ProcessTab::processFinished, [this](int exitCode, QProcess::ExitStatus /* status */) {
-    if (mBottomPanel && exitCode != 0 && mBottomPanel->currentIndex() != MainWindowLayout::PROCESS_TAB_INDEX)
-      mBottomPanel->badgedTabBar()->setTabErrorDot(MainWindowLayout::PROCESS_TAB_INDEX);
-  });
-  connect(mBottomPanel, &QTabWidget::currentChanged, this, [this](int index) {
-    if (mBottomPanel)
-      mBottomPanel->badgedTabBar()->clearTabBadge(index);
-  });
+  // connect(mProcessTab, &ProcessTab::processStarted, [this] {
+  //   if (mBottomPanel && mBottomPanel->currentIndex() != MainWindowLayout::PROCESS_TAB_INDEX)
+  //     mBottomPanel->badgedTabBar()->setTabDot(MainWindowLayout::PROCESS_TAB_INDEX);
+  // });
+  // connect(mProcessTab, &ProcessTab::processFinished, [this](int exitCode, QProcess::ExitStatus /* status */) {
+  //   if (mBottomPanel && exitCode != 0 && mBottomPanel->currentIndex() != MainWindowLayout::PROCESS_TAB_INDEX)
+  //     mBottomPanel->badgedTabBar()->setTabErrorDot(MainWindowLayout::PROCESS_TAB_INDEX);
+  // });
+  // connect(mBottomPanel, &QTabWidget::currentChanged, this, [this](int index) {
+  //   if (mBottomPanel)
+  //     mBottomPanel->badgedTabBar()->clearTabBadge(index);
+  // });
 
   if (mGenerator)
   {
@@ -844,6 +852,36 @@ int MainWindow::libraryTypeToIndex(Types::LibraryTypes type) const
   }
 }
 
-void MainWindow::handleLogging(const QString& message, QTextBrowser* textBrowser)
+void MainWindow::showAboutDialog()
 {
+  oclero::qlementine::AboutDialog dialog(this);
+
+  dialog.setIcon(QIcon(":/app_icons/maki.png"));
+  dialog.setApplicationName("MAKI");
+  dialog.setApplicationVersion(QApplication::applicationVersion());
+
+  dialog.setDescription(
+      "A low-code development platform for modelling, orchestrating, "
+      "simulating, and verifying component-based systems.");
+
+  dialog.setWebsiteUrl("https://felipeacxavier.github.io/maki/");
+  dialog.setLicense("MIT License");
+  dialog.setCopyright("© 2026 Felipe Xavier");
+
+  dialog.addSocialMediaLink(
+      "GitHub",
+      "https://github.com/FelipeACXavier",
+      QIcon(":/icons/github.svg"));
+
+  dialog.addSocialMediaLink(
+      "Research",
+      "https://research.tue.nl/nl/persons/felipe-de-azeredo-coutinho-xavier/",
+      QIcon(":/icons/research.svg"));
+
+  dialog.addSocialMediaLink(
+      "Website",
+      "https://felipeacxavier.github.io",
+      QIcon(":/icons/me.svg"));
+
+  dialog.exec();
 }

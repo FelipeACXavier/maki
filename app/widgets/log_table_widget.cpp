@@ -100,6 +100,8 @@ LogTableWidget::LogTableWidget(QWidget* parent)
   filterLayout->addWidget(filterBox);
 
   auto* mainLayout = new QVBoxLayout(this);
+  mainLayout->setContentsMargins(0, 0, 0, 0);
+  mainLayout->setSpacing(5);
   mainLayout->addLayout(filterLayout);
   mainLayout->addWidget(mTable);
 

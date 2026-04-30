@@ -1,5 +1,7 @@
 #include "main_window_layout.h"
 
+#include <qpalette.h>
+
 #include <QAction>
 #include <QApplication>
 #include <QComboBox>
@@ -20,6 +22,8 @@
 #include <QToolButton>
 #include <QUndoGroup>
 #include <QVBoxLayout>
+#include <oclero/qlementine.hpp>
+#include <oclero/qlementine/widgets/IconWidget.hpp>
 
 // Custom widgets
 #include "app_configs.h"
@@ -90,7 +94,7 @@ void MainWindowLayout::buildLeftPanel()
   mStructureScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
   mStructureScrollArea->setWidget(mStructureTab);
 
-  auto sindex = mPalette->addTab(mStructureScrollArea, tr("Structure"));
+  auto sindex = mPalette->addTab(mStructureScrollArea, QIcon(":/icons/structure.svg"), tr("Structure"));
   mTranslatable.push_back({mPalette->tabBar(), "Structure", sindex});
 
   mBehaviourTab = new QWidget();
@@ -107,17 +111,13 @@ void MainWindowLayout::buildLeftPanel()
   mBehaviourScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
   mBehaviourScrollArea->setWidget(mBehaviourTab);
 
-  auto bindex = mPalette->addTab(mBehaviourScrollArea, tr("Behavior"));
+  auto bindex = mPalette->addTab(mBehaviourScrollArea, QIcon(":/icons/behaviour.svg"), tr("Behavior"));
   mTranslatable.push_back({mPalette->tabBar(), "Behavior", bindex});
 
-  mIcons.append({mPalette->tabBar(), ":/icons/structure.svg", 0});
-  mIcons.append({mPalette->tabBar(), ":/icons/behaviour.svg", 1});
-
-  mPalette->tabBar()->setIconSize(QSize(18, 18));
+  mPalette->tabBar()->setIconSize(QSize(16, 16));
 
   mPaletteSearch = new maki::SearchWidget(tr("Filter nodes"), mLeftPanel);
   mPaletteSearch->hide();
-  mIcons.append(mPaletteSearch->icon());
 
   connect(mPaletteSearch, &maki::SearchWidget::dismissed, this, [this] {
     mPaletteSearch->hide();
@@ -145,8 +145,7 @@ void MainWindowLayout::buildCentralPanel()
 
   // ---------------------------------------------
   mGenerationButton = new QPushButton("");
-  mIcons.append({mGenerationButton, ":/icons/verify.svg"});
-
+  mGenerationButton->setIcon(QIcon(":/icons/verify.svg"));
   mGenerationButton->setToolTip("Verify system");
   mGenerationButton->setToolTipDuration(2000);
   mGenerationButton->setFixedSize(30, 30);
@@ -155,7 +154,7 @@ void MainWindowLayout::buildCentralPanel()
 
   // ----------------------------------------------------------------
   mSimulateButton = new QPushButton("");
-  mIcons.append({mSimulateButton, ":/icons/play.svg"});
+  mSimulateButton->setIcon(QIcon(":/icons/play.svg"));
   mSimulateButton->setToolTip("Simulate system");
   mSimulateButton->setToolTipDuration(2000);
   mSimulateButton->setFixedSize(30, 30);
@@ -170,7 +169,7 @@ void MainWindowLayout::buildCentralPanel()
 
   // ----------------------------------------------------------------
   mDeployButton = new QPushButton("");
-  mIcons.append({mDeployButton, ":/icons/deploy.svg"});
+  mDeployButton->setIcon(QIcon(":/icons/deploy.svg"));
 
   mDeployButton->setToolTip("Deploy program to selected application");
   mDeployButton->setToolTipDuration(2000);
@@ -180,8 +179,6 @@ void MainWindowLayout::buildCentralPanel()
 
   // ---------------------------------------------
   mCanvasPanel = new QTabWidget();
-  mCanvasPanel->setTabsClosable(true);
-  mCanvasPanel->setMovable(true);
 
   CanvasView* canvasView = new CanvasView();
 
@@ -190,6 +187,7 @@ void MainWindowLayout::buildCentralPanel()
 
   // Remove the close button from the system tab
   mCanvasPanel->tabBar()->setTabButton(0, QTabBar::RightSide, nullptr);
+  mCanvasPanel->tabBar()->setIconSize(QSize(16, 16));
 
   // Top right buttons
   QWidget* corner = new QWidget();
@@ -200,11 +198,10 @@ void MainWindowLayout::buildCentralPanel()
 
   // First button
   mBrowserTabButton = new QPushButton(corner);
-  mBrowserTabButton->setObjectName("MainWindowButton");
+  mBrowserTabButton->setIcon(QIcon(":/icons/display.svg"));
   mBrowserTabButton->setToolTip(tr("Show simulation tab"));
   mTranslatable.push_back({mBrowserTabButton, "Show simulation tab", 0, true});
   connect(mBrowserTabButton, &QPushButton::pressed, [this] { updateProperty(mBrowserTabButton, Config::HAS_ACTIVITY, false); });
-  mIcons.append({mBrowserTabButton, ":/icons/display.svg"});
 
   layout->addWidget(mBrowserTabButton);
 
@@ -224,9 +221,26 @@ void MainWindowLayout::buildCentralPanel()
   // Now add the container to the splitter
   mCentralSplitter->addWidget(canvasContainer);
 
-  mBottomPanel = new BadgedTabWidget();
-  mBottomPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-  mBottomPanel->setMinimumHeight(320);
+  auto* bottomContainer = new QWidget();
+  QVBoxLayout* bottomLayout = new QVBoxLayout(bottomContainer);
+  bottomLayout->setContentsMargins(0, 0, 0, 0);
+  bottomLayout->setSpacing(0);
+
+  auto* bottomNavContainer = new QWidget();
+  QHBoxLayout* bottomNavLayout = new QHBoxLayout(bottomNavContainer);
+  bottomNavLayout->setContentsMargins(0, 0, 0, 0);
+  bottomNavLayout->setSpacing(0);
+
+  mBottomNavigation = new oclero::qlementine::NavigationBar(bottomContainer);
+  mBottomPanel = new QStackedWidget(bottomContainer);
+
+  // mBottomPanel = new BadgedTabWidget();
+  // mBottomPanel->setMinimumHeight(300);
+  // mBottomPanel->tabBar()->setIconSize(QSize(16, 16));
+  bottomNavLayout->addWidget(mBottomNavigation);
+  bottomNavLayout->addStretch();
+  bottomLayout->addWidget(bottomNavContainer);
+  bottomLayout->addWidget(mBottomPanel);
 
   // ===================================================================
   QWidget* infoContainer = new QWidget(mBottomPanel);
@@ -242,17 +256,32 @@ void MainWindowLayout::buildCentralPanel()
 
   infoLayout->addWidget(mInfoText);
 
-  auto iindex = mBottomPanel->addTab(infoContainer, tr("Info"));
-  mTranslatable.push_back({mBottomPanel->tabBar(), "Info", iindex});
-  mIcons.append({mBottomPanel->tabBar(), ":/icons/info.svg", iindex});
+  mBottomNavigation->addItem(tr("Info"), QIcon(":/icons/info.svg"));
+  mBottomPanel->addWidget(infoContainer);
 
-  buildLogTab();
+  QWidget* logContainer = new QFrame(mBottomPanel);
+  QVBoxLayout* logLayout = new QVBoxLayout(logContainer);
+  logLayout->setContentsMargins(2, 2, 2, 2);
+  logLayout->setSpacing(0);
+
+  mLogTable = new LogTableWidget(logContainer);
+  logLayout->addWidget(mLogTable);
+  // LOG_TAB_INDEX = mBottomPanel->addTab(mLogTable, QIcon(":/icons/logs.svg"), tr("Log"));
+
+  mBottomNavigation->addItem(tr("Log"), QIcon(":/icons/logs.svg"));
+  mBottomPanel->addWidget(logContainer);
 
   mProcessTab = new ProcessTab(mBottomPanel);
-  PROCESS_TAB_INDEX = mBottomPanel->addTab(mProcessTab, tr("Generation"));
-  mIcons.append({mBottomPanel->tabBar(), ":/icons/terminal.svg", PROCESS_TAB_INDEX});
+  // PROCESS_TAB_INDEX = mBottomPanel->addTab(mProcessTab, QIcon(":/icons/terminal.svg"), tr("Generation"));
+  mBottomNavigation->addItem(tr("Generation"), QIcon(":/icons/terminal.svg"));
+  mBottomPanel->addWidget(mProcessTab);
 
-  mCentralSplitter->addWidget(mBottomPanel);
+  mBottomPanel->setCurrentIndex(0);
+  connect(mBottomNavigation, &oclero::qlementine::NavigationBar::currentIndexChanged, [this]() {
+    mBottomPanel->setCurrentIndex(mBottomNavigation->currentIndex());
+  });
+
+  mCentralSplitter->addWidget(bottomContainer);
   mCentralSplitter->setCollapsible(0, false);
 
   mMainSplitter->addWidget(mCentralSplitter);
@@ -280,14 +309,12 @@ void MainWindowLayout::buildRightPanel()
   mSystemMenu->header()->setTextElideMode(Qt::ElideRight);
   mSystemMenu->header()->setSectionsMovable(false);
 
-  auto sindex = mNavigationTab->addTab(mSystemMenu, tr("System"));
+  auto sindex = mNavigationTab->addTab(mSystemMenu, QIcon(":/icons/system.svg"), tr("System"));
   mTranslatable.push_back({mNavigationTab->tabBar(), "System", sindex});
-  mIcons.append({mNavigationTab->tabBar(), ":/icons/system.svg", 0});
 
   mFileMenu = new GeneratedFilesPanel(mNavigationTab);
-  auto findex = mNavigationTab->addTab(mFileMenu, tr("Files"));
+  auto findex = mNavigationTab->addTab(mFileMenu, QIcon(":/icons/rectangle-list.svg"), tr("Files"));
   mTranslatable.push_back({mNavigationTab->tabBar(), "Files", findex});
-  mIcons.append({mNavigationTab->tabBar(), ":/icons/rectangle-list.svg", 1});
 
   // ----------------------------------------------------------------------
   // Properties Menu
@@ -295,15 +322,14 @@ void MainWindowLayout::buildRightPanel()
   mPropertiesTab->setMinimumHeight(500);
 
   mPropertiesMenu = new PropertiesMenu(mPropertiesTab);
-  auto pindex = mPropertiesTab->addTab(mPropertiesMenu, tr("Properties"));
+  auto pindex = mPropertiesTab->addTab(mPropertiesMenu, QIcon(":/icons/properties.svg"), tr("Properties"));
   mTranslatable.push_back({mPropertiesTab->tabBar(), "Properties", pindex});
-
-  mIcons.append({mPropertiesTab->tabBar(), ":/icons/properties.svg", 0});
-  mIcons.append({mPropertiesTab->tabBar(), ":/icons/fields.svg", 1});
-  mIcons.append({mPropertiesTab->tabBar(), ":/icons/behaviour.svg", 2});
 
   mNavigationTab->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
   mPropertiesTab->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+  mPropertiesTab->tabBar()->setIconSize(QSize(16, 16));
+  mNavigationTab->tabBar()->setIconSize(QSize(16, 16));
 
   mRightPanel->addWidget(mNavigationTab);
   mRightPanel->addWidget(mPropertiesTab);
@@ -436,24 +462,24 @@ void MainWindowLayout::buildMenuBar()
   view->addMenu(showMenu);
 
   mOpenInfoPanel = new QAction(tr("Information panel"), this);
+  mOpenInfoPanel->setIcon(QIcon(":/icons/invisible.svg"));
   mTranslatable.push_back({mOpenInfoPanel, "Information panel"});
-  mIcons.append({mOpenInfoPanel, ":/icons/invisible.svg"});
   showMenu->addAction(mOpenInfoPanel);
   connect(mOpenInfoPanel, &QAction::triggered, [this] {
     togglePanelVisibility(mBottomPanel, mOpenInfoPanel);
   });
 
   mOpenComponentsPanel = new QAction(tr("Components panel"), this);
+  mOpenComponentsPanel->setIcon(QIcon(":/icons/invisible.svg"));
   mTranslatable.push_back({mOpenComponentsPanel, "Components panel"});
-  mIcons.append({mOpenComponentsPanel, ":/icons/invisible.svg"});
   showMenu->addAction(mOpenComponentsPanel);
   connect(mOpenComponentsPanel, &QAction::triggered, [this] {
     togglePanelVisibility(mLeftPanel, mOpenComponentsPanel);
   });
 
   mOpenPropertiesPanel = new QAction(tr("Properties panel"), this);
+  mOpenPropertiesPanel->setIcon(QIcon(":/icons/invisible.svg"));
   mTranslatable.push_back({mOpenPropertiesPanel, "Properties panel"});
-  mIcons.append({mOpenPropertiesPanel, ":/icons/invisible.svg"});
   showMenu->addAction(mOpenPropertiesPanel);
   connect(mOpenPropertiesPanel, &QAction::triggered, [this] {
     togglePanelVisibility(mRightPanel, mOpenPropertiesPanel);
@@ -523,96 +549,9 @@ void MainWindowLayout::buildMenuBar()
 
   mAboutAction = new QAction(tr("About"), this);
   mTranslatable.push_back({mAboutAction, "About"});
-  mAboutAction->setEnabled(false);
   help->addAction(mAboutAction);
 
   setMenuBar(mMenuBar);
-}
-
-void MainWindowLayout::buildLogTab()
-{
-  // QWidget* logContainer = new QWidget(mBottomPanel);
-  // QVBoxLayout* logLayout = new QVBoxLayout(logContainer);
-  // logLayout->setContentsMargins(2, 2, 2, 2);
-  // logLayout->setSpacing(0);
-
-  // // Toolbar
-  // QToolBar* logToolBar = new QToolBar(logContainer);
-  // logToolBar->setObjectName("LogToolBar");
-  // logToolBar->setMovable(false);
-  // logToolBar->setFloatable(false);
-  // logToolBar->setFont(Fonts::SmallTab);
-
-  mLogTable = new LogTableWidget(mBottomPanel);
-
-  // =======================================================================================
-  // Clear button
-  // QPushButton* clearButton = new QPushButton();
-  // clearButton->setToolTip("Clear the logs");
-  // clearButton->setToolTipDuration(2000);
-  // mIcons.append({clearButton, ":/icons/clear.svg"});
-
-  // connect(clearButton, &QPushButton::pressed, this, [this]() {
-  //   mLogText->clear();
-  //   mErrorLogText->clear();
-  //   mWarningLogText->clear();
-  // });
-
-  // =======================================================================================
-  // Set the layout
-  // QWidget* group = new QWidget();
-  // QHBoxLayout* layout = new QHBoxLayout(group);
-  // layout->setContentsMargins(0, 0, 0, 0);
-  // layout->setSpacing(5);
-  // layout->setAlignment(Qt::AlignCenter);
-
-  // layout->addWidget(errorButton);
-  // layout->addWidget(warningButton);
-  // layout->addStretch();
-  // layout->addWidget(clearButton);
-
-  // logToolBar->addWidget(group);
-
-  // logViews->addWidget(mLogText);
-  // logViews->addWidget(mErrorLogText);
-  // logViews->addWidget(mWarningLogText);
-
-  // TODO: Make these indices less magical
-  // connect(errorButton, &QPushButton::toggled, this, [logViews, warningButton](bool checked) {
-  //   if (checked)
-  //   {
-  //     // Highest priority
-  //     logViews->setCurrentIndex(1);
-  //   }
-  //   else
-  //   {
-  //     if (warningButton->isChecked())
-  //       logViews->setCurrentIndex(2);
-  //     else
-  //       logViews->setCurrentIndex(0);
-  //   }
-  // });
-
-  // connect(warningButton, &QPushButton::toggled, this, [logViews, errorButton](bool checked) {
-  //   if (checked)
-  //   {
-  //     if (!errorButton->isChecked())
-  //       logViews->setCurrentIndex(2);
-  //   }
-  //   else
-  //   {
-  //     logViews->setCurrentIndex(0);
-  //   }
-  // });
-
-  // Assemble the complete tab
-  // logLayout->addWidget(logToolBar);
-  // logLayout->addSpacing(2);
-  // logLayout->addWidget(logViews);
-  // logLayout->addWidget(mLogTable);
-
-  LOG_TAB_INDEX = mBottomPanel->addTab(mLogTable, tr("Log"));
-  mIcons.append({mBottomPanel->tabBar(), ":/icons/logs.svg", LOG_TAB_INDEX});
 }
 
 int MainWindowLayout::setTabBarWidth(QTabBar* bar, int minWidth, int minBorder, int minPadding)
@@ -629,10 +568,7 @@ int MainWindowLayout::setTabBarWidth(QTabBar* bar, int minWidth, int minBorder, 
   }
 
   // Set the width of the tabs
-  applyStyle(bar, QString("QTabBar::tab {"
-                          "  width: %1"
-                          "}")
-                      .arg(maxWidth));
+  // applyStyle(bar, QString("QTabBar::tab { width: %1 }").arg(maxWidth));
 
   int singleBarWidth = (maxWidth) + (2 * minBorder) + (2 * minPadding);
 
@@ -641,88 +577,97 @@ int MainWindowLayout::setTabBarWidth(QTabBar* bar, int minWidth, int minBorder, 
 
 void MainWindowLayout::applyTheme()
 {
-  auto tabPadding = Config::getValueFromTheme("@tab_w_padding");
-  auto tabBorderSize = Config::getValueFromTheme("@tab_border_size");
+  const auto* qlementineStyle = oclero::qlementine::appStyle();
+  if (!qlementineStyle)
+    return;
+
+  const auto theme = qlementineStyle->theme();
+
+  const auto tabPadding = theme.spacing;
+  const auto tabBorderSize = theme.borderWidth;
+  const auto minWidth = 100;
 
   if (mLeftPanel && mPalette)
   {
     mLeftPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    mPalette->setObjectName("LeftPanel");
-    mPalette->tabBar()->setExpanding(false);
 
-    auto tabWidth = Config::getValueFromTheme("@left_tab_width");
-    if (tabWidth.isValid() && tabPadding.isValid() && tabBorderSize.isValid())
-    {
-      int width = setTabBarWidth(mPalette->tabBar(), tabWidth.toInt(), tabPadding.toInt(), tabBorderSize.toInt());
-      mPalette->setMinimumWidth(width);
-    }
-    else
-    {
-      LOG_WARNING("Failed to derive left panel size from theme");
-    }
+    int width = setTabBarWidth(mPalette->tabBar(), minWidth, tabPadding, tabBorderSize);
+    mPalette->setMinimumWidth(width);
+
+    mPalette->tabBar()->setExpanding(false);
+    mPalette->tabBar()->setDocumentMode(true);
+    mPalette->tabBar()->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
+    mPalette->tabBar()->setFocusPolicy(Qt::NoFocus);
+    mPalette->tabBar()->setTabsClosable(false);
+    mPalette->tabBar()->setMovable(false);
+    mPalette->tabBar()->setChangeCurrentOnDrag(true);
   }
 
   if (mCanvasPanel)
   {
-    auto tabWidth = Config::getValueFromTheme("@canvas_tab_width");
-    if (tabWidth.isValid())
-      setTabBarWidth(mCanvasPanel->tabBar(), tabWidth.toInt(), tabPadding.toInt(), tabBorderSize.toInt());
-
-    mCanvasPanel->setObjectName("CanvasPanel");
     mCanvasPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
     mCanvasPanel->tabBar()->setExpanding(false);
+    mCanvasPanel->tabBar()->setDocumentMode(true);
+    mCanvasPanel->tabBar()->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
+    mCanvasPanel->tabBar()->setFocusPolicy(Qt::NoFocus);
+    mCanvasPanel->tabBar()->setTabsClosable(true);
+    mCanvasPanel->tabBar()->setMovable(true);
+    mCanvasPanel->tabBar()->setChangeCurrentOnDrag(false);
+    mCanvasPanel->tabBar()->setUsesScrollButtons(false);
   }
 
-  if (mBottomPanel)
-  {
-    auto tabWidth = Config::getValueFromTheme("@info_tab_width");
-    if (tabWidth.isValid())
-      setTabBarWidth(mBottomPanel->tabBar(), tabWidth.toInt(), tabPadding.toInt(), tabBorderSize.toInt());
+  // if (mBottomPanel)
+  // {
+  //   mBottomPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    mBottomPanel->setObjectName("InfoPanel");
-    mBottomPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    mBottomPanel->tabBar()->setExpanding(false);
-  }
+  //   mBottomPanel->tabBar()->setExpanding(false);
+  //   mBottomPanel->tabBar()->setDocumentMode(true);
+  //   mBottomPanel->tabBar()->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
+  //   mBottomPanel->tabBar()->setFocusPolicy(Qt::NoFocus);
+  //   mBottomPanel->tabBar()->setTabsClosable(false);
+  //   mBottomPanel->tabBar()->setMovable(false);
+  //   mBottomPanel->tabBar()->setChangeCurrentOnDrag(false);
+  //   mBottomPanel->tabBar()->setUsesScrollButtons(false);
+  // }
 
   if (mRightPanel)
   {
     int navigationTabWidth = 0;
     int propertiesTabWidth = 0;
 
-    auto tabWidth = Config::getValueFromTheme("@right_tab_width");
-
     if (mNavigationTab)
     {
-      mNavigationTab->setObjectName("RightPanel");
       mNavigationTab->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-      mNavigationTab->tabBar()->setExpanding(false);
 
-      if (tabWidth.isValid() && tabPadding.isValid() && tabBorderSize.isValid())
-      {
-        navigationTabWidth = setTabBarWidth(mNavigationTab->tabBar(), tabWidth.toInt(), tabPadding.toInt(), tabBorderSize.toInt());
-        mNavigationTab->setMinimumWidth(navigationTabWidth);
-      }
-      else
-      {
-        LOG_WARNING("Failed to derive navigation panel size from theme");
-      }
+      navigationTabWidth = setTabBarWidth(mNavigationTab->tabBar(), minWidth, tabPadding, tabBorderSize);
+      mNavigationTab->setMinimumWidth(navigationTabWidth);
+
+      mNavigationTab->tabBar()->setExpanding(false);
+      mNavigationTab->tabBar()->setDocumentMode(true);
+      mNavigationTab->tabBar()->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
+      mNavigationTab->tabBar()->setFocusPolicy(Qt::NoFocus);
+      mNavigationTab->tabBar()->setTabsClosable(false);
+      mNavigationTab->tabBar()->setMovable(false);
+      mNavigationTab->tabBar()->setChangeCurrentOnDrag(false);
+      mNavigationTab->tabBar()->setUsesScrollButtons(false);
     }
 
     if (mPropertiesTab)
     {
-      mPropertiesTab->setObjectName("RightPanel");
       mPropertiesTab->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-      mPropertiesTab->tabBar()->setExpanding(true);
 
-      if (tabWidth.isValid() && tabPadding.isValid() && tabBorderSize.isValid())
-      {
-        propertiesTabWidth = setTabBarWidth(mPropertiesTab->tabBar(), tabWidth.toInt(), tabPadding.toInt(), tabBorderSize.toInt());
-        mPropertiesTab->setMinimumWidth(propertiesTabWidth);
-      }
-      else
-      {
-        LOG_WARNING("Failed to derive properties panel size from theme");
-      }
+      propertiesTabWidth = setTabBarWidth(mPropertiesTab->tabBar(), minWidth, tabPadding, tabBorderSize);
+      mPropertiesTab->setMinimumWidth(propertiesTabWidth);
+
+      mPropertiesTab->tabBar()->setExpanding(false);
+      mPropertiesTab->tabBar()->setDocumentMode(true);
+      mPropertiesTab->tabBar()->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
+      mPropertiesTab->tabBar()->setFocusPolicy(Qt::NoFocus);
+      mPropertiesTab->tabBar()->setTabsClosable(false);
+      mPropertiesTab->tabBar()->setMovable(false);
+      mPropertiesTab->tabBar()->setChangeCurrentOnDrag(false);
+      mPropertiesTab->tabBar()->setUsesScrollButtons(false);
     }
 
     mRightPanel->setMinimumWidth(std::max(navigationTabWidth, propertiesTabWidth));
@@ -734,7 +679,6 @@ void MainWindowLayout::applyTheme()
 
 void MainWindowLayout::onThemeChanged(const AppearanceSettings& settings)
 {
-  updateIconTheme(mIcons);
   mMenuBar->setNativeMenuBar(settings.nativeMenuBar);
 }
 
@@ -782,18 +726,15 @@ QWidget* MainWindowLayout::createHeaderComboBox(QComboBox* comboBox, const QStri
   QWidget* wrapper = new QWidget();
   QHBoxLayout* wLayout = new QHBoxLayout(wrapper);
   wLayout->setContentsMargins(0, 0, 0, 0);
-  wLayout->setSpacing(0);
+  wLayout->setSpacing(4);
 
-  QLabel* iconLabel = new QLabel();
-  iconLabel->setObjectName("HeaderButton");
+  auto* iconLabel = new oclero::qlementine::IconWidget(QIcon(iconPath), QSize(16, 16));
   iconLabel->setToolTip(tooltip);
   iconLabel->setToolTipDuration(2000);
-  mIcons.append({iconLabel, iconPath});
 
   comboBox->setSizeAdjustPolicy(QComboBox::AdjustToContents);
   comboBox->setToolTip(tooltip);
   comboBox->setToolTipDuration(2000);
-  comboBox->setObjectName("HeaderComboBox");
 
   wLayout->addWidget(iconLabel);
   wLayout->addWidget(comboBox);
@@ -803,26 +744,30 @@ QWidget* MainWindowLayout::createHeaderComboBox(QComboBox* comboBox, const QStri
 
 void MainWindowLayout::toggleGenerationButton(bool running)
 {
-  auto it = std::find_if(mIcons.begin(), mIcons.end(), [&](const WidgetWithIcon& item) { return item.widget == mGenerationButton; });
-  if (it != mIcons.end())
+  if (running)
   {
-    if (running)
-    {
-      mGenerationButton->setToolTip("Cancel current generation");
-      it->path = ":/icons/pause.svg";
-    }
-    else
-    {
-      mGenerationButton->setToolTip("Run with the selected options");
-      it->path = ":/icons/verify.svg";
-    }
+    mGenerationButton->setToolTip("Cancel current generation");
+    mGenerationButton->setIcon(QIcon(":/icons/pause.svg"));
   }
-
-  updateIconTheme(mIcons);
+  else
+  {
+    mGenerationButton->setToolTip("Verify system");
+    mGenerationButton->setIcon(QIcon(":/icons/verify.svg"));
+  }
 }
 
 void MainWindowLayout::toggleDeployButton(bool running)
 {
+  if (running)
+  {
+    mSimulateButton->setToolTip("Cancel current simulation");
+    mSimulateButton->setIcon(QIcon(":/icons/pause.svg"));
+  }
+  else
+  {
+    mSimulateButton->setToolTip("Simulate system");
+    mSimulateButton->setIcon(QIcon(":/icons/play.svg"));
+  }
 }
 
 void MainWindowLayout::togglePanelVisibility(QWidget* panel, QAction* action)

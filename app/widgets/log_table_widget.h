@@ -11,7 +11,6 @@
 class LogTableWidget : public QWidget
 {
   Q_OBJECT
-
 public:
   LogTableWidget(QWidget* parent = nullptr);
 

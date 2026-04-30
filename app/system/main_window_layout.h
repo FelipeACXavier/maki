@@ -3,6 +3,7 @@
 #include <qlineedit.h>
 
 #include <QMainWindow>
+#include <oclero/qlementine/widgets/NavigationBar.hpp>
 
 #include "style_helpers.h"
 #include "widgets/settings_manager.h"
@@ -24,6 +25,7 @@ class SectionWidget;
 class QScrollArea;
 class BadgedTabWidget;
 class LogTableWidget;
+class QStackedWidget;
 
 namespace maki
 {
@@ -63,7 +65,9 @@ protected:
   QTabWidget* mCanvasPanel;
   QPushButton* mBrowserTabButton;
 
-  BadgedTabWidget* mBottomPanel;
+  // BadgedTabWidget* mBottomPanel;
+  QStackedWidget* mBottomPanel;
+  oclero::qlementine::NavigationBar* mBottomNavigation;
   LogTableWidget* mLogTable;
   QTextBrowser* mInfoText;
   ProcessTab* mProcessTab;
@@ -147,7 +151,6 @@ private:
 
   void buildLeftPanel();
   void buildCentralPanel();
-  void buildLogTab();
   void buildRightPanel();
 
   void buildMenuBar();

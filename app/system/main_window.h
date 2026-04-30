@@ -7,6 +7,7 @@
 #include <QDir>
 #include <QMainWindow>
 #include <QStringLiteral>
+#include <oclero/qlementine.hpp>
 
 #include "common/theme.h"
 #include "config_table.h"
@@ -38,7 +39,7 @@ class MainWindow : public MainWindowLayout
   Q_OBJECT
 
 public:
-  explicit MainWindow(QApplication* app, QWidget* parent = nullptr);
+  explicit MainWindow(QApplication* app, oclero::qlementine::ThemeManager* themeManager, QWidget* parent = nullptr);
   ~MainWindow();
 
   VoidResult start();
@@ -70,6 +71,8 @@ private:
   NotificationManager* mNotificationManager = nullptr;
   Logger* mLogger = nullptr;
 
+  oclero::qlementine::ThemeManager* mThemeManager;
+
   logging::LogLevel mLogLevel;
 
   std::shared_ptr<SaveInfo> mStorage;
@@ -96,7 +99,7 @@ private:
   void onThemeChanged(const QString& t, const QList<Config::ThemeInfo>& at);
   void onSettingsChanged();
 
-  void handleLogging(const QString& message, QTextBrowser* textBrowser);
+  void showAboutDialog();
 
   void addBrowserTab();
   void addPluginTab(const QString& name, PluginView* view);
@@ -111,6 +114,6 @@ private:
   void onActionGenerate();
   void onActionSimulate();
   void onActionLogLevelChanged();
-};
+};  // namespace qlementclassMainWindow:public MainWindowLayout
 
 #endif  // MAINWINDOW_H

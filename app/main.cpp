@@ -4,6 +4,7 @@
 #include <QFontDatabase>
 #include <QMessageBox>
 #include <QUrl>
+#include <oclero/qlementine.hpp>
 
 #include "app_paths.h"
 #include "common/app_configs.h"
@@ -52,6 +53,11 @@ int main(int argc, char* argv[])
   app.setApplicationVersion(Config::VERSION);
   app.setOrganizationName(Config::ORGANIZATION_NAME);
 
+  auto* style = new oclero::qlementine::QlementineStyle(&app);
+  style->setAnimationsEnabled(true);
+  style->setAutoIconColor(oclero::qlementine::AutoIconColor::TextColor);
+  app.setStyle(style);
+
   QCoreApplication::setOrganizationName(Config::ORGANIZATION_NAME);
   QCoreApplication::setApplicationVersion(Config::VERSION);
   QCoreApplication::setApplicationName(Config::APPLICATION_NAME);        // internal id-ish
@@ -66,7 +72,9 @@ int main(int argc, char* argv[])
   loadApplicationFonts();
 
   QApplication::setFont(Fonts::Main);
-  MainWindow system(&app);
+  auto* themeManager = new oclero::qlementine::ThemeManager(style);
+
+  MainWindow system(&app, themeManager);
   system.setWindowTitle(Config::APPLICATION_NAME);
 
   auto started = system.start();

@@ -73,6 +73,10 @@
     <!-- Tree tcons -->
     <file alias="capability.svg">assets/icons/fontawesome/svgs/solid/puzzle-piece.svg</file>
     <file alias="flow_block.svg">assets/icons/fontawesome/svgs/solid/scroll.svg</file>
+    <!-- Brands -->
+    <file alias="github.svg">assets/icons/fontawesome/svgs/brands/github.svg</file>
+    <file alias="research.svg">assets/icons/fontawesome/svgs/solid/book.svg</file>
+    <file alias="me.svg">assets/icons/fontawesome/svgs/solid/circle-user.svg</file>
   </qresource>
   <qresource prefix="/app_icons">
     <file alias="maki.png">assets/app_icon/maki_icon_only.png</file>
