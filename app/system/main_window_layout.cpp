@@ -34,6 +34,7 @@
 #include "theme.h"
 #include "widgets/badged_tab_bar.h"
 #include "widgets/badged_tab_widget.h"
+#include "widgets/frame.h"
 #include "widgets/log_table_widget.h"
 #include "widgets/properties/properties_menu.h"
 #include "widgets/section.h"
@@ -259,7 +260,12 @@ void MainWindowLayout::buildCentralPanel()
   mBottomNavigation->addItem(tr("Info"), QIcon(":/icons/info.svg"));
   mBottomPanel->addWidget(infoContainer);
 
-  QWidget* logContainer = new QFrame(mBottomPanel);
+  auto* logContainer = new StyledFrame(mBottomPanel);
+  logContainer->setBackgroundRole(StyledFrame::BackgroundRole::Base);
+  logContainer->setBorderRole(StyledFrame::BorderRole::None);
+  logContainer->setRadius(0);
+  logContainer->setBorderWidth(0);
+
   QVBoxLayout* logLayout = new QVBoxLayout(logContainer);
   logLayout->setContentsMargins(2, 2, 2, 2);
   logLayout->setSpacing(0);
