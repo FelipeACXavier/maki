@@ -145,7 +145,6 @@ protected:
   void toggleDeployButton(bool running);
 
 private:
-  QList<WidgetWithIcon> mIcons;
   QList<TranslatableWidget> mTranslatable;
 
   void buildMainWindow();

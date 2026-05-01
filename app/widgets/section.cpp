@@ -13,8 +13,6 @@ constexpr int MIN_DURATION = 400;
 constexpr int MAX_DURATION = 600;
 
 SectionWidget::SectionWidget(QWidget* parent)
-    : QWidget(parent)
-
 {
   auto* layout = new QVBoxLayout(this);
   layout->setContentsMargins(0, 0, 0, 0);
@@ -32,6 +30,11 @@ SectionWidget::SectionWidget(QWidget* parent)
 
 void SectionWidget::addItem(QWidget* container, const QString& title)
 {
+  addItem(container, title, oclero::qlementine::TextRole::H4);
+}
+
+void SectionWidget::addItem(QWidget* container, const QString& title, oclero::qlementine::TextRole role)
+{
   // Setup the content of the collapsable section
   mContent = container;
   mContent->setParent(mContentArea);
@@ -44,7 +47,7 @@ void SectionWidget::addItem(QWidget* container, const QString& title)
 
   auto* label = new oclero::qlementine::Label(title, header);
   label->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-  label->setRole(oclero::qlementine::TextRole::H4);
+  label->setRole(role);
   label->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
 
   auto* line = new QFrame(header);
@@ -127,6 +130,7 @@ void SectionWidget::updateContentHeight(int height)
 
 void SectionWidget::setExpanded(bool expanded)
 {
+  mToggleButton->setIcon(expanded ? QIcon(":/icons/arrow-down.svg") : QIcon(":/icons/arrow-right.svg"));
   mToggleButton->setChecked(expanded);
 }
 

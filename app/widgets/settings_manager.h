@@ -50,7 +50,7 @@ struct AppearanceSettings
   bool showCanvasGrid = true;
   bool nativeMenuBar = true;
   int nodeCornerRadius = 8;
-  maki::ThemeVars themeVars;
+  oclero::qlementine::Theme themeVars;
 
   bool operator!=(const AppearanceSettings& s)
   {
@@ -109,6 +109,7 @@ public:
   void save();
 
   std::vector<oclero::qlementine::Theme> availableThemes() const;
+  void themeCreated(const QString& themePath);
 
 signals:
   void themeChanged(const QString& theme);

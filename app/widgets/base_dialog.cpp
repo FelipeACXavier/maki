@@ -58,16 +58,6 @@ QVBoxLayout* BaseDialog::layout()
   return qobject_cast<QVBoxLayout*>(QDialog::layout());
 }
 
-void BaseDialog::addIcon(QWidget* widget, const QString& iconPath)
-{
-  mIcons.append({widget, iconPath});
-}
-
-void BaseDialog::onThemeChanged()
-{
-  updateIconTheme(mIcons);
-}
-
 QDialogButtonBox* BaseDialog::createButtons(const QString& ok, const QString& cancel)
 {
   QDialogButtonBox* buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Close, this);
@@ -87,8 +77,7 @@ QDialogButtonBox* BaseDialog::createButtons(const QString& ok, const QString& ca
 
     auto textWidth = metrics.horizontalAdvance(okButton->text());
     okButton->setFixedWidth(qMax<int>(100, textWidth));
-
-    addIcon(okButton, ":/icons/accept.svg");
+    okButton->setIcon(QIcon(":/icons/accept.svg"));
   }
 
   auto* cancelBtn = buttonBox->button(QDialogButtonBox::Close);
@@ -100,8 +89,7 @@ QDialogButtonBox* BaseDialog::createButtons(const QString& ok, const QString& ca
 
     auto textWidth = metrics.horizontalAdvance(cancelBtn->text());
     cancelBtn->setFixedWidth(qMax<int>(100, textWidth));
-
-    addIcon(cancelBtn, ":/icons/reject.svg");
+    cancelBtn->setIcon(QIcon(":/icons/reject.svg"));
   }
 
   return buttonBox;

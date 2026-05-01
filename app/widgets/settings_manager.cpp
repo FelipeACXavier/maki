@@ -58,6 +58,12 @@ std::vector<oclero::qlementine::Theme> SettingsManager::availableThemes() const
   return mThemeManager->themes();
 }
 
+void SettingsManager::themeCreated(const QString& themePath)
+{
+  // Refresh the user themes
+  mThemeManager->loadDirectory(themePath);
+}
+
 void SettingsManager::load()
 {
   if (!QFile(mSettings.fileName()).exists())

@@ -103,7 +103,7 @@ WidgetGroup::WidgetGroup(const QString& label, QWidget* parent)
   auto* vLayout = new QVBoxLayout(this);
   vLayout->setContentsMargins(0, 0, 0, 0);
   vLayout->setSpacing(WIDGET_SPACING);
-  vLayout->setAlignment(Qt::AlignLeft);
+  vLayout->setAlignment(Qt::AlignTop);
 
   auto* title = new QLabel(label, this);
   title->setFont(Fonts::Label);

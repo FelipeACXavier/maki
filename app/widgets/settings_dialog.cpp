@@ -20,11 +20,17 @@
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QVBoxLayout>
+#include <oclero/qlementine/widgets/IconWidget.hpp>
+#include <oclero/qlementine/widgets/Label.hpp>
 
 #include "app_paths.h"
+#include "frame.h"
 #include "logging.h"
+#include "scroll_area.h"
+#include "section.h"
 #include "style_helpers.h"
 #include "theme.h"
+#include "theme_editor.h"
 #include "widget_factory.h"
 
 SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsManager> manager, std::shared_ptr<LanguageManager> languageManager, QWidget* parent)
@@ -34,8 +40,6 @@ SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsMan
 {
   auto* mainLayout = new QHBoxLayout();
   mainLayout->setSpacing(0);
-
-  connect(mSettingsManager.get(), &SettingsManager::themeChanged, this, &BaseDialog::onThemeChanged);
 
   // Left: navigation list
   mPageSelector = new QTreeWidget(this);
@@ -94,17 +98,14 @@ SettingsDialog::SelectorPage SettingsDialog::addPage(const QString& pageName, co
   auto* headerRow = new QHBoxLayout();
   headerRow->setContentsMargins(10, 0, 10, 0);
 
-  QLabel* titleIcon = new QLabel();
-  addIcon(titleIcon, iconName);
-
-  QLabel* title = new QLabel(pageName);
-  title->setObjectName("PageTitle");
+  auto* titleIcon = new oclero::qlementine::IconWidget(QIcon(iconName), QSize(16, 16), page);
+  auto* title = new oclero::qlementine::Label(pageName, page);
+  title->setRole(oclero::qlementine::TextRole::H3);
 
   auto* resetButton = new QPushButton(page);
-  resetButton->setObjectName("TextAndIcon");
   resetButton->setText(" " + tr("Reset"));
   resetButton->setToolTip(tr("Reset settings for this page"));
-  addIcon(resetButton, ":/icons/reset.svg");
+  resetButton->setIcon(QIcon(":/icons/reset.svg"));
 
   connect(resetButton, &QPushButton::pressed, resetCallback);
 
@@ -123,11 +124,13 @@ SettingsDialog::SelectorPage SettingsDialog::addPage(const QString& pageName, co
   scrollArea->setWidgetResizable(true);
   scrollArea->setFrameShape(QFrame::NoFrame);
   scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-  scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+  scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
   auto content = new QWidget(this);
+  content->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
   auto contentLayout = new QVBoxLayout(content);
-  contentLayout->setContentsMargins(20, 5, 5, 5);
+  contentLayout->setContentsMargins(20, 5, 20, 5);
   contentLayout->setObjectName("ContentArea");
 
   scrollArea->setWidget(content);
@@ -143,7 +146,7 @@ SettingsDialog::SelectorPage SettingsDialog::addPage(const QString& pageName, co
   auto* selector = parent == nullptr ? new QTreeWidgetItem(mPageSelector) : new QTreeWidgetItem(parent);
   selector->setText(0, pageName);
   selector->setData(0, Qt::UserRole, index);
-  mIcons.append({mPageSelector, iconName, 0, Config::FOREGROUND, mPageSelector->indexFromItem(selector)});
+  selector->setIcon(0, QIcon(iconName));
 
   return SelectorPage{selector, page};
 }
@@ -212,7 +215,6 @@ VoidResult SettingsDialog::createGeneralPage()
 
 VoidResult SettingsDialog::createAppearancePage()
 {
-  mTheme = Config::SYSTEM_THEME;
   auto appearance = mSettingsManager->appearance();
   auto [selector, page] = addPage(tr("Appearance"), ":/icons/appearance.svg", [this] {
     auto defaultSettings = AppearanceSettings();
@@ -234,9 +236,6 @@ VoidResult SettingsDialog::createAppearancePage()
   for (const auto& info : mSettingsManager->availableThemes())
   {
     QString label = info.meta.name;
-    // if (info.isUser)
-    //   label += tr(" (user)");
-
     mThemeCombo->addItem(label, info.meta.name);
   }
   mThemeCombo->setValue(appearance.theme);
@@ -248,46 +247,56 @@ VoidResult SettingsDialog::createAppearancePage()
   themeLayout->addWidget(mThemeCombo);
   themeLayout->addWidget(mNativeMenuBar);
 
-  // Color pickers
-  // QMap<QString, QString> colors = {};
-  // for (auto it = Config::THEME_KEY_MAP.cbegin(); it != Config::THEME_KEY_MAP.cend(); ++it)
-  // {
-  //   QString key = it.key();
-  //   QString value = Config::SYSTEM_THEME.*(it.value());
+  auto* qlementineStyle = oclero::qlementine::appStyle();
+  if (qlementineStyle)
+  {
+    mTheme = qlementineStyle->theme();
 
-  //   QColor color(value);
-  //   if (color.isValid())
-  //     colors[key] = value;
-  // }
+    auto* editorFrame = new StyledFrame(page);
+    editorFrame->setBackgroundRole(StyledFrame::BackgroundRole::Base);
+    editorFrame->setBorderRole(StyledFrame::BorderRole::Mid);
+    editorFrame->setRadius(mTheme.borderRadius);
+    editorFrame->setBorderWidth(mTheme.borderWidth);
+    editorFrame->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-  // int cols = 3;
-  // int rows = qCeil(colors.size() / cols) + 1;
-  // mColorGrid = new maki::GridGroup(tr("Colors"), rows, cols, page);
-  // for (auto it = colors.constBegin(); it != colors.constEnd(); ++it)
-  // {
-  //   QString key = it.key();
-  //   QString label = toColorLabel(it.key());
+    QVBoxLayout* editorLayout = new QVBoxLayout(editorFrame);
+    editorLayout->setContentsMargins(4, 4, 4, 4);
+    editorFrame->setLayout(editorLayout);
 
-  //   auto colorSelector = new maki::ColorWidget(label, it.value(), page);
-  //   connect(colorSelector, &maki::ColorWidget::valueChanged, [this, key](const QColor& color) {
-  //     LOG_DEBUG("Looking for %s", qPrintable(key));
-  //     auto mapIt = Config::THEME_KEY_MAP.find(key);
-  //     if (mapIt == Config::THEME_KEY_MAP.end())
-  //       return;
+    auto* editor = new oclero::qlementine::ThemeEditorWidget(editorFrame);
+    editor->setDefaultPath(AppPaths::userThemes());
 
-  //     LOG_DEBUG("Setting %s to %s", qPrintable(key), qPrintable(color.name()));
-  //     mTheme.*(mapIt.value()) = color.name();
-  //   });
-  //   mIcons.append({colorSelector->widget(), Config::getValueFromTheme("@eyedropper_icon").toString()});
-  //   mColorGrid->addWidget(colorSelector);
-  // }
+    connect(editor, &oclero::qlementine::ThemeEditorWidget::themeChanged, [this, qlementineStyle](const oclero::qlementine::Theme& theme) {
+      LOG_DEBUG("Theme changed, saving to variable");
+      mTheme = theme;
+      qlementineStyle->setTheme(mTheme);
+    });
+    connect(editor, &oclero::qlementine::ThemeEditorWidget::themeSaved, [this, qlementineStyle](const QString& path, const oclero::qlementine::Theme& theme) {
+      LOG_DEBUG("Theme saved: %s", qPrintable(path));
+      mThemeCombo->addItem(theme.meta.name, theme.meta.name);
+      mSettingsManager->themeCreated(path);
+    });
+    connect(editor, &oclero::qlementine::ThemeEditorWidget::themeLoaded, [this, qlementineStyle](const QString& path, const oclero::qlementine::Theme& theme) {
+      LOG_DEBUG("Theme loaded: %s", qPrintable(path));
+      mThemeCombo->addItem(theme.meta.name, theme.meta.name);
+      mSettingsManager->themeCreated(path);
+    });
+    connect(qlementineStyle, &oclero::qlementine::QlementineStyle::themeChanged, [qlementineStyle, editor]() {
+      LOG_DEBUG("Theme changed, updating editor");
+      editor->setTheme(qlementineStyle->theme());
+    });
+    editor->setTheme(mTheme);
 
-  mUserThemeName = new maki::StringWidget(tr("Theme name"), "User", alignment, page);
-  mUserThemeName->addDescription(tr("The theme will be installed in") + ": " + AppPaths::userThemes());
+    editorFrame->setFixedHeight(editor->sizeHint().height() + mTheme.borderWidth);
+    editorLayout->addWidget(editor);
 
-  // themeLayout->addWidget(mColorGrid);
-  themeLayout->addSpacing(2);
-  themeLayout->addWidget(mUserThemeName);
+    auto section = new SectionWidget(page);
+    section->addItem(editorFrame, tr("Theme editor"), oclero::qlementine::TextRole::H5);
+    section->setExpanded(false);
+    section->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
+
+    themeLayout->addWidget(section);
+  }
 
   mUiScale = new maki::SpinWidget(tr("UI scale"), appearance.uiScalePercent, page, 80, 200);
   mUiScale->setSuffix(" %");
@@ -388,10 +397,10 @@ VoidResult SettingsDialog::createPluginPages()
 
   auto* addBtn = new maki::ButtonWidget("Add", topPage);
   addBtn->setFixedWidth(200);
-  addIcon(addBtn, ":/icons/plus.svg");
+  addBtn->setIcon(QIcon(":/icons/plus.svg"));
 
   auto* removeBtn = new maki::ButtonWidget("Remove", topPage);
-  addIcon(removeBtn, ":/icons/clear.svg");
+  removeBtn->setIcon(QIcon(":/icons/clear.svg"));
   removeBtn->setFixedWidth(200);
   removeBtn->setEnabled(false);
 
@@ -491,17 +500,8 @@ void SettingsDialog::saveToSettings()
   general.confirmOnCloseWithExecution = mConfirmOnClose->getValue();
 
   AppearanceSettings appearance;
-  // if (mTheme != Config::SYSTEM_THEME)
-  // {
-  //   const auto themeName = mUserThemeName->getValue();
-  //   mThemeCombo->addItem(themeName, themeName.toLower());
-  //   mThemeCombo->setValue(themeName);
-
-  //   Config::saveThemeVarsToFile(themeName, mTheme);
-  // }
-
-  appearance.themeVars = mTheme;
   appearance.theme = mThemeCombo->getValue();
+  appearance.themeVars = mTheme;
   appearance.uiScalePercent = mUiScale->getValue();
   appearance.showCanvasGrid = mShowGrid->getValue();
   appearance.nativeMenuBar = mNativeMenuBar->getValue();
@@ -520,7 +520,6 @@ void SettingsDialog::apply()
 {
   saveToSettings();
   updateColorGrid();
-  updateIconTheme(mIcons);
 }
 
 void SettingsDialog::updatePluginSetting(const QString& pluginId, const QString& key, QVariant value)

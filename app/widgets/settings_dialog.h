@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <oclero/qlementine.hpp>
 
 #include "base_dialog.h"
 #include "language_manager.h"
@@ -86,12 +87,11 @@ private:
   // Plugins
   QVector<PluginInfo> mPluginSettings;
 
-  // User theme
-  maki::ThemeVars mTheme;
-
+  oclero::qlementine::Theme mTheme;
   // ------------------------------------------
   // Methods
-  void saveToSettings();
+  void
+  saveToSettings();
 
   /**
    * Construct the standard settings page and assign the selector accordingly.

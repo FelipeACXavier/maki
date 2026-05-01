@@ -142,8 +142,6 @@ private:
     NodeRole           ///< Item represents a node within a flow.
   };
 
-  QList<TreeWidgetWithIcon> mIcons;  ///< Auxiliary icon widgets associated with tree items.
-
   /**
    * @brief Adds a root node to the menu.
    * @param node The node to add.

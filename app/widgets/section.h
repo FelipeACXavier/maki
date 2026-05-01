@@ -3,6 +3,7 @@
 #include <QToolButton>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <oclero/qlementine/Common.hpp>
 
 #include "collapsible_area.h"
 
@@ -15,7 +16,8 @@ class SectionWidget : public QWidget
 public:
   SectionWidget(QWidget* parent = nullptr);
 
-  void addItem(QWidget* content, const QString& title);
+  void addItem(QWidget* container, const QString& title);
+  void addItem(QWidget* container, const QString& title, oclero::qlementine::TextRole role);
   void setExpanded(bool expanded);
   bool isExpanded() const;
 

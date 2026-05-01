@@ -46,8 +46,6 @@ void EventDialog::setup(std::shared_ptr<FlowSaveInfo> event)
 
   qobject_cast<QVBoxLayout*>(layout())->addStretch();
 
-  updateIconTheme(mIcons);
-
   auto buttonBox = createButtons("Apply", "Cancel");
   connect(buttonBox, &QDialogButtonBox::accepted, this, &EventDialog::accept);
   connect(buttonBox, &QDialogButtonBox::rejected, this, &EventDialog::reject);
