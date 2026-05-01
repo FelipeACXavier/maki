@@ -79,12 +79,6 @@ public:
    */
   VoidResult onFlowRemoved(const QString& flowId, const QString& nodeId);
 
-  /**
-   * @brief Updates the widget appearance after a theme change.
-   * @param settings The new appearance settings.
-   */
-  void onThemeChanged(const AppearanceSettings& settings);
-
 signals:
   /**
    * @brief Emitted when a node should be focused in the editor.

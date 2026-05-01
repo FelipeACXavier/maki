@@ -174,8 +174,6 @@ void MainWindow::onThemeChanged(const QString& t, const QList<Config::ThemeInfo>
     }
   }
 
-  if (mSystemMenu)
-    mSystemMenu->onThemeChanged(mSettingsManager->appearance());
   if (mPluginTab)
     mPluginTab->onThemeChanged();
 

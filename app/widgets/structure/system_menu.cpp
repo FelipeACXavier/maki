@@ -36,12 +36,10 @@ VoidResult SystemMenu::onNodeAdded(const QString& flowId, NodeItem* node)
     {
       LOG_DEBUG("%s is a root node", qPrintable(node->nodeType()));
       auto result = addRootNode(node);
-      updateTreeIconTheme(mIcons);
       return result;
     }
 
     auto result = addLeafNode(node);
-    updateTreeIconTheme(mIcons);
     return result;
   }
 
@@ -51,14 +49,12 @@ VoidResult SystemMenu::onNodeAdded(const QString& flowId, NodeItem* node)
 
   // Add item to the tree
   QTreeWidgetItem* newNode = new QTreeWidgetItem(parent);
-  mIcons.append({newNode, ":/icons/flow_block.svg"});
+  newNode->setIcon(0, QIcon(":/icons/flow_block.svg"));
   newNode->setText(NAME_COLUMN, node->nodeName());
   newNode->setText(TYPE_COLUMN, node->nodeType());
   newNode->setData(ID_DATA, Qt::UserRole, node->id());
   newNode->setData(TYPE_DATA, Qt::UserRole, Roles::NodeRole);
   newNode->setData(CANVAS_DATA, Qt::UserRole, flowId);
-
-  updateTreeIconTheme(mIcons);
 
   return VoidResult();
 }
@@ -76,7 +72,6 @@ VoidResult SystemMenu::onNodeRemoved(const QString& flowId, const QString& nodeI
     if (parentId.isEmpty())
     {
       takeTopLevelItem(indexOfTopLevelItem(item));
-      mIcons.removeIf([item](TreeWidgetWithIcon treeItem) { return treeItem.widget == item; });
       delete item;
       return VoidResult();
     }
@@ -86,7 +81,6 @@ VoidResult SystemMenu::onNodeRemoved(const QString& flowId, const QString& nodeI
       return VoidResult::Failed("The parent node is not on the tree");
 
     parentItem->removeChild(item);
-    mIcons.removeIf([item](TreeWidgetWithIcon treeItem) { return treeItem.widget == item; });
     delete item;
   }
   else
@@ -103,7 +97,6 @@ VoidResult SystemMenu::onNodeRemoved(const QString& flowId, const QString& nodeI
       return VoidResult::Failed("Item is in the tree but it is not a node");
 
     flow->removeChild(component);
-    mIcons.removeIf([component](TreeWidgetWithIcon treeItem) { return treeItem.widget == component; });
   }
 
   return VoidResult();
@@ -153,7 +146,7 @@ VoidResult SystemMenu::onFlowAdded(Flow* flow, NodeItem* node)
   QTreeWidgetItem* newFlow = new QTreeWidgetItem(parent);
 
   // Assign the tree information
-  mIcons.append({newFlow, ":/icons/behaviour.svg"});
+  newFlow->setIcon(0, QIcon(":/icons/behaviour.svg"));
   newFlow->setText(NAME_COLUMN, flow->name());
   newFlow->setText(TYPE_COLUMN, "Flow");
   newFlow->setData(ID_DATA, Qt::UserRole, flow->id());
@@ -162,15 +155,12 @@ VoidResult SystemMenu::onFlowAdded(Flow* flow, NodeItem* node)
   for (const auto& component : flow->getNodes())
   {
     QTreeWidgetItem* newComponent = new QTreeWidgetItem(newFlow);
-    mIcons.append({newComponent, ":/icons/flow_block.svg"});
-
+    newComponent->setIcon(0, QIcon(":/icons/flow_block.svg"));
     newComponent->setText(NAME_COLUMN, component->getProperty("name").toString());
     newComponent->setText(TYPE_COLUMN, component->getnodeId());
     newComponent->setData(ID_DATA, Qt::UserRole, component->getid());
     newComponent->setData(TYPE_DATA, Qt::UserRole, Roles::NodeRole);
   }
-
-  updateTreeIconTheme(mIcons);
 
   return VoidResult();
 }
@@ -200,7 +190,6 @@ VoidResult SystemMenu::onFlowRemoved(const QString& flowId, const QString& nodeI
   collectTreeItems(flowItem, itemsToRemove);
 
   nodeItem->removeChild(flowItem);
-  mIcons.removeIf([&itemsToRemove](const TreeWidgetWithIcon& treeItem) { return itemsToRemove.contains(treeItem.widget); });
   delete flowItem;
 
   return VoidResult();
@@ -217,7 +206,7 @@ void SystemMenu::populateItem(QTreeWidgetItem* item, NodeItem* node)
 VoidResult SystemMenu::addRootNode(NodeItem* node)
 {
   QTreeWidgetItem* item = new QTreeWidgetItem(this);
-  mIcons.append({item, ":/icons/structure.svg"});
+  item->setIcon(0, QIcon(":/icons/structure.svg"));
   populateItem(item, node);
   addTopLevelItem(item);
 
@@ -235,7 +224,7 @@ VoidResult SystemMenu::addLeafNode(NodeItem* node)
     return VoidResult::Failed("The parent node is not on the tree");
 
   QTreeWidgetItem* item = new QTreeWidgetItem(parentItem);
-  mIcons.append({item, ":/icons/capability.svg"});
+  item->setIcon(0, QIcon(":/icons/capability.svg"));
   populateItem(item, node);
 
   return VoidResult();
@@ -326,9 +315,4 @@ void SystemMenu::removeFlow(QTreeWidgetItem* item)
   auto flowId = item->data(ID_DATA, Qt::UserRole).toString();
   LOG_DEBUG("Removing flow");
   emit flowRemoved(flowId, nodeId);
-}
-
-void SystemMenu::onThemeChanged(const AppearanceSettings& /* settings */)
-{
-  updateTreeIconTheme(mIcons);
 }
