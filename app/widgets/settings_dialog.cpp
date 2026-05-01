@@ -290,12 +290,7 @@ VoidResult SettingsDialog::createAppearancePage()
     editorFrame->setFixedHeight(editor->sizeHint().height() + mTheme.borderWidth);
     editorLayout->addWidget(editor);
 
-    auto section = new SectionWidget(page);
-    section->addItem(editorFrame, tr("Theme editor"), oclero::qlementine::TextRole::H5);
-    section->setExpanded(false);
-    section->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
-
-    themeLayout->addWidget(section);
+    themeLayout->addWidget(editorFrame);
   }
 
   mUiScale = new maki::SpinWidget(tr("UI scale"), appearance.uiScalePercent, page, 80, 200);

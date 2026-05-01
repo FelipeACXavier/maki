@@ -14,7 +14,9 @@
 #include <oclero/qlementine/widgets/Label.hpp>
 #include <oclero/qlementine/widgets/LineEdit.hpp>
 
+#include "frame.h"
 #include "logging.h"
+#include "section.h"
 
 #define ADD_TITLE(TEXT)                                        \
   {                                                            \
@@ -26,7 +28,7 @@
   }
 
 #define ADD_SUBTITLE(TEXT) \
-  formLayout->addRow(new Label(TEXT, TextRole::H4, &owner));
+  formLayout->addRow(new Label(TEXT, TextRole::H5, &owner));
 
 #define ADD_DESCRIPTION(TEXT) formLayout->addRow(new Label(TEXT, TextRole::Caption, &owner));
 
@@ -97,7 +99,7 @@ ColorReturn makeColorAndLabel(const QString& label, const QString& description,
   const auto vSpacing = leftColumn->style()->pixelMetric(QStyle::PM_LayoutVerticalSpacing);
   leftColumnLayout->setSpacing(vSpacing / 4);
 
-  auto* nameLabel = new Label(label, TextRole::H5, leftColumn);
+  auto* nameLabel = new Label(label, TextRole::Default, leftColumn);
   nameLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
   leftColumnLayout->addWidget(nameLabel);
   if (!description.isEmpty())
@@ -329,136 +331,186 @@ struct ThemeEditorWidget::Impl
 
   void setupColorEditors(QFormLayout* formLayout, int vSpacing)
   {
-    // Primary Color.
-    ADD_TITLE("Primary Color");
-    ADD_SUBTITLE("Background")
-    ADD_DESCRIPTION("Used to highlight elements.")
-    ADD_COLOR_EDITOR(primaryColor, "");
-    ADD_COLOR_EDITOR(primaryColorHovered, "");
-    ADD_COLOR_EDITOR(primaryColorPressed, "");
-    ADD_COLOR_EDITOR(primaryColorDisabled, "");
-    ADD_SUBTITLE("Foreground")
-    ADD_DESCRIPTION("Text drawn over highlighted elements.");
-    ADD_COLOR_EDITOR(primaryColorForeground, "");
-    ADD_COLOR_EDITOR(primaryColorForegroundHovered, "");
-    ADD_COLOR_EDITOR(primaryColorForegroundPressed, "");
-    ADD_COLOR_EDITOR(primaryColorForegroundDisabled, "");
-    ADD_SUBTITLE("Alternative")
-    ADD_DESCRIPTION("Used to highlight elements over already highlighted elements.")
-    ADD_COLOR_EDITOR(primaryAlternativeColor, "");
-    ADD_COLOR_EDITOR(primaryAlternativeColorHovered, "");
-    ADD_COLOR_EDITOR(primaryAlternativeColorPressed, "");
-    ADD_COLOR_EDITOR(primaryAlternativeColorDisabled, "");
+    addSection("Primary Color", formLayout, vSpacing);
+    addSection("Secondary Color", formLayout, vSpacing);
+    addSection("Neutral Color", formLayout, vSpacing);
+    addSection("Semi-transparent Color", formLayout, vSpacing);
+    addSection("Background Color", formLayout, vSpacing);
+    addSection("Border Color", formLayout, vSpacing);
+    addSection("Effect Color", formLayout, vSpacing);
+    addSection("Status Color", formLayout, vSpacing);
+  }
 
-    // Secondary Color.
-    ADD_TITLE("Secondary Color");
-    ADD_SUBTITLE("Background");
-    ADD_DESCRIPTION("A more neutral color, used for text and non-highlighted elements.");
-    ADD_COLOR_EDITOR(secondaryColor, "");
-    ADD_COLOR_EDITOR(secondaryColorHovered, "");
-    ADD_COLOR_EDITOR(secondaryColorPressed, "");
-    ADD_COLOR_EDITOR(secondaryColorDisabled, "");
-    ADD_SUBTITLE("Foreground")
-    ADD_DESCRIPTION("Text drawn over elements in secondary color.")
-    ADD_COLOR_EDITOR(secondaryColorForeground, "");
-    ADD_COLOR_EDITOR(secondaryColorForegroundHovered, "");
-    ADD_COLOR_EDITOR(secondaryColorForegroundPressed, "");
-    ADD_COLOR_EDITOR(secondaryColorForegroundDisabled, "");
-    ADD_TITLE("Secondary Alternative Color");
-    ADD_DESCRIPTION("A lighter version of the secondary color.");
-    ADD_COLOR_EDITOR(secondaryAlternativeColor, "");
-    ADD_COLOR_EDITOR(secondaryAlternativeColorHovered, "");
-    ADD_COLOR_EDITOR(secondaryAlternativeColorPressed, "");
-    ADD_COLOR_EDITOR(secondaryAlternativeColorDisabled, "");
+  void addSection(const QString& title, QFormLayout* parentLayout, int vSpacing)
+  {
+    const auto* qlementineStyle = oclero::qlementine::appStyle();
+    const auto styleTheme = qlementineStyle->theme();
+    const auto hSpacing = owner.style()->pixelMetric(QStyle::PM_LayoutHorizontalSpacing);
 
-    // Neutral color.
-    ADD_TITLE("Neutral Color");
-    ADD_DESCRIPTION("Used for ??");
-    ADD_COLOR_EDITOR(neutralColor, "");
-    ADD_COLOR_EDITOR(neutralColorHovered, "");
-    ADD_COLOR_EDITOR(neutralColorPressed, "");
-    ADD_COLOR_EDITOR(neutralColorDisabled, "");
+    auto* frame = new StyledFrame(&owner);
+    frame->setBackgroundRole(StyledFrame::BackgroundRole::Base);
+    frame->setBorderRole(StyledFrame::BorderRole::Mid);
+    frame->setRadius(styleTheme.borderRadius);
+    frame->setBorderWidth(styleTheme.borderWidth);
+    frame->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-    // Semi-transparent color.
-    ADD_TITLE("Semi-transparent Color");
-    ADD_DESCRIPTION("Used for semi-transparent elements such as scrollbars.");
-    ADD_COLOR_EDITOR(semiTransparentColor1, "");
-    ADD_COLOR_EDITOR(semiTransparentColor2, "");
-    ADD_COLOR_EDITOR(semiTransparentColor3, "");
-    ADD_COLOR_EDITOR(semiTransparentColor4, "");
+    auto* formLayout = new QFormLayout(frame);
+    formLayout->setHorizontalSpacing(hSpacing * 8);
+    formLayout->setContentsMargins(hSpacing, vSpacing, hSpacing, vSpacing);
+    formLayout->setRowWrapPolicy(QFormLayout::RowWrapPolicy::DontWrapRows);
 
-    // Background Color.
-    ADD_TITLE("Background Color");
-    ADD_DESCRIPTION("Used for containers: windows, GroupBoxes, etc.")
-    ADD_COLOR_EDITOR(backgroundColorMain1, "Main background color (window, etc).");
-    ADD_COLOR_EDITOR(backgroundColorMain2, "");
-    ADD_COLOR_EDITOR(backgroundColorMain3, "");
-    ADD_COLOR_EDITOR(backgroundColorMain4, "");
+    if (title == "Primary Color")
+    {
+      // ADD_TITLE("Primary Color");
+      ADD_SUBTITLE("Background")
+      ADD_DESCRIPTION("Used to highlight elements.")
+      ADD_COLOR_EDITOR(primaryColor, "");
+      ADD_COLOR_EDITOR(primaryColorHovered, "");
+      ADD_COLOR_EDITOR(primaryColorPressed, "");
+      ADD_COLOR_EDITOR(primaryColorDisabled, "");
+      ADD_SUBTITLE("Foreground")
+      ADD_DESCRIPTION("Text drawn over highlighted elements.");
+      ADD_COLOR_EDITOR(primaryColorForeground, "");
+      ADD_COLOR_EDITOR(primaryColorForegroundHovered, "");
+      ADD_COLOR_EDITOR(primaryColorForegroundPressed, "");
+      ADD_COLOR_EDITOR(primaryColorForegroundDisabled, "");
+      ADD_SUBTITLE("Alternative")
+      ADD_DESCRIPTION("Used to highlight elements over already highlighted elements.")
+      ADD_COLOR_EDITOR(primaryAlternativeColor, "");
+      ADD_COLOR_EDITOR(primaryAlternativeColorHovered, "");
+      ADD_COLOR_EDITOR(primaryAlternativeColorPressed, "");
+      ADD_COLOR_EDITOR(primaryAlternativeColorDisabled, "");
+    }
+    else if (title == "Secondary Color")
+    {
+      // ADD_TITLE("Secondary Color");
+      ADD_SUBTITLE("Background");
+      ADD_DESCRIPTION("A more neutral color, used for text and non-highlighted elements.");
+      ADD_COLOR_EDITOR(secondaryColor, "");
+      ADD_COLOR_EDITOR(secondaryColorHovered, "");
+      ADD_COLOR_EDITOR(secondaryColorPressed, "");
+      ADD_COLOR_EDITOR(secondaryColorDisabled, "");
+      ADD_SUBTITLE("Foreground")
+      ADD_DESCRIPTION("Text drawn over elements in secondary color.")
+      ADD_COLOR_EDITOR(secondaryColorForeground, "");
+      ADD_COLOR_EDITOR(secondaryColorForegroundHovered, "");
+      ADD_COLOR_EDITOR(secondaryColorForegroundPressed, "");
+      ADD_COLOR_EDITOR(secondaryColorForegroundDisabled, "");
+      ADD_SUBTITLE("Secondary Alternative Color");
+      ADD_DESCRIPTION("A lighter version of the secondary color.");
+      ADD_COLOR_EDITOR(secondaryAlternativeColor, "");
+      ADD_COLOR_EDITOR(secondaryAlternativeColorHovered, "");
+      ADD_COLOR_EDITOR(secondaryAlternativeColorPressed, "");
+      ADD_COLOR_EDITOR(secondaryAlternativeColorDisabled, "");
+    }
+    else if (title == "Neutral Color")
+    {
+      // Neutral color.
+      // ADD_TITLE("Neutral Color");
+      ADD_DESCRIPTION("Used for hover, pressed, and disabled feedback");
+      ADD_COLOR_EDITOR(neutralColor, "");
+      ADD_COLOR_EDITOR(neutralColorHovered, "");
+      ADD_COLOR_EDITOR(neutralColorPressed, "");
+      ADD_COLOR_EDITOR(neutralColorDisabled, "");
+    }
+    else if (title == "Semi-transparent Color")
+    {
+      // Semi-transparent color.
+      // ADD_TITLE("Semi-transparent Color");
+      ADD_DESCRIPTION("Used for semi-transparent elements such as scrollbars.");
+      ADD_COLOR_EDITOR(semiTransparentColor1, "");
+      ADD_COLOR_EDITOR(semiTransparentColor2, "");
+      ADD_COLOR_EDITOR(semiTransparentColor3, "");
+      ADD_COLOR_EDITOR(semiTransparentColor4, "");
+    }
+    else if (title == "Background Color")
+    {
+      // Background Color.
+      // ADD_TITLE("Background Color");
+      ADD_DESCRIPTION("Used for containers: windows, GroupBoxes, etc.")
+      ADD_COLOR_EDITOR(backgroundColorMain1, "Main background color (window, etc).");
+      ADD_COLOR_EDITOR(backgroundColorMain2, "");
+      ADD_COLOR_EDITOR(backgroundColorMain3, "");
+      ADD_COLOR_EDITOR(backgroundColorMain4, "");
+    }
+    else if (title == "Border Color")
+    {
+      // Border Color.
+      // ADD_TITLE("Border Color");
+      ADD_DESCRIPTION("Used to draw the borders: ComboBox, GroupBox's border, etc.");
+      ADD_COLOR_EDITOR(borderColor, "");
+      ADD_COLOR_EDITOR(borderColorHovered, "");
+      ADD_COLOR_EDITOR(borderColorPressed, "");
+      ADD_COLOR_EDITOR(borderColorDisabled, "");
+    }
+    else if (title == "Effect Color")
+    {
+      // Focus Color.
+      ADD_SUBTITLE("Focus Color");
+      ADD_COLOR_EDITOR(focusColor, "Color for the focus border.");
 
-    // Border Color.
-    ADD_TITLE("Border Color");
-    ADD_DESCRIPTION("Used to draw the borders: ComboBox, GroupBox's border, etc.");
-    ADD_COLOR_EDITOR(borderColor, "");
-    ADD_COLOR_EDITOR(borderColorHovered, "");
-    ADD_COLOR_EDITOR(borderColorPressed, "");
-    ADD_COLOR_EDITOR(borderColorDisabled, "");
+      // Shadow Color.
+      ADD_SUBTITLE("Shadow Color");
+      ADD_COLOR_EDITOR(shadowColor1, "Shadow 1");
+      ADD_COLOR_EDITOR(shadowColor2, "Shadow 2");
+      ADD_COLOR_EDITOR(shadowColor3, "Shadow 3");
+    }
+    else if (title == "Status Color")
+    {
+      // Status Color.
+      // ADD_TITLE("Status Color");
+      ADD_DESCRIPTION("Displaying feedback to the user (success, error, etc.)")
+      ADD_SUBTITLE("Error");
+      ADD_COLOR_EDITOR(statusColorError, "");
+      ADD_COLOR_EDITOR(statusColorErrorHovered, "");
+      ADD_COLOR_EDITOR(statusColorErrorPressed, "");
+      ADD_COLOR_EDITOR(statusColorErrorDisabled, "");
+      ADD_SUBTITLE("Warning");
+      ADD_COLOR_EDITOR(statusColorWarning, "");
+      ADD_COLOR_EDITOR(statusColorWarningHovered, "");
+      ADD_COLOR_EDITOR(statusColorWarningPressed, "");
+      ADD_COLOR_EDITOR(statusColorWarningDisabled, "");
+      ADD_SUBTITLE("Success");
+      ADD_COLOR_EDITOR(statusColorSuccess, "");
+      ADD_COLOR_EDITOR(statusColorSuccessHovered, "");
+      ADD_COLOR_EDITOR(statusColorSuccessPressed, "");
+      ADD_COLOR_EDITOR(statusColorSuccessDisabled, "");
+      ADD_SUBTITLE("Info");
+      ADD_COLOR_EDITOR(statusColorInfo, "");
+      ADD_COLOR_EDITOR(statusColorInfoHovered, "");
+      ADD_COLOR_EDITOR(statusColorInfoPressed, "");
+      ADD_COLOR_EDITOR(statusColorInfoDisabled, "");
+      ADD_SUBTITLE("Foreground");
+      ADD_DESCRIPTION("Used to draw text over status colors.");
+      ADD_COLOR_EDITOR(statusColorForeground, "");
+      ADD_COLOR_EDITOR(statusColorForegroundHovered, "");
+      ADD_COLOR_EDITOR(statusColorForegroundPressed, "");
+      ADD_COLOR_EDITOR(statusColorForegroundDisabled, "");
+    }
 
-    // Focus Color.
-    ADD_TITLE("Focus Color");
-    ADD_COLOR_EDITOR(focusColor, "Color for the focus border.");
+    auto section = new SectionWidget(&owner);
+    section->addItem(frame, title, oclero::qlementine::TextRole::H5);
+    section->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
+    section->setExpanded(false);
 
-    // Shadow Color.
-    ADD_TITLE("Shadow Color");
-    ADD_COLOR_EDITOR(shadowColor1, "Shadow 1");
-    ADD_COLOR_EDITOR(shadowColor2, "Shadow 2");
-    ADD_COLOR_EDITOR(shadowColor3, "Shadow 3");
-
-    // Status Color.
-    ADD_TITLE("Status Color");
-    ADD_DESCRIPTION("Displaying feedback to the user (success, error, etc.)")
-    ADD_SUBTITLE("Error");
-    ADD_COLOR_EDITOR(statusColorError, "");
-    ADD_COLOR_EDITOR(statusColorErrorHovered, "");
-    ADD_COLOR_EDITOR(statusColorErrorPressed, "");
-    ADD_COLOR_EDITOR(statusColorErrorDisabled, "");
-    ADD_SUBTITLE("Warning");
-    ADD_COLOR_EDITOR(statusColorWarning, "");
-    ADD_COLOR_EDITOR(statusColorWarningHovered, "");
-    ADD_COLOR_EDITOR(statusColorWarningPressed, "");
-    ADD_COLOR_EDITOR(statusColorWarningDisabled, "");
-    ADD_SUBTITLE("Success");
-    ADD_COLOR_EDITOR(statusColorSuccess, "");
-    ADD_COLOR_EDITOR(statusColorSuccessHovered, "");
-    ADD_COLOR_EDITOR(statusColorSuccessPressed, "");
-    ADD_COLOR_EDITOR(statusColorSuccessDisabled, "");
-    ADD_SUBTITLE("Info");
-    ADD_COLOR_EDITOR(statusColorInfo, "");
-    ADD_COLOR_EDITOR(statusColorInfoHovered, "");
-    ADD_COLOR_EDITOR(statusColorInfoPressed, "");
-    ADD_COLOR_EDITOR(statusColorInfoDisabled, "");
-    ADD_SUBTITLE("Foreground");
-    ADD_DESCRIPTION("Used to draw text over status colors.");
-    ADD_COLOR_EDITOR(statusColorForeground, "");
-    ADD_COLOR_EDITOR(statusColorForegroundHovered, "");
-    ADD_COLOR_EDITOR(statusColorForegroundPressed, "");
-    ADD_COLOR_EDITOR(statusColorForegroundDisabled, "");
+    parentLayout->addRow(section);
   }
 
   void setupUi()
   {
     auto* globalLayout = new QVBoxLayout(&owner);
-    globalLayout->setContentsMargins(0, 0, 0, 0);
+    // globalLayout->setContentsMargins(0, 0, 0, 0);
     owner.setLayout(globalLayout);
 
     const auto vSpacing = owner.style()->pixelMetric(QStyle::PM_LayoutVerticalSpacing);
     const auto hSpacing = owner.style()->pixelMetric(QStyle::PM_LayoutHorizontalSpacing);
 
-    LOG_DEBUG("Creating form with: %d %d", vSpacing, hSpacing);
+    globalLayout->setContentsMargins(hSpacing, 0, hSpacing, 0);
 
     QWidget* header = new QWidget(&owner);
 
     auto* headerLayout = new QHBoxLayout(header);
-    headerLayout->setContentsMargins(hSpacing, 0, hSpacing, 0);
+    headerLayout->setContentsMargins(0, 0, 0, 0);
     header->setLayout(headerLayout);
 
     auto* buttonWidget = new QWidget(header);
@@ -488,22 +540,28 @@ struct ThemeEditorWidget::Impl
     auto* formLayout = new QFormLayout(container);
     formLayout->setFormAlignment(Qt::AlignTop);
     formLayout->setHorizontalSpacing(hSpacing * 8);
-    formLayout->setContentsMargins(hSpacing, 0, hSpacing, 0);
+    formLayout->setContentsMargins(0, 0, 0, 0);
     formLayout->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
     formLayout->setRowWrapPolicy(QFormLayout::RowWrapPolicy::DontWrapRows);
     container->setLayout(formLayout);
 
     setupColorEditors(formLayout, vSpacing);
 
-    // auto* editorScroll = new QScrollArea(&owner);
-    // editorScroll->setWidgetResizable(true);
-    // editorScroll->setFrameShape(QFrame::NoFrame);
-    // editorScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    // editorScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    // editorScroll->setWidget(container);
+    auto* editorScroll = new QScrollArea(&owner);
+    editorScroll->setWidgetResizable(true);
+    editorScroll->setFrameShape(QFrame::NoFrame);
+    editorScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    editorScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    editorScroll->setWidget(container);
+
+    auto* line = new QFrame(&owner);
+    line->setFrameShape(QFrame::HLine);
+    line->setFrameShadow(QFrame::Plain);
 
     globalLayout->addWidget(header);
-    globalLayout->addWidget(container);
+    globalLayout->addWidget(new Label(tr("Theme Editor"), TextRole::H3, &owner));
+    globalLayout->addWidget(line);
+    globalLayout->addWidget(editorScroll);
   }
 
   // Update all the widgets.

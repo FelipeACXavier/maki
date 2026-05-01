@@ -75,47 +75,15 @@ void SectionWidget::addItem(QWidget* container, const QString& title, oclero::ql
   layout()->addWidget(header);
   layout()->addWidget(mContentArea);
 
-  // With the header and content setup, we must define the animation
+  // With the header and content setup, we must define the mAnimation
   header->setFixedHeight(header->sizeHint().height());
   mContentArea->setMaximumHeight(mContentArea->layout()->sizeHint().height());
   mContentArea->setMinimumHeight(0);
 
-  auto* animation = new QPropertyAnimation(mContentArea, "contentHeight", this);
-  animation->setEasingCurve(QEasingCurve::InOutQuad);
+  mAnimation = new QPropertyAnimation(mContentArea, "contentHeight", this);
+  mAnimation->setEasingCurve(QEasingCurve::InOutQuad);
 
-  connect(mToggleButton, &ClickableIcon::toggled, this, [this, animation](bool checked) {
-    animation->stop();
-    mToggleButton->setIcon(checked ? QIcon(":/icons/arrow-down.svg") : QIcon(":/icons/arrow-right.svg"));
-
-    if (checked)
-    {
-      // Always show before animating so there is actually something "appearing"
-      mContentArea->show();
-      const int targetHeight = mContentArea->maximumHeight();
-      const int currentHeight = mContentArea->contentHeight();
-      const int duration = getAnimationDuration(targetHeight, currentHeight);
-      animation->setDuration(duration);
-      animation->setStartValue(currentHeight);
-      animation->setEndValue(targetHeight);
-      LOG_TRACE("Section animation expand: %d to %d in %dms", currentHeight, targetHeight, duration);
-    }
-    else
-    {
-      const int targetHeight = 0;
-      const int currentHeight = mContentArea->contentHeight();
-      const int duration = getAnimationDuration(targetHeight, currentHeight);
-      animation->setDuration(duration);
-      animation->setStartValue(mContentArea->contentHeight());
-      animation->setEndValue(0);
-      LOG_TRACE("Section animation collapse: %d to %d in %dms", currentHeight, targetHeight, duration);
-
-      connect(animation, &QPropertyAnimation::finished, mContentArea, [this]() {
-        if (!mToggleButton->isChecked())
-          mContentArea->hide(); }, Qt::SingleShotConnection);
-    }
-
-    animation->start();
-  });
+  connect(mToggleButton, &ClickableIcon::toggled, this, &SectionWidget::toggled);
 }
 
 void SectionWidget::updateContentHeight(int height)
@@ -139,6 +107,49 @@ bool SectionWidget::isExpanded() const
   return mToggleButton->isChecked();
 }
 
+void SectionWidget::setDuration(int duration)
+{
+  if (duration < 0)
+    mDuration = std::nullopt;
+  else
+    mDuration = duration;
+}
+
+void SectionWidget::toggled(bool checked)
+{
+  mAnimation->stop();
+  mToggleButton->setIcon(checked ? QIcon(":/icons/arrow-down.svg") : QIcon(":/icons/arrow-right.svg"));
+
+  if (checked)
+  {
+    // Always show before animating so there is actually something "appearing"
+    mContentArea->show();
+    const int targetHeight = mContentArea->maximumHeight();
+    const int currentHeight = mContentArea->contentHeight();
+    const int duration = getAnimationDuration(targetHeight, currentHeight);
+    mAnimation->setDuration(duration);
+    mAnimation->setStartValue(currentHeight);
+    mAnimation->setEndValue(targetHeight);
+    LOG_TRACE("Section mAnimation expand: %d to %d in %dms", currentHeight, targetHeight, duration);
+  }
+  else
+  {
+    const int targetHeight = 0;
+    const int currentHeight = mContentArea->contentHeight();
+    const int duration = getAnimationDuration(targetHeight, currentHeight);
+    mAnimation->setDuration(duration);
+    mAnimation->setStartValue(mContentArea->contentHeight());
+    mAnimation->setEndValue(0);
+    LOG_TRACE("Section mAnimation collapse: %d to %d in %dms", currentHeight, targetHeight, duration);
+
+    connect(mAnimation, &QPropertyAnimation::finished, mContentArea, [this]() {
+      if (!mToggleButton->isChecked())
+        mContentArea->hide(); }, Qt::SingleShotConnection);
+  }
+
+  mAnimation->start();
+}
+
 QWidget* SectionWidget::content() const
 {
   return mContent;
@@ -146,5 +157,5 @@ QWidget* SectionWidget::content() const
 
 int SectionWidget::getAnimationDuration(int target, int current) const
 {
-  return std::clamp(static_cast<int>(std::abs(target - current) / SPEED), MIN_DURATION, MAX_DURATION);
+  return mDuration ? mDuration.value() : std::clamp(static_cast<int>(std::abs(target - current) / SPEED), MIN_DURATION, MAX_DURATION);
 }

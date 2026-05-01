@@ -1,5 +1,6 @@
 #include "clickable_icon.h"
 
+#include "logging.h"
 ClickableIcon::ClickableIcon(const QIcon& icon, QWidget* parent)
     : ClickableIcon(icon, QSize(16, 16), parent)
 {
@@ -27,6 +28,9 @@ void ClickableIcon::setCheckable(bool checkable)
 void ClickableIcon::setChecked(bool check)
 {
   mChecked = check;
+
+  if (mCheckable)
+    emit toggled(mChecked);
 }
 
 void ClickableIcon::mousePressEvent(QMouseEvent* event)
