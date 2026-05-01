@@ -640,12 +640,6 @@ public:
    */
   QLineEdit* widget() const;
 
-  /**
-   * @brief Returns the icon associated with the search widget.
-   * @return The search icon wrapper.
-   */
-  WidgetWithIcon icon() const;
-
 signals:
   /**
    * @brief Emitted when the search text changes.

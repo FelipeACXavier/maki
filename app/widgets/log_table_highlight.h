@@ -23,4 +23,5 @@ public:
 private:
   QString mSearchText;
   QVector<int> mExpandedRows = {};
+  int mMatches = 0;
 };

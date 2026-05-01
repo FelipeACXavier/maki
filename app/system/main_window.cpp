@@ -14,12 +14,14 @@
 #include <QRegularExpressionValidator>
 #include <QScrollArea>
 #include <QShortcut>
+#include <QStackedWidget>
 #include <QString>
 #include <QTextBlock>
 #include <QTextBrowser>
 #include <QUndoGroup>
 #include <QWidget>
 #include <oclero/qlementine/widgets/AboutDialog.hpp>
+#include <oclero/qlementine/widgets/AbstractItemListWidget.hpp>
 
 #include "app_configs.h"
 #include "app_paths.h"
@@ -208,6 +210,7 @@ static QWidget* findAncestor(QWidget* w, const QMetaObject* type)
 {
   while (w)
   {
+    LOG_TRACE("Finding: %s vs %s", qPrintable(type->className()), qPrintable(w->metaObject()->className()));
     if (w->metaObject()->inherits(type))
       return w;
     w = w->parentWidget();
@@ -260,6 +263,16 @@ void MainWindow::bind()
     {
       Q_UNUSED(canvas);
       LOG_DEBUG("Finding in canvas");
+      return;
+    }
+
+    if (auto* bottom = qobject_cast<QSplitter*>(findAncestor(fw, &QSplitter::staticMetaObject)))
+    {
+      LOG_DEBUG("Finding in bottom container");
+      if (bottom == mCentralSplitter && mBottomPanel->currentIndex() == 1)
+      {
+        mLogTable->search();
+      }
       return;
     }
   });
@@ -792,19 +805,19 @@ void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
 
   newView->setProperty("id", flow->id());
   LOG_DEBUG("Set tab property to %s", qPrintable(flow->id()));
-  mCanvasPanel->addTab(newView, flowName);
+  mCanvasPanel->addTab(newView, QIcon(":/icons/behaviour.svg"), flowName);
   mCanvasPanel->setCurrentWidget(newView);
 }
 
 void MainWindow::addPluginTab(const QString& name, PluginView* view)
 {
-  mCanvasPanel->addTab(view, name);
+  mCanvasPanel->addTab(view, QIcon(":/icons/plugin.svg"), name);
   mCanvasPanel->setCurrentWidget(view);
 }
 
 void MainWindow::addEditorTab(QPlainTextEdit* editorTab)
 {
-  mCanvasPanel->addTab(editorTab, "File viewer");
+  mCanvasPanel->addTab(editorTab, QIcon(":/icons/file.svg"), tr("File viewer"));
   mCanvasPanel->setCurrentWidget(editorTab);
 }
 

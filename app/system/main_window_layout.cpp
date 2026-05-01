@@ -81,7 +81,12 @@ void MainWindowLayout::buildLeftPanel()
   mLeftPanel = new QSplitter(Qt::Vertical, mMainSplitter);
   mPalette = new QTabWidget(mLeftPanel);
 
-  mStructureTab = new QWidget();
+  mStructureTab = new StyledFrame();
+  mStructureTab->setBackgroundRole(StyledFrame::BackgroundRole::Base);
+  mStructureTab->setBorderRole(StyledFrame::BorderRole::Mid);
+  mStructureTab->setRadius(5);
+  mStructureTab->setBorderWidth(1);
+
   QVBoxLayout* structureLayout = new QVBoxLayout(mStructureTab);
   structureLayout->setContentsMargins(
       Config::CONTENT_PADDING, Config::CONTENT_PADDING,
@@ -92,13 +97,18 @@ void MainWindowLayout::buildLeftPanel()
   mStructureScrollArea->setWidgetResizable(true);
   mStructureScrollArea->setFrameShape(QFrame::NoFrame);
   mStructureScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-  mStructureScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+  mStructureScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   mStructureScrollArea->setWidget(mStructureTab);
 
   auto sindex = mPalette->addTab(mStructureScrollArea, QIcon(":/icons/structure.svg"), tr("Structure"));
   mTranslatable.push_back({mPalette->tabBar(), "Structure", sindex});
 
-  mBehaviourTab = new QWidget();
+  mBehaviourTab = new StyledFrame();
+  mBehaviourTab->setBackgroundRole(StyledFrame::BackgroundRole::Base);
+  mBehaviourTab->setBorderRole(StyledFrame::BorderRole::Mid);
+  mBehaviourTab->setRadius(5);
+  mBehaviourTab->setBorderWidth(1);
+
   QVBoxLayout* behaviourLayout = new QVBoxLayout(mBehaviourTab);
   behaviourLayout->setContentsMargins(
       Config::CONTENT_PADDING, Config::CONTENT_PADDING,
@@ -183,12 +193,8 @@ void MainWindowLayout::buildCentralPanel()
 
   CanvasView* canvasView = new CanvasView();
 
-  mCanvasPanel->addTab(canvasView, "System view");
+  mCanvasPanel->addTab(canvasView, QIcon(":/icons/structure.svg"), "System view");
   mCanvasPanel->setCurrentWidget(canvasView);
-
-  // Remove the close button from the system tab
-  mCanvasPanel->tabBar()->setTabButton(0, QTabBar::RightSide, nullptr);
-  mCanvasPanel->tabBar()->setIconSize(QSize(16, 16));
 
   // Top right buttons
   QWidget* corner = new QWidget();
@@ -235,9 +241,6 @@ void MainWindowLayout::buildCentralPanel()
   mBottomNavigation = new oclero::qlementine::NavigationBar(bottomContainer);
   mBottomPanel = new QStackedWidget(bottomContainer);
 
-  // mBottomPanel = new BadgedTabWidget();
-  // mBottomPanel->setMinimumHeight(300);
-  // mBottomPanel->tabBar()->setIconSize(QSize(16, 16));
   bottomNavLayout->addWidget(mBottomNavigation);
   bottomNavLayout->addStretch();
   bottomLayout->addWidget(bottomNavContainer);
@@ -272,13 +275,11 @@ void MainWindowLayout::buildCentralPanel()
 
   mLogTable = new LogTableWidget(logContainer);
   logLayout->addWidget(mLogTable);
-  // LOG_TAB_INDEX = mBottomPanel->addTab(mLogTable, QIcon(":/icons/logs.svg"), tr("Log"));
 
   mBottomNavigation->addItem(tr("Log"), QIcon(":/icons/logs.svg"));
   mBottomPanel->addWidget(logContainer);
 
   mProcessTab = new ProcessTab(mBottomPanel);
-  // PROCESS_TAB_INDEX = mBottomPanel->addTab(mProcessTab, QIcon(":/icons/terminal.svg"), tr("Generation"));
   mBottomNavigation->addItem(tr("Generation"), QIcon(":/icons/terminal.svg"));
   mBottomPanel->addWidget(mProcessTab);
 
@@ -613,29 +614,26 @@ void MainWindowLayout::applyTheme()
   {
     mCanvasPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
+    mCanvasPanel->setTabsClosable(true);
     mCanvasPanel->tabBar()->setExpanding(false);
     mCanvasPanel->tabBar()->setDocumentMode(true);
-    mCanvasPanel->tabBar()->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
+    mCanvasPanel->tabBar()->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     mCanvasPanel->tabBar()->setFocusPolicy(Qt::NoFocus);
     mCanvasPanel->tabBar()->setTabsClosable(true);
     mCanvasPanel->tabBar()->setMovable(true);
     mCanvasPanel->tabBar()->setChangeCurrentOnDrag(false);
     mCanvasPanel->tabBar()->setUsesScrollButtons(false);
+
+    // Remove the close button from the system tab
+    mCanvasPanel->tabBar()->setTabButton(0, QTabBar::RightSide, nullptr);
+    mCanvasPanel->tabBar()->setIconSize(QSize(16, 16));
+
+    // Qlementine causes a weird issue where the text disappears when a tab is moved
+    connect(mCanvasPanel->tabBar(), &QTabBar::tabMoved, this, [this](int /* from */, int /* to */) {
+      for (int i = 0; i < mCanvasPanel->count(); ++i)
+        mCanvasPanel->setTabText(i, mCanvasPanel->tabText(i));
+    });
   }
-
-  // if (mBottomPanel)
-  // {
-  //   mBottomPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-
-  //   mBottomPanel->tabBar()->setExpanding(false);
-  //   mBottomPanel->tabBar()->setDocumentMode(true);
-  //   mBottomPanel->tabBar()->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
-  //   mBottomPanel->tabBar()->setFocusPolicy(Qt::NoFocus);
-  //   mBottomPanel->tabBar()->setTabsClosable(false);
-  //   mBottomPanel->tabBar()->setMovable(false);
-  //   mBottomPanel->tabBar()->setChangeCurrentOnDrag(false);
-  //   mBottomPanel->tabBar()->setUsesScrollButtons(false);
-  // }
 
   if (mRightPanel)
   {

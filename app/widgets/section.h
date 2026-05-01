@@ -6,6 +6,8 @@
 
 #include "collapsible_area.h"
 
+class ClickableIcon;
+
 class SectionWidget : public QWidget
 {
   Q_OBJECT
@@ -22,9 +24,10 @@ public:
   void updateContentHeight(int height);
 
 private:
-  QToolButton* mToggleButton = nullptr;
+  ClickableIcon* mToggleButton = nullptr;
   QWidget* mContent = nullptr;
   CollapsibleAreaHeight* mContentArea = nullptr;
+  bool mExpanded = true;
 
   inline int getAnimationDuration(int target, int current) const;
 };

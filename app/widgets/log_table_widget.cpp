@@ -7,6 +7,7 @@
 #include <QPushButton>
 #include <QSet>
 
+#include "clickable_icon.h"
 #include "expanding_widget.h"
 
 class CenterIconDelegate : public QStyledItemDelegate
@@ -64,12 +65,6 @@ LogTableWidget::LogTableWidget(QWidget* parent)
   mSourceFilter->setMaximumWidth(100);
   mSourceFilter->addItem("MAKI");
 
-  mFileFilter = new QLineEdit(this);
-  mFileFilter->setPlaceholderText(tr("Filter file"));
-
-  mSearchField = new QLineEdit(this);
-  mSearchField->setPlaceholderText(tr("Find"));
-
   mTable = new QTableView(this);
   mTable->setModel(mProxy);
   mTable->setItemDelegate(mHighlightDelegate);
@@ -111,28 +106,41 @@ LogTableWidget::LogTableWidget(QWidget* parent)
   nextButton->setFixedWidth(30);
   nextButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
-  auto searchBox = new ExpandingWidget(ExpandingWidget::Direction::Right, this);
-  searchBox->setButtonIcon(QIcon(":/icons/search.svg"));
-  searchBox->setButtonTooltip(tr("Search logs"));
-  searchBox->setExpandedWidth(400);
+  mSearchBox = new ExpandingWidget(ExpandingWidget::Direction::Right, this);
+  mSearchBox->setButtonIcon(QIcon(":/icons/search.svg"));
+  mSearchBox->setButtonTooltip(tr("Search logs"));
+  mSearchBox->setExpandedWidth(400);
 
-  searchBox->addCollapsableWidget(mSearchField);
-  searchBox->addCollapsableWidget(previousButton);
-  searchBox->addCollapsableWidget(nextButton);
+  mSearchCounterLabel = new QLabel("", mSearchBox);
+  mSearchCounterLabel->setFocusPolicy(Qt::NoFocus);
+  mSearchCounterLabel->setMinimumWidth(60);
 
-  auto filterBox = new ExpandingWidget(ExpandingWidget::Direction::Left, this);
-  filterBox->setButtonIcon(QIcon(":/icons/filter.svg"));
-  filterBox->setButtonTooltip(tr("Filter logs"));
-  filterBox->setExpandedWidth(400);
+  mSearchField = new QLineEdit(mSearchBox);
+  mSearchField->setPlaceholderText(tr("Find"));
+  mSearchField->installEventFilter(this);
 
-  filterBox->addCollapsableWidget(mFileFilter);
-  filterBox->addCollapsableWidget(mLevelFilter);
-  filterBox->addCollapsableWidget(mSourceFilter);
+  mSearchBox->addCollapsableWidget(mSearchField);
+  mSearchBox->addCollapsableWidget(previousButton);
+  mSearchBox->addCollapsableWidget(nextButton);
+  mSearchBox->addCollapsableWidget(mSearchCounterLabel);
+
+  mFilterBox = new ExpandingWidget(ExpandingWidget::Direction::Left, this);
+  mFilterBox->setButtonIcon(QIcon(":/icons/filter.svg"));
+  mFilterBox->setButtonTooltip(tr("Filter logs"));
+  mFilterBox->setExpandedWidth(400);
+
+  mFileFilter = new QLineEdit(this);
+  mFileFilter->setPlaceholderText(tr("Filter file"));
+  mFileFilter->installEventFilter(this);
+
+  mFilterBox->addCollapsableWidget(mFileFilter);
+  mFilterBox->addCollapsableWidget(mLevelFilter);
+  mFilterBox->addCollapsableWidget(mSourceFilter);
 
   auto* filterLayout = new QHBoxLayout();
-  filterLayout->addWidget(searchBox);
+  filterLayout->addWidget(mSearchBox);
   filterLayout->addStretch();
-  filterLayout->addWidget(filterBox);
+  filterLayout->addWidget(mFilterBox);
 
   auto* mainLayout = new QVBoxLayout(this);
   mainLayout->setContentsMargins(0, 0, 0, 0);
@@ -147,10 +155,10 @@ LogTableWidget::LogTableWidget(QWidget* parent)
   connect(previousButton, &QPushButton::pressed, this, &LogTableWidget::previousSearchMatch);
   connect(nextButton, &QPushButton::pressed, this, &LogTableWidget::nextSearchMatch);
 
-  connect(searchBox, &ExpandingWidget::areaExpanded, [this](QPushButton* button) { onAreaExpanded(button, mSearchField); });
-  connect(searchBox, &ExpandingWidget::areaCollapsed, [this](QPushButton* button) { onAreaCollapsed(button, mSearchField, ":/icons/search.svg"); });
-  connect(filterBox, &ExpandingWidget::areaExpanded, [this](QPushButton* button) { onAreaExpanded(button, mFileFilter); });
-  connect(filterBox, &ExpandingWidget::areaCollapsed, [this](QPushButton* button) { onAreaCollapsed(button, mFileFilter, ":/icons/filter.svg"); });
+  connect(mSearchBox, &ExpandingWidget::areaExpanded, [this](ClickableIcon* button) { onAreaExpanded(button, mSearchField); });
+  connect(mSearchBox, &ExpandingWidget::areaCollapsed, [this](ClickableIcon* button) { onAreaCollapsed(button, mSearchField, ":/icons/search.svg"); });
+  connect(mFilterBox, &ExpandingWidget::areaExpanded, [this](ClickableIcon* button) { onAreaExpanded(button, mFileFilter); });
+  connect(mFilterBox, &ExpandingWidget::areaCollapsed, [this](ClickableIcon* button) { onAreaCollapsed(button, mFileFilter, ":/icons/filter.svg"); });
 
   connect(mTable, &QTableView::customContextMenuRequested, this, &LogTableWidget::showContextMenu);
   connect(mTable, &QTableView::clicked, this, &LogTableWidget::onClicked);
@@ -158,7 +166,7 @@ LogTableWidget::LogTableWidget(QWidget* parent)
   connect(mProxy, &QAbstractItemModel::layoutChanged, mHighlightDelegate, &LogHighlightDelegate::clearExpandedRows);
 }
 
-void LogTableWidget::onAreaExpanded(QPushButton* button, QLineEdit* lineEdit)
+void LogTableWidget::onAreaExpanded(ClickableIcon* button, QLineEdit* lineEdit)
 {
   if (lineEdit)
   {
@@ -170,13 +178,18 @@ void LogTableWidget::onAreaExpanded(QPushButton* button, QLineEdit* lineEdit)
     button->setIcon(QIcon(":/icons/circle-close.svg"));
 }
 
-void LogTableWidget::onAreaCollapsed(QPushButton* button, QLineEdit* lineEdit, const QString& iconName)
+void LogTableWidget::onAreaCollapsed(ClickableIcon* button, QLineEdit* lineEdit, const QString& iconName)
 {
   if (lineEdit)
+  {
+    lineEdit->clearFocus();
     lineEdit->clear();
+  }
 
   if (button)
     button->setIcon(QIcon(iconName));
+
+  mTable->setFocus();
 }
 
 void LogTableWidget::onClicked(const QModelIndex& index)
@@ -231,6 +244,11 @@ void LogTableWidget::clear()
   mModel->clear();
 }
 
+void LogTableWidget::search()
+{
+  mSearchBox->expandArea();
+}
+
 void LogTableWidget::setSearchText(const QString& text)
 {
   mSearchText = text;
@@ -248,6 +266,7 @@ void LogTableWidget::setSearchText(const QString& text)
     mCurrentSearchMatch = -1;
   }
 
+  updateSearchCounter();
   mTable->viewport()->update();
 }
 
@@ -256,9 +275,9 @@ void LogTableWidget::nextSearchMatch()
   if (mSearchMatches.isEmpty())
     return;
 
-  mCurrentSearchMatch =
-      (mCurrentSearchMatch + 1) % mSearchMatches.size();
+  mCurrentSearchMatch = (mCurrentSearchMatch + 1) % mSearchMatches.size();
 
+  updateSearchCounter();
   focusCurrentSearchMatch();
 }
 
@@ -269,6 +288,7 @@ void LogTableWidget::previousSearchMatch()
 
   mCurrentSearchMatch = (mCurrentSearchMatch - 1 + mSearchMatches.size()) % mSearchMatches.size();
 
+  updateSearchCounter();
   focusCurrentSearchMatch();
 }
 
@@ -290,6 +310,8 @@ void LogTableWidget::rebuildSearchMatches()
         mSearchMatches.push_back(index);
     }
   }
+
+  updateSearchCounter();
 }
 
 void LogTableWidget::focusCurrentSearchMatch()
@@ -304,6 +326,17 @@ void LogTableWidget::focusCurrentSearchMatch()
 
   mTable->setCurrentIndex(index);
   mTable->scrollTo(index, QAbstractItemView::PositionAtCenter);
+}
+
+void LogTableWidget::updateSearchCounter()
+{
+  if (mSearchMatches.isEmpty())
+  {
+    mSearchCounterLabel->setText(mSearchText.isEmpty() ? "" : "0/0");
+    return;
+  }
+
+  mSearchCounterLabel->setText(QString("%1/%2").arg(mCurrentSearchMatch + 1).arg(mSearchMatches.size()));
 }
 
 void LogTableWidget::showContextMenu(const QPoint& pos)
@@ -401,4 +434,40 @@ bool LogTableWidget::isMessageElided(int proxyRow) const
   const QString elided = mTable->fontMetrics().elidedText(text, Qt::ElideRight, availableWidth);
 
   return elided != text;
+}
+
+bool LogTableWidget::eventFilter(QObject* watched, QEvent* event)
+{
+  if (watched == mSearchField && event->type() == QEvent::KeyPress)
+  {
+    auto* keyEvent = static_cast<QKeyEvent*>(event);
+
+    if (keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter)
+    {
+      if (keyEvent->modifiers() & Qt::ShiftModifier)
+        previousSearchMatch();
+      else
+        nextSearchMatch();
+
+      return true;
+    }
+
+    if (keyEvent->key() == Qt::Key_Escape)
+    {
+      mSearchBox->collapseArea();
+      return true;
+    }
+  }
+
+  if (watched == mFileFilter && event->type() == QEvent::KeyPress)
+  {
+    auto* keyEvent = static_cast<QKeyEvent*>(event);
+    if (keyEvent->key() == Qt::Key_Escape)
+    {
+      mFilterBox->collapseArea();
+      return true;
+    }
+  }
+
+  return QWidget::eventFilter(watched, event);
 }

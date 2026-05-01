@@ -2,8 +2,10 @@
 
 #include <QLabel>
 #include <QPropertyAnimation>
+#include <oclero/qlementine/widgets/Label.hpp>
 
 #include "app_configs.h"
+#include "clickable_icon.h"
 #include "logging.h"
 
 constexpr double SPEED = 1.2;
@@ -40,26 +42,31 @@ void SectionWidget::addItem(QWidget* container, const QString& title)
   QWidget* header = new QWidget(this);
   header->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
-  QLabel* label = new QLabel(title, header);
+  auto* label = new oclero::qlementine::Label(title, header);
   label->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-  label->setFont(Fonts::Label);
-  label->setObjectName("SectionLabel");
+  label->setRole(oclero::qlementine::TextRole::H4);
+  label->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
 
-  mToggleButton = new QToolButton(header);
-  mToggleButton->setObjectName("SectionButton");
+  auto* line = new QFrame(header);
+  line->setFrameShape(QFrame::HLine);
+  line->setFrameShadow(QFrame::Plain);
+
+  auto* lableLayout = new QVBoxLayout();
+  lableLayout->addWidget(label);
+  lableLayout->addWidget(line);
+
+  mToggleButton = new ClickableIcon(QIcon(":/icons/arrow-down.svg"), QSize(16, 16), header);
   mToggleButton->setCheckable(true);
   mToggleButton->setChecked(true);
-  mToggleButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-  mToggleButton->setArrowType(Qt::DownArrow);
   mToggleButton->setFixedWidth(30);
   mToggleButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
   QHBoxLayout* hLayout = new QHBoxLayout(header);
   hLayout->setContentsMargins(2, 2, 10, 2);
   hLayout->setAlignment(Qt::AlignLeft);
-  hLayout->setSpacing(0);
+  hLayout->setSpacing(4);
   hLayout->addWidget(mToggleButton);
-  hLayout->addWidget(label);
+  hLayout->addLayout(lableLayout);
 
   // Add the header and the content to the layout
   layout()->addWidget(header);
@@ -73,9 +80,9 @@ void SectionWidget::addItem(QWidget* container, const QString& title)
   auto* animation = new QPropertyAnimation(mContentArea, "contentHeight", this);
   animation->setEasingCurve(QEasingCurve::InOutQuad);
 
-  connect(mToggleButton, &QToolButton::toggled, this, [this, animation](bool checked) {
+  connect(mToggleButton, &ClickableIcon::toggled, this, [this, animation](bool checked) {
     animation->stop();
-    mToggleButton->setArrowType(checked ? Qt::DownArrow : Qt::RightArrow);
+    mToggleButton->setIcon(checked ? QIcon(":/icons/arrow-down.svg") : QIcon(":/icons/arrow-right.svg"));
 
     if (checked)
     {

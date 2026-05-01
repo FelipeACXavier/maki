@@ -15,6 +15,7 @@
 #include <QLineEdit>
 #include <QShortcut>
 #include <QSpinBox>
+#include <oclero/qlementine/widgets/IconWidget.hpp>
 
 #include "app_configs.h"
 #include "style_helpers.h"
@@ -705,12 +706,10 @@ SearchWidget::SearchWidget(const QString& placeholder, QWidget* parent)
   setMaximumHeight(40);
 
   auto* searchLayout = new QHBoxLayout(this);
-  searchLayout->setContentsMargins(0, 0, 0, 0);
-  searchLayout->setSpacing(0);
+  searchLayout->setContentsMargins(5, 0, 5, 0);
+  searchLayout->setSpacing(5);
 
-  mIcon = new QLabel(this);
-  mIcon->setAlignment(Qt::AlignCenter);
-  mIcon->setFixedSize(16, 16);
+  auto* icon = new oclero::qlementine::IconWidget(QIcon(":/icons/search.svg"), QSize(16, 16), this);
 
   mInputField = new QLineEdit(this);
   mInputField->setPlaceholderText(placeholder);
@@ -726,13 +725,8 @@ SearchWidget::SearchWidget(const QString& placeholder, QWidget* parent)
   auto* esc = new QShortcut(QKeySequence(Qt::Key_Escape), this);
   connect(esc, &QShortcut::activated, this, [this]() { emit dismissed(); });
 
-  layout()->addWidget(mIcon);
+  layout()->addWidget(icon);
   layout()->addWidget(mInputField);
-}
-
-WidgetWithIcon SearchWidget::icon() const
-{
-  return {mIcon, ":/icons/search.svg"};
 }
 
 QLineEdit* SearchWidget::widget() const

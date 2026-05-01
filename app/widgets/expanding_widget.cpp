@@ -1,5 +1,6 @@
 #include "expanding_widget.h"
 
+#include "clickable_icon.h"
 #include "logging.h"
 
 ExpandingWidget::ExpandingWidget(Direction direction, QWidget* parent)
@@ -10,8 +11,10 @@ ExpandingWidget::ExpandingWidget(Direction direction, QWidget* parent)
   layout->setContentsMargins(0, 0, 0, 0);
   layout->setSpacing(4);
 
-  mButton = new QPushButton(this);
+  mButton = new ClickableIcon(QIcon(":/icons/arrow-down.svg"), QSize(16, 16), this);
+  // mButton = new QPushButton(this);
   mButton->setCheckable(true);
+  mButton->setChecked(false);
   mButton->setFixedWidth(30);
   mButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
@@ -37,7 +40,19 @@ ExpandingWidget::ExpandingWidget(Direction direction, QWidget* parent)
     layout->addWidget(mButton);
   }
 
-  connect(mButton, &QPushButton::toggled, this, &ExpandingWidget::setExpanded);
+  connect(mButton, &ClickableIcon::toggled, this, &ExpandingWidget::setExpanded);
+}
+
+void ExpandingWidget::expandArea()
+{
+  mButton->setChecked(true);
+  setExpanded(true);
+}
+
+void ExpandingWidget::collapseArea()
+{
+  mButton->setChecked(false);
+  setExpanded(false);
 }
 
 void ExpandingWidget::setExpandedWidth(int width)
@@ -69,8 +84,10 @@ void ExpandingWidget::setExpanded(bool expanded)
   mAnimation->setEndValue(expanded ? mExpandedWidth : 0);
   mAnimation->start();
 
-  if (expanded)
-    emit areaExpanded(mButton);
-  else
-    emit areaCollapsed(mButton);
+  connect(mAnimation, &QPropertyAnimation::finished, this, [this, expanded]() {
+    if (expanded)
+      emit areaExpanded(mButton);
+    else
+      emit areaCollapsed(mButton);
+  });
 }

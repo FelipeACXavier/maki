@@ -8,6 +8,8 @@
 
 #include "collapsible_area.h"
 
+class ClickableIcon;
+
 class ExpandingWidget : public QWidget
 {
   Q_OBJECT
@@ -27,16 +29,19 @@ public:
   void addCollapsableWidget(QWidget* widget);
   void setExpandedWidth(int width);
 
+  void expandArea();
+  void collapseArea();
+
 signals:
   void textChanged(const QString& text);
-  void areaExpanded(QPushButton* button);
-  void areaCollapsed(QPushButton* button);
+  void areaExpanded(ClickableIcon* button);
+  void areaCollapsed(ClickableIcon* button);
 
 public slots:
   void setExpanded(bool expanded);
 
 private:
-  QPushButton* mButton = nullptr;
+  ClickableIcon* mButton = nullptr;
   CollapsibleAreaWidth* mSearchArea = nullptr;
   QPropertyAnimation* mAnimation = nullptr;
 

@@ -26,6 +26,7 @@ class QScrollArea;
 class BadgedTabWidget;
 class LogTableWidget;
 class QStackedWidget;
+class StyledFrame;
 
 namespace maki
 {
@@ -46,10 +47,10 @@ protected:
 
   // === Left Panel ===
   QTabWidget* mPalette;
-  QWidget* mStructureTab;
+  StyledFrame* mStructureTab;
   QScrollArea* mStructureScrollArea;
 
-  QWidget* mBehaviourTab;
+  StyledFrame* mBehaviourTab;
   QScrollArea* mBehaviourScrollArea;
   maki::SearchWidget* mPaletteSearch;
   QSplitter* mLeftPanel;
