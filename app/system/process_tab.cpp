@@ -47,25 +47,25 @@ void ProcessTab::onReadyReadStandardError(const QByteArray& message)
   handleProcessData(message);
 }
 
-void ProcessTab::onFinished(int exitCode, QProcess::ExitStatus status)
+void ProcessTab::onFinished(const Pipeline::Info& /* info */, int exitCode, QProcess::ExitStatus status)
 {
   appendText(QString("[Process finished with code %1]\n").arg(exitCode));
 }
 
-void ProcessTab::onFinishedLast(int exitCode, const QString& /* message */)
+void ProcessTab::onFinishedLast(const Pipeline::Info& /* info */, int exitCode, const QString& /* message */)
 {
   appendText(QString("Finished all process in the pipeline\n"));
   emit processFinished(exitCode, QProcess::ExitStatus::NormalExit);
 }
 
-void ProcessTab::onStartingProcess(const QString& process, const QStringList& arguments)
+void ProcessTab::onStartingProcess(const Pipeline::Info& /* info */, const QString& process, const QStringList& arguments)
 {
   appendText(QString("> %1 %2\n\n").arg(process, arguments.join(' ')));
 
   emit processStarted();
 }
 
-void ProcessTab::onErrorOccurred(QProcess::ProcessError error, const QString& message)
+void ProcessTab::onErrorOccurred(const Pipeline::Info& /* info */, QProcess::ProcessError error, const QString& message)
 {
   appendText(QString("\n[Process error: %1] %2\n").arg(static_cast<int>(error)).arg(message));
   emit processFinished(1, QProcess::ExitStatus::CrashExit);

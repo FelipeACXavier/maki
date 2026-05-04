@@ -4,8 +4,9 @@
 #include <QTextCharFormat>
 #include <QWidget>
 
+#include "compiler/pipeline.h"
+
 class QTextBrowser;
-class Pipeline;
 
 class ProcessTab : public QWidget
 {
@@ -21,12 +22,12 @@ signals:
   void processFinished(int exitCode, QProcess::ExitStatus status);
 
 private slots:
-  void onStartingProcess(const QString& process, const QStringList& arguments);
-  void onFinished(int exitCode, QProcess::ExitStatus status);
-  void onFinishedLast(int exitCode, const QString& message);
+  void onStartingProcess(const Pipeline::Info& info, const QString& process, const QStringList& arguments);
+  void onFinished(const Pipeline::Info& info, int exitCode, QProcess::ExitStatus status);
+  void onFinishedLast(const Pipeline::Info& info, int exitCode, const QString& message);
   void onReadyReadStandardOutput(const QByteArray& message);
   void onReadyReadStandardError(const QByteArray& message);
-  void onErrorOccurred(QProcess::ProcessError error, const QString& process);
+  void onErrorOccurred(const Pipeline::Info& info, QProcess::ProcessError error, const QString& process);
 
 private:
   QTextBrowser* mOutput;

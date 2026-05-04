@@ -3,14 +3,13 @@
 #include <QObject>
 #include <QString>
 
+#include "pipeline.h"
 #include "result.h"
 
 namespace maki
 {
 class IGeneratorPlugin;
 }
-
-class Pipeline;
 
 /**
  * @brief Handles code generation and simulation workflows using generator plugins.
@@ -99,5 +98,13 @@ private:
   /// Directory where generated artifacts are stored.
   QString mGenerationFolder;
 
+  /// Holds information regarding the current generation pipeline
+  Pipeline::Info mInfo;
+
+  /// Holds the id of the progress widget
+  QString mProgressId;
+
   std::string notificationHeader(const QString& languageName) const;
+
+  QWidget* progressContent();
 };
