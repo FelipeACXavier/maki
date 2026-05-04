@@ -189,6 +189,13 @@ void MainWindowLayout::buildCentralPanel()
   headerLayout->addWidget(mDeployButton);
 
   // ---------------------------------------------
+  mGenerationSpinner = new oclero::qlementine::LoadingSpinner(this);
+  mGenerationSpinner->setFixedSize(24, 24);
+  mGenerationSpinner->setVisible(false);
+
+  headerLayout->addWidget(mGenerationSpinner);
+
+  // ---------------------------------------------
   mCanvasPanel = new QTabWidget();
 
   CanvasView* canvasView = new CanvasView();
@@ -750,11 +757,15 @@ void MainWindowLayout::toggleGenerationButton(bool running)
 {
   if (running)
   {
+    mGenerationSpinner->setSpinning(true);
+    mGenerationSpinner->setVisible(true);
     mGenerationButton->setToolTip("Cancel current generation");
     mGenerationButton->setIcon(QIcon(":/icons/pause.svg"));
   }
   else
   {
+    mGenerationSpinner->setSpinning(false);
+    mGenerationSpinner->setVisible(false);
     mGenerationButton->setToolTip("Verify system");
     mGenerationButton->setIcon(QIcon(":/icons/verify.svg"));
   }

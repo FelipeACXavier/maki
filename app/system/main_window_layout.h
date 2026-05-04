@@ -3,6 +3,7 @@
 #include <qlineedit.h>
 
 #include <QMainWindow>
+#include <oclero/qlementine/widgets/LoadingSpinner.hpp>
 #include <oclero/qlementine/widgets/NavigationBar.hpp>
 
 #include "style_helpers.h"
@@ -59,6 +60,7 @@ protected:
   QPushButton* mGenerationButton;
   QPushButton* mSimulateButton;
   QComboBox* mGeneratorOption;
+  oclero::qlementine::LoadingSpinner* mGenerationSpinner;
 
   QPushButton* mDeployButton;
 
