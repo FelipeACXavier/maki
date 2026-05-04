@@ -9,8 +9,6 @@ set(CPPHELPERS_USE_SOURCE ON)
 add_subdirectory(CppHelpers)
 add_subdirectory(maki-sdk)
 
-set(QLEMENTINE_SHOWCASE ON)
-set(QLEMENTINE_SANDBOX ON)
 add_subdirectory(qclementine)
 
 # Build-in plugins
