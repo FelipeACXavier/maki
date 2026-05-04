@@ -183,7 +183,10 @@ void KodaGenerator::setHostServices(maki::IHostServices* services)
     });
 
   if (auto logger = mServices->logger())
+  {
+    logging::gSourceName = languageName().toStdString();
     logger->registerPlugin(languageName(), logging::gLogToStream);
+  }
 }
 
 void KodaGenerator::setName(const QString& name)

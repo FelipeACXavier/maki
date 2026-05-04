@@ -218,14 +218,14 @@ void LogTableWidget::onClicked(const QModelIndex& index)
   mTable->resizeRowToContents(clickedRow);
 }
 
-void LogTableWidget::append(logging::LogLevel level, const QString& file, const uint32_t line, const QString& message)
+void LogTableWidget::append(logging::LogLevel level, const QString& source, const QString& file, const uint32_t line, const QString& message)
 {
   // Remove new lines so the text fits nicely in the table
   auto cleaned = message;
   cleaned.replace("\r\n", " ");
   cleaned.replace("\n", " ");
   cleaned.replace("\r", " ");
-  mModel->append(level, "MAKI", file, line, cleaned);
+  mModel->append(level, source, file, line, cleaned);
 
   const QModelIndex lastSourceIndex = mModel->index(mModel->rowCount() - 1, 0);
   const QModelIndex lastProxyIndex = mProxy->mapFromSource(lastSourceIndex);
@@ -234,9 +234,9 @@ void LogTableWidget::append(logging::LogLevel level, const QString& file, const 
     mTable->scrollToBottom();
 }
 
-void LogTableWidget::append(logging::LogLevel level, const std::string& file, const uint32_t line, const std::string& message)
+void LogTableWidget::append(logging::LogLevel level, const std::string& source, const std::string& file, const uint32_t line, const std::string& message)
 {
-  append(level, QString::fromStdString(file), line, QString::fromStdString(message));
+  append(level, QString::fromStdString(source), QString::fromStdString(file), line, QString::fromStdString(message));
 }
 
 void LogTableWidget::clear()

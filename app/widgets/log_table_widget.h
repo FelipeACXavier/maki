@@ -18,8 +18,8 @@ class LogTableWidget : public QWidget
 public:
   LogTableWidget(QWidget* parent = nullptr);
 
-  void append(logging::LogLevel level, const QString& file, const uint32_t line, const QString& message);
-  void append(logging::LogLevel level, const std::string& file, const uint32_t line, const std::string& message);
+  void append(logging::LogLevel level, const QString& source, const QString& file, const uint32_t line, const QString& message);
+  void append(logging::LogLevel level, const std::string& source, const std::string& file, const uint32_t line, const std::string& message);
   void clear();
 
   void search();

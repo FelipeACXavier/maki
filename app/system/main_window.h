@@ -73,8 +73,6 @@ private:
 
   oclero::qlementine::ThemeManager* mThemeManager;
 
-  logging::LogLevel mLogLevel;
-
   std::shared_ptr<SaveInfo> mStorage;
 
   QApplication* mApp;

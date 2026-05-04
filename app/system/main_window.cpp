@@ -47,8 +47,6 @@
 #include "structure_canvas.h"
 #include "style_helpers.h"
 #include "system/main_window_layout.h"
-#include "widgets/badged_tab_bar.h"
-#include "widgets/badged_tab_widget.h"
 #include "widgets/language_manager.h"
 #include "widgets/log_table_widget.h"
 #include "widgets/notification_manager.h"
@@ -74,15 +72,11 @@ MainWindow::~MainWindow()
 
 VoidResult MainWindow::start()
 {
-  mLogLevel = logging::LogLevel::Trace;
-
-  logging::gLogToStream = [this](std::chrono::system_clock::time_point ts, logging::LogLevel level, const std::string& filename, const uint32_t& line, const std::string& message) {
-    if (level > mLogLevel)
-      return;
-
-    // QString logMessage = toQT(ts, level, message);
+  logging::gMinLogLevel = logging::LogLevel::Trace;
+  logging::gSourceName = Config::APPLICATION_NAME.toStdString();
+  logging::gLogToStream = [this](std::chrono::system_clock::time_point ts, logging::LogLevel level, const std::string& source, const std::string& filename, const uint32_t& line, const std::string& message) {
     if (mLogTable)
-      mLogTable->append(level, filename, line, message);
+      mLogTable->append(level, source, filename, line, message);
   };
 
   notification::gNotificationStream = [this](logging::LogLevel level, const std::string& header, const std::string& message) {
@@ -187,6 +181,9 @@ void MainWindow::onSettingsChanged()
 
   if (mLanguageManager)
     mLanguageManager->setLanguage(mSettingsManager->general().language);
+
+  if (mSettingsManager->general().enableDebugLogs)
+    logging::gMinLogLevel = logging::LogLevel::Trace;
 }
 
 void MainWindow::startUI()

@@ -7,6 +7,7 @@ namespace maki
 {
 
 typedef std::function<void(std::chrono::system_clock::time_point now, logging::LogLevel level,
+                           const std::string& source,
                            const std::string& filename, const uint32_t& line,
                            const std::string& message)>
     LogFunction;
