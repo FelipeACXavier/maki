@@ -11,7 +11,7 @@
 #include "style_helpers.h"
 #include "theme.h"
 
-constexpr double MinScreenFraction = 0.40;
+constexpr double MinScreenFraction = 0.10;
 constexpr double TargetScreenFraction = 0.50;
 
 BaseDialog::BaseDialog(const QString& title, double ratio, double screenFraction, QWidget* parent)
@@ -29,6 +29,11 @@ BaseDialog::BaseDialog(const QString& title, double ratio, double screenFraction
 
 void BaseDialog::setSize(double ratio, double screenFraction)
 {
+  setSize(ratio, screenFraction, TargetScreenFraction);
+}
+
+void BaseDialog::setSize(double ratio, double screenFraction, qreal heightFraction)
+{
   // Set the dialog size dynamically
   QScreen* screen = this->screen();
   if (!screen)
@@ -38,12 +43,13 @@ void BaseDialog::setSize(double ratio, double screenFraction)
   int screenW = avail.width();
   int screenH = avail.height();
 
-  int targetH = int(screenH * TargetScreenFraction);
+  int targetH = int(screenH * heightFraction);
 
-  targetH = qBound(int(screenH * MinScreenFraction), targetH, int(screenH * screenFraction));
+  const qreal fraction = qMax<qreal>(MinScreenFraction, screenFraction);
+  targetH = qBound(int(screenH * MinScreenFraction), targetH, int(screenH * fraction));
 
   int targetW = int(targetH * ratio);
-  if (targetW > int(screenW * screenFraction))
+  if (targetW > int(screenW * fraction))
   {
     targetW = int(screenW * screenFraction);
     targetH = int(targetW / ratio);
@@ -63,20 +69,18 @@ QDialogButtonBox* BaseDialog::createButtons(const QString& ok, const QString& ca
   QDialogButtonBox* buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Close, this);
   layout()->addWidget(buttonBox);
 
-  auto okButton = buttonBox->button(QDialogButtonBox::Ok);
-
   QFontMetricsF metrics(Fonts::Main);
+  auto okButton = buttonBox->button(QDialogButtonBox::Ok);
   if (okButton)
   {
     okButton->setDefault(false);
     okButton->setAutoDefault(false);
 
     okButton->setFont(Fonts::Main);
-    okButton->setObjectName("TextAndIcon");
     okButton->setText(" " + ok);
 
     auto textWidth = metrics.horizontalAdvance(okButton->text());
-    okButton->setFixedWidth(qMax<int>(100, textWidth));
+    okButton->setFixedWidth(qMax<int>(150, textWidth));
     okButton->setIcon(QIcon(":/icons/accept.svg"));
   }
 
@@ -84,11 +88,10 @@ QDialogButtonBox* BaseDialog::createButtons(const QString& ok, const QString& ca
   if (cancelBtn)
   {
     cancelBtn->setFont(Fonts::Main);
-    cancelBtn->setObjectName("TextAndIcon");
     cancelBtn->setText(" " + cancel);
 
     auto textWidth = metrics.horizontalAdvance(cancelBtn->text());
-    cancelBtn->setFixedWidth(qMax<int>(100, textWidth));
+    cancelBtn->setFixedWidth(qMax<int>(150, textWidth));
     cancelBtn->setIcon(QIcon(":/icons/reject.svg"));
   }
 

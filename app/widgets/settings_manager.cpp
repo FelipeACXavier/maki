@@ -5,6 +5,7 @@
 
 #include "common/app_configs.h"
 #include "logging.h"
+#include "widgets/dialogs/prompt.h"
 
 #define LOAD_SETTING(MEMBER, FIELD, TYPE)                            \
   do                                                                 \
@@ -285,9 +286,21 @@ VoidResult SettingsManager::registerSettings(const QString& id, const maki::Plug
     info.callback = callback;
 
     // We need to check to see if the versions match
-    // TODO(felaze): Prompt user
     if (info.version != version)
-      LOG_WARNING("Versions are different. Saved: %s Registering: %s", qPrintable(info.version.toString()), qPrintable(version.toString()));
+    {
+      const auto message = QString(tr("Current: %1 Incoming: %2")).arg(info.version.toString(), version.toString());
+      if (maki::warningPrompt(tr("Plugin version mismatch. Replace?"), message))
+      {
+        // The user confirmed that the version should be replaced
+        LOG_WARNING("Versions are different: %s", qPrintable(message));
+      }
+      else
+      {
+        // The user does not want to replace the settings
+        mSettings.endGroup();  // plugin.name
+        continue;
+      }
+    }
 
     exists = true;
 
