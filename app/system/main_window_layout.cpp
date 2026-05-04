@@ -153,6 +153,7 @@ void MainWindowLayout::buildCentralPanel()
   headerLayout->setContentsMargins(0, 8, 0, 8);  // top/bottom spacing
   headerLayout->setSpacing(5);
   headerLayout->setAlignment(Qt::AlignCenter);
+  headerLayout->addSpacing(24);
 
   // ---------------------------------------------
   mGenerationButton = new QPushButton("");
@@ -189,11 +190,17 @@ void MainWindowLayout::buildCentralPanel()
   headerLayout->addWidget(mDeployButton);
 
   // ---------------------------------------------
+  auto* spinnerContainer = new QWidget(header);
+  spinnerContainer->setFixedSize(24, 24);
+
+  auto* spinnerLayout = new QHBoxLayout(spinnerContainer);
+  spinnerLayout->setContentsMargins(0, 0, 0, 0);
+
   mGenerationSpinner = new oclero::qlementine::LoadingSpinner(this);
-  mGenerationSpinner->setFixedSize(24, 24);
   mGenerationSpinner->setVisible(false);
 
-  headerLayout->addWidget(mGenerationSpinner);
+  spinnerLayout->addWidget(mGenerationSpinner);
+  headerLayout->addWidget(spinnerContainer);
 
   // ---------------------------------------------
   mCanvasPanel = new QTabWidget();
