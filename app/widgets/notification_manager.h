@@ -44,6 +44,19 @@ public slots:
    */
   void showNotification(const QString& header, const QString& text, logging::LogLevel level);
 
+  /**
+   * @brief Displays a new long notification toast.
+   *
+   * Creates a LongNotificationWidget and adds it to the managed list,
+   * positioning it relative to the parent window.
+   *
+   * @param header The id of the long notification widget
+   * @param header The title of the notification.
+   * @param contents The body of the notification.
+   * @param level The log level determining the visual style.
+   */
+  QString showLongNotification(const QString& id, const QString& header, QWidget* contents, logging::LogLevel level);
+
 private slots:
   /**
    * @brief Handles dismissal of a notification toast.
@@ -72,6 +85,8 @@ private:
    * @return True if the event was handled, false otherwise.
    */
   bool eventFilter(QObject* watched, QEvent* event);
+
+  QString updateExistingNotification(const QString& id, QWidget* contents);
 
   QPointer<QWidget> mParentWindow;     ///< Weak pointer to the parent window used for positioning.
   QList<NotificationWidget*> mToasts;  ///< List of active notification toasts.

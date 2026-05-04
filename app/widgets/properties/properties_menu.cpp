@@ -107,35 +107,6 @@ static const int CLEAR_INDEX = INT32_MAX;
     FIELD->widget()->setCompleter(completer);                    \
   } while (false);
 
-void clearLayout(QLayout* layout)
-{
-  if (!layout)
-    return;
-
-  while (layout->count() > 0)
-  {
-    QLayoutItem* item = layout->takeAt(0);
-    if (!item)
-      break;
-
-    if (QLayout* childLayout = item->layout())
-    {
-      clearLayout(childLayout);
-      delete item;  // do NOT delete childLayout separately
-      continue;
-    }
-
-    if (QWidget* widget = item->widget())
-    {
-      widget->deleteLater();  // or delete widget;
-      delete item;
-      continue;
-    }
-
-    delete item;  // spacer etc.
-  }
-}
-
 PropertiesMenu::PropertiesMenu(QWidget* parent)
     : QFrame(parent)
     , mCurrentNode("")

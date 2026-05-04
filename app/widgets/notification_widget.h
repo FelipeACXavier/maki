@@ -6,6 +6,7 @@
 #include <QPropertyAnimation>
 #include <QPushButton>
 #include <QTimer>
+#include <QVBoxLayout>
 
 #include "frame.h"
 #include "logging.h"
@@ -57,6 +58,10 @@ public:
    */
   void setOpacity(qreal o);
 
+  virtual bool disappearing() const;
+
+  int duration() const;
+
 signals:
   /**
    * @brief Emitted when the notification is dismissed.
@@ -75,9 +80,18 @@ public slots:
    */
   void hideAnimated();
 
+protected:
+  bool mAlarmSetup;
+  QTimer mAutoCloseTimer;         ///< Timer used to automatically dismiss the notification.
+  QPropertyAnimation* mFadeAnim;  ///< Animation used to control opacity transitions.
+
+  QVBoxLayout* getContent();
+
+  void setupAlarm(int msec);
+
 private:
-  QPushButton* mCloseButton = nullptr;      ///< Button used to manually dismiss the notification.
-  QPropertyAnimation* mFadeAnim = nullptr;  ///< Animation used to control opacity transitions.
-  QTimer mAutoCloseTimer;                   ///< Timer used to automatically dismiss the notification.
-  qreal mOpacity = 1.0;                     ///< Current opacity value of the widget.
+  QPushButton* mCloseButton;  ///< Button used to manually dismiss the notification.
+  qreal mOpacity;             ///< Current opacity value of the widget.
+
+  QVBoxLayout* mContentLayout;
 };

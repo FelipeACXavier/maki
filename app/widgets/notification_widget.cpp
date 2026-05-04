@@ -1,9 +1,11 @@
 #include "notification_widget.h"
 
 #include <QGraphicsOpacityEffect>
+#include <QGuiApplication>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
+#include <QScreen>
 #include <QVBoxLayout>
 #include <oclero/qlementine/widgets/Label.hpp>
 #include <oclero/qlementine/widgets/StatusBadgeWidget.hpp>
@@ -14,7 +16,11 @@
 
 NotificationWidget::NotificationWidget(const QString& title, const QString& text, logging::LogLevel level, QWidget* parent)
     : StyledFrame(parent)
+    , mAlarmSetup(false)
+    , mFadeAnim(nullptr)
+    , mCloseButton(nullptr)
     , mOpacity(0.0)
+    , mContentLayout(nullptr)
 {
   const auto* qlementineStyle = oclero::qlementine::appStyle();
   const auto theme = qlementineStyle->theme();
@@ -25,10 +31,18 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
   setBorderWidth(theme.borderWidth);
   setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
 
+  // Make sure the notifications don't take too much space
+  QScreen* screen = this->screen();
+  if (!screen)
+    screen = QGuiApplication::primaryScreen();
+
+  setFixedWidth(screen->availableGeometry().width() / 7);
+
   auto header = new StyledFrame(this);
   header->setBackgroundRole(StyledFrame::BackgroundRole::Midlight);
   header->setBorderRole(StyledFrame::BorderRole::None);
   header->setBorderWidth(2 * theme.borderWidth);
+  header->setRadius(theme.borderRadius);
 
   // Header
   auto* headerLayout = new QHBoxLayout(header);
@@ -72,23 +86,26 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
 
   // Body
   auto body = new QWidget(this);
-  body->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+  body->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-  auto* bodyLayout = new QVBoxLayout(body);
-  bodyLayout->setContentsMargins(
+  mContentLayout = new QVBoxLayout(body);
+  mContentLayout->setContentsMargins(
       Config::CONTENT_PADDING, Config::CONTENT_PADDING,
       Config::CONTENT_PADDING, Config::CONTENT_PADDING);
-  bodyLayout->setAlignment(Qt::AlignVCenter);
-  bodyLayout->setSpacing(0);
+  mContentLayout->setAlignment(Qt::AlignVCenter);
+  mContentLayout->setSpacing(0);
 
-  auto* notificationText = new oclero::qlementine::Label(text, body);
-  notificationText->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-  notificationText->setWordWrap(true);
-  notificationText->setRole(oclero::qlementine::TextRole::Default);
-  notificationText->setMinimumWidth(300 - 2 * Config::CONTENT_PADDING);
-  notificationText->setMinimumHeight(2 * notificationText->fontMetrics().height());
+  if (!text.isEmpty())
+  {
+    auto* notificationText = new oclero::qlementine::Label(text, body);
+    notificationText->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    notificationText->setWordWrap(true);
+    notificationText->setRole(oclero::qlementine::TextRole::Default);
+    notificationText->setMinimumWidth(300 - 2 * Config::CONTENT_PADDING);
+    notificationText->setMinimumHeight(2 * notificationText->fontMetrics().height());
 
-  bodyLayout->addWidget(notificationText);
+    mContentLayout->addWidget(notificationText);
+  }
 
   auto layout = new QVBoxLayout(this);
   layout->setContentsMargins(0, 0, 0, 0);
@@ -103,15 +120,27 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
   setGraphicsEffect(effect);
 
   mFadeAnim = new QPropertyAnimation(this, "opacity", this);
-  mFadeAnim->setDuration(200);
+  mFadeAnim->setDuration(duration());
   mFadeAnim->setStartValue(opacity());
   mFadeAnim->setEndValue(1.0);
 
   connect(mCloseButton, &QPushButton::clicked, this, &NotificationWidget::hideAnimated);
 
-  mAutoCloseTimer.setSingleShot(true);
-  mAutoCloseTimer.setInterval(3000);
+  // Only enable in short notification
+  if (!text.isEmpty())
+    setupAlarm(3000);
+}
 
+int NotificationWidget::duration() const
+{
+  return 350;
+}
+
+void NotificationWidget::setupAlarm(int msec)
+{
+  mAlarmSetup = true;
+  mAutoCloseTimer.setSingleShot(true);
+  mAutoCloseTimer.setInterval(msec);
   connect(&mAutoCloseTimer, &QTimer::timeout, this, &NotificationWidget::hideAnimated);
 }
 
@@ -129,13 +158,27 @@ void NotificationWidget::setOpacity(qreal o)
   update();
 }
 
+bool NotificationWidget::disappearing() const
+{
+  return true;
+}
+
+QVBoxLayout* NotificationWidget::getContent()
+{
+  return mContentLayout;
+}
+
 void NotificationWidget::showAnimated()
 {
+  if (opacity() == 1.0)
+    return;
+
   show();
   raise();
   mFadeAnim->setDirection(QAbstractAnimation::Forward);
   mFadeAnim->start();
-  mAutoCloseTimer.start();
+  if (mAlarmSetup)
+    mAutoCloseTimer.start();
 }
 
 void NotificationWidget::hideAnimated()
@@ -143,7 +186,8 @@ void NotificationWidget::hideAnimated()
   if (mFadeAnim->direction() == QAbstractAnimation::Backward && mFadeAnim->state() == QAbstractAnimation::Running)
     return;
 
-  mAutoCloseTimer.stop();
+  if (mAlarmSetup)
+    mAutoCloseTimer.stop();
 
   mFadeAnim->setStartValue(0.0);
   mFadeAnim->setEndValue(opacity());

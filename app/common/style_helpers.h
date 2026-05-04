@@ -32,6 +32,8 @@ void addSectionLabel(QMenu* menu, const QString& text);
 QString elideLeft(const QString& text, const QWidget* const component);
 QString elideRight(const QString& text, const QWidget* const component);
 
+void clearLayout(QLayout* layout);
+
 struct WidgetWithIcon
 {
   QObject* widget;
