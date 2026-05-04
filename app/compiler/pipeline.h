@@ -1,5 +1,7 @@
 #pragma once
 
+#include <qobject.h>
+
 #include <QProcess>
 #include <QVector>
 #include <mutex>
@@ -21,6 +23,36 @@ class Pipeline : public QObject, public maki::IPipeline
 {
   Q_OBJECT
 public:
+  /**
+   * @brief Internal state of the pipeline execution.
+   */
+  enum class State
+  {
+    Unknown,   ///< Not initialized
+    Idle,      ///< Not running.
+    Running,   ///< Currently executing processes.
+    Aborting,  ///< Aborting execution.
+    Done,      ///< Done successfully
+    Error      ///< Done with error
+  };
+
+  struct ProcessInfo
+  {
+    QString name = "";
+    State status = State::Unknown;
+  };
+
+  struct GroupInfo
+  {
+    QString name = "";
+    QVector<ProcessInfo> processes = {};
+  };
+
+  struct Info
+  {
+    QVector<GroupInfo> groupInfo = {};
+  };
+
   /**
    * @brief Constructs a Pipeline instance.
    *
@@ -94,6 +126,9 @@ public:
    */
   VoidResult abort();
 
+  void startGroup(const QString& groupName) override;
+  void endGroup() override;
+
 signals:
   /**
    * @brief Emitted before a process starts.
@@ -103,7 +138,17 @@ signals:
    * @param process Executable name.
    * @param arguments Command line arguments.
    */
-  void startingProcess(const QString& process, const QStringList& arguments);
+  void startingProcess(const Info& info, const QString& process, const QStringList& arguments);
+
+  /**
+   * @brief Emitted after a process starts.
+   *
+   * Allows observers to track which external command is being executed.
+   *
+   * @param process Executable name.
+   * @param arguments Command line arguments.
+   */
+  void processStarted(const Info& info, const QString& process, const QStringList& arguments);
 
   /**
    * @brief Emitted when the currently running process finishes.
@@ -111,12 +156,31 @@ signals:
    * @param exitCode Exit code returned by the process.
    * @param status Exit status reported by QProcess.
    */
-  void finished(int exitCode, QProcess::ExitStatus status);
+  void finished(const Info& info, int exitCode, QProcess::ExitStatus status);
 
   /**
    * @brief Emitted when the last process in the pipeline finishes.
    */
-  void finishedLast(int exitCode, const QString& message);
+  void finishedLast(const Info& info, int exitCode, const QString& message);
+
+  /**
+   * @brief Emitted when the complete pipeline is started
+   */
+  void startingPipeline(const Info& info);
+
+  /**
+   * @brief Emitted before a group starts.
+   *
+   * Allows observers to track which group is being executed
+   *
+   * @param groupName Name of the group which is starting
+   */
+  void startingGroup(const Info& info, const QString& groupName);
+
+  /**
+   * @brief Emitted when the last process in a group finishes.
+   */
+  void finishedGroup(const Info& info, const QString& groupName, int exitCode, const QString& message);
 
   /**
    * @brief Emitted when new data is available on the standard output stream.
@@ -137,7 +201,7 @@ signals:
    *
    * @param error Error reported by QProcess.
    */
-  void errorOccurred(QProcess::ProcessError error, const QString& message);
+  void errorOccurred(const Info& info, QProcess::ProcessError error, const QString& message);
 
 private slots:
   /**
@@ -179,29 +243,55 @@ private:
 
     /// Optional callback executed when the process finishes.
     std::function<void()> onFinish;
+
+    /// Current state of a single process
+    State state = State::Unknown;
   };
 
   /**
-   * @brief Internal state of the pipeline execution.
+   * @brief Internal representation of a group of processes
    */
-  enum class State
+  struct PipelineGroup
   {
-    Idle,     ///< Pipeline is not running.
-    Running,  ///< Pipeline is currently executing processes.
-    Aborting  ///< Pipeline is aborting execution.
-  } mState;
+    /// Process to be executed.
+    QString name = "";
+
+    /// Queue of processes waiting to be executed.
+    std::vector<std::shared_ptr<PipelineProcess>> processes;
+
+    int size() const
+    {
+      return processes.size();
+    }
+
+    bool isEmpty() const
+    {
+      return processes.size() == 0;
+    }
+
+    int getNextIndex()
+    {
+      for (int i = 0; i < (int)processes.size(); ++i)
+        if (processes.at(i)->state == State::Idle)
+          return i;
+
+      return -1;
+    }
+  };
 
   /// Mutex protecting access to the pipeline state.
   mutable std::mutex mStateMutex;
+  State mState;
 
   /// Name of the pipeline.
   QString mName;
 
   /// Currently running process.
-  PipelineProcess mRunningProcess;
+  std::shared_ptr<PipelineProcess> mRunningProcess;
 
-  /// Queue of processes waiting to be executed.
-  QVector<PipelineProcess> mProcesses;
+  uint32_t mGroupIndex;
+  QString mCurrentGroup;
+  std::vector<std::shared_ptr<PipelineGroup>> mGroups;
 
   /**
    * @brief Starts the next process or ends the pipeline.
@@ -224,4 +314,13 @@ private:
    * @return True if the data was handled successfully.
    */
   bool handleInputData(QByteArray& data) const;
+
+  void clearGroups();
+  int getIndexOfGroup(const QString& name) const;
+  int getIndexofFirstNonEmptyGroup() const;
+  std::shared_ptr<Pipeline::PipelineGroup> getGroup();
+
+  VoidResult start(const QString& groupName, bool first = false);
+
+  Info constructInfo() const;
 };

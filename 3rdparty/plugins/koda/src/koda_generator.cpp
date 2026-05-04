@@ -185,6 +185,7 @@ void KodaGenerator::setHostServices(maki::IHostServices* services)
   if (auto logger = mServices->logger())
   {
     logging::gSourceName = languageName().toStdString();
+    logging::gSilentLog = true;
     logger->registerPlugin(languageName(), logging::gLogToStream);
   }
 }
@@ -236,6 +237,7 @@ VoidResult KodaGenerator::simulate(const QString& outputFolder)
 
   if (mGeneratedDznFiles.empty())
   {
+    mServices->pipeline()->startGroup("Simulation");
     RETURN_ON_FAILURE(verify(outputFolder));
 
     // Start simulation after verification is done
@@ -246,6 +248,7 @@ VoidResult KodaGenerator::simulate(const QString& outputFolder)
     generate->setArguments(arguments);
 
     mServices->pipeline()->add(generate, maki::OnFail::EXECUTE, [this]() { startSimulation(); });
+    mServices->pipeline()->endGroup();
   }
   else
   {
@@ -371,6 +374,7 @@ VoidResult KodaGenerator::verify(const QString& outputFolder)
 
   // mGeneratedDznFiles = filtered;
 #else
+  mServices->pipeline()->startGroup("Generation");
   for (const auto& file : mGeneratedFiles)
   {
     LOG_DEBUG("Will generate Dezyne from KODA file: %s", qPrintable(file));
@@ -391,9 +395,11 @@ VoidResult KodaGenerator::verify(const QString& outputFolder)
 
     mServices->pipeline()->add(generate, maki::OnFail::STOP);
   }
+  mServices->pipeline()->endGroup();
 #endif
 
   // TODO: We need to find a better solution for this, we shouldn't allow plugins to execute any scripts
+  mServices->pipeline()->startGroup("Verification");
   auto taskOnly = getSetting("taskOnly");
   for (const QString& f : mGeneratedDznFiles)
   {
@@ -421,6 +427,7 @@ VoidResult KodaGenerator::verify(const QString& outputFolder)
 
     mServices->pipeline()->add(generate, maki::OnFail::STOP);
   }
+  mServices->pipeline()->endGroup();
 
   return VoidResult();
 }
