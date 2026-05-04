@@ -72,7 +72,8 @@ MainWindow::~MainWindow()
 
 VoidResult MainWindow::start()
 {
-  logging::gMinLogLevel = logging::LogLevel::Trace;
+  logging::gSilentLog = false;
+  logging::gMinLogLevel = logging::LogLevel::Debugging;
   logging::gSourceName = Config::APPLICATION_NAME.toStdString();
   logging::gLogToStream = [this](std::chrono::system_clock::time_point ts, logging::LogLevel level, const std::string& source, const std::string& filename, const uint32_t& line, const std::string& message) {
     if (mLogTable)
@@ -82,6 +83,11 @@ VoidResult MainWindow::start()
   notification::gNotificationStream = [this](logging::LogLevel level, const std::string& header, const std::string& message) {
     if (mNotificationManager)
       mNotificationManager->showNotification(QString::fromStdString(header), QString::fromStdString(message), level);
+  };
+  notification::gLongNotificationStream = [this](const QString& id, logging::LogLevel level, const std::string& header, QWidget* body) {
+    if (mNotificationManager)
+      return mNotificationManager->showLongNotification(id, QString::fromStdString(header), body, level);
+    return QString();
   };
 
   for (const auto& t : AppPaths::themes())
