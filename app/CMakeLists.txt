@@ -26,9 +26,12 @@ file(GLOB SYSTEM_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/system/undo_commands/*.cpp
 )
 file(GLOB ELEMENT_FILES ${CMAKE_CURRENT_SOURCE_DIR}/elements/*.cpp)
-file(GLOB WIDGET_FILES ${CMAKE_CURRENT_SOURCE_DIR}/widgets/*.cpp)
-file(GLOB STRUCTURAL_WIDGET_FILES ${CMAKE_CURRENT_SOURCE_DIR}/widgets/structure/*.cpp)
-file(GLOB PROPERTY_WIDGET_FILES ${CMAKE_CURRENT_SOURCE_DIR}/widgets/properties/*.cpp)
+file(GLOB WIDGET_FILES
+  ${CMAKE_CURRENT_SOURCE_DIR}/widgets/*.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/widgets/structure/*.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/widgets/properties/*.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/widgets/dialogs/*.cpp
+)
 file(GLOB COMPILER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/compiler/*.cpp)
 
 qt_add_executable(${APPLICATION_NAME}
@@ -36,8 +39,6 @@ qt_add_executable(${APPLICATION_NAME}
     assets.qrc
     ${SYSTEM_FILES}
     ${WIDGET_FILES}
-    ${STRUCTURAL_WIDGET_FILES}
-    ${PROPERTY_WIDGET_FILES}
     ${ELEMENT_FILES}
     ${COMPILER_FILES}
 )

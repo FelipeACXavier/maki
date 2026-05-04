@@ -16,6 +16,7 @@ public:
 
 protected:
   void setSize(double ratio, double screenFraction);
+  void setSize(double ratio, double screenFraction, qreal heightFraction);
   QVBoxLayout* layout();
   QDialogButtonBox* createButtons(const QString& ok, const QString& cancel);
 };
