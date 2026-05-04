@@ -47,6 +47,7 @@ private:
   LogHighlightDelegate* mHighlightDelegate = nullptr;
   QString mSearchText;
   QVector<QModelIndex> mSearchMatches;
+  QSet<QString> mSources;
 
   int mCurrentSearchMatch = -1;
   int mDefaultRowHeight = 24;

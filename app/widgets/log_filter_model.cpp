@@ -37,7 +37,7 @@ bool LogFilterProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex& sou
   const auto* model = sourceModel();
 
   const QModelIndex levelIndex = model->index(sourceRow, LogTableModel::LevelColumn, sourceParent);
-  const QModelIndex sourceIndex = model->index(sourceRow, LogTableModel::FileColumn, sourceParent);
+  const QModelIndex sourceIndex = model->index(sourceRow, LogTableModel::SourceColumn, sourceParent);
   const QModelIndex messageIndex = model->index(sourceRow, LogTableModel::MessageColumn, sourceParent);
   const QModelIndex fileIndex = model->index(sourceRow, LogTableModel::FileColumn, sourceParent);
 
@@ -52,7 +52,7 @@ bool LogFilterProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex& sou
   if (!mFileFilter.isEmpty() && !file.contains(mFileFilter, Qt::CaseInsensitive))
     return false;
 
-  if (!mSourceFilter.isEmpty() && !source.contains(mSourceFilter, Qt::CaseInsensitive))
+  if (mSourceFilter != "All" && !source.contains(mSourceFilter, Qt::CaseInsensitive))
     return false;
 
   if (!mTextFilter.isEmpty() && !message.contains(mTextFilter, Qt::CaseInsensitive))

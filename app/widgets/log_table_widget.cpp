@@ -7,6 +7,7 @@
 #include <QPushButton>
 #include <QSet>
 
+#include "app_configs.h"
 #include "clickable_icon.h"
 #include "expanding_widget.h"
 
@@ -63,7 +64,11 @@ LogTableWidget::LogTableWidget(QWidget* parent)
   mSourceFilter = new QComboBox(this);
   mSourceFilter->setSizeAdjustPolicy(QComboBox::SizeAdjustPolicy::AdjustToContents);
   mSourceFilter->setMaximumWidth(100);
-  mSourceFilter->addItem("MAKI");
+  mSourceFilter->setDuplicatesEnabled(false);
+  mSourceFilter->addItem("All");
+  mSourceFilter->addItem(Config::APPLICATION_NAME);
+  mSources.insert("All");
+  mSources.insert(Config::APPLICATION_NAME);
 
   mTable = new QTableView(this);
   mTable->setModel(mProxy);
@@ -226,6 +231,12 @@ void LogTableWidget::append(logging::LogLevel level, const QString& source, cons
   cleaned.replace("\n", " ");
   cleaned.replace("\r", " ");
   mModel->append(level, source, file, line, cleaned);
+
+  if (!mSources.contains(source))
+  {
+    mSourceFilter->addItem(source);
+    mSources.insert(source);
+  }
 
   const QModelIndex lastSourceIndex = mModel->index(mModel->rowCount() - 1, 0);
   const QModelIndex lastProxyIndex = mProxy->mapFromSource(lastSourceIndex);
