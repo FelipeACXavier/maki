@@ -16,20 +16,22 @@ class QApplication;
 
 namespace Config
 {
+/** @brief Contains configuration and theme-related data. */
 // ------------------------------------------------------------
 // Data types
-static const QString HAS_ACTIVITY = "hasActivity";
-static const QString INVALID = "invalid";
+static const QString HAS_ACTIVITY = "hasActivity";  /// Key for activity status.
+static const QString INVALID = "invalid";          /// Key for invalid state.
 
+/** @brief Represents theme information. */
 struct ThemeInfo
 {
-  QString id;           // "dark", "light", "gruvbox"
-  QString displayName;  // "Dark", "Light", "Gruvbox"
-  QString filePath;     // full path to .theme file
-  bool isUser = false;
+  QString id;           /// ID of the theme ("dark", "light", "gruvbox").
+  QString displayName;  /// Display name of the theme ("Dark", "Light", "Gruvbox").
+  QString filePath;     /// Full path to the .theme file.
+  bool isUser = false;   /// Indicates if the theme is user-defined.
 };
 
-// Map key strings to maki::ThemeVars members using the handy pointer to member notation
+/** @brief Maps key strings to maki::ThemeVars members. */
 const QHash<QString, QString maki::ThemeVars::*> THEME_KEY_MAP = {
     // General
     DECLARE_KEY(background),
@@ -111,21 +113,30 @@ const QHash<QString, QString maki::ThemeVars::*> THEME_KEY_MAP = {
     DECLARE_KEY(tooltip_border_color),
 };
 
-extern maki::ThemeVars SYSTEM_THEME;
-extern QColor FOREGROUND;
-extern QColor HIGHLIGHT;
+extern maki::ThemeVars SYSTEM_THEME;  /// System theme variables.
+extern QColor FOREGROUND;              /// Foreground color.
+extern QColor HIGHLIGHT;               /// Highlight color.
 
+/** @brief Retrieves a value from the theme based on a key. */
 QVariant getValueFromTheme(const QString& key);
 
 // ------------------------------------------------------------
 // Theme loading stuff
+/** @brief Loads a file from the specified path. */
 QString loadFile(const QString& path);
+
+/** @brief Applies a theme to the application. */
 void applyThemeToApp(QApplication* app, const QString& theme, const QList<Config::ThemeInfo>& availableThemes);
+
+/** @brief Loads theme variables from a file. */
 maki::ThemeVars loadThemeVarsFromFile(const QString& filePath);
+
+/** @brief Saves theme variables to a file. */
 VoidResult saveThemeVarsToFile(const QString& name, const maki::ThemeVars& theme);
 
 // ------------------------------------------------------------
 // Theme search stuff
+/** @brief Discovers available themes. */
 QList<ThemeInfo> discoverThemes();
 
 }  // namespace Config

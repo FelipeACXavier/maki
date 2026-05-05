@@ -8,6 +8,9 @@
 
 class NodeItem;
 
+/**
+ * @brief Represents a flow in the system.
+ */
 class Flow
 {
 public:
@@ -16,25 +19,71 @@ public:
     Type = Types::FLOW
   };
 
+  /**
+   * @brief Constructs a new Flow object.
+   *
+   * @param flowName The name of the flow.
+   * @param storage A shared pointer to the flow save information.
+   */
   Flow(const QString& flowName, std::shared_ptr<FlowSaveInfo> storage);
 
+  /**
+   * @brief Returns the unique identifier of the flow.
+   *
+   * @return const QString& The flow's ID.
+   */
   QString id() const;
+
+  /**
+   * @brief Returns the type of the flow.
+   *
+   * @return int The flow's type.
+   */
   int type() const;
+
+  /**
+   * @brief Returns the name of the flow.
+   *
+   * @return QString The flow's name.
+   */
   QString name() const;
 
+  /**
+   * @brief Checks if the flow is modifiable.
+   *
+   * @return bool True if modifiable, false otherwise.
+   */
   bool modifiable() const;
 
-  // Contains a list of saved data of the behaviour nodes
-  // Add, remove, and edit nodes
+  /**
+   * @brief Removes a node from the flow.
+   *
+   * @param node The node to remove.
+   */
   void removeNode(NodeItem* node);
 
+  /**
+   * @brief Updates a node in the flow with new save information.
+   *
+   * @param node The node to update.
+   * @param storage A shared pointer to the new node save information.
+   */
   void updateFlow(NodeItem* node, std::shared_ptr<NodeSaveInfo> storage);
 
+  /**
+   * @brief Retrieves a list of all nodes in the flow.
+   *
+   * @return QVector<std::shared_ptr<NodeSaveInfo>> The list of nodes.
+   */
   QVector<std::shared_ptr<NodeSaveInfo>> getNodes() const;
 
 private:
+  /// Unique identifier for the flow
   const QString mId;
+
+  /// Name of the flow
   QString mName;
 
+  /// Storage for flow save information
   std::shared_ptr<FlowSaveInfo> mStorage;
 };

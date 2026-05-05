@@ -50,10 +50,11 @@ public slots:
    * Creates a LongNotificationWidget and adds it to the managed list,
    * positioning it relative to the parent window.
    *
-   * @param header The id of the long notification widget
+   * @param id The id of the long notification widget
    * @param header The title of the notification.
    * @param contents The body of the notification.
    * @param level The log level determining the visual style.
+   * @return QString The ID of the created long notification.
    */
   QString showLongNotification(const QString& id, const QString& header, QWidget* contents, logging::LogLevel level);
 
@@ -86,6 +87,13 @@ private:
    */
   bool eventFilter(QObject* watched, QEvent* event);
 
+  /**
+   * @brief Updates an existing notification with new contents.
+   *
+   * @param id The ID of the notification to update.
+   * @param contents The new body of the notification.
+   * @return QString The updated notification's ID.
+   */
   QString updateExistingNotification(const QString& id, QWidget* contents);
 
   QPointer<QWidget> mParentWindow;     ///< Weak pointer to the parent window used for positioning.

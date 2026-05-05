@@ -36,6 +36,13 @@ class SettingsDialog : public BaseDialog
 {
   Q_OBJECT
 public:
+  /**
+   * Constructs a new instance of SettingsDialog.
+   * @param title The title of the dialog.
+   * @param manager A shared pointer to the SettingsManager.
+   * @param languageManager A shared pointer to the LanguageManager.
+   * @param parent The parent widget.
+   */
   SettingsDialog(const QString& title, std::shared_ptr<SettingsManager> manager, std::shared_ptr<LanguageManager> languageManager, QWidget* parent = nullptr);
 
 private slots:
@@ -53,63 +60,63 @@ private:
 
   // ------------------------------------------
   // Layouting
-  QStackedWidget* mPages = nullptr;
-  QTreeWidget* mPageSelector = nullptr;
+  QStackedWidget* mPages = nullptr;  /// Pointer to the stacked widget for managing pages.
+  QTreeWidget* mPageSelector = nullptr;  /// Pointer to the tree widget for selecting pages.
 
   // ------------------------------------------
   // Actual settings
-  std::shared_ptr<SettingsManager> mSettingsManager = nullptr;
-  std::shared_ptr<LanguageManager> mLanguageManager = nullptr;
+  std::shared_ptr<SettingsManager> mSettingsManager = nullptr;  /// Shared pointer to the SettingsManager.
+  std::shared_ptr<LanguageManager> mLanguageManager = nullptr;  /// Shared pointer to the LanguageManager.
 
   // General
-  maki::BooleanWidget* mRestoreLastSession = nullptr;
-  maki::BooleanWidget* mAutosaveEnabled = nullptr;
-  maki::SpinWidget* mAutosaveMinutes = nullptr;
-  maki::BooleanWidget* mConfirmOnClose = nullptr;
-  maki::BooleanWidget* mEnableDebugLogs = nullptr;
-  maki::IntegerWidget* mRecentHistorySize = nullptr;
-  maki::BooleanWidget* mShowWelcomeMessage = nullptr;
-  maki::SelectorWidget* mLanguageCombo = nullptr;
+  maki::BooleanWidget* mRestoreLastSession = nullptr;  /// Widget for enabling/disabling restoring last session.
+  maki::BooleanWidget* mAutosaveEnabled = nullptr;  /// Widget for enabling/disabling autosave.
+  maki::SpinWidget* mAutosaveMinutes = nullptr;  /// Widget for setting autosave interval in minutes.
+  maki::BooleanWidget* mConfirmOnClose = nullptr;  /// Widget for enabling/disabling confirmation on close.
+  maki::BooleanWidget* mEnableDebugLogs = nullptr;  /// Widget for enabling debug logs.
+  maki::IntegerWidget* mRecentHistorySize = nullptr;  /// Widget for setting recent history size.
+  maki::BooleanWidget* mShowWelcomeMessage = nullptr;  /// Widget for enabling/disabling welcome message.
+  maki::SelectorWidget* mLanguageCombo = nullptr;  /// Widget for selecting language.
 
   // Appearance
-  maki::SelectorWidget* mThemeCombo = nullptr;
-  maki::SpinWidget* mUiScale = nullptr;
-  maki::BooleanWidget* mNativeMenuBar = nullptr;
-  maki::BooleanWidget* mShowGrid = nullptr;
-  maki::SpinWidget* mNodeCornerRadius = nullptr;
-  maki::GridGroup* mColorGrid = nullptr;
-  maki::StringWidget* mUserThemeName = nullptr;
+  maki::SelectorWidget* mThemeCombo = nullptr;  /// Widget for selecting theme.
+  maki::SpinWidget* mUiScale = nullptr;  /// Widget for setting UI scale.
+  maki::BooleanWidget* mNativeMenuBar = nullptr;  /// Widget for enabling/disabling native menu bar.
+  maki::BooleanWidget* mShowGrid = nullptr;  /// Widget for enabling/disabling grid display.
+  maki::SpinWidget* mNodeCornerRadius = nullptr;  /// Widget for setting node corner radius.
+  maki::GridGroup* mColorGrid = nullptr;  /// Group widget for color settings.
+  maki::StringWidget* mUserThemeName = nullptr;  /// Widget for entering user theme name.
 
   // Generation
-  maki::StringWidget* mGenerationDirEdit = nullptr;
-  maki::ButtonWidget* mGenerationBrowseBtn = nullptr;
+  maki::StringWidget* mGenerationDirEdit = nullptr;  /// Widget for editing generation directory.
+  maki::ButtonWidget* mGenerationBrowseBtn = nullptr;  /// Button widget for browsing generation directory.
 
   // Plugins
-  QVector<PluginInfo> mPluginSettings;
+  QVector<PluginInfo> mPluginSettings;  /// Vector of plugin settings.
 
-  oclero::qlementine::Theme mTheme;
+  oclero::qlementine::Theme mTheme;  /// Current theme.
+
   // ------------------------------------------
   // Methods
-  void
-  saveToSettings();
+  void saveToSettings();  /// Saves the current settings to the manager.
 
   /**
-   * Construct the standard settings page and assign the selector accordingly.
+   * Constructs a standard settings page and assigns the selector accordingly.
    * @param pageName This will be the page title and the text in the selector.
    * @param iconName The icon of the page. It will be reflected in the selector.
    * @param resetCallback The callback for when the user clicks the reset button.
    * @param parent The parent widget.
-   * @return A struct with pointers to the create page and the respective selector. It can be assigned as auto[page, selector] = addPage(...);
+   * @return A struct with pointers to the created page and the respective selector. It can be assigned as auto[page, selector] = addPage(...);
    */
   SelectorPage addPage(const QString& pageName, const QString& iconName, std::function<void()> resetCallback, QTreeWidgetItem* parent = nullptr);
 
-  VoidResult createGeneralPage();
-  VoidResult createAppearancePage();
-  VoidResult createGenerationPage();
-  VoidResult createPluginPages();
+  VoidResult createGeneralPage();  /// Creates the general settings page.
+  VoidResult createAppearancePage();  /// Creates the appearance settings page.
+  VoidResult createGenerationPage();  /// Creates the generation settings page.
+  VoidResult createPluginPages();  /// Creates the plugin settings pages.
 
-  void updatePluginSetting(const QString& pluginId, const QString& key, QVariant value);
-  void updateColorGrid();
-  QString toColorLabel(QString label) const;
-  maki::ColorWidget* widgetByLabel(const QString& label, const QGridLayout* grid) const;
+  void updatePluginSetting(const QString& pluginId, const QString& key, QVariant value);  /// Updates a plugin setting.
+  void updateColorGrid();  /// Updates the color grid based on current settings.
+  QString toColorLabel(QString label) const;  /// Converts a color label to a formatted string.
+  maki::ColorWidget* widgetByLabel(const QString& label, const QGridLayout* grid) const;  /// Retrieves a color widget by its label.
 };

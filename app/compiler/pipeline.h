@@ -38,19 +38,19 @@ public:
 
   struct ProcessInfo
   {
-    QString name = "";
-    State status = State::Unknown;
+    QString name = "";  /// Name of the process.
+    State status = State::Unknown;  /// Current status of the process.
   };
 
   struct GroupInfo
   {
-    QString name = "";
-    QVector<ProcessInfo> processes = {};
+    QString name = "";  /// Name of the group.
+    QVector<ProcessInfo> processes = {};  /// List of processes in this group.
   };
 
   struct Info
   {
-    QVector<GroupInfo> groupInfo = {};
+    QVector<GroupInfo> groupInfo = {};  /// List of all groups and their processes.
   };
 
   /**
@@ -135,6 +135,7 @@ signals:
    *
    * Allows observers to track which external command is being executed.
    *
+   * @param info Information about the pipeline and group.
    * @param process Executable name.
    * @param arguments Command line arguments.
    */
@@ -145,6 +146,7 @@ signals:
    *
    * Allows observers to track which external command is being executed.
    *
+   * @param info Information about the pipeline and group.
    * @param process Executable name.
    * @param arguments Command line arguments.
    */
@@ -153,6 +155,7 @@ signals:
   /**
    * @brief Emitted when the currently running process finishes.
    *
+   * @param info Information about the pipeline and group.
    * @param exitCode Exit code returned by the process.
    * @param status Exit status reported by QProcess.
    */
@@ -160,11 +163,17 @@ signals:
 
   /**
    * @brief Emitted when the last process in the pipeline finishes.
+   *
+   * @param info Information about the pipeline and group.
+   * @param exitCode Exit code returned by the process.
+   * @param message Additional message.
    */
   void finishedLast(const Info& info, int exitCode, const QString& message);
 
   /**
    * @brief Emitted when the complete pipeline is started
+   *
+   * @param info Information about the pipeline and group.
    */
   void startingPipeline(const Info& info);
 
@@ -173,12 +182,18 @@ signals:
    *
    * Allows observers to track which group is being executed
    *
+   * @param info Information about the pipeline and group.
    * @param groupName Name of the group which is starting
    */
   void startingGroup(const Info& info, const QString& groupName);
 
   /**
    * @brief Emitted when the last process in a group finishes.
+   *
+   * @param info Information about the pipeline and group.
+   * @param groupName Name of the group which finished
+   * @param exitCode Exit code returned by the process.
+   * @param message Additional message.
    */
   void finishedGroup(const Info& info, const QString& groupName, int exitCode, const QString& message);
 
@@ -199,7 +214,9 @@ signals:
   /**
    * @brief Emitted when a process error occurs.
    *
+   * @param info Information about the pipeline and group.
    * @param error Error reported by QProcess.
+   * @param message Additional message.
    */
   void errorOccurred(const Info& info, QProcess::ProcessError error, const QString& message);
 
@@ -253,7 +270,7 @@ private:
    */
   struct PipelineGroup
   {
-    /// Process to be executed.
+    /// Name of the group.
     QString name = "";
 
     /// Queue of processes waiting to be executed.
