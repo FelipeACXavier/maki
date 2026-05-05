@@ -271,12 +271,12 @@ VoidResult SettingsDialog::createAppearancePage()
       mTheme = theme;
       qlementineStyle->setTheme(mTheme);
     });
-    connect(editor, &oclero::qlementine::ThemeEditorWidget::themeSaved, [this, qlementineStyle](const QString& path, const oclero::qlementine::Theme& theme) {
+    connect(editor, &oclero::qlementine::ThemeEditorWidget::themeSaved, [this](const QString& path, const oclero::qlementine::Theme& theme) {
       LOG_DEBUG("Theme saved: %s", qPrintable(path));
       mThemeCombo->addItem(theme.meta.name, theme.meta.name);
       mSettingsManager->themeCreated(path);
     });
-    connect(editor, &oclero::qlementine::ThemeEditorWidget::themeLoaded, [this, qlementineStyle](const QString& path, const oclero::qlementine::Theme& theme) {
+    connect(editor, &oclero::qlementine::ThemeEditorWidget::themeLoaded, [this](const QString& path, const oclero::qlementine::Theme& theme) {
       LOG_DEBUG("Theme loaded: %s", qPrintable(path));
       mThemeCombo->addItem(theme.meta.name, theme.meta.name);
       mSettingsManager->themeCreated(path);

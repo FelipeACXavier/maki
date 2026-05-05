@@ -20,7 +20,7 @@
 
 #define ADD_TITLE(TEXT)                                        \
   {                                                            \
-    formLayout->addRow(new Label(TEXT, TextRole::H3, &owner)); \
+    formLayout->addRow(new Label(TEXT, TextRole::H4, &owner)); \
     auto* line = new QFrame(&owner);                           \
     line->setFrameShape(QFrame::HLine);                        \
     line->setFrameShadow(QFrame::Plain);                       \
@@ -231,65 +231,55 @@ struct ThemeEditorWidget::Impl
   }
 
   /// Utility to load/save from/to JSON files.
-  void setupJSONLoader(QWidget* parent, QFormLayout* formLayout)
+  void setupJSONLoader(QWidget* parent, QVBoxLayout* buttonLayout, int vSpacing)
   {
-    auto* rowLayout = new QHBoxLayout();
-    const auto hSpacing = owner.style()->pixelMetric(QStyle::PM_LayoutHorizontalSpacing);
-    rowLayout->setSpacing(hSpacing * 2);
+    auto* container = new QWidget(parent);
+    auto* rowLayout = new QVBoxLayout(container);
+    rowLayout->setContentsMargins(0, 0, 0, 0);
+    rowLayout->setSpacing(vSpacing);
 
     // 'Load' button.
     {
-      auto* loadJsonButton = new QPushButton(QIcon::fromTheme("document-open"), "Load JSON file…", parent);
+      auto* loadJsonButton = new QPushButton(QIcon::fromTheme("document-open"), tr("Load JSON file…"), container);
       loadJsonButton->setToolTip("Load a JSON file from disk.");
       loadJsonButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
       rowLayout->addWidget(loadJsonButton);
 
       QObject::connect(loadJsonButton, &QPushButton::pressed, &owner, [this]() {
         // Get previous path.
-        // const auto defaultDirPath =
-        //     QStandardPaths::writableLocation(QStandardPaths::StandardLocation::DocumentsLocation);
+        // const auto defaultDirPath = QStandardPaths::writableLocation(QStandardPaths::StandardLocation::DocumentsLocation);
         LOG_DEBUG("Loading theme from: %s", qPrintable(defaultDirPath));
         const auto defaultPath = defaultDirPath + '/' + DEFAULT_FILE_NAME;
         QSettings settings;
-        // const auto previousPath = settings.value(PREVIOUS_PATH_SETTINGS_KEY, defaultPath).toString();
 
         // Get theme from file and set it on the application.
         const auto fileName = getFileName("Load JSON theme");
-        // QFileDialog::getOpenFileName(&owner, "Load JSON theme", defaultPath, "JSON Files (*.json)");
         const auto themeOpt = Theme::fromJsonPath(fileName);
         if (!themeOpt.has_value())
-        {
           return;
-        }
 
         owner.setTheme(themeOpt.value());
 
         Q_EMIT owner.themeLoaded(fileName, theme);
-
-        // Save path to QSettings.
-        // settings.setValue(PREVIOUS_PATH_SETTINGS_KEY, fileName);
         settings.sync();
       });
     }
 
     // 'Save' button.
     {
-      auto* saveJsonButton = new QPushButton(QIcon::fromTheme("document-save"), "Save JSON file…", parent);
+      auto* saveJsonButton = new QPushButton(QIcon::fromTheme("document-save"), tr("Save JSON file…"), container);
       saveJsonButton->setToolTip("Save the current theme as JSON file to disk.");
       saveJsonButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
       rowLayout->addWidget(saveJsonButton);
 
       QObject::connect(saveJsonButton, &QPushButton::pressed, &owner, [this]() {
         // Get previous path.
-        // const auto defaultDirPath =
-        // QStandardPaths::writableLocation(QStandardPaths::StandardLocation::DocumentsLocation);
+        // const auto defaultDirPath = QStandardPaths::writableLocation(QStandardPaths::StandardLocation::DocumentsLocation);
         LOG_DEBUG("Saving theme to: %s", qPrintable(defaultDirPath));
         const auto defaultPath = defaultDirPath + '/' + DEFAULT_FILE_NAME;
         QSettings settings;
-        // const auto previousPath = settings.value(PREVIOUS_PATH_SETTINGS_KEY, defaultPath).toString();
 
         const auto fileName = getFileName("Save JSON theme");
-        // QFileDialog::getSaveFileName(&owner, "Save JSON theme", defaultPath, "JSON Files (*.json)");
         if (!fileName.isEmpty())
         {
           const auto jsonDoc = theme.toJson();
@@ -303,9 +293,6 @@ struct ThemeEditorWidget::Impl
             file.close();
 
             Q_EMIT owner.themeSaved(fileName, theme);
-
-            // Save path to QSettings.
-            // settings.setValue(PREVIOUS_PATH_SETTINGS_KEY, fileName);
             settings.sync();
           }
           else
@@ -317,7 +304,7 @@ struct ThemeEditorWidget::Impl
       });
     }
 
-    formLayout->addRow(rowLayout);
+    buttonLayout->addWidget(container);
   }
 
   void setupMetadataEditors(QFormLayout* formLayout, int vSpacing)
@@ -492,6 +479,7 @@ struct ThemeEditorWidget::Impl
     section->addItem(frame, title, oclero::qlementine::TextRole::H5);
     section->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
     section->setExpanded(false);
+    section->setContentsMargins(hSpacing, vSpacing, hSpacing, vSpacing);
 
     parentLayout->addRow(section);
   }
@@ -499,7 +487,6 @@ struct ThemeEditorWidget::Impl
   void setupUi()
   {
     auto* globalLayout = new QVBoxLayout(&owner);
-    // globalLayout->setContentsMargins(0, 0, 0, 0);
     owner.setLayout(globalLayout);
 
     const auto vSpacing = owner.style()->pixelMetric(QStyle::PM_LayoutVerticalSpacing);
@@ -514,12 +501,16 @@ struct ThemeEditorWidget::Impl
     header->setLayout(headerLayout);
 
     auto* buttonWidget = new QWidget(header);
-    auto* buttonLayout = new QFormLayout(buttonWidget);
-    buttonLayout->setHorizontalSpacing(hSpacing * 8);
+    buttonWidget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+
+    auto* buttonLayout = new QVBoxLayout(buttonWidget);
     buttonLayout->setContentsMargins(0, 0, 0, 0);
-    buttonLayout->setRowWrapPolicy(QFormLayout::RowWrapPolicy::DontWrapRows);
+    buttonLayout->setSpacing(vSpacing);
+    buttonLayout->addStretch();
 
     auto* metadataWidget = new QWidget(header);
+    metadataWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+
     auto* metadataLayout = new QFormLayout(metadataWidget);
     metadataLayout->setHorizontalSpacing(hSpacing * 8);
     metadataLayout->setContentsMargins(0, 0, 0, 0);
@@ -530,15 +521,22 @@ struct ThemeEditorWidget::Impl
     headerLayout->addWidget(buttonWidget, 0, Qt::AlignVCenter);
 
     setupMetadataEditors(metadataLayout, vSpacing);
-    setupJSONLoader(&owner, buttonLayout);
+    setupJSONLoader(&owner, buttonLayout, vSpacing);
 
     auto* reminder = new oclero::qlementine::Label(tr("Note: Changes are not saved unless you export the theme"), header);
     reminder->setRole(oclero::qlementine::TextRole::Default);
-    buttonLayout->addRow(reminder);
+    reminder->setMaximumWidth(250);
+    reminder->setWordWrap(true);
+
+    buttonLayout->addWidget(reminder);
 
     QWidget* container = new QWidget(&owner);
+    container->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
+
     auto* formLayout = new QFormLayout(container);
+    formLayout->setSizeConstraint(QLayout::SetMinAndMaxSize);
     formLayout->setFormAlignment(Qt::AlignTop);
+    formLayout->setVerticalSpacing(0);
     formLayout->setHorizontalSpacing(hSpacing * 8);
     formLayout->setContentsMargins(0, 0, 0, 0);
     formLayout->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
@@ -548,6 +546,7 @@ struct ThemeEditorWidget::Impl
     setupColorEditors(formLayout, vSpacing);
 
     auto* editorScroll = new QScrollArea(&owner);
+    editorScroll->setAlignment(Qt::AlignTop);
     editorScroll->setWidgetResizable(true);
     editorScroll->setFrameShape(QFrame::NoFrame);
     editorScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -559,7 +558,7 @@ struct ThemeEditorWidget::Impl
     line->setFrameShadow(QFrame::Plain);
 
     globalLayout->addWidget(header);
-    globalLayout->addWidget(new Label(tr("Theme Editor"), TextRole::H3, &owner));
+    globalLayout->addWidget(new Label(tr("Theme Editor"), TextRole::H4, &owner));
     globalLayout->addWidget(line);
     globalLayout->addWidget(editorScroll);
   }
