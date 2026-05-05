@@ -107,6 +107,7 @@ jobs:
   # 4) Build documentation for Pages
   build-docs:
     name: Build Docs
+    if: github.ref_name == 'master'
     runs-on: self-hosted
 
     container:
