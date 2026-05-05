@@ -15,3 +15,8 @@ tagged
 
 # Compilations logs
 /*.log
+
+# Artifacts from auto-documenting script
+*.bak
+*.llm
+env
