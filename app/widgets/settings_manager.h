@@ -41,7 +41,9 @@ struct GeneralSettings
            confirmOnCloseWithExecution != s.confirmOnCloseWithExecution ||
            enableDebugLogs != s.enableDebugLogs ||
            recentHistorySize != s.recentHistorySize ||
+           recentFiles != s.recentFiles ||
            showWelcomeMessage != s.showWelcomeMessage ||
+           lastOpenFileDir != s.lastOpenFileDir ||
            language != s.language;
   }
 };

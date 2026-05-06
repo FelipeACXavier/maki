@@ -252,15 +252,16 @@ void SettingsManager::setPlugins(const QVector<PluginInfo>& s)
 
 void SettingsManager::addRecentFile(const QString& s)
 {
-  // Check if the files was already added
-  if (mGeneral.recentFiles.contains(s))
+  // Check if the file was already added
+  auto settings = general();
+  if (settings.recentFiles.contains(s))
     return;
 
-  mGeneral.recentFiles.push_front(s);
-  if (mGeneral.recentFiles.size() >= mGeneral.recentHistorySize)
-    mGeneral.recentFiles.pop_back();
+  settings.recentFiles.push_front(s);
+  if (settings.recentFiles.size() >= settings.recentHistorySize)
+    settings.recentFiles.pop_back();
 
-  save();
+  setGeneral(settings);
 }
 
 QVector<maki::SettingField> SettingsManager::getPluginSettings(const QString& id) const

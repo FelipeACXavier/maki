@@ -207,6 +207,8 @@ void MainWindow::onThemeChanged(const AppearanceSettings& settings, bool initial
 
 void MainWindow::onSettingsChanged()
 {
+  LOG_DEBUG("Settings changed");
+
   if (mFileMenu)
     mFileMenu->setGenerationRoot(mSettingsManager->generation().generationDir);
 
@@ -215,6 +217,14 @@ void MainWindow::onSettingsChanged()
 
   if (mSettingsManager->general().enableDebugLogs)
     logging::gMinLogLevel = logging::LogLevel::Trace;
+
+  // Clean and repopulate the recent files
+  mActionOpenRecent->clear();
+  for (const auto& file : mSettingsManager->general().recentFiles)
+  {
+    QAction* action = mActionOpenRecent->addAction(elideLeft(file, mActionOpenRecent));
+    connect(action, &QAction::triggered, [this, file] { onActionLoad(file); });
+  }
 }
 
 void MainWindow::startUI()
