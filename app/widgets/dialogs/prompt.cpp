@@ -50,6 +50,9 @@ PromptDialog::PromptDialog(const QString& title, const QString& accept, const QS
   auto* buttonBox = createButtons(accept, reject);
   connect(buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
   connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
+
+  limitWidth(buttonBox->sizeHint().width());
+  setSize(4, 0.15);
 }
 
 void PromptDialog::setType(oclero::qlementine::StatusBadge type)
@@ -93,7 +96,12 @@ void PromptDialog::setExtraInfo(const QString& info)
 
 bool confirmationPrompt(const QString& message, const QString& extraInfo, QWidget* parent)
 {
-  PromptDialog prompt("Confirmation", "Accept", "Cancel", message, parent);
+  return confirmationPrompt(message, "Accept", "Reject", extraInfo, parent);
+}
+
+bool confirmationPrompt(const QString& message, const QString& confirm, const QString& reject, const QString& extraInfo, QWidget* parent)
+{
+  PromptDialog prompt("Confirmation", confirm, reject, message, parent);
   prompt.setType(oclero::qlementine::StatusBadge::Info);
   if (!extraInfo.isEmpty())
     prompt.setExtraInfo(extraInfo);

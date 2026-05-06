@@ -5,12 +5,14 @@
 
 #include "../base_dialog.h"
 
-namespace maki {
+namespace maki
+{
 
 /**
  * @brief A dialog for prompting the user with a message and options.
  */
-class PromptDialog : public BaseDialog {
+class PromptDialog : public BaseDialog
+{
   Q_OBJECT
 
 public:
@@ -53,6 +55,18 @@ private:
  * @return true if the user accepted, false otherwise.
  */
 bool confirmationPrompt(const QString& message, const QString& extraInfo = "", QWidget* parent = nullptr);
+
+/**
+ * @brief Displays a confirmation prompt dialog.
+ *
+ * @param message The message to display in the dialog.
+ * @param confirm The text of the confirmation button.
+ * @param reject The text of the cancellation button.
+ * @param extraInfo Optional extra information to be displayed.
+ * @param parent The parent widget.
+ * @return true if the user accepted, false otherwise.
+ */
+bool confirmationPrompt(const QString& message, const QString& confirm, const QString& reject, const QString& extraInfo = "", QWidget* parent = nullptr);
 
 /**
  * @brief Displays a warning prompt dialog.

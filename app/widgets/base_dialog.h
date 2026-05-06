@@ -58,4 +58,22 @@ protected:
    * @return QDialogButtonBox* Pointer to the created button box.
    */
   QDialogButtonBox* createButtons(const QString& ok, const QString& cancel);
+
+  /**
+   * @brief Defines the width limits for the dialog
+   *
+   * @param minWidth The minimum width allowed
+   */
+  void limitWidth(int minWidth);
+
+  /**
+   * @brief Defines the heigth limits for the dialog
+   *
+   * @param minHeight The minimum height allowed
+   */
+  void limitHeight(int minHeight);
+
+private:
+  int mMinimunWidth;
+  int mMinimunHeight;
 };

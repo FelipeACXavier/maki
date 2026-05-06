@@ -16,6 +16,8 @@ constexpr double TargetScreenFraction = 0.50;
 
 BaseDialog::BaseDialog(const QString& title, double ratio, double screenFraction, QWidget* parent)
     : QDialog(parent)
+    , mMinimunWidth(-1)
+    , mMinimunHeight(-1)
 {
   setWindowTitle(title);
 
@@ -49,7 +51,10 @@ void BaseDialog::setSize(double ratio, double screenFraction, qreal heightFracti
   targetH = qBound(int(screenH * MinScreenFraction), targetH, int(screenH * fraction));
 
   int targetW = int(targetH * ratio);
-  if (targetW > int(screenW * fraction))
+  if (mMinimunWidth > 0)
+    targetW = qMax<int>(mMinimunWidth, targetW);
+
+  if (targetW > int(screenW * fraction) && mMinimunWidth < 0)
   {
     targetW = int(screenW * screenFraction);
     targetH = int(targetW / ratio);
@@ -96,4 +101,14 @@ QDialogButtonBox* BaseDialog::createButtons(const QString& ok, const QString& ca
   }
 
   return buttonBox;
+}
+
+void BaseDialog::limitWidth(int minWidth)
+{
+  mMinimunWidth = minWidth;
+}
+
+void BaseDialog::limitHeight(int minHeight)
+{
+  mMinimunHeight = minHeight;
 }
