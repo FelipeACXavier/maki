@@ -138,10 +138,10 @@ public:
 protected:
   std::shared_ptr<NodeConfig> mConfig;  /// Configuration settings for the node.
 
-  QGraphicsTextItem* mLabel = nullptr;  /// Pointer to the label text item.
+  QGraphicsTextItem* mLabel = nullptr;         /// Pointer to the label text item.
   QGraphicsPixmapItem* mPixmapItem = nullptr;  /// Pointer to the pixmap item.
-  QString mIconPath = "";  /// Path to the icon image.
-  QGraphicsSvgItem* mIconItem = nullptr;  /// Pointer to the SVG icon item.
+  QString mIconPath = "";                      /// Path to the icon image.
+  QGraphicsSvgItem* mIconItem = nullptr;       /// Pointer to the SVG icon item.
 
   /**
    * @brief Updates the position of the label.
@@ -202,8 +202,8 @@ protected:
   virtual void paintPixmap(QPainter* painter) const;
 
 private:
-  const QString mId;  /// Unique identifier of the node.
-  const QRectF mBounds;  /// Bounding rectangle of the node.
+  const QString mId;      /// Unique identifier of the node.
+  const QRectF mBounds;   /// Bounding rectangle of the node.
   const QString mNodeId;  /// Identifier of the node within its type.
 
   QRectF mScaledBounds;  /// Scaled bounding rectangle of the node.
