@@ -206,6 +206,13 @@ public:
   std::vector<oclero::qlementine::Theme> availableThemes() const;
 
   /**
+   * @brief Get a theme based on its metadata name
+   *
+   * @return In case the theme exists, it is returned. Otherwise Result is set to Failed
+   */
+  Result<oclero::qlementine::Theme> themeByName(const QString& themeName) const;
+
+  /**
    * @brief Handles a theme creation event.
    *
    * @param themePath Path to the created theme.
@@ -218,7 +225,7 @@ signals:
    *
    * @param theme New theme name.
    */
-  void themeChanged(const QString& theme);
+  void themeChanged();
 
   /**
    * @brief Emitted when settings change.

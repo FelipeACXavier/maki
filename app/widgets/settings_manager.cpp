@@ -5,6 +5,8 @@
 
 #include "common/app_configs.h"
 #include "logging.h"
+#include "oclero/qlementine/style/Theme.hpp"
+#include "result.h"
 #include "widgets/dialogs/prompt.h"
 
 #define LOAD_SETTING(MEMBER, FIELD, TYPE)                            \
@@ -57,6 +59,15 @@ QVector<PluginInfo> SettingsManager::plugins() const
 std::vector<oclero::qlementine::Theme> SettingsManager::availableThemes() const
 {
   return mThemeManager->themes();
+}
+
+Result<oclero::qlementine::Theme> SettingsManager::themeByName(const QString& themeName) const
+{
+  for (const auto& theme : availableThemes())
+    if (theme.meta.name == themeName)
+      return theme;
+
+  return Result<oclero::qlementine::Theme>::Failed("No theme named: " + themeName.toStdString());
 }
 
 void SettingsManager::themeCreated(const QString& themePath)
@@ -208,7 +219,7 @@ void SettingsManager::setAppearance(const AppearanceSettings& s)
   if (changed)
   {
     LOG_DEBUG("Appearence settings changed: %s", qPrintable(mAppearance.theme));
-    emit themeChanged(mAppearance.theme);
+    emit themeChanged();
   }
 }
 

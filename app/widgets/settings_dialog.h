@@ -7,6 +7,8 @@
 #include "language_manager.h"
 #include "result.h"
 #include "settings_manager.h"
+#include "theme_editor.h"
+#include "widgets/theme_editor.h"
 #include "widgets/widget_factory.h"
 
 class QSpinBox;
@@ -60,7 +62,7 @@ private:
 
   // ------------------------------------------
   // Layouting
-  QStackedWidget* mPages = nullptr;  /// Pointer to the stacked widget for managing pages.
+  QStackedWidget* mPages = nullptr;      /// Pointer to the stacked widget for managing pages.
   QTreeWidget* mPageSelector = nullptr;  /// Pointer to the tree widget for selecting pages.
 
   // ------------------------------------------
@@ -70,25 +72,26 @@ private:
 
   // General
   maki::BooleanWidget* mRestoreLastSession = nullptr;  /// Widget for enabling/disabling restoring last session.
-  maki::BooleanWidget* mAutosaveEnabled = nullptr;  /// Widget for enabling/disabling autosave.
-  maki::SpinWidget* mAutosaveMinutes = nullptr;  /// Widget for setting autosave interval in minutes.
-  maki::BooleanWidget* mConfirmOnClose = nullptr;  /// Widget for enabling/disabling confirmation on close.
-  maki::BooleanWidget* mEnableDebugLogs = nullptr;  /// Widget for enabling debug logs.
-  maki::IntegerWidget* mRecentHistorySize = nullptr;  /// Widget for setting recent history size.
+  maki::BooleanWidget* mAutosaveEnabled = nullptr;     /// Widget for enabling/disabling autosave.
+  maki::SpinWidget* mAutosaveMinutes = nullptr;        /// Widget for setting autosave interval in minutes.
+  maki::BooleanWidget* mConfirmOnClose = nullptr;      /// Widget for enabling/disabling confirmation on close.
+  maki::BooleanWidget* mEnableDebugLogs = nullptr;     /// Widget for enabling debug logs.
+  maki::IntegerWidget* mRecentHistorySize = nullptr;   /// Widget for setting recent history size.
   maki::BooleanWidget* mShowWelcomeMessage = nullptr;  /// Widget for enabling/disabling welcome message.
-  maki::SelectorWidget* mLanguageCombo = nullptr;  /// Widget for selecting language.
+  maki::SelectorWidget* mLanguageCombo = nullptr;      /// Widget for selecting language.
 
   // Appearance
-  maki::SelectorWidget* mThemeCombo = nullptr;  /// Widget for selecting theme.
-  maki::SpinWidget* mUiScale = nullptr;  /// Widget for setting UI scale.
+  maki::SelectorWidget* mThemeCombo = nullptr;    /// Widget for selecting theme.
+  maki::SpinWidget* mUiScale = nullptr;           /// Widget for setting UI scale.
   maki::BooleanWidget* mNativeMenuBar = nullptr;  /// Widget for enabling/disabling native menu bar.
-  maki::BooleanWidget* mShowGrid = nullptr;  /// Widget for enabling/disabling grid display.
+  maki::BooleanWidget* mShowGrid = nullptr;       /// Widget for enabling/disabling grid display.
   maki::SpinWidget* mNodeCornerRadius = nullptr;  /// Widget for setting node corner radius.
-  maki::GridGroup* mColorGrid = nullptr;  /// Group widget for color settings.
-  maki::StringWidget* mUserThemeName = nullptr;  /// Widget for entering user theme name.
+  maki::GridGroup* mColorGrid = nullptr;          /// Group widget for color settings.
+  maki::StringWidget* mUserThemeName = nullptr;   /// Widget for entering user theme name.
+  oclero::qlementine::ThemeEditorWidget* mThemeEditor = nullptr;
 
   // Generation
-  maki::StringWidget* mGenerationDirEdit = nullptr;  /// Widget for editing generation directory.
+  maki::StringWidget* mGenerationDirEdit = nullptr;    /// Widget for editing generation directory.
   maki::ButtonWidget* mGenerationBrowseBtn = nullptr;  /// Button widget for browsing generation directory.
 
   // Plugins
@@ -110,13 +113,13 @@ private:
    */
   SelectorPage addPage(const QString& pageName, const QString& iconName, std::function<void()> resetCallback, QTreeWidgetItem* parent = nullptr);
 
-  VoidResult createGeneralPage();  /// Creates the general settings page.
+  VoidResult createGeneralPage();     /// Creates the general settings page.
   VoidResult createAppearancePage();  /// Creates the appearance settings page.
   VoidResult createGenerationPage();  /// Creates the generation settings page.
-  VoidResult createPluginPages();  /// Creates the plugin settings pages.
+  VoidResult createPluginPages();     /// Creates the plugin settings pages.
 
   void updatePluginSetting(const QString& pluginId, const QString& key, QVariant value);  /// Updates a plugin setting.
-  void updateColorGrid();  /// Updates the color grid based on current settings.
-  QString toColorLabel(QString label) const;  /// Converts a color label to a formatted string.
+  void updateColorGrid();                                                                 /// Updates the color grid based on current settings.
+  QString toColorLabel(QString label) const;                                              /// Converts a color label to a formatted string.
   maki::ColorWidget* widgetByLabel(const QString& label, const QGridLayout* grid) const;  /// Retrieves a color widget by its label.
 };

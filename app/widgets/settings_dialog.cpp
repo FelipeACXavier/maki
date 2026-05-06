@@ -30,7 +30,6 @@
 #include "section.h"
 #include "style_helpers.h"
 #include "theme.h"
-#include "theme_editor.h"
 #include "widget_factory.h"
 
 SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsManager> manager, std::shared_ptr<LanguageManager> languageManager, QWidget* parent)
@@ -239,6 +238,14 @@ VoidResult SettingsDialog::createAppearancePage()
     mThemeCombo->addItem(label, info.meta.name);
   }
   mThemeCombo->setValue(appearance.theme);
+  connect(mThemeCombo, &maki::SelectorWidget::valueChanged, [this](const QString& themeName) {
+    if (!mThemeEditor)
+      return;
+
+    auto theme = mSettingsManager->themeByName(themeName);
+    if (theme.IsSuccess())
+      mThemeEditor->setTheme(theme.Value());
+  });
 
   maki::WidgetAlignment alignment = {maki::WidgetAlignment::Type::VERTICAL};
   mNativeMenuBar = new maki::BooleanWidget(tr("Use native menubar"), appearance.nativeMenuBar, alignment, page);
@@ -250,7 +257,9 @@ VoidResult SettingsDialog::createAppearancePage()
   auto* qlementineStyle = oclero::qlementine::appStyle();
   if (qlementineStyle)
   {
-    mTheme = qlementineStyle->theme();
+    auto themeResult = mSettingsManager->themeByName(appearance.theme);
+    if (themeResult.IsSuccess())
+      mTheme = themeResult.Value();
 
     auto* editorFrame = new StyledFrame(page);
     editorFrame->setBackgroundRole(StyledFrame::BackgroundRole::Base);
@@ -263,32 +272,27 @@ VoidResult SettingsDialog::createAppearancePage()
     editorLayout->setContentsMargins(4, 4, 4, 4);
     editorFrame->setLayout(editorLayout);
 
-    auto* editor = new oclero::qlementine::ThemeEditorWidget(editorFrame);
-    editor->setDefaultPath(AppPaths::userThemes());
+    mThemeEditor = new oclero::qlementine::ThemeEditorWidget(editorFrame);
+    mThemeEditor->setDefaultPath(AppPaths::userThemes());
 
-    connect(editor, &oclero::qlementine::ThemeEditorWidget::themeChanged, [this, qlementineStyle](const oclero::qlementine::Theme& theme) {
-      LOG_DEBUG("Theme changed, saving to variable");
+    connect(mThemeEditor, &oclero::qlementine::ThemeEditorWidget::themeChanged, [this](const oclero::qlementine::Theme& theme) {
+      LOG_TRACE("Theme updated");
       mTheme = theme;
-      qlementineStyle->setTheme(mTheme);
     });
-    connect(editor, &oclero::qlementine::ThemeEditorWidget::themeSaved, [this](const QString& path, const oclero::qlementine::Theme& theme) {
-      LOG_DEBUG("Theme saved: %s", qPrintable(path));
+    connect(mThemeEditor, &oclero::qlementine::ThemeEditorWidget::themeSaved, [this](const QString& path, const oclero::qlementine::Theme& theme) {
+      LOG_TRACE("Theme saved: %s", qPrintable(path));
       mThemeCombo->addItem(theme.meta.name, theme.meta.name);
       mSettingsManager->themeCreated(path);
     });
-    connect(editor, &oclero::qlementine::ThemeEditorWidget::themeLoaded, [this](const QString& path, const oclero::qlementine::Theme& theme) {
-      LOG_DEBUG("Theme loaded: %s", qPrintable(path));
+    connect(mThemeEditor, &oclero::qlementine::ThemeEditorWidget::themeLoaded, [this](const QString& path, const oclero::qlementine::Theme& theme) {
+      LOG_TRACE("Theme loaded: %s", qPrintable(path));
       mThemeCombo->addItem(theme.meta.name, theme.meta.name);
       mSettingsManager->themeCreated(path);
     });
-    connect(qlementineStyle, &oclero::qlementine::QlementineStyle::themeChanged, [qlementineStyle, editor]() {
-      LOG_DEBUG("Theme changed, updating editor");
-      editor->setTheme(qlementineStyle->theme());
-    });
-    editor->setTheme(mTheme);
+    mThemeEditor->setTheme(mTheme);
 
-    editorFrame->setFixedHeight(editor->sizeHint().height() + mTheme.borderWidth);
-    editorLayout->addWidget(editor);
+    editorFrame->setFixedHeight(mThemeEditor->sizeHint().height() + mTheme.borderWidth);
+    editorLayout->addWidget(mThemeEditor);
 
     themeLayout->addWidget(editorFrame);
   }
