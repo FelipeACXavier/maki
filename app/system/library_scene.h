@@ -41,6 +41,11 @@ public:
    */
   void relayoutVisibleItems();
 
+  /**
+   * @brief Handles theme change events.
+   */
+  void themeChanged();
+
 signals:
   /**
    * @brief Emitted when a library node is selected.
@@ -79,10 +84,10 @@ protected:
   void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
 
 private:
-  QPointF mPressScenePos; /// Scene position where mouse was pressed.
-  bool mPressed = false; /// Flag indicating if mouse is currently pressed.
-  bool mDragging = false; /// Flag indicating if dragging is in progress.
-  DraggableItem* mClickedItem; /// Pointer to the item that was clicked.
+  QPointF mPressScenePos;       /// Scene position where mouse was pressed.
+  bool mPressed = false;        /// Flag indicating if mouse is currently pressed.
+  bool mDragging = false;       /// Flag indicating if dragging is in progress.
+  DraggableItem* mClickedItem;  /// Pointer to the item that was clicked.
 
   /**
    * @brief Clears all selected nodes from the scene.

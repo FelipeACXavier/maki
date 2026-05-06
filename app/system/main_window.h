@@ -16,6 +16,7 @@
 #include "main_window_layout.h"
 #include "result.h"
 #include "widgets/notification_manager.h"
+#include "widgets/settings_manager.h"
 
 class Flow;
 class Canvas;
@@ -126,19 +127,19 @@ private slots:
   void changeEvent(QEvent* event) override;
 
 private:
-  std::unique_ptr<SaveHandler> mSaveHandler;  /// Handler for saving data.
-  std::unique_ptr<PluginManager> mPluginManager;  /// Manager for plugins.
-  std::shared_ptr<ConfigurationTable> mConfigTable;  /// Configuration table shared pointer.
+  std::unique_ptr<SaveHandler> mSaveHandler;          /// Handler for saving data.
+  std::unique_ptr<PluginManager> mPluginManager;      /// Manager for plugins.
+  std::shared_ptr<ConfigurationTable> mConfigTable;   /// Configuration table shared pointer.
   std::shared_ptr<SettingsManager> mSettingsManager;  /// Settings manager shared pointer.
   std::shared_ptr<LanguageManager> mLanguageManager;  /// Language manager shared pointer.
 
-  Pipeline* mPipeline = nullptr;  /// Pointer to the pipeline.
-  Generator* mGenerator = nullptr;  /// Pointer to the generator.
-  HostServices* mHostServices = nullptr;  /// Pointer to the host services.
-  Canvas* mActiveCanvas = nullptr;  /// Pointer to the active canvas.
-  PluginTab* mPluginTab = nullptr;  /// Pointer to the plugin tab.
+  Pipeline* mPipeline = nullptr;                        /// Pointer to the pipeline.
+  Generator* mGenerator = nullptr;                      /// Pointer to the generator.
+  HostServices* mHostServices = nullptr;                /// Pointer to the host services.
+  Canvas* mActiveCanvas = nullptr;                      /// Pointer to the active canvas.
+  PluginTab* mPluginTab = nullptr;                      /// Pointer to the plugin tab.
   NotificationManager* mNotificationManager = nullptr;  /// Pointer to the notification manager.
-  Logger* mLogger = nullptr;  /// Pointer to the logger.
+  Logger* mLogger = nullptr;                            /// Pointer to the logger.
 
   oclero::qlementine::ThemeManager* mThemeManager;  /// Pointer to the theme manager.
 
@@ -237,7 +238,7 @@ private:
    * @param t Name of the new theme.
    * @param at List of theme information.
    */
-  void onThemeChanged(const QString& t, const QList<Config::ThemeInfo>& at);
+  void onThemeChanged(const AppearanceSettings& themeName, bool intialConfig);
 
   /**
    * @brief Handles settings change events.
@@ -271,13 +272,15 @@ private:
 
   // ================================================
   // Actions
-  void onActionNew();  /// Handles new action.
+  void onActionNew();                          /// Handles new action.
   void onActionLoad(const QString& filename);  /// Handles load action with a specified file name.
-  void onActionSave();  /// Handles save action.
-  void onActionSaveAs();  /// Handles save as action.
-  void onActionGenerate();  /// Handles generate action.
-  void onActionSimulate();  /// Handles simulate action.
-  void onActionLogLevelChanged();  /// Handles log level change action.
+  void onActionSave();                         /// Handles save action.
+  void onActionExit();                         /// Handles exit action.
+  void onActionRestart();                      /// Handles restart action.
+  void onActionSaveAs();                       /// Handles save as action.
+  void onActionGenerate();                     /// Handles generate action.
+  void onActionSimulate();                     /// Handles simulate action.
+  void onActionLogLevelChanged();              /// Handles log level change action.
 };  // namespace qlementclassMainWindow:public MainWindowLayout
 
 #endif  // MAINWINDOW_H

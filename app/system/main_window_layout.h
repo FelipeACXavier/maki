@@ -51,45 +51,45 @@ public:
 
 protected:
   // === Main ===
-  QWidget* mCentralWidget;  /// Pointer to the central widget.
+  QWidget* mCentralWidget;   /// Pointer to the central widget.
   QSplitter* mMainSplitter;  /// Pointer to the main splitter.
 
   // === Left Panel ===
-  QTabWidget* mPalette;  /// Pointer to the palette tab widget.
-  StyledFrame* mStructureTab;  /// Pointer to the structure tab frame.
+  QTabWidget* mPalette;               /// Pointer to the palette tab widget.
+  StyledFrame* mStructureTab;         /// Pointer to the structure tab frame.
   QScrollArea* mStructureScrollArea;  /// Pointer to the structure scroll area.
 
-  StyledFrame* mBehaviourTab;  /// Pointer to the behaviour tab frame.
-  QScrollArea* mBehaviourScrollArea;  /// Pointer to the behaviour scroll area.
+  StyledFrame* mBehaviourTab;          /// Pointer to the behaviour tab frame.
+  QScrollArea* mBehaviourScrollArea;   /// Pointer to the behaviour scroll area.
   maki::SearchWidget* mPaletteSearch;  /// Pointer to the palette search widget.
-  QSplitter* mLeftPanel;  /// Pointer to the left panel splitter.
+  QSplitter* mLeftPanel;               /// Pointer to the left panel splitter.
 
   // === Central Panel ===
-  QPushButton* mGenerationButton;  /// Pointer to the generation button.
-  QPushButton* mSimulateButton;  /// Pointer to the simulate button.
-  QComboBox* mGeneratorOption;  /// Pointer to the generator option combo box.
+  QPushButton* mGenerationButton;                          /// Pointer to the generation button.
+  QPushButton* mSimulateButton;                            /// Pointer to the simulate button.
+  QComboBox* mGeneratorOption;                             /// Pointer to the generator option combo box.
   oclero::qlementine::LoadingSpinner* mGenerationSpinner;  /// Pointer to the generation spinner.
 
   QPushButton* mDeployButton;  /// Pointer to the deploy button.
 
-  QSplitter* mCentralSplitter;  /// Pointer to the central splitter.
-  QTabWidget* mCanvasPanel;  /// Pointer to the canvas panel tab widget.
+  QSplitter* mCentralSplitter;     /// Pointer to the central splitter.
+  QTabWidget* mCanvasPanel;        /// Pointer to the canvas panel tab widget.
   QPushButton* mBrowserTabButton;  /// Pointer to the browser tab button.
 
   // BadgedTabWidget* mBottomPanel;
-  QStackedWidget* mBottomPanel;  /// Pointer to the bottom panel stacked widget.
+  QStackedWidget* mBottomPanel;                          /// Pointer to the bottom panel stacked widget.
   oclero::qlementine::NavigationBar* mBottomNavigation;  /// Pointer to the bottom navigation bar.
-  LogTableWidget* mLogTable;  /// Pointer to the log table widget.
-  QTextBrowser* mInfoText;  /// Pointer to the info text browser.
-  ProcessTab* mProcessTab;  /// Pointer to the process tab.
+  LogTableWidget* mLogTable;                             /// Pointer to the log table widget.
+  QTextBrowser* mInfoText;                               /// Pointer to the info text browser.
+  ProcessTab* mProcessTab;                               /// Pointer to the process tab.
 
   // === Right Panel ===
-  QSplitter* mRightPanel;  /// Pointer to the right panel splitter.
-  QTabWidget* mNavigationTab;  /// Pointer to the navigation tab widget.
-  SystemMenu* mSystemMenu;  /// Pointer to the system menu.
+  QSplitter* mRightPanel;          /// Pointer to the right panel splitter.
+  QTabWidget* mNavigationTab;      /// Pointer to the navigation tab widget.
+  SystemMenu* mSystemMenu;         /// Pointer to the system menu.
   GeneratedFilesPanel* mFileMenu;  /// Pointer to the file menu.
 
-  QTabWidget* mPropertiesTab;  /// Pointer to the properties tab widget.
+  QTabWidget* mPropertiesTab;       /// Pointer to the properties tab widget.
   PropertiesMenu* mPropertiesMenu;  /// Pointer to the properties menu.
 
   // === Menu Bar ===
@@ -97,11 +97,11 @@ protected:
 
   // === Actions ===
   // File menu
-  QAction* mActionNew;  /// Pointer to the new action.
-  QAction* mActionOpen;  /// Pointer to the open action.
+  QAction* mActionNew;       /// Pointer to the new action.
+  QAction* mActionOpen;      /// Pointer to the open action.
   QMenu* mActionOpenRecent;  /// Pointer to the open recent menu.
-  QAction* mActionSave;  /// Pointer to the save action.
-  QAction* mActionSaveAs;  /// Pointer to the save as action.
+  QAction* mActionSave;      /// Pointer to the save action.
+  QAction* mActionSaveAs;    /// Pointer to the save as action.
 
   QAction* mActionImportLibrary;  /// Pointer to the import library action.
   QAction* mActionInstallPlugin;  /// Pointer to the install plugin action.
@@ -110,23 +110,23 @@ protected:
 
   // Edit menu
   QUndoGroup* mUndoGroup;  /// Pointer to the undo group.
-  QAction* mActionUndo;  /// Pointer to the undo action.
-  QAction* mActionRedo;  /// Pointer to the redo action.
+  QAction* mActionUndo;    /// Pointer to the undo action.
+  QAction* mActionRedo;    /// Pointer to the redo action.
 
-  QAction* mActionCopy;  /// Pointer to the copy action.
-  QAction* mActionPaste;  /// Pointer to the paste action.
-  QAction* mActionCut;  /// Pointer to the cut action.
+  QAction* mActionCopy;    /// Pointer to the copy action.
+  QAction* mActionPaste;   /// Pointer to the paste action.
+  QAction* mActionCut;     /// Pointer to the cut action.
   QAction* mActionDelete;  /// Pointer to the delete action.
 
   // View menu
-  QAction* mActionZoomIn;  /// Pointer to the zoom in action.
-  QAction* mActionZoomOut;  /// Pointer to the zoom out action.
-  QAction* mActionResetZoom;  /// Pointer to the reset zoom action.
+  QAction* mActionZoomIn;       /// Pointer to the zoom in action.
+  QAction* mActionZoomOut;      /// Pointer to the zoom out action.
+  QAction* mActionResetZoom;    /// Pointer to the reset zoom action.
   QAction* mActionFitToScreen;  /// Pointer to the fit to screen action.
 
   QAction* mOpenComponentsPanel;  /// Pointer to the open components panel action.
   QAction* mOpenPropertiesPanel;  /// Pointer to the open properties panel action.
-  QAction* mOpenInfoPanel;  /// Pointer to the open info panel action.
+  QAction* mOpenInfoPanel;        /// Pointer to the open info panel action.
 
   QMenu* mSpecialTabsMenu;  /// Pointer to the special tabs menu.
 
@@ -137,24 +137,17 @@ protected:
   QAction* mActionSimulate;  /// Pointer to the simulate action.
 
   // Help menu
-  QAction* mActionDocumentation;  /// Pointer to the documentation action.
+  QAction* mActionDocumentation;    /// Pointer to the documentation action.
   QAction* mActionQuickStartGuide;  /// Pointer to the quick start guide action.
-  QAction* mOpenAllSettings;  /// Pointer to the open all settings action.
-  QAction* mActionShortcuts;  /// Pointer to the shortcuts action.
-  QAction* mActionReportIssue;  /// Pointer to the report issue action.
-  QAction* mAboutAction;  /// Pointer to the about action.
+  QAction* mOpenAllSettings;        /// Pointer to the open all settings action.
+  QAction* mActionShortcuts;        /// Pointer to the shortcuts action.
+  QAction* mActionReportIssue;      /// Pointer to the report issue action.
+  QAction* mAboutAction;            /// Pointer to the about action.
 
-  int LOG_TAB_INDEX = 0;  /// Index of the log tab.
+  int LOG_TAB_INDEX = 0;      /// Index of the log tab.
   int PROCESS_TAB_INDEX = 0;  /// Index of the process tab.
 
 protected:
-  /**
-   * @brief Handles theme changed event.
-   *
-   * @param settings Appearance settings.
-   */
-  void onThemeChanged(const AppearanceSettings& settings);
-
   /**
    * @brief Handles language changed event.
    */

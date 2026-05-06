@@ -1,7 +1,5 @@
 #include "main_window.h"
 
-#include <qaction.h>
-
 #include <QComboBox>
 #include <QDrag>
 #include <QInputDialog>
@@ -9,6 +7,7 @@
 #include <QJsonDocument>
 #include <QListWidgetItem>
 #include <QMenu>
+#include <QMenuBar>
 #include <QPushButton>
 #include <QRegularExpression>
 #include <QRegularExpressionValidator>
@@ -47,6 +46,8 @@
 #include "structure_canvas.h"
 #include "style_helpers.h"
 #include "system/main_window_layout.h"
+#include "theme.h"
+#include "widgets/dialogs/prompt.h"
 #include "widgets/language_manager.h"
 #include "widgets/log_table_widget.h"
 #include "widgets/notification_manager.h"
@@ -137,19 +138,18 @@ VoidResult MainWindow::start()
     mLanguageManager->setLanguage(mSettingsManager->general().language);
     mSaveHandler->setLastDir(mSettingsManager->general().lastOpenFileDir);
 
-    // onThemeChanged(mSettingsManager->appearance().theme, mSettingsManager->availableThemes());
-    mThemeManager->setCurrentTheme(mSettingsManager->appearance().theme);
-
     for (const auto& file : mSettingsManager->general().recentFiles)
     {
       QAction* action = mActionOpenRecent->addAction(elideLeft(file, mActionOpenRecent));
       connect(action, &QAction::triggered, [this, file] { onActionLoad(file); });
     }
-    connect(mSettingsManager.get(), &SettingsManager::themeChanged, mThemeManager, &oclero::qlementine::ThemeManager::setCurrentTheme);
+    connect(mSettingsManager.get(), &SettingsManager::themeChanged, [this] { onThemeChanged(mSettingsManager->appearance(), false); });
     connect(mSettingsManager.get(), &SettingsManager::settingsChanged, this, &MainWindow::onSettingsChanged);
 
     if (!mSettingsManager->general().showWelcomeMessage)
       mInfoText->clear();
+
+    onThemeChanged(mSettingsManager->appearance(), true);
   }
 
   LOG_DEBUG("Main window started");
@@ -157,11 +157,29 @@ VoidResult MainWindow::start()
   return VoidResult();
 }
 
-void MainWindow::onThemeChanged(const QString& t, const QList<Config::ThemeInfo>& at)
+void MainWindow::onThemeChanged(const AppearanceSettings& settings, bool initialConfig)
 {
-  return;
+  // Apply the theme first so we can then call appStyle
+  mThemeManager->setCurrentTheme(settings.theme);
 
-  // Config::applyThemeToApp(mApp, t, at);
+  const auto* qlementineStyle = oclero::qlementine::appStyle();
+  if (!qlementineStyle)
+    return;
+
+  const auto theme = qlementineStyle->theme();
+
+  // These are used by the nodes
+  Config::HIGHLIGHT = theme.primaryAlternativeColor;
+  Config::HOVER = theme.primaryColor;
+  Config::FOREGROUND = theme.secondaryColor;
+
+  // Update the libraries
+  QList<SectionWidget*> sections = mStructureTab->findChildren<SectionWidget*>();
+  for (const auto& section : sections)
+  {
+    if (auto* library = qobject_cast<LibraryContainer*>(section->content()))
+      qobject_cast<LibraryScene*>(library->scene())->themeChanged();
+  }
 
   // Update all items in all canvases
   for (int i = 0; i < mCanvasPanel->count(); ++i)
@@ -169,7 +187,7 @@ void MainWindow::onThemeChanged(const QString& t, const QList<Config::ThemeInfo>
     QWidget* w = mCanvasPanel->widget(i);
     if (auto canvas = qobject_cast<CanvasView*>(w))
     {
-      canvas->onSettingsChanged(mSettingsManager->appearance());
+      canvas->onSettingsChanged(settings);
       static_cast<Canvas*>(canvas->scene())->themeChanged();
     }
   }
@@ -177,7 +195,14 @@ void MainWindow::onThemeChanged(const QString& t, const QList<Config::ThemeInfo>
   if (mPluginTab)
     mPluginTab->onThemeChanged();
 
-  MainWindowLayout::onThemeChanged(mSettingsManager->appearance());
+  auto menuBarChanged = mMenuBar->isNativeMenuBar() != settings.nativeMenuBar;
+  mMenuBar->setNativeMenuBar(settings.nativeMenuBar);
+  if (!initialConfig && menuBarChanged)
+  {
+    if (maki::confirmationPrompt("A full restart is required to for the menu bar to be updated",
+                                 "Restart now", "Restart later"))
+      onActionRestart();
+  }
 }
 
 void MainWindow::onSettingsChanged()
@@ -287,6 +312,8 @@ void MainWindow::bind()
 
   connect(mActionSave, &QAction::triggered, this, &MainWindow::onActionSave);
   mActionSave->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_S));
+
+  connect(mActionExit, &QAction::triggered, this, &MainWindow::onActionExit);
 
   connect(mActionSaveAs, &QAction::triggered, this, &MainWindow::onActionSaveAs);
   mActionSaveAs->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S));
@@ -556,6 +583,26 @@ void MainWindow::onActionNew()
   mSaveHandler->newFileCreated();
 
   canvas()->loadFromSave(emptySave);
+}
+
+void MainWindow::onActionExit()
+{
+  QCoreApplication::quit();
+}
+
+void MainWindow::onActionRestart()
+{
+  LOG_DEBUG("Restart requested");
+  // Prepare to start a new instance of MAKI
+  QObject::connect(qApp, &QCoreApplication::aboutToQuit, [] {
+    const QString program = QCoreApplication::applicationFilePath();
+    const QStringList args = QCoreApplication::arguments().mid(1);
+
+    QProcess::startDetached(program, args);
+  });
+
+  // Quit from the running instance
+  onActionExit();
 }
 
 void MainWindow::onActionGenerate()
@@ -857,8 +904,8 @@ void MainWindow::showAboutDialog()
 {
   oclero::qlementine::AboutDialog dialog(this);
 
-  dialog.setIcon(QIcon(":/app_icons/maki.png"));
-  dialog.setApplicationName("MAKI");
+  dialog.setIcon(QApplication::windowIcon());
+  dialog.setApplicationName(QApplication::applicationName());
   dialog.setApplicationVersion(QApplication::applicationVersion());
 
   dialog.setDescription(

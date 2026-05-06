@@ -17,6 +17,7 @@ namespace Config
 maki::ThemeVars SYSTEM_THEME = maki::ThemeVars{};
 QColor FOREGROUND = QColor("#000000");
 QColor HIGHLIGHT = QColor("#000000");
+QColor HOVER = QColor("#000000");
 
 QString loadFile(const QString& path)
 {

@@ -3,6 +3,7 @@
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsSvgItem>
 
+#include "elements/draggable.h"
 #include "logging.h"
 
 static const int MIN_DRAG_DISTANCE = 200;
@@ -164,4 +165,10 @@ QRectF LibraryScene::visibleItemsBounds() const
   }
 
   return bounds;
+}
+
+void LibraryScene::themeChanged()
+{
+  for (QGraphicsItem* item : items())
+    item->update();
 }

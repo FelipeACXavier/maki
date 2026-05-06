@@ -695,11 +695,6 @@ void MainWindowLayout::applyTheme()
   }
 }
 
-void MainWindowLayout::onThemeChanged(const AppearanceSettings& settings)
-{
-  mMenuBar->setNativeMenuBar(settings.nativeMenuBar);
-}
-
 void MainWindowLayout::onLanguageChanged()
 {
   for (auto& item : mTranslatable)

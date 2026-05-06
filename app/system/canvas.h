@@ -360,28 +360,28 @@ private:
     Populating
   };
 
-  NodeItem* mHoveredNode = nullptr;  /// Pointer to the hovered node.
+  NodeItem* mHoveredNode = nullptr;       /// Pointer to the hovered node.
   TransitionItem* mTransition = nullptr;  /// Pointer to the current transition being created.
-  NodeItem* mNode = nullptr;  /// Pointer to the currently clicked node.
-  QPointF mStartDragPosition;  /// The starting position of a drag operation.
-  bool mDragging = false;  /// Whether a drag operation is in progress.
-  bool mMouseDown = false;  /// Whether the mouse button is pressed.
+  NodeItem* mNode = nullptr;              /// Pointer to the currently clicked node.
+  QPointF mStartDragPosition;             /// The starting position of a drag operation.
+  bool mDragging = false;                 /// Whether a drag operation is in progress.
+  bool mMouseDown = false;                /// Whether the mouse button is pressed.
 
-  QTimer* mHoverTimer = nullptr;  /// Timer for handling hover events.
+  QTimer* mHoverTimer = nullptr;     /// Timer for handling hover events.
   QUndoStack* mUndoStack = nullptr;  /// Pointer to the undo stack.
 
   struct CopiedNode
   {
-    NodeSaveInfo info;  /// Save information of the copied node.
+    NodeSaveInfo info;           /// Save information of the copied node.
     QPointF posRelativeToMouse;  /// Position relative to the mouse when copying.
   };
 
   const QString mId;  /// Unique identifier for this canvas.
 
-  QList<CopiedNode> mCopiedNodes;  /// List of copied nodes.
-  QList<NodeItem*> mSelectedNodes;  /// List of currently selected nodes.
+  QList<CopiedNode> mCopiedNodes;                    /// List of copied nodes.
+  QList<NodeItem*> mSelectedNodes;                   /// List of currently selected nodes.
   std::shared_ptr<ConfigurationTable> mConfigTable;  /// Pointer to the configuration table.
-  std::shared_ptr<SaveInfo> mStorage;  /// Shared pointer to the save information.
+  std::shared_ptr<SaveInfo> mStorage;                /// Shared pointer to the save information.
 
   /**
    * @brief Clears all items from the canvas.
@@ -450,16 +450,16 @@ private:
 
   QVector<QGraphicsItem*> removeNode(NodeItem* node);  /// Removes a node and its associated connections.
 
-  void clearSelectedNodes();  /// Clears all selected nodes.
+  void clearSelectedNodes();                                                           /// Clears all selected nodes.
   bool isModifierSet(QGraphicsSceneMouseEvent* event, Qt::KeyboardModifier modifier);  /// Checks if a specific keyboard modifier is set.
 
-  bool nodeClickHandler(QGraphicsSceneMouseEvent* event, QGraphicsItem* item);  /// Handles node click events.
+  bool nodeClickHandler(QGraphicsSceneMouseEvent* event, QGraphicsItem* item);        /// Handles node click events.
   bool transitionClickHandler(QGraphicsSceneMouseEvent* event, QGraphicsItem* item);  /// Handles transition click events.
 
-  void createNodeContextMenu(QMenu& menu);  /// Creates a context menu for nodes.
+  void createNodeContextMenu(QMenu& menu);        /// Creates a context menu for nodes.
   void createTransitionContextMenu(QMenu& menu);  /// Creates a context menu for transitions.
 
-  bool isParentSelected(NodeItem* node);  /// Checks if the parent of a node is selected.
+  bool isParentSelected(NodeItem* node);                                                                              /// Checks if the parent of a node is selected.
   void pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode, QList<CopiedNode> nodes, bool relative);  /// Pastes copied items at a specified position.
 
   VoidResult loadFromSave(const QVector<std::shared_ptr<INode>>& nodes, NodeItem* parent);  /// Loads nodes and their children from save information.

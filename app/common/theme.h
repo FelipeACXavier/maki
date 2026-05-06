@@ -20,7 +20,7 @@ namespace Config
 // ------------------------------------------------------------
 // Data types
 static const QString HAS_ACTIVITY = "hasActivity";  /// Key for activity status.
-static const QString INVALID = "invalid";          /// Key for invalid state.
+static const QString INVALID = "invalid";           /// Key for invalid state.
 
 /** @brief Represents theme information. */
 struct ThemeInfo
@@ -28,7 +28,7 @@ struct ThemeInfo
   QString id;           /// ID of the theme ("dark", "light", "gruvbox").
   QString displayName;  /// Display name of the theme ("Dark", "Light", "Gruvbox").
   QString filePath;     /// Full path to the .theme file.
-  bool isUser = false;   /// Indicates if the theme is user-defined.
+  bool isUser = false;  /// Indicates if the theme is user-defined.
 };
 
 /** @brief Maps key strings to maki::ThemeVars members. */
@@ -114,8 +114,9 @@ const QHash<QString, QString maki::ThemeVars::*> THEME_KEY_MAP = {
 };
 
 extern maki::ThemeVars SYSTEM_THEME;  /// System theme variables.
-extern QColor FOREGROUND;              /// Foreground color.
-extern QColor HIGHLIGHT;               /// Highlight color.
+extern QColor FOREGROUND;             /// Foreground color.
+extern QColor HIGHLIGHT;              /// Highlight color.
+extern QColor HOVER;                  /// Hover color.
 
 /** @brief Retrieves a value from the theme based on a key. */
 QVariant getValueFromTheme(const QString& key);

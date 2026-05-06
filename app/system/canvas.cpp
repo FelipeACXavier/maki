@@ -1202,7 +1202,5 @@ void Canvas::updateParent(NodeItem* /* node */, std::shared_ptr<NodeSaveInfo> /*
 void Canvas::themeChanged()
 {
   for (QGraphicsItem* item : items())
-  {
     item->update();
-  }
 }
