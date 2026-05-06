@@ -322,7 +322,7 @@ void MainWindowLayout::buildRightPanel()
   mSystemMenu->header()->setAlternatingRowColors(true);
   mSystemMenu->header()->setSectionResizeMode(0, QHeaderView::Stretch);
 
-  mSystemMenu->setColumnWidth(1, 150);
+  mSystemMenu->setColumnWidth(1, 80);
   mSystemMenu->header()->setStretchLastSection(false);
   mSystemMenu->header()->setSectionResizeMode(1, QHeaderView::Fixed);
   mSystemMenu->header()->setTextElideMode(Qt::ElideRight);

@@ -12,6 +12,10 @@ class QLabel;
 class QCheckBox;
 class QFormLayout;
 
+namespace oclero::qlementine
+{
+class Label;
+}
 /**
  * @namespace maki
  * @brief Contains UI helper widgets and layout grouping utilities used by MAKI.
@@ -558,8 +562,8 @@ protected:
   void resizeEvent(QResizeEvent* event) override;
 
 private:
-  QLabel* mLabel;      ///< Label widget displaying the colour name or text.
-  QString mFullLabel;  ///< Full, non-elided label text.
+  oclero::qlementine::Label* mLabel;  ///< Label widget displaying the colour name or text.
+  QString mFullLabel;                 ///< Full, non-elided label text.
 
   QLabel* mPreview;      ///< Preview widget showing the current colour.
   QPushButton* mButton;  ///< Button used to open or trigger colour selection.

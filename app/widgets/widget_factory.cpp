@@ -13,8 +13,10 @@
 #include <QShortcut>
 #include <QSpinBox>
 #include <oclero/qlementine/widgets/IconWidget.hpp>
+#include <oclero/qlementine/widgets/Label.hpp>
 
 #include "app_configs.h"
+#include "oclero/qlementine/Common.hpp"
 #include "style_helpers.h"
 #include "theme.h"
 
@@ -37,8 +39,8 @@ GridGroup::GridGroup(const QString& label, int rows, int cols, QWidget* parent)
   vLayout->setSpacing(WIDGET_SPACING);
   vLayout->setAlignment(Qt::AlignLeft);
 
-  auto* title = new QLabel(label, this);
-  title->setFont(Fonts::Label);
+  auto* title = new oclero::qlementine::Label(label, this);
+  title->setRole(oclero::qlementine::TextRole::Default);
   title->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
 
   auto* line = new QFrame(this);
@@ -102,8 +104,9 @@ WidgetGroup::WidgetGroup(const QString& label, QWidget* parent)
   vLayout->setSpacing(WIDGET_SPACING);
   vLayout->setAlignment(Qt::AlignTop);
 
-  auto* title = new QLabel(label, this);
-  title->setFont(Fonts::Label);
+  auto* title = new oclero::qlementine::Label(label, this);
+  title->setRole(oclero::qlementine::TextRole::Default);
+  ;
   title->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
 
   auto* line = new QFrame(this);
@@ -167,8 +170,8 @@ BooleanWidget::BooleanWidget(const QString& label, bool value, WidgetAlignment a
     hlayout->setSpacing(WIDGET_SPACING);
     hlayout->setAlignment(Qt::AlignLeft);
 
-    auto* title = new QLabel(label, this);
-    title->setFont(Fonts::Main);
+    auto* title = new oclero::qlementine::Label(label, this);
+    title->setRole(oclero::qlementine::TextRole::Default);
     title->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
 
     hlayout->addWidget(title);
@@ -191,8 +194,8 @@ bool maki::BooleanWidget::getValue() const
 
 void maki::BooleanWidget::addDescription(const QString& label)
 {
-  auto* hint = new QLabel(label, this);
-  hint->setFont(Fonts::Hint);
+  auto* hint = new oclero::qlementine::Label(label, this);
+  hint->setRole(oclero::qlementine::TextRole::Caption);
   hint->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
   layout()->addWidget(hint);
 }
@@ -244,8 +247,9 @@ QLineEdit* StringWidget::widget() const
 
 void StringWidget::addDescription(const QString& label)
 {
-  auto* hint = new QLabel(label, this);
-  hint->setFont(Fonts::Hint);
+  auto* hint = new oclero::qlementine::Label(label, this);
+  hint->setRole(oclero::qlementine::TextRole::Caption);
+  ;
   layout()->addWidget(hint);
 }
 
@@ -326,8 +330,8 @@ int IntegerWidget::getValue() const
 
 void IntegerWidget::addDescription(const QString& label)
 {
-  auto* hint = new QLabel(label, this);
-  hint->setFont(Fonts::Hint);
+  auto* hint = new oclero::qlementine::Label(label, this);
+  hint->setRole(oclero::qlementine::TextRole::Caption);
   layout()->addWidget(hint);
 }
 
@@ -379,8 +383,8 @@ FloatWidget::FloatWidget(const QString& label, const QString& placeholder, Widge
       vLayout->setSpacing(WIDGET_SPACING);
     }
 
-    auto* labelWidget = new QLabel(label, this);
-    labelWidget->setFont(Fonts::Main);
+    auto* labelWidget = new oclero::qlementine::Label(label, this);
+    labelWidget->setRole(oclero::qlementine::TextRole::Default);
 
     layout()->addWidget(labelWidget);
     layout()->addWidget(mInputField);
@@ -400,8 +404,8 @@ qreal FloatWidget::getValue() const
 
 void FloatWidget::addDescription(const QString& label)
 {
-  auto* hint = new QLabel(label, this);
-  hint->setFont(Fonts::Hint);
+  auto* hint = new oclero::qlementine::Label(label, this);
+  hint->setRole(oclero::qlementine::TextRole::Caption);
   layout()->addWidget(hint);
 }
 
@@ -417,8 +421,8 @@ SpinWidget::SpinWidget(const QString& label, int placeholder, QWidget* parent, i
   hlayout->setContentsMargins(0, 0, 0, 0);
   hlayout->setSpacing(WIDGET_SPACING);
 
-  auto* labelWidget = new QLabel(label, this);
-  labelWidget->setFont(Fonts::Main);
+  auto* labelWidget = new oclero::qlementine::Label(label, this);
+  labelWidget->setRole(oclero::qlementine::TextRole::Default);
 
   mInputField = new QSpinBox(this);
   mInputField->setRange(min, max);
@@ -457,8 +461,8 @@ void SpinWidget::setSuffix(const QString& suffix)
 
 void SpinWidget::addDescription(const QString& label)
 {
-  auto* hint = new QLabel(label, this);
-  hint->setFont(Fonts::Hint);
+  auto* hint = new oclero::qlementine::Label(label, this);
+  hint->setRole(oclero::qlementine::TextRole::Caption);
   layout()->addWidget(hint);
 }
 
@@ -473,8 +477,8 @@ SelectorWidget::SelectorWidget(const QString& label, QComboBox* comboBox, QWidge
   hlayout->setContentsMargins(0, 0, 0, 0);
   hlayout->setSpacing(WIDGET_SPACING);
 
-  auto* labelWidget = new QLabel(label, this);
-  labelWidget->setFont(Fonts::Main);
+  auto* labelWidget = new oclero::qlementine::Label(label, this);
+  labelWidget->setRole(oclero::qlementine::TextRole::Default);
 
   if (comboBox)
     mInputField = comboBox;
@@ -502,8 +506,8 @@ SelectorWidget::SelectorWidget(const QString& label, QWidget* parent)
 
 void SelectorWidget::addDescription(const QString& label)
 {
-  auto* hint = new QLabel(label, this);
-  hint->setFont(Fonts::Hint);
+  auto* hint = new oclero::qlementine::Label(label, this);
+  hint->setRole(oclero::qlementine::TextRole::Caption);
   layout()->addWidget(hint);
 }
 
@@ -558,8 +562,8 @@ void ButtonWidget::setToolTip(const QString& tooltip)
 
 void ButtonWidget::addDescription(const QString& label)
 {
-  auto* hint = new QLabel(label, this);
-  hint->setFont(Fonts::Hint);
+  auto* hint = new oclero::qlementine::Label(label, this);
+  hint->setRole(oclero::qlementine::TextRole::Caption);
   layout()->addWidget(hint);
 }
 
@@ -576,8 +580,8 @@ ColorWidget::ColorWidget(const QString& label, const QString& placeholder, QWidg
   hlayout->setSpacing(WIDGET_SPACING);
 
   mFullLabel = label;
-  mLabel = new QLabel(mFullLabel, this);
-  mLabel->setFont(Fonts::Main);
+  mLabel = new oclero::qlementine::Label(mFullLabel, this);
+  mLabel->setRole(oclero::qlementine::TextRole::Default);
 
   mPreview = new QLabel(this);
   mPreview->setFixedSize({16, 16});
@@ -613,8 +617,8 @@ QPushButton* ColorWidget::widget() const
 
 void ColorWidget::addDescription(const QString& label)
 {
-  auto* hint = new QLabel(label, this);
-  hint->setFont(Fonts::Hint);
+  auto* hint = new oclero::qlementine::Label(label, this);
+  hint->setRole(oclero::qlementine::TextRole::Caption);
   layout()->addWidget(hint);
 }
 
@@ -733,8 +737,8 @@ QLineEdit* SearchWidget::widget() const
 
 void SearchWidget::addDescription(const QString& label)
 {
-  auto* hint = new QLabel(label, this);
-  hint->setFont(Fonts::Hint);
+  auto* hint = new oclero::qlementine::Label(label, this);
+  hint->setRole(oclero::qlementine::TextRole::Caption);
   layout()->addWidget(hint);
 }
 
