@@ -1,9 +1,5 @@
 #include "widget_factory.h"
 
-#include <qboxlayout.h>
-#include <qnamespace.h>
-#include <qpushbutton.h>
-
 #include <QCheckBox>
 #include <QColorDialog>
 #include <QComboBox>
@@ -13,6 +9,7 @@
 #include <QIntValidator>
 #include <QLabel>
 #include <QLineEdit>
+#include <QPushButton>
 #include <QShortcut>
 #include <QSpinBox>
 #include <oclero/qlementine/widgets/IconWidget.hpp>

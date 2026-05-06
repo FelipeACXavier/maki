@@ -1,7 +1,5 @@
 #include "canvas_view.h"
 
-#include <qgraphicsview.h>
-
 #include <QShortcut>
 
 #include "app_configs.h"

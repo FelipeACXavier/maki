@@ -1,7 +1,5 @@
 #pragma once
 
-#include <qtmetamacros.h>
-
 #include <QFrame>
 
 #include "../menu_base.h"
@@ -136,41 +134,41 @@ signals:
   void flowRemoved(const QString& flowId, const QString& nodeId);
 
 private:
-  QString mCurrentNode; /// Current node ID.
-  QDialog* mCurrentDialog; /// Pointer to the current dialog.
-  std::shared_ptr<SaveInfo> mStorage; /// Shared pointer to the save info storage.
+  QString mCurrentNode;                /// Current node ID.
+  QDialog* mCurrentDialog;             /// Pointer to the current dialog.
+  std::shared_ptr<SaveInfo> mStorage;  /// Shared pointer to the save info storage.
 
   // Property related actions
-  VoidResult loadProperties(NodeItem* node); /// Loads properties for a given node.
-  VoidResult loadPropertyInt(const PropertyInfo& property, NodeItem* node); /// Loads integer property.
-  VoidResult loadPropertyReal(const PropertyInfo& property, NodeItem* node); /// Loads real number property.
-  VoidResult loadPropertyColor(const PropertyInfo& property, NodeItem* node); /// Loads color property.
-  VoidResult loadPropertySelect(const PropertyInfo& property, NodeItem* node); /// Loads select property.
-  VoidResult loadPropertyString(const PropertyInfo& property, NodeItem* node); /// Loads string property.
-  VoidResult loadPropertyBoolean(const PropertyInfo& property, NodeItem* node); /// Loads boolean property.
-  VoidResult loadPropertyEventSelect(const PropertyInfo& property, NodeItem* node); /// Loads event select property.
-  QLineEdit* loadPropertyEventArguments(const PropertyInfo& property, NodeItem* node, const QString& propertyId, const QString& eventName, QComboBox* eventWidget); /// Loads event arguments.
-  VoidResult loadPropertyComponentSelect(const PropertyInfo& property, NodeItem* node); /// Loads component select property.
+  VoidResult loadProperties(NodeItem* node);                                                                                                                         /// Loads properties for a given node.
+  VoidResult loadPropertyInt(const PropertyInfo& property, NodeItem* node);                                                                                          /// Loads integer property.
+  VoidResult loadPropertyReal(const PropertyInfo& property, NodeItem* node);                                                                                         /// Loads real number property.
+  VoidResult loadPropertyColor(const PropertyInfo& property, NodeItem* node);                                                                                        /// Loads color property.
+  VoidResult loadPropertySelect(const PropertyInfo& property, NodeItem* node);                                                                                       /// Loads select property.
+  VoidResult loadPropertyString(const PropertyInfo& property, NodeItem* node);                                                                                       /// Loads string property.
+  VoidResult loadPropertyBoolean(const PropertyInfo& property, NodeItem* node);                                                                                      /// Loads boolean property.
+  VoidResult loadPropertyEventSelect(const PropertyInfo& property, NodeItem* node);                                                                                  /// Loads event select property.
+  QLineEdit* loadPropertyEventArguments(const PropertyInfo& property, NodeItem* node, const QString& propertyId, const QString& eventName, QComboBox* eventWidget);  /// Loads event arguments.
+  VoidResult loadPropertyComponentSelect(const PropertyInfo& property, NodeItem* node);                                                                              /// Loads component select property.
 
   // Control related actions
-  VoidResult loadControls(NodeItem* node); /// Loads controls for a given node.
-  VoidResult loadControlAddEvent(const ControlsConfig& control, NodeItem* node, QWidget* parent, QHBoxLayout* controlLayout); /// Adds an event control.
-  VoidResult loadControlAddField(const ControlsConfig& control, NodeItem* node, QWidget* parent, QHBoxLayout* controlLayout); /// Adds a field control.
-  VoidResult loadControlAddState(const ControlsConfig& control, NodeItem* node, QWidget* parent, QHBoxLayout* controlLayout); /// Adds a state control.
+  VoidResult loadControls(NodeItem* node);                                                                                     /// Loads controls for a given node.
+  VoidResult loadControlAddEvent(const ControlsConfig& control, NodeItem* node, QWidget* parent, QHBoxLayout* controlLayout);  /// Adds an event control.
+  VoidResult loadControlAddField(const ControlsConfig& control, NodeItem* node, QWidget* parent, QHBoxLayout* controlLayout);  /// Adds a field control.
+  VoidResult loadControlAddState(const ControlsConfig& control, NodeItem* node, QWidget* parent, QHBoxLayout* controlLayout);  /// Adds a state control.
 
-  void showContextMenu(QTableView* tableView, NodeItem* node, const QPoint& pos); /// Shows context menu for a table view.
-  void showEventContextMenu(QTableView* tableView, NodeItem* node, const QPoint& pos); /// Shows event context menu for a table view.
+  void showContextMenu(QTableView* tableView, NodeItem* node, const QPoint& pos);       /// Shows context menu for a table view.
+  void showEventContextMenu(QTableView* tableView, NodeItem* node, const QPoint& pos);  /// Shows event context menu for a table view.
 
-  void openEventDialog(QTableView* tableView, NodeItem* node, int row); /// Opens an event dialog.
-  void addEventToTable(QStandardItemModel* model, int row, std::shared_ptr<FlowSaveInfo> event); /// Adds an event to the table.
+  void openEventDialog(QTableView* tableView, NodeItem* node, int row);                           /// Opens an event dialog.
+  void addEventToTable(QStandardItemModel* model, int row, std::shared_ptr<FlowSaveInfo> event);  /// Adds an event to the table.
 
-  void openFieldDialog(QTableView* tableView, NodeItem* node, int row); /// Opens a field dialog.
-  void addStateToTable(QStandardItemModel* model, int row, std::shared_ptr<PropertyInfo> event); /// Adds a state to the table.
+  void openFieldDialog(QTableView* tableView, NodeItem* node, int row);                           /// Opens a field dialog.
+  void addStateToTable(QStandardItemModel* model, int row, std::shared_ptr<PropertyInfo> event);  /// Adds a state to the table.
 
-  VoidResult loadEventArguments(const QString& nodeId, const QString& flowName, const PropertyInfo& property, NodeItem* node, Types::CallType callType, QFormLayout* formLayout); /// Loads event arguments for a given property.
+  VoidResult loadEventArguments(const QString& nodeId, const QString& flowName, const PropertyInfo& property, NodeItem* node, Types::CallType callType, QFormLayout* formLayout);  /// Loads event arguments for a given property.
 
   // Component select fields
   VoidResult loadFieldEventSelect(QComboBox* componentSelect, const QString& optionId, const PropertyInfo& property, NodeItem* node,
-                                  std::function<void(const QString& nodeId, QComboBox* eventWidget)> populate); /// Loads field event select.
-  VoidResult loadFieldTriggerCall(QComboBox* componentSelect, const QString& optionId, const PropertyInfo& property, NodeItem* node); /// Loads field trigger call.
+                                  std::function<void(const QString& nodeId, QComboBox* eventWidget)> populate);                        /// Loads field event select.
+  VoidResult loadFieldTriggerCall(QComboBox* componentSelect, const QString& optionId, const PropertyInfo& property, NodeItem* node);  /// Loads field trigger call.
 };

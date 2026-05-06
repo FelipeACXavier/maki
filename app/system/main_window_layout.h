@@ -1,7 +1,5 @@
 #pragma once
 
-#include <qlineedit.h>
-
 #include <QMainWindow>
 #include <oclero/qlementine/widgets/LoadingSpinner.hpp>
 #include <oclero/qlementine/widgets/NavigationBar.hpp>

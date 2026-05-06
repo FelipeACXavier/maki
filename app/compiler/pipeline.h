@@ -1,7 +1,5 @@
 #pragma once
 
-#include <qobject.h>
-
 #include <QProcess>
 #include <QVector>
 #include <mutex>
@@ -38,13 +36,13 @@ public:
 
   struct ProcessInfo
   {
-    QString name = "";  /// Name of the process.
+    QString name = "";              /// Name of the process.
     State status = State::Unknown;  /// Current status of the process.
   };
 
   struct GroupInfo
   {
-    QString name = "";  /// Name of the group.
+    QString name = "";                    /// Name of the group.
     QVector<ProcessInfo> processes = {};  /// List of processes in this group.
   };
 

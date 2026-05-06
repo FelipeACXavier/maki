@@ -1,7 +1,5 @@
 #include "pipeline.h"
 
-#include <qobject.h>
-
 #include <QProcess>
 #include <QRegularExpression>
 #include <QStandardPaths>

@@ -1,9 +1,5 @@
 #include "property_info.h"
 
-#include <qcontainerfwd.h>
-#include <qjsonarray.h>
-#include <qjsonobject.h>
-
 #include <QJsonArray>
 
 #include "config.h"

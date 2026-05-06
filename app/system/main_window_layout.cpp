@@ -1,7 +1,5 @@
 #include "main_window_layout.h"
 
-#include <qpalette.h>
-
 #include <QAction>
 #include <QApplication>
 #include <QComboBox>

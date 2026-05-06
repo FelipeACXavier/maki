@@ -1,7 +1,5 @@
 #pragma once
 
-#include <qboxlayout.h>
-
 #include <QDialog>
 
 #include "style_helpers.h"
