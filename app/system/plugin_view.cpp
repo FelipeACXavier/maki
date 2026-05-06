@@ -4,7 +4,6 @@
 
 #include "app_configs.h"
 #include "style_helpers.h"
-#include "theme.h"
 
 static constexpr qreal DEFAULT_ZOOM = 1.0;
 
@@ -33,8 +32,6 @@ PluginView::PluginView(QWidget* parent)
 
   setMaxSize();
   centerOn({0, 0});
-
-  updateProperty(this, Config::HAS_ACTIVITY, true);
 }
 
 qreal PluginView::getScale() const

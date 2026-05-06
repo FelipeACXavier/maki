@@ -18,7 +18,6 @@
 #include "system/canvas.h"
 #include "system/undo_commands/move_node.h"
 #include "system/undo_commands/resize_node.h"
-#include "theme.h"
 
 NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
     : NodeBase((!nodeId.isEmpty() && !nodeId.isNull()) ? nodeId : QUuid::createUuid().toString(), info->getnodeId(), nodeConfig, parent)

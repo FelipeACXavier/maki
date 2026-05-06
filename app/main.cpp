@@ -9,7 +9,6 @@
 #include "app_paths.h"
 #include "common/app_configs.h"
 #include "common/style_helpers.h"
-#include "common/theme.h"
 #include "logging.h"
 #include "system/main_window.h"
 #include "widgets/settings_manager.h"

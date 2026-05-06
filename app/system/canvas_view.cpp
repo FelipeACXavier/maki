@@ -33,8 +33,6 @@ CanvasView::CanvasView(QWidget* parent)
 
   setMaxSize();
   centerOn({0, 0});
-
-  updateProperty(this, Config::HAS_ACTIVITY, true);
 }
 
 qreal CanvasView::getScale() const

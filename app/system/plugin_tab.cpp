@@ -2,9 +2,10 @@
 
 #include <QMenu>
 
+#include "app_configs.h"
+#include "itab.h"
 #include "logging.h"
 #include "plugin_view.h"
-#include "theme.h"
 
 PluginTab::PluginTab(QMenu* menu, QObject* parent)
     : QObject(parent)
@@ -37,7 +38,7 @@ void PluginTab::openScene(const QString& name)
 
 maki::ThemeVars PluginTab::currentTheme()
 {
-  return Config::SYSTEM_THEME;
+  return maki::ThemeVars{};
 }
 
 maki::ThemeFonts PluginTab::labelFont()

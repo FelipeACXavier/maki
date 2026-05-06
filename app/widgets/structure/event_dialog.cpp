@@ -13,7 +13,6 @@
 #include <QVBoxLayout>
 
 #include "app_configs.h"
-#include "common/theme.h"
 #include "logging.h"
 #include "save_info.h"
 #include "style_helpers.h"

@@ -7,7 +7,6 @@
 #include <oclero/qlementine.hpp>
 
 #include "app_paths.h"
-#include "common/theme.h"
 #include "generator_plugin.h"
 #include "isettings.h"
 #include "style_helpers.h"

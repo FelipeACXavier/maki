@@ -8,8 +8,8 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
+#include "app_configs.h"
 #include "style_helpers.h"
-#include "theme.h"
 
 constexpr double MinScreenFraction = 0.10;
 constexpr double TargetScreenFraction = 0.50;

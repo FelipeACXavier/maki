@@ -5,7 +5,6 @@
 #include <QUuid>
 
 #include "long_notification.h"
-#include "theme.h"
 
 NotificationManager::NotificationManager(QWidget* parentWindow, QObject* parent)
     : QObject(parent)
@@ -90,20 +89,20 @@ void NotificationManager::repositionToasts()
   if (!mParentWindow)
     return;
 
-  const auto leftMargin = Config::getValueFromTheme("@notification_left_margin");
-  if (!leftMargin.isValid())
-    return;
-  const auto topMargin = Config::getValueFromTheme("@notification_top_margin");
-  if (!topMargin.isValid())
-    return;
-  const auto betweenMargin = Config::getValueFromTheme("@notification_between_margin");
-  if (!betweenMargin.isValid())
-    return;
-
-  int y = topMargin.toInt();
+  int y = 50;
+  const auto leftMargin = 10;
+  const auto betweenMargin = 10;
 
   // Place relative to the parent window
-  QRect pw = mParentWindow->rect();
+  const QRect pw = mParentWindow->rect();
+
+  auto reposition = [&](NotificationWidget* toast, int y) {
+    // For some reason, sizeHint must be called before so width() and height() are correct
+    toast->resize(toast->sizeHint());
+    int x = pw.width() - toast->width() - leftMargin;
+    toast->move(x, y);
+    return toast->height() + betweenMargin;
+  };
 
   // First the long running toasts
   for (auto* toast : mToasts)
@@ -111,11 +110,7 @@ void NotificationManager::repositionToasts()
     if (!toast || toast->disappearing())
       continue;
 
-    // For some reason, sizeHint must be called before so width() and height() are correct
-    toast->resize(toast->sizeHint());
-    int x = pw.width() - toast->width() - leftMargin.toInt();
-    toast->move(x, y);
-    y += toast->height() + betweenMargin.toInt();
+    y += reposition(toast, y);
   }
 
   // Then the dissappearing ones
@@ -124,10 +119,7 @@ void NotificationManager::repositionToasts()
     if (!toast || !toast->disappearing())
       continue;
 
-    toast->resize(toast->sizeHint());
-    int x = pw.width() - toast->width() - leftMargin.toInt();
-    toast->move(x, y);
-    y += toast->height() + betweenMargin.toInt();
+    y += reposition(toast, y);
   }
 }
 

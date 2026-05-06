@@ -10,7 +10,6 @@
 #include "app_configs.h"
 #include "logging.h"
 #include "node.h"
-#include "theme.h"
 
 const qreal MAX_WIDTH = 80.0;
 const qreal MAX_HEIGHT = 80.0;

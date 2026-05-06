@@ -119,7 +119,4 @@ private:
   VoidResult createPluginPages();     /// Creates the plugin settings pages.
 
   void updatePluginSetting(const QString& pluginId, const QString& key, QVariant value);  /// Updates a plugin setting.
-  void updateColorGrid();                                                                 /// Updates the color grid based on current settings.
-  QString toColorLabel(QString label) const;                                              /// Converts a color label to a formatted string.
-  maki::ColorWidget* widgetByLabel(const QString& label, const QGridLayout* grid) const;  /// Retrieves a color widget by its label.
 };

@@ -11,9 +11,9 @@
 #include <QVariant>
 #include <QWidgetAction>
 
+#include "app_configs.h"
 #include "logging.h"
 #include "string_helpers.h"
-#include "theme.h"
 
 static const char* CLASS = "class";
 

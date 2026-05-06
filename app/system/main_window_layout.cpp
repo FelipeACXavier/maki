@@ -29,13 +29,9 @@
 #include "process_tab.h"
 #include "style_helpers.h"
 #include "system/canvas_view.h"
-#include "theme.h"
-#include "widgets/badged_tab_bar.h"
-#include "widgets/badged_tab_widget.h"
 #include "widgets/frame.h"
 #include "widgets/log_table_widget.h"
 #include "widgets/properties/properties_menu.h"
-#include "widgets/section.h"
 #include "widgets/structure/file_menu.h"
 #include "widgets/structure/system_menu.h"
 #include "widgets/widget_factory.h"
@@ -220,7 +216,6 @@ void MainWindowLayout::buildCentralPanel()
   mBrowserTabButton->setIcon(QIcon(":/icons/display.svg"));
   mBrowserTabButton->setToolTip(tr("Show simulation tab"));
   mTranslatable.push_back({mBrowserTabButton, "Show simulation tab", 0, true});
-  connect(mBrowserTabButton, &QPushButton::pressed, [this] { updateProperty(mBrowserTabButton, Config::HAS_ACTIVITY, false); });
 
   layout->addWidget(mBrowserTabButton);
 

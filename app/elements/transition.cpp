@@ -6,7 +6,6 @@
 
 #include "app_configs.h"
 #include "node.h"
-#include "theme.h"
 
 TransitionItem::TransitionItem(std::shared_ptr<TransitionSaveInfo> storage)
     : QGraphicsPathItem()

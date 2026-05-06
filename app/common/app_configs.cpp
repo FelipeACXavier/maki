@@ -6,3 +6,7 @@ const QFont Fonts::Label = QFont("Geist", 12, 700, false);
 const QFont Fonts::Hint = QFont("Geist", 10, 300, true);
 const QFont Fonts::SmallTab = QFont("Geist", 12, 300, false);
 const QFont Fonts::MonoSpace = QFont("JetBrains Mono");
+
+QColor Config::FOREGROUND = QColor("#000000");
+QColor Config::HIGHLIGHT = QColor("#000000");
+QColor Config::HOVER = QColor("#000000");

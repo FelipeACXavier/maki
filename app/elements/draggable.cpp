@@ -9,11 +9,10 @@
 #include <QUuid>
 
 #include "app_configs.h"
+#include "app_paths.h"
 #include "logging.h"
 #include "save_info.h"
 #include "style_helpers.h"
-#include "theme.h"
-#include "app_paths.h"
 
 DraggableItem::DraggableItem(const QString& nodeId, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
     : NodeBase(QUuid::createUuid().toString(), nodeId, nodeConfig, parent)

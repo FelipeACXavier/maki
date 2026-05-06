@@ -46,7 +46,6 @@
 #include "structure_canvas.h"
 #include "style_helpers.h"
 #include "system/main_window_layout.h"
-#include "theme.h"
 #include "widgets/dialogs/prompt.h"
 #include "widgets/language_manager.h"
 #include "widgets/log_table_widget.h"

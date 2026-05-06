@@ -3,10 +3,10 @@
 #include <QInputDialog>
 #include <QMenu>
 
+#include "app_configs.h"
 #include "elements/flow.h"
 #include "elements/node.h"
 #include "logging.h"
-#include "theme.h"
 
 static const int NAME_COLUMN = 0;
 static const int TYPE_COLUMN = 1;

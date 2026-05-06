@@ -23,13 +23,13 @@
 #include <oclero/qlementine/widgets/IconWidget.hpp>
 #include <oclero/qlementine/widgets/Label.hpp>
 
+#include "app_configs.h"
 #include "app_paths.h"
 #include "frame.h"
 #include "logging.h"
 #include "scroll_area.h"
 #include "section.h"
 #include "style_helpers.h"
-#include "theme.h"
 #include "widget_factory.h"
 
 SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsManager> manager, std::shared_ptr<LanguageManager> languageManager, QWidget* parent)
@@ -518,7 +518,6 @@ void SettingsDialog::saveToSettings()
 void SettingsDialog::apply()
 {
   saveToSettings();
-  updateColorGrid();
 }
 
 void SettingsDialog::updatePluginSetting(const QString& pluginId, const QString& key, QVariant value)
@@ -534,53 +533,5 @@ void SettingsDialog::updatePluginSetting(const QString& pluginId, const QString&
         set.setValue(value);
         return;
       }
-  }
-}
-
-QString SettingsDialog::toColorLabel(QString label) const
-{
-  return ToLabel(label.replace("@", "").replace("_", " "));
-}
-
-maki::ColorWidget* SettingsDialog::widgetByLabel(const QString& label, const QGridLayout* grid) const
-{
-  for (int i = 0; i < grid->count(); ++i)
-  {
-    QLayoutItem* item = grid->itemAt(i);
-    if (!item)
-      continue;
-
-    QWidget* widget = item->widget();
-    if (!widget)
-      continue;
-
-    if (maki::ColorWidget* color = qobject_cast<maki::ColorWidget*>(widget))
-    {
-      if (color->getLabel() == toColorLabel(label))
-        return color;
-    }
-  }
-
-  return nullptr;
-}
-
-void SettingsDialog::updateColorGrid()
-{
-  if (!mColorGrid || !mColorGrid->widget())
-    return;
-
-  auto* grid = qobject_cast<QGridLayout*>(mColorGrid->widget()->layout());
-  for (auto it = Config::THEME_KEY_MAP.cbegin(); it != Config::THEME_KEY_MAP.cend(); ++it)
-  {
-    QString key = it.key();
-    QString value = Config::SYSTEM_THEME.*(it.value());
-
-    QColor color(value);
-    if (color.isValid())
-    {
-      auto widget = widgetByLabel(key, grid);
-      if (widget)
-        widget->setValue(color);
-    }
   }
 }

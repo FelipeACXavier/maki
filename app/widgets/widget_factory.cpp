@@ -18,7 +18,6 @@
 #include "app_configs.h"
 #include "oclero/qlementine/Common.hpp"
 #include "style_helpers.h"
-#include "theme.h"
 
 static const int WIDGET_SPACING = 2;
 static const int WIDGET_PADDING = 24;
@@ -283,7 +282,7 @@ IntegerWidget::IntegerWidget(const QString& label, const QString& placeholder, W
     int pos = 0;
     QString t = text;
     QValidator::State state = mInputField->validator()->validate(t, pos);
-    updateProperty(mInputField, Config::INVALID, (state != QValidator::Acceptable));
+    // updateProperty(mInputField, Config::INVALID, (state != QValidator::Acceptable));
   });
   connect(mInputField, &QLineEdit::editingFinished, this, [this]() {
     mValue = mInputField->text().toInt();
@@ -357,7 +356,7 @@ FloatWidget::FloatWidget(const QString& label, const QString& placeholder, Widge
     int pos = 0;
     QString t = text;
     QValidator::State state = mInputField->validator()->validate(t, pos);
-    updateProperty(mInputField, Config::INVALID, (state != QValidator::Acceptable));
+    // updateProperty(mInputField, Config::INVALID, (state != QValidator::Acceptable));
   });
   connect(mInputField, &QLineEdit::editingFinished, this, [this]() {
     mValue = mInputField->text().toDouble();

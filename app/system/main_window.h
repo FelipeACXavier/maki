@@ -9,7 +9,6 @@
 #include <QStringLiteral>
 #include <oclero/qlementine.hpp>
 
-#include "common/theme.h"
 #include "config_table.h"
 #include "json.h"
 #include "logging.h"
