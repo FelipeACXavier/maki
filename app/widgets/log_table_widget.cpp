@@ -155,7 +155,7 @@ LogTableWidget::LogTableWidget(QWidget* parent)
 
   connect(mLevelFilter, &QComboBox::currentTextChanged, mProxy, &LogFilterProxyModel::setLevelFilter);
   connect(mSourceFilter, &QComboBox::currentTextChanged, mProxy, &LogFilterProxyModel::setSourceFilter);
-  connect(mFileFilter, &QLineEdit::textChanged, mProxy, &LogFilterProxyModel::setSourceFilter);
+  connect(mFileFilter, &QLineEdit::textChanged, mProxy, &LogFilterProxyModel::setFileFilter);
   connect(mSearchField, &QLineEdit::textChanged, this, &LogTableWidget::setSearchText);
   connect(previousButton, &QPushButton::pressed, this, &LogTableWidget::previousSearchMatch);
   connect(nextButton, &QPushButton::pressed, this, &LogTableWidget::nextSearchMatch);
