@@ -115,8 +115,8 @@ struct PluginInfo
  */
 struct PluginSettings
 {
-  QString defaultPlugin;
-  QVector<PluginInfo> plugins = {};
+  QString defaultPlugin;             /// The default plugin to be used
+  QVector<PluginInfo> plugins = {};  /// The list of plugin settings
 
   enum class Status
   {
@@ -185,6 +185,11 @@ public:
    */
   PluginSettings plugins() const;
 
+  /**
+   * @brief Applies the current temporary settings to the permanent settings and emits a signal indicating that settings have changed.
+   *
+   * This function is called to save any changes made during the user interface session. It copies the temporary settings to their corresponding permanent settings, and then calls save() to persist these changes to storage.
+   */
   void applySettings();
 
   /**
@@ -288,11 +293,21 @@ private:
   PluginSettings mPluginSettings;  /// Current plugin settings.
 
   /// Temporaty copies until apply is called
-  GeneralSettings mTmpGeneral;        /// Current general settings.
-  AppearanceSettings mTmpAppearance;  /// Current appearance settings.
-  GenerationSettings mTmpGeneration;  /// Current generation settings.
-  PluginSettings mTmpPluginSettings;  /// Current plugin settings.
+  GeneralSettings mTmpGeneral;
+  AppearanceSettings mTmpAppearance;
+  GenerationSettings mTmpGeneration;
+  PluginSettings mTmpPluginSettings;
 
   oclero::qlementine::ThemeManager* mThemeManager;  /// Pointer to the ThemeManager.
+
+  /**
+   * @brief Retrieves a setting field from a list of settings by its name.
+   *
+   * This function searches through the provided vector of `maki::SettingField` objects to find one with a matching name.
+   *
+   * @param settings The vector of settings to search through.
+   * @param fieldName The name of the setting field to retrieve.
+   * @return maki::SettingField A copy of the found setting field, or an empty field if not found.
+   */
   maki::SettingField settingFromName(const QVector<maki::SettingField>& settings, const QString& fieldName) const;
 };
