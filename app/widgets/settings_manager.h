@@ -32,7 +32,7 @@ struct GeneralSettings
   QString lastOpenFileDir = "";             /// Directory of the last opened file.
   QString language = "en_US";               /// Application language.
 
-  bool operator!=(const GeneralSettings& s)
+  bool operator!=(const GeneralSettings& s) const
   {
     return restoreLastSession != s.restoreLastSession ||
            autosaveEnabled != s.autosaveEnabled ||
@@ -59,7 +59,7 @@ struct AppearanceSettings
   int nodeCornerRadius = 8;             /// Node corner radius.
   oclero::qlementine::Theme themeVars;  /// Theme variables.
 
-  bool operator!=(const AppearanceSettings& s)
+  bool operator!=(const AppearanceSettings& s) const
   {
     return theme != s.theme ||
            uiScalePercent != s.uiScalePercent ||
@@ -78,7 +78,7 @@ struct GenerationSettings
   QString generationDir = QCoreApplication::applicationDirPath() + "/generation";  /// Directory for generated files.
   QStringList pluginSearchPaths = {AppPaths::pluginSearchPaths()};                 /// Paths to search for plugins.
 
-  bool operator!=(const GenerationSettings& s)
+  bool operator!=(const GenerationSettings& s) const
   {
     return generationDir != s.generationDir ||
            pluginSearchPaths != s.pluginSearchPaths;
@@ -95,6 +95,50 @@ struct PluginInfo
   maki::PluginVersion version;           /// Version of the plugin.
   QVector<maki::SettingField> settings;  /// Settings for the plugin.
   maki::SettingsFunction callback;       /// Callback function for the plugin.
+
+  bool operator==(const PluginInfo& s) const
+  {
+    return name == s.name &&
+           enabled == s.enabled &&
+           version == s.version &&
+           settings == s.settings;
+  }
+
+  bool operator!=(const PluginInfo& s) const
+  {
+    return !(*this == s);
+  }
+};
+
+/**
+ * @brief Holds information about a plugin.
+ */
+struct PluginSettings
+{
+  QString defaultPlugin;
+  QVector<PluginInfo> plugins = {};
+
+  enum class Status
+  {
+    Unknown,
+    Enabled,
+    Disabled
+  };
+
+  bool operator!=(const PluginSettings& s) const
+  {
+    return defaultPlugin != s.defaultPlugin ||
+           plugins != s.plugins;
+  }
+
+  Status pluginStatus(const QString& pluginName) const
+  {
+    for (const auto& p : plugins)
+      if (p.name == pluginName)
+        return p.enabled ? Status::Enabled : Status::Disabled;
+
+    return Status::Unknown;
+  }
 };
 
 /**
@@ -137,9 +181,11 @@ public:
   /**
    * @brief Gets the list of plugins.
    *
-   * @return QVector<PluginInfo> List of plugin information.
+   * @return PluginSettings The current plugin settings
    */
-  QVector<PluginInfo> plugins() const;
+  PluginSettings plugins() const;
+
+  void applySettings();
 
   /**
    * @brief Sets the general settings.
@@ -167,7 +213,7 @@ public:
    *
    * @param s The new list of plugin information.
    */
-  void setPlugins(const QVector<PluginInfo>& s);
+  void setPlugins(const PluginSettings& s);
 
   /**
    * @brief Gets the settings for a specific plugin.
@@ -222,13 +268,6 @@ public:
 
 signals:
   /**
-   * @brief Emitted when the theme changes.
-   *
-   * @param theme New theme name.
-   */
-  void themeChanged();
-
-  /**
    * @brief Emitted when settings change.
    */
   void settingsChanged();
@@ -246,8 +285,14 @@ private:
   GeneralSettings mGeneral;        /// Current general settings.
   AppearanceSettings mAppearance;  /// Current appearance settings.
   GenerationSettings mGeneration;  /// Current generation settings.
+  PluginSettings mPluginSettings;  /// Current plugin settings.
 
-  QVector<PluginInfo> mPluginSettings;  /// List of plugin information.
+  /// Temporaty copies until apply is called
+  GeneralSettings mTmpGeneral;        /// Current general settings.
+  AppearanceSettings mTmpAppearance;  /// Current appearance settings.
+  GenerationSettings mTmpGeneration;  /// Current generation settings.
+  PluginSettings mTmpPluginSettings;  /// Current plugin settings.
 
   oclero::qlementine::ThemeManager* mThemeManager;  /// Pointer to the ThemeManager.
+  maki::SettingField settingFromName(const QVector<maki::SettingField>& settings, const QString& fieldName) const;
 };

@@ -73,6 +73,22 @@ public:
     mMetadata = metadata;
   }
 
+  bool operator==(const SettingField& s) const
+  {
+    return getKey() == s.getKey() &&
+           getLabel() == s.getLabel() &&
+           getDescription() == s.getDescription() &&
+           getValue() == s.getValue() &&
+           getDefaultValue() == s.getDefaultValue() &&
+           getType() == s.getType() &&
+           getMetadata() == s.getMetadata();
+  }
+
+  bool operator!=(const SettingField& s) const
+  {
+    return !(*this == s);
+  }
+
 private:
   QString mKey;
   QString mLabel;

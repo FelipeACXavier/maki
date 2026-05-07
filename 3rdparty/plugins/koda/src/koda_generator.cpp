@@ -156,6 +156,14 @@ void KodaGenerator::buildSettings()
   taskOnly.setDefaultValue(false);
   taskOnly.setType(Types::PropertyTypes::BOOLEAN);
   mSettings.push_back(taskOnly);
+
+  maki::SettingField validateOnSave;
+  validateOnSave.setKey("validateOnSave");
+  validateOnSave.setLabel("Validate on save");
+  validateOnSave.setDescription("Validate the system on every save");
+  validateOnSave.setDefaultValue(false);
+  validateOnSave.setType(Types::PropertyTypes::BOOLEAN);
+  mSettings.push_back(validateOnSave);
 }
 
 void KodaGenerator::setHostServices(maki::IHostServices* services)

@@ -1,5 +1,8 @@
 #include "plugin_manager.h"
 
+#include <qcoreapplication.h>
+#include <qdir.h>
+
 #include <QApplication>
 #include <QComboBox>
 #include <QDir>
@@ -10,6 +13,9 @@
 #include "common/style_helpers.h"
 #include "host_services.h"
 #include "logging.h"
+#include "result.h"
+#include "widgets/language_manager.h"
+#include "widgets/settings_manager.h"
 
 // Include after the rest to avoid conflicts
 #ifdef Q_OS_WIN
@@ -28,7 +34,7 @@ PluginManager::~PluginManager()
     mPlugin->tearDown();
 }
 
-VoidResult PluginManager::start(QMenu* menu, QComboBox* comboBox, HostServices* services)
+VoidResult PluginManager::start(const PluginSettings& settings, QMenu* menu, QComboBox* comboBox, HostServices* services)
 {
   if (!menu)
     return VoidResult::Failed("No menu provided, cannot set the language plugins");
@@ -39,6 +45,7 @@ VoidResult PluginManager::start(QMenu* menu, QComboBox* comboBox, HostServices* 
   for (const auto& path : AppPaths::pluginSearchPaths())
   {
     QDir pluginParentDir(path);
+    LOG_DEBUG("Plugin search path: %s", qPrintable(pluginParentDir.absolutePath()));
     for (const auto& subFolder : pluginParentDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot))
     {
       QDir pluginsDir(pluginParentDir.absoluteFilePath(subFolder));
@@ -52,12 +59,19 @@ VoidResult PluginManager::start(QMenu* menu, QComboBox* comboBox, HostServices* 
       }
 
       Manifest manifest = manifestResult.Value();
+      if (settings.pluginStatus(manifest.name) == PluginSettings::Status::Disabled)
+      {
+        LOG_DEBUG("Not loading plugin: %s, it is disabled", qPrintable(manifest.name));
+        continue;
+      }
+
       LOG_WARN_ON_FAILURE(loadPlugin(pluginsDir, manifest, menu, comboBox, services));
     }
   }
 
   // Connect the signal later so it is not triggered by the setup of the combobox
   connect(comboBox, &QComboBox::currentTextChanged, [this](const QString& text) {
+    LOG_DEBUG("Content changed: %s", qPrintable(text));
     setPlugin(text);
   });
 
@@ -68,8 +82,9 @@ VoidResult PluginManager::start(QMenu* menu, QComboBox* comboBox, HostServices* 
   }
 
   // Set default plugin
-  setPlugin(mPlugins.front().plugin->languageName());
-  LOG_DEBUG("Starting with plugin: %s", qPrintable(currentPlugin()->languageName()));
+  const auto defaultPlugin = settings.defaultPlugin.isEmpty() ? mPlugins.front().plugin->languageName() : settings.defaultPlugin;
+  if (selectPlugin(comboBox, defaultPlugin))
+    LOG_DEBUG("Starting with plugin: %s", qPrintable(currentPlugin()->languageName()));
 
   return VoidResult();
 }
@@ -89,13 +104,13 @@ VoidResult PluginManager::loadPlugin(const QDir& pluginDir, const Manifest& mani
 
   RETURN_ON_FAILURE(loadPluginLibraryDir(manifest));
 
-  QPluginLoader loader(pluginPath);
-  if (!loader.load())
-    return VoidResult::Failed("Loader: " + loader.errorString().toStdString());
+  auto loader = QSharedPointer<QPluginLoader>::create(pluginPath);
+  if (!loader->load())
+    return VoidResult::Failed("Loader: " + loader->errorString().toStdString());
 
-  QObject* plugin = loader.instance();
+  QObject* plugin = loader->instance();
   if (!plugin)
-    return VoidResult::Failed("Failed to load plugin: " + loader.errorString().toStdString());
+    return VoidResult::Failed("Failed to load plugin: " + loader->errorString().toStdString());
 
   auto* codeGen = qobject_cast<maki::IGeneratorPlugin*>(plugin);
   if (!codeGen)
@@ -104,11 +119,11 @@ VoidResult PluginManager::loadPlugin(const QDir& pluginDir, const Manifest& mani
   // Update UI with new plugin
   QAction* action = menu->addAction(pluginName);
   connect(action, &QAction::triggered, [this, pluginName, comboBox] {
-    if (setPlugin(pluginName))
-      comboBox->setCurrentText(pluginName);
+    selectPlugin(comboBox, pluginName);
   });
 
   comboBox->addItem(pluginName, pluginName);
+  int pluginIndex = comboBox->count() - 1;
 
   codeGen->setName(manifest.name);
   codeGen->setVersion(manifest.version);
@@ -119,7 +134,7 @@ VoidResult PluginManager::loadPlugin(const QDir& pluginDir, const Manifest& mani
   if (assets.exists())
     codeGen->setAssetDir(assets);
 
-  mPlugins.append({codeGen, manifest});
+  mPlugins.append({loader, codeGen, manifest, action, pluginIndex});
   LOG_DEBUG("Loaded plugin for language: %s", qPrintable(pluginName));
 
   return VoidResult();
@@ -141,6 +156,15 @@ Result<Manifest> PluginManager::getPluginManifest(const QDir& path) const
 
   auto data = manifest.Value();
   return Manifest::fromJson(path.absolutePath(), data);
+}
+
+bool PluginManager::selectPlugin(QComboBox* comboBox, const QString& language)
+{
+  if (!setPlugin(language))
+    return false;
+
+  comboBox->setCurrentText(language);
+  return true;
 }
 
 bool PluginManager::setPlugin(const QString& language)
@@ -211,5 +235,82 @@ VoidResult PluginManager::loadPluginLibraryDir(const Manifest& manifest)
     //   qputenv("PATH", (normalisedPluginDir + ";" + path).toLocal8Bit());
 
 #endif
+  return VoidResult();
+}
+
+void PluginManager::settingsChanged(const PluginSettings& settings, QMenu* menu, QComboBox* comboBox, HostServices* services)
+{
+  for (const auto& ps : settings.plugins)
+  {
+    auto index = getPluginIndex(ps.name);
+    if (index >= 0 && !ps.enabled)
+    {
+      LOG_WARN_ON_FAILURE(deregisterPlugin(mPlugins.at(index), menu, comboBox));
+    }
+    else if (index < 0 && ps.enabled)
+    {
+      for (const auto& path : AppPaths::pluginSearchPaths())
+      {
+        QDir pluginParentDir(path);
+        for (const auto& subFolder : pluginParentDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot))
+        {
+          QDir pluginsDir(pluginParentDir.absoluteFilePath(subFolder));
+
+          LOG_DEBUG("Loading plugins from %s", qPrintable(pluginsDir.path()));
+          auto manifestResult = getPluginManifest(pluginsDir);
+          if (!manifestResult || manifestResult.Value().name != ps.name)
+            continue;
+
+          Manifest manifest = manifestResult.Value();
+          LOG_WARN_ON_FAILURE(loadPlugin(pluginsDir, manifest, menu, comboBox, services));
+        }
+      }
+    }
+  }
+}
+
+int PluginManager::getPluginIndex(const QString& pluginName) const
+{
+  for (int i = 0; i < mPlugins.size(); ++i)
+    if (mPlugins.at(i).plugin && mPlugins.at(i).plugin->languageName() == pluginName)
+      return i;
+
+  return -1;
+}
+
+VoidResult PluginManager::deregisterPlugin(const Plugin& plugin, QMenu* menu, QComboBox* comboBox)
+{
+  LOG_TRACE("Deregistering plugin: %s", qPrintable(plugin.manifest.name));
+  const auto index = getPluginIndex(plugin.plugin->languageName());
+  if (index == -1)
+    return VoidResult::Failed("Plugin not registered");
+
+  // In case we are running the plugin, we must update it
+  if (plugin.plugin->languageName() == mPlugin->languageName())
+  {
+    // Get the next plugin to auto update the picker
+    int nextIndex = 0;
+    if (index + 1 >= mPlugins.size())
+      nextIndex = index - 1;
+    else
+      nextIndex = index + 1;
+
+    LOG_TRACE("Plugin was running");
+    const auto nextPlugin = mPlugins.at(nextIndex);
+    setPlugin(nextPlugin.plugin->languageName());
+  }
+
+  // Finally, remove it from the list
+  comboBox->removeItem(plugin.comboIndex);
+  if (plugin.action)
+    menu->removeAction(plugin.action);
+
+  // Unload immediately
+  plugin.loader->unload();
+
+  auto removed = mPlugins.removeIf([&](const Plugin& p) { return p.manifest.name == plugin.manifest.name; });
+  if (removed != 1)
+    return VoidResult::Failed("Failed to remove plugin from the list");
+
   return VoidResult();
 }

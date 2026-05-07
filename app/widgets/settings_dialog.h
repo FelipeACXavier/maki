@@ -95,7 +95,8 @@ private:
   maki::ButtonWidget* mGenerationBrowseBtn = nullptr;  /// Button widget for browsing generation directory.
 
   // Plugins
-  QVector<PluginInfo> mPluginSettings;  /// Vector of plugin settings.
+  PluginSettings mPluginSettings;                  /// Vector of plugin settings.
+  maki::SelectorWidget* mDefaultPlugin = nullptr;  /// Widget for editing the default plugin
 
   oclero::qlementine::Theme mTheme;  /// Current theme.
 

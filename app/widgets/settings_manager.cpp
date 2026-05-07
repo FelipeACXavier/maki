@@ -1,9 +1,12 @@
 // SettingsManager.cpp
 #include "settings_manager.h"
 
+#include <qcoreapplication.h>
+
 #include <QFile>
 
 #include "common/app_configs.h"
+#include "isettings.h"
 #include "logging.h"
 #include "oclero/qlementine/style/Theme.hpp"
 #include "result.h"
@@ -51,7 +54,7 @@ GenerationSettings SettingsManager::generation() const
   return mGeneration;
 }
 
-QVector<PluginInfo> SettingsManager::plugins() const
+PluginSettings SettingsManager::plugins() const
 {
   return mPluginSettings;
 }
@@ -126,6 +129,61 @@ void SettingsManager::load()
   LOAD_SETTING(mGeneration, generationDir, String);
   LOAD_SETTING(mGeneration, pluginSearchPaths, StringList);
   mSettings.endGroup();
+
+  mSettings.beginGroup("Plugins");
+  LOAD_SETTING(mPluginSettings, defaultPlugin, String);
+  const QStringList pluginGroups = mSettings.childGroups();
+  for (const QString& pg : pluginGroups)
+  {
+    mSettings.beginGroup(pg);
+
+    PluginInfo info;
+    info.name = mSettings.value("name", info.name).toString();
+    info.enabled = mSettings.value("enabled", info.enabled).toBool();
+    info.version = maki::PluginVersion::fromString(mSettings.value("version", "").toString());
+
+    const QStringList settingGroups = mSettings.childGroups();
+    info.settings.resize(settingGroups.size());
+    for (const QString& sg : settingGroups)
+    {
+      mSettings.beginGroup(sg);
+      int index = mSettings.value("index", 0).toInt();
+
+      maki::SettingField setting;
+      setting.setKey(mSettings.value("key", setting.getKey()).toString());
+      setting.setLabel(mSettings.value("label", setting.getLabel()).toString());
+      setting.setDescription(mSettings.value("description", setting.getDescription()).toString());
+      setting.setValue(mSettings.value("value", setting.getValue()));
+      setting.setDefaultValue(mSettings.value("defaultValue", setting.getDefaultValue()));
+      setting.setType(Types::StringToPropertyTypes(mSettings.value("type", "").toString()));
+
+      if (setting.getType() == Types::PropertyTypes::INTEGER)
+      {
+        QVariantMap metdata;
+        auto min = mSettings.value("min");
+        if (min.isValid())
+          metdata["min"] = min.toInt();
+        auto max = mSettings.value("max");
+        if (min.isValid())
+          metdata["max"] = max.toInt();
+
+        setting.setMetadata(metdata);
+      }
+
+      LOG_TRACE("Adding setting %s to index %d of %d", qPrintable(setting.getKey()), index, info.settings.size());
+      info.settings[index] = setting;
+      mSettings.endGroup();  // setting.name
+    }
+    mPluginSettings.plugins.push_back(info);
+    mSettings.endGroup();  // plugin.name
+  }
+  mSettings.endGroup();
+
+  // Make sure the tmps are up to date
+  mTmpGeneral = mGeneral;
+  mTmpAppearance = mAppearance;
+  mTmpGeneration = mGeneration;
+  mTmpPluginSettings = mPluginSettings;
 }
 
 void SettingsManager::save()
@@ -162,7 +220,8 @@ void SettingsManager::save()
   mSettings.endGroup();
 
   mSettings.beginGroup("Plugins");
-  for (const auto& plugin : plugins())
+  SAVE_SETTING(mPluginSettings, defaultPlugin);
+  for (const auto& plugin : plugins().plugins)
   {
     mSettings.beginGroup(plugin.name);
     mSettings.setValue("name", plugin.name);
@@ -195,59 +254,70 @@ void SettingsManager::save()
   mSettings.sync();
 }
 
-void SettingsManager::setGeneral(const GeneralSettings& s)
+void SettingsManager::applySettings()
 {
-  bool changed = mGeneral != s;
+  bool changed = false;
+  if (mGeneral != mTmpGeneral)
+  {
+    mGeneral = mTmpGeneral;
+    changed = true;
+  }
 
-  mGeneral = s;
+  if (mGeneration != mTmpGeneration)
+  {
+    mGeneration = mTmpGeneration;
+    changed = true;
+  }
+
+  if (mAppearance != mTmpAppearance)
+  {
+    mAppearance = mTmpAppearance;
+    changed = true;
+  }
+
+  if (mPluginSettings != mTmpPluginSettings)
+  {
+    mPluginSettings = mTmpPluginSettings;
+    changed = true;
+  }
+
   save();
 
   if (changed)
     emit settingsChanged();
+}
+
+void SettingsManager::setGeneral(const GeneralSettings& s)
+{
+  mTmpGeneral = s;
 }
 
 void SettingsManager::setAppearance(const AppearanceSettings& s)
 {
-  // Rediscover incase the user created a new theme
-  // mAvailableThemes = Config::discoverThemes();
-
-  bool changed = (mAppearance != s);
-
-  mAppearance = s;
-  save();
-
-  if (changed)
-  {
-    LOG_DEBUG("Appearence settings changed: %s", qPrintable(mAppearance.theme));
-    emit themeChanged();
-  }
+  mTmpAppearance = s;
 }
 
 void SettingsManager::setGeneration(const GenerationSettings& s)
 {
-  bool changed = mGeneration != s;
-
   mGeneration = s;
-  save();
-
-  if (changed)
-    emit settingsChanged();
 }
 
-void SettingsManager::setPlugins(const QVector<PluginInfo>& s)
+void SettingsManager::setPlugins(const PluginSettings& settings)
 {
+  mTmpPluginSettings.defaultPlugin = settings.defaultPlugin;
+
+  const auto s = settings.plugins;
   for (int i = 0; i < s.size(); ++i)
   {
     auto update = s.at(i);
-    auto current = mPluginSettings.at(i);
+    auto current = mTmpPluginSettings.plugins.at(i);
     if (update.name == current.name && update.version == current.version)
     {
-      mPluginSettings[i] = update;
-      if (mPluginSettings[i].callback)
-        mPluginSettings[i].callback(mPluginSettings[i].settings);
+      mTmpPluginSettings.plugins[i] = update;
+      if (mTmpPluginSettings.plugins[i].callback)
+        mTmpPluginSettings.plugins[i].callback(mTmpPluginSettings.plugins[i].settings);
     }
   }
-  save();
 }
 
 void SettingsManager::addRecentFile(const QString& s)
@@ -262,11 +332,12 @@ void SettingsManager::addRecentFile(const QString& s)
     settings.recentFiles.pop_back();
 
   setGeneral(settings);
+  applySettings();
 }
 
 QVector<maki::SettingField> SettingsManager::getPluginSettings(const QString& id) const
 {
-  for (const auto& plugin : mPluginSettings)
+  for (const auto& plugin : plugins().plugins)
   {
     if (plugin.name == id)
       return plugin.settings;
@@ -281,84 +352,46 @@ VoidResult SettingsManager::registerSettings(const QString& id, const maki::Plug
 {
   // Since the plugin is registered, we try to load the save settings
   bool exists = false;
-
-  mSettings.beginGroup("Plugins");
-  const QStringList pluginGroups = mSettings.childGroups();
-  for (const QString& pg : pluginGroups)
+  for (auto& plugin : mPluginSettings.plugins)
   {
-    if (pg != id)
+    // Lets look for the plugin in the settings
+    if (plugin.name != id)
       continue;
-
-    mSettings.beginGroup(pg);
-
-    PluginInfo info;
-    info.name = mSettings.value("name", info.name).toString();
-    info.enabled = mSettings.value("enabled", info.enabled).toBool();
-    info.version = maki::PluginVersion::fromString(mSettings.value("version", "").toString());
-    info.callback = callback;
-
-    // We need to check to see if the versions match
-    if (info.version != version)
-    {
-      const auto message = QString(tr("Current: %1 Incoming: %2")).arg(info.version.toString(), version.toString());
-      if (maki::warningPrompt(tr("Plugin version mismatch. Replace?"), message))
-      {
-        // The user confirmed that the version should be replaced
-        LOG_WARNING("Versions are different: %s", qPrintable(message));
-      }
-      else
-      {
-        // The user does not want to replace the settings
-        mSettings.endGroup();  // plugin.name
-        continue;
-      }
-    }
 
     exists = true;
 
-    // TODO: We need to take into account incoming settings as well
-    const QStringList settingGroups = mSettings.childGroups();
-    info.settings.resize(settingGroups.size());
-    for (const QString& sg : settingGroups)
+    if (plugin.version != version)
     {
-      mSettings.beginGroup(sg);
-
-      int index = mSettings.value("index", 0).toInt();
-
-      maki::SettingField setting;
-      setting.setKey(mSettings.value("key", setting.getKey()).toString());
-      setting.setLabel(mSettings.value("label", setting.getLabel()).toString());
-      setting.setDescription(mSettings.value("description", setting.getDescription()).toString());
-      setting.setValue(mSettings.value("value", setting.getValue()));
-      setting.setDefaultValue(mSettings.value("defaultValue", setting.getDefaultValue()));
-      setting.setType(Types::StringToPropertyTypes(mSettings.value("type", "").toString()));
-
-      if (setting.getType() == Types::PropertyTypes::INTEGER)
-      {
-        QVariantMap metdata;
-        auto min = mSettings.value("min");
-        if (min.isValid())
-          metdata["min"] = min.toInt();
-        auto max = mSettings.value("max");
-        if (min.isValid())
-          metdata["max"] = max.toInt();
-
-        setting.setMetadata(metdata);
-      }
-
-      LOG_TRACE("Adding setting %s to index %d of %d", qPrintable(setting.getKey()), index, info.settings.size());
-      info.settings[index] = setting;
-      mSettings.endGroup();  // setting.name
+      const auto message = QString(tr("Current: %1 Incoming: %2")).arg(plugin.version.toString(), version.toString());
+      if (maki::warningPrompt(tr("Plugin version mismatch. Replace?"), message))
+        // The user confirmed that the version should be replaced
+        LOG_WARNING("Versions are different: %s", qPrintable(message));
+      else
+        continue;
     }
-    mPluginSettings.push_back(info);
-    mSettings.endGroup();  // plugin.name
-  }
-  mSettings.endGroup();
 
+    // We need to make sure all the settings are available
+    // This should only happen with a version change
+    for (const auto& incoming : settings)
+    {
+      auto current = settingFromName(plugin.settings, incoming.getKey());
+
+      // Check if it is a new setting
+      if (!current.getKey().isEmpty())
+        continue;
+
+      LOG_DEBUG("New setting (%s) added to plugin %s", qPrintable(incoming.getKey()), qPrintable(id));
+      plugin.settings.append(incoming);
+    }
+
+    plugin.callback = callback;
+  }
+
+  // If it is a new plugin, then we must register it
   if (!exists)
   {
     LOG_DEBUG("Registering plugin \"%s\" settings", qPrintable(id));
-    mPluginSettings.append({id, true, version, settings, callback});
+    mPluginSettings.plugins.append({id, true, version, settings, callback});
   }
   else
   {
@@ -366,4 +399,13 @@ VoidResult SettingsManager::registerSettings(const QString& id, const maki::Plug
   }
 
   return VoidResult();
+}
+
+maki::SettingField SettingsManager::settingFromName(const QVector<maki::SettingField>& settings, const QString& fieldName) const
+{
+  for (const auto& s : settings)
+    if (fieldName == s.getKey())
+      return s;
+
+  return maki::SettingField{};
 }

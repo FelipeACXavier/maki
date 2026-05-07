@@ -100,9 +100,9 @@ VoidResult MainWindow::start()
 
   LOG_INFO("Using application path: %s", qPrintable(QCoreApplication::applicationDirPath()));
   mSaveHandler = std::make_unique<SaveHandler>(this);
-  mPluginManager = std::make_unique<PluginManager>(this);
   mSettingsManager = std::make_shared<SettingsManager>(mThemeManager, this);
   mLanguageManager = std::make_shared<LanguageManager>();
+  mPluginManager = std::make_unique<PluginManager>(this);
   // TODO(felaze): Check leaks here
   mNotificationManager = new NotificationManager(mCanvasPanel);
   mLogger = new Logger(this);
@@ -142,7 +142,6 @@ VoidResult MainWindow::start()
       QAction* action = mActionOpenRecent->addAction(elideLeft(file, mActionOpenRecent));
       connect(action, &QAction::triggered, [this, file] { onActionLoad(file); });
     }
-    connect(mSettingsManager.get(), &SettingsManager::themeChanged, [this] { onThemeChanged(mSettingsManager->appearance(), false); });
     connect(mSettingsManager.get(), &SettingsManager::settingsChanged, this, &MainWindow::onSettingsChanged);
 
     if (!mSettingsManager->general().showWelcomeMessage)
@@ -208,6 +207,8 @@ void MainWindow::onSettingsChanged()
 {
   LOG_DEBUG("Settings changed");
 
+  onThemeChanged(mSettingsManager->appearance(), false);
+
   if (mFileMenu)
     mFileMenu->setGenerationRoot(mSettingsManager->generation().generationDir);
 
@@ -216,6 +217,9 @@ void MainWindow::onSettingsChanged()
 
   if (mSettingsManager->general().enableDebugLogs)
     logging::gMinLogLevel = logging::LogLevel::Trace;
+
+  if (mPluginManager)
+    mPluginManager->settingsChanged(mSettingsManager->plugins(), mGeneratorMenu, mGeneratorOption, mHostServices);
 
   // Clean and repopulate the recent files
   mActionOpenRecent->clear();
@@ -238,7 +242,7 @@ void MainWindow::startUI()
   mUndoGroup->setActiveStack(canvas->undoStack());
 
   if (mPluginManager)
-    LOG_WARN_ON_FAILURE(mPluginManager->start(mGeneratorMenu, mGeneratorOption, mHostServices));
+    LOG_WARN_ON_FAILURE(mPluginManager->start(mSettingsManager->plugins(), mGeneratorMenu, mGeneratorOption, mHostServices));
 }
 
 static QWidget* findAncestor(QWidget* w, const QMetaObject* type)

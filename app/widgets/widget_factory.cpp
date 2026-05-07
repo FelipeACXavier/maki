@@ -104,7 +104,7 @@ WidgetGroup::WidgetGroup(const QString& label, QWidget* parent)
   vLayout->setAlignment(Qt::AlignTop);
 
   auto* title = new oclero::qlementine::Label(label, this);
-  title->setRole(oclero::qlementine::TextRole::Default);
+  title->setRole(oclero::qlementine::TextRole::H4);
   ;
   title->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
 

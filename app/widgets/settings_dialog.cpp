@@ -1,5 +1,8 @@
 #include "settings_dialog.h"
 
+#include <qnamespace.h>
+#include <qobject.h>
+
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDialogButtonBox>
@@ -83,7 +86,7 @@ SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsMan
   connect(buttonBox, &QDialogButtonBox::accepted, this, &SettingsDialog::apply);
   connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
-  apply();
+  // apply();
 }
 
 SettingsDialog::SelectorPage SettingsDialog::addPage(const QString& pageName, const QString& iconName, std::function<void()> resetCallback, QTreeWidgetItem* parent)
@@ -361,7 +364,7 @@ VoidResult SettingsDialog::createPluginPages()
   // -----------------------------------------------------------------
   // Load Plugin settings
   mPluginSettings = mSettingsManager->plugins();
-  LOG_DEBUG("Loaded from settings with %d plugins", mPluginSettings.size());
+  LOG_DEBUG("Loaded from settings with %d plugins", mPluginSettings.plugins.size());
 
   // Add top level plugin page
   auto [topSelector, topPage] = addPage(tr("Plugins"), ":/icons/plugin.svg", [] {
@@ -370,9 +373,9 @@ VoidResult SettingsDialog::createPluginPages()
 
   // -------------------------------------------------------------------------
   // Plugins table
-  auto* tableLabel = new QLabel(tr("Installed plugins"), topPage);
+  auto tableLayout = new maki::WidgetGroup(tr("Installed plugins"), topPage);
 
-  QTableView* table = new QTableView(topPage);
+  QTableView* table = new QTableView(tableLayout);
   QStandardItemModel* model = new QStandardItemModel(0, 3);
 
   model->setHorizontalHeaderItem(0, new QStandardItem("Name"));
@@ -394,29 +397,54 @@ VoidResult SettingsDialog::createPluginPages()
   // Add new plugin
   auto* buttonRow = new QHBoxLayout();
 
-  auto* addBtn = new maki::ButtonWidget("Add", topPage);
+  auto* addBtn = new maki::ButtonWidget("Add", tableLayout);
   addBtn->setFixedWidth(200);
   addBtn->setIcon(QIcon(":/icons/plus.svg"));
 
-  auto* removeBtn = new maki::ButtonWidget("Remove", topPage);
+  auto* removeBtn = new maki::ButtonWidget("Remove", tableLayout);
   removeBtn->setIcon(QIcon(":/icons/clear.svg"));
-  removeBtn->setFixedWidth(200);
+  removeBtn->setMaximumWidth(200);
   removeBtn->setEnabled(false);
 
   connect(table->selectionModel(), &QItemSelectionModel::selectionChanged, topPage, [removeBtn, table]() {
     removeBtn->setEnabled(table->selectionModel()->hasSelection());
   });
 
+  connect(model, &QStandardItemModel::itemChanged, this, [this, model](QStandardItem* item) {
+    if (item->column() != 2)
+      return;
+
+    QStandardItem* nameItem = model->item(item->row(), 0);
+    if (!nameItem)
+      return;
+
+    for (auto& p : mPluginSettings.plugins)
+      if (p.name == nameItem->text())
+      {
+        p.enabled = item->checkState() == Qt::Checked;
+        return;
+      }
+  });
+
   buttonRow->addStretch();
   buttonRow->addWidget(addBtn);
   buttonRow->addWidget(removeBtn);
 
+  auto generalLayout = new maki::WidgetGroup(tr("Other settings"), topPage);
+  mDefaultPlugin = new maki::SelectorWidget(tr("Default plugin"), generalLayout);
+  mDefaultPlugin->addDescription(tr("MAKI will set this plugin as the default on start"));
+  mDefaultPlugin->addItem("-", "");
+
   // -------------------------------------------------------------------------
   // Go through all the plugins and build the page
-  for (const auto& plugin : mPluginSettings)
+  for (const auto& plugin : mPluginSettings.plugins)
   {
     auto pluginId = plugin.name;
     auto settings = plugin.settings;
+
+    // Add the available plugins to the combo box
+    if (plugin.enabled)
+      mDefaultPlugin->addItem(pluginId, pluginId);
 
     int newRow = model->rowCount();
     model->insertRow(newRow);
@@ -431,7 +459,7 @@ VoidResult SettingsDialog::createPluginPages()
 
     QStandardItem* item = new QStandardItem(true);
     item->setCheckable(true);
-    item->setCheckState(Qt::Checked);
+    item->setCheckState(plugin.enabled ? Qt::Checked : Qt::Unchecked);
     item->setTextAlignment(Qt::AlignCenter);
     item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled | Qt::ItemIsUserCheckable);
     model->setItem(newRow, 2, item);
@@ -477,10 +505,16 @@ VoidResult SettingsDialog::createPluginPages()
     layout->addStretch();
   }
 
+  // Make sure the combo box is updated on start
+  mDefaultPlugin->setValue(mPluginSettings.defaultPlugin);
+
   QVBoxLayout* layout = topPage->findChild<QVBoxLayout*>("ContentArea");
-  layout->addWidget(tableLabel);
-  layout->addWidget(table);
-  layout->addLayout(buttonRow);
+  tableLayout->addWidget(table);
+  tableLayout->addLayout(buttonRow);
+  generalLayout->addWidget(mDefaultPlugin);
+
+  layout->addWidget(tableLayout);
+  layout->addWidget(generalLayout);
   layout->addStretch();
 
   return VoidResult();
@@ -509,10 +543,13 @@ void SettingsDialog::saveToSettings()
   GenerationSettings generation;
   generation.generationDir = mGenerationDirEdit->getValue();
 
+  mPluginSettings.defaultPlugin = mDefaultPlugin->getValue();
+
   mSettingsManager->setGeneral(general);
   mSettingsManager->setAppearance(appearance);
   mSettingsManager->setGeneration(generation);
   mSettingsManager->setPlugins(mPluginSettings);
+  mSettingsManager->applySettings();
 }
 
 void SettingsDialog::apply()
@@ -522,7 +559,7 @@ void SettingsDialog::apply()
 
 void SettingsDialog::updatePluginSetting(const QString& pluginId, const QString& key, QVariant value)
 {
-  for (auto& plugin : mPluginSettings)
+  for (auto& plugin : mPluginSettings.plugins)
   {
     if (plugin.name != pluginId)
       continue;

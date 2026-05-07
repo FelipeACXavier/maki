@@ -8,6 +8,7 @@
 #include <QString>
 
 #include "ihost_services.h"
+#include "isettings.h"
 #include "result.h"
 
 namespace maki
