@@ -296,8 +296,17 @@ VoidResult PluginManager::deregisterPlugin(const Plugin& plugin, QMenu* menu, QC
       nextIndex = index + 1;
 
     LOG_TRACE("Plugin was running");
-    const auto nextPlugin = mPlugins.at(nextIndex);
-    setPlugin(nextPlugin.plugin->languageName());
+    if (nextIndex >= 0)
+    {
+      const auto nextPlugin = mPlugins.at(nextIndex);
+      setPlugin(nextPlugin.plugin->languageName());
+    }
+    else if (mPlugin)
+    {
+      // If there are no plugins to swap, just tear down the current plugin and reset it
+      mPlugin->tearDown();
+      mPlugin = nullptr;
+    }
   }
 
   // Finally, remove it from the list
