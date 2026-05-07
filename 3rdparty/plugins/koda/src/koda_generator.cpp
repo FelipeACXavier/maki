@@ -19,6 +19,7 @@
 #include "isettings.h"
 #include "itab.h"
 #include "logging.h"
+#include "result.h"
 #include "string_helpers.h"
 #include "types.h"
 
@@ -313,6 +314,9 @@ VoidResult KodaGenerator::verify(const QString& outputFolder)
     return VoidResult::Failed("Cannot proceed with verification, no pipeline provided");
   else if (mServices->document() == nullptr)
     return VoidResult::Failed("Cannot proceed with verification, no document provided");
+
+  if (mServices->document()->getnodes().isEmpty())
+    return VoidResult::Failed("Nothing to verify");
 
   mGeneratedDznFiles = {};
   mGeneratedFiles = {};

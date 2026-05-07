@@ -9,6 +9,7 @@
 #include "generator_plugin.h"
 #include "logging.h"
 #include "notifications.h"
+#include "result.h"
 #include "style_helpers.h"
 
 Generator::Generator(Pipeline* pipeline, QObject* parent)
@@ -61,6 +62,9 @@ Pipeline* Generator::pipeline() const
 
 VoidResult Generator::generate(const QString& outputDir, maki::IGeneratorPlugin* generator)
 {
+  if (!generator)
+    return VoidResult::Failed("No generator passed");
+
   if (pipeline()->isRunning())
   {
     LOG_INFO("Pipeline is running aborting");
@@ -90,6 +94,9 @@ VoidResult Generator::generate(const QString& outputDir, maki::IGeneratorPlugin*
 
 VoidResult Generator::simulate(const QString& outputDir, maki::IGeneratorPlugin* generator)
 {
+  if (!generator)
+    return VoidResult::Failed("No generator passed");
+
   if (pipeline()->isRunning())
     return pipeline()->abort();
 

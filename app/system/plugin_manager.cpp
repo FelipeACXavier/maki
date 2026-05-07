@@ -80,9 +80,8 @@ VoidResult PluginManager::start(const PluginSettings& settings, QMenu* menu, QCo
     return VoidResult();
   }
 
-  // Set default plugin
-  const auto defaultPlugin = settings.defaultPlugin.isEmpty() ? mPlugins.front().plugin->languageName() : settings.defaultPlugin;
-  if (selectPlugin(comboBox, defaultPlugin))
+  // Try setting the config plugin, otherwise just try the first
+  if (selectPlugin(comboBox, settings.defaultPlugin) || selectPlugin(comboBox, mPlugins.front().plugin->languageName()))
     LOG_DEBUG("Starting with plugin: %s", qPrintable(currentPlugin()->languageName()));
 
   return VoidResult();
@@ -171,7 +170,7 @@ bool PluginManager::setPlugin(const QString& language)
   auto plugin = pluginByLanguage(language);
   if (plugin == nullptr)
   {
-    LOG_WARNING("Trying to set plugin that doesn't exist: " + language.toStdString());
+    LOG_TRACE("Trying to set plugin that doesn't exist: " + language.toStdString());
     return false;
   }
 
@@ -180,7 +179,7 @@ bool PluginManager::setPlugin(const QString& language)
     // No need to set the same plugin again...
     if (mPlugin->languageName() == language)
     {
-      LOG_DEBUG("Plugin %s already set", qPrintable(language));
+      LOG_TRACE("Plugin %s already set", qPrintable(language));
       return false;
     }
 
