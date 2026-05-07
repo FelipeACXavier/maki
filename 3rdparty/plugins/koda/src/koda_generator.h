@@ -41,6 +41,7 @@ public:
   VoidResult simulate(const QString& outputFolder) override;
 
   QList<QString> generatedFiles() const override;
+  void settingsChanged(const QVector<maki::SettingField>& settings) override;
 
 private:
   QDir mOutputFolder;

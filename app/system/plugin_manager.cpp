@@ -14,7 +14,6 @@
 #include "host_services.h"
 #include "logging.h"
 #include "result.h"
-#include "widgets/language_manager.h"
 #include "widgets/settings_manager.h"
 
 // Include after the rest to avoid conflicts
@@ -177,7 +176,16 @@ bool PluginManager::setPlugin(const QString& language)
   }
 
   if (mPlugin)
+  {
+    // No need to set the same plugin again...
+    if (mPlugin->languageName() == language)
+    {
+      LOG_DEBUG("Plugin %s already set", qPrintable(language));
+      return false;
+    }
+
     mPlugin->tearDown();
+  }
 
   mPlugin = plugin;
   plugin->setup();
@@ -243,9 +251,12 @@ void PluginManager::settingsChanged(const PluginSettings& settings, QMenu* menu,
   for (const auto& ps : settings.plugins)
   {
     auto index = getPluginIndex(ps.name);
-    if (index >= 0 && !ps.enabled)
+    if (index >= 0)
     {
-      LOG_WARN_ON_FAILURE(deregisterPlugin(mPlugins.at(index), menu, comboBox));
+      if (!ps.enabled)
+        LOG_WARN_ON_FAILURE(deregisterPlugin(mPlugins.at(index), menu, comboBox));
+      else
+        mPlugins.at(index).plugin->settingsChanged(ps.settings);
     }
     else if (index < 0 && ps.enabled)
     {
@@ -285,8 +296,11 @@ VoidResult PluginManager::deregisterPlugin(const Plugin& plugin, QMenu* menu, QC
   if (index == -1)
     return VoidResult::Failed("Plugin not registered");
 
+  if (!plugin.plugin)
+    return VoidResult::Failed("Plugin missing");
+
   // In case we are running the plugin, we must update it
-  if (plugin.plugin->languageName() == mPlugin->languageName())
+  if (mPlugin && plugin.plugin->languageName() == mPlugin->languageName())
   {
     // Get the next plugin to auto update the picker
     int nextIndex = 0;
@@ -301,7 +315,7 @@ VoidResult PluginManager::deregisterPlugin(const Plugin& plugin, QMenu* menu, QC
       const auto nextPlugin = mPlugins.at(nextIndex);
       setPlugin(nextPlugin.plugin->languageName());
     }
-    else if (mPlugin)
+    else
     {
       // If there are no plugins to swap, just tear down the current plugin and reset it
       mPlugin->tearDown();
@@ -309,14 +323,18 @@ VoidResult PluginManager::deregisterPlugin(const Plugin& plugin, QMenu* menu, QC
     }
   }
 
-  // Finally, remove it from the list
-  comboBox->removeItem(plugin.comboIndex);
+  // Clean up the UI elements
+  int comboIndex = comboBox->findData(plugin.manifest.name);
+  if (comboIndex >= 0)
+    comboBox->removeItem(comboIndex);
+
   if (plugin.action)
     menu->removeAction(plugin.action);
 
   // Unload immediately
   plugin.loader->unload();
 
+  // Finally, remove it from the list
   auto removed = mPlugins.removeIf([&](const Plugin& p) { return p.manifest.name == plugin.manifest.name; });
   if (removed != 1)
     return VoidResult::Failed("Failed to remove plugin from the list");

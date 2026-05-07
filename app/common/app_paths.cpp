@@ -88,12 +88,6 @@ QStringList AppPaths::pluginSearchPaths()
   if (!env.isEmpty())
     paths << env;
 
-#ifdef DEV_BUILD
-  const auto devPluginPath = devPluginDir();
-  if (!devPluginPath.isEmpty())
-    paths << devPluginPath;
-#endif
-
   paths << bundledPluginDir();
   paths << userPluginDir();
 

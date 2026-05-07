@@ -304,34 +304,19 @@ void SettingsManager::setGeneration(const GenerationSettings& s)
 
 void SettingsManager::setPlugins(const PluginSettings& settings)
 {
-  mTmpPluginSettings.defaultPlugin = settings.defaultPlugin;
-
-  const auto s = settings.plugins;
-  for (int i = 0; i < s.size(); ++i)
-  {
-    auto update = s.at(i);
-    auto current = mTmpPluginSettings.plugins.at(i);
-    if (update.name == current.name && update.version == current.version)
-    {
-      mTmpPluginSettings.plugins[i] = update;
-      if (mTmpPluginSettings.plugins[i].callback)
-        mTmpPluginSettings.plugins[i].callback(mTmpPluginSettings.plugins[i].settings);
-    }
-  }
+  mTmpPluginSettings = settings;
 }
 
 void SettingsManager::addRecentFile(const QString& s)
 {
   // Check if the file was already added
-  auto settings = general();
-  if (settings.recentFiles.contains(s))
+  if (mTmpGeneral.recentFiles.contains(s))
     return;
 
-  settings.recentFiles.push_front(s);
-  if (settings.recentFiles.size() >= settings.recentHistorySize)
-    settings.recentFiles.pop_back();
+  mTmpGeneral.recentFiles.push_front(s);
+  if (mTmpGeneral.recentFiles.size() >= mTmpGeneral.recentHistorySize)
+    mTmpGeneral.recentFiles.pop_back();
 
-  setGeneral(settings);
   applySettings();
 }
 
@@ -347,8 +332,7 @@ QVector<maki::SettingField> SettingsManager::getPluginSettings(const QString& id
 }
 
 VoidResult SettingsManager::registerSettings(const QString& id, const maki::PluginVersion version,
-                                             const QVector<maki::SettingField>& settings,
-                                             maki::SettingsFunction callback)
+                                             const QVector<maki::SettingField>& settings)
 {
   // Since the plugin is registered, we try to load the save settings
   bool exists = false;
@@ -383,15 +367,13 @@ VoidResult SettingsManager::registerSettings(const QString& id, const maki::Plug
       LOG_DEBUG("New setting (%s) added to plugin %s", qPrintable(incoming.getKey()), qPrintable(id));
       plugin.settings.append(incoming);
     }
-
-    plugin.callback = callback;
   }
 
   // If it is a new plugin, then we must register it
   if (!exists)
   {
     LOG_DEBUG("Registering plugin \"%s\" settings", qPrintable(id));
-    mPluginSettings.plugins.append({id, true, version, settings, callback});
+    mPluginSettings.plugins.append({id, true, version, settings});
   }
   else
   {

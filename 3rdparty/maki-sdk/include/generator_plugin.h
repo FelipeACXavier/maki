@@ -71,6 +71,7 @@ public:
   virtual VoidResult simulate(const QString& outputFolder) = 0;
 
   virtual QList<QString> generatedFiles() const = 0;
+  virtual void settingsChanged(const QVector<maki::SettingField>& settings) = 0;
 };
 }  // namespace maki
 

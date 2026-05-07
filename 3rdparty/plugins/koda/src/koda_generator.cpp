@@ -78,7 +78,6 @@ bool KodaGenerator::tearDown()
     }
   }
 
-  mDaemon->deleteLater();
   mDaemon = nullptr;
 
   return true;
@@ -166,6 +165,20 @@ void KodaGenerator::buildSettings()
   mSettings.push_back(validateOnSave);
 }
 
+void KodaGenerator::settingsChanged(const QVector<maki::SettingField>& settings)
+{
+  for (auto& setting : mSettings)
+  {
+    for (const auto& incoming : settings)
+    {
+      if (setting.getKey() != incoming.getKey())
+        continue;
+
+      setting.setValue(incoming.getValue());
+    }
+  }
+}
+
 void KodaGenerator::setHostServices(maki::IHostServices* services)
 {
   mServices = services;
@@ -175,10 +188,7 @@ void KodaGenerator::setHostServices(maki::IHostServices* services)
   // Setup settings
   if (auto service = mServices->settings())
   {
-    service->registerSettings(languageName(), version(), mSettings, [this](const QVector<maki::SettingField>& settings) {
-      LOG_DEBUG("Updating settings of %s plugin", qPrintable(languageName()));
-      mSettings = settings;
-    });
+    service->registerSettings(languageName(), version(), mSettings);
 
     auto settings = service->getPluginSettings(languageName());
     if (!settings.isEmpty())
@@ -414,7 +424,7 @@ VoidResult KodaGenerator::verify(const QString& outputFolder)
     auto fullPath = mDezyneOutputFolder.absoluteFilePath(f);
     if (fullPath.contains("/a_") || fullPath.contains("types"))
       continue;
-    if (fullPath.contains("/arbiter"))
+    if (fullPath.contains("arbiter"))
       continue;
     if (taskOnly.getValue().isValid() && taskOnly.getValue().toBool() && !f.contains("_task"))
       continue;
@@ -1180,14 +1190,12 @@ bool KodaGenerator::startDaemon()
     LOG_DEBUG(mDaemon->readAllStandardError().trimmed().toStdString());
   });
 
-  connect(mDaemon, &QProcess::finished, this, [this](int exitCode, QProcess::ExitStatus status) {
-    LOG_DEBUG("Finished with code %d and status %d", exitCode, (int)status);
-    if (exitCode != 0)
-      mDaemon->deleteLater();  // important
+  connect(mDaemon, &QProcess::finished, this, [](int exitCode, QProcess::ExitStatus status) {
+    LOG_DEBUG("Daemon finished with code %d and status %d", exitCode, (int)status);
   });
 
   connect(mDaemon, &QProcess::errorOccurred, this, [](QProcess::ProcessError e) {
-    LOG_WARNING("Process error: %d", (int)e);
+    LOG_WARNING("Daemon error: %d", (int)e);
   });
 
   // Non-blocking start

@@ -86,7 +86,7 @@ SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsMan
   connect(buttonBox, &QDialogButtonBox::accepted, this, &SettingsDialog::apply);
   connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
-  // apply();
+  apply();
 }
 
 SettingsDialog::SelectorPage SettingsDialog::addPage(const QString& pageName, const QString& iconName, std::function<void()> resetCallback, QTreeWidgetItem* parent)
@@ -531,6 +531,8 @@ void SettingsDialog::saveToSettings()
   general.restoreLastSession = mRestoreLastSession->getValue();
   general.autosaveIntervalMinutes = mAutosaveMinutes->getValue();
   general.confirmOnCloseWithExecution = mConfirmOnClose->getValue();
+  // The dialog should not mess with the recent files
+  general.recentFiles = mSettingsManager->general().recentFiles;
 
   AppearanceSettings appearance;
   appearance.theme = mThemeCombo->getValue();

@@ -94,7 +94,6 @@ struct PluginInfo
   bool enabled;                          /// Whether the plugin is enabled.
   maki::PluginVersion version;           /// Version of the plugin.
   QVector<maki::SettingField> settings;  /// Settings for the plugin.
-  maki::SettingsFunction callback;       /// Callback function for the plugin.
 
   bool operator==(const PluginInfo& s) const
   {
@@ -237,8 +236,7 @@ public:
    * @param callback Callback function for the plugin.
    */
   VoidResult registerSettings(const QString& id, const maki::PluginVersion version,
-                              const QVector<maki::SettingField>& settings,
-                              maki::SettingsFunction callback) override;
+                              const QVector<maki::SettingField>& settings) override;
 
   /**
    * @brief Loads settings from a file.
