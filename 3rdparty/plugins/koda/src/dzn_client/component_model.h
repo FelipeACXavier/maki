@@ -61,7 +61,7 @@ struct ComponentNode
   QRectF labelRect = QRectF();
 
   ComponentNode* findOrAddChild(const QString& childName, const QString& role);
-  QRectF computeLayout(ComponentTreeModel* model, const maki::ThemeFonts& fonts, int indent);
+  QRectF computeLayout(ComponentTreeModel* model, const maki::Theme& theme, int indent);
   void print(int level) const;
 };
 
@@ -83,9 +83,9 @@ struct ComponentTreeModel
 
   std::shared_ptr<LeafLifeline> lifelineOfNode(const QString& endpoint) const;
   std::shared_ptr<LeafLifeline> resolveToLeaf(const QString& endpoint) const;
-  void computeLayout(const maki::ThemeFonts& fonts);
+  void computeLayout(const maki::Theme& theme);
   void print() const;
 };
 
 static const QString ROOT_NODE = "root";
-ComponentTreeModel buildComponentTree(const QVector<RawLifeline>& raw, const maki::ThemeFonts& fonts, const QSet<QString>& collapsed);
+ComponentTreeModel buildComponentTree(const QVector<RawLifeline>& raw, const maki::Theme& theme, const QSet<QString>& collapsed);

@@ -66,15 +66,14 @@ public:
 
   using LabelClickHandler = std::function<void(const QString& instance, const QString& labelText, bool illegal)>;
 
-  TraceSceneBuilder(maki::ThemeVars theme, const maki::ThemeFonts& font, Style style);
+  TraceSceneBuilder(const maki::Theme& theme, Style style);
 
   // Main entry: clears and rebuilds the scene from the given traceUpdate JSON object.
   bool buildScene(const QJsonObject& traceUpdateMsg, QGraphicsScene* scene, LabelClickHandler clickHandler, QString* errorOut = nullptr);
 
 private:
   Style mStyle;
-  maki::ThemeVars mTheme;
-  maki::ThemeFonts mFonts;
+  maki::Theme mTheme;
   TraceLabelItem::Style* mButtonStyle;
 
   QSet<QString> mCollapsedComponents;

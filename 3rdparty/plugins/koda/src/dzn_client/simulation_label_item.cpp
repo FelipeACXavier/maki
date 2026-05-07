@@ -18,19 +18,32 @@ void TraceLabelItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget
 {
   p->setRenderHint(QPainter::Antialiasing, true);
 
-  QColor fill = mPayload.illegal ? mStyle->invalid : mStyle->valid;
+  // Draw the label
+  if (mPayload.illegal)
+  {
+    p->setBrush(mStyle->invalid);
+    p->setPen(mStyle->invalidBorder);
+    p->drawRoundedRect(mRect, mStyle->borderRadius, mStyle->borderRadius);
+    p->setPen(mStyle->invalidPen);
+  }
+  else if (mHovered)
+  {
+    p->setBrush(mStyle->hover);
+    p->setPen(mStyle->hoverBorder);
+    p->drawRoundedRect(mRect, mStyle->borderRadius, mStyle->borderRadius);
+    p->setPen(mStyle->hoverPen);
+  }
+  else
+  {
+    p->setBrush(mStyle->valid);
+    p->setPen(mStyle->validBorder);
+    p->drawRoundedRect(mRect, mStyle->borderRadius, mStyle->borderRadius);
+    p->setPen(mStyle->validPen);
+  }
 
-  if (mHovered && !mPayload.illegal)
-    fill = mStyle->hover;
-
-  p->setPen(mStyle->borderPen);
-  p->setBrush(fill);
-  p->drawRoundedRect(mRect, 6, 6);
-
-  // Text
-  p->setPen(mStyle->labelPen);
+  // Then the text
   p->setFont(mStyle->font);
-  p->drawText(mRect.adjusted(6, 0, -6, 0), Qt::AlignCenter, mPayload.call);
+  p->drawText(mRect.adjusted(mStyle->borderRadius, 0, -mStyle->borderRadius, 0), Qt::AlignCenter, mPayload.call);
 }
 
 void TraceLabelItem::hoverEnterEvent(QGraphicsSceneHoverEvent*)

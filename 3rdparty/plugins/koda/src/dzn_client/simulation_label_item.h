@@ -22,11 +22,20 @@ public:
   struct Style
   {
     QColor valid;
+    QPen validPen;
+    QPen validBorder;
+
     QColor hover;
+    QPen hoverPen;
+    QPen hoverBorder;
+
     QColor invalid;
-    QPen labelPen;
-    QPen borderPen;
+    QPen invalidPen;
+    QPen invalidBorder;
+
     QFont font;
+
+    int borderRadius;
   };
 
   TraceLabelItem(const QRectF& rect, const Style* const style, Payload payload, QGraphicsItem* parent = nullptr);

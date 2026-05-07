@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QGraphicsView>
+#include <oclero/qlementine.hpp>
 
 #include "itab.h"
 #include "result.h"
@@ -60,17 +61,7 @@ public:
    *
    * @return The current theme variable set.
    */
-  maki::ThemeVars currentTheme() override;
-
-  /**
-   * @brief Returns the font configuration used for labels.
-   *
-   * Allows plugin views to render text using the same typography
-   * as the rest of the application.
-   *
-   * @return The label font definition.
-   */
-  maki::ThemeFonts labelFont() override;
+  maki::Theme currentTheme() override;
 
   /**
    * @brief Registers a plugin-provided tab.
@@ -124,4 +115,12 @@ private:
 
   /// Mapping between plugin names and their associated data.
   QMap<QString, PluginData> mTabs;
+
+  /**
+   * @brief Converts a qlementine theme to the maki theme
+   *
+   * @param theme The qlemetine theme to be converted
+   * @return A maki::Theme corresponding to the qlementine theme
+   */
+  maki::Theme qlementineToMaki(const oclero::qlementine::Theme& theme) const;
 };

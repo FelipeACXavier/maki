@@ -58,13 +58,13 @@ static ComponentNode* ensurePath(ComponentTreeModel* model, ComponentNode* root,
 }
 
 QRectF ComponentNode::computeLayout(ComponentTreeModel* model,
-                                    const maki::ThemeFonts& fonts,
+                                    const maki::Theme& theme,
                                     int indent)
 {
   auto lifeline = model->lifelineOfNode(fullPath);
 
-  QFontMetricsF fmLabel(fonts.label);
-  QFontMetricsF fmHint(fonts.hint);
+  QFontMetricsF fmLabel(theme.fontCaption);
+  QFontMetricsF fmHint(theme.fontRegular);
 
   const qreal labelWidth = fmLabel.horizontalAdvance(name);
   const qreal labelHeight = fmLabel.height();
@@ -142,7 +142,7 @@ QRectF ComponentNode::computeLayout(ComponentTreeModel* model,
 
   for (auto& child : children)
   {
-    QRectF childRect = child->computeLayout(model, fonts, indent + 2);
+    QRectF childRect = child->computeLayout(model, theme, indent + 2);
 
     if (!childRect.isNull() && !childRect.isEmpty())
       bounds = bounds.isNull() ? childRect : bounds.united(childRect);
@@ -170,7 +170,7 @@ QRectF ComponentNode::computeLayout(ComponentTreeModel* model,
   return rect;
 }
 
-ComponentTreeModel buildComponentTree(const QVector<RawLifeline>& raw, const maki::ThemeFonts& fonts, const QSet<QString>& collapsed)
+ComponentTreeModel buildComponentTree(const QVector<RawLifeline>& raw, const maki::Theme& theme, const QSet<QString>& collapsed)
 {
   ComponentTreeModel model;
   model.root = std::make_shared<ComponentNode>();
@@ -198,7 +198,7 @@ ComponentTreeModel buildComponentTree(const QVector<RawLifeline>& raw, const mak
 
   // Uncomment to debug
   // model.print();
-  model.computeLayout(fonts);
+  model.computeLayout(theme);
 
   return model;
 }
@@ -217,10 +217,10 @@ std::shared_ptr<LeafLifeline> ComponentTreeModel::ensureVisualLifeline(const QSt
   return layout;
 }
 
-void ComponentTreeModel::computeLayout(const maki::ThemeFonts& fonts)
+void ComponentTreeModel::computeLayout(const maki::Theme& theme)
 {
-  QFontMetricsF fmHint(fonts.hint);
-  QFontMetricsF fmLabel(fonts.label);
+  QFontMetricsF fmHint(theme.fontCaption);
+  QFontMetricsF fmLabel(theme.fontRegular);
   // qreal lastWidth = 0;
 
   mLastWidth = 0;
@@ -263,7 +263,7 @@ void ComponentTreeModel::computeLayout(const maki::ThemeFonts& fonts)
   }
 
   // Compute groups
-  root->computeLayout(this, fonts, 0);
+  root->computeLayout(this, theme, 0);
 }
 
 std::shared_ptr<LeafLifeline> ComponentTreeModel::lifelineOfNode(const QString& endpoint) const

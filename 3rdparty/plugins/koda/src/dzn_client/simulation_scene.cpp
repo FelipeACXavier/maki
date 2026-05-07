@@ -34,19 +34,25 @@ static void addArrow(QGraphicsScene* scene, QPointF from, QPointF to, const QPen
   scene->addPolygon(head, p, QBrush(p.color()));
 }
 
-TraceSceneBuilder::TraceSceneBuilder(maki::ThemeVars theme, const maki::ThemeFonts& fonts, Style style)
+TraceSceneBuilder::TraceSceneBuilder(const maki::Theme& theme, Style style)
     : mStyle(style)
     , mTheme(theme)
-    , mFonts(fonts)
     , mCollapsedComponents({})
 {
-  mButtonStyle = new TraceLabelItem::Style{
-      QColor(theme.selection_bg),
-      QColor(theme.selection_bg),
-      QColor(theme.input_bg),
-      QPen(QColor(theme.foreground), 1),
-      QPen(QColor(theme.foreground), 2),
-      fonts.hint};
+  mButtonStyle = new TraceLabelItem::Style{};
+  mButtonStyle->valid = theme.statusColorInfo;
+  mButtonStyle->validPen = QPen(theme.statusColorForeground);
+  mButtonStyle->validBorder = QPen(theme.borderColor);
+
+  mButtonStyle->hover = theme.statusColorInfoHovered;
+  mButtonStyle->hoverPen = QPen(theme.statusColorForegroundHovered);
+  mButtonStyle->hoverBorder = QPen(theme.borderColorHovered);
+
+  mButtonStyle->invalid = theme.statusColorInfoDisabled;
+  mButtonStyle->invalidPen = QPen(theme.statusColorForegroundDisabled);
+  mButtonStyle->invalidBorder = QPen(theme.borderColorDisabled);
+
+  mButtonStyle->borderRadius = theme.borderRadius;
 }
 
 bool TraceSceneBuilder::buildScene(const QJsonObject& traceUpdateMsg, QGraphicsScene* scene, LabelClickHandler clickHandler, QString* errorOut)
@@ -62,7 +68,7 @@ bool TraceSceneBuilder::buildScene(const QJsonObject& traceUpdateMsg, QGraphicsS
     return false;
 
   // NEW: Build ownership model
-  ComponentTreeModel model = buildComponentTree(raw, mFonts, mCollapsedComponents);
+  ComponentTreeModel model = buildComponentTree(raw, mTheme, mCollapsedComponents);
   mCollapsedComponents = model.collapsedComponents;
 
   // Layout maps for leaf lifelines only
@@ -191,13 +197,15 @@ qreal TraceSceneBuilder::renderHeader(QGraphicsScene* scene, const ComponentTree
       };
     }
 
-    addCenteredText(scene, node->labelRect, node->name, mFonts.label);
+    // This is the component name
+    addCenteredText(scene, node->labelRect, node->name, mTheme.fontBold);
 
+    // These are the current states of the component
     for (int j = 0; leaf && j < leaf->stateText.size(); ++j)
     {
       const auto& state = leaf->stateText.at(j);
       const QString st = QStringLiteral("%1:%2").arg(state.name, state.state);
-      addCenteredText(scene, state.rect, st, mFonts.hint);
+      addCenteredText(scene, state.rect, st, mTheme.fontCaption);
     }
 
     outDiagramTopY = node->rect.bottom();
@@ -223,7 +231,7 @@ void TraceSceneBuilder::renderBottomLabels(QGraphicsScene* scene, const Componen
     const qreal cx = xByLeafInstance.value(leaf->instance);
     qreal y = diagramBottomY + mStyle.headerToLifelineGap;
 
-    QFontMetrics fm(mFonts.hint);
+    QFontMetrics fm(mTheme.fontCaption);
     auto addClickable = [&](const RawLifeline::Label& label) {
       TraceLabelItem::Payload payload;
       payload.instance = leaf->instance;
@@ -232,7 +240,7 @@ void TraceSceneBuilder::renderBottomLabels(QGraphicsScene* scene, const Componen
       payload.illegal = label.illegal;
 
       // We need to move both the top and the bottom according to y
-      auto* item = new TraceLabelItem(label.rect.adjusted(0, y, 0, y), mButtonStyle, payload);
+      auto* item = new TraceLabelItem(label.rect.adjusted(0, y, 0, y + 4), mButtonStyle, payload);
       scene->addItem(item);
 
       item->clicked = [clickHandler](TraceLabelItem::Payload p) {
@@ -290,14 +298,14 @@ qreal TraceSceneBuilder::renderEvents(QGraphicsScene* scene, const ComponentTree
   }
 
   // 2) Draw each event as an arrow between LEAF lifelines
-  QPen pen(QColor(mTheme.foreground));
+  QPen pen(mTheme.secondaryColor);
   pen.setWidthF(1.3);
 
   int time = 0;
   QHash<int, int> countAtTime;  // spacing when multiple events share the same time
 
   qreal maxY = diagramTopY;
-  QFontMetrics fm(mFonts.hint);
+  QFontMetrics fm(mTheme.fontCaption);
   for (const auto& eVal : events)
   {
     const QJsonObject e = eVal.toObject();
@@ -347,8 +355,8 @@ qreal TraceSceneBuilder::renderEvents(QGraphicsScene* scene, const ComponentTree
       qreal height = fm.height() + 5;
       QRectF rect = QRectF(x2 + 5, y - height, width, height);
 
-      addRoundedRect(scene, rect, mStyle.headerRadius, QPen(QColor(mTheme.error_color)), QBrush(QColor("#FD9A99")));
-      addCenteredText(scene, rect, text, mFonts.hint);
+      addRoundedRect(scene, rect, mStyle.headerRadius, QPen(mTheme.statusColorForeground), QBrush(mTheme.statusColorErrorDisabled));
+      addCenteredText(scene, rect, text, mTheme.fontCaption);
     }
 
     addArrow(scene, QPointF(x1, y), QPointF(x2, y), pen, mStyle.arrowHeadSize, dashed);
@@ -357,8 +365,8 @@ qreal TraceSceneBuilder::renderEvents(QGraphicsScene* scene, const ComponentTree
     if (!text.isEmpty())
     {
       auto* label = scene->addSimpleText(text);
-      label->setBrush(QColor(mTheme.foreground));
-      label->setFont(mFonts.hint);
+      label->setBrush(mTheme.secondaryColor);
+      label->setFont(mTheme.fontCaption);
 
       const qreal midX = (x1 + x2) / 2.0;
       label->setPos(midX - label->boundingRect().width() / 2.0, y - fm.height());

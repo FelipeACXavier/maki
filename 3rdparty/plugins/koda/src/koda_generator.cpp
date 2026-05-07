@@ -1233,10 +1233,8 @@ VoidResult KodaGenerator::createSimulationScene(QGraphicsScene* scene, const QJs
   // LOG_DEBUG("Received message: %s", qPrintable(pretty));
 
   auto theme = mServices->pluginTab()->currentTheme();
-  auto fonts = mServices->pluginTab()->labelFont();
-
   if (!mTraceBuilder)
-    mTraceBuilder = std::make_unique<TraceSceneBuilder>(theme, fonts, TraceSceneBuilder::Style{});
+    mTraceBuilder = std::make_unique<TraceSceneBuilder>(theme, TraceSceneBuilder::Style{});
 
   auto clickHandler = [this](const QString& instance, const QString& labelText, bool illegal) {
     LOG_DEBUG("Sending data: %s %s", qPrintable(instance), qPrintable(labelText));
