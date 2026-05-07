@@ -111,10 +111,34 @@ PropertiesMenu::PropertiesMenu(QWidget* parent)
     : QFrame(parent)
     , mCurrentNode("")
 {
-  // Set widget layout
-  QVBoxLayout* layout = new QVBoxLayout();
-  layout->setSpacing(10);
-  setLayout(layout);
+  auto* qlementineStyle = oclero::qlementine::appStyle();
+  if (qlementineStyle)
+  {
+    const auto theme = qlementineStyle->theme();
+
+    // Set widget layout
+    QVBoxLayout* layout = new QVBoxLayout(this);
+    layout->setContentsMargins(theme.spacing, 0, 0, 0);
+    layout->setSpacing(theme.spacing);
+
+    mFrame = new StyledFrame(this);
+    mFrame->setBackgroundRole(StyledFrame::BackgroundRole::Base);
+    mFrame->setBorderRole(StyledFrame::BorderRole::Mid);
+    mFrame->setRadius(theme.borderRadius);
+    mFrame->setBorderWidth(theme.borderWidth);
+    mFrame->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+
+    QVBoxLayout* frameLayout = new QVBoxLayout(mFrame);
+    frameLayout->setContentsMargins(theme.spacing, theme.spacing, theme.spacing, theme.spacing);
+    frameLayout->setSpacing(theme.spacing);
+
+    layout->addWidget(mFrame);
+  }
+}
+
+QLayout* PropertiesMenu::layout() const
+{
+  return mFrame ? mFrame->layout() : QFrame::layout();
 }
 
 VoidResult PropertiesMenu::start(std::shared_ptr<SaveInfo> storage)

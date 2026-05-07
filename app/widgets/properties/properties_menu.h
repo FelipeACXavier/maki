@@ -6,6 +6,7 @@
 #include "config.h"
 #include "result.h"
 #include "save_info.h"
+#include "widgets/frame.h"
 
 class Flow;
 class NodeItem;
@@ -16,6 +17,7 @@ class QHBoxLayout;
 class TransitionItem;
 class QStandardItemModel;
 class QFormLayout;
+class QLayout;
 
 class FlowSaveInfo;
 
@@ -109,6 +111,8 @@ public:
    */
   VoidResult onFlowRemoved(const QString& flowId, NodeItem* node);
 
+  QLayout* layout() const;
+
 signals:
   /**
    * @brief Emitted when a node is focused.
@@ -137,6 +141,7 @@ private:
   QString mCurrentNode;                /// Current node ID.
   QDialog* mCurrentDialog;             /// Pointer to the current dialog.
   std::shared_ptr<SaveInfo> mStorage;  /// Shared pointer to the save info storage.
+  StyledFrame* mFrame;
 
   // Property related actions
   VoidResult loadProperties(NodeItem* node);                                                                                                                         /// Loads properties for a given node.
