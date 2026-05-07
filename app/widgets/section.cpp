@@ -130,7 +130,7 @@ void SectionWidget::toggled(bool checked)
     mAnimation->setDuration(duration);
     mAnimation->setStartValue(currentHeight);
     mAnimation->setEndValue(targetHeight);
-    LOG_TRACE("Section mAnimation expand: %d to %d in %dms", currentHeight, targetHeight, duration);
+    // LOG_TRACE("Section mAnimation expand: %d to %d in %dms", currentHeight, targetHeight, duration);
   }
   else
   {
@@ -140,7 +140,7 @@ void SectionWidget::toggled(bool checked)
     mAnimation->setDuration(duration);
     mAnimation->setStartValue(mContentArea->contentHeight());
     mAnimation->setEndValue(0);
-    LOG_TRACE("Section mAnimation collapse: %d to %d in %dms", currentHeight, targetHeight, duration);
+    // LOG_TRACE("Section mAnimation collapse: %d to %d in %dms", currentHeight, targetHeight, duration);
 
     connect(mAnimation, &QPropertyAnimation::finished, mContentArea, [this]() {
       if (!mToggleButton->isChecked())

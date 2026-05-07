@@ -52,7 +52,7 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
   headerLayout->setSpacing(5);
 
   auto* titleLabel = new oclero::qlementine::Label(title.size() > 1 ? title : "Notification", header);
-  titleLabel->setRole(oclero::qlementine::TextRole::H3);
+  titleLabel->setRole(oclero::qlementine::TextRole::H4);
   titleLabel->setContentsMargins(0, 0, 0, 0);
   titleLabel->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
 
