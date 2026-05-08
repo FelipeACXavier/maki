@@ -197,6 +197,13 @@ void LogTableWidget::onAreaCollapsed(ClickableIcon* button, QLineEdit* lineEdit,
   mTable->setFocus();
 }
 
+void LogTableWidget::showAll()
+{
+  LOG_INFO("Showing all filters");
+  mSearchBox->expandArea();
+  mFilterBox->expandArea();
+}
+
 void LogTableWidget::onClicked(const QModelIndex& index)
 {
   if (!index.isValid())

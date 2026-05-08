@@ -147,6 +147,9 @@ VoidResult MainWindow::start()
     if (!mSettingsManager->general().showWelcomeMessage)
       mInfoText->clear();
 
+    if (mSettingsManager->appearance().startLogFilterExpanded)
+      mLogTable->showAll();
+
     onThemeChanged(mSettingsManager->appearance(), true);
   }
 

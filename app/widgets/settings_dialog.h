@@ -81,13 +81,14 @@ private:
   maki::SelectorWidget* mLanguageCombo = nullptr;      /// Widget for selecting language.
 
   // Appearance
-  maki::SelectorWidget* mThemeCombo = nullptr;    /// Widget for selecting theme.
-  maki::SpinWidget* mUiScale = nullptr;           /// Widget for setting UI scale.
-  maki::BooleanWidget* mNativeMenuBar = nullptr;  /// Widget for enabling/disabling native menu bar.
-  maki::BooleanWidget* mShowGrid = nullptr;       /// Widget for enabling/disabling grid display.
-  maki::SpinWidget* mNodeCornerRadius = nullptr;  /// Widget for setting node corner radius.
-  maki::GridGroup* mColorGrid = nullptr;          /// Group widget for color settings.
-  maki::StringWidget* mUserThemeName = nullptr;   /// Widget for entering user theme name.
+  maki::SelectorWidget* mThemeCombo = nullptr;           /// Widget for selecting theme.
+  maki::SpinWidget* mUiScale = nullptr;                  /// Widget for setting UI scale.
+  maki::BooleanWidget* mNativeMenuBar = nullptr;         /// Widget for enabling/disabling native menu bar.
+  maki::BooleanWidget* mShowGrid = nullptr;              /// Widget for enabling/disabling grid display.
+  maki::BooleanWidget* mStartLogTableFilters = nullptr;  /// Widget for enabling/disabling log table filters on start up.
+  maki::SpinWidget* mNodeCornerRadius = nullptr;         /// Widget for setting node corner radius.
+  maki::GridGroup* mColorGrid = nullptr;                 /// Group widget for color settings.
+  maki::StringWidget* mUserThemeName = nullptr;          /// Widget for entering user theme name.
   oclero::qlementine::ThemeEditorWidget* mThemeEditor = nullptr;
 
   // Generation

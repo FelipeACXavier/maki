@@ -57,6 +57,7 @@ struct AppearanceSettings
   bool showCanvasGrid = true;           /// Whether to show the canvas grid.
   bool nativeMenuBar = true;            /// Whether to use the native menu bar.
   int nodeCornerRadius = 8;             /// Node corner radius.
+  bool startLogFilterExpanded = true;   /// Start the log table filters collapsed or expanded.
   oclero::qlementine::Theme themeVars;  /// Theme variables.
 
   bool operator!=(const AppearanceSettings& s) const
@@ -66,7 +67,8 @@ struct AppearanceSettings
            showCanvasGrid != s.showCanvasGrid ||
            nativeMenuBar != s.nativeMenuBar ||
            nodeCornerRadius != s.nodeCornerRadius ||
-           themeVars != s.themeVars;
+           themeVars != s.themeVars ||
+           startLogFilterExpanded != s.startLogFilterExpanded;
   }
 };
 

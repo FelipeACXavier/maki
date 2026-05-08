@@ -59,6 +59,11 @@ public:
    */
   void search();
 
+  /**
+   * @brief Expand all the expandable widgets
+   */
+  void showAll();
+
 private slots:
   /**
    * @brief Handles area expansion events.
@@ -85,26 +90,26 @@ private slots:
   void onClicked(const QModelIndex& index);
 
 private:
-  LogTableModel* mModel = nullptr; /// Pointer to the log table model.
-  LogFilterProxyModel* mProxy = nullptr; /// Pointer to the log filter proxy model.
+  LogTableModel* mModel = nullptr;        /// Pointer to the log table model.
+  LogFilterProxyModel* mProxy = nullptr;  /// Pointer to the log filter proxy model.
 
-  QTableView* mTable = nullptr; /// Pointer to the table view widget.
-  QComboBox* mLevelFilter = nullptr; /// Pointer to the level filter combo box.
-  QComboBox* mSourceFilter = nullptr; /// Pointer to the source filter combo box.
-  QLineEdit* mFileFilter = nullptr; /// Pointer to the file filter line edit.
-  QLineEdit* mSearchField = nullptr; /// Pointer to the search field line edit.
-  QLabel* mSearchCounterLabel = nullptr; /// Pointer to the search counter label.
+  QTableView* mTable = nullptr;           /// Pointer to the table view widget.
+  QComboBox* mLevelFilter = nullptr;      /// Pointer to the level filter combo box.
+  QComboBox* mSourceFilter = nullptr;     /// Pointer to the source filter combo box.
+  QLineEdit* mFileFilter = nullptr;       /// Pointer to the file filter line edit.
+  QLineEdit* mSearchField = nullptr;      /// Pointer to the search field line edit.
+  QLabel* mSearchCounterLabel = nullptr;  /// Pointer to the search counter label.
 
-  ExpandingWidget* mSearchBox = nullptr; /// Pointer to the search box widget.
-  ExpandingWidget* mFilterBox = nullptr; /// Pointer to the filter box widget.
+  ExpandingWidget* mSearchBox = nullptr;  /// Pointer to the search box widget.
+  ExpandingWidget* mFilterBox = nullptr;  /// Pointer to the filter box widget.
 
-  LogHighlightDelegate* mHighlightDelegate = nullptr; /// Pointer to the log highlight delegate.
-  QString mSearchText; /// The current search text.
-  QVector<QModelIndex> mSearchMatches; /// List of search matches.
-  QSet<QString> mSources; /// Set of sources for filtering.
+  LogHighlightDelegate* mHighlightDelegate = nullptr;  /// Pointer to the log highlight delegate.
+  QString mSearchText;                                 /// The current search text.
+  QVector<QModelIndex> mSearchMatches;                 /// List of search matches.
+  QSet<QString> mSources;                              /// Set of sources for filtering.
 
-  int mCurrentSearchMatch = -1; /// Index of the current search match.
-  int mDefaultRowHeight = 24; /// Default row height in pixels.
+  int mCurrentSearchMatch = -1;  /// Index of the current search match.
+  int mDefaultRowHeight = 24;    /// Default row height in pixels.
 
   /**
    * @brief Sets the search text and updates the search matches.

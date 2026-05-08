@@ -226,6 +226,7 @@ VoidResult SettingsDialog::createAppearancePage()
     mUiScale->setValue(defaultSettings.uiScalePercent);
     mNodeCornerRadius->setValue(defaultSettings.nodeCornerRadius);
     mShowGrid->setValue(defaultSettings.showCanvasGrid);
+    mStartLogTableFilters->setValue(defaultSettings.startLogFilterExpanded);
 
     mSettingsManager->setAppearance(defaultSettings);
   });
@@ -307,10 +308,12 @@ VoidResult SettingsDialog::createAppearancePage()
   mNodeCornerRadius->setSuffix(" pixels");
 
   mShowGrid = new maki::BooleanWidget(tr("Show canvas grid"), appearance.showCanvasGrid, alignment, page);
+  mStartLogTableFilters = new maki::BooleanWidget(tr("Show log table filters on start"), appearance.startLogFilterExpanded, alignment, page);
 
   auto editorLayout = new maki::WidgetGroup(tr("UI changes"), page);
   editorLayout->addWidget(mUiScale);
   editorLayout->addWidget(mShowGrid);
+  editorLayout->addWidget(mStartLogTableFilters);
   editorLayout->addWidget(mNodeCornerRadius);
 
   QVBoxLayout* layout = page->findChild<QVBoxLayout*>("ContentArea");
@@ -539,6 +542,7 @@ void SettingsDialog::saveToSettings()
   appearance.themeVars = mTheme;
   appearance.uiScalePercent = mUiScale->getValue();
   appearance.showCanvasGrid = mShowGrid->getValue();
+  appearance.startLogFilterExpanded = mStartLogTableFilters->getValue();
   appearance.nativeMenuBar = mNativeMenuBar->getValue();
   appearance.nodeCornerRadius = mNodeCornerRadius->getValue();
 

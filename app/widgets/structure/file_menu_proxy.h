@@ -44,7 +44,11 @@ public:
     if (info.isDir())
       return true;
 
+#ifdef DEV_BUILD
+    return true;
+#else
     return mAllowedExtensions.contains(info.suffix().toLower());
+#endif
   }
 
 private:

@@ -123,6 +123,7 @@ void SettingsManager::load()
   LOAD_SETTING(mAppearance, showCanvasGrid, Bool);
   LOAD_SETTING(mAppearance, nativeMenuBar, Bool);
   LOAD_SETTING(mAppearance, nodeCornerRadius, Int);
+  LOAD_SETTING(mAppearance, startLogFilterExpanded, Bool);
   mSettings.endGroup();
 
   mSettings.beginGroup("Generation");
@@ -210,6 +211,7 @@ void SettingsManager::save()
   SAVE_SETTING(mAppearance, theme);
   SAVE_SETTING(mAppearance, uiScalePercent);
   SAVE_SETTING(mAppearance, showCanvasGrid);
+  SAVE_SETTING(mAppearance, startLogFilterExpanded);
   SAVE_SETTING(mAppearance, nativeMenuBar);
   SAVE_SETTING(mAppearance, nodeCornerRadius);
   mSettings.endGroup();  // Appearance
