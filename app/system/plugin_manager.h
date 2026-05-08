@@ -5,6 +5,7 @@
 #include <QPluginLoader>
 #include <QWidget>
 
+#include "compiler/pipeline.h"
 #include "generator_plugin.h"
 #include "json.h"
 #include "keys.h"
@@ -21,6 +22,17 @@ class HostServices;
 class Manifest
 {
 public:
+  struct InstallStep
+  {
+    QString command;
+    QStringList args;
+  };
+
+  struct Environment
+  {
+    QString path;
+  };
+
   QString id;          /// Unique identifier of the plugin.
   QString name;        /// Name of the plugin.
   QString version;     /// Version of the plugin.
@@ -28,6 +40,8 @@ public:
   QString icon;        /// Icon associated with the plugin.
   QString path;        /// Path to the plugin.
   QStringList libs;    /// List of libraries required by the plugin.
+  Environment env;
+  QVector<InstallStep> installationSteps;
 
   /**
    * @brief Creates a Manifest object from JSON data.
@@ -59,9 +73,44 @@ public:
     for (const auto& argument : data["libraries"].toArray())
       manifest.libs.push_back(argument.toString());
 
-    manifest.path = path + "/" + manifest.entryPoint;
+    for (const auto& installation : data["installation"].toArray())
+    {
+      const auto obj = installation.toObject();
+      if (!obj.contains("command"))
+        continue;
+
+      InstallStep step;
+      step.command = obj["command"].toString();
+      if (obj.contains("arguments"))
+      {
+        QStringList args;
+        for (const auto& arg : obj["arguments"].toArray())
+          args << arg.toString();
+
+        step.args = args;
+      }
+
+      manifest.installationSteps.push_back(step);
+    }
+
+    if (data.contains("env"))
+    {
+      Environment env;
+      const auto obj = data["env"].toObject();
+      if (obj.contains("PATH"))
+        env.path = obj["PATH"].toString();
+
+      manifest.env = env;
+    }
+
+    manifest.path = path;
 
     return manifest;
+  }
+
+  QString pluginPath() const
+  {
+    return path + "/" + entryPoint;
   }
 };
 
@@ -87,7 +136,7 @@ public:
    *
    * @param parent The parent QObject.
    */
-  PluginManager(QObject* parent = nullptr);
+  PluginManager(Pipeline* pipeline, QObject* parent = nullptr);
 
   /**
    * @brief Destructs the PluginManager object.
@@ -124,9 +173,25 @@ public:
    */
   void settingsChanged(const PluginSettings& settings, QMenu* menu, QComboBox* comboBox, HostServices* services);
 
+  /**
+   * @brief Reloads a given plugin
+   *
+   * @param pluginName The name of the plugin to be reloaded.
+   * @param menu The QMenu to populate with plugins.
+   * @param comboBox The QComboBox to populate with plugin options.
+   * @param services The HostServices object for plugin interaction.
+   * @return A VoidResult indicating success or failure.
+   */
+  VoidResult reloadPlugin(const QString& pluginName, QMenu* menu, QComboBox* comboBox, HostServices* services);
+
 private:
   maki::IGeneratorPlugin* mPlugin;  /// Pointer to the currently selected plugin.
   QVector<Plugin> mPlugins;         /// List of all plugins managed by this manager.
+
+  Pipeline::Info mInfo;  /// Holds information regarding the current generation pipeline
+  Pipeline* mPipeline;   /// Pipeline responsible for installation processes
+  QString mProgressId;   /// Holds the id of the progress widget
+  bool mIsRunning;
 
   /**
    * @brief Loads a plugin from a directory and populates the menu, combo box, and services.
@@ -138,7 +203,7 @@ private:
    * @param services The HostServices object for plugin interaction.
    * @return A VoidResult indicating success or failure.
    */
-  VoidResult loadPlugin(const QDir& pluginDir, const Manifest& path, QMenu* menu, QComboBox* comboBox, HostServices* services);
+  VoidResult loadPlugin(const QDir& pluginDir, const Manifest& path, QMenu* menu, QComboBox* comboBox, HostServices* services, PluginSettings::Status status);
 
   /**
    * @brief Sets the current plugin based on a language identifier.
@@ -175,6 +240,14 @@ private:
   VoidResult loadPluginLibraryDir(const Manifest& manifest);
 
   /**
+   * @brief Run the plugin installation steps
+   *
+   * @param manifest The Manifest object containing the plugin information.
+   * @return A VoidResult indicating success or failure.
+   */
+  VoidResult installPlugin(const Manifest& manifest);
+
+  /**
    * @brief Retrieves the index of a plugin in the manager's list by name.
    *
    * @param pluginName The name of the plugin to find.
@@ -190,4 +263,6 @@ private:
    * @param comboBox The QComboBox to update.
    */
   VoidResult deregisterPlugin(const Plugin& plugin, QMenu* menu, QComboBox* comboBox);
+
+  QWidget* progressContent();  /// Creates and returns the progress content widget.
 };

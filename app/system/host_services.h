@@ -6,13 +6,13 @@
 
 namespace maki
 {
-class IPipeline; /// Interface for the pipeline.
-class ISettings; /// Interface for settings.
-class ILogging; /// Interface for logging.
-class ITab; /// Interface for a tab.
+class IPipeline;  /// Interface for the pipeline.
+class ISettings;  /// Interface for settings.
+class ILogging;   /// Interface for logging.
+class IUI;        /// Interface for a tab.
 }  // namespace maki
 
-class IDocument; /// Interface for a document.
+class IDocument;  /// Interface for a document.
 
 /**
  * @brief HostServices class provides services to the host application.
@@ -35,9 +35,9 @@ public:
   /**
    * @brief Sets the plugin tab.
    *
-   * @param tab Pointer to the ITab instance.
+   * @param tab Pointer to the IUI instance.
    */
-  void setPluginTab(maki::ITab* tab);
+  void setPluginTab(maki::IUI* tab);
 
   /**
    * @brief Sets the logger.
@@ -77,9 +77,9 @@ public:
   /**
    * @brief Returns the plugin tab.
    *
-   * @return maki::ITab* Pointer to the plugin tab.
+   * @return maki::IUI* Pointer to the plugin tab.
    */
-  maki::ITab* pluginTab() const override;
+  maki::IUI* ui() const override;
 
   /**
    * @brief Returns the logger.
@@ -89,11 +89,11 @@ public:
   maki::ILogging* logger() const override;
 
 private:
-  std::shared_ptr<IDocument> mDocument; /// Shared pointer to the document.
-  maki::IPipeline* mPipeline; /// Pointer to the pipeline.
-  maki::ISettings* mSettings; /// Pointer to the settings.
-  maki::ITab* mPluginTab; /// Pointer to the plugin tab.
-  maki::ILogging* mLogger; /// Pointer to the logger.
+  std::shared_ptr<IDocument> mDocument;  /// Shared pointer to the document.
+  maki::IPipeline* mPipeline;            /// Pointer to the pipeline.
+  maki::ISettings* mSettings;            /// Pointer to the settings.
+  maki::IUI* mPluginTab;                 /// Pointer to the plugin tab.
+  maki::ILogging* mLogger;               /// Pointer to the logger.
 
-  QString mRoot; /// Project root directory.
+  QString mRoot;  /// Project root directory.
 };

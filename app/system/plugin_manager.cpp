@@ -8,11 +8,16 @@
 #include <QDir>
 #include <QMenu>
 #include <QPluginLoader>
+#include <QProcess>
+#include <QProgressBar>
+#include <QTimer>
+#include <oclero/qlementine/widgets/Label.hpp>
 
 #include "app_paths.h"
 #include "common/style_helpers.h"
 #include "host_services.h"
 #include "logging.h"
+#include "notifications.h"
 #include "result.h"
 #include "widgets/settings_manager.h"
 
@@ -21,10 +26,61 @@
 #include <windows.h>
 #endif
 
-PluginManager::PluginManager(QObject* parent)
+PluginManager::PluginManager(Pipeline* pipeline, QObject* parent)
     : QObject(parent)
     , mPlugin{nullptr}
+    , mPipeline(pipeline)
+    , mIsRunning(false)
 {
+  connect(mPipeline, &Pipeline::finishedLast, [this](const Pipeline::Info& info, int exitCode, const QString& message) {
+    if (!mIsRunning)
+      return;
+
+    mInfo = info;
+    mProgressId = NOTIFY_LONG_INFO(mProgressId, "Installation Progress", progressContent());
+
+    // Send an empty content so the widget is cleared
+    NOTIFY_LONG_INFO(mProgressId, "Installation Progress", nullptr);
+    mProgressId.clear();
+    mIsRunning = false;
+  });
+  connect(mPipeline, &Pipeline::errorOccurred, [this](const Pipeline::Info& info, QProcess::ProcessError /* error */, const QString& message) {
+    if (!mIsRunning)
+      return;
+
+    mProgressId = NOTIFY_LONG_INFO(mProgressId, "Installation Progress", progressContent());
+    NOTIFY_ERROR("Plugin installation", "Error occurred: {} ", message.toStdString());
+    mProgressId.clear();
+    mIsRunning = false;
+  });
+  connect(mPipeline, &Pipeline::startingPipeline, [this](const Pipeline::Info& info) {
+    if (!mIsRunning)
+      return;
+
+    mInfo = info;
+    mProgressId = NOTIFY_LONG_INFO(mProgressId, "Installation Progress", progressContent());
+  });
+  connect(mPipeline, &Pipeline::startingGroup, [this](const Pipeline::Info& info, const QString& groupName) {
+    if (!mIsRunning)
+      return;
+
+    mInfo = info;
+    mProgressId = NOTIFY_LONG_INFO(mProgressId, "Installation Progress", progressContent());
+  });
+  connect(mPipeline, &Pipeline::processStarted, [this](const Pipeline::Info& info, const QString& /* process */, const QStringList& /* arguments */) {
+    if (!mIsRunning)
+      return;
+
+    mInfo = info;
+    mProgressId = NOTIFY_LONG_INFO(mProgressId, "Installation Progress", progressContent());
+  });
+  connect(mPipeline, &Pipeline::finishedGroup, [this](const Pipeline::Info& info, const QString& groupName, int exitCode, const QString& message) {
+    if (!mIsRunning)
+      return;
+
+    mInfo = info;
+    mProgressId = NOTIFY_LONG_INFO(mProgressId, "Installation Progress", progressContent());
+  });
 }
 
 PluginManager::~PluginManager()
@@ -58,13 +114,14 @@ VoidResult PluginManager::start(const PluginSettings& settings, QMenu* menu, QCo
       }
 
       Manifest manifest = manifestResult.Value();
-      if (settings.pluginStatus(manifest.name) == PluginSettings::Status::Disabled)
+      auto status = settings.pluginStatus(manifest.name);
+      if (status == PluginSettings::Status::Disabled)
       {
         LOG_DEBUG("Not loading plugin: %s, it is disabled", qPrintable(manifest.name));
         continue;
       }
 
-      LOG_WARN_ON_FAILURE(loadPlugin(pluginsDir, manifest, menu, comboBox, services));
+      LOG_WARN_ON_FAILURE(loadPlugin(pluginsDir, manifest, menu, comboBox, services, status));
     }
   }
 
@@ -82,27 +139,54 @@ VoidResult PluginManager::start(const PluginSettings& settings, QMenu* menu, QCo
 
   // Try setting the config plugin, otherwise just try the first
   if (selectPlugin(comboBox, settings.defaultPlugin) || selectPlugin(comboBox, mPlugins.front().plugin->languageName()))
-    LOG_DEBUG("Starting with plugin: %s", qPrintable(currentPlugin()->languageName()));
+  {
+    if (currentPlugin())
+      LOG_DEBUG("Starting with plugin: %s", qPrintable(currentPlugin()->languageName()));
+  }
+
+  if (mPipeline->size() > 0)
+  {
+    LOG_DEBUG("There are installation steps needed");
+    QTimer::singleShot(0, this, [this] {
+      auto result = mPipeline->start();
+      if (!result.IsSuccess())
+      {
+        LOG_WARNING(result.ErrorMessage());
+        return;
+      }
+
+      mIsRunning = true;
+    });
+  }
 
   return VoidResult();
 }
 
-VoidResult PluginManager::loadPlugin(const QDir& pluginDir, const Manifest& manifest, QMenu* menu, QComboBox* comboBox, HostServices* services)
+VoidResult PluginManager::loadPlugin(const QDir& pluginDir, const Manifest& manifest, QMenu* menu, QComboBox* comboBox, HostServices* services, PluginSettings::Status status)
 {
   if (manifest.entryPoint.isEmpty())
     return VoidResult::Failed("No entry point defined in manifest");
 
   auto pluginName = manifest.name;
-  auto pluginPath = manifest.path;
+  auto pluginPath = manifest.pluginPath();
 
-  LOG_DEBUG("Loading plugin: %s from %s", qPrintable(pluginName), qPrintable(pluginPath));
+  LOG_DEBUG("Loading plugin: %s from %s with status: %d", qPrintable(pluginName), qPrintable(pluginPath), (int)status);
   auto exists = pluginByLanguage(pluginName);
   if (exists != nullptr)
     return VoidResult::Failed(std::format("Plugin {} ({}) already exists", pluginName.toStdString(), pluginPath.toStdString()));
 
   RETURN_ON_FAILURE(loadPluginLibraryDir(manifest));
 
+  // If it is the first time we are seeing this plugin, then we might need to install it
+  if (status == PluginSettings::Status::Unknown)
+  {
+    RETURN_ON_FAILURE(installPlugin(manifest));
+  }
+
   auto loader = QSharedPointer<QPluginLoader>::create(pluginPath);
+#ifdef DEV_BUILD
+  loader->setLoadHints(QLibrary::LoadHints{});
+#endif
   if (!loader->load())
     return VoidResult::Failed("Loader: " + loader->errorString().toStdString());
 
@@ -195,7 +279,7 @@ bool PluginManager::setPlugin(const QString& language)
 
 maki::IGeneratorPlugin* PluginManager::currentPlugin() const
 {
-  return mPlugin;
+  return mPipeline && mPipeline->isRunning() ? nullptr : mPlugin;
 }
 
 maki::IGeneratorPlugin* PluginManager::pluginByLanguage(const QString& language) const
@@ -215,7 +299,7 @@ VoidResult PluginManager::loadPluginLibraryDir(const Manifest& manifest)
     return VoidResult();
 
 #ifdef Q_OS_WIN
-  const auto pluginDir = QFileInfo(manifest.path).absolutePath();
+  const auto pluginDir = QFileInfo(manifest.pluginPath()).absolutePath();
   LOG_DEBUG("Adding DLL path: %s", qPrintable(pluginDir));
   DLL_DIRECTORY_COOKIE cookie = AddDllDirectory(reinterpret_cast<LPCWSTR>(pluginDir.utf16()));
   if (!cookie)
@@ -242,6 +326,23 @@ VoidResult PluginManager::loadPluginLibraryDir(const Manifest& manifest)
     //   qputenv("PATH", (normalisedPluginDir + ";" + path).toLocal8Bit());
 
 #endif
+  return VoidResult();
+}
+
+VoidResult PluginManager::installPlugin(const Manifest& manifest)
+{
+  mPipeline->startGroup(manifest.name);
+  for (const auto& step : manifest.installationSteps)
+  {
+    QProcess* install = new QProcess(this);
+    install->setWorkingDirectory(manifest.path);
+    install->setProgram(step.command);
+    install->setArguments(step.args);
+    mPipeline->add(install, maki::OnFail::STOP);
+  }
+
+  mPipeline->endGroup();
+
   return VoidResult();
 }
 
@@ -272,7 +373,7 @@ void PluginManager::settingsChanged(const PluginSettings& settings, QMenu* menu,
             continue;
 
           Manifest manifest = manifestResult.Value();
-          LOG_WARN_ON_FAILURE(loadPlugin(pluginsDir, manifest, menu, comboBox, services));
+          LOG_WARN_ON_FAILURE(loadPlugin(pluginsDir, manifest, menu, comboBox, services, PluginSettings::Status::Enabled));
         }
       }
     }
@@ -331,7 +432,8 @@ VoidResult PluginManager::deregisterPlugin(const Plugin& plugin, QMenu* menu, QC
     menu->removeAction(plugin.action);
 
   // Unload immediately
-  plugin.loader->unload();
+  if (!plugin.loader->unload())
+    LOG_WARNING("Failed to unload the plugin: %s", qPrintable(plugin.manifest.name));
 
   // Finally, remove it from the list
   auto removed = mPlugins.removeIf([&](const Plugin& p) { return p.manifest.name == plugin.manifest.name; });
@@ -339,4 +441,112 @@ VoidResult PluginManager::deregisterPlugin(const Plugin& plugin, QMenu* menu, QC
     return VoidResult::Failed("Failed to remove plugin from the list");
 
   return VoidResult();
+}
+
+VoidResult PluginManager::reloadPlugin(const QString& pluginName, QMenu* menu, QComboBox* comboBox, HostServices* services)
+{
+  LOG_DEBUG("Reloading plugin: %s", qPrintable(pluginName));
+  const int index = getPluginIndex(pluginName);
+  if (index < 0)
+    return VoidResult::Failed("Plugin not loaded: " + pluginName.toStdString());
+
+  const auto old = mPlugins.at(index);
+  const QDir pluginDir = QDir(old.manifest.path);
+
+  RETURN_ON_FAILURE(deregisterPlugin(old, menu, comboBox));
+
+  auto manifestResult = getPluginManifest(pluginDir);
+  if (!manifestResult)
+    return VoidResult::Failed(manifestResult.ErrorMessage());
+
+  RETURN_ON_FAILURE(loadPlugin(pluginDir, manifestResult.Value(), menu, comboBox, services, PluginSettings::Status::Enabled));
+
+  selectPlugin(comboBox, pluginName);
+  return VoidResult();
+}
+
+QWidget* PluginManager::progressContent()
+{
+  QWidget* container = new QWidget();
+  container->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+  QVBoxLayout* layout = new QVBoxLayout(container);
+
+  auto getRunningTask = [](Pipeline::GroupInfo group) {
+    bool allDone = true;
+    for (const auto& p : group.processes)
+    {
+      if (p.status == Pipeline::State::Running)
+        return p.name;
+      if (p.status == Pipeline::State::Error)
+        return QString("Error");
+
+      allDone = allDone && (p.status == Pipeline::State::Done);
+    }
+
+    return QString(allDone ? "Done" : "Waiting");
+  };
+  auto getCompleteTasks = [](Pipeline::GroupInfo group) {
+    int count = 0;
+    for (const auto& p : group.processes)
+      if (p.status == Pipeline::State::Done)
+        count++;
+
+    return count;
+  };
+
+  // For each group, we have
+  for (const auto& group : mInfo.groupInfo)
+  {
+    if (group.processes.isEmpty())
+      continue;
+
+    auto* row = new QWidget(container);
+    row->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+
+    auto* rowLayout = new QVBoxLayout(row);
+    rowLayout->setContentsMargins(0, 0, 0, 0);
+    rowLayout->setSpacing(4);
+
+    // Header row: group name + count
+    auto* header = new QWidget(row);
+    header->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+
+    auto* headerLayout = new QHBoxLayout(header);
+    headerLayout->setContentsMargins(0, 0, 0, 0);
+    headerLayout->setSpacing(8);
+
+    auto* nameLabel = new oclero::qlementine::Label(group.name, header);
+    nameLabel->setRole(oclero::qlementine::TextRole::H4);
+    nameLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+
+    auto completed = getCompleteTasks(group);
+    auto total = group.processes.count();
+    auto* countLabel = new QLabel(QString("%1 / %2 tasks").arg(completed).arg(total), header);
+
+    headerLayout->addWidget(nameLabel);
+    headerLayout->addWidget(countLabel);
+
+    // Progress bar
+    auto* progress = new QProgressBar(row);
+    progress->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    progress->setRange(0, total);
+    progress->setValue(completed);
+    progress->setTextVisible(false);
+
+    // Current task label
+    auto currentTask = getRunningTask(group);
+    auto* currentTaskLabel = new oclero::qlementine::Label(currentTask, row);
+    currentTaskLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    currentTaskLabel->setWordWrap(false);
+    currentTaskLabel->setRole(oclero::qlementine::TextRole::H5);
+
+    rowLayout->addWidget(header);
+    rowLayout->addWidget(progress);
+    rowLayout->addWidget(currentTaskLabel);
+
+    layout->addWidget(row);
+  }
+
+  return container;
 }

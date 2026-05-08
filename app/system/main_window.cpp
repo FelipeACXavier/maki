@@ -102,12 +102,12 @@ VoidResult MainWindow::start()
   mSaveHandler = std::make_unique<SaveHandler>(this);
   mSettingsManager = std::make_shared<SettingsManager>(mThemeManager, this);
   mLanguageManager = std::make_shared<LanguageManager>();
-  mPluginManager = std::make_unique<PluginManager>(this);
-  // TODO(felaze): Check leaks here
-  mNotificationManager = new NotificationManager(mCanvasPanel);
-  mLogger = new Logger(this);
 
+  mLogger = new Logger(this);
   mPipeline = new Pipeline(this);
+  mNotificationManager = new NotificationManager(mCanvasPanel);  // TODO(felaze): Check leaks here
+  mPluginManager = std::make_unique<PluginManager>(mPipeline, this);
+
   mGenerator = new Generator(mPipeline, this);
 
   mPluginTab = new PluginTab(mSpecialTabsMenu, this);
@@ -343,6 +343,7 @@ void MainWindow::bind()
   mOpenPropertiesPanel->setShortcut(QKeySequence(Qt::Key_F9));
 
   connect(mPluginTab, &PluginTab::openView, this, &MainWindow::addPluginTab);
+  connect(mPluginTab, &PluginTab::closeView, this, &MainWindow::removePluginTab);
 
   // Diagram actions =============================================================
   connect(mActionGenerate, &QAction::triggered, this, &MainWindow::onActionGenerate);
@@ -454,6 +455,10 @@ void MainWindow::bindShortcuts()
   new QShortcut(QKeySequence(Qt::Key_Delete), this, [this] {
     if (canvas())
       canvas()->deleteSelectedItems();
+  });
+  new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_R), this, [this] {
+    if (mPluginManager && mPluginManager->currentPlugin())
+      LOG_WARN_ON_FAILURE(mPluginManager->reloadPlugin(mPluginManager->currentPlugin()->languageName(), mGeneratorMenu, mGeneratorOption, mHostServices));
   });
 
   mActionUndo->setShortcuts(QKeySequence::Undo);
@@ -877,6 +882,13 @@ void MainWindow::addPluginTab(const QString& name, PluginView* view)
 {
   mCanvasPanel->addTab(view, QIcon(":/icons/plugin.svg"), name);
   mCanvasPanel->setCurrentWidget(view);
+}
+
+void MainWindow::removePluginTab(PluginView* view)
+{
+  int index = mCanvasPanel->indexOf(view);
+  if (index >= 0)
+    mCanvasPanel->removeTab(index);
 }
 
 void MainWindow::addEditorTab(QPlainTextEdit* editorTab)

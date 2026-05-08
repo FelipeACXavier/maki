@@ -104,6 +104,8 @@ private:
   /// Holds the id of the progress widget
   QString mProgressId;
 
+  bool mIsRunning;
+
   std::string notificationHeader(const QString& languageName) const;  /// Returns a header string for notifications.
 
   QWidget* progressContent();  /// Creates and returns the progress content widget.

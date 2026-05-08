@@ -3,7 +3,7 @@
 #include <QMenu>
 
 #include "app_configs.h"
-#include "itab.h"
+#include "iui.h"
 #include "logging.h"
 #include "plugin_view.h"
 
@@ -205,10 +205,47 @@ void PluginTab::registerPlugin(const QString& name, std::function<VoidResult(QGr
   pd.view->setScene(pd.scene);
   pd.callback = callback;
 
+  pd.action = new QAction(tr("Open") + " " + name, mMenu);
+  connect(pd.action, &QAction::triggered, [this, name] { openScene(name); });
+
   mTabs[name] = pd;
 
-  auto action = new QAction(tr("Open") + " " + name, mMenu);
-  connect(action, &QAction::triggered, [this, name] { openScene(name); });
+  mMenu->addAction(pd.action);
+}
 
-  mMenu->addAction(action);
+void PluginTab::deregisterPlugin(const QString& name)
+{
+  // Plugin is not registered
+  auto tab = mTabs.find(name);
+  if (tab == mTabs.end())
+    return;
+
+  // Make sure the tab is not available in the menu
+  mMenu->removeAction(tab->action);
+
+  // Close the tab in case it is open
+  emit closeView(tab->view);
+
+  // Remove the plugin from the list
+  delete tab->view;
+  mTabs.remove(name);
+}
+
+void PluginTab::addTab(const QString& name, QWidget* tabWidget)
+{
+  auto tab = mTabs.find(name);
+  if (tab == mTabs.end())
+    return;
+
+  tab->tab = tabWidget;
+  emit addBottomTab(name, tabWidget);
+}
+
+void PluginTab::closeTab(const QString& name, QWidget* tabWidget)
+{
+  auto tab = mTabs.find(name);
+  if (tab == mTabs.end())
+    return;
+
+  emit removeBottomTab(tabWidget);
 }

@@ -3,12 +3,12 @@
 #include <QGraphicsView>
 #include <oclero/qlementine.hpp>
 
-#include "itab.h"
+#include "iui.h"
 #include "result.h"
 
 namespace maki
 {
-class ITab;
+class IUI;
 }
 
 class PluginView;
@@ -21,7 +21,7 @@ class PluginView;
  * when the tab is opened or updated. The class also integrates plugin entries
  * into the application menu and propagates theme changes to the plugin views.
  */
-class PluginTab : public QObject, public maki::ITab
+class PluginTab : public QObject, public maki::IUI
 {
   Q_OBJECT
 public:
@@ -75,12 +75,22 @@ public:
   void registerPlugin(const QString& name, std::function<VoidResult(QGraphicsScene* scene)> callback) override;
 
   /**
+   * @brief Deregisters a plugin.
+   *
+   * @param name Name of the plugin to be deregsitered.
+   */
+  void deregisterPlugin(const QString& name) override;
+
+  /**
    * @brief Notifies the tab that the application theme has changed.
    *
    * This allows plugin views to update their styling according
    * to the new theme.
    */
   void onThemeChanged();
+
+  void addTab(const QString& name, QWidget* tabWidget) override;
+  void closeTab(const QString& name, QWidget* tabWidget) override;
 
 signals:
   /**
@@ -93,6 +103,19 @@ signals:
    * @param view Pointer to the PluginView instance.
    */
   void openView(const QString& name, PluginView* view);
+
+  /**
+   * @brief Signal emitted when a plugin view should be closed.
+   *
+   * The UI layer can connect to this signal to close the view
+   * associated with the plugin.
+   *
+   * @param view Pointer to the PluginView instance.
+   */
+  void closeView(PluginView* view);
+
+  void addBottomTab(const QString& name, QWidget* tab);
+  void removeBottomTab(QWidget* tab);
 
 private:
   /**
@@ -108,6 +131,11 @@ private:
 
     /// Callback responsible for populating or updating the scene.
     std::function<VoidResult(QGraphicsScene* scene)> callback;
+
+    /// QAction used to open this plugin
+    QAction* action;
+
+    QWidget* tab;
   };
 
   /// Menu where plugin tabs are registered as actions.

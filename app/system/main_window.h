@@ -263,6 +263,13 @@ private:
   void addPluginTab(const QString& name, PluginView* view);
 
   /**
+   * @brief Removes a plugin tab with the specified name
+   *
+   * @param view Pointer to the PluginView instance to be removed;
+   */
+  void removePluginTab(PluginView* view);
+
+  /**
    * @brief Adds an editor tab with the specified view.
    *
    * @param view Pointer to the QPlainTextEdit instance.

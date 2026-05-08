@@ -17,8 +17,12 @@ Generator::Generator(Pipeline* pipeline, QObject* parent)
     , mPipeline(pipeline)
     , mGenerationFolder("")
     , mProgressId("")
+    , mIsRunning(false)
 {
   connect(mPipeline, &Pipeline::finishedLast, [this](const Pipeline::Info& info, int exitCode, const QString& message) {
+    if (!mIsRunning)
+      return;
+
     mInfo = info;
     mProgressId = NOTIFY_LONG_INFO(mProgressId, "Generation Progress", progressContent());
     if (exitCode == 0)
@@ -29,27 +33,45 @@ Generator::Generator(Pipeline* pipeline, QObject* parent)
     // Send an empty content so the widget is cleared
     NOTIFY_LONG_INFO(mProgressId, "Generation Progress", nullptr);
     mProgressId.clear();
+    mIsRunning = false;
+
     emit generationEnded(mGenerationFolder);
   });
   connect(mPipeline, &Pipeline::errorOccurred, [this](const Pipeline::Info& info, QProcess::ProcessError /* error */, const QString& message) {
+    if (!mIsRunning)
+      return;
+
     mInfo = info;
     mProgressId = NOTIFY_LONG_INFO(mProgressId, "Generation Progress", progressContent());
     NOTIFY_ERROR(notificationHeader(QFileInfo(mGenerationFolder).fileName()), "Error occurred: {} ", message.toStdString());
     mProgressId.clear();
+    mIsRunning = false;
   });
   connect(mPipeline, &Pipeline::startingPipeline, [this](const Pipeline::Info& info) {
+    if (!mIsRunning)
+      return;
+
     mInfo = info;
     mProgressId = NOTIFY_LONG_INFO(mProgressId, "Generation Progress", progressContent());
   });
   connect(mPipeline, &Pipeline::startingGroup, [this](const Pipeline::Info& info, const QString& groupName) {
+    if (!mIsRunning)
+      return;
+
     mInfo = info;
     mProgressId = NOTIFY_LONG_INFO(mProgressId, "Generation Progress", progressContent());
   });
   connect(mPipeline, &Pipeline::processStarted, [this](const Pipeline::Info& info, const QString& /* process */, const QStringList& /* arguments */) {
+    if (!mIsRunning)
+      return;
+
     mInfo = info;
     mProgressId = NOTIFY_LONG_INFO(mProgressId, "Generation Progress", progressContent());
   });
   connect(mPipeline, &Pipeline::finishedGroup, [this](const Pipeline::Info& info, const QString& groupName, int exitCode, const QString& message) {
+    if (!mIsRunning)
+      return;
+
     mInfo = info;
     mProgressId = NOTIFY_LONG_INFO(mProgressId, "Generation Progress", progressContent());
   });
@@ -74,7 +96,8 @@ VoidResult Generator::generate(const QString& outputDir, maki::IGeneratorPlugin*
   mGenerationFolder = outputDir + "/" + generator->languageName();
   pipeline()->setName(generator->languageName());
 
-  auto verified = generator->verify(outputDir);
+  LOG_INFO("Runnning generator with folder: %s", qPrintable(mGenerationFolder));
+  auto verified = generator->verify(mGenerationFolder);
   if (!verified)
   {
     NOTIFY_ERROR(notificationHeader(generator->languageName()), verified.ErrorMessage());
@@ -89,6 +112,7 @@ VoidResult Generator::generate(const QString& outputDir, maki::IGeneratorPlugin*
   if (!ran.IsSuccess())
     return VoidResult::Failed("Failed to run pipeline: " + ran.ErrorMessage());
 
+  mIsRunning = true;
   return VoidResult();
 }
 
@@ -104,7 +128,7 @@ VoidResult Generator::simulate(const QString& outputDir, maki::IGeneratorPlugin*
 
   pipeline()->setName(generator->languageName());
 
-  auto simulated = generator->simulate(outputDir);
+  auto simulated = generator->simulate(mGenerationFolder);
   if (!simulated)
   {
     NOTIFY_ERROR(notificationHeader(generator->languageName()), simulated.ErrorMessage());
@@ -118,6 +142,7 @@ VoidResult Generator::simulate(const QString& outputDir, maki::IGeneratorPlugin*
   if (!ran.IsSuccess())
     return VoidResult::Failed("Failed to run pipeline: " + ran.ErrorMessage());
 
+  mIsRunning = true;
   return VoidResult();
 }
 

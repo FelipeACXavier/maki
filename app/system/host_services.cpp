@@ -3,7 +3,7 @@
 #include "idocument.h"
 #include "ilogging.h"
 #include "ipipeline.h"
-#include "itab.h"
+#include "iui.h"
 
 HostServices::HostServices(std::shared_ptr<IDocument> document, maki::IPipeline* pipeline, maki::ISettings* settings, const QString& root, QObject* parent)
     : QObject(parent)
@@ -15,7 +15,7 @@ HostServices::HostServices(std::shared_ptr<IDocument> document, maki::IPipeline*
 {
 }
 
-void HostServices::setPluginTab(maki::ITab* tab)
+void HostServices::setPluginTab(maki::IUI* tab)
 {
   mPluginTab = tab;
 }
@@ -40,7 +40,7 @@ maki::IPipeline* HostServices::pipeline() const
   return mPipeline;
 }
 
-maki::ITab* HostServices::pluginTab() const
+maki::IUI* HostServices::ui() const
 {
   return mPluginTab;
 }
