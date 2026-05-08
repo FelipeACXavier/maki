@@ -163,14 +163,18 @@ struct Theme
   bool operator==(const Theme& other) const = default;
 };
 
-class ITab
+class IUI
 {
 public:
-  virtual ~ITab() = default;
+  virtual ~IUI() = default;
   virtual void updateScene(const QString& name) = 0;
   virtual void openScene(const QString& name) = 0;
   virtual Theme currentTheme() = 0;
   virtual void registerPlugin(const QString& name, std::function<VoidResult(QGraphicsScene* scene)> callback) = 0;
+  virtual void deregisterPlugin(const QString& name) = 0;
+
+  virtual void addTab(const QString& name, QWidget* tabWidget) = 0;
+  virtual void closeTab(const QString& name, QWidget* tabWidget) = 0;
 };
 
 }  // namespace maki
