@@ -14,4 +14,5 @@ add_subdirectory(qclementine)
 # Build-in plugins
 if (BUILD_PLUGINS)
 add_subdirectory(plugins/koda)
+add_subdirectory(plugins/platformio)
 endif()
