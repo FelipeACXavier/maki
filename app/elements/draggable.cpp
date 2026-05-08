@@ -20,11 +20,6 @@ namespace
 constexpr qreal kTaskCornerRadius = 28.0;
 constexpr qreal kTaskInnerPadding = 6.0;
 constexpr qreal kTaskSlotDiameterFactor = 0.30;
-constexpr qreal kTaskSlotTopY = 0.30;
-constexpr qreal kTaskSlotBottomY = 0.70;
-constexpr qreal kTaskSlotLeftX = 0.30;
-constexpr qreal kTaskSlotRightX = 0.70;
-const QColor kTaskSlotColor = QColor("#d9d9d9");
 }  // namespace
 
 DraggableItem::DraggableItem(const QString& nodeId, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
@@ -70,17 +65,11 @@ void DraggableItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* sty
 
     const qreal slotDiameter = qMin(bodyRect.width(), bodyRect.height()) * kTaskSlotDiameterFactor;
     const qreal slotRadius = slotDiameter * 0.5;
-    painter->setPen(Qt::NoPen);
-    painter->setBrush(kTaskSlotColor);
-
-    const QVector<QPointF> centers = {
-        QPointF(bodyRect.left() + bodyRect.width() * kTaskSlotLeftX, bodyRect.top() + bodyRect.height() * kTaskSlotTopY),
-        QPointF(bodyRect.left() + bodyRect.width() * kTaskSlotRightX, bodyRect.top() + bodyRect.height() * kTaskSlotTopY),
-        QPointF(bodyRect.left() + bodyRect.width() * kTaskSlotLeftX, bodyRect.top() + bodyRect.height() * kTaskSlotBottomY),
-        QPointF(bodyRect.left() + bodyRect.width() * kTaskSlotRightX, bodyRect.top() + bodyRect.height() * kTaskSlotBottomY),
-    };
-    for (const QPointF& c : centers)
-      painter->drawEllipse(c, slotRadius, slotRadius);
+    const QPointF center = bodyRect.center();
+    QPen dashPen(Qt::black, 1.0, Qt::DashLine, Qt::RoundCap, Qt::RoundJoin);
+    painter->setPen(dashPen);
+    painter->setBrush(Qt::NoBrush);
+    painter->drawEllipse(center, slotRadius, slotRadius);
     return;
   }
 

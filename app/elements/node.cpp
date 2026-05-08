@@ -6,12 +6,14 @@
 #include <QMenu>
 #include <QObject>
 #include <QPainter>
+#include <QSvgRenderer>
 #include <QStyleOptionGraphicsItem>
 #include <QTimer>
 #include <QUndoStack>
 #include <QUuid>
 
 #include "app_configs.h"
+#include "app_paths.h"
 #include "flow.h"
 #include "port.h"
 #include "logging.h"
@@ -32,21 +34,109 @@ constexpr qreal kTaskSlotTopY = 0.30;
 constexpr qreal kTaskSlotBottomY = 0.70;
 constexpr qreal kTaskSlotLeftX = 0.30;
 constexpr qreal kTaskSlotRightX = 0.70;
-const QColor kTaskSlotColor = QColor("#d9d9d9");
 constexpr qreal kTaskAspectWidth = 324.0;
 constexpr qreal kTaskAspectHeight = 300.0;
 constexpr qreal kTaskAspectRatio = kTaskAspectWidth / kTaskAspectHeight;
 
-QVector<QPointF> taskSlotCenters(const QSizeF& size)
+/** Horizontal row of slot centers (count in [1,3]). Centers use full node width `size`. */
+QVector<QPointF> taskSlotCentersHorizontalRow(const QSizeF& size, int count)
 {
+  QVector<QPointF> out;
+  if (count <= 0)
+    return out;
+
   const qreal w = size.width();
   const qreal h = size.height();
-  return {
-      QPointF(w * kTaskSlotLeftX, h * kTaskSlotTopY),
-      QPointF(w * kTaskSlotRightX, h * kTaskSlotTopY),
-      QPointF(w * kTaskSlotLeftX, h * kTaskSlotBottomY),
-      QPointF(w * kTaskSlotRightX, h * kTaskSlotBottomY),
-  };
+  const qreal slotD = qMin(w, h) * kTaskSlotDiameterFactor;
+  constexpr qreal rowYMiddleNorm = 0.5;
+  const qreal y = h * rowYMiddleNorm;
+
+  if (count == 1)
+  {
+    out.append(QPointF(w * 0.5, y));
+    return out;
+  }
+
+  constexpr qreal horizontalMargin = 16.0;
+  const qreal leftX = horizontalMargin + slotD * 0.5;
+  const qreal rightX = w - horizontalMargin - slotD * 0.5;
+  const qreal span = rightX - leftX;
+  if (count == 2)
+  {
+    const qreal anchorW = qMin(w, kTaskAspectWidth);
+    const qreal colStep = (kTaskSlotRightX - kTaskSlotLeftX) * anchorW;
+    const qreal cx0 = (w - colStep) * 0.5;
+    out.append(QPointF(cx0, y));
+    out.append(QPointF(cx0 + colStep, y));
+    return out;
+  }
+  // count == 3
+  const qreal step = span * 0.5;
+  out.append(QPointF(leftX, y));
+  out.append(QPointF(leftX + step, y));
+  out.append(QPointF(rightX, y));
+  return out;
+}
+
+/** Slot centers in node local coordinates (same basis as boundingRect: full node 0..w x 0..h). */
+QVector<QPointF> taskSlotCenters(const QSizeF& size, int count)
+{
+  QVector<QPointF> out;
+  if (count <= 0)
+    return out;
+
+  const qreal w = size.width();
+  const qreal h = size.height();
+
+  // Single horizontal row while fewer than 4 slots (incl. placeholder).
+  if (count < 4)
+    return taskSlotCentersHorizontalRow(size, count);
+
+  // Two-row grid, row-major: fill the top row left-to-right, then the bottom row.
+  // numCols = ceil(count / 2). Column pitch matches classic 2-column layout on anchorW; grid is centered in w.
+  const qreal anchorW = qMin(w, kTaskAspectWidth);
+  const qreal colStep = (kTaskSlotRightX - kTaskSlotLeftX) * anchorW;
+  const qreal topY = kTaskSlotTopY * h;
+  const qreal botY = kTaskSlotBottomY * h;
+
+  const int numCols = (count + 1) / 2;
+  const qreal totalGrid = (numCols > 1) ? static_cast<qreal>(numCols - 1) * colStep : 0.0;
+  const qreal leftX = (numCols > 1) ? (w - totalGrid) * 0.5 : w * 0.5;
+  out.reserve(count);
+  for (int i = 0; i < count; ++i)
+  {
+    const int row = i / numCols;
+    const int col = i % numCols;
+    const qreal x = leftX + col * colStep;
+    const qreal y = (row == 0) ? topY : botY;
+    out.append(QPointF(x, y));
+  }
+  return out;
+}
+
+void renderSvgInEllipse(QPainter* painter, const QString& svgPath, const QPointF& center, qreal diameter)
+{
+  if (svgPath.isEmpty())
+    return;
+  QSvgRenderer renderer(svgPath);
+  if (!renderer.isValid())
+    return;
+  QRectF viewBox = renderer.viewBoxF();
+  if (!viewBox.isValid() || viewBox.isEmpty())
+    viewBox = QRectF(0, 0, 1, 1);
+
+  QRectF drawingBounds(center.x() - diameter * 0.5, center.y() - diameter * 0.5, diameter, diameter);
+  constexpr qreal padding = 2.0;
+  QRectF contentRect = drawingBounds.adjusted(padding, padding, -padding, -padding);
+  const qreal sx = contentRect.width() / viewBox.width();
+  const qreal sy = contentRect.height() / viewBox.height();
+  const qreal scale = qMin(sx, sy);
+  const QSizeF scaledSize(viewBox.width() * scale, viewBox.height() * scale);
+  const QRectF targetRect(contentRect.x() + (contentRect.width() - scaledSize.width()) / 2.0,
+                          contentRect.y() + (contentRect.height() - scaledSize.height()) / 2.0,
+                          scaledSize.width(),
+                          scaledSize.height());
+  renderer.render(painter, targetRect);
 }
 
 QSizeF taskAspectSizeFromWidth(qreal width)
@@ -202,14 +292,30 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
                                                     -kTaskInnerPadding);
     painter->drawRoundedRect(bodyRect, kTaskCornerRadius, kTaskCornerRadius);
 
-    const qreal slotDiameter = qMin(bodyRect.width(), bodyRect.height()) * kTaskSlotDiameterFactor;
+    const qreal bbW = boundingRect().width();
+    const qreal bbH = boundingRect().height();
+    const qreal slotDiameter = qMin(bbW, bbH) * kTaskSlotDiameterFactor;
     const qreal slotRadius = slotDiameter * 0.5;
-    painter->setPen(Qt::NoPen);
-    painter->setBrush(kTaskSlotColor);
-    for (const QPointF& c : taskSlotCenters(bodyRect.size()))
+    const int n = static_cast<int>(structuralCapabilityChildren().size());
+    const QVector<QPointF> centers = taskSlotCenters(boundingRect().size(), n + 1);
+    if (!centers.isEmpty())
     {
-      const QPointF center = QPointF(bodyRect.left() + c.x(), bodyRect.top() + c.y());
-      painter->drawEllipse(center, slotRadius, slotRadius);
+      const QPointF placeholderCenter = centers.last();
+      if (mHoverPreviewActive && mHoverPreviewColor.isValid())
+      {
+        const QPen capPen = isSelected() ? QPen(Config::HIGHLIGHT, 4 / baseScale()) : QPen(Config::FOREGROUND, 1.0 / baseScale());
+        painter->setPen(capPen);
+        painter->setBrush(QBrush(mHoverPreviewColor));
+        painter->drawEllipse(placeholderCenter, slotRadius, slotRadius);
+        renderSvgInEllipse(painter, mHoverPreviewIcon, placeholderCenter, slotDiameter);
+      }
+      else
+      {
+        QPen dashPen(Qt::black, 1.5 / baseScale(), Qt::DashLine, Qt::RoundCap, Qt::RoundJoin);
+        painter->setPen(dashPen);
+        painter->setBrush(Qt::NoBrush);
+        painter->drawEllipse(placeholderCenter, slotRadius, slotRadius);
+      }
     }
     return;
   }
@@ -465,49 +571,32 @@ void NodeItem::relayoutCapabilitySlots()
   QVector<NodeItem*> caps = structuralCapabilityChildren();
   const int n = caps.size();
 
-  if (n == 0)
-  {
-    syncSubtaskConnector();
-    return;
-  }
-
-  constexpr qreal gap = 8.0;
   constexpr qreal margin = 16.0;
 
   qreal W = mSize.width();
   qreal H = mSize.height();
 
-  auto computeSlotCenters = [&](qreal w, qreal h) -> QVector<QPointF> {
-    QVector<QPointF> out;
-    const QVector<QPointF> centersNorm = {
-        QPointF(kTaskSlotLeftX, kTaskSlotTopY),
-        QPointF(kTaskSlotRightX, kTaskSlotTopY),
-        QPointF(kTaskSlotLeftX, kTaskSlotBottomY),
-        QPointF(kTaskSlotRightX, kTaskSlotBottomY),
-    };
-    const QPointF br = centersNorm[3];
-    for (int i = 0; i < qMin(4, n); ++i)
-      out.append(QPointF(centersNorm[i].x() * w, centersNorm[i].y() * h));
-    for (int i = 4; i < n; ++i)
-    {
-      const int extra = i - 4;
-      const qreal slotD = qMin(w, h) * kTaskSlotDiameterFactor;
-      out.append(QPointF(br.x() * w + (extra + 1) * (slotD + gap), br.y() * h));
-    }
-    return out;
-  };
-
-  QVector<QPointF> centers = computeSlotCenters(W, H);
+  const int slotCount = n + 1;
+  QVector<QPointF> centers = taskSlotCenters(QSizeF(W, H), slotCount);
   qreal slotDiam = qMin(W, H) * kTaskSlotDiameterFactor;
-  // Main tasks may grow for overflow capabilities.
-  // Subtasks keep a fixed size (2/3 of parent) and must not auto-resize when filled.
   qreal reqW = W;
   qreal reqH = H;
   if (!isStructuralSubtask())
   {
     reqW = qMax(static_cast<qreal>(config()->body.width), W);
-    for (const QPointF& c : centers)
-      reqW = qMax(reqW, c.x() + slotDiam / 2.0 + margin);
+    if (slotCount >= 4)
+    {
+      const int numCols = (slotCount + 1) / 2;
+      const qreal anchorW = qMin(W, kTaskAspectWidth);
+      const qreal colStep = (kTaskSlotRightX - kTaskSlotLeftX) * anchorW;
+      const qreal totalGrid = (numCols > 1) ? static_cast<qreal>(numCols - 1) * colStep : 0.0;
+      reqW = qMax(reqW, totalGrid + slotDiam + 2.0 * margin);
+    }
+    else
+    {
+      for (const QPointF& c : centers)
+        reqW = qMax(reqW, c.x() + slotDiam / 2.0 + margin);
+    }
     reqH = qMax(static_cast<qreal>(config()->body.height), H);
   }
 
@@ -516,7 +605,7 @@ void NodeItem::relayoutCapabilitySlots()
     applySize(QSizeF(reqW, reqH));
     W = mSize.width();
     H = mSize.height();
-    centers = computeSlotCenters(W, H);
+    centers = taskSlotCenters(QSizeF(W, H), slotCount);
     slotDiam = qMin(W, H) * kTaskSlotDiameterFactor;
   }
 
@@ -598,15 +687,11 @@ QRectF NodeItem::parentInnerSceneRect(qreal padding) const
 // Apply a new logical size to this node in one place
 void NodeItem::applySize(const QSizeF& size)
 {
-  QSizeF targetSize = size;
-  if (isTaskContainer() && function() == Types::LibraryTypes::STRUCTURAL)
-    targetSize = taskAspectSizeFromWidth(size.width());
-
-  if (targetSize == mSize)
+  if (size == mSize)
     return;
 
   prepareGeometryChange();
-  mSize = targetSize;
+  mSize = size;
   mStorage->setSize(mSize);
 
   // Same scale logic as before
@@ -620,6 +705,25 @@ void NodeItem::applySize(const QSizeF& size)
 
   if (isTaskContainer() && function() == Types::LibraryTypes::STRUCTURAL)
     syncSubtaskConnector();
+}
+
+void NodeItem::setHoverPreview(const QString& iconPath, const QColor& color, bool active)
+{
+  if (!isTaskContainer() || function() != Types::LibraryTypes::STRUCTURAL)
+    return;
+
+  mHoverPreviewActive = active;
+  if (active)
+  {
+    mHoverPreviewIcon = iconPath;
+    mHoverPreviewColor = color;
+  }
+  else
+  {
+    mHoverPreviewIcon.clear();
+    mHoverPreviewColor = QColor();
+  }
+  update();
 }
 
 // Clamp this node's position so its scene rect stays inside `inner`

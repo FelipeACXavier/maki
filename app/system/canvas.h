@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QApplication>
+#include <QColor>
 #include <QDropEvent>
 #include <QGraphicsItem>
 #include <QGraphicsScene>
@@ -60,6 +61,7 @@ protected:
   void
   dragEnterEvent(QGraphicsSceneDragDropEvent* event) override;
   void dragMoveEvent(QGraphicsSceneDragDropEvent* event) override;
+  void dragLeaveEvent(QGraphicsSceneDragDropEvent* event) override;
   void dropEvent(QGraphicsSceneDragDropEvent* event) override;
 
   void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
@@ -160,4 +162,12 @@ private:
   void pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode, QList<CopiedNode> nodes, bool relative);
 
   VoidResult loadFromSave(const QVector<std::shared_ptr<INode>>& nodes, NodeItem* parent);
+
+  void clearCapabilityDropPreview();
+  void updateCapabilityDropPreview(const QPointF& scenePos);
+
+  NodeItem* mCapabilityPreviewTask = nullptr;
+  bool mDraggedNodeIsCapability = false;
+  QString mDraggedCapabilityIconPath;
+  QColor mDraggedCapabilityColor;
 };

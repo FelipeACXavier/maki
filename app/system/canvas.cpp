@@ -12,6 +12,7 @@
 #include <memory>
 
 #include "app_configs.h"
+#include "app_paths.h"
 #include "canvas_view.h"
 #include "common/style_helpers.h"
 #include "config.h"
@@ -26,6 +27,28 @@
 #include "undo_commands/add_node.h"
 #include "undo_commands/align.h"
 #include "undo_commands/remove_node.h"
+
+namespace
+{
+NodeItem* taskContainerAcceptingDrop(QGraphicsItem* item)
+{
+  while (item)
+  {
+    if (item->type() == NodeItem::Type)
+    {
+      auto* node = static_cast<NodeItem*>(item);
+      for (NodeItem* cur = node; cur; cur = cur->parentNode())
+      {
+        if (cur->isTaskContainer() && cur->acceptDrops())
+          return cur;
+      }
+      return nullptr;
+    }
+    item = item->parentItem();
+  }
+  return nullptr;
+}
+}  // namespace
 
 Canvas::Canvas(const QString& canvasId, std::shared_ptr<SaveInfo> storage, std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
     : QGraphicsScene(parent)
@@ -73,33 +96,65 @@ QList<NodeItem*> Canvas::availableNodes()
 
 void Canvas::dragEnterEvent(QGraphicsSceneDragDropEvent* event)
 {
-  if (event->mimeData()->hasFormat(Constants::TYPE_NODE))
-    event->acceptProposedAction();
+  if (!event->mimeData()->hasFormat(Constants::TYPE_NODE))
+  {
+    QGraphicsScene::dragEnterEvent(event);
+    return;
+  }
+  event->acceptProposedAction();
+
+  mDraggedNodeIsCapability = false;
+  mDraggedCapabilityIconPath.clear();
+  mDraggedCapabilityColor = QColor();
+  clearCapabilityDropPreview();
+
+  QByteArray data = event->mimeData()->data(Constants::TYPE_NODE);
+  QDataStream stream(&data, QIODevice::ReadOnly);
+  NodeSaveInfo peekInfo;
+  stream >> peekInfo;
+  auto cfg = mConfigTable->get(peekInfo.getnodeId());
+  if (cfg && type() == Types::LibraryTypes::STRUCTURAL && cfg->libraryType == Types::LibraryTypes::STRUCTURAL
+      && cfg->type != QStringLiteral("Task"))
+  {
+    mDraggedNodeIsCapability = true;
+    mDraggedCapabilityColor = cfg->body.backgroundColor;
+    if (cfg->body.nodeSvg.isEmpty() && !cfg->body.iconPath.isEmpty())
+      mDraggedCapabilityIconPath = AppPaths::icon(cfg->body.iconPath);
+  }
+
+  updateCapabilityDropPreview(event->scenePos());
 }
 
 void Canvas::dragMoveEvent(QGraphicsSceneDragDropEvent* event)
 {
   if (event->mimeData()->hasFormat(Constants::TYPE_NODE))
+  {
     event->acceptProposedAction();
+    updateCapabilityDropPreview(event->scenePos());
+    return;
+  }
+  QGraphicsScene::dragMoveEvent(event);
+}
+
+void Canvas::dragLeaveEvent(QGraphicsSceneDragDropEvent* event)
+{
+  clearCapabilityDropPreview();
+  mDraggedNodeIsCapability = false;
+  mDraggedCapabilityIconPath.clear();
+  mDraggedCapabilityColor = QColor();
+  QGraphicsScene::dragLeaveEvent(event);
 }
 
 void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
 {
+  clearCapabilityDropPreview();
+  mDraggedNodeIsCapability = false;
+  mDraggedCapabilityIconPath.clear();
+  mDraggedCapabilityColor = QColor();
+
   if (event->mimeData()->hasFormat(Constants::TYPE_NODE))
   {
-    NodeItem* parentNode = nullptr;
-    QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
-    if (item && item->type() == NodeItem::Type)
-    {
-      parentNode = static_cast<NodeItem*>(item);
-
-      // Add error message
-      if (!parentNode->acceptDrops())
-      {
-        LOG_WARNING("Tried to drop node on parent that does not accept drops");
-        return;
-      }
-    }
+    NodeItem* parentNode = taskContainerAcceptingDrop(itemAt(event->scenePos(), QTransform()));
 
     // Make sure that no other nodes are selected before dropping
     clearSelectedNodes();
@@ -125,6 +180,30 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
     // Make sure we show that we are no longer dragging
     dynamic_cast<QGraphicsView*>(parent())->setCursor(Qt::ArrowCursor);
   }
+}
+
+void Canvas::clearCapabilityDropPreview()
+{
+  if (mCapabilityPreviewTask)
+  {
+    mCapabilityPreviewTask->setHoverPreview(QString(), QColor(), false);
+    mCapabilityPreviewTask = nullptr;
+  }
+}
+
+void Canvas::updateCapabilityDropPreview(const QPointF& scenePos)
+{
+  if (!mDraggedNodeIsCapability || type() != Types::LibraryTypes::STRUCTURAL)
+    return;
+
+  NodeItem* task = taskContainerAcceptingDrop(itemAt(scenePos, QTransform()));
+  if (task == mCapabilityPreviewTask)
+    return;
+
+  clearCapabilityDropPreview();
+  mCapabilityPreviewTask = task;
+  if (mCapabilityPreviewTask)
+    mCapabilityPreviewTask->setHoverPreview(mDraggedCapabilityIconPath, mDraggedCapabilityColor, true);
 }
 
 bool Canvas::isModifierSet(QGraphicsSceneMouseEvent* event, Qt::KeyboardModifier modifier)

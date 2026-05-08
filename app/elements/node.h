@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QBrush>
+#include <QColor>
 #include <QDataStream>
 #include <QGraphicsEllipseItem>
 #include <QGraphicsItem>
@@ -107,6 +108,8 @@ public:
   void applySize(const QSizeF& size);
   void updatePosition(const QPointF& position);
 
+  void setHoverPreview(const QString& iconPath, const QColor& color, bool active);
+
   // "signals":
   std::function<void(NodeItem* item)> nodeModified;
   std::function<void(Flow* flow, NodeItem* item)> flowAdded;
@@ -158,4 +161,8 @@ private:
   SubtaskConnector* mSubtaskConnector = nullptr;
   QPointF mTreeDragRootStartPos{0, 0};
   QPointF mTreeDragStartScenePos{0, 0};
+
+  bool mHoverPreviewActive = false;
+  QString mHoverPreviewIcon;
+  QColor mHoverPreviewColor;
 };
