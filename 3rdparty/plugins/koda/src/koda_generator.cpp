@@ -17,7 +17,7 @@
 #include "ilogging.h"
 #include "ipipeline.h"
 #include "isettings.h"
-#include "itab.h"
+#include "iui.h"
 #include "logging.h"
 #include "result.h"
 #include "string_helpers.h"
@@ -67,6 +67,9 @@ bool KodaGenerator::tearDown()
 {
   if (mDaemon == nullptr)
     return true;
+
+  if (auto* tab = mServices->ui())
+    tab->deregisterPlugin(languageName());
 
   if (mDaemon->state() == QProcess::Running)
   {
@@ -184,6 +187,13 @@ void KodaGenerator::setHostServices(maki::IHostServices* services)
 {
   mServices = services;
 
+  if (auto logger = mServices->logger())
+  {
+    logging::gSourceName = languageName().toStdString();
+    logging::gSilentLog = true;
+    logger->registerPlugin(languageName(), logging::gLogToStream);
+  }
+
   buildSettings();
 
   // Setup settings
@@ -196,17 +206,10 @@ void KodaGenerator::setHostServices(maki::IHostServices* services)
       mSettings = settings;
   }
 
-  if (auto pluginTab = mServices->pluginTab())
+  if (auto pluginTab = mServices->ui())
     pluginTab->registerPlugin(languageName(), [this](QGraphicsScene* scene) {
       return createSimulationScene(scene, mLastUpdate);
     });
-
-  if (auto logger = mServices->logger())
-  {
-    logging::gSourceName = languageName().toStdString();
-    logging::gSilentLog = true;
-    logger->registerPlugin(languageName(), logging::gLogToStream);
-  }
 }
 
 void KodaGenerator::setName(const QString& name)
@@ -249,7 +252,7 @@ VoidResult KodaGenerator::simulate(const QString& outputFolder)
     return VoidResult::Failed("Cannot proceed with simulation, no services provided");
   else if (mServices->pipeline() == nullptr)
     return VoidResult::Failed("Cannot proceed with simulation, no pipeline provided");
-  else if (mServices->pluginTab() == nullptr)
+  else if (mServices->ui() == nullptr)
     return VoidResult::Failed("Cannot proceed with simulation, no plugin tab provided");
   else if (mServices->document() == nullptr)
     return VoidResult::Failed("Cannot proceed with simulation, no document provided");
@@ -322,7 +325,7 @@ VoidResult KodaGenerator::verify(const QString& outputFolder)
   mGeneratedFiles = {};
 
   // Create output folder
-  mOutputFolder = QDir(outputFolder + "/" + languageName());
+  mOutputFolder = QDir(outputFolder);
   if (!mOutputFolder.exists())
     mOutputFolder.mkpath(".");
 
@@ -1198,9 +1201,9 @@ bool KodaGenerator::startDaemon()
     LOG_DEBUG("Daemon finished with code %d and status %d", exitCode, (int)status);
   });
 
-  connect(mDaemon, &QProcess::errorOccurred, this, [](QProcess::ProcessError e) {
-    LOG_WARNING("Daemon error: %d", (int)e);
-  });
+  // connect(mDaemon, &QProcess::errorOccurred, this, [](QProcess::ProcessError e) {
+  //   LOG_WARNING("Daemon error: %d", (int)e);
+  // });
 
   // Non-blocking start
   QStringList arguments = {"daemon"};
@@ -1220,7 +1223,7 @@ void KodaGenerator::simulationStarted()
   if (!mServices)
     return;
 
-  if (auto pluginTab = mServices->pluginTab())
+  if (auto pluginTab = mServices->ui())
   {
     LOG_INFO("Simulation started");
     pluginTab->openScene(languageName());
@@ -1240,7 +1243,7 @@ void KodaGenerator::simulationUpdated(const QJsonObject& obj)
 {
   LOG_DEBUG("Simulation updated");
   mLastUpdate = obj;
-  mServices->pluginTab()->updateScene(languageName());
+  mServices->ui()->updateScene(languageName());
 }
 
 VoidResult KodaGenerator::createSimulationScene(QGraphicsScene* scene, const QJsonObject& obj)
@@ -1252,7 +1255,7 @@ VoidResult KodaGenerator::createSimulationScene(QGraphicsScene* scene, const QJs
   // auto pretty = QJsonDocument(obj).toJson(QJsonDocument::Indented);
   // LOG_DEBUG("Received message: %s", qPrintable(pretty));
 
-  auto theme = mServices->pluginTab()->currentTheme();
+  auto theme = mServices->ui()->currentTheme();
   if (!mTraceBuilder)
     mTraceBuilder = std::make_unique<TraceSceneBuilder>(theme, TraceSceneBuilder::Style{});
 

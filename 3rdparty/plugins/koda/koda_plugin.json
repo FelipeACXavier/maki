@@ -2,7 +2,8 @@
   "id": "com.maki.koda",
   "name": "KODA",
   "version": "0.0.1",
+  "author": "Felipe Xavier",
   "entryPointDLL": "bin/koda_generatorplugin.dll",
-  "entryPointSO": "bin/koda_generatorplugin.so",
+  "entryPointSO": "bin/libkoda_generatorplugin.so",
   "icon": "assets/icon.png"
 }

@@ -7,7 +7,7 @@
 #include <QVector>
 #include <memory>
 
-#include "itab.h"
+#include "iui.h"
 
 struct ComponentTreeModel;
 

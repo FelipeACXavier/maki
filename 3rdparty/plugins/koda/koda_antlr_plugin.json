@@ -2,8 +2,9 @@
   "id": "com.maki.koda_antler",
   "name": "KODA Antlr",
   "version": "0.0.1",
+  "author": "Felipe Xavier",
   "entryPointDLL": "bin/koda_generatorplugin_antlr.dll",
-  "entryPointSO": "bin/koda_generatorplugin_antlr.so",
+  "entryPointSO": "bin/libkoda_generatorplugin_antlr.so",
   "icon": "assets/icon.png",
   "libraries": [
     "antler-runtime.dll"

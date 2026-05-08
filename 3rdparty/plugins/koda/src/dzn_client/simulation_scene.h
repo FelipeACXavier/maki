@@ -10,7 +10,7 @@
 #include <QString>
 
 #include "component_model.h"
-#include "itab.h"
+#include "iui.h"
 #include "simulation_label_item.h"
 
 class TraceSceneBuilder
