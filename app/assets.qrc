@@ -30,7 +30,7 @@
     <file alias="display.svg">assets/icons/fontawesome/svgs/solid/display.svg</file>
     <file alias="deploy.svg">assets/icons/fontawesome/svgs/solid/diagram-next.svg</file>
     <file alias="logs.svg">assets/icons/fontawesome/svgs/solid/newspaper.svg</file>
-    <file alias="system.svg">assets/icons/fontawesome/svgs/solid/folder-tree.svg</file>
+    <file alias="tree.svg">assets/icons/fontawesome/svgs/solid/folder-tree.svg</file>
     <file alias="flows.svg">assets/icons/fontawesome/svgs/solid/code-branch.svg</file>
     <file alias="properties.svg">assets/icons/fontawesome/svgs/solid/sliders.svg</file>
     <file alias="fields.svg">assets/icons/fontawesome/svgs/solid/rectangle-list.svg</file>
@@ -72,6 +72,7 @@
     <file alias="search.svg">assets/icons/fontawesome/svgs/solid/magnifying-glass.svg</file>
     <file alias="filter.svg">assets/icons/fontawesome/svgs/solid/filter.svg</file>
     <!-- Tree tcons -->
+    <file alias="system_menu.svg">assets/icons/fontawesome/svgs/solid/diagram-project.svg</file>
     <file alias="capability.svg">assets/icons/fontawesome/svgs/solid/puzzle-piece.svg</file>
     <file alias="flow_block.svg">assets/icons/fontawesome/svgs/solid/scroll.svg</file>
     <!-- Brands -->

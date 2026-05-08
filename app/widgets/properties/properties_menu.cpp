@@ -118,7 +118,7 @@ PropertiesMenu::PropertiesMenu(QWidget* parent)
 
     // Set widget layout
     QVBoxLayout* layout = new QVBoxLayout(this);
-    layout->setContentsMargins(theme.spacing, 0, 0, 0);
+    layout->setContentsMargins(theme.spacing, theme.spacing, 0, 0);
     layout->setSpacing(theme.spacing);
 
     mFrame = new StyledFrame(this);

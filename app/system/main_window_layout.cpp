@@ -52,6 +52,13 @@ void MainWindowLayout::buildMainWindow()
   // Central widget
   mCentralWidget = new QWidget(this);
   QHBoxLayout* mainLayout = new QHBoxLayout(mCentralWidget);
+  auto* qlementineStyle = oclero::qlementine::appStyle();
+  if (qlementineStyle)
+  {
+    const auto theme = qlementineStyle->theme();
+    mainLayout->setContentsMargins(theme.spacing, theme.spacing, theme.spacing, theme.spacing);
+    mainLayout->setSpacing(theme.spacing);
+  }
 
   // Main horizontal splitter
   mMainSplitter = new QSplitter(Qt::Horizontal, mCentralWidget);
@@ -77,16 +84,25 @@ void MainWindowLayout::buildLeftPanel()
   mLeftPanel = new QSplitter(Qt::Vertical, mMainSplitter);
   mPalette = new QTabWidget(mLeftPanel);
 
+  auto* qlementineStyle = oclero::qlementine::appStyle();
+  const auto theme = qlementineStyle->theme();
+
+  // -----------------------------------------------------------------------------
+  // Structure
+  auto* sContainer = new QWidget(mPalette);
+  auto* scLayout = new QVBoxLayout(sContainer);
+  scLayout->setContentsMargins(0, theme.spacing, theme.spacing, theme.spacing);
+  scLayout->setSpacing(theme.spacing);
+
   mStructureTab = new StyledFrame();
   mStructureTab->setBackgroundRole(StyledFrame::BackgroundRole::Base);
   mStructureTab->setBorderRole(StyledFrame::BorderRole::Mid);
-  mStructureTab->setRadius(5);
-  mStructureTab->setBorderWidth(1);
+  mStructureTab->setRadius(theme.borderRadius);
+  mStructureTab->setBorderWidth(theme.borderWidth);
+  mStructureTab->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
   QVBoxLayout* structureLayout = new QVBoxLayout(mStructureTab);
-  structureLayout->setContentsMargins(
-      Config::CONTENT_PADDING, Config::CONTENT_PADDING,
-      Config::CONTENT_PADDING, Config::CONTENT_PADDING);
+  structureLayout->setContentsMargins(Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING);
   mStructureTab->setLayout(structureLayout);
 
   mStructureScrollArea = new QScrollArea(this);
@@ -96,29 +112,38 @@ void MainWindowLayout::buildLeftPanel()
   mStructureScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   mStructureScrollArea->setWidget(mStructureTab);
 
-  auto sindex = mPalette->addTab(mStructureScrollArea, QIcon(":/icons/structure.svg"), tr("Structure"));
+  scLayout->addWidget(mStructureScrollArea);
+
+  auto sindex = mPalette->addTab(sContainer, QIcon(":/icons/structure.svg"), tr("Structure"));
   mTranslatable.push_back({mPalette->tabBar(), "Structure", sindex});
+
+  // -----------------------------------------------------------------------------
+  // Behaviour
+  auto* bContainer = new QWidget(mPalette);
+  auto* bcLayout = new QVBoxLayout(bContainer);
+  bcLayout->setContentsMargins(0, theme.spacing, theme.spacing, theme.spacing);
+  bcLayout->setSpacing(theme.spacing);
 
   mBehaviourTab = new StyledFrame();
   mBehaviourTab->setBackgroundRole(StyledFrame::BackgroundRole::Base);
   mBehaviourTab->setBorderRole(StyledFrame::BorderRole::Mid);
-  mBehaviourTab->setRadius(5);
-  mBehaviourTab->setBorderWidth(1);
+  mBehaviourTab->setRadius(theme.borderRadius);
+  mBehaviourTab->setBorderWidth(theme.borderWidth);
 
   QVBoxLayout* behaviourLayout = new QVBoxLayout(mBehaviourTab);
-  behaviourLayout->setContentsMargins(
-      Config::CONTENT_PADDING, Config::CONTENT_PADDING,
-      Config::CONTENT_PADDING, Config::CONTENT_PADDING);
+  behaviourLayout->setContentsMargins(Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING);
   mBehaviourTab->setLayout(behaviourLayout);
 
   mBehaviourScrollArea = new QScrollArea(this);
   mBehaviourScrollArea->setWidgetResizable(true);
   mBehaviourScrollArea->setFrameShape(QFrame::NoFrame);
   mBehaviourScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-  mBehaviourScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+  mBehaviourScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   mBehaviourScrollArea->setWidget(mBehaviourTab);
 
-  auto bindex = mPalette->addTab(mBehaviourScrollArea, QIcon(":/icons/behaviour.svg"), tr("Behavior"));
+  bcLayout->addWidget(mBehaviourScrollArea);
+
+  auto bindex = mPalette->addTab(bContainer, QIcon(":/icons/behaviour.svg"), tr("Behavior"));
   mTranslatable.push_back({mPalette->tabBar(), "Behavior", bindex});
 
   mPalette->tabBar()->setIconSize(QSize(16, 16));
@@ -237,8 +262,8 @@ void MainWindowLayout::buildCentralPanel()
   // Now add the container to the splitter
   mCentralSplitter->addWidget(canvasContainer);
 
-  auto* bottomContainer = new QWidget();
-  QVBoxLayout* bottomLayout = new QVBoxLayout(bottomContainer);
+  mBottomContainer = new QWidget();
+  QVBoxLayout* bottomLayout = new QVBoxLayout(mBottomContainer);
   bottomLayout->setContentsMargins(0, 0, 0, 0);
   bottomLayout->setSpacing(0);
 
@@ -247,8 +272,8 @@ void MainWindowLayout::buildCentralPanel()
   bottomNavLayout->setContentsMargins(0, 0, 0, 0);
   bottomNavLayout->setSpacing(0);
 
-  mBottomNavigation = new oclero::qlementine::NavigationBar(bottomContainer);
-  mBottomPanel = new QStackedWidget(bottomContainer);
+  mBottomNavigation = new oclero::qlementine::NavigationBar(mBottomContainer);
+  mBottomPanel = new QStackedWidget(mBottomContainer);
 
   bottomNavLayout->addWidget(mBottomNavigation);
   bottomNavLayout->addStretch();
@@ -297,7 +322,7 @@ void MainWindowLayout::buildCentralPanel()
     mBottomPanel->setCurrentIndex(mBottomNavigation->currentIndex());
   });
 
-  mCentralSplitter->addWidget(bottomContainer);
+  mCentralSplitter->addWidget(mBottomContainer);
   mCentralSplitter->setCollapsible(0, false);
 
   mMainSplitter->addWidget(mCentralSplitter);
@@ -309,27 +334,34 @@ void MainWindowLayout::buildRightPanel()
   mRightPanel->setMinimumWidth(MINIMUM_MENU_WIDTH);
   mRightPanel->setMaximumWidth(MAXIMUM_MENU_WIDTH);
 
+  auto* qlementineStyle = oclero::qlementine::appStyle();
+  const auto theme = qlementineStyle->theme();
+
   // ----------------------------------------------------------------------
   // Navigation Menu
   mNavigationTab = new QTabWidget();
+  auto* systemContainer = new QWidget(mNavigationTab);
 
-  mSystemMenu = new SystemMenu(mNavigationTab);
-  mSystemMenu->setColumnCount(2);
-  mSystemMenu->setHeaderLabels({tr("Name"), tr("Type")});
-  mSystemMenu->header()->setAlternatingRowColors(true);
-  mSystemMenu->header()->setSectionResizeMode(0, QHeaderView::Stretch);
+  QVBoxLayout* systemLayout = new QVBoxLayout(systemContainer);
+  systemLayout->setContentsMargins(theme.spacing, theme.spacing, 0, theme.spacing);
+  systemLayout->setSpacing(theme.spacing);
 
-  mSystemMenu->setColumnWidth(1, 80);
-  mSystemMenu->header()->setStretchLastSection(false);
-  mSystemMenu->header()->setSectionResizeMode(1, QHeaderView::Fixed);
-  mSystemMenu->header()->setTextElideMode(Qt::ElideRight);
-  mSystemMenu->header()->setSectionsMovable(false);
+  mSystemMenu = new SystemMenu(systemContainer);
+  systemLayout->addWidget(mSystemMenu);
 
-  auto sindex = mNavigationTab->addTab(mSystemMenu, QIcon(":/icons/system.svg"), tr("System"));
+  auto sindex = mNavigationTab->addTab(systemContainer, QIcon(":/icons/system_menu.svg"), tr("System"));
   mTranslatable.push_back({mNavigationTab->tabBar(), "System", sindex});
 
+  auto* filesContainer = new QWidget(mNavigationTab);
+
+  QVBoxLayout* filesLayout = new QVBoxLayout(filesContainer);
+  filesLayout->setContentsMargins(theme.spacing, theme.spacing, 0, theme.spacing);
+  filesLayout->setSpacing(theme.spacing);
+
   mFileMenu = new GeneratedFilesPanel(mNavigationTab);
-  auto findex = mNavigationTab->addTab(mFileMenu, QIcon(":/icons/rectangle-list.svg"), tr("Files"));
+  filesLayout->addWidget(mFileMenu);
+
+  auto findex = mNavigationTab->addTab(filesContainer, QIcon(":/icons/tree.svg"), tr("Files"));
   mTranslatable.push_back({mNavigationTab->tabBar(), "Files", findex});
 
   // ----------------------------------------------------------------------
@@ -478,27 +510,28 @@ void MainWindowLayout::buildMenuBar()
   view->addSeparator();
 
   QMenu* showMenu = view->addMenu(tr("Show/Hide"));
+  showMenu->setIcon(QIcon::fromTheme("view-visible"));
   mTranslatable.push_back({showMenu, "Show/Hide"});
   view->addMenu(showMenu);
 
-  mOpenInfoPanel = new QAction(tr("Information panel"), this);
-  mOpenInfoPanel->setIcon(QIcon(":/icons/invisible.svg"));
-  mTranslatable.push_back({mOpenInfoPanel, "Information panel"});
-  showMenu->addAction(mOpenInfoPanel);
-  connect(mOpenInfoPanel, &QAction::triggered, [this] {
-    togglePanelVisibility(mBottomPanel, mOpenInfoPanel);
-  });
-
   mOpenComponentsPanel = new QAction(tr("Components panel"), this);
-  mOpenComponentsPanel->setIcon(QIcon(":/icons/invisible.svg"));
+  mOpenComponentsPanel->setIcon(QIcon::fromTheme("view-visible"));
   mTranslatable.push_back({mOpenComponentsPanel, "Components panel"});
   showMenu->addAction(mOpenComponentsPanel);
   connect(mOpenComponentsPanel, &QAction::triggered, [this] {
     togglePanelVisibility(mLeftPanel, mOpenComponentsPanel);
   });
 
+  mOpenInfoPanel = new QAction(tr("Information panel"), this);
+  mOpenInfoPanel->setIcon(QIcon::fromTheme("view-visible"));
+  mTranslatable.push_back({mOpenInfoPanel, "Information panel"});
+  showMenu->addAction(mOpenInfoPanel);
+  connect(mOpenInfoPanel, &QAction::triggered, [this] {
+    togglePanelVisibility(mBottomContainer, mOpenInfoPanel);
+  });
+
   mOpenPropertiesPanel = new QAction(tr("Properties panel"), this);
-  mOpenPropertiesPanel->setIcon(QIcon(":/icons/invisible.svg"));
+  mOpenPropertiesPanel->setIcon(QIcon::fromTheme("view-visible"));
   mTranslatable.push_back({mOpenPropertiesPanel, "Properties panel"});
   showMenu->addAction(mOpenPropertiesPanel);
   connect(mOpenPropertiesPanel, &QAction::triggered, [this] {
@@ -751,8 +784,9 @@ QWidget* MainWindowLayout::createHeaderComboBox(QComboBox* comboBox, const QStri
   iconLabel->setToolTip(tooltip);
   iconLabel->setToolTipDuration(2000);
 
-  comboBox->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+  comboBox->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
   comboBox->setMinimumWidth(150);
+  comboBox->setFixedHeight(30);
   comboBox->setToolTip(tooltip);
   comboBox->setToolTipDuration(2000);
 
@@ -799,11 +833,11 @@ void MainWindowLayout::togglePanelVisibility(QWidget* panel, QAction* action)
   if (panel->isHidden())
   {
     panel->show();
-    action->setIcon(addIconWithColor(":/icons/invisible.svg", Qt::white));
+    action->setIcon(QIcon::fromTheme("view-visible"));
   }
   else
   {
     panel->hide();
-    action->setIcon(addIconWithColor(":/icons/visible.svg", Qt::white));
+    action->setIcon(QIcon::fromTheme("view-hidden"));
   }
 }

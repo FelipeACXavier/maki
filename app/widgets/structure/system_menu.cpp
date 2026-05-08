@@ -1,5 +1,6 @@
 #include "system_menu.h"
 
+#include <QHeaderView>
 #include <QInputDialog>
 #include <QMenu>
 
@@ -19,6 +20,17 @@ SystemMenu::SystemMenu(QWidget* parent)
     : QTreeWidget(parent)
 {
   setContextMenuPolicy(Qt::CustomContextMenu);
+
+  setColumnCount(2);
+  setHeaderLabels({tr("Name"), tr("Type")});
+  header()->setAlternatingRowColors(true);
+  header()->setSectionResizeMode(0, QHeaderView::Stretch);
+
+  setColumnWidth(1, 80);
+  header()->setStretchLastSection(false);
+  header()->setSectionResizeMode(1, QHeaderView::Fixed);
+  header()->setTextElideMode(Qt::ElideRight);
+  header()->setSectionsMovable(false);
 
   connect(this, &QTreeWidget::customContextMenuRequested, this, &SystemMenu::showContextMenu);
   connect(this, &QTreeWidget::itemDoubleClicked, this, &SystemMenu::onItemClicked);

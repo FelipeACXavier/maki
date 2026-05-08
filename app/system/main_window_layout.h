@@ -75,6 +75,7 @@ protected:
   QPushButton* mBrowserTabButton;  /// Pointer to the browser tab button.
 
   // BadgedTabWidget* mBottomPanel;
+  QWidget* mBottomContainer;
   QStackedWidget* mBottomPanel;                          /// Pointer to the bottom panel stacked widget.
   oclero::qlementine::NavigationBar* mBottomNavigation;  /// Pointer to the bottom navigation bar.
   LogTableWidget* mLogTable;                             /// Pointer to the log table widget.
