@@ -299,7 +299,7 @@ void SettingsManager::setAppearance(const AppearanceSettings& s)
 
 void SettingsManager::setGeneration(const GenerationSettings& s)
 {
-  mGeneration = s;
+  mTmpGeneration = s;
 }
 
 void SettingsManager::setPlugins(const PluginSettings& settings)
