@@ -15,9 +15,11 @@
 
 #include "app_paths.h"
 #include "common/style_helpers.h"
+#include "compiler/plugin_action_registry.h"
 #include "host_services.h"
 #include "logging.h"
 #include "notifications.h"
+#include "pipeline_action.h"
 #include "result.h"
 #include "widgets/settings_manager.h"
 
@@ -26,9 +28,10 @@
 #include <windows.h>
 #endif
 
-PluginManager::PluginManager(Pipeline* pipeline, QObject* parent)
+PluginManager::PluginManager(maki::PipelineActionRegistry* registry, Pipeline* pipeline, QObject* parent)
     : QObject(parent)
     , mPlugin{nullptr}
+    , mRegistry(registry)
     , mPipeline(pipeline)
     , mIsRunning(false)
 {
@@ -194,9 +197,9 @@ VoidResult PluginManager::loadPlugin(const QDir& pluginDir, const Manifest& mani
   if (!plugin)
     return VoidResult::Failed("Failed to load plugin: " + loader->errorString().toStdString());
 
-  auto* codeGen = qobject_cast<maki::IGeneratorPlugin*>(plugin);
+  auto* codeGen = qobject_cast<maki::IPlugin*>(plugin);
   if (!codeGen)
-    return VoidResult::Failed("Plugin: " + pluginPath.toStdString() + " does not adhere to maki::IGeneratorPlugin");
+    return VoidResult::Failed("Plugin: " + pluginPath.toStdString() + " does not adhere to maki::IPlugin");
 
   // Update UI with new plugin
   QAction* action = menu->addAction(pluginName);
@@ -215,6 +218,10 @@ VoidResult PluginManager::loadPlugin(const QDir& pluginDir, const Manifest& mani
   LOG_DEBUG("Using asset path: %s", qPrintable(assets.absolutePath()));
   if (assets.exists())
     codeGen->setAssetDir(assets);
+
+  // Register plugin actions in
+  for (const auto& action : codeGen->pipelineActions())
+    LOG_WARN_ON_FAILURE(mRegistry->registerAction(action->id(), action));
 
   mPlugins.append({loader, codeGen, manifest, action, pluginIndex});
   LOG_DEBUG("Loaded plugin for language: %s", qPrintable(pluginName));
@@ -277,12 +284,12 @@ bool PluginManager::setPlugin(const QString& language)
   return true;
 }
 
-maki::IGeneratorPlugin* PluginManager::currentPlugin() const
+maki::IPlugin* PluginManager::currentPlugin() const
 {
   return mPipeline && mPipeline->isRunning() ? nullptr : mPlugin;
 }
 
-maki::IGeneratorPlugin* PluginManager::pluginByLanguage(const QString& language) const
+maki::IPlugin* PluginManager::pluginByLanguage(const QString& language) const
 {
   for (const auto& plugin : mPlugins)
   {

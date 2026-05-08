@@ -5,8 +5,9 @@
 #include <QObject>
 #include <QProcess>
 
-#include "generator_plugin.h"
+#include "iplugin.h"
 #include "isettings.h"
+#include "pipeline_action.h"
 
 class ProjectPage;
 class QPlainTextEdit;
@@ -16,11 +17,11 @@ namespace maki
 
 class ProjectPage;
 
-class PlatformIOPlugin : public QObject, public maki::IGeneratorPlugin
+class PlatformIOPlugin : public QObject, public maki::IPlugin
 {
   Q_OBJECT
   Q_PLUGIN_METADATA(IID MAKI_GENERATORPLUGIN_IID FILE "platformio.json")
-  Q_INTERFACES(maki::IGeneratorPlugin)
+  Q_INTERFACES(maki::IPlugin)
 
 public:
   bool setup() override;
@@ -38,6 +39,8 @@ public:
 
   QList<QString> generatedFiles() const override;
   void settingsChanged(const QVector<maki::SettingField>& settings) override;
+
+  QList<std::shared_ptr<maki::IPipelineAction>> pipelineActions() override;
 
 private:
   maki::PluginVersion mVersion;

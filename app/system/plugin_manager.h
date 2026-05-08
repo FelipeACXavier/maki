@@ -6,7 +6,7 @@
 #include <QWidget>
 
 #include "compiler/pipeline.h"
-#include "generator_plugin.h"
+#include "iplugin.h"
 #include "json.h"
 #include "keys.h"
 #include "logging.h"
@@ -15,6 +15,10 @@
 
 class QComboBox;
 class HostServices;
+namespace maki
+{
+class PipelineActionRegistry;
+}
 
 /**
  * @brief Represents a manifest file for a plugin.
@@ -125,8 +129,8 @@ public:
   struct Plugin
   {
     QSharedPointer<QPluginLoader> loader;
-    maki::IGeneratorPlugin* plugin;  /// Pointer to the generator plugin.
-    Manifest manifest;               /// Manifest of the plugin.
+    maki::IPlugin* plugin;  /// Pointer to the generator plugin.
+    Manifest manifest;      /// Manifest of the plugin.
     QAction* action;
     int comboIndex;
   };
@@ -136,7 +140,7 @@ public:
    *
    * @param parent The parent QObject.
    */
-  PluginManager(Pipeline* pipeline, QObject* parent = nullptr);
+  PluginManager(maki::PipelineActionRegistry* registry, Pipeline* pipeline, QObject* parent = nullptr);
 
   /**
    * @brief Destructs the PluginManager object.
@@ -156,17 +160,17 @@ public:
   /**
    * @brief Retrieves the currently selected plugin.
    *
-   * @return The current maki::IGeneratorPlugin pointer.
+   * @return The current maki::IPlugin pointer.
    */
-  maki::IGeneratorPlugin* currentPlugin() const;
+  maki::IPlugin* currentPlugin() const;
 
   /**
    * @brief Retrieves a plugin by its language.
    *
    * @param language The language of the plugin to retrieve.
-   * @return The corresponding maki::IGeneratorPlugin pointer, or nullptr if not found.
+   * @return The corresponding maki::IPlugin pointer, or nullptr if not found.
    */
-  maki::IGeneratorPlugin* pluginByLanguage(const QString& language) const;
+  maki::IPlugin* pluginByLanguage(const QString& language) const;
 
   /**
    * @brief Updates the plugins when a setting changes
@@ -185,8 +189,9 @@ public:
   VoidResult reloadPlugin(const QString& pluginName, QMenu* menu, QComboBox* comboBox, HostServices* services);
 
 private:
-  maki::IGeneratorPlugin* mPlugin;  /// Pointer to the currently selected plugin.
-  QVector<Plugin> mPlugins;         /// List of all plugins managed by this manager.
+  maki::IPlugin* mPlugin;    /// Pointer to the currently selected plugin.
+  QVector<Plugin> mPlugins;  /// List of all plugins managed by this manager.
+  maki::PipelineActionRegistry* mRegistry;
 
   Pipeline::Info mInfo;  /// Holds information regarding the current generation pipeline
   Pipeline* mPipeline;   /// Pipeline responsible for installation processes

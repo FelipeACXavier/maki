@@ -230,8 +230,9 @@ void MainWindowLayout::buildCentralPanel()
   mCanvasPanel = new QTabWidget(mCentralSplitter);
 
   CanvasView* canvasView = new CanvasView(mCanvasPanel);
+  mPipelineView = new CanvasView(mCanvasPanel);
 
-  mCanvasPanel->addTab(canvasView, QIcon(":/icons/structure.svg"), "System view");
+  mCanvasPanel->addTab(canvasView, QIcon(":/icons/structure.svg"), tr("System"));
   mCanvasPanel->setCurrentWidget(canvasView);
 
   // Top right buttons

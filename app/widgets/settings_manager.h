@@ -7,8 +7,8 @@
 #include <oclero/qlementine.hpp>
 
 #include "app_paths.h"
-#include "generator_plugin.h"
 #include "isettings.h"
+#include "plugin_version.h"
 #include "style_helpers.h"
 
 namespace Config

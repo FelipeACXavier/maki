@@ -11,6 +11,9 @@
 #include <QTextStream>
 #include <filesystem>
 
+#include "actions/cpp_action.h"
+#include "actions/dezyne_action.h"
+#include "actions/koda_action.h"
 #include "dzn_client/dezyne_simulator.h"
 #include "dzn_client/simulation_scene.h"
 #include "idocument.h"
@@ -278,6 +281,14 @@ VoidResult KodaGenerator::simulate(const QString& outputFolder)
   }
 
   return VoidResult();
+}
+
+QList<std::shared_ptr<maki::IPipelineAction>> KodaGenerator::pipelineActions()
+{
+  return {
+      std::make_shared<GenerateKodaAction>(this),
+      std::make_shared<GenerateDezyneAction>(this),
+      std::make_shared<GenerateCppAction>(this)};
 }
 
 void KodaGenerator::startSimulation()

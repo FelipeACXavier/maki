@@ -7,23 +7,24 @@
 #include <memory>
 
 #include "dzn_client/simulation_scene.h"
-#include "generator_plugin.h"
+#include "iplugin.h"
 #include "isettings.h"
+#include "pipeline_action.h"
 
 class INode;
 class IFlow;
 class DezyneSimulator;
 
-class KodaGenerator : public QObject, public maki::IGeneratorPlugin
+class KodaGenerator : public QObject, public maki::IPlugin
 {
 #ifdef USE_ANTLR
   Q_OBJECT
   Q_PLUGIN_METADATA(IID MAKI_GENERATORPLUGIN_IID FILE "koda_generator_antlr.json")
-  Q_INTERFACES(maki::IGeneratorPlugin)
+  Q_INTERFACES(maki::IPlugin)
 #else
   Q_OBJECT
   Q_PLUGIN_METADATA(IID MAKI_GENERATORPLUGIN_IID FILE "koda_generator.json")
-  Q_INTERFACES(maki::IGeneratorPlugin)
+  Q_INTERFACES(maki::IPlugin)
 #endif
 
 public:
@@ -42,6 +43,8 @@ public:
 
   QList<QString> generatedFiles() const override;
   void settingsChanged(const QVector<maki::SettingField>& settings) override;
+
+  QList<std::shared_ptr<maki::IPipelineAction>> pipelineActions() override;
 
 private:
   QDir mOutputFolder;

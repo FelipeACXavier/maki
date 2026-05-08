@@ -29,6 +29,7 @@
 #include "canvas_view.h"
 #include "compiler/generator.h"
 #include "compiler/pipeline.h"
+#include "compiler/plugin_pipeline.h"
 #include "elements/flow.h"
 #include "elements/node.h"
 #include "host_services.h"
@@ -38,6 +39,7 @@
 #include "logger.h"
 #include "logging.h"
 #include "notifications.h"
+#include "pipeline_canvas.h"
 #include "plugin_manager.h"
 #include "plugin_tab.h"
 #include "plugin_view.h"
@@ -103,10 +105,11 @@ VoidResult MainWindow::start()
   mSettingsManager = std::make_shared<SettingsManager>(mThemeManager, this);
   mLanguageManager = std::make_shared<LanguageManager>();
 
+  mPluginPipeline = new maki::PluginPipeline(this);
   mLogger = new Logger(this);
   mPipeline = new Pipeline(this);
   mNotificationManager = new NotificationManager(mCanvasPanel);  // TODO(felaze): Check leaks here
-  mPluginManager = std::make_unique<PluginManager>(mPipeline, this);
+  mPluginManager = std::make_unique<PluginManager>(mPluginPipeline->registry(), mPipeline, this);
 
   mGenerator = new Generator(mPipeline, this);
 
@@ -336,6 +339,21 @@ void MainWindow::bind()
 
   connect(mGenerationButton, &QPushButton::pressed, this, &MainWindow::onActionGenerate);
   connect(mSimulateButton, &QPushButton::pressed, this, &MainWindow::onActionSimulate);
+  connect(mDeployButton, &QPushButton::pressed, [this] {
+    auto pipelineTab = mCanvasPanel->indexOf(mPipelineView);
+    if (pipelineTab >= 0)
+      return;
+
+    PipelineCanvas* canvas = new PipelineCanvas("Pipeline Editor", mStorage, mConfigTable, mPipelineView);
+    mPipelineView->setScene(canvas);
+
+    // Change to respective tabs
+    auto index = libraryTypeToIndex(canvas->type());
+    mPalette->setCurrentIndex(index);
+
+    mCanvasPanel->addTab(mPipelineView, QIcon(":/icons/deploy.svg"), "Pipeline Editor");
+    mCanvasPanel->setCurrentWidget(mPipelineView);
+  });
 
   // View actions =============================================================
   mOpenComponentsPanel->setShortcut(QKeySequence(Qt::Key_F7));
@@ -631,6 +649,14 @@ void MainWindow::onActionGenerate()
   if (!mGenerator)
     LOG_WARNING("No generator available");
 
+  // TODO: Update this to the plugin pipeline
+  // We should have three buttons:
+  // - Verify
+  // - Simulate
+  // - Deploy
+  // Each has a different pipeline graph
+  // We no longer select plugins, we just modify the pipeline directly
+  // This is similar to the eclipse run configuration
   LOG_ERROR_ON_FAILURE(mGenerator->generate(mSettingsManager->generation().generationDir, mPluginManager->currentPlugin()));
 }
 
@@ -639,6 +665,7 @@ void MainWindow::onActionSimulate()
   if (!mGenerator)
     LOG_WARNING("No generator available");
 
+  // TODO: Update this to the plugin pipeline.
   LOG_ERROR_ON_FAILURE(mGenerator->simulate(mSettingsManager->generation().generationDir, mPluginManager->currentPlugin()));
 }
 
@@ -921,6 +948,7 @@ int MainWindow::libraryTypeToIndex(Types::LibraryTypes type) const
     case Types::LibraryTypes::STRUCTURAL:
       return 0;
     case Types::LibraryTypes::BEHAVIOUR:
+    case Types::LibraryTypes::PIPELINE:
       return 1;
     default:
       LOG_ERROR("Unknown library type");

@@ -163,6 +163,11 @@ PluginVersion PlatformIOPlugin::version() const
   return mVersion;
 }
 
+QList<std::shared_ptr<maki::IPipelineAction>> PlatformIOPlugin::pipelineActions()
+{
+  return {};
+}
+
 // VoidResult PlatformIOPlugin::generate(const QString& outputFolder)
 VoidResult PlatformIOPlugin::verify(const QString& outputFolder)
 {

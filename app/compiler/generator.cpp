@@ -6,7 +6,7 @@
 #include <QWidget>
 #include <oclero/qlementine/widgets/Label.hpp>
 
-#include "generator_plugin.h"
+#include "iplugin.h"
 #include "logging.h"
 #include "notifications.h"
 #include "result.h"
@@ -82,7 +82,7 @@ Pipeline* Generator::pipeline() const
   return mPipeline;
 }
 
-VoidResult Generator::generate(const QString& outputDir, maki::IGeneratorPlugin* generator)
+VoidResult Generator::generate(const QString& outputDir, maki::IPlugin* generator)
 {
   if (!generator)
     return VoidResult::Failed("No generator passed");
@@ -116,7 +116,7 @@ VoidResult Generator::generate(const QString& outputDir, maki::IGeneratorPlugin*
   return VoidResult();
 }
 
-VoidResult Generator::simulate(const QString& outputDir, maki::IGeneratorPlugin* generator)
+VoidResult Generator::simulate(const QString& outputDir, maki::IPlugin* generator)
 {
   if (!generator)
     return VoidResult::Failed("No generator passed");

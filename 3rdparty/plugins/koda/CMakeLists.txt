@@ -139,6 +139,9 @@ function(add_koda_plugin TARGET_NAME USE_ANTLR_ENABLED)
     ${COMPILER_FILES}
     src/koda_generator.cpp
     src/koda_generator.h
+    src/actions/koda_action.cpp
+    src/actions/dezyne_action.cpp
+    src/actions/cpp_action.cpp
     ${JSON_FILE}
   )
 

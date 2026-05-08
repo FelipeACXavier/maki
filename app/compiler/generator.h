@@ -8,7 +8,7 @@
 
 namespace maki
 {
-class IGeneratorPlugin;
+class IPlugin;
 }
 
 /**
@@ -44,7 +44,7 @@ public:
    * @param generator Generator plugin responsible for producing the output.
    * @return VoidResult indicating whether generation was successfully initiated.
    */
-  VoidResult generate(const QString& outputDir, maki::IGeneratorPlugin* generator);
+  VoidResult generate(const QString& outputDir, maki::IPlugin* generator);
 
   /**
    * @brief Runs a simulation using the specified generator plugin.
@@ -56,7 +56,7 @@ public:
    * @param generator Generator plugin responsible for preparing the simulation.
    * @return VoidResult indicating whether simulation was successfully initiated.
    */
-  VoidResult simulate(const QString& outputDir, maki::IGeneratorPlugin* generator);
+  VoidResult simulate(const QString& outputDir, maki::IPlugin* generator);
 
   /**
    * @brief Returns the pipeline used for generation workflows.

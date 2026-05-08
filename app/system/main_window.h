@@ -34,6 +34,11 @@ class QPlainTextEdit;
 class Logger;
 class LanguageManager;
 
+namespace maki
+{
+class PluginPipeline;
+}
+
 /**
  * @brief The MainWindow class is the main window of the application.
  */
@@ -139,6 +144,7 @@ private:
   PluginTab* mPluginTab = nullptr;                      /// Pointer to the plugin tab.
   NotificationManager* mNotificationManager = nullptr;  /// Pointer to the notification manager.
   Logger* mLogger = nullptr;                            /// Pointer to the logger.
+  maki::PluginPipeline* mPluginPipeline = nullptr;
 
   oclero::qlementine::ThemeManager* mThemeManager;  /// Pointer to the theme manager.
 

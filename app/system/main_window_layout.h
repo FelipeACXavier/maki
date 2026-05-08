@@ -26,6 +26,7 @@ class BadgedTabWidget;
 class LogTableWidget;
 class QStackedWidget;
 class StyledFrame;
+class CanvasView;
 
 namespace maki
 {
@@ -73,6 +74,7 @@ protected:
   QSplitter* mCentralSplitter;     /// Pointer to the central splitter.
   QTabWidget* mCanvasPanel;        /// Pointer to the canvas panel tab widget.
   QPushButton* mBrowserTabButton;  /// Pointer to the browser tab button.
+  CanvasView* mPipelineView;
 
   // BadgedTabWidget* mBottomPanel;
   QWidget* mBottomContainer;

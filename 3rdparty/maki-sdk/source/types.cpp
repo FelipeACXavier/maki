@@ -194,6 +194,8 @@ QString Types::LibraryTypeToString(Types::LibraryTypes type)
     return "structural";
   else if (type == Types::LibraryTypes::BEHAVIOUR)
     return "behavioural";
+  else if (type == Types::LibraryTypes::PIPELINE)
+    return "pipeline";
 
   return "unknown";
 }
