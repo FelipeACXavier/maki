@@ -852,7 +852,7 @@ void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
     return;
   }
 
-  CanvasView* newView = new CanvasView();
+  CanvasView* newView = new CanvasView(mCanvasPanel);
 
   BehaviourCanvas* canvas = new BehaviourCanvas(flow, mStorage, mConfigTable, newView);
   newView->setScene(canvas);

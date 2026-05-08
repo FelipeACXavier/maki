@@ -91,7 +91,7 @@ void MainWindowLayout::buildLeftPanel()
   // Structure
   auto* sContainer = new QWidget(mPalette);
   auto* scLayout = new QVBoxLayout(sContainer);
-  scLayout->setContentsMargins(0, theme.spacing, theme.spacing, theme.spacing);
+  scLayout->setContentsMargins(0, theme.spacing, theme.spacing, 0);
   scLayout->setSpacing(theme.spacing);
 
   mStructureTab = new StyledFrame();
@@ -121,7 +121,7 @@ void MainWindowLayout::buildLeftPanel()
   // Behaviour
   auto* bContainer = new QWidget(mPalette);
   auto* bcLayout = new QVBoxLayout(bContainer);
-  bcLayout->setContentsMargins(0, theme.spacing, theme.spacing, theme.spacing);
+  bcLayout->setContentsMargins(0, theme.spacing, theme.spacing, 0);
   bcLayout->setSpacing(theme.spacing);
 
   mBehaviourTab = new StyledFrame();
@@ -168,6 +168,9 @@ void MainWindowLayout::buildLeftPanel()
 void MainWindowLayout::buildCentralPanel()
 {
   mCentralSplitter = new QSplitter(Qt::Vertical);
+
+  auto* qlementineStyle = oclero::qlementine::appStyle();
+  const auto theme = qlementineStyle->theme();
 
   QWidget* header = new QWidget();
   QHBoxLayout* headerLayout = new QHBoxLayout(header);
@@ -224,9 +227,9 @@ void MainWindowLayout::buildCentralPanel()
   headerLayout->addWidget(spinnerContainer);
 
   // ---------------------------------------------
-  mCanvasPanel = new QTabWidget();
+  mCanvasPanel = new QTabWidget(mCentralSplitter);
 
-  CanvasView* canvasView = new CanvasView();
+  CanvasView* canvasView = new CanvasView(mCanvasPanel);
 
   mCanvasPanel->addTab(canvasView, QIcon(":/icons/structure.svg"), "System view");
   mCanvasPanel->setCurrentWidget(canvasView);
@@ -249,7 +252,6 @@ void MainWindowLayout::buildCentralPanel()
   // Add the whole widget to the corner
   mCanvasPanel->setCornerWidget(corner, Qt::TopRightCorner);
 
-  // =================================================================
   QWidget* canvasContainer = new QWidget();
   QVBoxLayout* canvasLayout = new QVBoxLayout(canvasContainer);
   canvasLayout->setContentsMargins(0, 0, 0, 0);
@@ -262,10 +264,12 @@ void MainWindowLayout::buildCentralPanel()
   // Now add the container to the splitter
   mCentralSplitter->addWidget(canvasContainer);
 
+  // =================================================================
+  // Bottom panel
   mBottomContainer = new QWidget();
   QVBoxLayout* bottomLayout = new QVBoxLayout(mBottomContainer);
-  bottomLayout->setContentsMargins(0, 0, 0, 0);
-  bottomLayout->setSpacing(0);
+  bottomLayout->setContentsMargins(theme.spacing, theme.spacing, theme.spacing, theme.borderWidth);
+  bottomLayout->setSpacing(theme.spacing);
 
   auto* bottomNavContainer = new QWidget();
   QHBoxLayout* bottomNavLayout = new QHBoxLayout(bottomNavContainer);
@@ -281,15 +285,21 @@ void MainWindowLayout::buildCentralPanel()
   bottomLayout->addWidget(mBottomPanel);
 
   // ===================================================================
-  QWidget* infoContainer = new QWidget(mBottomPanel);
+  // QWidget* infoContainer = new QWidget(mBottomPanel);
+  auto* infoContainer = new StyledFrame(mBottomPanel);
+  infoContainer->setBackgroundRole(StyledFrame::BackgroundRole::Base);
+  infoContainer->setBorderRole(StyledFrame::BorderRole::Mid);
+  infoContainer->setRadius(theme.borderRadius);
+  infoContainer->setBorderWidth(theme.borderWidth);
+
   QVBoxLayout* infoLayout = new QVBoxLayout(infoContainer);
-  infoLayout->setContentsMargins(2, 2, 2, 2);
+  infoLayout->setContentsMargins(theme.borderWidth, theme.borderWidth, theme.borderWidth, theme.borderWidth);
   infoLayout->setSpacing(0);
 
   // Info tab
   mInfoText = new QTextBrowser(mBottomPanel);
   mInfoText->setWordWrapMode(QTextOption::WrapMode::WordWrap);
-  mInfoText->setFont(Fonts::Property);
+  mInfoText->setFont(theme.fontRegular);
   mInfoText->setHtml(createDefaultMessage());
 
   infoLayout->addWidget(mInfoText);
@@ -297,15 +307,17 @@ void MainWindowLayout::buildCentralPanel()
   mBottomNavigation->addItem(tr("Info"), QIcon(":/icons/info.svg"));
   mBottomPanel->addWidget(infoContainer);
 
+  // -----------------------------------------------------------------
+  // Log container
   auto* logContainer = new StyledFrame(mBottomPanel);
   logContainer->setBackgroundRole(StyledFrame::BackgroundRole::Base);
-  logContainer->setBorderRole(StyledFrame::BorderRole::None);
-  logContainer->setRadius(0);
-  logContainer->setBorderWidth(0);
+  logContainer->setBorderRole(StyledFrame::BorderRole::Mid);
+  logContainer->setRadius(theme.borderRadius);
+  logContainer->setBorderWidth(theme.borderWidth);
 
   QVBoxLayout* logLayout = new QVBoxLayout(logContainer);
-  logLayout->setContentsMargins(2, 2, 2, 2);
-  logLayout->setSpacing(0);
+  logLayout->setContentsMargins(theme.spacing, theme.spacing, theme.spacing, theme.borderWidth);
+  logLayout->setSpacing(theme.spacing);
 
   mLogTable = new LogTableWidget(logContainer);
   logLayout->addWidget(mLogTable);
@@ -313,14 +325,30 @@ void MainWindowLayout::buildCentralPanel()
   mBottomNavigation->addItem(tr("Log"), QIcon(":/icons/logs.svg"));
   mBottomPanel->addWidget(logContainer);
 
-  mProcessTab = new ProcessTab(mBottomPanel);
-  mBottomNavigation->addItem(tr("Generation"), QIcon(":/icons/terminal.svg"));
-  mBottomPanel->addWidget(mProcessTab);
+  // -----------------------------------------------------------------
+  // Process tab
+  auto* pluginContainer = new StyledFrame(mBottomPanel);
+  pluginContainer->setBackgroundRole(StyledFrame::BackgroundRole::Base);
+  pluginContainer->setBorderRole(StyledFrame::BorderRole::Mid);
+  pluginContainer->setRadius(theme.borderRadius);
+  pluginContainer->setBorderWidth(theme.borderWidth);
 
-  mBottomPanel->setCurrentIndex(0);
+  QVBoxLayout* pluginLayout = new QVBoxLayout(pluginContainer);
+  pluginLayout->setContentsMargins(theme.borderWidth, theme.borderWidth, theme.borderWidth, theme.borderWidth);
+  pluginLayout->setSpacing(0);
+
+  mProcessTab = new ProcessTab(pluginContainer);
+  pluginLayout->addWidget(mProcessTab);
+
+  mBottomNavigation->addItem(tr("Generation"), QIcon(":/icons/terminal.svg"));
+  mBottomPanel->addWidget(pluginContainer);
+
+  // -----------------------------------------------------------------
+  // Final detals
   connect(mBottomNavigation, &oclero::qlementine::NavigationBar::currentIndexChanged, [this]() {
     mBottomPanel->setCurrentIndex(mBottomNavigation->currentIndex());
   });
+  mBottomPanel->setCurrentIndex(0);
 
   mCentralSplitter->addWidget(mBottomContainer);
   mCentralSplitter->setCollapsible(0, false);
@@ -685,6 +713,16 @@ void MainWindowLayout::applyTheme()
     connect(mCanvasPanel->tabBar(), &QTabBar::tabMoved, this, [this](int /* from */, int /* to */) {
       for (int i = 0; i < mCanvasPanel->count(); ++i)
         mCanvasPanel->setTabText(i, mCanvasPanel->tabText(i));
+    });
+  }
+
+  if (mInfoText)
+  {
+    // Update the info text so the welcome message fits
+    QTimer::singleShot(0, this, [this, theme] {
+      int documentHeight = int(std::ceil(mInfoText->document()->documentLayout()->documentSize().height()));
+      int height = documentHeight + mInfoText->contentsMargins().top() + mInfoText->contentsMargins().bottom() + theme.spacing;
+      mInfoText->setMinimumHeight(height);
     });
   }
 
