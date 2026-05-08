@@ -35,7 +35,7 @@ public:
    * @return qreal The scale factor.
    */
   qreal getScale() const;
-  
+
   /**
    * @brief Sets the scale factor of the view.
    *
@@ -49,7 +49,7 @@ public:
    * @param scaleFactor The zoom scale factor.
    */
   void zoom(float scaleFactor);
-  
+
   /**
    * @brief Centers the view on a specific position.
    *
@@ -125,49 +125,39 @@ protected:
 private:
   /// Flags to determine if zooming or panning should be done.
   bool mDoMousePanning;
-  
+
   /// Flag to determine if key-based zooming is active.
   bool mDoKeyZoom;
-  
+
   /// Flag to show the grid on the canvas.
   bool mShowGrid;
 
   /// Last mouse position for panning.
   QPoint mLastMousePos;
-  
+
   /// Current center point of the view.
   QPointF mCenterPoint;
 
-  /// Speed at which the view pans.
-  qreal mPanSpeed;
-  
   /// Delta value for zooming.
   qreal mZoomDelta;
-  
+
   /// Key used for zooming.
   qreal mZoomKey;
-  
+
   /// Minimum allowed zoom level.
   qreal mMinZoom;
-  
+
   /// Maximum allowed zoom level.
   qreal mMaxZoom;
-  
+
   /// Mouse button used for panning.
   Qt::MouseButton mPanButton;
-
-  /**
-   * @brief Pans the view by a given delta.
-   *
-   * @param delta The delta to pan by.
-   */
-  void pan(QPointF delta);
 
   /**
    * @brief Zooms in by applying a zoom factor of 1 + mZoomDelta.
    */
   void zoomIn();
-  
+
   /**
    * @brief Zooms out by applying a zoom factor of 1 - mZoomDelta.
    */
@@ -177,7 +167,7 @@ private:
    * @brief Resets the view to its default scale.
    */
   void resetZoom();
-  
+
   /**
    * @brief Quantises the proposed scale to ensure it is within valid limits and aligned with grid size.
    *

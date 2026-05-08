@@ -1,5 +1,6 @@
 #include "canvas_view.h"
 
+#include <QScrollBar>
 #include <QShortcut>
 
 #include "app_configs.h"
@@ -8,11 +9,9 @@
 static constexpr qreal DEFAULT_ZOOM = 1.0;
 
 CanvasView::CanvasView(QWidget* parent)
-    // TODO(felaze): make these configurable
     : mDoMousePanning(false)
     , mDoKeyZoom(false)
     , mShowGrid(true)
-    , mPanSpeed(1)
     , mZoomDelta(0.2)
     , mZoomKey(Qt::Key_Control)
     , mMinZoom(0.2)
@@ -26,8 +25,8 @@ CanvasView::CanvasView(QWidget* parent)
   setViewportUpdateMode(ViewportUpdateMode::FullViewportUpdate);
 
   setAttribute(Qt::WA_DeleteOnClose);
+  setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
 
-  // TODO(felaze): Maybe we can make this custom
   setDragMode(QGraphicsView::RubberBandDrag);
   setAcceptDrops(true);
 
@@ -115,15 +114,17 @@ void CanvasView::mouseMoveEvent(QMouseEvent* event)
 {
   if (mDoMousePanning)
   {
-    pan(mapToScene(event->pos()) - mapToScene(mLastMousePos));
+    const QPoint delta = event->pos() - mLastMousePos;
+
+    horizontalScrollBar()->setValue(horizontalScrollBar()->value() - delta.x());
+    verticalScrollBar()->setValue(verticalScrollBar()->value() - delta.y());
+
+    mLastMousePos = event->pos();
     event->accept();
-  }
-  else
-  {
-    QGraphicsView::mouseMoveEvent(event);
+    return;
   }
 
-  mLastMousePos = event->pos();
+  QGraphicsView::mouseMoveEvent(event);
 }
 
 void CanvasView::mousePressEvent(QMouseEvent* event)
@@ -177,6 +178,7 @@ void CanvasView::resetZoom()
 
 void CanvasView::zoom(float scaleFactor)
 {
+  setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
   const qreal cur = getScale();
   const qreal target = cur * static_cast<qreal>(scaleFactor);
   const qreal snapped = quantisedScale(target);
@@ -200,22 +202,6 @@ qreal CanvasView::quantisedScale(qreal proposedScale) const
 
   // Clamp to sane limits
   return std::clamp(snapped, mMinZoom, mMaxZoom);
-}
-
-void CanvasView::pan(QPointF delta)
-{
-  // Scale the pan amount by the current zoom.
-  delta *= getScale();
-  delta *= mPanSpeed;
-
-  // Have panning be anchored from the mouse.
-  setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
-
-  QPoint newCenter(qreal(viewport()->rect().width()) / 2 - delta.x(), qreal(viewport()->rect().height()) / 2 - delta.y());
-  centerOn(mapToScene(newCenter));
-
-  // For zooming to anchor from the view center.
-  setTransformationAnchor(QGraphicsView::AnchorViewCenter);
 }
 
 void CanvasView::drawBackground(QPainter* p, const QRectF& /* rect */)
