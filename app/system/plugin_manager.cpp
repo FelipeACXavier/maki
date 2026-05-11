@@ -221,7 +221,10 @@ VoidResult PluginManager::loadPlugin(const QDir& pluginDir, const Manifest& mani
 
   // Register plugin actions in
   for (const auto& action : codeGen->pipelineActions())
+  {
+    LOG_DEBUG("Registering action: %s", qPrintable(action->id()));
     LOG_WARN_ON_FAILURE(mRegistry->registerAction(action->id(), action));
+  }
 
   mPlugins.append({loader, codeGen, manifest, action, pluginIndex});
   LOG_DEBUG("Loaded plugin for language: %s", qPrintable(pluginName));

@@ -1,13 +1,45 @@
 #include "plugin_pipeline.h"
 
+#include <QTimer>
+
+#include "logging.h"
+#include "pipeline.h"
+#include "pipeline_action.h"
 #include "plugin_action_registry.h"
+#include "notifications.h"
 
 namespace maki
 {
-PluginPipeline::PluginPipeline(QObject* parent)
+PluginPipeline::PluginPipeline(Pipeline* pipeline, QObject* parent)
     : QObject(parent)
     , mRegistry(new PipelineActionRegistry())
+    , mPipeline(pipeline)
 {
+  connect(mPipeline, &Pipeline::finishedLast, [this](const Pipeline::Info& info, int exitCode, const QString& message) {
+    if (exitCode == 0)
+      mContext.commitPendingArtifact();
+
+    mProgressId = NOTIFY_LONG_INFO(mProgressId, "Pipeline Progress", mPipeline->progressWidget());
+    mProgressId = NOTIFY_LONG_INFO(mProgressId, "Pipeline Progress", nullptr);
+    QTimer::singleShot(0, this, [this]() { LOG_WARN_ON_FAILURE(continueAfterNode()); });
+  });
+  connect(mPipeline, &Pipeline::errorOccurred, [this](const Pipeline::Info& info, QProcess::ProcessError /* error */, const QString& message) {
+    LOG_INFO("Error occurred: %s", qPrintable(message));
+    mProgressId = NOTIFY_LONG_INFO(mProgressId, "Pipeline Progress", mPipeline->progressWidget());
+    mProgressId.clear();
+  });
+  connect(mPipeline, &Pipeline::startingPipeline, [this](const Pipeline::Info& info) {
+    mProgressId = NOTIFY_LONG_INFO(mProgressId, "Pipeline Progress", mPipeline->progressWidget());
+  });
+  connect(mPipeline, &Pipeline::startingGroup, [this](const Pipeline::Info& info, const QString& groupName) {
+    mProgressId = NOTIFY_LONG_INFO(mProgressId, "Pipeline Progress", mPipeline->progressWidget());
+  });
+  connect(mPipeline, &Pipeline::processStarted, [this](const Pipeline::Info& info, const QString& process, const QStringList& /* arguments */) {
+    mProgressId = NOTIFY_LONG_INFO(mProgressId, "Pipeline Progress", mPipeline->progressWidget());
+  });
+  connect(mPipeline, &Pipeline::finishedGroup, [this](const Pipeline::Info& info, const QString& groupName, int exitCode, const QString& message) {
+    mProgressId = NOTIFY_LONG_INFO(mProgressId, "Pipeline Progress", mPipeline->progressWidget());
+  });
 }
 
 PluginPipeline::~PluginPipeline()
@@ -20,41 +52,77 @@ PipelineActionRegistry* PluginPipeline::registry() const
   return mRegistry;
 }
 
+VoidResult PluginPipeline::runNextNode()
+{
+  if (mCurrentIndex >= mExecutionOrder.size())
+  {
+    emit pipelineFinished();
+    return VoidResult();
+  }
+
+  const auto nodeId = mExecutionOrder.at(mCurrentIndex);
+  const auto node = findNode(mGraph, nodeId);
+
+  if (!node)
+    return VoidResult::Failed("Pipeline node does not exist: " + nodeId.toStdString());
+
+  auto action = mRegistry->action(node->actionId);
+  if (!action)
+    return VoidResult::Failed("Pipeline action is not registered: " + node->actionId.toStdString());
+
+  auto validation = validateInputs(*action, mContext);
+  if (!validation)
+    return validation;
+
+  auto result = action->run(mContext, node->parameters, mPipeline);
+  if (!result)
+    return result;
+
+  // for (const auto& art : mContext.artifacts())
+  // {
+  //   if (art.producer == "MAKI")
+  //     continue;
+
+  //   auto pretty = QJsonDocument(art.toJson()).toJson(QJsonDocument::Indented);
+  //   LOG_DEBUG("Artifact %s %s: \n%s", qPrintable(art.id), qPrintable(art.producer), qPrintable(pretty));
+  // }
+
+  if (mPipeline->size() == 0)
+  {
+    for (const auto& a : result.Value())
+      mContext.addArtifact(a);
+
+    return continueAfterNode();
+  }
+
+  for (const auto& a : result.Value())
+    mContext.addPendingArtifact(a);
+
+  mProgressId.clear();
+  mPipeline->start();
+
+  return VoidResult();
+}
+
+VoidResult PluginPipeline::continueAfterNode()
+{
+  const auto nodeId = mExecutionOrder.at(mCurrentIndex);
+  ++mCurrentIndex;
+  return runNextNode();
+}
+
 VoidResult PluginPipeline::run(const PipelineGraph& graph, PipelineContext& context)
 {
+  mGraph = graph;
+  mContext = context;
+  mCurrentIndex = 0;
+
   auto orderResult = executionOrder(graph);
   if (!orderResult)
     return VoidResult::Failed(orderResult.ErrorMessage());
 
-  const auto order = orderResult.Value();
-  for (const auto& nodeId : order)
-  {
-    auto node = findNode(graph, nodeId);
-    if (!node)
-      return VoidResult::Failed(QString("Pipeline node '%1' does not exist.").arg(nodeId).toStdString());
-
-    auto action = mRegistry->action(node->actionId);
-    if (!action)
-      return VoidResult::Failed(QString("Pipeline action '%1' is not registered.").arg(node->actionId).toStdString());
-
-    auto validation = validateInputs(*action, context);
-    if (!validation)
-      return validation;
-
-    emit nodeStarted(node->id, action->displayName());
-
-    auto result = action->run(context, node->parameters);
-    if (!result)
-    {
-      emit nodeFailed(node->id, QString::fromStdString(result.ErrorMessage()));
-      return result;
-    }
-
-    emit nodeFinished(node->id);
-  }
-
-  emit pipelineFinished();
-  return VoidResult();
+  mExecutionOrder = orderResult.Value();
+  return runNextNode();
 }
 
 std::optional<PipelineNode> PluginPipeline::findNode(const PipelineGraph& graph, const QString& nodeId) const

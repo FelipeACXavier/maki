@@ -8,6 +8,8 @@
 #include "pipeline_graph.h"
 #include "result.h"
 
+class Pipeline;
+
 namespace maki
 {
 class PipelineActionRegistry;
@@ -17,7 +19,7 @@ class PluginPipeline : public QObject
   Q_OBJECT
 
 public:
-  PluginPipeline(QObject* parent = nullptr);
+  PluginPipeline(Pipeline* pipeline, QObject* parent = nullptr);
   ~PluginPipeline();
 
   VoidResult run(const PipelineGraph& graph, PipelineContext& context);
@@ -32,10 +34,20 @@ signals:
 
 private:
   PipelineActionRegistry* mRegistry = nullptr;
+  Pipeline* mPipeline;
+  QStringList mExecutionOrder;
+  int mCurrentIndex;
+  QString mCurrentGroup;
+  PipelineContext mContext;
+  PipelineGraph mGraph;
+  QString mProgressId;
 
   std::optional<PipelineNode> findNode(const PipelineGraph& graph, const QString& nodeId) const;
   VoidResult validateInputs(const IPipelineAction& action, const PipelineContext& context) const;
   Result<QList<QString>> executionOrder(const PipelineGraph& graph) const;
+
+  VoidResult runNextNode();
+  VoidResult continueAfterNode();
 };
 
 }  // namespace maki

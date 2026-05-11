@@ -2,6 +2,7 @@
 
 #include <QProcess>
 #include <QVector>
+#include <QWidget>
 #include <mutex>
 
 #include "ipipeline.h"
@@ -126,6 +127,8 @@ public:
 
   void startGroup(const QString& groupName) override;
   void endGroup() override;
+
+QWidget* progressWidget() const;
 
 signals:
   /**
@@ -338,4 +341,7 @@ private:
   VoidResult start(const QString& groupName, bool first = false);
 
   Info constructInfo() const;
+
+  QString getRunningTask(GroupInfo info) const;
+  int getCompleteTasks(GroupInfo info) const;
 };

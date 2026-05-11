@@ -105,9 +105,10 @@ VoidResult MainWindow::start()
   mSettingsManager = std::make_shared<SettingsManager>(mThemeManager, this);
   mLanguageManager = std::make_shared<LanguageManager>();
 
-  mPluginPipeline = new maki::PluginPipeline(this);
-  mLogger = new Logger(this);
+  auto processPipeline = new Pipeline(this);
   mPipeline = new Pipeline(this);
+  mPluginPipeline = new maki::PluginPipeline(processPipeline, this);
+  mLogger = new Logger(this);
   mNotificationManager = new NotificationManager(mCanvasPanel);  // TODO(felaze): Check leaks here
   mPluginManager = std::make_unique<PluginManager>(mPluginPipeline->registry(), mPipeline, this);
 
@@ -119,7 +120,8 @@ VoidResult MainWindow::start()
   mHostServices->setPluginTab(mPluginTab);
   mHostServices->setLogger(mLogger);
 
-  mProcessTab->setPipeline(mPipeline);
+  mProcessTab->addPipeline(mPipeline);
+  mProcessTab->addPipeline(processPipeline);
 
   startUI();
   bind();
@@ -650,6 +652,50 @@ void MainWindow::onActionGenerate()
     LOG_WARNING("No generator available");
 
   // TODO: Update this to the plugin pipeline
+  maki::PipelineGraph graph;
+  graph.id = "Test 1";
+  graph.name = "Generate koda and dezyne";
+
+  maki::PipelineNode node1;
+  node1.actionId = "koda_antlr.generate_koda";
+  node1.id = "Koda generation";
+  node1.parameters = {};
+
+  maki::PipelineNode node2;
+  node2.actionId = "koda_antlr.generate_dezyne";
+  node2.id = "Dezyne generation";
+  node2.parameters = {};
+
+  maki::PipelineNode node3;
+  node3.actionId = "koda_antlr.verify_dezyne";
+  node3.id = "Dezyne verification";
+  node3.parameters = {};
+
+  maki::PipelineNode node4;
+  node4.actionId = "koda_antlr.generate_dezyne_cpp";
+  node4.id = "Dezyne C++ generation";
+  node4.parameters = {};
+
+  maki::PipelineEdge edge1;
+  edge1.from = "Koda generation";
+  edge1.to = "Dezyne generation";
+
+  maki::PipelineEdge edge2;
+  edge2.from = "Dezyne generation";
+  edge2.to = "Dezyne verification";
+
+  maki::PipelineEdge edge3;
+  edge3.from = "Dezyne verification";
+  edge3.to = "Dezyne C++ generation";
+
+  graph.nodes.push_back(node1);
+  graph.nodes.push_back(node2);
+  graph.nodes.push_back(node3);
+  graph.nodes.push_back(node4);
+  graph.edges.push_back(edge1);
+  graph.edges.push_back(edge2);
+  graph.edges.push_back(edge3);
+
   // We should have three buttons:
   // - Verify
   // - Simulate
@@ -657,7 +703,24 @@ void MainWindow::onActionGenerate()
   // Each has a different pipeline graph
   // We no longer select plugins, we just modify the pipeline directly
   // This is similar to the eclipse run configuration
-  LOG_ERROR_ON_FAILURE(mGenerator->generate(mSettingsManager->generation().generationDir, mPluginManager->currentPlugin()));
+  QByteArray byteArray;
+  QDataStream out(&byteArray, QIODevice::WriteOnly);
+  out << mHostServices->document()->getnodes();
+
+  maki::PipelineContext context;
+  context.buildDir = QDir(mSettingsManager->generation().generationDir);
+  context.projectDir = QDir(mSettingsManager->generation().generationDir);
+  context.addArtifact({
+      .id = "maki.nodes",
+      .type = "maki",
+      .producer = "MAKI",
+      .paths = {
+          {"nodes", byteArray.toBase64()},
+      },
+  });
+
+  LOG_ERROR_ON_FAILURE(mPluginPipeline->run(graph, context));
+  // LOG_ERROR_ON_FAILURE(mGenerator->generate(mSettingsManager->generation().generationDir, mPluginManager->currentPlugin()));
 }
 
 void MainWindow::onActionSimulate()
@@ -666,7 +729,7 @@ void MainWindow::onActionSimulate()
     LOG_WARNING("No generator available");
 
   // TODO: Update this to the plugin pipeline.
-  LOG_ERROR_ON_FAILURE(mGenerator->simulate(mSettingsManager->generation().generationDir, mPluginManager->currentPlugin()));
+  // LOG_ERROR_ON_FAILURE(mGenerator->simulate(mSettingsManager->generation().generationDir, mPluginManager->currentPlugin()));
 }
 
 void MainWindow::onActionSave()

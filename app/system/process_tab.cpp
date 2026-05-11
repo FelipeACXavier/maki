@@ -22,19 +22,17 @@ ProcessTab::ProcessTab(QWidget* parent)
   layout->addWidget(mOutput);
 }
 
-void ProcessTab::setPipeline(Pipeline* pipeline)
+void ProcessTab::addPipeline(Pipeline* pipeline)
 {
   if (!pipeline)
     return;
 
-  mPipeline = pipeline;
-
-  connect(mPipeline, &Pipeline::startingProcess, this, &ProcessTab::onStartingProcess);
-  connect(mPipeline, &Pipeline::finished, this, &ProcessTab::onFinished);
-  connect(mPipeline, &Pipeline::finishedLast, this, &ProcessTab::onFinishedLast);
-  connect(mPipeline, &Pipeline::readyReadStandardOutput, this, &ProcessTab::onReadyReadStandardOutput);
-  connect(mPipeline, &Pipeline::readyReadStandardError, this, &ProcessTab::onReadyReadStandardError);
-  connect(mPipeline, &Pipeline::errorOccurred, this, &ProcessTab::onErrorOccurred);
+  connect(pipeline, &Pipeline::startingProcess, this, &ProcessTab::onStartingProcess);
+  connect(pipeline, &Pipeline::finished, this, &ProcessTab::onFinished);
+  connect(pipeline, &Pipeline::finishedLast, this, &ProcessTab::onFinishedLast);
+  connect(pipeline, &Pipeline::readyReadStandardOutput, this, &ProcessTab::onReadyReadStandardOutput);
+  connect(pipeline, &Pipeline::readyReadStandardError, this, &ProcessTab::onReadyReadStandardError);
+  connect(pipeline, &Pipeline::errorOccurred, this, &ProcessTab::onErrorOccurred);
 }
 
 void ProcessTab::onReadyReadStandardOutput(const QByteArray& message)

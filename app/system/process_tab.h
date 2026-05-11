@@ -27,7 +27,7 @@ public:
    *
    * @param pipeline The pipeline to set.
    */
-  void setPipeline(Pipeline* pipeline);
+  void addPipeline(Pipeline* pipeline);
 
 signals:
   /**
@@ -95,10 +95,7 @@ private slots:
   void onErrorOccurred(const Pipeline::Info& info, QProcess::ProcessError error, const QString& process);
 
 private:
-  QTextBrowser* mOutput;  /// Pointer to the text browser for displaying output.
-
-  Pipeline* mPipeline;  /// Pointer to the pipeline being processed.
-
+  QTextBrowser* mOutput;           /// Pointer to the text browser for displaying output.
   QTextCharFormat mCurrentFormat;  /// Current text format for output.
 
   int mOverwriteNextLine = 0;  // after ESC[1F]

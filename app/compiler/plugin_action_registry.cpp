@@ -1,5 +1,6 @@
 #include "plugin_action_registry.h"
 
+#include "logging.h"
 #include "pipeline_action.h"
 
 namespace maki
@@ -11,6 +12,8 @@ VoidResult PipelineActionRegistry::registerAction(const QString& pluginId, std::
 
   mActions.insert(action->id(), action);
   mActionPluginIds.insert(action->id(), pluginId);
+
+  LOG_DEBUG("Adding action: %s of plugin: %s to the registry", qPrintable(action->id()), qPrintable(pluginId));
 
   return VoidResult();
 }
