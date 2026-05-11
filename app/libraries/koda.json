@@ -79,10 +79,11 @@
         {
           "type": "Timer",
           "body": {
-            "shape": "Rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#008585",
+            "shape": "Ellipse",
+            "textColor": "#000000",
+            "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
+            "icon": "capability_timer.svg",
             "width": 500,
             "height": 500,
             "z-index": -2
@@ -96,7 +97,7 @@
             {
               "id": "color",
               "type": "color",
-              "default": "#008585"
+              "default": "#e6e6e6"
             }
           ],
           "controls": [
@@ -135,10 +136,11 @@
         {
           "type": "Siren",
           "body": {
-            "shape": "Rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#c45335",
+            "shape": "Ellipse",
+            "textColor": "#000000",
+            "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
+            "icon": "capability_siren.svg",
             "width": 500,
             "height": 500,
             "z-index": -2
@@ -152,7 +154,7 @@
             {
               "id": "color",
               "type": "color",
-              "default": "#c45335"
+              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -178,10 +180,11 @@
         {
           "type": "Grip",
           "body": {
-            "shape": "Rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#cc7a3d",
+            "shape": "Ellipse",
+            "textColor": "#000000",
+            "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
+            "icon": "capability_grip.svg",
             "width": 500,
             "height": 500,
             "z-index": -2
@@ -195,7 +198,7 @@
             {
               "id": "color",
               "type": "color",
-              "default": "#cc7a3d"
+              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -249,10 +252,11 @@
         {
           "type": "Vision",
           "body": {
-            "shape": "Rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#e6c994",
+            "shape": "Ellipse",
+            "textColor": "#000000",
+            "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
+            "icon": "capability_vision.svg",
             "width": 500,
             "height": 500,
             "z-index": -2
@@ -266,7 +270,7 @@
             {
               "id": "color",
               "type": "color",
-              "default": "#e6c994"
+              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -298,9 +302,9 @@
         {
           "type": "Drive",
           "body": {
-            "shape": "Rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#74a892",
+            "shape": "Ellipse",
+            "textColor": "#000000",
+            "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
             "width": 500,
             "height": 500,
@@ -315,7 +319,7 @@
             {
               "id": "color",
               "type": "color",
-              "default": "#74a892"
+              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -405,9 +409,9 @@
         {
           "type": "Bridge",
           "body": {
-            "shape": "Rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#bb2c1e",
+            "shape": "Ellipse",
+            "textColor": "#000000",
+            "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
             "width": 500,
             "height": 500,
@@ -422,7 +426,7 @@
             {
               "id": "color",
               "type": "color",
-              "default": "#bb2c1e"
+              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -477,10 +481,11 @@
         {
           "type": "Co2Sensor",
           "body": {
-            "shape": "Rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#d73800",
+            "shape": "Ellipse",
+            "textColor": "#000000",
+            "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
+            "icon": "capability_co2sensor.svg",
             "width": 500,
             "height": 500,
             "z-index": -2
@@ -494,7 +499,7 @@
             {
               "id": "color",
               "type": "color",
-              "default": "#d73800"
+              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -555,9 +560,9 @@
         {
           "type": "EnvSensor",
           "body": {
-            "shape": "Rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#e5c185",
+            "shape": "Ellipse",
+            "textColor": "#000000",
+            "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
             "width": 500,
             "height": 500,
@@ -572,7 +577,7 @@
             {
               "id": "color",
               "type": "color",
-              "default": "#e5c185"
+              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -634,10 +639,11 @@
         {
           "type": "Lighting",
           "body": {
-            "shape": "Rectangle",
+            "shape": "Ellipse",
             "textColor": "#000000",
-            "backgroundColor": "#fbf2c4",
+            "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
+            "icon": "capability_lighting.svg",
             "width": 500,
             "height": 500,
             "z-index": -2
@@ -651,7 +657,7 @@
             {
               "id": "color",
               "type": "color",
-              "default": "#fbf2c4"
+              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -705,10 +711,11 @@
         {
           "type": "Ventilation",
           "body": {
-            "shape": "Rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#7ebb9c",
+            "shape": "Ellipse",
+            "textColor": "#000000",
+            "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
+            "icon": "capability_ventilation.svg",
             "width": 500,
             "height": 500,
             "z-index": -2
@@ -722,7 +729,7 @@
             {
               "id": "color",
               "type": "color",
-              "default": "#7ebb9c"
+              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -797,9 +804,9 @@
         {
           "type": "Conveyor",
           "body": {
-            "shape": "Rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#bb2c1e",
+            "shape": "Ellipse",
+            "textColor": "#000000",
+            "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
             "width": 500,
             "height": 500,
@@ -814,7 +821,7 @@
             {
               "id": "color",
               "type": "color",
-              "default": "#7ebb9c"
+              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -874,9 +881,9 @@
         {
           "type": "RobotArm",
           "body": {
-            "shape": "Rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#d73800",
+            "shape": "Ellipse",
+            "textColor": "#000000",
+            "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
             "width": 500,
             "height": 500,
@@ -891,7 +898,7 @@
             {
               "id": "color",
               "type": "color",
-              "default": "#7ebb9c"
+              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -966,9 +973,9 @@
         {
           "type": "ImageInspector",
           "body": {
-            "shape": "Rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#e5c185",
+            "shape": "Ellipse",
+            "textColor": "#000000",
+            "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
             "width": 500,
             "height": 500,
@@ -983,7 +990,7 @@
             {
               "id": "color",
               "type": "color",
-              "default": "#d73800"
+              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -1067,9 +1074,9 @@
         {
           "type": "TicketCreation",
           "body": {
-            "shape": "Rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#fbf2c4",
+            "shape": "Ellipse",
+            "textColor": "#000000",
+            "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
             "width": 500,
             "height": 500,
@@ -1084,7 +1091,7 @@
             {
               "id": "color",
               "type": "color",
-              "default": "#d73800"
+              "default": "#e6e6e6"
             },
             {
               "id": "type",

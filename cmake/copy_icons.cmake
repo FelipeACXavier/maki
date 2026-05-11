@@ -79,6 +79,13 @@ file(GLOB APP_ICON_FILES
   ${MISSION_PATH}/node_subtask_placeholder.svg
   ${MISSION_PATH}/port_in.svg
   ${MISSION_PATH}/port_out.svg
+  ${MISSION_PATH}/capability_siren.svg
+  ${MISSION_PATH}/capability_lighting.svg
+  ${MISSION_PATH}/capability_ventilation.svg
+  ${MISSION_PATH}/capability_grip.svg
+  ${MISSION_PATH}/capability_vision.svg
+  ${MISSION_PATH}/capability_co2sensor.svg
+  ${MISSION_PATH}/capability_timer.svg
   ${SHAPES_PATH}/shape_start.svg
   ${SHAPES_PATH}/shape_middle.svg
   ${SHAPES_PATH}/shape_end.svg

@@ -194,8 +194,10 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
     mStorage->addFlow(std::make_shared<FlowSaveInfo>(event));
   }
 
-  // node svg replaces icon if set 
-  if (config()->body.nodeSvg.isEmpty() && !mStorage->getIcon().isEmpty())
+  // node svg replaces icon if set
+  const bool structuralCapability =
+      config()->libraryType == Types::LibraryTypes::STRUCTURAL && config()->type != QStringLiteral("Task");
+  if (config()->body.nodeSvg.isEmpty() && !mStorage->getIcon().isEmpty() && !structuralCapability)
     setIcon(mStorage->getIcon(), config()->body.iconColor);
 
   qreal labelSize = qMax(Fonts::BaseSize, mSize.width() / Fonts::BaseFactor);
@@ -273,6 +275,11 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
     painter->setBrush(QBrush(background));
     const QRectF r = boundingRect().adjusted(2, 2, -2, -2);
     painter->drawEllipse(r);
+    if (!config()->body.iconPath.isEmpty())
+    {
+      const QString iconAbsPath = AppPaths::icon(config()->body.iconPath);
+      renderSvgInEllipse(painter, iconAbsPath, r.center(), qMin(r.width(), r.height()));
+    }
     return;
   }
 
@@ -320,10 +327,18 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
     return;
   }
 
-  NodeBase::paintNode(boundingRect(),
-                      background,
-                      isSelected() ? QPen(Config::HIGHLIGHT, 4 / baseScale()) : QPen(Config::FOREGROUND, 1.0 / baseScale()),
-                      painter);
+  const QPen outlinePen =
+      isSelected() ? QPen(Config::HIGHLIGHT, 4 / baseScale()) : QPen(Config::FOREGROUND, 1.0 / baseScale());
+  const bool isStructuralCapability =
+      function() == Types::LibraryTypes::STRUCTURAL && !isTaskContainer();
+
+  NodeBase::paintNode(boundingRect(), background, outlinePen, painter);
+
+  if (isStructuralCapability && !config()->body.iconPath.isEmpty())
+  {
+    const QRectF r = boundingRect().adjusted(2, 2, -2, -2);
+    renderSvgInEllipse(painter, AppPaths::icon(config()->body.iconPath), r.center(), qMin(r.width(), r.height()));
+  }
 }
 
 QPainterPath NodeItem::shape() const
