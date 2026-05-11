@@ -1,6 +1,10 @@
 #include "dezyne_action.h"
 
+#include <QString>
+
 #include "../koda_generator.h"
+#include "logging.h"
+#include "pipeline_artifact.h"
 
 GenerateDezyneAction::GenerateDezyneAction(KodaGenerator* generator)
     : mGenerator(generator)
@@ -8,12 +12,20 @@ GenerateDezyneAction::GenerateDezyneAction(KodaGenerator* generator)
 }
 QString GenerateDezyneAction::id() const
 {
+#ifdef USE_ANTLR
+  return "koda_antlr.generate_dezyne";
+#else
   return "koda.generate_dezyne";
+#endif
 }
 
 QString GenerateDezyneAction::displayName() const
 {
-  return "Generate Dezyne";
+#ifdef USE_ANTLR
+  return "Koda Antlr: Generate Dezyne";
+#else
+  return "Koda: Generate Dezyne";
+#endif
 }
 
 QStringList GenerateDezyneAction::consumes() const
@@ -26,18 +38,23 @@ QStringList GenerateDezyneAction::produces() const
   return {"dezyne"};
 }
 
-VoidResult GenerateDezyneAction::run(maki::PipelineContext& context, const QVariantMap& parameters)
+maki::ResultArtifacts GenerateDezyneAction::run(const maki::PipelineContext& context, const QVariantMap& parameters, maki::IPipeline* pipeline)
 {
-  // Use context.canvas
-  // Generate files
-  // Add artefacts
+  LOG_INFO("Running %s", qPrintable(id()));
 
-  context.addArtifact({
-      .id = "dezyne.generated",
-      .type = "dezyne",
-      .producer = id(),
-      .paths = {},
-  });
+  const auto artifacts = context.artifactsOfType("koda");
+  if (artifacts.isEmpty())
+    return maki::ResultArtifacts::Failed("No artifacts available, requires \"koda\"");
 
-  return VoidResult();
+  const auto koda = artifacts.at(0);
+  auto result = mGenerator->generateDezyne(koda, context.buildDir);
+  if (!result.IsSuccess())
+    return maki::ResultArtifacts::Failed(result.ErrorMessage());
+
+  maki::PipelineArtifact artifact = result.Value();
+  artifact.id = "dezyne.generated";
+  artifact.type = "dezyne";
+  artifact.producer = id();
+
+  return maki::Artifacts{ artifact };
 }

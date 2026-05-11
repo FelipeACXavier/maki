@@ -1,10 +1,11 @@
 #pragma once
 
 #include "pipeline_action.h"
+#include "pipeline_artifact.h"
 
 class KodaGenerator;
 
-class GenerateDezyneAction final : public maki::IPipelineAction
+class GenerateDezyneAction : public maki::IPipelineAction
 {
 public:
   GenerateDezyneAction(KodaGenerator* generator);
@@ -12,7 +13,7 @@ public:
   QString displayName() const override;
   QStringList consumes() const override;
   QStringList produces() const override;
-  VoidResult run(maki::PipelineContext& context, const QVariantMap& parameters) override;
+  maki::ResultArtifacts run(const maki::PipelineContext& context, const QVariantMap& parameters, maki::IPipeline* pipeline) override;
 
 private:
   KodaGenerator* mGenerator;

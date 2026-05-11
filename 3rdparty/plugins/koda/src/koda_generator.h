@@ -38,8 +38,11 @@ public:
   QString languageName() const override;
   maki::PluginVersion version() const override;
 
-  VoidResult verify(const QString& outputFolder) override;
-  VoidResult simulate(const QString& outputFolder) override;
+  QString generateKoda(const QDir& outputFolder);
+  Result<maki::PipelineArtifact> generateCpp(const maki::PipelineArtifact& artifact, const QDir& outputFolder, maki::IPipeline* pipeline);
+  Result<maki::PipelineArtifact> generateDezyne(const maki::PipelineArtifact& artifact, const QDir& outputFolder);
+  VoidResult verify(const maki::PipelineArtifact& artifacts, const QDir& outputFolder, maki::IPipeline* pipeline);
+  VoidResult simulate(const QString& outputFolder);
 
   QList<QString> generatedFiles() const override;
   void settingsChanged(const QVector<maki::SettingField>& settings) override;
@@ -80,8 +83,6 @@ private:
   {
     QString name = "";
   };
-
-  QString generateKoda(const QString& outputFolder);
 
   // Generic generators
   QString generateNode(const INode& node);

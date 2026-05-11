@@ -142,6 +142,7 @@ function(add_koda_plugin TARGET_NAME USE_ANTLR_ENABLED)
     src/actions/koda_action.cpp
     src/actions/dezyne_action.cpp
     src/actions/cpp_action.cpp
+    src/actions/verify_action.cpp
     ${JSON_FILE}
   )
 

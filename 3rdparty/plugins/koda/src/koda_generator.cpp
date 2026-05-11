@@ -14,6 +14,7 @@
 #include "actions/cpp_action.h"
 #include "actions/dezyne_action.h"
 #include "actions/koda_action.h"
+#include "actions/verify_action.h"
 #include "dzn_client/dezyne_simulator.h"
 #include "dzn_client/simulation_scene.h"
 #include "idocument.h"
@@ -193,7 +194,7 @@ void KodaGenerator::setHostServices(maki::IHostServices* services)
   if (auto logger = mServices->logger())
   {
     logging::gSourceName = languageName().toStdString();
-    logging::gSilentLog = true;
+    logging::gSilentLog = false;
     logger->registerPlugin(languageName(), logging::gLogToStream);
   }
 
@@ -263,7 +264,7 @@ VoidResult KodaGenerator::simulate(const QString& outputFolder)
   if (mGeneratedDznFiles.empty())
   {
     mServices->pipeline()->startGroup("Simulation");
-    RETURN_ON_FAILURE(verify(outputFolder));
+    // RETURN_ON_FAILURE(verify(outputFolder));
 
     // Start simulation after verification is done
     const QString command = "echo";
@@ -288,7 +289,9 @@ QList<std::shared_ptr<maki::IPipelineAction>> KodaGenerator::pipelineActions()
   return {
       std::make_shared<GenerateKodaAction>(this),
       std::make_shared<GenerateDezyneAction>(this),
-      std::make_shared<GenerateCppAction>(this)};
+      std::make_shared<GenerateCppAction>(this),
+      std::make_shared<KodaVerifyAction>(this),
+  };
 }
 
 void KodaGenerator::startSimulation()
@@ -318,13 +321,149 @@ void KodaGenerator::startSimulation()
   }
 }
 
-VoidResult KodaGenerator::verify(const QString& outputFolder)
+Result<maki::PipelineArtifact> KodaGenerator::generateDezyne(const maki::PipelineArtifact& artifact, const QDir& outputFolder)
+{
+  if (!artifact.metadata.contains("sources"))
+    return Result<maki::PipelineArtifact>::Failed("Missing input sources");
+
+  const QStringList inputFiles = artifact.metadata["sources"].toStringList();
+#ifdef USE_ANTLR
+  koda::Compiler compiler;
+  if (!outputFolder.exists())
+    outputFolder.mkpath(".");
+
+  mDezyneOutputFolder = QDir(outputFolder.absolutePath() + "/models");
+  // Make sure the output is clean before the generation
+  if (mDezyneOutputFolder.exists())
+    mDezyneOutputFolder.removeRecursively();
+
+  mDezyneOutputFolder.mkpath(".");
+
+  for (const auto& file : inputFiles)
+  {
+    koda::CompilerOptions options;
+    options.inputFile = file.toStdString();
+    options.outputDir = mDezyneOutputFolder.absolutePath().toStdString();
+    LOG_DEBUG("Generating from file: %s to %s", qPrintable(file), qPrintable(outputFolder.absolutePath()));
+    auto parsed = compiler.parse(options);
+    if (!parsed)
+      return Result<maki::PipelineArtifact>::Failed(parsed.ErrorMessage());
+    auto generated = compiler.generate();
+    if (!generated)
+      return Result<maki::PipelineArtifact>::Failed(generated.ErrorMessage());
+  }
+
+  QStringList includeFolders = {};
+  QString libDstPath = mDezyneOutputFolder.absolutePath() + "/lib";
+  if (mAssetDir)
+  {
+    LOG_DEBUG("Using asset dir: %s", qPrintable(mAssetDir->absolutePath()));
+    QString libSrcPath = mAssetDir->absoluteFilePath("lib");
+    auto copied = copyDirectory(libSrcPath, libDstPath);
+    if (!copied.IsSuccess())
+      return Result<maki::PipelineArtifact>::Failed(copied.ErrorMessage());
+
+    includeFolders << libDstPath;
+  }
+
+  // Finally, set the files to be verified
+  QStringList filters;
+  filters << "*.dzn";
+
+  QStringList outputFiles = {};
+  for (const auto& file : mDezyneOutputFolder.entryList(filters, QDir::Files))
+    outputFiles << mDezyneOutputFolder.absoluteFilePath(file);
+
+  if (mAssetDir)
+  {
+    auto libDir = QDir(libDstPath);
+    for (const auto& file : libDir.entryList(filters, QDir::Files))
+      outputFiles << libDir.absoluteFilePath(file);
+  }
+
+  maki::PipelineArtifact output;
+  output.metadata = {
+      {"sources", outputFiles},
+      {"includes", includeFolders},
+  };
+
+  return output;
+#else
+  return maki::PipelineArtifact();
+#endif
+}
+
+Result<maki::PipelineArtifact> KodaGenerator::generateCpp(const maki::PipelineArtifact& artifact, const QDir& outputFolder, maki::IPipeline* pipeline)
+{
+  if (!artifact.metadata.contains("sources"))
+    return Result<maki::PipelineArtifact>::Failed("Missing input sources");
+  else if (!artifact.metadata.contains("includes"))
+    return Result<maki::PipelineArtifact>::Failed("Missing input includes");
+
+  const QStringList inputFiles = artifact.metadata["sources"].toStringList();
+  const QStringList includeFolders = artifact.metadata["includes"].toStringList();
+  if (!outputFolder.exists())
+    outputFolder.mkpath(".");
+
+  auto cppOutputFolder = QDir(outputFolder.absolutePath() + "/cpp");
+  if (cppOutputFolder.exists())
+    cppOutputFolder.removeRecursively();
+
+  cppOutputFolder.mkpath(".");
+
+  QStringList outputSourceFiles = {};
+  QStringList outputHeaderFiles = {};
+
+  pipeline->startGroup("CppGeneration");
+  for (const auto& f : inputFiles)
+  {
+    auto fullPath = cppOutputFolder.absoluteFilePath(f);
+    LOG_INFO("Will generate file: %s", qPrintable(fullPath));
+    const QString command = "dzn";
+    QStringList arguments = {
+        "code",
+        "-l",
+        "c++",
+        "-o",
+        cppOutputFolder.absolutePath(),
+        fullPath,
+    };
+    for (const auto& inc : includeFolders)
+      arguments << "-I" << inc;
+
+    QProcess* generate = new QProcess(this);
+    generate->setProgram(command);
+    generate->setArguments(arguments);
+
+    QFileInfo info(fullPath);
+    QString baseName = info.completeBaseName();
+    outputHeaderFiles << info.dir().filePath(baseName + ".hh");
+    outputSourceFiles << info.dir().filePath(baseName + ".cc");
+
+    pipeline->add(generate, maki::OnFail::STOP);
+  }
+  pipeline->endGroup();
+
+  maki::PipelineArtifact output;
+  output.metadata = {
+      {"sources", outputSourceFiles},
+      {"includes", outputHeaderFiles},
+  };
+
+  return output;
+}
+
+VoidResult KodaGenerator::verify(const maki::PipelineArtifact& artifact, const QDir& outputFolder, maki::IPipeline* pipeline)
 {
   LOG_INFO("Running verification");
 
-  if (mServices == nullptr)
+  if (!artifact.metadata.contains("sources"))
+    return Result<maki::PipelineArtifact>::Failed("Missing input sources");
+  else if (!artifact.metadata.contains("includes"))
+    return Result<maki::PipelineArtifact>::Failed("Missing input includes");
+  else if (mServices == nullptr)
     return VoidResult::Failed("Cannot proceed with verification, no services provided");
-  else if (mServices->pipeline() == nullptr)
+  else if (pipeline == nullptr)
     return VoidResult::Failed("Cannot proceed with verification, no pipeline provided");
   else if (mServices->document() == nullptr)
     return VoidResult::Failed("Cannot proceed with verification, no document provided");
@@ -332,121 +471,21 @@ VoidResult KodaGenerator::verify(const QString& outputFolder)
   if (mServices->document()->getnodes().isEmpty())
     return VoidResult::Failed("Nothing to verify");
 
-  mGeneratedDznFiles = {};
-  mGeneratedFiles = {};
+  const QStringList inputFiles = artifact.metadata["sources"].toStringList();
+  const QStringList includeFolders = artifact.metadata["includes"].toStringList();
 
-  // Create output folder
-  mOutputFolder = QDir(outputFolder);
-  if (!mOutputFolder.exists())
-    mOutputFolder.mkpath(".");
-
-  // Clear the errors before generation
-  mErrors = {};
-
-  // Generate Koda from the model
-  generateKoda(outputFolder);
-
-  if (!mErrors.isEmpty())
-  {
-    for (const auto& error : mErrors)
-      LOG_WARNING("%s", qPrintable(error.message));
-
-    return VoidResult::Failed("Failed to generate KODA file");
-  }
-
-  // Compile Koda to Dezyne
-  mDezyneOutputFolder = QDir(mOutputFolder.absolutePath() + "/models");
-  // Make sure the output is clean before the next generation
-  if (mDezyneOutputFolder.exists())
-    mDezyneOutputFolder.removeRecursively();
-
-  mDezyneOutputFolder.mkpath(".");
-
-  QStringList includeFolders = {};
-
-  LOG_INFO("Compiling %s to Dezyne: %s %d", qPrintable(languageName()), qPrintable(mDezyneOutputFolder.absolutePath()), mGeneratedFiles.size());
-#ifdef USE_ANTLR
-  // First, we compile the program
-  koda::Compiler compiler;
-  for (const auto& file : mGeneratedFiles)
-  {
-    koda::CompilerOptions options;
-    options.inputFile = file.toStdString();
-    options.outputDir = mDezyneOutputFolder.absolutePath().toStdString();
-    RETURN_ON_FAILURE(compiler.parse(options));
-    RETURN_ON_FAILURE(compiler.generate());
-  }
-
-  // Make sure the correct file are included
-  includeFolders << mDezyneOutputFolder.absolutePath();
-
-  // Then we make sure the dezyne libraries are available
-  if (mAssetDir)
-  {
-    LOG_DEBUG("Using asset dir: %s", qPrintable(mAssetDir->absolutePath()));
-    QString libSrcPath = mAssetDir->absoluteFilePath("lib");
-    QString libDstPath = mDezyneOutputFolder.absolutePath() + "/lib";
-    RETURN_ON_FAILURE(copyDirectory(libSrcPath, libDstPath));
-    includeFolders << libDstPath;
-  }
-
-  // Finally, set the files to be verified
-  QStringList filters;
-  filters << "*.dzn";
-  mGeneratedDznFiles = mDezyneOutputFolder.entryList(filters, QDir::Files);
-
-  // Keep only files NOT containing "arbiter" for now
-  // QStringList filtered;
-  // auto taskOnly = getSetting("taskOnly");
-  // for (const QString& f : files)
-  // {
-  //   if (!f.contains("arbiter", Qt::CaseInsensitive))
-  //     filtered << f;
-
-  //   LOG_DEBUG("Task only: %d %d %d - %s", taskOnly.getValue().isValid(), taskOnly.getValue().toBool(), f.contains("_task", Qt::CaseInsensitive), qPrintable(f));
-  //   if (taskOnly.getValue().isValid() && taskOnly.getValue().toBool() && f.contains("_task", Qt::CaseInsensitive))
-  //     filtered << f;
-  // }
-
-  // mGeneratedDznFiles = filtered;
-#else
-  mServices->pipeline()->startGroup("Generation");
-  for (const auto& file : mGeneratedFiles)
-  {
-    LOG_DEBUG("Will generate Dezyne from KODA file: %s", qPrintable(file));
-    const QString command = "java";
-    const QStringList arguments = {
-        "-jar",
-        QDir::homePath() + "/rascal-0.40.9.jar",
-        "Main.rsc",                    // Entrypoint for KODA
-        file,                          // Input
-        mOutputFolder.absolutePath(),  // Output
-        "ros"                          // Generator type
-    };
-
-    QProcess* generate = new QProcess(this);
-    generate->setWorkingDirectory("/home/felaze/Documents/PhD/Programs/DSL/koda");
-    generate->setProgram(command);
-    generate->setArguments(arguments);
-
-    mServices->pipeline()->add(generate, maki::OnFail::STOP);
-  }
-  mServices->pipeline()->endGroup();
-#endif
-
-  // TODO: We need to find a better solution for this, we shouldn't allow plugins to execute any scripts
-  mServices->pipeline()->startGroup("Verification");
   auto taskOnly = getSetting("taskOnly");
-  for (const QString& f : mGeneratedDznFiles)
+  pipeline->startGroup("Verification");
+  for (const QString& f : inputFiles)
   {
-    auto fullPath = mDezyneOutputFolder.absoluteFilePath(f);
-    if (fullPath.contains("/a_") || fullPath.contains("types"))
+    if (f.contains("/a_") || f.contains("types"))
       continue;
-    if (fullPath.contains("arbiter"))
+    if (f.contains("arbiter"))
       continue;
     if (taskOnly.getValue().isValid() && taskOnly.getValue().toBool() && !f.contains("_task"))
       continue;
 
+    auto fullPath = mDezyneOutputFolder.absoluteFilePath(f);
     LOG_INFO("Will verify file: %s", qPrintable(fullPath));
 #ifdef USE_ANTLR
     const QString command = "ide";
@@ -461,16 +500,19 @@ VoidResult KodaGenerator::verify(const QString& outputFolder)
     generate->setProgram(command);
     generate->setArguments(arguments);
 
-    mServices->pipeline()->add(generate, maki::OnFail::STOP);
+    pipeline->add(generate, maki::OnFail::STOP);
   }
-  mServices->pipeline()->endGroup();
+  pipeline->endGroup();
 
   return VoidResult();
 }
 
-QString KodaGenerator::generateKoda(const QString& outputFolder)
+QString KodaGenerator::generateKoda(const QDir& outputFolder)
 {
   mGeneratedFiles.clear();
+  mOutputFolder = outputFolder;
+  if (!mOutputFolder.exists())
+    mOutputFolder.mkdir(".");
 
   LOG_DEBUG("Generating Koda files with %d nodes", mServices->document()->getnodes().size());
   QString code = "";

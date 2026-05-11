@@ -169,34 +169,34 @@ QList<std::shared_ptr<maki::IPipelineAction>> PlatformIOPlugin::pipelineActions(
 }
 
 // VoidResult PlatformIOPlugin::generate(const QString& outputFolder)
-VoidResult PlatformIOPlugin::verify(const QString& outputFolder)
-{
-  if (outputFolder.isEmpty())
-    return VoidResult::Failed("No output folder configured for PlatformIO generation");
-  else if (mServices->pipeline() == nullptr)
-    return VoidResult::Failed("Cannot proceed with generation, no pipeline provided");
+// VoidResult PlatformIOPlugin::verify(const QString& outputFolder)
+// {
+//   if (outputFolder.isEmpty())
+//     return VoidResult::Failed("No output folder configured for PlatformIO generation");
+//   else if (mServices->pipeline() == nullptr)
+//     return VoidResult::Failed("Cannot proceed with generation, no pipeline provided");
 
-  mGeneratedFiles = {};
-  mCurrentOutputFolder = outputFolder;
+//   mGeneratedFiles = {};
+//   mCurrentOutputFolder = outputFolder;
 
-  if (auto r = initialiseProject(outputFolder); !r)
-    return r;
+//   if (auto r = initialiseProject(outputFolder); !r)
+//     return r;
 
-  // if (auto r = writePlatformIni(outputFolder); !r)
-  //   return r;
+//   // if (auto r = writePlatformIni(outputFolder); !r)
+//   //   return r;
 
-  // if (auto r = writeMainCpp(outputFolder); !r)
-  //   return r;
+//   // if (auto r = writeMainCpp(outputFolder); !r)
+//   //   return r;
 
-  // appendOutput("Generated PlatformIO project in: " + outputFolder);
+//   // appendOutput("Generated PlatformIO project in: " + outputFolder);
 
-  return VoidResult();
-}
+//   return VoidResult();
+// }
 
-VoidResult PlatformIOPlugin::simulate(const QString& outputFolder)
-{
-  return verify(outputFolder);
-}
+// VoidResult PlatformIOPlugin::simulate(const QString& outputFolder)
+// {
+//   return verify(outputFolder);
+// }
 
 QList<QString> PlatformIOPlugin::generatedFiles() const
 {

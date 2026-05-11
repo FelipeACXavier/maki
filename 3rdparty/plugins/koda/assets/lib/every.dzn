@@ -26,7 +26,7 @@ component cevery {
     [state.State1] {
       on alarm.timeout(): {
         Result triggered = action1.trigger();
-        if (triggered.Failed) {
+        if (triggered.Error) {
           api.failure();
           state = State.Error;
         } else {

@@ -5,10 +5,10 @@
 
 class KodaGenerator;
 
-class GenerateCppAction : public maki::IPipelineAction
+class KodaVerifyAction : public maki::IPipelineAction
 {
 public:
-  GenerateCppAction(KodaGenerator* generator);
+  KodaVerifyAction(KodaGenerator* generator);
   QString id() const override;
   QString displayName() const override;
   QStringList consumes() const override;

@@ -121,16 +121,16 @@ component cwithin {
         Result ret1 = Result.Success;
         Result ret2 = Result.Success;
 
-        if (action.state.Running) {
+        if (action1.state.Running) {
           ret1 = action1.abort();
         }
 
-        if (handler.state.Running) {
+        if (action2.state.Running) {
           ret2 = action2.abort();
         }
 
         if (ret1.Success && ret2.Success) {
-          state = State.Idle;
+          state = State.State0;
           reply(Result.Success);
         } else if (ret1.Failure || ret2.Failure) {
           state = State.Error;

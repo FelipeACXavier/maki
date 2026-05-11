@@ -34,8 +34,8 @@ public:
   QString languageName() const override;
   maki::PluginVersion version() const override;
 
-  VoidResult verify(const QString& outputFolder) override;
-  VoidResult simulate(const QString& outputFolder) override;
+  // VoidResult verify(const QString& outputFolder) override;
+  // VoidResult simulate(const QString& outputFolder) override;
 
   QList<QString> generatedFiles() const override;
   void settingsChanged(const QVector<maki::SettingField>& settings) override;
