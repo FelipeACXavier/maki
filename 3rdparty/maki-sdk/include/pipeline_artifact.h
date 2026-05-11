@@ -3,6 +3,8 @@
 #include <QJsonObject>
 #include <QString>
 
+#include "result.h"
+
 namespace maki
 {
 struct PipelineArtifact
@@ -16,4 +18,8 @@ struct PipelineArtifact
   QJsonObject toJson() const;
   static PipelineArtifact fromJson(const QJsonObject& object);
 };
+
+typedef QList<maki::PipelineArtifact> Artifacts;
+typedef Result<Artifacts> ResultArtifacts;
+
 }  // namespace maki

@@ -4,6 +4,8 @@
 #include <QStringList>
 #include <QVariantMap>
 
+#include "ipipeline.h"
+#include "pipeline_artifact.h"
 #include "pipeline_context.h"
 #include "result.h"
 
@@ -16,7 +18,6 @@ public:
 
   virtual QString id() const = 0;
   virtual QString displayName() const = 0;
-
   virtual QStringList consumes() const = 0;
   virtual QStringList produces() const = 0;
 
@@ -25,6 +26,7 @@ public:
     return {};
   }
 
-  virtual VoidResult run(PipelineContext& context, const QVariantMap& parameters) = 0;
+  virtual ResultArtifacts run(const PipelineContext& context, const QVariantMap& parameters, maki::IPipeline* pipeline) = 0;
 };
+
 }  // namespace maki

@@ -31,9 +31,6 @@ public:
   virtual QString languageName() const = 0;
   virtual PluginVersion version() const = 0;
 
-  virtual VoidResult verify(const QString& outputFolder) = 0;
-  virtual VoidResult simulate(const QString& outputFolder) = 0;
-
   virtual QList<QString> generatedFiles() const = 0;
   virtual void settingsChanged(const QVector<maki::SettingField>& settings) = 0;
 

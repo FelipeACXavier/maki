@@ -23,12 +23,15 @@ public:
   bool hasType(const QString& type) const;
 
   void addArtifact(const PipelineArtifact& artifact);
+  void addPendingArtifact(const PipelineArtifact& artifact);
+  void commitPendingArtifact();
 
   std::optional<PipelineArtifact> artifact(const QString& id) const;
   QMap<QString, PipelineArtifact> artifacts() const;
-  QList<PipelineArtifact> artifactsOfType(const QString& type) const;
+  Artifacts artifactsOfType(const QString& type) const;
 
 private:
   QMap<QString, PipelineArtifact> mArtifacts;
+  Artifacts mPending;
 };
 }  // namespace maki
