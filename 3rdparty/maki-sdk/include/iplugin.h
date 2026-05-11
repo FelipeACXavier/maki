@@ -31,7 +31,6 @@ public:
   virtual QString languageName() const = 0;
   virtual PluginVersion version() const = 0;
 
-  virtual QList<QString> generatedFiles() const = 0;
   virtual void settingsChanged(const QVector<maki::SettingField>& settings) = 0;
 
   virtual QList<std::shared_ptr<maki::IPipelineAction>> pipelineActions() = 0;

@@ -38,13 +38,12 @@ public:
   QString languageName() const override;
   maki::PluginVersion version() const override;
 
-  QString generateKoda(const QDir& outputFolder);
+  Result<maki::PipelineArtifact> generateKoda(const maki::PipelineArtifact& artifact, const QDir& outputFolder);
   Result<maki::PipelineArtifact> generateCpp(const maki::PipelineArtifact& artifact, const QDir& outputFolder, maki::IPipeline* pipeline);
   Result<maki::PipelineArtifact> generateDezyne(const maki::PipelineArtifact& artifact, const QDir& outputFolder);
   VoidResult verify(const maki::PipelineArtifact& artifacts, const QDir& outputFolder, maki::IPipeline* pipeline);
   VoidResult simulate(const QString& outputFolder);
 
-  QList<QString> generatedFiles() const override;
   void settingsChanged(const QVector<maki::SettingField>& settings) override;
 
   QList<std::shared_ptr<maki::IPipelineAction>> pipelineActions() override;
@@ -62,22 +61,11 @@ private:
   QString mName;
   std::optional<QDir> mAssetDir;
 
-  QVector<QString> mGeneratedIds = {};
   QProcess* mDaemon = nullptr;
   DezyneSimulator* mSimulator = nullptr;
   QJsonObject mLastUpdate;
 
   std::unique_ptr<TraceSceneBuilder> mTraceBuilder;
-
-  struct Error
-  {
-    QString nodeId;
-    QString nodeType;
-    QString flowId;
-    QString message;
-  };
-
-  QVector<Error> mErrors;
 
   struct Argument
   {
@@ -85,25 +73,24 @@ private:
   };
 
   // Generic generators
-  QString generateNode(const INode& node);
-  QString generateBehaviourNode(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
-  QString generateTransitions(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
+  Result<QString> generateBehaviourNode(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
+  Result<QString> generateTransitions(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
 
   // These are the block generators
-  QString generateComponent(const INode& node, const QString& code, const QString& args);
-  QString generateCapability(const INode& node);
+  VoidResult generateComponent(const INode& node, const QString& code, const QString& args);
+  Result<QString> generateCapability(const INode& node);
 
-  QString generateStart(const QString& parent, const INode& node, const IFlow& flow, const QString& format);
-  QString generateSuccess(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
-  QString generateError(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
-  QString generateContinue(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
+  Result<QString> generateStart(const QString& parent, const INode& node, const IFlow& flow, const QString& format);
+  Result<QString> generateSuccess(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
+  Result<QString> generateError(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
+  Result<QString> generateContinue(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
 
-  QString generateAsyncTask(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
-  QString generateSyncTask(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
-  QString generateWithin(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
-  QString generateEvery(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
-  QString generateRepeat(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
-  QString generateStrategy(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
+  Result<QString> generateAsyncTask(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
+  Result<QString> generateSyncTask(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
+  Result<QString> generateWithin(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
+  Result<QString> generateEvery(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
+  Result<QString> generateRepeat(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
+  Result<QString> generateStrategy(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
 
   // Helpers
   QString fixCase(const QString& name);

@@ -198,11 +198,6 @@ QList<std::shared_ptr<maki::IPipelineAction>> PlatformIOPlugin::pipelineActions(
 //   return verify(outputFolder);
 // }
 
-QList<QString> PlatformIOPlugin::generatedFiles() const
-{
-  return mGeneratedFiles;
-}
-
 // VoidResult PlatformIOPlugin::build(const QString& outputFolder)
 // {
 //   if (auto r = generate(outputFolder); !r)

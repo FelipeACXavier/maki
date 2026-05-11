@@ -56,17 +56,15 @@ maki::ResultArtifacts GenerateKodaAction::run(const maki::PipelineContext& conte
   //   LOG_DEBUG("Will explore node: %s", qPrintable(n->id()));
 
   // Generate files
-  mGenerator->generateKoda(context.buildDir);
+  auto output = mGenerator->generateKoda(maki::PipelineArtifact{}, context.buildDir);
+  if (!output.IsSuccess())
+      return maki::ResultArtifacts::Failed(output.ErrorMessage());
 
   // Add artefacts
-  maki::PipelineArtifact artifact = {
-      .id = "koda.generated",
-      .type = "koda",
-      .producer = id(),
-      .metadata = {
-          {"sources", mGenerator->generatedFiles()},
-      },
-  };
+  maki::PipelineArtifact artifact = output.Value();
+  artifact.id = "koda.generated";
+  artifact.type = "koda";
+  artifact.producer = id();
 
   return maki::Artifacts{ artifact };
 }
