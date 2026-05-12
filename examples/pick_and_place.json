@@ -1,10 +1,10 @@
 {
     "canvas": {
         "position": {
-            "x": 0,
-            "y": 0
+            "x": -145.71428571428572,
+            "y": 97.14285714285714
         },
-        "scale": 1
+        "scale": 0.35
     },
     "structural": [
         {
@@ -30,6 +30,7 @@
                                 }
                             ],
                             "id": "{903a8df6-e074-44b9-bf2e-a1e4053de22b}",
+                            "linksTo": 0,
                             "modifiable": false,
                             "name": "to_position",
                             "owner": "",
@@ -40,6 +41,7 @@
                             "arguments": [
                             ],
                             "id": "{c9c79ce8-5391-4a69-adaf-a11502146e2b}",
+                            "linksTo": 0,
                             "modifiable": false,
                             "name": "abort",
                             "owner": "",
@@ -65,6 +67,7 @@
                                 }
                             ],
                             "id": "{aae7420b-10bf-44d4-ae5c-d931e4eb3aa0}",
+                            "linksTo": 0,
                             "modifiable": false,
                             "name": "in_position",
                             "owner": "",
@@ -75,6 +78,7 @@
                             "arguments": [
                             ],
                             "id": "{5ff3998f-4345-4355-bac8-81fcaddeb02e}",
+                            "linksTo": 0,
                             "modifiable": false,
                             "name": "path_blocked",
                             "owner": "",
@@ -90,8 +94,8 @@
                         "data": ""
                     },
                     "position": {
-                        "x": -391.5,
-                        "y": 3
+                        "x": -191.5,
+                        "y": 183
                     },
                     "properties": {
                         "arguments": [
@@ -110,7 +114,28 @@
                         ],
                         "color": "#74a892",
                         "name": "Drive",
-                        "type": "action \"/navigate_to_pose\" \"nav2_msgs::action::NavigateToPose::Goal\""
+                        "type": {
+                            "id": "type",
+                            "options": [
+                                {
+                                    "id": "action",
+                                    "options": [
+                                        {
+                                            "default": "navigate_to_pose",
+                                            "id": "route",
+                                            "type": "string"
+                                        },
+                                        {
+                                            "default": "nav2_msgs::action::NavigateToPose::Goal",
+                                            "id": "message",
+                                            "type": "string"
+                                        }
+                                    ],
+                                    "type": "string"
+                                }
+                            ],
+                            "type": "void"
+                        }
                     },
                     "scale": 2.4271844660194173,
                     "size": {
@@ -124,6 +149,7 @@
                             "arguments": [
                             ],
                             "id": "{6d254179-2678-4e92-acb8-3b3fad537737}",
+                            "linksTo": 0,
                             "modifiable": false,
                             "name": "recognize",
                             "owner": "",
@@ -134,6 +160,7 @@
                             "arguments": [
                             ],
                             "id": "{7c00155b-0d92-430c-9e48-fb212b4ba4f3}",
+                            "linksTo": 0,
                             "modifiable": false,
                             "name": "cancel",
                             "owner": "",
@@ -144,6 +171,7 @@
                             "arguments": [
                             ],
                             "id": "{80a10113-ab91-4327-a374-ecc84f27e8eb}",
+                            "linksTo": 0,
                             "modifiable": false,
                             "name": "found",
                             "owner": "",
@@ -159,13 +187,34 @@
                         "data": ""
                     },
                     "position": {
-                        "x": -103.5,
-                        "y": -194
+                        "x": 76.5,
+                        "y": -34
                     },
                     "properties": {
                         "color": "#e6c994",
                         "name": "Vision",
-                        "type": "action \"/recognize\" \"std_msgs::String\""
+                        "type": {
+                            "id": "type",
+                            "options": [
+                                {
+                                    "id": "action",
+                                    "options": [
+                                        {
+                                            "default": "recognize",
+                                            "id": "route",
+                                            "type": "string"
+                                        },
+                                        {
+                                            "default": "std_msgs::String",
+                                            "id": "message",
+                                            "type": "string"
+                                        }
+                                    ],
+                                    "type": "string"
+                                }
+                            ],
+                            "type": "void"
+                        }
                     },
                     "scale": 2.5906735751295336,
                     "size": {
@@ -184,6 +233,7 @@
                                 }
                             ],
                             "id": "{ef942f11-abc3-49fd-a299-80e99e2d992f}",
+                            "linksTo": 0,
                             "modifiable": false,
                             "name": "handle",
                             "owner": "",
@@ -194,6 +244,7 @@
                             "arguments": [
                             ],
                             "id": "{abab70c8-4cc0-46cd-8394-4b95358787da}",
+                            "linksTo": 0,
                             "modifiable": false,
                             "name": "cancel",
                             "owner": "",
@@ -204,6 +255,7 @@
                             "arguments": [
                             ],
                             "id": "{5717ed64-e1c8-4d5e-90b8-e45823fd05bb}",
+                            "linksTo": 0,
                             "modifiable": false,
                             "name": "handled",
                             "owner": "",
@@ -214,6 +266,7 @@
                             "arguments": [
                             ],
                             "id": "{894eabaa-2edc-4c0e-b786-09e28f337d37}",
+                            "linksTo": 0,
                             "modifiable": false,
                             "name": "failed",
                             "owner": "",
@@ -229,8 +282,8 @@
                         "data": ""
                     },
                     "position": {
-                        "x": -437,
-                        "y": -253.5
+                        "x": -237,
+                        "y": -73.5
                     },
                     "properties": {
                         "arguments": [
@@ -241,7 +294,28 @@
                         ],
                         "color": "#cc7a3d",
                         "name": "Grip",
-                        "type": "action \"/handler/action\" \"std_msgs::String\""
+                        "type": {
+                            "id": "type",
+                            "options": [
+                                {
+                                    "id": "action",
+                                    "options": [
+                                        {
+                                            "default": "handler/action",
+                                            "id": "route",
+                                            "type": "string"
+                                        },
+                                        {
+                                            "default": "std_msgs::String",
+                                            "id": "message",
+                                            "type": "string"
+                                        }
+                                    ],
+                                    "type": "string"
+                                }
+                            ],
+                            "type": "void"
+                        }
                     },
                     "scale": 2.8901734104046244,
                     "size": {
@@ -311,6 +385,7 @@
                         }
                     ],
                     "id": "{c67153ba-eccb-47da-a202-ab2ec178afd5}",
+                    "linksTo": 0,
                     "modifiable": true,
                     "name": "start",
                     "owner": "",
@@ -321,6 +396,7 @@
                     "arguments": [
                     ],
                     "id": "{a52cf46e-f351-4189-aaea-06de90e2473c}",
+                    "linksTo": 0,
                     "modifiable": false,
                     "name": "abort",
                     "owner": "",
@@ -331,6 +407,7 @@
                     "arguments": [
                     ],
                     "id": "{6635b310-aa18-40d9-b5af-3e6526581525}",
+                    "linksTo": 0,
                     "modifiable": false,
                     "name": "done",
                     "owner": "",
@@ -341,6 +418,7 @@
                     "arguments": [
                     ],
                     "id": "{5a6aee18-8af5-4bc6-990c-2fd725410de1}",
+                    "linksTo": 0,
                     "modifiable": false,
                     "name": "failed",
                     "owner": "",
@@ -351,11 +429,12 @@
                     "arguments": [
                     ],
                     "id": "{4fa18684-b34d-428e-8a9e-c699e1c8f7eb}",
+                    "linksTo": 0,
                     "modifiable": true,
                     "name": "main",
                     "nodes": [
                         {
-                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_start.svg",
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_start.svg",
                             "id": "{b4c0fb19-24f0-4635-a993-98db8fae8cb7}",
                             "nodeId": "Koda::Start",
                             "parentId": "",
@@ -406,7 +485,7 @@
                             ]
                         },
                         {
-                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_repeat.svg",
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_repeat.svg",
                             "id": "{70499972-0728-4c5c-8a7d-0c2dc7ecd981}",
                             "nodeId": "Koda::Repeat",
                             "parentId": "",
@@ -418,14 +497,14 @@
                                 "y": 10
                             },
                             "properties": {
+                                "name": "Repeat",
                                 "strategy": {
                                     "options": [
                                         {
                                             "data": "loop"
                                         }
                                     ]
-                                },
-                                "name": "Repeat"
+                                }
                             },
                             "scale": 1,
                             "size": {
@@ -442,11 +521,12 @@
                     "arguments": [
                     ],
                     "id": "{34e4c651-d721-41ad-8a23-5b5178d4305c}",
+                    "linksTo": 0,
                     "modifiable": true,
                     "name": "loop",
                     "nodes": [
                         {
-                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_start.svg",
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_start.svg",
                             "id": "{f809948e-3c7c-48ce-a825-49b30c20bf3c}",
                             "nodeId": "Koda::Start",
                             "parentId": "",
@@ -471,8 +551,8 @@
                                     "destination": {
                                         "id": "{3a792d75-ccd7-4b1b-8d6e-11ad3994ee69}",
                                         "position": {
-                                            "x": -600,
-                                            "y": -15
+                                            "x": 0,
+                                            "y": 0
                                         },
                                         "shift": {
                                             "x": 0,
@@ -497,7 +577,7 @@
                             ]
                         },
                         {
-                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_async.svg",
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_async.svg",
                             "id": "{3a792d75-ccd7-4b1b-8d6e-11ad3994ee69}",
                             "nodeId": "Koda::Async task",
                             "parentId": "",
@@ -533,7 +613,7 @@
                                     ]
                                 },
                                 "color": "#202020",
-                                "name": "Async task"
+                                "name": "Drive to pick"
                             },
                             "scale": 1,
                             "size": {
@@ -545,8 +625,8 @@
                                     "destination": {
                                         "id": "{99fd7da4-b0b3-4620-9ada-5c229dc801c9}",
                                         "position": {
-                                            "x": -340,
-                                            "y": -15
+                                            "x": 0,
+                                            "y": 0
                                         },
                                         "shift": {
                                             "x": 0,
@@ -572,8 +652,8 @@
                                     "destination": {
                                         "id": "{4796b30d-c359-4e90-9a5f-9e943a43b1d4}",
                                         "position": {
-                                            "x": -326.7401722313744,
-                                            "y": 191.0859948633467
+                                            "x": 0,
+                                            "y": 0
                                         },
                                         "shift": {
                                             "x": 0,
@@ -586,8 +666,8 @@
                                     "source": {
                                         "id": "{3a792d75-ccd7-4b1b-8d6e-11ad3994ee69}",
                                         "position": {
-                                            "x": -513.2598277686257,
-                                            "y": 18.914005136653294
+                                            "x": -501.4166198419027,
+                                            "y": -3.18242104262497
                                         },
                                         "shift": {
                                             "x": 0,
@@ -599,8 +679,8 @@
                                     "destination": {
                                         "id": "{859d19ad-193c-4072-ac07-2659afe19fa5}",
                                         "position": {
-                                            "x": -329.63119945523,
-                                            "y": -184.51446195751538
+                                            "x": 0,
+                                            "y": 0
                                         },
                                         "shift": {
                                             "x": 0,
@@ -613,8 +693,8 @@
                                     "source": {
                                         "id": "{3a792d75-ccd7-4b1b-8d6e-11ad3994ee69}",
                                         "position": {
-                                            "x": -510.36880054477,
-                                            "y": -45.48553804248462
+                                            "x": -500.8714877151466,
+                                            "y": -24.294583405242534
                                         },
                                         "shift": {
                                             "x": 0,
@@ -625,7 +705,7 @@
                             ]
                         },
                         {
-                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_strategy.svg",
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_strategy.svg",
                             "id": "{99fd7da4-b0b3-4620-9ada-5c229dc801c9}",
                             "nodeId": "Koda::Strategy",
                             "parentId": "",
@@ -638,14 +718,16 @@
                             },
                             "properties": {
                                 "color": "#202020",
+                                "name": "Pick",
                                 "strategy": {
                                     "options": [
                                         {
-                                            "data": "pick"
+                                            "data": "pick",
+                                            "isVariable": false,
+                                            "type": "event_select"
                                         }
                                     ]
-                                },
-                                "name": "Strategy"
+                                }
                             },
                             "scale": 1,
                             "size": {
@@ -657,8 +739,8 @@
                                     "destination": {
                                         "id": "{3a3186dc-3393-40e0-ab38-cbbec8042d76}",
                                         "position": {
-                                            "x": -100,
-                                            "y": -15
+                                            "x": 0,
+                                            "y": 0
                                         },
                                         "shift": {
                                             "x": 0,
@@ -683,7 +765,7 @@
                             ]
                         },
                         {
-                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_async.svg",
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_async.svg",
                             "id": "{3a3186dc-3393-40e0-ab38-cbbec8042d76}",
                             "nodeId": "Koda::Async task",
                             "parentId": "",
@@ -719,7 +801,7 @@
                                     ]
                                 },
                                 "color": "#202020",
-                                "name": "Async task"
+                                "name": "Drive to drop"
                             },
                             "scale": 1,
                             "size": {
@@ -731,8 +813,8 @@
                                     "destination": {
                                         "id": "{eac51279-137c-4ac3-b29f-cf4a99acc2c9}",
                                         "position": {
-                                            "x": 140,
-                                            "y": -15
+                                            "x": 0,
+                                            "y": 0
                                         },
                                         "shift": {
                                             "x": 0,
@@ -758,8 +840,8 @@
                                     "destination": {
                                         "id": "{4796b30d-c359-4e90-9a5f-9e943a43b1d4}",
                                         "position": {
-                                            "x": -254.64466094067262,
-                                            "y": 189.64466094067262
+                                            "x": 0,
+                                            "y": 0
                                         },
                                         "shift": {
                                             "x": 0,
@@ -772,8 +854,8 @@
                                     "source": {
                                         "id": "{3a3186dc-3393-40e0-ab38-cbbec8042d76}",
                                         "position": {
-                                            "x": -85.35533905932738,
-                                            "y": 20.35533905932737
+                                            "x": -10,
+                                            "y": 15
                                         },
                                         "shift": {
                                             "x": 0,
@@ -785,8 +867,8 @@
                                     "destination": {
                                         "id": "{859d19ad-193c-4072-ac07-2659afe19fa5}",
                                         "position": {
-                                            "x": -251.5889360201312,
-                                            "y": -182.990780016776
+                                            "x": 0,
+                                            "y": 0
                                         },
                                         "shift": {
                                             "x": 0,
@@ -799,8 +881,8 @@
                                     "source": {
                                         "id": "{3a3186dc-3393-40e0-ab38-cbbec8042d76}",
                                         "position": {
-                                            "x": -88.4110639798688,
-                                            "y": -47.009219983224
+                                            "x": -6.811054955078326,
+                                            "y": -40.1935512762043
                                         },
                                         "shift": {
                                             "x": 0,
@@ -811,7 +893,7 @@
                             ]
                         },
                         {
-                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_strategy.svg",
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_strategy.svg",
                             "id": "{eac51279-137c-4ac3-b29f-cf4a99acc2c9}",
                             "nodeId": "Koda::Strategy",
                             "parentId": "",
@@ -824,14 +906,16 @@
                             },
                             "properties": {
                                 "color": "#202020",
+                                "name": "Drop",
                                 "strategy": {
                                     "options": [
                                         {
-                                            "data": "drop"
+                                            "data": "drop",
+                                            "isVariable": false,
+                                            "type": "event_select"
                                         }
                                     ]
-                                },
-                                "name": "Strategy"
+                                }
                             },
                             "scale": 1,
                             "size": {
@@ -840,7 +924,7 @@
                             }
                         },
                         {
-                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_strategy.svg",
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_strategy.svg",
                             "id": "{4796b30d-c359-4e90-9a5f-9e943a43b1d4}",
                             "nodeId": "Koda::Strategy",
                             "parentId": "",
@@ -849,18 +933,20 @@
                             },
                             "position": {
                                 "x": 190,
-                                "y": 171.0869565217391
+                                "y": 165
                             },
                             "properties": {
                                 "color": "#8d1d1f",
+                                "name": "Error flow",
                                 "strategy": {
                                     "options": [
                                         {
-                                            "data": "err"
+                                            "data": "err",
+                                            "isVariable": false,
+                                            "type": "event_select"
                                         }
                                     ]
-                                },
-                                "name": "Strategy"
+                                }
                             },
                             "scale": 1,
                             "size": {
@@ -869,7 +955,7 @@
                             }
                         },
                         {
-                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_strategy.svg",
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_strategy.svg",
                             "id": "{859d19ad-193c-4072-ac07-2659afe19fa5}",
                             "nodeId": "Koda::Strategy",
                             "parentId": "",
@@ -878,18 +964,20 @@
                             },
                             "position": {
                                 "x": 190,
-                                "y": -153.26086956521738
+                                "y": -155
                             },
                             "properties": {
                                 "color": "#b8b439",
+                                "name": "Abort flow",
                                 "strategy": {
                                     "options": [
                                         {
-                                            "data": "err"
+                                            "data": "err",
+                                            "isVariable": false,
+                                            "type": "event_select"
                                         }
                                     ]
-                                },
-                                "name": "Strategy"
+                                }
                             },
                             "scale": 1.1,
                             "size": {
@@ -906,11 +994,12 @@
                     "arguments": [
                     ],
                     "id": "{b0343c3b-4ecd-4cef-8a25-f0229bf4b649}",
+                    "linksTo": 0,
                     "modifiable": true,
                     "name": "pick",
                     "nodes": [
                         {
-                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_start.svg",
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_start.svg",
                             "id": "{91dfd7c1-8ef5-4820-ad5f-1efb6d788f17}",
                             "nodeId": "Koda::Start",
                             "parentId": "",
@@ -961,7 +1050,7 @@
                             ]
                         },
                         {
-                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_async.svg",
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_async.svg",
                             "id": "{7bacbd56-4372-4066-89e3-541b66c9dddd}",
                             "nodeId": "Koda::Async task",
                             "parentId": "",
@@ -1044,7 +1133,7 @@
                             ]
                         },
                         {
-                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_async.svg",
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_async.svg",
                             "id": "{4a181bca-2c8b-497c-ba66-d67b63475cb5}",
                             "nodeId": "Koda::Async task",
                             "parentId": "",
@@ -1052,7 +1141,7 @@
                                 "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAACgklEQVR4nO2ZvW4UMRCAv13RQ4o0lxYkSkAgLhIFFRGnBfEKiFBAjSgRvEdIXuFIgDu6IApAQJSeMkABRbgXAAr7tMbr3fU5a99JN59kyd7zeMaj8fjnQBAEQRAEQRAEQRAEYcnI5m0AkAMDXX8N/Emp/JRnvwzo63K6pe8E+KDLX4+xB8Ceru8Am1SdEFN/K2vAWA82SxkDPY/xC0tuGxUVqfQ3sgb8ClA+LT89jMhRk3Y5Ibr+phyQASNgQ7d/AENtUBOrwB1D8RvgJs3hmANbwF3j2w7KATcS6HeyTunJ78DKDLIrWmYq3/eQcUVCdP1NSdAUGgLHMxhwDLwAHuj2U1RSauMIOAQuWN93A/QPgYe6vV6nv8kBZrZtCzsXZ4z6BuVSCuF8gIxpc+3Okdf9sCz4ngNC+GrU3wL7HjIZcJvqEnjXkU0VYjrAzLr7qDzQxHQnsCcPEU+Hi7IEXNvgYQrFMSPAl7ozwBHuaOhc+bwZUJ38Jh2d49uYRwTYtz+TustQNFI7wA73AuWEQrdHLOh1uAtcax3UhF8ltOM/UuWADHeiGyXSX0uqCLgFXDTa28B9Eoe7i1QRYE7+OQsyeYgbAa63hgPUNfUJ8JlyFxgAl62+11vG6oSYDjjn+HZJlykFanJ7jr4mZ7syymYRDkJzpSkCJkZ9NWDs345vB8BL1CnvE+UuUABXrL59yjeECbNj2hwi3+mTmFm28Iu8JE9yqR5FvwH3jD4+22BX+seoJBt0t+ihnpZP+iydo7Y/87fHCfWfiB5hf0yMLOX2q+9uYv1OfPfXDLiKWpc+f029Bz5SDbsceARcA54BXxLrFwRBEARBEARBEARBEJaef+gEFWJs2rViAAAAAElFTkSuQmCC"
                             },
                             "position": {
-                                "x": -309,
+                                "x": -310,
                                 "y": -15
                             },
                             "properties": {
@@ -1135,7 +1224,7 @@
                             ]
                         },
                         {
-                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_strategy.svg",
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_strategy.svg",
                             "id": "{9471ebd5-4a73-4e7e-a14c-82f0f420bb1a}",
                             "nodeId": "Koda::Strategy",
                             "parentId": "",
@@ -1148,14 +1237,16 @@
                             },
                             "properties": {
                                 "color": "#ba1e21",
+                                "name": "Error strategy",
                                 "strategy": {
                                     "options": [
                                         {
-                                            "data": "err"
+                                            "data": "err",
+                                            "isVariable": false,
+                                            "type": "event_select"
                                         }
                                     ]
-                                },
-                                "name": "Strategy"
+                                }
                             },
                             "scale": 1,
                             "size": {
@@ -1164,7 +1255,7 @@
                             }
                         },
                         {
-                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_strategy.svg",
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_strategy.svg",
                             "id": "{27a2dc66-44d1-462f-8ed1-0ebdd4f028ad}",
                             "nodeId": "Koda::Strategy",
                             "parentId": "",
@@ -1177,14 +1268,16 @@
                             },
                             "properties": {
                                 "color": "#9c9c22",
+                                "name": "Abort strategy",
                                 "strategy": {
                                     "options": [
                                         {
-                                            "data": "err"
+                                            "data": "err",
+                                            "isVariable": false,
+                                            "type": "event_select"
                                         }
                                     ]
-                                },
-                                "name": "Strategy"
+                                }
                             },
                             "scale": 1,
                             "size": {
@@ -1201,11 +1294,12 @@
                     "arguments": [
                     ],
                     "id": "{f56d82c6-356b-48d7-a958-e8711e5e7779}",
+                    "linksTo": 0,
                     "modifiable": true,
                     "name": "drop",
                     "nodes": [
                         {
-                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_start.svg",
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_start.svg",
                             "id": "{86b25ffd-5766-4013-9afd-d08ea178c96d}",
                             "nodeId": "Koda::Start",
                             "parentId": "",
@@ -1256,7 +1350,7 @@
                             ]
                         },
                         {
-                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_async.svg",
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_async.svg",
                             "id": "{2ddd69cc-d705-46ca-84ee-bae09870e32a}",
                             "nodeId": "Koda::Async task",
                             "parentId": "",
@@ -1347,7 +1441,7 @@
                             ]
                         },
                         {
-                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_strategy.svg",
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_strategy.svg",
                             "id": "{5d364c8f-d163-4428-b55d-84c4ee4c3bc0}",
                             "nodeId": "Koda::Strategy",
                             "parentId": "",
@@ -1360,14 +1454,14 @@
                             },
                             "properties": {
                                 "color": "#9d9f26",
+                                "name": "Strategy",
                                 "strategy": {
                                     "options": [
                                         {
                                             "data": "err"
                                         }
                                     ]
-                                },
-                                "name": "Strategy"
+                                }
                             },
                             "scale": 1,
                             "size": {
@@ -1376,7 +1470,7 @@
                             }
                         },
                         {
-                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_strategy.svg",
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_strategy.svg",
                             "id": "{cfaa2827-d58a-4c68-8d6f-ffbbfdd5b143}",
                             "nodeId": "Koda::Strategy",
                             "parentId": "",
@@ -1389,14 +1483,14 @@
                             },
                             "properties": {
                                 "color": "#9d1e20",
+                                "name": "Strategy",
                                 "strategy": {
                                     "options": [
                                         {
                                             "data": "err"
                                         }
                                     ]
-                                },
-                                "name": "Strategy"
+                                }
                             },
                             "scale": 1,
                             "size": {
@@ -1413,11 +1507,12 @@
                     "arguments": [
                     ],
                     "id": "{cd7bc4ce-eeb3-4092-aafd-0bcfed101f71}",
+                    "linksTo": 0,
                     "modifiable": true,
                     "name": "err",
                     "nodes": [
                         {
-                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_start.svg",
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_start.svg",
                             "id": "{1f0e012b-7060-4e70-9534-bde76e5bcb86}",
                             "nodeId": "Koda::Start",
                             "parentId": "",
@@ -1468,7 +1563,7 @@
                             ]
                         },
                         {
-                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_sync.svg",
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_sync.svg",
                             "id": "{209dd7da-afb8-400c-935a-b91ac546c8ec}",
                             "nodeId": "Koda::Sync task",
                             "parentId": "",
@@ -1480,10 +1575,6 @@
                                 "y": -15
                             },
                             "properties": {
-                                "capability": {
-                                    "options": [
-                                    ]
-                                },
                                 "capability": {
                                     "data": "Drive",
                                     "options": [
@@ -1531,7 +1622,7 @@
                             ]
                         },
                         {
-                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_sync.svg",
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_sync.svg",
                             "id": "{800f5bb1-b689-4f9b-a78f-d1afd96b2a91}",
                             "nodeId": "Koda::Sync task",
                             "parentId": "",
@@ -1543,10 +1634,6 @@
                                 "y": -15
                             },
                             "properties": {
-                                "capability": {
-                                    "options": [
-                                    ]
-                                },
                                 "capability": {
                                     "data": "Vision",
                                     "options": [
@@ -1594,7 +1681,7 @@
                             ]
                         },
                         {
-                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_sync.svg",
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_sync.svg",
                             "id": "{d6931cf2-954b-4ae4-9449-ddad5c74636e}",
                             "nodeId": "Koda::Sync task",
                             "parentId": "",
@@ -1606,10 +1693,6 @@
                                 "y": -15
                             },
                             "properties": {
-                                "capability": {
-                                    "options": [
-                                    ]
-                                },
                                 "capability": {
                                     "data": "Grip",
                                     "options": [
@@ -1657,7 +1740,7 @@
                             ]
                         },
                         {
-                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../share/icons/koda_success.svg",
+                            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_success.svg",
                             "id": "{7dd2387d-aa86-4f5e-8170-fcb53fdbaf7e}",
                             "nodeId": "Koda::Success",
                             "parentId": "",
@@ -1691,11 +1774,11 @@
                 "data": ""
             },
             "position": {
-                "x": -268.5,
-                "y": -103.5
+                "x": -68.5,
+                "y": 76.5
             },
             "properties": {
-                "color": "#202020",
+                "color": "#3b7e7c",
                 "name": "Pick and Place"
             },
             "scale": 0.4873294346978557,
