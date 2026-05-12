@@ -1,0 +1,149 @@
+{
+  "name": "Arduino",
+  "author": "Felipe Xavier",
+  "libraries": [
+    {
+      "type": "structural",
+      "name": "Arduino",
+      "nodes": [
+        {
+          "type": "Led",
+          "body": {
+            "shape": "Rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#c45335",
+            "borderColor": "#FFFFFF",
+            "width": 100,
+            "height": 100,
+            "z-index": -2
+          },
+          "help": {
+            "message": "Represents a single LED in the arduino board"
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Led",
+              "info": "The name of the block"
+            },
+            {
+              "id": "type",
+              "type": "void",
+              "options": [
+                {
+                  "id": "service",
+                  "type": "string",
+                  "options": [
+                    {
+                      "id": "route",
+                      "type": "string",
+                      "default": "LED_BUILTIN"
+                    },
+                    {
+                      "id": "message",
+                      "type": "string",
+                      "default": ""
+                    }
+                  ]
+                },
+                {
+                  "id": "service",
+                  "type": "string",
+                  "options": [
+                    {
+                      "id": "route",
+                      "type": "string",
+                      "default": "LED_BUILTIN"
+                    },
+                    {
+                      "id": "message",
+                      "type": "string",
+                      "default": ""
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "controls": [],
+          "events": [
+            {
+              "id": "start",
+              "type": "in",
+              "returnType": "void",
+              "modifiable": false,
+              "linksTo": 0
+            },
+            {
+              "id": "stop",
+              "type": "in",
+              "returnType": "void",
+              "modifiable": false,
+              "linksTo": 1
+            }
+          ]
+        },
+        {
+          "type": "Timer",
+          "body": {
+            "shape": "rounded rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#008585",
+            "borderColor": "#FFFFFF",
+            "borderRadius": 10,
+            "width": 100,
+            "height": 50,
+            "iconColor": "#FFFFFF",
+            "iconScale": 0.8
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Timer"
+            },
+            {
+              "id": "type",
+              "type": "void",
+              "options": [
+                {
+                  "id": "service",
+                  "type": "string",
+                  "options": [
+                    {
+                      "id": "route",
+                      "type": "string",
+                      "default": ""
+                    },
+                    {
+                      "id": "message",
+                      "type": "string",
+                      "default": ""
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "controls": [],
+          "events": [
+            {
+              "id": "delay",
+              "type": "in",
+              "returnType": "void",
+              "modifiable": false,
+              "linksTo": 0,
+              "arguments": [
+                {
+                  "id": "Milliseconds",
+                  "type": "int"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

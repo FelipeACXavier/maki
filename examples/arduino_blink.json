@@ -1,0 +1,557 @@
+{
+  "canvas": {
+    "position": {
+      "x": -618.4615384615385,
+      "y": -353.8461538461538
+    },
+    "scale": 0.65
+  },
+  "structural": [
+    {
+      "children": [
+        {
+          "flows": [
+            {
+              "arguments": [],
+              "id": "{5f9fcbc3-500c-4914-b347-df91dd0976ed}",
+              "linksTo": 0,
+              "modifiable": false,
+              "name": "start",
+              "owner": "",
+              "returnType": "void",
+              "type": "in"
+            },
+            {
+              "arguments": [],
+              "id": "{b11a1253-4999-4240-95f0-5bf7ca5386d5}",
+              "linksTo": 1,
+              "modifiable": false,
+              "name": "stop",
+              "owner": "",
+              "returnType": "void",
+              "type": "in"
+            }
+          ],
+          "iconPath": "",
+          "id": "{c78d7837-8368-4be4-af70-952b66146dfe}",
+          "nodeId": "Arduino::Led",
+          "parentId": "{180c923f-be10-4ecd-9174-f419d5f02b08}",
+          "pixmap": {
+            "data": ""
+          },
+          "position": {
+            "x": -670,
+            "y": -370
+          },
+          "properties": {
+            "name": "Led",
+            "type": {
+              "id": "type",
+              "options": [
+                {
+                  "id": "service",
+                  "options": [
+                    {
+                      "default": "LED_BUILTIN",
+                      "id": "route",
+                      "type": "string"
+                    },
+                    {
+                      "default": "",
+                      "id": "message",
+                      "type": "string"
+                    }
+                  ],
+                  "type": "string"
+                },
+                {
+                  "id": "service",
+                  "options": [
+                    {
+                      "default": "LED_BUILTIN",
+                      "id": "route",
+                      "type": "string"
+                    },
+                    {
+                      "default": "",
+                      "id": "message",
+                      "type": "string"
+                    }
+                  ],
+                  "type": "string"
+                }
+              ],
+              "type": "void"
+            }
+          },
+          "scale": 1,
+          "size": {
+            "height": 100,
+            "width": 100
+          }
+        },
+        {
+          "flows": [
+            {
+              "arguments": [
+                {
+                  "default": 0,
+                  "id": "milliseconds",
+                  "type": 2
+                }
+              ],
+              "id": "{8e5e8f3b-09c1-4aa2-afa9-f25ded2ab966}",
+              "linksTo": 0,
+              "modifiable": false,
+              "name": "delay",
+              "owner": "",
+              "returnType": "void",
+              "type": "in"
+            }
+          ],
+          "iconPath": "",
+          "id": "{d4a65c04-4055-4ddb-8aa4-abd149e26071}",
+          "nodeId": "Arduino::Timer",
+          "parentId": "{180c923f-be10-4ecd-9174-f419d5f02b08}",
+          "pixmap": {
+            "data": ""
+          },
+          "position": {
+            "x": -570,
+            "y": -275
+          },
+          "properties": {
+            "name": "Timer",
+            "type": {
+              "id": "type",
+              "options": [
+                {
+                  "id": "service",
+                  "options": [
+                    {
+                      "default": "",
+                      "id": "route",
+                      "type": "string"
+                    },
+                    {
+                      "default": "",
+                      "id": "message",
+                      "type": "string"
+                    }
+                  ],
+                  "type": "string"
+                }
+              ],
+              "type": "void"
+            }
+          },
+          "scale": 1,
+          "size": {
+            "height": 50,
+            "width": 100
+          }
+        }
+      ],
+      "flows": [
+        {
+          "arguments": [],
+          "id": "{746cfcde-eafe-40e3-a8b0-427ca353efca}",
+          "linksTo": 2147483647,
+          "modifiable": true,
+          "name": "start",
+          "owner": "",
+          "returnType": "void",
+          "type": "trigger"
+        },
+        {
+          "arguments": [],
+          "id": "{12c4bb62-cd2b-45cc-8bf6-dfcf34fd2d47}",
+          "linksTo": 2147483647,
+          "modifiable": false,
+          "name": "abort",
+          "owner": "",
+          "returnType": "void",
+          "type": "abort"
+        },
+        {
+          "arguments": [],
+          "id": "{c29497e4-613e-477e-b154-857fe2d86b27}",
+          "linksTo": 2147483647,
+          "modifiable": false,
+          "name": "done",
+          "owner": "",
+          "returnType": "void",
+          "type": "return"
+        },
+        {
+          "arguments": [],
+          "id": "{52cef0bb-e622-4115-9e53-0ee1956ccfda}",
+          "linksTo": 2147483647,
+          "modifiable": false,
+          "name": "failed",
+          "owner": "",
+          "returnType": "void",
+          "type": "error"
+        },
+        {
+          "arguments": [],
+          "id": "{38e874bf-b15f-4029-ac0b-08f83e4ddf2c}",
+          "linksTo": -1094795586,
+          "modifiable": true,
+          "name": "main",
+          "nodes": [
+            {
+              "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_start.svg",
+              "id": "{1acb6784-6d50-426a-917d-9ba521f434a5}",
+              "nodeId": "Koda::Start",
+              "parentId": "",
+              "pixmap": {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAo0lEQVR4nO3T2wmEQBSD4bBF2NnapKVZxPgahBWve2TyfzCvckiiBAAAAAAAAAD3mSQN1UdUapJmSWP1IVWavcg1tNWLW8M6gLg1/AogZg1bAUSsYU8AXa9hbwDdruFoAN2t4UwAXa3hSgB/WcPnyY/fpFUfcAW/wIk3S/pWHPuEyNZdZOsusnUX2bqLbN1Ftu4iW3eRrbvI1gEAAAAAAAC81wLmv8ckCrfr0gAAAABJRU5ErkJggg=="
+              },
+              "position": {
+                "x": -215,
+                "y": -75
+              },
+              "properties": {
+                "mode": "signal",
+                "name": "Start"
+              },
+              "scale": 1,
+              "size": {
+                "height": 50,
+                "width": 50
+              },
+              "transitions": [
+                {
+                  "destination": {
+                    "id": "{5c166bc4-7612-4087-aa05-450420be9971}",
+                    "position": {
+                      "x": 0,
+                      "y": 0
+                    },
+                    "shift": {
+                      "x": 0,
+                      "y": 0
+                    }
+                  },
+                  "events": "",
+                  "id": "{3e93fe82-3edb-4f06-9582-d9d01eb37c86}",
+                  "label": "",
+                  "source": {
+                    "id": "{1acb6784-6d50-426a-917d-9ba521f434a5}",
+                    "position": {
+                      "x": -190.23447176891312,
+                      "y": -71.58406507157423
+                    },
+                    "shift": {
+                      "x": 0,
+                      "y": 0
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_sync.svg",
+              "id": "{5c166bc4-7612-4087-aa05-450420be9971}",
+              "nodeId": "Koda::Sync task",
+              "parentId": "",
+              "pixmap": {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAB8ElEQVR4nO2ZvU7DMBRGTyt2xMBCZ3Y26IBgQ1QI8QqV+iA8CFJfoRKiLVsRA7CxMyIYYEB9gcIQh1r9cZs0dgz9jmTViXL9XTv32qkNQgghhBBCCCGEEGK9qGR47sCUzQXPDoFHU77zuxaPfg3om8aylD6w89f1a8BnDvG0fKzohHd9VwpUgB5wYq7fgY5xyMU2cGEJ3wKnZA/HsvWpMx7JN2Arg+2WsUntD7KKh9KvOhqxjTrAVwYHvoxNSj2DbVD9DUcj9my7KOxmYdu4Zu4q0DD1LjAKqe+KgFA0gGtTrgjskysCyqBpfluhBGOIgC7Qtq6bJJGw7EfaSsQQASPGb7xp/T6HEI8hAmA8CHYk7IUQ9hkBdggfA5dL2LySvPnJznt7UT4HYNeqH5mSl8MVfZlLLClQGj4j4MWq3wGDJWwqwDnTKXBfkE9T+BwA+8/HgMVzQJVk+Zs1+Y1m3CuEWFIg7XzTuhdkGYzhO2BW59skK4L3pTCGCGgw3fkWxW2nOYlhAGzSznvL+UliSIEucGbqPQJ2HtwDMLTq2znatm2Gc59KOnxTov5c1mJLLMSmaJ9koitrUzSvPphGPihvW7xs/V8n8hxM9IoQ962f5WhsnyQvlzmaegCeKPZorEx9IYQQQgghhBBCCPFv+AEtAOydvKikkwAAAABJRU5ErkJggg=="
+              },
+              "position": {
+                "x": -140,
+                "y": 29
+              },
+              "properties": {
+                "capability": {
+                  "data": "Led",
+                  "options": [
+                    {
+                      "data": "start",
+                      "isVariable": false,
+                      "type": "event_select"
+                    }
+                  ]
+                },
+                "color": "#202020",
+                "name": "Sync task"
+              },
+              "scale": 1,
+              "size": {
+                "height": 50,
+                "width": 100
+              },
+              "transitions": [
+                {
+                  "destination": {
+                    "id": "{4a9f58c5-dfc2-466d-9760-ee4b0ae25c93}",
+                    "position": {
+                      "x": 0,
+                      "y": 0
+                    },
+                    "shift": {
+                      "x": 0,
+                      "y": 0
+                    }
+                  },
+                  "events": "",
+                  "id": "{8a098d9e-b3ba-471a-bcdd-f6d91e34e5df}",
+                  "label": "",
+                  "source": {
+                    "id": "{5c166bc4-7612-4087-aa05-450420be9971}",
+                    "position": {
+                      "x": -110.63023555500882,
+                      "y": -11.465008790876738
+                    },
+                    "shift": {
+                      "x": 0,
+                      "y": 0
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_sync.svg",
+              "id": "{4a9f58c5-dfc2-466d-9760-ee4b0ae25c93}",
+              "nodeId": "Koda::Sync task",
+              "parentId": "",
+              "pixmap": {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAB8ElEQVR4nO2ZvU7DMBRGTyt2xMBCZ3Y26IBgQ1QI8QqV+iA8CFJfoRKiLVsRA7CxMyIYYEB9gcIQh1r9cZs0dgz9jmTViXL9XTv32qkNQgghhBBCCCGEEGK9qGR47sCUzQXPDoFHU77zuxaPfg3om8aylD6w89f1a8BnDvG0fKzohHd9VwpUgB5wYq7fgY5xyMU2cGEJ3wKnZA/HsvWpMx7JN2Arg+2WsUntD7KKh9KvOhqxjTrAVwYHvoxNSj2DbVD9DUcj9my7KOxmYdu4Zu4q0DD1LjAKqe+KgFA0gGtTrgjskysCyqBpfluhBGOIgC7Qtq6bJJGw7EfaSsQQASPGb7xp/T6HEI8hAmA8CHYk7IUQ9hkBdggfA5dL2LySvPnJznt7UT4HYNeqH5mSl8MVfZlLLClQGj4j4MWq3wGDJWwqwDnTKXBfkE9T+BwA+8/HgMVzQJVk+Zs1+Y1m3CuEWFIg7XzTuhdkGYzhO2BW59skK4L3pTCGCGgw3fkWxW2nOYlhAGzSznvL+UliSIEucGbqPQJ2HtwDMLTq2znatm2Gc59KOnxTov5c1mJLLMSmaJ9koitrUzSvPphGPihvW7xs/V8n8hxM9IoQ962f5WhsnyQvlzmaegCeKPZorEx9IYQQQgghhBBCCPFv+AEtAOydvKikkwAAAABJRU5ErkJggg=="
+              },
+              "position": {
+                "x": -50,
+                "y": -95
+              },
+              "properties": {
+                "capability": {
+                  "data": "Timer",
+                  "options": [
+                    {
+                      "data": "delay",
+                      "isVariable": false,
+                      "type": "event_select"
+                    },
+                    {
+                      "data": "500",
+                      "isVariable": false,
+                      "type": "integer"
+                    }
+                  ]
+                },
+                "color": "#202020",
+                "name": "Sync task"
+              },
+              "scale": 1,
+              "size": {
+                "height": 50,
+                "width": 100
+              },
+              "transitions": [
+                {
+                  "destination": {
+                    "id": "{4f94fd76-4016-418f-bee7-0ab1d17e28f5}",
+                    "position": {
+                      "x": 0,
+                      "y": 0
+                    },
+                    "shift": {
+                      "x": 0,
+                      "y": 0
+                    }
+                  },
+                  "events": "",
+                  "id": "{ba276e93-2786-452b-8611-642389be61d1}",
+                  "label": "",
+                  "source": {
+                    "id": "{4a9f58c5-dfc2-466d-9760-ee4b0ae25c93}",
+                    "position": {
+                      "x": -14.64466094067263,
+                      "y": -59.64466094067263
+                    },
+                    "shift": {
+                      "x": 0,
+                      "y": 0
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_sync.svg",
+              "id": "{4f94fd76-4016-418f-bee7-0ab1d17e28f5}",
+              "nodeId": "Koda::Sync task",
+              "parentId": "",
+              "pixmap": {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAB8ElEQVR4nO2ZvU7DMBRGTyt2xMBCZ3Y26IBgQ1QI8QqV+iA8CFJfoRKiLVsRA7CxMyIYYEB9gcIQh1r9cZs0dgz9jmTViXL9XTv32qkNQgghhBBCCCGEEGK9qGR47sCUzQXPDoFHU77zuxaPfg3om8aylD6w89f1a8BnDvG0fKzohHd9VwpUgB5wYq7fgY5xyMU2cGEJ3wKnZA/HsvWpMx7JN2Arg+2WsUntD7KKh9KvOhqxjTrAVwYHvoxNSj2DbVD9DUcj9my7KOxmYdu4Zu4q0DD1LjAKqe+KgFA0gGtTrgjskysCyqBpfluhBGOIgC7Qtq6bJJGw7EfaSsQQASPGb7xp/T6HEI8hAmA8CHYk7IUQ9hkBdggfA5dL2LySvPnJznt7UT4HYNeqH5mSl8MVfZlLLClQGj4j4MWq3wGDJWwqwDnTKXBfkE9T+BwA+8/HgMVzQJVk+Zs1+Y1m3CuEWFIg7XzTuhdkGYzhO2BW59skK4L3pTCGCGgw3fkWxW2nOYlhAGzSznvL+UliSIEucGbqPQJ2HtwDMLTq2znatm2Gc59KOnxTov5c1mJLLMSmaJ9koitrUzSvPphGPihvW7xs/V8n8hxM9IoQ962f5WhsnyQvlzmaegCeKPZorEx9IYQQQgghhBBCCPFv+AEtAOydvKikkwAAAABJRU5ErkJggg=="
+              },
+              "position": {
+                "x": 70,
+                "y": 25
+              },
+              "properties": {
+                "capability": {
+                  "data": "Led",
+                  "options": [
+                    {
+                      "data": "stop",
+                      "isVariable": false,
+                      "type": "event_select"
+                    }
+                  ]
+                },
+                "color": "#202020",
+                "name": "Sync task"
+              },
+              "scale": 1,
+              "size": {
+                "height": 50,
+                "width": 100
+              },
+              "transitions": [
+                {
+                  "destination": {
+                    "id": "{06c36277-e678-4fbb-adda-5c71105d23dd}",
+                    "position": {
+                      "x": 0,
+                      "y": 0
+                    },
+                    "shift": {
+                      "x": 0,
+                      "y": 0
+                    }
+                  },
+                  "events": "",
+                  "id": "{7694afcc-600d-437e-b95f-e06df1dd86e7}",
+                  "label": "",
+                  "source": {
+                    "id": "{4f94fd76-4016-418f-bee7-0ab1d17e28f5}",
+                    "position": {
+                      "x": 105.35533905932738,
+                      "y": -10.35533905932737
+                    },
+                    "shift": {
+                      "x": 0,
+                      "y": 0
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_sync.svg",
+              "id": "{06c36277-e678-4fbb-adda-5c71105d23dd}",
+              "nodeId": "Koda::Sync task",
+              "parentId": "",
+              "pixmap": {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAB8ElEQVR4nO2ZvU7DMBRGTyt2xMBCZ3Y26IBgQ1QI8QqV+iA8CFJfoRKiLVsRA7CxMyIYYEB9gcIQh1r9cZs0dgz9jmTViXL9XTv32qkNQgghhBBCCCGEEGK9qGR47sCUzQXPDoFHU77zuxaPfg3om8aylD6w89f1a8BnDvG0fKzohHd9VwpUgB5wYq7fgY5xyMU2cGEJ3wKnZA/HsvWpMx7JN2Arg+2WsUntD7KKh9KvOhqxjTrAVwYHvoxNSj2DbVD9DUcj9my7KOxmYdu4Zu4q0DD1LjAKqe+KgFA0gGtTrgjskysCyqBpfluhBGOIgC7Qtq6bJJGw7EfaSsQQASPGb7xp/T6HEI8hAmA8CHYk7IUQ9hkBdggfA5dL2LySvPnJznt7UT4HYNeqH5mSl8MVfZlLLClQGj4j4MWq3wGDJWwqwDnTKXBfkE9T+BwA+8/HgMVzQJVk+Zs1+Y1m3CuEWFIg7XzTuhdkGYzhO2BW59skK4L3pTCGCGgw3fkWxW2nOYlhAGzSznvL+UliSIEucGbqPQJ2HtwDMLTq2znatm2Gc59KOnxTov5c1mJLLMSmaJ9koitrUzSvPphGPihvW7xs/V8n8hxM9IoQ962f5WhsnyQvlzmaegCeKPZorEx9IYQQQgghhBBCCPFv+AEtAOydvKikkwAAAABJRU5ErkJggg=="
+              },
+              "position": {
+                "x": 190,
+                "y": -95
+              },
+              "properties": {
+                "capability": {
+                  "data": "Timer",
+                  "options": [
+                    {
+                      "data": "delay",
+                      "isVariable": false,
+                      "type": "event_select"
+                    },
+                    {
+                      "data": "500",
+                      "isVariable": false,
+                      "type": "integer"
+                    }
+                  ]
+                },
+                "color": "#202020",
+                "name": "Sync task"
+              },
+              "scale": 1,
+              "size": {
+                "height": 50,
+                "width": 100
+              },
+              "transitions": [
+                {
+                  "destination": {
+                    "id": "{109495c6-b966-401d-84d6-58fa9739cde1}",
+                    "position": {
+                      "x": 0,
+                      "y": 0
+                    },
+                    "shift": {
+                      "x": 0,
+                      "y": 0
+                    }
+                  },
+                  "events": "",
+                  "id": "{55231c70-55ab-4781-a10d-88920515e95e}",
+                  "label": "",
+                  "source": {
+                    "id": "{06c36277-e678-4fbb-adda-5c71105d23dd}",
+                    "position": {
+                      "x": 224.7067785292116,
+                      "y": -59.007785228965744
+                    },
+                    "shift": {
+                      "x": 0,
+                      "y": 0
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_success.svg",
+              "id": "{109495c6-b966-401d-84d6-58fa9739cde1}",
+              "nodeId": "Koda::Success",
+              "parentId": "",
+              "pixmap": {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAADLElEQVR4nO2aTU8TQRiAn7INnPDOR4wpXCDe/AO0F0jA6IGkd+Hei5TfAAoX+A16ROGif4HEkFgvkFjRtHDxphcNQQ87G2fanenu7EdXOk/yJtvtu+/Xzs7M7gw4HA6Hw+FwOByOUaSUs78x4AEwC8wA0+L8FdAFOsAlcJtzXJlSBmrAIX6SfwZIV+jWxLX/LR6wSbSkTcXYELYyIatHYAV4ATwM+e8b8Bm4FgIwJWQOuB9yzSdgC3iXeqQp4+En3nsnT4EmsIC56CWh0xTX9NrZJcPWkJR7wAlqwB+BVexaWklc2+qxeQJMphBvqkwCZ/wL8gZokM7d8oStG8n+GQUqgod6578DSxn4qQrbgZ9jCvI47KImP5+hr3nUIuxk6CsSK6jNfikHn1XUx2E5B5+hlPGHpyCQRoRrJoA68Bq4AH4KuRDn6kJnEA3Jb4shPQqbqL39oCDWgTb9Q1uvtIWuCQ91dNiwyiABZdQZ3qpB1wP2GZx4r+xjLuqapNsl52lzTXJ+inmct0k+kD2D3RLqZKlqnY0Fh5LjpkFvHfvkAzE9DtuS3oF1NjEZQ23+Cxq9CeALyQvQBsY1PhYlvY6ILXMqktNL9M2/TvLkA6lrfJSAr5JeJW4yNhWblY6DXj2Mpxa2dTzRnA9aSMBMXMM2BZCdXGu14JGFbRtbcgy5FGBaOjYVYNrwXxKfveRegDuFTQGupOOpiHpJMdmSY+jGNWxTANmJqQAfLGzb2Mq9AB3peA79MPjGwraOt5rzJdShL3YBbIgzEYry8jPUiZBNC7gFjqTfjzV6vzBPk6OyBfzW/Cf7PiLHBZWRfxmK+zq8h13yhX0dhhH/IBIWRJRPYuP4LzavgHPgh5Bzca6OvsOTKcQnMRjxj6IBI/1ZHMIXRrLokWsUdGEERnxpLGCS/sXRFv5wZbs4ukb/4ugxBUw+wEPtE+TJ0jb+1HXQ8vii0A1bHt8h5Waf1QaJZeAl+g0SbcI3SFTQb5B4DrxPPdIM8fAnKEm3yDyjQJ2dDWX8UeEA/41tUNIdoVslh+ntsLbJzUgC/p0O5JI7tk3O4XA4HA6Hw+FwFI+/yMW9Rq3ZYIsAAAAASUVORK5CYII="
+              },
+              "position": {
+                "x": 308,
+                "y": 25
+              },
+              "properties": {
+                "name": "Success"
+              },
+              "scale": 1,
+              "size": {
+                "height": 50,
+                "width": 50
+              }
+            }
+          ],
+          "owner": "{180c923f-be10-4ecd-9174-f419d5f02b08}",
+          "returnType": "void",
+          "type": "user"
+        }
+      ],
+      "iconPath": "",
+      "id": "{180c923f-be10-4ecd-9174-f419d5f02b08}",
+      "nodeId": "Koda::Task",
+      "parentId": "",
+      "pixmap": {
+        "data": ""
+      },
+      "position": {
+        "x": -615,
+        "y": -335
+      },
+      "properties": {
+        "color": "#7d925c",
+        "name": "Blink"
+      },
+      "scale": 1,
+      "size": {
+        "height": 250,
+        "width": 250
+      }
+    }
+  ]
+}

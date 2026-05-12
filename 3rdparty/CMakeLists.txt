@@ -13,6 +13,8 @@ add_subdirectory(qclementine)
 
 # Build-in plugins
 if (BUILD_PLUGINS)
-add_subdirectory(plugins/koda)
-add_subdirectory(plugins/platformio)
+  add_subdirectory(plugins/koda)
+  add_subdirectory(plugins/platformio)
+  add_subdirectory(plugins/arduino)
+  add_subdirectory(plugins/ollama)
 endif()

@@ -1,0 +1,9 @@
+{
+  "id": "com.maki.arduino",
+  "name": "arduino",
+  "version": "0.0.1",
+  "author": "Felipe Xavier",
+  "entryPointDLL": "bin/arduino_plugin.dll",
+  "entryPointSO": "bin/libarduino_plugin.so",
+  "icon": "assets/icon.png"
+}

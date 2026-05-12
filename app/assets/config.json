@@ -1,32 +1,17 @@
 {
-  "libraries": [
-    "generic",
-    "koda"
-  ],
+  "libraries": ["generic", "koda", "arduino"],
   "layout": {
     "leftPanel": {
-      "structurePanel": {
-
-      },
-      "behaviourPanel": {
-
-      }
+      "structurePanel": {},
+      "behaviourPanel": {}
     },
     "centralPanel": {
-      "canvas": {
-
-      },
+      "canvas": {},
       "bottomPanel": {
-        "infoTab" : {
-
-        },
-        "logTab" : {
-
-        }
+        "infoTab": {},
+        "logTab": {}
       }
     },
-    "rightPanel": {
-
-    }
+    "rightPanel": {}
   }
 }
