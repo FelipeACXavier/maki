@@ -135,9 +135,6 @@ private:
   /// Last mouse position for panning.
   QPoint mLastMousePos;
 
-  /// Current center point of the view.
-  QPointF mCenterPoint;
-
   /// Delta value for zooming.
   qreal mZoomDelta;
 

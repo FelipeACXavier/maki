@@ -41,7 +41,7 @@ qreal CanvasView::getScale() const
 
 QPointF CanvasView::getCenter() const
 {
-  return mCenterPoint;
+  return mapToScene(viewport()->rect().center());
 }
 
 void CanvasView::centerOn(const QGraphicsItem* item)
@@ -51,8 +51,7 @@ void CanvasView::centerOn(const QGraphicsItem* item)
 
 void CanvasView::centerOn(const QPointF& pos)
 {
-  mCenterPoint = pos;
-  QGraphicsView::centerOn(mCenterPoint);
+  QGraphicsView::centerOn(pos);
 }
 
 void CanvasView::onSettingsChanged(const AppearanceSettings& settings)
