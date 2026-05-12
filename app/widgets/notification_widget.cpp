@@ -36,7 +36,9 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
   if (!screen)
     screen = QGuiApplication::primaryScreen();
 
-  setFixedWidth(screen->availableGeometry().width() / 7);
+  const auto screenGeomerty = screen->availableGeometry();
+  setFixedWidth(screenGeomerty.width() / 7);
+  setMaximumHeight(screenGeomerty.height() / 6);
 
   auto header = new StyledFrame(this);
   header->setBackgroundRole(StyledFrame::BackgroundRole::Midlight);
