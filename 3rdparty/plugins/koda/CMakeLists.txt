@@ -16,9 +16,9 @@ if (NOT BUILD_PLUGINS)
     add_compile_options(/W4 /MP)
 
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-        add_compile_options(/Zi /Od)
+      add_compile_options(/Zi /Od)
     elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
-        add_compile_options(/O2)
+      add_compile_options(/O2)
     endif()
 
     find_package(Qt6 ${QT_VERSION} REQUIRED COMPONENTS
@@ -28,13 +28,13 @@ if (NOT BUILD_PLUGINS)
     add_compile_options(-Wall)
 
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-        message(STATUS "Compiling with debug symbols")
-        set(LINUX_BUILD_DIR "${CMAKE_SOURCE_DIR}/build/linux/debug")
-        add_compile_options(-g -O0)
+      message(STATUS "Compiling with debug symbols")
+      set(LINUX_BUILD_DIR "${CMAKE_SOURCE_DIR}/build/linux/debug")
+      add_compile_options(-g -O0)
     elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
-        message("Compiling in release version")
-        set(LINUX_BUILD_DIR "${CMAKE_SOURCE_DIR}/build/linux/release")
-        add_compile_options(-O2)
+      message("Compiling in release version")
+      set(LINUX_BUILD_DIR "${CMAKE_SOURCE_DIR}/build/linux/release")
+      add_compile_options(-O2)
     endif()
 
     find_package(Qt6 REQUIRED COMPONENTS
@@ -100,6 +100,27 @@ target_include_directories(${COMPILER_NAME} PRIVATE
 )
 
 # ==================================================================
+# Koda library
+set(LIB_NAME "libkoda")
+add_library(${LIB_NAME} STATIC ${KODA_COMPILER_FILES})
+
+target_include_directories(${LIB_NAME}
+  PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/parser
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ast
+    ${ANTLR4_RUNTIME_INCLUDE_DIR}
+)
+
+target_link_libraries(${LIB_NAME} PRIVATE
+  ${ANTLR4_RUNTIME_LIBRARY}
+  libcpphelpers
+)
+
+install(TARGETS ${LIB_NAME}
+    LIBRARY       DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+# ==================================================================
 # Plugin generator
 find_package(Qt6 REQUIRED COMPONENTS
   Core
@@ -143,6 +164,7 @@ function(add_koda_plugin TARGET_NAME USE_ANTLR_ENABLED)
     src/actions/dezyne_action.cpp
     src/actions/cpp_action.cpp
     src/actions/verify_action.cpp
+    src/actions/simulate_action.cpp
     ${JSON_FILE}
   )
 
@@ -191,7 +213,7 @@ include(${CMAKE_SOURCE_DIR}/3rdparty/maki-sdk/cmake/maki-plugin.cmake)
 
 # If we are building with MAKI, then use the MAKI sdk instead of the 3rdparty one
 if (NOT BUILD_PLUGINS)
-add_subdirectory(3rdparty)
+  add_subdirectory(3rdparty)
 endif()
 
 add_koda_plugin(koda_generatorplugin OFF)

@@ -4,9 +4,11 @@
 #include <format>
 #include <fstream>
 #include <map>
+#include <memory>
 #include <set>
 
 #include "ast.h"
+#include "koda_plugin.h"
 #include "logging.h"
 #include "result.h"
 
@@ -28,6 +30,12 @@ struct CompilerOptions
   bool showHelp = false;
   bool dryRun = false;
   bool showVersion = false;
+  enum class PluginOption
+  {
+    NoPlugins = 0,
+    PluginsOnly,
+    RunAll
+  } pluginRule;
 };
 
 class Compiler
@@ -40,6 +48,9 @@ public:
 
   void printAST() const;
 
+  VoidResult addPlugin(std::shared_ptr<KodaPlugin> plugin);
+  std::vector<std::string> generatedFiles() const;
+
   struct PortRef
   {
     std::string instance;  // e.g. "main"
@@ -50,6 +61,8 @@ private:
   System mAST;
   std::ofstream mCurrentFile;
   CompilerOptions mOptions;
+  std::map<std::string, std::shared_ptr<KodaPlugin>> mPlugins;
+  std::vector<std::string> mGeneratedFiles;
 
   struct Composition
   {
@@ -328,9 +341,11 @@ private:
   void createSequenceDoneRecursion(bool fromIdle, uint32_t start, uint32_t instances, std::ofstream& file, const std::string& indent);
 
   void connectWithArbiter(Environment& env);
-  void connectWithArbiter(const std::map<std::string, uint32_t>& connections, Environment& env);
+  void connectWithArbiter(const std::map<std::string, uint32_t>& connections, Connection::Type connectionType, Environment& env);
 
   PortRef portFromString(const std::string& ref) const;
+
+  VoidResult runPlugins();
 };
 
 }  // namespace koda

@@ -17,6 +17,7 @@
 #include "actions/cpp_action.h"
 #include "actions/dezyne_action.h"
 #include "actions/koda_action.h"
+#include "actions/simulate_action.h"
 #include "actions/verify_action.h"
 #include "dzn_client/dezyne_simulator.h"
 #include "dzn_client/simulation_scene.h"
@@ -26,6 +27,7 @@
 #include "isettings.h"
 #include "iui.h"
 #include "logging.h"
+#include "pipeline_artifact.h"
 #include "result.h"
 #include "string_helpers.h"
 #include "types.h"
@@ -73,8 +75,6 @@ bool KodaGenerator::setup()
 
   connect(mSimulator, &DezyneSimulator::simulationStarted, this, &KodaGenerator::simulationStarted);
   connect(mSimulator, &DezyneSimulator::simulationUpdated, this, &KodaGenerator::simulationUpdated);
-
-  // LOG_ERROR_ON_FAILURE(mSimulator->startSimulation(QUuid::createUuid().toString()));
 
   // Start the ide daemon on a specific port
   return startDaemon();
@@ -261,37 +261,39 @@ maki::PluginVersion KodaGenerator::version() const
   return mVersion;
 }
 
-VoidResult KodaGenerator::simulate(const QString& outputFolder)
+VoidResult KodaGenerator::simulate(const maki::PipelineArtifact& artifact)
 {
   LOG_INFO("Running simulation");
 
   if (mServices == nullptr)
     return VoidResult::Failed("Cannot proceed with simulation, no services provided");
-  else if (mServices->pipeline() == nullptr)
-    return VoidResult::Failed("Cannot proceed with simulation, no pipeline provided");
   else if (mServices->ui() == nullptr)
     return VoidResult::Failed("Cannot proceed with simulation, no plugin tab provided");
   else if (mServices->document() == nullptr)
     return VoidResult::Failed("Cannot proceed with simulation, no document provided");
 
-  if (mGeneratedDznFiles.empty())
-  {
-    mServices->pipeline()->startGroup("Simulation");
-    // RETURN_ON_FAILURE(verify(outputFolder));
+  if (!artifact.paths.contains("modelDir"))
+    return VoidResult::Failed("No model folder provided");
+  if (!artifact.metadata.contains("sources"))
+    return VoidResult::Failed("No sources provided");
+  if (!artifact.metadata.contains("includes"))
+    return VoidResult::Failed("No includes provided");
 
-    // Start simulation after verification is done
-    const QString command = "echo";
-    const QStringList arguments = {"\"Running sim\""};
-    QProcess* generate = new QProcess(this);
-    generate->setProgram(command);
-    generate->setArguments(arguments);
+  const auto modelsFolder = artifact.paths["modelDir"].toString();
+  const auto sourceFiles = artifact.metadata["sources"].toStringList();
+  const auto includeFolders = artifact.metadata["includes"].toStringList();
 
-    mServices->pipeline()->add(generate, maki::OnFail::EXECUTE, [this]() { startSimulation(); });
-    mServices->pipeline()->endGroup();
-  }
-  else
+  for (const QString& file : sourceFiles)
   {
-    startSimulation();
+    if (!file.contains("_task"))
+      continue;
+
+    LOG_INFO("Will simulate: %s", qPrintable(file));
+
+    mSimulator->setWorkingDirectory(modelsFolder);
+    mSimulator->setSimulationModel(file);
+    mSimulator->setSimulationIncludes(includeFolders);
+    return mSimulator->startSimulation(QUuid::createUuid().toString());
   }
 
   return VoidResult();
@@ -304,34 +306,8 @@ QList<std::shared_ptr<maki::IPipelineAction>> KodaGenerator::pipelineActions()
       std::make_shared<GenerateDezyneAction>(this),
       std::make_shared<GenerateCppAction>(this),
       std::make_shared<KodaVerifyAction>(this),
+      std::make_shared<KodaSimulateAction>(this),
   };
-}
-
-void KodaGenerator::startSimulation()
-{
-  // Always include the output folder
-  QList<QString> includeFolders = {mDezyneOutputFolder.absolutePath()};
-
-#if USE_ANTLR
-  // Make sure the libraries are also included
-  includeFolders << mDezyneOutputFolder.absolutePath() + "/lib";
-#endif
-
-  for (const QString& f : mGeneratedDznFiles)
-  {
-    auto fullPath = mDezyneOutputFolder.absoluteFilePath(f);
-    if (!fullPath.contains("_task"))
-      continue;
-
-    LOG_INFO("Will simulate: %s", qPrintable(fullPath));
-
-    mSimulator->setWorkingDirectory(mDezyneOutputFolder.absolutePath());
-    mSimulator->setSimulationModel(fullPath);
-
-    mSimulator->setSimulationIncludes(includeFolders);
-
-    mSimulator->startSimulation(QUuid::createUuid().toString());
-  }
 }
 
 Result<maki::PipelineArtifact> KodaGenerator::generateDezyne(const maki::PipelineArtifact& artifact, const QDir& outputFolder)
@@ -357,6 +333,7 @@ Result<maki::PipelineArtifact> KodaGenerator::generateDezyne(const maki::Pipelin
     koda::CompilerOptions options;
     options.inputFile = file.toStdString();
     options.outputDir = modelsOutputFolder.absolutePath().toStdString();
+    options.verbose = 2;
     LOG_DEBUG("Generating from file: %s to %s", qPrintable(file), qPrintable(outputFolder.absolutePath()));
     auto parsed = compiler.parse(options);
     if (!parsed)
@@ -395,6 +372,9 @@ Result<maki::PipelineArtifact> KodaGenerator::generateDezyne(const maki::Pipelin
   }
 
   maki::PipelineArtifact output;
+  output.paths = {
+      {"modelDir", modelsOutputFolder.absolutePath()},
+  };
   output.metadata = {
       {"sources", outputFiles},
       {"includes", includeFolders},
@@ -451,15 +431,21 @@ Result<maki::PipelineArtifact> KodaGenerator::generateCpp(const maki::PipelineAr
     generate->setArguments(arguments);
 
     QFileInfo info(fullPath);
-    QString baseName = info.completeBaseName();
-    outputHeaderFiles << info.dir().filePath(baseName + ".hh");
-    outputSourceFiles << info.dir().filePath(baseName + ".cc");
+    QString baseName = info.baseName();
+    outputHeaderFiles << cppOutputFolder.absolutePath() + "/" + baseName + ".hh";
+    outputSourceFiles << cppOutputFolder.absolutePath() + "/" + baseName + ".cc";
 
     pipeline->add(generate, maki::OnFail::STOP);
   }
   pipeline->endGroup();
 
+  // Add dzn lib includes as well
+  LOG_DEBUG("Using asset dir: %s", qPrintable(mAssetDir->absolutePath()));
   maki::PipelineArtifact output;
+  output.paths = {
+      {"includeDir", mAssetDir->absoluteFilePath("dzn_files/include")},
+      {"sourceDir", {mAssetDir->absoluteFilePath("dzn_files/src")}},
+  };
   output.metadata = {
       {"sources", outputSourceFiles},
       {"includes", outputHeaderFiles},

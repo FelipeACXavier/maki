@@ -41,8 +41,9 @@ public:
   Result<maki::PipelineArtifact> generateKoda(const maki::PipelineArtifact& artifact, const QDir& outputFolder);
   Result<maki::PipelineArtifact> generateCpp(const maki::PipelineArtifact& artifact, const QDir& outputFolder, maki::IPipeline* pipeline);
   Result<maki::PipelineArtifact> generateDezyne(const maki::PipelineArtifact& artifact, const QDir& outputFolder);
+
   VoidResult verify(const maki::PipelineArtifact& artifacts, const QDir& outputFolder, maki::IPipeline* pipeline);
-  VoidResult simulate(const QString& outputFolder);
+  VoidResult simulate(const maki::PipelineArtifact& artifact);
 
   void settingsChanged(const QVector<maki::SettingField>& settings) override;
 
@@ -97,7 +98,6 @@ private:
   std::shared_ptr<INode> findDestination(const QString& nodeId, const IFlow& flow) const;
   QString createArguments(const QJsonArray& options) const;
 
-  void startSimulation();
   void simulationStarted();
   void simulationUpdated(const QJsonObject& obj);
   VoidResult createSimulationScene(QGraphicsScene* scene, const QJsonObject& obj);

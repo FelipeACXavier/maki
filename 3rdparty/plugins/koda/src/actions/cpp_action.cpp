@@ -34,7 +34,7 @@ QStringList GenerateCppAction::consumes() const
 
 QStringList GenerateCppAction::produces() const
 {
-  return {"dezyne_cpp"};
+  return {"cpp"};
 }
 
 maki::ResultArtifacts GenerateCppAction::run(const maki::PipelineContext& context, const QVariantMap& parameters, maki::IPipeline* pipeline)
@@ -53,8 +53,8 @@ maki::ResultArtifacts GenerateCppAction::run(const maki::PipelineContext& contex
 
   maki::PipelineArtifact artifact = generated.Value();
   artifact.id = "dezyne.generate_dezyne_cpp";
-  artifact.type = "dezyne_cpp";
+  artifact.type = "cpp";
   artifact.producer = id();
 
-  return maki::Artifacts{ artifact };
+  return maki::Artifacts{artifact};
 }

@@ -8,6 +8,7 @@
 #include "antlr4-runtime.h"
 #include "cst2ast.h"
 #include "error_listener.h"
+#include "result.h"
 
 #define IF_ALT(ALT, OBJ, CALL, ARGS)    \
   if (std::holds_alternative<ALT>(OBJ)) \
@@ -94,9 +95,27 @@ VoidResult Compiler::parse(const CompilerOptions& options)
   return VoidResult();
 }
 
+VoidResult Compiler::runPlugins()
+{
+  for (const auto& plugin : mPlugins)
+    RETURN_ON_FAILURE(plugin.second->generate(mOptions, mAST));
+
+  return VoidResult();
+}
+
+std::vector<std::string> Compiler::generatedFiles() const
+{
+  return mGeneratedFiles;
+}
+
 VoidResult Compiler::generate()
 {
+  mGeneratedFiles.clear();
+
   Environment env;
+  if (mOptions.pluginRule == CompilerOptions::PluginOption::PluginsOnly)
+    return runPlugins();
+
   for (auto& component : mAST.components)
   {
     if (component->kind == Component::Kind::Capability)
@@ -108,6 +127,26 @@ VoidResult Compiler::generate()
     if (component->kind == Component::Kind::Task)
       RETURN_ON_FAILURE(generateTask(component, env));
   }
+
+  if (mOptions.pluginRule == CompilerOptions::PluginOption::RunAll)
+    return runPlugins();
+
+  return VoidResult();
+}
+
+VoidResult Compiler::addPlugin(std::shared_ptr<KodaPlugin> plugin)
+{
+  if (!plugin)
+    return VoidResult::Failed("Invalid, null plugin");
+  else if (mPlugins.contains(plugin->id()))
+    return VoidResult::Failed("Plugin already exists");
+
+  // Set callbacks
+  plugin->toFilename = [this](const std::string& name) { return toFilename(name); };
+  plugin->componentName = [this](const std::string& name) { return componentName(name); };
+  plugin->flowName = [this](const std::string& name) { return flowName(name); };
+
+  mPlugins[plugin->id()] = plugin;
 
   return VoidResult();
 }
@@ -162,7 +201,7 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, Environment& e
       PortRef out = {toFilename(name), trigger};
 
       if (mOptions.verbose > 1)
-        LOG_RAW("asyncCalls - In: {} Out: {}", in, out);
+        LOG_RAW("asyncCalls {} - In: {} Out: {}", c.first, in, out);
 
       env.system.connections.push_back(Connection{in, out, Connection::Type::Action});
     }
@@ -186,11 +225,11 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, Environment& e
         name = cap->name;
       }
 
-      PortRef in = {toFlowVariable(flowName), instance};
+      PortRef in = {toFlowVariable(flowName), std::format("{}_{}", instance, port)};
       PortRef out = {toFilename(cap->name), port};
 
       if (mOptions.verbose > 1)
-        LOG_RAW("syncCalls - In: {} Out: {}", in, out);
+        LOG_RAW("syncCalls {} - In: {} Out: {}", c.first, in, out);
       env.system.connections.push_back(Connection{in, out, Connection::Type::Action});
     }
 
@@ -280,6 +319,7 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, Environment& e
 
   // Component
   file.close();
+  mGeneratedFiles.push_back(filename);
 
   return koda::ReturnValue();
 }
@@ -322,6 +362,8 @@ Result<koda::ReturnValue> Compiler::generateCapability(PComponent capability, En
 
   file << "}";
   file.close();
+
+  mGeneratedFiles.push_back(filename);
 
   return koda::ReturnValue();
 }
@@ -415,7 +457,7 @@ Result<ReturnValue> Compiler::generateVarsDef(PVarDef var, Environment& env)
   return koda::ReturnValue{};
 }
 
-void Compiler::connectWithArbiter(const std::map<std::string, uint32_t>& connections, Environment& env)
+void Compiler::connectWithArbiter(const std::map<std::string, uint32_t>& connections, Connection::Type connectionType, Environment& env)
 {
   for (auto it = connections.cbegin(); it != connections.cend(); ++it)
   {
@@ -437,16 +479,17 @@ void Compiler::connectWithArbiter(const std::map<std::string, uint32_t>& connect
     if (mOptions.verbose > 0)
       LOG_RAW("Arbiter evaluation, {} {} has {} connections", instance, port, it->second);
 
+    const auto toReplace = connectionType == Connection::Type::Signal ? std::format("{}_{}", instance, port) : instance;
     // Change current links to the arbitrer
     for (auto& statement : env.core)
     {
-      auto index0 = statement.find(instance);
+      auto index0 = statement.find(toReplace);
       if (index0 != std::string::npos)
-        statement.replace(index0, instance.size(), std::format("arbitrer{}.client{}", id, count++));
+        statement.replace(index0, toReplace.size(), std::format("arbitrer{}.client{}", id, count++));
     }
 
     // Connect arbitrer to the component
-    env.core.push_back(std::format("arbitrer{}.resource <=> {}", id, instance));
+    env.core.push_back(std::format("arbitrer{}.resource <=> {}", id, toReplace));
   }
 }
 
@@ -474,10 +517,10 @@ Result<koda::ReturnValue> Compiler::generateFlow(PFlow flow, Environment& env)
 
   // ------------------------------------------------------------
   // Check the need for arbitrers and create them
-  connectWithArbiter(env.strategies, env);
-  connectWithArbiter(env.asyncCalls, env);
-  connectWithArbiter(env.syncCalls, env);
-  connectWithArbiter(env.signalCalls, env);
+  connectWithArbiter(env.strategies, Connection::Type::Action, env);
+  connectWithArbiter(env.asyncCalls, Connection::Type::Action, env);
+  connectWithArbiter(env.syncCalls, Connection::Type::Signal, env);
+  connectWithArbiter(env.signalCalls, Connection::Type::Signal, env);
 
   // ------------------------------------------------------------
   // Print everything to a file
@@ -509,6 +552,7 @@ Result<koda::ReturnValue> Compiler::generateFlow(PFlow flow, Environment& env)
 
   // Compose
   mCurrentFile.close();
+  mGeneratedFiles.push_back(filename);
 
   return ret;
 }
@@ -838,6 +882,9 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
 
 Result<koda::ReturnValue> Compiler::generateEventCall(PEventCall call, Environment& env, bool isSignal)
 {
+  if (mOptions.verbose > 1)
+    LOG_RAW("Generating event call: {} receiver: {}", call->name, call->receiver);
+
   if (call->receiver.empty())
   {
     INCREMENT_MAP(env.asyncCalls, call->name)
@@ -854,10 +901,10 @@ Result<koda::ReturnValue> Compiler::generateEventCall(PEventCall call, Environme
     else
     {
       INCREMENT_MAP(env.syncCalls, event)
-      env.requiresPorts.insert(std::format("iaction {}", call->receiver));
+      env.requiresPorts.insert(std::format("iaction {}_{}", call->receiver, call->name));
     }
 
-    return koda::ReturnValue{call->receiver, call->name};
+    return koda::ReturnValue{std::format("{}_{}", call->receiver, call->name, call->name)};
   }
 }
 
@@ -973,6 +1020,7 @@ VoidResult Compiler::createSequenceComponent(uint32_t instances)
   file << "}\n";
 
   file.close();
+  mGeneratedFiles.push_back(filename);
 
   return VoidResult();
 }
@@ -1123,6 +1171,7 @@ VoidResult Compiler::createActionArbiterComponent(uint32_t instances)
   file << "}\n";
 
   file.close();
+  mGeneratedFiles.push_back(filename);
 
   return VoidResult();
 }
