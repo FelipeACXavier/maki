@@ -11,6 +11,7 @@ static const int DRAGGABLE = QGraphicsItem::UserType + 4;
 static const int BASE_NODE = QGraphicsItem::UserType + 5;
 static const int TRANSITION = QGraphicsItem::UserType + 6;
 static const int FLOW = QGraphicsItem::UserType + 7;
+static const int PORT = QGraphicsItem::UserType + 8;
 
 static const QString PIXMAP = "PNG";
 

@@ -41,6 +41,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libfreetype6-dev libfontconfig1-dev libharfbuzz-dev \
   && rm -rf /var/lib/apt/lists/*
 
+RUN useradd -ms /bin/bash ${USERNAME}
 # -----------------------------------------------------------------------------------------------------------
 # Make sure the fonts are loaded
 RUN fc-cache -f
@@ -120,11 +121,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
 
 # Install dezyne
-USER ${USERNAME}
+USER root
 
+COPY scripts/install_dezyne.sh /home/${USERNAME}/install_dezyne.sh
+
+RUN chown ${USERNAME}:${USERNAME} /home/${USERNAME}/install_dezyne.sh && \
+    chmod +x /home/${USERNAME}/install_dezyne.sh && \
+    sed -i 's/\r$//' /home/${USERNAME}/install_dezyne.sh
+
+# now switch to normal user (IMPORTANT)
+USER ${USERNAME}
 WORKDIR ${HOME}
-COPY scripts/install_dezyne.sh ${HOME}/install_dezyne.sh
-RUN ${HOME}/install_dezyne.sh
+
+# run installer as NON-root (required by Dezyne)
+RUN bash /home/${USERNAME}/install_dezyne.sh
 
 # Install gf2 for debugging
 RUN git clone https://github.com/nakst/gf.git

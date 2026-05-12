@@ -9,12 +9,13 @@
         {
           "type": "Task",
           "body": {
-            "shape": "Rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#202020",
-            "borderColor": "#FFFFFF",
-            "width": 250,
-            "height": 250,
+            "shape": "rounded rectangle",
+            "textColor": "#000000",
+            "backgroundColor": "#FFFFFF",
+            "borderColor": "#000000",
+            "width": 324,
+            "height": 300,
+            "borderRadius": 28,
             "z-index": -2
           },
           "help": {
@@ -78,10 +79,11 @@
         {
           "type": "Timer",
           "body": {
-            "shape": "Rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#008585",
+            "shape": "Ellipse",
+            "textColor": "#000000",
+            "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
+            "icon": "capability_timer.svg",
             "width": 500,
             "height": 500,
             "z-index": -2
@@ -95,7 +97,7 @@
             {
               "id": "color",
               "type": "color",
-              "default": "#008585"
+              "default": "#e6e6e6"
             }
           ],
           "controls": [
@@ -134,10 +136,11 @@
         {
           "type": "Siren",
           "body": {
-            "shape": "Rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#c45335",
+            "shape": "Ellipse",
+            "textColor": "#000000",
+            "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
+            "icon": "capability_siren.svg",
             "width": 500,
             "height": 500,
             "z-index": -2
@@ -151,7 +154,7 @@
             {
               "id": "color",
               "type": "color",
-              "default": "#c45335"
+              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -201,10 +204,11 @@
         {
           "type": "Grip",
           "body": {
-            "shape": "Rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#cc7a3d",
+            "shape": "Ellipse",
+            "textColor": "#000000",
+            "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
+            "icon": "capability_grip.svg",
             "width": 500,
             "height": 500,
             "z-index": -2
@@ -218,7 +222,7 @@
             {
               "id": "color",
               "type": "color",
-              "default": "#cc7a3d"
+              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -293,10 +297,11 @@
         {
           "type": "Vision",
           "body": {
-            "shape": "Rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#e6c994",
+            "shape": "Ellipse",
+            "textColor": "#000000",
+            "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
+            "icon": "capability_vision.svg",
             "width": 500,
             "height": 500,
             "z-index": -2
@@ -310,7 +315,7 @@
             {
               "id": "color",
               "type": "color",
-              "default": "#e6c994"
+              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -362,9 +367,9 @@
         {
           "type": "Drive",
           "body": {
-            "shape": "Rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#74a892",
+            "shape": "Ellipse",
+            "textColor": "#000000",
+            "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
             "width": 500,
             "height": 500,
@@ -379,7 +384,7 @@
             {
               "id": "color",
               "type": "color",
-              "default": "#74a892"
+              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -583,9 +588,9 @@
         {
           "type": "Bridge",
           "body": {
-            "shape": "Rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#bb2c1e",
+            "shape": "Ellipse",
+            "textColor": "#000000",
+            "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
             "width": 500,
             "height": 500,
@@ -600,7 +605,7 @@
             {
               "id": "color",
               "type": "color",
-              "default": "#bb2c1e"
+              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -655,10 +660,11 @@
         {
           "type": "Co2Sensor",
           "body": {
-            "shape": "Rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#d73800",
+            "shape": "Ellipse",
+            "textColor": "#000000",
+            "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
+            "icon": "capability_co2sensor.svg",
             "width": 500,
             "height": 500,
             "z-index": -2
@@ -672,7 +678,7 @@
             {
               "id": "color",
               "type": "color",
-              "default": "#d73800"
+              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -733,9 +739,9 @@
         {
           "type": "EnvSensor",
           "body": {
-            "shape": "Rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#e5c185",
+            "shape": "Ellipse",
+            "textColor": "#000000",
+            "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
             "width": 500,
             "height": 500,
@@ -750,7 +756,7 @@
             {
               "id": "color",
               "type": "color",
-              "default": "#e5c185"
+              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -812,10 +818,11 @@
         {
           "type": "Lighting",
           "body": {
-            "shape": "Rectangle",
+            "shape": "Ellipse",
             "textColor": "#000000",
-            "backgroundColor": "#fbf2c4",
+            "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
+            "icon": "capability_lighting.svg",
             "width": 500,
             "height": 500,
             "z-index": -2
@@ -829,7 +836,7 @@
             {
               "id": "color",
               "type": "color",
-              "default": "#fbf2c4"
+              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -883,10 +890,11 @@
         {
           "type": "Ventilation",
           "body": {
-            "shape": "Rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#7ebb9c",
+            "shape": "Ellipse",
+            "textColor": "#000000",
+            "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
+            "icon": "capability_ventilation.svg",
             "width": 500,
             "height": 500,
             "z-index": -2
@@ -900,7 +908,7 @@
             {
               "id": "color",
               "type": "color",
-              "default": "#7ebb9c"
+              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -975,9 +983,9 @@
         {
           "type": "Conveyor",
           "body": {
-            "shape": "Rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#bb2c1e",
+            "shape": "Ellipse",
+            "textColor": "#000000",
+            "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
             "width": 500,
             "height": 500,
@@ -992,7 +1000,7 @@
             {
               "id": "color",
               "type": "color",
-              "default": "#7ebb9c"
+              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -1052,9 +1060,9 @@
         {
           "type": "RobotArm",
           "body": {
-            "shape": "Rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#d73800",
+            "shape": "Ellipse",
+            "textColor": "#000000",
+            "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
             "width": 500,
             "height": 500,
@@ -1069,7 +1077,7 @@
             {
               "id": "color",
               "type": "color",
-              "default": "#7ebb9c"
+              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -1144,9 +1152,9 @@
         {
           "type": "ImageInspector",
           "body": {
-            "shape": "Rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#e5c185",
+            "shape": "Ellipse",
+            "textColor": "#000000",
+            "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
             "width": 500,
             "height": 500,
@@ -1161,7 +1169,7 @@
             {
               "id": "color",
               "type": "color",
-              "default": "#d73800"
+              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -1245,9 +1253,9 @@
         {
           "type": "TicketCreation",
           "body": {
-            "shape": "Rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#fbf2c4",
+            "shape": "Ellipse",
+            "textColor": "#000000",
+            "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
             "width": 500,
             "height": 500,
@@ -1262,7 +1270,7 @@
             {
               "id": "color",
               "type": "color",
-              "default": "#d73800"
+              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -1305,15 +1313,16 @@
         {
           "type": "Start",
           "body": {
-            "shape": "Ellipse",
+            "shape": "startShape",
             "textColor": "#FFFFFF",
             "backgroundColor": "#ffc300",
             "borderColor": "#FFFFFF",
-            "width": 50,
-            "height": 50,
+            "width": 100,
+            "height": 100,
             "iconColor": "#FFFFFF",
-            "iconScale": 0.8,
-            "icon": "koda_start.svg"
+            "iconScale": 1.0,
+            "icon": "",
+            "nodeSvg": "node_start.svg"
           },
           "properties": [
             {
@@ -1346,21 +1355,23 @@
           ],
           "behaviour": {},
           "help": {
-            "message": "Start of a behavioural flow. This can be a reaction to an event or a timed action"
-          }
+            "message": "Start of a behavioural flow. This can be a reaction to an event or a timed action."
+          },
+          "ports": ["out"]
         },
         {
           "type": "Success",
           "body": {
-            "shape": "Ellipse",
+            "shape": "endShape",
             "textColor": "#FFFFFF",
             "backgroundColor": "#6a994e",
             "borderColor": "#FFFFFF",
-            "width": 50,
-            "height": 50,
+            "width": 100,
+            "height": 100,
             "iconColor": "#FFFFFF",
             "iconScale": 0.8,
-            "icon": "koda_success.svg"
+            "icon": "koda_success.svg",
+            "nodeSvg": "node_success.svg"
           },
           "properties": [
             {
@@ -1379,20 +1390,22 @@
           "behaviour": {},
           "help": {
             "message": "End of a happy behavioural flow. This must always be present in a flow"
-          }
+          },
+          "ports": ["in"]
         },
         {
           "type": "Failure",
           "body": {
-            "shape": "Ellipse",
+            "shape": "endShape",
             "textColor": "#FFFFFF",
             "backgroundColor": "#bc4749",
             "borderColor": "#FFFFFF",
-            "width": 50,
-            "height": 50,
+            "width": 100,
+            "height": 100,
             "iconColor": "#FFFFFF",
             "iconScale": 0.8,
-            "icon": "koda_failure.svg"
+            "icon": "koda_failure.svg",
+            "nodeSvg": "node_failure.svg"
           },
           "properties": [
             {
@@ -1411,20 +1424,22 @@
           "behaviour": {},
           "help": {
             "message": "End of an errored behavioural flow. This indicates the flow of a bad behaviour."
-          }
+          },
+          "ports": ["in"]
         },
         {
           "type": "Continue",
           "body": {
-            "shape": "Ellipse",
+            "shape": "endShape",
             "textColor": "#FFFFFF",
             "backgroundColor": "#FF6D7A",
             "borderColor": "#FFFFFF",
-            "width": 50,
-            "height": 50,
+            "width": 100,
+            "height": 100,
             "iconColor": "#FFFFFF",
             "iconScale": 0.8,
-            "icon": "koda_continue.svg"
+            "icon": "koda_continue.svg",
+            "nodeSvg": "node_continue.svg"
           },
           "properties": [
             {
@@ -1443,7 +1458,8 @@
           "behaviour": {},
           "help": {
             "message": "Used with signal handlers to indicate that the main behaviour should continue executing after the signal was handled."
-          }
+          },
+          "ports": ["in"]
         },
         {
           "type": "Async task",
@@ -1481,7 +1497,8 @@
               ]
             }
           ],
-          "controls": []
+          "controls": [],
+          "ports": ["in", "out"]
         },
         {
           "type": "Sync task",
@@ -1519,7 +1536,8 @@
               ]
             }
           ],
-          "controls": []
+          "controls": [],
+          "ports": ["in", "out"]
         },
         {
           "type": "Strategy",
@@ -1530,10 +1548,11 @@
             "borderColor": "#FFFFFF",
             "borderRadius": 10,
             "width": 100,
-            "height": 50,
+            "height": 100,
             "iconColor": "#FFFFFF",
             "iconScale": 0.8,
-            "icon": "koda_strategy.svg"
+            "icon": "koda_strategy.svg",
+            "nodeSvg": "node_strategy.svg"
           },
           "properties": [
             {
@@ -1557,7 +1576,8 @@
               ]
             }
           ],
-          "controls": []
+          "controls": [],
+          "ports": ["in", "out"]
         },
         {
           "type": "Join",
@@ -1566,11 +1586,12 @@
             "textColor": "#FFFFFF",
             "backgroundColor": "#74a892",
             "borderColor": "#FFFFFF",
-            "width": 50,
-            "height": 50,
+            "width": 100,
+            "height": 100,
             "iconColor": "#FFFFFF",
             "iconScale": 0.8,
-            "icon": "koda_join.svg"
+            "icon": "koda_join.svg",
+            "nodeSvg": "node_join.svg"
           },
           "properties": [
             {
@@ -1584,7 +1605,8 @@
               "default": "#74a892"
             }
           ],
-          "controls": []
+          "controls": [],
+          "ports": ["in", "out"]
         },
         {
           "type": "Within",
@@ -1595,10 +1617,11 @@
             "borderColor": "#FFFFFF",
             "borderRadius": 10,
             "width": 100,
-            "height": 50,
+            "height": 100,
             "iconColor": "#FFFFFF",
             "iconScale": 0.8,
-            "icon": "koda_within.svg"
+            "icon": "koda_within.svg",
+            "nodeSvg": "node_within.svg"
           },
           "properties": [
             {
@@ -1633,7 +1656,8 @@
           "behaviour": {},
           "help": {
             "message": "Performs the \"do\" strategy and if it does not conclude within the set time, it will trigger the \"else\" strategy."
-          }
+          },
+          "ports": ["in", "out"]
         },
         {
           "type": "Repeat",
@@ -1643,11 +1667,12 @@
             "backgroundColor": "#202020",
             "borderColor": "#FFFFFF",
             "borderRadius": 10,
-            "width": 200,
+            "width": 100,
             "height": 100,
             "iconColor": "#FFFFFF",
             "iconScale": 0.8,
-            "icon": "koda_repeat.svg"
+            "icon": "koda_repeat.svg",
+            "nodeSvg": "node_repeat.svg"
           },
           "properties": [
             {
@@ -1656,7 +1681,7 @@
               "default": "Repeat"
             },
             {
-              "id": "strategy",
+              "id": "capability",
               "type": "component_select",
               "options": [
                 {
@@ -1669,7 +1694,8 @@
           "behaviour": {},
           "help": {
             "message": "Repeats the contained strategy forever"
-          }
+          },
+          "ports": ["in", "out"]
         },
         {
           "type": "Every",
@@ -1680,10 +1706,11 @@
             "borderColor": "#FFFFFF",
             "borderRadius": 10,
             "width": 100,
-            "height": 50,
+            "height": 100,
             "iconColor": "#FFFFFF",
             "iconScale": 0.8,
-            "icon": "koda_every.svg"
+            "icon": "koda_every.svg",
+            "nodeSvg": "node_every.svg"
           },
           "properties": [
             {
@@ -1704,7 +1731,8 @@
           "behaviour": {},
           "help": {
             "message": "Performs the \"do\" strategy and if it does not conclude within the set time, it will trigger the \"else\" strategy."
-          }
+          },
+          "ports": ["in", "out"]
         }
       ]
     }

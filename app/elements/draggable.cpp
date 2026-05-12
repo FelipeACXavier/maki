@@ -14,12 +14,19 @@
 #include "save_info.h"
 #include "style_helpers.h"
 
+namespace
+{
+constexpr qreal kTaskCornerRadius = 28.0;
+constexpr qreal kTaskInnerPadding = 6.0;
+constexpr qreal kTaskSlotDiameterFactor = 0.30;
+}  // namespace
+
 DraggableItem::DraggableItem(const QString& nodeId, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
     : NodeBase(QUuid::createUuid().toString(), nodeId, nodeConfig, parent)
 {
   setFlag(QGraphicsItem::ItemIsSelectable, true);
 
-  if (!config()->body.iconPath.isEmpty())
+  if (config()->body.nodeSvg.isEmpty() && !config()->body.iconPath.isEmpty())
   {
     setIcon(AppPaths::icon(config()->body.iconPath), config()->body.iconColor);
   }
@@ -44,7 +51,28 @@ QRectF DraggableItem::boundingRect() const
 void DraggableItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget)
 {
   Q_UNUSED(widget);
-  NodeBase::paintNode((style && style->state == QStyle::State_Active) ? boundingRect() : scaledRect(),
+  const QRectF rect = (style && style->state == QStyle::State_Active) ? boundingRect() : scaledRect();
+
+  if (config()->libraryType == Types::LibraryTypes::STRUCTURAL && config()->type == QStringLiteral("Task"))
+  {
+    painter->setRenderHint(QPainter::Antialiasing, true);
+    painter->setPen(isSelected() ? QPen(Config::HIGHLIGHT, 2.0) : QPen(Config::FOREGROUND, 1.0));
+    painter->setBrush(Qt::NoBrush);
+
+    const QRectF bodyRect = rect.adjusted(kTaskInnerPadding, kTaskInnerPadding, -kTaskInnerPadding, -kTaskInnerPadding);
+    painter->drawRoundedRect(bodyRect, kTaskCornerRadius, kTaskCornerRadius);
+
+    const qreal slotDiameter = qMin(bodyRect.width(), bodyRect.height()) * kTaskSlotDiameterFactor;
+    const qreal slotRadius = slotDiameter * 0.5;
+    const QPointF center = bodyRect.center();
+    QPen dashPen(Qt::black, 1.0, Qt::DashLine, Qt::RoundCap, Qt::RoundJoin);
+    painter->setPen(dashPen);
+    painter->setBrush(Qt::NoBrush);
+    painter->drawEllipse(center, slotRadius, slotRadius);
+    return;
+  }
+
+  NodeBase::paintNode(rect,
                       config()->body.backgroundColor,
                       isSelected() ? QPen(Config::HIGHLIGHT, 2.0) : QPen(Config::FOREGROUND, 1.0),
                       painter);

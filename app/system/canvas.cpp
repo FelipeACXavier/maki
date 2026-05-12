@@ -12,12 +12,14 @@
 #include <memory>
 
 #include "app_configs.h"
+#include "app_paths.h"
 #include "canvas_view.h"
 #include "common/style_helpers.h"
 #include "config.h"
 #include "config_table.h"
 #include "elements/flow.h"
 #include "elements/node.h"
+#include "elements/port.h"
 #include "elements/transition.h"
 #include "logging.h"
 #include "result.h"
@@ -25,6 +27,28 @@
 #include "undo_commands/add_node.h"
 #include "undo_commands/align.h"
 #include "undo_commands/remove_node.h"
+
+namespace
+{
+NodeItem* taskContainerAcceptingDrop(QGraphicsItem* item)
+{
+  while (item)
+  {
+    if (item->type() == NodeItem::Type)
+    {
+      auto* node = static_cast<NodeItem*>(item);
+      for (NodeItem* cur = node; cur; cur = cur->parentNode())
+      {
+        if (cur->isTaskContainer() && cur->acceptDrops())
+          return cur;
+      }
+      return nullptr;
+    }
+    item = item->parentItem();
+  }
+  return nullptr;
+}
+}  // namespace
 
 Canvas::Canvas(const QString& canvasId, std::shared_ptr<SaveInfo> storage, std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
     : QGraphicsScene(parent)
@@ -72,33 +96,65 @@ QList<NodeItem*> Canvas::availableNodes()
 
 void Canvas::dragEnterEvent(QGraphicsSceneDragDropEvent* event)
 {
-  if (event->mimeData()->hasFormat(Constants::TYPE_NODE))
-    event->acceptProposedAction();
+  if (!event->mimeData()->hasFormat(Constants::TYPE_NODE))
+  {
+    QGraphicsScene::dragEnterEvent(event);
+    return;
+  }
+  event->acceptProposedAction();
+
+  mDraggedNodeIsCapability = false;
+  mDraggedCapabilityIconPath.clear();
+  mDraggedCapabilityColor = QColor();
+  clearCapabilityDropPreview();
+
+  QByteArray data = event->mimeData()->data(Constants::TYPE_NODE);
+  QDataStream stream(&data, QIODevice::ReadOnly);
+  NodeSaveInfo peekInfo;
+  stream >> peekInfo;
+  auto cfg = mConfigTable->get(peekInfo.getnodeId());
+  if (cfg && type() == Types::LibraryTypes::STRUCTURAL && cfg->libraryType == Types::LibraryTypes::STRUCTURAL
+      && cfg->type != QStringLiteral("Task"))
+  {
+    mDraggedNodeIsCapability = true;
+    mDraggedCapabilityColor = cfg->body.backgroundColor;
+    if (cfg->body.nodeSvg.isEmpty() && !cfg->body.iconPath.isEmpty())
+      mDraggedCapabilityIconPath = AppPaths::icon(cfg->body.iconPath);
+  }
+
+  updateCapabilityDropPreview(event->scenePos());
 }
 
 void Canvas::dragMoveEvent(QGraphicsSceneDragDropEvent* event)
 {
   if (event->mimeData()->hasFormat(Constants::TYPE_NODE))
+  {
     event->acceptProposedAction();
+    updateCapabilityDropPreview(event->scenePos());
+    return;
+  }
+  QGraphicsScene::dragMoveEvent(event);
+}
+
+void Canvas::dragLeaveEvent(QGraphicsSceneDragDropEvent* event)
+{
+  clearCapabilityDropPreview();
+  mDraggedNodeIsCapability = false;
+  mDraggedCapabilityIconPath.clear();
+  mDraggedCapabilityColor = QColor();
+  QGraphicsScene::dragLeaveEvent(event);
 }
 
 void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
 {
+  clearCapabilityDropPreview();
+  mDraggedNodeIsCapability = false;
+  mDraggedCapabilityIconPath.clear();
+  mDraggedCapabilityColor = QColor();
+
   if (event->mimeData()->hasFormat(Constants::TYPE_NODE))
   {
-    NodeItem* parentNode = nullptr;
-    QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
-    if (item && item->type() == NodeItem::Type)
-    {
-      parentNode = static_cast<NodeItem*>(item);
-
-      // Add error message
-      if (!parentNode->acceptDrops())
-      {
-        LOG_WARNING("Tried to drop node on parent that does not accept drops");
-        return;
-      }
-    }
+    NodeItem* parentNode = taskContainerAcceptingDrop(itemAt(event->scenePos(), QTransform()));
 
     // Make sure that no other nodes are selected before dropping
     clearSelectedNodes();
@@ -126,6 +182,30 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
   }
 }
 
+void Canvas::clearCapabilityDropPreview()
+{
+  if (mCapabilityPreviewTask)
+  {
+    mCapabilityPreviewTask->setHoverPreview(QString(), QColor(), false);
+    mCapabilityPreviewTask = nullptr;
+  }
+}
+
+void Canvas::updateCapabilityDropPreview(const QPointF& scenePos)
+{
+  if (!mDraggedNodeIsCapability || type() != Types::LibraryTypes::STRUCTURAL)
+    return;
+
+  NodeItem* task = taskContainerAcceptingDrop(itemAt(scenePos, QTransform()));
+  if (task == mCapabilityPreviewTask)
+    return;
+
+  clearCapabilityDropPreview();
+  mCapabilityPreviewTask = task;
+  if (mCapabilityPreviewTask)
+    mCapabilityPreviewTask->setHoverPreview(mDraggedCapabilityIconPath, mDraggedCapabilityColor, true);
+}
+
 bool Canvas::isModifierSet(QGraphicsSceneMouseEvent* event, Qt::KeyboardModifier modifier)
 {
   return (event->modifiers() & modifier) > 0;
@@ -141,6 +221,34 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
     mMouseDown = true;
 
     QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
+    if (item && item->type() == Types::PORT)
+    {
+      auto* port = static_cast<PortItem*>(item);
+      if (port->kind() == PortItem::Out)
+      {
+        NodeItem* node = port->nodeItem();
+        if (node && node->canAddTransition())
+        {
+          mNode = node;
+          mTransition = new TransitionItem(std::make_shared<TransitionSaveInfo>());
+          mTransition->setZValue(node->zValue() - 1);
+          LOG_INFO("Node: %s ZValue: %f %f", qPrintable(node->nodeId()), node->zValue(), mTransition->zValue());
+
+          auto config = node->nextTransition();
+          mTransition->setEvent(config.event);
+
+          mTransition->setStart(node->id(), port->anchorScenePos(), {0, 0});
+          mTransition->setEnd(Constants::TMP_CONNECTION_ID, event->scenePos(), {0, 0});
+
+          addItem(mTransition);
+          parentView()->setDragMode(QGraphicsView::NoDrag);
+          event->accept();
+          return;
+        }
+      }
+      QGraphicsScene::mousePressEvent(event);
+      return;
+    }
     if (item && item->type() == NodeItem::Type)
     {
       if (!nodeClickHandler(event, item))
@@ -183,29 +291,7 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
 bool Canvas::nodeClickHandler(QGraphicsSceneMouseEvent* event, QGraphicsItem* item)
 {
   NodeItem* node = static_cast<NodeItem*>(item);
-  if (isModifierSet(event, Qt::AltModifier))
-  {
-    mNode = node;
-    auto info = std::make_shared<TransitionSaveInfo>();
-    mTransition = new TransitionItem(std::make_shared<TransitionSaveInfo>());
-    mTransition->setZValue(node->zValue() - 1);
-    LOG_INFO("Node: %s ZValue: %f %f", qPrintable(node->nodeId()), node->zValue(), mTransition->zValue());
-
-    if (node->canAddTransition())
-    {
-      auto config = node->nextTransition();
-      mTransition->setEvent(config.event);
-    }
-
-    mTransition->setStart(node->id(), node->mapToScene(node->boundingRect().center()), {0, 0});
-    mTransition->setEnd(Constants::TMP_CONNECTION_ID, event->scenePos(), {0, 0});
-
-    addItem(mTransition);
-    parentView()->setDragMode(QGraphicsView::NoDrag);
-    event->accept();
-    return false;
-  }
-  else if (isModifierSet(event, Qt::ControlModifier))
+  if (isModifierSet(event, Qt::ControlModifier))
   {
     nodeClicked(node);
     selectNode(node, !node->isSelected());
@@ -261,25 +347,24 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
   {
     if (event->button() == Qt::LeftButton)
     {
-      if (item)
+      bool completed = false;
+      if (item && item->type() == Types::PORT)
       {
-        NodeItem* node = nullptr;
-
-        if (item->type() == NodeItem::Type)
-          node = static_cast<NodeItem*>(item);
-        else if (item->type() == QGraphicsTextItem::Type || item->type() == QGraphicsSvgItem::Type)
-          node = static_cast<NodeItem*>(item->parentItem());
-
-        if (node)
+        auto* port = static_cast<PortItem*>(item);
+        if (port->kind() == PortItem::In)
         {
-          mTransition->setEnd(node->id(), node->mapToScene(node->boundingRect().center()), {0, 0});
-          mTransition->done(mNode, node);
-        }
-        else
-        {
-          removeItem(mTransition);
+          NodeItem* dest = port->nodeItem();
+          if (dest && mNode && dest != mNode)
+          {
+            mTransition->setEnd(dest->id(), port->anchorScenePos(), {0, 0});
+            mTransition->done(mNode, dest);
+            completed = true;
+          }
         }
       }
+
+      if (!completed)
+        removeItem(mTransition);
 
       mTransition = nullptr;
       mNode = nullptr;
@@ -294,6 +379,8 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
         node = static_cast<NodeItem*>(item);
       else if ((item->type() == QGraphicsTextItem::Type || item->type() == QGraphicsSvgItem::Type) && item->parentItem()->type() == NodeItem::Type)
         node = static_cast<NodeItem*>(item->parentItem());
+      else if (item->type() == Types::PORT)
+        node = static_cast<PortItem*>(item)->nodeItem();
 
       if (node)
       {

@@ -6,6 +6,53 @@
 
 #include "app_configs.h"
 #include "node.h"
+#include "port.h"
+
+namespace
+{
+/**
+ * Shorten segment so the stroke and arrow sit clear of port squares (scene coords).
+ * @param shortenEnd pull the destination end back toward the source (in-port clearance + arrow); false while dragging to cursor.
+ */
+void trimConnectionEndpoints(QPointF& start, QPointF& end, bool shortenEnd)
+{
+  const QPointF origStart = start;
+  const QPointF origEnd = end;
+  QLineF seg(origStart, origEnd);
+  const qreal len = seg.length();
+  if (len < 1.0)
+    return;
+
+  const qreal dx = (origEnd.x() - origStart.x()) / len;
+  const qreal dy = (origEnd.y() - origStart.y()) / len;
+
+  const qreal trimFromOut = qMin(PortItem::kSize * 0.5 + 1.0, len * 0.35);
+  if (trimFromOut < len - 0.5)
+    start += QPointF(dx * trimFromOut, dy * trimFromOut);
+
+  if (shortenEnd)
+  {
+    // Small inset only: keep the tip near the in-port without a visible gap (was kSize/2+8).
+    const qreal trimBeforeIn = qMin(PortItem::kSize * 0.35 + 1.0, len * 0.2);
+    if (trimBeforeIn < len - 0.5 && trimFromOut + trimBeforeIn < len - 0.5)
+      end -= QPointF(dx * trimBeforeIn, dy * trimBeforeIn);
+  }
+}
+
+/** Left edge, vertically centered — target when routing from source toward destination. */
+QPointF destinationApproachPoint(const NodeItem& dest)
+{
+  const QRectF r = dest.sceneBoundingRect();
+  return QPointF(r.left(), r.center().y());
+}
+
+/** Right edge, vertically centered — target when routing from destination back toward source (in-port side). */
+QPointF sourceApproachPoint(const NodeItem& src)
+{
+  const QRectF r = src.sceneBoundingRect();
+  return QPointF(r.right(), r.center().y());
+}
+}  // namespace
 
 TransitionItem::TransitionItem(std::shared_ptr<TransitionSaveInfo> storage)
     : QGraphicsPathItem()
@@ -100,16 +147,33 @@ NodeItem* TransitionItem::destination() const
 void TransitionItem::move(const QString& id, QPointF pos)
 {
   if (id == mStorage->getsrcId())
-    mStorage->setSrcPoint(mSource ? mSource->edgePointToward(mDestination->sceneBoundingRect().center()) : pos);
+  {
+    if (!mSource)
+      mStorage->setSrcPoint(pos);
+    else if (mDestination)
+      mStorage->setSrcPoint(mSource->edgePointToward(destinationApproachPoint(*mDestination), true));
+    else
+      mStorage->setSrcPoint(mSource->edgePointToward(pos, true));
+  }
   else if (id == mStorage->getdstId())
-    mStorage->setDstPoint(mDestination ? mDestination->edgePointToward(mSource->sceneBoundingRect().center()) : pos);
+  {
+    if (!mDestination)
+      mStorage->setDstPoint(pos);
+    else if (mSource)
+      mStorage->setDstPoint(mDestination->edgePointToward(sourceApproachPoint(*mSource), false));
+    else
+      mStorage->setDstPoint(mDestination->edgePointToward(pos, false));
+  }
   else
     return;
 
-  // Control points for Bézier curve
+  QPointF a = mStorage->srcPoint();
+  QPointF b = mStorage->dstPoint();
+  trimConnectionEndpoints(a, b, mDestination != nullptr);
+
   QPainterPath path;
-  path.moveTo(mStorage->srcPoint());
-  path.lineTo(mStorage->dstPoint());
+  path.moveTo(a);
+  path.lineTo(b);
 
   setPath(path);
   updateLabelPosition();
@@ -166,13 +230,10 @@ void TransitionItem::updatePath()
   if (!mSource || !mDestination)
     return;
 
-  // Get center positions in scene coordinates
-  QPointF fromCenter = mSource->sceneBoundingRect().center();
-  QPointF toCenter = mDestination->sceneBoundingRect().center();
-
-  // Compute edge points toward the other node
-  QPointF start = mSource->edgePointToward(toCenter);
-  QPointF end = mDestination->edgePointToward(fromCenter);
+  // Same approach hints as move() so path stays consistent when nodes are dragged.
+  QPointF start = mSource->edgePointToward(destinationApproachPoint(*mDestination), true);
+  QPointF end = mDestination->edgePointToward(sourceApproachPoint(*mSource), false);
+  trimConnectionEndpoints(start, end, true);
 
   // Draw the curve or line
   QPainterPath path(start);

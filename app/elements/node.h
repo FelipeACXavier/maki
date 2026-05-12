@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QBrush>
+#include <QColor>
 #include <QDataStream>
 #include <QGraphicsEllipseItem>
 #include <QGraphicsItem>
@@ -13,8 +14,11 @@
 #include "transition.h"
 #include "types.h"
 
+class PortItem;
 class Flow;
 class QGraphicsSceneMouseEvent;
+class SubtaskConnector;
+class StructureCanvas;
 
 /**
  * @brief Represents a graphical node item in a flowchart.
@@ -195,12 +199,9 @@ public:
   void removeTransition(TransitionItem* transition);
 
   /**
-   * @brief Calculates an edge point toward a target scene position.
-   *
-   * @param targetScenePos The target scene position.
-   * @return The QPointF representing the edge point.
+   * @param fromOutgoingPort true = out-port anchor (source side), false = in-port anchor (target side).
    */
-  QPointF edgePointToward(const QPointF& targetScenePos) const;
+  QPointF edgePointToward(const QPointF& targetScenePos, bool fromOutgoingPort) const;
 
   /**
    * @brief Returns a list of fields associated with this node.
@@ -279,11 +280,22 @@ public:
    */
   void childRemoved(NodeItem* child);
 
-  /**
-   * @brief Returns a list of flows associated with this node.
-   *
-   * @return The QVector of Flow pointers.
-   */
+  /** Structural "Task" node from library (container with capability slots + subtasks). */
+  bool isTaskContainer() const;
+  /** Task nested under another Task in the system view. */
+  bool isStructuralSubtask() const;
+  /** Non-Task structural child of a Task (capability / timer / etc.): drawn as inset circle. */
+  bool rendersAsInsetCapability() const;
+
+  QVector<NodeItem*> structuralSubtaskChildren() const;
+  QVector<NodeItem*> structuralCapabilityChildren() const;
+
+  void layoutSubtasks();
+  void relayoutCapabilitySlots();
+  void ensureSubtaskConnector(StructureCanvas* canvas);
+  void destroySubtaskConnector();
+  void syncSubtaskConnector();
+
   QVector<Flow*> flows() const;
 
   /**
@@ -357,6 +369,8 @@ public:
    */
   void updatePosition(const QPointF& position);
 
+  void setHoverPreview(const QString& iconPath, const QColor& color, bool active);
+
   // "signals":
   std::function<void(NodeItem* item)> nodeModified;
   std::function<void(Flow* flow, NodeItem* item)> flowAdded;
@@ -429,10 +443,13 @@ private:
   QVector<NodeItem*> mChildrenNodes;      /// List of child nodes.
   QVector<TransitionItem*> mTransitions;  /// List of transitions connected to this node.
 
-  qreal mBaseScale;             /// Base scale for the node.
-  QSizeF mSize{0, 0};           /// Current size of the node.
-  QPointF mDragStartPos{0, 0};  /// Position where dragging started.
-  QPointF mLastPosition{0, 0};  /// Last known position of the node.
+  PortItem* mInPort = nullptr;
+  PortItem* mOutPort = nullptr;
+
+  qreal mBaseScale;
+  QSizeF mSize{0, 0};
+  QPointF mDragStartPos{0, 0};
+  QPointF mLastPosition{0, 0};
 
   bool mIsResizing{false};             /// Flag indicating if the node is being resized.
   QPointF mResizeStartMousePos{0, 0};  /// Mouse position when resizing started.
@@ -442,6 +459,7 @@ private:
    * @brief Updates extra positions related to this node.
    */
   void updateExtrasPosition();
+  void updatePortPositions();
 
   /**
    * @brief Clamps a size within valid limits.
@@ -475,4 +493,13 @@ private:
    * @return The QRectF representing the inner scene rectangle.
    */
   QRectF parentInnerSceneRect(qreal padding) const;
+  NodeItem* rootStructuralTask() const;
+
+  SubtaskConnector* mSubtaskConnector = nullptr;
+  QPointF mTreeDragRootStartPos{0, 0};
+  QPointF mTreeDragStartScenePos{0, 0};
+
+  bool mHoverPreviewActive = false;
+  QString mHoverPreviewIcon;
+  QColor mHoverPreviewColor;
 };

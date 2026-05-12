@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QApplication>
+#include <QColor>
 #include <QDropEvent>
 #include <QGraphicsItem>
 #include <QGraphicsScene>
@@ -206,12 +207,7 @@ protected:
    * @param event Pointer to the QGraphicsSceneDragDropEvent.
    */
   void dragMoveEvent(QGraphicsSceneDragDropEvent* event) override;
-
-  /**
-   * @brief Handles drop events.
-   *
-   * @param event Pointer to the QGraphicsSceneDragDropEvent.
-   */
+  void dragLeaveEvent(QGraphicsSceneDragDropEvent* event) override;
   void dropEvent(QGraphicsSceneDragDropEvent* event) override;
 
   /**
@@ -250,6 +246,21 @@ protected:
    * @param adding Whether this is an addition or removal.
    */
   virtual void updateParent(NodeItem* node, std::shared_ptr<NodeSaveInfo> storage, bool adding);
+
+  enum class NodeCreation
+  {
+    Dropping,
+    Pasting,
+    Loading,
+    Populating
+  };
+
+  NodeItem* createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo> info, const QPointF& position, NodeItem* parent);
+
+  std::shared_ptr<ConfigurationTable> configurationTable() const
+  {
+    return mConfigTable;
+  }
 
 signals:
   /**
@@ -352,14 +363,7 @@ public slots:
   void onFlowRemoved(const QString& flowId, const QString& nodeId);
 
 private:
-  enum class NodeCreation
-  {
-    Dropping,
-    Pasting,
-    Loading,
-    Populating
-  };
-
+  // TODO(felaze): Move connection behaviour to a separate class
   NodeItem* mHoveredNode = nullptr;       /// Pointer to the hovered node.
   TransitionItem* mTransition = nullptr;  /// Pointer to the current transition being created.
   NodeItem* mNode = nullptr;              /// Pointer to the currently clicked node.
@@ -402,17 +406,6 @@ private:
    * @return Pointer to CanvasView.
    */
   CanvasView* parentView() const;
-
-  /**
-   * @brief Creates a new node based on save information and other parameters.
-   *
-   * @param creation The type of node creation (e.g., dropping, pasting).
-   * @param info Shared pointer to the save information for the node.
-   * @param position The initial position of the node.
-   * @param parent Pointer to the parent node.
-   * @return Pointer to the created NodeItem.
-   */
-  NodeItem* createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo> info, const QPointF& position, NodeItem* parent);
 
   /**
    * @brief Finds a node by its ID.
@@ -462,5 +455,13 @@ private:
   bool isParentSelected(NodeItem* node);                                                                              /// Checks if the parent of a node is selected.
   void pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode, QList<CopiedNode> nodes, bool relative);  /// Pastes copied items at a specified position.
 
-  VoidResult loadFromSave(const QVector<std::shared_ptr<INode>>& nodes, NodeItem* parent);  /// Loads nodes and their children from save information.
+  VoidResult loadFromSave(const QVector<std::shared_ptr<INode>>& nodes, NodeItem* parent);
+
+  void clearCapabilityDropPreview();
+  void updateCapabilityDropPreview(const QPointF& scenePos);
+
+  NodeItem* mCapabilityPreviewTask = nullptr;
+  bool mDraggedNodeIsCapability = false;
+  QString mDraggedCapabilityIconPath;
+  QColor mDraggedCapabilityColor;
 };

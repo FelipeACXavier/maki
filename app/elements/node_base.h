@@ -3,8 +3,11 @@
 #include <QGraphicsItem>
 #include <QGraphicsSvgItem>
 #include <QString>
+#include <memory>
 
 #include "config.h"
+
+class QSvgRenderer;
 #include "ids.h"
 #include "result.h"
 
@@ -208,10 +211,8 @@ private:
 
   QRectF mScaledBounds;  /// Scaled bounding rectangle of the node.
 
-  /**
-   * @brief Computes the scale factor for the node.
-   *
-   * @return The computed scale factor.
-   */
+  // mutable std::unique_ptr<QSvgRenderer> mShapeSvgRenderer;
+  mutable std::unique_ptr<QSvgRenderer> mNodeSvgRenderer;
+
   qreal computeScaleFactor() const;
 };

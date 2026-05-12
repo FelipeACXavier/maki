@@ -237,6 +237,9 @@ BodyConfig::BodyConfig(const QJsonObject& object)
   if (object.contains("icon"))
     iconPath = object["icon"].toString();
 
+  if (object.contains("nodeSvg"))
+    nodeSvg = object["nodeSvg"].toString();
+
   if (object.contains("scale"))
     iconScale = object["scale"].toDouble();
 
@@ -343,6 +346,18 @@ NodeConfig::NodeConfig(const QJsonObject& object)
       transitions.push_back(ctrl);
     }
   }
+
+  if (object.contains(ConfigKeys::PORTS))
+  {
+    for (const auto& p : object[ConfigKeys::PORTS].toArray())
+    {
+      const QString s = p.toString().toLower();
+      if (s == "in")
+        hasInPort = true;
+      else if (s == "out")
+        hasOutPort = true;
+    }
+  }
 }
 
 // ===========================================================================================================
@@ -358,6 +373,8 @@ QDataStream& operator<<(QDataStream& out, const NodeConfig& config)
   out << config.libraryType;
   out << config.events;
   out << config.transitions;
+  out << config.hasInPort;
+  out << config.hasOutPort;
 
   return out;
 }
@@ -373,6 +390,8 @@ QDataStream& operator>>(QDataStream& in, NodeConfig& config)
   in >> config.libraryType;
   in >> config.events;
   in >> config.transitions;
+  in >> config.hasInPort;
+  in >> config.hasOutPort;
 
   return in;
 }
@@ -391,6 +410,7 @@ QDataStream& operator<<(QDataStream& out, const BodyConfig& config)
   out << config.zIndex;
   out << config.borderRadius;
   out << config.iconPath;
+  out << config.nodeSvg;
   out << config.iconScale;
 
   return out;
