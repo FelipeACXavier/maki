@@ -1,10 +1,10 @@
 #include "pipeline.h"
 
 #include <QProcess>
+#include <QProgressBar>
 #include <QRegularExpression>
 #include <QStandardPaths>
 #include <QVBoxLayout>
-#include <QProgressBar>
 #include <oclero/qlementine/widgets/Label.hpp>
 
 #include "logging.h"
@@ -187,7 +187,7 @@ VoidResult Pipeline::add(QProcess* process, maki::OnFail onFail, std::function<v
 
   group->processes.push_back(pp);
 
-  LOG_DEBUG("Adding process to group: %s (%d)", qPrintable(group->name), mGroupIndex);
+  LOG_DEBUG("Adding process to group: %s (%d)", qPrintable(group->name), group->size());
 
   return VoidResult();
 }
@@ -243,7 +243,7 @@ VoidResult Pipeline::start(const QString& groupName, bool first)
   if (first)
     emit startingPipeline(constructInfo());
 
-  LOG_DEBUG("Starting group: %s, was running %s", qPrintable(group->name), qPrintable(mCurrentGroup));
+  // LOG_DEBUG("Starting group: %s, was running %s", qPrintable(group->name), qPrintable(mCurrentGroup));
   if (mCurrentGroup != group->name)
   {
     mCurrentGroup = group->name;
@@ -286,7 +286,7 @@ void Pipeline::startNextOrEnd(int exitCode, QProcess::ExitStatus status)
     aborting = mState == State::Aborting;
   }
 
-  LOG_DEBUG("Process ended with code: %d", exitCode);
+  // LOG_DEBUG("Process ended with code: %d", exitCode);
 
   auto group = getGroup();
   if (exitCode != SUCCESS)
@@ -328,7 +328,7 @@ void Pipeline::startNextOrEnd(int exitCode, QProcess::ExitStatus status)
   }
   else
   {
-    LOG_DEBUG("Running next process");
+    // LOG_DEBUG("Running next process");
 
     // Keep running the same group
     start(group->name);
@@ -393,7 +393,7 @@ void Pipeline::onFinished(int exitCode, QProcess::ExitStatus status)
     return;
   }
 
-  LOG_DEBUG("Process finished: %s", qPrintable(mRunningProcess->process->program()));
+  // LOG_DEBUG("Process finished: %s", qPrintable(mRunningProcess->process->program()));
   emit finished(constructInfo(), exitCode, status);
 
   if (mRunningProcess->onFinish)

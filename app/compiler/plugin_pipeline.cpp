@@ -3,10 +3,10 @@
 #include <QTimer>
 
 #include "logging.h"
+#include "notifications.h"
 #include "pipeline.h"
 #include "pipeline_action.h"
 #include "plugin_action_registry.h"
-#include "notifications.h"
 
 namespace maki
 {
@@ -16,12 +16,14 @@ PluginPipeline::PluginPipeline(Pipeline* pipeline, QObject* parent)
     , mPipeline(pipeline)
 {
   connect(mPipeline, &Pipeline::finishedLast, [this](const Pipeline::Info& info, int exitCode, const QString& message) {
-    if (exitCode == 0)
-      mContext.commitPendingArtifact();
-
     mProgressId = NOTIFY_LONG_INFO(mProgressId, "Pipeline Progress", mPipeline->progressWidget());
     mProgressId = NOTIFY_LONG_INFO(mProgressId, "Pipeline Progress", nullptr);
-    QTimer::singleShot(0, this, [this]() { LOG_WARN_ON_FAILURE(continueAfterNode()); });
+
+    if (exitCode == 0)
+    {
+      mContext.commitPendingArtifact();
+      QTimer::singleShot(0, this, [this]() { LOG_WARN_ON_FAILURE(continueAfterNode()); });
+    }
   });
   connect(mPipeline, &Pipeline::errorOccurred, [this](const Pipeline::Info& info, QProcess::ProcessError /* error */, const QString& message) {
     LOG_INFO("Error occurred: %s", qPrintable(message));
@@ -74,7 +76,11 @@ VoidResult PluginPipeline::runNextNode()
   if (!validation)
     return validation;
 
-  auto result = action->run(mContext, node->parameters, mPipeline);
+  auto args = node->parameters;
+  if (args.isEmpty())
+    args = action->defaultParameters();
+
+  auto result = action->run(mContext, args, mPipeline);
   if (!result)
     return result;
 
@@ -87,6 +93,7 @@ VoidResult PluginPipeline::runNextNode()
   //   LOG_DEBUG("Artifact %s %s: \n%s", qPrintable(art.id), qPrintable(art.producer), qPrintable(pretty));
   // }
 
+  LOG_INFO("Done running action %s, pipeline size: %d", qPrintable(action->id()), mPipeline->size());
   if (mPipeline->size() == 0)
   {
     for (const auto& a : result.Value())
