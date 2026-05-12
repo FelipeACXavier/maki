@@ -21,5 +21,6 @@ struct PipelineArtifact
 
 typedef QList<maki::PipelineArtifact> Artifacts;
 typedef Result<Artifacts> ResultArtifacts;
+typedef Result<maki::PipelineArtifact> ResultArtifact;
 
 }  // namespace maki
