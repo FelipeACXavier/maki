@@ -18,8 +18,8 @@ ProjectPage::ProjectPage(QWidget* parent)
   auto* targetBox = new QGroupBox("Target");
   auto* form = new QFormLayout(targetBox);
 
-  mBoardEdit = new QLineEdit("esp32dev");
-  mPlatformEdit = new QLineEdit("espressif32");
+  mBoardEdit = new QLineEdit("nodemcuv2");
+  mPlatformEdit = new QLineEdit("espressif8266");
   mFrameworkEdit = new QLineEdit("arduino");
   mEnvironmentEdit = new QLineEdit("esp32dev");
 

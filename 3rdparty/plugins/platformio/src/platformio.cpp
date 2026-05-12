@@ -5,6 +5,9 @@
 #include <QPlainTextEdit>
 #include <QStringList>
 
+#include "actions/build_project.h"
+#include "actions/copy_sources.h"
+#include "actions/create_project.h"
 #include "idocument.h"
 #include "ilogging.h"
 #include "ipipeline.h"
@@ -26,7 +29,8 @@ bool PlatformIOPlugin::setup()
   mPioExecutable = QDir(home).filePath(".platformio/penv/bin/pio");
 #endif
 
-  mProjectPage = new ProjectPage();
+  if (!mProjectPage)
+    mProjectPage = new ProjectPage();
 
   // connect(mProjectPage, &maki::ProjectPage::refreshDevicesRequested, this, &PlatformIOPlugin::refreshDevices);
 
@@ -117,7 +121,7 @@ void PlatformIOPlugin::setHostServices(maki::IHostServices* services)
   if (auto logger = mServices->logger())
   {
     logging::gSourceName = languageName().toStdString();
-    logging::gSilentLog = true;
+    logging::gSilentLog = false;
     logger->registerPlugin(languageName(), logging::gLogToStream);
   }
 
@@ -165,124 +169,101 @@ PluginVersion PlatformIOPlugin::version() const
 
 QList<std::shared_ptr<maki::IPipelineAction>> PlatformIOPlugin::pipelineActions()
 {
-  return {};
+  return {
+      std::make_shared<PlatformIOCreateProject>(this),
+      std::make_shared<PlatformIOBuildAction>(this),
+      std::make_shared<PlatformIOCopySources>(this),
+  };
 }
 
-// VoidResult PlatformIOPlugin::generate(const QString& outputFolder)
-// VoidResult PlatformIOPlugin::verify(const QString& outputFolder)
-// {
-//   if (outputFolder.isEmpty())
-//     return VoidResult::Failed("No output folder configured for PlatformIO generation");
-//   else if (mServices->pipeline() == nullptr)
-//     return VoidResult::Failed("Cannot proceed with generation, no pipeline provided");
-
-//   mGeneratedFiles = {};
-//   mCurrentOutputFolder = outputFolder;
-
-//   if (auto r = initialiseProject(outputFolder); !r)
-//     return r;
-
-//   // if (auto r = writePlatformIni(outputFolder); !r)
-//   //   return r;
-
-//   // if (auto r = writeMainCpp(outputFolder); !r)
-//   //   return r;
-
-//   // appendOutput("Generated PlatformIO project in: " + outputFolder);
-
-//   return VoidResult();
-// }
-
-// VoidResult PlatformIOPlugin::simulate(const QString& outputFolder)
-// {
-//   return verify(outputFolder);
-// }
-
-// VoidResult PlatformIOPlugin::build(const QString& outputFolder)
-// {
-//   if (auto r = generate(outputFolder); !r)
-//     return r;
-
-//   const auto profile = mProjectPage->profile();
-
-//   QStringList args = {"run", "-e", profile.environment};
-
-//   return runPio(outputFolder, args);
-// }
-
-// VoidResult PlatformIOPlugin::upload(const QString& outputFolder)
-// {
-//   if (auto r = generate(outputFolder); !r)
-//     return r;
-
-//   const auto profile = mProjectPage->profile();
-
-//   QStringList args = {"run", "-e", profile.environment, "-t", "upload"};
-
-//   if (!profile.uploadPort.isEmpty())
-//     args << "--upload-port" << profile.uploadPort;
-
-//   return runPio(outputFolder, args);
-// }
-
-// VoidResult PlatformIOPlugin::monitor(const QString& outputFolder)
-// {
-//   if (outputFolder.isEmpty())
-//     return VoidResult::Failed("No output folder configured for PlatformIO monitor");
-
-//   const auto profile = mProjectPage->profile();
-
-//   QStringList args = {
-//       "device",
-//       "monitor",
-//       "-d",
-//       outputFolder,
-//       "-e",
-//       profile.environment,
-//       "--baud",
-//       QString::number(profile.monitorSpeed)};
-
-//   if (!profile.monitorPort.isEmpty())
-//     args << "--port" << profile.monitorPort;
-
-//   return runPio(outputFolder, args, false);
-// }
-
-VoidResult PlatformIOPlugin::initialiseProject(const QString& outputFolder)
+Result<maki::PipelineArtifact> PlatformIOPlugin::initialiseProject(const QDir& outputFolder, maki::IPipeline* pipeline)
 {
   LOG_DEBUG("Initialising PlatformIO project");
 
-  QDir dir(outputFolder);
-  if (!dir.exists() && !dir.mkpath("."))
-    return VoidResult::Failed("Could not create PlatformIO output folder");
+  if (!setup())
+    return Result<maki::PipelineArtifact>::Failed("Failed to setup plugin");
+  else if (!pipeline)
+    return Result<maki::PipelineArtifact>::Failed("No pipeline provided");
 
+  auto projectFolder = outputFolder;
+  if (projectFolder.exists())
+    projectFolder.removeRecursively();
+
+  if (!projectFolder.mkpath("."))
+    return Result<maki::PipelineArtifact>::Failed("Could not create PlatformIO output folder");
+
+  pipeline->startGroup("Project creation");
   const auto profile = mProjectPage->profile();
 
-  mServices->pipeline()->startGroup("Generation");
-
-  QStringList args = {"project", "init", "--project-dir", outputFolder, "--board", profile.board};
+  QStringList args = {"project", "init", "--project-dir", projectFolder.absolutePath(), "--board", profile.board};
 
   QProcess* generate = new QProcess(this);
-  generate->setWorkingDirectory(outputFolder);
+  generate->setWorkingDirectory(projectFolder.absolutePath());
   generate->setProgram(mPioExecutable);
   generate->setArguments(args);
-  mServices->pipeline()->add(generate, maki::OnFail::EXECUTE, [this, outputFolder] {
-    LOG_WARN_ON_FAILURE(writePlatformIni(outputFolder));
-    LOG_WARN_ON_FAILURE(writeMainCpp(outputFolder));
+  auto added = pipeline->add(generate, maki::OnFail::EXECUTE, [this, projectFolder] {
+    LOG_WARN_ON_FAILURE(writePlatformIni(projectFolder));
+    // LOG_WARN_ON_FAILURE(writeMainCpp(outputFolder));
   });
 
-  mServices->pipeline()->endGroup();
+  pipeline->endGroup();
 
-  return VoidResult();
+  if (!added.IsSuccess())
+    return Result<maki::PipelineArtifact>::Failed(added.ErrorMessage());
+
+  maki::PipelineArtifact artifact;
+  artifact.paths = {
+      {"includeDir", projectFolder.absolutePath() + "/include"},
+      {"sourceDir", projectFolder.absolutePath() + "/src"},
+      {"libraryDir", projectFolder.absolutePath() + "/lib"},
+      {"rootDir", projectFolder.absolutePath()},
+  };
+  artifact.metadata = {
+      {"ini", projectFolder.absolutePath() + "/platform.ini"},
+  };
+
+  return artifact;
 }
 
-VoidResult PlatformIOPlugin::writePlatformIni(const QString& outputFolder)
+Result<maki::PipelineArtifact> PlatformIOPlugin::buildProject(const maki::PipelineArtifact& artifact, const QDir& outputFolder, maki::IPipeline* pipeline)
+{
+  if (!setup())
+    return Result<maki::PipelineArtifact>::Failed("Failed to setup plugin");
+  else if (!artifact.paths.contains("rootDir"))
+    return Result<maki::PipelineArtifact>::Failed("buildProject, missing root folder");
+
+  const QString projectDir = artifact.paths["rootDir"].toString();
+  const auto profile = mProjectPage->profile();
+
+  pipeline->startGroup("Generation");
+
+  QProcess* generate = new QProcess(this);
+  generate->setWorkingDirectory(projectDir);
+  generate->setProgram(mPioExecutable);
+  QStringList args = {"run", "-d", projectDir, "-e", profile.environment};
+  generate->setArguments(args);
+  pipeline->add(generate, maki::OnFail::STOP);
+
+  pipeline->endGroup();
+
+  maki::PipelineArtifact firmware;
+  firmware.paths = {
+      {"buildDir", projectDir + "/build"},
+  };
+  firmware.metadata = {
+      {"firmware", projectDir + "/build/myexecutable"},
+  };
+
+  return firmware;
+}
+
+VoidResult PlatformIOPlugin::writePlatformIni(const QDir& outputFolder)
 {
   const auto profile = mProjectPage->profile();
 
-  LOG_DEBUG("Writing platform ini file on: %s", qPrintable(outputFolder));
+  LOG_DEBUG("Writing platform ini file on: %s", qPrintable(outputFolder.absolutePath()));
 
-  QFile file(QDir(outputFolder).filePath("platformio.ini"));
+  QFile file(outputFolder.filePath("platformio.ini"));
   if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
     return VoidResult::Failed("Could not write platformio.ini");
 
@@ -293,6 +274,9 @@ VoidResult PlatformIOPlugin::writePlatformIni(const QString& outputFolder)
   out << "board = " << profile.board << "\n";
   out << "framework = " << profile.framework << "\n";
   out << "monitor_speed = " << profile.monitorSpeed << "\n";
+  out << "build_unflags = -fno-rtti -std=gnu++11\n";
+  out << "build_flags = -g -std=c++17 -std=gnu++17 -DCONFIG_ARDUINO_LOOP_STACK_SIZE=16384\n";
+  out << "lib_ldf_mode = deep+\n";
 
   if (!profile.uploadPort.isEmpty())
     out << "upload_port = " << profile.uploadPort << "\n";

@@ -15,9 +15,9 @@ if (NOT BUILD_PLUGINS)
     add_compile_options(/W4 /MP)
 
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-        add_compile_options(/Zi /Od)
+      add_compile_options(/Zi /Od)
     elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
-        add_compile_options(/O2)
+      add_compile_options(/O2)
     endif()
 
     find_package(Qt6 ${QT_VERSION} REQUIRED COMPONENTS
@@ -27,13 +27,13 @@ if (NOT BUILD_PLUGINS)
     add_compile_options(-Wall)
 
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-        message(STATUS "Compiling with debug symbols")
-        set(LINUX_BUILD_DIR "${CMAKE_SOURCE_DIR}/build/linux/debug")
-        add_compile_options(-g -O0)
+      message(STATUS "Compiling with debug symbols")
+      set(LINUX_BUILD_DIR "${CMAKE_SOURCE_DIR}/build/linux/debug")
+      add_compile_options(-g -O0)
     elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
-        message("Compiling in release version")
-        set(LINUX_BUILD_DIR "${CMAKE_SOURCE_DIR}/build/linux/release")
-        add_compile_options(-O2)
+      message("Compiling in release version")
+      set(LINUX_BUILD_DIR "${CMAKE_SOURCE_DIR}/build/linux/release")
+      add_compile_options(-O2)
     endif()
 
     find_package(Qt6 REQUIRED COMPONENTS
@@ -59,6 +59,9 @@ add_library(${PLUGIN_NAME} SHARED
   src/platformio.cpp
   src/platformio.h
   src/project_page.cpp
+  src/actions/create_project.cpp
+  src/actions/build_project.cpp
+  src/actions/copy_sources.cpp
   ${JSON_FILE}
 )
 

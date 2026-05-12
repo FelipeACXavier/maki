@@ -28,7 +28,7 @@ public:
   bool tearDown() override;
   void setHostServices(maki::IHostServices* services) override;
   void setName(const QString& name) override;
-  void setVersion(const QString& name) override;
+  void setVersion(const QString& version) override;
   void setAssetDir(const QDir& dir) override;
 
   QString languageName() const override;
@@ -37,6 +37,8 @@ public:
   void settingsChanged(const QVector<maki::SettingField>& settings) override;
 
   QList<std::shared_ptr<maki::IPipelineAction>> pipelineActions() override;
+  Result<maki::PipelineArtifact> initialiseProject(const QDir& outputFolder, maki::IPipeline* pipeline);
+  Result<maki::PipelineArtifact> buildProject(const maki::PipelineArtifact& artifact, const QDir& outputFolder, maki::IPipeline* pipeline);
 
 private:
   maki::PluginVersion mVersion;
@@ -56,8 +58,7 @@ private:
   QVector<maki::SettingField> mSettings = {};
   QList<QString> mGeneratedFiles = {};
 
-  VoidResult initialiseProject(const QString& outputFolder);
-  VoidResult writePlatformIni(const QString& outputFolder);
+  VoidResult writePlatformIni(const QDir& outputFolder);
   VoidResult writeMainCpp(const QString& outputFolder);
 
   void refreshDevices();
