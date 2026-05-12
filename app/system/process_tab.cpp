@@ -147,6 +147,42 @@ void ProcessTab::handleProcessData(const QByteArray& raw)
         else if (mode == 2)
           cursor.select(QTextCursor::Document);
       }
+      else if (finalByte == 'G')
+      {
+        // Cursor horizontal absolute.
+        // ESC[1G means move to column 1.
+        const int column = paramsStr.isEmpty() ? 1 : paramsStr.toInt();
+
+        cursor.movePosition(QTextCursor::StartOfLine);
+
+        if (column > 1)
+          cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, column - 1);
+      }
+      else if (finalByte == 'K')
+      {
+        // Erase in line.
+        // ESC[K  = clear from cursor to end of line
+        // ESC[1K = clear from cursor to start of line
+        // ESC[2K = clear entire line
+        const int mode = paramsStr.isEmpty() ? 0 : paramsStr.toInt();
+
+        if (mode == 0)
+        {
+          cursor.movePosition(QTextCursor::EndOfLine, QTextCursor::KeepAnchor);
+          cursor.removeSelectedText();
+        }
+        else if (mode == 1)
+        {
+          cursor.movePosition(QTextCursor::StartOfLine, QTextCursor::KeepAnchor);
+          cursor.removeSelectedText();
+        }
+        else if (mode == 2)
+        {
+          cursor.movePosition(QTextCursor::StartOfLine);
+          cursor.movePosition(QTextCursor::EndOfLine, QTextCursor::KeepAnchor);
+          cursor.removeSelectedText();
+        }
+      }
       else
       {
         // Other CSI – ignore for now

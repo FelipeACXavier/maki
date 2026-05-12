@@ -1,0 +1,9 @@
+{
+  "id": "com.maki.ollama",
+  "name": "Ollama",
+  "version": "0.0.1",
+  "author": "Felipe Xavier",
+  "entryPointDLL": "bin/ollama_plugin.dll",
+  "entryPointSO": "bin/libollama_plugin.so",
+  "icon": "assets/icon.png"
+}

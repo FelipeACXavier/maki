@@ -341,21 +341,21 @@ void MainWindow::bind()
 
   connect(mGenerationButton, &QPushButton::pressed, this, &MainWindow::onActionGenerate);
   connect(mSimulateButton, &QPushButton::pressed, this, &MainWindow::onActionSimulate);
-  connect(mDeployButton, &QPushButton::pressed, [this] {
-    auto pipelineTab = mCanvasPanel->indexOf(mPipelineView);
-    if (pipelineTab >= 0)
-      return;
+  connect(mDeployButton, &QPushButton::pressed, this, &MainWindow::onActionDeploy);
+  // auto pipelineTab = mCanvasPanel->indexOf(mPipelineView);
+  // if (pipelineTab >= 0)
+  //   return;
 
-    PipelineCanvas* canvas = new PipelineCanvas("Pipeline Editor", mStorage, mConfigTable, mPipelineView);
-    mPipelineView->setScene(canvas);
+  // PipelineCanvas* canvas = new PipelineCanvas("Pipeline Editor", mStorage, mConfigTable, mPipelineView);
+  // mPipelineView->setScene(canvas);
 
-    // Change to respective tabs
-    auto index = libraryTypeToIndex(canvas->type());
-    mPalette->setCurrentIndex(index);
+  // // Change to respective tabs
+  // auto index = libraryTypeToIndex(canvas->type());
+  // mPalette->setCurrentIndex(index);
 
-    mCanvasPanel->addTab(mPipelineView, QIcon(":/icons/deploy.svg"), "Pipeline Editor");
-    mCanvasPanel->setCurrentWidget(mPipelineView);
-  });
+  // mCanvasPanel->addTab(mPipelineView, QIcon(":/icons/deploy.svg"), "Pipeline Editor");
+  // mCanvasPanel->setCurrentWidget(mPipelineView);
+  // });
 
   // View actions =============================================================
   mOpenComponentsPanel->setShortcut(QKeySequence(Qt::Key_F7));
@@ -817,6 +817,54 @@ void MainWindow::onActionSimulate()
   graph.edges.push_back(edge1);
   graph.edges.push_back(edge2);
   graph.edges.push_back(edge3);
+
+  QByteArray byteArray;
+  QDataStream out(&byteArray, QIODevice::WriteOnly);
+  out << mHostServices->document()->getnodes();
+
+  maki::PipelineContext context;
+  context.buildDir = QDir(mSettingsManager->generation().generationDir);
+  context.projectDir = QDir(mSettingsManager->generation().generationDir);
+  context.addArtifact({
+      .id = "maki.nodes",
+      .type = "maki",
+      .producer = "MAKI",
+      .paths = {
+          {"nodes", byteArray.toBase64()},
+      },
+  });
+
+  LOG_ERROR_ON_FAILURE(mPluginPipeline->run(graph, context));
+}
+
+void MainWindow::onActionDeploy()
+{
+  if (!mGenerator)
+    LOG_WARNING("No generator available");
+
+  // TODO: Update this to the plugin pipeline
+  maki::PipelineGraph graph;
+  graph.id = "Test 1";
+  graph.name = "Generate koda and dezyne";
+
+  maki::PipelineNode node1;
+  node1.actionId = "koda_antlr.generate_koda";
+  node1.id = "Koda generation";
+  node1.parameters = {};
+
+  maki::PipelineNode node2;
+  node2.actionId = "ollama.explain";
+  node2.id = "Explain with ollama";
+  node2.parameters = {};
+
+  maki::PipelineEdge edge1;
+  edge1.from = "Koda generation";
+  edge1.to = "Explain with ollama";
+
+  graph.nodes.push_back(node1);
+  graph.nodes.push_back(node2);
+
+  graph.edges.push_back(edge1);
 
   QByteArray byteArray;
   QDataStream out(&byteArray, QIODevice::WriteOnly);

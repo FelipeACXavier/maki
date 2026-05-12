@@ -292,6 +292,7 @@ private:
   void onActionSaveAs();                       /// Handles save as action.
   void onActionGenerate();                     /// Handles generate action.
   void onActionSimulate();                     /// Handles simulate action.
+  void onActionDeploy();                       /// Handles deploy action.
   void onActionLogLevelChanged();              /// Handles log level change action.
 };  // namespace qlementclassMainWindow:public MainWindowLayout
 
