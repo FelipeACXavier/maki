@@ -1,5 +1,6 @@
 #include "log_table_highlight.h"
 
+#include <QApplication>
 #include <QPainter>
 
 #include "log_table_model.h"
@@ -34,6 +35,12 @@ void LogHighlightDelegate::clearExpandedRows()
   mExpandedRows.clear();
 }
 
+void LogHighlightDelegate::updatePadding(int hPadding, int vPadding)
+{
+  mExpandedHPadding = hPadding;
+  mExpandedHPadding = vPadding;
+}
+
 QSize LogHighlightDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
 {
   if (!containExpandedRow(index.row()) || index.column() != LogTableModel::MessageColumn)
@@ -61,11 +68,29 @@ void LogHighlightDelegate::paint(QPainter* painter, const QStyleOptionViewItem& 
 
   if (containExpandedRow(index.row()) && index.column() == LogTableModel::MessageColumn)
   {
-    opt.textElideMode = Qt::ElideNone;
-    opt.features |= QStyleOptionViewItem::WrapText;
-  }
+    QStyle* style = opt.widget ? opt.widget->style() : QApplication::style();
 
-  QStyledItemDelegate::paint(painter, opt, index);
+    const QString text = opt.text;
+    // Important: compute this from the original opt, while text still exists.
+    QRect textRect = style->subElementRect(QStyle::SE_ItemViewItemText, &opt, opt.widget);
+
+    textRect.adjust(mExpandedHPadding, mExpandedVPadding, -mExpandedHPadding, mExpandedVPadding);
+
+    // Draw qlementine background/selection without drawing text.
+    QStyleOptionViewItem bgOpt(opt);
+    bgOpt.text.clear();
+    style->drawControl(QStyle::CE_ItemViewItem, &bgOpt, painter, opt.widget);
+
+    painter->save();
+    painter->setPen(opt.state & QStyle::State_Selected ? opt.palette.color(QPalette::HighlightedText) : opt.palette.color(QPalette::Text));
+    painter->drawText(textRect, Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, text);
+    painter->restore();
+    return;
+  }
+  else
+  {
+    QStyledItemDelegate::paint(painter, opt, index);
+  }
 
   if (mSearchText.isEmpty())
     return;

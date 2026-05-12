@@ -1,11 +1,14 @@
 #include "log_table_widget.h"
 
+#include <qmath.h>
+
 #include <QApplication>
 #include <QCheckBox>
 #include <QClipboard>
 #include <QMenu>
 #include <QPushButton>
 #include <QSet>
+#include <oclero/qlementine.hpp>
 
 #include "app_configs.h"
 #include "clickable_icon.h"
@@ -16,9 +19,7 @@ class CenterIconDelegate : public QStyledItemDelegate
 public:
   using QStyledItemDelegate::QStyledItemDelegate;
 
-  void paint(QPainter* painter,
-             const QStyleOptionViewItem& option,
-             const QModelIndex& index) const override
+  void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override
   {
     QStyleOptionViewItem opt(option);
     initStyleOption(&opt, index);
@@ -210,6 +211,14 @@ void LogTableWidget::onClicked(const QModelIndex& index)
     return;
 
   const int clickedRow = index.row();
+
+  if (const auto* qlementine_style = oclero::qlementine::appStyle())
+  {
+    const auto theme = qlementine_style->theme();
+    const auto hSpace = theme.spacing - theme.borderWidth;
+    const auto vSpace = qCeil(theme.spacing / 2);
+    mHighlightDelegate->updatePadding(hSpace, vSpace);
+  }
 
   // Click expanded row again: collapse it
   if (mHighlightDelegate->containExpandedRow(clickedRow))

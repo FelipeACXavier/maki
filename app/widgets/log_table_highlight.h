@@ -53,6 +53,11 @@ public:
   void clearExpandedRows();
 
   /**
+   * @brief Update the internal padding for expanded rows
+   */
+  void updatePadding(int hPadding, int vPadding);
+
+  /**
    * @brief Returns the size hint for a given item view option and model index.
    *
    * @param option The style option for the item view.
@@ -71,7 +76,10 @@ public:
   void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
 
 private:
-  QString mSearchText; /// The current search text used for highlighting log entries.
-  QVector<int> mExpandedRows = {}; /// List of rows that are currently expanded.
-  int mMatches = 0; /// Number of matches found during the last search.
+  QString mSearchText;              /// The current search text used for highlighting log entries.
+  QVector<int> mExpandedRows = {};  /// List of rows that are currently expanded.
+  int mMatches = 0;                 /// Number of matches found during the last search.
+
+  int mExpandedHPadding = 4;
+  int mExpandedVPadding = 7;
 };
