@@ -676,6 +676,26 @@ void MainWindow::onActionGenerate()
   node4.id = "Dezyne C++ generation";
   node4.parameters = {};
 
+  maki::PipelineNode node5;
+  node5.actionId = "platformio.create_project";
+  node5.id = "Create platform IO project";
+  node5.parameters = {};
+
+  maki::PipelineNode node6;
+  node6.actionId = "platformio.copy_sources";
+  node6.id = "Copy sources to platform IO project";
+  node6.parameters = {};
+
+  // maki::PipelineNode node7;
+  // node7.actionId = "platformio.build_project";
+  // node7.id = "Build Platform IO project";
+  // node7.parameters = {};
+
+  // maki::PipelineNode node8;
+  // node8.actionId = "arduino.generate_cpp";
+  // node8.id = "Arduino generation";
+  // node8.parameters = {};
+
   maki::PipelineEdge edge1;
   edge1.from = "Koda generation";
   edge1.to = "Dezyne generation";
@@ -688,13 +708,38 @@ void MainWindow::onActionGenerate()
   edge3.from = "Dezyne verification";
   edge3.to = "Dezyne C++ generation";
 
+  maki::PipelineEdge edge4;
+  edge4.from = "Dezyne C++ generation";
+  edge4.to = "Create platform IO project";
+
+  maki::PipelineEdge edge5;
+  edge5.from = "Create platform IO project";
+  edge5.to = "Copy sources to platform IO project";
+
+  // maki::PipelineEdge edge6;
+  // edge6.from = "Copy sources to platform IO project";
+  // edge6.to = "Build Platform IO project";
+
+  // maki::PipelineEdge edge7;
+  // edge7.from = "Copy sources to platform IO project";
+  // edge7.to = "Arduino generation";
+
   graph.nodes.push_back(node1);
   graph.nodes.push_back(node2);
   graph.nodes.push_back(node3);
   graph.nodes.push_back(node4);
+  graph.nodes.push_back(node5);
+  graph.nodes.push_back(node6);
+  // graph.nodes.push_back(node7);
+  // graph.nodes.push_back(node8);
+
   graph.edges.push_back(edge1);
   graph.edges.push_back(edge2);
   graph.edges.push_back(edge3);
+  graph.edges.push_back(edge4);
+  graph.edges.push_back(edge5);
+  // graph.edges.push_back(edge6);
+  // graph.edges.push_back(edge7);
 
   // We should have three buttons:
   // - Verify
@@ -720,7 +765,6 @@ void MainWindow::onActionGenerate()
   });
 
   LOG_ERROR_ON_FAILURE(mPluginPipeline->run(graph, context));
-  // LOG_ERROR_ON_FAILURE(mGenerator->generate(mSettingsManager->generation().generationDir, mPluginManager->currentPlugin()));
 }
 
 void MainWindow::onActionSimulate()
@@ -728,8 +772,69 @@ void MainWindow::onActionSimulate()
   if (!mGenerator)
     LOG_WARNING("No generator available");
 
-  // TODO: Update this to the plugin pipeline.
-  // LOG_ERROR_ON_FAILURE(mGenerator->simulate(mSettingsManager->generation().generationDir, mPluginManager->currentPlugin()));
+  // TODO: Update this to the plugin pipeline
+  maki::PipelineGraph graph;
+  graph.id = "Test 1";
+  graph.name = "Generate koda and dezyne";
+
+  maki::PipelineNode node1;
+  node1.actionId = "koda_antlr.generate_koda";
+  node1.id = "Koda generation";
+  node1.parameters = {};
+
+  maki::PipelineNode node2;
+  node2.actionId = "koda_antlr.generate_dezyne";
+  node2.id = "Dezyne generation";
+  node2.parameters = {};
+
+  maki::PipelineNode node3;
+  node3.actionId = "koda_antlr.verify_dezyne";
+  node3.id = "Dezyne verification";
+  node3.parameters = {};
+
+  maki::PipelineNode node4;
+  node4.actionId = "koda_antlr.simulate";
+  node4.id = "Dezyne simulation";
+  node4.parameters = {};
+
+  maki::PipelineEdge edge1;
+  edge1.from = "Koda generation";
+  edge1.to = "Dezyne generation";
+
+  maki::PipelineEdge edge2;
+  edge2.from = "Dezyne generation";
+  edge2.to = "Dezyne verification";
+
+  maki::PipelineEdge edge3;
+  edge3.from = "Dezyne verification";
+  edge3.to = "Dezyne simulation";
+
+  graph.nodes.push_back(node1);
+  graph.nodes.push_back(node2);
+  graph.nodes.push_back(node3);
+  graph.nodes.push_back(node4);
+
+  graph.edges.push_back(edge1);
+  graph.edges.push_back(edge2);
+  graph.edges.push_back(edge3);
+
+  QByteArray byteArray;
+  QDataStream out(&byteArray, QIODevice::WriteOnly);
+  out << mHostServices->document()->getnodes();
+
+  maki::PipelineContext context;
+  context.buildDir = QDir(mSettingsManager->generation().generationDir);
+  context.projectDir = QDir(mSettingsManager->generation().generationDir);
+  context.addArtifact({
+      .id = "maki.nodes",
+      .type = "maki",
+      .producer = "MAKI",
+      .paths = {
+          {"nodes", byteArray.toBase64()},
+      },
+  });
+
+  LOG_ERROR_ON_FAILURE(mPluginPipeline->run(graph, context));
 }
 
 void MainWindow::onActionSave()

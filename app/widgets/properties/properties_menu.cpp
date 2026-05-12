@@ -32,6 +32,7 @@
 #include "json.h"
 #include "keys.h"
 #include "logging.h"
+#include "result.h"
 #include "style_helpers.h"
 #include "types.h"
 #include "widgets/widget_factory.h"
