@@ -188,6 +188,10 @@ public:
    */
   VoidResult reloadPlugin(const QString& pluginName, QMenu* menu, QComboBox* comboBox, HostServices* services);
 
+signals:
+
+  void pluginAdded(const Plugin& plugin) const;
+
 private:
   maki::IPlugin* mPlugin;    /// Pointer to the currently selected plugin.
   QVector<Plugin> mPlugins;  /// List of all plugins managed by this manager.

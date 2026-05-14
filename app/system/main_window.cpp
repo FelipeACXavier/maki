@@ -1,5 +1,8 @@
 #include "main_window.h"
 
+#include <qdir.h>
+#include <qjsonarray.h>
+
 #include <QComboBox>
 #include <QDrag>
 #include <QInputDialog>
@@ -29,7 +32,10 @@
 #include "canvas_view.h"
 #include "compiler/generator.h"
 #include "compiler/pipeline.h"
+#include "compiler/pipeline_graph.h"
+#include "compiler/plugin_action_registry.h"
 #include "compiler/plugin_pipeline.h"
+#include "config.h"
 #include "elements/flow.h"
 #include "elements/node.h"
 #include "host_services.h"
@@ -44,10 +50,12 @@
 #include "plugin_tab.h"
 #include "plugin_view.h"
 #include "process_tab.h"
+#include "result.h"
 #include "save_handler.h"
 #include "structure_canvas.h"
 #include "style_helpers.h"
 #include "system/main_window_layout.h"
+#include "types.h"
 #include "widgets/dialogs/prompt.h"
 #include "widgets/language_manager.h"
 #include "widgets/log_table_widget.h"
@@ -126,6 +134,9 @@ VoidResult MainWindow::start()
   startUI();
   bind();
   bindShortcuts();
+
+  if (mPluginManager)
+    LOG_WARN_ON_FAILURE(mPluginManager->start(mSettingsManager->plugins(), mGeneratorMenu, mGeneratorOption, mHostServices));
 
   mPropertiesMenu->start(mStorage);
 
@@ -248,9 +259,6 @@ void MainWindow::startUI()
 
   mUndoGroup->addStack(canvas->undoStack());
   mUndoGroup->setActiveStack(canvas->undoStack());
-
-  if (mPluginManager)
-    LOG_WARN_ON_FAILURE(mPluginManager->start(mSettingsManager->plugins(), mGeneratorMenu, mGeneratorOption, mHostServices));
 }
 
 static QWidget* findAncestor(QWidget* w, const QMetaObject* type)
@@ -341,21 +349,23 @@ void MainWindow::bind()
 
   connect(mGenerationButton, &QPushButton::pressed, this, &MainWindow::onActionGenerate);
   connect(mSimulateButton, &QPushButton::pressed, this, &MainWindow::onActionSimulate);
-  connect(mDeployButton, &QPushButton::pressed, this, &MainWindow::onActionDeploy);
-  // auto pipelineTab = mCanvasPanel->indexOf(mPipelineView);
-  // if (pipelineTab >= 0)
-  //   return;
+  connect(mDeployButton, &QPushButton::pressed, [this] {
+    auto pipelineTab = mCanvasPanel->indexOf(mPipelineView);
+    if (pipelineTab >= 0)
+      return;
 
-  // PipelineCanvas* canvas = new PipelineCanvas("Pipeline Editor", mStorage, mConfigTable, mPipelineView);
-  // mPipelineView->setScene(canvas);
+    PipelineCanvas* canvas = new PipelineCanvas("Pipeline Editor", mStorage, mConfigTable, mPipelineView);
+    mPipelineView->setScene(canvas);
 
-  // // Change to respective tabs
-  // auto index = libraryTypeToIndex(canvas->type());
-  // mPalette->setCurrentIndex(index);
+    // Hide all tabs but the pipeline one
+    mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::STRUCTURAL), false);
+    mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::BEHAVIOUR), false);
+    mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::PIPELINE), true);
+    mPalette->setCurrentIndex(libraryTypeToIndex(Types::LibraryTypes::PIPELINE));
 
-  // mCanvasPanel->addTab(mPipelineView, QIcon(":/icons/deploy.svg"), "Pipeline Editor");
-  // mCanvasPanel->setCurrentWidget(mPipelineView);
-  // });
+    mCanvasPanel->addTab(mPipelineView, QIcon(":/icons/deploy.svg"), "Pipeline Editor");
+    mCanvasPanel->setCurrentWidget(mPipelineView);
+  });
 
   // View actions =============================================================
   mOpenComponentsPanel->setShortcut(QKeySequence(Qt::Key_F7));
@@ -401,6 +411,41 @@ void MainWindow::bind()
 
   connect(mSaveHandler.get(), &SaveHandler::fileLoaded, mSettingsManager.get(), &SettingsManager::addRecentFile);
   connect(mSaveHandler.get(), &SaveHandler::fileSaved, mSettingsManager.get(), &SettingsManager::addRecentFile);
+
+  connect(mPluginManager.get(), &PluginManager::pluginAdded, [this](const PluginManager::Plugin& plugin) {
+    LOG_INFO("====== Plugin added ======");
+    QJsonObject library;
+    library[ConfigKeys::NAME] = plugin.plugin->languageName();
+    library[ConfigKeys::TYPE] = ConfigKeys::PIPELINE;
+
+    QJsonArray nodes;
+    for (const auto& action : mPluginPipeline->registry()->actionsOfPlugin(plugin.plugin->languageName()))
+    {
+      QJsonObject node;
+      node["type"] = action->id();
+
+      QJsonArray properties;
+      QJsonObject name;
+      name["id"] = "name";
+      name["type"] = "string";
+      name["default"] = action->displayName();
+      properties.append(name);
+
+      for (const auto& p : action->parameters())
+      {
+        QJsonObject prop;
+        prop["id"] = p.getid();
+        prop["type"] = Types::PropertyTypesToString(p.gettype());
+        properties.append(prop);
+      }
+
+      node["properties"] = properties;
+      nodes.append(node);
+    }
+
+    library[ConfigKeys::NODES] = nodes;
+    LOG_WARN_ON_FAILURE(loadElementLibrary(library[ConfigKeys::NAME].toString(), library));
+  });
 
   if (mGenerator)
   {
@@ -565,8 +610,12 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
   // SectionWidget* toolbox = nullptr;
   if (type == ConfigKeys::STRUCTURAL)
     toolbox = mStructureTab;
-  else
+  else if (type == ConfigKeys::BEHAVIOURAL)
     toolbox = mBehaviourTab;
+  else if (type == ConfigKeys::PIPELINE)
+    toolbox = mPipelineTab;
+  else
+    return VoidResult::Failed("Unknown library type: " + type.toStdString());
 
   LibraryContainer* sidebarview = LibraryContainer::create(libraryName, toolbox);
   LibraryScene* sidebarScene = dynamic_cast<LibraryScene*>(sidebarview->scene());
@@ -587,22 +636,26 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
 
     QJsonObject node = value.toObject();
 
+    LOG_INFO("Loading element: %s", qPrintable(node["type"].toString()));
+
     // Parse config and make sure it is valid before continuing
-    auto config = std::make_shared<NodeConfig>(node);
-    if (!config->isValid())
-      return VoidResult::Failed(config->errorMessage.toStdString());
+    auto nodeConfig = std::make_shared<NodeConfig>(node);
+    if (!nodeConfig->isValid())
+      return VoidResult::Failed(nodeConfig->errorMessage.toStdString());
 
     // Initialize the library type
     if (type == ConfigKeys::STRUCTURAL)
-      config->libraryType = Types::LibraryTypes::STRUCTURAL;
-    else
-      config->libraryType = Types::LibraryTypes::BEHAVIOUR;
+      nodeConfig->libraryType = Types::LibraryTypes::STRUCTURAL;
+    else if (type == ConfigKeys::BEHAVIOURAL)
+      nodeConfig->libraryType = Types::LibraryTypes::BEHAVIOUR;
+    else if (type == ConfigKeys::PIPELINE)
+      nodeConfig->libraryType = Types::LibraryTypes::PIPELINE;
 
-    auto id = QStringLiteral("%1::%2").arg(name, config->type);
-    sidebarview->addNode(id, config);
+    auto id = QStringLiteral("%1::%2").arg(name, nodeConfig->type);
+    sidebarview->addNode(id, nodeConfig);
 
     LOG_TRACE("Adding key: %s to the config table", qPrintable(id));
-    LOG_ERROR_ON_FAILURE(mConfigTable->add(id, config));
+    LOG_ERROR_ON_FAILURE(mConfigTable->add(id, nodeConfig));
   }
 
   return VoidResult();
@@ -663,6 +716,9 @@ void MainWindow::onActionGenerate()
 
   maki::PipelineNode node2;
   node2.actionId = "koda_antlr.generate_dezyne";
+  if (mGeneratorOption && mGeneratorOption->currentText() == "KODA")
+    node2.actionId = "koda.generate_dezyne";
+
   node2.id = "Dezyne generation";
   node2.parameters = {};
 
@@ -764,7 +820,7 @@ void MainWindow::onActionGenerate()
       },
   });
 
-  LOG_ERROR_ON_FAILURE(mPluginPipeline->run(graph, context));
+  LOG_ERROR_ON_FAILURE(mPluginPipeline->run(mCurrentPipeline, context));
 }
 
 void MainWindow::onActionSimulate()
@@ -893,6 +949,15 @@ void MainWindow::onActionSave()
     return;
   }
 
+  if (mActiveCanvas->type() == Types::LibraryTypes::PIPELINE)
+  {
+    auto graph = maki::PipelineGraph::fromCanvas(mActiveCanvas);
+    if (!graph.IsSuccess())
+      LOG_WARNING("Could not convert canvas to graph: " + graph.ErrorMessage());
+
+    mCurrentPipeline = graph.Value();
+  }
+
   mSaveHandler->save(rootCanvas());
 }
 
@@ -1009,6 +1074,20 @@ void MainWindow::onCanvasTabChanged(int index)
     mUndoGroup->addStack(activeStack);
 
   mUndoGroup->setActiveStack(activeStack);
+
+  if (mActiveCanvas->type() == Types::LibraryTypes::PIPELINE)
+  {
+    // If we are closing a pipeline canvas, then we must hide it
+    mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::STRUCTURAL), false);
+    mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::BEHAVIOUR), false);
+    mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::PIPELINE), true);
+  }
+  else
+  {
+    mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::STRUCTURAL), true);
+    mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::BEHAVIOUR), true);
+    mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::PIPELINE), false);
+  }
 }
 
 void MainWindow::closeCanvasTab(int index)
@@ -1028,6 +1107,20 @@ void MainWindow::closeCanvasTab(int index)
         newCanvas = qobject_cast<CanvasView*>(mCanvasPanel->widget(index - 1));
         mActiveCanvas = qobject_cast<Canvas*>(newCanvas->scene());
         bindCanvas();
+
+        if (mActiveCanvas->type() == Types::LibraryTypes::PIPELINE)
+        {
+          // If we are closing a pipeline canvas, then we must hide it
+          mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::STRUCTURAL), false);
+          mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::BEHAVIOUR), false);
+          mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::PIPELINE), true);
+        }
+        else
+        {
+          mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::STRUCTURAL), true);
+          mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::BEHAVIOUR), true);
+          mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::PIPELINE), false);
+        }
 
         auto libIndex = libraryTypeToIndex(mActiveCanvas->type());
         mPalette->setCurrentIndex(libIndex);
@@ -1164,8 +1257,9 @@ int MainWindow::libraryTypeToIndex(Types::LibraryTypes type) const
     case Types::LibraryTypes::STRUCTURAL:
       return 0;
     case Types::LibraryTypes::BEHAVIOUR:
-    case Types::LibraryTypes::PIPELINE:
       return 1;
+    case Types::LibraryTypes::PIPELINE:
+      return 2;
     default:
       LOG_ERROR("Unknown library type");
       return 0;

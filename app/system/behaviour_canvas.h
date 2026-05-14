@@ -12,6 +12,7 @@
  */
 class BehaviourCanvas : public Canvas
 {
+  Q_OBJECT
 public:
   /**
    * @brief Constructs a BehaviourCanvas object.

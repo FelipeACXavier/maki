@@ -48,6 +48,10 @@ private:
 
   VoidResult runNextNode();
   VoidResult continueAfterNode();
+
+  int mInitialCount = 0;
+  QVector<QWidget*> mOldWidgets = {};
+  QWidget* progressWidget() const;
 };
 
 }  // namespace maki

@@ -310,24 +310,24 @@ QList<std::shared_ptr<maki::IPipelineAction>> KodaGenerator::pipelineActions()
   };
 }
 
-Result<maki::PipelineArtifact> KodaGenerator::generateDezyne(const maki::PipelineArtifact& artifact, const QDir& outputFolder)
+Result<maki::PipelineArtifact> KodaGenerator::generateDezyne(const maki::PipelineArtifact& artifact, const QDir& outputFolder, maki::IPipeline* pipeline)
 {
   if (!artifact.metadata.contains("sources"))
     return Result<maki::PipelineArtifact>::Failed("generateDezyne, missing input sources");
 
   const QStringList inputFiles = artifact.metadata["sources"].toStringList();
-#ifdef USE_ANTLR
-  koda::Compiler compiler;
   if (!outputFolder.exists())
     outputFolder.mkpath(".");
 
-  auto modelsOutputFolder = QDir(outputFolder.absolutePath() + "/models");
   // Make sure the output is clean before the generation
+  auto modelsOutputFolder = QDir(outputFolder.absolutePath() + "/models");
   if (modelsOutputFolder.exists())
     modelsOutputFolder.removeRecursively();
 
   modelsOutputFolder.mkpath(".");
 
+#ifdef USE_ANTLR
+  koda::Compiler compiler;
   for (const auto& file : inputFiles)
   {
     koda::CompilerOptions options;
@@ -384,6 +384,27 @@ Result<maki::PipelineArtifact> KodaGenerator::generateDezyne(const maki::Pipelin
 
   return output;
 #else
+  for (const auto& file : inputFiles)
+  {
+    LOG_DEBUG("Generating from file: %s to %s", qPrintable(file), qPrintable(outputFolder.absolutePath()));
+    const QString command = "java";
+    const QStringList arguments = {
+        "-jar",
+        QDir::homePath() + "/rascal-0.40.9.jar",
+        "Main.rsc",                   // Entrypoint for KODA
+        file,                         // Input
+        outputFolder.absolutePath(),  // Output
+        "ros"                         // Generator type
+    };
+
+    QProcess* generate = new QProcess(this);
+    generate->setWorkingDirectory("/home/felaze/Documents/PhD/Programs/DSL/koda");
+    generate->setProgram(command);
+    generate->setArguments(arguments);
+
+    pipeline->add(generate, maki::OnFail::STOP);
+  }
+
   return maki::PipelineArtifact();
 #endif
 }

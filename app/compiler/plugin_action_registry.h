@@ -14,11 +14,12 @@ class PipelineActionRegistry
 public:
   VoidResult registerAction(const QString& pluginId, std::shared_ptr<IPipelineAction> action);
   std::shared_ptr<IPipelineAction> action(const QString& id) const;
+  QVector<std::shared_ptr<IPipelineAction>> actionsOfPlugin(const QString& pluginId) const;
 
   bool contains(const QString& id) const;
 
 private:
   QMap<QString, std::shared_ptr<IPipelineAction>> mActions;
-  QMap<QString, QString> mActionPluginIds;
+  QMap<QString, QVector<QString>> mActionPluginIds;
 };
 }  // namespace maki

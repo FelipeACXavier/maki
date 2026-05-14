@@ -128,7 +128,7 @@ public:
   void startGroup(const QString& groupName) override;
   void endGroup() override;
 
-  QWidget* progressWidget() const;
+  QWidget* progressWidget(bool subMenu = false) const;
 
 signals:
   /**

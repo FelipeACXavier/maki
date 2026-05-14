@@ -25,9 +25,9 @@ capability Grip(boolean grip) {
 }
 
 
-task PickAndDrop (drive req Drive, vision req Vision, 
+task PickAndDrop (drive req Drive, vision req Vision,
                   grip req Grip,
-                  float x1, float y1, float x2, float y2) 
+                  float x1, float y1, float x2, float y2)
 {
   trigger: void start(float x1, float y1, float x2, float y2);
   return: void done();

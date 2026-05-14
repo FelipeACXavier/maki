@@ -4,6 +4,7 @@
 
 class StructureCanvas : public Canvas
 {
+  Q_OBJECT
 public:
   StructureCanvas(const QString& canvasId, std::shared_ptr<SaveInfo> storage, std::shared_ptr<ConfigurationTable> configTable, QObject* parent = nullptr);
 

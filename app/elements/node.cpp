@@ -7,6 +7,7 @@
 #include <QObject>
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
+#include <QSvgRenderer>
 #include <QTimer>
 #include <QUndoStack>
 #include <QUuid>
@@ -16,6 +17,7 @@
 #include "logging.h"
 #include "style_helpers.h"
 #include "system/canvas.h"
+#include "system/structure_canvas.h"
 #include "system/undo_commands/move_node.h"
 #include "system/undo_commands/resize_node.h"
 

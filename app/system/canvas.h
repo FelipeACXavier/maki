@@ -23,7 +23,6 @@ class ConfigurationTable;
 class Canvas : public QGraphicsScene
 {
   Q_OBJECT
-
 public:
   /**
    * @brief Constructs a new Canvas object.

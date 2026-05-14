@@ -311,9 +311,9 @@ void SettingsManager::setPlugins(const PluginSettings& settings)
 
 void SettingsManager::addRecentFile(const QString& s)
 {
-  // Check if the file was already added
+  // Check if the file was already added so we fix the order
   if (mTmpGeneral.recentFiles.contains(s))
-    return;
+    mTmpGeneral.recentFiles.removeIf([s](const QString& file) { return file == s; });
 
   mTmpGeneral.recentFiles.push_front(s);
   if (mTmpGeneral.recentFiles.size() >= mTmpGeneral.recentHistorySize)

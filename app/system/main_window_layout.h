@@ -58,8 +58,12 @@ protected:
   StyledFrame* mStructureTab;         /// Pointer to the structure tab frame.
   QScrollArea* mStructureScrollArea;  /// Pointer to the structure scroll area.
 
-  StyledFrame* mBehaviourTab;          /// Pointer to the behaviour tab frame.
-  QScrollArea* mBehaviourScrollArea;   /// Pointer to the behaviour scroll area.
+  StyledFrame* mBehaviourTab;         /// Pointer to the behaviour tab frame.
+  QScrollArea* mBehaviourScrollArea;  /// Pointer to the behaviour scroll area.
+
+  StyledFrame* mPipelineTab;         /// Pointer to the pipeline tab frame.
+  QScrollArea* mPipelineScrollArea;  /// Pointer to the pipeline scroll area.
+
   maki::SearchWidget* mPaletteSearch;  /// Pointer to the palette search widget.
   QSplitter* mLeftPanel;               /// Pointer to the left panel splitter.
 

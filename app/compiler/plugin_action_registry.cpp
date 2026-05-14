@@ -11,7 +11,10 @@ VoidResult PipelineActionRegistry::registerAction(const QString& pluginId, std::
     return VoidResult::Failed("Action already registred, " + action->id().toStdString());
 
   mActions.insert(action->id(), action);
-  mActionPluginIds.insert(action->id(), pluginId);
+  if (mActionPluginIds.contains(pluginId))
+    mActionPluginIds[pluginId] += action->id();
+  else
+    mActionPluginIds.insert(pluginId, {action->id()});
 
   LOG_DEBUG("Adding action: %s of plugin: %s to the registry", qPrintable(action->id()), qPrintable(pluginId));
 
@@ -21,6 +24,15 @@ VoidResult PipelineActionRegistry::registerAction(const QString& pluginId, std::
 std::shared_ptr<IPipelineAction> PipelineActionRegistry::action(const QString& id) const
 {
   return mActions.value(id, nullptr);
+}
+
+QVector<std::shared_ptr<IPipelineAction>> PipelineActionRegistry::actionsOfPlugin(const QString& pluginId) const
+{
+  QVector<std::shared_ptr<IPipelineAction>> actions = {};
+  for (const auto& a : mActionPluginIds[pluginId])
+    actions.push_back(action(a));
+
+  return actions;
 }
 
 bool PipelineActionRegistry::contains(const QString& id) const
