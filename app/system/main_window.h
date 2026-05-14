@@ -9,7 +9,9 @@
 #include <QStringLiteral>
 #include <oclero/qlementine.hpp>
 
+#include "compiler/pipeline_graph.h"
 #include "config_table.h"
+#include "flow_info.h"
 #include "json.h"
 #include "logging.h"
 #include "main_window_layout.h"
@@ -151,6 +153,7 @@ private:
   std::shared_ptr<SaveInfo> mStorage;  /// Shared pointer to save information.
 
   QApplication* mApp;  /// Pointer to the QApplication instance.
+  maki::PipelineGraph mCurrentPipeline;
 
   /**
    * @brief Returns the active canvas.

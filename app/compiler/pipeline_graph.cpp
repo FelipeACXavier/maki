@@ -3,6 +3,9 @@
 #include <QFile>
 #include <QJsonArray>
 
+#include "system/canvas.h"
+#include "transition_info.h"
+
 namespace maki
 {
 Result<PipelineNode> PipelineNode::fromJson(const QJsonObject& object)
@@ -123,6 +126,66 @@ QJsonObject PipelineGraph::toJson() const
   object["edges"] = edgeArray;
 
   return object;
+}
+
+Result<PipelineGraph> PipelineGraph::fromFlow(const FlowSaveInfo& info)
+{
+  PipelineGraph graph;
+
+  for (const auto& inode : info.getnodes())
+  {
+    auto node = std::dynamic_pointer_cast<NodeSaveInfo>(inode);
+    PipelineNode pnode;
+    pnode.id = node->getid();
+    pnode.actionId = node->getProperty("name").toString();
+    pnode.parameters = node->getproperties();
+
+    graph.nodes.append(pnode);
+
+    for (const auto& it : node->gettransitions())
+    {
+      auto t = std::dynamic_pointer_cast<TransitionSaveInfo>(it);
+      PipelineEdge edge;
+      edge.from = t->getsrcId();
+      edge.to = t->getdstId();
+      graph.edges.append(edge);
+    }
+  }
+
+  return graph;
+}
+
+Result<PipelineGraph> PipelineGraph::fromCanvas(const Canvas* canvas)
+{
+  PipelineGraph graph;
+  auto toAction = [](const QString& n) {
+    auto index = n.lastIndexOf(':') + 1;
+    return n.mid(index, n.size() - index);
+  };
+
+  for (const auto& item : canvas->items())
+  {
+    if (item->type() != NodeItem::Type)
+      continue;
+
+    auto node = static_cast<NodeItem*>(item);
+    PipelineNode pnode;
+    pnode.id = node->getProperty("name").toString();
+    pnode.actionId = toAction(node->nodeType());
+    pnode.parameters = node->saveInfo().getproperties();
+
+    graph.nodes.append(pnode);
+
+    for (const auto& t : node->transitions())
+    {
+      PipelineEdge edge;
+      edge.from = t->source()->getProperty("name").toString();
+      edge.to = t->destination()->getProperty("name").toString();
+      graph.edges.append(edge);
+    }
+  }
+
+  return graph;
 }
 
 }  // namespace maki

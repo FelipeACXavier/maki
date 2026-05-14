@@ -502,7 +502,7 @@ VoidResult KodaGenerator::verify(const maki::PipelineArtifact& artifact, const Q
   {
     if (f.contains("/a_") || f.contains("types"))
       continue;
-    if (f.contains("arbiter"))
+    if (f.contains("arbiter") || f.contains("/lib/"))
       continue;
     if (taskOnly.getValue().isValid() && taskOnly.getValue().toBool() && !f.contains("_task"))
       continue;

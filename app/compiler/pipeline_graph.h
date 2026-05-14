@@ -7,6 +7,9 @@
 
 #include "plugin_version.h"
 #include "result.h"
+#include "save_info.h"
+
+class Canvas;
 
 namespace maki
 {
@@ -38,6 +41,8 @@ struct PipelineGraph
 
   static Result<PipelineGraph> fromJson(const QJsonObject& object);
   static Result<PipelineGraph> fromJsonFile(const QString& filename);
+  static Result<PipelineGraph> fromFlow(const FlowSaveInfo& info);
+  static Result<PipelineGraph> fromCanvas(const Canvas* canvas);
 
   QJsonObject toJson() const;
 };

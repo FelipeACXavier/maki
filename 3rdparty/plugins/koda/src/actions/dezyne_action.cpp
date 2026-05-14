@@ -5,6 +5,7 @@
 #include "../koda_generator.h"
 #include "logging.h"
 #include "pipeline_artifact.h"
+#include "types.h"
 
 GenerateDezyneAction::GenerateDezyneAction(KodaGenerator* generator)
     : mGenerator(generator)
@@ -38,6 +39,16 @@ QStringList GenerateDezyneAction::produces() const
   return {"dezyne"};
 }
 
+QVariantMap GenerateDezyneAction::defaultParameters() const
+{
+  return {};
+}
+
+QVector<maki::ActionParameter> GenerateDezyneAction::parameters() const
+{
+  return {maki::ActionParameter("Debug", Types::PropertyTypes::BOOLEAN, false)};
+}
+
 maki::ResultArtifacts GenerateDezyneAction::run(const maki::PipelineContext& context, const QVariantMap& parameters, maki::IPipeline* pipeline)
 {
   LOG_INFO("Running %s", qPrintable(id()));
@@ -47,7 +58,7 @@ maki::ResultArtifacts GenerateDezyneAction::run(const maki::PipelineContext& con
     return maki::ResultArtifacts::Failed("No artifacts available, requires \"koda\"");
 
   const auto koda = artifacts.at(0);
-  auto result = mGenerator->generateDezyne(koda, context.buildDir);
+  auto result = mGenerator->generateDezyne(koda, context.buildDir, pipeline);
   if (!result.IsSuccess())
     return maki::ResultArtifacts::Failed(result.ErrorMessage());
 
@@ -56,5 +67,5 @@ maki::ResultArtifacts GenerateDezyneAction::run(const maki::PipelineContext& con
   artifact.type = "dezyne";
   artifact.producer = id();
 
-  return maki::Artifacts{ artifact };
+  return maki::Artifacts{artifact};
 }
