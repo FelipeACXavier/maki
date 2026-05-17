@@ -371,6 +371,7 @@
             "textColor": "#000000",
             "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
+            "icon": "capability_drive.svg",
             "width": 500,
             "height": 500,
             "z-index": -2
@@ -743,6 +744,7 @@
             "textColor": "#000000",
             "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
+            "icon": "capability_envsensor.svg",
             "width": 500,
             "height": 500,
             "z-index": -2
@@ -987,6 +989,7 @@
             "textColor": "#000000",
             "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
+            "icon": "capability_conveyor.svg",
             "width": 500,
             "height": 500,
             "z-index": -2
@@ -1064,6 +1067,7 @@
             "textColor": "#000000",
             "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
+            "icon": "capability_robotarm.svg",
             "width": 500,
             "height": 500,
             "z-index": -2

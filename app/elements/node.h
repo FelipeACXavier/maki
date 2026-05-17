@@ -292,6 +292,13 @@ public:
 
   void layoutSubtasks();
   void relayoutCapabilitySlots();
+  void swapCapabilityOrder(NodeItem* a, NodeItem* b);
+  NodeItem* capabilityAtScenePos(const QPointF& scenePos, NodeItem* exclude = nullptr) const;
+
+  /** Scene rect of the dashed capability placeholder slot on a Task; empty when N/A. */
+  QRectF placeholderSlotSceneRect() const;
+  bool placeholderSlotContainsScenePoint(const QPointF& scenePos) const;
+
   void ensureSubtaskConnector(StructureCanvas* canvas);
   void destroySubtaskConnector();
   void syncSubtaskConnector();
@@ -449,6 +456,7 @@ private:
   qreal mBaseScale;
   QSizeF mSize{0, 0};
   QPointF mDragStartPos{0, 0};
+  int mCapDragStartIndex = -1;
   QPointF mLastPosition{0, 0};
 
   bool mIsResizing{false};             /// Flag indicating if the node is being resized.

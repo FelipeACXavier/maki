@@ -161,6 +161,15 @@ public:
   void setNodeSize(const QString& nodeId, const QSizeF& size);
 
   /**
+   * @brief Swaps the order of two capability children on a task node.
+   *
+   * @param parentId The ID of the parent task node.
+   * @param aId The ID of the first capability node.
+   * @param bId The ID of the second capability node.
+   */
+  void swapCapabilities(const QString& parentId, const QString& aId, const QString& bId);
+
+  /**
    * @brief Creates a transition based on save information.
    *
    * @param info The save information for the transition.
@@ -459,6 +468,7 @@ private:
 
   void clearCapabilityDropPreview();
   void updateCapabilityDropPreview(const QPointF& scenePos);
+  void openCapabilityMenu(NodeItem* task);
 
   NodeItem* mCapabilityPreviewTask = nullptr;
   bool mDraggedNodeIsCapability = false;

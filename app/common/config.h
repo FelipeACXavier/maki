@@ -233,6 +233,9 @@ public:
   QVector<TransitionConfig> transitions = {};  /// List of transitions associated with the node.
 
   Types::LibraryTypes libraryType = Types::LibraryTypes::UNKNOWN;  /// Type of the library.
+  /// Inner JSON library section / sidebar heading (runtime only; unset for legacy streams).
+  QString libraryName;
+
   bool hasInPort = false;
   bool hasOutPort = false;
 

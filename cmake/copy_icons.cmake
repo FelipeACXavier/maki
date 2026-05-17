@@ -86,6 +86,11 @@ file(GLOB APP_ICON_FILES
   ${MISSION_PATH}/capability_vision.svg
   ${MISSION_PATH}/capability_co2sensor.svg
   ${MISSION_PATH}/capability_timer.svg
+  ${MISSION_PATH}/capability_drive.svg
+  ${MISSION_PATH}/capability_envsensor.svg  
+  ${MISSION_PATH}/capability_robotarm.svg  
+  ${MISSION_PATH}/capability_led.svg  
+  ${MISSION_PATH}/capability_conveyor.svg  
   ${SHAPES_PATH}/shape_start.svg
   ${SHAPES_PATH}/shape_middle.svg
   ${SHAPES_PATH}/shape_end.svg

@@ -599,6 +599,8 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
     else
       nodeConfig->libraryType = Types::LibraryTypes::BEHAVIOUR;
 
+    nodeConfig->libraryName = libraryName;
+
     auto id = QStringLiteral("%1::%2").arg(name, nodeConfig->type);
     sidebarview->addNode(id, nodeConfig);
 

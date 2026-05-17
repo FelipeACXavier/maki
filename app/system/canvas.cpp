@@ -2,14 +2,27 @@
 
 #include <QBuffer>
 #include <QClipboard>
+#include <QFontMetrics>
 #include <QGraphicsSceneDragDropEvent>
 #include <QLabel>
 #include <QMenu>
 #include <QMessageBox>
 #include <QMimeData>
 #include <QUndoStack>
+#include <QFont>
+#include <QGridLayout>
+#include <QIcon>
+#include <QScrollArea>
+#include <QToolButton>
+#include <QVBoxLayout>
+#include <QWidgetAction>
+#include <QFrame>
+#include <algorithm>
 #include <limits>
+#include <map>
 #include <memory>
+
+#include <oclero/qlementine/style/QlementineStyle.hpp>
 
 #include "app_configs.h"
 #include "app_paths.h"
@@ -206,6 +219,170 @@ void Canvas::updateCapabilityDropPreview(const QPointF& scenePos)
     mCapabilityPreviewTask->setHoverPreview(mDraggedCapabilityIconPath, mDraggedCapabilityColor, true);
 }
 
+void Canvas::openCapabilityMenu(NodeItem* task)
+{
+  if (!task || type() != Types::LibraryTypes::STRUCTURAL || !task->isTaskContainer())
+    return;
+
+  CanvasView* view = parentView();
+  if (!view)
+    return;
+
+  QMenu menu(view);
+
+  using CapRow = std::pair<QString, std::shared_ptr<NodeConfig>>;
+  std::map<QString, QVector<CapRow>> byLibrary;
+
+  for (const auto& kv : mConfigTable->entries())
+  {
+    const auto& cfg = kv.second;
+    if (!cfg || cfg->libraryType != Types::LibraryTypes::STRUCTURAL)
+      continue;
+    if (cfg->type == QStringLiteral("Task"))
+      continue;
+
+    const QString& key = kv.first;
+    const int sep = key.indexOf(QLatin1String("::"));
+    QString libName = cfg->libraryName;
+    if (libName.isEmpty())
+      libName = (sep > 0) ? key.left(sep) : QStringLiteral("(other)");
+    byLibrary[libName].push_back({key, cfg});
+  }
+
+  for (auto it = byLibrary.begin(); it != byLibrary.end(); ++it)
+  {
+    std::sort(it->second.begin(), it->second.end(), [](const CapRow& a, const CapRow& b) {
+      return a.second->type < b.second->type;
+    });
+  }
+
+  auto* host = new QWidget(&menu);
+  oclero::qlementine::QlementineStyle::setAutoIconColor(host, oclero::qlementine::AutoIconColor::None);
+  auto* vbox = new QVBoxLayout(host);
+  vbox->setContentsMargins(6, 4, 6, 4);
+  vbox->setSpacing(4);
+
+  constexpr int kCols = 5;
+  constexpr int kIconPx = 28;
+  constexpr int kIconBtnPx = 36;
+  constexpr int kMinTileW = 72;
+  constexpr int kMaxTileW = 110;
+  constexpr int kTileHPadding = 8;
+
+  const QFontMetrics fm(host->font());
+  int widest = kMinTileW - kTileHPadding;
+  for (const auto& libIt : byLibrary)
+  {
+    for (const CapRow& row : libIt.second)
+    {
+      const int w = fm.horizontalAdvance(row.second->type);
+      widest = qMax(widest, w);
+    }
+  }
+  const int tileW = qBound(kMinTileW, widest + kTileHPadding, kMaxTileW);
+
+  for (auto libIt = byLibrary.begin(); libIt != byLibrary.end(); ++libIt)
+  {
+    auto* header = new QLabel(libIt->first, host);
+    QFont hf = header->font();
+    hf.setBold(true);
+    header->setFont(hf);
+    vbox->addWidget(header);
+
+    auto* gridHost = new QWidget(host);
+    auto* grid = new QGridLayout(gridHost);
+    grid->setContentsMargins(0, 0, 0, 0);
+    grid->setHorizontalSpacing(4);
+    grid->setVerticalSpacing(4);
+
+    int idx = 0;
+    for (const CapRow& row : libIt->second)
+    {
+      const QString nodeIdKey = row.first;
+      const std::shared_ptr<NodeConfig> cfgRow = row.second;
+
+      auto* cell = new QWidget(gridHost);
+      cell->setFixedWidth(tileW);
+      auto* cv = new QVBoxLayout(cell);
+      cv->setContentsMargins(0, 0, 0, 0);
+      cv->setSpacing(2);
+
+      auto* btn = new QToolButton(cell);
+      btn->setToolButtonStyle(Qt::ToolButtonIconOnly);
+      btn->setAutoRaise(true);
+      btn->setIconSize(QSize(kIconPx, kIconPx));
+      btn->setFixedSize(QSize(kIconBtnPx, kIconBtnPx));
+      if (!cfgRow->body.iconPath.isEmpty())
+      {
+        const QString path = AppPaths::icon(cfgRow->body.iconPath);
+        if (!path.isEmpty())
+          btn->setIcon(QIcon(path));
+      }
+      cv->addWidget(btn, 0, Qt::AlignHCenter);
+
+      auto* lbl = new QLabel(cfgRow->type, cell);
+      QFont lf = lbl->font();
+      lf.setPointSizeF(qMax(7.0, lf.pointSizeF() - 1.0));
+      lbl->setFont(lf);
+      lbl->setAlignment(Qt::AlignHCenter | Qt::AlignTop);
+      lbl->setWordWrap(true);
+      lbl->setTextInteractionFlags(Qt::NoTextInteraction);
+      lbl->setFixedWidth(tileW - kTileHPadding);
+      lbl->setToolTip(cfgRow->type);
+      cv->addWidget(lbl, 0, Qt::AlignHCenter);
+
+      QObject::connect(btn, &QToolButton::clicked, view, [this, task, menuPtr = &menu, nodeIdKey, cfgRow]() {
+        auto info = std::make_shared<NodeSaveInfo>();
+        info->setNodeId(nodeIdKey);
+        info->setSize(QSizeF(cfgRow->body.width, cfgRow->body.height));
+        info->setScale(parentView()->getScale());
+
+        clearSelectedNodes();
+        const QPointF slotCenter = task->placeholderSlotSceneRect().center();
+        NodeItem* created = createNode(NodeCreation::Dropping, info, slotCenter, task);
+        if (created)
+          selectNode(created, true);
+
+        menuPtr->close();
+      });
+
+      grid->addWidget(cell, idx / kCols, idx % kCols);
+      ++idx;
+    }
+    vbox->addWidget(gridHost);
+  }
+
+  host->adjustSize();
+
+  auto* scroll = new QScrollArea(&menu);
+  scroll->setFrameShape(QFrame::NoFrame);
+  scroll->setWidgetResizable(true);
+  scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+  scroll->setWidget(host);
+
+  const int viewportH = view->viewport() ? view->viewport()->height() : view->height();
+  const int maxPopupH = qMax(240, static_cast<int>(viewportH * 0.7));
+
+  const QSize hostHint = host->sizeHint();
+  scroll->setMaximumHeight(qMin(hostHint.height() + 2, maxPopupH));
+  scroll->setMinimumWidth(hostHint.width() + 2);
+
+  auto* wa = new QWidgetAction(&menu);
+  wa->setDefaultWidget(scroll);
+  menu.addAction(wa);
+
+  const QRectF slotRect = task->placeholderSlotSceneRect();
+  const QPointF anchorScene = slotRect.center() + QPointF(0, slotRect.height() * 0.5 + 4.0);
+
+  menu.ensurePolished();
+  const QSize menuHint = menu.sizeHint();
+
+  QPoint v = view->mapFromScene(anchorScene);
+  v.rx() -= menuHint.width() / 2;
+  menu.exec(view->viewport()->mapToGlobal(v));
+}
+
 bool Canvas::isModifierSet(QGraphicsSceneMouseEvent* event, Qt::KeyboardModifier modifier)
 {
   return (event->modifiers() & modifier) > 0;
@@ -219,6 +396,19 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
   {
     mStartDragPosition = event->scenePos();
     mMouseDown = true;
+
+    if (type() == Types::LibraryTypes::STRUCTURAL)
+    {
+      if (NodeItem* task = taskContainerAcceptingDrop(itemAt(event->scenePos(), QTransform())))
+      {
+        if (task->placeholderSlotContainsScenePoint(event->scenePos()))
+        {
+          event->accept();
+          openCapabilityMenu(task);
+          return;
+        }
+      }
+    }
 
     QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
     if (item && item->type() == Types::PORT)
@@ -1080,6 +1270,15 @@ void Canvas::setNodeSize(const QString& nodeId, const QSizeF& size)
     return;
 
   node->applySize(size);
+}
+
+void Canvas::swapCapabilities(const QString& parentId, const QString& aId, const QString& bId)
+{
+  NodeItem* parentNode = findNodeWithId(parentId);
+  NodeItem* aNode = findNodeWithId(aId);
+  NodeItem* bNode = findNodeWithId(bId);
+  if (parentNode && aNode && bNode)
+    parentNode->swapCapabilityOrder(aNode, bNode);
 }
 
 void Canvas::createTransition(const TransitionSaveInfo& info)

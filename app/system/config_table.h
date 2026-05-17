@@ -34,6 +34,9 @@ public:
    */
   std::shared_ptr<NodeConfig> get(const QString& key) const;
 
+  /** Read-only access to all registered node configs (e.g. capability picker menus). */
+  const std::map<QString, std::shared_ptr<NodeConfig>>& entries() const { return mMap; }
+
 private:
   /**
    * @brief Internal map storing configuration entries.

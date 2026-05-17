@@ -1,3 +1,5 @@
+#include <utility>
+
 #include "node.h"
 
 #include <QGraphicsScene>
@@ -23,6 +25,7 @@
 #include "system/canvas.h"
 #include "system/undo_commands/move_node.h"
 #include "system/undo_commands/resize_node.h"
+#include "system/undo_commands/swap_capabilities.h"
 
 namespace
 {
@@ -319,7 +322,7 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
       {
         QPen dashPen(Qt::black, 1.5 / baseScale(), Qt::DashLine, Qt::RoundCap, Qt::RoundJoin);
         painter->setPen(dashPen);
-        painter->setBrush(Qt::NoBrush);
+        painter->setBrush(QBrush(QColor(0xe6, 0xe6, 0xe6)));
         painter->drawEllipse(placeholderCenter, slotRadius, slotRadius);
       }
     }
@@ -465,9 +468,8 @@ void NodeItem::addParent(NodeItem* parent)
 
   if (function() == Types::LibraryTypes::STRUCTURAL && parent->isTaskContainer())
   {
-    // subtasks drags are redirected to the root task in mouseMoveEvent so the
-    // whole tree moves as a unit.
-    setFlag(ItemIsMovable, false);
+    if (isTaskContainer())
+      setFlag(ItemIsMovable, false);
     return;
   }
 
@@ -634,6 +636,72 @@ void NodeItem::relayoutCapabilitySlots()
   }
 
   syncSubtaskConnector();
+}
+
+void NodeItem::swapCapabilityOrder(NodeItem* a, NodeItem* b)
+{
+  if (!a || !b || a == b)
+    return;
+  const int ia = mChildrenNodes.indexOf(a);
+  const int ib = mChildrenNodes.indexOf(b);
+  if (ia < 0 || ib < 0)
+    return;
+  std::swap(mChildrenNodes[ia], mChildrenNodes[ib]);
+  relayoutCapabilitySlots();
+}
+
+NodeItem* NodeItem::capabilityAtScenePos(const QPointF& scenePos, NodeItem* exclude) const
+{
+  const QVector<NodeItem*> caps = structuralCapabilityChildren();
+  const int slotCount = caps.size() + 1;
+  if (slotCount <= 0)
+    return nullptr;
+
+  const qreal bbW = boundingRect().width();
+  const qreal bbH = boundingRect().height();
+  const qreal slotDiameter = qMin(bbW, bbH) * kTaskSlotDiameterFactor;
+  const qreal slotRadiusSq = (slotDiameter * 0.5) * (slotDiameter * 0.5);
+  const QVector<QPointF> centers = taskSlotCenters(boundingRect().size(), slotCount);
+
+  for (int i = 0; i < caps.size() && i < centers.size(); ++i)
+  {
+    NodeItem* cap = caps[i];
+    if (cap == exclude)
+      continue;
+    const QPointF c = mapToScene(centers[i]);
+    const QPointF d = scenePos - c;
+    if (d.x() * d.x() + d.y() * d.y() <= slotRadiusSq)
+      return cap;
+  }
+  return nullptr;
+}
+
+QRectF NodeItem::placeholderSlotSceneRect() const
+{
+  if (!isTaskContainer())
+    return {};
+
+  const qreal bbW = boundingRect().width();
+  const qreal bbH = boundingRect().height();
+  const qreal slotDiameter = qMin(bbW, bbH) * kTaskSlotDiameterFactor;
+  const qreal slotRadius = slotDiameter * 0.5;
+  const int n = static_cast<int>(structuralCapabilityChildren().size());
+  const QVector<QPointF> centers = taskSlotCenters(boundingRect().size(), n + 1);
+  if (centers.isEmpty())
+    return {};
+
+  const QPointF c = mapToScene(centers.last());
+  return QRectF(c.x() - slotRadius, c.y() - slotRadius, slotDiameter, slotDiameter);
+}
+
+bool NodeItem::placeholderSlotContainsScenePoint(const QPointF& scenePos) const
+{
+  const QRectF r = placeholderSlotSceneRect();
+  if (r.isEmpty())
+    return false;
+  const QPointF d = scenePos - r.center();
+  const qreal rr = r.width() * 0.5;
+  return (d.x() * d.x() + d.y() * d.y()) <= rr * rr;
 }
 
 void NodeItem::ensureSubtaskConnector(StructureCanvas* canvas)
@@ -881,6 +949,10 @@ void NodeItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
       mTreeDragRootStartPos = root ? root->pos() : QPointF();
       mTreeDragStartScenePos = event->scenePos();
     }
+    else if (rendersAsInsetCapability() && mParentNode)
+    {
+      mCapDragStartIndex = mParentNode->children().indexOf(this);
+    }
     QGraphicsItem::mousePressEvent(event);
   }
 }
@@ -902,6 +974,17 @@ void NodeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     NodeItem* root = rootStructuralTask();
     if (canvas && root && root->pos() != mTreeDragRootStartPos)
       canvas->undoStack()->push(new MoveNodeCommand(canvas, root->id(), mTreeDragRootStartPos, root->pos()));
+  }
+  else if (rendersAsInsetCapability() && mParentNode)
+  {
+    const QPointF myCenterScene = mapToScene(boundingRect().center());
+    NodeItem* target = mParentNode->capabilityAtScenePos(myCenterScene, this);
+    auto* canvas = static_cast<Canvas*>(scene());
+    if (target && canvas)
+      canvas->undoStack()->push(new SwapCapabilitiesCommand(canvas, mParentNode->id(), id(), target->id()));
+    else
+      mParentNode->relayoutCapabilitySlots();
+    mCapDragStartIndex = -1;
   }
   else if (pos() != mDragStartPos)
   {
