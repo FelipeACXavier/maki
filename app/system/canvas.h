@@ -379,6 +379,7 @@ private:
   QPointF mStartDragPosition;             /// The starting position of a drag operation.
   bool mDragging = false;                 /// Whether a drag operation is in progress.
   bool mMouseDown = false;                /// Whether the mouse button is pressed.
+  bool mHoverPortHalo = false;            /// True while showing Out-port halo crosshair on viewport.
 
   QTimer* mHoverTimer = nullptr;     /// Timer for handling hover events.
   QUndoStack* mUndoStack = nullptr;  /// Pointer to the undo stack.
@@ -423,6 +424,15 @@ private:
    * @return Pointer to the found NodeItem, or nullptr if not found.
    */
   NodeItem* findNodeWithId(const QString& id) const;
+
+  /**
+   * Returns the closest PortItem of the given kind whose anchor is within `radius` scene units of `scenePos`,
+   * or nullptr. Kind values match `PortItem::Kind` (`0` In, `1` Out).
+   */
+  PortItem* portNear(const QPointF& scenePos, int kind, qreal radius) const;
+
+  /** If the port is a valid drag source, begin building mTransition and return true. */
+  bool beginTransitionFromOutPort(PortItem* port, const QPointF& cursorScenePos);
 
   /**
    * @brief Returns a list of currently selected nodes.

@@ -19,6 +19,7 @@ public:
 
   static constexpr qreal kSize = 8.0;
   static constexpr qreal kGap = - 3.0;
+  static constexpr qreal kHitPadding = 30.0; // area around port where it's still possible to initiate/drop a transition 
 
   PortItem(Kind kind, NodeItem* parentNode);
 
