@@ -210,7 +210,10 @@ FlowSaveInfo FlowSaveInfo::fromJson(const QJsonObject& data)
   info.setId(data[ConfigKeys::ID].toString());
   info.setName(data[ConfigKeys::NAME].toString());
   info.setModifiable(data[ConfigKeys::MODIFIABLE].toBool());
-  info.setLinksTo(data["linksTo"].toInt());
+
+  if (data.contains("linksTo"))
+    info.setLinksTo(data["linksTo"].toInt());
+
   info.setType(Types::StringToCallType(data[ConfigKeys::TYPE].toString()));
   info.setReturnType(Types::StringToPropertyTypes(data[ConfigKeys::RETURN_TYPE].toString()));
   info.setOwner(data[ConfigKeys::OWNER].toString());

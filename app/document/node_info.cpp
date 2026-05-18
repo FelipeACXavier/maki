@@ -1,5 +1,7 @@
 #include "node_info.h"
 
+#include <qhashfunctions.h>
+
 #include <QBuffer>
 #include <QJsonArray>
 #include <QJsonObject>
@@ -7,6 +9,7 @@
 #include "flow_info.h"
 #include "json.h"
 #include "keys.h"
+#include "logging.h"
 #include "transition_info.h"
 
 Q_DECLARE_METATYPE(NodeSaveInfo)
@@ -21,6 +24,7 @@ NodeSaveInfo::NodeSaveInfo()
     , mProperties({})
     , mChildren({})
     , mFlows({})
+    , mEvents({})
     , mTransitions({})
 {
 }
@@ -78,6 +82,11 @@ QMap<QString, QVariant> NodeSaveInfo::getproperties() const
 QVector<std::shared_ptr<IFlow>> NodeSaveInfo::getflows() const
 {
   return mFlows;
+}
+
+QVector<std::shared_ptr<IFlow>> NodeSaveInfo::getevents() const
+{
+  return mEvents;
 }
 
 QVector<std::shared_ptr<INode>> NodeSaveInfo::getchildren() const
@@ -182,6 +191,7 @@ void NodeSaveInfo::removeField(const QString& key)
 
 void NodeSaveInfo::addFlow(std::shared_ptr<IFlow> flow)
 {
+  LOG_INFO("Adding flow: %s", qPrintable(flow->getname()));
   mFlows.push_back(flow);
 }
 
@@ -193,6 +203,16 @@ void NodeSaveInfo::removeFlow(std::shared_ptr<IFlow> flow)
 void NodeSaveInfo::removeFlow(const QString& flowId)
 {
   mFlows.removeIf([flowId](std::shared_ptr<IFlow> info) { return info->getid() == flowId; });
+}
+
+void NodeSaveInfo::addEvent(std::shared_ptr<IFlow> event)
+{
+  mEvents.push_back(event);
+}
+
+void NodeSaveInfo::removeEvent(std::shared_ptr<IFlow> event)
+{
+  mEvents.removeIf([event](std::shared_ptr<IFlow> info) { return info->getid() == event->getid(); });
 }
 
 void NodeSaveInfo::addChild(std::shared_ptr<INode> child)
@@ -236,6 +256,10 @@ QJsonObject NodeSaveInfo::toJson() const
   for (const auto& flow : getflows())
     flowArray.append(std::dynamic_pointer_cast<FlowSaveInfo>(flow)->toJson());
 
+  QJsonArray eventArray;
+  for (const auto& flow : getevents())
+    eventArray.append(std::dynamic_pointer_cast<FlowSaveInfo>(flow)->toJson());
+
   QJsonObject propertiesObject;
   for (auto it = mProperties.constBegin(); it != mProperties.constEnd(); ++it)
     propertiesObject[it.key()] = it.value().toJsonValue();
@@ -248,6 +272,8 @@ QJsonObject NodeSaveInfo::toJson() const
     data[ConfigKeys::CHILDREN] = childrenArray;
   if (flowArray.size() > 0)
     data[ConfigKeys::FLOWS] = flowArray;
+  if (eventArray.size() > 0)
+    data[ConfigKeys::EVENTS] = eventArray;
 
   data[ConfigKeys::PIXMAP] = JSON::fromPixmap(getPixmap());
 
@@ -276,16 +302,23 @@ NodeSaveInfo NodeSaveInfo::fromJson(const QJsonObject& data)
       info.addField(std::make_shared<PropertyInfo>(PropertyInfo::fromJson(node.toObject())));
   }
 
-  if (data.contains(ConfigKeys::CHILDREN))
-  {
-    for (const auto& node : data[ConfigKeys::CHILDREN].toArray())
-      info.addChild(std::make_shared<NodeSaveInfo>(NodeSaveInfo::fromJson(node.toObject())));
-  }
+  // These are populated by the loaded
+  // if (data.contains(ConfigKeys::CHILDREN))
+  // {
+  //   for (const auto& node : data[ConfigKeys::CHILDREN].toArray())
+  //     info.addChild(std::make_shared<NodeSaveInfo>(NodeSaveInfo::fromJson(node.toObject())));
+  // }
 
-  if (data.contains(ConfigKeys::FLOWS))
+  // if (data.contains(ConfigKeys::FLOWS))
+  // {
+  //   for (const auto& node : data[ConfigKeys::FLOWS].toArray())
+  //     info.addFlow(std::make_shared<FlowSaveInfo>(FlowSaveInfo::fromJson(node.toObject())));
+  // }
+
+  if (data.contains(ConfigKeys::EVENTS))
   {
-    for (const auto& node : data[ConfigKeys::FLOWS].toArray())
-      info.addFlow(std::make_shared<FlowSaveInfo>(FlowSaveInfo::fromJson(node.toObject())));
+    for (const auto& node : data[ConfigKeys::EVENTS].toArray())
+      info.addEvent(std::make_shared<FlowSaveInfo>(FlowSaveInfo::fromJson(node.toObject())));
   }
 
   if (data.contains(ConfigKeys::PROPERTIES))
@@ -361,6 +394,7 @@ QDataStream& operator<<(QDataStream& out, const NodeSaveInfo& info)
   out << info.getproperties();
   out << info.getchildren();
   out << info.getflows();
+  out << info.getevents();
   out << info.getfields();
 
   QByteArray pixmapData;
@@ -414,6 +448,11 @@ QDataStream& operator>>(QDataStream& in, NodeSaveInfo& info)
   in >> flows;
   for (const auto& flow : flows)
     info.addFlow(std::dynamic_pointer_cast<IFlow>(flow));
+
+  QVector<std::shared_ptr<FlowSaveInfo>> events;
+  in >> events;
+  for (const auto& event : events)
+    info.addEvent(std::dynamic_pointer_cast<IFlow>(event));
 
   QVector<std::shared_ptr<PropertyInfo>> fields;
   in >> fields;

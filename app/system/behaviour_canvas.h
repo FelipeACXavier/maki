@@ -23,21 +23,57 @@ public:
    * @param configTable A shared pointer to the ConfigurationTable for configuration data.
    * @param parent An optional QObject parent for this canvas.
    */
-  BehaviourCanvas(Flow* flow, std::shared_ptr<SaveInfo> storage, std::shared_ptr<ConfigurationTable> configTable, QObject* parent = nullptr);
+  BehaviourCanvas(Flow* flow, std::shared_ptr<ConfigurationTable> configTable, QObject* parent = nullptr);
 
   /**
    * @brief Retrieves the type of library associated with this canvas.
    *
    * @return The library type as a value of `Types::LibraryTypes`.
    */
-  Types::LibraryTypes type() const override;
+  virtual Types::LibraryTypes type() const override;
 
+  /**
+   * @brief Checkes whether it is possible to add a new trasition to a node
+   * @param node A pointer to the node of interest
+   * @return True if the node allows more transitions, and false otherwise.
+   */
   bool canAddTransition(NodeItem* node) const override;
+
+  /**
+   * @brief Gets the next transition configuration for a given node
+   *
+   * This method assumes the caller already called canAddTransition
+   * @param node A pointer to the node of interest
+   *
+   * @return The TransitionConfig object of the next allowed transition
+   */
   TransitionConfig nextTransition(NodeItem* node) const override;
+
+  /**
+   * @brief Remove all transitions to and from a node with id nodeId
+   */
   QVector<QGraphicsItem*> cleanTransitionsOfNode(const QString& nodeId) override;
+
+  /**
+   * @brief Add the TransitionItem to the Flow managed by this Canvas
+   */
   void addTransition(TransitionItem* transition) override;
+
+  /**
+   * @brief Removed the TransitionItem from the Flow managed by this Canvas
+   */
   void removeTransition(TransitionItem* transition) override;
+
+  /**
+   * @brief Callback triggered whenever a node moves significantly
+   */
   void onNodeMoved(const QString& nodeId) override;
+
+protected:
+  /**
+   * @brief Deletes the Flow managed by this Canvas. This should not be called if the Flow is created by a NodeItem.
+   */
+  void cleanFlow();
 
 private:
   /**

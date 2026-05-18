@@ -131,8 +131,6 @@ public:
     QSharedPointer<QPluginLoader> loader;
     maki::IPlugin* plugin;  /// Pointer to the generator plugin.
     Manifest manifest;      /// Manifest of the plugin.
-    QAction* action;
-    int comboIndex;
   };
 
   /**
@@ -155,7 +153,7 @@ public:
    * @param services The HostServices object for plugin interaction.
    * @return A VoidResult indicating success or failure.
    */
-  VoidResult start(const PluginSettings& settings, QMenu* menu, QComboBox* comboBox, HostServices* services);
+  VoidResult start(const PluginSettings& settings, HostServices* services);
 
   /**
    * @brief Retrieves the currently selected plugin.
@@ -175,7 +173,7 @@ public:
   /**
    * @brief Updates the plugins when a setting changes
    */
-  void settingsChanged(const PluginSettings& settings, QMenu* menu, QComboBox* comboBox, HostServices* services);
+  void settingsChanged(const PluginSettings& settings, HostServices* services);
 
   /**
    * @brief Reloads a given plugin
@@ -186,7 +184,7 @@ public:
    * @param services The HostServices object for plugin interaction.
    * @return A VoidResult indicating success or failure.
    */
-  VoidResult reloadPlugin(const QString& pluginName, QMenu* menu, QComboBox* comboBox, HostServices* services);
+  VoidResult reloadPlugin(const QString& pluginName, HostServices* services);
 
 signals:
 
@@ -212,7 +210,7 @@ private:
    * @param services The HostServices object for plugin interaction.
    * @return A VoidResult indicating success or failure.
    */
-  VoidResult loadPlugin(const QDir& pluginDir, const Manifest& path, QMenu* menu, QComboBox* comboBox, HostServices* services, PluginSettings::Status status);
+  VoidResult loadPlugin(const QDir& pluginDir, const Manifest& path, HostServices* services, PluginSettings::Status status);
 
   /**
    * @brief Sets the current plugin based on a language identifier.
@@ -221,16 +219,6 @@ private:
    * @return true if the plugin was successfully set, false otherwise.
    */
   bool setPlugin(const QString& language);
-
-  /**
-   * @brief Sets the current plugin based on a language identifier and updates
-   * the plugin selection UI element.
-   *
-   * @param comboBox The UI element to be updated
-   * @param language The language identifier for the plugin to set.
-   * @return true if the plugin was successfully set, false otherwise.
-   */
-  bool selectPlugin(QComboBox* comboBox, const QString& language);
 
   /**
    * @brief Retrieves the manifest of a plugin from a directory.
@@ -271,7 +259,7 @@ private:
    * @param menu The QMenu to update.
    * @param comboBox The QComboBox to update.
    */
-  VoidResult deregisterPlugin(const Plugin& plugin, QMenu* menu, QComboBox* comboBox);
+  VoidResult deregisterPlugin(const Plugin& plugin);
 
   QWidget* progressContent();  /// Creates and returns the progress content widget.
 };

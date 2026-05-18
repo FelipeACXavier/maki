@@ -3,6 +3,7 @@
 #include <QString>
 #include <QWidget>
 
+#include "node_info.h"
 #include "result.h"
 #include "save_info.h"
 
@@ -30,6 +31,13 @@ public:
    * @return VoidResult The result of the operation.
    */
   VoidResult save(Canvas* canvas);
+
+  VoidResult saveProject(SaveInfo& project, bool override = false);
+  VoidResult saveProjectAs(SaveInfo& project);
+
+  Result<SaveInfo> loadProject();
+  Result<SaveInfo> loadProject(const QString& fileToLoad);
+  Result<SaveInfo> loadProjectManifest(const QString& manifestPath);
 
   /**
    * @brief Saves the current canvas to a new file.
@@ -87,7 +95,9 @@ public:
   enum class Function
   {
     SAVE,
-    LOAD
+    LOAD,
+    SAVE_PROJECT_DIR,
+    LOAD_PROJECT_DIR
   };
 
 signals:
@@ -125,4 +135,13 @@ private:
    * @param fileName The new file name.
    */
   void storeFilename(const QString& fileName);
+
+  QString sanitizeFileName(QString name) const;
+
+  VoidResult writeJsonFile(const QString& path, const QJsonObject& object);
+  VoidResult saveProjectInternal(const SaveInfo& project);
+  VoidResult saveManifest(const SaveInfo& project);
+  Result<QString> saveCapability(const QString& prefix, const SaveInfo& project, const NodeSaveInfo& task);
+  Result<QString> saveFlow(const QString& prefix, const SaveInfo& project, const FlowSaveInfo& task);
+  Result<QString> savePipeline(const SaveInfo& project, const FlowSaveInfo& task);
 };

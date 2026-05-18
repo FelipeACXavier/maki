@@ -46,6 +46,8 @@ public:
    */
   QVector<std::shared_ptr<INode>> getnodes() const override;
 
+  void clearNodes();
+
   /**
    * @brief Add a node.
    * @param node The node to add.
@@ -56,7 +58,7 @@ public:
    * @brief Remove a node.
    * @param node The node to remove.
    */
-  void removeNode(std::shared_ptr<NodeSaveInfo> node);
+  void removeNode(const QString& nodeId);
 
   /**
    * @brief Convert the object to JSON format.
@@ -108,6 +110,8 @@ public:
    */
   QVector<std::shared_ptr<FlowSaveInfo>> getEventsFromNode(const QString& nodeId) const;
 
+  QVector<std::shared_ptr<FlowSaveInfo>> getFlowsFromNode(const QString& nodeId) const;
+
   /**
    * @brief Get events of a specific type from a node.
    * @param nodeId The ID of the node.
@@ -138,9 +142,18 @@ public:
    */
   std::shared_ptr<FlowSaveInfo> getFlowWithId(const QString& flowId);
 
+  QVector<std::shared_ptr<FlowSaveInfo>> pipelines() const;
+
+  void addPipeline(std::shared_ptr<FlowSaveInfo> pipeline);
+
+  QString name;
+  QString version;
+  QString rootPath;
+
 private:
-  CanvasSaveInfo mCanvasInfo;                        /// The canvas save info.
-  QVector<std::shared_ptr<INode>> mStructuralNodes;  /// A vector of shared pointers to INode objects representing structural nodes.
+  CanvasSaveInfo mCanvasInfo;                         /// The canvas save info.
+  QVector<std::shared_ptr<INode>> mStructuralNodes;   /// A vector of shared pointers to INode objects representing structural nodes.
+  QVector<std::shared_ptr<FlowSaveInfo>> mPipelines;  /// A vector of shared pointers to IFlow objects representing the available pipelines.
 
   /**
    * @brief Find the family of a construct.
@@ -165,6 +178,8 @@ private:
    * @return QVector<std::shared_ptr<FlowSaveInfo>> A vector of shared pointers to FlowSaveInfo objects representing events.
    */
   QVector<std::shared_ptr<FlowSaveInfo>> getEventsFromNode(const QString& nodeId, QVector<std::shared_ptr<INode>> nodes) const;
+
+  QVector<std::shared_ptr<FlowSaveInfo>> getFlowsFromNode(const QString& nodeId, QVector<std::shared_ptr<INode>> nodes) const;
 
   /**
    * @brief Get a node by ID.

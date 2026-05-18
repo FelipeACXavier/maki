@@ -1,5 +1,7 @@
 #include "canvas.h"
 
+#include <qcoreapplication.h>
+
 #include <QBuffer>
 #include <QClipboard>
 #include <QGraphicsSceneDragDropEvent>
@@ -19,19 +21,20 @@
 #include "elements/flow.h"
 #include "elements/node.h"
 #include "elements/transition.h"
+#include "flow_info.h"
 #include "logging.h"
+#include "node_info.h"
 #include "result.h"
 #include "save_info.h"
 #include "undo_commands/add_node.h"
 #include "undo_commands/align.h"
 #include "undo_commands/remove_node.h"
 
-Canvas::Canvas(const QString& canvasId, std::shared_ptr<SaveInfo> storage, std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
+Canvas::Canvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
     : QGraphicsScene(parent)
     , mId(canvasId)
     , mCopiedNodes({})
     , mConfigTable(configTable)
-    , mStorage(storage)
 {
   setBackgroundBrush(Qt::transparent);
   // setItemIndexMethod(ItemIndexMethod::NoIndex);
@@ -209,17 +212,22 @@ bool Canvas::nodeClickHandler(QGraphicsSceneMouseEvent* event, QGraphicsItem* it
   NodeItem* node = static_cast<NodeItem*>(item);
   if (isModifierSet(event, Qt::AltModifier))
   {
+    if (!canAddTransition(node))
+    {
+      LOG_DEBUG("We cannot add transition");
+      event->accept();
+      return false;
+    }
+
     mNode = node;
     auto info = std::make_shared<TransitionSaveInfo>();
     mTransition = new TransitionItem(std::make_shared<TransitionSaveInfo>());
     mTransition->setZValue(node->zValue() - 1);
     // LOG_INFO("Node: %s ZValue: %f %f", qPrintable(node->nodeId()), node->zValue(), mTransition->zValue());
 
-    if (canAddTransition(node))
-    {
-      auto config = nextTransition(node);
-      mTransition->setEvent(config.event);
-    }
+    auto config = nextTransition(node);
+    mTransition->setEvent(config.event);
+    mTransition->setName(config.label);
 
     mTransition->setStart(node->id(), node->mapToScene(node->boundingRect().center()), {0, 0});
     mTransition->setEnd(Constants::TMP_CONNECTION_ID, event->scenePos(), {0, 0});
@@ -1084,12 +1092,7 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
   auto nodeId = creation == NodeCreation::Pasting ? "" : info->getid();
   NodeItem* node = new NodeItem(nodeId, info, position, config);
 
-  if (parent == nullptr)
-  {
-    if (type() == Types::LibraryTypes::STRUCTURAL)
-      mStorage->addNode(info);
-  }
-  else
+  if (parent != nullptr)
   {
     node->addParent(parent);
     parent->addChild(node, info);
@@ -1097,7 +1100,7 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
 
   // TODO(felaze): Move these to a function or so
   node->nodeModified = [this](NodeItem* item) { emit nodeModified(item); };
-  node->flowAdded = [this](Flow* flow, NodeItem* node) { emit flowAdded(flow, node); };
+  node->flowAdded = [this](Flow* flow, NodeItem* node) { addedItemFlow(flow, node); };
   node->nodeMoved = [this](const QString& id) { onNodeMoved(id); };
 
   node->start();
@@ -1108,12 +1111,22 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
   if (creation != NodeCreation::Populating)
     updateParent(node, info, true);
 
-  emit nodeAdded(node);
+  addedItemNode(node, info);
 
   if (creation != NodeCreation::Populating)
     mUndoStack->push(new AddNodeCommand(this, node->saveInfo()));
 
   return node;
+}
+
+void Canvas::addedItemNode(NodeItem* node, std::shared_ptr<NodeSaveInfo> /* info */)
+{
+  emit nodeAdded(node);
+}
+
+void Canvas::addedItemFlow(Flow* flow, NodeItem* node)
+{
+  emit flowAdded(flow, node);
 }
 
 NodeItem* Canvas::findNodeWithId(const QString& id) const
@@ -1167,19 +1180,19 @@ void Canvas::onRemoveNode(const QString& nodeId)
 
 // ==========================================================================================
 // Flow
-void Canvas::populate(Flow* flow)
+void Canvas::populate(const FlowSaveInfo& flow)
 {
   // First create all the nodes
-  for (std::shared_ptr<NodeSaveInfo> node : flow->getNodes())
+  for (const auto& inode : flow.getnodes())
   {
+    auto node = std::dynamic_pointer_cast<NodeSaveInfo>(inode);
     LOG_DEBUG("Creating behavioral node %s with parent %s", qPrintable(node->getid()), qPrintable(node->getparentId()));
     auto created = createNode(NodeCreation::Populating, node, node->getposition(), findNodeWithId(node->getparentId()));
     LOG_DEBUG("Created node %s", qPrintable(created->id()));
   }
 
   // Then create the transitions between the nodes
-  auto flowConfig = flow->config();
-  for (std::shared_ptr<ITransition> itransition : flowConfig->gettransitions())
+  for (std::shared_ptr<ITransition> itransition : flow.gettransitions())
   {
     auto transition = std::dynamic_pointer_cast<TransitionSaveInfo>(itransition);
     auto srcConn = findNodeWithId(transition->getsrcId());

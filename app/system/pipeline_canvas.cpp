@@ -3,12 +3,20 @@
 #include <memory>
 
 #include "compiler/pipeline_graph.h"
-#include "node_info.h"
+#include "elements/flow.h"
+#include "flow_info.h"
+#include "logging.h"
 #include "result.h"
+#include "system/behaviour_canvas.h"
 
-PipelineCanvas::PipelineCanvas(const QString& canvasId, std::shared_ptr<SaveInfo> storage, std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
-    : Canvas(canvasId, storage, configTable, parent)
+PipelineCanvas::PipelineCanvas(std::shared_ptr<FlowSaveInfo> storage, std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
+    : BehaviourCanvas(new Flow(storage->getname(), storage), configTable, parent)
 {
+}
+
+PipelineCanvas::~PipelineCanvas()
+{
+  cleanFlow();
 }
 
 Types::LibraryTypes PipelineCanvas::type() const

@@ -32,7 +32,7 @@ public:
    * @param configTable Shared pointer to the configuration table.
    * @param parent Pointer to the parent object.
    */
-  Canvas(const QString& canvasId, std::shared_ptr<SaveInfo> storage, std::shared_ptr<ConfigurationTable> configTable, QObject* parent = nullptr);
+  Canvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> configTable, QObject* parent = nullptr);
 
   /**
    * @brief Returns the unique identifier for this canvas.
@@ -113,7 +113,7 @@ public:
    *
    * @param flow Pointer to the flow to populate.
    */
-  void populate(Flow* flow);
+  void populate(const FlowSaveInfo& flow);
 
   /**
    * @brief Handles theme change events.
@@ -250,13 +250,6 @@ protected:
    */
   virtual void updateParent(NodeItem* node, std::shared_ptr<NodeSaveInfo> storage, bool adding);
 
-  virtual void addTransition(TransitionItem* transition);
-  virtual void removeTransition(TransitionItem* transition);
-  virtual bool canAddTransition(NodeItem* node) const;
-  virtual TransitionConfig nextTransition(NodeItem* node) const;
-  virtual QVector<QGraphicsItem*> cleanTransitionsOfNode(const QString& nodeId);
-  virtual void onNodeMoved(const QString& nodeId);
-
 signals:
   /**
    * @brief Emitted when a node is selected.
@@ -264,8 +257,7 @@ signals:
    * @param node Pointer to the selected node.
    * @param selected Whether the node is selected or not.
    */
-  void
-  nodeSelected(NodeItem* node, bool selected);
+  void nodeSelected(NodeItem* node, bool selected);
 
   /**
    * @brief Emitted when a node is added.
@@ -358,6 +350,16 @@ public slots:
    */
   void onFlowRemoved(const QString& flowId, const QString& nodeId);
 
+protected:
+  virtual void addedItemNode(NodeItem* node, std::shared_ptr<NodeSaveInfo> info);
+  virtual void addedItemFlow(Flow* flow, NodeItem* node);
+  virtual void addTransition(TransitionItem* transition);
+  virtual void removeTransition(TransitionItem* transition);
+  virtual bool canAddTransition(NodeItem* node) const;
+  virtual TransitionConfig nextTransition(NodeItem* node) const;
+  virtual QVector<QGraphicsItem*> cleanTransitionsOfNode(const QString& nodeId);
+  virtual void onNodeMoved(const QString& nodeId);
+
 private:
   enum class NodeCreation
   {
@@ -391,7 +393,6 @@ private:
   QList<CopiedNode> mCopiedNodes;                    /// List of copied nodes.
   QList<NodeItem*> mSelectedNodes;                   /// List of currently selected nodes.
   std::shared_ptr<ConfigurationTable> mConfigTable;  /// Pointer to the configuration table.
-  std::shared_ptr<SaveInfo> mStorage;                /// Shared pointer to the save information.
 
   /**
    * @brief Clears all items from the canvas.

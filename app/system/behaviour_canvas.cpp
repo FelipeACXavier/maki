@@ -1,12 +1,13 @@
 #include "behaviour_canvas.h"
 
 #include <qcoreapplication.h>
+#include <qdir.h>
 
 #include "elements/flow.h"
 #include "logging.h"
 
-BehaviourCanvas::BehaviourCanvas(Flow* flow, std::shared_ptr<SaveInfo> storage, std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
-    : Canvas(flow->id(), storage, configTable, parent)
+BehaviourCanvas::BehaviourCanvas(Flow* flow, std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
+    : Canvas(flow->id(), configTable, parent)
     , mFlow(flow)
 {
 }
@@ -14,6 +15,12 @@ BehaviourCanvas::BehaviourCanvas(Flow* flow, std::shared_ptr<SaveInfo> storage, 
 Types::LibraryTypes BehaviourCanvas::type() const
 {
   return Types::LibraryTypes::BEHAVIOUR;
+}
+
+void BehaviourCanvas::cleanFlow()
+{
+  if (mFlow)
+    delete mFlow;
 }
 
 void BehaviourCanvas::updateParent(NodeItem* node, std::shared_ptr<NodeSaveInfo> storage, bool adding)
@@ -37,7 +44,7 @@ bool BehaviourCanvas::canAddTransition(NodeItem* node) const
   }
 
   LOG_INFO("canAddTransition: %d < %d", index, node->config()->transitions.size());
-  return node->config()->transitions.isEmpty() || index < node->config()->transitions.size();
+  return node->config()->transitions.isEmpty() || index <= node->config()->transitions.size();
 }
 
 TransitionConfig BehaviourCanvas::nextTransition(NodeItem* node) const
@@ -62,7 +69,8 @@ QVector<QGraphicsItem*> BehaviourCanvas::cleanTransitionsOfNode(const QString& n
   auto toDelete = mFlow->transitions();
   for (TransitionItem* transition : toDelete)
   {
-    if (transition->source()->id() != nodeId)
+    if (transition->source()->id() != nodeId &&
+        transition->destination()->id() != nodeId)
       continue;
 
     mFlow->removeTransition(transition);
@@ -75,6 +83,7 @@ QVector<QGraphicsItem*> BehaviourCanvas::cleanTransitionsOfNode(const QString& n
 
 void BehaviourCanvas::addTransition(TransitionItem* transition)
 {
+  LOG_INFO("Adding transition: %s %s", qPrintable(transition->getName()), qPrintable(transition->getEvent()));
   mFlow->addTransition(transition);
 }
 

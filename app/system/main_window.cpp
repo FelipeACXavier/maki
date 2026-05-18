@@ -1,6 +1,7 @@
 #include "main_window.h"
 
 #include <qdir.h>
+#include <qhashfunctions.h>
 #include <qjsonarray.h>
 
 #include <QComboBox>
@@ -22,6 +23,7 @@
 #include <QTextBrowser>
 #include <QUndoGroup>
 #include <QWidget>
+#include <memory>
 #include <oclero/qlementine/widgets/AboutDialog.hpp>
 #include <oclero/qlementine/widgets/AbstractItemListWidget.hpp>
 
@@ -29,6 +31,7 @@
 #include "app_paths.h"
 #include "behaviour_canvas.h"
 #include "canvas.h"
+#include "canvas_info.h"
 #include "canvas_view.h"
 #include "compiler/generator.h"
 #include "compiler/pipeline.h"
@@ -38,6 +41,7 @@
 #include "config.h"
 #include "elements/flow.h"
 #include "elements/node.h"
+#include "flow_info.h"
 #include "host_services.h"
 #include "keys.h"
 #include "library_container.h"
@@ -57,6 +61,8 @@
 #include "system/main_window_layout.h"
 #include "types.h"
 #include "widgets/dialogs/prompt.h"
+#include "widgets/dialogs/text_prompt.h"
+#include "widgets/dropdown_button.h"
 #include "widgets/language_manager.h"
 #include "widgets/log_table_widget.h"
 #include "widgets/notification_manager.h"
@@ -136,9 +142,15 @@ VoidResult MainWindow::start()
   bindShortcuts();
 
   if (mPluginManager)
-    LOG_WARN_ON_FAILURE(mPluginManager->start(mSettingsManager->plugins(), mGeneratorMenu, mGeneratorOption, mHostServices));
+    LOG_WARN_ON_FAILURE(mPluginManager->start(mSettingsManager->plugins(), mHostServices));
 
   mPropertiesMenu->start(mStorage);
+
+  if (mPipelineRun)
+  {
+    for (const auto& pipeline : mStorage->pipelines())
+      mPipelineRun->addOption(pipeline->getname());
+  }
 
   RETURN_ON_FAILURE(loadElements());
 
@@ -238,7 +250,7 @@ void MainWindow::onSettingsChanged()
     logging::gMinLogLevel = logging::LogLevel::Trace;
 
   if (mPluginManager)
-    mPluginManager->settingsChanged(mSettingsManager->plugins(), mGeneratorMenu, mGeneratorOption, mHostServices);
+    mPluginManager->settingsChanged(mSettingsManager->plugins(), mHostServices);
 
   // Clean and repopulate the recent files
   mActionOpenRecent->clear();
@@ -252,7 +264,7 @@ void MainWindow::onSettingsChanged()
 void MainWindow::startUI()
 {
   CanvasView* currentCanvas = static_cast<CanvasView*>(mCanvasPanel->currentWidget());
-  StructureCanvas* canvas = new StructureCanvas(Config::MAIN_CANVAS, mStorage, mConfigTable, currentCanvas);
+  StructureCanvas* canvas = new StructureCanvas(mStorage, Config::MAIN_CANVAS, mConfigTable, currentCanvas);
 
   mActiveCanvas = canvas;
   currentCanvas->setScene(canvas);
@@ -347,25 +359,8 @@ void MainWindow::bind()
   connect(mActionSaveAs, &QAction::triggered, this, &MainWindow::onActionSaveAs);
   mActionSaveAs->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S));
 
-  connect(mGenerationButton, &QPushButton::pressed, this, &MainWindow::onActionGenerate);
-  connect(mSimulateButton, &QPushButton::pressed, this, &MainWindow::onActionSimulate);
-  connect(mDeployButton, &QPushButton::pressed, [this] {
-    auto pipelineTab = mCanvasPanel->indexOf(mPipelineView);
-    if (pipelineTab >= 0)
-      return;
-
-    PipelineCanvas* canvas = new PipelineCanvas("Pipeline Editor", mStorage, mConfigTable, mPipelineView);
-    mPipelineView->setScene(canvas);
-
-    // Hide all tabs but the pipeline one
-    mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::STRUCTURAL), false);
-    mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::BEHAVIOUR), false);
-    mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::PIPELINE), true);
-    mPalette->setCurrentIndex(libraryTypeToIndex(Types::LibraryTypes::PIPELINE));
-
-    mCanvasPanel->addTab(mPipelineView, QIcon(":/icons/deploy.svg"), "Pipeline Editor");
-    mCanvasPanel->setCurrentWidget(mPipelineView);
-  });
+  connect(mPipelineRun, &DropDownButton::executeRequested, this, &MainWindow::onActionGenerate);
+  connect(mPipelineRun, &DropDownButton::editOptionRequested, this, &MainWindow::onActionEditPipeline);
 
   // View actions =============================================================
   mOpenComponentsPanel->setShortcut(QKeySequence(Qt::Key_F7));
@@ -374,11 +369,6 @@ void MainWindow::bind()
 
   connect(mPluginTab, &PluginTab::openView, this, &MainWindow::addPluginTab);
   connect(mPluginTab, &PluginTab::closeView, this, &MainWindow::removePluginTab);
-
-  // Diagram actions =============================================================
-  connect(mActionGenerate, &QAction::triggered, this, &MainWindow::onActionGenerate);
-  mActionGenerate->setShortcut(QKeySequence(Qt::Key_F5));
-  mActionSimulate->setShortcut(QKeySequence(Qt::Key_F6));
 
   // Setting actions =============================================================
   connect(mOpenAllSettings, &QAction::triggered, this, [this] {
@@ -398,7 +388,6 @@ void MainWindow::bind()
   connect(rootCanvas(), &Canvas::openFlow, this, &MainWindow::onOpenFlow);
   connect(rootCanvas(), &Canvas::flowAdded, this, &MainWindow::onFlowAdded);
   connect(rootCanvas(), &Canvas::flowRemoved, this, &MainWindow::onFlowRemoved);
-  // connect(rootCanvas(), &Canvas::createEvent, mFieldsMenu, &FieldsMenu::onCreateEvent);
 
   connect(mPropertiesMenu, &PropertiesMenu::flowSelected, rootCanvas(), &Canvas::onFlowSelected);
 
@@ -447,14 +436,16 @@ void MainWindow::bind()
     LOG_WARN_ON_FAILURE(loadElementLibrary(library[ConfigKeys::NAME].toString(), library));
   });
 
-  if (mGenerator)
-  {
-    connect(mGenerator, &Generator::generationStarted, [this] { toggleGenerationButton(true); });
-    connect(mGenerator, &Generator::generationEnded, [this](const QString& outputFolder) {
+  // Pipeline stuff =============================================================
+  connect(mPluginPipeline, &maki::PluginPipeline::pipelineStarted, [this] {
+    toggleGenerationButton(true);
+  });
+  connect(mPluginPipeline, &maki::PluginPipeline::pipelineFinished, [this](const QString& outputFolder) {
+    if (!outputFolder.isEmpty())
       mFileMenu->setGenerationRoot(outputFolder);
-      toggleGenerationButton(false);
-    });
-  }
+
+    toggleGenerationButton(false);
+  });
 
   // Search stuff =============================================================
   connect(mPaletteSearch, &maki::SearchWidget::valueChanged, [this](const QString& query) {
@@ -523,7 +514,7 @@ void MainWindow::bindShortcuts()
   });
   new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_R), this, [this] {
     if (mPluginManager && mPluginManager->currentPlugin())
-      LOG_WARN_ON_FAILURE(mPluginManager->reloadPlugin(mPluginManager->currentPlugin()->languageName(), mGeneratorMenu, mGeneratorOption, mHostServices));
+      LOG_WARN_ON_FAILURE(mPluginManager->reloadPlugin(mPluginManager->currentPlugin()->languageName(), mHostServices));
   });
 
   mActionUndo->setShortcuts(QKeySequence::Undo);
@@ -635,7 +626,6 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
       return VoidResult::Failed("Invalid node format");
 
     QJsonObject node = value.toObject();
-
     LOG_INFO("Loading element: %s", qPrintable(node["type"].toString()));
 
     // Parse config and make sure it is valid before continuing
@@ -699,103 +689,12 @@ void MainWindow::onActionRestart()
   onActionExit();
 }
 
-void MainWindow::onActionGenerate()
+void MainWindow::onActionGenerate(const QString& pipelineId)
 {
-  if (!mGenerator)
-    LOG_WARNING("No generator available");
+  LOG_INFO("onActionGenerate: %s", qPrintable(pipelineId));
 
-  // TODO: Update this to the plugin pipeline
-  maki::PipelineGraph graph;
-  graph.id = "Test 1";
-  graph.name = "Generate koda and dezyne";
-
-  maki::PipelineNode node1;
-  node1.actionId = "koda_antlr.generate_koda";
-  node1.id = "Koda generation";
-  node1.parameters = {};
-
-  maki::PipelineNode node2;
-  node2.actionId = "koda_antlr.generate_dezyne";
-  if (mGeneratorOption && mGeneratorOption->currentText() == "KODA")
-    node2.actionId = "koda.generate_dezyne";
-
-  node2.id = "Dezyne generation";
-  node2.parameters = {};
-
-  maki::PipelineNode node3;
-  node3.actionId = "koda_antlr.verify_dezyne";
-  node3.id = "Dezyne verification";
-  node3.parameters = {};
-
-  maki::PipelineNode node4;
-  node4.actionId = "koda_antlr.generate_dezyne_cpp";
-  node4.id = "Dezyne C++ generation";
-  node4.parameters = {};
-
-  maki::PipelineNode node5;
-  node5.actionId = "platformio.create_project";
-  node5.id = "Create platform IO project";
-  node5.parameters = {};
-
-  maki::PipelineNode node6;
-  node6.actionId = "platformio.copy_sources";
-  node6.id = "Copy sources to platform IO project";
-  node6.parameters = {};
-
-  // maki::PipelineNode node7;
-  // node7.actionId = "platformio.build_project";
-  // node7.id = "Build Platform IO project";
-  // node7.parameters = {};
-
-  // maki::PipelineNode node8;
-  // node8.actionId = "arduino.generate_cpp";
-  // node8.id = "Arduino generation";
-  // node8.parameters = {};
-
-  maki::PipelineEdge edge1;
-  edge1.from = "Koda generation";
-  edge1.to = "Dezyne generation";
-
-  maki::PipelineEdge edge2;
-  edge2.from = "Dezyne generation";
-  edge2.to = "Dezyne verification";
-
-  maki::PipelineEdge edge3;
-  edge3.from = "Dezyne verification";
-  edge3.to = "Dezyne C++ generation";
-
-  maki::PipelineEdge edge4;
-  edge4.from = "Dezyne C++ generation";
-  edge4.to = "Create platform IO project";
-
-  maki::PipelineEdge edge5;
-  edge5.from = "Create platform IO project";
-  edge5.to = "Copy sources to platform IO project";
-
-  // maki::PipelineEdge edge6;
-  // edge6.from = "Copy sources to platform IO project";
-  // edge6.to = "Build Platform IO project";
-
-  // maki::PipelineEdge edge7;
-  // edge7.from = "Copy sources to platform IO project";
-  // edge7.to = "Arduino generation";
-
-  graph.nodes.push_back(node1);
-  graph.nodes.push_back(node2);
-  graph.nodes.push_back(node3);
-  graph.nodes.push_back(node4);
-  graph.nodes.push_back(node5);
-  graph.nodes.push_back(node6);
-  // graph.nodes.push_back(node7);
-  // graph.nodes.push_back(node8);
-
-  graph.edges.push_back(edge1);
-  graph.edges.push_back(edge2);
-  graph.edges.push_back(edge3);
-  graph.edges.push_back(edge4);
-  graph.edges.push_back(edge5);
-  // graph.edges.push_back(edge6);
-  // graph.edges.push_back(edge7);
+  if (!mPluginPipeline)
+    LOG_WARNING("No pipeline available");
 
   // We should have three buttons:
   // - Verify
@@ -820,7 +719,85 @@ void MainWindow::onActionGenerate()
       },
   });
 
-  LOG_ERROR_ON_FAILURE(mPluginPipeline->run(mCurrentPipeline, context));
+  for (const auto& pipeline : mStorage->pipelines())
+  {
+    LOG_DEBUG("Comparing: %s to %s", qPrintable(pipeline->getname()), qPrintable(pipelineId));
+    if (pipeline->getname() != pipelineId)
+      continue;
+
+    auto graph = maki::PipelineGraph::fromFlow(*pipeline);
+    if (!graph.IsSuccess())
+    {
+      LOG_ERROR(graph.ErrorMessage());
+      return;
+    }
+
+    LOG_ERROR_ON_FAILURE(mPluginPipeline->run(graph.Value(), context));
+    return;
+  }
+
+  // We tried running an unknown pipeline, so we can create it
+  onActionEditPipeline(pipelineId);
+}
+
+void MainWindow::onActionEditPipeline(const QString& pipelineId)
+{
+  LOG_INFO("onActionEditPipeline: %s", qPrintable(pipelineId));
+
+  QString pipelineName;
+  std::shared_ptr<FlowSaveInfo> pipeline;
+  for (const auto& p : mStorage->pipelines())
+  {
+    if (p->getname() != pipelineId)
+      continue;
+
+    pipelineName = pipelineId;
+    pipeline = p;
+    break;
+  }
+
+  // If we are dealing with an unknown or new pipeline, we must create it
+  if (pipelineName.isEmpty() || !pipeline)
+  {
+    FlowSaveInfo info;
+    auto name = maki::textPrompt(tr("Pipeline name"), tr("Choose a pipeline name"), this);
+    if (name.isEmpty())
+      return;
+
+    pipelineName = name;
+    info.setName(pipelineName);
+    pipeline = std::make_shared<FlowSaveInfo>(info);
+
+    mStorage->addPipeline(pipeline);
+    mPipelineRun->addOption(pipelineName);  // Update the UI as well
+  }
+
+  // Check if the pipeline is already open
+  for (int i = 1; i < mCanvasPanel->count(); ++i)
+  {
+    auto prop = mCanvasPanel->widget(i)->property("id");
+    if (prop.isValid() && prop.toString() == pipelineName)
+    {
+      mCanvasPanel->setCurrentIndex(i);
+      return;
+    }
+  }
+
+  CanvasView* newView = new CanvasView(mCanvasPanel);
+  newView->setProperty("id", pipelineName);
+
+  PipelineCanvas* canvas = new PipelineCanvas(pipeline, mConfigTable, newView);
+  newView->setScene(canvas);
+  canvas->populate(*pipeline);
+
+  // Hide all tabs in the palette but the pipeline one
+  mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::STRUCTURAL), false);
+  mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::BEHAVIOUR), false);
+  mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::PIPELINE), true);
+  mPalette->setCurrentIndex(libraryTypeToIndex(Types::LibraryTypes::PIPELINE));
+
+  mCanvasPanel->addTab(newView, QIcon(":/icons/deploy.svg"), pipeline->getname());
+  mCanvasPanel->setCurrentWidget(newView);
 }
 
 void MainWindow::onActionSimulate()
@@ -949,16 +926,18 @@ void MainWindow::onActionSave()
     return;
   }
 
-  if (mActiveCanvas->type() == Types::LibraryTypes::PIPELINE)
+  if (CanvasView* view = qobject_cast<CanvasView*>(mCanvasPanel->widget(0)))
   {
-    auto graph = maki::PipelineGraph::fromCanvas(mActiveCanvas);
-    if (!graph.IsSuccess())
-      LOG_WARNING("Could not convert canvas to graph: " + graph.ErrorMessage());
-
-    mCurrentPipeline = graph.Value();
+    if (auto* canvas = qobject_cast<Canvas*>(view->scene()))
+    {
+      CanvasSaveInfo info;
+      info.setCenter(canvas->getCenter());
+      info.setScale(canvas->getScale());
+      mStorage->setCanvasInfo(info);
+    }
   }
 
-  mSaveHandler->save(rootCanvas());
+  LOG_WARN_ON_FAILURE(mSaveHandler->saveProject(*mStorage));
 }
 
 void MainWindow::onActionSaveAs()
@@ -969,7 +948,7 @@ void MainWindow::onActionSaveAs()
     return;
   }
 
-  mSaveHandler->saveFileAs(rootCanvas());
+  LOG_WARN_ON_FAILURE(mSaveHandler->saveProjectAs(*mStorage));
 }
 
 void MainWindow::onActionLoad(const QString& filename)
@@ -980,7 +959,7 @@ void MainWindow::onActionLoad(const QString& filename)
     return;
   }
 
-  auto loaded = filename.isEmpty() ? mSaveHandler->load() : mSaveHandler->load(filename);
+  auto loaded = filename.isEmpty() ? mSaveHandler->loadProject() : mSaveHandler->loadProject(filename);
   if (!loaded.IsSuccess())
   {
     LOG_ERROR(loaded.ErrorMessage());
@@ -992,8 +971,18 @@ void MainWindow::onActionLoad(const QString& filename)
     closeCanvasTab(i);
 
   auto info = loaded.Value();
-  // Clear the storage
-  *mStorage = SaveInfo();
+
+  // Clear the storage so it can be populated by the canvas
+  *mStorage = info;
+  mStorage->clearNodes();
+
+  for (const auto& n : info.getnodes())
+  {
+    for (const auto& e : n->getevents())
+    {
+      LOG_INFO("Node: %s Event: %s - links to: %d", qPrintable(n->getnodeId()), qPrintable(e->getname()), e->getlinksTo());
+    }
+  }
 
   // Repopulate the canvas (and the storage)
   canvas()->loadFromSave(info);
@@ -1001,6 +990,17 @@ void MainWindow::onActionLoad(const QString& filename)
   GeneralSettings general = mSettingsManager->general();
   general.lastOpenFileDir = mSaveHandler->lastDir();
   mSettingsManager->setGeneral(general);
+  mSettingsManager->applySettings();
+
+  if (mPipelineRun)
+  {
+    mPipelineRun->reset();
+
+    for (const auto& pipeline : mStorage->pipelines())
+      mPipelineRun->addOption(pipeline->getname());
+  }
+
+  LOG_INFO("Project with %d nodes after", mStorage->getnodes().size());
 }
 
 void MainWindow::onNodeSelected(NodeItem* node, bool selected)
@@ -1198,7 +1198,7 @@ void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
 
   CanvasView* newView = new CanvasView(mCanvasPanel);
 
-  BehaviourCanvas* canvas = new BehaviourCanvas(flow, mStorage, mConfigTable, newView);
+  BehaviourCanvas* canvas = new BehaviourCanvas(flow, mConfigTable, newView);
   newView->setScene(canvas);
 
   // Change to respective tabs
@@ -1206,7 +1206,7 @@ void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
   mPalette->setCurrentIndex(index);
 
   // Add default start and end nodes to flow
-  canvas->populate(flow);
+  canvas->populate(*flow->config());
 
   newView->setProperty("id", flow->id());
   LOG_DEBUG("Set tab property to %s", qPrintable(flow->id()));

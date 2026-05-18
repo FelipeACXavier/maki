@@ -58,6 +58,12 @@ public:
   QVector<std::shared_ptr<IFlow>> getflows() const override;
 
   /**
+   * @brief Gets the events of the node.
+   * @return A QVector of shared pointers to IFlow objects.
+   */
+  QVector<std::shared_ptr<IFlow>> getevents() const override;
+
+  /**
    * @brief Gets the parent ID of the node.
    * @return The parent ID as a QString.
    */
@@ -206,6 +212,18 @@ public:
   void removeFlow(const QString& flowId);
 
   /**
+   * @brief Adds a flow to the node.
+   * @param flow The new flow as a shared pointer to IFlow.
+   */
+  void addEvent(std::shared_ptr<IFlow> event);
+
+  /**
+   * @brief Removes a flow from the node by reference.
+   * @param flow The flow to be removed.
+   */
+  void removeEvent(std::shared_ptr<IFlow> event);
+
+  /**
    * @brief Adds a child to the node.
    * @param child The new child as a shared pointer to INode.
    */
@@ -253,6 +271,7 @@ private:
   QMap<QString, QVariant> mProperties;                 /// A map of properties for the node.
   QVector<std::shared_ptr<INode>> mChildren;           /// A vector of children nodes.
   QVector<std::shared_ptr<IFlow>> mFlows;              /// A vector of flows associated with the node.
+  QVector<std::shared_ptr<IFlow>> mEvents;             /// A vector of flows associated with the node.
   QVector<std::shared_ptr<ITransition>> mTransitions;  /// A vector of transitions for the node.
   QVector<std::shared_ptr<IProperty>> mFields;         /// A vector of fields for the node.
 };

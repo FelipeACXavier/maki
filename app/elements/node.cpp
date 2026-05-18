@@ -1,5 +1,7 @@
 #include "node.h"
 
+#include <qhashfunctions.h>
+
 #include <QGraphicsScene>
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsView>
@@ -49,7 +51,7 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
   for (const auto& event : config()->events)
   {
     bool found = false;
-    for (const auto& flow : mStorage->getflows())
+    for (const auto& flow : mStorage->getevents())
     {
       if (flow->getname() != event.name)
         continue;
@@ -61,7 +63,7 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
     if (found)
       continue;
 
-    mStorage->addFlow(std::make_shared<FlowSaveInfo>(event));
+    mStorage->addEvent(std::make_shared<FlowSaveInfo>(event));
   }
 
   // Add icon if it exists

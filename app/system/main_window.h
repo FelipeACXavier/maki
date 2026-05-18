@@ -153,7 +153,6 @@ private:
   std::shared_ptr<SaveInfo> mStorage;  /// Shared pointer to save information.
 
   QApplication* mApp;  /// Pointer to the QApplication instance.
-  maki::PipelineGraph mCurrentPipeline;
 
   /**
    * @brief Returns the active canvas.
@@ -287,16 +286,17 @@ private:
 
   // ================================================
   // Actions
-  void onActionNew();                          /// Handles new action.
-  void onActionLoad(const QString& filename);  /// Handles load action with a specified file name.
-  void onActionSave();                         /// Handles save action.
-  void onActionExit();                         /// Handles exit action.
-  void onActionRestart();                      /// Handles restart action.
-  void onActionSaveAs();                       /// Handles save as action.
-  void onActionGenerate();                     /// Handles generate action.
-  void onActionSimulate();                     /// Handles simulate action.
-  void onActionDeploy();                       /// Handles deploy action.
-  void onActionLogLevelChanged();              /// Handles log level change action.
+  void onActionNew();                                    /// Handles new action.
+  void onActionLoad(const QString& filename);            /// Handles load action with a specified file name.
+  void onActionSave();                                   /// Handles save action.
+  void onActionExit();                                   /// Handles exit action.
+  void onActionRestart();                                /// Handles restart action.
+  void onActionSaveAs();                                 /// Handles save as action.
+  void onActionGenerate(const QString& pipelineId);      /// Handles generate action.
+  void onActionEditPipeline(const QString& pipelineId);  /// Handles generate action.
+  void onActionSimulate();                               /// Handles simulate action.
+  void onActionDeploy();                                 /// Handles deploy action.
+  void onActionLogLevelChanged();                        /// Handles log level change action.
 };  // namespace qlementclassMainWindow:public MainWindowLayout
 
 #endif  // MAINWINDOW_H

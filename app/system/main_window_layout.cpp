@@ -31,6 +31,7 @@
 #include "process_tab.h"
 #include "style_helpers.h"
 #include "system/canvas_view.h"
+#include "widgets/dropdown_button.h"
 #include "widgets/frame.h"
 #include "widgets/log_table_widget.h"
 #include "widgets/properties/properties_menu.h"
@@ -214,39 +215,12 @@ void MainWindowLayout::buildCentralPanel()
   headerLayout->setAlignment(Qt::AlignCenter);
   headerLayout->addSpacing(24);
 
-  // ---------------------------------------------
-  mGenerationButton = new QPushButton("");
-  mGenerationButton->setIcon(QIcon::fromTheme("document-edit-decrypt-verify"));
-  mGenerationButton->setToolTip("Verify system");
-  mGenerationButton->setToolTipDuration(2000);
-  mGenerationButton->setFixedSize(30, 30);
-
-  headerLayout->addWidget(mGenerationButton);
-
   // ----------------------------------------------------------------
-  mSimulateButton = new QPushButton("");
-  mSimulateButton->setIcon(QIcon::fromTheme("exaile-play"));
-  mSimulateButton->setToolTip("Simulate system");
-  mSimulateButton->setToolTipDuration(2000);
-  mSimulateButton->setFixedSize(30, 30);
+  mPipelineRun = new DropDownButton(header);
+  mPipelineRun->setIcon(QIcon::fromTheme("exaile-play"));
+  // mPipelineRun->setBaseText(tr("Generate"));
 
-  headerLayout->addWidget(mSimulateButton);
-
-  // ----------------------------------------------------------------
-  mGeneratorOption = new QComboBox();
-
-  auto generatorOptionsWrapper = createHeaderComboBox(mGeneratorOption, ":/icons/generator.svg", "Verification plugin");
-  headerLayout->addWidget(generatorOptionsWrapper);
-
-  // ----------------------------------------------------------------
-  mDeployButton = new QPushButton("");
-  mDeployButton->setIcon(QIcon(":/icons/deploy.svg"));
-
-  mDeployButton->setToolTip("Deploy program to selected application");
-  mDeployButton->setToolTipDuration(2000);
-  mDeployButton->setFixedSize(30, 30);
-
-  headerLayout->addWidget(mDeployButton);
+  headerLayout->addWidget(mPipelineRun);
 
   // ---------------------------------------------
   auto* spinnerContainer = new QWidget(header);
@@ -265,7 +239,6 @@ void MainWindowLayout::buildCentralPanel()
   mCanvasPanel = new QTabWidget(mCentralSplitter);
 
   CanvasView* canvasView = new CanvasView(mCanvasPanel);
-  mPipelineView = new CanvasView(mCanvasPanel);
 
   mCanvasPanel->addTab(canvasView, QIcon(":/icons/structure.svg"), tr("System"));
   mCanvasPanel->setCurrentWidget(canvasView);
@@ -876,29 +849,15 @@ void MainWindowLayout::toggleGenerationButton(bool running)
   {
     mGenerationSpinner->setSpinning(true);
     mGenerationSpinner->setVisible(true);
-    mGenerationButton->setToolTip("Cancel current generation");
-    mGenerationButton->setIcon(QIcon(":/icons/pause.svg"));
+    mPipelineRun->setToolTip(tr("Cancel current pipeline"));
+    mPipelineRun->setIcon(QIcon(":/icons/pause.svg"));
   }
   else
   {
     mGenerationSpinner->setSpinning(false);
     mGenerationSpinner->setVisible(false);
-    mGenerationButton->setToolTip("Verify system");
-    mGenerationButton->setIcon(QIcon::fromTheme("document-edit-decrypt-verify"));
-  }
-}
-
-void MainWindowLayout::toggleDeployButton(bool running)
-{
-  if (running)
-  {
-    mSimulateButton->setToolTip("Cancel current simulation");
-    mSimulateButton->setIcon(QIcon(":/icons/pause.svg"));
-  }
-  else
-  {
-    mSimulateButton->setToolTip("Simulate system");
-    mSimulateButton->setIcon(QIcon::fromTheme("exaile-play"));
+    mPipelineRun->setToolTip(tr("Run pipeline"));
+    mPipelineRun->setIcon(QIcon::fromTheme("exaile-play"));
   }
 }
 
