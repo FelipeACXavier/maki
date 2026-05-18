@@ -2,6 +2,7 @@
 
 #include <qcontainerfwd.h>
 #include <qdir.h>
+#include <qhashfunctions.h>
 
 #include <QApplication>
 #include <QDirIterator>
@@ -333,7 +334,6 @@ Result<maki::PipelineArtifact> KodaGenerator::generateDezyne(const maki::Pipelin
     koda::CompilerOptions options;
     options.inputFile = file.toStdString();
     options.outputDir = modelsOutputFolder.absolutePath().toStdString();
-    options.verbose = 2;
     LOG_DEBUG("Generating from file: %s to %s", qPrintable(file), qPrintable(outputFolder.absolutePath()));
     auto parsed = compiler.parse(options);
     if (!parsed)
@@ -507,7 +507,7 @@ VoidResult KodaGenerator::verify(const maki::PipelineArtifact& artifact, const Q
     if (taskOnly.getValue().isValid() && taskOnly.getValue().toBool() && !f.contains("_task"))
       continue;
 
-    LOG_INFO("Will verify file: %s", qPrintable(f));
+    LOG_DEBUG("Will verify file: %s", qPrintable(f));
 #ifdef USE_ANTLR
     const QString command = "ide";
 #else
@@ -655,7 +655,7 @@ Result<QString> KodaGenerator::generateCapability(const INode& node)
     code += std::format("  {} \"{}\" \"{}\" {{\n", callType.toStdString(), callRoute.toStdString(), callMessage.toStdString());
 
     QString qualifier = "  ";
-    for (const auto& f : node.getflows())
+    for (const auto& f : node.getevents())
     {
       // LOG_DEBUG("%s match: %d %d", qPrintable(f->getname()), f->getlinksTo(), i);
       if (f->getlinksTo() != i)
@@ -709,7 +709,7 @@ VoidResult KodaGenerator::generateComponent(const INode& node, const QString& in
 
   // Generate flows
   QString bodyCode = "";
-  for (const auto& f : node.getflows())
+  for (const auto& f : node.getevents())
   {
     if (!f->getnodes().empty())
       continue;
@@ -989,6 +989,7 @@ Result<QString> KodaGenerator::generateWithin(const INode& node, const Argument&
 
   for (const auto& transition : flow.gettransitions(node.getid()))
   {
+    LOG_INFO("Label: %s", qPrintable(transition->getlabel()));
     if (transition->getlabel() == "do")
     {
       auto dst = findDestination(transition->getdstId(), flow);
