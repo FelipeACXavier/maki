@@ -16,8 +16,6 @@
 const qreal MAX_WIDTH = 80.0;
 const qreal MAX_HEIGHT = 80.0;
 
-
-
 void renderShapeSvg(QSvgRenderer& renderer, QPainter* painter, const QRectF& drawingBounds)
 {
   QRectF viewBox = renderer.viewBoxF();
@@ -31,8 +29,8 @@ void renderShapeSvg(QSvgRenderer& renderer, QPainter* painter, const QRectF& dra
   const qreal scale = qMin(sx, sy);
   const QSizeF scaledSize(viewBox.width() * scale, viewBox.height() * scale);
   const QRectF targetRect(contentRect.x() + (contentRect.width() - scaledSize.width()) / 2.0,
-                            contentRect.y() + (contentRect.height() - scaledSize.height()) / 2.0,
-                            scaledSize.width(), scaledSize.height());
+                          contentRect.y() + (contentRect.height() - scaledSize.height()) / 2.0,
+                          scaledSize.width(), scaledSize.height());
 
   renderer.render(painter, targetRect);
 }
@@ -141,7 +139,7 @@ void NodeBase::paintNode(const QRectF& bounds, const QColor& background, const Q
       if (renderer->isValid())
         mNodeSvgRenderer = std::move(renderer);
       else
-        LOG_WARNING("nodeSvg not found or invalid: %s", qPrintable(path));
+        LOG_WARNING("nodeSvg not found or invalid: %s", qPrintable(config()->body.nodeSvg));
     }
 
     if (mNodeSvgRenderer)
@@ -273,7 +271,12 @@ void NodeBase::setLabelSize(qreal fontSize, const QSizeF& boundingSize)
   font.setPointSizeF(qMin(Fonts::MaxSize, fontSize));
   mLabel->setFont(font);
 
-  mLabel->setTextWidth(boundingSize.width() - (boundingSize.width() * 0.2));
+  // Labels can be a bit longer in the pipeline
+  if (config()->libraryType == Types::LibraryTypes::PIPELINE)
+    mLabel->setTextWidth(2 * boundingSize.width() - (boundingSize.width() * 0.2));
+  else
+    mLabel->setTextWidth(boundingSize.width() - (boundingSize.width() * 0.2));
+
   mLabel->document()->adjustSize();
 
   updateLabelPosition();

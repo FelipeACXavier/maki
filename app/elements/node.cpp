@@ -308,15 +308,14 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
   }
 
   // node svg replaces icon if set
-  const bool structuralCapability =
-      config()->libraryType == Types::LibraryTypes::STRUCTURAL && config()->type != QStringLiteral("Task");
+  const bool structuralCapability = config()->libraryType == Types::LibraryTypes::STRUCTURAL && config()->type != QStringLiteral("Task");
   if (config()->body.nodeSvg.isEmpty() && !mStorage->getIcon().isEmpty() && !structuralCapability)
     setIcon(mStorage->getIcon(), config()->body.iconColor);
 
   qreal labelSize = qMax(Fonts::BaseSize, mSize.width() / Fonts::BaseFactor);
   setLabel(getProperty("name").toString(), labelSize);
 
-  if (config()->libraryType == Types::LibraryTypes::BEHAVIOUR)
+  if (config()->libraryType != Types::LibraryTypes::STRUCTURAL)
   {
     if (config()->hasInPort)
       mInPort = new PortItem(PortItem::In, this);

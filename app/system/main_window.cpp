@@ -3,6 +3,7 @@
 #include <qdir.h>
 #include <qhashfunctions.h>
 #include <qjsonarray.h>
+#include <qjsonobject.h>
 
 #include <QComboBox>
 #include <QDrag>
@@ -411,24 +412,41 @@ void MainWindow::bind()
     for (const auto& action : mPluginPipeline->registry()->actionsOfPlugin(plugin.plugin->languageName()))
     {
       QJsonObject node;
-      node["type"] = action->id();
+      node[ConfigKeys::TYPE] = action->id();
+
+      QJsonObject body;
+      body["shape"] = "circle";
+      body["textColor"] = "#FFFFFF";
+      body["backgroundColor"] = "#202020";
+      body["borderColor"] = "#FFFFFF";
+      body["borderRadius"] = 10;
+      body["width"] = 100;
+      body["height"] = 100;
+      body["iconColor"] = "#FFFFFF";
+      body["iconScale"] = 0.8;
+      body["nodeSvg"] = plugin.manifest.iconPath();
+
+      node["body"] = body;
+
+      QJsonArray ports = {"in", "out"};
+      node["ports"] = ports;
 
       QJsonArray properties;
       QJsonObject name;
-      name["id"] = "name";
-      name["type"] = "string";
-      name["default"] = action->displayName();
+      name[ConfigKeys::ID] = "name";
+      name[ConfigKeys::TYPE] = "string";
+      name[ConfigKeys::DEFAULT] = action->displayName();
       properties.append(name);
 
       for (const auto& p : action->parameters())
       {
         QJsonObject prop;
-        prop["id"] = p.getid();
-        prop["type"] = Types::PropertyTypesToString(p.gettype());
+        prop[ConfigKeys::ID] = p.getid();
+        prop[ConfigKeys::TYPE] = Types::PropertyTypesToString(p.gettype());
         properties.append(prop);
       }
 
-      node["properties"] = properties;
+      node[ConfigKeys::PROPERTIES] = properties;
       nodes.append(node);
     }
 
@@ -626,7 +644,7 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
       return VoidResult::Failed("Invalid node format");
 
     QJsonObject node = value.toObject();
-    LOG_INFO("Loading element: %s", qPrintable(node["type"].toString()));
+    LOG_INFO("Loading element: %s", qPrintable(node[ConfigKeys::TYPE].toString()));
 
     // Parse config and make sure it is valid before continuing
     auto nodeConfig = std::make_shared<NodeConfig>(node);

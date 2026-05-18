@@ -5,5 +5,5 @@
   "author": "Felipe Xavier",
   "entryPointDLL": "bin/ollama_plugin.dll",
   "entryPointSO": "bin/libollama_plugin.so",
-  "icon": "assets/icon.png"
+  "icon": "assets/icon.svg"
 }

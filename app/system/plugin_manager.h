@@ -1,5 +1,7 @@
 #pragma once
 
+#include <qfileinfo.h>
+
 #include <QDir>
 #include <QJsonArray>
 #include <QPluginLoader>
@@ -115,6 +117,11 @@ public:
   QString pluginPath() const
   {
     return path + "/" + entryPoint;
+  }
+
+  QString iconPath() const
+  {
+    return QDir(path).dirName() + "/" + icon;
   }
 };
 

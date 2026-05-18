@@ -1,5 +1,7 @@
 #include "app_paths.h"
 
+#include <qobject.h>
+
 #include <QCoreApplication>
 #include <QDir>
 #include <QFileInfo>
@@ -145,9 +147,20 @@ QStringList AppPaths::envOverridePaths(const QString& name)
   return result;
 }
 
-QString AppPaths::icon(const QString& arg)
+QString AppPaths::icon(const QString& relativePath)
 {
-  return findAsset("icons/" + arg);
+  auto icon = findAsset("icons/" + relativePath);
+  if (!icon.isEmpty())
+    return icon;
+
+  for (const QString& root : pluginSearchPaths())
+  {
+    const QString fullPath = QDir(root).filePath(relativePath);
+    if (QFileInfo::exists(fullPath))
+      return fullPath;
+  }
+
+  return QString();
 }
 
 QString AppPaths::theme(const QString& arg)
