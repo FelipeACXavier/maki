@@ -1,5 +1,8 @@
 #include "plugin_action_registry.h"
 
+#include <qdir.h>
+#include <qhashfunctions.h>
+
 #include "logging.h"
 #include "pipeline_action.h"
 
@@ -11,7 +14,10 @@ VoidResult PipelineActionRegistry::registerAction(const QString& pluginId, std::
     return VoidResult::Failed("Action already registred, " + action->id().toStdString());
 
   mActions.insert(action->id(), action);
-  mActionPluginIds.insert(action->id(), pluginId);
+  if (mActionPluginIds.contains(pluginId))
+    mActionPluginIds[pluginId] += action->id();
+  else
+    mActionPluginIds.insert(pluginId, {action->id()});
 
   LOG_DEBUG("Adding action: %s of plugin: %s to the registry", qPrintable(action->id()), qPrintable(pluginId));
 
@@ -23,8 +29,26 @@ std::shared_ptr<IPipelineAction> PipelineActionRegistry::action(const QString& i
   return mActions.value(id, nullptr);
 }
 
+QVector<std::shared_ptr<IPipelineAction>> PipelineActionRegistry::actionsOfPlugin(const QString& pluginId) const
+{
+  QVector<std::shared_ptr<IPipelineAction>> actions = {};
+  for (const auto& a : mActionPluginIds[pluginId])
+    actions.push_back(action(a));
+
+  return actions;
+}
+
 bool PipelineActionRegistry::contains(const QString& id) const
 {
   return mActions.contains(id);
+}
+
+void PipelineActionRegistry::printAll() const
+{
+  LOG_INFO("Available actions:");
+  for (const auto& action : mActions)
+  {
+    LOG_INFO("Id: %s - Action Id: %s", qPrintable(action->id()), qPrintable(action->displayName()));
+  }
 }
 }  // namespace maki

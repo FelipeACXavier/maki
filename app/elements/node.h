@@ -185,28 +185,10 @@ public:
   QVector<NodeItem*> children() const;
 
   /**
-   * @brief Returns a list of transitions connected to this node.
+   * @brief Calculates an edge point toward a target scene position.
    *
-   * @return The QVector of TransitionItem pointers.
-   */
-  QVector<TransitionItem*> transitions() const;
-
-  /**
-   * @brief Adds a transition to the node.
-   *
-   * @param transition The TransitionItem to add.
-   */
-  void addTransition(TransitionItem* transition);
-
-  /**
-   * @brief Removes a transition from the node.
-   *
-   * @param transition The TransitionItem to remove.
-   */
-  void removeTransition(TransitionItem* transition);
-
-  /**
-   * @param fromOutgoingPort true = out-port anchor (source side), false = in-port anchor (target side).
+   * @param targetScenePos The target scene position.
+   * @return The QPointF representing the edge point.
    */
   QPointF edgePointToward(const QPointF& targetScenePos, bool fromOutgoingPort) const;
 
@@ -349,20 +331,6 @@ public:
   qreal baseScale() const;
 
   /**
-   * @brief Checks if a transition can be added to this node.
-   *
-   * @return True if a transition can be added, false otherwise.
-   */
-  bool canAddTransition() const;
-
-  /**
-   * @brief Gets the next available transition configuration.
-   *
-   * @return The TransitionConfig object for the next transition.
-   */
-  TransitionConfig nextTransition() const;
-
-  /**
    * @brief Returns a list of configured transitions.
    *
    * @return The QVector of TransitionConfig objects.
@@ -388,6 +356,7 @@ public:
   // "signals":
   std::function<void(NodeItem* item)> nodeModified;
   std::function<void(Flow* flow, NodeItem* item)> flowAdded;
+  std::function<void(const QString& id)> nodeMoved;
 
   // "slots":
   void onProperties();
@@ -452,10 +421,9 @@ protected:
 private:
   std::shared_ptr<NodeSaveInfo> mStorage;  /// Save information for the node.
 
-  QVector<Flow*> mFlows;                  /// List of flows associated with this node.
-  NodeItem* mParentNode;                  /// Parent node of this item, if any.
-  QVector<NodeItem*> mChildrenNodes;      /// List of child nodes.
-  QVector<TransitionItem*> mTransitions;  /// List of transitions connected to this node.
+  QVector<Flow*> mFlows;              /// List of flows associated with this node.
+  NodeItem* mParentNode;              /// Parent node of this item, if any.
+  QVector<NodeItem*> mChildrenNodes;  /// List of child nodes.
 
   PortItem* mInPort = nullptr;
   PortItem* mOutPort = nullptr;

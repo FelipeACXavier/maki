@@ -1,28 +1,30 @@
 #include "canvas.h"
 
+#include <qcoreapplication.h>
+#include <qtpreprocessorsupport.h>
+
 #include <QBuffer>
 #include <QClipboard>
+#include <QFont>
 #include <QFontMetrics>
+#include <QFrame>
 #include <QGraphicsSceneDragDropEvent>
+#include <QGridLayout>
+#include <QIcon>
 #include <QLabel>
 #include <QMenu>
 #include <QMessageBox>
 #include <QMimeData>
-#include <QUndoStack>
-#include <QFont>
-#include <QGridLayout>
-#include <QIcon>
 #include <QScrollArea>
 #include <QToolButton>
+#include <QUndoStack>
 #include <QVBoxLayout>
 #include <QWidget>
 #include <QWidgetAction>
-#include <QFrame>
 #include <algorithm>
 #include <limits>
 #include <map>
 #include <memory>
-
 #include <oclero/qlementine/style/QlementineStyle.hpp>
 
 #include "app_configs.h"
@@ -35,7 +37,9 @@
 #include "elements/node.h"
 #include "elements/port.h"
 #include "elements/transition.h"
+#include "flow_info.h"
 #include "logging.h"
+#include "node_info.h"
 #include "result.h"
 #include "save_info.h"
 #include "undo_commands/add_node.h"
@@ -84,12 +88,11 @@ QWidget* viewportFor(QGraphicsScene* scene)
 }
 }  // namespace
 
-Canvas::Canvas(const QString& canvasId, std::shared_ptr<SaveInfo> storage, std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
+Canvas::Canvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
     : QGraphicsScene(parent)
     , mId(canvasId)
     , mCopiedNodes({})
     , mConfigTable(configTable)
-    , mStorage(storage)
 {
   setBackgroundBrush(Qt::transparent);
   // setItemIndexMethod(ItemIndexMethod::NoIndex);
@@ -147,8 +150,7 @@ void Canvas::dragEnterEvent(QGraphicsSceneDragDropEvent* event)
   NodeSaveInfo peekInfo;
   stream >> peekInfo;
   auto cfg = mConfigTable->get(peekInfo.getnodeId());
-  if (cfg && type() == Types::LibraryTypes::STRUCTURAL && cfg->libraryType == Types::LibraryTypes::STRUCTURAL
-      && cfg->type != QStringLiteral("Task"))
+  if (cfg && type() == Types::LibraryTypes::STRUCTURAL && cfg->libraryType == Types::LibraryTypes::STRUCTURAL && cfg->type != QStringLiteral("Task"))
   {
     mDraggedNodeIsCapability = true;
     mDraggedCapabilityColor = cfg->body.backgroundColor;
@@ -488,6 +490,12 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
     else if (!item)
     {
       LOG_DEBUG("Clearing selected nodes");
+      mSelectionStart = event->scenePos();
+      auto color = Config::HIGHLIGHT;
+      color.setAlpha(15);
+      mSelectionRect = addRect(QRectF(mSelectionStart, mSelectionStart), QPen(color, 1, Qt::DashLine), QColor(color));
+      mSelectionRect->setZValue(1'000'000);
+
       mSelectedNodes.clear();
       clearSelectedNodes();
     }
@@ -498,6 +506,39 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
   }
 
   QGraphicsScene::mousePressEvent(event);
+}
+
+bool Canvas::canAddTransition(NodeItem* node) const
+{
+  Q_UNUSED(node)
+  return false;
+}
+
+TransitionConfig Canvas::nextTransition(NodeItem* node) const
+{
+  Q_UNUSED(node)
+  return TransitionConfig{};
+}
+
+void Canvas::addTransition(TransitionItem* transition)
+{
+  Q_UNUSED(transition)
+}
+
+void Canvas::removeTransition(TransitionItem* transition)
+{
+  Q_UNUSED(transition)
+}
+
+void Canvas::addedItemNode(NodeItem* node, std::shared_ptr<NodeSaveInfo> info)
+{
+  Q_UNUSED(info)
+  emit nodeAdded(node);
+}
+
+void Canvas::addedItemFlow(Flow* flow, NodeItem* node)
+{
+  emit flowAdded(flow, node);
 }
 
 bool Canvas::nodeClickHandler(QGraphicsSceneMouseEvent* event, QGraphicsItem* item)
@@ -544,11 +585,17 @@ void Canvas::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
     const int dist = (event->scenePos() - event->buttonDownScreenPos(Qt::LeftButton)).manhattanLength();
     if (!mDragging && dist >= 400)
       mDragging = true;
+
+    if (mSelectionRect)
+    {
+      mSelectionRect->setRect(QRectF(mSelectionStart, event->scenePos()).normalized());
+      event->accept();
+      return;
+    }
   }
   else if (event->buttons() == Qt::NoButton)
   {
-    const bool inHalo = (itemAt(event->scenePos(), QTransform()) == nullptr)
-                        && (portNear(event->scenePos(), static_cast<int>(PortItem::Out), PortItem::kHitPadding) != nullptr);
+    const bool inHalo = (itemAt(event->scenePos(), QTransform()) == nullptr) && (portNear(event->scenePos(), static_cast<int>(PortItem::Out), PortItem::kHitPadding) != nullptr);
 
     if (inHalo && !mHoverPortHalo)
     {
@@ -591,6 +638,7 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
         const QPointF endPos = dest->edgePointToward(event->scenePos(), false);
         mTransition->setEnd(dest->id(), endPos, {0, 0});
         mTransition->done(mNode, dest);
+        addTransition(mTransition);
         completed = true;
       }
 
@@ -601,7 +649,7 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
       mNode = nullptr;
     }
   }
-  else if (item)
+  else if (item && (!mSelectionRect || item != mSelectionRect))
   {
     if (!mDragging)
     {
@@ -637,15 +685,22 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
       QPainterPath selectionPath = selectionArea();
       QList<QGraphicsItem*> allSelectedItems = selectedItems();
 
-      for (QGraphicsItem* item : selectedItems())
+      for (QGraphicsItem* selectedItem : selectedItems())
       {
-        QRectF itemBounds = item->sceneBoundingRect();
+        QRectF itemBounds = selectedItem->sceneBoundingRect();
         if ((draggingFromRight && !selectionPath.intersects(itemBounds)) ||
             (!draggingFromRight && !selectionPath.contains(itemBounds)))
         {
-          item->setSelected(false);
+          selectedItem->setSelected(false);
         }
       }
+    }
+
+    if (mSelectionRect)
+    {
+      removeItem(mSelectionRect);
+      delete mSelectionRect;
+      mSelectionRect = nullptr;
     }
   }
 
@@ -1002,9 +1057,10 @@ void Canvas::deleteSelectedItems()
     else if (item->type() == TransitionItem::Type)
     {
       TransitionItem* transition = static_cast<TransitionItem*>(item);
-      if (!(transition->source() && transition->source()->isSelected()) && !(transition->destination() && transition->destination()->isSelected()))
+      if (!(transition->source() && transition->source()->isSelected()) &&
+          !(transition->destination() && transition->destination()->isSelected()))
       {
-        transition->detach();
+        removeTransition(transition);
         connectionsToDelete.append(item);
       }
     }
@@ -1053,6 +1109,16 @@ void Canvas::removeNode(const NodeSaveInfo info)
   });
 }
 
+QVector<QGraphicsItem*> Canvas::cleanTransitionsOfNode(const QString& nodeId)
+{
+  // Do nothing
+  return {};
+}
+
+void Canvas::onNodeMoved(const QString& /* nodeId */)
+{
+}
+
 QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
 {
   if (!node)
@@ -1063,6 +1129,7 @@ QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
   // Clear any potential callback
   node->nodeModified = nullptr;
   node->flowAdded = nullptr;
+  node->nodeMoved = nullptr;
 
   LOG_TRACE("Removing node: %s", qPrintable(node->id()));
 
@@ -1080,13 +1147,7 @@ QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
   if (parent)
     parent->childRemoved(node);
 
-  auto transtionsToDelete = node->transitions();
-  for (TransitionItem* transition : transtionsToDelete)
-  {
-    transition->detach();
-    removeItem(transition);
-    itemsToRemove.append(transition);
-  }
+  itemsToRemove += cleanTransitionsOfNode(node->id());
 
   auto toDelete = node->children();
   for (NodeItem* child : toDelete)
@@ -1366,24 +1427,16 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
   auto nodeId = creation == NodeCreation::Pasting ? "" : info->getid();
   NodeItem* node = new NodeItem(nodeId, info, position, config);
 
-  if (parent == nullptr)
-  {
-    if (type() == Types::LibraryTypes::STRUCTURAL)
-      mStorage->addNode(info);
-  }
-  else
+  if (parent != nullptr)
   {
     node->addParent(parent);
     parent->addChild(node, info);
   }
 
   // TODO(felaze): Move these to a function or so
-  node->nodeModified = [this](NodeItem* item) {
-    emit nodeModified(item);
-  };
-  node->flowAdded = [this](Flow* flow, NodeItem* node) {
-    emit flowAdded(flow, node);
-  };
+  node->nodeModified = [this](NodeItem* item) { emit nodeModified(item); };
+  node->flowAdded = [this](Flow* flow, NodeItem* node) { addedItemFlow(flow, node); };
+  node->nodeMoved = [this](const QString& id) { onNodeMoved(id); };
 
   node->start();
 
@@ -1393,7 +1446,7 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
   if (creation != NodeCreation::Populating)
     updateParent(node, info, true);
 
-  emit nodeAdded(node);
+  addedItemNode(node, info);
 
   if (creation != NodeCreation::Populating)
     mUndoStack->push(new AddNodeCommand(this, node->saveInfo()));
@@ -1433,7 +1486,7 @@ bool Canvas::beginTransitionFromOutPort(PortItem* port, const QPointF& cursorSce
     return false;
 
   NodeItem* node = port->nodeItem();
-  if (!node || !node->canAddTransition())
+  if (!node || !canAddTransition(node))
     return false;
 
   mNode = node;
@@ -1441,8 +1494,9 @@ bool Canvas::beginTransitionFromOutPort(PortItem* port, const QPointF& cursorSce
   mTransition->setZValue(node->zValue() - 1);
   LOG_INFO("Node: %s ZValue: %f %f", qPrintable(node->nodeId()), node->zValue(), mTransition->zValue());
 
-  auto config = node->nextTransition();
+  auto config = nextTransition(node);
   mTransition->setEvent(config.event);
+  mTransition->setName(config.label);
   mTransition->setStart(node->id(), port->anchorScenePos(), {0, 0});
   mTransition->setEnd(Constants::TMP_CONNECTION_ID, cursorScenePos, {0, 0});
 
@@ -1502,47 +1556,45 @@ void Canvas::onRemoveNode(const QString& nodeId)
 
 // ==========================================================================================
 // Flow
-void Canvas::populate(Flow* flow)
+void Canvas::populate(const FlowSaveInfo& flow)
 {
   // First create all the nodes
-  for (std::shared_ptr<NodeSaveInfo> node : flow->getNodes())
+  for (const auto& inode : flow.getnodes())
   {
+    auto node = std::dynamic_pointer_cast<NodeSaveInfo>(inode);
     LOG_DEBUG("Creating behavioral node %s with parent %s", qPrintable(node->getid()), qPrintable(node->getparentId()));
     auto created = createNode(NodeCreation::Populating, node, node->getposition(), findNodeWithId(node->getparentId()));
     LOG_DEBUG("Created node %s", qPrintable(created->id()));
   }
 
   // Then create the transitions between the nodes
-  for (std::shared_ptr<NodeSaveInfo> node : flow->getNodes())
+  for (std::shared_ptr<ITransition> itransition : flow.gettransitions())
   {
-    auto srcConn = findNodeWithId(node->getid());
+    auto transition = std::dynamic_pointer_cast<TransitionSaveInfo>(itransition);
+    auto srcConn = findNodeWithId(transition->getsrcId());
     if (!srcConn)
     {
       LOG_WARNING("Could not find source node");
       continue;
     }
 
-    for (std::shared_ptr<ITransition> itransition : node->gettransitions())
+    auto dstConn = findNodeWithId(transition->getdstId());
+    if (!dstConn)
     {
-      auto transition = std::dynamic_pointer_cast<TransitionSaveInfo>(itransition);
-      auto dstConn = findNodeWithId(transition->getdstId());
-      if (!dstConn)
-      {
-        LOG_WARNING("Could not find destination node");
-        continue;
-      }
-
-      LOG_DEBUG("Creating transitions %s -> %s", qPrintable(node->getid()), qPrintable(transition->getdstId()));
-
-      auto connection = new TransitionItem(transition);
-
-      connection->setStart(node->getid(), transition->srcPoint(), transition->srcShift());
-      connection->setEnd(transition->getdstId(), transition->dstPoint(), transition->dstShift());
-
-      connection->done(srcConn, dstConn);
-
-      addItem(connection);
+      LOG_WARNING("Could not find destination node");
+      continue;
     }
+
+    LOG_DEBUG("Creating transitions %s -> %s", qPrintable(transition->getsrcId()), qPrintable(transition->getdstId()));
+
+    auto connection = new TransitionItem(transition);
+
+    connection->setStart(transition->getsrcId(), transition->srcPoint(), transition->srcShift());
+    connection->setEnd(transition->getdstId(), transition->dstPoint(), transition->dstShift());
+
+    connection->done(srcConn, dstConn);
+    addTransition(connection);
+    addItem(connection);
   }
 }
 

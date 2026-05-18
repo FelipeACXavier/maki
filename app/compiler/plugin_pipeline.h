@@ -30,7 +30,8 @@ signals:
   void nodeStarted(const QString& nodeId, const QString& displayName);
   void nodeFinished(const QString& nodeId);
   void nodeFailed(const QString& nodeId, const QString& error);
-  void pipelineFinished();
+  void pipelineStarted();
+  void pipelineFinished(const QString& generationDir);
 
 private:
   PipelineActionRegistry* mRegistry = nullptr;
@@ -48,6 +49,10 @@ private:
 
   VoidResult runNextNode();
   VoidResult continueAfterNode();
+
+  int mInitialCount = 0;
+  QVector<QWidget*> mOldWidgets = {};
+  QWidget* progressWidget() const;
 };
 
 }  // namespace maki

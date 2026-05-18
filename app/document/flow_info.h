@@ -90,6 +90,23 @@ public:
   QVector<std::shared_ptr<INode>> getnodes() const override;
 
   /**
+   * @brief Gets the transitions of the flow.
+   * @return A QVector of shared pointers to ITransition objects.
+   */
+  QVector<std::shared_ptr<ITransition>> gettransitions() const override;
+
+  /**
+   * @brief Gets the transitions of the flow coming from a specific node.
+   * @param id The id of the node of interest.
+   * @return A QVector of shared pointers to ITransition objects.
+   */
+  QVector<std::shared_ptr<ITransition>> gettransitions(const QString& id) const override;
+
+  void addTransition(std::shared_ptr<ITransition> transition);
+
+  void removeTransition(std::shared_ptr<ITransition> transition);
+
+  /**
    * @brief Sets the ID of the flow.
    *
    * @param arg The new ID for the flow.
@@ -216,16 +233,17 @@ public:
   friend QDataStream& operator>>(QDataStream& in, FlowSaveInfo& info);
 
 private:
-  QString mId; /// The ID of the flow.
-  QString mName; /// The name of the flow.
-  QString mOwner; /// The owner of the flow.
-  bool mModifiable; /// Whether the flow is modifiable.
-  int mLinksTo; /// The number of links to the flow.
+  QString mId;       /// The ID of the flow.
+  QString mName;     /// The name of the flow.
+  QString mOwner;    /// The owner of the flow.
+  bool mModifiable;  /// Whether the flow is modifiable.
+  int mLinksTo;      /// The number of links to the flow.
 
-  Types::CallType mType; /// The type of the call.
-  Types::PropertyTypes mReturnType; /// The return type of the property.
-  QVector<std::shared_ptr<INode>> mNodes; /// A vector of shared pointers to INode objects representing the nodes.
-  QVector<std::shared_ptr<IProperty>> mArguments; /// A vector of shared pointers to IProperty objects representing the arguments.
+  Types::CallType mType;                           /// The type of the call.
+  Types::PropertyTypes mReturnType;                /// The return type of the property.
+  QVector<std::shared_ptr<INode>> mNodes;          /// A vector of shared pointers to INode objects representing the nodes.
+  QVector<std::shared_ptr<IProperty>> mArguments;  /// A vector of shared pointers to IProperty objects representing the arguments.
+  QVector<std::shared_ptr<ITransition>> mTransitions;
 };
 
 /**

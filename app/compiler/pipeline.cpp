@@ -499,13 +499,15 @@ int Pipeline::getCompleteTasks(GroupInfo info) const
   return count;
 }
 
-QWidget* Pipeline::progressWidget() const
+QWidget* Pipeline::progressWidget(bool subMenu) const
 {
   const auto info = constructInfo();
   QWidget* container = new QWidget();
   container->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
   QVBoxLayout* layout = new QVBoxLayout(container);
+  layout->setSpacing(0);
+  layout->setContentsMargins(0, 0, 0, 0);
 
   // For each group, we have
   for (const auto& group : info.groupInfo)
@@ -526,10 +528,10 @@ QWidget* Pipeline::progressWidget() const
 
     auto* headerLayout = new QHBoxLayout(header);
     headerLayout->setContentsMargins(0, 0, 0, 0);
-    headerLayout->setSpacing(8);
+    headerLayout->setSpacing(4);
 
     auto* nameLabel = new oclero::qlementine::Label(group.name, header);
-    nameLabel->setRole(oclero::qlementine::TextRole::H4);
+    nameLabel->setRole(subMenu ? oclero::qlementine::TextRole::H5 : oclero::qlementine::TextRole::H4);
     nameLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
     auto completed = getCompleteTasks(group);
@@ -551,7 +553,7 @@ QWidget* Pipeline::progressWidget() const
     auto* currentTaskLabel = new oclero::qlementine::Label(currentTask, row);
     currentTaskLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     currentTaskLabel->setWordWrap(false);
-    currentTaskLabel->setRole(oclero::qlementine::TextRole::H5);
+    currentTaskLabel->setRole(subMenu ? oclero::qlementine::TextRole::Default : oclero::qlementine::TextRole::H5);
 
     rowLayout->addWidget(header);
     rowLayout->addWidget(progress);

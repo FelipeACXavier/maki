@@ -51,6 +51,7 @@
               "type": "trigger",
               "returnType": "void",
               "modifiable": true,
+              "linksTo": 0,
               "info": "Called to start the task"
             },
             {
@@ -58,6 +59,7 @@
               "type": "abort",
               "returnType": "void",
               "modifiable": false,
+              "linksTo": 0,
               "info": "Called to abort the task when it is running"
             },
             {
@@ -65,6 +67,7 @@
               "type": "return",
               "returnType": "void",
               "modifiable": false,
+              "linksTo": 0,
               "info": "Emitted when the task is completed successfully"
             },
             {
@@ -72,6 +75,7 @@
               "type": "error",
               "returnType": "void",
               "modifiable": false,
+              "linksTo": 0,
               "info": "Emitted when the task is completed unsuccessfully"
             }
           ]
@@ -111,19 +115,22 @@
               "id": "set",
               "type": "in",
               "returnType": "void",
-              "modifiable": false
+              "modifiable": false,
+              "linksTo": 0
             },
             {
               "id": "reset",
               "type": "in",
               "returnType": "void",
-              "modifiable": false
+              "modifiable": false,
+              "linksTo": 0
             },
             {
               "id": "timeout",
               "type": "out",
               "returnType": "void",
-              "modifiable": true
+              "modifiable": true,
+              "linksTo": 0
             }
           ]
         }
@@ -190,14 +197,14 @@
               "type": "trigger",
               "returnType": "void",
               "modifiable": false,
-              "linksto": 0
+              "linksTo": 0
             },
             {
               "id": "stop",
               "type": "abort",
               "returnType": "void",
               "modifiable": false,
-              "linksto": 0
+              "linksTo": 0
             }
           ]
         },
@@ -269,28 +276,28 @@
                   "type": "boolean"
                 }
               ],
-              "linksto": 0
+              "linksTo": 0
             },
             {
               "id": "cancel",
               "type": "abort",
               "returnType": "void",
               "modifiable": false,
-              "linksto": 0
+              "linksTo": 0
             },
             {
               "id": "handled",
               "type": "return",
               "returnType": "void",
               "modifiable": false,
-              "linksto": 0
+              "linksTo": 0
             },
             {
               "id": "failed",
               "type": "error",
               "returnType": "void",
               "modifiable": false,
-              "linksto": 0
+              "linksTo": 0
             }
           ]
         },
@@ -346,21 +353,21 @@
               "type": "trigger",
               "returnType": "void",
               "modifiable": false,
-              "linksto": 0
+              "linksTo": 0
             },
             {
               "id": "cancel",
               "type": "abort",
               "returnType": "void",
               "modifiable": false,
-              "linksto": 0
+              "linksTo": 0
             },
             {
               "id": "found",
               "type": "return",
               "returnType": "void",
               "modifiable": false,
-              "linksto": 0
+              "linksTo": 0
             }
           ]
         },
@@ -448,14 +455,14 @@
                   "type": "float"
                 }
               ],
-              "linksto": 0
+              "linksTo": 0
             },
             {
               "id": "abort",
               "type": "abort",
               "returnType": "void",
               "modifiable": false,
-              "linksto": 0
+              "linksTo": 0
             },
             {
               "id": "in_position",
@@ -476,14 +483,14 @@
                   "type": "float"
                 }
               ],
-              "linksto": 0
+              "linksTo": 0
             },
             {
               "id": "path_blocked",
               "type": "error",
               "returnType": "void",
               "modifiable": false,
-              "linksto": 0
+              "linksTo": 0
             }
           ]
         },
@@ -554,14 +561,14 @@
                   "type": "boolean"
                 }
               ],
-              "linksto": 0
+              "linksTo": 0
             },
             {
               "id": "abort",
               "type": "abort",
               "returnType": "void",
               "modifiable": false,
-              "linksto": 0
+              "linksTo": 0
             },
             {
               "id": "finished",
@@ -569,14 +576,14 @@
               "returnType": "void",
               "modifiable": false,
               "arguments": [],
-              "linksto": 0
+              "linksTo": 0
             },
             {
               "id": "failed",
               "type": "error",
               "returnType": "void",
               "modifiable": false,
-              "linksto": 0
+              "linksTo": 0
             }
           ]
         }

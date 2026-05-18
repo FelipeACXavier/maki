@@ -5,6 +5,7 @@
 #include <oclero/qlementine/widgets/NavigationBar.hpp>
 
 #include "style_helpers.h"
+#include "widgets/dropdown_button.h"
 #include "widgets/settings_manager.h"
 
 class QWidget;
@@ -58,23 +59,22 @@ protected:
   StyledFrame* mStructureTab;         /// Pointer to the structure tab frame.
   QScrollArea* mStructureScrollArea;  /// Pointer to the structure scroll area.
 
-  StyledFrame* mBehaviourTab;          /// Pointer to the behaviour tab frame.
-  QScrollArea* mBehaviourScrollArea;   /// Pointer to the behaviour scroll area.
+  StyledFrame* mBehaviourTab;         /// Pointer to the behaviour tab frame.
+  QScrollArea* mBehaviourScrollArea;  /// Pointer to the behaviour scroll area.
+
+  StyledFrame* mPipelineTab;         /// Pointer to the pipeline tab frame.
+  QScrollArea* mPipelineScrollArea;  /// Pointer to the pipeline scroll area.
+
   maki::SearchWidget* mPaletteSearch;  /// Pointer to the palette search widget.
   QSplitter* mLeftPanel;               /// Pointer to the left panel splitter.
 
   // === Central Panel ===
-  QPushButton* mGenerationButton;                          /// Pointer to the generation button.
-  QPushButton* mSimulateButton;                            /// Pointer to the simulate button.
-  QComboBox* mGeneratorOption;                             /// Pointer to the generator option combo box.
+  DropDownButton* mPipelineRun;                            /// Pointer to the generator option combo box.
   oclero::qlementine::LoadingSpinner* mGenerationSpinner;  /// Pointer to the generation spinner.
-
-  QPushButton* mDeployButton;  /// Pointer to the deploy button.
 
   QSplitter* mCentralSplitter;     /// Pointer to the central splitter.
   QTabWidget* mCanvasPanel;        /// Pointer to the canvas panel tab widget.
   QPushButton* mBrowserTabButton;  /// Pointer to the browser tab button.
-  CanvasView* mPipelineView;
 
   // BadgedTabWidget* mBottomPanel;
   QWidget* mBottomContainer;
@@ -162,13 +162,6 @@ protected:
    * @param running True if running, false otherwise.
    */
   void toggleGenerationButton(bool running);
-
-  /**
-   * @brief Toggles the deploy button state.
-   *
-   * @param running True if running, false otherwise.
-   */
-  void toggleDeployButton(bool running);
 
 private:
   QList<TranslatableWidget> mTranslatable;  /// List of translatable widgets.

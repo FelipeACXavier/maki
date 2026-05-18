@@ -1,11 +1,17 @@
 #include "structure_canvas.h"
 
-#include "system/config_table.h"
-#include "document/node_info.h"
-#include "elements/node.h"
+#include <memory>
 
-StructureCanvas::StructureCanvas(const QString& canvasId, std::shared_ptr<SaveInfo> storage, std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
-    : Canvas(canvasId, storage, configTable, parent)
+#include "document/node_info.h"
+#include "elements/flow.h"
+#include "elements/node.h"
+#include "logging.h"
+#include "node_info.h"
+#include "system/config_table.h"
+
+StructureCanvas::StructureCanvas(std::shared_ptr<SaveInfo> storage, const QString& canvasId, std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
+    : Canvas(canvasId, configTable, parent)
+    , mStorage(storage)
 {
 }
 
@@ -18,8 +24,14 @@ void StructureCanvas::updateParent(NodeItem* node, std::shared_ptr<NodeSaveInfo>
 {
   Q_UNUSED(storage);
 
-  if (!node || !adding)
+  if (!node)
     return;
+
+  if (!adding)
+  {
+    mStorage->removeNode(node->id());
+    return;
+  }
 
   NodeItem* parent = node->parentNode();
   if (parent && parent->isTaskContainer())
@@ -35,4 +47,15 @@ void StructureCanvas::updateParent(NodeItem* node, std::shared_ptr<NodeSaveInfo>
 
   if (node->isTaskContainer())
     node->ensureSubtaskConnector(this);
+}
+
+void StructureCanvas::addedItemNode(NodeItem* node, std::shared_ptr<NodeSaveInfo> info)
+{
+  if (node->parentNode() == nullptr)
+  {
+    // Adding task
+    mStorage->addNode(info);
+  }
+
+  Canvas::addedItemNode(node, info);
 }

@@ -54,6 +54,7 @@ static const QString CONNECTOR_ID = "connectorId";
 static const QString CANVAS = "canvas";
 static const QString STRUCTURAL = "structural";
 static const QString BEHAVIOURAL = "behavioural";
+static const QString PIPELINE = "pipeline";
 static const QString TRANSITIONS = "transitions";
 static const QString PORTS = "ports";
 static const QString NODES = "nodes";

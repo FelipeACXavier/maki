@@ -525,7 +525,7 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertyInfo& prope
       else if (option->gettype() == Types::PropertyTypes::USER_CALL)
         LOG_WARN_ON_FAILURE(loadFieldEventSelect(widget, option->getid(), property, node, [this](const QString& nodeId, QComboBox* eventWidget) {
           eventWidget->clear();
-          auto events = mStorage->getEventsOfTypeFromNode(nodeId, Types::CallType::USER);
+          auto events = mStorage->getFlowsFromNode(nodeId);
           for (const auto& event : events)
             eventWidget->addItem(event->getname(), event->getid());
         }));

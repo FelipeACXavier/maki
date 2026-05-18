@@ -1,31 +1,30 @@
-#include <utility>
-
-#include <algorithm>
-
 #include "node.h"
 
 #include <QFontMetricsF>
 #include <QGraphicsScene>
-#include <QHash>
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsView>
+#include <QHash>
 #include <QMenu>
 #include <QObject>
 #include <QPainter>
-#include <QSvgRenderer>
 #include <QStyleOptionGraphicsItem>
+#include <QSvgRenderer>
 #include <QTimer>
 #include <QUndoStack>
 #include <QUuid>
+#include <algorithm>
+#include <utility>
 
 #include "app_configs.h"
 #include "app_paths.h"
 #include "flow.h"
-#include "port.h"
 #include "logging.h"
+#include "port.h"
 #include "style_helpers.h"
 #include "subtask_connector.h"
 #include "system/canvas.h"
+#include "system/structure_canvas.h"
 #include "system/undo_commands/move_node.h"
 #include "system/undo_commands/resize_node.h"
 #include "system/undo_commands/swap_capabilities.h"
@@ -144,7 +143,7 @@ QVector<QPointF> taskSlotCenters(const QSizeF& size, int count)
   const qreal bottomInset = taskSlotBottomInset(slotDiam);
   const qreal yMinTop = topInset + slotDiam * 0.5;
   const qreal yMaxTop = (numRows > 1) ? (h - bottomInset - slotDiam * 0.5 - totalSpan)
-                                     : yMinTop;
+                                      : yMinTop;
   qreal topRowY = (numRows > 1) ? ((h - totalSpan) * 0.5)
                                 : ((kTaskSlotTopY + kTaskSlotBottomY) * 0.5) * h;
   if (numRows > 1)
@@ -294,7 +293,7 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
   for (const auto& event : config()->events)
   {
     bool found = false;
-    for (const auto& flow : mStorage->getflows())
+    for (const auto& flow : mStorage->getevents())
     {
       if (flow->getname() != event.name)
         continue;
@@ -306,7 +305,7 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
     if (found)
       continue;
 
-    mStorage->addFlow(std::make_shared<FlowSaveInfo>(event));
+    mStorage->addEvent(std::make_shared<FlowSaveInfo>(event));
   }
 
   // node svg replaces icon if set
@@ -1228,8 +1227,9 @@ void NodeItem::updatePosition(const QPointF& newPosition)
 void NodeItem::updateExtrasPosition()
 {
   updatePortPositions();
-  for (auto& transition : transitions())
-    transition->updatePath();
+
+  if (nodeMoved)
+    nodeMoved(id());
 
   updateLabelPosition();
 }
@@ -1255,70 +1255,6 @@ NodeSaveInfo NodeItem::saveInfo() const
   return *mStorage;
 }
 
-QVector<TransitionItem*> NodeItem::transitions() const
-{
-  return mTransitions;
-}
-
-void NodeItem::addTransition(TransitionItem* transition)
-{
-  // Make sure the source node holds the transition info
-  if (transition->destination() && (id() != transition->destination()->id()))
-  {
-    bool found = false;
-    for (const auto& t : mStorage->gettransitions())
-    {
-      if (t->getid() == transition->id())
-      {
-        found = true;
-        break;
-      }
-    }
-
-    if (!found)
-      mStorage->addTransition(transition->storage());
-
-    for (auto& t : transitions())
-    {
-      // If I am the source of this transition
-      // Check whether we have another transition with me as destination
-      auto src1 = transition->source()->id();
-      auto dst1 = transition->destination()->id();
-      auto src2 = t->source()->id();
-      auto dst2 = t->destination()->id();
-      if (((src1 == dst2) && (src2 == dst1)))
-      {
-        transition->setEdge(TransitionItem::Edge::FORWARD);
-        t->setEdge(TransitionItem::Edge::BACKWARD);
-      }
-    }
-  }
-
-  bool found = false;
-  for (const auto& t : transitions())
-  {
-    if (t->id() == transition->id())
-    {
-      found = true;
-      break;
-    }
-  }
-
-  if (!found)
-    mTransitions.push_back(transition);
-
-  prepareGeometryChange();
-  updateExtrasPosition();
-}
-
-void NodeItem::removeTransition(TransitionItem* transition)
-{
-  mStorage->removeTransition(transition->storage());
-  mTransitions.removeIf([transition](TransitionItem* item) {
-    return item->id() == transition->id();
-  });
-}
-
 QPointF NodeItem::edgePointToward(const QPointF& targetScenePos, bool fromOutgoingPort) const
 {
   if (fromOutgoingPort && mOutPort)
@@ -1336,34 +1272,6 @@ QPointF NodeItem::edgePointToward(const QPointF& targetScenePos, bool fromOutgoi
   dir /= std::hypot(dir.x(), dir.y());
   qreal radius = boundingRect().width() / 2.0;
   return center + dir * radius;
-}
-
-bool NodeItem::canAddTransition() const
-{
-  int index = 0;
-  for (const auto& t : transitions())
-  {
-    if (t->source()->id() == id())
-      ++index;
-  }
-
-  return config()->transitions.isEmpty() || index < config()->transitions.size();
-}
-
-TransitionConfig NodeItem::nextTransition() const
-{
-  // Only count the transitions coming from this
-  int index = 0;
-  for (const auto& t : transitions())
-  {
-    if (t->source()->id() == id())
-      ++index;
-  }
-
-  if (config()->transitions.isEmpty() || index >= config()->transitions.size())
-    return TransitionConfig();
-
-  return config()->transitions.at(index);
 }
 
 QVector<TransitionConfig> NodeItem::configTransitions() const

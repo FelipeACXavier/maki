@@ -5,6 +5,7 @@
 
 #include "keys.h"
 #include "node_info.h"
+#include "transition_info.h"
 
 Q_DECLARE_METATYPE(FlowSaveInfo)
 
@@ -17,6 +18,7 @@ FlowSaveInfo::FlowSaveInfo()
     , mReturnType(Types::PropertyTypes::UNKNOWN)
     , mNodes({})
     , mArguments({})
+    , mTransitions({})
 {
 }
 
@@ -75,6 +77,31 @@ QVector<std::shared_ptr<IProperty>> FlowSaveInfo::getarguments() const
 QVector<std::shared_ptr<INode>> FlowSaveInfo::getnodes() const
 {
   return mNodes;
+}
+
+QVector<std::shared_ptr<ITransition>> FlowSaveInfo::gettransitions() const
+{
+  return mTransitions;
+}
+
+QVector<std::shared_ptr<ITransition>> FlowSaveInfo::gettransitions(const QString& id) const
+{
+  QVector<std::shared_ptr<ITransition>> transitions = {};
+  for (const auto& t : mTransitions)
+    if (t->getsrcId() == id)
+      transitions.push_back(t);
+
+  return transitions;
+}
+
+void FlowSaveInfo::addTransition(std::shared_ptr<ITransition> transition)
+{
+  mTransitions.push_back(transition);
+}
+
+void FlowSaveInfo::removeTransition(std::shared_ptr<ITransition> transition)
+{
+  mTransitions.removeIf([transition](std::shared_ptr<ITransition> info) { return info->getid() == transition->getid(); });
 }
 
 void FlowSaveInfo::setId(const QString& arg)
@@ -165,8 +192,14 @@ QJsonObject FlowSaveInfo::toJson() const
   for (const auto& node : getnodes())
     nodesArray.append(std::dynamic_pointer_cast<NodeSaveInfo>(node)->toJson());
 
+  QJsonArray transitionArray;
+  for (const auto& transition : gettransitions())
+    transitionArray.append(std::dynamic_pointer_cast<TransitionSaveInfo>(transition)->toJson());
+
   if (nodesArray.size() > 0)
     data[ConfigKeys::NODES] = nodesArray;
+  if (transitionArray.size() > 0)
+    data[ConfigKeys::TRANSITIONS] = transitionArray;
 
   return data;
 }
@@ -177,16 +210,31 @@ FlowSaveInfo FlowSaveInfo::fromJson(const QJsonObject& data)
   info.setId(data[ConfigKeys::ID].toString());
   info.setName(data[ConfigKeys::NAME].toString());
   info.setModifiable(data[ConfigKeys::MODIFIABLE].toBool());
-  info.setLinksTo(data["linksTo"].toInt());
+
+  if (data.contains("linksTo"))
+    info.setLinksTo(data["linksTo"].toInt());
+
   info.setType(Types::StringToCallType(data[ConfigKeys::TYPE].toString()));
   info.setReturnType(Types::StringToPropertyTypes(data[ConfigKeys::RETURN_TYPE].toString()));
   info.setOwner(data[ConfigKeys::OWNER].toString());
 
-  for (const auto& argument : data[ConfigKeys::ARGUMENTS].toArray())
-    info.addArgument(std::make_shared<PropertyInfo>(PropertyInfo::fromJson(argument.toObject())));
+  if (data.contains(ConfigKeys::ARGUMENTS))
+  {
+    for (const auto& argument : data[ConfigKeys::ARGUMENTS].toArray())
+      info.addArgument(std::make_shared<PropertyInfo>(PropertyInfo::fromJson(argument.toObject())));
+  }
 
-  for (const auto& node : data[ConfigKeys::NODES].toArray())
-    info.addNode(std::make_shared<NodeSaveInfo>(NodeSaveInfo::fromJson(node.toObject())));
+  if (data.contains(ConfigKeys::NODES))
+  {
+    for (const auto& node : data[ConfigKeys::NODES].toArray())
+      info.addNode(std::make_shared<NodeSaveInfo>(NodeSaveInfo::fromJson(node.toObject())));
+  }
+
+  if (data.contains(ConfigKeys::TRANSITIONS))
+  {
+    for (const auto& node : data[ConfigKeys::TRANSITIONS].toArray())
+      info.addTransition(std::make_shared<TransitionSaveInfo>(TransitionSaveInfo::fromJson(node.toObject())));
+  }
 
   return info;
 }
@@ -250,6 +298,7 @@ QDataStream& operator<<(QDataStream& out, const FlowSaveInfo& info)
   out << info.getlinksTo();
 
   out << info.getarguments();
+  out << info.gettransitions();
 
   return out;
 }
@@ -289,6 +338,11 @@ QDataStream& operator>>(QDataStream& in, FlowSaveInfo& info)
 
   QVector<std::shared_ptr<IProperty>> arguments;
   in >> arguments;
+
+  QVector<std::shared_ptr<TransitionSaveInfo>> transitions;
+  in >> transitions;
+  for (const auto& transition : transitions)
+    info.addTransition(std::dynamic_pointer_cast<ITransition>(transition));
 
   return in;
 }

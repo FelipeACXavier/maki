@@ -9,7 +9,9 @@
 #include <QStringLiteral>
 #include <oclero/qlementine.hpp>
 
+#include "compiler/pipeline_graph.h"
 #include "config_table.h"
+#include "flow_info.h"
 #include "json.h"
 #include "logging.h"
 #include "main_window_layout.h"
@@ -284,16 +286,15 @@ private:
 
   // ================================================
   // Actions
-  void onActionNew();                          /// Handles new action.
-  void onActionLoad(const QString& filename);  /// Handles load action with a specified file name.
-  void onActionSave();                         /// Handles save action.
-  void onActionExit();                         /// Handles exit action.
-  void onActionRestart();                      /// Handles restart action.
-  void onActionSaveAs();                       /// Handles save as action.
-  void onActionGenerate();                     /// Handles generate action.
-  void onActionSimulate();                     /// Handles simulate action.
-  void onActionDeploy();                       /// Handles deploy action.
-  void onActionLogLevelChanged();              /// Handles log level change action.
+  void onActionNew();                                    /// Handles new action.
+  void onActionLoad(const QString& filename);            /// Handles load action with a specified file name.
+  void onActionSave();                                   /// Handles save action.
+  void onActionExit();                                   /// Handles exit action.
+  void onActionRestart();                                /// Handles restart action.
+  void onActionSaveAs();                                 /// Handles save as action.
+  void onActionGenerate(const QString& pipelineId);      /// Handles generate action.
+  void onActionEditPipeline(const QString& pipelineId);  /// Handles generate action.
+  void onActionLogLevelChanged();                        /// Handles log level change action.
 };  // namespace qlementclassMainWindow:public MainWindowLayout
 
 #endif  // MAINWINDOW_H

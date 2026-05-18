@@ -83,14 +83,6 @@ TransitionItem::~TransitionItem()
 {
 }
 
-void TransitionItem::detach()
-{
-  if (mSource != nullptr)
-    mSource->removeTransition(this);
-  if (mDestination != nullptr)
-    mDestination->removeTransition(this);
-}
-
 QString TransitionItem::id() const
 {
   return mId;
@@ -121,8 +113,8 @@ void TransitionItem::done(NodeItem* source, NodeItem* destination)
   mSource = source;
   mDestination = destination;
 
-  mSource->addTransition(this);
-  mDestination->addTransition(this);
+  // mSource->addTransition(this);
+  // mDestination->addTransition(this);
 
   // Make sure line is update with new control points
   move(mStorage->getsrcId(), mStorage->srcPoint());
@@ -298,6 +290,7 @@ void TransitionItem::updateLabelPosition()
   mLabel->setPos(labelPos.x() - labelSize.width() / 2,
                  labelPos.y() - labelSize.height() / 2);
 }
+
 QString TransitionItem::getEvent() const
 {
   return mStorage->getevent();
@@ -306,7 +299,6 @@ QString TransitionItem::getEvent() const
 void TransitionItem::setEvent(const QString& name)
 {
   mStorage->setEvent(name);
-
   if (!mLabel)
     return;
 

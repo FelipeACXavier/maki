@@ -4,6 +4,7 @@
 #include <QStringList>
 #include <QVariantMap>
 
+#include "action_parameter.h"
 #include "ipipeline.h"
 #include "pipeline_artifact.h"
 #include "pipeline_context.h"
@@ -22,6 +23,11 @@ public:
   virtual QStringList produces() const = 0;
 
   virtual QVariantMap defaultParameters() const
+  {
+    return {};
+  }
+
+  virtual QVector<ActionParameter> parameters() const
   {
     return {};
   }

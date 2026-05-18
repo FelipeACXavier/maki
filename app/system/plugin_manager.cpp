@@ -92,14 +92,8 @@ PluginManager::~PluginManager()
     mPlugin->tearDown();
 }
 
-VoidResult PluginManager::start(const PluginSettings& settings, QMenu* menu, QComboBox* comboBox, HostServices* services)
+VoidResult PluginManager::start(const PluginSettings& settings, HostServices* services)
 {
-  if (!menu)
-    return VoidResult::Failed("No menu provided, cannot set the language plugins");
-
-  if (!comboBox)
-    return VoidResult::Failed("No comboBox provided, cannot set the language plugins");
-
   for (const auto& path : AppPaths::pluginSearchPaths())
   {
     QDir pluginParentDir(path);
@@ -124,15 +118,9 @@ VoidResult PluginManager::start(const PluginSettings& settings, QMenu* menu, QCo
         continue;
       }
 
-      LOG_WARN_ON_FAILURE(loadPlugin(pluginsDir, manifest, menu, comboBox, services, status));
+      LOG_WARN_ON_FAILURE(loadPlugin(pluginsDir, manifest, services, status));
     }
   }
-
-  // Connect the signal later so it is not triggered by the setup of the combobox
-  connect(comboBox, &QComboBox::currentTextChanged, [this](const QString& text) {
-    LOG_DEBUG("Content changed: %s", qPrintable(text));
-    setPlugin(text);
-  });
 
   if (mPlugins.isEmpty())
   {
@@ -141,7 +129,7 @@ VoidResult PluginManager::start(const PluginSettings& settings, QMenu* menu, QCo
   }
 
   // Try setting the config plugin, otherwise just try the first
-  if (selectPlugin(comboBox, settings.defaultPlugin) || selectPlugin(comboBox, mPlugins.front().plugin->languageName()))
+  if (setPlugin(settings.defaultPlugin) || setPlugin(mPlugins.front().plugin->languageName()))
   {
     if (currentPlugin())
       LOG_DEBUG("Starting with plugin: %s", qPrintable(currentPlugin()->languageName()));
@@ -165,7 +153,7 @@ VoidResult PluginManager::start(const PluginSettings& settings, QMenu* menu, QCo
   return VoidResult();
 }
 
-VoidResult PluginManager::loadPlugin(const QDir& pluginDir, const Manifest& manifest, QMenu* menu, QComboBox* comboBox, HostServices* services, PluginSettings::Status status)
+VoidResult PluginManager::loadPlugin(const QDir& pluginDir, const Manifest& manifest, HostServices* services, PluginSettings::Status status)
 {
   if (manifest.entryPoint.isEmpty())
     return VoidResult::Failed("No entry point defined in manifest");
@@ -201,15 +189,6 @@ VoidResult PluginManager::loadPlugin(const QDir& pluginDir, const Manifest& mani
   if (!codeGen)
     return VoidResult::Failed("Plugin: " + pluginPath.toStdString() + " does not adhere to maki::IPlugin");
 
-  // Update UI with new plugin
-  QAction* action = menu->addAction(pluginName);
-  connect(action, &QAction::triggered, [this, pluginName, comboBox] {
-    selectPlugin(comboBox, pluginName);
-  });
-
-  comboBox->addItem(pluginName, pluginName);
-  int pluginIndex = comboBox->count() - 1;
-
   codeGen->setName(manifest.name);
   codeGen->setVersion(manifest.version);
   codeGen->setHostServices(services);
@@ -223,11 +202,13 @@ VoidResult PluginManager::loadPlugin(const QDir& pluginDir, const Manifest& mani
   for (const auto& action : codeGen->pipelineActions())
   {
     LOG_DEBUG("Registering action: %s", qPrintable(action->id()));
-    LOG_WARN_ON_FAILURE(mRegistry->registerAction(action->id(), action));
+    LOG_WARN_ON_FAILURE(mRegistry->registerAction(codeGen->languageName(), action));
   }
 
-  mPlugins.append({loader, codeGen, manifest, action, pluginIndex});
+  mPlugins.append({loader, codeGen, manifest});
   LOG_DEBUG("Loaded plugin for language: %s", qPrintable(pluginName));
+
+  emit pluginAdded(mPlugins.last());
 
   return VoidResult();
 }
@@ -248,15 +229,6 @@ Result<Manifest> PluginManager::getPluginManifest(const QDir& path) const
 
   auto data = manifest.Value();
   return Manifest::fromJson(path.absolutePath(), data);
-}
-
-bool PluginManager::selectPlugin(QComboBox* comboBox, const QString& language)
-{
-  if (!setPlugin(language))
-    return false;
-
-  comboBox->setCurrentText(language);
-  return true;
 }
 
 bool PluginManager::setPlugin(const QString& language)
@@ -356,7 +328,7 @@ VoidResult PluginManager::installPlugin(const Manifest& manifest)
   return VoidResult();
 }
 
-void PluginManager::settingsChanged(const PluginSettings& settings, QMenu* menu, QComboBox* comboBox, HostServices* services)
+void PluginManager::settingsChanged(const PluginSettings& settings, HostServices* services)
 {
   for (const auto& ps : settings.plugins)
   {
@@ -364,7 +336,7 @@ void PluginManager::settingsChanged(const PluginSettings& settings, QMenu* menu,
     if (index >= 0)
     {
       if (!ps.enabled)
-        LOG_WARN_ON_FAILURE(deregisterPlugin(mPlugins.at(index), menu, comboBox));
+        LOG_WARN_ON_FAILURE(deregisterPlugin(mPlugins.at(index)));
       else
         mPlugins.at(index).plugin->settingsChanged(ps.settings);
     }
@@ -383,7 +355,7 @@ void PluginManager::settingsChanged(const PluginSettings& settings, QMenu* menu,
             continue;
 
           Manifest manifest = manifestResult.Value();
-          LOG_WARN_ON_FAILURE(loadPlugin(pluginsDir, manifest, menu, comboBox, services, PluginSettings::Status::Enabled));
+          LOG_WARN_ON_FAILURE(loadPlugin(pluginsDir, manifest, services, PluginSettings::Status::Enabled));
         }
       }
     }
@@ -399,7 +371,7 @@ int PluginManager::getPluginIndex(const QString& pluginName) const
   return -1;
 }
 
-VoidResult PluginManager::deregisterPlugin(const Plugin& plugin, QMenu* menu, QComboBox* comboBox)
+VoidResult PluginManager::deregisterPlugin(const Plugin& plugin)
 {
   LOG_TRACE("Deregistering plugin: %s", qPrintable(plugin.manifest.name));
   const auto index = getPluginIndex(plugin.plugin->languageName());
@@ -433,14 +405,6 @@ VoidResult PluginManager::deregisterPlugin(const Plugin& plugin, QMenu* menu, QC
     }
   }
 
-  // Clean up the UI elements
-  int comboIndex = comboBox->findData(plugin.manifest.name);
-  if (comboIndex >= 0)
-    comboBox->removeItem(comboIndex);
-
-  if (plugin.action)
-    menu->removeAction(plugin.action);
-
   // Unload immediately
   if (!plugin.loader->unload())
     LOG_WARNING("Failed to unload the plugin: %s", qPrintable(plugin.manifest.name));
@@ -453,7 +417,7 @@ VoidResult PluginManager::deregisterPlugin(const Plugin& plugin, QMenu* menu, QC
   return VoidResult();
 }
 
-VoidResult PluginManager::reloadPlugin(const QString& pluginName, QMenu* menu, QComboBox* comboBox, HostServices* services)
+VoidResult PluginManager::reloadPlugin(const QString& pluginName, HostServices* services)
 {
   LOG_DEBUG("Reloading plugin: %s", qPrintable(pluginName));
   const int index = getPluginIndex(pluginName);
@@ -463,15 +427,15 @@ VoidResult PluginManager::reloadPlugin(const QString& pluginName, QMenu* menu, Q
   const auto old = mPlugins.at(index);
   const QDir pluginDir = QDir(old.manifest.path);
 
-  RETURN_ON_FAILURE(deregisterPlugin(old, menu, comboBox));
+  RETURN_ON_FAILURE(deregisterPlugin(old));
 
   auto manifestResult = getPluginManifest(pluginDir);
   if (!manifestResult)
     return VoidResult::Failed(manifestResult.ErrorMessage());
 
-  RETURN_ON_FAILURE(loadPlugin(pluginDir, manifestResult.Value(), menu, comboBox, services, PluginSettings::Status::Enabled));
+  RETURN_ON_FAILURE(loadPlugin(pluginDir, manifestResult.Value(), services, PluginSettings::Status::Enabled));
 
-  selectPlugin(comboBox, pluginName);
+  setPlugin(pluginName);
   return VoidResult();
 }
 

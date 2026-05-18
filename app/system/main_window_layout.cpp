@@ -31,6 +31,7 @@
 #include "process_tab.h"
 #include "style_helpers.h"
 #include "system/canvas_view.h"
+#include "widgets/dropdown_button.h"
 #include "widgets/frame.h"
 #include "widgets/log_table_widget.h"
 #include "widgets/properties/properties_menu.h"
@@ -89,63 +90,98 @@ void MainWindowLayout::buildLeftPanel()
 
   // -----------------------------------------------------------------------------
   // Structure
-  auto* sContainer = new QWidget(mPalette);
-  auto* scLayout = new QVBoxLayout(sContainer);
-  scLayout->setContentsMargins(0, theme.spacing, theme.spacing, 0);
-  scLayout->setSpacing(theme.spacing);
+  {
+    auto* sContainer = new QWidget(mPalette);
+    auto* scLayout = new QVBoxLayout(sContainer);
+    scLayout->setContentsMargins(0, theme.spacing, theme.spacing, 0);
+    scLayout->setSpacing(theme.spacing);
 
-  mStructureTab = new StyledFrame();
-  mStructureTab->setBackgroundRole(StyledFrame::BackgroundRole::Base);
-  mStructureTab->setBorderRole(StyledFrame::BorderRole::Mid);
-  mStructureTab->setRadius(theme.borderRadius);
-  mStructureTab->setBorderWidth(theme.borderWidth);
-  mStructureTab->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    mStructureTab = new StyledFrame();
+    mStructureTab->setBackgroundRole(StyledFrame::BackgroundRole::Base);
+    mStructureTab->setBorderRole(StyledFrame::BorderRole::Mid);
+    mStructureTab->setRadius(theme.borderRadius);
+    mStructureTab->setBorderWidth(theme.borderWidth);
+    mStructureTab->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-  QVBoxLayout* structureLayout = new QVBoxLayout(mStructureTab);
-  structureLayout->setContentsMargins(Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING);
-  mStructureTab->setLayout(structureLayout);
+    QVBoxLayout* structureLayout = new QVBoxLayout(mStructureTab);
+    structureLayout->setContentsMargins(Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING);
+    mStructureTab->setLayout(structureLayout);
 
-  mStructureScrollArea = new QScrollArea(this);
-  mStructureScrollArea->setWidgetResizable(true);
-  mStructureScrollArea->setFrameShape(QFrame::NoFrame);
-  mStructureScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-  mStructureScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-  mStructureScrollArea->setWidget(mStructureTab);
+    mStructureScrollArea = new QScrollArea(this);
+    mStructureScrollArea->setWidgetResizable(true);
+    mStructureScrollArea->setFrameShape(QFrame::NoFrame);
+    mStructureScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    mStructureScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    mStructureScrollArea->setWidget(mStructureTab);
 
-  scLayout->addWidget(mStructureScrollArea);
+    scLayout->addWidget(mStructureScrollArea);
 
-  auto sindex = mPalette->addTab(sContainer, QIcon(":/icons/structure.svg"), tr("Structure"));
-  mTranslatable.push_back({mPalette->tabBar(), "Structure", sindex});
-
+    auto sindex = mPalette->addTab(sContainer, QIcon(":/icons/structure.svg"), tr("Structure"));
+    mTranslatable.push_back({mPalette->tabBar(), "Structure", sindex});
+  }
   // -----------------------------------------------------------------------------
   // Behaviour
-  auto* bContainer = new QWidget(mPalette);
-  auto* bcLayout = new QVBoxLayout(bContainer);
-  bcLayout->setContentsMargins(0, theme.spacing, theme.spacing, 0);
-  bcLayout->setSpacing(theme.spacing);
+  {
+    auto* bContainer = new QWidget(mPalette);
+    auto* bcLayout = new QVBoxLayout(bContainer);
+    bcLayout->setContentsMargins(0, theme.spacing, theme.spacing, 0);
+    bcLayout->setSpacing(theme.spacing);
 
-  mBehaviourTab = new StyledFrame();
-  mBehaviourTab->setBackgroundRole(StyledFrame::BackgroundRole::Base);
-  mBehaviourTab->setBorderRole(StyledFrame::BorderRole::Mid);
-  mBehaviourTab->setRadius(theme.borderRadius);
-  mBehaviourTab->setBorderWidth(theme.borderWidth);
+    mBehaviourTab = new StyledFrame();
+    mBehaviourTab->setBackgroundRole(StyledFrame::BackgroundRole::Base);
+    mBehaviourTab->setBorderRole(StyledFrame::BorderRole::Mid);
+    mBehaviourTab->setRadius(theme.borderRadius);
+    mBehaviourTab->setBorderWidth(theme.borderWidth);
 
-  QVBoxLayout* behaviourLayout = new QVBoxLayout(mBehaviourTab);
-  behaviourLayout->setContentsMargins(Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING);
-  mBehaviourTab->setLayout(behaviourLayout);
+    QVBoxLayout* behaviourLayout = new QVBoxLayout(mBehaviourTab);
+    behaviourLayout->setContentsMargins(Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING);
+    mBehaviourTab->setLayout(behaviourLayout);
 
-  mBehaviourScrollArea = new QScrollArea(this);
-  mBehaviourScrollArea->setWidgetResizable(true);
-  mBehaviourScrollArea->setFrameShape(QFrame::NoFrame);
-  mBehaviourScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-  mBehaviourScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-  mBehaviourScrollArea->setWidget(mBehaviourTab);
+    mBehaviourScrollArea = new QScrollArea(this);
+    mBehaviourScrollArea->setWidgetResizable(true);
+    mBehaviourScrollArea->setFrameShape(QFrame::NoFrame);
+    mBehaviourScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    mBehaviourScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    mBehaviourScrollArea->setWidget(mBehaviourTab);
 
-  bcLayout->addWidget(mBehaviourScrollArea);
+    bcLayout->addWidget(mBehaviourScrollArea);
 
-  auto bindex = mPalette->addTab(bContainer, QIcon(":/icons/behaviour.svg"), tr("Behavior"));
-  mTranslatable.push_back({mPalette->tabBar(), "Behavior", bindex});
+    auto bindex = mPalette->addTab(bContainer, QIcon(":/icons/behaviour.svg"), tr("Behavior"));
+    mTranslatable.push_back({mPalette->tabBar(), "Behavior", bindex});
+  }
+  // -----------------------------------------------------------------------------
+  // Pipeline
+  {
+    auto* pContainer = new QWidget(mPalette);
+    auto* pcLayout = new QVBoxLayout(pContainer);
+    pcLayout->setContentsMargins(0, theme.spacing, theme.spacing, 0);
+    pcLayout->setSpacing(theme.spacing);
 
+    mPipelineTab = new StyledFrame();
+    mPipelineTab->setBackgroundRole(StyledFrame::BackgroundRole::Base);
+    mPipelineTab->setBorderRole(StyledFrame::BorderRole::Mid);
+    mPipelineTab->setRadius(theme.borderRadius);
+    mPipelineTab->setBorderWidth(theme.borderWidth);
+
+    QVBoxLayout* behaviourLayout = new QVBoxLayout(mPipelineTab);
+    behaviourLayout->setContentsMargins(Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING);
+    mPipelineTab->setLayout(behaviourLayout);
+
+    mPipelineScrollArea = new QScrollArea(this);
+    mPipelineScrollArea->setWidgetResizable(true);
+    mPipelineScrollArea->setFrameShape(QFrame::NoFrame);
+    mPipelineScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    mPipelineScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    mPipelineScrollArea->setWidget(mPipelineTab);
+
+    pcLayout->addWidget(mPipelineScrollArea);
+
+    auto bindex = mPalette->addTab(pContainer, QIcon(":/icons/behaviour.svg"), tr("Pipeline"));
+    mPalette->setTabVisible(bindex, false);
+    mTranslatable.push_back({mPalette->tabBar(), "Pipeline", bindex});
+  }
+
+  // Rest of palette
   mPalette->tabBar()->setIconSize(QSize(16, 16));
 
   mPaletteSearch = new maki::SearchWidget(tr("Filter nodes"), mLeftPanel);
@@ -179,39 +215,12 @@ void MainWindowLayout::buildCentralPanel()
   headerLayout->setAlignment(Qt::AlignCenter);
   headerLayout->addSpacing(24);
 
-  // ---------------------------------------------
-  mGenerationButton = new QPushButton("");
-  mGenerationButton->setIcon(QIcon::fromTheme("document-edit-decrypt-verify"));
-  mGenerationButton->setToolTip("Verify system");
-  mGenerationButton->setToolTipDuration(2000);
-  mGenerationButton->setFixedSize(30, 30);
-
-  headerLayout->addWidget(mGenerationButton);
-
   // ----------------------------------------------------------------
-  mSimulateButton = new QPushButton("");
-  mSimulateButton->setIcon(QIcon::fromTheme("exaile-play"));
-  mSimulateButton->setToolTip("Simulate system");
-  mSimulateButton->setToolTipDuration(2000);
-  mSimulateButton->setFixedSize(30, 30);
+  mPipelineRun = new DropDownButton(header);
+  mPipelineRun->setIcon(QIcon::fromTheme("exaile-play"));
+  // mPipelineRun->setBaseText(tr("Generate"));
 
-  headerLayout->addWidget(mSimulateButton);
-
-  // ----------------------------------------------------------------
-  mGeneratorOption = new QComboBox();
-
-  auto generatorOptionsWrapper = createHeaderComboBox(mGeneratorOption, ":/icons/generator.svg", "Verification plugin");
-  headerLayout->addWidget(generatorOptionsWrapper);
-
-  // ----------------------------------------------------------------
-  mDeployButton = new QPushButton("");
-  mDeployButton->setIcon(QIcon(":/icons/deploy.svg"));
-
-  mDeployButton->setToolTip("Deploy program to selected application");
-  mDeployButton->setToolTipDuration(2000);
-  mDeployButton->setFixedSize(30, 30);
-
-  headerLayout->addWidget(mDeployButton);
+  headerLayout->addWidget(mPipelineRun);
 
   // ---------------------------------------------
   auto* spinnerContainer = new QWidget(header);
@@ -230,7 +239,6 @@ void MainWindowLayout::buildCentralPanel()
   mCanvasPanel = new QTabWidget(mCentralSplitter);
 
   CanvasView* canvasView = new CanvasView(mCanvasPanel);
-  mPipelineView = new CanvasView(mCanvasPanel);
 
   mCanvasPanel->addTab(canvasView, QIcon(":/icons/structure.svg"), tr("System"));
   mCanvasPanel->setCurrentWidget(canvasView);
@@ -841,29 +849,15 @@ void MainWindowLayout::toggleGenerationButton(bool running)
   {
     mGenerationSpinner->setSpinning(true);
     mGenerationSpinner->setVisible(true);
-    mGenerationButton->setToolTip("Cancel current generation");
-    mGenerationButton->setIcon(QIcon(":/icons/pause.svg"));
+    mPipelineRun->setToolTip(tr("Cancel current pipeline"));
+    mPipelineRun->setIcon(QIcon(":/icons/pause.svg"));
   }
   else
   {
     mGenerationSpinner->setSpinning(false);
     mGenerationSpinner->setVisible(false);
-    mGenerationButton->setToolTip("Verify system");
-    mGenerationButton->setIcon(QIcon::fromTheme("document-edit-decrypt-verify"));
-  }
-}
-
-void MainWindowLayout::toggleDeployButton(bool running)
-{
-  if (running)
-  {
-    mSimulateButton->setToolTip("Cancel current simulation");
-    mSimulateButton->setIcon(QIcon(":/icons/pause.svg"));
-  }
-  else
-  {
-    mSimulateButton->setToolTip("Simulate system");
-    mSimulateButton->setIcon(QIcon::fromTheme("exaile-play"));
+    mPipelineRun->setToolTip(tr("Run pipeline"));
+    mPipelineRun->setIcon(QIcon::fromTheme("exaile-play"));
   }
 }
 

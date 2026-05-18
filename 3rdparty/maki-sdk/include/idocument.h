@@ -8,6 +8,7 @@
 #include "types.h"
 
 class INode;
+class ITransition;
 
 class IProperty
 {
@@ -32,6 +33,8 @@ public:
   virtual QVector<std::shared_ptr<IProperty>> getarguments() const = 0;
 
   virtual QVector<std::shared_ptr<INode>> getnodes() const = 0;
+  virtual QVector<std::shared_ptr<ITransition>> gettransitions() const = 0;
+  virtual QVector<std::shared_ptr<ITransition>> gettransitions(const QString& srcId) const = 0;
 };
 
 class ITransition
@@ -53,9 +56,8 @@ public:
   virtual QPointF getposition() const = 0;
   virtual QVector<std::shared_ptr<IProperty>> getfields() const = 0;
   virtual QMap<QString, QVariant> getproperties() const = 0;
-  virtual QVector<std::shared_ptr<ITransition>> gettransitions() const = 0;
   virtual QVector<std::shared_ptr<IFlow>> getflows() const = 0;
-  // virtual std::shared_ptr<IFlow> getbehaviour() const = 0;
+  virtual QVector<std::shared_ptr<IFlow>> getevents() const = 0;
   virtual QString getparentId() const = 0;
   virtual QVector<std::shared_ptr<INode>> getchildren() const = 0;
 };

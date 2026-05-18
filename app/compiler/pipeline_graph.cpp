@@ -2,6 +2,12 @@
 
 #include <QFile>
 #include <QJsonArray>
+#include <memory>
+
+#include "elements/transition.h"
+#include "node_info.h"
+#include "system/canvas.h"
+#include "transition_info.h"
 
 namespace maki
 {
@@ -123,6 +129,80 @@ QJsonObject PipelineGraph::toJson() const
   object["edges"] = edgeArray;
 
   return object;
+}
+
+Result<PipelineGraph> PipelineGraph::fromFlow(const FlowSaveInfo& info)
+{
+  PipelineGraph graph;
+  auto toAction = [](const QString& n) {
+    auto index = n.lastIndexOf(':') + 1;
+    return n.mid(index, n.size() - index);
+  };
+
+  for (const auto& inode : info.getnodes())
+  {
+    auto node = std::dynamic_pointer_cast<NodeSaveInfo>(inode);
+    PipelineNode pnode;
+    pnode.id = node->getid();
+    pnode.actionId = toAction(node->getnodeId());
+    pnode.displayName = node->getProperty("name").toString();
+    QVariantMap params;
+    for (const auto& key : node->getproperties().keys())
+    {
+      if (key == "name")
+        continue;
+
+      params[key] = node->getproperties()[key];
+    }
+
+    pnode.parameters = params;
+
+    graph.nodes.append(pnode);
+  }
+
+  for (const auto& it : info.gettransitions())
+  {
+    auto t = std::dynamic_pointer_cast<TransitionSaveInfo>(it);
+    PipelineEdge edge;
+    edge.from = t->getsrcId();
+    edge.to = t->getdstId();
+    graph.edges.append(edge);
+  }
+
+  return graph;
+}
+
+Result<PipelineGraph> PipelineGraph::fromCanvas(const Canvas* canvas)
+{
+  PipelineGraph graph;
+  auto toAction = [](const QString& n) {
+    auto index = n.lastIndexOf(':') + 1;
+    return n.mid(index, n.size() - index);
+  };
+
+  for (const auto& item : canvas->items())
+  {
+    if (item->type() == NodeItem::Type)
+    {
+      auto node = static_cast<NodeItem*>(item);
+      PipelineNode pnode;
+      pnode.id = node->getProperty("name").toString();
+      pnode.actionId = toAction(node->nodeType());
+      pnode.parameters = node->saveInfo().getproperties();
+
+      graph.nodes.append(pnode);
+    }
+    else if (item->type() == TransitionItem::Type)
+    {
+      auto edge = static_cast<TransitionItem*>(item);
+      PipelineEdge pedge;
+      pedge.from = edge->source()->getProperty("name").toString();
+      pedge.to = edge->destination()->getProperty("name").toString();
+      graph.edges.append(pedge);
+    }
+  }
+
+  return graph;
 }
 
 }  // namespace maki

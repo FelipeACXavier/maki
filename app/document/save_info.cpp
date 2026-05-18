@@ -24,15 +24,20 @@ void SaveInfo::addNode(std::shared_ptr<NodeSaveInfo> node)
   mStructuralNodes.push_back(node);
 }
 
-void SaveInfo::removeNode(std::shared_ptr<NodeSaveInfo> node)
+void SaveInfo::removeNode(const QString& nodeId)
 {
-  mStructuralNodes.removeIf([node](std::shared_ptr<INode> info) { return info->getid() == node->getid(); });
+  mStructuralNodes.removeIf([nodeId](std::shared_ptr<INode> info) { return info->getid() == nodeId; });
 }
 
 QVector<std::shared_ptr<INode>> SaveInfo::getnodes() const
 {
   return mStructuralNodes;
 };
+
+void SaveInfo::clearNodes()
+{
+  mStructuralNodes.clear();
+}
 
 QVector<std::shared_ptr<NodeSaveInfo>> SaveInfo::findFamilyOfConstruct(const QString& nodeId, QVector<std::shared_ptr<INode>> nodes) const
 {
@@ -111,7 +116,7 @@ QVector<std::shared_ptr<FlowSaveInfo>> SaveInfo::getEventsFromNode(const QString
     if (node->getid() == nodeId)
     {
       QVector<std::shared_ptr<FlowSaveInfo>> out;
-      for (auto& flow : node->getflows())
+      for (auto& flow : node->getevents())
         out.push_back(std::static_pointer_cast<FlowSaveInfo>(flow));
 
       return out;
@@ -144,8 +149,41 @@ QVector<std::shared_ptr<FlowSaveInfo>> SaveInfo::getEventsOfTypeFromNode(const Q
   return events;
 }
 
+QVector<std::shared_ptr<FlowSaveInfo>> SaveInfo::getFlowsFromNode(const QString& nodeId) const
+{
+  return getFlowsFromNode(nodeId, getnodes());
+}
+
+QVector<std::shared_ptr<FlowSaveInfo>> SaveInfo::getFlowsFromNode(const QString& nodeId, QVector<std::shared_ptr<INode>> nodes) const
+{
+  for (const auto& node : nodes)
+  {
+    if (node->getid() == nodeId)
+    {
+      QVector<std::shared_ptr<FlowSaveInfo>> out;
+      for (auto& flow : node->getflows())
+        out.push_back(std::static_pointer_cast<FlowSaveInfo>(flow));
+
+      return out;
+    }
+
+    auto events = getFlowsFromNode(nodeId, node->getchildren());
+    if (!events.empty())
+      return events;
+  }
+
+  return {};
+}
+
 std::shared_ptr<FlowSaveInfo> SaveInfo::getEventFromNode(const QString& nodeId, const QString& flowName) const
 {
+  auto flows = getFlowsFromNode(nodeId, getnodes());
+  for (const auto& flow : flows)
+  {
+    if (flow->getname() == flowName)
+      return flow;
+  }
+
   auto events = getEventsFromNode(nodeId, getnodes());
   for (const auto& event : events)
   {
@@ -204,6 +242,16 @@ std::shared_ptr<FlowSaveInfo> SaveInfo::getFlowWithId(const QString& flowId, con
   }
 
   return nullptr;
+}
+
+QVector<std::shared_ptr<FlowSaveInfo>> SaveInfo::pipelines() const
+{
+  return mPipelines;
+}
+
+void SaveInfo::addPipeline(std::shared_ptr<FlowSaveInfo> pipeline)
+{
+  mPipelines.push_back(pipeline);
 }
 
 // ==========================================================================

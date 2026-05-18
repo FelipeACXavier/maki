@@ -3,10 +3,12 @@
 #include <QMap>
 #include <QString>
 
+#include "elements/transition.h"
 #include "ids.h"
 #include "save_info.h"
 
 class NodeItem;
+class TransitionItem;
 
 /**
  * @brief Represents a flow in the system.
@@ -77,6 +79,29 @@ public:
    */
   QVector<std::shared_ptr<NodeSaveInfo>> getNodes() const;
 
+  /**
+   * @brief Returns a list of transitions connected to this node.
+   *
+   * @return The QVector of TransitionItem pointers.
+   */
+  QVector<TransitionItem*> transitions() const;
+
+  /**
+   * @brief Adds a transition to the node.
+   *
+   * @param transition The TransitionItem to add.
+   */
+  void addTransition(TransitionItem* transition);
+
+  /**
+   * @brief Removes a transition from the node.
+   *
+   * @param transition The TransitionItem to remove.
+   */
+  void removeTransition(TransitionItem* transition);
+
+  std::shared_ptr<FlowSaveInfo> config() const;
+
 private:
   /// Unique identifier for the flow
   const QString mId;
@@ -86,4 +111,7 @@ private:
 
   /// Storage for flow save information
   std::shared_ptr<FlowSaveInfo> mStorage;
+
+  /// List of transitions in this flow
+  QVector<TransitionItem*> mTransitions;
 };
