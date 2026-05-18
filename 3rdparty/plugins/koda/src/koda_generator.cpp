@@ -605,7 +605,7 @@ Result<QString> KodaGenerator::generateTransitions(const INode& node, const Argu
 {
   QString code = "";
 
-  for (const auto& transition : node.gettransitions())
+  for (const auto& transition : flow.gettransitions(node.getid()))
   {
     auto dst = findDestination(transition->getdstId(), flow);
     if (dst != nullptr)
@@ -879,7 +879,7 @@ Result<QString> KodaGenerator::generateAsyncTask(const INode& node, const Argume
 
   auto fixed = QString::fromStdString(ToLowerCase(val.toStdString(), 0, val.size() - 1));
   code += "(" + fixed + "(" + args + ")";
-  for (const auto& transition : node.gettransitions())
+  for (const auto& transition : flow.gettransitions(node.getid()))
   {
     if (transition->getlabel() != "on error")
       continue;
@@ -893,7 +893,7 @@ Result<QString> KodaGenerator::generateAsyncTask(const INode& node, const Argume
     }
   }
 
-  for (const auto& transition : node.gettransitions())
+  for (const auto& transition : flow.gettransitions(node.getid()))
   {
     if (transition->getlabel() != "on abort")
       continue;
@@ -907,7 +907,7 @@ Result<QString> KodaGenerator::generateAsyncTask(const INode& node, const Argume
     }
   }
 
-  for (const auto& transition : node.gettransitions())
+  for (const auto& transition : flow.gettransitions(node.getid()))
   {
     if (transition->getlabel() != "on")
       continue;
@@ -922,7 +922,7 @@ Result<QString> KodaGenerator::generateAsyncTask(const INode& node, const Argume
   }
 
   bool hasOutTransitions = false;
-  for (const auto& transition : node.gettransitions())
+  for (const auto& transition : flow.gettransitions(node.getid()))
   {
     if (transition->getlabel() != "")
       continue;
@@ -972,7 +972,7 @@ Result<QString> KodaGenerator::generateSyncTask(const INode& node, const Argumen
   auto fixed = QString::fromStdString(ToLowerCase(val.toStdString(), 0, val.size() - 1));
   code += fixed + "." + method + "(" + args + ")";
 
-  if (node.gettransitions().size() > 0)
+  if (flow.gettransitions(node.getid()).size() > 0)
     code += " --> ";
 
   APPEND_OR_RETURN_ON_FAILURE(code, generateTransitions(node, arg, flow, format + "  "));
@@ -987,7 +987,7 @@ Result<QString> KodaGenerator::generateWithin(const INode& node, const Argument&
 
   code += "(within " + QString::number(val) + " do (";
 
-  for (const auto& transition : node.gettransitions())
+  for (const auto& transition : flow.gettransitions(node.getid()))
   {
     if (transition->getlabel() == "do")
     {
@@ -1000,7 +1000,7 @@ Result<QString> KodaGenerator::generateWithin(const INode& node, const Argument&
 
   code += ") else (";
 
-  for (const auto& transition : node.gettransitions())
+  for (const auto& transition : flow.gettransitions(node.getid()))
   {
     if (transition->getlabel() == "else")
     {
@@ -1013,7 +1013,7 @@ Result<QString> KodaGenerator::generateWithin(const INode& node, const Argument&
 
   code += ")";
 
-  for (const auto& transition : node.gettransitions())
+  for (const auto& transition : flow.gettransitions(node.getid()))
   {
     if (transition->getlabel() != "on error")
       continue;
@@ -1027,7 +1027,7 @@ Result<QString> KodaGenerator::generateWithin(const INode& node, const Argument&
     }
   }
 
-  for (const auto& transition : node.gettransitions())
+  for (const auto& transition : flow.gettransitions(node.getid()))
   {
     if (transition->getlabel() != "on abort")
       continue;
@@ -1041,7 +1041,7 @@ Result<QString> KodaGenerator::generateWithin(const INode& node, const Argument&
     }
   }
 
-  for (const auto& transition : node.gettransitions())
+  for (const auto& transition : flow.gettransitions(node.getid()))
   {
     if (transition->getlabel() != "on")
       continue;
@@ -1057,7 +1057,7 @@ Result<QString> KodaGenerator::generateWithin(const INode& node, const Argument&
 
   code += ")";
 
-  for (const auto& transition : node.gettransitions())
+  for (const auto& transition : flow.gettransitions(node.getid()))
   {
     if (transition->getlabel() != "")
       continue;
@@ -1080,7 +1080,7 @@ Result<QString> KodaGenerator::generateEvery(const INode& node, const Argument& 
 
   code += "(every " + QString::number(val) + " { ";
 
-  for (const auto& transition : node.gettransitions())
+  for (const auto& transition : flow.gettransitions(node.getid()))
   {
     if (transition->getlabel() != "")
       continue;
@@ -1094,7 +1094,7 @@ Result<QString> KodaGenerator::generateEvery(const INode& node, const Argument& 
 
   code += " }";
 
-  for (const auto& transition : node.gettransitions())
+  for (const auto& transition : flow.gettransitions(node.getid()))
   {
     if (transition->getlabel() != "on error")
       continue;
@@ -1108,7 +1108,7 @@ Result<QString> KodaGenerator::generateEvery(const INode& node, const Argument& 
     }
   }
 
-  for (const auto& transition : node.gettransitions())
+  for (const auto& transition : flow.gettransitions(node.getid()))
   {
     if (transition->getlabel() != "on abort")
       continue;
@@ -1122,7 +1122,7 @@ Result<QString> KodaGenerator::generateEvery(const INode& node, const Argument& 
     }
   }
 
-  for (const auto& transition : node.gettransitions())
+  for (const auto& transition : flow.gettransitions(node.getid()))
   {
     if (transition->getlabel() != "on")
       continue;
@@ -1182,7 +1182,7 @@ Result<QString> KodaGenerator::generateStrategy(const INode& node, const Argumen
     strategy = "f" + strategy;
 
   code += strategy + (args.isEmpty() ? "" : "(" + args + ")");
-  if (node.gettransitions().size() > 0)
+  if (flow.gettransitions(node.getid()).size() > 0)
     code += " --> ";
 
   APPEND_OR_RETURN_ON_FAILURE(code, generateTransitions(node, arg, flow, format + "  "));

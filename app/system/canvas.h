@@ -250,6 +250,13 @@ protected:
    */
   virtual void updateParent(NodeItem* node, std::shared_ptr<NodeSaveInfo> storage, bool adding);
 
+  virtual void addTransition(TransitionItem* transition);
+  virtual void removeTransition(TransitionItem* transition);
+  virtual bool canAddTransition(NodeItem* node) const;
+  virtual TransitionConfig nextTransition(NodeItem* node) const;
+  virtual QVector<QGraphicsItem*> cleanTransitionsOfNode(const QString& nodeId);
+  virtual void onNodeMoved(const QString& nodeId);
+
 signals:
   /**
    * @brief Emitted when a node is selected.
@@ -257,7 +264,8 @@ signals:
    * @param node Pointer to the selected node.
    * @param selected Whether the node is selected or not.
    */
-  void nodeSelected(NodeItem* node, bool selected);
+  void
+  nodeSelected(NodeItem* node, bool selected);
 
   /**
    * @brief Emitted when a node is added.
@@ -365,6 +373,9 @@ private:
   QPointF mStartDragPosition;             /// The starting position of a drag operation.
   bool mDragging = false;                 /// Whether a drag operation is in progress.
   bool mMouseDown = false;                /// Whether the mouse button is pressed.
+
+  QPointF mSelectionStart;
+  QGraphicsRectItem* mSelectionRect = nullptr;
 
   QTimer* mHoverTimer = nullptr;     /// Timer for handling hover events.
   QUndoStack* mUndoStack = nullptr;  /// Pointer to the undo stack.

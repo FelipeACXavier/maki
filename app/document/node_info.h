@@ -8,7 +8,6 @@
 #include <QVector>
 
 #include "config.h"
-#include "idocument.h"
 #include "property_info.h"
 
 /**
@@ -51,12 +50,6 @@ public:
    * @return A QMap of QString keys and QVariant values.
    */
   QMap<QString, QVariant> getproperties() const override;
-
-  /**
-   * @brief Gets the transitions of the node.
-   * @return A QVector of shared pointers to ITransition objects.
-   */
-  QVector<std::shared_ptr<ITransition>> gettransitions() const override;
 
   /**
    * @brief Gets the flows of the node.
@@ -193,18 +186,6 @@ public:
    * @param key The field key as a QString.
    */
   void removeField(const QString& key);
-
-  /**
-   * @brief Adds a transition to the node.
-   * @param transition The new transition as a shared pointer to ITransition.
-   */
-  void addTransition(std::shared_ptr<ITransition> transition);
-
-  /**
-   * @brief Removes a transition from the node.
-   * @param transition The transition to remove as a shared pointer to ITransition.
-   */
-  void removeTransition(std::shared_ptr<ITransition> transition);
 
   /**
    * @brief Adds a flow to the node.

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "canvas.h"
+#include "elements/transition.h"
 
 /**
  * @class BehaviourCanvas
@@ -30,6 +31,13 @@ public:
    * @return The library type as a value of `Types::LibraryTypes`.
    */
   Types::LibraryTypes type() const override;
+
+  bool canAddTransition(NodeItem* node) const override;
+  TransitionConfig nextTransition(NodeItem* node) const override;
+  QVector<QGraphicsItem*> cleanTransitionsOfNode(const QString& nodeId) override;
+  void addTransition(TransitionItem* transition) override;
+  void removeTransition(TransitionItem* transition) override;
+  void onNodeMoved(const QString& nodeId) override;
 
 private:
   /**

@@ -19,10 +19,10 @@ public:
    */
   enum class Edge
   {
-    NONE = 0,     /// No edge type.
-    FORWARD,      /// Forward transition edge.
-    BACKWARD,     /// Backward transition edge.
-    ARC           /// Arc-shaped transition edge.
+    NONE = 0,  /// No edge type.
+    FORWARD,   /// Forward transition edge.
+    BACKWARD,  /// Backward transition edge.
+    ARC        /// Arc-shaped transition edge.
   };
 
   /**
@@ -70,11 +70,6 @@ public:
    * @param destination Pointer to the destination node item.
    */
   void done(NodeItem* source, NodeItem* destination);
-
-  /**
-   * @brief Detaches this transition from its source and destination nodes.
-   */
-  void detach();
 
   /**
    * @brief Retrieves the source node of this transition.
@@ -157,20 +152,20 @@ public:
   void setEdge(Edge edge);
 
   // "signals":
-  std::function<void(TransitionItem* item)> transitionDeleted; /// Signal emitted when the transition is deleted.
-  std::function<void(TransitionItem* item)> transitionModified; /// Signal emitted when the transition is modified.
+  std::function<void(TransitionItem* item)> transitionDeleted;   /// Signal emitted when the transition is deleted.
+  std::function<void(TransitionItem* item)> transitionModified;  /// Signal emitted when the transition is modified.
 
 private:
-  const QString mId; /// Unique identifier for this transition.
-  bool mComplete;    /// Flag indicating if the transition is complete.
+  const QString mId;  /// Unique identifier for this transition.
+  bool mComplete;     /// Flag indicating if the transition is complete.
 
-  Edge mEdge = Edge::NONE; /// Type of edge used in the transition.
+  Edge mEdge = Edge::NONE;  /// Type of edge used in the transition.
 
-  NodeItem* mSource;     /// Pointer to the source node item.
-  NodeItem* mDestination;/// Pointer to the destination node item.
+  NodeItem* mSource;       /// Pointer to the source node item.
+  NodeItem* mDestination;  /// Pointer to the destination node item.
 
-  QGraphicsTextItem* mLabel = nullptr; /// Pointer to the label text item.
-  std::shared_ptr<TransitionSaveInfo> mStorage; /// Shared pointer to the storage information.
+  QGraphicsTextItem* mLabel = nullptr;           /// Pointer to the label text item.
+  std::shared_ptr<TransitionSaveInfo> mStorage;  /// Shared pointer to the storage information.
 
-  void updateLabelPosition(); /// Updates the position of the label text item.
+  void updateLabelPosition();  /// Updates the position of the label text item.
 };

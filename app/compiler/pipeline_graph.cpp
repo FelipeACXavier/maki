@@ -3,6 +3,7 @@
 #include <QFile>
 #include <QJsonArray>
 
+#include "elements/transition.h"
 #include "system/canvas.h"
 #include "transition_info.h"
 
@@ -141,15 +142,15 @@ Result<PipelineGraph> PipelineGraph::fromFlow(const FlowSaveInfo& info)
     pnode.parameters = node->getproperties();
 
     graph.nodes.append(pnode);
+  }
 
-    for (const auto& it : node->gettransitions())
-    {
-      auto t = std::dynamic_pointer_cast<TransitionSaveInfo>(it);
-      PipelineEdge edge;
-      edge.from = t->getsrcId();
-      edge.to = t->getdstId();
-      graph.edges.append(edge);
-    }
+  for (const auto& it : info.gettransitions())
+  {
+    auto t = std::dynamic_pointer_cast<TransitionSaveInfo>(it);
+    PipelineEdge edge;
+    edge.from = t->getsrcId();
+    edge.to = t->getdstId();
+    graph.edges.append(edge);
   }
 
   return graph;
@@ -165,23 +166,23 @@ Result<PipelineGraph> PipelineGraph::fromCanvas(const Canvas* canvas)
 
   for (const auto& item : canvas->items())
   {
-    if (item->type() != NodeItem::Type)
-      continue;
-
-    auto node = static_cast<NodeItem*>(item);
-    PipelineNode pnode;
-    pnode.id = node->getProperty("name").toString();
-    pnode.actionId = toAction(node->nodeType());
-    pnode.parameters = node->saveInfo().getproperties();
-
-    graph.nodes.append(pnode);
-
-    for (const auto& t : node->transitions())
+    if (item->type() == NodeItem::Type)
     {
-      PipelineEdge edge;
-      edge.from = t->source()->getProperty("name").toString();
-      edge.to = t->destination()->getProperty("name").toString();
-      graph.edges.append(edge);
+      auto node = static_cast<NodeItem*>(item);
+      PipelineNode pnode;
+      pnode.id = node->getProperty("name").toString();
+      pnode.actionId = toAction(node->nodeType());
+      pnode.parameters = node->saveInfo().getproperties();
+
+      graph.nodes.append(pnode);
+    }
+    else if (item->type() == TransitionItem::Type)
+    {
+      auto edge = static_cast<TransitionItem*>(item);
+      PipelineEdge pedge;
+      pedge.from = edge->source()->getProperty("name").toString();
+      pedge.to = edge->destination()->getProperty("name").toString();
+      graph.edges.append(pedge);
     }
   }
 

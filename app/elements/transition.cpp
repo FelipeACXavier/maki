@@ -36,14 +36,6 @@ TransitionItem::~TransitionItem()
 {
 }
 
-void TransitionItem::detach()
-{
-  if (mSource != nullptr)
-    mSource->removeTransition(this);
-  if (mDestination != nullptr)
-    mDestination->removeTransition(this);
-}
-
 QString TransitionItem::id() const
 {
   return mId;
@@ -74,8 +66,8 @@ void TransitionItem::done(NodeItem* source, NodeItem* destination)
   mSource = source;
   mDestination = destination;
 
-  mSource->addTransition(this);
-  mDestination->addTransition(this);
+  // mSource->addTransition(this);
+  // mDestination->addTransition(this);
 
   // Make sure line is update with new control points
   move(mStorage->getsrcId(), mStorage->srcPoint());

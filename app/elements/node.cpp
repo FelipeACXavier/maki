@@ -499,8 +499,8 @@ void NodeItem::updatePosition(const QPointF& newPosition)
 
 void NodeItem::updateExtrasPosition()
 {
-  for (auto& transition : transitions())
-    transition->updatePath();
+  if (nodeMoved)
+    nodeMoved(id());
 
   updateLabelPosition();
 }
@@ -516,70 +516,6 @@ NodeSaveInfo NodeItem::saveInfo() const
   return *mStorage;
 }
 
-QVector<TransitionItem*> NodeItem::transitions() const
-{
-  return mTransitions;
-}
-
-void NodeItem::addTransition(TransitionItem* transition)
-{
-  // Make sure the source node holds the transition info
-  if (transition->destination() && (id() != transition->destination()->id()))
-  {
-    bool found = false;
-    for (const auto& t : mStorage->gettransitions())
-    {
-      if (t->getid() == transition->id())
-      {
-        found = true;
-        break;
-      }
-    }
-
-    if (!found)
-      mStorage->addTransition(transition->storage());
-
-    for (auto& t : transitions())
-    {
-      // If I am the source of this transition
-      // Check whether we have another transition with me as destination
-      auto src1 = transition->source()->id();
-      auto dst1 = transition->destination()->id();
-      auto src2 = t->source()->id();
-      auto dst2 = t->destination()->id();
-      if (((src1 == dst2) && (src2 == dst1)))
-      {
-        transition->setEdge(TransitionItem::Edge::FORWARD);
-        t->setEdge(TransitionItem::Edge::BACKWARD);
-      }
-    }
-  }
-
-  bool found = false;
-  for (const auto& t : transitions())
-  {
-    if (t->id() == transition->id())
-    {
-      found = true;
-      break;
-    }
-  }
-
-  if (!found)
-    mTransitions.push_back(transition);
-
-  prepareGeometryChange();
-  updateExtrasPosition();
-}
-
-void NodeItem::removeTransition(TransitionItem* transition)
-{
-  mStorage->removeTransition(transition->storage());
-  mTransitions.removeIf([transition](TransitionItem* item) {
-    return item->id() == transition->id();
-  });
-}
-
 QPointF NodeItem::edgePointToward(const QPointF& targetScenePos) const
 {
   QPointF center = sceneBoundingRect().center();
@@ -592,34 +528,6 @@ QPointF NodeItem::edgePointToward(const QPointF& targetScenePos) const
   dir /= std::hypot(dir.x(), dir.y());
   qreal radius = boundingRect().width() / 2.0;
   return center + dir * radius;
-}
-
-bool NodeItem::canAddTransition() const
-{
-  int index = 0;
-  for (const auto& t : transitions())
-  {
-    if (t->source()->id() == id())
-      ++index;
-  }
-
-  return config()->transitions.isEmpty() || index < config()->transitions.size();
-}
-
-TransitionConfig NodeItem::nextTransition() const
-{
-  // Only count the transitions coming from this
-  int index = 0;
-  for (const auto& t : transitions())
-  {
-    if (t->source()->id() == id())
-      ++index;
-  }
-
-  if (config()->transitions.isEmpty() || index >= config()->transitions.size())
-    return TransitionConfig();
-
-  return config()->transitions.at(index);
 }
 
 QVector<TransitionConfig> NodeItem::configTransitions() const

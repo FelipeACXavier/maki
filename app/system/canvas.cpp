@@ -168,6 +168,12 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
     else if (!item)
     {
       LOG_DEBUG("Clearing selected nodes");
+      mSelectionStart = event->scenePos();
+      auto color = Config::HIGHLIGHT;
+      color.setAlpha(15);
+      mSelectionRect = addRect(QRectF(mSelectionStart, mSelectionStart), QPen(color, 1, Qt::DashLine), QColor(color));
+      mSelectionRect->setZValue(1'000'000);
+
       mSelectedNodes.clear();
       clearSelectedNodes();
     }
@@ -180,6 +186,24 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
   QGraphicsScene::mousePressEvent(event);
 }
 
+bool Canvas::canAddTransition(NodeItem* /* node */) const
+{
+  return false;
+}
+
+TransitionConfig Canvas::nextTransition(NodeItem* /* node */) const
+{
+  return TransitionConfig{};
+}
+
+void Canvas::addTransition(TransitionItem* transition)
+{
+}
+
+void Canvas::removeTransition(TransitionItem* transition)
+{
+}
+
 bool Canvas::nodeClickHandler(QGraphicsSceneMouseEvent* event, QGraphicsItem* item)
 {
   NodeItem* node = static_cast<NodeItem*>(item);
@@ -189,11 +213,11 @@ bool Canvas::nodeClickHandler(QGraphicsSceneMouseEvent* event, QGraphicsItem* it
     auto info = std::make_shared<TransitionSaveInfo>();
     mTransition = new TransitionItem(std::make_shared<TransitionSaveInfo>());
     mTransition->setZValue(node->zValue() - 1);
-    LOG_INFO("Node: %s ZValue: %f %f", qPrintable(node->nodeId()), node->zValue(), mTransition->zValue());
+    // LOG_INFO("Node: %s ZValue: %f %f", qPrintable(node->nodeId()), node->zValue(), mTransition->zValue());
 
-    if (node->canAddTransition())
+    if (canAddTransition(node))
     {
-      auto config = node->nextTransition();
+      auto config = nextTransition(node);
       mTransition->setEvent(config.event);
     }
 
@@ -246,6 +270,13 @@ void Canvas::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
     const int dist = (event->scenePos() - event->buttonDownScreenPos(Qt::LeftButton)).manhattanLength();
     if (!mDragging && dist >= 400)
       mDragging = true;
+
+    if (mSelectionRect)
+    {
+      mSelectionRect->setRect(QRectF(mSelectionStart, event->scenePos()).normalized());
+      event->accept();
+      return;
+    }
   }
 
   QGraphicsScene::mouseMoveEvent(event);
@@ -274,6 +305,7 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
         {
           mTransition->setEnd(node->id(), node->mapToScene(node->boundingRect().center()), {0, 0});
           mTransition->done(mNode, node);
+          addTransition(mTransition);
         }
         else
         {
@@ -285,7 +317,7 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
       mNode = nullptr;
     }
   }
-  else if (item)
+  else if (item && (!mSelectionRect || item != mSelectionRect))
   {
     if (!mDragging)
     {
@@ -319,15 +351,22 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
       QPainterPath selectionPath = selectionArea();
       QList<QGraphicsItem*> allSelectedItems = selectedItems();
 
-      for (QGraphicsItem* item : selectedItems())
+      for (QGraphicsItem* selectedItem : selectedItems())
       {
-        QRectF itemBounds = item->sceneBoundingRect();
+        QRectF itemBounds = selectedItem->sceneBoundingRect();
         if ((draggingFromRight && !selectionPath.intersects(itemBounds)) ||
             (!draggingFromRight && !selectionPath.contains(itemBounds)))
         {
-          item->setSelected(false);
+          selectedItem->setSelected(false);
         }
       }
+    }
+
+    if (mSelectionRect)
+    {
+      removeItem(mSelectionRect);
+      delete mSelectionRect;
+      mSelectionRect = nullptr;
     }
   }
 
@@ -684,9 +723,10 @@ void Canvas::deleteSelectedItems()
     else if (item->type() == TransitionItem::Type)
     {
       TransitionItem* transition = static_cast<TransitionItem*>(item);
-      if (!(transition->source() && transition->source()->isSelected()) && !(transition->destination() && transition->destination()->isSelected()))
+      if (!(transition->source() && transition->source()->isSelected()) &&
+          !(transition->destination() && transition->destination()->isSelected()))
       {
-        transition->detach();
+        removeTransition(transition);
         connectionsToDelete.append(item);
       }
     }
@@ -735,6 +775,16 @@ void Canvas::removeNode(const NodeSaveInfo info)
   });
 }
 
+QVector<QGraphicsItem*> Canvas::cleanTransitionsOfNode(const QString& nodeId)
+{
+  // Do nothing
+  return {};
+}
+
+void Canvas::onNodeMoved(const QString& /* nodeId */)
+{
+}
+
 QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
 {
   if (!node)
@@ -745,6 +795,7 @@ QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
   // Clear any potential callback
   node->nodeModified = nullptr;
   node->flowAdded = nullptr;
+  node->nodeMoved = nullptr;
 
   LOG_TRACE("Removing node: %s", qPrintable(node->id()));
 
@@ -762,13 +813,7 @@ QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
   if (parent)
     parent->childRemoved(node);
 
-  auto transtionsToDelete = node->transitions();
-  for (TransitionItem* transition : transtionsToDelete)
-  {
-    transition->detach();
-    removeItem(transition);
-    itemsToRemove.append(transition);
-  }
+  itemsToRemove += cleanTransitionsOfNode(node->id());
 
   auto toDelete = node->children();
   for (NodeItem* child : toDelete)
@@ -1051,12 +1096,9 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
   }
 
   // TODO(felaze): Move these to a function or so
-  node->nodeModified = [this](NodeItem* item) {
-    emit nodeModified(item);
-  };
-  node->flowAdded = [this](Flow* flow, NodeItem* node) {
-    emit flowAdded(flow, node);
-  };
+  node->nodeModified = [this](NodeItem* item) { emit nodeModified(item); };
+  node->flowAdded = [this](Flow* flow, NodeItem* node) { emit flowAdded(flow, node); };
+  node->nodeMoved = [this](const QString& id) { onNodeMoved(id); };
 
   node->start();
 
@@ -1136,36 +1178,34 @@ void Canvas::populate(Flow* flow)
   }
 
   // Then create the transitions between the nodes
-  for (std::shared_ptr<NodeSaveInfo> node : flow->getNodes())
+  auto flowConfig = flow->config();
+  for (std::shared_ptr<ITransition> itransition : flowConfig->gettransitions())
   {
-    auto srcConn = findNodeWithId(node->getid());
+    auto transition = std::dynamic_pointer_cast<TransitionSaveInfo>(itransition);
+    auto srcConn = findNodeWithId(transition->getsrcId());
     if (!srcConn)
     {
       LOG_WARNING("Could not find source node");
       continue;
     }
 
-    for (std::shared_ptr<ITransition> itransition : node->gettransitions())
+    auto dstConn = findNodeWithId(transition->getdstId());
+    if (!dstConn)
     {
-      auto transition = std::dynamic_pointer_cast<TransitionSaveInfo>(itransition);
-      auto dstConn = findNodeWithId(transition->getdstId());
-      if (!dstConn)
-      {
-        LOG_WARNING("Could not find destination node");
-        continue;
-      }
-
-      LOG_DEBUG("Creating transitions %s -> %s", qPrintable(node->getid()), qPrintable(transition->getdstId()));
-
-      auto connection = new TransitionItem(transition);
-
-      connection->setStart(node->getid(), transition->srcPoint(), transition->srcShift());
-      connection->setEnd(transition->getdstId(), transition->dstPoint(), transition->dstShift());
-
-      connection->done(srcConn, dstConn);
-
-      addItem(connection);
+      LOG_WARNING("Could not find destination node");
+      continue;
     }
+
+    LOG_DEBUG("Creating transitions %s -> %s", qPrintable(transition->getsrcId()), qPrintable(transition->getdstId()));
+
+    auto connection = new TransitionItem(transition);
+
+    connection->setStart(transition->getsrcId(), transition->srcPoint(), transition->srcShift());
+    connection->setEnd(transition->getdstId(), transition->dstPoint(), transition->dstShift());
+
+    connection->done(srcConn, dstConn);
+    addTransition(connection);
+    addItem(connection);
   }
 }
 
