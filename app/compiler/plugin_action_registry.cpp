@@ -1,5 +1,8 @@
 #include "plugin_action_registry.h"
 
+#include <qdir.h>
+#include <qhashfunctions.h>
+
 #include "logging.h"
 #include "pipeline_action.h"
 
@@ -38,5 +41,14 @@ QVector<std::shared_ptr<IPipelineAction>> PipelineActionRegistry::actionsOfPlugi
 bool PipelineActionRegistry::contains(const QString& id) const
 {
   return mActions.contains(id);
+}
+
+void PipelineActionRegistry::printAll() const
+{
+  LOG_INFO("Available actions:");
+  for (const auto& action : mActions)
+  {
+    LOG_INFO("Id: %s - Action Id: %s", qPrintable(action->id()), qPrintable(action->displayName()));
+  }
 }
 }  // namespace maki

@@ -18,6 +18,8 @@ public:
 
   bool contains(const QString& id) const;
 
+  void printAll() const;
+
 private:
   QMap<QString, std::shared_ptr<IPipelineAction>> mActions;
   QMap<QString, QVector<QString>> mActionPluginIds;

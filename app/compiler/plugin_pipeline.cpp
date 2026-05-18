@@ -1,5 +1,7 @@
 #include "plugin_pipeline.h"
 
+#include <qobject.h>
+
 #include <QProgressBar>
 #include <QTimer>
 #include <QVBoxLayout>
@@ -28,6 +30,10 @@ PluginPipeline::PluginPipeline(Pipeline* pipeline, QObject* parent)
     {
       mContext.commitPendingArtifact();
       QTimer::singleShot(0, this, [this]() { LOG_WARN_ON_FAILURE(continueAfterNode()); });
+    }
+    else
+    {
+      QTimer::singleShot(0, this, [this]() { emit pipelineFinished(""); });
     }
   });
   connect(mPipeline, &Pipeline::errorOccurred, [this](const Pipeline::Info& info, QProcess::ProcessError /* error */, const QString& message) {
@@ -67,13 +73,13 @@ VoidResult PluginPipeline::runNextNode()
       mOldWidgets.push_back(mPipeline->progressWidget(true));
 
     mProgressId = NOTIFY_LONG_INFO(mProgressId, "Pipeline Progress", nullptr);
-    emit pipelineFinished();
+
+    emit pipelineFinished(mContext.projectDir.absolutePath());
     return VoidResult();
   }
 
   const auto nodeId = mExecutionOrder.at(mCurrentIndex);
   const auto node = findNode(mGraph, nodeId);
-
   if (!node)
     return VoidResult::Failed("Pipeline node does not exist: " + nodeId.toStdString());
 
@@ -89,18 +95,12 @@ VoidResult PluginPipeline::runNextNode()
   if (args.isEmpty())
     args = action->defaultParameters();
 
+  for (const auto& arg : args)
+    qDebug() << "Running with : " << arg;
+
   auto result = action->run(mContext, args, mPipeline);
   if (!result)
     return result;
-
-  // for (const auto& art : mContext.artifacts())
-  // {
-  //   if (art.producer == "MAKI")
-  //     continue;
-
-  //   auto pretty = QJsonDocument(art.toJson()).toJson(QJsonDocument::Indented);
-  //   LOG_DEBUG("Artifact %s %s: \n%s", qPrintable(art.id), qPrintable(art.producer), qPrintable(pretty));
-  // }
 
   LOG_INFO("Done running action %s, pipeline size: %d", qPrintable(action->id()), mPipeline->size());
   if (mPipeline->size() == 0)
@@ -125,7 +125,11 @@ VoidResult PluginPipeline::continueAfterNode()
 {
   const auto nodeId = mExecutionOrder.at(mCurrentIndex);
   ++mCurrentIndex;
-  return runNextNode();
+  auto ran = runNextNode();
+  if (!ran.IsSuccess())
+    emit pipelineFinished("");
+
+  return ran;
 }
 
 VoidResult PluginPipeline::run(const PipelineGraph& graph, PipelineContext& context)
@@ -141,7 +145,14 @@ VoidResult PluginPipeline::run(const PipelineGraph& graph, PipelineContext& cont
   mOldWidgets.clear();
   mProgressId.clear();
   mExecutionOrder = orderResult.Value();
-  return runNextNode();
+
+  emit pipelineStarted();
+
+  auto ran = runNextNode();
+  if (!ran.IsSuccess())
+    emit pipelineFinished("");
+
+  return ran;
 }
 
 std::optional<PipelineNode> PluginPipeline::findNode(const PipelineGraph& graph, const QString& nodeId) const
@@ -280,7 +291,7 @@ QWidget* PluginPipeline::progressWidget() const
   {
     const auto nodeId = mExecutionOrder.at(mCurrentIndex);
     const auto node = findNode(mGraph, nodeId);
-    currentTaskWidget = new oclero::qlementine::Label(node->id, row);
+    currentTaskWidget = new oclero::qlementine::Label(node->displayName, row);
     qobject_cast<oclero::qlementine::Label*>(currentTaskWidget)->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     qobject_cast<oclero::qlementine::Label*>(currentTaskWidget)->setWordWrap(false);
     qobject_cast<oclero::qlementine::Label*>(currentTaskWidget)->setRole(oclero::qlementine::TextRole::H5);

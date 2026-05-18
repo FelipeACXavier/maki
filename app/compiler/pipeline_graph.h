@@ -17,6 +17,7 @@ struct PipelineNode
 {
   QString id;
   QString actionId;
+  QString displayName;
   QVariantMap parameters;
 
   static Result<PipelineNode> fromJson(const QJsonObject& object);

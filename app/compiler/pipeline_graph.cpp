@@ -2,8 +2,10 @@
 
 #include <QFile>
 #include <QJsonArray>
+#include <memory>
 
 #include "elements/transition.h"
+#include "node_info.h"
 #include "system/canvas.h"
 #include "transition_info.h"
 
@@ -132,14 +134,28 @@ QJsonObject PipelineGraph::toJson() const
 Result<PipelineGraph> PipelineGraph::fromFlow(const FlowSaveInfo& info)
 {
   PipelineGraph graph;
+  auto toAction = [](const QString& n) {
+    auto index = n.lastIndexOf(':') + 1;
+    return n.mid(index, n.size() - index);
+  };
 
   for (const auto& inode : info.getnodes())
   {
     auto node = std::dynamic_pointer_cast<NodeSaveInfo>(inode);
     PipelineNode pnode;
     pnode.id = node->getid();
-    pnode.actionId = node->getProperty("name").toString();
-    pnode.parameters = node->getproperties();
+    pnode.actionId = toAction(node->getnodeId());
+    pnode.displayName = node->getProperty("name").toString();
+    QVariantMap params;
+    for (const auto& key : node->getproperties().keys())
+    {
+      if (key == "name")
+        continue;
+
+      params[key] = node->getproperties()[key];
+    }
+
+    pnode.parameters = params;
 
     graph.nodes.append(pnode);
   }
