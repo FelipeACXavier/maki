@@ -1474,10 +1474,10 @@
             "borderColor": "#FFFFFF",
             "borderRadius": 10,
             "width": 100,
-            "height": 50,
+            "height": 100,
             "iconColor": "#FFFFFF",
             "iconScale": 0.8,
-            "icon": "koda_async.svg"
+            "nodeSvg": "node_async.svg"
           },
           "properties": [
             {
@@ -1513,10 +1513,10 @@
             "borderColor": "#FFFFFF",
             "borderRadius": 10,
             "width": 100,
-            "height": 50,
+            "height": 100,
             "iconColor": "#FFFFFF",
             "iconScale": 0.8,
-            "icon": "koda_sync.svg"
+            "nodeSvg": "node_sync.svg"
           },
           "properties": [
             {
