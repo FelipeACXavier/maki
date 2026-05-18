@@ -302,7 +302,7 @@ NodeSaveInfo NodeSaveInfo::fromJson(const QJsonObject& data)
       info.addField(std::make_shared<PropertyInfo>(PropertyInfo::fromJson(node.toObject())));
   }
 
-  // These are populated by the loaded
+  // These are populated by the loader
   // if (data.contains(ConfigKeys::CHILDREN))
   // {
   //   for (const auto& node : data[ConfigKeys::CHILDREN].toArray())

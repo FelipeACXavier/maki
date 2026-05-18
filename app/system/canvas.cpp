@@ -1,10 +1,11 @@
 #include "canvas.h"
 
-#include <qcoreapplication.h>
-
 #include <QBuffer>
 #include <QClipboard>
 #include <QGraphicsSceneDragDropEvent>
+#include <QGridLayout>
+#include <QIcon>
+#include <QJsonArray>
 #include <QLabel>
 #include <QMenu>
 #include <QMessageBox>
@@ -29,6 +30,8 @@
 #include "undo_commands/add_node.h"
 #include "undo_commands/align.h"
 #include "undo_commands/remove_node.h"
+
+static constexpr auto MAKI_CLIPBOARD_MIME = "application/x-maki-copied-nodes";
 
 Canvas::Canvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
     : QGraphicsScene(parent)
@@ -847,40 +850,62 @@ bool Canvas::isParentSelected(NodeItem* node)
 
 void Canvas::copySelectedItems(NodeItem* clickedNode)
 {
-  mCopiedNodes.clear();
+  QList<CopiedNode> copiedNodes;
 
-  QPointF mousePosition = parentView()->mapToScene(parentView()->mapFromGlobal(QCursor::pos()));
+  const QPointF mousePosition = parentView()->mapToScene(parentView()->mapFromGlobal(QCursor::pos()));
 
-  if (clickedNode != nullptr)
-  {
-    auto info = clickedNode->saveInfo();
-    LOG_DEBUG("Selected %s (%.2f %.2f)", qPrintable(clickedNode->id()), info.getposition().x(), info.getposition().y());
-
-    mCopiedNodes.append({info, mousePosition - info.getposition()});
-  }
-
-  for (QGraphicsItem* item : selectedItems())
-  {
-    if (item->type() != NodeItem::Type)
-      continue;
-
-    NodeItem* node = dynamic_cast<NodeItem*>(item);
+  auto copyNode = [&](NodeItem* node) {
     if (!node)
-      continue;
+      return;
 
-    // Do not copy the children
-    if (isParentSelected(node))
-      continue;
-
-    // Save relative position
     auto info = node->saveInfo();
-    LOG_DEBUG("Selected %s (%.2f %.2f)", qPrintable(node->id()), info.getposition().x(), info.getposition().y());
 
-    mCopiedNodes.append({info, mousePosition - info.getposition()});
+    LOG_DEBUG("Copied %s (%.2f %.2f)", qPrintable(node->id()), info.getposition().x(), info.getposition().y());
 
-    // Make sure the item is not selected after copying
-    selectNode(node, false);
+    copiedNodes.append({info, mousePosition - info.getposition()});
+  };
+
+  if (clickedNode)
+  {
+    copyNode(clickedNode);
   }
+  else
+  {
+    for (QGraphicsItem* item : selectedItems())
+    {
+      if (item->type() != NodeItem::Type)
+        continue;
+
+      auto* node = static_cast<NodeItem*>(item);
+
+      // Do not copy children if their parent is already copied.
+      if (isParentSelected(node))
+        continue;
+
+      copyNode(node);
+      selectNode(node, false);
+    }
+  }
+
+  if (copiedNodes.isEmpty())
+    return;
+
+  QByteArray data;
+  QDataStream out(&data, QIODevice::WriteOnly);
+  out.setVersion(QDataStream::Qt_6_0);
+  out << copiedNodes;
+
+  auto* mimeData = new QMimeData();
+  mimeData->setData(MAKI_CLIPBOARD_MIME, data);
+
+  // Also copy as json so it can be easily transferred
+  QJsonArray text;
+  for (const auto& node : copiedNodes)
+    text.append(node.toJson());
+
+  mimeData->setText(QJsonDocument(text).toJson(QJsonDocument::Indented));
+
+  QApplication::clipboard()->setMimeData(mimeData);
 }
 
 void Canvas::pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode, QList<CopiedNode> copiedNodes, bool absolute)
@@ -895,7 +920,9 @@ void Canvas::pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode
 
     auto node = createNode(NodeCreation::Pasting,
                            infoPtr,
-                           absolute ? mousePosition - copy.posRelativeToMouse : (newParentPosition + (copy.info.getposition() - copy.posRelativeToMouse)),
+                           absolute
+                               ? mousePosition - copy.posRelativeToMouse
+                               : newParentPosition + (copy.info.getposition() - copy.posRelativeToMouse),
                            parentNode);
 
     QList<CopiedNode> children;
@@ -909,10 +936,21 @@ void Canvas::pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode
 
 void Canvas::pasteCopiedItems()
 {
-  if (mCopiedNodes.isEmpty())
+  const QMimeData* mimeData = QApplication::clipboard()->mimeData();
+  if (!mimeData || !mimeData->hasFormat(MAKI_CLIPBOARD_MIME))
     return;
 
-  QPointF mousePosition = parentView()->mapToScene(parentView()->mapFromGlobal(QCursor::pos()));
+  QByteArray data = mimeData->data(MAKI_CLIPBOARD_MIME);
+
+  QList<CopiedNode> copiedNodes;
+  QDataStream in(&data, QIODevice::ReadOnly);
+  in.setVersion(QDataStream::Qt_6_0);
+  in >> copiedNodes;
+
+  if (copiedNodes.isEmpty())
+    return;
+
+  const QPointF mousePosition = parentView()->mapToScene(parentView()->mapFromGlobal(QCursor::pos()));
 
   NodeItem* parentNode = nullptr;
   QGraphicsItem* item = itemAt(mousePosition, QTransform());
@@ -920,12 +958,11 @@ void Canvas::pasteCopiedItems()
   {
     parentNode = static_cast<NodeItem*>(item);
 
-    // Add error message
     if (!parentNode->acceptDrops())
       return;
   }
 
-  pasteCopiedItems(mousePosition, parentNode, mCopiedNodes, true);
+  pasteCopiedItems(mousePosition, parentNode, copiedNodes, true);
 }
 
 void Canvas::clearCanvas()
