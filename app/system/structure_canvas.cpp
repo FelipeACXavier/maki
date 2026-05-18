@@ -27,29 +27,12 @@ void StructureCanvas::updateParent(NodeItem* node, std::shared_ptr<NodeSaveInfo>
     if (node->isTaskContainer())
       parent->layoutSubtasks();
     else
+    {
       parent->relayoutCapabilitySlots();
+      parent->layoutSubtasks();
+    }
   }
 
   if (node->isTaskContainer())
     node->ensureSubtaskConnector(this);
-}
-
-void StructureCanvas::createSubtask(NodeItem* parentTask)
-{
-  if (!parentTask || !parentTask->isTaskContainer())
-    return;
-
-  auto cfg = configurationTable()->get(QStringLiteral("Koda::Task"));
-  if (!cfg)
-    return;
-
-  auto info = std::make_shared<NodeSaveInfo>();
-  info->setNodeId(QStringLiteral("Koda::Task"));
-  info->setSize(QSizeF(cfg->body.width, cfg->body.height));
-  info->setScale(getScale());
-
-  const QRectF pr = parentTask->sceneBoundingRect();
-  const QPointF center(pr.right() + 80.0, pr.bottom() + 60.0);
-
-  createNode(NodeCreation::Dropping, info, center, parentTask);
 }

@@ -95,6 +95,22 @@ QRectF NodeBase::labelBoundingRect() const
   return QRectF();
 }
 
+QRectF NodeBase::itemRectIncludingLabel() const
+{
+  QRectF r = boundingRect();
+  if (!mLabel || !mLabel->isVisible())
+    return r;
+  return r.united(mLabel->mapRectToParent(mLabel->boundingRect()));
+}
+
+qreal NodeBase::labelExtentBelowBody() const
+{
+  if (!mLabel || !mLabel->isVisible())
+    return 0.0;
+  const QRectF labelInParent = mLabel->mapRectToParent(mLabel->boundingRect());
+  return qMax(0.0, labelInParent.bottom() - boundingRect().bottom());
+}
+
 QRectF NodeBase::scaledRect() const
 {
   return mScaledBounds;

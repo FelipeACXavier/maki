@@ -14,11 +14,18 @@
 #include "transition.h"
 #include "types.h"
 
+class NodeItem;
+
 class PortItem;
 class Flow;
 class QGraphicsSceneMouseEvent;
 class SubtaskConnector;
 class StructureCanvas;
+
+namespace structural_layout
+{
+void layoutNonLayeredTidyTree(NodeItem* root);
+}
 
 /**
  * @brief Represents a graphical node item in a flowchart.
@@ -502,6 +509,12 @@ private:
    */
   QRectF parentInnerSceneRect(qreal padding) const;
   NodeItem* rootStructuralTask() const;
+
+  friend void structural_layout::layoutNonLayeredTidyTree(NodeItem* root);
+
+  /** Move task node's scene top-left without moving logical children (structural subtree layout pass). */
+  void applyStructuralLayoutTopLeft(const QPointF& topLeftScene);
+  void finalizeStructuralPackedPositions(const QPointF& subtreeSceneTopLeft);
 
   SubtaskConnector* mSubtaskConnector = nullptr;
   QPointF mTreeDragRootStartPos{0, 0};

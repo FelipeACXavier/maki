@@ -1,8 +1,12 @@
 #include <utility>
 
+#include <algorithm>
+
 #include "node.h"
 
+#include <QFontMetricsF>
 #include <QGraphicsScene>
+#include <QHash>
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsView>
 #include <QMenu>
@@ -21,7 +25,6 @@
 #include "logging.h"
 #include "style_helpers.h"
 #include "subtask_connector.h"
-#include "system/structure_canvas.h"
 #include "system/canvas.h"
 #include "system/undo_commands/move_node.h"
 #include "system/undo_commands/resize_node.h"
@@ -29,92 +32,9 @@
 
 namespace
 {
-constexpr qreal kTaskCornerRadius = 28.0;
-constexpr qreal kTaskInnerPadding = 6.0;
-constexpr qreal kTaskSlotDiameterFactor = 0.30;  // relative to min(width,height)
-constexpr qreal kTaskSlotTopY = 0.30;
-constexpr qreal kTaskSlotBottomY = 0.70;
-constexpr qreal kTaskSlotLeftX = 0.30;
-constexpr qreal kTaskSlotRightX = 0.70;
-constexpr qreal kTaskAspectWidth = 324.0;
-constexpr qreal kTaskAspectHeight = 300.0;
-constexpr qreal kTaskAspectRatio = kTaskAspectWidth / kTaskAspectHeight;
-
-/** Horizontal row of slot centers (count in [1,3]). Centers use full node width `size`. */
-QVector<QPointF> taskSlotCentersHorizontalRow(const QSizeF& size, int count)
-{
-  QVector<QPointF> out;
-  if (count <= 0)
-    return out;
-
-  const qreal w = size.width();
-  const qreal h = size.height();
-  const qreal slotD = qMin(w, h) * kTaskSlotDiameterFactor;
-  constexpr qreal rowYMiddleNorm = 0.5;
-  const qreal y = h * rowYMiddleNorm;
-
-  if (count == 1)
-  {
-    out.append(QPointF(w * 0.5, y));
-    return out;
-  }
-
-  constexpr qreal horizontalMargin = 16.0;
-  const qreal leftX = horizontalMargin + slotD * 0.5;
-  const qreal rightX = w - horizontalMargin - slotD * 0.5;
-  const qreal span = rightX - leftX;
-  if (count == 2)
-  {
-    const qreal anchorW = qMin(w, kTaskAspectWidth);
-    const qreal colStep = (kTaskSlotRightX - kTaskSlotLeftX) * anchorW;
-    const qreal cx0 = (w - colStep) * 0.5;
-    out.append(QPointF(cx0, y));
-    out.append(QPointF(cx0 + colStep, y));
-    return out;
-  }
-  // count == 3
-  const qreal step = span * 0.5;
-  out.append(QPointF(leftX, y));
-  out.append(QPointF(leftX + step, y));
-  out.append(QPointF(rightX, y));
-  return out;
-}
-
-/** Slot centers in node local coordinates (same basis as boundingRect: full node 0..w x 0..h). */
-QVector<QPointF> taskSlotCenters(const QSizeF& size, int count)
-{
-  QVector<QPointF> out;
-  if (count <= 0)
-    return out;
-
-  const qreal w = size.width();
-  const qreal h = size.height();
-
-  // Single horizontal row while fewer than 4 slots (incl. placeholder).
-  if (count < 4)
-    return taskSlotCentersHorizontalRow(size, count);
-
-  // Two-row grid, row-major: fill the top row left-to-right, then the bottom row.
-  // numCols = ceil(count / 2). Column pitch matches classic 2-column layout on anchorW; grid is centered in w.
-  const qreal anchorW = qMin(w, kTaskAspectWidth);
-  const qreal colStep = (kTaskSlotRightX - kTaskSlotLeftX) * anchorW;
-  const qreal topY = kTaskSlotTopY * h;
-  const qreal botY = kTaskSlotBottomY * h;
-
-  const int numCols = (count + 1) / 2;
-  const qreal totalGrid = (numCols > 1) ? static_cast<qreal>(numCols - 1) * colStep : 0.0;
-  const qreal leftX = (numCols > 1) ? (w - totalGrid) * 0.5 : w * 0.5;
-  out.reserve(count);
-  for (int i = 0; i < count; ++i)
-  {
-    const int row = i / numCols;
-    const int col = i % numCols;
-    const qreal x = leftX + col * colStep;
-    const qreal y = (row == 0) ? topY : botY;
-    out.append(QPointF(x, y));
-  }
-  return out;
-}
+/** Shared by tidy-tree packing and structural task layout finalization */
+QHash<NodeItem*, QPointF> g_packNodeOriginInSubtree;
+QHash<NodeItem*, QVector<QPair<NodeItem*, QPointF>>> g_childSubtreeTopLeftOffsets;
 
 void renderSvgInEllipse(QPainter* painter, const QString& svgPath, const QPointF& center, qreal diameter)
 {
@@ -140,12 +60,205 @@ void renderSvgInEllipse(QPainter* painter, const QString& svgPath, const QPointF
                           scaledSize.height());
   renderer.render(painter, targetRect);
 }
+}  // namespace
+
+namespace structural_layout
+{
+constexpr qreal kTaskCornerRadius = 28.0;
+constexpr qreal kTaskInnerPadding = 6.0;
+constexpr qreal kTaskSlotDiameterFactor = 0.30;  // relative to min(width,height)
+constexpr qreal kTaskSlotTopY = 0.30;
+constexpr qreal kTaskSlotBottomY = 0.70;
+constexpr qreal kTaskSlotLeftX = 0.30;
+constexpr qreal kTaskSlotRightX = 0.70;
+constexpr qreal kTaskAspectWidth = 324.0;
+constexpr qreal kTaskAspectHeight = 300.0;
+constexpr qreal kTaskAspectRatio = kTaskAspectWidth / kTaskAspectHeight;
+/** Gap between slot-circle rows as fraction of slot diameter (shared with relayoutCapabilitySlots). */
+constexpr qreal kSlotVerticalGapFactor = 0.35;
+
+/** Estimated caption height below an inset capability circle (matches NodeItem label sizing). */
+qreal estimatedCapabilityLabelOverhang(qreal slotDiam)
+{
+  const qreal fontPt = qMax(Fonts::BaseSize, slotDiam / Fonts::BaseFactor);
+  QFont font;
+  font.setPointSizeF(qMin(Fonts::MaxSize, fontPt));
+  const QFontMetricsF fm(font);
+  constexpr qreal kLabelGapBelowCircle = 2.0;
+  return kLabelGapBelowCircle + fm.height();
+}
+
+qreal taskSlotTopInset()
+{
+  constexpr qreal margin = 16.0;
+  return margin + kTaskInnerPadding;
+}
+
+qreal taskSlotBottomInset(qreal slotDiam)
+{
+  constexpr qreal margin = 16.0;
+  return margin + kTaskInnerPadding + estimatedCapabilityLabelOverhang(slotDiam);
+}
+
+/**
+ * Capability + placeholder slot centres in node-local coordinates (basis: boundingRect 0..w x 0..h).
+ * - count == 1: single centred near top spine.
+ * - count == 2: one row, side-by-side in two columns (left/right).
+ * - count >= 3: at most two columns, row-major; if count is odd, the final slot sits centred on row 2.
+ */
+QVector<QPointF> taskSlotCenters(const QSizeF& size, int count)
+{
+  QVector<QPointF> out;
+  if (count <= 0)
+    return out;
+
+  constexpr qreal margin = 16.0;
+  const qreal w = size.width();
+  const qreal h = size.height();
+  const qreal anchorW = qMin(w, kTaskAspectWidth);
+  const qreal colStep = (kTaskSlotRightX - kTaskSlotLeftX) * anchorW;
+  const qreal slotDiam = qMin(w, h) * kTaskSlotDiameterFactor;
+
+  const qreal leftColCenter = (w - colStep) * 0.5;
+  const qreal rightColCenter = leftColCenter + colStep;
+
+  if (count == 1)
+  {
+    out.append(QPointF(w * 0.5, kTaskSlotTopY * h));
+    return out;
+  }
+
+  if (count == 2)
+  {
+    const qreal yy = ((kTaskSlotTopY + kTaskSlotBottomY) * 0.5) * h;
+    out.append(QPointF(leftColCenter, yy));
+    out.append(QPointF(rightColCenter, yy));
+    return out;
+  }
+
+  const int numRows = (count + 1) / 2;
+  const qreal pitch =
+      (numRows > 1) ? slotDiam * (1.0 + kSlotVerticalGapFactor) : static_cast<qreal>(0.0);
+  const qreal totalSpan = (numRows > 1) ? static_cast<qreal>(numRows - 1) * pitch : 0.0;
+  const qreal topInset = taskSlotTopInset();
+  const qreal bottomInset = taskSlotBottomInset(slotDiam);
+  const qreal yMinTop = topInset + slotDiam * 0.5;
+  const qreal yMaxTop = (numRows > 1) ? (h - bottomInset - slotDiam * 0.5 - totalSpan)
+                                     : yMinTop;
+  qreal topRowY = (numRows > 1) ? ((h - totalSpan) * 0.5)
+                                : ((kTaskSlotTopY + kTaskSlotBottomY) * 0.5) * h;
+  if (numRows > 1)
+    topRowY = std::clamp(topRowY, yMinTop, qMax(yMinTop, yMaxTop));
+
+  out.reserve(count);
+  for (int i = 0; i < count; ++i)
+  {
+    const int row = i / 2;
+    const int col = i % 2;
+
+    qreal cx = (col == 0) ? leftColCenter : rightColCenter;
+    if (count % 2 == 1 && i == count - 1)
+      cx = w * 0.5;
+
+    qreal yy = 0;
+    if (numRows <= 1)
+      yy = ((kTaskSlotTopY + kTaskSlotBottomY) * 0.5) * h;
+    else
+      yy = topRowY + static_cast<qreal>(row) * pitch;
+
+    out.append(QPointF(cx, yy));
+  }
+
+  return out;
+}
+
+// --- Non-layered compact horizontal packing of structural subtasks ( subtree geometry ) ---
+
+constexpr qreal kSubtreeLevelGap = 72.0;
+constexpr qreal kSubtreeSiblingGap = 32.0;
+
+struct PackResult
+{
+  qreal width = 0;
+  qreal height = 0;
+};
+
+PackResult structuralPackSubtree(NodeItem* v)
+{
+  const qreal myW = v->boundingRect().width();
+  const qreal myH = v->boundingRect().height();
+  QVector<NodeItem*> subs = v->structuralSubtaskChildren();
+
+  if (subs.isEmpty())
+  {
+    g_packNodeOriginInSubtree[v] = QPointF(0, 0);
+    return {myW, myH};
+  }
+
+  QVector<PackResult> cp;
+  cp.reserve(subs.size());
+  qreal rowWidth = -(kSubtreeSiblingGap);
+  qreal maxSubtreeHBelow = 0;
+  for (NodeItem* st : subs)
+  {
+    PackResult pr = structuralPackSubtree(st);
+    cp.append(pr);
+    rowWidth += pr.width + kSubtreeSiblingGap;
+    maxSubtreeHBelow = qMax(maxSubtreeHBelow, pr.height);
+  }
+
+  const qreal subtreeW = qMax(myW, rowWidth);
+  const qreal subtreeH = myH + kSubtreeLevelGap + maxSubtreeHBelow;
+
+  const qreal px = (subtreeW - myW) * 0.5;
+  g_packNodeOriginInSubtree[v] = QPointF(px, 0);
+
+  qreal cum = (subtreeW - rowWidth) * 0.5;
+  QVector<QPair<NodeItem*, QPointF>> origins;
+  origins.reserve(subs.size());
+  for (int i = 0; i < subs.size(); ++i)
+  {
+    origins.append(qMakePair(subs[i], QPointF(cum, myH + kSubtreeLevelGap)));
+    cum += cp[i].width + kSubtreeSiblingGap;
+  }
+  g_childSubtreeTopLeftOffsets[v] = origins;
+
+  return {subtreeW, subtreeH};
+}
+
+void recursiveRelayoutCapabilitiesPostorder(NodeItem* v)
+{
+  for (NodeItem* st : v->structuralSubtaskChildren())
+    recursiveRelayoutCapabilitiesPostorder(st);
+  v->relayoutCapabilitySlots();
+}
+
+void layoutNonLayeredTidyTree(NodeItem* root)
+{
+  g_packNodeOriginInSubtree.clear();
+  g_childSubtreeTopLeftOffsets.clear();
+
+  recursiveRelayoutCapabilitiesPostorder(root);
+  (void)structuralPackSubtree(root);
+
+  const QPointF preservedRootTopLeft = root->pos();
+  const QPointF rootOff = g_packNodeOriginInSubtree.value(root, QPointF(0, 0));
+  const QPointF subtreeSceneTopLeft = preservedRootTopLeft - rootOff;
+  root->finalizeStructuralPackedPositions(subtreeSceneTopLeft);
+  recursiveRelayoutCapabilitiesPostorder(root);
+}
 
 QSizeF taskAspectSizeFromWidth(qreal width)
 {
   return QSizeF(width, width / kTaskAspectRatio);
 }
-}  // namespace
+}  // namespace structural_layout
+
+using structural_layout::kTaskAspectRatio;
+using structural_layout::kTaskAspectWidth;
+using structural_layout::kTaskCornerRadius;
+using structural_layout::kTaskInnerPadding;
+using structural_layout::kTaskSlotDiameterFactor;
 
 NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
     : NodeBase((!nodeId.isEmpty() && !nodeId.isNull()) ? nodeId : QUuid::createUuid().toString(), info->getnodeId(), nodeConfig, parent)
@@ -165,7 +278,7 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
 
   if (config()->libraryType == Types::LibraryTypes::STRUCTURAL && config()->type == QStringLiteral("Task"))
   {
-    mSize = taskAspectSizeFromWidth(mSize.width());
+    mSize = structural_layout::taskAspectSizeFromWidth(mSize.width());
     mStorage->setSize(mSize);
   }
 
@@ -306,7 +419,7 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
     const qreal slotDiameter = qMin(bbW, bbH) * kTaskSlotDiameterFactor;
     const qreal slotRadius = slotDiameter * 0.5;
     const int n = static_cast<int>(structuralCapabilityChildren().size());
-    const QVector<QPointF> centers = taskSlotCenters(boundingRect().size(), n + 1);
+    const QVector<QPointF> centers = structural_layout::taskSlotCenters(boundingRect().size(), n + 1);
     if (!centers.isEmpty())
     {
       const QPointF placeholderCenter = centers.last();
@@ -495,7 +608,10 @@ void NodeItem::childRemoved(NodeItem* child)
     if (child->isTaskContainer())
       layoutSubtasks();
     else
+    {
       relayoutCapabilitySlots();
+      layoutSubtasks();
+    }
   }
 }
 
@@ -548,35 +664,45 @@ NodeItem* NodeItem::rootStructuralTask() const
   return root;
 }
 
+void NodeItem::applyStructuralLayoutTopLeft(const QPointF& topLeftScene)
+{
+  prepareGeometryChange();
+  setPos(topLeftScene);
+  mLastPosition = topLeftScene;
+  updateExtrasPosition();
+  mStorage->setPosition(pos() + boundingRect().center());
+
+  if (isTaskContainer() && function() == Types::LibraryTypes::STRUCTURAL)
+    syncSubtaskConnector();
+}
+
+void NodeItem::finalizeStructuralPackedPositions(const QPointF& subtreeSceneTopLeft)
+{
+  applyStructuralLayoutTopLeft(subtreeSceneTopLeft + g_packNodeOriginInSubtree.value(this, QPointF(0, 0)));
+
+  const QVector<QPair<NodeItem*, QPointF>> ch =
+      g_childSubtreeTopLeftOffsets.value(this, QVector<QPair<NodeItem*, QPointF>>());
+
+  for (const auto& kv : ch)
+  {
+    if (kv.first)
+      kv.first->finalizeStructuralPackedPositions(subtreeSceneTopLeft + kv.second);
+  }
+}
+
 void NodeItem::layoutSubtasks()
 {
   if (!isTaskContainer() || function() != Types::LibraryTypes::STRUCTURAL)
     return;
 
-  QVector<NodeItem*> subs = structuralSubtaskChildren();
-  constexpr qreal trunkDrop = 24.0;
-  constexpr qreal rowGap = 48.0;
-  constexpr qreal trunkMinInset = 28.0;
-  constexpr qreal trunkWidthFraction = 0.30;
-  constexpr qreal subtaskBranchLength = 86.0;
-
-  const QRectF taskBodySceneRect = mapRectToScene(boundingRect());
-  const qreal trunkX = taskBodySceneRect.left() + qMax(trunkMinInset, taskBodySceneRect.width() * trunkWidthFraction);
-  const qreal baseY = taskBodySceneRect.bottom() + trunkDrop;
-  const QSizeF subtaskTargetSize(boundingRect().width() * (2.0 / 3.0),
-                                 boundingRect().height() * (2.0 / 3.0));
-
-  for (int i = 0; i < subs.size(); ++i)
+  NodeItem* root = rootStructuralTask();
+  if (root != this)
   {
-    NodeItem* st = subs[i];
-    st->applySize(subtaskTargetSize);
-    const QSizeF sz = st->boundingRect().size();
-    const qreal x = trunkX + subtaskBranchLength;
-    const qreal y = baseY + i * (sz.height() + rowGap);
-    st->updatePosition(QPointF(x, y));
+    root->layoutSubtasks();
+    return;
   }
 
-  syncSubtaskConnector();
+  structural_layout::layoutNonLayeredTidyTree(root);
 }
 
 void NodeItem::relayoutCapabilitySlots()
@@ -593,37 +719,43 @@ void NodeItem::relayoutCapabilitySlots()
   qreal H = mSize.height();
 
   const int slotCount = n + 1;
-  QVector<QPointF> centers = taskSlotCenters(QSizeF(W, H), slotCount);
-  qreal slotDiam = qMin(W, H) * kTaskSlotDiameterFactor;
-  qreal reqW = W;
-  qreal reqH = H;
-  if (!isStructuralSubtask())
-  {
-    reqW = qMax(static_cast<qreal>(config()->body.width), W);
-    if (slotCount >= 4)
-    {
-      const int numCols = (slotCount + 1) / 2;
-      const qreal anchorW = qMin(W, kTaskAspectWidth);
-      const qreal colStep = (kTaskSlotRightX - kTaskSlotLeftX) * anchorW;
-      const qreal totalGrid = (numCols > 1) ? static_cast<qreal>(numCols - 1) * colStep : 0.0;
-      reqW = qMax(reqW, totalGrid + slotDiam + 2.0 * margin);
-    }
-    else
-    {
-      for (const QPointF& c : centers)
-        reqW = qMax(reqW, c.x() + slotDiam / 2.0 + margin);
-    }
-    reqH = qMax(static_cast<qreal>(config()->body.height), H);
-  }
 
-  if (!isStructuralSubtask() && (reqW > W + 0.5 || reqH > H + 0.5))
+  const qreal cfgW = static_cast<qreal>(config()->body.width);
+  const qreal cfgH = static_cast<qreal>(config()->body.height);
+  const qreal reqW = qMax(cfgW, W);  // do not shrink below config or current width
+
+  const int numRows =
+      slotCount <= 1 ? 1 : (slotCount + 1) / 2;  // ceil(slotCount/2) for slotCount >= 2
+
+  // Match taskSlotCenters: diameter uses qMin(W,H); sizing on cfg min underestimated height
+  // for wide Tasks once H grows beyond min(cfgW,cfgH).
+  qreal trialH = qMax(cfgH, H);
+  constexpr int kSizingIters = 12;
+  for (int iter = 0; iter < kSizingIters; ++iter)
   {
-    applySize(QSizeF(reqW, reqH));
-    W = mSize.width();
-    H = mSize.height();
-    centers = taskSlotCenters(QSizeF(W, H), slotCount);
-    slotDiam = qMin(W, H) * kTaskSlotDiameterFactor;
+    const qreal minDim = qMin(reqW, trialH);
+    const qreal sd = minDim * kTaskSlotDiameterFactor;
+    const qreal verticalGap = sd * structural_layout::kSlotVerticalGapFactor;
+    const qreal pitch = sd + verticalGap;
+    const qreal topInset = structural_layout::taskSlotTopInset();
+    const qreal bottomInset = structural_layout::taskSlotBottomInset(sd);
+    qreal needH =
+        topInset + sd + static_cast<qreal>(numRows - 1) * pitch + bottomInset;
+    needH = qMax(cfgH, needH);
+
+    if (needH <= trialH + 0.51)
+      break;
+    trialH = needH;
   }
+  qreal reqH = trialH;
+
+  if (reqH > H + 0.5 || reqW > W + 0.5)
+    applySize(QSizeF(reqW, reqH));
+  W = mSize.width();
+  H = mSize.height();
+
+  QVector<QPointF> centers = structural_layout::taskSlotCenters(QSizeF(W, H), slotCount);
+  qreal slotDiam = qMin(W, H) * kTaskSlotDiameterFactor;
 
   for (int i = 0; i < n; ++i)
   {
@@ -633,6 +765,35 @@ void NodeItem::relayoutCapabilitySlots()
     cap->applySize(QSizeF(slotDiam, slotDiam));
     const QSizeF cs = cap->boundingRect().size();
     cap->updatePosition(centerScene - QPointF(cs.width() / 2.0, cs.height() / 2.0));
+  }
+
+  // Measure real label overhang after capability resize; grow once if captions still clip the border.
+  qreal lowestContentBottom = 0.0;
+  for (int i = 0; i < centers.size(); ++i)
+  {
+    const qreal slotBottom = centers[i].y() + slotDiam * 0.5;
+    const qreal labelBelow = (i < n) ? caps[i]->labelExtentBelowBody()
+                                     : structural_layout::estimatedCapabilityLabelOverhang(slotDiam);
+    lowestContentBottom = qMax(lowestContentBottom, slotBottom + labelBelow);
+  }
+
+  const qreal bottomClearance = margin + kTaskInnerPadding;
+  const qreal requiredH = lowestContentBottom + bottomClearance;
+  if (requiredH > H + 0.5)
+  {
+    applySize(QSizeF(reqW, requiredH));
+    H = mSize.height();
+    centers = structural_layout::taskSlotCenters(QSizeF(W, H), slotCount);
+    slotDiam = qMin(W, H) * kTaskSlotDiameterFactor;
+    for (int i = 0; i < n; ++i)
+    {
+      const QPointF centerLocal = centers[i];
+      const QPointF centerScene = mapToScene(centerLocal);
+      NodeItem* cap = caps[i];
+      cap->applySize(QSizeF(slotDiam, slotDiam));
+      const QSizeF cs = cap->boundingRect().size();
+      cap->updatePosition(centerScene - QPointF(cs.width() / 2.0, cs.height() / 2.0));
+    }
   }
 
   syncSubtaskConnector();
@@ -661,7 +822,7 @@ NodeItem* NodeItem::capabilityAtScenePos(const QPointF& scenePos, NodeItem* excl
   const qreal bbH = boundingRect().height();
   const qreal slotDiameter = qMin(bbW, bbH) * kTaskSlotDiameterFactor;
   const qreal slotRadiusSq = (slotDiameter * 0.5) * (slotDiameter * 0.5);
-  const QVector<QPointF> centers = taskSlotCenters(boundingRect().size(), slotCount);
+  const QVector<QPointF> centers = structural_layout::taskSlotCenters(boundingRect().size(), slotCount);
 
   for (int i = 0; i < caps.size() && i < centers.size(); ++i)
   {
@@ -686,7 +847,7 @@ QRectF NodeItem::placeholderSlotSceneRect() const
   const qreal slotDiameter = qMin(bbW, bbH) * kTaskSlotDiameterFactor;
   const qreal slotRadius = slotDiameter * 0.5;
   const int n = static_cast<int>(structuralCapabilityChildren().size());
-  const QVector<QPointF> centers = taskSlotCenters(boundingRect().size(), n + 1);
+  const QVector<QPointF> centers = structural_layout::taskSlotCenters(boundingRect().size(), n + 1);
   if (centers.isEmpty())
     return {};
 
@@ -706,7 +867,8 @@ bool NodeItem::placeholderSlotContainsScenePoint(const QPointF& scenePos) const
 
 void NodeItem::ensureSubtaskConnector(StructureCanvas* canvas)
 {
-  if (!isTaskContainer() || function() != Types::LibraryTypes::STRUCTURAL || !canvas)
+  Q_UNUSED(canvas);
+  if (!isTaskContainer() || function() != Types::LibraryTypes::STRUCTURAL)
     return;
 
   if (mSubtaskConnector)
@@ -719,7 +881,7 @@ void NodeItem::ensureSubtaskConnector(StructureCanvas* canvas)
   if (!sc)
     return;
 
-  mSubtaskConnector = new SubtaskConnector(this, canvas);
+  mSubtaskConnector = new SubtaskConnector(this);
   sc->addItem(mSubtaskConnector);
   mSubtaskConnector->syncGeometry();
 }

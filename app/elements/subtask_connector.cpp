@@ -1,53 +1,63 @@
 #include "subtask_connector.h"
 
-#include <QGraphicsSceneMouseEvent>
+#include <algorithm>
+
 #include <QPainter>
 #include <QPen>
 #include <QStyleOptionGraphicsItem>
-#include <QSvgRenderer>
 #include <cmath>
 
 #include "app_configs.h"
-#include "app_paths.h"
 #include "node.h"
-#include "system/structure_canvas.h"
 
 namespace
 {
 constexpr qreal kStrokeWidth = 3.0;
-constexpr qreal kTrunkDrop = 24.0;
-constexpr qreal kRowGap = 48.0;
-constexpr qreal kPlaceholderSide = 48.0;
 constexpr qreal kArrowSize = 10.0;
-constexpr qreal kPlaceholderBranchLength = 86.0;
-/** Slightly-left anchor, but still attached to task body. */
-constexpr qreal kTrunkMinInset = 28.0;
-constexpr qreal kTrunkWidthFraction = 0.30;
+/** Extra pixels below caption so elbows do not collide with multi-line titles. */
+constexpr qreal kOutletBelowCaption = 6.0;
 
-/** Anchor on the visible task body (not full scene bounds with label). */
-QPointF trunkTopFromTaskRect(const NodeItem& task)
+QPointF parentConnectorOutletScene(const NodeItem* task)
 {
-  const QRectF taskBodySceneRect = task.mapRectToScene(task.boundingRect());
-  const qreal trunkX = taskBodySceneRect.left() + qMax(kTrunkMinInset, taskBodySceneRect.width() * kTrunkWidthFraction);
-  return QPointF(trunkX, taskBodySceneRect.bottom());
+  if (!task)
+    return {};
+  const QRectF bodyScene = task->mapRectToScene(task->boundingRect());
+  const QRectF withLabelScene = task->mapRectToScene(task->itemRectIncludingLabel());
+  return QPointF(bodyScene.center().x(), withLabelScene.bottom() + kOutletBelowCaption);
 }
 
-void drawArrowHead(QPainter* painter, const QPointF& tip, qreal angleRad)
+void drawArrowHead(QPainter* painter, const QPointF& tipLocal, qreal angleRad)
 {
-  QPointF p1 = tip - QPointF(std::cos(angleRad + M_PI / 6) * kArrowSize, -std::sin(angleRad + M_PI / 6) * kArrowSize);
-  QPointF p2 = tip - QPointF(std::cos(angleRad - M_PI / 6) * kArrowSize, -std::sin(angleRad - M_PI / 6) * kArrowSize);
+  QPointF p1 =
+      tipLocal - QPointF(std::cos(angleRad + M_PI / 6) * kArrowSize, -std::sin(angleRad + M_PI / 6) * kArrowSize);
+  QPointF p2 =
+      tipLocal - QPointF(std::cos(angleRad - M_PI / 6) * kArrowSize, -std::sin(angleRad - M_PI / 6) * kArrowSize);
   QPolygonF head;
-  head << tip << p1 << p2;
+  head << tipLocal << p1 << p2;
   painter->setBrush(QBrush(Config::FOREGROUND));
   painter->drawPolygon(head);
 }
+
+QPainterPath elbowConnectorPathScene(const QPointF& parentOutletScene, const QRectF& childBodyScene)
+{
+  QPointF pb = parentOutletScene;
+  QPointF ct(childBodyScene.center().x(), childBodyScene.top());
+  qreal midY = (pb.y() + ct.y()) * 0.5;
+  midY = std::clamp(midY, std::min(pb.y(), ct.y()), std::max(pb.y(), ct.y()));
+
+  QPainterPath path;
+  path.moveTo(pb);
+  path.lineTo(pb.x(), midY);
+  path.lineTo(ct.x(), midY);
+  path.lineTo(ct);
+  return path;
+}
 }  // namespace
 
-SubtaskConnector::SubtaskConnector(NodeItem* task, StructureCanvas* canvas)
+SubtaskConnector::SubtaskConnector(NodeItem* task)
     : mTask(task)
-    , mCanvas(canvas)
 {
-  setAcceptedMouseButtons(Qt::LeftButton);
+  setAcceptedMouseButtons(Qt::NoButton);
   setFlag(QGraphicsItem::ItemIsSelectable, false);
   setZValue(task ? task->zValue() - 1 : -1);
   syncGeometry();
@@ -60,76 +70,32 @@ void SubtaskConnector::syncGeometry()
   prepareGeometryChange();
 
   mStrokePath = QPainterPath();
-  mPlaceholderRect = QRectF();
   mBounds = QRectF();
 
   if (!mTask || !mTask->scene())
     return;
 
-  const QRectF taskR = mTask->sceneBoundingRect();
-  const QPointF trunkTop = trunkTopFromTaskRect(*mTask);
-  const qreal trunkX = trunkTop.x();
+  const QRectF parentUnion = mTask->mapRectToScene(mTask->itemRectIncludingLabel())
+                                 .adjusted(0, 0, 0, kOutletBelowCaption);
+  mBounds |= parentUnion;
+
+  const QPointF parentOutlet = parentConnectorOutletScene(mTask);
 
   QVector<NodeItem*> subs = mTask->structuralSubtaskChildren();
-
-  qreal lowestBranchY = trunkTop.y() + kTrunkDrop;
-  qreal lowestSubtaskBottom = lowestBranchY;
   for (NodeItem* st : subs)
   {
-    QRectF sr = st->sceneBoundingRect();
-    lowestBranchY = qMax(lowestBranchY, sr.center().y());
-    lowestSubtaskBottom = qMax(lowestSubtaskBottom, sr.bottom());
+    QRectF childBody = st->mapRectToScene(st->boundingRect());
+    mBounds |= childBody;
+    QPainterPath seg = elbowConnectorPathScene(parentOutlet, childBody);
+    mBounds |= seg.boundingRect();
+    mStrokePath.addPath(seg);
   }
 
-  // keep placeholder fully below last subtask to avoid overlap
-  const qreal placeholderTop = qMax(lowestBranchY + kRowGap, lowestSubtaskBottom + kRowGap);
-  const qreal placeholderBranchY = placeholderTop + (kPlaceholderSide * 0.5);
-  const qreal placeholderCenterX = trunkX + kPlaceholderBranchLength;
-  const QRectF placeholderScene(placeholderCenterX - kPlaceholderSide / 2.0,
-                                placeholderTop,
-                                kPlaceholderSide,
-                                kPlaceholderSide);
+  mBounds = mBounds.adjusted(-24, -12, 24, 20);
+  setPos(mBounds.topLeft());
 
-  const qreal trunkBottomY = placeholderBranchY;
-
-  QRectF br = taskR;
-  br |= placeholderScene;
-  br |= QRectF(trunkTop, QSizeF(1, 1));
-  br |= QRectF(QPointF(trunkX, trunkTop.y()), QPointF(trunkX, trunkBottomY));
-
-  for (NodeItem* st : subs)
-  {
-    QRectF sr = st->sceneBoundingRect();
-    const qreal branchY = sr.center().y();
-    br |= QRectF(QPointF(qMin(trunkX, sr.left()), branchY), QPointF(qMax(trunkX, sr.left()), branchY));
-    br |= sr;
-  }
-  br |= QRectF(QPointF(qMin(trunkX, placeholderScene.left()), placeholderBranchY),
-               QPointF(qMax(trunkX, placeholderScene.left()), placeholderBranchY));
-
-  br = br.adjusted(-20, -10, 20, 20);
-  mBounds = br;
-  const QPointF origin = br.topLeft();
-  setPos(origin);
-
-  auto toLocal = [&](const QPointF& scenePt) -> QPointF {
-    return scenePt - origin;
-  };
-
-  mStrokePath.moveTo(toLocal(trunkTop));
-  mStrokePath.lineTo(toLocal(QPointF(trunkX, trunkBottomY)));
-
-  for (NodeItem* st : subs)
-  {
-    QRectF sr = st->sceneBoundingRect();
-    const qreal branchY = sr.center().y();
-    mStrokePath.moveTo(toLocal(QPointF(trunkX, branchY)));
-    mStrokePath.lineTo(toLocal(QPointF(sr.left(), branchY)));
-  }
-  mStrokePath.moveTo(toLocal(QPointF(trunkX, placeholderBranchY)));
-  mStrokePath.lineTo(toLocal(QPointF(placeholderScene.left(), placeholderBranchY)));
-
-  mPlaceholderRect = placeholderScene.translated(-origin);
+  const QPointF origin = pos();
+  mStrokePath.translate(-origin);
 
   if (mTask)
     setZValue(mTask->zValue() - 1);
@@ -155,36 +121,21 @@ void SubtaskConnector::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
   QPen pen(Config::FOREGROUND, kStrokeWidth, Qt::SolidLine, Qt::FlatCap, Qt::MiterJoin);
   painter->setPen(pen);
   painter->setBrush(Qt::NoBrush);
-
   painter->drawPath(mStrokePath);
 
-  QVector<NodeItem*> subs = mTask->structuralSubtaskChildren();
-  const qreal trunkX = trunkTopFromTaskRect(*mTask).x();
+  const QPointF parentOutletScene = parentConnectorOutletScene(mTask);
+  const QPointF origin = mBounds.topLeft();
 
-  for (NodeItem* st : subs)
+  for (NodeItem* st : mTask->structuralSubtaskChildren())
   {
-    QRectF sr = st->sceneBoundingRect();
-    const qreal branchY = sr.center().y();
-    QLineF branch(QPointF(trunkX, branchY), QPointF(sr.left(), branchY));
-    const qreal angle = std::atan2(-branch.dy(), branch.dx());
-    drawArrowHead(painter, branch.p2() - mBounds.topLeft(), angle);
-  }
-  QLineF placeholderBranch(QPointF(trunkX, mPlaceholderRect.center().y() + mBounds.topLeft().y()),
-                           QPointF(mPlaceholderRect.left() + mBounds.topLeft().x(), mPlaceholderRect.center().y() + mBounds.topLeft().y()));
-  const qreal placeholderAngle = std::atan2(-placeholderBranch.dy(), placeholderBranch.dx());
-  drawArrowHead(painter, placeholderBranch.p2() - mBounds.topLeft(), placeholderAngle);
-
-  const QString svgPath = AppPaths::icon(QStringLiteral("node_subtask_placeholder.svg"));
-  QSvgRenderer renderer(svgPath);
-  if (renderer.isValid())
-  {
-    painter->setPen(Qt::NoPen);
-    renderer.render(painter, mPlaceholderRect);
-  }
-  else
-  {
-    painter->setPen(pen);
-    painter->drawEllipse(mPlaceholderRect);
+    const QRectF childBody = st->mapRectToScene(st->boundingRect());
+    qreal midY = (parentOutletScene.y() + childBody.top()) * 0.5;
+    midY = std::clamp(midY, std::min(parentOutletScene.y(), childBody.top()),
+                      std::max(parentOutletScene.y(), childBody.top()));
+    QPointF tipLocal(childBody.center().x() - origin.x(), childBody.top() - origin.y());
+    QPointF jointLocal(childBody.center().x() - origin.x(), midY - origin.y());
+    const qreal angle = std::atan2(-(tipLocal.y() - jointLocal.y()), tipLocal.x() - jointLocal.x());
+    drawArrowHead(painter, tipLocal, angle);
   }
 
   painter->restore();
@@ -193,27 +144,6 @@ void SubtaskConnector::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
 QPainterPath SubtaskConnector::shape() const
 {
   QPainterPathStroker stroker;
-  stroker.setWidth(12);
-  QPainterPath p = stroker.createStroke(mStrokePath);
-  p.addEllipse(mPlaceholderRect.adjusted(-4, -4, 4, 4));
-  return p;
-}
-
-void SubtaskConnector::mousePressEvent(QGraphicsSceneMouseEvent* event)
-{
-  if (!mCanvas || !mTask || !event)
-  {
-    QGraphicsItem::mousePressEvent(event);
-    return;
-  }
-
-  const QPointF local = event->pos();
-  if (mPlaceholderRect.contains(local))
-  {
-    mCanvas->createSubtask(mTask);
-    event->accept();
-    return;
-  }
-
-  QGraphicsItem::mousePressEvent(event);
+  stroker.setWidth(14);
+  return stroker.createStroke(mStrokePath);
 }

@@ -87,6 +87,16 @@ public:
   virtual QRectF labelBoundingRect() const;
 
   /**
+   * @brief Bounding rect of node body united with visible label geometry (parent item coordinates).
+   *
+   * Used where connectors or visuals must clear the caption drawn below the body.
+   */
+  QRectF itemRectIncludingLabel() const;
+
+  /** Pixels the visible label extends below boundingRect().bottom() (0 if none). */
+  qreal labelExtentBelowBody() const;
+
+  /**
    * @brief Returns the scaled rectangle of the node.
    *
    * @return The scaled rectangle.

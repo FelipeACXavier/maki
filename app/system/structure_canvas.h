@@ -11,8 +11,6 @@ public:
 
   Types::LibraryTypes type() const override;
 
-  void createSubtask(NodeItem* parentTask);
-
 protected:
   void updateParent(NodeItem* node, std::shared_ptr<NodeSaveInfo> storage, bool adding) override;
 };
