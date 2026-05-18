@@ -5,20 +5,19 @@
   "author": "Felipe Xavier",
   "entryPointDLL": "bin/platformio_plugin.dll",
   "entryPointSO": "bin/libplatformio_plugin.so",
-  "icon": "assets/icon.png",
+  "icon": "assets/icon.svg",
   "installation": [
     {
       "command": "wget",
       "arguments": [
-        "-O", "get-platformio.py",
+        "-O",
+        "get-platformio.py",
         "https://raw.githubusercontent.com/platformio/platformio-core-installer/master/get-platformio.py"
       ]
     },
     {
       "command": "python",
-      "arguments": [
-        "get-platformio.py"
-      ]
+      "arguments": ["get-platformio.py"]
     }
   ],
   "env": {

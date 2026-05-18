@@ -5,8 +5,6 @@
   "author": "Felipe Xavier",
   "entryPointDLL": "bin/koda_generatorplugin_antlr.dll",
   "entryPointSO": "bin/libkoda_generatorplugin_antlr.so",
-  "icon": "assets/icon.png",
-  "libraries": [
-    "antler-runtime.dll"
-  ]
+  "icon": "assets/icon.svg",
+  "libraries": ["antler-runtime.dll"]
 }

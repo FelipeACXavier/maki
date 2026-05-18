@@ -5,5 +5,5 @@
   "author": "Felipe Xavier",
   "entryPointDLL": "bin/koda_generatorplugin.dll",
   "entryPointSO": "bin/libkoda_generatorplugin.so",
-  "icon": "assets/icon.png"
+  "icon": "assets/icon.svg"
 }

@@ -196,7 +196,12 @@ void NodeBase::setLabelSize(qreal fontSize, const QSizeF& boundingSize)
   font.setPointSizeF(qMin(Fonts::MaxSize, fontSize));
   mLabel->setFont(font);
 
-  mLabel->setTextWidth(boundingSize.width() - (boundingSize.width() * 0.2));
+  // Labels can be a bit longer in the pipeline
+  if (config()->libraryType == Types::LibraryTypes::PIPELINE)
+    mLabel->setTextWidth(2 * boundingSize.width() - (boundingSize.width() * 0.2));
+  else
+    mLabel->setTextWidth(boundingSize.width() - (boundingSize.width() * 0.2));
+
   mLabel->document()->adjustSize();
 
   updateLabelPosition();
