@@ -4,7 +4,9 @@
 #include <QJsonObject>
 
 #include "keys.h"
+#include "logging.h"
 #include "node_info.h"
+#include "property_info.h"
 #include "transition_info.h"
 
 Q_DECLARE_METATYPE(FlowSaveInfo)
@@ -257,7 +259,10 @@ QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<FlowSaveInfo>>&
 
   flows.resize(size);
   for (int i = 0; i < size; ++i)
+  {
+    flows[i] = std::make_shared<FlowSaveInfo>();
     in >> *flows[i];
+  }
 
   return in;
 }
@@ -315,6 +320,8 @@ QDataStream& operator>>(QDataStream& in, FlowSaveInfo& info)
 
   QVector<std::shared_ptr<INode>> nodes;
   in >> nodes;
+  for (const auto& node : nodes)
+    info.addNode(std::dynamic_pointer_cast<NodeSaveInfo>(node));
 
   bool modifiable;
   in >> modifiable;
@@ -338,6 +345,8 @@ QDataStream& operator>>(QDataStream& in, FlowSaveInfo& info)
 
   QVector<std::shared_ptr<IProperty>> arguments;
   in >> arguments;
+  for (const auto& argument : arguments)
+    info.addArgument(std::dynamic_pointer_cast<PropertyInfo>(argument));
 
   QVector<std::shared_ptr<TransitionSaveInfo>> transitions;
   in >> transitions;

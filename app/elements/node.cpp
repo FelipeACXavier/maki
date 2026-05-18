@@ -73,6 +73,8 @@ constexpr qreal kTaskSlotRightX = 0.70;
 constexpr qreal kTaskAspectWidth = 324.0;
 constexpr qreal kTaskAspectHeight = 300.0;
 constexpr qreal kTaskAspectRatio = kTaskAspectWidth / kTaskAspectHeight;
+constexpr qreal margin = 16.0;
+
 /** Gap between slot-circle rows as fraction of slot diameter (shared with relayoutCapabilitySlots). */
 constexpr qreal kSlotVerticalGapFactor = 0.35;
 
@@ -89,13 +91,11 @@ qreal estimatedCapabilityLabelOverhang(qreal slotDiam)
 
 qreal taskSlotTopInset()
 {
-  constexpr qreal margin = 16.0;
   return margin + kTaskInnerPadding;
 }
 
 qreal taskSlotBottomInset(qreal slotDiam)
 {
-  constexpr qreal margin = 16.0;
   return margin + kTaskInnerPadding + estimatedCapabilityLabelOverhang(slotDiam);
 }
 
@@ -111,7 +111,6 @@ QVector<QPointF> taskSlotCenters(const QSizeF& size, int count)
   if (count <= 0)
     return out;
 
-  constexpr qreal margin = 16.0;
   const qreal w = size.width();
   const qreal h = size.height();
   const qreal anchorW = qMin(w, kTaskAspectWidth);

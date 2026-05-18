@@ -6,11 +6,14 @@
 #include <QGraphicsItem>
 #include <QGraphicsScene>
 #include <QGraphicsView>
+#include <QJsonObject>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QTimer>
 
 #include "elements/node.h"
+#include "json.h"
+#include "node_info.h"
 #include "save_info.h"
 
 class QUndoStack;
@@ -25,6 +28,28 @@ class Canvas : public QGraphicsScene
 {
   Q_OBJECT
 public:
+  struct CopiedNode
+  {
+    NodeSaveInfo info;           /// Save information of the copied node.
+    QPointF posRelativeToMouse;  /// Position relative to the mouse when copying.
+
+    QJsonObject toJson() const
+    {
+      QJsonObject object;
+      object["info"] = info.toJson();
+      object["position"] = JSON::fromPointF(posRelativeToMouse);
+      return object;
+    }
+
+    static CopiedNode fromJson(const QJsonObject& object)
+    {
+      CopiedNode copied;
+      copied.info = NodeSaveInfo::fromJson(object["info"].toObject());
+      copied.posRelativeToMouse = JSON::toPointF(object["position"].toObject());
+      return copied;
+    }
+  };
+
   /**
    * @brief Constructs a new Canvas object.
    *
@@ -396,12 +421,6 @@ private:
   QTimer* mHoverTimer = nullptr;     /// Timer for handling hover events.
   QUndoStack* mUndoStack = nullptr;  /// Pointer to the undo stack.
 
-  struct CopiedNode
-  {
-    NodeSaveInfo info;           /// Save information of the copied node.
-    QPointF posRelativeToMouse;  /// Position relative to the mouse when copying.
-  };
-
   const QString mId;  /// Unique identifier for this canvas.
 
   QList<CopiedNode> mCopiedNodes;                    /// List of copied nodes.
@@ -496,3 +515,17 @@ private:
   QString mDraggedCapabilityIconPath;
   QColor mDraggedCapabilityColor;
 };
+
+inline QDataStream& operator<<(QDataStream& out, const Canvas::CopiedNode& node)
+{
+  out << node.info;
+  out << node.posRelativeToMouse;
+  return out;
+}
+
+inline QDataStream& operator>>(QDataStream& in, Canvas::CopiedNode& node)
+{
+  in >> node.info;
+  in >> node.posRelativeToMouse;
+  return in;
+}
