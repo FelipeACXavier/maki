@@ -4,10 +4,13 @@
 #include <QVBoxLayout>
 
 #include "config.h"
+#include "elements/draggable.h"
 #include "library_scene.h"
+#include "logging.h"
 #include "widgets/section.h"
 
-static const int PADDING = 15;
+static constexpr qreal CELL_HEIGHT = 100.0;
+static constexpr int PADDING = 15;
 
 LibraryContainer::LibraryContainer(QWidget* parent)
     : QGraphicsView(parent)
@@ -59,39 +62,25 @@ void LibraryContainer::updateSceneSize()
 
 VoidResult LibraryContainer::addNode(const QString& id, std::shared_ptr<NodeConfig> config)
 {
-  DraggableItem* item = new DraggableItem(id, config);
-
-  // Center the item in the sidebar and make sure it is below the last item added
-  item->setPos(static_cast<int>(viewport()->width() / 2), mLastItemY + PADDING);
-
-  QRectF itemBounds = item->boundingRect();
-  QRectF labelBounds = item->labelBoundingRect();
-  mLastItemY = item->mapToScene(itemBounds.bottomLeft() + labelBounds.bottomLeft()).y();
+  auto* item = new DraggableItem(id, config);
 
   // Add item to scene
   scene()->addItem(item);
-
-  updateSceneSize();
+  relayoutItems();
 
   return VoidResult();
+}
+
+void LibraryContainer::setColumnCount(int count)
+{
+  mColumnCount = std::max(1, count);
+  relayoutItems();
 }
 
 void LibraryContainer::resizeEvent(QResizeEvent* event)
 {
   QGraphicsView::resizeEvent(event);
-  adjustNodePositions();  // Adjust positions on resize
-}
-
-void LibraryContainer::adjustNodePositions()
-{
-  // Reposition each node in the scene to the center based on the new width
-  for (QGraphicsItem* item : scene()->items())
-  {
-    if (item->type() != DraggableItem::Type)
-      continue;
-
-    dynamic_cast<DraggableItem*>(item)->adjustWidth(viewport()->width());
-  }
+  relayoutItems();  // Adjust positions on resize
 }
 
 bool LibraryContainer::filterNodes(const QString& query)
@@ -104,4 +93,38 @@ bool LibraryContainer::filterNodes(const QString& query)
   updateSceneSize();
 
   return hasMatches;
+}
+
+void LibraryContainer::relayoutItems()
+{
+  QList<DraggableItem*> items;
+  for (QGraphicsItem* graphicsItem : scene()->items(Qt::AscendingOrder))
+  {
+    if (graphicsItem->type() != DraggableItem::Type)
+      continue;
+
+    items.append(dynamic_cast<DraggableItem*>(graphicsItem));
+  }
+
+  const qreal availableWidth = viewport()->width();
+  const int columnCount = mColumnCount;
+
+  const qreal columnWidth = availableWidth / columnCount;
+  const qreal itemWidth = columnWidth - PADDING;
+
+  for (int i = 0; i < items.size(); ++i)
+  {
+    const int column = i % columnCount;
+    const int row = i / columnCount;
+
+    items[i]->adjustWidth(itemWidth);
+
+    QRectF itemBounds = items[i]->boundingRect();
+    const qreal x = (column * columnWidth + columnWidth / 2.0) - (itemBounds.width() / 2);
+    const qreal y = PADDING + row * (CELL_HEIGHT + PADDING);
+
+    items[i]->setPos(x, y);
+  }
+
+  updateSceneSize();
 }

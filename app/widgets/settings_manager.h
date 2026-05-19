@@ -59,6 +59,7 @@ struct AppearanceSettings
   int nodeCornerRadius = 8;             /// Node corner radius.
   bool startLogFilterExpanded = true;   /// Start the log table filters collapsed or expanded.
   oclero::qlementine::Theme themeVars;  /// Theme variables.
+  int numberOfColumns = 1;
 
   bool operator!=(const AppearanceSettings& s) const
   {
@@ -68,7 +69,8 @@ struct AppearanceSettings
            nativeMenuBar != s.nativeMenuBar ||
            nodeCornerRadius != s.nodeCornerRadius ||
            themeVars != s.themeVars ||
-           startLogFilterExpanded != s.startLogFilterExpanded;
+           startLogFilterExpanded != s.startLogFilterExpanded ||
+           numberOfColumns != s.numberOfColumns;
   }
 };
 

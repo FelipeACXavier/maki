@@ -260,6 +260,25 @@ void MainWindow::onSettingsChanged()
     QAction* action = mActionOpenRecent->addAction(elideLeft(file, mActionOpenRecent));
     connect(action, &QAction::triggered, [this, file] { onActionLoad(file); });
   }
+
+  // Update node palette
+  for (const auto& section : mStructureTab->findChildren<SectionWidget*>())
+  {
+    if (auto* library = qobject_cast<LibraryContainer*>(section->content()))
+      library->setColumnCount(mSettingsManager->appearance().numberOfColumns);
+  }
+
+  for (const auto& section : mBehaviourTab->findChildren<SectionWidget*>())
+  {
+    if (auto* library = qobject_cast<LibraryContainer*>(section->content()))
+      library->setColumnCount(mSettingsManager->appearance().numberOfColumns);
+  }
+
+  for (const auto& section : mPipelineTab->findChildren<SectionWidget*>())
+  {
+    if (auto* library = qobject_cast<LibraryContainer*>(section->content()))
+      library->setColumnCount(mSettingsManager->appearance().numberOfColumns);
+  }
 }
 
 void MainWindow::startUI()
@@ -632,6 +651,8 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
     if (auto info = mConfigTable->get(nodeType))
       mInfoText->setHtml(createInformationMessage(*info));
   });
+  // Make sure the configured value is there by default
+  sidebarview->setColumnCount(mSettingsManager->appearance().numberOfColumns);
 
   auto nodes = config[ConfigKeys::NODES];
   if (!nodes.isArray())
@@ -644,7 +665,7 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
       return VoidResult::Failed("Invalid node format");
 
     QJsonObject node = value.toObject();
-    LOG_INFO("Loading element: %s", qPrintable(node[ConfigKeys::TYPE].toString()));
+    // LOG_INFO("Loading element: %s", qPrintable(node[ConfigKeys::TYPE].toString()));
 
     // Parse config and make sure it is valid before continuing
     auto nodeConfig = std::make_shared<NodeConfig>(node);
