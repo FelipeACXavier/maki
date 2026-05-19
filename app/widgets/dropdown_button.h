@@ -15,18 +15,23 @@ public:
   void setCurrentOption(const QString& name);
   QString currentOption();
 
-  // void setBaseText(const QString& text);
-
+  void setSize(int width, int height);
   void reset();
 
 signals:
   void executeRequested(const QString& option);
   void editOptionRequested(const QString& option);
 
+protected:
+  QSize sizeHint() const override;
+  void paintEvent(QPaintEvent* event) override;
+
 private:
   QMenu* mMenu = nullptr;
   QList<QString> mOptions;
   QString mCurrentOption;
+  int mWidth = 150;
+  int mHeight = 40;
 
   void rebuildMenu();
   void updateButtonText();
