@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QSet>
+#include <mutex>
 
 #include "pipeline_action.h"
 #include "pipeline_context.h"
@@ -25,6 +26,8 @@ public:
   VoidResult run(const PipelineGraph& graph, PipelineContext& context);
 
   PipelineActionRegistry* registry() const;
+  bool isRunning() const;
+  VoidResult abort();
 
 signals:
   void nodeStarted(const QString& nodeId, const QString& displayName);
@@ -43,12 +46,21 @@ private:
   PipelineGraph mGraph;
   QString mProgressId;
 
+  mutable std::mutex mStateMutex;
+  enum class State
+  {
+    Idle,
+    Running,
+    Aborting
+  } mRunning;
+
   std::optional<PipelineNode> findNode(const PipelineGraph& graph, const QString& nodeId) const;
   VoidResult validateInputs(const IPipelineAction& action, const PipelineContext& context) const;
   Result<QList<QString>> executionOrder(const PipelineGraph& graph) const;
 
   VoidResult runNextNode();
   VoidResult continueAfterNode();
+  void done(const QString& message);
 
   int mInitialCount = 0;
   QVector<QWidget*> mOldWidgets = {};

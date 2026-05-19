@@ -15,6 +15,7 @@ public:
   void setCurrentOption(const QString& name);
   QString currentOption();
 
+  void setRunning(bool running);
   void setSize(int width, int height);
   void reset();
 
@@ -32,6 +33,7 @@ private:
   QString mCurrentOption;
   int mWidth = 150;
   int mHeight = 40;
+  bool mRunning = false;
 
   void rebuildMenu();
   void updateButtonText();

@@ -297,7 +297,7 @@ static QWidget* findAncestor(QWidget* w, const QMetaObject* type)
 {
   while (w)
   {
-    LOG_TRACE("Finding: %s vs %s", qPrintable(type->className()), qPrintable(w->metaObject()->className()));
+    // LOG_TRACE("Finding: %s vs %s", qPrintable(type->className()), qPrintable(w->metaObject()->className()));
     if (w->metaObject()->inherits(type))
       return w;
     w = w->parentWidget();
@@ -734,6 +734,13 @@ void MainWindow::onActionGenerate(const QString& pipelineId)
 
   if (!mPluginPipeline)
     LOG_WARNING("No pipeline available");
+
+  // If we are running, then we should cancel
+  if (mPluginPipeline->isRunning())
+  {
+    LOG_WARN_ON_FAILURE(mPluginPipeline->abort());
+    return;
+  }
 
   // We should have three buttons:
   // - Verify
