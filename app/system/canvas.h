@@ -476,7 +476,7 @@ private:
   void alignNodesVertically(const QList<Types::AlignmentNode>& items, Types::AlignmentDirection direction);
 
   // Context menu
-  QMenu* createAlignMenu(const QList<Types::AlignmentNode>& items);  /// Creates a context menu for alignment options.
+  void createAlignMenu(QMenu* alignMenu, const QList<Types::AlignmentNode>& items);  /// Creates a context menu for alignment options.
 
   QVector<QGraphicsItem*> removeNode(NodeItem* node);  /// Removes a node and its associated connections.
 
