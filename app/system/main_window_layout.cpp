@@ -218,7 +218,7 @@ void MainWindowLayout::buildCentralPanel()
   // ----------------------------------------------------------------
   mPipelineRun = new DropDownButton(header);
   mPipelineRun->setIcon(QIcon::fromTheme("exaile-play"));
-  // mPipelineRun->setBaseText(tr("Generate"));
+  mPipelineRun->setToolTip(tr("Run pipeline"));
 
   headerLayout->addWidget(mPipelineRun);
 
@@ -852,15 +852,15 @@ void MainWindowLayout::toggleGenerationButton(bool running)
     mGenerationSpinner->setSpinning(true);
     mGenerationSpinner->setVisible(true);
     mPipelineRun->setToolTip(tr("Cancel current pipeline"));
-    mPipelineRun->setIcon(QIcon(":/icons/pause.svg"));
   }
   else
   {
     mGenerationSpinner->setSpinning(false);
     mGenerationSpinner->setVisible(false);
     mPipelineRun->setToolTip(tr("Run pipeline"));
-    mPipelineRun->setIcon(QIcon::fromTheme("exaile-play"));
   }
+
+  mPipelineRun->setRunning(running);
 }
 
 void MainWindowLayout::togglePanelVisibility(QWidget* panel, QAction* action)

@@ -131,6 +131,12 @@ void DropDownButton::setSize(int width, int height)
   mHeight = height;
 }
 
+void DropDownButton::setRunning(bool running)
+{
+  mRunning = running;
+  update();
+}
+
 QSize DropDownButton::sizeHint() const
 {
   return {mWidth, mHeight};
@@ -178,18 +184,34 @@ void DropDownButton::paintEvent(QPaintEvent* event)
   painter.setBrush(playBg);
   painter.drawEllipse(circleRect);
 
-  // Play triangle.
-  QPolygonF triangle;
-  const auto z = (circleSize - theme.spacing) / 2;
-  const auto x = 0.5 * z;    // cos(60)
-  const auto y = 0.866 * z;  // sin(60)
-  const QPointF c = circleRect.center() - QPointF{0, -1};
-  triangle << QPointF(c.x() - x, c.y() - y)
-           << QPointF(c.x() - x, c.y() + y)
-           << QPointF(c.x() + z, c.y());
-
   painter.setBrush(Qt::white);
-  painter.drawPolygon(triangle);
+  const QPointF c = circleRect.center() - QPointF{0, -1};
+  if (mRunning)
+  {
+    // Pause icon
+    const int barWidth = 4;
+    const int barHeight = circleSize / 2;
+    const int gap = 4;
+
+    QRectF leftBar(c.x() - gap / 2.0 - barWidth / 2.0, c.y() - barHeight / 2.0, barWidth, barHeight);
+    QRectF rightBar(c.x() + gap / 2.0, c.y() - barHeight / 2.0, barWidth, barHeight);
+
+    painter.drawRoundedRect(leftBar, 1.5, 1.5);
+    painter.drawRoundedRect(rightBar, 1.5, 1.5);
+  }
+  else
+  {
+    // Play triangle.
+    QPolygonF triangle;
+    const auto z = (circleSize - theme.spacing) / 2;
+    const auto x = 0.5 * z;    // cos(60)
+    const auto y = 0.866 * z;  // sin(60)
+    triangle << QPointF(c.x() - x, c.y() - y)
+             << QPointF(c.x() - x, c.y() + y)
+             << QPointF(c.x() + z, c.y());
+
+    painter.drawPolygon(triangle);
+  }
 
   // Text.
   const QString label = mCurrentOption.isEmpty() ? text() : mCurrentOption;

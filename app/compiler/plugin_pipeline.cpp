@@ -5,6 +5,7 @@
 #include <QProgressBar>
 #include <QTimer>
 #include <QVBoxLayout>
+#include <mutex>
 #include <oclero/qlementine.hpp>
 #include <oclero/qlementine/widgets/Label.hpp>
 
@@ -13,6 +14,7 @@
 #include "pipeline.h"
 #include "pipeline_action.h"
 #include "plugin_action_registry.h"
+#include "result.h"
 
 namespace maki
 {
@@ -33,7 +35,7 @@ PluginPipeline::PluginPipeline(Pipeline* pipeline, QObject* parent)
     }
     else
     {
-      QTimer::singleShot(0, this, [this]() { emit pipelineFinished(""); });
+      QTimer::singleShot(0, this, [this]() { done(""); });
     }
   });
   connect(mPipeline, &Pipeline::errorOccurred, [this](const Pipeline::Info& info, QProcess::ProcessError /* error */, const QString& message) {
@@ -64,8 +66,36 @@ PipelineActionRegistry* PluginPipeline::registry() const
   return mRegistry;
 }
 
+bool PluginPipeline::isRunning() const
+{
+  std::unique_lock<std::mutex> lock(mStateMutex);
+  return mRunning == State::Running;
+}
+
+VoidResult PluginPipeline::abort()
+{
+  if (!isRunning())
+    return VoidResult();
+
+  {
+    std::unique_lock<std::mutex> lock(mStateMutex);
+    mRunning = State::Aborting;
+  }
+
+  if (mPipeline->isRunning())
+    RETURN_ON_FAILURE(mPipeline->abort());
+
+  return VoidResult();
+}
+
 VoidResult PluginPipeline::runNextNode()
 {
+  if (!isRunning())
+  {
+    LOG_DEBUG("Run cancelled");
+    return VoidResult();
+  }
+
   if (mCurrentIndex >= mExecutionOrder.size())
   {
     mProgressId = NOTIFY_LONG_INFO(mProgressId, "Pipeline Progress", progressWidget());
@@ -74,7 +104,7 @@ VoidResult PluginPipeline::runNextNode()
 
     mProgressId = NOTIFY_LONG_INFO(mProgressId, "Pipeline Progress", nullptr);
 
-    emit pipelineFinished(mContext.projectDir.absolutePath());
+    done(mContext.projectDir.absolutePath());
     return VoidResult();
   }
 
@@ -146,13 +176,28 @@ VoidResult PluginPipeline::run(const PipelineGraph& graph, PipelineContext& cont
   mProgressId.clear();
   mExecutionOrder = orderResult.Value();
 
+  {
+    std::unique_lock<std::mutex> lock(mStateMutex);
+    mRunning = State::Running;
+  }
+
   emit pipelineStarted();
 
   auto ran = runNextNode();
   if (!ran.IsSuccess())
-    emit pipelineFinished("");
+    done("");
 
   return ran;
+}
+
+void PluginPipeline::done(const QString& message)
+{
+  emit pipelineFinished(message);
+
+  {
+    std::unique_lock<std::mutex> lock(mStateMutex);
+    mRunning = State::Idle;
+  }
 }
 
 std::optional<PipelineNode> PluginPipeline::findNode(const PipelineGraph& graph, const QString& nodeId) const
