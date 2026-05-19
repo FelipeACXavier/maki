@@ -352,7 +352,10 @@ QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<NodeSaveInfo>>&
 
   nodes.resize(size);
   for (int i = 0; i < size; ++i)
+  {
+    nodes[i] = std::make_shared<NodeSaveInfo>();
     in >> *nodes[i];
+  }
 
   return in;
 }
