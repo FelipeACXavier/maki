@@ -1,11 +1,10 @@
 #include "dropdown_button.h"
 
-#include <qcoreapplication.h>
-#include <qsize.h>
-#include <qsizepolicy.h>
-
 #include <QActionGroup>
 #include <QMenu>
+#include <QPainter>
+#include <QStyleOptionToolButton>
+#include <oclero/qlementine.hpp>
 
 #include "logging.h"
 
@@ -14,6 +13,7 @@ DropDownButton::DropDownButton(QWidget* parent)
 {
   mMenu = new QMenu(this);
   mMenu->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+  mMenu->setFixedWidth(mWidth);
 
   setMenu(mMenu);
   setEnabled(true);
@@ -123,4 +123,97 @@ void DropDownButton::buildMenu(QMenu* menu, const QString& option, bool addRun)
   connect(editAction, &QAction::triggered, this, [this, option] {
     emit editOptionRequested(option);
   });
+}
+
+void DropDownButton::setSize(int width, int height)
+{
+  mWidth = width;
+  mHeight = height;
+}
+
+QSize DropDownButton::sizeHint() const
+{
+  return {mWidth, mHeight};
+}
+
+void DropDownButton::paintEvent(QPaintEvent* event)
+{
+  auto* qlementineStyle = oclero::qlementine::appStyle();
+  if (!qlementineStyle)
+  {
+    QToolButton::paintEvent(event);
+    return;
+  }
+  const auto theme = qlementineStyle->theme();
+
+  QPainter painter(this);
+  painter.setRenderHint(QPainter::Antialiasing);
+
+  const QRect r = rect().adjusted(theme.borderWidth, theme.borderWidth, -theme.borderWidth, -theme.borderWidth);
+
+  const bool hovered = underMouse();
+  const bool pressed = isDown();
+
+  QColor bg = theme.backgroundColorMain2;
+  if (hovered || pressed)
+    bg = theme.backgroundColorMain3;
+
+  painter.setPen(theme.borderColor);
+  painter.setBrush(bg);
+  painter.drawRoundedRect(r, 8, 8);
+
+  // Left circular play area.
+  const int circleSize = height() - 2 * theme.spacing;
+  const QRect circleRect(r.left() + theme.spacing, r.center().y() - circleSize / 2, circleSize, circleSize);
+
+  // A nice medium green
+  QColor playBg(45, 160, 80);
+
+  if (hovered)
+    playBg = playBg.darker(108);
+  if (!isEnabled())
+    playBg = theme.neutralColorDisabled;
+
+  painter.setPen(Qt::NoPen);
+  painter.setBrush(playBg);
+  painter.drawEllipse(circleRect);
+
+  // Play triangle.
+  QPolygonF triangle;
+  const auto z = (circleSize - theme.spacing) / 2;
+  const auto x = 0.5 * z;    // cos(60)
+  const auto y = 0.866 * z;  // sin(60)
+  const QPointF c = circleRect.center() - QPointF{0, -1};
+  triangle << QPointF(c.x() - x, c.y() - y)
+           << QPointF(c.x() - x, c.y() + y)
+           << QPointF(c.x() + z, c.y());
+
+  painter.setBrush(Qt::white);
+  painter.drawPolygon(triangle);
+
+  // Text.
+  const QString label = mCurrentOption.isEmpty() ? text() : mCurrentOption;
+  QRect textRect = r.adjusted(circleRect.right() + theme.spacing, 0, -theme.spacing, 0);
+
+  painter.setPen(isEnabled() ? theme.secondaryColor : theme.secondaryColorDisabled);
+  painter.drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft, fontMetrics().elidedText(label, Qt::ElideRight, textRect.width()));
+
+  // Dropdown divider.
+  const int arrowAreaWidth = 24;
+  const int dividerX = r.right() - arrowAreaWidth;
+
+  painter.setPen(theme.secondaryColorDisabled);
+  painter.drawLine(dividerX, r.top() + theme.spacing, dividerX, r.bottom() - theme.spacing);
+
+  // Arrow.
+  QPolygonF arrow;
+  const QPointF ac(dividerX + static_cast<qreal>(arrowAreaWidth) / 2, r.center().y() + 1);
+
+  arrow << QPointF(ac.x() - 4, ac.y() - 2)
+        << QPointF(ac.x() + 4, ac.y() - 2)
+        << QPointF(ac.x(), ac.y() + 3);
+
+  painter.setPen(Qt::NoPen);
+  painter.setBrush(theme.secondaryColor);
+  painter.drawPolygon(arrow);
 }
