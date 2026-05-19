@@ -13,8 +13,8 @@
 #include "logging.h"
 #include "node.h"
 
-const qreal MAX_WIDTH = 80.0;
-const qreal MAX_HEIGHT = 80.0;
+const qreal MAX_WIDTH = 60.0;
+const qreal MAX_HEIGHT = 60.0;
 
 void renderShapeSvg(QSvgRenderer& renderer, QPainter* painter, const QRectF& drawingBounds)
 {

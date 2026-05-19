@@ -225,6 +225,7 @@ VoidResult SettingsDialog::createAppearancePage()
     mNativeMenuBar->setValue(defaultSettings.nativeMenuBar);
     mUiScale->setValue(defaultSettings.uiScalePercent);
     mNodeCornerRadius->setValue(defaultSettings.nodeCornerRadius);
+    mNumberOfColumns->setValue(defaultSettings.numberOfColumns);
     mShowGrid->setValue(defaultSettings.showCanvasGrid);
     mStartLogTableFilters->setValue(defaultSettings.startLogFilterExpanded);
 
@@ -307,6 +308,10 @@ VoidResult SettingsDialog::createAppearancePage()
   mNodeCornerRadius = new maki::SpinWidget(tr("Node corner radius"), appearance.nodeCornerRadius, page, 0, 30);
   mNodeCornerRadius->setSuffix(" pixels");
 
+  mNumberOfColumns = new maki::SpinWidget(tr("Number of columns in the node palette"), appearance.numberOfColumns, page, 0, 4);
+  mNumberOfColumns->setSuffix(" " + tr("columns"));
+  mNumberOfColumns->addDescription(tr("Note: The width of the palette will not update automatically"));
+
   mShowGrid = new maki::BooleanWidget(tr("Show canvas grid"), appearance.showCanvasGrid, alignment, page);
   mStartLogTableFilters = new maki::BooleanWidget(tr("Show log table filters on start"), appearance.startLogFilterExpanded, alignment, page);
 
@@ -315,6 +320,7 @@ VoidResult SettingsDialog::createAppearancePage()
   editorLayout->addWidget(mShowGrid);
   editorLayout->addWidget(mStartLogTableFilters);
   editorLayout->addWidget(mNodeCornerRadius);
+  editorLayout->addWidget(mNumberOfColumns);
 
   QVBoxLayout* layout = page->findChild<QVBoxLayout*>("ContentArea");
   layout->addWidget(themeLayout);
@@ -545,6 +551,7 @@ void SettingsDialog::saveToSettings()
   appearance.startLogFilterExpanded = mStartLogTableFilters->getValue();
   appearance.nativeMenuBar = mNativeMenuBar->getValue();
   appearance.nodeCornerRadius = mNodeCornerRadius->getValue();
+  appearance.numberOfColumns = mNumberOfColumns->getValue();
 
   GenerationSettings generation;
   generation.generationDir = mGenerationDirEdit->getValue();

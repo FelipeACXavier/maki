@@ -45,6 +45,11 @@ public:
    */
   bool filterNodes(const QString& query);
 
+  /**
+   * @brief Update the number of columns in the library
+   */
+  void setColumnCount(int count);
+
 protected:
   /**
    * @brief Handles resize events for the LibraryContainer.
@@ -55,6 +60,7 @@ protected:
 
 private:
   int mLastItemY;  /// The last Y position of an item in the scene.
+  int mColumnCount = 2;
 
   /**
    * @brief Updates the size of the scene based on the current view size.
@@ -62,7 +68,7 @@ private:
   void updateSceneSize();
 
   /**
-   * @brief Adjusts the positions of nodes within the scene.
+   * @brief Update layout after a column change
    */
-  void adjustNodePositions();
+  void relayoutItems();
 };

@@ -656,20 +656,22 @@ int MainWindowLayout::setTabBarWidth(QTabBar* bar, int minWidth, int minBorder, 
   QFontMetrics fm(bar->font());
   int iconSize = bar->iconSize().width();
   int maxWidth = minWidth;
+  int count = 0;
 
   // Check the width of all tabs and get the largest
   for (int i = 0; i < bar->count(); ++i)
   {
+    if (!bar->isTabEnabled(i) || !bar->isTabVisible(i))
+      continue;
+
     int textWidth = fm.horizontalAdvance(bar->tabText(i)) + iconSize + (2 * minPadding);
     maxWidth = qMax(textWidth, maxWidth);
+    count++;
   }
-
-  // Set the width of the tabs
-  // applyStyle(bar, QString("QTabBar::tab { width: %1 }").arg(maxWidth));
 
   int singleBarWidth = (maxWidth) + (2 * minBorder) + (2 * minPadding);
 
-  return bar->count() * singleBarWidth;
+  return count * singleBarWidth;
 }
 
 void MainWindowLayout::applyTheme()
