@@ -32,7 +32,6 @@ DropDownButton::DropDownButton(QWidget* parent)
 
 void DropDownButton::addOption(const QString& name)
 {
-  LOG_INFO("Adding option: %s", qPrintable(name));
   mOptions.push_back(name);
   rebuildMenu();
 }
@@ -101,27 +100,34 @@ void DropDownButton::showContextMenu(const QPoint& event)
 
 void DropDownButton::buildMenu(QMenu* menu, const QString& option, bool addRun)
 {
-  auto* runAction = menu->addAction(tr("Run"));
-  auto* selectAction = menu->addAction(tr("Select"));
-  menu->addSeparator();
+  if (addRun)
+  {
+    auto* runAction = menu->addAction(QIcon::fromTheme("run-build"), tr("Run"));
+    connect(runAction, &QAction::triggered, this, [this, option] {
+      mCurrentOption = option;
+      updateButtonText();
+      emit executeRequested(option);
+    });
+  }
 
-  auto* addAction = menu->addAction(tr("Add..."));
-  auto* editAction = menu->addAction(tr("Edit..."));
-
-  connect(runAction, &QAction::triggered, this, [this, option] {
-    mCurrentOption = option;
-    updateButtonText();
-    emit executeRequested(option);
-  });
+  auto* selectAction = menu->addAction(QIcon::fromTheme("select"), tr("Select"));
   connect(selectAction, &QAction::triggered, this, [this, option] {
     mCurrentOption = option;
     updateButtonText();
   });
+  menu->addSeparator();
+
+  auto* addAction = menu->addAction(QIcon::fromTheme("document-new"), tr("Add"));
   connect(addAction, &QAction::triggered, this, [this, option] {
     emit editOptionRequested("");
   });
+  auto* editAction = menu->addAction(QIcon::fromTheme("document-edit"), tr("Edit"));
   connect(editAction, &QAction::triggered, this, [this, option] {
     emit editOptionRequested(option);
+  });
+  auto* deleteAction = menu->addAction(QIcon::fromTheme("edit-delete"), tr("Delete"));
+  connect(deleteAction, &QAction::triggered, this, [this, option] {
+    emit deleteOptionRequested(option);
   });
 }
 
