@@ -22,6 +22,7 @@ public:
 signals:
   void executeRequested(const QString& option);
   void editOptionRequested(const QString& option);
+  void deleteOptionRequested(const QString& option);
 
 protected:
   QSize sizeHint() const override;
