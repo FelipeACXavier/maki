@@ -1,0 +1,134 @@
+{
+    "events": [
+        {
+            "arguments": [
+                {
+                    "default": 0,
+                    "id": "x",
+                    "type": 3
+                },
+                {
+                    "default": 0,
+                    "id": "y",
+                    "type": 3
+                },
+                {
+                    "default": 0,
+                    "id": "yaw",
+                    "type": 3
+                }
+            ],
+            "id": "{331d043e-26b6-4c78-861b-2bfd1ee8086d}",
+            "linksTo": 0,
+            "modifiable": false,
+            "name": "to_position",
+            "owner": "",
+            "returnType": "void",
+            "type": "trigger"
+        },
+        {
+            "arguments": [
+            ],
+            "id": "{bf3e9ba2-8402-4847-b243-dac77a173996}",
+            "linksTo": 0,
+            "modifiable": false,
+            "name": "abort",
+            "owner": "",
+            "returnType": "void",
+            "type": "abort"
+        },
+        {
+            "arguments": [
+                {
+                    "default": 0,
+                    "id": "x",
+                    "type": 3
+                },
+                {
+                    "default": 0,
+                    "id": "y",
+                    "type": 3
+                },
+                {
+                    "default": 0,
+                    "id": "yaw",
+                    "type": 3
+                }
+            ],
+            "id": "{f28a47f8-0e6a-4488-affa-70faecbb23c4}",
+            "linksTo": 0,
+            "modifiable": false,
+            "name": "in_position",
+            "owner": "",
+            "returnType": "void",
+            "type": "return"
+        },
+        {
+            "arguments": [
+            ],
+            "id": "{5eacbe4f-c891-41ec-97b5-29c836a7050e}",
+            "linksTo": 0,
+            "modifiable": false,
+            "name": "path_blocked",
+            "owner": "",
+            "returnType": "void",
+            "type": "error"
+        }
+    ],
+    "iconPath": "C:/Users/20175791/Documents/maki/build/windows/Debug/bin/../assets/icons/capability_drive.svg",
+    "id": "{f57eb3b3-e2f7-413e-a217-08f7d722119d}",
+    "nodeId": "Koda::Drive",
+    "parentId": "{31535016-8c1e-443c-b794-2cd1d5732f2c}",
+    "pixmap": {
+        "data": "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"
+    },
+    "position": {
+        "x": -542.8,
+        "y": -330
+    },
+    "properties": {
+        "arguments": [
+            {
+                "id": "x",
+                "type": "float"
+            },
+            {
+                "id": "y",
+                "type": "float"
+            },
+            {
+                "id": "yaw",
+                "type": "float"
+            }
+        ],
+        "color": "#e6e6e6",
+        "name": "Drive",
+        "type": {
+            "id": "type",
+            "options": [
+                {
+                    "id": "action",
+                    "options": [
+                        {
+                            "default": "/drive",
+                            "id": "route",
+                            "type": "string"
+                        },
+                        {
+                            "default": "nav2_msgs::action::NavigateToPose::Goal",
+                            "id": "message",
+                            "type": "string"
+                        }
+                    ],
+                    "type": "string"
+                }
+            ],
+            "type": "void"
+        }
+    },
+    "scale": 5.555555555555555,
+    "size": {
+        "height": 90,
+        "width": 90
+    }
+}
