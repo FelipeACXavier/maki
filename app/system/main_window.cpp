@@ -597,6 +597,7 @@ VoidResult MainWindow::loadElements()
   // Once we are done with the libraries, we can make sure they are positioned on the top
   dynamic_cast<QVBoxLayout*>(mStructureTab->layout())->addStretch();
   dynamic_cast<QVBoxLayout*>(mBehaviourTab->layout())->addStretch();
+  dynamic_cast<QVBoxLayout*>(mPipelineTab->layout())->addStretch();
 
   return VoidResult();
 }
