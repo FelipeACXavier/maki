@@ -68,13 +68,17 @@ VoidResult copyDirectory(const QString& sourceDir, const QString& targetDir)
 
 bool KodaGenerator::setup()
 {
-  mSimulator = new DezyneSimulator(this);
+  if (!mSimulator)
+  {
+    mSimulator = new DezyneSimulator(this);
 
-  connect(mSimulator, &DezyneSimulator::simulationStarted, this, &KodaGenerator::simulationStarted);
-  connect(mSimulator, &DezyneSimulator::simulationUpdated, this, &KodaGenerator::simulationUpdated);
+    connect(mSimulator, &DezyneSimulator::simulationStarted, this, &KodaGenerator::simulationStarted);
+    connect(mSimulator, &DezyneSimulator::simulationUpdated, this, &KodaGenerator::simulationUpdated);
+  }
 
   // Start the ide daemon on a specific port
-  return startDaemon();
+  // return startDaemon();
+  return true;
 }
 
 bool KodaGenerator::tearDown()
@@ -268,6 +272,8 @@ VoidResult KodaGenerator::simulate(const maki::PipelineArtifact& artifact)
     return VoidResult::Failed("Cannot proceed with simulation, no plugin tab provided");
   else if (mServices->document() == nullptr)
     return VoidResult::Failed("Cannot proceed with simulation, no document provided");
+  else if (!setup())
+    return VoidResult::Failed("Could not setup simulator");
 
   if (!artifact.paths.contains("modelDir"))
     return VoidResult::Failed("No model folder provided");
@@ -485,6 +491,8 @@ VoidResult KodaGenerator::verify(const maki::PipelineArtifact& artifact, const Q
     return VoidResult::Failed("Cannot proceed with verification, no pipeline provided");
   else if (mServices->document() == nullptr)
     return VoidResult::Failed("Cannot proceed with verification, no document provided");
+  // else if (!setup())
+  //   return VoidResult::Failed("Could not setup plugin");
 
   if (mServices->document()->getnodes().isEmpty())
     return VoidResult::Failed("Nothing to verify");
@@ -1206,6 +1214,9 @@ QString KodaGenerator::fixCase(const QString& name)
 
 bool KodaGenerator::startDaemon()
 {
+  if (mDaemon)
+    return true;
+
   mDaemon = new QProcess(this);
 
   connect(mDaemon, &QProcess::started, this, []() {
