@@ -703,7 +703,7 @@ VoidResult KodaGenerator::generateComponent(const INode& node, const QString& in
   QString fileName = mOutputFolder.filePath(name + ".kd");
   QFile file(fileName);
   if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
-    return VoidResult::Failed("Failed to open device for writing");
+    return VoidResult::Failed("Failed to open device for writing: " + fileName.toStdString());
 
   mGeneratedFiles.append(fileName);
 

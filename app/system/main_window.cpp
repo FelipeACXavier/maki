@@ -4,6 +4,7 @@
 #include <qhashfunctions.h>
 #include <qjsonarray.h>
 #include <qjsonobject.h>
+#include <qobject.h>
 
 #include <QComboBox>
 #include <QDrag>
@@ -371,7 +372,7 @@ void MainWindow::bind()
   connect(mActionOpen, &QAction::triggered, [this] { onActionLoad(""); });
   mActionOpen->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_O));
 
-  connect(mActionSave, &QAction::triggered, this, &MainWindow::onActionSave);
+  connect(mActionSave, &QAction::triggered, [this] { LOG_WARN_ON_FAILURE(onActionSave()); });
   mActionSave->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_S));
 
   connect(mActionExit, &QAction::triggered, this, &MainWindow::onActionExit);
@@ -753,9 +754,19 @@ void MainWindow::onActionGenerate(const QString& pipelineId)
   QDataStream out(&byteArray, QIODevice::WriteOnly);
   out << mHostServices->document()->getnodes();
 
+  if (mStorage->name.isEmpty())
+  {
+    auto saved = onActionSave();
+    if (!saved.IsSuccess())
+    {
+      NOTIFY_ERROR("Pipeline", "Failed to run pipeline: " + saved.ErrorMessage());
+      return;
+    }
+  }
+
   maki::PipelineContext context;
-  context.buildDir = QDir(mSettingsManager->generation().generationDir);
-  context.projectDir = QDir(mSettingsManager->generation().generationDir);
+  context.buildDir = QDir(mSettingsManager->generation().generationDir + "/" + mStorage->name);
+  context.projectDir = QDir(mSettingsManager->generation().generationDir + "/" + mStorage->name);
   context.addArtifact({
       .id = "maki.nodes",
       .type = "maki",
@@ -764,6 +775,10 @@ void MainWindow::onActionGenerate(const QString& pipelineId)
           {"nodes", byteArray.toBase64()},
       },
   });
+
+  // Make sure the project exists
+  if (!context.buildDir.exists())
+    context.buildDir.mkpath(".");
 
   for (const auto& pipeline : mStorage->pipelines())
   {
@@ -964,13 +979,10 @@ void MainWindow::onActionDeploy()
   LOG_ERROR_ON_FAILURE(mPluginPipeline->run(graph, context));
 }
 
-void MainWindow::onActionSave()
+VoidResult MainWindow::onActionSave()
 {
   if (!mSaveHandler)
-  {
-    LOG_WARNING("System not initialized");
-    return;
-  }
+    return VoidResult::Failed("System not initialized");
 
   if (CanvasView* view = qobject_cast<CanvasView*>(mCanvasPanel->widget(0)))
   {
@@ -983,7 +995,7 @@ void MainWindow::onActionSave()
     }
   }
 
-  LOG_WARN_ON_FAILURE(mSaveHandler->saveProject(*mStorage));
+  return mSaveHandler->saveProject(*mStorage);
 }
 
 void MainWindow::onActionSaveAs()
@@ -1138,38 +1150,43 @@ void MainWindow::onCanvasTabChanged(int index)
 
 void MainWindow::closeCanvasTab(int index)
 {
-  if (CanvasView* newCanvas = qobject_cast<CanvasView*>(mCanvasPanel->widget(index)))
+  if (CanvasView* closedCanvas = qobject_cast<CanvasView*>(mCanvasPanel->widget(index)))
   {
-    auto toBeRemoved = qobject_cast<Canvas*>(newCanvas->scene());
+    auto toBeRemoved = qobject_cast<Canvas*>(closedCanvas->scene());
     mUndoGroup->removeStack(toBeRemoved->undoStack());
 
-    if (newCanvas->scene() == mActiveCanvas)
+    if (closedCanvas->scene() == mActiveCanvas)
     {
       unbindCanvas();
 
       if (index > 0)
       {
         // The previous tab becomes the new active tab
-        newCanvas = qobject_cast<CanvasView*>(mCanvasPanel->widget(index - 1));
-        mActiveCanvas = qobject_cast<Canvas*>(newCanvas->scene());
-        bindCanvas();
-
-        if (mActiveCanvas->type() == Types::LibraryTypes::PIPELINE)
+        if (auto* newCanvas = qobject_cast<CanvasView*>(mCanvasPanel->widget(index - 1)))
         {
-          // If we are closing a pipeline canvas, then we must hide it
-          mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::STRUCTURAL), false);
-          mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::BEHAVIOUR), false);
-          mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::PIPELINE), true);
-        }
-        else
-        {
-          mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::STRUCTURAL), true);
-          mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::BEHAVIOUR), true);
-          mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::PIPELINE), false);
-        }
+          mActiveCanvas = qobject_cast<Canvas*>(newCanvas->scene());
+          if (mActiveCanvas)
+          {
+            bindCanvas();
 
-        auto libIndex = libraryTypeToIndex(mActiveCanvas->type());
-        mPalette->setCurrentIndex(libIndex);
+            if (mActiveCanvas->type() == Types::LibraryTypes::PIPELINE)
+            {
+              // If we are closing a pipeline canvas, then we must hide it
+              mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::STRUCTURAL), false);
+              mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::BEHAVIOUR), false);
+              mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::PIPELINE), true);
+            }
+            else
+            {
+              mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::STRUCTURAL), true);
+              mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::BEHAVIOUR), true);
+              mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::PIPELINE), false);
+            }
+
+            auto libIndex = libraryTypeToIndex(mActiveCanvas->type());
+            mPalette->setCurrentIndex(libIndex);
+          }
+        }
       }
     }
   }
