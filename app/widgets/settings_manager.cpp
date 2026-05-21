@@ -32,11 +32,12 @@
 
 SettingsManager::SettingsManager(oclero::qlementine::ThemeManager* themeManager, QObject* parent)
     : QObject(parent)
-    , mSettings(Config::ORGANIZATION_NAME, Config::APPLICATION_NAME)
+    , mSettings(  QSettings::IniFormat, QSettings::UserScope, Config::ORGANIZATION_NAME, Config::APPLICATION_NAME)
     , mThemeManager(themeManager)
 {
-  // mAvailableThemes = Config::discoverThemes();
   load();
+  // Even if there is nothing, let's create the file on start up
+  save();
 }
 
 GeneralSettings SettingsManager::general() const
@@ -82,7 +83,15 @@ void SettingsManager::themeCreated(const QString& themePath)
 void SettingsManager::load()
 {
   if (!QFile(mSettings.fileName()).exists())
+  {
+    LOG_DEBUG("No configuration file: %s", qPrintable(mSettings.fileName()));
     return;
+  }
+  else if (mSettings.allKeys().isEmpty())
+  {
+    LOG_DEBUG("Empty configuration: %s", qPrintable(mSettings.fileName()));
+    return;
+  }
 
   LOG_DEBUG("Loading from: %s", qPrintable(mSettings.fileName()));
   mSettings.beginGroup("General");

@@ -331,7 +331,7 @@ void MainWindowLayout::buildCentralPanel()
   mLogTable = new LogTableWidget(logContainer);
   logLayout->addWidget(mLogTable);
 
-  mBottomNavigation->addItem(tr("Log"), QIcon(":/icons/logs.svg"));
+  mBottomNavigation->addItem(tr("Logs"), QIcon(":/icons/logs.svg"));
   mBottomPanel->addWidget(logContainer);
 
   // -----------------------------------------------------------------

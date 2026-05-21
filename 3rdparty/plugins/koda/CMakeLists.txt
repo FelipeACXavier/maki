@@ -9,10 +9,13 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+if (MSVC)
+set(antlr4-runtime_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg_installed/x64-windows/share/antlr4-runtime")
+endif()
+
 # If we are building with MAKI (with BUILD_PLUGINS), then just use MAKI's settings
 if (NOT BUILD_PLUGINS)
   if (MSVC)
-    set(antlr4-runtime_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg_installed/x64-windows/share/antlr4-runtime")
     add_compile_options(/W4 /MP)
 
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -111,9 +114,11 @@ target_include_directories(${LIB_NAME}
     ${ANTLR4_RUNTIME_INCLUDE_DIR}
 )
 
-target_link_libraries(${LIB_NAME} PRIVATE
-  ${ANTLR4_RUNTIME_LIBRARY}
-  libcpphelpers
+target_link_libraries(${LIB_NAME}
+  PUBLIC
+    ${ANTLR4_RUNTIME_LIBRARY}
+  PRIVATE
+    libcpphelpers
 )
 
 install(TARGETS ${LIB_NAME}

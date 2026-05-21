@@ -5,6 +5,7 @@
 #include <QDir>
 #include <QJsonArray>
 #include <QPluginLoader>
+#include <QSysInfo>
 #include <QWidget>
 
 #include "compiler/pipeline.h"
@@ -28,10 +29,34 @@ class PipelineActionRegistry;
 class Manifest
 {
 public:
+  enum class Shell {
+    Unknown,
+    Any,
+    Powershell,
+    Bash
+  };
+
+  static Manifest::Shell stringToShell(const QString& shell)
+  {
+    if (shell == "powershell")
+      return Shell::Powershell;
+    else if (shell == "bash")
+      return Shell::Bash;
+    else
+      return Shell::Unknown;
+  }
+
   struct InstallStep
   {
+    QStringList os;
+    Manifest::Shell shell;
     QString command;
     QStringList args;
+
+    bool osMatches() const
+    {
+      return os.isEmpty() || os.contains(QSysInfo::productType());
+    }
   };
 
   struct Environment
@@ -87,6 +112,13 @@ public:
 
       InstallStep step;
       step.command = obj["command"].toString();
+      if (obj.contains("os"))
+      {
+        for (const auto& value : obj["os"].toArray())
+          step.os.append(value.toString());
+      }
+
+      step.shell = obj.contains("shell") ? stringToShell(obj["shell"].toString()) : Shell::Any;
       if (obj.contains("arguments"))
       {
         QStringList args;

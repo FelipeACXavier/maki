@@ -1,9 +1,5 @@
 #include "koda_generator.h"
 
-#include <qcontainerfwd.h>
-#include <qdir.h>
-#include <qhashfunctions.h>
-
 #include <QApplication>
 #include <QDirIterator>
 #include <QFile>

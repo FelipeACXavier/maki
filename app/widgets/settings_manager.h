@@ -55,7 +55,7 @@ struct AppearanceSettings
   QString theme = "Dark";               /// Current theme.
   int uiScalePercent = 100;             /// UI scale percentage.
   bool showCanvasGrid = true;           /// Whether to show the canvas grid.
-  bool nativeMenuBar = true;            /// Whether to use the native menu bar.
+  bool nativeMenuBar = false;           /// Whether to use the native menu bar.
   int nodeCornerRadius = 8;             /// Node corner radius.
   bool startLogFilterExpanded = true;   /// Start the log table filters collapsed or expanded.
   oclero::qlementine::Theme themeVars;  /// Theme variables.

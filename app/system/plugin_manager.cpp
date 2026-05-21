@@ -1,8 +1,5 @@
 #include "plugin_manager.h"
 
-#include <qcoreapplication.h>
-#include <qdir.h>
-
 #include <QApplication>
 #include <QComboBox>
 #include <QDir>
@@ -139,6 +136,7 @@ VoidResult PluginManager::start(const PluginSettings& settings, HostServices* se
   {
     LOG_DEBUG("There are installation steps needed");
     QTimer::singleShot(0, this, [this] {
+      mIsRunning = true;
       auto result = mPipeline->start();
       if (!result.IsSuccess())
       {
@@ -146,7 +144,6 @@ VoidResult PluginManager::start(const PluginSettings& settings, HostServices* se
         return;
       }
 
-      mIsRunning = true;
     });
   }
 
@@ -287,25 +284,15 @@ VoidResult PluginManager::loadPluginLibraryDir(const Manifest& manifest)
   if (!cookie)
     return VoidResult::Failed("Failed to add DLL directory: " + pluginDir.toStdString());
 
-    // const QString pluginDir = QFileInfo(manifest.path).absolutePath();
-    // LOG_DEBUG("Adding DLL path to PATH: %s", qPrintable(pluginDir));
+  QString path = qEnvironmentVariable("PATH");
+  const QString normalisedPluginDir = QDir(pluginDir).absolutePath();
 
-    // QString path = qEnvironmentVariable("PATH");
-    // const QString normalisedPluginDir = QDir(pluginDir).absolutePath();
+  const QStringList parts = path.split(';', Qt::SkipEmptyParts);
+  for (const QString& part : parts)
+    if (QDir(part).absolutePath().compare(normalisedPluginDir, Qt::CaseInsensitive) == 0)
+      return VoidResult();
 
-    // const QStringList parts = path.split(';', Qt::SkipEmptyParts);
-    // bool alreadyPresent = false;
-    // for (const QString& part : parts)
-    // {
-    //   if (QDir(part).absolutePath().compare(normalisedPluginDir, Qt::CaseInsensitive) == 0)
-    //   {
-    //     alreadyPresent = true;
-    //     break;
-    //   }
-    // }
-
-    // if (!alreadyPresent)
-    //   qputenv("PATH", (normalisedPluginDir + ";" + path).toLocal8Bit());
+  qputenv("PATH", (normalisedPluginDir + ";" + path).toLocal8Bit());
 
 #endif
   return VoidResult();
@@ -316,10 +303,46 @@ VoidResult PluginManager::installPlugin(const Manifest& manifest)
   mPipeline->startGroup(manifest.name);
   for (const auto& step : manifest.installationSteps)
   {
+    if (!step.osMatches())
+    {
+      LOG_DEBUG("Not running command %s in this OS: %s", qPrintable(step.command), qPrintable(QSysInfo::productType()));
+      continue;
+    }
+
+    if (step.shell == Manifest::Shell::Unknown)
+    {
+      LOG_DEBUG("Not running step, unknown shell");
+      continue;
+    }
+
     QProcess* install = new QProcess(this);
     install->setWorkingDirectory(manifest.path);
-    install->setProgram(step.command);
-    install->setArguments(step.args);
+
+    if (step.shell == Manifest::Shell::Powershell)
+    {
+      install->setProgram("powershell.exe");
+      install->setArguments({
+        "-NoProfile",
+        "-ExecutionPolicy", "Bypass",
+        "-Command",
+        step.command,
+        step.args.join(' ')
+      });
+    }
+    else if (step.shell == Manifest::Shell::Bash)
+    {
+      install->setProgram("bash");
+      install->setArguments({
+        "-c",
+        step.command,
+        step.args.join(' ')
+      });
+    }
+    else
+    {
+      install->setProgram(step.command);
+      install->setArguments(step.args);
+    }
     mPipeline->add(install, maki::OnFail::STOP);
   }
 

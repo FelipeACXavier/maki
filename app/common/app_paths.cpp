@@ -1,7 +1,5 @@
 #include "app_paths.h"
 
-#include <qobject.h>
-
 #include <QCoreApplication>
 #include <QDir>
 #include <QFileInfo>
@@ -36,7 +34,7 @@ QString AppPaths::bundledAssetDir()
 {
 #if defined(Q_OS_MACOS)
   return QDir(appDir()).filePath("../Resources/assets");
-#elif defined(Q_OS_WIN)
+#elif defined(Q_OS_WIN) && !defined(_DEBUG)
   return QDir(appDir()).filePath("assets");
 #else
   return QDir(appDir()).filePath("../assets");
@@ -47,7 +45,7 @@ QString AppPaths::bundledPluginDir()
 {
 #if defined(Q_OS_MACOS)
   return QDir(appDir()).filePath("../Resources/plugins");
-#elif defined(Q_OS_WIN)
+#elif defined(Q_OS_WIN) && !defined(_DEBUG)
   return QDir(appDir()).filePath("plugins");
 #else
   return QDir(appDir()).filePath("../plugins");

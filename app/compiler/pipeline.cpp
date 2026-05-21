@@ -12,6 +12,7 @@
 
 static const QString DEFAULT_GROUP = "Default";
 static const int SUCCESS = 0;
+static const int FAILURE = -1;
 static const QRegularExpression ansiRe("\x1B\\[[0-9;?]*[ -/]*[@-~]", QRegularExpression::DontCaptureOption);
 
 Pipeline::Pipeline(QObject* parent)
@@ -257,7 +258,10 @@ VoidResult Pipeline::start(const QString& groupName, bool first)
   mRunningProcess->process->closeWriteChannel();
 
   if (!mRunningProcess->process->waitForStarted())
+  {
+    onFinished(FAILURE, mRunningProcess->process->exitStatus());
     return VoidResult::Failed("Command not found or not executable!");
+  }
 
   emit processStarted(constructInfo(), name, args);
 
