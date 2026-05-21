@@ -1145,7 +1145,7 @@ Result<QString> KodaGenerator::generateEvery(const INode& node, const Argument& 
 Result<QString> KodaGenerator::generateRepeat(const INode& node, const Argument& arg, const IFlow& flow, const QString& format)
 {
   QString code = "";
-  QJsonObject object = node.getproperties()["strategy"].toJsonObject();
+  QJsonObject object = node.getproperties()["capability"].toJsonObject();
   QString val = object["data"].toString();
   QJsonArray options = object["options"].toArray();
   if (options.isEmpty())

@@ -6,5 +6,26 @@
   "entryPointDLL": "bin/koda_generatorplugin_antlr.dll",
   "entryPointSO": "bin/libkoda_generatorplugin_antlr.so",
   "icon": "assets/icon.svg",
-  "libraries": ["antler-runtime.dll"]
+  "libraries": ["antler-runtime.dll"],
+  "installation": [
+    {
+      "os": ["windows"],
+      "shell": "powershell",
+      "command": "curl",
+      "arguments": [
+        "-o",
+        "./verum-dezyne.msi",
+        "https://downloads.verum.com/download/verum-dezyne/verum-dezyne-2.20.0-x86_64-windows.msi"
+      ]
+    },
+    {
+      "os": ["windows"],
+      "shell": "powershell",
+      "command": "msiexec",
+      "arguments": [
+        "/i",
+        "\"$(Resolve-Path verum-dezyne.msi)\""
+      ]
+    }
+  ]
 }
