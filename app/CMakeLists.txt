@@ -48,6 +48,11 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug" AND BUILD_PLUGINS)
 endif()
 
 if (MSVC)
+  # Only set these on release so we can see the logs in the terminal
+  set_target_properties(${APPLICATION_NAME} PROPERTIES
+    WIN32_EXECUTABLE  $<CONFIG:Release>
+    MACOSX_BUNDLE  $<CONFIG:Release>
+  )
 else()
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_compile_options(${APPLICATION_NAME} PRIVATE
@@ -62,10 +67,6 @@ else()
 endif()
 
 
-set_target_properties(${APPLICATION_NAME} PROPERTIES
-    WIN32_EXECUTABLE TRUE
-    MACOSX_BUNDLE TRUE
-)
 
 target_link_libraries(${APPLICATION_NAME} PRIVATE
     Qt6::Core
