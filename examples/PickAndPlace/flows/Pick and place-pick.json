@@ -1,0 +1,428 @@
+{
+    "arguments": [
+    ],
+    "id": "{a063613f-c486-425e-9165-fc1d6e6b3ed2}",
+    "linksTo": -1094795586,
+    "modifiable": true,
+    "name": "pick",
+    "nodes": [
+        {
+            "iconPath": "koda_start.svg",
+            "id": "{a587ff7d-b704-4db0-8b89-95bfc7def6b1}",
+            "nodeId": "Koda::Start",
+            "parentId": "",
+            "pixmap": {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAo0lEQVR4nO3T2wmEQBSD4bBF2NnapKVZxPgahBWve2TyfzCvckiiBAAAAAAAAAD3mSQN1UdUapJmSWP1IVWavcg1tNWLW8M6gLg1/AogZg1bAUSsYU8AXa9hbwDdruFoAN2t4UwAXa3hSgB/WcPnyY/fpFUfcAW/wIk3S/pWHPuEyNZdZOsusnUX2bqLbN1Ftu4iW3eRrbvI1gEAAAAAAAC81wLmv8ckCrfr0gAAAABJRU5ErkJggg=="
+            },
+            "position": {
+                "x": -715,
+                "y": -55
+            },
+            "properties": {
+                "mode": "signal",
+                "name": "Start"
+            },
+            "scale": 1,
+            "size": {
+                "height": 50,
+                "width": 50
+            }
+        },
+        {
+            "iconPath": "koda_within.svg",
+            "id": "{dfb952e2-149f-47ab-8869-0bbfab28cdf2}",
+            "nodeId": "Koda::Within",
+            "parentId": "",
+            "pixmap": {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAEcUlEQVR4nO3aT4hVVRzA8Y9DsxqdxkX4Z1QwdwmBoRsHKYiMhv5iVlDooiz7syuTNuEqMCuDQE0iMgqlJqiMpMVIEdlCwU0GLVLQzFyNjUmLwVeLc5/vOPPem/veO/c54v3Chd+773d+v9/53XPu+XMPJSUlJSUlJTcqszosvwBrsBhzOg+nJS7iDH7EuS77NoTDqOC/a3xVsliGCq1xRi92d7FyrV67sxhz00oX6MVB3Bvd+xujOIV/WnGcgNlYirtxc3T/OzyAidQO4ydfwTvoS+2kDfqw09XdcVdqJ0Ourvza1A4SsNbVSVid0vjhyPDOlIYT865anKOpjC5Qy+wFM6PZN6JPiLHaUhdMV6Anh9E1ai/LUVxqN7oucEntyc8SYm9KngQsjuRTbQTVbeIYF02nfFMOg/EML8VQ14tVWILB7N5ZnMZRnQ9fcYz90ynnSUAqVuM5PIiBBjpj+Bp7caQbQeXpAp2yDCP4CRs0rjzMxcZMdyQrWyhFt4BhHDB1oXQcJ3A++z0Py7Ei0lmHe/AEDhUVYJEJ2CzMyKojyBh2YB/+bFBmodACtgitoR/f4AW8X2CsTdmmNrnYlrPMMC5H5T43ten34P7smtwVB4QuUC1/GfcVEW8R74Bl2B/ZfguPCxOUmGFhcXXQ1MpdwGN4O4rzAG5NHWwRCdiuNvyMYKswK5vMykheVef/Cl7FF9nv/sx2UlInYLXw8iL0+U3qVz4vFTyj1noelXiRkzoBz0byDlObfTtcwJvR700JbF4hZQJ6hUlOlX0JbX8cyQ9pcdenGSkTsEoYugjjfKOhrh3OZjZlPlY20W2JlAlYEsknCojj1wa+OiJlAgYj+XxDrRq3R/Jm3DmN/l8NfHVEN9YCjYif6C34Hp/IsYmRkpQJOBvJ83Lov449+De69yR+w0t19Oc38NURKRNwOpKX59Cv4Hlh5vhpdH8O3sPDk/Rva+CrI1Im4Kgw+SGs6hbmLHcOT+Eu/BLdnx3Jg2orxTEcazvKSaRMwISwmVFlY4vlf8AdeBqPCO+DKhsi+SsJP3qkfgnujeQtmm9+1GMCH+LL6N6AsCao56NjUifgiNriZS4+6NBHT2ajmsgR/NyBvboOUrMV45m8TljBteOnR1gDVBdX45ntpBSRgN+FbazqKvAVfKa17jCQlXk5+13JbJ5MFOMVipoIHcKLaklYJ+zXv6b5LG4w0zml9uQrwpZYIfuCRe4J7hHG6/3CZsYA3siu48JMsDq9nS+M8ysm2Rh3HW+KwrdCpbYLmxlVVpha2clUd5OSN/uYbqwFTmK98Il9n9pkqR5j+CjTXa/gytPdL0NHsqtXWM/X+zR2TAEnO5qRJwEXI3l2Q638TAhjedLxPCKOcbyhVkaeLnAmkpe2HE73iWP8I4XB6/mAxPzm6vm5oY/IUB6SwtRjcjvNjO7QJzz5to7JlQclW2SmH5XdJeFHk2YMCU9+phyWHtVmn091XH6RHAeSEjMujPPX5Lh8SUlJSUlJyfXP/yjoiMs+EhMuAAAAAElFTkSuQmCC"
+            },
+            "position": {
+                "x": -510,
+                "y": -55
+            },
+            "properties": {
+                "color": "#202020",
+                "name": "Within",
+                "timeout": 30000
+            },
+            "scale": 1,
+            "size": {
+                "height": 50,
+                "width": 100
+            }
+        },
+        {
+            "iconPath": "koda_strategy.svg",
+            "id": "{edae4eac-65b9-4af2-a6af-c493edf5d59a}",
+            "nodeId": "Koda::Strategy",
+            "parentId": "",
+            "pixmap": {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAACvUlEQVR4nO2ZMW8TMRSAv4vYERJZkpmNoQOo7YBgi4gQyl8IdOrWnYE/0a2QvxAJkaZbERItgqFDN8ZKGehQ5Q+kDPZxbjn7fOn5ziHvk6z4cs8+v3fv2e9sEARBEARBEARBENaPpOkBlCQBtnS5b5GZA6e6XNc0rlroAlOUUj5lCnQaGWkAusAl/sqn5TcFRliFEEiAQ6Cnr2fAGGWQPNrAgEzxI+AllnDwNUCTsbcNfNP1GfAYuCpo8wA4JzPCth7XUjQde3tG3/sl2u0b7fZsQvcKOukCZ8DDEg/u6TYbqDd2V0yPs7l9HqaszWudBkiAD2TKl4m9NvARR+zFgssAW9yceHxi7x1Z7PWATYpjrwX0dX0CLDzln1ju/9T9eFFkgJQxxcqjZcbArr72mXz6wCddHwE7uI1gytt4VXD/Ly3HvaCxZ2EIHOAeV6UUTYJ1MEG9+aG+Tn9tnjBBveGnlv5+oPIG2/0bxGCABUpZyDdCnvxnXe5MDAYAtxEuQj44FgOA3QhnIR9a22TjSWqEkfHfRsgHhvAA8/viBfB+iT4uyLJJkxY15gHL8sioP9elKp5RYx6wFoTwgF9G/QtwvEQfCfCaf0PgKyuQB5gfP8eUnwNaqGwwb/JbUHEeEFsIpMoPjf+CLoMx5QF5yo9QK0KwpTAWD7Apv0Pg/YQYPMClfN7HUPR5QFn6+CufyteSB8yNetu3w1uyc6tUPj4bIpXi8gBzJ2eA2u7y2Y4eGNcnHmNI13VQ63eR8rXlAaeoQ4Ueao/vnHIHElPgu8cY0nXdl9r2A66BN6h1uI1SbNchb3IJvCXyHWEoXgZnqDX4qESfU6o7E4DAc1GZo7FN1C6v62jsBOX2K3M0tg6Ho1PU0hl9OLrooI66Kz8eXyU6lDukPcRD+VUIAZMm5yJBEARBEARBEAThv+EP/2TlnGp9kAQAAAAASUVORK5CYII="
+            },
+            "position": {
+                "x": -190,
+                "y": 85
+            },
+            "properties": {
+                "color": "#202020",
+                "name": "Abort",
+                "strategy": {
+                    "options": [
+                        {
+                            "data": "err",
+                            "isVariable": false,
+                            "type": "event_select"
+                        }
+                    ]
+                }
+            },
+            "scale": 1,
+            "size": {
+                "height": 50,
+                "width": 100
+            }
+        },
+        {
+            "iconPath": "koda_async.svg",
+            "id": "{5ec2b264-e5d0-436a-afbb-96c1c64809a0}",
+            "nodeId": "Koda::Async task",
+            "parentId": "",
+            "pixmap": {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAACgklEQVR4nO2ZvW4UMRCAv13RQ4o0lxYkSkAgLhIFFRGnBfEKiFBAjSgRvEdIXuFIgDu6IApAQJSeMkABRbgXAAr7tMbr3fU5a99JN59kyd7zeMaj8fjnQBAEQRAEQRAEQRAEYcnI5m0AkAMDXX8N/Emp/JRnvwzo63K6pe8E+KDLX4+xB8Ceru8Am1SdEFN/K2vAWA82SxkDPY/xC0tuGxUVqfQ3sgb8ClA+LT89jMhRk3Y5Ibr+phyQASNgQ7d/AENtUBOrwB1D8RvgJs3hmANbwF3j2w7KATcS6HeyTunJ78DKDLIrWmYq3/eQcUVCdP1NSdAUGgLHMxhwDLwAHuj2U1RSauMIOAQuWN93A/QPgYe6vV6nv8kBZrZtCzsXZ4z6BuVSCuF8gIxpc+3Okdf9sCz4ngNC+GrU3wL7HjIZcJvqEnjXkU0VYjrAzLr7qDzQxHQnsCcPEU+Hi7IEXNvgYQrFMSPAl7ozwBHuaOhc+bwZUJ38Jh2d49uYRwTYtz+TustQNFI7wA73AuWEQrdHLOh1uAtcax3UhF8ltOM/UuWADHeiGyXSX0uqCLgFXDTa28B9Eoe7i1QRYE7+OQsyeYgbAa63hgPUNfUJ8JlyFxgAl62+11vG6oSYDjjn+HZJlykFanJ7jr4mZ7syymYRDkJzpSkCJkZ9NWDs345vB8BL1CnvE+UuUABXrL59yjeECbNj2hwi3+mTmFm28Iu8JE9yqR5FvwH3jD4+22BX+seoJBt0t+ihnpZP+iydo7Y/87fHCfWfiB5hf0yMLOX2q+9uYv1OfPfXDLiKWpc+f029Bz5SDbsceARcA54BXxLrFwRBEARBEARBEARBEJaef+gEFWJs2rViAAAAAElFTkSuQmCC"
+            },
+            "position": {
+                "x": -190,
+                "y": -195
+            },
+            "properties": {
+                "capability": {
+                    "data": "Vision",
+                    "options": [
+                    ]
+                },
+                "color": "#202020",
+                "name": "Find object"
+            },
+            "scale": 1,
+            "size": {
+                "height": 50,
+                "width": 100
+            }
+        },
+        {
+            "iconPath": "koda_async.svg",
+            "id": "{5e67cc0c-df4c-4025-80df-3c3a509c82cf}",
+            "nodeId": "Koda::Async task",
+            "parentId": "",
+            "pixmap": {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAACgklEQVR4nO2ZvW4UMRCAv13RQ4o0lxYkSkAgLhIFFRGnBfEKiFBAjSgRvEdIXuFIgDu6IApAQJSeMkABRbgXAAr7tMbr3fU5a99JN59kyd7zeMaj8fjnQBAEQRAEQRAEQRAEYcnI5m0AkAMDXX8N/Emp/JRnvwzo63K6pe8E+KDLX4+xB8Ceru8Am1SdEFN/K2vAWA82SxkDPY/xC0tuGxUVqfQ3sgb8ClA+LT89jMhRk3Y5Ibr+phyQASNgQ7d/AENtUBOrwB1D8RvgJs3hmANbwF3j2w7KATcS6HeyTunJ78DKDLIrWmYq3/eQcUVCdP1NSdAUGgLHMxhwDLwAHuj2U1RSauMIOAQuWN93A/QPgYe6vV6nv8kBZrZtCzsXZ4z6BuVSCuF8gIxpc+3Okdf9sCz4ngNC+GrU3wL7HjIZcJvqEnjXkU0VYjrAzLr7qDzQxHQnsCcPEU+Hi7IEXNvgYQrFMSPAl7ozwBHuaOhc+bwZUJ38Jh2d49uYRwTYtz+TustQNFI7wA73AuWEQrdHLOh1uAtcax3UhF8ltOM/UuWADHeiGyXSX0uqCLgFXDTa28B9Eoe7i1QRYE7+OQsyeYgbAa63hgPUNfUJ8JlyFxgAl62+11vG6oSYDjjn+HZJlykFanJ7jr4mZ7syymYRDkJzpSkCJkZ9NWDs345vB8BL1CnvE+UuUABXrL59yjeECbNj2hwi3+mTmFm28Iu8JE9yqR5FvwH3jD4+22BX+seoJBt0t+ihnpZP+iydo7Y/87fHCfWfiB5hf0yMLOX2q+9uYv1OfPfXDLiKWpc+f029Bz5SDbsceARcA54BXxLrFwRBEARBEARBEARBEJaef+gEFWJs2rViAAAAAElFTkSuQmCC"
+            },
+            "position": {
+                "x": -190,
+                "y": -55
+            },
+            "properties": {
+                "capability": {
+                    "data": "Grip",
+                    "options": [
+                        {
+                            "data": "true",
+                            "isVariable": false,
+                            "type": "bool"
+                        }
+                    ]
+                },
+                "color": "#202020",
+                "name": "Pick object"
+            },
+            "scale": 1,
+            "size": {
+                "height": 50,
+                "width": 100
+            }
+        },
+        {
+            "iconPath": "koda_strategy.svg",
+            "id": "{4b2621e3-1c8c-47fc-8826-7d18885ff800}",
+            "nodeId": "Koda::Strategy",
+            "parentId": "",
+            "pixmap": {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAACvUlEQVR4nO2ZMW8TMRSAv4vYERJZkpmNoQOo7YBgi4gQyl8IdOrWnYE/0a2QvxAJkaZbERItgqFDN8ZKGehQ5Q+kDPZxbjn7fOn5ziHvk6z4cs8+v3fv2e9sEARBEARBEARBENaPpOkBlCQBtnS5b5GZA6e6XNc0rlroAlOUUj5lCnQaGWkAusAl/sqn5TcFRliFEEiAQ6Cnr2fAGGWQPNrAgEzxI+AllnDwNUCTsbcNfNP1GfAYuCpo8wA4JzPCth7XUjQde3tG3/sl2u0b7fZsQvcKOukCZ8DDEg/u6TYbqDd2V0yPs7l9HqaszWudBkiAD2TKl4m9NvARR+zFgssAW9yceHxi7x1Z7PWATYpjrwX0dX0CLDzln1ju/9T9eFFkgJQxxcqjZcbArr72mXz6wCddHwE7uI1gytt4VXD/Ly3HvaCxZ2EIHOAeV6UUTYJ1MEG9+aG+Tn9tnjBBveGnlv5+oPIG2/0bxGCABUpZyDdCnvxnXe5MDAYAtxEuQj44FgOA3QhnIR9a22TjSWqEkfHfRsgHhvAA8/viBfB+iT4uyLJJkxY15gHL8sioP9elKp5RYx6wFoTwgF9G/QtwvEQfCfCaf0PgKyuQB5gfP8eUnwNaqGwwb/JbUHEeEFsIpMoPjf+CLoMx5QF5yo9QK0KwpTAWD7Apv0Pg/YQYPMClfN7HUPR5QFn6+CufyteSB8yNetu3w1uyc6tUPj4bIpXi8gBzJ2eA2u7y2Y4eGNcnHmNI13VQ63eR8rXlAaeoQ4Ueao/vnHIHElPgu8cY0nXdl9r2A66BN6h1uI1SbNchb3IJvCXyHWEoXgZnqDX4qESfU6o7E4DAc1GZo7FN1C6v62jsBOX2K3M0tg6Ho1PU0hl9OLrooI66Kz8eXyU6lDukPcRD+VUIAZMm5yJBEARBEARBEAThv+EP/2TlnGp9kAQAAAAASUVORK5CYII="
+            },
+            "position": {
+                "x": 110,
+                "y": 45
+            },
+            "properties": {
+                "color": "#d7d700",
+                "name": "Abort",
+                "strategy": {
+                    "options": [
+                        {
+                            "data": "err",
+                            "isVariable": false,
+                            "type": "event_select"
+                        }
+                    ]
+                }
+            },
+            "scale": 1,
+            "size": {
+                "height": 50,
+                "width": 100
+            }
+        },
+        {
+            "iconPath": "koda_strategy.svg",
+            "id": "{52bdf966-f5ca-40d2-99c4-78fde6ccb583}",
+            "nodeId": "Koda::Strategy",
+            "parentId": "",
+            "pixmap": {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAACvUlEQVR4nO2ZMW8TMRSAv4vYERJZkpmNoQOo7YBgi4gQyl8IdOrWnYE/0a2QvxAJkaZbERItgqFDN8ZKGehQ5Q+kDPZxbjn7fOn5ziHvk6z4cs8+v3fv2e9sEARBEARBEARBENaPpOkBlCQBtnS5b5GZA6e6XNc0rlroAlOUUj5lCnQaGWkAusAl/sqn5TcFRliFEEiAQ6Cnr2fAGGWQPNrAgEzxI+AllnDwNUCTsbcNfNP1GfAYuCpo8wA4JzPCth7XUjQde3tG3/sl2u0b7fZsQvcKOukCZ8DDEg/u6TYbqDd2V0yPs7l9HqaszWudBkiAD2TKl4m9NvARR+zFgssAW9yceHxi7x1Z7PWATYpjrwX0dX0CLDzln1ju/9T9eFFkgJQxxcqjZcbArr72mXz6wCddHwE7uI1gytt4VXD/Ly3HvaCxZ2EIHOAeV6UUTYJ1MEG9+aG+Tn9tnjBBveGnlv5+oPIG2/0bxGCABUpZyDdCnvxnXe5MDAYAtxEuQj44FgOA3QhnIR9a22TjSWqEkfHfRsgHhvAA8/viBfB+iT4uyLJJkxY15gHL8sioP9elKp5RYx6wFoTwgF9G/QtwvEQfCfCaf0PgKyuQB5gfP8eUnwNaqGwwb/JbUHEeEFsIpMoPjf+CLoMx5QF5yo9QK0KwpTAWD7Apv0Pg/YQYPMClfN7HUPR5QFn6+CufyteSB8yNetu3w1uyc6tUPj4bIpXi8gBzJ2eA2u7y2Y4eGNcnHmNI13VQ63eR8rXlAaeoQ4Ueao/vnHIHElPgu8cY0nXdl9r2A66BN6h1uI1SbNchb3IJvCXyHWEoXgZnqDX4qESfU6o7E4DAc1GZo7FN1C6v62jsBOX2K3M0tg6Ho1PU0hl9OLrooI66Kz8eXyU6lDukPcRD+VUIAZMm5yJBEARBEARBEAThv+EP/2TlnGp9kAQAAAAASUVORK5CYII="
+            },
+            "position": {
+                "x": 110,
+                "y": -195
+            },
+            "properties": {
+                "color": "#941315",
+                "name": "Abort",
+                "strategy": {
+                    "options": [
+                        {
+                            "data": "err",
+                            "isVariable": false,
+                            "type": "event_select"
+                        }
+                    ]
+                }
+            },
+            "scale": 1,
+            "size": {
+                "height": 50,
+                "width": 100
+            }
+        }
+    ],
+    "owner": "{f1982623-40c5-4f7d-8053-da9b6112c9c7}",
+    "returnType": "void",
+    "transitions": [
+        {
+            "destination": {
+                "id": "{dfb952e2-149f-47ab-8869-0bbfab28cdf2}",
+                "position": {
+                    "x": 0,
+                    "y": 0
+                },
+                "shift": {
+                    "x": 0,
+                    "y": 0
+                }
+            },
+            "events": "",
+            "id": "{7b6bcd72-4fd6-431f-9077-7ae3da5e1ced}",
+            "label": "",
+            "source": {
+                "id": "{a587ff7d-b704-4db0-8b89-95bfc7def6b1}",
+                "position": {
+                    "x": -689,
+                    "y": -55
+                },
+                "shift": {
+                    "x": 0,
+                    "y": 0
+                }
+            }
+        },
+        {
+            "destination": {
+                "id": "{4b2621e3-1c8c-47fc-8826-7d18885ff800}",
+                "position": {
+                    "x": 0,
+                    "y": 0
+                },
+                "shift": {
+                    "x": 0,
+                    "y": 0
+                }
+            },
+            "events": "on abort",
+            "id": "{7b3a9239-2fc4-4d2f-b1d4-2e7a4d85a85d}",
+            "label": "on abort",
+            "source": {
+                "id": "{5e67cc0c-df4c-4025-80df-3c3a509c82cf}",
+                "position": {
+                    "x": -139,
+                    "y": -55
+                },
+                "shift": {
+                    "x": 0,
+                    "y": 0
+                }
+            }
+        },
+        {
+            "destination": {
+                "id": "{52bdf966-f5ca-40d2-99c4-78fde6ccb583}",
+                "position": {
+                    "x": 0,
+                    "y": 0
+                },
+                "shift": {
+                    "x": 0,
+                    "y": 0
+                }
+            },
+            "events": "on error",
+            "id": "{ddc0b2f2-2ea0-4db3-bf71-268870daafd9}",
+            "label": "on error",
+            "source": {
+                "id": "{5e67cc0c-df4c-4025-80df-3c3a509c82cf}",
+                "position": {
+                    "x": -139,
+                    "y": -55
+                },
+                "shift": {
+                    "x": 0,
+                    "y": 0
+                }
+            }
+        },
+        {
+            "destination": {
+                "id": "{4b2621e3-1c8c-47fc-8826-7d18885ff800}",
+                "position": {
+                    "x": 0,
+                    "y": 0
+                },
+                "shift": {
+                    "x": 0,
+                    "y": 0
+                }
+            },
+            "events": "on abort",
+            "id": "{b47c59b8-d435-473c-b738-41778fbaf34d}",
+            "label": "on abort",
+            "source": {
+                "id": "{5ec2b264-e5d0-436a-afbb-96c1c64809a0}",
+                "position": {
+                    "x": -139,
+                    "y": -195
+                },
+                "shift": {
+                    "x": 0,
+                    "y": 0
+                }
+            }
+        },
+        {
+            "destination": {
+                "id": "{52bdf966-f5ca-40d2-99c4-78fde6ccb583}",
+                "position": {
+                    "x": 0,
+                    "y": 0
+                },
+                "shift": {
+                    "x": 0,
+                    "y": 0
+                }
+            },
+            "events": "on error",
+            "id": "{5285d6e3-f76f-4b29-bb76-8ea35fe4acac}",
+            "label": "on error",
+            "source": {
+                "id": "{5ec2b264-e5d0-436a-afbb-96c1c64809a0}",
+                "position": {
+                    "x": -139,
+                    "y": -195
+                },
+                "shift": {
+                    "x": 0,
+                    "y": 0
+                }
+            }
+        },
+        {
+            "destination": {
+                "id": "{5ec2b264-e5d0-436a-afbb-96c1c64809a0}",
+                "position": {
+                    "x": 0,
+                    "y": 0
+                },
+                "shift": {
+                    "x": 0,
+                    "y": 0
+                }
+            },
+            "events": "do",
+            "id": "{cdc80b0a-4cef-4fde-8218-6f7b69b51028}",
+            "label": "do",
+            "source": {
+                "id": "{dfb952e2-149f-47ab-8869-0bbfab28cdf2}",
+                "position": {
+                    "x": -459,
+                    "y": -55
+                },
+                "shift": {
+                    "x": 0,
+                    "y": 0
+                }
+            }
+        },
+        {
+            "destination": {
+                "id": "{edae4eac-65b9-4af2-a6af-c493edf5d59a}",
+                "position": {
+                    "x": 0,
+                    "y": 0
+                },
+                "shift": {
+                    "x": 0,
+                    "y": 0
+                }
+            },
+            "events": "else",
+            "id": "{88a6d096-859b-4623-86a3-89a4acc0cca2}",
+            "label": "else",
+            "source": {
+                "id": "{dfb952e2-149f-47ab-8869-0bbfab28cdf2}",
+                "position": {
+                    "x": -459,
+                    "y": -55
+                },
+                "shift": {
+                    "x": 0,
+                    "y": 0
+                }
+            }
+        },
+        {
+            "destination": {
+                "id": "{5e67cc0c-df4c-4025-80df-3c3a509c82cf}",
+                "position": {
+                    "x": 0,
+                    "y": 0
+                },
+                "shift": {
+                    "x": 0,
+                    "y": 0
+                }
+            },
+            "events": "",
+            "id": "{93fc6f68-ad00-462d-8dad-09789a4d9c16}",
+            "label": "",
+            "source": {
+                "id": "{dfb952e2-149f-47ab-8869-0bbfab28cdf2}",
+                "position": {
+                    "x": -459,
+                    "y": -55
+                },
+                "shift": {
+                    "x": 0,
+                    "y": 0
+                }
+            }
+        }
+    ],
+    "type": "user"
+}

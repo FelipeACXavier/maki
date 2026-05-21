@@ -75,7 +75,7 @@
             "type": "error"
         }
     ],
-    "iconPath": "C:/Users/20175791/Documents/maki/build/windows/Debug/bin/../assets/icons/capability_drive.svg",
+    "iconPath": "capability_drive.svg",
     "id": "{f57eb3b3-e2f7-413e-a217-08f7d722119d}",
     "nodeId": "Koda::Drive",
     "parentId": "{31535016-8c1e-443c-b794-2cd1d5732f2c}",
