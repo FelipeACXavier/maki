@@ -1,8 +1,7 @@
 #include "node_info.h"
 
-#include <qhashfunctions.h>
-
 #include <QBuffer>
+#include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonObject>
 
@@ -277,7 +276,7 @@ QJsonObject NodeSaveInfo::toJson() const
 
   data[ConfigKeys::PIXMAP] = JSON::fromPixmap(getPixmap());
 
-  data[ConfigKeys::ICON_PATH] = getIcon();
+  data[ConfigKeys::ICON_PATH] = QFileInfo(getIcon()).fileName();
 
   return data;
 }
