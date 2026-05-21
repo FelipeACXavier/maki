@@ -292,7 +292,9 @@ void Strategy::Within::print(const std::string& prefix, const bool last, const S
   if (a != nullptr)
     a->print(childPrefix, false);
   if (b != nullptr)
-    b->print(childPrefix, true);
+    b->print(childPrefix, handlers.empty());
+  for (int i = 0; i < handlers.size(); ++i)
+    handlers.at(i)->print(childPrefix, i + 1 == handlers.size());
 }
 
 void Strategy::IfElse::print(const std::string& prefix, const bool last, const Span& span) const

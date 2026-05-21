@@ -1,0 +1,89 @@
+{
+    "canvas": {
+        "center": {
+            "x": -420,
+            "y": -314.2857142857143
+        },
+        "scale": 1.75
+    },
+    "name": "Patrol",
+    "pipelines": [
+    ],
+    "tasks": [
+        {
+            "children": [
+                "capabilities/Task-Drive.json"
+            ],
+            "events": [
+                {
+                    "arguments": [
+                    ],
+                    "id": "{fb11786b-02c9-4391-8a1e-d1d202d41bda}",
+                    "linksTo": 0,
+                    "modifiable": true,
+                    "name": "start",
+                    "owner": "",
+                    "returnType": "void",
+                    "type": "trigger"
+                },
+                {
+                    "arguments": [
+                    ],
+                    "id": "{07f4db29-571b-4eac-bbee-c16a9b1b8c18}",
+                    "linksTo": 0,
+                    "modifiable": false,
+                    "name": "abort",
+                    "owner": "",
+                    "returnType": "void",
+                    "type": "abort"
+                },
+                {
+                    "arguments": [
+                    ],
+                    "id": "{d8f56272-2201-4e56-a6c6-d15eae6f45b2}",
+                    "linksTo": 0,
+                    "modifiable": false,
+                    "name": "done",
+                    "owner": "",
+                    "returnType": "void",
+                    "type": "return"
+                },
+                {
+                    "arguments": [
+                    ],
+                    "id": "{71abf07f-bd8b-493c-9c43-bd159a3f3d87}",
+                    "linksTo": 0,
+                    "modifiable": false,
+                    "name": "failed",
+                    "owner": "",
+                    "returnType": "void",
+                    "type": "error"
+                }
+            ],
+            "flows": [
+                "flows/Task-main.json"
+            ],
+            "iconPath": "",
+            "id": "{31535016-8c1e-443c-b794-2cd1d5732f2c}",
+            "nodeId": "Koda::Task",
+            "parentId": "",
+            "pixmap": {
+                "data": ""
+            },
+            "position": {
+                "x": -478,
+                "y": -330
+            },
+            "properties": {
+                "color": "#202020",
+                "name": "Task"
+            },
+            "scale": 1,
+            "size": {
+                "height": 300,
+                "width": 324
+            }
+        }
+    ],
+    "version": ""
+}

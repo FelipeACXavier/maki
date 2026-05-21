@@ -529,7 +529,6 @@ VoidResult KodaGenerator::verify(const maki::PipelineArtifact& artifact, const Q
 
 Result<maki::PipelineArtifact> KodaGenerator::generateKoda(const maki::PipelineArtifact& artifact, const QDir& outputFolder)
 {
-  mGeneratedFiles.clear();
   mOutputFolder = outputFolder;
   if (!mOutputFolder.exists())
     mOutputFolder.mkdir(".");
@@ -537,34 +536,23 @@ Result<maki::PipelineArtifact> KodaGenerator::generateKoda(const maki::PipelineA
   LOG_DEBUG("Generating Koda files with %d nodes", mServices->document()->getnodes().size());
   QString code = "";
 
-  for (const auto& node : mServices->document()->getnodes())
-  {
-    if (node->getnodeId() != "Koda::Task")
-      continue;
+  koda::MakiToKoda makiToKoda;
+  auto generated = makiToKoda.generate(mServices->document()->getnodes());
+  if (!generated)
+    LOG_ERROR(generated.ErrorMessage());
 
-    LOG_DEBUG("Generating code for top level node %s %s %d", qPrintable(node->getproperties()["name"].toString()), qPrintable(node->getnodeId()), node->getchildren().size());
+  QString fileName = mOutputFolder.filePath("task.kd");
+  QFile file(fileName);
+  if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
+    return Result<maki::PipelineArtifact>::Failed("Failed to open device for writing: " + fileName.toStdString());
 
-    QString args = "";
-    for (const auto& child : node->getchildren())
-    {
-      auto capabilityId = child->getproperties()["name"].toString();
-      LOG_DEBUG("Generating code for capability %s %s %d", qPrintable(capabilityId), qPrintable(child->getnodeId()), child->getchildren().size());
-      auto generated = generateCapability(*child);
-      if (!generated)
-        return Result<maki::PipelineArtifact>::Failed(generated.ErrorMessage());
-
-      code += generated.Value();
-      args += fixCase(capabilityId) + " req " + capabilityId + ", ";
-    }
-
-    auto generated = generateComponent(*node, code, args);
-    if (!generated)
-      return Result<maki::PipelineArtifact>::Failed(generated.ErrorMessage());
-  }
+  QTextStream out(&file);
+  out << generated.Value();
+  file.close();
 
   maki::PipelineArtifact output;
   output.metadata = {
-      {"sources", mGeneratedFiles},
+      {"sources", {fileName}},
   };
 
   return output;
@@ -733,32 +721,32 @@ VoidResult KodaGenerator::generateComponent(const INode& node, const QString& in
     bodyCode += qualifier + "  " + Types::PropertyTypesToString(f->getreturnType()) + " " + f->getname() + "(" + args + ");\n";
   }
 
-  koda::MakiToKoda makiToKoda;
-  for (const auto& f : node.getflows())
-  {
-    if (f->getnodes().empty())
-      continue;
+  // koda::MakiToKoda makiToKoda;
+  // for (const auto& f : node.getflows())
+  // {
+  //   if (f->getnodes().empty())
+  //     continue;
 
-    LOG_DEBUG("Generating flow %s", qPrintable(f->getname()));
+  //   LOG_DEBUG("Generating flow %s", qPrintable(f->getname()));
 
-    auto generated = makiToKoda.generateFlow(node, *f, " ");
-    if (!generated)
-      return VoidResult::Failed(generated.ErrorMessage());  // Find the start node
+  //   auto generated = makiToKoda.generateFlow(node, *f, " ");
+  //   if (!generated)
+  //     return VoidResult::Failed(generated.ErrorMessage());  // Find the start node
 
-    LOG_DEBUG("Generated:\n%s", qPrintable(generated.Value()));
-    for (const auto& n : f->getnodes())
-    {
-      if (n->getnodeId() != "Koda::Start")
-        continue;
+  //   LOG_DEBUG("Generated:\n%s", qPrintable(generated.Value()));
+  //   for (const auto& n : f->getnodes())
+  //   {
+  //     if (n->getnodeId() != "Koda::Start")
+  //       continue;
 
-      auto generated = generateStart(node.getproperties()["name"].toString(), *n, *f, "    ");
-      if (!generated.IsSuccess())
-        return VoidResult::Failed(generated.ErrorMessage());
+  //     auto generated = generateStart(node.getproperties()["name"].toString(), *n, *f, "    ");
+  //     if (!generated.IsSuccess())
+  //       return VoidResult::Failed(generated.ErrorMessage());
 
-      code += generated.Value();
-      break;
-    }
-  }
+  //     code += generated.Value();
+  //     break;
+  //   }
+  // }
 
   QTextStream out(&file);
   for (const auto& imp : mImports)
