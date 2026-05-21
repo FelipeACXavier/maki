@@ -288,7 +288,7 @@ private:
   // Actions
   void onActionNew();                                    /// Handles new action.
   void onActionLoad(const QString& filename);            /// Handles load action with a specified file name.
-  void onActionSave();                                   /// Handles save action.
+  VoidResult onActionSave();                             /// Handles save action.
   void onActionExit();                                   /// Handles exit action.
   void onActionRestart();                                /// Handles restart action.
   void onActionSaveAs();                                 /// Handles save as action.
