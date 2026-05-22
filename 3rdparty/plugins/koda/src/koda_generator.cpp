@@ -1,5 +1,7 @@
 #include "koda_generator.h"
 
+#include <qdir.h>
+
 #include <QApplication>
 #include <QDirIterator>
 #include <QFile>
@@ -743,20 +745,19 @@ VoidResult KodaGenerator::generateComponent(const INode& node, const QString& in
     if (!generated)
       return VoidResult::Failed(generated.ErrorMessage());  // Find the start node
 
-    qDebug() << "Generated:\n"
-             << generated.Value();
-    // for (const auto& n : f->getnodes())
-    // {
-    //   if (n->getnodeId() != "Koda::Start")
-    //     continue;
+    LOG_DEBUG("Generated:\n%s", qPrintable(generated.Value()));
+    for (const auto& n : f->getnodes())
+    {
+      if (n->getnodeId() != "Koda::Start")
+        continue;
 
-    //   auto generated = generateStart(node.getproperties()["name"].toString(), *n, *f, "    ");
-    //   if (!generated.IsSuccess())
-    //     return VoidResult::Failed(generated.ErrorMessage());
+      auto generated = generateStart(node.getproperties()["name"].toString(), *n, *f, "    ");
+      if (!generated.IsSuccess())
+        return VoidResult::Failed(generated.ErrorMessage());
 
-    //   code += generated.Value();
-    //   break;
-    // }
+      code += generated.Value();
+      break;
+    }
   }
 
   QTextStream out(&file);
