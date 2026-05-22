@@ -93,7 +93,7 @@ void SectionWidget::updateContentHeight(int height)
 
   mContentArea->setContentHeight(height);
   mContentArea->setMaximumHeight(height);
-  LOG_TRACE("New content area height: %d", height);
+  // LOG_TRACE("New content area height: %d", height);
 }
 
 void SectionWidget::setExpanded(bool expanded)

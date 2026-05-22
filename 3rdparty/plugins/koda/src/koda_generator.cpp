@@ -1,9 +1,5 @@
 #include "koda_generator.h"
 
-#include <qcontainerfwd.h>
-#include <qdir.h>
-#include <qhashfunctions.h>
-
 #include <QApplication>
 #include <QDirIterator>
 #include <QFile>
@@ -28,6 +24,7 @@
 #include "isettings.h"
 #include "iui.h"
 #include "logging.h"
+#include "maki_to_koda.h"
 #include "pipeline_artifact.h"
 #include "result.h"
 #include "string_helpers.h"
@@ -734,25 +731,32 @@ VoidResult KodaGenerator::generateComponent(const INode& node, const QString& in
     bodyCode += qualifier + "  " + Types::PropertyTypesToString(f->getreturnType()) + " " + f->getname() + "(" + args + ");\n";
   }
 
+  koda::MakiToKoda makiToKoda;
   for (const auto& f : node.getflows())
   {
     if (f->getnodes().empty())
       continue;
 
     LOG_DEBUG("Generating flow %s", qPrintable(f->getname()));
-    // Find the start node
-    for (const auto& n : f->getnodes())
-    {
-      if (n->getnodeId() != "Koda::Start")
-        continue;
 
-      auto generated = generateStart(node.getproperties()["name"].toString(), *n, *f, "    ");
-      if (!generated.IsSuccess())
-        return VoidResult::Failed(generated.ErrorMessage());
+    auto generated = makiToKoda.generateFlow(node, *f, " ");
+    if (!generated)
+      return VoidResult::Failed(generated.ErrorMessage());  // Find the start node
 
-      code += generated.Value();
-      break;
-    }
+    qDebug() << "Generated:\n"
+             << generated.Value();
+    // for (const auto& n : f->getnodes())
+    // {
+    //   if (n->getnodeId() != "Koda::Start")
+    //     continue;
+
+    //   auto generated = generateStart(node.getproperties()["name"].toString(), *n, *f, "    ");
+    //   if (!generated.IsSuccess())
+    //     return VoidResult::Failed(generated.ErrorMessage());
+
+    //   code += generated.Value();
+    //   break;
+    // }
   }
 
   QTextStream out(&file);
