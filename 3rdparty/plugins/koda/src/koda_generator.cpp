@@ -390,6 +390,23 @@ VoidResult KodaGenerator::verify(const QString& outputFolder)
   }
 #endif
 
+  // modelsOutputFolder is QDir for output models folder
+  QJsonObject mappingRoot;
+  mappingRoot["generated_at"] = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
+  mappingRoot["entries"] = mTraceMappingEntries;
+
+  // write mapping file
+  const QString mappingFilePath = mOutputFolder.absoluteFilePath("trace_mapping.json");
+  QFile mappingFile(mappingFilePath);
+  if (mappingFile.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+    const QJsonDocument doc(mappingRoot);
+    mappingFile.write(doc.toJson(QJsonDocument::Indented));
+    mappingFile.close();
+    LOG_INFO("Trace mapping written to %s", qPrintable(mappingFilePath));
+  } else {
+    LOG_WARNING("Could not write trace mapping file: %s", qPrintable(mappingFilePath));
+  }
+
   // TODO: We need to find a better solution for this, we shouldn't allow plugins to execute any scripts
   auto taskOnly = getSetting("taskOnly");
   for (const QString& f : mGeneratedDznFiles)
@@ -536,6 +553,16 @@ QString KodaGenerator::generateCapability(const INode& node)
 
   // mGeneratedDznFiles += QString::fromStdString("c" + ToLowerCase(name.toStdString(), 0, 1) + ".dzn");
   mGeneratedDznFiles += QString::fromStdString("i" + ToLowerCase(name.toStdString(), 0, name.size() - 1) + ".dzn");
+  QJsonObject mappingEntry;
+  mappingEntry["dezyne_module"] = QString::fromStdString("i" + ToLowerCase(name.toStdString(), 0, name.size() - 1) + ".dzn");
+  mappingEntry["dezyne_symbol"] = name; // best-effort symbol name
+  mappingEntry["koda_node_id"] = node.getid();
+  mappingEntry["koda_node_name"] = node.getproperties()["name"].toString();
+  QJsonObject origin;
+  origin["koda_file"] = "" ; // if you can extract origin, fill it
+  origin["line"] = -1;
+  mappingEntry["origin"] = origin;
+  mTraceMappingEntries.append(mappingEntry);
 
   args.chop(2);
   code += "capability " + name + "(" + args + ") {\n";
@@ -607,7 +634,18 @@ QString KodaGenerator::generateComponent(const INode& node, const QString& incom
   // Generate necessary wrappers
   QString name = fixCase(node.getproperties()["name"].toString());
   mGeneratedDznFiles += QString::fromStdString("c" + ToLowerCase(name.toStdString(), 0, name.size() - 1) + ".dzn");
+  QJsonObject mappingEntry;
+  mappingEntry["dezyne_module"] = QString::fromStdString("c" + ToLowerCase(name.toStdString(), 0, name.size() - 1) + ".dzn");
+  mappingEntry["dezyne_symbol"] = name; // best-effort symbol name
+  mappingEntry["koda_node_id"] = node.getid();
+  mappingEntry["koda_node_name"] = node.getproperties()["name"].toString();
+  QJsonObject origin;
+  origin["koda_file"] = "" ;
+  origin["line"] = -1;
+  mappingEntry["origin"] = origin;
+  mTraceMappingEntries.append(mappingEntry);
   mGeneratedDznFiles += QString::fromStdString("c" + ToLowerCase(name.toStdString(), 0, name.size() - 1) + "_task.dzn");
+
 
   // Create a file for each top level component
   QString fileName = mOutputFolder.filePath(name + ".kd");

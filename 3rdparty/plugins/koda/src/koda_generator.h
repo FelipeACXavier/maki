@@ -2,6 +2,7 @@
 
 #include <QDir>
 #include <QJsonObject>
+#include <QJsonArray>
 #include <QObject>
 #include <QProcess>
 #include <memory>
@@ -115,4 +116,6 @@ private:
   void buildSettings();
 
   maki::SettingField getSetting(const QString& key) const;
+
+  QJsonArray mTraceMappingEntries;
 };
