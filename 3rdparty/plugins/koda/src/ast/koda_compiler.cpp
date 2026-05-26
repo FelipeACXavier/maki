@@ -1064,7 +1064,7 @@ VoidResult Compiler::createSequenceComponent(uint32_t instances)
   file << "}\n";
 
   file.close();
-  recordFileMapping(filename, "sequence_temp", "component");
+  recordFileMapping(filename, "sequence_temp", "sequenceComponent");
 
   return VoidResult();
 }

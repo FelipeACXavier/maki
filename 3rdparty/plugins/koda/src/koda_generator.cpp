@@ -354,19 +354,19 @@ VoidResult KodaGenerator::verify(const QString& outputFolder)
   mGeneratedDznFiles = mDezyneOutputFolder.entryList(filters, QDir::Files);
 
   // Keep only files NOT containing "arbiter" for now
-  // QStringList filtered;
-  // auto taskOnly = getSetting("taskOnly");
-  // for (const QString& f : files)
-  // {
-  //   if (!f.contains("arbiter", Qt::CaseInsensitive))
-  //     filtered << f;
+  QStringList filtered;
+  auto taskOnly = getSetting("taskOnly");
+  for (const QString& f : files)
+  {
+    if (!f.contains("arbiter", Qt::CaseInsensitive))
+      filtered << f;
 
-  //   LOG_DEBUG("Task only: %d %d %d - %s", taskOnly.getValue().isValid(), taskOnly.getValue().toBool(), f.contains("_task", Qt::CaseInsensitive), qPrintable(f));
-  //   if (taskOnly.getValue().isValid() && taskOnly.getValue().toBool() && f.contains("_task", Qt::CaseInsensitive))
-  //     filtered << f;
-  // }
+    LOG_DEBUG("Task only: %d %d %d - %s", taskOnly.getValue().isValid(), taskOnly.getValue().toBool(), f.contains("_task", Qt::CaseInsensitive), qPrintable(f));
+    if (taskOnly.getValue().isValid() && taskOnly.getValue().toBool() && f.contains("_task", Qt::CaseInsensitive))
+      filtered << f;
+  }
 
-  // mGeneratedDznFiles = filtered;
+  mGeneratedDznFiles = filtered;
 #else
   for (const auto& file : mGeneratedFiles)
   {
