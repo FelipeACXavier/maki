@@ -356,12 +356,17 @@ VoidResult KodaGenerator::verify(const QString& outputFolder)
   // Keep only files NOT containing "arbiter" for now
   QStringList filtered;
   auto taskOnly = getSetting("taskOnly");
-  for (const QString& f : files)
+  for (const QString& f : mGeneratedDznFiles)
   {
     if (!f.contains("arbiter", Qt::CaseInsensitive))
       filtered << f;
 
-    LOG_DEBUG("Task only: %d %d %d - %s", taskOnly.getValue().isValid(), taskOnly.getValue().toBool(), f.contains("_task", Qt::CaseInsensitive), qPrintable(f));
+    LOG_DEBUG("Task only: %d %d %d - %s",
+              taskOnly.getValue().isValid(),
+              taskOnly.getValue().toBool(),
+              f.contains("_task", Qt::CaseInsensitive),
+              qPrintable(f));
+
     if (taskOnly.getValue().isValid() && taskOnly.getValue().toBool() && f.contains("_task", Qt::CaseInsensitive))
       filtered << f;
   }
@@ -408,7 +413,7 @@ VoidResult KodaGenerator::verify(const QString& outputFolder)
   }
 
   // TODO: We need to find a better solution for this, we shouldn't allow plugins to execute any scripts
-  auto taskOnly = getSetting("taskOnly");
+  //auto taskOnly = getSetting("taskOnly");
   for (const QString& f : mGeneratedDznFiles)
   {
     auto fullPath = mDezyneOutputFolder.absoluteFilePath(f);
