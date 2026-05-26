@@ -1,10 +1,12 @@
 #include "node.h"
 
+#include <QFileInfo>
 #include <QFontMetricsF>
 #include <QGraphicsScene>
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsView>
 #include <QHash>
+#include <QJsonObject>
 #include <QMenu>
 #include <QObject>
 #include <QPainter>
@@ -18,22 +20,47 @@
 
 #include "app_configs.h"
 #include "app_paths.h"
+#include "draggable.h"
 #include "flow.h"
+#include "keys.h"
 #include "logging.h"
 #include "port.h"
 #include "style_helpers.h"
 #include "subtask_connector.h"
 #include "system/canvas.h"
+#include "system/config_table.h"
 #include "system/structure_canvas.h"
 #include "system/undo_commands/move_node.h"
 #include "system/undo_commands/resize_node.h"
 #include "system/undo_commands/swap_capabilities.h"
+#include "types.h"
 
 namespace
 {
 /** Shared by tidy-tree packing and structural task layout finalization */
 QHash<NodeItem*, QPointF> g_packNodeOriginInSubtree;
 QHash<NodeItem*, QVector<QPair<NodeItem*, QPointF>>> g_childSubtreeTopLeftOffsets;
+
+constexpr qreal kComponentOverlayDiameterFactor = 0.40;
+
+bool showsSelectedComponentOverlay(const NodeConfig* cfg)
+{
+  if (!cfg)
+    return false;
+  return cfg->type == QStringLiteral("Async task") || cfg->type == QStringLiteral("Sync task");
+}
+
+bool isTaskCaller(const NodeSaveInfo& caller, const ConfigurationTable* configTable)
+{
+  if (caller.getnodeId().endsWith(QStringLiteral("::Task")))
+    return true;
+
+  if (!configTable)
+    return false;
+
+  const auto cfg = configTable->get(caller.getnodeId());
+  return cfg && cfg->type == QStringLiteral("Task");
+}
 
 void renderSvgInEllipse(QPainter* painter, const QString& svgPath, const QPointF& center, qreal diameter)
 {
@@ -58,6 +85,152 @@ void renderSvgInEllipse(QPainter* painter, const QString& svgPath, const QPointF
                           scaledSize.width(),
                           scaledSize.height());
   renderer.render(painter, targetRect);
+}
+
+QString resolveStoredIconPath(const QString& storedIcon, const QString& nodeId, const ConfigurationTable* configTable)
+{
+  if (!storedIcon.isEmpty())
+  {
+    if (QFileInfo::exists(storedIcon))
+      return storedIcon;
+
+    const QString byFileName = AppPaths::icon(QFileInfo(storedIcon).fileName());
+    if (!byFileName.isEmpty())
+      return byFileName;
+  }
+
+  if (!configTable)
+    return QString();
+
+  const auto cfg = configTable->get(nodeId);
+  if (!cfg)
+    return QString();
+
+  if (!cfg->body.iconPath.isEmpty())
+  {
+    const QString resolved = AppPaths::icon(cfg->body.iconPath);
+    if (!resolved.isEmpty())
+      return resolved;
+  }
+
+  return QString();
+}
+
+void paintTaskPalettePreview(QPainter* painter, const QRectF& drawingBounds)
+{
+  paintStructuralTaskOverlayPreview(painter, drawingBounds, QPen(Config::FOREGROUND, 1.0));
+}
+
+std::shared_ptr<NodeSaveInfo> selectedComponentCaller(const NodeItem* node, const SaveInfo& storage)
+{
+  QString propertyId;
+  for (const auto& property : node->config()->properties)
+  {
+    if (property.type == Types::PropertyTypes::COMPONENT_SELECT)
+    {
+      propertyId = property.id;
+      break;
+    }
+  }
+
+  if (propertyId.isEmpty())
+    return nullptr;
+
+  const auto callers = storage.getPossibleCallers(node->id());
+  if (callers.isEmpty())
+    return nullptr;
+
+  QString callerName;
+  const QVariant propertyValue = node->getProperty(propertyId);
+  if (propertyValue.isValid())
+  {
+    const QJsonObject object = propertyValue.toJsonObject();
+    if (object.contains(ConfigKeys::DATA))
+      callerName = object.value(ConfigKeys::DATA).toString();
+  }
+
+  if (callerName.isEmpty() || callerName == QStringLiteral("-"))
+    return callers.first();
+
+  for (const auto& caller : callers)
+  {
+    const QVariant callerNameProperty = caller->getProperty(ConfigKeys::NAME);
+    if (callerNameProperty.isValid() && callerNameProperty.toString() == callerName)
+      return caller;
+  }
+
+  return nullptr;
+}
+
+QString selectedComponentIconPath(const std::shared_ptr<NodeSaveInfo>& caller, const ConfigurationTable* configTable)
+{
+  if (!caller || isTaskCaller(*caller, configTable))
+    return QString();
+
+  return resolveStoredIconPath(caller->getIcon(), caller->getnodeId(), configTable);
+}
+
+QColor callerBackgroundColor(const NodeSaveInfo& caller, const ConfigurationTable* configTable)
+{
+  const QVariant color = caller.getProperty(QStringLiteral("color"));
+  if (color.isValid() && QColor::isValidColorName(color.toString()))
+    return QColor::fromString(color.toString());
+
+  if (configTable)
+  {
+    if (const auto cfg = configTable->get(caller.getnodeId()))
+      return cfg->body.backgroundColor;
+  }
+
+  return QColor(0xe6, 0xe6, 0xe6);
+}
+
+void paintSelectedComponentOverlay(const NodeItem* node, QPainter* painter)
+{
+  if (!showsSelectedComponentOverlay(node->config().get()))
+    return;
+
+  if (node->config()->body.nodeSvg.isEmpty())
+    return;
+
+  const QGraphicsScene* sc = node->scene();
+  if (!sc)
+    return;
+
+  const auto* canvas = dynamic_cast<const Canvas*>(sc);
+  if (!canvas)
+    return;
+
+  const auto storage = canvas->projectStorage();
+  if (!storage)
+    return;
+
+  const ConfigurationTable* configTable = canvas->configurationTable().get();
+  const auto caller = selectedComponentCaller(node, *storage);
+  if (!caller)
+    return;
+
+  const QRectF drawingBounds = node->drawingRect(node->boundingRect());
+  painter->setRenderHint(QPainter::Antialiasing, true);
+
+  if (isTaskCaller(*caller, configTable))
+  {
+    paintTaskPalettePreview(painter, drawingBounds);
+    return;
+  }
+
+  const QString iconPath = selectedComponentIconPath(caller, configTable);
+  if (iconPath.isEmpty())
+    return;
+
+  const qreal diameter = qMin(drawingBounds.width(), drawingBounds.height()) * node->config()->body.iconScale * kComponentOverlayDiameterFactor;
+  const QPointF center = drawingBounds.center();
+  const qreal radius = diameter * 0.5;
+
+  painter->setPen(QPen(Qt::black, 1.0 / node->baseScale()));
+  painter->setBrush(QBrush(callerBackgroundColor(*caller, configTable)));
+  painter->drawEllipse(center, radius, radius);
+  renderSvgInEllipse(painter, iconPath, center, diameter);
 }
 }  // namespace
 
@@ -445,6 +618,8 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
       function() == Types::LibraryTypes::STRUCTURAL && !isTaskContainer();
 
   NodeBase::paintNode(boundingRect(), background, outlinePen, painter);
+
+  paintSelectedComponentOverlay(this, painter);
 
   if (isStructuralCapability && !config()->body.iconPath.isEmpty())
   {

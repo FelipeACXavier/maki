@@ -92,6 +92,10 @@ file(GLOB APP_ICON_FILES
   ${MISSION_PATH}/capability_robotarm.svg  
   ${MISSION_PATH}/capability_led.svg  
   ${MISSION_PATH}/capability_conveyor.svg  
+  ${MISSION_PATH}/capability_approach.svg 
+  ${MISSION_PATH}/capability_imageinspector.svg   
+  ${MISSION_PATH}/capability_ticketcreation.svg  
+  ${MISSION_PATH}/capability_bridge.svg  
   ${SHAPES_PATH}/shape_start.svg
   ${SHAPES_PATH}/shape_middle.svg
   ${SHAPES_PATH}/shape_end.svg

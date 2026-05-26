@@ -10,10 +10,12 @@
 #include <QIcon>
 #include <QJsonArray>
 #include <QLabel>
+#include <QLineEdit>
 #include <QMenu>
 #include <QMessageBox>
 #include <QMimeData>
 #include <QScrollArea>
+#include <QTimer>
 #include <QToolButton>
 #include <QUndoStack>
 #include <QVBoxLayout>
@@ -43,6 +45,7 @@
 #include "undo_commands/add_node.h"
 #include "undo_commands/align.h"
 #include "undo_commands/remove_node.h"
+#include "widgets/widget_factory.h"
 
 static constexpr auto MAKI_CLIPBOARD_MIME = "application/x-maki-copied-nodes";
 
@@ -202,6 +205,21 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
     stream >> *info;
     info->setScale(parentView()->getScale());
 
+    if (TransitionItem* transition = transitionAt(event->scenePos()))
+    {
+      auto dropConfig = mConfigTable->get(info->getnodeId());
+      if (dropConfig && dropConfig->libraryType == type())
+      {
+        if (NodeItem* inserted = insertDroppedNodeOnTransition(transition, info))
+        {
+          selectNode(inserted, true);
+          event->acceptProposedAction();
+          dynamic_cast<QGraphicsView*>(parent())->setCursor(Qt::ArrowCursor);
+          return;
+        }
+      }
+    }
+
     auto node = createNode(NodeCreation::Dropping, info, event->scenePos(), parentNode);
     if (node)
     {
@@ -279,11 +297,30 @@ void Canvas::openCapabilityMenu(NodeItem* task)
     });
   }
 
+  struct CapabilityTile
+  {
+    QString name;
+    QWidget* cell = nullptr;
+  };
+
+  struct LibrarySection
+  {
+    QLabel* header = nullptr;
+    QWidget* gridHost = nullptr;
+    QGridLayout* grid = nullptr;
+    QVector<CapabilityTile> tiles;
+  };
+
+  QVector<LibrarySection> sections;
+
   auto* host = new QWidget(&menu);
   oclero::qlementine::QlementineStyle::setAutoIconColor(host, oclero::qlementine::AutoIconColor::None);
   auto* vbox = new QVBoxLayout(host);
   vbox->setContentsMargins(6, 4, 6, 4);
   vbox->setSpacing(4);
+
+  auto* search = new maki::SearchWidget(tr("Filter capabilities"), host);
+  vbox->addWidget(search);
 
   constexpr int kCols = 5;
   constexpr int kIconPx = 28;
@@ -306,17 +343,18 @@ void Canvas::openCapabilityMenu(NodeItem* task)
 
   for (auto libIt = byLibrary.begin(); libIt != byLibrary.end(); ++libIt)
   {
-    auto* header = new QLabel(libIt->first, host);
-    QFont hf = header->font();
+    LibrarySection section;
+    section.header = new QLabel(libIt->first, host);
+    QFont hf = section.header->font();
     hf.setBold(true);
-    header->setFont(hf);
-    vbox->addWidget(header);
+    section.header->setFont(hf);
+    vbox->addWidget(section.header);
 
-    auto* gridHost = new QWidget(host);
-    auto* grid = new QGridLayout(gridHost);
-    grid->setContentsMargins(0, 0, 0, 0);
-    grid->setHorizontalSpacing(4);
-    grid->setVerticalSpacing(4);
+    section.gridHost = new QWidget(host);
+    section.grid = new QGridLayout(section.gridHost);
+    section.grid->setContentsMargins(0, 0, 0, 0);
+    section.grid->setHorizontalSpacing(4);
+    section.grid->setVerticalSpacing(4);
 
     int idx = 0;
     for (const CapRow& row : libIt->second)
@@ -324,7 +362,7 @@ void Canvas::openCapabilityMenu(NodeItem* task)
       const QString nodeIdKey = row.first;
       const std::shared_ptr<NodeConfig> cfgRow = row.second;
 
-      auto* cell = new QWidget(gridHost);
+      auto* cell = new QWidget(section.gridHost);
       cell->setFixedWidth(tileW);
       auto* cv = new QVBoxLayout(cell);
       cv->setContentsMargins(0, 0, 0, 0);
@@ -369,11 +407,49 @@ void Canvas::openCapabilityMenu(NodeItem* task)
         menuPtr->close();
       });
 
-      grid->addWidget(cell, idx / kCols, idx % kCols);
+      section.grid->addWidget(cell, idx / kCols, idx % kCols);
+      section.tiles.push_back({cfgRow->type, cell});
       ++idx;
     }
-    vbox->addWidget(gridHost);
+
+    vbox->addWidget(section.gridHost);
+    sections.push_back(section);
   }
+
+  const auto reflowSection = [kCols](LibrarySection& section, const QVector<QWidget*>& visibleCells) {
+    while (QLayoutItem* item = section.grid->takeAt(0))
+    {
+      if (item->widget())
+        item->widget()->setParent(section.gridHost);
+      delete item;
+    }
+
+    for (int i = 0; i < visibleCells.size(); ++i)
+      section.grid->addWidget(visibleCells[i], i / kCols, i % kCols);
+
+    const bool hasVisible = !visibleCells.isEmpty();
+    section.header->setVisible(hasVisible);
+    section.gridHost->setVisible(hasVisible);
+  };
+
+  const auto applyFilter = [reflowSection, &sections](const QString& query) {
+    const QString needle = query.trimmed();
+    for (LibrarySection& section : sections)
+    {
+      QVector<QWidget*> visible;
+      visible.reserve(section.tiles.size());
+      for (const CapabilityTile& tile : section.tiles)
+      {
+        const bool matches = needle.isEmpty() || tile.name.contains(needle, Qt::CaseInsensitive);
+        tile.cell->setVisible(matches);
+        if (matches)
+          visible.push_back(tile.cell);
+      }
+      reflowSection(section, visible);
+    }
+  };
+
+  QObject::connect(search, &maki::SearchWidget::valueChanged, host, applyFilter);
 
   host->adjustSize();
 
@@ -403,6 +479,7 @@ void Canvas::openCapabilityMenu(NodeItem* task)
 
   QPoint v = view->mapFromScene(anchorScene);
   v.rx() -= menuHint.width() / 2;
+  QTimer::singleShot(0, search, [search]() { search->widget()->setFocus(); });
   menu.exec(view->viewport()->mapToGlobal(v));
 }
 
@@ -1661,6 +1738,32 @@ void Canvas::onFlowRemoved(const QString& flowId, const QString& nodeId)
 
 void Canvas::updateParent(NodeItem* /* node */, std::shared_ptr<NodeSaveInfo> /* storage */, bool /* adding */)
 {
+}
+
+NodeItem* Canvas::insertDroppedNodeOnTransition(TransitionItem* /* transition */, std::shared_ptr<NodeSaveInfo> /* info */)
+{
+  return nullptr;
+}
+
+TransitionItem* Canvas::transitionAt(const QPointF& scenePos) const
+{
+  const QList<QGraphicsItem*> hits = items(scenePos, Qt::IntersectsItemShape, Qt::DescendingOrder);
+  for (QGraphicsItem* item : hits)
+  {
+    if (item->type() == NodeItem::Type)
+      return nullptr;
+
+    if (item->type() == TransitionItem::Type)
+      return static_cast<TransitionItem*>(item);
+
+    for (QGraphicsItem* parent = item->parentItem(); parent; parent = parent->parentItem())
+    {
+      if (parent->type() == TransitionItem::Type)
+        return static_cast<TransitionItem*>(parent);
+    }
+  }
+
+  return nullptr;
 }
 
 void Canvas::themeChanged()

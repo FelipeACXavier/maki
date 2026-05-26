@@ -1143,7 +1143,7 @@ void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
 
   CanvasView* newView = new CanvasView(mCanvasPanel);
 
-  BehaviourCanvas* canvas = new BehaviourCanvas(flow, mConfigTable, newView);
+  BehaviourCanvas* canvas = new BehaviourCanvas(flow, mStorage, mConfigTable, newView);
   newView->setScene(canvas);
 
   // Change to respective tabs

@@ -19,7 +19,63 @@ namespace
 constexpr qreal kTaskCornerRadius = 28.0;
 constexpr qreal kTaskInnerPadding = 6.0;
 constexpr qreal kTaskSlotDiameterFactor = 0.30;
+constexpr qreal kPaletteMaxWidth = 60.0;
+constexpr qreal kPaletteMaxHeight = 60.0;
 }  // namespace
+
+QRectF structuralTaskPaletteBounds(qreal width, qreal height)
+{
+  const qreal widthScale = width > kPaletteMaxWidth ? kPaletteMaxWidth / width : 1.0;
+  const qreal heightScale = height > kPaletteMaxHeight ? kPaletteMaxHeight / height : 1.0;
+  const qreal scaleFactor = qMin(widthScale, heightScale);
+  return QRectF(0, 0, width * scaleFactor, height * scaleFactor);
+}
+
+void paintStructuralTaskPalettePreview(QPainter* painter, const QRectF& rect, const QPen& outlinePen)
+{
+  painter->setRenderHint(QPainter::Antialiasing, true);
+  painter->setPen(outlinePen);
+  painter->setBrush(Qt::NoBrush);
+
+  const QRectF bodyRect = rect.adjusted(kTaskInnerPadding, kTaskInnerPadding, -kTaskInnerPadding, -kTaskInnerPadding);
+  painter->drawRoundedRect(bodyRect, kTaskCornerRadius, kTaskCornerRadius);
+
+  const qreal slotDiameter = qMin(bodyRect.width(), bodyRect.height()) * kTaskSlotDiameterFactor;
+  const qreal slotRadius = slotDiameter * 0.5;
+  QPen dashPen(Qt::black, 1.0, Qt::DashLine, Qt::RoundCap, Qt::RoundJoin);
+  painter->setPen(dashPen);
+  painter->drawEllipse(bodyRect.center(), slotRadius, slotRadius);
+}
+
+void paintStructuralTaskOverlayPreview(QPainter* painter, const QRectF& drawingBounds, const QPen& outlinePen)
+{
+  constexpr qreal kOverlaySizeScale = 0.68;
+  constexpr qreal kOverlayInnerPadding = 3.0;
+  constexpr qreal kOverlayCornerRadiusFraction = 0.44;
+  constexpr qreal kOverlaySlotDiameterFactor = 0.30;
+
+  const QRectF paletteSize = structuralTaskPaletteBounds();
+  const qreal width = paletteSize.width() * kOverlaySizeScale;
+  const qreal height = paletteSize.height() * kOverlaySizeScale;
+  const QRectF rect(drawingBounds.center().x() - width * 0.5,
+                    drawingBounds.center().y() - height * 0.5,
+                    width,
+                    height);
+
+  painter->setRenderHint(QPainter::Antialiasing, true);
+  painter->setPen(outlinePen);
+  painter->setBrush(Qt::NoBrush);
+
+  const QRectF bodyRect = rect.adjusted(kOverlayInnerPadding, kOverlayInnerPadding, -kOverlayInnerPadding, -kOverlayInnerPadding);
+  const qreal cornerRadius = qMin(bodyRect.width(), bodyRect.height()) * kOverlayCornerRadiusFraction;
+  painter->drawRoundedRect(bodyRect, cornerRadius, cornerRadius);
+
+  const qreal slotDiameter = qMin(bodyRect.width(), bodyRect.height()) * kOverlaySlotDiameterFactor;
+  const qreal slotRadius = slotDiameter * 0.5;
+  QPen dashPen(Qt::black, 1.0, Qt::DashLine, Qt::RoundCap, Qt::RoundJoin);
+  painter->setPen(dashPen);
+  painter->drawEllipse(bodyRect.center(), slotRadius, slotRadius);
+}
 
 DraggableItem::DraggableItem(const QString& nodeId, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
     : NodeBase(QUuid::createUuid().toString(), nodeId, nodeConfig, parent)
@@ -55,20 +111,8 @@ void DraggableItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* sty
 
   if (config()->libraryType == Types::LibraryTypes::STRUCTURAL && config()->type == QStringLiteral("Task"))
   {
-    painter->setRenderHint(QPainter::Antialiasing, true);
-    painter->setPen(isSelected() ? QPen(Config::HIGHLIGHT, 2.0) : QPen(Config::FOREGROUND, 1.0));
-    painter->setBrush(Qt::NoBrush);
-
-    const QRectF bodyRect = rect.adjusted(kTaskInnerPadding, kTaskInnerPadding, -kTaskInnerPadding, -kTaskInnerPadding);
-    painter->drawRoundedRect(bodyRect, kTaskCornerRadius, kTaskCornerRadius);
-
-    const qreal slotDiameter = qMin(bodyRect.width(), bodyRect.height()) * kTaskSlotDiameterFactor;
-    const qreal slotRadius = slotDiameter * 0.5;
-    const QPointF center = bodyRect.center();
-    QPen dashPen(Qt::black, 1.0, Qt::DashLine, Qt::RoundCap, Qt::RoundJoin);
-    painter->setPen(dashPen);
-    painter->setBrush(Qt::NoBrush);
-    painter->drawEllipse(center, slotRadius, slotRadius);
+    const QPen outlinePen = isSelected() ? QPen(Config::HIGHLIGHT, 2.0) : QPen(Config::FOREGROUND, 1.0);
+    paintStructuralTaskPalettePreview(painter, rect, outlinePen);
     return;
   }
 

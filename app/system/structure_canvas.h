@@ -13,6 +13,11 @@ public:
 
   Types::LibraryTypes type() const override;
 
+  std::shared_ptr<SaveInfo> projectStorage() const override
+  {
+    return mStorage;
+  }
+
 protected:
   void addedItemNode(NodeItem* node, std::shared_ptr<NodeSaveInfo> info) override;
 

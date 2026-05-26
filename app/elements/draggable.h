@@ -14,6 +14,17 @@
 #include "node_base.h"
 #include "types.h"
 
+class QPainter;
+
+/** Bounds used for Task previews in the structure palette (matches DraggableItem scaling). */
+QRectF structuralTaskPaletteBounds(qreal width = 324.0, qreal height = 300.0);
+
+/** Paints the Task preview shown in the structure palette (rounded rect + dashed slot). */
+void paintStructuralTaskPalettePreview(QPainter* painter, const QRectF& rect, const QPen& outlinePen);
+
+/** Compact Task preview for sync/async behaviour node overlays. */
+void paintStructuralTaskOverlayPreview(QPainter* painter, const QRectF& drawingBounds, const QPen& outlinePen);
+
 /**
  * @brief A draggable item in a graphical scene.
  */

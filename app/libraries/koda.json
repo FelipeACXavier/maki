@@ -497,10 +497,11 @@
         {
           "type": "Approach",
           "body": {
-            "shape": "Rectangle",
+            "shape": "Ellipse",
             "textColor": "#FFFFFF",
-            "backgroundColor": "#fbf2c4",
+            "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
+            "icon": "capability_approach.svg",
             "width": 500,
             "height": 500,
             "z-index": -2
@@ -514,7 +515,7 @@
             {
               "id": "color",
               "type": "color",
-              "default": "#fbf2c4"
+              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -600,6 +601,7 @@
             "textColor": "#000000",
             "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
+            "icon": "capability_bridge.svg",
             "width": 500,
             "height": 500,
             "z-index": -2
@@ -1167,6 +1169,7 @@
             "textColor": "#000000",
             "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
+            "icon": "capability_imageinspector.svg",
             "width": 500,
             "height": 500,
             "z-index": -2
@@ -1268,6 +1271,7 @@
             "textColor": "#000000",
             "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
+            "icon": "capability_ticketcreation.svg",
             "width": 500,
             "height": 500,
             "z-index": -2

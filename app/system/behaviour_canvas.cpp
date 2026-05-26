@@ -3,12 +3,18 @@
 #include <qcoreapplication.h>
 #include <qdir.h>
 
+#include "app_configs.h"
 #include "elements/flow.h"
+#include "elements/node.h"
+#include "elements/transition.h"
 #include "logging.h"
+#include "style_helpers.h"
+#include "transition_info.h"
 
-BehaviourCanvas::BehaviourCanvas(Flow* flow, std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
+BehaviourCanvas::BehaviourCanvas(Flow* flow, std::shared_ptr<SaveInfo> storage, std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
     : Canvas(flow->id(), configTable, parent)
     , mFlow(flow)
+    , mStorage(std::move(storage))
 {
 }
 
@@ -99,4 +105,63 @@ void BehaviourCanvas::onNodeMoved(const QString& nodeId)
     if (transition->source()->id() == nodeId || transition->destination()->id() == nodeId)
       transition->updatePath();
   }
+}
+
+namespace
+{
+TransitionItem* connectBehaviourNodes(Canvas* canvas, BehaviourCanvas* behaviourCanvas, NodeItem* source, NodeItem* destination,
+                                      const QString& event, const QString& label)
+{
+  if (!canvas || !behaviourCanvas || !source || !destination)
+    return nullptr;
+
+  if (!behaviourCanvas->canAddTransition(source))
+    return nullptr;
+
+  auto storage = std::make_shared<TransitionSaveInfo>();
+  auto* transition = new TransitionItem(storage);
+  transition->setEvent(event);
+  transition->setName(label);
+  transition->setStart(source->id(), source->edgePointToward(destination->sceneBoundingRect().center(), true), {0, 0});
+  transition->setEnd(destination->id(), destination->edgePointToward(source->sceneBoundingRect().center(), false), {0, 0});
+  transition->done(source, destination);
+  canvas->addItem(transition);
+  behaviourCanvas->addTransition(transition);
+  return transition;
+}
+}  // namespace
+
+NodeItem* BehaviourCanvas::insertDroppedNodeOnTransition(TransitionItem* transition, std::shared_ptr<NodeSaveInfo> info)
+{
+  if (!transition || !info)
+    return nullptr;
+
+  NodeItem* source = transition->source();
+  NodeItem* destination = transition->destination();
+  if (!source || !destination || source == destination)
+    return nullptr;
+
+  const QString eventName = transition->getEvent();
+  const QString label = transition->getName();
+
+  removeTransition(transition);
+  removeItem(transition);
+  delete transition;
+
+  const QPointF insertCenter =
+      snapToGrid((source->sceneBoundingRect().center() + destination->sceneBoundingRect().center()) * 0.5, Config::GRID_SIZE);
+
+  NodeItem* node = createNode(NodeCreation::Dropping, info, insertCenter, nullptr);
+  if (!node)
+    return nullptr;
+
+  if (!connectBehaviourNodes(this, this, source, node, eventName, label))
+    return nullptr;
+
+  const TransitionConfig outConfig = nextTransition(node);
+  if (!connectBehaviourNodes(this, this, node, destination, outConfig.event, outConfig.label))
+    return nullptr;
+
+  onNodeMoved(node->id());
+  return node;
 }

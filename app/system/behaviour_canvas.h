@@ -23,7 +23,7 @@ public:
    * @param configTable A shared pointer to the ConfigurationTable for configuration data.
    * @param parent An optional QObject parent for this canvas.
    */
-  BehaviourCanvas(Flow* flow, std::shared_ptr<ConfigurationTable> configTable, QObject* parent = nullptr);
+  BehaviourCanvas(Flow* flow, std::shared_ptr<SaveInfo> storage, std::shared_ptr<ConfigurationTable> configTable, QObject* parent = nullptr);
 
   /**
    * @brief Retrieves the type of library associated with this canvas.
@@ -31,6 +31,11 @@ public:
    * @return The library type as a value of `Types::LibraryTypes`.
    */
   virtual Types::LibraryTypes type() const override;
+
+  std::shared_ptr<SaveInfo> projectStorage() const override
+  {
+    return mStorage;
+  }
 
   /**
    * @brief Checkes whether it is possible to add a new trasition to a node
@@ -81,6 +86,8 @@ private:
    */
   Flow* mFlow;
 
+  std::shared_ptr<SaveInfo> mStorage;
+
   /**
    * @brief Updates the parent node of a given node item.
    *
@@ -91,4 +98,6 @@ private:
    * @param adding A boolean indicating whether the node is being added or removed.
    */
   void updateParent(NodeItem* node, std::shared_ptr<NodeSaveInfo> storage, bool adding) override;
+
+  NodeItem* insertDroppedNodeOnTransition(TransitionItem* transition, std::shared_ptr<NodeSaveInfo> info) override;
 };

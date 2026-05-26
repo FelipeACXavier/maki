@@ -14,6 +14,11 @@ class TransitionSaveInfo;
 class TransitionItem : public QGraphicsPathItem
 {
 public:
+  enum
+  {
+    Type = Types::TRANSITION
+  };
+
   /**
    * @brief Enumerates the types of edges that can be used for transitions.
    */

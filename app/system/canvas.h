@@ -226,6 +226,19 @@ public:
    */
   void alignNodes(const QList<Types::AlignmentNode>& items, Types::AlignmentMode mode, Types::AlignmentDirection direction, bool useGiven);
 
+  std::shared_ptr<ConfigurationTable> configurationTable() const
+  {
+    return mConfigTable;
+  }
+
+  /**
+   * @brief Returns the project save info when this canvas can resolve cross-node references.
+   */
+  virtual std::shared_ptr<SaveInfo> projectStorage() const
+  {
+    return nullptr;
+  }
+
 protected:
   /**
    * @brief Handles drag enter events.
@@ -289,11 +302,6 @@ protected:
   };
 
   NodeItem* createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo> info, const QPointF& position, NodeItem* parent);
-
-  std::shared_ptr<ConfigurationTable> configurationTable() const
-  {
-    return mConfigTable;
-  }
 
 signals:
   /**
@@ -405,6 +413,12 @@ protected:
   virtual QVector<QGraphicsItem*> cleanTransitionsOfNode(const QString& nodeId);
   virtual void onNodeMoved(const QString& nodeId);
 
+  /**
+   * @brief Inserts a dropped behaviour node onto an existing transition (source -> new -> destination).
+   * @return The created node when handled, otherwise nullptr.
+   */
+  virtual NodeItem* insertDroppedNodeOnTransition(TransitionItem* transition, std::shared_ptr<NodeSaveInfo> info);
+
 private:
   // TODO(felaze): Move connection behaviour to a separate class
   NodeItem* mHoveredNode = nullptr;       /// Pointer to the hovered node.
@@ -509,6 +523,7 @@ private:
   void clearCapabilityDropPreview();
   void updateCapabilityDropPreview(const QPointF& scenePos);
   void openCapabilityMenu(NodeItem* task);
+  TransitionItem* transitionAt(const QPointF& scenePos) const;
 
   NodeItem* mCapabilityPreviewTask = nullptr;
   bool mDraggedNodeIsCapability = false;
