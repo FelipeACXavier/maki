@@ -47,6 +47,90 @@ Compiler::Compiler()
 {
 }
 
+void Compiler::recordFileMapping(const std::string& generated_file, const std::string& koda_symbol, const std::string& kind)
+{
+  mFileMappings.push_back(FileMapping{
+  generated_file,
+  koda_symbol,
+  kind,
+  mOptions.inputFile
+  });
+
+  if (mOptions.verbose > 0)
+    LOG_DEBUG("Mapped KODA:%s -> Dezyne:%s (kind:%s)", koda_symbol.c_str(), generated_file.c_str(), kind.c_str());
+}
+
+std::string Compiler::jsonEscape(const std::string& str)
+{
+  std::ostringstream o;
+  for (char c : str)
+  {
+    switch (c)
+    {
+      case '"':  o << "\\\""; break;
+      case '\\': o << "\\\\"; break;
+      case '\b': o << "\\b"; break;
+      case '\f': o << "\\f"; break;
+      case '\n': o << "\\n"; break;
+      case '\r': o << "\\r"; break;
+      case '\t': o << "\\t"; break;
+      default:
+        if (static_cast<unsigned char>(c) < 0x20)
+          o << "\\u" << std::hex << std::setw(4) << std::setfill('0') << (int)c << std::dec;
+        else
+          o << c;
+    }
+  }
+  return o.str();
+}
+
+VoidResult Compiler::writeFileMappingFile() const
+{
+  if (mFileMappings.empty())
+  {
+    LOG_DEBUG("No file mappings to write");
+    return VoidResult();
+  }
+
+  std::string mappingPath = std::format("{}/trace_mapping.json", mOptions.outputDir);
+  std::ofstream outfile(mappingPath, std::ios::out | std::ios::trunc);
+
+  if (!outfile.is_open())
+    return VoidResult::Failed(std::string("Could not open trace mapping file: ") + mappingPath);
+
+  auto now = std::time(nullptr);
+  auto tm = *std::gmtime(&now);
+  std::ostringstream oss;
+  oss << std::put_time(&tm, "%Y-%m-%dT%H:%M:%SZ");
+
+  outfile << "{\n";
+  outfile << "  \"generated_at\": \"" << oss.str() << "\",\n";
+  outfile << "  \"source_koda\": \"" << jsonEscape(mOptions.inputFile) << "\",\n";
+  outfile << "  \"output_directory\": \"" << jsonEscape(mOptions.outputDir) << "\",\n";
+  outfile << "  \"mappings\": [\n";
+
+  for (size_t i = 0; i < mFileMappings.size(); ++i)
+  {
+    const auto& m = mFileMappings[i];
+    outfile << "    {\n";
+    outfile << "      \"koda_symbol\": \"" << jsonEscape(m.koda_symbol) << "\",\n";
+    outfile << "      \"kind\": \"" << jsonEscape(m.kind) << "\",\n";
+    outfile << "      \"generated_file\": \"" << jsonEscape(m.generated_file) << "\"\n";
+    outfile << "    }";
+
+    if (i + 1 < mFileMappings.size())
+      outfile << ",";
+    outfile << "\n";
+  }
+
+  outfile << "  ]\n";
+  outfile << "}\n";
+  outfile.close();
+
+  LOG_INFO("Trace mapping written to %s (%zu entries)", mappingPath.c_str(), mFileMappings.size());
+  return VoidResult();
+}
+
 VoidResult Compiler::parse(const CompilerOptions& options)
 {
   mOptions = options;
@@ -96,6 +180,7 @@ VoidResult Compiler::parse(const CompilerOptions& options)
 
 VoidResult Compiler::generate()
 {
+  mFileMappings.clear();
   Environment env;
   for (auto& component : mAST.components)
   {
@@ -108,6 +193,8 @@ VoidResult Compiler::generate()
     if (component->kind == Component::Kind::Task)
       RETURN_ON_FAILURE(generateTask(component, env));
   }
+
+  RETURN_ON_FAILURE(writeFileMappingFile());
 
   return VoidResult();
 }
@@ -225,6 +312,7 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, Environment& e
 
   // With the flows for this task defined, we can now connect all flows into a complete strategy
   std::string filename = std::format("{}/{}_task.dzn", mOptions.outputDir, toFilename(task->name));
+
   std::ofstream file;
   file.open(filename);
   if (!file.is_open())
@@ -280,6 +368,7 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, Environment& e
 
   // Component
   file.close();
+  recordFileMapping(filename, task->name, "task");
 
   return koda::ReturnValue();
 }
@@ -322,6 +411,7 @@ Result<koda::ReturnValue> Compiler::generateCapability(PComponent capability, En
 
   file << "}";
   file.close();
+  recordFileMapping(filename, capability->name, "capability");
 
   return koda::ReturnValue();
 }
@@ -509,6 +599,7 @@ Result<koda::ReturnValue> Compiler::generateFlow(PFlow flow, Environment& env)
 
   // Compose
   mCurrentFile.close();
+  recordFileMapping(filename, file->name, "flow");
 
   return ret;
 }
@@ -973,6 +1064,7 @@ VoidResult Compiler::createSequenceComponent(uint32_t instances)
   file << "}\n";
 
   file.close();
+  recordFileMapping(filename, "sequence_temp", "component");
 
   return VoidResult();
 }

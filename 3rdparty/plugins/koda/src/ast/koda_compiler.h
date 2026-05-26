@@ -51,6 +51,19 @@ private:
   std::ofstream mCurrentFile;
   CompilerOptions mOptions;
 
+  struct FileMapping {
+    std::string generated_file;
+    std::string koda_symbol;
+    std::string kind;
+    std::string source_file;
+  };
+
+  std::vector<FileMapping> mFileMappings;
+
+  void recordFileMapping(const std::string& generated_file, const std::string& koda_symbol, const std::string& kind);
+  VoidResult writeFileMappingFile() const;
+  static std::string jsonEscape(const std::string& str);
+
   struct Composition
   {
     std::string id = "";
