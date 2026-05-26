@@ -599,7 +599,7 @@ Result<koda::ReturnValue> Compiler::generateFlow(PFlow flow, Environment& env)
 
   // Compose
   mCurrentFile.close();
-  recordFileMapping(filename, file->name, "flow");
+  recordFileMapping(filename, flow->name, "flow");
 
   return ret;
 }
