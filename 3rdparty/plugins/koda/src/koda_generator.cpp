@@ -563,6 +563,7 @@ QString KodaGenerator::generateCapability(const INode& node)
   mappingEntry["dezyne_symbol"] = name; // best-effort symbol name
   mappingEntry["koda_node_id"] = node.getid();
   mappingEntry["koda_node_name"] = node.getproperties()["name"].toString();
+  mappingEntry["kind"] = "capability";
   QJsonObject origin;
   origin["koda_file"] = "" ; // if you can extract origin, fill it
   origin["line"] = -1;
@@ -602,6 +603,17 @@ QString KodaGenerator::generateCapability(const INode& node)
       {
         continue;
       }
+
+      // Record flow mapping
+      QString flowName = f->getname();
+      QJsonObject flowMappingEntry;
+      flowMappingEntry["flow_id"] = f->getid();
+      flowMappingEntry["flow_name"] = flowName;
+      flowMappingEntry["source_capability"] = name;
+      flowMappingEntry["source_node_id"] = node.getid();
+      flowMappingEntry["call_type"] = QString::number((int)f->gettype());
+      mTraceMappingEntries.append(flowMappingEntry);
+      LOG_DEBUG("Mapped flow: %s (id: %s) from capability: %s", qPrintable(flowName), qPrintable(f->getid()), qPrintable(name));
 
       QString args = "";
       for (const auto& arg : f->getarguments())
@@ -644,6 +656,15 @@ QString KodaGenerator::generateComponent(const INode& node, const QString& incom
   mappingEntry["dezyne_symbol"] = name; // best-effort symbol name
   mappingEntry["koda_node_id"] = node.getid();
   mappingEntry["koda_node_name"] = node.getproperties()["name"].toString();
+  mappingEntry["kind"] = "task";
+
+  QJsonArray connectedFlows;
+  for (const auto& f : node.getflows())
+  {
+    connectedFlows.append(f->getname());
+  }
+  if (!connectedFlows.isEmpty())
+    mappingEntry["connected_flows"] = connectedFlows;
   QJsonObject origin;
   origin["koda_file"] = "" ;
   origin["line"] = -1;
@@ -669,6 +690,16 @@ QString KodaGenerator::generateComponent(const INode& node, const QString& incom
   {
     if (!f->getnodes().empty())
       continue;
+
+    QString flowName = f->getname();
+    QJsonObject componentFlowEntry;
+    componentFlowEntry["flow_id"] = f->getid();
+    componentFlowEntry["flow_name"] = flowName;
+    componentFlowEntry["source_task"] = name;
+    componentFlowEntry["source_node_id"] = node.getid();
+    componentFlowEntry["call_type"] = QString::number((int)f->gettype());
+    mTraceMappingEntries.append(componentFlowEntry);
+    LOG_DEBUG("Mapped task-level flow: %s (id: %s) from task: %s", qPrintable(flowName), qPrintable(f->getid()), qPrintable(name));
 
     LOG_DEBUG("Generating flow %s", qPrintable(f->getname()));
 
