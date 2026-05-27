@@ -8,8 +8,8 @@
                     "type": 4
                 }
             ],
-            "id": "{2f02bd7a-033c-4749-9ae6-fe9353cefcbc}",
-            "linksTo": 2147483647,
+            "id": "{8a5cfd2a-a2c4-4df5-8cf2-9bf7dfe1bb1c}",
+            "linksTo": 0,
             "modifiable": false,
             "name": "start",
             "owner": "",
@@ -19,8 +19,8 @@
         {
             "arguments": [
             ],
-            "id": "{c0922077-a022-49e4-9ca7-b9461b4ac74a}",
-            "linksTo": 2147483647,
+            "id": "{74ad2f78-f21e-4646-862d-0ce2d339bdb5}",
+            "linksTo": 0,
             "modifiable": false,
             "name": "abort",
             "owner": "",
@@ -30,8 +30,8 @@
         {
             "arguments": [
             ],
-            "id": "{11ae473c-c095-4b86-a9dc-96c60b5acef7}",
-            "linksTo": 2147483647,
+            "id": "{fa39d035-5552-4c72-ba81-3329e174e84e}",
+            "linksTo": 0,
             "modifiable": false,
             "name": "finished",
             "owner": "",
@@ -41,8 +41,8 @@
         {
             "arguments": [
             ],
-            "id": "{185e3f74-78ad-4442-b788-439c1f6ee2b6}",
-            "linksTo": 2147483647,
+            "id": "{7b5beec9-47d4-4cdd-8992-13f0fbf759c7}",
+            "linksTo": 0,
             "modifiable": false,
             "name": "failed",
             "owner": "",
@@ -51,15 +51,15 @@
         }
     ],
     "iconPath": "",
-    "id": "{f7a374ec-b3c6-4478-a587-a4f489ad8edf}",
+    "id": "{b8af4e59-841b-4a37-a380-b1c515d8e8a2}",
     "nodeId": "Koda::Approach",
-    "parentId": "{f519a102-352b-464e-ad64-2e47b211d123}",
+    "parentId": "{f1982623-40c5-4f7d-8053-da9b6112c9c7}",
     "pixmap": {
         "data": ""
     },
     "position": {
-        "x": -795,
-        "y": -35
+        "x": -32.5,
+        "y": 128
     },
     "properties": {
         "arguments": [
@@ -93,9 +93,9 @@
             "type": "void"
         }
     },
-    "scale": 2.380952380952381,
+    "scale": 2.3255813953488373,
     "size": {
-        "height": 210,
-        "width": 210
+        "height": 216,
+        "width": 215
     }
 }

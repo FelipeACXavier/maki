@@ -69,8 +69,8 @@
                 "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAB8ElEQVR4nO2ZvU7DMBRGTyt2xMBCZ3Y26IBgQ1QI8QqV+iA8CFJfoRKiLVsRA7CxMyIYYEB9gcIQh1r9cZs0dgz9jmTViXL9XTv32qkNQgghhBBCCCGEEGK9qGR47sCUzQXPDoFHU77zuxaPfg3om8aylD6w89f1a8BnDvG0fKzohHd9VwpUgB5wYq7fgY5xyMU2cGEJ3wKnZA/HsvWpMx7JN2Arg+2WsUntD7KKh9KvOhqxjTrAVwYHvoxNSj2DbVD9DUcj9my7KOxmYdu4Zu4q0DD1LjAKqe+KgFA0gGtTrgjskysCyqBpfluhBGOIgC7Qtq6bJJGw7EfaSsQQASPGb7xp/T6HEI8hAmA8CHYk7IUQ9hkBdggfA5dL2LySvPnJznt7UT4HYNeqH5mSl8MVfZlLLClQGj4j4MWq3wGDJWwqwDnTKXBfkE9T+BwA+8/HgMVzQJVk+Zs1+Y1m3CuEWFIg7XzTuhdkGYzhO2BW59skK4L3pTCGCGgw3fkWxW2nOYlhAGzSznvL+UliSIEucGbqPQJ2HtwDMLTq2znatm2Gc59KOnxTov5c1mJLLMSmaJ9koitrUzSvPphGPihvW7xs/V8n8hxM9IoQ962f5WhsnyQvlzmaegCeKPZorEx9IYQQQgghhBBCCPFv+AEtAOydvKikkwAAAABJRU5ErkJggg=="
             },
             "position": {
-                "x": -130,
-                "y": -155
+                "x": -249,
+                "y": -156
             },
             "properties": {
                 "capability": {
@@ -101,7 +101,7 @@
                 "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAB8ElEQVR4nO2ZvU7DMBRGTyt2xMBCZ3Y26IBgQ1QI8QqV+iA8CFJfoRKiLVsRA7CxMyIYYEB9gcIQh1r9cZs0dgz9jmTViXL9XTv32qkNQgghhBBCCCGEEGK9qGR47sCUzQXPDoFHU77zuxaPfg3om8aylD6w89f1a8BnDvG0fKzohHd9VwpUgB5wYq7fgY5xyMU2cGEJ3wKnZA/HsvWpMx7JN2Arg+2WsUntD7KKh9KvOhqxjTrAVwYHvoxNSj2DbVD9DUcj9my7KOxmYdu4Zu4q0DD1LjAKqe+KgFA0gGtTrgjskysCyqBpfluhBGOIgC7Qtq6bJJGw7EfaSsQQASPGb7xp/T6HEI8hAmA8CHYk7IUQ9hkBdggfA5dL2LySvPnJznt7UT4HYNeqH5mSl8MVfZlLLClQGj4j4MWq3wGDJWwqwDnTKXBfkE9T+BwA+8/HgMVzQJVk+Zs1+Y1m3CuEWFIg7XzTuhdkGYzhO2BW59skK4L3pTCGCGgw3fkWxW2nOYlhAGzSznvL+UliSIEucGbqPQJ2HtwDMLTq2znatm2Gc59KOnxTov5c1mJLLMSmaJ9koitrUzSvPphGPihvW7xs/V8n8hxM9IoQ962f5WhsnyQvlzmaegCeKPZorEx9IYQQQgghhBBCCPFv+AEtAOydvKikkwAAAABJRU5ErkJggg=="
             },
             "position": {
-                "x": 175,
+                "x": 170,
                 "y": -155
             },
             "properties": {
@@ -143,6 +143,38 @@
             "size": {
                 "height": 50,
                 "width": 50
+            }
+        },
+        {
+            "iconPath": "koda_sync.svg",
+            "id": "{63de34bd-c861-491e-a462-3a02ab0d7a63}",
+            "nodeId": "Koda::Sync task",
+            "parentId": "",
+            "pixmap": {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAB8ElEQVR4nO2ZvU7DMBRGTyt2xMBCZ3Y26IBgQ1QI8QqV+iA8CFJfoRKiLVsRA7CxMyIYYEB9gcIQh1r9cZs0dgz9jmTViXL9XTv32qkNQgghhBBCCCGEEGK9qGR47sCUzQXPDoFHU77zuxaPfg3om8aylD6w89f1a8BnDvG0fKzohHd9VwpUgB5wYq7fgY5xyMU2cGEJ3wKnZA/HsvWpMx7JN2Arg+2WsUntD7KKh9KvOhqxjTrAVwYHvoxNSj2DbVD9DUcj9my7KOxmYdu4Zu4q0DD1LjAKqe+KgFA0gGtTrgjskysCyqBpfluhBGOIgC7Qtq6bJJGw7EfaSsQQASPGb7xp/T6HEI8hAmA8CHYk7IUQ9hkBdggfA5dL2LySvPnJznt7UT4HYNeqH5mSl8MVfZlLLClQGj4j4MWq3wGDJWwqwDnTKXBfkE9T+BwA+8/HgMVzQJVk+Zs1+Y1m3CuEWFIg7XzTuhdkGYzhO2BW59skK4L3pTCGCGgw3fkWxW2nOYlhAGzSznvL+UliSIEucGbqPQJ2HtwDMLTq2znatm2Gc59KOnxTov5c1mJLLMSmaJ9koitrUzSvPphGPihvW7xs/V8n8hxM9IoQ962f5WhsnyQvlzmaegCeKPZorEx9IYQQQgghhBBCCPFv+AEtAOydvKikkwAAAABJRU5ErkJggg=="
+            },
+            "position": {
+                "x": -48,
+                "y": -154
+            },
+            "properties": {
+                "capability": {
+                    "data": "Approach",
+                    "options": [
+                        {
+                            "data": "abort",
+                            "isVariable": false,
+                            "type": "event_select"
+                        }
+                    ]
+                },
+                "color": "#202020",
+                "name": "Sync task"
+            },
+            "scale": 1,
+            "size": {
+                "height": 50,
+                "width": 100
             }
         }
     ],
@@ -194,35 +226,8 @@
             "source": {
                 "id": "{6c1c15e0-d86b-416e-8b06-9fbe8d9129df}",
                 "position": {
-                    "x": -380.11074210716953,
-                    "y": -151.6740494738113
-                },
-                "shift": {
-                    "x": 0,
-                    "y": 0
-                }
-            }
-        },
-        {
-            "destination": {
-                "id": "{a0e7d704-6b3f-4ef7-8b98-230d9db94fb5}",
-                "position": {
-                    "x": 0,
-                    "y": 0
-                },
-                "shift": {
-                    "x": 0,
-                    "y": 0
-                }
-            },
-            "events": "",
-            "id": "{47cebfa1-27e5-4313-bcd6-09c2d8c6492b}",
-            "label": "",
-            "source": {
-                "id": "{81badaec-ab44-4703-9e53-2709ec8ef6a3}",
-                "position": {
-                    "x": -80.11074210716956,
-                    "y": -138.3259505261887
+                    "x": -380,
+                    "y": -155
                 },
                 "shift": {
                     "x": 0,
@@ -250,6 +255,60 @@
                 "position": {
                     "x": 220,
                     "y": -155
+                },
+                "shift": {
+                    "x": 0,
+                    "y": 0
+                }
+            }
+        },
+        {
+            "destination": {
+                "id": "{63de34bd-c861-491e-a462-3a02ab0d7a63}",
+                "position": {
+                    "x": 0,
+                    "y": 0
+                },
+                "shift": {
+                    "x": 0,
+                    "y": 0
+                }
+            },
+            "events": "",
+            "id": "{f04c517f-f6bb-4ef4-a649-9ed8fba4c498}",
+            "label": "",
+            "source": {
+                "id": "{81badaec-ab44-4703-9e53-2709ec8ef6a3}",
+                "position": {
+                    "x": -198.00058911203146,
+                    "y": -156.2427155868348
+                },
+                "shift": {
+                    "x": 0,
+                    "y": 0
+                }
+            }
+        },
+        {
+            "destination": {
+                "id": "{a0e7d704-6b3f-4ef7-8b98-230d9db94fb5}",
+                "position": {
+                    "x": 0,
+                    "y": 0
+                },
+                "shift": {
+                    "x": 0,
+                    "y": 0
+                }
+            },
+            "events": "",
+            "id": "{287ae25b-c3c2-42de-9ff1-37f4e29c04ee}",
+            "label": "",
+            "source": {
+                "id": "{63de34bd-c861-491e-a462-3a02ab0d7a63}",
+                "position": {
+                    "x": 7.997775157406515,
+                    "y": -156.52832287587353
                 },
                 "shift": {
                     "x": 0,

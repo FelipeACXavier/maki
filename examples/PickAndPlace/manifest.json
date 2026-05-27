@@ -1,23 +1,18 @@
 {
-    "canvas": {
-        "center": {
-            "x": -1,
-            "y": -1
-        },
-        "scale": 1
-    },
     "name": "PickAndPlace",
     "pipelines": [
         "pipelines/Verify.json",
         "pipelines/Simulate.json",
-        "pipelines/Platform IO pipeline.json"
+        "pipelines/Platform IO pipeline.json",
+        "pipelines/ROS.json"
     ],
     "tasks": [
         {
             "children": [
                 "capabilities/Pick and place-Vision.json",
                 "capabilities/Pick and place-Grip.json",
-                "capabilities/Pick and place-Drive.json"
+                "capabilities/Pick and place-Drive.json",
+                "capabilities/Pick and place-Approach.json"
             ],
             "events": [
                 {
@@ -80,8 +75,8 @@
                 "data": ""
             },
             "position": {
-                "x": -142.5,
-                "y": 171.01851851851848
+                "x": -162.5,
+                "y": -28.981481481481524
             },
             "properties": {
                 "color": "#62829a",
