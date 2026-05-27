@@ -90,12 +90,6 @@ VoidResult PluginPipeline::abort()
 
 VoidResult PluginPipeline::runNextNode()
 {
-  if (!isRunning())
-  {
-    LOG_DEBUG("Run cancelled");
-    return VoidResult();
-  }
-
   if (mCurrentIndex >= mExecutionOrder.size())
   {
     mProgressId = NOTIFY_LONG_INFO(mProgressId, "Pipeline Progress", progressWidget());
@@ -107,6 +101,9 @@ VoidResult PluginPipeline::runNextNode()
     done(mContext.projectDir.absolutePath());
     return VoidResult();
   }
+
+  if (!isRunning())
+    return VoidResult::Failed("Run cancelled");
 
   const auto nodeId = mExecutionOrder.at(mCurrentIndex);
   const auto node = findNode(mGraph, nodeId);
@@ -125,8 +122,8 @@ VoidResult PluginPipeline::runNextNode()
   if (args.isEmpty())
     args = action->defaultParameters();
 
-  for (const auto& arg : args)
-    qDebug() << "Running with : " << arg;
+  // for (const auto& arg : args)
+  //   qDebug() << "Running with : " << arg;
 
   auto result = action->run(mContext, args, mPipeline);
   if (!result)

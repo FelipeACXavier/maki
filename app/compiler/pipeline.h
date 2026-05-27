@@ -75,7 +75,7 @@ public:
    * @param callback Optional callback executed when the process finishes.
    * @return VoidResult indicating whether the process was successfully added.
    */
-  VoidResult add(QProcess* process, maki::OnFail onFail, std::function<void()> callback = nullptr) override;
+  VoidResult add(QProcess* process, maki::OnFail onFail, std::function<void(int& exitCode, QProcess::ExitStatus& status)> callback = nullptr) override;
 
   /**
    * @brief Starts executing the pipeline.
@@ -260,7 +260,7 @@ private:
     maki::OnFail onFail = maki::OnFail::STOP;
 
     /// Optional callback executed when the process finishes.
-    std::function<void()> onFinish;
+    std::function<void(int& exitCode, QProcess::ExitStatus& status)> onFinish;
 
     /// Current state of a single process
     State state = State::Unknown;

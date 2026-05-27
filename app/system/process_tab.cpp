@@ -15,7 +15,7 @@ ProcessTab::ProcessTab(QWidget* parent)
 {
   mOutput = new QTextBrowser(this);
   mOutput->setReadOnly(true);
-  mOutput->setWordWrapMode(QTextOption::NoWrap);
+  mOutput->setWordWrapMode(QTextOption::WordWrap);
 
   auto* layout = new QVBoxLayout(this);
   layout->setContentsMargins(0, 0, 0, 0);

@@ -13,7 +13,7 @@ DropDownButton::DropDownButton(QWidget* parent)
 {
   mMenu = new QMenu(this);
   mMenu->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-  mMenu->setFixedWidth(mWidth);
+  mMenu->setMinimumWidth(mWidth);
 
   setMenu(mMenu);
   setEnabled(true);
@@ -60,7 +60,7 @@ void DropDownButton::rebuildMenu()
   {
     auto* pipelineMenu = mMenu->addMenu(option);
     pipelineMenu->setProperty("id", option);
-    buildMenu(pipelineMenu, option, false);
+    buildMenu(pipelineMenu, option, true);
   }
 
   updateButtonText();
@@ -94,27 +94,28 @@ void DropDownButton::updateButtonText()
 void DropDownButton::showContextMenu(const QPoint& event)
 {
   QMenu menu(this);
-  buildMenu(&menu, mCurrentOption, true);
+  buildMenu(&menu, mCurrentOption, false);
   menu.exec(mapToGlobal(event));
 }
 
 void DropDownButton::buildMenu(QMenu* menu, const QString& option, bool addRun)
 {
+  auto* runAction = menu->addAction(QIcon::fromTheme("run-build"), tr("Run"));
+  connect(runAction, &QAction::triggered, this, [this, option] {
+    mCurrentOption = option;
+    updateButtonText();
+    emit executeRequested(option);
+  });
+
   if (addRun)
   {
-    auto* runAction = menu->addAction(QIcon::fromTheme("run-build"), tr("Run"));
-    connect(runAction, &QAction::triggered, this, [this, option] {
+    auto* selectAction = menu->addAction(QIcon::fromTheme("select"), tr("Select"));
+    connect(selectAction, &QAction::triggered, this, [this, option] {
       mCurrentOption = option;
       updateButtonText();
-      emit executeRequested(option);
     });
   }
 
-  auto* selectAction = menu->addAction(QIcon::fromTheme("select"), tr("Select"));
-  connect(selectAction, &QAction::triggered, this, [this, option] {
-    mCurrentOption = option;
-    updateButtonText();
-  });
   menu->addSeparator();
 
   auto* addAction = menu->addAction(QIcon::fromTheme("document-new"), tr("Add"));
