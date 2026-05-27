@@ -1,6 +1,8 @@
 #include "maki_to_koda.h"
 
 #include <qdir.h>
+#include <qhashfunctions.h>
+#include <qjsonobject.h>
 
 #include <QJsonArray>
 #include <QJsonObject>
@@ -53,7 +55,7 @@ Result<koda::PComponent> MakiToKoda::buildTask(const INode& task)
 {
   auto c = std::make_shared<koda::Component>();
   c->kind = koda::Component::Kind::Task;
-  c->name = task.getproperties()["name"].toString().toStdString();
+  c->name = task.getproperties()["name"].toString().toLower().replace(" ", "_").toStdString();
 
   // Get arguments
   for (const auto& cap : task.getchildren())
@@ -268,7 +270,11 @@ Result<koda::PFlow> MakiToKoda::buildFlowAst(const IFlow& flow)
     return Result<koda::PFlow>::Failed("Failed to build first sequence");
 
   auto pflow = std::make_shared<koda::Flow>();
-  pflow->name = flow.getname().toStdString();
+  auto flowName = flow.getname().toStdString();
+  if (flowName != "main")
+    flowName = "f" + flowName;
+
+  pflow->name = flowName;
   pflow->strategy = std::any_cast<koda::PStrategy>(seq);
 
   return pflow;
@@ -391,7 +397,7 @@ std::any MakiToKoda::buildAsyncExpr(const IFlow& flow, const INode& node)
   QJsonArray options = object["options"].toArray();
   if (val.isEmpty())
   {
-    LOG_ERROR("SyncTask component is missing an associated call");
+    LOG_ERROR("AsyncTask component is missing an associated call");
     return std::any();
   }
 
@@ -456,7 +462,7 @@ std::any MakiToKoda::buildStrategyExpr(const IFlow& flow, const INode& node)
   }
 
   auto expr = std::make_shared<koda::Strategy::Ref>();
-  expr->name = options[0].toObject()["data"].toString().toStdString();
+  expr->name = "f" + options[0].toObject()["data"].toString().toStdString();
 
   auto strat = std::make_shared<koda::Strategy>();
   strat->v = expr;
@@ -502,6 +508,14 @@ std::any MakiToKoda::buildWithinExpr(const IFlow& flow, const INode& node)
 
     expr->b = std::any_cast<koda::PStrategy>(elseSequence);
   }
+
+  auto properties = node.getproperties();
+  if (!properties.contains("timeout"))
+  {
+    LOG_ERROR("Within missing timeout property");
+    return std::any();
+  }
+  expr->seconds = properties["timeout"].toInt();
 
   auto strat = std::make_shared<koda::Strategy>();
   strat->v = expr;
@@ -554,7 +568,7 @@ std::any MakiToKoda::buildRepeatExpr(const IFlow& flow, const INode& node)
   QString strategy = options[0].toObject()["data"].toString();
 
   auto ref = std::make_shared<koda::Strategy::Ref>();
-  ref->name = strategy.toStdString();
+  ref->name = "f" + strategy.toStdString();
 
   auto repeatStrat = std::make_shared<koda::Strategy>();
   repeatStrat->v = ref;
@@ -645,13 +659,60 @@ QList<koda::PStrategyHandler> MakiToKoda::buildHandlers(const IFlow& flow, const
   return handlers;
 }
 
-std::shared_ptr<koda::Expr> MakiToKoda::buildExpr(const std::string& stream)
+std::shared_ptr<koda::Expr> MakiToKoda::buildExpr(const QJsonObject& object)
 {
-  auto expr = std::make_shared<koda::Expr::Id>();
-  expr->value = stream;
+  if (!object.contains("type"))
+  {
+    LOG_ERROR("Expr with no type");
+    return nullptr;
+  }
 
+  if (!object.contains("data"))
+  {
+    LOG_ERROR("Expr with no data");
+    return nullptr;
+  }
+
+  auto type = Types::StringToPropertyTypes(object["type"].toString());
   auto wrapper = std::make_shared<koda::Expr>();
-  wrapper->v = expr;
+  switch (type)
+  {
+    case Types::PropertyTypes::BOOLEAN:
+    {
+      auto expr = std::make_shared<koda::Expr::Int>();
+      expr->value = (object["data"].toString().toLower() == "true");
+      wrapper->v = expr;
+      break;
+    }
+    case Types::PropertyTypes::INTEGER:
+    {
+      auto expr = std::make_shared<koda::Expr::Int>();
+      expr->value = object["data"].toInt();
+      wrapper->v = expr;
+      break;
+    }
+    case Types::PropertyTypes::REAL:
+    {
+      auto expr = std::make_shared<koda::Expr::Float>();
+      expr->value = object["data"].toString().toDouble();
+      wrapper->v = expr;
+      break;
+    }
+    case Types::PropertyTypes::STRING:
+    {
+      auto expr = std::make_shared<koda::Expr::Str>();
+      expr->value = object["data"].toString().toStdString();
+      wrapper->v = expr;
+      break;
+    }
+    default:
+    {
+      auto expr = std::make_shared<koda::Expr::Id>();
+      expr->value = object["data"].toString().toStdString();
+      wrapper->v = expr;
+      break;
+    }
+  }
 
   return wrapper;
 }
@@ -663,9 +724,7 @@ std::vector<std::shared_ptr<Expr>> MakiToKoda::buildArgumentExpr(const QJsonArra
   for (int i = start; i < options.size(); ++i)
   {
     const auto arg = options.at(i).toObject();
-    const auto input = arg["data"].toString().toStdString();
-
-    auto parg = buildExpr(input);
+    auto parg = buildExpr(arg);
     if (parg != nullptr)
       args.push_back(parg);
   }

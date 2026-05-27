@@ -2,6 +2,7 @@
 #pragma once
 
 #include <QHash>
+#include <QJsonObject>
 #include <QList>
 #include <QSet>
 #include <QString>
@@ -62,7 +63,7 @@ private:
   Result<koda::PVarDef> buildVarDef(const IProperty& property);
   Result<std::vector<koda::PActionDef>> buildActionDefs(const INode& node, const QJsonArray& typeArray);
   Result<koda::PRosDef> buildRosDef(const IFlow& flow);
-  koda::PExpr buildExpr(const std::string& input);
+  koda::PExpr buildExpr(const QJsonObject& object);
   std::vector<koda::PExpr> buildArgumentExpr(const QJsonArray& options, int start);
 
   QList<NodeTransition> sequentialPredecessorsOf(const INode& node, const IFlow& flow) const;

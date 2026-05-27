@@ -26,9 +26,9 @@ QString KodaVerifyAction::id() const
 QString KodaVerifyAction::displayName() const
 {
 #ifdef USE_ANTLR
-  return "Koda Antlr: Verify Dezyne";
+  return "Verify Dezyne";
 #else
-  return "Koda: Verify Dezyne";
+  return "Verify Dezyne";
 #endif
 }
 

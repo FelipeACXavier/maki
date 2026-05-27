@@ -2,26 +2,28 @@
 
 #include <format>
 #include <fstream>
+#include <string>
 
 #include "KodaLexer.h"
 #include "KodaParser.h"
 #include "antlr4-runtime.h"
+#include "ast.h"
 #include "cst2ast.h"
 #include "error_listener.h"
 #include "result.h"
 
-#define IF_ALT(ALT, OBJ, CALL, ARGS)    \
+#define IF_ALT(ALT, OBJ, CALL, ...)     \
   if (std::holds_alternative<ALT>(OBJ)) \
   {                                     \
     if (auto obj = std::get<ALT>(OBJ))  \
-      return CALL(obj, ARGS);           \
+      return CALL(obj, __VA_ARGS__);    \
   }
 
-#define ELSE_IF_ALT(ALT, OBJ, CALL, ARGS)    \
+#define ELSE_IF_ALT(ALT, OBJ, CALL, ...)     \
   else if (std::holds_alternative<ALT>(OBJ)) \
   {                                          \
     if (auto obj = std::get<ALT>(OBJ))       \
-      return CALL(obj, ARGS);                \
+      return CALL(obj, __VA_ARGS__);         \
   }
 
 #define INCREMENT_MAP(MAP, KEY)     \
@@ -112,10 +114,10 @@ VoidResult Compiler::generate()
 {
   mGeneratedFiles.clear();
 
-  Environment env;
   if (mOptions.pluginRule == CompilerOptions::PluginOption::PluginsOnly)
     return runPlugins();
 
+  Environment env;
   for (auto& component : mAST.components)
   {
     if (component->kind == Component::Kind::Capability)
@@ -127,6 +129,14 @@ VoidResult Compiler::generate()
     if (component->kind == Component::Kind::Task)
       RETURN_ON_FAILURE(generateTask(component, env));
   }
+
+  for (auto& component : mAST.components)
+  {
+    if (component->kind == Component::Kind::Capability)
+      RETURN_ON_FAILURE(emitCapability(component, env));
+  }
+
+  mEnv = env;
 
   if (mOptions.pluginRule == CompilerOptions::PluginOption::RunAll)
     return runPlugins();
@@ -156,6 +166,16 @@ void Compiler::printAST() const
   mAST.print();
 }
 
+System Compiler::getAST() const
+{
+  return mAST;
+}
+
+Compiler::Environment Compiler::getIR() const
+{
+  return mEnv;
+}
+
 // =========================================================================================
 // Generation methods
 
@@ -178,30 +198,35 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, Environment& e
     const auto flowName = flow.name;
     for (const auto& c : flow.asyncCalls)
     {
-      auto cap = env.getCapability(c.first);
+      auto index = c.find_first_of("_");
+      auto capName = c.substr(0, index);
+      auto cap = env.getCapability(capName);
       std::string name = "";
       std::string trigger = "";
       if (!cap)
       {
         // Sometimes strategies are parsed as async calls...
-        if (!env.flows.contains(c.first))
-          return Result<koda::ReturnValue>::Failed("Could not find async capability: " + c.first);
+        if (!env.flows.contains(capName))
+          return Result<koda::ReturnValue>::Failed("Could not find async capability: " + c);
 
-        auto tmp = env.flows.at(c.first);
+        auto tmp = env.flows.at(capName);
         name = toFlowVariable(tmp.name);
         trigger = "api";
       }
       else
       {
         name = cap->name;
-        trigger = cap->trigger->name;
+        if (index == std::string::npos)
+          trigger = cap->trigger->name;
+        else
+          trigger = std::format("{}_{}", cap->trigger->name, c.substr(index + 1));
       }
 
-      PortRef in = {toFlowVariable(flowName), c.first};
+      PortRef in = {toFlowVariable(flowName), c};
       PortRef out = {toFilename(name), trigger};
 
       if (mOptions.verbose > 1)
-        LOG_RAW("asyncCalls {} - In: {} Out: {}", c.first, in, out);
+        LOG_RAW("asyncCalls {} - In: {} Out: {}", c, in, out);
 
       env.system.connections.push_back(Connection{in, out, Connection::Type::Action});
     }
@@ -261,6 +286,9 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, Environment& e
 
   env.includes = {};
   connectWithArbiter(env);
+
+  if (mOptions.dryRun)
+    return koda::ReturnValue();
 
   // With the flows for this task defined, we can now connect all flows into a complete strategy
   std::string filename = std::format("{}/{}_task.dzn", mOptions.outputDir, toFilename(task->name));
@@ -340,6 +368,14 @@ Result<koda::ReturnValue> Compiler::generateCapability(PComponent capability, En
   env.capabilities[capability->name] = env.currentCapability;
   env.system.instances.insert({componentName(capability->name), toFilename(capability->name)});
 
+  return koda::ReturnValue();
+}
+
+Result<ReturnValue> Compiler::emitCapability(PComponent capability, Environment& env)
+{
+  if (mOptions.dryRun)
+    return koda::ReturnValue();
+
   // Then we proceed with the creation of the file itself
   std::string filename = std::format("{}/a_{}.dzn", mOptions.outputDir, toFilename(capability->name));
   std::ofstream file;
@@ -352,7 +388,23 @@ Result<koda::ReturnValue> Compiler::generateCapability(PComponent capability, En
   file << "import iaction.dzn;\n\n";
   file << std::format("component {} {{\n", componentName(capability->name));
   if (cap.trigger)
-    file << createPort(*cap.trigger, true);
+  {
+    auto name = toFilename(capability->name);
+    if (env.asyncCallsCounter.contains(name))
+    {
+      LOG_INFO("Capability %s with %d entries", name.c_str(), env.asyncCallsCounter[name]);
+      for (uint32_t i = 0; i < env.asyncCallsCounter[name]; ++i)
+      {
+        Action action = cap.trigger.value();
+        action.name = std::format("{}_{}", action.name, i + 1);
+        file << createPort(action, true);
+      }
+    }
+    else
+    {
+      LOG_ERROR("No such capability in the counter map: %s", name.c_str());
+    }
+  }
   if (cap.abort)
     file << createPort(*cap.abort, true);
   for (const auto& in : cap.ins)
@@ -498,14 +550,6 @@ Result<koda::ReturnValue> Compiler::generateFlow(PFlow flow, Environment& env)
   if (mOptions.verbose > 0)
     LOG_RAW("Generating flow: {}", flow->name);
 
-  // There is one file per flow, so here we create a new file
-  // The name of the file matches the flow + c.
-  // For example, loop = cloop
-  std::string filename = std::format("{}/{}.dzn", mOptions.outputDir, flow->name);
-  mCurrentFile.open(filename);
-  if (!mCurrentFile.is_open())
-    return Result<koda::ReturnValue>::Failed("Failed to open: " + filename);
-
   // Compile the different connections
   env.clear();
   auto ret = generateStrategy(flow->strategy, env);
@@ -518,7 +562,8 @@ Result<koda::ReturnValue> Compiler::generateFlow(PFlow flow, Environment& env)
   // ------------------------------------------------------------
   // Check the need for arbitrers and create them
   connectWithArbiter(env.strategies, Connection::Type::Action, env);
-  connectWithArbiter(env.asyncCalls, Connection::Type::Action, env);
+  // TODO: Clean and make sure this works
+  // connectWithArbiter(env.asyncCalls, Connection::Type::Action, env);
   connectWithArbiter(env.syncCalls, Connection::Type::Signal, env);
   connectWithArbiter(env.signalCalls, Connection::Type::Signal, env);
 
@@ -526,6 +571,17 @@ Result<koda::ReturnValue> Compiler::generateFlow(PFlow flow, Environment& env)
   // Print everything to a file
   env.core.push_front(std::format("api <=> {}", ret.Value().name));
   env.includes.insert("iaction.dzn");
+
+  if (mOptions.dryRun)
+    return ret;
+
+  // There is one file per flow, so here we create a new file
+  // The name of the file matches the flow + c.
+  // For example, loop = cloop
+  std::string filename = std::format("{}/{}.dzn", mOptions.outputDir, flow->name);
+  mCurrentFile.open(filename);
+  if (!mCurrentFile.is_open())
+    return Result<koda::ReturnValue>::Failed("Failed to open: " + filename);
 
   for (const auto& i : env.includes)
     mCurrentFile << "import " + i + ";\n";
@@ -887,9 +943,26 @@ Result<koda::ReturnValue> Compiler::generateEventCall(PEventCall call, Environme
 
   if (call->receiver.empty())
   {
-    INCREMENT_MAP(env.asyncCalls, call->name)
-    env.requiresPorts.insert(std::format("iaction {}", call->name));
-    return koda::ReturnValue{call->name};
+    INCREMENT_MAP(env.asyncCallsCounter, call->name)
+    auto identifier = std::format("{}_{}", call->name, env.asyncCallsCounter[call->name]);
+    env.asyncCalls.push_back(identifier);
+    env.requiresPorts.insert(std::format("iaction {}", identifier));
+    std::vector<std::string> args = {};
+    LOG_DEBUG("Generating expr %s (%d) with call: %ld", call->name.c_str(), env.asyncCallsCounter[call->name], call->args.size());
+    for (const auto& expr : call->args)
+    {
+      auto ret = generateExpr(expr, env);
+      if (ret.IsSuccess() && !ret.Value().name.empty())
+        args.push_back(ret.Value().name);
+      else
+        LOG_ERROR(ret.ErrorMessage());
+    }
+
+    env.capabilityCalls[call->name].push_back(CapabilityCall{
+        .count = env.asyncCallsCounter[call->name],
+        .args = args,
+    });
+    return koda::ReturnValue{identifier};
   }
   else
   {
@@ -908,8 +981,142 @@ Result<koda::ReturnValue> Compiler::generateEventCall(PEventCall call, Environme
   }
 }
 
+Result<ReturnValue> Compiler::generateExpr(PExpr node, Environment& env)
+{
+  IF_ALT(PId, node->v, generateId, env)
+  ELSE_IF_ALT(PStr, node->v, generateStr, env)
+  ELSE_IF_ALT(PInt, node->v, generateInt, env)
+  ELSE_IF_ALT(PFloat, node->v, generateFloat, env)
+  ELSE_IF_ALT(PCall, node->v, generateCall, env)
+  ELSE_IF_ALT(PNeg, node->v, generateNeg, env)
+  ELSE_IF_ALT(PNot, node->v, generateNot, env)
+  ELSE_IF_ALT(PBinOp, node->v, generateBinOp, env)
+  ELSE_IF_ALT(PEParen, node->v, generateParen, env)
+
+  return ReturnValue{};
+}
+
+Result<ReturnValue> Compiler::generateId(PId expr, Environment& env)
+{
+  return ReturnValue{
+      .name = expr->value,
+  };
+}
+
+Result<ReturnValue> Compiler::generateStr(PStr expr, Environment& env)
+{
+  return ReturnValue{
+      .name = expr->value,
+  };
+}
+
+Result<ReturnValue> Compiler::generateInt(PInt expr, Environment& env)
+{
+  return ReturnValue{
+      .name = std::to_string(expr->value),
+  };
+}
+
+Result<ReturnValue> Compiler::generateFloat(PFloat expr, Environment& env)
+{
+  return ReturnValue{
+      .name = std::to_string(expr->value),
+  };
+}
+
+Result<ReturnValue> Compiler::generateCall(PCall expr, Environment& env)
+{
+  return ReturnValue{};
+}
+
+Result<ReturnValue> Compiler::generateNeg(PNeg expr, Environment& env)
+{
+  auto result = generateExpr(expr->value, env);
+  RETURN_ON_FAILURE(result);
+
+  return ReturnValue{
+      .name = "-" + result.Value().name,
+  };
+}
+
+Result<ReturnValue> Compiler::generateNot(PNot expr, Environment& env)
+{
+  auto result = generateExpr(expr->value, env);
+  RETURN_ON_FAILURE(result);
+
+  return ReturnValue{
+      .name = "!" + result.Value().name,
+  };
+}
+
+Result<ReturnValue> Compiler::generateBinOp(PBinOp expr, Environment& env)
+{
+  auto resultA = generateExpr(expr->a, env);
+  RETURN_ON_FAILURE(resultA);
+
+  std::string aSide = resultA.Value().name;
+  std::string bSide = "";
+  if (expr->b)
+  {
+    auto resultB = generateExpr(expr->b, env);
+    RETURN_ON_FAILURE(resultB);
+    bSide = resultB.Value().name;
+  }
+
+  auto setExpression = [aSide, bSide](const std::string& op, bool unary) {
+    if (!unary && bSide.empty())
+      return Result<ReturnValue>::Failed("No left side of expression");
+
+    return Result<ReturnValue>({
+        .name = (unary ? op : "") + aSide + (unary ? "" : " " + op + " " + bSide),
+    });
+  };
+
+  switch (expr->operation)
+  {
+    case koda::Expr::BinOp::Kind::Equal:
+      return setExpression("=", false);
+    case koda::Expr::BinOp::Kind::NotEqual:
+      return setExpression("!=", false);
+    case koda::Expr::BinOp::Kind::GreaterThan:
+      return setExpression(">", false);
+    case koda::Expr::BinOp::Kind::GreaterEqual:
+      return setExpression(">=", false);
+    case koda::Expr::BinOp::Kind::LessThan:
+      return setExpression("<", false);
+    case koda::Expr::BinOp::Kind::LessEqual:
+      return setExpression("<=", false);
+    case koda::Expr::BinOp::Kind::Addition:
+      return setExpression("+", false);
+    case koda::Expr::BinOp::Kind::Subtraction:
+      return setExpression("-", false);
+    case koda::Expr::BinOp::Kind::Multiplication:
+      return setExpression("*", false);
+    case koda::Expr::BinOp::Kind::Division:
+      return setExpression("/", false);
+    case koda::Expr::BinOp::Kind::Negation:
+      return setExpression("!", true);
+    case koda::Expr::BinOp::Kind::Unary:
+      return setExpression("-", true);
+    case koda::Expr::BinOp::Kind::Disjunction:
+      return setExpression("||", true);
+    case koda::Expr::BinOp::Kind::Conjunction:
+      return setExpression("&&", true);
+    default:
+      return Result<ReturnValue>::Failed("Unknown operation");
+  }
+}
+
+Result<ReturnValue> Compiler::generateParen(PEParen expr, Environment& env)
+{
+  return generateExpr(expr->value, env);
+}
+
 VoidResult Compiler::createSequenceComponent(uint32_t instances)
 {
+  if (mOptions.dryRun)
+    return VoidResult();
+
   std::string filename = std::format("{}/sequence{}.dzn", mOptions.outputDir, instances);
 
   std::ofstream file;
@@ -1027,6 +1234,9 @@ VoidResult Compiler::createSequenceComponent(uint32_t instances)
 
 VoidResult Compiler::createActionArbiterComponent(uint32_t instances)
 {
+  if (mOptions.dryRun)
+    return VoidResult();
+
   std::string filename = std::format("{}/action_arbiter{}.dzn", mOptions.outputDir, instances);
 
   std::ofstream file;

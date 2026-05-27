@@ -144,6 +144,7 @@ function(add_koda_plugin TARGET_NAME USE_ANTLR_ENABLED)
     set(KODA_TO_MAKI
       src/maki_to_koda.cpp
       src/koda_emitter.cpp
+      src/ros_emitter.cpp
     )
     set(COMPILER_INCLUDES
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ast
@@ -173,6 +174,10 @@ function(add_koda_plugin TARGET_NAME USE_ANTLR_ENABLED)
     src/actions/cpp_action.cpp
     src/actions/verify_action.cpp
     src/actions/simulate_action.cpp
+    src/actions/ros_action.cpp
+    src/actions/ros_copy.cpp
+    src/actions/ros_build.cpp
+    src/actions/ros_launch.cpp
     ${JSON_FILE}
   )
 

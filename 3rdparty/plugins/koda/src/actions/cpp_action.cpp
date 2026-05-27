@@ -21,9 +21,9 @@ QString GenerateCppAction::id() const
 QString GenerateCppAction::displayName() const
 {
 #ifdef USE_ANTLR
-  return "Koda Antlr: Generate Dezyne Cpp";
+  return "Generate Dezyne Cpp";
 #else
-  return "Koda: Generate Dezyne Cpp";
+  return "Generate Dezyne Cpp";
 #endif
 }
 
