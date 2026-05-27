@@ -43,6 +43,33 @@ QHash<NodeItem*, QVector<QPair<NodeItem*, QPointF>>> g_childSubtreeTopLeftOffset
 
 constexpr qreal kComponentOverlayDiameterFactor = 0.40;
 
+bool isNearDimension(qreal value, qreal reference, qreal factor)
+{
+  return qAbs(value - reference * factor) < 1.0;
+}
+
+QSizeF normalizedBehaviourNodeSize(const NodeConfig* cfg, const QSizeF& saved)
+{
+  const qreal cfgW = static_cast<qreal>(cfg->body.width);
+  const qreal cfgH = static_cast<qreal>(cfg->body.height);
+  const QSizeF configSize(cfgW, cfgH);
+
+  if (saved.width() <= 0.0 || saved.height() <= 0.0)
+    return configSize;
+
+  const bool legacyHalfWidth = isNearDimension(saved.width(), cfgW, 0.5);
+  const bool legacyHalfHeight = isNearDimension(saved.height(), cfgH, 0.5);
+  const bool legacyDoubleWidth = isNearDimension(saved.width(), cfgW, 2.0);
+  const bool legacyDoubleHeight = isNearDimension(saved.height(), cfgH, 2.0);
+
+  if ((legacyHalfWidth && legacyHalfHeight) || (legacyHalfWidth && qAbs(saved.height() - cfgH) < 1.0) ||
+      (legacyHalfHeight && qAbs(saved.width() - cfgW) < 1.0) || legacyDoubleWidth || legacyDoubleHeight)
+    return configSize;
+
+  return saved;
+}
+
+// show task/capability display for sync/async only
 bool showsSelectedComponentOverlay(const NodeConfig* cfg)
 {
   if (!cfg)
@@ -250,6 +277,16 @@ constexpr qreal margin = 16.0;
 
 /** Gap between slot-circle rows as fraction of slot diameter (shared with relayoutCapabilitySlots). */
 constexpr qreal kSlotVerticalGapFactor = 0.35;
+constexpr qreal kSlotHorizontalGapFactor = 0.35;
+
+qreal taskSlotColumnStep(const QSizeF& size, qreal slotDiam)
+{
+  const qreal w = size.width();
+  const qreal anchorW = qMin(w, kTaskAspectWidth);
+  const qreal legacyStep = (kTaskSlotRightX - kTaskSlotLeftX) * anchorW;
+  const qreal minStep = slotDiam * (1.0 + kSlotHorizontalGapFactor);
+  return qMax(legacyStep, minStep);
+}
 
 /** Estimated caption height below an inset capability circle (matches NodeItem label sizing). */
 qreal estimatedCapabilityLabelOverhang(qreal slotDiam)
@@ -265,6 +302,11 @@ qreal estimatedCapabilityLabelOverhang(qreal slotDiam)
 qreal taskSlotTopInset()
 {
   return margin + kTaskInnerPadding;
+}
+
+qreal minTaskWidthForSlots(qreal slotDiam, qreal colStep)
+{
+  return colStep + slotDiam + 2.0 * taskSlotTopInset();
 }
 
 qreal taskSlotBottomInset(qreal slotDiam)
@@ -286,9 +328,8 @@ QVector<QPointF> taskSlotCenters(const QSizeF& size, int count)
 
   const qreal w = size.width();
   const qreal h = size.height();
-  const qreal anchorW = qMin(w, kTaskAspectWidth);
-  const qreal colStep = (kTaskSlotRightX - kTaskSlotLeftX) * anchorW;
   const qreal slotDiam = qMin(w, h) * kTaskSlotDiameterFactor;
+  const qreal colStep = taskSlotColumnStep(size, slotDiam);
 
   const qreal leftColCenter = (w - colStep) * 0.5;
   const qreal rightColCenter = leftColCenter + colStep;
@@ -450,6 +491,11 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
   if (config()->libraryType == Types::LibraryTypes::STRUCTURAL && config()->type == QStringLiteral("Task"))
   {
     mSize = structural_layout::taskAspectSizeFromWidth(mSize.width());
+    mStorage->setSize(mSize);
+  }
+  else if (config()->libraryType == Types::LibraryTypes::BEHAVIOUR)
+  {
+    mSize = normalizedBehaviourNodeSize(config().get(), mSize);
     mStorage->setSize(mSize);
   }
 
@@ -894,18 +940,16 @@ void NodeItem::relayoutCapabilitySlots()
 
   const qreal cfgW = static_cast<qreal>(config()->body.width);
   const qreal cfgH = static_cast<qreal>(config()->body.height);
-  const qreal reqW = qMax(cfgW, W);  // do not shrink below config or current width
 
   const int numRows =
       slotCount <= 1 ? 1 : (slotCount + 1) / 2;  // ceil(slotCount/2) for slotCount >= 2
 
-  // Match taskSlotCenters: diameter uses qMin(W,H); sizing on cfg min underestimated height
-  // for wide Tasks once H grows beyond min(cfgW,cfgH).
+  qreal trialW = qMax(cfgW, W);
   qreal trialH = qMax(cfgH, H);
   constexpr int kSizingIters = 12;
   for (int iter = 0; iter < kSizingIters; ++iter)
   {
-    const qreal minDim = qMin(reqW, trialH);
+    const qreal minDim = qMin(trialW, trialH);
     const qreal sd = minDim * kTaskSlotDiameterFactor;
     const qreal verticalGap = sd * structural_layout::kSlotVerticalGapFactor;
     const qreal pitch = sd + verticalGap;
@@ -915,10 +959,19 @@ void NodeItem::relayoutCapabilitySlots()
         topInset + sd + static_cast<qreal>(numRows - 1) * pitch + bottomInset;
     needH = qMax(cfgH, needH);
 
-    if (needH <= trialH + 0.51)
+    qreal needW = trialW;
+    if (slotCount >= 2)
+    {
+      const qreal colStep = structural_layout::taskSlotColumnStep(QSizeF(trialW, trialH), sd);
+      needW = qMax(cfgW, structural_layout::minTaskWidthForSlots(sd, colStep));
+    }
+
+    if (needH <= trialH + 0.51 && needW <= trialW + 0.51)
       break;
     trialH = needH;
+    trialW = needW;
   }
+  const qreal reqW = trialW;
   qreal reqH = trialH;
 
   if (reqH > H + 0.5 || reqW > W + 0.5)
@@ -1409,12 +1462,15 @@ void NodeItem::updateExtrasPosition()
 
 void NodeItem::updatePortPositions()
 {
-  const qreal w = boundingRect().width();
-  const qreal h = boundingRect().height();
+  const QRectF portRect = nodeShapeContentRect(boundingRect());
+  const qreal left = portRect.left();
+  const qreal top = portRect.top();
+  const qreal w = portRect.width();
+  const qreal h = portRect.height();
   if (mInPort)
-    mInPort->setPos(-PortItem::kSize - PortItem::kGap, (h - PortItem::kSize) / 2.0);
+    mInPort->setPos(left - PortItem::kSize - PortItem::kGap, top + (h - PortItem::kSize) / 2.0);
   if (mOutPort)
-    mOutPort->setPos(w + PortItem::kGap, (h - PortItem::kSize) / 2.0);
+    mOutPort->setPos(left + w + PortItem::kGap, top + (h - PortItem::kSize) / 2.0);
 }
 
 // Slots

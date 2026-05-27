@@ -1460,7 +1460,14 @@ VoidResult Canvas::loadFromSave(const SaveInfo& info)
 
   LOG_DEBUG("Loading canvas from save with %d nodes", info.getnodes().size());
 
-  return loadFromSave(info.getnodes(), nullptr);
+  mDeferStructuralLayout = type() == Types::LibraryTypes::STRUCTURAL;
+  const VoidResult ret = loadFromSave(info.getnodes(), nullptr);
+  mDeferStructuralLayout = false;
+
+  if (ret.IsSuccess())
+    finalizeAfterLoad();
+
+  return ret;
 }
 
 CanvasView* Canvas::parentView() const

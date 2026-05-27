@@ -20,6 +20,19 @@ Types::LibraryTypes StructureCanvas::type() const
   return Types::LibraryTypes::STRUCTURAL;
 }
 
+void StructureCanvas::finalizeAfterLoad()
+{
+  for (QGraphicsItem* item : items())
+  {
+    if (item->type() != NodeItem::Type)
+      continue;
+
+    auto* node = static_cast<NodeItem*>(item);
+    if (node->isTaskContainer() && node->parentNode() == nullptr)
+      node->layoutSubtasks();
+  }
+}
+
 void StructureCanvas::updateParent(NodeItem* node, std::shared_ptr<NodeSaveInfo> storage, bool adding)
 {
   Q_UNUSED(storage);
@@ -30,6 +43,13 @@ void StructureCanvas::updateParent(NodeItem* node, std::shared_ptr<NodeSaveInfo>
   if (!adding)
   {
     mStorage->removeNode(node->id());
+    return;
+  }
+
+  if (mDeferStructuralLayout)
+  {
+    if (node->isTaskContainer())
+      node->ensureSubtaskConnector(this);
     return;
   }
 

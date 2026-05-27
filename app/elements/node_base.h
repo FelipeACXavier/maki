@@ -111,6 +111,9 @@ public:
    */
   virtual QRectF drawingRect(const QRectF& input) const;
 
+  /** Visible SVG shape bounds within the node body (equals drawingRect when no nodeSvg). */
+  QRectF nodeShapeContentRect(const QRectF& bounds) const;
+
   /**
    * @brief Returns the node shape as a QPainterPath.
    *

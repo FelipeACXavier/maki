@@ -21,6 +21,8 @@ public:
 protected:
   void addedItemNode(NodeItem* node, std::shared_ptr<NodeSaveInfo> info) override;
 
+  void finalizeAfterLoad() override;
+
 private:
   std::shared_ptr<SaveInfo> mStorage;
 

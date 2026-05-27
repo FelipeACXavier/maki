@@ -419,6 +419,11 @@ protected:
    */
   virtual NodeItem* insertDroppedNodeOnTransition(TransitionItem* transition, std::shared_ptr<NodeSaveInfo> info);
 
+  /** Runs once after a project load; structural canvases relayout task capability slots. */
+  virtual void finalizeAfterLoad() {}
+
+  bool mDeferStructuralLayout = false;
+
 private:
   // TODO(felaze): Move connection behaviour to a separate class
   NodeItem* mHoveredNode = nullptr;       /// Pointer to the hovered node.

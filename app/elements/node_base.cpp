@@ -16,7 +16,7 @@
 const qreal MAX_WIDTH = 60.0;
 const qreal MAX_HEIGHT = 60.0;
 
-void renderShapeSvg(QSvgRenderer& renderer, QPainter* painter, const QRectF& drawingBounds)
+QRectF shapeSvgTargetRect(const QSvgRenderer& renderer, const QRectF& drawingBounds)
 {
   QRectF viewBox = renderer.viewBoxF();
   if (!viewBox.isValid() || viewBox.isEmpty())
@@ -28,11 +28,15 @@ void renderShapeSvg(QSvgRenderer& renderer, QPainter* painter, const QRectF& dra
   const qreal sy = contentRect.height() / viewBox.height();
   const qreal scale = qMin(sx, sy);
   const QSizeF scaledSize(viewBox.width() * scale, viewBox.height() * scale);
-  const QRectF targetRect(contentRect.x() + (contentRect.width() - scaledSize.width()) / 2.0,
-                          contentRect.y() + (contentRect.height() - scaledSize.height()) / 2.0,
-                          scaledSize.width(), scaledSize.height());
+  return QRectF(contentRect.x() + (contentRect.width() - scaledSize.width()) / 2.0,
+                contentRect.y() + (contentRect.height() - scaledSize.height()) / 2.0,
+                scaledSize.width(),
+                scaledSize.height());
+}
 
-  renderer.render(painter, targetRect);
+void renderShapeSvg(QSvgRenderer& renderer, QPainter* painter, const QRectF& drawingBounds)
+{
+  renderer.render(painter, shapeSvgTargetRect(renderer, drawingBounds));
 }
 
 NodeBase::NodeBase(const QString& id, const QString& nodeId, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
@@ -117,6 +121,26 @@ QRectF NodeBase::scaledRect() const
 QRectF NodeBase::drawingRect(const QRectF& input) const
 {
   return input.adjusted(2, 2, -2, -2);
+}
+
+QRectF NodeBase::nodeShapeContentRect(const QRectF& bounds) const
+{
+  const QRectF drawingBounds = drawingRect(bounds);
+  if (config()->body.nodeSvg.isEmpty())
+    return drawingBounds;
+
+  if (!mNodeSvgRenderer)
+  {
+    const QString path = AppPaths::icon(config()->body.nodeSvg);
+    auto renderer = std::make_unique<QSvgRenderer>(path);
+    if (renderer->isValid())
+      mNodeSvgRenderer = std::move(renderer);
+  }
+
+  if (!mNodeSvgRenderer)
+    return drawingBounds;
+
+  return shapeSvgTargetRect(*mNodeSvgRenderer, drawingBounds);
 }
 
 void NodeBase::paintNode(const QRectF& bounds, const QColor& background, const QPen& text, QPainter* painter)

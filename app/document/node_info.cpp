@@ -301,18 +301,25 @@ NodeSaveInfo NodeSaveInfo::fromJson(const QJsonObject& data)
       info.addField(std::make_shared<PropertyInfo>(PropertyInfo::fromJson(node.toObject())));
   }
 
-  // These are populated by the loader
-  // if (data.contains(ConfigKeys::CHILDREN))
-  // {
-  //   for (const auto& node : data[ConfigKeys::CHILDREN].toArray())
-  //     info.addChild(std::make_shared<NodeSaveInfo>(NodeSaveInfo::fromJson(node.toObject())));
-  // }
+  if (data.contains(ConfigKeys::CHILDREN))
+  {
+    for (const auto& childValue : data[ConfigKeys::CHILDREN].toArray())
+    {
+      if (!childValue.isObject())
+        continue;
+      info.addChild(std::make_shared<NodeSaveInfo>(NodeSaveInfo::fromJson(childValue.toObject())));
+    }
+  }
 
-  // if (data.contains(ConfigKeys::FLOWS))
-  // {
-  //   for (const auto& node : data[ConfigKeys::FLOWS].toArray())
-  //     info.addFlow(std::make_shared<FlowSaveInfo>(FlowSaveInfo::fromJson(node.toObject())));
-  // }
+  if (data.contains(ConfigKeys::FLOWS))
+  {
+    for (const auto& flowValue : data[ConfigKeys::FLOWS].toArray())
+    {
+      if (!flowValue.isObject())
+        continue;
+      info.addFlow(std::make_shared<FlowSaveInfo>(FlowSaveInfo::fromJson(flowValue.toObject())));
+    }
+  }
 
   if (data.contains(ConfigKeys::EVENTS))
   {
