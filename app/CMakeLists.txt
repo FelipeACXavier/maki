@@ -31,6 +31,7 @@ file(GLOB WIDGET_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/widgets/structure/*.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/widgets/properties/*.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/widgets/dialogs/*.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/widgets/validators/*.cpp
 )
 file(GLOB COMPILER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/compiler/*.cpp)
 

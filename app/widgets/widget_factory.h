@@ -11,11 +11,15 @@ class QPushButton;
 class QLabel;
 class QCheckBox;
 class QFormLayout;
+class IntegerOrVariableValidator;
+class DoubleOrVariableValidator;
 
 namespace oclero::qlementine
 {
 class Label;
-}
+class LineEdit;
+}  // namespace oclero::qlementine
+
 /**
  * @namespace maki
  * @brief Contains UI helper widgets and layout grouping utilities used by MAKI.
@@ -265,6 +269,12 @@ public:
    */
   int getValue() const;
 
+  /**
+   * @brief Sets the widget to accept variables
+   * @param value The value to set.
+   */
+  void setAcceptVariable(bool accept);
+
 signals:
   /**
    * @brief Emitted when the integer value changes.
@@ -273,8 +283,9 @@ signals:
   void valueChanged(const int value);
 
 private:
-  QLineEdit* mInputField;  ///< Line edit used to edit the integer value.
-  int mValue = 0;          ///< Cached integer value.
+  oclero::qlementine::LineEdit* mInputField;  ///< Line edit used to edit the integer value.
+  IntegerOrVariableValidator* mValidator;
+  int mValue = 0;  ///< Cached integer value.
 };
 
 /**
@@ -314,6 +325,8 @@ public:
    */
   qreal getValue() const;
 
+  void setAcceptVariable(bool accept);
+
 signals:
   /**
    * @brief Emitted when the floating-point value changes.
@@ -322,8 +335,9 @@ signals:
   void valueChanged(const qreal value);
 
 private:
-  QLineEdit* mInputField;  ///< Line edit used to edit the floating-point value.
-  qreal mValue = 0;        ///< Cached floating-point value.
+  oclero::qlementine::LineEdit* mInputField;  ///< Line edit used to edit the floating-point value.
+  DoubleOrVariableValidator* mValidator;
+  qreal mValue = 0;  ///< Cached floating-point value.
 };
 
 /**

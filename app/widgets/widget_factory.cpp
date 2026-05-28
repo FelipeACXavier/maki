@@ -14,10 +14,13 @@
 #include <QSpinBox>
 #include <oclero/qlementine/widgets/IconWidget.hpp>
 #include <oclero/qlementine/widgets/Label.hpp>
+#include <oclero/qlementine/widgets/LineEdit.hpp>
 
 #include "app_configs.h"
 #include "oclero/qlementine/Common.hpp"
 #include "style_helpers.h"
+#include "validators/double_variable.h"
+#include "validators/int_variable.h"
 
 static const int WIDGET_SPACING = 2;
 static const int WIDGET_PADDING = 24;
@@ -267,7 +270,7 @@ void StringWidget::setValue(const QString& value)
 IntegerWidget::IntegerWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent, int min, int max)
     : QWidget(parent)
 {
-  mInputField = new QLineEdit(this);
+  mInputField = new oclero::qlementine::LineEdit(this);
   mInputField->setPlaceholderText(placeholder);
 
   bool valid = false;
@@ -275,17 +278,18 @@ IntegerWidget::IntegerWidget(const QString& label, const QString& placeholder, W
   if (valid)
     mValue = intPlaceholder;
 
-  QIntValidator* validator = new QIntValidator(min, max, this);
-  mInputField->setValidator(validator);
+  mValidator = new IntegerOrVariableValidator(min, max, this);
+  mInputField->setValidator(mValidator);
 
-  connect(mInputField, &QLineEdit::textEdited, this, [this](const QString& text) {
-    int pos = 0;
-    QString t = text;
-    QValidator::State state = mInputField->validator()->validate(t, pos);
-    // updateProperty(mInputField, Config::INVALID, (state != QValidator::Acceptable));
+  connect(mInputField, &QLineEdit::inputRejected, this, [this]() {
+    mInputField->setStatus(oclero::qlementine::Status::Warning);
   });
   connect(mInputField, &QLineEdit::editingFinished, this, [this]() {
+    if (!mInputField->hasAcceptableInput())
+      return;
+
     mValue = mInputField->text().toInt();
+    mInputField->setStatus(oclero::qlementine::Status::Default);
     emit valueChanged(mValue);
   });
 
@@ -334,11 +338,17 @@ void IntegerWidget::addDescription(const QString& label)
   layout()->addWidget(hint);
 }
 
+void IntegerWidget::setAcceptVariable(bool accept)
+{
+  if (mValidator)
+    mValidator->setAcceptVariable(accept);
+}
+
 // ========================================================================================================================================
 FloatWidget::FloatWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent, qreal min, qreal max)
     : QWidget(parent)
 {
-  mInputField = new QLineEdit(this);
+  mInputField = new oclero::qlementine::LineEdit(this);
   mInputField->setPlaceholderText(placeholder);
 
   bool valid = false;
@@ -346,19 +356,18 @@ FloatWidget::FloatWidget(const QString& label, const QString& placeholder, Widge
   if (valid)
     mValue = intPlaceholder;
 
-  QDoubleValidator* validator = new QDoubleValidator(min, max, 6, this);
-  validator->setNotation(QDoubleValidator::StandardNotation);
-  validator->setLocale(QLocale::C);  // Use dot instead of comma
+  mValidator = new DoubleOrVariableValidator(min, max, 6, this);
+  mValidator->setNotation(QDoubleValidator::StandardNotation);
+  mValidator->setLocale(QLocale::C);  // Use dot instead of comma
+  mInputField->setValidator(mValidator);
 
-  mInputField->setValidator(validator);
-
-  connect(mInputField, &QLineEdit::textEdited, this, [this](const QString& text) {
-    int pos = 0;
-    QString t = text;
-    QValidator::State state = mInputField->validator()->validate(t, pos);
-    // updateProperty(mInputField, Config::INVALID, (state != QValidator::Acceptable));
+  connect(mInputField, &QLineEdit::inputRejected, this, [this]() {
+    mInputField->setStatus(oclero::qlementine::Status::Warning);
   });
   connect(mInputField, &QLineEdit::editingFinished, this, [this]() {
+    if (!mInputField->hasAcceptableInput())
+      return;
+
     mValue = mInputField->text().toDouble();
     emit valueChanged(mValue);
   });
@@ -406,6 +415,12 @@ void FloatWidget::addDescription(const QString& label)
   auto* hint = new oclero::qlementine::Label(label, this);
   hint->setRole(oclero::qlementine::TextRole::Caption);
   layout()->addWidget(hint);
+}
+
+void FloatWidget::setAcceptVariable(bool accept)
+{
+  if (mValidator)
+    mValidator->setAcceptVariable(accept);
 }
 
 // ========================================================================================================================================
