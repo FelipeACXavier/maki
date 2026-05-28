@@ -6,7 +6,9 @@
 #include "config.h"
 #include "result.h"
 #include "save_info.h"
+#include "types.h"
 #include "widgets/frame.h"
+#include "widgets/widget_factory.h"
 
 class Flow;
 class NodeItem;
@@ -173,7 +175,9 @@ private:
   VoidResult loadEventArguments(const QString& nodeId, const QString& flowName, const PropertyInfo& property, NodeItem* node, Types::CallType callType, QFormLayout* formLayout);  /// Loads event arguments for a given property.
 
   // Component select fields
-  VoidResult loadFieldEventSelect(QComboBox* componentSelect, const QString& optionId, const PropertyInfo& property, NodeItem* node,
-                                  std::function<void(const QString& nodeId, QComboBox* eventWidget)> populate);                        /// Loads field event select.
-  VoidResult loadFieldTriggerCall(QComboBox* componentSelect, const QString& optionId, const PropertyInfo& property, NodeItem* node);  /// Loads field trigger call.
+  VoidResult loadFieldEventSelect(maki::SelectorWidget* componentSelect, const QString& optionId, const PropertyInfo& property, NodeItem* node,
+                                  std::function<void(const QString& nodeId, QComboBox* eventWidget)> populate);                                   /// Loads field event select.
+  VoidResult loadFieldTriggerCall(maki::SelectorWidget* componentSelect, const QString& optionId, const PropertyInfo& property, NodeItem* node);  /// Loads field trigger call.
+
+  void addCompleter(maki::StringWidget* field, const QString& nodeId, const Types::PropertyTypes dataType, QStringList variables = {});
 };

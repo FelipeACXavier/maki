@@ -187,6 +187,18 @@ std::shared_ptr<FlowSaveInfo> SaveInfo::getEventFromNode(const QString& nodeId, 
   return nullptr;
 }
 
+std::shared_ptr<FlowSaveInfo> SaveInfo::getFlowFromNode(const QString& nodeId, const QString& flowName) const
+{
+  auto flows = getFlowsFromNode(nodeId, getnodes());
+  for (const auto& flow : flows)
+  {
+    if (flow->getname() == flowName)
+      return flow;
+  }
+
+  return nullptr;
+}
+
 std::shared_ptr<NodeSaveInfo> SaveInfo::getNodeWithId(const QString& nodeId)
 {
   return getNodeWithId(nodeId, getnodes());

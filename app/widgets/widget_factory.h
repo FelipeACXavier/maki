@@ -3,6 +3,7 @@
 #include <QComboBox>
 #include <QWidget>
 
+#include "oclero/qlementine/widgets/ColorEditor.hpp"
 #include "style_helpers.h"
 
 class QLineEdit;
@@ -18,6 +19,7 @@ namespace oclero::qlementine
 {
 class Label;
 class LineEdit;
+class ColorEditor;
 }  // namespace oclero::qlementine
 
 /**
@@ -49,6 +51,16 @@ struct WidgetAlignment
   } type;  ///< The alignment mode to apply.
 
   QFormLayout* layout;  ///< Optional form layout associated with this alignment.
+
+  static WidgetAlignment Inline()
+  {
+    return WidgetAlignment{WidgetAlignment::Type::INLINE};
+  };
+
+  static WidgetAlignment Vertical()
+  {
+    return WidgetAlignment{WidgetAlignment::Type::VERTICAL};
+  };
 };
 
 /**
@@ -275,6 +287,8 @@ public:
    */
   void setAcceptVariable(bool accept);
 
+  QLineEdit* widget() const;
+
 signals:
   /**
    * @brief Emitted when the integer value changes.
@@ -326,6 +340,8 @@ public:
   qreal getValue() const;
 
   void setAcceptVariable(bool accept);
+
+  QLineEdit* widget() const;
 
 signals:
   /**
@@ -407,7 +423,7 @@ public:
    * @param label The label shown next to the widget.
    * @param parent The parent widget.
    */
-  SelectorWidget(const QString& label, QWidget* parent);
+  SelectorWidget(const QString& label, WidgetAlignment alignment, QWidget* parent);
 
   /**
    * @brief Constructs a selector widget using an existing combo box.
@@ -415,7 +431,7 @@ public:
    * @param comboBox The combo box to use as the selector.
    * @param parent The parent widget.
    */
-  SelectorWidget(const QString& label, QComboBox* comboBox, QWidget* parent);
+  SelectorWidget(const QString& label, QComboBox* comboBox, WidgetAlignment alignment, QWidget* parent);
 
   /**
    * @brief Adds a descriptive label or help text to the widget.
@@ -428,12 +444,14 @@ public:
    * @param value The value to select.
    */
   void setValue(const QString& value);
+  void setData(const QString& value);
 
   /**
    * @brief Returns the current selected value.
    * @return The current value.
    */
   QString getValue() const;
+  QVariant getData() const;
 
   /**
    * @brief Returns the underlying combo box widget.
@@ -455,9 +473,12 @@ signals:
    */
   void valueChanged(const QString& value);
 
+  void dataChanged(const QString& text, const QVariant& value);
+
 private:
   QComboBox* mInputField;  ///< Combo box used to edit the selected value.
   QString mValue = "";     ///< Cached selected value.
+  QVariant mData;
 };
 
 /**
@@ -517,19 +538,13 @@ public:
    * @param placeholder Additional placeholder or button text.
    * @param parent The parent widget.
    */
-  ColorWidget(const QString& label, const QString& placeholder, QWidget* parent);
+  ColorWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent);
 
   /**
    * @brief Adds a descriptive label or help text to the widget.
    * @param label The description text.
    */
   void addDescription(const QString& label);
-
-  /**
-   * @brief Sets the icon shown by the widget button.
-   * @param icon The icon to display.
-   */
-  void setIcon(const QIcon& icon);
 
   /**
    * @brief Sets the tooltip shown for the widget button.
@@ -550,16 +565,10 @@ public:
   void setValue(const QColor& color);
 
   /**
-   * @brief Returns the full label text associated with the widget.
-   * @return The label text.
-   */
-  QString getLabel() const;
-
-  /**
    * @brief Returns the underlying push button used to trigger colour selection.
    * @return The button widget.
    */
-  QPushButton* widget() const;
+  oclero::qlementine::ColorEditor* widget() const;
 
 signals:
   /**
@@ -568,25 +577,9 @@ signals:
    */
   void valueChanged(const QColor& value);
 
-protected:
-  /**
-   * @brief Handles widget resize events.
-   * @param event The resize event.
-   */
-  void resizeEvent(QResizeEvent* event) override;
-
 private:
-  oclero::qlementine::Label* mLabel;  ///< Label widget displaying the colour name or text.
-  QString mFullLabel;                 ///< Full, non-elided label text.
-
-  QLabel* mPreview;      ///< Preview widget showing the current colour.
-  QPushButton* mButton;  ///< Button used to open or trigger colour selection.
-  QColor mValue;         ///< Cached selected colour value.
-
-  /**
-   * @brief Updates the displayed label text using elision when needed.
-   */
-  void updateElidedLabel();
+  oclero::qlementine::ColorEditor* mInputField;  ///< Preview widget showing the current colour.
+  QColor mValue;                                 ///< Cached selected colour value.
 };
 
 /**

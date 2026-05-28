@@ -62,7 +62,7 @@ void EventDialog::createNameInput()
 
 void EventDialog::createTypeInput()
 {
-  auto type = new maki::SelectorWidget(tr("Event type"), this);
+  auto type = new maki::SelectorWidget(tr("Event type"), maki::WidgetAlignment::Vertical(), this);
   type->setFocusPolicy(mStorage->getmodifiable() ? Qt::ClickFocus : Qt::NoFocus);
   type->setEnabled(mStorage->getmodifiable());
 
@@ -89,7 +89,7 @@ void EventDialog::createReturnTypeInput()
 {
   auto typeBox = new maki::TypeSelectionWidget(Types::PropertyTypesToString(Types::PropertyTypes::VOID), this);
 
-  auto returnType = new maki::SelectorWidget(tr("Return type"), typeBox, this);
+  auto returnType = new maki::SelectorWidget(tr("Return type"), typeBox, maki::WidgetAlignment::Vertical(), this);
   returnType->setFocusPolicy(mStorage->getmodifiable() ? Qt::ClickFocus : Qt::NoFocus);
   returnType->setEnabled(mStorage->getmodifiable());
 
