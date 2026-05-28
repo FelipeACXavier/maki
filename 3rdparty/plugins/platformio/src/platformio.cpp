@@ -136,10 +136,6 @@ void PlatformIOPlugin::setHostServices(maki::IHostServices* services)
     if (!settings.isEmpty())
       mSettings = settings;
   }
-
-  if (auto ui = mServices->ui())
-  {
-  }
 }
 
 void PlatformIOPlugin::setName(const QString& name)
@@ -201,9 +197,8 @@ Result<maki::PipelineArtifact> PlatformIOPlugin::initialiseProject(const QDir& o
   generate->setWorkingDirectory(projectFolder.absolutePath());
   generate->setProgram(mPioExecutable);
   generate->setArguments(args);
-  auto added = pipeline->add(generate, maki::OnFail::EXECUTE, [this, projectFolder] {
+  auto added = pipeline->add(generate, maki::OnFail::ALWAYS_EXECUTE, [this, projectFolder](int& /* exitCode */, QProcess::ExitStatus& /* status */) {
     LOG_WARN_ON_FAILURE(writePlatformIni(projectFolder));
-    // LOG_WARN_ON_FAILURE(writeMainCpp(outputFolder));
   });
 
   pipeline->endGroup();

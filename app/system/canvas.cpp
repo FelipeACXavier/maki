@@ -47,8 +47,6 @@
 #include "undo_commands/remove_node.h"
 #include "widgets/widget_factory.h"
 
-static constexpr auto MAKI_CLIPBOARD_MIME = "application/x-maki-copied-nodes";
-
 namespace
 {
 NodeItem* taskContainerAcceptingDrop(QGraphicsItem* item)
@@ -90,6 +88,8 @@ QWidget* viewportFor(QGraphicsScene* scene)
   return view ? view->viewport() : nullptr;
 }
 }  // namespace
+
+static constexpr auto MAKI_CLIPBOARD_MIME = "application/x-maki-copied-nodes";
 
 Canvas::Canvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
     : QGraphicsScene(parent)

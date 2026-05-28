@@ -7,6 +7,7 @@
 #include <QVBoxLayout>
 #include <oclero/qlementine/widgets/Label.hpp>
 
+#include "ipipeline.h"
 #include "logging.h"
 #include "result.h"
 
@@ -162,10 +163,14 @@ void Pipeline::startGroup(const QString& groupName)
 void Pipeline::endGroup()
 {
   // Reset to the default group index
+  auto group = getGroup();
+  if (group)
+    LOG_DEBUG("Ending group: %s (%d)", qPrintable(group->name), group->size());
+
   mGroupIndex = 0;
 }
 
-VoidResult Pipeline::add(QProcess* process, maki::OnFail onFail, std::function<void()> callback)
+VoidResult Pipeline::add(QProcess* process, maki::OnFail onFail, std::function<void(int& exitCode, QProcess::ExitStatus& status)> callback)
 {
   QString exe = QStandardPaths::findExecutable(process->program());
   if (exe.isEmpty())
@@ -188,7 +193,7 @@ VoidResult Pipeline::add(QProcess* process, maki::OnFail onFail, std::function<v
 
   group->processes.push_back(pp);
 
-  LOG_DEBUG("Adding process to group: %s (%d)", qPrintable(group->name), group->size());
+  // LOG_DEBUG("Adding process to group: %s (%d)", qPrintable(group->name), group->size());
 
   return VoidResult();
 }
@@ -398,10 +403,13 @@ void Pipeline::onFinished(int exitCode, QProcess::ExitStatus status)
   }
 
   // LOG_DEBUG("Process finished: %s", qPrintable(mRunningProcess->process->program()));
-  emit finished(constructInfo(), exitCode, status);
+  if (mRunningProcess->onFinish &&
+      ((exitCode != SUCCESS && mRunningProcess->onFail == maki::OnFail::EXECUTE) || mRunningProcess->onFail == maki::OnFail::ALWAYS_EXECUTE))
+  {
+    mRunningProcess->onFinish(exitCode, status);
+  }
 
-  if (mRunningProcess->onFinish)
-    mRunningProcess->onFinish();
+  emit finished(constructInfo(), exitCode, status);
 
   startNextOrEnd(
       (exitCode == SUCCESS || mRunningProcess->onFail == maki::OnFail::CONTINUE) ? SUCCESS : exitCode,

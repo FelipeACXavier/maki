@@ -143,7 +143,14 @@ function(add_koda_plugin TARGET_NAME USE_ANTLR_ENABLED)
   if(USE_ANTLR_ENABLED)
     set(JSON_FILE ${CMAKE_CURRENT_SOURCE_DIR}/src/koda_generator_antlr.json)
     set(PLUGIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/koda_antlr_plugin.json)
-    set(COMPILER_FILES ${KODA_COMPILER_FILES})
+    set(COMPILER_FILES
+      ${KODA_COMPILER_FILES}
+    )
+    set(KODA_TO_MAKI
+      src/maki_to_koda.cpp
+      src/koda_emitter.cpp
+      src/ros_emitter.cpp
+    )
     set(COMPILER_INCLUDES
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ast
       ${CMAKE_CURRENT_SOURCE_DIR}/src/parser
@@ -158,6 +165,7 @@ function(add_koda_plugin TARGET_NAME USE_ANTLR_ENABLED)
     set(COMPILER_FILES)
     set(COMPILER_INCLUDES)
     set(COMPILER_LIBS)
+    set(KODA_TO_MAKI)
   endif()
 
   add_library(${TARGET_NAME} SHARED
@@ -165,11 +173,16 @@ function(add_koda_plugin TARGET_NAME USE_ANTLR_ENABLED)
     ${COMPILER_FILES}
     src/koda_generator.cpp
     src/koda_generator.h
+    ${KODA_TO_MAKI}
     src/actions/koda_action.cpp
     src/actions/dezyne_action.cpp
     src/actions/cpp_action.cpp
     src/actions/verify_action.cpp
     src/actions/simulate_action.cpp
+    src/actions/ros_action.cpp
+    src/actions/ros_copy.cpp
+    src/actions/ros_build.cpp
+    src/actions/ros_launch.cpp
     ${JSON_FILE}
   )
 

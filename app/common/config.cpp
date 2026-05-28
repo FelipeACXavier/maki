@@ -57,17 +57,17 @@ PropertyConfig::PropertyConfig(const QJsonObject& object)
 QVariant PropertyConfig::toDefault(const QJsonObject& object, Types::PropertyTypes objectType)
 {
   if (objectType == Types::PropertyTypes::STRING)
-    return object.contains("default") ? object["default"].toString() : QVariant(QString(""));
+    return object.contains(ConfigKeys::DEFAULT) ? object[ConfigKeys::DEFAULT].toString() : QVariant(QString(""));
   else if (objectType == Types::PropertyTypes::INTEGER)
-    return object.contains("default") ? object["default"].toInt() : QVariant(qint32(0));
+    return object.contains(ConfigKeys::DEFAULT) ? object[ConfigKeys::DEFAULT].toInt() : QVariant(qint32(0));
   else if (objectType == Types::PropertyTypes::REAL)
-    return object.contains("default") ? object["default"].toDouble() : QVariant(qreal(0));
+    return object.contains(ConfigKeys::DEFAULT) ? object[ConfigKeys::DEFAULT].toDouble() : QVariant(qreal(0));
   else if (objectType == Types::PropertyTypes::BOOLEAN)
-    return object.contains("default") ? object["default"].toBool() : QVariant(false);
+    return object.contains(ConfigKeys::DEFAULT) ? object[ConfigKeys::DEFAULT].toBool() : QVariant(false);
   else if (objectType == Types::PropertyTypes::LIST)
-    return object.contains("default") ? object["default"].toArray().toVariantList() : QVariantList();
+    return object.contains(ConfigKeys::DEFAULT) ? object[ConfigKeys::DEFAULT].toArray().toVariantList() : QVariantList();
   else if (objectType == Types::PropertyTypes::COLOR)
-    return object.contains("default") ? object["default"].toString() : QVariant(QString("#050505"));
+    return object.contains(ConfigKeys::DEFAULT) ? object[ConfigKeys::DEFAULT].toString() : QVariant(QString("#050505"));
   else if (objectType == Types::PropertyTypes::COMPONENT_SELECT)
   {
     QJsonObject defaultObject;

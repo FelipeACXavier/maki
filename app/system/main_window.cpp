@@ -463,6 +463,16 @@ void MainWindow::bind()
         QJsonObject prop;
         prop[ConfigKeys::ID] = p.getid();
         prop[ConfigKeys::TYPE] = Types::PropertyTypesToString(p.gettype());
+        if (p.gettype() == Types::PropertyTypes::STRING)
+          name[ConfigKeys::DEFAULT] = p.getdefaultValue().toString();
+        else if (p.gettype() == Types::PropertyTypes::BOOLEAN)
+          name[ConfigKeys::DEFAULT] = p.getdefaultValue().toBool();
+        else if (p.gettype() == Types::PropertyTypes::REAL)
+          name[ConfigKeys::DEFAULT] = p.getdefaultValue().toString().toDouble();
+        else if (p.gettype() == Types::PropertyTypes::INTEGER)
+          name[ConfigKeys::DEFAULT] = p.getdefaultValue().toInt();
+        else
+          name[ConfigKeys::DEFAULT] = p.getdefaultValue().toJsonValue();
         properties.append(prop);
       }
 
@@ -538,14 +548,65 @@ void MainWindow::unbindCanvas()
 
 void MainWindow::bindShortcuts()
 {
-  new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_C), this, [this] {
-    if (canvas())
-      canvas()->copySelectedItems(nullptr);
+  new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_C), this, [] {
+    QWidget* fw = QApplication::focusWidget();
+    if (!fw)
+      return;
+
+    LOG_INFO("Copy, focused on: %s", qPrintable(fw->metaObject()->className()));
+
+    // 1) If focus is in the node library panel -> search there
+    if (auto* textEdit = qobject_cast<QTextEdit*>(findAncestor(fw, &QTextEdit::staticMetaObject)))
+    {
+      textEdit->copy();
+      return;
+    }
+    else if (auto* browser = qobject_cast<QTextBrowser*>(findAncestor(fw, &QTextBrowser::staticMetaObject)))
+    {
+      browser->copy();
+      return;
+    }
+    else if (auto* canvasView = qobject_cast<CanvasView*>(findAncestor(fw, &CanvasView::staticMetaObject)))
+    {
+      if (auto* canvas = qobject_cast<Canvas*>(canvasView->scene()))
+        canvas->copySelectedItems(nullptr);
+
+      return;
+    }
   });
   new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_V), this, [this] {
-    if (canvas())
-      canvas()->pasteCopiedItems();
+    QWidget* fw = QApplication::focusWidget();
+    if (!fw)
+      return;
+
+    LOG_INFO("Copy, focused on: %s", qPrintable(fw->metaObject()->className()));
+
+    // 1) If focus is in the node library panel -> search there
+    if (auto* textEdit = qobject_cast<QTextEdit*>(findAncestor(fw, &QTextEdit::staticMetaObject)))
+    {
+      if (!textEdit->isReadOnly())
+        textEdit->paste();
+
+      return;
+    }
+    else if (auto* browser = qobject_cast<QTextBrowser*>(findAncestor(fw, &QTextBrowser::staticMetaObject)))
+    {
+      if (!browser->isReadOnly())
+        browser->paste();
+
+      return;
+    }
+    else if (auto* canvasView = qobject_cast<CanvasView*>(findAncestor(fw, &CanvasView::staticMetaObject)))
+    {
+      if (auto* canvas = qobject_cast<Canvas*>(canvasView->scene()))
+        canvas->pasteCopiedItems();
+
+      return;
+    }
   });
+  //   if (canvas())
+  //     canvas()->pasteCopiedItems();
+  // });
   new QShortcut(QKeySequence(Qt::Key_Delete), this, [this] {
     if (canvas())
       canvas()->deleteSelectedItems();
@@ -597,6 +658,7 @@ VoidResult MainWindow::loadElements()
   // Once we are done with the libraries, we can make sure they are positioned on the top
   dynamic_cast<QVBoxLayout*>(mStructureTab->layout())->addStretch();
   dynamic_cast<QVBoxLayout*>(mBehaviourTab->layout())->addStretch();
+  dynamic_cast<QVBoxLayout*>(mPipelineTab->layout())->addStretch();
 
   return VoidResult();
 }

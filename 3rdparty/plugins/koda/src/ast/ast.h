@@ -243,6 +243,7 @@ struct Strategy
     int seconds;
     std::shared_ptr<Strategy> a;
     std::shared_ptr<Strategy> b;
+    std::vector<std::shared_ptr<StrategyHandler>> handlers;
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };

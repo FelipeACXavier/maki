@@ -79,60 +79,6 @@
               "info": "Emitted when the task is completed unsuccessfully"
             }
           ]
-        },
-        {
-          "type": "Timer",
-          "body": {
-            "shape": "Ellipse",
-            "textColor": "#000000",
-            "backgroundColor": "#e6e6e6",
-            "borderColor": "#FFFFFF",
-            "icon": "capability_timer.svg",
-            "width": 500,
-            "height": 500,
-            "z-index": -2
-          },
-          "properties": [
-            {
-              "id": "name",
-              "type": "string",
-              "default": "Timer"
-            },
-            {
-              "id": "color",
-              "type": "color",
-              "default": "#e6e6e6"
-            }
-          ],
-          "controls": [
-            {
-              "id": "Add event",
-              "type": "add event"
-            }
-          ],
-          "events": [
-            {
-              "id": "set",
-              "type": "in",
-              "returnType": "void",
-              "modifiable": false,
-              "linksTo": 0
-            },
-            {
-              "id": "reset",
-              "type": "in",
-              "returnType": "void",
-              "modifiable": false,
-              "linksTo": 0
-            },
-            {
-              "id": "timeout",
-              "type": "out",
-              "returnType": "void",
-              "modifiable": true,
-              "linksTo": 0
-            }
-          ]
         }
       ]
     },

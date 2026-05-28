@@ -1,5 +1,7 @@
 #include "properties_menu.h"
 
+#include <qobject.h>
+
 #include <QCheckBox>
 #include <QColorDialog>
 #include <QComboBox>
@@ -52,40 +54,49 @@ static const int CLEAR_INDEX = INT32_MAX;
     }                                                     \
                                                           \
     QJsonObject object = propValue.toJsonObject();        \
-    object[ConfigKeys::DATA] = text;                      \
+    object[ConfigKeys::DATA] = value;                     \
     object[ConfigKeys::OPTIONS] = QJsonArray();           \
                                                           \
     node->setProperty(property.getid(), object);          \
   } while (false);
 
-#define UPDATE_PROPERTY_ARG(node, id, index, value, type, isVariable) \
-  do                                                                  \
-  {                                                                   \
-    auto propValue = node->getProperty(id);                           \
-    if (propValue.isValid())                                          \
-    {                                                                 \
-      QJsonObject object = propValue.toJsonObject();                  \
-      QJsonArray array = object[ConfigKeys::OPTIONS].toArray();       \
-                                                                      \
-      QJsonObject item;                                               \
-      item[ConfigKeys::DATA] = value;                                 \
-      item[ConfigKeys::TYPE] = Types::PropertyTypesToString(type);    \
-      item[ConfigKeys::IS_VARIABLE] = isVariable;                     \
-      if (index == CLEAR_INDEX)                                       \
-        array = QJsonArray();                                         \
-                                                                      \
-      if (index < array.size())                                       \
-        array[index] = item;                                          \
-      else                                                            \
-        array.push_back(item);                                        \
-                                                                      \
-      object[ConfigKeys::OPTIONS] = array;                            \
-      node->setProperty(id, object);                                  \
-    }                                                                 \
-    else                                                              \
-    {                                                                 \
-      LOG_WARNING("Property is not valid");                           \
-    }                                                                 \
+#define UPDATE_PROPERTY_ARG(node, id, index, value, type, isVariable)                                   \
+  do                                                                                                    \
+  {                                                                                                     \
+    auto propValue = node->getProperty(id);                                                             \
+    if (propValue.isValid())                                                                            \
+    {                                                                                                   \
+      QJsonObject object = propValue.toJsonObject();                                                    \
+      QJsonArray array = object[ConfigKeys::OPTIONS].toArray();                                         \
+                                                                                                        \
+      QJsonObject item;                                                                                 \
+      item[ConfigKeys::DATA] = value;                                                                   \
+      item[ConfigKeys::TYPE] = Types::PropertyTypesToString(type);                                      \
+      item[ConfigKeys::IS_VARIABLE] = isVariable;                                                       \
+      if (index == CLEAR_INDEX)                                                                         \
+        array = QJsonArray();                                                                           \
+                                                                                                        \
+      if (array.empty() && index != EVENT_INDEX)                                                        \
+      {                                                                                                 \
+        QJsonObject eventItem;                                                                          \
+        eventItem[ConfigKeys::DATA] = "";                                                               \
+        eventItem[ConfigKeys::TYPE] = Types::PropertyTypesToString(Types::PropertyTypes::EVENT_SELECT); \
+        eventItem[ConfigKeys::IS_VARIABLE] = false;                                                     \
+        array.push_back(eventItem);                                                                     \
+      }                                                                                                 \
+                                                                                                        \
+      if (index < array.size())                                                                         \
+        array[index] = item;                                                                            \
+      else                                                                                              \
+        array.push_back(item);                                                                          \
+                                                                                                        \
+      object[ConfigKeys::OPTIONS] = array;                                                              \
+      node->setProperty(id, object);                                                                    \
+    }                                                                                                   \
+    else                                                                                                \
+    {                                                                                                   \
+      LOG_WARNING("Property is not valid");                                                             \
+    }                                                                                                   \
   } while (false);
 
 #define ADD_COMPLETER(FIELD, NODE, TYPE)                         \
@@ -321,7 +332,10 @@ VoidResult PropertiesMenu::loadPropertyReal(const PropertyInfo& property, NodeIt
   maki::WidgetAlignment alignment = {maki::WidgetAlignment::Type::VERTICAL};
   auto widget = new maki::FloatWidget(ToLabel(property.getid()), "", alignment, this);
   if (result.isValid())
-    widget->setValue(result.toInt());
+  {
+    LOG_DEBUG("Setting propoerty %s to: %.2lf", qPrintable(property.getid()), result.toDouble());
+    widget->setValue(result.toDouble());
+  }
 
   connect(widget, &maki::FloatWidget::valueChanged, this, [node, property](const qreal value) {
     node->setProperty(property.getid(), value);
@@ -440,25 +454,43 @@ VoidResult PropertiesMenu::loadPropertyString(const PropertyInfo& property, Node
 
 VoidResult PropertiesMenu::loadPropertyBoolean(const PropertyInfo& property, NodeItem* node)
 {
-  QString label = ToLabel(property.getid());
-  QLabel* nameLabel = new QLabel(label);
-  nameLabel->setObjectName("PropertyLabel");
-  nameLabel->setFont(Fonts::Label);
-
-  layout()->addWidget(nameLabel);
-
-  QCheckBox* widget = new QCheckBox(this);
   auto result = node->getProperty(property.getid());
-  if (!result.isValid())
-    return VoidResult::Failed("Failed to get default value");
+  if (result.isNull())
+    return VoidResult::Failed("Failed to get property " + property.getid().toStdString() + " of " + node->nodeName().toStdString());
 
-  widget->setChecked(result.toBool());
-  connect(widget, &QCheckBox::checkStateChanged, this, [=](Qt::CheckState state) {
-    node->setProperty(property.getid(), state);
+  maki::WidgetAlignment alignment = {maki::WidgetAlignment::Type::VERTICAL};
+  auto widget = new maki::BooleanWidget(ToLabel(property.getid()), "", alignment, this);
+  if (result.isValid())
+  {
+    LOG_DEBUG("Setting propoerty %s to: %d", qPrintable(property.getid()), result.toBool());
+    widget->setValue(result.toBool());
+  }
+
+  connect(widget, &maki::BooleanWidget::valueChanged, this, [node, property](const bool value) {
+    node->setProperty(property.getid(), value);
   });
 
-  widget->setFont(Fonts::Property);
   layout()->addWidget(widget);
+
+  // QString label = ToLabel(property.getid());
+  // QLabel* nameLabel = new QLabel(label);
+  // nameLabel->setObjectName("PropertyLabel");
+  // nameLabel->setFont(Fonts::Label);
+
+  // layout()->addWidget(nameLabel);
+
+  // QCheckBox* widget = new QCheckBox(this);
+  // auto result = node->getProperty(property.getid());
+  // if (!result.isValid())
+  //   return VoidResult::Failed("Failed to get default value");
+
+  // widget->setChecked(result.toBool());
+  // connect(widget, &QCheckBox::checkStateChanged, this, [=](Qt::CheckState state) {
+  //   node->setProperty(property.getid(), state);
+  // });
+
+  // widget->setFont(Fonts::Property);
+  // layout()->addWidget(widget);
 
   return VoidResult();
 }
@@ -644,7 +676,7 @@ VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QStri
   if (event->getarguments().isEmpty())
     return VoidResult();
 
-  LOG_TRACE("Loading %s with args: %d", qPrintable(event->getname()), event->getarguments().size());
+  LOG_DEBUG("Loading %s with args: %d", qPrintable(event->getname()), event->getarguments().size());
 
   int index = ARG_INDEX;
   maki::WidgetAlignment alignment = {maki::WidgetAlignment::Type::FORM, formLayout};
@@ -682,7 +714,7 @@ VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QStri
         bool isLiteral = false;
         (void)value.toDouble(&isLiteral);
         UPDATE_PROPERTY_ARG(node, property.getid(), index, value, Types::PropertyTypes::REAL, !isLiteral)
-        LOG_TRACE("Set property %s argument (%d) to %s", qPrintable(property.getid()), index, qPrintable(value));
+        LOG_DEBUG("Set property %s argument (%d) to %s", qPrintable(property.getid()), index, qPrintable(value));
       });
     }
     else if (argType == Types::PropertyTypes::STRING)
@@ -696,10 +728,10 @@ VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QStri
       connect(field, &maki::StringWidget::valueChanged, this, [property, node, index](const QString& value) {
         bool isLiteral = value.size() > 2 && value.startsWith('"') && value.endsWith('"');
         UPDATE_PROPERTY_ARG(node, property.getid(), index, value, Types::PropertyTypes::STRING, !isLiteral)
-        LOG_TRACE("Set property %s argument (%d) to %s", qPrintable(property.getid()), index, qPrintable(value));
+        LOG_DEBUG("Set property %s argument (%d) to %s", qPrintable(property.getid()), index, qPrintable(value));
       });
     }
-    else if (arg->gettype() == Types::PropertyTypes::BOOLEAN)
+    else if (argType == Types::PropertyTypes::BOOLEAN)
     {
       auto* field = new maki::StringWidget(arg->getid(), arg->getdefaultValue().toString(), alignment, this);
       if (jsonItem.contains(ConfigKeys::DATA))
@@ -708,12 +740,12 @@ VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QStri
       connect(field, &maki::StringWidget::valueChanged, this, [property, node, index](const QString& value) {
         bool isLiteral = value == "true" || value == "false" || value == "True" || value == "False";
         UPDATE_PROPERTY_ARG(node, property.getid(), index, value, Types::PropertyTypes::BOOLEAN, !isLiteral)
-        LOG_TRACE("Set property %s argument (%d) to %s", qPrintable(property.getid()), index, qPrintable(value));
+        LOG_DEBUG("Set property %s argument (%d) to %s", qPrintable(property.getid()), index, qPrintable(value));
       });
     }
     else
     {
-      LOG_WARNING("No support for argument of type: %s", qPrintable(Types::PropertyTypesToString(arg->gettype())));
+      LOG_WARNING("No support for argument of type: %s", qPrintable(Types::PropertyTypesToString(argType)));
     }
 
     ++index;

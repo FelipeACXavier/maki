@@ -25,9 +25,9 @@ QString GenerateKodaAction::id() const
 QString GenerateKodaAction::displayName() const
 {
 #ifdef USE_ANTLR
-  return "Koda Antlr: Generate Koda";
+  return "Generate Koda";
 #else
-  return "Koda: Generate Koda";
+  return "Generate Koda";
 #endif
 }
 
@@ -58,7 +58,7 @@ maki::ResultArtifacts GenerateKodaAction::run(const maki::PipelineContext& conte
   // Generate files
   auto output = mGenerator->generateKoda(maki::PipelineArtifact{}, context.buildDir);
   if (!output.IsSuccess())
-      return maki::ResultArtifacts::Failed(output.ErrorMessage());
+    return maki::ResultArtifacts::Failed(output.ErrorMessage());
 
   // Add artefacts
   maki::PipelineArtifact artifact = output.Value();
@@ -66,5 +66,5 @@ maki::ResultArtifacts GenerateKodaAction::run(const maki::PipelineContext& conte
   artifact.type = "koda";
   artifact.producer = id();
 
-  return maki::Artifacts{ artifact };
+  return maki::Artifacts{artifact};
 }

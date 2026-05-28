@@ -1,7 +1,9 @@
 #include "cst2ast.h"
 
 #include <memory>
+#include <variant>
 
+#include "ast.h"
 #include "logging.h"
 
 koda::System KodaCST2AST::build(KodaParser::SystemContext* ctx)
@@ -279,8 +281,11 @@ std::any KodaCST2AST::visitStratSeq(KodaParser::StratSeqContext* ctx)
   {
     auto child = std::any_cast<koda::PStrategy>(visit(s));
     // TODO: For now, we don't handle the end, fix this
-    if (std::get_if<koda::PEnd>(&child->v))
+    if (std::holds_alternative<koda::PEnd>(child->v))
       continue;
+    if (auto* paren = std::get_if<koda::PParen>(&child->v))
+      if (std::holds_alternative<koda::PEnd>((*paren)->a->v))
+        continue;
 
     // if (std::get_if<koda::PContinue>(&child->v))
     //   continue;

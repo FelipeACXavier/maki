@@ -17,7 +17,7 @@ calarm::~calarm()
 
 void calarm::api_set(int millis)
 {
-  WakeUpIn(std::chrono::milliseconds(millis * 1000), [this]() { api_timeout(); });
+  WakeUpIn(std::chrono::milliseconds(millis), [this]() { api_timeout(); });
 }
 
 void calarm::api_reset()

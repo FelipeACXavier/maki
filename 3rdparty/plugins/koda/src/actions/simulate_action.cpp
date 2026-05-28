@@ -25,9 +25,9 @@ QString KodaSimulateAction::id() const
 QString KodaSimulateAction::displayName() const
 {
 #ifdef USE_ANTLR
-  return "Koda Antlr: Simulate";
+  return "Simulate Dezyne";
 #else
-  return "Koda: Simulate";
+  return "Simulate Dezyne";
 #endif
 }
 

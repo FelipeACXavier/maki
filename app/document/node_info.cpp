@@ -301,15 +301,15 @@ NodeSaveInfo NodeSaveInfo::fromJson(const QJsonObject& data)
       info.addField(std::make_shared<PropertyInfo>(PropertyInfo::fromJson(node.toObject())));
   }
 
-  if (data.contains(ConfigKeys::CHILDREN))
-  {
-    for (const auto& childValue : data[ConfigKeys::CHILDREN].toArray())
-    {
-      if (!childValue.isObject())
-        continue;
-      info.addChild(std::make_shared<NodeSaveInfo>(NodeSaveInfo::fromJson(childValue.toObject())));
-    }
-  }
+  // if (data.contains(ConfigKeys::CHILDREN))
+  // {
+  //   for (const auto& childValue : data[ConfigKeys::CHILDREN].toArray())
+  //   {
+  //     if (!childValue.isObject())
+  //       continue;
+  //     info.addChild(std::make_shared<NodeSaveInfo>(NodeSaveInfo::fromJson(childValue.toObject())));
+  //   }
+  // }
 
   if (data.contains(ConfigKeys::FLOWS))
   {

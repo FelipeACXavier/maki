@@ -23,9 +23,9 @@ QString GenerateDezyneAction::id() const
 QString GenerateDezyneAction::displayName() const
 {
 #ifdef USE_ANTLR
-  return "Koda Antlr: Generate Dezyne";
+  return "Generate Dezyne";
 #else
-  return "Koda: Generate Dezyne";
+  return "Generate Dezyne";
 #endif
 }
 
