@@ -37,6 +37,9 @@ static const QString TYPE_CONFIG = QStringLiteral("application/x-configuration")
 static const QString TYPE_NODE_ID = QStringLiteral("application/x-node-id");       /// MIME type for node IDs.
 
 static const qreal CONTROL_POINT_SHIFT = 100;  /// Shift value for control points.
+
+static const QString EMPTY_COMBO = "-";
+static const int TOOLTIP_DURATION = 2;
 }  // namespace Constants
 
 class Fonts
