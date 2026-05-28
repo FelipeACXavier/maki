@@ -1,8 +1,5 @@
 #include "widget_factory.h"
 
-#include <qobject.h>
-#include <qvariant.h>
-
 #include <QCheckBox>
 #include <QColorDialog>
 #include <QComboBox>
@@ -521,24 +518,30 @@ SelectorWidget::SelectorWidget(const QString& label, QComboBox* comboBox, Widget
   }
   else
   {
-    if (alignment.type == WidgetAlignment::Type::INLINE)
-    {
-      auto* hLayout = new QHBoxLayout(this);
-      hLayout->setContentsMargins(0, 0, 0, WIDGET_SPACING);
-      hLayout->setSpacing(WIDGET_SPACING);
-    }
-    else if (alignment.type == WidgetAlignment::Type::VERTICAL)
-    {
-      auto* vLayout = new QVBoxLayout(this);
-      vLayout->setContentsMargins(0, 0, 0, WIDGET_SPACING);
-      vLayout->setSpacing(WIDGET_SPACING);
-    }
+    auto* vLayout = new QVBoxLayout(this);
+    vLayout->setContentsMargins(0, 0, 0, WIDGET_SPACING);
+    vLayout->setSpacing(WIDGET_SPACING);
 
     auto* labelWidget = new oclero::qlementine::Label(label, this);
     labelWidget->setRole(oclero::qlementine::TextRole::Default);
 
-    layout()->addWidget(labelWidget);
-    layout()->addWidget(mInputField);
+    if (alignment.type == WidgetAlignment::Type::INLINE)
+    {
+      auto* container = new QWidget(this);
+      auto* hLayout = new QHBoxLayout(container);
+      hLayout->setContentsMargins(0, 0, 0, 0);
+      hLayout->setSpacing(WIDGET_SPACING);
+
+      hLayout->addWidget(labelWidget);
+      hLayout->addWidget(mInputField);
+      layout()->addWidget(container);
+    }
+    else
+    {
+      layout()->addWidget(labelWidget);
+      layout()->addWidget(mInputField);
+      l
+    }
   }
 }
 
@@ -549,6 +552,9 @@ SelectorWidget::SelectorWidget(const QString& label, WidgetAlignment alignment, 
 
 void SelectorWidget::addDescription(const QString& label)
 {
+  if (!layout())
+    return;
+
   auto* hint = new oclero::qlementine::Label(label, this);
   hint->setRole(oclero::qlementine::TextRole::Caption);
   layout()->addWidget(hint);

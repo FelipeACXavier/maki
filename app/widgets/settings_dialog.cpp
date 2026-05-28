@@ -170,7 +170,7 @@ VoidResult SettingsDialog::createGeneralPage()
   });
 
   auto languageLayout = new maki::WidgetGroup(tr("Language"), page);
-  mLanguageCombo = new maki::SelectorWidget(tr("Set language"), maki::WidgetAlignment::Vertical(), page);
+  mLanguageCombo = new maki::SelectorWidget(tr("Set language"), maki::WidgetAlignment::Inline(), page);
   for (const LanguageManager::LanguageOption& info : mLanguageManager->availableLanguages())
     mLanguageCombo->addItem(info.label, info.code);
 
@@ -233,7 +233,7 @@ VoidResult SettingsDialog::createAppearancePage()
   });
 
   // First entry: system theme (no QSS)
-  mThemeCombo = new maki::SelectorWidget(tr("Theme"), maki::WidgetAlignment::Vertical(), page);
+  mThemeCombo = new maki::SelectorWidget(tr("Theme"), maki::WidgetAlignment::Inline(), page);
   // Then all discovered themes
   for (const auto& info : mSettingsManager->availableThemes())
   {
@@ -439,7 +439,7 @@ VoidResult SettingsDialog::createPluginPages()
   buttonRow->addWidget(removeBtn);
 
   auto generalLayout = new maki::WidgetGroup(tr("Other settings"), topPage);
-  mDefaultPlugin = new maki::SelectorWidget(tr("Default plugin"), maki::WidgetAlignment::Vertical(), generalLayout);
+  mDefaultPlugin = new maki::SelectorWidget(tr("Default plugin"), maki::WidgetAlignment::Inline(), generalLayout);
   mDefaultPlugin->addDescription(tr("MAKI will set this plugin as the default on start"));
   mDefaultPlugin->addItem(Constants::EMPTY_COMBO, "");
 
