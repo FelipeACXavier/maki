@@ -246,7 +246,10 @@ VoidResult PropertiesMenu::loadProperties(NodeItem* node)
     else if (property.type == Types::PropertyTypes::SELECT)
       LOG_WARN_ON_FAILURE(loadPropertySelect(property, node));
     else if (property.type == Types::PropertyTypes::COLOR)
-      LOG_WARN_ON_FAILURE(loadPropertyColor(property, node));
+    {
+      if (node->isTaskContainer())
+        LOG_WARN_ON_FAILURE(loadPropertyColor(property, node));
+    }
     else if (property.type == Types::PropertyTypes::EVENT_SELECT)
       LOG_WARN_ON_FAILURE(loadPropertyEventSelect(property, node));
     else if (property.type == Types::PropertyTypes::COMPONENT_SELECT)
@@ -356,7 +359,10 @@ VoidResult PropertiesMenu::loadPropertyColor(const PropertyInfo& property, NodeI
   colorPreviewLabel->setFixedSize({widget->height(), widget->height()});
   colorPreviewLabel->setObjectName("PropertyColorPreview");
   applyStyle(colorPreviewLabel, QStringLiteral(
-                                    "QLabel#PropertyColorPreview { background-color: %1; }")
+                                    "QLabel#PropertyColorPreview {"
+                                    " background-color: %1;"
+                                    " border: 1px solid #999999;"
+                                    "}")
                                     .arg(result.toString()));
 
   connect(widget, &QPushButton::pressed, [this, node, colorPreviewLabel, property, selectedColor]() {
@@ -365,14 +371,17 @@ VoidResult PropertiesMenu::loadPropertyColor(const PropertyInfo& property, NodeI
       return;
 
     applyStyle(colorPreviewLabel, QStringLiteral(
-                                      "QLabel#PropertyColorPreview { background-color: %1; }")
+                                      "QLabel#PropertyColorPreview {"
+                                      " background-color: %1;"
+                                      " border: 1px solid #999999;"
+                                      "}")
                                       .arg(color.name()));
 
     node->setProperty(property.getid(), color.name());
     colorPreviewLabel->update();
   });
 
-  widget->setText(result.toString());
+  widget->setText(tr("Select color"));
   widget->setFont(Fonts::Property);
 
   holderLayout->addWidget(colorPreviewLabel);

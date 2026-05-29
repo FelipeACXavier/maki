@@ -16,6 +16,7 @@
 #include <QUndoStack>
 #include <QUuid>
 #include <algorithm>
+#include <optional>
 #include <utility>
 
 #include "app_configs.h"
@@ -197,11 +198,22 @@ QString selectedComponentIconPath(const std::shared_ptr<NodeSaveInfo>& caller, c
   return resolveStoredIconPath(caller->getIcon(), caller->getnodeId(), configTable);
 }
 
+std::optional<QColor> optionalColorProperty(const QVariant& value)
+{
+  if (!value.isValid())
+    return std::nullopt;
+
+  const QString name = value.toString().trimmed();
+  if (name.isEmpty() || !QColor::isValidColorName(name))
+    return std::nullopt;
+
+  return QColor::fromString(name);
+}
+
 QColor callerBackgroundColor(const NodeSaveInfo& caller, const ConfigurationTable* configTable)
 {
-  const QVariant color = caller.getProperty(QStringLiteral("color"));
-  if (color.isValid() && QColor::isValidColorName(color.toString()))
-    return QColor::fromString(color.toString());
+  if (const auto color = optionalColorProperty(caller.getProperty(QStringLiteral("color"))))
+    return *color;
 
   if (configTable)
   {
@@ -593,8 +605,8 @@ QRectF NodeItem::boundingRect() const
 
 void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget)
 {
-  auto color = getProperty("color");
-  auto background = color.isValid() ? QColor::fromString(color.toString()) : config()->body.backgroundColor;
+  const auto background = optionalColorProperty(getProperty(QStringLiteral("color")))
+                              .value_or(config()->body.backgroundColor);
 
   if (rendersAsInsetCapability())
   {
@@ -622,7 +634,10 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
 
     const QPen pen = isSelected() ? QPen(Config::HIGHLIGHT, 4 / baseScale()) : QPen(Config::FOREGROUND, 1.5 / baseScale());
     painter->setPen(pen);
-    painter->setBrush(Qt::NoBrush);
+    if (const auto fill = optionalColorProperty(getProperty(QStringLiteral("color"))))
+      painter->setBrush(QBrush(*fill));
+    else
+      painter->setBrush(Qt::NoBrush);
 
     const QRectF bodyRect = boundingRect().adjusted(kTaskInnerPadding,
                                                     kTaskInnerPadding,

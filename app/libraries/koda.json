@@ -31,7 +31,7 @@
             {
               "id": "color",
               "type": "color",
-              "default": "#202020",
+              "default": "#FFFFFF",
               "info": "The color of the block"
             }
           ],
@@ -97,11 +97,6 @@
               "id": "name",
               "type": "string",
               "default": "Timer"
-            },
-            {
-              "id": "color",
-              "type": "color",
-              "default": "#e6e6e6"
             }
           ],
           "controls": [
@@ -157,11 +152,6 @@
               "id": "name",
               "type": "string",
               "default": "Siren"
-            },
-            {
-              "id": "color",
-              "type": "color",
-              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -225,11 +215,6 @@
               "id": "name",
               "type": "string",
               "default": "Grip"
-            },
-            {
-              "id": "color",
-              "type": "color",
-              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -320,11 +305,6 @@
               "default": "Vision"
             },
             {
-              "id": "color",
-              "type": "color",
-              "default": "#e6e6e6"
-            },
-            {
               "id": "type",
               "type": "void",
               "options": [
@@ -388,11 +368,6 @@
               "id": "name",
               "type": "string",
               "default": "Drive"
-            },
-            {
-              "id": "color",
-              "type": "color",
-              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -513,11 +488,6 @@
               "default": "Approach"
             },
             {
-              "id": "color",
-              "type": "color",
-              "default": "#e6e6e6"
-            },
-            {
               "id": "type",
               "type": "void",
               "options": [
@@ -613,11 +583,6 @@
               "default": "Bridge"
             },
             {
-              "id": "color",
-              "type": "color",
-              "default": "#e6e6e6"
-            },
-            {
               "id": "type",
               "type": "void",
               "default": "service",
@@ -684,11 +649,6 @@
               "id": "name",
               "type": "string",
               "default": "Co2Sensor"
-            },
-            {
-              "id": "color",
-              "type": "color",
-              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -763,11 +723,6 @@
               "id": "name",
               "type": "string",
               "default": "EnvSensor"
-            },
-            {
-              "id": "color",
-              "type": "color",
-              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -845,11 +800,6 @@
               "default": "Lighting"
             },
             {
-              "id": "color",
-              "type": "color",
-              "default": "#e6e6e6"
-            },
-            {
               "id": "type",
               "type": "void",
               "options": [
@@ -915,11 +865,6 @@
               "id": "name",
               "type": "string",
               "default": "Ventilation"
-            },
-            {
-              "id": "color",
-              "type": "color",
-              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -1010,11 +955,6 @@
               "default": "Conveyor"
             },
             {
-              "id": "color",
-              "type": "color",
-              "default": "#e6e6e6"
-            },
-            {
               "id": "type",
               "type": "void",
               "options": [
@@ -1086,11 +1026,6 @@
               "id": "name",
               "type": "string",
               "default": "RobotArm"
-            },
-            {
-              "id": "color",
-              "type": "color",
-              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -1179,11 +1114,6 @@
               "id": "name",
               "type": "string",
               "default": "ImageInspector"
-            },
-            {
-              "id": "color",
-              "type": "color",
-              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -1281,11 +1211,6 @@
               "id": "name",
               "type": "string",
               "default": "TicketCreation"
-            },
-            {
-              "id": "color",
-              "type": "color",
-              "default": "#e6e6e6"
             },
             {
               "id": "type",
@@ -1497,11 +1422,6 @@
               "default": "Async task"
             },
             {
-              "id": "color",
-              "type": "color",
-              "default": "#202020"
-            },
-            {
               "id": "capability",
               "type": "component_select",
               "options": [
@@ -1534,11 +1454,6 @@
               "id": "name",
               "type": "string",
               "default": "Sync task"
-            },
-            {
-              "id": "color",
-              "type": "color",
-              "default": "#202020"
             },
             {
               "id": "capability",
@@ -1576,11 +1491,6 @@
               "default": "Strategy"
             },
             {
-              "id": "color",
-              "type": "color",
-              "default": "#202020"
-            },
-            {
               "id": "strategy",
               "type": "component_select",
               "options": [
@@ -1613,11 +1523,6 @@
               "id": "name",
               "type": "string",
               "default": "Join"
-            },
-            {
-              "id": "color",
-              "type": "color",
-              "default": "#74a892"
             }
           ],
           "controls": [],
@@ -1643,11 +1548,6 @@
               "id": "name",
               "type": "string",
               "default": "Within"
-            },
-            {
-              "id": "color",
-              "type": "color",
-              "default": "#202020"
             },
             {
               "id": "timeout",
@@ -1732,11 +1632,6 @@
               "id": "name",
               "type": "string",
               "default": "Every"
-            },
-            {
-              "id": "color",
-              "type": "color",
-              "default": "#202020"
             },
             {
               "id": "rate",

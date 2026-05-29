@@ -21,11 +21,6 @@
               "id": "name",
               "type": "string",
               "default": "System"
-            },
-            {
-              "id": "color",
-              "type": "color",
-              "default": "#202020"
             }
           ],
           "controls": [
@@ -55,11 +50,6 @@
               "id": "name",
               "type": "string",
               "default": "Interface"
-            },
-            {
-              "id": "color",
-              "type": "color",
-              "default": "#202020"
             }
           ],
           "controls": [
@@ -100,11 +90,6 @@
               "id": "default value",
               "type": "string",
               "default": ""
-            },
-            {
-              "id": "color",
-              "type": "color",
-              "default": "#f77f00"
             }
           ]
         },
@@ -130,11 +115,6 @@
               "id": "default value",
               "type": "string",
               "default": ""
-            },
-            {
-              "id": "color",
-              "type": "color",
-              "default": "#fcbf49"
             }
           ],
           "controls": [
@@ -162,11 +142,6 @@
               "id": "name",
               "type": "string",
               "default": "Parallel"
-            },
-            {
-              "id": "color",
-              "type": "color",
-              "default": "#2E2E2E"
             }
           ]
         }

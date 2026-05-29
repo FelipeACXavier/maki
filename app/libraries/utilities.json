@@ -21,11 +21,6 @@
               "id": "name",
               "type": "string",
               "default": "Timer"
-            },
-            {
-              "id": "color",
-              "type": "color",
-              "default": "#DBB146"
             }
           ],
           "controls": [
@@ -73,11 +68,6 @@
               "default": "Authenticator"
             },
             {
-              "id": "color",
-              "type": "color",
-              "default": "#24273A"
-            },
-            {
               "id": "token",
               "type": "string"
             }
@@ -113,11 +103,6 @@
               "id": "name",
               "type": "string",
               "default": "Siren"
-            },
-            {
-              "id": "color",
-              "type": "color",
-              "default": "#35AA46"
             }
           ],
           "events": [
@@ -157,11 +142,6 @@
               "id": "name",
               "type": "string",
               "default": "Presence sensor"
-            },
-            {
-              "id": "color",
-              "type": "color",
-              "default": "#62A22A"
             }
           ],
           "events": [
