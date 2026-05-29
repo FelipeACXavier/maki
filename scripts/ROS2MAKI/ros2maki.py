@@ -38,6 +38,15 @@ def to_json(ros_cap):
                 "default_value": param.default_value
             }
             for param in ros_cap.parameters
+        ],
+        "events": [
+            {
+                "id": event.name,
+                "type": event.type,
+                "return_type": event.return_type,
+                "modifiable": True
+            }
+            for event in ros_cap.events
         ]
     }
 
@@ -46,10 +55,10 @@ def write_json(ros_capabilities):
     data = {
         "name": "ROS packages",
         "author": "Clara Rodrigues",
-        "libraries": [
+        "libraries": [ 
             {
                 "type": "internal behaviour",
-                "nodes": [to_json(cap) for cap in ros_capabilities]
+                "nodes": ros_capabilities
             }
         ]
     }

@@ -197,12 +197,19 @@ def parse_value(value):
 
     return "" 
 
-def remove_duplicates(all_parameters):
+def remove_duplicate_params(all_parameters):
     unique_parameters = {
         param.name: param
         for param in all_parameters
     }
     return list(unique_parameters.values())
+
+def remove_duplicate_methods(methods):
+    unique_methods = {
+        method['name']: method
+        for method in methods
+    }
+    return list(unique_methods.values())
 
 def get_parameters(package_name, package_path):
     print(f"Scanning ROS package: {package_name}")
@@ -235,7 +242,7 @@ def get_parameters(package_name, package_path):
                     all_parameters.extend(extracted)
                 
 
-                all_parameters = remove_duplicates(all_parameters)
+                all_parameters = remove_duplicate_params(all_parameters)
 
             except Exception as e:
                 print(f"Failed to parse {file_path}: {e}")
@@ -315,6 +322,14 @@ def classify_method(method_name):
 
     return "method"
 
+def is_from_package(node, package_path):
+    if not node.location.file:
+        return False
+
+    file_path = str(node.location.file)
+
+    return package_path in file_path
+
 def extract_context(package_path):
 
     include_path = os.path.join(package_path, "include")
@@ -339,14 +354,7 @@ def extract_context(package_path):
             print(f"Analyzing header: {file_path}")
 
             try:
-
-                tu = index.parse(
-                    file_path,
-                    args=[
-                        "-std=c++17"
-                    ]
-                )
-
+                tu = index.parse(file_path,args=["-std=c++17"])
                 current_class = None
 
                 for node in tu.cursor.walk_preorder():
@@ -360,6 +368,8 @@ def extract_context(package_path):
                             current_class = node.spelling
 
                     if node.kind == CursorKind.CXX_METHOD:
+                        if not is_from_package(node, package_path):
+                            continue
 
                         inputs = []
 
@@ -416,7 +426,7 @@ def extract_context(package_path):
 
             except Exception as e:
                 print(f"Failed parsing {file_path}: {e}")
-
+    methods = remove_duplicate_methods(methods)
     return methods
 
 def print_context(context):
@@ -426,6 +436,7 @@ def print_context(context):
         print("  Inputs:")
         for inp in method["inputs"]:
             print(f"    - {inp['name']} (type: {inp['type']})")
+        print(f"Method type: {method['type']}")
         print("  Outputs:")
         for out in method["outputs"]:
             print(f"    - (type: {out['type']})")
@@ -442,24 +453,25 @@ def get_events(package_name, package_path, parameters=None):
         print(f"No include folder found in {package_path}")
         return []
     
-    context = extract_context(package_path)
-
-    print_context(context)
-    events = ask_llm(package_name, context, parameters)
+    events = extract_context(package_path)
+    
     return events
 
 def pkg_to_process(package_name, repo_path):
     packages_to_process = []
 
+    print (f"Searching for packages in repository: {repo_path} with common denominator: {package_name}")
+
     for root, dirs, files in os.walk(repo_path):
         if "package.xml" in files:
-            pkg_name = os.path.basename(root)
-
-            if package_name in pkg_name and contains_src_folder(root):
+            package_name = os.path.basename(root)
+            if contains_src_folder(root):
                 packages_to_process.append({
-                    "name": pkg_name,
+                    "name": package_name,
                     "path": root
                 })
+    print(f"Found {len(packages_to_process)} packages with src folder:")
+    print (f"Packages found in repository: {[pkg['name'] for pkg in packages_to_process]}")
     return packages_to_process
 
 def process(package_name, repo_path):
@@ -467,30 +479,33 @@ def process(package_name, repo_path):
     print(f"Processing ROS package: {package_name} in repository: {repo_path}")
 
     packages_to_process = pkg_to_process(package_name, repo_path)
-
     print(f"Found {len(packages_to_process)} packages with src folder:")
     for pkg in packages_to_process:
+        if  pkg["name"]  != "opennav_following" :
+            continue
         print(f"- {pkg['name']} at {pkg['path']}")
         package_parameters = get_parameters(pkg["name"], pkg["path"])
         events = get_events(pkg["name"], pkg["path"])
 
-        ros_capability = RosCapability(
-            name=pkg["name"],
-            parameters=package_parameters,
-            events=events
-        )
-        ros_capabilities.append(ros_capability)
+        llm_response = ask_llm(pkg['name'], events, package_parameters)
+
+        #ros_capability = RosCapability(
+        #    name=pkg["name"],
+        #    parameters=package_parameters,
+        #    events=events
+        #)
+        ros_capabilities.extend(llm_response)
 
 
-    print("\nExtracted ROS Capabilities:")
-    for capability in ros_capabilities:
-        print(f"Capability: {capability.name}")
-        print("Parameters:")
-        for param in capability.parameters:
-            print(f"  - {param.name} (type: {param.type}, default: {param.default_value})")
-        print("Events:")
-        if capability.events:
-            for event in capability.events:
-                print(f"  - {event}")
-        print("\n")
+    #print("\nExtracted ROS Capabilities:")
+    #for capability in ros_capabilities:
+    #    print(f"Capability: {capability.name}")
+    #    print("Parameters:")
+    #    for param in capability.parameters:
+    #        print(f"  - {param.name} (type: {param.type}, default: {param.default_value})")
+    #    print("Events:")
+    #    if capability.events:
+    #        for event in capability.events:
+    #            print(f"  - {event}")
+    #    print("\n")
     return ros_capabilities
