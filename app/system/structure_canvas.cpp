@@ -1,7 +1,5 @@
 #include "structure_canvas.h"
 
-#include <qhashfunctions.h>
-
 #include <memory>
 
 #include "elements/flow.h"

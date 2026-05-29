@@ -1,10 +1,5 @@
 #include "save_handler.h"
 
-#include <qcoreapplication.h>
-#include <qdir.h>
-#include <qfileinfo.h>
-#include <qhashfunctions.h>
-
 #include <QBuffer>
 #include <QFile>
 #include <QFileDialog>

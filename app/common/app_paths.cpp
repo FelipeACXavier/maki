@@ -1,7 +1,5 @@
 #include "app_paths.h"
 
-#include <qobject.h>
-
 #include <QCoreApplication>
 #include <QDir>
 #include <QFileInfo>

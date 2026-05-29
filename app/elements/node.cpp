@@ -1,7 +1,5 @@
 #include "node.h"
 
-#include <qhashfunctions.h>
-
 #include <QGraphicsScene>
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsView>

@@ -1,7 +1,5 @@
 #include "node_info.h"
 
-#include <qhashfunctions.h>
-
 #include <QBuffer>
 #include <QJsonArray>
 #include <QJsonObject>

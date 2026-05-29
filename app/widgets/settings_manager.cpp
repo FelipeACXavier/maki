@@ -1,8 +1,6 @@
 // SettingsManager.cpp
 #include "settings_manager.h"
 
-#include <qcoreapplication.h>
-
 #include <QFile>
 
 #include "common/app_configs.h"

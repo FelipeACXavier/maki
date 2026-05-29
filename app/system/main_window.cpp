@@ -1,11 +1,5 @@
 #include "main_window.h"
 
-#include <qdir.h>
-#include <qhashfunctions.h>
-#include <qjsonarray.h>
-#include <qjsonobject.h>
-#include <qobject.h>
-
 #include <QComboBox>
 #include <QDrag>
 #include <QInputDialog>

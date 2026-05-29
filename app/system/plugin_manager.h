@@ -1,7 +1,5 @@
 #pragma once
 
-#include <qfileinfo.h>
-
 #include <QDir>
 #include <QJsonArray>
 #include <QPluginLoader>

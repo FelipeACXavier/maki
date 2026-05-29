@@ -1,7 +1,5 @@
 #pragma once
 
-#include <qvalidator.h>
-
 #include <QValidator>
 
 class DoubleOrVariableValidator : public QDoubleValidator

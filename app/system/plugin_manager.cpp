@@ -1,8 +1,5 @@
 #include "plugin_manager.h"
 
-#include <qcoreapplication.h>
-#include <qdir.h>
-
 #include <QApplication>
 #include <QComboBox>
 #include <QDir>

@@ -1,7 +1,5 @@
 #include "flow.h"
 
-#include <qdir.h>
-
 #include "logging.h"
 #include "node.h"
 #include "transition_info.h"

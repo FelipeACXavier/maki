@@ -1,7 +1,5 @@
 #include "log_table_widget.h"
 
-#include <qmath.h>
-
 #include <QApplication>
 #include <QCheckBox>
 #include <QClipboard>

@@ -1,7 +1,5 @@
 #include "plugin_pipeline.h"
 
-#include <qobject.h>
-
 #include <QProgressBar>
 #include <QTimer>
 #include <QVBoxLayout>

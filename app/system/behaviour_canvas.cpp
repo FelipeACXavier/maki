@@ -1,8 +1,5 @@
 #include "behaviour_canvas.h"
 
-#include <qcoreapplication.h>
-#include <qdir.h>
-
 #include "elements/flow.h"
 #include "logging.h"
 
