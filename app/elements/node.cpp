@@ -959,8 +959,8 @@ void NodeItem::relayoutCapabilitySlots()
   const int numRows =
       slotCount <= 1 ? 1 : (slotCount + 1) / 2;  // ceil(slotCount/2) for slotCount >= 2
 
-  qreal trialW = qMax(cfgW, W);
-  qreal trialH = qMax(cfgH, H);
+  qreal trialW = cfgW;
+  qreal trialH = cfgH;
   constexpr int kSizingIters = 12;
   for (int iter = 0; iter < kSizingIters; ++iter)
   {
@@ -989,7 +989,7 @@ void NodeItem::relayoutCapabilitySlots()
   const qreal reqW = trialW;
   qreal reqH = trialH;
 
-  if (reqH > H + 0.5 || reqW > W + 0.5)
+  if (qAbs(reqW - W) > 0.5 || qAbs(reqH - H) > 0.5)
     applySize(QSizeF(reqW, reqH));
   W = mSize.width();
   H = mSize.height();
