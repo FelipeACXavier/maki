@@ -22,11 +22,13 @@ SystemMenu::SystemMenu(QWidget* parent)
   setContextMenuPolicy(Qt::CustomContextMenu);
 
   setColumnCount(2);
+  setIndentation(15);
+  setExpandsOnDoubleClick(false);
   setHeaderLabels({tr("Name"), tr("Type")});
   header()->setAlternatingRowColors(true);
   header()->setSectionResizeMode(0, QHeaderView::Stretch);
 
-  setColumnWidth(1, 80);
+  setColumnWidth(1, 100);
   header()->setStretchLastSection(false);
   header()->setSectionResizeMode(1, QHeaderView::Fixed);
   header()->setTextElideMode(Qt::ElideRight);
@@ -61,12 +63,7 @@ VoidResult SystemMenu::onNodeAdded(const QString& flowId, NodeItem* node)
 
   // Add item to the tree
   QTreeWidgetItem* newNode = new QTreeWidgetItem(parent);
-  newNode->setIcon(0, QIcon(":/icons/flow_block.svg"));
-  newNode->setText(NAME_COLUMN, node->nodeName());
-  newNode->setText(TYPE_COLUMN, node->nodeType());
-  newNode->setData(ID_DATA, Qt::UserRole, node->id());
-  newNode->setData(TYPE_DATA, Qt::UserRole, Roles::NodeRole);
-  newNode->setData(CANVAS_DATA, Qt::UserRole, flowId);
+  populateItem(newNode, QIcon(":/icons/flow_block.svg"), node->nodeName(), node->nodeType(), node->id(), Roles::NodeRole, flowId);
 
   return VoidResult();
 }
@@ -116,23 +113,10 @@ VoidResult SystemMenu::onNodeRemoved(const QString& flowId, const QString& nodeI
 
 VoidResult SystemMenu::onNodeModified(const QString& flowId, NodeItem* node)
 {
-  if (flowId == Config::MAIN_CANVAS)
-  {
-    auto item = getItemById(node->id());
-    if (!item)
-      return VoidResult::Failed("Modified item is not in the tree");
-
-    populateItem(item, node);
-  }
-  else
-  {
-    auto component = getItemById(node->id());
-    if (component == nullptr)
-      return VoidResult();
-
-    populateItem(component, node);
-  }
-
+  // auto item = getItemById(node->id());
+  // if (!item)
+  //   return VoidResult::Failed("Modified item is not in the tree");
+  // populateItem(item, QIcon(), node->nodeName(), node->nodeType(), node->id(), Roles::NodeRole);
   return VoidResult();
 }
 
@@ -151,27 +135,19 @@ VoidResult SystemMenu::onFlowAdded(Flow* flow, NodeItem* node)
 
   LOG_INFO("Adding flow: %s to %s", qPrintable(flow->name()), qPrintable(node->nodeType()));
 
-  auto parent = getItemById(node->id());
+  auto parent = findParentItemByRole(node->id(), Roles::Flows);
   if (!parent)
     return VoidResult::Failed("Tried to add flow with no parent node");
 
   QTreeWidgetItem* newFlow = new QTreeWidgetItem(parent);
 
   // Assign the tree information
-  newFlow->setIcon(0, QIcon(":/icons/behaviour.svg"));
-  newFlow->setText(NAME_COLUMN, flow->name());
-  newFlow->setText(TYPE_COLUMN, "Flow");
-  newFlow->setData(ID_DATA, Qt::UserRole, flow->id());
-  newFlow->setData(TYPE_DATA, Qt::UserRole, Roles::FlowRole);
+  populateItem(newFlow, QIcon(":/icons/flow.svg"), flow->name(), tr("Flow"), flow->id(), Roles::FlowRole, flow->id());
 
   for (const auto& component : flow->getNodes())
   {
     QTreeWidgetItem* newComponent = new QTreeWidgetItem(newFlow);
-    newComponent->setIcon(0, QIcon(":/icons/flow_block.svg"));
-    newComponent->setText(NAME_COLUMN, component->getProperty("name").toString());
-    newComponent->setText(TYPE_COLUMN, component->getnodeId());
-    newComponent->setData(ID_DATA, Qt::UserRole, component->getid());
-    newComponent->setData(TYPE_DATA, Qt::UserRole, Roles::NodeRole);
+    populateItem(newComponent, QIcon(":/icons/flow_block.svg"), component->getProperty("name").toString(), component->getnodeId(), component->getid(), Roles::NodeRole, flow->id());
   }
 
   return VoidResult();
@@ -207,20 +183,30 @@ VoidResult SystemMenu::onFlowRemoved(const QString& flowId, const QString& nodeI
   return VoidResult();
 }
 
-void SystemMenu::populateItem(QTreeWidgetItem* item, NodeItem* node)
+void SystemMenu::populateItem(QTreeWidgetItem* item, const QIcon& icon, const QString& name,
+                              const QString& type, const QString& data, const Roles role, const QString& canvas)
 {
-  item->setText(NAME_COLUMN, node->nodeName());
-  item->setText(TYPE_COLUMN, node->nodeType());
-  item->setData(ID_DATA, Qt::UserRole, node->id());  // Not shown to user
-  item->setData(TYPE_DATA, Qt::UserRole, Roles::NodeRole);
+  item->setIcon(0, icon);
+  item->setText(NAME_COLUMN, name);
+  item->setText(TYPE_COLUMN, type);
+  item->setData(ID_DATA, Qt::UserRole, data);  // Not shown to user
+  item->setData(TYPE_DATA, Qt::UserRole, role);
+  if (!canvas.isEmpty())
+    item->setData(CANVAS_DATA, Qt::UserRole, canvas);
 }
 
 VoidResult SystemMenu::addRootNode(NodeItem* node)
 {
+  // Root nodes are composed of two subnodes, Capabilities and Flows
   QTreeWidgetItem* item = new QTreeWidgetItem(this);
-  item->setIcon(0, QIcon(":/icons/structure.svg"));
-  populateItem(item, node);
+  populateItem(item, QIcon(":/icons/task.svg"), node->nodeName(), node->nodeType(), node->id(), Roles::NodeRole);
   addTopLevelItem(item);
+
+  QTreeWidgetItem* capabilities = new QTreeWidgetItem(item);
+  populateItem(capabilities, QIcon(":/icons/structure.svg"), tr("Capabilities"), "", node->id(), Roles::Capabilities);
+
+  QTreeWidgetItem* flows = new QTreeWidgetItem(item);
+  populateItem(flows, QIcon(":/icons/behaviour.svg"), tr("Flows"), "", node->id(), Roles::Flows);
 
   return VoidResult();
 }
@@ -231,23 +217,38 @@ VoidResult SystemMenu::addLeafNode(NodeItem* node)
   if (!parent)
     return VoidResult::Failed("No parent, this should be a root");
 
-  auto parentItem = getItemById(parent->id());
+  auto parentItem = findParentItemByRole(parent->id(), Roles::Capabilities);
   if (!parentItem)
     return VoidResult::Failed("The parent node is not on the tree");
 
   QTreeWidgetItem* item = new QTreeWidgetItem(parentItem);
-  item->setIcon(0, QIcon(":/icons/capability.svg"));
-  populateItem(item, node);
+  populateItem(item, QIcon(":/icons/capability.svg"), node->nodeName(), node->nodeType(), node->id(), Roles::NodeRole);
 
   return VoidResult();
 }
 
-QTreeWidgetItem* SystemMenu::getItemById(const QString& id)
+QTreeWidgetItem* SystemMenu::getItemById(const QString& id) const
 {
-  for (QTreeWidgetItemIterator it(this); *it; ++it)
+  for (QTreeWidgetItemIterator it(const_cast<SystemMenu*>(this)); *it; ++it)
   {
     if ((*it)->data(ID_DATA, Qt::UserRole).toString() == id)
       return *it;
+  }
+
+  return nullptr;
+}
+
+QTreeWidgetItem* SystemMenu::findParentItemByRole(const QString& id, Roles role) const
+{
+  auto parent = getItemById(id);
+  if (!parent)
+    return nullptr;
+
+  for (int i = 0; i < parent->childCount(); ++i)
+  {
+    auto* child = parent->child(i);
+    if (child->data(TYPE_DATA, Qt::UserRole) == role)
+      return child;
   }
 
   return nullptr;

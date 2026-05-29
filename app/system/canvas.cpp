@@ -1265,7 +1265,7 @@ void Canvas::onFlowSelected(const QString& flowId, const QString& nodeId)
   auto node = findNodeWithId(nodeId);
   if (!node)
   {
-    LOG_WARNING("Flow is not tied to any nodes");
+    LOG_WARNING("Flow %s is not tied to any nodes", qPrintable(flowId));
     return;
   }
 

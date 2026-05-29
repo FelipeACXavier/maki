@@ -1105,6 +1105,9 @@ void MainWindow::onActionLoad(const QString& filename)
       mPipelineRun->addOption(pipeline->getname());
   }
 
+  if (mSystemMenu)
+    mSystemMenu->expandToDepth(1);
+
   LOG_INFO("Project with %d nodes after", mStorage->getnodes().size());
 }
 
