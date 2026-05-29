@@ -99,6 +99,11 @@ void GridGroup::addLayout(QLayout* layout)
 
 // =========================================================================================================
 WidgetGroup::WidgetGroup(const QString& label, QWidget* parent)
+    : WidgetGroup(label, oclero::qlementine::TextRole::H4, parent)
+{
+}
+
+WidgetGroup::WidgetGroup(const QString& label, oclero::qlementine::TextRole role, QWidget* parent)
     : QWidget(parent)
 {
   auto* vLayout = new QVBoxLayout(this);
@@ -107,8 +112,7 @@ WidgetGroup::WidgetGroup(const QString& label, QWidget* parent)
   vLayout->setAlignment(Qt::AlignTop);
 
   auto* title = new oclero::qlementine::Label(label, this);
-  title->setRole(oclero::qlementine::TextRole::H4);
-  ;
+  title->setRole(role);
   title->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
 
   auto* line = new QFrame(this);
@@ -144,200 +148,153 @@ void WidgetGroup::addStretch()
   qobject_cast<QVBoxLayout*>(this->layout())->addStretch();
 }
 
-// =========================================================================================================
-BooleanWidget::BooleanWidget(const QString& label, bool value, WidgetAlignment alignment, QWidget* parent)
+InputWidget::InputWidget(const QString& label, QWidget* inputField, WidgetAlignment alignment, QWidget* parent)
     : QWidget(parent)
+    , mInputField(inputField)
 {
-  mInputField = new QCheckBox(this);
-  mInputField->setCheckState(value ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
-  connect(mInputField, &QCheckBox::checkStateChanged, this, [this](Qt::CheckState state) {
-    mValue = (state == Qt::CheckState::Checked);
-    emit valueChanged(mValue);
-  });
+  auto* labelWidget = new oclero::qlementine::Label(label, this);
+  labelWidget->setRole(oclero::qlementine::TextRole::Default);
+  labelWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-  mValue = value;
-
+  mInputField->setParent(this);
   if (alignment.type == WidgetAlignment::Type::FORM)
   {
-    alignment.layout->addRow("&" + label, mInputField);
+    if (alignment.labelWidth > 0)
+      labelWidget->setFixedWidth(alignment.labelWidth);
+
+    alignment.group->addWidget(createLayout(labelWidget, alignment));
   }
   else
   {
-    auto* vlayout = new QVBoxLayout(this);
-    vlayout->setContentsMargins(0, 0, 0, WIDGET_SPACING);
-    vlayout->setSpacing(WIDGET_SPACING);
+    auto* vLayout = new QVBoxLayout(this);
+    vLayout->setContentsMargins(0, 0, 0, WIDGET_SPACING);
+    vLayout->setSpacing(WIDGET_SPACING);
 
-    auto* hlayout = new QHBoxLayout();
-    hlayout->setContentsMargins(0, 0, WIDGET_SPACING, 0);
-    hlayout->setSpacing(WIDGET_SPACING);
-    hlayout->setAlignment(Qt::AlignLeft);
-
-    auto* title = new oclero::qlementine::Label(label, this);
-    title->setRole(oclero::qlementine::TextRole::Default);
-    title->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
-
-    hlayout->addWidget(title);
-    hlayout->addStretch();
-    hlayout->addWidget(mInputField);
-    vlayout->addLayout(hlayout);
+    if (alignment.type == WidgetAlignment::Type::INLINE)
+    {
+      layout()->addWidget(createLayout(labelWidget, alignment));
+    }
+    else
+    {
+      layout()->addWidget(labelWidget);
+      layout()->addWidget(mInputField);
+    }
   }
 }
 
-void maki::BooleanWidget::setValue(const bool value)
+void InputWidget::addDescription(const QString& text)
+{
+  auto* description = new oclero::qlementine::Label(text, this);
+  description->setRole(oclero::qlementine::TextRole::Caption);
+
+  if (auto* vLayout = qobject_cast<QVBoxLayout*>(layout()))
+    vLayout->addWidget(description);
+}
+
+QWidget* InputWidget::createLayout(oclero::qlementine::Label* labelWidget, WidgetAlignment alignment)
+{
+  auto* container = new QWidget(this);
+  auto* hLayout = new QHBoxLayout(container);
+  hLayout->setContentsMargins(0, 0, 0, 0);
+  hLayout->setSpacing(WIDGET_SPACING);
+
+  if (alignment.direction == WidgetAlignment::Direction::RIGHT ||
+      alignment.direction == WidgetAlignment::Direction::CENTER)
+    hLayout->addStretch();
+
+  hLayout->addWidget(labelWidget);
+
+  if (alignment.direction == WidgetAlignment::Direction::SPREAD)
+    hLayout->addStretch();
+
+  hLayout->addWidget(mInputField);
+
+  if (alignment.direction == WidgetAlignment::Direction::LEFT ||
+      alignment.direction == WidgetAlignment::Direction::CENTER)
+    hLayout->addStretch();
+
+  return container;
+}
+
+void InputWidget::setToolTip(const QString& text)
+{
+  if (!mInputField)
+    return;
+
+  mInputField->setToolTip(text);
+  mInputField->setToolTipDuration(Constants::TOOLTIP_DURATION);
+}
+
+// =========================================================================================================
+BooleanWidget::BooleanWidget(const QString& label, bool value, WidgetAlignment alignment, QWidget* parent)
+    : TypedInputWidget<bool, QCheckBox>(label, new QCheckBox(), value, alignment, parent)
+{
+  if (auto* combo = qobject_cast<QCheckBox*>(mInputField))
+  {
+    combo->setCheckState(value ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
+    connect(combo, &QCheckBox::checkStateChanged, this, [this](Qt::CheckState state) {
+      mValue = (state == Qt::CheckState::Checked);
+      emit valueChanged(mValue);
+    });
+  }
+
+  setValue(value);
+}
+
+void maki::BooleanWidget::writeValueToWidget(const bool& value)
 {
   mValue = value;
-  mInputField->setCheckState(value ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
-}
-
-bool maki::BooleanWidget::getValue() const
-{
-  return mValue;
-}
-
-void maki::BooleanWidget::addDescription(const QString& label)
-{
-  auto* hint = new oclero::qlementine::Label(label, this);
-  hint->setRole(oclero::qlementine::TextRole::Caption);
-  hint->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
-  layout()->addWidget(hint);
+  if (auto* combo = qobject_cast<QCheckBox*>(mInputField))
+    combo->setCheckState(value ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
 }
 
 // =========================================================================================================
 StringWidget::StringWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent)
+    : TypedInputWidget<QString, oclero::qlementine::LineEdit>(label, new oclero::qlementine::LineEdit(), placeholder, alignment, parent)
 {
-  mInputField = new QLineEdit(this);
-  mInputField->setPlaceholderText(placeholder);
-
-  mValue = placeholder;
-
-  connect(mInputField, &QLineEdit::editingFinished, this, [this]() {
-    mValue = mInputField->text();
-    emit valueChanged(mValue);
-  });
-
-  if (alignment.type == WidgetAlignment::Type::FORM)
+  if (auto* edit = qobject_cast<oclero::qlementine::LineEdit*>(mInputField))
   {
-    alignment.layout->addRow("&" + label, mInputField);
+    connect(edit, &oclero::qlementine::LineEdit::editingFinished, this, [this, edit]() {
+      mValue = edit->text();
+      emit valueChanged(mValue);
+    });
   }
-  else
-  {
-    if (alignment.type == WidgetAlignment::Type::INLINE)
-    {
-      auto* hLayout = new QHBoxLayout(this);
-      hLayout->setContentsMargins(0, 0, 0, WIDGET_SPACING);
-      hLayout->setSpacing(WIDGET_SPACING);
-    }
-    else if (alignment.type == WidgetAlignment::Type::VERTICAL)
-    {
-      auto* vLayout = new QVBoxLayout(this);
-      vLayout->setContentsMargins(0, 0, 0, WIDGET_SPACING);
-      vLayout->setSpacing(WIDGET_SPACING);
-    }
 
-    auto* labelWidget = new oclero::qlementine::Label(label, this);
-    labelWidget->setRole(oclero::qlementine::TextRole::Default);
-
-    layout()->addWidget(labelWidget);
-    layout()->addWidget(mInputField);
-  }
+  setValue(placeholder);
 }
 
-QLineEdit* StringWidget::widget() const
-{
-  return mInputField;
-}
-
-void StringWidget::addDescription(const QString& label)
-{
-  auto* hint = new oclero::qlementine::Label(label, this);
-  hint->setRole(oclero::qlementine::TextRole::Caption);
-  ;
-  layout()->addWidget(hint);
-}
-
-QString StringWidget::getValue() const
-{
-  return mValue;
-}
-
-void StringWidget::setValue(const QString& value)
+void maki::StringWidget::writeValueToWidget(const QString& value)
 {
   mValue = value;
-  mInputField->setText(value);
+  if (auto* edit = qobject_cast<QLineEdit*>(mInputField))
+    edit->setText(value);
 }
 
 // ========================================================================================================================================
 IntegerWidget::IntegerWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent, int min, int max)
-    : QWidget(parent)
+    : TypedInputWidget<QString, oclero::qlementine::LineEdit>(label, new oclero::qlementine::LineEdit(), placeholder, alignment, parent)
 {
-  mInputField = new oclero::qlementine::LineEdit(this);
-  mInputField->setPlaceholderText(placeholder);
-  mInputField->setToolTip(QString(tr("Input must be an integer value")));
-  mInputField->setToolTipDuration(Constants::TOOLTIP_DURATION);
-
-  bool valid = false;
-  auto intPlaceholder = placeholder.toInt(&valid);
-  if (valid)
-    mValue = intPlaceholder;
-
-  mValidator = new IntegerOrVariableValidator(min, max, this);
-  mInputField->setValidator(mValidator);
-
-  connect(mInputField, &QLineEdit::inputRejected, this, [this]() {
-    mInputField->setStatus(oclero::qlementine::Status::Warning);
-  });
-  connect(mInputField, &QLineEdit::editingFinished, this, [this]() {
-    if (!mInputField->hasAcceptableInput())
-      return;
-
-    mValue = mInputField->text().toInt();
-    mInputField->setStatus(oclero::qlementine::Status::Default);
-    emit valueChanged(mValue);
-  });
-
-  if (alignment.type == WidgetAlignment::Type::FORM)
+  if (auto* edit = qobject_cast<oclero::qlementine::LineEdit*>(mInputField))
   {
-    alignment.layout->addRow("&" + label, mInputField);
+    // Set tooltip
+    setToolTip(QString(tr("Input must be an integer value")));
+
+    mValidator = new IntegerOrVariableValidator(min, max, this);
+    edit->setValidator(mValidator);
+
+    // Connect the signals
+    connect(edit, &QLineEdit::inputRejected, this, [edit]() {
+      edit->setStatus(oclero::qlementine::Status::Warning);
+    });
+    connect(edit, &QLineEdit::editingFinished, this, [this, edit]() {
+      if (!edit->hasAcceptableInput())
+        return;
+
+      mValue = edit->text();
+      edit->setStatus(oclero::qlementine::Status::Default);
+      emit valueChanged(mValue);
+    });
   }
-  else
-  {
-    if (alignment.type == WidgetAlignment::Type::INLINE)
-    {
-      auto* hLayout = new QHBoxLayout(this);
-      hLayout->setContentsMargins(0, 0, 0, WIDGET_SPACING);
-      hLayout->setSpacing(WIDGET_SPACING);
-    }
-    else if (alignment.type == WidgetAlignment::Type::VERTICAL)
-    {
-      auto* vLayout = new QVBoxLayout(this);
-      vLayout->setContentsMargins(0, 0, 0, WIDGET_SPACING);
-      vLayout->setSpacing(WIDGET_SPACING);
-    }
-
-    auto* labelWidget = new oclero::qlementine::Label(label, this);
-    labelWidget->setRole(oclero::qlementine::TextRole::Default);
-
-    layout()->addWidget(labelWidget);
-    layout()->addWidget(mInputField);
-  }
-}
-
-void maki::IntegerWidget::setValue(const int value)
-{
-  mValue = value;
-  mInputField->setText(QString("%1").arg(mValue));
-}
-
-int IntegerWidget::getValue() const
-{
-  return mValue;
-}
-
-void IntegerWidget::addDescription(const QString& label)
-{
-  auto* hint = new oclero::qlementine::Label(label, this);
-  hint->setRole(oclero::qlementine::TextRole::Caption);
-  layout()->addWidget(hint);
 }
 
 void IntegerWidget::setAcceptVariable(bool accept)
@@ -346,84 +303,55 @@ void IntegerWidget::setAcceptVariable(bool accept)
     mValidator->setAcceptVariable(accept);
 }
 
-QLineEdit* IntegerWidget::widget() const
+void IntegerWidget::setValue(int value)
 {
-  return mInputField;
+  TypedInputWidget::setValue(QString::number(value));
+}
+
+int IntegerWidget::getValue() const
+{
+  bool ok = false;
+  int value = mValue.toInt(&ok);
+  if (ok)
+    return value;
+
+  assert(false && "Tried to get an integer from a field that does not contain an integer");
+}
+
+void IntegerWidget::writeValueToWidget(const QString& value)
+{
+  mValue = value;
+  if (auto* edit = qobject_cast<QLineEdit*>(mInputField))
+    edit->setText(value);
 }
 
 // ========================================================================================================================================
 FloatWidget::FloatWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent, qreal min, qreal max)
-    : QWidget(parent)
+    : TypedInputWidget<QString, oclero::qlementine::LineEdit>(label, new oclero::qlementine::LineEdit(), placeholder, alignment, parent)
 {
-  mInputField = new oclero::qlementine::LineEdit(this);
-  mInputField->setPlaceholderText(placeholder);
-  mInputField->setToolTip(QString(tr("Input must be a real value")));
-  mInputField->setToolTipDuration(Constants::TOOLTIP_DURATION);
-
-  bool valid = false;
-  auto intPlaceholder = placeholder.toInt(&valid);
-  if (valid)
-    mValue = intPlaceholder;
-
-  mValidator = new DoubleOrVariableValidator(min, max, 6, this);
-  mValidator->setNotation(QDoubleValidator::StandardNotation);
-  mValidator->setLocale(QLocale::C);  // Use dot instead of comma
-  mInputField->setValidator(mValidator);
-
-  connect(mInputField, &QLineEdit::inputRejected, this, [this]() {
-    mInputField->setStatus(oclero::qlementine::Status::Warning);
-  });
-  connect(mInputField, &QLineEdit::editingFinished, this, [this]() {
-    if (!mInputField->hasAcceptableInput())
-      return;
-
-    mValue = mInputField->text().toDouble();
-    emit valueChanged(mValue);
-  });
-
-  if (alignment.type == WidgetAlignment::Type::FORM)
+  if (auto* edit = qobject_cast<oclero::qlementine::LineEdit*>(mInputField))
   {
-    alignment.layout->addRow("&" + label, mInputField);
+    // Set tooltip
+    setToolTip(QString(tr("Input must be a real value")));
+
+    mValidator = new DoubleOrVariableValidator(min, max, 6, this);
+    mValidator->setNotation(QDoubleValidator::StandardNotation);
+    mValidator->setLocale(QLocale::C);  // Use dot instead of comma
+    edit->setValidator(mValidator);
+
+    // Connect the signals
+    connect(edit, &QLineEdit::inputRejected, this, [edit]() {
+      edit->setStatus(oclero::qlementine::Status::Warning);
+    });
+    connect(edit, &QLineEdit::editingFinished, this, [this, edit]() {
+      if (!edit->hasAcceptableInput())
+        return;
+
+      mValue = edit->text();
+      edit->setStatus(oclero::qlementine::Status::Default);
+      emit valueChanged(mValue);
+    });
   }
-  else
-  {
-    if (alignment.type == WidgetAlignment::Type::INLINE)
-    {
-      auto* hLayout = new QHBoxLayout(this);
-      hLayout->setContentsMargins(0, 0, 0, WIDGET_SPACING);
-      hLayout->setSpacing(WIDGET_SPACING);
-    }
-    else if (alignment.type == WidgetAlignment::Type::VERTICAL)
-    {
-      auto* vLayout = new QVBoxLayout(this);
-      vLayout->setContentsMargins(0, 0, 0, WIDGET_SPACING);
-      vLayout->setSpacing(WIDGET_SPACING);
-    }
-
-    auto* labelWidget = new oclero::qlementine::Label(label, this);
-    labelWidget->setRole(oclero::qlementine::TextRole::Default);
-
-    layout()->addWidget(labelWidget);
-    layout()->addWidget(mInputField);
-  }
-}
-
-void maki::FloatWidget::setValue(const qreal value)
-{
-  mValue = value;
-  mInputField->setText(QString("%1").arg(mValue));
-}
-
-qreal FloatWidget::getValue() const
-{
-  return mValue;
-}
-
-void FloatWidget::addDescription(const QString& label)
-{
-  auto* hint = new oclero::qlementine::Label(label, this);
-  hint->setRole(oclero::qlementine::TextRole::Caption);
-  layout()->addWidget(hint);
 }
 
 void FloatWidget::setAcceptVariable(bool accept)
@@ -432,168 +360,115 @@ void FloatWidget::setAcceptVariable(bool accept)
     mValidator->setAcceptVariable(accept);
 }
 
-QLineEdit* FloatWidget::widget() const
+void FloatWidget::setValue(qreal value)
 {
-  return mInputField;
+  TypedInputWidget::setValue(QString::number(value));
+}
+
+qreal FloatWidget::getValue() const
+{
+  bool ok = false;
+  int value = mValue.toDouble(&ok);
+  if (ok)
+    return value;
+
+  assert(false && "Tried to get a real from a field that does not contain a real");
+}
+
+void FloatWidget::writeValueToWidget(const QString& value)
+{
+  mValue = value;
+  if (auto* edit = qobject_cast<QLineEdit*>(mInputField))
+    edit->setText(value);
 }
 
 // ========================================================================================================================================
-SpinWidget::SpinWidget(const QString& label, int placeholder, QWidget* parent, int min, int max)
-    : QWidget(parent)
+SpinWidget::SpinWidget(const QString& label, int placeholder, QWidget* parent, WidgetAlignment alignment, int min, int max)
+    : TypedInputWidget<int, QSpinBox>(label, new QSpinBox(), placeholder, alignment, parent)
 {
-  auto* vlayout = new QVBoxLayout(this);
-  vlayout->setContentsMargins(0, 0, 0, WIDGET_SPACING);
-  vlayout->setSpacing(WIDGET_SPACING);
+  if (auto* edit = qobject_cast<QSpinBox*>(mInputField))
+  {
+    edit->setRange(min, max);
+    edit->setAlignment(Qt::AlignRight);
+    edit->setValue(mValue);
 
-  auto* hlayout = new QHBoxLayout();
-  hlayout->setContentsMargins(0, 0, 0, 0);
-  hlayout->setSpacing(WIDGET_SPACING);
-
-  auto* labelWidget = new oclero::qlementine::Label(label, this);
-  labelWidget->setRole(oclero::qlementine::TextRole::Default);
-
-  mInputField = new QSpinBox(this);
-  mInputField->setRange(min, max);
-  mInputField->setAlignment(Qt::AlignRight);
-
-  mValue = placeholder;
-  mInputField->setValue(mValue);
-
-  connect(mInputField, &QSpinBox::valueChanged, this, [this](int value) {
-    mValue = value;
-    emit valueChanged(mValue);
-  });
-
-  hlayout->addWidget(labelWidget);
-  hlayout->addStretch();
-  hlayout->addWidget(mInputField);
-
-  vlayout->addLayout(hlayout);
-}
-
-void SpinWidget::setValue(const int value)
-{
-  mValue = value;
-  mInputField->setValue(mValue);
-}
-
-int SpinWidget::getValue() const
-{
-  return mValue;
+    connect(edit, &QSpinBox::valueChanged, this, [this](int value) {
+      mValue = value;
+      emit valueChanged(mValue);
+    });
+  }
 }
 
 void SpinWidget::setSuffix(const QString& suffix)
 {
-  mInputField->setSuffix(suffix);
+  if (auto* edit = qobject_cast<QSpinBox*>(mInputField))
+    edit->setSuffix(suffix);
 }
 
-void SpinWidget::addDescription(const QString& label)
+void SpinWidget::writeValueToWidget(const int& value)
 {
-  auto* hint = new oclero::qlementine::Label(label, this);
-  hint->setRole(oclero::qlementine::TextRole::Caption);
-  layout()->addWidget(hint);
+  mValue = value;
+  if (auto* edit = qobject_cast<QSpinBox*>(mInputField))
+    edit->setValue(mValue);
 }
 
 // ========================================================================================================================================
-SelectorWidget::SelectorWidget(const QString& label, QComboBox* comboBox, WidgetAlignment alignment, QWidget* parent)
-{
-  if (comboBox)
-    mInputField = comboBox;
-  else
-    mInputField = new QComboBox(this);
-
-  setValue(Constants::EMPTY_COMBO);
-  connect(mInputField, &QComboBox::currentTextChanged, this, [this](const QString& value) {
-    mValue = value;
-    emit valueChanged(mValue);
-    mData = mInputField->currentData();
-    emit dataChanged(mValue, mData);
-  });
-
-  mValue = mInputField->currentText();
-
-  if (alignment.type == WidgetAlignment::Type::FORM)
-  {
-    alignment.layout->addRow("&" + label, mInputField);
-  }
-  else
-  {
-    auto* vLayout = new QVBoxLayout(this);
-    vLayout->setContentsMargins(0, 0, 0, WIDGET_SPACING);
-    vLayout->setSpacing(WIDGET_SPACING);
-
-    auto* labelWidget = new oclero::qlementine::Label(label, this);
-    labelWidget->setRole(oclero::qlementine::TextRole::Default);
-
-    if (alignment.type == WidgetAlignment::Type::INLINE)
-    {
-      auto* container = new QWidget(this);
-      auto* hLayout = new QHBoxLayout(container);
-      hLayout->setContentsMargins(0, 0, 0, 0);
-      hLayout->setSpacing(WIDGET_SPACING);
-
-      hLayout->addWidget(labelWidget);
-      hLayout->addWidget(mInputField);
-      layout()->addWidget(container);
-    }
-    else
-    {
-      layout()->addWidget(labelWidget);
-      layout()->addWidget(mInputField);
-      l
-    }
-  }
-}
-
 SelectorWidget::SelectorWidget(const QString& label, WidgetAlignment alignment, QWidget* parent)
-    : SelectorWidget(label, nullptr, alignment, parent)
+    : SelectorWidget(label, new QComboBox(), alignment, parent)
 {
 }
 
-void SelectorWidget::addDescription(const QString& label)
+SelectorWidget::SelectorWidget(const QString& label, QComboBox* comboBox, WidgetAlignment alignment, QWidget* parent)
+    : TypedInputWidget<QString, QComboBox>(label, comboBox, Constants::EMPTY_COMBO, alignment, parent)
 {
-  if (!layout())
-    return;
+  if (auto* combo = qobject_cast<QComboBox*>(mInputField))
+  {
+    setValue(Constants::EMPTY_COMBO);
+    connect(combo, &QComboBox::currentTextChanged, this, [this, combo](const QString& value) {
+      mValue = value;
+      mData = combo->currentData();
+      emit valueChanged(mValue);
+      emit dataChanged(mValue, mData);
+    });
+  }
+}
 
-  auto* hint = new oclero::qlementine::Label(label, this);
-  hint->setRole(oclero::qlementine::TextRole::Caption);
-  layout()->addWidget(hint);
+void SelectorWidget::writeValueToWidget(const QString& text)
+{
+  if (auto* combo = qobject_cast<QComboBox*>(mInputField))
+  {
+    if (text == Constants::EMPTY_COMBO)
+    {
+      combo->setPlaceholderText(Constants::EMPTY_COMBO);
+      combo->setCurrentIndex(-1);
+      // Clear values
+      mValue = Constants::EMPTY_COMBO;
+      mData = QVariant();
+      return;
+    }
+
+    int index = combo->findText(text);
+    if (index >= 0)
+    {
+      combo->setCurrentIndex(index);
+      mValue = combo->currentText();
+      mData = combo->currentData();
+    }
+  }
 }
 
 void SelectorWidget::setData(const QString& data)
 {
-  int index = mInputField->findData(data);
-  if (index >= 0)
+  if (auto* combo = qobject_cast<QComboBox*>(mInputField))
   {
-    mInputField->setCurrentIndex(index);
-    mValue = mInputField->currentText();
-    mData = mInputField->currentData();
+    int index = combo->findData(data);
+    if (index >= 0)
+    {
+      combo->setCurrentIndex(index);
+      mValue = combo->currentText();
+      mData = combo->currentData();
+    }
   }
-}
-
-void SelectorWidget::setValue(const QString& text)
-{
-  if (text == Constants::EMPTY_COMBO)
-  {
-    mInputField->setPlaceholderText(Constants::EMPTY_COMBO);
-    mInputField->setCurrentIndex(-1);
-    mValue = Constants::EMPTY_COMBO;
-    mData = QVariant();
-    return;
-  }
-
-  int index = mInputField->findText(text);
-  if (index >= 0)
-  {
-    mInputField->setCurrentIndex(index);
-    mValue = mInputField->currentText();
-    mData = mInputField->currentData();
-  }
-}
-
-QString SelectorWidget::getValue() const
-{
-  return mValue;
 }
 
 QVariant SelectorWidget::getData() const
@@ -603,9 +478,12 @@ QVariant SelectorWidget::getData() const
 
 void SelectorWidget::addItem(const QString& name, const QString& value)
 {
-  int index = mInputField->findData(name);
-  if (index < 0)
-    mInputField->addItem(name, value);
+  if (auto* combo = qobject_cast<QComboBox*>(mInputField))
+  {
+    int index = combo->findData(name);
+    if (index < 0)
+      combo->addItem(name, value);
+  }
 }
 
 // =========================================================================================================
@@ -644,63 +522,23 @@ void ButtonWidget::addDescription(const QString& label)
 
 // =========================================================================================================
 ColorWidget::ColorWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent)
-    : QWidget(parent)
+    : TypedInputWidget<QColor, oclero::qlementine::ColorEditor>(label, new oclero::qlementine::ColorEditor(), QColor::fromString(placeholder), alignment, parent)
 {
-  QColor placeholderColor = QColor::fromString(placeholder);
-  mInputField = new oclero::qlementine::ColorEditor(placeholderColor, this);
-  connect(mInputField, &oclero::qlementine::ColorEditor::colorChanged, this, [this]() {
-    mValue = mInputField->color();
-    emit valueChanged(mValue);
-  });
-
-  if (alignment.type == WidgetAlignment::Type::FORM)
+  if (auto* edit = qobject_cast<oclero::qlementine::ColorEditor*>(mInputField))
   {
-    alignment.layout->addRow("&" + label, mInputField);
-  }
-  else
-  {
-    if (alignment.type == WidgetAlignment::Type::INLINE)
-    {
-      auto* hLayout = new QHBoxLayout(this);
-      hLayout->setContentsMargins(0, 0, 0, WIDGET_SPACING);
-      hLayout->setSpacing(WIDGET_SPACING);
-    }
-    else if (alignment.type == WidgetAlignment::Type::VERTICAL)
-    {
-      auto* vLayout = new QVBoxLayout(this);
-      vLayout->setContentsMargins(0, 0, 0, WIDGET_SPACING);
-      vLayout->setSpacing(WIDGET_SPACING);
-    }
-
-    auto* labelWidget = new oclero::qlementine::Label(label, this);
-    labelWidget->setRole(oclero::qlementine::TextRole::Default);
-
-    layout()->addWidget(labelWidget);
-    layout()->addWidget(mInputField);
+    edit->setColor(QColor::fromString(placeholder));
+    connect(edit, &oclero::qlementine::ColorEditor::colorChanged, this, [this, edit]() {
+      mValue = edit->color();
+      emit valueChanged(mValue);
+    });
   }
 }
 
-oclero::qlementine::ColorEditor* ColorWidget::widget() const
-{
-  return mInputField;
-}
-
-void ColorWidget::addDescription(const QString& label)
-{
-  auto* hint = new oclero::qlementine::Label(label, this);
-  hint->setRole(oclero::qlementine::TextRole::Caption);
-  layout()->addWidget(hint);
-}
-
-QColor ColorWidget::getValue() const
-{
-  return mValue;
-}
-
-void ColorWidget::setValue(const QColor& color)
+void ColorWidget::writeValueToWidget(const QColor& color)
 {
   mValue = color;
-  mInputField->setColor(color);
+  if (auto* edit = qobject_cast<oclero::qlementine::ColorEditor*>(mInputField))
+    edit->setColor(color);
 }
 
 // =========================================================================================================

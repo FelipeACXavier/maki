@@ -11,6 +11,7 @@
 #include <QStyledItemDelegate>
 #include <QTimer>
 #include <QVBoxLayout>
+#include <oclero/qlementine/widgets/LineEdit.hpp>
 
 #include "app_configs.h"
 #include "logging.h"

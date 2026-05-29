@@ -4,6 +4,7 @@
 
 #include "../menu_base.h"
 #include "config.h"
+#include "oclero/qlementine/widgets/LineEdit.hpp"
 #include "result.h"
 #include "save_info.h"
 #include "types.h"
@@ -18,7 +19,6 @@ class QTableView;
 class QHBoxLayout;
 class TransitionItem;
 class QStandardItemModel;
-class QFormLayout;
 class QLayout;
 
 class FlowSaveInfo;
@@ -172,12 +172,12 @@ private:
   void openFieldDialog(QTableView* tableView, NodeItem* node, int row);                           /// Opens a field dialog.
   void addStateToTable(QStandardItemModel* model, int row, std::shared_ptr<PropertyInfo> event);  /// Adds a state to the table.
 
-  VoidResult loadEventArguments(const QString& nodeId, const QString& flowName, const PropertyInfo& property, NodeItem* node, Types::CallType callType, QFormLayout* formLayout);  /// Loads event arguments for a given property.
+  VoidResult loadEventArguments(const QString& nodeId, const QString& flowName, const PropertyInfo& property, NodeItem* node, Types::CallType callType, maki::WidgetGroup* formLayout);  /// Loads event arguments for a given property.
 
   // Component select fields
   VoidResult loadFieldEventSelect(maki::SelectorWidget* componentSelect, const QString& optionId, const PropertyInfo& property, NodeItem* node,
                                   std::function<void(const QString& nodeId, QComboBox* eventWidget)> populate);                                   /// Loads field event select.
   VoidResult loadFieldTriggerCall(maki::SelectorWidget* componentSelect, const QString& optionId, const PropertyInfo& property, NodeItem* node);  /// Loads field trigger call.
 
-  void addCompleter(maki::StringWidget* field, const QString& nodeId, const Types::PropertyTypes dataType, QStringList variables = {});
+  void addCompleter(oclero::qlementine::LineEdit* field, const QString& nodeId, const Types::PropertyTypes dataType, QStringList variables = {});
 };

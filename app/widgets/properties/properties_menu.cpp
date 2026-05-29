@@ -1,17 +1,10 @@
 #include "properties_menu.h"
 
-#include <qboxlayout.h>
-#include <qhashfunctions.h>
-#include <qjsonarray.h>
-#include <qobject.h>
-#include <qwidget.h>
-
 #include <QCheckBox>
 #include <QColorDialog>
 #include <QComboBox>
 #include <QCompleter>
 #include <QDoubleValidator>
-#include <QFormLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QHeaderView>
@@ -29,6 +22,7 @@
 #include <QVBoxLayout>
 #include <QWidget>
 #include <cfloat>
+#include <oclero/qlementine/widgets/LineEdit.hpp>
 
 #include "../structure/event_dialog.h"
 #include "../structure/field_dialog.h"
@@ -39,6 +33,7 @@
 #include "json.h"
 #include "keys.h"
 #include "logging.h"
+#include "oclero/qlementine/Common.hpp"
 #include "result.h"
 #include "style_helpers.h"
 #include "types.h"
@@ -274,10 +269,11 @@ VoidResult PropertiesMenu::loadPropertyInt(const PropertyInfo& property, NodeIte
     return VoidResult::Failed("Failed to get property " + property.getid().toStdString() + " of " + node->nodeName().toStdString());
 
   auto widget = new maki::IntegerWidget(ToLabel(property.getid()), "", maki::WidgetAlignment::Vertical(), this);
+  widget->setAcceptVariable(true);
   if (result.isValid())
-    widget->setValue(result.toInt());
+    widget->setValue(result.toString());
 
-  connect(widget, &maki::IntegerWidget::valueChanged, this, [node, property](const int value) {
+  connect(widget, &maki::IntegerWidget::valueChanged, this, [node, property](const QString& value) {
     node->setProperty(property.getid(), value);
   });
 
@@ -293,10 +289,11 @@ VoidResult PropertiesMenu::loadPropertyReal(const PropertyInfo& property, NodeIt
     return VoidResult::Failed("Failed to get property " + property.getid().toStdString() + " of " + node->nodeName().toStdString());
 
   auto widget = new maki::FloatWidget(ToLabel(property.getid()), "", maki::WidgetAlignment::Vertical(), this);
+  widget->setAcceptVariable(true);
   if (result.isValid())
     widget->setValue(result.toInt());
 
-  connect(widget, &maki::FloatWidget::valueChanged, this, [node, property](const qreal value) {
+  connect(widget, &maki::FloatWidget::valueChanged, this, [node, property](const QString& value) {
     if (node)
       node->setProperty(property.getid(), value);
   });
@@ -453,7 +450,7 @@ VoidResult PropertiesMenu::loadFieldEventSelect(maki::SelectorWidget* componentS
 {
   QComboBox* eventCombo = new QComboBox(this);
   auto* widget = new maki::SelectorWidget(ToLabel(optionId), eventCombo, maki::WidgetAlignment::Vertical(), this);
-  auto* vlayout = new QFormLayout();
+  auto* group = new maki::WidgetGroup(tr("Arguments"), oclero::qlementine::TextRole::Default, this);
 
   // Set starting values
   auto propertyValue = node->getProperty(property.getid());
@@ -470,18 +467,18 @@ VoidResult PropertiesMenu::loadFieldEventSelect(maki::SelectorWidget* componentS
       widget->setValue(currentEvent);
 
       // Finally, based on the event, we can set the arguments
-      LOG_WARN_ON_FAILURE(loadEventArguments(currentComponentId, currentEvent, property, node, Types::CallType::UNKNOWN, vlayout));
+      LOG_WARN_ON_FAILURE(loadEventArguments(currentComponentId, currentEvent, property, node, Types::CallType::UNKNOWN, group));
     }
   }
 
   // When the event changes
-  connect(widget, &maki::SelectorWidget::valueChanged, this, [this, node, property, componentSelect, vlayout](const QString& eventName) {
+  connect(widget, &maki::SelectorWidget::valueChanged, this, [this, node, property, componentSelect, group](const QString& eventName) {
     if (eventName.isEmpty())
       return;
 
-    clearLayout(vlayout);
+    clearLayout(group->layout());
     UPDATE_PROPERTY_ARG(node, property.getid(), EVENT_INDEX, eventName, Types::PropertyTypes::EVENT_SELECT, false)
-    LOG_WARN_ON_FAILURE(loadEventArguments(componentSelect->getData().toString(), eventName, property, node, Types::CallType::UNKNOWN, vlayout));
+    LOG_WARN_ON_FAILURE(loadEventArguments(componentSelect->getData().toString(), eventName, property, node, Types::CallType::UNKNOWN, group));
   });
 
   // When the component itself changes
@@ -495,33 +492,33 @@ VoidResult PropertiesMenu::loadFieldEventSelect(maki::SelectorWidget* componentS
 
   // Add everything to the layout
   layout()->addWidget(widget);
-  qobject_cast<QVBoxLayout*>(layout())->addLayout(vlayout);
+  layout()->addWidget(group);
 
   return VoidResult();
 }
 
 VoidResult PropertiesMenu::loadFieldTriggerCall(maki::SelectorWidget* componentSelect, const QString& optionId, const PropertyInfo& property, NodeItem* node)
 {
-  auto* vlayout = new QFormLayout();
+  auto* group = new maki::WidgetGroup(tr("Arguments"), oclero::qlementine::TextRole::Default, this);
   auto currentComponentId = componentSelect->getData().toString();
-  LOG_WARN_ON_FAILURE(loadEventArguments(currentComponentId, "", property, node, Types::CallType::TRIGGER, vlayout));
+  LOG_WARN_ON_FAILURE(loadEventArguments(currentComponentId, "", property, node, Types::CallType::TRIGGER, group));
 
-  connect(componentSelect, &maki::SelectorWidget::dataChanged, this, [this, currentComponentId, vlayout, node, property](const QString& component, const QVariant& nodeId) {
+  connect(componentSelect, &maki::SelectorWidget::dataChanged, this, [this, currentComponentId, group, node, property](const QString& component, const QVariant& nodeId) {
     if (!nodeId.isValid())
       return;
 
-    clearLayout(vlayout);
+    clearLayout(group->layout());
 
     UPDATE_PROPERTY(node, property.getid(), component)
-    LOG_WARN_ON_FAILURE(loadEventArguments(nodeId.toString(), "", property, node, Types::CallType::TRIGGER, vlayout));
+    LOG_WARN_ON_FAILURE(loadEventArguments(nodeId.toString(), "", property, node, Types::CallType::TRIGGER, group));
   });
 
-  qobject_cast<QVBoxLayout*>(layout())->addLayout(vlayout);
+  layout()->addWidget(group);
 
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QString& flowName, const PropertyInfo& property, NodeItem* node, Types::CallType callType, QFormLayout* formLayout)
+VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QString& flowName, const PropertyInfo& property, NodeItem* node, Types::CallType callType, maki::WidgetGroup* group)
 {
   std::shared_ptr<FlowSaveInfo> event = nullptr;
   if (callType == Types::CallType::UNKNOWN)
@@ -545,12 +542,22 @@ VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QStri
     return VoidResult::Failed("Property is not valid");
 
   if (event->getarguments().isEmpty())
+  {
+    group->hide();
     return VoidResult();
+  }
 
   LOG_DEBUG("Loading event %s with args: %d", qPrintable(event->getname()), event->getarguments().size());
 
+  group->show();
   int index = ARG_INDEX;
-  maki::WidgetAlignment alignment = {maki::WidgetAlignment::Type::FORM, formLayout};
+  maki::WidgetAlignment alignment = {
+      .type = maki::WidgetAlignment::Type::FORM,
+      .direction = maki::WidgetAlignment::Direction::SPREAD,
+      .group = group,
+      .labelWidth = 50,
+  };
+
   QJsonArray argArray = jsonValue.toJsonObject()[ConfigKeys::OPTIONS].toArray();
   for (const auto& arg : event->getarguments())
   {
@@ -558,12 +565,13 @@ VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QStri
     const auto argType = arg->gettype();
     if (argType == Types::PropertyTypes::INTEGER)
     {
-      auto* field = new maki::StringWidget(arg->getid(), arg->getdefaultValue().toString(), alignment, this);
+      auto* field = new maki::IntegerWidget(arg->getid(), arg->getdefaultValue().toString(), alignment, this);
+      field->setAcceptVariable(true);
       if (jsonItem.contains(ConfigKeys::DATA))
         field->setValue(jsonItem[ConfigKeys::DATA].toString());
 
-      addCompleter(field, node->id(), argType);
-      connect(field, &maki::StringWidget::valueChanged, this, [property, node, index](const QString& value) {
+      addCompleter(field->widget(), node->id(), argType);
+      connect(field, &maki::IntegerWidget::valueChanged, this, [property, node, index](const QString& value) {
         bool isLiteral = false;
         (void)value.toInt(&isLiteral);
         UPDATE_PROPERTY_ARG(node, property.getid(), index, value, Types::PropertyTypes::INTEGER, !isLiteral)
@@ -572,12 +580,13 @@ VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QStri
     }
     else if (argType == Types::PropertyTypes::REAL)
     {
-      auto* field = new maki::StringWidget(arg->getid(), arg->getdefaultValue().toString(), alignment, this);
+      auto* field = new maki::FloatWidget(arg->getid(), arg->getdefaultValue().toString(), alignment, this);
+      field->setAcceptVariable(true);
       if (jsonItem.contains(ConfigKeys::DATA))
         field->setValue(jsonItem[ConfigKeys::DATA].toString());
 
-      addCompleter(field, node->id(), argType);
-      connect(field, &maki::StringWidget::valueChanged, this, [property, node, index](const QString& value) {
+      addCompleter(field->widget(), node->id(), argType);
+      connect(field, &maki::FloatWidget::valueChanged, this, [property, node, index](const QString& value) {
         bool isLiteral = false;
         (void)value.toDouble(&isLiteral);
         UPDATE_PROPERTY_ARG(node, property.getid(), index, value, Types::PropertyTypes::REAL, !isLiteral)
@@ -590,7 +599,7 @@ VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QStri
       if (jsonItem.contains(ConfigKeys::DATA))
         field->setValue(jsonItem[ConfigKeys::DATA].toString());
 
-      addCompleter(field, node->id(), argType);
+      addCompleter(field->widget(), node->id(), argType);
       connect(field, &maki::StringWidget::valueChanged, this, [property, node, index](const QString& value) {
         bool isLiteral = value.size() > 2 && value.startsWith('"') && value.endsWith('"');
         UPDATE_PROPERTY_ARG(node, property.getid(), index, value, Types::PropertyTypes::STRING, !isLiteral)
@@ -603,7 +612,7 @@ VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QStri
       if (jsonItem.contains(ConfigKeys::DATA))
         field->setValue(jsonItem[ConfigKeys::DATA].toString());
 
-      addCompleter(field, node->id(), argType, {"true", "false"});
+      addCompleter(field->widget(), node->id(), argType, {"true", "false"});
       connect(field, &maki::StringWidget::valueChanged, this, [property, node, index](const QString& value) {
         bool isLiteral = value == "true" || value == "false" || value == "True" || value == "False";
         UPDATE_PROPERTY_ARG(node, property.getid(), index, value, Types::PropertyTypes::BOOLEAN, !isLiteral)
@@ -675,7 +684,7 @@ QLineEdit* PropertiesMenu::loadPropertyEventArguments(const PropertyInfo& proper
   return widget;
 }
 
-void PropertiesMenu::addCompleter(maki::StringWidget* field, const QString& nodeId, const Types::PropertyTypes dataType, QStringList variables)
+void PropertiesMenu::addCompleter(oclero::qlementine::LineEdit* field, const QString& nodeId, const Types::PropertyTypes dataType, QStringList variables)
 {
   auto parentStates = mStorage->getPossibleStates(nodeId);
   for (const auto& state : parentStates)
@@ -691,7 +700,7 @@ void PropertiesMenu::addCompleter(maki::StringWidget* field, const QString& node
   completer->setCompletionMode(QCompleter::PopupCompletion);
   completer->setCaseSensitivity(Qt::CaseInsensitive);
 
-  field->widget()->setCompleter(completer);
+  field->setCompleter(completer);
 }
 
 VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)

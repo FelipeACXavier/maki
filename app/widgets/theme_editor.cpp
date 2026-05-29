@@ -551,7 +551,9 @@ struct ThemeEditorWidget::Impl
     editorScroll->setFrameShape(QFrame::NoFrame);
     editorScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     editorScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    auto height = container->sizeHint().height();
     editorScroll->setWidget(container);
+    editorScroll->setMinimumHeight(height + vSpacing);
 
     auto* line = new QFrame(&owner);
     line->setFrameShape(QFrame::HLine);

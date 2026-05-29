@@ -1,8 +1,5 @@
 #include "settings_dialog.h"
 
-#include <qnamespace.h>
-#include <qobject.h>
-
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDialogButtonBox>
@@ -58,7 +55,7 @@ SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsMan
 
   // Right: stacked mPages
   mPages = new QStackedWidget(this);
-  mPages->setFixedWidth(size().width() / 5 * 4);
+  mPages->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
   // Add categories
   LOG_WARN_ON_FAILURE(createGeneralPage());
@@ -91,8 +88,8 @@ SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsMan
 
 SettingsDialog::SelectorPage SettingsDialog::addPage(const QString& pageName, const QString& iconName, std::function<void()> resetCallback, QTreeWidgetItem* parent)
 {
-  QWidget* page = new QWidget;
-  page->setObjectName("SettingsPage");
+  QWidget* page = new QWidget(this);
+  page->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
   QVBoxLayout* layout = new QVBoxLayout(page);
   layout->setContentsMargins(6, 6, 6, 6);
@@ -117,7 +114,6 @@ SettingsDialog::SelectorPage SettingsDialog::addPage(const QString& pageName, co
   headerRow->addWidget(resetButton);
 
   QFrame* line = new QFrame(page);
-  line->setObjectName("HLine");
   line->setFrameShape(QFrame::HLine);
   line->setFrameShadow(QFrame::Sunken);
 
@@ -126,10 +122,11 @@ SettingsDialog::SelectorPage SettingsDialog::addPage(const QString& pageName, co
   scrollArea->setWidgetResizable(true);
   scrollArea->setFrameShape(QFrame::NoFrame);
   scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-  scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+  scrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
   auto content = new QWidget(this);
-  content->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+  content->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
 
   auto contentLayout = new QVBoxLayout(content);
   contentLayout->setContentsMargins(20, 5, 20, 5);
@@ -169,8 +166,9 @@ VoidResult SettingsDialog::createGeneralPage()
     mSettingsManager->setGeneral(defaultSettings);
   });
 
+  maki::WidgetAlignment alignment = {maki::WidgetAlignment::Type::INLINE};
   auto languageLayout = new maki::WidgetGroup(tr("Language"), page);
-  mLanguageCombo = new maki::SelectorWidget(tr("Set language"), maki::WidgetAlignment::Inline(), page);
+  mLanguageCombo = new maki::SelectorWidget(tr("Set language"), alignment, page);
   for (const LanguageManager::LanguageOption& info : mLanguageManager->availableLanguages())
     mLanguageCombo->addItem(info.label, info.code);
 
@@ -179,8 +177,7 @@ VoidResult SettingsDialog::createGeneralPage()
 
   languageLayout->addWidget(mLanguageCombo);
 
-  maki::WidgetAlignment alignment = {maki::WidgetAlignment::Type::VERTICAL};
-  mAutosaveMinutes = new maki::SpinWidget(tr("Autosave interval"), generalSettings.autosaveIntervalMinutes, page, 1, 120);
+  mAutosaveMinutes = new maki::SpinWidget(tr("Autosave interval"), generalSettings.autosaveIntervalMinutes, page, alignment, 1, 120);
   mAutosaveMinutes->addDescription("Between 1 and 120 minutes");
   mAutosaveMinutes->setSuffix(" minutes");
   mAutosaveEnabled = new maki::BooleanWidget(tr("Enable autosave"), generalSettings.autosaveEnabled, alignment, page);
@@ -251,7 +248,7 @@ VoidResult SettingsDialog::createAppearancePage()
       mThemeEditor->setTheme(theme.Value());
   });
 
-  maki::WidgetAlignment alignment = {maki::WidgetAlignment::Type::VERTICAL};
+  maki::WidgetAlignment alignment = {maki::WidgetAlignment::Type::INLINE};
   mNativeMenuBar = new maki::BooleanWidget(tr("Use native menubar"), appearance.nativeMenuBar, alignment, page);
 
   auto themeLayout = new maki::WidgetGroup(tr("Theming"), page);
@@ -301,13 +298,13 @@ VoidResult SettingsDialog::createAppearancePage()
     themeLayout->addWidget(editorFrame);
   }
 
-  mUiScale = new maki::SpinWidget(tr("UI scale"), appearance.uiScalePercent, page, 80, 200);
+  mUiScale = new maki::SpinWidget(tr("UI scale"), appearance.uiScalePercent, page, alignment, 80, 200);
   mUiScale->setSuffix(" %");
 
-  mNodeCornerRadius = new maki::SpinWidget(tr("Node corner radius"), appearance.nodeCornerRadius, page, 0, 30);
+  mNodeCornerRadius = new maki::SpinWidget(tr("Node corner radius"), appearance.nodeCornerRadius, page, alignment, 0, 30);
   mNodeCornerRadius->setSuffix(" pixels");
 
-  mNumberOfColumns = new maki::SpinWidget(tr("Number of columns in the node palette"), appearance.numberOfColumns, page, 0, 4);
+  mNumberOfColumns = new maki::SpinWidget(tr("Number of columns in the node palette"), appearance.numberOfColumns, page, alignment, 0, 4);
   mNumberOfColumns->setSuffix(" " + tr("columns"));
   mNumberOfColumns->addDescription(tr("Note: The width of the palette will not update automatically"));
 
@@ -337,8 +334,7 @@ VoidResult SettingsDialog::createGenerationPage()
   });
 
   auto* pathRow = new QWidget(page);
-
-  mGenerationDirEdit = new maki::StringWidget(tr("Generation output folder"), generation.generationDir, {maki::WidgetAlignment::Type::VERTICAL}, pathRow);
+  mGenerationDirEdit = new maki::StringWidget(tr("Generation output folder"), generation.generationDir, maki::WidgetAlignment::Inline(), pathRow);
   mGenerationDirEdit->addDescription(tr("\"/<plugin name>\" will be appended to this path"));
 
   if (generation.generationDir != GenerationSettings().generationDir)
@@ -349,9 +345,9 @@ VoidResult SettingsDialog::createGenerationPage()
 
   auto* rowLayout = new QHBoxLayout(pathRow);
   rowLayout->setContentsMargins(0, 0, 0, 0);
-
-  rowLayout->addWidget(mGenerationDirEdit, /*stretch=*/1);
-  rowLayout->addWidget(mGenerationBrowseBtn);
+  rowLayout->setAlignment(Qt::AlignTop);
+  rowLayout->addWidget(mGenerationDirEdit, 1, Qt::AlignTop);
+  rowLayout->addWidget(mGenerationBrowseBtn, 0, Qt::AlignTop);
 
   // hook up buttons
   connect(mGenerationBrowseBtn, &maki::ButtonWidget::valueChanged, this, [this] {
@@ -360,8 +356,11 @@ VoidResult SettingsDialog::createGenerationPage()
       mGenerationDirEdit->setValue(dir);
   });
 
+  auto group = new maki::WidgetGroup(tr("General"), page);
+  group->addWidget(pathRow);
+
   QVBoxLayout* layout = page->findChild<QVBoxLayout*>("ContentArea");
-  layout->addWidget(pathRow);
+  layout->addWidget(group);
   layout->addStretch();
 
   return VoidResult();
@@ -480,7 +479,7 @@ VoidResult SettingsDialog::createPluginPages()
     QVBoxLayout* layout = page->findChild<QVBoxLayout*>("ContentArea");
     layout->setSpacing(2);
 
-    maki::WidgetAlignment alignment = {maki::WidgetAlignment::Type::VERTICAL};
+    maki::WidgetAlignment alignment = {maki::WidgetAlignment::Type::INLINE};
     for (const auto& setting : settings)
     {
       if (setting.getType() == Types::PropertyTypes::INTEGER)
@@ -490,7 +489,7 @@ VoidResult SettingsDialog::createPluginPages()
         auto* field = new maki::IntegerWidget(setting.getLabel(), setting.getDefaultValue().toString(), alignment, page, min, max);
         field->addDescription(setting.getDescription());
 
-        connect(field, &maki::IntegerWidget::valueChanged, this, [this, pluginId, setting](const int value) {
+        connect(field, &maki::IntegerWidget::valueChanged, this, [this, pluginId, setting](const QString& value) {
           updatePluginSetting(pluginId, setting.getKey(), value);
         });
 
