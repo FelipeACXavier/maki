@@ -555,7 +555,7 @@ Result<maki::PipelineArtifact> KodaGenerator::generateKoda(const maki::PipelineA
   koda::MakiToKoda makiToKoda;
   auto generated = makiToKoda.generate(mServices->document()->getnodes());
   if (!generated)
-    LOG_ERROR(generated.ErrorMessage());
+    return Result<maki::PipelineArtifact>::Failed(generated.ErrorMessage());
 
   QString fileName = mOutputFolder.filePath("task.kd");
   QFile file(fileName);
