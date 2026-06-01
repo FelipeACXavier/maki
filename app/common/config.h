@@ -238,6 +238,8 @@ public:
 
   bool hasInPort = false;
   bool hasOutPort = false;
+  bool hasAbortPort = false;
+  bool hasErrorPort = false;
 
   friend QDataStream& operator<<(QDataStream& out, const NodeConfig& config);
   friend QDataStream& operator>>(QDataStream& in, NodeConfig& config);

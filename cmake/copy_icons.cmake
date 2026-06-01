@@ -76,10 +76,14 @@ file(GLOB APP_ICON_FILES
   ${MISSION_PATH}/node_every.svg
   ${MISSION_PATH}/node_continue.svg
   ${MISSION_PATH}/node_task.svg
+  ${MISSION_PATH}/button_addflow.svg
+  ${MISSION_PATH}/button_addsubtask.svg
   ${MISSION_PATH}/node_sync.svg
   ${MISSION_PATH}/node_async.svg
   ${MISSION_PATH}/port_in.svg
   ${MISSION_PATH}/port_out.svg
+  ${MISSION_PATH}/port_abort.svg
+  ${MISSION_PATH}/port_error.svg
   ${MISSION_PATH}/capability_siren.svg
   ${MISSION_PATH}/capability_lighting.svg
   ${MISSION_PATH}/capability_ventilation.svg

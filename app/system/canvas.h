@@ -18,6 +18,8 @@
 
 class QUndoStack;
 class CanvasView;
+class NodeActionMenu;
+class PortItem;
 class TransitionItem;
 class ConfigurationTable;
 
@@ -408,7 +410,7 @@ protected:
   virtual void addedItemFlow(Flow* flow, NodeItem* node);
   virtual void addTransition(TransitionItem* transition);
   virtual void removeTransition(TransitionItem* transition);
-  virtual bool canAddTransition(NodeItem* node) const;
+  virtual bool canAddTransition(NodeItem* node, PortItem* port = nullptr) const;
   virtual TransitionConfig nextTransition(NodeItem* node) const;
   virtual QVector<QGraphicsItem*> cleanTransitionsOfNode(const QString& nodeId);
   virtual void onNodeMoved(const QString& nodeId);
@@ -476,12 +478,21 @@ private:
 
   /**
    * Returns the closest PortItem of the given kind whose anchor is within `radius` scene units of `scenePos`,
-   * or nullptr. Kind values match `PortItem::Kind` (`0` In, `1` Out).
+   * or nullptr. Kind values match `PortItem::Kind` (`0` In, `1` Out, `2` Abort, `3` Error).
    */
   PortItem* portNear(const QPointF& scenePos, int kind, qreal radius) const;
 
+  /** Closest outgoing port (out / abort / error) within `radius`, or nullptr. */
+  PortItem* portNearOutgoing(const QPointF& scenePos, qreal radius) const;
+
+  /** Closest port on `node` within `radius`, or nullptr. */
+  PortItem* portClosestOnNode(const NodeItem* node, const QPointF& scenePos, qreal radius) const;
+
   /** If the port is a valid drag source, begin building mTransition and return true. */
   bool beginTransitionFromOutPort(PortItem* port, const QPointF& cursorScenePos);
+
+  /** True when a transition may end on `dest` at `scenePos` (in-port only, not on out/abort/error). */
+  bool canCompleteTransitionTo(NodeItem* dest, const QPointF& scenePos) const;
 
   /**
    * @brief Returns a list of currently selected nodes.
@@ -528,8 +539,12 @@ private:
   void clearCapabilityDropPreview();
   void updateCapabilityDropPreview(const QPointF& scenePos);
   void openCapabilityMenu(NodeItem* task);
+  void addSubtaskTo(NodeItem* task);
+  void updateNodeActionButtons();
+  void ensureNodeActionMenu();
   TransitionItem* transitionAt(const QPointF& scenePos) const;
 
+  NodeActionMenu* mNodeActionMenu = nullptr;
   NodeItem* mCapabilityPreviewTask = nullptr;
   bool mDraggedNodeIsCapability = false;
   QString mDraggedCapabilityIconPath;

@@ -552,6 +552,10 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
       mInPort = new PortItem(PortItem::In, this);
     if (config()->hasOutPort)
       mOutPort = new PortItem(PortItem::Out, this);
+    if (config()->hasAbortPort)
+      mAbortPort = new PortItem(PortItem::Abort, this);
+    if (config()->hasErrorPort)
+      mErrorPort = new PortItem(PortItem::Error, this);
     updatePortPositions();
   }
 
@@ -1486,6 +1490,27 @@ void NodeItem::updatePortPositions()
     mInPort->setPos(left - PortItem::kSize - PortItem::kGap, top + (h - PortItem::kSize) / 2.0);
   if (mOutPort)
     mOutPort->setPos(left + w + PortItem::kGap, top + (h - PortItem::kSize) / 2.0);
+
+  const qreal topPortSize = PortItem::sizeForKind(PortItem::Abort);
+  const qreal centerX = left + w * 0.5;
+  const qreal errorY = top - topPortSize - PortItem::kGap;
+  const qreal errorX = centerX + topPortSize * 0.5 + PortItem::kGap * 2.0;
+  const qreal abortX = centerX - topPortSize * 0.5;
+  const qreal abortY = portRect.bottom() + PortItem::kGap;
+
+  if (mAbortPort && mErrorPort)
+  {
+    mErrorPort->setPos(errorX, errorY);
+    mAbortPort->setPos(errorX, abortY);
+  }
+  else if (mAbortPort)
+  {
+    mAbortPort->setPos(abortX, abortY);
+  }
+  else if (mErrorPort)
+  {
+    mErrorPort->setPos(errorX, errorY);
+  }
 }
 
 // Slots
@@ -1497,6 +1522,35 @@ void NodeItem::onProperties()
 NodeSaveInfo NodeItem::saveInfo() const
 {
   return *mStorage;
+}
+
+PortItem::Kind NodeItem::outgoingPortKindForEvent(const QString& event) const
+{
+  const QString e = event.trimmed();
+  if (e.compare(QStringLiteral("on abort"), Qt::CaseInsensitive) == 0 && mAbortPort)
+    return PortItem::Abort;
+  if (e.compare(QStringLiteral("on error"), Qt::CaseInsensitive) == 0 && mErrorPort)
+    return PortItem::Error;
+  return PortItem::Out;
+}
+
+QPointF NodeItem::outgoingPortAnchorForEvent(const QString& event) const
+{
+  const PortItem::Kind kind = outgoingPortKindForEvent(event);
+  if (kind == PortItem::Abort && mAbortPort)
+    return mAbortPort->anchorScenePos();
+  if (kind == PortItem::Error && mErrorPort)
+    return mErrorPort->anchorScenePos();
+  if (mOutPort)
+    return mOutPort->anchorScenePos();
+  return sceneBoundingRect().center();
+}
+
+QPointF NodeItem::incomingPortAnchor() const
+{
+  if (mInPort)
+    return mInPort->anchorScenePos();
+  return edgePointToward(sceneBoundingRect().center(), false);
 }
 
 QPointF NodeItem::edgePointToward(const QPointF& targetScenePos, bool fromOutgoingPort) const

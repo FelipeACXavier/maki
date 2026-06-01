@@ -538,6 +538,12 @@ QTreeWidget#SettingsList::item:selected {
   background: @selection_bg;
 }
 
+QTreeWidget#NodeActionMenuList::item:selected,
+QTreeWidget#NodeActionMenuList::item:selected:active {
+  background: transparent;
+  color: @foreground;
+}
+
 /* ===============================
    NOTIFICATIONWIDGET
    =============================== */

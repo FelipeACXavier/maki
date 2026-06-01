@@ -10,18 +10,17 @@
 #include "config.h"
 // #include "inode.h"
 #include "node_base.h"
+#include "port.h"
 #include "save_info.h"
 #include "transition.h"
 #include "types.h"
 
 class NodeItem;
 
-class PortItem;
 class Flow;
 class QGraphicsSceneMouseEvent;
 class SubtaskConnector;
 class StructureCanvas;
-
 namespace structural_layout
 {
 void layoutNonLayeredTidyTree(NodeItem* root);
@@ -191,6 +190,15 @@ public:
    * @return The QPointF representing the edge point.
    */
   QPointF edgePointToward(const QPointF& targetScenePos, bool fromOutgoingPort) const;
+
+  /** Outgoing transition anchor for the given event (e.g. "on abort", "on error"). */
+  QPointF outgoingPortAnchorForEvent(const QString& event) const;
+
+  /** Which outgoing port an event uses (Out, Abort, or Error). */
+  PortItem::Kind outgoingPortKindForEvent(const QString& event) const;
+
+  /** Incoming transition anchor (in-port), or node edge fallback. */
+  QPointF incomingPortAnchor() const;
 
   /**
    * @brief Returns a list of fields associated with this node.
@@ -427,6 +435,8 @@ private:
 
   PortItem* mInPort = nullptr;
   PortItem* mOutPort = nullptr;
+  PortItem* mAbortPort = nullptr;
+  PortItem* mErrorPort = nullptr;
 
   qreal mBaseScale;
   QSizeF mSize{0, 0};

@@ -1433,7 +1433,7 @@
             }
           ],
           "controls": [],
-          "ports": ["in", "out"]
+          "ports": ["in", "out", "abort", "error"]
         },
         {
           "type": "Sync task",
@@ -1467,7 +1467,7 @@
             }
           ],
           "controls": [],
-          "ports": ["in", "out"]
+          "ports": ["in", "out", "abort", "error"]
         },
         {
           "type": "Strategy",
@@ -1502,7 +1502,7 @@
             }
           ],
           "controls": [],
-          "ports": ["in", "out"]
+          "ports": ["in", "out", "abort", "error"]
         },
         {
           "type": "Join",

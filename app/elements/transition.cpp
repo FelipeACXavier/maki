@@ -4,17 +4,26 @@
 #include <QPen>
 #include <QUuid>
 
+#include <cmath>
+
 #include "app_configs.h"
 #include "node.h"
 #include "port.h"
 
 namespace
 {
-/**
- * Shorten segment so the stroke and arrow sit clear of port squares (scene coords).
- * @param shortenEnd pull the destination end back toward the source (in-port clearance + arrow); false while dragging to cursor.
- */
-void trimConnectionEndpoints(QPointF& start, QPointF& end, bool shortenEnd)
+constexpr qreal kStub = 14.0;
+constexpr qreal kChannelMargin = 18.0;
+constexpr qreal kTrimStart = PortItem::kSize * 0.5 + 1.0;
+constexpr qreal kTrimTopStart = PortItem::kTopPortSize * 0.5 + 1.0;
+constexpr qreal kTrimEnd = PortItem::kSize * 0.35 + 1.0;
+
+bool usesOrthogonalRouting(PortItem::Kind srcPortKind)
+{
+  return srcPortKind == PortItem::Abort || srcPortKind == PortItem::Error;
+}
+
+void trimStraightEndpoints(QPointF& start, QPointF& end, bool shortenEnd)
 {
   const QPointF origStart = start;
   const QPointF origEnd = end;
@@ -26,31 +35,132 @@ void trimConnectionEndpoints(QPointF& start, QPointF& end, bool shortenEnd)
   const qreal dx = (origEnd.x() - origStart.x()) / len;
   const qreal dy = (origEnd.y() - origStart.y()) / len;
 
-  const qreal trimFromOut = qMin(PortItem::kSize * 0.5 + 1.0, len * 0.35);
+  const qreal trimFromOut = qMin(kTrimStart, len * 0.35);
   if (trimFromOut < len - 0.5)
     start += QPointF(dx * trimFromOut, dy * trimFromOut);
 
   if (shortenEnd)
   {
-    // Small inset only: keep the tip near the in-port without a visible gap (was kSize/2+8).
-    const qreal trimBeforeIn = qMin(PortItem::kSize * 0.35 + 1.0, len * 0.2);
+    const qreal trimBeforeIn = qMin(kTrimEnd, len * 0.2);
     if (trimBeforeIn < len - 0.5 && trimFromOut + trimBeforeIn < len - 0.5)
       end -= QPointF(dx * trimBeforeIn, dy * trimBeforeIn);
   }
 }
 
-/** Left edge, vertically centered — target when routing from source toward destination. */
-QPointF destinationApproachPoint(const NodeItem& dest)
+QPainterPath buildStraightTransitionPath(QPointF start, QPointF end, bool trimEnds)
 {
-  const QRectF r = dest.sceneBoundingRect();
-  return QPointF(r.left(), r.center().y());
+  if (trimEnds)
+    trimStraightEndpoints(start, end, true);
+  QPainterPath path;
+  path.moveTo(start);
+  path.lineTo(end);
+  return path;
 }
 
-/** Right edge, vertically centered — target when routing from destination back toward source (in-port side). */
-QPointF sourceApproachPoint(const NodeItem& src)
+qreal laneOffsetForEvent(const QString& event)
 {
-  const QRectF r = src.sceneBoundingRect();
-  return QPointF(r.right(), r.center().y());
+  if (event.compare(QStringLiteral("on abort"), Qt::CaseInsensitive) == 0)
+    return -14.0;
+  if (event.compare(QStringLiteral("on error"), Qt::CaseInsensitive) == 0)
+    return 14.0;
+  return 0.0;
+}
+
+qreal sideRoutingChannelY(const NodeItem* source,
+                          const NodeItem* destination,
+                          const QPointF& start,
+                          qreal lane,
+                          bool exitDownward)
+{
+  const QRectF srcRect = source->sceneBoundingRect();
+  const QRectF dstRect = destination ? destination->sceneBoundingRect() : QRectF();
+
+  qreal y = exitDownward ? start.y() + kStub : start.y() - kStub;
+  if (exitDownward)
+  {
+    y = qMax(y, srcRect.bottom() + kChannelMargin);
+    if (destination)
+      y = qMax(y, dstRect.bottom() + kChannelMargin);
+    return y + lane;
+  }
+
+  y = qMin(y, srcRect.top() - kChannelMargin);
+  if (destination)
+    y = qMin(y, dstRect.top() - kChannelMargin);
+  return y - lane;
+}
+
+QVector<QPointF> buildOrthogonalPoints(const QPointF& start,
+                                       const QPointF& end,
+                                       PortItem::Kind srcPortKind,
+                                       const NodeItem* source,
+                                       const NodeItem* destination,
+                                       qreal lane)
+{
+  QVector<QPointF> pts;
+  pts.reserve(6);
+  pts.append(start);
+
+  const qreal approachX = end.x() - kStub;
+  const bool exitDownward =
+      srcPortKind == PortItem::Abort && source && start.y() > source->sceneBoundingRect().center().y();
+  const qreal channelY = sideRoutingChannelY(source, destination, start, lane, exitDownward);
+  pts.append(QPointF(start.x(), channelY));
+  pts.append(QPointF(approachX, channelY));
+  pts.append(QPointF(approachX, end.y()));
+
+  pts.append(end);
+  return pts;
+}
+
+void trimPolylineEndpoints(QVector<QPointF>& pts, qreal trimStart, qreal trimEnd)
+{
+  if (pts.size() < 2)
+    return;
+
+  if (trimStart > 0.0)
+  {
+    QLineF seg(pts[0], pts[1]);
+    const qreal len = seg.length();
+    if (len > trimStart)
+      pts[0] = seg.pointAt(trimStart / len);
+  }
+
+  if (trimEnd > 0.0)
+  {
+    const int n = pts.size();
+    QLineF seg(pts[n - 2], pts[n - 1]);
+    const qreal len = seg.length();
+    if (len > trimEnd)
+      pts[n - 1] = seg.pointAt((len - trimEnd) / len);
+  }
+}
+
+QPainterPath pathFromPoints(const QVector<QPointF>& pts)
+{
+  QPainterPath path;
+  if (pts.isEmpty())
+    return path;
+
+  path.moveTo(pts.front());
+  for (int i = 1; i < pts.size(); ++i)
+    path.lineTo(pts[i]);
+  return path;
+}
+
+QPainterPath buildOrthogonalTransitionPath(const QPointF& start,
+                                           const QPointF& end,
+                                           PortItem::Kind srcPortKind,
+                                           const NodeItem* source,
+                                           const NodeItem* destination,
+                                           const QString& event,
+                                           bool trimEnds)
+{
+  const qreal lane = laneOffsetForEvent(event);
+  QVector<QPointF> pts = buildOrthogonalPoints(start, end, srcPortKind, source, destination, lane);
+  if (trimEnds)
+    trimPolylineEndpoints(pts, kTrimTopStart, kTrimEnd);
+  return pathFromPoints(pts);
 }
 }  // namespace
 
@@ -63,12 +173,8 @@ TransitionItem::TransitionItem(std::shared_ptr<TransitionSaveInfo> storage)
     , mDestination(nullptr)
     , mStorage(storage)
 {
-  // Make sure the transitions are behind the nodes
-  // setZValue(-1);
   setFlags(QGraphicsItem::ItemIsSelectable);
 
-  // Set line color and width
-  // TODO(felaze): make configurable
   setPen(QPen(Qt::white, 2));
 
   mLabel = new QGraphicsTextItem(this);
@@ -113,10 +219,6 @@ void TransitionItem::done(NodeItem* source, NodeItem* destination)
   mSource = source;
   mDestination = destination;
 
-  // mSource->addTransition(this);
-  // mDestination->addTransition(this);
-
-  // Make sure line is update with new control points
   move(mStorage->getsrcId(), mStorage->srcPoint());
   move(mStorage->getdstId(), mStorage->dstPoint());
 }
@@ -138,36 +240,57 @@ NodeItem* TransitionItem::destination() const
 
 void TransitionItem::move(const QString& id, QPointF pos)
 {
+  Q_UNUSED(pos);
+
   if (id == mStorage->getsrcId())
   {
     if (!mSource)
       mStorage->setSrcPoint(pos);
-    else if (mDestination)
-      mStorage->setSrcPoint(mSource->edgePointToward(destinationApproachPoint(*mDestination), true));
     else
-      mStorage->setSrcPoint(mSource->edgePointToward(pos, true));
+      mStorage->setSrcPoint(mSource->outgoingPortAnchorForEvent(mStorage->getevent()));
   }
   else if (id == mStorage->getdstId())
   {
     if (!mDestination)
       mStorage->setDstPoint(pos);
     else if (mSource)
-      mStorage->setDstPoint(mDestination->edgePointToward(sourceApproachPoint(*mSource), false));
+      mStorage->setDstPoint(mDestination->incomingPortAnchor());
     else
-      mStorage->setDstPoint(mDestination->edgePointToward(pos, false));
+      mStorage->setDstPoint(pos);
   }
   else
+  {
     return;
+  }
 
-  QPointF a = mStorage->srcPoint();
-  QPointF b = mStorage->dstPoint();
-  trimConnectionEndpoints(a, b, mDestination != nullptr);
+  const QPointF start = mStorage->srcPoint();
+  const QPointF end = mStorage->dstPoint();
 
-  QPainterPath path;
-  path.moveTo(a);
-  path.lineTo(b);
+  if (mEdge != Edge::NONE)
+  {
+    QPainterPath path(start);
+    QPointF mid = (start + end) * 0.5;
+    const qreal distance = QLineF(start, end).length();
+    const qreal offset = qMin(80.0, distance * 0.5);
+    mid.setY(mid.y() + (mEdge == Edge::FORWARD ? offset : -offset));
+    path.quadTo(mid, end);
+    setPath(path);
+  }
+  else
+  {
+    const PortItem::Kind srcKind =
+        mSource ? mSource->outgoingPortKindForEvent(mStorage->getevent()) : PortItem::Out;
+    if (usesOrthogonalRouting(srcKind))
+    {
+      setPath(buildOrthogonalTransitionPath(start, end, srcKind, mSource, mDestination, mStorage->getevent(),
+                                            mDestination != nullptr));
+    }
+    else
+    {
+      setPath(buildStraightTransitionPath(start, end, mDestination != nullptr));
+    }
+  }
 
-  setPath(path);
   updateLabelPosition();
   prepareGeometryChange();
 }
@@ -185,13 +308,13 @@ void TransitionItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
                     ? QLineF(path().pointAtPercent(0.99), path().pointAtPercent(1.0))
                     : QLineF(path().pointAtPercent(0.98), path().pointAtPercent(1.0));
 
-  double angle = std::atan2(-line.dy(), line.dx());
+  const double angle = std::atan2(-line.dy(), line.dx());
   const qreal arrowSize = 10;
 
-  QPointF arrowP1 = line.p2() - QPointF(std::cos(angle + M_PI / 6) * arrowSize,
-                                        -std::sin(angle + M_PI / 6) * arrowSize);
-  QPointF arrowP2 = line.p2() - QPointF(std::cos(angle - M_PI / 6) * arrowSize,
-                                        -std::sin(angle - M_PI / 6) * arrowSize);
+  const QPointF arrowP1 = line.p2() - QPointF(std::cos(angle + M_PI / 6) * arrowSize,
+                                               -std::sin(angle + M_PI / 6) * arrowSize);
+  const QPointF arrowP2 = line.p2() - QPointF(std::cos(angle - M_PI / 6) * arrowSize,
+                                               -std::sin(angle - M_PI / 6) * arrowSize);
 
   QPolygonF arrowHead;
   arrowHead << line.p2() << arrowP1 << arrowP2;
@@ -203,7 +326,7 @@ void TransitionItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
 QPainterPath TransitionItem::shape() const
 {
   QPainterPathStroker stroker;
-  stroker.setWidth(10);  // Wider clickable area
+  stroker.setWidth(10);
   return stroker.createStroke(path());
 }
 
@@ -222,30 +345,28 @@ void TransitionItem::updatePath()
   if (!mSource || !mDestination)
     return;
 
-  // Same approach hints as move() so path stays consistent when nodes are dragged.
-  QPointF start = mSource->edgePointToward(destinationApproachPoint(*mDestination), true);
-  QPointF end = mDestination->edgePointToward(sourceApproachPoint(*mSource), false);
-  trimConnectionEndpoints(start, end, true);
+  const QPointF start = mSource->outgoingPortAnchorForEvent(mStorage->getevent());
+  const QPointF end = mDestination->incomingPortAnchor();
 
-  // Draw the curve or line
-  QPainterPath path(start);
-
-  if (mEdge == Edge::NONE)
+  if (mEdge != Edge::NONE)
   {
-    path.lineTo(end);
+    QPainterPath path(start);
+    QPointF mid = (start + end) * 0.5;
+    const qreal distance = QLineF(start, end).length();
+    const qreal offset = qMin(80.0, distance * 0.5);
+    mid.setY(mid.y() + (mEdge == Edge::FORWARD ? offset : -offset));
+    path.quadTo(mid, end);
+    setPath(path);
   }
   else
   {
-    QPointF mid = (start + end) / 2;
-    qreal distance = QLineF(start, end).length();
-    qreal offset = qMin(80.0, distance * 0.5);  // cap max curve to avoid going crazy
-
-    mid.setY(mid.y() + (mEdge == Edge::FORWARD ? offset : -offset));
-
-    path.quadTo(mid, end);
+    const PortItem::Kind srcKind = mSource->outgoingPortKindForEvent(mStorage->getevent());
+    if (usesOrthogonalRouting(srcKind))
+      setPath(buildOrthogonalTransitionPath(start, end, srcKind, mSource, mDestination, mStorage->getevent(), true));
+    else
+      setPath(buildStraightTransitionPath(start, end, true));
   }
 
-  setPath(path);
   updateLabelPosition();
   prepareGeometryChange();
 }
@@ -272,21 +393,19 @@ void TransitionItem::updateLabelPosition()
   if (p.length() == 0.0)
     return;
 
-  QPointF midPoint = p.pointAtPercent(0.5);
-  qreal angleDeg = p.angleAtPercent(0.5);
+  const QPointF midPoint = p.pointAtPercent(0.5);
+  const qreal angleDeg = p.angleAtPercent(0.5);
 
-  // Convert angle to radians for vector math
-  qreal angleRad = qDegreesToRadians(angleDeg);
+  const qreal angleRad = qDegreesToRadians(angleDeg);
 
-  // Compute the unit perpendicular vector
-  qreal offsetDistance = 10.0;  // adjust this as needed
-  qreal dx = -std::sin(angleRad);
-  qreal dy = -std::cos(angleRad);
+  const qreal offsetDistance = 10.0;
+  const qreal dx = -std::sin(angleRad);
+  const qreal dy = -std::cos(angleRad);
 
-  QPointF offset(dx * offsetDistance, dy * offsetDistance);
-  QPointF labelPos = midPoint + offset;
+  const QPointF offset(dx * offsetDistance, dy * offsetDistance);
+  const QPointF labelPos = midPoint + offset;
 
-  QSizeF labelSize = mLabel->boundingRect().size();
+  const QSizeF labelSize = mLabel->boundingRect().size();
   mLabel->setPos(labelPos.x() - labelSize.width() / 2,
                  labelPos.y() - labelSize.height() / 2);
 }

@@ -6,6 +6,7 @@
 #include "app_configs.h"
 #include "elements/flow.h"
 #include "elements/node.h"
+#include "elements/port.h"
 #include "elements/transition.h"
 #include "logging.h"
 #include "style_helpers.h"
@@ -40,8 +41,34 @@ void BehaviourCanvas::updateParent(NodeItem* node, std::shared_ptr<NodeSaveInfo>
     mFlow->removeNode(node);
 }
 
-bool BehaviourCanvas::canAddTransition(NodeItem* node) const
+bool BehaviourCanvas::canAddTransition(NodeItem* node, PortItem* port) const
 {
+  if (!node)
+    return false;
+
+  if (port && port->nodeItem() == node)
+  {
+    if (port->kind() == PortItem::Abort)
+    {
+      for (const auto& t : mFlow->transitions())
+      {
+        if (t->source()->id() == node->id() && t->getEvent() == QStringLiteral("on abort"))
+          return false;
+      }
+      return true;
+    }
+
+    if (port->kind() == PortItem::Error)
+    {
+      for (const auto& t : mFlow->transitions())
+      {
+        if (t->source()->id() == node->id() && t->getEvent() == QStringLiteral("on error"))
+          return false;
+      }
+      return true;
+    }
+  }
+
   int index = 0;
   for (const auto& t : mFlow->transitions())
   {
