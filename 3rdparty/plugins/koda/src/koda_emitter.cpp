@@ -183,7 +183,6 @@ VoidResult KodaEmitter::emitStrategy(const koda::Strategy& strategy, std::string
   ELSE_IF_ALT(PJoin, strategy.v, emitJoin, ss, format)
   ELSE_IF_ALT(PWithin, strategy.v, emitWithin, ss, format)
   ELSE_IF_ALT(PRepeat, strategy.v, emitRepeat, ss, format)
-  ELSE_IF_ALT(PEvery, strategy.v, emitEvery, ss, format)
   ELSE_IF_ALT(PEnd, strategy.v, emitEnd, ss, format)
   ELSE_IF_ALT(PContinue, strategy.v, emitContinue, ss, format)
   ELSE_IF_ALT(PRef, strategy.v, emitRef, ss, format)
@@ -241,15 +240,8 @@ VoidResult KodaEmitter::emitWithin(const koda::Strategy::Within& node, std::stri
 
 VoidResult KodaEmitter::emitRepeat(const koda::Strategy::Repeat& node, std::stringstream& ss, const std::string& format)
 {
-  ss << "repeat (";
-  RETURN_ON_FAILURE(emitStrategy(*node.a, ss, format));
-  ss << ")";
-  return VoidResult();
-}
-
-VoidResult KodaEmitter::emitEvery(const koda::Strategy::Every& node, std::stringstream& ss, const std::string& format)
-{
-  ss << "every " << node.seconds << " (";
+  ss << "repeat " << node.iterations << " " << node.seconds;
+  ss << " (";
   RETURN_ON_FAILURE(emitStrategy(*node.a, ss, format));
   ss << ")";
   for (const auto& handler : node.handlers)

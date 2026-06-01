@@ -1650,46 +1650,22 @@
                   "type": "user_call"
                 }
               ]
-            }
-          ],
-          "behaviour": {},
-          "help": {
-            "message": "Repeats the contained strategy forever"
-          }
-        },
-        {
-          "type": "Every",
-          "body": {
-            "shape": "rounded rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#202020",
-            "borderColor": "#FFFFFF",
-            "borderRadius": 10,
-            "width": 100,
-            "height": 50,
-            "iconColor": "#FFFFFF",
-            "iconScale": 0.8,
-            "icon": "koda_every.svg"
-          },
-          "properties": [
-            {
-              "id": "name",
-              "type": "string",
-              "default": "Every"
             },
             {
-              "id": "color",
-              "type": "color",
-              "default": "#202020"
+              "id": "iterations",
+              "type": "int",
+              "default": "0",
+              "info": "Number of times the loop will execute. A value of 0 repeats indefinitely until the flow is stopped or aborted."
             },
             {
               "id": "rate",
-              "type": "int"
+              "type": "int",
+              "info": "Delay in milliseconds between consecutive iterations. For example, a value of 1000 executes the loop once per second."
             }
           ],
           "behaviour": {},
           "help": {
-            "message": "Performs the \"do\" strategy and if it does not conclude within the set time, it will trigger the \"else\" strategy."
+            "message": "Executes the contained strategy repeatedly. Configure the number of iterations and the interval between executions using the block properties."
           }
         }
       ]

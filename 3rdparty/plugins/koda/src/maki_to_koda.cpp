@@ -372,8 +372,6 @@ std::any MakiToKoda::buildNodeExpr(const IFlow& flow, const INode& node)
     return buildStrategyExpr(flow, node);
   else if (node.getnodeId() == "Koda::Within")
     return buildWithinExpr(flow, node);
-  else if (node.getnodeId() == "Koda::Every")
-    return buildEveryExpr(flow, node);
   else if (node.getnodeId() == "Koda::Repeat")
     return buildRepeatExpr(flow, node);
   else if (node.getnodeId() == "Koda::Continue")
@@ -523,47 +521,37 @@ std::any MakiToKoda::buildWithinExpr(const IFlow& flow, const INode& node)
   return strat;
 }
 
-std::any MakiToKoda::buildEveryExpr(const IFlow& flow, const INode& node)
-{
-  auto expr = std::make_shared<koda::Strategy::Every>();
-
-  const auto seqSuccessors = sequentialSuccessorsOf(node, flow);
-  if (seqSuccessors.size() != 1)
-  {
-    LOG_ERROR("Every node must have exactly one normal transition: " + node.getid().toStdString());
-    return std::any();
-  }
-
-  auto sequence = buildSequenceFrom(flow, seqSuccessors.first().node, nullptr);
-  if (!sequence.has_value())
-  {
-    LOG_ERROR("Failed to create do sequence");
-    return std::any();
-  }
-
-  expr->a = std::any_cast<koda::PStrategy>(sequence);
-
-  auto handlers = buildHandlers(flow, node);
-  for (const auto& handler : handlers)
-    expr->handlers.push_back(handler);
-
-  auto strat = std::make_shared<koda::Strategy>();
-  strat->v = expr;
-
-  return strat;
-}
-
 std::any MakiToKoda::buildRepeatExpr(const IFlow& flow, const INode& node)
 {
   auto expr = std::make_shared<koda::Strategy::Repeat>();
 
-  QJsonObject object = node.getproperties()["strategy"].toJsonObject();
+  auto properties = node.getproperties();
+  if (!properties.contains("strategy"))
+  {
+    LOG_ERROR("Repeat component does not have an associated flow");
+    return std::any();
+  }
+  if (!properties.contains("iterations"))
+  {
+    LOG_ERROR("Repeat component is missing the iterations property");
+    return std::any();
+  }
+  if (!properties.contains("rate"))
+  {
+    LOG_ERROR("Repeat component is missing the rate property");
+    return std::any();
+  }
+
+  QJsonObject object = properties["strategy"].toJsonObject();
   QJsonArray options = object["options"].toArray();
   if (options.isEmpty())
   {
     LOG_ERROR("Repeat component does not have an associated flow");
     return std::any();
   }
+
+  expr->iterations = properties["iterations"].toInt();
+  expr->seconds = properties["rate"].toInt();
 
   QString strategy = options[0].toObject()["data"].toString();
 
@@ -573,6 +561,17 @@ std::any MakiToKoda::buildRepeatExpr(const IFlow& flow, const INode& node)
   auto repeatStrat = std::make_shared<koda::Strategy>();
   repeatStrat->v = ref;
   expr->a = repeatStrat;
+
+  const auto seqSuccessors = sequentialSuccessorsOf(node, flow);
+  if (!seqSuccessors.empty())
+  {
+    auto sequence = buildSequenceFrom(flow, seqSuccessors.first().node, nullptr);
+    if (!sequence.has_value())
+    {
+      LOG_ERROR("Failed to create do sequence");
+      return std::any();
+    }
+  }
 
   auto strat = std::make_shared<koda::Strategy>();
   strat->v = expr;

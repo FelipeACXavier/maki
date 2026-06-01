@@ -128,20 +128,19 @@ timeUnit
 // =============================================================================
 
 strategy
-  : strategy (ARROW strategy)+                                   # stratSeq
-  | JOIN   LPAREN strategy (PIPE strategy)+ RPAREN               # stratJoin
-  | EITHER LPAREN strategy (PIPE strategy)+ RPAREN               # stratEither
-  | LET IDENT ASSIGN eventStatement                              # stratLet
-  | WITHIN NATURAL DO strategy ELSE strategy                     # stratWithin
-  | IF expression THEN strategy (ELSE strategy)?                 # stratIfElse
-  | REPEAT LPAREN strategy RPAREN                                # stratRepeat
-  | GUARD LBRACE expression RBRACE                               # stratGuard
-  | EVERY NATURAL LBRACE strategy RBRACE strategyHandler*        # stratEvery
-  | END                                                          # stratEnd
-  | CONTINUE                                                     # stratContinue
-  | identifier                                                   # stratRef
-  | eventStatement strategyHandler*                              # stratTask
-  | LPAREN strategy RPAREN                                       # stratParen
+  : strategy (ARROW strategy)+                                     # stratSeq
+  | JOIN   LPAREN strategy (PIPE strategy)+ RPAREN                 # stratJoin
+  | EITHER LPAREN strategy (PIPE strategy)+ RPAREN                 # stratEither
+  | LET IDENT ASSIGN eventStatement                                # stratLet
+  | WITHIN NATURAL DO strategy ELSE strategy                       # stratWithin
+  | IF expression THEN strategy (ELSE strategy)?                   # stratIfElse
+  | REPEAT NATURAL NATURAL LPAREN strategy RPAREN strategyHandler* # stratRepeat
+  | GUARD LBRACE expression RBRACE                                 # stratGuard
+  | END                                                            # stratEnd
+  | CONTINUE                                                       # stratContinue
+  | identifier                                                     # stratRef
+  | eventStatement strategyHandler*                                # stratTask
+  | LPAREN strategy RPAREN                                         # stratParen
   ;
 
 strategyHandler
