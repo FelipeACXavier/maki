@@ -35,6 +35,7 @@
 #include "compiler/plugin_action_registry.h"
 #include "compiler/plugin_pipeline.h"
 #include "config.h"
+#include "edge_router.h"
 #include "elements/flow.h"
 #include "elements/node.h"
 #include "flow_info.h"
@@ -113,7 +114,8 @@ VoidResult MainWindow::start()
   LOG_INFO("Using application path: %s", qPrintable(QCoreApplication::applicationDirPath()));
   mSaveHandler = std::make_unique<SaveHandler>(this);
   mSettingsManager = std::make_shared<SettingsManager>(mThemeManager, this);
-  mLanguageManager = std::make_shared<LanguageManager>();
+  mLanguageManager = std::make_shared<LanguageManager>(this);
+  mRouter = std::make_shared<EdgeRouter>(this);
 
   auto processPipeline = new Pipeline(this);
   mPipeline = new Pipeline(this);
@@ -160,6 +162,7 @@ VoidResult MainWindow::start()
     mFileMenu->setGenerationRoot(mSettingsManager->generation().generationDir);
     mLanguageManager->setLanguage(mSettingsManager->general().language);
     mSaveHandler->setLastDir(mSettingsManager->general().lastOpenFileDir);
+    mRouter->setRouteOption((EdgeRouter::Option)mSettingsManager->appearance().edgeShape);
 
     for (const auto& file : mSettingsManager->general().recentFiles)
     {
@@ -248,6 +251,9 @@ void MainWindow::onSettingsChanged()
   if (mPluginManager)
     mPluginManager->settingsChanged(mSettingsManager->plugins(), mHostServices);
 
+  if (mRouter)
+    mRouter->setRouteOption((EdgeRouter::Option)mSettingsManager->appearance().edgeShape);
+
   // Clean and repopulate the recent files
   mActionOpenRecent->clear();
   for (const auto& file : mSettingsManager->general().recentFiles)
@@ -279,7 +285,7 @@ void MainWindow::onSettingsChanged()
 void MainWindow::startUI()
 {
   CanvasView* currentCanvas = static_cast<CanvasView*>(mCanvasPanel->currentWidget());
-  StructureCanvas* canvas = new StructureCanvas(mStorage, Config::MAIN_CANVAS, mConfigTable, currentCanvas);
+  StructureCanvas* canvas = new StructureCanvas(mStorage, Config::MAIN_CANVAS, mConfigTable, mRouter, currentCanvas);
 
   mActiveCanvas = canvas;
   currentCanvas->setScene(canvas);
@@ -888,7 +894,7 @@ void MainWindow::onActionEditPipeline(const QString& pipelineId)
   CanvasView* newView = new CanvasView(mCanvasPanel);
   newView->setProperty("id", pipelineName);
 
-  PipelineCanvas* canvas = new PipelineCanvas(pipeline, mConfigTable, newView);
+  PipelineCanvas* canvas = new PipelineCanvas(pipeline, mConfigTable, mRouter, newView);
   newView->setScene(canvas);
   canvas->populate(*pipeline);
 
@@ -1322,7 +1328,7 @@ void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId)
 
   CanvasView* newView = new CanvasView(mCanvasPanel);
 
-  BehaviourCanvas* canvas = new BehaviourCanvas(flow, mConfigTable, newView);
+  BehaviourCanvas* canvas = new BehaviourCanvas(flow, mConfigTable, mRouter, newView);
   newView->setScene(canvas);
 
   // Change to respective tabs

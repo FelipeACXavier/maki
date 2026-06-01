@@ -35,6 +35,7 @@ class PluginView;
 class QPlainTextEdit;
 class Logger;
 class LanguageManager;
+class EdgeRouter;
 
 namespace maki
 {
@@ -151,6 +152,7 @@ private:
   oclero::qlementine::ThemeManager* mThemeManager;  /// Pointer to the theme manager.
 
   std::shared_ptr<SaveInfo> mStorage;  /// Shared pointer to save information.
+  std::shared_ptr<EdgeRouter> mRouter;
 
   QApplication* mApp;  /// Pointer to the QApplication instance.
 

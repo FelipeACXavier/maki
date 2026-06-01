@@ -60,6 +60,7 @@ struct AppearanceSettings
   bool startLogFilterExpanded = true;   /// Start the log table filters collapsed or expanded.
   oclero::qlementine::Theme themeVars;  /// Theme variables.
   int numberOfColumns = 1;
+  int edgeShape = 0;
 
   bool operator!=(const AppearanceSettings& s) const
   {
@@ -70,7 +71,8 @@ struct AppearanceSettings
            nodeCornerRadius != s.nodeCornerRadius ||
            themeVars != s.themeVars ||
            startLogFilterExpanded != s.startLogFilterExpanded ||
-           numberOfColumns != s.numberOfColumns;
+           numberOfColumns != s.numberOfColumns ||
+           edgeShape != s.edgeShape;
   }
 };
 

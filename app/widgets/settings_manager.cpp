@@ -124,6 +124,7 @@ void SettingsManager::load()
   LOAD_SETTING(mAppearance, nativeMenuBar, Bool);
   LOAD_SETTING(mAppearance, nodeCornerRadius, Int);
   LOAD_SETTING(mAppearance, numberOfColumns, Int);
+  LOAD_SETTING(mAppearance, edgeShape, Int);
   LOAD_SETTING(mAppearance, startLogFilterExpanded, Bool);
   mSettings.endGroup();
 
@@ -217,6 +218,7 @@ void SettingsManager::save()
   SAVE_SETTING(mAppearance, nativeMenuBar);
   SAVE_SETTING(mAppearance, nodeCornerRadius);
   SAVE_SETTING(mAppearance, numberOfColumns);
+  SAVE_SETTING(mAppearance, edgeShape);
   mSettings.endGroup();  // Appearance
 
   mSettings.beginGroup("Generation");

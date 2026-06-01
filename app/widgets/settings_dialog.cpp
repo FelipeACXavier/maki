@@ -30,6 +30,7 @@
 #include "scroll_area.h"
 #include "section.h"
 #include "style_helpers.h"
+#include "system/edge_router.h"
 #include "widget_factory.h"
 
 SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsManager> manager, std::shared_ptr<LanguageManager> languageManager, QWidget* parent)
@@ -230,6 +231,7 @@ VoidResult SettingsDialog::createAppearancePage()
     mNumberOfColumns->setValue(defaultSettings.numberOfColumns);
     mShowGrid->setValue(defaultSettings.showCanvasGrid);
     mStartLogTableFilters->setValue(defaultSettings.startLogFilterExpanded);
+    mTransitionShape->setValue(EdgeRouter::optionToString(defaultSettings.edgeShape));
 
     mSettingsManager->setAppearance(defaultSettings);
   });
@@ -317,6 +319,11 @@ VoidResult SettingsDialog::createAppearancePage()
   mNumberOfColumns->setSuffix(" " + tr("columns"));
   mNumberOfColumns->addDescription(tr("Note: The width of the palette will not update automatically"));
 
+  mTransitionShape = new maki::SelectorWidget(tr("Shape of the transtion edges"), alignment, page);
+  for (int i = (int)EdgeRouter::Option::DIRECT; i < (int)EdgeRouter::Option::OGDF; ++i)
+    mTransitionShape->addItem(EdgeRouter::optionToString((EdgeRouter::Option)i), i);
+  mTransitionShape->setValue(EdgeRouter::optionToString(appearance.edgeShape));
+
   mShowGrid = new maki::BooleanWidget(tr("Show canvas grid"), appearance.showCanvasGrid, alignment, page);
   mStartLogTableFilters = new maki::BooleanWidget(tr("Show log table filters on start"), appearance.startLogFilterExpanded, alignment, page);
 
@@ -327,6 +334,7 @@ VoidResult SettingsDialog::createAppearancePage()
   editorLayout->addWidget(mStartLogTableFilters);
   editorLayout->addWidget(mNodeCornerRadius);
   editorLayout->addWidget(mNumberOfColumns);
+  editorLayout->addWidget(mTransitionShape);
 
   QVBoxLayout* layout = page->findChild<QVBoxLayout*>("ContentArea");
   layout->addWidget(themeLayout);
@@ -564,6 +572,7 @@ void SettingsDialog::saveToSettings()
   appearance.nativeMenuBar = mNativeMenuBar->getValue();
   appearance.nodeCornerRadius = mNodeCornerRadius->getValue();
   appearance.numberOfColumns = mNumberOfColumns->getValue();
+  appearance.edgeShape = mTransitionShape->getData().toInt();
 
   GenerationSettings generation;
   generation.generationDir = mGenerationDirEdit->getValue();

@@ -5,8 +5,8 @@
 #include "elements/flow.h"
 #include "logging.h"
 
-BehaviourCanvas::BehaviourCanvas(Flow* flow, std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
-    : Canvas(flow->id(), configTable, parent)
+BehaviourCanvas::BehaviourCanvas(Flow* flow, std::shared_ptr<ConfigurationTable> configTable, std::shared_ptr<EdgeRouter> router, QObject* parent)
+    : Canvas(flow->id(), configTable, router, parent)
     , mFlow(flow)
 {
   // Add start and end nodes on creation

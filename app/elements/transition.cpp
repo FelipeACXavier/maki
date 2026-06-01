@@ -6,6 +6,8 @@
 
 #include "app_configs.h"
 #include "node.h"
+#include "system/canvas.h"
+#include "system/edge_router.h"
 
 TransitionItem::TransitionItem(std::shared_ptr<TransitionSaveInfo> storage)
     : QGraphicsPathItem()
@@ -66,9 +68,6 @@ void TransitionItem::done(NodeItem* source, NodeItem* destination)
   mSource = source;
   mDestination = destination;
 
-  // mSource->addTransition(this);
-  // mDestination->addTransition(this);
-
   // Make sure line is update with new control points
   move(mStorage->getsrcId(), mStorage->srcPoint());
   move(mStorage->getdstId(), mStorage->dstPoint());
@@ -98,12 +97,14 @@ void TransitionItem::move(const QString& id, QPointF pos)
   else
     return;
 
-  // Control points for Bézier curve
-  QPainterPath path;
-  path.moveTo(mStorage->srcPoint());
-  path.lineTo(mStorage->dstPoint());
+  const auto canvas = static_cast<Canvas*>(scene());
+  if (!canvas)
+    return;
+  const auto router = canvas->router();
+  if (!router)
+    return;
 
-  setPath(path);
+  setPath(router->route(mStorage->srcPoint(), mStorage->dstPoint(), {}));
   updateLabelPosition();
   prepareGeometryChange();
 }
@@ -158,33 +159,22 @@ void TransitionItem::updatePath()
   if (!mSource || !mDestination)
     return;
 
-  // Get center positions in scene coordinates
+  const auto canvas = static_cast<Canvas*>(scene());
+  if (!canvas)
+    return;
+
+  const auto router = canvas->router();
+  if (!router)
+    return;
+
   QPointF fromCenter = mSource->sceneNodeRect().center();
   QPointF toCenter = mDestination->sceneNodeRect().center();
 
   // Compute edge points toward the other node
-  QPointF start = mSource->edgePointToward(toCenter);
-  QPointF end = mDestination->edgePointToward(fromCenter);
+  const QPointF start = mSource->edgePointToward(toCenter);
+  const QPointF end = mDestination->edgePointToward(fromCenter);
 
-  // Draw the curve or line
-  QPainterPath path(start);
-
-  if (mEdge == Edge::NONE)
-  {
-    path.lineTo(end);
-  }
-  else
-  {
-    QPointF mid = (start + end) / 2;
-    qreal distance = QLineF(start, end).length();
-    qreal offset = qMin(80.0, distance * 0.5);  // cap max curve to avoid going crazy
-
-    mid.setY(mid.y() + (mEdge == Edge::FORWARD ? offset : -offset));
-
-    path.quadTo(mid, end);
-  }
-
-  setPath(path);
+  setPath(router->route(start, end, {}));
   updateLabelPosition();
   prepareGeometryChange();
 }

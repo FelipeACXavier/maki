@@ -6,8 +6,8 @@
 #include "logging.h"
 #include "node_info.h"
 
-StructureCanvas::StructureCanvas(std::shared_ptr<SaveInfo> storage, const QString& canvasId, std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
-    : Canvas(canvasId, configTable, parent)
+StructureCanvas::StructureCanvas(std::shared_ptr<SaveInfo> storage, const QString& canvasId, std::shared_ptr<ConfigurationTable> configTable, std::shared_ptr<EdgeRouter> router, QObject* parent)
+    : Canvas(canvasId, configTable, router, parent)
     , mStorage(storage)
 {
 }

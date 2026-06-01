@@ -409,7 +409,7 @@ public:
    * @param name The visible display name.
    * @param value The underlying value associated with the item.
    */
-  void addItem(const QString& name, const QString& value);
+  void addItem(const QString& name, const QVariant& value);
 
   void writeValueToWidget(const QString& value) override;
 

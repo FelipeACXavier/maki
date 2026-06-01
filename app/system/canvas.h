@@ -19,6 +19,7 @@ class QUndoStack;
 class CanvasView;
 class TransitionItem;
 class ConfigurationTable;
+class EdgeRouter;
 
 /**
  * @brief The Canvas class represents the main drawing area for nodes and transitions.
@@ -57,7 +58,7 @@ public:
    * @param configTable Shared pointer to the configuration table.
    * @param parent Pointer to the parent object.
    */
-  Canvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> configTable, QObject* parent = nullptr);
+  Canvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> configTable, std::shared_ptr<EdgeRouter> router, QObject* parent = nullptr);
 
   ~Canvas();
   /**
@@ -217,13 +218,16 @@ public:
    */
   void alignNodes(const QList<Types::AlignmentNode>& items, Types::AlignmentMode mode, Types::AlignmentDirection direction, bool useGiven);
 
+  std::shared_ptr<EdgeRouter> router() const;
+
 protected:
   /**
    * @brief Handles drag enter events.
    *
    * @param event Pointer to the QGraphicsSceneDragDropEvent.
    */
-  void dragEnterEvent(QGraphicsSceneDragDropEvent* event) override;
+  void
+  dragEnterEvent(QGraphicsSceneDragDropEvent* event) override;
 
   /**
    * @brief Handles drag move events.
@@ -379,6 +383,7 @@ public slots:
 
 protected:
   std::shared_ptr<ConfigurationTable> mConfigTable;  /// Pointer to the configuration table.
+  std::shared_ptr<EdgeRouter> mRouter;               /// Pointer to the system edge router.
 
   virtual void addedItemNode(NodeItem* node, std::shared_ptr<NodeSaveInfo> info);
   virtual void addedItemFlow(Flow* flow, NodeItem* node);

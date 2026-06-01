@@ -33,9 +33,10 @@
 
 static constexpr auto MAKI_CLIPBOARD_MIME = "application/x-maki-copied-nodes";
 
-Canvas::Canvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
+Canvas::Canvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> configTable, std::shared_ptr<EdgeRouter> router, QObject* parent)
     : QGraphicsScene(parent)
     , mConfigTable(configTable)
+    , mRouter(router)
     , mId(canvasId)
     , mCopiedNodes({})
 {
@@ -69,6 +70,11 @@ Types::LibraryTypes Canvas::type() const
 QUndoStack* Canvas::undoStack() const
 {
   return mUndoStack;
+}
+
+std::shared_ptr<EdgeRouter> Canvas::router() const
+{
+  return mRouter;
 }
 
 QList<NodeItem*> Canvas::availableNodes()
@@ -432,6 +438,9 @@ void Canvas::createAlignMenu(QMenu* alignMenu, const QList<Types::AlignmentNode>
 
   alignMenu->setIcon(iconFromTheme("align-none"));
   alignMenu->setEnabled(items.size() > 1);
+
+  const auto width = qobject_cast<QGraphicsView*>(parent())->viewport()->width();
+  alignMenu->setMinimumWidth(width / 6);
 }
 
 void Canvas::nodeClicked(NodeItem* node)
@@ -551,9 +560,12 @@ void Canvas::alignNodesVertically(const QList<Types::AlignmentNode>& nodes, Type
 void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 {
   QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
+  const auto width = qobject_cast<QGraphicsView*>(parent())->viewport()->width();
 
   // Define menu actions
   QMenu menu;
+  menu.setMinimumWidth(width / 6);
+
   QList<NodeItem*> items = selectedNodes();
   QList<Types::AlignmentNode> itemIds = {};
   for (const auto node : items)
@@ -1302,9 +1314,11 @@ void Canvas::populate(const FlowSaveInfo& flow)
     connection->setStart(transition->getsrcId(), transition->srcPoint(), transition->srcShift());
     connection->setEnd(transition->getdstId(), transition->dstPoint(), transition->dstShift());
 
-    connection->done(srcConn, dstConn);
     addTransition(connection);
     addItem(connection);
+
+    // First add the transition to the canvas and then mark it as done
+    connection->done(srcConn, dstConn);
   }
 }
 
@@ -1341,5 +1355,10 @@ void Canvas::updateParent(NodeItem* /* node */, std::shared_ptr<NodeSaveInfo> /*
 void Canvas::themeChanged()
 {
   for (QGraphicsItem* item : items())
+  {
+    if (item->type() == TransitionItem::Type)
+      qgraphicsitem_cast<TransitionItem*>(item)->updatePath();
+
     item->update();
+  }
 }

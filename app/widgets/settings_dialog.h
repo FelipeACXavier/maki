@@ -90,6 +90,7 @@ private:
   maki::SpinWidget* mNumberOfColumns = nullptr;          /// Widget for setting the palette number of columns
   maki::GridGroup* mColorGrid = nullptr;                 /// Group widget for color settings.
   maki::StringWidget* mUserThemeName = nullptr;          /// Widget for entering user theme name.
+  maki::SelectorWidget* mTransitionShape = nullptr;      /// Widget for selecting the transition shape.
   oclero::qlementine::ThemeEditorWidget* mThemeEditor = nullptr;
 
   // Generation

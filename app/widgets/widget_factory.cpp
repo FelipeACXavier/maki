@@ -495,7 +495,7 @@ QVariant SelectorWidget::getData() const
   return mData;
 }
 
-void SelectorWidget::addItem(const QString& name, const QString& value)
+void SelectorWidget::addItem(const QString& name, const QVariant& value)
 {
   if (auto* combo = qobject_cast<QComboBox*>(mInputField))
   {
