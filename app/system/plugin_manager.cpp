@@ -107,7 +107,7 @@ VoidResult PluginManager::start(const PluginSettings& settings, HostServices* se
         continue;
       }
 
-      Manifest manifest = manifestResult.Value();
+      maki::Manifest manifest = manifestResult.Value();
       auto status = settings.pluginStatus(manifest.name);
       if (status == PluginSettings::Status::Disabled)
       {
@@ -150,7 +150,7 @@ VoidResult PluginManager::start(const PluginSettings& settings, HostServices* se
   return VoidResult();
 }
 
-VoidResult PluginManager::loadPlugin(const QDir& pluginDir, const Manifest& manifest, HostServices* services, PluginSettings::Status status)
+VoidResult PluginManager::loadPlugin(const QDir& pluginDir, const maki::Manifest& manifest, HostServices* services, PluginSettings::Status status)
 {
   if (manifest.entryPoint.isEmpty())
     return VoidResult::Failed("No entry point defined in manifest");
@@ -186,8 +186,7 @@ VoidResult PluginManager::loadPlugin(const QDir& pluginDir, const Manifest& mani
   if (!codeGen)
     return VoidResult::Failed("Plugin: " + pluginPath.toStdString() + " does not adhere to maki::IPlugin");
 
-  codeGen->setName(manifest.name);
-  codeGen->setVersion(manifest.version);
+  codeGen->setManifest(manifest);
   codeGen->setHostServices(services);
 
   QDir assets = QDir(pluginDir.absoluteFilePath("assets"));
@@ -202,7 +201,7 @@ VoidResult PluginManager::loadPlugin(const QDir& pluginDir, const Manifest& mani
     LOG_WARN_ON_FAILURE(mRegistry->registerAction(codeGen->languageName(), action));
   }
 
-  mPlugins.append({loader, codeGen, manifest});
+  mPlugins.append({loader, codeGen});
   LOG_DEBUG("Loaded plugin for language: %s", qPrintable(pluginName));
 
   emit pluginAdded(mPlugins.last());
@@ -210,22 +209,22 @@ VoidResult PluginManager::loadPlugin(const QDir& pluginDir, const Manifest& mani
   return VoidResult();
 }
 
-Result<Manifest> PluginManager::getPluginManifest(const QDir& path) const
+Result<maki::Manifest> PluginManager::getPluginManifest(const QDir& path) const
 {
   auto manifestFiles = path.entryList({"plugin.json"}, QDir::Files);
   if (manifestFiles.isEmpty())
-    return Result<Manifest>::Failed("No manifest available");
+    return Result<maki::Manifest>::Failed("No manifest available");
 
   if (manifestFiles.size() != 1)
-    return Result<Manifest>::Failed("Plugin folder has more than one manifest");
+    return Result<maki::Manifest>::Failed("Plugin folder has more than one manifest");
 
   auto fileName = path.absoluteFilePath(manifestFiles.at(0));
   auto manifest = JSON::fromFile(fileName);
   if (!manifest.IsSuccess())
-    return Result<Manifest>::Failed("Failed to parse manifest: " + manifest.ErrorMessage());
+    return Result<maki::Manifest>::Failed("Failed to parse manifest: " + manifest.ErrorMessage());
 
   auto data = manifest.Value();
-  return Manifest::fromJson(path.absolutePath(), data);
+  return maki::Manifest::fromJson(path.absolutePath(), data);
 }
 
 bool PluginManager::setPlugin(const QString& language)
@@ -265,14 +264,14 @@ maki::IPlugin* PluginManager::pluginByLanguage(const QString& language) const
 {
   for (const auto& plugin : mPlugins)
   {
-    if (plugin.manifest.name == language)
+    if (plugin.plugin->languageName() == language)
       return plugin.plugin;
   }
 
   return nullptr;
 }
 
-VoidResult PluginManager::loadPluginLibraryDir(const Manifest& manifest)
+VoidResult PluginManager::loadPluginLibraryDir(const maki::Manifest& manifest)
 {
   if (manifest.libs.isEmpty())
     return VoidResult();
@@ -308,7 +307,7 @@ VoidResult PluginManager::loadPluginLibraryDir(const Manifest& manifest)
   return VoidResult();
 }
 
-VoidResult PluginManager::installPlugin(const Manifest& manifest)
+VoidResult PluginManager::installPlugin(const maki::Manifest& manifest)
 {
   mPipeline->startGroup(manifest.name);
   for (const auto& step : manifest.installationSteps)
@@ -351,7 +350,7 @@ void PluginManager::settingsChanged(const PluginSettings& settings, HostServices
           if (!manifestResult || manifestResult.Value().name != ps.name)
             continue;
 
-          Manifest manifest = manifestResult.Value();
+          maki::Manifest manifest = manifestResult.Value();
           LOG_WARN_ON_FAILURE(loadPlugin(pluginsDir, manifest, services, PluginSettings::Status::Enabled));
         }
       }
@@ -370,7 +369,7 @@ int PluginManager::getPluginIndex(const QString& pluginName) const
 
 VoidResult PluginManager::deregisterPlugin(const Plugin& plugin)
 {
-  LOG_TRACE("Deregistering plugin: %s", qPrintable(plugin.manifest.name));
+  LOG_TRACE("Deregistering plugin: %s", qPrintable(plugin.plugin->languageName()));
   const auto index = getPluginIndex(plugin.plugin->languageName());
   if (index == -1)
     return VoidResult::Failed("Plugin not registered");
@@ -404,10 +403,10 @@ VoidResult PluginManager::deregisterPlugin(const Plugin& plugin)
 
   // Unload immediately
   if (!plugin.loader->unload())
-    LOG_WARNING("Failed to unload the plugin: %s", qPrintable(plugin.manifest.name));
+    LOG_WARNING("Failed to unload the plugin: %s", qPrintable(plugin.plugin->languageName()));
 
   // Finally, remove it from the list
-  auto removed = mPlugins.removeIf([&](const Plugin& p) { return p.manifest.name == plugin.manifest.name; });
+  auto removed = mPlugins.removeIf([&](const Plugin& p) { return p.plugin->languageName() == plugin.plugin->languageName(); });
   if (removed != 1)
     return VoidResult::Failed("Failed to remove plugin from the list");
 
@@ -422,7 +421,7 @@ VoidResult PluginManager::reloadPlugin(const QString& pluginName, HostServices* 
     return VoidResult::Failed("Plugin not loaded: " + pluginName.toStdString());
 
   const auto old = mPlugins.at(index);
-  const QDir pluginDir = QDir(old.manifest.path);
+  const QDir pluginDir = QDir(old.plugin->manifest().path);
 
   RETURN_ON_FAILURE(deregisterPlugin(old));
 

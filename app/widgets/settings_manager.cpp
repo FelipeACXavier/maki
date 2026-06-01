@@ -1,7 +1,9 @@
 // SettingsManager.cpp
 #include "settings_manager.h"
 
+#include <QDir>
 #include <QFile>
+#include <QFileInfo>
 
 #include "common/app_configs.h"
 #include "isettings.h"
@@ -141,6 +143,7 @@ void SettingsManager::load()
     info.name = mSettings.value("name", info.name).toString();
     info.enabled = mSettings.value("enabled", info.enabled).toBool();
     info.version = maki::PluginVersion::fromString(mSettings.value("version", "").toString());
+    info.icon = mSettings.value("icon", "").toString();
 
     const QStringList settingGroups = mSettings.childGroups();
     info.settings.resize(settingGroups.size());
@@ -229,6 +232,7 @@ void SettingsManager::save()
     mSettings.setValue("name", plugin.name);
     mSettings.setValue("version", plugin.version.toString());
     mSettings.setValue("enabled", plugin.enabled);
+    mSettings.setValue("icon", plugin.icon);
     for (int i = 0; i < plugin.settings.size(); ++i)
     {
       const auto setting = plugin.settings.at(i);
@@ -333,9 +337,12 @@ QVector<maki::SettingField> SettingsManager::getPluginSettings(const QString& id
   return {};
 }
 
-VoidResult SettingsManager::registerSettings(const QString& id, const maki::PluginVersion version,
+VoidResult SettingsManager::registerSettings(const QString& id, const maki::PluginVersion version, const QString& iconPath,
                                              const QVector<maki::SettingField>& settings)
 {
+  QFileInfo info(iconPath);
+  auto fixedIconPath = info.dir().filePath(info.completeBaseName());
+
   // Since the plugin is registered, we try to load the save settings
   bool exists = false;
   for (auto& plugin : mPluginSettings.plugins)
@@ -369,13 +376,16 @@ VoidResult SettingsManager::registerSettings(const QString& id, const maki::Plug
       LOG_DEBUG("New setting (%s) added to plugin %s", qPrintable(incoming.getKey()), qPrintable(id));
       plugin.settings.append(incoming);
     }
+
+    // If icon is empty, try adding it
+    plugin.icon = fixedIconPath;
   }
 
   // If it is a new plugin, then we must register it
   if (!exists)
   {
     LOG_DEBUG("Registering plugin \"%s\" settings", qPrintable(id));
-    mPluginSettings.plugins.append({id, true, version, settings});
+    mPluginSettings.plugins.append({id, true, version, settings, fixedIconPath});
   }
   else
   {

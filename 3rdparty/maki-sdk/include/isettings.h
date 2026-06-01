@@ -106,6 +106,7 @@ public:
 
   virtual VoidResult registerSettings(const QString& id,
                                       const maki::PluginVersion version,
+                                      const QString& iconPath,
                                       const QVector<SettingField>& settings) = 0;
   virtual QVector<maki::SettingField> getPluginSettings(const QString& id) const = 0;
 };

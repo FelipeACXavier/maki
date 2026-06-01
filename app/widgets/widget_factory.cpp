@@ -11,6 +11,7 @@
 #include <QPushButton>
 #include <QShortcut>
 #include <QSpinBox>
+#include <oclero/qlementine.hpp>
 #include <oclero/qlementine/widgets/ColorEditor.hpp>
 #include <oclero/qlementine/widgets/IconWidget.hpp>
 #include <oclero/qlementine/widgets/Label.hpp>
@@ -156,7 +157,16 @@ InputWidget::InputWidget(const QString& label, QWidget* inputField, WidgetAlignm
   labelWidget->setRole(oclero::qlementine::TextRole::Default);
   labelWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
+  auto* qlementineStyle = oclero::qlementine::appStyle();
+  if (qlementineStyle)
+  {
+    auto metric = labelWidget->fontMetrics();
+    const auto theme = qlementineStyle->theme();
+    labelWidget->setMinimumWidth(metric.horizontalAdvance(label) + theme.spacing);
+  }
+
   mInputField->setParent(this);
+
   if (alignment.type == WidgetAlignment::Type::FORM)
   {
     if (alignment.labelWidth > 0)
@@ -172,6 +182,9 @@ InputWidget::InputWidget(const QString& label, QWidget* inputField, WidgetAlignm
 
     if (alignment.type == WidgetAlignment::Type::INLINE)
     {
+      if (alignment.labelWidth > 0)
+        labelWidget->setFixedWidth(alignment.labelWidth);
+
       layout()->addWidget(createLayout(labelWidget, alignment));
     }
     else

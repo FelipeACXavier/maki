@@ -97,7 +97,8 @@ SettingsDialog::SelectorPage SettingsDialog::addPage(const QString& pageName, co
   auto* headerRow = new QHBoxLayout();
   headerRow->setContentsMargins(10, 0, 10, 0);
 
-  auto* titleIcon = new oclero::qlementine::IconWidget(QIcon(iconName), QSize(16, 16), page);
+  auto icon = iconFromTheme(iconName, true);
+  auto* titleIcon = new oclero::qlementine::IconWidget(icon, QSize(16, 16), page);
   auto* title = new oclero::qlementine::Label(pageName, page);
   title->setRole(oclero::qlementine::TextRole::H3);
 
@@ -145,7 +146,7 @@ SettingsDialog::SelectorPage SettingsDialog::addPage(const QString& pageName, co
   auto* selector = parent == nullptr ? new QTreeWidgetItem(mPageSelector) : new QTreeWidgetItem(parent);
   selector->setText(0, pageName);
   selector->setData(0, Qt::UserRole, index);
-  selector->setIcon(0, QIcon(iconName));
+  selector->setIcon(0, icon);
 
   return SelectorPage{selector, page};
 }
@@ -153,7 +154,7 @@ SettingsDialog::SelectorPage SettingsDialog::addPage(const QString& pageName, co
 VoidResult SettingsDialog::createGeneralPage()
 {
   auto generalSettings = mSettingsManager->general();
-  auto [selector, page] = addPage(tr("General"), ":/icons/general.svg", [this] {
+  auto [selector, page] = addPage(tr("General"), "general", [this] {
     auto defaultSettings = GeneralSettings();
 
     mAutosaveMinutes->setValue(defaultSettings.autosaveIntervalMinutes);
@@ -166,7 +167,11 @@ VoidResult SettingsDialog::createGeneralPage()
     mSettingsManager->setGeneral(defaultSettings);
   });
 
-  maki::WidgetAlignment alignment = {maki::WidgetAlignment::Type::INLINE};
+  maki::WidgetAlignment alignment = {
+      .type = maki::WidgetAlignment::Type::INLINE,
+      .direction = maki::WidgetAlignment::Direction::SPREAD,
+      .labelWidth = 300,
+  };
   auto languageLayout = new maki::WidgetGroup(tr("Language"), page);
   mLanguageCombo = new maki::SelectorWidget(tr("Set language"), alignment, page);
   for (const LanguageManager::LanguageOption& info : mLanguageManager->availableLanguages())
@@ -215,7 +220,7 @@ VoidResult SettingsDialog::createGeneralPage()
 VoidResult SettingsDialog::createAppearancePage()
 {
   auto appearance = mSettingsManager->appearance();
-  auto [selector, page] = addPage(tr("Appearance"), ":/icons/appearance.svg", [this] {
+  auto [selector, page] = addPage(tr("Appearance"), "appearance", [this] {
     auto defaultSettings = AppearanceSettings();
 
     mThemeCombo->setValue(defaultSettings.theme);
@@ -247,9 +252,6 @@ VoidResult SettingsDialog::createAppearancePage()
     if (theme.IsSuccess())
       mThemeEditor->setTheme(theme.Value());
   });
-
-  maki::WidgetAlignment alignment = {maki::WidgetAlignment::Type::INLINE};
-  mNativeMenuBar = new maki::BooleanWidget(tr("Use native menubar"), appearance.nativeMenuBar, alignment, page);
 
   auto themeLayout = new maki::WidgetGroup(tr("Theming"), page);
   themeLayout->addWidget(mThemeCombo);
@@ -298,6 +300,13 @@ VoidResult SettingsDialog::createAppearancePage()
     themeLayout->addWidget(editorFrame);
   }
 
+  maki::WidgetAlignment alignment = {
+      .type = maki::WidgetAlignment::Type::INLINE,
+      .direction = maki::WidgetAlignment::Direction::SPREAD,
+      .labelWidth = 300,
+  };
+  mNativeMenuBar = new maki::BooleanWidget(tr("Use native menubar"), appearance.nativeMenuBar, alignment, page);
+
   mUiScale = new maki::SpinWidget(tr("UI scale"), appearance.uiScalePercent, page, alignment, 80, 200);
   mUiScale->setSuffix(" %");
 
@@ -329,7 +338,7 @@ VoidResult SettingsDialog::createAppearancePage()
 VoidResult SettingsDialog::createGenerationPage()
 {
   auto generation = mSettingsManager->generation();
-  auto [selector, page] = addPage(tr("Generation"), ":/icons/generator.svg", [this] {
+  auto [selector, page] = addPage(tr("Generation"), "run-build", [this] {
     mSettingsManager->setGeneration(GenerationSettings());
   });
 
@@ -374,7 +383,7 @@ VoidResult SettingsDialog::createPluginPages()
   LOG_DEBUG("Loaded from settings with %d plugins", mPluginSettings.plugins.size());
 
   // Add top level plugin page
-  auto [topSelector, topPage] = addPage(tr("Plugins"), ":/icons/plugin.svg", [] {
+  auto [topSelector, topPage] = addPage(tr("Plugins"), "plugins", [] {
     // mSettingsManager->setGeneration(GenerationSettings());
   });
 
@@ -471,7 +480,7 @@ VoidResult SettingsDialog::createPluginPages()
     item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled | Qt::ItemIsUserCheckable);
     model->setItem(newRow, 2, item);
 
-    auto [selector, page] = addPage(pluginId, ":/icons/plugin.svg", [] {
+    auto [selector, page] = addPage(pluginId, plugin.icon, [] {
       // mSettingsManager->setGeneration(GenerationSettings());
     },
                                     topSelector);
@@ -479,7 +488,11 @@ VoidResult SettingsDialog::createPluginPages()
     QVBoxLayout* layout = page->findChild<QVBoxLayout*>("ContentArea");
     layout->setSpacing(2);
 
-    maki::WidgetAlignment alignment = {maki::WidgetAlignment::Type::INLINE};
+    maki::WidgetAlignment alignment = {
+        .type = maki::WidgetAlignment::Type::INLINE,
+        .direction = maki::WidgetAlignment::Direction::SPREAD,
+        .labelWidth = 300,
+    };
     for (const auto& setting : settings)
     {
       if (setting.getType() == Types::PropertyTypes::INTEGER)

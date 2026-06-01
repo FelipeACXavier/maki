@@ -21,109 +21,6 @@ class PipelineActionRegistry;
 }
 
 /**
- * @brief Represents a manifest file for a plugin.
- */
-class Manifest
-{
-public:
-  struct InstallStep
-  {
-    QString command;
-    QStringList args;
-  };
-
-  struct Environment
-  {
-    QString path;
-  };
-
-  QString id;          /// Unique identifier of the plugin.
-  QString name;        /// Name of the plugin.
-  QString version;     /// Version of the plugin.
-  QString entryPoint;  /// Entry point of the plugin.
-  QString icon;        /// Icon associated with the plugin.
-  QString path;        /// Path to the plugin.
-  QStringList libs;    /// List of libraries required by the plugin.
-  Environment env;
-  QVector<InstallStep> installationSteps;
-
-  /**
-   * @brief Creates a Manifest object from JSON data.
-   *
-   * @param path The path to the manifest file.
-   * @param data The JSON data containing the manifest information.
-   * @return A Manifest object populated with the data.
-   */
-  static Manifest fromJson(const QString& path, const JSON& data)
-  {
-    Manifest manifest;
-
-    if (data.contains(ConfigKeys::ID))
-      manifest.id = data[ConfigKeys::ID].toString();
-    if (data.contains(ConfigKeys::NAME))
-      manifest.name = data[ConfigKeys::NAME].toString();
-    if (data.contains("version"))
-      manifest.version = data["version"].toString();
-#ifdef Q_OS_WIN
-    if (data.contains("entryPointDLL"))
-      manifest.entryPoint = data["entryPointDLL"].toString();
-#else
-    if (data.contains("entryPointSO"))
-      manifest.entryPoint = data["entryPointSO"].toString();
-#endif
-    if (data.contains("icon"))
-      manifest.icon = data["icon"].toString();
-
-    for (const auto& argument : data["libraries"].toArray())
-      manifest.libs.push_back(argument.toString());
-
-    for (const auto& installation : data["installation"].toArray())
-    {
-      const auto obj = installation.toObject();
-      if (!obj.contains("command"))
-        continue;
-
-      InstallStep step;
-      step.command = obj["command"].toString();
-      if (obj.contains("arguments"))
-      {
-        QStringList args;
-        for (const auto& arg : obj["arguments"].toArray())
-          args << arg.toString();
-
-        step.args = args;
-      }
-
-      manifest.installationSteps.push_back(step);
-    }
-
-    if (data.contains("env"))
-    {
-      Environment env;
-      const auto obj = data["env"].toObject();
-      if (obj.contains("PATH"))
-        env.path = obj["PATH"].toString();
-
-      manifest.env = env;
-    }
-
-    manifest.path = path;
-
-    return manifest;
-  }
-
-  QString pluginPath() const
-  {
-    return path + "/" + entryPoint;
-  }
-
-  QString iconPath() const
-  {
-    return QDir(path).dirName() + "/" + icon;
-  }
-};
-
-/**
  * @brief Manages plugins and their associated functionality.
  */
 class PluginManager : public QObject
@@ -135,7 +32,6 @@ public:
   {
     QSharedPointer<QPluginLoader> loader;
     maki::IPlugin* plugin;  /// Pointer to the generator plugin.
-    Manifest manifest;      /// Manifest of the plugin.
   };
 
   /**
@@ -215,7 +111,7 @@ private:
    * @param services The HostServices object for plugin interaction.
    * @return A VoidResult indicating success or failure.
    */
-  VoidResult loadPlugin(const QDir& pluginDir, const Manifest& path, HostServices* services, PluginSettings::Status status);
+  VoidResult loadPlugin(const QDir& pluginDir, const maki::Manifest& path, HostServices* services, PluginSettings::Status status);
 
   /**
    * @brief Sets the current plugin based on a language identifier.
@@ -231,7 +127,7 @@ private:
    * @param path The QDir object representing the plugin directory.
    * @return A Result<Manifest> containing the manifest or an error if not found.
    */
-  Result<Manifest> getPluginManifest(const QDir& path) const;
+  Result<maki::Manifest> getPluginManifest(const QDir& path) const;
 
   /**
    * @brief Loads a plugin library directory.
@@ -239,7 +135,7 @@ private:
    * @param manifest The Manifest object containing the plugin information.
    * @return A VoidResult indicating success or failure.
    */
-  VoidResult loadPluginLibraryDir(const Manifest& manifest);
+  VoidResult loadPluginLibraryDir(const maki::Manifest& manifest);
 
   /**
    * @brief Run the plugin installation steps
@@ -247,7 +143,7 @@ private:
    * @param manifest The Manifest object containing the plugin information.
    * @return A VoidResult indicating success or failure.
    */
-  VoidResult installPlugin(const Manifest& manifest);
+  VoidResult installPlugin(const maki::Manifest& manifest);
 
   /**
    * @brief Retrieves the index of a plugin in the manager's list by name.

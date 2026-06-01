@@ -438,7 +438,7 @@ void MainWindow::bind()
       body["height"] = 100;
       body["iconColor"] = "#FFFFFF";
       body["iconScale"] = 0.8;
-      body["nodeSvg"] = plugin.manifest.iconPath();
+      body["nodeSvg"] = plugin.plugin->manifest().iconPath();
 
       node["body"] = body;
 
@@ -802,15 +802,8 @@ void MainWindow::onActionGenerate(const QString& pipelineId)
   QDataStream out(&byteArray, QIODevice::WriteOnly);
   out << mHostServices->document()->getnodes();
 
-  if (mStorage->name.isEmpty())
-  {
-    auto saved = onActionSave();
-    if (!saved.IsSuccess())
-    {
-      NOTIFY_ERROR("Pipeline", "Failed to run pipeline: " + saved.ErrorMessage());
-      return;
-    }
-  }
+  if (mStorage->name.isEmpty() && !onActionSave().IsSuccess())
+    return;
 
   maki::PipelineContext context;
   context.buildDir = QDir(mSettingsManager->generation().generationDir + "/" + mStorage->name);
