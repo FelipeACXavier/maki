@@ -107,7 +107,7 @@ private slots:
    * @param flow Pointer to the opened Flow.
    * @param node Pointer to the associated NodeItem.
    */
-  void onOpenFlow(Flow* flow, NodeItem* node);
+  void onOpenFlow(Flow* flow, const QString& nodeId);
 
   /**
    * @brief Handles flow addition events.

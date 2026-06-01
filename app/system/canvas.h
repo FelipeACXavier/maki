@@ -326,7 +326,7 @@ signals:
    * @param flow Pointer to the opened flow.
    * @param node Pointer to the node associated with the flow.
    */
-  void openFlow(Flow* flow, NodeItem* node);
+  void openFlow(Flow* flow, const QString& nodeId);
 
   /**
    * @brief Emitted when a flow is added.
@@ -348,9 +348,10 @@ public slots:
   /**
    * @brief Handles focus on a node.
    *
+   * @param flowId The ID of the flow that contains the given node.
    * @param nodeId The ID of the focused node.
    */
-  void onFocusNode(const QString& nodeId);
+  void onFocusNode(const QString& flowId, const QString& nodeId);
 
   /**
    * @brief Handles removal of a node.

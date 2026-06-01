@@ -296,9 +296,9 @@ void SystemMenu::onItemClicked(QTreeWidgetItem* item, int /* column */)
     return;
 
   if (item->data(TYPE_DATA, Qt::UserRole) == Roles::FlowRole)
-  {
     editFlow(item);
-  }
+  else if (item->data(TYPE_DATA, Qt::UserRole) == Roles::NodeRole)
+    emit nodeFocused(item->data(CANVAS_DATA, Qt::UserRole).toString(), item->data(ID_DATA, Qt::UserRole).toString());
 }
 
 void SystemMenu::editFlow(QTreeWidgetItem* item)

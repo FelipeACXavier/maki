@@ -1192,16 +1192,41 @@ QPointF Canvas::getCenter() const
   return parentView()->getCenter();
 }
 
-void Canvas::onFocusNode(const QString& nodeId)
+void Canvas::onFocusNode(const QString& flowId, const QString& nodeId)
 {
-  auto node = findNodeWithId(nodeId);
-  if (!node)
-    return;
+  // If no flow id was provided, then we are already in the right canvas, or in the structural canvas
+  if (flowId.isEmpty())
+  {
+    auto node = findNodeWithId(nodeId);
+    if (!node)
+      return;
 
-  parentView()->zoom(2 * node->baseScale() / parentView()->getScale());
+    parentView()->zoom(2 * node->baseScale() / parentView()->getScale());
 
-  // Center the node in the view
-  parentView()->centerOn(node);
+    // Center the node in the view
+    parentView()->centerOn(node);
+  }
+  else
+  {
+    // If we have a flow id, we need to find that flow and the node inside it
+    for (const auto& item : items())
+    {
+      if (item->type() != NodeItem::Type)
+        continue;
+
+      auto node = static_cast<NodeItem*>(item);
+      const auto flow = node->getFlow(flowId);
+      if (!flow)
+        continue;
+
+      for (const auto& child : flow->getNodes())
+        if (child->getid() == nodeId)
+        {
+          emit openFlow(flow, nodeId);
+          return;
+        }
+    }
+  }
 }
 
 void Canvas::onRemoveNode(const QString& nodeId)
@@ -1270,7 +1295,7 @@ void Canvas::onFlowSelected(const QString& flowId, const QString& nodeId)
   }
 
   auto flow = node->getFlow(flowId);
-  emit openFlow(flow, node);
+  emit openFlow(flow, "");
 }
 
 void Canvas::onFlowRemoved(const QString& flowId, const QString& nodeId)

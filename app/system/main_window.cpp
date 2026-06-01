@@ -1165,25 +1165,25 @@ void MainWindow::onCanvasTabChanged(int index)
     return;
 
   // Disconnect signals from the previous canvas
-  if (mActiveCanvas)
+  if (canvas())
     unbindCanvas();
 
   mActiveCanvas = qobject_cast<Canvas*>(newCanvas->scene());
-  if (!mActiveCanvas)
+  if (!canvas())
     return;
 
   bindCanvas();
 
-  auto libIndex = libraryTypeToIndex(mActiveCanvas->type());
+  auto libIndex = libraryTypeToIndex(canvas()->type());
   mPalette->setCurrentIndex(libIndex);
 
-  auto activeStack = mActiveCanvas->undoStack();
+  auto activeStack = canvas()->undoStack();
   if (!mUndoGroup->stacks().contains(activeStack))
     mUndoGroup->addStack(activeStack);
 
   mUndoGroup->setActiveStack(activeStack);
 
-  if (mActiveCanvas->type() == Types::LibraryTypes::PIPELINE)
+  if (canvas()->type() == Types::LibraryTypes::PIPELINE)
   {
     // If we are closing a pipeline canvas, then we must hide it
     mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::STRUCTURAL), false);
@@ -1205,7 +1205,7 @@ void MainWindow::closeCanvasTab(int index)
     auto toBeRemoved = qobject_cast<Canvas*>(closedCanvas->scene());
     mUndoGroup->removeStack(toBeRemoved->undoStack());
 
-    if (closedCanvas->scene() == mActiveCanvas)
+    if (closedCanvas->scene() == canvas())
     {
       unbindCanvas();
 
@@ -1215,11 +1215,11 @@ void MainWindow::closeCanvasTab(int index)
         if (auto* newCanvas = qobject_cast<CanvasView*>(mCanvasPanel->widget(index - 1)))
         {
           mActiveCanvas = qobject_cast<Canvas*>(newCanvas->scene());
-          if (mActiveCanvas)
+          if (canvas())
           {
             bindCanvas();
 
-            if (mActiveCanvas->type() == Types::LibraryTypes::PIPELINE)
+            if (canvas()->type() == Types::LibraryTypes::PIPELINE)
             {
               // If we are closing a pipeline canvas, then we must hide it
               mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::STRUCTURAL), false);
@@ -1233,7 +1233,7 @@ void MainWindow::closeCanvasTab(int index)
               mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::PIPELINE), false);
             }
 
-            auto libIndex = libraryTypeToIndex(mActiveCanvas->type());
+            auto libIndex = libraryTypeToIndex(canvas()->type());
             mPalette->setCurrentIndex(libIndex);
           }
         }
@@ -1257,7 +1257,7 @@ void MainWindow::closeCanvasTab(int index)
   mCanvasPanel->removeTab(index);
 }
 
-void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
+void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId)
 {
   QString flowName;
   if (flow == nullptr)
@@ -1295,17 +1295,23 @@ void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
 
   for (int i = 1; i < mCanvasPanel->count() && flow != nullptr; ++i)
   {
+    // Check if the flow is already open in some tab
     auto prop = mCanvasPanel->widget(i)->property("id");
     if (prop.isValid() && prop.toString() == flow->id())
     {
       mCanvasPanel->setCurrentIndex(i);
+      // TODO: clean this up
+      if (!nodeId.isEmpty())
+        if (auto* view = qobject_cast<CanvasView*>(mCanvasPanel->currentWidget()))
+          if (auto* canvas = qobject_cast<Canvas*>(view->scene()))
+            canvas->onFocusNode("", nodeId);
       return;
     }
   }
 
   if (flow == nullptr)
   {
-    LOG_WARNING("This shouldn't happen");
+    LOG_WARNING("This shouldn't happen, no flow was found");
     return;
   }
 
@@ -1325,6 +1331,9 @@ void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
   LOG_DEBUG("Set tab property to %s", qPrintable(flow->id()));
   mCanvasPanel->addTab(newView, QIcon(":/icons/behaviour.svg"), flowName);
   mCanvasPanel->setCurrentWidget(newView);
+
+  if (!nodeId.isEmpty())
+    canvas->onFocusNode("", nodeId);
 }
 
 void MainWindow::addPluginTab(const QString& name, PluginView* view)
@@ -1353,7 +1362,7 @@ void MainWindow::onFlowAdded(Flow* flow, NodeItem* node)
 
 void MainWindow::onFlowRemoved(const QString& flowId, const QString& nodeId)
 {
-  if (mActiveCanvas->id() == flowId)
+  if (canvas()->id() == flowId)
   {
     int oldTab = mCanvasPanel->currentIndex();
     mCanvasPanel->setCurrentIndex(oldTab - 1);
