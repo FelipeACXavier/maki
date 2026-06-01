@@ -119,6 +119,11 @@ QRectF NodeItem::nodeRect() const
   return QRectF(0, 0, mSize.width(), mSize.height());
 }
 
+QRectF NodeItem::sceneNodeRect() const
+{
+  return mapRectToScene(nodeRect());
+}
+
 void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget)
 {
   auto color = getProperty("color");
@@ -512,7 +517,7 @@ NodeSaveInfo NodeItem::saveInfo() const
 
 QPointF NodeItem::edgePointToward(const QPointF& targetScenePos) const
 {
-  QPointF center = sceneBoundingRect().center();
+  QPointF center = sceneNodeRect().center();
   QPointF dir = targetScenePos - center;
 
   if (dir.manhattanLength() < 0.001)
@@ -520,7 +525,7 @@ QPointF NodeItem::edgePointToward(const QPointF& targetScenePos) const
 
   // Normalise and scale
   dir /= std::hypot(dir.x(), dir.y());
-  qreal radius = boundingRect().width() / 2.0;
+  qreal radius = nodeRect().width() / 2.0;
   return center + dir * radius;
 }
 

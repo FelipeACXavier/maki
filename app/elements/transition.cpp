@@ -92,9 +92,9 @@ NodeItem* TransitionItem::destination() const
 void TransitionItem::move(const QString& id, QPointF pos)
 {
   if (id == mStorage->getsrcId())
-    mStorage->setSrcPoint(mSource ? mSource->edgePointToward(mDestination->sceneBoundingRect().center()) : pos);
+    mStorage->setSrcPoint(mSource ? mSource->edgePointToward(mDestination->sceneNodeRect().center()) : pos);
   else if (id == mStorage->getdstId())
-    mStorage->setDstPoint(mDestination ? mDestination->edgePointToward(mSource->sceneBoundingRect().center()) : pos);
+    mStorage->setDstPoint(mDestination ? mDestination->edgePointToward(mSource->sceneNodeRect().center()) : pos);
   else
     return;
 
@@ -159,8 +159,8 @@ void TransitionItem::updatePath()
     return;
 
   // Get center positions in scene coordinates
-  QPointF fromCenter = mSource->sceneBoundingRect().center();
-  QPointF toCenter = mDestination->sceneBoundingRect().center();
+  QPointF fromCenter = mSource->sceneNodeRect().center();
+  QPointF toCenter = mDestination->sceneNodeRect().center();
 
   // Compute edge points toward the other node
   QPointF start = mSource->edgePointToward(toCenter);

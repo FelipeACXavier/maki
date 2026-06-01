@@ -308,6 +308,8 @@ IntegerWidget::IntegerWidget(const QString& label, const QString& placeholder, W
       emit valueChanged(mValue);
     });
   }
+
+  setValue(placeholder);
 }
 
 void IntegerWidget::setAcceptVariable(bool accept)
@@ -365,6 +367,8 @@ FloatWidget::FloatWidget(const QString& label, const QString& placeholder, Widge
       emit valueChanged(mValue);
     });
   }
+
+  setValue(placeholder);
 }
 
 void FloatWidget::setAcceptVariable(bool accept)
@@ -410,6 +414,8 @@ SpinWidget::SpinWidget(const QString& label, int placeholder, QWidget* parent, W
       emit valueChanged(mValue);
     });
   }
+
+  setValue(placeholder);
 }
 
 void SpinWidget::setSuffix(const QString& suffix)
@@ -545,6 +551,8 @@ ColorWidget::ColorWidget(const QString& label, const QString& placeholder, Widge
       emit valueChanged(mValue);
     });
   }
+
+  setValue(placeholder);
 }
 
 void ColorWidget::writeValueToWidget(const QColor& color)

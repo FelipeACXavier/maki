@@ -191,7 +191,7 @@ VoidResult SettingsDialog::createGeneralPage()
   autoSaveLayout->addWidget(mAutosaveEnabled);
   autoSaveLayout->addWidget(mAutosaveMinutes);
 
-  mRecentHistorySize = new maki::IntegerWidget(tr("Recent History Size"), QString("%1").arg(generalSettings.recentHistorySize), alignment, page, INT32_MIN, INT32_MAX);
+  mRecentHistorySize = new maki::IntegerWidget(tr("Recent History Size"), QString::number(generalSettings.recentHistorySize), alignment, page, INT32_MIN, INT32_MAX);
 
   mRestoreLastSession = new maki::BooleanWidget(tr("Restore last session on startup"), generalSettings.restoreLastSession, alignment, page);
   mConfirmOnClose = new maki::BooleanWidget(tr("Confirm before closing editor with running execution"), generalSettings.confirmOnCloseWithExecution, alignment, page);
@@ -255,7 +255,6 @@ VoidResult SettingsDialog::createAppearancePage()
 
   auto themeLayout = new maki::WidgetGroup(tr("Theming"), page);
   themeLayout->addWidget(mThemeCombo);
-  themeLayout->addWidget(mNativeMenuBar);
 
   auto* qlementineStyle = oclero::qlementine::appStyle();
   if (qlementineStyle)
@@ -305,6 +304,7 @@ VoidResult SettingsDialog::createAppearancePage()
       .direction = maki::WidgetAlignment::Direction::SPREAD,
       .labelWidth = 300,
   };
+
   mNativeMenuBar = new maki::BooleanWidget(tr("Use native menubar"), appearance.nativeMenuBar, alignment, page);
 
   mUiScale = new maki::SpinWidget(tr("UI scale"), appearance.uiScalePercent, page, alignment, 80, 200);
@@ -321,6 +321,7 @@ VoidResult SettingsDialog::createAppearancePage()
   mStartLogTableFilters = new maki::BooleanWidget(tr("Show log table filters on start"), appearance.startLogFilterExpanded, alignment, page);
 
   auto editorLayout = new maki::WidgetGroup(tr("UI changes"), page);
+  editorLayout->addWidget(mNativeMenuBar);
   editorLayout->addWidget(mUiScale);
   editorLayout->addWidget(mShowGrid);
   editorLayout->addWidget(mStartLogTableFilters);
