@@ -62,7 +62,7 @@ public:
    *
    * @return The bounding rectangle.
    */
-  QRectF boundingRect() const override;
+  QRectF nodeRect() const override;
 
   /**
    * @brief Returns the shape of this item.

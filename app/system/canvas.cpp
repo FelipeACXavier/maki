@@ -47,6 +47,13 @@ Canvas::Canvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> conf
 
   mUndoStack = new QUndoStack(this);
   mUndoStack->setUndoLimit(20);
+
+  connect(this, &QGraphicsScene::selectionChanged, this, &Canvas::onSelectionChanged);
+}
+
+Canvas::~Canvas()
+{
+  disconnect(this, &QGraphicsScene::selectionChanged, this, &Canvas::onSelectionChanged);
 }
 
 QString Canvas::id() const
@@ -74,6 +81,21 @@ QList<NodeItem*> Canvas::availableNodes()
   }
 
   return nodes;
+}
+
+void Canvas::onSelectionChanged()
+{
+  const auto selected = selectedItems();
+  mSelectedNodes.erase(std::remove_if(mSelectedNodes.begin(), mSelectedNodes.end(),
+                                      [&selected](NodeItem* node) {
+                                        return !selected.contains(node);
+                                      }),
+                       mSelectedNodes.end());
+
+  for (auto* item : selected)
+    if (auto* node = qgraphicsitem_cast<NodeItem*>(item))
+      if (!mSelectedNodes.contains(node))
+        mSelectedNodes.append(node);
 }
 
 void Canvas::dragEnterEvent(QGraphicsSceneDragDropEvent* event)

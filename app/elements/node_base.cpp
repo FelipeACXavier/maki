@@ -13,6 +13,8 @@
 
 const qreal MAX_WIDTH = 60.0;
 const qreal MAX_HEIGHT = 60.0;
+const qreal LABEL_H_SPACING = 8;
+const qreal LABEL_V_SPACING = 4;
 
 NodeBase::NodeBase(const QString& id, const QString& nodeId, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
     : QGraphicsItem(parent)
@@ -59,15 +61,22 @@ std::shared_ptr<NodeConfig> NodeBase::config() const
 
 QRectF NodeBase::boundingRect() const
 {
+  return nodeRect().united(labelBoundingRect());
+}
+
+QRectF NodeBase::nodeRect() const
+{
   return mBounds;
 }
 
 QRectF NodeBase::labelBoundingRect() const
 {
-  if (mLabel != nullptr)
-    return mLabel->boundingRect();
+  if (mLabelText.isEmpty())
+    return QRectF();
 
-  return QRectF();
+  const auto bounds = drawingRect(nodeRect());
+  return QRectF(bounds.left() - LABEL_H_SPACING, bounds.bottom() + LABEL_V_SPACING,
+                bounds.width() + 2 * LABEL_H_SPACING, mLabelFont.pointSizeF() * 3);
 }
 
 QRectF NodeBase::scaledRect() const
@@ -85,9 +94,6 @@ void NodeBase::paintNode(const QRectF& bounds, const QColor& background, const Q
   painter->setPen(text);
   painter->setBrush(background);
   painter->setRenderHint(QPainter::Antialiasing, false);
-
-  if (mLabel)
-    mLabel->setDefaultTextColor(text.color());
 
   const auto drawingBounds = drawingRect(bounds);
   if (config()->body.shape == Types::Shape::RECTANGLE)
@@ -113,6 +119,7 @@ void NodeBase::paintNode(const QRectF& bounds, const QColor& background, const Q
     painter->drawRoundedRect(drawingBounds, 5, 5);
   }
 
+  paintLabel(painter, drawingBounds, text);
   paintPixmap(painter);
 }
 
@@ -145,13 +152,19 @@ QPainterPath NodeBase::nodeShape(const QRectF& bounds) const
   return path;
 }
 
-void NodeBase::paintLabel(QPainter* painter, const QRectF& area) const
+void NodeBase::paintLabel(QPainter* painter, const QRectF& drawingBounds, const QPen& pen) const
 {
-  if (!mLabel)
+  if (mLabelText.isEmpty() || !mPaintLabel)
     return;
 
-  painter->setPen(Config::FOREGROUND);
-  painter->drawText(area, Qt::AlignCenter, mLabel->toPlainText());
+  painter->setFont(mLabelFont);
+  painter->setPen(pen);
+
+  QTextOption textOption;
+  textOption.setAlignment(Qt::AlignCenter);
+  textOption.setWrapMode(QTextOption::WrapAtWordBoundaryOrAnywhere);
+
+  painter->drawText(labelBoundingRect(), mLabelText, textOption);
 }
 
 void NodeBase::paintPixmap(QPainter* painter) const
@@ -167,65 +180,28 @@ void NodeBase::paintPixmap(QPainter* painter) const
 
 void NodeBase::setLabel(const QString& name, qreal fontSize)
 {
-  mLabel = new QGraphicsTextItem(this);
-  mLabel->setDefaultTextColor(Config::FOREGROUND);
-
   setLabelName(name);
-  setLabelSize(fontSize, {(double)config()->body.width, (double)config()->body.height});
 
-  updateLabelPosition();
+  mLabelFont.setPointSizeF(qMin(Fonts::MaxSize, fontSize));
+  update();
 }
 
 void NodeBase::setLabelName(const QString& name)
 {
-  if (!mLabel)
-    return;
-
-  mLabel->setPlainText(name);
-  setLabelSize(mLabel->font().pointSizeF(), boundingRect().size());
+  mLabelText = name;
+  update();
 }
 
 void NodeBase::setLabelSize(qreal fontSize, const QSizeF& boundingSize)
 {
-  if (!mLabel)
-    return;
-
-  // Set the base font size
-  QFont font = mLabel->font();
-  font.setPointSizeF(qMin(Fonts::MaxSize, fontSize));
-  mLabel->setFont(font);
-
-  // Labels can be a bit longer in the pipeline
-  if (config()->libraryType == Types::LibraryTypes::PIPELINE)
-    mLabel->setTextWidth(2 * boundingSize.width() - (boundingSize.width() * 0.2));
-  else
-    mLabel->setTextWidth(boundingSize.width() - (boundingSize.width() * 0.2));
-
-  mLabel->document()->adjustSize();
-
-  updateLabelPosition();
-}
-
-void NodeBase::updateLabelPosition()
-{
-  if (!mLabel)
-    return;
-
-  QRectF textBounds = mLabel->boundingRect();
-
-  // Calculate centered position
-  qreal x = boundingRect().center().x() - (textBounds.width() / 2);
-  qreal y = boundingRect().bottom() + 2;  // type() == NodeItem::Type ? boundingRect().bottom() + 2 : boundingRect().center().y() - (textBounds.height() / 2);
-
-  mLabel->setPos(x, y);
+  mLabelFont.setPointSizeF(qMin(Fonts::MaxSize, fontSize));
+  update();
 }
 
 void NodeBase::toggleLabelVisibility()
 {
-  if (!mLabel)
-    return;
-
-  mLabel->setVisible(!mLabel->isVisible());
+  mPaintLabel = !mPaintLabel;
+  update();
 }
 
 void NodeBase::setPixmap(const QPixmap& pixmap)
@@ -294,11 +270,6 @@ QPixmap NodeBase::nodePixmap() const
   mIconItem->renderer()->render(&painter, QRectF(QPointF(0, 0), mIconItem->boundingRect().size().toSize()));
 
   return pixmap;
-
-  // if (mPixmapItem)
-  //   return mPixmapItem->pixmap();
-
-  // return QPixmap();
 }
 
 QString NodeBase::nodeIcon() const

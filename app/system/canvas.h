@@ -59,6 +59,7 @@ public:
    */
   Canvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> configTable, QObject* parent = nullptr);
 
+  ~Canvas();
   /**
    * @brief Returns the unique identifier for this canvas.
    *
@@ -495,6 +496,8 @@ private:
   void pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode, QList<CopiedNode> nodes, bool relative);  /// Pastes copied items at a specified position.
 
   VoidResult loadFromSave(const QVector<std::shared_ptr<INode>>& nodes, NodeItem* parent);  /// Loads nodes and their children from save information.
+
+  void onSelectionChanged();
 };
 
 inline QDataStream& operator<<(QDataStream& out, const Canvas::CopiedNode& node)

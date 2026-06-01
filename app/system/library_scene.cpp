@@ -145,8 +145,8 @@ void LibraryScene::relayoutVisibleItems()
     item->setPos(static_cast<int>((width - item->boundingRect().width()) / 2), y + 15);
 
     QRectF itemBounds = item->boundingRect();
-    QRectF labelBounds = item->labelBoundingRect();
-    y = item->mapToScene(itemBounds.bottomLeft() + labelBounds.bottomLeft()).y();
+    // QRectF labelBounds = item->labelBoundingRect();
+    y = item->mapToScene(itemBounds.bottomLeft()).y();
   }
 }
 

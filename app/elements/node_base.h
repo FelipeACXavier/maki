@@ -1,9 +1,11 @@
 #pragma once
 
+#include <QFont>
 #include <QGraphicsItem>
 #include <QGraphicsSvgItem>
 #include <QString>
 
+#include "app_configs.h"
 #include "config.h"
 #include "ids.h"
 #include "result.h"
@@ -83,6 +85,8 @@ public:
    */
   virtual QRectF labelBoundingRect() const;
 
+  virtual QRectF nodeRect() const;
+
   /**
    * @brief Returns the scaled rectangle of the node.
    *
@@ -138,15 +142,9 @@ public:
 protected:
   std::shared_ptr<NodeConfig> mConfig;  /// Configuration settings for the node.
 
-  QGraphicsTextItem* mLabel = nullptr;         /// Pointer to the label text item.
   QGraphicsPixmapItem* mPixmapItem = nullptr;  /// Pointer to the pixmap item.
   QString mIconPath = "";                      /// Path to the icon image.
   QGraphicsSvgItem* mIconItem = nullptr;       /// Pointer to the SVG icon item.
-
-  /**
-   * @brief Updates the position of the label.
-   */
-  virtual void updateLabelPosition();
 
   /**
    * @brief Sets the pixmap for the node.
@@ -192,7 +190,7 @@ protected:
    * @param painter Painter to use for drawing.
    * @param area Area to paint the label in.
    */
-  virtual void paintLabel(QPainter* painter, const QRectF& area) const;
+  virtual void paintLabel(QPainter* painter, const QRectF& area, const QPen& pen) const;
 
   /**
    * @brief Paints the pixmap using the provided painter.
@@ -205,6 +203,9 @@ private:
   const QString mId;     /// Unique identifier of the node.
   const QRectF mBounds;  /// Bounding rectangle of the node.
 
+  QString mLabelText;
+  QFont mLabelFont = Fonts::Main;
+  bool mPaintLabel = true;
   QRectF mScaledBounds;  /// Scaled bounding rectangle of the node.
 
   /**

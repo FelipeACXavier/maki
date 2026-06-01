@@ -114,7 +114,7 @@ VoidResult NodeItem::start()
   return NodeBase::start();
 }
 
-QRectF NodeItem::boundingRect() const
+QRectF NodeItem::nodeRect() const
 {
   return QRectF(0, 0, mSize.width(), mSize.height());
 }
@@ -124,7 +124,7 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
   auto color = getProperty("color");
   auto background = color.isValid() ? QColor::fromString(color.toString()) : config()->body.backgroundColor;
 
-  NodeBase::paintNode(boundingRect(),
+  NodeBase::paintNode(nodeRect(),
                       background,
                       isSelected() ? QPen(Config::HIGHLIGHT, 4 / baseScale()) : QPen(Config::FOREGROUND, 1.0 / baseScale()),
                       painter);
@@ -285,7 +285,7 @@ QRectF NodeItem::parentInnerSceneRect(qreal padding) const
   if (!parentNode())
     return {};
 
-  QRectF r = parentNode()->mapRectToScene(parentNode()->boundingRect());
+  QRectF r = parentNode()->mapRectToScene(parentNode()->nodeRect());
   return r.adjusted(padding, padding, -padding, -padding);
 }
 
@@ -447,12 +447,7 @@ QVariant NodeItem::itemChange(GraphicsItemChange change, const QVariant& value)
     if (NodeItem* parent = parentNode())
     {
       QPointF newPos = value.toPointF();  // proposed new pos in scene coords
-
-      // auto parent = parentNode();
-      // if (parent == nullptr)
-      //   return QGraphicsItem::itemChange(change, value);
-
-      QRectF parentRect = parent->boundingRect();
+      QRectF parentRect = parent->nodeRect();
       parentRect = parentRect.adjusted(10, 10, -10, -10);
       parentRect.translate(parent->pos());
 
@@ -502,8 +497,6 @@ void NodeItem::updateExtrasPosition()
 {
   if (nodeMoved)
     nodeMoved(id());
-
-  updateLabelPosition();
 }
 
 // Slots
