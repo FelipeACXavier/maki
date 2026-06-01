@@ -1043,7 +1043,13 @@ VoidResult MainWindow::onActionSave()
     }
   }
 
-  return mSaveHandler->saveProject(*mStorage);
+  auto saved = mSaveHandler->saveProject(*mStorage);
+  if (saved)
+    NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Saved project: {}", mStorage->name.toStdString());
+  else
+    NOTIFY_ERROR(Config::APPLICATION_NAME.toStdString(), "Could not save project: {}\n{}", mStorage->name.toStdString(), saved.ErrorMessage());
+
+  return saved;
 }
 
 void MainWindow::onActionSaveAs()
@@ -1054,7 +1060,11 @@ void MainWindow::onActionSaveAs()
     return;
   }
 
-  LOG_WARN_ON_FAILURE(mSaveHandler->saveProjectAs(*mStorage));
+  auto saved = mSaveHandler->saveProjectAs(*mStorage);
+  if (saved)
+    NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Saved project: {}", mStorage->name.toStdString());
+  else
+    NOTIFY_ERROR(Config::APPLICATION_NAME.toStdString(), "Could not save project: {}\n{}", mStorage->name.toStdString(), saved.ErrorMessage());
 }
 
 void MainWindow::onActionLoad(const QString& filename)
@@ -1110,6 +1120,7 @@ void MainWindow::onActionLoad(const QString& filename)
     mSystemMenu->expandToDepth(1);
 
   LOG_INFO("Project with %d nodes after", mStorage->getnodes().size());
+  NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Loaded project: {}", mStorage->name.toStdString());
 }
 
 void MainWindow::onNodeSelected(NodeItem* node, bool selected)
