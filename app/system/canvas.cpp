@@ -19,6 +19,7 @@
 #include "common/style_helpers.h"
 #include "config.h"
 #include "config_table.h"
+#include "edge_router.h"
 #include "elements/flow.h"
 #include "elements/node.h"
 #include "elements/transition.h"
@@ -1360,5 +1361,28 @@ void Canvas::themeChanged()
       qgraphicsitem_cast<TransitionItem*>(item)->updatePath();
 
     item->update();
+  }
+}
+
+void Canvas::autoRoute()
+{
+  if (!router())
+    return;
+
+  QList<NodeItem*> nodes;
+  QList<TransitionItem*> transitions;
+  for (const auto& item : items())
+  {
+    if (item->type() == NodeItem::Type)
+      nodes.push_back(qgraphicsitem_cast<NodeItem*>(item));
+    else if (item->type() == TransitionItem::Type)
+      transitions.push_back(qgraphicsitem_cast<TransitionItem*>(item));
+  }
+
+  const auto paths = router()->route(nodes, transitions);
+  for (TransitionItem* transition : transitions)
+  {
+    if (paths.contains(transition))
+      transition->updatePath(paths.value(transition));
   }
 }

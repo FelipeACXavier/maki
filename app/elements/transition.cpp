@@ -154,27 +154,34 @@ TransitionSaveInfo TransitionItem::saveInfo() const
   return *mStorage;
 }
 
-void TransitionItem::updatePath()
+void TransitionItem::updatePath(QPainterPath painterPath)
 {
   if (!mSource || !mDestination)
     return;
 
-  const auto canvas = static_cast<Canvas*>(scene());
-  if (!canvas)
-    return;
+  if (painterPath.isEmpty())
+  {
+    const auto canvas = static_cast<Canvas*>(scene());
+    if (!canvas)
+      return;
 
-  const auto router = canvas->router();
-  if (!router)
-    return;
+    const auto router = canvas->router();
+    if (!router)
+      return;
 
-  QPointF fromCenter = mSource->sceneNodeRect().center();
-  QPointF toCenter = mDestination->sceneNodeRect().center();
+    QPointF fromCenter = mSource->sceneNodeRect().center();
+    QPointF toCenter = mDestination->sceneNodeRect().center();
 
-  // Compute edge points toward the other node
-  const QPointF start = mSource->edgePointToward(toCenter);
-  const QPointF end = mDestination->edgePointToward(fromCenter);
+    // Compute edge points toward the other node
+    const QPointF start = mSource->edgePointToward(toCenter);
+    const QPointF end = mDestination->edgePointToward(fromCenter);
 
-  setPath(router->route(start, end, {}));
+    setPath(router->route(start, end, {}));
+  }
+  else
+  {
+    setPath(painterPath);
+  }
   updateLabelPosition();
   prepareGeometryChange();
 }

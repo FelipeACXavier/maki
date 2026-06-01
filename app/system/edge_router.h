@@ -4,6 +4,9 @@
 #include <QPainterPath>
 #include <QPointF>
 
+#include "elements/node.h"
+#include "elements/transition.h"
+
 class EdgeRouter : public QObject
 {
   Q_OBJECT
@@ -23,6 +26,8 @@ public:
   Option option() const;
   void setRouteOption(Option option);
   virtual QPainterPath route(const QPointF& sourceRect, const QPointF& destinationRect, const QList<QRectF>& obstacleRects) const;
+  QHash<const TransitionItem*, QPainterPath> route(const QList<NodeItem*>& nodes, const QList<TransitionItem*>& transitions) const;
+
   static QString optionToString(int option);
   static QString optionToString(Option option);
 

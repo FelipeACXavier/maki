@@ -75,6 +75,7 @@ target_link_libraries(${APPLICATION_NAME} PRIVATE
     Qt6::Svg
     Qt6::SvgWidgets
     qlementine
+    libavoid
     libcommon
     libdocument
     libcpphelpers

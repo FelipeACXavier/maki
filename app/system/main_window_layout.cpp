@@ -567,11 +567,11 @@ void MainWindowLayout::buildMenuBar()
 
   // ----------------------------------------------------------
   // Diagram menu
-  QMenu* window = mMenuBar->addMenu(tr("Diagram"));
-  mTranslatable.push_back({window, "Diagram"});
+  QMenu* diagram = mMenuBar->addMenu(tr("Diagram"));
+  mTranslatable.push_back({diagram, "Diagram"});
 
-  // mActionAddTask = new QAction(tr("Add Node"), this);
-  // view->addAction(mOpenPropertiesPanel);
+  mActionAutoRoute = new QAction(tr("Auto-route"), this);
+  diagram->addAction(mActionAutoRoute);
 
   // ----------------------------------------------------------
   // Tools menu
@@ -585,11 +585,11 @@ void MainWindowLayout::buildMenuBar()
 
   mActionGenerate = new QAction(iconFromTheme("document-edit-decrypt-verify"), tr("Verify"), this);
   mTranslatable.push_back({mActionGenerate, "Verify"});
-  window->addAction(mActionGenerate);
+  tools->addAction(mActionGenerate);
 
   mActionSimulate = new QAction(iconFromTheme("exaile-play"), tr("Simulate"), this);
   mTranslatable.push_back({mActionSimulate, "Simulate"});
-  window->addAction(mActionSimulate);
+  tools->addAction(mActionSimulate);
 
   mActionToggleGrid = new QAction(iconFromTheme("grid-rectangular"), tr("Toggle Grid"), this);
   mTranslatable.push_back({mActionToggleGrid, "Toggle Grid"});

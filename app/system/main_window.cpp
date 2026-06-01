@@ -391,6 +391,13 @@ void MainWindow::bind()
   connect(mPluginTab, &PluginTab::openView, this, &MainWindow::addPluginTab);
   connect(mPluginTab, &PluginTab::closeView, this, &MainWindow::removePluginTab);
 
+  // Diagram actions =============================================================
+  connect(mActionAutoRoute, &QAction::triggered, this, [this] {
+    if (canvas())
+      canvas()->autoRoute();
+  });
+  mActionAutoRoute->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_L));
+
   // Setting actions =============================================================
   connect(mOpenAllSettings, &QAction::triggered, this, [this] {
     LOG_INFO("Opening all settings");

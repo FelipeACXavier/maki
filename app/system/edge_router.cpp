@@ -1,6 +1,8 @@
 #include "edge_router.h"
 
-#include <QObject>
+#include <libavoid/connector.h>
+#include <libavoid/router.h>
+#include <libavoid/shape.h>
 
 QString EdgeRouter::optionToString(int option)
 {
@@ -124,4 +126,94 @@ QPainterPath EdgeRouter::pathFromPoints(const QVector<QPointF>& points) const
     path.lineTo(points[i]);
 
   return path;
+}
+
+static Avoid::Polygon polygonFromRect(const QRectF& rect, qreal margin = 12.0)
+{
+  QRectF r = rect.adjusted(-margin, -margin, margin, margin);
+
+  Avoid::Polygon polygon(4);
+  polygon.ps[0] = Avoid::Point(r.left(), r.top());
+  polygon.ps[1] = Avoid::Point(r.right(), r.top());
+  polygon.ps[2] = Avoid::Point(r.right(), r.bottom());
+  polygon.ps[3] = Avoid::Point(r.left(), r.bottom());
+
+  return polygon;
+}
+
+QHash<const TransitionItem*, QPainterPath> EdgeRouter::route(const QList<NodeItem*>& nodes, const QList<TransitionItem*>& transitions) const
+{
+  Avoid::Router router(Avoid::PolyLineRouting | Avoid::OrthogonalRouting);
+
+  router.setRoutingPenalty(Avoid::segmentPenalty);
+  router.setRoutingPenalty(Avoid::crossingPenalty);
+  router.setRoutingPenalty(Avoid::fixedSharedPathPenalty);
+  router.setRoutingPenalty(Avoid::portDirectionPenalty);
+
+  QHash<const NodeItem*, Avoid::ShapeRef*> shapeMap;
+  QHash<const TransitionItem*, Avoid::ConnRef*> connectorMap;
+
+  for (const NodeItem* node : nodes)
+  {
+    QRectF rect = node->sceneNodeRect();
+    auto poly = polygonFromRect(rect);
+    shapeMap[node] = new Avoid::ShapeRef(&router, poly);
+  }
+
+  for (const TransitionItem* transition : transitions)
+  {
+    const NodeItem* source = transition->source();
+    const NodeItem* target = transition->destination();
+
+    if (!source || !target)
+      continue;
+
+    const auto sourceRect = source->sceneNodeRect();
+    const auto targetRect = target->sceneNodeRect();
+
+    auto* conn = new Avoid::ConnRef(&router);
+    if (!transition->getEvent().isEmpty() && option() == Option::MANHATTAN)
+    {
+      if (transition->getEvent() == "on error")
+        conn->setSourceEndpoint(Avoid::ConnEnd(Avoid::Point(sourceRect.center().x(), sourceRect.top()),
+                                               Avoid::ConnDirUp));
+      else if (transition->getEvent() == "on abort")
+        conn->setSourceEndpoint(Avoid::ConnEnd(Avoid::Point(sourceRect.center().x(), sourceRect.bottom()),
+                                               Avoid::ConnDirDown));
+      else
+        conn->setSourceEndpoint(Avoid::ConnEnd(Avoid::Point(sourceRect.right(), sourceRect.center().y()),
+                                               Avoid::ConnDirRight));
+    }
+    else
+    {
+      conn->setSourceEndpoint(Avoid::ConnEnd(Avoid::Point(sourceRect.right(), sourceRect.center().y()),
+                                             Avoid::ConnDirRight));
+    }
+    conn->setDestEndpoint(Avoid::ConnEnd(Avoid::Point(targetRect.left(), targetRect.center().y()),
+                                         Avoid::ConnDirLeft));
+    if (option() == Option::MANHATTAN)
+      conn->setRoutingType(Avoid::ConnType_Orthogonal);
+    else
+      conn->setRoutingType(Avoid::ConnType_PolyLine);
+
+    connectorMap[transition] = conn;
+  }
+
+  router.processTransaction();
+
+  QHash<const TransitionItem*, QPainterPath> result;
+
+  for (auto it = connectorMap.constBegin(); it != connectorMap.constEnd(); ++it)
+  {
+    const TransitionItem* transition = it.key();
+    const Avoid::PolyLine& route = it.value()->displayRoute();
+
+    QVector<QPointF> points;
+    for (size_t i = 0; i < route.size(); ++i)
+      points << QPointF(route.ps[i].x, route.ps[i].y);
+
+    result[transition] = pathFromPoints(points);
+  }
+
+  return result;
 }

@@ -85,6 +85,8 @@ public:
    */
   void deleteSelectedItems();
 
+  void autoRoute();
+
   /**
    * @brief Returns the current scale of the canvas.
    *

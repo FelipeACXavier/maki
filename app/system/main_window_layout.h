@@ -133,6 +133,7 @@ protected:
 
   // Diagram menu
   QMenu* mGeneratorMenu;  /// Pointer to the generator menu.
+  QAction* mActionAutoRoute;
 
   QAction* mActionGenerate;  /// Pointer to the generate action.
   QAction* mActionSimulate;  /// Pointer to the simulate action.
