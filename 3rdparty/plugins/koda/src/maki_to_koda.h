@@ -101,6 +101,8 @@ private:
   bool isSignalTransition(const ITransition& transition) const;
 
   TransitionKind transitionKind(const ITransition& transition) const;
+
+  std::string format(QString input, const QString& token = "") const;
 };
 
 }  // namespace koda

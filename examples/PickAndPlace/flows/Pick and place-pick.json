@@ -97,7 +97,7 @@
             },
             "properties": {
                 "capability": {
-                    "data": "Vision",
+                    "data": "Aruco Detection",
                     "options": [
                     ]
                 },

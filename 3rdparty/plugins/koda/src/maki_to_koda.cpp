@@ -55,18 +55,23 @@ Result<koda::PComponent> MakiToKoda::buildTask(const INode& task)
 {
   auto c = std::make_shared<koda::Component>();
   c->kind = koda::Component::Kind::Task;
-  c->name = task.getproperties()["name"].toString().toLower().replace(" ", "_").toStdString();
+  auto properties = task.getproperties();
+  if (!properties.contains("name"))
+    return Result<koda::PComponent>::Failed("Task does not have a name");
+
+  auto name = properties["name"].toString().toLower();
+  c->name = format(name, "_");
 
   // Get arguments
   for (const auto& cap : task.getchildren())
   {
-    auto capName = cap->getproperties()["name"].toString().toStdString();
+    auto capName = cap->getproperties()["name"].toString();
 
     auto parg = std::make_shared<koda::Argument>();
     parg->kind = koda::Argument::Kind::Req;
-    parg->a = capName;
+    parg->a = format(capName);
     ToLowerCase(parg->a, 0);
-    parg->b = capName;
+    parg->b = format(capName);
 
     c->args.push_back(parg);
   }
@@ -115,9 +120,14 @@ Result<koda::PComponent> MakiToKoda::buildCapability(const INode& capability)
 {
   auto c = std::make_shared<koda::Component>();
   c->kind = koda::Component::Kind::Capability;
-  c->name = capability.getproperties()["name"].toString().toStdString();
+  auto properties = capability.getproperties();
+  if (!properties.contains("name"))
+    return Result<koda::PComponent>::Failed("Capabiity does not have a name");
 
-  auto typeArray = capability.getproperties()["type"].toJsonObject()["options"].toArray();
+  auto name = properties["name"].toString();
+  c->name = format(name);
+
+  auto typeArray = properties["type"].toJsonObject()["options"].toArray();
   if (typeArray.isEmpty())
     return Result<koda::PComponent>::Failed("Type options is empty: " + c->name);
 
@@ -400,7 +410,7 @@ std::any MakiToKoda::buildAsyncExpr(const IFlow& flow, const INode& node)
   }
 
   auto task = std::make_shared<koda::EventCall>();
-  task->receiver = val.toStdString();
+  task->receiver = format(val);
   ToLowerCase(task->receiver, 0);
 
   auto expr = std::make_shared<koda::Strategy::TaskCall>();
@@ -434,7 +444,7 @@ std::any MakiToKoda::buildSyncExpr(const IFlow& flow, const INode& node)
   const auto method = options.at(0).toObject();
 
   auto task = std::make_shared<koda::EventCall>();
-  task->receiver = val.toStdString();
+  task->receiver = format(val);
   ToLowerCase(task->receiver, 0);
 
   task->name = method["data"].toString().toStdString();
@@ -1035,6 +1045,11 @@ TransitionKind MakiToKoda::transitionKind(const ITransition& transition) const
     return TransitionKind::Signal;
 
   return TransitionKind::Unknown;
+}
+
+std::string MakiToKoda::format(QString input, const QString& token) const
+{
+  return input.replace(" ", token).toStdString();
 }
 
 }  // namespace koda

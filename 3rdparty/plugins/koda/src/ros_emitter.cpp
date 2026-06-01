@@ -89,7 +89,7 @@ void RosEmitter::collectComponent(const Component& component)
     collectDrive(cap);
     mCapabilities.push_front(std::move(cap));
   }
-  else if (component.name == "Vision")
+  else if (component.name == "Aruco Detection")
   {
     collectObjectDetection(cap);
     mCapabilities.push_back(std::move(cap));

@@ -9,7 +9,7 @@
     "tasks": [
         {
             "children": [
-                "capabilities/Pick and place-Vision.json",
+                "capabilities/Pick and place-Aruco Detection.json",
                 "capabilities/Pick and place-Grip.json",
                 "capabilities/Pick and place-Drive.json",
                 "capabilities/Pick and place-Approach.json"

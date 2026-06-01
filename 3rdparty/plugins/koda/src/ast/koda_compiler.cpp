@@ -185,6 +185,7 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, Environment& e
   {
     auto name = arg->a;
     auto type = arg->b;
+    LOG_INFO("Looking for %s", type.c_str());
     if (env.capabilities.contains(type))
       env.capabilityMap[name] = type;
   }
@@ -263,7 +264,7 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, Environment& e
       auto [instance, port] = portFromString(c.first);
       auto cap = env.getCapability(instance);
       if (!cap)
-        return Result<koda::ReturnValue>::Failed("Could not find signal capability: " + c.first);
+        return Result<koda::ReturnValue>::Failed("  signal capability: " + c.first);
 
       PortRef in = {toFlowVariable(flowName), port};
       PortRef out = {toFilename(cap->name), port};

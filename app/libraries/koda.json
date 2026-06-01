@@ -245,7 +245,7 @@
           ]
         },
         {
-          "type": "Vision",
+          "type": "Aruco Detection",
           "body": {
             "shape": "Rectangle",
             "textColor": "#FFFFFF",
@@ -259,7 +259,7 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Vision"
+              "default": "Aruco Detection"
             },
             {
               "id": "color",
@@ -535,7 +535,7 @@
       "type": "structural",
       "nodes": [
         {
-          "type": "Bridge",
+          "type": "IO Bridge",
           "body": {
             "shape": "Rectangle",
             "textColor": "#FFFFFF",
@@ -549,7 +549,7 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Bridge"
+              "default": "IO Bridge"
             },
             {
               "id": "color",
@@ -685,7 +685,7 @@
           ]
         },
         {
-          "type": "EnvSensor",
+          "type": "Occupancy Sensor",
           "body": {
             "shape": "Rectangle",
             "textColor": "#FFFFFF",
@@ -699,7 +699,7 @@
             {
               "id": "name",
               "type": "string",
-              "default": "EnvSensor"
+              "default": "Occupancy Sensor"
             },
             {
               "id": "color",
@@ -1004,99 +1004,7 @@
           ]
         },
         {
-          "type": "RobotArm",
-          "body": {
-            "shape": "Rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#d73800",
-            "borderColor": "#FFFFFF",
-            "width": 500,
-            "height": 500,
-            "z-index": -2
-          },
-          "properties": [
-            {
-              "id": "name",
-              "type": "string",
-              "default": "RobotArm"
-            },
-            {
-              "id": "color",
-              "type": "color",
-              "default": "#7ebb9c"
-            },
-            {
-              "id": "type",
-              "type": "void",
-              "options": [
-                {
-                  "id": "action",
-                  "type": "string",
-                  "options": [
-                    {
-                      "id": "route",
-                      "type": "string",
-                      "default": "arm"
-                    },
-                    {
-                      "id": "message",
-                      "type": "string",
-                      "default": ""
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "arguments",
-              "type": "list",
-              "default": [
-                {
-                  "id": "pick",
-                  "type": "string"
-                }
-              ]
-            }
-          ],
-          "events": [
-            {
-              "id": "act",
-              "type": "trigger",
-              "returnType": "void",
-              "modifiable": false,
-              "linksTo": 0,
-              "arguments": [
-                {
-                  "id": "pick",
-                  "type": "string"
-                }
-              ]
-            },
-            {
-              "id": "done",
-              "type": "return",
-              "returnType": "void",
-              "linksTo": 0,
-              "modifiable": false
-            },
-            {
-              "id": "stop",
-              "type": "abort",
-              "returnType": "void",
-              "linksTo": 0,
-              "modifiable": false
-            },
-            {
-              "id": "failed",
-              "type": "error",
-              "returnType": "void",
-              "linksTo": 0,
-              "modifiable": false
-            }
-          ]
-        },
-        {
-          "type": "ImageInspector",
+          "type": "Image Inspection",
           "body": {
             "shape": "Rectangle",
             "textColor": "#FFFFFF",
@@ -1110,7 +1018,7 @@
             {
               "id": "name",
               "type": "string",
-              "default": "ImageInspector"
+              "default": "Image Inspection"
             },
             {
               "id": "color",
