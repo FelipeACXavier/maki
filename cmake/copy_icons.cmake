@@ -1,5 +1,6 @@
 # cmake/copy_icons.cmake
 
+set(FALLBACK_PATH "${CMAKE_CURRENT_SOURCE_DIR}/assets/icons/fallback")
 set(MISSION_PATH "${CMAKE_CURRENT_SOURCE_DIR}/assets/icons/mission")
 set(FONT_AWESOME_PATH "${CMAKE_CURRENT_SOURCE_DIR}/assets/icons/fontawesome/svgs/solid")
 set(ICON_BUILD_DIR "${BUILD_ASSET_DIR}/icons")
@@ -64,6 +65,7 @@ file(GLOB APP_ICON_FILES
   ${MISSION_PATH}/koda_success.svg
   ${MISSION_PATH}/koda_sync.svg
   ${MISSION_PATH}/koda_within.svg
+  ${FALLBACK_PATH}/*.svg
 )
 
 add_custom_target(copy_icons ALL
