@@ -9,6 +9,3 @@
 [submodule "3rdparty/qclementine"]
 	path = 3rdparty/qclementine
 	url = https://github.com/oclero/qlementine.git
-[submodule "3rdparty/ogdf"]
-	path = 3rdparty/ogdf
-	url = https://github.com/ogdf/ogdf.git
