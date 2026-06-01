@@ -65,7 +65,8 @@
                 "flows/Pick and place-loop.json",
                 "flows/Pick and place-pick.json",
                 "flows/Pick and place-place.json",
-                "flows/Pick and place-err.json"
+                "flows/Pick and place-err.json",
+                "flows/Pick and place-home.json"
             ],
             "iconPath": "",
             "id": "{f1982623-40c5-4f7d-8053-da9b6112c9c7}",

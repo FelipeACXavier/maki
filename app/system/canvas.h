@@ -377,6 +377,8 @@ public slots:
   void onFlowRemoved(const QString& flowId, const QString& nodeId);
 
 protected:
+  std::shared_ptr<ConfigurationTable> mConfigTable;  /// Pointer to the configuration table.
+
   virtual void addedItemNode(NodeItem* node, std::shared_ptr<NodeSaveInfo> info);
   virtual void addedItemFlow(Flow* flow, NodeItem* node);
   virtual void addTransition(TransitionItem* transition);
@@ -385,6 +387,13 @@ protected:
   virtual TransitionConfig nextTransition(NodeItem* node) const;
   virtual QVector<QGraphicsItem*> cleanTransitionsOfNode(const QString& nodeId);
   virtual void onNodeMoved(const QString& nodeId);
+
+  /**
+   * @brief Returns the parent view of this canvas.
+   *
+   * @return Pointer to CanvasView.
+   */
+  CanvasView* parentView() const;
 
 private:
   enum class NodeCreation
@@ -410,9 +419,8 @@ private:
 
   const QString mId;  /// Unique identifier for this canvas.
 
-  QList<CopiedNode> mCopiedNodes;                    /// List of copied nodes.
-  QList<NodeItem*> mSelectedNodes;                   /// List of currently selected nodes.
-  std::shared_ptr<ConfigurationTable> mConfigTable;  /// Pointer to the configuration table.
+  QList<CopiedNode> mCopiedNodes;   /// List of copied nodes.
+  QList<NodeItem*> mSelectedNodes;  /// List of currently selected nodes.
 
   /**
    * @brief Clears all items from the canvas.
@@ -426,13 +434,6 @@ private:
    * @param select Whether to select or deselect the node.
    */
   void selectNode(NodeItem* node, bool select);
-
-  /**
-   * @brief Returns the parent view of this canvas.
-   *
-   * @return Pointer to CanvasView.
-   */
-  CanvasView* parentView() const;
 
   /**
    * @brief Creates a new node based on save information and other parameters.

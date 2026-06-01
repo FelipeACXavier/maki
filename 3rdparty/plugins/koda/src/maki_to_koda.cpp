@@ -378,7 +378,7 @@ std::any MakiToKoda::buildNodeExpr(const IFlow& flow, const INode& node)
     return buildRepeatExpr(flow, node);
   else if (node.getnodeId() == "Koda::Continue")
     return buildContinueExpr(flow, node);
-  else if (node.getnodeId() == "Koda::Success")
+  else if (node.getnodeId() == "Koda::Terminate")
     return buildSuccessExpr(flow, node);
 
   LOG_ERROR("Unknown expression: %s", qPrintable(node.getnodeId()));
@@ -963,12 +963,12 @@ int MakiToKoda::sequentialDistanceBetween(const IFlow& flow, const INode& start,
 
 bool MakiToKoda::isEndNode(const INode& node) const
 {
-  return node.getnodeId() == "Koda::End";
+  return node.getnodeId() == "Koda::Terminate";
 }
 
 bool MakiToKoda::isStructuralNode(const INode& node) const
 {
-  return node.getnodeId() == "Koda::Start";
+  return node.getnodeId() == "Koda::Start" || node.getnodeId() == "Koda::Success" || node.getnodeId() == "Koda::Failure";
 }
 
 QList<NodeTransition> MakiToKoda::successorsOfKind(const INode& node, const IFlow& flow, TransitionKind kind) const

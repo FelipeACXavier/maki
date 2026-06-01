@@ -1400,6 +1400,38 @@
           }
         },
         {
+          "type": "Terminate",
+          "body": {
+            "shape": "Ellipse",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#C2222C",
+            "borderColor": "#FFFFFF",
+            "width": 50,
+            "height": 50,
+            "iconColor": "#FFFFFF",
+            "iconScale": 0.8,
+            "icon": "koda_success.svg"
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Terminate"
+            }
+          ],
+          "connectors": [
+            {
+              "id": "input",
+              "type": "in",
+              "position": "west"
+            }
+          ],
+          "behaviour": {},
+          "help": {
+            "message": "End of a task. This will end the current task, independent of where it is triggered."
+          }
+        },
+        {
           "type": "Async task",
           "body": {
             "shape": "rounded rectangle",

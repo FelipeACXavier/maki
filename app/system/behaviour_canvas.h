@@ -91,4 +91,6 @@ private:
    * @param adding A boolean indicating whether the node is being added or removed.
    */
   void updateParent(NodeItem* node, std::shared_ptr<NodeSaveInfo> storage, bool adding) override;
+
+  void addInitialNode(const QString& nodeType, const QPointF& position);
 };

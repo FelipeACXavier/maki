@@ -90,46 +90,46 @@ void Canvas::dragMoveEvent(QGraphicsSceneDragDropEvent* event)
 
 void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
 {
-  if (event->mimeData()->hasFormat(Constants::TYPE_NODE))
+  if (!event->mimeData()->hasFormat(Constants::TYPE_NODE))
+    return;
+
+  NodeItem* parentNode = nullptr;
+  QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
+  if (item && item->type() == NodeItem::Type)
   {
-    NodeItem* parentNode = nullptr;
-    QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
-    if (item && item->type() == NodeItem::Type)
+    parentNode = static_cast<NodeItem*>(item);
+
+    // Add error message
+    if (!parentNode->acceptDrops())
     {
-      parentNode = static_cast<NodeItem*>(item);
-
-      // Add error message
-      if (!parentNode->acceptDrops())
-      {
-        LOG_WARNING("Tried to drop node on parent that does not accept drops");
-        return;
-      }
+      LOG_WARNING("Tried to drop node on parent that does not accept drops");
+      return;
     }
-
-    // Make sure that no other nodes are selected before dropping
-    clearSelectedNodes();
-
-    QByteArray data = event->mimeData()->data(Constants::TYPE_NODE);
-    QDataStream stream(&data, QIODevice::ReadOnly);
-
-    auto info = std::make_shared<NodeSaveInfo>();
-    stream >> *info;
-    info->setScale(parentView()->getScale());
-
-    auto node = createNode(NodeCreation::Dropping, info, event->scenePos(), parentNode);
-    if (node)
-    {
-      selectNode(node, true);
-      event->acceptProposedAction();
-    }
-    else
-    {
-      event->ignore();
-    }
-
-    // Make sure we show that we are no longer dragging
-    dynamic_cast<QGraphicsView*>(parent())->setCursor(Qt::ArrowCursor);
   }
+
+  // Make sure that no other nodes are selected before dropping
+  clearSelectedNodes();
+
+  QByteArray data = event->mimeData()->data(Constants::TYPE_NODE);
+  QDataStream stream(&data, QIODevice::ReadOnly);
+
+  auto info = std::make_shared<NodeSaveInfo>();
+  stream >> *info;
+  info->setScale(parentView()->getScale());
+
+  auto node = createNode(NodeCreation::Dropping, info, event->scenePos(), parentNode);
+  if (node)
+  {
+    selectNode(node, true);
+    event->acceptProposedAction();
+  }
+  else
+  {
+    event->ignore();
+  }
+
+  // Make sure we show that we are no longer dragging
+  dynamic_cast<QGraphicsView*>(parent())->setCursor(Qt::ArrowCursor);
 }
 
 bool Canvas::isModifierSet(QGraphicsSceneMouseEvent* event, Qt::KeyboardModifier modifier)
@@ -1249,9 +1249,10 @@ void Canvas::populate(const FlowSaveInfo& flow)
   for (const auto& inode : flow.getnodes())
   {
     auto node = std::dynamic_pointer_cast<NodeSaveInfo>(inode);
-    LOG_DEBUG("Creating behavioral node %s with parent %s", qPrintable(node->getid()), qPrintable(node->getparentId()));
-    auto created = createNode(NodeCreation::Populating, node, node->getposition(), findNodeWithId(node->getparentId()));
-    LOG_DEBUG("Created node %s", qPrintable(created->id()));
+    // LOG_DEBUG("Creating behavioral node %s with parent \"%s\"", qPrintable(node->getid()), qPrintable(node->getparentId()));
+    (void)createNode(NodeCreation::Populating, node, node->getposition(), findNodeWithId(node->getparentId()));
+    // if (created)
+    //   LOG_DEBUG("Created node %s", qPrintable(created->id()));
   }
 
   // Then create the transitions between the nodes

@@ -19,7 +19,6 @@ NodeBase::NodeBase(const QString& id, const QString& nodeId, std::shared_ptr<Nod
     , mConfig(nodeConfig)
     , mId(id)
     , mBounds(0, 0, config()->body.width, config()->body.height)
-    , mNodeId(nodeId)
 {
   setZValue(config()->body.zIndex);
 
@@ -45,7 +44,7 @@ int NodeBase::type() const
 
 QString NodeBase::nodeId() const
 {
-  return mNodeId;
+  return config()->type;
 }
 
 VoidResult NodeBase::start()

@@ -45,22 +45,19 @@
                     "data": "Drive",
                     "options": [
                         {
+                        },
+                        {
+                            "data": "1",
+                            "isVariable": false,
+                            "type": "float"
+                        },
+                        {
                             "data": "2",
                             "isVariable": false,
                             "type": "float"
                         },
                         {
-                            "data": "3.6927",
-                            "isVariable": false,
-                            "type": "float"
-                        },
-                        {
-                            "data": "-0.048",
-                            "isVariable": false,
-                            "type": "float"
-                        },
-                        {
-                            "data": "0.02",
+                            "data": "3",
                             "isVariable": false,
                             "type": "float"
                         }
@@ -92,22 +89,19 @@
                     "data": "Drive",
                     "options": [
                         {
+                        },
+                        {
+                            "data": "3",
+                            "isVariable": false,
+                            "type": "float"
+                        },
+                        {
                             "data": "2",
                             "isVariable": false,
                             "type": "float"
                         },
                         {
-                            "data": "2.08",
-                            "isVariable": false,
-                            "type": "float"
-                        },
-                        {
-                            "data": "2.54",
-                            "isVariable": false,
-                            "type": "float"
-                        },
-                        {
-                            "data": "1.55",
+                            "data": "1",
                             "isVariable": false,
                             "type": "float"
                         }
@@ -138,6 +132,7 @@
                 "color": "#202020",
                 "name": "Pick",
                 "strategy": {
+                    "data": "Pick and place",
                     "options": [
                         {
                             "data": "pick",
@@ -169,6 +164,7 @@
                 "color": "#202020",
                 "name": "Drop",
                 "strategy": {
+                    "data": "Pick and place",
                     "options": [
                         {
                             "data": "place",
@@ -197,9 +193,10 @@
                 "y": -175
             },
             "properties": {
-                "color": "#ff0000",
+                "color": "#aa0000",
                 "name": "Strategy",
                 "strategy": {
+                    "data": "Pick and place",
                     "options": [
                         {
                             "data": "err",
@@ -231,6 +228,7 @@
                 "color": "#dfdf00",
                 "name": "Strategy",
                 "strategy": {
+                    "data": "Pick and place",
                     "options": [
                         {
                             "data": "err",
@@ -245,6 +243,27 @@
                 "height": 50,
                 "width": 100
             }
+        },
+        {
+            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_success.svg",
+            "id": "{6cf63676-b807-4215-a117-9826661695f7}",
+            "nodeId": "Koda::Success",
+            "parentId": "",
+            "pixmap": {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAADLElEQVR4nO2aTU8TQRiAn7INnPDOR4wpXCDe/AO0F0jA6IGkd+Hei5TfAAoX+A16ROGif4HEkFgvkFjRtHDxphcNQQ87G2fanenu7EdXOk/yJtvtu+/Xzs7M7gw4HA6Hw+FwOByOUaSUs78x4AEwC8wA0+L8FdAFOsAlcJtzXJlSBmrAIX6SfwZIV+jWxLX/LR6wSbSkTcXYELYyIatHYAV4ATwM+e8b8Bm4FgIwJWQOuB9yzSdgC3iXeqQp4+En3nsnT4EmsIC56CWh0xTX9NrZJcPWkJR7wAlqwB+BVexaWklc2+qxeQJMphBvqkwCZ/wL8gZokM7d8oStG8n+GQUqgod6578DSxn4qQrbgZ9jCvI47KImP5+hr3nUIuxk6CsSK6jNfikHn1XUx2E5B5+hlPGHpyCQRoRrJoA68Bq4AH4KuRDn6kJnEA3Jb4shPQqbqL39oCDWgTb9Q1uvtIWuCQ91dNiwyiABZdQZ3qpB1wP2GZx4r+xjLuqapNsl52lzTXJ+inmct0k+kD2D3RLqZKlqnY0Fh5LjpkFvHfvkAzE9DtuS3oF1NjEZQ23+Cxq9CeALyQvQBsY1PhYlvY6ILXMqktNL9M2/TvLkA6lrfJSAr5JeJW4yNhWblY6DXj2Mpxa2dTzRnA9aSMBMXMM2BZCdXGu14JGFbRtbcgy5FGBaOjYVYNrwXxKfveRegDuFTQGupOOpiHpJMdmSY+jGNWxTANmJqQAfLGzb2Mq9AB3peA79MPjGwraOt5rzJdShL3YBbIgzEYry8jPUiZBNC7gFjqTfjzV6vzBPk6OyBfzW/Cf7PiLHBZWRfxmK+zq8h13yhX0dhhH/IBIWRJRPYuP4LzavgHPgh5Bzca6OvsOTKcQnMRjxj6IBI/1ZHMIXRrLokWsUdGEERnxpLGCS/sXRFv5wZbs4ukb/4ugxBUw+wEPtE+TJ0jb+1HXQ8vii0A1bHt8h5Waf1QaJZeAl+g0SbcI3SFTQb5B4DrxPPdIM8fAnKEm3yDyjQJ2dDWX8UeEA/41tUNIdoVslh+ntsLbJzUgC/p0O5JI7tk3O4XA4HA6Hw+FwFI+/yMW9Rq3ZYIsAAAAASUVORK5CYII="
+            },
+            "position": {
+                "x": 565,
+                "y": 5
+            },
+            "properties": {
+                "name": "Success"
+            },
+            "scale": 0.65,
+            "size": {
+                "height": 50,
+                "width": 50
+            }
         }
     ],
     "owner": "{f1982623-40c5-4f7d-8053-da9b6112c9c7}",
@@ -254,8 +273,8 @@
             "destination": {
                 "id": "{79e09ab5-ed3f-416a-9649-b11d15930285}",
                 "position": {
-                    "x": 0,
-                    "y": 0
+                    "x": -640,
+                    "y": 5
                 },
                 "shift": {
                     "x": 0,
@@ -281,8 +300,8 @@
             "destination": {
                 "id": "{3d2eafce-8fe2-4deb-a522-7489b00ef9a4}",
                 "position": {
-                    "x": 0,
-                    "y": 0
+                    "x": -60,
+                    "y": 5
                 },
                 "shift": {
                     "x": 0,
@@ -308,8 +327,8 @@
             "destination": {
                 "id": "{dd8d99cf-8c06-4952-8ae0-bfc5434c3979}",
                 "position": {
-                    "x": 0,
-                    "y": 0
+                    "x": -142.26499018873855,
+                    "y": 203.3974852831078
                 },
                 "shift": {
                     "x": 0,
@@ -335,8 +354,8 @@
             "destination": {
                 "id": "{dd8d99cf-8c06-4952-8ae0-bfc5434c3979}",
                 "position": {
-                    "x": 0,
-                    "y": 0
+                    "x": -213.41215710622296,
+                    "y": 220.19305308215831
                 },
                 "shift": {
                     "x": 0,
@@ -362,8 +381,8 @@
             "destination": {
                 "id": "{83d9ba1e-1bc9-4d8a-a45f-6539d4d399e6}",
                 "position": {
-                    "x": 0,
-                    "y": 0
+                    "x": -215.95725150090288,
+                    "y": -155.30403507104162
                 },
                 "shift": {
                     "x": 0,
@@ -389,8 +408,8 @@
             "destination": {
                 "id": "{83d9ba1e-1bc9-4d8a-a45f-6539d4d399e6}",
                 "position": {
-                    "x": 0,
-                    "y": 0
+                    "x": -136.781808058504,
+                    "y": -137.629534065817
                 },
                 "shift": {
                     "x": 0,
@@ -416,8 +435,8 @@
             "destination": {
                 "id": "{95f2b342-e88e-4e27-9d85-6565714cc5aa}",
                 "position": {
-                    "x": 0,
-                    "y": 0
+                    "x": -340,
+                    "y": 5
                 },
                 "shift": {
                     "x": 0,
@@ -443,8 +462,8 @@
             "destination": {
                 "id": "{7e0c60a7-945e-43c2-993e-80d44e6a429e}",
                 "position": {
-                    "x": 0,
-                    "y": 0
+                    "x": 280,
+                    "y": 5
                 },
                 "shift": {
                     "x": 0,
@@ -458,6 +477,33 @@
                 "id": "{3d2eafce-8fe2-4deb-a522-7489b00ef9a4}",
                 "position": {
                     "x": 40,
+                    "y": 5
+                },
+                "shift": {
+                    "x": 0,
+                    "y": 0
+                }
+            }
+        },
+        {
+            "destination": {
+                "id": "{6cf63676-b807-4215-a117-9826661695f7}",
+                "position": {
+                    "x": 540,
+                    "y": 5
+                },
+                "shift": {
+                    "x": 0,
+                    "y": 0
+                }
+            },
+            "events": "",
+            "id": "{0152e607-c9b8-4c2c-999c-4a42e4312161}",
+            "label": "",
+            "source": {
+                "id": "{7e0c60a7-945e-43c2-993e-80d44e6a429e}",
+                "position": {
+                    "x": 380,
                     "y": 5
                 },
                 "shift": {

@@ -202,9 +202,8 @@ protected:
   virtual void paintPixmap(QPainter* painter) const;
 
 private:
-  const QString mId;      /// Unique identifier of the node.
-  const QRectF mBounds;   /// Bounding rectangle of the node.
-  const QString mNodeId;  /// Identifier of the node within its type.
+  const QString mId;     /// Unique identifier of the node.
+  const QRectF mBounds;  /// Bounding rectangle of the node.
 
   QRectF mScaledBounds;  /// Scaled bounding rectangle of the node.
 

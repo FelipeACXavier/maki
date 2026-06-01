@@ -728,11 +728,12 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
     else if (type == ConfigKeys::PIPELINE)
       nodeConfig->libraryType = Types::LibraryTypes::PIPELINE;
 
-    auto id = QStringLiteral("%1::%2").arg(name, nodeConfig->type);
-    sidebarview->addNode(id, nodeConfig);
+    auto nodeId = QStringLiteral("%1::%2").arg(name, nodeConfig->type);
+    sidebarview->addNode(nodeId, nodeConfig);
+    nodeConfig->type = nodeId;
 
-    LOG_TRACE("Adding key: %s to the config table", qPrintable(id));
-    LOG_ERROR_ON_FAILURE(mConfigTable->add(id, nodeConfig));
+    LOG_TRACE("Adding key: %s to the config table", qPrintable(nodeId));
+    LOG_ERROR_ON_FAILURE(mConfigTable->add(nodeId, nodeConfig));
   }
 
   return VoidResult();
@@ -1324,13 +1325,13 @@ void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId)
   auto index = libraryTypeToIndex(canvas->type());
   mPalette->setCurrentIndex(index);
 
-  // Add default start and end nodes to flow
-  canvas->populate(*flow->config());
-
-  newView->setProperty("id", flow->id());
   LOG_DEBUG("Set tab property to %s", qPrintable(flow->id()));
+  newView->setProperty("id", flow->id());
   mCanvasPanel->addTab(newView, QIcon(":/icons/behaviour.svg"), flowName);
   mCanvasPanel->setCurrentWidget(newView);
+
+  // Populate after creation
+  canvas->populate(*flow->config());
 
   if (!nodeId.isEmpty())
     canvas->onFocusNode("", nodeId);

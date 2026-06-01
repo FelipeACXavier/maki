@@ -1,21 +1,21 @@
 {
     "arguments": [
     ],
-    "id": "{3efcfcd7-b3e4-4492-b028-555eaf1f6c50}",
+    "id": "{320d9da1-3d5c-489a-8391-cd911eae3afc}",
     "linksTo": -1094795586,
     "modifiable": true,
-    "name": "main",
+    "name": "home",
     "nodes": [
         {
-            "iconPath": "koda_start.svg",
-            "id": "{d7814788-a6bd-4fc5-b8b7-99548b568374}",
+            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_start.svg",
+            "id": "{8c30a894-ef86-4c12-b077-270d6d43f638}",
             "nodeId": "Koda::Start",
             "parentId": "",
             "pixmap": {
                 "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAo0lEQVR4nO3T2wmEQBSD4bBF2NnapKVZxPgahBWve2TyfzCvckiiBAAAAAAAAAD3mSQN1UdUapJmSWP1IVWavcg1tNWLW8M6gLg1/AogZg1bAUSsYU8AXa9hbwDdruFoAN2t4UwAXa3hSgB/WcPnyY/fpFUfcAW/wIk3S/pWHPuEyNZdZOsusnUX2bqLbN1Ftu4iW3eRrbvI1gEAAAAAAAC81wLmv8ckCrfr0gAAAABJRU5ErkJggg=="
             },
             "position": {
-                "x": -695,
+                "x": -335,
                 "y": -15
             },
             "properties": {
@@ -29,52 +29,65 @@
             }
         },
         {
-            "iconPath": "koda_repeat.svg",
-            "id": "{9d66cca8-bf87-48ad-af22-818ea58af62c}",
-            "nodeId": "Koda::Repeat",
+            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_async.svg",
+            "id": "{29204530-53c5-4581-86dd-5a9185b2fa31}",
+            "nodeId": "Koda::Async task",
             "parentId": "",
             "pixmap": {
-                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAADgUlEQVR4nO3aS2hcVRzH8U8nKb5AKabB0HQjvkArFhroQl3pxhatutCFBaXowkdbulJBnYWCYFwpKN0IKiI+wIrUjQspWAQFixEVdOEDtVWrKVJqo01c/CfMvdN5JNzHWHK+cMide2fO73/P456b8/+RSCQSiURipbJq2AFgFFdhHdZiHA3M4k/8gM9xfFgBVsEEduFdHMPCgDKPr/AibsTq+kMuhym8ijmDb7pfOYppTBYNqK4psB7P4+Ye17/Gt/gNv4sevwBrcCmuxFldfvevaNBH8Uu5IZdDQwz1v+R78CRewa1i3g9iFNfgMXzm9BFxDA9gpEN7a6s0it/K8jkHb8kHOotHLO2m+zGFN3Cqo/4PMNb6ztbM+S0F9ZbNWhzsCO41XFSyzoYuOt9hI5qZc82SdftyPmbkh/sdFeo18CD+kZ8Sew2hAUaxPyP8B66rSftaHMlonzCEBpiW7/nNdQm3uAyH5adE3wYYLVF8I/ZkPt+Hj0usvxcN3IRNrc9v4x7xEF6k8uV+FQ5ot/jLVQtmyD7te5V3ev24rPXxFu25fhwPl1RvWcz0ulDWFNiROX4GP5dU71LYL0bBVJdrV7RieaLKAMa0l6B58V/diuJe7bn24XBDWT5lPAP+zhw/V0J9ZyTbcNewg0gkEolEIpFIJBKJpTIy+Cv/S7bjYpFSW3Hcrr3/sL1oZUPJmRVkZ+b47KFFMSQmxbbbgtiGu7Bohf02RRt4VpgZus21T8WG5HzRIJbBDu09/veFT6AynjR4v73OrOs6seW+qL2tjEr7PQM2lCFQIk/j3NbxAewro9J+U+CQvKPjBF4SLg74RAzDOrhbe89xAbtbfyul6fQhf1gkIOtks0i0LsYwXZdwMyOaTTUfEanoOrhepNgXtd9T48tbMyO8V97ONidMCVW+R9wp3/MzwnxRG82MeFOkv7+XnxIHcXXJuhN4vUPnI23vT210MxmNCSNSNrhTwrDULTm5HMaF3a3TOPmmfK6/NhrixrfID/UR3K+7w/MQHheWtqVknsdxm/D6ZYf7grDW7VTx63oR58QEnhLLUzfr6kl8iW+E53dWNN6YcJFdgst71L0PD+HHAvHVxqTwBBxVzP46J8yTm5yhrMYNeEH0fKeJsVuZFfaVXWJE1U6V5qHzxAqxXnh+14hG+VW8Tf6EL1rnEolEIpFIJGrnP7NtLPjOuHgXAAAAAElFTkSuQmCC"
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAACgklEQVR4nO2ZvW4UMRCAv13RQ4o0lxYkSkAgLhIFFRGnBfEKiFBAjSgRvEdIXuFIgDu6IApAQJSeMkABRbgXAAr7tMbr3fU5a99JN59kyd7zeMaj8fjnQBAEQRAEQRAEQRAEYcnI5m0AkAMDXX8N/Emp/JRnvwzo63K6pe8E+KDLX4+xB8Ceru8Am1SdEFN/K2vAWA82SxkDPY/xC0tuGxUVqfQ3sgb8ClA+LT89jMhRk3Y5Ibr+phyQASNgQ7d/AENtUBOrwB1D8RvgJs3hmANbwF3j2w7KATcS6HeyTunJ78DKDLIrWmYq3/eQcUVCdP1NSdAUGgLHMxhwDLwAHuj2U1RSauMIOAQuWN93A/QPgYe6vV6nv8kBZrZtCzsXZ4z6BuVSCuF8gIxpc+3Okdf9sCz4ngNC+GrU3wL7HjIZcJvqEnjXkU0VYjrAzLr7qDzQxHQnsCcPEU+Hi7IEXNvgYQrFMSPAl7ozwBHuaOhc+bwZUJ38Jh2d49uYRwTYtz+TustQNFI7wA73AuWEQrdHLOh1uAtcax3UhF8ltOM/UuWADHeiGyXSX0uqCLgFXDTa28B9Eoe7i1QRYE7+OQsyeYgbAa63hgPUNfUJ8JlyFxgAl62+11vG6oSYDjjn+HZJlykFanJ7jr4mZ7syymYRDkJzpSkCJkZ9NWDs345vB8BL1CnvE+UuUABXrL59yjeECbNj2hwi3+mTmFm28Iu8JE9yqR5FvwH3jD4+22BX+seoJBt0t+ihnpZP+iydo7Y/87fHCfWfiB5hf0yMLOX2q+9uYv1OfPfXDLiKWpc+f029Bz5SDbsceARcA54BXxLrFwRBEARBEARBEARBEJaef+gEFWJs2rViAAAAAElFTkSuQmCC"
             },
             "position": {
-                "x": -380,
-                "y": -10
+                "x": -110,
+                "y": -15
             },
             "properties": {
-                "name": "Repeat",
-                "strategy": {
-                    "data": "Pick and place",
+                "capability": {
+                    "data": "Drive",
                     "options": [
                         {
-                            "data": "loop",
+                        },
+                        {
+                            "data": "0",
                             "isVariable": false,
-                            "type": "event_select"
+                            "type": "float"
+                        },
+                        {
+                            "data": "0",
+                            "isVariable": false,
+                            "type": "float"
+                        },
+                        {
+                            "data": "0",
+                            "isVariable": false,
+                            "type": "float"
                         }
                     ]
-                }
+                },
+                "color": "#202020",
+                "name": "Async task"
             },
             "scale": 1,
             "size": {
-                "height": 100,
-                "width": 200
+                "height": 50,
+                "width": 100
             }
         },
         {
             "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_success.svg",
-            "id": "{3bc9f5fb-f15f-4cc7-915e-f39a8f92180a}",
+            "id": "{09d35484-b543-4e12-85e2-1fb42ac4eb8b}",
             "nodeId": "Koda::Success",
             "parentId": "",
             "pixmap": {
                 "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAADLElEQVR4nO2aTU8TQRiAn7INnPDOR4wpXCDe/AO0F0jA6IGkd+Hei5TfAAoX+A16ROGif4HEkFgvkFjRtHDxphcNQQ87G2fanenu7EdXOk/yJtvtu+/Xzs7M7gw4HA6Hw+FwOByOUaSUs78x4AEwC8wA0+L8FdAFOsAlcJtzXJlSBmrAIX6SfwZIV+jWxLX/LR6wSbSkTcXYELYyIatHYAV4ATwM+e8b8Bm4FgIwJWQOuB9yzSdgC3iXeqQp4+En3nsnT4EmsIC56CWh0xTX9NrZJcPWkJR7wAlqwB+BVexaWklc2+qxeQJMphBvqkwCZ/wL8gZokM7d8oStG8n+GQUqgod6578DSxn4qQrbgZ9jCvI47KImP5+hr3nUIuxk6CsSK6jNfikHn1XUx2E5B5+hlPGHpyCQRoRrJoA68Bq4AH4KuRDn6kJnEA3Jb4shPQqbqL39oCDWgTb9Q1uvtIWuCQ91dNiwyiABZdQZ3qpB1wP2GZx4r+xjLuqapNsl52lzTXJ+inmct0k+kD2D3RLqZKlqnY0Fh5LjpkFvHfvkAzE9DtuS3oF1NjEZQ23+Cxq9CeALyQvQBsY1PhYlvY6ILXMqktNL9M2/TvLkA6lrfJSAr5JeJW4yNhWblY6DXj2Mpxa2dTzRnA9aSMBMXMM2BZCdXGu14JGFbRtbcgy5FGBaOjYVYNrwXxKfveRegDuFTQGupOOpiHpJMdmSY+jGNWxTANmJqQAfLGzb2Mq9AB3peA79MPjGwraOt5rzJdShL3YBbIgzEYry8jPUiZBNC7gFjqTfjzV6vzBPk6OyBfzW/Cf7PiLHBZWRfxmK+zq8h13yhX0dhhH/IBIWRJRPYuP4LzavgHPgh5Bzca6OvsOTKcQnMRjxj6IBI/1ZHMIXRrLokWsUdGEERnxpLGCS/sXRFv5wZbs4ukb/4ugxBUw+wEPtE+TJ0jb+1HXQ8vii0A1bHt8h5Waf1QaJZeAl+g0SbcI3SFTQb5B4DrxPPdIM8fAnKEm3yDyjQJ2dDWX8UeEA/41tUNIdoVslh+ntsLbJzUgC/p0O5JI7tk3O4XA4HA6Hw+FwFI+/yMW9Rq3ZYIsAAAAASUVORK5CYII="
             },
             "position": {
-                "x": -75,
-                "y": -15
+                "x": 125,
+                "y": -14
             },
             "properties": {
                 "name": "Success"
             },
-            "scale": 0.8,
+            "scale": 1,
             "size": {
                 "height": 50,
                 "width": 50
@@ -82,14 +95,14 @@
         }
     ],
     "owner": "{f1982623-40c5-4f7d-8053-da9b6112c9c7}",
-    "returnType": "void",
+    "returnType": "unknown",
     "transitions": [
         {
             "destination": {
-                "id": "{9d66cca8-bf87-48ad-af22-818ea58af62c}",
+                "id": "{29204530-53c5-4581-86dd-5a9185b2fa31}",
                 "position": {
-                    "x": -479.9874047483599,
-                    "y": -11.58710166267238
+                    "x": 0,
+                    "y": 0
                 },
                 "shift": {
                     "x": 0,
@@ -97,13 +110,13 @@
                 }
             },
             "events": "",
-            "id": "{069c273c-66e3-43f4-8900-381b527d9c77}",
+            "id": "{c6e05db8-36d0-4539-86e0-325657b0cb14}",
             "label": "",
             "source": {
-                "id": "{d7814788-a6bd-4fc5-b8b7-99548b568374}",
+                "id": "{8c30a894-ef86-4c12-b077-270d6d43f638}",
                 "position": {
-                    "x": -670.00314881291,
-                    "y": -14.603224584331905
+                    "x": -310,
+                    "y": -15
                 },
                 "shift": {
                     "x": 0,
@@ -113,10 +126,10 @@
         },
         {
             "destination": {
-                "id": "{3bc9f5fb-f15f-4cc7-915e-f39a8f92180a}",
+                "id": "{09d35484-b543-4e12-85e2-1fb42ac4eb8b}",
                 "position": {
-                    "x": -99.99664136493413,
-                    "y": -14.590218994017473
+                    "x": 0,
+                    "y": 0
                 },
                 "shift": {
                     "x": 0,
@@ -124,13 +137,13 @@
                 }
             },
             "events": "",
-            "id": "{b2bb526f-a29e-41d3-866a-b0513ba90874}",
+            "id": "{9d969188-8359-40f1-8f28-9f54fba2e225}",
             "label": "",
             "source": {
-                "id": "{9d66cca8-bf87-48ad-af22-818ea58af62c}",
+                "id": "{29204530-53c5-4581-86dd-5a9185b2fa31}",
                 "position": {
-                    "x": -280.01343454026346,
-                    "y": -11.639124023930107
+                    "x": -60.1317091520603,
+                    "y": -11.373215211058932
                 },
                 "shift": {
                     "x": 0,
@@ -139,5 +152,5 @@
             }
         }
     ],
-    "type": "user"
+    "type": "trigger"
 }

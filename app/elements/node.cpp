@@ -13,6 +13,7 @@
 #include <QUuid>
 
 #include "app_configs.h"
+#include "app_paths.h"
 #include "flow.h"
 #include "logging.h"
 #include "style_helpers.h"
@@ -66,7 +67,7 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
 
   // Add icon if it exists
   if (!mStorage->getIcon().isEmpty())
-    setIcon(mStorage->getIcon(), config()->body.iconColor);
+    setIcon(AppPaths::icon(config()->body.iconPath), config()->body.iconColor);
 
   qreal labelSize = qMax(Fonts::BaseSize, mSize.width() / Fonts::BaseFactor);
   setLabel(getProperty("name").toString(), labelSize);
