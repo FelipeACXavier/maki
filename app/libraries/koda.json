@@ -1416,7 +1416,7 @@
           "controls": []
         },
         {
-          "type": "Strategy",
+          "type": "Flow call",
           "body": {
             "shape": "rounded rectangle",
             "textColor": "#FFFFFF",
@@ -1433,7 +1433,7 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Strategy"
+              "default": "Flow call"
             },
             {
               "id": "color",
@@ -1441,11 +1441,11 @@
               "default": "#202020"
             },
             {
-              "id": "strategy",
+              "id": "task",
               "type": "component_select",
               "options": [
                 {
-                  "id": "strategy",
+                  "id": "flow",
                   "type": "user_call"
                 }
               ]
@@ -1550,11 +1550,11 @@
               "default": "Repeat"
             },
             {
-              "id": "strategy",
+              "id": "capability",
               "type": "component_select",
               "options": [
                 {
-                  "id": "strategy",
+                  "id": "flow",
                   "type": "user_call"
                 }
               ]

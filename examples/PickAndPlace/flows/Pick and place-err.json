@@ -185,8 +185,8 @@
             "destination": {
                 "id": "{6c1c15e0-d86b-416e-8b06-9fbe8d9129df}",
                 "position": {
-                    "x": -480,
-                    "y": -155
+                    "x": 0,
+                    "y": 0
                 },
                 "shift": {
                     "x": 0,
@@ -212,8 +212,8 @@
             "destination": {
                 "id": "{81badaec-ab44-4703-9e53-2709ec8ef6a3}",
                 "position": {
-                    "x": -300,
-                    "y": -155
+                    "x": 0,
+                    "y": 0
                 },
                 "shift": {
                     "x": 0,
@@ -239,8 +239,8 @@
             "destination": {
                 "id": "{63de34bd-c861-491e-a462-3a02ab0d7a63}",
                 "position": {
-                    "x": -100,
-                    "y": -155
+                    "x": 0,
+                    "y": 0
                 },
                 "shift": {
                     "x": 0,
@@ -266,8 +266,8 @@
             "destination": {
                 "id": "{a0e7d704-6b3f-4ef7-8b98-230d9db94fb5}",
                 "position": {
-                    "x": 120,
-                    "y": -155
+                    "x": 0,
+                    "y": 0
                 },
                 "shift": {
                     "x": 0,
@@ -293,8 +293,8 @@
             "destination": {
                 "id": "{cdbc3e68-f8ca-4b5a-a06b-7299d97f9f69}",
                 "position": {
-                    "x": 380,
-                    "y": -155
+                    "x": 0,
+                    "y": 0
                 },
                 "shift": {
                     "x": 0,

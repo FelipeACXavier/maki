@@ -41,10 +41,7 @@
                 "y": -10
             },
             "properties": {
-                "iterations": 0,
-                "name": "Repeat",
-                "rate": 0,
-                "strategy": {
+                "capability": {
                     "data": "Pick and place",
                     "options": [
                         {
@@ -53,7 +50,10 @@
                             "type": "event_select"
                         }
                     ]
-                }
+                },
+                "iterations": 0,
+                "name": "Repeat",
+                "rate": 0
             },
             "scale": 1,
             "size": {

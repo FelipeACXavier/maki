@@ -134,27 +134,6 @@
                 "height": 100,
                 "width": 100
             }
-        },
-        {
-            "iconPath": "",
-            "id": "{14373d99-289a-48f6-9a4c-0e91a8bde987}",
-            "nodeId": "KODA Antlr::koda_antlr.launch_ros",
-            "parentId": "",
-            "pixmap": {
-                "data": ""
-            },
-            "position": {
-                "x": 890,
-                "y": 50
-            },
-            "properties": {
-                "name": "Launch ROS"
-            },
-            "scale": 1,
-            "size": {
-                "height": 100,
-                "width": 100
-            }
         }
     ],
     "owner": "",
@@ -288,33 +267,6 @@
                 "position": {
                     "x": 237.96827507856352,
                     "y": 55.89168380042249
-                },
-                "shift": {
-                    "x": 0,
-                    "y": 0
-                }
-            }
-        },
-        {
-            "destination": {
-                "id": "{14373d99-289a-48f6-9a4c-0e91a8bde987}",
-                "position": {
-                    "x": 0,
-                    "y": 0
-                },
-                "shift": {
-                    "x": 0,
-                    "y": 0
-                }
-            },
-            "events": "",
-            "id": "{2ea0c0ff-b4e5-4784-943f-fd722811d1e3}",
-            "label": "",
-            "source": {
-                "id": "{a6e9aabf-ea99-463d-83f8-19598ff05baf}",
-                "position": {
-                    "x": 578.8093530091976,
-                    "y": -19.15347710906719
                 },
                 "shift": {
                     "x": 0,

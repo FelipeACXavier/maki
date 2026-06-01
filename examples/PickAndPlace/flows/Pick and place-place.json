@@ -65,7 +65,7 @@
         {
             "iconPath": "koda_strategy.svg",
             "id": "{2dfa86e5-28f0-4992-a2d1-90a4e4ad4dba}",
-            "nodeId": "Koda::Strategy",
+            "nodeId": "Koda::Flow call",
             "parentId": "",
             "pixmap": {
                 "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAACvUlEQVR4nO2ZMW8TMRSAv4vYERJZkpmNoQOo7YBgi4gQyl8IdOrWnYE/0a2QvxAJkaZbERItgqFDN8ZKGehQ5Q+kDPZxbjn7fOn5ziHvk6z4cs8+v3fv2e9sEARBEARBEARBENaPpOkBlCQBtnS5b5GZA6e6XNc0rlroAlOUUj5lCnQaGWkAusAl/sqn5TcFRliFEEiAQ6Cnr2fAGGWQPNrAgEzxI+AllnDwNUCTsbcNfNP1GfAYuCpo8wA4JzPCth7XUjQde3tG3/sl2u0b7fZsQvcKOukCZ8DDEg/u6TYbqDd2V0yPs7l9HqaszWudBkiAD2TKl4m9NvARR+zFgssAW9yceHxi7x1Z7PWATYpjrwX0dX0CLDzln1ju/9T9eFFkgJQxxcqjZcbArr72mXz6wCddHwE7uI1gytt4VXD/Ly3HvaCxZ2EIHOAeV6UUTYJ1MEG9+aG+Tn9tnjBBveGnlv5+oPIG2/0bxGCABUpZyDdCnvxnXe5MDAYAtxEuQj44FgOA3QhnIR9a22TjSWqEkfHfRsgHhvAA8/viBfB+iT4uyLJJkxY15gHL8sioP9elKp5RYx6wFoTwgF9G/QtwvEQfCfCaf0PgKyuQB5gfP8eUnwNaqGwwb/JbUHEeEFsIpMoPjf+CLoMx5QF5yo9QK0KwpTAWD7Apv0Pg/YQYPMClfN7HUPR5QFn6+CufyteSB8yNetu3w1uyc6tUPj4bIpXi8gBzJ2eA2u7y2Y4eGNcnHmNI13VQ63eR8rXlAaeoQ4Ueao/vnHIHElPgu8cY0nXdl9r2A66BN6h1uI1SbNchb3IJvCXyHWEoXgZnqDX4qESfU6o7E4DAc1GZo7FN1C6v62jsBOX2K3M0tg6Ho1PU0hl9OLrooI66Kz8eXyU6lDukPcRD+VUIAZMm5yJBEARBEARBEAThv+EP/2TlnGp9kAQAAAAASUVORK5CYII="
@@ -77,7 +77,7 @@
             "properties": {
                 "color": "#aa0000",
                 "name": "Abort",
-                "strategy": {
+                "task": {
                     "data": "Pick and place",
                     "options": [
                         {
@@ -97,7 +97,7 @@
         {
             "iconPath": "koda_strategy.svg",
             "id": "{1aa9b782-a9b4-4eeb-be31-3d6a52359d35}",
-            "nodeId": "Koda::Strategy",
+            "nodeId": "Koda::Flow call",
             "parentId": "",
             "pixmap": {
                 "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAACvUlEQVR4nO2ZMW8TMRSAv4vYERJZkpmNoQOo7YBgi4gQyl8IdOrWnYE/0a2QvxAJkaZbERItgqFDN8ZKGehQ5Q+kDPZxbjn7fOn5ziHvk6z4cs8+v3fv2e9sEARBEARBEARBENaPpOkBlCQBtnS5b5GZA6e6XNc0rlroAlOUUj5lCnQaGWkAusAl/sqn5TcFRliFEEiAQ6Cnr2fAGGWQPNrAgEzxI+AllnDwNUCTsbcNfNP1GfAYuCpo8wA4JzPCth7XUjQde3tG3/sl2u0b7fZsQvcKOukCZ8DDEg/u6TYbqDd2V0yPs7l9HqaszWudBkiAD2TKl4m9NvARR+zFgssAW9yceHxi7x1Z7PWATYpjrwX0dX0CLDzln1ju/9T9eFFkgJQxxcqjZcbArr72mXz6wCddHwE7uI1gytt4VXD/Ly3HvaCxZ2EIHOAeV6UUTYJ1MEG9+aG+Tn9tnjBBveGnlv5+oPIG2/0bxGCABUpZyDdCnvxnXe5MDAYAtxEuQj44FgOA3QhnIR9a22TjSWqEkfHfRsgHhvAA8/viBfB+iT4uyLJJkxY15gHL8sioP9elKp5RYx6wFoTwgF9G/QtwvEQfCfCaf0PgKyuQB5gfP8eUnwNaqGwwb/JbUHEeEFsIpMoPjf+CLoMx5QF5yo9QK0KwpTAWD7Apv0Pg/YQYPMClfN7HUPR5QFn6+CufyteSB8yNetu3w1uyc6tUPj4bIpXi8gBzJ2eA2u7y2Y4eGNcnHmNI13VQ63eR8rXlAaeoQ4Ueao/vnHIHElPgu8cY0nXdl9r2A66BN6h1uI1SbNchb3IJvCXyHWEoXgZnqDX4qESfU6o7E4DAc1GZo7FN1C6v62jsBOX2K3M0tg6Ho1PU0hl9OLrooI66Kz8eXyU6lDukPcRD+VUIAZMm5yJBEARBEARBEAThv+EP/2TlnGp9kAQAAAAASUVORK5CYII="
@@ -109,7 +109,7 @@
             "properties": {
                 "color": "#aaaa00",
                 "name": "Abort",
-                "strategy": {
+                "task": {
                     "data": "Pick and place",
                     "options": [
                         {

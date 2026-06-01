@@ -378,7 +378,7 @@ std::any MakiToKoda::buildNodeExpr(const IFlow& flow, const INode& node)
     return buildAsyncExpr(flow, node);
   else if (node.getnodeId() == "Koda::Sync task")
     return buildSyncExpr(flow, node);
-  else if (node.getnodeId() == "Koda::Strategy")
+  else if (node.getnodeId() == "Koda::Flow call")
     return buildStrategyExpr(flow, node);
   else if (node.getnodeId() == "Koda::Within")
     return buildWithinExpr(flow, node);
@@ -460,7 +460,7 @@ std::any MakiToKoda::buildSyncExpr(const IFlow& flow, const INode& node)
 
 std::any MakiToKoda::buildStrategyExpr(const IFlow& flow, const INode& node)
 {
-  QJsonObject object = node.getproperties()["strategy"].toJsonObject();
+  QJsonObject object = node.getproperties()["task"].toJsonObject();
   QString val = object["data"].toString();
   QJsonArray options = object["options"].toArray();
   if (options.isEmpty())
@@ -536,7 +536,7 @@ std::any MakiToKoda::buildRepeatExpr(const IFlow& flow, const INode& node)
   auto expr = std::make_shared<koda::Strategy::Repeat>();
 
   auto properties = node.getproperties();
-  if (!properties.contains("strategy"))
+  if (!properties.contains("capability"))
   {
     LOG_ERROR("Repeat component does not have an associated flow");
     return std::any();
@@ -552,7 +552,7 @@ std::any MakiToKoda::buildRepeatExpr(const IFlow& flow, const INode& node)
     return std::any();
   }
 
-  QJsonObject object = properties["strategy"].toJsonObject();
+  QJsonObject object = properties["capability"].toJsonObject();
   QJsonArray options = object["options"].toArray();
   if (options.isEmpty())
   {
