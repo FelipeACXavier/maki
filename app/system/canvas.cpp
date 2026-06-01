@@ -35,9 +35,9 @@ static constexpr auto MAKI_CLIPBOARD_MIME = "application/x-maki-copied-nodes";
 
 Canvas::Canvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
     : QGraphicsScene(parent)
+    , mConfigTable(configTable)
     , mId(canvasId)
     , mCopiedNodes({})
-    , mConfigTable(configTable)
 {
   setBackgroundBrush(Qt::transparent);
   // setItemIndexMethod(ItemIndexMethod::NoIndex);
@@ -390,25 +390,25 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 void Canvas::createAlignMenu(QMenu* alignMenu, const QList<Types::AlignmentNode>& items)
 {
   // QAction* distribute = alignMenu->addAction("Distribute");
-  QAction* alignHCenter = alignMenu->addAction(QIcon::fromTheme("align-horizontal-center"), "Align H center");
+  QAction* alignHCenter = alignMenu->addAction(iconFromTheme("align-horizontal-center"), "Align H center");
   connect(alignHCenter, &QAction::triggered, [this, &items]() { requestAlignNodes(items, Types::AlignmentMode::HORIZONTAL, Types::AlignmentDirection::CENTER); });
 
-  QAction* alignLeft = alignMenu->addAction(QIcon::fromTheme("align-horizontal-left"), "Align left");
+  QAction* alignLeft = alignMenu->addAction(iconFromTheme("align-horizontal-left"), "Align left");
   connect(alignLeft, &QAction::triggered, [this, &items]() { requestAlignNodes(items, Types::AlignmentMode::HORIZONTAL, Types::AlignmentDirection::START); });
 
-  QAction* alignRight = alignMenu->addAction(QIcon::fromTheme("align-horizontal-right"), "Align right");
+  QAction* alignRight = alignMenu->addAction(iconFromTheme("align-horizontal-right"), "Align right");
   connect(alignRight, &QAction::triggered, [this, &items]() { requestAlignNodes(items, Types::AlignmentMode::HORIZONTAL, Types::AlignmentDirection::END); });
 
-  QAction* alignVCenter = alignMenu->addAction(QIcon::fromTheme("align-vertical-center"), "Align V center");
+  QAction* alignVCenter = alignMenu->addAction(iconFromTheme("align-vertical-center"), "Align V center");
   connect(alignVCenter, &QAction::triggered, [this, &items]() { requestAlignNodes(items, Types::AlignmentMode::VERTICAL, Types::AlignmentDirection::CENTER); });
 
-  QAction* alignTop = alignMenu->addAction(QIcon::fromTheme("align-vertical-top"), "Align top");
+  QAction* alignTop = alignMenu->addAction(iconFromTheme("align-vertical-top"), "Align top");
   connect(alignTop, &QAction::triggered, [this, &items]() { requestAlignNodes(items, Types::AlignmentMode::VERTICAL, Types::AlignmentDirection::START); });
 
-  QAction* alignBottom = alignMenu->addAction(QIcon::fromTheme("align-vertical-bottom"), "Align bottom");
+  QAction* alignBottom = alignMenu->addAction(iconFromTheme("align-vertical-bottom"), "Align bottom");
   connect(alignBottom, &QAction::triggered, [this, &items]() { requestAlignNodes(items, Types::AlignmentMode::VERTICAL, Types::AlignmentDirection::END); });
 
-  alignMenu->setIcon(QIcon::fromTheme("align-none"));
+  alignMenu->setIcon(iconFromTheme("align-none"));
   alignMenu->setEnabled(items.size() > 1);
 }
 
@@ -545,20 +545,20 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     // =============================================
     addSectionLabel(&menu, "Edit");
 
-    QAction* copyAction = menu.addAction(QIcon::fromTheme("edit-copy"), "Copy");
+    QAction* copyAction = menu.addAction(iconFromTheme("edit-copy"), "Copy");
     copyAction->setEnabled(items.size() > 0);
     QObject::connect(copyAction, &QAction::triggered, [this]() {
       copySelectedItems(nullptr);
     });
 
-    QAction* pasteAction = menu.addAction(QIcon::fromTheme("edit-paste"), "Paste");
+    QAction* pasteAction = menu.addAction(iconFromTheme("edit-paste", true), "Paste");
     const QMimeData* mimeData = QApplication::clipboard()->mimeData();
     pasteAction->setEnabled(mimeData && mimeData->hasFormat(MAKI_CLIPBOARD_MIME));
     QObject::connect(pasteAction, &QAction::triggered, [this]() {
       pasteCopiedItems();
     });
 
-    QAction* deleteAction = menu.addAction(QIcon::fromTheme("edit-delete"), "Delete");
+    QAction* deleteAction = menu.addAction(iconFromTheme("edit-delete"), "Delete");
     deleteAction->setEnabled(items.size() > 0);
     QObject::connect(deleteAction, &QAction::triggered, [this]() {
       deleteSelectedItems();
@@ -567,7 +567,7 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     // =============================================
     addSectionLabel(&menu, "Visual");
 
-    QAction* forwardAction = menu.addAction(QIcon::fromTheme("object-order-front"), "To front");
+    QAction* forwardAction = menu.addAction(iconFromTheme("object-order-front"), "To front");
     forwardAction->setEnabled(items.size() > 0);
     QObject::connect(forwardAction, &QAction::triggered, [this, items]() {
       qreal topZLevel = 0;
@@ -578,7 +578,7 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
         node->setZValue(topZLevel);
     });
 
-    QAction* backwardAction = menu.addAction(QIcon::fromTheme("object-order-back"), "To back");
+    QAction* backwardAction = menu.addAction(iconFromTheme("object-order-back"), "To back");
     backwardAction->setEnabled(items.size() > 0);
     QObject::connect(backwardAction, &QAction::triggered, [this, items]() {
       qreal topZLevel = 0;
@@ -589,7 +589,7 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
         node->setZValue(topZLevel);
     });
 
-    QAction* toggleLabelAction = menu.addAction(QIcon::fromTheme("view-visible"), "Toggle label");
+    QAction* toggleLabelAction = menu.addAction(iconFromTheme("view-visible"), "Toggle label");
     toggleLabelAction->setEnabled(items.size() > 0);
     QObject::connect(toggleLabelAction, &QAction::triggered, [items]() {
       for (QGraphicsItem* item : items)
@@ -599,7 +599,7 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
       }
     });
 
-    QMenu* alignMenu = menu.addMenu(QIcon::fromTheme("align-on-canvas"), tr("Align"));
+    QMenu* alignMenu = menu.addMenu(iconFromTheme("align-on-canvas"), tr("Align"));
     createAlignMenu(alignMenu, itemIds);
   }
   else if (item->type() == NodeItem::Type || item->type() == QGraphicsSvgItem::Type)
@@ -609,7 +609,7 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     // =============================================
     addSectionLabel(&menu, "Creation");
 
-    QAction* newEventAction = menu.addAction(tr("New flow"));
+    QAction* newEventAction = menu.addAction(QIcon(":/icons/flow.svg"), tr("New flow"));
     newEventAction->setEnabled(node != nullptr || items.size() > 0);
     QObject::connect(newEventAction, &QAction::triggered, [this, node]() {
       emit createEvent(node);
@@ -619,20 +619,20 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     // =============================================
     addSectionLabel(&menu, "Edit");
 
-    QAction* copyAction = menu.addAction(QIcon::fromTheme("edit-copy"), "Copy");
+    QAction* copyAction = menu.addAction(iconFromTheme("edit-copy"), "Copy");
     copyAction->setEnabled(node != nullptr || items.size() > 0);
     QObject::connect(copyAction, &QAction::triggered, [this, node]() {
       copySelectedItems(node);
     });
 
-    QAction* pasteAction = menu.addAction(QIcon::fromTheme("edit-paste"), "Paste");
+    QAction* pasteAction = menu.addAction(iconFromTheme("edit-paste"), "Paste");
     const QMimeData* mimeData = QApplication::clipboard()->mimeData();
     pasteAction->setEnabled(mimeData && mimeData->hasFormat(MAKI_CLIPBOARD_MIME));
     QObject::connect(pasteAction, &QAction::triggered, [this]() {
       pasteCopiedItems();
     });
 
-    QAction* deleteAction = menu.addAction(QIcon::fromTheme("edit-delete"), "Delete");
+    QAction* deleteAction = menu.addAction(iconFromTheme("edit-delete"), "Delete");
     deleteAction->setEnabled(node != nullptr || items.size() > 0);
     QObject::connect(deleteAction, &QAction::triggered, [this]() {
       deleteSelectedItems();
@@ -641,7 +641,7 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     // =============================================
     addSectionLabel(&menu, "Visual");
 
-    QAction* forwardAction = menu.addAction(QIcon::fromTheme("object-order-front"), "To front");
+    QAction* forwardAction = menu.addAction(iconFromTheme("object-order-front"), "To front");
     forwardAction->setEnabled(node != nullptr || items.size() > 0);
     QObject::connect(forwardAction, &QAction::triggered, [this, node]() {
       if (!node)
@@ -655,7 +655,7 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
       node->setZValue(++topZLevel);
     });
 
-    QAction* backwardAction = menu.addAction(QIcon::fromTheme("object-order-back"), "To back");
+    QAction* backwardAction = menu.addAction(iconFromTheme("object-order-back"), "To back");
     backwardAction->setEnabled(node != nullptr || items.size() > 0);
     QObject::connect(backwardAction, &QAction::triggered, [this, node]() {
       if (!node)
@@ -669,7 +669,7 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
       node->setZValue(--topZLevel);
     });
 
-    QAction* toggleLabelAction = menu.addAction(QIcon::fromTheme("view-visible"), "Toggle label");
+    QAction* toggleLabelAction = menu.addAction(iconFromTheme("view-visible"), "Toggle label");
     toggleLabelAction->setEnabled(node != nullptr || items.size() > 0);
     QObject::connect(toggleLabelAction, &QAction::triggered, [items]() {
       for (QGraphicsItem* item : items)
@@ -679,7 +679,7 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
       }
     });
 
-    QMenu* alignMenu = menu.addMenu(QIcon::fromTheme("align-on-canvas"), tr("Align"));
+    QMenu* alignMenu = menu.addMenu(iconFromTheme("align-on-canvas"), tr("Align"));
     createAlignMenu(alignMenu, itemIds);
   }
   else if (item->type() == TransitionItem::Type)
@@ -689,7 +689,7 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 
     // TransitionItem* transition = static_cast<TransitionItem*>(item);
 
-    QAction* toggleLabelAction = menu.addAction(QIcon::fromTheme("view-visible"), "Toggle label");
+    QAction* toggleLabelAction = menu.addAction(iconFromTheme("view-visible"), "Toggle label");
     toggleLabelAction->setEnabled(items.size() > 0);
     QObject::connect(toggleLabelAction, &QAction::triggered, [items]() {
       // for (QGraphicsItem* item : items)

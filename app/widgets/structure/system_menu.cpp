@@ -266,19 +266,19 @@ void SystemMenu::showContextMenu(const QPoint& pos)
 
   if (selectedItem->data(TYPE_DATA, Qt::UserRole) == Roles::NodeRole)
   {
-    contextMenu.addAction(QIcon::fromTheme("search"), tr("Focus"), this, [this, selectedItem]() {
+    contextMenu.addAction(iconFromTheme("search"), tr("Focus"), this, [this, selectedItem]() {
       emit nodeFocused(selectedItem->data(CANVAS_DATA, Qt::UserRole).toString(), selectedItem->data(ID_DATA, Qt::UserRole).toString());
     });
-    contextMenu.addAction(QIcon::fromTheme("edit-delete"), tr("Delete"), this, [this, selectedItem]() {
+    contextMenu.addAction(iconFromTheme("edit-delete"), tr("Delete"), this, [this, selectedItem]() {
       emit nodeRemoved(selectedItem->data(CANVAS_DATA, Qt::UserRole).toString(), selectedItem->data(ID_DATA, Qt::UserRole).toString());
     });
   }
   else if (selectedItem->data(TYPE_DATA, Qt::UserRole) == Roles::FlowRole)
   {
-    contextMenu.addAction(QIcon::fromTheme("document-edit"), tr("Edit"), this, [this, selectedItem]() {
+    contextMenu.addAction(iconFromTheme("document-edit"), tr("Edit"), this, [this, selectedItem]() {
       editFlow(selectedItem);
     });
-    contextMenu.addAction(QIcon::fromTheme("edit-delete"), tr("Delete"), this, [this, selectedItem]() {
+    contextMenu.addAction(iconFromTheme("edit-delete"), tr("Delete"), this, [this, selectedItem]() {
       removeFlow(selectedItem);
     });
   }

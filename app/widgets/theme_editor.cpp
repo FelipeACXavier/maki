@@ -17,6 +17,7 @@
 #include "frame.h"
 #include "logging.h"
 #include "section.h"
+#include "style_helpers.h"
 
 #define ADD_TITLE(TEXT)                                        \
   {                                                            \
@@ -240,7 +241,7 @@ struct ThemeEditorWidget::Impl
 
     // 'Load' button.
     {
-      auto* loadJsonButton = new QPushButton(QIcon::fromTheme("document-open"), tr("Load JSON file…"), container);
+      auto* loadJsonButton = new QPushButton(iconFromTheme("document-open"), tr("Load JSON file…"), container);
       loadJsonButton->setToolTip("Load a JSON file from disk.");
       loadJsonButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
       rowLayout->addWidget(loadJsonButton);
@@ -267,7 +268,7 @@ struct ThemeEditorWidget::Impl
 
     // 'Save' button.
     {
-      auto* saveJsonButton = new QPushButton(QIcon::fromTheme("document-save"), tr("Save JSON file…"), container);
+      auto* saveJsonButton = new QPushButton(iconFromTheme("document-save"), tr("Save JSON file…"), container);
       saveJsonButton->setToolTip("Save the current theme as JSON file to disk.");
       saveJsonButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
       rowLayout->addWidget(saveJsonButton);

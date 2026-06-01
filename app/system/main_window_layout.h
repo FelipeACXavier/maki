@@ -224,6 +224,4 @@ private:
    * @return int The new minimum width of the tab bar.
    */
   int setTabBarWidth(QTabBar* bar, int minWidth, int minBorder, int minPadding);
-
-  QIcon makeThemedIcon(const QString& id, const QString& fallback, const QSize& size = {16, 16}) const;
 };
