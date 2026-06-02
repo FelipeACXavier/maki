@@ -76,7 +76,7 @@ enum class PropertyTypes
   COMPONENT_SELECT,
   EVENT_SELECT,
   TRIGGER_CALL,
-  USER_CALL,
+  FLOW_CALL,
   END
 };
 
