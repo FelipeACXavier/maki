@@ -20,7 +20,9 @@ class IPipeline
 {
 public:
   virtual ~IPipeline() = default;
+#ifndef __EMSCRIPTEN__
   virtual VoidResult add(QProcess* process, OnFail onFail, std::function<void(int& exitCode, QProcess::ExitStatus& status)> callback = nullptr) = 0;
+#endif
   virtual void startGroup(const QString& groupName) = 0;
   virtual void endGroup() = 0;
 };

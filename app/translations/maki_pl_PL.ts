@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
-<TS version="2.1" language="en_US">
+<TS version="2.1" language="pl_PL">
 <context>
     <name>Canvas</name>
     <message>
@@ -226,19 +226,30 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="298"/>
-        <source>Info</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../system/main_window_layout.cpp" line="334"/>
-        <source>Generation</source>
+        <location filename="../system/main_window_layout.cpp" line="220"/>
+        <location filename="../system/main_window_layout.cpp" line="893"/>
+        <source>Run pipeline</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../system/main_window_layout.cpp" line="243"/>
         <location filename="../system/main_window_layout.cpp" line="371"/>
         <source>System</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../system/main_window_layout.cpp" line="298"/>
+        <source>Info</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../system/main_window_layout.cpp" line="316"/>
+        <source>Log</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../system/main_window_layout.cpp" line="334"/>
+        <source>Generation</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -357,44 +368,8 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="596"/>
-        <source>Plugin tabs</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../system/main_window_layout.cpp" line="610"/>
-        <source>Auto-route</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../system/main_window_layout.cpp" line="636"/>
-        <source>Toggle Grid</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../system/main_window_layout.cpp" line="641"/>
-        <source>Toggle Snap to Grid</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../system/main_window_layout.cpp" line="887"/>
-        <source>Cancel current pipeline</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <location filename="../system/main_window_layout.cpp" line="567"/>
         <source>Show/Hide</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../system/main_window_layout.cpp" line="220"/>
-        <location filename="../system/main_window_layout.cpp" line="893"/>
-        <source>Run pipeline</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../system/main_window_layout.cpp" line="580"/>
-        <source>Information panel</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -403,13 +378,28 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <location filename="../system/main_window_layout.cpp" line="580"/>
+        <source>Information panel</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="../system/main_window_layout.cpp" line="588"/>
         <source>Properties panel</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <location filename="../system/main_window_layout.cpp" line="596"/>
+        <source>Plugin tabs</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="../system/main_window_layout.cpp" line="607"/>
         <source>Diagram</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../system/main_window_layout.cpp" line="610"/>
+        <source>Auto-route</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -430,6 +420,16 @@
     <message>
         <location filename="../system/main_window_layout.cpp" line="632"/>
         <source>Simulate</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../system/main_window_layout.cpp" line="636"/>
+        <source>Toggle Grid</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../system/main_window_layout.cpp" line="641"/>
+        <source>Toggle Snap to Grid</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -468,8 +468,8 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../system/main_window_layout.cpp" line="316"/>
-        <source>Log</source>
+        <location filename="../system/main_window_layout.cpp" line="887"/>
+        <source>Cancel current pipeline</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -663,28 +663,13 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../widgets/settings_dialog.cpp" line="458"/>
-        <source>Other settings</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../widgets/settings_dialog.cpp" line="459"/>
-        <source>Default plugin</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../widgets/settings_dialog.cpp" line="460"/>
-        <source>MAKI will set this plugin as the default on start</source>
+        <location filename="../widgets/settings_dialog.cpp" line="258"/>
+        <source>Theming</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../widgets/settings_dialog.cpp" line="310"/>
         <source>Use native menubar</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../widgets/settings_dialog.cpp" line="258"/>
-        <source>Theming</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -765,6 +750,21 @@
     <message>
         <location filename="../widgets/settings_dialog.cpp" line="401"/>
         <source>Installed plugins</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../widgets/settings_dialog.cpp" line="458"/>
+        <source>Other settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../widgets/settings_dialog.cpp" line="459"/>
+        <source>Default plugin</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../widgets/settings_dialog.cpp" line="460"/>
+        <source>MAKI will set this plugin as the default on start</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
