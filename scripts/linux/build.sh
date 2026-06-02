@@ -23,9 +23,11 @@ SOURCE_DIR=$CURR_DIR
 # Use QT version from the single source of truth file
 QT_VERSION="$(tr -d ' \n' < $CURR_DIR/.qt-version)"
 BUILD_PATH="$SOURCE_DIR/build/linux/debug"
-PREFIX_PATH="$HOME/Qt/$QT_VERSION/gcc_64"
+PREFIX_PATH="$HOME/Programs/Qt/$QT_VERSION/gcc_64"
 INSTALL_PREFIX="$SOURCE_DIR/release/linux"
 EXTRA_ARGS=""
+TOOLCHAIN_FILE=""
+WASM=0
 
 while [[ $# -gt 0 ]]; do
   key="$1"
@@ -53,6 +55,14 @@ while [[ $# -gt 0 ]]; do
       BUILD_PATH="$SOURCE_DIR/build/linux/release"
       shift
       ;;
+      --wasm)
+      TARGET="wasm"
+      BUILD_TYPE="Release"
+      BUILD_PATH="$SOURCE_DIR/build/wasm"
+      PREFIX_PATH="$HOME/Programs/Qt/$QT_VERSION/wasm_multithread"
+      TOOLCHAIN_FILE="$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake"
+      shift
+      ;;
       --prefix)
       PREFIX_PATH="$2"
       shift
@@ -69,6 +79,8 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+QT6_DIR="$PREFIX_PATH/lib/cmake/Qt6"
+
 echo "--------------------------------------"
 echo "Running with:"
 echo "  CURR_DIR: ${CURR_DIR}"
@@ -78,6 +90,7 @@ echo "  TARGET: ${TARGET}"
 echo "  BUILD_PATH: ${BUILD_PATH}"
 echo "  PREFIX_PATH: ${PREFIX_PATH}"
 echo "  INSTALL_PREFIX: ${INSTALL_PREFIX}"
+echo "  TOOLCHAIN_FILE: ${TOOLCHAIN_FILE}"
 echo "  Extra args: ${EXTRA_ARGS}"
 echo "--------------------------------------"
 
@@ -95,10 +108,16 @@ else
     -DLOCAL_QT_PATH="$LOCAL_QT_PATH" \
     -DLOCAL_PROJECT_PATH="$LOCAL_PROJECT_PATH" \
     -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
+    -DCMAKE_TOOLCHAIN_FILE="$TOOLCHAIN_FILE" \
+    -DQt6_DIR="$QT6_DIR" \
+    -DQT_DEBUG_FIND_PACKAGE=ON \
+    -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=BOTH \
     $EXTRA_ARGS
 
   if [ $DOCS -eq 1 ]; then
     cmake --build "$BUILD_PATH" -j 4 --target docs
+  elif [ "$TARGET" == "wasm" ]; then
+    cmake --build "$BUILD_PATH" -j 4
   elif [ "$BUILD_TYPE" == "Release" ]; then
     cmake --build "$BUILD_PATH" -j 4 --target deploy-linux
   else
