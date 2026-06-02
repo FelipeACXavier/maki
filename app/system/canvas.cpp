@@ -163,8 +163,6 @@ void Canvas::onSelectionChanged()
     if (auto* node = qgraphicsitem_cast<NodeItem*>(item))
       if (!mSelectedNodes.contains(node))
         mSelectedNodes.append(node);
-
-  updateNodeActionButtons();
 }
 
 void Canvas::dragEnterEvent(QGraphicsSceneDragDropEvent* event)
@@ -284,7 +282,7 @@ void Canvas::updateCapabilityDropPreview(const QPointF& scenePos)
     return;
 
   NodeItem* task = taskContainerAcceptingDrop(itemAt(scenePos, QTransform()));
-  if (task == mCapabilityPreviewTask)
+  if (!task || !mCapabilityPreviewTask || task == mCapabilityPreviewTask)
     return;
 
   clearCapabilityDropPreview();
@@ -305,49 +303,47 @@ void Canvas::ensureNodeActionMenu()
   mNodeActionMenu = new NodeActionMenu(view);
   connect(mNodeActionMenu, &NodeActionMenu::addFlowRequested, this, [this](NodeItem* n) {
     if (n)
-      emit openFlow(nullptr, n->id());
+      emit createEvent(n);
   });
   connect(mNodeActionMenu, &NodeActionMenu::addSubtaskRequested, this, &Canvas::addSubtaskTo);
+
+  if (!mNodeActionHideTimer)
+  {
+    mNodeActionHideTimer = new QTimer(this);
+    mNodeActionHideTimer->setSingleShot(true);
+
+    connect(mNodeActionHideTimer, &QTimer::timeout, this, [this] {
+      if (!mNodeActionMenu)
+        return;
+
+      if (mNodeActionMenu->underMouse())
+        return;
+
+      mNodeActionMenu->hideMenu();
+      mHoveredActionNode = nullptr;
+    });
+  }
 }
 
-void Canvas::updateNodeActionButtons()
+void Canvas::onNodeHovered(NodeItem* node, bool show)
 {
-  if (type() != Types::LibraryTypes::STRUCTURAL)
+  if (!node || !node->isTaskContainer())
+    return;
+
+  ensureNodeActionMenu();
+
+  if (!mNodeActionMenu)
+    return;
+
+  if (show)
   {
-    if (mNodeActionMenu)
-      mNodeActionMenu->hideMenu();
+    mNodeActionHideTimer->stop();
+    mHoveredActionNode = node;
+    mNodeActionMenu->showForTask(node, parentView());
     return;
   }
-
-  NodeItem* selectedTask = nullptr;
-  int selectedTaskCount = 0;
-
-  for (QGraphicsItem* item : items())
-  {
-    if (item->type() != NodeItem::Type)
-      continue;
-
-    auto* node = static_cast<NodeItem*>(item);
-    if (!node->isTaskContainer())
-      continue;
-
-    if (node->isSelected())
-    {
-      ++selectedTaskCount;
-      selectedTask = node;
-    }
-  }
-
-  if (selectedTaskCount == 1 && selectedTask)
-  {
-    ensureNodeActionMenu();
-    if (mNodeActionMenu)
-      mNodeActionMenu->showForTask(selectedTask, parentView());
-  }
-  else if (mNodeActionMenu)
-  {
-    mNodeActionMenu->hideMenu();
-  }
+  else if (mHoveredActionNode == node)
+    mNodeActionHideTimer->start(150);
 }
 
 void Canvas::addSubtaskTo(NodeItem* task)
@@ -396,6 +392,7 @@ void Canvas::openCapabilityMenu(NodeItem* task)
     QString libName = cfg->libraryName;
     if (libName.isEmpty())
       libName = (sep > 0) ? key.left(sep) : QStringLiteral("(other)");
+
     byLibrary[libName].push_back({key, cfg});
   }
 
@@ -422,6 +419,11 @@ void Canvas::openCapabilityMenu(NodeItem* task)
 
   QVector<LibrarySection> sections;
 
+  // This should be it't own class. I think it would be quite simple to implement it as a child of LibraryContainer
+  // or something similar to it. It already puts the nodes in a grid like layout and it is quite easy to configure.
+  // We would only need to put the searchwidget above it
+  // I also think it might make sense to construct this at the system level since it is always the same, it might take
+  // some more ram, but at least we don't need to populate the container everytime.
   auto* host = new QWidget(&menu);
   oclero::qlementine::QlementineStyle::setAutoIconColor(host, oclero::qlementine::AutoIconColor::None);
   auto* vbox = new QVBoxLayout(host);
@@ -1222,7 +1224,6 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 
   // Execute the menu at the mouse cursor's position
   menu->popup(event->screenPos());
-  // menu->exec(event->screenPos());
 }
 
 void Canvas::createNodeContextMenu(QMenu& menu)
@@ -1688,6 +1689,7 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
   node->nodeModified = [this](NodeItem* item) { emit nodeModified(item); };
   node->flowAdded = [this](Flow* flow, NodeItem* node) { addedItemFlow(flow, node); };
   node->nodeMoved = [this](const QString& id) { onNodeMoved(id); };
+  node->nodeHovered = [this](NodeItem* item, bool hovered) { onNodeHovered(item, hovered); };
 
   node->start();
 
@@ -1905,9 +1907,9 @@ void Canvas::populate(const FlowSaveInfo& flow)
   {
     auto node = std::dynamic_pointer_cast<NodeSaveInfo>(inode);
     // LOG_DEBUG("Creating behavioral node %s with parent \"%s\"", qPrintable(node->getid()), qPrintable(node->getparentId()));
-    (void)createNode(NodeCreation::Populating, node, node->getposition(), findNodeWithId(node->getparentId()));
-    // if (created)
-    //   LOG_DEBUG("Created node %s", qPrintable(created->id()));
+    auto created = createNode(NodeCreation::Populating, node, node->getposition(), findNodeWithId(node->getparentId()));
+    if (created)
+      LOG_DEBUG("Created node %s", qPrintable(created->id()));
   }
 
   // Then create the transitions between the nodes

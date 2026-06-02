@@ -5,6 +5,29 @@
 class CanvasView;
 class NodeItem;
 class QTreeWidget;
+class QGraphicsOpacityEffect;
+class QPropertyAnimation;
+
+class NodeActionRow : public QWidget
+{
+  Q_OBJECT
+public:
+  NodeActionRow(const QString& svgPath, const QString& labelText, QWidget* parent = nullptr);
+
+signals:
+  void clicked();
+
+protected:
+  void enterEvent(QEnterEvent* event) override;
+  void leaveEvent(QEvent* event) override;
+  void mousePressEvent(QMouseEvent* event) override;
+
+  void paintEvent(QPaintEvent* event) override;
+
+private:
+  bool mHovered;
+  void setHovered(bool hovered);
+};
 
 /** Floating menu (QTreeWidget) with Add flow / Add subtask actions beside a selected Task. */
 class NodeActionMenu : public QWidget
@@ -27,4 +50,8 @@ signals:
 private:
   QTreeWidget* mTree = nullptr;
   NodeItem* mTask = nullptr;
+  QTimer* mFadeTimer = nullptr;
+
+  void enterEvent(QEnterEvent* event) override;
+  void leaveEvent(QEvent* event) override;
 };

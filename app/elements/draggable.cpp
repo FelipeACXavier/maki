@@ -113,6 +113,7 @@ void DraggableItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* sty
   {
     const QPen outlinePen = isSelected() ? QPen(Config::HIGHLIGHT, 2.0) : QPen(Config::FOREGROUND, 1.0);
     paintStructuralTaskPalettePreview(painter, rect, outlinePen);
+    NodeBase::paintLabel(painter, outlinePen);
     return;
   }
 
@@ -146,7 +147,7 @@ void DraggableItem::startDrag(QGraphicsSceneMouseEvent* event)
   QStyleOptionGraphicsItem opt;
   opt.state = QStyle::State_Active;
   paint(&painter, &opt, nullptr);
-  paintLabel(&painter, pixmap.rect(), QPen(Config::FOREGROUND));
+  paintLabel(&painter, QPen(Config::FOREGROUND));
 
   NodeSaveInfo info;
   info.setNodeId(nodeId());

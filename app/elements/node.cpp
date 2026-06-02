@@ -629,12 +629,13 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
       const QString iconAbsPath = AppPaths::icon(config()->body.iconPath);
       renderSvgInEllipse(painter, iconAbsPath, r.center(), qMin(r.width(), r.height()));
     }
+
+    NodeBase::paintLabel(painter, pen);
     return;
   }
 
   if (isTaskContainer())
   {
-    LOG_INFO("Painting task container: %s", qPrintable(nodeType()));
     Q_UNUSED(style);
     Q_UNUSED(widget);
     painter->setRenderHint(QPainter::Antialiasing, true);
@@ -672,6 +673,7 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
       }
     }
 
+    NodeBase::paintLabel(painter, pen);
     return;
   }
 
@@ -1397,6 +1399,18 @@ void NodeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
   }
 
   QGraphicsItem::mouseReleaseEvent(event);
+}
+
+void NodeItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
+{
+  emit nodeHovered(this, true);
+  QGraphicsItem::hoverEnterEvent(event);
+}
+
+void NodeItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
+{
+  emit nodeHovered(this, false);
+  QGraphicsItem::hoverLeaveEvent(event);
 }
 
 QVariant NodeItem::itemChange(GraphicsItemChange change, const QVariant& value)

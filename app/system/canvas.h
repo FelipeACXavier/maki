@@ -426,6 +426,7 @@ protected:
   virtual TransitionConfig nextTransition(NodeItem* node) const;
   virtual QVector<QGraphicsItem*> cleanTransitionsOfNode(const QString& nodeId);
   virtual void onNodeMoved(const QString& nodeId);
+  virtual void onNodeHovered(NodeItem* node, bool hovered);
 
   /**
    * @brief Inserts a dropped behaviour node onto an existing transition (source -> new -> destination).
@@ -550,7 +551,6 @@ private:
   void updateCapabilityDropPreview(const QPointF& scenePos);
   void openCapabilityMenu(NodeItem* task);
   void addSubtaskTo(NodeItem* task);
-  void updateNodeActionButtons();
   void ensureNodeActionMenu();
   TransitionItem* transitionAt(const QPointF& scenePos) const;
 
@@ -559,6 +559,8 @@ private:
   bool mDraggedNodeIsCapability = false;
   QString mDraggedCapabilityIconPath;
   QColor mDraggedCapabilityColor;
+  QTimer* mNodeActionHideTimer = nullptr;
+  NodeItem* mHoveredActionNode = nullptr;
 
   void onSelectionChanged();
 };

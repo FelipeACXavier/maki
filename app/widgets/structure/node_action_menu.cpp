@@ -3,145 +3,29 @@
 #include <QAbstractItemView>
 #include <QEvent>
 #include <QFontMetrics>
+#include <QGraphicsOpacityEffect>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QPropertyAnimation>
 #include <QSvgWidget>
+#include <QTimer>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QVBoxLayout>
 
 #include "app_paths.h"
 #include "elements/node.h"
+#include "logging.h"
 #include "system/canvas_view.h"
 
 namespace
 {
-constexpr int kActionRole = Qt::UserRole;
-constexpr int kActionAddFlow = 1;
-constexpr int kActionAddSubtask = 2;
 constexpr int kGapFromNode = 8;
 constexpr int kIconPx = 32;
 constexpr int kRowHeight = 36;
 constexpr int kIconTextGap = 8;
 constexpr int kHPad = 8;
 constexpr int kVPad = 4;
-
-void setActionRowHovered(QWidget* row, QTreeWidget* tree, bool hovered)
-{
-  if (!row || !tree)
-    return;
-
-  QPalette p = tree->palette();
-  if (hovered)
-  {
-    p.setColor(QPalette::Window, tree->palette().color(QPalette::Highlight));
-    p.setColor(QPalette::WindowText, tree->palette().color(QPalette::HighlightedText));
-  }
-
-  row->setAutoFillBackground(hovered);
-  row->setPalette(p);
-  for (QLabel* label : row->findChildren<QLabel*>())
-  {
-    label->setAutoFillBackground(hovered);
-    label->setPalette(p);
-  }
-}
-
-class ActionRowHoverFilter final : public QObject
-{
-public:
-  ActionRowHoverFilter(QWidget* row, QTreeWidget* tree)
-      : QObject(row)
-      , m_row(row)
-      , m_tree(tree)
-  {
-    row->installEventFilter(this);
-  }
-
-protected:
-  bool eventFilter(QObject* watched, QEvent* event) override
-  {
-    if (watched != m_row)
-      return QObject::eventFilter(watched, event);
-
-    if (event->type() == QEvent::Enter)
-      setActionRowHovered(m_row, m_tree, true);
-    else if (event->type() == QEvent::Leave)
-      setActionRowHovered(m_row, m_tree, false);
-
-    return QObject::eventFilter(watched, event);
-  }
-
-private:
-  QWidget* m_row = nullptr;
-  QTreeWidget* m_tree = nullptr;
-};
-
-class NodeActionMenuViewportFilter final : public QObject
-{
-public:
-  explicit NodeActionMenuViewportFilter(QTreeWidget* tree)
-      : QObject(tree)
-      , mTree(tree)
-  {
-  }
-
-protected:
-  bool eventFilter(QObject* watched, QEvent* event) override
-  {
-    if (!mTree)
-      return QObject::eventFilter(watched, event);
-
-    if (watched && watched == mTree->viewport() && event->type() == QEvent::Leave)
-    {
-      mTree->setCurrentItem(nullptr);
-      for (int i = 0; i < mTree->topLevelItemCount(); ++i)
-      {
-        if (auto* row = mTree->itemWidget(mTree->topLevelItem(i), 0))
-          setActionRowHovered(row, mTree, false);
-      }
-    }
-    return QObject::eventFilter(watched, event);
-  }
-
-private:
-  QPointer<QTreeWidget> mTree = nullptr;
-};
-
-QWidget* makeActionRow(QTreeWidget* tree, const QString& svgPath, const QString& labelText)
-{
-  auto* row = new QWidget(tree);
-  row->setFixedHeight(kRowHeight);
-  auto* rowLayout = new QHBoxLayout(row);
-  rowLayout->setContentsMargins(kHPad, 0, kHPad, 0);
-  rowLayout->setSpacing(kIconTextGap);
-
-  if (!svgPath.isEmpty())
-  {
-    auto* svg = new QSvgWidget(svgPath, row);
-    svg->setFixedSize(kIconPx, kIconPx);
-    rowLayout->addWidget(svg, 0, Qt::AlignVCenter);
-  }
-
-  auto* label = new QLabel(labelText, row);
-  rowLayout->addWidget(label, 0, Qt::AlignVCenter);
-
-  new ActionRowHoverFilter(row, tree);
-  return row;
-}
-
-void clearAllActionRowHover(QTreeWidget* tree)
-{
-  if (!tree)
-    return;
-
-  tree->setCurrentItem(nullptr);
-  for (int i = 0; i < tree->topLevelItemCount(); ++i)
-  {
-    if (auto* row = tree->itemWidget(tree->topLevelItem(i), 0))
-      setActionRowHovered(row, tree, false);
-  }
-}
 
 void applyCompactTreeSize(QTreeWidget* tree)
 {
@@ -165,6 +49,68 @@ void applyCompactTreeSize(QTreeWidget* tree)
 }
 }  // namespace
 
+NodeActionRow::NodeActionRow(const QString& svgPath, const QString& labelText, QWidget* parent)
+    : QWidget(parent)
+    , mHovered(false)
+{
+  setMouseTracking(true);
+  setAttribute(Qt::WA_Hover, true);
+  setFixedHeight(kRowHeight);
+
+  auto* rowLayout = new QHBoxLayout(this);
+  rowLayout->setContentsMargins(kHPad, 0, kHPad, 0);
+  rowLayout->setSpacing(kIconTextGap);
+
+  if (!svgPath.isEmpty())
+  {
+    auto* svg = new QSvgWidget(svgPath, this);
+    svg->setFixedSize(kIconPx, kIconPx);
+    rowLayout->addWidget(svg, 0, Qt::AlignVCenter);
+  }
+
+  auto* label = new QLabel(labelText, this);
+  rowLayout->addWidget(label, 0, Qt::AlignVCenter);
+}
+
+void NodeActionRow::enterEvent(QEnterEvent* event)
+{
+  setHovered(true);
+  QWidget::enterEvent(event);
+}
+
+void NodeActionRow::leaveEvent(QEvent* event)
+{
+  setHovered(false);
+  QWidget::leaveEvent(event);
+}
+
+void NodeActionRow::mousePressEvent(QMouseEvent* event)
+{
+  if (event->button() == Qt::LeftButton)
+    emit clicked();
+
+  QWidget::mousePressEvent(event);
+}
+
+void NodeActionRow::setHovered(bool hovered)
+{
+  mHovered = hovered;
+}
+
+void NodeActionRow::paintEvent(QPaintEvent* event)
+{
+  QPainter painter(this);
+
+  if (const auto* qlementineStyle = oclero::qlementine::appStyle())
+  {
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(mHovered ? qlementineStyle->theme().neutralColorHovered : qlementineStyle->theme().backgroundColorMain1);
+    painter.drawRect(rect());
+  }
+
+  QWidget::paintEvent(event);
+}
+
 NodeActionMenu::NodeActionMenu(QWidget* parent)
     : QWidget(parent)
 {
@@ -175,58 +121,49 @@ NodeActionMenu::NodeActionMenu(QWidget* parent)
   layout->setContentsMargins(0, 0, 0, 0);
   layout->setSpacing(0);
 
-  mTree = new QTreeWidget(this);
-  mTree->setObjectName(QStringLiteral("NodeActionMenuList"));
-  mTree->setHeaderHidden(true);
-  mTree->setRootIsDecorated(false);
-  mTree->setIndentation(0);
-  mTree->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-  mTree->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-  mTree->setFocusPolicy(Qt::NoFocus);
-  mTree->setSelectionMode(QAbstractItemView::NoSelection);
-  mTree->setIconSize(QSize(kIconPx, kIconPx));
-  mTree->setUniformRowHeights(true);
-  mTree->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-  mTree->viewport()->installEventFilter(new NodeActionMenuViewportFilter(mTree));
-
   const QString flowIconPath = AppPaths::icon(QStringLiteral("button_addflow.svg"));
   const QString subtaskIconPath = AppPaths::icon(QStringLiteral("button_addsubtask.svg"));
 
-  auto* flowItem = new QTreeWidgetItem(mTree);
-  flowItem->setData(0, kActionRole, kActionAddFlow);
-  flowItem->setToolTip(0, QStringLiteral("Add flow"));
-  flowItem->setSizeHint(0, QSize(0, kRowHeight));
-  mTree->setItemWidget(flowItem, 0, makeActionRow(mTree, flowIconPath, QStringLiteral("Add flow")));
+  auto* flowWidget = new NodeActionRow(flowIconPath, QStringLiteral("Add flow"), this);
+  auto* subtaskWidget = new NodeActionRow(subtaskIconPath, QStringLiteral("Add subtask"), this);
+  layout->addWidget(flowWidget);
+  layout->addWidget(subtaskWidget);
 
-  auto* subtaskItem = new QTreeWidgetItem(mTree);
-  subtaskItem->setData(0, kActionRole, kActionAddSubtask);
-  subtaskItem->setToolTip(0, QStringLiteral("Add subtask"));
-  subtaskItem->setSizeHint(0, QSize(0, kRowHeight));
-  mTree->setItemWidget(subtaskItem, 0, makeActionRow(mTree, subtaskIconPath, QStringLiteral("Add subtask")));
-
-  applyCompactTreeSize(mTree);
-  layout->addWidget(mTree);
-  setFixedSize(mTree->size());
-
-  // itemPressed (not itemClicked) so clicks on setItemWidget rows still activate.
-  connect(mTree, &QTreeWidget::itemPressed, this, [this](QTreeWidgetItem* item) {
-    if (!item || !mTask)
-      return;
-
-    const int action = item->data(0, kActionRole).toInt();
-    if (action == kActionAddFlow)
+  connect(flowWidget, &NodeActionRow::clicked, this, [this] {
+    if (mTask)
       emit addFlowRequested(mTask);
-    else if (action == kActionAddSubtask)
+
+    hideMenu();
+  });
+  connect(subtaskWidget, &NodeActionRow::clicked, this, [this] {
+    if (mTask)
       emit addSubtaskRequested(mTask);
 
     hideMenu();
   });
+
+  mFadeTimer = new QTimer(this);
+  mFadeTimer->setSingleShot(true);
+  mFadeTimer->setInterval(2000);
+  connect(mFadeTimer, &QTimer::timeout, this, &NodeActionMenu::hideMenu);
 }
 
 void NodeActionMenu::hideMenu()
 {
   mTask = nullptr;
   hide();
+}
+
+void NodeActionMenu::enterEvent(QEnterEvent* event)
+{
+  mFadeTimer->stop();
+  QWidget::enterEvent(event);
+}
+
+void NodeActionMenu::leaveEvent(QEvent* event)
+{
+  QWidget::leaveEvent(event);
+  mFadeTimer->start();
 }
 
 QString NodeActionMenu::trackedTaskId() const
@@ -256,7 +193,7 @@ void NodeActionMenu::showForTask(NodeItem* task, CanvasView* view)
 
   mTask = task;
   updatePosition(view);
-  clearAllActionRowHover(mTree);
   show();
   raise();
+  mFadeTimer->start();
 }

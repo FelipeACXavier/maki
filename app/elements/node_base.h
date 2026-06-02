@@ -206,7 +206,7 @@ protected:
    * @param painter Painter to use for drawing.
    * @param area Area to paint the label in.
    */
-  virtual void paintLabel(QPainter* painter, const QRectF& area, const QPen& pen) const;
+  virtual void paintLabel(QPainter* painter, const QPen& pen) const;
 
   /**
    * @brief Paints the pixmap using the provided painter.

@@ -1189,35 +1189,7 @@ void MainWindow::closeCanvasTab(int index)
 
 void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId)
 {
-  QString flowName;
   if (flow == nullptr)
-  {
-    QInputDialog* dialog = new QInputDialog(this);
-    dialog->setWindowTitle(tr("Flow name"));
-    dialog->setLabelText(tr("Enter a name for the new flow") + ":");
-    dialog->setTextValue(tr(""));
-
-    // Set a validator: allow only alphanumerics and spaces
-    QRegularExpression rx("[A-Za-z ]+");
-    QValidator* validator = new QRegularExpressionValidator(rx, dialog);
-
-    // Access the line edit and assign the validator
-    QLineEdit* lineEdit = dialog->findChild<QLineEdit*>();
-    if (lineEdit)
-      lineEdit->setValidator(validator);
-
-    // Execute the dialog
-    if (dialog->exec() != QDialog::Accepted)
-      return;
-
-    flowName = dialog->textValue().trimmed();
-  }
-  else
-  {
-    flowName = flow->name();
-  }
-
-  if (flowName.isEmpty())
   {
     LOG_INFO("No name provided, skipping flow creation");
     return;
@@ -1239,16 +1211,6 @@ void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId)
     }
   }
 
-  if (flow == nullptr)
-  {
-    // TODO: Why is this here??
-    // flow = node->createFlow(flowName, nullptr);
-    // if (!flow)
-    //   return;
-    LOG_WARNING("This shouldn't happen, no flow was found");
-    return;
-  }
-
   CanvasView* newView = new CanvasView(mCanvasPanel);
 
   BehaviourCanvas* canvas = new BehaviourCanvas(flow, mStorage, mConfigTable, mRouter, newView);
@@ -1260,7 +1222,7 @@ void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId)
 
   LOG_DEBUG("Set tab property to %s", qPrintable(flow->id()));
   newView->setProperty("id", flow->id());
-  mCanvasPanel->addTab(newView, QIcon(":/icons/behaviour.svg"), flowName);
+  mCanvasPanel->addTab(newView, QIcon(":/icons/behaviour.svg"), flow->name());
   mCanvasPanel->setCurrentWidget(newView);
 
   // Populate after creation

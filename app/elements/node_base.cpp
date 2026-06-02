@@ -178,6 +178,7 @@ void NodeBase::paintNode(const QRectF& bounds, const QColor& background, const Q
       painter->drawRoundedRect(drawingBounds, config()->body.borderRadius, config()->body.borderRadius);
     }
 
+    paintLabel(painter, text);
     paintPixmap(painter);
     return;
   }
@@ -206,7 +207,7 @@ void NodeBase::paintNode(const QRectF& bounds, const QColor& background, const Q
     painter->drawRoundedRect(drawingBounds, 5, 5);
   }
 
-  paintLabel(painter, drawingBounds, text);
+  paintLabel(painter, text);
   paintPixmap(painter);
 }
 
@@ -245,7 +246,7 @@ QPainterPath NodeBase::nodeShape(const QRectF& bounds) const
   return path;
 }
 
-void NodeBase::paintLabel(QPainter* painter, const QRectF& drawingBounds, const QPen& pen) const
+void NodeBase::paintLabel(QPainter* painter, const QPen& pen) const
 {
   if (mLabelText.isEmpty() || !mPaintLabel)
     return;

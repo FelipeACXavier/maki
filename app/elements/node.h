@@ -366,6 +366,7 @@ public:
   std::function<void(NodeItem* item)> nodeModified;
   std::function<void(Flow* flow, NodeItem* item)> flowAdded;
   std::function<void(const QString& id)> nodeMoved;
+  std::function<void(NodeItem* item, bool hovered)> nodeHovered;
 
   // "slots":
   void onProperties();
@@ -417,6 +418,9 @@ protected:
    * @param event The QGraphicsSceneMouseEvent object.
    */
   void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
+
+  void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
+  void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
 
   /**
    * @brief Handles changes to the item's properties.

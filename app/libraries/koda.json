@@ -1294,7 +1294,8 @@
           "behaviour": {},
           "help": {
             "message": "End of a task. This will end the current task, independent of where it is triggered."
-          }
+          },
+          "ports": ["in"]
         },
         {
           "type": "Async task",
@@ -1520,7 +1521,8 @@
           "behaviour": {},
           "help": {
             "message": "Executes the contained strategy repeatedly. Configure the number of iterations and the interval between executions using the block properties."
-          }
+          },
+          "ports": ["in", "out"]
         }
       ]
     }
