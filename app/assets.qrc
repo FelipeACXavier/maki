@@ -1,19 +1,5 @@
 <!DOCTYPE RCC>
 <RCC>
-  <qresource prefix="/">
-    <file alias="themes/style.qss">assets/style.qss</file>
-    <file>assets/branch-closed.png</file>
-    <file>assets/branch-end.png</file>
-    <file>assets/branch-more.png</file>
-    <file>assets/branch-open.png</file>
-    <file>assets/vline.png</file>
-  </qresource>
-  <qresource prefix="/math">
-    <file alias="addition.png">assets/icons/math/addition.png</file>
-    <file alias="subtraction.png">assets/icons/math/subtraction.png</file>
-    <file alias="multiplication.png">assets/icons/math/multiplication.png</file>
-    <file alias="division.png">assets/icons/math/division.png</file>
-  </qresource>
   <qresource prefix="/icons">
     <file alias="behaviour.svg">assets/icons/fontawesome/svgs/solid/circle-nodes.svg</file>
     <file alias="structure.svg">assets/icons/fontawesome/svgs/solid/cubes.svg</file>
