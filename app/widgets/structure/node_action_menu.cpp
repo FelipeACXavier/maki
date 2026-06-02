@@ -5,10 +5,10 @@
 #include <QFontMetrics>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QSvgWidget>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QVBoxLayout>
-#include <QSvgWidget>
 
 #include "app_paths.h"
 #include "elements/node.h"
@@ -51,7 +51,9 @@ class ActionRowHoverFilter final : public QObject
 {
 public:
   ActionRowHoverFilter(QWidget* row, QTreeWidget* tree)
-      : QObject(row), m_row(row), m_tree(tree)
+      : QObject(row)
+      , m_row(row)
+      , m_tree(tree)
   {
     row->installEventFilter(this);
   }
@@ -79,27 +81,31 @@ class NodeActionMenuViewportFilter final : public QObject
 {
 public:
   explicit NodeActionMenuViewportFilter(QTreeWidget* tree)
-      : QObject(tree), m_tree(tree)
+      : QObject(tree)
+      , mTree(tree)
   {
   }
 
 protected:
   bool eventFilter(QObject* watched, QEvent* event) override
   {
-    if (watched == m_tree->viewport() && event->type() == QEvent::Leave)
+    if (!mTree)
+      return QObject::eventFilter(watched, event);
+
+    if (watched && watched == mTree->viewport() && event->type() == QEvent::Leave)
     {
-      m_tree->setCurrentItem(nullptr);
-      for (int i = 0; i < m_tree->topLevelItemCount(); ++i)
+      mTree->setCurrentItem(nullptr);
+      for (int i = 0; i < mTree->topLevelItemCount(); ++i)
       {
-        if (auto* row = m_tree->itemWidget(m_tree->topLevelItem(i), 0))
-          setActionRowHovered(row, m_tree, false);
+        if (auto* row = mTree->itemWidget(mTree->topLevelItem(i), 0))
+          setActionRowHovered(row, mTree, false);
       }
     }
     return QObject::eventFilter(watched, event);
   }
 
 private:
-  QTreeWidget* m_tree = nullptr;
+  QPointer<QTreeWidget> mTree = nullptr;
 };
 
 QWidget* makeActionRow(QTreeWidget* tree, const QString& svgPath, const QString& labelText)
