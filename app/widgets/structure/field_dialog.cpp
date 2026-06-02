@@ -83,7 +83,7 @@ void FieldDialog::createTypeInput(QWidget* parent)
 {
   auto typeBox = new maki::TypeSelectionWidget(Types::PropertyTypesToString(Types::PropertyTypes::REAL), Types::minus(Types::PropertyTypes::VOID, 1), this);
 
-  auto type = new maki::SelectorWidget(tr("Return type"), typeBox, this);
+  auto type = new maki::SelectorWidget(tr("Return type"), typeBox, maki::WidgetAlignment::Vertical(), this);
   type->setObjectName("TypeField");
 
   connect(type, &maki::SelectorWidget::valueChanged, this, [this](const QString& text) {

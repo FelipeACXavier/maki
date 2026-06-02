@@ -35,29 +35,9 @@ void OllamaPlugin::setHostServices(maki::IHostServices* services)
   buildSettings();
 }
 
-void OllamaPlugin::setName(const QString& name)
-{
-  mName = name;
-}
-
-void OllamaPlugin::setVersion(const QString& version)
-{
-  mVersion = PluginVersion::fromString(version);
-}
-
 void OllamaPlugin::setAssetDir(const QDir& dir)
 {
   mAssetDir = dir;
-}
-
-QString OllamaPlugin::languageName() const
-{
-  return mName;
-}
-
-maki::PluginVersion OllamaPlugin::version() const
-{
-  return mVersion;
 }
 
 void OllamaPlugin::settingsChanged(const QVector<maki::SettingField>& settings)

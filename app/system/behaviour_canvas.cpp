@@ -4,6 +4,8 @@
 #include <qdir.h>
 
 #include "app_configs.h"
+#include "canvas_view.h"
+#include "config_table.h"
 #include "elements/flow.h"
 #include "elements/node.h"
 #include "elements/port.h"
@@ -12,11 +14,32 @@
 #include "style_helpers.h"
 #include "transition_info.h"
 
-BehaviourCanvas::BehaviourCanvas(Flow* flow, std::shared_ptr<SaveInfo> storage, std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
-    : Canvas(flow->id(), configTable, parent)
+BehaviourCanvas::BehaviourCanvas(Flow* flow, std::shared_ptr<ConfigurationTable> configTable, std::shared_ptr<EdgeRouter> router, QObject* parent)
+    : Canvas(flow->id(), configTable, router, parent)
     , mFlow(flow)
     , mStorage(std::move(storage))
 {
+  // Add start and end nodes on creation
+  if (mFlow && mFlow->getNodes().isEmpty())
+  {
+    const QRectF visible = parentView()->mapToScene(parentView()->viewport()->rect()).boundingRect();
+    const qreal y = visible.center().y();
+    const QPointF startPos{visible.left(), y};
+    const QPointF endPos{visible.left() + visible.width(), y};
+    addInitialNode("Koda::Start", startPos);
+    addInitialNode("Koda::Success", endPos);
+  }
+}
+
+void BehaviourCanvas::addInitialNode(const QString& nodeType, const QPointF& position)
+{
+  auto config = mConfigTable->get(nodeType);
+  if (config == nullptr)
+    return;
+
+  auto info = std::make_shared<NodeSaveInfo>(*config);
+  info->setPosition(position);
+  mFlow->config()->addNode(info);
 }
 
 Types::LibraryTypes BehaviourCanvas::type() const

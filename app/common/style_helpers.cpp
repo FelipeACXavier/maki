@@ -12,6 +12,7 @@
 #include <QWidgetAction>
 
 #include "app_configs.h"
+#include "app_paths.h"
 #include "logging.h"
 #include "string_helpers.h"
 
@@ -57,6 +58,14 @@ QPixmap applyColorToIcon(const QString& path, const QColor& color)
 QIcon addIconWithColor(const QString& path, const QColor& color)
 {
   return QIcon(applyColorToIcon(path, color));
+}
+
+QIcon iconFromTheme(const QString& name, bool fallback)
+{
+  if (fallback)
+    return QIcon(AppPaths::icon(name + ".svg"));
+
+  return QIcon::fromTheme(name, QIcon(AppPaths::icon(name + ".svg")));
 }
 
 QString timeToQT(std::chrono::system_clock::time_point now)

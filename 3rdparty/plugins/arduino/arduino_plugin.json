@@ -5,6 +5,5 @@
   "author": "Felipe Xavier",
   "entryPointDLL": "bin/arduino_plugin.dll",
   "entryPointSO": "bin/libarduino_plugin.so",
-  "icon": "assets/icon.svg",
-  "libraries": ["antler-runtime.dll"]
+  "icon": "assets/icon.svg"
 }

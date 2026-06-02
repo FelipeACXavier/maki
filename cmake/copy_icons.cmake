@@ -1,5 +1,6 @@
 # cmake/copy_icons.cmake
 
+set(FALLBACK_PATH "${CMAKE_CURRENT_SOURCE_DIR}/assets/icons/fallback")
 set(MISSION_PATH "${CMAKE_CURRENT_SOURCE_DIR}/assets/icons/mission")
 set(SHAPES_PATH "${CMAKE_CURRENT_SOURCE_DIR}/assets/icons/shapes")
 set(FONT_AWESOME_PATH "${CMAKE_CURRENT_SOURCE_DIR}/assets/icons/fontawesome/svgs/solid")
@@ -103,6 +104,7 @@ file(GLOB APP_ICON_FILES
   ${SHAPES_PATH}/shape_start.svg
   ${SHAPES_PATH}/shape_middle.svg
   ${SHAPES_PATH}/shape_end.svg
+  ${FALLBACK_PATH}/*.svg
 )
 
 add_custom_target(copy_icons ALL

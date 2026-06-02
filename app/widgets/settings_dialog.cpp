@@ -1,8 +1,5 @@
 #include "settings_dialog.h"
 
-#include <qnamespace.h>
-#include <qobject.h>
-
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDialogButtonBox>
@@ -33,6 +30,7 @@
 #include "scroll_area.h"
 #include "section.h"
 #include "style_helpers.h"
+#include "system/edge_router.h"
 #include "widget_factory.h"
 
 SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsManager> manager, std::shared_ptr<LanguageManager> languageManager, QWidget* parent)
@@ -58,7 +56,7 @@ SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsMan
 
   // Right: stacked mPages
   mPages = new QStackedWidget(this);
-  mPages->setFixedWidth(size().width() / 5 * 4);
+  mPages->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
   // Add categories
   LOG_WARN_ON_FAILURE(createGeneralPage());
@@ -91,8 +89,8 @@ SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsMan
 
 SettingsDialog::SelectorPage SettingsDialog::addPage(const QString& pageName, const QString& iconName, std::function<void()> resetCallback, QTreeWidgetItem* parent)
 {
-  QWidget* page = new QWidget;
-  page->setObjectName("SettingsPage");
+  QWidget* page = new QWidget(this);
+  page->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
   QVBoxLayout* layout = new QVBoxLayout(page);
   layout->setContentsMargins(6, 6, 6, 6);
@@ -100,7 +98,8 @@ SettingsDialog::SelectorPage SettingsDialog::addPage(const QString& pageName, co
   auto* headerRow = new QHBoxLayout();
   headerRow->setContentsMargins(10, 0, 10, 0);
 
-  auto* titleIcon = new oclero::qlementine::IconWidget(QIcon(iconName), QSize(16, 16), page);
+  auto icon = iconFromTheme(iconName, true);
+  auto* titleIcon = new oclero::qlementine::IconWidget(icon, QSize(16, 16), page);
   auto* title = new oclero::qlementine::Label(pageName, page);
   title->setRole(oclero::qlementine::TextRole::H3);
 
@@ -117,7 +116,6 @@ SettingsDialog::SelectorPage SettingsDialog::addPage(const QString& pageName, co
   headerRow->addWidget(resetButton);
 
   QFrame* line = new QFrame(page);
-  line->setObjectName("HLine");
   line->setFrameShape(QFrame::HLine);
   line->setFrameShadow(QFrame::Sunken);
 
@@ -126,10 +124,11 @@ SettingsDialog::SelectorPage SettingsDialog::addPage(const QString& pageName, co
   scrollArea->setWidgetResizable(true);
   scrollArea->setFrameShape(QFrame::NoFrame);
   scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-  scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+  scrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
   auto content = new QWidget(this);
-  content->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+  content->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
 
   auto contentLayout = new QVBoxLayout(content);
   contentLayout->setContentsMargins(20, 5, 20, 5);
@@ -148,7 +147,7 @@ SettingsDialog::SelectorPage SettingsDialog::addPage(const QString& pageName, co
   auto* selector = parent == nullptr ? new QTreeWidgetItem(mPageSelector) : new QTreeWidgetItem(parent);
   selector->setText(0, pageName);
   selector->setData(0, Qt::UserRole, index);
-  selector->setIcon(0, QIcon(iconName));
+  selector->setIcon(0, icon);
 
   return SelectorPage{selector, page};
 }
@@ -156,7 +155,7 @@ SettingsDialog::SelectorPage SettingsDialog::addPage(const QString& pageName, co
 VoidResult SettingsDialog::createGeneralPage()
 {
   auto generalSettings = mSettingsManager->general();
-  auto [selector, page] = addPage(tr("General"), ":/icons/general.svg", [this] {
+  auto [selector, page] = addPage(tr("General"), "general", [this] {
     auto defaultSettings = GeneralSettings();
 
     mAutosaveMinutes->setValue(defaultSettings.autosaveIntervalMinutes);
@@ -169,8 +168,13 @@ VoidResult SettingsDialog::createGeneralPage()
     mSettingsManager->setGeneral(defaultSettings);
   });
 
+  maki::WidgetAlignment alignment = {
+      .type = maki::WidgetAlignment::Type::INLINE,
+      .direction = maki::WidgetAlignment::Direction::SPREAD,
+      .labelWidth = 300,
+  };
   auto languageLayout = new maki::WidgetGroup(tr("Language"), page);
-  mLanguageCombo = new maki::SelectorWidget(tr("Set language"), page);
+  mLanguageCombo = new maki::SelectorWidget(tr("Set language"), alignment, page);
   for (const LanguageManager::LanguageOption& info : mLanguageManager->availableLanguages())
     mLanguageCombo->addItem(info.label, info.code);
 
@@ -179,8 +183,7 @@ VoidResult SettingsDialog::createGeneralPage()
 
   languageLayout->addWidget(mLanguageCombo);
 
-  maki::WidgetAlignment alignment = {maki::WidgetAlignment::Type::VERTICAL};
-  mAutosaveMinutes = new maki::SpinWidget(tr("Autosave interval"), generalSettings.autosaveIntervalMinutes, page, 1, 120);
+  mAutosaveMinutes = new maki::SpinWidget(tr("Autosave interval"), generalSettings.autosaveIntervalMinutes, page, alignment, 1, 120);
   mAutosaveMinutes->addDescription("Between 1 and 120 minutes");
   mAutosaveMinutes->setSuffix(" minutes");
   mAutosaveEnabled = new maki::BooleanWidget(tr("Enable autosave"), generalSettings.autosaveEnabled, alignment, page);
@@ -189,7 +192,7 @@ VoidResult SettingsDialog::createGeneralPage()
   autoSaveLayout->addWidget(mAutosaveEnabled);
   autoSaveLayout->addWidget(mAutosaveMinutes);
 
-  mRecentHistorySize = new maki::IntegerWidget(tr("Recent History Size"), QString("%1").arg(generalSettings.recentHistorySize), alignment, page, INT32_MIN, INT32_MAX);
+  mRecentHistorySize = new maki::IntegerWidget(tr("Recent History Size"), QString::number(generalSettings.recentHistorySize), alignment, page, INT32_MIN, INT32_MAX);
 
   mRestoreLastSession = new maki::BooleanWidget(tr("Restore last session on startup"), generalSettings.restoreLastSession, alignment, page);
   mConfirmOnClose = new maki::BooleanWidget(tr("Confirm before closing editor with running execution"), generalSettings.confirmOnCloseWithExecution, alignment, page);
@@ -218,7 +221,7 @@ VoidResult SettingsDialog::createGeneralPage()
 VoidResult SettingsDialog::createAppearancePage()
 {
   auto appearance = mSettingsManager->appearance();
-  auto [selector, page] = addPage(tr("Appearance"), ":/icons/appearance.svg", [this] {
+  auto [selector, page] = addPage(tr("Appearance"), "appearance", [this] {
     auto defaultSettings = AppearanceSettings();
 
     mThemeCombo->setValue(defaultSettings.theme);
@@ -228,20 +231,20 @@ VoidResult SettingsDialog::createAppearancePage()
     mNumberOfColumns->setValue(defaultSettings.numberOfColumns);
     mShowGrid->setValue(defaultSettings.showCanvasGrid);
     mStartLogTableFilters->setValue(defaultSettings.startLogFilterExpanded);
+    mTransitionShape->setValue(EdgeRouter::optionToString(defaultSettings.edgeShape));
 
     mSettingsManager->setAppearance(defaultSettings);
   });
 
   // First entry: system theme (no QSS)
-  mThemeCombo = new maki::SelectorWidget(tr("Theme"), page);
-  mThemeCombo->addItem(tr("System theme"), "system");
-
+  mThemeCombo = new maki::SelectorWidget(tr("Theme"), maki::WidgetAlignment::Inline(), page);
   // Then all discovered themes
   for (const auto& info : mSettingsManager->availableThemes())
   {
     QString label = info.meta.name;
-    mThemeCombo->addItem(label, info.meta.name);
+    mThemeCombo->addItem(label, label);
   }
+
   mThemeCombo->setValue(appearance.theme);
   connect(mThemeCombo, &maki::SelectorWidget::valueChanged, [this](const QString& themeName) {
     if (!mThemeEditor)
@@ -252,12 +255,8 @@ VoidResult SettingsDialog::createAppearancePage()
       mThemeEditor->setTheme(theme.Value());
   });
 
-  maki::WidgetAlignment alignment = {maki::WidgetAlignment::Type::VERTICAL};
-  mNativeMenuBar = new maki::BooleanWidget(tr("Use native menubar"), appearance.nativeMenuBar, alignment, page);
-
   auto themeLayout = new maki::WidgetGroup(tr("Theming"), page);
   themeLayout->addWidget(mThemeCombo);
-  themeLayout->addWidget(mNativeMenuBar);
 
   auto* qlementineStyle = oclero::qlementine::appStyle();
   if (qlementineStyle)
@@ -302,25 +301,40 @@ VoidResult SettingsDialog::createAppearancePage()
     themeLayout->addWidget(editorFrame);
   }
 
-  mUiScale = new maki::SpinWidget(tr("UI scale"), appearance.uiScalePercent, page, 80, 200);
+  maki::WidgetAlignment alignment = {
+      .type = maki::WidgetAlignment::Type::INLINE,
+      .direction = maki::WidgetAlignment::Direction::SPREAD,
+      .labelWidth = 300,
+  };
+
+  mNativeMenuBar = new maki::BooleanWidget(tr("Use native menubar"), appearance.nativeMenuBar, alignment, page);
+
+  mUiScale = new maki::SpinWidget(tr("UI scale"), appearance.uiScalePercent, page, alignment, 80, 200);
   mUiScale->setSuffix(" %");
 
-  mNodeCornerRadius = new maki::SpinWidget(tr("Node corner radius"), appearance.nodeCornerRadius, page, 0, 30);
+  mNodeCornerRadius = new maki::SpinWidget(tr("Node corner radius"), appearance.nodeCornerRadius, page, alignment, 0, 30);
   mNodeCornerRadius->setSuffix(" pixels");
 
-  mNumberOfColumns = new maki::SpinWidget(tr("Number of columns in the node palette"), appearance.numberOfColumns, page, 0, 4);
+  mNumberOfColumns = new maki::SpinWidget(tr("Number of columns in the node palette"), appearance.numberOfColumns, page, alignment, 0, 4);
   mNumberOfColumns->setSuffix(" " + tr("columns"));
   mNumberOfColumns->addDescription(tr("Note: The width of the palette will not update automatically"));
+
+  mTransitionShape = new maki::SelectorWidget(tr("Shape of the transtion edges"), alignment, page);
+  for (int i = (int)EdgeRouter::Option::DIRECT; i < (int)EdgeRouter::Option::OGDF; ++i)
+    mTransitionShape->addItem(EdgeRouter::optionToString((EdgeRouter::Option)i), i);
+  mTransitionShape->setValue(EdgeRouter::optionToString(appearance.edgeShape));
 
   mShowGrid = new maki::BooleanWidget(tr("Show canvas grid"), appearance.showCanvasGrid, alignment, page);
   mStartLogTableFilters = new maki::BooleanWidget(tr("Show log table filters on start"), appearance.startLogFilterExpanded, alignment, page);
 
   auto editorLayout = new maki::WidgetGroup(tr("UI changes"), page);
+  editorLayout->addWidget(mNativeMenuBar);
   editorLayout->addWidget(mUiScale);
   editorLayout->addWidget(mShowGrid);
   editorLayout->addWidget(mStartLogTableFilters);
   editorLayout->addWidget(mNodeCornerRadius);
   editorLayout->addWidget(mNumberOfColumns);
+  editorLayout->addWidget(mTransitionShape);
 
   QVBoxLayout* layout = page->findChild<QVBoxLayout*>("ContentArea");
   layout->addWidget(themeLayout);
@@ -333,13 +347,12 @@ VoidResult SettingsDialog::createAppearancePage()
 VoidResult SettingsDialog::createGenerationPage()
 {
   auto generation = mSettingsManager->generation();
-  auto [selector, page] = addPage(tr("Generation"), ":/icons/generator.svg", [this] {
+  auto [selector, page] = addPage(tr("Generation"), "run-build", [this] {
     mSettingsManager->setGeneration(GenerationSettings());
   });
 
   auto* pathRow = new QWidget(page);
-
-  mGenerationDirEdit = new maki::StringWidget(tr("Generation output folder"), generation.generationDir, {maki::WidgetAlignment::Type::VERTICAL}, pathRow);
+  mGenerationDirEdit = new maki::StringWidget(tr("Generation output folder"), generation.generationDir, maki::WidgetAlignment::Inline(), pathRow);
   mGenerationDirEdit->addDescription(tr("\"/<plugin name>\" will be appended to this path"));
 
   if (generation.generationDir != GenerationSettings().generationDir)
@@ -350,9 +363,9 @@ VoidResult SettingsDialog::createGenerationPage()
 
   auto* rowLayout = new QHBoxLayout(pathRow);
   rowLayout->setContentsMargins(0, 0, 0, 0);
-
-  rowLayout->addWidget(mGenerationDirEdit, /*stretch=*/1);
-  rowLayout->addWidget(mGenerationBrowseBtn);
+  rowLayout->setAlignment(Qt::AlignTop);
+  rowLayout->addWidget(mGenerationDirEdit, 1, Qt::AlignTop);
+  rowLayout->addWidget(mGenerationBrowseBtn, 0, Qt::AlignTop);
 
   // hook up buttons
   connect(mGenerationBrowseBtn, &maki::ButtonWidget::valueChanged, this, [this] {
@@ -361,8 +374,11 @@ VoidResult SettingsDialog::createGenerationPage()
       mGenerationDirEdit->setValue(dir);
   });
 
+  auto group = new maki::WidgetGroup(tr("General"), page);
+  group->addWidget(pathRow);
+
   QVBoxLayout* layout = page->findChild<QVBoxLayout*>("ContentArea");
-  layout->addWidget(pathRow);
+  layout->addWidget(group);
   layout->addStretch();
 
   return VoidResult();
@@ -376,7 +392,7 @@ VoidResult SettingsDialog::createPluginPages()
   LOG_DEBUG("Loaded from settings with %d plugins", mPluginSettings.plugins.size());
 
   // Add top level plugin page
-  auto [topSelector, topPage] = addPage(tr("Plugins"), ":/icons/plugin.svg", [] {
+  auto [topSelector, topPage] = addPage(tr("Plugins"), "plugins", [] {
     // mSettingsManager->setGeneration(GenerationSettings());
   });
 
@@ -440,9 +456,9 @@ VoidResult SettingsDialog::createPluginPages()
   buttonRow->addWidget(removeBtn);
 
   auto generalLayout = new maki::WidgetGroup(tr("Other settings"), topPage);
-  mDefaultPlugin = new maki::SelectorWidget(tr("Default plugin"), generalLayout);
+  mDefaultPlugin = new maki::SelectorWidget(tr("Default plugin"), maki::WidgetAlignment::Inline(), generalLayout);
   mDefaultPlugin->addDescription(tr("MAKI will set this plugin as the default on start"));
-  mDefaultPlugin->addItem("-", "");
+  mDefaultPlugin->addItem(Constants::EMPTY_COMBO, "");
 
   // -------------------------------------------------------------------------
   // Go through all the plugins and build the page
@@ -473,7 +489,7 @@ VoidResult SettingsDialog::createPluginPages()
     item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled | Qt::ItemIsUserCheckable);
     model->setItem(newRow, 2, item);
 
-    auto [selector, page] = addPage(pluginId, ":/icons/plugin.svg", [] {
+    auto [selector, page] = addPage(pluginId, plugin.icon, [] {
       // mSettingsManager->setGeneration(GenerationSettings());
     },
                                     topSelector);
@@ -481,7 +497,11 @@ VoidResult SettingsDialog::createPluginPages()
     QVBoxLayout* layout = page->findChild<QVBoxLayout*>("ContentArea");
     layout->setSpacing(2);
 
-    maki::WidgetAlignment alignment = {maki::WidgetAlignment::Type::VERTICAL};
+    maki::WidgetAlignment alignment = {
+        .type = maki::WidgetAlignment::Type::INLINE,
+        .direction = maki::WidgetAlignment::Direction::SPREAD,
+        .labelWidth = 300,
+    };
     for (const auto& setting : settings)
     {
       if (setting.getType() == Types::PropertyTypes::INTEGER)
@@ -491,7 +511,7 @@ VoidResult SettingsDialog::createPluginPages()
         auto* field = new maki::IntegerWidget(setting.getLabel(), setting.getDefaultValue().toString(), alignment, page, min, max);
         field->addDescription(setting.getDescription());
 
-        connect(field, &maki::IntegerWidget::valueChanged, this, [this, pluginId, setting](const int value) {
+        connect(field, &maki::IntegerWidget::valueChanged, this, [this, pluginId, setting](const QString& value) {
           updatePluginSetting(pluginId, setting.getKey(), value);
         });
 
@@ -552,6 +572,7 @@ void SettingsDialog::saveToSettings()
   appearance.nativeMenuBar = mNativeMenuBar->getValue();
   appearance.nodeCornerRadius = mNodeCornerRadius->getValue();
   appearance.numberOfColumns = mNumberOfColumns->getValue();
+  appearance.edgeShape = mTransitionShape->getData().toInt();
 
   GenerationSettings generation;
   generation.generationDir = mGenerationDirEdit->getValue();

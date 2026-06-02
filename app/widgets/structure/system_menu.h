@@ -137,9 +137,11 @@ private:
   enum Roles
   {
     ToplevelRole = 0,  ///< Item represents a top-level category node.
-    ComponentRole,     ///< Item represents a component category or container.
-    FlowRole,          ///< Item represents a flow.
-    NodeRole           ///< Item represents a node within a flow.
+    Capabilities,
+    Flows,
+    ComponentRole,  ///< Item represents a component category or container.
+    FlowRole,       ///< Item represents a flow.
+    NodeRole        ///< Item represents a node within a flow.
   };
 
   /**
@@ -161,14 +163,18 @@ private:
    * @param item The tree item to populate.
    * @param node The source node.
    */
-  void populateItem(QTreeWidgetItem* item, NodeItem* node);
+  void populateItem(QTreeWidgetItem* item, const QIcon& icon,
+                    const QString& name, const QString& type,
+                    const QString& data, const Roles role, const QString& canvas = "");
 
   /**
    * @brief Finds a tree item by its identifier.
    * @param id The identifier to search for.
    * @return The matching tree item, or nullptr if none was found.
    */
-  QTreeWidgetItem* getItemById(const QString& id);
+  QTreeWidgetItem* getItemById(const QString& id) const;
+
+  QTreeWidgetItem* findParentItemByRole(const QString& id, Roles role) const;
 
   /**
    * @brief Returns the root item containing system flows.

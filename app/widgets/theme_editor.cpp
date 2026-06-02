@@ -17,6 +17,7 @@
 #include "frame.h"
 #include "logging.h"
 #include "section.h"
+#include "style_helpers.h"
 
 #define ADD_TITLE(TEXT)                                        \
   {                                                            \
@@ -240,14 +241,12 @@ struct ThemeEditorWidget::Impl
 
     // 'Load' button.
     {
-      auto* loadJsonButton = new QPushButton(QIcon::fromTheme("document-open"), tr("Load JSON file…"), container);
+      auto* loadJsonButton = new QPushButton(iconFromTheme("document-open"), tr("Load theme"), container);
       loadJsonButton->setToolTip("Load a JSON file from disk.");
       loadJsonButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
       rowLayout->addWidget(loadJsonButton);
 
       QObject::connect(loadJsonButton, &QPushButton::pressed, &owner, [this]() {
-        // Get previous path.
-        // const auto defaultDirPath = QStandardPaths::writableLocation(QStandardPaths::StandardLocation::DocumentsLocation);
         LOG_DEBUG("Loading theme from: %s", qPrintable(defaultDirPath));
         const auto defaultPath = defaultDirPath + '/' + DEFAULT_FILE_NAME;
         QSettings settings;
@@ -267,14 +266,12 @@ struct ThemeEditorWidget::Impl
 
     // 'Save' button.
     {
-      auto* saveJsonButton = new QPushButton(QIcon::fromTheme("document-save"), tr("Save JSON file…"), container);
+      auto* saveJsonButton = new QPushButton(iconFromTheme("document-save"), tr("Save theme"), container);
       saveJsonButton->setToolTip("Save the current theme as JSON file to disk.");
       saveJsonButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
       rowLayout->addWidget(saveJsonButton);
 
       QObject::connect(saveJsonButton, &QPushButton::pressed, &owner, [this]() {
-        // Get previous path.
-        // const auto defaultDirPath = QStandardPaths::writableLocation(QStandardPaths::StandardLocation::DocumentsLocation);
         LOG_DEBUG("Saving theme to: %s", qPrintable(defaultDirPath));
         const auto defaultPath = defaultDirPath + '/' + DEFAULT_FILE_NAME;
         QSettings settings;
@@ -311,9 +308,9 @@ struct ThemeEditorWidget::Impl
   {
     // Metadata
     ADD_TITLE("Metadata");
-    ADD_METADATA_TEXT_EDITOR(name, "Name of the Qlementine theme");
-    ADD_METADATA_TEXT_EDITOR(author, "Author of the Qlementine theme");
-    ADD_METADATA_TEXT_EDITOR(version, "Version of the Qlementine theme");
+    ADD_METADATA_TEXT_EDITOR(name, "");
+    ADD_METADATA_TEXT_EDITOR(author, "");
+    ADD_METADATA_TEXT_EDITOR(version, "");
   }
 
   void setupColorEditors(QFormLayout* formLayout, int vSpacing)
@@ -551,7 +548,9 @@ struct ThemeEditorWidget::Impl
     editorScroll->setFrameShape(QFrame::NoFrame);
     editorScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     editorScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    auto height = container->sizeHint().height();
     editorScroll->setWidget(container);
+    editorScroll->setMinimumHeight(height + vSpacing);
 
     auto* line = new QFrame(&owner);
     line->setFrameShape(QFrame::HLine);

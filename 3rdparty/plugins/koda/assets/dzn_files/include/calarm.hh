@@ -4,7 +4,7 @@
 #include <condition_variable>
 #include <mutex>
 
-#include "a_calarm.hh"
+#include "alarm.hh"
 #include "async_task.hh"
 
 class calarm : public skel::calarm

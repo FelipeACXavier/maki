@@ -83,8 +83,6 @@ public:
 
     virtual std::any visitStratRepeat(KodaParser::StratRepeatContext *context) = 0;
 
-    virtual std::any visitStratEvery(KodaParser::StratEveryContext *context) = 0;
-
     virtual std::any visitStratParen(KodaParser::StratParenContext *context) = 0;
 
     virtual std::any visitStratGuard(KodaParser::StratGuardContext *context) = 0;

@@ -20,6 +20,7 @@ public:
    * @brief Constructs a new NodeSaveInfo object.
    */
   NodeSaveInfo();
+  NodeSaveInfo(const NodeConfig& config);
 
   /**
    * @brief Gets the ID of the node.

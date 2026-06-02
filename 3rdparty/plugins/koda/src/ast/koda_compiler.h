@@ -6,6 +6,7 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <vector>
 
 #include "ast.h"
 #include "koda_plugin.h"
@@ -35,35 +36,12 @@ struct CompilerOptions
     NoPlugins = 0,
     PluginsOnly,
     RunAll
-  } pluginRule;
+  } pluginRule = PluginOption::NoPlugins;
 };
 
 class Compiler
 {
 public:
-  Compiler();
-
-  VoidResult parse(const CompilerOptions& options);
-  VoidResult generate();
-
-  void printAST() const;
-
-  VoidResult addPlugin(std::shared_ptr<KodaPlugin> plugin);
-  std::vector<std::string> generatedFiles() const;
-
-  struct PortRef
-  {
-    std::string instance;  // e.g. "main"
-    std::string port;      // e.g. "drive"
-  };
-
-private:
-  System mAST;
-  std::ofstream mCurrentFile;
-  CompilerOptions mOptions;
-  std::map<std::string, std::shared_ptr<KodaPlugin>> mPlugins;
-  std::vector<std::string> mGeneratedFiles;
-
   struct Composition
   {
     std::string id = "";
@@ -138,7 +116,7 @@ private:
     std::string name;
 
     std::map<std::string, uint32_t> syncCalls;
-    std::map<std::string, uint32_t> asyncCalls;
+    std::vector<std::string> asyncCalls;
     std::map<std::string, uint32_t> signalCalls;
     std::map<std::string, uint32_t> strategies;
   };
@@ -155,6 +133,12 @@ private:
 
       return name < other.name;
     }
+  };
+
+  struct PortRef
+  {
+    std::string instance;  // e.g. "main"
+    std::string port;      // e.g. "drive"
   };
 
   struct Connection
@@ -177,6 +161,12 @@ private:
     std::vector<Connection> connections;
   };
 
+  struct CapabilityCall
+  {
+    uint32_t count;
+    std::vector<std::string> args;
+  };
+
   struct Environment
   {
     uint32_t sequence = 0;
@@ -193,7 +183,8 @@ private:
 
     std::string previousCall = "";
     std::map<std::string, uint32_t> syncCalls;
-    std::map<std::string, uint32_t> asyncCalls;
+    std::vector<std::string> asyncCalls;
+    std::map<std::string, uint32_t> asyncCallsCounter;
     std::map<std::string, uint32_t> signalCalls;
     std::map<std::string, uint32_t> strategies;
 
@@ -206,6 +197,8 @@ private:
     std::map<std::string, Flow> flows;
     std::map<std::string, Capability> capabilities;
     std::map<std::string, std::string> capabilityMap;
+
+    std::map<std::string, std::vector<CapabilityCall>> capabilityCalls;
 
     TopLevelSystem system;
 
@@ -263,9 +256,9 @@ private:
       for (auto it = capabilities.cbegin(); it != capabilities.cend(); ++it)
         LOG_RAW("  {}: {}", it->first, it->second.name);
 
-      if (!asyncCalls.empty())
+      if (!asyncCallsCounter.empty())
         LOG_RAW("Async Calls:");
-      for (auto it = asyncCalls.cbegin(); it != asyncCalls.cend(); ++it)
+      for (auto it = asyncCallsCounter.cbegin(); it != asyncCallsCounter.cend(); ++it)
         LOG_RAW("  {}: {}", it->first, it->second);
 
       if (!syncCalls.empty())
@@ -293,12 +286,39 @@ private:
       for (auto it = capabilityMap.cbegin(); it != capabilityMap.cend(); ++it)
         LOG_RAW("  {}: {}", it->first, it->second);
 
+      if (!capabilityCalls.empty())
+        LOG_RAW("CapCalls:");
+      for (auto it = capabilityCalls.cbegin(); it != capabilityCalls.cend(); ++it)
+        for (const auto& call : it->second)
+          LOG_RAW("  {}: {}", it->first, call.count);
+
       LOG_RAW("---------------------------------------");
     }
   };
 
+  Compiler();
+
+  VoidResult parse(const CompilerOptions& options);
+  VoidResult generate();
+  System getAST() const;
+  Environment getIR() const;
+
+  void printAST() const;
+
+  VoidResult addPlugin(std::shared_ptr<KodaPlugin> plugin);
+  std::vector<std::string> generatedFiles() const;
+
+private:
+  System mAST;
+  Environment mEnv;
+  std::ofstream mCurrentFile;
+  CompilerOptions mOptions;
+  std::map<std::string, std::shared_ptr<KodaPlugin>> mPlugins;
+  std::vector<std::string> mGeneratedFiles;
+
   Result<ReturnValue> generateTask(PComponent task, Environment& env);
   Result<ReturnValue> generateCapability(PComponent capability, Environment& env);
+  Result<ReturnValue> emitCapability(PComponent capability, Environment& env);
 
   Result<ReturnValue> generateStrategy(PStrategyBlock strategy);
   Result<ReturnValue> generateFlow(PFlow flow, Environment& env);
@@ -312,7 +332,7 @@ private:
   Result<ReturnValue> generateIfElse(PIfElse strategy, Environment& env);
   Result<ReturnValue> generateRepeat(PRepeat strategy, Environment& env);
   Result<ReturnValue> generateGuard(PGuard strategy, Environment& env);
-  Result<ReturnValue> generateEvery(PEvery strategy, Environment& env);
+  Result<ReturnValue> generateEvery(PRepeat strategy, Environment& env);
   Result<ReturnValue> generateEnd(PEnd strategy, Environment& env);
   Result<ReturnValue> generateContinue(PContinue strategy, Environment& env);
   Result<ReturnValue> generateRef(PRef strategy, Environment& env);
@@ -330,6 +350,17 @@ private:
   Result<ReturnValue> generateVarsDef(PVarDef varDef, Environment& env);
   Result<ReturnValue> generateArgument(PArgument argument, Environment& env);
   Result<ReturnValue> generateStatement(PStatement statement, Environment& env);
+
+  Result<ReturnValue> generateExpr(PExpr expr, Environment& env);
+  Result<ReturnValue> generateId(PId expr, Environment& env);
+  Result<ReturnValue> generateStr(PStr expr, Environment& env);
+  Result<ReturnValue> generateInt(PInt expr, Environment& env);
+  Result<ReturnValue> generateFloat(PFloat expr, Environment& env);
+  Result<ReturnValue> generateCall(PCall expr, Environment& env);
+  Result<ReturnValue> generateNeg(PNeg expr, Environment& env);
+  Result<ReturnValue> generateNot(PNot expr, Environment& env);
+  Result<ReturnValue> generateBinOp(PBinOp expr, Environment& env);
+  Result<ReturnValue> generateParen(PEParen expr, Environment& env);
 
   std::string componentName(const std::string& name) const;
   std::string flowName(const std::string& name) const;

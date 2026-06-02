@@ -1,7 +1,9 @@
 #include "cst2ast.h"
 
 #include <memory>
+#include <variant>
 
+#include "ast.h"
 #include "logging.h"
 
 koda::System KodaCST2AST::build(KodaParser::SystemContext* ctx)
@@ -279,8 +281,11 @@ std::any KodaCST2AST::visitStratSeq(KodaParser::StratSeqContext* ctx)
   {
     auto child = std::any_cast<koda::PStrategy>(visit(s));
     // TODO: For now, we don't handle the end, fix this
-    if (std::get_if<koda::PEnd>(&child->v))
+    if (std::holds_alternative<koda::PEnd>(child->v))
       continue;
+    if (auto* paren = std::get_if<koda::PParen>(&child->v))
+      if (std::holds_alternative<koda::PEnd>((*paren)->a->v))
+        continue;
 
     // if (std::get_if<koda::PContinue>(&child->v))
     //   continue;
@@ -361,18 +366,11 @@ std::any KodaCST2AST::visitStratRepeat(KodaParser::StratRepeatContext* ctx)
   auto value = std::make_shared<koda::Strategy::Repeat>();
   value->a = std::any_cast<koda::PStrategy>(visit(ctx->strategy()));
 
-  auto node = std::make_shared<koda::Strategy>();
-  node->span = spanOf(ctx);
-  node->v = value;
-  return node;
-}
+  if (ctx->NATURAL().size() != 2)
+    throw std::runtime_error("Missing arguments for repeat block. Expects <iterations> <rate>");
 
-std::any KodaCST2AST::visitStratEvery(KodaParser::StratEveryContext* ctx)
-{
-  // LOG_DEBUG("Visiting Every");
-  auto value = std::make_shared<koda::Strategy::Every>();
-  value->seconds = std::stoi(ctx->NATURAL()->getText());
-  value->a = std::any_cast<koda::PStrategy>(visit(ctx->strategy()));
+  value->iterations = std::stoi(ctx->NATURAL(0)->getText());
+  value->seconds = std::stoi(ctx->NATURAL(1)->getText());
   for (auto h : ctx->strategyHandler())
     value->handlers.push_back(std::any_cast<koda::PStrategyHandler>(visit(h)));
 
@@ -876,8 +874,7 @@ bool KodaCST2AST::containsContinue(koda::PStrategy s)
       return false;
     }
     // --- Unary wrappers ---
-    else if constexpr (std::is_same_v<T, std::shared_ptr<koda::Strategy::Paren>> ||
-                       std::is_same_v<T, std::shared_ptr<koda::Strategy::Repeat>>)
+    else if constexpr (std::is_same_v<T, std::shared_ptr<koda::Strategy::Paren>>)
     {
       return node && node->a && containsContinue(node->a);
     }
@@ -887,8 +884,8 @@ bool KodaCST2AST::containsContinue(koda::PStrategy s)
       return node && ((node->a && containsContinue(node->a)) ||
                       (node->b && containsContinue(node->b)));
     }
-    // --- Every ---
-    else if constexpr (std::is_same_v<T, std::shared_ptr<koda::Strategy::Every>>)
+    // --- Repeat ---
+    else if constexpr (std::is_same_v<T, std::shared_ptr<koda::Strategy::Repeat>>)
     {
       if (!node)
         return false;

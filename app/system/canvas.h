@@ -22,6 +22,7 @@ class NodeActionMenu;
 class PortItem;
 class TransitionItem;
 class ConfigurationTable;
+class EdgeRouter;
 
 /**
  * @brief The Canvas class represents the main drawing area for nodes and transitions.
@@ -60,8 +61,9 @@ public:
    * @param configTable Shared pointer to the configuration table.
    * @param parent Pointer to the parent object.
    */
-  Canvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> configTable, QObject* parent = nullptr);
+  Canvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> configTable, std::shared_ptr<EdgeRouter> router, QObject* parent = nullptr);
 
+  ~Canvas();
   /**
    * @brief Returns the unique identifier for this canvas.
    *
@@ -85,6 +87,8 @@ public:
    * @brief Deletes selected items from the canvas.
    */
   void deleteSelectedItems();
+
+  void autoRoute();
 
   /**
    * @brief Returns the current scale of the canvas.
@@ -240,6 +244,7 @@ public:
   {
     return nullptr;
   }
+  std::shared_ptr<EdgeRouter> router() const;
 
 protected:
   /**
@@ -247,7 +252,8 @@ protected:
    *
    * @param event Pointer to the QGraphicsSceneDragDropEvent.
    */
-  void dragEnterEvent(QGraphicsSceneDragDropEvent* event) override;
+  void
+  dragEnterEvent(QGraphicsSceneDragDropEvent* event) override;
 
   /**
    * @brief Handles drag move events.
@@ -356,7 +362,7 @@ signals:
    * @param flow Pointer to the opened flow.
    * @param node Pointer to the node associated with the flow.
    */
-  void openFlow(Flow* flow, NodeItem* node);
+  void openFlow(Flow* flow, const QString& nodeId);
 
   /**
    * @brief Emitted when a flow is added.
@@ -378,9 +384,10 @@ public slots:
   /**
    * @brief Handles focus on a node.
    *
+   * @param flowId The ID of the flow that contains the given node.
    * @param nodeId The ID of the focused node.
    */
-  void onFocusNode(const QString& nodeId);
+  void onFocusNode(const QString& flowId, const QString& nodeId);
 
   /**
    * @brief Handles removal of a node.
@@ -406,6 +413,9 @@ public slots:
   void onFlowRemoved(const QString& flowId, const QString& nodeId);
 
 protected:
+  std::shared_ptr<ConfigurationTable> mConfigTable;  /// Pointer to the configuration table.
+  std::shared_ptr<EdgeRouter> mRouter;               /// Pointer to the system edge router.
+
   virtual void addedItemNode(NodeItem* node, std::shared_ptr<NodeSaveInfo> info);
   virtual void addedItemFlow(Flow* flow, NodeItem* node);
   virtual void addTransition(TransitionItem* transition);
@@ -420,6 +430,11 @@ protected:
    * @return The created node when handled, otherwise nullptr.
    */
   virtual NodeItem* insertDroppedNodeOnTransition(TransitionItem* transition, std::shared_ptr<NodeSaveInfo> info);
+   * @brief Returns the parent view of this canvas.
+   *
+   * @return Pointer to CanvasView.
+   */
+  CanvasView* parentView() const;
 
   /** Runs once after a project load; structural canvases relayout task capability slots. */
   virtual void finalizeAfterLoad() {}
@@ -427,6 +442,14 @@ protected:
   bool mDeferStructuralLayout = false;
 
 private:
+  enum class NodeCreation
+  {
+    Dropping,
+    Pasting,
+    Loading,
+    Populating
+  };
+
   // TODO(felaze): Move connection behaviour to a separate class
   NodeItem* mHoveredNode = nullptr;       /// Pointer to the hovered node.
   TransitionItem* mTransition = nullptr;  /// Pointer to the current transition being created.
@@ -444,9 +467,8 @@ private:
 
   const QString mId;  /// Unique identifier for this canvas.
 
-  QList<CopiedNode> mCopiedNodes;                    /// List of copied nodes.
-  QList<NodeItem*> mSelectedNodes;                   /// List of currently selected nodes.
-  std::shared_ptr<ConfigurationTable> mConfigTable;  /// Pointer to the configuration table.
+  QList<CopiedNode> mCopiedNodes;   /// List of copied nodes.
+  QList<NodeItem*> mSelectedNodes;  /// List of currently selected nodes.
 
   /**
    * @brief Clears all items from the canvas.
@@ -467,6 +489,15 @@ private:
    * @return Pointer to CanvasView.
    */
   CanvasView* parentView() const;
+   * @brief Creates a new node based on save information and other parameters.
+   *
+   * @param creation The type of node creation (e.g., dropping, pasting).
+   * @param info Shared pointer to the save information for the node.
+   * @param position The initial position of the node.
+   * @param parent Pointer to the parent node.
+   * @return Pointer to the created NodeItem.
+   */
+  NodeItem* createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo> info, const QPointF& position, NodeItem* parent);
 
   /**
    * @brief Finds a node by its ID.
@@ -549,6 +580,7 @@ private:
   bool mDraggedNodeIsCapability = false;
   QString mDraggedCapabilityIconPath;
   QColor mDraggedCapabilityColor;
+  void onSelectionChanged();
 };
 
 inline QDataStream& operator<<(QDataStream& out, const Canvas::CopiedNode& node)

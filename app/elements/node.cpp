@@ -602,9 +602,14 @@ VoidResult NodeItem::start()
   return NodeBase::start();
 }
 
-QRectF NodeItem::boundingRect() const
+QRectF NodeItem::nodeRect() const
 {
   return QRectF(0, 0, mSize.width(), mSize.height());
+}
+
+QRectF NodeItem::sceneNodeRect() const
+{
+  return mapRectToScene(nodeRect());
 }
 
 void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget)
@@ -1168,7 +1173,7 @@ QRectF NodeItem::parentInnerSceneRect(qreal padding) const
   if (!parentNode())
     return {};
 
-  QRectF r = parentNode()->mapRectToScene(parentNode()->boundingRect());
+  QRectF r = parentNode()->mapRectToScene(parentNode()->nodeRect());
   return r.adjusted(padding, padding, -padding, -padding);
 }
 
@@ -1415,12 +1420,7 @@ QVariant NodeItem::itemChange(GraphicsItemChange change, const QVariant& value)
         return QGraphicsItem::itemChange(change, value);
 
       QPointF newPos = value.toPointF();  // proposed new pos in scene coords
-
-      // auto parent = parentNode();
-      // if (parent == nullptr)
-      //   return QGraphicsItem::itemChange(change, value);
-
-      QRectF parentRect = parent->boundingRect();
+      QRectF parentRect = parent->nodeRect();
       parentRect = parentRect.adjusted(10, 10, -10, -10);
       parentRect.translate(parent->pos());
 
@@ -1475,8 +1475,6 @@ void NodeItem::updateExtrasPosition()
 
   if (nodeMoved)
     nodeMoved(id());
-
-  updateLabelPosition();
 }
 
 void NodeItem::updatePortPositions()
@@ -1568,7 +1566,7 @@ QPointF NodeItem::edgePointToward(const QPointF& targetScenePos, bool fromOutgoi
 
   // Normalise and scale
   dir /= std::hypot(dir.x(), dir.y());
-  qreal radius = boundingRect().width() / 2.0;
+  qreal radius = nodeRect().width() / 2.0;
   return center + dir * radius;
 }
 

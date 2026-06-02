@@ -10,14 +10,16 @@
     "pipelines": [
         "pipelines/Verify.json",
         "pipelines/Simulate.json",
-        "pipelines/Platform IO pipeline.json"
+        "pipelines/Platform IO pipeline.json",
+        "pipelines/ROS.json"
     ],
     "tasks": [
         {
             "children": [
-                "capabilities/Pick and place-Vision.json",
+                "capabilities/Pick and place-Aruco Detection.json",
                 "capabilities/Pick and place-Grip.json",
-                "capabilities/Pick and place-Drive.json"
+                "capabilities/Pick and place-Drive.json",
+                "capabilities/Pick and place-Approach.json"
             ],
             "events": [
                 {
@@ -70,7 +72,8 @@
                 "flows/Pick and place-loop.json",
                 "flows/Pick and place-pick.json",
                 "flows/Pick and place-place.json",
-                "flows/Pick and place-err.json"
+                "flows/Pick and place-err.json",
+                "flows/Pick and place-home.json"
             ],
             "iconPath": "",
             "id": "{f1982623-40c5-4f7d-8053-da9b6112c9c7}",
@@ -80,8 +83,8 @@
                 "data": ""
             },
             "position": {
-                "x": -142.5,
-                "y": 171.01851851851848
+                "x": -162.5,
+                "y": -28.981481481481524
             },
             "properties": {
                 "color": "#62829a",

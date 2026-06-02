@@ -7,13 +7,14 @@
 #include <oclero/qlementine.hpp>
 
 #include "logging.h"
+#include "style_helpers.h"
 
 DropDownButton::DropDownButton(QWidget* parent)
     : QToolButton(parent)
 {
   mMenu = new QMenu(this);
   mMenu->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-  mMenu->setFixedWidth(mWidth);
+  mMenu->setMinimumWidth(mWidth);
 
   setMenu(mMenu);
   setEnabled(true);
@@ -60,7 +61,7 @@ void DropDownButton::rebuildMenu()
   {
     auto* pipelineMenu = mMenu->addMenu(option);
     pipelineMenu->setProperty("id", option);
-    buildMenu(pipelineMenu, option, false);
+    buildMenu(pipelineMenu, option, true);
   }
 
   updateButtonText();
@@ -94,7 +95,7 @@ void DropDownButton::updateButtonText()
 void DropDownButton::showContextMenu(const QPoint& event)
 {
   QMenu menu(this);
-  buildMenu(&menu, mCurrentOption, true);
+  buildMenu(&menu, mCurrentOption, false);
   menu.exec(mapToGlobal(event));
 }
 

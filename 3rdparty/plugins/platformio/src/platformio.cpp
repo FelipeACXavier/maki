@@ -130,41 +130,17 @@ void PlatformIOPlugin::setHostServices(maki::IHostServices* services)
   // Setup settings
   if (auto service = mServices->settings())
   {
-    service->registerSettings(languageName(), version(), mSettings);
+    service->registerSettings(languageName(), version(), manifest().iconPath(), mSettings);
 
     auto settings = service->getPluginSettings(languageName());
     if (!settings.isEmpty())
       mSettings = settings;
   }
-
-  if (auto ui = mServices->ui())
-  {
-  }
-}
-
-void PlatformIOPlugin::setName(const QString& name)
-{
-  mName = name;
-}
-
-void PlatformIOPlugin::setVersion(const QString& version)
-{
-  mVersion = PluginVersion::fromString(version);
 }
 
 void PlatformIOPlugin::setAssetDir(const QDir& dir)
 {
   mAssetDir = dir;
-}
-
-QString PlatformIOPlugin::languageName() const
-{
-  return mName;
-}
-
-PluginVersion PlatformIOPlugin::version() const
-{
-  return mVersion;
 }
 
 QList<std::shared_ptr<maki::IPipelineAction>> PlatformIOPlugin::pipelineActions()
@@ -201,9 +177,8 @@ Result<maki::PipelineArtifact> PlatformIOPlugin::initialiseProject(const QDir& o
   generate->setWorkingDirectory(projectFolder.absolutePath());
   generate->setProgram(mPioExecutable);
   generate->setArguments(args);
-  auto added = pipeline->add(generate, maki::OnFail::EXECUTE, [this, projectFolder] {
+  auto added = pipeline->add(generate, maki::OnFail::ALWAYS_EXECUTE, [this, projectFolder](int& /* exitCode */, QProcess::ExitStatus& /* status */) {
     LOG_WARN_ON_FAILURE(writePlatformIni(projectFolder));
-    // LOG_WARN_ON_FAILURE(writeMainCpp(outputFolder));
   });
 
   pipeline->endGroup();

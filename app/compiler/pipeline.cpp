@@ -7,12 +7,12 @@
 #include <QVBoxLayout>
 #include <oclero/qlementine/widgets/Label.hpp>
 
+#include "ipipeline.h"
 #include "logging.h"
 #include "result.h"
 
 static const QString DEFAULT_GROUP = "Default";
 static const int SUCCESS = 0;
-static const int FAILURE = -1;
 static const QRegularExpression ansiRe("\x1B\\[[0-9;?]*[ -/]*[@-~]", QRegularExpression::DontCaptureOption);
 
 Pipeline::Pipeline(QObject* parent)
@@ -165,7 +165,7 @@ void Pipeline::endGroup()
   mGroupIndex = 0;
 }
 
-VoidResult Pipeline::add(QProcess* process, maki::OnFail onFail, std::function<void()> callback)
+VoidResult Pipeline::add(QProcess* process, maki::OnFail onFail, std::function<void(int& exitCode, QProcess::ExitStatus& status)> callback)
 {
   QString exe = QStandardPaths::findExecutable(process->program());
   if (exe.isEmpty())
@@ -258,10 +258,7 @@ VoidResult Pipeline::start(const QString& groupName, bool first)
   mRunningProcess->process->closeWriteChannel();
 
   if (!mRunningProcess->process->waitForStarted())
-  {
-    onFinished(FAILURE, mRunningProcess->process->exitStatus());
     return VoidResult::Failed("Command not found or not executable!");
-  }
 
   emit processStarted(constructInfo(), name, args);
 
@@ -398,10 +395,13 @@ void Pipeline::onFinished(int exitCode, QProcess::ExitStatus status)
   }
 
   // LOG_DEBUG("Process finished: %s", qPrintable(mRunningProcess->process->program()));
-  emit finished(constructInfo(), exitCode, status);
+  if (mRunningProcess->onFinish &&
+      ((exitCode != SUCCESS && mRunningProcess->onFail == maki::OnFail::EXECUTE) || mRunningProcess->onFail == maki::OnFail::ALWAYS_EXECUTE))
+  {
+    mRunningProcess->onFinish(exitCode, status);
+  }
 
-  if (mRunningProcess->onFinish)
-    mRunningProcess->onFinish();
+  emit finished(constructInfo(), exitCode, status);
 
   startNextOrEnd(
       (exitCode == SUCCESS || mRunningProcess->onFail == maki::OnFail::CONTINUE) ? SUCCESS : exitCode,

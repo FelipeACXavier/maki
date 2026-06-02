@@ -99,7 +99,7 @@ int DraggableItem::type() const
   return Type;
 }
 
-QRectF DraggableItem::boundingRect() const
+QRectF DraggableItem::nodeRect() const
 {
   return scaledRect();
 }
@@ -116,7 +116,7 @@ void DraggableItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* sty
     return;
   }
 
-  NodeBase::paintNode(rect,
+  NodeBase::paintNode(nodeRect(),
                       config()->body.backgroundColor,
                       isSelected() ? QPen(Config::HIGHLIGHT, 2.0) : QPen(Config::FOREGROUND, 1.0),
                       painter);
@@ -131,8 +131,6 @@ void DraggableItem::adjustWidth(int width)
 {
   int centerX = (width - boundingRect().width()) / 2;
   setPos(centerX, pos().y());
-
-  updateLabelPosition();
 }
 
 void DraggableItem::startDrag(QGraphicsSceneMouseEvent* event)
@@ -148,7 +146,7 @@ void DraggableItem::startDrag(QGraphicsSceneMouseEvent* event)
   QStyleOptionGraphicsItem opt;
   opt.state = QStyle::State_Active;
   paint(&painter, &opt, nullptr);
-  paintLabel(&painter, pixmap.rect());
+  paintLabel(&painter, pixmap.rect(), QPen(Config::FOREGROUND));
 
   NodeSaveInfo info;
   info.setNodeId(nodeId());

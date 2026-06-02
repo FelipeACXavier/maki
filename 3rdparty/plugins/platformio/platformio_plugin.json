@@ -8,9 +8,9 @@
   "icon": "assets/icon.svg",
   "installation": [
     {
-      "command": "curl",
+      "command": "wget",
       "arguments": [
-        "-o",
+        "-O",
         "get-platformio.py",
         "https://raw.githubusercontent.com/platformio/platformio-core-installer/master/get-platformio.py"
       ]

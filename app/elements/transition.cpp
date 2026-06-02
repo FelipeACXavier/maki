@@ -10,6 +10,9 @@
 #include "node.h"
 #include "port.h"
 
+#include "system/canvas.h"
+#include "system/edge_router.h"
+
 namespace
 {
 constexpr qreal kStub = 14.0;
@@ -164,6 +167,7 @@ QPainterPath buildOrthogonalTransitionPath(const QPointF& start,
 }
 }  // namespace
 
+
 TransitionItem::TransitionItem(std::shared_ptr<TransitionSaveInfo> storage)
     : QGraphicsPathItem()
     , mId((!storage->getid().isEmpty() && !storage->getid().isNull()) ? storage->getid() : QUuid::createUuid().toString())
@@ -219,6 +223,7 @@ void TransitionItem::done(NodeItem* source, NodeItem* destination)
   mSource = source;
   mDestination = destination;
 
+  // Make sure line is update with new control points
   move(mStorage->getsrcId(), mStorage->srcPoint());
   move(mStorage->getdstId(), mStorage->dstPoint());
 }
@@ -340,7 +345,7 @@ TransitionSaveInfo TransitionItem::saveInfo() const
   return *mStorage;
 }
 
-void TransitionItem::updatePath()
+void TransitionItem::updatePath(QPainterPath painterPath)
 {
   if (!mSource || !mDestination)
     return;

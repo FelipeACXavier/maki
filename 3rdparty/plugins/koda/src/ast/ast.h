@@ -243,6 +243,7 @@ struct Strategy
     int seconds;
     std::shared_ptr<Strategy> a;
     std::shared_ptr<Strategy> b;
+    std::vector<std::shared_ptr<StrategyHandler>> handlers;
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
@@ -257,20 +258,15 @@ struct Strategy
   struct Repeat
   {
     std::shared_ptr<Strategy> a;
+    int seconds;
+    int iterations;
+    std::vector<std::shared_ptr<StrategyHandler>> handlers;
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
   struct Guard
   {
     std::shared_ptr<Expr> cond;
-
-    void print(const std::string& prefix, const bool last, const Span& span) const;
-  };
-  struct Every
-  {
-    int seconds;
-    std::shared_ptr<Strategy> a;
-    std::vector<std::shared_ptr<StrategyHandler>> handlers;
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
@@ -309,7 +305,6 @@ struct Strategy
       std::shared_ptr<IfElse>,
       std::shared_ptr<Repeat>,
       std::shared_ptr<Guard>,
-      std::shared_ptr<Every>,
       std::shared_ptr<End>,
       std::shared_ptr<Continue>,
       std::shared_ptr<Ref>,
@@ -442,7 +437,6 @@ typedef std::shared_ptr<Strategy::Within> PWithin;
 typedef std::shared_ptr<Strategy::IfElse> PIfElse;
 typedef std::shared_ptr<Strategy::Repeat> PRepeat;
 typedef std::shared_ptr<Strategy::Guard> PGuard;
-typedef std::shared_ptr<Strategy::Every> PEvery;
 typedef std::shared_ptr<Strategy::End> PEnd;
 typedef std::shared_ptr<Strategy::Continue> PContinue;
 typedef std::shared_ptr<Strategy::Ref> PRef;

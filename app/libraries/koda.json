@@ -287,7 +287,7 @@
           ]
         },
         {
-          "type": "Vision",
+          "type": "Aruco Detection",
           "body": {
             "shape": "Ellipse",
             "textColor": "#000000",
@@ -302,7 +302,7 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Vision"
+              "default": "Aruco Detection"
             },
             {
               "id": "type",
@@ -565,7 +565,7 @@
       "type": "structural",
       "nodes": [
         {
-          "type": "Bridge",
+          "type": "IO Bridge",
           "body": {
             "shape": "Ellipse",
             "textColor": "#000000",
@@ -580,7 +580,7 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Bridge"
+              "default": "IO Bridge"
             },
             {
               "id": "type",
@@ -707,7 +707,7 @@
           ]
         },
         {
-          "type": "EnvSensor",
+          "type": "Occupancy Sensor",
           "body": {
             "shape": "Ellipse",
             "textColor": "#000000",
@@ -722,7 +722,7 @@
             {
               "id": "name",
               "type": "string",
-              "default": "EnvSensor"
+              "default": "Occupancy Sensor"
             },
             {
               "id": "type",
@@ -1098,7 +1098,7 @@
           ]
         },
         {
-          "type": "ImageInspector",
+          "type": "Image Inspection",
           "body": {
             "shape": "Ellipse",
             "textColor": "#000000",
@@ -1113,7 +1113,7 @@
             {
               "id": "name",
               "type": "string",
-              "default": "ImageInspector"
+              "default": "Image Inspection"
             },
             {
               "id": "type",
@@ -1195,7 +1195,7 @@
           ]
         },
         {
-          "type": "TicketCreation",
+          "type": "Ticket Creation",
           "body": {
             "shape": "Ellipse",
             "textColor": "#000000",
@@ -1210,7 +1210,7 @@
             {
               "id": "name",
               "type": "string",
-              "default": "TicketCreation"
+              "default": "Ticket Creation"
             },
             {
               "id": "type",
@@ -1402,6 +1402,38 @@
           "ports": ["in"]
         },
         {
+          "type": "Terminate",
+          "body": {
+            "shape": "Ellipse",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#C2222C",
+            "borderColor": "#FFFFFF",
+            "width": 50,
+            "height": 50,
+            "iconColor": "#FFFFFF",
+            "iconScale": 0.8,
+            "icon": "koda_success.svg"
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Terminate"
+            }
+          ],
+          "connectors": [
+            {
+              "id": "input",
+              "type": "in",
+              "position": "west"
+            }
+          ],
+          "behaviour": {},
+          "help": {
+            "message": "End of a task. This will end the current task, independent of where it is triggered."
+          }
+        },
+        {
           "type": "Async task",
           "body": {
             "shape": "rounded rectangle",
@@ -1470,7 +1502,7 @@
           "ports": ["in", "out", "abort", "error"]
         },
         {
-          "type": "Strategy",
+          "type": "Flow call",
           "body": {
             "shape": "rounded rectangle",
             "textColor": "#FFFFFF",
@@ -1488,14 +1520,14 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Strategy"
+              "default": "Flow call"
             },
             {
               "id": "strategy",
               "type": "component_select",
               "options": [
                 {
-                  "id": "strategy",
+                  "id": "flow",
                   "type": "user_call"
                 }
               ]
@@ -1600,7 +1632,7 @@
               "type": "component_select",
               "options": [
                 {
-                  "id": "strategy",
+                  "id": "flow",
                   "type": "user_call"
                 }
               ]
@@ -1634,15 +1666,22 @@
               "default": "Every"
             },
             {
+              "id": "iterations",
+              "type": "int",
+              "default": "0",
+              "info": "Number of times the loop will execute. A value of 0 repeats indefinitely until the flow is stopped or aborted."
+            },
+            {
               "id": "rate",
-              "type": "int"
+              "type": "int",
+              "info": "Delay in milliseconds between consecutive iterations. For example, a value of 1000 executes the loop once per second."
             }
           ],
           "behaviour": {},
           "help": {
-            "message": "Performs the \"do\" strategy and if it does not conclude within the set time, it will trigger the \"else\" strategy."
+            "message": "Executes the contained strategy repeatedly. Configure the number of iterations and the interval between executions using the block properties."
           },
-          "ports": ["in", "out"]
+          "ports": ["in", "out"]，
         }
       ]
     }

@@ -1,7 +1,5 @@
 #include "plugin_pipeline.h"
 
-#include <qobject.h>
-
 #include <QProgressBar>
 #include <QTimer>
 #include <QVBoxLayout>
@@ -108,6 +106,9 @@ VoidResult PluginPipeline::runNextNode()
     return VoidResult();
   }
 
+  if (!isRunning())
+    return VoidResult::Failed("Run cancelled");
+
   const auto nodeId = mExecutionOrder.at(mCurrentIndex);
   const auto node = findNode(mGraph, nodeId);
   if (!node)
@@ -125,8 +126,8 @@ VoidResult PluginPipeline::runNextNode()
   if (args.isEmpty())
     args = action->defaultParameters();
 
-  for (const auto& arg : args)
-    qDebug() << "Running with : " << arg;
+  // for (const auto& arg : args)
+  //   qDebug() << "Running with : " << arg;
 
   auto result = action->run(mContext, args, mPipeline);
   if (!result)

@@ -99,5 +99,5 @@ public:
    *
    * @return The QRectF representing the bounding rectangle of this item.
    */
-  QRectF boundingRect() const override;
+  QRectF nodeRect() const override;
 };

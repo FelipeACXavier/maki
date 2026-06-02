@@ -3,6 +3,7 @@
 #include <QComboBox>
 #include <QWidget>
 
+#include "oclero/qlementine/widgets/ColorEditor.hpp"
 #include "style_helpers.h"
 
 class QLineEdit;
@@ -11,17 +12,23 @@ class QPushButton;
 class QLabel;
 class QCheckBox;
 class QFormLayout;
+class IntegerOrVariableValidator;
+class DoubleOrVariableValidator;
 
 namespace oclero::qlementine
 {
 class Label;
-}
+class LineEdit;
+class ColorEditor;
+}  // namespace oclero::qlementine
+
 /**
  * @namespace maki
  * @brief Contains UI helper widgets and layout grouping utilities used by MAKI.
  */
 namespace maki
 {
+class WidgetGroup;
 /**
  * @struct WidgetAlignment
  * @brief Describes how a widget should be aligned or inserted into a parent layout.
@@ -44,7 +51,28 @@ struct WidgetAlignment
     FORM
   } type;  ///< The alignment mode to apply.
 
-  QFormLayout* layout;  ///< Optional form layout associated with this alignment.
+  enum class Direction
+  {
+    /** @brief Alignment type is unknown or unspecified. */
+    UNKNOWN = 0,
+    LEFT,
+    RIGHT,
+    CENTER,
+    SPREAD,
+  } direction;  ///< The alignment mode to apply.
+
+  WidgetGroup* group;  ///< Optional form layout associated with this alignment.
+  int labelWidth = 0;
+
+  static WidgetAlignment Inline()
+  {
+    return WidgetAlignment{WidgetAlignment::Type::INLINE};
+  };
+
+  static WidgetAlignment Vertical()
+  {
+    return WidgetAlignment{WidgetAlignment::Type::VERTICAL};
+  };
 };
 
 /**
@@ -103,6 +131,7 @@ public:
    * @param parent The parent widget.
    */
   WidgetGroup(const QString& label, QWidget* parent);
+  WidgetGroup(const QString& label, oclero::qlementine::TextRole role, QWidget* parent);
 
   /**
    * @brief Adds a widget to the group.
@@ -128,11 +157,57 @@ public:
   void addStretch();
 };
 
+class InputWidget : public QWidget
+{
+  Q_OBJECT
+public:
+  InputWidget(const QString& label, QWidget* inputField, WidgetAlignment alignment, QWidget* parent = nullptr);
+
+  void addDescription(const QString& text);
+  void setToolTip(const QString& text);
+
+protected:
+  QWidget* mInputField = nullptr;
+
+  QWidget* createLayout(oclero::qlementine::Label* label, WidgetAlignment alignment);
+};
+
+template <typename T, typename W>
+class TypedInputWidget : public InputWidget
+{
+public:
+  TypedInputWidget(const QString& label, W* inputField, const T& value, WidgetAlignment alignment, QWidget* parent = nullptr)
+      : InputWidget(label, inputField, alignment, parent)
+      , mValue(value)
+  {
+  }
+
+  void setValue(const T& value)
+  {
+    mValue = value;
+    writeValueToWidget(value);
+  }
+
+  T getValue() const
+  {
+    return mValue;
+  }
+
+  W* widget() const
+  {
+    return qobject_cast<W*>(mInputField);
+  }
+
+protected:
+  virtual void writeValueToWidget(const T& value) = 0;
+  T mValue{};
+};
+
 /**
  * @class BooleanWidget
  * @brief A widget for displaying and editing boolean values.
  */
-class BooleanWidget : public QWidget
+class BooleanWidget : public TypedInputWidget<bool, QCheckBox>
 {
   Q_OBJECT
 public:
@@ -145,23 +220,7 @@ public:
    */
   BooleanWidget(const QString& label, bool value, WidgetAlignment alignment, QWidget* parent);
 
-  /**
-   * @brief Adds a descriptive label or help text to the widget.
-   * @param label The description text.
-   */
-  void addDescription(const QString& label);
-
-  /**
-   * @brief Sets the current boolean value.
-   * @param value The value to set.
-   */
-  void setValue(const bool value);
-
-  /**
-   * @brief Returns the current boolean value.
-   * @return The current value.
-   */
-  bool getValue() const;
+  void writeValueToWidget(const bool& value) override;
 
 signals:
   /**
@@ -169,17 +228,13 @@ signals:
    * @param value The new value.
    */
   void valueChanged(const bool value);
-
-private:
-  QCheckBox* mInputField;  ///< Checkbox used to edit the boolean value.
-  bool mValue = false;     ///< Cached boolean value.
 };
 
 /**
  * @class StringWidget
  * @brief A widget for displaying and editing string values.
  */
-class StringWidget : public QWidget
+class StringWidget : public TypedInputWidget<QString, oclero::qlementine::LineEdit>
 {
   Q_OBJECT
 public:
@@ -192,29 +247,7 @@ public:
    */
   StringWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent);
 
-  /**
-   * @brief Adds a descriptive label or help text to the widget.
-   * @param label The description text.
-   */
-  void addDescription(const QString& label);
-
-  /**
-   * @brief Sets the current string value.
-   * @param value The value to set.
-   */
-  void setValue(const QString& value);
-
-  /**
-   * @brief Returns the current string value.
-   * @return The current value.
-   */
-  QString getValue() const;
-
-  /**
-   * @brief Returns the underlying line edit widget.
-   * @return The input widget.
-   */
-  QLineEdit* widget() const;
+  void writeValueToWidget(const QString& value) override;
 
 signals:
   /**
@@ -222,17 +255,13 @@ signals:
    * @param value The new value.
    */
   void valueChanged(const QString& value);
-
-private:
-  QLineEdit* mInputField;  ///< Line edit used to edit the string value.
-  QString mValue = "";     ///< Cached string value.
 };
 
 /**
  * @class IntegerWidget
  * @brief A widget for displaying and editing integer values.
  */
-class IntegerWidget : public QWidget
+class IntegerWidget : public TypedInputWidget<QString, oclero::qlementine::LineEdit>
 {
   Q_OBJECT
 public:
@@ -248,21 +277,16 @@ public:
   IntegerWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent, int min = INT32_MIN, int max = INT32_MAX);
 
   /**
-   * @brief Adds a descriptive label or help text to the widget.
-   * @param label The description text.
-   */
-  void addDescription(const QString& label);
-
-  /**
-   * @brief Sets the current integer value.
+   * @brief Sets the widget to accept variables
    * @param value The value to set.
    */
-  void setValue(const int value);
+  void setAcceptVariable(bool accept);
 
-  /**
-   * @brief Returns the current integer value.
-   * @return The current value.
-   */
+  void writeValueToWidget(const QString& value) override;
+
+  using TypedInputWidget<QString, oclero::qlementine::LineEdit>::setValue;
+  void setValue(int value);
+
   int getValue() const;
 
 signals:
@@ -270,18 +294,17 @@ signals:
    * @brief Emitted when the integer value changes.
    * @param value The new value.
    */
-  void valueChanged(const int value);
+  void valueChanged(const QString& value);
 
 private:
-  QLineEdit* mInputField;  ///< Line edit used to edit the integer value.
-  int mValue = 0;          ///< Cached integer value.
+  IntegerOrVariableValidator* mValidator;
 };
 
 /**
  * @class FloatWidget
  * @brief A widget for displaying and editing floating-point values.
  */
-class FloatWidget : public QWidget
+class FloatWidget : public TypedInputWidget<QString, oclero::qlementine::LineEdit>
 {
   Q_OBJECT
 public:
@@ -297,21 +320,16 @@ public:
   FloatWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent, qreal min = std::numeric_limits<qreal>::min(), qreal max = std::numeric_limits<qreal>::max());
 
   /**
-   * @brief Adds a descriptive label or help text to the widget.
-   * @param label The description text.
-   */
-  void addDescription(const QString& label);
-
-  /**
-   * @brief Sets the current floating-point value.
+   * @brief Sets the widget to accept variables
    * @param value The value to set.
    */
-  void setValue(const qreal value);
+  void setAcceptVariable(bool accept);
 
-  /**
-   * @brief Returns the current floating-point value.
-   * @return The current value.
-   */
+  void writeValueToWidget(const QString& value) override;
+
+  using TypedInputWidget<QString, oclero::qlementine::LineEdit>::setValue;
+  void setValue(qreal value);
+
   qreal getValue() const;
 
 signals:
@@ -319,18 +337,17 @@ signals:
    * @brief Emitted when the floating-point value changes.
    * @param value The new value.
    */
-  void valueChanged(const qreal value);
+  void valueChanged(const QString& value);
 
 private:
-  QLineEdit* mInputField;  ///< Line edit used to edit the floating-point value.
-  qreal mValue = 0;        ///< Cached floating-point value.
+  DoubleOrVariableValidator* mValidator;
 };
 
 /**
  * @class SpinWidget
  * @brief A widget for displaying and editing integer values using a spin box.
  */
-class SpinWidget : public QWidget
+class SpinWidget : public TypedInputWidget<int, QSpinBox>
 {
   Q_OBJECT
 public:
@@ -342,25 +359,9 @@ public:
    * @param min The minimum allowed value.
    * @param max The maximum allowed value.
    */
-  SpinWidget(const QString& label, int placeholder, QWidget* parent, int min, int max);
+  SpinWidget(const QString& label, int placeholder, QWidget* parent, WidgetAlignment alignment, int min = INT32_MIN, int max = INT32_MAX);
 
-  /**
-   * @brief Adds a descriptive label or help text to the widget.
-   * @param label The description text.
-   */
-  void addDescription(const QString& label);
-
-  /**
-   * @brief Sets the current integer value.
-   * @param value The value to set.
-   */
-  void setValue(const int value);
-
-  /**
-   * @brief Returns the current integer value.
-   * @return The current value.
-   */
-  int getValue() const;
+  void writeValueToWidget(const int& value) override;
 
   /**
    * @brief Sets the suffix displayed by the spin box.
@@ -374,17 +375,13 @@ signals:
    * @param value The new value.
    */
   void valueChanged(const int value);
-
-private:
-  QSpinBox* mInputField;  ///< Spin box used to edit the integer value.
-  int mValue = 0;         ///< Cached integer value.
 };
 
 /**
  * @class SelectorWidget
  * @brief A widget for selecting one value from a list of options.
  */
-class SelectorWidget : public QWidget
+class SelectorWidget : public TypedInputWidget<QString, QComboBox>
 {
   Q_OBJECT
 public:
@@ -393,7 +390,7 @@ public:
    * @param label The label shown next to the widget.
    * @param parent The parent widget.
    */
-  SelectorWidget(const QString& label, QWidget* parent);
+  SelectorWidget(const QString& label, WidgetAlignment alignment, QWidget* parent);
 
   /**
    * @brief Constructs a selector widget using an existing combo box.
@@ -401,38 +398,20 @@ public:
    * @param comboBox The combo box to use as the selector.
    * @param parent The parent widget.
    */
-  SelectorWidget(const QString& label, QComboBox* comboBox, QWidget* parent);
+  SelectorWidget(const QString& label, QComboBox* comboBox, WidgetAlignment alignment, QWidget* parent);
 
-  /**
-   * @brief Adds a descriptive label or help text to the widget.
-   * @param label The description text.
-   */
-  void addDescription(const QString& label);
+  void setData(const QString& value);
 
-  /**
-   * @brief Sets the current selected value.
-   * @param value The value to select.
-   */
-  void setValue(const QString& value);
-
-  /**
-   * @brief Returns the current selected value.
-   * @return The current value.
-   */
-  QString getValue() const;
-
-  /**
-   * @brief Returns the underlying combo box widget.
-   * @return The combo box.
-   */
-  QComboBox* widget() const;
+  QVariant getData() const;
 
   /**
    * @brief Adds an item to the selector.
    * @param name The visible display name.
    * @param value The underlying value associated with the item.
    */
-  void addItem(const QString& name, const QString& value);
+  void addItem(const QString& name, const QVariant& value);
+
+  void writeValueToWidget(const QString& value) override;
 
 signals:
   /**
@@ -440,10 +419,10 @@ signals:
    * @param value The new value.
    */
   void valueChanged(const QString& value);
+  void dataChanged(const QString& text, const QVariant& value);
 
 private:
-  QComboBox* mInputField;  ///< Combo box used to edit the selected value.
-  QString mValue = "";     ///< Cached selected value.
+  QVariant mData;
 };
 
 /**
@@ -493,7 +472,7 @@ private:
  * @class ColorWidget
  * @brief A widget for displaying and editing a colour value.
  */
-class ColorWidget : public QWidget
+class ColorWidget : public TypedInputWidget<QColor, oclero::qlementine::ColorEditor>
 {
   Q_OBJECT
 public:
@@ -503,76 +482,15 @@ public:
    * @param placeholder Additional placeholder or button text.
    * @param parent The parent widget.
    */
-  ColorWidget(const QString& label, const QString& placeholder, QWidget* parent);
+  ColorWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent);
 
-  /**
-   * @brief Adds a descriptive label or help text to the widget.
-   * @param label The description text.
-   */
-  void addDescription(const QString& label);
-
-  /**
-   * @brief Sets the icon shown by the widget button.
-   * @param icon The icon to display.
-   */
-  void setIcon(const QIcon& icon);
-
-  /**
-   * @brief Sets the tooltip shown for the widget button.
-   * @param tooltip The tooltip text.
-   */
-  void setToolTip(const QString& tooltip);
-
-  /**
-   * @brief Returns the current colour value.
-   * @return The selected colour.
-   */
-  QColor getValue() const;
-
-  /**
-   * @brief Sets the current colour value.
-   * @param color The colour to set.
-   */
-  void setValue(const QColor& color);
-
-  /**
-   * @brief Returns the full label text associated with the widget.
-   * @return The label text.
-   */
-  QString getLabel() const;
-
-  /**
-   * @brief Returns the underlying push button used to trigger colour selection.
-   * @return The button widget.
-   */
-  QPushButton* widget() const;
-
+  void writeValueToWidget(const QColor& color) override;
 signals:
   /**
    * @brief Emitted when the selected colour changes.
    * @param value The new colour value.
    */
   void valueChanged(const QColor& value);
-
-protected:
-  /**
-   * @brief Handles widget resize events.
-   * @param event The resize event.
-   */
-  void resizeEvent(QResizeEvent* event) override;
-
-private:
-  oclero::qlementine::Label* mLabel;  ///< Label widget displaying the colour name or text.
-  QString mFullLabel;                 ///< Full, non-elided label text.
-
-  QLabel* mPreview;      ///< Preview widget showing the current colour.
-  QPushButton* mButton;  ///< Button used to open or trigger colour selection.
-  QColor mValue;         ///< Cached selected colour value.
-
-  /**
-   * @brief Updates the displayed label text using elision when needed.
-   */
-  void updateElidedLabel();
 };
 
 /**

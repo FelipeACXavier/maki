@@ -1,7 +1,5 @@
 #include "text_prompt.h"
 
-#include <qstringtokenizer.h>
-
 #include <QDialogButtonBox>
 #include <QLineEdit>
 #include <oclero/qlementine.hpp>

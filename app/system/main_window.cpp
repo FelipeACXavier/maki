@@ -41,6 +41,7 @@
 #include "compiler/plugin_action_registry.h"
 #include "compiler/plugin_pipeline.h"
 #include "config.h"
+#include "edge_router.h"
 #include "elements/flow.h"
 #include "elements/node.h"
 #include "flow_info.h"
@@ -119,7 +120,8 @@ VoidResult MainWindow::start()
   LOG_INFO("Using application path: %s", qPrintable(QCoreApplication::applicationDirPath()));
   mSaveHandler = std::make_unique<SaveHandler>(this);
   mSettingsManager = std::make_shared<SettingsManager>(mThemeManager, this);
-  mLanguageManager = std::make_shared<LanguageManager>();
+  mLanguageManager = std::make_shared<LanguageManager>(this);
+  mRouter = std::make_shared<EdgeRouter>(this);
 
   auto processPipeline = new Pipeline(this);
   mPipeline = new Pipeline(this);
@@ -166,6 +168,7 @@ VoidResult MainWindow::start()
     mFileMenu->setGenerationRoot(mSettingsManager->generation().generationDir);
     mLanguageManager->setLanguage(mSettingsManager->general().language);
     mSaveHandler->setLastDir(mSettingsManager->general().lastOpenFileDir);
+    mRouter->setRouteOption((EdgeRouter::Option)mSettingsManager->appearance().edgeShape);
 
     for (const auto& file : mSettingsManager->general().recentFiles)
     {
@@ -254,6 +257,9 @@ void MainWindow::onSettingsChanged()
   if (mPluginManager)
     mPluginManager->settingsChanged(mSettingsManager->plugins(), mHostServices);
 
+  if (mRouter)
+    mRouter->setRouteOption((EdgeRouter::Option)mSettingsManager->appearance().edgeShape);
+
   // Clean and repopulate the recent files
   mActionOpenRecent->clear();
   for (const auto& file : mSettingsManager->general().recentFiles)
@@ -285,7 +291,7 @@ void MainWindow::onSettingsChanged()
 void MainWindow::startUI()
 {
   CanvasView* currentCanvas = static_cast<CanvasView*>(mCanvasPanel->currentWidget());
-  StructureCanvas* canvas = new StructureCanvas(mStorage, Config::MAIN_CANVAS, mConfigTable, currentCanvas);
+  StructureCanvas* canvas = new StructureCanvas(mStorage, Config::MAIN_CANVAS, mConfigTable, mRouter, currentCanvas);
 
   mActiveCanvas = canvas;
   currentCanvas->setScene(canvas);
@@ -391,6 +397,13 @@ void MainWindow::bind()
   connect(mPluginTab, &PluginTab::openView, this, &MainWindow::addPluginTab);
   connect(mPluginTab, &PluginTab::closeView, this, &MainWindow::removePluginTab);
 
+  // Diagram actions =============================================================
+  connect(mActionAutoRoute, &QAction::triggered, this, [this] {
+    if (canvas())
+      canvas()->autoRoute();
+  });
+  mActionAutoRoute->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_L));
+
   // Setting actions =============================================================
   connect(mOpenAllSettings, &QAction::triggered, this, [this] {
     LOG_INFO("Opening all settings");
@@ -444,7 +457,7 @@ void MainWindow::bind()
       body["height"] = 100;
       body["iconColor"] = "#FFFFFF";
       body["iconScale"] = 0.8;
-      body["nodeSvg"] = plugin.manifest.iconPath();
+      body["nodeSvg"] = plugin.plugin->manifest().iconPath();
 
       node["body"] = body;
 
@@ -463,6 +476,7 @@ void MainWindow::bind()
         QJsonObject prop;
         prop[ConfigKeys::ID] = p.getid();
         prop[ConfigKeys::TYPE] = Types::PropertyTypesToString(p.gettype());
+        name[ConfigKeys::DEFAULT] = p.getdefaultValue().toJsonValue();
         properties.append(prop);
       }
 
@@ -538,14 +552,65 @@ void MainWindow::unbindCanvas()
 
 void MainWindow::bindShortcuts()
 {
-  new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_C), this, [this] {
-    if (canvas())
-      canvas()->copySelectedItems(nullptr);
+  new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_C), this, [] {
+    QWidget* fw = QApplication::focusWidget();
+    if (!fw)
+      return;
+
+    LOG_INFO("Copy, focused on: %s", qPrintable(fw->metaObject()->className()));
+
+    // 1) If focus is in the node library panel -> search there
+    if (auto* textEdit = qobject_cast<QTextEdit*>(findAncestor(fw, &QTextEdit::staticMetaObject)))
+    {
+      textEdit->copy();
+      return;
+    }
+    else if (auto* browser = qobject_cast<QTextBrowser*>(findAncestor(fw, &QTextBrowser::staticMetaObject)))
+    {
+      browser->copy();
+      return;
+    }
+    else if (auto* canvasView = qobject_cast<CanvasView*>(findAncestor(fw, &CanvasView::staticMetaObject)))
+    {
+      if (auto* canvas = qobject_cast<Canvas*>(canvasView->scene()))
+        canvas->copySelectedItems(nullptr);
+
+      return;
+    }
   });
   new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_V), this, [this] {
-    if (canvas())
-      canvas()->pasteCopiedItems();
+    QWidget* fw = QApplication::focusWidget();
+    if (!fw)
+      return;
+
+    LOG_INFO("Copy, focused on: %s", qPrintable(fw->metaObject()->className()));
+
+    // 1) If focus is in the node library panel -> search there
+    if (auto* textEdit = qobject_cast<QTextEdit*>(findAncestor(fw, &QTextEdit::staticMetaObject)))
+    {
+      if (!textEdit->isReadOnly())
+        textEdit->paste();
+
+      return;
+    }
+    else if (auto* browser = qobject_cast<QTextBrowser*>(findAncestor(fw, &QTextBrowser::staticMetaObject)))
+    {
+      if (!browser->isReadOnly())
+        browser->paste();
+
+      return;
+    }
+    else if (auto* canvasView = qobject_cast<CanvasView*>(findAncestor(fw, &CanvasView::staticMetaObject)))
+    {
+      if (auto* canvas = qobject_cast<Canvas*>(canvasView->scene()))
+        canvas->pasteCopiedItems();
+
+      return;
+    }
   });
+  //   if (canvas())
+  //     canvas()->pasteCopiedItems();
+  // });
   new QShortcut(QKeySequence(Qt::Key_Delete), this, [this] {
     if (canvas())
       canvas()->deleteSelectedItems();
@@ -597,6 +662,7 @@ VoidResult MainWindow::loadElements()
   // Once we are done with the libraries, we can make sure they are positioned on the top
   dynamic_cast<QVBoxLayout*>(mStructureTab->layout())->addStretch();
   dynamic_cast<QVBoxLayout*>(mBehaviourTab->layout())->addStretch();
+  dynamic_cast<QVBoxLayout*>(mPipelineTab->layout())->addStretch();
 
   return VoidResult();
 }
@@ -681,11 +747,12 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
     else if (type == ConfigKeys::PIPELINE)
       nodeConfig->libraryType = Types::LibraryTypes::PIPELINE;
 
-    auto id = QStringLiteral("%1::%2").arg(name, nodeConfig->type);
-    sidebarview->addNode(id, nodeConfig);
+    auto nodeId = QStringLiteral("%1::%2").arg(name, nodeConfig->type);
+    sidebarview->addNode(nodeId, nodeConfig);
+    nodeConfig->type = nodeId;
 
-    LOG_TRACE("Adding key: %s to the config table", qPrintable(id));
-    LOG_ERROR_ON_FAILURE(mConfigTable->add(id, nodeConfig));
+    LOG_TRACE("Adding key: %s to the config table", qPrintable(nodeId));
+    LOG_ERROR_ON_FAILURE(mConfigTable->add(nodeId, nodeConfig));
   }
 
   return VoidResult();
@@ -847,7 +914,7 @@ void MainWindow::onActionEditPipeline(const QString& pipelineId)
   CanvasView* newView = new CanvasView(mCanvasPanel);
   newView->setProperty("id", pipelineName);
 
-  PipelineCanvas* canvas = new PipelineCanvas(pipeline, mConfigTable, newView);
+  PipelineCanvas* canvas = new PipelineCanvas(pipeline, mConfigTable, mRouter, newView);
   newView->setScene(canvas);
   canvas->populate(*pipeline);
 
@@ -859,6 +926,124 @@ void MainWindow::onActionEditPipeline(const QString& pipelineId)
 
   mCanvasPanel->addTab(newView, QIcon(":/icons/deploy.svg"), pipeline->getname());
   mCanvasPanel->setCurrentWidget(newView);
+}
+
+void MainWindow::onActionSimulate()
+{
+  if (!mGenerator)
+    LOG_WARNING("No generator available");
+
+  // TODO: Update this to the plugin pipeline
+  maki::PipelineGraph graph;
+  graph.id = "Test 1";
+  graph.name = "Generate koda and dezyne";
+
+  maki::PipelineNode node1;
+  node1.actionId = "koda_antlr.generate_koda";
+  node1.id = "Koda generation";
+  node1.parameters = {};
+
+  maki::PipelineNode node2;
+  node2.actionId = "koda_antlr.generate_dezyne";
+  node2.id = "Dezyne generation";
+  node2.parameters = {};
+
+  maki::PipelineNode node3;
+  node3.actionId = "koda_antlr.verify_dezyne";
+  node3.id = "Dezyne verification";
+  node3.parameters = {};
+
+  maki::PipelineNode node4;
+  node4.actionId = "koda_antlr.simulate";
+  node4.id = "Dezyne simulation";
+  node4.parameters = {};
+
+  maki::PipelineEdge edge1;
+  edge1.from = "Koda generation";
+  edge1.to = "Dezyne generation";
+
+  maki::PipelineEdge edge2;
+  edge2.from = "Dezyne generation";
+  edge2.to = "Dezyne verification";
+
+  maki::PipelineEdge edge3;
+  edge3.from = "Dezyne verification";
+  edge3.to = "Dezyne simulation";
+
+  graph.nodes.push_back(node1);
+  graph.nodes.push_back(node2);
+  graph.nodes.push_back(node3);
+  graph.nodes.push_back(node4);
+
+  graph.edges.push_back(edge1);
+  graph.edges.push_back(edge2);
+  graph.edges.push_back(edge3);
+
+  QByteArray byteArray;
+  QDataStream out(&byteArray, QIODevice::WriteOnly);
+  out << mHostServices->document()->getnodes();
+
+  maki::PipelineContext context;
+  context.buildDir = QDir(mSettingsManager->generation().generationDir);
+  context.projectDir = QDir(mSettingsManager->generation().generationDir);
+  context.addArtifact({
+      .id = "maki.nodes",
+      .type = "maki",
+      .producer = "MAKI",
+      .paths = {
+          {"nodes", byteArray.toBase64()},
+      },
+  });
+
+  LOG_ERROR_ON_FAILURE(mPluginPipeline->run(graph, context));
+}
+
+void MainWindow::onActionDeploy()
+{
+  if (!mGenerator)
+    LOG_WARNING("No generator available");
+
+  // TODO: Update this to the plugin pipeline
+  maki::PipelineGraph graph;
+  graph.id = "Test 1";
+  graph.name = "Generate koda and dezyne";
+
+  maki::PipelineNode node1;
+  node1.actionId = "koda_antlr.generate_koda";
+  node1.id = "Koda generation";
+  node1.parameters = {};
+
+  maki::PipelineNode node2;
+  node2.actionId = "ollama.explain";
+  node2.id = "Explain with ollama";
+  node2.parameters = {};
+
+  maki::PipelineEdge edge1;
+  edge1.from = "Koda generation";
+  edge1.to = "Explain with ollama";
+
+  graph.nodes.push_back(node1);
+  graph.nodes.push_back(node2);
+
+  graph.edges.push_back(edge1);
+
+  QByteArray byteArray;
+  QDataStream out(&byteArray, QIODevice::WriteOnly);
+  out << mHostServices->document()->getnodes();
+
+  maki::PipelineContext context;
+  context.buildDir = QDir(mSettingsManager->generation().generationDir);
+  context.projectDir = QDir(mSettingsManager->generation().generationDir);
+  context.addArtifact({
+      .id = "maki.nodes",
+      .type = "maki",
+      .producer = "MAKI",
+      .paths = {
+          {"nodes", byteArray.toBase64()},
+      },
+  });
+
+  LOG_ERROR_ON_FAILURE(mPluginPipeline->run(graph, context));
 }
 
 VoidResult MainWindow::onActionSave()
@@ -877,7 +1062,13 @@ VoidResult MainWindow::onActionSave()
     }
   }
 
-  return mSaveHandler->saveProject(*mStorage);
+  auto saved = mSaveHandler->saveProject(*mStorage);
+  if (saved)
+    NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Saved project: {}", mStorage->name.toStdString());
+  else
+    NOTIFY_ERROR(Config::APPLICATION_NAME.toStdString(), "Could not save project: {}\n{}", mStorage->name.toStdString(), saved.ErrorMessage());
+
+  return saved;
 }
 
 void MainWindow::onActionSaveAs()
@@ -888,7 +1079,11 @@ void MainWindow::onActionSaveAs()
     return;
   }
 
-  LOG_WARN_ON_FAILURE(mSaveHandler->saveProjectAs(*mStorage));
+  auto saved = mSaveHandler->saveProjectAs(*mStorage);
+  if (saved)
+    NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Saved project: {}", mStorage->name.toStdString());
+  else
+    NOTIFY_ERROR(Config::APPLICATION_NAME.toStdString(), "Could not save project: {}\n{}", mStorage->name.toStdString(), saved.ErrorMessage());
 }
 
 void MainWindow::onActionLoad(const QString& filename)
@@ -940,7 +1135,11 @@ void MainWindow::onActionLoad(const QString& filename)
       mPipelineRun->addOption(pipeline->getname());
   }
 
+  if (mSystemMenu)
+    mSystemMenu->expandToDepth(1);
+
   LOG_INFO("Project with %d nodes after", mStorage->getnodes().size());
+  NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Loaded project: {}", mStorage->name.toStdString());
 }
 
 void MainWindow::onNodeSelected(NodeItem* node, bool selected)
@@ -997,25 +1196,25 @@ void MainWindow::onCanvasTabChanged(int index)
     return;
 
   // Disconnect signals from the previous canvas
-  if (mActiveCanvas)
+  if (canvas())
     unbindCanvas();
 
   mActiveCanvas = qobject_cast<Canvas*>(newCanvas->scene());
-  if (!mActiveCanvas)
+  if (!canvas())
     return;
 
   bindCanvas();
 
-  auto libIndex = libraryTypeToIndex(mActiveCanvas->type());
+  auto libIndex = libraryTypeToIndex(canvas()->type());
   mPalette->setCurrentIndex(libIndex);
 
-  auto activeStack = mActiveCanvas->undoStack();
+  auto activeStack = canvas()->undoStack();
   if (!mUndoGroup->stacks().contains(activeStack))
     mUndoGroup->addStack(activeStack);
 
   mUndoGroup->setActiveStack(activeStack);
 
-  if (mActiveCanvas->type() == Types::LibraryTypes::PIPELINE)
+  if (canvas()->type() == Types::LibraryTypes::PIPELINE)
   {
     // If we are closing a pipeline canvas, then we must hide it
     mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::STRUCTURAL), false);
@@ -1037,7 +1236,7 @@ void MainWindow::closeCanvasTab(int index)
     auto toBeRemoved = qobject_cast<Canvas*>(closedCanvas->scene());
     mUndoGroup->removeStack(toBeRemoved->undoStack());
 
-    if (closedCanvas->scene() == mActiveCanvas)
+    if (closedCanvas->scene() == canvas())
     {
       unbindCanvas();
 
@@ -1047,11 +1246,11 @@ void MainWindow::closeCanvasTab(int index)
         if (auto* newCanvas = qobject_cast<CanvasView*>(mCanvasPanel->widget(index - 1)))
         {
           mActiveCanvas = qobject_cast<Canvas*>(newCanvas->scene());
-          if (mActiveCanvas)
+          if (canvas())
           {
             bindCanvas();
 
-            if (mActiveCanvas->type() == Types::LibraryTypes::PIPELINE)
+            if (canvas()->type() == Types::LibraryTypes::PIPELINE)
             {
               // If we are closing a pipeline canvas, then we must hide it
               mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::STRUCTURAL), false);
@@ -1065,7 +1264,7 @@ void MainWindow::closeCanvasTab(int index)
               mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::PIPELINE), false);
             }
 
-            auto libIndex = libraryTypeToIndex(mActiveCanvas->type());
+            auto libIndex = libraryTypeToIndex(canvas()->type());
             mPalette->setCurrentIndex(libIndex);
           }
         }
@@ -1089,7 +1288,7 @@ void MainWindow::closeCanvasTab(int index)
   mCanvasPanel->removeTab(index);
 }
 
-void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
+void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId)
 {
   QString flowName;
   if (flow == nullptr)
@@ -1127,37 +1326,45 @@ void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
 
   for (int i = 1; i < mCanvasPanel->count() && flow != nullptr; ++i)
   {
+    // Check if the flow is already open in some tab
     auto prop = mCanvasPanel->widget(i)->property("id");
     if (prop.isValid() && prop.toString() == flow->id())
     {
       mCanvasPanel->setCurrentIndex(i);
+      // TODO: clean this up
+      if (!nodeId.isEmpty())
+        if (auto* view = qobject_cast<CanvasView*>(mCanvasPanel->currentWidget()))
+          if (auto* canvas = qobject_cast<Canvas*>(view->scene()))
+            canvas->onFocusNode("", nodeId);
       return;
     }
   }
 
   if (flow == nullptr)
   {
-    flow = node->createFlow(flowName, nullptr);
-    if (!flow)
-      return;
+    LOG_WARNING("This shouldn't happen, no flow was found");
+    return;
   }
 
   CanvasView* newView = new CanvasView(mCanvasPanel);
 
-  BehaviourCanvas* canvas = new BehaviourCanvas(flow, mStorage, mConfigTable, newView);
+  BehaviourCanvas* canvas = new BehaviourCanvas(flow, mConfigTable, mRouter, newView);
   newView->setScene(canvas);
 
   // Change to respective tabs
   auto index = libraryTypeToIndex(canvas->type());
   mPalette->setCurrentIndex(index);
 
-  // Add default start and end nodes to flow
-  canvas->populate(*flow->config());
-
-  newView->setProperty("id", flow->id());
   LOG_DEBUG("Set tab property to %s", qPrintable(flow->id()));
+  newView->setProperty("id", flow->id());
   mCanvasPanel->addTab(newView, QIcon(":/icons/behaviour.svg"), flowName);
   mCanvasPanel->setCurrentWidget(newView);
+
+  // Populate after creation
+  canvas->populate(*flow->config());
+
+  if (!nodeId.isEmpty())
+    canvas->onFocusNode("", nodeId);
 }
 
 void MainWindow::addPluginTab(const QString& name, PluginView* view)
@@ -1186,7 +1393,7 @@ void MainWindow::onFlowAdded(Flow* flow, NodeItem* node)
 
 void MainWindow::onFlowRemoved(const QString& flowId, const QString& nodeId)
 {
-  if (mActiveCanvas->id() == flowId)
+  if (canvas()->id() == flowId)
   {
     int oldTab = mCanvasPanel->currentIndex();
     mCanvasPanel->setCurrentIndex(oldTab - 1);

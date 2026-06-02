@@ -128,6 +128,8 @@ public:
    */
   std::shared_ptr<FlowSaveInfo> getEventFromNode(const QString& nodeId, const QString& flowName) const;
 
+  std::shared_ptr<FlowSaveInfo> getFlowFromNode(const QString& nodeId, const QString& flowName) const;
+
   /**
    * @brief Get a node by ID.
    * @param nodeId The ID of the node.

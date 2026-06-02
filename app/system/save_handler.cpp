@@ -1,10 +1,5 @@
 #include "save_handler.h"
 
-#include <qcoreapplication.h>
-#include <qdir.h>
-#include <qfileinfo.h>
-#include <qhashfunctions.h>
-
 #include <QBuffer>
 #include <QFile>
 #include <QFileDialog>
@@ -308,11 +303,6 @@ VoidResult SaveHandler::saveManifest(const SaveInfo& project)
   manifest["name"] = project.name;
   manifest["version"] = project.version;
 
-  QJsonObject canvasInfo;
-  canvasInfo["scale"] = project.canvasInfo().scale();
-  canvasInfo["center"]= JSON::fromPointF(project.canvasInfo().center());
-  manifest["canvas"] = canvasInfo;
-
   QJsonArray tasks;
   for (const auto& task : project.getnodes())
   {
@@ -439,15 +429,6 @@ Result<SaveInfo> SaveHandler::loadProjectManifest(const QString& manifestPath)
   project.rootPath = projectRoot;
   project.name = manifestJson.value(ConfigKeys::NAME).toString();
   project.version = manifestJson.value("version").toString();
-
-  if (manifestJson.contains("canvas"))
-  {
-    auto canvas = manifestJson["canvas"].toObject();
-    CanvasSaveInfo canvasInfo;
-    canvasInfo.setScale(canvas["scale"].toDouble());
-    canvasInfo.setCenter(JSON::toPointF(canvas["center"].toObject()));
-    project.setCanvasInfo(canvasInfo);
-  }
 
   const QJsonArray tasks = manifestJson["tasks"].toArray();
   for (const QJsonValue& value : tasks)

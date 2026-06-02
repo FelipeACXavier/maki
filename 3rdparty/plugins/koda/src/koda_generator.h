@@ -31,16 +31,13 @@ public:
   bool setup() override;
   bool tearDown() override;
   void setHostServices(maki::IHostServices* services) override;
-  void setName(const QString& name) override;
-  void setVersion(const QString& name) override;
   void setAssetDir(const QDir& dir) override;
-
-  QString languageName() const override;
-  maki::PluginVersion version() const override;
 
   Result<maki::PipelineArtifact> generateKoda(const maki::PipelineArtifact& artifact, const QDir& outputFolder);
   Result<maki::PipelineArtifact> generateCpp(const maki::PipelineArtifact& artifact, const QDir& outputFolder, maki::IPipeline* pipeline);
   Result<maki::PipelineArtifact> generateDezyne(const maki::PipelineArtifact& artifact, const QDir& outputFolder, maki::IPipeline* pipeline);
+  Result<maki::PipelineArtifact> buildRosProject(const maki::PipelineArtifact& artifact, const QDir& outputFolder, maki::IPipeline* pipeline);
+  Result<maki::PipelineArtifact> launchRosProject(const maki::PipelineArtifact& artifact, const QDir& outputFolder, maki::IPipeline* pipeline);
 
   VoidResult verify(const maki::PipelineArtifact& artifacts, const QDir& outputFolder, maki::IPipeline* pipeline);
   VoidResult simulate(const maki::PipelineArtifact& artifact);
@@ -58,8 +55,6 @@ private:
   maki::IHostServices* mServices = nullptr;
   QVector<maki::SettingField> mSettings = {};
 
-  maki::PluginVersion mVersion;
-  QString mName;
   std::optional<QDir> mAssetDir;
 
   QProcess* mDaemon = nullptr;
@@ -67,36 +62,6 @@ private:
   QJsonObject mLastUpdate;
 
   std::unique_ptr<TraceSceneBuilder> mTraceBuilder;
-
-  struct Argument
-  {
-    QString name = "";
-  };
-
-  // Generic generators
-  Result<QString> generateBehaviourNode(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
-  Result<QString> generateTransitions(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
-
-  // These are the block generators
-  VoidResult generateComponent(const INode& node, const QString& code, const QString& args);
-  Result<QString> generateCapability(const INode& node);
-
-  Result<QString> generateStart(const QString& parent, const INode& node, const IFlow& flow, const QString& format);
-  Result<QString> generateSuccess(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
-  Result<QString> generateError(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
-  Result<QString> generateContinue(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
-
-  Result<QString> generateAsyncTask(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
-  Result<QString> generateSyncTask(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
-  Result<QString> generateWithin(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
-  Result<QString> generateEvery(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
-  Result<QString> generateRepeat(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
-  Result<QString> generateStrategy(const INode& node, const Argument& arg, const IFlow& flow, const QString& format);
-
-  // Helpers
-  QString fixCase(const QString& name);
-  std::shared_ptr<INode> findDestination(const QString& nodeId, const IFlow& flow) const;
-  QString createArguments(const QJsonArray& options) const;
 
   void simulationStarted();
   void simulationUpdated(const QJsonObject& obj);
