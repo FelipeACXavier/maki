@@ -14,7 +14,7 @@
 const qreal MAX_WIDTH = 60.0;
 const qreal MAX_HEIGHT = 60.0;
 const qreal LABEL_H_SPACING = 8;
-const qreal LABEL_V_SPACING = 4;
+const qreal LABEL_V_SPACING = 2;
 
 NodeBase::NodeBase(const QString& id, const QString& nodeId, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
     : QGraphicsItem(parent)

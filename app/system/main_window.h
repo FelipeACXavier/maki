@@ -300,6 +300,8 @@ private:
   void onActionDeploy();                                 /// Handles deploy action.
   void onActionLogLevelChanged();                        /// Handles log level change action.
   void onFileLoaded(const QString& file, const SaveInfo& info, const QString& error);
+
+  void updateUnloadWarning();
 };  // namespace qlementclassMainWindow:public MainWindowLayout
 
 #endif  // MAINWINDOW_H

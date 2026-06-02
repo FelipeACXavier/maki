@@ -71,7 +71,7 @@ VoidResult SystemMenu::onNodeAdded(const QString& flowId, NodeItem* node)
 
   // Add item to the tree
   QTreeWidgetItem* newNode = new QTreeWidgetItem(parent);
-  populateItem(newNode, QIcon(":/icons/flow_block.svg"), node->nodeName(), node->nodeType(), node->id(), Roles::NodeRole, flowId);
+  populateItem(newNode, iconFromTheme("flow_block"), node->nodeName(), node->nodeType(), node->id(), Roles::NodeRole, flowId);
 
   return VoidResult();
 }
@@ -152,12 +152,12 @@ VoidResult SystemMenu::onFlowAdded(Flow* flow, NodeItem* node)
   QTreeWidgetItem* newFlow = new QTreeWidgetItem(parent);
 
   // Assign the tree information
-  populateItem(newFlow, QIcon(":/icons/flow.svg"), flow->name(), tr("Flow"), flow->id(), Roles::FlowRole, flow->id());
+  populateItem(newFlow, iconFromTheme("flow"), flow->name(), tr("Flow"), flow->id(), Roles::FlowRole, flow->id());
 
   for (const auto& component : flow->getNodes())
   {
     QTreeWidgetItem* newComponent = new QTreeWidgetItem(newFlow);
-    populateItem(newComponent, QIcon(":/icons/flow_block.svg"), component->getProperty("name").toString(), component->getnodeId(), component->getid(), Roles::NodeRole, flow->id());
+    populateItem(newComponent, iconFromTheme("flow_block"), component->getProperty("name").toString(), component->getnodeId(), component->getid(), Roles::NodeRole, flow->id());
   }
 
   return VoidResult();
@@ -205,26 +205,12 @@ void SystemMenu::populateItem(QTreeWidgetItem* item, const QIcon& icon, const QS
     item->setData(CANVAS_DATA, Qt::UserRole, canvas);
 }
 
-void SystemMenu::populateTaskItem(QTreeWidgetItem* item, NodeItem* node)
-{
-  QTreeWidgetItem* tasks = new QTreeWidgetItem(item);
-  populateItem(tasks, QIcon(":/icons/structure.svg"), tr("Sub-tasks"), "", node->id(), Roles::SubTasks);
-
-  QTreeWidgetItem* capabilities = new QTreeWidgetItem(item);
-  populateItem(capabilities, QIcon(":/icons/structure.svg"), tr("Capabilities"), "", node->id(), Roles::Capabilities);
-
-  QTreeWidgetItem* flows = new QTreeWidgetItem(item);
-  populateItem(flows, QIcon(":/icons/behaviour.svg"), tr("Flows"), "", node->id(), Roles::Flows);
-}
-
 VoidResult SystemMenu::addRootNode(NodeItem* node)
 {
   // Root nodes are composed of two subnodes, Capabilities and Flows
   QTreeWidgetItem* item = new QTreeWidgetItem(this);
-  populateItem(item, QIcon(":/icons/task.svg"), node->nodeName(), node->nodeType(), node->id(), Roles::NodeRole);
+  populateItem(item, iconFromTheme("task"), node->nodeName(), node->nodeType(), node->id(), Roles::NodeRole);
   addTopLevelItem(item);
-
-  // populateTaskItem(item, node);
 
   return VoidResult();
 }
@@ -240,10 +226,7 @@ VoidResult SystemMenu::addLeafNode(NodeItem* node)
     return VoidResult::Failed("The parent node is not on the tree");
 
   QTreeWidgetItem* item = new QTreeWidgetItem(parentItem);
-  populateItem(item, QIcon(":/icons/capability.svg"), node->nodeName(), node->nodeType(), node->id(), Roles::NodeRole);
-
-  // if (node->nodeType() == "Koda::Task")
-  //   populateTaskItem(item, node);
+  populateItem(item, iconFromTheme("capability"), node->nodeName(), node->nodeType(), node->id(), Roles::NodeRole);
 
   return VoidResult();
 }
@@ -261,15 +244,15 @@ QTreeWidgetItem* SystemMenu::getOrCreateChildGroup(const QString& parentId, Role
   switch (role)
   {
     case Roles::SubTasks:
-      populateItem(group, QIcon(":/icons/structure.svg"), tr("Sub-tasks"), "", parentId, Roles::SubTasks);
+      populateItem(group, iconFromTheme("structure"), tr("Sub-tasks"), "", parentId, Roles::SubTasks);
       break;
 
     case Roles::Capabilities:
-      populateItem(group, QIcon(":/icons/structure.svg"), tr("Capabilities"), "", parentId, Roles::Capabilities);
+      populateItem(group, iconFromTheme("structure"), tr("Capabilities"), "", parentId, Roles::Capabilities);
       break;
 
     case Roles::Flows:
-      populateItem(group, QIcon(":/icons/behaviour.svg"), tr("Flows"), "", parentId, Roles::Flows);
+      populateItem(group, iconFromTheme("behaviour"), tr("Flows"), "", parentId, Roles::Flows);
       break;
 
     default:

@@ -51,7 +51,7 @@ void LibraryContainer::updateSceneSize()
     return;
 
   QRectF bounds = qobject_cast<LibraryScene*>(scene())->visibleItemsBounds();
-  const int contentHeight = qCeil(bounds.height()) + 20;
+  const int contentHeight = qCeil(bounds.height()) + PADDING;
 
   scene()->setSceneRect(0, 0, viewport()->width(), contentHeight);
   setFixedHeight(contentHeight + frameWidth() * 2);
@@ -123,7 +123,7 @@ void LibraryContainer::relayoutItems()
     const qreal x = (column * columnWidth + columnWidth / 2.0) - (itemBounds.width() / 2);
     const qreal y = PADDING + row * (CELL_HEIGHT + PADDING);
 
-    items[i]->setPos(x, y + CELL_HEIGHT - itemBounds.bottom());
+    items[i]->setPos(x, y + CELL_HEIGHT - itemBounds.bottom() - PADDING);
   }
 
   updateSceneSize();

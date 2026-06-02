@@ -114,7 +114,7 @@ void MainWindowLayout::buildLeftPanel()
 
     scLayout->addWidget(mStructureScrollArea);
 
-    auto sindex = mPalette->addTab(sContainer, QIcon(":/icons/structure.svg"), tr("Structure"));
+    auto sindex = mPalette->addTab(sContainer, iconFromTheme("structure"), tr("Structure"));
     mTranslatable.push_back({mPalette->tabBar(), "Structure", sindex});
   }
   // -----------------------------------------------------------------------------
@@ -144,7 +144,7 @@ void MainWindowLayout::buildLeftPanel()
 
     bcLayout->addWidget(mBehaviourScrollArea);
 
-    auto bindex = mPalette->addTab(bContainer, QIcon(":/icons/behaviour.svg"), tr("Behavior"));
+    auto bindex = mPalette->addTab(bContainer, iconFromTheme("behaviour"), tr("Behavior"));
     mTranslatable.push_back({mPalette->tabBar(), "Behavior", bindex});
   }
   // -----------------------------------------------------------------------------
@@ -174,7 +174,7 @@ void MainWindowLayout::buildLeftPanel()
 
     pcLayout->addWidget(mPipelineScrollArea);
 
-    auto bindex = mPalette->addTab(pContainer, QIcon(":/icons/behaviour.svg"), tr("Pipeline"));
+    auto bindex = mPalette->addTab(pContainer, iconFromTheme("behaviour"), tr("Pipeline"));
     mPalette->setTabVisible(bindex, false);
     mTranslatable.push_back({mPalette->tabBar(), "Pipeline", bindex});
   }
@@ -206,22 +206,23 @@ void MainWindowLayout::buildCentralPanel()
   auto* qlementineStyle = oclero::qlementine::appStyle();
   const auto theme = qlementineStyle->theme();
 
-  QWidget* header = new QWidget();
-  QHBoxLayout* headerLayout = new QHBoxLayout(header);
+  mHeaderWidget = new QWidget(mCentralSplitter);
+  QHBoxLayout* headerLayout = new QHBoxLayout(mHeaderWidget);
   headerLayout->setContentsMargins(0, 8, 0, 8);  // top/bottom spacing
   headerLayout->setSpacing(5);
   headerLayout->setAlignment(Qt::AlignCenter);
   headerLayout->addSpacing(24);
 
   // ----------------------------------------------------------------
-  mPipelineRun = new DropDownButton(header);
+  headerLayout->addStretch();
+  mPipelineRun = new DropDownButton(mHeaderWidget);
   mPipelineRun->setIcon(iconFromTheme("exaile-play"));
   mPipelineRun->setToolTip(tr("Run pipeline"));
 
   headerLayout->addWidget(mPipelineRun);
 
   // ---------------------------------------------
-  auto* spinnerContainer = new QWidget(header);
+  auto* spinnerContainer = new QWidget(mHeaderWidget);
   spinnerContainer->setFixedSize(24, 24);
 
   auto* spinnerLayout = new QHBoxLayout(spinnerContainer);
@@ -232,32 +233,15 @@ void MainWindowLayout::buildCentralPanel()
 
   spinnerLayout->addWidget(mGenerationSpinner);
   headerLayout->addWidget(spinnerContainer);
+  headerLayout->addStretch();
 
   // ---------------------------------------------
   mCanvasPanel = new QTabWidget(mCentralSplitter);
 
   CanvasView* canvasView = new CanvasView(mCanvasPanel);
 
-  mCanvasPanel->addTab(canvasView, QIcon(":/icons/structure.svg"), tr("System"));
+  mCanvasPanel->addTab(canvasView, iconFromTheme("structure"), tr("System"));
   mCanvasPanel->setCurrentWidget(canvasView);
-
-  // Top right buttons
-  QWidget* corner = new QWidget();
-  auto* layout = new QHBoxLayout(corner);
-
-  layout->setContentsMargins(0, 0, 0, 0);
-  layout->setSpacing(4);
-
-  // First button
-  mBrowserTabButton = new QPushButton(corner);
-  mBrowserTabButton->setIcon(QIcon(":/icons/display.svg"));
-  mBrowserTabButton->setToolTip(tr("Show simulation tab"));
-  mTranslatable.push_back({mBrowserTabButton, "Show simulation tab", 0, true});
-
-  layout->addWidget(mBrowserTabButton);
-
-  // Add the whole widget to the corner
-  mCanvasPanel->setCornerWidget(corner, Qt::TopRightCorner);
 
   QWidget* canvasContainer = new QWidget();
   QVBoxLayout* canvasLayout = new QVBoxLayout(canvasContainer);
@@ -265,7 +249,7 @@ void MainWindowLayout::buildCentralPanel()
   canvasLayout->setSpacing(0);
 
   // Add header + tabs
-  canvasLayout->addWidget(header);
+  canvasLayout->addWidget(mHeaderWidget);
   canvasLayout->addWidget(mCanvasPanel);
 
   // Now add the container to the splitter
@@ -311,7 +295,7 @@ void MainWindowLayout::buildCentralPanel()
 
   infoLayout->addWidget(mInfoText);
 
-  mBottomNavigation->addItem(tr("Info"), QIcon(":/icons/info.svg"));
+  mBottomNavigation->addItem(tr("Info"), iconFromTheme("info"));
   mBottomPanel->addWidget(infoContainer);
 
   // -----------------------------------------------------------------
@@ -329,7 +313,7 @@ void MainWindowLayout::buildCentralPanel()
   mLogTable = new LogTableWidget(logContainer);
   logLayout->addWidget(mLogTable);
 
-  mBottomNavigation->addItem(tr("Log"), QIcon(":/icons/logs.svg"));
+  mBottomNavigation->addItem(tr("Log"), iconFromTheme("logs"));
   mBottomPanel->addWidget(logContainer);
 
   // -----------------------------------------------------------------
@@ -347,7 +331,7 @@ void MainWindowLayout::buildCentralPanel()
   mProcessTab = new ProcessTab(pluginContainer);
   pluginLayout->addWidget(mProcessTab);
 
-  mBottomNavigation->addItem(tr("Generation"), QIcon(":/icons/terminal.svg"));
+  mBottomNavigation->addItem(tr("Generation"), iconFromTheme("terminal"));
   mBottomPanel->addWidget(pluginContainer);
 
   // -----------------------------------------------------------------
@@ -384,7 +368,7 @@ void MainWindowLayout::buildRightPanel()
   mSystemMenu = new SystemMenu(systemContainer);
   systemLayout->addWidget(mSystemMenu);
 
-  auto sindex = mNavigationTab->addTab(systemContainer, QIcon(":/icons/system_menu.svg"), tr("System"));
+  auto sindex = mNavigationTab->addTab(systemContainer, iconFromTheme("system_menu"), tr("System"));
   mTranslatable.push_back({mNavigationTab->tabBar(), "System", sindex});
 
   auto* filesContainer = new QWidget(mNavigationTab);
@@ -396,7 +380,7 @@ void MainWindowLayout::buildRightPanel()
   mFileMenu = new GeneratedFilesPanel(mNavigationTab);
   filesLayout->addWidget(mFileMenu);
 
-  auto findex = mNavigationTab->addTab(filesContainer, QIcon(":/icons/tree.svg"), tr("Files"));
+  auto findex = mNavigationTab->addTab(filesContainer, iconFromTheme("tree"), tr("Files"));
   mTranslatable.push_back({mNavigationTab->tabBar(), "Files", findex});
 
   // ----------------------------------------------------------------------
@@ -405,7 +389,7 @@ void MainWindowLayout::buildRightPanel()
   mPropertiesTab->setMinimumHeight(500);
 
   mPropertiesMenu = new PropertiesMenu(mPropertiesTab);
-  auto pindex = mPropertiesTab->addTab(mPropertiesMenu, QIcon(":/icons/properties.svg"), tr("Properties"));
+  auto pindex = mPropertiesTab->addTab(mPropertiesMenu, iconFromTheme("properties"), tr("Properties"));
   mTranslatable.push_back({mPropertiesTab->tabBar(), "Properties", pindex});
 
   mNavigationTab->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -422,110 +406,158 @@ void MainWindowLayout::buildRightPanel()
 
 void MainWindowLayout::buildMenuBar()
 {
+#ifndef __EMSCRIPTEN__
   // === Menu Bar ===
-  mMenuBar = new QMenuBar();
+  mMenuBar = new QMenuBar(this);
   mMenuBar->setNativeMenuBar(true);
 
+  mMenuBar->addMenu(createFileMenu(mMenuBar));
+  mMenuBar->addMenu(createEditMenu(mMenuBar));
+  mMenuBar->addMenu(createViewMenu(mMenuBar));
+  mMenuBar->addMenu(createDiagramMenu(mMenuBar));
+  mMenuBar->addMenu(createToolsMenu(mMenuBar));
+  mMenuBar->addMenu(createHelpMenu(mMenuBar));
+
+  setMenuBar(mMenuBar);
+#else
+  mMenuButton = new QToolButton(this);
+  mMenuButton->setIcon(iconFromTheme("bars"));
+  // mMenuButton->setPopupMode(ToolButtonPopupMode::);
+
+  auto* menu = new QMenu(mMenuButton);
+
+  menu->addMenu(createFileMenu(menu));
+  menu->addMenu(createEditMenu(menu));
+  menu->addMenu(createViewMenu(menu));
+  menu->addMenu(createDiagramMenu(menu));
+  menu->addMenu(createToolsMenu(menu));
+  menu->addMenu(createHelpMenu(menu));
+
+  connect(mMenuButton, &QToolButton::clicked, this, [this, menu] {
+    const QPoint pos = mMenuButton->mapToGlobal(QPoint(
+        mMenuButton->width() - mMenuButton->sizeHint().width(),
+        mMenuButton->height()));
+
+    menu->popup(pos);
+  });
+
+  if (mHeaderWidget)
+    mHeaderWidget->layout()->addWidget(mMenuButton);
+#endif
+}
+
+QMenu* MainWindowLayout::createFileMenu(QWidget* parent)
+{
   // ----------------------------------------------------------
   // File menu
-  QMenu* file = mMenuBar->addMenu(tr("File"));
+  auto* file = new QMenu(tr("File"), parent);
   mTranslatable.push_back({file, "File"});
 
-  mActionNew = new QAction(iconFromTheme("document-new"), tr("New"), this);
+  mActionNew = new QAction(iconFromTheme("document-new", false), tr("New"), this);
   mTranslatable.push_back({mActionNew, "New"});
   file->addAction(mActionNew);
 
-  mActionOpen = new QAction(iconFromTheme("document-open"), tr("Open"), this);
+  mActionOpen = new QAction(iconFromTheme("document-open", false), tr("Open"), this);
   mTranslatable.push_back({mActionOpen, "Open"});
   file->addAction(mActionOpen);
 
-  mActionOpenRecent = file->addMenu(iconFromTheme("document-open-recent"), tr("Open Recent"));
+  mActionOpenRecent = file->addMenu(iconFromTheme("document-open-recent", false), tr("Open Recent"));
   mTranslatable.push_back({mActionOpenRecent, "Open Recent"});
   mActionOpenRecent->setMaximumWidth(MAXIMUM_MENU_WIDTH);
 
   file->addSeparator();
 
-  mActionSave = new QAction(iconFromTheme("document-save"), tr("Save"), this);
+  mActionSave = new QAction(iconFromTheme("document-save", false), tr("Save"), this);
   mTranslatable.push_back({mActionSave, "Save"});
   file->addAction(mActionSave);
 
-  mActionSaveAs = new QAction(iconFromTheme("document-save-as"), tr("Save As"), this);
+  mActionSaveAs = new QAction(iconFromTheme("document-save-as", false), tr("Save As"), this);
   mTranslatable.push_back({mActionSaveAs, "Save As"});
   file->addAction(mActionSaveAs);
 
   file->addSeparator();
 
-  mActionImportLibrary = new QAction(iconFromTheme("install"), tr("Install library"), this);
+  mActionImportLibrary = new QAction(iconFromTheme("install", false), tr("Install library"), this);
   mTranslatable.push_back({mActionImportLibrary, "Install library"});
   file->addAction(mActionImportLibrary);
 
-  mActionInstallPlugin = new QAction(iconFromTheme("plugins"), tr("Install plugin"), this);
+  mActionInstallPlugin = new QAction(iconFromTheme("plugins", false), tr("Install plugin"), this);
   mTranslatable.push_back({mActionInstallPlugin, "Install plugin"});
   file->addAction(mActionInstallPlugin);
 
   file->addSeparator();
-  mActionExit = new QAction(iconFromTheme("application-exit"), tr("Exit"), this);
+  mActionExit = new QAction(iconFromTheme("application-exit", false), tr("Exit"), this);
   mTranslatable.push_back({mActionExit, "Exit"});
   file->addAction(mActionExit);
 
+  return file;
+}
+
+QMenu* MainWindowLayout::createEditMenu(QWidget* parent)
+{
   // ----------------------------------------------------------
   // Edit menu
-  QMenu* edit = mMenuBar->addMenu(tr("Edit"));
+  auto* edit = new QMenu(tr("Edit"), parent);
   mTranslatable.push_back({edit, "Edit"});
 
   mActionUndo = mUndoGroup->createUndoAction(this, tr("Undo"));
-  mActionUndo->setIcon(iconFromTheme("edit-undo"));
+  mActionUndo->setIcon(iconFromTheme("edit-undo", false));
   mTranslatable.push_back({mActionUndo, "Undo"});
   edit->addAction(mActionUndo);
 
   mActionRedo = mUndoGroup->createRedoAction(this, tr("Redo"));
-  mActionRedo->setIcon(iconFromTheme("edit-redo"));
+  mActionRedo->setIcon(iconFromTheme("edit-redo", false));
   mTranslatable.push_back({mActionRedo, "Redo"});
   edit->addAction(mActionRedo);
 
   edit->addSeparator();
 
-  mActionCopy = new QAction(iconFromTheme("edit-copy"), tr("Copy"), this);
+  mActionCopy = new QAction(iconFromTheme("edit-copy", false), tr("Copy"), this);
   mTranslatable.push_back({mActionCopy, "Copy"});
   mActionCopy->setEnabled(false);
   edit->addAction(mActionCopy);
 
-  mActionPaste = new QAction(iconFromTheme("edit-paste"), tr("Paste"), this);
+  mActionPaste = new QAction(iconFromTheme("edit-paste", false), tr("Paste"), this);
   mTranslatable.push_back({mActionPaste, "Paste"});
   mActionPaste->setEnabled(false);
   edit->addAction(mActionPaste);
 
-  mActionCut = new QAction(iconFromTheme("edit-cut"), tr("Cut"), this);
+  mActionCut = new QAction(iconFromTheme("edit-cut", false), tr("Cut"), this);
   mTranslatable.push_back({mActionCut, "Cut"});
   mActionCut->setEnabled(false);
   edit->addAction(mActionCut);
 
-  mActionDelete = new QAction(iconFromTheme("edit-delete"), tr("Delete"), this);
+  mActionDelete = new QAction(iconFromTheme("edit-delete", false), tr("Delete"), this);
   mTranslatable.push_back({mActionDelete, "Delete"});
   mActionDelete->setEnabled(false);
   edit->addAction(mActionDelete);
 
+  return edit;
+}
+
+QMenu* MainWindowLayout::createViewMenu(QWidget* parent)
+{
   // ----------------------------------------------------------
   // View menu
-  QMenu* view = mMenuBar->addMenu(tr("View"));
+  auto* view = new QMenu(tr("View"), parent);
   mTranslatable.push_back({view, "View"});
 
-  mActionZoomIn = new QAction(iconFromTheme("zoom-in"), tr("Zoom In"), this);
+  mActionZoomIn = new QAction(iconFromTheme("zoom-in", false), tr("Zoom In"), this);
   mTranslatable.push_back({mActionZoomIn, "Zoom In"});
   mActionZoomIn->setEnabled(false);
   view->addAction(mActionZoomIn);
 
-  mActionZoomOut = new QAction(iconFromTheme("zoom-out"), tr("Zoom Out"), this);
+  mActionZoomOut = new QAction(iconFromTheme("zoom-out", false), tr("Zoom Out"), this);
   mTranslatable.push_back({mActionZoomOut, "Zoom Out"});
   mActionZoomOut->setEnabled(false);
   view->addAction(mActionZoomOut);
 
-  mActionResetZoom = new QAction(iconFromTheme("zoom-original"), tr("Reset Zoom"), this);
+  mActionResetZoom = new QAction(iconFromTheme("zoom-original", false), tr("Reset Zoom"), this);
   mTranslatable.push_back({mActionResetZoom, "Reset Zoom"});
   mActionResetZoom->setEnabled(false);
   view->addAction(mActionResetZoom);
 
-  mActionFitToScreen = new QAction(iconFromTheme("zoom-fit-best"), tr("Fit to Screen"), this);
+  mActionFitToScreen = new QAction(iconFromTheme("zoom-fit-best", false), tr("Fit to Screen"), this);
   mTranslatable.push_back({mActionFitToScreen, "Fit to Screen"});
   mActionFitToScreen->setEnabled(false);
   view->addAction(mActionFitToScreen);
@@ -533,12 +565,12 @@ void MainWindowLayout::buildMenuBar()
   view->addSeparator();
 
   QMenu* showMenu = view->addMenu(tr("Show/Hide"));
-  showMenu->setIcon(iconFromTheme("view-visible"));
+  showMenu->setIcon(iconFromTheme("view-visible", false));
   mTranslatable.push_back({showMenu, "Show/Hide"});
   view->addMenu(showMenu);
 
   mOpenComponentsPanel = new QAction(tr("Components panel"), this);
-  mOpenComponentsPanel->setIcon(iconFromTheme("view-visible"));
+  mOpenComponentsPanel->setIcon(iconFromTheme("view-visible", false));
   mTranslatable.push_back({mOpenComponentsPanel, "Components panel"});
   showMenu->addAction(mOpenComponentsPanel);
   connect(mOpenComponentsPanel, &QAction::triggered, [this] {
@@ -546,7 +578,7 @@ void MainWindowLayout::buildMenuBar()
   });
 
   mOpenInfoPanel = new QAction(tr("Information panel"), this);
-  mOpenInfoPanel->setIcon(iconFromTheme("view-visible"));
+  mOpenInfoPanel->setIcon(iconFromTheme("view-visible", false));
   mTranslatable.push_back({mOpenInfoPanel, "Information panel"});
   showMenu->addAction(mOpenInfoPanel);
   connect(mOpenInfoPanel, &QAction::triggered, [this] {
@@ -554,87 +586,102 @@ void MainWindowLayout::buildMenuBar()
   });
 
   mOpenPropertiesPanel = new QAction(tr("Properties panel"), this);
-  mOpenPropertiesPanel->setIcon(iconFromTheme("view-visible"));
+  mOpenPropertiesPanel->setIcon(iconFromTheme("view-visible", false));
   mTranslatable.push_back({mOpenPropertiesPanel, "Properties panel"});
   showMenu->addAction(mOpenPropertiesPanel);
   connect(mOpenPropertiesPanel, &QAction::triggered, [this] {
     togglePanelVisibility(mRightPanel, mOpenPropertiesPanel);
   });
 
-  mSpecialTabsMenu = view->addMenu(iconFromTheme("special-effects-symbolic"), tr("Special tabs"));
-  mTranslatable.push_back({mSpecialTabsMenu, "Special tabs"});
+  mSpecialTabsMenu = view->addMenu(iconFromTheme("plugins", false), tr("Plugin tabs"));
+  mTranslatable.push_back({mSpecialTabsMenu, "Plugin tabs"});
   view->addMenu(mSpecialTabsMenu);
 
+  return view;
+}
+
+QMenu* MainWindowLayout::createDiagramMenu(QWidget* parent)
+{
   // ----------------------------------------------------------
   // Diagram menu
-  QMenu* diagram = mMenuBar->addMenu(tr("Diagram"));
+  auto* diagram = new QMenu(tr("Diagram"), parent);
   mTranslatable.push_back({diagram, "Diagram"});
 
-  mActionAutoRoute = new QAction(tr("Auto-route"), this);
+  mActionAutoRoute = new QAction(iconFromTheme("auto-route", false), tr("Auto-route"), this);
   diagram->addAction(mActionAutoRoute);
 
+  return diagram;
+}
+
+QMenu* MainWindowLayout::createToolsMenu(QWidget* parent)
+{
   // ----------------------------------------------------------
   // Tools menu
-  QMenu* tools = mMenuBar->addMenu(tr("Tools"));
+  auto* tools = new QMenu(tr("Tools"), parent);
   mTranslatable.push_back({tools, "Tools"});
 
   mGeneratorMenu = new QMenu(tr("Generator"));
-  mGeneratorMenu->setIcon(iconFromTheme("tool-magic-symbolic"));
+  mGeneratorMenu->setIcon(iconFromTheme("special-effects-symbolic", false));
   mTranslatable.push_back({mGeneratorMenu, "Generator"});
   tools->addMenu(mGeneratorMenu);
 
-  mActionGenerate = new QAction(iconFromTheme("document-edit-decrypt-verify"), tr("Verify"), this);
+  mActionGenerate = new QAction(iconFromTheme("document-edit-decrypt-verify", false), tr("Verify"), this);
   mTranslatable.push_back({mActionGenerate, "Verify"});
   tools->addAction(mActionGenerate);
 
-  mActionSimulate = new QAction(iconFromTheme("exaile-play"), tr("Simulate"), this);
+  mActionSimulate = new QAction(iconFromTheme("exaile-play", false), tr("Simulate"), this);
   mTranslatable.push_back({mActionSimulate, "Simulate"});
   tools->addAction(mActionSimulate);
 
-  mActionToggleGrid = new QAction(iconFromTheme("grid-rectangular"), tr("Toggle Grid"), this);
+  mActionToggleGrid = new QAction(iconFromTheme("grid-rectangular", false), tr("Toggle Grid"), this);
   mTranslatable.push_back({mActionToggleGrid, "Toggle Grid"});
   mActionToggleGrid->setEnabled(false);
   tools->addAction(mActionToggleGrid);
 
-  mActionToggleSnapToGrid = new QAction(iconFromTheme("snap"), tr("Toggle Snap to Grid"), this);
+  mActionToggleSnapToGrid = new QAction(iconFromTheme("snap", false), tr("Toggle Snap to Grid"), this);
   mTranslatable.push_back({mActionToggleSnapToGrid, "Toggle Snap to Grid"});
   mActionToggleSnapToGrid->setEnabled(false);
   tools->addAction(mActionToggleSnapToGrid);
 
+  return tools;
+}
+
+QMenu* MainWindowLayout::createHelpMenu(QWidget* parent)
+{
   // ----------------------------------------------------------
   // Help menu
-  QMenu* help = mMenuBar->addMenu(tr("Help"));
+  auto* help = new QMenu(tr("Help"), parent);
   mTranslatable.push_back({help, "Help"});
 
-  mActionDocumentation = new QAction(iconFromTheme("help-browser"), tr("Documentation"), this);
+  mActionDocumentation = new QAction(iconFromTheme("help-browser", false), tr("Documentation"), this);
   mTranslatable.push_back({mActionDocumentation, "Documentation"});
   mActionDocumentation->setEnabled(false);
   help->addAction(mActionDocumentation);
 
-  mActionQuickStartGuide = new QAction(iconFromTheme("show-guides"), tr("Quick Start Guide"), this);
+  mActionQuickStartGuide = new QAction(iconFromTheme("show-guides", false), tr("Quick Start Guide"), this);
   mTranslatable.push_back({mActionQuickStartGuide, "Quick Start Guide"});
   mActionQuickStartGuide->setEnabled(false);
   help->addAction(mActionQuickStartGuide);
 
-  mOpenAllSettings = new QAction(iconFromTheme("preferences-system"), tr("Open All Settings"), this);
+  mOpenAllSettings = new QAction(iconFromTheme("preferences-system", false), tr("Open All Settings"), this);
   mTranslatable.push_back({mOpenAllSettings, "Open All Settings"});
   help->addAction(mOpenAllSettings);
 
-  mActionShortcuts = new QAction(iconFromTheme("help-keyboard-shortcuts"), tr("Shortcuts"), this);
+  mActionShortcuts = new QAction(iconFromTheme("help-keyboard-shortcuts", false), tr("Shortcuts"), this);
   mTranslatable.push_back({mActionShortcuts, "Shortcuts"});
   mActionShortcuts->setEnabled(false);
   help->addAction(mActionShortcuts);
 
-  mActionReportIssue = new QAction(iconFromTheme("tools-report-bug"), tr("Report Issue"), this);
+  mActionReportIssue = new QAction(iconFromTheme("tools-report-bug", false), tr("Report Issue"), this);
   mTranslatable.push_back({mActionReportIssue, "Report Issue"});
   mActionReportIssue->setEnabled(false);
   help->addAction(mActionReportIssue);
 
-  mAboutAction = new QAction(iconFromTheme("help-about"), tr("About"), this);
+  mAboutAction = new QAction(iconFromTheme("help-about", false), tr("About"), this);
   mTranslatable.push_back({mAboutAction, "About"});
   help->addAction(mAboutAction);
 
-  setMenuBar(mMenuBar);
+  return help;
 }
 
 int MainWindowLayout::setTabBarWidth(QTabBar* bar, int minWidth, int minBorder, int minPadding)
@@ -854,11 +901,11 @@ void MainWindowLayout::togglePanelVisibility(QWidget* panel, QAction* action)
   if (panel->isHidden())
   {
     panel->show();
-    action->setIcon(iconFromTheme("view-visible"));
+    action->setIcon(iconFromTheme("view-visible", false));
   }
   else
   {
     panel->hide();
-    action->setIcon(iconFromTheme("view-hidden"));
+    action->setIcon(iconFromTheme("view-hidden", false));
   }
 }

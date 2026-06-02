@@ -168,8 +168,6 @@ private:
                     const QString& name, const QString& type,
                     const QString& data, const Roles role, const QString& canvas = "");
 
-  void populateTaskItem(QTreeWidgetItem* item, NodeItem* node);
-
   /**
    * @brief Finds a tree item by its identifier.
    * @param id The identifier to search for.

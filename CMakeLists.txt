@@ -48,24 +48,29 @@ if (MSVC)
   add_compile_options(/W4 /MP)
 
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-      add_compile_options(/Zi /Od)
+    add_compile_options(/Zi /Od)
   elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
-      add_compile_options(/O2)
+    add_compile_options(/O2)
   endif()
 
   find_package(Qt6 ${QT_VERSION} REQUIRED COMPONENTS
+    ${QT_REQUIRED_PACKAGES}
+  )
+elseif(EMSCRIPTEN)
+  set(BUILD_PLUGINS OFF)
+  find_package(Qt6 REQUIRED COMPONENTS
     ${QT_REQUIRED_PACKAGES}
   )
 else()
   add_compile_options(-Wall)
 
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-      set(LINUX_BUILD_DIR "${CMAKE_SOURCE_DIR}/build/linux/debug")
-      add_compile_options(-g -O0)
+    set(LINUX_BUILD_DIR "${CMAKE_SOURCE_DIR}/build/linux/debug")
+    add_compile_options(-g -O0)
   elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
-      message("Compiling in release version")
-      set(LINUX_BUILD_DIR "${CMAKE_SOURCE_DIR}/build/linux/release")
-      add_compile_options(-O2)
+    message("Compiling in release version")
+    set(LINUX_BUILD_DIR "${CMAKE_SOURCE_DIR}/build/linux/release")
+    add_compile_options(-O2)
   endif()
 
   find_package(Qt6 REQUIRED COMPONENTS
@@ -73,8 +78,7 @@ else()
   )
 endif()
 
-
-# qt_standard_project_setup(REQUIRES ${QT_VERSION})
+qt_standard_project_setup()
 
 # -----------------------------------------
 # Some variables

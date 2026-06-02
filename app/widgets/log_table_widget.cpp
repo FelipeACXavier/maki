@@ -11,6 +11,7 @@
 #include "app_configs.h"
 #include "clickable_icon.h"
 #include "expanding_widget.h"
+#include "style_helpers.h"
 
 class CenterIconDelegate : public QStyledItemDelegate
 {
@@ -101,17 +102,17 @@ LogTableWidget::LogTableWidget(QWidget* parent)
   mDefaultRowHeight = mTable->verticalHeader()->defaultSectionSize();
 
   QPushButton* previousButton = new QPushButton(this);
-  previousButton->setIcon(QIcon(":/icons/arrow-up.svg"));
+  previousButton->setIcon(iconFromTheme("arrow-up"));
   previousButton->setFixedWidth(30);
   previousButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
   QPushButton* nextButton = new QPushButton(this);
-  nextButton->setIcon(QIcon(":/icons/arrow-down.svg"));
+  nextButton->setIcon(iconFromTheme("arrow-down"));
   nextButton->setFixedWidth(30);
   nextButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
   mSearchBox = new ExpandingWidget(ExpandingWidget::Direction::Right, this);
-  mSearchBox->setButtonIcon(QIcon(":/icons/search.svg"));
+  mSearchBox->setButtonIcon(iconFromTheme("search"));
   mSearchBox->setButtonTooltip(tr("Search logs"));
   mSearchBox->setExpandedWidth(400);
 
@@ -129,7 +130,7 @@ LogTableWidget::LogTableWidget(QWidget* parent)
   mSearchBox->addCollapsableWidget(mSearchCounterLabel);
 
   mFilterBox = new ExpandingWidget(ExpandingWidget::Direction::Left, this);
-  mFilterBox->setButtonIcon(QIcon(":/icons/filter.svg"));
+  mFilterBox->setButtonIcon(iconFromTheme("filter"));
   mFilterBox->setButtonTooltip(tr("Filter logs"));
   mFilterBox->setExpandedWidth(400);
 
@@ -160,9 +161,9 @@ LogTableWidget::LogTableWidget(QWidget* parent)
   connect(nextButton, &QPushButton::pressed, this, &LogTableWidget::nextSearchMatch);
 
   connect(mSearchBox, &ExpandingWidget::areaExpanded, [this](ClickableIcon* button) { onAreaExpanded(button, mSearchField); });
-  connect(mSearchBox, &ExpandingWidget::areaCollapsed, [this](ClickableIcon* button) { onAreaCollapsed(button, mSearchField, ":/icons/search.svg"); });
+  connect(mSearchBox, &ExpandingWidget::areaCollapsed, [this](ClickableIcon* button) { onAreaCollapsed(button, mSearchField, iconFromTheme("search")); });
   connect(mFilterBox, &ExpandingWidget::areaExpanded, [this](ClickableIcon* button) { onAreaExpanded(button, mFileFilter); });
-  connect(mFilterBox, &ExpandingWidget::areaCollapsed, [this](ClickableIcon* button) { onAreaCollapsed(button, mFileFilter, ":/icons/filter.svg"); });
+  connect(mFilterBox, &ExpandingWidget::areaCollapsed, [this](ClickableIcon* button) { onAreaCollapsed(button, mFileFilter, iconFromTheme("filter")); });
 
   connect(mTable, &QTableView::customContextMenuRequested, this, &LogTableWidget::showContextMenu);
   connect(mTable, &QTableView::clicked, this, &LogTableWidget::onClicked);
@@ -179,10 +180,10 @@ void LogTableWidget::onAreaExpanded(ClickableIcon* button, QLineEdit* lineEdit)
   }
 
   if (button)
-    button->setIcon(QIcon(":/icons/circle-close.svg"));
+    button->setIcon(iconFromTheme("close"));
 }
 
-void LogTableWidget::onAreaCollapsed(ClickableIcon* button, QLineEdit* lineEdit, const QString& iconName)
+void LogTableWidget::onAreaCollapsed(ClickableIcon* button, QLineEdit* lineEdit, const QIcon& icon)
 {
   if (lineEdit)
   {
@@ -191,7 +192,7 @@ void LogTableWidget::onAreaCollapsed(ClickableIcon* button, QLineEdit* lineEdit,
   }
 
   if (button)
-    button->setIcon(QIcon(iconName));
+    button->setIcon(icon);
 
   mTable->setFocus();
 }

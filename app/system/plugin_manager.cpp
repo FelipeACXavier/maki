@@ -309,6 +309,7 @@ VoidResult PluginManager::loadPluginLibraryDir(const maki::Manifest& manifest)
 
 VoidResult PluginManager::installPlugin(const maki::Manifest& manifest)
 {
+#ifndef __EMSCRIPTEN__
   mPipeline->startGroup(manifest.name);
   for (const auto& step : manifest.installationSteps)
   {
@@ -320,7 +321,7 @@ VoidResult PluginManager::installPlugin(const maki::Manifest& manifest)
   }
 
   mPipeline->endGroup();
-
+#endif
   return VoidResult();
 }
 

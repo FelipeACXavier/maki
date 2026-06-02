@@ -12,16 +12,16 @@
 #include "result.h"
 #include "widgets/dialogs/prompt.h"
 
-#define LOAD_SETTING(MEMBER, FIELD, TYPE)                            \
-  do                                                                 \
-  {                                                                  \
-    auto tmp##FIELD = mSettings.value("" #FIELD, MEMBER.FIELD);      \
-    if (!tmp##FIELD.isValid())                                       \
-    {                                                                \
-      LOG_ERROR("Settings are corrupted field is invalid: " #FIELD); \
-      return;                                                        \
-    }                                                                \
-    MEMBER.FIELD = tmp##FIELD.to##TYPE();                            \
+#define LOAD_SETTING(MEMBER, FIELD, TYPE)                               \
+  do                                                                    \
+  {                                                                     \
+    auto tmp##FIELD = mSettings.value("" #FIELD, MEMBER.FIELD);         \
+    if (!tmp##FIELD.isValid())                                          \
+    {                                                                   \
+      LOG_ERROR("Settings are corrupted field is invalid: %s", #FIELD); \
+      return;                                                           \
+    }                                                                   \
+    MEMBER.FIELD = tmp##FIELD.to##TYPE();                               \
   } while (false);
 
 #define SAVE_SETTING(MEMBER, FIELD)              \
@@ -81,8 +81,10 @@ void SettingsManager::themeCreated(const QString& themePath)
 
 void SettingsManager::load()
 {
+#ifndef __EMSCRIPTEN__
   if (!QFile(mSettings.fileName()).exists())
     return;
+#endif
 
   LOG_DEBUG("Loading from: %s", qPrintable(mSettings.fileName()));
   mSettings.beginGroup("General");

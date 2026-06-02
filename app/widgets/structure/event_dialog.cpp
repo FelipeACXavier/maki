@@ -194,7 +194,7 @@ void EventDialog::createArgumentInput()
 
   button->setFocusPolicy(Qt::NoFocus);
   button->setText(" " + tr("Add argument"));
-  button->setIcon(addIconWithColor(":/icons/plus.svg", Config::FOREGROUND));
+  button->setIcon(iconFromTheme("plus"));
   button->setMaximumWidth(250);
 
   QPushButton* deletebutton = new QPushButton(this);
@@ -213,7 +213,7 @@ void EventDialog::createArgumentInput()
 
   deletebutton->setFocusPolicy(Qt::NoFocus);
   deletebutton->setText(" " + tr("Remove argument"));
-  deletebutton->setIcon(addIconWithColor(":/icons/clear.svg", Config::FOREGROUND));
+  deletebutton->setIcon(iconFromTheme("clear"));
   deletebutton->setMaximumWidth(250);
 
   QHBoxLayout* buttonLayout = new QHBoxLayout();

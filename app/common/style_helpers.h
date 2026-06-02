@@ -96,33 +96,7 @@ QIcon addIconWithColor(const QString& path, const QColor& color);
  * @param path The path to the icon.
  * @return QIcon The icon with the applied color.
  */
-QIcon iconFromTheme(const QString& name, bool fallback = false);
-
-/**
- * @brief Converts a time point to a string in QT format.
- *
- * @param ts The time point to convert.
- * @return QString The converted string.
- */
-QString timeToQT(std::chrono::system_clock::time_point ts);
-
-/**
- * @brief Converts a log level to a string in QT format.
- *
- * @param logLevel The log level to convert.
- * @return QString The converted string.
- */
-QString logLevelToQT(logging::LogLevel logLevel);
-
-/**
- * @brief Converts a time point and log level to a string in QT format.
- *
- * @param ts The time point to convert.
- * @param level The log level to convert.
- * @param message The message to convert.
- * @return QString The converted string.
- */
-QString toQT(std::chrono::system_clock::time_point ts, logging::LogLevel level, const std::string& message);
+QIcon iconFromTheme(const QString& name, bool useLocal = true);
 
 /**
  * @brief Adds a dynamic widget to a layout.
@@ -132,23 +106,6 @@ QString toQT(std::chrono::system_clock::time_point ts, logging::LogLevel level, 
  * @param parent The parent widget of the dynamic widget.
  */
 void addDynamicWidget(QVBoxLayout* layout, QWidget* dynamicWidget, QWidget* parent);
-
-/**
- * @brief Updates a property on a widget.
- *
- * @param widget The widget to update.
- * @param property The property to update.
- * @param value The new value for the property.
- */
-void updateProperty(QWidget* widget, const QString& property, bool value);
-
-/**
- * @brief Applies a style to a widget.
- *
- * @param widget The widget to apply the style to.
- * @param style The style to apply.
- */
-void applyStyle(QWidget* widget, const QString& style);
 
 /**
  * @brief Adds a section label to a menu.

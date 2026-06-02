@@ -85,4 +85,6 @@ private:
   QString mCurrentLanguage = "en_US";  ///< Currently active language code.
 
   QList<LanguageOption> mAvailableLanguages;  ///< List of supported languages.
+
+  void loadFromDir(const QString& dir);
 };

@@ -78,9 +78,9 @@ private slots:
    *
    * @param button The button that triggered the event.
    * @param lineEdit The line edit associated with the button.
-   * @param iconName The icon name for the collapsed state.
+   * @param icon The icon for the collapsed state.
    */
-  void onAreaCollapsed(ClickableIcon* button, QLineEdit* lineEdit, const QString& iconName);
+  void onAreaCollapsed(ClickableIcon* button, QLineEdit* lineEdit, const QIcon& icon);
 
   /**
    * @brief Handles click events on table items.
