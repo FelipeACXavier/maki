@@ -1,6 +1,10 @@
 #include "save_handler.h"
 
+#include <quazip/quazip.h>
+#include <quazip/quazipfile.h>
+
 #include <QBuffer>
+#include <QDirIterator>
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -17,7 +21,118 @@
 #include "main_window.h"
 #include "node_info.h"
 #include "result.h"
-#include "widgets/dialogs/text_prompt.h"
+
+VoidResult zipFolder(const QString& sourceDir, const QString& outputFile)
+{
+  QuaZip zip(outputFile);
+  if (!zip.open(QuaZip::mdCreate))
+    return VoidResult::Failed("Could not create archive: " + outputFile.toStdString());
+
+  QDir base(sourceDir);
+  QDirIterator it(sourceDir, QDir::Files, QDirIterator::Subdirectories);
+  while (it.hasNext())
+  {
+    const QString filePath = it.next();
+    const QString relativePath = base.relativeFilePath(filePath);
+
+    QFile input(filePath);
+    if (!input.open(QIODevice::ReadOnly))
+      return VoidResult::Failed("Could not read file: " + filePath.toStdString());
+
+    QuaZipFile outFile(&zip);
+    QuaZipNewInfo info(relativePath, filePath);
+
+    if (!outFile.open(QIODevice::WriteOnly, info))
+      return VoidResult::Failed("Could not add file: " + relativePath.toStdString());
+
+    outFile.write(input.readAll());
+    outFile.close();
+  }
+
+  zip.close();
+
+  if (zip.getZipError() != UNZ_OK)
+    return VoidResult::Failed("Failed to finalise archive");
+
+  return VoidResult();
+}
+
+Result<QByteArray> zipFolderToBytes(const QString& sourceDir)
+{
+  QByteArray zipData;
+  QBuffer buffer(&zipData);
+
+  if (!buffer.open(QIODevice::WriteOnly))
+    return Result<QByteArray>::Failed("Could not open zip buffer");
+
+  QuaZip zip(&buffer);
+
+  if (!zip.open(QuaZip::mdCreate))
+    return Result<QByteArray>::Failed("Could not create archive");
+
+  QDir base(sourceDir);
+  QDirIterator it(sourceDir, QDir::Files, QDirIterator::Subdirectories);
+
+  while (it.hasNext())
+  {
+    const QString filePath = it.next();
+    const QString relativePath = base.relativeFilePath(filePath);
+
+    QFile input(filePath);
+    if (!input.open(QIODevice::ReadOnly))
+      return Result<QByteArray>::Failed(
+          "Could not read file: " + filePath.toStdString());
+
+    QuaZipFile outFile(&zip);
+    QuaZipNewInfo info(relativePath);
+
+    if (!outFile.open(QIODevice::WriteOnly, info))
+      return Result<QByteArray>::Failed(
+          "Could not add file: " + relativePath.toStdString());
+
+    outFile.write(input.readAll());
+    outFile.close();
+  }
+
+  zip.close();
+
+  if (zip.getZipError() != UNZ_OK)
+    return Result<QByteArray>::Failed("Failed to finalise archive");
+
+  return zipData;
+}
+
+VoidResult unzipProject(const QString& makiFile, const QString& outputDir)
+{
+  QuaZip zip(makiFile);
+  if (!zip.open(QuaZip::mdUnzip))
+    return VoidResult::Failed("Could not open archive");
+
+  QDir().mkpath(outputDir);
+
+  for (bool more = zip.goToFirstFile(); more; more = zip.goToNextFile())
+  {
+    const QString name = zip.getCurrentFileName();
+
+    QuaZipFile file(&zip);
+    if (!file.open(QIODevice::ReadOnly))
+      return VoidResult::Failed("Could not read archive entry: " + name.toStdString());
+
+    const QString outPath = QDir(outputDir).filePath(name);
+    QDir().mkpath(QFileInfo(outPath).absolutePath());
+
+    QFile outFile(outPath);
+    if (!outFile.open(QIODevice::WriteOnly))
+      return VoidResult::Failed("Could not write file: " + outPath.toStdString());
+
+    outFile.write(file.readAll());
+    outFile.close();
+    file.close();
+  }
+
+  zip.close();
+  return VoidResult();
+}
 
 SaveHandler::SaveHandler(QWidget* parent)
     : QObject()
@@ -45,115 +160,6 @@ void SaveHandler::setLastDir(const QString& dir)
     mLastDir = dir;
 }
 
-VoidResult SaveHandler::save(Canvas* canvas)
-{
-  if (mCurrentFile.isEmpty() || mCurrentFile.isNull())
-    return saveFileAs(canvas);
-
-  return saveToFile(canvas);
-}
-
-VoidResult SaveHandler::saveFileAs(Canvas* canvas)
-{
-  QString fileName = openAtCenter(Function::SAVE);
-
-  if (fileName.isEmpty())
-    return VoidResult::Failed("File not set");
-
-  storeFilename(fileName);
-  return saveToFile(canvas);
-}
-
-VoidResult SaveHandler::saveToFile(Canvas* canvas)
-{
-  CanvasSaveInfo canvasInfo;
-  canvasInfo.setScale(canvas->getScale());
-  canvasInfo.setCenter(canvas->getCenter());
-
-  SaveInfo info;
-  info.setCanvasInfo(canvasInfo);
-
-  for (const auto& item : canvas->items())
-  {
-    if (item->type() == NodeItem::Type)
-    {
-      auto node = static_cast<NodeItem*>(item);
-      if (node->parentNode() != nullptr)
-        continue;
-
-      if (node->function() == Types::LibraryTypes::STRUCTURAL)
-        info.addNode(std::make_shared<NodeSaveInfo>(node->saveInfo()));
-    }
-  }
-
-  QFile file(mCurrentFile);
-  if (!file.open(QIODevice::WriteOnly))
-    return VoidResult::Failed("Could not open file for writing: " + file.errorString().toStdString());
-
-  QFileInfo fileInfo(mCurrentFile);
-  QString extension = fileInfo.suffix();
-  if (fileInfo.suffix() == "json")
-  {
-    QJsonDocument document(info.toJson());
-    file.write(document.toJson());
-  }
-  else
-  {
-    QDataStream out(&file);
-    out.setVersion(QDataStream::Qt_6_0);
-    out << info;
-  }
-
-  file.flush();
-  file.close();
-
-  emit fileSaved(mCurrentFile);
-
-  return VoidResult();
-}
-
-Result<SaveInfo> SaveHandler::load()
-{
-  QString fileName = openAtCenter(Function::LOAD);
-  return load(fileName);
-}
-
-Result<SaveInfo> SaveHandler::load(const QString& fileName)
-{
-  if (fileName.isEmpty())
-    return Result<SaveInfo>::Failed("Not loading diagram");
-
-  storeFilename(fileName);
-
-  SaveInfo info;
-  QFileInfo fileInfo(fileName);
-  QString extension = fileInfo.suffix();
-  if (fileInfo.suffix() == "json")
-  {
-    auto saveFile = JSON::fromFile(fileName);
-    if (!saveFile.IsSuccess())
-      return Result<SaveInfo>::Failed("Failed to open file for reading: " + saveFile.ErrorMessage());
-
-    auto fileContents = saveFile.Value();
-    info = SaveInfo::fromJson(fileContents);
-  }
-  else
-  {
-    QFile file(fileName);
-    if (!file.open(QIODevice::ReadOnly))
-      return Result<SaveInfo>::Failed("Failed to open file for reading: " + file.errorString().toStdString());
-
-    QDataStream in(&file);
-    in.setVersion(QDataStream::Qt_6_0);
-    in >> info;
-    file.close();
-  }
-
-  emit fileLoaded(fileName);
-
-  return info;
-}
-
 void SaveHandler::storeFilename(const QString& fileName)
 {
   if (fileName.isEmpty())
@@ -168,7 +174,7 @@ void SaveHandler::storeFilename(const QString& fileName)
 QString SaveHandler::openAtCenter(Function function)
 {
   QFileDialog dialog(mParentWidget);
-  dialog.setOption(QFileDialog::DontUseNativeDialog, true);
+  dialog.setOption(QFileDialog::DontUseNativeDialog, false);
 
   switch (function)
   {
@@ -176,28 +182,14 @@ QString SaveHandler::openAtCenter(Function function)
       dialog.setAcceptMode(QFileDialog::AcceptSave);
       dialog.setFileMode(QFileDialog::AnyFile);
       dialog.setWindowTitle(tr("Save diagram"));
-      dialog.setNameFilter(tr("MAKI diagram (*.json);;All Files (*)"));
+      dialog.setNameFilter(tr("MAKI (*.maki);;All Files (*)"));
       break;
 
     case Function::LOAD:
       dialog.setAcceptMode(QFileDialog::AcceptOpen);
       dialog.setFileMode(QFileDialog::ExistingFile);
       dialog.setWindowTitle(tr("Open diagram"));
-      dialog.setNameFilter(tr("MAKI diagram (*.json);;All Files (*)"));
-      break;
-
-    case Function::SAVE_PROJECT_DIR:
-      dialog.setAcceptMode(QFileDialog::AcceptOpen);
-      dialog.setFileMode(QFileDialog::Directory);
-      dialog.setOption(QFileDialog::ShowDirsOnly, true);
-      dialog.setWindowTitle(tr("Save MAKI project folder"));
-      break;
-
-    case Function::LOAD_PROJECT_DIR:
-      dialog.setAcceptMode(QFileDialog::AcceptOpen);
-      dialog.setFileMode(QFileDialog::Directory);
-      dialog.setOption(QFileDialog::ShowDirsOnly, true);
-      dialog.setWindowTitle(tr("Open MAKI project folder"));
+      dialog.setNameFilter(tr("MAKI (*.maki);;All Files (*)"));
       break;
   }
 
@@ -216,29 +208,23 @@ QString SaveHandler::openAtCenter(Function function)
 
 VoidResult SaveHandler::saveProject(SaveInfo& project, bool override)
 {
-  if (project.name.trimmed().isEmpty() || override)
+#ifdef __EMSCRIPTEN__
+  project.rootPath = "/tmp/maki-project";
+  QDir(project.rootPath).removeRecursively();
+  QDir().mkpath(project.rootPath);
+#else
+  if (project.rootPath.isEmpty() || project.saveFile.isEmpty() || project.name.trimmed().isEmpty() || override)
   {
-    auto name = maki::textPrompt(tr("Project name"), tr("Choose a project name"), mParentWidget);
+    QString saveFile = openAtCenter(Function::SAVE);
+    if (saveFile.isEmpty())
+      return VoidResult::Failed("No file selected.");
 
-    if (name.isEmpty())
-      return VoidResult::Failed("Project name is required.");
-
-    project.name = name;
+    QFileInfo fileInfo(saveFile);
+    project.name = fileInfo.completeBaseName();
+    project.saveFile = saveFile;
+    project.rootPath = "/tmp/maki-project";
   }
-
-  if (project.rootPath.isEmpty() || override)
-  {
-    QString parentPath = openAtCenter(Function::SAVE_PROJECT_DIR);
-    if (parentPath.isEmpty())
-      return VoidResult::Failed("No directory selected.");
-
-    QDir parentDir(parentPath);
-    auto projectPath = parentDir.filePath(project.name);
-    if (!QFileInfo(projectPath).exists() && !parentDir.mkdir(project.name))
-      return VoidResult::Failed("Could not create project directory: " + projectPath.toStdString());
-
-    project.rootPath = projectPath;
-  }
+#endif
 
   return saveProjectInternal(project);
 }
@@ -254,7 +240,8 @@ VoidResult SaveHandler::saveProjectInternal(const SaveInfo& project)
     return VoidResult::Failed("Project root path is empty.");
 
   QDir root(project.rootPath);
-  if (!root.exists())
+  root.removeRecursively();
+  if (!root.mkpath("."))
     return VoidResult::Failed("No project directory: " + project.rootPath.toStdString());
 
   if (!root.mkpath("capabilities"))
@@ -270,7 +257,21 @@ VoidResult SaveHandler::saveProjectInternal(const SaveInfo& project)
   if (!manifestResult.IsSuccess())
     return manifestResult;
 
-  emit fileSaved(project.rootPath);
+#ifdef __EMSCRIPTEN__
+  auto zipped = zipFolderToBytes(project.rootPath);
+  if (!zipped)
+    return VoidResult::Failed(zipped.ErrorMessage());
+
+  QFileDialog::saveFileContent(
+      zipped.Value(),
+      QString("%1.maki").arg(project.name));
+#else
+  auto zipped = zipFolder(project.rootPath, project.saveFile);
+  if (!zipped.IsSuccess())
+    return zipped;
+#endif
+
+  emit fileSaved(project.saveFile);
 
   return VoidResult();
 }
@@ -289,8 +290,6 @@ VoidResult SaveHandler::writeJsonFile(const QString& path, const QJsonObject& ob
 
   QJsonDocument document(object);
   auto data = document.toJson(QJsonDocument::Indented);
-  // LOG_DEBUG("Saving %s", qPrintable(path));
-  // LOG_DEBUG("%s", qPrintable(data));
   file.write(data);
   file.close();
 
@@ -300,43 +299,22 @@ VoidResult SaveHandler::writeJsonFile(const QString& path, const QJsonObject& ob
 VoidResult SaveHandler::saveManifest(const SaveInfo& project)
 {
   QJsonObject manifest;
-  manifest["name"] = project.name;
+  manifest[ConfigKeys::NAME] = project.name;
   manifest["version"] = project.version;
+  manifest["projectSaveFile"] = project.saveFile;
+
+  manifest["canvas"] = project.canvasInfo().toJson();
 
   QJsonArray tasks;
   for (const auto& task : project.getnodes())
   {
     auto node = std::static_pointer_cast<NodeSaveInfo>(task);
-    const auto name = node->getProperty("name").toString();
-    auto toSave = node->toJson();
-
-    QJsonArray capabilities;
-    QJsonArray flows;
-
-    for (const auto& c : task->getchildren())
-    {
-      auto capability = std::static_pointer_cast<NodeSaveInfo>(c);
-      auto saved = saveCapability(name, project, *capability);
-      if (!saved)
-        return VoidResult::Failed(saved.ErrorMessage());
-
-      capabilities.append(saved.Value());
-    }
-
-    for (const auto& f : task->getflows())
-    {
-      auto flow = std::static_pointer_cast<FlowSaveInfo>(f);
-      auto saved = saveFlow(name, project, *flow);
-      if (!saved)
-        return VoidResult::Failed(saved.ErrorMessage());
-
-      flows.append(saved.Value());
-    }
-
-    toSave[ConfigKeys::FLOWS] = flows;
-    toSave[ConfigKeys::CHILDREN] = capabilities;
-    tasks.append(toSave);
+    QString savedTask;
+    ASSIGN_OR_RETURN_ON_FAILURE(savedTask, saveNodeTree(project, *node, "tasks"));
+    LOG_INFO("Adding task: %s", qPrintable(savedTask));
+    tasks.append(savedTask);
   }
+
   manifest["tasks"] = tasks;
 
   QJsonArray pipelines;
@@ -354,27 +332,63 @@ VoidResult SaveHandler::saveManifest(const SaveInfo& project)
   return writeJsonFile(manifestPath, manifest);
 }
 
-Result<QString> SaveHandler::saveCapability(const QString& prefix, const SaveInfo& project, const NodeSaveInfo& capability)
+Result<QString> SaveHandler::saveNodeTree(const SaveInfo& project, const NodeSaveInfo& node, const QString& folder)
 {
-  const QString fileName = QString("capabilities/%1-%2.json").arg(prefix, capability.getProperty("name").toString());
-  const QString path = QDir(project.rootPath).filePath(fileName);
+  QDir root(project.rootPath);
 
-  auto wrote = writeJsonFile(path, capability.toJson());
-  if (!wrote.IsSuccess())
+  const QString nodeName = sanitizeFileName(node.getProperty("name").toString());
+  const QString nodeFolder = QDir(folder).filePath(nodeName);
+
+  QDir().mkpath(root.filePath(nodeFolder));
+  QDir().mkpath(root.filePath(QDir(nodeFolder).filePath("flows")));
+  QDir().mkpath(root.filePath(QDir(nodeFolder).filePath("children")));
+
+  QJsonObject toSave = node.toJson();
+  QJsonArray flows;
+  for (const auto& f : node.getflows())
+  {
+    auto flow = std::static_pointer_cast<FlowSaveInfo>(f);
+
+    QString flowFile;
+    ASSIGN_OR_RETURN_ON_FAILURE(flowFile, saveFlow(root, nodeFolder, *flow));
+    // const QString flowFile = QDir(nodeFolder).filePath(QString("flows/%1.json").arg(sanitizeFileName(flow->getname())));
+    // auto wrote = writeJsonFile(root.filePath(flowFile), flow->toJson());
+    // if (!wrote)
+    // return Result<QString>::Failed(wrote.ErrorMessage());
+
+    flows.append(flowFile);
+  }
+
+  QJsonArray children;
+  for (const auto& c : node.getchildren())
+  {
+    auto child = std::static_pointer_cast<NodeSaveInfo>(c);
+
+    QString childNodeFile;
+    ASSIGN_OR_RETURN_ON_FAILURE(childNodeFile, saveNodeTree(project, *child, QDir(nodeFolder).filePath("children")));
+    LOG_INFO("Saving child: %s", qPrintable(childNodeFile));
+    children.append(childNodeFile);
+  }
+
+  toSave[ConfigKeys::FLOWS] = flows;
+  toSave[ConfigKeys::CHILDREN] = children;
+
+  const QString nodeFile = QDir(nodeFolder).filePath("node.json");
+  auto wrote = writeJsonFile(root.filePath(nodeFile), toSave);
+  if (!wrote)
     return Result<QString>::Failed(wrote.ErrorMessage());
 
-  return fileName;
+  return nodeFile;
 }
 
-Result<QString> SaveHandler::saveFlow(const QString& prefix, const SaveInfo& project, const FlowSaveInfo& flow)
+Result<QString> SaveHandler::saveFlow(const QDir& root, const QString& nodeFolder, const FlowSaveInfo& flow)
 {
-  const QString fileName = QString("flows/%1-%2.json").arg(prefix, flow.getname());
-  const QString path = QDir(project.rootPath).filePath(fileName);
-  auto wrote = writeJsonFile(path, flow.toJson());
+  const QString filePath = QDir(nodeFolder).filePath(QString("flows/%1.json").arg(sanitizeFileName(flow.getname())));
+  auto wrote = writeJsonFile(root.filePath(filePath), flow.toJson());
   if (!wrote.IsSuccess())
     return Result<QString>::Failed(wrote.ErrorMessage());
 
-  return fileName;
+  return QDir(nodeFolder).relativeFilePath(filePath);
 }
 
 Result<QString> SaveHandler::savePipeline(const SaveInfo& project, const FlowSaveInfo& pipeline)
@@ -395,15 +409,49 @@ QString SaveHandler::sanitizeFileName(QString name) const
   return name;
 }
 
-Result<SaveInfo> SaveHandler::loadProject()
+VoidResult SaveHandler::loadProject()
 {
-  const QString projectDir = openAtCenter(Function::LOAD_PROJECT_DIR);
-  return loadProject(projectDir);
+  QFileDialog::getOpenFileContent(
+      "MAKI projects (*.maki)",
+      [this](const QString& fileName, const QByteArray& content) {
+        if (fileName.isEmpty())
+        {
+          emit fileLoaded("", SaveInfo(), "No file selected.");
+          return;
+        }
+
+        const QString tempFile = "/tmp/uploaded.maki";
+        QFile file(tempFile);
+        if (!file.open(QIODevice::WriteOnly))
+        {
+          emit fileLoaded("", SaveInfo(), "No file selected.");
+          return;
+        }
+
+        file.write(content);
+        file.close();
+
+        auto loaded = loadProject(tempFile);
+        if (!loaded.IsSuccess())
+          emit fileLoaded(fileName, SaveInfo(), QString::fromStdString(loaded.ErrorMessage()));
+        else
+        {
+          auto info = loaded.Value();
+          emit fileLoaded(fileName, info, QString());
+        }
+      });
+
+  return VoidResult();
 }
 
 Result<SaveInfo> SaveHandler::loadProject(const QString& fileToLoad)
 {
-  const QString manifestPath = QDir(fileToLoad).filePath("manifest.json");
+  const auto projectDir = "/tmp/maki-project";
+  auto unzipped = unzipProject(fileToLoad, projectDir);
+  if (!unzipped)
+    return Result<SaveInfo>::Failed(unzipped.ErrorMessage());
+
+  const QString manifestPath = QDir(projectDir).filePath("manifest.json");
 
   if (!QFileInfo::exists(manifestPath))
     return Result<SaveInfo>::Failed("No manifest.json found in selected project folder.");
@@ -427,38 +475,24 @@ Result<SaveInfo> SaveHandler::loadProjectManifest(const QString& manifestPath)
 
   SaveInfo project;
   project.rootPath = projectRoot;
-  project.name = manifestJson.value(ConfigKeys::NAME).toString();
-  project.version = manifestJson.value("version").toString();
+  if (manifestJson.contains(ConfigKeys::NAME))
+    project.name = manifestJson.value(ConfigKeys::NAME).toString();
+  if (manifestJson.contains("version"))
+    project.version = manifestJson.value("version").toString();
+  if (manifestJson.contains("projectSaveFile"))
+    project.saveFile = manifestJson.value("projectSaveFile").toString();
+  if (manifestJson.contains("canvas"))
+    project.setCanvasInfo(CanvasSaveInfo::fromJson(manifestJson.value("canvas").toObject()));
 
   const QJsonArray tasks = manifestJson["tasks"].toArray();
   for (const QJsonValue& value : tasks)
   {
-    const QJsonObject taskJson = value.toObject();
+    if (!value.isString())
+      return Result<SaveInfo>::Failed("Invalid task entry in manifest.");
 
-    NodeSaveInfo task = NodeSaveInfo::fromJson(taskJson);
-    for (const QJsonValue& child : taskJson.value("children").toArray())
-    {
-      const QString absolutePath = QDir(projectRoot).filePath(child.toString());
-      auto read = JSON::fromFile(absolutePath);
-      if (!read.IsSuccess())
-        return Result<SaveInfo>::Failed(read.ErrorMessage());
-
-      QJsonObject capabilityJson = read.Value();
-      task.addChild(std::make_shared<NodeSaveInfo>(NodeSaveInfo::fromJson(capabilityJson)));
-    }
-
-    for (const QJsonValue& flow : taskJson.value("flows").toArray())
-    {
-      const QString absolutePath = QDir(projectRoot).filePath(flow.toString());
-      auto read = JSON::fromFile(absolutePath);
-      if (!read.IsSuccess())
-        return Result<SaveInfo>::Failed(read.ErrorMessage());
-
-      QJsonObject flowJson = read.Value();
-      task.addFlow(std::make_shared<FlowSaveInfo>(FlowSaveInfo::fromJson(flowJson)));
-    }
-
-    project.addNode(std::make_shared<NodeSaveInfo>(task));
+    std::shared_ptr<NodeSaveInfo> loadedTask;
+    ASSIGN_OR_RETURN_ON_FAILURE_AS(loadedTask, loadNodeTree(projectRoot, value.toString()), SaveInfo);
+    project.addNode(loadedTask);
   }
 
   const QJsonArray pipelines = manifestJson["pipelines"].toArray();
@@ -466,15 +500,45 @@ Result<SaveInfo> SaveHandler::loadProjectManifest(const QString& manifestPath)
   {
     const auto pipelineFile = value.toString();
     const auto absolutePath = QDir(projectRoot).filePath(pipelineFile);
-    auto read = JSON::fromFile(absolutePath);
-    if (!read.IsSuccess())
-      return Result<SaveInfo>::Failed(read.ErrorMessage());
 
-    QJsonObject pipelineJson = read.Value();
-    project.addPipeline(std::make_shared<FlowSaveInfo>(FlowSaveInfo::fromJson(pipelineJson)));
+    JSON contents;
+    ASSIGN_OR_RETURN_ON_FAILURE_AS(contents, JSON::fromFile(absolutePath), SaveInfo);
+    project.addPipeline(std::make_shared<FlowSaveInfo>(FlowSaveInfo::fromJson(contents)));
   }
 
-  emit fileLoaded(project.rootPath);
-
   return project;
+}
+
+Result<std::shared_ptr<NodeSaveInfo>> SaveHandler::loadNodeTree(const QString& projectRoot, const QString& nodeFile)
+{
+  const QString absolutePath = QDir(projectRoot).filePath(nodeFile);
+  LOG_INFO("loadNodeTree:\n\tprojectRoot: %s\n\tnodeFile: %s\n\tabsolutePath: %s", qPrintable(projectRoot), qPrintable(nodeFile), qPrintable(absolutePath));
+
+  auto read = JSON::fromFile(absolutePath);
+  if (!read)
+    return Result<std::shared_ptr<NodeSaveInfo>>::Failed(read.ErrorMessage());
+
+  const QJsonObject json = read.Value();
+  auto node = std::make_shared<NodeSaveInfo>(NodeSaveInfo::fromJson(json));
+
+  const QFileInfo nodeInfo(absolutePath);
+  const QDir nodeDir = nodeInfo.absoluteDir();
+
+  for (const auto& child : json.value(ConfigKeys::CHILDREN).toArray())
+  {
+    const QString childFile = QDir(projectRoot).absoluteFilePath(child.toString());
+    std::shared_ptr<NodeSaveInfo> info;
+    ASSIGN_OR_RETURN_ON_FAILURE(info, loadNodeTree(projectRoot, childFile));
+    node->addChild(info);
+  }
+
+  for (const auto& flow : json.value(ConfigKeys::FLOWS).toArray())
+  {
+    const QString flowPath = QDir(projectRoot).absoluteFilePath(flow.toString());
+    JSON contents;
+    ASSIGN_OR_RETURN_ON_FAILURE_AS(contents, JSON::fromFile(flowPath), std::shared_ptr<NodeSaveInfo>);
+    node->addFlow(std::make_shared<FlowSaveInfo>(FlowSaveInfo::fromJson(contents)));
+  }
+
+  return node;
 }

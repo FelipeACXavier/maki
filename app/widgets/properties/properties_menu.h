@@ -180,4 +180,6 @@ private:
   VoidResult loadFieldTriggerCall(maki::SelectorWidget* componentSelect, const QString& optionId, const PropertyInfo& property, NodeItem* node);  /// Loads field trigger call.
 
   void addCompleter(oclero::qlementine::LineEdit* field, const QString& nodeId, const Types::PropertyTypes dataType, QStringList variables = {});
+
+  void updateBlockName(NodeItem* node, const QString& componentName, const QString& eventName) const;
 };

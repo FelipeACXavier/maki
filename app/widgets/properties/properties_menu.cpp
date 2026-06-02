@@ -352,7 +352,15 @@ VoidResult PropertiesMenu::loadPropertyString(const PropertyInfo& property, Node
 
   connect(widget, &maki::StringWidget::valueChanged, this, [node, property](const QString& text) {
     if (node)
-      node->setProperty(property.getid(), text);
+    {
+      if (text.isEmpty())
+        node->setProperty(property.getid(), node->nodeType().replace("Koda::", ""));
+      else
+        node->setProperty(property.getid(), text);
+    }
+
+    if (property.getid() == ConfigKeys::NAME)
+      node->setProperty("name_auto_generated", text.isEmpty());
   });
 
   layout()->addWidget(widget);
@@ -362,6 +370,10 @@ VoidResult PropertiesMenu::loadPropertyString(const PropertyInfo& property, Node
 
 VoidResult PropertiesMenu::loadPropertyBoolean(const PropertyInfo& property, NodeItem* node)
 {
+  // What a hack...
+  if (property.getid() == "name_auto_generated")
+    return VoidResult();
+
   auto* widget = new maki::BooleanWidget(ToLabel(property.getid()), "", maki::WidgetAlignment::Vertical(), this);
 
   auto result = node->getProperty(property.getid());
@@ -385,8 +397,16 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertyInfo& prope
   if (!mStorage)
     return VoidResult::Failed("No storage assigned to properties menu");
 
+  auto componentType = Types::PropertyTypes::EVENT_SELECT;
+  if (!property.getoptions().empty())
+    for (const auto& option : property.getoptions())
+      if (option->gettype() == Types::PropertyTypes::FLOW_CALL ||
+          option->gettype() == Types::PropertyTypes::EVENT_SELECT ||
+          option->gettype() == Types::PropertyTypes::TRIGGER_CALL)
+        componentType = option->gettype();
+
   auto* widget = new maki::SelectorWidget(ToLabel(property.getid()), maki::WidgetAlignment::Vertical(), this);
-  for (const auto& child : mStorage->getPossibleCallers(node->id()))
+  for (const auto& child : mStorage->getPossibleCallers(node->id(), componentType))
   {
     auto name = child->getProperty(ConfigKeys::NAME);
     if (name.isNull() || !name.isValid())
@@ -417,7 +437,7 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertyInfo& prope
       {
         LOG_WARN_ON_FAILURE(loadFieldEventSelect(widget, option->getid(), property, node, [this](const QString& nodeId, QComboBox* eventWidget) {
           eventWidget->clear();
-          auto events = mStorage->getEventsFromNode(nodeId);
+          auto events = mStorage->getEventsOfTypeFromNode(nodeId, {Types::CallType::TRIGGER, Types::CallType::ABORT});
           for (const auto& event : events)
             eventWidget->addItem(event->getname(), event->getname());
         }));
@@ -427,7 +447,7 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertyInfo& prope
         // This is used in async call type blocks, where the component itself has arguments
         LOG_WARN_ON_FAILURE(loadFieldTriggerCall(widget, option->getid(), property, node));
       }
-      else if (option->gettype() == Types::PropertyTypes::USER_CALL)
+      else if (option->gettype() == Types::PropertyTypes::FLOW_CALL)
       {
         LOG_WARN_ON_FAILURE(loadFieldEventSelect(widget, option->getid(), property, node, [this](const QString& nodeId, QComboBox* eventWidget) {
           eventWidget->clear();
@@ -469,6 +489,10 @@ VoidResult PropertiesMenu::loadFieldEventSelect(maki::SelectorWidget* componentS
       // Finally, based on the event, we can set the arguments
       LOG_WARN_ON_FAILURE(loadEventArguments(currentComponentId, currentEvent, property, node, Types::CallType::UNKNOWN, group));
     }
+    else
+    {
+      group->hide();
+    }
   }
 
   // When the event changes
@@ -479,15 +503,19 @@ VoidResult PropertiesMenu::loadFieldEventSelect(maki::SelectorWidget* componentS
     clearLayout(group->layout());
     UPDATE_PROPERTY_ARG(node, property.getid(), EVENT_INDEX, eventName, Types::PropertyTypes::EVENT_SELECT, false)
     LOG_WARN_ON_FAILURE(loadEventArguments(componentSelect->getData().toString(), eventName, property, node, Types::CallType::UNKNOWN, group));
+
+    // Update the node name
+    updateBlockName(node, componentSelect->getValue(), eventName);
   });
 
   // When the component itself changes
-  connect(componentSelect, &maki::SelectorWidget::dataChanged, this, [populate, eventCombo, node, id = property.getid()](const QString& component, const QVariant& nodeId) {
+  connect(componentSelect, &maki::SelectorWidget::dataChanged, this, [this, populate, eventCombo, node, id = property.getid()](const QString& component, const QVariant& nodeId) {
     if (!nodeId.isValid())
       return;
 
     populate(nodeId.toString(), eventCombo);
     UPDATE_PROPERTY(node, id, component)
+    updateBlockName(node, component, "");
   });
 
   // Add everything to the layout
@@ -511,6 +539,7 @@ VoidResult PropertiesMenu::loadFieldTriggerCall(maki::SelectorWidget* componentS
 
     UPDATE_PROPERTY(node, property.getid(), component)
     LOG_WARN_ON_FAILURE(loadEventArguments(nodeId.toString(), "", property, node, Types::CallType::TRIGGER, group));
+    updateBlockName(node, component, "");
   });
 
   layout()->addWidget(group);
@@ -527,19 +556,23 @@ VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QStri
   }
   else
   {
-    auto events = mStorage->getEventsOfTypeFromNode(nodeId, callType);
-    if (events.isEmpty())
-      return VoidResult::Failed("Component does not have any flows");
-
-    event = events.first();
+    auto events = mStorage->getEventsOfTypeFromNode(nodeId, {callType});
+    if (!events.isEmpty())
+      event = events.first();
   }
 
   if (!event)
+  {
+    group->hide();
     return VoidResult::Failed("Component does not have flow: " + flowName.toStdString());
+  }
 
   auto jsonValue = node->getProperty(property.getid());
   if (!jsonValue.isValid())
+  {
+    group->hide();
     return VoidResult::Failed("Property is not valid");
+  }
 
   if (event->getarguments().isEmpty())
   {
@@ -575,7 +608,7 @@ VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QStri
         bool isLiteral = false;
         (void)value.toInt(&isLiteral);
         UPDATE_PROPERTY_ARG(node, property.getid(), index, value, Types::PropertyTypes::INTEGER, !isLiteral)
-        LOG_DEBUG("Set property %s argument (%d) to %s", qPrintable(property.getid()), index, qPrintable(value));
+        // LOG_DEBUG("Set property %s argument (%d) to %s", qPrintable(property.getid()), index, qPrintable(value));
       });
     }
     else if (argType == Types::PropertyTypes::REAL)
@@ -590,7 +623,7 @@ VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QStri
         bool isLiteral = false;
         (void)value.toDouble(&isLiteral);
         UPDATE_PROPERTY_ARG(node, property.getid(), index, value, Types::PropertyTypes::REAL, !isLiteral)
-        LOG_DEBUG("Set property %s argument (%d) to %s", qPrintable(property.getid()), index, qPrintable(value));
+        // LOG_DEBUG("Set property %s argument (%d) to %s", qPrintable(property.getid()), index, qPrintable(value));
       });
     }
     else if (argType == Types::PropertyTypes::STRING)
@@ -603,7 +636,7 @@ VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QStri
       connect(field, &maki::StringWidget::valueChanged, this, [property, node, index](const QString& value) {
         bool isLiteral = value.size() > 2 && value.startsWith('"') && value.endsWith('"');
         UPDATE_PROPERTY_ARG(node, property.getid(), index, value, Types::PropertyTypes::STRING, !isLiteral)
-        LOG_DEBUG("Set property %s argument (%d) to %s", qPrintable(property.getid()), index, qPrintable(value));
+        // LOG_DEBUG("Set property %s argument (%d) to %s", qPrintable(property.getid()), index, qPrintable(value));
       });
     }
     else if (argType == Types::PropertyTypes::BOOLEAN)
@@ -616,7 +649,7 @@ VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QStri
       connect(field, &maki::StringWidget::valueChanged, this, [property, node, index](const QString& value) {
         bool isLiteral = value == "true" || value == "false" || value == "True" || value == "False";
         UPDATE_PROPERTY_ARG(node, property.getid(), index, value, Types::PropertyTypes::BOOLEAN, !isLiteral)
-        LOG_DEBUG("Set property %s argument (%d) to %s", qPrintable(property.getid()), index, qPrintable(value));
+        // LOG_DEBUG("Set property %s argument (%d) to %s", qPrintable(property.getid()), index, qPrintable(value));
       });
     }
     else
@@ -717,14 +750,7 @@ VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)
   if (source == nullptr)
     return VoidResult::Failed("Transition with no source");
 
-  QLabel* comboLabel = new QLabel("Transition event");
-  comboLabel->setFont(Fonts::Label);
-  layout()->addWidget(comboLabel);
-
-  QComboBox* eventWidget = new QComboBox(this);
-  eventWidget->setPlaceholderText("-");
-  eventWidget->setCurrentIndex(-1);
-
+  auto* eventWidget = new maki::SelectorWidget(tr("Transition event"), maki::WidgetAlignment::Vertical(), this);
   // First, we add the node specific transitions
   for (const auto& t : source->configTransitions())
     eventWidget->addItem(t.event, t.event);
@@ -734,25 +760,26 @@ VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)
   eventWidget->addItem("on abort", "on abort");
 
   // Finally, the rest of the signals
-  auto callers = mStorage->getPossibleCallers(source->id());
+  auto callers = mStorage->getPossibleCallers(source->id(), Types::PropertyTypes::UNKNOWN);
   for (const auto& caller : callers)
   {
     auto name = caller->getProperty(ConfigKeys::NAME);
     if (name.isNull() || !name.isValid())
       continue;
 
-    auto events = mStorage->getEventsOfTypeFromNode(caller->getid(), Types::CallType::OUT);
+    auto events = mStorage->getEventsOfTypeFromNode(caller->getid(), {Types::CallType::OUT});
     for (const auto& event : events)
       eventWidget->addItem(name.toString() + "." + event->getname(), "on");
   }
 
   // Set the initial value
-  eventWidget->setCurrentText(transition->getEvent());
+  auto currentEvent = transition->getEvent();
+  eventWidget->setValue(currentEvent.isEmpty() ? Constants::EMPTY_COMBO : currentEvent);
 
-  connect(eventWidget, &QComboBox::currentTextChanged, this, [transition, eventWidget](const QString& text) {
+  connect(eventWidget, &maki::SelectorWidget::dataChanged, this, [transition](const QString& text, const QVariant& data) {
     transition->setEvent(text);
-    transition->setName(eventWidget->currentData().toString());
-    LOG_TRACE("Setting transition to: %s and %s", qPrintable(text), qPrintable(eventWidget->currentData().toString()));
+    transition->setName(data.toString());
+    LOG_TRACE("Setting transition to: %s and %s", qPrintable(text), qPrintable(data.toString()));
   });
 
   QPushButton* button = new QPushButton(this);
@@ -760,8 +787,7 @@ VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)
   connect(button, &QPushButton::pressed, this, [transition, eventWidget]() {
     transition->setEvent("");
     transition->setName("");
-    eventWidget->setPlaceholderText("-");
-    eventWidget->setCurrentIndex(-1);
+    eventWidget->setValue(Constants::EMPTY_COMBO);
   });
 
   layout()->addWidget(eventWidget);
@@ -1133,4 +1159,24 @@ void PropertiesMenu::addStateToTable(QStandardItemModel* model, int row, std::sh
     model->setItem(row, 2, new QStandardItem(JSON::fromArray(field->getdefaultValue().toList(), ',')));
   else
     model->setItem(row, 2, new QStandardItem(field->getdefaultValue().toString()));
+}
+
+void PropertiesMenu::updateBlockName(NodeItem* node, const QString& componentName, const QString& eventName) const
+{
+  if (!node)
+    return;
+
+  // Sanity check, make sure the name property exists
+  auto name = node->getProperty(ConfigKeys::NAME);
+  if (!name.isValid())
+    return;
+
+  // We are only allowed to update the name if it wasn't set by the user
+  auto wasAutoGenerated = node->getProperty("name_auto_generated");
+  if (wasAutoGenerated.isValid() && !wasAutoGenerated.toBool())
+    return;
+
+  auto type = node->nodeType();
+  auto newName = componentName + (eventName.isEmpty() ? "" : " " + eventName);
+  node->setProperty(ConfigKeys::NAME, newName);
 }

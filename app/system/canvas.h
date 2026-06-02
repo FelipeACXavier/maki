@@ -169,7 +169,7 @@ public:
    *
    * @param node Pointer to the node to be removed.
    */
-  void triggerNodeRemoval(const NodeItem* node);
+  void triggerNodeRemoval(const NodeSaveInfo& nodeInfo);
 
   /**
    * @brief Moves a node to a new position.
@@ -365,7 +365,7 @@ public slots:
    *
    * @param nodeId The ID of the node to remove.
    */
-  void onRemoveNode(const QString& nodeId);
+  void onRemoveNode(const QString& flowId, const QString& nodeId);
 
   /**
    * @brief Handles selection of a flow.

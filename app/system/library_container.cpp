@@ -123,7 +123,7 @@ void LibraryContainer::relayoutItems()
     const qreal x = (column * columnWidth + columnWidth / 2.0) - (itemBounds.width() / 2);
     const qreal y = PADDING + row * (CELL_HEIGHT + PADDING);
 
-    items[i]->setPos(x, y);
+    items[i]->setPos(x, y + CELL_HEIGHT - itemBounds.bottom());
   }
 
   updateSceneSize();

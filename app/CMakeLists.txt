@@ -74,6 +74,8 @@ target_link_libraries(${APPLICATION_NAME} PRIVATE
     Qt6::Widgets
     Qt6::Svg
     Qt6::SvgWidgets
+    Qt6::Core5Compat
+    QuaZip::QuaZip
     qlementine
     libavoid
     libcommon

@@ -138,6 +138,7 @@ private:
   {
     ToplevelRole = 0,  ///< Item represents a top-level category node.
     Capabilities,
+    SubTasks,
     Flows,
     ComponentRole,  ///< Item represents a component category or container.
     FlowRole,       ///< Item represents a flow.
@@ -167,6 +168,8 @@ private:
                     const QString& name, const QString& type,
                     const QString& data, const Roles role, const QString& canvas = "");
 
+  void populateTaskItem(QTreeWidgetItem* item, NodeItem* node);
+
   /**
    * @brief Finds a tree item by its identifier.
    * @param id The identifier to search for.
@@ -175,6 +178,8 @@ private:
   QTreeWidgetItem* getItemById(const QString& id) const;
 
   QTreeWidgetItem* findParentItemByRole(const QString& id, Roles role) const;
+
+  QTreeWidgetItem* getOrCreateChildGroup(const QString& parentId, Roles role);
 
   /**
    * @brief Returns the root item containing system flows.

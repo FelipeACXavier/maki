@@ -11,6 +11,10 @@ add_subdirectory(maki-sdk)
 
 add_subdirectory(qclementine)
 
+find_package(ZLIB REQUIRED)
+include_directories(${ZLIB_INCLUDE_DIRS})
+add_subdirectory(quazip)
+
 # ===================================
 set(LIBAVOID_DIR ${CMAKE_CURRENT_SOURCE_DIR}/adaptagrams/cola/libavoid)
 file(GLOB LIBAVOID_SOURCES

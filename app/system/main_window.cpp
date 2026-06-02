@@ -426,7 +426,7 @@ void MainWindow::bind()
 
   connect(mFileMenu, &GeneratedFilesPanel::openExternallyRequested, this, &MainWindow::addEditorTab);
 
-  connect(mSaveHandler.get(), &SaveHandler::fileLoaded, mSettingsManager.get(), &SettingsManager::addRecentFile);
+  connect(mSaveHandler.get(), &SaveHandler::fileLoaded, this, &MainWindow::onFileLoaded);
   connect(mSaveHandler.get(), &SaveHandler::fileSaved, mSettingsManager.get(), &SettingsManager::addRecentFile);
 
   connect(mPluginManager.get(), &PluginManager::pluginAdded, [this](const PluginManager::Plugin& plugin) {
@@ -1051,9 +1051,14 @@ VoidResult MainWindow::onActionSave()
 
   auto saved = mSaveHandler->saveProject(*mStorage);
   if (saved)
+  {
     NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Saved project: {}", mStorage->name.toStdString());
+  }
   else
+  {
+    LOG_ERROR(saved.ErrorMessage());
     NOTIFY_ERROR(Config::APPLICATION_NAME.toStdString(), "Could not save project: {}\n{}", mStorage->name.toStdString(), saved.ErrorMessage());
+  }
 
   return saved;
 }
@@ -1068,9 +1073,14 @@ void MainWindow::onActionSaveAs()
 
   auto saved = mSaveHandler->saveProjectAs(*mStorage);
   if (saved)
+  {
     NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Saved project: {}", mStorage->name.toStdString());
+  }
   else
+  {
+    LOG_ERROR(saved.ErrorMessage());
     NOTIFY_ERROR(Config::APPLICATION_NAME.toStdString(), "Could not save project: {}\n{}", mStorage->name.toStdString(), saved.ErrorMessage());
+  }
 }
 
 void MainWindow::onActionLoad(const QString& filename)
@@ -1081,30 +1091,41 @@ void MainWindow::onActionLoad(const QString& filename)
     return;
   }
 
-  auto loaded = filename.isEmpty() ? mSaveHandler->loadProject() : mSaveHandler->loadProject(filename);
-  if (!loaded.IsSuccess())
+  if (filename.isEmpty())
   {
-    LOG_ERROR(loaded.ErrorMessage());
+    mSaveHandler->loadProject();
     return;
   }
+
+  auto loaded = mSaveHandler->loadProject(filename);
+  if (!loaded.IsSuccess())
+  {
+    onFileLoaded(filename, SaveInfo(), QString::fromStdString(loaded.ErrorMessage()));
+    return;
+  }
+
+  auto info = loaded.Value();
+  onFileLoaded(filename, info, "");
+}
+
+void MainWindow::onFileLoaded(const QString& file, const SaveInfo& info, const QString& error)
+{
+  if (!error.isEmpty())
+  {
+    NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Failed to load project.\n{}", qPrintable(error));
+    return;
+  }
+
+  if (mSettingsManager)
+    mSettingsManager->addRecentFile(file);
 
   // Close all tabs except the first
   for (int i = 1; i < mCanvasPanel->count(); ++i)
     closeCanvasTab(i);
 
-  auto info = loaded.Value();
-
   // Clear the storage so it can be populated by the canvas
   *mStorage = info;
   mStorage->clearNodes();
-
-  for (const auto& n : info.getnodes())
-  {
-    for (const auto& e : n->getevents())
-    {
-      LOG_INFO("Node: %s Event: %s - links to: %d", qPrintable(n->getnodeId()), qPrintable(e->getname()), e->getlinksTo());
-    }
-  }
 
   // Repopulate the canvas (and the storage)
   canvas()->loadFromSave(info);

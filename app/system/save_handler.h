@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QDir>
 #include <QString>
 #include <QWidget>
 
@@ -24,36 +25,12 @@ public:
    */
   SaveHandler(QWidget* parent);
 
-  /**
-   * @brief Saves the current canvas to a file.
-   *
-   * @param canvas The canvas to save.
-   * @return VoidResult The result of the operation.
-   */
-  VoidResult save(Canvas* canvas);
-
   VoidResult saveProject(SaveInfo& project, bool override = false);
   VoidResult saveProjectAs(SaveInfo& project);
 
-  Result<SaveInfo> loadProject();
+  VoidResult loadProject();
   Result<SaveInfo> loadProject(const QString& fileToLoad);
   Result<SaveInfo> loadProjectManifest(const QString& manifestPath);
-
-  /**
-   * @brief Saves the current canvas to a new file.
-   *
-   * @param canvas The canvas to save.
-   * @return VoidResult The result of the operation.
-   */
-  VoidResult saveToFile(Canvas* canvas);
-
-  /**
-   * @brief Saves the current canvas as a new file.
-   *
-   * @param canvas The canvas to save.
-   * @return VoidResult The result of the operation.
-   */
-  VoidResult saveFileAs(Canvas* canvas);
 
   /**
    * @brief Gets the last directory used for saving or loading files.
@@ -75,29 +52,12 @@ public:
   void newFileCreated();
 
   /**
-   * @brief Loads a diagram from a file.
-   *
-   * @return Result<SaveInfo> The result of the operation.
-   */
-  Result<SaveInfo> load();
-
-  /**
-   * @brief Loads a diagram from a specific file.
-   *
-   * @param fileToLoad The file to load.
-   * @return Result<SaveInfo> The result of the operation.
-   */
-  Result<SaveInfo> load(const QString& fileToLoad);
-
-  /**
    * @brief Enumeration containing the accepted functionalities of the SaveHandler
    */
   enum class Function
   {
     SAVE,
     LOAD,
-    SAVE_PROJECT_DIR,
-    LOAD_PROJECT_DIR
   };
 
 signals:
@@ -106,7 +66,7 @@ signals:
    *
    * @param file The name of the loaded file.
    */
-  void fileLoaded(const QString& file);
+  void fileLoaded(const QString& file, const SaveInfo& info, const QString& error);
 
   /**
    * @brief Emitted when a file is saved.
@@ -141,7 +101,10 @@ private:
   VoidResult writeJsonFile(const QString& path, const QJsonObject& object);
   VoidResult saveProjectInternal(const SaveInfo& project);
   VoidResult saveManifest(const SaveInfo& project);
-  Result<QString> saveCapability(const QString& prefix, const SaveInfo& project, const NodeSaveInfo& task);
-  Result<QString> saveFlow(const QString& prefix, const SaveInfo& project, const FlowSaveInfo& task);
+
+  Result<QString> saveNodeTree(const SaveInfo& project, const NodeSaveInfo& node, const QString& folder);
+  Result<QString> saveFlow(const QDir& root, const QString& nodeFolder, const FlowSaveInfo& task);
   Result<QString> savePipeline(const SaveInfo& project, const FlowSaveInfo& task);
+
+  Result<std::shared_ptr<NodeSaveInfo>> loadNodeTree(const QString& projectRoot, const QString& nodeFile);
 };

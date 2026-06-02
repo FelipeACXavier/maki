@@ -457,7 +457,7 @@ QVariant NodeItem::itemChange(GraphicsItemChange change, const QVariant& value)
       parentRect.translate(parent->pos());
 
       // Child rect in its own coords
-      QRectF childLocalRect = boundingRect();
+      QRectF childLocalRect = nodeRect();
 
       // Compute allowed range so childSceneRect stays inside parentRect
       const qreal minX = parentRect.left();
