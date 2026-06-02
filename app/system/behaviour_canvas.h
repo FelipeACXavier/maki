@@ -40,9 +40,10 @@ public:
   /**
    * @brief Checkes whether it is possible to add a new trasition to a node
    * @param node A pointer to the node of interest
+   * @param port Outgoing port used for the transition (abort / error / out)
    * @return True if the node allows more transitions, and false otherwise.
    */
-  bool canAddTransition(NodeItem* node) const override;
+  bool canAddTransition(NodeItem* node, PortItem* port = nullptr) const override;
 
   /**
    * @brief Gets the next transition configuration for a given node

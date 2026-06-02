@@ -21,11 +21,6 @@
               "id": "name",
               "type": "string",
               "default": "Service"
-            },
-            {
-              "id": "color",
-              "type": "color",
-              "default": "#202020"
             }
           ],
           "controls": [],
@@ -50,11 +45,6 @@
               "id": "name",
               "type": "string",
               "default": "Message"
-            },
-            {
-              "id": "color",
-              "type": "color",
-              "default": "#fcbf49"
             }
           ],
           "controls": [],

@@ -1199,8 +1199,9 @@ void MainWindow::onOpenFlow(Flow* flow, NodeItem* node)
 
   if (flow == nullptr)
   {
-    LOG_WARNING("This shouldn't happen");
-    return;
+    flow = node->createFlow(flowName, nullptr);
+    if (!flow)
+      return;
   }
 
   CanvasView* newView = new CanvasView(mCanvasPanel);

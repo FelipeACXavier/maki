@@ -356,6 +356,10 @@ NodeConfig::NodeConfig(const QJsonObject& object)
         hasInPort = true;
       else if (s == "out")
         hasOutPort = true;
+      else if (s == "abort")
+        hasAbortPort = true;
+      else if (s == "error")
+        hasErrorPort = true;
     }
   }
 }
@@ -375,6 +379,8 @@ QDataStream& operator<<(QDataStream& out, const NodeConfig& config)
   out << config.transitions;
   out << config.hasInPort;
   out << config.hasOutPort;
+  out << config.hasAbortPort;
+  out << config.hasErrorPort;
 
   return out;
 }
@@ -392,6 +398,11 @@ QDataStream& operator>>(QDataStream& in, NodeConfig& config)
   in >> config.transitions;
   in >> config.hasInPort;
   in >> config.hasOutPort;
+  if (!in.atEnd())
+  {
+    in >> config.hasAbortPort;
+    in >> config.hasErrorPort;
+  }
 
   return in;
 }

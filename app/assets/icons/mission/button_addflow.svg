@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 66.26 58.06">
+  <g>
+    <rect fill="#e49444" stroke="#333" stroke-miterlimit="10" x=".5" y=".5" width="55.28" height="48" rx="9.03" ry="9.03"/>
+    <rect fill="none" stroke="#252525" stroke-width="2" stroke-miterlimit="10" x="14.28" y="13.82" width="10.68" height="10.68" rx="2.81" ry="2.81"/>
+    <rect fill="none" stroke="#252525" stroke-width="2" stroke-miterlimit="10" x="29.98" y="27.62" width="10.68" height="10.68" rx="2.81" ry="2.81"/>
+    <rect fill="#252525" x="18.51" y="25.02" width="2.22" height="9.5" rx="1.11" ry="1.11"/>
+    <rect fill="#252525" x="23.23" y="28.7" width="2.22" height="9.43" rx="1.11" ry="1.11" transform="translate(57.75 9.08) rotate(90)"/>
+  </g>
+  <g>
+    <circle fill="#fff" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" cx="53.44" cy="45.24" r="11.82"/>
+    <path fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M48.71,45.24h9.46"/>
+    <path fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M53.44,40.51v9.46"/>
+  </g>
+</svg>

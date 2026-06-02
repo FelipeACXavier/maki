@@ -16,6 +16,7 @@
 #include <QUndoStack>
 #include <QUuid>
 #include <algorithm>
+#include <optional>
 #include <utility>
 
 #include "app_configs.h"
@@ -197,11 +198,22 @@ QString selectedComponentIconPath(const std::shared_ptr<NodeSaveInfo>& caller, c
   return resolveStoredIconPath(caller->getIcon(), caller->getnodeId(), configTable);
 }
 
+std::optional<QColor> optionalColorProperty(const QVariant& value)
+{
+  if (!value.isValid())
+    return std::nullopt;
+
+  const QString name = value.toString().trimmed();
+  if (name.isEmpty() || !QColor::isValidColorName(name))
+    return std::nullopt;
+
+  return QColor::fromString(name);
+}
+
 QColor callerBackgroundColor(const NodeSaveInfo& caller, const ConfigurationTable* configTable)
 {
-  const QVariant color = caller.getProperty(QStringLiteral("color"));
-  if (color.isValid() && QColor::isValidColorName(color.toString()))
-    return QColor::fromString(color.toString());
+  if (const auto color = optionalColorProperty(caller.getProperty(QStringLiteral("color"))))
+    return *color;
 
   if (configTable)
   {
@@ -540,6 +552,10 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
       mInPort = new PortItem(PortItem::In, this);
     if (config()->hasOutPort)
       mOutPort = new PortItem(PortItem::Out, this);
+    if (config()->hasAbortPort)
+      mAbortPort = new PortItem(PortItem::Abort, this);
+    if (config()->hasErrorPort)
+      mErrorPort = new PortItem(PortItem::Error, this);
     updatePortPositions();
   }
 
@@ -593,8 +609,8 @@ QRectF NodeItem::boundingRect() const
 
 void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget)
 {
-  auto color = getProperty("color");
-  auto background = color.isValid() ? QColor::fromString(color.toString()) : config()->body.backgroundColor;
+  const auto background = optionalColorProperty(getProperty(QStringLiteral("color")))
+                              .value_or(config()->body.backgroundColor);
 
   if (rendersAsInsetCapability())
   {
@@ -622,7 +638,10 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
 
     const QPen pen = isSelected() ? QPen(Config::HIGHLIGHT, 4 / baseScale()) : QPen(Config::FOREGROUND, 1.5 / baseScale());
     painter->setPen(pen);
-    painter->setBrush(Qt::NoBrush);
+    if (const auto fill = optionalColorProperty(getProperty(QStringLiteral("color"))))
+      painter->setBrush(QBrush(*fill));
+    else
+      painter->setBrush(Qt::NoBrush);
 
     const QRectF bodyRect = boundingRect().adjusted(kTaskInnerPadding,
                                                     kTaskInnerPadding,
@@ -944,8 +963,8 @@ void NodeItem::relayoutCapabilitySlots()
   const int numRows =
       slotCount <= 1 ? 1 : (slotCount + 1) / 2;  // ceil(slotCount/2) for slotCount >= 2
 
-  qreal trialW = qMax(cfgW, W);
-  qreal trialH = qMax(cfgH, H);
+  qreal trialW = cfgW;
+  qreal trialH = cfgH;
   constexpr int kSizingIters = 12;
   for (int iter = 0; iter < kSizingIters; ++iter)
   {
@@ -974,7 +993,7 @@ void NodeItem::relayoutCapabilitySlots()
   const qreal reqW = trialW;
   qreal reqH = trialH;
 
-  if (reqH > H + 0.5 || reqW > W + 0.5)
+  if (qAbs(reqW - W) > 0.5 || qAbs(reqH - H) > 0.5)
     applySize(QSizeF(reqW, reqH));
   W = mSize.width();
   H = mSize.height();
@@ -1471,6 +1490,27 @@ void NodeItem::updatePortPositions()
     mInPort->setPos(left - PortItem::kSize - PortItem::kGap, top + (h - PortItem::kSize) / 2.0);
   if (mOutPort)
     mOutPort->setPos(left + w + PortItem::kGap, top + (h - PortItem::kSize) / 2.0);
+
+  const qreal topPortSize = PortItem::sizeForKind(PortItem::Abort);
+  const qreal centerX = left + w * 0.5;
+  const qreal errorY = top - topPortSize - PortItem::kGap;
+  const qreal errorX = centerX + topPortSize * 0.5 + PortItem::kGap * 2.0;
+  const qreal abortX = centerX - topPortSize * 0.5;
+  const qreal abortY = portRect.bottom() + PortItem::kGap;
+
+  if (mAbortPort && mErrorPort)
+  {
+    mErrorPort->setPos(errorX, errorY);
+    mAbortPort->setPos(errorX, abortY);
+  }
+  else if (mAbortPort)
+  {
+    mAbortPort->setPos(abortX, abortY);
+  }
+  else if (mErrorPort)
+  {
+    mErrorPort->setPos(errorX, errorY);
+  }
 }
 
 // Slots
@@ -1482,6 +1522,35 @@ void NodeItem::onProperties()
 NodeSaveInfo NodeItem::saveInfo() const
 {
   return *mStorage;
+}
+
+PortItem::Kind NodeItem::outgoingPortKindForEvent(const QString& event) const
+{
+  const QString e = event.trimmed();
+  if (e.compare(QStringLiteral("on abort"), Qt::CaseInsensitive) == 0 && mAbortPort)
+    return PortItem::Abort;
+  if (e.compare(QStringLiteral("on error"), Qt::CaseInsensitive) == 0 && mErrorPort)
+    return PortItem::Error;
+  return PortItem::Out;
+}
+
+QPointF NodeItem::outgoingPortAnchorForEvent(const QString& event) const
+{
+  const PortItem::Kind kind = outgoingPortKindForEvent(event);
+  if (kind == PortItem::Abort && mAbortPort)
+    return mAbortPort->anchorScenePos();
+  if (kind == PortItem::Error && mErrorPort)
+    return mErrorPort->anchorScenePos();
+  if (mOutPort)
+    return mOutPort->anchorScenePos();
+  return sceneBoundingRect().center();
+}
+
+QPointF NodeItem::incomingPortAnchor() const
+{
+  if (mInPort)
+    return mInPort->anchorScenePos();
+  return edgePointToward(sceneBoundingRect().center(), false);
 }
 
 QPointF NodeItem::edgePointToward(const QPointF& targetScenePos, bool fromOutgoingPort) const

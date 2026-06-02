@@ -1,27 +1,54 @@
 #include "port.h"
 
 #include <QCursor>
-#include <memory>
 #include <QGraphicsSceneHoverEvent>
 #include <QPainter>
 #include <QSvgRenderer>
+
+#include <memory>
 
 #include "app_paths.h"
 #include "node.h"
 
 namespace
 {
+QString iconPathForKind(PortItem::Kind kind)
+{
+  switch (kind)
+  {
+    case PortItem::In:
+      return QStringLiteral("port_in.svg");
+    case PortItem::Out:
+      return QStringLiteral("port_out.svg");
+    case PortItem::Abort:
+      return QStringLiteral("port_abort.svg");
+    case PortItem::Error:
+      return QStringLiteral("port_error.svg");
+  }
+  return QString();
+}
+
 QSvgRenderer* rendererForKind(PortItem::Kind kind)
 {
-  static std::unique_ptr<QSvgRenderer> inRenderer;
-  static std::unique_ptr<QSvgRenderer> outRenderer;
-  const QString path = AppPaths::icon(kind == PortItem::In ? QStringLiteral("port_in.svg") : QStringLiteral("port_out.svg"));
-  std::unique_ptr<QSvgRenderer>& slot = (kind == PortItem::In) ? inRenderer : outRenderer;
-  if (!slot || !slot->isValid())
-    slot = std::make_unique<QSvgRenderer>(path);
-  return (slot && slot->isValid()) ? slot.get() : nullptr;
+  static std::unique_ptr<QSvgRenderer> renderers[4];
+  const int index = static_cast<int>(kind);
+  if (index < 0 || index >= 4)
+    return nullptr;
+
+  const QString path = AppPaths::icon(iconPathForKind(kind));
+  if (!renderers[index] || !renderers[index]->isValid())
+    renderers[index] = std::make_unique<QSvgRenderer>(path);
+
+  return (renderers[index] && renderers[index]->isValid()) ? renderers[index].get() : nullptr;
 }
 }  // namespace
+
+qreal PortItem::sizeForKind(Kind kind)
+{
+  if (kind == Abort || kind == Error)
+    return kTopPortSize;
+  return kSize;
+}
 
 PortItem::PortItem(Kind kind, NodeItem* parentNode)
     : QGraphicsItem(parentNode)
@@ -31,6 +58,24 @@ PortItem::PortItem(Kind kind, NodeItem* parentNode)
   setAcceptedMouseButtons(Qt::LeftButton);
   setFlag(QGraphicsItem::ItemStacksBehindParent, false);
   setZValue(10);
+}
+
+QString PortItem::defaultTransitionEvent() const
+{
+  switch (mKind)
+  {
+    case Abort:
+      return QStringLiteral("on abort");
+    case Error:
+      return QStringLiteral("on error");
+    default:
+      return QString();
+  }
+}
+
+QString PortItem::defaultTransitionLabel() const
+{
+  return defaultTransitionEvent();
 }
 
 int PortItem::type() const
@@ -68,7 +113,8 @@ NodeItem* PortItem::nodeItem() const
 
 QPointF PortItem::anchorScenePos() const
 {
-  return mapToScene(QPointF(kSize / 2.0, kSize / 2.0));
+  const qreal s = sizeForKind(mKind);
+  return mapToScene(QPointF(s / 2.0, s / 2.0));
 }
 
 void PortItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
