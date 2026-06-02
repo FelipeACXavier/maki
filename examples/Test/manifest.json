@@ -1,25 +1,18 @@
 {
-    "name": "PickAndPlace",
+    "name": "Test",
     "pipelines": [
-        "pipelines/Verify.json",
-        "pipelines/Simulate.json",
-        "pipelines/Platform IO pipeline.json",
-        "pipelines/ROS.json"
+        "pipelines/Simulate.json"
     ],
     "tasks": [
         {
             "children": [
-                "capabilities/Pick and place-Aruco Detection.json",
-                "capabilities/Pick and place-Grip.json",
-                "capabilities/Pick and place-Drive.json",
-                "capabilities/Pick and place-Approach.json"
             ],
             "events": [
                 {
                     "arguments": [
                     ],
-                    "id": "{e67365ea-cba8-4bfd-843e-da8eafe22c08}",
-                    "linksTo": 0,
+                    "id": "{1f26072f-1d59-4559-a91f-cf09877c7f29}",
+                    "linksTo": 2147483647,
                     "modifiable": true,
                     "name": "start",
                     "owner": "",
@@ -29,8 +22,8 @@
                 {
                     "arguments": [
                     ],
-                    "id": "{9f181a04-4e9d-4084-a314-f8cd4eca4887}",
-                    "linksTo": 0,
+                    "id": "{fc71f901-010c-43e2-b8d9-f401d5bfd3ef}",
+                    "linksTo": 2147483647,
                     "modifiable": false,
                     "name": "abort",
                     "owner": "",
@@ -40,8 +33,8 @@
                 {
                     "arguments": [
                     ],
-                    "id": "{a81c9265-2447-4336-bdc0-4204e6d9e274}",
-                    "linksTo": 0,
+                    "id": "{27967007-7a15-493f-89eb-c38bf8165121}",
+                    "linksTo": 2147483647,
                     "modifiable": false,
                     "name": "done",
                     "owner": "",
@@ -51,8 +44,8 @@
                 {
                     "arguments": [
                     ],
-                    "id": "{5bff3437-ad06-457c-be8b-a18edb63493b}",
-                    "linksTo": 0,
+                    "id": "{3d1faed4-9336-4f0a-8982-fed390a59b11}",
+                    "linksTo": 2147483647,
                     "modifiable": false,
                     "name": "failed",
                     "owner": "",
@@ -61,32 +54,26 @@
                 }
             ],
             "flows": [
-                "flows/Pick and place-main.json",
-                "flows/Pick and place-loop.json",
-                "flows/Pick and place-pick.json",
-                "flows/Pick and place-place.json",
-                "flows/Pick and place-err.json",
-                "flows/Pick and place-home.json"
             ],
             "iconPath": "",
-            "id": "{f1982623-40c5-4f7d-8053-da9b6112c9c7}",
+            "id": "{b0ec8e70-5e44-418a-82e3-306c83173f26}",
             "nodeId": "Koda::Task",
             "parentId": "",
             "pixmap": {
                 "data": ""
             },
             "position": {
-                "x": -182.5,
-                "y": -34.356481481481524
+                "x": 117.11538461538464,
+                "y": -113.1730769230769
             },
             "properties": {
-                "color": "#62829a",
-                "name": "Pick and place"
+                "color": "#202020",
+                "name": "Task"
             },
-            "scale": 0.45314685314685316,
+            "scale": 0.2205258693808312,
             "size": {
-                "height": 662.037037037037,
-                "width": 715
+                "height": 1133.6538461538462,
+                "width": 1234.2307692307693
             }
         }
     ],

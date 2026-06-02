@@ -1,5 +1,5 @@
 {
-    "name": "PickAndPlace",
+    "name": "PickTest",
     "pipelines": [
         "pipelines/Verify.json",
         "pipelines/Simulate.json",
