@@ -118,7 +118,7 @@ QString Types::PropertyTypesToString(Types::PropertyTypes type)
     return "enum";
   else if (type == Types::PropertyTypes::TRIGGER_CALL)
     return "trigger_call";
-  else if (type == Types::PropertyTypes::USER_CALL)
+  else if (type == Types::PropertyTypes::FLOW_CALL)
     return "user_call";
 
   return "unknown";
@@ -151,7 +151,7 @@ Types::PropertyTypes Types::StringToPropertyTypes(const QString& type)
   else if (type == "trigger_call")
     return Types::PropertyTypes::TRIGGER_CALL;
   else if (type == "user_call")
-    return Types::PropertyTypes::USER_CALL;
+    return Types::PropertyTypes::FLOW_CALL;
 
   return Types::PropertyTypes::UNKNOWN;
 }

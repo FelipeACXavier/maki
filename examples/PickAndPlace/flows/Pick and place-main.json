@@ -41,8 +41,8 @@
                 "y": -10
             },
             "properties": {
-                "name": "Repeat",
-                "strategy": {
+                "capability": {
+                    "data": "Pick and place",
                     "options": [
                         {
                             "data": "loop",
@@ -50,12 +50,36 @@
                             "type": "event_select"
                         }
                     ]
-                }
+                },
+                "iterations": 0,
+                "name": "Repeat",
+                "rate": 0
             },
             "scale": 1,
             "size": {
                 "height": 100,
                 "width": 200
+            }
+        },
+        {
+            "iconPath": "/home/felaze/Documents/PhD/Programs/maki/build/linux/debug/app/../assets/icons/koda_success.svg",
+            "id": "{3bc9f5fb-f15f-4cc7-915e-f39a8f92180a}",
+            "nodeId": "Koda::Success",
+            "parentId": "",
+            "pixmap": {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAADLElEQVR4nO2aTU8TQRiAn7INnPDOR4wpXCDe/AO0F0jA6IGkd+Hei5TfAAoX+A16ROGif4HEkFgvkFjRtHDxphcNQQ87G2fanenu7EdXOk/yJtvtu+/Xzs7M7gw4HA6Hw+FwOByOUaSUs78x4AEwC8wA0+L8FdAFOsAlcJtzXJlSBmrAIX6SfwZIV+jWxLX/LR6wSbSkTcXYELYyIatHYAV4ATwM+e8b8Bm4FgIwJWQOuB9yzSdgC3iXeqQp4+En3nsnT4EmsIC56CWh0xTX9NrZJcPWkJR7wAlqwB+BVexaWklc2+qxeQJMphBvqkwCZ/wL8gZokM7d8oStG8n+GQUqgod6578DSxn4qQrbgZ9jCvI47KImP5+hr3nUIuxk6CsSK6jNfikHn1XUx2E5B5+hlPGHpyCQRoRrJoA68Bq4AH4KuRDn6kJnEA3Jb4shPQqbqL39oCDWgTb9Q1uvtIWuCQ91dNiwyiABZdQZ3qpB1wP2GZx4r+xjLuqapNsl52lzTXJ+inmct0k+kD2D3RLqZKlqnY0Fh5LjpkFvHfvkAzE9DtuS3oF1NjEZQ23+Cxq9CeALyQvQBsY1PhYlvY6ILXMqktNL9M2/TvLkA6lrfJSAr5JeJW4yNhWblY6DXj2Mpxa2dTzRnA9aSMBMXMM2BZCdXGu14JGFbRtbcgy5FGBaOjYVYNrwXxKfveRegDuFTQGupOOpiHpJMdmSY+jGNWxTANmJqQAfLGzb2Mq9AB3peA79MPjGwraOt5rzJdShL3YBbIgzEYry8jPUiZBNC7gFjqTfjzV6vzBPk6OyBfzW/Cf7PiLHBZWRfxmK+zq8h13yhX0dhhH/IBIWRJRPYuP4LzavgHPgh5Bzca6OvsOTKcQnMRjxj6IBI/1ZHMIXRrLokWsUdGEERnxpLGCS/sXRFv5wZbs4ukb/4ugxBUw+wEPtE+TJ0jb+1HXQ8vii0A1bHt8h5Waf1QaJZeAl+g0SbcI3SFTQb5B4DrxPPdIM8fAnKEm3yDyjQJ2dDWX8UeEA/41tUNIdoVslh+ntsLbJzUgC/p0O5JI7tk3O4XA4HA6Hw+FwFI+/yMW9Rq3ZYIsAAAAASUVORK5CYII="
+            },
+            "position": {
+                "x": -75,
+                "y": -15
+            },
+            "properties": {
+                "name": "Success"
+            },
+            "scale": 0.8,
+            "size": {
+                "height": 50,
+                "width": 50
             }
         }
     ],
@@ -82,6 +106,33 @@
                 "position": {
                     "x": -670.00314881291,
                     "y": -14.603224584331905
+                },
+                "shift": {
+                    "x": 0,
+                    "y": 0
+                }
+            }
+        },
+        {
+            "destination": {
+                "id": "{3bc9f5fb-f15f-4cc7-915e-f39a8f92180a}",
+                "position": {
+                    "x": 0,
+                    "y": 0
+                },
+                "shift": {
+                    "x": 0,
+                    "y": 0
+                }
+            },
+            "events": "",
+            "id": "{b2bb526f-a29e-41d3-866a-b0513ba90874}",
+            "label": "",
+            "source": {
+                "id": "{9d66cca8-bf87-48ad-af22-818ea58af62c}",
+                "position": {
+                    "x": -280.01343454026346,
+                    "y": -11.639124023930107
                 },
                 "shift": {
                     "x": 0,

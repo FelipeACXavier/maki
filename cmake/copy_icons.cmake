@@ -1,5 +1,6 @@
 # cmake/copy_icons.cmake
 
+set(FALLBACK_PATH "${CMAKE_CURRENT_SOURCE_DIR}/assets/icons/fallback")
 set(MISSION_PATH "${CMAKE_CURRENT_SOURCE_DIR}/assets/icons/mission")
 set(SHAPES_PATH "${CMAKE_CURRENT_SOURCE_DIR}/assets/icons/shapes")
 set(FONT_AWESOME_PATH "${CMAKE_CURRENT_SOURCE_DIR}/assets/icons/fontawesome/svgs/solid")
@@ -92,17 +93,18 @@ file(GLOB APP_ICON_FILES
   ${MISSION_PATH}/capability_co2sensor.svg
   ${MISSION_PATH}/capability_timer.svg
   ${MISSION_PATH}/capability_drive.svg
-  ${MISSION_PATH}/capability_envsensor.svg  
-  ${MISSION_PATH}/capability_robotarm.svg  
-  ${MISSION_PATH}/capability_led.svg  
-  ${MISSION_PATH}/capability_conveyor.svg  
-  ${MISSION_PATH}/capability_approach.svg 
-  ${MISSION_PATH}/capability_imageinspector.svg   
-  ${MISSION_PATH}/capability_ticketcreation.svg  
-  ${MISSION_PATH}/capability_bridge.svg  
+  ${MISSION_PATH}/capability_envsensor.svg
+  ${MISSION_PATH}/capability_robotarm.svg
+  ${MISSION_PATH}/capability_led.svg
+  ${MISSION_PATH}/capability_conveyor.svg
+  ${MISSION_PATH}/capability_approach.svg
+  ${MISSION_PATH}/capability_imageinspector.svg
+  ${MISSION_PATH}/capability_ticketcreation.svg
+  ${MISSION_PATH}/capability_bridge.svg
   ${SHAPES_PATH}/shape_start.svg
   ${SHAPES_PATH}/shape_middle.svg
   ${SHAPES_PATH}/shape_end.svg
+  ${FALLBACK_PATH}/*.svg
 )
 
 add_custom_target(copy_icons ALL

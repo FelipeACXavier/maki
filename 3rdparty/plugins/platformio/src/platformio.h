@@ -27,12 +27,7 @@ public:
   bool setup() override;
   bool tearDown() override;
   void setHostServices(maki::IHostServices* services) override;
-  void setName(const QString& name) override;
-  void setVersion(const QString& version) override;
   void setAssetDir(const QDir& dir) override;
-
-  QString languageName() const override;
-  maki::PluginVersion version() const override;
 
   void settingsChanged(const QVector<maki::SettingField>& settings) override;
 
@@ -41,8 +36,6 @@ public:
   Result<maki::PipelineArtifact> buildProject(const maki::PipelineArtifact& artifact, const QDir& outputFolder, maki::IPipeline* pipeline);
 
 private:
-  maki::PluginVersion mVersion;
-  QString mName;
   std::optional<QDir> mAssetDir;
 
   maki::IHostServices* mServices = nullptr;

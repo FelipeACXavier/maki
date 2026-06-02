@@ -248,7 +248,6 @@ void Strategy::print(const std::string& prefix, const bool last) const
   ELSE_IF_ALT(PIfElse, v, print(prefix, last, span))
   ELSE_IF_ALT(PRepeat, v, print(prefix, last, span))
   ELSE_IF_ALT(PGuard, v, print(prefix, last, span))
-  ELSE_IF_ALT(PEvery, v, print(prefix, last, span))
   ELSE_IF_ALT(PEnd, v, print(prefix, last, span))
   ELSE_IF_ALT(PContinue, v, print(prefix, last, span))
   ELSE_IF_ALT(PRef, v, print(prefix, last, span))
@@ -318,17 +317,6 @@ void Strategy::Repeat::print(const std::string& prefix, const bool last, const S
 void Strategy::Guard::print(const std::string& prefix, const bool last, const Span& span) const
 {
   LOG_TREE("Guard");
-}
-
-void Strategy::Every::print(const std::string& prefix, const bool last, const Span& span) const
-{
-  LOG_TREE("Every");
-  const std::string childPrefix = prefix + tree::carry(last);
-  if (a)
-    a->print(childPrefix, handlers.empty());
-
-  for (uint32_t i = 0; i < handlers.size(); ++i)
-    handlers.at(i)->print(childPrefix, i == handlers.size() - 1);
 }
 
 void Strategy::End::print(const std::string& prefix, const bool last, const Span& span) const

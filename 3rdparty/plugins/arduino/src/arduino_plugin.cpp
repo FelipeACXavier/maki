@@ -35,29 +35,9 @@ void ArduinoPlugin::setHostServices(maki::IHostServices* services)
   buildSettings();
 }
 
-void ArduinoPlugin::setName(const QString& name)
-{
-  mName = name;
-}
-
-void ArduinoPlugin::setVersion(const QString& version)
-{
-  mVersion = PluginVersion::fromString(version);
-}
-
 void ArduinoPlugin::setAssetDir(const QDir& dir)
 {
   mAssetDir = dir;
-}
-
-QString ArduinoPlugin::languageName() const
-{
-  return mName;
-}
-
-maki::PluginVersion ArduinoPlugin::version() const
-{
-  return mVersion;
 }
 
 void ArduinoPlugin::settingsChanged(const QVector<maki::SettingField>& settings)

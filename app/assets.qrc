@@ -2,17 +2,6 @@
 <RCC>
   <qresource prefix="/">
     <file alias="themes/style.qss">assets/style.qss</file>
-    <file>assets/branch-closed.png</file>
-    <file>assets/branch-end.png</file>
-    <file>assets/branch-more.png</file>
-    <file>assets/branch-open.png</file>
-    <file>assets/vline.png</file>
-  </qresource>
-  <qresource prefix="/math">
-    <file alias="addition.png">assets/icons/math/addition.png</file>
-    <file alias="subtraction.png">assets/icons/math/subtraction.png</file>
-    <file alias="multiplication.png">assets/icons/math/multiplication.png</file>
-    <file alias="division.png">assets/icons/math/division.png</file>
   </qresource>
   <qresource prefix="/icons">
     <file alias="behaviour.svg">assets/icons/fontawesome/svgs/solid/circle-nodes.svg</file>
@@ -73,8 +62,10 @@
     <file alias="filter.svg">assets/icons/fontawesome/svgs/solid/filter.svg</file>
     <!-- Tree tcons -->
     <file alias="system_menu.svg">assets/icons/fontawesome/svgs/solid/diagram-project.svg</file>
+    <file alias="task.svg">assets/icons/fontawesome/svgs/solid/meteor.svg</file>
     <file alias="capability.svg">assets/icons/fontawesome/svgs/solid/puzzle-piece.svg</file>
-    <file alias="flow_block.svg">assets/icons/fontawesome/svgs/solid/scroll.svg</file>
+    <file alias="flow.svg">assets/icons/fontawesome/svgs/solid/hexagon-nodes.svg</file>
+    <file alias="flow_block.svg">assets/icons/fontawesome/svgs/solid/gear.svg</file>
     <!-- Brands -->
     <file alias="github.svg">assets/icons/fontawesome/svgs/brands/github.svg</file>
     <file alias="research.svg">assets/icons/fontawesome/svgs/solid/book.svg</file>

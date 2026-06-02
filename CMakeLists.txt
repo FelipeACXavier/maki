@@ -37,6 +37,7 @@ set(QT_REQUIRED_PACKAGES
   Gui
   Svg
   Widgets
+  Core5Compat
   SvgWidgets
   LinguistTools
 )

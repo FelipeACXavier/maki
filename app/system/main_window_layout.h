@@ -133,6 +133,7 @@ protected:
 
   // Diagram menu
   QMenu* mGeneratorMenu;  /// Pointer to the generator menu.
+  QAction* mActionAutoRoute;
 
   QAction* mActionGenerate;  /// Pointer to the generate action.
   QAction* mActionSimulate;  /// Pointer to the simulate action.
@@ -224,6 +225,4 @@ private:
    * @return int The new minimum width of the tab bar.
    */
   int setTabBarWidth(QTabBar* bar, int minWidth, int minBorder, int minPadding);
-
-  QIcon makeThemedIcon(const QString& id, const QString& fallback, const QSize& size = {16, 16}) const;
 };

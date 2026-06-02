@@ -101,7 +101,7 @@ public:
    * @param nodeId The ID of the node.
    * @return QVector<std::shared_ptr<NodeSaveInfo>> A vector of shared pointers to NodeSaveInfo objects representing possible callers.
    */
-  QVector<std::shared_ptr<NodeSaveInfo>> getPossibleCallers(const QString& nodeId) const;
+  QVector<std::shared_ptr<NodeSaveInfo>> getPossibleCallers(const QString& nodeId, const Types::PropertyTypes type) const;
 
   /**
    * @brief Get events from a node.
@@ -118,7 +118,7 @@ public:
    * @param type The type of event.
    * @return QVector<std::shared_ptr<FlowSaveInfo>> A vector of shared pointers to FlowSaveInfo objects representing events of the specified type.
    */
-  QVector<std::shared_ptr<FlowSaveInfo>> getEventsOfTypeFromNode(const QString& nodeId, Types::CallType type) const;
+  QVector<std::shared_ptr<FlowSaveInfo>> getEventsOfTypeFromNode(const QString& nodeId, const QList<Types::CallType>& types) const;
 
   /**
    * @brief Get an event from a node by name.
@@ -127,6 +127,8 @@ public:
    * @return std::shared_ptr<FlowSaveInfo> A shared pointer to FlowSaveInfo object representing the event.
    */
   std::shared_ptr<FlowSaveInfo> getEventFromNode(const QString& nodeId, const QString& flowName) const;
+
+  std::shared_ptr<FlowSaveInfo> getFlowFromNode(const QString& nodeId, const QString& flowName) const;
 
   /**
    * @brief Get a node by ID.
@@ -149,6 +151,7 @@ public:
   QString name;
   QString version;
   QString rootPath;
+  QString saveFile;
 
 private:
   CanvasSaveInfo mCanvasInfo;                         /// The canvas save info.
@@ -161,7 +164,9 @@ private:
    * @param nodes The vector of nodes to search.
    * @return QVector<std::shared_ptr<NodeSaveInfo>> A vector of shared pointers to NodeSaveInfo objects representing the family of the construct.
    */
-  QVector<std::shared_ptr<NodeSaveInfo>> findFamilyOfConstruct(const QString& nodeId, QVector<std::shared_ptr<INode>> nodes) const;
+  QVector<std::shared_ptr<NodeSaveInfo>> findFamilyOfFlowNode(const QString& nodeId, const QVector<std::shared_ptr<INode>>& nodes, const Types::PropertyTypes type) const;
+
+  void findChildrenOfTask(const std::shared_ptr<INode> task, QVector<std::shared_ptr<NodeSaveInfo>>& nodes, const Types::PropertyTypes type) const;
 
   /**
    * @brief Find the parent of a construct.
@@ -169,7 +174,7 @@ private:
    * @param node The node to search.
    * @return std::shared_ptr<NodeSaveInfo> A shared pointer to NodeSaveInfo object representing the parent of the construct.
    */
-  std::shared_ptr<NodeSaveInfo> findParentOfConstruct(const QString& nodeId, const std::shared_ptr<INode> node) const;
+  std::shared_ptr<NodeSaveInfo> findOwnerTaskOfFlowNode(const QString& nodeId, const std::shared_ptr<INode> node) const;
 
   /**
    * @brief Get events from a node.

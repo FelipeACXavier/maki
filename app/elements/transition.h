@@ -98,7 +98,7 @@ public:
   /**
    * @brief Updates the path of this transition item.
    */
-  void updatePath();
+  void updatePath(QPainterPath painterPath = {});
 
   /**
    * @brief Paints this graphics item using the given painter.

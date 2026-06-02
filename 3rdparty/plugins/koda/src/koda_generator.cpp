@@ -224,7 +224,7 @@ void KodaGenerator::setHostServices(maki::IHostServices* services)
   // Setup settings
   if (auto service = mServices->settings())
   {
-    service->registerSettings(languageName(), version(), mSettings);
+    service->registerSettings(languageName(), version(), manifest().iconPath(), mSettings);
 
     auto settings = service->getPluginSettings(languageName());
     if (!settings.isEmpty())
@@ -237,36 +237,9 @@ void KodaGenerator::setHostServices(maki::IHostServices* services)
     });
 }
 
-void KodaGenerator::setName(const QString& name)
-{
-  mName = name;
-}
-
-void KodaGenerator::setVersion(const QString& version)
-{
-  mVersion = maki::PluginVersion::fromString(version);
-}
-
 void KodaGenerator::setAssetDir(const QDir& dir)
 {
   mAssetDir = dir;
-}
-
-QString KodaGenerator::languageName() const
-{
-  if (!mName.isEmpty())
-    return mName;
-
-#ifdef USE_ANTLR
-  return "KODA_ANTLR";
-#else
-  return "KODA";
-#endif
-}
-
-maki::PluginVersion KodaGenerator::version() const
-{
-  return mVersion;
 }
 
 VoidResult KodaGenerator::simulate(const maki::PipelineArtifact& artifact)
@@ -562,7 +535,7 @@ Result<maki::PipelineArtifact> KodaGenerator::generateKoda(const maki::PipelineA
   koda::MakiToKoda makiToKoda;
   auto generated = makiToKoda.generate(mServices->document()->getnodes());
   if (!generated)
-    LOG_ERROR(generated.ErrorMessage());
+    return Result<maki::PipelineArtifact>::Failed(generated.ErrorMessage());
 
   QString fileName = mOutputFolder.filePath("task.kd");
   QFile file(fileName);

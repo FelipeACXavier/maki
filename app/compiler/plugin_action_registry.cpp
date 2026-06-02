@@ -1,8 +1,5 @@
 #include "plugin_action_registry.h"
 
-#include <qdir.h>
-#include <qhashfunctions.h>
-
 #include "logging.h"
 #include "pipeline_action.h"
 

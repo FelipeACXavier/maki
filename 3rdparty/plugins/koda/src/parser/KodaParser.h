@@ -612,22 +612,11 @@ public:
     StratRepeatContext(StrategyContext *ctx);
 
     antlr4::tree::TerminalNode *REPEAT();
+    std::vector<antlr4::tree::TerminalNode *> NATURAL();
+    antlr4::tree::TerminalNode* NATURAL(size_t i);
     antlr4::tree::TerminalNode *LPAREN();
     StrategyContext *strategy();
     antlr4::tree::TerminalNode *RPAREN();
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-  };
-
-  class  StratEveryContext : public StrategyContext {
-  public:
-    StratEveryContext(StrategyContext *ctx);
-
-    antlr4::tree::TerminalNode *EVERY();
-    antlr4::tree::TerminalNode *NATURAL();
-    antlr4::tree::TerminalNode *LBRACE();
-    StrategyContext *strategy();
-    antlr4::tree::TerminalNode *RBRACE();
     std::vector<StrategyHandlerContext *> strategyHandler();
     StrategyHandlerContext* strategyHandler(size_t i);
 

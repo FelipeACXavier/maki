@@ -7,6 +7,7 @@
 #include <oclero/qlementine.hpp>
 
 #include "logging.h"
+#include "style_helpers.h"
 
 DropDownButton::DropDownButton(QWidget* parent)
     : QToolButton(parent)
@@ -100,7 +101,7 @@ void DropDownButton::showContextMenu(const QPoint& event)
 
 void DropDownButton::buildMenu(QMenu* menu, const QString& option, bool addRun)
 {
-  auto* runAction = menu->addAction(QIcon::fromTheme("run-build"), tr("Run"));
+  auto* runAction = menu->addAction(iconFromTheme("run-build"), tr("Run"));
   connect(runAction, &QAction::triggered, this, [this, option] {
     mCurrentOption = option;
     updateButtonText();
@@ -109,7 +110,7 @@ void DropDownButton::buildMenu(QMenu* menu, const QString& option, bool addRun)
 
   if (addRun)
   {
-    auto* selectAction = menu->addAction(QIcon::fromTheme("select"), tr("Select"));
+    auto* selectAction = menu->addAction(iconFromTheme("select"), tr("Select"));
     connect(selectAction, &QAction::triggered, this, [this, option] {
       mCurrentOption = option;
       updateButtonText();
@@ -120,16 +121,16 @@ void DropDownButton::buildMenu(QMenu* menu, const QString& option, bool addRun)
 
   if (!addRun)
   {
-    auto* addAction = menu->addAction(QIcon::fromTheme("document-new"), tr("Add"));
+    auto* addAction = menu->addAction(iconFromTheme("document-new"), tr("Add"));
     connect(addAction, &QAction::triggered, this, [this, option] {
       emit editOptionRequested("");
     });
   }
-  auto* editAction = menu->addAction(QIcon::fromTheme("document-edit"), tr("Edit"));
+  auto* editAction = menu->addAction(iconFromTheme("document-edit"), tr("Edit"));
   connect(editAction, &QAction::triggered, this, [this, option] {
     emit editOptionRequested(option);
   });
-  auto* deleteAction = menu->addAction(QIcon::fromTheme("edit-delete"), tr("Delete"));
+  auto* deleteAction = menu->addAction(iconFromTheme("edit-delete"), tr("Delete"));
   connect(deleteAction, &QAction::triggered, this, [this, option] {
     emit deleteOptionRequested(option);
   });

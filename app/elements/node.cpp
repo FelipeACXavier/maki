@@ -75,7 +75,8 @@ bool showsSelectedComponentOverlay(const NodeConfig* cfg)
 {
   if (!cfg)
     return false;
-  return cfg->type == QStringLiteral("Async task") || cfg->type == QStringLiteral("Sync task");
+
+  return cfg->type == QStringLiteral("Koda::Async task") || cfg->type == QStringLiteral("Koda::Sync task");
 }
 
 bool isTaskCaller(const NodeSaveInfo& caller, const ConfigurationTable* configTable)
@@ -87,7 +88,7 @@ bool isTaskCaller(const NodeSaveInfo& caller, const ConfigurationTable* configTa
     return false;
 
   const auto cfg = configTable->get(caller.getnodeId());
-  return cfg && cfg->type == QStringLiteral("Task");
+  return cfg && cfg->type == QStringLiteral("Koda::Task");
 }
 
 void renderSvgInEllipse(QPainter* painter, const QString& svgPath, const QPointF& center, qreal diameter)
@@ -164,21 +165,22 @@ std::shared_ptr<NodeSaveInfo> selectedComponentCaller(const NodeItem* node, cons
   if (propertyId.isEmpty())
     return nullptr;
 
-  const auto callers = storage.getPossibleCallers(node->id());
-  if (callers.isEmpty())
+  // Do not optimize, only update once the option is selected
+  const QVariant propertyValue = node->getProperty(propertyId);
+  if (!propertyValue.isValid())
     return nullptr;
 
-  QString callerName;
-  const QVariant propertyValue = node->getProperty(propertyId);
-  if (propertyValue.isValid())
-  {
-    const QJsonObject object = propertyValue.toJsonObject();
-    if (object.contains(ConfigKeys::DATA))
-      callerName = object.value(ConfigKeys::DATA).toString();
-  }
+  const QJsonObject object = propertyValue.toJsonObject();
+  if (!object.contains(ConfigKeys::DATA))
+    return nullptr;
 
+  auto callerName = object.value(ConfigKeys::DATA).toString();
   if (callerName.isEmpty() || callerName == QStringLiteral("-"))
-    return callers.first();
+    return nullptr;
+
+  const auto callers = storage.getPossibleCallers(node->id(), Types::PropertyTypes::UNKNOWN);
+  if (callers.isEmpty())
+    return nullptr;
 
   for (const auto& caller : callers)
   {
@@ -224,10 +226,15 @@ QColor callerBackgroundColor(const NodeSaveInfo& caller, const ConfigurationTabl
   return QColor(0xe6, 0xe6, 0xe6);
 }
 
+// Computing this for every paint loop is rather expensive, we should only update the icon when the property changes
 void paintSelectedComponentOverlay(const NodeItem* node, QPainter* painter)
 {
   if (!showsSelectedComponentOverlay(node->config().get()))
     return;
+
+  const QRectF drawingBounds = node->drawingRect(node->nodeRect());
+  painter->setRenderHint(QPainter::Antialiasing, true);
+  paintStructuralTaskOverlayPreview(painter, drawingBounds, QPen(Config::FOREGROUND, 1.0));
 
   if (node->config()->body.nodeSvg.isEmpty())
     return;
@@ -248,15 +255,6 @@ void paintSelectedComponentOverlay(const NodeItem* node, QPainter* painter)
   const auto caller = selectedComponentCaller(node, *storage);
   if (!caller)
     return;
-
-  const QRectF drawingBounds = node->drawingRect(node->boundingRect());
-  painter->setRenderHint(QPainter::Antialiasing, true);
-
-  if (isTaskCaller(*caller, configTable))
-  {
-    paintTaskPalettePreview(painter, drawingBounds);
-    return;
-  }
 
   const QString iconPath = selectedComponentIconPath(caller, configTable);
   if (iconPath.isEmpty())
@@ -500,7 +498,7 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
   mStorage->setId(this->id());
   mStorage->setNodeId(this->nodeId());
 
-  if (config()->libraryType == Types::LibraryTypes::STRUCTURAL && config()->type == QStringLiteral("Task"))
+  if (config()->libraryType == Types::LibraryTypes::STRUCTURAL && config()->type == QStringLiteral("Koda::Task"))
   {
     mSize = structural_layout::taskAspectSizeFromWidth(mSize.width());
     mStorage->setSize(mSize);
@@ -539,9 +537,9 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
   }
 
   // node svg replaces icon if set
-  const bool structuralCapability = config()->libraryType == Types::LibraryTypes::STRUCTURAL && config()->type != QStringLiteral("Task");
+  const bool structuralCapability = config()->libraryType == Types::LibraryTypes::STRUCTURAL && config()->type != QStringLiteral("Koda::Task");
   if (config()->body.nodeSvg.isEmpty() && !mStorage->getIcon().isEmpty() && !structuralCapability)
-    setIcon(mStorage->getIcon(), config()->body.iconColor);
+    setIcon(AppPaths::icon(mStorage->getIcon()), config()->body.iconColor);
 
   qreal labelSize = qMax(Fonts::BaseSize, mSize.width() / Fonts::BaseFactor);
   setLabel(getProperty("name").toString(), labelSize);
@@ -602,15 +600,19 @@ VoidResult NodeItem::start()
   return NodeBase::start();
 }
 
-QRectF NodeItem::boundingRect() const
+QRectF NodeItem::nodeRect() const
 {
   return QRectF(0, 0, mSize.width(), mSize.height());
 }
 
+QRectF NodeItem::sceneNodeRect() const
+{
+  return mapRectToScene(nodeRect());
+}
+
 void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget)
 {
-  const auto background = optionalColorProperty(getProperty(QStringLiteral("color")))
-                              .value_or(config()->body.backgroundColor);
+  const auto background = optionalColorProperty(getProperty(QStringLiteral("color"))).value_or(config()->body.backgroundColor);
 
   if (rendersAsInsetCapability())
   {
@@ -620,7 +622,7 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
     const QPen pen = isSelected() ? QPen(Config::HIGHLIGHT, 4 / baseScale()) : QPen(Config::FOREGROUND, 1.0 / baseScale());
     painter->setPen(pen);
     painter->setBrush(QBrush(background));
-    const QRectF r = boundingRect().adjusted(2, 2, -2, -2);
+    const QRectF r = nodeRect().adjusted(2, 2, -2, -2);
     painter->drawEllipse(r);
     if (!config()->body.iconPath.isEmpty())
     {
@@ -632,29 +634,24 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
 
   if (isTaskContainer())
   {
+    LOG_INFO("Painting task container: %s", qPrintable(nodeType()));
     Q_UNUSED(style);
     Q_UNUSED(widget);
     painter->setRenderHint(QPainter::Antialiasing, true);
 
     const QPen pen = isSelected() ? QPen(Config::HIGHLIGHT, 4 / baseScale()) : QPen(Config::FOREGROUND, 1.5 / baseScale());
     painter->setPen(pen);
-    if (const auto fill = optionalColorProperty(getProperty(QStringLiteral("color"))))
-      painter->setBrush(QBrush(*fill));
-    else
-      painter->setBrush(Qt::NoBrush);
+    painter->setBrush(background);
 
-    const QRectF bodyRect = boundingRect().adjusted(kTaskInnerPadding,
-                                                    kTaskInnerPadding,
-                                                    -kTaskInnerPadding,
-                                                    -kTaskInnerPadding);
+    const QRectF bodyRect = nodeRect().adjusted(kTaskInnerPadding, kTaskInnerPadding, -kTaskInnerPadding, -kTaskInnerPadding);
     painter->drawRoundedRect(bodyRect, kTaskCornerRadius, kTaskCornerRadius);
 
-    const qreal bbW = boundingRect().width();
-    const qreal bbH = boundingRect().height();
+    const qreal bbW = nodeRect().width();
+    const qreal bbH = nodeRect().height();
     const qreal slotDiameter = qMin(bbW, bbH) * kTaskSlotDiameterFactor;
     const qreal slotRadius = slotDiameter * 0.5;
     const int n = static_cast<int>(structuralCapabilityChildren().size());
-    const QVector<QPointF> centers = structural_layout::taskSlotCenters(boundingRect().size(), n + 1);
+    const QVector<QPointF> centers = structural_layout::taskSlotCenters(nodeRect().size(), n + 1);
     if (!centers.isEmpty())
     {
       const QPointF placeholderCenter = centers.last();
@@ -674,21 +671,21 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
         painter->drawEllipse(placeholderCenter, slotRadius, slotRadius);
       }
     }
+
     return;
   }
 
-  const QPen outlinePen =
-      isSelected() ? QPen(Config::HIGHLIGHT, 4 / baseScale()) : QPen(Config::FOREGROUND, 1.0 / baseScale());
-  const bool isStructuralCapability =
-      function() == Types::LibraryTypes::STRUCTURAL && !isTaskContainer();
+  const QPen outlinePen = isSelected() ? QPen(Config::HIGHLIGHT, 4 / baseScale()) : QPen(Config::FOREGROUND, 1.0 / baseScale());
+  const bool isStructuralCapability = function() == Types::LibraryTypes::STRUCTURAL && !isTaskContainer();
 
-  NodeBase::paintNode(boundingRect(), background, outlinePen, painter);
+  NodeBase::paintNode(nodeRect(), background, outlinePen, painter);
 
+  // TODO: this needs to go to a subclass that handles "call" tasks
   paintSelectedComponentOverlay(this, painter);
 
   if (isStructuralCapability && !config()->body.iconPath.isEmpty())
   {
-    const QRectF r = boundingRect().adjusted(2, 2, -2, -2);
+    const QRectF r = nodeRect().adjusted(2, 2, -2, -2);
     renderSvgInEllipse(painter, AppPaths::icon(config()->body.iconPath), r.center(), qMin(r.width(), r.height()));
   }
 }
@@ -854,7 +851,7 @@ void NodeItem::childRemoved(NodeItem* child)
 
 bool NodeItem::isTaskContainer() const
 {
-  return config()->libraryType == Types::LibraryTypes::STRUCTURAL && config()->type == QStringLiteral("Task");
+  return config()->libraryType == Types::LibraryTypes::STRUCTURAL && config()->type == QStringLiteral("Koda::Task");
 }
 
 bool NodeItem::isStructuralSubtask() const
@@ -1168,7 +1165,7 @@ QRectF NodeItem::parentInnerSceneRect(qreal padding) const
   if (!parentNode())
     return {};
 
-  QRectF r = parentNode()->mapRectToScene(parentNode()->boundingRect());
+  QRectF r = parentNode()->mapRectToScene(parentNode()->nodeRect());
   return r.adjusted(padding, padding, -padding, -padding);
 }
 
@@ -1415,17 +1412,12 @@ QVariant NodeItem::itemChange(GraphicsItemChange change, const QVariant& value)
         return QGraphicsItem::itemChange(change, value);
 
       QPointF newPos = value.toPointF();  // proposed new pos in scene coords
-
-      // auto parent = parentNode();
-      // if (parent == nullptr)
-      //   return QGraphicsItem::itemChange(change, value);
-
-      QRectF parentRect = parent->boundingRect();
+      QRectF parentRect = parent->nodeRect();
       parentRect = parentRect.adjusted(10, 10, -10, -10);
       parentRect.translate(parent->pos());
 
       // Child rect in its own coords
-      QRectF childLocalRect = boundingRect();
+      QRectF childLocalRect = nodeRect();
 
       // Compute allowed range so childSceneRect stays inside parentRect
       const qreal minX = parentRect.left();
@@ -1475,13 +1467,11 @@ void NodeItem::updateExtrasPosition()
 
   if (nodeMoved)
     nodeMoved(id());
-
-  updateLabelPosition();
 }
 
 void NodeItem::updatePortPositions()
 {
-  const QRectF portRect = nodeShapeContentRect(boundingRect());
+  const QRectF portRect = nodeShapeContentRect(nodeRect());
   const qreal left = portRect.left();
   const qreal top = portRect.top();
   const qreal w = portRect.width();
@@ -1568,7 +1558,7 @@ QPointF NodeItem::edgePointToward(const QPointF& targetScenePos, bool fromOutgoi
 
   // Normalise and scale
   dir /= std::hypot(dir.x(), dir.y());
-  qreal radius = boundingRect().width() / 2.0;
+  qreal radius = nodeRect().width() / 2.0;
   return center + dir * radius;
 }
 

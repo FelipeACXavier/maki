@@ -332,7 +332,7 @@ private:
   Result<ReturnValue> generateIfElse(PIfElse strategy, Environment& env);
   Result<ReturnValue> generateRepeat(PRepeat strategy, Environment& env);
   Result<ReturnValue> generateGuard(PGuard strategy, Environment& env);
-  Result<ReturnValue> generateEvery(PEvery strategy, Environment& env);
+  Result<ReturnValue> generateEvery(PRepeat strategy, Environment& env);
   Result<ReturnValue> generateEnd(PEnd strategy, Environment& env);
   Result<ReturnValue> generateContinue(PContinue strategy, Environment& env);
   Result<ReturnValue> generateRef(PRef strategy, Environment& env);

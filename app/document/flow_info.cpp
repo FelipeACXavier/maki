@@ -163,6 +163,14 @@ void FlowSaveInfo::removeArgument(std::shared_ptr<IProperty> arg)
 
 void FlowSaveInfo::addNode(std::shared_ptr<INode> arg)
 {
+  // Do not add repeated nodes
+  if (!arg->getid().isEmpty())
+  {
+    for (const auto& node : mNodes)
+      if (node->getid() == arg->getid())
+        return;
+  }
+
   mNodes.push_back(arg);
 }
 

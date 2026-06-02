@@ -20,12 +20,34 @@ NodeSaveInfo::NodeSaveInfo()
     , mPosition(QPointF{0, 0})
     , mSize(QSizeF{0, 0})
     , mScale(1.0)
+    , mIconPath("")
     , mProperties({})
     , mChildren({})
     , mFlows({})
     , mEvents({})
     , mTransitions({})
+    , mFields({})
 {
+}
+
+NodeSaveInfo::NodeSaveInfo(const NodeConfig& config)
+    : mId("")
+    , mNodeId(config.type)
+    , mParentId("")
+    , mPosition(QPointF{0, 0})
+    , mSize(QSizeF{static_cast<qreal>(config.body.width), static_cast<qreal>(config.body.height)})
+    , mScale(1)
+    , mIconPath(config.body.iconPath)
+    , mChildren({})
+    , mFlows({})
+    , mTransitions({})
+    , mFields({})
+{
+  for (const auto& property : config.properties)
+    addProperty(property.id, property.defaultValue);
+
+  for (const auto& event : config.events)
+    addEvent(std::make_shared<FlowSaveInfo>(event));
 }
 
 QString NodeSaveInfo::getid() const

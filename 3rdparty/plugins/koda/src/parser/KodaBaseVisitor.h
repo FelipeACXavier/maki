@@ -143,10 +143,6 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitStratEvery(KodaParser::StratEveryContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
   virtual std::any visitStratParen(KodaParser::StratParenContext *ctx) override {
     return visitChildren(ctx);
   }

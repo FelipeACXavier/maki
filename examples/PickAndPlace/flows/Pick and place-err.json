@@ -1,321 +1,341 @@
 {
-    "arguments": [
-    ],
-    "id": "{5669efba-64af-4155-bfaf-bca690b8928b}",
-    "linksTo": -1094795586,
-    "modifiable": true,
-    "name": "err",
-    "nodes": [
-        {
-            "iconPath": "koda_start.svg",
-            "id": "{15f23e55-ab6d-447f-a23c-485d352fdbf6}",
-            "nodeId": "Koda::Start",
-            "parentId": "",
-            "pixmap": {
-                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAo0lEQVR4nO3T2wmEQBSD4bBF2NnapKVZxPgahBWve2TyfzCvckiiBAAAAAAAAAD3mSQN1UdUapJmSWP1IVWavcg1tNWLW8M6gLg1/AogZg1bAUSsYU8AXa9hbwDdruFoAN2t4UwAXa3hSgB/WcPnyY/fpFUfcAW/wIk3S/pWHPuEyNZdZOsusnUX2bqLbN1Ftu4iW3eRrbvI1gEAAAAAAAC81wLmv8ckCrfr0gAAAABJRU5ErkJggg=="
-            },
-            "position": {
-                "x": -630,
-                "y": -150
-            },
-            "properties": {
-                "mode": "signal",
-                "name": "Start"
-            },
-            "scale": 1,
-            "size": {
-                "height": 100,
-                "width": 100
+  "arguments": [],
+  "id": "{5669efba-64af-4155-bfaf-bca690b8928b}",
+  "linksTo": -1094795586,
+  "modifiable": true,
+  "name": "err",
+  "nodes": [
+    {
+      "iconPath": "koda_start.svg",
+      "id": "{15f23e55-ab6d-447f-a23c-485d352fdbf6}",
+      "nodeId": "Koda::Start",
+      "parentId": "",
+      "pixmap": {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAo0lEQVR4nO3T2wmEQBSD4bBF2NnapKVZxPgahBWve2TyfzCvckiiBAAAAAAAAAD3mSQN1UdUapJmSWP1IVWavcg1tNWLW8M6gLg1/AogZg1bAUSsYU8AXa9hbwDdruFoAN2t4UwAXa3hSgB/WcPnyY/fpFUfcAW/wIk3S/pWHPuEyNZdZOsusnUX2bqLbN1Ftu4iW3eRrbvI1gEAAAAAAAC81wLmv8ckCrfr0gAAAABJRU5ErkJggg=="
+      },
+      "position": {
+        "x": -630,
+        "y": -150
+      },
+      "properties": {
+        "mode": "signal",
+        "name": "Start"
+      },
+      "scale": 1,
+      "size": {
+        "height": 100,
+        "width": 100
+      }
+    },
+    {
+      "iconPath": "koda_sync.svg",
+      "id": "{6c1c15e0-d86b-416e-8b06-9fbe8d9129df}",
+      "nodeId": "Koda::Sync task",
+      "parentId": "",
+      "pixmap": {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAB8ElEQVR4nO2ZvU7DMBRGTyt2xMBCZ3Y26IBgQ1QI8QqV+iA8CFJfoRKiLVsRA7CxMyIYYEB9gcIQh1r9cZs0dgz9jmTViXL9XTv32qkNQgghhBBCCCGEEGK9qGR47sCUzQXPDoFHU77zuxaPfg3om8aylD6w89f1a8BnDvG0fKzohHd9VwpUgB5wYq7fgY5xyMU2cGEJ3wKnZA/HsvWpMx7JN2Arg+2WsUntD7KKh9KvOhqxjTrAVwYHvoxNSj2DbVD9DUcj9my7KOxmYdu4Zu4q0DD1LjAKqe+KgFA0gGtTrgjskysCyqBpfluhBGOIgC7Qtq6bJJGw7EfaSsQQASPGb7xp/T6HEI8hAmA8CHYk7IUQ9hkBdggfA5dL2LySvPnJznt7UT4HYNeqH5mSl8MVfZlLLClQGj4j4MWq3wGDJWwqwDnTKXBfkE9T+BwA+8/HgMVzQJVk+Zs1+Y1m3CuEWFIg7XzTuhdkGYzhO2BW59skK4L3pTCGCGgw3fkWxW2nOYlhAGzSznvL+UliSIEucGbqPQJ2HtwDMLTq2znatm2Gc59KOnxTov5c1mJLLMSmaJ9koitrUzSvPphGPihvW7xs/V8n8hxM9IoQ962f5WhsnyQvlzmaegCeKPZorEx9IYQQQgghhBBCCPFv+AEtAOydvKikkwAAAABJRU5ErkJggg=="
+      },
+      "position": {
+        "x": -430,
+        "y": -150
+      },
+      "properties": {
+        "capability": {
+          "data": "Aruco Detection",
+          "options": [
+            {
+              "data": "cancel",
+              "isVariable": false,
+              "type": "event_select"
             }
+          ]
         },
-        {
-            "iconPath": "koda_sync.svg",
-            "id": "{6c1c15e0-d86b-416e-8b06-9fbe8d9129df}",
-            "nodeId": "Koda::Sync task",
-            "parentId": "",
-            "pixmap": {
-                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAB8ElEQVR4nO2ZvU7DMBRGTyt2xMBCZ3Y26IBgQ1QI8QqV+iA8CFJfoRKiLVsRA7CxMyIYYEB9gcIQh1r9cZs0dgz9jmTViXL9XTv32qkNQgghhBBCCCGEEGK9qGR47sCUzQXPDoFHU77zuxaPfg3om8aylD6w89f1a8BnDvG0fKzohHd9VwpUgB5wYq7fgY5xyMU2cGEJ3wKnZA/HsvWpMx7JN2Arg+2WsUntD7KKh9KvOhqxjTrAVwYHvoxNSj2DbVD9DUcj9my7KOxmYdu4Zu4q0DD1LjAKqe+KgFA0gGtTrgjskysCyqBpfluhBGOIgC7Qtq6bJJGw7EfaSsQQASPGb7xp/T6HEI8hAmA8CHYk7IUQ9hkBdggfA5dL2LySvPnJznt7UT4HYNeqH5mSl8MVfZlLLClQGj4j4MWq3wGDJWwqwDnTKXBfkE9T+BwA+8/HgMVzQJVk+Zs1+Y1m3CuEWFIg7XzTuhdkGYzhO2BW59skK4L3pTCGCGgw3fkWxW2nOYlhAGzSznvL+UliSIEucGbqPQJ2HtwDMLTq2znatm2Gc59KOnxTov5c1mJLLMSmaJ9koitrUzSvPphGPihvW7xs/V8n8hxM9IoQ962f5WhsnyQvlzmaegCeKPZorEx9IYQQQgghhBBCCPFv+AEtAOydvKikkwAAAABJRU5ErkJggg=="
-            },
-            "position": {
-                "x": -430,
-                "y": -150
-            },
-            "properties": {
-                "capability": {
-                    "data": "Vision",
-                    "options": [
-                        {
-                            "data": "cancel",
-                            "isVariable": false,
-                            "type": "event_select"
-                        }
-                    ]
-                },
-                "color": "#202020",
-                "name": "Sync task"
-            },
-            "scale": 1,
-            "size": {
-                "height": 100,
-                "width": 100
+        "color": "#202020",
+        "name": "Sync task"
+      },
+      "scale": 1,
+      "size": {
+        "height": 100,
+        "width": 100
+      }
+    },
+    {
+      "iconPath": "koda_sync.svg",
+      "id": "{81badaec-ab44-4703-9e53-2709ec8ef6a3}",
+      "nodeId": "Koda::Sync task",
+      "parentId": "",
+      "pixmap": {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAB8ElEQVR4nO2ZvU7DMBRGTyt2xMBCZ3Y26IBgQ1QI8QqV+iA8CFJfoRKiLVsRA7CxMyIYYEB9gcIQh1r9cZs0dgz9jmTViXL9XTv32qkNQgghhBBCCCGEEGK9qGR47sCUzQXPDoFHU77zuxaPfg3om8aylD6w89f1a8BnDvG0fKzohHd9VwpUgB5wYq7fgY5xyMU2cGEJ3wKnZA/HsvWpMx7JN2Arg+2WsUntD7KKh9KvOhqxjTrAVwYHvoxNSj2DbVD9DUcj9my7KOxmYdu4Zu4q0DD1LjAKqe+KgFA0gGtTrgjskysCyqBpfluhBGOIgC7Qtq6bJJGw7EfaSsQQASPGb7xp/T6HEI8hAmA8CHYk7IUQ9hkBdggfA5dL2LySvPnJznt7UT4HYNeqH5mSl8MVfZlLLClQGj4j4MWq3wGDJWwqwDnTKXBfkE9T+BwA+8/HgMVzQJVk+Zs1+Y1m3CuEWFIg7XzTuhdkGYzhO2BW59skK4L3pTCGCGgw3fkWxW2nOYlhAGzSznvL+UliSIEucGbqPQJ2HtwDMLTq2znatm2Gc59KOnxTov5c1mJLLMSmaJ9koitrUzSvPphGPihvW7xs/V8n8hxM9IoQ962f5WhsnyQvlzmaegCeKPZorEx9IYQQQgghhBBCCPFv+AEtAOydvKikkwAAAABJRU5ErkJggg=="
+      },
+      "position": {
+        "x": -245,
+        "y": -149
+      },
+      "properties": {
+        "capability": {
+          "data": "Grip",
+          "options": [
+            {
+              "data": "cancel",
+              "isVariable": false,
+              "type": "event_select"
             }
+          ]
         },
-        {
-            "iconPath": "koda_sync.svg",
-            "id": "{81badaec-ab44-4703-9e53-2709ec8ef6a3}",
-            "nodeId": "Koda::Sync task",
-            "parentId": "",
-            "pixmap": {
-                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAB8ElEQVR4nO2ZvU7DMBRGTyt2xMBCZ3Y26IBgQ1QI8QqV+iA8CFJfoRKiLVsRA7CxMyIYYEB9gcIQh1r9cZs0dgz9jmTViXL9XTv32qkNQgghhBBCCCGEEGK9qGR47sCUzQXPDoFHU77zuxaPfg3om8aylD6w89f1a8BnDvG0fKzohHd9VwpUgB5wYq7fgY5xyMU2cGEJ3wKnZA/HsvWpMx7JN2Arg+2WsUntD7KKh9KvOhqxjTrAVwYHvoxNSj2DbVD9DUcj9my7KOxmYdu4Zu4q0DD1LjAKqe+KgFA0gGtTrgjskysCyqBpfluhBGOIgC7Qtq6bJJGw7EfaSsQQASPGb7xp/T6HEI8hAmA8CHYk7IUQ9hkBdggfA5dL2LySvPnJznt7UT4HYNeqH5mSl8MVfZlLLClQGj4j4MWq3wGDJWwqwDnTKXBfkE9T+BwA+8/HgMVzQJVk+Zs1+Y1m3CuEWFIg7XzTuhdkGYzhO2BW59skK4L3pTCGCGgw3fkWxW2nOYlhAGzSznvL+UliSIEucGbqPQJ2HtwDMLTq2znatm2Gc59KOnxTov5c1mJLLMSmaJ9koitrUzSvPphGPihvW7xs/V8n8hxM9IoQ962f5WhsnyQvlzmaegCeKPZorEx9IYQQQgghhBBCCPFv+AEtAOydvKikkwAAAABJRU5ErkJggg=="
-            },
-            "position": {
-                "x": -245,
-                "y": -149
-            },
-            "properties": {
-                "capability": {
-                    "data": "Grip",
-                    "options": [
-                        {
-                            "data": "cancel",
-                            "isVariable": false,
-                            "type": "event_select"
-                        }
-                    ]
-                },
-                "color": "#202020",
-                "name": "Sync task"
-            },
-            "scale": 1,
-            "size": {
-                "height": 100,
-                "width": 100
+        "color": "#202020",
+        "name": "Sync task"
+      },
+      "scale": 1,
+      "size": {
+        "height": 100,
+        "width": 100
+      }
+    },
+    {
+      "iconPath": "koda_sync.svg",
+      "id": "{a0e7d704-6b3f-4ef7-8b98-230d9db94fb5}",
+      "nodeId": "Koda::Sync task",
+      "parentId": "",
+      "pixmap": {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAB8ElEQVR4nO2ZvU7DMBRGTyt2xMBCZ3Y26IBgQ1QI8QqV+iA8CFJfoRKiLVsRA7CxMyIYYEB9gcIQh1r9cZs0dgz9jmTViXL9XTv32qkNQgghhBBCCCGEEGK9qGR47sCUzQXPDoFHU77zuxaPfg3om8aylD6w89f1a8BnDvG0fKzohHd9VwpUgB5wYq7fgY5xyMU2cGEJ3wKnZA/HsvWpMx7JN2Arg+2WsUntD7KKh9KvOhqxjTrAVwYHvoxNSj2DbVD9DUcj9my7KOxmYdu4Zu4q0DD1LjAKqe+KgFA0gGtTrgjskysCyqBpfluhBGOIgC7Qtq6bJJGw7EfaSsQQASPGb7xp/T6HEI8hAmA8CHYk7IUQ9hkBdggfA5dL2LySvPnJznt7UT4HYNeqH5mSl8MVfZlLLClQGj4j4MWq3wGDJWwqwDnTKXBfkE9T+BwA+8/HgMVzQJVk+Zs1+Y1m3CuEWFIg7XzTuhdkGYzhO2BW59skK4L3pTCGCGgw3fkWxW2nOYlhAGzSznvL+UliSIEucGbqPQJ2HtwDMLTq2znatm2Gc59KOnxTov5c1mJLLMSmaJ9koitrUzSvPphGPihvW7xs/V8n8hxM9IoQ962f5WhsnyQvlzmaegCeKPZorEx9IYQQQgghhBBCCPFv+AEtAOydvKikkwAAAABJRU5ErkJggg=="
+      },
+      "position": {
+        "x": 170,
+        "y": -150
+      },
+      "properties": {
+        "capability": {
+          "data": "Drive",
+          "options": [
+            {
+              "data": "abort",
+              "isVariable": false,
+              "type": "event_select"
             }
+          ]
         },
-        {
-            "iconPath": "koda_sync.svg",
-            "id": "{a0e7d704-6b3f-4ef7-8b98-230d9db94fb5}",
-            "nodeId": "Koda::Sync task",
-            "parentId": "",
-            "pixmap": {
-                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAB8ElEQVR4nO2ZvU7DMBRGTyt2xMBCZ3Y26IBgQ1QI8QqV+iA8CFJfoRKiLVsRA7CxMyIYYEB9gcIQh1r9cZs0dgz9jmTViXL9XTv32qkNQgghhBBCCCGEEGK9qGR47sCUzQXPDoFHU77zuxaPfg3om8aylD6w89f1a8BnDvG0fKzohHd9VwpUgB5wYq7fgY5xyMU2cGEJ3wKnZA/HsvWpMx7JN2Arg+2WsUntD7KKh9KvOhqxjTrAVwYHvoxNSj2DbVD9DUcj9my7KOxmYdu4Zu4q0DD1LjAKqe+KgFA0gGtTrgjskysCyqBpfluhBGOIgC7Qtq6bJJGw7EfaSsQQASPGb7xp/T6HEI8hAmA8CHYk7IUQ9hkBdggfA5dL2LySvPnJznt7UT4HYNeqH5mSl8MVfZlLLClQGj4j4MWq3wGDJWwqwDnTKXBfkE9T+BwA+8/HgMVzQJVk+Zs1+Y1m3CuEWFIg7XzTuhdkGYzhO2BW59skK4L3pTCGCGgw3fkWxW2nOYlhAGzSznvL+UliSIEucGbqPQJ2HtwDMLTq2znatm2Gc59KOnxTov5c1mJLLMSmaJ9koitrUzSvPphGPihvW7xs/V8n8hxM9IoQ962f5WhsnyQvlzmaegCeKPZorEx9IYQQQgghhBBCCPFv+AEtAOydvKikkwAAAABJRU5ErkJggg=="
-            },
-            "position": {
-                "x": 170,
-                "y": -150
-            },
-            "properties": {
-                "capability": {
-                    "data": "Drive",
-                    "options": [
-                        {
-                            "data": "abort",
-                            "isVariable": false,
-                            "type": "event_select"
-                        }
-                    ]
-                },
-                "color": "#202020",
-                "name": "Sync task"
-            },
-            "scale": 1,
-            "size": {
-                "height": 100,
-                "width": 100
+        "color": "#202020",
+        "name": "Sync task"
+      },
+      "scale": 1,
+      "size": {
+        "height": 100,
+        "width": 100
+      }
+    },
+    {
+      "iconPath": "koda_success.svg",
+      "id": "{ddf71c60-25a5-49fa-9922-b056af5a5029}",
+      "nodeId": "Koda::Success",
+      "parentId": "",
+      "pixmap": {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAADLElEQVR4nO2aTU8TQRiAn7INnPDOR4wpXCDe/AO0F0jA6IGkd+Hei5TfAAoX+A16ROGif4HEkFgvkFjRtHDxphcNQQ87G2fanenu7EdXOk/yJtvtu+/Xzs7M7gw4HA6Hw+FwOByOUaSUs78x4AEwC8wA0+L8FdAFOsAlcJtzXJlSBmrAIX6SfwZIV+jWxLX/LR6wSbSkTcXYELYyIatHYAV4ATwM+e8b8Bm4FgIwJWQOuB9yzSdgC3iXeqQp4+En3nsnT4EmsIC56CWh0xTX9NrZJcPWkJR7wAlqwB+BVexaWklc2+qxeQJMphBvqkwCZ/wL8gZokM7d8oStG8n+GQUqgod6578DSxn4qQrbgZ9jCvI47KImP5+hr3nUIuxk6CsSK6jNfikHn1XUx2E5B5+hlPGHpyCQRoRrJoA68Bq4AH4KuRDn6kJnEA3Jb4shPQqbqL39oCDWgTb9Q1uvtIWuCQ91dNiwyiABZdQZ3qpB1wP2GZx4r+xjLuqapNsl52lzTXJ+inmct0k+kD2D3RLqZKlqnY0Fh5LjpkFvHfvkAzE9DtuS3oF1NjEZQ23+Cxq9CeALyQvQBsY1PhYlvY6ILXMqktNL9M2/TvLkA6lrfJSAr5JeJW4yNhWblY6DXj2Mpxa2dTzRnA9aSMBMXMM2BZCdXGu14JGFbRtbcgy5FGBaOjYVYNrwXxKfveRegDuFTQGupOOpiHpJMdmSY+jGNWxTANmJqQAfLGzb2Mq9AB3peA79MPjGwraOt5rzJdShL3YBbIgzEYry8jPUiZBNC7gFjqTfjzV6vzBPk6OyBfzW/Cf7PiLHBZWRfxmK+zq8h13yhX0dhhH/IBIWRJRPYuP4LzavgHPgh5Bzca6OvsOTKcQnMRjxj6IBI/1ZHMIXRrLokWsUdGEERnxpLGCS/sXRFv5wZbs4ukb/4ugxBUw+wEPtE+TJ0jb+1HXQ8vii0A1bHt8h5Waf1QaJZeAl+g0SbcI3SFTQb5B4DrxPPdIM8fAnKEm3yDyjQJ2dDWX8UeEA/41tUNIdoVslh+ntsLbJzUgC/p0O5JI7tk3O4XA4HA6Hw+FwFI+/yMW9Rq3ZYIsAAAAASUVORK5CYII="
+      },
+      "position": {
+        "x": 430,
+        "y": -150
+      },
+      "properties": {
+        "name": "Success"
+      },
+      "scale": 1,
+      "size": {
+        "height": 100,
+        "width": 100
+      }
+    },
+    {
+      "iconPath": "koda_sync.svg",
+      "id": "{63de34bd-c861-491e-a462-3a02ab0d7a63}",
+      "nodeId": "Koda::Sync task",
+      "parentId": "",
+      "pixmap": {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAB8ElEQVR4nO2ZvU7DMBRGTyt2xMBCZ3Y26IBgQ1QI8QqV+iA8CFJfoRKiLVsRA7CxMyIYYEB9gcIQh1r9cZs0dgz9jmTViXL9XTv32qkNQgghhBBCCCGEEGK9qGR47sCUzQXPDoFHU77zuxaPfg3om8aylD6w89f1a8BnDvG0fKzohHd9VwpUgB5wYq7fgY5xyMU2cGEJ3wKnZA/HsvWpMx7JN2Arg+2WsUntD7KKh9KvOhqxjTrAVwYHvoxNSj2DbVD9DUcj9my7KOxmYdu4Zu4q0DD1LjAKqe+KgFA0gGtTrgjskysCyqBpfluhBGOIgC7Qtq6bJJGw7EfaSsQQASPGb7xp/T6HEI8hAmA8CHYk7IUQ9hkBdggfA5dL2LySvPnJznt7UT4HYNeqH5mSl8MVfZlLLClQGj4j4MWq3wGDJWwqwDnTKXBfkE9T+BwA+8/HgMVzQJVk+Zs1+Y1m3CuEWFIg7XzTuhdkGYzhO2BW59skK4L3pTCGCGgw3fkWxW2nOYlhAGzSznvL+UliSIEucGbqPQJ2HtwDMLTq2znatm2Gc59KOnxTov5c1mJLLMSmaJ9koitrUzSvPphGPihvW7xs/V8n8hxM9IoQ962f5WhsnyQvlzmaegCeKPZorEx9IYQQQgghhBBCCPFv+AEtAOydvKikkwAAAABJRU5ErkJggg=="
+      },
+      "position": {
+        "x": -45,
+        "y": -149
+      },
+      "properties": {
+        "capability": {
+          "data": "Approach",
+          "options": [
+            {
+              "data": "abort",
+              "isVariable": false,
+              "type": "event_select"
             }
+          ]
         },
-        {
-            "iconPath": "koda_success.svg",
-            "id": "{ddf71c60-25a5-49fa-9922-b056af5a5029}",
-            "nodeId": "Koda::Success",
-            "parentId": "",
-            "pixmap": {
-                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAADLElEQVR4nO2aTU8TQRiAn7INnPDOR4wpXCDe/AO0F0jA6IGkd+Hei5TfAAoX+A16ROGif4HEkFgvkFjRtHDxphcNQQ87G2fanenu7EdXOk/yJtvtu+/Xzs7M7gw4HA6Hw+FwOByOUaSUs78x4AEwC8wA0+L8FdAFOsAlcJtzXJlSBmrAIX6SfwZIV+jWxLX/LR6wSbSkTcXYELYyIatHYAV4ATwM+e8b8Bm4FgIwJWQOuB9yzSdgC3iXeqQp4+En3nsnT4EmsIC56CWh0xTX9NrZJcPWkJR7wAlqwB+BVexaWklc2+qxeQJMphBvqkwCZ/wL8gZokM7d8oStG8n+GQUqgod6578DSxn4qQrbgZ9jCvI47KImP5+hr3nUIuxk6CsSK6jNfikHn1XUx2E5B5+hlPGHpyCQRoRrJoA68Bq4AH4KuRDn6kJnEA3Jb4shPQqbqL39oCDWgTb9Q1uvtIWuCQ91dNiwyiABZdQZ3qpB1wP2GZx4r+xjLuqapNsl52lzTXJ+inmct0k+kD2D3RLqZKlqnY0Fh5LjpkFvHfvkAzE9DtuS3oF1NjEZQ23+Cxq9CeALyQvQBsY1PhYlvY6ILXMqktNL9M2/TvLkA6lrfJSAr5JeJW4yNhWblY6DXj2Mpxa2dTzRnA9aSMBMXMM2BZCdXGu14JGFbRtbcgy5FGBaOjYVYNrwXxKfveRegDuFTQGupOOpiHpJMdmSY+jGNWxTANmJqQAfLGzb2Mq9AB3peA79MPjGwraOt5rzJdShL3YBbIgzEYry8jPUiZBNC7gFjqTfjzV6vzBPk6OyBfzW/Cf7PiLHBZWRfxmK+zq8h13yhX0dhhH/IBIWRJRPYuP4LzavgHPgh5Bzca6OvsOTKcQnMRjxj6IBI/1ZHMIXRrLokWsUdGEERnxpLGCS/sXRFv5wZbs4ukb/4ugxBUw+wEPtE+TJ0jb+1HXQ8vii0A1bHt8h5Waf1QaJZeAl+g0SbcI3SFTQb5B4DrxPPdIM8fAnKEm3yDyjQJ2dDWX8UeEA/41tUNIdoVslh+ntsLbJzUgC/p0O5JI7tk3O4XA4HA6Hw+FwFI+/yMW9Rq3ZYIsAAAAASUVORK5CYII="
-            },
-            "position": {
-                "x": 430,
-                "y": -150
-            },
-            "properties": {
-                "name": "Success"
-            },
-            "scale": 1,
-            "size": {
-                "height": 100,
-                "width": 100
-            }
+        "color": "#202020",
+        "name": "Sync task"
+      },
+      "scale": 1,
+      "size": {
+        "height": 100,
+        "width": 100
+      }
+    },
+    {
+      "iconPath": "koda_success.svg",
+      "id": "{cdbc3e68-f8ca-4b5a-a06b-7299d97f9f69}",
+      "nodeId": "Koda::Terminate",
+      "parentId": "",
+      "pixmap": {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAADLElEQVR4nO2aTU8TQRiAn7INnPDOR4wpXCDe/AO0F0jA6IGkd+Hei5TfAAoX+A16ROGif4HEkFgvkFjRtHDxphcNQQ87G2fanenu7EdXOk/yJtvtu+/Xzs7M7gw4HA6Hw+FwOByOUaSUs78x4AEwC8wA0+L8FdAFOsAlcJtzXJlSBmrAIX6SfwZIV+jWxLX/LR6wSbSkTcXYELYyIatHYAV4ATwM+e8b8Bm4FgIwJWQOuB9yzSdgC3iXeqQp4+En3nsnT4EmsIC56CWh0xTX9NrZJcPWkJR7wAlqwB+BVexaWklc2+qxeQJMphBvqkwCZ/wL8gZokM7d8oStG8n+GQUqgod6578DSxn4qQrbgZ9jCvI47KImP5+hr3nUIuxk6CsSK6jNfikHn1XUx2E5B5+hlPGHpyCQRoRrJoA68Bq4AH4KuRDn6kJnEA3Jb4shPQqbqL39oCDWgTb9Q1uvtIWuCQ91dNiwyiABZdQZ3qpB1wP2GZx4r+xjLuqapNsl52lzTXJ+inmct0k+kD2D3RLqZKlqnY0Fh5LjpkFvHfvkAzE9DtuS3oF1NjEZQ23+Cxq9CeALyQvQBsY1PhYlvY6ILXMqktNL9M2/TvLkA6lrfJSAr5JeJW4yNhWblY6DXj2Mpxa2dTzRnA9aSMBMXMM2BZCdXGu14JGFbRtbcgy5FGBaOjYVYNrwXxKfveRegDuFTQGupOOpiHpJMdmSY+jGNWxTANmJqQAfLGzb2Mq9AB3peA79MPjGwraOt5rzJdShL3YBbIgzEYry8jPUiZBNC7gFjqTfjzV6vzBPk6OyBfzW/Cf7PiLHBZWRfxmK+zq8h13yhX0dhhH/IBIWRJRPYuP4LzavgHPgh5Bzca6OvsOTKcQnMRjxj6IBI/1ZHMIXRrLokWsUdGEERnxpLGCS/sXRFv5wZbs4ukb/4ugxBUw+wEPtE+TJ0jb+1HXQ8vii0A1bHt8h5Waf1QaJZeAl+g0SbcI3SFTQb5B4DrxPPdIM8fAnKEm3yDyjQJ2dDWX8UeEA/41tUNIdoVslh+ntsLbJzUgC/p0O5JI7tk3O4XA4HA6Hw+FwFI+/yMW9Rq3ZYIsAAAAASUVORK5CYII="
+      },
+      "position": {
+        "x": 405,
+        "y": -155
+      },
+      "properties": {
+        "name": "Terminate"
+      },
+      "scale": 1,
+      "size": {
+        "height": 50,
+        "width": 50
+      }
+    }
+  ],
+  "owner": "{f1982623-40c5-4f7d-8053-da9b6112c9c7}",
+  "returnType": "void",
+  "transitions": [
+    {
+      "destination": {
+        "id": "{6c1c15e0-d86b-416e-8b06-9fbe8d9129df}",
+        "position": {
+          "x": 0,
+          "y": 0
         },
-        {
-            "iconPath": "koda_sync.svg",
-            "id": "{63de34bd-c861-491e-a462-3a02ab0d7a63}",
-            "nodeId": "Koda::Sync task",
-            "parentId": "",
-            "pixmap": {
-                "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAB8ElEQVR4nO2ZvU7DMBRGTyt2xMBCZ3Y26IBgQ1QI8QqV+iA8CFJfoRKiLVsRA7CxMyIYYEB9gcIQh1r9cZs0dgz9jmTViXL9XTv32qkNQgghhBBCCCGEEGK9qGR47sCUzQXPDoFHU77zuxaPfg3om8aylD6w89f1a8BnDvG0fKzohHd9VwpUgB5wYq7fgY5xyMU2cGEJ3wKnZA/HsvWpMx7JN2Arg+2WsUntD7KKh9KvOhqxjTrAVwYHvoxNSj2DbVD9DUcj9my7KOxmYdu4Zu4q0DD1LjAKqe+KgFA0gGtTrgjskysCyqBpfluhBGOIgC7Qtq6bJJGw7EfaSsQQASPGb7xp/T6HEI8hAmA8CHYk7IUQ9hkBdggfA5dL2LySvPnJznt7UT4HYNeqH5mSl8MVfZlLLClQGj4j4MWq3wGDJWwqwDnTKXBfkE9T+BwA+8/HgMVzQJVk+Zs1+Y1m3CuEWFIg7XzTuhdkGYzhO2BW59skK4L3pTCGCGgw3fkWxW2nOYlhAGzSznvL+UliSIEucGbqPQJ2HtwDMLTq2znatm2Gc59KOnxTov5c1mJLLMSmaJ9koitrUzSvPphGPihvW7xs/V8n8hxM9IoQ962f5WhsnyQvlzmaegCeKPZorEx9IYQQQgghhBBCCPFv+AEtAOydvKikkwAAAABJRU5ErkJggg=="
-            },
-            "position": {
-                "x": -45,
-                "y": -149
-            },
-            "properties": {
-                "capability": {
-                    "data": "Approach",
-                    "options": [
-                        {
-                            "data": "abort",
-                            "isVariable": false,
-                            "type": "event_select"
-                        }
-                    ]
-                },
-                "color": "#202020",
-                "name": "Sync task"
-            },
-            "scale": 1,
-            "size": {
-                "height": 100,
-                "width": 100
-            }
+        "shift": {
+          "x": 0,
+          "y": 0
         }
-    ],
-    "owner": "{f1982623-40c5-4f7d-8053-da9b6112c9c7}",
-    "returnType": "void",
-    "transitions": [
-        {
-            "destination": {
-                "id": "{6c1c15e0-d86b-416e-8b06-9fbe8d9129df}",
-                "position": {
-                    "x": 0,
-                    "y": 0
-                },
-                "shift": {
-                    "x": 0,
-                    "y": 0
-                }
-            },
-            "events": "",
-            "id": "{6f33fd85-186b-4c27-a481-099376d969d7}",
-            "label": "",
-            "source": {
-                "id": "{15f23e55-ab6d-447f-a23c-485d352fdbf6}",
-                "position": {
-                    "x": -579,
-                    "y": -150
-                },
-                "shift": {
-                    "x": 0,
-                    "y": 0
-                }
-            }
+      },
+      "events": "",
+      "id": "{6f33fd85-186b-4c27-a481-099376d969d7}",
+      "label": "",
+      "source": {
+        "id": "{15f23e55-ab6d-447f-a23c-485d352fdbf6}",
+        "position": {
+          "x": -579,
+          "y": -150
         },
-        {
-            "destination": {
-                "id": "{81badaec-ab44-4703-9e53-2709ec8ef6a3}",
-                "position": {
-                    "x": 0,
-                    "y": 0
-                },
-                "shift": {
-                    "x": 0,
-                    "y": 0
-                }
-            },
-            "events": "",
-            "id": "{508b6626-81c7-426a-bc3d-e8b5bac5a9f7}",
-            "label": "",
-            "source": {
-                "id": "{6c1c15e0-d86b-416e-8b06-9fbe8d9129df}",
-                "position": {
-                    "x": -379,
-                    "y": -150
-                },
-                "shift": {
-                    "x": 0,
-                    "y": 0
-                }
-            }
-        },
-        {
-            "destination": {
-                "id": "{ddf71c60-25a5-49fa-9922-b056af5a5029}",
-                "position": {
-                    "x": 0,
-                    "y": 0
-                },
-                "shift": {
-                    "x": 0,
-                    "y": 0
-                }
-            },
-            "events": "",
-            "id": "{91cf0079-d668-47a2-ab47-106229d18ed4}",
-            "label": "",
-            "source": {
-                "id": "{a0e7d704-6b3f-4ef7-8b98-230d9db94fb5}",
-                "position": {
-                    "x": 221,
-                    "y": -150
-                },
-                "shift": {
-                    "x": 0,
-                    "y": 0
-                }
-            }
-        },
-        {
-            "destination": {
-                "id": "{63de34bd-c861-491e-a462-3a02ab0d7a63}",
-                "position": {
-                    "x": 0,
-                    "y": 0
-                },
-                "shift": {
-                    "x": 0,
-                    "y": 0
-                }
-            },
-            "events": "",
-            "id": "{f04c517f-f6bb-4ef4-a649-9ed8fba4c498}",
-            "label": "",
-            "source": {
-                "id": "{81badaec-ab44-4703-9e53-2709ec8ef6a3}",
-                "position": {
-                    "x": -79,
-                    "y": -150
-                },
-                "shift": {
-                    "x": 0,
-                    "y": 0
-                }
-            }
-        },
-        {
-            "destination": {
-                "id": "{a0e7d704-6b3f-4ef7-8b98-230d9db94fb5}",
-                "position": {
-                    "x": 0,
-                    "y": 0
-                },
-                "shift": {
-                    "x": 0,
-                    "y": 0
-                }
-            },
-            "events": "",
-            "id": "{287ae25b-c3c2-42de-9ff1-37f4e29c04ee}",
-            "label": "",
-            "source": {
-                "id": "{63de34bd-c861-491e-a462-3a02ab0d7a63}",
-                "position": {
-                    "x": 1,
-                    "y": -150
-                },
-                "shift": {
-                    "x": 0,
-                    "y": 0
-                }
-            }
+        "shift": {
+          "x": 0,
+          "y": 0
         }
-    ],
-    "type": "user"
+      }
+    },
+    {
+      "destination": {
+        "id": "{81badaec-ab44-4703-9e53-2709ec8ef6a3}",
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "shift": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      "events": "",
+      "id": "{508b6626-81c7-426a-bc3d-e8b5bac5a9f7}",
+      "label": "",
+      "source": {
+        "id": "{6c1c15e0-d86b-416e-8b06-9fbe8d9129df}",
+        "position": {
+          "x": -379,
+          "y": -150
+        },
+        "shift": {
+          "x": 0,
+          "y": 0
+        }
+      }
+    },
+    {
+      "destination": {
+        "id": "{ddf71c60-25a5-49fa-9922-b056af5a5029}",
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "shift": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      "events": "",
+      "id": "{91cf0079-d668-47a2-ab47-106229d18ed4}",
+      "label": "",
+      "source": {
+        "id": "{a0e7d704-6b3f-4ef7-8b98-230d9db94fb5}",
+        "position": {
+          "x": 221,
+          "y": -150
+        },
+        "shift": {
+          "x": 0,
+          "y": 0
+        }
+      }
+    },
+    {
+      "destination": {
+        "id": "{63de34bd-c861-491e-a462-3a02ab0d7a63}",
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "shift": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      "events": "",
+      "id": "{f04c517f-f6bb-4ef4-a649-9ed8fba4c498}",
+      "label": "",
+      "source": {
+        "id": "{81badaec-ab44-4703-9e53-2709ec8ef6a3}",
+        "position": {
+          "x": -79,
+          "y": -150
+        },
+        "shift": {
+          "x": 0,
+          "y": 0
+        }
+      }
+    },
+    {
+      "destination": {
+        "id": "{a0e7d704-6b3f-4ef7-8b98-230d9db94fb5}",
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "shift": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      "events": "",
+      "id": "{287ae25b-c3c2-42de-9ff1-37f4e29c04ee}",
+      "label": "",
+      "source": {
+        "id": "{63de34bd-c861-491e-a462-3a02ab0d7a63}",
+        "position": {
+          "x": 1,
+          "y": -150
+        },
+        "shift": {
+          "x": 0,
+          "y": 0
+        }
+      }
+    }
+  ],
+  "type": "user"
 }

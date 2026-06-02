@@ -35,6 +35,7 @@ class PluginView;
 class QPlainTextEdit;
 class Logger;
 class LanguageManager;
+class EdgeRouter;
 
 namespace maki
 {
@@ -107,7 +108,7 @@ private slots:
    * @param flow Pointer to the opened Flow.
    * @param node Pointer to the associated NodeItem.
    */
-  void onOpenFlow(Flow* flow, NodeItem* node);
+  void onOpenFlow(Flow* flow, const QString& nodeId);
 
   /**
    * @brief Handles flow addition events.
@@ -151,6 +152,7 @@ private:
   oclero::qlementine::ThemeManager* mThemeManager;  /// Pointer to the theme manager.
 
   std::shared_ptr<SaveInfo> mStorage;  /// Shared pointer to save information.
+  std::shared_ptr<EdgeRouter> mRouter;
 
   QApplication* mApp;  /// Pointer to the QApplication instance.
 
@@ -295,6 +297,7 @@ private:
   void onActionGenerate(const QString& pipelineId);      /// Handles generate action.
   void onActionEditPipeline(const QString& pipelineId);  /// Handles generate action.
   void onActionLogLevelChanged();                        /// Handles log level change action.
+  void onFileLoaded(const QString& file, const SaveInfo& info, const QString& error);
 };  // namespace qlementclassMainWindow:public MainWindowLayout
 
 #endif  // MAINWINDOW_H

@@ -33,6 +33,7 @@
 #include "common/style_helpers.h"
 #include "config.h"
 #include "config_table.h"
+#include "edge_router.h"
 #include "elements/flow.h"
 #include "elements/node.h"
 #include "elements/port.h"
@@ -92,11 +93,13 @@ QWidget* viewportFor(QGraphicsScene* scene)
 
 static constexpr auto MAKI_CLIPBOARD_MIME = "application/x-maki-copied-nodes";
 
-Canvas::Canvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> configTable, QObject* parent)
+Canvas::Canvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> configTable,
+               std::shared_ptr<EdgeRouter> router, QObject* parent)
     : QGraphicsScene(parent)
+    , mConfigTable(configTable)
+    , mRouter(router)
     , mId(canvasId)
     , mCopiedNodes({})
-    , mConfigTable(configTable)
 {
   setBackgroundBrush(Qt::transparent);
   // setItemIndexMethod(ItemIndexMethod::NoIndex);
@@ -107,7 +110,12 @@ Canvas::Canvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> conf
   mUndoStack = new QUndoStack(this);
   mUndoStack->setUndoLimit(20);
 
-  connect(this, &QGraphicsScene::selectionChanged, this, [this]() { updateNodeActionButtons(); });
+  connect(this, &QGraphicsScene::selectionChanged, this, &Canvas::onSelectionChanged);
+}
+
+Canvas::~Canvas()
+{
+  disconnect(this, &QGraphicsScene::selectionChanged, this, &Canvas::onSelectionChanged);
 }
 
 QString Canvas::id() const
@@ -125,6 +133,11 @@ QUndoStack* Canvas::undoStack() const
   return mUndoStack;
 }
 
+std::shared_ptr<EdgeRouter> Canvas::router() const
+{
+  return mRouter;
+}
+
 QList<NodeItem*> Canvas::availableNodes()
 {
   QList<NodeItem*> nodes;
@@ -135,6 +148,23 @@ QList<NodeItem*> Canvas::availableNodes()
   }
 
   return nodes;
+}
+
+void Canvas::onSelectionChanged()
+{
+  const auto selected = selectedItems();
+  mSelectedNodes.erase(std::remove_if(mSelectedNodes.begin(), mSelectedNodes.end(),
+                                      [&selected](NodeItem* node) {
+                                        return !selected.contains(node);
+                                      }),
+                       mSelectedNodes.end());
+
+  for (auto* item : selected)
+    if (auto* node = qgraphicsitem_cast<NodeItem*>(item))
+      if (!mSelectedNodes.contains(node))
+        mSelectedNodes.append(node);
+
+  updateNodeActionButtons();
 }
 
 void Canvas::dragEnterEvent(QGraphicsSceneDragDropEvent* event)
@@ -156,7 +186,7 @@ void Canvas::dragEnterEvent(QGraphicsSceneDragDropEvent* event)
   NodeSaveInfo peekInfo;
   stream >> peekInfo;
   auto cfg = mConfigTable->get(peekInfo.getnodeId());
-  if (cfg && type() == Types::LibraryTypes::STRUCTURAL && cfg->libraryType == Types::LibraryTypes::STRUCTURAL && cfg->type != QStringLiteral("Task"))
+  if (cfg && type() == Types::LibraryTypes::STRUCTURAL && cfg->libraryType == Types::LibraryTypes::STRUCTURAL && cfg->type != QStringLiteral("Koda::Task"))
   {
     mDraggedNodeIsCapability = true;
     mDraggedCapabilityColor = cfg->body.backgroundColor;
@@ -275,7 +305,7 @@ void Canvas::ensureNodeActionMenu()
   mNodeActionMenu = new NodeActionMenu(view);
   connect(mNodeActionMenu, &NodeActionMenu::addFlowRequested, this, [this](NodeItem* n) {
     if (n)
-      emit openFlow(nullptr, n);
+      emit openFlow(nullptr, n->id());
   });
   connect(mNodeActionMenu, &NodeActionMenu::addSubtaskRequested, this, &Canvas::addSubtaskTo);
 }
@@ -358,7 +388,7 @@ void Canvas::openCapabilityMenu(NodeItem* task)
     const auto& cfg = kv.second;
     if (!cfg || cfg->libraryType != Types::LibraryTypes::STRUCTURAL)
       continue;
-    if (cfg->type == QStringLiteral("Task"))
+    if (cfg->type == QStringLiteral("Koda::Task"))
       continue;
 
     const QString& key = kv.first;
@@ -871,26 +901,29 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 void Canvas::createAlignMenu(QMenu* alignMenu, const QList<Types::AlignmentNode>& items)
 {
   // QAction* distribute = alignMenu->addAction("Distribute");
-  QAction* alignHCenter = alignMenu->addAction(QIcon::fromTheme("align-horizontal-center"), "Align H center");
-  connect(alignHCenter, &QAction::triggered, [this, &items]() { requestAlignNodes(items, Types::AlignmentMode::HORIZONTAL, Types::AlignmentDirection::CENTER); });
+  QAction* alignHCenter = alignMenu->addAction(iconFromTheme("align-horizontal-center"), "Align H center");
+  connect(alignHCenter, &QAction::triggered, [this, items]() { requestAlignNodes(items, Types::AlignmentMode::HORIZONTAL, Types::AlignmentDirection::CENTER); });
 
-  QAction* alignLeft = alignMenu->addAction(QIcon::fromTheme("align-horizontal-left"), "Align left");
-  connect(alignLeft, &QAction::triggered, [this, &items]() { requestAlignNodes(items, Types::AlignmentMode::HORIZONTAL, Types::AlignmentDirection::START); });
+  QAction* alignLeft = alignMenu->addAction(iconFromTheme("align-horizontal-left"), "Align left");
+  connect(alignLeft, &QAction::triggered, [this, items]() { requestAlignNodes(items, Types::AlignmentMode::HORIZONTAL, Types::AlignmentDirection::START); });
 
-  QAction* alignRight = alignMenu->addAction(QIcon::fromTheme("align-horizontal-right"), "Align right");
-  connect(alignRight, &QAction::triggered, [this, &items]() { requestAlignNodes(items, Types::AlignmentMode::HORIZONTAL, Types::AlignmentDirection::END); });
+  QAction* alignRight = alignMenu->addAction(iconFromTheme("align-horizontal-right"), "Align right");
+  connect(alignRight, &QAction::triggered, [this, items]() { requestAlignNodes(items, Types::AlignmentMode::HORIZONTAL, Types::AlignmentDirection::END); });
 
-  QAction* alignVCenter = alignMenu->addAction(QIcon::fromTheme("align-vertical-center"), "Align V center");
-  connect(alignVCenter, &QAction::triggered, [this, &items]() { requestAlignNodes(items, Types::AlignmentMode::VERTICAL, Types::AlignmentDirection::CENTER); });
+  QAction* alignVCenter = alignMenu->addAction(iconFromTheme("align-vertical-center"), "Align V center");
+  connect(alignVCenter, &QAction::triggered, [this, items]() { requestAlignNodes(items, Types::AlignmentMode::VERTICAL, Types::AlignmentDirection::CENTER); });
 
-  QAction* alignTop = alignMenu->addAction(QIcon::fromTheme("align-vertical-top"), "Align top");
-  connect(alignTop, &QAction::triggered, [this, &items]() { requestAlignNodes(items, Types::AlignmentMode::VERTICAL, Types::AlignmentDirection::START); });
+  QAction* alignTop = alignMenu->addAction(iconFromTheme("align-vertical-top"), "Align top");
+  connect(alignTop, &QAction::triggered, [this, items]() { requestAlignNodes(items, Types::AlignmentMode::VERTICAL, Types::AlignmentDirection::START); });
 
-  QAction* alignBottom = alignMenu->addAction(QIcon::fromTheme("align-vertical-bottom"), "Align bottom");
-  connect(alignBottom, &QAction::triggered, [this, &items]() { requestAlignNodes(items, Types::AlignmentMode::VERTICAL, Types::AlignmentDirection::END); });
+  QAction* alignBottom = alignMenu->addAction(iconFromTheme("align-vertical-bottom"), "Align bottom");
+  connect(alignBottom, &QAction::triggered, [this, items]() { requestAlignNodes(items, Types::AlignmentMode::VERTICAL, Types::AlignmentDirection::END); });
 
-  alignMenu->setIcon(QIcon::fromTheme("align-none"));
+  alignMenu->setIcon(iconFromTheme("align-none"));
   alignMenu->setEnabled(items.size() > 1);
+
+  const auto width = qobject_cast<QGraphicsView*>(parent())->viewport()->width();
+  alignMenu->setMinimumWidth(width / 6);
 }
 
 void Canvas::nodeClicked(NodeItem* node)
@@ -912,12 +945,14 @@ QList<NodeItem*> Canvas::selectedNodes() const
   return mSelectedNodes;
 }
 
-void Canvas::requestAlignNodes(const QList<Types::AlignmentNode>& items, Types::AlignmentMode mode, Types::AlignmentDirection direction)
+void Canvas::requestAlignNodes(const QList<Types::AlignmentNode>& items,
+                               Types::AlignmentMode mode, Types::AlignmentDirection direction)
 {
   mUndoStack->push(new AlignCommand(this, items, mode, direction));
 }
 
-void Canvas::alignNodes(const QList<Types::AlignmentNode>& nodes, Types::AlignmentMode mode, Types::AlignmentDirection direction, bool useGiven)
+void Canvas::alignNodes(const QList<Types::AlignmentNode>& nodes,
+                        Types::AlignmentMode mode, Types::AlignmentDirection direction, bool useGiven)
 {
   if (nodes.size() < 2)
     return;
@@ -1010,9 +1045,13 @@ void Canvas::alignNodesVertically(const QList<Types::AlignmentNode>& nodes, Type
 void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 {
   QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
+  const auto width = qobject_cast<QGraphicsView*>(parent())->viewport()->width();
 
   // Define menu actions
-  QMenu menu;
+  auto* menu = new QMenu(parentView());
+  menu->setAttribute(Qt::WA_DeleteOnClose);
+  menu->setMinimumWidth(width / 6);
+
   QList<NodeItem*> items = selectedNodes();
   QList<Types::AlignmentNode> itemIds = {};
   for (const auto node : items)
@@ -1024,31 +1063,31 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
   if (!item)
   {
     // =============================================
-    addSectionLabel(&menu, "Edit");
+    addSectionLabel(menu, "Edit");
 
-    QAction* copyAction = menu.addAction(QIcon::fromTheme("edit-copy"), "Copy");
+    QAction* copyAction = menu->addAction(iconFromTheme("edit-copy"), "Copy");
     copyAction->setEnabled(items.size() > 0);
     QObject::connect(copyAction, &QAction::triggered, [this]() {
       copySelectedItems(nullptr);
     });
 
-    QAction* pasteAction = menu.addAction(QIcon::fromTheme("edit-paste"), "Paste");
+    QAction* pasteAction = menu->addAction(iconFromTheme("edit-paste", true), "Paste");
     const QMimeData* mimeData = QApplication::clipboard()->mimeData();
     pasteAction->setEnabled(mimeData && mimeData->hasFormat(MAKI_CLIPBOARD_MIME));
     QObject::connect(pasteAction, &QAction::triggered, [this]() {
       pasteCopiedItems();
     });
 
-    QAction* deleteAction = menu.addAction(QIcon::fromTheme("edit-delete"), "Delete");
+    QAction* deleteAction = menu->addAction(iconFromTheme("edit-delete"), "Delete");
     deleteAction->setEnabled(items.size() > 0);
     QObject::connect(deleteAction, &QAction::triggered, [this]() {
       deleteSelectedItems();
     });
 
     // =============================================
-    addSectionLabel(&menu, "Visual");
+    addSectionLabel(menu, "Visual");
 
-    QAction* forwardAction = menu.addAction(QIcon::fromTheme("object-order-front"), "To front");
+    QAction* forwardAction = menu->addAction(iconFromTheme("object-order-front"), "To front");
     forwardAction->setEnabled(items.size() > 0);
     QObject::connect(forwardAction, &QAction::triggered, [this, items]() {
       qreal topZLevel = 0;
@@ -1059,7 +1098,7 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
         node->setZValue(topZLevel);
     });
 
-    QAction* backwardAction = menu.addAction(QIcon::fromTheme("object-order-back"), "To back");
+    QAction* backwardAction = menu->addAction(iconFromTheme("object-order-back"), "To back");
     backwardAction->setEnabled(items.size() > 0);
     QObject::connect(backwardAction, &QAction::triggered, [this, items]() {
       qreal topZLevel = 0;
@@ -1070,7 +1109,7 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
         node->setZValue(topZLevel);
     });
 
-    QAction* toggleLabelAction = menu.addAction(QIcon::fromTheme("view-visible"), "Toggle label");
+    QAction* toggleLabelAction = menu->addAction(iconFromTheme("view-visible"), "Toggle label");
     toggleLabelAction->setEnabled(items.size() > 0);
     QObject::connect(toggleLabelAction, &QAction::triggered, [items]() {
       for (QGraphicsItem* item : items)
@@ -1080,7 +1119,7 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
       }
     });
 
-    QMenu* alignMenu = menu.addMenu(QIcon::fromTheme("align-on-canvas"), tr("Align"));
+    QMenu* alignMenu = menu->addMenu(iconFromTheme("align-on-canvas"), tr("Align"));
     createAlignMenu(alignMenu, itemIds);
   }
   else if (item->type() == NodeItem::Type || item->type() == QGraphicsSvgItem::Type)
@@ -1088,41 +1127,41 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     NodeItem* node = static_cast<NodeItem*>(item->type() == NodeItem::Type ? item : item->parentItem());
 
     // =============================================
-    addSectionLabel(&menu, "Creation");
+    addSectionLabel(menu, "Creation");
 
-    QAction* newEventAction = menu.addAction(tr("New flow"));
+    QAction* newEventAction = menu->addAction(QIcon(":/icons/flow.svg"), tr("New flow"));
     newEventAction->setEnabled(node != nullptr || items.size() > 0);
     QObject::connect(newEventAction, &QAction::triggered, [this, node]() {
       emit createEvent(node);
     });
-    menu.addAction(newEventAction);
+    menu->addAction(newEventAction);
 
     // =============================================
-    addSectionLabel(&menu, "Edit");
+    addSectionLabel(menu, "Edit");
 
-    QAction* copyAction = menu.addAction(QIcon::fromTheme("edit-copy"), "Copy");
+    QAction* copyAction = menu->addAction(iconFromTheme("edit-copy"), "Copy");
     copyAction->setEnabled(node != nullptr || items.size() > 0);
     QObject::connect(copyAction, &QAction::triggered, [this, node]() {
       copySelectedItems(node);
     });
 
-    QAction* pasteAction = menu.addAction(QIcon::fromTheme("edit-paste"), "Paste");
+    QAction* pasteAction = menu->addAction(iconFromTheme("edit-paste"), "Paste");
     const QMimeData* mimeData = QApplication::clipboard()->mimeData();
     pasteAction->setEnabled(mimeData && mimeData->hasFormat(MAKI_CLIPBOARD_MIME));
     QObject::connect(pasteAction, &QAction::triggered, [this]() {
       pasteCopiedItems();
     });
 
-    QAction* deleteAction = menu.addAction(QIcon::fromTheme("edit-delete"), "Delete");
+    QAction* deleteAction = menu->addAction(iconFromTheme("edit-delete"), "Delete");
     deleteAction->setEnabled(node != nullptr || items.size() > 0);
     QObject::connect(deleteAction, &QAction::triggered, [this]() {
       deleteSelectedItems();
     });
 
     // =============================================
-    addSectionLabel(&menu, "Visual");
+    addSectionLabel(menu, "Visual");
 
-    QAction* forwardAction = menu.addAction(QIcon::fromTheme("object-order-front"), "To front");
+    QAction* forwardAction = menu->addAction(iconFromTheme("object-order-front"), "To front");
     forwardAction->setEnabled(node != nullptr || items.size() > 0);
     QObject::connect(forwardAction, &QAction::triggered, [this, node]() {
       if (!node)
@@ -1136,7 +1175,7 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
       node->setZValue(++topZLevel);
     });
 
-    QAction* backwardAction = menu.addAction(QIcon::fromTheme("object-order-back"), "To back");
+    QAction* backwardAction = menu->addAction(iconFromTheme("object-order-back"), "To back");
     backwardAction->setEnabled(node != nullptr || items.size() > 0);
     QObject::connect(backwardAction, &QAction::triggered, [this, node]() {
       if (!node)
@@ -1150,7 +1189,7 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
       node->setZValue(--topZLevel);
     });
 
-    QAction* toggleLabelAction = menu.addAction(QIcon::fromTheme("view-visible"), "Toggle label");
+    QAction* toggleLabelAction = menu->addAction(iconFromTheme("view-visible"), "Toggle label");
     toggleLabelAction->setEnabled(node != nullptr || items.size() > 0);
     QObject::connect(toggleLabelAction, &QAction::triggered, [items]() {
       for (QGraphicsItem* item : items)
@@ -1160,17 +1199,17 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
       }
     });
 
-    QMenu* alignMenu = menu.addMenu(QIcon::fromTheme("align-on-canvas"), tr("Align"));
+    QMenu* alignMenu = menu->addMenu(iconFromTheme("align-on-canvas"), tr("Align"));
     createAlignMenu(alignMenu, itemIds);
   }
   else if (item->type() == TransitionItem::Type)
   {
     // =============================================
-    addSectionLabel(&menu, "Visual");
+    addSectionLabel(menu, "Visual");
 
     // TransitionItem* transition = static_cast<TransitionItem*>(item);
 
-    QAction* toggleLabelAction = menu.addAction(QIcon::fromTheme("view-visible"), "Toggle label");
+    QAction* toggleLabelAction = menu->addAction(iconFromTheme("view-visible"), "Toggle label");
     toggleLabelAction->setEnabled(items.size() > 0);
     QObject::connect(toggleLabelAction, &QAction::triggered, [items]() {
       // for (QGraphicsItem* item : items)
@@ -1182,7 +1221,8 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
   }
 
   // Execute the menu at the mouse cursor's position
-  menu.exec(event->screenPos());
+  menu->popup(event->screenPos());
+  // menu->exec(event->screenPos());
 }
 
 void Canvas::createNodeContextMenu(QMenu& menu)
@@ -1236,16 +1276,17 @@ void Canvas::deleteSelectedItems()
   mUndoStack->beginMacro("Remove nodes");
 
   for (NodeItem* node : nodesToDelete)
-    triggerNodeRemoval(node);
+    triggerNodeRemoval(node->saveInfo());
 
   mUndoStack->endMacro();
 }
 
-void Canvas::triggerNodeRemoval(const NodeItem* node)
+void Canvas::triggerNodeRemoval(const NodeSaveInfo& nodeInfo)
 {
   // We have to remember that QT QUndoCommands trigger the 'redo' method after creation. Thus, the node
   // removal is not explicit (as I would like) but happens through the RemoveNodeCommand below
-  mUndoStack->push(new RemoveNodeCommand(this, node->saveInfo()));
+  LOG_INFO("Removing node: %s", qPrintable(nodeInfo.getnodeId()));
+  mUndoStack->push(new RemoveNodeCommand(this, nodeInfo));
 }
 
 void Canvas::removeNode(const NodeSaveInfo info)
@@ -1398,7 +1439,8 @@ void Canvas::copySelectedItems(NodeItem* clickedNode)
   QApplication::clipboard()->setMimeData(mimeData);
 }
 
-void Canvas::pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode, QList<CopiedNode> copiedNodes, bool absolute)
+void Canvas::pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode,
+                              QList<CopiedNode> copiedNodes, bool absolute)
 {
   for (const auto& copy : copiedNodes)
   {
@@ -1616,7 +1658,8 @@ void Canvas::createNode(const NodeSaveInfo info)
     (void)createNode(*std::dynamic_pointer_cast<NodeSaveInfo>(child));
 }
 
-NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo> info, const QPointF& position, NodeItem* parent)
+NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo> info,
+                             const QPointF& position, NodeItem* parent)
 {
   auto config = mConfigTable->get(info->getnodeId());
   if (config == nullptr)
@@ -1812,28 +1855,45 @@ QPointF Canvas::getCenter() const
   return parentView()->getCenter();
 }
 
-void Canvas::onFocusNode(const QString& nodeId)
+void Canvas::onFocusNode(const QString& flowId, const QString& nodeId)
 {
-  auto node = findNodeWithId(nodeId);
-  if (!node)
-    return;
+  // If no flow id was provided, then we are already in the right canvas, or in the structural canvas
+  if (flowId.isEmpty())
+  {
+    auto node = findNodeWithId(nodeId);
+    if (!node)
+      return;
 
-  parentView()->zoom(2 * node->baseScale() / parentView()->getScale());
+    parentView()->zoom(2 * node->baseScale() / parentView()->getScale());
 
-  // Center the node in the view
-  parentView()->centerOn(node);
+    // Center the node in the view
+    parentView()->centerOn(node);
+  }
+  else
+  {
+    // If we have a flow id, we need to find that flow and the node inside it
+    for (const auto& item : items())
+    {
+      if (item->type() != NodeItem::Type)
+        continue;
+
+      auto node = static_cast<NodeItem*>(item);
+      const auto flow = node->getFlow(flowId);
+      if (!flow)
+        continue;
+
+      for (const auto& child : flow->getNodes())
+        if (child->getid() == nodeId)
+        {
+          emit openFlow(flow, nodeId);
+          return;
+        }
+    }
+  }
 }
 
-void Canvas::onRemoveNode(const QString& nodeId)
+void Canvas::onRemoveNode(const QString& flowId, const QString& nodeId)
 {
-  auto node = findNodeWithId(nodeId);
-  if (!node)
-  {
-    LOG_WARNING("No node with id: %s", qPrintable(nodeId));
-    return;
-  }
-
-  triggerNodeRemoval(node);
 }
 
 // ==========================================================================================
@@ -1844,9 +1904,10 @@ void Canvas::populate(const FlowSaveInfo& flow)
   for (const auto& inode : flow.getnodes())
   {
     auto node = std::dynamic_pointer_cast<NodeSaveInfo>(inode);
-    LOG_DEBUG("Creating behavioral node %s with parent %s", qPrintable(node->getid()), qPrintable(node->getparentId()));
-    auto created = createNode(NodeCreation::Populating, node, node->getposition(), findNodeWithId(node->getparentId()));
-    LOG_DEBUG("Created node %s", qPrintable(created->id()));
+    // LOG_DEBUG("Creating behavioral node %s with parent \"%s\"", qPrintable(node->getid()), qPrintable(node->getparentId()));
+    (void)createNode(NodeCreation::Populating, node, node->getposition(), findNodeWithId(node->getparentId()));
+    // if (created)
+    //   LOG_DEBUG("Created node %s", qPrintable(created->id()));
   }
 
   // Then create the transitions between the nodes
@@ -1874,9 +1935,11 @@ void Canvas::populate(const FlowSaveInfo& flow)
     connection->setStart(transition->getsrcId(), transition->srcPoint(), transition->srcShift());
     connection->setEnd(transition->getdstId(), transition->dstPoint(), transition->dstShift());
 
-    connection->done(srcConn, dstConn);
     addTransition(connection);
     addItem(connection);
+
+    // First add the transition to the canvas and then mark it as done
+    connection->done(srcConn, dstConn);
   }
 }
 
@@ -1885,12 +1948,12 @@ void Canvas::onFlowSelected(const QString& flowId, const QString& nodeId)
   auto node = findNodeWithId(nodeId);
   if (!node)
   {
-    LOG_WARNING("Flow is not tied to any nodes");
+    LOG_WARNING("Flow %s is not tied to any nodes", qPrintable(flowId));
     return;
   }
 
   auto flow = node->getFlow(flowId);
-  emit openFlow(flow, node);
+  emit openFlow(flow, "");
 }
 
 void Canvas::onFlowRemoved(const QString& flowId, const QString& nodeId)
@@ -1939,5 +2002,33 @@ TransitionItem* Canvas::transitionAt(const QPointF& scenePos) const
 void Canvas::themeChanged()
 {
   for (QGraphicsItem* item : items())
+  {
+    if (item->type() == TransitionItem::Type)
+      qgraphicsitem_cast<TransitionItem*>(item)->updatePath();
+
     item->update();
+  }
+}
+
+void Canvas::autoRoute()
+{
+  if (!router())
+    return;
+
+  QList<NodeItem*> nodes;
+  QList<TransitionItem*> transitions;
+  for (const auto& item : items())
+  {
+    if (item->type() == NodeItem::Type)
+      nodes.push_back(qgraphicsitem_cast<NodeItem*>(item));
+    else if (item->type() == TransitionItem::Type)
+      transitions.push_back(qgraphicsitem_cast<TransitionItem*>(item));
+  }
+
+  const auto paths = router()->route(nodes, transitions);
+  for (TransitionItem* transition : transitions)
+  {
+    if (paths.contains(transition))
+      transition->updatePath(paths.value(transition));
+  }
 }

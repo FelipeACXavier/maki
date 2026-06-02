@@ -36,7 +36,7 @@
     ],
     "iconPath": "",
     "id": "{e8a331db-e477-425e-a3fb-5dab40bae07f}",
-    "nodeId": "Koda::Vision",
+    "nodeId": "Koda::Aruco Detection",
     "parentId": "{f1982623-40c5-4f7d-8053-da9b6112c9c7}",
     "pixmap": {
         "data": ""
@@ -47,7 +47,7 @@
     },
     "properties": {
         "color": "#e6c994",
-        "name": "Vision",
+        "name": "Aruco Detection",
         "type": {
             "id": "type",
             "options": [

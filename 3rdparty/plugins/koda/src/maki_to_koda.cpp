@@ -55,18 +55,23 @@ Result<koda::PComponent> MakiToKoda::buildTask(const INode& task)
 {
   auto c = std::make_shared<koda::Component>();
   c->kind = koda::Component::Kind::Task;
-  c->name = task.getproperties()["name"].toString().toLower().replace(" ", "_").toStdString();
+  auto properties = task.getproperties();
+  if (!properties.contains("name"))
+    return Result<koda::PComponent>::Failed("Task does not have a name");
+
+  auto name = properties["name"].toString().toLower();
+  c->name = format(name, "_");
 
   // Get arguments
   for (const auto& cap : task.getchildren())
   {
-    auto capName = cap->getproperties()["name"].toString().toStdString();
+    auto capName = cap->getproperties()["name"].toString();
 
     auto parg = std::make_shared<koda::Argument>();
     parg->kind = koda::Argument::Kind::Req;
-    parg->a = capName;
+    parg->a = format(capName);
     ToLowerCase(parg->a, 0);
-    parg->b = capName;
+    parg->b = format(capName);
 
     c->args.push_back(parg);
   }
@@ -115,9 +120,14 @@ Result<koda::PComponent> MakiToKoda::buildCapability(const INode& capability)
 {
   auto c = std::make_shared<koda::Component>();
   c->kind = koda::Component::Kind::Capability;
-  c->name = capability.getproperties()["name"].toString().toStdString();
+  auto properties = capability.getproperties();
+  if (!properties.contains("name"))
+    return Result<koda::PComponent>::Failed("Capabiity does not have a name");
 
-  auto typeArray = capability.getproperties()["type"].toJsonObject()["options"].toArray();
+  auto name = properties["name"].toString();
+  c->name = format(name);
+
+  auto typeArray = properties["type"].toJsonObject()["options"].toArray();
   if (typeArray.isEmpty())
     return Result<koda::PComponent>::Failed("Type options is empty: " + c->name);
 
@@ -368,17 +378,15 @@ std::any MakiToKoda::buildNodeExpr(const IFlow& flow, const INode& node)
     return buildAsyncExpr(flow, node);
   else if (node.getnodeId() == "Koda::Sync task")
     return buildSyncExpr(flow, node);
-  else if (node.getnodeId() == "Koda::Strategy")
+  else if (node.getnodeId() == "Koda::Flow call")
     return buildStrategyExpr(flow, node);
   else if (node.getnodeId() == "Koda::Within")
     return buildWithinExpr(flow, node);
-  else if (node.getnodeId() == "Koda::Every")
-    return buildEveryExpr(flow, node);
   else if (node.getnodeId() == "Koda::Repeat")
     return buildRepeatExpr(flow, node);
   else if (node.getnodeId() == "Koda::Continue")
     return buildContinueExpr(flow, node);
-  else if (node.getnodeId() == "Koda::Success")
+  else if (node.getnodeId() == "Koda::Terminate")
     return buildSuccessExpr(flow, node);
 
   LOG_ERROR("Unknown expression: %s", qPrintable(node.getnodeId()));
@@ -402,7 +410,7 @@ std::any MakiToKoda::buildAsyncExpr(const IFlow& flow, const INode& node)
   }
 
   auto task = std::make_shared<koda::EventCall>();
-  task->receiver = val.toStdString();
+  task->receiver = format(val);
   ToLowerCase(task->receiver, 0);
 
   auto expr = std::make_shared<koda::Strategy::TaskCall>();
@@ -436,7 +444,7 @@ std::any MakiToKoda::buildSyncExpr(const IFlow& flow, const INode& node)
   const auto method = options.at(0).toObject();
 
   auto task = std::make_shared<koda::EventCall>();
-  task->receiver = val.toStdString();
+  task->receiver = format(val);
   ToLowerCase(task->receiver, 0);
 
   task->name = method["data"].toString().toStdString();
@@ -452,7 +460,7 @@ std::any MakiToKoda::buildSyncExpr(const IFlow& flow, const INode& node)
 
 std::any MakiToKoda::buildStrategyExpr(const IFlow& flow, const INode& node)
 {
-  QJsonObject object = node.getproperties()["strategy"].toJsonObject();
+  QJsonObject object = node.getproperties()["task"].toJsonObject();
   QString val = object["data"].toString();
   QJsonArray options = object["options"].toArray();
   if (options.isEmpty())
@@ -523,47 +531,37 @@ std::any MakiToKoda::buildWithinExpr(const IFlow& flow, const INode& node)
   return strat;
 }
 
-std::any MakiToKoda::buildEveryExpr(const IFlow& flow, const INode& node)
-{
-  auto expr = std::make_shared<koda::Strategy::Every>();
-
-  const auto seqSuccessors = sequentialSuccessorsOf(node, flow);
-  if (seqSuccessors.size() != 1)
-  {
-    LOG_ERROR("Every node must have exactly one normal transition: " + node.getid().toStdString());
-    return std::any();
-  }
-
-  auto sequence = buildSequenceFrom(flow, seqSuccessors.first().node, nullptr);
-  if (!sequence.has_value())
-  {
-    LOG_ERROR("Failed to create do sequence");
-    return std::any();
-  }
-
-  expr->a = std::any_cast<koda::PStrategy>(sequence);
-
-  auto handlers = buildHandlers(flow, node);
-  for (const auto& handler : handlers)
-    expr->handlers.push_back(handler);
-
-  auto strat = std::make_shared<koda::Strategy>();
-  strat->v = expr;
-
-  return strat;
-}
-
 std::any MakiToKoda::buildRepeatExpr(const IFlow& flow, const INode& node)
 {
   auto expr = std::make_shared<koda::Strategy::Repeat>();
 
-  QJsonObject object = node.getproperties()["strategy"].toJsonObject();
+  auto properties = node.getproperties();
+  if (!properties.contains("capability"))
+  {
+    LOG_ERROR("Repeat component does not have an associated flow");
+    return std::any();
+  }
+  if (!properties.contains("iterations"))
+  {
+    LOG_ERROR("Repeat component is missing the iterations property");
+    return std::any();
+  }
+  if (!properties.contains("rate"))
+  {
+    LOG_ERROR("Repeat component is missing the rate property");
+    return std::any();
+  }
+
+  QJsonObject object = properties["capability"].toJsonObject();
   QJsonArray options = object["options"].toArray();
   if (options.isEmpty())
   {
     LOG_ERROR("Repeat component does not have an associated flow");
     return std::any();
   }
+
+  expr->iterations = properties["iterations"].toInt();
+  expr->seconds = properties["rate"].toInt();
 
   QString strategy = options[0].toObject()["data"].toString();
 
@@ -573,6 +571,17 @@ std::any MakiToKoda::buildRepeatExpr(const IFlow& flow, const INode& node)
   auto repeatStrat = std::make_shared<koda::Strategy>();
   repeatStrat->v = ref;
   expr->a = repeatStrat;
+
+  const auto seqSuccessors = sequentialSuccessorsOf(node, flow);
+  if (!seqSuccessors.empty())
+  {
+    auto sequence = buildSequenceFrom(flow, seqSuccessors.first().node, nullptr);
+    if (!sequence.has_value())
+    {
+      LOG_ERROR("Failed to create do sequence");
+      return std::any();
+    }
+  }
 
   auto strat = std::make_shared<koda::Strategy>();
   strat->v = expr;
@@ -963,12 +972,12 @@ int MakiToKoda::sequentialDistanceBetween(const IFlow& flow, const INode& start,
 
 bool MakiToKoda::isEndNode(const INode& node) const
 {
-  return node.getnodeId() == "Koda::End";
+  return node.getnodeId() == "Koda::Terminate";
 }
 
 bool MakiToKoda::isStructuralNode(const INode& node) const
 {
-  return node.getnodeId() == "Koda::Start";
+  return node.getnodeId() == "Koda::Start" || node.getnodeId() == "Koda::Success" || node.getnodeId() == "Koda::Failure";
 }
 
 QList<NodeTransition> MakiToKoda::successorsOfKind(const INode& node, const IFlow& flow, TransitionKind kind) const
@@ -1036,6 +1045,11 @@ TransitionKind MakiToKoda::transitionKind(const ITransition& transition) const
     return TransitionKind::Signal;
 
   return TransitionKind::Unknown;
+}
+
+std::string MakiToKoda::format(QString input, const QString& token) const
+{
+  return input.replace(" ", token).toStdString();
 }
 
 }  // namespace koda

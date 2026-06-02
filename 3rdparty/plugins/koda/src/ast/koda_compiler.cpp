@@ -185,6 +185,7 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, Environment& e
   {
     auto name = arg->a;
     auto type = arg->b;
+    LOG_INFO("Looking for %s", type.c_str());
     if (env.capabilities.contains(type))
       env.capabilityMap[name] = type;
   }
@@ -263,7 +264,7 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, Environment& e
       auto [instance, port] = portFromString(c.first);
       auto cap = env.getCapability(instance);
       if (!cap)
-        return Result<koda::ReturnValue>::Failed("Could not find signal capability: " + c.first);
+        return Result<koda::ReturnValue>::Failed("  signal capability: " + c.first);
 
       PortRef in = {toFlowVariable(flowName), port};
       PortRef out = {toFilename(cap->name), port};
@@ -623,7 +624,6 @@ Result<koda::ReturnValue> Compiler::generateStrategy(PStrategy strategy, Environ
   ELSE_IF_ALT(PIfElse, strategy->v, generateIfElse, env)
   ELSE_IF_ALT(PRepeat, strategy->v, generateRepeat, env)
   ELSE_IF_ALT(PGuard, strategy->v, generateGuard, env)
-  ELSE_IF_ALT(PEvery, strategy->v, generateEvery, env)
   ELSE_IF_ALT(PEnd, strategy->v, generateEnd, env)
   ELSE_IF_ALT(PContinue, strategy->v, generateContinue, env)
   ELSE_IF_ALT(PRef, strategy->v, generateRef, env)
@@ -731,6 +731,9 @@ Result<koda::ReturnValue> Compiler::generateIfElse(PIfElse strategy, Environment
 
 Result<koda::ReturnValue> Compiler::generateRepeat(PRepeat strategy, Environment& env)
 {
+  if (strategy->iterations > 0)
+    return generateEvery(strategy, env);
+
   ReturnValue expr;
   ASSIGN_OR_RETURN_ON_FAILURE(expr, generateStrategy(strategy->a, env));
 
@@ -748,7 +751,7 @@ Result<koda::ReturnValue> Compiler::generateGuard(PGuard strategy, Environment& 
   return koda::ReturnValue();
 }
 
-Result<koda::ReturnValue> Compiler::generateEvery(PEvery strategy, Environment& env)
+Result<koda::ReturnValue> Compiler::generateEvery(PRepeat strategy, Environment& env)
 {
   ReturnValue expr;
   ASSIGN_OR_RETURN_ON_FAILURE(expr, generateStrategy(strategy->a, env));

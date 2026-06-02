@@ -99,7 +99,7 @@ int DraggableItem::type() const
   return Type;
 }
 
-QRectF DraggableItem::boundingRect() const
+QRectF DraggableItem::nodeRect() const
 {
   return scaledRect();
 }
@@ -107,9 +107,9 @@ QRectF DraggableItem::boundingRect() const
 void DraggableItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget)
 {
   Q_UNUSED(widget);
-  const QRectF rect = (style && style->state == QStyle::State_Active) ? boundingRect() : scaledRect();
+  const QRectF rect = nodeRect();
 
-  if (config()->libraryType == Types::LibraryTypes::STRUCTURAL && config()->type == QStringLiteral("Task"))
+  if (config()->libraryType == Types::LibraryTypes::STRUCTURAL && config()->type == QStringLiteral("Koda::Task"))
   {
     const QPen outlinePen = isSelected() ? QPen(Config::HIGHLIGHT, 2.0) : QPen(Config::FOREGROUND, 1.0);
     paintStructuralTaskPalettePreview(painter, rect, outlinePen);
@@ -131,8 +131,6 @@ void DraggableItem::adjustWidth(int width)
 {
   int centerX = (width - boundingRect().width()) / 2;
   setPos(centerX, pos().y());
-
-  updateLabelPosition();
 }
 
 void DraggableItem::startDrag(QGraphicsSceneMouseEvent* event)
@@ -148,7 +146,7 @@ void DraggableItem::startDrag(QGraphicsSceneMouseEvent* event)
   QStyleOptionGraphicsItem opt;
   opt.state = QStyle::State_Active;
   paint(&painter, &opt, nullptr);
-  paintLabel(&painter, pixmap.rect());
+  paintLabel(&painter, pixmap.rect(), QPen(Config::FOREGROUND));
 
   NodeSaveInfo info;
   info.setNodeId(nodeId());

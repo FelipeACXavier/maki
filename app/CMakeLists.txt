@@ -31,6 +31,7 @@ file(GLOB WIDGET_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/widgets/structure/*.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/widgets/properties/*.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/widgets/dialogs/*.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/widgets/validators/*.cpp
 )
 file(GLOB COMPILER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/compiler/*.cpp)
 
@@ -74,7 +75,10 @@ target_link_libraries(${APPLICATION_NAME} PRIVATE
     Qt6::Widgets
     Qt6::Svg
     Qt6::SvgWidgets
+    Qt6::Core5Compat
+    QuaZip::QuaZip
     qlementine
+    libavoid
     libcommon
     libdocument
     libcpphelpers

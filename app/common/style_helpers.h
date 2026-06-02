@@ -89,6 +89,16 @@ QPixmap applyColorToIcon(const QString& path, const QColor& color);
 QIcon addIconWithColor(const QString& path, const QColor& color);
 
 /**
+ * @brief Returns a QIcon from the system theme.
+ *
+ * If the icon is not available, the counterpart from the icons/fallback is used
+ *
+ * @param path The path to the icon.
+ * @return QIcon The icon with the applied color.
+ */
+QIcon iconFromTheme(const QString& name, bool fallback = false);
+
+/**
  * @brief Converts a time point to a string in QT format.
  *
  * @param ts The time point to convert.

@@ -238,7 +238,7 @@
           ]
         },
         {
-          "type": "Vision",
+          "type": "Aruco Detection",
           "body": {
             "shape": "Ellipse",
             "textColor": "#000000",
@@ -253,7 +253,7 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Vision"
+              "default": "Aruco Detection"
             },
             {
               "id": "type",
@@ -516,7 +516,7 @@
       "type": "structural",
       "nodes": [
         {
-          "type": "Bridge",
+          "type": "IO Bridge",
           "body": {
             "shape": "Ellipse",
             "textColor": "#000000",
@@ -531,7 +531,7 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Bridge"
+              "default": "IO Bridge"
             },
             {
               "id": "type",
@@ -658,7 +658,7 @@
           ]
         },
         {
-          "type": "EnvSensor",
+          "type": "Occupancy Sensor",
           "body": {
             "shape": "Ellipse",
             "textColor": "#000000",
@@ -673,7 +673,7 @@
             {
               "id": "name",
               "type": "string",
-              "default": "EnvSensor"
+              "default": "Occupancy Sensor"
             },
             {
               "id": "type",
@@ -961,95 +961,7 @@
           ]
         },
         {
-          "type": "RobotArm",
-          "body": {
-            "shape": "Ellipse",
-            "textColor": "#000000",
-            "backgroundColor": "#e6e6e6",
-            "borderColor": "#FFFFFF",
-            "icon": "capability_robotarm.svg",
-            "width": 500,
-            "height": 500,
-            "z-index": -2
-          },
-          "properties": [
-            {
-              "id": "name",
-              "type": "string",
-              "default": "RobotArm"
-            },
-            {
-              "id": "type",
-              "type": "void",
-              "options": [
-                {
-                  "id": "action",
-                  "type": "string",
-                  "options": [
-                    {
-                      "id": "route",
-                      "type": "string",
-                      "default": "arm"
-                    },
-                    {
-                      "id": "message",
-                      "type": "string",
-                      "default": ""
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "arguments",
-              "type": "list",
-              "default": [
-                {
-                  "id": "pick",
-                  "type": "string"
-                }
-              ]
-            }
-          ],
-          "events": [
-            {
-              "id": "act",
-              "type": "trigger",
-              "returnType": "void",
-              "modifiable": false,
-              "linksTo": 0,
-              "arguments": [
-                {
-                  "id": "pick",
-                  "type": "string"
-                }
-              ]
-            },
-            {
-              "id": "done",
-              "type": "return",
-              "returnType": "void",
-              "linksTo": 0,
-              "modifiable": false
-            },
-            {
-              "id": "stop",
-              "type": "abort",
-              "returnType": "void",
-              "linksTo": 0,
-              "modifiable": false
-            },
-            {
-              "id": "failed",
-              "type": "error",
-              "returnType": "void",
-              "linksTo": 0,
-              "modifiable": false
-            }
-          ]
-        },
-        {
-          "type": "ImageInspector",
+          "type": "Image Inspection",
           "body": {
             "shape": "Ellipse",
             "textColor": "#000000",
@@ -1064,7 +976,7 @@
             {
               "id": "name",
               "type": "string",
-              "default": "ImageInspector"
+              "default": "Image Inspection"
             },
             {
               "id": "type",
@@ -1146,7 +1058,7 @@
           ]
         },
         {
-          "type": "TicketCreation",
+          "type": "Ticket Creation",
           "body": {
             "shape": "Ellipse",
             "textColor": "#000000",
@@ -1161,7 +1073,7 @@
             {
               "id": "name",
               "type": "string",
-              "default": "TicketCreation"
+              "default": "Ticket Creation"
             },
             {
               "id": "type",
@@ -1353,6 +1265,38 @@
           "ports": ["in"]
         },
         {
+          "type": "Terminate",
+          "body": {
+            "shape": "Ellipse",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#C2222C",
+            "borderColor": "#FFFFFF",
+            "width": 50,
+            "height": 50,
+            "iconColor": "#FFFFFF",
+            "iconScale": 0.8,
+            "icon": "koda_success.svg"
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Terminate"
+            }
+          ],
+          "connectors": [
+            {
+              "id": "input",
+              "type": "in",
+              "position": "west"
+            }
+          ],
+          "behaviour": {},
+          "help": {
+            "message": "End of a task. This will end the current task, independent of where it is triggered."
+          }
+        },
+        {
           "type": "Async task",
           "body": {
             "shape": "rounded rectangle",
@@ -1421,7 +1365,7 @@
           "ports": ["in", "out", "abort", "error"]
         },
         {
-          "type": "Strategy",
+          "type": "Flow call",
           "body": {
             "shape": "rounded rectangle",
             "textColor": "#FFFFFF",
@@ -1439,14 +1383,19 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Strategy"
+              "default": "Flow call"
             },
             {
-              "id": "strategy",
+              "id": "color",
+              "type": "color",
+              "default": "#202020"
+            },
+            {
+              "id": "task",
               "type": "component_select",
               "options": [
                 {
-                  "id": "strategy",
+                  "id": "flow",
                   "type": "user_call"
                 }
               ]
@@ -1551,49 +1500,27 @@
               "type": "component_select",
               "options": [
                 {
-                  "id": "strategy",
+                  "id": "flow",
                   "type": "user_call"
                 }
               ]
-            }
-          ],
-          "behaviour": {},
-          "help": {
-            "message": "Repeats the contained strategy forever"
-          },
-          "ports": ["in", "out"]
-        },
-        {
-          "type": "Every",
-          "body": {
-            "shape": "rounded rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#202020",
-            "borderColor": "#FFFFFF",
-            "borderRadius": 10,
-            "width": 100,
-            "height": 100,
-            "iconColor": "#FFFFFF",
-            "iconScale": 0.8,
-            "icon": "koda_every.svg",
-            "nodeSvg": "node_every.svg"
-          },
-          "properties": [
+            },
             {
-              "id": "name",
-              "type": "string",
-              "default": "Every"
+              "id": "iterations",
+              "type": "int",
+              "default": "0",
+              "info": "Number of times the loop will execute. A value of 0 repeats indefinitely until the flow is stopped or aborted."
             },
             {
               "id": "rate",
-              "type": "int"
+              "type": "int",
+              "info": "Delay in milliseconds between consecutive iterations. For example, a value of 1000 executes the loop once per second."
             }
           ],
           "behaviour": {},
           "help": {
-            "message": "Performs the \"do\" strategy and if it does not conclude within the set time, it will trigger the \"else\" strategy."
-          },
-          "ports": ["in", "out"]
+            "message": "Executes the contained strategy repeatedly. Configure the number of iterations and the interval between executions using the block properties."
+          }
         }
       ]
     }

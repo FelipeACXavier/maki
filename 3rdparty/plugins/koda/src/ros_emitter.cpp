@@ -89,7 +89,7 @@ void RosEmitter::collectComponent(const Component& component)
     collectDrive(cap);
     mCapabilities.push_front(std::move(cap));
   }
-  else if (component.name == "Vision")
+  else if (component.name == "ArucoDetection")
   {
     collectObjectDetection(cap);
     mCapabilities.push_back(std::move(cap));
@@ -106,7 +106,7 @@ void RosEmitter::collectComponent(const Component& component)
   }
   else
   {
-    LOG_ERROR("Unsupported capability: %s", cap.name.c_str());
+    LOG_ERROR("Unsupported capability: %s", component.name.c_str());
   }
 }
 
