@@ -238,36 +238,9 @@ void KodaGenerator::setHostServices(maki::IHostServices* services)
     });
 }
 
-void KodaGenerator::setName(const QString& name)
-{
-  mName = name;
-}
-
-void KodaGenerator::setVersion(const QString& version)
-{
-  mVersion = maki::PluginVersion::fromString(version);
-}
-
 void KodaGenerator::setAssetDir(const QDir& dir)
 {
   mAssetDir = dir;
-}
-
-QString KodaGenerator::languageName() const
-{
-  if (!mName.isEmpty())
-    return mName;
-
-#ifdef USE_ANTLR
-  return "KODA_ANTLR";
-#else
-  return "KODA";
-#endif
-}
-
-maki::PluginVersion KodaGenerator::version() const
-{
-  return mVersion;
 }
 
 VoidResult KodaGenerator::simulate(const maki::PipelineArtifact& artifact)

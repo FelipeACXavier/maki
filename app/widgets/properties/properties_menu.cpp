@@ -309,46 +309,10 @@ VoidResult PropertiesMenu::loadPropertyReal(const PropertyInfo& property, NodeIt
 VoidResult PropertiesMenu::loadPropertyColor(const PropertyInfo& property, NodeItem* node)
 {
   auto* colorEditor = new maki::ColorWidget(ToLabel(property.getid()), "", maki::WidgetAlignment::Vertical(), this);
-  auto result = node->getProperty(property.getid());
+  const auto result = node->getProperty(property.getid());
   if (result.isValid())
     colorEditor->setValue(QColor::fromString(result.toString()));
 
-  QColor selectedColor = QColor::fromString(result.toString());
-
-  QLabel* colorPreviewLabel = new QLabel(this);
-  colorPreviewLabel->setFixedSize({widget->height(), widget->height()});
-  colorPreviewLabel->setObjectName("PropertyColorPreview");
-  applyStyle(colorPreviewLabel, QStringLiteral(
-                                    "QLabel#PropertyColorPreview {"
-                                    " background-color: %1;"
-                                    " border: 1px solid #999999;"
-                                    "}")
-                                    .arg(result.toString()));
-
-  connect(widget, &QPushButton::pressed, [this, node, colorPreviewLabel, property, selectedColor]() {
-    QColor color = QColorDialog::getColor(selectedColor, this, "Background Color");
-    if (!color.isValid())
-      return;
-
-    applyStyle(colorPreviewLabel, QStringLiteral(
-                                      "QLabel#PropertyColorPreview {"
-                                      " background-color: %1;"
-                                      " border: 1px solid #999999;"
-                                      "}")
-                                      .arg(color.name()));
-
-    node->setProperty(property.getid(), color.name());
-    colorPreviewLabel->update();
-  });
-
-  widget->setText(tr("Select color"));
-  widget->setFont(Fonts::Property);
-
-  holderLayout->addWidget(colorPreviewLabel);
-  holderLayout->addWidget(widget);
-
-  layout()->addWidget(nameLabel);
-  layout()->addWidget(holder);
   connect(colorEditor, &maki::ColorWidget::valueChanged, this, [node, property](const QColor& color) {
     if (node)
       node->setProperty(property.getid(), color.name());

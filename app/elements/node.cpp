@@ -87,7 +87,7 @@ bool isTaskCaller(const NodeSaveInfo& caller, const ConfigurationTable* configTa
     return false;
 
   const auto cfg = configTable->get(caller.getnodeId());
-  return cfg && cfg->type == QStringLiteral("Task");
+  return cfg && cfg->isStructuralTask();
 }
 
 void renderSvgInEllipse(QPainter* painter, const QString& svgPath, const QPointF& center, qreal diameter)
@@ -500,7 +500,7 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
   mStorage->setId(this->id());
   mStorage->setNodeId(this->nodeId());
 
-  if (config()->libraryType == Types::LibraryTypes::STRUCTURAL && config()->type == QStringLiteral("Task"))
+  if (config()->isStructuralTask())
   {
     mSize = structural_layout::taskAspectSizeFromWidth(mSize.width());
     mStorage->setSize(mSize);
@@ -539,7 +539,7 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
   }
 
   // node svg replaces icon if set
-  const bool structuralCapability = config()->libraryType == Types::LibraryTypes::STRUCTURAL && config()->type != QStringLiteral("Task");
+  const bool structuralCapability = config()->libraryType == Types::LibraryTypes::STRUCTURAL && !config()->isStructuralTask();
   if (config()->body.nodeSvg.isEmpty() && !mStorage->getIcon().isEmpty() && !structuralCapability)
     setIcon(mStorage->getIcon(), config()->body.iconColor);
 
@@ -859,7 +859,7 @@ void NodeItem::childRemoved(NodeItem* child)
 
 bool NodeItem::isTaskContainer() const
 {
-  return config()->libraryType == Types::LibraryTypes::STRUCTURAL && config()->type == QStringLiteral("Task");
+  return config()->isStructuralTask();
 }
 
 bool NodeItem::isStructuralSubtask() const

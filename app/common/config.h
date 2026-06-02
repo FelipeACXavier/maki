@@ -241,6 +241,20 @@ public:
   bool hasAbortPort = false;
   bool hasErrorPort = false;
 
+  /** True for structural Task nodes (type is "Task" or "Package::Task" after library load). */
+  bool isStructuralTask() const
+  {
+    return libraryType == Types::LibraryTypes::STRUCTURAL &&
+           (type == QLatin1String("Task") || type.endsWith(QLatin1String("::Task")));
+  }
+
+  /** Short label for UI (e.g. "Grip" from "Koda::Grip"). */
+  QString displayType() const
+  {
+    const int sep = type.lastIndexOf(QLatin1String("::"));
+    return sep >= 0 ? type.mid(sep + 2) : type;
+  }
+
   friend QDataStream& operator<<(QDataStream& out, const NodeConfig& config);
   friend QDataStream& operator>>(QDataStream& in, NodeConfig& config);
 };

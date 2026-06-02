@@ -430,6 +430,8 @@ protected:
    * @return The created node when handled, otherwise nullptr.
    */
   virtual NodeItem* insertDroppedNodeOnTransition(TransitionItem* transition, std::shared_ptr<NodeSaveInfo> info);
+
+  /**
    * @brief Returns the parent view of this canvas.
    *
    * @return Pointer to CanvasView.
@@ -442,14 +444,6 @@ protected:
   bool mDeferStructuralLayout = false;
 
 private:
-  enum class NodeCreation
-  {
-    Dropping,
-    Pasting,
-    Loading,
-    Populating
-  };
-
   // TODO(felaze): Move connection behaviour to a separate class
   NodeItem* mHoveredNode = nullptr;       /// Pointer to the hovered node.
   TransitionItem* mTransition = nullptr;  /// Pointer to the current transition being created.
@@ -482,22 +476,6 @@ private:
    * @param select Whether to select or deselect the node.
    */
   void selectNode(NodeItem* node, bool select);
-
-  /**
-   * @brief Returns the parent view of this canvas.
-   *
-   * @return Pointer to CanvasView.
-   */
-  CanvasView* parentView() const;
-   * @brief Creates a new node based on save information and other parameters.
-   *
-   * @param creation The type of node creation (e.g., dropping, pasting).
-   * @param info Shared pointer to the save information for the node.
-   * @param position The initial position of the node.
-   * @param parent Pointer to the parent node.
-   * @return Pointer to the created NodeItem.
-   */
-  NodeItem* createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo> info, const QPointF& position, NodeItem* parent);
 
   /**
    * @brief Finds a node by its ID.

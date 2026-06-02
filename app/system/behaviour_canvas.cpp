@@ -14,7 +14,7 @@
 #include "style_helpers.h"
 #include "transition_info.h"
 
-BehaviourCanvas::BehaviourCanvas(Flow* flow, std::shared_ptr<ConfigurationTable> configTable, std::shared_ptr<EdgeRouter> router, QObject* parent)
+BehaviourCanvas::BehaviourCanvas(Flow* flow, std::shared_ptr<SaveInfo> storage, std::shared_ptr<ConfigurationTable> configTable, std::shared_ptr<EdgeRouter> router, QObject* parent)
     : Canvas(flow->id(), configTable, router, parent)
     , mFlow(flow)
     , mStorage(std::move(storage))

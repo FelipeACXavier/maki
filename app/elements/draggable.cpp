@@ -87,7 +87,7 @@ DraggableItem::DraggableItem(const QString& nodeId, std::shared_ptr<NodeConfig> 
     setIcon(AppPaths::icon(config()->body.iconPath), config()->body.iconColor);
   }
 
-  setLabel(config()->type, Fonts::BaseSize);
+  setLabel(config()->displayType(), Fonts::BaseSize);
 }
 
 DraggableItem::~DraggableItem()
@@ -109,7 +109,7 @@ void DraggableItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* sty
   Q_UNUSED(widget);
   const QRectF rect = (style && style->state == QStyle::State_Active) ? boundingRect() : scaledRect();
 
-  if (config()->libraryType == Types::LibraryTypes::STRUCTURAL && config()->type == QStringLiteral("Task"))
+  if (config()->isStructuralTask())
   {
     const QPen outlinePen = isSelected() ? QPen(Config::HIGHLIGHT, 2.0) : QPen(Config::FOREGROUND, 1.0);
     paintStructuralTaskPalettePreview(painter, rect, outlinePen);

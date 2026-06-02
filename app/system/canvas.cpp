@@ -93,8 +93,6 @@ QWidget* viewportFor(QGraphicsScene* scene)
 }
 }  // namespace
 
-static constexpr auto MAKI_CLIPBOARD_MIME = "application/x-maki-copied-nodes";
-
 Canvas::Canvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> configTable, std::shared_ptr<EdgeRouter> router, QObject* parent)
     : QGraphicsScene(parent)
     , mConfigTable(configTable)
@@ -113,6 +111,8 @@ Canvas::Canvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> conf
 
   connect(this, &QGraphicsScene::selectionChanged, this, [this]() { updateNodeActionButtons(); });
 }
+
+Canvas::~Canvas() = default;
 
 QString Canvas::id() const
 {
@@ -180,7 +180,7 @@ void Canvas::dragEnterEvent(QGraphicsSceneDragDropEvent* event)
   NodeSaveInfo peekInfo;
   stream >> peekInfo;
   auto cfg = mConfigTable->get(peekInfo.getnodeId());
-  if (cfg && type() == Types::LibraryTypes::STRUCTURAL && cfg->libraryType == Types::LibraryTypes::STRUCTURAL && cfg->type != QStringLiteral("Task"))
+  if (cfg && type() == Types::LibraryTypes::STRUCTURAL && cfg->libraryType == Types::LibraryTypes::STRUCTURAL && !cfg->isStructuralTask())
   {
     mDraggedNodeIsCapability = true;
     mDraggedCapabilityColor = cfg->body.backgroundColor;
@@ -260,48 +260,8 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
 
     // Make sure we show that we are no longer dragging
     dynamic_cast<QGraphicsView*>(parent())->setCursor(Qt::ArrowCursor);
-  }
-
-  if (!event->mimeData()->hasFormat(Constants::TYPE_NODE))
     return;
-
-  NodeItem* parentNode = nullptr;
-  QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
-  if (item && item->type() == NodeItem::Type)
-  {
-    parentNode = static_cast<NodeItem*>(item);
-
-    // Add error message
-    if (!parentNode->acceptDrops())
-    {
-      LOG_WARNING("Tried to drop node on parent that does not accept drops");
-      return;
-    }
   }
-
-  // Make sure that no other nodes are selected before dropping
-  clearSelectedNodes();
-
-  QByteArray data = event->mimeData()->data(Constants::TYPE_NODE);
-  QDataStream stream(&data, QIODevice::ReadOnly);
-
-  auto info = std::make_shared<NodeSaveInfo>();
-  stream >> *info;
-  info->setScale(parentView()->getScale());
-
-  auto node = createNode(NodeCreation::Dropping, info, event->scenePos(), parentNode);
-  if (node)
-  {
-    selectNode(node, true);
-    event->acceptProposedAction();
-  }
-  else
-  {
-    event->ignore();
-  }
-
-  // Make sure we show that we are no longer dragging
-  dynamic_cast<QGraphicsView*>(parent())->setCursor(Qt::ArrowCursor);
 }
 
 void Canvas::clearCapabilityDropPreview()
@@ -340,7 +300,7 @@ void Canvas::ensureNodeActionMenu()
   mNodeActionMenu = new NodeActionMenu(view);
   connect(mNodeActionMenu, &NodeActionMenu::addFlowRequested, this, [this](NodeItem* n) {
     if (n)
-      emit openFlow(nullptr, n);
+      emit openFlow(nullptr, n->id());
   });
   connect(mNodeActionMenu, &NodeActionMenu::addSubtaskRequested, this, &Canvas::addSubtaskTo);
 }
@@ -423,7 +383,7 @@ void Canvas::openCapabilityMenu(NodeItem* task)
     const auto& cfg = kv.second;
     if (!cfg || cfg->libraryType != Types::LibraryTypes::STRUCTURAL)
       continue;
-    if (cfg->type == QStringLiteral("Task"))
+    if (cfg->isStructuralTask())
       continue;
 
     const QString& key = kv.first;
@@ -437,7 +397,7 @@ void Canvas::openCapabilityMenu(NodeItem* task)
   for (auto it = byLibrary.begin(); it != byLibrary.end(); ++it)
   {
     std::sort(it->second.begin(), it->second.end(), [](const CapRow& a, const CapRow& b) {
-      return a.second->type < b.second->type;
+      return a.second->displayType() < b.second->displayType();
     });
   }
 
@@ -479,7 +439,7 @@ void Canvas::openCapabilityMenu(NodeItem* task)
   {
     for (const CapRow& row : libIt.second)
     {
-      const int w = fm.horizontalAdvance(row.second->type);
+      const int w = fm.horizontalAdvance(row.second->displayType());
       widest = qMax(widest, w);
     }
   }
@@ -525,7 +485,7 @@ void Canvas::openCapabilityMenu(NodeItem* task)
       }
       cv->addWidget(btn, 0, Qt::AlignHCenter);
 
-      auto* lbl = new QLabel(cfgRow->type, cell);
+      auto* lbl = new QLabel(cfgRow->displayType(), cell);
       QFont lf = lbl->font();
       lf.setPointSizeF(qMax(7.0, lf.pointSizeF() - 1.0));
       lbl->setFont(lf);
@@ -552,7 +512,7 @@ void Canvas::openCapabilityMenu(NodeItem* task)
       });
 
       section.grid->addWidget(cell, idx / kCols, idx % kCols);
-      section.tiles.push_back({cfgRow->type, cell});
+      section.tiles.push_back({cfgRow->displayType(), cell});
       ++idx;
     }
 
@@ -1142,12 +1102,14 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     });
 
     QAction* toggleLabelAction = menu.addAction(iconFromTheme("view-visible"), "Toggle label");
+    toggleLabelAction->setEnabled(items.size() > 0);
+    QObject::connect(toggleLabelAction, &QAction::triggered, [items]() {
       for (QGraphicsItem* item : items)
+      {
         if (item->type() == NodeItem::Type)
           dynamic_cast<NodeItem*>(item)->toggleLabelVisibility();
       }
     });
-
 
     QMenu* alignMenu = menu.addMenu(iconFromTheme("align-on-canvas"), tr("Align"));
     createAlignMenu(alignMenu, itemIds);

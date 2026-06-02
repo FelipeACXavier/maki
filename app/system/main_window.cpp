@@ -389,6 +389,8 @@ void MainWindow::bind()
   connect(mPipelineRun, &DropDownButton::executeRequested, this, &MainWindow::onActionGenerate);
   connect(mPipelineRun, &DropDownButton::editOptionRequested, this, &MainWindow::onActionEditPipeline);
 
+  connect(mActionSimulate, &QAction::triggered, this, &MainWindow::onActionSimulate);
+
   // View actions =============================================================
   mOpenComponentsPanel->setShortcut(QKeySequence(Qt::Key_F7));
   mOpenInfoPanel->setShortcut(QKeySequence(Qt::Key_F8));
@@ -748,6 +750,7 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
       nodeConfig->libraryType = Types::LibraryTypes::PIPELINE;
 
     auto nodeId = QStringLiteral("%1::%2").arg(name, nodeConfig->type);
+    nodeConfig->libraryName = libraryName;
     sidebarview->addNode(nodeId, nodeConfig);
     nodeConfig->type = nodeId;
 
@@ -1348,7 +1351,7 @@ void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId)
 
   CanvasView* newView = new CanvasView(mCanvasPanel);
 
-  BehaviourCanvas* canvas = new BehaviourCanvas(flow, mConfigTable, mRouter, newView);
+  BehaviourCanvas* canvas = new BehaviourCanvas(flow, mStorage, mConfigTable, mRouter, newView);
   newView->setScene(canvas);
 
   // Change to respective tabs

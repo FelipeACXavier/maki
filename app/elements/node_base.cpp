@@ -109,17 +109,17 @@ QRectF NodeBase::labelBoundingRect() const
 QRectF NodeBase::itemRectIncludingLabel() const
 {
   QRectF r = boundingRect();
-  if (!mLabel || !mLabel->isVisible())
+  if (!mPaintLabel || mLabelText.isEmpty())
     return r;
-  return r.united(mLabel->mapRectToParent(mLabel->boundingRect()));
+  return r.united(labelBoundingRect());
 }
 
 qreal NodeBase::labelExtentBelowBody() const
 {
-  if (!mLabel || !mLabel->isVisible())
+  if (!mPaintLabel || mLabelText.isEmpty())
     return 0.0;
-  const QRectF labelInParent = mLabel->mapRectToParent(mLabel->boundingRect());
-  return qMax(0.0, labelInParent.bottom() - boundingRect().bottom());
+  const QRectF labelRect = labelBoundingRect();
+  return qMax(0.0, labelRect.bottom() - boundingRect().bottom());
 }
 
 QRectF NodeBase::scaledRect() const
@@ -294,37 +294,7 @@ void NodeBase::setLabelName(const QString& name)
 
 void NodeBase::setLabelSize(qreal fontSize, const QSizeF& boundingSize)
 {
-  if (!mLabel)
-    return;
-
-  // Set the base font size
-  QFont font = mLabel->font();
-  font.setPointSizeF(qMin(Fonts::MaxSize, fontSize));
-  mLabel->setFont(font);
-
-  // Labels can be a bit longer in the pipeline
-  if (config()->libraryType == Types::LibraryTypes::PIPELINE)
-    mLabel->setTextWidth(2 * boundingSize.width() - (boundingSize.width() * 0.2));
-  else
-    mLabel->setTextWidth(boundingSize.width() - (boundingSize.width() * 0.2));
-
-  mLabel->document()->adjustSize();
-
-  updateLabelPosition();
-}
-
-void NodeBase::updateLabelPosition()
-{
-  if (!mLabel)
-    return;
-
-  QRectF textBounds = mLabel->boundingRect();
-
-  // Calculate centered position
-  qreal x = boundingRect().center().x() - (textBounds.width() / 2);
-  qreal y = boundingRect().bottom() + 2;  // type() == NodeItem::Type ? boundingRect().bottom() + 2 : boundingRect().center().y() - (textBounds.height() / 2);
-
-  mLabel->setPos(x, y);
+  Q_UNUSED(boundingSize);
   mLabelFont.setPointSizeF(qMin(Fonts::MaxSize, fontSize));
   update();
 }
