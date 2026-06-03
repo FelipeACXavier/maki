@@ -538,7 +538,7 @@ void Canvas::openCapabilityMenu(NodeItem* task)
     sections.push_back(section);
   }
 
-  const auto reflowSection = [kCols](LibrarySection& section, const QVector<QWidget*>& visibleCells) {
+  const auto reflowSection = [](LibrarySection& section, const QVector<QWidget*>& visibleCells) {
     while (QLayoutItem* item = section.grid->takeAt(0))
     {
       if (item->widget())
@@ -780,6 +780,14 @@ void Canvas::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
   if (mTransition)
   {
     mTransition->move(Constants::TMP_CONNECTION_ID, event->scenePos());
+
+    // Hover in case we are on a node
+    if (PortItem* nearIn = portNear(event->scenePos(), static_cast<int>(PortItem::In), PortItem::kHitPadding))
+      nearIn->nodeItem()->setSelected(true);
+    else if (NodeItem* node = qgraphicsitem_cast<NodeItem*>(itemAt(event->scenePos(), QTransform())))
+      node->setSelected(true);
+    else
+      clearSelection();
   }
   else if (mMouseDown)
   {
@@ -1461,7 +1469,7 @@ void Canvas::copySelectedItems(NodeItem* clickedNode)
 }
 
 void Canvas::pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode,
-                              QList<CopiedNode> copiedNodes, bool absolute)
+                                node->setSelected(bool selectedtrue)                              QList<CopiedNode> copiedNodes, bool absolute);
 {
   for (const auto& copy : copiedNodes)
   {
@@ -1739,9 +1747,11 @@ PortItem* Canvas::portNear(const QPointF& scenePos, int kind, qreal radius) cons
   {
     if (!it || it->type() != Types::PORT)
       continue;
+
     auto* p = static_cast<PortItem*>(it);
     if (p->kind() != static_cast<PortItem::Kind>(kind))
       continue;
+
     const QPointF d = p->anchorScenePos() - scenePos;
     const qreal d2 = d.x() * d.x() + d.y() * d.y();
     if (d2 <= bestD2)

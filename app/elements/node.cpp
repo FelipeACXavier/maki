@@ -22,7 +22,6 @@
 #include <utility>
 
 #include "app_configs.h"
-#include "app_paths.h"
 #include "draggable.h"
 #include "flow.h"
 #include "keys.h"
