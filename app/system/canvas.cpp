@@ -281,17 +281,25 @@ void Canvas::clearCapabilityDropPreview()
 
 void Canvas::updateCapabilityDropPreview(const QPointF& scenePos)
 {
-  if (!mDraggedNodeIsCapability || type() != Types::LibraryTypes::STRUCTURAL)
-    return;
+  if (mDraggedNodeIsCapability && type() == Types::LibraryTypes::STRUCTURAL)
+  {
+    NodeItem* task = taskContainerAcceptingDrop(itemAt(scenePos, QTransform()));
+    if (!task || !mCapabilityPreviewTask || task == mCapabilityPreviewTask)
+      return;
 
-  NodeItem* task = taskContainerAcceptingDrop(itemAt(scenePos, QTransform()));
-  if (!task || !mCapabilityPreviewTask || task == mCapabilityPreviewTask)
-    return;
-
-  clearCapabilityDropPreview();
-  mCapabilityPreviewTask = task;
-  if (mCapabilityPreviewTask)
-    mCapabilityPreviewTask->setHoverPreview(mDraggedCapabilityIconPath, mDraggedCapabilityColor, true);
+    clearCapabilityDropPreview();
+    mCapabilityPreviewTask = task;
+    if (mCapabilityPreviewTask)
+      mCapabilityPreviewTask->setHoverPreview(mDraggedCapabilityIconPath, mDraggedCapabilityColor, true);
+  }
+  else if (TransitionItem* transition = transitionAt(scenePos))
+  {
+    transition->setSelected(true);
+  }
+  else
+  {
+    clearSelection();
+  }
 }
 
 void Canvas::ensureNodeActionMenu()
@@ -1335,6 +1343,9 @@ void Canvas::onNodeMoved(const QString& nodeId)
 
   if (CanvasView* view = parentView())
     mNodeActionMenu->updatePosition(view);
+
+  // We should also check for dropping nodes on transitions here
+  // Instead of creating, we would just update its transitions
 }
 
 QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
