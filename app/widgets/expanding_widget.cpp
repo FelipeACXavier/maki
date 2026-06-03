@@ -2,6 +2,7 @@
 
 #include "clickable_icon.h"
 #include "logging.h"
+#include "style_helpers.h"
 
 ExpandingWidget::ExpandingWidget(Direction direction, QWidget* parent)
     : QWidget(parent)
@@ -11,7 +12,7 @@ ExpandingWidget::ExpandingWidget(Direction direction, QWidget* parent)
   layout->setContentsMargins(0, 0, 0, 0);
   layout->setSpacing(4);
 
-  mButton = new ClickableIcon(QIcon(":/icons/arrow-down.svg"), QSize(16, 16), this);
+  mButton = new ClickableIcon(iconFromTheme("arrow-down"), QSize(16, 16), this);
   // mButton = new QPushButton(this);
   mButton->setCheckable(true);
   mButton->setChecked(false);

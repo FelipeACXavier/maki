@@ -106,7 +106,7 @@ SettingsDialog::SelectorPage SettingsDialog::addPage(const QString& pageName, co
   auto* resetButton = new QPushButton(page);
   resetButton->setText(" " + tr("Reset"));
   resetButton->setToolTip(tr("Reset settings for this page"));
-  resetButton->setIcon(QIcon(":/icons/reset.svg"));
+  resetButton->setIcon(iconFromTheme("reset"));
 
   connect(resetButton, &QPushButton::pressed, resetCallback);
 
@@ -155,7 +155,7 @@ SettingsDialog::SelectorPage SettingsDialog::addPage(const QString& pageName, co
 VoidResult SettingsDialog::createGeneralPage()
 {
   auto generalSettings = mSettingsManager->general();
-  auto [selector, page] = addPage(tr("General"), "general", [this] {
+  auto [selector, page] = addPage(tr("General"), "preferences-system", [this] {
     auto defaultSettings = GeneralSettings();
 
     mAutosaveMinutes->setValue(defaultSettings.autosaveIntervalMinutes);
@@ -424,10 +424,10 @@ VoidResult SettingsDialog::createPluginPages()
 
   auto* addBtn = new maki::ButtonWidget("Add", tableLayout);
   addBtn->setFixedWidth(200);
-  addBtn->setIcon(QIcon(":/icons/plus.svg"));
+  addBtn->setIcon(iconFromTheme("plus"));
 
   auto* removeBtn = new maki::ButtonWidget("Remove", tableLayout);
-  removeBtn->setIcon(QIcon(":/icons/clear.svg"));
+  removeBtn->setIcon(iconFromTheme("clear"));
   removeBtn->setMaximumWidth(200);
   removeBtn->setEnabled(false);
 

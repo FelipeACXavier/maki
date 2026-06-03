@@ -7,6 +7,7 @@
 #include "app_configs.h"
 #include "clickable_icon.h"
 #include "logging.h"
+#include "style_helpers.h"
 
 constexpr double SPEED = 1.2;
 constexpr int MIN_DURATION = 400;
@@ -58,7 +59,7 @@ void SectionWidget::addItem(QWidget* container, const QString& title, oclero::ql
   lableLayout->addWidget(label);
   lableLayout->addWidget(line);
 
-  mToggleButton = new ClickableIcon(QIcon(":/icons/arrow-down.svg"), QSize(16, 16), header);
+  mToggleButton = new ClickableIcon(iconFromTheme("arrow-down"), QSize(16, 16), header);
   mToggleButton->setCheckable(true);
   mToggleButton->setChecked(true);
   mToggleButton->setFixedWidth(30);
@@ -98,7 +99,7 @@ void SectionWidget::updateContentHeight(int height)
 
 void SectionWidget::setExpanded(bool expanded)
 {
-  mToggleButton->setIcon(expanded ? QIcon(":/icons/arrow-down.svg") : QIcon(":/icons/arrow-right.svg"));
+  mToggleButton->setIcon(expanded ? iconFromTheme("arrow-down") : iconFromTheme("arrow-right"));
   mToggleButton->setChecked(expanded);
 }
 
@@ -118,7 +119,7 @@ void SectionWidget::setDuration(int duration)
 void SectionWidget::toggled(bool checked)
 {
   mAnimation->stop();
-  mToggleButton->setIcon(checked ? QIcon(":/icons/arrow-down.svg") : QIcon(":/icons/arrow-right.svg"));
+  mToggleButton->setIcon(checked ? iconFromTheme("arrow-down") : iconFromTheme("arrow-right"));
 
   if (checked)
   {

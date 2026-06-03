@@ -13,9 +13,8 @@
 #include <QTreeWidgetItem>
 #include <QVBoxLayout>
 
-#include "app_paths.h"
 #include "elements/node.h"
-#include "logging.h"
+#include "style_helpers.h"
 #include "system/canvas_view.h"
 
 namespace
@@ -25,28 +24,6 @@ constexpr int kIconPx = 32;
 constexpr int kRowHeight = 36;
 constexpr int kIconTextGap = 8;
 constexpr int kHPad = 8;
-constexpr int kVPad = 4;
-
-void applyCompactTreeSize(QTreeWidget* tree)
-{
-  if (!tree || tree->topLevelItemCount() == 0)
-    return;
-
-  const QFontMetrics fm(tree->font());
-  int textW = 0;
-  for (int i = 0; i < tree->topLevelItemCount(); ++i)
-  {
-    if (auto* row = tree->itemWidget(tree->topLevelItem(i), 0))
-    {
-      for (const QLabel* label : row->findChildren<QLabel*>())
-        textW = qMax(textW, fm.horizontalAdvance(label->text()));
-    }
-  }
-
-  const int treeW = kHPad * 2 + kIconPx + kIconTextGap + textW;
-  const int treeH = kVPad * 2 + tree->topLevelItemCount() * kRowHeight;
-  tree->setFixedSize(treeW, treeH);
-}
 }  // namespace
 
 NodeActionRow::NodeActionRow(const QString& svgPath, const QString& labelText, QWidget* parent)
@@ -121,8 +98,8 @@ NodeActionMenu::NodeActionMenu(QWidget* parent)
   layout->setContentsMargins(0, 0, 0, 0);
   layout->setSpacing(0);
 
-  const QString flowIconPath = AppPaths::icon(QStringLiteral("button_addflow.svg"));
-  const QString subtaskIconPath = AppPaths::icon(QStringLiteral("button_addsubtask.svg"));
+  const QString flowIconPath = iconPathFromTheme("button_addflow.svg");
+  const QString subtaskIconPath = iconPathFromTheme("button_addsubtask.svg");
 
   auto* flowWidget = new NodeActionRow(flowIconPath, QStringLiteral("Add flow"), this);
   auto* subtaskWidget = new NodeActionRow(subtaskIconPath, QStringLiteral("Add subtask"), this);

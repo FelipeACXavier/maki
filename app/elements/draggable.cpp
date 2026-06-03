@@ -83,9 +83,7 @@ DraggableItem::DraggableItem(const QString& nodeId, std::shared_ptr<NodeConfig> 
   setFlag(QGraphicsItem::ItemIsSelectable, true);
 
   if (config()->body.nodeSvg.isEmpty() && !config()->body.iconPath.isEmpty())
-  {
-    setIcon(AppPaths::icon(config()->body.iconPath), config()->body.iconColor);
-  }
+    setIcon(config()->body.iconPath, config()->body.iconColor);
 
   setLabel(config()->type, Fonts::BaseSize);
 }

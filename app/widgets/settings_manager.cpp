@@ -12,16 +12,16 @@
 #include "result.h"
 #include "widgets/dialogs/prompt.h"
 
-#define LOAD_SETTING(MEMBER, FIELD, TYPE)                            \
-  do                                                                 \
-  {                                                                  \
-    auto tmp##FIELD = mSettings.value("" #FIELD, MEMBER.FIELD);      \
-    if (!tmp##FIELD.isValid())                                       \
-    {                                                                \
-      LOG_ERROR("Settings are corrupted field is invalid: " #FIELD); \
-      return;                                                        \
-    }                                                                \
-    MEMBER.FIELD = tmp##FIELD.to##TYPE();                            \
+#define LOAD_SETTING(MEMBER, FIELD, TYPE)                               \
+  do                                                                    \
+  {                                                                     \
+    auto tmp##FIELD = mSettings.value("" #FIELD, MEMBER.FIELD);         \
+    if (!tmp##FIELD.isValid())                                          \
+    {                                                                   \
+      LOG_ERROR("Settings are corrupted field is invalid: %s", #FIELD); \
+      return;                                                           \
+    }                                                                   \
+    MEMBER.FIELD = tmp##FIELD.to##TYPE();                               \
   } while (false);
 
 #define SAVE_SETTING(MEMBER, FIELD)              \
@@ -32,7 +32,7 @@
 
 SettingsManager::SettingsManager(oclero::qlementine::ThemeManager* themeManager, QObject* parent)
     : QObject(parent)
-    , mSettings(  QSettings::IniFormat, QSettings::UserScope, Config::ORGANIZATION_NAME, Config::APPLICATION_NAME)
+    , mSettings(QSettings::IniFormat, QSettings::UserScope, Config::ORGANIZATION_NAME, Config::APPLICATION_NAME)
     , mThemeManager(themeManager)
 {
   load();
@@ -82,6 +82,7 @@ void SettingsManager::themeCreated(const QString& themePath)
 
 void SettingsManager::load()
 {
+#ifndef __EMSCRIPTEN__
   if (!QFile(mSettings.fileName()).exists())
   {
     LOG_DEBUG("No configuration file: %s", qPrintable(mSettings.fileName()));
@@ -92,6 +93,7 @@ void SettingsManager::load()
     LOG_DEBUG("Empty configuration: %s", qPrintable(mSettings.fileName()));
     return;
   }
+#endif
 
   LOG_DEBUG("Loading from: %s", qPrintable(mSettings.fileName()));
   mSettings.beginGroup("General");

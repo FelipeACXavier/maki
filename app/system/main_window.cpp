@@ -23,6 +23,10 @@
 #include <oclero/qlementine/widgets/AboutDialog.hpp>
 #include <oclero/qlementine/widgets/AbstractItemListWidget.hpp>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 #include "app_configs.h"
 #include "app_paths.h"
 #include "behaviour_canvas.h"
@@ -182,6 +186,8 @@ VoidResult MainWindow::start()
 
   LOG_DEBUG("Main window started");
 
+  updateUnloadWarning();
+
   return VoidResult();
 }
 
@@ -223,13 +229,17 @@ void MainWindow::onThemeChanged(const AppearanceSettings& settings, bool initial
   if (mPluginTab)
     mPluginTab->onThemeChanged();
 
-  auto menuBarChanged = mMenuBar->isNativeMenuBar() != settings.nativeMenuBar;
-  mMenuBar->setNativeMenuBar(settings.nativeMenuBar);
-  if (!initialConfig && menuBarChanged)
+  if (mMenuBar)
   {
-    if (maki::confirmationPrompt("A full restart is required to for the menu bar to be updated",
-                                 "Restart now", "Restart later"))
-      onActionRestart();
+    auto menuBarChanged = mMenuBar->isNativeMenuBar() != settings.nativeMenuBar;
+    mMenuBar->setNativeMenuBar(settings.nativeMenuBar);
+
+    if (!initialConfig && menuBarChanged)
+    {
+      if (maki::confirmationPrompt(tr("A full restart is required to for the menu bar to be updated"),
+                                   tr("Restart now"), tr("Restart later")))
+        onActionRestart();
+    }
   }
 }
 
@@ -618,10 +628,12 @@ void MainWindow::bindShortcuts()
     if (canvas())
       canvas()->deleteSelectedItems();
   });
+#ifndef __EMSCRIPTEN__
   new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_R), this, [this] {
     if (mPluginManager && mPluginManager->currentPlugin())
       LOG_WARN_ON_FAILURE(mPluginManager->reloadPlugin(mPluginManager->currentPlugin()->languageName(), mHostServices));
   });
+#endif
 
   mActionUndo->setShortcuts(QKeySequence::Undo);
   mActionRedo->setShortcuts(QKeySequence::Redo);
@@ -642,25 +654,39 @@ VoidResult MainWindow::loadElements()
 {
   LOG_DEBUG("Loading the elements");
 
+#ifndef __EMSCRIPTEN__
   auto libPaths = AppPaths::libraries();
   for (const auto& path : libPaths)
   {
     QDir libDir(path);
     QStringList files = libDir.entryList(QDir::Files);
+#else
+  const QStringList files = {
+      ":/libraries/koda.json",
+      ":/libraries/arduino.json",
+  };
+#endif
     for (const auto& file : files)
     {
+#ifndef __EMSCRIPTEN__
       const auto fileName = libDir.absoluteFilePath(file);
       auto libRead = JSON::fromFile(fileName);
+#else
+    LOG_DEBUG("Loading library: %s", qPrintable(file));
+    auto libRead = JSON::fromFile(file);
+#endif
       if (!libRead.IsSuccess())
         return VoidResult::Failed(
             QStringLiteral("Failed to open library: %1")
-                .arg(fileName)
+                .arg(file)
                 .toStdString());
 
       auto libConfig = libRead.Value();
       LOG_ERROR_ON_FAILURE(loadLibrary(libConfig));
     }
+#ifndef __EMSCRIPTEN__
   }
+#endif
 
   // Once we are done with the libraries, we can make sure they are positioned on the top
   dynamic_cast<QVBoxLayout*>(mStructureTab->layout())->addStretch();
@@ -786,6 +812,7 @@ void MainWindow::onActionExit()
 
 void MainWindow::onActionRestart()
 {
+#ifndef __EMSCRIPTEN__
   LOG_DEBUG("Restart requested");
   // Prepare to start a new instance of MAKI
   QObject::connect(qApp, &QCoreApplication::aboutToQuit, [] {
@@ -797,6 +824,7 @@ void MainWindow::onActionRestart()
 
   // Quit from the running instance
   onActionExit();
+#endif
 }
 
 void MainWindow::onActionGenerate(const QString& pipelineId)
@@ -920,7 +948,7 @@ void MainWindow::onActionEditPipeline(const QString& pipelineId)
   mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::PIPELINE), true);
   mPalette->setCurrentIndex(libraryTypeToIndex(Types::LibraryTypes::PIPELINE));
 
-  mCanvasPanel->addTab(newView, QIcon(":/icons/deploy.svg"), pipeline->getname());
+  mCanvasPanel->addTab(newView, iconFromTheme("deploy"), pipeline->getname());
   mCanvasPanel->setCurrentWidget(newView);
 }
 
@@ -1067,6 +1095,7 @@ void MainWindow::onNodeAdded(NodeItem* node)
     return;
   }
 
+  LOG_INFO("Adding node: %s %s", qPrintable(node->nodeType()), qPrintable(node->nodeName()));
   LOG_WARN_ON_FAILURE(mSystemMenu->onNodeAdded(canvas()->id(), node));
   LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeAdded(node));
 }
@@ -1213,6 +1242,7 @@ void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId)
 
   CanvasView* newView = new CanvasView(mCanvasPanel);
 
+  LOG_INFO("Opening flow: %s - %d", qPrintable(flow->name()), flow->getNodes().size());
   BehaviourCanvas* canvas = new BehaviourCanvas(flow, mStorage, mConfigTable, mRouter, newView);
   newView->setScene(canvas);
 
@@ -1222,7 +1252,7 @@ void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId)
 
   LOG_DEBUG("Set tab property to %s", qPrintable(flow->id()));
   newView->setProperty("id", flow->id());
-  mCanvasPanel->addTab(newView, QIcon(":/icons/behaviour.svg"), flow->name());
+  mCanvasPanel->addTab(newView, iconFromTheme("behaviour"), flow->name());
   mCanvasPanel->setCurrentWidget(newView);
 
   // Populate after creation
@@ -1234,7 +1264,7 @@ void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId)
 
 void MainWindow::addPluginTab(const QString& name, PluginView* view)
 {
-  mCanvasPanel->addTab(view, QIcon(":/icons/plugin.svg"), name);
+  mCanvasPanel->addTab(view, iconFromTheme("plugins"), name);
   mCanvasPanel->setCurrentWidget(view);
 }
 
@@ -1247,7 +1277,7 @@ void MainWindow::removePluginTab(PluginView* view)
 
 void MainWindow::addEditorTab(QPlainTextEdit* editorTab)
 {
-  mCanvasPanel->addTab(editorTab, QIcon(":/icons/file.svg"), tr("File viewer"));
+  mCanvasPanel->addTab(editorTab, iconFromTheme("file"), tr("File viewer"));
   mCanvasPanel->setCurrentWidget(editorTab);
 }
 
@@ -1303,17 +1333,37 @@ void MainWindow::showAboutDialog()
   dialog.addSocialMediaLink(
       "GitHub",
       "https://github.com/FelipeACXavier",
-      QIcon(":/icons/github.svg"));
+      iconFromTheme("github"));
 
   dialog.addSocialMediaLink(
       "Research",
       "https://research.tue.nl/nl/persons/felipe-de-azeredo-coutinho-xavier/",
-      QIcon(":/icons/research.svg"));
+      iconFromTheme("research"));
 
   dialog.addSocialMediaLink(
       "Website",
       "https://felipeacxavier.github.io",
-      QIcon(":/icons/me.svg"));
+      iconFromTheme("me"));
 
   dialog.exec();
+}
+
+void MainWindow::updateUnloadWarning()
+{
+#ifdef __EMSCRIPTEN__
+  if (true)
+  {
+    EM_ASM(
+        window.onbeforeunload = function(e) {
+          e.preventDefault();
+          e.returnValue = "";
+          return "";
+        };);
+  }
+  else
+  {
+    EM_ASM(
+        window.onbeforeunload = null;);
+  }
+#endif
 }

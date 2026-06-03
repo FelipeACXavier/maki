@@ -1,5 +1,7 @@
 #include "node.h"
 
+#include <qhashfunctions.h>
+
 #include <QFileInfo>
 #include <QFontMetricsF>
 #include <QGraphicsScene>
@@ -123,7 +125,7 @@ QString resolveStoredIconPath(const QString& storedIcon, const QString& nodeId, 
     if (QFileInfo::exists(storedIcon))
       return storedIcon;
 
-    const QString byFileName = AppPaths::icon(QFileInfo(storedIcon).fileName());
+    const QString byFileName = iconPathFromTheme(QFileInfo(storedIcon).fileName());
     if (!byFileName.isEmpty())
       return byFileName;
   }
@@ -137,17 +139,12 @@ QString resolveStoredIconPath(const QString& storedIcon, const QString& nodeId, 
 
   if (!cfg->body.iconPath.isEmpty())
   {
-    const QString resolved = AppPaths::icon(cfg->body.iconPath);
+    const QString resolved = iconPathFromTheme(cfg->body.iconPath);
     if (!resolved.isEmpty())
       return resolved;
   }
 
   return QString();
-}
-
-void paintTaskPalettePreview(QPainter* painter, const QRectF& drawingBounds)
-{
-  paintStructuralTaskOverlayPreview(painter, drawingBounds, QPen(Config::FOREGROUND, 1.0));
 }
 
 std::shared_ptr<NodeSaveInfo> selectedComponentCaller(const NodeItem* node, const SaveInfo& storage)
@@ -536,11 +533,6 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
     mStorage->addEvent(std::make_shared<FlowSaveInfo>(event));
   }
 
-  // node svg replaces icon if set
-  const bool structuralCapability = config()->libraryType == Types::LibraryTypes::STRUCTURAL && config()->type != QStringLiteral("Koda::Task");
-  if (config()->body.nodeSvg.isEmpty() && !mStorage->getIcon().isEmpty() && !structuralCapability)
-    setIcon(AppPaths::icon(mStorage->getIcon()), config()->body.iconColor);
-
   qreal labelSize = qMax(Fonts::BaseSize, mSize.width() / Fonts::BaseFactor);
   setLabel(getProperty("name").toString(), labelSize);
 
@@ -597,6 +589,13 @@ qreal NodeItem::baseScale() const
 
 VoidResult NodeItem::start()
 {
+  // We need to wait the parent is or not set to check if we should have an icon
+  // node svg replaces icon if set
+  const auto isCapabilityOrTask = isTaskContainer() || rendersAsInsetCapability();
+  LOG_INFO("%s is cap: %d", qPrintable(nodeType()), isCapabilityOrTask);
+  if (config()->body.nodeSvg.isEmpty() && !mStorage->getIcon().isEmpty() && !isCapabilityOrTask)
+    setIcon(mStorage->getIcon(), config()->body.iconColor);
+
   return NodeBase::start();
 }
 
@@ -626,7 +625,7 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
     painter->drawEllipse(r);
     if (!config()->body.iconPath.isEmpty())
     {
-      const QString iconAbsPath = AppPaths::icon(config()->body.iconPath);
+      const QString iconAbsPath = iconPathFromTheme(config()->body.iconPath);
       renderSvgInEllipse(painter, iconAbsPath, r.center(), qMin(r.width(), r.height()));
     }
 
@@ -688,7 +687,7 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
   if (isStructuralCapability && !config()->body.iconPath.isEmpty())
   {
     const QRectF r = nodeRect().adjusted(2, 2, -2, -2);
-    renderSvgInEllipse(painter, AppPaths::icon(config()->body.iconPath), r.center(), qMin(r.width(), r.height()));
+    renderSvgInEllipse(painter, iconPathFromTheme(config()->body.iconPath), r.center(), qMin(r.width(), r.height()));
   }
 }
 
@@ -697,10 +696,10 @@ QPainterPath NodeItem::shape() const
   if (rendersAsInsetCapability())
   {
     QPainterPath path;
-    path.addEllipse(boundingRect().adjusted(2, 2, -2, -2));
+    path.addEllipse(nodeRect().adjusted(2, 2, -2, -2));
     return path;
   }
-  return NodeBase::nodeShape(boundingRect());
+  return NodeBase::nodeShape(nodeRect());
 }
 
 QVector<PropertyConfig> NodeItem::configurationProperties() const
@@ -1061,8 +1060,8 @@ NodeItem* NodeItem::capabilityAtScenePos(const QPointF& scenePos, NodeItem* excl
   if (slotCount <= 0)
     return nullptr;
 
-  const qreal bbW = boundingRect().width();
-  const qreal bbH = boundingRect().height();
+  const qreal bbW = nodeRect().width();
+  const qreal bbH = nodeRect().height();
   const qreal slotDiameter = qMin(bbW, bbH) * kTaskSlotDiameterFactor;
   const qreal slotRadiusSq = (slotDiameter * 0.5) * (slotDiameter * 0.5);
   const QVector<QPointF> centers = structural_layout::taskSlotCenters(boundingRect().size(), slotCount);
@@ -1085,8 +1084,8 @@ QRectF NodeItem::placeholderSlotSceneRect() const
   if (!isTaskContainer())
     return {};
 
-  const qreal bbW = boundingRect().width();
-  const qreal bbH = boundingRect().height();
+  const qreal bbW = nodeRect().width();
+  const qreal bbH = nodeRect().height();
   const qreal slotDiameter = qMin(bbW, bbH) * kTaskSlotDiameterFactor;
   const qreal slotRadius = slotDiameter * 0.5;
   const int n = static_cast<int>(structuralCapabilityChildren().size());
@@ -1382,7 +1381,7 @@ void NodeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
   }
   else if (rendersAsInsetCapability() && mParentNode)
   {
-    const QPointF myCenterScene = mapToScene(boundingRect().center());
+    const QPointF myCenterScene = sceneNodeRect().center();
     NodeItem* target = mParentNode->capabilityAtScenePos(myCenterScene, this);
     auto* canvas = static_cast<Canvas*>(scene());
     if (target && canvas)

@@ -1,5 +1,8 @@
 #include "canvas.h"
 
+#include <qgraphicsitem.h>
+#include <qgridlayout.h>
+
 #include <QBuffer>
 #include <QClipboard>
 #include <QFont>
@@ -857,6 +860,12 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
         if (selectedItems().size() < 2)
           clearSelectedNodes();
 
+        qDebug() << "clicked item" << item
+                 << "type" << item->type()
+                 << "br" << item->boundingRect()
+                 << "scene br" << item->sceneBoundingRect()
+                 << "shape scene"
+                 << item->mapToScene(item->shape()).boundingRect();
         nodeClicked(node);
         selectNode(node, true);
       }
@@ -1131,7 +1140,7 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     // =============================================
     addSectionLabel(menu, "Creation");
 
-    QAction* newEventAction = menu->addAction(QIcon(":/icons/flow.svg"), tr("New flow"));
+    QAction* newEventAction = menu->addAction(iconFromTheme("flow"), tr("New flow"));
     newEventAction->setEnabled(node != nullptr || items.size() > 0);
     QObject::connect(newEventAction, &QAction::triggered, [this, node]() {
       emit createEvent(node);

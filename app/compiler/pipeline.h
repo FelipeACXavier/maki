@@ -1,12 +1,143 @@
 #pragma once
 
-#include <QProcess>
 #include <QVector>
 #include <QWidget>
 #include <mutex>
 
 #include "ipipeline.h"
 #include "result.h"
+
+#pragma once
+
+#ifndef __EMSCRIPTEN__
+#include <QProcess>
+#else
+#include <QByteArray>
+#include <QObject>
+#include <QString>
+#include <QStringList>
+class QProcess : public QObject
+{
+  Q_OBJECT
+
+public:
+  enum ProcessState
+  {
+    NotRunning,
+    Starting,
+    Running
+  };
+
+  enum ExitStatus
+  {
+    NormalExit,
+    CrashExit
+  };
+
+  enum ProcessError
+  {
+    FailedToStart,
+    Crashed,
+    Timedout,
+    WriteError,
+    ReadError,
+    UnknownError
+  };
+
+  explicit QProcess(QObject* parent = nullptr)
+      : QObject(parent)
+  {
+  }
+
+  QString program() const
+  {
+    return mProgram;
+  }
+  void setProgram(const QString& program)
+  {
+    mProgram = program;
+  }
+
+  QStringList arguments() const
+  {
+    return mArguments;
+  }
+  void setArguments(const QStringList& arguments)
+  {
+    mArguments = arguments;
+  }
+
+  ProcessState state() const
+  {
+    return mState;
+  }
+
+  void start()
+  {
+    mState = Running;
+    emit started();
+
+    mState = NotRunning;
+    emit finished(1, NormalExit);
+  }
+
+  bool waitForStarted(int msecs = 30000)
+  {
+    Q_UNUSED(msecs)
+    return false;
+  }
+
+  bool waitForFinished(int msecs = 30000)
+  {
+    Q_UNUSED(msecs)
+    return true;
+  }
+
+  void closeWriteChannel()
+  {
+  }
+  void terminate()
+  {
+    mState = NotRunning;
+  }
+  void kill()
+  {
+    mState = NotRunning;
+  }
+
+  qint64 write(const QByteArray& data)
+  {
+    Q_UNUSED(data)
+    return -1;
+  }
+
+  QByteArray readAllStandardOutput()
+  {
+    return {};
+  }
+  QByteArray readAllStandardError()
+  {
+    return {};
+  }
+
+  ExitStatus exitStatus()
+  {
+    return ExitStatus::NormalExit;
+  }
+
+signals:
+  void started();
+  void finished(int exitCode, QProcess::ExitStatus exitStatus);
+  void readyReadStandardOutput();
+  void readyReadStandardError();
+  void errorOccurred(QProcess::ProcessError error);
+
+private:
+  QString mProgram;
+  QStringList mArguments;
+  ProcessState mState = NotRunning;
+};
+#endif
 
 /**
  * @brief Executes and manages a sequence of external processes.
@@ -75,7 +206,11 @@ public:
    * @param callback Optional callback executed when the process finishes.
    * @return VoidResult indicating whether the process was successfully added.
    */
+#ifndef __EMSCRIPTEN__
   VoidResult add(QProcess* process, maki::OnFail onFail, std::function<void(int& exitCode, QProcess::ExitStatus& status)> callback = nullptr) override;
+#else
+  VoidResult add(QProcess* process, maki::OnFail onFail, std::function<void(int& exitCode, QProcess::ExitStatus& status)> callback = nullptr);
+#endif
 
   /**
    * @brief Starts executing the pipeline.

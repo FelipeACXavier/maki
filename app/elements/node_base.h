@@ -159,7 +159,6 @@ protected:
   std::shared_ptr<NodeConfig> mConfig;  /// Configuration settings for the node.
 
   QGraphicsPixmapItem* mPixmapItem = nullptr;  /// Pointer to the pixmap item.
-  QString mIconPath = "";                      /// Path to the icon image.
   QGraphicsSvgItem* mIconItem = nullptr;       /// Pointer to the SVG icon item.
 
   /**

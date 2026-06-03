@@ -14,7 +14,7 @@ include(${CMAKE_SOURCE_DIR}/cmake/copy_icons.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/copy_themes.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/copy_libraries.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/doxygen.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/copy_translations.cmake)
+# include(${CMAKE_SOURCE_DIR}/cmake/copy_translations.cmake)
 
 # ------------------------------------------------------------------------------------------------------------
 # Main application
@@ -90,7 +90,7 @@ add_dependencies(${APPLICATION_NAME}
   copy_themes
   copy_icons
   copy_libraries
-  copy_translations
+  # copy_translations
 )
 
 # ------------------------------------------------------------------------------------------------------------
@@ -191,4 +191,16 @@ if (DEPLOY_TARGET STREQUAL "windows" AND WIN32 AND NOT CMAKE_CROSSCOMPILING)
   else()
     message(WARNING "windeployqt not found; cannot run the 'deploy-windows' target")
   endif()
+endif()
+
+if(EMSCRIPTEN)
+  target_compile_definitions(${APPLICATION_NAME} PRIVATE MAKI_WEB_DEMO)
+
+  target_link_options(${APPLICATION_NAME} PRIVATE
+    "SHELL:-sALLOW_MEMORY_GROWTH=1"
+    "SHELL:-sINITIAL_MEMORY=128MB"
+    "SHELL:-sASYNCIFY"
+    "SHELL:-Os"
+    "SHELL:-sVERBOSE=1"
+  )
 endif()

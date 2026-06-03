@@ -331,6 +331,8 @@ int IntegerWidget::getValue() const
     return value;
 
   assert(false && "Tried to get an integer from a field that does not contain an integer");
+
+  return 0;
 }
 
 void IntegerWidget::writeValueToWidget(const QString& value)
@@ -390,6 +392,8 @@ qreal FloatWidget::getValue() const
     return value;
 
   assert(false && "Tried to get a real from a field that does not contain a real");
+
+  return 0;
 }
 
 void FloatWidget::writeValueToWidget(const QString& value)
@@ -602,7 +606,7 @@ SearchWidget::SearchWidget(const QString& placeholder, QWidget* parent)
   searchLayout->setContentsMargins(5, 0, 5, 0);
   searchLayout->setSpacing(5);
 
-  auto* icon = new oclero::qlementine::IconWidget(QIcon(":/icons/search.svg"), QSize(16, 16), this);
+  auto* icon = new oclero::qlementine::IconWidget(iconFromTheme("search"), QSize(16, 16), this);
 
   mInputField = new QLineEdit(this);
   mInputField->setPlaceholderText(placeholder);

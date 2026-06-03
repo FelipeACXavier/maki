@@ -1,5 +1,8 @@
 #include "node_base.h"
 
+#include <qcoreapplication.h>
+#include <qhashfunctions.h>
+
 #include <QGraphicsColorizeEffect>
 #include <QPainter>
 #include <QPainterPath>
@@ -9,14 +12,13 @@
 #include <QtGlobal>
 
 #include "app_configs.h"
-#include "app_paths.h"
 #include "logging.h"
-#include "node.h"
+#include "style_helpers.h"
 
 const qreal MAX_WIDTH = 60.0;
 const qreal MAX_HEIGHT = 60.0;
 const qreal LABEL_H_SPACING = 8;
-const qreal LABEL_V_SPACING = 4;
+const qreal LABEL_V_SPACING = 2;
 
 QRectF shapeSvgTargetRect(const QSvgRenderer& renderer, const QRectF& drawingBounds)
 {
@@ -133,7 +135,7 @@ QRectF NodeBase::nodeShapeContentRect(const QRectF& bounds) const
 
   if (!mNodeSvgRenderer)
   {
-    const QString path = AppPaths::icon(config()->body.nodeSvg);
+    const QString path = iconPathFromTheme(config()->body.nodeSvg);
     auto renderer = std::make_unique<QSvgRenderer>(path);
     if (renderer->isValid())
       mNodeSvgRenderer = std::move(renderer);
@@ -157,7 +159,7 @@ void NodeBase::paintNode(const QRectF& bounds, const QColor& background, const Q
   {
     if (!mNodeSvgRenderer)
     {
-      const QString path = AppPaths::icon(config()->body.nodeSvg);
+      const QString path = iconPathFromTheme(config()->body.nodeSvg);
       auto renderer = std::make_unique<QSvgRenderer>(path);
       if (renderer->isValid())
         mNodeSvgRenderer = std::move(renderer);
@@ -305,8 +307,11 @@ void NodeBase::setPixmap(const QPixmap& pixmap)
 
 void NodeBase::setIcon(const QString& path, const QColor& iconColor)
 {
-  mIconPath = path;
-  mIconItem = new QGraphicsSvgItem(mIconPath, this);
+  LOG_INFO("Setting icon: %s", qPrintable(path));
+  mIconItem = new QGraphicsSvgItem(iconPathFromTheme(path), this);
+  mIconItem->setAcceptedMouseButtons(Qt::NoButton);
+  mIconItem->setFlag(QGraphicsItem::ItemIsSelectable, false);
+  mIconItem->setFlag(QGraphicsItem::ItemIsMovable, false);
 
   QRectF nodeRect = boundingRect();
   QRectF svgRect = mIconItem->boundingRect();
@@ -331,12 +336,6 @@ void NodeBase::setIcon(const QString& path, const QColor& iconColor)
   qreal y = contentRect.y() + (contentRect.height() - scaledSize.height()) / 2.0;
 
   mIconItem->setPos(x, y);
-
-  // auto* effect = new QGraphicsColorizeEffect();
-  // effect->setColor(iconColor);
-  // effect->setStrength(1.0);
-
-  // mIconItem->setGraphicsEffect(effect);
 }
 
 qreal NodeBase::computeScaleFactor() const
@@ -358,7 +357,7 @@ QPixmap NodeBase::nodePixmap() const
   {
     if (!mNodeSvgRenderer)
     {
-      const QString path = AppPaths::icon(config()->body.nodeSvg);
+      const QString path = iconPathFromTheme(config()->body.nodeSvg);
       auto renderer = std::make_unique<QSvgRenderer>(path);
       if (renderer->isValid())
         mNodeSvgRenderer = std::move(renderer);
@@ -394,8 +393,8 @@ QString NodeBase::nodeIcon() const
   if (!config()->body.nodeSvg.isEmpty())
     return config()->body.nodeSvg;
 
-  if (mIconItem && !mIconPath.isEmpty())
-    return mIconPath;
+  if (!config()->body.iconPath.isEmpty())
+    return config()->body.iconPath;
 
   return QString();
 }

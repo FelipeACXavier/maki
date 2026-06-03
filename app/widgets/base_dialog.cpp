@@ -19,7 +19,9 @@ BaseDialog::BaseDialog(const QString& title, double ratio, double screenFraction
     , mMinimunWidth(-1)
     , mMinimunHeight(-1)
 {
+#ifndef __EMSCRIPTEN__
   setWindowTitle(title);
+#endif
 
   // Create and set dialog layout
   QVBoxLayout* layout = new QVBoxLayout();
@@ -86,7 +88,7 @@ QDialogButtonBox* BaseDialog::createButtons(const QString& ok, const QString& ca
 
     auto textWidth = metrics.horizontalAdvance(okButton->text());
     okButton->setFixedWidth(qMax<int>(150, textWidth));
-    okButton->setIcon(QIcon(":/icons/accept.svg"));
+    okButton->setIcon(iconFromTheme("accept"));
   }
 
   auto* cancelBtn = buttonBox->button(QDialogButtonBox::Close);
@@ -97,7 +99,7 @@ QDialogButtonBox* BaseDialog::createButtons(const QString& ok, const QString& ca
 
     auto textWidth = metrics.horizontalAdvance(cancelBtn->text());
     cancelBtn->setFixedWidth(qMax<int>(150, textWidth));
-    cancelBtn->setIcon(QIcon(":/icons/reject.svg"));
+    cancelBtn->setIcon(iconFromTheme("reject"));
   }
 
   return buttonBox;

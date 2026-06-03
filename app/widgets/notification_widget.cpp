@@ -78,7 +78,7 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
 
   mCloseButton = new QPushButton(header);
   mCloseButton->setFlat(true);
-  mCloseButton->setIcon(QIcon(":/icons/close.svg"));
+  mCloseButton->setIcon(iconFromTheme("close"));
 
   headerLayout->addWidget(statusBadge, 0, Qt::AlignVCenter);
   headerLayout->addSpacing(Config::CONTENT_PADDING);

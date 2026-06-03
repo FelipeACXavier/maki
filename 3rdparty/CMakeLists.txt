@@ -12,6 +12,8 @@ add_subdirectory(maki-sdk)
 add_subdirectory(qclementine)
 
 find_package(ZLIB REQUIRED)
+set(ZLIB_INCLUDE "${ZLIB_INCLUDE_DIRS}")
+set(ZCONF_INCLUDE "${ZLIB_INCLUDE_DIRS}")
 include_directories(${ZLIB_INCLUDE_DIRS})
 add_subdirectory(quazip)
 

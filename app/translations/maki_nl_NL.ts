@@ -7,6 +7,37 @@
         <source>New flow</source>
         <translation>Nieuwe flow</translation>
     </message>
+    <message>
+        <source>Align</source>
+        <translation type="unfinished">Uitlijnen</translation>
+    </message>
+</context>
+<context>
+    <name>DropDownButton</name>
+    <message>
+        <source>Add new...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Run</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Select</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Add</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation type="unfinished">Bewerken</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation type="unfinished">Verwijderen</translation>
+    </message>
 </context>
 <context>
     <name>EventDialog</name>
@@ -74,6 +105,25 @@
     </message>
 </context>
 <context>
+    <name>LogTableWidget</name>
+    <message>
+        <source>Search logs</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Find</source>
+        <translation type="unfinished">Zoeken</translation>
+    </message>
+    <message>
+        <source>Filter logs</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Filter file</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>MainWindow</name>
     <message>
         <source>Find</source>
@@ -90,6 +140,30 @@
     <message>
         <source>Settings</source>
         <translation>Instellingen</translation>
+    </message>
+    <message>
+        <source>A full restart is required to for the menu bar to be updated</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Restart now</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Restart later</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Pipeline name</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Choose a pipeline name</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>File viewer</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -108,7 +182,7 @@
     </message>
     <message>
         <source>Show simulation tab</source>
-        <translation>Simulatie-tabblad tonen</translation>
+        <translation type="vanished">Simulatie-tabblad tonen</translation>
     </message>
     <message>
         <source>Info</source>
@@ -116,11 +190,11 @@
     </message>
     <message>
         <source>Name</source>
-        <translation>Naam</translation>
+        <translation type="vanished">Naam</translation>
     </message>
     <message>
         <source>Type</source>
-        <translation>Type</translation>
+        <translation type="vanished">Type</translation>
     </message>
     <message>
         <source>System</source>
@@ -244,7 +318,7 @@
     </message>
     <message>
         <source>Special tabs</source>
-        <translation>Speciale tabbladen</translation>
+        <translation type="vanished">Speciale tabbladen</translation>
     </message>
     <message>
         <source>Diagram</source>
@@ -302,6 +376,26 @@
         <source>Generation</source>
         <translation>Generatie</translation>
     </message>
+    <message>
+        <source>Pipeline</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Run pipeline</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Plugin tabs</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Auto-route</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cancel current pipeline</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>PluginTab</name>
@@ -327,6 +421,14 @@
     <message>
         <source>Edit field</source>
         <translation>Veld bewerken</translation>
+    </message>
+    <message>
+        <source>Arguments</source>
+        <translation type="unfinished">Argumenten</translation>
+    </message>
+    <message>
+        <source>Transition event</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -367,7 +469,7 @@
         <translation>Diagram openen</translation>
     </message>
     <message>
-        <source>All Files (*);;MAKI diagram (*.json)</source>
+        <source>MAKI (*.maki);;All Files (*)</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -435,7 +537,7 @@
     </message>
     <message>
         <source>System theme</source>
-        <translation>Systeemthema</translation>
+        <translation type="vanished">Systeemthema</translation>
     </message>
     <message>
         <source>Use native menubar</source>
@@ -447,15 +549,15 @@
     </message>
     <message>
         <source>Colors</source>
-        <translation>Kleuren</translation>
+        <translation type="vanished">Kleuren</translation>
     </message>
     <message>
         <source>Theme name</source>
-        <translation>Themanaam</translation>
+        <translation type="vanished">Themanaam</translation>
     </message>
     <message>
         <source>The theme will be installed in</source>
-        <translation>Het thema wordt geïnstalleerd in</translation>
+        <translation type="vanished">Het thema wordt geïnstalleerd in</translation>
     </message>
     <message>
         <source>UI scale</source>
@@ -513,6 +615,49 @@
         <source>Requires a restart to take full effect</source>
         <translation>Een herstart is vereist om het effect te bereiken.&gt;</translation>
     </message>
+    <message>
+        <source>Number of columns in the node palette</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>columns</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Note: The width of the palette will not update automatically</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Shape of the transtion edges</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Show log table filters on start</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Other settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Default plugin</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>MAKI will set this plugin as the default on start</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>SettingsManager</name>
+    <message>
+        <source>Current: %1 Incoming: %2</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Plugin version mismatch. Replace?</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>SystemMenu</name>
@@ -527,6 +672,74 @@
     <message>
         <source>Edit</source>
         <translation>Bewerken</translation>
+    </message>
+    <message>
+        <source>Name</source>
+        <translation type="unfinished">Naam</translation>
+    </message>
+    <message>
+        <source>Type</source>
+        <translation type="unfinished">Type</translation>
+    </message>
+    <message>
+        <source>Flow</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Sub-tasks</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Capabilities</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Flows</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>maki::FloatWidget</name>
+    <message>
+        <source>Input must be a real value</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>maki::IntegerWidget</name>
+    <message>
+        <source>Input must be an integer value</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>maki::TextDialog</name>
+    <message>
+        <source>Accept</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>oclero::qlementine::ThemeEditorWidget</name>
+    <message>
+        <source>Load theme</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Save theme</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Note: Changes are not saved unless you export the theme</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Theme Editor</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 </TS>
