@@ -81,6 +81,7 @@ file(GLOB APP_ICON_FILES
   ${MISSION_PATH}/button_addsubtask.svg
   ${MISSION_PATH}/node_sync.svg
   ${MISSION_PATH}/node_async.svg
+  ${MISSION_PATH}/node_terminate.svg
   ${MISSION_PATH}/port_in.svg
   ${MISSION_PATH}/port_out.svg
   ${MISSION_PATH}/port_abort.svg
