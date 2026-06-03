@@ -1469,7 +1469,7 @@ void Canvas::copySelectedItems(NodeItem* clickedNode)
 }
 
 void Canvas::pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode,
-                                node->setSelected(bool selectedtrue)                              QList<CopiedNode> copiedNodes, bool absolute);
+                              QList<CopiedNode> copiedNodes, bool absolute)
 {
   for (const auto& copy : copiedNodes)
   {
