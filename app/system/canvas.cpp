@@ -149,8 +149,168 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
   // Make sure that no other nodes are selected before dropping
   clearSelectedNodes();
 
+<<<<<<< HEAD
   QByteArray data = event->mimeData()->data(Constants::TYPE_NODE);
   QDataStream stream(&data, QIODevice::ReadOnly);
+||||||| parent of d5ba2986 (Fixed ports in the web and added hover on drop to transition)
+  void Canvas::updateCapabilityDropPreview(const QPointF& scenePos)
+  {
+    if (!mDraggedNodeIsCapability || type() != Types::LibraryTypes::STRUCTURAL)
+      return;
+
+    NodeItem* task = taskContainerAcceptingDrop(itemAt(scenePos, QTransform()));
+    if (!task || !mCapabilityPreviewTask || task == mCapabilityPreviewTask)
+      return;
+
+    clearCapabilityDropPreview();
+    mCapabilityPreviewTask = task;
+    if (mCapabilityPreviewTask)
+      mCapabilityPreviewTask->setHoverPreview(mDraggedCapabilityIconPath, mDraggedCapabilityColor, true);
+  }
+
+  void Canvas::ensureNodeActionMenu()
+  {
+    if (mNodeActionMenu)
+      return;
+
+    CanvasView* view = parentView();
+    if (!view)
+      return;
+
+    mNodeActionMenu = new NodeActionMenu(view);
+    connect(mNodeActionMenu, &NodeActionMenu::addFlowRequested, this, [this](NodeItem* n) {
+      if (n)
+        emit createEvent(n);
+    });
+    connect(mNodeActionMenu, &NodeActionMenu::addSubtaskRequested, this, &Canvas::addSubtaskTo);
+
+    if (!mNodeActionHideTimer)
+    {
+      mNodeActionHideTimer = new QTimer(this);
+      mNodeActionHideTimer->setSingleShot(true);
+
+      connect(mNodeActionHideTimer, &QTimer::timeout, this, [this] {
+        if (!mNodeActionMenu)
+          return;
+
+        if (mNodeActionMenu->underMouse())
+          return;
+
+        mNodeActionMenu->hideMenu();
+        mHoveredActionNode = nullptr;
+      });
+    }
+  }
+
+  void Canvas::onNodeHovered(NodeItem * node, bool show)
+  {
+    if (!node || !node->isTaskContainer())
+      return;
+
+    ensureNodeActionMenu();
+
+    if (!mNodeActionMenu)
+      return;
+
+    if (show)
+    {
+      mNodeActionHideTimer->stop();
+      mHoveredActionNode = node;
+      mNodeActionMenu->showForTask(node, parentView());
+      return;
+    }
+    else if (mHoveredActionNode == node)
+      mNodeActionHideTimer->start(150);
+  }
+
+  void Canvas::addSubtaskTo(NodeItem * task)
+  {
+    if (!task || !task->isTaskContainer() || type() != Types::LibraryTypes::STRUCTURAL)
+      return;
+=======
+  void Canvas::updateCapabilityDropPreview(const QPointF& scenePos)
+  {
+    if (mDraggedNodeIsCapability && type() == Types::LibraryTypes::STRUCTURAL)
+    {
+      NodeItem* task = taskContainerAcceptingDrop(itemAt(scenePos, QTransform()));
+      if (!task || !mCapabilityPreviewTask || task == mCapabilityPreviewTask)
+        return;
+
+      clearCapabilityDropPreview();
+      mCapabilityPreviewTask = task;
+      if (mCapabilityPreviewTask)
+        mCapabilityPreviewTask->setHoverPreview(mDraggedCapabilityIconPath, mDraggedCapabilityColor, true);
+    }
+    else if (TransitionItem* transition = transitionAt(scenePos))
+    {
+      transition->setSelected(true);
+    }
+    else
+    {
+      clearSelection();
+    }
+  }
+
+  void Canvas::ensureNodeActionMenu()
+  {
+    if (mNodeActionMenu)
+      return;
+
+    CanvasView* view = parentView();
+    if (!view)
+      return;
+
+    mNodeActionMenu = new NodeActionMenu(view);
+    connect(mNodeActionMenu, &NodeActionMenu::addFlowRequested, this, [this](NodeItem* n) {
+      if (n)
+        emit createEvent(n);
+    });
+    connect(mNodeActionMenu, &NodeActionMenu::addSubtaskRequested, this, &Canvas::addSubtaskTo);
+
+    if (!mNodeActionHideTimer)
+    {
+      mNodeActionHideTimer = new QTimer(this);
+      mNodeActionHideTimer->setSingleShot(true);
+
+      connect(mNodeActionHideTimer, &QTimer::timeout, this, [this] {
+        if (!mNodeActionMenu)
+          return;
+
+        if (mNodeActionMenu->underMouse())
+          return;
+
+        mNodeActionMenu->hideMenu();
+        mHoveredActionNode = nullptr;
+      });
+    }
+  }
+
+  void Canvas::onNodeHovered(NodeItem * node, bool show)
+  {
+    if (!node || !node->isTaskContainer())
+      return;
+
+    ensureNodeActionMenu();
+
+    if (!mNodeActionMenu)
+      return;
+
+    if (show)
+    {
+      mNodeActionHideTimer->stop();
+      mHoveredActionNode = node;
+      mNodeActionMenu->showForTask(node, parentView());
+      return;
+    }
+    else if (mHoveredActionNode == node)
+      mNodeActionHideTimer->start(150);
+  }
+
+  void Canvas::addSubtaskTo(NodeItem * task)
+  {
+    if (!task || !task->isTaskContainer() || type() != Types::LibraryTypes::STRUCTURAL)
+      return;
+>>>>>>> d5ba2986 (Fixed ports in the web and added hover on drop to transition)
 
   auto info = std::make_shared<NodeSaveInfo>();
   stream >> *info;
