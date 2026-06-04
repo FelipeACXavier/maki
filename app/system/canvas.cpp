@@ -1556,6 +1556,8 @@ VoidResult Canvas::loadFromSave(const QVector<std::shared_ptr<INode>>& nodes, No
     // TODO(felaze): This is necessary because the save info is using shared ptr when it shouldn't...
     // I need to make a proper distinction between save and run-time store structures.
     std::shared_ptr<NodeSaveInfo> nodeInfo = std::dynamic_pointer_cast<NodeSaveInfo>(inodeInfo);
+    if (!nodeInfo)
+      return VoidResult::Failed("Save is corrupt");
 
     auto node = std::make_shared<NodeSaveInfo>(*nodeInfo);
 

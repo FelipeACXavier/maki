@@ -402,6 +402,7 @@ QPainterPath NodeBase::nodeBodyOutlinePath(const QRectF& bounds) const
   const QRectF drawingBounds = drawingRect(bounds);
   if (!config()->body.nodeSvg.isEmpty())
     return svgSilhouetteOutlinePath(drawingBounds);
+
   return geometricBodyOutlinePath(drawingBounds);
 }
 

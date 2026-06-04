@@ -397,26 +397,6 @@ VoidResult PropertiesMenu::loadPropertyBoolean(const PropertyInfo& property, Nod
 
   layout()->addWidget(widget);
 
-  // QString label = ToLabel(property.getid());
-  // QLabel* nameLabel = new QLabel(label);
-  // nameLabel->setObjectName("PropertyLabel");
-  // nameLabel->setFont(Fonts::Label);
-
-  // layout()->addWidget(nameLabel);
-
-  // QCheckBox* widget = new QCheckBox(this);
-  // auto result = node->getProperty(property.getid());
-  // if (!result.isValid())
-  //   return VoidResult::Failed("Failed to get default value");
-
-  // widget->setChecked(result.toBool());
-  // connect(widget, &QCheckBox::checkStateChanged, this, [=](Qt::CheckState state) {
-  //   node->setProperty(property.getid(), state);
-  // });
-
-  // widget->setFont(Fonts::Property);
-  // layout()->addWidget(widget);
-
   return VoidResult();
 }
 
@@ -616,7 +596,7 @@ VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QStri
       .type = maki::WidgetAlignment::Type::FORM,
       .direction = maki::WidgetAlignment::Direction::SPREAD,
       .group = group,
-      .labelWidth = 50,
+      .labelWidth = 75,
   };
 
   QJsonArray argArray = jsonValue.toJsonObject()[ConfigKeys::OPTIONS].toArray();

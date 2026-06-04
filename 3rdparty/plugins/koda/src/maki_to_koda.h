@@ -41,6 +41,9 @@ public:
   Result<QString> generate(const QVector<std::shared_ptr<INode>> nodes);
 
 private:
+  // This should be a registry
+  std::vector<std::string> mVariables = {};
+
   Result<koda::PComponent> buildTask(const INode& task);
   Result<koda::PComponent> buildCapability(const INode& capability);
 

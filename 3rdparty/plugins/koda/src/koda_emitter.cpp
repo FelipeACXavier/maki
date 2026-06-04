@@ -171,7 +171,19 @@ VoidResult KodaEmitter::emitVarDef(const koda::VarDef& varDef, std::stringstream
 
 VoidResult KodaEmitter::emitFlow(const koda::Flow& flow, std::stringstream& ss, const std::string& format)
 {
-  ss << format << flow.name << ": ";
+  ss << format << flow.name;
+  if (!flow.tags.empty())
+  {
+    ss << "[";
+    for (size_t i = 0; i < flow.tags.size(); ++i)
+    {
+      if (i > 0)
+        ss << ", ";
+      ss << flow.tags.at(i);
+    }
+    ss << "]";
+  }
+  ss << ": ";
   RETURN_ON_FAILURE(emitStrategy(*flow.strategy, ss, ""));
   ss << ";\n";
   return VoidResult();

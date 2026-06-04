@@ -1,9 +1,5 @@
 #include "maki_to_koda.h"
 
-#include <qdir.h>
-#include <qhashfunctions.h>
-#include <qjsonobject.h>
-
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QQueue>
@@ -12,6 +8,7 @@
 #include <any>
 #include <limits>
 #include <memory>
+#include <vector>
 
 #include "ast/ast.h"
 #include "koda_emitter.h"
@@ -22,6 +19,9 @@
 
 namespace koda
 {
+
+const int INVALID_INTEGER = std::numeric_limits<int>::max();
+const double INVALID_DOUBLE = std::numeric_limits<double>::max();
 
 Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes)
 {
@@ -275,6 +275,10 @@ Result<koda::PFlow> MakiToKoda::buildFlowAst(const IFlow& flow)
   if (start == nullptr)
     return Result<koda::PFlow>::Failed("Flow has no Koda::Start node");
 
+  // Prepare all the variables for this flow
+  for (const auto& arg : flow.getarguments())
+    mVariables.push_back(arg->getid().toStdString());
+
   auto seq = buildSequenceFrom(flow, start, nullptr);
   if (!seq.has_value())
     return Result<koda::PFlow>::Failed("Failed to build first sequence");
@@ -286,6 +290,11 @@ Result<koda::PFlow> MakiToKoda::buildFlowAst(const IFlow& flow)
 
   pflow->name = flowName;
   pflow->strategy = std::any_cast<koda::PStrategy>(seq);
+  for (const auto& arg : flow.getarguments())
+    pflow->tags.push_back(arg->getid().toStdString());
+
+  // Clear variables at the end of the flow
+  mVariables.clear();
 
   return pflow;
 }
@@ -684,6 +693,18 @@ std::shared_ptr<koda::Expr> MakiToKoda::buildExpr(const QJsonObject& object)
 
   auto type = Types::StringToPropertyTypes(object["type"].toString());
   auto wrapper = std::make_shared<koda::Expr>();
+
+  // Before anything, lets check to see if we are dealing with a variable
+  auto varValue = object["data"].toString().toStdString();
+  if (std::count(mVariables.cbegin(), mVariables.cend(), varValue) > 0)
+  {
+    auto expr = std::make_shared<koda::Expr::Id>();
+    expr->value = varValue;
+    wrapper->v = expr;
+    return wrapper;
+  }
+
+  // If not a variable, we can continue
   switch (type)
   {
     case Types::PropertyTypes::BOOLEAN:
