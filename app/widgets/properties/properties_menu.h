@@ -175,7 +175,7 @@ private:
   VoidResult loadEventArguments(const QString& nodeId, const QString& flowName, const PropertyInfo& property, NodeItem* node, Types::CallType callType, maki::WidgetGroup* formLayout);  /// Loads event arguments for a given property.
 
   // Component select fields
-  VoidResult loadFieldEventSelect(maki::SelectorWidget* componentSelect, const QString& optionId, const PropertyInfo& property, NodeItem* node,
+  VoidResult loadFieldEventSelect(maki::SelectorWidget* componentSelect, const QString& optionId, const PropertyInfo& property, NodeItem* node, Types::CallType callType,
                                   std::function<void(const QString& nodeId, QComboBox* eventWidget)> populate);                                   /// Loads field event select.
   VoidResult loadFieldTriggerCall(maki::SelectorWidget* componentSelect, const QString& optionId, const PropertyInfo& property, NodeItem* node);  /// Loads field trigger call.
 
