@@ -15,6 +15,10 @@ BehaviourCanvas::BehaviourCanvas(Flow* flow, std::shared_ptr<SaveInfo> storage, 
     , mFlow(flow)
     , mStorage(storage)
 {
+}
+
+void BehaviourCanvas::setupInitialNodes()
+{
   // Add start and end nodes on creation
   if (mFlow && mFlow->getNodes().isEmpty())
   {

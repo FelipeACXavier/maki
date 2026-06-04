@@ -856,6 +856,8 @@ void MainWindow::onActionGenerate(const QString& pipelineId)
       return;
     }
 
+    graph.Value().print();
+
     LOG_ERROR_ON_FAILURE(mPluginPipeline->run(graph.Value(), context));
     return;
   }
@@ -1003,7 +1005,8 @@ void MainWindow::onFileLoaded(const QString& file, const SaveInfo& info, const Q
 {
   if (!error.isEmpty())
   {
-    NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Failed to load project.\n{}", qPrintable(error));
+    LOG_ERROR("Failed to load project: %s", qPrintable(error));
+    NOTIFY_ERROR(Config::APPLICATION_NAME.toStdString(), "Failed to load project.\n{}", qPrintable(error));
     return;
   }
 
@@ -1019,7 +1022,9 @@ void MainWindow::onFileLoaded(const QString& file, const SaveInfo& info, const Q
   mStorage->clearNodes();
 
   // Repopulate the canvas (and the storage)
-  canvas()->loadFromSave(info);
+  auto loaded = canvas()->loadFromSave(info);
+  if (!loaded)
+    LOG_ERROR("Failed to load project: %s", loaded.ErrorMessage().c_str());
 
   GeneralSettings general = mSettingsManager->general();
   general.lastOpenFileDir = mSaveHandler->lastDir();
@@ -1214,6 +1219,7 @@ void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId)
   CanvasView* newView = new CanvasView(mCanvasPanel);
 
   BehaviourCanvas* canvas = new BehaviourCanvas(flow, mStorage, mConfigTable, mRouter, newView);
+  canvas->setupInitialNodes();
   newView->setScene(canvas);
 
   // Change to respective tabs
