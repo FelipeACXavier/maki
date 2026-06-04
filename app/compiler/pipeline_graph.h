@@ -21,6 +21,7 @@ struct PipelineNode
   QVariantMap parameters;
 
   static Result<PipelineNode> fromJson(const QJsonObject& object);
+  void print() const;
 };
 
 struct PipelineEdge
@@ -29,6 +30,7 @@ struct PipelineEdge
   QString to;
 
   static Result<PipelineEdge> fromJson(const QJsonObject& object);
+  void print() const;
 };
 
 struct PipelineGraph
@@ -46,5 +48,6 @@ struct PipelineGraph
   static Result<PipelineGraph> fromCanvas(const Canvas* canvas);
 
   QJsonObject toJson() const;
+  void print() const;
 };
 }  // namespace maki

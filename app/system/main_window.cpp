@@ -884,6 +884,8 @@ void MainWindow::onActionGenerate(const QString& pipelineId)
       return;
     }
 
+    graph.Value().print();
+
     LOG_ERROR_ON_FAILURE(mPluginPipeline->run(graph.Value(), context));
     return;
   }
