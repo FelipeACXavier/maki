@@ -164,11 +164,7 @@ VoidResult MainWindow::start()
     mSaveHandler->setLastDir(mSettingsManager->general().lastOpenFileDir);
     mRouter->setRouteOption((EdgeRouter::Option)mSettingsManager->appearance().edgeShape);
 
-    for (const auto& file : mSettingsManager->general().recentFiles)
-    {
-      QAction* action = mActionOpenRecent->addAction(elideLeft(file, mActionOpenRecent));
-      connect(action, &QAction::triggered, [this, file] { onActionLoad(file); });
-    }
+    updateRecentFiles();
     connect(mSettingsManager.get(), &SettingsManager::settingsChanged, this, &MainWindow::onSettingsChanged);
 
     if (!mSettingsManager->general().showWelcomeMessage)
@@ -183,6 +179,21 @@ VoidResult MainWindow::start()
   LOG_DEBUG("Main window started");
 
   return VoidResult();
+}
+
+void MainWindow::updateRecentFiles()
+{
+  if (!mSettingsManager || !mActionOpenRecent)
+    return;
+
+  mActionOpenRecent->clear();
+  QFontMetrics fm(mActionOpenRecent->font());
+  for (const auto& file : mSettingsManager->general().recentFiles)
+  {
+    QString text = fm.elidedText(QDir::toNativeSeparators(file), Qt::ElideLeft, Constants::MINIMUM_MENU_WIDTH);
+    QAction* action = mActionOpenRecent->addAction(text);
+    connect(action, &QAction::triggered, [this, file] { onActionLoad(file); });
+  }
 }
 
 void MainWindow::onThemeChanged(const AppearanceSettings& settings, bool initialConfig)
@@ -255,12 +266,7 @@ void MainWindow::onSettingsChanged()
     mRouter->setRouteOption((EdgeRouter::Option)mSettingsManager->appearance().edgeShape);
 
   // Clean and repopulate the recent files
-  mActionOpenRecent->clear();
-  for (const auto& file : mSettingsManager->general().recentFiles)
-  {
-    QAction* action = mActionOpenRecent->addAction(elideLeft(file, mActionOpenRecent));
-    connect(action, &QAction::triggered, [this, file] { onActionLoad(file); });
-  }
+  updateRecentFiles();
 
   // Update node palette
   for (const auto& section : mStructureTab->findChildren<SectionWidget*>())
@@ -775,6 +781,15 @@ void MainWindow::onActionNew()
 
   // Gotta make sure we don't save over an old file
   mSaveHandler->newFileCreated();
+
+  // Close all tabs except the first
+  for (int i = 1; i < mCanvasPanel->count(); ++i)
+    closeCanvasTab(i);
+
+  if (mPipelineRun)
+    mPipelineRun->reset();
+  if (mSystemMenu)
+    mSystemMenu->clear();
 
   canvas()->loadFromSave(emptySave);
 }

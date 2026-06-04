@@ -37,9 +37,6 @@
 #include "widgets/structure/system_menu.h"
 #include "widgets/widget_factory.h"
 
-static constexpr int MINIMUM_MENU_WIDTH = 250;
-static constexpr int MAXIMUM_MENU_WIDTH = 400;
-
 MainWindowLayout::MainWindowLayout(QWidget* parent)
     : QMainWindow(parent)
 {
@@ -366,8 +363,8 @@ void MainWindowLayout::buildCentralPanel()
 void MainWindowLayout::buildRightPanel()
 {
   mRightPanel = new QSplitter(Qt::Vertical);
-  mRightPanel->setMinimumWidth(MINIMUM_MENU_WIDTH);
-  mRightPanel->setMaximumWidth(MAXIMUM_MENU_WIDTH);
+  mRightPanel->setMinimumWidth(Constants::MINIMUM_MENU_WIDTH);
+  mRightPanel->setMaximumWidth(Constants::MAXIMUM_MENU_WIDTH);
 
   auto* qlementineStyle = oclero::qlementine::appStyle();
   const auto theme = qlementineStyle->theme();
@@ -441,7 +438,7 @@ void MainWindowLayout::buildMenuBar()
 
   mActionOpenRecent = file->addMenu(iconFromTheme("document-open-recent"), tr("Open Recent"));
   mTranslatable.push_back({mActionOpenRecent, "Open Recent"});
-  mActionOpenRecent->setMaximumWidth(MAXIMUM_MENU_WIDTH);
+  mActionOpenRecent->setMaximumWidth(Constants::MAXIMUM_MENU_WIDTH);
 
   file->addSeparator();
 
@@ -765,7 +762,7 @@ void MainWindowLayout::applyTheme()
     mRightPanel->setMinimumWidth(std::max(navigationTabWidth, propertiesTabWidth));
 
     // Set initial height ratio
-    mRightPanel->setSizes({MAXIMUM_MENU_WIDTH, 600});
+    mRightPanel->setSizes({Constants::MAXIMUM_MENU_WIDTH, 600});
   }
 }
 
