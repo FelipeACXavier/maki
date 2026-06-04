@@ -3,6 +3,7 @@
 #include <QFont>
 #include <QGraphicsItem>
 #include <QGraphicsSvgItem>
+#include <QPainterPath>
 #include <QString>
 #include <memory>
 
@@ -136,6 +137,12 @@ public:
    */
   void paintNode(const QRectF& bounds, const QColor& background, const QPen& text, QPainter* painter);
 
+  /** Outline path matching the visible node body (including SVG silhouettes). */
+  QPainterPath nodeBodyOutlinePath(const QRectF& bounds) const;
+
+  /** Draws a screen-space selection ring along nodeBodyOutlinePath(). */
+  void paintSelectionOutline(QPainter* painter, const QRectF& bounds) const;
+
   /**
    * @brief Retrieves the pixmap of the node.
    *
@@ -226,6 +233,14 @@ private:
 
   // mutable std::unique_ptr<QSvgRenderer> mShapeSvgRenderer;
   mutable std::unique_ptr<QSvgRenderer> mNodeSvgRenderer;
+  mutable QRectF mSvgOutlineCacheTarget;
+  mutable QSize mSvgOutlineCachePixelSize;
+  mutable QString mSvgOutlineCacheKey;
+  mutable QPainterPath mSvgOutlineCachePath;
+
+  void ensureNodeSvgRenderer() const;
+  QPainterPath geometricBodyOutlinePath(const QRectF& drawingBounds) const;
+  QPainterPath svgSilhouetteOutlinePath(const QRectF& drawingBounds) const;
 
   qreal computeScaleFactor() const;
 };

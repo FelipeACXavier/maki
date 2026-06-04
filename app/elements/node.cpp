@@ -626,6 +626,16 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
     }
 
     NodeBase::paintLabel(painter, pen);
+    if (isSelected())
+    {
+      const QRectF r = nodeRect().adjusted(2, 2, -2, -2);
+      QPen selPen(Config::HIGHLIGHT);
+      selPen.setWidthF(2.0);
+      selPen.setCosmetic(true);
+      painter->setPen(selPen);
+      painter->setBrush(Qt::NoBrush);
+      painter->drawEllipse(r);
+    }
     return;
   }
 
@@ -669,6 +679,15 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
     }
 
     NodeBase::paintLabel(painter, pen);
+    if (isSelected())
+    {
+      QPen selPen(Config::HIGHLIGHT);
+      selPen.setWidthF(2.0);
+      selPen.setCosmetic(true);
+      painter->setPen(selPen);
+      painter->setBrush(Qt::NoBrush);
+      painter->drawRoundedRect(bodyRect, kTaskCornerRadius, kTaskCornerRadius);
+    }
     return;
   }
 
@@ -685,6 +704,9 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
     const QRectF r = nodeRect().adjusted(2, 2, -2, -2);
     renderSvgInEllipse(painter, AppPaths::icon(config()->body.iconPath), r.center(), qMin(r.width(), r.height()));
   }
+
+  if (isSelected() && !config()->body.nodeSvg.isEmpty())
+    paintSelectionOutline(painter, nodeRect());
 }
 
 QPainterPath NodeItem::shape() const
