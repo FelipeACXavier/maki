@@ -11,6 +11,7 @@ function printHelp()
   echo "    --clean             | Clean the build directory"
   echo "    --prefix            | CMake QT install prefix"
   echo "    --docs              | Build docs"
+  echo "    --wasm              | Build the web version of MAKI"
   echo ""
 }
 
@@ -23,8 +24,8 @@ SOURCE_DIR=$CURR_DIR
 # Use QT version from the single source of truth file
 QT_VERSION="$(tr -d ' \n' < $CURR_DIR/.qt-version)"
 BUILD_PATH="$SOURCE_DIR/build/linux/debug"
-PREFIX_PATH="$HOME/Programs/Qt/$QT_VERSION/gcc_64"
-INSTALL_PREFIX="$SOURCE_DIR/release/linux"
+# This is the path in the docker container, it must be overwritten locally
+BASE_PREFIX_PATH="$HOME/Qt/$QT_VERSION"
 EXTRA_ARGS=""
 TOOLCHAIN_FILE=""
 WASM=0
@@ -59,12 +60,13 @@ while [[ $# -gt 0 ]]; do
       TARGET="wasm"
       BUILD_TYPE="Release"
       BUILD_PATH="$SOURCE_DIR/build/wasm"
-      PREFIX_PATH="$HOME/Programs/Qt/$QT_VERSION/wasm_multithread"
+      PREFIX_PATH="$BASE_PREFIX_PATH/wasm_multithread"
       TOOLCHAIN_FILE="$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake"
+      QT6_DIR="$PREFIX_PATH/lib/cmake/Qt6"
       shift
       ;;
       --prefix)
-      PREFIX_PATH="$2"
+      BASE_PREFIX_PATH="$2"
       shift
       shift
       ;;
@@ -79,7 +81,13 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-QT6_DIR="$PREFIX_PATH/lib/cmake/Qt6"
+if [ -z "$PREFIX_PATH" ]; then
+  # Set gcc as default
+  PREFIX_PATH="$BASE_PREFIX_PATH/gcc_64"
+fi
+
+INSTALL_PREFIX="$SOURCE_DIR/release/$TARGET"
+
 
 echo "--------------------------------------"
 echo "Running with:"

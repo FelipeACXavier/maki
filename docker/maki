@@ -41,7 +41,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libfreetype6-dev libfontconfig1-dev libharfbuzz-dev \
   && rm -rf /var/lib/apt/lists/*
 
-RUN useradd -ms /bin/bash ${USERNAME}
+# RUN useradd -ms /bin/bash ${USERNAME}
 # -----------------------------------------------------------------------------------------------------------
 # Make sure the fonts are loaded
 RUN fc-cache -f
