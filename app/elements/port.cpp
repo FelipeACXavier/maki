@@ -8,7 +8,6 @@
 
 #include "app_paths.h"
 #include "node.h"
-#include "style_helpers.h"
 
 namespace
 {
@@ -35,7 +34,7 @@ QSvgRenderer* rendererForKind(PortItem::Kind kind)
   if (index < 0 || index >= 4)
     return nullptr;
 
-  const QString path = iconPathFromTheme(iconPathForKind(kind));
+  const QString path = AppPaths::icon(iconPathForKind(kind));
   if (!renderers[index] || !renderers[index]->isValid())
     renderers[index] = std::make_unique<QSvgRenderer>(path);
 
