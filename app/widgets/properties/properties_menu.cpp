@@ -616,7 +616,7 @@ VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QStri
       .type = maki::WidgetAlignment::Type::FORM,
       .direction = maki::WidgetAlignment::Direction::SPREAD,
       .group = group,
-      .labelWidth = 50,
+      .labelWidth = 75,
   };
 
   QJsonArray argArray = jsonValue.toJsonObject()[ConfigKeys::OPTIONS].toArray();

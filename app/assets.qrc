@@ -130,6 +130,7 @@
     <file alias="icon_start_old.svg">assets/icons/mission/icon_start_old.svg</file>
     <file alias="node_async.svg">assets/icons/mission/node_async.svg</file>
     <file alias="node_continue.svg">assets/icons/mission/node_continue.svg</file>
+    <file alias="node_terminate.svg">assets/icons/mission/node_terminate.svg</file>
     <file alias="node_every.svg">assets/icons/mission/node_every.svg</file>
     <file alias="node_failure.svg">assets/icons/mission/node_failure.svg</file>
     <file alias="node_join.svg">assets/icons/mission/node_join.svg</file>

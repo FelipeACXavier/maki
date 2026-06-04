@@ -46,6 +46,7 @@
 #include "node_info.h"
 #include "result.h"
 #include "save_info.h"
+#include "types.h"
 #include "undo_commands/add_node.h"
 #include "undo_commands/align.h"
 #include "undo_commands/remove_node.h"
@@ -1154,14 +1155,17 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     NodeItem* node = static_cast<NodeItem*>(item->type() == NodeItem::Type ? item : item->parentItem());
 
     // =============================================
-    addSectionLabel(menu, "Creation");
+    if (type() == Types::LibraryTypes::STRUCTURAL)
+    {
+      addSectionLabel(menu, "Creation");
 
-    QAction* newEventAction = menu->addAction(iconFromTheme("flow"), tr("New flow"));
-    newEventAction->setEnabled(node != nullptr || items.size() > 0);
-    QObject::connect(newEventAction, &QAction::triggered, [this, node]() {
-      emit createEvent(node);
-    });
-    menu->addAction(newEventAction);
+      QAction* newEventAction = menu->addAction(iconFromTheme("flow"), tr("New flow"));
+      newEventAction->setEnabled(node != nullptr || items.size() > 0);
+      QObject::connect(newEventAction, &QAction::triggered, [this, node]() {
+        emit createEvent(node);
+      });
+      menu->addAction(newEventAction);
+    }
 
     // =============================================
     addSectionLabel(menu, "Edit");
