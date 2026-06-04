@@ -304,6 +304,7 @@ private:
   void onFileLoaded(const QString& file, const SaveInfo& info, const QString& error);
 
   void updateUnloadWarning();
+  void updateRecentFiles();
 };  // namespace qlementclassMainWindow:public MainWindowLayout
 
 #endif  // MAINWINDOW_H

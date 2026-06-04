@@ -35,6 +35,8 @@ static const QString TYPE_NODE = QStringLiteral("application/x-node");          
 static const QString TYPE_PIXMAP = QStringLiteral("application/x-pixmap");         /// MIME type for pixmaps.
 static const QString TYPE_CONFIG = QStringLiteral("application/x-configuration");  /// MIME type for configurations.
 static const QString TYPE_NODE_ID = QStringLiteral("application/x-node-id");       /// MIME type for node IDs.
+static constexpr int MINIMUM_MENU_WIDTH = 250;
+static constexpr int MAXIMUM_MENU_WIDTH = 400;
 
 static const qreal CONTROL_POINT_SHIFT = 100;  /// Shift value for control points.
 
