@@ -4,6 +4,17 @@
   <defs>
     <style>
       .st0 {
+        stroke-dasharray: 11.78 11.78;
+        stroke-width: 3px;
+      }
+
+      .st0, .st1 {
+        fill: none;
+        stroke: #000;
+        stroke-miterlimit: 10;
+      }
+
+      .st2 {
         fill: #f2f2f2;
       }
 
@@ -11,13 +22,8 @@
         stroke-width: 2px;
       }
 
-      .st1, .st2 {
-        fill: none;
-        stroke: #000;
-      }
-
-      .st1, .st2, .st3 {
-        stroke-miterlimit: 10;
+      .st3 {
+        fill: #d1615d;
       }
 
       .st4 {
@@ -25,18 +31,7 @@
         stroke: #f3f3f3;
         stroke-linecap: round;
         stroke-linejoin: round;
-        stroke-width: 4px;
-      }
-
-      .st2 {
-        stroke-dasharray: 12.31 12.31;
-        stroke-width: 3px;
-      }
-
-      .st3 {
-        fill: #d1615d;
-        stroke: #d1615d;
-        stroke-width: 12px;
+        stroke-width: 9px;
       }
 
       .st5 {
@@ -44,19 +39,19 @@
       }
     </style>
   </defs>
-  <path class="st0" d="M253.37,0H95.68c-15.36,0-29.55,7.21-37.23,18.9L6.83,97.51c-9.11,13.88-9.11,30.98,0,44.86l51.61,78.57c7.68,11.69,21.87,18.9,37.23,18.9h56.08v.17h101.62c19.37,0,35.05-15.68,35.05-35.05V35.05c0-19.37-15.68-35.05-35.05-35.05Z"/>
+  <path class="st2" d="M253.37,0H95.68c-15.36,0-29.55,7.21-37.23,18.9L6.83,97.51c-9.11,13.88-9.11,30.98,0,44.86l51.61,78.57c7.68,11.69,21.87,18.9,37.23,18.9h56.08v.17h101.62c19.37,0,35.05-15.68,35.05-35.05V35.05c0-19.37-15.68-35.05-35.05-35.05Z"/>
   <g>
     <g>
-      <circle class="st5" cx="164.6" cy="94.98" r="27.43"/>
-      <circle class="st2" cx="164.6" cy="94.98" r="27.43"/>
+      <circle class="st5" cx="166.91" cy="79.95" r="26.25"/>
+      <circle class="st0" cx="166.91" cy="79.95" r="26.25"/>
     </g>
-    <rect class="st1" x="87.61" y="45.65" width="153.98" height="142.44" rx="44.29" ry="44.29"/>
+    <rect class="st1" x="93.23" y="32.74" width="147.35" height="136.32" rx="44.29" ry="44.29"/>
   </g>
   <g>
-    <rect class="st3" x="143.42" y="168.39" width="42.37" height="42.62" rx="20.04" ry="20.04"/>
+    <circle class="st3" cx="166.91" cy="164.82" r="44.82"/>
     <g>
-      <path class="st4" d="M176.66,177.64l-24.13,24.13"/>
-      <path class="st4" d="M152.54,177.64l24.13,24.13"/>
+      <path class="st4" d="M189.6,142.12l-45.39,45.39"/>
+      <path class="st4" d="M144.21,142.12l45.39,45.39"/>
     </g>
   </g>
 </svg>

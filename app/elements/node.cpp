@@ -1492,9 +1492,10 @@ void NodeItem::updatePortPositions()
 
   const qreal topPortSize = PortItem::sizeForKind(PortItem::Abort);
   const qreal centerX = left + w * 0.5;
+  const qreal shiftX = PortItem::kAbortErrorPortPositioning;
   const qreal errorY = top - topPortSize - PortItem::kGap;
-  const qreal errorX = centerX + topPortSize * 0.5 + PortItem::kGap * 2.0;
-  const qreal abortX = centerX - topPortSize * 0.5;
+  const qreal errorX = centerX + topPortSize * 0.5 + PortItem::kGap * 2.0 + shiftX;
+  const qreal abortX = centerX - topPortSize * 0.5 + shiftX;
   const qreal abortY = portRect.bottom() + PortItem::kGap;
 
   if (mAbortPort && mErrorPort)
