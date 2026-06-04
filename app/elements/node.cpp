@@ -145,11 +145,6 @@ QString resolveStoredIconPath(const QString& storedIcon, const QString& nodeId, 
   return QString();
 }
 
-void paintTaskPalettePreview(QPainter* painter, const QRectF& drawingBounds)
-{
-  paintStructuralTaskOverlayPreview(painter, drawingBounds, QPen(Config::FOREGROUND, 1.0));
-}
-
 std::shared_ptr<NodeSaveInfo> selectedComponentCaller(const NodeItem* node, const SaveInfo& storage)
 {
   QString propertyId;

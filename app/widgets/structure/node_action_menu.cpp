@@ -26,27 +26,6 @@ constexpr int kRowHeight = 36;
 constexpr int kIconTextGap = 8;
 constexpr int kHPad = 8;
 constexpr int kVPad = 4;
-
-void applyCompactTreeSize(QTreeWidget* tree)
-{
-  if (!tree || tree->topLevelItemCount() == 0)
-    return;
-
-  const QFontMetrics fm(tree->font());
-  int textW = 0;
-  for (int i = 0; i < tree->topLevelItemCount(); ++i)
-  {
-    if (auto* row = tree->itemWidget(tree->topLevelItem(i), 0))
-    {
-      for (const QLabel* label : row->findChildren<QLabel*>())
-        textW = qMax(textW, fm.horizontalAdvance(label->text()));
-    }
-  }
-
-  const int treeW = kHPad * 2 + kIconPx + kIconTextGap + textW;
-  const int treeH = kVPad * 2 + tree->topLevelItemCount() * kRowHeight;
-  tree->setFixedSize(treeW, treeH);
-}
 }  // namespace
 
 NodeActionRow::NodeActionRow(const QString& svgPath, const QString& labelText, QWidget* parent)
