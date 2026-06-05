@@ -266,7 +266,7 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, Environment& e
       if (!cap)
         return Result<koda::ReturnValue>::Failed("  signal capability: " + c.first);
 
-      PortRef in = {toFlowVariable(flowName), port};
+      PortRef in = {toFlowVariable(flowName), std::format("{}_{}", instance, port)};
       PortRef out = {toFilename(cap->name), port};
 
       if (mOptions.verbose > 1)
@@ -903,12 +903,12 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
     ASSIGN_OR_RETURN_ON_FAILURE(expr, generateEventCall(handler->emitter, env, true));
 
     env.includes.insert("isignal.dzn");
-    env.requiresPorts.insert("isignal " + expr.call);
+    env.requiresPorts.insert("isignal " + expr.name);
 
     ReturnValue strat;
     ASSIGN_OR_RETURN_ON_FAILURE(strat, generateStrategy(handler->body, env));
 
-    env.core.push_back(std::format("sh{}.signal <=> {}", id, expr.call));
+    env.core.push_back(std::format("sh{}.signal <=> {}", id, expr.name));
     env.core.push_back(std::format("sh{}.action <=> {}", id, env.previousCall));
     env.core.push_back(std::format("sh{}.handler <=> {}", id, strat.name));
 
@@ -973,6 +973,7 @@ Result<koda::ReturnValue> Compiler::generateEventCall(PEventCall call, Environme
     if (isSignal)
     {
       INCREMENT_MAP(env.signalCalls, event)
+      env.requiresPorts.insert(std::format("isignal {}_{}", call->receiver, call->name));
     }
     else
     {
@@ -980,7 +981,7 @@ Result<koda::ReturnValue> Compiler::generateEventCall(PEventCall call, Environme
       env.requiresPorts.insert(std::format("iaction {}_{}", call->receiver, call->name));
     }
 
-    return koda::ReturnValue{std::format("{}_{}", call->receiver, call->name, call->name)};
+    return koda::ReturnValue{std::format("{}_{}", call->receiver, call->name)};
   }
 }
 

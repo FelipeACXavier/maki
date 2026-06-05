@@ -109,18 +109,18 @@
               "type": "void",
               "options": [
                 {
-                  "id": "action",
+                  "id": "service",
                   "type": "string",
                   "options": [
                     {
                       "id": "route",
                       "type": "string",
-                      "default": "ventilation"
+                      "default": "/siren/start"
                     },
                     {
                       "id": "message",
                       "type": "string",
-                      "default": "\"nav2_msgs::action::NavigateToPose::Goal\""
+                      "default": ""
                     }
                   ]
                 }
@@ -128,8 +128,25 @@
             },
             {
               "id": "type",
-              "type": "string",
-              "default": "sync"
+              "type": "void",
+              "options": [
+                {
+                  "id": "action",
+                  "type": "string",
+                  "options": [
+                    {
+                      "id": "route",
+                      "type": "string",
+                      "default": "/siren/stop"
+                    },
+                    {
+                      "id": "message",
+                      "type": "string",
+                      "default": ""
+                    }
+                  ]
+                }
+              ]
             }
           ],
           "events": [
@@ -138,14 +155,14 @@
               "type": "trigger",
               "returnType": "void",
               "modifiable": false,
-              "linksTo": 0
+              "linksTo": 1
             },
             {
               "id": "stop",
               "type": "abort",
               "returnType": "void",
               "modifiable": false,
-              "linksTo": 0
+              "linksTo": 1
             }
           ]
         },
@@ -1160,7 +1177,9 @@
           "help": {
             "message": "Start of a behavioural flow. This can be a reaction to an event or a timed action."
           },
-          "ports": ["out"]
+          "ports": [
+            "out"
+          ]
         },
         {
           "type": "Success",
@@ -1194,7 +1213,9 @@
           "help": {
             "message": "End of a happy behavioural flow. This must always be present in a flow"
           },
-          "ports": ["in"]
+          "ports": [
+            "in"
+          ]
         },
         {
           "type": "Failure",
@@ -1228,7 +1249,9 @@
           "help": {
             "message": "End of an errored behavioural flow. This indicates the flow of a bad behaviour."
           },
-          "ports": ["in"]
+          "ports": [
+            "in"
+          ]
         },
         {
           "type": "Continue",
@@ -1262,7 +1285,9 @@
           "help": {
             "message": "Used with signal handlers to indicate that the main behaviour should continue executing after the signal was handled."
           },
-          "ports": ["in"]
+          "ports": [
+            "in"
+          ]
         },
         {
           "type": "Terminate",
@@ -1296,7 +1321,9 @@
           "help": {
             "message": "End of a task. This will end the current task, independent of where it is triggered."
           },
-          "ports": ["in"]
+          "ports": [
+            "in"
+          ]
         },
         {
           "type": "Async task",
@@ -1330,7 +1357,12 @@
             }
           ],
           "controls": [],
-          "ports": ["in", "out", "abort", "error"]
+          "ports": [
+            "in",
+            "out",
+            "abort",
+            "error"
+          ]
         },
         {
           "type": "Sync task",
@@ -1364,7 +1396,12 @@
             }
           ],
           "controls": [],
-          "ports": ["in", "out", "abort", "error"]
+          "ports": [
+            "in",
+            "out",
+            "abort",
+            "error"
+          ]
         },
         {
           "type": "Flow call",
@@ -1404,7 +1441,12 @@
             }
           ],
           "controls": [],
-          "ports": ["in", "out", "abort", "error"]
+          "ports": [
+            "in",
+            "out",
+            "abort",
+            "error"
+          ]
         },
         {
           "type": "Join",
@@ -1428,7 +1470,10 @@
             }
           ],
           "controls": [],
-          "ports": ["in", "out"]
+          "ports": [
+            "in",
+            "out"
+          ]
         },
         {
           "type": "Within",
@@ -1474,7 +1519,10 @@
           "help": {
             "message": "Performs the \"do\" strategy and if it does not conclude within the set time, it will trigger the \"else\" strategy."
           },
-          "ports": ["in", "out"]
+          "ports": [
+            "in",
+            "out"
+          ]
         },
         {
           "type": "Repeat",
@@ -1523,7 +1571,10 @@
           "help": {
             "message": "Executes the contained strategy repeatedly. Configure the number of iterations and the interval between executions using the block properties."
           },
-          "ports": ["in", "out"]
+          "ports": [
+            "in",
+            "out"
+          ]
         }
       ]
     }
