@@ -29,6 +29,7 @@ class QStackedWidget;
 class StyledFrame;
 class CanvasView;
 class RecentFilesMenu;
+class BreadcrumbWidget;
 
 namespace maki
 {
@@ -71,7 +72,10 @@ protected:
 
   // === Central Panel ===
   QWidget* mHeaderWidget = nullptr;
-  QToolButton* mMenuButton = nullptr;
+  QWidget* mHeaderLeft = nullptr;
+  QWidget* mHeaderCentre = nullptr;
+  QWidget* mHeaderRight = nullptr;
+  BreadcrumbWidget* mBreadcrumb = nullptr;
   DropDownButton* mPipelineRun = nullptr;                            /// Pointer to the generator option combo box.
   oclero::qlementine::LoadingSpinner* mGenerationSpinner = nullptr;  /// Pointer to the generation spinner.
 
@@ -153,7 +157,6 @@ protected:
   int LOG_TAB_INDEX = 0;      /// Index of the log tab.
   int PROCESS_TAB_INDEX = 0;  /// Index of the process tab.
 
-protected:
   /**
    * @brief Handles language changed event.
    */
