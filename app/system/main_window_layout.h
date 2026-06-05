@@ -28,6 +28,7 @@ class LogTableWidget;
 class QStackedWidget;
 class StyledFrame;
 class CanvasView;
+class RecentFilesMenu;
 
 namespace maki
 {
@@ -99,11 +100,11 @@ protected:
 
   // === Actions ===
   // File menu
-  QAction* mActionNew = nullptr;       /// Pointer to the new action.
-  QAction* mActionOpen = nullptr;      /// Pointer to the open action.
-  QMenu* mActionOpenRecent = nullptr;  /// Pointer to the open recent menu.
-  QAction* mActionSave = nullptr;      /// Pointer to the save action.
-  QAction* mActionSaveAs = nullptr;    /// Pointer to the save as action.
+  QAction* mActionNew = nullptr;                /// Pointer to the new action.
+  QAction* mActionOpen = nullptr;               /// Pointer to the open action.
+  RecentFilesMenu* mRecentFilesMenu = nullptr;  /// Pointer to the open recent menu.
+  QAction* mActionSave = nullptr;               /// Pointer to the save action.
+  QAction* mActionSaveAs = nullptr;             /// Pointer to the save as action.
 
   QAction* mActionImportLibrary = nullptr;  /// Pointer to the import library action.
   QAction* mActionInstallPlugin = nullptr;  /// Pointer to the install plugin action.
