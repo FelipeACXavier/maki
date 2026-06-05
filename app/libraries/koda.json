@@ -112,18 +112,18 @@
               "type": "void",
               "options": [
                 {
-                  "id": "action",
+                  "id": "service",
                   "type": "string",
                   "options": [
                     {
                       "id": "route",
                       "type": "string",
-                      "default": "ventilation"
+                      "default": "/siren/start"
                     },
                     {
                       "id": "message",
                       "type": "string",
-                      "default": "\"nav2_msgs::action::NavigateToPose::Goal\""
+                      "default": ""
                     }
                   ]
                 }
@@ -131,8 +131,25 @@
             },
             {
               "id": "type",
-              "type": "string",
-              "default": "sync"
+              "type": "void",
+              "options": [
+                {
+                  "id": "action",
+                  "type": "string",
+                  "options": [
+                    {
+                      "id": "route",
+                      "type": "string",
+                      "default": "/siren/stop"
+                    },
+                    {
+                      "id": "message",
+                      "type": "string",
+                      "default": ""
+                    }
+                  ]
+                }
+              ]
             }
           ],
           "events": [
@@ -141,14 +158,14 @@
               "type": "trigger",
               "returnType": "void",
               "modifiable": false,
-              "linksTo": 0
+              "linksTo": 1
             },
             {
               "id": "stop",
               "type": "abort",
               "returnType": "void",
               "modifiable": false,
-              "linksTo": 0
+              "linksTo": 1
             }
           ]
         },
@@ -1208,7 +1225,7 @@
           ],
           "behaviour": {},
           "help": {
-            "message": "Start of a behavioural flow. This can be a reaction to an event or a timed action"
+            "message": "Start of a behavioural flow. This can be a reaction to an event or a timed action."
           }
         },
         {

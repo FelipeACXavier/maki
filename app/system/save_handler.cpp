@@ -412,7 +412,7 @@ QString SaveHandler::sanitizeFileName(QString name) const
 VoidResult SaveHandler::loadProject()
 {
   QFileDialog::getOpenFileContent(
-      "MAKI projects (*.maki)",
+      "MAKI projects (*.maki);;All files (*)",
       [this](const QString& fileName, const QByteArray& content) {
         if (fileName.isEmpty())
         {
