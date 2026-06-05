@@ -67,6 +67,7 @@
 #include "widgets/section.h"
 #include "widgets/settings_dialog.h"
 #include "widgets/settings_manager.h"
+#include "widgets/structure/breadcrumb.h"
 #include "widgets/structure/file_menu.h"
 #include "widgets/structure/flow_menu.h"
 #include "widgets/structure/recent_files_menu.h"
@@ -1048,6 +1049,8 @@ void MainWindow::onFileLoaded(const QString& file, const SaveInfo& info, const Q
   if (mSystemMenu)
     mSystemMenu->expandToDepth(1);
 
+  mBreadcrumb->setProject(mStorage->name);
+
   LOG_INFO("Project with %d nodes after", mStorage->getnodes().size());
   NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Loaded project: {}", mStorage->name.toStdString());
 }
@@ -1058,6 +1061,8 @@ void MainWindow::onNodeSelected(NodeItem* node, bool selected)
   {
     if (auto info = mConfigTable->get(node->nodeType()))
       mInfoText->setHtml(createInformationMessage(*info));
+
+    mBreadcrumb->setBlock(node->nodeName(), canvas()->type());
   }
   else
   {
@@ -1065,6 +1070,8 @@ void MainWindow::onNodeSelected(NodeItem* node, bool selected)
       mInfoText->setHtml(createDefaultMessage());
     else
       mInfoText->clear();
+
+    mBreadcrumb->setBlock("", canvas()->type());
   }
 
   LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeSelected(node, selected));
@@ -1137,6 +1144,8 @@ void MainWindow::onCanvasTabChanged(int index)
     mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::BEHAVIOUR), true);
     mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::PIPELINE), false);
   }
+
+  mBreadcrumb->setTab(mCanvasPanel->tabText(index), canvas()->type());
 }
 
 void MainWindow::closeCanvasTab(int index)

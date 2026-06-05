@@ -512,8 +512,6 @@ Result<SaveInfo> SaveHandler::loadProjectManifest(const QString& manifestPath)
 Result<std::shared_ptr<NodeSaveInfo>> SaveHandler::loadNodeTree(const QString& projectRoot, const QString& nodeFile)
 {
   const QString absolutePath = QDir(projectRoot).filePath(nodeFile);
-  LOG_INFO("loadNodeTree:\n\tprojectRoot: %s\n\tnodeFile: %s\n\tabsolutePath: %s", qPrintable(projectRoot), qPrintable(nodeFile), qPrintable(absolutePath));
-
   auto read = JSON::fromFile(absolutePath);
   if (!read)
     return Result<std::shared_ptr<NodeSaveInfo>>::Failed(read.ErrorMessage());

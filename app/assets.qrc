@@ -25,6 +25,8 @@
     <file alias="clear.svg">assets/icons/fontawesome/svgs/solid/trash.svg</file>
     <file alias="log-level.svg">assets/icons/fontawesome/svgs/solid/temperature-half.svg</file>
     <file alias="file.svg">assets/icons/fontawesome/svgs/solid/file.svg</file>
+    <file alias="separator.svg">assets/icons/fontawesome/svgs/solid/chevron-right.svg</file>
+    <file alias="home.svg">assets/icons/fontawesome/svgs/solid/house-chimney.svg</file>
     <!-- Log levels -->
     <file alias="info.svg">assets/icons/fontawesome/svgs/solid/circle-info.svg</file>
     <file alias="warning.svg">assets/icons/fontawesome/svgs/solid/circle-exclamation.svg</file>

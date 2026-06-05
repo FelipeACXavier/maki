@@ -1,5 +1,7 @@
 #include "main_window_layout.h"
 
+#include <qnamespace.h>
+
 #include <QAction>
 #include <QApplication>
 #include <QComboBox>
@@ -33,6 +35,7 @@
 #include "widgets/frame.h"
 #include "widgets/log_table_widget.h"
 #include "widgets/properties/properties_menu.h"
+#include "widgets/structure/breadcrumb.h"
 #include "widgets/structure/file_menu.h"
 #include "widgets/structure/recent_files_menu.h"
 #include "widgets/structure/system_menu.h"
@@ -72,6 +75,9 @@ void MainWindowLayout::buildMainWindow()
   setCentralWidget(mCentralWidget);
 
   buildMenuBar();
+
+  // Breadcrumbs on the top right of the panel
+  mBreadcrumb = new BreadcrumbWidget(mCanvasPanel);
 
   applyTheme();
 }
@@ -204,22 +210,34 @@ void MainWindowLayout::buildCentralPanel()
   auto* qlementineStyle = oclero::qlementine::appStyle();
   const auto theme = qlementineStyle->theme();
 
-  QWidget* header = new QWidget();
-  QHBoxLayout* headerLayout = new QHBoxLayout(header);
+  mHeaderWidget = new QWidget();
+  QHBoxLayout* headerLayout = new QHBoxLayout(mHeaderWidget);
   headerLayout->setContentsMargins(0, 8, 0, 8);  // top/bottom spacing
-  headerLayout->setSpacing(5);
+  headerLayout->addSpacing(0);
   headerLayout->setAlignment(Qt::AlignCenter);
-  headerLayout->addSpacing(24);
 
   // ----------------------------------------------------------------
-  mPipelineRun = new DropDownButton(header);
+  mHeaderLeft = new QWidget(mHeaderWidget);
+  auto* leftLayout = new QHBoxLayout(mHeaderLeft);
+  leftLayout->setContentsMargins(0, 0, 0, 0);
+  leftLayout->setSpacing(0);
+  leftLayout->setAlignment(Qt::AlignLeft);
+
+  // ----------------------------------------------------------------
+  mHeaderCentre = new QWidget(mHeaderWidget);
+  auto* centreLayout = new QHBoxLayout(mHeaderCentre);
+  centreLayout->setContentsMargins(0, 0, 0, 0);
+  centreLayout->setSpacing(0);
+  centreLayout->setAlignment(Qt::AlignCenter);
+
+  mPipelineRun = new DropDownButton(mHeaderCentre);
   mPipelineRun->setIcon(iconFromTheme("exaile-play"));
   mPipelineRun->setToolTip(tr("Run pipeline"));
 
-  headerLayout->addWidget(mPipelineRun);
+  centreLayout->addWidget(mPipelineRun);
 
   // ---------------------------------------------
-  auto* spinnerContainer = new QWidget(header);
+  auto* spinnerContainer = new QWidget(mHeaderCentre);
   spinnerContainer->setFixedSize(24, 24);
 
   auto* spinnerLayout = new QHBoxLayout(spinnerContainer);
@@ -229,7 +247,20 @@ void MainWindowLayout::buildCentralPanel()
   mGenerationSpinner->setVisible(false);
 
   spinnerLayout->addWidget(mGenerationSpinner);
-  headerLayout->addWidget(spinnerContainer);
+  centreLayout->addWidget(spinnerContainer);
+
+  // ---------------------------------------------
+  mHeaderRight = new QWidget(mHeaderWidget);
+  auto* rightLayout = new QHBoxLayout(mHeaderRight);
+  rightLayout->setContentsMargins(0, 0, 0, 0);
+  rightLayout->setSpacing(0);
+  rightLayout->setAlignment(Qt::AlignRight);
+  rightLayout->addStretch();
+
+  // Add all the zones to the header
+  headerLayout->addWidget(mHeaderLeft, 35);
+  headerLayout->addWidget(mHeaderCentre, 30);
+  headerLayout->addWidget(mHeaderRight, 35);
 
   // ---------------------------------------------
   mCanvasPanel = new QTabWidget(mCentralSplitter);
@@ -263,7 +294,7 @@ void MainWindowLayout::buildCentralPanel()
   canvasLayout->setSpacing(0);
 
   // Add header + tabs
-  canvasLayout->addWidget(header);
+  canvasLayout->addWidget(mHeaderWidget);
   canvasLayout->addWidget(mCanvasPanel);
 
   // Now add the container to the splitter

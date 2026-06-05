@@ -1139,7 +1139,7 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     // =============================================
     addSectionLabel(menu, "Creation");
 
-    QAction* newEventAction = menu->addAction(QIcon(":/icons/flow.svg"), tr("New flow"));
+    QAction* newEventAction = menu->addAction(QIcon(":/icons/behaviour.svg"), tr("New flow"));
     newEventAction->setEnabled(node != nullptr || items.size() > 0);
     QObject::connect(newEventAction, &QAction::triggered, [this, node]() {
       emit createEvent(node);

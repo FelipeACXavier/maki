@@ -72,7 +72,7 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
       statusBadge->setBadge(oclero::qlementine::StatusBadge::Error);
       break;
     default:
-      setCustomBorderColor(theme.statusColorSuccess);
+      setCustomBorderColor(theme.statusColorInfo);
       statusBadge->setBadge(oclero::qlementine::StatusBadge::Info);
       break;
   }
