@@ -1,5 +1,7 @@
 #include "notification_widget.h"
 
+#include <qabstractanimation.h>
+
 #include <QGraphicsOpacityEffect>
 #include <QGuiApplication>
 #include <QHBoxLayout>
@@ -125,12 +127,27 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
   mFadeAnim->setDuration(duration());
   mFadeAnim->setStartValue(opacity());
   mFadeAnim->setEndValue(1.0);
+  connect(mFadeAnim, &QPropertyAnimation::finished, this, [this]() {
+    if (mFadeAnim->direction() != QAbstractAnimation::Backward)
+      return;
+
+    emit dismissed(this);
+    deleteLater();
+  });
 
   connect(mCloseButton, &QPushButton::clicked, this, &NotificationWidget::hideAnimated);
 
   // Only enable in short notification
   if (!text.isEmpty())
     setupAlarm(3000);
+}
+
+NotificationWidget::~NotificationWidget()
+{
+  mAutoCloseTimer.stop();
+
+  if (mFadeAnim)
+    mFadeAnim->stop();
 }
 
 int NotificationWidget::duration() const
@@ -194,11 +211,5 @@ void NotificationWidget::hideAnimated()
   mFadeAnim->setStartValue(0.0);
   mFadeAnim->setEndValue(opacity());
   mFadeAnim->setDirection(QAbstractAnimation::Backward);
-
-  connect(mFadeAnim, &QPropertyAnimation::finished, this, [this]() {
-    emit dismissed(this);
-    deleteLater();
-  });
-
   mFadeAnim->start();
 }

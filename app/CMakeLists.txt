@@ -44,6 +44,10 @@ qt_add_executable(${APPLICATION_NAME}
     ${COMPILER_FILES}
 )
 
+if (BUILD_NOTIFY_DUMP)
+  target_compile_definitions(${TARGET_NAME} PRIVATE DEBUG_ADDRESS=1)
+endif()
+
 if (CMAKE_BUILD_TYPE STREQUAL "Debug" AND BUILD_PLUGINS)
   target_compile_definitions(${APPLICATION_NAME} PRIVATE DEV_BUILD=1)
 endif()

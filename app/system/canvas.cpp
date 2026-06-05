@@ -1574,6 +1574,8 @@ VoidResult Canvas::loadFromSave(const QVector<std::shared_ptr<INode>>& nodes, No
 
     LOG_DEBUG("Creating node %s with parent %s", qPrintable(node->getid()), qPrintable(node->getparentId()));
     auto createdNode = createNode(NodeCreation::Loading, node, node->getposition(), parent);
+    if (!createdNode)
+      return VoidResult::Failed("Failed to load node: " + node->getnodeId().toStdString());
 
     auto ret = loadFromSave(nodeInfo->getchildren(), createdNode);
     if (!ret.IsSuccess())

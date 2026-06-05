@@ -46,6 +46,8 @@ public:
    */
   NotificationWidget(const QString& title, const QString& text, logging::LogLevel level, QWidget* parent = nullptr);
 
+  ~NotificationWidget();
+
   /**
    * @brief Returns the current opacity of the widget.
    * @return The opacity value in the range [0.0, 1.0].

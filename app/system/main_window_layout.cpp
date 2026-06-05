@@ -34,6 +34,7 @@
 #include "widgets/log_table_widget.h"
 #include "widgets/properties/properties_menu.h"
 #include "widgets/structure/file_menu.h"
+#include "widgets/structure/recent_files_menu.h"
 #include "widgets/structure/system_menu.h"
 #include "widgets/widget_factory.h"
 
@@ -349,7 +350,7 @@ void MainWindowLayout::buildCentralPanel()
 
   // -----------------------------------------------------------------
   // Final detals
-  connect(mBottomNavigation, &oclero::qlementine::NavigationBar::currentIndexChanged, [this]() {
+  connect(mBottomNavigation, &oclero::qlementine::NavigationBar::currentIndexChanged, this, [this]() {
     mBottomPanel->setCurrentIndex(mBottomNavigation->currentIndex());
   });
   mBottomPanel->setCurrentIndex(0);
@@ -420,7 +421,7 @@ void MainWindowLayout::buildRightPanel()
 void MainWindowLayout::buildMenuBar()
 {
   // === Menu Bar ===
-  mMenuBar = new QMenuBar();
+  mMenuBar = new QMenuBar(this);
   mMenuBar->setNativeMenuBar(true);
 
   // ----------------------------------------------------------
@@ -436,10 +437,10 @@ void MainWindowLayout::buildMenuBar()
   mTranslatable.push_back({mActionOpen, "Open"});
   file->addAction(mActionOpen);
 
-  mActionOpenRecent = file->addMenu(iconFromTheme("document-open-recent"), tr("Open Recent"));
-  mTranslatable.push_back({mActionOpenRecent, "Open Recent"});
-  mActionOpenRecent->setMaximumWidth(Constants::MAXIMUM_MENU_WIDTH);
-
+  mRecentFilesMenu = new RecentFilesMenu(this);
+  mRecentFilesMenu->setTitle(tr("Open Recent"));
+  mRecentFilesMenu->setIcon(iconFromTheme("document-open-recent"));
+  file->addMenu(mRecentFilesMenu);
   file->addSeparator();
 
   mActionSave = new QAction(iconFromTheme("document-save"), tr("Save"), this);
@@ -538,7 +539,7 @@ void MainWindowLayout::buildMenuBar()
   mOpenComponentsPanel->setIcon(iconFromTheme("view-visible"));
   mTranslatable.push_back({mOpenComponentsPanel, "Components panel"});
   showMenu->addAction(mOpenComponentsPanel);
-  connect(mOpenComponentsPanel, &QAction::triggered, [this] {
+  connect(mOpenComponentsPanel, &QAction::triggered, this, [this] {
     togglePanelVisibility(mLeftPanel, mOpenComponentsPanel);
   });
 
@@ -546,7 +547,7 @@ void MainWindowLayout::buildMenuBar()
   mOpenInfoPanel->setIcon(iconFromTheme("view-visible"));
   mTranslatable.push_back({mOpenInfoPanel, "Information panel"});
   showMenu->addAction(mOpenInfoPanel);
-  connect(mOpenInfoPanel, &QAction::triggered, [this] {
+  connect(mOpenInfoPanel, &QAction::triggered, this, [this] {
     togglePanelVisibility(mBottomContainer, mOpenInfoPanel);
   });
 
@@ -554,7 +555,7 @@ void MainWindowLayout::buildMenuBar()
   mOpenPropertiesPanel->setIcon(iconFromTheme("view-visible"));
   mTranslatable.push_back({mOpenPropertiesPanel, "Properties panel"});
   showMenu->addAction(mOpenPropertiesPanel);
-  connect(mOpenPropertiesPanel, &QAction::triggered, [this] {
+  connect(mOpenPropertiesPanel, &QAction::triggered, this, [this] {
     togglePanelVisibility(mRightPanel, mOpenPropertiesPanel);
   });
 
