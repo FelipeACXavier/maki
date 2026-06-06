@@ -15,6 +15,8 @@ public:
 
   void onCleanChanged(bool state) override;
 
+  void onCleanChanged(bool state) override;
+
 private:
   std::shared_ptr<SaveInfo> mStorage;
 

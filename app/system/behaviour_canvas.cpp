@@ -145,3 +145,9 @@ void BehaviourCanvas::onCleanChanged(bool state)
   if (mFlow)
     emit cleanChanged(id(), mFlow->name(), state);
 }
+
+void BehaviourCanvas::onCleanChanged(bool state)
+{
+  if (mFlow)
+    emit cleanChanged(id(), mFlow->name(), state);
+}
