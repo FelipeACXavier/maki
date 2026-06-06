@@ -18,6 +18,7 @@
 #include <QTextBlock>
 #include <QTextBrowser>
 #include <QUndoGroup>
+#include <QUndoStack>
 #include <QWidget>
 #include <memory>
 #include <oclero/qlementine/widgets/AboutDialog.hpp>
@@ -296,9 +297,11 @@ void MainWindow::startUI()
 {
   CanvasView* currentCanvas = static_cast<CanvasView*>(mCanvasPanel->currentWidget());
   StructureCanvas* canvas = new StructureCanvas(mStorage, Config::MAIN_CANVAS, mConfigTable, mRouter, currentCanvas);
+  connect(canvas, &Canvas::cleanChanged, this, &MainWindow::onCleanChanged);
 
   mActiveCanvas = canvas;
   currentCanvas->setScene(canvas);
+  currentCanvas->setProperty("id", Config::MAIN_CANVAS);
 
   mUndoGroup->addStack(canvas->undoStack());
   mUndoGroup->setActiveStack(canvas->undoStack());
@@ -932,6 +935,7 @@ void MainWindow::onActionEditPipeline(const QString& pipelineId)
   newView->setProperty("id", pipelineName);
 
   PipelineCanvas* canvas = new PipelineCanvas(pipeline, mConfigTable, mRouter, newView);
+  connect(canvas, &Canvas::cleanChanged, this, &MainWindow::onCleanChanged);
   newView->setScene(canvas);
   canvas->populate(*pipeline);
 
@@ -1082,6 +1086,12 @@ VoidResult MainWindow::onActionSave()
   auto saved = mSaveHandler->saveProject(*mStorage);
   if (saved)
   {
+    // Clean the undo stacks on save
+    for (auto* stack : mUndoGroup->stacks())
+    {
+      stack->clear();
+      stack->setClean();
+    }
     NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Saved project: {}", mStorage->name.toStdString());
   }
   else
@@ -1104,6 +1114,12 @@ void MainWindow::onActionSaveAs()
   auto saved = mSaveHandler->saveProjectAs(*mStorage);
   if (saved)
   {
+    // Clean the undo stacks on save
+    for (auto* stack : mUndoGroup->stacks())
+    {
+      stack->clear();
+      stack->setClean();
+    }
     NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Saved project: {}", mStorage->name.toStdString());
   }
   else
@@ -1179,6 +1195,13 @@ void MainWindow::onFileLoaded(const QString& file, const SaveInfo& info, const Q
 
   LOG_INFO("Project with %d nodes after", mStorage->getnodes().size());
   NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Loaded project: {}", mStorage->name.toStdString());
+
+  // Clean the undo stacks on start up
+  for (auto* stack : mUndoGroup->stacks())
+  {
+    stack->clear();
+    stack->setClean();
+  }
 }
 
 void MainWindow::onNodeSelected(NodeItem* node, bool selected)
@@ -1274,6 +1297,8 @@ void MainWindow::closeCanvasTab(int index)
   if (CanvasView* closedCanvas = qobject_cast<CanvasView*>(mCanvasPanel->widget(index)))
   {
     auto toBeRemoved = qobject_cast<Canvas*>(closedCanvas->scene());
+    // We only disconnect this on destruction
+    disconnect(toBeRemoved, &Canvas::cleanChanged, this, &MainWindow::onCleanChanged);
     mUndoGroup->removeStack(toBeRemoved->undoStack());
 
     if (closedCanvas->scene() == canvas())
@@ -1388,8 +1413,8 @@ void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId)
 
   CanvasView* newView = new CanvasView(mCanvasPanel);
 
-  LOG_INFO("Opening flow: %s - %d", qPrintable(flow->name()), flow->getNodes().size());
   BehaviourCanvas* canvas = new BehaviourCanvas(flow, mConfigTable, mRouter, newView);
+  connect(canvas, &Canvas::cleanChanged, this, &MainWindow::onCleanChanged);
   canvas->setupInitialNodes();
   newView->setScene(canvas);
 
@@ -1443,6 +1468,24 @@ void MainWindow::onFlowRemoved(const QString& flowId, const QString& nodeId)
   }
 
   LOG_WARN_ON_FAILURE(mSystemMenu->onFlowRemoved(flowId, nodeId));
+}
+
+void MainWindow::onCleanChanged(const QString& flowId, const QString& text, bool state)
+{
+  if (flowId.isEmpty())
+    return;
+
+  for (int i = 0; i < mCanvasPanel->count(); ++i)
+  {
+    // Check if the flow is already open in some tab
+    auto prop = mCanvasPanel->widget(i)->property("id");
+    if (!prop.isValid() || prop.toString() != flowId)
+      continue;
+
+    auto updatedText = text + (state ? "" : "*");
+    mCanvasPanel->setTabText(i, updatedText);
+    return;
+  }
 }
 
 int MainWindow::libraryTypeToIndex(Types::LibraryTypes type) const

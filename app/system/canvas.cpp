@@ -1,5 +1,8 @@
 #include "canvas.h"
 
+#include <qcoreapplication.h>
+#include <qundostack.h>
+
 #include <QBuffer>
 #include <QClipboard>
 #include <QGraphicsSceneDragDropEvent>
@@ -52,11 +55,13 @@ Canvas::Canvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> conf
   mUndoStack->setUndoLimit(20);
 
   connect(this, &QGraphicsScene::selectionChanged, this, &Canvas::onSelectionChanged);
+  connect(mUndoStack, &QUndoStack::cleanChanged, this, &Canvas::onCleanChanged);
 }
 
 Canvas::~Canvas()
 {
   disconnect(this, &QGraphicsScene::selectionChanged, this, &Canvas::onSelectionChanged);
+  disconnect(mUndoStack, &QUndoStack::cleanChanged, this, &Canvas::onCleanChanged);
 }
 
 QString Canvas::id() const
@@ -104,6 +109,10 @@ void Canvas::onSelectionChanged()
     if (auto* node = qgraphicsitem_cast<NodeItem*>(item))
       if (!mSelectedNodes.contains(node))
         mSelectedNodes.append(node);
+}
+
+void Canvas::onCleanChanged(bool state)
+{
 }
 
 void Canvas::dragEnterEvent(QGraphicsSceneDragDropEvent* event)
@@ -830,6 +839,7 @@ void Canvas::removeNode(const NodeSaveInfo info)
 
 QVector<QGraphicsItem*> Canvas::cleanTransitionsOfNode(const QString& nodeId)
 {
+  LOG_INFO("Calling base class");
   // Do nothing
   return {};
 }
@@ -850,7 +860,7 @@ QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
   node->flowAdded = nullptr;
   node->nodeMoved = nullptr;
 
-  LOG_TRACE("Removing node: %s", qPrintable(node->id()));
+  LOG_DEBUG("Removing node: %s %d", qPrintable(node->id()), (int)type());
 
   QVector<QGraphicsItem*> itemsToRemove = {node};
   updateParent(node, nullptr, false);
@@ -1024,13 +1034,12 @@ void Canvas::clearCanvas()
     if (node->parentNode())
       continue;
 
+    LOG_INFO("Removing node: %s", qPrintable(node->id()));
     toRemove += removeNode(node);
   }
 
-  QTimer::singleShot(0, this, [toRemove]() {
-    for (QGraphicsItem* item : toRemove)
-      delete item;
-  });
+  for (QGraphicsItem* item : toRemove)
+    delete item;
 
   LOG_DEBUG("Number of items after clearCanvas: %d", items().size());
 }
@@ -1285,9 +1294,9 @@ void Canvas::populate(const FlowSaveInfo& flow)
   {
     auto node = std::dynamic_pointer_cast<NodeSaveInfo>(inode);
     // LOG_DEBUG("Creating behavioral node %s with parent \"%s\"", qPrintable(node->getid()), qPrintable(node->getparentId()));
-    (void)createNode(NodeCreation::Populating, node, node->getposition(), findNodeWithId(node->getparentId()));
-    // if (created)
-    //   LOG_DEBUG("Created node %s", qPrintable(created->id()));
+    auto created = createNode(NodeCreation::Populating, node, node->getposition(), findNodeWithId(node->getparentId()));
+    if (created)
+      LOG_DEBUG("Created node %s %s", qPrintable(node->getid()), qPrintable(created->id()));
   }
 
   // Then create the transitions between the nodes

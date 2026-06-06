@@ -60,7 +60,7 @@ public:
    */
   Canvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> configTable, std::shared_ptr<EdgeRouter> router, QObject* parent = nullptr);
 
-  ~Canvas();
+  virtual ~Canvas();
   /**
    * @brief Returns the unique identifier for this canvas.
    *
@@ -351,6 +351,8 @@ signals:
    */
   void flowRemoved(const QString& flowId, const QString& nodeId);
 
+  void cleanChanged(const QString& flowId, const QString& text, bool state);
+
 public slots:
   /**
    * @brief Handles focus on a node.
@@ -383,6 +385,10 @@ public slots:
    */
   void onFlowRemoved(const QString& flowId, const QString& nodeId);
 
+  void onSelectionChanged();
+
+  virtual void onCleanChanged(bool state);
+
 protected:
   std::shared_ptr<ConfigurationTable> mConfigTable;  /// Pointer to the configuration table.
   std::shared_ptr<EdgeRouter> mRouter;               /// Pointer to the system edge router.
@@ -402,6 +408,11 @@ protected:
    * @return Pointer to CanvasView.
    */
   CanvasView* parentView() const;
+
+  /**
+   * @brief Clears all items from the canvas.
+   */
+  void clearCanvas();
 
 private:
   enum class NodeCreation
@@ -429,11 +440,6 @@ private:
 
   QList<CopiedNode> mCopiedNodes;   /// List of copied nodes.
   QList<NodeItem*> mSelectedNodes;  /// List of currently selected nodes.
-
-  /**
-   * @brief Clears all items from the canvas.
-   */
-  void clearCanvas();
 
   /**
    * @brief Selects a node and updates its selection state.
@@ -503,8 +509,6 @@ private:
   void pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode, QList<CopiedNode> nodes, bool relative);  /// Pastes copied items at a specified position.
 
   VoidResult loadFromSave(const QVector<std::shared_ptr<INode>>& nodes, NodeItem* parent);  /// Loads nodes and their children from save information.
-
-  void onSelectionChanged();
 };
 
 inline QDataStream& operator<<(QDataStream& out, const Canvas::CopiedNode& node)

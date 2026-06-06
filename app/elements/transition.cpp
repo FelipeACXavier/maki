@@ -48,6 +48,16 @@ int TransitionItem::type() const
   return Type;
 }
 
+QString TransitionItem::sourceId() const
+{
+  return mStorage->getsrcId();
+}
+
+QString TransitionItem::destinationId() const
+{
+  return mStorage->getdstId();
+}
+
 void TransitionItem::setStart(const QString& id, const QPointF& point, const QPointF& controlShift)
 {
   mStorage->setSrcId(id);

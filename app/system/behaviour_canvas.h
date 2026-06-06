@@ -25,6 +25,8 @@ public:
    */
   BehaviourCanvas(Flow* flow, std::shared_ptr<ConfigurationTable> configTable, std::shared_ptr<EdgeRouter> router, QObject* parent = nullptr);
 
+  ~BehaviourCanvas();
+
   /**
    * @brief Retrieves the type of library associated with this canvas.
    *
@@ -79,6 +81,8 @@ protected:
    * @brief Deletes the Flow managed by this Canvas. This should not be called if the Flow is created by a NodeItem.
    */
   void cleanFlow();
+
+  void onCleanChanged(bool state) override;
 
 private:
   /**

@@ -13,6 +13,8 @@ public:
 
   void addedItemNode(NodeItem* node, std::shared_ptr<NodeSaveInfo> info) override;
 
+  void onCleanChanged(bool state) override;
+
 private:
   std::shared_ptr<SaveInfo> mStorage;
 

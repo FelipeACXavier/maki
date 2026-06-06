@@ -33,3 +33,8 @@ void StructureCanvas::addedItemNode(NodeItem* node, std::shared_ptr<NodeSaveInfo
 
   Canvas::addedItemNode(node, info);
 }
+
+void StructureCanvas::onCleanChanged(bool state)
+{
+  emit cleanChanged(id(), id(), state);
+}
