@@ -4,6 +4,7 @@
 #include <QScreen>
 #include <QUuid>
 
+#include "app_configs.h"
 #include "long_notification.h"
 
 NotificationManager::NotificationManager(QWidget* parentWindow, QObject* parent)
@@ -89,9 +90,9 @@ void NotificationManager::repositionToasts()
   if (!mParentWindow)
     return;
 
-  int y = 50;
-  const auto leftMargin = 10;
-  const auto betweenMargin = 10;
+  int y = Config::CANVAS_OVERLAY_Y_MARGIN;
+  const auto leftMargin = Config::CANVAS_OVERLAY_X_MARGIN;
+  const auto betweenMargin = Config::CANVAS_OVERLAY_X_MARGIN;
 
   // Place relative to the parent window
   const QRect pw = mParentWindow->rect();
