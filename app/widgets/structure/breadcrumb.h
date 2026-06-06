@@ -48,12 +48,12 @@ public:
   void setBlock(const QString& block, Types::LibraryTypes type);
 
 private:
+  bool mApplySizeQueued = false;
   BreadcrumbLabel* mProjectName = nullptr;
   oclero::qlementine::IconWidget* mTabSeparator = nullptr;
   BreadcrumbLabel* mTabName = nullptr;
   oclero::qlementine::IconWidget* mBlockSeparator = nullptr;
   BreadcrumbLabel* mBlockName = nullptr;
-  bool mRepositionQueued = false;
 
   void updateLabel(const QString& text, BreadcrumbLabel* label, const QIcon& labelIcon, oclero::qlementine::IconWidget* icon);
   void setIconOptions(oclero::qlementine::IconWidget* icon);
@@ -61,7 +61,7 @@ private:
   QIcon libraryTypeToIcon(Types::LibraryTypes type, bool isBlock) const;
 
   void reposition();
-  void scheduleReposition();
   void applySize();
+  void scheduleApplySize();
   bool eventFilter(QObject* watched, QEvent* event);
 };

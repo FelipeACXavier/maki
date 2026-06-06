@@ -4,6 +4,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 
+#include "app_configs.h"
 #include "oclero/qlementine/widgets/IconWidget.hpp"
 #include "types.h"
 #include "widgets/frame.h"
@@ -118,21 +119,23 @@ BreadcrumbWidget::BreadcrumbWidget(QWidget* parent)
 
   // Start closed
   setProject("Unnamed");
-  // The breadcrumb sometimes start in the wrong position, fix that
   reposition();
   applySize();
 }
 
-void BreadcrumbWidget::scheduleReposition()
+void BreadcrumbWidget::scheduleApplySize()
 {
-  if (mRepositionQueued)
+  if (mApplySizeQueued)
     return;
 
-  mRepositionQueued = true;
+  mApplySizeQueued = true;
 
   QMetaObject::invokeMethod(this, [this] {
-        reposition();
-        mRepositionQueued = false; }, Qt::QueuedConnection);
+        layout()->invalidate();
+        layout()->activate();
+        applySize();
+        update();
+        mApplySizeQueued = false; }, Qt::QueuedConnection);
 }
 
 void BreadcrumbWidget::applySize()
@@ -148,7 +151,8 @@ void BreadcrumbWidget::reposition()
     return;
 
   const QRect r = parentWidget()->contentsRect();
-  const QPoint wantedPos(r.left() + 8, r.top() + 50);
+  const QPoint wantedPos(r.left() + Config::CANVAS_OVERLAY_X_MARGIN,
+                         r.top() + Config::CANVAS_OVERLAY_Y_MARGIN);
   if (pos() != wantedPos)
     move(wantedPos);
 
@@ -161,9 +165,8 @@ void BreadcrumbWidget::setProject(const QString& project)
   updateLabel(project, mProjectName, QIcon(":/icons/home.svg"), nullptr);
   updateLabel("", mTabName, QIcon(), mTabSeparator);
   updateLabel("", mBlockName, QIcon(), mBlockSeparator);
-  applySize();
   setUpdatesEnabled(true);
-  update();
+  scheduleApplySize();
 }
 
 void BreadcrumbWidget::setTab(const QString& tab, Types::LibraryTypes type)

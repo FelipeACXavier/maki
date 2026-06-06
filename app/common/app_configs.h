@@ -20,7 +20,9 @@ static const int CONNECTOR_RADIUS = 5;        /// Radius of connectors in pixels
 static const qreal MINIMUM_NODE_SIZE = 50;    /// Minimum size of a node.
 static const qreal OPACITY_THRESHOLD = 0.25;  /// Opacity threshold for visibility.
 
-static const int CONTENT_PADDING = 5;  /// Padding around content.
+static const int CONTENT_PADDING = 5;           /// Padding around content.
+static const int CANVAS_OVERLAY_X_MARGIN = 10;  /// X margin for objects that overaly the canvas
+static const int CANVAS_OVERLAY_Y_MARGIN = 50;  /// Y margin for objects that overaly the canvas
 
 extern QColor FOREGROUND;  /// Foreground color.
 extern QColor HIGHLIGHT;   /// Highlight color.
