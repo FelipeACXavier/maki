@@ -76,6 +76,9 @@ public:
    */
   void done(NodeItem* source, NodeItem* destination);
 
+  QString sourceId() const;
+  QString destinationId() const;
+
   /**
    * @brief Retrieves the source node of this transition.
    * @return Pointer to the source node item.

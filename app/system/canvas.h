@@ -63,7 +63,7 @@ public:
    */
   Canvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> configTable, std::shared_ptr<EdgeRouter> router, QObject* parent = nullptr);
 
-  ~Canvas();
+  virtual ~Canvas();
   /**
    * @brief Returns the unique identifier for this canvas.
    *
@@ -381,6 +381,8 @@ signals:
    */
   void flowRemoved(const QString& flowId, const QString& nodeId);
 
+  void cleanChanged(const QString& flowId, const QString& text, bool state);
+
 public slots:
   /**
    * @brief Handles focus on a node.
@@ -412,6 +414,10 @@ public slots:
    * @param nodeId The ID of the node associated with the flow.
    */
   void onFlowRemoved(const QString& flowId, const QString& nodeId);
+
+  void onSelectionChanged();
+
+  virtual void onCleanChanged(bool state);
 
 protected:
   std::shared_ptr<ConfigurationTable> mConfigTable;  /// Pointer to the configuration table.
@@ -446,6 +452,11 @@ protected:
    */
   CanvasView* parentView() const;
 
+  /**
+   * @brief Clears all items from the canvas.
+   */
+  void clearCanvas();
+
 private:
   // TODO(felaze): Move connection behaviour to a separate class
   NodeItem* mHoveredNode = nullptr;       /// Pointer to the hovered node.
@@ -466,11 +477,6 @@ private:
 
   QList<CopiedNode> mCopiedNodes;   /// List of copied nodes.
   QList<NodeItem*> mSelectedNodes;  /// List of currently selected nodes.
-
-  /**
-   * @brief Clears all items from the canvas.
-   */
-  void clearCanvas();
 
   /**
    * @brief Selects a node and updates its selection state.
@@ -561,8 +567,6 @@ private:
   QColor mDraggedCapabilityColor;
   QTimer* mNodeActionHideTimer = nullptr;
   NodeItem* mHoveredActionNode = nullptr;
-
-  void onSelectionChanged();
 };
 
 inline QDataStream& operator<<(QDataStream& out, const Canvas::CopiedNode& node)

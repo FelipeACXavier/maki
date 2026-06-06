@@ -23,6 +23,8 @@ protected:
 
   void finalizeAfterLoad() override;
 
+  void onCleanChanged(bool state) override;
+
 private:
   std::shared_ptr<SaveInfo> mStorage;
 
