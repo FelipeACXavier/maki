@@ -5,6 +5,7 @@ release/
 generated/
 .cache
 .flatpak-builder
+vcpkg_installed/
 
 compile_commands.json
 
