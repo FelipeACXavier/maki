@@ -30,7 +30,7 @@ public:
 
   VoidResult loadProject();
   Result<SaveInfo> loadProject(const QString& fileToLoad);
-  Result<SaveInfo> loadProjectManifest(const QString& manifestPath);
+  Result<SaveInfo> loadProjectManifest(const QString& projectFile, const QString& manifestPath);
 
   /**
    * @brief Gets the last directory used for saving or loading files.
@@ -76,9 +76,7 @@ signals:
   void fileSaved(const QString& file);
 
 private:
-  QString mLastDir;      /// Last directory used for saving or loading files.
-  QString mCurrentFile;  /// Current file being edited.
-
+  QString mLastDir;        /// Last directory used for saving or loading files.
   QWidget* mParentWidget;  /// Parent widget.
 
   /**
@@ -88,13 +86,6 @@ private:
    * @return QString The selected file name, or an empty string if the dialog was canceled.
    */
   QString openAtCenter(Function save);
-
-  /**
-   * @brief Stores the filename and updates the last directory.
-   *
-   * @param fileName The new file name.
-   */
-  void storeFilename(const QString& fileName);
 
   QString sanitizeFileName(QString name) const;
 

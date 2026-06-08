@@ -24,16 +24,16 @@
 
 VoidResult zipFolder(const QString& sourceDir, const QString& outputFile)
 {
-  QuaZip zip(outputFile);
+  QuaZip zip(QDir::toNativeSeparators(outputFile));
   if (!zip.open(QuaZip::mdCreate))
-    return VoidResult::Failed("Could not create archive: " + outputFile.toStdString());
+    return VoidResult::Failed("Could not create archive: " + outputFile.toStdString() + " - " + std::to_string(zip.getZipError()));
 
-  QDir base(sourceDir);
+  QDir base(QDir::toNativeSeparators(sourceDir));
   QDirIterator it(sourceDir, QDir::Files, QDirIterator::Subdirectories);
   while (it.hasNext())
   {
-    const QString filePath = it.next();
-    const QString relativePath = base.relativeFilePath(filePath);
+    const QString filePath = QDir::toNativeSeparators(it.next());
+    const QString relativePath = QDir::toNativeSeparators(base.relativeFilePath(filePath));
 
     QFile input(filePath);
     if (!input.open(QIODevice::ReadOnly))
@@ -75,8 +75,8 @@ Result<QByteArray> zipFolderToBytes(const QString& sourceDir)
 
   while (it.hasNext())
   {
-    const QString filePath = it.next();
-    const QString relativePath = base.relativeFilePath(filePath);
+    const QString filePath = QDir::toNativeSeparators(it.next());
+    const QString relativePath = QDir::toNativeSeparators(base.relativeFilePath(filePath));
 
     QFile input(filePath);
     if (!input.open(QIODevice::ReadOnly))
@@ -104,11 +104,11 @@ Result<QByteArray> zipFolderToBytes(const QString& sourceDir)
 
 VoidResult unzipProject(const QString& makiFile, const QString& outputDir)
 {
-  QuaZip zip(makiFile);
+  QuaZip zip(QDir::toNativeSeparators(makiFile));
   if (!zip.open(QuaZip::mdUnzip))
-    return VoidResult::Failed("Could not open archive");
+    return VoidResult::Failed("Could not open archive: " + zip.getZipError());
 
-  QDir().mkpath(outputDir);
+  QDir().mkpath(QDir::toNativeSeparators(outputDir));
 
   for (bool more = zip.goToFirstFile(); more; more = zip.goToNextFile())
   {
@@ -135,16 +135,10 @@ VoidResult unzipProject(const QString& makiFile, const QString& outputDir)
 }
 
 SaveHandler::SaveHandler(QWidget* parent)
-    : QObject()
+    : QObject(parent)
     , mLastDir(QDir::homePath())
-    , mCurrentFile("")
     , mParentWidget(parent)
 {
-}
-
-void SaveHandler::newFileCreated()
-{
-  mCurrentFile.clear();
 }
 
 QString SaveHandler::lastDir() const
@@ -155,20 +149,9 @@ QString SaveHandler::lastDir() const
 void SaveHandler::setLastDir(const QString& dir)
 {
   if (dir.isEmpty())
-    mLastDir = QDir::homePath();
+    mLastDir = QDir::toNativeSeparators(QDir::homePath());
   else
-    mLastDir = dir;
-}
-
-void SaveHandler::storeFilename(const QString& fileName)
-{
-  if (fileName.isEmpty())
-    return;
-
-  mCurrentFile = fileName;
-
-  QFileInfo fileInfo(fileName);
-  mLastDir = fileInfo.absolutePath();  // Update the last directory to the current one
+    mLastDir = QDir::toNativeSeparators(dir);
 }
 
 QString SaveHandler::openAtCenter(Function function)
@@ -183,6 +166,7 @@ QString SaveHandler::openAtCenter(Function function)
       dialog.setFileMode(QFileDialog::AnyFile);
       dialog.setWindowTitle(tr("Save diagram"));
       dialog.setNameFilter(tr("MAKI (*.maki);;All Files (*)"));
+      dialog.setDefaultSuffix("maki");
       break;
 
     case Function::LOAD:
@@ -193,15 +177,17 @@ QString SaveHandler::openAtCenter(Function function)
       break;
   }
 
-  dialog.setDirectory(mLastDir);
+  dialog.setDirectory(lastDir());
 
   if (dialog.exec() != QDialog::Accepted)
     return QString();
 
-  const QString selected = dialog.selectedFiles().value(0);
+  QString selected = dialog.selectedFiles().value(0);
+  if (function == Function::SAVE && !selected.endsWith(".maki", Qt::CaseInsensitive))
+    selected += ".maki";
 
   if (!selected.isEmpty())
-    mLastDir = QFileInfo(selected).absolutePath();
+    setLastDir(QFileInfo(selected).absolutePath());
 
   return selected;
 }
@@ -209,7 +195,7 @@ QString SaveHandler::openAtCenter(Function function)
 VoidResult SaveHandler::saveProject(SaveInfo& project, bool override)
 {
 #ifdef __EMSCRIPTEN__
-  project.rootPath = "/tmp/maki-project";
+  project.rootPath = QDir::toNativeSeparators("/tmp/maki-project");
   QDir(project.rootPath).removeRecursively();
   QDir().mkpath(project.rootPath);
 #else
@@ -222,7 +208,7 @@ VoidResult SaveHandler::saveProject(SaveInfo& project, bool override)
     QFileInfo fileInfo(saveFile);
     project.name = fileInfo.completeBaseName();
     project.saveFile = saveFile;
-    project.rootPath = "/tmp/maki-project";
+    project.rootPath = QDir::toNativeSeparators("/tmp/maki-project");
   }
 #endif
 
@@ -301,7 +287,6 @@ VoidResult SaveHandler::saveManifest(const SaveInfo& project)
   QJsonObject manifest;
   manifest[ConfigKeys::NAME] = project.name;
   manifest["version"] = project.version;
-  manifest["projectSaveFile"] = project.saveFile;
 
   manifest["canvas"] = project.canvasInfo().toJson();
 
@@ -411,6 +396,7 @@ QString SaveHandler::sanitizeFileName(QString name) const
 
 VoidResult SaveHandler::loadProject()
 {
+#ifdef __EMSCRIPTEN__
   QFileDialog::getOpenFileContent(
       "MAKI projects (*.maki);;All files (*)",
       [this](const QString& fileName, const QByteArray& content) {
@@ -440,13 +426,28 @@ VoidResult SaveHandler::loadProject()
           emit fileLoaded(fileName, info, QString());
         }
       });
+#else
+  QString fileName = openAtCenter(Function::LOAD);
+  if (fileName.isEmpty())
+    return VoidResult::Failed("No file selected.");
 
+  auto loaded = loadProject(fileName);
+  if (!loaded.IsSuccess())
+  {
+    emit fileLoaded(fileName, SaveInfo(), QString::fromStdString(loaded.ErrorMessage()));
+  }
+  else
+  {
+    auto info = loaded.Value();
+    emit fileLoaded(fileName, info, QString());
+  }
+#endif
   return VoidResult();
 }
 
 Result<SaveInfo> SaveHandler::loadProject(const QString& fileToLoad)
 {
-  const auto projectDir = "/tmp/maki-project";
+  const auto projectDir = QDir::toNativeSeparators("/tmp/maki-project");
   auto unzipped = unzipProject(fileToLoad, projectDir);
   if (!unzipped)
     return Result<SaveInfo>::Failed(unzipped.ErrorMessage());
@@ -456,10 +457,10 @@ Result<SaveInfo> SaveHandler::loadProject(const QString& fileToLoad)
   if (!QFileInfo::exists(manifestPath))
     return Result<SaveInfo>::Failed("No manifest.json found in selected project folder.");
 
-  return loadProjectManifest(manifestPath);
+  return loadProjectManifest(fileToLoad, manifestPath);
 }
 
-Result<SaveInfo> SaveHandler::loadProjectManifest(const QString& manifestPath)
+Result<SaveInfo> SaveHandler::loadProjectManifest(const QString& projectFile, const QString& manifestPath)
 {
   QFileInfo manifestInfo(manifestPath);
 
@@ -479,10 +480,12 @@ Result<SaveInfo> SaveHandler::loadProjectManifest(const QString& manifestPath)
     project.name = manifestJson.value(ConfigKeys::NAME).toString();
   if (manifestJson.contains("version"))
     project.version = manifestJson.value("version").toString();
-  if (manifestJson.contains("projectSaveFile"))
-    project.saveFile = manifestJson.value("projectSaveFile").toString();
   if (manifestJson.contains("canvas"))
     project.setCanvasInfo(CanvasSaveInfo::fromJson(manifestJson.value("canvas").toObject()));
+
+  project.saveFile = QDir::toNativeSeparators(projectFile);
+
+  LOG_INFO("Loaded project: %s", qPrintable(project.saveFile));
 
   const QJsonArray tasks = manifestJson["tasks"].toArray();
   for (const QJsonValue& value : tasks)
