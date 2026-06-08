@@ -33,7 +33,7 @@ QVariant LogTableModel::data(const QModelIndex& index, int role) const
   if (index.column() == LevelColumn)
   {
     if (role == Qt::ToolTipRole || role == Qt::UserRole)
-      return toString(entry.level);
+      return (int)entry.level;
     else if (role == Qt::DecorationRole)
       return toIcon(entry.level);
     else if (role == Qt::DisplayRole)

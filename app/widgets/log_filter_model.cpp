@@ -4,14 +4,29 @@
 
 LogFilterProxyModel::LogFilterProxyModel(QObject* parent)
     : QSortFilterProxyModel(parent)
+    , mLevelFilter(int(logging::LogLevel::Debugging))
 {
   setFilterCaseSensitivity(Qt::CaseInsensitive);
 }
 
 void LogFilterProxyModel::setLevelFilter(const QString& level)
 {
-  mLevelFilter = level;
+  mLevelFilter = levelToInt(level);
   invalidateFilter();
+}
+
+int LogFilterProxyModel::levelToInt(const QString& level) const
+{
+  if (level == "Error")
+    return int(logging::LogLevel::Error);
+  if (level == "Warning")
+    return int(logging::LogLevel::Warning);
+  if (level == "Info")
+    return int(logging::LogLevel::Info);
+  if (level == "Trace")
+    return int(logging::LogLevel::Trace);
+
+  return int(logging::LogLevel::Debugging);
 }
 
 void LogFilterProxyModel::setFileFilter(const QString& source)
@@ -41,12 +56,12 @@ bool LogFilterProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex& sou
   const QModelIndex messageIndex = model->index(sourceRow, LogTableModel::MessageColumn, sourceParent);
   const QModelIndex fileIndex = model->index(sourceRow, LogTableModel::FileColumn, sourceParent);
 
-  const QString level = model->data(levelIndex, Qt::UserRole).toString();
+  const int level = model->data(levelIndex, Qt::UserRole).toInt();
   const QString source = model->data(sourceIndex, Qt::DisplayRole).toString();
   const QString message = model->data(messageIndex, Qt::DisplayRole).toString();
   const QString file = model->data(fileIndex, Qt::DisplayRole).toString();
 
-  if (mLevelFilter != "All" && level != mLevelFilter)
+  if (level > mLevelFilter)
     return false;
 
   if (!mFileFilter.isEmpty() && !file.contains(mFileFilter, Qt::CaseInsensitive))
