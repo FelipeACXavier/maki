@@ -12,9 +12,9 @@ add_subdirectory(maki-sdk)
 add_subdirectory(qclementine)
 
 find_package(ZLIB REQUIRED)
-set(ZLIB_INCLUDE "${ZLIB_INCLUDE_DIRS}")
-set(ZCONF_INCLUDE "${ZLIB_INCLUDE_DIRS}")
-include_directories(${ZLIB_INCLUDE_DIRS})
+if(NOT WIN32)
+  include_directories(${ZLIB_INCLUDE_DIRS})
+endif()
 add_subdirectory(quazip)
 
 # ===================================
@@ -22,9 +22,12 @@ set(LIBAVOID_DIR ${CMAKE_CURRENT_SOURCE_DIR}/adaptagrams/cola/libavoid)
 file(GLOB LIBAVOID_SOURCES
   ${LIBAVOID_DIR}/*.cpp
 )
-add_library(libavoid STATIC
-  ${LIBAVOID_SOURCES}
-)
+if(WIN32)
+  add_library(libavoid SHARED ${LIBAVOID_SOURCES})
+  target_compile_definitions(libavoid PRIVATE LIBAVOID_EXPORTS)
+else()
+  add_library(libavoid STATIC ${LIBAVOID_SOURCES})
+endif()
 target_include_directories(libavoid
   PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/adaptagrams/cola

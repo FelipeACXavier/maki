@@ -31,7 +31,6 @@
 #include "isettings.h"
 #include "iui.h"
 #include "logging.h"
-#include "maki_to_koda.h"
 #include "pipeline_artifact.h"
 #include "result.h"
 #include "string_helpers.h"
@@ -39,6 +38,7 @@
 
 #ifdef USE_ANTLR
 #include "ast/koda_compiler.h"
+#include "maki_to_koda.h"
 #endif
 
 #define APPEND_OR_RETURN_ON_FAILURE(v, func) \
@@ -525,10 +525,14 @@ Result<maki::PipelineArtifact> KodaGenerator::generateKoda(const maki::PipelineA
   LOG_DEBUG("Generating Koda files with %d nodes", mServices->document()->getnodes().size());
   QString code = "";
 
+#ifdef USE_ANTLR
   koda::MakiToKoda makiToKoda;
   auto generated = makiToKoda.generate(mServices->document()->getnodes());
   if (!generated)
     return Result<maki::PipelineArtifact>::Failed(generated.ErrorMessage());
+#else
+  auto generated = Result<QString>("This is a temp placeholder");
+#endif
 
   QString fileName = mOutputFolder.filePath("task.kd");
   QFile file(fileName);
@@ -714,7 +718,7 @@ VoidResult KodaGenerator::createSimulationScene(QGraphicsScene* scene, const QJs
   if (!mTraceBuilder)
     mTraceBuilder = std::make_unique<TraceSceneBuilder>(theme, TraceSceneBuilder::Style{});
 
-  auto clickHandler = [this](const QString& instance, const QString& labelText, bool illegal) {
+  auto clickHandler = [this](const QString& instance, const QString& labelText, bool /* illegal */) {
     LOG_DEBUG("Sending data: %s %s", qPrintable(instance), qPrintable(labelText));
     mSimulator->triggerEvent(labelText);
   };

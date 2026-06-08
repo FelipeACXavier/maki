@@ -36,27 +36,36 @@ LogDebug "==> Using aqt: $AQT"
 if (Test-Path $WindeployqtPath) {
     LogDebug "==> Qt already installed at: $QtBase"
 } else {
-    LogDebug "==> Installing Qt $QtVersion ($QtArch)..."
+  LogDebug "==> Installing Qt $QtVersion ($QtArch)..."
 
-    if (-not (Test-Path $QtRoot)) {
-        New-Item -ItemType Directory -Path $QtRoot | Out-Null
-    }
+  if (-not (Test-Path $QtRoot)) {
+      New-Item -ItemType Directory -Path $QtRoot | Out-Null
+  }
 
-    &  $AQT install-qt windows desktop $QtVersion $QtArch `
-        -m qtpdf qtwebchannel qtpositioning qtwebsockets `
-        -O $QtRoot `
+  &  $AQT install-qt windows desktop $QtVersion $QtArch `
+      -m qt5compat qtpdf qtwebchannel qtpositioning qtwebsockets `
+      -O $QtRoot `
 
-    if ($LASTEXITCODE -ne 0) {
-      Fail "Qt installation failed."
-    }
+  if ($LASTEXITCODE -ne 0) {
+    Fail "Qt installation failed."
+  }
 
-    if (-not (Test-Path $WindeployqtPath)) {
-        Fail "Qt installation completed but windeployqt.exe not found. Something went wrong."
-    }
+  if (-not (Test-Path $WindeployqtPath)) {
+      Fail "Qt installation completed but windeployqt.exe not found. Something went wrong."
+  }
 }
 
 $env:PATH = "$QtBin;$env:PATH"
 LogInfo "Qt successfully installed at: $QtBase"
+
+
+# ------------------------------------------------------
+# Install zlib
+# ------------------------------------------------------
+& vcpkg install
+if ($LASTEXITCODE -ne 0) {
+  Fail "zlib installation failed."
+}
 
 # ------------------------------------------------------
 # Check for C++ compiler (MSVC)
