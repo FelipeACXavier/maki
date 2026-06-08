@@ -1,8 +1,5 @@
 #include "canvas.h"
 
-#include <qgraphicsitem.h>
-#include <qgridlayout.h>
-
 #include <QBuffer>
 #include <QClipboard>
 #include <QFont>
@@ -115,11 +112,13 @@ Canvas::Canvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> conf
   mUndoStack->setUndoLimit(20);
 
   connect(this, &QGraphicsScene::selectionChanged, this, &Canvas::onSelectionChanged);
+  connect(mUndoStack, &QUndoStack::cleanChanged, this, &Canvas::onCleanChanged);
 }
 
 Canvas::~Canvas()
 {
   disconnect(this, &QGraphicsScene::selectionChanged, this, &Canvas::onSelectionChanged);
+  disconnect(mUndoStack, &QUndoStack::cleanChanged, this, &Canvas::onCleanChanged);
 }
 
 QString Canvas::id() const
@@ -167,6 +166,10 @@ void Canvas::onSelectionChanged()
     if (auto* node = qgraphicsitem_cast<NodeItem*>(item))
       if (!mSelectedNodes.contains(node))
         mSelectedNodes.append(node);
+}
+
+void Canvas::onCleanChanged(bool state)
+{
 }
 
 void Canvas::dragEnterEvent(QGraphicsSceneDragDropEvent* event)
@@ -1341,6 +1344,7 @@ void Canvas::removeNode(const NodeSaveInfo info)
 
 QVector<QGraphicsItem*> Canvas::cleanTransitionsOfNode(const QString& nodeId)
 {
+  LOG_INFO("Calling base class");
   // Do nothing
   return {};
 }
@@ -1372,7 +1376,7 @@ QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
   node->flowAdded = nullptr;
   node->nodeMoved = nullptr;
 
-  LOG_TRACE("Removing node: %s", qPrintable(node->id()));
+  LOG_DEBUG("Removing node: %s %d", qPrintable(node->id()), (int)type());
 
   QVector<QGraphicsItem*> itemsToRemove = {node};
   updateParent(node, nullptr, false);
@@ -1546,13 +1550,12 @@ void Canvas::clearCanvas()
     if (node->parentNode())
       continue;
 
+    LOG_INFO("Removing node: %s", qPrintable(node->id()));
     toRemove += removeNode(node);
   }
 
-  QTimer::singleShot(0, this, [toRemove]() {
-    for (QGraphicsItem* item : toRemove)
-      delete item;
-  });
+  for (QGraphicsItem* item : toRemove)
+    delete item;
 
   LOG_DEBUG("Number of items after clearCanvas: %d", items().size());
 }
@@ -1588,11 +1591,15 @@ VoidResult Canvas::loadFromSave(const QVector<std::shared_ptr<INode>>& nodes, No
     // TODO(felaze): This is necessary because the save info is using shared ptr when it shouldn't...
     // I need to make a proper distinction between save and run-time store structures.
     std::shared_ptr<NodeSaveInfo> nodeInfo = std::dynamic_pointer_cast<NodeSaveInfo>(inodeInfo);
+    if (!nodeInfo)
+      return VoidResult::Failed("Save is corrupt");
 
     auto node = std::make_shared<NodeSaveInfo>(*nodeInfo);
 
     LOG_DEBUG("Creating node %s with parent %s", qPrintable(node->getid()), qPrintable(node->getparentId()));
     auto createdNode = createNode(NodeCreation::Loading, node, node->getposition(), parent);
+    if (!createdNode)
+      return VoidResult::Failed("Failed to load node: " + node->getnodeId().toStdString());
 
     auto ret = loadFromSave(nodeInfo->getchildren(), createdNode);
     if (!ret.IsSuccess())
@@ -1943,7 +1950,7 @@ void Canvas::populate(const FlowSaveInfo& flow)
     // LOG_DEBUG("Creating behavioral node %s with parent \"%s\"", qPrintable(node->getid()), qPrintable(node->getparentId()));
     auto created = createNode(NodeCreation::Populating, node, node->getposition(), findNodeWithId(node->getparentId()));
     if (created)
-      LOG_DEBUG("Created node %s", qPrintable(created->id()));
+      LOG_DEBUG("Created node %s %s", qPrintable(node->getid()), qPrintable(created->id()));
   }
 
   // Then create the transitions between the nodes

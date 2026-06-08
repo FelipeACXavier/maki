@@ -18,6 +18,7 @@
 #include <QTextBlock>
 #include <QTextBrowser>
 #include <QUndoGroup>
+#include <QUndoStack>
 #include <QWidget>
 #include <memory>
 #include <oclero/qlementine/widgets/AboutDialog.hpp>
@@ -71,8 +72,10 @@
 #include "widgets/section.h"
 #include "widgets/settings_dialog.h"
 #include "widgets/settings_manager.h"
+#include "widgets/structure/breadcrumb.h"
 #include "widgets/structure/file_menu.h"
 #include "widgets/structure/flow_menu.h"
+#include "widgets/structure/recent_files_menu.h"
 #include "widgets/structure/system_menu.h"
 
 MainWindow::MainWindow(QApplication* app, oclero::qlementine::ThemeManager* themeManager, QWidget* parent)
@@ -168,11 +171,7 @@ VoidResult MainWindow::start()
     mSaveHandler->setLastDir(mSettingsManager->general().lastOpenFileDir);
     mRouter->setRouteOption((EdgeRouter::Option)mSettingsManager->appearance().edgeShape);
 
-    for (const auto& file : mSettingsManager->general().recentFiles)
-    {
-      QAction* action = mActionOpenRecent->addAction(elideLeft(file, mActionOpenRecent));
-      connect(action, &QAction::triggered, [this, file] { onActionLoad(file); });
-    }
+    mRecentFilesMenu->setRecentFiles(mSettingsManager->general().recentFiles);
     connect(mSettingsManager.get(), &SettingsManager::settingsChanged, this, &MainWindow::onSettingsChanged);
 
     if (!mSettingsManager->general().showWelcomeMessage)
@@ -265,12 +264,7 @@ void MainWindow::onSettingsChanged()
     mRouter->setRouteOption((EdgeRouter::Option)mSettingsManager->appearance().edgeShape);
 
   // Clean and repopulate the recent files
-  mActionOpenRecent->clear();
-  for (const auto& file : mSettingsManager->general().recentFiles)
-  {
-    QAction* action = mActionOpenRecent->addAction(elideLeft(file, mActionOpenRecent));
-    connect(action, &QAction::triggered, [this, file] { onActionLoad(file); });
-  }
+  mRecentFilesMenu->setRecentFiles(mSettingsManager->general().recentFiles);
 
   // Update node palette
   for (const auto& section : mStructureTab->findChildren<SectionWidget*>())
@@ -296,9 +290,11 @@ void MainWindow::startUI()
 {
   CanvasView* currentCanvas = static_cast<CanvasView*>(mCanvasPanel->currentWidget());
   StructureCanvas* canvas = new StructureCanvas(mStorage, Config::MAIN_CANVAS, mConfigTable, mRouter, currentCanvas);
+  connect(canvas, &Canvas::cleanChanged, this, &MainWindow::onCleanChanged);
 
   mActiveCanvas = canvas;
   currentCanvas->setScene(canvas);
+  currentCanvas->setProperty("id", Config::MAIN_CANVAS);
 
   mUndoGroup->addStack(canvas->undoStack());
   mUndoGroup->setActiveStack(canvas->undoStack());
@@ -379,13 +375,14 @@ void MainWindow::bind()
   connect(mActionNew, &QAction::triggered, this, &MainWindow::onActionNew);
   mActionNew->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_N));
 
-  connect(mActionOpen, &QAction::triggered, [this] { onActionLoad(""); });
+  connect(mActionOpen, &QAction::triggered, this, [this] { onActionLoad(""); });
   mActionOpen->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_O));
 
-  connect(mActionSave, &QAction::triggered, [this] { LOG_WARN_ON_FAILURE(onActionSave()); });
+  connect(mActionSave, &QAction::triggered, this, [this] { LOG_WARN_ON_FAILURE(onActionSave()); });
   mActionSave->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_S));
 
   connect(mActionExit, &QAction::triggered, this, &MainWindow::onActionExit);
+  mActionExit->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Q));
 
   connect(mActionSaveAs, &QAction::triggered, this, &MainWindow::onActionSaveAs);
   mActionSaveAs->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S));
@@ -438,8 +435,9 @@ void MainWindow::bind()
 
   connect(mSaveHandler.get(), &SaveHandler::fileLoaded, this, &MainWindow::onFileLoaded);
   connect(mSaveHandler.get(), &SaveHandler::fileSaved, mSettingsManager.get(), &SettingsManager::addRecentFile);
+  connect(mRecentFilesMenu, &RecentFilesMenu::fileRequested, this, &MainWindow::onActionLoad);
 
-  connect(mPluginManager.get(), &PluginManager::pluginAdded, [this](const PluginManager::Plugin& plugin) {
+  connect(mPluginManager.get(), &PluginManager::pluginAdded, this, [this](const PluginManager::Plugin& plugin) {
     LOG_INFO("====== Plugin added ======");
     QJsonObject library;
     library[ConfigKeys::NAME] = plugin.plugin->languageName();
@@ -502,10 +500,10 @@ void MainWindow::bind()
   });
 
   // Pipeline stuff =============================================================
-  connect(mPluginPipeline, &maki::PluginPipeline::pipelineStarted, [this] {
+  connect(mPluginPipeline, &maki::PluginPipeline::pipelineStarted, this, [this] {
     toggleGenerationButton(true);
   });
-  connect(mPluginPipeline, &maki::PluginPipeline::pipelineFinished, [this](const QString& outputFolder) {
+  connect(mPluginPipeline, &maki::PluginPipeline::pipelineFinished, this, [this](const QString& outputFolder) {
     if (!outputFolder.isEmpty())
       mFileMenu->setGenerationRoot(outputFolder);
 
@@ -513,7 +511,7 @@ void MainWindow::bind()
   });
 
   // Search stuff =============================================================
-  connect(mPaletteSearch, &maki::SearchWidget::valueChanged, [this](const QString& query) {
+  connect(mPaletteSearch, &maki::SearchWidget::valueChanged, this, [this](const QString& query) {
     // This is inefficient and might cause some issues in the future since the search is done on every input change.
     // Still, it is enough for now
     QList<SectionWidget*> sections = mStructureTab->findChildren<SectionWidget*>();
@@ -743,7 +741,7 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
 
   LibraryContainer* sidebarview = LibraryContainer::create(libraryName, toolbox);
   LibraryScene* sidebarScene = dynamic_cast<LibraryScene*>(sidebarview->scene());
-  connect(sidebarScene, &LibraryScene::libraryNodeSelected, [this](const QString& nodeType) {
+  connect(sidebarScene, &LibraryScene::libraryNodeSelected, this, [this](const QString& nodeType) {
     if (auto info = mConfigTable->get(nodeType))
       mInfoText->setHtml(createInformationMessage(*info));
   });
@@ -801,6 +799,15 @@ void MainWindow::onActionNew()
 
   // Gotta make sure we don't save over an old file
   mSaveHandler->newFileCreated();
+
+  // Close all tabs except the first
+  for (int i = mCanvasPanel->count(); i >= 1; --i)
+    closeCanvasTab(i);
+
+  if (mPipelineRun)
+    mPipelineRun->reset();
+  if (mSystemMenu)
+    mSystemMenu->clear();
 
   canvas()->loadFromSave(emptySave);
 }
@@ -941,6 +948,7 @@ void MainWindow::onActionEditPipeline(const QString& pipelineId)
   newView->setProperty("id", pipelineName);
 
   PipelineCanvas* canvas = new PipelineCanvas(pipeline, mConfigTable, mRouter, newView);
+  connect(canvas, &Canvas::cleanChanged, this, &MainWindow::onCleanChanged);
   newView->setScene(canvas);
   canvas->populate(*pipeline);
 
@@ -973,6 +981,12 @@ VoidResult MainWindow::onActionSave()
   auto saved = mSaveHandler->saveProject(*mStorage);
   if (saved)
   {
+    // Clean the undo stacks on save
+    for (auto* stack : mUndoGroup->stacks())
+    {
+      stack->clear();
+      stack->setClean();
+    }
     NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Saved project: {}", mStorage->name.toStdString());
   }
   else
@@ -995,6 +1009,12 @@ void MainWindow::onActionSaveAs()
   auto saved = mSaveHandler->saveProjectAs(*mStorage);
   if (saved)
   {
+    // Clean the undo stacks on save
+    for (auto* stack : mUndoGroup->stacks())
+    {
+      stack->clear();
+      stack->setClean();
+    }
     NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Saved project: {}", mStorage->name.toStdString());
   }
   else
@@ -1033,7 +1053,8 @@ void MainWindow::onFileLoaded(const QString& file, const SaveInfo& info, const Q
 {
   if (!error.isEmpty())
   {
-    NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Failed to load project.\n{}", qPrintable(error));
+    LOG_ERROR("Failed to load project: %s", qPrintable(error));
+    NOTIFY_ERROR(Config::APPLICATION_NAME.toStdString(), "Failed to load project.\n{}", qPrintable(error));
     return;
   }
 
@@ -1041,15 +1062,20 @@ void MainWindow::onFileLoaded(const QString& file, const SaveInfo& info, const Q
     mSettingsManager->addRecentFile(file);
 
   // Close all tabs except the first
-  for (int i = 1; i < mCanvasPanel->count(); ++i)
+  for (int i = mCanvasPanel->count(); i >= 1; --i)
     closeCanvasTab(i);
+
+  // We have to make sure the structural tab is active
+  mCanvasPanel->setCurrentIndex(0);
 
   // Clear the storage so it can be populated by the canvas
   *mStorage = info;
   mStorage->clearNodes();
 
   // Repopulate the canvas (and the storage)
-  canvas()->loadFromSave(info);
+  auto loaded = canvas()->loadFromSave(info);
+  if (!loaded)
+    LOG_ERROR("Failed to load project: %s", loaded.ErrorMessage().c_str());
 
   GeneralSettings general = mSettingsManager->general();
   general.lastOpenFileDir = mSaveHandler->lastDir();
@@ -1067,8 +1093,17 @@ void MainWindow::onFileLoaded(const QString& file, const SaveInfo& info, const Q
   if (mSystemMenu)
     mSystemMenu->expandToDepth(1);
 
+  mBreadcrumb->setProject(mStorage->name);
+
   LOG_INFO("Project with %d nodes after", mStorage->getnodes().size());
   NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Loaded project: {}", mStorage->name.toStdString());
+
+  // Clean the undo stacks on start up
+  for (auto* stack : mUndoGroup->stacks())
+  {
+    stack->clear();
+    stack->setClean();
+  }
 }
 
 void MainWindow::onNodeSelected(NodeItem* node, bool selected)
@@ -1077,6 +1112,8 @@ void MainWindow::onNodeSelected(NodeItem* node, bool selected)
   {
     if (auto info = mConfigTable->get(node->nodeType()))
       mInfoText->setHtml(createInformationMessage(*info));
+
+    mBreadcrumb->setBlock(node->nodeName(), canvas()->type());
   }
   else
   {
@@ -1084,6 +1121,8 @@ void MainWindow::onNodeSelected(NodeItem* node, bool selected)
       mInfoText->setHtml(createDefaultMessage());
     else
       mInfoText->clear();
+
+    mBreadcrumb->setBlock("", canvas()->type());
   }
 
   LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeSelected(node, selected));
@@ -1157,13 +1196,21 @@ void MainWindow::onCanvasTabChanged(int index)
     mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::BEHAVIOUR), true);
     mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::PIPELINE), false);
   }
+
+  mBreadcrumb->setTab(mCanvasPanel->tabText(index), canvas()->type());
 }
 
 void MainWindow::closeCanvasTab(int index)
 {
-  if (CanvasView* closedCanvas = qobject_cast<CanvasView*>(mCanvasPanel->widget(index)))
+  QWidget* widget = mCanvasPanel->widget(index);
+  if (!widget)
+    return;
+
+  if (CanvasView* closedCanvas = qobject_cast<CanvasView*>(widget))
   {
     auto toBeRemoved = qobject_cast<Canvas*>(closedCanvas->scene());
+    // We only disconnect this on destruction
+    disconnect(toBeRemoved, &Canvas::cleanChanged, this, &MainWindow::onCleanChanged);
     mUndoGroup->removeStack(toBeRemoved->undoStack());
 
     if (closedCanvas->scene() == canvas())
@@ -1205,17 +1252,18 @@ void MainWindow::closeCanvasTab(int index)
   // {
   //   Q_UNUSED(tab);
   // }
-  else if (QPlainTextEdit* tab = qobject_cast<QPlainTextEdit*>(mCanvasPanel->widget(index)))
+  else if (QPlainTextEdit* tab = qobject_cast<QPlainTextEdit*>(widget))
   {
     LOG_DEBUG("Closing editor tab");
     Q_UNUSED(tab);
   }
-  else if (ProcessTab* tab = qobject_cast<ProcessTab*>(mCanvasPanel->widget(index)))
+  else if (ProcessTab* tab = qobject_cast<ProcessTab*>(widget))
   {
     tab->hide();
   }
 
   mCanvasPanel->removeTab(index);
+  widget->deleteLater();
 }
 
 void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId)
@@ -1246,6 +1294,8 @@ void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId)
 
   LOG_INFO("Opening flow: %s - %d", qPrintable(flow->name()), flow->getNodes().size());
   BehaviourCanvas* canvas = new BehaviourCanvas(flow, mStorage, mConfigTable, mRouter, newView);
+  connect(canvas, &Canvas::cleanChanged, this, &MainWindow::onCleanChanged);
+  canvas->setupInitialNodes();
   newView->setScene(canvas);
 
   // Change to respective tabs
@@ -1298,6 +1348,24 @@ void MainWindow::onFlowRemoved(const QString& flowId, const QString& nodeId)
   }
 
   LOG_WARN_ON_FAILURE(mSystemMenu->onFlowRemoved(flowId, nodeId));
+}
+
+void MainWindow::onCleanChanged(const QString& flowId, const QString& text, bool state)
+{
+  if (flowId.isEmpty())
+    return;
+
+  for (int i = 0; i < mCanvasPanel->count(); ++i)
+  {
+    // Check if the flow is already open in some tab
+    auto prop = mCanvasPanel->widget(i)->property("id");
+    if (!prop.isValid() || prop.toString() != flowId)
+      continue;
+
+    auto updatedText = text + (state ? "" : "*");
+    mCanvasPanel->setTabText(i, updatedText);
+    return;
+  }
 }
 
 int MainWindow::libraryTypeToIndex(Types::LibraryTypes type) const

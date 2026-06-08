@@ -1,9 +1,5 @@
 #include "maki_to_koda.h"
 
-#include <qdir.h>
-#include <qhashfunctions.h>
-#include <qjsonobject.h>
-
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QQueue>
@@ -12,6 +8,7 @@
 #include <any>
 #include <limits>
 #include <memory>
+#include <vector>
 
 #include "ast/ast.h"
 #include "koda_emitter.h"
@@ -22,6 +19,9 @@
 
 namespace koda
 {
+
+const int INVALID_INTEGER = std::numeric_limits<int>::max();
+const double INVALID_DOUBLE = std::numeric_limits<double>::max();
 
 Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes)
 {
@@ -275,17 +275,26 @@ Result<koda::PFlow> MakiToKoda::buildFlowAst(const IFlow& flow)
   if (start == nullptr)
     return Result<koda::PFlow>::Failed("Flow has no Koda::Start node");
 
+  // Prepare all the variables for this flow
+  for (const auto& arg : flow.getarguments())
+    mVariables.push_back(arg->getid().toStdString());
+
   auto seq = buildSequenceFrom(flow, start, nullptr);
   if (!seq.has_value())
     return Result<koda::PFlow>::Failed("Failed to build first sequence");
 
   auto pflow = std::make_shared<koda::Flow>();
-  auto flowName = flow.getname().toStdString();
+  auto flowName = flow.getname();
   if (flowName != "main")
     flowName = "f" + flowName;
 
-  pflow->name = flowName;
+  pflow->name = format(flowName);
   pflow->strategy = std::any_cast<koda::PStrategy>(seq);
+  for (const auto& arg : flow.getarguments())
+    pflow->tags.push_back(arg->getid().toStdString());
+
+  // Clear variables at the end of the flow
+  mVariables.clear();
 
   return pflow;
 }
@@ -470,7 +479,7 @@ std::any MakiToKoda::buildStrategyExpr(const IFlow& flow, const INode& node)
   }
 
   auto expr = std::make_shared<koda::Strategy::Ref>();
-  expr->name = "f" + options[0].toObject()["data"].toString().toStdString();
+  expr->name = "f" + format(options[0].toObject()["data"].toString());
 
   auto strat = std::make_shared<koda::Strategy>();
   strat->v = expr;
@@ -533,8 +542,6 @@ std::any MakiToKoda::buildWithinExpr(const IFlow& flow, const INode& node)
 
 std::any MakiToKoda::buildRepeatExpr(const IFlow& flow, const INode& node)
 {
-  auto expr = std::make_shared<koda::Strategy::Repeat>();
-
   auto properties = node.getproperties();
   if (!properties.contains("capability"))
   {
@@ -560,13 +567,14 @@ std::any MakiToKoda::buildRepeatExpr(const IFlow& flow, const INode& node)
     return std::any();
   }
 
+  auto expr = std::make_shared<koda::Strategy::Repeat>();
   expr->iterations = properties["iterations"].toInt();
   expr->seconds = properties["rate"].toInt();
 
-  QString strategy = options[0].toObject()["data"].toString();
+  auto strategy = format(options[0].toObject()["data"].toString());
 
   auto ref = std::make_shared<koda::Strategy::Ref>();
-  ref->name = "f" + strategy.toStdString();
+  ref->name = "f" + strategy;
 
   auto repeatStrat = std::make_shared<koda::Strategy>();
   repeatStrat->v = ref;
@@ -582,6 +590,10 @@ std::any MakiToKoda::buildRepeatExpr(const IFlow& flow, const INode& node)
       return std::any();
     }
   }
+
+  auto handlers = buildHandlers(flow, node);
+  for (const auto& handler : handlers)
+    expr->handlers.push_back(handler);
 
   auto strat = std::make_shared<koda::Strategy>();
   strat->v = expr;
@@ -655,7 +667,7 @@ QList<koda::PStrategyHandler> MakiToKoda::buildHandlers(const IFlow& flow, const
     value->body = std::any_cast<koda::PStrategy>(sequence);
 
     auto emitter = std::make_shared<koda::EventCall>();
-    auto event = signalStart.transition->getevent().toStdString();
+    auto event = format(signalStart.transition->getevent());
     auto receiverIndex = event.find_first_of('.');
     emitter->name = event.substr(receiverIndex + 1);
     emitter->receiver = event.substr(0, receiverIndex);
@@ -684,6 +696,18 @@ std::shared_ptr<koda::Expr> MakiToKoda::buildExpr(const QJsonObject& object)
 
   auto type = Types::StringToPropertyTypes(object["type"].toString());
   auto wrapper = std::make_shared<koda::Expr>();
+
+  // Before anything, lets check to see if we are dealing with a variable
+  auto varValue = object["data"].toString().toStdString();
+  if (std::count(mVariables.cbegin(), mVariables.cend(), varValue) > 0)
+  {
+    auto expr = std::make_shared<koda::Expr::Id>();
+    expr->value = varValue;
+    wrapper->v = expr;
+    return wrapper;
+  }
+
+  // If not a variable, we can continue
   switch (type)
   {
     case Types::PropertyTypes::BOOLEAN:

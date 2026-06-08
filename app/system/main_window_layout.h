@@ -28,6 +28,8 @@ class LogTableWidget;
 class QStackedWidget;
 class StyledFrame;
 class CanvasView;
+class RecentFilesMenu;
+class BreadcrumbWidget;
 
 namespace maki
 {
@@ -70,6 +72,10 @@ protected:
 
   // === Central Panel ===
   QWidget* mHeaderWidget = nullptr;
+  QWidget* mHeaderLeft = nullptr;
+  QWidget* mHeaderCentre = nullptr;
+  QWidget* mHeaderRight = nullptr;
+  BreadcrumbWidget* mBreadcrumb = nullptr;
   QToolButton* mMenuButton = nullptr;
   DropDownButton* mPipelineRun = nullptr;                            /// Pointer to the generator option combo box.
   oclero::qlementine::LoadingSpinner* mGenerationSpinner = nullptr;  /// Pointer to the generation spinner.
@@ -99,11 +105,12 @@ protected:
 
   // === Actions ===
   // File menu
-  QAction* mActionNew = nullptr;       /// Pointer to the new action.
-  QAction* mActionOpen = nullptr;      /// Pointer to the open action.
-  QMenu* mActionOpenRecent = nullptr;  /// Pointer to the open recent menu.
-  QAction* mActionSave = nullptr;      /// Pointer to the save action.
-  QAction* mActionSaveAs = nullptr;    /// Pointer to the save as action.
+  QAction* mActionNew = nullptr;                /// Pointer to the new action.
+  QAction* mActionOpen = nullptr;               /// Pointer to the open action.
+  QMenu* mActionOpenRecent = nullptr;           /// Pointer to the open recent menu.
+  QAction* mActionSave = nullptr;               /// Pointer to the save action.
+  QAction* mActionSaveAs = nullptr;             /// Pointer to the save as action.
+  RecentFilesMenu* mRecentFilesMenu = nullptr;  /// Pointer to the open recent menu.
 
   QAction* mActionImportLibrary = nullptr;  /// Pointer to the import library action.
   QAction* mActionInstallPlugin = nullptr;  /// Pointer to the install plugin action.
@@ -152,7 +159,6 @@ protected:
   int LOG_TAB_INDEX = 0;      /// Index of the log tab.
   int PROCESS_TAB_INDEX = 0;  /// Index of the process tab.
 
-protected:
   /**
    * @brief Handles language changed event.
    */

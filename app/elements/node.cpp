@@ -629,6 +629,16 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
     }
 
     NodeBase::paintLabel(painter, pen);
+    if (isSelected())
+    {
+      const QRectF r = nodeRect().adjusted(2, 2, -2, -2);
+      QPen selPen(Config::HIGHLIGHT);
+      selPen.setWidthF(2.0);
+      selPen.setCosmetic(true);
+      painter->setPen(selPen);
+      painter->setBrush(Qt::NoBrush);
+      painter->drawEllipse(r);
+    }
     return;
   }
 
@@ -672,6 +682,15 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
     }
 
     NodeBase::paintLabel(painter, pen);
+    if (isSelected())
+    {
+      QPen selPen(Config::HIGHLIGHT);
+      selPen.setWidthF(2.0);
+      selPen.setCosmetic(true);
+      painter->setPen(selPen);
+      painter->setBrush(Qt::NoBrush);
+      painter->drawRoundedRect(bodyRect, kTaskCornerRadius, kTaskCornerRadius);
+    }
     return;
   }
 
@@ -688,6 +707,9 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
     const QRectF r = nodeRect().adjusted(2, 2, -2, -2);
     renderSvgInEllipse(painter, iconPathFromTheme(config()->body.iconPath), r.center(), qMin(r.width(), r.height()));
   }
+
+  if (isSelected() && !config()->body.nodeSvg.isEmpty())
+    paintSelectionOutline(painter, nodeRect());
 }
 
 QPainterPath NodeItem::shape() const
@@ -1495,9 +1517,10 @@ void NodeItem::updatePortPositions()
 
   const qreal topPortSize = PortItem::sizeForKind(PortItem::Abort);
   const qreal centerX = left + w * 0.5;
+  const qreal shiftX = PortItem::kAbortErrorPortPositioning;
   const qreal errorY = top - topPortSize - PortItem::kGap;
-  const qreal errorX = centerX + topPortSize * 0.5 + PortItem::kGap * 2.0;
-  const qreal abortX = centerX - topPortSize * 0.5;
+  const qreal errorX = centerX + topPortSize * 0.5 + PortItem::kGap * 2.0 + shiftX;
+  const qreal abortX = centerX - topPortSize * 0.5 + shiftX;
   const qreal abortY = portRect.bottom() + PortItem::kGap;
 
   if (mAbortPort && mErrorPort)

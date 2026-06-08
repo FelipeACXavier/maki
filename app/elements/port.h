@@ -20,8 +20,11 @@ public:
   };
 
   static constexpr qreal kSize = 8.0;
-  static constexpr qreal kTopPortSize = 12.0;
+  static constexpr qreal kAbortPortSize = 12.0;
+  static constexpr qreal kErrorPortSize = 10.0;
   static constexpr qreal kGap = 1.0;
+  /** Extra shift right for abort/error ports relative to the node center. */
+  static constexpr qreal kAbortErrorPortPositioning = 6.0;
   static constexpr qreal kHitPadding = 30.0; // area around port where it's still possible to initiate/drop a transition
 
   static qreal sizeForKind(Kind kind);

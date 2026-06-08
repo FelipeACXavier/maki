@@ -33,12 +33,11 @@
 #include "widgets/frame.h"
 #include "widgets/log_table_widget.h"
 #include "widgets/properties/properties_menu.h"
+#include "widgets/structure/breadcrumb.h"
 #include "widgets/structure/file_menu.h"
+#include "widgets/structure/recent_files_menu.h"
 #include "widgets/structure/system_menu.h"
 #include "widgets/widget_factory.h"
-
-static constexpr int MINIMUM_MENU_WIDTH = 250;
-static constexpr int MAXIMUM_MENU_WIDTH = 400;
 
 MainWindowLayout::MainWindowLayout(QWidget* parent)
     : QMainWindow(parent)
@@ -74,6 +73,9 @@ void MainWindowLayout::buildMainWindow()
   setCentralWidget(mCentralWidget);
 
   buildMenuBar();
+
+  // Breadcrumbs on the top right of the panel
+  mBreadcrumb = new BreadcrumbWidget(mCanvasPanel);
 
   applyTheme();
 }
@@ -208,21 +210,32 @@ void MainWindowLayout::buildCentralPanel()
 
   mHeaderWidget = new QWidget(mCentralSplitter);
   QHBoxLayout* headerLayout = new QHBoxLayout(mHeaderWidget);
-  headerLayout->setContentsMargins(0, 8, 0, 8);  // top/bottom spacing
-  headerLayout->setSpacing(5);
+  headerLayout->setContentsMargins(0, 8, 0, 8);
+  headerLayout->addSpacing(0);
   headerLayout->setAlignment(Qt::AlignCenter);
-  headerLayout->addSpacing(24);
 
   // ----------------------------------------------------------------
-  headerLayout->addStretch();
-  mPipelineRun = new DropDownButton(mHeaderWidget);
+  mHeaderLeft = new QWidget(mHeaderWidget);
+  auto* leftLayout = new QHBoxLayout(mHeaderLeft);
+  leftLayout->setContentsMargins(0, 0, 0, 0);
+  leftLayout->setSpacing(0);
+  leftLayout->setAlignment(Qt::AlignLeft);
+
+  // ----------------------------------------------------------------
+  mHeaderCentre = new QWidget(mHeaderWidget);
+  auto* centreLayout = new QHBoxLayout(mHeaderCentre);
+  centreLayout->setContentsMargins(0, 0, 0, 0);
+  centreLayout->setSpacing(0);
+  centreLayout->setAlignment(Qt::AlignCenter);
+
+  mPipelineRun = new DropDownButton(mHeaderCentre);
   mPipelineRun->setIcon(iconFromTheme("exaile-play"));
   mPipelineRun->setToolTip(tr("Run pipeline"));
 
-  headerLayout->addWidget(mPipelineRun);
+  centreLayout->addWidget(mPipelineRun);
 
   // ---------------------------------------------
-  auto* spinnerContainer = new QWidget(mHeaderWidget);
+  auto* spinnerContainer = new QWidget(mHeaderCentre);
   spinnerContainer->setFixedSize(24, 24);
 
   auto* spinnerLayout = new QHBoxLayout(spinnerContainer);
@@ -232,8 +245,20 @@ void MainWindowLayout::buildCentralPanel()
   mGenerationSpinner->setVisible(false);
 
   spinnerLayout->addWidget(mGenerationSpinner);
-  headerLayout->addWidget(spinnerContainer);
-  headerLayout->addStretch();
+  centreLayout->addWidget(spinnerContainer);
+
+  // ---------------------------------------------
+  mHeaderRight = new QWidget(mHeaderWidget);
+  auto* rightLayout = new QHBoxLayout(mHeaderRight);
+  rightLayout->setContentsMargins(0, 0, 0, 0);
+  rightLayout->setSpacing(0);
+  rightLayout->setAlignment(Qt::AlignRight);
+  rightLayout->addStretch();
+
+  // Add all the zones to the header
+  headerLayout->addWidget(mHeaderLeft, 35);
+  headerLayout->addWidget(mHeaderCentre, 30);
+  headerLayout->addWidget(mHeaderRight, 35);
 
   // ---------------------------------------------
   mCanvasPanel = new QTabWidget(mCentralSplitter);
@@ -336,7 +361,7 @@ void MainWindowLayout::buildCentralPanel()
 
   // -----------------------------------------------------------------
   // Final detals
-  connect(mBottomNavigation, &oclero::qlementine::NavigationBar::currentIndexChanged, [this]() {
+  connect(mBottomNavigation, &oclero::qlementine::NavigationBar::currentIndexChanged, this, [this]() {
     mBottomPanel->setCurrentIndex(mBottomNavigation->currentIndex());
   });
   mBottomPanel->setCurrentIndex(0);
@@ -350,8 +375,8 @@ void MainWindowLayout::buildCentralPanel()
 void MainWindowLayout::buildRightPanel()
 {
   mRightPanel = new QSplitter(Qt::Vertical);
-  mRightPanel->setMinimumWidth(MINIMUM_MENU_WIDTH);
-  mRightPanel->setMaximumWidth(MAXIMUM_MENU_WIDTH);
+  mRightPanel->setMinimumWidth(Constants::MINIMUM_MENU_WIDTH);
+  mRightPanel->setMaximumWidth(Constants::MAXIMUM_MENU_WIDTH);
 
   auto* qlementineStyle = oclero::qlementine::appStyle();
   const auto theme = qlementineStyle->theme();
@@ -420,7 +445,7 @@ void MainWindowLayout::buildMenuBar()
 
   setMenuBar(mMenuBar);
 #else
-  mMenuButton = new QToolButton(this);
+  mMenuButton = new QToolButton(mHeaderRight);
   mMenuButton->setIcon(iconFromTheme("bars"));
   // mMenuButton->setPopupMode(ToolButtonPopupMode::);
 
@@ -442,7 +467,7 @@ void MainWindowLayout::buildMenuBar()
   });
 
   if (mHeaderWidget)
-    mHeaderWidget->layout()->addWidget(mMenuButton);
+    mHeaderRight->layout()->addWidget(mMenuButton);
 #endif
 }
 
@@ -461,10 +486,10 @@ QMenu* MainWindowLayout::createFileMenu(QWidget* parent)
   mTranslatable.push_back({mActionOpen, "Open"});
   file->addAction(mActionOpen);
 
-  mActionOpenRecent = file->addMenu(iconFromTheme("document-open-recent", false), tr("Open Recent"));
-  mTranslatable.push_back({mActionOpenRecent, "Open Recent"});
-  mActionOpenRecent->setMaximumWidth(MAXIMUM_MENU_WIDTH);
-
+  mRecentFilesMenu = new RecentFilesMenu(this);
+  mRecentFilesMenu->setTitle(tr("Open Recent"));
+  mRecentFilesMenu->setIcon(iconFromTheme("document-open-recent"));
+  file->addMenu(mRecentFilesMenu);
   file->addSeparator();
 
   mActionSave = new QAction(iconFromTheme("document-save", false), tr("Save"), this);
@@ -573,7 +598,7 @@ QMenu* MainWindowLayout::createViewMenu(QWidget* parent)
   mOpenComponentsPanel->setIcon(iconFromTheme("view-visible", false));
   mTranslatable.push_back({mOpenComponentsPanel, "Components panel"});
   showMenu->addAction(mOpenComponentsPanel);
-  connect(mOpenComponentsPanel, &QAction::triggered, [this] {
+  connect(mOpenComponentsPanel, &QAction::triggered, this, [this] {
     togglePanelVisibility(mLeftPanel, mOpenComponentsPanel);
   });
 
@@ -581,7 +606,7 @@ QMenu* MainWindowLayout::createViewMenu(QWidget* parent)
   mOpenInfoPanel->setIcon(iconFromTheme("view-visible", false));
   mTranslatable.push_back({mOpenInfoPanel, "Information panel"});
   showMenu->addAction(mOpenInfoPanel);
-  connect(mOpenInfoPanel, &QAction::triggered, [this] {
+  connect(mOpenInfoPanel, &QAction::triggered, this, [this] {
     togglePanelVisibility(mBottomContainer, mOpenInfoPanel);
   });
 
@@ -589,7 +614,7 @@ QMenu* MainWindowLayout::createViewMenu(QWidget* parent)
   mOpenPropertiesPanel->setIcon(iconFromTheme("view-visible", false));
   mTranslatable.push_back({mOpenPropertiesPanel, "Properties panel"});
   showMenu->addAction(mOpenPropertiesPanel);
-  connect(mOpenPropertiesPanel, &QAction::triggered, [this] {
+  connect(mOpenPropertiesPanel, &QAction::triggered, this, [this] {
     togglePanelVisibility(mRightPanel, mOpenPropertiesPanel);
   });
 
@@ -812,7 +837,7 @@ void MainWindowLayout::applyTheme()
     mRightPanel->setMinimumWidth(std::max(navigationTabWidth, propertiesTabWidth));
 
     // Set initial height ratio
-    mRightPanel->setSizes({MAXIMUM_MENU_WIDTH, 600});
+    mRightPanel->setSizes({Constants::MAXIMUM_MENU_WIDTH, 600});
   }
 }
 

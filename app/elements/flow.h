@@ -99,6 +99,7 @@ public:
    * @param transition The TransitionItem to remove.
    */
   void removeTransition(TransitionItem* transition);
+  void deleteTransition(TransitionItem* transition);
 
   std::shared_ptr<FlowSaveInfo> config() const;
 

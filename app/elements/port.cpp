@@ -45,8 +45,10 @@ QSvgRenderer* rendererForKind(PortItem::Kind kind)
 
 qreal PortItem::sizeForKind(Kind kind)
 {
-  if (kind == Abort || kind == Error)
-    return kTopPortSize;
+  if (kind == Abort)
+    return kAbortPortSize;
+  if (kind == Error)
+    return kErrorPortSize;
   return kSize;
 }
 
@@ -85,7 +87,8 @@ int PortItem::type() const
 
 QRectF PortItem::boundingRect() const
 {
-  return QRectF(0, 0, kSize, kSize);
+  const qreal s = sizeForKind(mKind);
+  return QRectF(0, 0, s, s);
 }
 
 QPainterPath PortItem::shape() const

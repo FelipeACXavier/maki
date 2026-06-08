@@ -1,5 +1,8 @@
 #include "behaviour_canvas.h"
 
+#include <qcoreapplication.h>
+#include <qhashfunctions.h>
+
 #include "canvas_view.h"
 #include "config_table.h"
 #include "elements/flow.h"
@@ -14,6 +17,20 @@ BehaviourCanvas::BehaviourCanvas(Flow* flow, std::shared_ptr<SaveInfo> storage, 
     : Canvas(flow->id(), configTable, router, parent)
     , mFlow(flow)
     , mStorage(storage)
+{
+}
+
+BehaviourCanvas::~BehaviourCanvas()
+{
+  auto toDelete = mFlow->transitions();
+  for (TransitionItem* transition : toDelete)
+  {
+    mFlow->deleteTransition(transition);
+    removeItem(transition);
+  }
+}
+
+void BehaviourCanvas::setupInitialNodes()
 {
   // Add start and end nodes on creation
   if (mFlow && mFlow->getNodes().isEmpty())
@@ -119,13 +136,15 @@ QVector<QGraphicsItem*> BehaviourCanvas::cleanTransitionsOfNode(const QString& n
 {
   QVector<QGraphicsItem*> itemsToRemove = {};
   auto toDelete = mFlow->transitions();
+  LOG_INFO("Clean transitions with %d", toDelete.size());
   for (TransitionItem* transition : toDelete)
   {
+    LOG_INFO("Cleaning? %s -> %s %s", qPrintable(nodeId), qPrintable(transition->source()->id()));
     if (transition->source()->id() != nodeId &&
         transition->destination()->id() != nodeId)
       continue;
 
-    mFlow->removeTransition(transition);
+    mFlow->deleteTransition(transition);
     removeItem(transition);
     itemsToRemove.append(transition);
   }
@@ -210,4 +229,10 @@ NodeItem* BehaviourCanvas::insertDroppedNodeOnTransition(TransitionItem* transit
 
   onNodeMoved(node->id());
   return node;
+}
+
+void BehaviourCanvas::onCleanChanged(bool state)
+{
+  if (mFlow)
+    emit cleanChanged(id(), mFlow->name(), state);
 }

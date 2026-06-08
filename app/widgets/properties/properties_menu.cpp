@@ -397,26 +397,6 @@ VoidResult PropertiesMenu::loadPropertyBoolean(const PropertyInfo& property, Nod
 
   layout()->addWidget(widget);
 
-  // QString label = ToLabel(property.getid());
-  // QLabel* nameLabel = new QLabel(label);
-  // nameLabel->setObjectName("PropertyLabel");
-  // nameLabel->setFont(Fonts::Label);
-
-  // layout()->addWidget(nameLabel);
-
-  // QCheckBox* widget = new QCheckBox(this);
-  // auto result = node->getProperty(property.getid());
-  // if (!result.isValid())
-  //   return VoidResult::Failed("Failed to get default value");
-
-  // widget->setChecked(result.toBool());
-  // connect(widget, &QCheckBox::checkStateChanged, this, [=](Qt::CheckState state) {
-  //   node->setProperty(property.getid(), state);
-  // });
-
-  // widget->setFont(Fonts::Property);
-  // layout()->addWidget(widget);
-
   return VoidResult();
 }
 
@@ -463,9 +443,9 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertyInfo& prope
     {
       if (option->gettype() == Types::PropertyTypes::EVENT_SELECT)
       {
-        LOG_WARN_ON_FAILURE(loadFieldEventSelect(widget, option->getid(), property, node, [this](const QString& nodeId, QComboBox* eventWidget) {
+        LOG_WARN_ON_FAILURE(loadFieldEventSelect(widget, option->getid(), property, node, Types::CallType::UNKNOWN, [this](const QString& nodeId, QComboBox* eventWidget) {
           eventWidget->clear();
-          auto events = mStorage->getEventsOfTypeFromNode(nodeId, {Types::CallType::TRIGGER, Types::CallType::ABORT});
+          auto events = mStorage->getEventsOfTypeFromNode(nodeId, {Types::CallType::TRIGGER, Types::CallType::ABORT, Types::CallType::IN});
           for (const auto& event : events)
             eventWidget->addItem(event->getname(), event->getname());
         }));
@@ -477,7 +457,7 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertyInfo& prope
       }
       else if (option->gettype() == Types::PropertyTypes::FLOW_CALL)
       {
-        LOG_WARN_ON_FAILURE(loadFieldEventSelect(widget, option->getid(), property, node, [this](const QString& nodeId, QComboBox* eventWidget) {
+        LOG_WARN_ON_FAILURE(loadFieldEventSelect(widget, option->getid(), property, node, Types::CallType::USER, [this](const QString& nodeId, QComboBox* eventWidget) {
           eventWidget->clear();
           auto events = mStorage->getFlowsFromNode(nodeId);
           for (const auto& event : events)
@@ -493,7 +473,7 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertyInfo& prope
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::loadFieldEventSelect(maki::SelectorWidget* componentSelect, const QString& optionId, const PropertyInfo& property, NodeItem* node,
+VoidResult PropertiesMenu::loadFieldEventSelect(maki::SelectorWidget* componentSelect, const QString& optionId, const PropertyInfo& property, NodeItem* node, Types::CallType callType,
                                                 std::function<void(const QString& nodeId, QComboBox* eventWidget)> populate)
 {
   QComboBox* eventCombo = new QComboBox(this);
@@ -515,7 +495,7 @@ VoidResult PropertiesMenu::loadFieldEventSelect(maki::SelectorWidget* componentS
       widget->setValue(currentEvent);
 
       // Finally, based on the event, we can set the arguments
-      LOG_WARN_ON_FAILURE(loadEventArguments(currentComponentId, currentEvent, property, node, Types::CallType::UNKNOWN, group));
+      LOG_WARN_ON_FAILURE(loadEventArguments(currentComponentId, currentEvent, property, node, callType, group));
     }
     else
     {
@@ -524,13 +504,13 @@ VoidResult PropertiesMenu::loadFieldEventSelect(maki::SelectorWidget* componentS
   }
 
   // When the event changes
-  connect(widget, &maki::SelectorWidget::valueChanged, this, [this, node, property, componentSelect, group](const QString& eventName) {
+  connect(widget, &maki::SelectorWidget::valueChanged, this, [this, node, property, componentSelect, group, callType](const QString& eventName) {
     if (eventName.isEmpty())
       return;
 
     clearLayout(group->layout());
     UPDATE_PROPERTY_ARG(node, property.getid(), EVENT_INDEX, eventName, Types::PropertyTypes::EVENT_SELECT, false)
-    LOG_WARN_ON_FAILURE(loadEventArguments(componentSelect->getData().toString(), eventName, property, node, Types::CallType::UNKNOWN, group));
+    LOG_WARN_ON_FAILURE(loadEventArguments(componentSelect->getData().toString(), eventName, property, node, callType, group));
 
     // Update the node name
     updateBlockName(node, componentSelect->getValue(), eventName);
@@ -578,9 +558,15 @@ VoidResult PropertiesMenu::loadFieldTriggerCall(maki::SelectorWidget* componentS
 VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QString& flowName, const PropertyInfo& property, NodeItem* node, Types::CallType callType, maki::WidgetGroup* group)
 {
   std::shared_ptr<FlowSaveInfo> event = nullptr;
-  if (callType == Types::CallType::UNKNOWN)
+  if (callType == Types::CallType::USER)
   {
     event = mStorage->getFlowFromNode(nodeId, flowName);
+  }
+  else if (callType == Types::CallType::UNKNOWN)
+  {
+    auto events = mStorage->getEventsFromNode(nodeId);
+    if (!events.isEmpty())
+      event = events.first();
   }
   else
   {

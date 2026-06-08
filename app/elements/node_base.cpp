@@ -43,6 +43,113 @@ void renderShapeSvg(QSvgRenderer& renderer, QPainter* painter, const QRectF& dra
   renderer.render(painter, shapeSvgTargetRect(renderer, drawingBounds));
 }
 
+namespace
+{
+constexpr int kSvgOutlineAlphaThreshold = 48;
+constexpr int kSvgOutlineSupersample = 3;
+
+bool pixelOpaque(const QImage& image, int x, int y, int threshold)
+{
+  if (x < 0 || x >= image.width() || y < 0 || y >= image.height())
+    return false;
+  return qAlpha(image.pixel(x, y)) > threshold;
+}
+
+bool pixelOnSilhouetteEdge(const QImage& image, int x, int y, int threshold)
+{
+  if (!pixelOpaque(image, x, y, threshold))
+    return false;
+
+  static constexpr int kDx[8] = {1, 1, 0, -1, -1, -1, 0, 1};
+  static constexpr int kDy[8] = {0, 1, 1, 1, 0, -1, -1, -1};
+  for (int i = 0; i < 8; ++i)
+  {
+    if (!pixelOpaque(image, x + kDx[i], y + kDy[i], threshold))
+      return true;
+  }
+  return false;
+}
+
+QVector<QPoint> traceOuterSilhouetteContour(const QImage& image, int threshold)
+{
+  QPoint start(-1, -1);
+  for (int y = 0; y < image.height() && start.x() < 0; ++y)
+  {
+    for (int x = 0; x < image.width(); ++x)
+    {
+      if (pixelOnSilhouetteEdge(image, x, y, threshold))
+      {
+        start = QPoint(x, y);
+        break;
+      }
+    }
+  }
+
+  if (start.x() < 0)
+    return {};
+
+  static constexpr int kDx[8] = {1, 1, 0, -1, -1, -1, 0, 1};
+  static constexpr int kDy[8] = {0, 1, 1, 1, 0, -1, -1, -1};
+
+  QVector<QPoint> contour;
+  int x = start.x();
+  int y = start.y();
+  int dir = 0;
+  const int maxSteps = image.width() * image.height() * 4;
+
+  for (int step = 0; step < maxSteps; ++step)
+  {
+    contour.append(QPoint(x, y));
+
+    bool foundNext = false;
+    const int searchStart = (dir + 5) % 8;
+    for (int i = 0; i < 8; ++i)
+    {
+      const int nd = (searchStart + i) % 8;
+      const int nx = x + kDx[nd];
+      const int ny = y + kDy[nd];
+      if (pixelOnSilhouetteEdge(image, nx, ny, threshold))
+      {
+        x = nx;
+        y = ny;
+        dir = nd;
+        foundNext = true;
+        break;
+      }
+    }
+
+    if (!foundNext)
+      break;
+
+    if (contour.size() > 2 && x == start.x() && y == start.y())
+      break;
+  }
+
+  return contour;
+}
+
+QPainterPath contourToPath(const QVector<QPoint>& contour, const QRectF& targetRect, const QSize& imageSize)
+{
+  if (contour.size() < 3 || imageSize.width() <= 0 || imageSize.height() <= 0)
+    return {};
+
+  const qreal scaleX = targetRect.width() / imageSize.width();
+  const qreal scaleY = targetRect.height() / imageSize.height();
+  const int stride = qMax(1, contour.size() / 96);
+
+  QPainterPath path;
+  path.moveTo(targetRect.x() + (contour.first().x() + 0.5) * scaleX,
+              targetRect.y() + (contour.first().y() + 0.5) * scaleY);
+  for (int i = stride; i < contour.size(); i += stride)
+  {
+    path.lineTo(targetRect.x() + (contour.at(i).x() + 0.5) * scaleX,
+                targetRect.y() + (contour.at(i).y() + 0.5) * scaleY);
+  }
+  path.closeSubpath();
+  return path.simplified();
+}
+}  // namespace
+
 NodeBase::NodeBase(const QString& id, const QString& nodeId, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
     : QGraphicsItem(parent)
     , mConfig(nodeConfig)
@@ -213,39 +320,117 @@ void NodeBase::paintNode(const QRectF& bounds, const QColor& background, const Q
   paintPixmap(painter);
 }
 
-QPainterPath NodeBase::nodeShape(const QRectF& bounds) const
+void NodeBase::ensureNodeSvgRenderer() const
+{
+  if (mNodeSvgRenderer || config()->body.nodeSvg.isEmpty())
+    return;
+
+  const QString path = iconPathFromTheme(config()->body.nodeSvg);
+  auto renderer = std::make_unique<QSvgRenderer>(path);
+  if (renderer->isValid())
+    mNodeSvgRenderer = std::move(renderer);
+}
+
+QPainterPath NodeBase::geometricBodyOutlinePath(const QRectF& drawingBounds) const
 {
   QPainterPath path;
-  if (!config()->body.nodeSvg.isEmpty())
-  {
-    path.addRect(bounds);
-    return path;
-  }
-
   if (config()->body.shape == Types::Shape::RECTANGLE)
   {
-    path.addRect(bounds);
+    path.addRect(drawingBounds);
   }
   else if (config()->body.shape == Types::Shape::ELLIPSE)
   {
-    path.addEllipse(bounds);
+    path.addEllipse(drawingBounds);
   }
   else if (config()->body.shape == Types::Shape::DIAMOND)
   {
     QPolygonF diamond;
-    diamond << QPointF(bounds.center().x(), bounds.top())     // Top
-            << QPointF(bounds.right(), bounds.center().y())   // Right
-            << QPointF(bounds.center().x(), bounds.bottom())  // Bottom
-            << QPointF(bounds.left(), bounds.center().y());   // Left
-
+    diamond << QPointF(drawingBounds.center().x(), drawingBounds.top())
+            << QPointF(drawingBounds.right(), drawingBounds.center().y())
+            << QPointF(drawingBounds.center().x(), drawingBounds.bottom())
+            << QPointF(drawingBounds.left(), drawingBounds.center().y());
     path.addPolygon(diamond);
   }
   else
   {
-    path.addRoundedRect(bounds, config()->body.borderRadius, config()->body.borderRadius);  // 10 is the corner radius
+    const qreal radius = config()->body.borderRadius > 0 ? config()->body.borderRadius : 5.0;
+    path.addRoundedRect(drawingBounds, radius, radius);
+  }
+  return path;
+}
+
+QPainterPath NodeBase::svgSilhouetteOutlinePath(const QRectF& drawingBounds) const
+{
+  ensureNodeSvgRenderer();
+  if (!mNodeSvgRenderer)
+    return geometricBodyOutlinePath(drawingBounds);
+
+  const QRectF target = shapeSvgTargetRect(*mNodeSvgRenderer, drawingBounds);
+  const int pixelWidth = qMax(12, qRound(target.width() * kSvgOutlineSupersample));
+  const int pixelHeight = qMax(12, qRound(target.height() * kSvgOutlineSupersample));
+  const QSize pixelSize(pixelWidth, pixelHeight);
+  const QString cacheKey = config()->body.nodeSvg;
+
+  if (mSvgOutlineCacheKey == cacheKey &&
+      mSvgOutlineCacheTarget == target &&
+      mSvgOutlineCachePixelSize == pixelSize &&
+      !mSvgOutlineCachePath.isEmpty())
+  {
+    return mSvgOutlineCachePath;
   }
 
-  return path;
+  QImage image(pixelSize.width(), pixelSize.height(), QImage::Format_ARGB32_Premultiplied);
+  image.fill(Qt::transparent);
+  {
+    QPainter imagePainter(&image);
+    imagePainter.setRenderHint(QPainter::Antialiasing, true);
+    mNodeSvgRenderer->render(&imagePainter, QRectF(QPointF(0, 0), pixelSize));
+  }
+
+  const QVector<QPoint> contour = traceOuterSilhouetteContour(image, kSvgOutlineAlphaThreshold);
+  QPainterPath outline = contourToPath(contour, target, pixelSize);
+  if (outline.isEmpty())
+    outline = geometricBodyOutlinePath(drawingBounds);
+
+  mSvgOutlineCacheKey = cacheKey;
+  mSvgOutlineCacheTarget = target;
+  mSvgOutlineCachePixelSize = pixelSize;
+  mSvgOutlineCachePath = outline;
+  return outline;
+}
+
+QPainterPath NodeBase::nodeBodyOutlinePath(const QRectF& bounds) const
+{
+  const QRectF drawingBounds = drawingRect(bounds);
+  if (!config()->body.nodeSvg.isEmpty())
+    return svgSilhouetteOutlinePath(drawingBounds);
+
+  return geometricBodyOutlinePath(drawingBounds);
+}
+
+void NodeBase::paintSelectionOutline(QPainter* painter, const QRectF& bounds) const
+{
+  const QPainterPath outline = nodeBodyOutlinePath(bounds);
+  if (outline.isEmpty())
+    return;
+
+  QPen pen(Config::HIGHLIGHT);
+  pen.setWidthF(2.0);
+  pen.setCosmetic(true);
+  pen.setJoinStyle(Qt::RoundJoin);
+  pen.setCapStyle(Qt::RoundCap);
+
+  painter->save();
+  painter->setPen(pen);
+  painter->setBrush(Qt::NoBrush);
+  painter->setRenderHint(QPainter::Antialiasing, true);
+  painter->drawPath(outline);
+  painter->restore();
+}
+
+QPainterPath NodeBase::nodeShape(const QRectF& bounds) const
+{
+  return nodeBodyOutlinePath(bounds);
 }
 
 void NodeBase::paintLabel(QPainter* painter, const QPen& pen) const

@@ -92,6 +92,7 @@
             "textColor": "#FFFFFF",
             "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
+            "icon": "capability_timer.svg",
             "width": 500,
             "height": 500,
             "iconColor": "#FFFFFF",

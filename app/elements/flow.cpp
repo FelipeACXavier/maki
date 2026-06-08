@@ -1,7 +1,10 @@
 #include "flow.h"
 
+#include <qdir.h>
+
 #include "logging.h"
 #include "node.h"
+#include "system/behaviour_canvas.h"
 #include "transition_info.h"
 
 Flow::Flow(const QString& name, std::shared_ptr<FlowSaveInfo> storage)
@@ -66,37 +69,11 @@ QVector<TransitionItem*> Flow::transitions() const
 
 void Flow::addTransition(TransitionItem* transition)
 {
-  // Make sure the source node holds the transition info
-  if (transition->destination() && (id() != transition->destination()->id()))
-  {
-    bool found = false;
-    for (const auto& t : mStorage->gettransitions())
-    {
-      if (t->getid() == transition->id())
-      {
-        found = true;
-        break;
-      }
-    }
+  if (!transition)
+    return;
 
-    if (!found)
-      mStorage->addTransition(transition->storage());
-
-    for (auto& t : transitions())
-    {
-      // If I am the source of this transition
-      // Check whether we have another transition with me as destination
-      auto src1 = transition->source()->id();
-      auto dst1 = transition->destination()->id();
-      auto src2 = t->source()->id();
-      auto dst2 = t->destination()->id();
-      if (((src1 == dst2) && (src2 == dst1)))
-      {
-        transition->setEdge(TransitionItem::Edge::FORWARD);
-        t->setEdge(TransitionItem::Edge::BACKWARD);
-      }
-    }
-  }
+  const auto srcId = transition->sourceId();
+  const auto dstId = transition->destinationId();
 
   bool found = false;
   for (const auto& t : transitions())
@@ -107,13 +84,31 @@ void Flow::addTransition(TransitionItem* transition)
       break;
     }
   }
-
   if (!found)
     mTransitions.push_back(transition);
+
+  found = false;
+  for (const auto& t : mStorage->gettransitions())
+  {
+    if (t->getid() == transition->id())
+    {
+      found = true;
+      break;
+    }
+  }
+
+  if (!found)
+    mStorage->addTransition(transition->storage());
 }
 
 void Flow::removeTransition(TransitionItem* transition)
 {
   mStorage->removeTransition(transition->storage());
+  deleteTransition(transition);
+}
+
+void Flow::deleteTransition(TransitionItem* transition)
+{
+  LOG_INFO("Removing transition: %s", qPrintable(transition->id()));
   mTransitions.removeIf([transition](TransitionItem* item) { return item->id() == transition->id(); });
 }

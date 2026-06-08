@@ -12,30 +12,24 @@
 #include "logging.h"
 #include "system/main_window.h"
 #include "widgets/settings_manager.h"
+#ifdef DEBUG_ADDRESS
+#include "system/object_info.h"
+#endif
 
 using namespace Qt::StringLiterals;
 
-void loadApplicationFonts()
+class MakiApplication : public QApplication
 {
-  auto fontPaths = AppPaths::fonts();
-  for (const auto& path : fontPaths)
+public:
+  using QApplication::QApplication;
+#ifdef DEBUG_ADDRESS
+  bool notify(QObject* receiver, QEvent* event) override
   {
-    QDir fontDir(path);
-    const QStringList files = fontDir.entryList({"*.ttf", "*.otf"}, QDir::Files);
-
-    for (const QString& file : files)
-    {
-      const QString fullPath = fontDir.filePath(file);
-      if (QFontDatabase::addApplicationFont(fullPath) == -1)
-        LOG_WARNING("Failed to load font %s", qPrintable(fullPath));
-    }
+    notify_debug(receiver, event);
+    return QApplication::notify(receiver, event);
   }
-
-  // Uncomment if you need to know what fonts are available
-  // QFontDatabase db;
-  // for (const QString& family : db.families())
-  //   qDebug() << family;
-}
+#endif
+};
 
 int main(int argc, char* argv[])
 {
@@ -46,7 +40,7 @@ int main(int argc, char* argv[])
     qputenv("QT_QPA_PLATFORMTHEME", "xdgdesktopportal");
 #endif
 
-  QApplication app(argc, argv);
+  MakiApplication app(argc, argv);
   app.setApplicationDisplayName(Config::APPLICATION_NAME);
   app.setApplicationName(Config::APPLICATION_NAME);
   app.setApplicationVersion(Config::VERSION);
@@ -67,8 +61,6 @@ int main(int argc, char* argv[])
   app.setWindowIcon(QIcon(":/app_icons/maki.png"));
 
   QGuiApplication::setDesktopFileName(Config::APPLICATION_NAME);
-
-  // loadApplicationFonts();
 
   // QApplication::setFont(Fonts::Main);
   auto* themeManager = new oclero::qlementine::ThemeManager(style);

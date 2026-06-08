@@ -133,6 +133,8 @@ private slots:
    */
   void changeEvent(QEvent* event) override;
 
+  void onCleanChanged(const QString& flowId, const QString& text, bool state);
+
 private:
   std::unique_ptr<SaveHandler> mSaveHandler;          /// Handler for saving data.
   std::unique_ptr<PluginManager> mPluginManager;      /// Manager for plugins.

@@ -20,7 +20,9 @@ static const int CONNECTOR_RADIUS = 5;        /// Radius of connectors in pixels
 static const qreal MINIMUM_NODE_SIZE = 50;    /// Minimum size of a node.
 static const qreal OPACITY_THRESHOLD = 0.25;  /// Opacity threshold for visibility.
 
-static const int CONTENT_PADDING = 5;  /// Padding around content.
+static const int CONTENT_PADDING = 5;           /// Padding around content.
+static const int CANVAS_OVERLAY_X_MARGIN = 10;  /// X margin for objects that overaly the canvas
+static const int CANVAS_OVERLAY_Y_MARGIN = 50;  /// Y margin for objects that overaly the canvas
 
 extern QColor FOREGROUND;  /// Foreground color.
 extern QColor HIGHLIGHT;   /// Highlight color.
@@ -35,6 +37,8 @@ static const QString TYPE_NODE = QStringLiteral("application/x-node");          
 static const QString TYPE_PIXMAP = QStringLiteral("application/x-pixmap");         /// MIME type for pixmaps.
 static const QString TYPE_CONFIG = QStringLiteral("application/x-configuration");  /// MIME type for configurations.
 static const QString TYPE_NODE_ID = QStringLiteral("application/x-node-id");       /// MIME type for node IDs.
+static constexpr int MINIMUM_MENU_WIDTH = 250;
+static constexpr int MAXIMUM_MENU_WIDTH = 400;
 
 static const qreal CONTROL_POINT_SHIFT = 100;  /// Shift value for control points.
 
