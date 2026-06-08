@@ -64,7 +64,8 @@ cmake -S "$RepoRoot" -B "$BuildPath" `
   -DCMAKE_PREFIX_PATH="$QtBase" `
   -DCMAKE_INSTALL_PREFIX="$InstallPath" `
   -DCMAKE_BUILD_TYPE="$BuildType" `
-  -DCMAKE_TOOLCHAIN_FILE="$VcPkgPath\scripts\buildsystems\vcpkg.cmake"
+  -DCMAKE_TOOLCHAIN_FILE="$VcPkgPath\scripts\buildsystems\vcpkg.cmake" `
+  -DVCPKG_TARGET_TRIPLET=x64-windows
 
 if ($LASTEXITCODE -ne 0) {
   Fail "CMake configure failed."

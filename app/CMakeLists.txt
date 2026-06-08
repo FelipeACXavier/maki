@@ -55,9 +55,25 @@ endif()
 if (MSVC)
   # Only set these on release so we can see the logs in the terminal
   set_target_properties(${APPLICATION_NAME} PROPERTIES
-    WIN32_EXECUTABLE  $<CONFIG:Release>
-    MACOSX_BUNDLE  $<CONFIG:Release>
+    WIN32_EXECUTABLE $<CONFIG:Release>
+    MACOSX_BUNDLE $<CONFIG:Release>
   )
+
+  # Copy the necessary DLLs in windows
+  add_custom_command(TARGET ${APPLICATION_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      $<TARGET_FILE:libavoid>
+      $<TARGET_FILE_DIR:${APPLICATION_NAME}>
+
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      $<TARGET_FILE:QuaZip::QuaZip>
+      $<TARGET_FILE_DIR:${APPLICATION_NAME}>
+
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/debug/bin/zlibd1.dll"
+      "$<TARGET_FILE_DIR:${APPLICATION_NAME}>"
+  )
+
 else()
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_compile_options(${APPLICATION_NAME} PRIVATE
