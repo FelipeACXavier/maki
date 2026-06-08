@@ -13,6 +13,7 @@ constexpr int MIN_DURATION = 400;
 constexpr int MAX_DURATION = 600;
 
 SectionWidget::SectionWidget(QWidget* parent)
+    : QWidget(parent)
 {
   auto* layout = new QVBoxLayout(this);
   layout->setContentsMargins(0, 0, 0, 0);
@@ -54,14 +55,16 @@ void SectionWidget::addItem(QWidget* container, const QString& title, oclero::ql
   line->setFrameShape(QFrame::HLine);
   line->setFrameShadow(QFrame::Plain);
 
-  auto* lableLayout = new QVBoxLayout();
-  lableLayout->addWidget(label);
-  lableLayout->addWidget(line);
+  auto* labelLayout = new QVBoxLayout();
+  labelLayout->setContentsMargins(0, 0, 0, 0);
+  labelLayout->setSpacing(2);
+  labelLayout->addWidget(label, 0, Qt::AlignVCenter);
+  labelLayout->addWidget(line);
 
   mToggleButton = new ClickableIcon(QIcon(":/icons/arrow-down.svg"), QSize(16, 16), header);
   mToggleButton->setCheckable(true);
   mToggleButton->setChecked(true);
-  mToggleButton->setFixedWidth(30);
+  mToggleButton->setFixedSize(24, 24);
   mToggleButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
   QHBoxLayout* hLayout = new QHBoxLayout(header);
@@ -69,7 +72,7 @@ void SectionWidget::addItem(QWidget* container, const QString& title, oclero::ql
   hLayout->setAlignment(Qt::AlignLeft);
   hLayout->setSpacing(4);
   hLayout->addWidget(mToggleButton);
-  hLayout->addLayout(lableLayout);
+  hLayout->addLayout(labelLayout);
 
   // Add the header and the content to the layout
   layout()->addWidget(header);

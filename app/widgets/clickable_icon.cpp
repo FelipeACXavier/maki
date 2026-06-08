@@ -12,6 +12,7 @@ ClickableIcon::ClickableIcon(const QIcon& icon, const QSize& size, QWidget* pare
     , mCheckable(false)
 {
   setIcon(icon);
+  setIconSize(size);
   setCursor(Qt::PointingHandCursor);
 }
 
