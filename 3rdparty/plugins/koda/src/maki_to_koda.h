@@ -9,6 +9,7 @@
 #include <QStringList>
 #include <QHash>
 #include <QString>
+#include <memory>
 #include <any>
 
 #include "ast/ast.h"

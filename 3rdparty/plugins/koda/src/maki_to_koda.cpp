@@ -159,7 +159,7 @@ Result<koda::PComponent> MakiToKoda::buildTask(const INode& task)
   std::string finalArgName = generateUniqueName(formattedName);
   c->name = finalArgName;
 
-  const std::shared_ptr<INode> taskPtr = std::make_shared<INode>(task);
+  auto taskPtr = std::make_shared<INode>(task);
   registerUniqueNameForINode(finalArgName, taskPtr);
 
   LOG_DEBUG("Generated Task: %s", c->name.c_str());
@@ -240,7 +240,7 @@ Result<koda::PComponent> MakiToKoda::buildCapability(const INode& capability)
   std::string finalCapName = generateUniqueName(formattedName);
   c->name = finalCapName;
 
-  const std::shared_ptr<INode> capPtr = std::make_shared<INode>(task);
+  auto capPtr = std::make_shared<INode>(capability);
   registerUniqueNameForINode(finalCapName, capPtr);
 
 
@@ -266,7 +266,7 @@ Result<koda::PVarDef> MakiToKoda::buildVarDef(const IProperty& property)
   varDef->name = property.getid().toStdString();
   std::string finalVarName = generateUniqueName(varDef->name);
   varDef->name = finalVarName;
-  const std::shared_ptr<IProperty> propPtr = std::make_shared<IProperty>(property);
+  auto propPtr = std::make_shared<IProperty>(property);
   registerUniqueNameForIProperty(finalVarName, propPtr);
   varDef->srcId = property.getid().toStdString();
   varDef->varType = Types::PropertyTypesToString(property.gettype()).toStdString();
@@ -374,9 +374,9 @@ Result<koda::PRosDef> MakiToKoda::buildRosDef(const IFlow& event)
 
   auto eventDef = std::make_shared<koda::EventDef>();
   eventDef->typeName = Types::PropertyTypesToString(event.getreturnType()).toStdString();
-  std::string finalEventName = generateUniqueName(format(event.getName()));
+  std::string finalEventName = generateUniqueName(format(event.getname()));
   eventDef->name = event.getname().toStdString();
-  std::shared_prt<IFlow> eventPtr = std::make_shared<IFlow>(event);
+  auto eventPtr = std::make_shared<IFlow>(event);
   registerUniqueNameForIFlow(finalEventName, eventPtr);
   eventDef->srcId = event.getid().toStdString();
 
@@ -421,7 +421,7 @@ Result<koda::PFlow> MakiToKoda::buildFlowAst(const IFlow& flow)
   pflow->name = finalFlowName;
 
   // register mapping uniqueName -> IFlow*
-  std::shared_ptr<IFlow> flowPtr = std::make_shared<IFlow>(flow);
+  auto flowPtr = std::make_shared<IFlow>(flow);
   registerUniqueNameForIFlow(finalFlowName, flowPtr);
   pflow->strategy = std::any_cast<koda::PStrategy>(seq);
   for (const auto& arg : flow.getarguments())
