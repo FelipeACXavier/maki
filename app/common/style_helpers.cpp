@@ -67,6 +67,9 @@ QString iconPathFromTheme(const QString& name, bool useLocal)
   if (!useLocal)
     return AppPaths::icon(iconName);
 #endif
+  if (name.contains("plugin"))
+    return AppPaths::icon(iconName);
+
   return QString(":/icons/" + iconName);
 }
 

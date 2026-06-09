@@ -210,7 +210,7 @@ void MainWindowLayout::buildCentralPanel()
 
   mHeaderWidget = new QWidget(mCentralSplitter);
   QHBoxLayout* headerLayout = new QHBoxLayout(mHeaderWidget);
-  headerLayout->setContentsMargins(0, 8, 0, 8);
+  headerLayout->setContentsMargins(8, 8, 8, 8);
   headerLayout->addSpacing(0);
   headerLayout->setAlignment(Qt::AlignCenter);
 
@@ -476,6 +476,7 @@ QMenu* MainWindowLayout::createFileMenu(QWidget* parent)
   // ----------------------------------------------------------
   // File menu
   auto* file = new QMenu(tr("File"), parent);
+  file->setMinimumWidth(200);
   mTranslatable.push_back({file, "File"});
 
   mActionNew = new QAction(iconFromTheme("document-new", false), tr("New"), this);
@@ -523,6 +524,7 @@ QMenu* MainWindowLayout::createEditMenu(QWidget* parent)
   // ----------------------------------------------------------
   // Edit menu
   auto* edit = new QMenu(tr("Edit"), parent);
+  edit->setMinimumWidth(200);
   mTranslatable.push_back({edit, "Edit"});
 
   mActionUndo = mUndoGroup->createUndoAction(this, tr("Undo"));
@@ -565,6 +567,7 @@ QMenu* MainWindowLayout::createViewMenu(QWidget* parent)
   // ----------------------------------------------------------
   // View menu
   auto* view = new QMenu(tr("View"), parent);
+  view->setMinimumWidth(200);
   mTranslatable.push_back({view, "View"});
 
   mActionZoomIn = new QAction(iconFromTheme("zoom-in", false), tr("Zoom In"), this);
@@ -630,6 +633,7 @@ QMenu* MainWindowLayout::createDiagramMenu(QWidget* parent)
   // ----------------------------------------------------------
   // Diagram menu
   auto* diagram = new QMenu(tr("Diagram"), parent);
+  diagram->setMinimumWidth(200);
   mTranslatable.push_back({diagram, "Diagram"});
 
   mActionAutoRoute = new QAction(iconFromTheme("auto-route", false), tr("Auto-route"), this);
@@ -643,6 +647,7 @@ QMenu* MainWindowLayout::createToolsMenu(QWidget* parent)
   // ----------------------------------------------------------
   // Tools menu
   auto* tools = new QMenu(tr("Tools"), parent);
+  tools->setMinimumWidth(200);
   mTranslatable.push_back({tools, "Tools"});
 
   mGeneratorMenu = new QMenu(tr("Generator"));
@@ -676,6 +681,7 @@ QMenu* MainWindowLayout::createHelpMenu(QWidget* parent)
   // ----------------------------------------------------------
   // Help menu
   auto* help = new QMenu(tr("Help"), parent);
+  help->setMinimumWidth(200);
   mTranslatable.push_back({help, "Help"});
 
   mActionDocumentation = new QAction(iconFromTheme("help-browser", false), tr("Documentation"), this);
