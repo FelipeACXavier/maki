@@ -97,7 +97,7 @@ Result<koda::PComponent> MakiToKoda::buildTask(const INode& task)
     std::string uniqueArgId = generateUniqueId();
     std::string finalArgName = formattedArgName + "_" + uniqueArgId;
     parg->b = finalArgName;
-    cap->getProperties()["uniqueName"] = finalArgName;
+    cap->getproperties()["uniqueName"] = finalArgName;
 
     c->args.push_back(parg);
   }
