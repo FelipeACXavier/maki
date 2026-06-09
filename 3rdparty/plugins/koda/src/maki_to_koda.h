@@ -44,6 +44,10 @@ private:
   // This should be a registry
   std::vector<std::string> mVariables = {};
 
+  // Counter-based ID generation
+  uint32_t mIdCounter = 0;
+  std::string generateUniqueId();
+
   Result<koda::PComponent> buildTask(const INode& task);
   Result<koda::PComponent> buildCapability(const INode& capability);
 

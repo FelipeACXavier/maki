@@ -16,6 +16,9 @@
 #include "string_helpers.h"
 #include "types.h"
 
+#include <iomanip>
+#include <functional>
+
 #ifdef USE_ANTLR
 #include "koda_emitter.h"
 #endif
@@ -25,6 +28,18 @@ namespace koda
 
 const int INVALID_INTEGER = std::numeric_limits<int>::max();
 const double INVALID_DOUBLE = std::numeric_limits<double>::max();
+
+std::string MakiToKoda::generateUniqueId()
+{
+  // Generate hash from counter
+  std::hash<uint32_t> hasher;
+  size_t hashValue = hasher(++mIdCounter);
+
+  // Convert to 4-character hex (16-bit, compact and readable)
+  std::ostringstream oss;
+  oss << std::hex << std::setfill('0') << std::setw(4) << (hashValue & 0xFFFF);
+  return oss.str();
+}
 
 Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes)
 {
@@ -65,7 +80,11 @@ Result<koda::PComponent> MakiToKoda::buildTask(const INode& task)
     return Result<koda::PComponent>::Failed("Task does not have a name");
 
   auto name = properties["name"].toString().toLower();
-  c->name = format(name, "_");
+  std::string formattedName = format(name, "_");
+  std::string uniqueId = generateUniqueId();
+  c->name = formattedName + "_" + uniqueId;
+
+  LOG_DEBUG("Generated Task: %s", c->name.c_str());
 
   // Get arguments
   for (const auto& cap : task.getchildren())
