@@ -135,7 +135,7 @@ Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes
         registerUniqueNameForINode(comp->name, child);
     }
 
-    auto TaskComp = taskAny.Value();
+    auto taskComp = taskAny.Value();
     if (!taskComp->name.empty())
       registerUniqueNameForINode(taskComp->name, node);
     sys.components.push_back(taskComp);
