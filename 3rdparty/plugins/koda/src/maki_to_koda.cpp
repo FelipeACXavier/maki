@@ -156,21 +156,18 @@ Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes
     {
       const QString nodeId = nodePtr->getid();
       QTimer::singleShot(0, [nodeId]() {
-        for (QWidget* top : qApp->topLevelWidgets())
+        for (QObject* obj : qApp->topLevelWidgets())
         {
-          if (!top) continue;
-          const auto children = top->findChildren<QObject*>();
-          for (QObject* obj : children)
+          if (!obj)
+            continue;
+
+          if (obj->metaObject()->indexOfSlot("onFocusNode(QString,QString)") != -1)
           {
-            if (!obj) continue;
-            if (obj->metaObject()->indexOfSlot("onFocusNode(QString,QString)") != -1)
-            {
-              QMetaObject::invokeMethod(obj,
-                                        "onFocusNode",
-                                        Qt::QueuedConnection,
-                                        Q_ARG(QString, QString()),      // empty flowId
-                                        Q_ARG(QString, nodeId));       // nodeId to focus
-            }
+            QMetaObject::invokeMethod(obj,
+                                      "onFocusNode",
+                                      Qt::QueuedConnection,
+                                      Q_ARG(QString, QString()),
+                                      Q_ARG(QString, nodeId));
           }
         }
       });
