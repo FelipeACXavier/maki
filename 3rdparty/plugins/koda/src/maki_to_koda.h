@@ -7,6 +7,8 @@
 #include <QSet>
 #include <QString>
 #include <QStringList>
+#include <QHash>
+#include <QString>
 #include <any>
 
 #include "ast/ast.h"
@@ -47,6 +49,9 @@ private:
   // Counter-based ID generation
   uint32_t mIdCounter = 0;
   std::string generateUniqueId();
+  std::string generateUniqueName(const std::string name);
+  // Assumes name is already unique?
+  QHash<QString, QString> mUniqueNames;
 
   Result<koda::PComponent> buildTask(const INode& task);
   Result<koda::PComponent> buildCapability(const INode& capability);

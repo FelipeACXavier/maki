@@ -39,6 +39,20 @@ std::string MakiToKoda::generateUniqueId()
   return oss.str();
 }
 
+std::string MakiToKoda::generateUniqueName(const std::string& name)
+{
+  const QString key = QString::fromStdString(name);
+
+  if (mUniqueNames.contains(key))
+    return mUniqueNames[key].toStdString();
+
+  const std::string uniqueId = generateUniqueId();
+  const std::string finalName = name + "_" + uniqueId;
+
+  mUniqueNames.insert(key, QString::fromStdString(finalName));
+  return finalName;
+}
+
 Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes)
 {
   koda::System sys;
@@ -79,8 +93,7 @@ Result<koda::PComponent> MakiToKoda::buildTask(const INode& task)
 
   auto name = properties["name"].toString().toLower();
   std::string formattedName = format(name, "_");
-  std::string uniqueId = generateUniqueId();
-  c->name = formattedName + "_" + uniqueId;
+  c->name = generateUniqueName(formattedName);
 
   LOG_DEBUG("Generated Task: %s", c->name.c_str());
 
@@ -94,10 +107,7 @@ Result<koda::PComponent> MakiToKoda::buildTask(const INode& task)
     parg->a = format(capName);
     ToLowerCase(parg->a, 0);
     std::string formattedArgName = format(capName);
-    std::string uniqueArgId = generateUniqueId();
-    std::string finalArgName = formattedArgName + "_" + uniqueArgId;
-    parg->b = finalArgName;
-    cap->getProperties()["uniqueName"] = finalArgName;
+    parg->b = generateUniqueName(formattedArgName);
 
     c->args.push_back(parg);
   }
@@ -151,16 +161,7 @@ Result<koda::PComponent> MakiToKoda::buildCapability(const INode& capability)
     return Result<koda::PComponent>::Failed("Capabiity does not have a name");
 
   auto name = properties["name"].toString();
-  auto uniqueName = properties["uniqueName"].toString();
-  if (!uniqueName.isEmpty())
-  {
-    c->name = format(uniqueName);
-  }
-  else
-  {
-    std::string uniqueID = generateUniqueId();
-    c->name = format(name) + "_" + uniqueID;
-  }
+  c->name = generateUniqueName(name);
 
 
   auto typeArray = properties["type"].toJsonObject()["options"].toArray();
