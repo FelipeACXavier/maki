@@ -156,7 +156,7 @@ Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes
     {
       const QString nodeId = nodePtr->getid();
       QTimer::singleShot(0, [nodeId]() {
-        for (QObject* obj : qApp->topLevelWidgets())
+        for (QWidget* obj : qApp->topLevelWidgets())
         {
           if (!obj)
             continue;
