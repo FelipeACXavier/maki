@@ -53,6 +53,24 @@ private:
   // Assumes name is already unique?
   QHash<QString, QString> mUniqueNames;
 
+  // Reverse lookup maps: uniqueName -> shared_ptr to source object
+  QHash<QString, std::shared_ptr<INode>> mUniqueToINode;        // uniqueName -> INode
+  QHash<QString, std::shared_ptr<IFlow>> mUniqueToIFlow;        // uniqueName -> IFlow
+  QHash<QString, std::shared_ptr<IProperty>> mUniqueToIProperty;// uniqueName -> IProperty
+  QHash<QString, std::shared_ptr<ITransition>> mUniqueToITransition; // uniqueName -> ITransition
+
+  // Register helpers (call these immediately after creating a unique name)
+  void registerUniqueNameForINode(const std::string& uniqueName, std::shared_ptr<INode> node);
+  void registerUniqueNameForIFlow(const std::string& uniqueName, std::shared_ptr<IFlow> flow);
+  void registerUniqueNameForIProperty(const std::string& uniqueName, std::shared_ptr<IProperty> prop);
+  void registerUniqueNameForITransition(const std::string& uniqueName, std::shared_ptr<ITransition> trans);
+
+  // Lookup helpers (return nullptr / empty shared_ptr if not found)
+  std::shared_ptr<INode> uniqueNameToINode(const std::string& uniqueName) const;
+  std::shared_ptr<IFlow> uniqueNameToIFlow(const std::string& uniqueName) const;
+  std::shared_ptr<IProperty> uniqueNameToIProperty(const std::string& uniqueName) const;
+  std::shared_ptr<ITransition> uniqueNameToITransition(const std::string& uniqueName) const;
+
   Result<koda::PComponent> buildTask(const INode& task);
   Result<koda::PComponent> buildCapability(const INode& capability);
 
