@@ -9,6 +9,7 @@
 #include <QTimer>
 #include <QApplication>
 #include <QMetaObject>
+#include <QWidget>
 #include <any>
 #include <limits>
 #include <memory>
