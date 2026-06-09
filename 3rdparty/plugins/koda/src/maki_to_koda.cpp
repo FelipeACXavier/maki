@@ -6,6 +6,9 @@
 #include <QStringList>
 #include <QVariant>
 #include <QString>
+#include <QTimer>
+#include <QApplication>
+#include <QMetaObject>
 #include <any>
 #include <limits>
 #include <memory>
@@ -143,6 +146,36 @@ Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes
 #ifdef USE_ANTLR
   LOG_RAW("Generated AST:");
   sys.print();
+  const std::string desiredUniqueName = "smart_room_0001"
+  const QString qUnique = QString::fromStdString(desiredUniqueName);
+  if (mUniqueNames.contains(qUnique))
+  {
+    auto nodePtr = mUniqueToINode.value(qUnique);
+    if (nodePtr)
+    {
+      const QString nodeId = nodePtr->getid();
+      QTimer::singleShot(0, [nodeId]()
+      {
+        for (QWidget* top : qApp->topLevelWidgets())
+        {
+          if (!top) continue;
+          const auto children = top->findChildren<QObject*>();
+          for (QObject* obj : children)
+          {
+            if (!obj) continue;
+            if (obj->metaObject()->indexOfSlot("onFocusNode(QString,QString)") != -1)
+            {
+              QMetaObject::invokeMethod(obj, "onFocusNode", Qt::QueuedConnection, Q_ARG(QString, QString()), Q_ARG(QString, nodeId));
+            }
+          }
+        }
+      });
+    }
+    else
+    {
+      LOG_DEBUG("Unique name '%s' exists but no corresponding INode found", desiredUniqueName.c_str());
+    }
+  }
 
   auto contents = KodaEmitter::emitKoda(sys);
   RETURN_ON_FAILURE_AS(contents, QString);
