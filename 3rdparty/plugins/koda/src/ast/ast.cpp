@@ -243,7 +243,7 @@ void EventDefComponent::print(const std::string& prefix, const bool last) const
 
 // -------------------------------------------------------------
 // Flow
-vvoid Flow::print(const std::string& prefix, const bool last) const
+void Flow::print(const std::string& prefix, const bool last) const
 {
   LOG_TREE("Flow")
   const std::string childPrefix = prefix + tree::carry(last);
