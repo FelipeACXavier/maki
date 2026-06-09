@@ -18,6 +18,7 @@
 
 #include <iomanip>
 #include <functional>
+#include <iostream>
 
 #ifdef USE_ANTLR
 #include "koda_emitter.h"
@@ -31,13 +32,10 @@ const double INVALID_DOUBLE = std::numeric_limits<double>::max();
 
 std::string MakiToKoda::generateUniqueId()
 {
-  // Generate hash from counter
-  std::hash<uint32_t> hasher;
-  size_t hashValue = hasher(++mIdCounter);
+  ++mIdCounter;
 
-  // Convert to 4-character hex (16-bit, compact and readable)
   std::ostringstream oss;
-  oss << std::hex << std::setfill('0') << std::setw(4) << (hashValue & 0xFFFF);
+  oss << std::hex << std::setfill('0') << std::setw(4) << (mIdCounter & 0xFFFF);
   return oss.str();
 }
 
