@@ -128,10 +128,17 @@ Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes
       if (!generated)
         return Result<QString>::Failed("Failed to generate capability: " + generated.ErrorMessage());
 
-      sys.components.push_back(generated.Value());
+      auto comp = generated.Value();
+      sys.components.push_back(comp);
+
+      if (!comp->name.empty())
+        registerUniqueNameForINode(comp->name, child);
     }
 
-    sys.components.push_back(taskAny.Value());
+    auto TaskComp = taskAny.Value();
+    if (!taskComp->name.empty())
+      registerUniqueNameForINode(taskComp->name, node);
+    sys.components.push_back(taskComp);
   }
 #ifdef USE_ANTLR
   LOG_RAW("Generated AST:");
@@ -158,9 +165,6 @@ Result<koda::PComponent> MakiToKoda::buildTask(const INode& task)
   std::string formattedName = format(name, "_");
   std::string finalArgName = generateUniqueName(formattedName);
   c->name = finalArgName;
-
-  auto taskPtr = std::make_shared<INode>(task);
-  registerUniqueNameForINode(finalArgName, taskPtr);
 
   LOG_DEBUG("Generated Task: %s", c->name.c_str());
 
@@ -240,8 +244,6 @@ Result<koda::PComponent> MakiToKoda::buildCapability(const INode& capability)
   std::string finalCapName = generateUniqueName(formattedName);
   c->name = finalCapName;
 
-  auto capPtr = std::make_shared<INode>(capability);
-  registerUniqueNameForINode(finalCapName, capPtr);
 
 
   auto typeArray = properties["type"].toJsonObject()["options"].toArray();
@@ -266,8 +268,6 @@ Result<koda::PVarDef> MakiToKoda::buildVarDef(const IProperty& property)
   varDef->name = property.getid().toStdString();
   std::string finalVarName = generateUniqueName(varDef->name);
   varDef->name = finalVarName;
-  auto propPtr = std::make_shared<IProperty>(property);
-  registerUniqueNameForIProperty(finalVarName, propPtr);
   varDef->srcId = property.getid().toStdString();
   varDef->varType = Types::PropertyTypesToString(property.gettype()).toStdString();
 
@@ -376,8 +376,6 @@ Result<koda::PRosDef> MakiToKoda::buildRosDef(const IFlow& event)
   eventDef->typeName = Types::PropertyTypesToString(event.getreturnType()).toStdString();
   std::string finalEventName = generateUniqueName(format(event.getname()));
   eventDef->name = event.getname().toStdString();
-  auto eventPtr = std::make_shared<IFlow>(event);
-  registerUniqueNameForIFlow(finalEventName, eventPtr);
   eventDef->srcId = event.getid().toStdString();
 
   for (const auto& arg : event.getarguments())
@@ -421,8 +419,6 @@ Result<koda::PFlow> MakiToKoda::buildFlowAst(const IFlow& flow)
   pflow->name = finalFlowName;
 
   // register mapping uniqueName -> IFlow*
-  auto flowPtr = std::make_shared<IFlow>(flow);
-  registerUniqueNameForIFlow(finalFlowName, flowPtr);
   pflow->strategy = std::any_cast<koda::PStrategy>(seq);
   for (const auto& arg : flow.getarguments())
     pflow->tags.push_back(arg->getid().toStdString());
