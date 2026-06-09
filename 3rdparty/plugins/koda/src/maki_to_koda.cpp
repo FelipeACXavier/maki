@@ -146,16 +146,16 @@ Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes
 #ifdef USE_ANTLR
   LOG_RAW("Generated AST:");
   sys.print();
-  const std::string desiredUniqueName = "smart_room_0001"
+  const std::string desiredUniqueName = "smart_room_0001";
   const QString qUnique = QString::fromStdString(desiredUniqueName);
-  if (mUniqueNames.contains(qUnique))
+
+  if (mUniqueToINode.contains(qUnique))
   {
     auto nodePtr = mUniqueToINode.value(qUnique);
     if (nodePtr)
     {
       const QString nodeId = nodePtr->getid();
-      QTimer::singleShot(0, [nodeId]()
-      {
+      QTimer::singleShot(0, [nodeId]() {
         for (QWidget* top : qApp->topLevelWidgets())
         {
           if (!top) continue;
@@ -165,15 +165,15 @@ Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes
             if (!obj) continue;
             if (obj->metaObject()->indexOfSlot("onFocusNode(QString,QString)") != -1)
             {
-              QMetaObject::invokeMethod(obj, "onFocusNode", Qt::QueuedConnection, Q_ARG(QString, QString()), Q_ARG(QString, nodeId));
+              QMetaObject::invokeMethod(obj,
+                                        "onFocusNode",
+                                        Qt::QueuedConnection,
+                                        Q_ARG(QString, QString()),      // empty flowId
+                                        Q_ARG(QString, nodeId));       // nodeId to focus
             }
           }
         }
       });
-    }
-    else
-    {
-      LOG_DEBUG("Unique name '%s' exists but no corresponding INode found", desiredUniqueName.c_str());
     }
   }
 
