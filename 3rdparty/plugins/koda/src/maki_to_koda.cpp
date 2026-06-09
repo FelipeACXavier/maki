@@ -162,7 +162,7 @@ Result<koda::PComponent> MakiToKoda::buildCapability(const INode& capability)
     return Result<koda::PComponent>::Failed("Capabiity does not have a name");
 
   auto name = properties["name"].toString();
-  c->name = generateUniqueName(name);
+  c->name = generateUniqueName(format(name));
 
 
   auto typeArray = properties["type"].toJsonObject()["options"].toArray();

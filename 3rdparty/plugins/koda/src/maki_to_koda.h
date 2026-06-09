@@ -49,7 +49,7 @@ private:
   // Counter-based ID generation
   uint32_t mIdCounter = 0;
   std::string generateUniqueId();
-  std::string generateUniqueName(const std::string name);
+  std::string generateUniqueName(const std::string& name);
   // Assumes name is already unique?
   QHash<QString, QString> mUniqueNames;
 
