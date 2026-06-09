@@ -153,6 +153,7 @@ Result<koda::PComponent> MakiToKoda::buildCapability(const INode& capability)
 
   auto name = properties["name"].toString();
   auto uniqueName = properties["uniqueName"].toString();
+  LOG_DEBUG("Capability: %s, %s", name.c_str(), uniqueName.c_str());
   if (!uniqueName.isEmpty())
   {
     c->name = format(uniqueName);
