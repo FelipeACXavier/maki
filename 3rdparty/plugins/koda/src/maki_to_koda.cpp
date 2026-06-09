@@ -93,7 +93,11 @@ Result<koda::PComponent> MakiToKoda::buildTask(const INode& task)
     parg->kind = koda::Argument::Kind::Req;
     parg->a = format(capName);
     ToLowerCase(parg->a, 0);
-    parg->b = format(capName);
+    std::string formattedArgName = format(capName);
+    std::string uniqueArgId = generateUniqueId();
+    std::string finalArgName = formattedArgName + "_" + uniqueArgId;
+    parg->b = finalArgName;
+    cap->getProperties()["uniqueName"] = finalArgName;
 
     c->args.push_back(parg);
   }
@@ -147,9 +151,17 @@ Result<koda::PComponent> MakiToKoda::buildCapability(const INode& capability)
     return Result<koda::PComponent>::Failed("Capabiity does not have a name");
 
   auto name = properties["name"].toString();
-  std::string formattedName = format(name);
-  std::string uniqueID = generateUniqueId();
-  c->name = formattedName + "_" + uniqueID;
+  auto uniqueName = properties["uniqueName"].toString();
+  if (!uniqueName.isEmpty())
+  {
+    c->name = format(uniqueName);
+  }
+  else
+  {
+    std::string uniqueID = generateUniqueId();
+    c->name = format(name) + "_" + uniqueID;
+  }
+
 
   auto typeArray = properties["type"].toJsonObject()["options"].toArray();
   if (typeArray.isEmpty())
