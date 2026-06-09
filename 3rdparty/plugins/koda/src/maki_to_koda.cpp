@@ -5,6 +5,7 @@
 #include <QQueue>
 #include <QStringList>
 #include <QVariant>
+#include <QString>
 #include <any>
 #include <limits>
 #include <memory>
