@@ -5,6 +5,7 @@
 #include <QQueue>
 #include <QStringList>
 #include <QVariant>
+#include <QString>
 #include <any>
 #include <limits>
 #include <memory>
@@ -97,7 +98,7 @@ Result<koda::PComponent> MakiToKoda::buildTask(const INode& task)
     std::string uniqueArgId = generateUniqueId();
     std::string finalArgName = formattedArgName + "_" + uniqueArgId;
     parg->b = finalArgName;
-    cap->getproperties()["uniqueName"] = finalArgName;
+    cap->getproperties()["uniqueName"] = QString::fromStdString(finalArgName);
 
     c->args.push_back(parg);
   }
