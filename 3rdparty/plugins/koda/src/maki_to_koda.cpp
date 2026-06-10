@@ -61,6 +61,8 @@ Result<koda::PComponent> MakiToKoda::buildTask(const INode& task)
 
   auto name = properties["name"].toString().toLower();
   c->name = format(name, "_");
+  if (c->name == "task")
+    return Result<koda::PComponent>::Failed("Task cannot be named \"task\"");
 
   // Get arguments
   for (const auto& cap : task.getchildren())

@@ -1911,6 +1911,7 @@ void Canvas::onFocusNode(const QString& flowId, const QString& nodeId)
 
     // Center the node in the view
     parentView()->centerOn(node);
+    selectNode(node, true);
   }
   else
   {
