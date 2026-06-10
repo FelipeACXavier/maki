@@ -146,26 +146,26 @@ Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes
     sys.components.push_back(taskComp);
   }
 #ifdef USE_ANTLR
-  LOG_RAW("Generated AST:");
-  sys.print();
+  // LOG_RAW("Generated AST:");
+  // sys.print();
 
   const std::string desiredUniqueName = "smart_room_0001";
-  LOG_RAW("Attempting to focus on task: '%s'", desiredUniqueName.c_str());
-  LOG_RAW("Total entries in registry: %d", mUniqueToINode.size());
+  LOG_DEBUG("Attempting to focus on task: %s", desiredUniqueName.c_str());
+  LOG_DEBUG("Total entries in registry: %d", mUniqueToINode.size());
 
   const QString qUnique = QString::fromStdString(desiredUniqueName);
 
   if (mUniqueToINode.contains(qUnique))
   {
-    LOG_RAW("Found '%s' in registry", desiredUniqueName.c_str());
+    LOG_DEBUG("Found %s in registry", desiredUniqueName.c_str());
     auto nodePtr = mUniqueToINode.value(qUnique);
     if (nodePtr)
     {
       const QString nodeId = nodePtr->getid();
-      LOG_RAW("Got nodeId: '%s'", nodeId.toStdString().c_str());
+      LOG_DEBUG("Got nodeId: %s", nodeId.toStdString().c_str());
 
       QMetaObject::invokeMethod(qApp, [nodeId, desiredUniqueName]() {
-        LOG_RAW("Focus lambda executing for task '%s' with nodeId '%s'", desiredUniqueName.c_str(), nodeId.toStdString().c_str());
+        LOG_DEBUG("Focus lambda executing for task '%s' with nodeId '%s'", desiredUniqueName.c_str(), nodeId.toStdString().c_str());
         int foundCount = 0;
         for (auto* widget : qApp->topLevelWidgets())
         {
@@ -185,20 +185,20 @@ Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes
                                           Qt::QueuedConnection,
                                           Q_ARG(QString, QString()),
                                           Q_ARG(QString, nodeId));
-            LOG_RAW("invokeMethod result: %s", success ? "true" : "false");
+            LOG_DEBUG("invokeMethod result: %s", success ? "true" : "false");
           }
         }
-        LOG_RAW("Total widgets with onFocusNode slot: %d", foundCount);
+        LOG_DEBUG("Total widgets with onFocusNode slot: %d", foundCount);
       }, Qt::QueuedConnection);
     }
     else
     {
-      LOG_RAW("nodePtr is null");
+      LOG_DEBUG("nodePtr is null");
     }
   }
   else
   {
-    LOG_RAW("'%s' NOT found in registry", desiredUniqueName.c_str());
+    LOG_DEBUG("'%s' NOT found in registry", desiredUniqueName.c_str());
   }
 
   auto contents = KodaEmitter::emitKoda(sys);
