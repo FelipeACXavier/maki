@@ -156,11 +156,13 @@ Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes
     if (nodePtr)
     {
       const QString nodeId = nodePtr->getid();
-      QTimer::singleShot(0, [nodeId]() {
-        for (QWidget* obj : qApp->topLevelWidgets())
+      QMetaObject::invokeMethod(qApp, [nodeId]() {
+        for (auto* widget : qApp->topLevelWidgets())
         {
-          if (!obj)
+          if (!widget)
             continue;
+
+          QObject* obj = widget;
 
           if (obj->metaObject()->indexOfSlot("onFocusNode(QString,QString)") != -1)
           {
@@ -171,7 +173,7 @@ Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes
                                       Q_ARG(QString, nodeId));
           }
         }
-      });
+      }, Qt::QueuedConnection);
     }
   }
 
