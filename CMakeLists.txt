@@ -5,6 +5,7 @@ set(APPLICATION_NAME maki)
 option(DEBUG "Build with debug symbols" OFF)
 option(BUILD_DOC "Build documentation" ON)
 option(BUILD_PLUGINS "Build plugins as part of the application" ON)
+option(MAKI_BUILD_TESTS "Build MAKI tests" OFF)
 
 # Paths as configurable cache variables
 set(LOCAL_QT_PATH "" CACHE PATH "Qt path on this machine")
@@ -37,6 +38,7 @@ set(QT_REQUIRED_PACKAGES
   Gui
   Svg
   Widgets
+  Test
   Core5Compat
   SvgWidgets
   LinguistTools
@@ -108,6 +110,19 @@ if (DEPLOY_TARGET STREQUAL "linux")
     set(CMAKE_BUILD_WITH_INSTALL_RPATH OFF)
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
   endif()
+endif()
+
+if(MAKI_BUILD_TESTS)
+  enable_testing()
+  include(FetchContent)
+  FetchContent_Declare(
+    googletest
+    URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+  )
+  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+  FetchContent_MakeAvailable(googletest)
+  include(GoogleTest)
 endif()
 
 add_subdirectory(3rdparty)

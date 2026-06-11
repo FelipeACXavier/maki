@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 3.16)
 project(${APPLICATION_NAME} LANGUAGES CXX)
 
+# This must be called before we build any QT targets
 qt_standard_project_setup()
+
 # Compile libraries
 add_subdirectory(common)
 add_subdirectory(document)
@@ -82,6 +84,12 @@ add_dependencies(${APPLICATION_NAME}
   copy_libraries
   copy_translations
 )
+
+# ------------------------------------------------------------------------------------------------------------
+# Tests
+if(MAKI_BUILD_TESTS)
+  add_subdirectory(tests)
+endif()
 
 # ------------------------------------------------------------------------------------------------------------
 # Linux deployment
