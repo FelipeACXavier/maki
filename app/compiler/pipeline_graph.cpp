@@ -5,6 +5,7 @@
 #include <memory>
 
 #include "elements/transition.h"
+#include "logging.h"
 #include "node_info.h"
 #include "system/canvas.h"
 #include "transition_info.h"
@@ -28,6 +29,12 @@ Result<PipelineNode> PipelineNode::fromJson(const QJsonObject& object)
   return node;
 }
 
+void PipelineNode::print() const
+{
+  LOG_INFO("  Node id: %s", qPrintable(id));
+  LOG_INFO("  Node actionId: %s", qPrintable(actionId));
+}
+
 Result<PipelineEdge> PipelineEdge::fromJson(const QJsonObject& object)
 {
   if (!object.contains("from"))
@@ -40,6 +47,12 @@ Result<PipelineEdge> PipelineEdge::fromJson(const QJsonObject& object)
   edge.to = object["to"].toString();
 
   return edge;
+}
+
+void PipelineEdge::print() const
+{
+  LOG_INFO("  Edge from: %s", qPrintable(from));
+  LOG_INFO("  Edge to: %s", qPrintable(to));
 }
 
 Result<PipelineGraph> PipelineGraph::fromJson(const QJsonObject& object)
@@ -205,4 +218,14 @@ Result<PipelineGraph> PipelineGraph::fromCanvas(const Canvas* canvas)
   return graph;
 }
 
+void PipelineGraph::print() const
+{
+  LOG_INFO("Pipeline id: %s", qPrintable(id));
+  LOG_INFO("Pipeline name: %s", qPrintable(name));
+  LOG_INFO("Pipeline version: %s", qPrintable(version.toString()));
+  for (const auto& node : nodes)
+    node.print();
+  for (const auto& edge : edges)
+    edge.print();
+}
 }  // namespace maki

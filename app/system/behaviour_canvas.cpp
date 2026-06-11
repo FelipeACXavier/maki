@@ -9,6 +9,10 @@ BehaviourCanvas::BehaviourCanvas(Flow* flow, std::shared_ptr<ConfigurationTable>
     : Canvas(flow->id(), configTable, router, parent)
     , mFlow(flow)
 {
+}
+
+void BehaviourCanvas::setupInitialNodes()
+{
   // Add start and end nodes on creation
   if (mFlow && mFlow->getNodes().isEmpty())
   {

@@ -69,6 +69,11 @@ public:
    */
   void onNodeMoved(const QString& nodeId) override;
 
+  /**
+   * @brief Used to create the start and end nodes of a flow
+   */
+  void setupInitialNodes();
+
 protected:
   /**
    * @brief Deletes the Flow managed by this Canvas. This should not be called if the Flow is created by a NodeItem.
