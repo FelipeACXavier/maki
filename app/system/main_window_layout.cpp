@@ -25,17 +25,17 @@
 
 // Custom widgets
 #include "app_configs.h"
+#include "canvas/canvas_view.h"
+#include "dropdown_button.h"
+#include "frame.h"
+#include "log_table_widget.h"
 #include "logging.h"
+#include "menus/file_menu.h"
+#include "menus/properties_menu.h"
+#include "menus/system_menu.h"
 #include "process_tab.h"
 #include "style_helpers.h"
-#include "system/canvas_view.h"
-#include "widgets/dropdown_button.h"
-#include "widgets/frame.h"
-#include "widgets/log_table_widget.h"
-#include "widgets/properties/properties_menu.h"
-#include "widgets/structure/file_menu.h"
-#include "widgets/structure/system_menu.h"
-#include "widgets/widget_factory.h"
+#include "widget_factory.h"
 
 static constexpr int MINIMUM_MENU_WIDTH = 250;
 static constexpr int MAXIMUM_MENU_WIDTH = 400;

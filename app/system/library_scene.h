@@ -5,7 +5,7 @@
 #include <QGraphicsScene>
 #include <QMouseEvent>
 
-#include "elements/draggable.h"
+class DraggableItem;
 
 /**
  * @brief A custom QGraphicsScene for a library application.

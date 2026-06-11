@@ -13,8 +13,6 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 
-#include "canvas.h"
-#include "elements/node.h"
 #include "flow_info.h"
 #include "keys.h"
 #include "logging.h"

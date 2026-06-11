@@ -4,10 +4,10 @@
 #include <QJsonArray>
 #include <memory>
 
-#include "elements/transition.h"
+#include "canvas.h"
 #include "logging.h"
 #include "node_info.h"
-#include "system/canvas.h"
+#include "transition.h"
 #include "transition_info.h"
 
 namespace maki

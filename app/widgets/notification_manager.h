@@ -5,7 +5,7 @@
 #include <QPointer>
 
 #include "logging.h"
-#include "widgets/notification_widget.h"
+#include "notification_widget.h"
 
 /**
  * @class NotificationManager

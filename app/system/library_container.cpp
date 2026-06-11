@@ -4,7 +4,7 @@
 #include <QVBoxLayout>
 
 #include "config.h"
-#include "elements/draggable.h"
+#include "draggable.h"
 #include "library_scene.h"
 #include "logging.h"
 #include "widgets/section.h"

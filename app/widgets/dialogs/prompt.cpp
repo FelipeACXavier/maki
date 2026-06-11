@@ -7,9 +7,9 @@
 #include <oclero/qlementine.hpp>
 #include <oclero/qlementine/widgets/Label.hpp>
 
-#include "widgets/base_dialog.h"
-#include "widgets/frame.h"
-#include "widgets/scroll_area.h"
+#include "base_dialog.h"
+#include "frame.h"
+#include "scroll_area.h"
 
 namespace maki
 {

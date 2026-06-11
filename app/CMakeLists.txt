@@ -1,13 +1,14 @@
 cmake_minimum_required(VERSION 3.16)
 project(${APPLICATION_NAME} LANGUAGES CXX)
 
+qt_standard_project_setup()
 # Compile libraries
 add_subdirectory(common)
 add_subdirectory(document)
+add_subdirectory(canvas)
+add_subdirectory(widgets)
 
-qt_standard_project_setup()
-
-# ------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------
 include(GNUInstallDirs)
 include(${CMAKE_SOURCE_DIR}/cmake/copy_fonts.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/copy_icons.cmake)
@@ -16,30 +17,18 @@ include(${CMAKE_SOURCE_DIR}/cmake/copy_libraries.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/doxygen.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/copy_translations.cmake)
 
-# ------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------
 # Main application
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 # Get the source files in common and view
-file(GLOB SYSTEM_FILES
-  ${CMAKE_CURRENT_SOURCE_DIR}/system/*.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/system/undo_commands/*.cpp
-)
-file(GLOB ELEMENT_FILES ${CMAKE_CURRENT_SOURCE_DIR}/elements/*.cpp)
-file(GLOB WIDGET_FILES
-  ${CMAKE_CURRENT_SOURCE_DIR}/widgets/*.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/widgets/structure/*.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/widgets/properties/*.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/widgets/dialogs/*.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/widgets/validators/*.cpp
-)
+file(GLOB SYSTEM_FILES ${CMAKE_CURRENT_SOURCE_DIR}/system/*.cpp)
 file(GLOB COMPILER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/compiler/*.cpp)
 
 qt_add_executable(${APPLICATION_NAME}
     main.cpp
     assets.qrc
     ${SYSTEM_FILES}
-    ${WIDGET_FILES}
     ${ELEMENT_FILES}
     ${COMPILER_FILES}
 )
@@ -80,6 +69,8 @@ target_link_libraries(${APPLICATION_NAME} PRIVATE
     libavoid
     libcommon
     libdocument
+    libcanvas
+    libwidgets
     libcpphelpers
     libmaki
 )

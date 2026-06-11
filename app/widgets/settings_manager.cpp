@@ -5,12 +5,12 @@
 #include <QFile>
 #include <QFileInfo>
 
-#include "common/app_configs.h"
+#include "app_configs.h"
+#include "dialogs/prompt.h"
 #include "isettings.h"
 #include "logging.h"
 #include "oclero/qlementine/style/Theme.hpp"
 #include "result.h"
-#include "widgets/dialogs/prompt.h"
 
 #define LOAD_SETTING(MEMBER, FIELD, TYPE)                            \
   do                                                                 \

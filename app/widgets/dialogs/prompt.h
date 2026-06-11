@@ -3,7 +3,7 @@
 #include <QPushButton>
 #include <oclero/qlementine/widgets/StatusBadgeWidget.hpp>
 
-#include "../base_dialog.h"
+#include "base_dialog.h"
 
 namespace maki
 {

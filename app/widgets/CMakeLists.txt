@@ -1,10 +1,14 @@
 # Define project name
-project(libcommon VERSION 1.0)
+project(libwidgets VERSION 1.0)
 
 include(GNUInstallDirs)
 
 file(GLOB SOURCES
-  "${PROJECT_SOURCE_DIR}/*.cpp"
+  ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/dialogs/*.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/menus/*.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/properties/*.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/validators/*.cpp
 )
 
 add_library(${PROJECT_NAME}
@@ -18,8 +22,13 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::Core
     Qt6::Gui
     Qt6::Widgets
+    Qt6::Svg
+    Qt6::SvgWidgets
     qlementine
     libcpphelpers
+    libdocument
+    libcanvas
+    libcommon
     libmaki
 )
 

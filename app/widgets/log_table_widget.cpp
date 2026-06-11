@@ -54,6 +54,7 @@ LogTableWidget::LogTableWidget(QWidget* parent)
   mHighlightDelegate = new LogHighlightDelegate(this);
 
   mLevelFilter = new QComboBox(this);
+  mLevelFilter->setObjectName("LevelFilter");
   mLevelFilter->setSizeAdjustPolicy(QComboBox::SizeAdjustPolicy::AdjustToContents);
   mLevelFilter->setMaximumWidth(100);
   mLevelFilter->addItem("All");
@@ -61,6 +62,7 @@ LogTableWidget::LogTableWidget(QWidget* parent)
     mLevelFilter->addItem(mModel->toString((logging::LogLevel)i));
 
   mSourceFilter = new QComboBox(this);
+  mSourceFilter->setObjectName("SourceFilter");
   mSourceFilter->setSizeAdjustPolicy(QComboBox::SizeAdjustPolicy::AdjustToContents);
   mSourceFilter->setMaximumWidth(100);
   mSourceFilter->setDuplicatesEnabled(false);
@@ -120,6 +122,7 @@ LogTableWidget::LogTableWidget(QWidget* parent)
   mSearchCounterLabel->setMinimumWidth(60);
 
   mSearchField = new QLineEdit(mSearchBox);
+  mSearchField->setObjectName("SearchField");
   mSearchField->setPlaceholderText(tr("Find"));
   mSearchField->installEventFilter(this);
 
@@ -134,6 +137,7 @@ LogTableWidget::LogTableWidget(QWidget* parent)
   mFilterBox->setExpandedWidth(400);
 
   mFileFilter = new QLineEdit(this);
+  mFileFilter->setObjectName("FileFilter");
   mFileFilter->setPlaceholderText(tr("Filter file"));
   mFileFilter->installEventFilter(this);
 

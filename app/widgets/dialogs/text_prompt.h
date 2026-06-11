@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../base_dialog.h"
+#include "base_dialog.h"
 
 namespace maki
 {

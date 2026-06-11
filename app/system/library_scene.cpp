@@ -3,7 +3,7 @@
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsSvgItem>
 
-#include "elements/draggable.h"
+#include "canvas/draggable.h"
 #include "logging.h"
 
 static const int MIN_DRAG_DISTANCE = 200;

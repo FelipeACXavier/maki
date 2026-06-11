@@ -37,6 +37,12 @@ void DropDownButton::addOption(const QString& name)
   rebuildMenu();
 }
 
+void DropDownButton::removeOption(const QString& name)
+{
+  mOptions.removeIf([name](const QString& option) { return option == name; });
+  rebuildMenu();
+}
+
 void DropDownButton::setCurrentOption(const QString& name)
 {
   mCurrentOption = name;
