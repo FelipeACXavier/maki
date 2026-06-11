@@ -8,10 +8,10 @@ concurrency:
 on:
   # Build/test on PRs to master
   pull_request:
-    branches: [ master ]
+    branches: [master]
   # Also on direct pushes to master
   push:
-    branches: [ "**" ]
+    branches: ["**"]
 
 jobs:
   # ====================================================================================
@@ -57,51 +57,6 @@ jobs:
         with:
           name: linux-build
           path: build/linux/debug
-
-  # ====================================================================================
-  # 3) Build the Windows version
-  # build-windows:
-  #   name: Build Windows
-  #   runs-on: windows-latest
-  #   defaults:
-  #     run:
-  #       shell: pwsh
-  #       working-directory: ${{ github.workspace }}
-
-  #   steps:
-  #     # 1) Checkout code
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-  #       with:
-  #         submodules: recursive
-  #         fetch-depth: 1
-
-  #     - name: Set up Python
-  #       uses: actions/setup-python@v4
-  #       with:
-  #         python-version: "3.12"
-
-  #     # 2) Setup tools in windows machine
-  #     - name: Setup tools script Windows
-  #       run: |
-  #         ./scripts/windows/setup_tools.ps1
-
-  #     # 3) Setup windows machine
-  #     - name: Setup script Windows
-  #       run: |
-  #         ./scripts/windows/setup.ps1
-
-  #     # 4) Build for given target
-  #     - name: Build script Windows
-  #       run: |
-  #         ./scripts/windows/build.ps1
-
-  #     # 5) Build for given target
-  #     - name: Upload build artefacts
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: windows-build
-  #         path: build/windows/
 
   # ====================================================================================
   # 4) Build documentation for Pages
@@ -165,46 +120,97 @@ jobs:
 
   # ====================================================================================
   # 2) Test the linux version
-  # test-linux:
-  #   runs-on: self-hosted
-  #   needs: build-linux
+  test-linux:
+    runs-on: self-hosted
+    needs: build-linux
 
-  #   container:
-  #     image: ghcr.io/felipeacxavier/maki/dev:${{ vars.QT_DEV_TAG }}
+    container:
+      image: ghcr.io/felipeacxavier/maki/dev:${{ vars.QT_DEV_TAG }}
 
-  #   env:
-  #     HOME: /home/ubuntu
+    env:
+      HOME: /home/ubuntu
+      QT_QPA_PLATFORM: offscreen
 
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ github.workspace }}
+
+    steps:
+      # 1) Checkout (if your test script expects the repo tree)
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Symlink repo to $HOME/maki for scripts
+        run: |
+          mkdir -p "$HOME"
+          ln -s "$GITHUB_WORKSPACE" "$HOME/maki" || true
+
+      # 2) Download build artefacts produced by build-linux job
+      - name: Download build artefacts
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-build
+          path: build/linux/debug
+
+      # 3) Run tests (should use the already-built tree)
+      - name: Run unit tests
+        run: |
+          chmod +x ./scripts/linux/run-tests.sh
+          ./scripts/linux/run-tests.sh --unit
+
+      - name: Run integration tests
+        run: |
+          chmod +x ./scripts/linux/run-tests.sh
+          ./scripts/linux/run-tests.sh --integration
+
+  # ====================================================================================
+  # 3) Build the Windows version
+  # build-windows:
+  #   name: Build Windows
+  #   runs-on: windows-latest
   #   defaults:
   #     run:
-  #       shell: bash
+  #       shell: pwsh
   #       working-directory: ${{ github.workspace }}
 
   #   steps:
-  #     # 1) Checkout (if your test script expects the repo tree)
+  #     # 1) Checkout code
   #     - name: Checkout
   #       uses: actions/checkout@v4
   #       with:
   #         submodules: recursive
   #         fetch-depth: 1
 
-  #     - name: Symlink repo to $HOME/maki for scripts
-  #       run: |
-  #         mkdir -p "$HOME"
-  #         ln -s "$GITHUB_WORKSPACE" "$HOME/maki" || true
-
-  #     # 2) Download build artefacts produced by build-linux job
-  #     - name: Download build artefacts
-  #       uses: actions/download-artifact@v4
+  #     - name: Set up Python
+  #       uses: actions/setup-python@v4
   #       with:
-  #         name: linux-build
-  #         path: build/linux
+  #         python-version: "3.12"
 
-  #     # 3) Run tests (should use the already-built tree)
-  #     - name: Run tests
+  #     # 2) Setup tools in windows machine
+  #     - name: Setup tools script Windows
   #       run: |
-  #         chmod +x ./scripts/linux/run-tests.sh
-  #         ./scripts/linux/run-tests.sh
+  #         ./scripts/windows/setup_tools.ps1
+
+  #     # 3) Setup windows machine
+  #     - name: Setup script Windows
+  #       run: |
+  #         ./scripts/windows/setup.ps1
+
+  #     # 4) Build for given target
+  #     - name: Build script Windows
+  #       run: |
+  #         ./scripts/windows/build.ps1
+
+  #     # 5) Build for given target
+  #     - name: Upload build artefacts
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: windows-build
+  #         path: build/windows/
 
   # ====================================================================================
   # 4) Test the Windows version

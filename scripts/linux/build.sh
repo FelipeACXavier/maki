@@ -44,6 +44,10 @@ while [[ $# -gt 0 ]]; do
       CLEAN=1
       shift
       ;;
+      --tests)
+      EXTRA_ARGS="${EXTRA_ARGS} -DMAKI_BUILD_TESTS=ON"
+      shift
+      ;;
       --docs)
       DOCS=1
       shift
