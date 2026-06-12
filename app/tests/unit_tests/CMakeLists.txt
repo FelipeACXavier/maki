@@ -1,22 +1,16 @@
 set(EXECUTABLE_NAME ${APPLICATION_NAME}_unit_tests)
 
-file(GLOB SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
-add_executable(${EXECUTABLE_NAME}
-  ../../assets.qrc
-  ../tests_main.cpp
-  ${SOURCES}
+file(GLOB SOURCES
+  ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/widgets/*.cpp
 )
 
-target_link_libraries(${EXECUTABLE_NAME}
-  PRIVATE
-    Qt6::Core
-    Qt6::Widgets
-    Qt6::Test
-    GTest::gtest
-    maki_test_helpers
-    libwidgets
-    libcpphelpers
-    libmaki
-)
+# Reuse the test rule
+include(${CMAKE_SOURCE_DIR}/cmake/build_tests.cmake)
 
-gtest_discover_tests(${EXECUTABLE_NAME})
+maki_add_test_executable(${EXECUTABLE_NAME}
+  SOURCES
+    ${SOURCES}
+  LIBRARIES
+    # maki_test_helpers
+)
