@@ -26,6 +26,7 @@ jobs:
 
     env:
       HOME: /home/ubuntu
+      QT_QPA_PLATFORM: offscreen
 
     defaults:
       run:
@@ -70,6 +71,7 @@ jobs:
 
     env:
       HOME: /home/ubuntu
+      QT_QPA_PLATFORM: offscreen
 
     defaults:
       run:

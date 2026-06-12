@@ -77,15 +77,15 @@ if (MSVC)
   set(ANTLR4_RUNTIME_LIBRARY antlr4_shared)
 else()
   find_path(ANTLR4_RUNTIME_INCLUDE_DIR
-    NAMES antlr4-runtime.h
-    PATH_SUFFIXES antlr4-runtime
-    PATHS /usr/include /usr/local/include
-  )
+      NAMES antlr4-runtime.h
+      PATH_SUFFIXES antlr4-runtime
+      PATHS /usr/include /usr/local/include
+    )
 
   find_library(ANTLR4_RUNTIME_LIBRARY
-    NAMES antlr4-runtime
-    PATHS /usr/lib /usr/lib/x86_64-linux-gnu /usr/local/lib
-  )
+      NAMES antlr4-runtime
+      PATHS /usr/lib /usr/lib/x86_64-linux-gnu /usr/local/lib
+    )
 endif()
 
 target_link_libraries(${COMPILER_NAME} PRIVATE
