@@ -11,11 +11,14 @@
 #include <vector>
 
 #include "ast/ast.h"
-#include "koda_emitter.h"
 #include "logging.h"
 #include "result.h"
 #include "string_helpers.h"
 #include "types.h"
+
+#ifdef USE_ANTLR
+#include "koda_emitter.h"
+#endif
 
 namespace koda
 {
@@ -44,11 +47,13 @@ Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes
 
     sys.components.push_back(taskAny.Value());
   }
-
+#ifdef USE_ANTLR
   auto contents = KodaEmitter::emitKoda(sys);
   RETURN_ON_FAILURE_AS(contents, QString);
-
   return QString::fromStdString(contents.Value());
+#else
+  return QString();
+#endif
 }
 
 Result<koda::PComponent> MakiToKoda::buildTask(const INode& task)

@@ -71,7 +71,7 @@ try {
 # Ensure vcpkg
 # ------------------------------------------------------
 $vcpkg = Get-Command vcpkg -ErrorAction SilentlyContinue
-if (-not $choco) {
+if (-not $vcpkg) {
   LogWarning "VcPkg not found. Installing..."
   git clone https://github.com/microsoft/vcpkg $VcPkgPath
   & "$VcPkgPath\bootstrap-vcpkg.bat"

@@ -40,6 +40,14 @@ int main(int argc, char* argv[])
     qputenv("QT_QPA_PLATFORMTHEME", "xdgdesktopportal");
 #endif
 
+  QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
+  QCoreApplication::setOrganizationName(Config::ORGANIZATION_NAME);
+  QCoreApplication::setApplicationVersion(Config::VERSION);
+  QCoreApplication::setApplicationName(Config::APPLICATION_NAME);
+  QGuiApplication::setDesktopFileName(Config::APPLICATION_NAME);
+  QGuiApplication::setApplicationDisplayName(Config::APPLICATION_NAME);
+  QCoreApplication::setAttribute(Qt::AA_DontUseNativeDialogs, false);
+
   MakiApplication app(argc, argv);
   app.setApplicationDisplayName(Config::APPLICATION_NAME);
   app.setApplicationName(Config::APPLICATION_NAME);
@@ -50,13 +58,6 @@ int main(int argc, char* argv[])
   style->setAnimationsEnabled(true);
   style->setAutoIconColor(oclero::qlementine::AutoIconColor::TextColor);
   app.setStyle(style);
-
-  QCoreApplication::setOrganizationName(Config::ORGANIZATION_NAME);
-  QCoreApplication::setApplicationVersion(Config::VERSION);
-  QCoreApplication::setApplicationName(Config::APPLICATION_NAME);        // internal id-ish
-  QGuiApplication::setDesktopFileName(Config::APPLICATION_NAME);         // matches maki.desktop
-  QGuiApplication::setApplicationDisplayName(Config::APPLICATION_NAME);  // human name
-  QCoreApplication::setAttribute(Qt::AA_DontUseNativeDialogs, false);
 
   app.setWindowIcon(QIcon(":/app_icons/maki.png"));
 

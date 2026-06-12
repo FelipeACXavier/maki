@@ -55,8 +55,8 @@ endif()
 if (MSVC)
   # Only set these on release so we can see the logs in the terminal
   set_target_properties(${APPLICATION_NAME} PROPERTIES
-    WIN32_EXECUTABLE  $<CONFIG:Release>
-    MACOSX_BUNDLE  $<CONFIG:Release>
+    WIN32_EXECUTABLE $<CONFIG:Release>
+    MACOSX_BUNDLE $<CONFIG:Release>
   )
 else()
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -133,7 +133,6 @@ if (DEPLOY_TARGET STREQUAL "linux" AND UNIX AND NOT APPLE)
   add_dependencies(deploy-linux ${APPLICATION_NAME})
 endif()
 
-# TODO: Test this with a windows machine
 # Windows deployment
 if (DEPLOY_TARGET STREQUAL "windows" AND WIN32 AND NOT CMAKE_CROSSCOMPILING)
   # Make sure windeployqt is available
@@ -144,6 +143,33 @@ if (DEPLOY_TARGET STREQUAL "windows" AND WIN32 AND NOT CMAKE_CROSSCOMPILING)
     RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   )
+
+  # Make sure the dynamic libraries are also installed
+  install(FILES
+    $<TARGET_FILE:libavoid>
+    $<TARGET_FILE:QuaZip::QuaZip>
+    $<TARGET_FILE:Qt6::Core5Compat>
+    "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/bin/zlib1.dll"
+    DESTINATION .
+    CONFIGURATIONS Release
+  )
+
+  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    # Copy the necessary DLLs in windows
+    add_custom_command(TARGET ${APPLICATION_NAME} POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE:libavoid>
+        "${CMAKE_BINARY_DIR}/bin"
+
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE:QuaZip::QuaZip>
+        "${CMAKE_BINARY_DIR}/bin"
+
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/debug/bin/zlibd1.dll"
+        "${CMAKE_BINARY_DIR}/bin"
+    )
+  endif()
 
   if (QT_WINDEPLOYQT_EXECUTABLE)
     # Execute windeployqt as a postscript only  if running in debug mode
@@ -158,11 +184,6 @@ if (DEPLOY_TARGET STREQUAL "windows" AND WIN32 AND NOT CMAKE_CROSSCOMPILING)
               $<$<CONFIG:Debug>:--dir>
               $<$<CONFIG:Debug>:${CMAKE_BINARY_DIR}/bin>
               $<$<CONFIG:Debug>:$<TARGET_FILE:${APPLICATION_NAME}>>
-
-      # Copy the executable to the output dir
-      COMMAND "${CMAKE_COMMAND}" -E copy_if_different
-              "$<TARGET_FILE:${APPLICATION_NAME}>"
-              "${CMAKE_BINARY_DIR}/bin/$<TARGET_FILE_NAME:${APPLICATION_NAME}>"
 
       # Copy debug assets
       COMMAND "${CMAKE_COMMAND}" -E copy_directory

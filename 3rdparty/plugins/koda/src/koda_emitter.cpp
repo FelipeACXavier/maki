@@ -7,7 +7,7 @@
 #include "result.h"
 #include "types.h"
 
-static constexpr std::string INDENT = "  ";
+static const std::string INDENT = "  ";
 
 #define IF_ALT(ALT, OBJ, CALL, ...)     \
   if (std::holds_alternative<ALT>(OBJ)) \
@@ -264,6 +264,9 @@ VoidResult KodaEmitter::emitRepeat(const koda::Strategy::Repeat& node, std::stri
 
 VoidResult KodaEmitter::emitEnd(const koda::Strategy::End& node, std::stringstream& ss, const std::string& format)
 {
+  Q_UNUSED(node)
+  Q_UNUSED(format)
+
   ss << "end";
   return VoidResult();
 }

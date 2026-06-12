@@ -11,7 +11,7 @@
 	url = https://github.com/oclero/qlementine.git
 [submodule "3rdparty/adaptagrams"]
 	path = 3rdparty/adaptagrams
-	url = https://github.com/mjwybrow/adaptagrams.git
+	url = https://github.com/FelipeACXavier/adaptagrams.git
 [submodule "3rdparty/quazip"]
 	path = 3rdparty/quazip
 	url = https://github.com/stachenov/quazip.git

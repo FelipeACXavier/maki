@@ -797,9 +797,6 @@ void MainWindow::onActionNew()
   SaveInfo emptySave;
   *mStorage = emptySave;
 
-  // Gotta make sure we don't save over an old file
-  mSaveHandler->newFileCreated();
-
   // Close all tabs except the first
   for (int i = mCanvasPanel->count(); i >= 1; --i)
     closeCanvasTab(i);
