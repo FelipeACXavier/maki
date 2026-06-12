@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <QApplication>
+#include <oclero/qlementine.hpp>
 
 #include "logging.h"
 
@@ -15,6 +16,9 @@ int main(int argc, char** argv)
       logging::gSilentLog = true;
     }
   }
+
+  auto* style = new oclero::qlementine::QlementineStyle();
+  QApplication::setStyle(style);
 
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

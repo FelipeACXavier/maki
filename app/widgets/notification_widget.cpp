@@ -53,7 +53,8 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
       Config::CONTENT_PADDING, Config::CONTENT_PADDING);
   headerLayout->setSpacing(5);
 
-  auto* titleLabel = new oclero::qlementine::Label(title.size() > 1 ? title : "Notification", header);
+  auto* titleLabel = new oclero::qlementine::Label(!title.isEmpty() ? title : "Notification", header);
+  titleLabel->setObjectName("TitleLabel");
   titleLabel->setRole(oclero::qlementine::TextRole::H4);
   titleLabel->setContentsMargins(0, 0, 0, 0);
   titleLabel->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
@@ -77,6 +78,7 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
   statusBadge->setBadgeSize(oclero::qlementine::StatusBadgeSize::Medium);
 
   mCloseButton = new QPushButton(header);
+  mCloseButton->setObjectName("CloseButton");
   mCloseButton->setFlat(true);
   mCloseButton->setIcon(QIcon(":/icons/close.svg"));
 
@@ -100,6 +102,7 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
   if (!text.isEmpty())
   {
     auto* notificationText = new oclero::qlementine::Label(text, body);
+    notificationText->setObjectName("TextLabel");
     notificationText->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     notificationText->setWordWrap(true);
     notificationText->setRole(oclero::qlementine::TextRole::Default);
