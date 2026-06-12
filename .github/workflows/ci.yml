@@ -125,7 +125,6 @@ jobs:
   test-linux:
     runs-on: self-hosted
     needs: build-linux
-
     container:
       image: ghcr.io/felipeacxavier/maki/dev:${{ vars.QT_DEV_TAG }}
 

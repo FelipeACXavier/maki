@@ -1,0 +1,49 @@
+name: Nightly Release
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  build-linux:
+    runs-on: self-hosted
+    container:
+      image: ghcr.io/felipeacxavier/maki/dev:${{ vars.QT_DEV_TAG }}
+
+    env:
+      HOME: /home/ubuntu
+      QT_QPA_PLATFORM: offscreen
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ github.workspace }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Symlink repo to $HOME/maki
+        run: |
+          mkdir -p "$HOME"
+          ln -s "$GITHUB_WORKSPACE" "$HOME/maki" || true
+
+      - name: Build Linux release
+        run: |
+          chmod +x scripts/linux/release.sh
+          ./scripts/linux/release.sh
+
+      - name: Publish latest development release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest development build
+          prerelease: true
+          make_latest: false
+          files: |
+            release/maki-linux.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
