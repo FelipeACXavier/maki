@@ -413,7 +413,7 @@ void MainWindowLayout::buildRightPanel()
   // ----------------------------------------------------------------------
   // Properties Menu
   mPropertiesTab = new QTabWidget();
-  mPropertiesTab->setMinimumHeight(500);
+  mPropertiesTab->setMinimumHeight(300);
 
   mPropertiesMenu = new PropertiesMenu(mPropertiesTab);
   auto pindex = mPropertiesTab->addTab(mPropertiesMenu, iconFromTheme("properties"), tr("Properties"));
