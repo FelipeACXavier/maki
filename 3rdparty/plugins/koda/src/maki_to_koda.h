@@ -15,6 +15,7 @@
 #include "ast/ast.h"
 #include "idocument.h"
 #include "result.h"
+#include "ihost_services.h"
 
 class QJsonArray;
 

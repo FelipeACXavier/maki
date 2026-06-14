@@ -35,6 +35,11 @@ namespace koda
 const int INVALID_INTEGER = std::numeric_limits<int>::max();
 const double INVALID_DOUBLE = std::numeric_limits<double>::max();
 
+MakiToKoda::MakiToKoda(maki::IHostServices* services)
+{
+    mServices = services;
+}
+
 std::string MakiToKoda::generateUniqueId()
 {
   ++mIdCounter;
@@ -155,7 +160,7 @@ Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes
 
   const QString qUnique = QString::fromStdString(desiredUniqueName);
 
-
+  mServices->focusNode(qUnique);
   auto contents = KodaEmitter::emitKoda(sys);
   RETURN_ON_FAILURE_AS(contents, QString);
   return QString::fromStdString(contents.Value());
