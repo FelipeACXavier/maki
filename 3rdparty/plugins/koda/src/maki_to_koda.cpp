@@ -14,6 +14,8 @@
 #include <limits>
 #include <memory>
 #include <vector>
+#include <QJsonDocument>
+#include <QDir>
 
 #include "ast/ast.h"
 #include "logging.h"
@@ -168,7 +170,7 @@ Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes
   QJsonObject mapping;
   for (auto it = mUniqueToINode.cbegin(); it != mUniqueToINode.cend(); ++it)
     mapping[it.key()] = it.value()->getid();
-  QFile mapFile(mOutputFolder.filePath("maki_mapping.json"););
+  QFile mapFile(mOutputFolder.filePath("maki_mapping.json"));
   if (mapFile.open(QIODevice::WriteOnly))
       mapFile.write(QJsonDocument(mapping).toJson());
 

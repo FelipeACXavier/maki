@@ -78,7 +78,7 @@ private:
   Result<koda::PComponent> buildTask(const INode& task);
   Result<koda::PComponent> buildCapability(const INode& capability);
 
-  Result<koda::PFlow> buildFlowAst(const IFlow& flow);
+  Result<koda::PFlow> buildFlowAst(std::shared_ptr<IFlow> flow);
   std::any buildSequenceFrom(const IFlow& flow, const INode* start, const INode* stop);
 
   std::any buildJoinFromFanOut(const IFlow& flow, const INode& splitNode, const QList<NodeTransition>& successors, const INode*& joinNode);
