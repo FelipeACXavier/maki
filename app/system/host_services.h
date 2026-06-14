@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QObject>
+#include <QString>
 
 #include "ihost_services.h"
 
@@ -88,12 +89,18 @@ public:
    */
   maki::ILogging* logger() const override;
 
+  void focusNode(const QString& nodeId, const QString& flowId = "") const override;
+
+signals:
+  void focusNodeRequested(const QString& flowId, const QString& nodeId);
+
 private:
   std::shared_ptr<IDocument> mDocument;  /// Shared pointer to the document.
   maki::IPipeline* mPipeline;            /// Pointer to the pipeline.
   maki::ISettings* mSettings;            /// Pointer to the settings.
   maki::IUI* mPluginTab;                 /// Pointer to the plugin tab.
   maki::ILogging* mLogger;               /// Pointer to the logger.
+  std::function<void(const QString&, const QString&)> mFocusNodeCallback;
 
   QString mRoot;  /// Project root directory.
 };

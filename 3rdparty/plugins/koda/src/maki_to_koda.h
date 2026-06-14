@@ -42,6 +42,7 @@ class MakiToKoda
 {
 public:
   Result<QString> generate(const QVector<std::shared_ptr<INode>> nodes);
+  MakiToKoda(maki::IHostServices* services);
 
 private:
   // This should be a registry
@@ -134,6 +135,8 @@ private:
   TransitionKind transitionKind(const ITransition& transition) const;
 
   std::string format(QString input, const QString& token = "") const;
+
+  maki::IHostServices* mServices = nullptr;
 };
 
 }  // namespace koda

@@ -4,6 +4,7 @@
 #include "ilogging.h"
 #include "ipipeline.h"
 #include "iui.h"
+#include <QString>
 
 HostServices::HostServices(std::shared_ptr<IDocument> document, maki::IPipeline* pipeline, maki::ISettings* settings, const QString& root, QObject* parent)
     : QObject(parent)
@@ -53,4 +54,9 @@ QString HostServices::projectRoot() const
 maki::ILogging* HostServices::logger() const
 {
   return mLogger;
+}
+
+void HostServices::focusNode(const QString& nodeId, const QString& flowId) const
+{
+  emit focusNodeRequested(flowId, nodeId);
 }

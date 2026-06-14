@@ -515,6 +515,8 @@ void MainWindow::bind()
     }
   });
 
+  connect(mHostServices, &HostServices::focusNodeRequested, rootCanvas(), &Canvas::onFocusNode);
+
   // Canvas stuff =============================================================
   bindCanvas();
 }
