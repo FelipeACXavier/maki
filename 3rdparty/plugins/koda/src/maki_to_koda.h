@@ -11,6 +11,7 @@
 #include <QString>
 #include <memory>
 #include <any>
+#include <QDir>
 
 #include "ast/ast.h"
 #include "idocument.h"
@@ -43,7 +44,7 @@ class MakiToKoda
 {
 public:
   Result<QString> generate(const QVector<std::shared_ptr<INode>> nodes);
-  MakiToKoda(maki::IHostServices* services);
+  MakiToKoda(maki::IHostServices* services, QDir outputFolder);
 
 private:
   // This should be a registry
@@ -138,6 +139,7 @@ private:
   std::string format(QString input, const QString& token = "") const;
 
   maki::IHostServices* mServices = nullptr;
+  QDir mOutputFolder;
 };
 
 }  // namespace koda

@@ -35,9 +35,10 @@ namespace koda
 const int INVALID_INTEGER = std::numeric_limits<int>::max();
 const double INVALID_DOUBLE = std::numeric_limits<double>::max();
 
-MakiToKoda::MakiToKoda(maki::IHostServices* services)
+MakiToKoda::MakiToKoda(maki::IHostServices* services, QDir outputFolder)
 {
-    mServices = services;
+  mServices = services;
+  mOutputFolder = outputFolder;
 }
 
 std::string MakiToKoda::generateUniqueId()
@@ -159,18 +160,18 @@ Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes
   LOG_DEBUG("Total entries in registry: %d", mUniqueToINode.size());
 
   const QString qUnique = QString::fromStdString(desiredUniqueName);
-
   const auto inode = uniqueNameToINode(desiredUniqueName);
-
-  if (inode) {
-    LOG_DEBUG("Successfully found INode for unique name '%s': nodeId='%s'", desiredUniqueName.c_str(), inode->getid().toStdString().c_str());
+  if (inode)
     mServices->focusNode(inode->getid());
-  }
-  else
-    LOG_ERROR("Failed to find INode for unique name: %s", desiredUniqueName.c_str());
-
-  mServices->focusNode(qUnique);
   auto contents = KodaEmitter::emitKoda(sys);
+
+  QJsonObject mapping;
+  for (auto it = mUniqueToINode.cbegin(); it != mUniqueToINode.cend(); ++it)
+    mapping[it.key()] = it.value()->getid();
+  QFile mapFile(mOutputFolder.filePath("maki_mapping.json"););
+  if (mapFile.open(QIODevice::WriteOnly))
+      mapFile.write(QJsonDocument(mapping).toJson());
+
   RETURN_ON_FAILURE_AS(contents, QString);
   return QString::fromStdString(contents.Value());
 #else
@@ -244,7 +245,7 @@ Result<koda::PComponent> MakiToKoda::buildTask(const INode& task)
   auto strategyBlock = std::make_shared<koda::StrategyBlock>();
   for (const auto& flow : task.getflows())
   {
-    auto generated = buildFlowAst(*flow);
+    auto generated = buildFlowAst(flow);
     RETURN_ON_FAILURE_AS(generated, koda::PComponent);
     strategyBlock->flows.push_back(generated.Value());
   }
@@ -418,25 +419,25 @@ Result<koda::PRosDef> MakiToKoda::buildRosDef(const IFlow& event)
   return def;
 }
 
-Result<koda::PFlow> MakiToKoda::buildFlowAst(const IFlow& flow)
+Result<koda::PFlow> MakiToKoda::buildFlowAst(std::shared_ptr<IFlow> flow)
 {
-  LOG_DEBUG("Building flow AST for %s", qPrintable(flow.getname()));
+  LOG_DEBUG("Building flow AST for %s", qPrintable(flow->getname()));
 
-  const auto* start = findStartNode(flow);
+  const auto* start = findStartNode(*flow);
   if (start == nullptr)
     return Result<koda::PFlow>::Failed("Flow has no Koda::Start node");
 
   // Prepare all the variables for this flow
-  for (const auto& arg : flow.getarguments())
+  for (const auto& arg : flow->getarguments())
     mVariables.push_back(arg->getid().toStdString());
 
-  auto seq = buildSequenceFrom(flow, start, nullptr);
+  auto seq = buildSequenceFrom(*flow, start, nullptr);
   if (!seq.has_value())
     return Result<koda::PFlow>::Failed("Failed to build first sequence");
 
   auto pflow = std::make_shared<koda::Flow>();
-  pflow->srcId = flow.getid().toStdString();
-  auto flowName = flow.getname();
+  pflow->srcId = flow->getid().toStdString();
+  auto flowName = flow->getname();
   if (flowName != "main")
     flowName = "f" + flowName;
 
@@ -444,10 +445,27 @@ Result<koda::PFlow> MakiToKoda::buildFlowAst(const IFlow& flow)
   std::string finalFlowName = generateUniqueName(formattedFlowName);
   pflow->name = finalFlowName;
 
-  // register mapping uniqueName -> IFlow*
   pflow->strategy = std::any_cast<koda::PStrategy>(seq);
-  for (const auto& arg : flow.getarguments())
+  for (const auto& arg : flow->getarguments())
     pflow->tags.push_back(arg->getid().toStdString());
+
+  // Register the flow itself
+  registerUniqueNameForIFlow(finalFlowName, flow);
+
+  // Register every node and every transition inside this flow
+  for (const auto& node : flow->getnodes())
+  {
+    const auto nodeName = node->getproperties().value("name").toString();
+    const std::string nodeUniqueName = generateUniqueName(format(nodeName));
+    registerUniqueNameForINode(nodeUniqueName, node);
+
+    for (const auto& transition : flow->gettransitions(node->getid()))
+    {
+      const std::string transUniqueName = generateUniqueName(
+          nodeUniqueName + "_" + format(transition->getlabel()));
+      registerUniqueNameForITransition(transUniqueName, transition);
+    }
+  }
 
   // Clear variables at the end of the flow
   mVariables.clear();

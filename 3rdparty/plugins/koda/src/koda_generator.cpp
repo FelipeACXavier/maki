@@ -533,7 +533,7 @@ Result<maki::PipelineArtifact> KodaGenerator::generateKoda(const maki::PipelineA
   QString code = "";
 
 #ifdef USE_ANTLR
-  koda::MakiToKoda makiToKoda(mServices);
+  koda::MakiToKoda makiToKoda(mServices, mOutputFolder);
   auto generated = makiToKoda.generate(mServices->document()->getnodes());
   if (!generated)
     return Result<maki::PipelineArtifact>::Failed(generated.ErrorMessage());
@@ -553,6 +553,7 @@ Result<maki::PipelineArtifact> KodaGenerator::generateKoda(const maki::PipelineA
   maki::PipelineArtifact output;
   output.metadata = {
       {"sources", {fileName}},
+      {"mappingFile", mOutputFolder.filePath("maki_mapping.json")},
   };
 
   return output;
