@@ -458,7 +458,7 @@ Result<koda::PFlow> MakiToKoda::buildFlowAst(std::shared_ptr<IFlow> flow)
   for (const auto& node : flow->getnodes())
   {
     const auto nodeName = node->getproperties().value("name").toString();
-    const std::string nodeUniqueName = generateUniqueName(format(nodeName));
+    const std::string nodeUniqueName = generateUniqueName(formattedFlowName + "_" + format(nodeName));
     registerUniqueNameForINode(nodeUniqueName, node);
 
     for (const auto& transition : flow->gettransitions(node->getid()))
