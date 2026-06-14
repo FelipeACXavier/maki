@@ -167,17 +167,17 @@ Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes
     mServices->focusNode(inode->getid());
   auto contents = KodaEmitter::emitKoda(sys);
 
-  QJsonObject nodes;
+  QJsonObject oNodes;
   for (auto it = mUniqueToINode.cbegin(); it != mUniqueToINode.cend(); ++it)
-      nodes[it.key()] = it.value()->getid();
+      oNodes[it.key()] = it.value()->getid();
 
-  QJsonObject transitions;
+  QJsonObject oTransitions;
   for (auto it = mUniqueToITransition.cbegin(); it != mUniqueToITransition.cend(); ++it)
-      transitions[it.key()] = it.value()->getid();
+      oTransitions[it.key()] = it.value()->getid();
 
   QJsonObject mapping;
-  mapping["nodes"] = nodes;
-  mapping["transitions"] = transitions;
+  mapping["nodes"] = oNodes;
+  mapping["transitions"] = oTransitions;
 
   QFile mapFile(mOutputFolder.filePath("maki_mapping.json"));
   if (mapFile.open(QIODevice::WriteOnly))
