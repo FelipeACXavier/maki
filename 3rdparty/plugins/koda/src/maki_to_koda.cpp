@@ -113,16 +113,16 @@ std::shared_ptr<ITransition> MakiToKoda::uniqueNameToITransition(const std::stri
 
 std::string MakiToKoda::generateUniqueName(const std::string& name)
 {
-  const QString key = QString::fromStdString(name);
-
-  if (mUniqueNames.contains(key))
-    return mUniqueNames[key].toStdString();
-
-  const std::string uniqueId = generateUniqueId();
-  const std::string finalName = name + "_" + uniqueId;
-
-  mUniqueNames.insert(key, QString::fromStdString(finalName));
-  return finalName;
+  // const QString key = QString::fromStdString(name);
+  //
+  // if (mUniqueNames.contains(key))
+  //   return mUniqueNames[key].toStdString();
+  //
+  // const std::string uniqueId = generateUniqueId();
+  // const std::string finalName = name + "_" + uniqueId;
+  //
+  // mUniqueNames.insert(key, QString::fromStdString(finalName));
+  return name;
 }
 
 Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes)
@@ -167,9 +167,18 @@ Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes
     mServices->focusNode(inode->getid());
   auto contents = KodaEmitter::emitKoda(sys);
 
-  QJsonObject mapping;
+  QJsonObject nodes;
   for (auto it = mUniqueToINode.cbegin(); it != mUniqueToINode.cend(); ++it)
-    mapping[it.key()] = it.value()->getid();
+      nodes[it.key()] = it.value()->getid();
+
+  QJsonObject transitions;
+  for (auto it = mUniqueToITransition.cbegin(); it != mUniqueToITransition.cend(); ++it)
+      transitions[it.key()] = it.value()->getid();
+
+  QJsonObject mapping;
+  mapping["nodes"] = nodes;
+  mapping["transitions"] = transitions;
+
   QFile mapFile(mOutputFolder.filePath("maki_mapping.json"));
   if (mapFile.open(QIODevice::WriteOnly))
       mapFile.write(QJsonDocument(mapping).toJson());
