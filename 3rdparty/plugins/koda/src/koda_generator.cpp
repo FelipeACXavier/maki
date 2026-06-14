@@ -533,7 +533,7 @@ Result<maki::PipelineArtifact> KodaGenerator::generateKoda(const maki::PipelineA
   QString code = "";
 
 #ifdef USE_ANTLR
-  koda::MakiToKoda makiToKoda;
+  koda::MakiToKoda makiToKoda(mServices);
   auto generated = makiToKoda.generate(mServices->document()->getnodes());
   if (!generated)
     return Result<maki::PipelineArtifact>::Failed(generated.ErrorMessage());

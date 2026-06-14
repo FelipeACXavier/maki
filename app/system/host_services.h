@@ -89,7 +89,7 @@ public:
    */
   maki::ILogging* logger() const override;
 
-  void focusNode(const QString& nodeId, const QString& flowId = "") const override;
+  void focusNode(const QString& nodeId, const QString& flowId = "") override;
 
 signals:
   void focusNodeRequested(const QString& flowId, const QString& nodeId);

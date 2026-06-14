@@ -56,7 +56,7 @@ maki::ILogging* HostServices::logger() const
   return mLogger;
 }
 
-void HostServices::focusNode(const QString& nodeId, const QString& flowId) const
+void HostServices::focusNode(const QString& nodeId, const QString& flowId)
 {
   emit focusNodeRequested(flowId, nodeId);
 }
