@@ -21,7 +21,7 @@ public:
   virtual QString projectRoot() const = 0;
   virtual IUI* ui() const = 0;
   virtual ILogging* logger() const = 0;
-  virtual void focusNode(const QString& flowId, const QString& nodeId = "") = 0;
+  virtual void focusNode(const QString& nodeId, const QString& flowId = "") = 0;
 
   // Optional later: logger(), settings(), uiHooks(), etc.
 };
