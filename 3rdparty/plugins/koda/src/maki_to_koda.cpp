@@ -160,6 +160,15 @@ Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes
 
   const QString qUnique = QString::fromStdString(desiredUniqueName);
 
+  const auto inode = uniqueNameToINode(desiredUniqueName);
+
+  if (inode) {
+    LOG_DEBUG("Successfully found INode for unique name '%s': nodeId='%s'", desiredUniqueName.c_str(), inode->getid().toStdString().c_str());
+    mServices->focusNode(inode->getid());
+  }
+  else
+    LOG_ERROR("Failed to find INode for unique name: %s", desiredUniqueName.c_str());
+
   mServices->focusNode(qUnique);
   auto contents = KodaEmitter::emitKoda(sys);
   RETURN_ON_FAILURE_AS(contents, QString);
