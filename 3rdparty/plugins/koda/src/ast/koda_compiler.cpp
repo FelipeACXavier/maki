@@ -122,42 +122,41 @@ VoidResult Compiler::loadMakiMapping()
     return VoidResult();
   }
 
-  // Minimal JSON parser for a flat {"section": {"key": "value"}} structure
   std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-  auto parseSection = [&](const std::string& src, size_t start, size_t end) {
-    size_t pos = start;
-    while (pos < end)
-    {
-      auto keyStart = src.find('"', pos);
-      if (keyStart == std::string::npos || keyStart >= end) break;
-      auto keyEnd = src.find('"', keyStart + 1);
-      if (keyEnd == std::string::npos || keyEnd >= end) break;
-      std::string key = src.substr(keyStart + 1, keyEnd - keyStart - 1);
 
-      auto colon = src.find(':', keyEnd);
-      if (colon == std::string::npos || colon >= end) break;
-      auto valStart = src.find('"', colon);
-      if (valStart == std::string::npos || valStart >= end) break;
-      auto valEnd = src.find('"', valStart + 1);
-      if (valEnd == std::string::npos || valEnd >= end) break;
-      std::string val = src.substr(valStart + 1, valEnd - valStart - 1);
-
-      mMakiMapping[key] = val;
-      pos = valEnd + 1;
-    }
-  };
-
-  // Parse both "nodes" and "transitions" sections
-  for (const auto& section : {"nodes", "transitions"})
+  // Extract all quoted strings in order: they appear as alternating key/value pairs
+  // after the section keys "nodes" and "transitions" are skipped.
+  // Structure: { "nodes": { "key": "val", ... }, "transitions": { "key": "val", ... } }
+  // We collect all strings, skip the section headers, then consume key/value pairs.
+  std::vector<std::string> tokens;
+  size_t pos = 0;
+  while (pos < content.size())
   {
-    std::string needle = std::string("\"") + section + "\"";
-    auto sectionPos = content.find(needle);
-    if (sectionPos == std::string::npos) continue;
-    auto braceOpen = content.find('{', sectionPos);
-    if (braceOpen == std::string::npos) continue;
-    auto braceClose = content.find('}', braceOpen);
-    if (braceClose == std::string::npos) continue;
-    parseSection(content, braceOpen + 1, braceClose);
+    auto start = content.find('"', pos);
+    if (start == std::string::npos) break;
+    auto end = content.find('"', start + 1);
+    if (end == std::string::npos) break;
+    tokens.push_back(content.substr(start + 1, end - start - 1));
+    pos = end + 1;
+  }
+
+  // Skip "nodes" and "transitions" section headers; treat every other token as key/value
+  for (size_t i = 0; i < tokens.size(); )
+  {
+    const auto& t = tokens[i];
+    if (t == "nodes" || t == "transitions")
+    {
+      ++i;
+      continue;
+    }
+    // Expect a key followed immediately by a value
+    if (i + 1 < tokens.size())
+    {
+      mMakiMapping[tokens[i]] = tokens[i + 1];
+      i += 2;
+    }
+    else
+      break;
   }
 
   LOG_DEBUG("Loaded %zu maki mappings", mMakiMapping.size());
@@ -166,7 +165,7 @@ VoidResult Compiler::loadMakiMapping()
 
 VoidResult Compiler::writeSrcMap() const
 {
-  std::string path = mOptions.outputDir + "/dezyne_mapping.json";
+  std::string path = mOptions.outputDir + "/../dezyne_mapping.json";
   std::ofstream file(path);
   if (!file.is_open())
     return VoidResult::Failed("Failed to open dezyne_mapping.json for writing: " + path);
@@ -188,9 +187,7 @@ VoidResult Compiler::generate()
   mGeneratedFiles.clear();
   mSrcMap.clear();
 
-  LOG_DEBUG("Starting Dezyne generation");
   RETURN_ON_FAILURE(loadMakiMapping());
-  LOG_DEBUG("Loaded %zu maki mappings", mMakiMapping.size());
 
   if (mOptions.pluginRule == CompilerOptions::PluginOption::PluginsOnly)
     return runPlugins();
