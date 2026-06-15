@@ -22,6 +22,9 @@ BehaviourCanvas::BehaviourCanvas(Flow* flow, std::shared_ptr<SaveInfo> storage, 
 
 BehaviourCanvas::~BehaviourCanvas()
 {
+  if (mFlow == nullptr)
+    return;
+
   auto toDelete = mFlow->transitions();
   for (TransitionItem* transition : toDelete)
   {
@@ -62,8 +65,18 @@ Types::LibraryTypes BehaviourCanvas::type() const
 
 void BehaviourCanvas::cleanFlow()
 {
-  if (mFlow)
-    delete mFlow;
+  if (mFlow == nullptr)
+    return;
+
+  auto toDelete = mFlow->transitions();
+  for (TransitionItem* transition : toDelete)
+  {
+    mFlow->deleteTransition(transition);
+    removeItem(transition);
+  }
+
+  delete mFlow;
+  mFlow = nullptr;
 }
 
 void BehaviourCanvas::updateParent(NodeItem* node, std::shared_ptr<NodeSaveInfo> storage, bool adding)
