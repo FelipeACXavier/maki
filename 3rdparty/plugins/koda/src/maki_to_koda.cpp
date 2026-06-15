@@ -455,7 +455,7 @@ Result<koda::PFlow> MakiToKoda::buildFlowAst(std::shared_ptr<IFlow> flow)
     flowName = "f" + flowName;
 
   std::string formattedFlowName = format(flowName);
-  std::string finalFlowName = gformattedFlowName;
+  std::string finalFlowName = formattedFlowName;
   pflow->name = finalFlowName;
 
   pflow->strategy = std::any_cast<koda::PStrategy>(seq);
