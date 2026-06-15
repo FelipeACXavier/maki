@@ -2,6 +2,7 @@
 
 #include <format>
 #include <fstream>
+#include <iterator>
 #include <string>
 
 #include "KodaLexer.h"
@@ -110,9 +111,84 @@ std::vector<std::string> Compiler::generatedFiles() const
   return mGeneratedFiles;
 }
 
+VoidResult Compiler::loadMakiMapping()
+{
+  // maki_mapping.json sits one level above the models outputDir
+  std::string path = mOptions.outputDir + "/../maki_mapping.json";
+  std::ifstream file(path);
+  if (!file.is_open())
+  {
+    LOG_WARN("Could not open maki_mapping.json at %s, dezyne mapping will be incomplete", path.c_str());
+    return VoidResult();
+  }
+
+  // Minimal JSON parser for a flat {"section": {"key": "value"}} structure
+  std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+  auto parseSection = [&](const std::string& src, size_t start, size_t end) {
+    size_t pos = start;
+    while (pos < end)
+    {
+      auto keyStart = src.find('"', pos);
+      if (keyStart == std::string::npos || keyStart >= end) break;
+      auto keyEnd = src.find('"', keyStart + 1);
+      if (keyEnd == std::string::npos || keyEnd >= end) break;
+      std::string key = src.substr(keyStart + 1, keyEnd - keyStart - 1);
+
+      auto colon = src.find(':', keyEnd);
+      if (colon == std::string::npos || colon >= end) break;
+      auto valStart = src.find('"', colon);
+      if (valStart == std::string::npos || valStart >= end) break;
+      auto valEnd = src.find('"', valStart + 1);
+      if (valEnd == std::string::npos || valEnd >= end) break;
+      std::string val = src.substr(valStart + 1, valEnd - valStart - 1);
+
+      mMakiMapping[key] = val;
+      pos = valEnd + 1;
+    }
+  };
+
+  // Parse both "nodes" and "transitions" sections
+  for (const auto& section : {"nodes", "transitions"})
+  {
+    std::string needle = std::string("\"") + section + "\"";
+    auto sectionPos = content.find(needle);
+    if (sectionPos == std::string::npos) continue;
+    auto braceOpen = content.find('{', sectionPos);
+    if (braceOpen == std::string::npos) continue;
+    auto braceClose = content.find('}', braceOpen);
+    if (braceClose == std::string::npos) continue;
+    parseSection(content, braceOpen + 1, braceClose);
+  }
+
+  LOG_DEBUG("Loaded %zu maki mappings", mMakiMapping.size());
+  return VoidResult();
+}
+
+VoidResult Compiler::writeSrcMap() const
+{
+  std::string path = mOptions.outputDir + "/dezyne_mapping.json";
+  std::ofstream file(path);
+  if (!file.is_open())
+    return VoidResult::Failed("Failed to open dezyne_mapping.json for writing: " + path);
+
+  file << "{\n";
+  bool first = true;
+  for (const auto& [dezyneName, srcId] : mSrcMap)
+  {
+    if (!first) file << ",\n";
+    file << "  \"" << dezyneName << "\": \"" << srcId << "\"";
+    first = false;
+  }
+  file << "\n}\n";
+  return VoidResult();
+}
+
 VoidResult Compiler::generate()
 {
   mGeneratedFiles.clear();
+  mSrcMap.clear();
+
+  RETURN_ON_FAILURE(loadMakiMapping());
 
   if (mOptions.pluginRule == CompilerOptions::PluginOption::PluginsOnly)
     return runPlugins();
@@ -137,6 +213,8 @@ VoidResult Compiler::generate()
   }
 
   mEnv = env;
+
+  RETURN_ON_FAILURE(writeSrcMap());
 
   if (mOptions.pluginRule == CompilerOptions::PluginOption::RunAll)
     return runPlugins();
@@ -557,6 +635,9 @@ Result<koda::ReturnValue> Compiler::generateFlow(PFlow flow, Environment& env)
 
   env.flows[flow->name] = Flow{flow->name, env.syncCalls, env.asyncCalls, env.signalCalls, env.strategies};
   env.system.instances.insert({flowName(flow->name), toFlowVariable(toFilename(flow->name))});
+
+  if (mMakiMapping.count(flow->name))
+    mSrcMap[flow->name] = mMakiMapping.at(flow->name);
   if (mOptions.verbose > 0)
     env.print();
 
@@ -868,6 +949,10 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
       env.core.push_back(std::format("ah{}.handler <=> {}", id, strat.name));
     }
 
+    // Map abort handler to same maki element as the capability it guards
+    if (mSrcMap.count(env.previousCall))
+      mSrcMap[std::format("ah{}", id)] = mSrcMap.at(env.previousCall);
+
     return koda::ReturnValue{Format("ah%d.api", id)};
   }
   else if (handler->kind == koda::StrategyHandler::Kind::OnError)
@@ -891,6 +976,10 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
       env.core.push_back(std::format("fh{}.handler <=> {}", id, strat.name));
     }
 
+    // Map error handler to same maki element as the capability it guards
+    if (mSrcMap.count(env.previousCall))
+      mSrcMap[std::format("fh{}", id)] = mSrcMap.at(env.previousCall);
+
     return koda::ReturnValue{Format("fh%d.api", id)};
   }
   else if (handler->kind == koda::StrategyHandler::Kind::OnEmitter)
@@ -912,6 +1001,10 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
     env.core.push_back(std::format("sh{}.action <=> {}", id, env.previousCall));
     env.core.push_back(std::format("sh{}.handler <=> {}", id, strat.name));
 
+    // Signal handler: expr.name is "receiver_event", which is the transition key
+    if (mMakiMapping.count(expr.name))
+      mSrcMap[std::format("sh{}", id)] = mMakiMapping.at(expr.name);
+
     return koda::ReturnValue{std::format("sh{}.api", id)};
   }
   else if (handler->kind == koda::StrategyHandler::Kind::OnEmitterContinue)
@@ -932,6 +1025,10 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
     env.core.push_back(std::format("sh{}.signal <=> {}", id, expr.call));
     env.core.push_back(std::format("sh{}.action <=> {}", id, env.previousCall));
     env.core.push_back(std::format("sh{}.handler <=> {}", id, strat.name));
+
+    // Signal continue handler: expr.call is "receiver_event", which is the transition key
+    if (mMakiMapping.count(expr.call))
+      mSrcMap[std::format("sh{}", id)] = mMakiMapping.at(expr.call);
 
     return koda::ReturnValue{std::format("sh{}.api", id)};
   }
@@ -965,6 +1062,11 @@ Result<koda::ReturnValue> Compiler::generateEventCall(PEventCall call, Environme
         .count = env.asyncCallsCounter[call->name],
         .args = args,
     });
+
+    // Async capability call: koda name is call->name (e.g. "drive")
+    if (mMakiMapping.count(call->name))
+      mSrcMap[identifier] = mMakiMapping.at(call->name);
+
     return koda::ReturnValue{identifier};
   }
   else
@@ -981,7 +1083,13 @@ Result<koda::ReturnValue> Compiler::generateEventCall(PEventCall call, Environme
       env.requiresPorts.insert(std::format("iaction {}_{}", call->receiver, call->name));
     }
 
-    return koda::ReturnValue{std::format("{}_{}", call->receiver, call->name)};
+    auto identifier = std::format("{}_{}", call->receiver, call->name);
+
+    // Sync/signal call: koda transition name is "receiver_name" (e.g. "arm_position")
+    if (mMakiMapping.count(identifier))
+      mSrcMap[identifier] = mMakiMapping.at(identifier);
+
+    return koda::ReturnValue{identifier};
   }
 }
 

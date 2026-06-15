@@ -316,6 +316,14 @@ private:
   std::map<std::string, std::shared_ptr<KodaPlugin>> mPlugins;
   std::vector<std::string> mGeneratedFiles;
 
+  // dezyne name (e.g. "sh0", "drive_1", "main") -> maki srcId (INode/ITransition getid())
+  std::map<std::string, std::string> mSrcMap;
+  // koda unique name -> maki srcId, loaded from maki_mapping.json
+  std::map<std::string, std::string> mMakiMapping;
+
+  VoidResult loadMakiMapping();
+  VoidResult writeSrcMap() const;
+
   Result<ReturnValue> generateTask(PComponent task, Environment& env);
   Result<ReturnValue> generateCapability(PComponent capability, Environment& env);
   Result<ReturnValue> emitCapability(PComponent capability, Environment& env);
