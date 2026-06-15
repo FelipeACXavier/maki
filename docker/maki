@@ -91,11 +91,12 @@ RUN mkdir -p ${HOME}/Qt && \
       -O ${HOME}/Qt
 
 # Patch the broken include in this specific QT installation
+ENV QT_ROOT=${HOME}/Qt/${QT_VERSION}
 RUN python3 - <<'PY'
 import os
 from pathlib import Path
 
-qt_root = Path('${HOME}/Qt/${QT_VERSION}')
+qt_root = Path(os.environ["QT_ROOT"])
 file = qt_root / "wasm_multithread/lib/cmake/Qt6Core/Qt6WasmMacros.cmake"
 text = file.read_text()
 
