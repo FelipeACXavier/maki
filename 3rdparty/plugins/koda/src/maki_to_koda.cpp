@@ -183,6 +183,7 @@ Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes
   if (mapFile.open(QIODevice::WriteOnly))
       mapFile.write(QJsonDocument(mapping).toJson());
 
+  auto contents = KodaEmitter::emitKoda(sys);
   RETURN_ON_FAILURE_AS(contents, QString);
   return QString::fromStdString(contents.Value());
 #else
