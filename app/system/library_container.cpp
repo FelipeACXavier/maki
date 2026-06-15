@@ -121,7 +121,7 @@ void LibraryContainer::relayoutItems()
 
     QRectF itemBounds = items[i]->boundingRect();
     const qreal x = (column * columnWidth + columnWidth / 2.0) - (itemBounds.width() / 2);
-    const qreal y = (row > 0 ? PADDING : 0) + row * (CELL_HEIGHT + PADDING);
+    const qreal y = PADDING + row * (CELL_HEIGHT + PADDING);
 
     items[i]->setPos(x, y + CELL_HEIGHT - itemBounds.bottom() - PADDING);
   }
