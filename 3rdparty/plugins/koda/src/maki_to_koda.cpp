@@ -122,7 +122,7 @@ std::string MakiToKoda::generateUniqueName(const std::string& name)
   const std::string finalName = name + "_" + uniqueId;
 
   //mUniqueNames.insert(key, QString::fromStdString(finalName));
-  return name;
+  return finalName;
 }
 
 Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes)
