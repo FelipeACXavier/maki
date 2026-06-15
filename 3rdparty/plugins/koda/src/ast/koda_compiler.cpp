@@ -213,6 +213,7 @@ VoidResult Compiler::generate()
 
   mEnv = env;
 
+  LOG_DEBUG("MAPPING: %zu", mSrcMap.size());
   RETURN_ON_FAILURE(writeSrcMap());
 
   if (mOptions.pluginRule == CompilerOptions::PluginOption::RunAll)
