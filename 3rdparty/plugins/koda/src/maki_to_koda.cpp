@@ -170,12 +170,17 @@ Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes
   for (auto it = mUniqueToINode.cbegin(); it != mUniqueToINode.cend(); ++it)
       oNodes[it.key()] = it.value()->getid();
 
+  QJsonObject oFlows;
+  for (auto it = mUniqueToIFlow.cbegin(); it != mUniqueToIFlow.cend(); ++it)
+      oFlows[it.key()] = it.value()->getid();
+
   QJsonObject oTransitions;
   for (auto it = mUniqueToITransition.cbegin(); it != mUniqueToITransition.cend(); ++it)
       oTransitions[it.key()] = it.value()->getid();
 
   QJsonObject mapping;
   mapping["nodes"] = oNodes;
+  mapping["flows"] = oFlows;
   mapping["transitions"] = oTransitions;
 
   QFile mapFile(mOutputFolder.filePath("maki_mapping.json"));

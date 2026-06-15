@@ -144,7 +144,7 @@ VoidResult Compiler::loadMakiMapping()
   for (size_t i = 0; i < tokens.size(); )
   {
     const auto& t = tokens[i];
-    if (t == "nodes" || t == "transitions")
+    if (t == "nodes" || t == "flows" || t == "transitions")
     {
       ++i;
       continue;
