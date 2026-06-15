@@ -118,7 +118,7 @@ VoidResult Compiler::loadMakiMapping()
   std::ifstream file(path);
   if (!file.is_open())
   {
-    LOG_WARN("Could not open maki_mapping.json at %s, dezyne mapping will be incomplete", path.c_str());
+    LOG_WARNING("Could not open maki_mapping.json at %s, dezyne mapping will be incomplete", path.c_str());
     return VoidResult();
   }
 
