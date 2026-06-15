@@ -113,7 +113,7 @@ std::shared_ptr<ITransition> MakiToKoda::uniqueNameToITransition(const std::stri
 
 std::string MakiToKoda::generateUniqueName(const std::string& name)
 {
-  const QString key = QString::fromStdString(name);
+  //const QString key = QString::fromStdString(name);
 
   // if (mUniqueNames.contains(key))
   //   return mUniqueNames[key].toStdString();
@@ -121,7 +121,7 @@ std::string MakiToKoda::generateUniqueName(const std::string& name)
   const std::string uniqueId = generateUniqueId();
   const std::string finalName = name + "_" + uniqueId;
 
-  mUniqueNames.insert(key, QString::fromStdString(finalName));
+  //mUniqueNames.insert(key, QString::fromStdString(finalName));
   return name;
 }
 
