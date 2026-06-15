@@ -72,4 +72,5 @@ echo "--------------------------------------"
 
 # ----------------------------------
 # Main
+chmod +x $EXECUTABLE
 "${QT_ENV[@]}" $EXECUTABLE $OPTIONS
