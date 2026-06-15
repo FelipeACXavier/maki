@@ -20,14 +20,13 @@ docker build . \
 ```bash
 docker run -it \
   --name maki \
-  --user 1000:1000 \
   --net=host \
   -e DISPLAY=:0 \
   -e QT_X11_NO_MITSHM=1 \
   --device /dev/dri \
   -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
-  -v .:/home/$(id -un)/maki:rw \
-  -v ~/ros2_ws:/home/$(id -un)/ros2_ws:rw \
+  -v .:/home/ubuntu/maki:rw \
+  -v ~/ros2_ws:/home/ubuntu/ros2_ws:rw \
   maki:v1.0.0
 ```
 

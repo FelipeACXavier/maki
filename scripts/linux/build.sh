@@ -62,7 +62,8 @@ while [[ $# -gt 0 ]]; do
       BUILD_PATH="$SOURCE_DIR/build/wasm"
       PREFIX_PATH="$BASE_PREFIX_PATH/wasm_multithread"
       TOOLCHAIN_FILE="$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake"
-      QT6_DIR="$PREFIX_PATH/lib/cmake/Qt6"
+      QT6_DIR="$BASE_PREFIX_PATH/lib/cmake/Qt6"
+      EXTRA_ARGS="-DQT_HOST_PATH=$BASE_PREFIX_PATH/gcc_64"
       shift
       ;;
       --prefix)
