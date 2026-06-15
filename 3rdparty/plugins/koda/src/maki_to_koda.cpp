@@ -213,8 +213,6 @@ Result<koda::PComponent> MakiToKoda::buildTask(const INode& task)
     parg->a = format(capName);
     ToLowerCase(parg->a, 0);
 
-    parg->srcId = cap->getid().toStdString();
-
     std::string formattedArgName = format(capName);
     std::string finalArgName = formattedArgName; // unchanged generator
     parg->b = finalArgName;
