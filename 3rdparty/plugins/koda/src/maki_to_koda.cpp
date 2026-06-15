@@ -128,7 +128,7 @@ std::string MakiToKoda::generateUniqueName(const std::string& name)
 Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes)
 {
   koda::System sys;
-
+  LOG_DEBUG("Generating Koda code for %d nodes", nodes.size());
   for (const auto& node : nodes)
   {
     auto taskAny = buildTask(*node);
@@ -165,7 +165,6 @@ Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes
   const auto inode = uniqueNameToINode(desiredUniqueName);
   if (inode)
     mServices->focusNode(inode->getid());
-  auto contents = KodaEmitter::emitKoda(sys);
 
   QJsonObject oNodes;
   for (auto it = mUniqueToINode.cbegin(); it != mUniqueToINode.cend(); ++it)
@@ -182,6 +181,8 @@ Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes
   QFile mapFile(mOutputFolder.filePath("maki_mapping.json"));
   if (mapFile.open(QIODevice::WriteOnly))
       mapFile.write(QJsonDocument(mapping).toJson());
+
+  LOG_DEBUG("Generating Koda code...");
 
   auto contents = KodaEmitter::emitKoda(sys);
   RETURN_ON_FAILURE_AS(contents, QString);
