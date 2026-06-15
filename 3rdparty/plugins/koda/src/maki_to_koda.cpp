@@ -477,6 +477,7 @@ Result<koda::PFlow> MakiToKoda::buildFlowAst(std::shared_ptr<IFlow> flow)
       const std::string transUniqueName = generateUniqueName(
           nodeUniqueName + "_" + format(transition->getlabel()));
       registerUniqueNameForITransition(transUniqueName, transition);
+      LOG_DEBUG("T: %s, %s, %s", transUniqueName.c_str(), transition->getLabel().toStdString().c_str(), transition->getid().toStdString().c_str());
     }
   }
 
