@@ -51,7 +51,6 @@ struct Component
   };
   Kind kind;
   std::string name;
-  std::string srcId;
   std::vector<std::shared_ptr<Argument>> args;
   std::vector<std::shared_ptr<Statement>> statements;
   Span span;
@@ -73,7 +72,6 @@ struct Argument
   Kind kind = Kind::Plain;
   std::string a;
   std::string b;
-  std::string srcId;
   Span span;
 
   std::string toString() const;
@@ -97,7 +95,6 @@ struct Statement
 struct Flow
 {
   std::string name;
-  std::string srcId;
   std::vector<std::string> tags;
   std::shared_ptr<Strategy> strategy;
   Span span;
@@ -109,7 +106,6 @@ struct VarDef
 {
   std::string varType;
   std::string name;
-  std::string srcId;
   std::shared_ptr<Expr> init;
   std::shared_ptr<Expr> fallback;
   Span span;
@@ -131,7 +127,6 @@ struct EventDef
 {
   std::string typeName;
   std::string name;
-  std::string srcId;
   std::vector<std::shared_ptr<Argument>> args;
   std::vector<std::shared_ptr<EventDefComponent>> components;
   Span span;
@@ -153,7 +148,6 @@ struct RosDef
   };
   Kind kind;
   std::shared_ptr<EventDef> def;
-  std::string srcId;
   // Rascal had `call` marker in grammar; we mapped it as CALL token.
   // You can store whether it's "call" or some other modifier if you later expand it.
   Span span;
@@ -174,7 +168,6 @@ struct ActionDef
   Kind kind;
   std::string label1;  // String
   std::string label2;  // String
-  std::string srcId;
   std::vector<std::shared_ptr<RosDef>> rosDefs;
   Span span;
 
@@ -210,7 +203,6 @@ struct StrategyHandler
     OnEmitterContinue
   };
   Kind kind;
-  std::string srcId;
   std::shared_ptr<EventCall> emitter;  // only for OnEmitter
   std::shared_ptr<Strategy> body;      // points to owned Strategy in container (see builder approach)
   Span span;
@@ -330,7 +322,6 @@ struct EventCall
   // qualified: a.b(args)  OR  unqualified: a(args)
   std::string receiver;  // a
   std::string name;      // b or a
-  std::string srcId;
   std::vector<std::shared_ptr<Expr>> args;
   Span span;
 
