@@ -458,6 +458,19 @@ Result<koda::PFlow> MakiToKoda::buildFlowAst(std::shared_ptr<IFlow> flow)
       const std::string transUniqueName = generateUniqueName(
           nodeUniqueName + "_" + format(transition->getlabel()) + format(transition->getevent()));
       registerUniqueNameForITransition(transUniqueName, transition);
+
+      // Also register under the short "receiver_event" form that the compiler looks up
+      // e.g. "OccupancySensor.empty" -> "OccupancySensor_empty"
+      const auto event = transition->getevent();
+      if (!event.isEmpty())
+      {
+        const auto dotPos = event.indexOf('.');
+        if (dotPos != -1)
+        {
+          const std::string shortKey = format(event.left(dotPos)) + "_" + format(event.mid(dotPos + 1));
+          registerUniqueNameForITransition(shortKey, transition);
+        }
+      }
     }
   }
 
