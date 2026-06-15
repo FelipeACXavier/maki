@@ -8,10 +8,10 @@ concurrency:
 on:
   # Build/test on PRs to master
   pull_request:
-    branches: [ master ]
+    branches: [master]
   # Also on direct pushes to master
   push:
-    branches: [ "**" ]
+    branches: ["**"]
 
 jobs:
   # ====================================================================================
@@ -57,6 +57,80 @@ jobs:
         with:
           name: linux-build
           path: build/linux/debug
+
+  # ====================================================================================
+  # 2) Build the wasm version
+  build-wasm:
+    # Self-hosted Linux box
+    runs-on: self-hosted
+
+    # Run inside the dev Docker image (standardised env)
+    container:
+      image: ghcr.io/felipeacxavier/maki/dev:${{ vars.QT_DEV_TAG }}
+
+    env:
+      HOME: /home/ubuntu
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ github.workspace }}
+
+    steps:
+      # 1) Checkout code
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Symlink repo to $HOME/maki for scripts
+        run: |
+          mkdir -p "$HOME"
+          ln -s "$GITHUB_WORKSPACE" "$HOME/maki" || true
+
+      # 2) Build for given target
+      - name: Build script Linux
+        run: |
+          chmod +x ./scripts/linux/build.sh
+          ./scripts/linux/build.sh --wasm
+
+      # 3) Create release version
+      - name: Create clean WASM release
+        run: |
+          rm -rf release/wasm
+          mkdir -p release/wasm
+
+          cp ./build/wasm/app/maki.html release/wasm/index.html
+          cp ./build/wasm/app/maki.js release/wasm/
+          cp ./build/wasm/app/maki.wasm release/wasm/
+          cp ./build/wasm/app/maki.worker.js release/wasm/
+          cp ./build/wasm/app/qtloader.js release/wasm/
+          cp ./build/wasm/app/qtlogo.svg release/wasm/
+
+          cp -r build/wasm/assets release/wasm/
+
+          cat > release/wasm/_headers <<'EOF'
+          /*
+            Cross-Origin-Opener-Policy: same-origin
+            Cross-Origin-Embedder-Policy: require-corp
+          EOF
+
+      # 3) Upload to github
+      - name: Upload build artefacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm-release
+          path: release/wasm
+
+      # 4) Upload to cloudfare
+      - name: Deploy to Cloudflare Pages
+        run: |
+          npx wrangler pages deploy release/wasm \
+            --project-name=maki \
+            --branch=${{ github.ref_name }}
 
   # ====================================================================================
   # 3) Build the Windows version

@@ -63,6 +63,7 @@ WORKDIR ${HOME}
 RUN wget -O - https://raw.githubusercontent.com/nvm-sh/nvm/${NVM_VERSION}/install.sh | bash
 ENV NVM_DIR=${HOME}/.nvm
 RUN bash -c "source $NVM_DIR/nvm.sh && nvm install $NODE_VERSION"
+RUN bash -c "source $NVM_DIR/nvm.sh && npm i -D wrangler@latest"
 
 # -----------------------------------------------------------------------------------------------------------
 # We now need to install qt
@@ -76,8 +77,46 @@ RUN mkdir -p ${HOME}/Qt && \
       desktop \
       "${QT_VERSION}" \
       linux_gcc_64 \
-      -m qt5compat qtwebengine qtpdf qtwebchannel qtpositioning qtwebsockets \
+      -m qt5compat qtwebchannel qtwebsockets \
       -O ${HOME}/Qt
+
+# Install the wasm version as well
+RUN mkdir -p ${HOME}/Qt && \
+    ${HOME}/env/bin/python3 -m aqt install-qt \
+      all_os \
+      wasm \
+      "${QT_VERSION}" \
+      wasm_multithread \
+      -m qt5compat qtwebchannel qtwebsockets \
+      -O ${HOME}/Qt
+
+# Patch the broken include in this specific QT installation
+RUN python3 - <<'PY'
+import os
+from pathlib import Path
+
+qt_root = Path('${HOME}/Qt/${QT_VERSION}')
+file = qt_root / "wasm_multithread/lib/cmake/Qt6Core/Qt6WasmMacros.cmake"
+text = file.read_text()
+
+old = """function(_qt_internal_wasm_add_target_helpers target)
+
+    _qt_test_emscripten_version()
+"""
+
+new = """function(_qt_internal_wasm_add_target_helpers target)
+    include(QtPublicWasmToolchainHelpers OPTIONAL)
+    _qt_test_emscripten_version()
+"""
+
+if new not in text:
+    if old not in text:
+        raise SystemExit("Qt6WasmMacros.cmake patch target not found")
+    file.write_text(text.replace(old, new, 1))
+    print("Patched Qt6WasmMacros.cmake")
+else:
+    print("Qt6WasmMacros.cmake already patched")
+PY
 
 # -----------------------------------------------------------------------------------------------------------\
 # Install extra packages
@@ -119,8 +158,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   doxygen \
   libantlr4-runtime-dev \
   graphviz \
+  vim \
   && rm -rf /var/lib/apt/lists/*
 
+# -----------------------------------------------------------------------------------------------------------
 # Install dezyne
 USER root
 
@@ -137,11 +178,13 @@ WORKDIR ${HOME}
 # run installer as NON-root (required by Dezyne)
 RUN bash /home/${USERNAME}/install_dezyne.sh
 
+# -----------------------------------------------------------------------------------------------------------
 # Install gf2 for debugging
 RUN git clone https://github.com/nakst/gf.git
 WORKDIR ${HOME}/gf
 RUN ./build.sh
 
+# -----------------------------------------------------------------------------------------------------------
 # Install KODA
 USER ${USERNAME}
 WORKDIR ${HOME}
@@ -152,6 +195,15 @@ RUN wget https://update.rascal-mpl.org/console/rascal-0.40.9.jar -O rascal-0.40.
 RUN git clone https://github.com/FelipeACXavier/KODA.git
 
 # -----------------------------------------------------------------------------------------------------------
+# Install emscripten so we are able to build the wasm version
+RUN git clone https://github.com/emscripten-core/emsdk.git
+WORKDIR ${HOME}/emsdk
+
+RUN ./emsdk install 3.1.56
+RUN ./emsdk activate 3.1.56
+RUN bash -c "source ${HOME}/emsdk/emsdk_env.sh && embuilder build zlib"
+
+# -----------------------------------------------------------------------------------------------------------
 # Make the shell look a bit nicer
 RUN echo "function custom_prompt() {" >> /home/${USERNAME}/.bashrc \
  && echo "  PS1='\\[\\e[32m\\]\\u@\\h\\[\\e[00m\\]:\\[\\e[34m\\]\\w \\[\\e[93m\\][docker:maki]\\[\\e[00m\\]\\n> '" >> /home/${USERNAME}/.bashrc \
@@ -159,6 +211,7 @@ RUN echo "function custom_prompt() {" >> /home/${USERNAME}/.bashrc \
  && echo "PROMPT_DIRTRIM=2" >> /home/${USERNAME}/.bashrc \
  && echo "PROMPT_COMMAND=\"custom_prompt\"" >> /home/${USERNAME}/.bashrc
 
+RUN echo "EMSDK_QUIET=1 source ${HOME}/emsdk/emsdk_env.sh" >> /home/${USERNAME}/.bashrc
 # -----------------------------------------------------------------------------------------------------------
 # Cd to the maki directory and end
 WORKDIR ${HOME}/maki
