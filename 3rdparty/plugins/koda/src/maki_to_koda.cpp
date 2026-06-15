@@ -113,15 +113,15 @@ std::shared_ptr<ITransition> MakiToKoda::uniqueNameToITransition(const std::stri
 
 std::string MakiToKoda::generateUniqueName(const std::string& name)
 {
-  // const QString key = QString::fromStdString(name);
-  //
+  const QString key = QString::fromStdString(name);
+
   // if (mUniqueNames.contains(key))
   //   return mUniqueNames[key].toStdString();
-  //
-  // const std::string uniqueId = generateUniqueId();
-  // const std::string finalName = name + "_" + uniqueId;
-  //
-  // mUniqueNames.insert(key, QString::fromStdString(finalName));
+
+  const std::string uniqueId = generateUniqueId();
+  const std::string finalName = name + "_" + uniqueId;
+
+  mUniqueNames.insert(key, QString::fromStdString(finalName));
   return name;
 }
 
@@ -203,7 +203,7 @@ Result<koda::PComponent> MakiToKoda::buildTask(const INode& task)
 
   auto name = properties["name"].toString().toLower();
   std::string formattedName = format(name, "_");
-  std::string finalArgName = generateUniqueName(formattedName);
+  std::string finalArgName = formattedName;
   c->name = finalArgName;
 
   LOG_DEBUG("Generated Task: %s", c->name.c_str());
@@ -221,7 +221,7 @@ Result<koda::PComponent> MakiToKoda::buildTask(const INode& task)
     parg->srcId = cap->getid().toStdString();
 
     std::string formattedArgName = format(capName);
-    std::string finalArgName = generateUniqueName(formattedArgName); // unchanged generator
+    std::string finalArgName = formattedArgName; // unchanged generator
     parg->b = finalArgName;
 
     // register reverse mapping to the source INode for this argument
@@ -281,7 +281,7 @@ Result<koda::PComponent> MakiToKoda::buildCapability(const INode& capability)
 
   auto name = properties["name"].toString();
   std::string formattedName = format(name);
-  std::string finalCapName = generateUniqueName(formattedName);
+  std::string finalCapName = formattedName;
   c->name = finalCapName;
 
 
@@ -306,7 +306,7 @@ Result<koda::PVarDef> MakiToKoda::buildVarDef(const IProperty& property)
 {
   auto varDef = std::make_shared<koda::VarDef>();
   varDef->name = property.getid().toStdString();
-  std::string finalVarName = generateUniqueName(varDef->name);
+  std::string finalVarName = varDef->name;
   varDef->name = finalVarName;
   varDef->srcId = property.getid().toStdString();
   varDef->varType = Types::PropertyTypesToString(property.gettype()).toStdString();
@@ -414,7 +414,7 @@ Result<koda::PRosDef> MakiToKoda::buildRosDef(const IFlow& event)
 
   auto eventDef = std::make_shared<koda::EventDef>();
   eventDef->typeName = Types::PropertyTypesToString(event.getreturnType()).toStdString();
-  std::string finalEventName = generateUniqueName(format(event.getname()));
+  std::string finalEventName = format(event.getname());
   eventDef->name = event.getname().toStdString();
   eventDef->srcId = event.getid().toStdString();
 
@@ -455,7 +455,7 @@ Result<koda::PFlow> MakiToKoda::buildFlowAst(std::shared_ptr<IFlow> flow)
     flowName = "f" + flowName;
 
   std::string formattedFlowName = format(flowName);
-  std::string finalFlowName = generateUniqueName(formattedFlowName);
+  std::string finalFlowName = gformattedFlowName;
   pflow->name = finalFlowName;
 
   pflow->strategy = std::any_cast<koda::PStrategy>(seq);
@@ -475,9 +475,8 @@ Result<koda::PFlow> MakiToKoda::buildFlowAst(std::shared_ptr<IFlow> flow)
     for (const auto& transition : flow->gettransitions(node->getid()))
     {
       const std::string transUniqueName = generateUniqueName(
-          nodeUniqueName + "_" + format(transition->getlabel()));
+          nodeUniqueName + "_" + format(transition->getlabel()) + format(transition->getevent()));
       registerUniqueNameForITransition(transUniqueName, transition);
-      LOG_DEBUG("T: %s, %s, %s", transUniqueName.c_str(), transition->getlabel().toStdString().c_str(), transition->getevent().toStdString().c_str());
     }
   }
 
