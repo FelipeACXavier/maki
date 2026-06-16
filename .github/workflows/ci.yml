@@ -129,6 +129,9 @@ jobs:
       # 4) Upload to cloudfare
       - name: Deploy to Cloudflare Pages
         run: |
+          export NVM_DIR="$HOME/.nvm"
+          source "$NVM_DIR/nvm.sh"
+
           npx wrangler pages deploy release/wasm \
             --project-name=maki \
             --branch=${{ github.ref_name }}
