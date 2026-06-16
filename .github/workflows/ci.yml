@@ -94,6 +94,7 @@ jobs:
       # 2) Build for given target
       - name: Build script Linux
         run: |
+          source $HOME/emsdk/emsdk_env.sh
           chmod +x ./scripts/linux/build.sh
           ./scripts/linux/build.sh --wasm
 
