@@ -25,7 +25,7 @@ public:
    */
   BehaviourCanvas(Flow* flow, std::shared_ptr<SaveInfo> storage, std::shared_ptr<ConfigurationTable> configTable, std::shared_ptr<EdgeRouter> router, QObject* parent = nullptr);
 
-  ~BehaviourCanvas();
+  virtual ~BehaviourCanvas();
 
   /**
    * @brief Retrieves the type of library associated with this canvas.

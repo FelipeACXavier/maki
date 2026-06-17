@@ -109,6 +109,5 @@ void Flow::removeTransition(TransitionItem* transition)
 
 void Flow::deleteTransition(TransitionItem* transition)
 {
-  LOG_INFO("Removing transition: %s", qPrintable(transition->id()));
   mTransitions.removeIf([transition](TransitionItem* item) { return item->id() == transition->id(); });
 }

@@ -220,7 +220,7 @@ QIcon BreadcrumbWidget::libraryTypeToIcon(Types::LibraryTypes type, bool isBlock
   else if (type == Types::LibraryTypes::BEHAVIOUR)
     return isBlock ? QIcon(":/icons/flow_block.svg") : QIcon(":/icons/behaviour.svg");
   else if (type == Types::LibraryTypes::PIPELINE)
-    return isBlock ? QIcon(":/icons/pipeline.svg") : QIcon(":/icons/pipeline.svg");
+    return isBlock ? QIcon(":/icons/deploy.svg") : QIcon(":/icons/deploy.svg");
 
   return QIcon();
 }
