@@ -924,12 +924,12 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
     ASSIGN_OR_RETURN_ON_FAILURE(expr, generateEventCall(handler->emitter, env, true));
 
     env.includes.insert("isignal.dzn");
-    env.requiresPorts.insert("isignal " + expr.call);
+    env.requiresPorts.insert("isignal " + expr.name);
 
     ReturnValue strat;
     ASSIGN_OR_RETURN_ON_FAILURE(strat, generateStrategy(handler->body, env));
 
-    env.core.push_back(std::format("sh{}.signal <=> {}", id, expr.call));
+    env.core.push_back(std::format("sh{}.signal <=> {}", id, expr.name));
     env.core.push_back(std::format("sh{}.action <=> {}", id, env.previousCall));
     env.core.push_back(std::format("sh{}.handler <=> {}", id, strat.name));
 
