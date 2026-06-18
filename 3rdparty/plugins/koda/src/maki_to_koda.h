@@ -141,7 +141,7 @@ private:
 
   maki::IHostServices* mServices = nullptr;
   QDir mOutputFolder;
-  bool writeJsonToFile(const QDir& path, const QJsonObject& obj);
+  bool writeJsonToFile(const QString& path, const QJsonObject& obj);
 };
 
 }  // namespace koda
