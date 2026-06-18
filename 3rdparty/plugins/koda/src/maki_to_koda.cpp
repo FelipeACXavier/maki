@@ -19,7 +19,6 @@
 #include <QJsonDocument>
 
 #include "ast/ast.h"
-#include "koda_ast_json.h"
 #include "logging.h"
 #include "result.h"
 #include "string_helpers.h"

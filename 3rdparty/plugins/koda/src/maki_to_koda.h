@@ -7,7 +7,6 @@
 #include <QSet>
 #include <QString>
 #include <QStringList>
-#include <QHash>
 #include <QString>
 #include <memory>
 #include <any>
@@ -18,6 +17,7 @@
 #include "idocument.h"
 #include "result.h"
 #include "ihost_services.h"
+#include "koda_ast_json.h"
 
 class QJsonArray;
 
