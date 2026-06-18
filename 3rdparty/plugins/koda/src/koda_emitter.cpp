@@ -51,8 +51,8 @@ void KodaEmitter::begin(T& node)
     if (!m_emitSpans)
         return;
 
-    // node.span.lineStart = m_line;
-    // node.span.colStart = m_col;
+    node.span.lineStart = m_line;
+    node.span.colStart = m_col;
 }
 
 template<typename T>
@@ -61,8 +61,8 @@ void KodaEmitter::end(T& node)
     if (!m_emitSpans)
         return;
 
-    // node.span.lineEnd = m_line;
-    // node.span.colEnd = m_col;
+    node.span.lineEnd = m_line;
+    node.span.colEnd = m_col;
 }
 
 Result<std::string> KodaEmitter::emitKoda(const koda::System& ast)
