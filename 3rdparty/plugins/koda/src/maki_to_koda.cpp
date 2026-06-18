@@ -46,7 +46,7 @@ MakiToKoda::MakiToKoda(maki::IHostServices* services, QDir outputFolder)
   mOutputFolder = outputFolder;
 }
 
-bool MakiToKoda::writeJsonToFile(const QString& path, const QJsonObject& obj)
+bool MakiToKoda::writeJsonToFile(const QDir& path, const QJsonObject& obj)
 {
   QFile file(path);
   if (!file.open(QIODevice::WriteOnly))
@@ -204,7 +204,7 @@ Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes
 
   auto contents = KodaEmitter::emitKoda(sys);
   RETURN_ON_FAILURE_AS(contents, QString);
-  writeJsonToFile("ast.json", toJson(sys));
+  writeJsonToFile(mOutputFolder.filePath("maki_ast.json"), toJson(sys));
   return QString::fromStdString(contents.Value());
 #else
   return QString();
