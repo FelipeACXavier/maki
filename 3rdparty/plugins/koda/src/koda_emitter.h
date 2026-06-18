@@ -18,9 +18,9 @@ private:
   int m_line = 1;
   int m_col = 1;
   void write(std::stringstream& ss, std::string_view text);
-  template<typename T> void begin(T& node);
+  template<typename T> void begin(T& node, std::stringstream& ss);
 
-  template<typename T> void end(T& node);
+  template<typename T> void end(T& node, std::stringstream& ss);
 
   VoidResult emitTask(koda::Component& component, std::stringstream& ss);
   VoidResult emitCapability(koda::Component& component, std::stringstream& ss);
