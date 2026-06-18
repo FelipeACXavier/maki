@@ -132,6 +132,7 @@ struct EventDefComponent
   // Keep it simple for now; you can structure this later similarly to Strategy/Expr.
   std::string kind;  // "ros_event", "timeout", ...
   std::string text;  // raw (or structured fields later)
+  Span span;
 
   void print(const std::string& prefix, const bool last) const;
   
@@ -242,6 +243,7 @@ struct Strategy
   struct Seq
   {
     std::vector<std::shared_ptr<Strategy>> alts;
+    Span span;
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
     
@@ -249,6 +251,7 @@ struct Strategy
   struct Join
   {
     std::vector<std::shared_ptr<Strategy>> alts;
+    Span span;
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
     
@@ -256,6 +259,7 @@ struct Strategy
   struct Either
   {
     std::vector<std::shared_ptr<Strategy>> alts;
+    Span span;
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
     
@@ -264,6 +268,7 @@ struct Strategy
   {
     std::string name;
     std::shared_ptr<EventCall> call;
+    Span span;
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
     
@@ -274,6 +279,7 @@ struct Strategy
     std::shared_ptr<Strategy> a;
     std::shared_ptr<Strategy> b;
     std::vector<std::shared_ptr<StrategyHandler>> handlers;
+    Span span;
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
     
@@ -283,6 +289,7 @@ struct Strategy
     std::shared_ptr<Expr> cond;
     std::shared_ptr<Strategy> a;
     std::shared_ptr<Strategy> b;
+    Span span;
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
     
@@ -293,6 +300,7 @@ struct Strategy
     int seconds;
     int iterations;
     std::vector<std::shared_ptr<StrategyHandler>> handlers;
+    Span span;
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
     
@@ -300,23 +308,27 @@ struct Strategy
   struct Guard
   {
     std::shared_ptr<Expr> cond;
+    Span span;
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
     
   };
   struct End
   {
+    Span span;
     void print(const std::string& prefix, const bool last, const Span& span) const;
     
   };
   struct Continue
   {
+    Span span;
     void print(const std::string& prefix, const bool last, const Span& span) const;
     
   };
   struct Ref
   {
     std::string name;
+    Span span;
     void print(const std::string& prefix, const bool last, const Span& span) const;
     
   };
@@ -324,6 +336,7 @@ struct Strategy
   {
     std::shared_ptr<EventCall> call;
     std::vector<std::shared_ptr<StrategyHandler>> handlers;
+    Span span;
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
     
@@ -331,6 +344,7 @@ struct Strategy
   struct Paren
   {
     std::shared_ptr<Strategy> a;
+    Span span;
     void print(const std::string& prefix, const bool last, const Span& span) const;
     
   };
@@ -377,42 +391,49 @@ struct Expr
   struct Id
   {
     std::string value;
+    Span span;
     void print(const std::string& prefix, const bool last, const Span& span) const;
     
   };
   struct Str
   {
     std::string value;
+    Span span;
     void print(const std::string& prefix, const bool last, const Span& span) const;
     
   };
   struct Int
   {
     int value;
+    Span span;
     void print(const std::string& prefix, const bool last, const Span& span) const;
     
   };
   struct Float
   {
     double value;
+    Span span;
     void print(const std::string& prefix, const bool last, const Span& span) const;
     
   };
   struct Call
   {
     std::shared_ptr<EventCall> value;
+    Span span;
     void print(const std::string& prefix, const bool last, const Span& span) const;
     
   };
   struct Neg
   {
     std::shared_ptr<Expr> value;
+    Span span;
     void print(const std::string& prefix, const bool last, const Span& span) const;
     
   };
   struct Not
   {
     std::shared_ptr<Expr> value;
+    Span span;
     void print(const std::string& prefix, const bool last, const Span& span) const;
     
   };
@@ -439,6 +460,7 @@ struct Expr
     Kind operation;
     std::shared_ptr<Expr> a;
     std::shared_ptr<Expr> b;
+    Span span;
 
     std::string toString() const;
     void print(const std::string& prefix, const bool last, const Span& span) const;
@@ -447,6 +469,7 @@ struct Expr
   struct Paren
   {
     std::shared_ptr<Expr> value;
+    Span span;
     void print(const std::string& prefix, const bool last, const Span& span) const;
     
   };
