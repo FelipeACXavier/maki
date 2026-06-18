@@ -59,8 +59,10 @@ QJsonObject toJson(const Argument& argument) {
 
 QJsonObject toJson(const Statement& statement) {
     QJsonObject obj;
-    if (statement.node)
-        obj["node"] = toJson(statement.node);
+    std::visit([&obj] (const auto& ptr) {
+      if (ptr)
+        obj["node"] = toJson(*ptr);
+    }, statement.node);
     obj["span"] = toJson(statement.span);
     return obj;
 }
@@ -72,8 +74,7 @@ QJsonObject toJson(const Flow& flow) {
 
     QJsonArray tagsArray;
     for (const auto& tag : flow.tags) {
-        if (tag)
-            tagsArray.append(QString::fromStdString(tag));
+        tagsArray.append(QString::fromStdString(tag));
     }
     obj["tags"] = tagsArray;
 
@@ -197,8 +198,10 @@ QJsonObject toJson(const VarsBlock& block) {
 
 QJsonObject toJson(const Strategy& strategy) {
     QJsonObject obj;
-    if (strategy.v)
-        obj["v"] = toJson(strategy.v);
+    std::visit([&obj] (const auto& ptr) {
+      if (ptr)
+        obj["v"] = toJson(*ptr);
+    }, strategy.v);
     obj["srcId"] = QString::fromStdString(strategy.srcId);
     obj["span"]  = toJson(strategy.span);
     return obj;
@@ -218,8 +221,10 @@ QJsonObject toJson(const StrategyHandler& handler) {
 
 QJsonObject toJson(const Expr& expr) {
     QJsonObject obj;
-    if (expr.v)
-        obj["v"] = toJson(*expr.v);
+    std::visit([&obj] (const auto& ptr) {
+      if (ptr)
+        obj["v"] = toJson(*ptr);
+    }, expr.v);
     obj["srcId"] = QString::fromStdString(expr.srcId);
     obj["span"]  = toJson(expr.span);
     return obj;

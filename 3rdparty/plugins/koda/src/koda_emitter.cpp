@@ -340,7 +340,7 @@ VoidResult KodaEmitter::emitWithin(const koda::Strategy::Within& node, std::stri
 
 VoidResult KodaEmitter::emitRepeat(const koda::Strategy::Repeat& node, std::stringstream& ss, const std::string& format)
 {
-  write(ss, "repeat " + node.iterations + std::string(" ") + node.seconds);
+  write(ss, "repeat " + node.iterations + std::string(" ") + std::to_string(node.seconds));
   // ss << "repeat " << node.iterations << " " << node.seconds;
   write(ss, " (");
   // ss << " (";
@@ -470,7 +470,7 @@ VoidResult KodaEmitter::emitInt(const koda::Expr::Int& expr, std::stringstream& 
 VoidResult KodaEmitter::emitFloat(const koda::Expr::Float& expr, std::stringstream& ss, const std::string& format)
 {
   // ss << expr.value;
-  write(ss, std::string(expr.value));
+  write(ss, std::to_string(expr.value));
   return VoidResult();
 }
 
