@@ -17,7 +17,6 @@
 #include "idocument.h"
 #include "result.h"
 #include "ihost_services.h"
-#include "koda_ast_json.h"
 
 class QJsonArray;
 

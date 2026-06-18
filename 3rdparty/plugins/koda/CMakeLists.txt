@@ -150,7 +150,6 @@ function(add_koda_plugin TARGET_NAME USE_ANTLR_ENABLED)
       src/maki_to_koda.cpp
       src/koda_emitter.cpp
       src/ros_emitter.cpp
-      src/koda_ast_json.cpp
     )
     set(COMPILER_INCLUDES
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ast
