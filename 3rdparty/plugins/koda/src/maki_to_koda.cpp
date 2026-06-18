@@ -16,6 +16,7 @@
 #include <vector>
 #include <QJsonDocument>
 #include <QDir>
+#include <QJsonDocument>
 
 #include "ast/ast.h"
 #include "logging.h"
@@ -41,6 +42,16 @@ MakiToKoda::MakiToKoda(maki::IHostServices* services, QDir outputFolder)
 {
   mServices = services;
   mOutputFolder = outputFolder;
+}
+
+bool writeJsonToFile(const QString& path, const QJsonObject& obj)
+{
+  QFile file(path);
+  if (!file.open(QIODevice::WriteOnly))
+    return false;
+  QJsonDocument doc(root);
+  file.write(doc.toJson(QJsonDocument::Indented));
+  return true;
 }
 
 std::string MakiToKoda::generateUniqueId()
@@ -191,6 +202,7 @@ Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes
 
   auto contents = KodaEmitter::emitKoda(sys);
   RETURN_ON_FAILURE_AS(contents, QString);
+  writeJsonToFile("ast.json", sys.toJson());
   return QString::fromStdString(contents.Value());
 #else
   return QString();
@@ -201,6 +213,7 @@ Result<koda::PComponent> MakiToKoda::buildTask(const INode& task)
 {
   auto c = std::make_shared<koda::Component>();
   c->kind = koda::Component::Kind::Task;
+  c->srcId = task.getid().toStdString();
   auto properties = task.getproperties();
   if (!properties.contains("name"))
     return Result<koda::PComponent>::Failed("Task does not have a name");
@@ -217,6 +230,7 @@ Result<koda::PComponent> MakiToKoda::buildTask(const INode& task)
     parg->kind = koda::Argument::Kind::Req;
     parg->a = format(capName);
     ToLowerCase(parg->a, 0);
+    parg->srcId = cap->getid().toStdString();
 
     std::string formattedArgName = format(capName);
     std::string finalArgName = formattedArgName; // unchanged generator
@@ -272,6 +286,7 @@ Result<koda::PComponent> MakiToKoda::buildCapability(const INode& capability)
 {
   auto c = std::make_shared<koda::Component>();
   c->kind = koda::Component::Kind::Capability;
+  c->srcId = capability.getid().toStdString();
   auto properties = capability.getproperties();
   if (!properties.contains("name"))
     return Result<koda::PComponent>::Failed("Capabiity does not have a name");
@@ -299,6 +314,7 @@ Result<koda::PVarDef> MakiToKoda::buildVarDef(const IProperty& property)
 {
   auto varDef = std::make_shared<koda::VarDef>();
   varDef->name = property.getid().toStdString();
+  varDef->srcId = property.getid().toStdString();
   varDef->varType = Types::PropertyTypesToString(property.gettype()).toStdString();
 
   auto wrapper = std::make_shared<koda::Expr>();
@@ -366,6 +382,7 @@ Result<std::vector<koda::PActionDef>> MakiToKoda::buildActionDefs(const INode& n
 
     action->label1 = callRoute.toStdString();
     action->label2 = callMessage.toStdString();
+    action->srcId = node.getid().toStdString();
 
     for (const auto& event : node.getevents())
     {
@@ -401,9 +418,12 @@ Result<koda::PRosDef> MakiToKoda::buildRosDef(const IFlow& event)
   else
     return Result<koda::PRosDef>::Failed("Unknown call type");
 
+  def->srcId = event.getid().toStdString();
+
   auto eventDef = std::make_shared<koda::EventDef>();
   eventDef->typeName = Types::PropertyTypesToString(event.getreturnType()).toStdString();
   eventDef->name = event.getname().toStdString();
+  eventDef->srcId = event.getid().toStdString();
 
   for (const auto& arg : event.getarguments())
   {
@@ -436,6 +456,7 @@ Result<koda::PFlow> MakiToKoda::buildFlowAst(std::shared_ptr<IFlow> flow)
     return Result<koda::PFlow>::Failed("Failed to build first sequence");
 
   auto pflow = std::make_shared<koda::Flow>();
+  pflow->srcId = flow->getid().toStdString();
   auto flowName = flow->getname();
   if (flowName != "main")
     flowName = "f" + flowName;
@@ -607,6 +628,7 @@ std::any MakiToKoda::buildAsyncExpr(const IFlow& flow, const INode& node)
   auto task = std::make_shared<koda::EventCall>();
   task->receiver = format(val);
   ToLowerCase(task->receiver, 0);
+  task->srcId = node.getid().toStdString();
 
   auto expr = std::make_shared<koda::Strategy::TaskCall>();
   expr->call = task;
@@ -618,6 +640,7 @@ std::any MakiToKoda::buildAsyncExpr(const IFlow& flow, const INode& node)
 
   auto strat = std::make_shared<koda::Strategy>();
   strat->v = expr;
+  strat->srcId = node.getid().toStdString();
   return strat;
 }
 
@@ -641,6 +664,7 @@ std::any MakiToKoda::buildSyncExpr(const IFlow& flow, const INode& node)
   auto task = std::make_shared<koda::EventCall>();
   task->receiver = format(val);
   ToLowerCase(task->receiver, 0);
+  task->srcId = node.getid().toStdString();
 
   task->name = method["data"].toString().toStdString();
   task->args = buildArgumentExpr(options, 1);
@@ -650,6 +674,7 @@ std::any MakiToKoda::buildSyncExpr(const IFlow& flow, const INode& node)
 
   auto strat = std::make_shared<koda::Strategy>();
   strat->v = expr;
+  strat->srcId = node.getid().toStdString();
   return strat;
 }
 
@@ -819,6 +844,7 @@ QList<koda::PStrategyHandler> MakiToKoda::buildHandlers(const IFlow& flow, const
 
     auto value = std::make_shared<koda::StrategyHandler>();
     value->kind = koda::StrategyHandler::Kind::OnError;
+    value->srcId = errorStart.node->getid().toStdString();
     value->body = std::any_cast<koda::PStrategy>(sequence);
 
     handlers.append(value);
@@ -835,6 +861,7 @@ QList<koda::PStrategyHandler> MakiToKoda::buildHandlers(const IFlow& flow, const
 
     auto value = std::make_shared<koda::StrategyHandler>();
     value->kind = koda::StrategyHandler::Kind::OnAbort;
+    value->srcId = abortStart.node->getid().toStdString();
     value->body = std::any_cast<koda::PStrategy>(sequence);
     handlers.append(value);
   }

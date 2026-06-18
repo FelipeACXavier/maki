@@ -12,6 +12,7 @@
 #include <memory>
 #include <any>
 #include <QDir>
+#include <QFile>
 
 #include "ast/ast.h"
 #include "idocument.h"
@@ -140,6 +141,7 @@ private:
 
   maki::IHostServices* mServices = nullptr;
   QDir mOutputFolder;
+  bool writeJsonToFile(const QString& path, const QJsonObject& obj);
 };
 
 }  // namespace koda

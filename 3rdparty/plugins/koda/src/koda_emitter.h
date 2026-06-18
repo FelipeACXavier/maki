@@ -1,6 +1,7 @@
 #pragma once
 
 #include <sstream>
+#include <string_view>
 
 #include "ast/ast.h"
 #include "result.h"
@@ -13,6 +14,14 @@ public:
   static Result<std::string> emitKoda(const koda::System& ast);
 
 private:
+  bool m_emitSpans = true;
+  int m_line = 1;
+  int m_col = 1;
+  void write(std::stringstream& ss, std::string_view text);
+  template<typename T> void begin(T& node);
+
+  template<typename T> void end(T& node);
+
   VoidResult emitTask(const koda::Component& component, std::stringstream& ss);
   VoidResult emitCapability(const koda::Component& component, std::stringstream& ss);
 

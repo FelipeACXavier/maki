@@ -25,6 +25,45 @@ static const std::string INDENT = "  ";
 
 namespace koda
 {
+
+void KodaEmitter::write(std::stringstream& ss, std::string_view text)
+{
+    ss << text;
+
+    for (char c : text)
+    {
+        if (c == '\n')
+        {
+            ++m_line;
+            m_col = 1;
+        }
+        else
+        {
+            ++m_col;
+        }
+    }
+}
+
+template<typename T>
+void KodaEmitter::begin(T& node)
+{
+    if (!m_emitSpans)
+        return;
+
+    node.span.lineStart = m_line;
+    node.span.colStart = m_col;
+}
+
+template<typename T>
+void KodaEmitter::end(T& node)
+{
+    if (!m_emitSpans)
+        return;
+
+    node.span.lineEnd = m_line;
+    node.span.colEnd = m_col;
+}
+
 Result<std::string> KodaEmitter::emitKoda(const koda::System& ast)
 {
   KodaEmitter emitter;
@@ -55,28 +94,36 @@ Result<std::string> KodaEmitter::emitKoda(const koda::System& ast)
 
 VoidResult KodaEmitter::emitTask(const koda::Component& component, std::stringstream& ss)
 {
-  ss << "task " << component.name << "(";
+  // ss << "task " << component.name << "(";
+  write(ss, "task " + component.name + "(");
   RETURN_ON_FAILURE(emitDefArguments(component.args, ss));
-  ss << ") {\n";
+  // ss << ") {\n";
+  write(ss, ") {\n");
   for (const auto& actions : component.statements)
   {
     RETURN_ON_FAILURE(emitStatement(*actions, ss, INDENT));
   }
-  ss << "}\n";
+  write(ss, "}\n");
+  // ss << "}\n";
 
   return VoidResult();
 }
 
 VoidResult KodaEmitter::emitCapability(const koda::Component& component, std::stringstream& ss)
 {
-  ss << "capability " << component.name << "(";
+  begin(component);
+  write(ss, "capability " + component.name + "(");
+  // ss << "capability " << component.name << "(";
   RETURN_ON_FAILURE(emitDefArguments(component.args, ss));
-  ss << ") {\n";
+  write(ss, ") {\n");
+  // ss << ") {\n";
   for (const auto& actions : component.statements)
   {
     RETURN_ON_FAILURE(emitStatement(*actions, ss, INDENT));
   }
-  ss << "}\n";
+  // ss << "}\n";
+  write(ss, "}\n");
+  end(component);
   return VoidResult();
 }
 
@@ -92,12 +139,14 @@ VoidResult KodaEmitter::emitStatement(const koda::Statement& statement, std::str
 
 VoidResult KodaEmitter::emitStrategyBlock(const koda::StrategyBlock& node, std::stringstream& ss, const std::string& format)
 {
-  ss << format << "strategy {\n";
+  write(ss, format + "strategy {\n");
+  // ss << format << "strategy {\n";
   for (auto& flow : node.flows)
   {
     RETURN_ON_FAILURE(emitFlow(*flow, ss, format + INDENT));
   }
-  ss << format << "}\n";
+  write(ss, format + "}\n");
+  // ss << format << "}\n";
 
   return VoidResult();
 }
@@ -105,38 +154,51 @@ VoidResult KodaEmitter::emitStrategyBlock(const koda::StrategyBlock& node, std::
 VoidResult KodaEmitter::emitActionDef(const koda::ActionDef& node, std::stringstream& ss, const std::string& format)
 {
   if (node.kind == koda::ActionDef::Kind::Action)
-    ss << format << "action";
+    write(ss, format + "action");
+    // ss << format << "action";
   else if (node.kind == koda::ActionDef::Kind::Service)
-    ss << format << "service";
+    write(ss, format + "service");
+    // ss << format << "service";
   else if (node.kind == koda::ActionDef::Kind::Topic)
-    ss << format << "topic";
+    write(ss, format + "topic");
+    // ss << format << "topic";
 
-  ss << " \"" << node.label1 << "\" \"" << node.label2 << "\" {\n";
+  // ss << " \"" << node.label1 << "\" \"" << node.label2 << "\" {\n";
+  write(ss, " \"" + node.label1 + "\" \"" + node.label2 + "\" {\n");
   for (const auto& ros : node.rosDefs)
     RETURN_ON_FAILURE(emitRosDef(*ros, ss, format + INDENT));
 
-  ss << format << "}\n";
+  // ss << format << "}\n";
+  write(ss, format + "}\n");
   return VoidResult();
 }
 
 VoidResult KodaEmitter::emitRosDef(const koda::RosDef& node, std::stringstream& ss, const std::string& format)
 {
   if (node.kind == koda::RosDef::Kind::Trigger)
-    ss << format << "trigger";
+    write(ss, format + "trigger");
+    // ss << format << "trigger";
   else if (node.kind == koda::RosDef::Kind::Return)
-    ss << format << "return";
+    write(ss, format + "return");
+    // ss << format << "return";
   else if (node.kind == koda::RosDef::Kind::Abort)
-    ss << format << "abort";
+    write(ss, format + "abort");
+    // ss << format << "abort";
   else if (node.kind == koda::RosDef::Kind::Error)
-    ss << format << "error";
+    write(ss, format + "error");
+    // ss << format << "error";
   else if (node.kind == koda::RosDef::Kind::In)
-    ss << format << "in";
+    write(ss, format + "in");
+    // ss << format << "in";
   else if (node.kind == koda::RosDef::Kind::Out)
-    ss << format << "out";
+    write(ss, format + "out");
+    // ss << format << "out";
 
-  ss << ": " << node.def->typeName << " " << node.def->name + "(";
+  write(ss, ": " + node.def->typeName + " " + node.def->name + "(");
+  // ss << ": " << node.def->typeName << " " << node.def->name + "(";
   RETURN_ON_FAILURE(emitDefArguments(node.def->args, ss));
-  ss << ");\n";
+  write(ss, ");\n");
+  // ss << ");\n";
 
   return VoidResult();
 }
@@ -146,46 +208,60 @@ VoidResult KodaEmitter::emitVarsBlock(const koda::VarsBlock& node, std::stringst
   if (node.vars.empty())
     return VoidResult();
 
-  ss << format << "vars {\n";
+  write(ss, format + "vars {\n");
+  // ss << format << "vars {\n";
   for (auto& var : node.vars)
   {
     RETURN_ON_FAILURE(emitVarDef(*var, ss, format + INDENT));
   }
-  ss << format << "}\n";
+  write(ss, format + "}\n");
+  // ss << format << "}\n";
   return VoidResult();
 }
 
 VoidResult KodaEmitter::emitVarDef(const koda::VarDef& varDef, std::stringstream& ss, const std::string& format)
 {
-  ss << format << " "
-     << varDef.varType << " "
-     << varDef.name << "_ = "
-     << varDef.name << " : ";
+  write(ss, format + " "
+     + varDef.varType + " "
+     + varDef.name + "_ = "
+     + varDef.name + " : ");
+  // ss << format << " "
+  //    << varDef.varType << " "
+  //    << varDef.name << "_ = "
+  //    << varDef.name << " : ";
 
   RETURN_ON_FAILURE(emitExpression(*varDef.init, ss, format));
 
-  ss << "\n";
+  write(ss, "\n");
+  // ss << "\n";
 
   return VoidResult();
 }
 
 VoidResult KodaEmitter::emitFlow(const koda::Flow& flow, std::stringstream& ss, const std::string& format)
 {
-  ss << format << flow.name;
+  write(ss, format + flow.name);
+  // ss << format << flow.name;
   if (!flow.tags.empty())
   {
-    ss << "[";
+    write(ss, "[");
+    // ss << "[";
     for (size_t i = 0; i < flow.tags.size(); ++i)
     {
       if (i > 0)
-        ss << ", ";
-      ss << flow.tags.at(i);
+        write(ss, ", ");
+        // ss << ", ";
+      write(ss, flow.tags.at(i));
+      // ss << flow.tags.at(i);
     }
-    ss << "]";
+    write(ss, "]");
+    // ss << "]";
   }
-  ss << ": ";
+  write(ss, ": ");
+  // ss << ": ";
   RETURN_ON_FAILURE(emitStrategy(*flow.strategy, ss, ""));
-  ss << ";\n";
+  write(ss, ";\n");
+  // ss << ";\n";
   return VoidResult();
 }
 
@@ -213,11 +289,14 @@ VoidResult KodaEmitter::emitSequence(const koda::Strategy::Seq& node, std::strin
   for (size_t i = 0; i < node.alts.size(); ++i)
   {
     if (i != 0)
-      ss << " --> ";
+      write(ss, " --> ");
+      // ss << " --> ";
 
-    ss << "(";
+    write(ss, "(");
+    // ss << "(";
     RETURN_ON_FAILURE(emitStrategy(*node.alts[i], ss, format));
-    ss << ")";
+    write(ss, ")");
+    // ss << ")";
   }
 
   return VoidResult();
@@ -225,37 +304,48 @@ VoidResult KodaEmitter::emitSequence(const koda::Strategy::Seq& node, std::strin
 
 VoidResult KodaEmitter::emitJoin(const koda::Strategy::Join& node, std::stringstream& ss, const std::string& format)
 {
-  ss << "join (";
+  write(ss, "join (");
+  // ss << "join (";
   for (size_t i = 0; i < node.alts.size(); ++i)
   {
     if (i != 0)
-      ss << " | ";
+      write (ss, " | ");
+      // ss << " | ";
 
-    ss << "(";
+    write(ss, "(");
+    // ss << "(";
     RETURN_ON_FAILURE(emitStrategy(*node.alts[i], ss, format));
-    ss << ")";
+    write(ss, ")");
+    // ss << ")";
   }
-  ss << ")";
+  write(ss, ")");
+  // ss << ")";
 
   return VoidResult();
 }
 
 VoidResult KodaEmitter::emitWithin(const koda::Strategy::Within& node, std::stringstream& ss, const std::string& format)
 {
-  ss << "within " << node.seconds << " do (";
+  write(ss, "within " + node.seconds + " do (");
+  // ss << "within " << node.seconds << " do (";
   RETURN_ON_FAILURE(emitStrategy(*node.a, ss, format));
-  ss << ") else (";
+  write(ss, ") else (");
+  // ss << ") else (";
   RETURN_ON_FAILURE(emitStrategy(*node.b, ss, format));
-  ss << ")";
+  write(ss, ")");
+  // ss << ")";
   return VoidResult();
 }
 
 VoidResult KodaEmitter::emitRepeat(const koda::Strategy::Repeat& node, std::stringstream& ss, const std::string& format)
 {
-  ss << "repeat " << node.iterations << " " << node.seconds;
-  ss << " (";
+  write(ss, "repeat " + node.iterations + " " + node.seconds);
+  // ss << "repeat " << node.iterations << " " << node.seconds;
+  write(ss, " (");
+  // ss << " (";
   RETURN_ON_FAILURE(emitStrategy(*node.a, ss, format));
-  ss << ")";
+  write(ss, ")");
+  // ss << ")";
   for (const auto& handler : node.handlers)
     RETURN_ON_FAILURE(emitHandler(*handler, ss, format));
 
@@ -267,19 +357,22 @@ VoidResult KodaEmitter::emitEnd(const koda::Strategy::End& node, std::stringstre
   Q_UNUSED(node)
   Q_UNUSED(format)
 
-  ss << "end";
+  write(ss, "end");
+  // ss << "end";
   return VoidResult();
 }
 
 VoidResult KodaEmitter::emitContinue(const koda::Strategy::Continue& node, std::stringstream& ss, const std::string& format)
 {
-  ss << "continue";
+  write(ss, "continue");
+  // ss << "continue";
   return VoidResult();
 }
 
 VoidResult KodaEmitter::emitRef(const koda::Strategy::Ref& node, std::stringstream& ss, const std::string& format)
 {
-  ss << node.name;
+  write(ss, node.name);
+  // ss << node.name;
   return VoidResult();
 }
 
@@ -294,13 +387,17 @@ VoidResult KodaEmitter::emitTaskCall(const koda::Strategy::TaskCall& node, std::
 
 VoidResult KodaEmitter::emitEventCall(const koda::EventCall& node, std::stringstream& ss, const std::string& format)
 {
-  ss << node.receiver;
+  write(ss, node.receiver);
+  // ss << node.receiver;
   if (!node.name.empty())
-    ss << "." << node.name;
+    write(ss, "." + node.name);
+    // ss << "." << node.name;
 
-  ss << "(";
+  write(ss, "(");
+  // ss << "(";
   RETURN_ON_FAILURE(emitCallArguments(node.args, ss));
-  ss << ")";
+  write(ss, ")");
+  // ss << ")";
 
   return VoidResult();
 }
@@ -309,21 +406,26 @@ VoidResult KodaEmitter::emitHandler(const koda::StrategyHandler& node, std::stri
 {
   if (node.kind == koda::StrategyHandler::Kind::OnAbort)
   {
-    ss << " on abort";
+    write(ss, " on abort");
+    // ss << " on abort";
   }
   else if (node.kind == koda::StrategyHandler::Kind::OnError)
   {
-    ss << " on error";
+    write(ss, " on error");
+    // ss << " on error";
   }
   else if (node.kind == koda::StrategyHandler::Kind::OnEmitter)
   {
-    ss << " on ";
+    write(ss, " on ")
+    // ss << " on ";
     RETURN_ON_FAILURE(emitEventCall(*node.emitter, ss, format));
   }
 
-  ss << " (";
+  write(ss, " (");
+  // ss << " (";
   RETURN_ON_FAILURE(emitStrategy(*node.body, ss, format));
-  ss << ")";
+  write(ss, ")");
+  // ss << ")";
 
   return VoidResult();
 }
@@ -345,25 +447,29 @@ VoidResult KodaEmitter::emitExpression(const koda::Expr& node, std::stringstream
 
 VoidResult KodaEmitter::emitId(const koda::Expr::Id& expr, std::stringstream& ss, const std::string& format)
 {
-  ss << expr.value;
+  // ss << expr.value;
+  write(ss, expr.value);
   return VoidResult();
 }
 
 VoidResult KodaEmitter::emitStr(const koda::Expr::Str& expr, std::stringstream& ss, const std::string& format)
 {
-  ss << "\"" << expr.value << "\"";
+  // ss << "\"" << expr.value << "\"";
+  write(ss, "\"" + expr.value + "\"");
   return VoidResult();
 }
 
 VoidResult KodaEmitter::emitInt(const koda::Expr::Int& expr, std::stringstream& ss, const std::string& format)
 {
-  ss << expr.value;
+  // ss << expr.value;
+  write(ss, expr.value);
   return VoidResult();
 }
 
 VoidResult KodaEmitter::emitFloat(const koda::Expr::Float& expr, std::stringstream& ss, const std::string& format)
 {
-  ss << expr.value;
+  // ss << expr.value;
+  write(ss, expr.value);
   return VoidResult();
 }
 
@@ -374,7 +480,8 @@ VoidResult KodaEmitter::emitCall(const koda::Expr::Call& expr, std::stringstream
 
 VoidResult KodaEmitter::emitNeg(const koda::Expr::Neg& expr, std::stringstream& ss, const std::string& format)
 {
-  ss << expr.value;
+  // ss << expr.value;
+  write(ss, expr.value);
   return VoidResult();
 }
 
@@ -398,7 +505,8 @@ VoidResult KodaEmitter::emitCallArguments(const std::vector<std::shared_ptr<Expr
   for (size_t i = 0; i < args.size(); ++i)
   {
     if (i > 0)
-      ss << ", ";
+      // ss << ", ";
+      write(ss, ", ");
 
     RETURN_ON_FAILURE(emitExpression(*args.at(i), ss, ""));
   }
@@ -411,13 +519,16 @@ VoidResult KodaEmitter::emitDefArguments(const std::vector<std::shared_ptr<Argum
   for (size_t i = 0; i < args.size(); ++i)
   {
     if (i > 0)
-      ss << ", ";
+      // ss << ", ";
+      write(ss, ", ");
 
     const auto& arg = args[i];
     if (arg->kind == koda::Argument::Kind::Req)
-      ss << arg->a << " req " << arg->b;
+      write(ss, arg->a + " req " + arg->b);
+      // ss << arg->a << " req " << arg->b;
     else
-      ss << arg->a << " " << arg->b;
+      write(ss, arg->a + " " + arg->b);
+      // ss << arg->a << " " << arg->b;
   }
 
   return VoidResult();
