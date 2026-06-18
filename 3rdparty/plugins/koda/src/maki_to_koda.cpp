@@ -17,6 +17,7 @@
 #include <QJsonDocument>
 #include <QDir>
 #include <QJsonDocument>
+#include <QJsonObject>
 
 #include "ast/ast.h"
 #include "koda_ast_json.h"
@@ -45,7 +46,7 @@ MakiToKoda::MakiToKoda(maki::IHostServices* services, QDir outputFolder)
   mOutputFolder = outputFolder;
 }
 
-bool writeJsonToFile(const QString& path, const QJsonObject& obj)
+bool MakiToKoda::writeJsonToFile(const QString& path, const QJsonObject& obj)
 {
   QFile file(path);
   if (!file.open(QIODevice::WriteOnly))
