@@ -95,7 +95,7 @@ struct Statement
       std::shared_ptr<RosDef>,
       std::shared_ptr<ActionDef>>
       node;
-  // Span span;
+  Span span;
 
   void print(const std::string& prefix, const bool last) const;
   
