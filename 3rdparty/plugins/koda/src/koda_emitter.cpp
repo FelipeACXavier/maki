@@ -355,6 +355,7 @@ VoidResult KodaEmitter::emitJoin(koda::Strategy::Join& node, std::stringstream& 
 
 VoidResult KodaEmitter::emitWithin(koda::Strategy::Within& node, std::stringstream& ss, const std::string& format)
 {
+  LOG_RAW("WITHIN SECONDS {}", node.seconds);
   begin(node);
   write(ss, "within " + node.seconds + std::string(" do ("));
   // ss << "within " << node.seconds << " do (";
@@ -370,6 +371,7 @@ VoidResult KodaEmitter::emitWithin(koda::Strategy::Within& node, std::stringstre
 
 VoidResult KodaEmitter::emitRepeat(koda::Strategy::Repeat& node, std::stringstream& ss, const std::string& format)
 {
+  LOG_RAW("REPEAT ITERATIONS {}", node.iterations);
   begin(node);
   write(ss, "repeat " + node.iterations + std::string(" ") + std::to_string(node.seconds));
   // ss << "repeat " << node.iterations << " " << node.seconds;
