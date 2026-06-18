@@ -1,6 +1,5 @@
 #include "ast.h"
 
-#include "../maki_to_koda.h"
 #include "logging.h"
 #include "string_helpers.h"
 
