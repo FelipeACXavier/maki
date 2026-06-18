@@ -35,7 +35,7 @@ struct Span
   int lineEnd = 0, colEnd = 0;
 
   std::string toString() const;
-  QJsonObject toJson() const;
+  
 };
 
 // ---------- Top-level ----------
@@ -43,7 +43,7 @@ struct System
 {
   std::vector<std::shared_ptr<Component>> components;
   void print() const;
-  QJsonObject toJson() const;
+  
 };
 
 struct Component
@@ -63,7 +63,7 @@ struct Component
 
   std::string toString() const;
   void print(const std::string& prefix, const bool last) const;
-  QJsonObject toJson() const;
+  
   std::string kindToString() const;
 };
 
@@ -85,7 +85,7 @@ struct Argument
 
   std::string toString() const;
   void print(const std::string& prefix, const bool last) const;
-  QJsonObject toJson() const;
+  
   std::string aKindToString() const;
 };
 
@@ -101,7 +101,7 @@ struct Statement
   Span span;
 
   void print(const std::string& prefix, const bool last) const;
-  QJsonObject toJson() const;
+  
 };
 
 struct Flow
@@ -113,7 +113,7 @@ struct Flow
   Span span;
 
   void print(const std::string& prefix, const bool last) const;
-  QJsonObject toJson() const;
+  
 };
 
 struct VarDef
@@ -126,7 +126,7 @@ struct VarDef
   Span span;
 
   void print(const std::string& prefix, const bool last) const;
-  QJsonObject toJson() const;
+  
 };
 
 // ---------- ROS defs ----------
@@ -137,7 +137,7 @@ struct EventDefComponent
   std::string text;  // raw (or structured fields later)
 
   void print(const std::string& prefix, const bool last) const;
-  QJsonObject toJson() const;
+  
 };
 
 struct EventDef
@@ -150,7 +150,7 @@ struct EventDef
   Span span;
 
   void print(const std::string& prefix, const bool last) const;
-  QJsonObject toJson() const;
+  
 };
 
 struct RosDef
@@ -174,7 +174,7 @@ struct RosDef
 
   std::string toString() const;
   void print(const std::string& prefix, const bool last) const;
-  QJsonObject toJson() const;
+  
   std::string rKindToString() const;
 };
 
@@ -196,7 +196,7 @@ struct ActionDef
 
   std::string toString() const;
   void print(const std::string& prefix, const bool last) const;
-  QJsonObject toJson() const;
+  
   std::string adKindToString() const;
 };
 
@@ -206,7 +206,7 @@ struct StrategyBlock
   Span span;
 
   void print(const std::string& prefix, const bool last) const;
-  QJsonObject toJson() const;
+  
 };
 
 struct VarsBlock
@@ -215,7 +215,7 @@ struct VarsBlock
   Span span;
 
   void print(const std::string& prefix, const bool last) const;
-  QJsonObject toJson() const;
+  
 };
 
 // ---------- Strategy ----------
@@ -237,7 +237,7 @@ struct StrategyHandler
 
   std::string toString() const;
   void print(const std::string& prefix, const bool last) const;
-  QJsonObject toJson() const;
+  
 };
 
 struct Strategy
@@ -247,21 +247,21 @@ struct Strategy
     std::vector<std::shared_ptr<Strategy>> alts;
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
-    QJsonObject toJson() const;
+    
   };
   struct Join
   {
     std::vector<std::shared_ptr<Strategy>> alts;
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
-    QJsonObject toJson() const;
+    
   };
   struct Either
   {
     std::vector<std::shared_ptr<Strategy>> alts;
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
-    QJsonObject toJson() const;
+    
   };
   struct Let
   {
@@ -269,7 +269,7 @@ struct Strategy
     std::shared_ptr<EventCall> call;
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
-    QJsonObject toJson() const;
+    
   };
   struct Within
   {
@@ -279,7 +279,7 @@ struct Strategy
     std::vector<std::shared_ptr<StrategyHandler>> handlers;
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
-    QJsonObject toJson() const;
+    
   };
   struct IfElse
   {
@@ -288,7 +288,7 @@ struct Strategy
     std::shared_ptr<Strategy> b;
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
-    QJsonObject toJson() const;
+    
   };
   struct Repeat
   {
@@ -298,30 +298,30 @@ struct Strategy
     std::vector<std::shared_ptr<StrategyHandler>> handlers;
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
-    QJsonObject toJson() const;
+    
   };
   struct Guard
   {
     std::shared_ptr<Expr> cond;
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
-    QJsonObject toJson() const;
+    
   };
   struct End
   {
     void print(const std::string& prefix, const bool last, const Span& span) const;
-    QJsonObject toJson() const;
+    
   };
   struct Continue
   {
     void print(const std::string& prefix, const bool last, const Span& span) const;
-    QJsonObject toJson() const;
+    
   };
   struct Ref
   {
     std::string name;
     void print(const std::string& prefix, const bool last, const Span& span) const;
-    QJsonObject toJson() const;
+    
   };
   struct TaskCall
   {
@@ -329,13 +329,13 @@ struct Strategy
     std::vector<std::shared_ptr<StrategyHandler>> handlers;
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
-    QJsonObject toJson() const;
+    
   };
   struct Paren
   {
     std::shared_ptr<Strategy> a;
     void print(const std::string& prefix, const bool last, const Span& span) const;
-    QJsonObject toJson() const;
+    
   };
 
   std::variant<
@@ -357,7 +357,7 @@ struct Strategy
   std::string srcId;
   void print(const std::string& prefix, const bool last) const;
   Span span;
-  QJsonObject toJson() const;
+  
 };
 
 // ---------- EventCall ----------
@@ -371,7 +371,7 @@ struct EventCall
   Span span;
 
   void print(const std::string& prefix, const bool last) const;
-  QJsonObject toJson() const;
+  
 };
 
 // ---------- Expressions ----------
@@ -381,43 +381,43 @@ struct Expr
   {
     std::string value;
     void print(const std::string& prefix, const bool last, const Span& span) const;
-    QJsonObject toJson() const;
+    
   };
   struct Str
   {
     std::string value;
     void print(const std::string& prefix, const bool last, const Span& span) const;
-    QJsonObject toJson() const;
+    
   };
   struct Int
   {
     int value;
     void print(const std::string& prefix, const bool last, const Span& span) const;
-    QJsonObject toJson() const;
+    
   };
   struct Float
   {
     double value;
     void print(const std::string& prefix, const bool last, const Span& span) const;
-    QJsonObject toJson() const;
+    
   };
   struct Call
   {
     std::shared_ptr<EventCall> value;
     void print(const std::string& prefix, const bool last, const Span& span) const;
-    QJsonObject toJson() const;
+    
   };
   struct Neg
   {
     std::shared_ptr<Expr> value;
     void print(const std::string& prefix, const bool last, const Span& span) const;
-    QJsonObject toJson() const;
+    
   };
   struct Not
   {
     std::shared_ptr<Expr> value;
     void print(const std::string& prefix, const bool last, const Span& span) const;
-    QJsonObject toJson() const;
+    
   };
   struct BinOp
   {
@@ -445,13 +445,13 @@ struct Expr
 
     std::string toString() const;
     void print(const std::string& prefix, const bool last, const Span& span) const;
-    QJsonObject toJson() const;
+    
   };
   struct Paren
   {
     std::shared_ptr<Expr> value;
     void print(const std::string& prefix, const bool last, const Span& span) const;
-    QJsonObject toJson() const;
+    
   };
 
   std::variant<
@@ -470,7 +470,7 @@ struct Expr
   Span span;
 
   void print(const std::string& prefix, const bool last) const;
-  QJsonObject toJson() const;
+  
 };
 
 typedef std::shared_ptr<Component> PComponent;
