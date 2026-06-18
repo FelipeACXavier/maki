@@ -5,9 +5,6 @@
 #include <string>
 #include <variant>
 #include <vector>
-#include <QJsonObject>
-#include <QString>
-#include <QJsonArray>
 
 namespace koda
 {
