@@ -357,7 +357,7 @@ VoidResult KodaEmitter::emitWithin(koda::Strategy::Within& node, std::stringstre
 {
   LOG_DEBUG("WITHIN SECONDS %d", node.seconds);
   begin(node);
-  write(ss, "within " + node.seconds + std::string(" do ("));
+  write(ss, "within " + std::to_string(node.seconds) + std::string(" do ("));
   // ss << "within " << node.seconds << " do (";
   RETURN_ON_FAILURE(emitStrategy(*node.a, ss, format));
   write(ss, ") else (");
@@ -373,7 +373,7 @@ VoidResult KodaEmitter::emitRepeat(koda::Strategy::Repeat& node, std::stringstre
 {
   LOG_DEBUG("REPEAT ITERATIONS %d", node.iterations);
   begin(node);
-  write(ss, "repeat " + node.iterations + std::string(" ") + std::to_string(node.seconds));
+  write(ss, "repeat " + std::to_string(node.iterations) + std::string(" ") + std::to_string(node.seconds));
   // ss << "repeat " << node.iterations << " " << node.seconds;
   write(ss, " (");
   // ss << " (";
