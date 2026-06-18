@@ -1,6 +1,7 @@
 #include "koda_emitter.h"
 
 #include <sstream>
+#include <string>
 
 #include "ast/ast.h"
 #include "logging.h"
@@ -50,8 +51,8 @@ void KodaEmitter::begin(T& node)
     if (!m_emitSpans)
         return;
 
-    node.span.lineStart = m_line;
-    node.span.colStart = m_col;
+    // node.span.lineStart = m_line;
+    // node.span.colStart = m_col;
 }
 
 template<typename T>
@@ -60,8 +61,8 @@ void KodaEmitter::end(T& node)
     if (!m_emitSpans)
         return;
 
-    node.span.lineEnd = m_line;
-    node.span.colEnd = m_col;
+    // node.span.lineEnd = m_line;
+    // node.span.colEnd = m_col;
 }
 
 Result<std::string> KodaEmitter::emitKoda(const koda::System& ast)
@@ -326,7 +327,7 @@ VoidResult KodaEmitter::emitJoin(const koda::Strategy::Join& node, std::stringst
 
 VoidResult KodaEmitter::emitWithin(const koda::Strategy::Within& node, std::stringstream& ss, const std::string& format)
 {
-  write(ss, "within " + node.seconds + " do (");
+  write(ss, "within " + node.seconds + std::string(" do ("));
   // ss << "within " << node.seconds << " do (";
   RETURN_ON_FAILURE(emitStrategy(*node.a, ss, format));
   write(ss, ") else (");
@@ -339,7 +340,7 @@ VoidResult KodaEmitter::emitWithin(const koda::Strategy::Within& node, std::stri
 
 VoidResult KodaEmitter::emitRepeat(const koda::Strategy::Repeat& node, std::stringstream& ss, const std::string& format)
 {
-  write(ss, "repeat " + node.iterations + " " + node.seconds);
+  write(ss, "repeat " + node.iterations + std::string(" ") + node.seconds);
   // ss << "repeat " << node.iterations << " " << node.seconds;
   write(ss, " (");
   // ss << " (";
@@ -416,7 +417,7 @@ VoidResult KodaEmitter::emitHandler(const koda::StrategyHandler& node, std::stri
   }
   else if (node.kind == koda::StrategyHandler::Kind::OnEmitter)
   {
-    write(ss, " on ")
+    write(ss, " on ");
     // ss << " on ";
     RETURN_ON_FAILURE(emitEventCall(*node.emitter, ss, format));
   }
@@ -462,14 +463,14 @@ VoidResult KodaEmitter::emitStr(const koda::Expr::Str& expr, std::stringstream& 
 VoidResult KodaEmitter::emitInt(const koda::Expr::Int& expr, std::stringstream& ss, const std::string& format)
 {
   // ss << expr.value;
-  write(ss, expr.value);
+  write(ss, "" + expr.value);
   return VoidResult();
 }
 
 VoidResult KodaEmitter::emitFloat(const koda::Expr::Float& expr, std::stringstream& ss, const std::string& format)
 {
   // ss << expr.value;
-  write(ss, expr.value);
+  write(ss, std::string(expr.value));
   return VoidResult();
 }
 

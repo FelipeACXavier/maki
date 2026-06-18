@@ -19,6 +19,7 @@
 #include <QJsonDocument>
 
 #include "ast/ast.h"
+#include "koda_ast_json.h"
 #include "logging.h"
 #include "result.h"
 #include "string_helpers.h"
@@ -49,7 +50,7 @@ bool writeJsonToFile(const QString& path, const QJsonObject& obj)
   QFile file(path);
   if (!file.open(QIODevice::WriteOnly))
     return false;
-  QJsonDocument doc(root);
+  QJsonDocument doc(obj);
   file.write(doc.toJson(QJsonDocument::Indented));
   return true;
 }
