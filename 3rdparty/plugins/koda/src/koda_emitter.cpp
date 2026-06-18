@@ -574,12 +574,14 @@ VoidResult KodaEmitter::emitDefArguments(std::vector<std::shared_ptr<Argument>>&
       write(ss, ", ");
 
     const auto& arg = args[i];
+    begin(*arg);
     if (arg->kind == koda::Argument::Kind::Req)
       write(ss, arg->a + " req " + arg->b);
       // ss << arg->a << " req " << arg->b;
     else
       write(ss, arg->a + " " + arg->b);
       // ss << arg->a << " " << arg->b;
+    end(*arg);
   }
 
   return VoidResult();
