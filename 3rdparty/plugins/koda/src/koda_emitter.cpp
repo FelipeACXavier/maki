@@ -201,7 +201,11 @@ VoidResult KodaEmitter::emitRosDef(koda::RosDef& node, std::stringstream& ss, co
     write(ss, format + "out");
     // ss << format << "out";
 
-  write(ss, ": " + node.def->typeName + " " + node.def->name + "(");
+  write(ss, ": ");
+  begin(*node.def);
+  write(ss, node.def->typeName + " " + node.def->name);
+  end(*node.def);
+  write(ss, "(");
   // ss << ": " << node.def->typeName << " " << node.def->name + "(";
   RETURN_ON_FAILURE(emitDefArguments(node.def->args, ss));
   write(ss, ");\n");
