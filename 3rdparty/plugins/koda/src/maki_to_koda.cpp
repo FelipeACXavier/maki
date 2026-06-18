@@ -203,7 +203,7 @@ Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes
 
   auto contents = KodaEmitter::emitKoda(sys);
   RETURN_ON_FAILURE_AS(contents, QString);
-  writeJsonToFile("ast.json", sys.toJson());
+  writeJsonToFile("ast.json", toJson(sys));
   return QString::fromStdString(contents.Value());
 #else
   return QString();

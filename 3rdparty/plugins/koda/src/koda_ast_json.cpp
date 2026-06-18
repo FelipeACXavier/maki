@@ -1,423 +1,425 @@
 #include "koda_ast_json.h"
 
-namespace koda
-{
-  QJsonObject System::toJson() {
+namespace koda {
+
+QJsonObject toJson(const System& system) {
     QJsonObject obj;
     QJsonArray compArray;
-    for (const auto& component : components)
-    {
-      if (component)
-        compArray.append(component->toJson());
+    for (const auto& component : system.components) {
+        if (component)
+            compArray.append(toJson(*component));
     }
     obj["components"] = compArray;
     return obj;
-  }
+}
 
-  QJsonObject Span::toJson()
-  {
+QJsonObject toJson(const Span& span) {
     QJsonObject obj;
-    obj["lineStart"] = lineStart;
-    obj["colStart"] = colStart;
-    obj["lineEnd"] = lineEnd;
-    obj["colEnd"] = colEnd;
+    obj["lineStart"] = span.lineStart;
+    obj["colStart"]  = span.colStart;
+    obj["lineEnd"]   = span.lineEnd;
+    obj["colEnd"]    = span.colEnd;
     return obj;
-  }
+}
 
-  QJsonObject Component::toJson() const
-  {
+QJsonObject toJson(const Component& component) {
     QJsonObject obj;
 
-    // basic fields
-    obj["kind"] = QString::fromStdString(kindToString());
-    obj["name"] = QString::fromStdString(name);
-    obj["srcId"] = QString::fromStdString(srcId);
+    obj["kind"]  = QString::fromStdString(component.kindToString());
+    obj["name"]  = QString::fromStdString(component.name);
+    obj["srcId"] = QString::fromStdString(component.srcId);
+    obj["span"]  = toJson(component.span);
 
-    // span
-    obj["span"] = span.toJson();
-
-    // args array
     QJsonArray argsArray;
-    for (const auto& arg : args)
-    {
-      if (arg)
-        argsArray.append(arg->toJson());
+    for (const auto& arg : component.args) {
+        if (arg)
+            argsArray.append(toJson(*arg));
     }
     obj["args"] = argsArray;
 
-    // statements array
     QJsonArray stmtArray;
-    for (const auto& stmt : statements)
-    {
-      if (stmt)
-        stmtArray.append(stmt->toJson());
+    for (const auto& stmt : component.statements) {
+        if (stmt)
+            stmtArray.append(toJson(*stmt));
     }
     obj["statements"] = stmtArray;
 
     return obj;
-  }
+}
 
-  QJsonObject Argument::toJson() const
-  {
+QJsonObject toJson(const Argument& argument) {
     QJsonObject obj;
-    obj["kind"] = QString::fromStdString(aKindToString());
-    obj["a"] = QString::fromStdString(a);
-    obj["b"] = QString::fromStdString(b);
-    obj["srcId"] = QString::fromStdString(srcId);
-    obj["span"] = span.toJson();
+    obj["kind"]  = QString::fromStdString(argument.aKindToString());
+    obj["a"]     = QString::fromStdString(argument.a);
+    obj["b"]     = QString::fromStdString(argument.b);
+    obj["srcId"] = QString::fromStdString(argument.srcId);
+    obj["span"]  = toJson(argument.span);
     return obj;
-  }
+}
 
-  QJsonObject Statement::toJson() const
-  {
+QJsonObject toJson(const Statement& statement) {
     QJsonObject obj;
-    if (node)
-      obj["node"] = node.toJson();
-    obj["span"] = span.toJson();
+    if (statement.node)
+        obj["node"] = toJson(statement.node);
+    obj["span"] = toJson(statement.span);
     return obj;
-  }
+}
 
-  QJsonObject Flow::toJson() const
-  {
+QJsonObject toJson(const Flow& flow) {
     QJsonObject obj;
-    obj["name"] = QString::fromStdString(name);
-    obj["srcId"] = QString::fromStdString(srcId);
+    obj["name"]  = QString::fromStdString(flow.name);
+    obj["srcId"] = QString::fromStdString(flow.srcId);
+
     QJsonArray tagsArray;
-    for (const auto& tag : tags) {
-      if (tag)
-        tagsArray.append(QString::fromStdString(tag));
+    for (const auto& tag : flow.tags) {
+        if (tag)
+            tagsArray.append(QString::fromStdString(tag));
     }
     obj["tags"] = tagsArray;
-    if (strategy)
-      obj["strategy"] = strategy->toJson();
-    obj["span"] = span.toJson();
-    return obj;
-  }
 
-  QJsonObject VarDef::toJson() const
-  {
-    QJsonObject obj;
-    obj["varType"] = QString::fromStdString(varType);
-    obj["name"] = QString::fromStdString(name);
-    obj["srcId"] = QString::fromStdString(srcId);
-    if (init)
-      obj["init"] = init->toJson();
-    if (fallback)
-      obj["fallback"] = fallback->toJson();
-    obj["span"] = span.toJson();
-    return obj;
-  }
+    if (flow.strategy)
+        obj["strategy"] = toJson(*flow.strategy);
 
-  QJsonObject EventDef::toJson() const {
+    obj["span"] = toJson(flow.span);
+    return obj;
+}
+
+QJsonObject toJson(const VarDef& varDef) {
     QJsonObject obj;
-    obj["typeName"] = QString::fromStdString(typeName);
-    obj["name"] = QString::fromStdString(name);
-    obj["srcId"] = QString::fromStdString(srcId);
+    obj["varType"] = QString::fromStdString(varDef.varType);
+    obj["name"]    = QString::fromStdString(varDef.name);
+    obj["srcId"]   = QString::fromStdString(varDef.srcId);
+    if (varDef.init)
+        obj["init"] = toJson(*varDef.init);
+    if (varDef.fallback)
+        obj["fallback"] = toJson(*varDef.fallback);
+    obj["span"] = toJson(varDef.span);
+    return obj;
+}
+
+QJsonObject toJson(const EventDef& eventDef) {
+    QJsonObject obj;
+    obj["typeName"] = QString::fromStdString(eventDef.typeName);
+    obj["name"]     = QString::fromStdString(eventDef.name);
+    obj["srcId"]    = QString::fromStdString(eventDef.srcId);
+
     QJsonArray argsArray;
-    for (const auto& arg : args) {
-      if (arg)
-        argsArray.append(arg->toJson());
+    for (const auto& arg : eventDef.args) {
+        if (arg)
+            argsArray.append(toJson(*arg));
     }
     obj["args"] = argsArray;
+
     QJsonArray componentsArray;
-    for (const auto& component : components) {
-      if (component)
-        componentsArray.append(component->toJson());
+    for (const auto& component : eventDef.components) {
+        if (component)
+            componentsArray.append(toJson(*component));
     }
     obj["components"] = componentsArray;
-    obj["span"] = span.toJson();
-    return obj;
-  }
 
-  QJsonObject EventDefComponent::toJson() const {
-    QJsonObject obj;
-    obj["kind"] = QString::fromStdString(kind);
-    obj["text"] = QString::fromStdString(text);
+    obj["span"] = toJson(eventDef.span);
     return obj;
-  }
+}
 
-  QJsonObject EventCall::toJson() const {
+QJsonObject toJson(const EventDefComponent& edc) {
     QJsonObject obj;
-    obj["name"] = QString::fromStdString(name);
-    obj["receiver"] = QString::fromStdString(receiver);
-    obj["srcId"] = QString::fromStdString(srcId);
+    obj["kind"] = QString::fromStdString(edc.kind);
+    obj["text"] = QString::fromStdString(edc.text);
+    return obj;
+}
+
+QJsonObject toJson(const EventCall& eventCall) {
+    QJsonObject obj;
+    obj["name"]     = QString::fromStdString(eventCall.name);
+    obj["receiver"] = QString::fromStdString(eventCall.receiver);
+    obj["srcId"]    = QString::fromStdString(eventCall.srcId);
+
     QJsonArray argsArray;
-    for (const auto& arg: args) {
-      if (arg)
-        argsArray.append(arg->toJson());
+    for (const auto& arg : eventCall.args) {
+        if (arg)
+            argsArray.append(toJson(*arg));
     }
     obj["args"] = argsArray;
-    obj["span"] = span.toJson();
+    obj["span"] = toJson(eventCall.span);
     return obj;
-  }
+}
 
-  QJsonObject RosDef::toJson() const {
+QJsonObject toJson(const RosDef& rosDef) {
     QJsonObject obj;
-    obj["kind"] = QString::fromStdString(rKindToString());
-    if (def)
-      obj["def"] = def->toJson();
-    obj["srcId"] = QString::fromStdString(srcId);
-    obj["span"] = span.toJson();
+    obj["kind"] = QString::fromStdString(rosDef.rKindToString());
+    if (rosDef.def)
+        obj["def"] = toJson(*rosDef.def);
+    obj["srcId"] = QString::fromStdString(rosDef.srcId);
+    obj["span"]  = toJson(rosDef.span);
     return obj;
-  }
+}
 
-  QJsonObject ActionDef::toJson() const {
+QJsonObject toJson(const ActionDef& actionDef) {
     QJsonObject obj;
-    obj["kind"] = QString::fromStdString(adKindToString());
-    obj["label1"] = QString::fromStdString(label1);
-    obj["label2"] = QString::fromStdString(label2);
-    obj["srcId"] = QString::fromStdString(srcId);
+    obj["kind"]   = QString::fromStdString(actionDef.adKindToString());
+    obj["label1"] = QString::fromStdString(actionDef.label1);
+    obj["label2"] = QString::fromStdString(actionDef.label2);
+    obj["srcId"]  = QString::fromStdString(actionDef.srcId);
+
     QJsonArray rosDefsArray;
-    for (const auto& rosDef : rosDefs) {
-      if (rosDef)
-        rosDefsArray.append(rosDef->toJson());
+    for (const auto& rosDef : actionDef.rosDefs) {
+        if (rosDef)
+            rosDefsArray.append(toJson(*rosDef));
     }
     obj["rosDefs"] = rosDefsArray;
-    obj["span"] = span.toJson();
+    obj["span"]    = toJson(actionDef.span);
     return obj;
-  }
+}
 
-  QJsonObject StrategyBlock::toJson() const {
+QJsonObject toJson(const StrategyBlock& block) {
     QJsonObject obj;
     QJsonArray flowArray;
-    for (const auto& flow : flows) {
-      if (flow)
-        flowArray.append(flow->toJson());
+    for (const auto& flow : block.flows) {
+        if (flow)
+            flowArray.append(toJson(*flow));
     }
     obj["flows"] = flowArray;
-    obj["span"] = span.toJson();
+    obj["span"]  = toJson(block.span);
     return obj;
-  }
+}
 
-  QJsonObject VarsBlock::toJson() const {
+QJsonObject toJson(const VarsBlock& block) {
     QJsonObject obj;
     QJsonArray varsArray;
-    for (const auto& var : vars) {
-      if (var)
-        varsArray.append(var->toJson());
+    for (const auto& var : block.vars) {
+        if (var)
+            varsArray.append(toJson(*var));
     }
     obj["vars"] = varsArray;
-    obj["span"] = span.toJson();
+    obj["span"] = toJson(block.span);
     return obj;
-  }
-
-  QJsonObject Strategy::toJson() const {
-    QJsonObject obj;
-    if (v)
-      obj["v"] = v.toJson();
-    obj["srcId"] = QString::fromStdString(srcId);
-    obj["span"] = span.toJson();
-    return obj;
-  }
-
-  QJsonObject StrategyHandler::toJson() const {
-    QJsonObject obj;
-    obj["kind"] = QString::fromStdString(toString());
-    if (emitter)
-      obj["emitter"] = emitter->toJson();
-    if (body)
-      obj["body"] = body->toJson();
-    obj["srcId"] = QString::fromStdString(srcId);
-    obj["span"] = span.toJson();
-    return obj;
-  }
-
-  QJsonObject Expr::toJson() const {
-    QJsonObject obj;
-    if (v)
-      obj["v"] = v->toJson();
-    obj["srcId"] = QString::fromStdString(srcId);
-    obj["span"] = span.toJson();
-    return obj;
-  }
-
-  // Strategy sub-structs
-  QJsonObject Strategy::Seq::toJson() const
-  {
-    QJsonObject obj;
-    QJsonArray altsArray;
-    for (const auto& alt: alts) {
-      if (alt)
-        altsArray.append(alt->toJson());
-    }
-    obj["alts"] = altsArray;
-    return obj;
-  }
-
-  QJsonObject Strategy::Join::toJson() const {
-    QJsonObject obj;
-    QJsonArray altsArray;
-    for (const auto& alt: alts) {
-      if (alt)
-        altsArray.append(alt->toJson());
-    }
-    obj["alts"] = altsArray;
-    return obj;
-  }
-
-  QJsonObject Strategy::Either::toJson() const {
-    QJsonObject obj;
-    QJsonArray altsArray;
-    for (const auto& alt: alts) {
-      if (alt)
-        altsArray.append(alt->toJson());
-    }
-    obj["alts"] = altsArray;
-    return obj;
-  }
-
-  QJsonObject Strategy::Let::toJson() const {
-    QJsonObject obj;
-    obj["name"] = QString::fromStdString(name);
-    if (call)
-      obj["call"] = call->toJson();
-    return obj;
-  }
-
-  QJsonObject Strategy::Within::toJson() const {
-    QJsonObject obj;
-    obj["seconds"] = seconds;
-    if (a)
-      obj["a"] = a->toJson();
-    if (b)
-      obj["b"] = b->toJson();
-    QJsonArray handlersArray;
-    for (const auto& handler: handlers) {
-      if (handler)
-        handlersArray.append(handler->toJson());
-    }
-    obj["handlers"] = handlersArray;
-    return obj;
-  }
-
-  QJsonObject Strategy::IfElse::toJson() const {
-    QJsonObject obj;
-    if (cond)
-      obj["cond"] = cond->toJson();
-    if (a)
-      obj["a"] = a->toJson();
-    if (b)
-      obj["b"] = b->toJson();
-    return obj;
-  }
-
-  QJsonObject Strategy::Repeat::toJson() const {
-    QJsonObject obj;
-    obj["seconds"] = seconds;
-    obj["iterations"] = iterations;
-    if (a)
-      obj["a"] = a->toJson();
-    QJsonArray handlersArray;
-    for (const auto& handler: handlers) {
-      if (handler)
-        handlersArray.append(handler->toJson());
-    }
-    obj["handlers"] = handlersArray;
-    return obj;
-  }
-
-  QJsonObject Strategy::Guard::toJson() const {
-    QJsonObject obj;
-    if (cond)
-      obj["cond"] = cond->toJson();
-    return obj;
-  }
-
-  QJsonObject Strategy::End::toJson() const {
-    QJsonObject obj;
-    return obj;
-  }
-
-  QJsonObject Strategy::Continue::toJson() const {
-    QJsonObject obj;
-    return obj;
-  }
-
-  QJsonObject Strategy::Ref::toJson() const {
-    QJsonObject obj;
-    obj["name"] = QString::fromStdString(name);
-    return obj;
-  }
-
-  QJsonObject Strategy::TaskCall::toJson() const {
-    QJsonObject obj;
-    if (call)
-      obj["call"] = call->toJson();
-    QJsonArray handlersArray;
-    for (const auto& handler: handlers) {
-      if (handler)
-        handlersArray.append(handler->toJson());
-    }
-    obj["handlers"] = handlersArray;
-    return obj;
-  }
-
-  QJsonObject Strategy::Paren::toJson() const {
-    QJsonObject obj;
-    if (a)
-      obj["a"] = a->toJson();
-    return obj;
-  }
-
-  QJsonObject Expr::Id::toJson() const {
-    QJsonObject obj;
-    obj["value"] = QString::fromStdString(value);
-    return obj;
-  }
-
-  QJsonObject Expr::Str::toJson() const {
-    QJsonObject obj;
-    obj["value"] = QString::fromStdString(value);
-    return obj;
-  }
-
-  QJsonObject Expr::Int::toJson() const {
-    QJsonObject obj;
-    obj["value"] = value;
-    return obj;
-  }
-
-  QJsonObject Expr::Float::toJson() const {
-    QJsonObject obj;
-    obj["value"] = value;
-    return obj;
-  }
-
-  QJsonObject Expr::Call::toJson() const {
-    QJsonObject obj;
-    if (value)
-      obj["value"] = value->toJson();
-    return obj;
-  }
-
-  QJsonObject Expr::Neg::toJson() const {
-    QJsonObject obj;
-    if (value)
-      obj["value"] = value->toJson();
-    return obj;
-  }
-
-  QJsonObject Expr::Not::toJson() const {
-    QJsonObject obj;
-    if (value)
-      obj["value"] = value->toJson();
-    return obj;
-  }
-
-  QJsonObject Expr::BinOp::toJson() const {
-    QJsonObject obj;
-    obj["operation"] = QString::fromStdString(toString());
-    if (a)
-      obj["a"] = a->toJson();
-    if (b)
-      obj["b"] = b->toJson();
-    return obj;
-  }
-
-  QJsonObject Expr::Paren::toJson() const {
-    QJsonObject obj;
-    if (value)
-      obj["value"] = value->toJson();
-    return obj;
-  }
 }
+
+QJsonObject toJson(const Strategy& strategy) {
+    QJsonObject obj;
+    if (strategy.v)
+        obj["v"] = toJson(strategy.v);
+    obj["srcId"] = QString::fromStdString(strategy.srcId);
+    obj["span"]  = toJson(strategy.span);
+    return obj;
+}
+
+QJsonObject toJson(const StrategyHandler& handler) {
+    QJsonObject obj;
+    obj["kind"] = QString::fromStdString(handler.toString());
+    if (handler.emitter)
+        obj["emitter"] = toJson(*handler.emitter);
+    if (handler.body)
+        obj["body"] = toJson(*handler.body);
+    obj["srcId"] = QString::fromStdString(handler.srcId);
+    obj["span"]  = toJson(handler.span);
+    return obj;
+}
+
+QJsonObject toJson(const Expr& expr) {
+    QJsonObject obj;
+    if (expr.v)
+        obj["v"] = toJson(*expr.v);
+    obj["srcId"] = QString::fromStdString(expr.srcId);
+    obj["span"]  = toJson(expr.span);
+    return obj;
+}
+
+// ---------------------------------------------------------------------------
+// Strategy nested structs
+// ---------------------------------------------------------------------------
+QJsonObject toJson(const Strategy::Seq& seq) {
+    QJsonObject obj;
+    QJsonArray altsArray;
+    for (const auto& alt : seq.alts) {
+        if (alt)
+            altsArray.append(toJson(*alt));
+    }
+    obj["alts"] = altsArray;
+    return obj;
+}
+
+QJsonObject toJson(const Strategy::Join& join) {
+    QJsonObject obj;
+    QJsonArray altsArray;
+    for (const auto& alt : join.alts) {
+        if (alt)
+            altsArray.append(toJson(*alt));
+    }
+    obj["alts"] = altsArray;
+    return obj;
+}
+
+QJsonObject toJson(const Strategy::Either& either) {
+    QJsonObject obj;
+    QJsonArray altsArray;
+    for (const auto& alt : either.alts) {
+        if (alt)
+            altsArray.append(toJson(*alt));
+    }
+    obj["alts"] = altsArray;
+    return obj;
+}
+
+QJsonObject toJson(const Strategy::Let& let) {
+    QJsonObject obj;
+    obj["name"] = QString::fromStdString(let.name);
+    if (let.call)
+        obj["call"] = toJson(*let.call);
+    return obj;
+}
+
+QJsonObject toJson(const Strategy::Within& within) {
+    QJsonObject obj;
+    obj["seconds"] = within.seconds;
+    if (within.a)
+        obj["a"] = toJson(*within.a);
+    if (within.b)
+        obj["b"] = toJson(*within.b);
+
+    QJsonArray handlersArray;
+    for (const auto& handler : within.handlers) {
+        if (handler)
+            handlersArray.append(toJson(*handler));
+    }
+    obj["handlers"] = handlersArray;
+    return obj;
+}
+
+QJsonObject toJson(const Strategy::IfElse& ifElse) {
+    QJsonObject obj;
+    if (ifElse.cond)
+        obj["cond"] = toJson(*ifElse.cond);
+    if (ifElse.a)
+        obj["a"] = toJson(*ifElse.a);
+    if (ifElse.b)
+        obj["b"] = toJson(*ifElse.b);
+    return obj;
+}
+
+QJsonObject toJson(const Strategy::Repeat& repeat) {
+    QJsonObject obj;
+    obj["seconds"]    = repeat.seconds;
+    obj["iterations"] = repeat.iterations;
+    if (repeat.a)
+        obj["a"] = toJson(*repeat.a);
+
+    QJsonArray handlersArray;
+    for (const auto& handler : repeat.handlers) {
+        if (handler)
+            handlersArray.append(toJson(*handler));
+    }
+    obj["handlers"] = handlersArray;
+    return obj;
+}
+
+QJsonObject toJson(const Strategy::Guard& guard) {
+    QJsonObject obj;
+    if (guard.cond)
+        obj["cond"] = toJson(*guard.cond);
+    return obj;
+}
+
+QJsonObject toJson(const Strategy::End& end) {
+    QJsonObject obj;
+    return obj;
+}
+
+QJsonObject toJson(const Strategy::Continue& cont) {
+    QJsonObject obj;
+    return obj;
+}
+
+QJsonObject toJson(const Strategy::Ref& ref) {
+    QJsonObject obj;
+    obj["name"] = QString::fromStdString(ref.name);
+    return obj;
+}
+
+QJsonObject toJson(const Strategy::TaskCall& taskCall) {
+    QJsonObject obj;
+    if (taskCall.call)
+        obj["call"] = toJson(*taskCall.call);
+
+    QJsonArray handlersArray;
+    for (const auto& handler : taskCall.handlers) {
+        if (handler)
+            handlersArray.append(toJson(*handler));
+    }
+    obj["handlers"] = handlersArray;
+    return obj;
+}
+
+QJsonObject toJson(const Strategy::Paren& paren) {
+    QJsonObject obj;
+    if (paren.a)
+        obj["a"] = toJson(*paren.a);
+    return obj;
+}
+
+// ---------------------------------------------------------------------------
+// Expr nested structs
+// ---------------------------------------------------------------------------
+QJsonObject toJson(const Expr::Id& id) {
+    QJsonObject obj;
+    obj["value"] = QString::fromStdString(id.value);
+    return obj;
+}
+
+QJsonObject toJson(const Expr::Str& str) {
+    QJsonObject obj;
+    obj["value"] = QString::fromStdString(str.value);
+    return obj;
+}
+
+QJsonObject toJson(const Expr::Int& i) {
+    QJsonObject obj;
+    obj["value"] = i.value;
+    return obj;
+}
+
+QJsonObject toJson(const Expr::Float& f) {
+    QJsonObject obj;
+    obj["value"] = f.value;
+    return obj;
+}
+
+QJsonObject toJson(const Expr::Call& call) {
+    QJsonObject obj;
+    if (call.value)
+        obj["value"] = toJson(*call.value);
+    return obj;
+}
+
+QJsonObject toJson(const Expr::Neg& neg) {
+    QJsonObject obj;
+    if (neg.value)
+        obj["value"] = toJson(*neg.value);
+    return obj;
+}
+
+QJsonObject toJson(const Expr::Not& not_) {
+    QJsonObject obj;
+    if (not_.value)
+        obj["value"] = toJson(*not_.value);
+    return obj;
+}
+
+QJsonObject toJson(const Expr::BinOp& binOp) {
+    QJsonObject obj;
+    obj["operation"] = QString::fromStdString(binOp.toString());
+    if (binOp.a)
+        obj["a"] = toJson(*binOp.a);
+    if (binOp.b)
+        obj["b"] = toJson(*binOp.b);
+    return obj;
+}
+
+QJsonObject toJson(const Expr::Paren& paren) {
+    QJsonObject obj;
+    if (paren.value)
+        obj["value"] = toJson(*paren.value);
+    return obj;
+}
+
+} // namespace koda

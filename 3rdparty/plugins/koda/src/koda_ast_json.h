@@ -4,60 +4,53 @@
 
 #include <QJsonObject>
 #include <QJsonArray>
-#include <QJsonArray>
 #include <QString>
 
-namespace koda
-{
-QJsonObject System::toJson();
+namespace koda {
 
-QJsonObject Span::toJson();
+// Core types
+QJsonObject toJson(const Span& span);
+QJsonObject toJson(const Component& component);
+QJsonObject toJson(const Argument& argument);
+QJsonObject toJson(const Statement& statement);
+QJsonObject toJson(const Flow& flow);
+QJsonObject toJson(const VarDef& varDef);
+QJsonObject toJson(const EventDef& eventDef);
+QJsonObject toJson(const EventDefComponent& edc);
+QJsonObject toJson(const EventCall& eventCall);
+QJsonObject toJson(const RosDef& rosDef);
+QJsonObject toJson(const ActionDef& actionDef);
+QJsonObject toJson(const StrategyBlock& block);
+QJsonObject toJson(const VarsBlock& block);
+QJsonObject toJson(const Strategy& strategy);
+QJsonObject toJson(const StrategyHandler& handler);
+QJsonObject toJson(const Expr& expr);
+QJsonObject toJson(const System& system);
 
-QJsonObject Span::toJson();
-QJsonObject Argument::toJson();
-QJsonObject Statement::toJson();
+// Strategy nested structs
+QJsonObject toJson(const Strategy::Seq& seq);
+QJsonObject toJson(const Strategy::Join& join);
+QJsonObject toJson(const Strategy::Either& either);
+QJsonObject toJson(const Strategy::Let& let);
+QJsonObject toJson(const Strategy::Within& within);
+QJsonObject toJson(const Strategy::IfElse& ifElse);
+QJsonObject toJson(const Strategy::Repeat& repeat);
+QJsonObject toJson(const Strategy::Guard& guard);
+QJsonObject toJson(const Strategy::End& end);
+QJsonObject toJson(const Strategy::Continue& cont);
+QJsonObject toJson(const Strategy::Ref& ref);
+QJsonObject toJson(const Strategy::TaskCall& taskCall);
+QJsonObject toJson(const Strategy::Paren& paren);
 
-QJsonObject Flow::toJson();
-QJsonObject VarDef::toJson();
+// Expr nested structs
+QJsonObject toJson(const Expr::Id& id);
+QJsonObject toJson(const Expr::Str& str);
+QJsonObject toJson(const Expr::Int& i);
+QJsonObject toJson(const Expr::Float& f);
+QJsonObject toJson(const Expr::Call& call);
+QJsonObject toJson(const Expr::Neg& neg);
+QJsonObject toJson(const Expr::Not& not_);
+QJsonObject toJson(const Expr::BinOp& binOp);
+QJsonObject toJson(const Expr::Paren& paren);
 
-QJsonObject EventDef::toJson();
-QJsonObject EventDefComponent::toJson();
-QJsonObject EventCall::toJson();
-
-QJsonObject RosDef::toJson();
-QJsonObject ActionDef::toJson();
-
-QJsonObject StrategyBlock::toJson();
-QJsonObject VarsBlock::toJson();
-
-QJsonObject Strategy::toJson();
-QJsonObject StrategyHandler::toJson();
-
-QJsonObject Expr::toJson();
-
-// Strategy node helpers
-QJsonObject Strategy::Seq::toJson();
-QJsonObject Strategy::Join::toJson();
-QJsonObject Strategy::Either::toJson();
-QJsonObject Strategy::Let::toJson();
-QJsonObject Strategy::Within::toJson();
-QJsonObject Strategy::IfElse::toJson();
-QJsonObject Strategy::Repeat::toJson();
-QJsonObject Strategy::Guard::toJson();
-QJsonObject Strategy::End::toJson();
-QJsonObject Strategy::Continue::toJson();
-QJsonObject Strategy::Ref::toJson();
-QJsonObject Strategy::TaskCall::toJson();
-QJsonObject Strategy::Paren::toJson();
-
-// Expr nodes
-QJsonObject Expr::Id::toJson();
-QJsonObject Expr::Str::toJson();
-QJsonObject Expr::Int::toJson();
-QJsonObject Expr::Float::toJson();
-QJsonObject Expr::Call::toJson();
-QJsonObject Expr::Neg::toJson();
-QJsonObject Expr::Not::toJson();
-QJsonObject Expr::BinOp::toJson();
-QJsonObject Expr::Paren::toJson();
-}
+} // namespace koda
