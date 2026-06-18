@@ -63,7 +63,7 @@ QJsonObject toJson(const Statement& statement) {
       if (ptr)
         obj["node"] = toJson(*ptr);
     }, statement.node);
-    obj["span"] = toJson(statement.span);
+    // obj["span"] = toJson(statement.span);
     return obj;
 }
 
