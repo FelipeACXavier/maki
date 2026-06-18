@@ -355,8 +355,8 @@ VoidResult KodaEmitter::emitRepeat(const koda::Strategy::Repeat& node, std::stri
 
 VoidResult KodaEmitter::emitEnd(const koda::Strategy::End& node, std::stringstream& ss, const std::string& format)
 {
-  Q_UNUSED(node)
-  Q_UNUSED(format)
+  Q_UNUSED(node);
+  Q_UNUSED(format);
 
   write(ss, "end");
   // ss << "end";
@@ -481,8 +481,11 @@ VoidResult KodaEmitter::emitCall(const koda::Expr::Call& expr, std::stringstream
 
 VoidResult KodaEmitter::emitNeg(const koda::Expr::Neg& expr, std::stringstream& ss, const std::string& format)
 {
-  // ss << expr.value;
-  write(ss, expr.value);
+  std::stringstream ssOut("");
+  ssOut << expr.value;
+  std::string out;
+  ssOut >> out;
+  write(ss, out);
   return VoidResult();
 }
 
