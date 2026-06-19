@@ -111,83 +111,83 @@ std::vector<std::string> Compiler::generatedFiles() const
   return mGeneratedFiles;
 }
 
-VoidResult Compiler::loadMakiMapping()
-{
-  // maki_mapping.json sits one level above the models outputDir
-  std::string path = mOptions.outputDir + "/../maki_mapping.json";
-  std::ifstream file(path);
-  if (!file.is_open())
-  {
-    LOG_DEBUG("Could not open maki_mapping.json at %s, dezyne mapping will be incomplete", path.c_str());
-    return VoidResult();
-  }
-
-  std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-
-  // Extract all quoted strings in order: they appear as alternating key/value pairs
-  // after the section keys "nodes" and "transitions" are skipped.
-  // Structure: { "nodes": { "key": "val", ... }, "transitions": { "key": "val", ... } }
-  // We collect all strings, skip the section headers, then consume key/value pairs.
-  std::vector<std::string> tokens;
-  size_t pos = 0;
-  while (pos < content.size())
-  {
-    auto start = content.find('"', pos);
-    if (start == std::string::npos) break;
-    auto end = content.find('"', start + 1);
-    if (end == std::string::npos) break;
-    tokens.push_back(content.substr(start + 1, end - start - 1));
-    pos = end + 1;
-  }
-
-  // Skip "nodes" and "transitions" section headers; treat every other token as key/value
-  for (size_t i = 0; i < tokens.size(); )
-  {
-    const auto& t = tokens[i];
-    if (t == "nodes" || t == "flows" || t == "transitions")
-    {
-      ++i;
-      continue;
-    }
-    // Expect a key followed immediately by a value
-    if (i + 1 < tokens.size())
-    {
-      mMakiMapping[tokens[i]] = tokens[i + 1];
-      i += 2;
-    }
-    else
-      break;
-  }
-
-  LOG_DEBUG("Loaded %zu maki mappings", mMakiMapping.size());
-  return VoidResult();
-}
-
-VoidResult Compiler::writeSrcMap() const
-{
-  std::string path = mOptions.outputDir + "/../dezyne_mapping.json";
-  std::ofstream file(path);
-  if (!file.is_open())
-    return VoidResult::Failed("Failed to open dezyne_mapping.json for writing: " + path);
-
-  file << "{\n";
-  bool first = true;
-  for (const auto& [dezyneName, srcId] : mSrcMap)
-  {
-    if (!first) file << ",\n";
-    file << "  \"" << dezyneName << "\": \"" << srcId << "\"";
-    first = false;
-  }
-  file << "\n}\n";
-  return VoidResult();
-}
+// VoidResult Compiler::loadMakiMapping()
+// {
+//   // maki_mapping.json sits one level above the models outputDir
+//   std::string path = mOptions.outputDir + "/../maki_mapping.json";
+//   std::ifstream file(path);
+//   if (!file.is_open())
+//   {
+//     LOG_DEBUG("Could not open maki_mapping.json at %s, dezyne mapping will be incomplete", path.c_str());
+//     return VoidResult();
+//   }
+//
+//   std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+//
+//   // Extract all quoted strings in order: they appear as alternating key/value pairs
+//   // after the section keys "nodes" and "transitions" are skipped.
+//   // Structure: { "nodes": { "key": "val", ... }, "transitions": { "key": "val", ... } }
+//   // We collect all strings, skip the section headers, then consume key/value pairs.
+//   std::vector<std::string> tokens;
+//   size_t pos = 0;
+//   while (pos < content.size())
+//   {
+//     auto start = content.find('"', pos);
+//     if (start == std::string::npos) break;
+//     auto end = content.find('"', start + 1);
+//     if (end == std::string::npos) break;
+//     tokens.push_back(content.substr(start + 1, end - start - 1));
+//     pos = end + 1;
+//   }
+//
+//   // Skip "nodes" and "transitions" section headers; treat every other token as key/value
+//   for (size_t i = 0; i < tokens.size(); )
+//   {
+//     const auto& t = tokens[i];
+//     if (t == "nodes" || t == "flows" || t == "transitions")
+//     {
+//       ++i;
+//       continue;
+//     }
+//     // Expect a key followed immediately by a value
+//     if (i + 1 < tokens.size())
+//     {
+//       mMakiMapping[tokens[i]] = tokens[i + 1];
+//       i += 2;
+//     }
+//     else
+//       break;
+//   }
+//
+//   LOG_DEBUG("Loaded %zu maki mappings", mMakiMapping.size());
+//   return VoidResult();
+// }
+//
+// VoidResult Compiler::writeSrcMap() const
+// {
+//   std::string path = mOptions.outputDir + "/../dezyne_mapping.json";
+//   std::ofstream file(path);
+//   if (!file.is_open())
+//     return VoidResult::Failed("Failed to open dezyne_mapping.json for writing: " + path);
+//
+//   file << "{\n";
+//   bool first = true;
+//   for (const auto& [dezyneName, srcId] : mSrcMap)
+//   {
+//     if (!first) file << ",\n";
+//     file << "  \"" << dezyneName << "\": \"" << srcId << "\"";
+//     first = false;
+//   }
+//   file << "\n}\n";
+//   return VoidResult();
+// }
 
 VoidResult Compiler::generate()
 {
   mGeneratedFiles.clear();
   mSrcMap.clear();
 
-  RETURN_ON_FAILURE(loadMakiMapping());
+  // RETURN_ON_FAILURE(loadMakiMapping());
 
   if (mOptions.pluginRule == CompilerOptions::PluginOption::PluginsOnly)
     return runPlugins();
@@ -214,7 +214,7 @@ VoidResult Compiler::generate()
   mEnv = env;
 
   LOG_DEBUG("MAPPING: %zu", mSrcMap.size());
-  RETURN_ON_FAILURE(writeSrcMap());
+  // RETURN_ON_FAILURE(writeSrcMap());
 
   if (mOptions.pluginRule == CompilerOptions::PluginOption::RunAll)
     return runPlugins();
@@ -636,8 +636,8 @@ Result<koda::ReturnValue> Compiler::generateFlow(PFlow flow, Environment& env)
   env.flows[flow->name] = Flow{flow->name, env.syncCalls, env.asyncCalls, env.signalCalls, env.strategies};
   env.system.instances.insert({flowName(flow->name), toFlowVariable(toFilename(flow->name))});
 
-  if (mMakiMapping.count(flow->name))
-    mSrcMap[flow->name] = mMakiMapping.at(flow->name);
+  // if (mMakiMapping.count(flow->name))
+  //   mSrcMap[flow->name] = mMakiMapping.at(flow->name);
   if (mOptions.verbose > 0)
     env.print();
 
@@ -950,8 +950,8 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
     }
 
     // Map abort handler to same maki element as the capability it guards
-    if (mSrcMap.count(env.previousCall))
-      mSrcMap[std::format("ah{}", id)] = mSrcMap.at(env.previousCall);
+    // if (mSrcMap.count(env.previousCall))
+    //   mSrcMap[std::format("ah{}", id)] = mSrcMap.at(env.previousCall);
 
     return koda::ReturnValue{Format("ah%d.api", id)};
   }
@@ -977,8 +977,8 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
     }
 
     // Map error handler to same maki element as the capability it guards
-    if (mSrcMap.count(env.previousCall))
-      mSrcMap[std::format("fh{}", id)] = mSrcMap.at(env.previousCall);
+    // if (mSrcMap.count(env.previousCall))
+    //   mSrcMap[std::format("fh{}", id)] = mSrcMap.at(env.previousCall);
 
     return koda::ReturnValue{Format("fh%d.api", id)};
   }
@@ -1002,8 +1002,8 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
     env.core.push_back(std::format("sh{}.handler <=> {}", id, strat.name));
 
     // Signal handler: expr.name is "receiver_event", which is the transition key
-    if (mMakiMapping.count(expr.name))
-      mSrcMap[std::format("sh{}", id)] = mMakiMapping.at(expr.name);
+    // if (mMakiMapping.count(expr.name))
+    //   mSrcMap[std::format("sh{}", id)] = mMakiMapping.at(expr.name);
 
     return koda::ReturnValue{std::format("sh{}.api", id)};
   }
@@ -1027,8 +1027,8 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
     env.core.push_back(std::format("sh{}.handler <=> {}", id, strat.name));
 
     // Signal continue handler: expr.call is "receiver_event", which is the transition key
-    if (mMakiMapping.count(expr.call))
-      mSrcMap[std::format("sh{}", id)] = mMakiMapping.at(expr.call);
+    // if (mMakiMapping.count(expr.call))
+    //   mSrcMap[std::format("sh{}", id)] = mMakiMapping.at(expr.call);
 
     return koda::ReturnValue{std::format("sh{}.api", id)};
   }
@@ -1064,8 +1064,8 @@ Result<koda::ReturnValue> Compiler::generateEventCall(PEventCall call, Environme
     });
 
     // Async capability call: koda name is call->name (e.g. "drive")
-    if (mMakiMapping.count(call->name))
-      mSrcMap[identifier] = mMakiMapping.at(call->name);
+    // if (mMakiMapping.count(call->name))
+    //   mSrcMap[identifier] = mMakiMapping.at(call->name);
 
     return koda::ReturnValue{identifier};
   }
@@ -1086,8 +1086,8 @@ Result<koda::ReturnValue> Compiler::generateEventCall(PEventCall call, Environme
     auto identifier = std::format("{}_{}", call->receiver, call->name);
 
     // Sync/signal call: koda transition name is "receiver_name" (e.g. "arm_position")
-    if (mMakiMapping.count(identifier))
-      mSrcMap[identifier] = mMakiMapping.at(identifier);
+    // if (mMakiMapping.count(identifier))
+    //   mSrcMap[identifier] = mMakiMapping.at(identifier);
 
     return koda::ReturnValue{identifier};
   }
