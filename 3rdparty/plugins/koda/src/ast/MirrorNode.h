@@ -16,6 +16,10 @@ struct MirrorNode {
   bool hasSrcId() const { return !srcId.empty(); }
 };
 
+MirrorNode loadMirrorAST(const std::string& filepath);
+std::vector<MirrorNode> loadComponents(const std::string& filepath);
+MirrorNode parseMirrorNode(const json& j);
+
 class MirrorWalker {
   const MirrorNode* current = nullptr;
   std::vector<const MirrorNode*> stack;
