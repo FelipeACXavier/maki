@@ -124,6 +124,7 @@ target_include_directories(${LIB_NAME}
 target_link_libraries(${LIB_NAME}
   PUBLIC
     ${ANTLR4_RUNTIME_LIBRARY}
+    nlohmann_json::nlohmann_json
   PRIVATE
     libcpphelpers
 )
@@ -202,6 +203,7 @@ function(add_koda_plugin TARGET_NAME USE_ANTLR_ENABLED)
     ${COMPILER_LIBS}
     libcpphelpers
     libmaki
+    nlohmann_json::nlohmann_json
   )
 
   target_include_directories(${TARGET_NAME} PRIVATE
