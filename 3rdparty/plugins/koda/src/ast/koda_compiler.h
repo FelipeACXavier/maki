@@ -325,6 +325,12 @@ private:
   // VoidResult loadMakiMapping();
   // VoidResult writeSrcMap() const;
 
+  MirrorNode mMirrorRoot;
+  MirrorWalker mWalker;
+  std::map<std::string, std::string> mAstMap;
+
+  void mapToSrcId(const std::string& dezyneName, const std::string& srcId);
+
   Result<ReturnValue> generateTask(PComponent task, Environment& env);
   Result<ReturnValue> generateCapability(PComponent capability, Environment& env);
   Result<ReturnValue> emitCapability(PComponent capability, Environment& env);

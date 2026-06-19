@@ -182,10 +182,28 @@ std::vector<std::string> Compiler::generatedFiles() const
 //   return VoidResult();
 // }
 
+void Compiler::mapToSrcId(const std::string& dezyneName, const std::string& srcId) {
+  if (!srcId.empty())
+    mAstMap[dezyneName] = srcId;
+  else
+    LOG_WARNING("No srcId for '%s'", dezyneName.c_str());
+}
+
 VoidResult Compiler::generate()
 {
   mGeneratedFiles.clear();
   mSrcMap.clear();
+
+  std::string mirrorPath = mOptions.outputDir + "/../maki_ast.json";
+  try
+  {
+    mMirrorRoot = loadMirrorAST(mirrorPath);
+  } catch (const std::exception& e)
+  {
+    LOG_ERROR("Failed to load mirror AST: %s", e.what());
+  }
+  mWalker.reset(mMirrorRoot);
+
 
   // RETURN_ON_FAILURE(loadMakiMapping());
 
