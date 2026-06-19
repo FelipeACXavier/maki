@@ -315,8 +315,6 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, Environment& e
   for (auto& statement : task->statements)
   {
     MirrorNode statementMirror = statementChildren[stmntIdx];
-    if (!(statementMirror.ASTtype == "Statement") || !(statementMirror.name == statement->name))
-      LOG_DEBUG("Mirror AST statement mismatch at index %zu: expected Statement with name '%s', found '%s' with name '%s'", stmntIdx, statement->name.c_str(), statementMirror.ASTtype.c_str(), statementMirror.name.c_str());
     mWalker.setChild(statementMirror);
     RETURN_ON_FAILURE(generateStatement(statement, env));
     mWalker.leave();
@@ -500,8 +498,6 @@ Result<koda::ReturnValue> Compiler::generateCapability(PComponent capability, En
   for (const auto& statement : capability->statements)
   {
     MirrorNode statementMirror = statementChildren[stmntIdx];
-    if (!(statementMirror.ASTtype == "Statement") || !(statementMirror.name == statement->name))
-      LOG_DEBUG("Mirror AST statement mismatch at index %zu: expected Statement with name '%s', found '%s' with name '%s'", stmntIdx, statement->name.c_str(), statementMirror.ASTtype.c_str(), statementMirror.name.c_str());
     mWalker.setChild(statementMirror);
     RETURN_ON_FAILURE(generateStatement(statement, env));
     mWalker.leave();
@@ -608,8 +604,6 @@ Result<ReturnValue> Compiler::generateActionDef(PActionDef action, Environment& 
   for (const auto& def : action->rosDefs)
   {
     MirrorNode defMirror = adMirror[rdIdx];
-    if (!(defMirror.ASTtype == "RosDef") || !(defMirror.name == action->name))
-      LOG_ERROR("Mirror AST action definition mismatch at index %zu: expected RosDef with name '%s', found '%s' with name '%s'", rdIdx, action->name.c_str(), defMirror.ASTtype.c_str(), defMirror.name.c_str());
     mWalker.setChild(defMirror);
     RETURN_ON_FAILURE(generateRosDef(def, env));
     mWalker.leave();
