@@ -35,8 +35,9 @@ namespace koda
     return it != groups.end() ? it->second : empty;
   }
 
-  std::string MirrorNode::prop(const std::string& key, const std::string& def = "") const
+  std::string MirrorNode::prop(const std::string& key) const
   {
+    std::string def("");
     auto it = properties.find(key);
     return it != properties.end() ? it->second : def;
   }

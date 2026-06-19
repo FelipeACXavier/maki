@@ -36,7 +36,7 @@ struct MirrorNode {
   std::string toString() const;
 
   const std::vector<MirrorNode>& group(const std::string& name) const;
-  std::string prop(const std::string& key, const std::string* def = "") const;
+  std::string prop(const std::string& key) const;
 };
 
 MirrorNode loadMirrorAST(const std::string& filepath);
