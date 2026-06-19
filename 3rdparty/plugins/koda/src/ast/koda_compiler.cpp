@@ -583,6 +583,7 @@ Result<ReturnValue> Compiler::generateStrategyBlock(PStrategyBlock strategy, Env
   size_t flowIdx = 0;
   for (auto& flow : strategy->flows)
   {
+    LOG_DEBUG("BEFORE %d", flowIdx);
     MirrorNode flowMirror = flowsMirror[flowIdx];
     if (!(flowMirror.ASTtype == "Flow") || !(flowMirror.name == flow->name))
       LOG_ERROR("Mirror AST flow mismatch at index %zu: expected Flow with name) '%s', found '%s' with name '%s'", flowIdx, flow->name.c_str(), flowMirror.ASTtype.c_str(), flowMirror.name.c_str());
@@ -590,6 +591,7 @@ Result<ReturnValue> Compiler::generateStrategyBlock(PStrategyBlock strategy, Env
     RETURN_ON_FAILURE(generateFlow(flow, env));
     mWalker.leave();
     flowIdx++;
+    LOG_DEBUG("AFTER");
   }
 
   return koda::ReturnValue{};
