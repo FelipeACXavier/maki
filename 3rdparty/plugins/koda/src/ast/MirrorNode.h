@@ -38,8 +38,8 @@ public:
   void enterChild(size_t index) {
     if (!current) return;
     stack.push_back(current);
-    current = (index < current->children.size())
-              ? &current->children[index]
+    current = (index < current->components.size())
+              ? &current->components[index]
               : nullptr;
   }
   void leave() {

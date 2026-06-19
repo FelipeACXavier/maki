@@ -213,8 +213,8 @@ VoidResult Compiler::generate()
     return runPlugins();
 
   Environment env;
-  const auto& compChildren = mWalker.node()->children;
-  LOG_DEBUG("SYSTEM MIRROR AST: %s, %d", mMirrorRoot.toString().c_str(), mMirrorRoot.children.size());
+  const auto& compChildren = mWalker.node()->components;
+  LOG_DEBUG("SYSTEM MIRROR AST: %s, %d", mMirrorRoot.toString().c_str(), mMirrorRoot.components.size());
   if (!(mWalker.node()->ASTtype == "System"))
     LOG_ERROR("Mirror AST root is not a System node, found: %s", mWalker.node()->ASTtype.c_str());
   size_t compIdx = 0;
