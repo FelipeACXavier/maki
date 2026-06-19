@@ -38,6 +38,7 @@ namespace koda
     // If the JSON has a "children" array, recurse
     if (j.contains("children") && j["children"].is_array()) {
       for (const auto& child : j["children"]) {
+        LOG_DEBUG("CHILD");
         node.children.push_back(parseMirrorNode(child));
       }
     }
