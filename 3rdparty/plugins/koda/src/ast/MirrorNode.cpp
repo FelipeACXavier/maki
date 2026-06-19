@@ -35,20 +35,20 @@ namespace koda
     return it != groups.end() ? it->second : empty;
   }
 
-  std::string MirrorNode::prop(const std::string& key, const std::string& def) const
+  std::string MirrorNode::prop(const std::string& key, const std::string& def = "") const
   {
     auto it = properties.find(key);
     return it != properties.end() ? it->second : def;
   }
 
-  static void addGroupIfArray(json& j, MirrorNode& node, const std::string& key) {
+  static void addGroupIfArray(const json& j, MirrorNode& node, const std::string& key) {
     if (j.contains(key) && j[key].is_array()) {
       auto& vec = node.groups[key];
       for (auto& item : j[key])
         vec.push_back(parseMirrorNode(item));
     }
   }
-  static void addGroupIfObject(json& j, MirrorNode& node, const std::string& key) {
+  static void addGroupIfObject(const json& j, MirrorNode& node, const std::string& key) {
     if (j.contains(key) && j[key].is_object())
       node.groups[key].push_back(parseMirrorNode(j[key]));
   }
