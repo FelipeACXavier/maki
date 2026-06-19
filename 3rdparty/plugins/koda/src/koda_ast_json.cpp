@@ -10,6 +10,7 @@ QJsonObject toJson(const System& system) {
             compArray.append(toJson(*component));
     }
     obj["components"] = compArray;
+    obj["ASTtype"] = "System";
     return obj;
 }
 
@@ -19,6 +20,7 @@ QJsonObject toJson(const Span& span) {
     obj["colStart"]  = span.colStart;
     obj["lineEnd"]   = span.lineEnd;
     obj["colEnd"]    = span.colEnd;
+    obj["ASTtype"] = "Span";
     return obj;
 }
 
@@ -29,6 +31,7 @@ QJsonObject toJson(const Component& component) {
     obj["name"]  = QString::fromStdString(component.name);
     obj["srcId"] = QString::fromStdString(component.srcId);
     obj["span"]  = toJson(component.span);
+    obj["ASTtype"] = "Component";
 
     QJsonArray argsArray;
     for (const auto& arg : component.args) {
@@ -54,6 +57,7 @@ QJsonObject toJson(const Argument& argument) {
     obj["b"]     = QString::fromStdString(argument.b);
     obj["srcId"] = QString::fromStdString(argument.srcId);
     obj["span"]  = toJson(argument.span);
+    obj["ASTtype"] = "Argument";
     return obj;
 }
 
@@ -64,6 +68,7 @@ QJsonObject toJson(const Statement& statement) {
         obj["node"] = toJson(*ptr);
     }, statement.node);
     // obj["span"] = toJson(statement.span);
+    obj["ASTtype"] = "Statement";
     return obj;
 }
 
@@ -82,6 +87,7 @@ QJsonObject toJson(const Flow& flow) {
         obj["strategy"] = toJson(*flow.strategy);
 
     obj["span"] = toJson(flow.span);
+    obj["ASTtype"] = "Flow";
     return obj;
 }
 
@@ -95,6 +101,7 @@ QJsonObject toJson(const VarDef& varDef) {
     if (varDef.fallback)
         obj["fallback"] = toJson(*varDef.fallback);
     obj["span"] = toJson(varDef.span);
+    obj["ASTtype"] = "VarDef";
     return obj;
 }
 
@@ -119,6 +126,7 @@ QJsonObject toJson(const EventDef& eventDef) {
     obj["components"] = componentsArray;
 
     obj["span"] = toJson(eventDef.span);
+    obj["ASTtype"] = "EventDef";
     return obj;
 }
 
@@ -126,7 +134,8 @@ QJsonObject toJson(const EventDefComponent& edc) {
   QJsonObject obj;
   obj["kind"] = QString::fromStdString(edc.kind);
   obj["text"] = QString::fromStdString(edc.text);
-  obj["span"] = toJson(edc.span);    // ADD
+  obj["span"] = toJson(edc.span);
+  obj["ASTtype"] = "EventDefComponent";
   return obj;
 }
 
@@ -143,6 +152,7 @@ QJsonObject toJson(const EventCall& eventCall) {
     }
     obj["args"] = argsArray;
     obj["span"] = toJson(eventCall.span);
+    obj["ASTtype"] = "EventCall";
     return obj;
 }
 
@@ -153,6 +163,7 @@ QJsonObject toJson(const RosDef& rosDef) {
         obj["def"] = toJson(*rosDef.def);
     obj["srcId"] = QString::fromStdString(rosDef.srcId);
     obj["span"]  = toJson(rosDef.span);
+    obj["ASTtype"] = "RosDef";
     return obj;
 }
 
@@ -170,6 +181,7 @@ QJsonObject toJson(const ActionDef& actionDef) {
     }
     obj["rosDefs"] = rosDefsArray;
     obj["span"]    = toJson(actionDef.span);
+    obj["ASTtype"] = "ActionDef";
     return obj;
 }
 
@@ -182,6 +194,7 @@ QJsonObject toJson(const StrategyBlock& block) {
     }
     obj["flows"] = flowArray;
     obj["span"]  = toJson(block.span);
+    obj["ASTtype"] = "StrategyBlock";
     return obj;
 }
 
@@ -194,6 +207,7 @@ QJsonObject toJson(const VarsBlock& block) {
     }
     obj["vars"] = varsArray;
     obj["span"] = toJson(block.span);
+    obj["ASTtype"] = "VarsBlock";
     return obj;
 }
 
@@ -205,6 +219,7 @@ QJsonObject toJson(const Strategy& strategy) {
     }, strategy.v);
     obj["srcId"] = QString::fromStdString(strategy.srcId);
     obj["span"]  = toJson(strategy.span);
+    obj["ASTtype"] = "Strategy";
     return obj;
 }
 
@@ -217,6 +232,7 @@ QJsonObject toJson(const StrategyHandler& handler) {
         obj["body"] = toJson(*handler.body);
     obj["srcId"] = QString::fromStdString(handler.srcId);
     obj["span"]  = toJson(handler.span);
+    obj["ASTtype"] = "StrategyHandler";
     return obj;
 }
 
@@ -228,6 +244,7 @@ QJsonObject toJson(const Expr& expr) {
     }, expr.v);
     obj["srcId"] = QString::fromStdString(expr.srcId);
     obj["span"]  = toJson(expr.span);
+    obj["ASTtype"] = "Expr";
     return obj;
 }
 
@@ -242,6 +259,7 @@ QJsonObject toJson(const Strategy::Seq& seq) {
     }
     obj["alts"] = altsArray;
     obj["span"] = toJson(seq.span);   // ADD THIS
+    obj["ASTtype"] = "Strategy::Seq";
     return obj;
 }
 
@@ -253,6 +271,7 @@ QJsonObject toJson(const Strategy::Join& join) {
     }
     obj["alts"] = altsArray;
     obj["span"] = toJson(join.span);   // ADD
+    obj["ASTtype"] = "Strategy::Join";
     return obj;
 }
 
@@ -264,6 +283,7 @@ QJsonObject toJson(const Strategy::Either& either) {
     }
     obj["alts"] = altsArray;
     obj["span"] = toJson(either.span); // ADD
+    obj["ASTtype"] = "Strategy::Either";
     return obj;
 }
 
@@ -272,6 +292,7 @@ QJsonObject toJson(const Strategy::Let& let) {
     obj["name"] = QString::fromStdString(let.name);
     if (let.call) obj["call"] = toJson(*let.call);
     obj["span"] = toJson(let.span);    // ADD
+    obj["ASTtype"] = "Strategy::Let";
     return obj;
 }
 
@@ -286,6 +307,7 @@ QJsonObject toJson(const Strategy::Within& within) {
     }
     obj["handlers"] = handlersArray;
     obj["span"] = toJson(within.span); // ADD
+    obj["ASTtype"] = "Strategy::Within";
     return obj;
 }
 
@@ -295,6 +317,7 @@ QJsonObject toJson(const Strategy::IfElse& ifElse) {
     if (ifElse.a)    obj["a"] = toJson(*ifElse.a);
     if (ifElse.b)    obj["b"] = toJson(*ifElse.b);
     obj["span"] = toJson(ifElse.span); // ADD
+    obj["ASTtype"] = "IfElse";
     return obj;
 }
 
@@ -309,6 +332,7 @@ QJsonObject toJson(const Strategy::Repeat& repeat) {
     }
     obj["handlers"] = handlersArray;
     obj["span"] = toJson(repeat.span); // ADD
+    obj["ASTtype"] = "Strategy::Repeat";
     return obj;
 }
 
@@ -316,18 +340,21 @@ QJsonObject toJson(const Strategy::Guard& guard) {
     QJsonObject obj;
     if (guard.cond) obj["cond"] = toJson(*guard.cond);
     obj["span"] = toJson(guard.span);  // ADD
+    obj["ASTtype"] = "Strategy::Guard";
     return obj;
 }
 
 QJsonObject toJson(const Strategy::End& end) {
     QJsonObject obj;
     obj["span"] = toJson(end.span);    // ADD
+    obj["ASTtype"] = "Strategy::End";
     return obj;
 }
 
 QJsonObject toJson(const Strategy::Continue& cont) {
     QJsonObject obj;
     obj["span"] = toJson(cont.span);   // ADD
+    obj["ASTtype"] = "Strategy::Continue";
     return obj;
 }
 
@@ -335,6 +362,7 @@ QJsonObject toJson(const Strategy::Ref& ref) {
     QJsonObject obj;
     obj["name"] = QString::fromStdString(ref.name);
     obj["span"] = toJson(ref.span);    // ADD
+    obj["ASTtype"] = "Strategy::Ref";
     return obj;
 }
 
@@ -347,6 +375,7 @@ QJsonObject toJson(const Strategy::TaskCall& taskCall) {
     }
     obj["handlers"] = handlersArray;
     obj["span"] = toJson(taskCall.span); // ADD
+    obj["ASTtype"] = "Strategy::TaskCall";
     return obj;
 }
 
@@ -354,6 +383,7 @@ QJsonObject toJson(const Strategy::Paren& paren) {
     QJsonObject obj;
     if (paren.a) obj["a"] = toJson(*paren.a);
     obj["span"] = toJson(paren.span);  // ADD
+    obj["ASTtype"] = "Strategy::Paren";
     return obj;
 }
 
@@ -364,6 +394,7 @@ QJsonObject toJson(const Expr::Id& id) {
   QJsonObject obj;
   obj["value"] = QString::fromStdString(id.value);
   obj["span"] = toJson(id.span);     // ADD
+  obj["ASTtype"] = "Expr::Id";
   return obj;
 }
 
@@ -371,6 +402,7 @@ QJsonObject toJson(const Expr::Str& str) {
   QJsonObject obj;
   obj["value"] = QString::fromStdString(str.value);
   obj["span"] = toJson(str.span);    // ADD
+  obj["ASTtype"] = "Expr::Str";
   return obj;
 }
 
@@ -378,6 +410,7 @@ QJsonObject toJson(const Expr::Int& i) {
   QJsonObject obj;
   obj["value"] = i.value;
   obj["span"] = toJson(i.span);      // ADD
+  obj["ASTtype"] = "Expr::Int";
   return obj;
 }
 
@@ -385,6 +418,7 @@ QJsonObject toJson(const Expr::Float& f) {
   QJsonObject obj;
   obj["value"] = f.value;
   obj["span"] = toJson(f.span);      // ADD
+  obj["ASTtype"] = "Expr::Float";
   return obj;
 }
 
@@ -392,6 +426,7 @@ QJsonObject toJson(const Expr::Call& call) {
   QJsonObject obj;
   if (call.value) obj["value"] = toJson(*call.value);
   obj["span"] = toJson(call.span);   // ADD
+  obj["ASTtype"] = "Expr::Call";
   return obj;
 }
 
@@ -399,6 +434,7 @@ QJsonObject toJson(const Expr::Neg& neg) {
   QJsonObject obj;
   if (neg.value) obj["value"] = toJson(*neg.value);
   obj["span"] = toJson(neg.span);    // ADD
+  obj["ASTtype"] = "Expr::Neg";
   return obj;
 }
 
@@ -406,6 +442,7 @@ QJsonObject toJson(const Expr::Not& not_) {
   QJsonObject obj;
   if (not_.value) obj["value"] = toJson(*not_.value);
   obj["span"] = toJson(not_.span);   // ADD
+  obj["ASTtype"] = "Expr::Not";
   return obj;
 }
 
@@ -415,6 +452,7 @@ QJsonObject toJson(const Expr::BinOp& binOp) {
   if (binOp.a) obj["a"] = toJson(*binOp.a);
   if (binOp.b) obj["b"] = toJson(*binOp.b);
   obj["span"] = toJson(binOp.span);  // ADD
+  obj["ASTtype"] = "Expr::BinOp";
   return obj;
 }
 
@@ -422,6 +460,7 @@ QJsonObject toJson(const Expr::Paren& paren) {
   QJsonObject obj;
   if (paren.value) obj["value"] = toJson(*paren.value);
   obj["span"] = toJson(paren.span);  // ADD
+  obj["ASTtype"] = "Expr::Paren";
   return obj;
 }
 
