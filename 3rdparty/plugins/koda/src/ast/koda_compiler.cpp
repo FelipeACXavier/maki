@@ -204,6 +204,8 @@ VoidResult Compiler::generate()
   }
   mWalker.reset(mMirrorRoot);
 
+  LOG_DEBUG("Loaded mirror AST.");
+
 
   // RETURN_ON_FAILURE(loadMakiMapping());
 
