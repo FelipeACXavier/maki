@@ -25,7 +25,7 @@ namespace koda
     ss << srcId;
     ss << ")";
     ss >> out;
-    return "test";
+    return out;
   };
 
   MirrorNode parseMirrorNode(const json& j) {
