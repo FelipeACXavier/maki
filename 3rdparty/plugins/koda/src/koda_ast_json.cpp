@@ -317,7 +317,7 @@ QJsonObject toJson(const Strategy::IfElse& ifElse) {
     if (ifElse.a)    obj["a"] = toJson(*ifElse.a);
     if (ifElse.b)    obj["b"] = toJson(*ifElse.b);
     obj["span"] = toJson(ifElse.span); // ADD
-    obj["ASTtype"] = "IfElse";
+    obj["ASTtype"] = "Strategy::IfElse";
     return obj;
 }
 

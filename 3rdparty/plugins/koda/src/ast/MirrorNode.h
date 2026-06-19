@@ -6,21 +6,37 @@
 #include <fstream>
 #include <stdexcept>
 #include <logging.h>
+#include <map>
 
 using json = nlohmann::json;
 
 namespace koda
 {
+
+
 struct MirrorNode {
+  struct Span
+  {
+    int lineStart = 0, colStart = 0;
+    int lineEnd = 0, colEnd = 0;
+
+  };
   std::string kind;        // e.g. "Component", "Flow", "EventCall"
   std::string name;        // user‑given name
   std::string srcId;       // the ID you want to trace
-  std::vector<MirrorNode> components; // For System and EventDef
   std::string ASTtype;
+  std::vector<std::string> tags;
+  Span span;
+
+  std::map<std::string, std::vector<MirrorNode>> groups;
+  std::map<std::string, std::string> properties;
 
   // Utility to check if srcId exists
   bool hasSrcId() const { return !srcId.empty(); }
   std::string toString() const;
+
+  const std::vector<MirrorNode>& group(const std::string& name) const;
+  std::string prop(const std::string& key, const std::string* def = "") const;
 };
 
 MirrorNode loadMirrorAST(const std::string& filepath);
@@ -31,23 +47,10 @@ class MirrorWalker {
   const MirrorNode* current = nullptr;
   std::vector<const MirrorNode*> stack;
 public:
-  void reset(const MirrorNode& root) {
-    current = &root;
-    stack.clear();
-  }
-  void enterChild(size_t index) {
-    if (!current) return;
-    stack.push_back(current);
-    current = (index < current->components.size())
-              ? &current->components[index]
-              : nullptr;
-  }
-  void leave() {
-    if (!stack.empty()) {
-      current = stack.back();
-      stack.pop_back();
-    }
-  }
+  void reset(const MirrorNode& root);
+  void setChild(const MirrorNode& current);
+  void leave();
+
   std::string srcId() const {
     return current ? current->srcId : "";
   }
