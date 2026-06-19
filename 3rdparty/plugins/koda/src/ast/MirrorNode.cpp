@@ -3,11 +3,28 @@
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <stdexcept>
+#include <stringstream>
+#include <string>
 
 using json = nlohmann::json;
 
 namespace koda
 {
+  std::string MirrorNode::toString() const
+  {
+    std::stringstream ss;
+    std::string out;
+    ss << "MirrorNode(";
+    ss << ASTtype;
+    ss << ", k: ";
+    ss << kind;
+    ss << ", n: ";
+    ss << name;
+    ss << ", id: ";
+    ss << srcId;
+    ss << ")";
+  };
+
   MirrorNode parseMirrorNode(const json& j) {
     MirrorNode node;
     if (j.contains("kind"))  node.kind = j["kind"].get<std::string>();

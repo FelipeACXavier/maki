@@ -15,9 +15,11 @@ struct MirrorNode {
   std::string name;        // user‑given name
   std::string srcId;       // the ID you want to trace
   std::vector<MirrorNode> children;
+  std::string ASTtype;
 
   // Utility to check if srcId exists
   bool hasSrcId() const { return !srcId.empty(); }
+  std::string toString() const;
 };
 
 MirrorNode loadMirrorAST(const std::string& filepath);
