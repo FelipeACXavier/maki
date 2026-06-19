@@ -53,6 +53,7 @@ public:
   {
     std::string name;
     std::map<std::string, std::string> args;
+    std::string srcId;
 
     void print() const
     {
@@ -73,6 +74,7 @@ public:
     std::optional<Action> success;
     std::vector<Action> ins;
     std::vector<Action> outs;
+    std::string srcId;
 
     void print() const
     {
@@ -120,6 +122,7 @@ public:
     std::vector<std::string> asyncCalls;
     std::map<std::string, uint32_t> signalCalls;
     std::map<std::string, uint32_t> strategies;
+    std::string srcId;
   };
 
   struct Instance
