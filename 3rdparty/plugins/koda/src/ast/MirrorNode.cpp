@@ -33,6 +33,7 @@ namespace koda
     if (j.contains("kind"))  node.kind = j["kind"].get<std::string>();
     if (j.contains("name"))  node.name = j["name"].get<std::string>();
     if (j.contains("srcId")) node.srcId = j["srcId"].get<std::string>();
+    if (j.contains("ASTtype")) node.ASTtype = j["ASTtype"].get<std::string>();
 
     // If the JSON has a "children" array, recurse
     if (j.contains("children") && j["children"].is_array()) {
