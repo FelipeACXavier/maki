@@ -214,14 +214,22 @@ VoidResult Compiler::generate()
 
   Environment env;
   const auto& compChildren = mWalker.node()->group("components");
-  LOG_DEBUG("SYSTEM MIRROR AST: %s, %d", mMirrorRoot.toString().c_str(), compChildren.size());
+  LOG_DEBUG("SYSTEM MIRROR AST: %s, %d, %s", mMirrorRoot.toString().c_str(), compChildren.size(), compChildren[0].name.c_str());
   if (!(mWalker.node()->ASTtype == "System"))
     LOG_ERROR("Mirror AST root is not a System node, found: %s", mWalker.node()->ASTtype.c_str());
   size_t compIdx = 0;
   for (auto& component : mAST.components)
   {
     if (component->kind == Component::Kind::Capability)
+    {
+      MirrorNode componentMirror = compChildren[compIdx];
+      if (!(componentMirror.ASTtype == "Component") || !(componentMirror.name == component.name))
+        LOG_ERROR("Mirror AST component mismatch at index %zu: expected Component with name '%s', found '%s' with name '%s'", compIdx, component.name.c_str(), componentMirror.ASTtype.c_str(), componentMirror.name.c_str());
+      mWalker.setChild(componentMirror);
       RETURN_ON_FAILURE(generateCapability(component, env));
+      mWalker.leave();
+      compIdx++;
+    }
   }
 
   for (auto& component : mAST.components)
@@ -458,6 +466,7 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, Environment& e
 
 Result<koda::ReturnValue> Compiler::generateCapability(PComponent capability, Environment& env)
 {
+  LOG_DEBUG("Generating capability: %s, %s", capability.name.c_str(), mWalker.node()->name.c_str());
   // Here, we must create the external components that will be implemented in C++, e.g.:
   // First, we go through the AST to build the strategy environment
   if (mOptions.verbose > 0)
