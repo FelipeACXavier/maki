@@ -653,8 +653,6 @@ Result<ReturnValue> Compiler::generateEventDef(PEventDef event, Environment& env
   for (const auto& arg : event->args)
   {
     MirrorNode argMirror = argsMirror[argIdx];
-    if (!(argMirror.ASTtype == "EventDef") || !(argMirror.name == event->name))
-      LOG_ERROR("Mirror AST event argument mismatch at index %zu: expected EventDef with name '%s', found '%s' with name '%s'", argIdx, event->name.c_str(), argMirror.ASTtype.c_str(), argMirror.name.c_str());
     mWalker.setChild(argMirror);
     koda::ReturnValue argValue;
     ASSIGN_OR_RETURN_ON_FAILURE(argValue, generateArgument(arg, env));
