@@ -2,7 +2,11 @@
 
 #include <string>
 #include <vector>
+#include <nlohmann/json.hpp>
+#include <fstream>
+#include <stdexcept>
 
+using json = nlohmann::json;
 
 namespace koda
 {

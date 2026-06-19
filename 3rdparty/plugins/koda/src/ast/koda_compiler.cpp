@@ -192,7 +192,7 @@ void Compiler::mapToSrcId(const std::string& dezyneName, const std::string& srcI
 VoidResult Compiler::generate()
 {
   mGeneratedFiles.clear();
-  mSrcMap.clear();
+  // mSrcMap.clear();
 
   std::string mirrorPath = mOptions.outputDir + "/../maki_ast.json";
   try
@@ -231,7 +231,7 @@ VoidResult Compiler::generate()
 
   mEnv = env;
 
-  LOG_DEBUG("MAPPING: %zu", mSrcMap.size());
+  // LOG_DEBUG("MAPPING: %zu", mSrcMap.size());
   // RETURN_ON_FAILURE(writeSrcMap());
 
   if (mOptions.pluginRule == CompilerOptions::PluginOption::RunAll)
