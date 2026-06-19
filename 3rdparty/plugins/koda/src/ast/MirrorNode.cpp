@@ -36,10 +36,10 @@ namespace koda
     if (j.contains("ASTtype")) node.ASTtype = j["ASTtype"].get<std::string>();
 
     // If the JSON has a "children" array, recurse
-    if (j.contains("children") && j["children"].is_array()) {
-      for (const auto& child : j["children"]) {
+    if (j.contains("components") && j["components"].is_array()) {
+      for (const auto& child : j["components"]) {
         LOG_DEBUG("CHILD");
-        node.children.push_back(parseMirrorNode(child));
+        node.components.push_back(parseMirrorNode(child));
       }
     }
     return node;

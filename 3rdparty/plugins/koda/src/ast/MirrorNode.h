@@ -15,7 +15,7 @@ struct MirrorNode {
   std::string kind;        // e.g. "Component", "Flow", "EventCall"
   std::string name;        // user‑given name
   std::string srcId;       // the ID you want to trace
-  std::vector<MirrorNode> children;
+  std::vector<MirrorNode> components; // For System and EventDef
   std::string ASTtype;
 
   // Utility to check if srcId exists
