@@ -59,6 +59,7 @@ set(KODA_COMPILER_FILES
   src/ast/ast.cpp
   src/ast/cst2ast.cpp
   src/ast/koda_compiler.cpp
+  src/ast/MirrorNode.cpp
   src/parser/KodaParser.cpp
   src/parser/KodaLexer.cpp
   src/parser/KodaVisitor.cpp

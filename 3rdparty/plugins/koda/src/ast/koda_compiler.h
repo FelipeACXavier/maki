@@ -12,6 +12,7 @@
 #include "koda_plugin.h"
 #include "logging.h"
 #include "result.h"
+#include "MirrorNode.h"
 
 namespace koda
 {
