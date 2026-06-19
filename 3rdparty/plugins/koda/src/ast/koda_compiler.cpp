@@ -314,6 +314,8 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, Environment& e
   size_t stmntIdx = 0;
   for (auto& statement : task->statements)
   {
+    if (statementChildren[stmntIdx].group("node").at(0).ASTtype == "VarsBlock" && statementChildren[stmntIdx].group("node").at(0).group("vars").empty())
+      stmntIdx++; // Skip empty vars block
     MirrorNode statementMirror = statementChildren[stmntIdx];
     mWalker.setChild(statementMirror);
     RETURN_ON_FAILURE(generateStatement(statement, env));
