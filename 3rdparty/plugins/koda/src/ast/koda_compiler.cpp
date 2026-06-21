@@ -926,6 +926,8 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
     env.includes.insert("isignal.dzn");
     env.requiresPorts.insert("isignal " + expr.name);
 
+    LOG_DEBUG("Generating on emitter continue strategy");
+    handler->body->print("", true);
     ReturnValue strat;
     ASSIGN_OR_RETURN_ON_FAILURE(strat, generateStrategy(handler->body, env));
 

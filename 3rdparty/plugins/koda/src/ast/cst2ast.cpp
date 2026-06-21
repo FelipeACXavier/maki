@@ -485,9 +485,42 @@ std::any KodaCST2AST::visitHandlerOnEmitter(KodaParser::HandlerOnEmitterContext*
   auto value = std::make_shared<koda::StrategyHandler>();
   value->kind = koda::StrategyHandler::Kind::OnEmitter;
   value->emitter = std::any_cast<koda::PEventCall>(visit(ctx->eventStatement()));
-  value->body = std::any_cast<koda::PStrategy>(visit(ctx->strategy()));
-  if (containsContinue(value->body))
+  auto strategy = std::any_cast<koda::PStrategy>(visit(ctx->strategy()));
+  if (containsContinue(strategy))
+  {
+    // Clean this a bit
     value->kind = koda::StrategyHandler::Kind::OnEmitterContinue;
+    if (std::holds_alternative<koda::PSeq>(strategy->v))
+    {
+      // Remove continue
+      if (auto obj = std::get<koda::PSeq>(strategy->v))
+        value->body = obj->alts.at(0);
+    }
+    else if (std::holds_alternative<koda::PParen>(strategy->v))
+    {
+      if (auto paren = std::get<koda::PParen>(strategy->v))
+      {
+        if (std::holds_alternative<koda::PSeq>(paren->a->v))
+        {
+          // Remove continue
+          if (auto obj = std::get<koda::PSeq>(paren->a->v))
+            value->body = obj->alts.at(0);
+        }
+        else
+        {
+          value->body = strategy;
+        }
+      }
+    }
+    else
+    {
+      value->body = strategy;
+    }
+  }
+  else
+  {
+    value->body = strategy;
+  }
 
   value->span = spanOf(ctx);
 
@@ -920,4 +953,8 @@ bool KodaCST2AST::containsContinue(koda::PStrategy s)
     }
   },
                     s->v);
+}
+
+std::any KodaCST2AST::buildgetContinueStrategy(koda::PStrategy s)
+{
 }

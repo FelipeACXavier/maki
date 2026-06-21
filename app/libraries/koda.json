@@ -152,14 +152,14 @@
           "events": [
             {
               "id": "start",
-              "type": "trigger",
+              "type": "in",
               "returnType": "void",
               "modifiable": false,
               "linksTo": 0
             },
             {
               "id": "stop",
-              "type": "abort",
+              "type": "in",
               "returnType": "void",
               "modifiable": false,
               "linksTo": 1
