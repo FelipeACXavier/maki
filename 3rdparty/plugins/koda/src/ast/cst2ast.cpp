@@ -954,7 +954,3 @@ bool KodaCST2AST::containsContinue(koda::PStrategy s)
   },
                     s->v);
 }
-
-std::any KodaCST2AST::buildgetContinueStrategy(koda::PStrategy s)
-{
-}
