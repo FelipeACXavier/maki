@@ -112,4 +112,6 @@ private:
   std::any buildActionLike(CtxT* ctx, koda::ActionDef::Kind kind);
 
   bool containsContinue(koda::PStrategy s);
+
+  std::any getContinueStrategy(koda::PStrategy s);
 };

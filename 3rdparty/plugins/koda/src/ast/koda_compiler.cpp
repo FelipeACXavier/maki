@@ -955,6 +955,24 @@ Result<koda::ReturnValue> Compiler::generateRepeat(PRepeat strategy, Environment
   env.includes.insert("repeat.dzn");
   env.definitions.push_back(std::format("crepeat r{}", id));
 
+  for (auto& handler : strategy->handlers)
+  {
+    if (handler->kind != koda::StrategyHandler::Kind::OnEmitter)
+      continue;
+
+    env.previousCall = expr.name;
+    ASSIGN_OR_RETURN_ON_FAILURE(expr, generateStrategyHandler(handler, env));
+  }
+
+  for (auto& handler : strategy->handlers)
+  {
+    if (handler->kind == koda::StrategyHandler::Kind::OnEmitter)
+      continue;
+
+    env.previousCall = expr.name;
+    ASSIGN_OR_RETURN_ON_FAILURE(expr, generateStrategyHandler(handler, env));
+  }
+
   env.core.push_back(std::format("r{}.action1 <=> {}", id, expr.name));
 
   return koda::ReturnValue{std::format("r{}.api", id)};
