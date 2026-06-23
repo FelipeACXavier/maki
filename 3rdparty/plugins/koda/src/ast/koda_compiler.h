@@ -334,51 +334,51 @@ private:
 
   void mapToSrcId(const std::string& dezyneName, const std::string& srcId);
 
-  Result<ReturnValue> generateTask(PComponent task, Environment& env);
-  Result<ReturnValue> generateCapability(PComponent capability, Environment& env);
+  Result<ReturnValue> generateTask(PComponent task, const MirrorNode& node, Environment& env);
+  Result<ReturnValue> generateCapability(PComponent capability, const MirrorNode& node, Environment& env);
   Result<ReturnValue> emitCapability(PComponent capability, Environment& env);
 
   Result<ReturnValue> generateStrategy(PStrategyBlock strategy);
-  Result<ReturnValue> generateFlow(PFlow flow, Environment& env);
+  Result<ReturnValue> generateFlow(PFlow flow, const MirrorNode& node, Environment& env);
 
-  Result<ReturnValue> generateStrategy(PStrategy strategy, Environment& env);
-  Result<ReturnValue> generateSequence(PSeq strategy, Environment& env);
-  Result<ReturnValue> generateJoin(PJoin strategy, Environment& env);
-  Result<ReturnValue> generateEither(PEither strategy, Environment& env);
-  Result<ReturnValue> generateLet(PLet strategy, Environment& env);
-  Result<ReturnValue> generateWithin(PWithin strategy, Environment& env);
-  Result<ReturnValue> generateIfElse(PIfElse strategy, Environment& env);
-  Result<ReturnValue> generateRepeat(PRepeat strategy, Environment& env);
-  Result<ReturnValue> generateGuard(PGuard strategy, Environment& env);
-  Result<ReturnValue> generateEvery(PRepeat strategy, Environment& env);
-  Result<ReturnValue> generateEnd(PEnd strategy, Environment& env);
-  Result<ReturnValue> generateContinue(PContinue strategy, Environment& env);
-  Result<ReturnValue> generateRef(PRef strategy, Environment& env);
-  Result<ReturnValue> generateTaskCall(PTaskCall strategy, Environment& env);
-  Result<ReturnValue> generateParen(PParen strategy, Environment& env);
+  Result<ReturnValue> generateStrategy(PStrategy strategy, const MirrorNode& node, Environment& env);
+  Result<ReturnValue> generateSequence(PSeq strategy, const MirrorNode& node, Environment& env);
+  Result<ReturnValue> generateJoin(PJoin strategy, const MirrorNode& node, Environment& env);
+  Result<ReturnValue> generateEither(PEither strategy, const MirrorNode& node, Environment& env);
+  Result<ReturnValue> generateLet(PLet strategy, const MirrorNode& node, Environment& env);
+  Result<ReturnValue> generateWithin(PWithin strategy, const MirrorNode& node, Environment& env);
+  Result<ReturnValue> generateIfElse(PIfElse strategy, const MirrorNode& node, Environment& env);
+  Result<ReturnValue> generateRepeat(PRepeat strategy, const MirrorNode& node, Environment& env);
+  Result<ReturnValue> generateGuard(PGuard strategy, const MirrorNode& node, Environment& env);
+  Result<ReturnValue> generateEvery(PRepeat strategy, const MirrorNode& node, Environment& env);
+  Result<ReturnValue> generateEnd(PEnd strategy, const MirrorNode& node, Environment& env);
+  Result<ReturnValue> generateContinue(PContinue strategy, const MirrorNode& node, Environment& env);
+  Result<ReturnValue> generateRef(PRef strategy, const MirrorNode& node, Environment& env);
+  Result<ReturnValue> generateTaskCall(PTaskCall strategy, const MirrorNode& node, Environment& env);
+  Result<ReturnValue> generateParen(PParen strategy, const MirrorNode& node, Environment& env);
 
-  Result<ReturnValue> generateStrategyHandler(PStrategyHandler handler, Environment& env);
-  Result<ReturnValue> generateEventCall(PEventCall call, Environment& env, bool isSignal);
+  Result<ReturnValue> generateStrategyHandler(PStrategyHandler handler, const MirrorNode& node, Environment& env);
+  Result<ReturnValue> generateEventCall(PEventCall call, const MirrorNode& node, Environment& env, bool isSignal);
 
-  Result<ReturnValue> generateStrategyBlock(PStrategyBlock strategy, Environment& env);
-  Result<ReturnValue> generateActionDef(PActionDef action, Environment& env);
-  Result<ReturnValue> generateRosDef(PRosDef rosDef, Environment& env);
-  Result<ReturnValue> generateEventDef(PEventDef event, Environment& env);
-  Result<ReturnValue> generateVarsBlock(PVarsBlock varsBlock, Environment& env);
-  Result<ReturnValue> generateVarsDef(PVarDef varDef, Environment& env);
-  Result<ReturnValue> generateArgument(PArgument argument, Environment& env);
-  Result<ReturnValue> generateStatement(PStatement statement, Environment& env);
+  Result<ReturnValue> generateStrategyBlock(PStrategyBlock strategy, const MirrorNode& node, Environment& env);
+  Result<ReturnValue> generateActionDef(PActionDef action, const MirrorNode& node, Environment& env);
+  Result<ReturnValue> generateRosDef(PRosDef rosDef, const MirrorNode& node, Environment& env);
+  Result<ReturnValue> generateEventDef(PEventDef event, const MirrorNode& node, Environment& env);
+  Result<ReturnValue> generateVarsBlock(PVarsBlock varsBlock, const MirrorNode& node, Environment& env);
+  Result<ReturnValue> generateVarsDef(PVarDef varDef, const MirrorNode& node, Environment& env);
+  Result<ReturnValue> generateArgument(PArgument argument, const MirrorNode& node, Environment& env);
+  Result<ReturnValue> generateStatement(PStatement statement, const MirrorNode& node, Environment& env);
 
-  Result<ReturnValue> generateExpr(PExpr expr, Environment& env);
-  Result<ReturnValue> generateId(PId expr, Environment& env);
-  Result<ReturnValue> generateStr(PStr expr, Environment& env);
-  Result<ReturnValue> generateInt(PInt expr, Environment& env);
-  Result<ReturnValue> generateFloat(PFloat expr, Environment& env);
-  Result<ReturnValue> generateCall(PCall expr, Environment& env);
-  Result<ReturnValue> generateNeg(PNeg expr, Environment& env);
-  Result<ReturnValue> generateNot(PNot expr, Environment& env);
-  Result<ReturnValue> generateBinOp(PBinOp expr, Environment& env);
-  Result<ReturnValue> generateParen(PEParen expr, Environment& env);
+  Result<ReturnValue> generateExpr(PExpr expr, const MirrorNode& node, Environment& env);
+  Result<ReturnValue> generateId(PId expr, const MirrorNode& node, Environment& env);
+  Result<ReturnValue> generateStr(PStr expr, const MirrorNode& node, Environment& env);
+  Result<ReturnValue> generateInt(PInt expr, const MirrorNode& node, Environment& env);
+  Result<ReturnValue> generateFloat(PFloat expr, const MirrorNode& node, Environment& env);
+  Result<ReturnValue> generateCall(PCall expr, const MirrorNode& node, Environment& env);
+  Result<ReturnValue> generateNeg(PNeg expr, const MirrorNode& node, Environment& env);
+  Result<ReturnValue> generateNot(PNot expr, const MirrorNode& node, Environment& env);
+  Result<ReturnValue> generateBinOp(PBinOp expr, const MirrorNode& node, Environment& env);
+  Result<ReturnValue> generateParen(PEParen expr, const MirrorNode& node, Environment& env);
 
   std::string componentName(const std::string& name) const;
   std::string flowName(const std::string& name) const;
