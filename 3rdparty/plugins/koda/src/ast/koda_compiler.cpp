@@ -510,11 +510,10 @@ Result<ReturnValue> Compiler::generateActionDef(PActionDef action, const MirrorN
 {
   env.currentCapability.title = action->label1;
   env.currentCapability.message = action->label2;
-  const auto& adMirror = node.group("rosDefs");
   size_t rdIdx = 0;
   for (const auto& def : action->rosDefs)
   {
-    RETURN_ON_FAILURE(generateRosDef(def, adMirror[rdIdx], env));
+    RETURN_ON_FAILURE(generateRosDef(def, *safeChild(node, "rosDefs", rdIdx), env));
     rdIdx++;
   }
   return koda::ReturnValue{};
