@@ -331,6 +331,7 @@ private:
   MirrorNode mMirrorRoot;
   MirrorWalker mWalker;
   std::map<std::string, std::string> mAstMap;
+  bool skipStrategy = false;
 
   void mapToSrcId(const std::string& dezyneName, const std::string& srcId);
 

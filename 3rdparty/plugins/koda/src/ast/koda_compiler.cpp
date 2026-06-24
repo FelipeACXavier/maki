@@ -686,6 +686,11 @@ Result<koda::ReturnValue> Compiler::generateFlow(PFlow flow, const MirrorNode& n
 Result<koda::ReturnValue> Compiler::generateStrategy(PStrategy strategy, const MirrorNode& node, Environment& env)
 {
   const auto& childMirror = *safeChild(node, "v", 0);
+  if (skipStrategy) {
+    // again, a very hacky fix
+    skipStrategy = false;
+    childMirror = node;
+  }
   IF_ALT(PSeq, strategy->v, generateSequence, childMirror, env)
   ELSE_IF_ALT(PJoin, strategy->v, generateJoin, childMirror, env)
   ELSE_IF_ALT(PEither, strategy->v, generateEither, childMirror, env)
@@ -959,6 +964,7 @@ Result<koda::ReturnValue> Compiler::generateParen(PParen strategy, const MirrorN
 {
   if (node.ASTtype != "Strategy::Paren") {
     // Parentheses were added during emitting, not AST generation, so hacky fix for now, update koda_ast_json later (and koda_emitter).
+    skipStrategy = true;
     return generateStrategy(strategy->a, node, env);
   }
   return generateStrategy(strategy->a, *safeChild(node, "a", 0), env);
@@ -1047,7 +1053,7 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
     env.requiresPorts.insert("isignal " + expr.name);
 
     ReturnValue strat;
-    MirrorNode bodyCorrected = *safeChild(safeChild(safeChild(node, "body", 0), "v", 0), "alts", 0);
+    MirrorNode bodyCorrected = *safeChild(*safeChild(*safeChild(node, "body", 0), "v", 0), "alts", 0);
     ASSIGN_OR_RETURN_ON_FAILURE(strat, generateStrategy(handler->body, bodyCorrected, env));
 
     env.core.push_back(std::format("sh{}.signal <=> {}", id, expr.name));
