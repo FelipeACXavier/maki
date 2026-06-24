@@ -43,6 +43,13 @@ MirrorNode loadMirrorAST(const std::string& filepath);
 std::vector<MirrorNode> loadComponents(const std::string& filepath);
 MirrorNode parseMirrorNode(const json& j);
 
+/**
+ * Safely retrieves the first child of a named group.
+ * If the group is missing or empty, logs a descriptive error with a stack trace
+ * and returns nullptr.
+ */
+inline const MirrorNode* safeChild(const MirrorNode& node, const std::string& groupName, int pos);
+
 class MirrorWalker {
   const MirrorNode* current = nullptr;
   std::vector<const MirrorNode*> stack;

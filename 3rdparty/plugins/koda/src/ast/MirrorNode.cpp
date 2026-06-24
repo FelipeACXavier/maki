@@ -6,11 +6,28 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <execinfo.h>   // for backtrace, backtrace_symbols (Linux, macOS)
+#include <cstdlib>
+#include <sstream>
 
 using json = nlohmann::json;
 
 namespace koda
 {
+
+void logStackTrace() {
+    void* callstack[128];
+    int frames = backtrace(callstack, 128);
+    char** strs = backtrace_symbols(callstack, frames);
+    std::ostringstream oss;
+    oss << "Stack trace (most recent call first):\n";
+    for (int i = 0; i < frames; ++i) {
+        oss << strs[i] << '\n';
+    }
+    free(strs);
+    LOG_ERROR("%s", oss.str().c_str());
+}
+
   std::string MirrorNode::toString() const
   {
     std::stringstream ss;
@@ -218,6 +235,26 @@ namespace koda
       components.push_back(parseMirrorNode(j));
     }
     return components;
+  }
+
+  /**
+   * Safely retrieves the first child of a named group.
+   * If the group is missing or empty, logs a descriptive error with a stack trace
+   * and returns nullptr.
+   */
+  inline const MirrorNode* safeChild(const MirrorNode& node,
+                                           const std::string& groupName, int pos) {
+      auto it = node.groups.find(groupName);
+      // also check whether item at pos exists
+      if (it == node.groups.end() || it->second.empty() || it->second.size() >= pos) {
+          LOG_ERROR(
+              "MirrorNode '%s' (type '%s') has no non-empty group '%s', or at position %d",
+              node.name.c_str(), node.ASTtype.c_str(), groupName.c_str(), pos
+          );
+          logStackTrace();       // <-- this dumps the call stack
+          return nullptr;
+      }
+      return &it->second[pos];
   }
 
   // MirrorWalker class definitions
