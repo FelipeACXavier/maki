@@ -13,18 +13,18 @@
 #include "error_listener.h"
 #include "result.h"
 
-#define IF_ALT(ALT, OBJ, CALL, NODE, ...)     \
-  if (std::holds_alternative<ALT>(OBJ))        \
-  {                                            \
-    if (auto obj = std::get<ALT>(OBJ))         \
-      return CALL(obj, NODE, __VA_ARGS__);     \
+#define IF_ALT(ALT, OBJ, CALL, ...)     \
+  if (std::holds_alternative<ALT>(OBJ)) \
+  {                                     \
+    if (auto obj = std::get<ALT>(OBJ))  \
+      return CALL(obj, __VA_ARGS__);    \
   }
 
-#define ELSE_IF_ALT(ALT, OBJ, CALL, NODE, ...)     \
-  else if (std::holds_alternative<ALT>(OBJ))        \
-  {                                                 \
-    if (auto obj = std::get<ALT>(OBJ))              \
-      return CALL(obj, NODE, __VA_ARGS__);          \
+#define ELSE_IF_ALT(ALT, OBJ, CALL, ...)     \
+  else if (std::holds_alternative<ALT>(OBJ)) \
+  {                                          \
+    if (auto obj = std::get<ALT>(OBJ))       \
+      return CALL(obj, __VA_ARGS__);         \
   }
 
 #define INCREMENT_MAP(MAP, KEY)     \
@@ -232,7 +232,7 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, const MirrorNo
   size_t stmntIdx = 0;
   for (auto& statement : task->statements)
   {
-    if (safeChild(*safeChild(node, "statements", stmntIdx), "node", 0)->ASTtype == "VarsBlock" && safeChild(*safeChild(node, "statements", stmntIdx), "node", 0)->group("vars").empty()) {
+    if (*safeChild(*safeChild(node, "statements", stmntIdx), "node", 0)->ASTtype == "VarsBlock" && *safeChild(*safeChild(node, "statements", stmntIdx), "node", 0)->group("vars").empty()) {
       stmntIdx++; // Skip empty vars block
       LOG_DEBUG("Skipping empty vars block at index %zu", stmntIdx - 1);
     }
@@ -480,7 +480,7 @@ Result<ReturnValue> Compiler::generateArgument(PArgument argument, const MirrorN
 
 Result<ReturnValue> Compiler::generateStatement(PStatement statement, const MirrorNode& node, Environment& env)
 {
-  const auto& nodeMirror = safeChild(node, "node", 0);
+  const auto& nodeMirror = *safeChild(node, "node", 0);
   IF_ALT(PStrategyBlock, statement->node, generateStrategyBlock, nodeMirror, env)
   ELSE_IF_ALT(PActionDef, statement->node, generateActionDef, nodeMirror, env)
   ELSE_IF_ALT(PRosDef, statement->node, generateRosDef, nodeMirror, env)
@@ -523,7 +523,7 @@ Result<ReturnValue> Compiler::generateActionDef(PActionDef action, const MirrorN
 Result<ReturnValue> Compiler::generateRosDef(PRosDef ros, const MirrorNode& node, Environment& env)
 {
   ReturnValue result;
-  const auto& defMirror = safeChild(node, "def", 0);
+  const auto& defMirror = *safeChild(node, "def", 0);
   if (!(defMirror.ASTtype == "EventDef") || !(defMirror.name == ros->def->name))
     LOG_ERROR("Mirror AST event definition mismatch: expected EventDef with name '%s', found '%s' with name '%s'", ros->def->name.c_str(), defMirror.ASTtype.c_str(), defMirror.name.c_str());
   ASSIGN_OR_RETURN_ON_FAILURE(result, generateEventDef(ros->def, defMirror, env));
@@ -630,7 +630,7 @@ Result<koda::ReturnValue> Compiler::generateFlow(PFlow flow, const MirrorNode& n
 
   // Compile the different connections
   env.clear();
-  const auto& strategyMirror = safeChild(node, "strategy", 0);
+  const auto& strategyMirror = *safeChild(node, "strategy", 0);
   auto ret = generateStrategy(flow->strategy, strategyMirror, env);
 
   env.flows[flow->name] = Flow{flow->name, env.syncCalls, env.asyncCalls, env.signalCalls, env.strategies};
@@ -691,7 +691,7 @@ Result<koda::ReturnValue> Compiler::generateFlow(PFlow flow, const MirrorNode& n
 
 Result<koda::ReturnValue> Compiler::generateStrategy(PStrategy strategy, const MirrorNode& node, Environment& env)
 {
-  const auto& childMirror = safeChild(node, "v", 0);
+  const auto& childMirror = *safeChild(node, "v", 0);
   IF_ALT(PSeq, strategy->v, generateSequence, childMirror, env)
   ELSE_IF_ALT(PJoin, strategy->v, generateJoin, childMirror, env)
   ELSE_IF_ALT(PEither, strategy->v, generateEither, childMirror, env)
@@ -727,7 +727,7 @@ Result<koda::ReturnValue> Compiler::generateSequence(PSeq strategy, const Mirror
   // No point in creating the sequence component if there is only one action in the sequence
   if (instances == 1)
   {
-    return generateStrategy(strategy->alts.at(0), safeChild(node, "alts", 0), env);
+    return generateStrategy(strategy->alts.at(0), *safeChild(node, "alts", 0), env);
   }
 
   auto id = env.sequence++;
@@ -779,10 +779,10 @@ Result<koda::ReturnValue> Compiler::generateLet(PLet strategy, const MirrorNode&
 Result<koda::ReturnValue> Compiler::generateWithin(PWithin strategy, const MirrorNode& node, Environment& env)
 {
   ReturnValue exprDo;
-  ASSIGN_OR_RETURN_ON_FAILURE(exprDo, generateStrategy(strategy->a, safeChild(node, "a", 0), env));
+  ASSIGN_OR_RETURN_ON_FAILURE(exprDo, generateStrategy(strategy->a, *safeChild(node, "a", 0), env));
 
   ReturnValue exprElse;
-  ASSIGN_OR_RETURN_ON_FAILURE(exprElse, generateStrategy(strategy->b, safeChild(node, "b", 0), env));
+  ASSIGN_OR_RETURN_ON_FAILURE(exprElse, generateStrategy(strategy->b, *safeChild(node, "b", 0), env));
 
   auto id = env.within++;
   auto alarmId = env.alarm++;
@@ -814,7 +814,7 @@ Result<koda::ReturnValue> Compiler::generateRepeat(PRepeat strategy, const Mirro
     return generateEvery(strategy, node, env);
 
   ReturnValue expr;
-  ASSIGN_OR_RETURN_ON_FAILURE(expr, generateStrategy(strategy->a, safeChild(node, "a", 0), env));
+  ASSIGN_OR_RETURN_ON_FAILURE(expr, generateStrategy(strategy->a, *safeChild(node, "a", 0), env));
 
   auto id = env.repeat++;
   env.includes.insert("repeat.dzn");
@@ -862,7 +862,7 @@ Result<koda::ReturnValue> Compiler::generateEvery(PRepeat strategy, const Mirror
 {
   ReturnValue expr;
   // Since Every does not exist on the AST, we are still in the Repeat node.
-  ASSIGN_OR_RETURN_ON_FAILURE(expr, generateStrategy(strategy->a, safeChild(node, "a", 0), env));
+  ASSIGN_OR_RETURN_ON_FAILURE(expr, generateStrategy(strategy->a, *safeChild(node, "a", 0), env));
 
   auto id = env.every++;
   auto alarmId = env.alarm++;
@@ -930,7 +930,7 @@ Result<koda::ReturnValue> Compiler::generateRef(PRef strategy, const MirrorNode&
 Result<koda::ReturnValue> Compiler::generateTaskCall(PTaskCall strategy, const MirrorNode& node, Environment& env)
 {
   ReturnValue expr;
-  ASSIGN_OR_RETURN_ON_FAILURE(expr, generateEventCall(strategy->call, safeChild(node, "call", 0), env, false));
+  ASSIGN_OR_RETURN_ON_FAILURE(expr, generateEventCall(strategy->call, *safeChild(node, "call", 0), env, false));
 
   if (strategy->handlers.empty())
     return expr;
@@ -967,7 +967,7 @@ Result<koda::ReturnValue> Compiler::generateTaskCall(PTaskCall strategy, const M
 
 Result<koda::ReturnValue> Compiler::generateParen(PParen strategy, const MirrorNode& node, Environment& env)
 {
-  return generateStrategy(strategy->a, safeChild(node, "a", 0), env);
+  return generateStrategy(strategy->a, *safeChild(node, "a", 0), env);
 }
 
 Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, const MirrorNode& node, Environment& env)
@@ -982,13 +982,13 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
     if (handler->emitter)
     {
       ReturnValue expr;
-      ASSIGN_OR_RETURN_ON_FAILURE(expr, generateEventCall(handler->emitter, safeChild(node, "emitter", 0), env, false));
+      ASSIGN_OR_RETURN_ON_FAILURE(expr, generateEventCall(handler->emitter, *safeChild(node, "emitter", 0), env, false));
     }
 
     if (handler->body)
     {
       ReturnValue strat;
-      ASSIGN_OR_RETURN_ON_FAILURE(strat, generateStrategy(handler->body, safeChild(node, "body", 0), env));
+      ASSIGN_OR_RETURN_ON_FAILURE(strat, generateStrategy(handler->body, *safeChild(node, "body", 0), env));
 
       env.core.push_back(std::format("ah{}.action <=> {}", id, env.previousCall));
       env.core.push_back(std::format("ah{}.handler <=> {}", id, strat.name));
@@ -1005,13 +1005,13 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
     if (handler->emitter)
     {
       ReturnValue expr;
-      ASSIGN_OR_RETURN_ON_FAILURE(expr, generateEventCall(handler->emitter, safeChild(node, "emitter", 0), env, false));
+      ASSIGN_OR_RETURN_ON_FAILURE(expr, generateEventCall(handler->emitter, *safeChild(node, "emitter", 0), env, false));
     }
 
     if (handler->body)
     {
       ReturnValue strat;
-      ASSIGN_OR_RETURN_ON_FAILURE(strat, generateStrategy(handler->body, safeChild(node, "body", 0), env));
+      ASSIGN_OR_RETURN_ON_FAILURE(strat, generateStrategy(handler->body, *safeChild(node, "body", 0), env));
 
       env.core.push_back(std::format("fh{}.action <=> {}", id, env.previousCall));
       env.core.push_back(std::format("fh{}.handler <=> {}", id, strat.name));
@@ -1026,13 +1026,13 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
     env.definitions.push_back(std::format("csignal_handler sh{}", id));
 
     ReturnValue expr;
-    ASSIGN_OR_RETURN_ON_FAILURE(expr, generateEventCall(handler->emitter, safeChild(node, "emitter", 0), env, true));
+    ASSIGN_OR_RETURN_ON_FAILURE(expr, generateEventCall(handler->emitter, *safeChild(node, "emitter", 0), env, true));
 
     env.includes.insert("isignal.dzn");
     env.requiresPorts.insert("isignal " + expr.name);
 
     ReturnValue strat;
-    ASSIGN_OR_RETURN_ON_FAILURE(strat, generateStrategy(handler->body, safeChild(node, "body", 0), env));
+    ASSIGN_OR_RETURN_ON_FAILURE(strat, generateStrategy(handler->body, *safeChild(node, "body", 0), env));
 
     env.core.push_back(std::format("sh{}.signal <=> {}", id, expr.name));
     env.core.push_back(std::format("sh{}.action <=> {}", id, env.previousCall));
@@ -1047,13 +1047,13 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
     env.definitions.push_back(std::format("csignal_continue sh{}", id));
 
     ReturnValue expr;
-    ASSIGN_OR_RETURN_ON_FAILURE(expr, generateEventCall(handler->emitter, safeChild(node, "emitter", 0), env, true));
+    ASSIGN_OR_RETURN_ON_FAILURE(expr, generateEventCall(handler->emitter, *safeChild(node, "emitter", 0), env, true));
 
     env.includes.insert("isignal.dzn");
     env.requiresPorts.insert("isignal " + expr.name);
 
     ReturnValue strat;
-    ASSIGN_OR_RETURN_ON_FAILURE(strat, generateStrategy(handler->body, safeChild(node, "body", 0), env));
+    ASSIGN_OR_RETURN_ON_FAILURE(strat, generateStrategy(handler->body, **safeChild(node, "body", 0), env));
 
     env.core.push_back(std::format("sh{}.signal <=> {}", id, expr.name));
     env.core.push_back(std::format("sh{}.action <=> {}", id, env.previousCall));
@@ -1119,7 +1119,7 @@ Result<koda::ReturnValue> Compiler::generateEventCall(PEventCall call, const Mir
 
 Result<ReturnValue> Compiler::generateExpr(PExpr node, const MirrorNode& mirror, Environment& env)
 {
-  const auto& vMirror = safeChild(node, "v", 0)
+  const auto& vMirror = *safeChild(mirror, "v", 0)
   IF_ALT(PId, node->v, generateId, vMirror, env)
   ELSE_IF_ALT(PStr, node->v, generateStr, vMirror, env)
   ELSE_IF_ALT(PInt, node->v, generateInt, vMirror, env)
@@ -1168,7 +1168,7 @@ Result<ReturnValue> Compiler::generateCall(PCall expr, const MirrorNode& node, E
 
 Result<ReturnValue> Compiler::generateNeg(PNeg expr, const MirrorNode& node, Environment& env)
 {
-  auto result = generateExpr(expr->value, safeChild(node, "value", 0), env);
+  auto result = generateExpr(expr->value, *safeChild(node, "value", 0), env);
   RETURN_ON_FAILURE(result);
 
   return ReturnValue{
@@ -1178,7 +1178,7 @@ Result<ReturnValue> Compiler::generateNeg(PNeg expr, const MirrorNode& node, Env
 
 Result<ReturnValue> Compiler::generateNot(PNot expr, const MirrorNode& node, Environment& env)
 {
-  auto result = generateExpr(expr->value, safeChild(node, "value", 0), env);
+  auto result = generateExpr(expr->value, *safeChild(node, "value", 0), env);
   RETURN_ON_FAILURE(result);
 
   return ReturnValue{
@@ -1188,14 +1188,14 @@ Result<ReturnValue> Compiler::generateNot(PNot expr, const MirrorNode& node, Env
 
 Result<ReturnValue> Compiler::generateBinOp(PBinOp expr, const MirrorNode& node, Environment& env)
 {
-  auto resultA = generateExpr(expr->a, safeChild(node, "a", 0), env);
+  auto resultA = generateExpr(expr->a, *safeChild(node, "a", 0), env);
   RETURN_ON_FAILURE(resultA);
 
   std::string aSide = resultA.Value().name;
   std::string bSide = "";
   if (expr->b)
   {
-    auto resultB = generateExpr(expr->b, safeChild(node, "b", 0), env);
+    auto resultB = generateExpr(expr->b, *safeChild(node, "b", 0), env);
     RETURN_ON_FAILURE(resultB);
     bSide = resultB.Value().name;
   }
@@ -1246,7 +1246,7 @@ Result<ReturnValue> Compiler::generateBinOp(PBinOp expr, const MirrorNode& node,
 
 Result<ReturnValue> Compiler::generateParen(PEParen expr, const MirrorNode& node, Environment& env)
 {
-  return generateExpr(expr->value, safeChild(node, "value", 0), env);
+  return generateExpr(expr->value, *safeChild(node, "value", 0), env);
 }
 
 VoidResult Compiler::createSequenceComponent(uint32_t instances)
