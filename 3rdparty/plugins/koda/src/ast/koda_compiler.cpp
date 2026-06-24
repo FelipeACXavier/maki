@@ -232,7 +232,7 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, const MirrorNo
   size_t stmntIdx = 0;
   for (auto& statement : task->statements)
   {
-    if (*safeChild(*safeChild(node, "statements", stmntIdx), "node", 0)->ASTtype == "VarsBlock" && *safeChild(*safeChild(node, "statements", stmntIdx), "node", 0)->group("vars").empty()) {
+    if (safeChild(*safeChild(node, "statements", stmntIdx), "node", 0)->ASTtype == "VarsBlock" && safeChild(*safeChild(node, "statements", stmntIdx), "node", 0)->group("vars").empty()) {
       stmntIdx++; // Skip empty vars block
       LOG_DEBUG("Skipping empty vars block at index %zu", stmntIdx - 1);
     }
