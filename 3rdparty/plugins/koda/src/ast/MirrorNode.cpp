@@ -246,7 +246,7 @@ void logStackTrace() {
                                            const std::string& groupName, int pos) {
       auto it = node.groups.find(groupName);
       // also check whether item at pos exists
-      if (it == node.groups.end() || it->second.empty() || it->second.size() >= pos) {
+      if (it == node.groups.end() || it->second.empty() || it->second.size() <= pos) {
           LOG_ERROR(
               "MirrorNode '%s' (type '%s') has no non-empty group '%s', or at position %d",
               node.name.c_str(), node.ASTtype.c_str(), groupName.c_str(), pos
