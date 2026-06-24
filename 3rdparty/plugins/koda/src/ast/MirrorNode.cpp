@@ -242,7 +242,7 @@ void logStackTrace() {
    * If the group is missing or empty, logs a descriptive error with a stack trace
    * and returns nullptr.
    */
-  inline const MirrorNode* safeChild(const MirrorNode& node,
+   const MirrorNode* safeChild(const MirrorNode& node,
                                            const std::string& groupName, int pos) {
       auto it = node.groups.find(groupName);
       // also check whether item at pos exists

@@ -48,7 +48,7 @@ MirrorNode parseMirrorNode(const json& j);
  * If the group is missing or empty, logs a descriptive error with a stack trace
  * and returns nullptr.
  */
-inline const MirrorNode* safeChild(const MirrorNode& node, const std::string& groupName, int pos);
+const MirrorNode* safeChild(const MirrorNode& node, const std::string& groupName, int pos);
 
 class MirrorWalker {
   const MirrorNode* current = nullptr;

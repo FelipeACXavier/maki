@@ -1119,7 +1119,7 @@ Result<koda::ReturnValue> Compiler::generateEventCall(PEventCall call, const Mir
 
 Result<ReturnValue> Compiler::generateExpr(PExpr node, const MirrorNode& mirror, Environment& env)
 {
-  const auto& vMirror = *safeChild(mirror, "v", 0)
+  const auto& vMirror = *safeChild(mirror, "v", 0);
   IF_ALT(PId, node->v, generateId, vMirror, env)
   ELSE_IF_ALT(PStr, node->v, generateStr, vMirror, env)
   ELSE_IF_ALT(PInt, node->v, generateInt, vMirror, env)
