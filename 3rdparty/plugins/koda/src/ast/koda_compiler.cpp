@@ -147,7 +147,7 @@ VoidResult Compiler::generate()
   {
     if (component->kind == Component::Kind::Capability)
     {
-      MirrorNode componentMirror = compChildren[compIdx];
+      MirrorNode componentMirror = *safeChild(mMirrorRoot, "components", compIdx);
       if (!(componentMirror.ASTtype == "Component") || !(componentMirror.name == component->name))
         LOG_ERROR("Mirror AST component mismatch at index %zu: expected Component with name '%s', found '%s' with name '%s'", compIdx, component->name.c_str(), componentMirror.ASTtype.c_str(), componentMirror.name.c_str());
       RETURN_ON_FAILURE(generateCapability(component, componentMirror, env));
@@ -160,7 +160,7 @@ VoidResult Compiler::generate()
   {
     if (component->kind == Component::Kind::Task)
     {
-      MirrorNode componentMirror = compChildren[compIdx];
+      MirrorNode componentMirror = *safeChild(mMirrorRoot, "components", compIdx);
       if (!(componentMirror.ASTtype == "Component") || !(componentMirror.name == component->name))
         LOG_ERROR("Mirror AST component mismatch at index %zu: expected Component with name '%s', found '%s' with name '%s'", compIdx, component->name.c_str(), componentMirror.ASTtype.c_str(), componentMirror.name.c_str());
       RETURN_ON_FAILURE(generateTask(component, componentMirror, env));
@@ -228,7 +228,6 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, const MirrorNo
       env.capabilityMap[name] = type;
   }
 
-  const auto& statementChildren = node.group("statements");
   size_t stmntIdx = 0;
   for (auto& statement : task->statements)
   {
@@ -236,7 +235,7 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, const MirrorNo
       stmntIdx++; // Skip empty vars block
       LOG_DEBUG("Skipping empty vars block at index %zu", stmntIdx - 1);
     }
-    RETURN_ON_FAILURE(generateStatement(statement, statementChildren[stmntIdx], env));
+    RETURN_ON_FAILURE(generateStatement(statement, *safeChild(node, "statements", stmntIdx), env));
     stmntIdx++;
   }
 
@@ -410,11 +409,10 @@ Result<koda::ReturnValue> Compiler::generateCapability(PComponent capability, co
   env.currentCapability.name = capability->name;
   env.currentCapability.srcId = node.srcId;
 
-  const auto& statementChildren = node.group("statements");
   size_t stmntIdx = 0;
   for (const auto& statement : capability->statements)
   {
-    RETURN_ON_FAILURE(generateStatement(statement, statementChildren[stmntIdx], env));
+    RETURN_ON_FAILURE(generateStatement(statement, *safeChild(node, "statements", stmntIdx), env));
     stmntIdx++;
   }
 
@@ -480,6 +478,7 @@ Result<ReturnValue> Compiler::generateArgument(PArgument argument, const MirrorN
 
 Result<ReturnValue> Compiler::generateStatement(PStatement statement, const MirrorNode& node, Environment& env)
 {
+  //ERROR CAUSED HERE.
   const auto& nodeMirror = *safeChild(node, "node", 0);
   IF_ALT(PStrategyBlock, statement->node, generateStrategyBlock, nodeMirror, env)
   ELSE_IF_ALT(PActionDef, statement->node, generateActionDef, nodeMirror, env)
@@ -490,12 +489,11 @@ Result<ReturnValue> Compiler::generateStatement(PStatement statement, const Mirr
 
 Result<ReturnValue> Compiler::generateStrategyBlock(PStrategyBlock strategy, const MirrorNode& node, Environment& env)
 {
-  const auto& flowsMirror = node.group("flows");
   size_t flowIdx = 0;
   for (auto& flow : strategy->flows)
   {
     LOG_DEBUG("BEFORE %d", flowIdx);
-    MirrorNode flowMirror = flowsMirror[flowIdx];
+    MirrorNode flowMirror = *child(node, "flows", flowIdx);
     if (!(flowMirror.ASTtype == "Flow") || !(flowMirror.name == flow->name))
       LOG_ERROR("Mirror AST flow mismatch at index %zu: expected Flow with name) '%s', found '%s' with name '%s'", flowIdx, flow->name.c_str(), flowMirror.ASTtype.c_str(), flowMirror.name.c_str());
     RETURN_ON_FAILURE(generateFlow(flow, flowMirror, env));
@@ -553,12 +551,11 @@ Result<ReturnValue> Compiler::generateEventDef(PEventDef event, const MirrorNode
   koda::ReturnValue value;
   value.call = event->name;
   value.name = event->typeName;
-  const auto& argsMirror = node.group("args");
   size_t argIdx = 0;
   for (const auto& arg : event->args)
   {
     koda::ReturnValue argValue;
-    ASSIGN_OR_RETURN_ON_FAILURE(argValue, generateArgument(arg, argsMirror[argIdx], env));
+    ASSIGN_OR_RETURN_ON_FAILURE(argValue, generateArgument(arg, *safeChild(node, "args", argIdx), env));
     value.args[argValue.call] = argValue.name;
     argIdx++;
   }
@@ -568,10 +565,9 @@ Result<ReturnValue> Compiler::generateEventDef(PEventDef event, const MirrorNode
 
 Result<ReturnValue> Compiler::generateVarsBlock(PVarsBlock varsBlock, const MirrorNode& node, Environment& env)
 {
-  const auto& varsMirror = node.group("vars");
   size_t varsIdx = 0;
   for (const auto& var : varsBlock->vars) {
-    MirrorNode varMirror = varsMirror[varsIdx];
+    MirrorNode varMirror = *safeChild(node, "vars", varsIdx);
     if (!(varMirror.ASTtype == "Vars") || !(varMirror.name == var->name))
       LOG_ERROR("Mirror AST vars definition mismatch at index %zu: expected Vars with name '%s', found '%s' with name '%s'", varsIdx, var->name.c_str(), varMirror.ASTtype.c_str(), varMirror.name.c_str());
     RETURN_ON_FAILURE(generateVarsDef(var, varMirror, env));
@@ -737,11 +733,11 @@ Result<koda::ReturnValue> Compiler::generateSequence(PSeq strategy, const Mirror
   env.includes.insert(std::format("sequence{}.dzn", instances));
   env.definitions.push_back(std::format("csequence{} s{}", instances, id));
 
-  const auto& altsMirror = node.group("alts");
+
   for (uint32_t i = 0; i < strategy->alts.size(); ++i)
   {
     ReturnValue expr;
-    ASSIGN_OR_RETURN_ON_FAILURE(expr, generateStrategy(strategy->alts[i], altsMirror[i], env));
+    ASSIGN_OR_RETURN_ON_FAILURE(expr, generateStrategy(strategy->alts[i], *safeChild(node, "args", i), env));
     env.core.push_back(std::format("s{}.action{} <=> {}", id, i, expr.name));
   }
 
@@ -754,11 +750,10 @@ Result<koda::ReturnValue> Compiler::generateJoin(PJoin strategy, const MirrorNod
   env.includes.insert("parallel.dzn");
   env.definitions.push_back(std::format("cparallel p{}", id));
 
-  const auto& altsMirror = node.group("alts");
   for (uint32_t i = 0; i < strategy->alts.size(); ++i)
   {
     ReturnValue expr;
-    ASSIGN_OR_RETURN_ON_FAILURE(expr, generateStrategy(strategy->alts[i], altsMirror[i], env));
+    ASSIGN_OR_RETURN_ON_FAILURE(expr, generateStrategy(strategy->alts[i], *safeChild(node, "alts", i), env));
     env.core.push_back(std::format("p{}.action{} <=> {}", id, i, expr.name));
   }
 
@@ -819,7 +814,6 @@ Result<koda::ReturnValue> Compiler::generateRepeat(PRepeat strategy, const Mirro
   env.includes.insert("repeat.dzn");
   env.definitions.push_back(std::format("crepeat r{}", id));
 
-  const auto& handlersMirror = node.group("handlers");
   size_t handlerIdx = 0;
 
   for (auto& handler : strategy->handlers)
@@ -830,7 +824,7 @@ Result<koda::ReturnValue> Compiler::generateRepeat(PRepeat strategy, const Mirro
       continue;
     }
     env.previousCall = expr.name;
-    ASSIGN_OR_RETURN_ON_FAILURE(expr, generateStrategyHandler(handler, handlersMirror[handlerIdx], env));
+    ASSIGN_OR_RETURN_ON_FAILURE(expr, generateStrategyHandler(handler, *safeChild(node, "handlers", handlerIdx), env));
     handlerIdx++;
   }
 
@@ -843,7 +837,7 @@ Result<koda::ReturnValue> Compiler::generateRepeat(PRepeat strategy, const Mirro
       continue;
     }
     env.previousCall = expr.name;
-    ASSIGN_OR_RETURN_ON_FAILURE(expr, generateStrategyHandler(handler, handlersMirror[handlerIdx], env));
+    ASSIGN_OR_RETURN_ON_FAILURE(expr, generateStrategyHandler(handler, *safeChild(node, "handlers", handlerIdx), env));
     handlerIdx++;
   }
 
@@ -875,7 +869,6 @@ Result<koda::ReturnValue> Compiler::generateEvery(PRepeat strategy, const Mirror
   INCREMENT_MAP(env.strategies, std::format("alarm{}", alarmId));
   env.requiresPorts.insert(std::format("ialarm alarm{}", alarmId));
 
-  const auto& handlersMirror = node.group("handlers");
   size_t handlerIdx = 0;
   for (auto& handler : strategy->handlers)
   {
@@ -885,7 +878,7 @@ Result<koda::ReturnValue> Compiler::generateEvery(PRepeat strategy, const Mirror
       continue;
     }
     env.previousCall = expr.name;
-    ASSIGN_OR_RETURN_ON_FAILURE(expr, generateStrategyHandler(handler, handlersMirror[handlerIdx], env));
+    ASSIGN_OR_RETURN_ON_FAILURE(expr, generateStrategyHandler(handler, *safeChild(node, "handlers", handlerIdx), env));
     handlerIdx++;
   }
 
@@ -898,7 +891,7 @@ Result<koda::ReturnValue> Compiler::generateEvery(PRepeat strategy, const Mirror
       continue;
     }
     env.previousCall = expr.name;
-    ASSIGN_OR_RETURN_ON_FAILURE(expr, generateStrategyHandler(handler, handlersMirror[handlerIdx], env));
+    ASSIGN_OR_RETURN_ON_FAILURE(expr, generateStrategyHandler(handler, *safeChild(node, "handlers", handlerIdx), env));
     handlerIdx++;
   }
 
@@ -934,7 +927,6 @@ Result<koda::ReturnValue> Compiler::generateTaskCall(PTaskCall strategy, const M
   if (strategy->handlers.empty())
     return expr;
 
-  const auto& handlersMirror = node.group("handlers");
   size_t handlerIdx = 0;
   for (auto& handler : strategy->handlers)
   {
@@ -944,7 +936,7 @@ Result<koda::ReturnValue> Compiler::generateTaskCall(PTaskCall strategy, const M
       continue;
     }
     env.previousCall = expr.name;
-    ASSIGN_OR_RETURN_ON_FAILURE(expr, generateStrategyHandler(handler, handlersMirror[handlerIdx], env));
+    ASSIGN_OR_RETURN_ON_FAILURE(expr, generateStrategyHandler(handler, *safeChild(node, "handlers", handlerIdx), env));
     handlerIdx++;
   }
 
@@ -957,7 +949,7 @@ Result<koda::ReturnValue> Compiler::generateTaskCall(PTaskCall strategy, const M
       continue;
     }
     env.previousCall = expr.name;
-    ASSIGN_OR_RETURN_ON_FAILURE(expr, generateStrategyHandler(handler, handlersMirror[handlerIdx], env));
+    ASSIGN_OR_RETURN_ON_FAILURE(expr, generateStrategyHandler(handler, *safeChild(node, "handlers", handlerIdx), env));
     handlerIdx++;
   }
 
@@ -1077,11 +1069,10 @@ Result<koda::ReturnValue> Compiler::generateEventCall(PEventCall call, const Mir
     env.requiresPorts.insert(std::format("iaction {}", identifier));
     std::vector<std::string> args = {};
     LOG_DEBUG("Generating expr %s (%d) with call: %ld", call->name.c_str(), env.asyncCallsCounter[call->name], call->args.size());
-    const auto& argsMirror = node.group("args");
     size_t argIdx = 0;
     for (const auto& expr : call->args)
     {
-      auto ret = generateExpr(expr, argsMirror[argIdx], env);
+      auto ret = generateExpr(expr, *safeChild(node, "args", argIdx), env);
       if (ret.IsSuccess() && !ret.Value().name.empty())
         args.push_back(ret.Value().name);
       else
