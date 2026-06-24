@@ -478,7 +478,6 @@ Result<ReturnValue> Compiler::generateArgument(PArgument argument, const MirrorN
 
 Result<ReturnValue> Compiler::generateStatement(PStatement statement, const MirrorNode& node, Environment& env)
 {
-  //ERROR CAUSED HERE.
   const auto& nodeMirror = *safeChild(node, "node", 0);
   IF_ALT(PStrategyBlock, statement->node, generateStrategyBlock, nodeMirror, env)
   ELSE_IF_ALT(PActionDef, statement->node, generateActionDef, nodeMirror, env)
@@ -958,6 +957,10 @@ Result<koda::ReturnValue> Compiler::generateTaskCall(PTaskCall strategy, const M
 
 Result<koda::ReturnValue> Compiler::generateParen(PParen strategy, const MirrorNode& node, Environment& env)
 {
+  if (node.ASTtype != "Strategy::Paren") {
+    // Parentheses were added during emitting, not AST generation, so hacky fix for now, update koda_ast_json later (and koda_emitter).
+    return generateStrategy(strategy->a, node, env);
+  }
   return generateStrategy(strategy->a, *safeChild(node, "a", 0), env);
 }
 
