@@ -685,12 +685,13 @@ Result<koda::ReturnValue> Compiler::generateFlow(PFlow flow, const MirrorNode& n
 
 Result<koda::ReturnValue> Compiler::generateStrategy(PStrategy strategy, const MirrorNode& node, Environment& env)
 {
-  const auto& childMirror = *safeChild(node, "v", 0);
+  const MirrorNode* childMirrorPtr = safeChild(node, "v", 0);
   if (skipStrategy) {
-    // again, a very hacky fix
+    //very hacy fix
     skipStrategy = false;
-    childMirror = node;
+    childMirrorPtr = &node;
   }
+  const MirrorNode& childMirror = *childMirrorPtr;
   IF_ALT(PSeq, strategy->v, generateSequence, childMirror, env)
   ELSE_IF_ALT(PJoin, strategy->v, generateJoin, childMirror, env)
   ELSE_IF_ALT(PEither, strategy->v, generateEither, childMirror, env)
