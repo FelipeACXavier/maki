@@ -1047,7 +1047,8 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
     env.requiresPorts.insert("isignal " + expr.name);
 
     ReturnValue strat;
-    ASSIGN_OR_RETURN_ON_FAILURE(strat, generateStrategy(handler->body, *safeChild(node, "body", 0), env));
+    MirrorNode bodyCorrected = *safeChild(safeChild(safeChild(node, "body", 0), "v", 0), "alts", 0);
+    ASSIGN_OR_RETURN_ON_FAILURE(strat, generateStrategy(handler->body, bodyCorrected, env));
 
     env.core.push_back(std::format("sh{}.signal <=> {}", id, expr.name));
     env.core.push_back(std::format("sh{}.action <=> {}", id, env.previousCall));
