@@ -493,7 +493,7 @@ Result<ReturnValue> Compiler::generateStrategyBlock(PStrategyBlock strategy, con
   for (auto& flow : strategy->flows)
   {
     LOG_DEBUG("BEFORE %d", flowIdx);
-    MirrorNode flowMirror = *child(node, "flows", flowIdx);
+    MirrorNode flowMirror = *safeChild(node, "flows", flowIdx);
     if (!(flowMirror.ASTtype == "Flow") || !(flowMirror.name == flow->name))
       LOG_ERROR("Mirror AST flow mismatch at index %zu: expected Flow with name) '%s', found '%s' with name '%s'", flowIdx, flow->name.c_str(), flowMirror.ASTtype.c_str(), flowMirror.name.c_str());
     RETURN_ON_FAILURE(generateFlow(flow, flowMirror, env));
