@@ -769,7 +769,7 @@ Result<koda::ReturnValue> Compiler::generateStrategy(PStrategy strategy, const M
     skipStrategy = false;
     childMirrorPtr = &node;
   } else {
-    childMirrorPtr = safeChild(node, "v", 0)
+    childMirrorPtr = safeChild(node, "v", 0);
   }
   const MirrorNode& childMirror = *childMirrorPtr;
   IF_ALT(PSeq, strategy->v, generateSequence, childMirror, env)
