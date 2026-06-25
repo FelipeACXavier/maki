@@ -285,7 +285,6 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, const MirrorNo
     stmntIdx++;
   }
 
-  // Inside generateTask, replace the connection-building loops:
   for (const auto& f : env.flows)
   {
     const auto& flow = f.second;
@@ -317,7 +316,7 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, const MirrorNo
       }
       PortRef in = {toFlowVariable(flowName), identifier};
       PortRef out = {toFilename(name), trigger};
-      env.system.connections.emplace_back(Connection{in, out, Connection::Type::Action, srcId});
+      env.system.connections.emplace_back(Connection{in, out, Connection::Type::Action, flow.srcId});
     }
 
     // Sync calls (unique – map stores {count, srcId})
@@ -339,7 +338,7 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, const MirrorNo
 
       PortRef in = {toFlowVariable(flowName), std::format("{}_{}", instance, port)};
       PortRef out = {toFilename(cap->name), port};
-      env.system.connections.emplace_back(Connection{in, out, Connection::Type::Action, srcId});
+      env.system.connections.emplace_back(Connection{in, out, Connection::Type::Action, flow.srcId});
     }
 
     // Signal calls (unique)
@@ -353,7 +352,7 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, const MirrorNo
 
       PortRef in = {toFlowVariable(flowName), std::format("{}_{}", instance, port)};
       PortRef out = {toFilename(cap->name), port};
-      env.system.connections.emplace_back(Connection{in, out, Connection::Type::Signal, srcId});
+      env.system.connections.emplace_back(Connection{in, out, Connection::Type::Signal, flow.srcId});
     }
 
     // Strategies (unique)
@@ -362,7 +361,7 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, const MirrorNo
       const auto& srcId = countSrcPair.second;
       PortRef in = {toFlowVariable(flowName), strategyName};
       PortRef out = {toFlowVariable(strategyName), "api"};
-      env.system.connections.emplace_back(Connection{in, out, Connection::Type::Action, srcId});
+      env.system.connections.emplace_back(Connection{in, out, Connection::Type::Action, flow.srcId});
     }
   }
 
@@ -688,6 +687,7 @@ Result<koda::ReturnValue> Compiler::generateFlow(PFlow flow, const MirrorNode& n
 
   Flow f;
   f.name = flow->name;
+  f.srcId = node.srcId;
   f.asyncCalls = std::move(env.asyncCallsWithSrc);
 
   // Build unique call maps using the first seen srcId

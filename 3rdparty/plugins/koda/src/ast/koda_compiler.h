@@ -99,6 +99,7 @@ public:
   struct Flow
   {
     std::string name;
+    std::string srcId;
     std::vector<std::pair<std::string, std::string>> asyncCalls;          // (identifier, srcId)
     std::map<std::string, std::pair<uint32_t, std::string>> syncCalls;    // key -> (count, srcId)
     std::map<std::string, std::pair<uint32_t, std::string>> signalCalls;  // key -> (count, srcId)
