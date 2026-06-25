@@ -276,7 +276,8 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, const MirrorNo
   size_t stmntIdx = 0;
   for (auto& statement : task->statements)
   {
-    if (safeChild(*safeChild(node, "statements", stmntIdx), "node", 0)->ASTtype == "VarsBlock" && safeChild(*safeChild(node, "statements", stmntIdx), "node", 0)->group("vars").empty()) {
+    if (safeChild(*safeChild(node, "statements", stmntIdx), "node", 0)->ASTtype == "VarsBlock" &&
+        safeChild(*safeChild(node, "statements", stmntIdx), "node", 0)->group("vars").empty()) {
       stmntIdx++; // Skip empty vars block
       LOG_DEBUG("Skipping empty vars block at index %zu", stmntIdx - 1);
     }
@@ -288,9 +289,8 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, const MirrorNo
   {
     const auto flow = f.second;
     const auto flowName = flow.name;
-    for (const auto& c : flow.asyncCalls)
+    for (const auto& [identifier, srcId] : flow.asyncCalls)
     {
-      auto [identifier, srcId] = c;
       auto index = identifier.find_first_of("_");
       auto capName = identifier.substr(0, index);
       auto cap = env.getCapability(capName);
@@ -317,12 +317,11 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, const MirrorNo
       PortRef in = {toFlowVariable(flowName), identifier};
       PortRef out = {toFilename(name), trigger};
 
-      env.system.connections.push_back(Connection{in, out, Connection::Type::Action, srcId});
+      env.system.connections.push_back({in, out, Connection::Type::Action, srcId});
     }
 
-    for (const auto& c : flow.syncCalls)
+    for (const auto& [fullName, srcId] : flow.syncCalls)
     {
-      auto [fullName, srcId] = c;
       auto [instance, port] = portFromString(fullName);
       auto cap = env.getCapability(instance);
       std::string name = "";
@@ -342,12 +341,11 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, const MirrorNo
       PortRef in = {toFlowVariable(flowName), std::format("{}_{}", instance, port)};
       PortRef out = {toFilename(cap->name), port};
 
-      env.system.connections.push_back(Connection{in, out, Connection::Type::Action, srcId});
+      env.system.connections.push_back({in, out, Connection::Type::Action, srcId});
     }
 
-    for (const auto& c : flow.signalCalls)
+    for (const auto& [fullName, srcId] : flow.signalCalls)
     {
-      auto [fullName, srcId] = c;
       auto [instance, port] = portFromString(fullName);
       auto cap = env.getCapability(instance);
       if (!cap)
@@ -356,16 +354,15 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, const MirrorNo
       PortRef in = {toFlowVariable(flowName), std::format("{}_{}", instance, port)};
       PortRef out = {toFilename(cap->name), port};
 
-      env.system.connections.push_back(Connection{in, out, Connection::Type::Signal, srcId});
+      env.system.connections.push_back({in, out, Connection::Type::Signal, srcId});
     }
 
-    for (const auto& c : flow.strategies)
+    for (const auto& [name, srcId] : flow.strategies)
     {
-      auto [name, srcId] = c;
       PortRef in = {toFlowVariable(flowName), name};
       PortRef out = {toFlowVariable(name), "api"};
 
-      env.system.connections.push_back(Connection{in, out, Connection::Type::Action, srcId});
+      env.system.connections.push_back({in, out, Connection::Type::Action, srcId});
     }
   }
 
@@ -384,7 +381,6 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, const MirrorNo
 
   startFile(filename);
 
-  // Imports
   emitLine(file, filename, "import iaction.dzn;", node.srcId);
   emitLine(file, filename, "import isignal.dzn;", node.srcId);
   emitLine(file, filename, "", node.srcId);
@@ -397,14 +393,12 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, const MirrorNo
     emitLine(file, filename, std::format("import {};", inc), node.srcId);
   emitLine(file, filename, "", node.srcId);
 
-  // Capabilities
   for (const auto& cap : env.capabilities)
     emitLine(file, filename, std::format("import a_{}.dzn;", toFilename(cap.second.name)), cap.second.srcId);
   emitLine(file, filename, "", node.srcId);
 
-  // Flows
   for (const auto& flow : env.flows)
-    emitLine(file, filename, std::format("import {}.dzn;", toFilename(flow.second.name)), node.srcId);
+    emitLine(file, filename, std::format("import {}.dzn;", toFilename(flow.second.name)), node.srcId); // using task node id
   emitLine(file, filename, "", node.srcId);
 
   emitLine(file, filename, std::format("component {} {{", componentName(task->name)), node.srcId);
@@ -419,8 +413,7 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, const MirrorNo
   emitLine(file, filename, "    api <=> main.api;", node.srcId);
   emitLine(file, filename, "", node.srcId);
 
-  // Connections
-  std::string currentInstance = "";
+  std::string currentInstance;
   for (const auto& conn : env.system.connections)
   {
     if (conn.lhs.instance != currentInstance)
@@ -429,7 +422,6 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, const MirrorNo
         emitLine(file, filename, "", conn.srcId);
       currentInstance = conn.lhs.instance;
     }
-
     emitLine(file, filename,
              std::format("    {}.{} <=> {}.{};", conn.lhs.instance, conn.lhs.port, conn.rhs.instance, conn.rhs.port),
              conn.srcId);
@@ -521,7 +513,7 @@ Result<ReturnValue> Compiler::emitCapability(PComponent capability, Environment&
 
 Result<ReturnValue> Compiler::generateArgument(PArgument argument, const MirrorNode& node, Environment& env)
 {
-  return koda::ReturnValue{argument->a, argument->b, node.srcId};
+  return koda::ReturnValue{argument->a, argument->b, {}, node.srcId};
 }
 
 Result<ReturnValue> Compiler::generateStatement(PStatement statement, const MirrorNode& node, Environment& env)
@@ -541,7 +533,8 @@ Result<ReturnValue> Compiler::generateStrategyBlock(PStrategyBlock strategy, con
   {
     MirrorNode flowMirror = *safeChild(node, "flows", flowIdx);
     if (!(flowMirror.ASTtype == "Flow") || !(flowMirror.name == flow->name))
-      LOG_ERROR("Mirror AST flow mismatch at index %zu: expected Flow with name) '%s', found '%s' with name '%s'", flowIdx, flow->name.c_str(), flowMirror.ASTtype.c_str(), flowMirror.name.c_str());
+      LOG_ERROR("Mirror AST flow mismatch at index %zu: expected Flow with name '%s', found '%s' with name '%s'",
+                flowIdx, flow->name.c_str(), flowMirror.ASTtype.c_str(), flowMirror.name.c_str());
     RETURN_ON_FAILURE(generateFlow(flow, flowMirror, env));
     flowIdx++;
   }
@@ -567,7 +560,8 @@ Result<ReturnValue> Compiler::generateRosDef(PRosDef ros, const MirrorNode& node
   ReturnValue result;
   const auto& defMirror = *safeChild(node, "def", 0);
   if (!(defMirror.ASTtype == "EventDef") || !(defMirror.name == ros->def->name))
-    LOG_ERROR("Mirror AST event definition mismatch: expected EventDef with name '%s', found '%s' with name '%s'", ros->def->name.c_str(), defMirror.ASTtype.c_str(), defMirror.name.c_str());
+    LOG_ERROR("Mirror AST event definition mismatch: expected EventDef with name '%s', found '%s' with name '%s'",
+              ros->def->name.c_str(), defMirror.ASTtype.c_str(), defMirror.name.c_str());
   ASSIGN_OR_RETURN_ON_FAILURE(result, generateEventDef(ros->def, defMirror, env));
 
   Action action;
@@ -612,10 +606,12 @@ Result<ReturnValue> Compiler::generateEventDef(PEventDef event, const MirrorNode
 Result<ReturnValue> Compiler::generateVarsBlock(PVarsBlock varsBlock, const MirrorNode& node, Environment& env)
 {
   size_t varsIdx = 0;
-  for (const auto& var : varsBlock->vars) {
+  for (const auto& var : varsBlock->vars)
+  {
     MirrorNode varMirror = *safeChild(node, "vars", varsIdx);
     if (!(varMirror.ASTtype == "Vars") || !(varMirror.name == var->name))
-      LOG_ERROR("Mirror AST vars definition mismatch at index %zu: expected Vars with name '%s', found '%s' with name '%s'", varsIdx, var->name.c_str(), varMirror.ASTtype.c_str(), varMirror.name.c_str());
+      LOG_ERROR("Mirror AST vars definition mismatch at index %zu: expected Vars with name '%s', found '%s' with name '%s'",
+                varsIdx, var->name.c_str(), varMirror.ASTtype.c_str(), varMirror.name.c_str());
     RETURN_ON_FAILURE(generateVarsDef(var, varMirror, env));
     varsIdx++;
   }
@@ -628,7 +624,8 @@ Result<ReturnValue> Compiler::generateVarsDef(PVarDef var, const MirrorNode& nod
   return koda::ReturnValue{};
 }
 
-void Compiler::connectWithArbiter(const std::map<std::string, uint32_t>& connections, Connection::Type connectionType, Environment& env)
+void Compiler::connectWithArbiter(const std::map<std::string, uint32_t>& connections,
+                                  Connection::Type connectionType, Environment& env)
 {
   for (auto it = connections.cbegin(); it != connections.cend(); ++it)
   {
@@ -642,18 +639,18 @@ void Compiler::connectWithArbiter(const std::map<std::string, uint32_t>& connect
     env.includes.insert(std::format("action_arbiter{}.dzn", occurences));
 
     auto id = env.arbiter++;
-    env.definitions.push_back({std::format("caction_arbiter{} arbitrer{}", occurences, id), ""});  // synthetic, no src
+    env.definitions.push_back({std::format("caction_arbiter{} arbitrer{}", occurences, id), ""});
 
     auto [instance, port] = portFromString(it->first);
     if (mOptions.verbose > 0)
       LOG_RAW("Arbiter evaluation, {} {} has {} connections", instance, port, it->second);
 
     const auto toReplace = connectionType == Connection::Type::Signal ? std::format("{}_{}", instance, port) : instance;
-    for (auto& [line, src] : env.core)
+    for (auto& lineSrc : env.core)
     {
-      auto index0 = line.find(toReplace);
+      auto index0 = lineSrc.text.find(toReplace);
       if (index0 != std::string::npos)
-        line.replace(index0, toReplace.size(), std::format("arbitrer{}.client{}", id, count++));
+        lineSrc.text.replace(index0, toReplace.size(), std::format("arbitrer{}.client{}", id, count++));
     }
 
     env.core.push_back({std::format("arbitrer{}.resource <=> {}", id, toReplace), ""});
@@ -669,16 +666,13 @@ Result<koda::ReturnValue> Compiler::generateFlow(PFlow flow, const MirrorNode& n
   const auto& strategyMirror = *safeChild(node, "strategy", 0);
   auto ret = generateStrategy(flow->strategy, strategyMirror, env);
 
-  // Collect calls with srcIds from env temporary storage
-  Flow f{flow->name};
-  for (auto& [identifier, src] : env.asyncCallsWithSrc)
-    f.asyncCalls.push_back({identifier, src});
-  for (auto& [identifier, src] : env.syncCallsWithSrc)
-    f.syncCalls.push_back({identifier, src});
-  for (auto& [identifier, src] : env.signalCallsWithSrc)
-    f.signalCalls.push_back({identifier, src});
-  for (auto& [identifier, src] : env.strategiesWithSrc)
-    f.strategies.push_back({identifier, src});
+  // Collect calls with srcIds from temporary storage
+  Flow f;
+  f.name = flow->name;
+  f.asyncCalls = std::move(env.asyncCallsWithSrc);
+  f.syncCalls = std::move(env.syncCallsWithSrc);
+  f.signalCalls = std::move(env.signalCallsWithSrc);
+  f.strategies = std::move(env.strategiesWithSrc);
 
   env.flows[flow->name] = f;
   env.system.instances.insert({flowName(flow->name), toFlowVariable(toFilename(flow->name)), node.srcId});
@@ -717,12 +711,12 @@ Result<koda::ReturnValue> Compiler::generateFlow(PFlow flow, const MirrorNode& n
   emitLine(mCurrentFile, filename, "", node.srcId);
   emitLine(mCurrentFile, filename, "  system {", node.srcId);
 
-  for (const auto& [line, src] : env.definitions)
-    emitLine(mCurrentFile, filename, "    " + line + ";", src);
+  for (const auto& def : env.definitions)
+    emitLine(mCurrentFile, filename, "    " + def.text + ";", def.srcId);
 
   emitLine(mCurrentFile, filename, "", node.srcId);
-  for (const auto& [line, src] : env.core)
-    emitLine(mCurrentFile, filename, "    " + line + ";", src);
+  for (const auto& lineSrc : env.core)
+    emitLine(mCurrentFile, filename, "    " + lineSrc.text + ";", lineSrc.srcId);
 
   emitLine(mCurrentFile, filename, "  }", node.srcId);
   emitLine(mCurrentFile, filename, "}", node.srcId);
@@ -807,12 +801,12 @@ Result<koda::ReturnValue> Compiler::generateJoin(PJoin strategy, const MirrorNod
 
 Result<koda::ReturnValue> Compiler::generateEither(PEither strategy, const MirrorNode& node, Environment& env)
 {
-  return koda::ReturnValue{};
+  return koda::ReturnValue();
 }
 
 Result<koda::ReturnValue> Compiler::generateLet(PLet strategy, const MirrorNode& node, Environment& env)
 {
-  return koda::ReturnValue{};
+  return koda::ReturnValue();
 }
 
 Result<koda::ReturnValue> Compiler::generateWithin(PWithin strategy, const MirrorNode& node, Environment& env)
@@ -844,7 +838,7 @@ Result<koda::ReturnValue> Compiler::generateWithin(PWithin strategy, const Mirro
 
 Result<koda::ReturnValue> Compiler::generateIfElse(PIfElse strategy, const MirrorNode& node, Environment& env)
 {
-  return koda::ReturnValue{};
+  return koda::ReturnValue();
 }
 
 Result<koda::ReturnValue> Compiler::generateRepeat(PRepeat strategy, const MirrorNode& node, Environment& env)
@@ -892,7 +886,7 @@ Result<koda::ReturnValue> Compiler::generateRepeat(PRepeat strategy, const Mirro
 
 Result<koda::ReturnValue> Compiler::generateGuard(PGuard strategy, const MirrorNode& node, Environment& env)
 {
-  return koda::ReturnValue{};
+  return koda::ReturnValue();
 }
 
 Result<koda::ReturnValue> Compiler::generateEvery(PRepeat strategy, const MirrorNode& node, Environment& env)
@@ -958,7 +952,7 @@ Result<koda::ReturnValue> Compiler::generateRef(PRef strategy, const MirrorNode&
 {
   INCREMENT_MAP(env.strategiesCountMap, strategy->name)
   env.requiresPorts.insert(std::format("iaction {}", strategy->name));
-  env.strategiesWithSrc.push_back({strategy->name, node.srcId});
+  env.strategiesWithSrc.emplace_back(strategy->name, node.srcId);
 
   return koda::ReturnValue{strategy->name, node.srcId};
 }
@@ -1028,7 +1022,6 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
     {
       ReturnValue strat;
       ASSIGN_OR_RETURN_ON_FAILURE(strat, generateStrategy(handler->body, *safeChild(node, "body", 0), env));
-
       env.core.push_back({std::format("ah{}.action <=> {}", id, env.previousCall), node.srcId});
       env.core.push_back({std::format("ah{}.handler <=> {}", id, strat.name), strat.srcId});
     }
@@ -1051,7 +1044,6 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
     {
       ReturnValue strat;
       ASSIGN_OR_RETURN_ON_FAILURE(strat, generateStrategy(handler->body, *safeChild(node, "body", 0), env));
-
       env.core.push_back({std::format("fh{}.action <=> {}", id, env.previousCall), node.srcId});
       env.core.push_back({std::format("fh{}.handler <=> {}", id, strat.name), strat.srcId});
     }
@@ -1072,7 +1064,6 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
 
     ReturnValue strat;
     ASSIGN_OR_RETURN_ON_FAILURE(strat, generateStrategy(handler->body, *safeChild(node, "body", 0), env));
-
     env.core.push_back({std::format("sh{}.signal <=> {}", id, expr.name), expr.srcId});
     env.core.push_back({std::format("sh{}.action <=> {}", id, env.previousCall), node.srcId});
     env.core.push_back({std::format("sh{}.handler <=> {}", id, strat.name), strat.srcId});
@@ -1094,7 +1085,6 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
     ReturnValue strat;
     MirrorNode bodyCorrected = *safeChild(*safeChild(*safeChild(node, "body", 0), "v", 0), "alts", 0);
     ASSIGN_OR_RETURN_ON_FAILURE(strat, generateStrategy(handler->body, bodyCorrected, env));
-
     env.core.push_back({std::format("sh{}.signal <=> {}", id, expr.name), expr.srcId});
     env.core.push_back({std::format("sh{}.action <=> {}", id, env.previousCall), node.srcId});
     env.core.push_back({std::format("sh{}.handler <=> {}", id, strat.name), strat.srcId});
@@ -1116,16 +1106,14 @@ Result<koda::ReturnValue> Compiler::generateEventCall(PEventCall call, const Mir
   {
     INCREMENT_MAP(env.asyncCallsCounter, call->name)
     auto identifier = std::format("{}_{}", call->name, env.asyncCallsCounter[call->name]);
-    env.asyncCallsWithSrc.push_back({identifier, srcId});
+    env.asyncCallsWithSrc.emplace_back(identifier, srcId);
     env.requiresPorts.insert(std::format("iaction {}", identifier));
 
     size_t argIdx = 0;
     for (const auto& expr : call->args)
     {
       auto ret = generateExpr(expr, *safeChild(node, "args", argIdx), env);
-      if (ret.IsSuccess() && !ret.Value().name.empty())
-        ; // we don't currently record arg lines separately, but we could
-      else
+      if (!ret.IsSuccess())
         LOG_ERROR(ret.ErrorMessage());
       argIdx++;
     }
@@ -1138,13 +1126,13 @@ Result<koda::ReturnValue> Compiler::generateEventCall(PEventCall call, const Mir
     if (isSignal)
     {
       INCREMENT_MAP(env.signalCallsCountMap, event)
-      env.signalCallsWithSrc.push_back({event, srcId});
+      env.signalCallsWithSrc.emplace_back(event, srcId);
       env.requiresPorts.insert(std::format("isignal {}_{}", call->receiver, call->name));
     }
     else
     {
       INCREMENT_MAP(env.syncCallsCountMap, event)
-      env.syncCallsWithSrc.push_back({event, srcId});
+      env.syncCallsWithSrc.emplace_back(event, srcId);
       env.requiresPorts.insert(std::format("iaction {}_{}", call->receiver, call->name));
     }
 
@@ -1170,22 +1158,22 @@ Result<ReturnValue> Compiler::generateExpr(PExpr node, const MirrorNode& mirror,
 
 Result<ReturnValue> Compiler::generateId(PId expr, const MirrorNode& node, Environment& env)
 {
-  return ReturnValue{expr->value, node.srcId};
+  return ReturnValue{expr->value, {}, {}, node.srcId};
 }
 
 Result<ReturnValue> Compiler::generateStr(PStr expr, const MirrorNode& node, Environment& env)
 {
-  return ReturnValue{expr->value, node.srcId};
+  return ReturnValue{expr->value, {}, {}, node.srcId};
 }
 
 Result<ReturnValue> Compiler::generateInt(PInt expr, const MirrorNode& node, Environment& env)
 {
-  return ReturnValue{std::to_string(expr->value), node.srcId};
+  return ReturnValue{std::to_string(expr->value), {}, {}, node.srcId};
 }
 
 Result<ReturnValue> Compiler::generateFloat(PFloat expr, const MirrorNode& node, Environment& env)
 {
-  return ReturnValue{std::to_string(expr->value), node.srcId};
+  return ReturnValue{std::to_string(expr->value), {}, {}, node.srcId};
 }
 
 Result<ReturnValue> Compiler::generateCall(PCall expr, const MirrorNode& node, Environment& env)
@@ -1197,14 +1185,14 @@ Result<ReturnValue> Compiler::generateNeg(PNeg expr, const MirrorNode& node, Env
 {
   auto result = generateExpr(expr->value, *safeChild(node, "value", 0), env);
   RETURN_ON_FAILURE(result);
-  return ReturnValue{"-" + result.Value().name, node.srcId};
+  return ReturnValue{"-" + result.Value().name, {}, {}, node.srcId};
 }
 
 Result<ReturnValue> Compiler::generateNot(PNot expr, const MirrorNode& node, Environment& env)
 {
   auto result = generateExpr(expr->value, *safeChild(node, "value", 0), env);
   RETURN_ON_FAILURE(result);
-  return ReturnValue{"!" + result.Value().name, node.srcId};
+  return ReturnValue{"!" + result.Value().name, {}, {}, node.srcId};
 }
 
 Result<ReturnValue> Compiler::generateBinOp(PBinOp expr, const MirrorNode& node, Environment& env)
@@ -1226,7 +1214,7 @@ Result<ReturnValue> Compiler::generateBinOp(PBinOp expr, const MirrorNode& node,
       return Result<ReturnValue>::Failed("No right side of expression");
     return ReturnValue{
       (unary ? op : "") + aSide + (unary ? "" : " " + op + " " + bSide),
-      node.srcId
+      {}, {}, node.srcId
     };
   };
 
@@ -1257,26 +1245,113 @@ Result<ReturnValue> Compiler::generateParen(PEParen expr, const MirrorNode& node
 
 VoidResult Compiler::createSequenceComponent(uint32_t instances)
 {
-  // Synthetic, no line mapping needed
   if (mOptions.dryRun)
     return VoidResult();
 
   std::string filename = std::format("{}/sequence{}.dzn", mOptions.outputDir, instances);
-  std::ofstream file(filename);
+
+  std::ofstream file;
+  file.open(filename);
   if (!file.is_open())
     return VoidResult::Failed("Failed to open: " + filename);
 
-  // We don't call startFile/emitLine here because these lines are not mapped.
+  // Synthetic component – not mapped to source lines
   file << "import types.dzn;\n";
   file << "import iaction.dzn;\n\n";
   file << std::format("component csequence{} {{\n", instances);
   file << "  provides iaction api;\n\n";
   for (uint32_t i = 0; i < instances; ++i)
     file << std::format("  requires iaction action{};\n", i);
-  // ... (rest of the template unchanged)
+  file << "\n";
+  file << "  behaviour {\n";
+  file << "    enum State { Idle, ";
+  for (uint32_t i = 0; i < instances; ++i)
+    file << std::format("Action{}, ", i);
+  file << "Error };\n";
+  file << "    State state = State.Idle;\n\n";
+  file << "    [state.Idle] {\n";
+  file << "      on api.trigger(): {\n";
+  file << "        Result ret = action0.trigger();\n";
+  file << "        if (ret.Success) {\n";
+  file << "          state = State.Action0;\n";
+  file << "        } else if (ret.Done) {\n";
+  createSequenceDoneRecursion(true, 1, instances, file, "          ");
+  file << "        } else {\n";
+  file << "          state = State.Error;\n";
+  file << "        }\n";
+  file << "        reply(ret);\n";
+  file << "      }\n";
+  file << "    }\n\n";
+
+  for (uint32_t i = 0; i < instances; ++i)
+  {
+    file << std::format("    [state.Action{}] {{\n", i);
+    file << std::format("      on action{}.success(): {{\n", i);
+    if (i + 1 == instances)
+    {
+      file << "        api.success();\n";
+      file << "        state = State.Idle;\n";
+    }
+    else
+    {
+      file << std::format("        Result ret = action{}.trigger();\n", i + 1);
+      file << "        if (ret.Success) {\n";
+      file << std::format("          state = State.Action{};\n", i + 1);
+      file << "        } else if (ret.Done) {\n";
+      createSequenceDoneRecursion(false, i + 2, instances, file, "          ");
+      file << "        } else {\n";
+      file << "          api.failure();\n";
+      file << "          state = State.Error;\n";
+      file << "        }\n";
+    }
+    file << "      }\n\n";
+    file << std::format("      on action{}.failure(): {{\n", i);
+    file << "        api.failure();\n";
+    file << "        state = State.Error;\n";
+    file << "      }\n\n";
+    file << "      on api.abort(): {\n";
+    file << std::format("        Result ret = action{}.abort();\n", i);
+    file << "        if (ret.Success)\n";
+    file << "          state = State.Idle;\n";
+    file << "        else if (ret.Failure)\n";
+    file << "          state = State.Error;\n";
+    file << "        reply(ret);\n";
+    file << "      }\n";
+    file << "    }\n\n";
+  }
+
+  file << "    [state.Error] {\n";
+  file << "      on api.reset(): {\n";
+  for (uint32_t i = 0; i < instances; ++i)
+  {
+    if (i == 0)
+      file << std::format("        if (action{}.state.Error) {{\n", i);
+    else
+      file << std::format("        else if (action{}.state.Error) {{\n", i);
+    file << std::format("          Result ret = action{}.reset();\n", i);
+    file << "          if (ret.Success)\n";
+    file << "            state = State.Idle;\n";
+    file << "          reply(ret);\n";
+    file << "        }\n";
+  }
+  file << "      }\n\n";
+  file << "      on api.abort(): {\n";
+  for (uint32_t i = 0; i < instances; ++i)
+  {
+    if (i == 0)
+      file << std::format("        if (action{}.state.Error)\n", i);
+    else
+      file << std::format("        else if (action{}.state.Error)\n", i);
+    file << std::format("          reply(action{}.abort());\n", i);
+  }
+  file << "      }\n";
+  file << "    }\n";
+  file << "  }\n";
+  file << "}\n";
 
   file.close();
   mGeneratedFiles.push_back(filename);
+
   return VoidResult();
 }
 
@@ -1286,24 +1361,172 @@ VoidResult Compiler::createActionArbiterComponent(uint32_t instances)
     return VoidResult();
 
   std::string filename = std::format("{}/action_arbiter{}.dzn", mOptions.outputDir, instances);
-  std::ofstream file(filename);
+
+  std::ofstream file;
+  file.open(filename);
   if (!file.is_open())
     return VoidResult::Failed("Failed to open: " + filename);
 
-  // template unchanged ...
+  // Synthetic component – not mapped
+  file << "import types.dzn;\n";
+  file << "import iaction.dzn;\n\n";
+  file << std::format("component caction_arbiter{} {{\n", instances);
+  for (uint32_t i = 0; i < instances; ++i)
+    file << std::format("  provides iaction client{};\n", i);
+  file << "\n  requires iaction resource;\n\n";
+  file << "  behaviour {\n";
+  file << "    enum Owner { None, ";
+  for (uint32_t i = 0; i < instances; ++i)
+    file << std::format("C{}{}", i, (i + 1 == instances ? "" : ", "));
+  file << "};\n";
+  file << "    Owner owner = Owner.None;\n";
+  file << "    Owner pending = Owner.None;\n";
+  file << "    bool erroring = false;\n";
+  file << "    bool succeeding = false;\n\n";
+  file << "    Result handleAbort()\n";
+  file << "    {\n";
+  file << "      Result ret = resource.abort();\n";
+  file << "      if (ret.Success)\n";
+  file << "      {\n";
+  file << "        owner = Owner.None;\n";
+  file << "        pending = Owner.None;\n";
+  file << "      }\n\n";
+  file << "      return ret;\n";
+  file << "    }\n\n";
+  file << "    [owner.None] {\n";
+  for (uint32_t i = 0; i < instances; ++i)
+  {
+    file << std::format("      on client{}.trigger(): {{\n", i);
+    file << "        if (erroring) {\n";
+    file << "          reply(Result.Failure);\n";
+    file << "        } else {\n";
+    file << "          Result ret = resource.trigger();\n";
+    file << "          if (!ret.Done)\n";
+    file << std::format("            owner = Owner.C{};\n", i);
+    file << "          reply(ret);\n";
+    file << "        }\n";
+    file << "      }\n";
+    file << std::format("      on client{}.abort(): {{\n", i);
+    file << std::format("        if (client{}.state.Error)\n", i);
+    file << "          reply(Result.Error);\n";
+    file << "        else\n";
+    file << "          reply(Result.Success);\n";
+    file << "      }\n";
+    file << std::format("      on client{}.reset(): {{ reply(Result.Success); }}\n\n", i);
+  }
+  file << "    }\n\n";
+  file << "    on resource.success(): {\n";
+  file << "      succeeding = true;\n";
+  file << "      defer () {\n";
+  for (uint32_t i = 0; i < instances; ++i)
+  {
+    file << std::format("        if (owner.C{} || pending.C{})\n", i, i);
+    file << std::format("          client{}.success();\n", i);
+  }
+  file << "\n";
+  file << "        owner = Owner.None;\n";
+  file << "        pending = Owner.None;\n";
+  file << "        succeeding = false;\n";
+  file << "      }\n";
+  file << "    }\n\n";
+  file << "    on resource.failure(): {\n";
+  file << "      erroring = true;\n";
+  file << "      defer () {\n";
+  for (uint32_t i = 0; i < instances; ++i)
+  {
+    file << std::format("        if (owner.C{} || pending.C{})\n", i, i);
+    file << std::format("          client{}.failure();\n", i);
+  }
+  file << "\n";
+  file << "        pending = Owner.None;\n";
+  file << "        erroring = false;\n";
+  file << "      }\n";
+  file << "    }\n\n";
+  for (uint32_t i = 0; i < instances; ++i)
+  {
+    file << std::format("    [owner.C{}] {{\n", i);
+    file << std::format("      on client{}.abort(): {{\n", i);
+    file << "        if (erroring)\n";
+    file << "          reply(Result.Error);\n";
+    file << "        else if (succeeding)\n";
+    file << "          reply(Result.Success);\n";
+    file << "        else\n";
+    file << "          reply(handleAbort());\n";
+    file << "      }\n\n";
+    file << std::format("      on client{}.reset(): {{\n", i);
+    file << "        Result ret = resource.reset();\n";
+    file << "        if (ret.Success)\n";
+    file << "        {\n";
+    file << "          owner = Owner.None;\n";
+    file << "          pending = Owner.None;\n";
+    file << "        }\n";
+    file << "        reply(ret);\n";
+    file << "      }\n\n";
+    for (uint32_t j = 0; j < instances; ++j)
+    {
+      if (j == i) continue;
+      file << std::format("      on client{}.abort(): {{\n", j);
+      file << std::format("        if (client{}.state.Error)\n", j);
+      file << "          reply(Result.Error);\n";
+      file << std::format("        else if (client{}.state.Idle)\n", j);
+      file << "          reply(Result.Success);\n";
+      file << "        else\n";
+      file << "          reply(Result.Running);\n";
+      file << "      }\n\n";
+      file << std::format("      on client{}.reset(): {{ reply(Result.Failure); }}\n\n", j);
+      file << std::format("      on client{}.trigger(): {{\n", j);
+      file << "        if (resource.state.Error) {\n";
+      file << "          reply(Result.Failure);\n";
+      file << "        } else {\n";
+      file << std::format("          pending = Owner.C{};\n", j);
+      file << "          reply(Result.Success);\n";
+      file << "        }\n";
+      file << "      }\n";
+    }
+    file << "    }\n";
+  }
+  file << "  }\n";
+  file << "}\n";
+
   file.close();
   mGeneratedFiles.push_back(filename);
+
   return VoidResult();
 }
 
-void Compiler::createSequenceDoneRecursion(bool fromIdle, uint32_t start, uint32_t instances, std::ofstream& file, const std::string& indent)
+void Compiler::createSequenceDoneRecursion(bool fromIdle, uint32_t start, uint32_t instances,
+                                           std::ofstream& file, const std::string& indent)
 {
-  // unchanged
+  if (start >= instances)
+  {
+    if (fromIdle)
+    {
+      file << std::format("{}state = State.Idle;\n", indent);
+    }
+    else
+    {
+      file << std::format("{}api.success();\n", indent);
+      file << std::format("{}state = State.Idle;\n", indent);
+    }
+  }
+  else
+  {
+    file << std::format("{}ret = action{}.trigger();\n", indent, start);
+    file << std::format("{}if (ret.Success) {{\n", indent);
+    file << std::format("{}  state = State.Action{};\n", indent, start);
+    file << std::format("{}}} else if (ret.Done) {{\n", indent);
+    createSequenceDoneRecursion(fromIdle, start + 1, instances, file, indent + "  ");
+    file << std::format("{}}} else if (ret.Failure) {{\n", indent);
+    if (!fromIdle)
+      file << std::format("{}  api.failure();\n", indent);
+    file << std::format("{}  state = State.Error;\n", indent);
+    file << std::format("{}}}\n", indent);
+  }
 }
 
 std::string Compiler::createPort(const Action& action, bool in) const
 {
-  return std::format("  provides {} {};\n", in ? "iaction" : "isignal", action.name);
+  return std::format("  provides {} {};", in ? "iaction" : "isignal", action.name);
 }
 
 std::string Compiler::toFilename(const std::string& name) const
@@ -1323,61 +1546,12 @@ std::string Compiler::flowName(const std::string& name) const
 
 void Compiler::connectWithArbiter(Environment& env)
 {
-  struct PortRefType
-  {
-    std::vector<PortRef> ports;
-    Connection::Type type;
-  };
-
-  std::map<std::string, PortRefType> refs;
-  for (const auto& conn : env.system.connections)
-  {
-    auto in = conn.lhs;
-    auto out = conn.rhs;
-
-    auto outId = std::format("{}.{}", out.instance, out.port);
-    if (refs.contains(outId))
-      refs[outId].ports.push_back(in);
-    else
-      refs[outId] = {{in}, conn.type};
-  }
-
-  uint32_t arbiterId = 0;
-  for (const auto& ref : refs)
-  {
-    // If there is only one connection, we don't need to create an arbiter
-    auto occurences = ref.second.ports.size();
-    if (occurences < 2)
-      continue;
-
-    auto id = arbiterId++;
-    auto arbiter = std::format("arbiter{}_{}", occurences, id);
-    if (ref.second.type == Connection::Type::Action)
-    {
-      createActionArbiterComponent(occurences);
-      env.system.instances.insert({std::format("caction_arbiter{}", occurences), arbiter});
-      env.includes.insert(std::format("action_arbiter{}.dzn", occurences));
-    }
-    else if (ref.second.type == Connection::Type::Signal)
-    {
-      env.system.instances.insert({std::format("csignal_arbiter{}", ""), arbiter});
-      env.includes.insert(std::format("signal_arbiter{}.dzn", ""));
-    }
-
-    auto [instance, port] = portFromString(ref.first);
-
-    uint32_t clientId = 0;
-    for (auto& conn : env.system.connections)
-    {
-      if (conn.rhs.instance == instance && conn.rhs.port == port)
-      {
-        conn.rhs.instance = arbiter;
-        conn.rhs.port = std::format("client{}", clientId++);
-      }
-    }
-
-    env.system.connections.push_back({{arbiter, "resource"}, {instance, port}});
-  }
+  // This overload is kept for backward compatibility with the original call.
+  // It now delegates to the main implementation using the count maps.
+  // (If you no longer need it, you can remove it, but ensure no other code calls it.)
+  connectWithArbiter(env.strategiesCountMap, Connection::Type::Action, env);
+  connectWithArbiter(env.syncCallsCountMap, Connection::Type::Signal, env);
+  connectWithArbiter(env.signalCallsCountMap, Connection::Type::Signal, env);
 }
 
 Compiler::PortRef Compiler::portFromString(const std::string& ref) const

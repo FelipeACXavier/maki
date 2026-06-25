@@ -7,8 +7,6 @@
 #include <memory>
 #include <set>
 #include <vector>
-#include <iostream>
-#include <utility>
 
 #include "ast.h"
 #include "koda_plugin.h"
@@ -82,81 +80,53 @@ public:
     void print() const
     {
       LOG_RAW("Capability: {} {}", name, message);
-      if (trigger)
-      {
-        LOG_RAW("Trigger:");
-        trigger->print();
-      }
-      if (abort)
-      {
-        LOG_RAW("Abort:");
-        abort->print();
-      }
-      if (success)
-      {
-        LOG_RAW("Return:");
-        success->print();
-      }
-      if (error)
-      {
-        LOG_RAW("Error:");
-        error->print();
-      }
-      if (!ins.empty())
-      {
+      if (trigger) { LOG_RAW("Trigger:"); trigger->print(); }
+      if (abort)   { LOG_RAW("Abort:");   abort->print(); }
+      if (success) { LOG_RAW("Return:");  success->print(); }
+      if (error)   { LOG_RAW("Error:");   error->print(); }
+      if (!ins.empty()) {
         LOG_RAW("Ins:");
-        for (const auto& in : ins)
-          in.print();
+        for (const auto& in : ins) in.print();
       }
-      if (!outs.empty())
-      {
+      if (!outs.empty()) {
         LOG_RAW("Outs:");
-        for (const auto& out : outs)
-          out.print();
+        for (const auto& out : outs) out.print();
       }
     }
   };
 
+  // Flow now stores call identifiers together with their source ids
   struct Flow
-{
+  {
     std::string name;
     std::vector<std::pair<std::string, std::string>> asyncCalls;   // {identifier, srcId}
     std::vector<std::pair<std::string, std::string>> syncCalls;
     std::vector<std::pair<std::string, std::string>> signalCalls;
     std::vector<std::pair<std::string, std::string>> strategies;   // {name, srcId}
-    std::string srcId;
-};
+  };
 
   struct Instance
   {
-    std::string type;  // e.g. "cmain"
-    std::string name;  // e.g. "main"
+    std::string type;
+    std::string name;
     std::string srcId;
 
     bool operator<(const Instance& other) const
     {
-      if (type != other.type)
-        return type < other.type;
-
+      if (type != other.type) return type < other.type;
       return name < other.name;
     }
   };
 
   struct PortRef
   {
-    std::string instance;  // e.g. "main"
-    std::string port;      // e.g. "drive"
+    std::string instance;
+    std::string port;
   };
 
   struct Connection
   {
-    enum class Type
-    {
-      Unknown,
-      Action,
-      Signal
-    };
-
+    enum class Type { Unknown, Action, Signal };
     PortRef lhs;
     PortRef rhs;
     Type type;
@@ -175,6 +145,13 @@ public:
     std::vector<std::string> args;
   };
 
+  // Helper for storing generated lines with optional source id
+  struct LineWithSrc
+  {
+    std::string text;
+    std::string srcId;
+  };
+
   struct Environment
   {
     uint32_t sequence = 0;
@@ -190,12 +167,16 @@ public:
     uint32_t signalHandler = 0;
 
     std::string previousCall = "";
-    // count maps (used by connectWithArbiter)
+
+    // Counts of calls (for generating multiple ports)
+    std::map<std::string, uint32_t> asyncCallsCounter;
+
+    // Counts used by the arbiter connection logic
     std::map<std::string, uint32_t> syncCallsCountMap;
     std::map<std::string, uint32_t> signalCallsCountMap;
     std::map<std::string, uint32_t> strategiesCountMap;
 
-    // temporary storage with srcIds (populated during strategy generation)
+    // Temporary storage of calls with their source ids (populated during strategy gen)
     std::vector<std::pair<std::string, std::string>> asyncCallsWithSrc;
     std::vector<std::pair<std::string, std::string>> syncCallsWithSrc;
     std::vector<std::pair<std::string, std::string>> signalCallsWithSrc;
@@ -203,42 +184,30 @@ public:
 
     std::set<std::string> includes = {};
     std::set<std::string> requiresPorts = {};
-    std::deque<std::pair<std::string, std::string>> definitions = {};
-    std::deque<std::pair<std::string, std::string>> core = {};
+
+    // Lines that will be emitted to the flow/task component
+    std::deque<LineWithSrc> definitions;
+    std::deque<LineWithSrc> core;
 
     Capability currentCapability;
     std::map<std::string, Flow> flows;
     std::map<std::string, Capability> capabilities;
     std::map<std::string, std::string> capabilityMap;
-
     std::map<std::string, std::vector<CapabilityCall>> capabilityCalls;
 
     TopLevelSystem system;
 
     std::optional<Capability> getCapability(const std::string& key) const
     {
-      if (!capabilityMap.contains(key))
-        return std::nullopt;
-
-      if (!capabilities.contains(capabilityMap.at(key)))
-        return std::nullopt;
-
+      if (!capabilityMap.contains(key)) return std::nullopt;
+      if (!capabilities.contains(capabilityMap.at(key))) return std::nullopt;
       return capabilities.at(capabilityMap.at(key));
     }
 
     void clear()
     {
-      sequence = 0;
-      join = 0;
-      repeat = 0;
-      within = 0;
-      every = 0;
-
-      arbiter = 0;
-      abortHandler = 0;
-      errorHandler = 0;
-      signalHandler = 0;
-
+      sequence = join = repeat = within = every = 0;
+      arbiter = abortHandler = errorHandler = signalHandler = 0;
       previousCall = "";
       syncCallsCountMap.clear();
       signalCallsCountMap.clear();
@@ -247,11 +216,10 @@ public:
       syncCallsWithSrc.clear();
       signalCallsWithSrc.clear();
       strategiesWithSrc.clear();
-
-      includes = {};
-      requiresPorts = {};
-      definitions = {};
-      core = {};
+      includes.clear();
+      requiresPorts.clear();
+      definitions.clear();
+      core.clear();
     }
 
     void print() const
@@ -272,41 +240,48 @@ public:
       for (auto it = capabilities.cbegin(); it != capabilities.cend(); ++it)
         LOG_RAW("  {}: {}", it->first, it->second.name);
 
-      if (!asyncCallsCounter.empty())
-        LOG_RAW("Async Calls:");
-      for (auto it = asyncCallsCounter.cbegin(); it != asyncCallsCounter.cend(); ++it)
-        LOG_RAW("  {}: {}", it->first, it->second);
+      if (!asyncCallsCounter.empty()) {
+        LOG_RAW("Async Calls Counter:");
+        for (auto it = asyncCallsCounter.cbegin(); it != asyncCallsCounter.cend(); ++it)
+          LOG_RAW("  {}: {}", it->first, it->second);
+      }
 
-      if (!syncCalls.empty())
-        LOG_RAW("Sync Calls:");
-      for (auto it = syncCalls.cbegin(); it != syncCalls.cend(); ++it)
-        LOG_RAW("  {}: {}", it->first, it->second);
+      if (!syncCallsCountMap.empty()) {
+        LOG_RAW("Sync Calls Count:");
+        for (auto it = syncCallsCountMap.cbegin(); it != syncCallsCountMap.cend(); ++it)
+          LOG_RAW("  {}: {}", it->first, it->second);
+      }
 
-      if (!signalCalls.empty())
-        LOG_RAW("Signals:");
-      for (auto it = signalCalls.cbegin(); it != signalCalls.cend(); ++it)
-        LOG_RAW("  {}: {}", it->first, it->second);
+      if (!signalCallsCountMap.empty()) {
+        LOG_RAW("Signal Calls Count:");
+        for (auto it = signalCallsCountMap.cbegin(); it != signalCallsCountMap.cend(); ++it)
+          LOG_RAW("  {}: {}", it->first, it->second);
+      }
 
-      if (!strategies.empty())
-        LOG_RAW("Strategies:");
-      for (auto it = strategies.cbegin(); it != strategies.cend(); ++it)
-        LOG_RAW("  {}: {}", it->first, it->second);
+      if (!strategiesCountMap.empty()) {
+        LOG_RAW("Strategies Count:");
+        for (auto it = strategiesCountMap.cbegin(); it != strategiesCountMap.cend(); ++it)
+          LOG_RAW("  {}: {}", it->first, it->second);
+      }
 
-      if (!flows.empty())
+      if (!flows.empty()) {
         LOG_RAW("Flows:");
-      for (auto it = flows.cbegin(); it != flows.cend(); ++it)
-        LOG_RAW("  {}: {}", it->first, it->second.name);
+        for (auto it = flows.cbegin(); it != flows.cend(); ++it)
+          LOG_RAW("  {}: {}", it->first, it->second.name);
+      }
 
-      if (!capabilityMap.empty())
+      if (!capabilityMap.empty()) {
         LOG_RAW("CapMap:");
-      for (auto it = capabilityMap.cbegin(); it != capabilityMap.cend(); ++it)
-        LOG_RAW("  {}: {}", it->first, it->second);
+        for (auto it = capabilityMap.cbegin(); it != capabilityMap.cend(); ++it)
+          LOG_RAW("  {}: {}", it->first, it->second);
+      }
 
-      if (!capabilityCalls.empty())
+      if (!capabilityCalls.empty()) {
         LOG_RAW("CapCalls:");
-      for (auto it = capabilityCalls.cbegin(); it != capabilityCalls.cend(); ++it)
-        for (const auto& call : it->second)
-          LOG_RAW("  {}: {}", it->first, call.count);
+        for (auto it = capabilityCalls.cbegin(); it != capabilityCalls.cend(); ++it)
+          for (const auto& call : it->second)
+            LOG_RAW("  {}: {}", it->first, call.count);
+      }
 
       LOG_RAW("---------------------------------------");
     }
@@ -332,13 +307,14 @@ private:
   std::map<std::string, std::shared_ptr<KodaPlugin>> mPlugins;
   std::vector<std::string> mGeneratedFiles;
 
-  // // dezyne name (e.g. "sh0", "drive_1", "main") -> maki srcId (INode/ITransition getid())
-  // std::map<std::string, std::string> mSrcMap;
-  // // koda unique name -> maki srcId, loaded from maki_mapping.json
-  // std::map<std::string, std::string> mMakiMapping;
-  //
-  // VoidResult loadMakiMapping();
-  // VoidResult writeSrcMap() const;
+  // Line mapping infrastructure
+  std::map<std::string, std::map<int, std::string>> mLineMappings;   // file -> (line -> srcId)
+  std::map<std::string, int> mLineCounters;                           // file -> current line number
+
+  void startFile(const std::string& filepath);
+  void emitLine(std::ofstream& stream, const std::string& filepath,
+                const std::string& line, const std::string& srcId);
+  void writeLineMapping();
 
   MirrorNode mMirrorRoot;
   MirrorWalker mWalker;
@@ -397,48 +373,27 @@ private:
   std::string flowName(const std::string& name) const;
   std::string toFilename(const std::string& name) const;
   std::string createPort(const Action& action, bool in) const;
+
   VoidResult createSequenceComponent(uint32_t instances);
   VoidResult createActionArbiterComponent(uint32_t instances);
-
-  void createSequenceDoneRecursion(bool fromIdle, uint32_t start, uint32_t instances, std::ofstream& file, const std::string& indent);
+  void createSequenceDoneRecursion(bool fromIdle, uint32_t start, uint32_t instances,
+                                   std::ofstream& file, const std::string& indent);
 
   void connectWithArbiter(Environment& env);
-  void connectWithArbiter(const std::map<std::string, uint32_t>& connections, Connection::Type connectionType, Environment& env);
+  void connectWithArbiter(const std::map<std::string, uint32_t>& connections,
+                          Connection::Type connectionType, Environment& env);
 
   PortRef portFromString(const std::string& ref) const;
-
   VoidResult runPlugins();
-
-  std::map<std::string, std::map<size_t, std::string>> mLineMappings;
-  std::map<std::string, size_t> mLineNumbers;   // per file
-
-  void emitLine(std::ofstream& stream, const std::string& filepath,
-                const std::string& line, const std::string& srcId) {
-      stream << line << "\n";
-      mLineMappings[filepath][++mLineNumbers[filepath]] = srcId;
-  }
-
-  void startFile(const std::string& filepath) {
-      mLineNumbers[filepath] = 0;   // reset counter
-  }
-
-  void writeLineMapping() {
-      json j = mLineMappings;
-      std::ofstream out(mOptions.outputDir + "/koda_line_mapping.json");
-      out << j.dump(2);
-  }
 };
 
 }  // namespace koda
 
+// Formatter for PortRef (unchanged)
 template <>
 struct std::formatter<koda::Compiler::PortRef>
 {
-  // No custom format options for now
-  constexpr auto parse(std::format_parse_context& ctx)
-  {
-    return ctx.begin();
-  }
+  constexpr auto parse(std::format_parse_context& ctx) { return ctx.begin(); }
 
   template <typename FormatContext>
   auto format(const koda::Compiler::PortRef& i, FormatContext& ctx) const
