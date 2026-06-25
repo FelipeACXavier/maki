@@ -765,6 +765,7 @@ Result<koda::ReturnValue> Compiler::generateStrategy(PStrategy strategy, const M
 {
   const MirrorNode* childMirrorPtr;
   if (skipStrategy) {
+    // second part of hacky fix introduced in generateParen. Might be needed for other strategies too, but currently not known.
     skipStrategy = false;
     childMirrorPtr = &node;
   } else {
@@ -1033,6 +1034,7 @@ Result<koda::ReturnValue> Compiler::generateTaskCall(PTaskCall strategy, const M
 Result<koda::ReturnValue> Compiler::generateParen(PParen strategy, const MirrorNode& node, Environment& env)
 {
   if (node.ASTtype != "Strategy::Paren") {
+    // Hacky fix to make sure that we can skip the Paren node and its child strategy, given that these are not present in the original AST due to optimizations.
     skipStrategy = true;
     return generateStrategy(strategy->a, node, env);
   }
@@ -1124,6 +1126,7 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
     env.requiresPorts.insert("isignal " + expr.name);
 
     ReturnValue strat;
+    // Hacky fix to mirror optimization in mirror nodes.
     MirrorNode bodyCorrected = *safeChild(*safeChild(*safeChild(node, "body", 0), "v", 0), "alts", 0);
     ASSIGN_OR_RETURN_ON_FAILURE(strat, generateStrategy(handler->body, bodyCorrected, env));
     env.core.push_back({std::format("sh{}.signal <=> {}", id, expr.name), srcId});
