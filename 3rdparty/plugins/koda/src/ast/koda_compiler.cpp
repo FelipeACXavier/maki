@@ -1110,12 +1110,13 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
   else if (handler->kind == koda::StrategyHandler::Kind::OnEmitterContinue)
   {
     id = env.signalHandler++;
+    std::string srcId = safeChild(*safeChild(*safeChild(node, "body", 0), "v", 0), "alts", 0)->srcId;
     env.includes.insert("signal_continue.dzn");
-    env.definitions.push_back({std::format("csignal_continue sh{}", id), node.srcId});
+    env.definitions.push_back({std::format("csignal_continue sh{}", id), srcId});
 
     ReturnValue expr;
     ASSIGN_OR_RETURN_ON_FAILURE(expr, generateEventCall(handler->emitter, *safeChild(node, "emitter", 0), env, true));
-    LOG_DEBUG("Emitter srcId for %s: %s", expr.name.c_str(), expr.srcId.c_str());
+    LOG_DEBUG("Emitter srcId for %s: %s", expr.name.c_str(), srcId);
 
     env.includes.insert("isignal.dzn");
     env.requiresPorts.insert("isignal " + expr.name);
@@ -1123,9 +1124,9 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
     ReturnValue strat;
     MirrorNode bodyCorrected = *safeChild(*safeChild(*safeChild(node, "body", 0), "v", 0), "alts", 0);
     ASSIGN_OR_RETURN_ON_FAILURE(strat, generateStrategy(handler->body, bodyCorrected, env));
-    env.core.push_back({std::format("sh{}.signal <=> {}", id, expr.name), expr.srcId});
-    env.core.push_back({std::format("sh{}.action <=> {}", id, env.previousCall), node.srcId});
-    env.core.push_back({std::format("sh{}.handler <=> {}", id, strat.name), strat.srcId});
+    env.core.push_back({std::format("sh{}.signal <=> {}", id, expr.name), srcId});
+    env.core.push_back({std::format("sh{}.action <=> {}", id, env.previousCall), srcId});
+    env.core.push_back({std::format("sh{}.handler <=> {}", id, strat.name), srcId});
 
     return koda::ReturnValue{std::format("sh{}.api", id), node.srcId};
   }
