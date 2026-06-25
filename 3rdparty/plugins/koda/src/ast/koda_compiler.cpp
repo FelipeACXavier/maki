@@ -817,7 +817,7 @@ Result<koda::ReturnValue> Compiler::generateSequence(PSeq strategy, const Mirror
     env.core.push_back({std::format("s{}.action{} <=> {}", id, i, expr.name), expr.srcId});
   }
 
-  return koda::ReturnValue{std::format("s{}.api", id), node.srcId};
+  return koda::ReturnValue{std::format("s{}.api", id),  "", {}, node.srcId};
 }
 
 Result<koda::ReturnValue> Compiler::generateJoin(PJoin strategy, const MirrorNode& node, Environment& env)
@@ -833,7 +833,7 @@ Result<koda::ReturnValue> Compiler::generateJoin(PJoin strategy, const MirrorNod
     env.core.push_back({std::format("p{}.action{} <=> {}", id, i, expr.name), expr.srcId});
   }
 
-  return koda::ReturnValue{std::format("p{}.api", id), node.srcId};
+  return koda::ReturnValue{std::format("p{}.api", id),  "", {}, node.srcId};
 }
 
 Result<koda::ReturnValue> Compiler::generateEither(PEither strategy, const MirrorNode& node, Environment& env)
@@ -870,7 +870,7 @@ Result<koda::ReturnValue> Compiler::generateWithin(PWithin strategy, const Mirro
   INCREMENT_MAP(env.strategiesCountMap, std::format("alarm{}", alarmId));
   env.requiresPorts.insert(std::format("ialarm alarm{}", alarmId));
 
-  return koda::ReturnValue{std::format("w{}.api", id), node.srcId};
+  return koda::ReturnValue{std::format("w{}.api", id),  "", {}, node.srcId};
 }
 
 Result<koda::ReturnValue> Compiler::generateIfElse(PIfElse strategy, const MirrorNode& node, Environment& env)
@@ -972,17 +972,17 @@ Result<koda::ReturnValue> Compiler::generateEvery(PRepeat strategy, const Mirror
   env.core.push_back({std::format("e{}.action1 <=> {}", id, expr.name), expr.srcId});
   env.core.push_back({std::format("e{}.alarm <=> alarm{}", id, alarmId), node.srcId});
 
-  return koda::ReturnValue{std::format("e{}.api", id), node.srcId};
+  return koda::ReturnValue{std::format("e{}.api", id),  "", {}, node.srcId};
 }
 
 Result<koda::ReturnValue> Compiler::generateEnd(PEnd strategy, const MirrorNode& node, Environment& env)
 {
-  return koda::ReturnValue{"end", node.srcId};
+  return koda::ReturnValue{"end", "", {},  node.srcId};
 }
 
 Result<ReturnValue> Compiler::generateContinue(PContinue strategy, const MirrorNode& node, Environment& env)
 {
-  return koda::ReturnValue{"continue", node.srcId};
+  return koda::ReturnValue{"continue", "", {},  node.srcId};
 }
 
 Result<koda::ReturnValue> Compiler::generateRef(PRef strategy, const MirrorNode& node, Environment& env)
@@ -991,7 +991,7 @@ Result<koda::ReturnValue> Compiler::generateRef(PRef strategy, const MirrorNode&
   if (env.strategiesSrcMap.find(strategy->name) == env.strategiesSrcMap.end())
     env.strategiesSrcMap[strategy->name] = node.srcId;
   env.requiresPorts.insert(std::format("iaction {}", strategy->name));
-  return koda::ReturnValue{strategy->name, node.srcId};
+  return koda::ReturnValue{strategy->name, "", {},  node.srcId};
 }
 
 Result<koda::ReturnValue> Compiler::generateTaskCall(PTaskCall strategy, const MirrorNode& node, Environment& env)
@@ -1065,7 +1065,7 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
       env.core.push_back({std::format("ah{}.handler <=> {}", id, strat.name), strat.srcId});
     }
 
-    return koda::ReturnValue{std::format("ah{}.api", id), node.srcId};
+    return koda::ReturnValue{std::format("ah{}.api", id), "", {},  node.srcId};
   }
   else if (handler->kind == koda::StrategyHandler::Kind::OnError)
   {
@@ -1088,7 +1088,7 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
       env.core.push_back({std::format("fh{}.handler <=> {}", id, strat.name), strat.srcId});
     }
 
-    return koda::ReturnValue{std::format("fh{}.api", id), node.srcId};
+    return koda::ReturnValue{std::format("fh{}.api", id), "", {}, node.srcId};
   }
   else if (handler->kind == koda::StrategyHandler::Kind::OnEmitter)
   {
@@ -1109,7 +1109,7 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
     env.core.push_back({std::format("sh{}.action <=> {}", id, env.previousCall), node.srcId});
     env.core.push_back({std::format("sh{}.handler <=> {}", id, strat.name), strat.srcId});
 
-    return koda::ReturnValue{std::format("sh{}.api", id), node.srcId};
+    return koda::ReturnValue{std::format("sh{}.api", id), "", {}, node.srcId};
   }
   else if (handler->kind == koda::StrategyHandler::Kind::OnEmitterContinue)
   {
@@ -1133,7 +1133,7 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
     env.core.push_back({std::format("sh{}.action <=> {}", id, env.previousCall), srcId});
     env.core.push_back({std::format("sh{}.handler <=> {}", id, strat.name), srcId});
 
-    return koda::ReturnValue{std::format("sh{}.api", id), node.srcId};
+    return koda::ReturnValue{std::format("sh{}.api", id), "", {}, node.srcId};
   }
 
   return koda::ReturnValue{};
