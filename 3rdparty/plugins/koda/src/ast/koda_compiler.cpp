@@ -1163,7 +1163,7 @@ Result<koda::ReturnValue> Compiler::generateEventCall(PEventCall call, const Mir
       argIdx++;
     }
 
-    return koda::ReturnValue{identifier, srcId};
+    return koda::ReturnValue{identifier, "", {}, srcId};
   }
   else
   {
@@ -1182,7 +1182,7 @@ Result<koda::ReturnValue> Compiler::generateEventCall(PEventCall call, const Mir
         env.syncCallsSrcMap[event] = srcId;
       env.requiresPorts.insert(std::format("iaction {}_{}", call->receiver, call->name));
     }
-    return koda::ReturnValue{std::format("{}_{}", call->receiver, call->name), srcId};
+    return koda::ReturnValue{std::format("{}_{}", call->receiver, call->name),"", {}, srcId};
   }
 }
 
