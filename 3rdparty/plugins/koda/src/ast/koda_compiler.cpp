@@ -285,12 +285,13 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, const MirrorNo
     stmntIdx++;
   }
 
+  // Inside generateTask, replace the connection-building loops:
   for (const auto& f : env.flows)
   {
     const auto& flow = f.second;
     const auto flowName = flow.name;
 
-    // Async calls (each occurrence creates its own port)
+    // Async calls (each occurrence gets its own port)
     for (const auto& [identifier, srcId] : flow.asyncCalls)
     {
       auto index = identifier.find_first_of("_");
@@ -302,7 +303,6 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, const MirrorNo
       {
         if (!env.flows.contains(capName))
           return Result<koda::ReturnValue>::Failed("Could not find async capability: " + identifier);
-
         auto tmp = env.flows.at(capName);
         name = toFlowVariable(tmp.name);
         trigger = "api";
@@ -315,17 +315,15 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, const MirrorNo
         else
           trigger = std::format("{}_{}", cap->trigger->name, identifier.substr(index + 1));
       }
-
       PortRef in = {toFlowVariable(flowName), identifier};
       PortRef out = {toFilename(name), trigger};
-
-      env.system.connections.push_back({in, out, Connection::Type::Action, srcId});
+      env.system.connections.emplace_back(Connection{in, out, Connection::Type::Action, srcId});
     }
 
-    // Sync calls (unique)
+    // Sync calls (unique – map stores {count, srcId})
     for (const auto& [fullName, countSrcPair] : flow.syncCalls)
     {
-      const auto& srcId = countSrcPair.second; // first seen srcId
+      const auto& srcId = countSrcPair.second;   // first seen srcId
       auto [instance, port] = portFromString(fullName);
       auto cap = env.getCapability(instance);
       std::string name = "";
@@ -333,19 +331,15 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, const MirrorNo
       {
         if (!env.flows.contains(instance))
           return Result<koda::ReturnValue>::Failed("Could not find sync capability: " + fullName);
-
         auto tmp = env.flows.at(instance);
         name = tmp.name;
       }
       else
-      {
         name = cap->name;
-      }
 
       PortRef in = {toFlowVariable(flowName), std::format("{}_{}", instance, port)};
       PortRef out = {toFilename(cap->name), port};
-
-      env.system.connections.push_back({in, out, Connection::Type::Action, srcId});
+      env.system.connections.emplace_back(Connection{in, out, Connection::Type::Action, srcId});
     }
 
     // Signal calls (unique)
@@ -359,8 +353,7 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, const MirrorNo
 
       PortRef in = {toFlowVariable(flowName), std::format("{}_{}", instance, port)};
       PortRef out = {toFilename(cap->name), port};
-
-      env.system.connections.push_back({in, out, Connection::Type::Signal, srcId});
+      env.system.connections.emplace_back(Connection{in, out, Connection::Type::Signal, srcId});
     }
 
     // Strategies (unique)
@@ -369,8 +362,7 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, const MirrorNo
       const auto& srcId = countSrcPair.second;
       PortRef in = {toFlowVariable(flowName), strategyName};
       PortRef out = {toFlowVariable(strategyName), "api"};
-
-      env.system.connections.push_back({in, out, Connection::Type::Action, srcId});
+      env.system.connections.emplace_back(Connection{in, out, Connection::Type::Action, srcId});
     }
   }
 
@@ -1176,7 +1168,6 @@ Result<koda::ReturnValue> Compiler::generateEventCall(PEventCall call, const Mir
         env.syncCallsSrcMap[event] = srcId;
       env.requiresPorts.insert(std::format("iaction {}_{}", call->receiver, call->name));
     }
-
     return koda::ReturnValue{std::format("{}_{}", call->receiver, call->name), srcId};
   }
 }
