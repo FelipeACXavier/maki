@@ -278,7 +278,7 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, const MirrorNo
   {
     if (safeChild(*safeChild(node, "statements", stmntIdx), "node", 0)->ASTtype == "VarsBlock" &&
         safeChild(*safeChild(node, "statements", stmntIdx), "node", 0)->group("vars").empty()) {
-      stmntIdx++; // Skip empty vars block
+      stmntIdx++;
       LOG_DEBUG("Skipping empty vars block at index %zu", stmntIdx - 1);
     }
     RETURN_ON_FAILURE(generateStatement(statement, *safeChild(node, "statements", stmntIdx), env));
@@ -287,8 +287,10 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, const MirrorNo
 
   for (const auto& f : env.flows)
   {
-    const auto flow = f.second;
+    const auto& flow = f.second;
     const auto flowName = flow.name;
+
+    // Async calls (each occurrence creates its own port)
     for (const auto& [identifier, srcId] : flow.asyncCalls)
     {
       auto index = identifier.find_first_of("_");
@@ -320,8 +322,10 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, const MirrorNo
       env.system.connections.push_back({in, out, Connection::Type::Action, srcId});
     }
 
-    for (const auto& [fullName, srcId] : flow.syncCalls)
+    // Sync calls (unique)
+    for (const auto& [fullName, countSrcPair] : flow.syncCalls)
     {
+      const auto& srcId = countSrcPair.second; // first seen srcId
       auto [instance, port] = portFromString(fullName);
       auto cap = env.getCapability(instance);
       std::string name = "";
@@ -344,8 +348,10 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, const MirrorNo
       env.system.connections.push_back({in, out, Connection::Type::Action, srcId});
     }
 
-    for (const auto& [fullName, srcId] : flow.signalCalls)
+    // Signal calls (unique)
+    for (const auto& [fullName, countSrcPair] : flow.signalCalls)
     {
+      const auto& srcId = countSrcPair.second;
       auto [instance, port] = portFromString(fullName);
       auto cap = env.getCapability(instance);
       if (!cap)
@@ -357,10 +363,12 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, const MirrorNo
       env.system.connections.push_back({in, out, Connection::Type::Signal, srcId});
     }
 
-    for (const auto& [name, srcId] : flow.strategies)
+    // Strategies (unique)
+    for (const auto& [strategyName, countSrcPair] : flow.strategies)
     {
-      PortRef in = {toFlowVariable(flowName), name};
-      PortRef out = {toFlowVariable(name), "api"};
+      const auto& srcId = countSrcPair.second;
+      PortRef in = {toFlowVariable(flowName), strategyName};
+      PortRef out = {toFlowVariable(strategyName), "api"};
 
       env.system.connections.push_back({in, out, Connection::Type::Action, srcId});
     }
@@ -381,25 +389,45 @@ Result<koda::ReturnValue> Compiler::generateTask(PComponent task, const MirrorNo
 
   startFile(filename);
 
+  bool needsSep = false;
+
   emitLine(file, filename, "import iaction.dzn;", node.srcId);
   emitLine(file, filename, "import isignal.dzn;", node.srcId);
-  emitLine(file, filename, "", node.srcId);
+  needsSep = true;
 
   if (env.alarm > 0)
+  {
+    if (needsSep) { emitLine(file, filename, "", node.srcId); needsSep = false; }
     emitLine(file, filename, "import alarm.dzn;", node.srcId);
-  emitLine(file, filename, "", node.srcId);
+    needsSep = true;
+  }
 
-  for (const auto& inc : env.includes)
-    emitLine(file, filename, std::format("import {};", inc), node.srcId);
-  emitLine(file, filename, "", node.srcId);
+  if (!env.includes.empty())
+  {
+    if (needsSep) { emitLine(file, filename, "", node.srcId); needsSep = false; }
+    for (const auto& inc : env.includes)
+      emitLine(file, filename, std::format("import {};", inc), node.srcId);
+    needsSep = true;
+  }
 
-  for (const auto& cap : env.capabilities)
-    emitLine(file, filename, std::format("import a_{}.dzn;", toFilename(cap.second.name)), cap.second.srcId);
-  emitLine(file, filename, "", node.srcId);
+  if (!env.capabilities.empty())
+  {
+    if (needsSep) { emitLine(file, filename, "", node.srcId); needsSep = false; }
+    for (const auto& cap : env.capabilities)
+      emitLine(file, filename, std::format("import a_{}.dzn;", toFilename(cap.second.name)), cap.second.srcId);
+    needsSep = true;
+  }
 
-  for (const auto& flow : env.flows)
-    emitLine(file, filename, std::format("import {}.dzn;", toFilename(flow.second.name)), node.srcId); // using task node id
-  emitLine(file, filename, "", node.srcId);
+  if (!env.flows.empty())
+  {
+    if (needsSep) { emitLine(file, filename, "", node.srcId); needsSep = false; }
+    for (const auto& flow : env.flows)
+      emitLine(file, filename, std::format("import {}.dzn;", toFilename(flow.second.name)), node.srcId);
+    needsSep = true;
+  }
+
+  if (needsSep)
+    emitLine(file, filename, "", node.srcId);
 
   emitLine(file, filename, std::format("component {} {{", componentName(task->name)), node.srcId);
   emitLine(file, filename, "  provides iaction api;", node.srcId);
@@ -666,13 +694,17 @@ Result<koda::ReturnValue> Compiler::generateFlow(PFlow flow, const MirrorNode& n
   const auto& strategyMirror = *safeChild(node, "strategy", 0);
   auto ret = generateStrategy(flow->strategy, strategyMirror, env);
 
-  // Collect calls with srcIds from temporary storage
   Flow f;
   f.name = flow->name;
   f.asyncCalls = std::move(env.asyncCallsWithSrc);
-  f.syncCalls = std::move(env.syncCallsWithSrc);
-  f.signalCalls = std::move(env.signalCallsWithSrc);
-  f.strategies = std::move(env.strategiesWithSrc);
+
+  // Build unique call maps using the first seen srcId
+  for (const auto& [key, count] : env.syncCallsCountMap)
+    f.syncCalls[key] = {count, env.syncCallsSrcMap[key]};
+  for (const auto& [key, count] : env.signalCallsCountMap)
+    f.signalCalls[key] = {count, env.signalCallsSrcMap[key]};
+  for (const auto& [key, count] : env.strategiesCountMap)
+    f.strategies[key] = {count, env.strategiesSrcMap[key]};
 
   env.flows[flow->name] = f;
   env.system.instances.insert({flowName(flow->name), toFlowVariable(toFilename(flow->name)), node.srcId});
@@ -697,10 +729,17 @@ Result<koda::ReturnValue> Compiler::generateFlow(PFlow flow, const MirrorNode& n
 
   startFile(filename);
 
-  for (const auto& i : env.includes)
-    emitLine(mCurrentFile, filename, "import " + i + ";", node.srcId);
+  bool needsSep = false;
+  if (!env.includes.empty())
+  {
+    for (const auto& i : env.includes)
+      emitLine(mCurrentFile, filename, "import " + i + ";", node.srcId);
+    needsSep = true;
+  }
 
-  emitLine(mCurrentFile, filename, "", node.srcId);
+  if (needsSep)
+    emitLine(mCurrentFile, filename, "", node.srcId);
+
   emitLine(mCurrentFile, filename, std::format("component {} {{", flowName(flow->name)), node.srcId);
   emitLine(mCurrentFile, filename, "  provides iaction api;", node.srcId);
   emitLine(mCurrentFile, filename, "", node.srcId);
@@ -951,9 +990,9 @@ Result<ReturnValue> Compiler::generateContinue(PContinue strategy, const MirrorN
 Result<koda::ReturnValue> Compiler::generateRef(PRef strategy, const MirrorNode& node, Environment& env)
 {
   INCREMENT_MAP(env.strategiesCountMap, strategy->name)
+  if (env.strategiesSrcMap.find(strategy->name) == env.strategiesSrcMap.end())
+    env.strategiesSrcMap[strategy->name] = node.srcId;
   env.requiresPorts.insert(std::format("iaction {}", strategy->name));
-  env.strategiesWithSrc.emplace_back(strategy->name, node.srcId);
-
   return koda::ReturnValue{strategy->name, node.srcId};
 }
 
@@ -1126,13 +1165,15 @@ Result<koda::ReturnValue> Compiler::generateEventCall(PEventCall call, const Mir
     if (isSignal)
     {
       INCREMENT_MAP(env.signalCallsCountMap, event)
-      env.signalCallsWithSrc.emplace_back(event, srcId);
+      if (env.signalCallsSrcMap.find(event) == env.signalCallsSrcMap.end())
+        env.signalCallsSrcMap[event] = srcId;
       env.requiresPorts.insert(std::format("isignal {}_{}", call->receiver, call->name));
     }
     else
     {
       INCREMENT_MAP(env.syncCallsCountMap, event)
-      env.syncCallsWithSrc.emplace_back(event, srcId);
+      if (env.syncCallsSrcMap.find(event) == env.syncCallsSrcMap.end())
+        env.syncCallsSrcMap[event] = srcId;
       env.requiresPorts.insert(std::format("iaction {}_{}", call->receiver, call->name));
     }
 
@@ -1546,9 +1587,6 @@ std::string Compiler::flowName(const std::string& name) const
 
 void Compiler::connectWithArbiter(Environment& env)
 {
-  // This overload is kept for backward compatibility with the original call.
-  // It now delegates to the main implementation using the count maps.
-  // (If you no longer need it, you can remove it, but ensure no other code calls it.)
   connectWithArbiter(env.strategiesCountMap, Connection::Type::Action, env);
   connectWithArbiter(env.syncCallsCountMap, Connection::Type::Signal, env);
   connectWithArbiter(env.signalCallsCountMap, Connection::Type::Signal, env);
