@@ -748,7 +748,7 @@ Result<koda::ReturnValue> Compiler::generateFlow(PFlow flow, const MirrorNode& n
   emitLine(mCurrentFile, filename, "", node.srcId);
   for (const auto& lineSrc : env.core)
 {
-    LOG_RAW("Writing line [%s] with srcId [%s]", lineSrc.text.c_str(), lineSrc.srcId.c_str());
+    LOG_DEBUG("Writing line [%s] with srcId [%s]", lineSrc.text.c_str(), lineSrc.srcId.c_str());
     emitLine(mCurrentFile, filename, "    " + lineSrc.text + ";", lineSrc.srcId);
 }
 
@@ -810,7 +810,7 @@ Result<koda::ReturnValue> Compiler::generateSequence(PSeq strategy, const Mirror
   for (uint32_t i = 0; i < strategy->alts.size(); ++i)
   {
     ReturnValue expr;
-    ASSIGN_OR_RETURN_ON_FAILURE(expr, generateStrategy(strategy->alts[i], *safeChild(node, "args", i), env));
+    ASSIGN_OR_RETURN_ON_FAILURE(expr, generateStrategy(strategy->alts[i], *safeChild(node, "alts", i), env));
     env.core.push_back({std::format("s{}.action{} <=> {}", id, i, expr.name), expr.srcId});
   }
 
@@ -1050,7 +1050,7 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
     {
       ReturnValue expr;
       ASSIGN_OR_RETURN_ON_FAILURE(expr, generateEventCall(handler->emitter, *safeChild(node, "emitter", 0), env, false));
-      LOG_RAW("Emitter srcId for %s: %s", expr.name.c_str(), expr.srcId.c_str());
+      LOG_DEBUG("Emitter srcId for %s: %s", expr.name.c_str(), expr.srcId.c_str());
     }
 
     if (handler->body)
@@ -1073,7 +1073,7 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
     {
       ReturnValue expr;
       ASSIGN_OR_RETURN_ON_FAILURE(expr, generateEventCall(handler->emitter, *safeChild(node, "emitter", 0), env, false));
-      LOG_RAW("Emitter srcId for %s: %s", expr.name.c_str(), expr.srcId.c_str());
+      LOG_DEBUG("Emitter srcId for %s: %s", expr.name.c_str(), expr.srcId.c_str());
     }
 
     if (handler->body)
@@ -1094,7 +1094,7 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
 
     ReturnValue expr;
     ASSIGN_OR_RETURN_ON_FAILURE(expr, generateEventCall(handler->emitter, *safeChild(node, "emitter", 0), env, true));
-    LOG_RAW("Emitter srcId for %s: %s", expr.name.c_str(), expr.srcId.c_str());
+    LOG_DEBUG("Emitter srcId for %s: %s", expr.name.c_str(), expr.srcId.c_str());
 
     env.includes.insert("isignal.dzn");
     env.requiresPorts.insert("isignal " + expr.name);
@@ -1115,7 +1115,7 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
 
     ReturnValue expr;
     ASSIGN_OR_RETURN_ON_FAILURE(expr, generateEventCall(handler->emitter, *safeChild(node, "emitter", 0), env, true));
-    LOG_RAW("Emitter srcId for %s: %s", expr.name.c_str(), expr.srcId.c_str());
+    LOG_DEBUG("Emitter srcId for %s: %s", expr.name.c_str(), expr.srcId.c_str());
 
     env.includes.insert("isignal.dzn");
     env.requiresPorts.insert("isignal " + expr.name);
@@ -1139,7 +1139,7 @@ Result<koda::ReturnValue> Compiler::generateEventCall(PEventCall call, const Mir
     LOG_RAW("Generating event call: {} receiver: {}", call->name, call->receiver);
 
   std::string srcId = node.srcId;
-  LOG_RAW("EventCall %s.%s → srcId: %s", call->receiver.c_str(), call->name.c_str(), srcId.c_str());
+  LOG_DEBUG("EventCall %s.%s → srcId: %s", call->receiver.c_str(), call->name.c_str(), srcId.c_str());
 
   if (call->receiver.empty())
   {
