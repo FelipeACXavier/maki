@@ -7,6 +7,7 @@
 #include <memory>
 #include <set>
 #include <vector>
+#include <pair>
 
 #include "ast.h"
 #include "koda_plugin.h"
@@ -21,6 +22,7 @@ struct ReturnValue
   std::string name;
   std::string call;
   std::map<std::string, std::string> args;
+  std::string srcId;
 };
 
 struct CompilerOptions
@@ -115,20 +117,20 @@ public:
   };
 
   struct Flow
-  {
+{
     std::string name;
-
-    std::map<std::string, uint32_t> syncCalls;
-    std::vector<std::string> asyncCalls;
-    std::map<std::string, uint32_t> signalCalls;
-    std::map<std::string, uint32_t> strategies;
+    std::vector<std::pair<std::string, std::string>> asyncCalls;   // {identifier, srcId}
+    std::vector<std::pair<std::string, std::string>> syncCalls;
+    std::vector<std::pair<std::string, std::string>> signalCalls;
+    std::vector<std::pair<std::string, std::string>> strategies;   // {name, srcId}
     std::string srcId;
-  };
+};
 
   struct Instance
   {
     std::string type;  // e.g. "cmain"
     std::string name;  // e.g. "main"
+    std::string srcId;
 
     bool operator<(const Instance& other) const
     {
@@ -157,6 +159,7 @@ public:
     PortRef lhs;
     PortRef rhs;
     Type type;
+    std::string srcId;
   };
 
   struct TopLevelSystem
@@ -186,16 +189,21 @@ public:
     uint32_t signalHandler = 0;
 
     std::string previousCall = "";
-    std::map<std::string, uint32_t> syncCalls;
-    std::vector<std::string> asyncCalls;
-    std::map<std::string, uint32_t> asyncCallsCounter;
-    std::map<std::string, uint32_t> signalCalls;
-    std::map<std::string, uint32_t> strategies;
+    // count maps (used by connectWithArbiter)
+    std::map<std::string, uint32_t> syncCallsCountMap;
+    std::map<std::string, uint32_t> signalCallsCountMap;
+    std::map<std::string, uint32_t> strategiesCountMap;
+
+    // temporary storage with srcIds (populated during strategy generation)
+    std::vector<std::pair<std::string, std::string>> asyncCallsWithSrc;
+    std::vector<std::pair<std::string, std::string>> syncCallsWithSrc;
+    std::vector<std::pair<std::string, std::string>> signalCallsWithSrc;
+    std::vector<std::pair<std::string, std::string>> strategiesWithSrc;
 
     std::set<std::string> includes = {};
     std::set<std::string> requiresPorts = {};
-    std::deque<std::string> definitions = {};
-    std::deque<std::string> core = {};
+    std::deque<std::pair<std::string, std::string>> definitions = {};
+    std::deque<std::pair<std::string, std::string>> core = {};
 
     Capability currentCapability;
     std::map<std::string, Flow> flows;
@@ -231,10 +239,13 @@ public:
       signalHandler = 0;
 
       previousCall = "";
-      syncCalls = {};
-      asyncCalls = {};
-      signalCalls = {};
-      strategies = {};
+      syncCallsCountMap.clear();
+      signalCallsCountMap.clear();
+      strategiesCountMap.clear();
+      asyncCallsWithSrc.clear();
+      syncCallsWithSrc.clear();
+      signalCallsWithSrc.clear();
+      strategiesWithSrc.clear();
 
       includes = {};
       requiresPorts = {};
@@ -396,6 +407,25 @@ private:
   PortRef portFromString(const std::string& ref) const;
 
   VoidResult runPlugins();
+
+  std::map<std::string, std::map<size_t, std::string>> mLineMappings;
+  std::map<std::string, size_t> mLineNumbers;   // per file
+
+  void emitLine(std::ofstream& stream, const std::string& filepath,
+                const std::string& line, const std::string& srcId) {
+      stream << line << "\n";
+      mLineMappings[filepath][++mLineNumbers[filepath]] = srcId;
+  }
+
+  void startFile(const std::string& filepath) {
+      mLineNumbers[filepath] = 0;   // reset counter
+  }
+
+  void writeLineMapping() {
+      json j = mLineMappings;
+      std::ofstream out(mOptions.outputDir + "/koda_line_mapping.json");
+      out << j.dump(2);
+  }
 };
 
 }  // namespace koda
