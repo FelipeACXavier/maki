@@ -763,10 +763,12 @@ Result<koda::ReturnValue> Compiler::generateFlow(PFlow flow, const MirrorNode& n
 
 Result<koda::ReturnValue> Compiler::generateStrategy(PStrategy strategy, const MirrorNode& node, Environment& env)
 {
-  const MirrorNode* childMirrorPtr = safeChild(node, "v", 0);
+  const MirrorNode* childMirrorPtr;
   if (skipStrategy) {
     skipStrategy = false;
     childMirrorPtr = &node;
+  } else {
+    childMirrorPtr = safeChild(node, "v", 0)
   }
   const MirrorNode& childMirror = *childMirrorPtr;
   IF_ALT(PSeq, strategy->v, generateSequence, childMirror, env)
