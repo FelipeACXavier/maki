@@ -183,6 +183,7 @@ void logStackTrace() {
     } else if (t == "EventCall")
     {
       node.properties["receiver"] = j["receiver"].get<std::string>();
+      addGroupIfArray(j, node, "args");
     } else if (t == "Expr")
     {
       addGroupIfObject(j, node, "v");

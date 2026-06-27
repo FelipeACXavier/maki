@@ -1035,6 +1035,7 @@ Result<koda::ReturnValue> Compiler::generateParen(PParen strategy, const MirrorN
 {
   if (node.ASTtype != "Strategy::Paren") {
     // Hacky fix to make sure that we can skip the Paren node and its child strategy, given that these are not present in the original AST due to optimizations.
+    LOG_DEBUG("Skipping Parentheses in mirror AST.");
     skipStrategy = true;
     return generateStrategy(strategy->a, node, env);
   }
