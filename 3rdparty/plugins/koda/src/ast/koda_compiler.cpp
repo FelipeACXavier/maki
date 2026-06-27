@@ -1113,8 +1113,14 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
   }
   else if (handler->kind == koda::StrategyHandler::Kind::OnEmitterContinue)
   {
+    MirrorNode bodyCorrected;
+    if (safeChild(*safeChild(node, "body", 0), "v", 0)->ASTtype=="Strategy::Seq") {
+      bodyCorrected = *safeChild(*safeChild(*safeChild(node, "body", 0), "v", 0), "alts", 0);
+    } else {
+      bodyCorrected = *safeChild(node, "body", 0);
+    }
     id = env.signalHandler++;
-    std::string srcId = safeChild(*safeChild(*safeChild(node, "body", 0), "v", 0), "alts", 0)->srcId;
+    std::string srcId = bodyCorrected.srcId;
     env.includes.insert("signal_continue.dzn");
     env.definitions.push_back({std::format("csignal_continue sh{}", id), srcId});
 
@@ -1127,7 +1133,6 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
 
     ReturnValue strat;
     // Hacky fix to mirror optimization in mirror nodes.
-    MirrorNode bodyCorrected = *safeChild(*safeChild(*safeChild(node, "body", 0), "v", 0), "alts", 0);
     ASSIGN_OR_RETURN_ON_FAILURE(strat, generateStrategy(handler->body, bodyCorrected, env));
     env.core.push_back({std::format("sh{}.signal <=> {}", id, expr.name), srcId});
     env.core.push_back({std::format("sh{}.action <=> {}", id, env.previousCall), srcId});
