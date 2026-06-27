@@ -880,6 +880,7 @@ QList<koda::PStrategyHandler> MakiToKoda::buildHandlers(const IFlow& flow, const
     auto value = std::make_shared<koda::StrategyHandler>();
     value->kind = koda::StrategyHandler::Kind::OnEmitter;
     value->body = std::any_cast<koda::PStrategy>(sequence);
+    value->srcId = signalStart.node->getid().toStdString();
 
     auto emitter = std::make_shared<koda::EventCall>();
     auto event = format(signalStart.transition->getevent());

@@ -1120,7 +1120,7 @@ Result<ReturnValue> Compiler::generateStrategyHandler(PStrategyHandler handler, 
       bodyCorrected = *safeChild(node, "body", 0);
     }
     id = env.signalHandler++;
-    std::string srcId = bodyCorrected.srcId;
+    std::string srcId = node.srcId;
     env.includes.insert("signal_continue.dzn");
     env.definitions.push_back({std::format("csignal_continue sh{}", id), srcId});
 
