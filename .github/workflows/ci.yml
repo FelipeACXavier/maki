@@ -8,10 +8,10 @@ concurrency:
 on:
   # Build/test on PRs to master
   pull_request:
-    branches: [ master ]
+    branches: [master]
   # Also on direct pushes to master
   push:
-    branches: [ "**" ]
+    branches: ["**"]
 
 jobs:
   # ====================================================================================
@@ -138,6 +138,9 @@ jobs:
           chmod +x ./scripts/linux/build.sh
           ./scripts/linux/build.sh --docs
 
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
@@ -148,11 +151,13 @@ jobs:
   deploy-docs:
     name: Deploy Docs
     needs: build-docs
-    runs-on: self-hosted
+    if: github.ref_name == 'master'
+    runs-on: ubuntu-latest
 
     permissions:
       pages: write
       id-token: write
+      contents: read
 
     environment:
       name: github-pages
