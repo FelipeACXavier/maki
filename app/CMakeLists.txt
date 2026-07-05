@@ -25,7 +25,10 @@ file(GLOB SYSTEM_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/system/*.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/system/undo_commands/*.cpp
 )
-file(GLOB ELEMENT_FILES ${CMAKE_CURRENT_SOURCE_DIR}/elements/*.cpp)
+file(GLOB ELEMENT_FILES
+  ${CMAKE_CURRENT_SOURCE_DIR}/elements/*.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/elements/behaviour/*.cpp
+)
 file(GLOB WIDGET_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/widgets/*.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/widgets/structure/*.cpp

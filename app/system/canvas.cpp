@@ -36,6 +36,7 @@
 #include "edge_router.h"
 #include "elements/flow.h"
 #include "elements/node.h"
+#include "elements/node_factory.h"
 #include "elements/port.h"
 #include "elements/transition.h"
 #include "flow_info.h"
@@ -1716,7 +1717,7 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
 
   // If no parent is defined, we must create a "base node" in the canvas
   auto nodeId = creation == NodeCreation::Pasting ? "" : info->getid();
-  NodeItem* node = new NodeItem(nodeId, info, position, config);
+  NodeItem* node = NodeFactory::create(nodeId, info, position, config);
 
   if (parent != nullptr)
   {

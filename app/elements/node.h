@@ -8,7 +8,6 @@
 #include <memory>
 
 #include "config.h"
-// #include "inode.h"
 #include "node_base.h"
 #include "port.h"
 #include "save_info.h"
@@ -19,15 +18,13 @@ class NodeItem;
 
 class Flow;
 class QGraphicsSceneMouseEvent;
-class SubtaskConnector;
 class StructureCanvas;
-namespace structural_layout
-{
-void layoutNonLayeredTidyTree(NodeItem* root);
-}
 
 /**
  * @brief Represents a graphical node item in a flowchart.
+ *
+ * Shared base for structural, behavioural, and pipeline nodes. Subclasses
+ * override virtual hooks for type-specific initialization, painting, and interaction.
  */
 class NodeItem : public NodeBase
 {
@@ -37,473 +34,149 @@ public:
     Type = Types::NODE
   };
 
-  /**
-   * @brief Constructs a new NodeItem with the given parameters.
-   *
-   * @param id The unique identifier for the node.
-   * @param info The save information for the node.
-   * @param initialPosition The initial position of the node in scene coordinates.
-   * @param nodeConfig The configuration for the node.
-   * @param parent The parent graphics item, if any.
-   */
   NodeItem(const QString& id, std::shared_ptr<NodeSaveInfo> info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent = nullptr);
 
-  /**
-   * @brief Destructor for the NodeItem.
-   */
   virtual ~NodeItem();
 
-  /**
-   * @brief Returns the type of this item.
-   *
-   * @return The type of the item.
-   */
   int type() const override;
 
-  /**
-   * @brief Starts the node.
-   *
-   * @return VoidResult indicating success or failure.
-   */
-  VoidResult start() override;
+  virtual VoidResult start() override;
 
-  /**
-   * @brief Returns the bounding rectangle for this item.
-   *
-   * @return The bounding rectangle.
-   */
   QRectF nodeRect() const override;
   QRectF sceneNodeRect() const;
 
-  /**
-   * @brief Returns the shape of this item.
-   *
-   * @return The QPainterPath representing the shape.
-   */
-  QPainterPath shape() const override;
+  virtual QPainterPath shape() const override;
 
-  /**
-   * @brief Paints the item using the given painter.
-   *
-   * @param painter The painter to use for drawing.
-   * @param style The style option for the graphics item.
-   * @param widget The parent widget, if any.
-   */
-  void paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget) override;
+  virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget) override;
 
-  /**
-   * @brief Returns help configuration for this node.
-   *
-   * @return The HelpConfig object.
-   */
   HelpConfig help() const;
-
-  /**
-   * @brief Returns the name of the node.
-   *
-   * @return The node name.
-   */
   QString nodeName() const;
-
-  /**
-   * @brief Returns the type of the node.
-   *
-   * @return The node type.
-   */
   QString nodeType() const;
-
-  /**
-   * @brief Returns the behavior of the node.
-   *
-   * @return The behavior string.
-   */
   QString behaviour() const;
-
-  /**
-   * @brief Returns the controls configuration for this node.
-   *
-   * @return The QVector of ControlsConfig objects.
-   */
   QVector<ControlsConfig> controls() const;
-
-  /**
-   * @brief Returns the properties of the node.
-   *
-   * @return The QMap of property keys to QVariant values.
-   */
   QMap<QString, QVariant> properties() const;
-
-  /**
-   * @brief Returns the configuration properties of the node.
-   *
-   * @return The QVector of PropertyConfig objects.
-   */
   QVector<PropertyConfig> configurationProperties() const;
-
-  /**
-   * @brief Returns the library type associated with this node's function.
-   *
-   * @return The Types::LibraryTypes enum value.
-   */
   Types::LibraryTypes function() const;
 
-  /**
-   * @brief Gets a property by key.
-   *
-   * @param key The property key.
-   * @return The QVariant value of the property.
-   */
   QVariant getProperty(const QString& key) const;
-
-  /**
-   * @brief Sets a property with a given key and value.
-   *
-   * @param key The property key.
-   * @param value The new value for the property.
-   */
   void setProperty(const QString& key, QVariant value);
-
-  /**
-   * @brief Renames the node to a new name.
-   *
-   * @param name The new name for the node.
-   */
   void renameNode(const QString& name);
 
-  /**
-   * @brief Returns the parent node of this item.
-   *
-   * @return The parent NodeItem, if any.
-   */
   NodeItem* parentNode() const;
 
-  /**
-   * @brief Returns a list of child nodes.
-   *
-   * @return The QVector of child NodeItems.
-   */
   QVector<NodeItem*> children() const;
 
-  /**
-   * @brief Calculates an edge point toward a target scene position.
-   *
-   * @param targetScenePos The target scene position.
-   * @return The QPointF representing the edge point.
-   */
   QPointF edgePointToward(const QPointF& targetScenePos, bool fromOutgoingPort) const;
-
-  /** Outgoing transition anchor for the given event (e.g. "on abort", "on error"). */
   QPointF outgoingPortAnchorForEvent(const QString& event) const;
-
-  /** Which outgoing port an event uses (Out, Abort, or Error). */
   PortItem::Kind outgoingPortKindForEvent(const QString& event) const;
-
-  /** Incoming transition anchor (in-port), or node edge fallback. */
   QPointF incomingPortAnchor() const;
 
-  /**
-   * @brief Returns a list of fields associated with this node.
-   *
-   * @return The QVector of IProperty pointers.
-   */
   QVector<std::shared_ptr<IProperty>> fields() const;
-
-  /**
-   * @brief Gets a property info by key.
-   *
-   * @param key The property key.
-   * @return The PropertyInfo object for the given key.
-   */
   PropertyInfo getField(const QString& key) const;
-
-  /**
-   * @brief Sets a field with a given key and JSON object.
-   *
-   * @param key The property key.
-   * @param property The QJsonObject representing the property.
-   * @return VoidResult indicating success or failure.
-   */
   VoidResult setField(const QString& key, const QJsonObject& property);
-
-  /**
-   * @brief Sets a field with a given key and PropertyInfo object.
-   *
-   * @param key The property key.
-   * @param property The PropertyInfo object to set.
-   * @return VoidResult indicating success or failure.
-   */
   VoidResult setField(const QString& key, std::shared_ptr<PropertyInfo> property);
-
-  /**
-   * @brief Removes a field by key.
-   *
-   * @param key The property key to remove.
-   */
   void removeField(const QString& key);
 
-  /**
-   * @brief Sets an event at the given index with the provided FlowConfig.
-   *
-   * @param index The index of the event.
-   * @param event The FlowConfig object for the event.
-   */
   void setEvent(int index, const FlowConfig& event);
-
-  /**
-   * @brief Returns a list of events associated with this node.
-   *
-   * @return The QVector of IFlow pointers.
-   */
   QVector<std::shared_ptr<IFlow>> events() const;
 
-  /**
-   * @brief Adds a parent node to this item.
-   *
-   * @param node The NodeItem to add as a parent.
-   */
-  void addParent(NodeItem* node);
-
-  /**
-   * @brief Adds a child node with the given save information.
-   *
-   * @param node The NodeItem to add as a child.
-   * @param info The save information for the child node.
-   */
+  virtual void addParent(NodeItem* node);
   void addChild(NodeItem* node, std::shared_ptr<NodeSaveInfo> info);
-
-  /**
-   * @brief Handles when a child is removed from this item.
-   *
-   * @param child The NodeItem that was removed.
-   */
-  void childRemoved(NodeItem* child);
+  virtual void childRemoved(NodeItem* child);
 
   /** Structural "Task" node from library (container with capability slots + subtasks). */
-  bool isTaskContainer() const;
+  virtual bool isTaskContainer() const { return false; }
   /** Task nested under another Task in the system view. */
-  bool isStructuralSubtask() const;
+  virtual bool isStructuralSubtask() const { return false; }
   /** Non-Task structural child of a Task (capability / timer / etc.): drawn as inset circle. */
-  bool rendersAsInsetCapability() const;
+  virtual bool rendersAsInsetCapability() const { return false; }
 
-  QVector<NodeItem*> structuralSubtaskChildren() const;
-  QVector<NodeItem*> structuralCapabilityChildren() const;
+  virtual QVector<NodeItem*> structuralSubtaskChildren() const { return {}; }
+  virtual QVector<NodeItem*> structuralCapabilityChildren() const { return {}; }
 
-  void layoutSubtasks();
-  void relayoutCapabilitySlots();
-  void swapCapabilityOrder(NodeItem* a, NodeItem* b);
-  NodeItem* capabilityAtScenePos(const QPointF& scenePos, NodeItem* exclude = nullptr) const;
+  virtual void layoutSubtasks() {}
+  virtual void relayoutCapabilitySlots() {}
+  virtual void swapCapabilityOrder(NodeItem* a, NodeItem* b);
+  virtual NodeItem* capabilityAtScenePos(const QPointF& scenePos, NodeItem* exclude = nullptr) const;
 
-  /** Scene rect of the dashed capability placeholder slot on a Task; empty when N/A. */
-  QRectF placeholderSlotSceneRect() const;
-  bool placeholderSlotContainsScenePoint(const QPointF& scenePos) const;
+  virtual QRectF placeholderSlotSceneRect() const { return {}; }
+  virtual bool placeholderSlotContainsScenePoint(const QPointF& scenePos) const;
 
-  void ensureSubtaskConnector(StructureCanvas* canvas);
-  void destroySubtaskConnector();
-  void syncSubtaskConnector();
+  virtual void ensureSubtaskConnector(StructureCanvas* canvas);
+  virtual void destroySubtaskConnector();
+  virtual void syncSubtaskConnector();
 
   QVector<Flow*> flows() const;
-
-  /**
-   * @brief Creates a new flow with the given name and save information.
-   *
-   * @param flowName The name of the flow.
-   * @param info The save information for the flow.
-   * @return The created Flow object, if successful.
-   */
   Flow* createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo> info);
-
-  /**
-   * @brief Gets a flow by its ID.
-   *
-   * @param flowId The ID of the flow to retrieve.
-   * @return The Flow object, if found.
-   */
   Flow* getFlow(const QString& flowId) const;
-
-  /**
-   * @brief Deletes a flow by its ID.
-   *
-   * @param flowId The ID of the flow to delete.
-   */
   void deleteFlow(const QString& flowId);
-
-  /**
-   * @brief Updates all flows associated with this node.
-   */
   void updateFlow();
 
-  /**
-   * @brief Returns the base scale for this node.
-   *
-   * @return The base scale value.
-   */
   qreal baseScale() const;
-
-  /**
-   * @brief Returns a list of configured transitions.
-   *
-   * @return The QVector of TransitionConfig objects.
-   */
   QVector<TransitionConfig> configTransitions() const;
 
-  /**
-   * @brief Applies a new size to the node.
-   *
-   * @param size The new QSizeF for the node.
-   */
-  void applySize(const QSizeF& size);
+  virtual void applySize(const QSizeF& size);
+  virtual void updatePosition(const QPointF& position);
 
-  /**
-   * @brief Updates the position of the node.
-   *
-   * @param position The new QPointF for the node's position.
-   */
-  void updatePosition(const QPointF& position);
+  virtual void setHoverPreview(const QString& iconPath, const QColor& color, bool active);
 
-  void setHoverPreview(const QString& iconPath, const QColor& color, bool active);
+  /** Used by structural subtree layout and parent resize passes. */
+  void fitInsideParent(qreal padding);
+  virtual void applyStructuralLayoutTopLeft(const QPointF& topLeftScene);
+  virtual void finalizeStructuralPackedPositions(const QPointF& subtreeSceneTopLeft);
 
-  // "signals":
   std::function<void(NodeItem* item)> nodeModified;
   std::function<void(Flow* flow, NodeItem* item)> flowAdded;
   std::function<void(const QString& id)> nodeMoved;
   std::function<void(NodeItem* item, bool hovered)> nodeHovered;
 
-  // "slots":
   void onProperties();
 
-  // Serialization functions
-
-  /**
-   * @brief Returns the savable information for this node.
-   *
-   * @return A NodeSaveInfo class populated with the information from this node
-   */
   NodeSaveInfo saveInfo() const;
-  /**
-   * @brief Saves the state of this NodeItem to a QDataStream.
-   *
-   * @param out The QDataStream to save to.
-   * @param config The NodeItem to save.
-   * @return The modified QDataStream.
-   */
-  friend QDataStream& operator<<(QDataStream& out, const NodeItem& config);
 
-  /**
-   * @brief Loads the state of a NodeItem from a QDataStream.
-   *
-   * @param in The QDataStream to load from.
-   * @param config The NodeItem to load into.
-   * @return The modified QDataStream.
-   */
+  friend QDataStream& operator<<(QDataStream& out, const NodeItem& config);
   friend QDataStream& operator>>(QDataStream& in, NodeItem& config);
 
 protected:
-  /**
-   * @brief Handles mouse move events for this item.
-   *
-   * @param event The QGraphicsSceneMouseEvent object.
-   */
-  void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
-
-  /**
-   * @brief Handles mouse press events for this item.
-   *
-   * @param event The QGraphicsSceneMouseEvent object.
-   */
-  void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
-
-  /**
-   * @brief Handles mouse release events for this item.
-   *
-   * @param event The QGraphicsSceneMouseEvent object.
-   */
-  void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
-
-  void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
-  void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
-
-  /**
-   * @brief Handles changes to the item's properties.
-   *
-   * @param change The GraphicsItemChange enum value.
-   * @param value The new value for the property.
-   * @return The modified QVariant value.
-   */
-  QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
-
-private:
-  std::shared_ptr<NodeSaveInfo> mStorage;  /// Save information for the node.
-
-  QVector<Flow*> mFlows;              /// List of flows associated with this node.
-  NodeItem* mParentNode;              /// Parent node of this item, if any.
-  QVector<NodeItem*> mChildrenNodes;  /// List of child nodes.
+  std::shared_ptr<NodeSaveInfo> mStorage;
+  QVector<Flow*> mFlows;
+  NodeItem* mParentNode = nullptr;
+  QVector<NodeItem*> mChildrenNodes;
 
   PortItem* mInPort = nullptr;
   PortItem* mOutPort = nullptr;
   PortItem* mAbortPort = nullptr;
   PortItem* mErrorPort = nullptr;
 
-  qreal mBaseScale;
+  qreal mBaseScale = 1.0;
   QSizeF mSize{0, 0};
   QPointF mDragStartPos{0, 0};
-  int mCapDragStartIndex = -1;
   QPointF mLastPosition{0, 0};
 
-  bool mIsResizing{false};             /// Flag indicating if the node is being resized.
-  QPointF mResizeStartMousePos{0, 0};  /// Mouse position when resizing started.
-  QSizeF mResizeStartSize{0, 0};       /// Size of the node when resizing started.
+  /** Called after mSize is loaded from storage; subclasses adjust dimensions. */
+  virtual void initializeNodeSize() {}
 
-  /**
-   * @brief Updates extra positions related to this node.
-   */
+  /** Called from constructor to create transition ports when applicable. */
+  virtual void configurePorts();
+
+  /** Default node body painting shared by behavioural and pipeline nodes. */
+  void paintDefaultNode(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget);
+
+  virtual void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
+  virtual void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
+  virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
+
+  void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
+  void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
+
+  QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
+
   void updateExtrasPosition();
   void updatePortPositions();
 
-  /**
-   * @brief Clamps a size within valid limits.
-   *
-   * @param width The width to clamp.
-   * @param height The height to clamp.
-   * @return The clamped QSizeF value.
-   */
   QSizeF clampSize(qreal width, qreal height) const;
-
-  /**
-   * @brief Clamps a position inside an inner rectangle.
-   *
-   * @param inner The inner QRectF.
-   * @param childSceneRect The scene rectangle of the child item.
-   * @return The clamped QPointF value.
-   */
   QPointF clampPosInside(const QRectF& inner, const QRectF& childSceneRect) const;
-
-  /**
-   * @brief Fits this node inside its parent with optional padding.
-   *
-   * @param padding The padding to apply when fitting.
-   */
-  void fitInsideParent(qreal padding);
-
-  /**
-   * @brief Returns the inner scene rectangle of the parent, optionally padded.
-   *
-   * @param padding The padding to apply.
-   * @return The QRectF representing the inner scene rectangle.
-   */
   QRectF parentInnerSceneRect(qreal padding) const;
-  NodeItem* rootStructuralTask() const;
 
-  friend void structural_layout::layoutNonLayeredTidyTree(NodeItem* root);
-
-  /** Move task node's scene top-left without moving logical children (structural subtree layout pass). */
-  void applyStructuralLayoutTopLeft(const QPointF& topLeftScene);
-  void finalizeStructuralPackedPositions(const QPointF& subtreeSceneTopLeft);
-
-  SubtaskConnector* mSubtaskConnector = nullptr;
-  QPointF mTreeDragRootStartPos{0, 0};
-  QPointF mTreeDragStartScenePos{0, 0};
-
-  bool mHoverPreviewActive = false;
-  QString mHoverPreviewIcon;
-  QColor mHoverPreviewColor;
+  virtual NodeItem* rootStructuralTask() const { return const_cast<NodeItem*>(this); }
 };
