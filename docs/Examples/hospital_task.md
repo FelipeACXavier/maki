@@ -42,3 +42,45 @@ task hospitalTask(drive req Drive, approach req Approach, grip req Grip, objdete
   }
 }
 ```
+
+Below, we find the different state machines for each of the task flows:
+
+\htmlonly
+<p>
+  <a href="fcheck.svg" target="_blank">
+    <img src="fcheck.svg" alt="Battery check flow state machine" style="max-width:100%; height:auto;">
+    <figcaption>Battery check flow state machine</figcaption>
+  </a>
+</p>
+<p>
+  <a href="fcharge.svg" target="_blank">
+    <img src="fcharge.svg" alt="Battery check flow state machine" style="max-width:100%; height:auto;">
+    <figcaption>Drive to charge flow state machine</figcaption>
+  </a>
+</p>
+<p>
+  <a href="fpick.svg" target="_blank">
+    <img src="fpick.svg" alt="Battery check flow state machine" style="max-width:100%; height:auto;">
+    <figcaption>Pick medicine flow state machine</figcaption>
+  </a>
+</p>
+<p>
+  <a href="fplace.svg" target="_blank">
+    <img src="fplace.svg" alt="Battery check flow state machine" style="max-width:100%; height:auto;">
+    <figcaption>Place medicine flow state machine</figcaption>
+  </a>
+</p>
+<p>
+  <a href="floop.svg" target="_blank">
+    <img src="floop.svg" alt="Battery check flow state machine" style="max-width:100%; height:auto;">
+    <figcaption>Pick and place loop flow state machine</figcaption>
+  </a>
+</p>
+<p>
+  <a href="main.svg" target="_blank">
+    <img src="main.svg" alt="Battery check flow state machine" style="max-width:100%; height:auto;">
+    <figcaption>Main flow state machine. Repeatedly run the battery check and the pick and place loop.</figcaption>
+  </a>
+</p>
+\endhtmlonly
+
