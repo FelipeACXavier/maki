@@ -366,6 +366,22 @@ signals:
   void openFlow(Flow* flow, const QString& nodeId);
 
   /**
+   * @brief Emitted when a new flow should be created on a task node.
+   *
+   * @param nodeId The ID of the task node that owns the flow.
+   * @param info The flow configuration to create.
+   */
+  void createFlowRequested(const QString& nodeId, std::shared_ptr<FlowSaveInfo> info);
+
+  /**
+   * @brief Emitted when a flow call node should navigate to its selected callee flow.
+   *
+   * @param taskNodeId The ID of the task node that owns the flow.
+   * @param flowName The name of the flow to open.
+   */
+  void openFlowCallTarget(const QString& taskNodeId, const QString& flowName);
+
+  /**
    * @brief Emitted when a flow is added.
    *
    * @param flow Pointer to the added flow.
@@ -408,6 +424,22 @@ public slots:
   void onFlowSelected(const QString& flowId, const QString& nodeId);
 
   /**
+   * @brief Creates a flow on a task node and opens its editor.
+   *
+   * @param nodeId The ID of the task node that owns the flow.
+   * @param info The flow configuration to create.
+   */
+  void onCreateFlow(const QString& nodeId, std::shared_ptr<FlowSaveInfo> info);
+
+  /**
+   * @brief Opens the flow diagram referenced by a flow call node.
+   *
+   * @param taskNodeId The ID of the task node that owns the flow.
+   * @param flowName The name of the flow to open.
+   */
+  void onOpenFlowCallTarget(const QString& taskNodeId, const QString& flowName);
+
+  /**
    * @brief Handles removal of a flow.
    *
    * @param flowId The ID of the removed flow.
@@ -415,7 +447,7 @@ public slots:
    */
   void onFlowRemoved(const QString& flowId, const QString& nodeId);
 
-  void onSelectionChanged();
+  virtual void onSelectionChanged();
 
   virtual void onCleanChanged(bool state);
 

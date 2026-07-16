@@ -28,6 +28,9 @@
 
 #include "../structure/event_dialog.h"
 #include "../structure/field_dialog.h"
+#include "../structure/flow_call_menu.h"
+#include "../structure/svg_click_button.h"
+#include "../structure/transition_event_menu.h"
 #include "app_configs.h"
 #include "config.h"
 #include "elements/flow.h"
@@ -448,7 +451,7 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertyInfo& prope
           auto events = mStorage->getEventsOfTypeFromNode(nodeId, {Types::CallType::TRIGGER, Types::CallType::ABORT, Types::CallType::IN});
           for (const auto& event : events)
             eventWidget->addItem(event->getname(), event->getname());
-        }));
+        }, false));
       }
       else if (option->gettype() == Types::PropertyTypes::TRIGGER_CALL)
       {
@@ -462,7 +465,7 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertyInfo& prope
           auto events = mStorage->getFlowsFromNode(nodeId);
           for (const auto& event : events)
             eventWidget->addItem(event->getname(), event->getname());
-        }));
+        }, true));
       }
       else
       {
@@ -474,7 +477,7 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertyInfo& prope
 }
 
 VoidResult PropertiesMenu::loadFieldEventSelect(maki::SelectorWidget* componentSelect, const QString& optionId, const PropertyInfo& property, NodeItem* node, Types::CallType callType,
-                                                std::function<void(const QString& nodeId, QComboBox* eventWidget)> populate)
+                                                std::function<void(const QString& nodeId, QComboBox* eventWidget)> populate, bool allowCreateFlow)
 {
   QComboBox* eventCombo = new QComboBox(this);
   auto* widget = new maki::SelectorWidget(ToLabel(optionId), eventCombo, maki::WidgetAlignment::Vertical(), this);
@@ -527,7 +530,51 @@ VoidResult PropertiesMenu::loadFieldEventSelect(maki::SelectorWidget* componentS
   });
 
   // Add everything to the layout
-  layout()->addWidget(widget);
+  if (allowCreateFlow)
+  {
+    auto* flowRow = new QHBoxLayout();
+    flowRow->setContentsMargins(0, 0, 0, 0);
+    flowRow->setSpacing(4);
+    flowRow->addWidget(widget, 1);
+
+    auto* createFlowButton = new SvgClickButton(iconPathFromTheme(QStringLiteral("button_addflow.svg")), QSize(16, 16), this);
+    createFlowButton->setToolTip(tr("Create flow"));
+    createFlowButton->setEnabled(!componentSelect->getData().toString().isEmpty());
+    flowRow->addWidget(createFlowButton, 0, Qt::AlignTop);
+
+    connect(createFlowButton, &SvgClickButton::clicked, this, [this, componentSelect, populate, eventCombo, widget, node, property, group, callType]() {
+      const QString taskId = componentSelect->getData().toString();
+      if (taskId.isEmpty())
+        return;
+
+      const auto info = FlowCallMenu::promptNewFlow(this);
+      if (!info)
+        return;
+
+      const QString flowName = info->getname();
+      populate(taskId, eventCombo);
+      widget->addItem(flowName, flowName);
+      widget->setValue(flowName);
+
+      clearLayout(group->layout());
+      UPDATE_PROPERTY_ARG(node, property.getid(), EVENT_INDEX, flowName, Types::PropertyTypes::EVENT_SELECT, false)
+      LOG_WARN_ON_FAILURE(loadEventArguments(taskId, flowName, property, node, callType, group));
+      updateBlockName(node, componentSelect->getValue(), flowName);
+      emit createFlow(taskId, info);
+    });
+
+    connect(componentSelect, &maki::SelectorWidget::dataChanged, createFlowButton, [createFlowButton](const QString&, const QVariant& nodeId) {
+      createFlowButton->setEnabled(nodeId.isValid() && !nodeId.toString().isEmpty());
+    });
+
+    auto* flowRowWidget = new QWidget(this);
+    flowRowWidget->setLayout(flowRow);
+    layout()->addWidget(flowRowWidget);
+  }
+  else
+  {
+    layout()->addWidget(widget);
+  }
   layout()->addWidget(group);
 
   return VoidResult();
@@ -765,26 +812,8 @@ VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)
     return VoidResult::Failed("Transition with no source");
 
   auto* eventWidget = new maki::SelectorWidget(tr("Transition event"), maki::WidgetAlignment::Vertical(), this);
-  // First, we add the node specific transitions
-  for (const auto& t : source->configTransitions())
-    eventWidget->addItem(t.event, t.event);
-
-  // Then the generic handlers
-  eventWidget->addItem("on error", "on error");
-  eventWidget->addItem("on abort", "on abort");
-
-  // Finally, the rest of the signals
-  auto callers = mStorage->getPossibleCallers(source->id(), Types::PropertyTypes::UNKNOWN);
-  for (const auto& caller : callers)
-  {
-    auto name = caller->getProperty(ConfigKeys::NAME);
-    if (name.isNull() || !name.isValid())
-      continue;
-
-    auto events = mStorage->getEventsOfTypeFromNode(caller->getid(), {Types::CallType::OUT});
-    for (const auto& event : events)
-      eventWidget->addItem(name.toString() + "." + event->getname(), "on");
-  }
+  for (const auto& option : TransitionEventMenu::buildOptions(source, mStorage.get()))
+    eventWidget->addItem(option.first, option.second);
 
   // Set the initial value
   auto currentEvent = transition->getEvent();

@@ -5,6 +5,7 @@
 
 #include "canvas_view.h"
 #include "config_table.h"
+#include "elements/behaviour/flow_call_node.h"
 #include "elements/flow.h"
 #include "elements/node.h"
 #include "elements/port.h"
@@ -12,12 +13,19 @@
 #include "logging.h"
 #include "style_helpers.h"
 #include "transition_info.h"
+#include "types.h"
+#include "widgets/structure/flow_call_menu.h"
+#include "widgets/structure/transition_event_menu.h"
 
 BehaviourCanvas::BehaviourCanvas(Flow* flow, std::shared_ptr<SaveInfo> storage, std::shared_ptr<ConfigurationTable> configTable, std::shared_ptr<EdgeRouter> router, QObject* parent)
     : Canvas(flow->id(), configTable, router, parent)
     , mFlow(flow)
     , mStorage(storage)
 {
+  connect(this, &Canvas::nodeRemoved, this, [this](const QString& nodeId, const QString&) {
+    if (mFlowCallMenu && mFlowCallMenu->trackedNodeId() == nodeId)
+      mFlowCallMenu->hideMenu();
+  });
 }
 
 BehaviourCanvas::~BehaviourCanvas()
@@ -169,6 +177,120 @@ void BehaviourCanvas::onNodeMoved(const QString& nodeId)
   {
     if (transition->source()->id() == nodeId || transition->destination()->id() == nodeId)
       transition->updatePath();
+  }
+
+  if (mTransitionMenu && mTransitionMenu->isVisible())
+  {
+    for (const auto& transition : mFlow->transitions())
+    {
+      if (transition->id() == mTransitionMenu->trackedTransitionId())
+      {
+        if (transition->source()->id() == nodeId || transition->destination()->id() == nodeId)
+          mTransitionMenu->updatePosition(parentView());
+        break;
+      }
+    }
+  }
+
+  if (mFlowCallMenu && mFlowCallMenu->isVisible() && mFlowCallMenu->trackedNodeId() == nodeId)
+    mFlowCallMenu->updatePosition(parentView());
+}
+
+void BehaviourCanvas::ensureTransitionMenu()
+{
+  if (mTransitionMenu)
+    return;
+
+  CanvasView* view = parentView();
+  if (!view)
+    return;
+
+  mTransitionMenu = new TransitionEventMenu(view);
+}
+
+void BehaviourCanvas::ensureFlowCallMenu()
+{
+  if (mFlowCallMenu)
+    return;
+
+  CanvasView* view = parentView();
+  if (!view)
+    return;
+
+  mFlowCallMenu = new FlowCallMenu(view);
+  connect(mFlowCallMenu, &FlowCallMenu::createFlowRequested, this, &Canvas::createFlowRequested);
+}
+
+void BehaviourCanvas::navigateToFlowCallTarget(NodeItem* flowCallNode)
+{
+  QString taskId;
+  QString flowName;
+  if (!FlowCallMenu::resolveFlowCallTarget(flowCallNode, mStorage.get(), taskId, flowName))
+    return;
+
+  emit openFlowCallTarget(taskId, flowName);
+}
+
+void BehaviourCanvas::onSelectionChanged()
+{
+  Canvas::onSelectionChanged();
+
+  ensureTransitionMenu();
+  ensureFlowCallMenu();
+
+  TransitionItem* selectedTransition = nullptr;
+  NodeItem* selectedFlowCallNode = nullptr;
+
+  for (auto* item : selectedItems())
+  {
+    if (item->type() == Types::TRANSITION)
+    {
+      if (selectedTransition || selectedFlowCallNode)
+      {
+        selectedTransition = nullptr;
+        selectedFlowCallNode = nullptr;
+        break;
+      }
+
+      selectedTransition = static_cast<TransitionItem*>(item);
+      continue;
+    }
+
+    if (item->type() == NodeItem::Type)
+    {
+      auto* node = static_cast<NodeItem*>(item);
+      if (!dynamic_cast<FlowCallNode*>(node))
+        continue;
+
+      if (selectedTransition || selectedFlowCallNode)
+      {
+        selectedTransition = nullptr;
+        selectedFlowCallNode = nullptr;
+        break;
+      }
+
+      selectedFlowCallNode = node;
+    }
+  }
+
+  if (selectedTransition && mTransitionMenu)
+  {
+    mTransitionMenu->showForTransition(selectedTransition, parentView(), mStorage.get());
+    if (mFlowCallMenu)
+      mFlowCallMenu->hideMenu();
+  }
+  else if (selectedFlowCallNode && mFlowCallMenu)
+  {
+    mFlowCallMenu->showForNode(selectedFlowCallNode, parentView(), mStorage.get());
+    if (mTransitionMenu)
+      mTransitionMenu->hideMenu();
+  }
+  else
+  {
+    if (mTransitionMenu)
+      mTransitionMenu->hideMenu();
+    if (mFlowCallMenu)
+      mFlowCallMenu->hideMenu();
   }
 }
 

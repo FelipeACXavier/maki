@@ -6,4 +6,7 @@ class FlowCallNode : public BehaviourNode
 {
 public:
   using BehaviourNode::BehaviourNode;
+
+protected:
+  void mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event) override;
 };

@@ -853,6 +853,8 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
         mTransition->setEnd(dest->id(), endPos, {0, 0});
         mTransition->done(mNode, dest);
         addTransition(mTransition);
+        clearSelection();
+        mTransition->setSelected(true);
         completed = true;
       }
 
@@ -1999,6 +2001,46 @@ void Canvas::onFlowSelected(const QString& flowId, const QString& nodeId)
 
   auto flow = node->getFlow(flowId);
   emit openFlow(flow, "");
+}
+
+void Canvas::onCreateFlow(const QString& nodeId, std::shared_ptr<FlowSaveInfo> info)
+{
+  if (!info)
+    return;
+
+  auto node = findNodeWithId(nodeId);
+  if (!node)
+  {
+    LOG_WARNING("Cannot create flow: task node %s not found", qPrintable(nodeId));
+    return;
+  }
+
+  Flow* flow = node->createFlow(info->getname(), info);
+  if (!flow)
+    return;
+
+  emit openFlow(flow, "");
+}
+
+void Canvas::onOpenFlowCallTarget(const QString& taskNodeId, const QString& flowName)
+{
+  auto node = findNodeWithId(taskNodeId);
+  if (!node)
+  {
+    LOG_WARNING("Cannot open flow call target: task node %s not found", qPrintable(taskNodeId));
+    return;
+  }
+
+  for (Flow* flow : node->flows())
+  {
+    if (flow->name() == flowName)
+    {
+      emit openFlow(flow, "");
+      return;
+    }
+  }
+
+  LOG_WARNING("Cannot open flow call target: flow %s not found on node %s", qPrintable(flowName), qPrintable(taskNodeId));
 }
 
 void Canvas::onFlowRemoved(const QString& flowId, const QString& nodeId)

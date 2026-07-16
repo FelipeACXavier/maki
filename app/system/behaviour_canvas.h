@@ -3,6 +3,9 @@
 #include "canvas.h"
 #include "elements/transition.h"
 
+class TransitionEventMenu;
+class FlowCallMenu;
+
 /**
  * @class BehaviourCanvas
  * @brief A specialized canvas for managing and displaying behavior-related nodes.
@@ -77,6 +80,10 @@ public:
    */
   void onNodeMoved(const QString& nodeId) override;
 
+  void onSelectionChanged() override;
+
+  void navigateToFlowCallTarget(NodeItem* flowCallNode);
+
   /**
    * @brief Used to create the start and end nodes of a flow
    */
@@ -111,4 +118,10 @@ private:
 
   NodeItem* insertDroppedNodeOnTransition(TransitionItem* transition, std::shared_ptr<NodeSaveInfo> info) override;
   void addInitialNode(const QString& nodeType, const QPointF& position);
+
+  void ensureTransitionMenu();
+  void ensureFlowCallMenu();
+
+  TransitionEventMenu* mTransitionMenu = nullptr;
+  FlowCallMenu* mFlowCallMenu = nullptr;
 };

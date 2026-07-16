@@ -132,6 +132,14 @@ signals:
   void flowSelected(const QString& flowId, const QString& nodeId);
 
   /**
+   * @brief Emitted when a new flow should be created on a task node.
+   *
+   * @param nodeId ID of the task node that owns the flow.
+   * @param info The flow configuration to create.
+   */
+  void createFlow(const QString& nodeId, std::shared_ptr<FlowSaveInfo> info);
+
+  /**
    * @brief Emitted when a flow is removed.
    *
    * @param flowId ID of the removed flow.
@@ -176,7 +184,7 @@ private:
 
   // Component select fields
   VoidResult loadFieldEventSelect(maki::SelectorWidget* componentSelect, const QString& optionId, const PropertyInfo& property, NodeItem* node, Types::CallType callType,
-                                  std::function<void(const QString& nodeId, QComboBox* eventWidget)> populate);                                   /// Loads field event select.
+                                  std::function<void(const QString& nodeId, QComboBox* eventWidget)> populate, bool allowCreateFlow = false);  /// Loads field event select.
   VoidResult loadFieldTriggerCall(maki::SelectorWidget* componentSelect, const QString& optionId, const PropertyInfo& property, NodeItem* node);  /// Loads field trigger call.
 
   void addCompleter(oclero::qlementine::LineEdit* field, const QString& nodeId, const Types::PropertyTypes dataType, QStringList variables = {});

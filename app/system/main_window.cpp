@@ -425,6 +425,7 @@ void MainWindow::bind()
   connect(rootCanvas(), &Canvas::flowRemoved, this, &MainWindow::onFlowRemoved);
 
   connect(mPropertiesMenu, &PropertiesMenu::flowSelected, rootCanvas(), &Canvas::onFlowSelected);
+  connect(mPropertiesMenu, &PropertiesMenu::createFlow, rootCanvas(), &Canvas::onCreateFlow);
 
   connect(mSystemMenu, &SystemMenu::flowSelected, rootCanvas(), &Canvas::onFlowSelected);
   connect(mSystemMenu, &SystemMenu::flowRemoved, rootCanvas(), &Canvas::onFlowRemoved);
@@ -1292,6 +1293,8 @@ void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId)
   LOG_INFO("Opening flow: %s - %d", qPrintable(flow->name()), flow->getNodes().size());
   BehaviourCanvas* canvas = new BehaviourCanvas(flow, mStorage, mConfigTable, mRouter, newView);
   connect(canvas, &Canvas::cleanChanged, this, &MainWindow::onCleanChanged);
+  connect(canvas, &Canvas::createFlowRequested, rootCanvas(), &Canvas::onCreateFlow);
+  connect(canvas, &Canvas::openFlowCallTarget, rootCanvas(), &Canvas::onOpenFlowCallTarget);
   canvas->setupInitialNodes();
   newView->setScene(canvas);
 
