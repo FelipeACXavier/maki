@@ -124,6 +124,22 @@ bool BehaviourCanvas::canAddTransition(NodeItem* node, PortItem* port) const
   return node->config()->transitions.isEmpty() || index <= node->config()->transitions.size();
 }
 
+bool BehaviourCanvas::canConnectNodes(NodeItem* source, NodeItem* dest) const
+{
+  if (!source || !dest)
+    return false;
+
+  // SubflowBlock out-port may only connect to nodes inside that block.
+  if (source->isSubflowContainer())
+    return dest->parentNode() == source;
+
+  // SubflowBlock has no in-port; nothing may target the block itself.
+  if (dest->isSubflowContainer())
+    return false;
+
+  return true;
+}
+
 TransitionConfig BehaviourCanvas::nextTransition(NodeItem* node) const
 {
   int index = 0;
@@ -177,6 +193,12 @@ void BehaviourCanvas::onNodeMoved(const QString& nodeId)
   {
     if (transition->source()->id() == nodeId || transition->destination()->id() == nodeId)
       transition->updatePath();
+  }
+
+  if (NodeItem* node = findNodeWithId(nodeId))
+  {
+    if (NodeItem* parent = node->parentNode())
+      parent->expandSubflowToFitChildren();
   }
 
   if (mTransitionMenu && mTransitionMenu->isVisible())
@@ -275,7 +297,16 @@ void BehaviourCanvas::onSelectionChanged()
 
   if (selectedTransition && mTransitionMenu)
   {
-    mTransitionMenu->showForTransition(selectedTransition, parentView(), mStorage.get());
+    // Loop begin/end transitions on SubflowBlock ports have no events.
+    const bool subflowPortTransition =
+        (selectedTransition->source() && selectedTransition->source()->isSubflowContainer()) ||
+        (selectedTransition->destination() && selectedTransition->destination()->isSubflowContainer());
+
+    if (subflowPortTransition)
+      mTransitionMenu->hideMenu();
+    else
+      mTransitionMenu->showForTransition(selectedTransition, parentView(), mStorage.get());
+
     if (mFlowCallMenu)
       mFlowCallMenu->hideMenu();
   }
@@ -331,16 +362,34 @@ NodeItem* BehaviourCanvas::insertDroppedNodeOnTransition(TransitionItem* transit
   const QString eventName = transition->getEvent();
   const QString label = transition->getName();
 
+  NodeItem* parent = nullptr;
+  auto preferSubflow = [](NodeItem* candidate) -> NodeItem* {
+    if (!candidate)
+      return nullptr;
+    if (candidate->isSubflowContainer())
+      return candidate;
+    if (candidate->parentNode() && candidate->parentNode()->isSubflowContainer())
+      return candidate->parentNode();
+    return nullptr;
+  };
+  parent = preferSubflow(source);
+  if (!parent)
+    parent = preferSubflow(destination);
+
   removeTransition(transition);
   removeItem(transition);
   delete transition;
 
   const QPointF insertCenter =
-      snapToGrid((source->sceneBoundingRect().center() + destination->sceneBoundingRect().center()) * 0.5, Config::GRID_SIZE);
+      snapToGrid((source->mapRectToScene(source->nodeRect()).center() + destination->mapRectToScene(destination->nodeRect()).center()) * 0.5,
+                 Config::GRID_SIZE);
 
-  NodeItem* node = createNode(NodeCreation::Dropping, info, insertCenter, nullptr);
+  NodeItem* node = createNode(NodeCreation::Dropping, info, insertCenter, parent);
   if (!node)
     return nullptr;
+
+  if (parent)
+    parent->expandSubflowToFitChildren();
 
   if (!connectBehaviourNodes(this, this, source, node, eventName, label))
     return nullptr;

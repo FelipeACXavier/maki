@@ -811,6 +811,13 @@ VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)
   if (source == nullptr)
     return VoidResult::Failed("Transition with no source");
 
+  // SubflowBlock loop begin/end transitions have no configurable event.
+  if (source->isSubflowContainer() || (transition->destination() && transition->destination()->isSubflowContainer()))
+  {
+    qobject_cast<QVBoxLayout*>(layout())->addStretch();
+    return VoidResult();
+  }
+
   auto* eventWidget = new maki::SelectorWidget(tr("Transition event"), maki::WidgetAlignment::Vertical(), this);
   for (const auto& option : TransitionEventMenu::buildOptions(source, mStorage.get()))
     eventWidget->addItem(option.first, option.second);

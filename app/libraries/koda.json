@@ -1500,23 +1500,9 @@
               "type": "int"
             }
           ],
-          "transitions": [
-            {
-              "id": "Do",
-              "label": "do",
-              "event": "do",
-              "modifiable": false
-            },
-            {
-              "id": "Else",
-              "label": "else",
-              "event": "else",
-              "modifiable": false
-            }
-          ],
           "behaviour": {},
           "help": {
-            "message": "Performs the \"do\" strategy and if it does not conclude within the set time, it will trigger the \"else\" strategy."
+            "message": "Performs the \"do\" strategy and if it does not conclude within the set time, it will trigger the \"else\" strategy. Define each branch in the attached Subflow blocks."
           },
           "ports": [
             "in",

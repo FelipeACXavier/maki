@@ -53,13 +53,17 @@
 
 namespace
 {
-NodeItem* taskContainerAcceptingDrop(QGraphicsItem* item)
+NodeItem* dropTargetContainer(QGraphicsItem* item, Types::LibraryTypes canvasType, QGraphicsScene* scene = nullptr,
+                              const QPointF& scenePos = QPointF())
 {
   while (item)
   {
     if (item->type() == NodeItem::Type)
     {
       auto* node = static_cast<NodeItem*>(item);
+      if (node->isSubflowContainer() && canvasType == Types::LibraryTypes::BEHAVIOUR)
+        return node;
+
       for (NodeItem* cur = node; cur; cur = cur->parentNode())
       {
         if (cur->isTaskContainer() && cur->acceptDrops())
@@ -69,7 +73,31 @@ NodeItem* taskContainerAcceptingDrop(QGraphicsItem* item)
     }
     item = item->parentItem();
   }
+
+  // SubflowBlock uses a border-only shape for hit-testing, so empty interior drops
+  // must still resolve the container via its body rect.
+  if (canvasType == Types::LibraryTypes::BEHAVIOUR && scene)
+  {
+    for (QGraphicsItem* gi : scene->items())
+    {
+      if (!gi || gi->type() != NodeItem::Type)
+        continue;
+
+      auto* node = static_cast<NodeItem*>(gi);
+      if (!node->isSubflowContainer())
+        continue;
+
+      if (node->mapRectToScene(node->nodeRect()).contains(scenePos))
+        return node;
+    }
+  }
+
   return nullptr;
+}
+
+NodeItem* taskContainerAcceptingDrop(QGraphicsItem* item)
+{
+  return dropTargetContainer(item, Types::LibraryTypes::STRUCTURAL);
 }
 
 NodeItem* ancestorNodeItem(QGraphicsItem* item)
@@ -232,7 +260,7 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
 
   if (event->mimeData()->hasFormat(Constants::TYPE_NODE))
   {
-    NodeItem* parentNode = taskContainerAcceptingDrop(itemAt(event->scenePos(), QTransform()));
+    NodeItem* parentNode = dropTargetContainer(itemAt(event->scenePos(), QTransform()), type(), this, event->scenePos());
 
     // Make sure that no other nodes are selected before dropping
     clearSelectedNodes();
@@ -262,6 +290,8 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
     auto node = createNode(NodeCreation::Dropping, info, event->scenePos(), parentNode);
     if (node)
     {
+      if (parentNode)
+        parentNode->expandSubflowToFitChildren();
       selectNode(node, true);
       event->acceptProposedAction();
     }
@@ -847,10 +877,19 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
       }
 
       bool completed = false;
-      if (dest && mNode && dest != mNode && dest->type() == NodeItem::Type && canCompleteTransitionTo(dest, event->scenePos()))
+      if (dest && mNode && dest != mNode && dest->type() == NodeItem::Type && canCompleteTransitionTo(dest, event->scenePos()) &&
+          canConnectNodes(mNode, dest))
       {
         const QPointF endPos = dest->incomingPortAnchor();
         mTransition->setEnd(dest->id(), endPos, {0, 0});
+
+        // SubflowBlock loop ports have no transition events.
+        if (mNode->isSubflowContainer() || dest->isSubflowContainer())
+        {
+          mTransition->setEvent(QString());
+          mTransition->setName(QString());
+        }
+
         mTransition->done(mNode, dest);
         addTransition(mTransition);
         clearSelection();
@@ -1283,10 +1322,20 @@ void Canvas::deleteSelectedItems()
     if (item->type() == NodeItem::Type)
     {
       NodeItem* node = static_cast<NodeItem*>(item);
-      NodeItem* parent = static_cast<NodeItem*>(node->parentNode());
+
+      // Deleting a subflow container deletes its owning Repeat/Within instead.
+      if (node->isSubflowContainer())
+      {
+        NodeItem* owner = node->subflowHost();
+        if (!owner)
+          continue;
+        node = owner;
+      }
+
+      NodeItem* parent = node->parentNode();
 
       // Only delete if no parent OR parent is not selected
-      if (!parent || !parent->isSelected())
+      if ((!parent || !parent->isSelected()) && !nodesToDelete.contains(node))
         nodesToDelete.append(node);
     }
     else if (item->type() == TransitionItem::Type)
@@ -1372,6 +1421,17 @@ QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
   if (!node)
     return {};
 
+  // Subflow containers are owned by Repeat/Within — delete the host instead.
+  if (node->isSubflowContainer())
+  {
+    if (NodeItem* owner = node->subflowHost())
+      return removeNode(owner);
+    return {};
+  }
+
+  // Detach owned subflow blocks so owner destructors will not touch them again.
+  const QVector<NodeItem*> detachedBlocks = node->detachOwnedSubflowBlocks();
+
   removeItem(node);
 
   // Clear any potential callback
@@ -1381,7 +1441,10 @@ QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
 
   LOG_DEBUG("Removing node: %s %d", qPrintable(node->id()), (int)type());
 
-  QVector<QGraphicsItem*> itemsToRemove = {node};
+  // Order is parent-then-descendants so the caller's reverse loop deletes
+  // children before parents (avoids dangling parent pointers during paint).
+  QVector<QGraphicsItem*> itemsToRemove;
+  itemsToRemove.append(node);
   updateParent(node, nullptr, false);
 
   auto flows = node->flows();
@@ -1396,6 +1459,27 @@ QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
     parent->childRemoved(node);
 
   itemsToRemove += cleanTransitionsOfNode(node->id());
+
+  for (NodeItem* detachedBlock : detachedBlocks)
+  {
+    if (!detachedBlock)
+      continue;
+
+    itemsToRemove += cleanTransitionsOfNode(detachedBlock->id());
+
+    detachedBlock->nodeModified = nullptr;
+    detachedBlock->flowAdded = nullptr;
+    detachedBlock->nodeMoved = nullptr;
+
+    if (detachedBlock->scene())
+      removeItem(detachedBlock);
+
+    itemsToRemove.append(detachedBlock);
+
+    const QVector<NodeItem*> subflowChildren = detachedBlock->children();
+    for (NodeItem* child : subflowChildren)
+      itemsToRemove += removeNode(child);
+  }
 
   auto toDelete = node->children();
   for (NodeItem* child : toDelete)
@@ -1504,6 +1588,9 @@ void Canvas::pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode
     pasteCopiedItems(mousePosition, node, children, false);
     selectNode(node, false);
   }
+
+  if (parentNode)
+    parentNode->expandSubflowToFitChildren();
 }
 
 void Canvas::pasteCopiedItems()
@@ -1524,14 +1611,16 @@ void Canvas::pasteCopiedItems()
 
   const QPointF mousePosition = parentView()->mapToScene(parentView()->mapFromGlobal(QCursor::pos()));
 
-  NodeItem* parentNode = nullptr;
-  QGraphicsItem* item = itemAt(mousePosition, QTransform());
-  if (item && item->type() == NodeItem::Type)
+  NodeItem* parentNode = dropTargetContainer(itemAt(mousePosition, QTransform()), type(), this, mousePosition);
+  if (!parentNode)
   {
-    parentNode = static_cast<NodeItem*>(item);
-
-    if (!parentNode->acceptDrops())
-      return;
+    QGraphicsItem* item = itemAt(mousePosition, QTransform());
+    if (item && item->type() == NodeItem::Type)
+    {
+      parentNode = static_cast<NodeItem*>(item);
+      if (!parentNode->acceptDrops())
+        return;
+    }
   }
 
   pasteCopiedItems(mousePosition, parentNode, copiedNodes, true);
@@ -1551,6 +1640,8 @@ void Canvas::clearCanvas()
 
     NodeItem* node = static_cast<NodeItem*>(item);
     if (node->parentNode())
+      continue;
+    if (node->isSubflowContainer())
       continue;
 
     LOG_INFO("Removing node: %s", qPrintable(node->id()));
@@ -1858,7 +1949,13 @@ bool Canvas::beginTransitionFromOutPort(PortItem* port, const QPointF& cursorSce
   LOG_INFO("Node: %s ZValue: %f %f", qPrintable(node->nodeId()), node->zValue(), mTransition->zValue());
 
   TransitionConfig config;
-  if (port->kind() == PortItem::Out)
+  if (node->isSubflowContainer())
+  {
+    config.event = QString();
+    config.label = QString();
+    config.modifiable = false;
+  }
+  else if (port->kind() == PortItem::Out)
     config = nextTransition(node);
   else
   {
@@ -2065,13 +2162,23 @@ NodeItem* Canvas::insertDroppedNodeOnTransition(TransitionItem* /* transition */
   return nullptr;
 }
 
+bool Canvas::canConnectNodes(NodeItem* /* source */, NodeItem* /* dest */) const
+{
+  return true;
+}
+
 TransitionItem* Canvas::transitionAt(const QPointF& scenePos) const
 {
   const QList<QGraphicsItem*> hits = items(scenePos, Qt::IntersectsItemShape, Qt::DescendingOrder);
   for (QGraphicsItem* item : hits)
   {
     if (item->type() == NodeItem::Type)
+    {
+      // SubflowBlock body is not an obstacle for drop-on-transition hit testing.
+      if (static_cast<NodeItem*>(item)->isSubflowContainer())
+        continue;
       return nullptr;
+    }
 
     if (item->type() == TransitionItem::Type)
       return static_cast<TransitionItem*>(item);

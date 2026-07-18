@@ -472,6 +472,9 @@ protected:
    */
   virtual NodeItem* insertDroppedNodeOnTransition(TransitionItem* transition, std::shared_ptr<NodeSaveInfo> info);
 
+  /** Extra connection rules beyond port hit-testing (e.g. SubflowBlock port locality). */
+  virtual bool canConnectNodes(NodeItem* source, NodeItem* dest) const;
+
   /** Runs once after a project load; structural canvases relayout task capability slots. */
   virtual void finalizeAfterLoad()
   {
@@ -488,6 +491,14 @@ protected:
    * @brief Clears all items from the canvas.
    */
   void clearCanvas();
+
+  /**
+   * @brief Finds a node by its ID.
+   *
+   * @param id The ID of the node to find.
+   * @return Pointer to the found NodeItem, or nullptr if not found.
+   */
+  NodeItem* findNodeWithId(const QString& id) const;
 
 private:
   // TODO(felaze): Move connection behaviour to a separate class
@@ -517,14 +528,6 @@ private:
    * @param select Whether to select or deselect the node.
    */
   void selectNode(NodeItem* node, bool select);
-
-  /**
-   * @brief Finds a node by its ID.
-   *
-   * @param id The ID of the node to find.
-   * @return Pointer to the found NodeItem, or nullptr if not found.
-   */
-  NodeItem* findNodeWithId(const QString& id) const;
 
   /**
    * Returns the closest PortItem of the given kind whose anchor is within `radius` scene units of `scenePos`,

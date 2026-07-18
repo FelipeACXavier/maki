@@ -31,6 +31,39 @@ std::optional<QColor> optionalColorProperty(const QVariant& value)
 
   return QColor::fromString(name);
 }
+
+QPointF pushOutOfRect(const QRectF& nodeLocalRect, const QPointF& proposedPos, const QRectF& obstacleScene)
+{
+  QRectF proposed(proposedPos.x(), proposedPos.y(), nodeLocalRect.width(), nodeLocalRect.height());
+  if (!proposed.intersects(obstacleScene))
+    return proposedPos;
+
+  const qreal overlapLeft = proposed.right() - obstacleScene.left();
+  const qreal overlapRight = obstacleScene.right() - proposed.left();
+  const qreal overlapTop = proposed.bottom() - obstacleScene.top();
+  const qreal overlapBottom = obstacleScene.bottom() - proposed.top();
+
+  const qreal minOverlapX = qMin(overlapLeft, overlapRight);
+  const qreal minOverlapY = qMin(overlapTop, overlapBottom);
+
+  QPointF adjusted = proposedPos;
+  if (minOverlapX < minOverlapY)
+  {
+    if (overlapLeft < overlapRight)
+      adjusted.rx() -= overlapLeft;
+    else
+      adjusted.rx() += overlapRight;
+  }
+  else
+  {
+    if (overlapTop < overlapBottom)
+      adjusted.ry() -= overlapTop;
+    else
+      adjusted.ry() += overlapBottom;
+  }
+
+  return adjusted;
+}
 }  // namespace
 
 NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
@@ -274,7 +307,8 @@ void NodeItem::addParent(NodeItem* parent)
   mParentNode = parent;
   mStorage->setParentId(parent->id());
   setZValue(parent->zValue() + 2);
-  fitInsideParent(20);
+  if (!parent->isSubflowContainer())
+    fitInsideParent(20);
 }
 
 void NodeItem::addChild(NodeItem* node, std::shared_ptr<NodeSaveInfo> info)
@@ -470,12 +504,22 @@ QVariant NodeItem::itemChange(GraphicsItemChange change, const QVariant& value)
 {
   if (change == QGraphicsItem::ItemPositionChange)
   {
+    QPointF newPos = value.toPointF();
+
     if (NodeItem* parent = parentNode())
     {
-      QPointF newPos = value.toPointF();
       QRectF parentRect = parent->nodeRect();
       parentRect = parentRect.adjusted(10, 10, -10, -10);
       parentRect.translate(parent->pos());
+
+      if (parent->isSubflowContainer())
+      {
+        // The block only grows to the right and downwards, so children are kept
+        // out of the left and top lanes but may move freely right/down.
+        newPos.setX(std::max(newPos.x(), parentRect.left()));
+        newPos.setY(std::max(newPos.y(), parentRect.top()));
+        return newPos;
+      }
 
       QRectF childLocalRect = nodeRect();
 
@@ -489,10 +533,41 @@ QVariant NodeItem::itemChange(GraphicsItemChange change, const QVariant& value)
 
       return newPos;
     }
+
+    if (!isSubflowContainer())
+    {
+      if (auto* canvas = dynamic_cast<Canvas*>(scene()))
+      {
+        if (canvas->type() == Types::LibraryTypes::BEHAVIOUR)
+        {
+          const QRectF localRect = nodeRect();
+          for (QGraphicsItem* item : scene()->items())
+          {
+            if (!item || item->type() != NodeItem::Type || item == this)
+              continue;
+
+            auto* other = static_cast<NodeItem*>(item);
+            if (!other->isSubflowContainer())
+              continue;
+
+            // Skip the mover's own attached blocks (Repeat/Within host).
+            if (other->subflowHost() == this)
+              continue;
+
+            // Use the block body only — sceneBoundingRect also covers the
+            // dashed connector gap, which must remain free for other nodes.
+            newPos = pushOutOfRect(localRect, newPos, other->mapRectToScene(other->nodeRect()));
+          }
+        }
+      }
+    }
+
+    return newPos;
   }
   else if (change == QGraphicsItem::ItemPositionHasChanged)
   {
-    updatePosition(value.toPointF());
+    if (!mInUpdatePosition)
+      updatePosition(value.toPointF());
   }
 
   return QGraphicsItem::itemChange(change, value);
@@ -500,14 +575,23 @@ QVariant NodeItem::itemChange(GraphicsItemChange change, const QVariant& value)
 
 void NodeItem::updatePosition(const QPointF& newPosition)
 {
-  prepareGeometryChange();
-  setPos(newPosition);
+  if (newPosition == mLastPosition)
+    return;
 
   const QPointF delta = newPosition - mLastPosition;
-  for (auto* child : children())
+
+  mInUpdatePosition = true;
+  prepareGeometryChange();
+  setPos(newPosition);
+  mInUpdatePosition = false;
+
+  if (!mSuppressChildCascade)
   {
-    auto* childNode = static_cast<NodeItem*>(child);
-    childNode->updatePosition(childNode->pos() + delta);
+    for (auto* child : children())
+    {
+      auto* childNode = static_cast<NodeItem*>(child);
+      childNode->updatePosition(childNode->pos() + delta);
+    }
   }
 
   mLastPosition = newPosition;

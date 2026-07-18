@@ -86,6 +86,14 @@ public:
 
   /** Structural "Task" node from library (container with capability slots + subtasks). */
   virtual bool isTaskContainer() const { return false; }
+  /** Inline subflow container attached to Repeat / Within nodes in the behaviour canvas. */
+  virtual bool isSubflowContainer() const { return false; }
+  /** Owning Repeat/Within for a subflow container; nullptr otherwise. */
+  virtual NodeItem* subflowHost() const { return nullptr; }
+  /** Detach owned subflow containers before this node is deleted (caller owns the result). */
+  virtual QVector<NodeItem*> detachOwnedSubflowBlocks() { return {}; }
+  /** Grow/shrink a subflow container around its children; no-op for other nodes. */
+  virtual void expandSubflowToFitChildren() {}
   /** Task nested under another Task in the system view. */
   virtual bool isStructuralSubtask() const { return false; }
   /** Non-Task structural child of a Task (capability / timer / etc.): drawn as inset circle. */
@@ -153,6 +161,11 @@ protected:
   QPointF mDragStartPos{0, 0};
   QPointF mLastPosition{0, 0};
 
+  /** Reentrancy guard so setPos inside updatePosition does not recurse via itemChange. */
+  bool mInUpdatePosition = false;
+  /** When true, updatePosition does not cascade to logical children (used by resize passes). */
+  bool mSuppressChildCascade = false;
+
   /** Called after mSize is loaded from storage; subclasses adjust dimensions. */
   virtual void initializeNodeSize() {}
 
@@ -172,7 +185,7 @@ protected:
   QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
 
   void updateExtrasPosition();
-  void updatePortPositions();
+  virtual void updatePortPositions();
 
   QSizeF clampSize(qreal width, qreal height) const;
   QPointF clampPosInside(const QRectF& inner, const QRectF& childSceneRect) const;

@@ -1,0 +1,106 @@
+#pragma once
+
+#include <optional>
+
+#include "elements/behaviour/behaviour_node.h"
+
+class NodeConfig;
+class QGraphicsProxyWidget;
+class QLineEdit;
+
+/**
+ * @brief Bordered container below a Repeat / Within node for inline subflow editing.
+ *
+ * Not part of the flow palette; created programmatically and kept out of Flow persistence.
+ * Canvas/NodeItem interact via isSubflowContainer / subflowHost / expandSubflowToFitChildren
+ * rather than concrete casts.
+ */
+class SubflowBlock : public BehaviourNode
+{
+public:
+  enum class Role
+  {
+    Loop,  ///< Repeat body
+    Do,    ///< Within "do" branch
+    Else   ///< Within "else" / timeout branch
+  };
+
+  static constexpr qreal kDefaultWidth = 320.0;
+  static constexpr qreal kDefaultHeight = 100.0;
+
+  static std::shared_ptr<NodeConfig> synthesizedConfig();
+
+  /** Create, add to the owner's scene, start, and attach to @p owner. */
+  static SubflowBlock* createAttached(NodeItem* owner, Role role);
+
+  SubflowBlock(const QString& id,
+               std::shared_ptr<NodeSaveInfo> info,
+               const QPointF& initialPosition,
+               std::shared_ptr<NodeConfig> nodeConfig,
+               NodeItem* owner,
+               Role role = Role::Loop,
+               QGraphicsItem* parent = nullptr);
+
+  bool isSubflowContainer() const override { return true; }
+  NodeItem* subflowHost() const override { return mOwner; }
+  void expandSubflowToFitChildren() override { expandToFitChildren(); }
+
+  Role role() const { return mRole; }
+
+  NodeItem* ownerNode() const { return mOwner; }
+  void setOwnerNode(NodeItem* owner);
+
+  /** Item the dashed connector attaches to above this block (defaults to owner). */
+  void setConnectorAbove(NodeItem* above);
+  NodeItem* connectorAbove() const { return mConnectorAbove ? mConnectorAbove : mOwner; }
+
+  /** When this block moves/resizes, keep @p follower stacked directly below it. */
+  void setStackFollower(SubflowBlock* follower);
+
+  void syncToOwnerPosition();
+  void syncBelow(NodeItem* above);
+  void translateBy(const QPointF& delta);
+  void expandToFitChildren();
+
+  void paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget) override;
+  QPainterPath shape() const override;
+  QRectF boundingRect() const override;
+
+  void applySize(const QSizeF& size) override;
+  void childRemoved(NodeItem* child) override;
+  VoidResult start() override;
+
+protected:
+  void configurePorts() override;
+  void initializeNodeSize() override;
+  void updatePortPositions() override;
+
+  QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
+  void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
+  void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
+
+private:
+  void setBlockGeometry(const QPointF& topLeft, const QSizeF& size);
+  void notifyStackFollower();
+  void ensureTitleUi();
+  void ensureDoTitleUi();
+  void ensureLoopTitleUi();
+  void syncTitleFieldsFromOwner();
+  void applyTimeoutToOwner();
+  void applyIterationsToOwner();
+  void applyRateToOwner();
+  std::optional<std::pair<QPointF, QPointF>> connectorSceneEndpoints() const;
+  void paintConnector(QPainter* painter) const;
+  void paintTitle(QPainter* painter) const;
+
+  NodeItem* mOwner = nullptr;
+  NodeItem* mConnectorAbove = nullptr;
+  SubflowBlock* mStackFollower = nullptr;
+  Role mRole = Role::Loop;
+  bool mSuppressExpand = false;
+
+  QGraphicsProxyWidget* mTitleProxy = nullptr;
+  QLineEdit* mTimeoutEdit = nullptr;
+  QLineEdit* mIterationsEdit = nullptr;
+  QLineEdit* mRateEdit = nullptr;
+};

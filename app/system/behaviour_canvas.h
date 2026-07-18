@@ -50,6 +50,9 @@ public:
    */
   bool canAddTransition(NodeItem* node, PortItem* port = nullptr) const override;
 
+  /** Extra connection rules beyond port hit-testing (e.g. SubflowBlock port locality). */
+  bool canConnectNodes(NodeItem* source, NodeItem* dest) const override;
+
   /**
    * @brief Gets the next transition configuration for a given node
    *
