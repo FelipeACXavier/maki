@@ -1,12 +1,14 @@
 #include "elements/behaviour/component_overlay.h"
 
 #include <QFileInfo>
+#include <QFontMetricsF>
 #include <QGraphicsScene>
 #include <QPainter>
 #include <QSvgRenderer>
 
 #include "app_configs.h"
 #include "app_paths.h"
+#include "elements/behaviour/call_capability.h"
 #include "elements/draggable.h"
 #include "keys.h"
 #include "save_info.h"
@@ -185,11 +187,38 @@ void paintEmptySlotSvg(QPainter* painter, const QPointF& center, qreal diameter)
   emptySlotRenderer.render(painter, target);
 }
 
+QFont callCapabilityNameFont(qreal diameter)
+{
+  QFont font;
+  // Keep the capability caption compact so it stays inside the Call body.
+  const qreal fontPt = qBound(5.5, diameter * 0.16, 7.5);
+  font.setPointSizeF(fontPt);
+  return font;
+}
+
+QPointF callCapabilityIconCenter(const QRectF& drawingBounds, qreal diameter, bool withNameLabel)
+{
+  QPointF center = drawingBounds.center();
+  if (!withNameLabel || diameter <= 0.0)
+    return center;
+
+  const QFont nameFont = callCapabilityNameFont(diameter);
+  const qreal overhang = kCallCapabilityLabelGap + QFontMetricsF(nameFont).height();
+  // Nudge the icon up so icon + name share the node's vertical centre.
+  center.ry() -= overhang * 0.5;
+  return center;
+}
+
 void paintSelectedComponentOverlay(const NodeItem* node, QPainter* painter)
 {
   const QRectF drawingBounds = node->drawingRect(node->nodeRect());
   painter->setRenderHint(QPainter::Antialiasing, true);
-  paintStructuralTaskOverlayPreview(painter, drawingBounds, QPen(Config::FOREGROUND, 1.0));
+
+  const bool isCall = call_capability::isCallNodeType(node->nodeType());
+  // Call already has its own SVG body; the task overlay preview's dashed slot would ghost
+  // if the capability icon is nudged away from the geometric centre.
+  if (!isCall)
+    paintStructuralTaskOverlayPreview(painter, drawingBounds, QPen(Config::FOREGROUND, 1.0));
 
   if (node->config()->body.nodeSvg.isEmpty())
     return;
@@ -212,16 +241,38 @@ void paintSelectedComponentOverlay(const NodeItem* node, QPainter* painter)
     return;
 
   const QString iconPath = selectedComponentIconPath(caller, configTable);
-  if (iconPath.isEmpty())
+  const QString capabilityName = caller->getProperty(ConfigKeys::NAME).toString().trimmed();
+  const bool showName = isCall && !capabilityName.isEmpty();
+  if (iconPath.isEmpty() && !showName)
     return;
 
-  const qreal diameter = qMin(drawingBounds.width(), drawingBounds.height()) * node->config()->body.iconScale * kComponentOverlayDiameterFactor;
-  const QPointF center = drawingBounds.center();
+  const qreal diameter = qMin(drawingBounds.width(), drawingBounds.height()) * node->config()->body.iconScale
+                         * kComponentOverlayDiameterFactor;
   const qreal radius = diameter * 0.5;
+  const QPointF center = isCall ? callCapabilityIconCenter(drawingBounds, diameter, showName)
+                                : drawingBounds.center();
 
   painter->setPen(QPen(Qt::black, 1.0 / node->baseScale()));
   painter->setBrush(QBrush(callerBackgroundColor(*caller, configTable)));
   painter->drawEllipse(center, radius, radius);
-  renderSvgInEllipse(painter, iconPath, center, diameter);
+  if (!iconPath.isEmpty())
+    renderSvgInEllipse(painter, iconPath, center, diameter);
+
+  if (showName)
+  {
+    const QFont nameFont = callCapabilityNameFont(diameter);
+    const QFontMetricsF fm(nameFont);
+    const qreal textTop = center.y() + radius + kCallCapabilityLabelGap;
+    const qreal maxTextBottom = drawingBounds.bottom() - 1.0;
+    const qreal textHeight = qMin(fm.height(), qMax(0.0, maxTextBottom - textTop));
+    if (textHeight > 0.0)
+    {
+      const QRectF textRect(drawingBounds.left(), textTop, drawingBounds.width(), textHeight);
+      painter->setFont(nameFont);
+      painter->setPen(QPen(Config::FOREGROUND));
+      painter->drawText(textRect, Qt::AlignHCenter | Qt::AlignTop,
+                        fm.elidedText(capabilityName, Qt::ElideRight, textRect.width()));
+    }
+  }
 }
 }  // namespace behaviour

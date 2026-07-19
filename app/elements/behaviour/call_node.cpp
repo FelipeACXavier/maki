@@ -44,9 +44,12 @@ qreal CallNode::capabilitySlotDiameter() const
 
 QRectF CallNode::capabilitySlotSceneRect() const
 {
+  const QRectF drawingBounds = drawingRect(nodeRect());
   const qreal diameter = capabilitySlotDiameter();
   const qreal radius = diameter * 0.5;
-  const QPointF center = mapToScene(nodeRect().center());
+  const QPointF localCenter =
+      behaviour::callCapabilityIconCenter(drawingBounds, diameter, hasCapabilitySelected());
+  const QPointF center = mapToScene(localCenter);
   return QRectF(center.x() - radius, center.y() - radius, diameter, diameter);
 }
 
