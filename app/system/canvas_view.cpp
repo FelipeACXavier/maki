@@ -32,6 +32,9 @@ CanvasView::CanvasView(QWidget* parent)
 
   setMaxSize();
   centerOn({0, 0});
+
+  connect(horizontalScrollBar(), &QScrollBar::valueChanged, this, &CanvasView::viewTransformed);
+  connect(verticalScrollBar(), &QScrollBar::valueChanged, this, &CanvasView::viewTransformed);
 }
 
 qreal CanvasView::getScale() const
@@ -66,6 +69,7 @@ void CanvasView::setScale(qreal scale)
   t.scale(snapped, snapped);
   setTransform(t);
   update();
+  emit viewTransformed();
 }
 
 void CanvasView::setMaxSize()
@@ -173,6 +177,7 @@ void CanvasView::resetZoom()
   const double snapped = quantisedScale(DEFAULT_ZOOM);
   t.scale(snapped, snapped);
   setTransform(t);
+  emit viewTransformed();
 }
 
 void CanvasView::zoom(float scaleFactor)
@@ -189,6 +194,7 @@ void CanvasView::zoom(float scaleFactor)
 
   scale(rel, rel);
   update();
+  emit viewTransformed();
 }
 
 qreal CanvasView::quantisedScale(qreal proposedScale) const

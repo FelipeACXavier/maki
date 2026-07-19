@@ -262,37 +262,32 @@ void BehaviourCanvas::onSelectionChanged()
 
   TransitionItem* selectedTransition = nullptr;
   NodeItem* selectedFlowCallNode = nullptr;
+  int specialSelectionCount = 0;
 
   for (auto* item : selectedItems())
   {
     if (item->type() == Types::TRANSITION)
     {
-      if (selectedTransition || selectedFlowCallNode)
-      {
-        selectedTransition = nullptr;
-        selectedFlowCallNode = nullptr;
-        break;
-      }
-
+      ++specialSelectionCount;
       selectedTransition = static_cast<TransitionItem*>(item);
       continue;
     }
 
-    if (item->type() == NodeItem::Type)
+    if (item->type() != NodeItem::Type)
+      continue;
+
+    auto* node = static_cast<NodeItem*>(item);
+    if (auto* flowCall = dynamic_cast<FlowCallNode*>(node))
     {
-      auto* node = static_cast<NodeItem*>(item);
-      if (!dynamic_cast<FlowCallNode*>(node))
-        continue;
-
-      if (selectedTransition || selectedFlowCallNode)
-      {
-        selectedTransition = nullptr;
-        selectedFlowCallNode = nullptr;
-        break;
-      }
-
-      selectedFlowCallNode = node;
+      ++specialSelectionCount;
+      selectedFlowCallNode = flowCall;
     }
+  }
+
+  if (specialSelectionCount != 1)
+  {
+    selectedTransition = nullptr;
+    selectedFlowCallNode = nullptr;
   }
 
   if (selectedTransition && mTransitionMenu)

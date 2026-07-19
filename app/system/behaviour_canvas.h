@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QHash>
+
 #include "canvas.h"
 #include "elements/transition.h"
 

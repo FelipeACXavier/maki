@@ -21,6 +21,9 @@ public:
   QRectF capabilitySlotSceneRect() const;
   bool capabilitySlotContainsScenePoint(const QPointF& scenePos) const;
 
+  QRectF eventChipSceneRect() const;
+  bool eventChipContainsScenePoint(const QPointF& scenePos) const;
+
   /** Assigns a capability from the canvas picker and picks a sensible call_mode / event. */
   void assignCapability(const QString& capabilityName, const QString& capabilityId, SaveInfo* storage);
 
@@ -29,5 +32,10 @@ protected:
 
 private:
   void syncNodeSvgFromState();
+  void syncAbortPortFromMode();
+  void syncCallLabels();
+  void removeOutgoingAbortTransitions();
   qreal capabilitySlotDiameter() const;
+  QRectF eventChipLocalRect() const;
+  void paintEventChip(QPainter* painter) const;
 };

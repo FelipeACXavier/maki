@@ -24,7 +24,9 @@ TransitionItem::TransitionItem(std::shared_ptr<TransitionSaveInfo> storage)
   setPen(QPen(Qt::white, 2));
 
   mLabel = new QGraphicsTextItem(this);
-  mLabel->setFont(Fonts::Property);
+  QFont labelFont = Fonts::Main;
+  labelFont.setPointSizeF(Fonts::BaseSize);
+  mLabel->setFont(labelFont);
   mLabel->setPlainText(mStorage->getevent());
   updateLabelPosition();
 

@@ -131,6 +131,7 @@
     <file alias="icon_start.svg">assets/icons/mission/icon_start.svg</file>
     <file alias="icon_start_old.svg">assets/icons/mission/icon_start_old.svg</file>
     <file alias="empty_slot.svg">assets/icons/mission/empty_slot.svg</file>
+    <file alias="questionmark_tooltip.svg">assets/icons/mission/questionmark_tooltip.svg</file>
     <file alias="shape_middle.svg">assets/icons/shapes/shape_middle.svg</file>
     <file alias="node_async.svg">assets/icons/mission/node_async.svg</file>
     <file alias="node_continue.svg">assets/icons/mission/node_continue.svg</file>

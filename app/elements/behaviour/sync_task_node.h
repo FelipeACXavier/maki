@@ -5,7 +5,11 @@
 class SyncTaskNode : public BehaviourNode
 {
 public:
-  using BehaviourNode::BehaviourNode;
+  SyncTaskNode(const QString& id,
+               std::shared_ptr<NodeSaveInfo> info,
+               const QPointF& initialPosition,
+               std::shared_ptr<NodeConfig> nodeConfig,
+               QGraphicsItem* parent = nullptr);
 
 protected:
   void paintBehaviourExtras(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget) override;

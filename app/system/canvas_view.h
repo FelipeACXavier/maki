@@ -71,6 +71,10 @@ public:
    */
   void onSettingsChanged(const AppearanceSettings& settings);
 
+signals:
+  /** Emitted when zoom or pan changes the scene↔view mapping. */
+  void viewTransformed();
+
 protected:
   /**
    * @brief Overrides the key press event to handle zoom and pan controls.

@@ -620,26 +620,31 @@ void NodeItem::updatePortPositions()
   if (mOutPort)
     mOutPort->setPos(left + w + PortItem::kGap, top + (h - PortItem::kSize) / 2.0);
 
+  const bool showAbort = mAbortPort && mAbortPort->isVisible();
+  const bool showError = mErrorPort && mErrorPort->isVisible();
+  if (!showAbort && !showError)
+    return;
+
   const qreal topPortSize = PortItem::sizeForKind(PortItem::Abort);
   const qreal centerX = left + w * 0.5;
   const qreal shiftX = PortItem::kAbortErrorPortPositioning;
-  const qreal errorY = top - topPortSize - PortItem::kGap;
+  // Abort and error both sit above the node, side by side.
+  const qreal topY = top - topPortSize - PortItem::kGap;
   const qreal errorX = centerX + topPortSize * 0.5 + PortItem::kGap * 2.0 + shiftX;
-  const qreal abortX = centerX - topPortSize * 0.5 + shiftX;
-  const qreal abortY = portRect.bottom() + PortItem::kGap;
+  const qreal abortX = centerX - topPortSize - PortItem::kGap * 2.0 + shiftX;
 
-  if (mAbortPort && mErrorPort)
+  if (showAbort && showError)
   {
-    mErrorPort->setPos(errorX, errorY);
-    mAbortPort->setPos(errorX, abortY);
+    mAbortPort->setPos(abortX, topY);
+    mErrorPort->setPos(errorX, topY);
   }
-  else if (mAbortPort)
+  else if (showAbort)
   {
-    mAbortPort->setPos(abortX, abortY);
+    mAbortPort->setPos(centerX - topPortSize * 0.5 + shiftX, topY);
   }
-  else if (mErrorPort)
+  else if (showError)
   {
-    mErrorPort->setPos(errorX, errorY);
+    mErrorPort->setPos(centerX - PortItem::sizeForKind(PortItem::Error) * 0.5 + shiftX, topY);
   }
 }
 
@@ -663,9 +668,9 @@ void NodeItem::finalizeStructuralPackedPositions(const QPointF& subtreeSceneTopL
 PortItem::Kind NodeItem::outgoingPortKindForEvent(const QString& event) const
 {
   const QString e = event.trimmed();
-  if (e.compare(QStringLiteral("on abort"), Qt::CaseInsensitive) == 0 && mAbortPort)
+  if (e.compare(QStringLiteral("on abort"), Qt::CaseInsensitive) == 0 && mAbortPort && mAbortPort->isVisible())
     return PortItem::Abort;
-  if (e.compare(QStringLiteral("on error"), Qt::CaseInsensitive) == 0 && mErrorPort)
+  if (e.compare(QStringLiteral("on error"), Qt::CaseInsensitive) == 0 && mErrorPort && mErrorPort->isVisible())
     return PortItem::Error;
   return PortItem::Out;
 }
@@ -673,9 +678,9 @@ PortItem::Kind NodeItem::outgoingPortKindForEvent(const QString& event) const
 QPointF NodeItem::outgoingPortAnchorForEvent(const QString& event) const
 {
   const PortItem::Kind kind = outgoingPortKindForEvent(event);
-  if (kind == PortItem::Abort && mAbortPort)
+  if (kind == PortItem::Abort && mAbortPort && mAbortPort->isVisible())
     return mAbortPort->anchorScenePos();
-  if (kind == PortItem::Error && mErrorPort)
+  if (kind == PortItem::Error && mErrorPort && mErrorPort->isVisible())
     return mErrorPort->anchorScenePos();
   if (mOutPort)
     return mOutPort->anchorScenePos();

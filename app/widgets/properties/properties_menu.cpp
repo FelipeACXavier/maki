@@ -45,26 +45,28 @@
 #include "types.h"
 #include "widgets/widget_factory.h"
 
-static const int EVENT_INDEX = 0;
-static const int ARG_INDEX = 1;
+static const int EVENT_INDEX = call_capability::kEventIndex;
+static const int ARG_INDEX = call_capability::kArgIndex;
 static const int CLEAR_INDEX = INT32_MAX;
 
 
-#define UPDATE_PROPERTY(NODE, ID, VALUE)           \
-  do                                               \
-  {                                                \
-    auto propValue = NODE->getProperty(ID);        \
-    if (!propValue.isValid())                      \
-    {                                              \
-      LOG_WARNING("Property is not valid");        \
-      return;                                      \
-    }                                              \
-                                                   \
-    QJsonObject object = propValue.toJsonObject(); \
-    object[ConfigKeys::DATA] = VALUE;              \
-    object[ConfigKeys::OPTIONS] = QJsonArray();    \
-                                                   \
-    NODE->setProperty(ID, object);                 \
+#define UPDATE_PROPERTY(NODE, ID, VALUE)                            \
+  do                                                                \
+  {                                                                 \
+    auto propValue = NODE->getProperty(ID);                         \
+    if (!propValue.isValid())                                       \
+    {                                                               \
+      LOG_WARNING("Property is not valid");                         \
+      return;                                                       \
+    }                                                               \
+                                                                    \
+    QJsonObject object = propValue.toJsonObject();                  \
+    const QString previous = object.value(ConfigKeys::DATA).toString(); \
+    object[ConfigKeys::DATA] = VALUE;                               \
+    if (previous != QString(VALUE))                                 \
+      object[ConfigKeys::OPTIONS] = QJsonArray();                   \
+                                                                    \
+    NODE->setProperty(ID, object);                                  \
   } while (false);
 
 #define UPDATE_PROPERTY_ARG(NODE, ID, INDEX, VALUE, DATA_TYPE, VARIABLE) \
@@ -81,7 +83,14 @@ static const int CLEAR_INDEX = INT32_MAX;
       item[ConfigKeys::TYPE] = Types::PropertyTypesToString(DATA_TYPE);  \
       item[ConfigKeys::IS_VARIABLE] = VARIABLE;                          \
       if (INDEX == EVENT_INDEX)                                          \
-        array = QJsonArray();                                            \
+      {                                                                  \
+        const QString previous =                                         \
+            array.size() > EVENT_INDEX                                   \
+                ? array.at(EVENT_INDEX).toObject().value(ConfigKeys::DATA).toString() \
+                : QString();                                             \
+        if (previous != QString(VALUE))                                  \
+          array = QJsonArray();                                          \
+      }                                                                  \
                                                                          \
       if (INDEX < array.size())                                          \
         array[INDEX] = item;                                             \
@@ -556,12 +565,10 @@ VoidResult PropertiesMenu::loadPropertyCallSelect(const PropertyInfo& property, 
       return;
 
     QString mode = node->getProperty(call_capability::kModeProperty).toString();
-    if (mode != call_capability::kModeSync && mode != call_capability::kModeAsync)
-      mode = call_capability::defaultMode(*mStorage, capabilityId);
-    if (mode == call_capability::kModeAsync && !canAsync)
-      mode = call_capability::kModeSync;
-    if (mode == call_capability::kModeSync && !canSync && canAsync)
-      mode = call_capability::kModeAsync;
+    QString resolvedEvent = call_capability::currentEventName(*node);
+    call_capability::resolveModeAndEvent(*mStorage, capabilityId, mode, resolvedEvent);
+    if (mode.isEmpty())
+      return;
 
     node->setProperty(call_capability::kModeProperty, mode);
 
@@ -579,14 +586,7 @@ VoidResult PropertiesMenu::loadPropertyCallSelect(const PropertyInfo& property, 
     populateEventsForMode(capabilityId, mode, eventCombo);
     eventSelect->show();
 
-    QString eventName;
-    const auto propertyValue = node->getProperty(property.getid());
-    if (propertyValue.isValid())
-    {
-      const QJsonObject object = propertyValue.toJsonObject();
-      if (object.contains(ConfigKeys::OPTIONS) && object[ConfigKeys::OPTIONS].toArray().size() > EVENT_INDEX)
-        eventName = object[ConfigKeys::OPTIONS][EVENT_INDEX][ConfigKeys::DATA].toString();
-    }
+    QString eventName = resolvedEvent;
     if (!eventName.isEmpty() && eventCombo->findData(eventName) < 0)
       eventName.clear();
     if (eventName.isEmpty() && eventCombo->count() > 0)
@@ -598,7 +598,7 @@ VoidResult PropertiesMenu::loadPropertyCallSelect(const PropertyInfo& property, 
     eventSelect->blockSignals(true);
     eventSelect->setValue(eventName);
     eventSelect->blockSignals(false);
-    UPDATE_PROPERTY_ARG(node, property.getid(), EVENT_INDEX, eventName, Types::PropertyTypes::EVENT_SELECT, false)
+    call_capability::applyModeAndEvent(*node, mode, eventName);
     LOG_WARN_ON_FAILURE(loadEventArguments(capabilityId, eventName, property, node, Types::CallType::UNKNOWN, argsGroup));
     updateBlockName(node, capabilityName, eventName);
   };
@@ -616,12 +616,11 @@ VoidResult PropertiesMenu::loadPropertyCallSelect(const PropertyInfo& property, 
           });
 
   connect(modeSelect, &maki::SelectorWidget::dataChanged, this,
-          [this, node, property, capabilitySelect, refreshCallDetails](const QString&, const QVariant& modeData) {
+          [this, node, refreshCallDetails](const QString&, const QVariant& modeData) {
             const QString mode = modeData.toString();
             if (mode != call_capability::kModeSync && mode != call_capability::kModeAsync)
               return;
             node->setProperty(call_capability::kModeProperty, mode);
-            UPDATE_PROPERTY(node, property.getid(), capabilitySelect->getValue())
             refreshCallDetails();
           });
 
@@ -1382,7 +1381,7 @@ void PropertiesMenu::updateBlockName(NodeItem* node, const QString& componentNam
   if (!node)
     return;
 
-  // Call keeps a fixed "Call" label; capability name is shown under the icon instead.
+  // Call auto-title is owned by CallNode::syncCallLabels ("Async/Sync Call to <capability>").
   if (call_capability::isCallNodeType(node->nodeType()))
     return;
 

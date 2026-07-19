@@ -54,6 +54,7 @@
 #include "undo_commands/remove_node.h"
 #include "widgets/capability_icon_menu.h"
 #include "widgets/structure/node_action_menu.h"
+#include "widgets/structure/call_config_popup.h"
 #include "widgets/widget_factory.h"
 
 namespace
@@ -476,7 +477,7 @@ void Canvas::openCapabilityMenu(NodeItem* task)
   });
 }
 
-void Canvas::openCallCapabilityMenu(NodeItem* callNode)
+void Canvas::openCallConfigPopup(NodeItem* callNode)
 {
   auto* call = dynamic_cast<CallNode*>(callNode);
   if (!call || type() != Types::LibraryTypes::BEHAVIOUR)
@@ -487,39 +488,13 @@ void Canvas::openCallCapabilityMenu(NodeItem* callNode)
   if (!view || !storage)
     return;
 
-  QVector<CapabilityIconMenuItem> items;
-  const auto callers = storage->getPossibleCallers(call->id(), Types::PropertyTypes::EVENT_SELECT);
-  for (const auto& caller : callers)
-  {
-    const QVariant nameVar = caller->getProperty(ConfigKeys::NAME);
-    if (!nameVar.isValid())
-      continue;
-    const QString capabilityName = nameVar.toString();
-    if (capabilityName.isEmpty())
-      continue;
-
-    CapabilityIconMenuItem item;
-    item.id = caller->getid();
-    item.name = capabilityName;
-    item.iconPath = behaviour::resolveCapabilityIconPath(caller->getIcon(), caller->getnodeId(), mConfigTable.get());
-    items.push_back(item);
-  }
-
-  std::sort(items.begin(), items.end(), [](const CapabilityIconMenuItem& a, const CapabilityIconMenuItem& b) {
-    return a.name.localeAwareCompare(b.name) < 0;
-  });
-
-  const QRectF slotRect = call->capabilitySlotSceneRect();
-  const QPointF anchorScene = slotRect.center() + QPointF(0, slotRect.height() * 0.5 + 4.0);
+  QRectF anchorRect = call->hasCapabilitySelected() ? call->eventChipSceneRect() : call->capabilitySlotSceneRect();
+  if (anchorRect.isEmpty())
+    anchorRect = call->capabilitySlotSceneRect();
+  const QPointF anchorScene(anchorRect.center().x(), anchorRect.bottom() + 4.0);
   const QPoint globalAnchor = view->viewport()->mapToGlobal(view->mapFromScene(anchorScene));
 
-  CapabilityIconMenu::exec(
-      view, items, globalAnchor,
-      [this, call, storage](const CapabilityIconMenuItem& selected) {
-        call->assignCapability(selected.name, selected.id, storage.get());
-        selectNode(call, true);
-      },
-      tr("No capabilities available"));
+  CallConfigPopup::open(view, call, storage.get(), mConfigTable.get(), globalAnchor);
 }
 
 bool Canvas::isModifierSet(QGraphicsSceneMouseEvent* event, Qt::KeyboardModifier modifier)
@@ -563,10 +538,11 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
       {
         if (auto* call = dynamic_cast<CallNode*>(node))
         {
-          if (call->capabilitySlotContainsScenePoint(event->scenePos()))
+          if (call->eventChipContainsScenePoint(event->scenePos())
+              || call->capabilitySlotContainsScenePoint(event->scenePos()))
           {
             event->accept();
-            openCallCapabilityMenu(call);
+            openCallConfigPopup(call);
             return;
           }
         }

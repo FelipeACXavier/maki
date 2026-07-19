@@ -60,6 +60,19 @@ void renderSvgInEllipse(QPainter* painter, const QString& svgPath, const QPointF
 
 std::shared_ptr<NodeSaveInfo> selectedComponentCaller(const NodeItem* node, const SaveInfo& storage)
 {
+  if (call_capability::isCallNodeType(node->nodeType()))
+  {
+    const QString capabilityId = call_capability::resolveCapabilityId(*node, storage);
+    if (capabilityId.isEmpty())
+      return nullptr;
+    for (const auto& caller : storage.getPossibleCallers(node->id(), Types::PropertyTypes::EVENT_SELECT))
+    {
+      if (caller && caller->getid() == capabilityId)
+        return caller;
+    }
+    return nullptr;
+  }
+
   QString propertyId;
   for (const auto& property : node->config()->properties)
   {
@@ -132,10 +145,7 @@ QColor callerBackgroundColor(const NodeSaveInfo& caller, const ConfigurationTabl
 
   return QColor(0xe6, 0xe6, 0xe6);
 }
-}  // namespace
 
-namespace
-{
 QString resolveConfigIconPath(const QString& iconPath)
 {
   if (iconPath.isEmpty())
@@ -187,26 +197,58 @@ void paintEmptySlotSvg(QPainter* painter, const QPointF& center, qreal diameter)
   emptySlotRenderer.render(painter, target);
 }
 
-QFont callCapabilityNameFont(qreal diameter)
+QFont callEventLabelFont(qreal diameter)
 {
   QFont font;
-  // Keep the capability caption compact so it stays inside the Call body.
+  // Keep the event caption compact so it stays inside the Call body.
   const qreal fontPt = qBound(5.5, diameter * 0.16, 7.5);
   font.setPointSizeF(fontPt);
   return font;
 }
 
-QPointF callCapabilityIconCenter(const QRectF& drawingBounds, qreal diameter, bool withNameLabel)
+qreal callCapabilityStackOverhang(qreal diameter, bool withEventLabel, bool withEventChip)
+{
+  qreal overhang = 0.0;
+  if (withEventLabel)
+  {
+    const QFont nameFont = callEventLabelFont(diameter);
+    overhang += kCallCapabilityLabelGap + QFontMetricsF(nameFont).height();
+  }
+  if (withEventChip)
+    overhang += kCallEventChipGap + kCallEventChipSize;
+  return overhang;
+}
+
+QPointF callCapabilityIconCenter(const QRectF& drawingBounds,
+                                 qreal diameter,
+                                 bool withEventLabel,
+                                 bool withEventChip)
 {
   QPointF center = drawingBounds.center();
-  if (!withNameLabel || diameter <= 0.0)
+  if (diameter <= 0.0)
     return center;
 
-  const QFont nameFont = callCapabilityNameFont(diameter);
-  const qreal overhang = kCallCapabilityLabelGap + QFontMetricsF(nameFont).height();
-  // Nudge the icon up so icon + name share the node's vertical centre.
-  center.ry() -= overhang * 0.5;
+  const qreal overhang = callCapabilityStackOverhang(diameter, withEventLabel, withEventChip);
+  if (overhang > 0.0)
+    center.ry() -= overhang * 0.5;
   return center;
+}
+
+QRectF callEventChipLocalRect(const QRectF& drawingBounds, qreal diameter, bool withEventLabel)
+{
+  if (diameter <= 0.0)
+    return {};
+
+  const QPointF iconCenter = callCapabilityIconCenter(drawingBounds, diameter, withEventLabel, true);
+  const qreal radius = diameter * 0.5;
+  qreal chipTop = iconCenter.y() + radius + kCallEventChipGap;
+  if (withEventLabel)
+  {
+    const QFontMetricsF fm(callEventLabelFont(diameter));
+    chipTop = iconCenter.y() + radius + kCallCapabilityLabelGap + fm.height() + kCallEventChipGap;
+  }
+
+  return QRectF(iconCenter.x() - kCallEventChipSize * 0.5, chipTop, kCallEventChipSize, kCallEventChipSize);
 }
 
 void paintSelectedComponentOverlay(const NodeItem* node, QPainter* painter)
@@ -241,26 +283,28 @@ void paintSelectedComponentOverlay(const NodeItem* node, QPainter* painter)
     return;
 
   const QString iconPath = selectedComponentIconPath(caller, configTable);
-  const QString capabilityName = caller->getProperty(ConfigKeys::NAME).toString().trimmed();
-  const bool showName = isCall && !capabilityName.isEmpty();
-  if (iconPath.isEmpty() && !showName)
+  // Call shows the selected event under the icon (capability title lives in the node label).
+  const QString underIconLabel = isCall ? call_capability::currentEventName(*node)
+                                        : caller->getProperty(ConfigKeys::NAME).toString().trimmed();
+  const bool showUnderIconLabel = !underIconLabel.isEmpty();
+  if (iconPath.isEmpty() && !showUnderIconLabel)
     return;
 
   const qreal diameter = qMin(drawingBounds.width(), drawingBounds.height()) * node->config()->body.iconScale
                          * kComponentOverlayDiameterFactor;
   const qreal radius = diameter * 0.5;
-  const QPointF center = isCall ? callCapabilityIconCenter(drawingBounds, diameter, showName)
+  const QPointF center = isCall ? callCapabilityIconCenter(drawingBounds, diameter, showUnderIconLabel, true)
                                 : drawingBounds.center();
 
-  painter->setPen(QPen(Qt::black, 1.0 / node->baseScale()));
+  painter->setPen(isCall ? Qt::NoPen : QPen(Qt::black, 1.0 / node->baseScale()));
   painter->setBrush(QBrush(callerBackgroundColor(*caller, configTable)));
   painter->drawEllipse(center, radius, radius);
   if (!iconPath.isEmpty())
     renderSvgInEllipse(painter, iconPath, center, diameter);
 
-  if (showName)
+  if (showUnderIconLabel && isCall)
   {
-    const QFont nameFont = callCapabilityNameFont(diameter);
+    const QFont nameFont = callEventLabelFont(diameter);
     const QFontMetricsF fm(nameFont);
     const qreal textTop = center.y() + radius + kCallCapabilityLabelGap;
     const qreal maxTextBottom = drawingBounds.bottom() - 1.0;
@@ -271,7 +315,7 @@ void paintSelectedComponentOverlay(const NodeItem* node, QPainter* painter)
       painter->setFont(nameFont);
       painter->setPen(QPen(Config::FOREGROUND));
       painter->drawText(textRect, Qt::AlignHCenter | Qt::AlignTop,
-                        fm.elidedText(capabilityName, Qt::ElideRight, textRect.width()));
+                        fm.elidedText(underIconLabel, Qt::ElideRight, textRect.width()));
     }
   }
 }
