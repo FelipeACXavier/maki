@@ -792,35 +792,63 @@ void SubflowBlock::setContentsVisible(bool visible)
   // Logical children are independent scene items (not graphics children), so
   // their visibility — and that of any nested descendants — is toggled here.
   QVector<NodeItem*> stack = children();
-  QVector<NodeItem*> descendants;
+  QSet<const NodeItem*> affected;
+  QVector<NodeItem*> nodesToToggle;
+
   while (!stack.isEmpty())
   {
     NodeItem* node = stack.takeLast();
-    if (!node)
+    if (!node || affected.contains(node))
       continue;
-    descendants.append(node);
+    affected.insert(node);
+    nodesToToggle.append(node);
     stack.append(node->children());
   }
 
-  QSet<const NodeItem*> hidden;
-  for (NodeItem* node : descendants)
-  {
+  for (NodeItem* node : nodesToToggle)
     node->setVisible(visible);
-    hidden.insert(node);
-  }
 
   if (!scene())
     return;
 
-  // Transitions touching a hidden descendant would otherwise dangle in mid-air.
+  // Nested Repeat/Within subflow blocks are owned scene items, not logical
+  // children — hide/show them too, and recurse into their contents.
   const QList<QGraphicsItem*> items = scene()->items();
+  for (QGraphicsItem* item : items)
+  {
+    if (!item || item->type() != NodeItem::Type)
+      continue;
+
+    auto* node = static_cast<NodeItem*>(item);
+    if (node == this || !node->isSubflowContainer())
+      continue;
+    if (!affected.contains(node->subflowHost()))
+      continue;
+
+    auto* nested = static_cast<SubflowBlock*>(node);
+    nested->setVisible(visible);
+    affected.insert(nested);
+
+    if (!visible)
+    {
+      // Force-hide nested contents regardless of the nested block's own collapse.
+      nested->setContentsVisible(false);
+    }
+    else if (!nested->isCollapsed())
+    {
+      // Restore contents only when the nested block itself is expanded.
+      nested->setContentsVisible(true);
+    }
+  }
+
+  // Transitions touching a hidden descendant / nested block would otherwise dangle.
   for (QGraphicsItem* item : items)
   {
     if (!item || item->type() != Types::TRANSITION)
       continue;
 
     auto* transition = static_cast<TransitionItem*>(item);
-    if (hidden.contains(transition->source()) || hidden.contains(transition->destination()))
+    if (affected.contains(transition->source()) || affected.contains(transition->destination()))
       transition->setVisible(visible);
   }
 }

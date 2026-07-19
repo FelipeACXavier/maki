@@ -312,9 +312,9 @@ void CallConfigPopup::rebuildEventMenu(const QString& capabilityId)
   };
 
   if (call_capability::canAsync(*mStorage, capabilityId))
-    addSection(call_capability::kModeAsync, tr("Async"), tr("Wait for return"));
+    addSection(call_capability::kModeAsync, tr("Async"), tr("Waits for a return event. Other signals can be handled in the meantime."));
   if (call_capability::canSync(*mStorage, capabilityId))
-    addSection(call_capability::kModeSync, tr("Sync"), tr("Immediate return"));
+    addSection(call_capability::kModeSync, tr("Sync"), tr("Continues the flow immediately."));
 
   if (QMenu* old = mEventButton->menu())
   {
