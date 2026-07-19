@@ -665,8 +665,10 @@ void StructuralNode::relayoutCapabilitySlots()
     const QPointF centerScene = mapToScene(centerLocal);
     NodeItem* cap = caps[i];
     cap->applySize(QSizeF(slotDiam, slotDiam));
-    const QSizeF cs = cap->boundingRect().size();
-    cap->updatePosition(centerScene - QPointF(cs.width() / 2.0, cs.height() / 2.0));
+    // Align the capability circle (nodeRect) to the slot centre — not boundingRect,
+    // which includes a wider label band and would shift the circle left of the empty slot.
+    const QRectF body = cap->nodeRect();
+    cap->updatePosition(centerScene - QPointF(body.width() * 0.5, body.height() * 0.5));
   }
 
   // Measure real label overhang after capability resize; grow once if captions still clip the border.
@@ -693,8 +695,8 @@ void StructuralNode::relayoutCapabilitySlots()
       const QPointF centerScene = mapToScene(centerLocal);
       NodeItem* cap = caps[i];
       cap->applySize(QSizeF(slotDiam, slotDiam));
-      const QSizeF cs = cap->boundingRect().size();
-      cap->updatePosition(centerScene - QPointF(cs.width() / 2.0, cs.height() / 2.0));
+      const QRectF body = cap->nodeRect();
+      cap->updatePosition(centerScene - QPointF(body.width() * 0.5, body.height() * 0.5));
     }
   }
 
@@ -724,7 +726,8 @@ NodeItem* StructuralNode::capabilityAtScenePos(const QPointF& scenePos, NodeItem
   const qreal bbH = nodeRect().height();
   const qreal slotDiameter = qMin(bbW, bbH) * kTaskSlotDiameterFactor;
   const qreal slotRadiusSq = (slotDiameter * 0.5) * (slotDiameter * 0.5);
-  const QVector<QPointF> centers = structural_layout::taskSlotCenters(boundingRect().size(), slotCount);
+  // Same basis as paint / relayoutCapabilitySlots (node body, not label-inflated bounds).
+  const QVector<QPointF> centers = structural_layout::taskSlotCenters(nodeRect().size(), slotCount);
 
   for (int i = 0; i < caps.size() && i < centers.size(); ++i)
   {
@@ -753,7 +756,8 @@ QRectF StructuralNode::placeholderSlotSceneRect() const
   const qreal slotDiameter = qMin(bbW, bbH) * kTaskSlotDiameterFactor;
   const qreal slotRadius = slotDiameter * 0.5;
   const int n = static_cast<int>(structuralCapabilityChildren().size());
-  const QVector<QPointF> centers = structural_layout::taskSlotCenters(boundingRect().size(), n + 1);
+  // Same basis as paint / relayoutCapabilitySlots (node body, not label-inflated bounds).
+  const QVector<QPointF> centers = structural_layout::taskSlotCenters(nodeRect().size(), n + 1);
   if (centers.isEmpty())
     return {};
 
@@ -1019,7 +1023,11 @@ QVariant StructuralNode::itemChange(GraphicsItemChange change, const QVariant& v
   }
   else if (change == QGraphicsItem::ItemPositionHasChanged)
   {
-    updatePosition(value.toPointF());
+    // Must match NodeItem's guard: updatePosition() setPos() re-enters here, and
+    // without this the child cascade applies the drag delta twice (capabilities
+    // and subtasks drift / overlap while the Task tree is moved).
+    if (!mInUpdatePosition)
+      updatePosition(value.toPointF());
   }
 
   return QGraphicsItem::itemChange(change, value);
