@@ -237,6 +237,17 @@ void SubflowBlock::notifyStackFollower()
     mStackFollower->syncBelow(this);
 }
 
+void SubflowBlock::notifyEnclosingSubflow()
+{
+  // Nested Repeat/Within blocks are not logical children of the outer Loop/Do
+  // block, so a size/position change here must explicitly ask the enclosing
+  // subflow (the owner's parent) to grow/shrink around us.
+  if (!mOwner)
+    return;
+  if (NodeItem* hostParent = mOwner->parentNode())
+    hostParent->expandSubflowToFitChildren();
+}
+
 QVariant SubflowBlock::itemChange(GraphicsItemChange change, const QVariant& value)
 {
   if (change == QGraphicsItem::ItemPositionChange && mOwner)
@@ -254,6 +265,15 @@ QVariant SubflowBlock::itemChange(GraphicsItemChange change, const QVariant& val
     newPos.setY(qMax(newPos.y(), minTop));
 
     return NodeItem::itemChange(change, QVariant(newPos));
+  }
+
+  if (change == QGraphicsItem::ItemPositionHasChanged && mSuppressExpand)
+  {
+    // Live-drag of a nested block: keep the enclosing subflow covering us.
+    // (mSuppressExpand is set for the duration of a chrome drag.)
+    const QVariant result = NodeItem::itemChange(change, value);
+    notifyEnclosingSubflow();
+    return result;
   }
 
   return NodeItem::itemChange(change, value);
@@ -285,6 +305,9 @@ void SubflowBlock::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
   mSuppressExpand = false;
   notifyStackFollower();
+  // Manual drag/extend does not go through expandToFitChildren, so notify the
+  // enclosing subflow here so nested Loop blocks stay covered by their parent.
+  notifyEnclosingSubflow();
   QGraphicsItem::mouseReleaseEvent(event);
 }
 
@@ -517,11 +540,38 @@ void SubflowBlock::expandToFitChildren()
   qreal right = left + kMinBlockWidth;
   qreal bottom = top + kInnerPadding + PortItem::kSize;
 
-  for (NodeItem* child : children())
+  auto fitRect = [&](const QRectF& sceneRect) {
+    right = qMax(right, sceneRect.right() + kInnerPadding + kPortLaneWidth);
+    bottom = qMax(bottom, sceneRect.bottom() + kInnerPadding);
+  };
+
+  // Gather all descendant nodes so we can also enclose the subflow blocks owned
+  // by nested Repeat / Within nodes (those blocks are separate scene items, not
+  // logical children, so they would otherwise fall outside this border).
+  QVector<NodeItem*> stack = children();
+  QSet<const NodeItem*> descendants;
+  while (!stack.isEmpty())
   {
-    const QRectF childScene = child->sceneBoundingRect();
-    right = qMax(right, childScene.right() + kInnerPadding + kPortLaneWidth);
-    bottom = qMax(bottom, childScene.bottom() + kInnerPadding);
+    NodeItem* child = stack.takeLast();
+    if (!child)
+      continue;
+    descendants.insert(child);
+    fitRect(child->sceneBoundingRect());
+    stack.append(child->children());
+  }
+
+  if (scene())
+  {
+    for (QGraphicsItem* item : scene()->items())
+    {
+      if (!item || item->type() != NodeItem::Type)
+        continue;
+      auto* node = static_cast<NodeItem*>(item);
+      if (node == this || !node->isSubflowContainer())
+        continue;
+      if (descendants.contains(node->subflowHost()))
+        fitRect(node->sceneBoundingRect());
+    }
   }
 
   const qreal newWidth = qMax(kMinBlockWidth, right - left);
@@ -530,6 +580,9 @@ void SubflowBlock::expandToFitChildren()
   setBlockGeometry(QPointF(left, top), QSizeF(newWidth, newHeight));
 
   mSuppressExpand = false;
+
+  // Auto-fit growth must also ripple outward to any enclosing subflow.
+  notifyEnclosingSubflow();
 }
 
 void SubflowBlock::applySize(const QSizeF& size)

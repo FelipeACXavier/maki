@@ -91,6 +91,8 @@ protected:
 private:
   void setBlockGeometry(const QPointF& topLeft, const QSizeF& size);
   void notifyStackFollower();
+  /** Ask the enclosing subflow (owner's parent) to refit around this block. */
+  void notifyEnclosingSubflow();
   void ensureTitleUi();
   void ensureDoTitleUi();
   void ensureLoopTitleUi();
