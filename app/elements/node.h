@@ -88,6 +88,8 @@ public:
   virtual bool isTaskContainer() const { return false; }
   /** Inline subflow container attached to Repeat / Within nodes in the behaviour canvas. */
   virtual bool isSubflowContainer() const { return false; }
+  /** True when this subflow container is currently collapsed (contents hidden). */
+  virtual bool isCollapsedSubflow() const { return false; }
   /** Owning Repeat/Within for a subflow container; nullptr otherwise. */
   virtual NodeItem* subflowHost() const { return nullptr; }
   /** Detach owned subflow containers before this node is deleted (caller owns the result). */

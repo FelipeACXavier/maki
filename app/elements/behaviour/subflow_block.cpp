@@ -9,6 +9,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPainter>
+#include <QSet>
 #include <QStyleOptionGraphicsItem>
 #include <QUuid>
 #include <algorithm>
@@ -16,8 +17,10 @@
 #include "app_configs.h"
 #include "config.h"
 #include "elements/port.h"
+#include "elements/transition.h"
 #include "keys.h"
 #include "style_helpers.h"
+#include "types.h"
 
 namespace
 {
@@ -26,6 +29,11 @@ constexpr qreal kPortLaneWidth = 36.0;
 /** Wide enough for "Loop [n] iterations every [n] ms" title controls. */
 constexpr qreal kMinBlockWidth = 320.0;
 constexpr qreal kMinBlockHeight = 100.0;
+/** Height of the header strip left visible when the block is collapsed. */
+constexpr qreal kCollapsedHeight = 44.0;
+/** Size of the collapse/expand chevron in item coordinates. */
+constexpr qreal kCollapseButtonSize = 16.0;
+constexpr qreal kCollapseButtonMargin = 8.0;
 constexpr qreal kCornerRadius = 10.0;
 /** Visible dashed-line gap below the owner label (or body if unlabeled). */
 constexpr qreal kGapBelowOwner = 40.0;
@@ -253,6 +261,13 @@ QVariant SubflowBlock::itemChange(GraphicsItemChange change, const QVariant& val
 
 void SubflowBlock::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
+  if (collapseButtonRect().contains(event->pos()))
+  {
+    toggleCollapsed();
+    event->accept();
+    return;
+  }
+
   if (!isBlockChromeHit(nodeRect(), event->pos(), borderGrabWidth(this, nodeRect()), kInnerPadding))
   {
     event->ignore();
@@ -483,7 +498,7 @@ void SubflowBlock::setBlockGeometry(const QPointF& topLeft, const QSizeF& size)
 
 void SubflowBlock::expandToFitChildren()
 {
-  if (mSuppressExpand)
+  if (mSuppressExpand || mCollapsed)
     return;
 
   // Guard against reentrancy: repositioning the block emits move notifications
@@ -646,6 +661,8 @@ void SubflowBlock::paint(QPainter* painter, const QStyleOptionGraphicsItem* styl
     syncTitleFieldsFromOwner();
   else
     paintTitle(painter);
+
+  paintCollapseButton(painter);
 }
 
 void SubflowBlock::paintTitle(QPainter* painter) const
@@ -656,4 +673,144 @@ void SubflowBlock::paintTitle(QPainter* painter) const
 
   const QRectF titleRect(kTitleLeft, kTitleTop, nodeRect().width() - 2.0 * kTitleLeft, font.pointSizeF() * 2.0);
   painter->drawText(titleRect, Qt::AlignLeft | Qt::AlignVCenter, titleTextForRole(mRole));
+}
+
+QRectF SubflowBlock::collapseButtonRect() const
+{
+  const QRectF outer = nodeRect();
+  return QRectF(outer.right() - kCollapseButtonSize - kCollapseButtonMargin,
+                outer.top() + kCollapseButtonMargin,
+                kCollapseButtonSize,
+                kCollapseButtonSize);
+}
+
+void SubflowBlock::paintCollapseButton(QPainter* painter) const
+{
+  const QRectF r = collapseButtonRect();
+
+  painter->save();
+  painter->setPen(Qt::NoPen);
+  painter->setBrush(QBrush(Config::FOREGROUND));
+
+  QPolygonF triangle;
+  if (mCollapsed)
+  {
+    // Right-pointing chevron: click to expand.
+    const qreal inset = r.height() * 0.15;
+    triangle << QPointF(r.left() + inset, r.top())
+             << QPointF(r.left() + inset, r.bottom())
+             << QPointF(r.right() - inset, r.center().y());
+  }
+  else
+  {
+    // Down-pointing chevron: click to collapse.
+    const qreal inset = r.width() * 0.15;
+    triangle << QPointF(r.left(), r.top() + inset)
+             << QPointF(r.right(), r.top() + inset)
+             << QPointF(r.center().x(), r.bottom() - inset);
+  }
+
+  painter->drawPolygon(triangle);
+  painter->restore();
+}
+
+QString SubflowBlock::collapsePropertyKey() const
+{
+  switch (mRole)
+  {
+    case Role::Do:
+      return QStringLiteral("doCollapsed");
+    case Role::Else:
+      return QStringLiteral("elseCollapsed");
+    case Role::Loop:
+    default:
+      return QStringLiteral("loopCollapsed");
+  }
+}
+
+void SubflowBlock::persistCollapsedState()
+{
+  if (mOwner)
+    mOwner->setProperty(collapsePropertyKey(), mCollapsed);
+}
+
+void SubflowBlock::setContentsVisible(bool visible)
+{
+  // Logical children are independent scene items (not graphics children), so
+  // their visibility — and that of any nested descendants — is toggled here.
+  QVector<NodeItem*> stack = children();
+  QVector<NodeItem*> descendants;
+  while (!stack.isEmpty())
+  {
+    NodeItem* node = stack.takeLast();
+    if (!node)
+      continue;
+    descendants.append(node);
+    stack.append(node->children());
+  }
+
+  QSet<const NodeItem*> hidden;
+  for (NodeItem* node : descendants)
+  {
+    node->setVisible(visible);
+    hidden.insert(node);
+  }
+
+  if (!scene())
+    return;
+
+  // Transitions touching a hidden descendant would otherwise dangle in mid-air.
+  const QList<QGraphicsItem*> items = scene()->items();
+  for (QGraphicsItem* item : items)
+  {
+    if (!item || item->type() != Types::TRANSITION)
+      continue;
+
+    auto* transition = static_cast<TransitionItem*>(item);
+    if (hidden.contains(transition->source()) || hidden.contains(transition->destination()))
+      transition->setVisible(visible);
+  }
+}
+
+void SubflowBlock::setCollapsed(bool collapsed)
+{
+  if (collapsed == mCollapsed)
+    return;
+
+  mCollapsed = collapsed;
+
+  // The loop/out port only makes sense while the contents are visible.
+  if (mOutPort)
+    mOutPort->setVisible(!collapsed);
+
+  if (collapsed)
+  {
+    setContentsVisible(false);
+
+    mSuppressExpand = true;
+    qreal left = pos().x();
+    if (mOwner)
+      left = mOwner->mapRectToScene(mOwner->nodeRect()).left();
+    setBlockGeometry(QPointF(left, pos().y()), QSizeF(qMax(mSize.width(), kMinBlockWidth), kCollapsedHeight));
+    mSuppressExpand = false;
+  }
+  else
+  {
+    setContentsVisible(true);
+    // Regrow around the (now visible) children; also re-stacks any follower.
+    expandToFitChildren();
+  }
+
+  persistCollapsedState();
+  update();
+}
+
+void SubflowBlock::applyPersistedCollapsedState()
+{
+  if (!mOwner)
+    return;
+
+  const QVariant value = mOwner->getProperty(collapsePropertyKey());
+  if (value.isValid() && value.toBool())
+    setCollapsed(true);
 }

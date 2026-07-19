@@ -44,7 +44,10 @@ void RepeatNode::ensureSubflowBlock()
 
   mBlock = SubflowBlock::createAttached(this, SubflowBlock::Role::Loop);
   if (mBlock)
+  {
     mBlock->syncToOwnerPosition();
+    mBlock->applyPersistedCollapsedState();
+  }
 }
 
 void RepeatNode::updatePosition(const QPointF& position)

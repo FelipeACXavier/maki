@@ -268,6 +268,15 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
   {
     NodeItem* parentNode = dropTargetContainer(itemAt(event->scenePos(), QTransform()), type(), this, event->scenePos());
 
+    // A collapsed subflow block hides its contents, so refuse drops into it.
+    if (parentNode && parentNode->isCollapsedSubflow())
+    {
+      event->ignore();
+      if (auto* view = dynamic_cast<QGraphicsView*>(parent()))
+        view->setCursor(Qt::ArrowCursor);
+      return;
+    }
+
     // Make sure that no other nodes are selected before dropping
     clearSelectedNodes();
 

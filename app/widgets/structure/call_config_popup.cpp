@@ -35,7 +35,7 @@
 namespace
 {
 constexpr int kPopupMinWidth = 300;
-constexpr int kCapabilityCols = 4;
+constexpr int kCapabilityCols = 3;
 constexpr int kHelpIconPx = 14;
 
 const char kArgIndexProp[] = "callArgIndex";

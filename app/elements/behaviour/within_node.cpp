@@ -75,6 +75,13 @@ void WithinNode::ensureSubflowBlocks()
       mElseBlock->syncBelow(mDoBlock);
     }
   }
+
+  // Apply persisted collapsed state after both blocks are stacked so the Else
+  // block re-stacks correctly when the Do block reloads collapsed.
+  if (mDoBlock)
+    mDoBlock->applyPersistedCollapsedState();
+  if (mElseBlock)
+    mElseBlock->applyPersistedCollapsedState();
 }
 
 void WithinNode::updatePosition(const QPointF& position)

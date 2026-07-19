@@ -44,8 +44,17 @@ public:
   bool isSubflowContainer() const override { return true; }
   NodeItem* subflowHost() const override { return mOwner; }
   void expandSubflowToFitChildren() override { expandToFitChildren(); }
+  bool isCollapsedSubflow() const override { return mCollapsed; }
 
   Role role() const { return mRole; }
+
+  /** Collapse hides the block's contents and shrinks it to a header strip. */
+  void setCollapsed(bool collapsed);
+  bool isCollapsed() const { return mCollapsed; }
+  void toggleCollapsed() { setCollapsed(!mCollapsed); }
+
+  /** Re-apply the collapsed flag persisted on the owning Repeat / Within node. */
+  void applyPersistedCollapsedState();
 
   NodeItem* ownerNode() const { return mOwner; }
   void setOwnerNode(NodeItem* owner);
@@ -93,11 +102,18 @@ private:
   void paintConnector(QPainter* painter) const;
   void paintTitle(QPainter* painter) const;
 
+  QRectF collapseButtonRect() const;
+  void paintCollapseButton(QPainter* painter) const;
+  void setContentsVisible(bool visible);
+  QString collapsePropertyKey() const;
+  void persistCollapsedState();
+
   NodeItem* mOwner = nullptr;
   NodeItem* mConnectorAbove = nullptr;
   SubflowBlock* mStackFollower = nullptr;
   Role mRole = Role::Loop;
   bool mSuppressExpand = false;
+  bool mCollapsed = false;
 
   QGraphicsProxyWidget* mTitleProxy = nullptr;
   QLineEdit* mTimeoutEdit = nullptr;
