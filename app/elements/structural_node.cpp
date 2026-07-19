@@ -18,6 +18,7 @@
 #include <utility>
 
 #include "app_configs.h"
+#include "elements/behaviour/component_overlay.h"
 #include "flow.h"
 #include "keys.h"
 #include "logging.h"
@@ -410,10 +411,7 @@ void StructuralNode::paint(QPainter* painter, const QStyleOptionGraphicsItem* st
       }
       else
       {
-        QPen dashPen(Qt::black, 1.5 / baseScale(), Qt::DashLine, Qt::RoundCap, Qt::RoundJoin);
-        painter->setPen(dashPen);
-        painter->setBrush(QBrush(QColor(0xe6, 0xe6, 0xe6)));
-        painter->drawEllipse(placeholderCenter, slotRadius, slotRadius);
+        behaviour::paintEmptySlotSvg(painter, placeholderCenter, slotDiameter);
       }
     }
 

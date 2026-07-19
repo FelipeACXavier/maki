@@ -59,7 +59,7 @@ public:
   Types::LibraryTypes function() const;
 
   QVariant getProperty(const QString& key) const;
-  void setProperty(const QString& key, QVariant value);
+  virtual void setProperty(const QString& key, QVariant value);
   void renameNode(const QString& name);
 
   NodeItem* parentNode() const;

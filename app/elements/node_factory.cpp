@@ -4,6 +4,7 @@
 
 #include "elements/behaviour/async_task_node.h"
 #include "elements/behaviour/behaviour_node.h"
+#include "elements/behaviour/call_node.h"
 #include "elements/behaviour/continue_node.h"
 #include "elements/behaviour/failure_node.h"
 #include "elements/behaviour/flow_call_node.h"
@@ -44,6 +45,8 @@ void registerKodaBehaviourTypes()
   NodeFactory::registerType(QStringLiteral("Koda::Failure"), makeNode<FailureNode>);
   NodeFactory::registerType(QStringLiteral("Koda::Continue"), makeNode<ContinueNode>);
   NodeFactory::registerType(QStringLiteral("Koda::Terminate"), makeNode<TerminateNode>);
+  NodeFactory::registerType(QStringLiteral("Koda::Call"), makeNode<CallNode>);
+  // Legacy node ids (still used by older saves / Koda mental model)
   NodeFactory::registerType(QStringLiteral("Koda::Async task"), makeNode<AsyncTaskNode>);
   NodeFactory::registerType(QStringLiteral("Koda::Sync task"), makeNode<SyncTaskNode>);
   NodeFactory::registerType(QStringLiteral("Koda::Flow call"), makeNode<FlowCallNode>);

@@ -33,6 +33,7 @@
 #include "../structure/transition_event_menu.h"
 #include "app_configs.h"
 #include "config.h"
+#include "elements/behaviour/call_capability.h"
 #include "elements/flow.h"
 #include "elements/node.h"
 #include "json.h"
@@ -47,6 +48,7 @@
 static const int EVENT_INDEX = 0;
 static const int ARG_INDEX = 1;
 static const int CLEAR_INDEX = INT32_MAX;
+
 
 #define UPDATE_PROPERTY(NODE, ID, VALUE)           \
   do                                               \
@@ -219,7 +221,12 @@ VoidResult PropertiesMenu::loadProperties(NodeItem* node)
     else if (property.type == Types::PropertyTypes::BOOLEAN)
       LOG_WARN_ON_FAILURE(loadPropertyBoolean(property, node));
     else if (property.type == Types::PropertyTypes::SELECT)
+    {
+      // Driven inside the Call capability UI (Async only when a trigger exists).
+      if (call_capability::isCallNodeType(node->nodeType()) && property.id == call_capability::kModeProperty)
+        continue;
       LOG_WARN_ON_FAILURE(loadPropertySelect(property, node));
+    }
     else if (property.type == Types::PropertyTypes::COLOR)
     {
       if (node->isTaskContainer())
@@ -228,7 +235,12 @@ VoidResult PropertiesMenu::loadProperties(NodeItem* node)
     else if (property.type == Types::PropertyTypes::EVENT_SELECT)
       LOG_WARN_ON_FAILURE(loadPropertyEventSelect(property, node));
     else if (property.type == Types::PropertyTypes::COMPONENT_SELECT)
-      LOG_WARN_ON_FAILURE(loadPropertyComponentSelect(property, node));
+    {
+      if (call_capability::isCallNodeType(node->nodeType()))
+        LOG_WARN_ON_FAILURE(loadPropertyCallSelect(property, node));
+      else
+        LOG_WARN_ON_FAILURE(loadPropertyComponentSelect(property, node));
+    }
     else if (property.type == Types::PropertyTypes::LIST)
       continue;
     else if (property.type == Types::PropertyTypes::VOID)
@@ -476,6 +488,156 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertyInfo& prope
   return VoidResult();
 }
 
+VoidResult PropertiesMenu::loadPropertyCallSelect(const PropertyInfo& property, NodeItem* node)
+{
+  if (!mStorage)
+    return VoidResult::Failed("No storage assigned to properties menu");
+
+  auto* capabilitySelect = new maki::SelectorWidget(ToLabel(property.getid()), maki::WidgetAlignment::Vertical(), this);
+  for (const auto& child : mStorage->getPossibleCallers(node->id(), Types::PropertyTypes::EVENT_SELECT))
+  {
+    auto name = child->getProperty(ConfigKeys::NAME);
+    if (name.isNull() || !name.isValid())
+      continue;
+    capabilitySelect->addItem(name.toString(), child->getid());
+  }
+
+  const auto selectedComponent = node->getProperty(property.getid());
+  if (selectedComponent.isValid())
+  {
+    const auto object = selectedComponent.toJsonObject();
+    if (object.contains(ConfigKeys::DATA))
+      capabilitySelect->setValue(object[ConfigKeys::DATA].toString());
+  }
+  else
+  {
+    capabilitySelect->setValue(Constants::EMPTY_COMBO);
+  }
+
+  auto* modeSelect = new maki::SelectorWidget(tr("Call type"), maki::WidgetAlignment::Vertical(), this);
+  modeSelect->addItem(tr("Sync (immediate return)"), call_capability::kModeSync);
+  modeSelect->addItem(tr("Async (wait for return)"), call_capability::kModeAsync);
+
+  auto* eventCombo = new QComboBox(this);
+  auto* eventSelect = new maki::SelectorWidget(tr("Event"), eventCombo, maki::WidgetAlignment::Vertical(), this);
+  auto* argsGroup = new maki::WidgetGroup(tr("Arguments"), oclero::qlementine::TextRole::Default, this);
+
+  layout()->addWidget(capabilitySelect);
+  layout()->addWidget(modeSelect);
+  layout()->addWidget(eventSelect);
+  layout()->addWidget(argsGroup);
+
+  auto populateEventsForMode = [this](const QString& capabilityId, const QString& mode, QComboBox* combo) {
+    combo->clear();
+    if (capabilityId.isEmpty())
+      return;
+
+    const auto events = mStorage->getEventsOfTypeFromNode(capabilityId, call_capability::eventTypesForMode(mode));
+    for (const auto& event : events)
+      combo->addItem(event->getname(), event->getname());
+  };
+
+  auto refreshCallDetails = [this, node, property, capabilitySelect, modeSelect, eventSelect, eventCombo, argsGroup,
+                             populateEventsForMode]() {
+    const QString capabilityId = capabilitySelect->getData().toString();
+    const QString capabilityName = capabilitySelect->getValue();
+
+    clearLayout(argsGroup->layout());
+    modeSelect->hide();
+    eventSelect->hide();
+    argsGroup->hide();
+
+    if (capabilityId.isEmpty())
+      return;
+
+    const bool canAsync = call_capability::canAsync(*mStorage, capabilityId);
+    const bool canSync = call_capability::canSync(*mStorage, capabilityId);
+    if (!canSync && !canAsync)
+      return;
+
+    QString mode = node->getProperty(call_capability::kModeProperty).toString();
+    if (mode != call_capability::kModeSync && mode != call_capability::kModeAsync)
+      mode = call_capability::defaultMode(*mStorage, capabilityId);
+    if (mode == call_capability::kModeAsync && !canAsync)
+      mode = call_capability::kModeSync;
+    if (mode == call_capability::kModeSync && !canSync && canAsync)
+      mode = call_capability::kModeAsync;
+
+    node->setProperty(call_capability::kModeProperty, mode);
+
+    // Rebuild mode items: Async only when a trigger exists.
+    modeSelect->blockSignals(true);
+    if (auto* combo = modeSelect->findChild<QComboBox*>())
+      combo->clear();
+    modeSelect->addItem(tr("Sync (immediate return)"), call_capability::kModeSync);
+    if (canAsync)
+      modeSelect->addItem(tr("Async (wait for return)"), call_capability::kModeAsync);
+    modeSelect->setData(mode);
+    modeSelect->blockSignals(false);
+    modeSelect->show();
+
+    populateEventsForMode(capabilityId, mode, eventCombo);
+    eventSelect->show();
+
+    QString eventName;
+    const auto propertyValue = node->getProperty(property.getid());
+    if (propertyValue.isValid())
+    {
+      const QJsonObject object = propertyValue.toJsonObject();
+      if (object.contains(ConfigKeys::OPTIONS) && object[ConfigKeys::OPTIONS].toArray().size() > EVENT_INDEX)
+        eventName = object[ConfigKeys::OPTIONS][EVENT_INDEX][ConfigKeys::DATA].toString();
+    }
+    if (!eventName.isEmpty() && eventCombo->findData(eventName) < 0)
+      eventName.clear();
+    if (eventName.isEmpty() && eventCombo->count() > 0)
+      eventName = eventCombo->itemData(0).toString();
+
+    if (eventName.isEmpty())
+      return;
+
+    eventSelect->blockSignals(true);
+    eventSelect->setValue(eventName);
+    eventSelect->blockSignals(false);
+    UPDATE_PROPERTY_ARG(node, property.getid(), EVENT_INDEX, eventName, Types::PropertyTypes::EVENT_SELECT, false)
+    LOG_WARN_ON_FAILURE(loadEventArguments(capabilityId, eventName, property, node, Types::CallType::UNKNOWN, argsGroup));
+    updateBlockName(node, capabilityName, eventName);
+  };
+
+  refreshCallDetails();
+
+  connect(capabilitySelect, &maki::SelectorWidget::dataChanged, this,
+          [this, node, property, refreshCallDetails](const QString& component, const QVariant& nodeId) {
+            if (!nodeId.isValid())
+              return;
+            call_capability::applyCapabilitySelection(*node, component, nodeId.toString(), mStorage.get());
+            // Keep the selector's data in sync; applyCapabilitySelection already wrote capability + mode/event.
+            Q_UNUSED(property);
+            refreshCallDetails();
+          });
+
+  connect(modeSelect, &maki::SelectorWidget::dataChanged, this,
+          [this, node, property, capabilitySelect, refreshCallDetails](const QString&, const QVariant& modeData) {
+            const QString mode = modeData.toString();
+            if (mode != call_capability::kModeSync && mode != call_capability::kModeAsync)
+              return;
+            node->setProperty(call_capability::kModeProperty, mode);
+            UPDATE_PROPERTY(node, property.getid(), capabilitySelect->getValue())
+            refreshCallDetails();
+          });
+
+  connect(eventSelect, &maki::SelectorWidget::valueChanged, this,
+          [this, node, property, capabilitySelect, argsGroup](const QString& eventName) {
+            if (eventName.isEmpty())
+              return;
+            clearLayout(argsGroup->layout());
+            UPDATE_PROPERTY_ARG(node, property.getid(), EVENT_INDEX, eventName, Types::PropertyTypes::EVENT_SELECT, false)
+            LOG_WARN_ON_FAILURE(loadEventArguments(capabilitySelect->getData().toString(), eventName, property, node, Types::CallType::UNKNOWN, argsGroup));
+            updateBlockName(node, capabilitySelect->getValue(), eventName);
+          });
+
+  return VoidResult();
+}
+
 VoidResult PropertiesMenu::loadFieldEventSelect(maki::SelectorWidget* componentSelect, const QString& optionId, const PropertyInfo& property, NodeItem* node, Types::CallType callType,
                                                 std::function<void(const QString& nodeId, QComboBox* eventWidget)> populate, bool allowCreateFlow)
 {
@@ -608,6 +770,10 @@ VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QStri
   if (callType == Types::CallType::USER)
   {
     event = mStorage->getFlowFromNode(nodeId, flowName);
+  }
+  else if (!flowName.isEmpty())
+  {
+    event = mStorage->getEventFromNode(nodeId, flowName);
   }
   else if (callType == Types::CallType::UNKNOWN)
   {

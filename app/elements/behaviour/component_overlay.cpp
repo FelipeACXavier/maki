@@ -6,6 +6,7 @@
 #include <QSvgRenderer>
 
 #include "app_configs.h"
+#include "app_paths.h"
 #include "elements/draggable.h"
 #include "keys.h"
 #include "save_info.h"
@@ -18,8 +19,6 @@ namespace behaviour
 {
 namespace
 {
-constexpr qreal kComponentOverlayDiameterFactor = 0.40;
-
 bool isTaskCaller(const NodeSaveInfo& caller, const ConfigurationTable* configTable)
 {
   if (caller.getnodeId().endsWith(QStringLiteral("::Task")))
@@ -55,35 +54,6 @@ void renderSvgInEllipse(QPainter* painter, const QString& svgPath, const QPointF
                           scaledSize.width(),
                           scaledSize.height());
   renderer.render(painter, targetRect);
-}
-
-QString resolveStoredIconPath(const QString& storedIcon, const QString& nodeId, const ConfigurationTable* configTable)
-{
-  if (!storedIcon.isEmpty())
-  {
-    if (QFileInfo::exists(storedIcon))
-      return storedIcon;
-
-    const QString byFileName = iconPathFromTheme(QFileInfo(storedIcon).fileName());
-    if (!byFileName.isEmpty())
-      return byFileName;
-  }
-
-  if (!configTable)
-    return QString();
-
-  const auto cfg = configTable->get(nodeId);
-  if (!cfg)
-    return QString();
-
-  if (!cfg->body.iconPath.isEmpty())
-  {
-    const QString resolved = iconPathFromTheme(cfg->body.iconPath);
-    if (!resolved.isEmpty())
-      return resolved;
-  }
-
-  return QString();
 }
 
 std::shared_ptr<NodeSaveInfo> selectedComponentCaller(const NodeItem* node, const SaveInfo& storage)
@@ -132,7 +102,7 @@ QString selectedComponentIconPath(const std::shared_ptr<NodeSaveInfo>& caller, c
   if (!caller || isTaskCaller(*caller, configTable))
     return QString();
 
-  return resolveStoredIconPath(caller->getIcon(), caller->getnodeId(), configTable);
+  return resolveCapabilityIconPath(caller->getIcon(), caller->getnodeId(), configTable);
 }
 
 std::optional<QColor> optionalColorProperty(const QVariant& value)
@@ -161,6 +131,59 @@ QColor callerBackgroundColor(const NodeSaveInfo& caller, const ConfigurationTabl
   return QColor(0xe6, 0xe6, 0xe6);
 }
 }  // namespace
+
+namespace
+{
+QString resolveConfigIconPath(const QString& iconPath)
+{
+  if (iconPath.isEmpty())
+    return {};
+  const QString fromApp = AppPaths::icon(iconPath);
+  if (!fromApp.isEmpty())
+    return fromApp;
+  return iconPathFromTheme(iconPath);
+}
+}  // namespace
+
+QString resolveCapabilityIconPath(const QString& storedIcon,
+                                  const QString& nodeTypeKey,
+                                  const ConfigurationTable* configTable)
+{
+  if (!storedIcon.isEmpty())
+  {
+    if (QFileInfo::exists(storedIcon))
+      return storedIcon;
+
+    const QString byFileName = resolveConfigIconPath(QFileInfo(storedIcon).fileName());
+    if (!byFileName.isEmpty())
+      return byFileName;
+  }
+
+  if (!configTable)
+    return {};
+
+  const auto cfg = configTable->get(nodeTypeKey);
+  if (!cfg || cfg->body.iconPath.isEmpty())
+    return {};
+
+  return resolveConfigIconPath(cfg->body.iconPath);
+}
+
+void paintEmptySlotSvg(QPainter* painter, const QPointF& center, qreal diameter)
+{
+  if (!painter || diameter <= 0.0)
+    return;
+
+  const QString emptySlotPath = iconPathFromTheme(QStringLiteral("empty_slot.svg"));
+  QSvgRenderer emptySlotRenderer(emptySlotPath);
+  if (!emptySlotRenderer.isValid())
+    return;
+
+  const qreal radius = diameter * 0.5;
+  const QRectF target(center.x() - radius, center.y() - radius, diameter, diameter);
+  painter->setRenderHint(QPainter::Antialiasing, true);
+  emptySlotRenderer.render(painter, target);
+}
 
 void paintSelectedComponentOverlay(const NodeItem* node, QPainter* painter)
 {

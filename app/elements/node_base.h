@@ -183,6 +183,12 @@ protected:
    */
   virtual void setIcon(const QString& path, const QColor& iconColor);
 
+  /** Updates the body SVG and clears the cached renderer (per-node config only). */
+  void setNodeSvg(const QString& nodeSvg);
+
+  /** Applies a body SVG path without scheduling a repaint (safe during paint). */
+  void applyNodeSvg(const QString& nodeSvg);
+
   /**
    * @brief Sets the label text and font size.
    *
@@ -232,12 +238,14 @@ private:
 
   // mutable std::unique_ptr<QSvgRenderer> mShapeSvgRenderer;
   mutable std::unique_ptr<QSvgRenderer> mNodeSvgRenderer;
+  mutable QString mNodeSvgLoadedPath;
   mutable QRectF mSvgOutlineCacheTarget;
   mutable QSize mSvgOutlineCachePixelSize;
   mutable QString mSvgOutlineCacheKey;
   mutable QPainterPath mSvgOutlineCachePath;
 
   void ensureNodeSvgRenderer() const;
+  void invalidateNodeSvgCache();
   QPainterPath geometricBodyOutlinePath(const QRectF& drawingBounds) const;
   QPainterPath svgSilhouetteOutlinePath(const QRectF& drawingBounds) const;
 

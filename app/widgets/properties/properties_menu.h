@@ -164,6 +164,7 @@ private:
   VoidResult loadPropertyEventSelect(const PropertyInfo& property, NodeItem* node);                                                                                  /// Loads event select property.
   QLineEdit* loadPropertyEventArguments(const PropertyInfo& property, NodeItem* node, const QString& propertyId, const QString& eventName, QComboBox* eventWidget);  /// Loads event arguments.
   VoidResult loadPropertyComponentSelect(const PropertyInfo& property, NodeItem* node);                                                                              /// Loads component select property.
+  VoidResult loadPropertyCallSelect(const PropertyInfo& property, NodeItem* node);                                                                                   /// Call node: capability → sync/async → event + args.
 
   // Control related actions
   VoidResult loadControls(NodeItem* node);                                                                                     /// Loads controls for a given node.

@@ -13,6 +13,23 @@
 
 Q_DECLARE_METATYPE(NodeSaveInfo)
 
+namespace
+{
+void migrateLegacyCallNode(NodeSaveInfo& info)
+{
+  const QString id = info.getnodeId();
+  const bool wasAsync = id == QStringLiteral("Koda::Async task") || id == QStringLiteral("Mission::Async task");
+  const bool wasSync = id == QStringLiteral("Koda::Sync task") || id == QStringLiteral("Mission::Sync task");
+  if (!wasAsync && !wasSync)
+    return;
+
+  info.setNodeId(QStringLiteral("Koda::Call"));
+  const QVariant existing = info.getProperty(QStringLiteral("call_mode"));
+  if (!existing.isValid() || existing.toString().isEmpty())
+    info.addProperty(QStringLiteral("call_mode"), wasAsync ? QStringLiteral("async") : QStringLiteral("sync"));
+}
+}  // namespace
+
 NodeSaveInfo::NodeSaveInfo()
     : mId("")
     , mNodeId("")
@@ -359,6 +376,8 @@ NodeSaveInfo NodeSaveInfo::fromJson(const QJsonObject& data)
   info.setPixmap(JSON::toPixmap(data[ConfigKeys::PIXMAP].toObject()));
   info.setIcon(data[ConfigKeys::ICON_PATH].toString());
 
+  migrateLegacyCallNode(info);
+
   return info;
 }
 
@@ -500,6 +519,8 @@ QDataStream& operator>>(QDataStream& in, NodeSaveInfo& info)
   QString iconPath;
   in >> iconPath;
   info.setIcon(iconPath);
+
+  migrateLegacyCallNode(info);
 
   return in;
 }

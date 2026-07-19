@@ -781,6 +781,15 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
 
     LOG_TRACE("Adding key: %s to the config table", qPrintable(nodeId));
     LOG_ERROR_ON_FAILURE(mConfigTable->add(nodeId, nodeConfig));
+
+    // Legacy Async/Sync task ids resolve to Call (not shown separately in the palette).
+    if (nodeId == QStringLiteral("Koda::Call"))
+    {
+      LOG_ERROR_ON_FAILURE(mConfigTable->add(QStringLiteral("Koda::Async task"), nodeConfig));
+      LOG_ERROR_ON_FAILURE(mConfigTable->add(QStringLiteral("Koda::Sync task"), nodeConfig));
+      LOG_ERROR_ON_FAILURE(mConfigTable->add(QStringLiteral("Mission::Async task"), nodeConfig));
+      LOG_ERROR_ON_FAILURE(mConfigTable->add(QStringLiteral("Mission::Sync task"), nodeConfig));
+    }
   }
 
   return VoidResult();

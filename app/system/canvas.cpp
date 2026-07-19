@@ -2,6 +2,7 @@
 
 #include <QBuffer>
 #include <QClipboard>
+#include <QFileInfo>
 #include <QFont>
 #include <QFontMetrics>
 #include <QFrame>
@@ -34,12 +35,15 @@
 #include "config.h"
 #include "config_table.h"
 #include "edge_router.h"
+#include "elements/behaviour/call_node.h"
+#include "elements/behaviour/component_overlay.h"
 #include "elements/flow.h"
 #include "elements/node.h"
 #include "elements/node_factory.h"
 #include "elements/port.h"
 #include "elements/transition.h"
 #include "flow_info.h"
+#include "keys.h"
 #include "logging.h"
 #include "node_info.h"
 #include "result.h"
@@ -48,6 +52,7 @@
 #include "undo_commands/add_node.h"
 #include "undo_commands/align.h"
 #include "undo_commands/remove_node.h"
+#include "widgets/capability_icon_menu.h"
 #include "widgets/structure/node_action_menu.h"
 #include "widgets/widget_factory.h"
 
@@ -417,14 +422,10 @@ void Canvas::openCapabilityMenu(NodeItem* task)
     return;
 
   CanvasView* view = parentView();
-  if (!view)
+  if (!view || !mConfigTable)
     return;
 
-  QMenu menu(view);
-
-  using CapRow = std::pair<QString, std::shared_ptr<NodeConfig>>;
-  std::map<QString, QVector<CapRow>> byLibrary;
-
+  QVector<CapabilityIconMenuItem> items;
   for (const auto& kv : mConfigTable->entries())
   {
     const auto& cfg = kv.second;
@@ -439,205 +440,86 @@ void Canvas::openCapabilityMenu(NodeItem* task)
     if (libName.isEmpty())
       libName = (sep > 0) ? key.left(sep) : QStringLiteral("(other)");
 
-    byLibrary[libName].push_back({key, cfg});
+    CapabilityIconMenuItem item;
+    item.id = key;
+    item.name = CapabilityIconMenu::displayNameFromQualifiedType(cfg->type);
+    item.section = libName;
+    item.iconPath = behaviour::resolveCapabilityIconPath(QString(), key, mConfigTable.get());
+    items.push_back(item);
   }
 
-  for (auto it = byLibrary.begin(); it != byLibrary.end(); ++it)
-  {
-    std::sort(it->second.begin(), it->second.end(), [](const CapRow& a, const CapRow& b) {
-      return a.second->type < b.second->type;
-    });
-  }
-
-  struct CapabilityTile
-  {
-    QString name;
-    QWidget* cell = nullptr;
-  };
-
-  struct LibrarySection
-  {
-    QLabel* header = nullptr;
-    QWidget* gridHost = nullptr;
-    QGridLayout* grid = nullptr;
-    QVector<CapabilityTile> tiles;
-  };
-
-  QVector<LibrarySection> sections;
-
-  // This should be it't own class. I think it would be quite simple to implement it as a child of LibraryContainer
-  // or something similar to it. It already puts the nodes in a grid like layout and it is quite easy to configure.
-  // We would only need to put the searchwidget above it
-  // I also think it might make sense to construct this at the system level since it is always the same, it might take
-  // some more ram, but at least we don't need to populate the container everytime.
-  auto* host = new QWidget(&menu);
-  oclero::qlementine::QlementineStyle::setAutoIconColor(host, oclero::qlementine::AutoIconColor::None);
-  auto* vbox = new QVBoxLayout(host);
-  vbox->setContentsMargins(6, 4, 6, 4);
-  vbox->setSpacing(4);
-
-  auto* search = new maki::SearchWidget(tr("Filter capabilities"), host);
-  vbox->addWidget(search);
-
-  constexpr int kCols = 5;
-  constexpr int kIconPx = 28;
-  constexpr int kIconBtnPx = 36;
-  constexpr int kMinTileW = 72;
-  constexpr int kMaxTileW = 110;
-  constexpr int kTileHPadding = 8;
-
-  const QFontMetrics fm(host->font());
-  int widest = kMinTileW - kTileHPadding;
-  for (const auto& libIt : byLibrary)
-  {
-    for (const CapRow& row : libIt.second)
-    {
-      const int w = fm.horizontalAdvance(row.second->type);
-      widest = qMax(widest, w);
-    }
-  }
-  const int tileW = qBound(kMinTileW, widest + kTileHPadding, kMaxTileW);
-
-  for (auto libIt = byLibrary.begin(); libIt != byLibrary.end(); ++libIt)
-  {
-    LibrarySection section;
-    section.header = new QLabel(libIt->first, host);
-    QFont hf = section.header->font();
-    hf.setBold(true);
-    section.header->setFont(hf);
-    vbox->addWidget(section.header);
-
-    section.gridHost = new QWidget(host);
-    section.grid = new QGridLayout(section.gridHost);
-    section.grid->setContentsMargins(0, 0, 0, 0);
-    section.grid->setHorizontalSpacing(4);
-    section.grid->setVerticalSpacing(4);
-
-    int idx = 0;
-    for (const CapRow& row : libIt->second)
-    {
-      const QString nodeIdKey = row.first;
-      const std::shared_ptr<NodeConfig> cfgRow = row.second;
-
-      auto* cell = new QWidget(section.gridHost);
-      cell->setFixedWidth(tileW);
-      auto* cv = new QVBoxLayout(cell);
-      cv->setContentsMargins(0, 0, 0, 0);
-      cv->setSpacing(2);
-
-      auto* btn = new QToolButton(cell);
-      btn->setToolButtonStyle(Qt::ToolButtonIconOnly);
-      btn->setAutoRaise(true);
-      btn->setIconSize(QSize(kIconPx, kIconPx));
-      btn->setFixedSize(QSize(kIconBtnPx, kIconBtnPx));
-      if (!cfgRow->body.iconPath.isEmpty())
-      {
-        const QString path = AppPaths::icon(cfgRow->body.iconPath);
-        if (!path.isEmpty())
-          btn->setIcon(QIcon(path));
-      }
-      cv->addWidget(btn, 0, Qt::AlignHCenter);
-
-      auto* lbl = new QLabel(cfgRow->type, cell);
-      QFont lf = lbl->font();
-      lf.setPointSizeF(qMax(7.0, lf.pointSizeF() - 1.0));
-      lbl->setFont(lf);
-      lbl->setAlignment(Qt::AlignHCenter | Qt::AlignTop);
-      lbl->setWordWrap(true);
-      lbl->setTextInteractionFlags(Qt::NoTextInteraction);
-      lbl->setFixedWidth(tileW - kTileHPadding);
-      lbl->setToolTip(cfgRow->type);
-      cv->addWidget(lbl, 0, Qt::AlignHCenter);
-
-      QObject::connect(btn, &QToolButton::clicked, view, [this, task, menuPtr = &menu, nodeIdKey, cfgRow]() {
-        auto info = std::make_shared<NodeSaveInfo>();
-        info->setNodeId(nodeIdKey);
-        info->setSize(QSizeF(cfgRow->body.width, cfgRow->body.height));
-        info->setScale(parentView()->getScale());
-
-        clearSelectedNodes();
-        const QPointF slotCenter = task->placeholderSlotSceneRect().center();
-        NodeItem* created = createNode(NodeCreation::Dropping, info, slotCenter, task);
-        if (created)
-          selectNode(created, true);
-
-        menuPtr->close();
-      });
-
-      section.grid->addWidget(cell, idx / kCols, idx % kCols);
-      section.tiles.push_back({cfgRow->type, cell});
-      ++idx;
-    }
-
-    vbox->addWidget(section.gridHost);
-    sections.push_back(section);
-  }
-
-  const auto reflowSection = [](LibrarySection& section, const QVector<QWidget*>& visibleCells) {
-    while (QLayoutItem* item = section.grid->takeAt(0))
-    {
-      if (item->widget())
-        item->widget()->setParent(section.gridHost);
-      delete item;
-    }
-
-    for (int i = 0; i < visibleCells.size(); ++i)
-      section.grid->addWidget(visibleCells[i], i / kCols, i % kCols);
-
-    const bool hasVisible = !visibleCells.isEmpty();
-    section.header->setVisible(hasVisible);
-    section.gridHost->setVisible(hasVisible);
-  };
-
-  const auto applyFilter = [reflowSection, &sections](const QString& query) {
-    const QString needle = query.trimmed();
-    for (LibrarySection& section : sections)
-    {
-      QVector<QWidget*> visible;
-      visible.reserve(section.tiles.size());
-      for (const CapabilityTile& tile : section.tiles)
-      {
-        const bool matches = needle.isEmpty() || tile.name.contains(needle, Qt::CaseInsensitive);
-        tile.cell->setVisible(matches);
-        if (matches)
-          visible.push_back(tile.cell);
-      }
-      reflowSection(section, visible);
-    }
-  };
-
-  QObject::connect(search, &maki::SearchWidget::valueChanged, host, applyFilter);
-
-  host->adjustSize();
-
-  auto* scroll = new QScrollArea(&menu);
-  scroll->setFrameShape(QFrame::NoFrame);
-  scroll->setWidgetResizable(true);
-  scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-  scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-  scroll->setWidget(host);
-
-  const int viewportH = view->viewport() ? view->viewport()->height() : view->height();
-  const int maxPopupH = qMax(240, static_cast<int>(viewportH * 0.7));
-
-  const QSize hostHint = host->sizeHint();
-  scroll->setMaximumHeight(qMin(hostHint.height() + 2, maxPopupH));
-  scroll->setMinimumWidth(hostHint.width() + 2);
-
-  auto* wa = new QWidgetAction(&menu);
-  wa->setDefaultWidget(scroll);
-  menu.addAction(wa);
+  std::sort(items.begin(), items.end(), [](const CapabilityIconMenuItem& a, const CapabilityIconMenuItem& b) {
+    if (a.section != b.section)
+      return a.section < b.section;
+    return a.name.localeAwareCompare(b.name) < 0;
+  });
 
   const QRectF slotRect = task->placeholderSlotSceneRect();
   const QPointF anchorScene = slotRect.center() + QPointF(0, slotRect.height() * 0.5 + 4.0);
+  const QPoint globalAnchor = view->viewport()->mapToGlobal(view->mapFromScene(anchorScene));
 
-  menu.ensurePolished();
-  const QSize menuHint = menu.sizeHint();
+  CapabilityIconMenu::exec(view, items, globalAnchor, [this, task](const CapabilityIconMenuItem& selected) {
+    auto cfg = mConfigTable->get(selected.id);
+    if (!cfg)
+      return;
 
-  QPoint v = view->mapFromScene(anchorScene);
-  v.rx() -= menuHint.width() / 2;
-  QTimer::singleShot(0, search, [search]() { search->widget()->setFocus(); });
-  menu.exec(view->viewport()->mapToGlobal(v));
+    auto info = std::make_shared<NodeSaveInfo>();
+    info->setNodeId(selected.id);
+    info->setSize(QSizeF(cfg->body.width, cfg->body.height));
+    info->setScale(parentView()->getScale());
+
+    clearSelectedNodes();
+    const QPointF slotCenter = task->placeholderSlotSceneRect().center();
+    NodeItem* created = createNode(NodeCreation::Dropping, info, slotCenter, task);
+    if (created)
+      selectNode(created, true);
+  });
+}
+
+void Canvas::openCallCapabilityMenu(NodeItem* callNode)
+{
+  auto* call = dynamic_cast<CallNode*>(callNode);
+  if (!call || type() != Types::LibraryTypes::BEHAVIOUR)
+    return;
+
+  CanvasView* view = parentView();
+  auto storage = projectStorage();
+  if (!view || !storage)
+    return;
+
+  QVector<CapabilityIconMenuItem> items;
+  const auto callers = storage->getPossibleCallers(call->id(), Types::PropertyTypes::EVENT_SELECT);
+  for (const auto& caller : callers)
+  {
+    const QVariant nameVar = caller->getProperty(ConfigKeys::NAME);
+    if (!nameVar.isValid())
+      continue;
+    const QString capabilityName = nameVar.toString();
+    if (capabilityName.isEmpty())
+      continue;
+
+    CapabilityIconMenuItem item;
+    item.id = caller->getid();
+    item.name = capabilityName;
+    item.iconPath = behaviour::resolveCapabilityIconPath(caller->getIcon(), caller->getnodeId(), mConfigTable.get());
+    items.push_back(item);
+  }
+
+  std::sort(items.begin(), items.end(), [](const CapabilityIconMenuItem& a, const CapabilityIconMenuItem& b) {
+    return a.name.localeAwareCompare(b.name) < 0;
+  });
+
+  const QRectF slotRect = call->capabilitySlotSceneRect();
+  const QPointF anchorScene = slotRect.center() + QPointF(0, slotRect.height() * 0.5 + 4.0);
+  const QPoint globalAnchor = view->viewport()->mapToGlobal(view->mapFromScene(anchorScene));
+
+  CapabilityIconMenu::exec(
+      view, items, globalAnchor,
+      [this, call, storage](const CapabilityIconMenuItem& selected) {
+        call->assignCapability(selected.name, selected.id, storage.get());
+        selectNode(call, true);
+      },
+      tr("No capabilities available"));
 }
 
 bool Canvas::isModifierSet(QGraphicsSceneMouseEvent* event, Qt::KeyboardModifier modifier)
@@ -672,6 +554,21 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
           event->accept();
           openCapabilityMenu(task);
           return;
+        }
+      }
+    }
+    else if (type() == Types::LibraryTypes::BEHAVIOUR)
+    {
+      if (NodeItem* node = ancestorNodeItem(item))
+      {
+        if (auto* call = dynamic_cast<CallNode*>(node))
+        {
+          if (call->capabilitySlotContainsScenePoint(event->scenePos()))
+          {
+            event->accept();
+            openCallCapabilityMenu(call);
+            return;
+          }
         }
       }
     }

@@ -240,13 +240,7 @@ QRectF NodeBase::nodeShapeContentRect(const QRectF& bounds) const
   if (config()->body.nodeSvg.isEmpty())
     return drawingBounds;
 
-  if (!mNodeSvgRenderer)
-  {
-    const QString path = iconPathFromTheme(config()->body.nodeSvg);
-    auto renderer = std::make_unique<QSvgRenderer>(path);
-    if (renderer->isValid())
-      mNodeSvgRenderer = std::move(renderer);
-  }
+  ensureNodeSvgRenderer();
 
   if (!mNodeSvgRenderer)
     return drawingBounds;
@@ -264,15 +258,9 @@ void NodeBase::paintNode(const QRectF& bounds, const QColor& background, const Q
 
   if (!config()->body.nodeSvg.isEmpty())
   {
+    ensureNodeSvgRenderer();
     if (!mNodeSvgRenderer)
-    {
-      const QString path = iconPathFromTheme(config()->body.nodeSvg);
-      auto renderer = std::make_unique<QSvgRenderer>(path);
-      if (renderer->isValid())
-        mNodeSvgRenderer = std::move(renderer);
-      else
-        LOG_WARNING("nodeSvg not found or invalid: %s", qPrintable(config()->body.nodeSvg));
-    }
+      LOG_WARNING("nodeSvg not found or invalid: %s", qPrintable(config()->body.nodeSvg));
 
     if (mNodeSvgRenderer)
     {
@@ -322,13 +310,39 @@ void NodeBase::paintNode(const QRectF& bounds, const QColor& background, const Q
 
 void NodeBase::ensureNodeSvgRenderer() const
 {
-  if (mNodeSvgRenderer || config()->body.nodeSvg.isEmpty())
+  const QString& nodeSvg = config()->body.nodeSvg;
+  if (nodeSvg.isEmpty())
+  {
+    mNodeSvgRenderer.reset();
+    mNodeSvgLoadedPath.clear();
+    return;
+  }
+
+  if (mNodeSvgRenderer && mNodeSvgLoadedPath == nodeSvg)
     return;
 
-  const QString path = iconPathFromTheme(config()->body.nodeSvg);
+  mNodeSvgRenderer.reset();
+  mNodeSvgLoadedPath = nodeSvg;
+  const QString path = iconPathFromTheme(nodeSvg);
   auto renderer = std::make_unique<QSvgRenderer>(path);
   if (renderer->isValid())
     mNodeSvgRenderer = std::move(renderer);
+  else
+    mNodeSvgLoadedPath.clear();
+}
+
+void NodeBase::invalidateNodeSvgCache()
+{
+  mNodeSvgRenderer.reset();
+  mNodeSvgLoadedPath.clear();
+  mSvgOutlineCacheKey.clear();
+  mSvgOutlineCachePath = QPainterPath();
+
+  // DeviceCoordinateCache can keep a stale pixmap across content-only changes.
+  const CacheMode previous = cacheMode();
+  setCacheMode(QGraphicsItem::NoCache);
+  update();
+  setCacheMode(previous);
 }
 
 QPainterPath NodeBase::geometricBodyOutlinePath(const QRectF& drawingBounds) const
@@ -490,6 +504,31 @@ void NodeBase::setPixmap(const QPixmap& pixmap)
   mPixmapItem = new QGraphicsPixmapItem(pixmap);
 }
 
+void NodeBase::applyNodeSvg(const QString& nodeSvg)
+{
+  if (!mConfig || mConfig->body.nodeSvg == nodeSvg)
+    return;
+
+  mConfig->body.nodeSvg = nodeSvg;
+  mNodeSvgRenderer.reset();
+  mNodeSvgLoadedPath.clear();
+  mSvgOutlineCacheKey.clear();
+  mSvgOutlineCachePath = QPainterPath();
+}
+
+void NodeBase::setNodeSvg(const QString& nodeSvg)
+{
+  if (!mConfig)
+    return;
+
+  if (mConfig->body.nodeSvg == nodeSvg && mNodeSvgLoadedPath == nodeSvg && mNodeSvgRenderer)
+    return;
+
+  prepareGeometryChange();
+  applyNodeSvg(nodeSvg);
+  invalidateNodeSvgCache();
+}
+
 void NodeBase::setIcon(const QString& path, const QColor& iconColor)
 {
   LOG_INFO("Setting icon: %s", qPrintable(path));
@@ -539,15 +578,7 @@ qreal NodeBase::computeScaleFactor() const
 QPixmap NodeBase::nodePixmap() const
 {
   if (!config()->body.nodeSvg.isEmpty())
-  {
-    if (!mNodeSvgRenderer)
-    {
-      const QString path = iconPathFromTheme(config()->body.nodeSvg);
-      auto renderer = std::make_unique<QSvgRenderer>(path);
-      if (renderer->isValid())
-        mNodeSvgRenderer = std::move(renderer);
-    }
-  }
+    ensureNodeSvgRenderer();
 
   if (mNodeSvgRenderer && mNodeSvgRenderer->isValid())
   {

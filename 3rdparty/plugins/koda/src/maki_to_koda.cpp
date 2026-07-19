@@ -388,21 +388,40 @@ std::any MakiToKoda::buildSequenceFrom(const IFlow& flow, const INode* start, co
   return node;
 }
 
+bool MakiToKoda::isAsyncCallNode(const INode& node) const
+{
+  const QString id = node.getnodeId();
+  if (id == QStringLiteral("Koda::Async task") || id == QStringLiteral("Mission::Async task"))
+    return true;
+  if (id == QStringLiteral("Koda::Sync task") || id == QStringLiteral("Mission::Sync task"))
+    return false;
+
+  // Front-end Call node: mode selects Async vs Sync backend semantics.
+  if (id == QStringLiteral("Koda::Call"))
+    return node.getproperties().value(QStringLiteral("call_mode")).toString() == QStringLiteral("async");
+
+  return false;
+}
+
 std::any MakiToKoda::buildNodeExpr(const IFlow& flow, const INode& node)
 {
-  if (node.getnodeId() == "Koda::Async task")
-    return buildAsyncExpr(flow, node);
-  else if (node.getnodeId() == "Koda::Sync task")
+  const QString id = node.getnodeId();
+  if (id == QStringLiteral("Koda::Call") || id == QStringLiteral("Koda::Async task") || id == QStringLiteral("Koda::Sync task")
+      || id == QStringLiteral("Mission::Async task") || id == QStringLiteral("Mission::Sync task"))
+  {
+    if (isAsyncCallNode(node))
+      return buildAsyncExpr(flow, node);
     return buildSyncExpr(flow, node);
-  else if (node.getnodeId() == "Koda::Flow call")
+  }
+  else if (id == QStringLiteral("Koda::Flow call"))
     return buildStrategyExpr(flow, node);
-  else if (node.getnodeId() == "Koda::Within")
+  else if (id == QStringLiteral("Koda::Within"))
     return buildWithinExpr(flow, node);
-  else if (node.getnodeId() == "Koda::Repeat")
+  else if (id == QStringLiteral("Koda::Repeat"))
     return buildRepeatExpr(flow, node);
-  else if (node.getnodeId() == "Koda::Continue")
+  else if (id == QStringLiteral("Koda::Continue"))
     return buildContinueExpr(flow, node);
-  else if (node.getnodeId() == "Koda::Terminate")
+  else if (id == QStringLiteral("Koda::Terminate"))
     return buildSuccessExpr(flow, node);
 
   LOG_ERROR("Unknown expression: %s", qPrintable(node.getnodeId()));

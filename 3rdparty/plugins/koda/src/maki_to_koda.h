@@ -53,6 +53,7 @@ private:
   std::any buildJoinFromFanOut(const IFlow& flow, const INode& splitNode, const QList<NodeTransition>& successors, const INode*& joinNode);
 
   std::any buildNodeExpr(const IFlow& flow, const INode& node);
+  bool isAsyncCallNode(const INode& node) const;
   std::any buildAsyncExpr(const IFlow& flow, const INode& node);
   std::any buildSyncExpr(const IFlow& flow, const INode& node);
   std::any buildStrategyExpr(const IFlow& flow, const INode& node);

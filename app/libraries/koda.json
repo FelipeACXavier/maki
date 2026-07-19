@@ -1325,7 +1325,7 @@
           ]
         },
         {
-          "type": "Async task",
+          "type": "Call",
           "body": {
             "shape": "rounded rectangle",
             "textColor": "#FFFFFF",
@@ -1336,52 +1336,31 @@
             "height": 100,
             "iconColor": "#FFFFFF",
             "iconScale": 0.8,
-            "nodeSvg": "node_async.svg"
+            "nodeSvg": "shape_middle.svg"
+          },
+          "help": {
+            "message": "Call a capability. Choose Async (wait for return via trigger) or Sync (immediate return for a selected event)."
           },
           "properties": [
             {
               "id": "name",
               "type": "string",
-              "default": "Async task"
+              "default": "Call"
             },
             {
-              "id": "capability",
-              "type": "component_select",
+              "id": "call_mode",
+              "type": "select",
+              "default": "sync",
               "options": [
                 {
-                  "id": "arguments",
-                  "type": "trigger_call"
+                  "id": "sync",
+                  "type": "string"
+                },
+                {
+                  "id": "async",
+                  "type": "string"
                 }
               ]
-            }
-          ],
-          "controls": [],
-          "ports": [
-            "in",
-            "out",
-            "abort",
-            "error"
-          ]
-        },
-        {
-          "type": "Sync task",
-          "body": {
-            "shape": "rounded rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#202020",
-            "borderColor": "#FFFFFF",
-            "borderRadius": 10,
-            "width": 100,
-            "height": 100,
-            "iconColor": "#FFFFFF",
-            "iconScale": 0.8,
-            "nodeSvg": "node_sync.svg"
-          },
-          "properties": [
-            {
-              "id": "name",
-              "type": "string",
-              "default": "Sync task"
             },
             {
               "id": "capability",
@@ -1402,6 +1381,7 @@
             "error"
           ]
         },
+
         {
           "type": "Flow call",
           "body": {
