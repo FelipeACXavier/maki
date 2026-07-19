@@ -86,6 +86,10 @@ DraggableItem::DraggableItem(const QString& nodeId, std::shared_ptr<NodeConfig> 
     setIcon(config()->body.iconPath, config()->body.iconColor);
 
   setLabel(config()->type, Fonts::BaseSize);
+
+  const QString definition = config()->help.message.trimmed();
+  if (!definition.isEmpty())
+    setToolTip(QStringLiteral("<qt>") + definition.toHtmlEscaped() + QStringLiteral("</qt>"));
 }
 
 DraggableItem::~DraggableItem()
