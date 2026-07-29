@@ -1,6 +1,7 @@
 #include "elements/behaviour/subflow_block.h"
 
 #include <QFont>
+#include <QFontMetricsF>
 #include <QGraphicsProxyWidget>
 #include <QGraphicsScene>
 #include <QGraphicsSceneMouseEvent>
@@ -29,14 +30,17 @@ constexpr qreal kPortLaneWidth = 36.0;
 /** Wide enough for "Loop [n] iterations every [n] ms" title controls. */
 constexpr qreal kMinBlockWidth = 320.0;
 constexpr qreal kMinBlockHeight = 100.0;
-/** Height of the header strip left visible when the block is collapsed. */
-constexpr qreal kCollapsedHeight = 44.0;
 /** Size of the collapse/expand chevron in item coordinates. */
-constexpr qreal kCollapseButtonSize = 16.0;
+constexpr qreal kCollapseButtonSize = 14.0;
 constexpr qreal kCollapseButtonMargin = 8.0;
+constexpr qreal kCollapsedChipPadX = 4.0;
+constexpr qreal kCollapsedChipPadY = 2.0;
+constexpr qreal kCollapsedLabelArrowGap = 6.0;
 constexpr qreal kCornerRadius = 10.0;
 /** Visible dashed-line gap below the owner label (or body if unlabeled). */
 constexpr qreal kGapBelowOwner = 40.0;
+/** Compact gap when collapsed — only a caption chip sits under the host. */
+constexpr qreal kGapBelowOwnerCollapsed = 8.0;
 constexpr qreal kTitleLeft = 10.0;
 constexpr qreal kTitleTop = 6.0;
 const QColor kConnectorColor(0xb0, 0xb0, 0xb0);
@@ -252,22 +256,21 @@ QVariant SubflowBlock::itemChange(GraphicsItemChange change, const QVariant& val
 {
   if (change == QGraphicsItem::ItemPositionChange && mOwner)
   {
-    // Constrain movement to the vertical axis: X stays locked to the owner's
-    // left edge, and the block is never allowed above the owner (or above its
-    // stacked predecessor for Within "else").
+    // Constrain movement to the vertical axis: X stays locked under the owner
+    // (left-aligned when expanded, centred when collapsed), and the block is
+    // never allowed above the owner (or above its stacked predecessor for Within "else").
     QPointF newPos = value.toPointF();
-    const QRectF ownerScene = mOwner->mapRectToScene(mOwner->nodeRect());
-    newPos.setX(ownerScene.left());
+    newPos.setX(alignedLeftUnderOwner(mSize.width()));
 
-    qreal minTop = sceneBottomBelowItem(mOwner) + kGapBelowOwner;
+    qreal minTop = sceneBottomBelowItem(mOwner) + gapBelowPredecessor();
     if (mConnectorAbove && mConnectorAbove != mOwner)
-      minTop = qMax(minTop, sceneBottomBelowItem(mConnectorAbove) + kGapBelowOwner);
+      minTop = qMax(minTop, sceneBottomBelowItem(mConnectorAbove) + gapBelowPredecessor());
     newPos.setY(qMax(newPos.y(), minTop));
 
     return NodeItem::itemChange(change, QVariant(newPos));
   }
 
-  if (change == QGraphicsItem::ItemPositionHasChanged && mSuppressExpand)
+  if (change == QGraphicsItem::ItemPositionHasChanged && mSuppressExpand && !mCollapsed)
   {
     // Live-drag of a nested block: keep the enclosing subflow covering us.
     // (mSuppressExpand is set for the duration of a chrome drag.)
@@ -281,6 +284,19 @@ QVariant SubflowBlock::itemChange(GraphicsItemChange change, const QVariant& val
 
 void SubflowBlock::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
+  // Collapsed: only the caption / expand arrow is interactive.
+  if (mCollapsed)
+  {
+    if (nodeRect().contains(event->pos()))
+    {
+      toggleCollapsed();
+      event->accept();
+      return;
+    }
+    event->ignore();
+    return;
+  }
+
   if (collapseButtonRect().contains(event->pos()))
   {
     toggleCollapsed();
@@ -468,8 +484,8 @@ void SubflowBlock::syncToOwnerPosition()
     return;
 
   mSuppressExpand = true;
-  const QRectF ownerScene = mOwner->mapRectToScene(mOwner->nodeRect());
-  const QPointF newTopLeft(ownerScene.left(), sceneBottomBelowItem(mOwner) + kGapBelowOwner);
+  const QPointF newTopLeft(alignedLeftUnderOwner(mSize.width()),
+                           sceneBottomBelowItem(mOwner) + gapBelowPredecessor());
   updatePosition(newTopLeft);
   mSuppressExpand = false;
   notifyStackFollower();
@@ -481,8 +497,8 @@ void SubflowBlock::syncBelow(NodeItem* above)
     return;
 
   mSuppressExpand = true;
-  const QRectF ownerScene = mOwner->mapRectToScene(mOwner->nodeRect());
-  const QPointF newTopLeft(ownerScene.left(), sceneBottomBelowItem(above) + kGapBelowOwner);
+  const QPointF newTopLeft(alignedLeftUnderOwner(mSize.width()),
+                           sceneBottomBelowItem(above) + gapBelowPredecessor());
   updatePosition(newTopLeft);
   mSuppressExpand = false;
   notifyStackFollower();
@@ -610,6 +626,14 @@ void SubflowBlock::childRemoved(NodeItem* child)
 
 QPainterPath SubflowBlock::shape() const
 {
+  if (mCollapsed)
+  {
+    // Entire collapsed caption chip is clickable to expand.
+    QPainterPath path;
+    path.addRect(nodeRect());
+    return path;
+  }
+
   // Only the border chrome is hittable so interior nodes/transitions receive
   // clicks and drops. Drop-into-block uses nodeRect via dropTargetContainer.
   QPainterPath outer;
@@ -661,6 +685,9 @@ std::optional<std::pair<QPointF, QPointF>> SubflowBlock::connectorSceneEndpoints
 QRectF SubflowBlock::boundingRect() const
 {
   QRectF rect = nodeRect();
+  if (mCollapsed)
+    return rect;
+
   const auto endpoints = connectorSceneEndpoints();
   if (!endpoints)
     return rect;
@@ -674,6 +701,9 @@ QRectF SubflowBlock::boundingRect() const
 
 void SubflowBlock::paintConnector(QPainter* painter) const
 {
+  if (mCollapsed)
+    return;
+
   const auto endpoints = connectorSceneEndpoints();
   if (!endpoints)
     return;
@@ -693,6 +723,13 @@ void SubflowBlock::paint(QPainter* painter, const QStyleOptionGraphicsItem* styl
   Q_UNUSED(widget);
 
   painter->setRenderHint(QPainter::Antialiasing, true);
+
+  if (mCollapsed)
+  {
+    paintCollapsedChrome(painter);
+    return;
+  }
+
   paintConnector(painter);
 
   const QPen borderPen = isSelected() ? QPen(Config::HIGHLIGHT, 4 / baseScale()) : QPen(Config::FOREGROUND, 1.5 / baseScale());
@@ -728,8 +765,52 @@ void SubflowBlock::paintTitle(QPainter* painter) const
   painter->drawText(titleRect, Qt::AlignLeft | Qt::AlignVCenter, titleTextForRole(mRole));
 }
 
+qreal SubflowBlock::gapBelowPredecessor() const
+{
+  return mCollapsed ? kGapBelowOwnerCollapsed : kGapBelowOwner;
+}
+
+qreal SubflowBlock::alignedLeftUnderOwner(qreal width) const
+{
+  if (!mOwner)
+    return pos().x();
+
+  const QRectF ownerScene = mOwner->mapRectToScene(mOwner->nodeRect());
+  if (mCollapsed)
+    return ownerScene.center().x() - width * 0.5;
+  return ownerScene.left();
+}
+
+QSizeF SubflowBlock::collapsedChromeSize() const
+{
+  const QFont font = boldTitleFont(QFont());
+  const QFontMetricsF fm(font);
+  const QString caption = titleTextForRole(mRole);
+  const qreal textW = fm.horizontalAdvance(caption);
+  const qreal textH = fm.height();
+  const qreal width = kCollapsedChipPadX + textW + kCollapsedLabelArrowGap + kCollapseButtonSize + kCollapsedChipPadX;
+  const qreal height = kCollapsedChipPadY + qMax(textH, kCollapseButtonSize) + kCollapsedChipPadY;
+  return QSizeF(width, height);
+}
+
+QRectF SubflowBlock::collapsedCaptionRect() const
+{
+  const QFont font = boldTitleFont(QFont());
+  const QFontMetricsF fm(font);
+  const qreal textH = fm.height();
+  const qreal y = (nodeRect().height() - textH) * 0.5;
+  return QRectF(kCollapsedChipPadX, y, fm.horizontalAdvance(titleTextForRole(mRole)), textH);
+}
+
 QRectF SubflowBlock::collapseButtonRect() const
 {
+  if (mCollapsed)
+  {
+    const QRectF caption = collapsedCaptionRect();
+    const qreal y = (nodeRect().height() - kCollapseButtonSize) * 0.5;
+    return QRectF(caption.right() + kCollapsedLabelArrowGap, y, kCollapseButtonSize, kCollapseButtonSize);
+  }
+
   const QRectF outer = nodeRect();
   return QRectF(outer.right() - kCollapseButtonSize - kCollapseButtonMargin,
                 outer.top() + kCollapseButtonMargin,
@@ -765,6 +846,32 @@ void SubflowBlock::paintCollapseButton(QPainter* painter) const
 
   painter->drawPolygon(triangle);
   painter->restore();
+}
+
+void SubflowBlock::paintCollapsedChrome(QPainter* painter) const
+{
+  const QFont font = boldTitleFont(painter->font());
+  painter->setFont(font);
+  painter->setPen(QPen(Config::FOREGROUND));
+  painter->drawText(collapsedCaptionRect(), Qt::AlignLeft | Qt::AlignVCenter, titleTextForRole(mRole));
+  paintCollapseButton(painter);
+}
+
+void SubflowBlock::applyCollapsedChrome()
+{
+  if (!mOwner)
+    return;
+
+  mSuppressExpand = true;
+
+  const QSizeF chip = collapsedChromeSize();
+  qreal top = sceneBottomBelowItem(mOwner) + gapBelowPredecessor();
+  if (mConnectorAbove && mConnectorAbove != mOwner)
+    top = qMax(top, sceneBottomBelowItem(mConnectorAbove) + gapBelowPredecessor());
+
+  setBlockGeometry(QPointF(alignedLeftUnderOwner(chip.width()), top), chip);
+  mSuppressExpand = false;
+  notifyStackFollower();
 }
 
 QString SubflowBlock::collapsePropertyKey() const
@@ -860,29 +967,33 @@ void SubflowBlock::setCollapsed(bool collapsed)
 
   mCollapsed = collapsed;
 
-  // The loop/out port only makes sense while the contents are visible.
+  // Port and inline title widgets only belong to the expanded block chrome.
   if (mOutPort)
     mOutPort->setVisible(!collapsed);
+  if (mTitleProxy)
+    mTitleProxy->setVisible(!collapsed);
+  setFlag(QGraphicsItem::ItemIsMovable, !collapsed);
 
   if (collapsed)
   {
     setContentsVisible(false);
-
-    mSuppressExpand = true;
-    qreal left = pos().x();
-    if (mOwner)
-      left = mOwner->mapRectToScene(mOwner->nodeRect()).left();
-    setBlockGeometry(QPointF(left, pos().y()), QSizeF(qMax(mSize.width(), kMinBlockWidth), kCollapsedHeight));
-    mSuppressExpand = false;
+    applyCollapsedChrome();
   }
   else
   {
     setContentsVisible(true);
+    // Restore the normal dashed-connector gap under the host / predecessor.
+    if (mConnectorAbove && mConnectorAbove != mOwner)
+      syncBelow(mConnectorAbove);
+    else
+      syncToOwnerPosition();
     // Regrow around the (now visible) children; also re-stacks any follower.
     expandToFitChildren();
   }
 
   persistCollapsedState();
+  notifyEnclosingSubflow();
+  prepareGeometryChange();
   update();
 }
 

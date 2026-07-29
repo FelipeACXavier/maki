@@ -48,7 +48,7 @@ public:
 
   Role role() const { return mRole; }
 
-  /** Collapse hides the block's contents and shrinks it to a header strip. */
+  /** Collapse hides the block entirely and shows only a label + expand arrow under the host. */
   void setCollapsed(bool collapsed);
   bool isCollapsed() const { return mCollapsed; }
   void toggleCollapsed() { setCollapsed(!mCollapsed); }
@@ -105,7 +105,14 @@ private:
   void paintTitle(QPainter* painter) const;
 
   QRectF collapseButtonRect() const;
+  QRectF collapsedCaptionRect() const;
+  QSizeF collapsedChromeSize() const;
+  qreal gapBelowPredecessor() const;
+  /** Top-left X under the owner: left-aligned when expanded, centred when collapsed. */
+  qreal alignedLeftUnderOwner(qreal width) const;
+  void applyCollapsedChrome();
   void paintCollapseButton(QPainter* painter) const;
+  void paintCollapsedChrome(QPainter* painter) const;
   void setContentsVisible(bool visible);
   QString collapsePropertyKey() const;
   void persistCollapsedState();
