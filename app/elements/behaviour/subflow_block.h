@@ -80,9 +80,7 @@ public:
   VoidResult start() override;
 
 protected:
-  void configurePorts() override;
   void initializeNodeSize() override;
-  void updatePortPositions() override;
 
   QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
   void mousePressEvent(QGraphicsSceneMouseEvent* event) override;

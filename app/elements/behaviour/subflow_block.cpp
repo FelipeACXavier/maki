@@ -10,6 +10,8 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPainter>
+#include <QRegularExpression>
+#include <QRegularExpressionValidator>
 #include <QSet>
 #include <QStyleOptionGraphicsItem>
 #include <QUuid>
@@ -52,12 +54,27 @@ const char* kTitleWidgetStyle =
     "QLabel { color: #404040; background: transparent; }"
     "QLineEdit { background: white; border: 1px solid #a0a0a0; border-radius: 2px; padding: 1px 3px; }";
 
+/** Infinity glyph shown in the Loop iterations field when the value is 0. */
+const QChar kInfinityGlyph(0x221E);
+
 QLineEdit* makeIntEdit(QWidget* parent, int width, const QString& tooltip)
 {
   auto* edit = new QLineEdit(parent);
   edit->setFixedWidth(width);
   edit->setAlignment(Qt::AlignCenter);
   edit->setValidator(new QIntValidator(0, 2'000'000'000, edit));
+  edit->setToolTip(tooltip);
+  return edit;
+}
+
+QLineEdit* makeIterationsEdit(QWidget* parent, int width, const QString& tooltip)
+{
+  auto* edit = new QLineEdit(parent);
+  edit->setFixedWidth(width);
+  edit->setAlignment(Qt::AlignCenter);
+  // Digits, or the infinity glyph / "inf" for indefinite loops (stored as 0).
+  edit->setValidator(new QRegularExpressionValidator(
+      QRegularExpression(QStringLiteral("^(\\d+|") + kInfinityGlyph + QStringLiteral("|[iI][nN][fF])?$")), edit));
   edit->setToolTip(tooltip);
   return edit;
 }
@@ -73,6 +90,25 @@ void syncEditFromProperty(QLineEdit* edit, NodeItem* owner, const QString& prope
     edit->setText(text);
 }
 
+void syncIterationsEditFromProperty(QLineEdit* edit, NodeItem* owner)
+{
+  if (!edit || !owner || edit->hasFocus())
+    return;
+
+  const QVariant value = owner->getProperty(kIterationsPropertyId);
+  if (!value.isValid())
+  {
+    if (!edit->text().isEmpty())
+      edit->setText(QString());
+    return;
+  }
+
+  const int iterations = value.toInt();
+  const QString text = iterations == 0 ? QString(kInfinityGlyph) : QString::number(iterations);
+  if (edit->text() != text)
+    edit->setText(text);
+}
+
 bool applyEditToProperty(QLineEdit* edit, NodeItem* owner, const QString& propertyId)
 {
   if (!edit || !owner)
@@ -84,6 +120,30 @@ bool applyEditToProperty(QLineEdit* edit, NodeItem* owner, const QString& proper
     return false;
 
   owner->setProperty(propertyId, value);
+  return true;
+}
+
+bool applyIterationsEditToProperty(QLineEdit* edit, NodeItem* owner)
+{
+  if (!edit || !owner)
+    return false;
+
+  const QString text = edit->text().trimmed();
+  if (text == QString(kInfinityGlyph) || text.compare(QStringLiteral("inf"), Qt::CaseInsensitive) == 0)
+  {
+    owner->setProperty(kIterationsPropertyId, 0);
+    edit->setText(QString(kInfinityGlyph));
+    return true;
+  }
+
+  bool ok = false;
+  const int value = text.toInt(&ok);
+  if (!ok || value < 0)
+    return false;
+
+  owner->setProperty(kIterationsPropertyId, value);
+  if (value == 0)
+    edit->setText(QString(kInfinityGlyph));
   return true;
 }
 
@@ -170,7 +230,7 @@ std::shared_ptr<NodeConfig> SubflowBlock::synthesizedConfig()
   config->body.height = static_cast<int>(kMinBlockHeight);
   config->body.borderRadius = static_cast<int>(kCornerRadius);
   config->hasInPort = false;
-  config->hasOutPort = true;
+  config->hasOutPort = false;
   return config;
 }
 
@@ -399,7 +459,7 @@ void SubflowBlock::ensureLoopTitleUi()
   auto* loopLabel = new QLabel(QStringLiteral("Loop"), container);
   loopLabel->setFont(titleFont);
 
-  mIterationsEdit = makeIntEdit(container, 44, QStringLiteral("Number of iterations (0 = indefinitely)"));
+  mIterationsEdit = makeIterationsEdit(container, 44, QStringLiteral("Number of iterations (∞ / 0 = indefinitely)"));
 
   auto* iterationsLabel = new QLabel(QStringLiteral("iterations every"), container);
   iterationsLabel->setFont(titleFont);
@@ -433,7 +493,7 @@ void SubflowBlock::syncTitleFieldsFromOwner()
     return;
 
   syncEditFromProperty(mTimeoutEdit, mOwner, kTimeoutPropertyId);
-  syncEditFromProperty(mIterationsEdit, mOwner, kIterationsPropertyId);
+  syncIterationsEditFromProperty(mIterationsEdit, mOwner);
   syncEditFromProperty(mRateEdit, mOwner, kRatePropertyId);
 }
 
@@ -445,7 +505,7 @@ void SubflowBlock::applyTimeoutToOwner()
 
 void SubflowBlock::applyIterationsToOwner()
 {
-  if (!applyEditToProperty(mIterationsEdit, mOwner, kIterationsPropertyId))
+  if (!applyIterationsEditToProperty(mIterationsEdit, mOwner))
     syncTitleFieldsFromOwner();
 }
 
@@ -455,27 +515,11 @@ void SubflowBlock::applyRateToOwner()
     syncTitleFieldsFromOwner();
 }
 
-void SubflowBlock::configurePorts()
-{
-  if (config()->hasOutPort)
-    mOutPort = new PortItem(PortItem::Out, this);
-  updatePortPositions();
-}
-
 void SubflowBlock::initializeNodeSize()
 {
   if (mSize.width() <= 0.0 || mSize.height() <= 0.0)
     mSize = QSizeF(kMinBlockWidth, kMinBlockHeight);
   mStorage->setSize(mSize);
-}
-
-void SubflowBlock::updatePortPositions()
-{
-  if (!mOutPort)
-    return;
-
-  const qreal midY = nodeRect().center().y();
-  mOutPort->setPos(kInnerPadding * 0.5, midY - PortItem::kSize * 0.5);
 }
 
 void SubflowBlock::syncToOwnerPosition()
@@ -967,9 +1011,7 @@ void SubflowBlock::setCollapsed(bool collapsed)
 
   mCollapsed = collapsed;
 
-  // Port and inline title widgets only belong to the expanded block chrome.
-  if (mOutPort)
-    mOutPort->setVisible(!collapsed);
+  // Inline title widgets only belong to the expanded block chrome.
   if (mTitleProxy)
     mTitleProxy->setVisible(!collapsed);
   setFlag(QGraphicsItem::ItemIsMovable, !collapsed);

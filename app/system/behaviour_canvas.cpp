@@ -129,12 +129,8 @@ bool BehaviourCanvas::canConnectNodes(NodeItem* source, NodeItem* dest) const
   if (!source || !dest)
     return false;
 
-  // SubflowBlock out-port may only connect to nodes inside that block.
-  if (source->isSubflowContainer())
-    return dest->parentNode() == source;
-
-  // SubflowBlock has no in-port; nothing may target the block itself.
-  if (dest->isSubflowContainer())
+  // SubflowBlock is not a transition endpoint (no ports).
+  if (source->isSubflowContainer() || dest->isSubflowContainer())
     return false;
 
   return true;
