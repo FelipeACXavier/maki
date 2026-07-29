@@ -12,7 +12,6 @@ class FlowSaveInfo;
 class NodeItem;
 class QComboBox;
 class SaveInfo;
-class SvgClickButton;
 
 /** Floating dropdown below a selected Flow call node for picking Task and Flow. */
 class FlowCallMenu : public QWidget
@@ -39,6 +38,8 @@ signals:
 private:
   static constexpr int kTaskPropertyEventIndex = 0;
   static constexpr const char* kTaskPropertyId = "task";
+  /** Sentinel userData for the "Create new flow" entry in the Flow combo. */
+  static constexpr const char* kCreateFlowItemData = "__create_new_flow__";
 
   void populateCombos(SaveInfo* storage);
   void populateFlowCombo(const QString& taskId, SaveInfo* storage);
@@ -47,12 +48,16 @@ private:
   void setTaskData(const QString& taskName);
   void setFlowData(const QString& flowName);
   void updateBlockName(const QString& componentName, const QString& flowName) const;
-  void updateCreateFlowButtonState();
+  bool isCreateFlowItem(int index) const;
+  int firstFlowOptionIndex() const;
+  void selectFirstFlowAndApply();
+  void handleCreateFlowRequested();
 
   QComboBox* mTaskCombo = nullptr;
   QComboBox* mFlowCombo = nullptr;
-  SvgClickButton* mCreateFlowButton = nullptr;
   NodeItem* mNode = nullptr;
   CanvasView* mView = nullptr;
   SaveInfo* mStorage = nullptr;
+  /** Last non-create Flow combo index, used to restore selection if create is cancelled. */
+  int mLastFlowComboIndex = -1;
 };

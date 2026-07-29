@@ -2,11 +2,16 @@
 
 #include <QComboBox>
 #include <QDialog>
-#include <QHBoxLayout>
+#include <QIcon>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QLabel>
+#include <QPainter>
+#include <QPixmap>
+#include <QSvgRenderer>
 #include <QVBoxLayout>
+
+#include <oclero/qlementine/style/QlementineStyle.hpp>
 
 #include "app_configs.h"
 #include "elements/node.h"
@@ -16,7 +21,6 @@
 #include "node_info.h"
 #include "save_info.h"
 #include "style_helpers.h"
-#include "svg_click_button.h"
 #include "system/canvas_view.h"
 #include "types.h"
 
@@ -24,6 +28,23 @@ namespace
 {
 constexpr int kGapBelowNode = 8;
 constexpr int kCreateFlowIconPx = 16;
+
+/** Multi-color SVG baked to a pixmap so Qlementine won't recolor it to text color. */
+QIcon createFlowIcon()
+{
+  const QString path = iconPathFromTheme(QStringLiteral("button_addflow.svg"));
+  QSvgRenderer renderer(path);
+  if (!renderer.isValid())
+    return {};
+
+  QPixmap pixmap(kCreateFlowIconPx, kCreateFlowIconPx);
+  pixmap.fill(Qt::transparent);
+  QPainter painter(&pixmap);
+  painter.setRenderHint(QPainter::Antialiasing, true);
+  renderer.render(&painter, QRectF(0, 0, kCreateFlowIconPx, kCreateFlowIconPx));
+  painter.end();
+  return QIcon(pixmap);
+}
 }  // namespace
 
 FlowCallMenu::FlowCallMenu(QWidget* parent)
@@ -31,34 +52,23 @@ FlowCallMenu::FlowCallMenu(QWidget* parent)
 {
   setAttribute(Qt::WA_ShowWithoutActivating, true);
   setFocusPolicy(Qt::NoFocus);
+  oclero::qlementine::QlementineStyle::setAutoIconColor(this, oclero::qlementine::AutoIconColor::None);
 
   auto* layout = new QVBoxLayout(this);
   layout->setContentsMargins(4, 4, 4, 4);
   layout->setSpacing(4);
 
-  auto* taskLabel = new QLabel(tr("Task"), this);
-  layout->addWidget(taskLabel);
+  layout->addWidget(new QLabel(tr("Task"), this));
 
   mTaskCombo = new QComboBox(this);
   mTaskCombo->setMinimumWidth(160);
   layout->addWidget(mTaskCombo);
 
-  auto* flowHeaderRow = new QHBoxLayout();
-  flowHeaderRow->setContentsMargins(0, 0, 0, 0);
-  flowHeaderRow->setSpacing(4);
-
-  auto* flowLabel = new QLabel(tr("Flow"), this);
-  flowHeaderRow->addWidget(flowLabel);
-
-  mCreateFlowButton = new SvgClickButton(iconPathFromTheme(QStringLiteral("button_addflow.svg")), QSize(kCreateFlowIconPx, kCreateFlowIconPx), this);
-  mCreateFlowButton->setToolTip(tr("Create flow"));
-  mCreateFlowButton->setEnabled(false);
-  flowHeaderRow->addWidget(mCreateFlowButton);
-  flowHeaderRow->addStretch();
-  layout->addLayout(flowHeaderRow);
+  layout->addWidget(new QLabel(tr("Flow"), this));
 
   mFlowCombo = new QComboBox(this);
   mFlowCombo->setMinimumWidth(160);
+  oclero::qlementine::QlementineStyle::setAutoIconColor(mFlowCombo, oclero::qlementine::AutoIconColor::None);
   layout->addWidget(mFlowCombo);
 
   connect(mTaskCombo, QOverload<int>::of(&QComboBox::activated), this, [this](int index) {
@@ -73,51 +83,28 @@ FlowCallMenu::FlowCallMenu(QWidget* parent)
 
     setTaskData(taskName);
     populateFlowCombo(taskId, mStorage);
-    mFlowCombo->setCurrentIndex(0);
-    updateBlockName(taskName, QString());
+    selectFirstFlowAndApply();
 
     mTaskCombo->blockSignals(false);
     mFlowCombo->blockSignals(false);
 
     mFlowCombo->setEnabled(!taskId.isEmpty());
-    updateCreateFlowButtonState();
     updatePosition(mView);
-  });
-
-  connect(mCreateFlowButton, &SvgClickButton::clicked, this, [this] {
-    if (!mNode || !mView)
-      return;
-
-    const QString taskId = currentTaskId();
-    if (taskId.isEmpty())
-      return;
-
-    const auto info = promptNewFlow(this);
-    if (!info)
-      return;
-
-    const QString flowName = info->getname();
-    if (mFlowCombo->findText(flowName) < 0)
-      mFlowCombo->addItem(flowName, flowName);
-
-    const int flowIndex = mFlowCombo->findText(flowName);
-    if (flowIndex >= 0)
-      mFlowCombo->setCurrentIndex(flowIndex);
-
-    setFlowData(flowName);
-    updateBlockName(currentTaskName(), flowName);
-    updatePosition(mView);
-    emit createFlowRequested(taskId, info);
   });
 
   connect(mFlowCombo, QOverload<int>::of(&QComboBox::activated), this, [this](int index) {
     if (!mNode || !mView || index < 0)
       return;
 
-    const QString flowName = mFlowCombo->itemText(index);
-    if (flowName == Constants::EMPTY_COMBO)
+    if (isCreateFlowItem(index))
+    {
+      handleCreateFlowRequested();
       return;
+    }
 
+    mLastFlowComboIndex = index;
+
+    const QString flowName = mFlowCombo->itemText(index);
     mFlowCombo->blockSignals(true);
     setFlowData(flowName);
     updateBlockName(currentTaskName(), flowName);
@@ -284,27 +271,100 @@ QString FlowCallMenu::currentTaskName() const
   if (!mTaskCombo || mTaskCombo->currentIndex() < 0)
     return QString();
 
-  const QString name = mTaskCombo->itemText(mTaskCombo->currentIndex());
-  return name == Constants::EMPTY_COMBO ? QString() : name;
+  return mTaskCombo->itemText(mTaskCombo->currentIndex());
+}
+
+bool FlowCallMenu::isCreateFlowItem(int index) const
+{
+  if (!mFlowCombo || index < 0 || index >= mFlowCombo->count())
+    return false;
+  return mFlowCombo->itemData(index).toString() == QLatin1String(kCreateFlowItemData);
+}
+
+int FlowCallMenu::firstFlowOptionIndex() const
+{
+  if (!mFlowCombo)
+    return -1;
+
+  for (int i = 0; i < mFlowCombo->count(); ++i)
+  {
+    if (!isCreateFlowItem(i))
+      return i;
+  }
+  return -1;
+}
+
+void FlowCallMenu::selectFirstFlowAndApply()
+{
+  const int flowIndex = firstFlowOptionIndex();
+  if (flowIndex < 0)
+  {
+    mFlowCombo->setCurrentIndex(-1);
+    mLastFlowComboIndex = -1;
+    updateBlockName(currentTaskName(), QString());
+    return;
+  }
+
+  mFlowCombo->setCurrentIndex(flowIndex);
+  mLastFlowComboIndex = flowIndex;
+  const QString flowName = mFlowCombo->itemText(flowIndex);
+  setFlowData(flowName);
+  updateBlockName(currentTaskName(), flowName);
 }
 
 void FlowCallMenu::populateFlowCombo(const QString& taskId, SaveInfo* storage)
 {
   mFlowCombo->blockSignals(true);
   mFlowCombo->clear();
-  mFlowCombo->addItem(Constants::EMPTY_COMBO, QString());
 
   for (const QString& flowName : buildFlowOptions(taskId, storage))
     mFlowCombo->addItem(flowName, flowName);
+
+  if (!taskId.isEmpty())
+    mFlowCombo->addItem(createFlowIcon(), tr("Create new flow"), QString::fromLatin1(kCreateFlowItemData));
 
   mFlowCombo->blockSignals(false);
   mFlowCombo->setEnabled(!taskId.isEmpty());
 }
 
-void FlowCallMenu::updateCreateFlowButtonState()
+void FlowCallMenu::handleCreateFlowRequested()
 {
-  if (mCreateFlowButton)
-    mCreateFlowButton->setEnabled(!currentTaskId().isEmpty());
+  if (!mNode || !mView)
+    return;
+
+  const QString taskId = currentTaskId();
+  if (taskId.isEmpty())
+    return;
+
+  const auto info = promptNewFlow(this);
+  if (!info)
+  {
+    mFlowCombo->blockSignals(true);
+    const int restore = (mLastFlowComboIndex >= 0 && mLastFlowComboIndex < mFlowCombo->count()
+                         && !isCreateFlowItem(mLastFlowComboIndex))
+                            ? mLastFlowComboIndex
+                            : firstFlowOptionIndex();
+    mFlowCombo->setCurrentIndex(restore);
+    mFlowCombo->blockSignals(false);
+    return;
+  }
+
+  const QString flowName = info->getname();
+  populateFlowCombo(taskId, mStorage);
+
+  const int flowIndex = mFlowCombo->findText(flowName);
+  mFlowCombo->blockSignals(true);
+  if (flowIndex >= 0)
+  {
+    mFlowCombo->setCurrentIndex(flowIndex);
+    mLastFlowComboIndex = flowIndex;
+  }
+  mFlowCombo->blockSignals(false);
+
+  setFlowData(flowName);
+  updateBlockName(currentTaskName(), flowName);
+  updatePosition(mView);
+  emit createFlowRequested(taskId, info);
 }
 
 void FlowCallMenu::populateCombos(SaveInfo* storage)
@@ -316,7 +376,6 @@ void FlowCallMenu::populateCombos(SaveInfo* storage)
   mFlowCombo->blockSignals(true);
 
   mTaskCombo->clear();
-  mTaskCombo->addItem(Constants::EMPTY_COMBO, QString());
 
   for (const auto& option : buildTaskOptions(mNode, storage))
     mTaskCombo->addItem(option.first, option.second);
@@ -330,49 +389,79 @@ void FlowCallMenu::populateCombos(SaveInfo* storage)
   {
     const QJsonObject object = propValue.toJsonObject();
     currentTaskName = object.value(ConfigKeys::DATA).toString();
+    if (currentTaskName == Constants::EMPTY_COMBO)
+      currentTaskName.clear();
 
     const QJsonArray options = object.value(ConfigKeys::OPTIONS).toArray();
     if (options.size() > kTaskPropertyEventIndex)
+    {
       currentFlowName = options.at(kTaskPropertyEventIndex).toObject().value(ConfigKeys::DATA).toString();
+      if (currentFlowName == Constants::EMPTY_COMBO)
+        currentFlowName.clear();
+    }
   }
 
-  if (currentTaskName.isEmpty())
+  if (mTaskCombo->count() == 0)
   {
-    mTaskCombo->setCurrentIndex(0);
+    mTaskCombo->setEnabled(false);
+    mFlowCombo->clear();
+    mFlowCombo->setEnabled(false);
+    mTaskCombo->blockSignals(false);
+    mFlowCombo->blockSignals(false);
+    mLastFlowComboIndex = -1;
+    return;
+  }
+
+  mTaskCombo->setEnabled(true);
+
+  int taskIndex = currentTaskName.isEmpty() ? -1 : mTaskCombo->findText(currentTaskName);
+  if (taskIndex < 0)
+  {
+    // No saved task (or unknown name): default to the first available task.
+    taskIndex = 0;
+    currentTaskName = mTaskCombo->itemText(taskIndex);
+    currentTaskId = mTaskCombo->itemData(taskIndex).toString();
+    setTaskData(currentTaskName);
+    currentFlowName.clear();
   }
   else
   {
-    int taskIndex = mTaskCombo->findText(currentTaskName);
-    if (taskIndex < 0)
-    {
-      mTaskCombo->addItem(currentTaskName, QString());
-      taskIndex = mTaskCombo->count() - 1;
-    }
-    mTaskCombo->setCurrentIndex(taskIndex);
     currentTaskId = mTaskCombo->itemData(taskIndex).toString();
   }
+  mTaskCombo->setCurrentIndex(taskIndex);
 
   populateFlowCombo(currentTaskId, storage);
 
   if (currentFlowName.isEmpty())
   {
-    mFlowCombo->setCurrentIndex(0);
+    selectFirstFlowAndApply();
   }
   else
   {
     const int flowIndex = mFlowCombo->findText(currentFlowName);
     if (flowIndex >= 0)
+    {
       mFlowCombo->setCurrentIndex(flowIndex);
+      mLastFlowComboIndex = flowIndex;
+    }
     else
     {
-      mFlowCombo->addItem(currentFlowName, currentFlowName);
-      mFlowCombo->setCurrentIndex(mFlowCombo->count() - 1);
+      // Insert recovered name before the trailing "Create new flow" entry.
+      const int createIndex = mFlowCombo->count() - 1;
+      if (createIndex >= 0 && isCreateFlowItem(createIndex))
+        mFlowCombo->insertItem(createIndex, currentFlowName, currentFlowName);
+      else
+        mFlowCombo->addItem(currentFlowName, currentFlowName);
+      const int recovered = mFlowCombo->findText(currentFlowName);
+      mFlowCombo->setCurrentIndex(recovered);
+      mLastFlowComboIndex = recovered;
     }
   }
 
   mTaskCombo->blockSignals(false);
   mFlowCombo->blockSignals(false);
-  updateCreateFlowButtonState();
+  if (mLastFlowComboIndex < 0)
+    mLastFlowComboIndex = mFlowCombo->currentIndex();
 }
 
 void FlowCallMenu::showForNode(NodeItem* node, CanvasView* view, SaveInfo* storage)
