@@ -49,6 +49,8 @@ public:
 
   struct Info
   {
+    QString current = "";               /// Name of the current process.
+    QString currentPath = "";           /// Name of the current process path.
     QVector<GroupInfo> groupInfo = {};  /// List of all groups and their processes.
   };
 

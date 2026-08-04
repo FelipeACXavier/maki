@@ -6,6 +6,7 @@
 #include <QTreeWidgetItem>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <oclero/qlementine/utils/BadgeUtils.hpp>
 
 #include "config.h"
 #include "logging.h"
@@ -113,6 +114,14 @@ QString timeToQT(std::chrono::system_clock::time_point ts);
  * @return QString The converted string.
  */
 QString logLevelToQT(logging::LogLevel logLevel);
+
+/**
+ * @brief Converts a log level to a qlementine StatusBadge
+ *
+ * @param logLevel The log level to convert.
+ * @return oclero::qlementine::StatusBadge The converted badge.
+ */
+oclero::qlementine::StatusBadge logLevelToStatusBadge(logging::LogLevel logLevel);
 
 /**
  * @brief Converts a time point and log level to a string in QT format.

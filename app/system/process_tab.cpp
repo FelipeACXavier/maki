@@ -12,6 +12,7 @@
 
 ProcessTab::ProcessTab(QWidget* parent)
     : QWidget(parent)
+    , mCurrentProgram("")
 {
   mOutput = new QTextBrowser(this);
   mOutput->setReadOnly(true);
@@ -47,7 +48,7 @@ void ProcessTab::onReadyReadStandardError(const QByteArray& message)
 
 void ProcessTab::onFinished(const Pipeline::Info& /* info */, int exitCode, QProcess::ExitStatus status)
 {
-  appendText(QString("[Process finished with code %1]\n").arg(exitCode));
+  appendText(QString("Process finished with code %1\n").arg(exitCode));
 }
 
 void ProcessTab::onFinishedLast(const Pipeline::Info& /* info */, int exitCode, const QString& /* message */)
@@ -56,21 +57,26 @@ void ProcessTab::onFinishedLast(const Pipeline::Info& /* info */, int exitCode, 
   emit processFinished(exitCode, QProcess::ExitStatus::NormalExit);
 }
 
-void ProcessTab::onStartingProcess(const Pipeline::Info& /* info */, const QString& process, const QStringList& arguments)
+void ProcessTab::onStartingProcess(const Pipeline::Info& info, const QString& process, const QStringList& arguments)
 {
-  appendText(QString("> %1 %2\n\n").arg(process, arguments.join(' ')));
-
+  mCurrentProgram = info.current;
+  appendText(QString("%1 %2\n\n").arg(process, arguments.join(' ')));
   emit processStarted();
 }
 
 void ProcessTab::onErrorOccurred(const Pipeline::Info& /* info */, QProcess::ProcessError error, const QString& message)
 {
-  appendText(QString("\n[Process error: %1] %2\n").arg(static_cast<int>(error)).arg(message));
+  appendText(QString("\nProcess error (%1): %2\n").arg(static_cast<int>(error)).arg(message));
   emit processFinished(1, QProcess::ExitStatus::CrashExit);
 }
 
 void ProcessTab::appendText(const QString& text)
 {
+  if (text.toLower().contains("error"))
+    LOG_ERROR("[%s] > %s", qPrintable(mCurrentProgram), qPrintable(text));
+  else
+    LOG_DEBUG("[%s] > %s", qPrintable(mCurrentProgram), qPrintable(text));
+
   mOutput->moveCursor(QTextCursor::End);
   mOutput->append(text);
   mOutput->verticalScrollBar()->setValue(mOutput->verticalScrollBar()->maximum());
@@ -213,6 +219,11 @@ void ProcessTab::handleProcessData(const QByteArray& raw)
       }
 
       cursor.insertText(text, mCurrentFormat);
+
+      if (text.toLower().contains("error"))
+        LOG_ERROR("[%s] > %s", qPrintable(mCurrentProgram), qPrintable(text));
+      else
+        LOG_DEBUG("[%s] > %s", qPrintable(mCurrentProgram), qPrintable(text));
     }
   }
 

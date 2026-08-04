@@ -1,5 +1,6 @@
 #include "pipeline.h"
 
+#include <QFileInfo>
 #include <QProcess>
 #include <QProgressBar>
 #include <QRegularExpression>
@@ -460,6 +461,14 @@ void Pipeline::onErrorOccurred(QProcess::ProcessError error)
 Pipeline::Info Pipeline::constructInfo() const
 {
   Info info;
+
+  if (mRunningProcess && mRunningProcess->process)
+  {
+    const auto fileInfo = QFileInfo(mRunningProcess->process->program());
+    info.current = fileInfo.fileName();
+    info.currentPath = fileInfo.absolutePath();
+  }
+
   for (const auto& g : mGroups)
   {
     GroupInfo groupInfo;

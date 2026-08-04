@@ -22,8 +22,11 @@ PluginPipeline::PluginPipeline(Pipeline* pipeline, QObject* parent)
     , mPipeline(pipeline)
 {
   connect(mPipeline, &Pipeline::finishedLast, [this](const Pipeline::Info& info, int exitCode, const QString& message) {
-    mProgressId = NOTIFY_LONG_INFO(mProgressId, "Pipeline Progress", progressWidget());
-    // mProgressId = NOTIFY_LONG_INFO(mProgressId, "Pipeline Progress", nullptr);
+    if (exitCode == 0)
+      mProgressId = NOTIFY_LONG_INFO(mProgressId, "Pipeline Progress", progressWidget());
+    else
+      mProgressId = NOTIFY_LONG_ERROR(mProgressId, "Pipeline Progress", progressWidget());
+
     mOldWidgets.push_back(mPipeline->progressWidget(true));
 
     if (exitCode == 0)
@@ -38,7 +41,7 @@ PluginPipeline::PluginPipeline(Pipeline* pipeline, QObject* parent)
   });
   connect(mPipeline, &Pipeline::errorOccurred, [this](const Pipeline::Info& info, QProcess::ProcessError /* error */, const QString& message) {
     LOG_INFO("Error occurred: %s", qPrintable(message));
-    mProgressId = NOTIFY_LONG_INFO(mProgressId, "Pipeline Progress", progressWidget());
+    mProgressId = NOTIFY_LONG_ERROR(mProgressId, "Pipeline Progress", progressWidget());
   });
   connect(mPipeline, &Pipeline::startingPipeline, [this](const Pipeline::Info& info) {
     mProgressId = NOTIFY_LONG_INFO(mProgressId, "Pipeline Progress", progressWidget());
@@ -50,7 +53,10 @@ PluginPipeline::PluginPipeline(Pipeline* pipeline, QObject* parent)
     mProgressId = NOTIFY_LONG_INFO(mProgressId, "Pipeline Progress", progressWidget());
   });
   connect(mPipeline, &Pipeline::finishedGroup, [this](const Pipeline::Info& info, const QString& groupName, int exitCode, const QString& message) {
-    mProgressId = NOTIFY_LONG_INFO(mProgressId, "Pipeline Progress", progressWidget());
+    if (exitCode == 0)
+      mProgressId = NOTIFY_LONG_INFO(mProgressId, "Pipeline Progress", progressWidget());
+    else
+      mProgressId = NOTIFY_LONG_ERROR(mProgressId, "Pipeline Progress", progressWidget());
   });
 }
 

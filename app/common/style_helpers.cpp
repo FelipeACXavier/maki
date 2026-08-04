@@ -101,6 +101,22 @@ QString logLevelToQT(logging::LogLevel logLevel)
   }
 }
 
+oclero::qlementine::StatusBadge logLevelToStatusBadge(logging::LogLevel logLevel)
+{
+  switch (logLevel)
+  {
+    case logging::LogLevel::Error:
+      return oclero::qlementine::StatusBadge::Error;
+    case logging::LogLevel::Warning:
+      return oclero::qlementine::StatusBadge::Warning;
+    case logging::LogLevel::Info:
+    case logging::LogLevel::Debugging:
+    case logging::LogLevel::Trace:
+    default:
+      return oclero::qlementine::StatusBadge::Info;
+  }
+}
+
 QString toQT(std::chrono::system_clock::time_point ts, logging::LogLevel level, const std::string& message)
 {
   return QStringLiteral("%1 %2: %3").arg(timeToQT(ts), logLevelToQT(level), QString::fromStdString(message));

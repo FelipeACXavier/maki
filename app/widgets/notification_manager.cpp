@@ -5,6 +5,7 @@
 #include <QUuid>
 
 #include "long_notification.h"
+#include "style_helpers.h"
 
 NotificationManager::NotificationManager(QWidget* parentWindow, QObject* parent)
     : QObject(parent)
@@ -35,7 +36,7 @@ QString NotificationManager::showLongNotification(const QString& id, const QStri
   if (!mParentWindow)
     return QString();
 
-  auto uuid = updateExistingNotification(id, contents);
+  auto uuid = updateExistingNotification(id, contents, level);
   if (!uuid.isEmpty())
     return uuid;
 
@@ -54,7 +55,7 @@ QString NotificationManager::showLongNotification(const QString& id, const QStri
   return uuid;
 }
 
-QString NotificationManager::updateExistingNotification(const QString& id, QWidget* contents)
+QString NotificationManager::updateExistingNotification(const QString& id, QWidget* contents, logging::LogLevel level)
 {
   if (id.isEmpty())
     return QString();
@@ -64,13 +65,14 @@ QString NotificationManager::updateExistingNotification(const QString& id, QWidg
     if (t->disappearing())
       continue;
 
-    if (auto* d = qobject_cast<maki::LongNotificationWidget*>(t))
+    if (auto* widget = qobject_cast<maki::LongNotificationWidget*>(t); widget)
     {
-      if (d->id() != id)
+      if (widget->id() != id)
         continue;
 
-      d->updateContent(contents);
-      d->showAnimated();
+      widget->setBadge(logLevelToStatusBadge(level));
+      widget->updateContent(contents);
+      widget->showAnimated();
       return id;
     }
   }

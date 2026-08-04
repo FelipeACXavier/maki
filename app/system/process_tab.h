@@ -95,6 +95,7 @@ private slots:
   void onErrorOccurred(const Pipeline::Info& info, QProcess::ProcessError error, const QString& process);
 
 private:
+  QString mCurrentProgram;
   QTextBrowser* mOutput;           /// Pointer to the text browser for displaying output.
   QTextCharFormat mCurrentFormat;  /// Current text format for output.
 

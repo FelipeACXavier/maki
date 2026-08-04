@@ -8,7 +8,6 @@
 #include <QScreen>
 #include <QVBoxLayout>
 #include <oclero/qlementine/widgets/Label.hpp>
-#include <oclero/qlementine/widgets/StatusBadgeWidget.hpp>
 
 #include "app_configs.h"
 #include "logging.h"
@@ -58,29 +57,29 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
   titleLabel->setContentsMargins(0, 0, 0, 0);
   titleLabel->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
 
-  auto* statusBadge = new oclero::qlementine::StatusBadgeWidget(header);
+  mStatusBadge = new oclero::qlementine::StatusBadgeWidget(header);
   switch (level)
   {
     case logging::LogLevel::Warning:
       setCustomBorderColor(theme.statusColorWarning);
-      statusBadge->setBadge(oclero::qlementine::StatusBadge::Warning);
+      mStatusBadge->setBadge(oclero::qlementine::StatusBadge::Warning);
       break;
     case logging::LogLevel::Error:
       setCustomBorderColor(theme.statusColorError);
-      statusBadge->setBadge(oclero::qlementine::StatusBadge::Error);
+      mStatusBadge->setBadge(oclero::qlementine::StatusBadge::Error);
       break;
     default:
       setCustomBorderColor(theme.statusColorSuccess);
-      statusBadge->setBadge(oclero::qlementine::StatusBadge::Info);
+      mStatusBadge->setBadge(oclero::qlementine::StatusBadge::Info);
       break;
   }
-  statusBadge->setBadgeSize(oclero::qlementine::StatusBadgeSize::Medium);
+  mStatusBadge->setBadgeSize(oclero::qlementine::StatusBadgeSize::Medium);
 
   mCloseButton = new QPushButton(header);
   mCloseButton->setFlat(true);
   mCloseButton->setIcon(QIcon(":/icons/close.svg"));
 
-  headerLayout->addWidget(statusBadge, 0, Qt::AlignVCenter);
+  headerLayout->addWidget(mStatusBadge, 0, Qt::AlignVCenter);
   headerLayout->addSpacing(Config::CONTENT_PADDING);
   headerLayout->addWidget(titleLabel, 0, Qt::AlignVCenter);
   headerLayout->addStretch();
@@ -157,6 +156,35 @@ void NotificationWidget::setOpacity(qreal o)
   if (auto* eff = qobject_cast<QGraphicsOpacityEffect*>(graphicsEffect()))
     eff->setOpacity(o);
 
+  update();
+}
+
+void NotificationWidget::setBadge(oclero::qlementine::StatusBadge badge)
+{
+  if (!mStatusBadge)
+    return;
+
+  if (mStatusBadge->badge() == badge)
+    return;
+
+  const auto* qlementineStyle = oclero::qlementine::appStyle();
+  if (!qlementineStyle)
+    return;
+
+  const auto theme = qlementineStyle->theme();
+  switch (badge)
+  {
+    case oclero::qlementine::StatusBadge::Warning:
+      setCustomBorderColor(theme.statusColorWarning);
+      break;
+    case oclero::qlementine::StatusBadge::Error:
+      setCustomBorderColor(theme.statusColorError);
+      break;
+    default:
+      setCustomBorderColor(theme.statusColorSuccess);
+      break;
+  }
+  mStatusBadge->setBadge(badge);
   update();
 }
 

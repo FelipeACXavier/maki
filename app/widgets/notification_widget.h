@@ -7,6 +7,7 @@
 #include <QPushButton>
 #include <QTimer>
 #include <QVBoxLayout>
+#include <oclero/qlementine/widgets/StatusBadgeWidget.hpp>
 
 #include "frame.h"
 #include "logging.h"
@@ -62,6 +63,8 @@ public:
 
   int duration() const;
 
+  void setBadge(oclero::qlementine::StatusBadge badge);
+
 signals:
   /**
    * @brief Emitted when the notification is dismissed.
@@ -94,4 +97,5 @@ private:
   qreal mOpacity;             ///< Current opacity value of the widget.
 
   QVBoxLayout* mContentLayout;
+  oclero::qlementine::StatusBadgeWidget* mStatusBadge;
 };

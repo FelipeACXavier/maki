@@ -94,7 +94,7 @@ private:
    * @param contents The new body of the notification.
    * @return QString The updated notification's ID.
    */
-  QString updateExistingNotification(const QString& id, QWidget* contents);
+  QString updateExistingNotification(const QString& id, QWidget* contents, logging::LogLevel level);
 
   QPointer<QWidget> mParentWindow;     ///< Weak pointer to the parent window used for positioning.
   QList<NotificationWidget*> mToasts;  ///< List of active notification toasts.
