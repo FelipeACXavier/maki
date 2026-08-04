@@ -9,6 +9,8 @@
 #include <QVBoxLayout>
 #include <oclero/qlementine/widgets/StatusBadgeWidget.hpp>
 
+#include "clickable_icon.h"
+#include "expanding_widget.h"
 #include "frame.h"
 #include "logging.h"
 
@@ -62,8 +64,8 @@ public:
   virtual bool disappearing() const;
 
   int duration() const;
-
   void setBadge(oclero::qlementine::StatusBadge badge);
+  void minimize(bool minimize);
 
 signals:
   /**
@@ -88,14 +90,19 @@ protected:
   QTimer mAutoCloseTimer;         ///< Timer used to automatically dismiss the notification.
   QPropertyAnimation* mFadeAnim;  ///< Animation used to control opacity transitions.
 
-  QVBoxLayout* getContent();
+  ExpandingWidget* mBody;
 
   void setupAlarm(int msec);
 
 private:
-  QPushButton* mCloseButton;  ///< Button used to manually dismiss the notification.
-  qreal mOpacity;             ///< Current opacity value of the widget.
+  ClickableIcon* mMinimizeButton;  ///< Button used to manually minimize the notification.
+  ClickableIcon* mCloseButton;     ///< Button used to manually dismiss the notification.
 
-  QVBoxLayout* mContentLayout;
+  bool mExpanded;  ///< Whether the widget is expanded or minimized
+  qreal mOpacity;  ///< Current opacity value of the widget.
+
   oclero::qlementine::StatusBadgeWidget* mStatusBadge;
+
+  void toggleMinimized();
+  void setMinimized(bool minimized);
 };

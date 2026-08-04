@@ -17,9 +17,11 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
     : StyledFrame(parent)
     , mAlarmSetup(false)
     , mFadeAnim(nullptr)
+    , mBody(nullptr)
+    , mMinimizeButton(nullptr)
     , mCloseButton(nullptr)
+    , mExpanded(true)
     , mOpacity(0.0)
-    , mContentLayout(nullptr)
 {
   const auto* qlementineStyle = oclero::qlementine::appStyle();
   const auto theme = qlementineStyle->theme();
@@ -28,7 +30,7 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
   setBorderRole(StyledFrame::BorderRole::Custom);
   setRadius(theme.borderRadius);
   setBorderWidth(theme.borderWidth);
-  setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+  setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
 
   // Make sure the notifications don't take too much space
   QScreen* screen = this->screen();
@@ -75,37 +77,43 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
   }
   mStatusBadge->setBadgeSize(oclero::qlementine::StatusBadgeSize::Medium);
 
-  mCloseButton = new QPushButton(header);
-  mCloseButton->setFlat(true);
-  mCloseButton->setIcon(QIcon(":/icons/close.svg"));
+  mCloseButton = new ClickableIcon(QIcon(":/icons/close.svg"), Config::SMALL_BUTTON_SIZE, header);
+  mCloseButton->setFixedSize(Config::MEDIUM_BUTTON_SIZE);
+
+  mMinimizeButton = new ClickableIcon(QIcon(":/icons/arrow-up.svg"), Config::SMALL_BUTTON_SIZE, header);
+  mMinimizeButton->setFixedSize(Config::MEDIUM_BUTTON_SIZE);
 
   headerLayout->addWidget(mStatusBadge, 0, Qt::AlignVCenter);
   headerLayout->addSpacing(Config::CONTENT_PADDING);
   headerLayout->addWidget(titleLabel, 0, Qt::AlignVCenter);
   headerLayout->addStretch();
+  headerLayout->addWidget(mMinimizeButton, 0, Qt::AlignVCenter);
   headerLayout->addWidget(mCloseButton, 0, Qt::AlignVCenter);
 
   // Body
-  auto body = new QWidget(this);
-  body->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+  mBody = new ExpandingWidget(ExpandingWidget::Direction::Up, this);
+  mBody->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
-  mContentLayout = new QVBoxLayout(body);
-  mContentLayout->setContentsMargins(
+  // mBody->layout()->setAlignment(Qt::AlignVCenter);
+
+  // Since we want to be able to fully collapse, the padding should be set in content layout
+  mBody->getContent()->setContentsMargins(
       Config::CONTENT_PADDING, Config::CONTENT_PADDING,
       Config::CONTENT_PADDING, Config::CONTENT_PADDING);
-  mContentLayout->setAlignment(Qt::AlignVCenter);
-  mContentLayout->setSpacing(0);
 
   if (!text.isEmpty())
   {
-    auto* notificationText = new oclero::qlementine::Label(text, body);
-    notificationText->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    auto* notificationText = new oclero::qlementine::Label(text, this);
+    notificationText->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     notificationText->setWordWrap(true);
     notificationText->setRole(oclero::qlementine::TextRole::Default);
     notificationText->setMinimumWidth(300 - 2 * Config::CONTENT_PADDING);
     notificationText->setMinimumHeight(2 * notificationText->fontMetrics().height());
 
-    mContentLayout->addWidget(notificationText);
+    mBody->addCollapsableWidget(notificationText);
+
+    // Adjust to content size
+    mBody->setExpandedSize(notificationText->sizeHint().height() + 2 * Config::CONTENT_PADDING);
   }
 
   auto layout = new QVBoxLayout(this);
@@ -114,22 +122,34 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
   layout->setAlignment(Qt::AlignLeft);
 
   layout->addWidget(header);
-  layout->addWidget(body);
+  layout->addWidget(mBody);
 
   // Opacity effect
   auto* effect = new QGraphicsOpacityEffect(this);
   setGraphicsEffect(effect);
 
+  // Close animation
   mFadeAnim = new QPropertyAnimation(this, "opacity", this);
   mFadeAnim->setDuration(duration());
   mFadeAnim->setStartValue(opacity());
   mFadeAnim->setEndValue(1.0);
 
-  connect(mCloseButton, &QPushButton::clicked, this, &NotificationWidget::hideAnimated);
+  connect(mCloseButton, &ClickableIcon::clicked, this, &NotificationWidget::hideAnimated);
+  connect(mMinimizeButton, &ClickableIcon::clicked, this, &NotificationWidget::toggleMinimized);
+  connect(mBody, &ExpandingWidget::areaExpanded, [this](ClickableIcon* /* button */) {
+    if (mMinimizeButton)
+      mMinimizeButton->setIcon(QIcon(":/icons/arrow-up.svg"));
+  });
+  connect(mBody, &ExpandingWidget::areaCollapsed, [this](ClickableIcon* /* button */) {
+    if (mMinimizeButton)
+      mMinimizeButton->setIcon(QIcon(":/icons/arrow-down.svg"));
+  });
+
+  mBody->expandArea();  // Start expanded
 
   // Only enable in short notification
-  if (!text.isEmpty())
-    setupAlarm(3000);
+  // if (!text.isEmpty())
+  //   setupAlarm(3000);
 }
 
 int NotificationWidget::duration() const
@@ -193,11 +213,6 @@ bool NotificationWidget::disappearing() const
   return true;
 }
 
-QVBoxLayout* NotificationWidget::getContent()
-{
-  return mContentLayout;
-}
-
 void NotificationWidget::showAnimated()
 {
   if (opacity() == 1.0)
@@ -229,4 +244,19 @@ void NotificationWidget::hideAnimated()
   });
 
   mFadeAnim->start();
+}
+
+void NotificationWidget::minimize(bool minimize)
+{
+  mExpanded = true;
+  toggleMinimized();
+}
+
+void NotificationWidget::toggleMinimized()
+{
+  if (!mBody)
+    return;
+
+  mBody->setExpanded(!mExpanded);
+  mExpanded = !mExpanded;
 }
