@@ -54,7 +54,7 @@ std::string Span::toString() const
 void System::print() const
 {
   LOG_RAW("  System");
-  for (uint32_t i = 0; i < components.size(); ++i)
+  for (size_t i = 0; i < components.size(); ++i)
     components.at(i)->print(" ", i == components.size() - 1);
 }
 
@@ -80,10 +80,10 @@ void Component::print(const std::string& prefix, const bool last) const
   const std::string childPrefix = prefix + tree::carry(last);
   printString(childPrefix, false, Format("Name: %s", name.c_str()));
 
-  for (uint32_t i = 0; i < args.size(); ++i)
+  for (size_t i = 0; i < args.size(); ++i)
     args.at(i)->print(childPrefix, (i == args.size() - 1) && (statements.empty()));
 
-  for (uint32_t i = 0; i < statements.size(); ++i)
+  for (size_t i = 0; i < statements.size(); ++i)
     statements.at(i)->print(childPrefix, i == statements.size() - 1);
 }
 
@@ -126,7 +126,7 @@ void StrategyBlock::print(const std::string& prefix, const bool last) const
   LOG_TREE("StrategyBlock");
 
   const std::string childPrefix = prefix + tree::carry(last);
-  for (uint32_t i = 0; i < flows.size(); ++i)
+  for (size_t i = 0; i < flows.size(); ++i)
     flows.at(i)->print(childPrefix, i == flows.size() - 1);
 }
 
@@ -135,7 +135,7 @@ void VarsBlock::print(const std::string& prefix, const bool last) const
   LOG_TREE("VarsBlock");
 
   const std::string childPrefix = prefix + tree::carry(last);
-  for (uint32_t i = 0; i < vars.size(); ++i)
+  for (size_t i = 0; i < vars.size(); ++i)
     vars.at(i)->print(childPrefix, i == vars.size() - 1);
 }
 
@@ -187,7 +187,7 @@ void ActionDef::print(const std::string& prefix, const bool last) const
   printString(childPrefix, false, Format("Channel: %s", label1.c_str()));
   printString(childPrefix, rosDefs.empty(), Format("Message: %s", label2.c_str()));
 
-  for (uint32_t i = 0; i < rosDefs.size(); ++i)
+  for (size_t i = 0; i < rosDefs.size(); ++i)
     rosDefs.at(i)->print(childPrefix, i == rosDefs.size() - 1);
 }
 
@@ -210,9 +210,9 @@ void EventDef::print(const std::string& prefix, const bool last) const
   const std::string childPrefix = prefix + tree::carry(last);
   printString(childPrefix, false, Format("Type: %s", typeName.c_str()));
   printString(childPrefix, args.empty() && components.empty(), Format("Name: %s", name.c_str()));
-  for (uint32_t i = 0; i < args.size(); ++i)
+  for (size_t i = 0; i < args.size(); ++i)
     args.at(i)->print(childPrefix, (i == args.size() - 1) && components.empty());
-  for (uint32_t i = 0; i < components.size(); ++i)
+  for (size_t i = 0; i < components.size(); ++i)
     components.at(i)->print(childPrefix, i == components.size() - 1);
 }
 
@@ -228,8 +228,8 @@ void Flow::print(const std::string& prefix, const bool last) const
   LOG_TREE("Flow")
   const std::string childPrefix = prefix + tree::carry(last);
   std::string tagsString = "";
-  for (uint32_t i = 0; i < tags.size(); ++i)
-    tagsString += tagsString + (i < tags.size() - 1 ? ", " : "");
+  for (size_t i = 0; i < args.size(); ++i)
+    tagsString += tagsString + (i < args.size() - 1 ? ", " : args.at(i)->toString());
 
   printString(childPrefix, false, Format("Name: %s", name.c_str()));
   if (!tagsString.empty())
@@ -259,7 +259,7 @@ void Strategy::Seq::print(const std::string& prefix, const bool last, const Span
 {
   LOG_TREE("Seq");
   const std::string childPrefix = prefix + tree::carry(last);
-  for (uint32_t i = 0; i < alts.size(); ++i)
+  for (size_t i = 0; i < alts.size(); ++i)
     alts.at(i)->print(childPrefix, i == alts.size() - 1);
 }
 
@@ -267,7 +267,7 @@ void Strategy::Join::print(const std::string& prefix, const bool last, const Spa
 {
   LOG_TREE("Join");
   const std::string childPrefix = prefix + tree::carry(last);
-  for (uint32_t i = 0; i < alts.size(); ++i)
+  for (size_t i = 0; i < alts.size(); ++i)
     alts.at(i)->print(childPrefix, i == alts.size() - 1);
 }
 
@@ -275,7 +275,7 @@ void Strategy::Either::print(const std::string& prefix, const bool last, const S
 {
   LOG_TREE("Either");
   const std::string childPrefix = prefix + tree::carry(last);
-  for (uint32_t i = 0; i < alts.size(); ++i)
+  for (size_t i = 0; i < alts.size(); ++i)
     alts.at(i)->print(childPrefix, i == alts.size() - 1);
 }
 
@@ -292,7 +292,7 @@ void Strategy::Within::print(const std::string& prefix, const bool last, const S
     a->print(childPrefix, false);
   if (b != nullptr)
     b->print(childPrefix, handlers.empty());
-  for (int i = 0; i < handlers.size(); ++i)
+  for (size_t i = 0; i < handlers.size(); ++i)
     handlers.at(i)->print(childPrefix, i + 1 == handlers.size());
 }
 
@@ -343,7 +343,7 @@ void Strategy::TaskCall::print(const std::string& prefix, const bool last, const
   if (call)
     call->print(childPrefix, handlers.empty());
 
-  for (uint32_t i = 0; i < handlers.size(); ++i)
+  for (size_t i = 0; i < handlers.size(); ++i)
     handlers.at(i)->print(childPrefix, i == handlers.size() - 1);
 }
 
@@ -396,7 +396,7 @@ void EventCall::print(const std::string& prefix, const bool last) const
   {
     printString(childPrefix, true, Format("Args:"));
     const std::string grandChildPrefix = childPrefix + tree::carry(true);
-    for (uint32_t i = 0; i < args.size(); ++i)
+    for (size_t i = 0; i < args.size(); ++i)
       args.at(i)->print(grandChildPrefix, i == args.size() - 1);
   }
 }

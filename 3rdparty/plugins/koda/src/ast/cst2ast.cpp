@@ -68,8 +68,8 @@ std::any KodaCST2AST::visitArgPlain(KodaParser::ArgPlainContext* ctx)
   // LOG_DEBUG("Visiting arg plain");
   auto a = std::make_shared<koda::Argument>();
   a->kind = koda::Argument::Kind::Plain;
-  a->a = ctx->IDENT(0)->getText();
-  a->b = ctx->IDENT(1)->getText();
+  a->a = ctx->IDENT(0)->getText();  // Type
+  a->b = ctx->IDENT(1)->getText();  // Symbol
   a->span = spanOf(ctx);
   return a;
 }
@@ -79,8 +79,8 @@ std::any KodaCST2AST::visitArgReq(KodaParser::ArgReqContext* ctx)
   // LOG_DEBUG("Visiting arg req");
   auto a = std::make_shared<koda::Argument>();
   a->kind = koda::Argument::Kind::Req;
-  a->a = ctx->IDENT(0)->getText();
-  a->b = ctx->IDENT(1)->getText();
+  a->a = ctx->IDENT(1)->getText();
+  a->b = ctx->IDENT(0)->getText();
   a->span = spanOf(ctx);
   return a;
 }
@@ -90,8 +90,8 @@ std::any KodaCST2AST::visitArgPro(KodaParser::ArgProContext* ctx)
   // LOG_DEBUG("Visiting arg pro");
   auto a = std::make_shared<koda::Argument>();
   a->kind = koda::Argument::Kind::Pro;
-  a->a = ctx->IDENT(0)->getText();
-  a->b = ctx->IDENT(1)->getText();
+  a->a = ctx->IDENT(1)->getText();
+  a->b = ctx->IDENT(0)->getText();
   a->span = spanOf(ctx);
   return a;
 }
@@ -146,8 +146,22 @@ std::any KodaCST2AST::visitFlow(KodaParser::FlowContext* ctx)
   f->span = spanOf(ctx);
   f->name = ctx->IDENT()->getText();
 
-  if (ctx->identList())
-    f->tags = std::any_cast<std::vector<std::string>>(visit(ctx->identList()));
+  for (size_t i = 0; ctx->identList() && i < ctx->identList()->IDENT().size(); ++i)
+  {
+    auto ident = ctx->identList()->IDENT(i);
+
+    auto arg = std::make_shared<koda::Argument>();
+    arg->b = ident->getText();  // Name only
+
+    // Do we need to make a function out of this?
+    auto token = ident->getSymbol();
+    arg->span.lineStart = token->getLine();
+    arg->span.colStart = token->getCharPositionInLine();
+    arg->span.lineEnd = token->getLine();
+    arg->span.colEnd = token->getCharPositionInLine() + static_cast<int>(token->getText().size());
+
+    f->args.push_back(arg);
+  }
 
   f->strategy = std::any_cast<koda::PStrategy>(visit(ctx->strategy()));
   // LOG_DEBUG("Done visiting flow");

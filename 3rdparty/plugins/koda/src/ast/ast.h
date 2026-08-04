@@ -1,7 +1,6 @@
 // KodaAst.h
 #pragma once
 #include <memory>
-#include <optional>
 #include <string>
 #include <variant>
 #include <vector>
@@ -95,7 +94,7 @@ struct Statement
 struct Flow
 {
   std::string name;
-  std::vector<std::string> tags;
+  std::vector<std::shared_ptr<Argument>> args;
   std::shared_ptr<Strategy> strategy;
   Span span;
 

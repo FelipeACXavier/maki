@@ -5,7 +5,7 @@
 
 #ifdef USE_ANTLR
 #include "../ast/koda_compiler.h"
-#include "../ros_emitter.h"
+// #include "../ros_emitter.h"
 #endif
 #include "logging.h"
 #include "pipeline_artifact.h"
@@ -81,62 +81,62 @@ maki::ResultArtifacts GenerateRosAction::run(const maki::PipelineContext& contex
   maki::PipelineArtifact artifact = {};
 
 #ifdef USE_ANTLR
-  koda::CompilerOptions options;
-  options.outputDir = modelsOutputFolder.absolutePath().toStdString();
-  options.dryRun = true;
-  options.verbose = 0;
-  options.pluginRule = koda::CompilerOptions::PluginOption::NoPlugins;
+  // koda::CompilerOptions options;
+  // options.outputDir = modelsOutputFolder.absolutePath().toStdString();
+  // options.dryRun = true;
+  // options.verbose = 0;
+  // options.pluginRule = koda::CompilerOptions::PluginOption::NoPlugins;
 
-  koda::RosEmitterOptions emitterOptions;
-  emitterOptions.outputDir = modelsOutputFolder.absolutePath().toStdString();
-  if (parameters.contains(SIMULATE_KEY))
-    emitterOptions.simulation = parameters[SIMULATE_KEY].toBool();
-  if (parameters.contains(START_WAIT))
-    emitterOptions.startWait = parameters[START_WAIT].toString().toDouble();
+  // koda::RosEmitterOptions emitterOptions;
+  // emitterOptions.outputDir = modelsOutputFolder.absolutePath().toStdString();
+  // if (parameters.contains(SIMULATE_KEY))
+  //   emitterOptions.simulation = parameters[SIMULATE_KEY].toBool();
+  // if (parameters.contains(START_WAIT))
+  //   emitterOptions.startWait = parameters[START_WAIT].toString().toDouble();
 
-  koda::Compiler compiler;
-  for (const auto& file : inputFiles)
-  {
-    LOG_DEBUG("Parsing from file: %s to %s", qPrintable(file), qPrintable(outputFolder.absolutePath()));
-    // Make sure the input file is set before calling the compiler
-    options.inputFile = file.toStdString();
-    auto parsed = compiler.parse(options);
-    if (!parsed.IsSuccess())
-      return maki::ResultArtifacts::Failed(parsed.ErrorMessage());
+  // koda::Compiler compiler;
+  // for (const auto& file : inputFiles)
+  // {
+  //   LOG_DEBUG("Parsing from file: %s to %s", qPrintable(file), qPrintable(outputFolder.absolutePath()));
+  //   // Make sure the input file is set before calling the compiler
+  //   options.inputFile = file.toStdString();
+  //   auto parsed = compiler.parse(options);
+  //   if (!parsed.IsSuccess())
+  //     return maki::ResultArtifacts::Failed(parsed.ErrorMessage());
 
-    LOG_DEBUG("Generating from file: %s to %s", qPrintable(file), qPrintable(outputFolder.absolutePath()));
-    auto generated = compiler.generate();
-    if (!generated.IsSuccess())
-    {
-      LOG_ERROR(generated.ErrorMessage());
-      return maki::ResultArtifacts::Failed(generated.ErrorMessage());
-    }
+  //   LOG_DEBUG("Generating from file: %s to %s", qPrintable(file), qPrintable(outputFolder.absolutePath()));
+  //   auto generated = compiler.generate();
+  //   if (!generated.IsSuccess())
+  //   {
+  //     LOG_ERROR(generated.ErrorMessage());
+  //     return maki::ResultArtifacts::Failed(generated.ErrorMessage());
+  //   }
 
-    koda::RosEmitter emitter;
-    auto emitted = emitter.emitRos(compiler.getAST(), compiler.getIR(), emitterOptions);
-    if (!emitted.ok)
-      for (const auto& error : emitted.errors)
-        LOG_ERROR(error);
-  }
+  //   koda::RosEmitter emitter;
+  //   auto emitted = emitter.emitRos(compiler.getAST(), compiler.getIR(), emitterOptions);
+  //   if (!emitted.ok)
+  //     for (const auto& error : emitted.errors)
+  //       LOG_ERROR(error);
+  // }
 
-  // Add artefacts
-  artifact.paths = {
-      {"rootDir", modelsOutputFolder.absolutePath()},
-      {"includeDir", modelsOutputFolder.absolutePath() + "/include"},
-      {"sourceDir", modelsOutputFolder.absolutePath() + "/src"},
-      {"launchDir", modelsOutputFolder.absolutePath() + "/launch"},
-      {"configDir", modelsOutputFolder.absolutePath() + "/config"},
-  };
-  artifact.metadata = {
-      {"package", modelsOutputFolder.absolutePath() + "/package.xml"},
-      {"cmake", modelsOutputFolder.absolutePath() + "/CMakeLists.txt"},
-      {"packageName", QString::fromStdString(emitterOptions.packageName)},
-      {"launchFile", QString::fromStdString(emitterOptions.launchFile)},
-  };
+  // // Add artefacts
+  // artifact.paths = {
+  //     {"rootDir", modelsOutputFolder.absolutePath()},
+  //     {"includeDir", modelsOutputFolder.absolutePath() + "/include"},
+  //     {"sourceDir", modelsOutputFolder.absolutePath() + "/src"},
+  //     {"launchDir", modelsOutputFolder.absolutePath() + "/launch"},
+  //     {"configDir", modelsOutputFolder.absolutePath() + "/config"},
+  // };
+  // artifact.metadata = {
+  //     {"package", modelsOutputFolder.absolutePath() + "/package.xml"},
+  //     {"cmake", modelsOutputFolder.absolutePath() + "/CMakeLists.txt"},
+  //     {"packageName", QString::fromStdString(emitterOptions.packageName)},
+  //     {"launchFile", QString::fromStdString(emitterOptions.launchFile)},
+  // };
 
-  artifact.id = "koda.generate_ros";
-  artifact.type = "ros-project";
-  artifact.producer = id();
+  // artifact.id = "koda.generate_ros";
+  // artifact.type = "ros-project";
+  // artifact.producer = id();
 #else
   return maki::ResultArtifacts::Failed("Not supported");
 #endif

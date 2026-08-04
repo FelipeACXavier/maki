@@ -539,6 +539,8 @@ Result<maki::PipelineArtifact> KodaGenerator::generateKoda(const maki::PipelineA
   out << generated.Value();
   file.close();
 
+  LOG_DEBUG("Created file: %s", qPrintable(fileName));
+
   maki::PipelineArtifact output;
   output.metadata = {
       {"sources", {fileName}},

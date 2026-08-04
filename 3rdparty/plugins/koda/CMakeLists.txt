@@ -50,7 +50,23 @@ find_package(antlr4-runtime CONFIG REQUIRED)
 set(KODA_COMPILER_FILES
   src/ast/ast.cpp
   src/ast/cst2ast.cpp
+
+  src/ast/declaration_pass.cpp
+  # src/ast/ir_declaration_pass.cpp
+  src/ast/ir_builder.cpp
   src/ast/koda_compiler.cpp
+
+  src/ast/main.cpp
+  src/ast/semantic_analyzer.cpp
+  src/ast/symbol_registry.cpp
+
+  src/ast/emitters/dezyne_declaration_pass.cpp
+  src/ast/emitters/dezyne_emitter.cpp
+  src/ast/emitters/dezyne_lowering_pass.cpp
+  src/ast/emitters/dezyne_model.cpp
+  src/ast/emitters/dezyne_writer.cpp
+  src/ast/emitters/dezyne_library_emitter.cpp
+
   src/parser/KodaParser.cpp
   src/parser/KodaLexer.cpp
   src/parser/KodaVisitor.cpp
@@ -96,6 +112,7 @@ target_link_libraries(${COMPILER_NAME} PRIVATE
 target_include_directories(${COMPILER_NAME} PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src/parser
   ${CMAKE_CURRENT_SOURCE_DIR}/src/ast
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/ast/emitters
   ${ANTLR4_RUNTIME_INCLUDE_DIR}
 )
 
@@ -108,6 +125,10 @@ target_include_directories(${LIB_NAME}
   PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/parser
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ast
+)
+
+target_include_directories(${LIB_NAME}
+  SYSTEM PUBLIC
     ${ANTLR4_RUNTIME_INCLUDE_DIR}
 )
 
@@ -144,11 +165,13 @@ function(add_koda_plugin TARGET_NAME USE_ANTLR_ENABLED)
     set(KODA_TO_MAKI
       src/maki_to_koda.cpp
       src/koda_emitter.cpp
-      src/ros_emitter.cpp
+      # src/ros_emitter.cpp
     )
     set(COMPILER_INCLUDES
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ast
       ${CMAKE_CURRENT_SOURCE_DIR}/src/parser
+    )
+    set(ANTLR_INCLUDES
       ${ANTLR4_RUNTIME_INCLUDE_DIR}
     )
     set(COMPILER_LIBS
@@ -158,6 +181,7 @@ function(add_koda_plugin TARGET_NAME USE_ANTLR_ENABLED)
     set(JSON_FILE ${CMAKE_CURRENT_SOURCE_DIR}/src/koda_generator.json)
     set(PLUGIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/koda_plugin.json)
     set(COMPILER_FILES)
+    set(ANTLR_INCLUDES)
     set(COMPILER_INCLUDES)
     set(COMPILER_LIBS)
     set(KODA_TO_MAKI)
@@ -195,6 +219,9 @@ function(add_koda_plugin TARGET_NAME USE_ANTLR_ENABLED)
     ${CMAKE_CURRENT_SOURCE_DIR}/src/
     ${CMAKE_CURRENT_SOURCE_DIR}/src/dzn_client
     ${COMPILER_INCLUDES}
+  )
+  target_include_directories(${TARGET_NAME} SYSTEM PRIVATE
+    ${ANTLR_INCLUDES}
   )
 
   if(USE_ANTLR_ENABLED)
