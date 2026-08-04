@@ -1,5 +1,7 @@
 #include "expanding_widget.h"
 
+#include <oclero/qlementine/widgets/Label.hpp>
+
 #include "clickable_icon.h"
 #include "logging.h"
 
@@ -72,8 +74,14 @@ void ExpandingWidget::setButtonTooltip(const QString& tooltip)
   mButton->setToolTipDuration(2000);
 }
 
-void ExpandingWidget::addCollapsableWidget(QWidget* widget)
+void ExpandingWidget::addCollapsableWidget(QWidget* widget, const QString& label)
 {
+  if (!label.isEmpty())
+  {
+    auto* labelWidget = new oclero::qlementine::Label(label, this);
+    mSearchArea->layout()->addWidget(labelWidget);
+  }
+
   mSearchArea->layout()->addWidget(widget);
 }
 

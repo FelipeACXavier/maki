@@ -54,7 +54,7 @@ public:
    *
    * @param widget The QWidget to add to the collapsible area.
    */
-  void addCollapsableWidget(QWidget* widget);
+  void addCollapsableWidget(QWidget* widget, const QString& label = "");
 
   /**
    * @brief Sets the width of the expanded state.
@@ -104,9 +104,9 @@ public slots:
   void setExpanded(bool expanded);
 
 private:
-  ClickableIcon* mButton = nullptr;  /// Pointer to the button that controls expansion/collapse.
+  ClickableIcon* mButton = nullptr;             /// Pointer to the button that controls expansion/collapse.
   CollapsibleAreaWidth* mSearchArea = nullptr;  /// Pointer to the collapsible area widget.
-  QPropertyAnimation* mAnimation = nullptr;  /// Pointer to the property animation for expanding/collapsing.
+  QPropertyAnimation* mAnimation = nullptr;     /// Pointer to the property animation for expanding/collapsing.
 
   int mExpandedWidth;  /// The width of the expanded state.
 };

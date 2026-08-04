@@ -402,7 +402,6 @@ void MainWindowLayout::buildRightPanel()
   // ----------------------------------------------------------------------
   // Properties Menu
   mPropertiesTab = new QTabWidget();
-  mPropertiesTab->setMinimumHeight(500);
 
   mPropertiesMenu = new PropertiesMenu(mPropertiesTab);
   auto pindex = mPropertiesTab->addTab(mPropertiesMenu, QIcon(":/icons/properties.svg"), tr("Properties"));
@@ -719,7 +718,7 @@ void MainWindowLayout::applyTheme()
     QTimer::singleShot(0, this, [this, theme] {
       int documentHeight = int(std::ceil(mInfoText->document()->documentLayout()->documentSize().height()));
       int height = documentHeight + mInfoText->contentsMargins().top() + mInfoText->contentsMargins().bottom() + theme.spacing;
-      mInfoText->setMinimumHeight(height);
+      mInfoText->resize(mInfoText->width(), height);
     });
   }
 
@@ -751,6 +750,8 @@ void MainWindowLayout::applyTheme()
 
       propertiesTabWidth = setTabBarWidth(mPropertiesTab->tabBar(), minWidth, tabPadding, tabBorderSize);
       mPropertiesTab->setMinimumWidth(propertiesTabWidth);
+      // No need for a minimum height
+      mPropertiesTab->resize(mPropertiesTab->width(), 450);
 
       mPropertiesTab->tabBar()->setExpanding(false);
       mPropertiesTab->tabBar()->setDocumentMode(true);

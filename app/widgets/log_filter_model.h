@@ -56,8 +56,8 @@ protected:
   bool filterAcceptsRow(int sourceRow, const QModelIndex& sourceParent) const override;
 
 private:
-  QString mLevelFilter = "All";  /// The current log level filter.
-  QString mSourceFilter;         /// The current source name filter.
-  QString mFileFilter;           /// The current file name filter.
-  QString mTextFilter;           /// The current text filter.
+  QString mLevelFilter = "All";   /// The current log level filter.
+  QString mSourceFilter = "All";  /// The current source name filter.
+  QString mFileFilter;            /// The current file name filter.
+  QString mTextFilter;            /// The current text filter.
 };
