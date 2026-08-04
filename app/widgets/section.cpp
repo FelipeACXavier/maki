@@ -58,10 +58,10 @@ void SectionWidget::addItem(QWidget* container, const QString& title, oclero::ql
   lableLayout->addWidget(label);
   lableLayout->addWidget(line);
 
-  mToggleButton = new ClickableIcon(QIcon(":/icons/arrow-down.svg"), QSize(16, 16), header);
+  mToggleButton = new ClickableIcon(QIcon(":/icons/arrow-down.svg"), Config::SMALL_BUTTON_SIZE, header);
   mToggleButton->setCheckable(true);
   mToggleButton->setChecked(true);
-  mToggleButton->setFixedWidth(30);
+  mToggleButton->setFixedSize(Config::MEDIUM_BUTTON_SIZE);
   mToggleButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
   QHBoxLayout* hLayout = new QHBoxLayout(header);

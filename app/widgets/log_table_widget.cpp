@@ -35,8 +35,7 @@ public:
     if (icon.isNull())
       return;
 
-    const QSize iconSize = opt.decorationSize.isValid() ? opt.decorationSize : QSize(16, 16);
-
+    const QSize iconSize = opt.decorationSize.isValid() ? opt.decorationSize : Config::SMALL_BUTTON_SIZE;
     const QRect iconRect = QStyle::alignedRect(opt.direction, Qt::AlignCenter, iconSize, option.rect);
 
     icon.paint(painter, iconRect, Qt::AlignCenter);
@@ -102,18 +101,18 @@ LogTableWidget::LogTableWidget(QWidget* parent)
 
   QPushButton* previousButton = new QPushButton(this);
   previousButton->setIcon(QIcon(":/icons/arrow-up.svg"));
-  previousButton->setFixedWidth(30);
+  previousButton->setFixedSize(Config::MEDIUM_BUTTON_SIZE);
   previousButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
   QPushButton* nextButton = new QPushButton(this);
   nextButton->setIcon(QIcon(":/icons/arrow-down.svg"));
-  nextButton->setFixedWidth(30);
+  nextButton->setFixedSize(Config::MEDIUM_BUTTON_SIZE);
   nextButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
   mSearchBox = new ExpandingWidget(ExpandingWidget::Direction::Right, this);
   mSearchBox->setButtonIcon(QIcon(":/icons/search.svg"));
   mSearchBox->setButtonTooltip(tr("Search logs"));
-  mSearchBox->setExpandedWidth(400);
+  mSearchBox->setExpandedSize(400);
 
   mSearchCounterLabel = new QLabel("", mSearchBox);
   mSearchCounterLabel->setFocusPolicy(Qt::NoFocus);
@@ -131,7 +130,7 @@ LogTableWidget::LogTableWidget(QWidget* parent)
   mFilterBox = new ExpandingWidget(ExpandingWidget::Direction::Left, this);
   mFilterBox->setButtonIcon(QIcon(":/icons/filter.svg"));
   mFilterBox->setButtonTooltip(tr("Filter logs"));
-  mFilterBox->setExpandedWidth(400);
+  mFilterBox->setExpandedSize(400);
 
   mFileFilter = new QLineEdit(this);
   mFileFilter->setPlaceholderText(tr("Filter file"));

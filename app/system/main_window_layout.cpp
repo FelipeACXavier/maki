@@ -180,7 +180,7 @@ void MainWindowLayout::buildLeftPanel()
   }
 
   // Rest of palette
-  mPalette->tabBar()->setIconSize(QSize(16, 16));
+  mPalette->tabBar()->setIconSize(Config::SMALL_BUTTON_SIZE);
 
   mPaletteSearch = new maki::SearchWidget(tr("Filter nodes"), mLeftPanel);
   mPaletteSearch->hide();
