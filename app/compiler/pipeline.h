@@ -345,5 +345,6 @@ private:
   Info constructInfo() const;
 
   QString getRunningTask(GroupInfo info) const;
+  bool tasksInError(GroupInfo info) const;
   int getCompleteTasks(GroupInfo info) const;
 };

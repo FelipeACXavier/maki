@@ -13,6 +13,7 @@
 #include "pipeline_action.h"
 #include "plugin_action_registry.h"
 #include "result.h"
+#include "widgets/progress_bar.h"
 
 namespace maki
 {
@@ -321,7 +322,7 @@ QWidget* PluginPipeline::progressWidget() const
   headerLayout->addWidget(countLabel);
 
   // Progress bar
-  auto* progress = new QProgressBar(row);
+  auto* progress = new maki::ProgressBar(row);
   progress->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
   progress->setRange(0, total);
   progress->setValue(completed);

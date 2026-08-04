@@ -11,6 +11,7 @@
 #include "ipipeline.h"
 #include "logging.h"
 #include "result.h"
+#include "widgets/progress_bar.h"
 
 static const QString DEFAULT_GROUP = "Default";
 static const int SUCCESS = 0;
@@ -512,6 +513,15 @@ int Pipeline::getCompleteTasks(GroupInfo info) const
   return count;
 }
 
+bool Pipeline::tasksInError(GroupInfo info) const
+{
+  for (const auto& p : info.processes)
+    if (p.status == Pipeline::State::Error)
+      return true;
+
+  return false;
+}
+
 QWidget* Pipeline::progressWidget(bool subMenu) const
 {
   const auto info = constructInfo();
@@ -555,7 +565,7 @@ QWidget* Pipeline::progressWidget(bool subMenu) const
     headerLayout->addWidget(countLabel);
 
     // Progress bar
-    auto* progress = new QProgressBar(row);
+    auto* progress = new maki::ProgressBar(row);
     progress->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     progress->setRange(0, total);
     progress->setValue(completed);
@@ -563,6 +573,12 @@ QWidget* Pipeline::progressWidget(bool subMenu) const
 
     // Current task label
     auto currentTask = getRunningTask(group);
+    if (currentTask == "Error")
+    {
+      progress->setError(true);
+      progress->setValue(total);
+    }
+
     auto* currentTaskLabel = new oclero::qlementine::Label(currentTask, row);
     currentTaskLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     currentTaskLabel->setWordWrap(false);
