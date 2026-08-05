@@ -29,6 +29,9 @@ AllowShortLambdasOnASingleLine: true
 AllowShortFunctionsOnASingleLine: None
 BreakConstructorInitializers: BeforeComma
 AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
 ConstructorInitializerAllOnOneLineOrOnePerLine: false
 AlwaysBreakBeforeMultilineStrings: false
 BreakAdjacentStringLiterals: true
+# BreakAfterReturnType: Automatic
+SeparateDefinitionBlocks: Always

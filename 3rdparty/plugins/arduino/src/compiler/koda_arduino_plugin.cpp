@@ -1,5 +1,7 @@
 #include "koda_arduino_plugin.h"
 
+#include <fstream>
+
 #include "ast.h"
 #include "logging.h"
 #include "result.h"
