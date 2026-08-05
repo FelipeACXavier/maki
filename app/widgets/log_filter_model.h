@@ -2,6 +2,8 @@
 
 #include <QSortFilterProxyModel>
 
+#include "logging.h"
+
 /**
  * @brief A proxy model for filtering log entries based on various criteria.
  */
@@ -22,7 +24,7 @@ public:
    *
    * @param level The log level to filter by. Default is "All".
    */
-  void setLevelFilter(const QString& level);
+  void setLevelEnabled(logging::LogLevel level, bool enabled);
 
   /**
    * @brief Sets the filter for source names.
@@ -30,6 +32,7 @@ public:
    * @param source The source name to filter by.
    */
   void setSourceFilter(const QString& source);
+  void setSourceEnabled(const QString& source, bool enabled);
 
   /**
    * @brief Sets the filter for file names.
@@ -56,8 +59,8 @@ protected:
   bool filterAcceptsRow(int sourceRow, const QModelIndex& sourceParent) const override;
 
 private:
-  QString mLevelFilter = "All";   /// The current log level filter.
-  QString mSourceFilter = "All";  /// The current source name filter.
-  QString mFileFilter;            /// The current file name filter.
-  QString mTextFilter;            /// The current text filter.
+  QSet<logging::LogLevel> mEnabledLevels;  /// The currently enabled log levels.
+  QSet<QString> mSourcesLevels;            /// The currently enabled sources.
+  QString mFileFilter;                     /// The current file name filter.
+  QString mTextFilter;                     /// The current text filter.
 };

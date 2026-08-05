@@ -6,11 +6,18 @@ LogFilterProxyModel::LogFilterProxyModel(QObject* parent)
     : QSortFilterProxyModel(parent)
 {
   setFilterCaseSensitivity(Qt::CaseInsensitive);
+
+  for (int value = static_cast<int>(logging::LogLevel::Error); value <= static_cast<int>(logging::gMinLogLevel); ++value)
+    mEnabledLevels.insert(static_cast<logging::LogLevel>(value));
 }
 
-void LogFilterProxyModel::setLevelFilter(const QString& level)
+void LogFilterProxyModel::setLevelEnabled(logging::LogLevel level, bool enabled)
 {
-  mLevelFilter = level;
+  if (enabled)
+    mEnabledLevels.insert(level);
+  else
+    mEnabledLevels.remove(level);
+
   invalidateFilter();
 }
 
@@ -20,9 +27,13 @@ void LogFilterProxyModel::setFileFilter(const QString& source)
   invalidateFilter();
 }
 
-void LogFilterProxyModel::setSourceFilter(const QString& source)
+void LogFilterProxyModel::setSourceEnabled(const QString& source, bool enabled)
 {
-  mSourceFilter = source;
+  if (enabled)
+    mSourcesLevels.insert(source);
+  else
+    mSourcesLevels.remove(source);
+
   invalidateFilter();
 }
 
@@ -41,18 +52,18 @@ bool LogFilterProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex& sou
   const QModelIndex messageIndex = model->index(sourceRow, LogTableModel::MessageColumn, sourceParent);
   const QModelIndex fileIndex = model->index(sourceRow, LogTableModel::FileColumn, sourceParent);
 
-  const QString level = model->data(levelIndex, Qt::UserRole).toString();
+  const logging::LogLevel level = static_cast<logging::LogLevel>(model->data(levelIndex, Qt::UserRole).toInt());
   const QString source = model->data(sourceIndex, Qt::DisplayRole).toString();
   const QString message = model->data(messageIndex, Qt::DisplayRole).toString();
   const QString file = model->data(fileIndex, Qt::DisplayRole).toString();
 
-  if (mLevelFilter != "All" && level != mLevelFilter)
+  if (!mEnabledLevels.contains(level))
     return false;
 
   if (!mFileFilter.isEmpty() && !file.contains(mFileFilter, Qt::CaseInsensitive))
     return false;
 
-  if (mSourceFilter != "All" && !source.contains(mSourceFilter, Qt::CaseInsensitive))
+  if (!mSourcesLevels.contains(source))
     return false;
 
   if (!mTextFilter.isEmpty() && !message.contains(mTextFilter, Qt::CaseInsensitive))

@@ -29,9 +29,7 @@ public:
 
     opt.widget->style()->drawControl(QStyle::CE_ItemViewItem, &opt, painter, opt.widget);
 
-    const auto icon = qvariant_cast<QIcon>(
-        index.data(Qt::DecorationRole));
-
+    const auto icon = qvariant_cast<QIcon>(index.data(Qt::DecorationRole));
     if (icon.isNull())
       return;
 
@@ -52,21 +50,37 @@ LogTableWidget::LogTableWidget(QWidget* parent)
 
   mHighlightDelegate = new LogHighlightDelegate(this);
 
-  mLevelFilter = new QComboBox(this);
-  mLevelFilter->setSizeAdjustPolicy(QComboBox::SizeAdjustPolicy::AdjustToContents);
-  mLevelFilter->setMaximumWidth(100);
-  mLevelFilter->addItem("All");
-  for (int i = (int)logging::LogLevel::Error; i <= (int)logging::LogLevel::Trace; ++i)
-    mLevelFilter->addItem(mModel->toString((logging::LogLevel)i));
+  mLevelFilter = new QToolButton(this);
+  mLevelFilter->setAutoRaise(true);
+  mLevelFilter->setPopupMode(QToolButton::InstantPopup);
+  mLevelFilter->setFixedWidth(100 + Config::CONTENT_PADDING);
 
-  mSourceFilter = new QComboBox(this);
-  mSourceFilter->setSizeAdjustPolicy(QComboBox::SizeAdjustPolicy::AdjustToContents);
-  mSourceFilter->setMaximumWidth(100);
-  mSourceFilter->setDuplicatesEnabled(false);
-  mSourceFilter->addItem("All");
-  mSourceFilter->addItem(Config::APPLICATION_NAME);
-  mSources.insert("All");
-  mSources.insert(Config::APPLICATION_NAME);
+  auto* levelMenu = new QMenu(mLevelFilter);
+  mLevelFilter->setMenu(levelMenu);
+
+  for (int value = static_cast<int>(logging::LogLevel::Error); value <= static_cast<int>(logging::gMinLogLevel); ++value)
+  {
+    const auto level = static_cast<logging::LogLevel>(value);
+
+    auto* action = levelMenu->addAction(mModel->toString(level));
+    action->setCheckable(true);
+    action->setChecked(true);
+    action->setData(value);
+
+    connect(action, &QAction::toggled, this, [this, action](bool enabled) {
+      const auto level = static_cast<logging::LogLevel>(action->data().toInt());
+      mProxy->setLevelEnabled(level, enabled);
+      updateFilterText(mLevelFilter, tr("Levels"));
+    });
+  }
+
+  mSourceFilter = new QToolButton(this);
+  mSourceFilter->setAutoRaise(false);
+  mSourceFilter->setPopupMode(QToolButton::InstantPopup);
+  mSourceFilter->setFixedWidth(110 + Config::CONTENT_PADDING);
+
+  auto* sourceMenu = new QMenu(mSourceFilter);
+  mSourceFilter->setMenu(sourceMenu);
 
   mTable = new QTableView(this);
   mTable->setModel(mProxy);
@@ -151,8 +165,7 @@ LogTableWidget::LogTableWidget(QWidget* parent)
   mainLayout->addLayout(filterLayout);
   mainLayout->addWidget(mTable);
 
-  connect(mLevelFilter, &QComboBox::currentTextChanged, mProxy, &LogFilterProxyModel::setLevelFilter);
-  connect(mSourceFilter, &QComboBox::currentTextChanged, mProxy, &LogFilterProxyModel::setSourceFilter);
+  // connect(mSourceFilter, &QComboBox::currentTextChanged, mProxy, &LogFilterProxyModel::setSourceFilter);
   connect(mFileFilter, &QLineEdit::textChanged, mProxy, &LogFilterProxyModel::setFileFilter);
   connect(mSearchField, &QLineEdit::textChanged, this, &LogTableWidget::setSearchText);
   connect(previousButton, &QPushButton::pressed, this, &LogTableWidget::previousSearchMatch);
@@ -167,6 +180,26 @@ LogTableWidget::LogTableWidget(QWidget* parent)
   connect(mTable, &QTableView::clicked, this, &LogTableWidget::onClicked);
 
   connect(mProxy, &QAbstractItemModel::layoutChanged, mHighlightDelegate, &LogHighlightDelegate::clearExpandedRows);
+
+  updateFilterText(mLevelFilter, tr("Levels"));
+  updateFilterText(mSourceFilter, tr("Sources"));
+}
+
+void LogTableWidget::updateFilterText(QToolButton* button, const QString& base)
+{
+  const auto actions = button->menu()->actions();
+
+  int checkedCount = 0;
+  for (const auto* action : actions)
+    if (action->isCheckable() && action->isChecked())
+      ++checkedCount;
+
+  if (checkedCount == actions.size())
+    button->setText(tr("All") + " " + base);
+  else if (checkedCount == 0)
+    button->setText(tr("No") + " " + base);
+  else
+    button->setText(tr("%2 ").arg(checkedCount) + base);
 }
 
 void LogTableWidget::onAreaExpanded(ClickableIcon* button, QLineEdit* lineEdit)
@@ -247,7 +280,18 @@ void LogTableWidget::append(logging::LogLevel level, const QString& source, cons
 
   if (!mSources.contains(source))
   {
-    mSourceFilter->addItem(source);
+    auto* action = mSourceFilter->menu()->addAction(source);
+    action->setCheckable(true);
+    action->setChecked(true);
+    action->setData(source);
+
+    connect(action, &QAction::toggled, this, [this, source](bool enabled) {
+      mProxy->setSourceEnabled(source, enabled);
+      updateFilterText(mSourceFilter, tr("Sources"));
+    });
+
+    // Enabled at the start
+    mProxy->setSourceEnabled(source, true);
     mSources.insert(source);
   }
 
