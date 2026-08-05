@@ -277,6 +277,11 @@ void SaveInfo::addPipeline(std::shared_ptr<FlowSaveInfo> pipeline)
   mPipelines.push_back(pipeline);
 }
 
+void SaveInfo::removePipeline(std::shared_ptr<FlowSaveInfo> pipeline)
+{
+  mPipelines.removeIf([pipeline](std::shared_ptr<FlowSaveInfo> info) { return info->getid() == pipeline->getid(); });
+}
+
 // ==========================================================================
 // JSON serialization
 QJsonObject SaveInfo::toJson() const
