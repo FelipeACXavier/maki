@@ -20,7 +20,7 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
     , mBody(nullptr)
     , mMinimizeButton(nullptr)
     , mCloseButton(nullptr)
-    , mExpanded(true)
+    , mMinimized(false)
     , mOpacity(0.0)
 {
   const auto* qlementineStyle = oclero::qlementine::appStyle();
@@ -94,8 +94,6 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
   mBody = new ExpandingWidget(ExpandingWidget::Direction::Up, this);
   mBody->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
-  // mBody->layout()->setAlignment(Qt::AlignVCenter);
-
   // Since we want to be able to fully collapse, the padding should be set in content layout
   mBody->getContent()->setContentsMargins(
       Config::CONTENT_PADDING, Config::CONTENT_PADDING,
@@ -145,11 +143,9 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
       mMinimizeButton->setIcon(QIcon(":/icons/arrow-down.svg"));
   });
 
-  mBody->expandArea();  // Start expanded
-
   // Only enable in short notification
-  // if (!text.isEmpty())
-  //   setupAlarm(3000);
+  if (!text.isEmpty())
+    setupAlarm(3000);
 }
 
 int NotificationWidget::duration() const
@@ -173,8 +169,8 @@ qreal NotificationWidget::opacity() const
 void NotificationWidget::setOpacity(qreal o)
 {
   mOpacity = std::clamp(o, 0.0, 1.0);
-  if (auto* eff = qobject_cast<QGraphicsOpacityEffect*>(graphicsEffect()))
-    eff->setOpacity(o);
+  if (auto* effect = qobject_cast<QGraphicsOpacityEffect*>(graphicsEffect()))
+    effect->setOpacity(o);
 
   update();
 }
@@ -248,7 +244,7 @@ void NotificationWidget::hideAnimated()
 
 void NotificationWidget::minimize(bool minimize)
 {
-  mExpanded = true;
+  mMinimized = minimize;
   toggleMinimized();
 }
 
@@ -257,6 +253,6 @@ void NotificationWidget::toggleMinimized()
   if (!mBody)
     return;
 
-  mBody->setExpanded(!mExpanded);
-  mExpanded = !mExpanded;
+  mBody->setExpanded(!mMinimized);
+  mMinimized = !mMinimized;
 }

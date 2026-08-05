@@ -30,11 +30,10 @@ void LongNotificationWidget::updateContent(QWidget* content)
   clearLayout(mBody->getContent());
 
   content->setParent(this);
-  mBody->addCollapsableWidget(content);
 
   // Adjust to content size
   mBody->setExpandedSize(content->sizeHint().height());
-  LOG_DEBUG("Setting expanded height: %d", content->sizeHint().height());
+  mBody->addCollapsableWidget(content);
 }
 
 bool LongNotificationWidget::disappearing() const

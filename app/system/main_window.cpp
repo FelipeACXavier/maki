@@ -391,6 +391,12 @@ void MainWindow::bind()
   connect(mPluginTab, &PluginTab::openView, this, &MainWindow::addPluginTab);
   connect(mPluginTab, &PluginTab::closeView, this, &MainWindow::removePluginTab);
 
+  mActionToggleToasts->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_M));
+  connect(mActionToggleToasts, &QAction::toggled, this, [this](bool toggled) {
+    if (mNotificationManager)
+      mNotificationManager->toggleMinimize(toggled);
+  });
+
   // Diagram actions =============================================================
   connect(mActionAutoRoute, &QAction::triggered, this, [this] {
     if (canvas())
@@ -572,7 +578,7 @@ void MainWindow::bindShortcuts()
       return;
     }
   });
-  new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_V), this, [this] {
+  new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_V), this, [] {
     QWidget* fw = QApplication::focusWidget();
     if (!fw)
       return;
@@ -602,9 +608,7 @@ void MainWindow::bindShortcuts()
       return;
     }
   });
-  //   if (canvas())
-  //     canvas()->pasteCopiedItems();
-  // });
+
   new QShortcut(QKeySequence(Qt::Key_Delete), this, [this] {
     if (canvas())
       canvas()->deleteSelectedItems();

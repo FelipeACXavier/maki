@@ -167,13 +167,13 @@ void ExpandingWidget::setExpanded(bool expanded)
   {
     auto* area = qobject_cast<CollapsibleAreaHeight*>(mSearchArea);
     mAnimation->setStartValue(area->contentHeight());
-    mAnimation->setEndValue(expanded ? mContentWidget->height() : 0);
+    mAnimation->setEndValue(expanded ? mExpandedSize : 0);
   }
   else
   {
     auto* area = qobject_cast<CollapsibleAreaWidth*>(mSearchArea);
     mAnimation->setStartValue(area->contentWidth());
-    mAnimation->setEndValue(expanded ? mContentWidget->width() : 0);
+    mAnimation->setEndValue(expanded ? mExpandedSize : 0);
   }
 
   connect(mAnimation, &QPropertyAnimation::finished, this, [this, expanded] {

@@ -120,10 +120,11 @@ protected:
   QAction* mActionDelete;  /// Pointer to the delete action.
 
   // View menu
-  QAction* mActionZoomIn;       /// Pointer to the zoom in action.
-  QAction* mActionZoomOut;      /// Pointer to the zoom out action.
-  QAction* mActionResetZoom;    /// Pointer to the reset zoom action.
-  QAction* mActionFitToScreen;  /// Pointer to the fit to screen action.
+  QAction* mActionZoomIn;        /// Pointer to the zoom in action.
+  QAction* mActionZoomOut;       /// Pointer to the zoom out action.
+  QAction* mActionResetZoom;     /// Pointer to the reset zoom action.
+  QAction* mActionFitToScreen;   /// Pointer to the fit to screen action.
+  QAction* mActionToggleToasts;  /// Pointer to the minimize notification toasts action.
 
   QAction* mOpenComponentsPanel;  /// Pointer to the open components panel action.
   QAction* mOpenPropertiesPanel;  /// Pointer to the open properties panel action.

@@ -65,6 +65,7 @@ public:
 
   int duration() const;
   void setBadge(oclero::qlementine::StatusBadge badge);
+
   void minimize(bool minimize);
 
 signals:
@@ -98,8 +99,8 @@ private:
   ClickableIcon* mMinimizeButton;  ///< Button used to manually minimize the notification.
   ClickableIcon* mCloseButton;     ///< Button used to manually dismiss the notification.
 
-  bool mExpanded;  ///< Whether the widget is expanded or minimized
-  qreal mOpacity;  ///< Current opacity value of the widget.
+  bool mMinimized;  ///< Whether the widget is expanded or minimized
+  qreal mOpacity;   ///< Current opacity value of the widget.
 
   oclero::qlementine::StatusBadgeWidget* mStatusBadge;
 

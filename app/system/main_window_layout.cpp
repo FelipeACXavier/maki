@@ -531,6 +531,17 @@ void MainWindowLayout::buildMenuBar()
 
   view->addSeparator();
 
+  mActionToggleToasts = new QAction(iconFromTheme("notifications"), tr("Minimize Toasts"), this);
+  mTranslatable.push_back({mActionToggleToasts, "Minimize Toasts"});
+  mActionToggleToasts->setCheckable(true);
+  mActionToggleToasts->setChecked(false);
+  connect(mActionToggleToasts, &QAction::toggled, [this](bool toggled) {
+    mActionToggleToasts->setIcon(iconFromTheme(toggled ? "notifications-disabled" : "notifications"));
+  });
+  view->addAction(mActionToggleToasts);
+
+  view->addSeparator();
+
   QMenu* showMenu = view->addMenu(tr("Show/Hide"));
   showMenu->setIcon(iconFromTheme("view-visible"));
   mTranslatable.push_back({showMenu, "Show/Hide"});

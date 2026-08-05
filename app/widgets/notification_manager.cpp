@@ -10,9 +10,19 @@
 NotificationManager::NotificationManager(QWidget* parentWindow, QObject* parent)
     : QObject(parent)
     , mParentWindow(parentWindow)
+    , mMinimize(false)
 {
   // This lets us listen to resize events of the parent so the notification toasts can react to layout changes.
   mParentWindow->installEventFilter(this);
+}
+
+void NotificationManager::toggleMinimize(bool minimize)
+{
+  // Expand or minimize all the toasts
+  for (const auto& t : mToasts)
+    t->minimize(minimize);
+
+  mMinimize = minimize;
 }
 
 void NotificationManager::showNotification(const QString& header, const QString& text, logging::LogLevel level)
@@ -27,6 +37,13 @@ void NotificationManager::showNotification(const QString& header, const QString&
 
   mToasts.prepend(toast);
   repositionToasts();
+
+  // Oh, the classic layout timing issue. Right after constructing the toast and inserting some content, Qt has not
+  // yet completed the layout pass that determines the toast’s final width or the wrapped/content-dependent height,
+  // We must, thus, defer the initial minimize/expand call until after Qt has processed the initial layout.
+  QMetaObject::invokeMethod(toast, [toast, minimize = mMinimize]() {
+        if (toast)
+          toast->minimize(minimize); }, Qt::QueuedConnection);
 
   toast->showAnimated();
 }
@@ -49,6 +66,11 @@ QString NotificationManager::showLongNotification(const QString& id, const QStri
 
   mToasts.prepend(toast);
   repositionToasts();
+
+  // See showNotification above
+  QMetaObject::invokeMethod(toast, [toast, minimize = mMinimize]() {
+        if (toast)
+          toast->minimize(minimize); }, Qt::QueuedConnection);
 
   toast->showAnimated();
 
