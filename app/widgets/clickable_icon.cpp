@@ -14,6 +14,7 @@ ClickableIcon::ClickableIcon(const QIcon& icon, const QSize& size, QWidget* pare
     : oclero::qlementine::IconWidget(icon, size, parent)
     , mChecked(false)
     , mCheckable(false)
+    , mHovered(false)
 {
   setIcon(icon);
   setCursor(Qt::PointingHandCursor);
