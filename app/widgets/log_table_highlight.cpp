@@ -1,7 +1,8 @@
 #include "log_table_highlight.h"
 
-#include <QApplication>
 #include <QPainter>
+#include <QTextLine>
+#include <oclero/qlementine.hpp>
 
 #include "log_table_model.h"
 
@@ -43,22 +44,123 @@ void LogHighlightDelegate::updatePadding(int hPadding, int vPadding)
 
 QSize LogHighlightDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
 {
-  if (!containExpandedRow(index.row()) || index.column() != LogTableModel::MessageColumn)
-    return QStyledItemDelegate::sizeHint(option, index);
+  QSize size = QStyledItemDelegate::sizeHint(option, index);
+  const bool expandedMessage = containExpandedRow(index.row()) && index.column() == LogTableModel::MessageColumn;
+
+  if (!expandedMessage)
+    return size;
 
   QStyleOptionViewItem opt(option);
   initStyleOption(&opt, index);
 
-  const QString text = opt.text;
-  const int width = option.rect.width() > 0 ? option.rect.width() : 600;
+  QStyle* style = opt.widget ? opt.widget->style() : oclero::qlementine::appStyle();
+  QRect textRect = style->subElementRect(QStyle::SE_ItemViewItemText, &opt, opt.widget);
 
-  QFontMetrics fm(opt.font);
+  int availableWidth = textRect.width();
 
-  QRect textRect = fm.boundingRect(QRect(0, 0, width, 10000), Qt::TextWordWrap, text);
+  // sizeHint() may occasionally receive an option without a useful rect.
+  if (availableWidth <= 0)
+    availableWidth = option.rect.width();
 
-  QSize size = QStyledItemDelegate::sizeHint(option, index);
-  size.setHeight(textRect.height() + 10);
+  if (availableWidth <= 0)
+    availableWidth = 600;
+
+  availableWidth -= 2 * mExpandedHPadding;
+  availableWidth = std::max(1, availableWidth);
+
+  const QFontMetrics fontMetrics(opt.font);
+
+  const QRect wrappedRect = fontMetrics.boundingRect(
+      QRect(0, 0, availableWidth, std::numeric_limits<int>::max()),
+      Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap,
+      opt.text);
+
+  const int requiredHeight = wrappedRect.height() + 2 * mExpandedVPadding + 2;  // Safety margin for font/device-pixel rounding.
+  size.setHeight(std::max(size.height(), requiredHeight));
   return size;
+}
+
+void LogHighlightDelegate::paintSearchHighlights(QPainter* painter, const QStyleOptionViewItem& option, const QRect& textRect, const QString& text, bool wordWrap) const
+{
+  if (mSearchText.isEmpty() || text.isEmpty() || !text.contains(mSearchText, Qt::CaseInsensitive) || textRect.width() <= 0)
+    return;
+
+  const auto* qlementinestyle = oclero::qlementine::appStyle();
+  if (!qlementinestyle)
+    return;
+
+  QTextLayout layout(text, option.font);
+  QTextOption textOption;
+  textOption.setWrapMode(wordWrap ? QTextOption::WrapAtWordBoundaryOrAnywhere : QTextOption::NoWrap);
+  layout.setTextOption(textOption);
+
+  layout.beginLayout();
+  qreal y = 0.0;
+  while (true)
+  {
+    QTextLine line = layout.createLine();
+    if (!line.isValid())
+      break;
+
+    line.setLineWidth(textRect.width());
+    line.setPosition(QPointF(0.0, y));
+    y += line.height();
+
+    // No need to create more lines if we are not wrapping
+    if (!wordWrap)
+      break;
+  }
+  layout.endLayout();
+
+  const qreal layoutHeight = y;
+  qreal verticalOffset = 0.0;
+  if (option.displayAlignment.testFlag(Qt::AlignVCenter))
+    verticalOffset = std::max<qreal>(0.0, (textRect.height() - layoutHeight) / 2.0);
+  else if (option.displayAlignment.testFlag(Qt::AlignBottom))
+    verticalOffset = std::max<qreal>(0.0, textRect.height() - layoutHeight);
+
+  painter->save();
+
+  // Find all the matches in the text
+  int searchPosition = 0;
+  while (searchPosition < text.length())
+  {
+    const int matchStart = text.indexOf(mSearchText, searchPosition, Qt::CaseInsensitive);
+    if (matchStart < 0)
+      break;
+
+    const int matchEnd = matchStart + mSearchText.length();
+    for (int lineIndex = 0; lineIndex < layout.lineCount(); ++lineIndex)
+    {
+      const QTextLine line = layout.lineAt(lineIndex);
+      const int lineStart = line.textStart();
+      const int lineEnd = lineStart + line.textLength();
+      const int segmentStart = std::max(matchStart, lineStart);
+      const int segmentEnd = std::min(matchEnd, lineEnd);
+
+      if (segmentStart >= segmentEnd)
+        continue;
+
+      qreal startX = line.cursorToX(segmentStart);
+      qreal endX = line.cursorToX(segmentEnd);
+
+      if (endX < startX)
+        std::swap(startX, endX);
+
+      QRectF highlightRect(
+          textRect.left() + line.position().x() + startX,
+          textRect.top() + verticalOffset + line.position().y(),
+          endX - startX,
+          line.height());
+
+      painter->fillRect(highlightRect, qlementinestyle->theme().statusColorWarning);
+    }
+
+    // Move beyond this match, so we dont get stuck on the same match forever
+    searchPosition = matchEnd;
+  }
+
+  painter->restore();
 }
 
 void LogHighlightDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const
@@ -66,54 +168,38 @@ void LogHighlightDelegate::paint(QPainter* painter, const QStyleOptionViewItem& 
   QStyleOptionViewItem opt(option);
   initStyleOption(&opt, index);
 
-  if (containExpandedRow(index.row()) && index.column() == LogTableModel::MessageColumn)
+  const auto* style = opt.widget ? opt.widget->style() : oclero::qlementine::appStyle();
+
+  QRect textRect = style->subElementRect(QStyle::SE_ItemViewItemText, &opt, opt.widget);
+  textRect.adjust(mExpandedHPadding, mExpandedVPadding, -mExpandedHPadding, -mExpandedVPadding);
+
+  const bool isExpanded = containExpandedRow(index.row()) && index.column() == LogTableModel::MessageColumn;
+  const auto flags = isExpanded ? (Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap) : (Qt::AlignLeft | Qt::AlignVCenter | Qt::TextSingleLine);
+  const QString displayedText = isExpanded ? opt.text : opt.fontMetrics.elidedText(opt.text, opt.textElideMode, textRect.width());
+
+  // Draw the standard Qlementine background, selection, icon, etc., but suppress the default text so that
+  // we can draw the search highlights
+  QStyleOptionViewItem backgroundOption(opt);
+  backgroundOption.text.clear();
+
+  style->drawControl(QStyle::CE_ItemViewItem, &backgroundOption, painter, opt.widget);
+
+  // Paint the search highlights behind the text.
+  if (isExpanded)
   {
-    QStyle* style = opt.widget ? opt.widget->style() : QApplication::style();
-
-    const QString text = opt.text;
-    // Important: compute this from the original opt, while text still exists.
-    QRect textRect = style->subElementRect(QStyle::SE_ItemViewItemText, &opt, opt.widget);
-
-    textRect.adjust(mExpandedHPadding, mExpandedVPadding, -mExpandedHPadding, mExpandedVPadding);
-
-    // Draw qlementine background/selection without drawing text.
-    QStyleOptionViewItem bgOpt(opt);
-    bgOpt.text.clear();
-    style->drawControl(QStyle::CE_ItemViewItem, &bgOpt, painter, opt.widget);
-
-    painter->save();
-    painter->setPen(opt.state & QStyle::State_Selected ? opt.palette.color(QPalette::HighlightedText) : opt.palette.color(QPalette::Text));
-    painter->drawText(textRect, Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, text);
-    painter->restore();
-    return;
+    QStyleOptionViewItem textOption(opt);
+    textOption.text = displayedText;
+    textOption.displayAlignment = Qt::AlignLeft | Qt::AlignVCenter;
+    paintSearchHighlights(painter, textOption, textRect, opt.text, isExpanded);
   }
   else
   {
-    QStyledItemDelegate::paint(painter, opt, index);
+    paintSearchHighlights(painter, opt, textRect, opt.text, isExpanded);
   }
 
-  if (mSearchText.isEmpty())
-    return;
-
-  const QString text = opt.text;
-  if (!text.contains(mSearchText, Qt::CaseInsensitive))
-    return;
-
+  // Move on to draw the text
   painter->save();
-
-  QRect textRect = option.widget->style()->subElementRect(QStyle::SE_ItemViewItemText, &opt, option.widget);
-
-  QFontMetrics fm(opt.font);
-
-  const int matchIndex = text.indexOf(mSearchText, 0, Qt::CaseInsensitive);
-  const QString before = text.left(matchIndex);
-  const QString match = text.mid(matchIndex, mSearchText.length());
-
-  const int x = textRect.x() + fm.horizontalAdvance(before);
-  const int w = fm.horizontalAdvance(match);
-
-  QRect highlightRect(x, textRect.y() + 2, w, textRect.height() - 4);
-
-  painter->fillRect(highlightRect, QColor(255, 220, 80, 140));
+  painter->setPen(opt.state.testFlag(QStyle::State_Selected) ? opt.palette.color(QPalette::HighlightedText) : opt.palette.color(QPalette::Text));
+  painter->drawText(textRect, flags, displayedText);
   painter->restore();
 }

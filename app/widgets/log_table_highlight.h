@@ -82,4 +82,6 @@ private:
 
   int mExpandedHPadding = 4;
   int mExpandedVPadding = 7;
+
+  void paintSearchHighlights(QPainter* painter, const QStyleOptionViewItem& option, const QRect& textRect, const QString& text, bool wordWrap) const;
 };
