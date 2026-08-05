@@ -214,7 +214,7 @@ void MainWindowLayout::buildCentralPanel()
   headerLayout->addSpacing(24);
 
   // ----------------------------------------------------------------
-  mPipelineRun = new DropDownButton(header);
+  mPipelineRun = new ExecuteButton(header);
   mPipelineRun->setIcon(iconFromTheme("exaile-play"));
   mPipelineRun->setToolTip(tr("Run pipeline"));
 

@@ -77,5 +77,5 @@ protected:
 private:
   bool mChecked;    /// True if the icon is currently checked, false otherwise.
   bool mCheckable;  /// True if the icon can be checked or unchecked, false otherwise.
-  bool mHovered;
+  bool mHovered;    /// True when the button is hovered
 };

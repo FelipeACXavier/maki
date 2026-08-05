@@ -380,8 +380,9 @@ void MainWindow::bind()
   connect(mActionSaveAs, &QAction::triggered, this, &MainWindow::onActionSaveAs);
   mActionSaveAs->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S));
 
-  connect(mPipelineRun, &DropDownButton::executeRequested, this, &MainWindow::onActionGenerate);
-  connect(mPipelineRun, &DropDownButton::editOptionRequested, this, &MainWindow::onActionEditPipeline);
+  connect(mPipelineRun, &ExecuteButton::executeRequested, this, &MainWindow::onActionGenerate);
+  connect(mPipelineRun, &ExecuteButton::editOptionRequested, this, &MainWindow::onActionEditPipeline);
+  connect(mPipelineRun, &ExecuteButton::deleteOptionRequested, this, &MainWindow::onActionDeletePipeline);
 
   // View actions =============================================================
   mOpenComponentsPanel->setShortcut(QKeySequence(Qt::Key_F7));
@@ -796,8 +797,6 @@ void MainWindow::onActionRestart()
 
 void MainWindow::onActionGenerate(const QString& pipelineId)
 {
-  LOG_INFO("onActionGenerate: %s", qPrintable(pipelineId));
-
   if (!mPluginPipeline)
     LOG_WARNING("No pipeline available");
 
@@ -840,7 +839,6 @@ void MainWindow::onActionGenerate(const QString& pipelineId)
 
   for (const auto& pipeline : mStorage->pipelines())
   {
-    LOG_DEBUG("Comparing: %s to %s", qPrintable(pipeline->getname()), qPrintable(pipelineId));
     if (pipeline->getname() != pipelineId)
       continue;
 
@@ -861,10 +859,42 @@ void MainWindow::onActionGenerate(const QString& pipelineId)
   onActionEditPipeline(pipelineId);
 }
 
+void MainWindow::onActionDeletePipeline(const QString& pipelineId)
+{
+  if (!mPluginPipeline)
+    LOG_WARNING("No pipeline available");
+
+  QString pipelineName;
+  std::shared_ptr<FlowSaveInfo> pipeline;
+  for (const auto& p : mStorage->pipelines())
+  {
+    if (p->getname() != pipelineId)
+      continue;
+
+    pipelineName = pipelineId;
+    pipeline = p;
+    break;
+  }
+
+  // Check if the pipeline is currently open
+  for (int i = 1; i < mCanvasPanel->count(); ++i)
+  {
+    auto prop = mCanvasPanel->widget(i)->property("id");
+    if (!prop.isValid() || prop.toString() != pipelineName)
+      continue;
+
+    // Change to the previous tab and remove the pipeline tab
+    mCanvasPanel->setCurrentIndex(qMax<int>(0, i - 1));
+    mCanvasPanel->removeTab(i);
+    break;
+  }
+
+  mStorage->removePipeline(pipeline);
+  mPipelineRun->removeOption(pipelineName);  // Update the UI as well
+}
+
 void MainWindow::onActionEditPipeline(const QString& pipelineId)
 {
-  LOG_INFO("onActionEditPipeline: %s", qPrintable(pipelineId));
-
   QString pipelineName;
   std::shared_ptr<FlowSaveInfo> pipeline;
   for (const auto& p : mStorage->pipelines())
@@ -919,124 +949,6 @@ void MainWindow::onActionEditPipeline(const QString& pipelineId)
 
   mCanvasPanel->addTab(newView, QIcon(":/icons/deploy.svg"), pipeline->getname());
   mCanvasPanel->setCurrentWidget(newView);
-}
-
-void MainWindow::onActionSimulate()
-{
-  if (!mGenerator)
-    LOG_WARNING("No generator available");
-
-  // TODO: Update this to the plugin pipeline
-  maki::PipelineGraph graph;
-  graph.id = "Test 1";
-  graph.name = "Generate koda and dezyne";
-
-  maki::PipelineNode node1;
-  node1.actionId = "koda_antlr.generate_koda";
-  node1.id = "Koda generation";
-  node1.parameters = {};
-
-  maki::PipelineNode node2;
-  node2.actionId = "koda_antlr.generate_dezyne";
-  node2.id = "Dezyne generation";
-  node2.parameters = {};
-
-  maki::PipelineNode node3;
-  node3.actionId = "koda_antlr.verify_dezyne";
-  node3.id = "Dezyne verification";
-  node3.parameters = {};
-
-  maki::PipelineNode node4;
-  node4.actionId = "koda_antlr.simulate";
-  node4.id = "Dezyne simulation";
-  node4.parameters = {};
-
-  maki::PipelineEdge edge1;
-  edge1.from = "Koda generation";
-  edge1.to = "Dezyne generation";
-
-  maki::PipelineEdge edge2;
-  edge2.from = "Dezyne generation";
-  edge2.to = "Dezyne verification";
-
-  maki::PipelineEdge edge3;
-  edge3.from = "Dezyne verification";
-  edge3.to = "Dezyne simulation";
-
-  graph.nodes.push_back(node1);
-  graph.nodes.push_back(node2);
-  graph.nodes.push_back(node3);
-  graph.nodes.push_back(node4);
-
-  graph.edges.push_back(edge1);
-  graph.edges.push_back(edge2);
-  graph.edges.push_back(edge3);
-
-  QByteArray byteArray;
-  QDataStream out(&byteArray, QIODevice::WriteOnly);
-  out << mHostServices->document()->getnodes();
-
-  maki::PipelineContext context;
-  context.buildDir = QDir(mSettingsManager->generation().generationDir);
-  context.projectDir = QDir(mSettingsManager->generation().generationDir);
-  context.addArtifact({
-      .id = "maki.nodes",
-      .type = "maki",
-      .producer = "MAKI",
-      .paths = {
-          {"nodes", byteArray.toBase64()},
-      },
-  });
-
-  LOG_ERROR_ON_FAILURE(mPluginPipeline->run(graph, context));
-}
-
-void MainWindow::onActionDeploy()
-{
-  if (!mGenerator)
-    LOG_WARNING("No generator available");
-
-  // TODO: Update this to the plugin pipeline
-  maki::PipelineGraph graph;
-  graph.id = "Test 1";
-  graph.name = "Generate koda and dezyne";
-
-  maki::PipelineNode node1;
-  node1.actionId = "koda_antlr.generate_koda";
-  node1.id = "Koda generation";
-  node1.parameters = {};
-
-  maki::PipelineNode node2;
-  node2.actionId = "ollama.explain";
-  node2.id = "Explain with ollama";
-  node2.parameters = {};
-
-  maki::PipelineEdge edge1;
-  edge1.from = "Koda generation";
-  edge1.to = "Explain with ollama";
-
-  graph.nodes.push_back(node1);
-  graph.nodes.push_back(node2);
-
-  graph.edges.push_back(edge1);
-
-  QByteArray byteArray;
-  QDataStream out(&byteArray, QIODevice::WriteOnly);
-  out << mHostServices->document()->getnodes();
-
-  maki::PipelineContext context;
-  context.buildDir = QDir(mSettingsManager->generation().generationDir);
-  context.projectDir = QDir(mSettingsManager->generation().generationDir);
-  context.addArtifact({
-      .id = "maki.nodes",
-      .type = "maki",
-      .producer = "MAKI",
-      .paths = {
-          {"nodes", byteArray.toBase64()},
-      },
-  });
-
-  LOG_ERROR_ON_FAILURE(mPluginPipeline->run(graph, context));
 }
 
 VoidResult MainWindow::onActionSave()

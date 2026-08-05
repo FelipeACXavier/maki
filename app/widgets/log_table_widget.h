@@ -4,6 +4,7 @@
 #include <QPushButton>
 #include <QWidget>
 
+#include "dropdown_button.h"
 #include "log_filter_model.h"
 #include "log_table_highlight.h"
 #include "log_table_model.h"
@@ -93,12 +94,12 @@ private:
   LogTableModel* mModel = nullptr;        /// Pointer to the log table model.
   LogFilterProxyModel* mProxy = nullptr;  /// Pointer to the log filter proxy model.
 
-  QTableView* mTable = nullptr;           /// Pointer to the table view widget.
-  QToolButton* mLevelFilter = nullptr;    /// Pointer to the level filter combo box.
-  QToolButton* mSourceFilter = nullptr;   /// Pointer to the source filter combo box.
-  QLineEdit* mFileFilter = nullptr;       /// Pointer to the file filter line edit.
-  QLineEdit* mSearchField = nullptr;      /// Pointer to the search field line edit.
-  QLabel* mSearchCounterLabel = nullptr;  /// Pointer to the search counter label.
+  QTableView* mTable = nullptr;             /// Pointer to the table view widget.
+  DropDownButton* mLevelFilter = nullptr;   /// Pointer to the level filter button.
+  DropDownButton* mSourceFilter = nullptr;  /// Pointer to the source filter button.
+  QLineEdit* mFileFilter = nullptr;         /// Pointer to the file filter line edit.
+  QLineEdit* mSearchField = nullptr;        /// Pointer to the search field line edit.
+  QLabel* mSearchCounterLabel = nullptr;    /// Pointer to the search counter label.
 
   ExpandingWidget* mSearchBox = nullptr;  /// Pointer to the search box widget.
   ExpandingWidget* mFilterBox = nullptr;  /// Pointer to the filter box widget.

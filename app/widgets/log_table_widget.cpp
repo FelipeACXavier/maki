@@ -50,19 +50,13 @@ LogTableWidget::LogTableWidget(QWidget* parent)
 
   mHighlightDelegate = new LogHighlightDelegate(this);
 
-  mLevelFilter = new QToolButton(this);
-  mLevelFilter->setAutoRaise(true);
-  mLevelFilter->setPopupMode(QToolButton::InstantPopup);
+  mLevelFilter = new DropDownButton(this);
   mLevelFilter->setFixedWidth(100 + Config::CONTENT_PADDING);
-
-  auto* levelMenu = new QMenu(mLevelFilter);
-  mLevelFilter->setMenu(levelMenu);
 
   for (int value = static_cast<int>(logging::LogLevel::Error); value <= static_cast<int>(logging::gMinLogLevel); ++value)
   {
     const auto level = static_cast<logging::LogLevel>(value);
-
-    auto* action = levelMenu->addAction(mModel->toString(level));
+    auto* action = mLevelFilter->addAction(mModel->toString(level));
     action->setCheckable(true);
     action->setChecked(true);
     action->setData(value);
@@ -74,13 +68,8 @@ LogTableWidget::LogTableWidget(QWidget* parent)
     });
   }
 
-  mSourceFilter = new QToolButton(this);
-  mSourceFilter->setAutoRaise(false);
-  mSourceFilter->setPopupMode(QToolButton::InstantPopup);
+  mSourceFilter = new DropDownButton(this);
   mSourceFilter->setFixedWidth(110 + Config::CONTENT_PADDING);
-
-  auto* sourceMenu = new QMenu(mSourceFilter);
-  mSourceFilter->setMenu(sourceMenu);
 
   mTable = new QTableView(this);
   mTable->setModel(mProxy);
@@ -113,13 +102,11 @@ LogTableWidget::LogTableWidget(QWidget* parent)
   // Save the height
   mDefaultRowHeight = mTable->verticalHeader()->defaultSectionSize();
 
-  QPushButton* previousButton = new QPushButton(this);
-  previousButton->setIcon(QIcon(":/icons/arrow-up.svg"));
+  ClickableIcon* previousButton = new ClickableIcon(QIcon(":/icons/arrow-up.svg"), Config::SMALL_BUTTON_SIZE, this);
   previousButton->setFixedSize(Config::MEDIUM_BUTTON_SIZE);
   previousButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
-  QPushButton* nextButton = new QPushButton(this);
-  nextButton->setIcon(QIcon(":/icons/arrow-down.svg"));
+  ClickableIcon* nextButton = new ClickableIcon(QIcon(":/icons/arrow-down.svg"), Config::SMALL_BUTTON_SIZE, this);
   nextButton->setFixedSize(Config::MEDIUM_BUTTON_SIZE);
   nextButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
@@ -168,8 +155,8 @@ LogTableWidget::LogTableWidget(QWidget* parent)
   // connect(mSourceFilter, &QComboBox::currentTextChanged, mProxy, &LogFilterProxyModel::setSourceFilter);
   connect(mFileFilter, &QLineEdit::textChanged, mProxy, &LogFilterProxyModel::setFileFilter);
   connect(mSearchField, &QLineEdit::textChanged, this, &LogTableWidget::setSearchText);
-  connect(previousButton, &QPushButton::pressed, this, &LogTableWidget::previousSearchMatch);
-  connect(nextButton, &QPushButton::pressed, this, &LogTableWidget::nextSearchMatch);
+  connect(previousButton, &ClickableIcon::clicked, this, &LogTableWidget::previousSearchMatch);
+  connect(nextButton, &ClickableIcon::clicked, this, &LogTableWidget::nextSearchMatch);
 
   connect(mSearchBox, &ExpandingWidget::areaExpanded, [this](ClickableIcon* button) { onAreaExpanded(button, mSearchField); });
   connect(mSearchBox, &ExpandingWidget::areaCollapsed, [this](ClickableIcon* button) { onAreaCollapsed(button, mSearchField, ":/icons/search.svg"); });
@@ -242,9 +229,9 @@ void LogTableWidget::onClicked(const QModelIndex& index)
 
   const int clickedRow = index.row();
 
-  if (const auto* qlementine_style = oclero::qlementine::appStyle())
+  if (const auto* qlementinestyle = oclero::qlementine::appStyle())
   {
-    const auto theme = qlementine_style->theme();
+    const auto theme = qlementinestyle->theme();
     const auto hSpace = theme.spacing - theme.borderWidth;
     const auto vSpace = qCeil(theme.spacing / 2);
     mHighlightDelegate->updatePadding(hSpace, vSpace);
@@ -280,7 +267,7 @@ void LogTableWidget::append(logging::LogLevel level, const QString& source, cons
 
   if (!mSources.contains(source))
   {
-    auto* action = mSourceFilter->menu()->addAction(source);
+    auto* action = mSourceFilter->addAction(source);
     action->setCheckable(true);
     action->setChecked(true);
     action->setData(source);

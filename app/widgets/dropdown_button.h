@@ -1,8 +1,7 @@
 #pragma once
 
 #include <QToolButton>
-
-#include "compiler/pipeline_graph.h"
+#include <oclero/qlementine.hpp>
 
 class DropDownButton : public QToolButton
 {
@@ -11,33 +10,21 @@ class DropDownButton : public QToolButton
 public:
   DropDownButton(QWidget* parent = nullptr);
 
-  void addOption(const QString& name);
-  void setCurrentOption(const QString& name);
-  QString currentOption();
+  virtual void setSize(int width, int height);
+  virtual void reset();
 
-  void setRunning(bool running);
-  void setSize(int width, int height);
-  void reset();
-
-signals:
-  void executeRequested(const QString& option);
-  void editOptionRequested(const QString& option);
-  void deleteOptionRequested(const QString& option);
+  QAction* addAction(const QString& text);
+  QAction* addAction(const QIcon& icon, const QString& text);
 
 protected:
-  QSize sizeHint() const override;
-  void paintEvent(QPaintEvent* event) override;
-
-private:
-  QMenu* mMenu = nullptr;
-  QList<QString> mOptions;
-  QString mCurrentOption;
   int mWidth = 150;
   int mHeight = 40;
-  bool mRunning = false;
 
-  void rebuildMenu();
-  void updateButtonText();
-  void showContextMenu(const QPoint& point);
-  void buildMenu(QMenu* menu, const QString& option, bool addRun);
+  virtual void paintEvent(QPaintEvent* event) override;
+  virtual int leadingContentWidth(const oclero::qlementine::Theme& theme) const;
+  virtual void paintLeadingContent(QPainter& painter, const QRect& rect, const oclero::qlementine::Theme& theme);
+  virtual QString displayedText() const;
+
+private:
+  bool mHovered;  /// True when the button is hovered
 };

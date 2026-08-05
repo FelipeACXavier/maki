@@ -5,7 +5,7 @@
 #include <oclero/qlementine/widgets/NavigationBar.hpp>
 
 #include "style_helpers.h"
-#include "widgets/dropdown_button.h"
+#include "widgets/execute_button.h"
 #include "widgets/settings_manager.h"
 
 class QWidget;
@@ -69,7 +69,7 @@ protected:
   QSplitter* mLeftPanel;               /// Pointer to the left panel splitter.
 
   // === Central Panel ===
-  DropDownButton* mPipelineRun;                            /// Pointer to the generator option combo box.
+  ExecuteButton* mPipelineRun;                             /// Pointer to the generator option combo box.
   oclero::qlementine::LoadingSpinner* mGenerationSpinner;  /// Pointer to the generation spinner.
 
   QSplitter* mCentralSplitter;     /// Pointer to the central splitter.
