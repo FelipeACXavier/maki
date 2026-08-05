@@ -275,7 +275,7 @@ void MainWindowLayout::buildCentralPanel()
   // Bottom panel
   mBottomContainer = new QWidget();
   QVBoxLayout* bottomLayout = new QVBoxLayout(mBottomContainer);
-  bottomLayout->setContentsMargins(theme.spacing, theme.spacing, theme.spacing, theme.borderWidth);
+  bottomLayout->setContentsMargins(theme.spacing, theme.spacing / 2, theme.spacing, theme.borderWidth);
   bottomLayout->setSpacing(theme.spacing);
 
   auto* bottomNavContainer = new QWidget();
@@ -284,6 +284,7 @@ void MainWindowLayout::buildCentralPanel()
   bottomNavLayout->setSpacing(0);
 
   mBottomNavigation = new oclero::qlementine::NavigationBar(mBottomContainer);
+  mBottomNavigation->setMaximumHeight(40);
   mBottomPanel = new QStackedWidget(mBottomContainer);
 
   bottomNavLayout->addWidget(mBottomNavigation);
@@ -292,7 +293,6 @@ void MainWindowLayout::buildCentralPanel()
   bottomLayout->addWidget(mBottomPanel);
 
   // ===================================================================
-  // QWidget* infoContainer = new QWidget(mBottomPanel);
   auto* infoContainer = new StyledFrame(mBottomPanel);
   infoContainer->setBackgroundRole(StyledFrame::BackgroundRole::Base);
   infoContainer->setBorderRole(StyledFrame::BorderRole::Mid);
@@ -308,6 +308,7 @@ void MainWindowLayout::buildCentralPanel()
   mInfoText->setWordWrapMode(QTextOption::WrapMode::WordWrap);
   mInfoText->setFont(theme.fontRegular);
   mInfoText->setHtml(createDefaultMessage());
+  mInfoText->setFocusPolicy(Qt::FocusPolicy::NoFocus);
 
   infoLayout->addWidget(mInfoText);
 
