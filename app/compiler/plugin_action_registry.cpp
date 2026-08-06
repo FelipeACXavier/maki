@@ -8,7 +8,7 @@ namespace maki
 VoidResult PipelineActionRegistry::registerAction(const QString& pluginId, std::shared_ptr<IPipelineAction> action)
 {
   if (mActions.contains(action->id()))
-    return VoidResult::Failed("Action already registred, " + action->id().toStdString());
+    return VoidResult::Failed("Action already registred: {}", action->id());
 
   mActions.insert(action->id(), action);
   if (mActionPluginIds.contains(pluginId))
@@ -16,7 +16,7 @@ VoidResult PipelineActionRegistry::registerAction(const QString& pluginId, std::
   else
     mActionPluginIds.insert(pluginId, {action->id()});
 
-  LOG_DEBUG("Adding action: {} of plugin: {} to the registry", qPrintable(action->id()), qPrintable(pluginId));
+  LOG_DEBUG("Adding action: {} of plugin: {} to the registry", action->id(), pluginId);
 
   return VoidResult();
 }
@@ -45,7 +45,7 @@ void PipelineActionRegistry::printAll() const
   LOG_INFO("Available actions:");
   for (const auto& action : mActions)
   {
-    LOG_INFO("Id: {} - Action Id: {}", qPrintable(action->id()), qPrintable(action->displayName()));
+    LOG_INFO("Id: {} - Action Id: {}", action->id(), action->displayName());
   }
 }
 }  // namespace maki

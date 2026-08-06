@@ -111,7 +111,7 @@ VoidResult MainWindow::start()
 
   LOG_DEBUG("Starting the main window");
 
-  LOG_INFO("Using application path: {}", qPrintable(QCoreApplication::applicationDirPath()));
+  LOG_INFO("Using application path: {}", QCoreApplication::applicationDirPath());
   mSaveHandler = std::make_unique<SaveHandler>(this);
   mSettingsManager = std::make_shared<SettingsManager>(mThemeManager, this);
   mLanguageManager = std::make_shared<LanguageManager>(this);
@@ -298,7 +298,7 @@ static QWidget* findAncestor(QWidget* w, const QMetaObject* type)
 {
   while (w)
   {
-    // LOG_TRACE("Finding: {} vs {}", qPrintable(type->className()), qPrintable(w->metaObject()->className()));
+    // LOG_TRACE("Finding: {} vs {}", type->className(), w->metaObject(->className()));
     if (w->metaObject()->inherits(type))
       return w;
     w = w->parentWidget();
@@ -321,7 +321,7 @@ void MainWindow::bind()
     if (!fw)
       return;
 
-    LOG_INFO("Focused on: {}", qPrintable(fw->metaObject()->className()));
+    LOG_INFO("Focused on: {}", fw->metaObject()->className());
 
     // 1) If focus is in the node library panel -> search there
     if (QScrollArea* lib = qobject_cast<QScrollArea*>(findAncestor(fw, &QScrollArea::staticMetaObject)))
@@ -558,7 +558,7 @@ void MainWindow::bindShortcuts()
     if (!fw)
       return;
 
-    LOG_INFO("Copy, focused on: {}", qPrintable(fw->metaObject()->className()));
+    LOG_INFO("Copy, focused on: {}", fw->metaObject()->className());
 
     // 1) If focus is in the node library panel -> search there
     if (auto* textEdit = qobject_cast<QTextEdit*>(findAncestor(fw, &QTextEdit::staticMetaObject)))
@@ -584,7 +584,7 @@ void MainWindow::bindShortcuts()
     if (!fw)
       return;
 
-    LOG_INFO("Copy, focused on: {}", qPrintable(fw->metaObject()->className()));
+    LOG_INFO("Copy, focused on: {}", fw->metaObject()->className());
 
     // 1) If focus is in the node library panel -> search there
     if (auto* textEdit = qobject_cast<QTextEdit*>(findAncestor(fw, &QTextEdit::staticMetaObject)))
@@ -648,10 +648,7 @@ VoidResult MainWindow::loadElements()
       const auto fileName = libDir.absoluteFilePath(file);
       auto libRead = JSON::fromFile(fileName);
       if (!libRead.IsSuccess())
-        return VoidResult::Failed(
-            QStringLiteral("Failed to open library: %1")
-                .arg(fileName)
-                .toStdString());
+        return VoidResult::Failed("Failed to open library: {}", fileName);
 
       auto libConfig = libRead.Value();
       LOG_ERROR_ON_FAILURE(loadLibrary(libConfig));
@@ -696,7 +693,7 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
   QString libraryName = config.contains(ConfigKeys::NAME) ? config[ConfigKeys::NAME].toString() : name;
   QString type = config[ConfigKeys::TYPE].toString();
 
-  LOG_DEBUG("Loading library: {} of {}", qPrintable(libraryName), qPrintable(name));
+  LOG_DEBUG("Loading library: {} of {}", libraryName, name);
 
   // Every library is added to a new item in the toolbox.
   // We load those dynamically on startup.
@@ -709,7 +706,7 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
   else if (type == ConfigKeys::PIPELINE)
     toolbox = mPipelineTab;
   else
-    return VoidResult::Failed("Unknown library type: " + type.toStdString());
+    return VoidResult::Failed("Unknown library type: {}", type);
 
   LibraryContainer* sidebarview = LibraryContainer::create(libraryName, toolbox);
   LibraryScene* sidebarScene = dynamic_cast<LibraryScene*>(sidebarview->scene());
@@ -731,7 +728,7 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
       return VoidResult::Failed("Invalid node format");
 
     QJsonObject node = value.toObject();
-    // LOG_INFO("Loading element: {}", qPrintable(node[ConfigKeys::TYPE].toString()));
+    // LOG_INFO("Loading element: {}", node[ConfigKeys::TYPE].toString());
 
     // Parse config and make sure it is valid before continuing
     auto nodeConfig = std::make_shared<NodeConfig>(node);
@@ -750,7 +747,7 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
     sidebarview->addNode(nodeId, nodeConfig);
     nodeConfig->type = nodeId;
 
-    LOG_TRACE("Adding key: {} to the config table", qPrintable(nodeId));
+    LOG_TRACE("Adding key: {} to the config table", nodeId);
     LOG_ERROR_ON_FAILURE(mConfigTable->add(nodeId, nodeConfig));
   }
 
@@ -1030,8 +1027,8 @@ void MainWindow::onFileLoaded(const QString& file, const SaveInfo& info, const Q
 {
   if (!error.isEmpty())
   {
-    LOG_ERROR("Failed to load project: {}", qPrintable(error));
-    NOTIFY_ERROR(Config::APPLICATION_NAME.toStdString(), "Failed to load project.\n{}", qPrintable(error));
+    LOG_ERROR("Failed to load project: {}", error);
+    NOTIFY_ERROR(Config::APPLICATION_NAME.toStdString(), "Failed to load project.\n{}", error);
     return;
   }
 
@@ -1283,7 +1280,7 @@ void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId)
   auto index = libraryTypeToIndex(canvas->type());
   mPalette->setCurrentIndex(index);
 
-  LOG_DEBUG("Set tab property to {}", qPrintable(flow->id()));
+  LOG_DEBUG("Set tab property to {}", flow->id());
   newView->setProperty("id", flow->id());
   mCanvasPanel->addTab(newView, QIcon(":/icons/behaviour.svg"), flowName);
   mCanvasPanel->setCurrentWidget(newView);

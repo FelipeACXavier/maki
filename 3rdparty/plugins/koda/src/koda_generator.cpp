@@ -266,7 +266,7 @@ VoidResult KodaGenerator::simulate(const maki::PipelineArtifact& artifact)
     if (!file.contains("_task"))
       continue;
 
-    LOG_INFO("Will simulate: {}", qPrintable(file));
+    LOG_INFO("Will simulate: {}", file);
 
     mSimulator->setWorkingDirectory(modelsFolder);
     mSimulator->setSimulationModel(file);
@@ -315,7 +315,7 @@ Result<maki::PipelineArtifact> KodaGenerator::generateDezyne(const maki::Pipelin
     koda::CompilerOptions options;
     options.inputFile = file.toStdString();
     options.outputDir = modelsOutputFolder.absolutePath().toStdString();
-    LOG_DEBUG("Generating from file: {} to {}", qPrintable(file), qPrintable(outputFolder.absolutePath()));
+    LOG_DEBUG("Generating from file: {} to {}", file, outputFolder.absolutePath());
     RETURN_ON_FAILURE_AS(compiler.parse(options), maki::PipelineArtifact);
     RETURN_ON_FAILURE_AS(compiler.generate(), maki::PipelineArtifact);
   }
@@ -324,7 +324,7 @@ Result<maki::PipelineArtifact> KodaGenerator::generateDezyne(const maki::Pipelin
   QString libDstPath = modelsOutputFolder.absolutePath() + "/lib";
   if (mAssetDir)
   {
-    LOG_DEBUG("Using asset dir: {}", qPrintable(mAssetDir->absolutePath()));
+    LOG_DEBUG("Using asset dir: {}", mAssetDir->absolutePath());
     QString libSrcPath = mAssetDir->absoluteFilePath("lib");
     auto copied = copyDirectory(libSrcPath, libDstPath);
     if (!copied.IsSuccess())
@@ -363,7 +363,7 @@ Result<maki::PipelineArtifact> KodaGenerator::generateDezyne(const maki::Pipelin
 #else
   for (const auto& file : inputFiles)
   {
-    LOG_DEBUG("Generating from file: {} to {}", qPrintable(file), qPrintable(outputFolder.absolutePath()));
+    LOG_DEBUG("Generating from file: {} to {}", file, outputFolder.absolutePath());
     const QString command = "java";
     const QStringList arguments = {
         "-jar",
@@ -411,7 +411,7 @@ Result<maki::PipelineArtifact> KodaGenerator::generateCpp(const maki::PipelineAr
   for (const auto& f : inputFiles)
   {
     auto fullPath = cppOutputFolder.absoluteFilePath(f);
-    LOG_INFO("Will generate file: {}", qPrintable(fullPath));
+    LOG_INFO("Will generate file: {}", fullPath);
     const QString command = "dzn";
     QStringList arguments = {
         "code",
@@ -445,7 +445,7 @@ Result<maki::PipelineArtifact> KodaGenerator::generateCpp(const maki::PipelineAr
   pipeline->endGroup();
 
   // Add dzn lib includes as well
-  LOG_DEBUG("Using asset dir: {}", qPrintable(mAssetDir->absolutePath()));
+  LOG_DEBUG("Using asset dir: {}", mAssetDir->absolutePath());
   maki::PipelineArtifact output;
   output.paths = {
       {"includeDir", mAssetDir->absoluteFilePath("dzn_files/include")},
@@ -491,7 +491,7 @@ VoidResult KodaGenerator::verify(const maki::PipelineArtifact& artifact, const Q
     if (taskOnly.getValue().isValid() && taskOnly.getValue().toBool() && !f.contains("_task"))
       continue;
 
-    LOG_DEBUG("Will verify file: {}", qPrintable(f));
+    LOG_DEBUG("Will verify file: {}", f);
 #ifdef USE_ANTLR
     const QString command = "ide";
 #else
@@ -535,7 +535,7 @@ Result<maki::PipelineArtifact> KodaGenerator::generateKoda(const maki::PipelineA
   out << generated.Value();
   file.close();
 
-  LOG_DEBUG("Created file: {}", qPrintable(fileName));
+  LOG_DEBUG("Created file: {}", fileName);
 
   maki::PipelineArtifact output;
   output.metadata = {
@@ -706,14 +706,14 @@ VoidResult KodaGenerator::createSimulationScene(QGraphicsScene* scene, const QJs
     return VoidResult();
 
   // auto pretty = QJsonDocument(obj).toJson(QJsonDocument::Indented);
-  // LOG_DEBUG("Received message: {}", qPrintable(pretty));
+  // LOG_DEBUG("Received message: {}", pretty);
 
   auto theme = mServices->ui()->currentTheme();
   if (!mTraceBuilder)
     mTraceBuilder = std::make_unique<TraceSceneBuilder>(theme, TraceSceneBuilder::Style{});
 
   auto clickHandler = [this](const QString& instance, const QString& labelText, bool illegal) {
-    LOG_DEBUG("Sending data: {} {}", qPrintable(instance), qPrintable(labelText));
+    LOG_DEBUG("Sending data: {} {}", instance, labelText);
     mSimulator->triggerEvent(labelText);
   };
 

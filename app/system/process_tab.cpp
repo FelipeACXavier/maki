@@ -74,9 +74,9 @@ void ProcessTab::onErrorOccurred(const Pipeline::Info& /* info */, QProcess::Pro
 void ProcessTab::appendText(const QString& text)
 {
   if (text.toLower().contains("error"))
-    LOG_ERROR("[{}] > {}", qPrintable(mCurrentProgram), qPrintable(text));
+    LOG_ERROR("[{}] > {}", mCurrentProgram, text);
   else
-    LOG_DEBUG("[{}] > {}", qPrintable(mCurrentProgram), qPrintable(text));
+    LOG_DEBUG("[{}] > {}", mCurrentProgram, text);
 
   mOutput->moveCursor(QTextCursor::End);
   mOutput->append(text);
@@ -193,7 +193,7 @@ void ProcessTab::handleProcessData(const QByteArray& raw)
       else
       {
         // Other CSI – ignore for now
-        LOG_DEBUG("Unhandled ANSI code: {} - {}", qPrintable(paramsStr), finalByte);
+        LOG_DEBUG("Unhandled ANSI code: {} - {}", paramsStr, finalByte);
       }
 
       i = j + 1;
@@ -222,9 +222,9 @@ void ProcessTab::handleProcessData(const QByteArray& raw)
       cursor.insertText(text, mCurrentFormat);
 
       if (text.toLower().contains("error"))
-        LOG_ERROR("[{}] > {}", qPrintable(mCurrentProgram), qPrintable(text));
+        LOG_ERROR("[{}] > {}", mCurrentProgram, text);
       else
-        LOG_DEBUG("[{}] > {}", qPrintable(mCurrentProgram), qPrintable(text));
+        LOG_DEBUG("[{}] > {}", mCurrentProgram, text);
     }
   }
 

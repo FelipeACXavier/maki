@@ -41,7 +41,7 @@ PluginPipeline::PluginPipeline(Pipeline* pipeline, QObject* parent)
     }
   });
   connect(mPipeline, &Pipeline::errorOccurred, [this](const Pipeline::Info& info, QProcess::ProcessError /* error */, const QString& message) {
-    LOG_INFO("Error occurred: {}", qPrintable(message));
+    LOG_INFO("Error occurred: {}", message);
     mProgressId = NOTIFY_LONG_ERROR(mProgressId, "Pipeline Progress", progressWidget());
   });
   connect(mPipeline, &Pipeline::startingPipeline, [this](const Pipeline::Info& info) {
@@ -113,11 +113,11 @@ VoidResult PluginPipeline::runNextNode()
   const auto nodeId = mExecutionOrder.at(mCurrentIndex);
   const auto node = findNode(mGraph, nodeId);
   if (!node)
-    return VoidResult::Failed("Pipeline node does not exist: " + nodeId.toStdString());
+    return VoidResult::Failed("Pipeline node does not exist: {}", nodeId);
 
   auto action = mRegistry->action(node->actionId);
   if (!action)
-    return VoidResult::Failed("Pipeline action is not registered: " + node->actionId.toStdString());
+    return VoidResult::Failed("Pipeline action is not registered: {}", node->actionId);
 
   auto validation = validateInputs(*action, mContext);
   if (!validation)
@@ -134,7 +134,7 @@ VoidResult PluginPipeline::runNextNode()
   if (!result)
     return result;
 
-  LOG_INFO("Done running action {}, pipeline size: {}", qPrintable(action->id()), mPipeline->size());
+  LOG_INFO("Done running action {}, pipeline size: {}", action->id(), mPipeline->size());
   if (mPipeline->size() == 0)
   {
     for (const auto& a : result.Value())
@@ -215,15 +215,11 @@ std::optional<PipelineNode> PluginPipeline::findNode(const PipelineGraph& graph,
 
 VoidResult PluginPipeline::validateInputs(const IPipelineAction& action, const PipelineContext& context) const
 {
+  // We must check in the execution context if there are any artefacts of the types we need
   for (const auto& requiredType : action.consumes())
   {
     if (!context.hasType(requiredType))
-    {
-      return VoidResult::Failed(
-          QString("Action '%1' requires artefact type '%2', but none exists.")
-              .arg(action.id(), requiredType)
-              .toStdString());
-    }
+      return VoidResult::Failed("Action '{}' requires artefact type '{}', but none exists.", action.id(), requiredType);
   }
 
   return VoidResult();
@@ -242,10 +238,10 @@ Result<QList<QString>> PluginPipeline::executionOrder(const PipelineGraph& graph
   for (const auto& edge : graph.edges)
   {
     if (!indegree.contains(edge.from))
-      return Result<QList<QString>>::Failed(QString("Unknown source node '%1'.").arg(edge.from).toStdString());
+      return Result<QList<QString>>::Failed("Unknown source node '{}'", edge.from);
 
     if (!indegree.contains(edge.to))
-      return Result<QList<QString>>::Failed(QString("Unknown target node '%1'.").arg(edge.to).toStdString());
+      return Result<QList<QString>>::Failed("Unknown target node '{}'", edge.to);
 
     outgoing[edge.from].append(edge.to);
     indegree[edge.to]++;
@@ -275,7 +271,7 @@ Result<QList<QString>> PluginPipeline::executionOrder(const PipelineGraph& graph
   }
 
   if (order.size() != graph.nodes.size())
-    return Result<QList<QString>>::Failed("Pipeline graph contains a cycle.");
+    return Result<QList<QString>>::Failed("Pipeline graph contains a cycle");
 
   return Result<QList<QString>>(order);
 }

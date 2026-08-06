@@ -389,7 +389,7 @@ std::any MakiToKoda::buildNodeExpr(const IFlow& flow, const INode& node)
   else if (node.getnodeId() == "Koda::Terminate")
     return buildSuccessExpr(flow, node);
 
-  LOG_ERROR("Unknown expression: {}", qPrintable(node.getnodeId()));
+  LOG_ERROR("Unknown expression: {}", node.getnodeId());
   return std::any();
 }
 

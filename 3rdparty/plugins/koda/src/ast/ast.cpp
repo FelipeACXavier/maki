@@ -18,7 +18,7 @@
   }
 
 #define LOG_TREE(TITLE)       \
-  LOG_RAW("{}{} {}{}:",       \
+  LOG_RAW("{}{} {}{}:\n",     \
           prefix,             \
           tree::branch(last), \
           TITLE,              \
@@ -54,7 +54,7 @@ std::string Span::toString() const
 // =============================================================
 void System::print() const
 {
-  LOG_RAW("  System");
+  LOG_RAW("  System\n");
   for (size_t i = 0; i < components.size(); ++i)
     components.at(i)->print(" ", i == components.size() - 1);
 }
@@ -71,7 +71,7 @@ std::string Component::toString() const
 
 void printString(const std::string& prefix, const bool last, const std::string& message)
 {
-  LOG_RAW("{}{} {}", prefix, tree::branch(last), message);
+  LOG_RAW("{}{} {}\n", prefix, tree::branch(last), message);
 }
 
 void Component::print(const std::string& prefix, const bool last) const
@@ -79,7 +79,7 @@ void Component::print(const std::string& prefix, const bool last) const
   LOG_TREE(toString());
 
   const std::string childPrefix = prefix + tree::carry(last);
-  printString(childPrefix, false, Format("Name: %s", name.c_str()));
+  printString(childPrefix, false, Format("Name: {}", name));
 
   for (size_t i = 0; i < args.size(); ++i)
     args.at(i)->print(childPrefix, (i == args.size() - 1) && (statements.empty()));
@@ -105,8 +105,8 @@ void Argument::print(const std::string& prefix, const bool last) const
   LOG_TREE(Format("Arg {}", toString()));
 
   const std::string childPrefix = prefix + tree::carry(last);
-  printString(childPrefix, false, Format("Type: %s", a.c_str()));
-  printString(childPrefix, true, Format("Id: %s", b.c_str()));
+  printString(childPrefix, false, Format("Type: {}", a));
+  printString(childPrefix, true, Format("Id: {}", b));
 }
 
 // ---------- Statements ----------
@@ -162,7 +162,7 @@ void RosDef::print(const std::string& prefix, const bool last) const
 {
   LOG_TREE("RosDef");
   const std::string childPrefix = prefix + tree::carry(last);
-  printString(childPrefix, false, Format("Type: %s", toString().c_str()));
+  printString(childPrefix, false, Format("Type: {}", toString()));
 
   def->print(childPrefix, true);
 }
@@ -184,9 +184,9 @@ void ActionDef::print(const std::string& prefix, const bool last) const
   LOG_TREE("ActionDef");
 
   const std::string childPrefix = prefix + tree::carry(last);
-  printString(childPrefix, false, Format("Type: %s", toString().c_str()));
-  printString(childPrefix, false, Format("Channel: %s", label1.c_str()));
-  printString(childPrefix, rosDefs.empty(), Format("Message: %s", label2.c_str()));
+  printString(childPrefix, false, Format("Type: {}", toString()));
+  printString(childPrefix, false, Format("Channel: {}", label1));
+  printString(childPrefix, rosDefs.empty(), Format("Message: {}", label2));
 
   for (size_t i = 0; i < rosDefs.size(); ++i)
     rosDefs.at(i)->print(childPrefix, i == rosDefs.size() - 1);
@@ -196,8 +196,8 @@ void VarDef::print(const std::string& prefix, const bool last) const
 {
   LOG_TREE("VarDef");
   const std::string childPrefix = prefix + tree::carry(last);
-  printString(childPrefix, false, Format("Type: %s", varType.c_str()));
-  printString(childPrefix, false, Format("Name: %s", name.c_str()));
+  printString(childPrefix, false, Format("Type: {}", varType));
+  printString(childPrefix, false, Format("Name: {}", name));
   if (init)
     init->print(childPrefix, false);
   if (fallback)
@@ -209,8 +209,8 @@ void EventDef::print(const std::string& prefix, const bool last) const
   LOG_TREE("EventDef");
 
   const std::string childPrefix = prefix + tree::carry(last);
-  printString(childPrefix, false, Format("Type: %s", typeName.c_str()));
-  printString(childPrefix, args.empty() && components.empty(), Format("Name: %s", name.c_str()));
+  printString(childPrefix, false, Format("Type: {}", typeName));
+  printString(childPrefix, args.empty() && components.empty(), Format("Name: {}", name));
   for (size_t i = 0; i < args.size(); ++i)
     args.at(i)->print(childPrefix, (i == args.size() - 1) && components.empty());
   for (size_t i = 0; i < components.size(); ++i)
@@ -219,7 +219,7 @@ void EventDef::print(const std::string& prefix, const bool last) const
 
 void EventDefComponent::print(const std::string& prefix, const bool last) const
 {
-  LOG_RAW("{}{}{} {}", prefix, tree::branch(last), kind, text);
+  LOG_RAW("{}{}{} {}\n", prefix, tree::branch(last), kind, text);
 }
 
 // -------------------------------------------------------------
@@ -232,9 +232,9 @@ void Flow::print(const std::string& prefix, const bool last) const
   for (size_t i = 0; i < args.size(); ++i)
     tagsString += tagsString + (i < args.size() - 1 ? ", " : args.at(i)->toString());
 
-  printString(childPrefix, false, Format("Name: %s", name.c_str()));
+  printString(childPrefix, false, Format("Name: {}", name));
   if (!tagsString.empty())
-    printString(childPrefix, false, Format("Tags: %s", tagsString.c_str()));
+    printString(childPrefix, false, Format("Tags: {}", tagsString));
 
   strategy->print(childPrefix, true);
 }
@@ -334,7 +334,7 @@ void Strategy::Ref::print(const std::string& prefix, const bool last, const Span
 {
   LOG_TREE("Reference");
   const std::string childPrefix = prefix + tree::carry(last);
-  printString(childPrefix, true, Format("Ref: %s", name.c_str()));
+  printString(childPrefix, true, Format("Ref: {}", name));
 }
 
 void Strategy::TaskCall::print(const std::string& prefix, const bool last, const Span& span) const
@@ -375,7 +375,7 @@ void StrategyHandler::print(const std::string& prefix, const bool last) const
   LOG_TREE("Interrupt handler");
 
   const std::string childPrefix = prefix + tree::carry(last);
-  printString(childPrefix, false, Format("Type: %s", toString().c_str()));
+  printString(childPrefix, false, Format("Type: {}", toString()));
   if (emitter)
     emitter->print(childPrefix, false);
   if (body)
@@ -388,10 +388,10 @@ void EventCall::print(const std::string& prefix, const bool last) const
 {
   LOG_TREE("EventCall");
   const std::string childPrefix = prefix + tree::carry(last);
-  printString(childPrefix, receiver.empty() && args.empty(), Format("Name: %s", name.c_str()));
+  printString(childPrefix, receiver.empty() && args.empty(), Format("Name: {}", name));
 
   if (!receiver.empty())
-    printString(childPrefix, args.empty(), Format("Receiver: %s", receiver.c_str()));
+    printString(childPrefix, args.empty(), Format("Receiver: {}", receiver));
 
   if (!args.empty())
   {
@@ -421,28 +421,28 @@ void Expr::Id::print(const std::string& prefix, const bool last, const Span& spa
 {
   LOG_TREE("Id");
   const std::string childPrefix = prefix + tree::carry(last);
-  printString(childPrefix, true, Format("Value: %s", value.c_str()));
+  printString(childPrefix, true, Format("Value: {}", value));
 }
 
 void Expr::Str::print(const std::string& prefix, const bool last, const Span& span) const
 {
   LOG_TREE("String");
   const std::string childPrefix = prefix + tree::carry(last);
-  printString(childPrefix, true, Format("Value: %s", value.c_str()));
+  printString(childPrefix, true, Format("Value: {}", value));
 }
 
 void Expr::Int::print(const std::string& prefix, const bool last, const Span& span) const
 {
   LOG_TREE("Integer");
   const std::string childPrefix = prefix + tree::carry(last);
-  printString(childPrefix, true, Format("Value: %d", value));
+  printString(childPrefix, true, Format("Value: {}", value));
 }
 
 void Expr::Float::print(const std::string& prefix, const bool last, const Span& span) const
 {
   LOG_TREE("Float");
   const std::string childPrefix = prefix + tree::carry(last);
-  printString(childPrefix, true, Format("Value: %.6lf", value));
+  printString(childPrefix, true, Format("Value: {:.6f}", value));
 }
 
 void Expr::Call::print(const std::string& prefix, const bool last, const Span& span) const
@@ -491,7 +491,7 @@ void Expr::BinOp::print(const std::string& prefix, const bool last, const Span& 
 {
   LOG_TREE("BinOp");
   const std::string childPrefix = prefix + tree::carry(last);
-  printString(childPrefix, false, Format("Operation: %s", toString().c_str()));
+  printString(childPrefix, false, Format("Operation: {}", toString()));
   if (a)
     a->print(childPrefix, false);
   if (b)

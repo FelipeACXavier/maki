@@ -44,14 +44,14 @@ int ProcessRunner::runSync(const QString& cmd, QString& result)
 
   if (!proc.waitForStarted())
   {
-    LOG_ERROR("Failed to start process: {}", qPrintable(cmd));
+    LOG_ERROR("Failed to start process: {}", cmd);
     return -1;
   }
 
   // -1 = wait indefinitely; you can add a timeout if you want
   if (!proc.waitForFinished(-1))
   {
-    LOG_WARNING("Process '{}' did not finish in time", qPrintable(cmd));
+    LOG_WARNING("Process '{}' did not finish in time", cmd);
     proc.kill();
     proc.waitForFinished();
     return -1;
@@ -62,13 +62,13 @@ int ProcessRunner::runSync(const QString& cmd, QString& result)
   int exitCode = proc.exitCode();
   if (proc.exitStatus() == QProcess::CrashExit)
   {
-    LOG_WARNING("Process '{}' crashed (code {})", qPrintable(cmd), exitCode);
+    LOG_WARNING("Process '{}' crashed (code {})", cmd, exitCode);
     return -1;
   }
 
   if (exitCode != 0)
   {
-    LOG_DEBUG("Process '{}' exited with code {}", qPrintable(cmd), exitCode);
+    LOG_DEBUG("Process '{}' exited with code {}", cmd, exitCode);
   }
 
   return exitCode;

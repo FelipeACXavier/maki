@@ -17,7 +17,7 @@ void RemoveNodeCommand::undo()
     return;
 
   mCanvas->createNode(mDesc);
-  LOG_TRACE("Undo RemoveNodeCommand: {} {}", qPrintable(mDesc.getnodeId()), qPrintable(mDesc.getid()));
+  LOG_TRACE("Undo RemoveNodeCommand: {} {}", mDesc.getnodeId(), mDesc.getid());
 }
 
 void RemoveNodeCommand::redo()
@@ -26,5 +26,5 @@ void RemoveNodeCommand::redo()
     return;
 
   mCanvas->removeNode(mDesc);
-  LOG_TRACE("Redo RemoveNodeCommand: {} {}", qPrintable(mDesc.getnodeId()), qPrintable(mDesc.getid()));
+  LOG_TRACE("Redo RemoveNodeCommand: {} {}", mDesc.getnodeId(), mDesc.getid());
 }

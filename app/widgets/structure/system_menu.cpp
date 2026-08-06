@@ -44,7 +44,7 @@ VoidResult SystemMenu::onNodeAdded(const QString& flowId, NodeItem* node)
   if (!node)
     return VoidResult::Failed("No node provided");
 
-  LOG_DEBUG("Node added to system menu: {} - {} ({})", qPrintable(node->id()), qPrintable(node->nodeType()), qPrintable(flowId));
+  LOG_DEBUG("Node added to system menu: {} - {} ({})", node->id(), node->nodeType(), flowId);
 
   auto exists = getItemById(node->id());
   if (exists)
@@ -56,7 +56,7 @@ VoidResult SystemMenu::onNodeAdded(const QString& flowId, NodeItem* node)
     auto parent = static_cast<NodeItem*>(node->parentNode());
     if (!parent)
     {
-      LOG_DEBUG("{} is a root node", qPrintable(node->nodeType()));
+      LOG_DEBUG("{} is a root node", node->nodeType());
       auto result = addRootNode(node);
       return result;
     }
@@ -78,7 +78,7 @@ VoidResult SystemMenu::onNodeAdded(const QString& flowId, NodeItem* node)
 
 VoidResult SystemMenu::onNodeRemoved(const QString& flowId, const QString& nodeId, const QString& parentId)
 {
-  LOG_DEBUG("Node removed: {} ({})", qPrintable(nodeId), qPrintable(flowId));
+  LOG_DEBUG("Node removed: {} ({})", nodeId, flowId);
 
   if (flowId == Config::MAIN_CANVAS)
   {
@@ -143,7 +143,7 @@ VoidResult SystemMenu::onFlowAdded(Flow* flow, NodeItem* node)
   if (!flow->modifiable())
     return VoidResult();
 
-  LOG_INFO("Adding flow: {} to {}", qPrintable(flow->name()), qPrintable(node->nodeType()));
+  LOG_INFO("Adding flow: {} to {}", flow->name(), node->nodeType());
 
   auto parent = getOrCreateChildGroup(node->id(), Roles::Flows);
   if (!parent)

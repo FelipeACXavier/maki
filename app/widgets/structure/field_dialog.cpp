@@ -114,7 +114,7 @@ void FieldDialog::createArgumentInput(QWidget* parent)
   name->setFocusPolicy(Qt::ClickFocus);
 
   connect(name, &QLineEdit::editingFinished, this, [this, name]() {
-    LOG_DEBUG("Setting default to {}", qPrintable(name->text()));
+    LOG_DEBUG("Setting default to {}", name->text());
     mStorage->setDefaultValue(name->text());
   });
   layout()->addWidget(name);

@@ -336,7 +336,7 @@ void ComponentTreeModel::print() const
 
 void ComponentNode::print(int level) const
 {
-  LOG_INFO("{}{} ({}):", std::string(level, ' '), qPrintable(name), qPrintable(fullPath));
+  LOG_INFO("{}{} ({}):", std::string(level, ' '), name, fullPath);
   for (const auto& child : children)
     child->print(level + 1);
 }

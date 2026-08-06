@@ -27,7 +27,7 @@ void loadApplicationFonts()
     {
       const QString fullPath = fontDir.filePath(file);
       if (QFontDatabase::addApplicationFont(fullPath) == -1)
-        LOG_WARNING("Failed to load font {}", qPrintable(fullPath));
+        LOG_WARNING("Failed to load font {}", fullPath);
     }
   }
 

@@ -32,7 +32,7 @@ QStringList PlatformIOCreateProject::produces() const
 
 maki::ResultArtifacts PlatformIOCreateProject::run(const maki::PipelineContext& context, const QVariantMap& parameters, maki::IPipeline* pipeline)
 {
-  LOG_INFO("Running {}", qPrintable(id()));
+  LOG_INFO("Running {}", id());
 
   QDir projectFolder = QDir(context.buildDir.absolutePath() + "/platformio");
   auto generated = mGenerator->initialiseProject(projectFolder, pipeline);

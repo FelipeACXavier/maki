@@ -43,7 +43,7 @@ QVector<std::shared_ptr<NodeSaveInfo>> SaveInfo::findFamilyOfFlowNode(const QStr
 {
   for (const auto& node : nodes)
   {
-    LOG_TRACE("Looking into: {} {}", qPrintable(node->getid()), qPrintable(node->getnodeId()));
+    LOG_TRACE("Looking into: {} {}", node->getid(), node->getnodeId());
 
     // Find the task which owns the given behaviour node
     // If the task is found, then we start building the family
@@ -85,11 +85,11 @@ std::shared_ptr<NodeSaveInfo> SaveInfo::findOwnerTaskOfFlowNode(const QString& n
   if (!node)
     return nullptr;
 
-  LOG_TRACE("Node info: {} {} {}", qPrintable(node->getnodeId()), node->getchildren().size(), node->getflows().size());
+  LOG_TRACE("Node info: {} {} {}", node->getnodeId(), node->getchildren().size(), node->getflows().size());
 
   for (const auto& flow : node->getflows())
   {
-    LOG_TRACE("Looking into flow: {}", qPrintable(flow->getname()));
+    LOG_TRACE("Looking into flow: {}", flow->getname());
     for (const auto& construct : flow->getnodes())
     {
       if (construct->getid() != nodeId)

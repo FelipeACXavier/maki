@@ -38,7 +38,7 @@ VoidResult copyTo(const QFileInfo& info, const QString& targetDir)
     return VoidResult::Failed("File does not exist: " + info.absoluteFilePath().toStdString());
 
   QString source = info.absoluteFilePath();
-  // LOG_INFO("Copying: {} to {}", qPrintable(source), qPrintable(targetDir));
+  // LOG_INFO("Copying: {} to {}", source, targetDir);
 
   if (info.isDir())
   {
@@ -101,7 +101,7 @@ QVariantMap PlatformIOCopySources::defaultParameters() const
 
 maki::ResultArtifacts PlatformIOCopySources::run(const maki::PipelineContext& context, const QVariantMap& parameters, maki::IPipeline* pipeline)
 {
-  LOG_INFO("Running {}", qPrintable(id()));
+  LOG_INFO("Running {}", id());
   const auto projectArtifacts = context.artifactsOfType("platformio-project");
   if (projectArtifacts.isEmpty())
     return maki::ResultArtifacts::Failed("No artifacts available, requires \"platformio-project\"");
@@ -114,10 +114,10 @@ maki::ResultArtifacts PlatformIOCopySources::run(const maki::PipelineContext& co
   const auto project = projectArtifacts.at(0);
 
   // auto pretty = QJsonDocument(project.toJson()).toJson(QJsonDocument::Indented);
-  // LOG_DEBUG("Artifact {} {}: \n{}", qPrintable(project.id), qPrintable(project.producer), qPrintable(pretty));
+  // LOG_DEBUG("Artifact {} {}: \n{}", project.id, project.producer, pretty);
 
   // pretty = QJsonDocument(cpp.toJson()).toJson(QJsonDocument::Indented);
-  // LOG_DEBUG("Artifact {} {}: \n{}", qPrintable(cpp.id), qPrintable(cpp.producer), qPrintable(pretty));
+  // LOG_DEBUG("Artifact {} {}: \n{}", cpp.id, cpp.producer, pretty);
 
   // Get all cpp sources and headers
   QStringList includeFiles = {};

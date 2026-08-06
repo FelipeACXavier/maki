@@ -93,7 +93,7 @@ VoidResult Compiler::runFrontend()
   if (!declared.IsSuccess())
     return declared;
 
-  mSymbols.print();
+  // mSymbols.print();
 
   // With the registry created, we can verify if the semantics of the KODA program make sense
   SemanticAnalyzer semantics(mSymbols);

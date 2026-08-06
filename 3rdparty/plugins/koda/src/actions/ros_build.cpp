@@ -44,7 +44,7 @@ QStringList KodaRosBuild::produces() const
 
 maki::ResultArtifacts KodaRosBuild::run(const maki::PipelineContext& context, const QVariantMap& parameters, maki::IPipeline* pipeline)
 {
-  LOG_INFO("Running {}", qPrintable(id()));
+  LOG_INFO("Running {}", id());
   const auto artifacts = context.artifactsOfType("ros-project");
   if (artifacts.isEmpty())
     return maki::ResultArtifacts::Failed("No artifacts available, requires \"ros-project\"");

@@ -75,7 +75,7 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
   updatePosition(snapToGrid(initialPosition - boundingRect().center(), Config::GRID_SIZE));
   mLastPosition = pos();
 
-  LOG_DEBUG("{} created at: ({}, {}) with size ({}, {}) and scale {}", qPrintable(id()), pos().x(), pos().y(), mSize.width(), mSize.height(), baseScale());
+  LOG_DEBUG("{} created at: ({}, {}) with size ({}, {}) and scale {}", id(), pos().x(), pos().y(), mSize.width(), mSize.height(), baseScale());
 }
 
 NodeItem::~NodeItem()
@@ -175,7 +175,7 @@ QVariant NodeItem::getProperty(const QString& key) const
 
 void NodeItem::setProperty(const QString& key, QVariant value)
 {
-  LOG_DEBUG("[{}] Setting property {} of node: {}", qPrintable(id()), qPrintable(key), qPrintable(nodeId()));
+  LOG_DEBUG("[{}] Setting property {} of node: {}", id(), key, nodeId());
   if (!mStorage)
     return;
 

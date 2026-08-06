@@ -15,7 +15,7 @@ LanguageManager::LanguageManager(QObject* parent)
 {
   for (const auto& path : AppPaths::translations())
   {
-    LOG_DEBUG("Looking for languages in: {}", qPrintable(path));
+    LOG_DEBUG("Looking for languages in: {}", path);
 
     // Ensure user dir exists so users know where to drop files
     QDir dir(path);
@@ -62,7 +62,7 @@ bool LanguageManager::setLanguage(const QString& code)
   if (code == mCurrentLanguage)
     return true;
 
-  LOG_DEBUG("Setting language {}, current: {}", qPrintable(code), qPrintable(mCurrentLanguage));
+  LOG_DEBUG("Setting language {}, current: {}", code, mCurrentLanguage);
   // English as source language: remove translator and use source strings
   if (code == "en_US")
   {

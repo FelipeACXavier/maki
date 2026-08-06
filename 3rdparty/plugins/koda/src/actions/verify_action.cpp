@@ -44,7 +44,7 @@ QStringList KodaVerifyAction::produces() const
 
 maki::ResultArtifacts KodaVerifyAction::run(const maki::PipelineContext& context, const QVariantMap& parameters, maki::IPipeline* pipeline)
 {
-  LOG_INFO("Running {}", qPrintable(id()));
+  LOG_INFO("Running {}", id());
   // Get the canvas from the context
   const auto artifacts = context.artifactsOfType("dezyne");
   if (artifacts.isEmpty())

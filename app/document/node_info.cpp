@@ -211,7 +211,7 @@ void NodeSaveInfo::removeField(const QString& key)
 
 void NodeSaveInfo::addFlow(std::shared_ptr<IFlow> flow)
 {
-  LOG_INFO("Adding flow: {}", qPrintable(flow->getname()));
+  LOG_INFO("Adding flow: {}", flow->getname());
   mFlows.push_back(flow);
 }
 
