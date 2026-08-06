@@ -102,8 +102,6 @@ ir::Argument IRBuilder::buildArg(const koda::PArgument kodaArg, SymbolId owner) 
   argument.mode = ir::Argument::ModeFromKind(kodaArg->kind);
   argument.span = kodaArg->span;
 
-  // LOG_DEBUG("Created argument %s with symbol: %u and type: %s, arg: %s", argument.name.c_str(), argument.symbol, argument.type.toString().c_str(), kodaArg->toString().c_str());
-
   return argument;
 }
 

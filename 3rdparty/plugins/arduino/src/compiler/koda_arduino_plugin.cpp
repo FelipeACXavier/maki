@@ -137,7 +137,7 @@ VoidResult KodaArduinoPlugin::generateTaskCall(koda::PTaskCall task)
   if (!task->call)
     return VoidResult::Failed("Task with no call");
 
-  LOG_INFO("Generating TaskCall: %s %s", task->call->receiver.c_str(), task->call->name.c_str());
+  LOG_INFO("Generating TaskCall: {} {}", task->call->receiver, task->call->name);
 
   // const auto receiver = task->call->receiver;
   // const auto event = task->call->name;

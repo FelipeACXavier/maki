@@ -21,7 +21,7 @@ void ResizeNodeCommand::undo()
     return;
 
   mCanvas->setNodeSize(mNodeId, mPreviousSize);
-  LOG_TRACE("Undo ResizeNodeCommand: %.2f %.2f", mCurrentSize.width(), mCurrentSize.height());
+  LOG_TRACE("Undo ResizeNodeCommand: {:.2f} {:.2f}", mCurrentSize.width(), mCurrentSize.height());
 }
 
 void ResizeNodeCommand::redo()
@@ -30,5 +30,5 @@ void ResizeNodeCommand::redo()
     return;
 
   mCanvas->setNodeSize(mNodeId, mCurrentSize);
-  LOG_TRACE("Redo ResizeNodeCommand: %.2f %.2f", mCurrentSize.width(), mCurrentSize.height());
+  LOG_TRACE("Redo ResizeNodeCommand: {:.2f} {:.2f}", mCurrentSize.width(), mCurrentSize.height());
 }

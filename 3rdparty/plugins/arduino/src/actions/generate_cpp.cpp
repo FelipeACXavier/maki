@@ -31,7 +31,7 @@ QStringList ArduinoGenerateCpp::produces() const
 
 maki::ResultArtifacts ArduinoGenerateCpp::run(const maki::PipelineContext& context, const QVariantMap& parameters, maki::IPipeline* pipeline)
 {
-  LOG_INFO("Running %s", qPrintable(id()));
+  LOG_INFO("Running {}", qPrintable(id()));
 
   const auto artifacts = context.artifactsOfType("koda");
   if (artifacts.isEmpty())

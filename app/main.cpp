@@ -27,7 +27,7 @@ void loadApplicationFonts()
     {
       const QString fullPath = fontDir.filePath(file);
       if (QFontDatabase::addApplicationFont(fullPath) == -1)
-        LOG_WARNING("Failed to load font %s", qPrintable(fullPath));
+        LOG_WARNING("Failed to load font {}", qPrintable(fullPath));
     }
   }
 
@@ -79,7 +79,7 @@ int main(int argc, char* argv[])
   auto started = system.start();
   if (!started.IsSuccess())
   {
-    LOG_ERROR("Failed to start main window: %s", started.ErrorMessage().c_str());
+    LOG_ERROR("Failed to start main window: {}", started.ErrorMessage());
     return -1;
   }
 

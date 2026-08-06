@@ -56,7 +56,7 @@ QVector<maki::ActionParameter> GenerateRosAction::parameters() const
 
 maki::ResultArtifacts GenerateRosAction::run(const maki::PipelineContext& context, const QVariantMap& parameters, maki::IPipeline* pipeline)
 {
-  LOG_INFO("Running %s", qPrintable(id()));
+  LOG_INFO("Running {}", qPrintable(id()));
   // Get the canvas from the context
   const auto artifacts = context.artifactsOfType("koda");
   if (artifacts.isEmpty())
@@ -97,14 +97,14 @@ maki::ResultArtifacts GenerateRosAction::run(const maki::PipelineContext& contex
   // koda::Compiler compiler;
   // for (const auto& file : inputFiles)
   // {
-  //   LOG_DEBUG("Parsing from file: %s to %s", qPrintable(file), qPrintable(outputFolder.absolutePath()));
+  //   LOG_DEBUG("Parsing from file: {} to {}", qPrintable(file), qPrintable(outputFolder.absolutePath()));
   //   // Make sure the input file is set before calling the compiler
   //   options.inputFile = file.toStdString();
   //   auto parsed = compiler.parse(options);
   //   if (!parsed.IsSuccess())
   //     return maki::ResultArtifacts::Failed(parsed.ErrorMessage());
 
-  //   LOG_DEBUG("Generating from file: %s to %s", qPrintable(file), qPrintable(outputFolder.absolutePath()));
+  //   LOG_DEBUG("Generating from file: {} to {}", qPrintable(file), qPrintable(outputFolder.absolutePath()));
   //   auto generated = compiler.generate();
   //   if (!generated.IsSuccess())
   //   {

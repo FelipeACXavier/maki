@@ -94,12 +94,12 @@ VoidResult PluginManager::start(const PluginSettings& settings, HostServices* se
   for (const auto& path : AppPaths::pluginSearchPaths())
   {
     QDir pluginParentDir(path);
-    LOG_DEBUG("Plugin search path: %s", qPrintable(pluginParentDir.absolutePath()));
+    LOG_DEBUG("Plugin search path: {}", qPrintable(pluginParentDir.absolutePath()));
     for (const auto& subFolder : pluginParentDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot))
     {
       QDir pluginsDir(pluginParentDir.absoluteFilePath(subFolder));
 
-      LOG_DEBUG("Loading plugins from %s", qPrintable(pluginsDir.path()));
+      LOG_DEBUG("Loading plugins from {}", qPrintable(pluginsDir.path()));
       auto manifestResult = getPluginManifest(pluginsDir);
       if (!manifestResult)
       {
@@ -111,7 +111,7 @@ VoidResult PluginManager::start(const PluginSettings& settings, HostServices* se
       auto status = settings.pluginStatus(manifest.name);
       if (status == PluginSettings::Status::Disabled)
       {
-        LOG_DEBUG("Not loading plugin: %s, it is disabled", qPrintable(manifest.name));
+        LOG_DEBUG("Not loading plugin: {}, it is disabled", qPrintable(manifest.name));
         continue;
       }
 
@@ -129,7 +129,7 @@ VoidResult PluginManager::start(const PluginSettings& settings, HostServices* se
   if (setPlugin(settings.defaultPlugin) || setPlugin(mPlugins.front().plugin->languageName()))
   {
     if (currentPlugin())
-      LOG_DEBUG("Starting with plugin: %s", qPrintable(currentPlugin()->languageName()));
+      LOG_DEBUG("Starting with plugin: {}", qPrintable(currentPlugin()->languageName()));
   }
 
   if (mPipeline->size() > 0)
@@ -158,7 +158,7 @@ VoidResult PluginManager::loadPlugin(const QDir& pluginDir, const maki::Manifest
   auto pluginName = manifest.name;
   auto pluginPath = manifest.pluginPath();
 
-  LOG_DEBUG("Loading plugin: %s from %s with status: %d", qPrintable(pluginName), qPrintable(pluginPath), (int)status);
+  LOG_DEBUG("Loading plugin: {} from {} with status: {}", qPrintable(pluginName), qPrintable(pluginPath), (int)status);
   auto exists = pluginByLanguage(pluginName);
   if (exists != nullptr)
     return VoidResult::Failed(std::format("Plugin {} ({}) already exists", pluginName.toStdString(), pluginPath.toStdString()));
@@ -190,19 +190,19 @@ VoidResult PluginManager::loadPlugin(const QDir& pluginDir, const maki::Manifest
   codeGen->setHostServices(services);
 
   QDir assets = QDir(pluginDir.absoluteFilePath("assets"));
-  LOG_DEBUG("Using asset path: %s", qPrintable(assets.absolutePath()));
+  LOG_DEBUG("Using asset path: {}", qPrintable(assets.absolutePath()));
   if (assets.exists())
     codeGen->setAssetDir(assets);
 
   // Register plugin actions in
   for (const auto& action : codeGen->pipelineActions())
   {
-    LOG_DEBUG("Registering action: %s", qPrintable(action->id()));
+    LOG_DEBUG("Registering action: {}", qPrintable(action->id()));
     LOG_WARN_ON_FAILURE(mRegistry->registerAction(codeGen->languageName(), action));
   }
 
   mPlugins.append({loader, codeGen});
-  LOG_DEBUG("Loaded plugin for language: %s", qPrintable(pluginName));
+  LOG_DEBUG("Loaded plugin for language: {}", qPrintable(pluginName));
 
   emit pluginAdded(mPlugins.last());
 
@@ -241,7 +241,7 @@ bool PluginManager::setPlugin(const QString& language)
     // No need to set the same plugin again...
     if (mPlugin->languageName() == language)
     {
-      LOG_TRACE("Plugin %s already set", qPrintable(language));
+      LOG_TRACE("Plugin {} already set", qPrintable(language));
       return false;
     }
 
@@ -251,7 +251,7 @@ bool PluginManager::setPlugin(const QString& language)
   mPlugin = plugin;
   plugin->setup();
 
-  LOG_DEBUG("Setting plugin: %s", qPrintable(language));
+  LOG_DEBUG("Setting plugin: {}", qPrintable(language));
   return true;
 }
 
@@ -278,13 +278,13 @@ VoidResult PluginManager::loadPluginLibraryDir(const maki::Manifest& manifest)
 
 #ifdef Q_OS_WIN
   const auto pluginDir = QFileInfo(manifest.pluginPath()).absolutePath();
-  LOG_DEBUG("Adding DLL path: %s", qPrintable(pluginDir));
+  LOG_DEBUG("Adding DLL path: {}", qPrintable(pluginDir));
   DLL_DIRECTORY_COOKIE cookie = AddDllDirectory(reinterpret_cast<LPCWSTR>(pluginDir.utf16()));
   if (!cookie)
     return VoidResult::Failed("Failed to add DLL directory: " + pluginDir.toStdString());
 
     // const QString pluginDir = QFileInfo(manifest.path).absolutePath();
-    // LOG_DEBUG("Adding DLL path to PATH: %s", qPrintable(pluginDir));
+    // LOG_DEBUG("Adding DLL path to PATH: {}", qPrintable(pluginDir));
 
     // QString path = qEnvironmentVariable("PATH");
     // const QString normalisedPluginDir = QDir(pluginDir).absolutePath();
@@ -345,7 +345,7 @@ void PluginManager::settingsChanged(const PluginSettings& settings, HostServices
         {
           QDir pluginsDir(pluginParentDir.absoluteFilePath(subFolder));
 
-          LOG_DEBUG("Loading plugins from %s", qPrintable(pluginsDir.path()));
+          LOG_DEBUG("Loading plugins from {}", qPrintable(pluginsDir.path()));
           auto manifestResult = getPluginManifest(pluginsDir);
           if (!manifestResult || manifestResult.Value().name != ps.name)
             continue;
@@ -369,7 +369,7 @@ int PluginManager::getPluginIndex(const QString& pluginName) const
 
 VoidResult PluginManager::deregisterPlugin(const Plugin& plugin)
 {
-  LOG_TRACE("Deregistering plugin: %s", qPrintable(plugin.plugin->languageName()));
+  LOG_TRACE("Deregistering plugin: {}", qPrintable(plugin.plugin->languageName()));
   const auto index = getPluginIndex(plugin.plugin->languageName());
   if (index == -1)
     return VoidResult::Failed("Plugin not registered");
@@ -403,7 +403,7 @@ VoidResult PluginManager::deregisterPlugin(const Plugin& plugin)
 
   // Unload immediately
   if (!plugin.loader->unload())
-    LOG_WARNING("Failed to unload the plugin: %s", qPrintable(plugin.plugin->languageName()));
+    LOG_WARNING("Failed to unload the plugin: {}", qPrintable(plugin.plugin->languageName()));
 
   // Finally, remove it from the list
   auto removed = mPlugins.removeIf([&](const Plugin& p) { return p.plugin->languageName() == plugin.plugin->languageName(); });
@@ -415,7 +415,7 @@ VoidResult PluginManager::deregisterPlugin(const Plugin& plugin)
 
 VoidResult PluginManager::reloadPlugin(const QString& pluginName, HostServices* services)
 {
-  LOG_DEBUG("Reloading plugin: %s", qPrintable(pluginName));
+  LOG_DEBUG("Reloading plugin: {}", qPrintable(pluginName));
   const int index = getPluginIndex(pluginName);
   if (index < 0)
     return VoidResult::Failed("Plugin not loaded: " + pluginName.toStdString());

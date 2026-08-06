@@ -6,16 +6,16 @@
 #include <QDir>
 #include <QFileInfo>
 
+#include "app_paths.h"
 #include "logging.h"
 #include "style_helpers.h"
-#include "app_paths.h"
 
 LanguageManager::LanguageManager(QObject* parent)
     : QObject(parent)
 {
   for (const auto& path : AppPaths::translations())
   {
-    LOG_DEBUG("Looking for languages in: %s", qPrintable(path));
+    LOG_DEBUG("Looking for languages in: {}", qPrintable(path));
 
     // Ensure user dir exists so users know where to drop files
     QDir dir(path);
@@ -62,7 +62,7 @@ bool LanguageManager::setLanguage(const QString& code)
   if (code == mCurrentLanguage)
     return true;
 
-  LOG_DEBUG("Setting language %s, current: %s", qPrintable(code), qPrintable(mCurrentLanguage));
+  LOG_DEBUG("Setting language {}, current: {}", qPrintable(code), qPrintable(mCurrentLanguage));
   // English as source language: remove translator and use source strings
   if (code == "en_US")
   {

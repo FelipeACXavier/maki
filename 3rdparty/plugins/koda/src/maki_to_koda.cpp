@@ -270,7 +270,7 @@ Result<koda::PRosDef> MakiToKoda::buildRosDef(const IFlow& event)
 Result<koda::PFlow> MakiToKoda::buildFlowAst(const IFlow& flow)
 {
   auto flowName = format(flow.getname());
-  LOG_DEBUG("Building AST for flow: %s", flowName.c_str());
+  LOG_DEBUG("Building AST for flow: {}", flowName);
 
   const auto* start = findStartNode(flow);
   if (start == nullptr)
@@ -389,7 +389,7 @@ std::any MakiToKoda::buildNodeExpr(const IFlow& flow, const INode& node)
   else if (node.getnodeId() == "Koda::Terminate")
     return buildSuccessExpr(flow, node);
 
-  LOG_ERROR("Unknown expression: %s", qPrintable(node.getnodeId()));
+  LOG_ERROR("Unknown expression: {}", qPrintable(node.getnodeId()));
   return std::any();
 }
 

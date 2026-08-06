@@ -80,7 +80,7 @@ Result<maki::PipelineArtifact> ArduinoPlugin::generateCpp(const maki::PipelineAr
     // Make sure we only execute the arduino part
     options.pluginRule = koda::CompilerOptions::PluginOption::PluginsOnly;
 
-    LOG_DEBUG("Generating from file: %s to %s", qPrintable(file), qPrintable(outputFolder.absolutePath()));
+    LOG_DEBUG("Generating from file: {} to {}", qPrintable(file), qPrintable(outputFolder.absolutePath()));
     auto parsed = compiler.parse(options);
     if (!parsed)
       return Result<maki::PipelineArtifact>::Failed(parsed.ErrorMessage());

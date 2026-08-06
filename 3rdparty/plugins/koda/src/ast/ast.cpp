@@ -30,6 +30,7 @@ inline const char* branch(bool last)
 {
   return last ? " └─" : " ├─";
 }
+
 inline const char* carry(bool last)
 {
   return last ? "   " : " │ ";
@@ -70,12 +71,12 @@ std::string Component::toString() const
 
 void printString(const std::string& prefix, const bool last, const std::string& message)
 {
-  LOG_RAW("{}{} {}", prefix.c_str(), tree::branch(last), message.c_str());
+  LOG_RAW("{}{} {}", prefix, tree::branch(last), message);
 }
 
 void Component::print(const std::string& prefix, const bool last) const
 {
-  LOG_TREE(toString().c_str());
+  LOG_TREE(toString());
 
   const std::string childPrefix = prefix + tree::carry(last);
   printString(childPrefix, false, Format("Name: %s", name.c_str()));
@@ -101,7 +102,7 @@ std::string Argument::toString() const
 
 void Argument::print(const std::string& prefix, const bool last) const
 {
-  LOG_TREE(Format("Arg %s", toString().c_str()).c_str());
+  LOG_TREE(Format("Arg {}", toString()));
 
   const std::string childPrefix = prefix + tree::carry(last);
   printString(childPrefix, false, Format("Type: %s", a.c_str()));
@@ -218,7 +219,7 @@ void EventDef::print(const std::string& prefix, const bool last) const
 
 void EventDefComponent::print(const std::string& prefix, const bool last) const
 {
-  LOG_RAW("{}{}{} {}", prefix.c_str(), tree::branch(last), kind.c_str(), text.c_str());
+  LOG_RAW("{}{}{} {}", prefix, tree::branch(last), kind, text);
 }
 
 // -------------------------------------------------------------

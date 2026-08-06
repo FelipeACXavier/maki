@@ -22,7 +22,7 @@ Compiler::Compiler()
 VoidResult Compiler::parse(const CompilerOptions& options)
 {
   mOptions = options;
-  LOG_DEBUG("Parsing %s", options.inputFile.c_str());
+  LOG_DEBUG("Parsing {}", options.inputFile);
 
   std::ifstream stream(options.inputFile);
   if (!stream.is_open())
@@ -74,9 +74,9 @@ VoidResult Compiler::generate()
   if (mOptions.pluginRule == CompilerOptions::PluginOption::PluginsOnly)
     return runPlugins();
 
-  auto emit = runEmitters();
-  if (!emit.IsSuccess())
-    return emit;
+  auto emitted = runEmitters();
+  if (!emitted.IsSuccess())
+    return emitted;
 
   if (mOptions.pluginRule == CompilerOptions::PluginOption::RunAll)
     return runPlugins();

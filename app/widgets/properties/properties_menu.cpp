@@ -204,7 +204,7 @@ VoidResult PropertiesMenu::loadProperties(NodeItem* node)
 
   for (const auto& property : node->configurationProperties())
   {
-    // LOG_DEBUG("Updating properties with %s of type %d", qPrintable(property.id), (int)property.type);
+    // LOG_DEBUG("Updating properties with {} of type {}", qPrintable(property.id), (int)property.type);
     if (property.type == Types::PropertyTypes::STRING)
       LOG_WARN_ON_FAILURE(loadPropertyString(property, node));
     else if (property.type == Types::PropertyTypes::INTEGER)
@@ -226,7 +226,7 @@ VoidResult PropertiesMenu::loadProperties(NodeItem* node)
     else if (property.type == Types::PropertyTypes::VOID)
       continue;
     else
-      LOG_WARNING("Property %s (%d) without a type, how is that possible?", qPrintable(property.id), (int)property.type);
+      LOG_WARNING("Property {} ({}) without a type, how is that possible?", qPrintable(property.id), (int)property.type);
   }
 
   return VoidResult();
@@ -250,7 +250,7 @@ VoidResult PropertiesMenu::loadControls(NodeItem* node)
     else if (control.type == Types::ControlTypes::ADD_STATE)
       LOG_WARN_ON_FAILURE(loadControlAddState(control, node, controls, controlLayout));
     else
-      LOG_WARNING("Unknown control type: %s", qPrintable(control.id));
+      LOG_WARNING("Unknown control type: {}", qPrintable(control.id));
   }
 
   if (!node->events().isEmpty() && node->controls().isEmpty())
@@ -348,7 +348,7 @@ VoidResult PropertiesMenu::loadPropertyString(const PropertyInfo& property, Node
   if (result.isValid())
     widget->setValue(result.toString());
   else
-    LOG_DEBUG("Creation of StringWidget failed: %s", qPrintable(property.getid()));
+    LOG_DEBUG("Creation of StringWidget failed: {}", qPrintable(property.getid()));
 
   connect(widget, &maki::StringWidget::valueChanged, this, [node, property](const QString& text) {
     if (node)
@@ -380,7 +380,7 @@ VoidResult PropertiesMenu::loadPropertyBoolean(const PropertyInfo& property, Nod
   if (result.isValid())
     widget->setValue(result.toBool());
   else
-    LOG_DEBUG("Creation of BooleanWidget failed: %s", qPrintable(property.getid()));
+    LOG_DEBUG("Creation of BooleanWidget failed: {}", qPrintable(property.getid()));
 
   connect(widget, &maki::BooleanWidget::valueChanged, this, [node, property](const bool value) {
     if (node)
@@ -580,7 +580,7 @@ VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QStri
     return VoidResult();
   }
 
-  LOG_DEBUG("Loading event %s with args: %d", qPrintable(event->getname()), event->getarguments().size());
+  LOG_DEBUG("Loading event {} with args: {}", qPrintable(event->getname()), event->getarguments().size());
 
   group->show();
   int index = ARG_INDEX;
@@ -608,7 +608,7 @@ VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QStri
         bool isLiteral = false;
         (void)value.toInt(&isLiteral);
         UPDATE_PROPERTY_ARG(node, property.getid(), index, value, Types::PropertyTypes::INTEGER, !isLiteral)
-        // LOG_DEBUG("Set property %s argument (%d) to %s", qPrintable(property.getid()), index, qPrintable(value));
+        // LOG_DEBUG("Set property {} argument ({}) to {}", qPrintable(property.getid()), index, qPrintable(value));
       });
     }
     else if (argType == Types::PropertyTypes::REAL)
@@ -623,7 +623,7 @@ VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QStri
         bool isLiteral = false;
         (void)value.toDouble(&isLiteral);
         UPDATE_PROPERTY_ARG(node, property.getid(), index, value, Types::PropertyTypes::REAL, !isLiteral)
-        // LOG_DEBUG("Set property %s argument (%d) to %s", qPrintable(property.getid()), index, qPrintable(value));
+        // LOG_DEBUG("Set property {} argument ({}) to {}", qPrintable(property.getid()), index, qPrintable(value));
       });
     }
     else if (argType == Types::PropertyTypes::STRING)
@@ -636,7 +636,7 @@ VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QStri
       connect(field, &maki::StringWidget::valueChanged, this, [property, node, index](const QString& value) {
         bool isLiteral = value.size() > 2 && value.startsWith('"') && value.endsWith('"');
         UPDATE_PROPERTY_ARG(node, property.getid(), index, value, Types::PropertyTypes::STRING, !isLiteral)
-        // LOG_DEBUG("Set property %s argument (%d) to %s", qPrintable(property.getid()), index, qPrintable(value));
+        // LOG_DEBUG("Set property {} argument ({}) to {}", qPrintable(property.getid()), index, qPrintable(value));
       });
     }
     else if (argType == Types::PropertyTypes::BOOLEAN)
@@ -649,12 +649,12 @@ VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QStri
       connect(field, &maki::StringWidget::valueChanged, this, [property, node, index](const QString& value) {
         bool isLiteral = value == "true" || value == "false" || value == "True" || value == "False";
         UPDATE_PROPERTY_ARG(node, property.getid(), index, value, Types::PropertyTypes::BOOLEAN, !isLiteral)
-        // LOG_DEBUG("Set property %s argument (%d) to %s", qPrintable(property.getid()), index, qPrintable(value));
+        // LOG_DEBUG("Set property {} argument ({}) to {}", qPrintable(property.getid()), index, qPrintable(value));
       });
     }
     else
     {
-      LOG_WARNING("No support for argument of type: %s", qPrintable(Types::PropertyTypesToString(argType)));
+      LOG_WARNING("No support for argument of type: {}", qPrintable(Types::PropertyTypesToString(argType)));
     }
 
     ++index;
@@ -779,7 +779,7 @@ VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)
   connect(eventWidget, &maki::SelectorWidget::dataChanged, this, [transition](const QString& text, const QVariant& data) {
     transition->setEvent(text);
     transition->setName(data.toString());
-    LOG_TRACE("Setting transition to: %s and %s", qPrintable(text), qPrintable(data.toString()));
+    LOG_TRACE("Setting transition to: {} and {}", qPrintable(text), qPrintable(data.toString()));
   });
 
   QPushButton* button = new QPushButton(this);
@@ -919,7 +919,7 @@ VoidResult PropertiesMenu::loadControlAddEvent(const ControlsConfig& control, No
 
   for (const std::shared_ptr<IFlow>& event : node->events())
   {
-    // LOG_INFO("Setting events for %s (%d): %s", qPrintable(node->nodeName()), model->rowCount(), qPrintable(event->getname()));
+    // LOG_INFO("Setting events for {} ({}): {}", qPrintable(node->nodeName()), model->rowCount(), qPrintable(event->getname()));
     addEventToTable(model, model->rowCount(), std::dynamic_pointer_cast<FlowSaveInfo>(event));
   }
 
@@ -1126,7 +1126,7 @@ void PropertiesMenu::addEventToTable(QStandardItemModel* model, int row, std::sh
   indexItem->setData(event->getid(), Qt::UserRole);
   indexItem->setData(event->getmodifiable(), Qt::UserRole + 1);
 
-  LOG_TRACE("Adding event %s of type %s and return %s to event table",
+  LOG_TRACE("Adding event {} of type {} and return {} to event table",
             qPrintable(event->getname()),
             qPrintable(Types::CallTypeToString(event->gettype())),
             qPrintable(Types::PropertyTypesToString(event->getreturnType())));

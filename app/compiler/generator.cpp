@@ -90,7 +90,7 @@ VoidResult Generator::generate(const QString& outputDir, maki::IPlugin* generato
   // mGenerationFolder = outputDir + "/" + generator->languageName();
   // pipeline()->setName(generator->languageName());
 
-  // LOG_INFO("Runnning generator with folder: %s", qPrintable(mGenerationFolder));
+  // LOG_INFO("Runnning generator with folder: {}", qPrintable(mGenerationFolder));
   // auto verified = generator->verify(mGenerationFolder);
   // if (!verified)
   // {

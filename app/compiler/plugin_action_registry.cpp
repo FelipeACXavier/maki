@@ -16,7 +16,7 @@ VoidResult PipelineActionRegistry::registerAction(const QString& pluginId, std::
   else
     mActionPluginIds.insert(pluginId, {action->id()});
 
-  LOG_DEBUG("Adding action: %s of plugin: %s to the registry", qPrintable(action->id()), qPrintable(pluginId));
+  LOG_DEBUG("Adding action: {} of plugin: {} to the registry", qPrintable(action->id()), qPrintable(pluginId));
 
   return VoidResult();
 }
@@ -45,7 +45,7 @@ void PipelineActionRegistry::printAll() const
   LOG_INFO("Available actions:");
   for (const auto& action : mActions)
   {
-    LOG_INFO("Id: %s - Action Id: %s", qPrintable(action->id()), qPrintable(action->displayName()));
+    LOG_INFO("Id: {} - Action Id: {}", qPrintable(action->id()), qPrintable(action->displayName()));
   }
 }
 }  // namespace maki

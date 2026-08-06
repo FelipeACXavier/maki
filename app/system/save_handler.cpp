@@ -311,7 +311,7 @@ VoidResult SaveHandler::saveManifest(const SaveInfo& project)
     auto node = std::static_pointer_cast<NodeSaveInfo>(task);
     QString savedTask;
     ASSIGN_OR_RETURN_ON_FAILURE(savedTask, saveNodeTree(project, *node, "tasks"));
-    LOG_INFO("Adding task: %s", qPrintable(savedTask));
+    LOG_INFO("Adding task: {}", qPrintable(savedTask));
     tasks.append(savedTask);
   }
 
@@ -366,7 +366,7 @@ Result<QString> SaveHandler::saveNodeTree(const SaveInfo& project, const NodeSav
 
     QString childNodeFile;
     ASSIGN_OR_RETURN_ON_FAILURE(childNodeFile, saveNodeTree(project, *child, QDir(nodeFolder).filePath("children")));
-    LOG_INFO("Saving child: %s", qPrintable(childNodeFile));
+    LOG_INFO("Saving child: {}", qPrintable(childNodeFile));
     children.append(childNodeFile);
   }
 
@@ -512,7 +512,7 @@ Result<SaveInfo> SaveHandler::loadProjectManifest(const QString& manifestPath)
 Result<std::shared_ptr<NodeSaveInfo>> SaveHandler::loadNodeTree(const QString& projectRoot, const QString& nodeFile)
 {
   const QString absolutePath = QDir(projectRoot).filePath(nodeFile);
-  LOG_INFO("loadNodeTree:\n\tprojectRoot: %s\n\tnodeFile: %s\n\tabsolutePath: %s", qPrintable(projectRoot), qPrintable(nodeFile), qPrintable(absolutePath));
+  LOG_INFO("loadNodeTree:\n\tprojectRoot: {}\n\tnodeFile: {}\n\tabsolutePath: {}", qPrintable(projectRoot), qPrintable(nodeFile), qPrintable(absolutePath));
 
   auto read = JSON::fromFile(absolutePath);
   if (!read)

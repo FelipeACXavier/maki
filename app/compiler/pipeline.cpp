@@ -190,7 +190,7 @@ VoidResult Pipeline::add(QProcess* process, maki::OnFail onFail, std::function<v
 
   group->processes.push_back(pp);
 
-  LOG_DEBUG("Adding process to group: %s (%d)", qPrintable(group->name), group->size());
+  LOG_DEBUG("Adding process to group: {} ({})", qPrintable(group->name), group->size());
 
   return VoidResult();
 }
@@ -246,7 +246,7 @@ VoidResult Pipeline::start(const QString& groupName, bool first)
   if (first)
     emit startingPipeline(constructInfo());
 
-  // LOG_DEBUG("Starting group: %s, was running %s", qPrintable(group->name), qPrintable(mCurrentGroup));
+  // LOG_DEBUG("Starting group: {}, was running {}", qPrintable(group->name), qPrintable(mCurrentGroup));
   if (mCurrentGroup != group->name)
   {
     mCurrentGroup = group->name;
@@ -289,7 +289,7 @@ void Pipeline::startNextOrEnd(int exitCode, QProcess::ExitStatus status)
     aborting = mState == State::Aborting;
   }
 
-  // LOG_DEBUG("Process ended with code: %d", exitCode);
+  // LOG_DEBUG("Process ended with code: {}", exitCode);
 
   auto group = getGroup();
   if (exitCode != SUCCESS)
@@ -311,7 +311,7 @@ void Pipeline::startNextOrEnd(int exitCode, QProcess::ExitStatus status)
     emit finishedGroup(constructInfo(), group->name, exitCode, "Success");
 
     // Check if there are more groups to run
-    LOG_DEBUG("Done running group: %s. (%d of %d)", qPrintable(group->name), mGroupIndex + 1, mGroups.size());
+    LOG_DEBUG("Done running group: {}. ({} of {})", qPrintable(group->name), mGroupIndex + 1, mGroups.size());
     if (mGroupIndex + 1 < mGroups.size())
     {
       // Move on to the next group
@@ -382,8 +382,6 @@ void Pipeline::onReadyReadStandardError()
   }
 
   QByteArray data = mRunningProcess->process->readAllStandardError();
-  // QString text = handleInputData(data);
-
   if (handleInputData(data))
     emit readyReadStandardError(data);
 }
@@ -396,7 +394,7 @@ void Pipeline::onFinished(int exitCode, QProcess::ExitStatus status)
     return;
   }
 
-  // LOG_DEBUG("Process finished: %s", qPrintable(mRunningProcess->process->program()));
+  // LOG_DEBUG("Process finished: {}", qPrintable(mRunningProcess->process->program()));
   if (mRunningProcess->onFinish &&
       ((exitCode != SUCCESS && mRunningProcess->onFail == maki::OnFail::EXECUTE) || mRunningProcess->onFail == maki::OnFail::ALWAYS_EXECUTE))
   {

@@ -177,7 +177,7 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
     for (const auto& alarm : found->second.alarms)
     {
       auto alarmName = std::format("alarm{}", alarmId++);
-      LOG_DEBUG("Adding alarm %s to flow instance %s", alarmName.c_str(), flowInstance.c_str());
+      LOG_DEBUG("Adding alarm {} to flow instance {}", alarmName, flowInstance);
       mModel.declareInstance(component->symbol, alarmName, "calarm", {component->symbol, flow.span});
       connections.push_back({
           .lhs = flowInstance + "." + alarm,  // The port remains the same since that is set based on the

@@ -31,8 +31,8 @@ Result<PipelineNode> PipelineNode::fromJson(const QJsonObject& object)
 
 void PipelineNode::print() const
 {
-  LOG_INFO("  Node id: %s", qPrintable(id));
-  LOG_INFO("  Node actionId: %s", qPrintable(actionId));
+  LOG_INFO("  Node id: {}", qPrintable(id));
+  LOG_INFO("  Node actionId: {}", qPrintable(actionId));
 }
 
 Result<PipelineEdge> PipelineEdge::fromJson(const QJsonObject& object)
@@ -51,8 +51,8 @@ Result<PipelineEdge> PipelineEdge::fromJson(const QJsonObject& object)
 
 void PipelineEdge::print() const
 {
-  LOG_INFO("  Edge from: %s", qPrintable(from));
-  LOG_INFO("  Edge to: %s", qPrintable(to));
+  LOG_INFO("  Edge from: {}", qPrintable(from));
+  LOG_INFO("  Edge to: {}", qPrintable(to));
 }
 
 Result<PipelineGraph> PipelineGraph::fromJson(const QJsonObject& object)
@@ -220,9 +220,9 @@ Result<PipelineGraph> PipelineGraph::fromCanvas(const Canvas* canvas)
 
 void PipelineGraph::print() const
 {
-  LOG_INFO("Pipeline id: %s", qPrintable(id));
-  LOG_INFO("Pipeline name: %s", qPrintable(name));
-  LOG_INFO("Pipeline version: %s", qPrintable(version.toString()));
+  LOG_INFO("Pipeline id: {}", qPrintable(id));
+  LOG_INFO("Pipeline name: {}", qPrintable(name));
+  LOG_INFO("Pipeline version: {}", qPrintable(version.toString()));
   for (const auto& node : nodes)
     node.print();
   for (const auto& edge : edges)

@@ -196,7 +196,7 @@ void updateIconTheme(QList<WidgetWithIcon>& icons)
       }
       else
       {
-        LOG_WARNING("Unsupported widget: %s", item.widget->metaObject()->className());
+        LOG_WARNING("Unsupported widget: {}", item.widget->metaObject()->className());
       }
     }
   }

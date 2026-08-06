@@ -106,7 +106,7 @@ void RosEmitter::collectComponent(const Component& component)
   }
   else
   {
-    LOG_ERROR("Unsupported capability: %s", component.name.c_str());
+    LOG_ERROR("Unsupported capability: {}", component.name);
   }
 }
 

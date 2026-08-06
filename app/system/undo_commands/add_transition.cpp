@@ -17,7 +17,7 @@ void AddTransitionCommand::undo()
     return;
 
   // mCanvas->onRemoveNode(mDesc.id);
-  LOG_DEBUG("Undo AddTransitionCommand: %s", qPrintable(mDesc.getlabel()));
+  LOG_DEBUG("Undo AddTransitionCommand: {}", qPrintable(mDesc.getlabel()));
 }
 
 void AddTransitionCommand::redo()
@@ -26,5 +26,5 @@ void AddTransitionCommand::redo()
     return;
 
   // mCanvas->createNode(mDesc);
-  LOG_DEBUG("Redo AddTransitionCommand: %s", qPrintable(mDesc.getlabel()));
+  LOG_DEBUG("Redo AddTransitionCommand: {}", qPrintable(mDesc.getlabel()));
 }

@@ -43,7 +43,7 @@ QStringList KodaSimulateAction::produces() const
 
 maki::ResultArtifacts KodaSimulateAction::run(const maki::PipelineContext& context, const QVariantMap& parameters, maki::IPipeline* pipeline)
 {
-  LOG_INFO("Running %s", qPrintable(id()));
+  LOG_INFO("Running {}", qPrintable(id()));
 
   // Get the canvas from the context
   const auto artifacts = context.artifactsOfType("dezyne");

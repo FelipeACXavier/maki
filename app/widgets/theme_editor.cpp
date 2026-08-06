@@ -247,7 +247,7 @@ struct ThemeEditorWidget::Impl
       rowLayout->addWidget(loadJsonButton);
 
       QObject::connect(loadJsonButton, &QPushButton::pressed, &owner, [this]() {
-        LOG_DEBUG("Loading theme from: %s", qPrintable(defaultDirPath));
+        LOG_DEBUG("Loading theme from: {}", qPrintable(defaultDirPath));
         const auto defaultPath = defaultDirPath + '/' + DEFAULT_FILE_NAME;
         QSettings settings;
 
@@ -272,7 +272,7 @@ struct ThemeEditorWidget::Impl
       rowLayout->addWidget(saveJsonButton);
 
       QObject::connect(saveJsonButton, &QPushButton::pressed, &owner, [this]() {
-        LOG_DEBUG("Saving theme to: %s", qPrintable(defaultDirPath));
+        LOG_DEBUG("Saving theme to: {}", qPrintable(defaultDirPath));
         const auto defaultPath = defaultDirPath + '/' + DEFAULT_FILE_NAME;
         QSettings settings;
 

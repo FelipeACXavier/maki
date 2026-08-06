@@ -93,7 +93,7 @@ GeneratedFilesPanel::GeneratedFilesPanel(QWidget* parent)
 
 void GeneratedFilesPanel::setGenerationRoot(const QString& dir)
 {
-  LOG_DEBUG("Setting root directory: %s", qPrintable(dir));
+  LOG_DEBUG("Setting root directory: {}", qPrintable(dir));
 
   auto info = QDir(dir);
   if (!info.exists())
@@ -212,7 +212,7 @@ void GeneratedFilesPanel::openPathInEditor(const QString& filePath)
   mEditor->setPlainText(text);
   mEditor->document()->setModified(false);
 
-  LOG_DEBUG("Opening editor for file: %s", qPrintable(filePath));
+  LOG_DEBUG("Opening editor for file: {}", qPrintable(filePath));
   emit openExternallyRequested(mEditor);
 }
 

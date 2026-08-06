@@ -37,7 +37,7 @@ VoidResult copyTo(const QFileInfo& info, const QString& targetDir)
     return VoidResult::Failed("File does not exist: " + info.absoluteFilePath().toStdString());
 
   QString source = info.absoluteFilePath();
-  // LOG_INFO("Copying: %s to %s", qPrintable(source), qPrintable(targetDir));
+  // LOG_INFO("Copying: {} to {}", qPrintable(source), qPrintable(targetDir));
 
   if (info.isDir())
   {
@@ -102,7 +102,7 @@ QVariantMap KodaRosCopySources::defaultParameters() const
 
 maki::ResultArtifacts KodaRosCopySources::run(const maki::PipelineContext& context, const QVariantMap& parameters, maki::IPipeline* pipeline)
 {
-  LOG_INFO("Running %s", qPrintable(id()));
+  LOG_INFO("Running {}", qPrintable(id()));
   const auto projectArtifacts = context.artifactsOfType("ros-project");
   if (projectArtifacts.isEmpty())
     return maki::ResultArtifacts::Failed("No artifacts available, requires \"ros-project\"");
@@ -115,10 +115,10 @@ maki::ResultArtifacts KodaRosCopySources::run(const maki::PipelineContext& conte
   const auto project = projectArtifacts.front();
 
   // auto pretty = QJsonDocument(project.toJson()).toJson(QJsonDocument::Indented);
-  // LOG_DEBUG("Artifact %s %s: \n%s", qPrintable(project.id), qPrintable(project.producer), qPrintable(pretty));
+  // LOG_DEBUG("Artifact {} {}: \n{}", qPrintable(project.id), qPrintable(project.producer), qPrintable(pretty));
 
   // pretty = QJsonDocument(cpp.toJson()).toJson(QJsonDocument::Indented);
-  // LOG_DEBUG("Artifact %s %s: \n%s", qPrintable(cpp.id), qPrintable(cpp.producer), qPrintable(pretty));
+  // LOG_DEBUG("Artifact {} {}: \n{}", qPrintable(cpp.id), qPrintable(cpp.producer), qPrintable(pretty));
 
   // Get all cpp sources and headers
   QStringList includeFiles = {};

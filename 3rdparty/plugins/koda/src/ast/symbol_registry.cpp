@@ -23,11 +23,11 @@ void SymbolRegistry::print()
   LOG_DEBUG("Symbol register:");
   for (const auto& s : mSymbols)
   {
-    LOG_DEBUG("  Symbol: %u %s", s.id, s.name.c_str());
-    LOG_DEBUG("    Kind: %s", toString(s.kind).c_str());
-    LOG_DEBUG("    Type: %s", s.type.toString().c_str());
-    LOG_DEBUG("    Span: %s", s.span.toString().c_str());
-    LOG_DEBUG("    Owner: %u", s.owner);
+    LOG_DEBUG("  Symbol: {} {}", s.id, s.name);
+    LOG_DEBUG("    Kind: {}", toString(s.kind));
+    LOG_DEBUG("    Type: {}", s.type.toString());
+    LOG_DEBUG("    Span: {}", s.span.toString());
+    LOG_DEBUG("    Owner: {}", s.owner);
   }
 }
 

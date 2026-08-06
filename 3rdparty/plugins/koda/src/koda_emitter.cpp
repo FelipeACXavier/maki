@@ -48,7 +48,7 @@ Result<std::string> KodaEmitter::emitKoda(const koda::System& ast)
     RETURN_ON_FAILURE_AS(emitter.emitTask(*component, ss), std::string);
   }
 
-  // LOG_DEBUG("Koda: %s", ss.str().c_str());
+  // LOG_DEBUG("Koda: {}", ss.str());
 
   return ss.str();
 }

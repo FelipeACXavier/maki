@@ -42,14 +42,14 @@ std::any KodaCST2AST::visitTopLevelComponent(KodaParser::TopLevelComponentContex
 
   c->name = ctx->IDENT()->getText();
 
-  // LOG_DEBUG("Visiting top level component: %s", c->name.c_str());
+  // LOG_DEBUG("Visiting top level component: {}", c->name);
   if (auto* al = ctx->argumentList())
     c->args = std::any_cast<std::vector<koda::PArgument>>(visit(al));
 
   for (auto* st : ctx->statement())
     c->statements.push_back(std::any_cast<koda::PStatement>(visit(st)));
 
-  // LOG_DEBUG("Done visiting top level component: %s", c->name.c_str());
+  // LOG_DEBUG("Done visiting top level component: {}", c->name);
   return c;
 }
 

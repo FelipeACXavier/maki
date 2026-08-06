@@ -41,7 +41,7 @@ PluginPipeline::PluginPipeline(Pipeline* pipeline, QObject* parent)
     }
   });
   connect(mPipeline, &Pipeline::errorOccurred, [this](const Pipeline::Info& info, QProcess::ProcessError /* error */, const QString& message) {
-    LOG_INFO("Error occurred: %s", qPrintable(message));
+    LOG_INFO("Error occurred: {}", qPrintable(message));
     mProgressId = NOTIFY_LONG_ERROR(mProgressId, "Pipeline Progress", progressWidget());
   });
   connect(mPipeline, &Pipeline::startingPipeline, [this](const Pipeline::Info& info) {
@@ -134,7 +134,7 @@ VoidResult PluginPipeline::runNextNode()
   if (!result)
     return result;
 
-  LOG_INFO("Done running action %s, pipeline size: %d", qPrintable(action->id()), mPipeline->size());
+  LOG_INFO("Done running action {}, pipeline size: {}", qPrintable(action->id()), mPipeline->size());
   if (mPipeline->size() == 0)
   {
     for (const auto& a : result.Value())
