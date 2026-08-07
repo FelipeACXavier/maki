@@ -1,7 +1,8 @@
 BasedOnStyle: Google
 AccessModifierOffset: -2
-ColumnLimit: 0
+ColumnLimit: 150 # Just a bit more than the editor columns
 BreakBeforeBraces: Custom
+RemoveBracesLLVM: true
 BraceWrapping:
   AfterEnum:              true
   AfterClass:             true
@@ -35,3 +36,7 @@ AlwaysBreakBeforeMultilineStrings: false
 BreakAdjacentStringLiterals: true
 # BreakAfterReturnType: Automatic
 SeparateDefinitionBlocks: Always
+# Lets discourage one argument per line
+BinPackArguments: true
+BinPackParameters: true
+AllowAllParametersOfDeclarationOnNextLine: false
