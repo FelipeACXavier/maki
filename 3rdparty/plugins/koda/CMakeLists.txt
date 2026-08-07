@@ -117,6 +117,23 @@ target_include_directories(${COMPILER_NAME} PRIVATE
 )
 
 # ==================================================================
+# Koda language
+set(TEST_NAME "typetest")
+add_executable(${TEST_NAME}
+  src/typing/main.cpp
+  src/typing/type_model.cpp
+  src/typing/variable_model.cpp
+)
+
+target_link_libraries(${TEST_NAME} PRIVATE
+  libcpphelpers
+)
+
+target_include_directories(${TEST_NAME} PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/typing
+)
+
+# ==================================================================
 # Koda library
 set(LIB_NAME "libkoda")
 add_library(${LIB_NAME} STATIC ${KODA_COMPILER_FILES})
@@ -244,6 +261,7 @@ function(add_koda_plugin TARGET_NAME USE_ANTLR_ENABLED)
     METADATA ${PLUGIN_FILE}
     BIN_TARGETS
       ${COMPILER_NAME}
+      ${TEST_NAME}
       ${DZN_CLIENT_NAME}
     ASSET_DIR ${CMAKE_CURRENT_SOURCE_DIR}/assets
   )
