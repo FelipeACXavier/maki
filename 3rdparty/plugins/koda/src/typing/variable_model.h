@@ -4,23 +4,16 @@
 #include <unordered_map>
 #include <vector>
 
-#include "type_model.h"
+#include "type_reference.h"
 
 namespace koda
 {
 class Value
 {
 public:
-  using Variant = std::variant<
-      bool,
-      int64_t,
-      double,
-      std::string,
-      std::unordered_map<std::string, Value>,
-      std::vector<Value>>;
+  using Variant = std::variant<bool, int64_t, double, std::string, std::unordered_map<std::string, Value>, std::vector<Value>>;
 
   Value(Variant data);
-
   Variant data() const;
 
 private:

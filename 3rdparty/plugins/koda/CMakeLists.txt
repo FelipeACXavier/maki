@@ -121,8 +121,13 @@ target_include_directories(${COMPILER_NAME} PRIVATE
 set(TEST_NAME "typetest")
 add_executable(${TEST_NAME}
   src/typing/main.cpp
-  src/typing/type_model.cpp
+  src/typing/types.cpp
+  src/typing/type_reference.cpp
+  src/typing/type_definition.cpp
   src/typing/variable_model.cpp
+
+  src/typing/helpers.cpp
+  src/typing/type_registry.cpp
 )
 
 target_link_libraries(${TEST_NAME} PRIVATE
