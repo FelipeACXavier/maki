@@ -3,6 +3,7 @@
 #include <qcoreapplication.h>
 #include <qhashfunctions.h>
 
+#include <QFontMetricsF>
 #include <QGraphicsColorizeEffect>
 #include <QPainter>
 #include <QPainterPath>
@@ -212,6 +213,17 @@ QRectF NodeBase::labelBoundingRect() const
   const auto bounds = drawingRect(nodeRect());
   return QRectF(bounds.left() - LABEL_H_SPACING, bounds.bottom() + LABEL_V_SPACING,
                 bounds.width() + 2 * LABEL_H_SPACING, mLabelFont.pointSizeF() * 3);
+}
+
+QRectF NodeBase::labelTextTightRect() const
+{
+  QRectF area = labelBoundingRect();
+  if (area.isEmpty() || mLabelText.isEmpty())
+    return QRectF();
+
+  area.translate(labelCenterOffsetX(), 0.0);
+  const QFontMetricsF fm(mLabelFont);
+  return fm.boundingRect(area, Qt::AlignCenter | Qt::TextWordWrap, mLabelText);
 }
 
 QRectF NodeBase::itemRectIncludingLabel() const
@@ -459,7 +471,9 @@ void NodeBase::paintLabel(QPainter* painter, const QPen& pen) const
   textOption.setAlignment(Qt::AlignCenter);
   textOption.setWrapMode(QTextOption::WrapAtWordBoundaryOrAnywhere);
 
-  painter->drawText(labelBoundingRect(), mLabelText, textOption);
+  QRectF area = labelBoundingRect();
+  area.translate(labelCenterOffsetX(), 0.0);
+  painter->drawText(area, mLabelText, textOption);
 }
 
 void NodeBase::paintPixmap(QPainter* painter) const

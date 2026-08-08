@@ -7,6 +7,25 @@
 class NodeConfig;
 class QGraphicsProxyWidget;
 class QLineEdit;
+class QPainter;
+
+/**
+ * Shared collapse-chevron UI for Repeat / Within hosts.
+ * One arrow sits beside the host label and toggles all owned subflow blocks together.
+ */
+namespace SubflowCollapseUi
+{
+constexpr qreal kButtonSize = 12.0;
+constexpr qreal kGapFromLabel = 4.0;
+constexpr const char* kPropertyKey = "subflowCollapsed";
+
+/** Shift so label text + chevron stay centered under the host. */
+qreal labelCenterOffsetX();
+QRectF arrowRect(const NodeBase& host);
+void paintArrow(QPainter* painter, const QRectF& rect, bool collapsed);
+bool readPersisted(const NodeItem* host);
+void writePersisted(NodeItem* host, bool collapsed);
+}  // namespace SubflowCollapseUi
 
 /**
  * @brief Bordered container below a Repeat / Within node for inline subflow editing.
@@ -48,13 +67,9 @@ public:
 
   Role role() const { return mRole; }
 
-  /** Collapse hides the block entirely and shows only a label + expand arrow under the host. */
+  /** Collapse hides this block and its contents entirely (chevron lives on the host). */
   void setCollapsed(bool collapsed);
   bool isCollapsed() const { return mCollapsed; }
-  void toggleCollapsed() { setCollapsed(!mCollapsed); }
-
-  /** Re-apply the collapsed flag persisted on the owning Repeat / Within node. */
-  void applyPersistedCollapsedState();
 
   NodeItem* ownerNode() const { return mOwner; }
   void setOwnerNode(NodeItem* owner);
@@ -109,18 +124,10 @@ private:
   void paintConnector(QPainter* painter) const;
   void paintTitle(QPainter* painter) const;
 
-  QRectF collapseButtonRect() const;
-  QRectF collapsedCaptionRect() const;
-  QSizeF collapsedChromeSize() const;
   qreal gapBelowPredecessor() const;
-  /** Top-left X under the owner: left-aligned when expanded, centred when collapsed. */
+  /** Top-left X under the owner (left-aligned with the host body). */
   qreal alignedLeftUnderOwner(qreal width) const;
-  void applyCollapsedChrome();
-  void paintCollapseButton(QPainter* painter) const;
-  void paintCollapsedChrome(QPainter* painter) const;
   void setContentsVisible(bool visible);
-  QString collapsePropertyKey() const;
-  void persistCollapsedState();
 
   NodeItem* mOwner = nullptr;
   NodeItem* mConnectorAbove = nullptr;

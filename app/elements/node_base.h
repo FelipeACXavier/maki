@@ -89,7 +89,17 @@ public:
    */
   virtual QRectF labelBoundingRect() const;
 
+  /** Tight rectangle around the drawn label text (centered within labelBoundingRect). */
+  QRectF labelTextTightRect() const;
+
   virtual QRectF nodeRect() const;
+
+  /**
+   * Horizontal shift applied when centering the label text inside labelBoundingRect.
+   * Hosts that draw chrome beside the label (e.g. a collapse chevron) can offset the
+   * text so the combined group stays centered under the node.
+   */
+  virtual qreal labelCenterOffsetX() const { return 0.0; }
 
   /**
    * @brief Bounding rect of node body united with visible label geometry (parent item coordinates).

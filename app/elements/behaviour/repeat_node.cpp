@@ -1,6 +1,10 @@
 #include "elements/behaviour/repeat_node.h"
 
 #include <QGraphicsScene>
+#include <QGraphicsSceneMouseEvent>
+#include <QPainter>
+#include <QPainterPath>
+#include <QStyleOptionGraphicsItem>
 
 #include "elements/behaviour/subflow_block.h"
 
@@ -42,6 +46,24 @@ QVector<NodeItem*> RepeatNode::detachOwnedSubflowBlocks()
   return blocks;
 }
 
+bool RepeatNode::subflowsCollapsed() const
+{
+  return mBlock && mBlock->isCollapsed();
+}
+
+void RepeatNode::setSubflowsCollapsed(bool collapsed)
+{
+  if (mBlock)
+    mBlock->setCollapsed(collapsed);
+  SubflowCollapseUi::writePersisted(this, collapsed);
+  update();
+}
+
+void RepeatNode::toggleSubflowsCollapsed()
+{
+  setSubflowsCollapsed(!subflowsCollapsed());
+}
+
 void RepeatNode::ensureSubflowBlock()
 {
   if (mBlock)
@@ -51,7 +73,8 @@ void RepeatNode::ensureSubflowBlock()
   if (mBlock)
   {
     mBlock->syncToOwnerPosition();
-    mBlock->applyPersistedCollapsedState();
+    if (SubflowCollapseUi::readPersisted(this))
+      setSubflowsCollapsed(true);
   }
 }
 
@@ -61,6 +84,41 @@ void RepeatNode::updatePosition(const QPointF& position)
   BehaviourNode::updatePosition(position);
   if (mBlock && !delta.isNull())
     mBlock->translateBy(delta);
+}
+
+qreal RepeatNode::labelCenterOffsetX() const
+{
+  return SubflowCollapseUi::labelCenterOffsetX();
+}
+
+QRectF RepeatNode::boundingRect() const
+{
+  return BehaviourNode::boundingRect().united(SubflowCollapseUi::arrowRect(*this));
+}
+
+QPainterPath RepeatNode::shape() const
+{
+  QPainterPath path = BehaviourNode::shape();
+  path.addRect(SubflowCollapseUi::arrowRect(*this));
+  return path;
+}
+
+void RepeatNode::paintBehaviourExtras(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget)
+{
+  Q_UNUSED(style);
+  Q_UNUSED(widget);
+  SubflowCollapseUi::paintArrow(painter, SubflowCollapseUi::arrowRect(*this), subflowsCollapsed());
+}
+
+void RepeatNode::mousePressEvent(QGraphicsSceneMouseEvent* event)
+{
+  if (event && SubflowCollapseUi::arrowRect(*this).contains(event->pos()))
+  {
+    toggleSubflowsCollapsed();
+    event->accept();
+    return;
+  }
+  BehaviourNode::mousePressEvent(event);
 }
 
 QVariant RepeatNode::itemChange(GraphicsItemChange change, const QVariant& value)

@@ -1,6 +1,10 @@
 #include "elements/behaviour/within_node.h"
 
 #include <QGraphicsScene>
+#include <QGraphicsSceneMouseEvent>
+#include <QPainter>
+#include <QPainterPath>
+#include <QStyleOptionGraphicsItem>
 
 #include "elements/behaviour/subflow_block.h"
 
@@ -55,6 +59,39 @@ QVector<NodeItem*> WithinNode::detachOwnedSubflowBlocks()
   return blocks;
 }
 
+bool WithinNode::subflowsCollapsed() const
+{
+  return (mDoBlock && mDoBlock->isCollapsed()) || (mElseBlock && mElseBlock->isCollapsed());
+}
+
+void WithinNode::setSubflowsCollapsed(bool collapsed)
+{
+  if (collapsed)
+  {
+    // Hide the follower first so it does not restack against a collapsing Do.
+    if (mElseBlock)
+      mElseBlock->setCollapsed(true);
+    if (mDoBlock)
+      mDoBlock->setCollapsed(true);
+  }
+  else
+  {
+    // Expand Do first so Else can stack under the restored geometry.
+    if (mDoBlock)
+      mDoBlock->setCollapsed(false);
+    if (mElseBlock)
+      mElseBlock->setCollapsed(false);
+  }
+
+  SubflowCollapseUi::writePersisted(this, collapsed);
+  update();
+}
+
+void WithinNode::toggleSubflowsCollapsed()
+{
+  setSubflowsCollapsed(!subflowsCollapsed());
+}
+
 void WithinNode::ensureSubflowBlocks()
 {
   if (mDoBlock && mElseBlock)
@@ -81,12 +118,8 @@ void WithinNode::ensureSubflowBlocks()
     }
   }
 
-  // Apply persisted collapsed state after both blocks are stacked so the Else
-  // block re-stacks correctly when the Do block reloads collapsed.
-  if (mDoBlock)
-    mDoBlock->applyPersistedCollapsedState();
-  if (mElseBlock)
-    mElseBlock->applyPersistedCollapsedState();
+  if (SubflowCollapseUi::readPersisted(this))
+    setSubflowsCollapsed(true);
 }
 
 void WithinNode::updatePosition(const QPointF& position)
@@ -101,6 +134,41 @@ void WithinNode::updatePosition(const QPointF& position)
     mDoBlock->translateBy(delta);
   else if (mElseBlock)
     mElseBlock->translateBy(delta);
+}
+
+qreal WithinNode::labelCenterOffsetX() const
+{
+  return SubflowCollapseUi::labelCenterOffsetX();
+}
+
+QRectF WithinNode::boundingRect() const
+{
+  return BehaviourNode::boundingRect().united(SubflowCollapseUi::arrowRect(*this));
+}
+
+QPainterPath WithinNode::shape() const
+{
+  QPainterPath path = BehaviourNode::shape();
+  path.addRect(SubflowCollapseUi::arrowRect(*this));
+  return path;
+}
+
+void WithinNode::paintBehaviourExtras(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget)
+{
+  Q_UNUSED(style);
+  Q_UNUSED(widget);
+  SubflowCollapseUi::paintArrow(painter, SubflowCollapseUi::arrowRect(*this), subflowsCollapsed());
+}
+
+void WithinNode::mousePressEvent(QGraphicsSceneMouseEvent* event)
+{
+  if (event && SubflowCollapseUi::arrowRect(*this).contains(event->pos()))
+  {
+    toggleSubflowsCollapsed();
+    event->accept();
+    return;
+  }
+  BehaviourNode::mousePressEvent(event);
 }
 
 QVariant WithinNode::itemChange(GraphicsItemChange change, const QVariant& value)
