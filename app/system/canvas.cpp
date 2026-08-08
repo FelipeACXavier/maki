@@ -15,7 +15,9 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QMimeData>
+#include <QCoreApplication>
 #include <QScrollArea>
+#include <QSet>
 #include <QTimer>
 #include <QToolButton>
 #include <QUndoStack>
@@ -37,6 +39,7 @@
 #include "edge_router.h"
 #include "elements/behaviour/call_node.h"
 #include "elements/behaviour/component_overlay.h"
+#include "elements/behaviour/subflow_block.h"
 #include "elements/flow.h"
 #include "elements/node.h"
 #include "elements/node_factory.h"
@@ -138,7 +141,12 @@ Canvas::Canvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> conf
     , mCopiedNodes({})
 {
   setBackgroundBrush(Qt::transparent);
-  // setItemIndexMethod(ItemIndexMethod::NoIndex);
+
+  // SubflowBlock::boundingRect() spans a connector drawn up to its owner node, so
+  // it changes whenever that owner moves or resizes — which the block cannot always
+  // announce via prepareGeometryChange(). The BSP index caches item rects and would
+  // then keep leaf entries pointing at freed items. A linear scan has no such cache.
+  setItemIndexMethod(ItemIndexMethod::NoIndex);
 
   // mHoverTimer = new QTimer(this);
   // mHoverTimer->setSingleShot(true);
@@ -295,6 +303,7 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
         if (NodeItem* inserted = insertDroppedNodeOnTransition(transition, info))
         {
           selectNode(inserted, true);
+          onNodeDroppedFromPalette(inserted);
           event->acceptProposedAction();
           dynamic_cast<QGraphicsView*>(parent())->setCursor(Qt::ArrowCursor);
           return;
@@ -308,6 +317,7 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
       if (parentNode)
         parentNode->expandSubflowToFitChildren();
       selectNode(node, true);
+      onNodeDroppedFromPalette(node);
       event->acceptProposedAction();
     }
     else
@@ -555,6 +565,11 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
             return;
           }
         }
+        if (tryOpenNodeConfigAt(node, event->scenePos()))
+        {
+          event->accept();
+          return;
+        }
       }
     }
 
@@ -652,6 +667,18 @@ void Canvas::addedItemNode(NodeItem* node, std::shared_ptr<NodeSaveInfo> info)
 {
   Q_UNUSED(info)
   emit nodeAdded(node);
+}
+
+void Canvas::onNodeDroppedFromPalette(NodeItem* node)
+{
+  Q_UNUSED(node);
+}
+
+bool Canvas::tryOpenNodeConfigAt(NodeItem* node, const QPointF& scenePos)
+{
+  Q_UNUSED(node);
+  Q_UNUSED(scenePos);
+  return false;
 }
 
 void Canvas::addedItemFlow(Flow* flow, NodeItem* node)
@@ -1258,21 +1285,76 @@ void Canvas::triggerNodeRemoval(const NodeSaveInfo& nodeInfo)
 
 void Canvas::removeNode(const NodeSaveInfo info)
 {
-  auto node = findNodeWithId(info.getid());
-  if (!node)
+  const QString nodeId = info.getid();
+  if (!findNodeWithId(nodeId))
     return;
 
-  QTimer::singleShot(0, this, [this, node]() {
+  // Look up by id when the timer fires — a raw NodeItem* can already be gone if
+  // another removal ran first (common with Repeat/Within + subflow teardown).
+  QTimer::singleShot(0, this, [this, nodeId]() {
+    NodeItem* node = findNodeWithId(nodeId);
+    if (!node)
+      return;
+
+    // Freeze view paints for the entire teardown (removeItem + delete).
+    const auto sceneViews = views();
+    for (QGraphicsView* view : sceneViews)
+      view->setUpdatesEnabled(false);
+
+    mBulkRemoving = true;
+    mPendingNodeRemoved.clear();
+    mPendingFlowRemoved.clear();
+
     auto toRemove = removeNode(node);
 
-    // Delete children before parents (important if parent owns child QGraphicsItems)
+    // Sweep hostless SubflowBlocks left behind by nested teardown edge cases.
+    const QList<QGraphicsItem*> sceneSnapshot = items();
+    for (QGraphicsItem* item : sceneSnapshot)
+    {
+      if (!item || item->type() != NodeItem::Type)
+        continue;
+      auto* candidate = static_cast<NodeItem*>(item);
+      if (!candidate->isSubflowContainer() || candidate->subflowHost())
+        continue;
+      toRemove += removeNode(candidate);
+    }
+
+    // Delete children before parents; skip duplicates (nested removals can overlap).
+    QSet<QGraphicsItem*> seen;
     for (int i = toRemove.size() - 1; i >= 0; --i)
     {
-      if (auto node = dynamic_cast<NodeItem*>(toRemove[i]))
-        LOG_DEBUG("Deleting: %s, has parent: %d", qPrintable(node->id()), node->parentNode() != nullptr);
+      QGraphicsItem* item = toRemove[i];
+      if (!item || seen.contains(item))
+        continue;
+      seen.insert(item);
 
-      delete toRemove[i];
+      if (auto* removedNode = dynamic_cast<NodeItem*>(item))
+      {
+        // Drop item caches before free — stale DeviceCoordinateCache is a known
+        // source of effectiveBoundingRect crashes during the next view paint.
+        removedNode->setCacheMode(QGraphicsItem::NoCache);
+        LOG_DEBUG("Deleting: %s, has parent: %d", qPrintable(removedNode->id()), removedNode->parentNode() != nullptr);
+      }
+
+      delete item;
     }
+
+    // Flush widget DeferredDeletes (e.g. properties panel) before painting again.
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+
+    const auto pendingNodes = mPendingNodeRemoved;
+    const auto pendingFlows = mPendingFlowRemoved;
+    mPendingNodeRemoved.clear();
+    mPendingFlowRemoved.clear();
+    mBulkRemoving = false;
+
+    for (const auto& flow : pendingFlows)
+      emit flowRemoved(flow.first, flow.second);
+    for (const auto& removed : pendingNodes)
+      emit nodeRemoved(removed.first, removed.second);
+
+    for (QGraphicsView* view : sceneViews)
+      view->setUpdatesEnabled(true);
   });
 }
 
@@ -1304,11 +1386,11 @@ QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
     return {};
 
   // Subflow containers are owned by Repeat/Within — delete the host instead.
+  // Orphan containers (host already gone) fall through and are removed directly.
   if (node->isSubflowContainer())
   {
     if (NodeItem* owner = node->subflowHost())
       return removeNode(owner);
-    return {};
   }
 
   // Detach owned subflow blocks so owner destructors will not touch them again.
@@ -1316,10 +1398,16 @@ QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
 
   removeItem(node);
 
+  // Orphan container (host already gone). Safe to drop its links now that the
+  // scene no longer indexes it by its old, connector-spanning boundingRect.
+  if (auto* block = dynamic_cast<SubflowBlock*>(node))
+    block->prepareForDeletion();
+
   // Clear any potential callback
   node->nodeModified = nullptr;
   node->flowAdded = nullptr;
   node->nodeMoved = nullptr;
+  node->nodeHovered = nullptr;
 
   LOG_DEBUG("Removing node: %s %d", qPrintable(node->id()), (int)type());
 
@@ -1333,12 +1421,16 @@ QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
   for (Flow* flow : flows)
   {
     node->deleteFlow(flow->id());
-    emit flowRemoved(flow->id(), node->id());
+    if (mBulkRemoving)
+      mPendingFlowRemoved.append({flow->id(), node->id()});
+    else
+      emit flowRemoved(flow->id(), node->id());
   }
 
   auto parent = node->parentNode();
   if (parent)
     parent->childRemoved(node);
+  node->clearParentNode();
 
   itemsToRemove += cleanTransitionsOfNode(node->id());
 
@@ -1352,11 +1444,16 @@ QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
     detachedBlock->nodeModified = nullptr;
     detachedBlock->flowAdded = nullptr;
     detachedBlock->nodeMoved = nullptr;
+    detachedBlock->nodeHovered = nullptr;
 
     if (detachedBlock->scene())
       removeItem(detachedBlock);
 
+    if (auto* block = dynamic_cast<SubflowBlock*>(detachedBlock))
+      block->prepareForDeletion();
+
     itemsToRemove.append(detachedBlock);
+    mSelectedNodes.removeAll(detachedBlock);
 
     const QVector<NodeItem*> subflowChildren = detachedBlock->children();
     for (NodeItem* child : subflowChildren)
@@ -1369,7 +1466,11 @@ QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
 
   mSelectedNodes.removeAll(node);
 
-  emit nodeRemoved(node->id(), parent ? parent->id() : "");
+  const QString parentId = parent ? parent->id() : QString();
+  if (mBulkRemoving)
+    mPendingNodeRemoved.append({node->id(), parentId});
+  else
+    emit nodeRemoved(node->id(), parentId);
 
   // Since this function can be called in loops or recusively, we do not perform the deletion of the pointer.
   // Deletion is the responsibility of the outer caller
@@ -1510,6 +1611,14 @@ void Canvas::pasteCopiedItems()
 
 void Canvas::clearCanvas()
 {
+  const auto sceneViews = views();
+  for (QGraphicsView* view : sceneViews)
+    view->setUpdatesEnabled(false);
+
+  mBulkRemoving = true;
+  mPendingNodeRemoved.clear();
+  mPendingFlowRemoved.clear();
+
   QVector<QGraphicsItem*> toRemove = {};
   QList<QGraphicsItem*> itemsList = items();
   for (QGraphicsItem* item : itemsList)
@@ -1530,8 +1639,30 @@ void Canvas::clearCanvas()
     toRemove += removeNode(node);
   }
 
+  QSet<QGraphicsItem*> seen;
   for (QGraphicsItem* item : toRemove)
+  {
+    if (!item || seen.contains(item))
+      continue;
+    seen.insert(item);
     delete item;
+  }
+
+  QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+
+  const auto pendingNodes = mPendingNodeRemoved;
+  const auto pendingFlows = mPendingFlowRemoved;
+  mPendingNodeRemoved.clear();
+  mPendingFlowRemoved.clear();
+  mBulkRemoving = false;
+
+  for (const auto& flow : pendingFlows)
+    emit flowRemoved(flow.first, flow.second);
+  for (const auto& removed : pendingNodes)
+    emit nodeRemoved(removed.first, removed.second);
+
+  for (QGraphicsView* view : sceneViews)
+    view->setUpdatesEnabled(true);
 
   LOG_DEBUG("Number of items after clearCanvas: %d", items().size());
 }

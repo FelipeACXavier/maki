@@ -326,6 +326,13 @@ void NodeItem::childRemoved(NodeItem* child)
   mChildrenNodes.removeAll(child);
 }
 
+void NodeItem::clearParentNode()
+{
+  mParentNode = nullptr;
+  if (mStorage)
+    mStorage->setParentId(QString());
+}
+
 void NodeItem::swapCapabilityOrder(NodeItem* a, NodeItem* b)
 {
   Q_UNUSED(a);
@@ -625,26 +632,26 @@ void NodeItem::updatePortPositions()
   if (!showAbort && !showError)
     return;
 
-  const qreal topPortSize = PortItem::sizeForKind(PortItem::Abort);
+  const qreal abortSize = PortItem::sizeForKind(PortItem::Abort);
+  const qreal errorSize = PortItem::sizeForKind(PortItem::Error);
   const qreal centerX = left + w * 0.5;
-  const qreal shiftX = PortItem::kAbortErrorPortPositioning;
-  // Abort and error both sit above the node, side by side.
-  const qreal topY = top - topPortSize - PortItem::kGap;
-  const qreal errorX = centerX + topPortSize * 0.5 + PortItem::kGap * 2.0 + shiftX;
-  const qreal abortX = centerX - topPortSize - PortItem::kGap * 2.0 + shiftX;
+  const qreal shiftX = PortItem::kAbortErrorLateralShift;
+  // When both are visible, keep their centers equidistant from the node center.
+  const qreal halfSpan = qMax(abortSize, errorSize) * 0.5 + PortItem::kGap * 2.0 + shiftX;
+  const qreal topY = top - qMax(abortSize, errorSize) - PortItem::kGap;
 
   if (showAbort && showError)
   {
-    mAbortPort->setPos(abortX, topY);
-    mErrorPort->setPos(errorX, topY);
+    mAbortPort->setPos(centerX - halfSpan - abortSize * 0.5, topY);
+    mErrorPort->setPos(centerX + halfSpan - errorSize * 0.5, topY);
   }
   else if (showAbort)
   {
-    mAbortPort->setPos(centerX - topPortSize * 0.5 + shiftX, topY);
+    mAbortPort->setPos(centerX - abortSize * 0.5 + shiftX, topY);
   }
-  else if (showError)
+  else  // showError
   {
-    mErrorPort->setPos(centerX - PortItem::sizeForKind(PortItem::Error) * 0.5 + shiftX, topY);
+    mErrorPort->setPos(centerX - errorSize * 0.5 + shiftX, topY);
   }
 }
 

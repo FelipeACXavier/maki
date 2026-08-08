@@ -9,7 +9,9 @@
 #include <QJsonObject>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPair>
 #include <QTimer>
+#include <QVector>
 
 #include "elements/node.h"
 #include "json.h"
@@ -87,6 +89,9 @@ public:
    * @brief Deletes selected items from the canvas.
    */
   void deleteSelectedItems();
+
+  /** True while a node-removal batch is tearing down scene items (skip refit/paint side effects). */
+  bool isBulkRemoving() const { return mBulkRemoving; }
 
   void autoRoute();
 
@@ -466,6 +471,15 @@ protected:
   virtual void onNodeMoved(const QString& nodeId);
   virtual void onNodeHovered(NodeItem* node, bool hovered);
 
+  /** Called after a palette node is successfully dropped onto this canvas. */
+  virtual void onNodeDroppedFromPalette(NodeItem* node);
+
+  /**
+   * Behaviour canvases may open type-specific config UI (e.g. Flow call menu) for a click at @p scenePos.
+   * @return true if the click was handled.
+   */
+  virtual bool tryOpenNodeConfigAt(NodeItem* node, const QPointF& scenePos);
+
   /**
    * @brief Inserts a dropped behaviour node onto an existing transition (source -> new -> destination).
    * @return The created node when handled, otherwise nullptr.
@@ -520,6 +534,10 @@ private:
 
   QList<CopiedNode> mCopiedNodes;   /// List of copied nodes.
   QList<NodeItem*> mSelectedNodes;  /// List of currently selected nodes.
+
+  bool mBulkRemoving = false;  /// Guards teardown so nested refits/signals do not paint mid-delete.
+  QVector<QPair<QString, QString>> mPendingNodeRemoved;  /// Deferred nodeRemoved(nodeId, parentId).
+  QVector<QPair<QString, QString>> mPendingFlowRemoved;  /// Deferred flowRemoved(flowId, nodeId).
 
   /**
    * @brief Selects a node and updates its selection state.

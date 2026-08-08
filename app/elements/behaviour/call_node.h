@@ -29,6 +29,8 @@ public:
 
 protected:
   void paintBehaviourExtras(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget) override;
+  void hoverMoveEvent(QGraphicsSceneHoverEvent* event) override;
+  void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
 
 private:
   void syncNodeSvgFromState();
@@ -38,4 +40,8 @@ private:
   qreal capabilitySlotDiameter() const;
   QRectF eventChipLocalRect() const;
   void paintEventChip(QPainter* painter) const;
+  void setEmptySlotHovered(bool hovered);
+
+  /** True while the pointer is over the empty (add-capability) slot. */
+  bool mEmptySlotHovered = false;
 };

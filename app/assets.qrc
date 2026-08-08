@@ -122,6 +122,7 @@
     <file alias="capability_imageinspector.svg">assets/icons/mission/capability_imageinspector.svg</file>
     <file alias="capability_led.svg">assets/icons/mission/capability_led.svg</file>
     <file alias="capability_lighting.svg">assets/icons/mission/capability_lighting.svg</file>
+    <file alias="capability_occupancysensor.svg">assets/icons/mission/capability_occupancysensor.svg</file>
     <file alias="capability_robotarm.svg">assets/icons/mission/capability_robotarm.svg</file>
     <file alias="capability_siren.svg">assets/icons/mission/capability_siren.svg</file>
     <file alias="capability_ticketcreation.svg">assets/icons/mission/capability_ticketcreation.svg</file>
@@ -131,6 +132,7 @@
     <file alias="icon_start.svg">assets/icons/mission/icon_start.svg</file>
     <file alias="icon_start_old.svg">assets/icons/mission/icon_start_old.svg</file>
     <file alias="empty_slot.svg">assets/icons/mission/empty_slot.svg</file>
+    <file alias="filled_slot.svg">assets/icons/mission/filled_slot.svg</file>
     <file alias="questionmark_tooltip.svg">assets/icons/mission/questionmark_tooltip.svg</file>
     <file alias="shape_middle.svg">assets/icons/shapes/shape_middle.svg</file>
     <file alias="node_async.svg">assets/icons/mission/node_async.svg</file>
@@ -138,7 +140,10 @@
     <file alias="node_terminate.svg">assets/icons/mission/node_terminate.svg</file>
     <file alias="node_every.svg">assets/icons/mission/node_every.svg</file>
     <file alias="node_failure.svg">assets/icons/mission/node_failure.svg</file>
+    <file alias="node_flow.svg">assets/icons/mission/node_flow.svg</file>
     <file alias="node_join.svg">assets/icons/mission/node_join.svg</file>
+    <file alias="node_link_in.svg">assets/icons/mission/node_link_in.svg</file>
+    <file alias="node_link_out.svg">assets/icons/mission/node_link_out.svg</file>
     <file alias="node_repeat.svg">assets/icons/mission/node_repeat.svg</file>
     <file alias="node_start.svg">assets/icons/mission/node_start.svg</file>
     <file alias="node_strategy.svg">assets/icons/mission/node_strategy.svg</file>

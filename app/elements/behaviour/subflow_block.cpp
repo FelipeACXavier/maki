@@ -1,5 +1,6 @@
 #include "elements/behaviour/subflow_block.h"
 
+#include <QApplication>
 #include <QFont>
 #include <QFontMetricsF>
 #include <QGraphicsProxyWidget>
@@ -16,6 +17,7 @@
 #include <QStyleOptionGraphicsItem>
 #include <QUuid>
 #include <algorithm>
+#include <cmath>
 
 #include "app_configs.h"
 #include "config.h"
@@ -23,6 +25,7 @@
 #include "elements/transition.h"
 #include "keys.h"
 #include "style_helpers.h"
+#include "system/canvas.h"
 #include "types.h"
 
 namespace
@@ -272,6 +275,8 @@ SubflowBlock::SubflowBlock(const QString& id,
   setAcceptHoverEvents(true);
   setFlag(QGraphicsItem::ItemIsSelectable, true);
   setFlag(QGraphicsItem::ItemIsMovable, true);
+  // Avoid DeviceCoordinateCache — it has interacted badly with subflow teardown/paint.
+  setCacheMode(QGraphicsItem::NoCache);
   setZValue(owner ? owner->zValue() - 1 : -1);
   setLabelName(QString());
 }
@@ -281,6 +286,52 @@ void SubflowBlock::setOwnerNode(NodeItem* owner)
   mOwner = owner;
   if (owner)
     setZValue(owner->zValue() - 1);
+}
+
+void SubflowBlock::destroyTitleUi()
+{
+  if (!mTitleProxy)
+    return;
+
+  if (mTimeoutEdit)
+    mTimeoutEdit->blockSignals(true);
+  if (mIterationsEdit)
+    mIterationsEdit->blockSignals(true);
+  if (mRateEdit)
+    mRateEdit->blockSignals(true);
+
+  if (QWidget* embedded = mTitleProxy->widget())
+  {
+    if (QWidget* focus = QApplication::focusWidget())
+    {
+      if (focus == embedded || embedded->isAncestorOf(focus))
+        focus->clearFocus();
+    }
+    mTitleProxy->setWidget(nullptr);
+    embedded->hide();
+    delete embedded;
+  }
+
+  mTitleProxy->hide();
+  delete mTitleProxy;
+  mTitleProxy = nullptr;
+  mTimeoutEdit = nullptr;
+  mIterationsEdit = nullptr;
+  mRateEdit = nullptr;
+}
+
+void SubflowBlock::prepareForDeletion()
+{
+  // boundingRect() spans the dashed connector up to mConnectorAbove / mOwner, so
+  // dropping those links shrinks it. Without prepareGeometryChange() the scene
+  // index would keep leaf entries for the old, larger rect and later dereference
+  // this item after it is freed.
+  prepareGeometryChange();
+
+  destroyTitleUi();
+  mStackFollower = nullptr;
+  mConnectorAbove = nullptr;
+  mOwner = nullptr;
 }
 
 void SubflowBlock::setConnectorAbove(NodeItem* above)
@@ -664,8 +715,17 @@ void SubflowBlock::applySize(const QSizeF& size)
 void SubflowBlock::childRemoved(NodeItem* child)
 {
   BehaviourNode::childRemoved(child);
-  if (mOwner)
-    expandToFitChildren();
+  if (!mOwner)
+    return;
+
+  // Refitting during host teardown paints into a half-destroyed scene.
+  if (auto* canvas = dynamic_cast<Canvas*>(scene()))
+  {
+    if (canvas->isBulkRemoving())
+      return;
+  }
+
+  expandToFitChildren();
 }
 
 QPainterPath SubflowBlock::shape() const
@@ -1009,6 +1069,10 @@ void SubflowBlock::setCollapsed(bool collapsed)
   if (collapsed == mCollapsed)
     return;
 
+  // Must precede every boundingRect()-affecting change below so the scene index
+  // drops this item using its current rect.
+  prepareGeometryChange();
+
   mCollapsed = collapsed;
 
   // Inline title widgets only belong to the expanded block chrome.
@@ -1035,7 +1099,6 @@ void SubflowBlock::setCollapsed(bool collapsed)
 
   persistCollapsedState();
   notifyEnclosingSubflow();
-  prepareGeometryChange();
   update();
 }
 

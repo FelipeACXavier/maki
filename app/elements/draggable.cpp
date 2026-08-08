@@ -10,6 +10,7 @@
 
 #include "app_configs.h"
 #include "app_paths.h"
+#include "elements/behaviour/flow_call_node.h"
 #include "logging.h"
 #include "save_info.h"
 #include "style_helpers.h"
@@ -123,6 +124,9 @@ void DraggableItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* sty
                       config()->body.backgroundColor,
                       isSelected() ? QPen(Config::HIGHLIGHT, 2.0) : QPen(Config::FOREGROUND, 1.0),
                       painter);
+
+  if (config()->type == QStringLiteral("Koda::Flow call"))
+    flow_call_visual::paintFlowIcon(painter, drawingRect(rect));
 }
 
 QPainterPath DraggableItem::shape() const

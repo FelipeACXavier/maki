@@ -59,6 +59,12 @@ public:
   NodeItem* ownerNode() const { return mOwner; }
   void setOwnerNode(NodeItem* owner);
 
+  /**
+   * Drop owner/stack links and destroy embedded title widgets without scheduling
+   * repaints. Must be called before the block leaves the scene / is deleted.
+   */
+  void prepareForDeletion();
+
   /** Item the dashed connector attaches to above this block (defaults to owner). */
   void setConnectorAbove(NodeItem* above);
   NodeItem* connectorAbove() const { return mConnectorAbove ? mConnectorAbove : mOwner; }
@@ -94,6 +100,7 @@ private:
   void ensureTitleUi();
   void ensureDoTitleUi();
   void ensureLoopTitleUi();
+  void destroyTitleUi();
   void syncTitleFieldsFromOwner();
   void applyTimeoutToOwner();
   void applyIterationsToOwner();

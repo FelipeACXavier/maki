@@ -681,7 +681,7 @@
             "textColor": "#000000",
             "backgroundColor": "#e6e6e6",
             "borderColor": "#FFFFFF",
-            "icon": "capability_envsensor.svg",
+            "icon": "capability_occupancysensor.svg",
             "width": 500,
             "height": 500,
             "z-index": -2
@@ -1182,6 +1182,70 @@
           ]
         },
         {
+          "type": "Link in",
+          "body": {
+            "shape": "startShape",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#a87c9f",
+            "borderColor": "#FFFFFF",
+            "width": 100,
+            "height": 100,
+            "iconColor": "#FFFFFF",
+            "iconScale": 1.0,
+            "icon": "",
+            "nodeSvg": "node_link_in.svg"
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Link in"
+            }
+          ],
+          "behaviour": {},
+          "help": {
+            "message": "Entry point for a linked piece of flow. Other Link out nodes in the same flow can jump here."
+          },
+          "ports": [
+            "out"
+          ]
+        },
+        {
+          "type": "Link out",
+          "body": {
+            "shape": "endShape",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#a87c9f",
+            "borderColor": "#FFFFFF",
+            "width": 100,
+            "height": 100,
+            "iconColor": "#FFFFFF",
+            "iconScale": 1.0,
+            "icon": "",
+            "nodeSvg": "node_link_out.svg"
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Link out"
+            },
+            {
+              "id": "target",
+              "type": "link_target",
+              "default": "",
+              "info": "Link in node in this flow to jump to"
+            }
+          ],
+          "behaviour": {},
+          "help": {
+            "message": "Jumps to a Link in node in the same behavioural flow."
+          },
+          "ports": [
+            "in"
+          ]
+        },
+        {
           "type": "Success",
           "body": {
             "shape": "endShape",
@@ -1394,8 +1458,7 @@
             "height": 100,
             "iconColor": "#FFFFFF",
             "iconScale": 0.8,
-            "icon": "koda_strategy.svg",
-            "nodeSvg": "node_strategy.svg"
+            "nodeSvg": "shape_middle.svg"
           },
           "properties": [
             {

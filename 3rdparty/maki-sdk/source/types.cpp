@@ -120,6 +120,8 @@ QString Types::PropertyTypesToString(Types::PropertyTypes type)
     return "trigger_call";
   else if (type == Types::PropertyTypes::FLOW_CALL)
     return "user_call";
+  else if (type == Types::PropertyTypes::LINK_TARGET)
+    return "link_target";
 
   return "unknown";
 }
@@ -152,6 +154,8 @@ Types::PropertyTypes Types::StringToPropertyTypes(const QString& type)
     return Types::PropertyTypes::TRIGGER_CALL;
   else if (type == "user_call")
     return Types::PropertyTypes::FLOW_CALL;
+  else if (type == "link_target")
+    return Types::PropertyTypes::LINK_TARGET;
 
   return Types::PropertyTypes::UNKNOWN;
 }

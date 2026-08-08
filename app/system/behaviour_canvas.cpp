@@ -23,6 +23,7 @@ BehaviourCanvas::BehaviourCanvas(Flow* flow, std::shared_ptr<SaveInfo> storage, 
     , mStorage(storage)
 {
   connect(this, &Canvas::nodeRemoved, this, [this](const QString& nodeId, const QString&) {
+    // Compare stored id (not live node pointer) so delete never touches a dangling NodeItem.
     if (mFlowCallMenu && mFlowCallMenu->trackedNodeId() == nodeId)
       mFlowCallMenu->hideMenu();
   });
@@ -210,8 +211,9 @@ void BehaviourCanvas::onNodeMoved(const QString& nodeId)
     }
   }
 
+  // Don't drag a Qt::Popup around with the node — dismiss and let click re-open it.
   if (mFlowCallMenu && mFlowCallMenu->isVisible() && mFlowCallMenu->trackedNodeId() == nodeId)
-    mFlowCallMenu->updatePosition(parentView());
+    mFlowCallMenu->hideMenu();
 }
 
 void BehaviourCanvas::ensureTransitionMenu()
@@ -247,6 +249,42 @@ void BehaviourCanvas::navigateToFlowCallTarget(NodeItem* flowCallNode)
     return;
 
   emit openFlowCallTarget(taskId, flowName);
+}
+
+void BehaviourCanvas::showFlowCallMenuFor(NodeItem* flowCallNode)
+{
+  if (!flowCallNode)
+    return;
+
+  ensureFlowCallMenu();
+  if (!mFlowCallMenu)
+    return;
+
+  mFlowCallMenu->showForNode(flowCallNode, parentView(), mStorage.get());
+  if (mTransitionMenu)
+    mTransitionMenu->hideMenu();
+}
+
+void BehaviourCanvas::hideFlowCallMenu()
+{
+  if (mFlowCallMenu)
+    mFlowCallMenu->hideMenu();
+}
+
+void BehaviourCanvas::onNodeDroppedFromPalette(NodeItem* node)
+{
+  if (auto* flowCall = dynamic_cast<FlowCallNode*>(node))
+    showFlowCallMenuFor(flowCall);
+}
+
+bool BehaviourCanvas::tryOpenNodeConfigAt(NodeItem* node, const QPointF& scenePos)
+{
+  auto* flowCall = dynamic_cast<FlowCallNode*>(node);
+  if (!flowCall || !flowCall->flowIconContainsScenePoint(scenePos))
+    return false;
+
+  showFlowCallMenuFor(flowCall);
+  return true;
 }
 
 void BehaviourCanvas::onSelectionChanged()
@@ -301,9 +339,9 @@ void BehaviourCanvas::onSelectionChanged()
     if (mFlowCallMenu)
       mFlowCallMenu->hideMenu();
   }
-  else if (selectedFlowCallNode && mFlowCallMenu)
+  else if (selectedFlowCallNode)
   {
-    mFlowCallMenu->showForNode(selectedFlowCallNode, parentView(), mStorage.get());
+    // Flow call menu opens on click-release (FlowCallNode), not on selection, so drag isn't stolen.
     if (mTransitionMenu)
       mTransitionMenu->hideMenu();
   }

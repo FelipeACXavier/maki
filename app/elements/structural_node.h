@@ -61,11 +61,16 @@ protected:
   void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
   void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
 
+  void hoverMoveEvent(QGraphicsSceneHoverEvent* event) override;
+  void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
+
   QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
 
   NodeItem* rootStructuralTask() const override;
 
 private:
+  void setEmptySlotHovered(bool hovered);
+
   bool mIsResizing{false};
   QPointF mResizeStartMousePos{0, 0};
   QSizeF mResizeStartSize{0, 0};
@@ -79,4 +84,7 @@ private:
   bool mHoverPreviewActive = false;
   QString mHoverPreviewIcon;
   QColor mHoverPreviewColor;
+
+  /** True while the pointer is over the Task empty-slot (add-capability) control. */
+  bool mEmptySlotHovered = false;
 };

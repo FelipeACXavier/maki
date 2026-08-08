@@ -3,7 +3,10 @@
 #include <QFileInfo>
 #include <QFontMetricsF>
 #include <QGraphicsScene>
+#include <QGraphicsView>
+#include <QObject>
 #include <QPainter>
+#include <QPen>
 #include <QSvgRenderer>
 
 #include "app_configs.h"
@@ -181,20 +184,38 @@ QString resolveCapabilityIconPath(const QString& storedIcon,
   return resolveConfigIconPath(cfg->body.iconPath);
 }
 
-void paintEmptySlotSvg(QPainter* painter, const QPointF& center, qreal diameter)
+void paintEmptySlotSvg(QPainter* painter, const QPointF& center, qreal diameter, bool hovered)
 {
   if (!painter || diameter <= 0.0)
     return;
 
-  const QString emptySlotPath = iconPathFromTheme(QStringLiteral("empty_slot.svg"));
-  QSvgRenderer emptySlotRenderer(emptySlotPath);
-  if (!emptySlotRenderer.isValid())
+  const QString slotPath = iconPathFromTheme(hovered ? QStringLiteral("filled_slot.svg")
+                                                     : QStringLiteral("empty_slot.svg"));
+  QSvgRenderer slotRenderer(slotPath);
+  if (!slotRenderer.isValid())
     return;
 
   const qreal radius = diameter * 0.5;
   const QRectF target(center.x() - radius, center.y() - radius, diameter, diameter);
   painter->setRenderHint(QPainter::Antialiasing, true);
-  emptySlotRenderer.render(painter, target);
+  slotRenderer.render(painter, target);
+}
+
+void applyAddCapabilityHover(QGraphicsItem* item, bool& hoveredState, bool hovered)
+{
+  if (!item || hoveredState == hovered)
+    return;
+
+  hoveredState = hovered;
+
+  if (QGraphicsScene* scene = item->scene())
+  {
+    if (auto* view = dynamic_cast<QGraphicsView*>(scene->parent()))
+      view->setCursor(hovered ? Qt::PointingHandCursor : Qt::ArrowCursor);
+  }
+
+  item->setToolTip(hovered ? QObject::tr("Add capability") : QString());
+  item->update();
 }
 
 QFont callEventLabelFont(qreal diameter)

@@ -86,8 +86,13 @@ public:
   void onNodeMoved(const QString& nodeId) override;
 
   void onSelectionChanged() override;
+  void onNodeDroppedFromPalette(NodeItem* node) override;
+  bool tryOpenNodeConfigAt(NodeItem* node, const QPointF& scenePos) override;
 
   void navigateToFlowCallTarget(NodeItem* flowCallNode);
+  /** Shows (or re-shows) the Flow call Task/Flow popup for @p flowCallNode. */
+  void showFlowCallMenuFor(NodeItem* flowCallNode);
+  void hideFlowCallMenu();
 
   /**
    * @brief Used to create the start and end nodes of a flow

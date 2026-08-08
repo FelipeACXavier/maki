@@ -11,6 +11,8 @@ RepeatNode::RepeatNode(const QString& id,
                        QGraphicsItem* parent)
     : BehaviourNode(id, info, initialPosition, nodeConfig, parent)
 {
+  // Avoid DeviceCoordinateCache interactions with attached SubflowBlock scene items.
+  setCacheMode(QGraphicsItem::NoCache);
 }
 
 RepeatNode::~RepeatNode()
@@ -21,6 +23,8 @@ RepeatNode::~RepeatNode()
   {
     if (block->scene())
       block->scene()->removeItem(block);
+    if (auto* subflow = dynamic_cast<SubflowBlock*>(block))
+      subflow->prepareForDeletion();
     delete block;
   }
 }
@@ -31,7 +35,8 @@ QVector<NodeItem*> RepeatNode::detachOwnedSubflowBlocks()
   if (!mBlock)
     return blocks;
 
-  mBlock->setOwnerNode(nullptr);
+  // prepareForDeletion() is the caller's job, once the block is out of the scene:
+  // it shrinks the block's boundingRect, which is only safe when unindexed.
   blocks.append(mBlock);
   mBlock = nullptr;
   return blocks;

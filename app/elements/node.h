@@ -83,6 +83,8 @@ public:
   virtual void addParent(NodeItem* node);
   void addChild(NodeItem* node, std::shared_ptr<NodeSaveInfo> info);
   virtual void childRemoved(NodeItem* child);
+  /** Clear logical parent pointer (does not notify the former parent). */
+  void clearParentNode();
 
   /** Structural "Task" node from library (container with capability slots + subtasks). */
   virtual bool isTaskContainer() const { return false; }

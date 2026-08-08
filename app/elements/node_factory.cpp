@@ -9,6 +9,7 @@
 #include "elements/behaviour/failure_node.h"
 #include "elements/behaviour/flow_call_node.h"
 #include "elements/behaviour/join_node.h"
+#include "elements/behaviour/link_out_node.h"
 #include "elements/behaviour/repeat_node.h"
 #include "elements/behaviour/start_node.h"
 #include "elements/behaviour/success_node.h"
@@ -51,6 +52,7 @@ void registerKodaBehaviourTypes()
   NodeFactory::registerType(QStringLiteral("Koda::Sync task"), makeNode<SyncTaskNode>);
   NodeFactory::registerType(QStringLiteral("Koda::Flow call"), makeNode<FlowCallNode>);
   NodeFactory::registerType(QStringLiteral("Koda::Join"), makeNode<JoinNode>);
+  NodeFactory::registerType(QStringLiteral("Koda::Link out"), makeNode<LinkOutNode>);
   NodeFactory::registerType(QStringLiteral("Koda::Within"), makeNode<WithinNode>);
   NodeFactory::registerType(QStringLiteral("Koda::Repeat"), makeNode<RepeatNode>);
 }

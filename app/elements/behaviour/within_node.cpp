@@ -11,6 +11,8 @@ WithinNode::WithinNode(const QString& id,
                        QGraphicsItem* parent)
     : BehaviourNode(id, info, initialPosition, nodeConfig, parent)
 {
+  // Avoid DeviceCoordinateCache interactions with attached SubflowBlock scene items.
+  setCacheMode(QGraphicsItem::NoCache);
 }
 
 WithinNode::~WithinNode()
@@ -21,6 +23,8 @@ WithinNode::~WithinNode()
   {
     if (block->scene())
       block->scene()->removeItem(block);
+    if (auto* subflow = dynamic_cast<SubflowBlock*>(block))
+      subflow->prepareForDeletion();
     delete block;
   }
 }
@@ -29,20 +33,21 @@ QVector<NodeItem*> WithinNode::detachOwnedSubflowBlocks()
 {
   QVector<NodeItem*> blocks;
 
+  // Break the Do↔Else stack link; it does not feed boundingRect(), so no
+  // geometry notification is needed here.
+  if (mDoBlock)
+    mDoBlock->setStackFollower(nullptr);
+
+  // prepareForDeletion() is the caller's job, once the blocks are out of the
+  // scene: it shrinks their boundingRect, which is only safe when unindexed.
   if (mDoBlock)
   {
-    mDoBlock->setStackFollower(nullptr);
-    mDoBlock->setConnectorAbove(nullptr);
-    mDoBlock->setOwnerNode(nullptr);
     blocks.append(mDoBlock);
     mDoBlock = nullptr;
   }
 
   if (mElseBlock)
   {
-    mElseBlock->setStackFollower(nullptr);
-    mElseBlock->setConnectorAbove(nullptr);
-    mElseBlock->setOwnerNode(nullptr);
     blocks.append(mElseBlock);
     mElseBlock = nullptr;
   }

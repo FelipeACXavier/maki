@@ -11,9 +11,10 @@ class CanvasView;
 class FlowSaveInfo;
 class NodeItem;
 class QComboBox;
+class QHideEvent;
 class SaveInfo;
 
-/** Floating dropdown below a selected Flow call node for picking Task and Flow. */
+/** Call-style popup card below a Flow call node for picking Task and Flow. */
 class FlowCallMenu : public QWidget
 {
   Q_OBJECT
@@ -35,6 +36,9 @@ public:
 signals:
   void createFlowRequested(const QString& taskId, std::shared_ptr<FlowSaveInfo> info);
 
+protected:
+  void hideEvent(QHideEvent* event) override;
+
 private:
   static constexpr int kTaskPropertyEventIndex = 0;
   static constexpr const char* kTaskPropertyId = "task";
@@ -46,18 +50,22 @@ private:
   QString currentTaskId() const;
   QString currentTaskName() const;
   void setTaskData(const QString& taskName);
-  void setFlowData(const QString& flowName);
-  void updateBlockName(const QString& componentName, const QString& flowName) const;
+  void setFlowData(NodeItem* node, const QString& flowName) const;
+  void updateBlockName(NodeItem* node, const QString& componentName, const QString& flowName) const;
+  void selectFlowInCombo(const QString& flowName);
   bool isCreateFlowItem(int index) const;
   int firstFlowOptionIndex() const;
   void selectFirstFlowAndApply();
   void handleCreateFlowRequested();
+  void clearTracking();
 
   QComboBox* mTaskCombo = nullptr;
   QComboBox* mFlowCombo = nullptr;
   NodeItem* mNode = nullptr;
   CanvasView* mView = nullptr;
   SaveInfo* mStorage = nullptr;
+  /** Stable id for move/delete checks without dereferencing mNode after teardown. */
+  QString mTrackedNodeId;
   /** Last non-create Flow combo index, used to restore selection if create is cancelled. */
   int mLastFlowComboIndex = -1;
 };

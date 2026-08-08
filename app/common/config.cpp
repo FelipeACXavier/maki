@@ -84,6 +84,8 @@ QVariant PropertyConfig::toDefault(const QJsonObject& object, Types::PropertyTyp
     return toDefault(object, Types::PropertyTypes::STRING);
   else if (objectType == Types::PropertyTypes::FLOW_CALL)
     return toDefault(object, Types::PropertyTypes::STRING);
+  else if (objectType == Types::PropertyTypes::LINK_TARGET)
+    return toDefault(object, Types::PropertyTypes::STRING);
   else if (objectType == Types::PropertyTypes::VOID)
     return object;
 

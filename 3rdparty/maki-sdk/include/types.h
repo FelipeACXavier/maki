@@ -77,6 +77,7 @@ enum class PropertyTypes
   EVENT_SELECT,
   TRIGGER_CALL,
   FLOW_CALL,
+  LINK_TARGET,
   END
 };
 

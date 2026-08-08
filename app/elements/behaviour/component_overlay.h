@@ -23,8 +23,17 @@ inline constexpr qreal kCallEventChipGap = 2.0;
 /** Paints the selected capability component overlay on Call / async / sync task nodes. */
 void paintSelectedComponentOverlay(const NodeItem* node, QPainter* painter);
 
-/** Renders empty_slot.svg centered at @p center with the given diameter (no icon padding). */
-void paintEmptySlotSvg(QPainter* painter, const QPointF& center, qreal diameter);
+/**
+ * Renders the empty capability slot centered at @p center.
+ * When @p hovered, uses filled_slot.svg instead of empty_slot.svg.
+ */
+void paintEmptySlotSvg(QPainter* painter, const QPointF& center, qreal diameter, bool hovered = false);
+
+/**
+ * Shared empty-slot hover feedback (cursor, tooltip, repaint) for Task / Call nodes.
+ * No-op when @p hoveredState already matches @p hovered.
+ */
+void applyAddCapabilityHover(QGraphicsItem* item, bool& hoveredState, bool hovered);
 
 /**
  * Local-coord center for a Call capability icon.

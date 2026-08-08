@@ -159,6 +159,7 @@ private:
   VoidResult loadPropertyReal(const PropertyInfo& property, NodeItem* node);                                                                                         /// Loads real number property.
   VoidResult loadPropertyColor(const PropertyInfo& property, NodeItem* node);                                                                                        /// Loads color property.
   VoidResult loadPropertySelect(const PropertyInfo& property, NodeItem* node);                                                                                       /// Loads select property.
+  VoidResult loadPropertyLinkTarget(const PropertyInfo& property, NodeItem* node);                                                                                   /// Loads Link out → Link in target picker.
   VoidResult loadPropertyString(const PropertyInfo& property, NodeItem* node);                                                                                       /// Loads string property.
   VoidResult loadPropertyBoolean(const PropertyInfo& property, NodeItem* node);                                                                                      /// Loads boolean property.
   VoidResult loadPropertyEventSelect(const PropertyInfo& property, NodeItem* node);                                                                                  /// Loads event select property.

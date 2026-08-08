@@ -5,6 +5,7 @@
 #include <QFileInfo>
 #include <QFontMetricsF>
 #include <QGraphicsScene>
+#include <QGraphicsSceneHoverEvent>
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsView>
 #include <QHash>
@@ -333,11 +334,8 @@ void StructuralNode::configurePorts()
 
 VoidResult StructuralNode::start()
 {
-  const auto isCapabilityOrTask = isTaskContainer() || rendersAsInsetCapability();
-  LOG_INFO("%s is cap: %d", qPrintable(nodeType()), isCapabilityOrTask);
-  if (config()->body.nodeSvg.isEmpty() && !mStorage->getIcon().isEmpty() && !isCapabilityOrTask)
-    setIcon(mStorage->getIcon(), config()->body.iconColor);
-
+  // Do not call setIcon(): structural capabilities already paint icons in paint()
+  // via renderSvgInEllipse. A QGraphicsSvgItem child would draw a second, offset copy.
   return NodeBase::start();
 }
 
@@ -411,7 +409,7 @@ void StructuralNode::paint(QPainter* painter, const QStyleOptionGraphicsItem* st
       }
       else
       {
-        behaviour::paintEmptySlotSvg(painter, placeholderCenter, slotDiameter);
+        behaviour::paintEmptySlotSvg(painter, placeholderCenter, slotDiameter, mEmptySlotHovered);
       }
     }
 
@@ -860,6 +858,7 @@ void StructuralNode::setHoverPreview(const QString& iconPath, const QColor& colo
   {
     mHoverPreviewIcon = iconPath;
     mHoverPreviewColor = color;
+    setEmptySlotHovered(false);
   }
   else
   {
@@ -869,9 +868,28 @@ void StructuralNode::setHoverPreview(const QString& iconPath, const QColor& colo
   update();
 }
 
+void StructuralNode::setEmptySlotHovered(bool hovered)
+{
+  behaviour::applyAddCapabilityHover(this, mEmptySlotHovered, hovered);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Mouse events
 // ─────────────────────────────────────────────────────────────────────────────
+
+void StructuralNode::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
+{
+  const bool overSlot = isTaskContainer() && !mIsResizing && !mHoverPreviewActive
+                        && placeholderSlotContainsScenePoint(event->scenePos());
+  setEmptySlotHovered(overSlot);
+  QGraphicsItem::hoverMoveEvent(event);
+}
+
+void StructuralNode::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
+{
+  setEmptySlotHovered(false);
+  NodeItem::hoverLeaveEvent(event);
+}
 
 void StructuralNode::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
@@ -925,6 +943,7 @@ void StructuralNode::mousePressEvent(QGraphicsSceneMouseEvent* event)
     mIsResizing = true;
     mResizeStartMousePos = event->pos();
     mResizeStartSize = mSize;
+    setEmptySlotHovered(false);
     dynamic_cast<QGraphicsView*>(scene()->parent())->setCursor(Qt::SizeFDiagCursor);
     event->accept();
   }

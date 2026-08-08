@@ -1,5 +1,7 @@
 #include "elements/behaviour/call_node.h"
 
+#include <QGraphicsSceneHoverEvent>
+#include <QObject>
 #include <QPainter>
 #include <QPolygonF>
 
@@ -33,6 +35,7 @@ CallNode::CallNode(const QString& id,
     // Clone config so Sync/Async/unset SVG swaps do not mutate the shared library entry.
     : BehaviourNode(id, info, initialPosition, std::make_shared<NodeConfig>(*nodeConfig), parent)
 {
+  setAcceptHoverEvents(true);
   syncNodeSvgFromState();
   syncAbortPortFromMode();
   syncCallLabels();
@@ -48,6 +51,8 @@ void CallNode::setProperty(const QString& key, QVariant value)
     if (key == call_capability::kModeProperty)
       syncAbortPortFromMode();
     syncCallLabels();
+    if (key == call_capability::kCapabilityProperty && hasCapabilitySelected())
+      setEmptySlotHovered(false);
   }
 }
 
@@ -214,6 +219,23 @@ void CallNode::paintEventChip(QPainter* painter) const
   painter->drawPolygon(triangle);
 }
 
+void CallNode::setEmptySlotHovered(bool hovered)
+{
+  behaviour::applyAddCapabilityHover(this, mEmptySlotHovered, hovered);
+}
+
+void CallNode::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
+{
+  setEmptySlotHovered(!hasCapabilitySelected() && capabilitySlotContainsScenePoint(event->scenePos()));
+  QGraphicsItem::hoverMoveEvent(event);
+}
+
+void CallNode::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
+{
+  setEmptySlotHovered(false);
+  NodeItem::hoverLeaveEvent(event);
+}
+
 void CallNode::paintBehaviourExtras(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget)
 {
   Q_UNUSED(style);
@@ -229,5 +251,5 @@ void CallNode::paintBehaviourExtras(QPainter* painter, const QStyleOptionGraphic
   const QRectF drawingBounds = drawingRect(nodeRect());
   const qreal diameter = capabilitySlotDiameter();
   const QPointF center = behaviour::callCapabilityIconCenter(drawingBounds, diameter, false, false);
-  behaviour::paintEmptySlotSvg(painter, center, diameter);
+  behaviour::paintEmptySlotSvg(painter, center, diameter, mEmptySlotHovered);
 }
