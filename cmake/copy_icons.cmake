@@ -71,6 +71,8 @@ file(GLOB APP_ICON_FILES
   ${MISSION_PATH}/node_success.svg
   ${MISSION_PATH}/node_failure.svg
   ${MISSION_PATH}/node_join.svg
+  ${MISSION_PATH}/node_link_in.svg
+  ${MISSION_PATH}/node_link_out.svg
   ${MISSION_PATH}/node_strategy.svg
   ${MISSION_PATH}/node_within.svg
   ${MISSION_PATH}/node_repeat.svg
@@ -95,6 +97,7 @@ file(GLOB APP_ICON_FILES
   ${MISSION_PATH}/capability_timer.svg
   ${MISSION_PATH}/capability_drive.svg
   ${MISSION_PATH}/capability_envsensor.svg
+  ${MISSION_PATH}/capability_occupancysensor.svg
   ${MISSION_PATH}/capability_robotarm.svg
   ${MISSION_PATH}/capability_led.svg
   ${MISSION_PATH}/capability_conveyor.svg

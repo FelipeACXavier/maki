@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 288.42 240.01">
+  <defs>
+    <style>
+      .st0 {
+        fill: #f2f2f2;
+      }
+
+      .st1 {
+        fill: #a87c9f;
+      }
+
+      .st2 {
+        fill: none;
+        stroke: #ffffff;
+        stroke-width: 16;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+    </style>
+  </defs>
+  <!-- Start silhouette (rounded left, pointed right) -->
+  <path class="st0" d="M281.58,97.64l-51.61-78.57C222.29,7.37,208.1.17,192.75.17h-56.08v-.17H35.05C15.68,0,0,15.68,0,35.05v169.91c0,19.37,15.68,35.05,35.04,35.05h157.7c15.36,0,29.55-7.2,37.23-18.9l51.62-78.61c9.11-13.88,9.11-30.98,0-44.86h-.01Z"/>
+  <!-- Accent capsule -->
+  <rect class="st1" x="52" y="52" width="150" height="136" rx="68" ry="68"/>
+  <!-- Chain-link glyph -->
+  <g transform="translate(127,120) rotate(-35)">
+    <ellipse class="st2" cx="-22" cy="0" rx="28" ry="18"/>
+    <ellipse class="st2" cx="22" cy="0" rx="28" ry="18"/>
+  </g>
+</svg>
