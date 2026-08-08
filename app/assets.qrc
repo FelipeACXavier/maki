@@ -113,7 +113,6 @@
     <file alias="button_addflow.svg">assets/icons/mission/button_addflow.svg</file>
     <file alias="button_addsubtask.svg">assets/icons/mission/button_addsubtask.svg</file>
     <file alias="capability_approach.svg">assets/icons/mission/capability_approach.svg</file>
-    <file alias="capability_bridge.svg">assets/icons/mission/capability_bridge.svg</file>
     <file alias="capability_co2sensor.svg">assets/icons/mission/capability_co2sensor.svg</file>
     <file alias="capability_conveyor.svg">assets/icons/mission/capability_conveyor.svg</file>
     <file alias="capability_drive.svg">assets/icons/mission/capability_drive.svg</file>

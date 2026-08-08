@@ -15,7 +15,6 @@
 #include <QStyledItemDelegate>
 #include <QTabWidget>
 #include <QTextBrowser>
-#include <QTimer>
 #include <QToolBar>
 #include <QToolButton>
 #include <QUndoGroup>
@@ -788,16 +787,6 @@ void MainWindowLayout::applyTheme()
     connect(mCanvasPanel->tabBar(), &QTabBar::tabMoved, this, [this](int /* from */, int /* to */) {
       for (int i = 0; i < mCanvasPanel->count(); ++i)
         mCanvasPanel->setTabText(i, mCanvasPanel->tabText(i));
-    });
-  }
-
-  if (mInfoText)
-  {
-    // Update the info text so the welcome message fits
-    QTimer::singleShot(0, this, [this, theme] {
-      int documentHeight = int(std::ceil(mInfoText->document()->documentLayout()->documentSize().height()));
-      int height = documentHeight + mInfoText->contentsMargins().top() + mInfoText->contentsMargins().bottom() + theme.spacing;
-      mInfoText->setMinimumHeight(height);
     });
   }
 
