@@ -554,7 +554,8 @@ QVariant NodeItem::itemChange(GraphicsItemChange change, const QVariant& value)
               continue;
 
             auto* other = static_cast<NodeItem*>(item);
-            if (!other->isSubflowContainer())
+            // keep collapsed blocks in the scene 
+            if (!other->isSubflowContainer() || other->isCollapsedSubflow())
               continue;
 
             // Skip the mover's own attached blocks (Repeat/Within host).

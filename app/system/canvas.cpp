@@ -70,7 +70,8 @@ NodeItem* dropTargetContainer(QGraphicsItem* item, Types::LibraryTypes canvasTyp
     if (item->type() == NodeItem::Type)
     {
       auto* node = static_cast<NodeItem*>(item);
-      if (node->isSubflowContainer() && canvasType == Types::LibraryTypes::BEHAVIOUR)
+      // collapsed blocks stay hidden and don't capture drops
+      if (node->isSubflowContainer() && canvasType == Types::LibraryTypes::BEHAVIOUR && !node->isCollapsedSubflow())
         return node;
 
       for (NodeItem* cur = node; cur; cur = cur->parentNode())
@@ -93,7 +94,7 @@ NodeItem* dropTargetContainer(QGraphicsItem* item, Types::LibraryTypes canvasTyp
         continue;
 
       auto* node = static_cast<NodeItem*>(gi);
-      if (!node->isSubflowContainer())
+      if (!node->isSubflowContainer() || node->isCollapsedSubflow())
         continue;
 
       if (node->mapRectToScene(node->nodeRect()).contains(scenePos))
@@ -275,15 +276,6 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
   if (event->mimeData()->hasFormat(Constants::TYPE_NODE))
   {
     NodeItem* parentNode = dropTargetContainer(itemAt(event->scenePos(), QTransform()), type(), this, event->scenePos());
-
-    // A collapsed subflow block hides its contents, so refuse drops into it.
-    if (parentNode && parentNode->isCollapsedSubflow())
-    {
-      event->ignore();
-      if (auto* view = dynamic_cast<QGraphicsView*>(parent()))
-        view->setCursor(Qt::ArrowCursor);
-      return;
-    }
 
     // Make sure that no other nodes are selected before dropping
     clearSelectedNodes();
