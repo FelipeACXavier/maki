@@ -15,6 +15,7 @@
 #include "elements/behaviour/success_node.h"
 #include "elements/behaviour/sync_task_node.h"
 #include "elements/behaviour/terminate_node.h"
+#include "elements/behaviour/wait_node.h"
 #include "elements/behaviour/within_node.h"
 #include "elements/node.h"
 #include "elements/structural_node.h"
@@ -55,6 +56,7 @@ void registerKodaBehaviourTypes()
   NodeFactory::registerType(QStringLiteral("Koda::Link out"), makeNode<LinkOutNode>);
   NodeFactory::registerType(QStringLiteral("Koda::Within"), makeNode<WithinNode>);
   NodeFactory::registerType(QStringLiteral("Koda::Repeat"), makeNode<RepeatNode>);
+  NodeFactory::registerType(QStringLiteral("Koda::Wait"), makeNode<WaitNode>);
 }
 }  // namespace
 

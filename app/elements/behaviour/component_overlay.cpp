@@ -63,7 +63,7 @@ void renderSvgInEllipse(QPainter* painter, const QString& svgPath, const QPointF
 
 std::shared_ptr<NodeSaveInfo> selectedComponentCaller(const NodeItem* node, const SaveInfo& storage)
 {
-  if (call_capability::isCallNodeType(node->nodeType()))
+  if (call_capability::isCallNodeType(node->nodeType()) || call_capability::isWaitNodeType(node->nodeType()))
   {
     const QString capabilityId = call_capability::resolveCapabilityId(*node, storage);
     if (capabilityId.isEmpty())
@@ -255,6 +255,13 @@ QPointF callCapabilityIconCenter(const QRectF& drawingBounds,
   return center;
 }
 
+QPointF waitCapabilityIconCenter(const QRectF& drawingBounds)
+{
+  QPointF center = drawingBounds.center();
+  center.ry() += drawingBounds.height() * kWaitCapabilityVerticalOffsetFactor;
+  return center;
+}
+
 QRectF callEventChipLocalRect(const QRectF& drawingBounds, qreal diameter, bool withEventLabel)
 {
   if (diameter <= 0.0)
@@ -278,9 +285,11 @@ void paintSelectedComponentOverlay(const NodeItem* node, QPainter* painter)
   painter->setRenderHint(QPainter::Antialiasing, true);
 
   const bool isCall = call_capability::isCallNodeType(node->nodeType());
-  // Call already has its own SVG body; the task overlay preview's dashed slot would ghost
+  const bool isWait = call_capability::isWaitNodeType(node->nodeType());
+  const bool isCapabilitySlotNode = isCall || isWait;
+  // Call/Wait already have their own SVG body; the task overlay preview's dashed slot would ghost
   // if the capability icon is nudged away from the geometric centre.
-  if (!isCall)
+  if (!isCapabilitySlotNode)
     paintStructuralTaskOverlayPreview(painter, drawingBounds, QPen(Config::FOREGROUND, 1.0));
 
   if (node->config()->body.nodeSvg.isEmpty())
@@ -304,20 +313,25 @@ void paintSelectedComponentOverlay(const NodeItem* node, QPainter* painter)
     return;
 
   const QString iconPath = selectedComponentIconPath(caller, configTable);
-  // Call shows the selected event under the icon (capability title lives in the node label).
-  const QString underIconLabel = isCall ? call_capability::currentEventName(*node)
-                                        : caller->getProperty(ConfigKeys::NAME).toString().trimmed();
+  // Call: event name under icon. Wait: none (title already names the capability). Else: caller name.
+  QString underIconLabel;
+  if (isCall)
+    underIconLabel = call_capability::currentEventName(*node);
+  else if (!isWait)
+    underIconLabel = caller->getProperty(ConfigKeys::NAME).toString().trimmed();
   const bool showUnderIconLabel = !underIconLabel.isEmpty();
   if (iconPath.isEmpty() && !showUnderIconLabel)
     return;
 
+  const qreal diameterFactor = isWait ? kWaitComponentOverlayDiameterFactor : kComponentOverlayDiameterFactor;
   const qreal diameter = qMin(drawingBounds.width(), drawingBounds.height()) * node->config()->body.iconScale
-                         * kComponentOverlayDiameterFactor;
+                         * diameterFactor;
   const qreal radius = diameter * 0.5;
-  const QPointF center = isCall ? callCapabilityIconCenter(drawingBounds, diameter, showUnderIconLabel, true)
-                                : drawingBounds.center();
+  const QPointF center = isWait ? waitCapabilityIconCenter(drawingBounds)
+                                : (isCall ? callCapabilityIconCenter(drawingBounds, diameter, showUnderIconLabel, true)
+                                          : drawingBounds.center());
 
-  painter->setPen(isCall ? Qt::NoPen : QPen(Qt::black, 1.0 / node->baseScale()));
+  painter->setPen(isCapabilitySlotNode ? Qt::NoPen : QPen(Qt::black, 1.0 / node->baseScale()));
   painter->setBrush(QBrush(callerBackgroundColor(*caller, configTable)));
   painter->drawEllipse(center, radius, radius);
   if (!iconPath.isEmpty())

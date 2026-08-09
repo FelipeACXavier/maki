@@ -10,6 +10,15 @@
 #include "system/canvas.h"
 #include "system/edge_router.h"
 
+namespace
+{
+/** Combo placeholder "-" means no event; never paint it on the canvas. */
+QString normalizedEventLabel(const QString& event)
+{
+  return (event == Constants::EMPTY_COMBO) ? QString() : event;
+}
+}  // namespace
+
 TransitionItem::TransitionItem(std::shared_ptr<TransitionSaveInfo> storage)
     : QGraphicsPathItem()
     , mId((!storage->getid().isEmpty() && !storage->getid().isNull()) ? storage->getid() : QUuid::createUuid().toString())
@@ -27,8 +36,7 @@ TransitionItem::TransitionItem(std::shared_ptr<TransitionSaveInfo> storage)
   QFont labelFont = Fonts::Main;
   labelFont.setPointSizeF(Fonts::BaseSize);
   mLabel->setFont(labelFont);
-  mLabel->setPlainText(mStorage->getevent());
-  updateLabelPosition();
+  setEvent(mStorage->getevent());
 
   mStorage->setId(id());
 }
@@ -250,15 +258,16 @@ void TransitionItem::updateLabelPosition()
 
 QString TransitionItem::getEvent() const
 {
-  return mStorage->getevent();
+  return normalizedEventLabel(mStorage->getevent());
 }
 
 void TransitionItem::setEvent(const QString& name)
 {
-  mStorage->setEvent(name);
+  const QString normalized = normalizedEventLabel(name);
+  mStorage->setEvent(normalized);
   if (!mLabel)
     return;
 
-  mLabel->setPlainText(name);
+  mLabel->setPlainText(normalized);
   updateLabelPosition();
 }

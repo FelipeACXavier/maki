@@ -40,6 +40,7 @@
 #include "elements/behaviour/call_node.h"
 #include "elements/behaviour/component_overlay.h"
 #include "elements/behaviour/subflow_block.h"
+#include "elements/behaviour/wait_node.h"
 #include "elements/flow.h"
 #include "elements/node.h"
 #include "elements/node_factory.h"
@@ -508,6 +509,34 @@ void Canvas::openCallConfigPopup(NodeItem* callNode)
   CallConfigPopup::open(view, call, storage.get(), mConfigTable.get(), globalAnchor);
 }
 
+void Canvas::openWaitCapabilityMenu(NodeItem* waitNode)
+{
+  auto* wait = dynamic_cast<WaitNode*>(waitNode);
+  if (!wait || type() != Types::LibraryTypes::BEHAVIOUR)
+    return;
+
+  CanvasView* view = parentView();
+  auto storage = projectStorage();
+  if (!view || !storage)
+    return;
+
+  QVector<CapabilityIconMenuItem> items;
+  for (const auto& item : CapabilityIconMenu::itemsFromPossibleCallers(*storage, wait->id(), mConfigTable.get()))
+  {
+    const auto outs = storage->getEventsOfTypeFromNode(item.id, {Types::CallType::OUT});
+    if (!outs.isEmpty())
+      items.push_back(item);
+  }
+
+  const QRectF slotRect = wait->capabilitySlotSceneRect();
+  const QPointF anchorScene(slotRect.center().x(), slotRect.bottom() + 4.0);
+  const QPoint globalAnchor = view->viewport()->mapToGlobal(view->mapFromScene(anchorScene));
+
+  CapabilityIconMenu::exec(view, items, globalAnchor,
+                           [wait](const CapabilityIconMenuItem& selected) { wait->assignCapability(selected.name); },
+                           QObject::tr("No capabilities with OUT events"));
+}
+
 bool Canvas::isModifierSet(QGraphicsSceneMouseEvent* event, Qt::KeyboardModifier modifier)
 {
   return (event->modifiers() & modifier) > 0;
@@ -554,6 +583,15 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
           {
             event->accept();
             openCallConfigPopup(call);
+            return;
+          }
+        }
+        if (auto* wait = dynamic_cast<WaitNode*>(node))
+        {
+          if (wait->capabilitySlotContainsScenePoint(event->scenePos()))
+          {
+            event->accept();
+            openWaitCapabilityMenu(wait);
             return;
           }
         }

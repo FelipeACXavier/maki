@@ -610,6 +610,7 @@ private:
   void updateCapabilityDropPreview(const QPointF& scenePos);
   void openCapabilityMenu(NodeItem* task);
   void openCallConfigPopup(NodeItem* callNode);
+  void openWaitCapabilityMenu(NodeItem* waitNode);
   void addSubtaskTo(NodeItem* task);
   void ensureNodeActionMenu();
   TransitionItem* transitionAt(const QPointF& scenePos) const;

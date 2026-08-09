@@ -505,7 +505,20 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertyInfo& prope
   }
 
   layout()->addWidget(widget);
-  if (!property.getoptions().empty())
+  if (property.getoptions().empty())
+  {
+    // Option-less component_select (e.g. Wait): persist name only.
+    connect(widget, &maki::SelectorWidget::dataChanged, this,
+            [node, property](const QString& component, const QVariant& nodeId) {
+              if (!node || !nodeId.isValid())
+                return;
+              if (call_capability::isWaitNodeType(node->nodeType()))
+                call_capability::applyCapabilitySelectionNameOnly(*node, component);
+              else
+                UPDATE_PROPERTY(node, property.getid(), component)
+            });
+  }
+  else
   {
     for (const auto& option : property.getoptions())
     {
@@ -1036,9 +1049,10 @@ VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)
   eventWidget->setValue(currentEvent.isEmpty() ? Constants::EMPTY_COMBO : currentEvent);
 
   connect(eventWidget, &maki::SelectorWidget::dataChanged, this, [transition](const QString& text, const QVariant& data) {
+    // TransitionItem::setEvent normalizes EMPTY_COMBO ("-") to an empty label.
     transition->setEvent(text);
     transition->setName(data.toString());
-    LOG_TRACE("Setting transition to: %s and %s", qPrintable(text), qPrintable(data.toString()));
+    LOG_TRACE("Setting transition to: %s and %s", qPrintable(transition->getEvent()), qPrintable(data.toString()));
   });
 
   QPushButton* button = new QPushButton(this);
@@ -1425,8 +1439,8 @@ void PropertiesMenu::updateBlockName(NodeItem* node, const QString& componentNam
   if (!node)
     return;
 
-  // Call auto-title is owned by CallNode::syncCallLabels ("Async/Sync Call to <capability>").
-  if (call_capability::isCallNodeType(node->nodeType()))
+  // Call / Wait auto-titles are owned by the node classes themselves.
+  if (call_capability::isCallNodeType(node->nodeType()) || call_capability::isWaitNodeType(node->nodeType()))
     return;
 
   // Sanity check, make sure the name property exists

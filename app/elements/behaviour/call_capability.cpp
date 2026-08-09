@@ -59,6 +59,11 @@ bool isCallNodeType(const QString& nodeType)
   return nodeType == QStringLiteral("Koda::Call");
 }
 
+bool isWaitNodeType(const QString& nodeType)
+{
+  return nodeType == QStringLiteral("Koda::Wait");
+}
+
 bool hasCapabilitySelected(const NodeItem& node)
 {
   const QString data = capabilityName(node);
@@ -178,6 +183,14 @@ void applyCapabilitySelection(NodeItem& node,
     return;
 
   applyModeAndEvent(node, mode, eventName);
+}
+
+void applyCapabilitySelectionNameOnly(NodeItem& node, const QString& name)
+{
+  if (name.isEmpty())
+    return;
+
+  writeCapabilityData(node, name, QJsonArray());
 }
 
 void applyModeAndEvent(NodeItem& node, const QString& mode, const QString& eventName)

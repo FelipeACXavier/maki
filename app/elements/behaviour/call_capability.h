@@ -8,7 +8,7 @@
 class NodeItem;
 class SaveInfo;
 
-/** Shared Call-node domain rules (mode / events / capability assignment / options JSON). */
+/** Shared Call / Wait capability rules (mode / events / assignment / options JSON). */
 namespace call_capability
 {
 inline const QString kModeProperty = QStringLiteral("call_mode");
@@ -24,6 +24,7 @@ inline constexpr int kEventIndex = 0;
 inline constexpr int kArgIndex = kEventIndex + 1;
 
 bool isCallNodeType(const QString& nodeType);
+bool isWaitNodeType(const QString& nodeType);
 bool hasCapabilitySelected(const NodeItem& node);
 
 bool canAsync(const SaveInfo& storage, const QString& capabilityId);
@@ -61,6 +62,9 @@ void applyCapabilitySelection(NodeItem& node,
                               const QString& capabilityName,
                               const QString& capabilityId,
                               SaveInfo* storage);
+
+/** Writes capability.data only (empty options). Used by Wait — no call_mode / event. */
+void applyCapabilitySelectionNameOnly(NodeItem& node, const QString& capabilityName);
 
 /** Sets call_mode and the nested event selection together (preserves args when event is unchanged). */
 void applyModeAndEvent(NodeItem& node, const QString& mode, const QString& eventName);

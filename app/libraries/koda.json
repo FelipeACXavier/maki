@@ -1535,6 +1535,41 @@
             "in",
             "out"
           ]
+        },
+        {
+          "type": "Wait",
+          "body": {
+            "shape": "rounded rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#202020",
+            "borderColor": "#FFFFFF",
+            "borderRadius": 10,
+            "width": 100,
+            "height": 100,
+            "iconColor": "#FFFFFF",
+            "iconScale": 0.8,
+            "icon": "",
+            "nodeSvg": "node_wait.svg"
+          },
+          "help": {
+            "message": "Wait for a signal from the selected capability. Drag from the out port to author 'on <capability>.<event>' transitions."
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": "Wait"
+            },
+            {
+              "id": "capability",
+              "type": "component_select"
+            }
+          ],
+          "controls": [],
+          "ports": [
+            "in",
+            "out"
+          ]
         }
       ]
     }

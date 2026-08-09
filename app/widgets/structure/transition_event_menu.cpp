@@ -4,6 +4,7 @@
 #include <QVBoxLayout>
 
 #include "app_configs.h"
+#include "elements/behaviour/call_capability.h"
 #include "elements/node.h"
 #include "elements/transition.h"
 #include "keys.h"
@@ -37,6 +38,7 @@ TransitionEventMenu::TransitionEventMenu(QWidget* parent)
     const QString data = mCombo->itemData(index).toString();
 
     mCombo->blockSignals(true);
+    // TransitionItem::setEvent normalizes EMPTY_COMBO ("-") to an empty label.
     mTransition->setEvent(display);
     mTransition->setName(data);
     mTransition->updatePath();
@@ -51,6 +53,23 @@ QVector<QPair<QString, QString>> TransitionEventMenu::buildOptions(NodeItem* sou
   QVector<QPair<QString, QString>> options;
   if (!source)
     return options;
+
+  // Wait: only OUT events of the capability selected on this node (no abort/error).
+  if (call_capability::isWaitNodeType(source->nodeType()))
+  {
+    if (!storage)
+      return options;
+
+    const QString capabilityId = call_capability::resolveCapabilityId(*source, *storage);
+    const QString capabilityName = call_capability::capabilityName(*source);
+    if (capabilityId.isEmpty() || capabilityName.isEmpty())
+      return options;
+
+    const auto events = storage->getEventsOfTypeFromNode(capabilityId, {Types::CallType::OUT});
+    for (const auto& event : events)
+      options.append(qMakePair(capabilityName + QStringLiteral(".") + event->getname(), QStringLiteral("on")));
+    return options;
+  }
 
   for (const auto& t : source->configTransitions())
     options.append(qMakePair(t.event, t.event));

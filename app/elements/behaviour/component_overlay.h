@@ -11,6 +11,15 @@ namespace behaviour
 /** Diameter of the capability/empty-slot circle relative to node body * iconScale. */
 inline constexpr qreal kComponentOverlayDiameterFactor = 0.40;
 
+/** Wait capability slot diameter relative to node body * iconScale. */
+inline constexpr qreal kWaitComponentOverlayDiameterFactor = 0.40;
+
+/** Vertical nudge (fraction of drawing height) for Wait's slot under the pause glyph. */
+inline constexpr qreal kWaitCapabilityVerticalOffsetFactor = 0.14;
+
+/** Canvas body SVG for Wait (pause raised; room for the capability slot below). */
+inline const QString kWaitNodeSvgCapability = QStringLiteral("node_wait_capability.svg");
+
 /** Gap between the Call capability icon and its event-name label. */
 inline constexpr qreal kCallCapabilityLabelGap = 4.0;
 
@@ -30,7 +39,7 @@ void paintSelectedComponentOverlay(const NodeItem* node, QPainter* painter);
 void paintEmptySlotSvg(QPainter* painter, const QPointF& center, qreal diameter, bool hovered = false);
 
 /**
- * Shared empty-slot hover feedback (cursor, tooltip, repaint) for Task / Call nodes.
+ * Shared empty-slot hover feedback (cursor, tooltip, repaint) for Task / Call / Wait.
  * No-op when @p hoveredState already matches @p hovered.
  */
 void applyAddCapabilityHover(QGraphicsItem* item, bool& hoveredState, bool hovered);
@@ -43,6 +52,9 @@ QPointF callCapabilityIconCenter(const QRectF& drawingBounds,
                                  qreal diameter,
                                  bool withEventLabel,
                                  bool withEventChip = false);
+
+/** Local-coord center for a Wait capability / empty slot under the pause glyph. */
+QPointF waitCapabilityIconCenter(const QRectF& drawingBounds);
 
 /** Local rect for the Call event expand chip (empty if not applicable). */
 QRectF callEventChipLocalRect(const QRectF& drawingBounds, qreal diameter, bool withEventLabel);
