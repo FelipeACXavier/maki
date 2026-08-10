@@ -21,7 +21,31 @@ public:
    */
     virtual std::any visitSystem(KodaParser::SystemContext *context) = 0;
 
+    virtual std::any visitTopLevelDeclaration(KodaParser::TopLevelDeclarationContext *context) = 0;
+
     virtual std::any visitTopLevelComponent(KodaParser::TopLevelComponentContext *context) = 0;
+
+    virtual std::any visitTypeRecord(KodaParser::TypeRecordContext *context) = 0;
+
+    virtual std::any visitTypeAlias(KodaParser::TypeAliasContext *context) = 0;
+
+    virtual std::any visitEnumDeclaration(KodaParser::EnumDeclarationContext *context) = 0;
+
+    virtual std::any visitFieldDeclaration(KodaParser::FieldDeclarationContext *context) = 0;
+
+    virtual std::any visitEnumValue(KodaParser::EnumValueContext *context) = 0;
+
+    virtual std::any visitEnumLiteral(KodaParser::EnumLiteralContext *context) = 0;
+
+    virtual std::any visitTypeNamed(KodaParser::TypeNamedContext *context) = 0;
+
+    virtual std::any visitTypeList(KodaParser::TypeListContext *context) = 0;
+
+    virtual std::any visitTypeOptional(KodaParser::TypeOptionalContext *context) = 0;
+
+    virtual std::any visitTypeMap(KodaParser::TypeMapContext *context) = 0;
+
+    virtual std::any visitQualifiedName(KodaParser::QualifiedNameContext *context) = 0;
 
     virtual std::any visitArgumentList(KodaParser::ArgumentListContext *context) = 0;
 

@@ -1,14 +1,28 @@
 #include "cst2ast.h"
 
 #include <memory>
+#include <stdexcept>
 #include <variant>
 
 #include "ast.h"
+#include "ast_helpers.h"
 #include "logging.h"
 
-koda::System KodaCST2AST::build(KodaParser::SystemContext* ctx)
+namespace koda
+{
+CST2AST::CST2AST()
+    : KodaBaseVisitor()
+{
+  mTypeRegistry.registerBuiltinTypes();
+}
+
+koda::System CST2AST::build(KodaParser::SystemContext* ctx)
 {
   auto anySys = visitSystem(ctx);
+
+  LOG_INFO("Available types:");
+  mTypeRegistry.print();
+
   return std::any_cast<koda::System>(anySys);
 }
 
@@ -16,21 +30,44 @@ koda::System KodaCST2AST::build(KodaParser::SystemContext* ctx)
 // Top-level
 // -------------------------
 
-std::any KodaCST2AST::visitSystem(KodaParser::SystemContext* ctx)
+std::any CST2AST::visitSystem(KodaParser::SystemContext* ctx)
 {
   if (!ctx)
     throw std::invalid_argument("No KodaParser::SystemContext provided");
 
+  // First, collect all the defined types
+  for (auto* declaration : ctx->topLevelDeclaration())
+  {
+    if (auto* type = declaration->typeDeclaration())
+    {
+      auto definition = convertTypeDeclaration(type);
+      const auto result = mTypeRegistry.add(std::move(definition));
+      if (!result.IsSuccess())
+        throw std::runtime_error(result.ErrorMessage());
+
+      continue;
+    }
+
+    if (auto* enumeration = declaration->enumDeclaration())
+    {
+      auto definition = convertEnumDeclaration(enumeration);
+      const auto result = mTypeRegistry.add(std::move(definition));
+      if (!result.IsSuccess())
+        throw std::runtime_error(result.ErrorMessage());
+    }
+  }
+
   // LOG_DEBUG("Visiting system");
   koda::System sys;
-  for (auto* c : ctx->topLevelComponent())
-    sys.components.push_back(std::any_cast<koda::PComponent>(visit(c)));
+  for (auto* declaration : ctx->topLevelDeclaration())
+    if (auto* topLevel = declaration->topLevelComponent(); topLevel)
+      sys.components.push_back(std::any_cast<koda::PComponent>(visit(topLevel)));
 
   // LOG_DEBUG("Done visiting system");
   return sys;
 }
 
-std::any KodaCST2AST::visitTopLevelComponent(KodaParser::TopLevelComponentContext* ctx)
+std::any CST2AST::visitTopLevelComponent(KodaParser::TopLevelComponentContext* ctx)
 {
   auto c = std::make_shared<koda::Component>();
   c->span = spanOf(ctx);
@@ -53,7 +90,7 @@ std::any KodaCST2AST::visitTopLevelComponent(KodaParser::TopLevelComponentContex
   return c;
 }
 
-std::any KodaCST2AST::visitArgumentList(KodaParser::ArgumentListContext* ctx)
+std::any CST2AST::visitArgumentList(KodaParser::ArgumentListContext* ctx)
 {
   // LOG_DEBUG("Visiting argument list");
   std::vector<koda::PArgument> out;
@@ -63,7 +100,7 @@ std::any KodaCST2AST::visitArgumentList(KodaParser::ArgumentListContext* ctx)
   return out;
 }
 
-std::any KodaCST2AST::visitArgPlain(KodaParser::ArgPlainContext* ctx)
+std::any CST2AST::visitArgPlain(KodaParser::ArgPlainContext* ctx)
 {
   // LOG_DEBUG("Visiting arg plain");
   auto a = std::make_shared<koda::Argument>();
@@ -74,7 +111,7 @@ std::any KodaCST2AST::visitArgPlain(KodaParser::ArgPlainContext* ctx)
   return a;
 }
 
-std::any KodaCST2AST::visitArgReq(KodaParser::ArgReqContext* ctx)
+std::any CST2AST::visitArgReq(KodaParser::ArgReqContext* ctx)
 {
   // LOG_DEBUG("Visiting arg req");
   auto a = std::make_shared<koda::Argument>();
@@ -85,7 +122,7 @@ std::any KodaCST2AST::visitArgReq(KodaParser::ArgReqContext* ctx)
   return a;
 }
 
-std::any KodaCST2AST::visitArgPro(KodaParser::ArgProContext* ctx)
+std::any CST2AST::visitArgPro(KodaParser::ArgProContext* ctx)
 {
   // LOG_DEBUG("Visiting arg pro");
   auto a = std::make_shared<koda::Argument>();
@@ -100,7 +137,7 @@ std::any KodaCST2AST::visitArgPro(KodaParser::ArgProContext* ctx)
 // Statements
 // -------------------------
 
-std::any KodaCST2AST::visitStatement(KodaParser::StatementContext* ctx)
+std::any CST2AST::visitStatement(KodaParser::StatementContext* ctx)
 {
   // LOG_DEBUG("Visiting statement");
   auto s = std::make_shared<koda::Statement>();
@@ -126,7 +163,7 @@ std::any KodaCST2AST::visitStatement(KodaParser::StatementContext* ctx)
   return s;
 }
 
-std::any KodaCST2AST::visitTasksBlock(KodaParser::TasksBlockContext* ctx)
+std::any CST2AST::visitTasksBlock(KodaParser::TasksBlockContext* ctx)
 {
   // LOG_DEBUG("Visiting tasks block");
   auto sb = std::make_shared<koda::StrategyBlock>();
@@ -139,7 +176,7 @@ std::any KodaCST2AST::visitTasksBlock(KodaParser::TasksBlockContext* ctx)
   return sb;
 }
 
-std::any KodaCST2AST::visitFlow(KodaParser::FlowContext* ctx)
+std::any CST2AST::visitFlow(KodaParser::FlowContext* ctx)
 {
   // LOG_DEBUG("Visiting flow");
   auto f = std::make_shared<koda::Flow>();
@@ -168,7 +205,7 @@ std::any KodaCST2AST::visitFlow(KodaParser::FlowContext* ctx)
   return f;
 }
 
-std::any KodaCST2AST::visitIdentList(KodaParser::IdentListContext* ctx)
+std::any CST2AST::visitIdentList(KodaParser::IdentListContext* ctx)
 {
   // LOG_DEBUG("Visiting ident list");
   std::vector<std::string> out;
@@ -178,7 +215,7 @@ std::any KodaCST2AST::visitIdentList(KodaParser::IdentListContext* ctx)
   return out;
 }
 
-std::any KodaCST2AST::visitVarsBlock(KodaParser::VarsBlockContext* ctx)
+std::any CST2AST::visitVarsBlock(KodaParser::VarsBlockContext* ctx)
 {
   // LOG_DEBUG("Visiting vars block");
   auto vb = std::make_shared<koda::VarsBlock>();
@@ -190,7 +227,7 @@ std::any KodaCST2AST::visitVarsBlock(KodaParser::VarsBlockContext* ctx)
   return vb;
 }
 
-std::any KodaCST2AST::visitVariableStatement(KodaParser::VariableStatementContext* ctx)
+std::any CST2AST::visitVariableStatement(KodaParser::VariableStatementContext* ctx)
 {
   // LOG_DEBUG("Visiting variable statement");
   auto v = std::make_shared<koda::VarDef>();
@@ -206,19 +243,19 @@ std::any KodaCST2AST::visitVariableStatement(KodaParser::VariableStatementContex
 }
 
 // Action/service/topic blocks mapped to same IR (ActionDef)
-std::any KodaCST2AST::visitActionBlock(KodaParser::ActionBlockContext* ctx)
+std::any CST2AST::visitActionBlock(KodaParser::ActionBlockContext* ctx)
 {
   // LOG_DEBUG("Visiting action block");
   return buildActionLike(ctx, koda::ActionDef::Kind::Action);
 }
 
-std::any KodaCST2AST::visitServiceBlock(KodaParser::ServiceBlockContext* ctx)
+std::any CST2AST::visitServiceBlock(KodaParser::ServiceBlockContext* ctx)
 {
   // LOG_DEBUG("Visiting service block");
   return buildActionLike(ctx, koda::ActionDef::Kind::Service);
 }
 
-std::any KodaCST2AST::visitTopicBlock(KodaParser::TopicBlockContext* ctx)
+std::any CST2AST::visitTopicBlock(KodaParser::TopicBlockContext* ctx)
 {
   // LOG_DEBUG("Visiting topic block");
   return buildActionLike(ctx, koda::ActionDef::Kind::Topic);
@@ -228,7 +265,7 @@ std::any KodaCST2AST::visitTopicBlock(KodaParser::TopicBlockContext* ctx)
 // ROS defs
 // -------------------------
 
-std::any KodaCST2AST::visitRosDefStatement(KodaParser::RosDefStatementContext* ctx)
+std::any CST2AST::visitRosDefStatement(KodaParser::RosDefStatementContext* ctx)
 {
   // LOG_DEBUG("Visiting ROS def statement");
   auto r = std::make_shared<koda::RosDef>();
@@ -253,7 +290,7 @@ std::any KodaCST2AST::visitRosDefStatement(KodaParser::RosDefStatementContext* c
   return r;
 }
 
-std::any KodaCST2AST::visitEventDefStatement(KodaParser::EventDefStatementContext* ctx)
+std::any CST2AST::visitEventDefStatement(KodaParser::EventDefStatementContext* ctx)
 {
   // LOG_DEBUG("Visiting event def statement");
 
@@ -285,7 +322,7 @@ std::any KodaCST2AST::visitEventDefStatement(KodaParser::EventDefStatementContex
 // Strategy
 // -------------------------
 
-std::any KodaCST2AST::visitStratSeq(KodaParser::StratSeqContext* ctx)
+std::any CST2AST::visitStratSeq(KodaParser::StratSeqContext* ctx)
 {
   // LOG_DEBUG("Visiting Stategy sequence");
   auto value = std::make_shared<koda::Strategy::Seq>();
@@ -320,7 +357,7 @@ std::any KodaCST2AST::visitStratSeq(KodaParser::StratSeqContext* ctx)
   return node;
 }
 
-std::any KodaCST2AST::visitStratJoin(KodaParser::StratJoinContext* ctx)
+std::any CST2AST::visitStratJoin(KodaParser::StratJoinContext* ctx)
 {
   // LOG_DEBUG("Visiting Join sequence");
   auto value = std::make_shared<koda::Strategy::Join>();
@@ -333,7 +370,7 @@ std::any KodaCST2AST::visitStratJoin(KodaParser::StratJoinContext* ctx)
   return node;
 }
 
-std::any KodaCST2AST::visitStratEither(KodaParser::StratEitherContext* ctx)
+std::any CST2AST::visitStratEither(KodaParser::StratEitherContext* ctx)
 {
   // LOG_DEBUG("Visiting Either sequence");
   auto value = std::make_shared<koda::Strategy::Either>();
@@ -346,7 +383,7 @@ std::any KodaCST2AST::visitStratEither(KodaParser::StratEitherContext* ctx)
   return node;
 }
 
-std::any KodaCST2AST::visitStratWithin(KodaParser::StratWithinContext* ctx)
+std::any CST2AST::visitStratWithin(KodaParser::StratWithinContext* ctx)
 {
   // LOG_DEBUG("Visiting Within");
   auto value = std::make_shared<koda::Strategy::Within>();
@@ -360,7 +397,7 @@ std::any KodaCST2AST::visitStratWithin(KodaParser::StratWithinContext* ctx)
   return node;
 }
 
-std::any KodaCST2AST::visitStratIfElse(KodaParser::StratIfElseContext* ctx)
+std::any CST2AST::visitStratIfElse(KodaParser::StratIfElseContext* ctx)
 {
   // LOG_DEBUG("Visiting If-Else");
   auto value = std::make_shared<koda::Strategy::IfElse>();
@@ -374,7 +411,7 @@ std::any KodaCST2AST::visitStratIfElse(KodaParser::StratIfElseContext* ctx)
   return node;
 }
 
-std::any KodaCST2AST::visitStratRepeat(KodaParser::StratRepeatContext* ctx)
+std::any CST2AST::visitStratRepeat(KodaParser::StratRepeatContext* ctx)
 {
   // LOG_DEBUG("Visiting Repeat");
   auto value = std::make_shared<koda::Strategy::Repeat>();
@@ -394,7 +431,7 @@ std::any KodaCST2AST::visitStratRepeat(KodaParser::StratRepeatContext* ctx)
   return node;
 }
 
-std::any KodaCST2AST::visitStratGuard(KodaParser::StratGuardContext* ctx)
+std::any CST2AST::visitStratGuard(KodaParser::StratGuardContext* ctx)
 {
   // LOG_DEBUG("Visiting Guard");
   auto value = std::make_shared<koda::Strategy::Guard>();
@@ -407,7 +444,7 @@ std::any KodaCST2AST::visitStratGuard(KodaParser::StratGuardContext* ctx)
   return node;
 }
 
-std::any KodaCST2AST::visitStratEnd(KodaParser::StratEndContext* ctx)
+std::any CST2AST::visitStratEnd(KodaParser::StratEndContext* ctx)
 {
   // LOG_DEBUG("Visiting End");
   auto value = std::make_shared<koda::Strategy::End>();
@@ -418,7 +455,7 @@ std::any KodaCST2AST::visitStratEnd(KodaParser::StratEndContext* ctx)
   return node;
 }
 
-std::any KodaCST2AST::visitStratContinue(KodaParser::StratContinueContext* ctx)
+std::any CST2AST::visitStratContinue(KodaParser::StratContinueContext* ctx)
 {
   // LOG_DEBUG("Visiting Continue");
   auto value = std::make_shared<koda::Strategy::Continue>();
@@ -429,7 +466,7 @@ std::any KodaCST2AST::visitStratContinue(KodaParser::StratContinueContext* ctx)
   return node;
 }
 
-std::any KodaCST2AST::visitStratRef(KodaParser::StratRefContext* ctx)
+std::any CST2AST::visitStratRef(KodaParser::StratRefContext* ctx)
 {
   // LOG_DEBUG("Visiting Reference");
   auto value = std::make_shared<koda::Strategy::Ref>();
@@ -442,7 +479,7 @@ std::any KodaCST2AST::visitStratRef(KodaParser::StratRefContext* ctx)
   return node;
 }
 
-std::any KodaCST2AST::visitStratParen(KodaParser::StratParenContext* ctx)
+std::any CST2AST::visitStratParen(KodaParser::StratParenContext* ctx)
 {
   // LOG_DEBUG("Visiting Parenthesis");
   auto value = std::make_shared<koda::Strategy::Paren>();
@@ -455,7 +492,7 @@ std::any KodaCST2AST::visitStratParen(KodaParser::StratParenContext* ctx)
   return node;
 }
 
-std::any KodaCST2AST::visitStratTask(KodaParser::StratTaskContext* ctx)
+std::any CST2AST::visitStratTask(KodaParser::StratTaskContext* ctx)
 {
   // LOG_DEBUG("Visiting Task");
   auto value = std::make_shared<koda::Strategy::TaskCall>();
@@ -470,7 +507,7 @@ std::any KodaCST2AST::visitStratTask(KodaParser::StratTaskContext* ctx)
   return node;
 }
 
-std::any KodaCST2AST::visitHandlerOnError(KodaParser::HandlerOnErrorContext* ctx)
+std::any CST2AST::visitHandlerOnError(KodaParser::HandlerOnErrorContext* ctx)
 {
   // LOG_DEBUG("Visiting On error");
 
@@ -482,7 +519,7 @@ std::any KodaCST2AST::visitHandlerOnError(KodaParser::HandlerOnErrorContext* ctx
   return value;
 }
 
-std::any KodaCST2AST::visitHandlerOnAbort(KodaParser::HandlerOnAbortContext* ctx)
+std::any CST2AST::visitHandlerOnAbort(KodaParser::HandlerOnAbortContext* ctx)
 {
   // LOG_DEBUG("Visiting on abort");
   auto value = std::make_shared<koda::StrategyHandler>();
@@ -493,7 +530,7 @@ std::any KodaCST2AST::visitHandlerOnAbort(KodaParser::HandlerOnAbortContext* ctx
   return value;
 }
 
-std::any KodaCST2AST::visitHandlerOnEmitter(KodaParser::HandlerOnEmitterContext* ctx)
+std::any CST2AST::visitHandlerOnEmitter(KodaParser::HandlerOnEmitterContext* ctx)
 {
   // LOG_DEBUG("Visiting on signal");
   auto value = std::make_shared<koda::StrategyHandler>();
@@ -512,7 +549,7 @@ std::any KodaCST2AST::visitHandlerOnEmitter(KodaParser::HandlerOnEmitterContext*
 // Event calls
 // -------------------------
 
-std::any KodaCST2AST::visitEvCall(KodaParser::EvCallContext* ctx)
+std::any CST2AST::visitEvCall(KodaParser::EvCallContext* ctx)
 {
   // LOG_DEBUG("Visiting event call");
   auto c = std::make_shared<koda::EventCall>();
@@ -526,7 +563,7 @@ std::any KodaCST2AST::visitEvCall(KodaParser::EvCallContext* ctx)
   return c;
 }
 
-std::any KodaCST2AST::visitEvQualifiedCall(KodaParser::EvQualifiedCallContext* ctx)
+std::any CST2AST::visitEvQualifiedCall(KodaParser::EvQualifiedCallContext* ctx)
 {
   // LOG_DEBUG("Visiting qualified call");
   auto c = std::make_shared<koda::EventCall>();
@@ -540,7 +577,7 @@ std::any KodaCST2AST::visitEvQualifiedCall(KodaParser::EvQualifiedCallContext* c
   return c;
 }
 
-std::any KodaCST2AST::visitExprList(KodaParser::ExprListContext* ctx)
+std::any CST2AST::visitExprList(KodaParser::ExprListContext* ctx)
 {
   // LOG_DEBUG("Visiting Expression list");
   std::vector<koda::PExpr> out;
@@ -557,7 +594,7 @@ std::any KodaCST2AST::visitExprList(KodaParser::ExprListContext* ctx)
 // Because we factored expression into precedence rules (exprOr -> exprAnd -> ...),
 // many nodes are built in the lower-level visit methods. Here are the leaves:
 
-std::any KodaCST2AST::visitIdentifier(KodaParser::IdentifierContext* ctx)
+std::any CST2AST::visitIdentifier(KodaParser::IdentifierContext* ctx)
 {
   if (ctx->IDENT())
     return unquoteString(ctx->IDENT()->getText());
@@ -577,7 +614,7 @@ std::any KodaCST2AST::visitIdentifier(KodaParser::IdentifierContext* ctx)
     throw std::runtime_error("Unknown Identifier kind");
 }
 
-std::any KodaCST2AST::visitExprId(KodaParser::ExprIdContext* ctx)
+std::any CST2AST::visitExprId(KodaParser::ExprIdContext* ctx)
 {
   // LOG_DEBUG("Visiting Expression id");
   auto s = std::make_shared<koda::Expr::Id>();
@@ -589,7 +626,7 @@ std::any KodaCST2AST::visitExprId(KodaParser::ExprIdContext* ctx)
   return exp;
 }
 
-std::any KodaCST2AST::visitExprString(KodaParser::ExprStringContext* ctx)
+std::any CST2AST::visitExprString(KodaParser::ExprStringContext* ctx)
 {
   // LOG_DEBUG("Visiting Expression string");
   auto s = std::make_shared<koda::Expr::Str>();
@@ -602,7 +639,7 @@ std::any KodaCST2AST::visitExprString(KodaParser::ExprStringContext* ctx)
   return exp;
 }
 
-std::any KodaCST2AST::visitExprInt(KodaParser::ExprIntContext* ctx)
+std::any CST2AST::visitExprInt(KodaParser::ExprIntContext* ctx)
 {
   // LOG_DEBUG("Visiting Expression int");
   auto s = std::make_shared<koda::Expr::Int>();
@@ -615,7 +652,7 @@ std::any KodaCST2AST::visitExprInt(KodaParser::ExprIntContext* ctx)
   return exp;
 }
 
-std::any KodaCST2AST::visitExprFloat(KodaParser::ExprFloatContext* ctx)
+std::any CST2AST::visitExprFloat(KodaParser::ExprFloatContext* ctx)
 {
   // LOG_DEBUG("Visiting Expression float");
   auto s = std::make_shared<koda::Expr::Float>();
@@ -628,7 +665,7 @@ std::any KodaCST2AST::visitExprFloat(KodaParser::ExprFloatContext* ctx)
   return exp;
 }
 
-std::any KodaCST2AST::visitExprCall(KodaParser::ExprCallContext* ctx)
+std::any CST2AST::visitExprCall(KodaParser::ExprCallContext* ctx)
 {
   // LOG_DEBUG("Visiting Expression call");
   auto s = std::make_shared<koda::Expr::Call>();
@@ -641,7 +678,7 @@ std::any KodaCST2AST::visitExprCall(KodaParser::ExprCallContext* ctx)
   return exp;
 }
 
-std::any KodaCST2AST::visitExprParen(KodaParser::ExprParenContext* ctx)
+std::any CST2AST::visitExprParen(KodaParser::ExprParenContext* ctx)
 {
   // LOG_DEBUG("Visiting Expression parenthesis");
   auto s = std::make_shared<koda::Expr::Paren>();
@@ -655,7 +692,7 @@ std::any KodaCST2AST::visitExprParen(KodaParser::ExprParenContext* ctx)
   return exp;
 }
 
-std::any KodaCST2AST::visitExprOr(KodaParser::ExprOrContext* ctx)
+std::any CST2AST::visitExprOr(KodaParser::ExprOrContext* ctx)
 {
   koda::PExpr left;
   if (ctx->exprAnd().size() > 0 && ctx->exprAnd(0))
@@ -680,7 +717,7 @@ std::any KodaCST2AST::visitExprOr(KodaParser::ExprOrContext* ctx)
   return exp;
 }
 
-std::any KodaCST2AST::visitExprAnd(KodaParser::ExprAndContext* ctx)
+std::any CST2AST::visitExprAnd(KodaParser::ExprAndContext* ctx)
 {
   koda::PExpr left;
   if (ctx->exprCmp().size() > 0 && ctx->exprCmp(0))
@@ -705,7 +742,7 @@ std::any KodaCST2AST::visitExprAnd(KodaParser::ExprAndContext* ctx)
   return exp;
 }
 
-std::any KodaCST2AST::visitCompOp(KodaParser::CompOpContext* ctx)
+std::any CST2AST::visitCompOp(KodaParser::CompOpContext* ctx)
 {
   if (ctx->EQ())
     return koda::Expr::BinOp::Kind::Equal;
@@ -723,7 +760,7 @@ std::any KodaCST2AST::visitCompOp(KodaParser::CompOpContext* ctx)
     throw std::runtime_error("Unknown Comparator kind");
 }
 
-std::any KodaCST2AST::visitExprCmp(KodaParser::ExprCmpContext* ctx)
+std::any CST2AST::visitExprCmp(KodaParser::ExprCmpContext* ctx)
 {
   koda::PExpr left;
   if (ctx->exprNot().size() > 0 && ctx->exprNot(0))
@@ -748,7 +785,7 @@ std::any KodaCST2AST::visitExprCmp(KodaParser::ExprCmpContext* ctx)
   return exp;
 }
 
-std::any KodaCST2AST::visitExprNot(KodaParser::ExprNotContext* ctx)
+std::any CST2AST::visitExprNot(KodaParser::ExprNotContext* ctx)
 {
   if (ctx->exprAdd())
     return visit(ctx->exprAdd());
@@ -767,7 +804,7 @@ std::any KodaCST2AST::visitExprNot(KodaParser::ExprNotContext* ctx)
   return exp;
 }
 
-std::any KodaCST2AST::visitExprAdd(KodaParser::ExprAddContext* ctx)
+std::any CST2AST::visitExprAdd(KodaParser::ExprAddContext* ctx)
 {
   koda::PExpr left;
   if (ctx->exprMul().size() > 0 && ctx->exprMul(0))
@@ -796,7 +833,7 @@ std::any KodaCST2AST::visitExprAdd(KodaParser::ExprAddContext* ctx)
   return exp;
 }
 
-std::any KodaCST2AST::visitExprMul(KodaParser::ExprMulContext* ctx)
+std::any CST2AST::visitExprMul(KodaParser::ExprMulContext* ctx)
 {
   koda::PExpr left;
   if (ctx->exprUnary().size() > 0 && ctx->exprUnary(0))
@@ -824,7 +861,7 @@ std::any KodaCST2AST::visitExprMul(KodaParser::ExprMulContext* ctx)
   return exp;
 }
 
-std::any KodaCST2AST::visitExprUnary(KodaParser::ExprUnaryContext* ctx)
+std::any CST2AST::visitExprUnary(KodaParser::ExprUnaryContext* ctx)
 {
   if (!ctx->MINUS())
     return visit(ctx->exprPrimary());
@@ -844,9 +881,8 @@ std::any KodaCST2AST::visitExprUnary(KodaParser::ExprUnaryContext* ctx)
   return exp;
 }
 
-// Build ActionDef / ServiceDef / TopicDef using the same field extraction.
 template <typename CtxT>
-std::any KodaCST2AST::buildActionLike(CtxT* ctx, koda::ActionDef::Kind kind)
+std::any CST2AST::buildActionLike(CtxT* ctx, koda::ActionDef::Kind kind)
 {
   auto a = std::make_shared<koda::ActionDef>();
   a->kind = kind;
@@ -862,76 +898,226 @@ std::any KodaCST2AST::buildActionLike(CtxT* ctx, koda::ActionDef::Kind kind)
   return a;
 }
 
-bool KodaCST2AST::containsContinue(koda::PStrategy s)
+bool CST2AST::containsContinue(koda::PStrategy s)
 {
   if (!s)
     return false;
 
-  return std::visit([&](auto&& node) -> bool {
-    using T = std::decay_t<decltype(node)>;
+  return std::visit(
+      [&](auto&& node) -> bool {
+        using T = std::decay_t<decltype(node)>;
 
-    // --- Ref ---
-    if constexpr (std::is_same_v<T, koda::PContinue>)
-    {
-      return true;
-    }
-    // --- Seq / Join / Either ---
-    else if constexpr (std::is_same_v<T, koda::PSeq> || std::is_same_v<T, koda::PJoin> || std::is_same_v<T, koda::PEither>)
-    {
-      if (!node)
-        return false;
-
-      for (const auto& child : node->alts)
-        if (child && containsContinue(child))
+        // --- Ref ---
+        if constexpr (std::is_same_v<T, koda::PContinue>)
+        {
           return true;
+        }
+        // --- Seq / Join / Either ---
+        else if constexpr (std::is_same_v<T, koda::PSeq> || std::is_same_v<T, koda::PJoin> || std::is_same_v<T, koda::PEither>)
+        {
+          if (!node)
+            return false;
 
-      return false;
-    }
-    // --- Unary wrappers ---
-    else if constexpr (std::is_same_v<T, std::shared_ptr<koda::Strategy::Paren>>)
-    {
-      return node && node->a && containsContinue(node->a);
-    }
-    // --- Binary ---
-    else if constexpr (std::is_same_v<T, koda::PWithin> || std::is_same_v<T, koda::PIfElse>)
-    {
-      return node && ((node->a && containsContinue(node->a)) ||
-                      (node->b && containsContinue(node->b)));
-    }
-    // --- Repeat ---
-    else if constexpr (std::is_same_v<T, std::shared_ptr<koda::Strategy::Repeat>>)
-    {
-      if (!node)
-        return false;
+          for (const auto& child : node->alts)
+            if (child && containsContinue(child))
+              return true;
 
-      if (node->a && containsContinue(node->a))
-        return true;
+          return false;
+        }
+        // --- Unary wrappers ---
+        else if constexpr (std::is_same_v<T, std::shared_ptr<koda::Strategy::Paren>>)
+        {
+          return node && node->a && containsContinue(node->a);
+        }
+        // --- Binary ---
+        else if constexpr (std::is_same_v<T, koda::PWithin> || std::is_same_v<T, koda::PIfElse>)
+        {
+          return node && ((node->a && containsContinue(node->a)) || (node->b && containsContinue(node->b)));
+        }
+        // --- Repeat ---
+        else if constexpr (std::is_same_v<T, std::shared_ptr<koda::Strategy::Repeat>>)
+        {
+          if (!node)
+            return false;
 
-      for (const auto& h : node->handlers)
-      {
-        if (h && h->body && containsContinue(h->body))
-          return true;
-      }
-      return false;
-    }
-    // --- TaskCall ---
-    else if constexpr (std::is_same_v<T, std::shared_ptr<koda::Strategy::TaskCall>>)
-    {
-      if (!node)
-        return false;
+          if (node->a && containsContinue(node->a))
+            return true;
 
-      for (const auto& h : node->handlers)
-      {
-        if (h && h->body && containsContinue(h->body))
-          return true;
-      }
-      return false;
-    }
-    // --- Let / Guard / End ---
-    else
-    {
-      return false;
-    }
-  },
-                    s->v);
+          for (const auto& h : node->handlers)
+            if (h && h->body && containsContinue(h->body))
+              return true;
+          return false;
+        }
+        // --- TaskCall ---
+        else if constexpr (std::is_same_v<T, std::shared_ptr<koda::Strategy::TaskCall>>)
+        {
+          if (!node)
+            return false;
+
+          for (const auto& h : node->handlers)
+            if (h && h->body && containsContinue(h->body))
+              return true;
+          return false;
+        }
+        // --- Let / Guard / End ---
+        else
+        {
+          return false;
+        }
+      },
+      s->v);
 }
+
+types::TypeDefinition CST2AST::convertTypeDeclaration(KodaParser::TypeDeclarationContext* ctx)
+{
+  if (auto* record = dynamic_cast<KodaParser::TypeRecordContext*>(ctx))
+  {
+    const types::QualifiedName name = convertQualifiedName(record->qualifiedName(0));
+    std::optional<types::TypeReference> baseType;
+    if (record->EXTENDS() != nullptr)
+    {
+      const auto baseName = convertQualifiedName(record->qualifiedName(1));
+      baseType = types::TypeReference::named(baseName, baseName.toId());
+    }
+
+    std::vector<types::FieldDefinition> fields;
+    fields.reserve(record->fieldDeclaration().size());
+
+    for (auto* field : record->fieldDeclaration())
+    {
+      fields.push_back(types::FieldDefinition{
+          .name = field->IDENT()->getText(),
+          .type = convertTypeReference(field->typeReference()),
+      });
+    }
+
+    return types::TypeDefinition{.id = name.toId(),
+                                 .name = name,
+                                 .data = types::RecordTypeDefinition{
+                                     .baseType = std::move(baseType),
+                                     .fields = std::move(fields),
+                                 }};
+  }
+
+  if (auto* alias = dynamic_cast<KodaParser::TypeAliasContext*>(ctx))
+  {
+    const types::QualifiedName name = convertQualifiedName(alias->qualifiedName());
+    return types::TypeDefinition{.id = name.toId(),
+                                 .name = name,
+                                 .data = types::AliasTypeDefinition{
+                                     .target = convertTypeReference(alias->typeReference()),
+                                 }};
+  }
+
+  throw std::runtime_error("Unknown KODA type declaration");
+}
+
+types::TypeDefinition CST2AST::convertEnumDeclaration(KodaParser::EnumDeclarationContext* ctx)
+{
+  const types::QualifiedName name = convertQualifiedName(ctx->qualifiedName());
+
+  // Default enum representation.
+  types::EnumUnderlyingKind underlyingType = types::EnumUnderlyingKind::Int32;
+  if (ctx->typeReference() != nullptr)
+    underlyingType = convertEnumUnderlyingType(ctx->typeReference());
+
+  std::vector<types::EnumValueDefinition> values;
+  values.reserve(ctx->enumValue().size());
+  for (auto* value : ctx->enumValue())
+  {
+    std::optional<std::string> enumValue;
+    if (value->enumLiteral() != nullptr)
+    {
+      auto* literal = value->enumLiteral();
+      if (literal->STRING() != nullptr)
+        enumValue = unquoteString(literal->STRING()->getText());
+      else if (literal->NATURAL() != nullptr)
+        enumValue = literal->getText();
+    }
+
+    values.push_back(types::EnumValueDefinition{
+        .name = value->IDENT()->getText(),
+        .value = std::move(enumValue),
+    });
+  }
+
+  return types::TypeDefinition{.id = name.toId(),
+                               .name = name,
+                               .data = types::EnumTypeDefinition{
+                                   .underlyingType = underlyingType,
+                                   .values = std::move(values),
+                               }};
+}
+
+types::TypeReference CST2AST::convertTypeReference(KodaParser::TypeReferenceContext* ctx)
+{
+  if (auto* named = dynamic_cast<KodaParser::TypeNamedContext*>(ctx))
+  {
+    const auto name = convertQualifiedName(named->qualifiedName());
+    return types::TypeReference::named(name, name.toId());
+  }
+
+  if (auto* list = dynamic_cast<KodaParser::TypeListContext*>(ctx))
+    return types::TypeReference::list(convertTypeReference(list->typeReference()));
+
+  if (auto* optional = dynamic_cast<KodaParser::TypeOptionalContext*>(ctx))
+    return types::TypeReference::optional(convertTypeReference(optional->typeReference()));
+
+  if (auto* map = dynamic_cast<KodaParser::TypeMapContext*>(ctx))
+    return types::TypeReference::map(convertTypeReference(map->typeReference(0)), convertTypeReference(map->typeReference(1)));
+
+  throw std::runtime_error("Unknown type reference: " + ctx->getText());
+}
+
+types::QualifiedName CST2AST::convertQualifiedName(KodaParser::QualifiedNameContext* ctx)
+{
+  const auto name = ctx->getText();
+  if (name == "bool")
+    return types::BooleanType;
+  if (name == "int")
+    return types::IntegerType;
+  if (name == "real")
+    return types::RealType;
+  if (name == "string")
+    return types::StringType;
+  if (name == "bytes")
+    return types::BytesType;
+  if (name == "timestamp")
+    return types::TimestampType;
+  if (name == "duration")
+    return types::DurationType;
+  if (name == "void")
+    return types::VoidType;
+
+  return types::QualifiedName(name);
+}
+
+types::EnumUnderlyingKind CST2AST::convertEnumUnderlyingType(KodaParser::TypeReferenceContext* ctx)
+{
+  const types::TypeReference type = convertTypeReference(ctx);
+
+  if (!type.isNamed())
+    throw std::runtime_error("Enum underlying type must be a primitive named type");
+
+  const auto* definition = mTypeRegistry.resolve(type);
+  if (definition == nullptr)
+    throw std::runtime_error("Unknown enum underlying type '" + type.toString() + "'");
+  if (!definition->isPrimitive())
+    throw std::runtime_error("Enum underlying type must be primitive");
+
+  switch (definition->primitive().primitive)
+  {
+    case types::PrimitiveKind::String:
+      return types::EnumUnderlyingKind::String;
+
+    case types::PrimitiveKind::Int32:
+      return types::EnumUnderlyingKind::Int32;
+
+    case types::PrimitiveKind::UInt32:
+      return types::EnumUnderlyingKind::UInt32;
+
+    default:
+      throw std::runtime_error("Type '" + type.toString() + "' cannot be used as an enum underlying type");
+  }
+}
+}  // namespace koda

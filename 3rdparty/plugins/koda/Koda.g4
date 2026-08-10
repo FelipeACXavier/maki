@@ -5,18 +5,63 @@ grammar Koda;
 // =============================================================================
 
 system
-  : topLevelComponent* EOF
+  : topLevelDeclaration* EOF
   ;
 
 // =============================================================================
 // Top-level
 // =============================================================================
 
+topLevelDeclaration
+  : topLevelComponent
+  | typeDeclaration
+  | enumDeclaration
+  ;
+
 topLevelComponent
   : TASK  IDENT LPAREN argumentList? RPAREN LBRACE statement* RBRACE
   | CAPABILITY IDENT LPAREN argumentList? RPAREN LBRACE statement* RBRACE
   ;
 
+// =============================================================================
+// Type system
+// =============================================================================
+typeDeclaration
+  : TYPE qualifiedName (EXTENDS qualifiedName)? LBRACE fieldDeclaration* RBRACE # typeRecord
+  | TYPE qualifiedName ASSIGN typeReference SEMI                                # typeAlias
+  ;
+
+fieldDeclaration
+  : IDENT COLON typeReference SEMI
+  ;
+
+enumDeclaration
+  : ENUM qualifiedName (COLON typeReference)? LBRACE enumValue* RBRACE
+  ;
+
+enumValue
+  : IDENT (ASSIGN enumLiteral)? SEMI
+  ;
+
+enumLiteral
+  : STRING
+  | MINUS? NATURAL
+  ;
+
+typeReference
+  : qualifiedName                                                   # typeNamed
+  | LIST LT typeReference GT                                        # typeList
+  | OPTIONAL LT typeReference GT                                    # typeOptional
+  | MAP LT typeReference COMMA typeReference GT                     # typeMap
+  ;
+
+qualifiedName
+  : IDENT (DOUBLE_COLON IDENT)*
+  ;
+
+// =============================================================================
+// Arguments
+// =============================================================================
 argumentList
   : argument (COMMA argument)*
   ;
@@ -30,7 +75,6 @@ argument
 // =============================================================================
 // Statements
 // =============================================================================
-
 statement
   : tasksBlock
   | varsBlock
@@ -232,6 +276,13 @@ identifier
 TASK       : 'task';
 CAPABILITY : 'capability';
 
+TYPE       : 'type';
+ENUM       : 'enum';
+EXTENDS    : 'extends';
+LIST       : 'list';
+OPTIONAL   : 'optional';
+MAP        : 'map';
+
 STRATEGY   : 'strategy';
 VARS       : 'vars';
 
@@ -291,10 +342,11 @@ GEQ        : '>=';
 LT         : '<';
 GT         : '>';
 
-ASSIGN     : '=';
-COLON      : ':';
-COMMA      : ',';
-SEMI       : ';';
+ASSIGN       : '=';
+DOUBLE_COLON : '::';
+COLON        : ':';
+COMMA        : ',';
+SEMI         : ';';
 
 DOT        : '.';
 

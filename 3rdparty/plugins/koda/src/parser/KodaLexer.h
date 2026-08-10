@@ -12,18 +12,20 @@
 class  KodaLexer : public antlr4::Lexer {
 public:
   enum {
-    TASK = 1, CAPABILITY = 2, STRATEGY = 3, VARS = 4, ACTION = 5, SERVICE = 6, 
-    TOPIC = 7, TRIGGER = 8, RETURN = 9, ABORT = 10, ERROR = 11, IN = 12, 
-    OUT = 13, ON = 14, REQ = 15, PRO = 16, END = 17, CONTINUE = 18, REPEAT = 19, 
-    JOIN = 20, EITHER = 21, LET = 22, WITHIN = 23, DO = 24, ELSE = 25, IF = 26, 
-    THEN = 27, GUARD = 28, EVERY = 29, TIMEOUT = 30, ALLOWED = 31, REPLY = 32, 
-    AFTER = 33, ONCE = 34, ALWAYS = 35, MISSION = 36, IDLE = 37, S = 38, 
-    MS = 39, US = 40, NS = 41, ARROW = 42, PIPE = 43, EQ = 44, NEQ = 45, 
-    LEQ = 46, GEQ = 47, LT = 48, GT = 49, ASSIGN = 50, COLON = 51, COMMA = 52, 
-    SEMI = 53, DOT = 54, PLUS = 55, MINUS = 56, STAR = 57, SLASH = 58, NOT = 59, 
-    AND = 60, OR = 61, LPAREN = 62, RPAREN = 63, LBRACE = 64, RBRACE = 65, 
-    LBRACK = 66, RBRACK = 67, NATURAL = 68, REAL = 69, IDENT = 70, STRING = 71, 
-    ANY = 72, LINE_COMMENT = 73, BLOCK_COMMENT = 74, WS = 75
+    TASK = 1, CAPABILITY = 2, TYPE = 3, ENUM = 4, EXTENDS = 5, LIST = 6, 
+    OPTIONAL = 7, MAP = 8, STRATEGY = 9, VARS = 10, ACTION = 11, SERVICE = 12, 
+    TOPIC = 13, TRIGGER = 14, RETURN = 15, ABORT = 16, ERROR = 17, IN = 18, 
+    OUT = 19, ON = 20, REQ = 21, PRO = 22, END = 23, CONTINUE = 24, REPEAT = 25, 
+    JOIN = 26, EITHER = 27, LET = 28, WITHIN = 29, DO = 30, ELSE = 31, IF = 32, 
+    THEN = 33, GUARD = 34, EVERY = 35, TIMEOUT = 36, ALLOWED = 37, REPLY = 38, 
+    AFTER = 39, ONCE = 40, ALWAYS = 41, MISSION = 42, IDLE = 43, S = 44, 
+    MS = 45, US = 46, NS = 47, ARROW = 48, PIPE = 49, EQ = 50, NEQ = 51, 
+    LEQ = 52, GEQ = 53, LT = 54, GT = 55, ASSIGN = 56, DOUBLE_COLON = 57, 
+    COLON = 58, COMMA = 59, SEMI = 60, DOT = 61, PLUS = 62, MINUS = 63, 
+    STAR = 64, SLASH = 65, NOT = 66, AND = 67, OR = 68, LPAREN = 69, RPAREN = 70, 
+    LBRACE = 71, RBRACE = 72, LBRACK = 73, RBRACK = 74, NATURAL = 75, REAL = 76, 
+    IDENT = 77, STRING = 78, ANY = 79, LINE_COMMENT = 80, BLOCK_COMMENT = 81, 
+    WS = 82
   };
 
   explicit KodaLexer(antlr4::CharStream *input);

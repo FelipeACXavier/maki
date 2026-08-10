@@ -1,9 +1,11 @@
-// AstHelpers.h
 #pragma once
 #include <string>
 
 #include "antlr4-runtime.h"
+#include "ast.h"
 
+namespace koda
+{
 inline koda::Span spanOf(antlr4::ParserRuleContext* ctx)
 {
   koda::Span s;
@@ -19,15 +21,14 @@ inline koda::Span spanOf(antlr4::ParserRuleContext* ctx)
     s.lineEnd = b->getLine();
     s.colEnd = b->getCharPositionInLine();
   }
-
   return s;
 }
 
 inline std::string unquoteString(const std::string& s)
 {
-  // minimal unquote; you can expand to handle escapes if needed.
   if (s.size() >= 2 && s.front() == '"' && s.back() == '"')
     return s.substr(1, s.size() - 2);
 
   return s;
 }
+}  // namespace koda

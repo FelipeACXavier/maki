@@ -1,19 +1,21 @@
-// IrBuilderVisitor.h
 #pragma once
 
 #include <any>
-#include <stdexcept>
 
 #include "KodaBaseVisitor.h"
 #include "KodaParser.h"
 #include "ast.h"
-#include "ast_helpers.h"
+#include "type_registry.h"
 
-class KodaCST2AST final : public KodaBaseVisitor
+namespace koda
+{
+class CST2AST final : public KodaBaseVisitor
 {
 public:
+  CST2AST();
+
   // Entry: build a whole System
-  koda::System build(KodaParser::SystemContext* ctx);
+  System build(KodaParser::SystemContext* ctx);
 
   // -------------------------
   // Top-level
@@ -107,9 +109,18 @@ public:
   std::any visitExprUnary(KodaParser::ExprUnaryContext* ctx) override;
 
 private:
+  types::TypeRegistry mTypeRegistry;
+
   // Build ActionDef / ServiceDef / TopicDef using the same field extraction.
   template <typename CtxT>
-  std::any buildActionLike(CtxT* ctx, koda::ActionDef::Kind kind);
+  std::any buildActionLike(CtxT* ctx, ActionDef::Kind kind);
 
-  bool containsContinue(koda::PStrategy s);
+  bool containsContinue(PStrategy s);
+
+  types::TypeDefinition convertTypeDeclaration(KodaParser::TypeDeclarationContext* ctx);
+  types::TypeDefinition convertEnumDeclaration(KodaParser::EnumDeclarationContext* ctx);
+  types::TypeReference convertTypeReference(KodaParser::TypeReferenceContext* ctx);
+  types::QualifiedName convertQualifiedName(KodaParser::QualifiedNameContext* ctx);
+  types::EnumUnderlyingKind convertEnumUnderlyingType(KodaParser::TypeReferenceContext* ctx);
 };
+}  // namespace koda

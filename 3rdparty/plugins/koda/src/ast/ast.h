@@ -1,4 +1,3 @@
-// KodaAst.h
 #pragma once
 #include <memory>
 #include <string>
@@ -80,12 +79,7 @@ struct Argument
 // ---------- Statements ----------
 struct Statement
 {
-  std::variant<
-      std::shared_ptr<StrategyBlock>,
-      std::shared_ptr<VarsBlock>,
-      std::shared_ptr<RosDef>,
-      std::shared_ptr<ActionDef>>
-      node;
+  std::variant<std::shared_ptr<StrategyBlock>, std::shared_ptr<VarsBlock>, std::shared_ptr<RosDef>, std::shared_ptr<ActionDef>> node;
   Span span;
 
   void print(const std::string& prefix, const bool last) const;
@@ -218,18 +212,21 @@ struct Strategy
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
+
   struct Join
   {
     std::vector<std::shared_ptr<Strategy>> alts;
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
+
   struct Either
   {
     std::vector<std::shared_ptr<Strategy>> alts;
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
+
   struct Let
   {
     std::string name;
@@ -237,6 +234,7 @@ struct Strategy
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
+
   struct Within
   {
     int seconds;
@@ -246,6 +244,7 @@ struct Strategy
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
+
   struct IfElse
   {
     std::shared_ptr<Expr> cond;
@@ -254,6 +253,7 @@ struct Strategy
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
+
   struct Repeat
   {
     std::shared_ptr<Strategy> a;
@@ -263,25 +263,30 @@ struct Strategy
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
+
   struct Guard
   {
     std::shared_ptr<Expr> cond;
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
+
   struct End
   {
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
+
   struct Continue
   {
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
+
   struct Ref
   {
     std::string name;
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
+
   struct TaskCall
   {
     std::shared_ptr<EventCall> call;
@@ -289,26 +294,16 @@ struct Strategy
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
+
   struct Paren
   {
     std::shared_ptr<Strategy> a;
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
 
-  std::variant<
-      std::shared_ptr<Seq>,
-      std::shared_ptr<Join>,
-      std::shared_ptr<Either>,
-      std::shared_ptr<Let>,
-      std::shared_ptr<Within>,
-      std::shared_ptr<IfElse>,
-      std::shared_ptr<Repeat>,
-      std::shared_ptr<Guard>,
-      std::shared_ptr<End>,
-      std::shared_ptr<Continue>,
-      std::shared_ptr<Ref>,
-      std::shared_ptr<TaskCall>,
-      std::shared_ptr<Paren>>
+  std::variant<std::shared_ptr<Seq>, std::shared_ptr<Join>, std::shared_ptr<Either>, std::shared_ptr<Let>, std::shared_ptr<Within>,
+               std::shared_ptr<IfElse>, std::shared_ptr<Repeat>, std::shared_ptr<Guard>, std::shared_ptr<End>, std::shared_ptr<Continue>,
+               std::shared_ptr<Ref>, std::shared_ptr<TaskCall>, std::shared_ptr<Paren>>
       v;
 
   void print(const std::string& prefix, const bool last) const;
@@ -335,36 +330,43 @@ struct Expr
     std::string value;
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
+
   struct Str
   {
     std::string value;
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
+
   struct Int
   {
     int value;
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
+
   struct Float
   {
     double value;
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
+
   struct Call
   {
     std::shared_ptr<EventCall> value;
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
+
   struct Neg
   {
     std::shared_ptr<Expr> value;
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
+
   struct Not
   {
     std::shared_ptr<Expr> value;
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
+
   struct BinOp
   {
     enum class Kind
@@ -392,22 +394,15 @@ struct Expr
     std::string toString() const;
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
+
   struct Paren
   {
     std::shared_ptr<Expr> value;
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
 
-  std::variant<
-      std::shared_ptr<Id>,
-      std::shared_ptr<Str>,
-      std::shared_ptr<Int>,
-      std::shared_ptr<Float>,
-      std::shared_ptr<Call>,
-      std::shared_ptr<Neg>,
-      std::shared_ptr<Not>,
-      std::shared_ptr<BinOp>,
-      std::shared_ptr<Paren>>
+  std::variant<std::shared_ptr<Id>, std::shared_ptr<Str>, std::shared_ptr<Int>, std::shared_ptr<Float>, std::shared_ptr<Call>, std::shared_ptr<Neg>,
+               std::shared_ptr<Not>, std::shared_ptr<BinOp>, std::shared_ptr<Paren>>
       v;
 
   Span span;

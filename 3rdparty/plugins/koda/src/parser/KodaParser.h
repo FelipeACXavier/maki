@@ -12,31 +12,35 @@
 class  KodaParser : public antlr4::Parser {
 public:
   enum {
-    TASK = 1, CAPABILITY = 2, STRATEGY = 3, VARS = 4, ACTION = 5, SERVICE = 6, 
-    TOPIC = 7, TRIGGER = 8, RETURN = 9, ABORT = 10, ERROR = 11, IN = 12, 
-    OUT = 13, ON = 14, REQ = 15, PRO = 16, END = 17, CONTINUE = 18, REPEAT = 19, 
-    JOIN = 20, EITHER = 21, LET = 22, WITHIN = 23, DO = 24, ELSE = 25, IF = 26, 
-    THEN = 27, GUARD = 28, EVERY = 29, TIMEOUT = 30, ALLOWED = 31, REPLY = 32, 
-    AFTER = 33, ONCE = 34, ALWAYS = 35, MISSION = 36, IDLE = 37, S = 38, 
-    MS = 39, US = 40, NS = 41, ARROW = 42, PIPE = 43, EQ = 44, NEQ = 45, 
-    LEQ = 46, GEQ = 47, LT = 48, GT = 49, ASSIGN = 50, COLON = 51, COMMA = 52, 
-    SEMI = 53, DOT = 54, PLUS = 55, MINUS = 56, STAR = 57, SLASH = 58, NOT = 59, 
-    AND = 60, OR = 61, LPAREN = 62, RPAREN = 63, LBRACE = 64, RBRACE = 65, 
-    LBRACK = 66, RBRACK = 67, NATURAL = 68, REAL = 69, IDENT = 70, STRING = 71, 
-    ANY = 72, LINE_COMMENT = 73, BLOCK_COMMENT = 74, WS = 75
+    TASK = 1, CAPABILITY = 2, TYPE = 3, ENUM = 4, EXTENDS = 5, LIST = 6, 
+    OPTIONAL = 7, MAP = 8, STRATEGY = 9, VARS = 10, ACTION = 11, SERVICE = 12, 
+    TOPIC = 13, TRIGGER = 14, RETURN = 15, ABORT = 16, ERROR = 17, IN = 18, 
+    OUT = 19, ON = 20, REQ = 21, PRO = 22, END = 23, CONTINUE = 24, REPEAT = 25, 
+    JOIN = 26, EITHER = 27, LET = 28, WITHIN = 29, DO = 30, ELSE = 31, IF = 32, 
+    THEN = 33, GUARD = 34, EVERY = 35, TIMEOUT = 36, ALLOWED = 37, REPLY = 38, 
+    AFTER = 39, ONCE = 40, ALWAYS = 41, MISSION = 42, IDLE = 43, S = 44, 
+    MS = 45, US = 46, NS = 47, ARROW = 48, PIPE = 49, EQ = 50, NEQ = 51, 
+    LEQ = 52, GEQ = 53, LT = 54, GT = 55, ASSIGN = 56, DOUBLE_COLON = 57, 
+    COLON = 58, COMMA = 59, SEMI = 60, DOT = 61, PLUS = 62, MINUS = 63, 
+    STAR = 64, SLASH = 65, NOT = 66, AND = 67, OR = 68, LPAREN = 69, RPAREN = 70, 
+    LBRACE = 71, RBRACE = 72, LBRACK = 73, RBRACK = 74, NATURAL = 75, REAL = 76, 
+    IDENT = 77, STRING = 78, ANY = 79, LINE_COMMENT = 80, BLOCK_COMMENT = 81, 
+    WS = 82
   };
 
   enum {
-    RuleSystem = 0, RuleTopLevelComponent = 1, RuleArgumentList = 2, RuleArgument = 3, 
-    RuleStatement = 4, RuleTasksBlock = 5, RuleFlow = 6, RuleIdentList = 7, 
-    RuleVarsBlock = 8, RuleVariableStatement = 9, RuleActionBlock = 10, 
-    RuleServiceBlock = 11, RuleTopicBlock = 12, RuleRosDefStatement = 13, 
-    RuleEventDefStatement = 14, RuleEventDefComponentList = 15, RuleEventDefComponent = 16, 
-    RuleRosData = 17, RuleWhenMode = 18, RuleTimeUnit = 19, RuleStrategy = 20, 
-    RuleStrategyHandler = 21, RuleEventStatement = 22, RuleExprList = 23, 
-    RuleExpression = 24, RuleExprOr = 25, RuleExprAnd = 26, RuleExprCmp = 27, 
-    RuleCompOp = 28, RuleExprNot = 29, RuleExprAdd = 30, RuleExprMul = 31, 
-    RuleExprUnary = 32, RuleExprPrimary = 33, RuleIdentifier = 34
+    RuleSystem = 0, RuleTopLevelDeclaration = 1, RuleTopLevelComponent = 2, 
+    RuleTypeDeclaration = 3, RuleEnumDeclaration = 4, RuleFieldDeclaration = 5, 
+    RuleEnumValue = 6, RuleEnumLiteral = 7, RuleTypeReference = 8, RuleQualifiedName = 9, 
+    RuleArgumentList = 10, RuleArgument = 11, RuleStatement = 12, RuleTasksBlock = 13, 
+    RuleFlow = 14, RuleIdentList = 15, RuleVarsBlock = 16, RuleVariableStatement = 17, 
+    RuleActionBlock = 18, RuleServiceBlock = 19, RuleTopicBlock = 20, RuleRosDefStatement = 21, 
+    RuleEventDefStatement = 22, RuleEventDefComponentList = 23, RuleEventDefComponent = 24, 
+    RuleRosData = 25, RuleWhenMode = 26, RuleTimeUnit = 27, RuleStrategy = 28, 
+    RuleStrategyHandler = 29, RuleEventStatement = 30, RuleExprList = 31, 
+    RuleExpression = 32, RuleExprOr = 33, RuleExprAnd = 34, RuleExprCmp = 35, 
+    RuleCompOp = 36, RuleExprNot = 37, RuleExprAdd = 38, RuleExprMul = 39, 
+    RuleExprUnary = 40, RuleExprPrimary = 41, RuleIdentifier = 42
   };
 
   explicit KodaParser(antlr4::TokenStream *input);
@@ -57,7 +61,15 @@ public:
 
 
   class SystemContext;
+  class TopLevelDeclarationContext;
   class TopLevelComponentContext;
+  class TypeDeclarationContext;
+  class EnumDeclarationContext;
+  class FieldDeclarationContext;
+  class EnumValueContext;
+  class EnumLiteralContext;
+  class TypeReferenceContext;
+  class QualifiedNameContext;
   class ArgumentListContext;
   class ArgumentContext;
   class StatementContext;
@@ -97,8 +109,8 @@ public:
     SystemContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *EOF();
-    std::vector<TopLevelComponentContext *> topLevelComponent();
-    TopLevelComponentContext* topLevelComponent(size_t i);
+    std::vector<TopLevelDeclarationContext *> topLevelDeclaration();
+    TopLevelDeclarationContext* topLevelDeclaration(size_t i);
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -106,6 +118,21 @@ public:
   };
 
   SystemContext* system();
+
+  class  TopLevelDeclarationContext : public antlr4::ParserRuleContext {
+  public:
+    TopLevelDeclarationContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    TopLevelComponentContext *topLevelComponent();
+    TypeDeclarationContext *typeDeclaration();
+    EnumDeclarationContext *enumDeclaration();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  TopLevelDeclarationContext* topLevelDeclaration();
 
   class  TopLevelComponentContext : public antlr4::ParserRuleContext {
   public:
@@ -128,6 +155,195 @@ public:
   };
 
   TopLevelComponentContext* topLevelComponent();
+
+  class  TypeDeclarationContext : public antlr4::ParserRuleContext {
+  public:
+    TypeDeclarationContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+   
+    TypeDeclarationContext() = default;
+    void copyFrom(TypeDeclarationContext *context);
+    using antlr4::ParserRuleContext::copyFrom;
+
+    virtual size_t getRuleIndex() const override;
+
+   
+  };
+
+  class  TypeAliasContext : public TypeDeclarationContext {
+  public:
+    TypeAliasContext(TypeDeclarationContext *ctx);
+
+    antlr4::tree::TerminalNode *TYPE();
+    QualifiedNameContext *qualifiedName();
+    antlr4::tree::TerminalNode *ASSIGN();
+    TypeReferenceContext *typeReference();
+    antlr4::tree::TerminalNode *SEMI();
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  TypeRecordContext : public TypeDeclarationContext {
+  public:
+    TypeRecordContext(TypeDeclarationContext *ctx);
+
+    antlr4::tree::TerminalNode *TYPE();
+    std::vector<QualifiedNameContext *> qualifiedName();
+    QualifiedNameContext* qualifiedName(size_t i);
+    antlr4::tree::TerminalNode *LBRACE();
+    antlr4::tree::TerminalNode *RBRACE();
+    antlr4::tree::TerminalNode *EXTENDS();
+    std::vector<FieldDeclarationContext *> fieldDeclaration();
+    FieldDeclarationContext* fieldDeclaration(size_t i);
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  TypeDeclarationContext* typeDeclaration();
+
+  class  EnumDeclarationContext : public antlr4::ParserRuleContext {
+  public:
+    EnumDeclarationContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *ENUM();
+    QualifiedNameContext *qualifiedName();
+    antlr4::tree::TerminalNode *LBRACE();
+    antlr4::tree::TerminalNode *RBRACE();
+    antlr4::tree::TerminalNode *COLON();
+    TypeReferenceContext *typeReference();
+    std::vector<EnumValueContext *> enumValue();
+    EnumValueContext* enumValue(size_t i);
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  EnumDeclarationContext* enumDeclaration();
+
+  class  FieldDeclarationContext : public antlr4::ParserRuleContext {
+  public:
+    FieldDeclarationContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *IDENT();
+    antlr4::tree::TerminalNode *COLON();
+    TypeReferenceContext *typeReference();
+    antlr4::tree::TerminalNode *SEMI();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  FieldDeclarationContext* fieldDeclaration();
+
+  class  EnumValueContext : public antlr4::ParserRuleContext {
+  public:
+    EnumValueContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *IDENT();
+    antlr4::tree::TerminalNode *SEMI();
+    antlr4::tree::TerminalNode *ASSIGN();
+    EnumLiteralContext *enumLiteral();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  EnumValueContext* enumValue();
+
+  class  EnumLiteralContext : public antlr4::ParserRuleContext {
+  public:
+    EnumLiteralContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *STRING();
+    antlr4::tree::TerminalNode *NATURAL();
+    antlr4::tree::TerminalNode *MINUS();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  EnumLiteralContext* enumLiteral();
+
+  class  TypeReferenceContext : public antlr4::ParserRuleContext {
+  public:
+    TypeReferenceContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+   
+    TypeReferenceContext() = default;
+    void copyFrom(TypeReferenceContext *context);
+    using antlr4::ParserRuleContext::copyFrom;
+
+    virtual size_t getRuleIndex() const override;
+
+   
+  };
+
+  class  TypeNamedContext : public TypeReferenceContext {
+  public:
+    TypeNamedContext(TypeReferenceContext *ctx);
+
+    QualifiedNameContext *qualifiedName();
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  TypeListContext : public TypeReferenceContext {
+  public:
+    TypeListContext(TypeReferenceContext *ctx);
+
+    antlr4::tree::TerminalNode *LIST();
+    antlr4::tree::TerminalNode *LT();
+    TypeReferenceContext *typeReference();
+    antlr4::tree::TerminalNode *GT();
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  TypeMapContext : public TypeReferenceContext {
+  public:
+    TypeMapContext(TypeReferenceContext *ctx);
+
+    antlr4::tree::TerminalNode *MAP();
+    antlr4::tree::TerminalNode *LT();
+    std::vector<TypeReferenceContext *> typeReference();
+    TypeReferenceContext* typeReference(size_t i);
+    antlr4::tree::TerminalNode *COMMA();
+    antlr4::tree::TerminalNode *GT();
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  TypeOptionalContext : public TypeReferenceContext {
+  public:
+    TypeOptionalContext(TypeReferenceContext *ctx);
+
+    antlr4::tree::TerminalNode *OPTIONAL();
+    antlr4::tree::TerminalNode *LT();
+    TypeReferenceContext *typeReference();
+    antlr4::tree::TerminalNode *GT();
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  TypeReferenceContext* typeReference();
+
+  class  QualifiedNameContext : public antlr4::ParserRuleContext {
+  public:
+    QualifiedNameContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    std::vector<antlr4::tree::TerminalNode *> IDENT();
+    antlr4::tree::TerminalNode* IDENT(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> DOUBLE_COLON();
+    antlr4::tree::TerminalNode* DOUBLE_COLON(size_t i);
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  QualifiedNameContext* qualifiedName();
 
   class  ArgumentListContext : public antlr4::ParserRuleContext {
   public:

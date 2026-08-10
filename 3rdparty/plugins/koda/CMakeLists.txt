@@ -47,6 +47,24 @@ find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets WebSockets)
 find_package(antlr4-runtime CONFIG REQUIRED)
 
 # Sources
+set(KODA_DZN_CLIENT_FILES
+  src/dzn_client/dezyne_client.cpp
+  src/dzn_client/dezyne_simulator.cpp
+  src/dzn_client/simulation_scene.cpp
+  src/dzn_client/simulation_label_item.cpp
+  src/dzn_client/component_model.cpp
+)
+
+set(KODA_TYPE_FILES
+  src/typing/types.cpp
+  src/typing/type_reference.cpp
+  src/typing/type_definition.cpp
+  src/typing/variable_model.cpp
+
+  src/typing/helpers.cpp
+  src/typing/type_registry.cpp
+)
+
 set(KODA_COMPILER_FILES
   src/ast/ast.cpp
   src/ast/cst2ast.cpp
@@ -71,22 +89,16 @@ set(KODA_COMPILER_FILES
   src/parser/KodaLexer.cpp
   src/parser/KodaVisitor.cpp
   src/parser/KodaBaseVisitor.cpp
-)
 
-set(KODA_DZN_CLIENT_FILES
-  src/dzn_client/dezyne_client.cpp
-  src/dzn_client/dezyne_simulator.cpp
-  src/dzn_client/simulation_scene.cpp
-  src/dzn_client/simulation_label_item.cpp
-  src/dzn_client/component_model.cpp
+  ${KODA_TYPE_FILES}
 )
-
 # ==================================================================
 # Koda language
 set(COMPILER_NAME "kodagen")
 add_executable(${COMPILER_NAME}
   src/ast/main.cpp
   ${KODA_COMPILER_FILES}
+  ${KODA_TYPE_FILES}
 )
 
 if (MSVC)
@@ -112,7 +124,10 @@ target_link_libraries(${COMPILER_NAME} PRIVATE
 target_include_directories(${COMPILER_NAME} PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src/parser
   ${CMAKE_CURRENT_SOURCE_DIR}/src/ast
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/typing
   ${CMAKE_CURRENT_SOURCE_DIR}/src/ast/emitters
+)
+target_include_directories(${COMPILER_NAME} SYSTEM PRIVATE
   ${ANTLR4_RUNTIME_INCLUDE_DIR}
 )
 
@@ -121,13 +136,7 @@ target_include_directories(${COMPILER_NAME} PRIVATE
 set(TEST_NAME "typetest")
 add_executable(${TEST_NAME}
   src/typing/main.cpp
-  src/typing/types.cpp
-  src/typing/type_reference.cpp
-  src/typing/type_definition.cpp
-  src/typing/variable_model.cpp
-
-  src/typing/helpers.cpp
-  src/typing/type_registry.cpp
+  ${KODA_TYPE_FILES}
 )
 
 target_link_libraries(${TEST_NAME} PRIVATE
@@ -147,6 +156,7 @@ target_include_directories(${LIB_NAME}
   PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/parser
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ast
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/typing
 )
 
 target_include_directories(${LIB_NAME}
@@ -191,6 +201,7 @@ function(add_koda_plugin TARGET_NAME USE_ANTLR_ENABLED)
     )
     set(COMPILER_INCLUDES
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ast
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/typing
       ${CMAKE_CURRENT_SOURCE_DIR}/src/parser
     )
     set(ANTLR_INCLUDES

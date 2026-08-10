@@ -37,7 +37,6 @@ VoidResult Compiler::parse(const CompilerOptions& options)
   parser.removeErrorListeners();
   parser.addErrorListener(&errorListener);
 
-  KodaCST2AST visitor;
   auto* tree = parser.system();
   if (errorListener.hasErrors() || tree == nullptr)
   {
@@ -46,13 +45,17 @@ VoidResult Compiler::parse(const CompilerOptions& options)
     return VoidResult::Failed("Failed to parse input file");
   }
 
+  koda::CST2AST visitor;
   try
   {
-    mAST = std::any_cast<System>(visitor.visitSystem(tree));
+    mAST = std::any_cast<System>(visitor.build(tree));
   } catch (const std::bad_any_cast& e)
   {
     return VoidResult::Failed(std::string("Failed to build AST: ") + e.what());
   } catch (const std::invalid_argument& e)
+  {
+    return VoidResult::Failed(std::string("Failed to build AST: ") + e.what());
+  } catch (const std::runtime_error& e)
   {
     return VoidResult::Failed(std::string("Failed to build AST: ") + e.what());
   }

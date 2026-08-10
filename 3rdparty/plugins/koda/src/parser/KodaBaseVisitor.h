@@ -19,7 +19,55 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitTopLevelDeclaration(KodaParser::TopLevelDeclarationContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitTopLevelComponent(KodaParser::TopLevelComponentContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitTypeRecord(KodaParser::TypeRecordContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitTypeAlias(KodaParser::TypeAliasContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitEnumDeclaration(KodaParser::EnumDeclarationContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitFieldDeclaration(KodaParser::FieldDeclarationContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitEnumValue(KodaParser::EnumValueContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitEnumLiteral(KodaParser::EnumLiteralContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitTypeNamed(KodaParser::TypeNamedContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitTypeList(KodaParser::TypeListContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitTypeOptional(KodaParser::TypeOptionalContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitTypeMap(KodaParser::TypeMapContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitQualifiedName(KodaParser::QualifiedNameContext *ctx) override {
     return visitChildren(ctx);
   }
 
