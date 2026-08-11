@@ -82,6 +82,7 @@ target_link_libraries(${APPLICATION_NAME} PRIVATE
     libdocument
     libcpphelpers
     libmaki
+    libkoda
 )
 
 add_dependencies(${APPLICATION_NAME}
