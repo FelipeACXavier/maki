@@ -60,6 +60,7 @@ enum class TypeReferenceKind
 
 enum class EnumUnderlyingKind
 {
+  Unknown,
   Int32,
   UInt32,
   String
@@ -74,17 +75,20 @@ static const std::string BytesType = "builtin::Bytes";
 static const std::string TimestampType = "builtin::Timestamp";
 static const std::string DurationType = "builtin::Duration";
 static const std::string VoidType = "builtin::Void";
+static const std::string NAMESPACE_SEPARATOR = "::";
 
 struct QualifiedName
 {
-  QualifiedName(const std::string& value, const std::string& separator = "::");
+  QualifiedName() = default;
+  QualifiedName(const std::string& value, const std::string& separator = NAMESPACE_SEPARATOR);
 
   std::vector<std::string> namespacePath;
   std::string name;
 
   bool empty() const;
   std::string toId() const;
-  std::string toString(const std::string& separator = "::") const;
+  std::string namespaceString(const std::string& separator = NAMESPACE_SEPARATOR) const;
+  std::string toString(const std::string& separator = NAMESPACE_SEPARATOR) const;
 
   auto operator<=>(const QualifiedName&) const = default;
 };

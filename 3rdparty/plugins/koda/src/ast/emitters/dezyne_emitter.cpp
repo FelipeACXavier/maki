@@ -1,8 +1,8 @@
 #include "dezyne_emitter.h"
 
+#include "ast/koda_compiler.h"
 #include "dezyne_declaration_pass.h"
 #include "dezyne_lowering_pass.h"
-#include "koda_compiler.h"
 #include "logging.h"
 
 namespace koda

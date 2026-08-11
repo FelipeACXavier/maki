@@ -37,11 +37,11 @@ bool containsWhitespace(const std::string& value)
 
 // ===========================================================================================================
 // TypeDefinition
-TypeDefinition TypeDefinition::createPrimitive(const std::string& name, PrimitiveKind kind)
+TypeDefinition TypeDefinition::createPrimitive(const std::string& name, PrimitiveKind kind, const std::string& id)
 {
   const auto qname = QualifiedName(name);
   TypeDefinition type{
-      .id = qname.toId(),
+      .id = id.empty() ? qname.toId() : id,
       .name = qname,
       .data = PrimitiveTypeDefinition{.primitive = kind},
   };
@@ -49,11 +49,11 @@ TypeDefinition TypeDefinition::createPrimitive(const std::string& name, Primitiv
   return type;
 }
 
-TypeDefinition TypeDefinition::createAlias(const std::string& name, const QualifiedName& alias)
+TypeDefinition TypeDefinition::createAlias(const std::string& name, const QualifiedName& alias, const std::string& id)
 {
   const auto qname = QualifiedName(name);
   TypeDefinition type{
-      .id = qname.toId(),
+      .id = id.empty() ? qname.toId() : id,
       .name = qname,
       .data = AliasTypeDefinition{.target = TypeReference::named(alias.name, alias.toId())},
   };
@@ -61,7 +61,8 @@ TypeDefinition TypeDefinition::createAlias(const std::string& name, const Qualif
   return type;
 }
 
-TypeDefinition TypeDefinition::createRecord(const std::string& name, const std::map<std::string, QualifiedName>& fields, const std::string& base)
+TypeDefinition TypeDefinition::createRecord(const std::string& name, const std::map<std::string, QualifiedName>& fields, const std::string& base,
+                                            const std::string& id)
 {
   const auto qname = QualifiedName(name);
   std::vector<FieldDefinition> ifields;
@@ -72,7 +73,7 @@ TypeDefinition TypeDefinition::createRecord(const std::string& name, const std::
     });
 
   TypeDefinition type{
-      .id = qname.toId(),
+      .id = id.empty() ? qname.toId() : id,
       .name = qname,
       .data =
           RecordTypeDefinition{
@@ -84,11 +85,11 @@ TypeDefinition TypeDefinition::createRecord(const std::string& name, const std::
   return type;
 }
 
-TypeDefinition TypeDefinition::createList(const std::string& name, const QualifiedName& listType)
+TypeDefinition TypeDefinition::createList(const std::string& name, const QualifiedName& listType, const std::string& id)
 {
   const auto qname = QualifiedName(name);
   TypeDefinition type{
-      .id = qname.toId(),
+      .id = id.empty() ? qname.toId() : id,
       .name = qname,
       .data = AliasTypeDefinition{.target = TypeReference::list(TypeReference::named(listType, listType.toId()))},
   };
@@ -96,11 +97,11 @@ TypeDefinition TypeDefinition::createList(const std::string& name, const Qualifi
   return type;
 }
 
-TypeDefinition TypeDefinition::createMap(const std::string& name, const QualifiedName& keyType, const QualifiedName& fieldType)
+TypeDefinition TypeDefinition::createMap(const std::string& name, const QualifiedName& keyType, const QualifiedName& fieldType, const std::string& id)
 {
   const auto qname = QualifiedName(name);
   TypeDefinition type{
-      .id = qname.toId(),
+      .id = id.empty() ? qname.toId() : id,
       .name = qname,
       .data = AliasTypeDefinition{.target = TypeReference::map(TypeReference::named(keyType, keyType.toId()),
                                                                TypeReference::named(fieldType, fieldType.toId()))},
@@ -118,7 +119,7 @@ std::optional<std::string> toEnumValue(EnumUnderlyingKind kind, const std::optio
 }
 
 TypeDefinition TypeDefinition::createEnum(const std::string& name, EnumUnderlyingKind kind,
-                                          const std::map<std::string, std::optional<std::string>>& fields)
+                                          const std::map<std::string, std::optional<std::string>>& fields, const std::string& id)
 {
   const auto qname = QualifiedName(name);
   std::vector<EnumValueDefinition> values;
@@ -131,7 +132,7 @@ TypeDefinition TypeDefinition::createEnum(const std::string& name, EnumUnderlyin
   }
 
   TypeDefinition type{
-      .id = qname.toId(),
+      .id = id.empty() ? qname.toId() : id,
       .name = qname,
       .data = EnumTypeDefinition{.underlyingType = kind, .values = values},
   };

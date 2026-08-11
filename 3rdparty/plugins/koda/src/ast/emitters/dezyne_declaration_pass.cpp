@@ -4,7 +4,7 @@
 #include <cctype>
 #include <format>
 
-#include "koda_compiler.h"
+#include "ast/koda_compiler.h"
 
 namespace koda::dezyne
 {
@@ -111,8 +111,7 @@ VoidResult DeclarationPass::declareStrategy(const ir::PStrategy& strategy, FlowS
   }
   else if (auto p = std::get_if<ir::Strategy::FlowRef>(&strategy->value))
   {
-    mModel.declarePort(state.component, sourceName(p->flow), PortDirection::Requires,
-                       PortProtocol::Action, {p->flow, strategy->span});
+    mModel.declarePort(state.component, sourceName(p->flow), PortDirection::Requires, PortProtocol::Action, {p->flow, strategy->span});
   }
   else if (auto p = std::get_if<ir::Strategy::TaskCall>(&strategy->value))
   {
@@ -160,8 +159,7 @@ std::string DeclarationPass::sourceName(koda::SymbolId id) const
 
 std::string DeclarationPass::lower(std::string value)
 {
-  std::transform(value.begin(), value.end(), value.begin(),
-                 [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
   return value;
 }
 

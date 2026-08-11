@@ -2,10 +2,10 @@
 
 #include <any>
 
-#include "KodaBaseVisitor.h"
-#include "KodaParser.h"
-#include "ast.h"
-#include "type_registry.h"
+#include "ast/ast.h"
+#include "parser/KodaBaseVisitor.h"
+#include "parser/KodaParser.h"
+#include "typing/type_registry.h"
 
 namespace koda
 {

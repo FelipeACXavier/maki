@@ -124,8 +124,24 @@ std::string toString(EnumUnderlyingKind kind)
 
     case EnumUnderlyingKind::String:
       return "String";
+
+    case EnumUnderlyingKind::Unknown:
+      return "Unknown";
   }
 
   return "Unknown enum underlying kind";
 }
+
+EnumUnderlyingKind enumKindFromString(const std::string& kind)
+{
+  if (kind == "Int32")
+    return EnumUnderlyingKind::Int32;
+  else if (kind == "UInt32")
+    return EnumUnderlyingKind::UInt32;
+  else if (kind == "String")
+    return EnumUnderlyingKind::String;
+  else
+    return EnumUnderlyingKind::Unknown;
+}
+
 }  // namespace koda::types

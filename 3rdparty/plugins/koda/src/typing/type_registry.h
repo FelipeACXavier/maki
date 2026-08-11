@@ -19,7 +19,8 @@ enum class TypeRegistrationError
   EmptyName,
   DuplicateId,
   DuplicateName,
-  InvalidDefinition
+  InvalidDefinition,
+  BuiltIn
 };
 
 typedef DataResult<TypeRegistrationError> TypeRegistrationResult;
@@ -31,11 +32,12 @@ public:
 
   void registerBuiltinTypes();
 
-  TypeRegistrationResult add(const TypeDefinition& definition);
-  TypeRegistrationResult replace(const TypeDefinition& definition);
+  virtual TypeRegistrationResult add(const TypeDefinition& definition);
+  virtual TypeRegistrationResult replace(const TypeDefinition& definition);
 
-  void clear();
-  bool removeById(const TypeId& id);
+  virtual void clear();
+  virtual void clearUserTypes();
+  virtual bool removeById(const TypeId& id);
 
   bool containsId(const TypeId& id) const;
   bool containsName(const QualifiedName& name) const;
@@ -57,6 +59,8 @@ public:
 
   const FieldDefinition* findField(const TypeReference& recordType, const std::string& fieldName) const;
 
+  bool isBuiltin(const TypeDefinition& type) const;
+  bool isBuiltin(const std::string& type) const;
   bool isAssignable(const TypeReference& source, const TypeReference& target) const;
 
   std::vector<TypeModelDiagnostic> validate() const;

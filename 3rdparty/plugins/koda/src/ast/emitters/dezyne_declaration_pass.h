@@ -3,10 +3,10 @@
 #include <map>
 #include <string>
 
+#include "ast/koda_ir.h"
+#include "ast/symbol_registry.h"
 #include "dezyne_model.h"
-#include "koda_ir.h"
 #include "result.h"
-#include "symbol_registry.h"
 
 namespace koda
 {

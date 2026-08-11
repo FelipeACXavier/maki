@@ -5,8 +5,8 @@
 #include <format>
 #include <sstream>
 
+#include "ast/koda_compiler.h"
 #include "dezyne_library_emitter.h"
-#include "koda_compiler.h"
 #include "logging.h"
 
 namespace koda::dezyne
@@ -239,10 +239,7 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
     }
 
     out << std::format("    {} <=> {};\n", connection.lhs, connection.rhs);
-    mModel.declareConnection(component->symbol,
-                             std::to_string(connectionId++),
-                             connection.lhs,
-                             connection.rhs, {component->symbol, connection.span});
+    mModel.declareConnection(component->symbol, std::to_string(connectionId++), connection.lhs, connection.rhs, {component->symbol, connection.span});
   }
 
   out << "  }\n}\n";
@@ -316,9 +313,7 @@ Result<LoweringPass::FlowResult> LoweringPass::lowerFlow(const ir::Flow& flow)
       continue;
 
     const auto direction = port.direction == PortDirection::Provides ? "provides" : "requires";
-    const auto protocol = port.protocol == PortProtocol::Signal  ? "isignal"
-                          : port.protocol == PortProtocol::Alarm ? "ialarm"
-                                                                 : "iaction";
+    const auto protocol = port.protocol == PortProtocol::Signal ? "isignal" : port.protocol == PortProtocol::Alarm ? "ialarm" : "iaction";
     out << std::format("  {} {} {};\n", direction, protocol, symbol->name);
   }
 
@@ -397,8 +392,7 @@ Result<std::string> LoweringPass::lowerStrategy(const ir::Flow& flow, const ir::
       if (!child.IsSuccess())
         return child;
 
-      state.connections.push_back({.lhs = std::format("{}.action{}", instance, i),
-                                   .rhs = child.Value()});
+      state.connections.push_back({.lhs = std::format("{}.action{}", instance, i), .rhs = child.Value()});
     }
     return instance + ".api";
   }
@@ -439,12 +433,9 @@ Result<std::string> LoweringPass::lowerStrategy(const ir::Flow& flow, const ir::
     mModel.declareInstance(state.component, instance, "cwithin", {std::nullopt, strategy->span});
     mModel.declarePort(state.component, alarm, PortDirection::Requires, PortProtocol::Alarm, {std::nullopt, strategy->span});
     state.alarms.push_back(alarm);
-    state.connections.push_back({.lhs = instance + ".action1",
-                                 .rhs = body.Value()});
-    state.connections.push_back({.lhs = instance + ".action2",
-                                 .rhs = fallback.Value()});
-    state.connections.push_back({.lhs = instance + ".alarm",
-                                 .rhs = alarm});
+    state.connections.push_back({.lhs = instance + ".action1", .rhs = body.Value()});
+    state.connections.push_back({.lhs = instance + ".action2", .rhs = fallback.Value()});
+    state.connections.push_back({.lhs = instance + ".alarm", .rhs = alarm});
     return instance + ".api";
   }
   if (std::holds_alternative<ir::Strategy::IfElse>(strategy->value))
@@ -469,16 +460,14 @@ Result<std::string> LoweringPass::lowerStrategy(const ir::Flow& flow, const ir::
     state.imports.insert(every ? "every.dzn" : "repeat.dzn");
     state.definitions.push_back(std::string(type) + " " + instance);
     mModel.declareInstance(state.component, instance, type, {std::nullopt, strategy->span});
-    state.connections.push_back({.lhs = instance + ".action1",
-                                 .rhs = current});
+    state.connections.push_back({.lhs = instance + ".action1", .rhs = current});
     if (every)
     {
       const auto alarm = std::format("alarm{}", state.alarm++);
       state.imports.insert("ialarm.dzn");
       mModel.declarePort(state.component, alarm, PortDirection::Requires, PortProtocol::Alarm, {std::nullopt, strategy->span});
       state.alarms.push_back(alarm);
-      state.connections.push_back({.lhs = instance + ".alarm",
-                                   .rhs = alarm});
+      state.connections.push_back({.lhs = instance + ".alarm", .rhs = alarm});
     }
     return instance + ".api";
   }
@@ -536,10 +525,8 @@ Result<std::string> LoweringPass::lowerHandler(const ir::Flow& flow, const ir::P
     auto body = lowerStrategy(flow, handler->body, state);
     if (!body.IsSuccess())
       return body;
-    state.connections.push_back({.lhs = instance + ".action",
-                                 .rhs = state.previous});
-    state.connections.push_back({.lhs = instance + ".handler",
-                                 .rhs = body.Value()});
+    state.connections.push_back({.lhs = instance + ".action", .rhs = state.previous});
+    state.connections.push_back({.lhs = instance + ".handler", .rhs = body.Value()});
     return instance + ".api";
   }
 
@@ -560,12 +547,9 @@ Result<std::string> LoweringPass::lowerHandler(const ir::Flow& flow, const ir::P
   if (!body.IsSuccess())
     return body;
 
-  state.connections.push_back({.lhs = instance + ".signal",
-                               .rhs = signal.Value()});
-  state.connections.push_back({.lhs = instance + ".action",
-                               .rhs = state.previous});
-  state.connections.push_back({.lhs = instance + ".handler",
-                               .rhs = body.Value()});
+  state.connections.push_back({.lhs = instance + ".signal", .rhs = signal.Value()});
+  state.connections.push_back({.lhs = instance + ".action", .rhs = state.previous});
+  state.connections.push_back({.lhs = instance + ".handler", .rhs = body.Value()});
   return instance + ".api";
 }
 
@@ -756,8 +740,7 @@ std::string LoweringPass::triggerName(koda::SymbolId capability) const
 
 std::string LoweringPass::lower(std::string value)
 {
-  std::transform(value.begin(), value.end(), value.begin(),
-                 [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
   return value;
 }
 

@@ -52,7 +52,7 @@ public:
     auto operator<=>(const Map&) const = default;
   };
 
-  TypeReference() = delete;
+  TypeReference();
 
   static TypeReference primitive(PrimitiveKind kind);
   static TypeReference named(QualifiedName name, std::optional<TypeId> id = std::nullopt);
@@ -90,7 +90,7 @@ private:
     std::variant<Primitive, Named, List, Optional, Map> value;
   };
 
-  explicit TypeReference(std::vector<Node> nodes, std::size_t rootNode);
+  TypeReference(std::vector<Node> nodes, std::size_t rootNode);
 
   static std::size_t appendTree(std::vector<Node>& target, const TypeReference& source);
 

@@ -53,6 +53,20 @@ std::string QualifiedName::toString(const std::string& separator) const
   return stream.str();
 }
 
+std::string QualifiedName::namespaceString(const std::string& separator) const
+{
+  std::ostringstream stream;
+  for (const auto& namespacePart : namespacePath)
+  {
+    if (stream.tellp() > 0)
+      stream << separator;
+
+    stream << namespacePart;
+  }
+
+  return stream.str();
+}
+
 QualifiedName::QualifiedName(const std::string& value, const std::string& separator)
 {
   const auto parts = split(value, separator);
@@ -63,4 +77,5 @@ QualifiedName::QualifiedName(const std::string& value, const std::string& separa
   if (parts.size() > 1)
     namespacePath.assign(parts.begin(), parts.end() - 1);
 }
+
 }  // namespace koda::types

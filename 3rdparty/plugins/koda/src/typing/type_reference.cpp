@@ -6,12 +6,17 @@
 
 namespace koda::types
 {
+TypeReference::TypeReference()
+    : TypeReference({}, 0)
+{
+}
+
 TypeReference::TypeReference(std::vector<Node> nodes, std::size_t rootNode)
     : mNodes(std::move(nodes))
     , mRootNode(rootNode)
 {
-  if (mNodes.empty() || mRootNode >= mNodes.size())
-    throw std::invalid_argument("Invalid TypeReference node tree");
+  // if (mNodes.empty() || mRootNode >= mNodes.size())
+  // throw std::invalid_argument("Invalid TypeReference node tree");
 }
 
 TypeReference TypeReference::primitive(PrimitiveKind kind)

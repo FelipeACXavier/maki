@@ -146,7 +146,7 @@ void TypeRegistry::registerBuiltinTypes()
   const auto registerBuiltin = [this](std::string name, PrimitiveKind primitive) {
     const auto qname = QualifiedName(name);
     TypeDefinition definition{
-        .id = qname.toId(),
+        .id = qname.toId(),  // These can just use the qname as ids since they are immutable
         .name = qname,
         .data = PrimitiveTypeDefinition{.primitive = primitive},
     };
@@ -190,14 +190,15 @@ TypeRegistrationResult TypeRegistry::add(const TypeDefinition& definition)
 
 TypeRegistrationResult TypeRegistry::replace(const TypeDefinition& definition)
 {
-  const auto existing = mTypes.find(definition.id);
-
   // Just add the new type in case it doesn't exist
+  const auto existing = mTypes.find(definition.id);
   if (existing == mTypes.end())
+  {
+    LOG_TRACE("Could not find id: {} adding it", definition.id);
     return add(definition);
+  }
 
   const TypeId replacedId = definition.id;
-
   const TypeRegistrationResult result = validateRegistration(definition, &replacedId);
 
   if (!result.IsSuccess())
@@ -254,6 +255,20 @@ void TypeRegistry::clear()
   mTypes.clear();
   mIdsByName.clear();
   mBuiltinIds.clear();
+}
+
+void TypeRegistry::clearUserTypes()
+{
+  for (auto it = mTypes.begin(); it != mTypes.end();)
+    if (isBuiltin(it->second))
+    {
+      ++it;
+    }
+    else
+    {
+      mIdsByName.erase(nameKey(it->second.name));
+      it = mTypes.erase(it);
+    }
 }
 
 bool TypeRegistry::containsId(const TypeId& id) const
@@ -461,6 +476,20 @@ const FieldDefinition* TypeRegistry::findField(const TypeReference& recordType, 
   return nullptr;
 }
 
+bool TypeRegistry::isBuiltin(const std::string& type) const
+{
+  const auto definition = findById(type);
+  if (!definition)
+    return false;
+
+  return isBuiltin(*definition);
+}
+
+bool TypeRegistry::isBuiltin(const TypeDefinition& type) const
+{
+  return type.isPrimitive() && mBuiltinIds.find(type.primitive().primitive) != mBuiltinIds.end();
+}
+
 bool TypeRegistry::isAssignable(const TypeReference& source, const TypeReference& target) const
 {
   const auto resolvedSource = resolveAliases(source);
@@ -594,7 +623,7 @@ TypeRegistrationResult TypeRegistry::validateRegistration(const TypeDefinition& 
 
   const std::string qualifiedName = nameKey(definition.name);
   const auto existingName = mIdsByName.find(qualifiedName);
-  if (existingName != mIdsByName.end() && (replacedId == nullptr || existingName->second != *replacedId))
+  if (existingName != mIdsByName.end() && replacedId == nullptr)
     return TypeRegistrationResult::Failed(TypeRegistrationError::DuplicateName, "A type named '" + qualifiedName + "' is already registered.");
 
   const auto diagnostics = definition.validate();
@@ -603,7 +632,13 @@ TypeRegistrationResult TypeRegistry::validateRegistration(const TypeDefinition& 
   });
 
   if (hasErrors)
-    return TypeRegistrationResult::Failed(TypeRegistrationError::InvalidDefinition, "The type definition contains local validation errors.");
+  {
+    std::string msg = "The type definition contains local validation errors:";
+    for (const auto& diagnostic : diagnostics)
+      msg += " " + diagnostic.message;
+
+    return TypeRegistrationResult::Failed(TypeRegistrationError::InvalidDefinition, msg);
+  }
 
   // We need to make sure that the underlying types exists.
   if (definition.isAlias())

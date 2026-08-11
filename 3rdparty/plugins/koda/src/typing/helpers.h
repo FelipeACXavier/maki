@@ -34,4 +34,6 @@ std::string toString(PrimitiveKind kind);
 std::string toString(TypeKind kind);
 std::string toString(TypeReferenceKind kind);
 std::string toString(EnumUnderlyingKind kind);
+
+EnumUnderlyingKind enumKindFromString(const std::string& kind);
 }  // namespace koda::types

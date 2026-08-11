@@ -2,8 +2,6 @@
 
 #include <fstream>
 
-#include "KodaLexer.h"
-#include "KodaParser.h"
 #include "antlr4-runtime.h"
 #include "cst2ast.h"
 #include "declaration_pass.h"
@@ -11,6 +9,8 @@
 #include "error_listener.h"
 #include "ir_builder.h"
 #include "logging.h"
+#include "parser/KodaLexer.h"
+#include "parser/KodaParser.h"
 
 namespace koda
 {

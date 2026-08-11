@@ -9,8 +9,8 @@
 #include <unordered_map>
 #include <vector>
 
-#include "ast.h"
-#include "symbol.h"
+#include "ast/ast.h"
+#include "ast/symbol.h"
 
 namespace koda::dezyne
 {
@@ -81,8 +81,7 @@ class SymbolTable
 {
 public:
   void clear();
-  SymbolId declare(SymbolKind kind, std::string name, std::string qualifiedName,
-                   SymbolId parent = InvalidSymbol, Provenance origin = {});
+  SymbolId declare(SymbolKind kind, std::string name, std::string qualifiedName, SymbolId parent = InvalidSymbol, Provenance origin = {});
 
   const Symbol* get(SymbolId id) const;
   Symbol* get(SymbolId id);

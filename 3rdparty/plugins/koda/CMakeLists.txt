@@ -122,10 +122,7 @@ target_link_libraries(${COMPILER_NAME} PRIVATE
 )
 
 target_include_directories(${COMPILER_NAME} PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/parser
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/ast
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/typing
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/ast/emitters
+  ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 target_include_directories(${COMPILER_NAME} SYSTEM PRIVATE
   ${ANTLR4_RUNTIME_INCLUDE_DIR}
@@ -144,7 +141,7 @@ target_link_libraries(${TEST_NAME} PRIVATE
 )
 
 target_include_directories(${TEST_NAME} PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/typing
+  ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
 # ==================================================================
@@ -154,9 +151,7 @@ add_library(${LIB_NAME} STATIC ${KODA_COMPILER_FILES})
 
 target_include_directories(${LIB_NAME}
   PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/parser
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ast
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/typing
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
 target_include_directories(${LIB_NAME}
@@ -200,9 +195,7 @@ function(add_koda_plugin TARGET_NAME USE_ANTLR_ENABLED)
       # src/ros_emitter.cpp
     )
     set(COMPILER_INCLUDES
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/ast
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/typing
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/parser
+      ${CMAKE_CURRENT_SOURCE_DIR}/src
     )
     set(ANTLR_INCLUDES
       ${ANTLR4_RUNTIME_INCLUDE_DIR}
