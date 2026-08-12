@@ -35,6 +35,7 @@
 #include "widgets/properties/properties_menu.h"
 #include "widgets/structure/file_menu.h"
 #include "widgets/structure/system_menu.h"
+#include "widgets/type_editor.h"
 #include "widgets/widget_factory.h"
 
 static constexpr int MINIMUM_MENU_WIDTH = 250;
@@ -352,10 +353,27 @@ void MainWindowLayout::buildCentralPanel()
   mBottomPanel->addWidget(pluginContainer);
 
   // -----------------------------------------------------------------
+  // Type editor
+  auto* typeContainer = new StyledFrame(mBottomPanel);
+  typeContainer->setBackgroundRole(StyledFrame::BackgroundRole::Base);
+  typeContainer->setBorderRole(StyledFrame::BorderRole::Mid);
+  typeContainer->setRadius(theme.borderRadius);
+  typeContainer->setBorderWidth(theme.borderWidth);
+
+  QVBoxLayout* typeLayout = new QVBoxLayout(typeContainer);
+  typeLayout->setContentsMargins(theme.spacing, theme.spacing, theme.spacing, theme.borderWidth);
+  typeLayout->setSpacing(theme.spacing);
+
+  auto typeEditor = new maki::TypeEditor(typeContainer);
+  typeLayout->addWidget(typeEditor);
+
+  mBottomNavigation->addItem(tr("Type Editor"), QIcon(":/icons/document-edit.svg"));
+  mBottomPanel->addWidget(typeContainer);
+
+  // -----------------------------------------------------------------
   // Final detals
-  connect(mBottomNavigation, &oclero::qlementine::NavigationBar::currentIndexChanged, [this]() {
-    mBottomPanel->setCurrentIndex(mBottomNavigation->currentIndex());
-  });
+  connect(mBottomNavigation, &oclero::qlementine::NavigationBar::currentIndexChanged,
+          [this]() { mBottomPanel->setCurrentIndex(mBottomNavigation->currentIndex()); });
   mBottomPanel->setCurrentIndex(0);
 
   mCentralSplitter->addWidget(mBottomContainer);
@@ -536,9 +554,8 @@ void MainWindowLayout::buildMenuBar()
   mTranslatable.push_back({mActionToggleToasts, "Minimize Toasts"});
   mActionToggleToasts->setCheckable(true);
   mActionToggleToasts->setChecked(false);
-  connect(mActionToggleToasts, &QAction::toggled, [this](bool toggled) {
-    mActionToggleToasts->setIcon(iconFromTheme(toggled ? "notifications-disabled" : "notifications"));
-  });
+  connect(mActionToggleToasts, &QAction::toggled,
+          [this](bool toggled) { mActionToggleToasts->setIcon(iconFromTheme(toggled ? "notifications-disabled" : "notifications")); });
   view->addAction(mActionToggleToasts);
 
   view->addSeparator();
@@ -552,25 +569,19 @@ void MainWindowLayout::buildMenuBar()
   mOpenComponentsPanel->setIcon(iconFromTheme("view-visible"));
   mTranslatable.push_back({mOpenComponentsPanel, "Components panel"});
   showMenu->addAction(mOpenComponentsPanel);
-  connect(mOpenComponentsPanel, &QAction::triggered, [this] {
-    togglePanelVisibility(mLeftPanel, mOpenComponentsPanel);
-  });
+  connect(mOpenComponentsPanel, &QAction::triggered, [this] { togglePanelVisibility(mLeftPanel, mOpenComponentsPanel); });
 
   mOpenInfoPanel = new QAction(tr("Information panel"), this);
   mOpenInfoPanel->setIcon(iconFromTheme("view-visible"));
   mTranslatable.push_back({mOpenInfoPanel, "Information panel"});
   showMenu->addAction(mOpenInfoPanel);
-  connect(mOpenInfoPanel, &QAction::triggered, [this] {
-    togglePanelVisibility(mBottomContainer, mOpenInfoPanel);
-  });
+  connect(mOpenInfoPanel, &QAction::triggered, [this] { togglePanelVisibility(mBottomContainer, mOpenInfoPanel); });
 
   mOpenPropertiesPanel = new QAction(tr("Properties panel"), this);
   mOpenPropertiesPanel->setIcon(iconFromTheme("view-visible"));
   mTranslatable.push_back({mOpenPropertiesPanel, "Properties panel"});
   showMenu->addAction(mOpenPropertiesPanel);
-  connect(mOpenPropertiesPanel, &QAction::triggered, [this] {
-    togglePanelVisibility(mRightPanel, mOpenPropertiesPanel);
-  });
+  connect(mOpenPropertiesPanel, &QAction::triggered, [this] { togglePanelVisibility(mRightPanel, mOpenPropertiesPanel); });
 
   mSpecialTabsMenu = view->addMenu(iconFromTheme("special-effects-symbolic"), tr("Special tabs"));
   mTranslatable.push_back({mSpecialTabsMenu, "Special tabs"});

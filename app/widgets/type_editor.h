@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QCompleter>
 #include <QWidget>
 
 #include "type_registry.h"
@@ -15,6 +16,9 @@ class QTreeWidgetItem;
 
 namespace maki
 {
+
+class StringWidget;
+struct WidgetAlignment;
 
 class TypeEditor : public QWidget
 {
@@ -36,11 +40,11 @@ private slots:
   void currentTypeChanged(QTreeWidgetItem* current, QTreeWidgetItem* previous);
 
   // Record editor
-  void addField();
+  void addField(const QString& defaultName, const QString& defaultValue);
   void removeField();
 
   // Enum editor
-  void addEnumValue();
+  void addEnumValue(const QString& defaultName, const QString& defaultValue);
   void removeEnumValue();
 
   // Registry
@@ -78,8 +82,6 @@ private:
   // --------------------------------------------------------------------------
   // Record page
   // --------------------------------------------------------------------------
-
-  QComboBox* mBaseTypeCombo = nullptr;
 
   QTableWidget* mFieldsTable = nullptr;
   QPushButton* mAddFieldButton = nullptr;
@@ -121,6 +123,17 @@ private:
   QTreeWidgetItem* findItemByRole(QTreeWidgetItem* parent, int role, const QVariant& value) const;
 
   void selectType(const QString& qualifiedName);
+
+  QComboBox* createComboBox(QWidget* parent, const QString& defaultValue) const;
+  QTableWidget* createTable(QWidget* parent) const;
+  void createDefinition(const koda::types::TypeDefinition& definition);
+  maki::StringWidget* createNamespaceEdit(maki::WidgetAlignment& alignment, QWidget* parent) const;
+  void addCompleter(const QStringList& items, QWidget* parent) const;
+  QIcon typeToIcon(const koda::types::TypeDefinition& type) const;
+
+  void populateEnumKind(QComboBox* widget) const;
+  void populateExtentKind(QComboBox* widget, const koda::types::QualifiedName* currentName = nullptr) const;
+  void populateTypes(QComboBox* widget, const koda::types::QualifiedName* currentName = nullptr) const;
 };
 
 }  // namespace maki

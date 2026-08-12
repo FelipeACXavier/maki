@@ -29,6 +29,7 @@ class ColorEditor;
 namespace maki
 {
 class WidgetGroup;
+
 /**
  * @struct WidgetAlignment
  * @brief Describes how a widget should be aligned or inserted into a parent layout.
@@ -72,6 +73,16 @@ struct WidgetAlignment
   static WidgetAlignment Vertical()
   {
     return WidgetAlignment{WidgetAlignment::Type::VERTICAL};
+  };
+
+  static WidgetAlignment Form(maki::WidgetGroup* widgetGroup, int width = 0, Direction dir = Direction::LEFT)
+  {
+    return maki::WidgetAlignment{
+        .type = maki::WidgetAlignment::Type::FORM,
+        .direction = dir,
+        .group = widgetGroup,
+        .labelWidth = width,
+    };
   };
 };
 
@@ -246,6 +257,7 @@ public:
    * @param parent The parent widget.
    */
   StringWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent);
+  StringWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, const QString& tooltip, QWidget* parent);
 
   void writeValueToWidget(const QString& value) override;
 
@@ -274,7 +286,8 @@ public:
    * @param min The minimum allowed value.
    * @param max The maximum allowed value.
    */
-  IntegerWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent, int min = INT32_MIN, int max = INT32_MAX);
+  IntegerWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent, int min = INT32_MIN,
+                int max = INT32_MAX);
 
   /**
    * @brief Sets the widget to accept variables
@@ -317,7 +330,8 @@ public:
    * @param min The minimum allowed value.
    * @param max The maximum allowed value.
    */
-  FloatWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent, qreal min = std::numeric_limits<qreal>::min(), qreal max = std::numeric_limits<qreal>::max());
+  FloatWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent,
+              qreal min = std::numeric_limits<qreal>::min(), qreal max = std::numeric_limits<qreal>::max());
 
   /**
    * @brief Sets the widget to accept variables
@@ -457,6 +471,12 @@ public:
    * @param tooltip The tooltip text.
    */
   void setToolTip(const QString& tooltip);
+
+  /**
+   * @brief Sets the text shown in the button.
+   * @param text The text to be shown.
+   */
+  void setText(const QString& text);
 
 signals:
   /**

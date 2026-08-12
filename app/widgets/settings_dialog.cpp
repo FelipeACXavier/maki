@@ -33,7 +33,8 @@
 #include "system/edge_router.h"
 #include "widget_factory.h"
 
-SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsManager> manager, std::shared_ptr<LanguageManager> languageManager, QWidget* parent)
+SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsManager> manager, std::shared_ptr<LanguageManager> languageManager,
+                               QWidget* parent)
     : BaseDialog(title, 1.4, 0.7, parent)
     , mSettingsManager(manager)
     , mLanguageManager(languageManager)
@@ -87,7 +88,8 @@ SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsMan
   apply();
 }
 
-SettingsDialog::SelectorPage SettingsDialog::addPage(const QString& pageName, const QString& iconName, std::function<void()> resetCallback, QTreeWidgetItem* parent)
+SettingsDialog::SelectorPage SettingsDialog::addPage(const QString& pageName, const QString& iconName, std::function<void()> resetCallback,
+                                                     QTreeWidgetItem* parent)
 {
   QWidget* page = new QWidget(this);
   page->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -192,10 +194,12 @@ VoidResult SettingsDialog::createGeneralPage()
   autoSaveLayout->addWidget(mAutosaveEnabled);
   autoSaveLayout->addWidget(mAutosaveMinutes);
 
-  mRecentHistorySize = new maki::IntegerWidget(tr("Recent History Size"), QString::number(generalSettings.recentHistorySize), alignment, page, INT32_MIN, INT32_MAX);
+  mRecentHistorySize =
+      new maki::IntegerWidget(tr("Recent History Size"), QString::number(generalSettings.recentHistorySize), alignment, page, INT32_MIN, INT32_MAX);
 
   mRestoreLastSession = new maki::BooleanWidget(tr("Restore last session on startup"), generalSettings.restoreLastSession, alignment, page);
-  mConfirmOnClose = new maki::BooleanWidget(tr("Confirm before closing editor with running execution"), generalSettings.confirmOnCloseWithExecution, alignment, page);
+  mConfirmOnClose = new maki::BooleanWidget(tr("Confirm before closing editor with running execution"), generalSettings.confirmOnCloseWithExecution,
+                                            alignment, page);
   mShowWelcomeMessage = new maki::BooleanWidget(tr("Show welcome message"), generalSettings.showWelcomeMessage, alignment, page);
 
   auto closingLayout = new maki::WidgetGroup(tr("Opening/Closing"), page);
@@ -347,9 +351,7 @@ VoidResult SettingsDialog::createAppearancePage()
 VoidResult SettingsDialog::createGenerationPage()
 {
   auto generation = mSettingsManager->generation();
-  auto [selector, page] = addPage(tr("Generation"), "run-build", [this] {
-    mSettingsManager->setGeneration(GenerationSettings());
-  });
+  auto [selector, page] = addPage(tr("Generation"), "run-build", [this] { mSettingsManager->setGeneration(GenerationSettings()); });
 
   auto* pathRow = new QWidget(page);
   mGenerationDirEdit = new maki::StringWidget(tr("Generation output folder"), generation.generationDir, maki::WidgetAlignment::Inline(), pathRow);
@@ -431,9 +433,8 @@ VoidResult SettingsDialog::createPluginPages()
   removeBtn->setMaximumWidth(200);
   removeBtn->setEnabled(false);
 
-  connect(table->selectionModel(), &QItemSelectionModel::selectionChanged, topPage, [removeBtn, table]() {
-    removeBtn->setEnabled(table->selectionModel()->hasSelection());
-  });
+  connect(table->selectionModel(), &QItemSelectionModel::selectionChanged, topPage,
+          [removeBtn, table]() { removeBtn->setEnabled(table->selectionModel()->hasSelection()); });
 
   connect(model, &QStandardItemModel::itemChanged, this, [this, model](QStandardItem* item) {
     if (item->column() != 2)
@@ -489,10 +490,12 @@ VoidResult SettingsDialog::createPluginPages()
     item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled | Qt::ItemIsUserCheckable);
     model->setItem(newRow, 2, item);
 
-    auto [selector, page] = addPage(pluginId, plugin.icon, [] {
-      // mSettingsManager->setGeneration(GenerationSettings());
-    },
-                                    topSelector);
+    auto [selector, page] = addPage(
+        pluginId, plugin.icon,
+        [] {
+          // mSettingsManager->setGeneration(GenerationSettings());
+        },
+        topSelector);
 
     QVBoxLayout* layout = page->findChild<QVBoxLayout*>("ContentArea");
     layout->setSpacing(2);
@@ -511,9 +514,8 @@ VoidResult SettingsDialog::createPluginPages()
         auto* field = new maki::IntegerWidget(setting.getLabel(), setting.getDefaultValue().toString(), alignment, page, min, max);
         field->addDescription(setting.getDescription());
 
-        connect(field, &maki::IntegerWidget::valueChanged, this, [this, pluginId, setting](const QString& value) {
-          updatePluginSetting(pluginId, setting.getKey(), value);
-        });
+        connect(field, &maki::IntegerWidget::valueChanged, this,
+                [this, pluginId, setting](const QString& value) { updatePluginSetting(pluginId, setting.getKey(), value); });
 
         layout->addWidget(field);
       }
@@ -522,9 +524,8 @@ VoidResult SettingsDialog::createPluginPages()
         auto* field = new maki::BooleanWidget(setting.getLabel(), setting.getValue().toBool(), alignment, page);
         field->addDescription(setting.getDescription());
 
-        connect(field, &maki::BooleanWidget::valueChanged, this, [this, pluginId, setting](const int value) {
-          updatePluginSetting(pluginId, setting.getKey(), value);
-        });
+        connect(field, &maki::BooleanWidget::valueChanged, this,
+                [this, pluginId, setting](const int value) { updatePluginSetting(pluginId, setting.getKey(), value); });
 
         layout->addWidget(field);
       }

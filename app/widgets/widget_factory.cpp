@@ -9,8 +9,10 @@
 #include <QIntValidator>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QScrollBar>
 #include <QShortcut>
 #include <QSpinBox>
+#include <QToolTip>
 #include <oclero/qlementine.hpp>
 #include <oclero/qlementine/widgets/ColorEditor.hpp>
 #include <oclero/qlementine/widgets/IconWidget.hpp>
@@ -25,6 +27,7 @@
 
 static const int WIDGET_SPACING = 2;
 static const int WIDGET_PADDING = 24;
+static const int TOOLTIP_HEIGHT = 55;
 
 namespace maki
 {
@@ -165,6 +168,7 @@ InputWidget::InputWidget(const QString& label, QWidget* inputField, WidgetAlignm
     labelWidget->setMinimumWidth(metric.horizontalAdvance(label) + theme.spacing);
   }
 
+  mInputField->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
   mInputField->setParent(this);
 
   if (alignment.type == WidgetAlignment::Type::FORM)
@@ -211,8 +215,7 @@ QWidget* InputWidget::createLayout(oclero::qlementine::Label* labelWidget, Widge
   hLayout->setContentsMargins(0, 0, 0, 0);
   hLayout->setSpacing(WIDGET_SPACING);
 
-  if (alignment.direction == WidgetAlignment::Direction::RIGHT ||
-      alignment.direction == WidgetAlignment::Direction::CENTER)
+  if (alignment.direction == WidgetAlignment::Direction::RIGHT || alignment.direction == WidgetAlignment::Direction::CENTER)
     hLayout->addStretch();
 
   hLayout->addWidget(labelWidget);
@@ -222,8 +225,7 @@ QWidget* InputWidget::createLayout(oclero::qlementine::Label* labelWidget, Widge
 
   hLayout->addWidget(mInputField);
 
-  if (alignment.direction == WidgetAlignment::Direction::LEFT ||
-      alignment.direction == WidgetAlignment::Direction::CENTER)
+  if (alignment.direction == WidgetAlignment::Direction::LEFT || alignment.direction == WidgetAlignment::Direction::CENTER)
     hLayout->addStretch();
 
   return container;
@@ -244,6 +246,7 @@ BooleanWidget::BooleanWidget(const QString& label, bool value, WidgetAlignment a
 {
   if (auto* combo = qobject_cast<QCheckBox*>(mInputField))
   {
+    combo->setMaximumWidth(20);
     combo->setCheckState(value ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
     connect(combo, &QCheckBox::checkStateChanged, this, [this](Qt::CheckState state) {
       mValue = (state == Qt::CheckState::Checked);
@@ -263,11 +266,27 @@ void maki::BooleanWidget::writeValueToWidget(const bool& value)
 
 // =========================================================================================================
 StringWidget::StringWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent)
+    : StringWidget(label, placeholder, alignment, "", parent)
+{
+}
+
+StringWidget::StringWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, const QString& tooltip, QWidget* parent)
     : TypedInputWidget<QString, oclero::qlementine::LineEdit>(label, new oclero::qlementine::LineEdit(), placeholder, alignment, parent)
 {
   if (auto* edit = qobject_cast<oclero::qlementine::LineEdit*>(mInputField))
   {
-    connect(edit, &oclero::qlementine::LineEdit::editingFinished, this, [this, edit]() {
+    if (!tooltip.isEmpty())
+      setToolTip(tooltip);
+
+    connect(edit, &QLineEdit::inputRejected, this, [edit]() {
+      edit->setStatus(oclero::qlementine::Status::Warning);
+      if (!edit->toolTip().isEmpty())
+      {
+        const QPoint globalPos = edit->mapToGlobal(QPoint(0, 0)) - QPoint(0, TOOLTIP_HEIGHT);
+        QToolTip::showText(globalPos, edit->toolTip(), edit);
+      }
+    });
+    connect(edit, &QLineEdit::editingFinished, this, [this, edit]() {
       mValue = edit->text();
       emit valueChanged(mValue);
     });
@@ -298,6 +317,11 @@ IntegerWidget::IntegerWidget(const QString& label, const QString& placeholder, W
     // Connect the signals
     connect(edit, &QLineEdit::inputRejected, this, [edit]() {
       edit->setStatus(oclero::qlementine::Status::Warning);
+      if (!edit->toolTip().isEmpty())
+      {
+        const QPoint globalPos = edit->mapToGlobal(QPoint(0, 0)) - QPoint(0, TOOLTIP_HEIGHT);
+        QToolTip::showText(globalPos, edit->toolTip(), edit);
+      }
     });
     connect(edit, &QLineEdit::editingFinished, this, [this, edit]() {
       if (!edit->hasAcceptableInput())
@@ -357,6 +381,11 @@ FloatWidget::FloatWidget(const QString& label, const QString& placeholder, Widge
     // Connect the signals
     connect(edit, &QLineEdit::inputRejected, this, [edit]() {
       edit->setStatus(oclero::qlementine::Status::Warning);
+      if (!edit->toolTip().isEmpty())
+      {
+        const QPoint globalPos = edit->mapToGlobal(QPoint(0, 0)) - QPoint(0, TOOLTIP_HEIGHT);
+        QToolTip::showText(globalPos, edit->toolTip(), edit);
+      }
     });
     connect(edit, &QLineEdit::editingFinished, this, [this, edit]() {
       if (!edit->hasAcceptableInput())
@@ -442,6 +471,9 @@ SelectorWidget::SelectorWidget(const QString& label, QComboBox* comboBox, Widget
 {
   if (auto* combo = qobject_cast<QComboBox*>(mInputField))
   {
+    combo->view()->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+    combo->view()->verticalScrollBar()->setSingleStep(10);
+
     setValue(Constants::EMPTY_COMBO);
     connect(combo, &QComboBox::currentTextChanged, this, [this, combo](const QString& value) {
       mValue = value;
@@ -487,6 +519,10 @@ void SelectorWidget::setData(const QString& data)
       mValue = combo->currentText();
       mData = combo->currentData();
     }
+    else
+    {
+      combo->setCurrentIndex(-1);
+    }
   }
 }
 
@@ -515,9 +551,7 @@ ButtonWidget::ButtonWidget(const QString& label, QWidget* parent)
   mInputField = new QPushButton(this);
   mInputField->setText(label);
 
-  connect(mInputField, &QPushButton::clicked, this, [this]() {
-    emit valueChanged();
-  });
+  connect(mInputField, &QPushButton::clicked, this, [this]() { emit valueChanged(); });
 
   layout()->addWidget(mInputField);
 }
@@ -532,6 +566,11 @@ void ButtonWidget::setToolTip(const QString& tooltip)
   mInputField->setToolTip(tooltip);
 }
 
+void ButtonWidget::setText(const QString& text)
+{
+  mInputField->setText(text);
+}
+
 void ButtonWidget::addDescription(const QString& label)
 {
   auto* hint = new oclero::qlementine::Label(label, this);
@@ -541,7 +580,8 @@ void ButtonWidget::addDescription(const QString& label)
 
 // =========================================================================================================
 ColorWidget::ColorWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent)
-    : TypedInputWidget<QColor, oclero::qlementine::ColorEditor>(label, new oclero::qlementine::ColorEditor(), QColor::fromString(placeholder), alignment, parent)
+    : TypedInputWidget<QColor, oclero::qlementine::ColorEditor>(label, new oclero::qlementine::ColorEditor(), QColor::fromString(placeholder),
+                                                                alignment, parent)
 {
   if (auto* edit = qobject_cast<oclero::qlementine::ColorEditor*>(mInputField))
   {

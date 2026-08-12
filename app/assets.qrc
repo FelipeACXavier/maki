@@ -8,6 +8,7 @@
     <file alias="circle-close.svg">assets/icons/fontawesome/svgs/solid/circle-xmark.svg</file>
     <file alias="equals.svg">assets/icons/fontawesome/svgs/solid/equals.svg</file>
     <file alias="plus.svg">assets/icons/fontawesome/svgs/solid/plus.svg</file>
+    <file alias="minus.svg">assets/icons/fontawesome/svgs/solid/minus.svg</file>
     <file alias="play.svg">assets/icons/fontawesome/svgs/solid/circle-play.svg</file>
     <file alias="pause.svg">assets/icons/fontawesome/svgs/solid/circle-pause.svg</file>
     <file alias="target.svg">assets/icons/fontawesome/svgs/solid/bullseye.svg</file>
@@ -25,6 +26,7 @@
     <file alias="clear.svg">assets/icons/fontawesome/svgs/solid/trash.svg</file>
     <file alias="log-level.svg">assets/icons/fontawesome/svgs/solid/temperature-half.svg</file>
     <file alias="file.svg">assets/icons/fontawesome/svgs/solid/file.svg</file>
+    <file alias="bars.svg">assets/icons/fontawesome/svgs/solid/bars.svg</file>
     <!-- Log levels -->
     <file alias="info.svg">assets/icons/fontawesome/svgs/solid/circle-info.svg</file>
     <file alias="warning.svg">assets/icons/fontawesome/svgs/solid/circle-exclamation.svg</file>
@@ -63,6 +65,10 @@
     <file alias="capability.svg">assets/icons/fontawesome/svgs/solid/puzzle-piece.svg</file>
     <file alias="flow.svg">assets/icons/fontawesome/svgs/solid/hexagon-nodes.svg</file>
     <file alias="flow_block.svg">assets/icons/fontawesome/svgs/solid/gear.svg</file>
+    <file alias="primitive.svg">assets/icons/fontawesome/svgs/solid/cube.svg</file>
+    <file alias="alias.svg">assets/icons/fontawesome/svgs/solid/link.svg</file>
+    <file alias="record.svg">assets/icons/fontawesome/svgs/solid/table-columns.svg</file>
+    <file alias="enum.svg">assets/icons/fontawesome/svgs/solid/list-ul.svg</file>
     <!-- Brands -->
     <file alias="github.svg">assets/icons/fontawesome/svgs/brands/github.svg</file>
     <file alias="research.svg">assets/icons/fontawesome/svgs/solid/book.svg</file>

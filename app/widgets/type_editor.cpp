@@ -1,6 +1,7 @@
 #include "type_editor.h"
 
 #include <QComboBox>
+#include <QCompleter>
 #include <QFormLayout>
 #include <QHBoxLayout>
 #include <QHeaderView>
@@ -8,7 +9,9 @@
 #include <QLineEdit>
 #include <QMenu>
 #include <QMessageBox>
+#include <QProxyStyle>
 #include <QPushButton>
+#include <QScrollBar>
 #include <QSignalBlocker>
 #include <QSplitter>
 #include <QStackedWidget>
@@ -16,10 +19,15 @@
 #include <QTreeWidget>
 #include <QUuid>
 #include <QVBoxLayout>
+#include <oclero/qlementine.hpp>
+#include <oclero/qlementine/widgets/Label.hpp>
+#include <oclero/qlementine/widgets/LineEdit.hpp>
 
-// #include "type_ref_dialog.h"
 #include "app_configs.h"
+#include "dialogs/type_reference_dialog.h"
 #include "logging.h"
+#include "validators/namespace_validator.h"
+#include "widget_factory.h"
 
 namespace maki
 {
@@ -39,9 +47,10 @@ TypeEditor::TypeEditor(QWidget* parent)
   connect(mTypeTree, &QTreeWidget::currentItemChanged, this, &TypeEditor::currentTypeChanged);
   connect(mDeleteButton, &QPushButton::clicked, this, &TypeEditor::removeCurrentType);
   connect(mApplyButton, &QPushButton::clicked, this, &TypeEditor::applyChanges);
-  connect(mAddFieldButton, &QPushButton::clicked, this, &TypeEditor::addField);
+  connect(mAddFieldButton, &QPushButton::clicked, this,
+          [this] { addField(tr("field%1").arg(mFieldsTable->rowCount() + 1), Constants::EMPTY_COMBO); });
   connect(mRemoveFieldButton, &QPushButton::clicked, this, &TypeEditor::removeField);
-  connect(mAddEnumValueButton, &QPushButton::clicked, this, &TypeEditor::addEnumValue);
+  connect(mAddEnumValueButton, &QPushButton::clicked, this, [this] { addEnumValue(tr("Value%1").arg(mEnumTable->rowCount() + 1), ""); });
   connect(mRemoveEnumValueButton, &QPushButton::clicked, this, &TypeEditor::removeEnumValue);
 
   reloadTypes();
@@ -50,37 +59,33 @@ TypeEditor::TypeEditor(QWidget* parent)
 // =============================================================================
 // Creation
 // =============================================================================
+void TypeEditor::createDefinition(const koda::types::TypeDefinition& definition)
+{
+  auto result = TypeRegistry::instance().add(definition);
+  if (!result.IsSuccess())
+  {
+    LOG_WARNING(result.ErrorMessage());
+    return;
+  }
+
+  selectType(QString::fromStdString(definition.name.toString()));
+}
 
 void TypeEditor::createRecord()
 {
-  auto toadd = koda::types::TypeDefinition::createRecord(createUniqueTypeName("Record"), {}, "", QUuid::createUuid().toString().toStdString());
-  auto result = TypeRegistry::instance().add(toadd);
-  if (!result.IsSuccess())
-    LOG_WARNING(result.ErrorMessage());
-
-  showDefinition(toadd);
+  createDefinition(koda::types::TypeDefinition::createRecord(createUniqueTypeName("Record"), {}, "", QUuid::createUuid().toString().toStdString()));
 }
 
 void TypeEditor::createEnum()
 {
-  auto toadd = koda::types::TypeDefinition::createEnum(createUniqueTypeName("Enum"), koda::types::EnumUnderlyingKind::Int32, {},
-                                                       QUuid::createUuid().toString().toStdString());
-  auto result = TypeRegistry::instance().add(toadd);
-  if (!result.IsSuccess())
-    LOG_WARNING(result.ErrorMessage());
-
-  showDefinition(toadd);
+  createDefinition(koda::types::TypeDefinition::createEnum(createUniqueTypeName("Enum"), koda::types::EnumUnderlyingKind::Int32, {},
+                                                           QUuid::createUuid().toString().toStdString()));
 }
 
 void TypeEditor::createAlias()
 {
-  auto toadd =
-      koda::types::TypeDefinition::createAlias(createUniqueTypeName("Alias"), koda::types::IntegerType, QUuid::createUuid().toString().toStdString());
-  auto result = TypeRegistry::instance().add(toadd);
-  if (!result.IsSuccess())
-    LOG_WARNING(result.ErrorMessage());
-
-  showDefinition(toadd);
+  createDefinition(koda::types::TypeDefinition::createAlias(createUniqueTypeName("Alias"), koda::types::IntegerType,
+                                                            QUuid::createUuid().toString().toStdString()));
 }
 
 void TypeEditor::removeCurrentType()
@@ -101,7 +106,6 @@ void TypeEditor::removeCurrentType()
 
 void TypeEditor::applyChanges()
 {
-  LOG_DEBUG("Applying changes: reading from UI {}", mSelectedQualifiedName);
   koda::types::TypeDefinition definition = readDefinitionFromUi();
   if (definition.name.toString().empty())
   {
@@ -109,7 +113,6 @@ void TypeEditor::applyChanges()
     return;
   }
 
-  LOG_DEBUG("Applying changes: replacing in registry");
   auto updated = TypeRegistry::instance().replace(definition);
   if (!updated)
   {
@@ -117,7 +120,6 @@ void TypeEditor::applyChanges()
     return;
   }
 
-  LOG_DEBUG("Applying changes: selecting new {}", definition.name.toString());
   selectType(mSelectedQualifiedName);
 }
 
@@ -142,158 +144,30 @@ void TypeEditor::currentTypeChanged(QTreeWidgetItem* current, QTreeWidgetItem* /
     return;
   }
 
-  LOG_INFO("currentTypeChanged: {}", qualifiedName);
+  // Since we can only show what we select, it makes sense to update this here
+  mSelectedQualifiedName = QString::fromStdString(definition->name.toString());
 
   showDefinition(*definition);
 }
 
-void TypeEditor::showDefinition(const koda::types::TypeDefinition& definition)
-{
-  TypeRegistry::instance().print();
-
-  // Since we can only show what we select, it makes sense to update this here
-  mSelectedQualifiedName = QString::fromStdString(definition.name.toString());
-
-  if (definition.isRecord())
-  {
-    mEditorStack->setCurrentIndex(static_cast<int>(EditorPage::Record));
-
-    auto* page = mEditorStack->widget(static_cast<int>(EditorPage::Record));
-    auto* nameEdit = page->findChild<QLineEdit*>("recordNameEdit");
-    auto* namespaceEdit = page->findChild<QLineEdit*>("recordNamespaceEdit");
-
-    nameEdit->setText(QString::fromStdString(definition.name.name));
-    namespaceEdit->setText(QString::fromStdString(definition.name.namespaceString()));
-
-    const auto def = definition.record();
-    if (def.baseType.has_value())
-    {
-      definition.print();
-      const int baseIndex = mBaseTypeCombo->findData(QString::fromStdString(def.baseType.value().namedType().name.name));
-      if (baseIndex >= 0)
-        mBaseTypeCombo->setCurrentIndex(baseIndex);
-      else
-        mBaseTypeCombo->setCurrentIndex(0);
-    }
-    else
-    {
-      mBaseTypeCombo->setCurrentIndex(0);
-    }
-
-    mFieldsTable->setRowCount(0);
-    for (const auto& field : def.fields)
-    {
-      const int row = mFieldsTable->rowCount();
-      mFieldsTable->insertRow(row);
-      auto* nameItem = new QTableWidgetItem(QString::fromStdString(field.name));
-
-      auto* container = new QWidget(mFieldsTable);
-      auto* layout = new QHBoxLayout(container);
-      layout->setContentsMargins(0, 0, 0, 0);
-      layout->setSpacing(0);
-
-      auto* typeCombo = new QComboBox(container);
-      typeCombo->setObjectName("typeCombo");
-      const auto typeNames = maki::TypeRegistry::instance().allTypeNames();
-      typeCombo->addItems(typeNames);
-
-      // Default to String if available.
-      const int stringIndex = typeCombo->findText(QString::fromStdString(field.type.toString()));
-      if (stringIndex >= 0)
-        typeCombo->setCurrentIndex(stringIndex);
-
-      typeCombo->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-      layout->addWidget(typeCombo);
-
-      mFieldsTable->setItem(row, 0, nameItem);
-      mFieldsTable->setCellWidget(row, 1, container);
-    }
-  }
-  else if (definition.isEnum())
-  {
-    mEditorStack->setCurrentIndex(static_cast<int>(EditorPage::Enum));
-
-    auto* page = mEditorStack->widget(static_cast<int>(EditorPage::Enum));
-    auto* nameEdit = page->findChild<QLineEdit*>("enumNameEdit");
-    auto* namespaceEdit = page->findChild<QLineEdit*>("enumNamespaceEdit");
-
-    nameEdit->setText(QString::fromStdString(definition.name.name));
-    namespaceEdit->setText(QString::fromStdString(definition.name.namespaceString()));
-
-    const auto def = definition.enumeration();
-    mEnumBackingCombo->setCurrentIndex(def.underlyingType == koda::types::EnumUnderlyingKind::String ? 0 : 1);
-    mEnumTable->setRowCount(0);
-    for (const auto& value : def.values)
-    {
-      const int row = mEnumTable->rowCount();
-      mEnumTable->insertRow(row);
-      mEnumTable->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(value.name)));
-      mEnumTable->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(value.value.value_or(""))));
-    }
-  }
-  else if (definition.isAlias())
-  {
-    mEditorStack->setCurrentIndex(static_cast<int>(EditorPage::Alias));
-
-    auto* page = mEditorStack->widget(static_cast<int>(EditorPage::Alias));
-    auto* nameEdit = page->findChild<QLineEdit*>("aliasNameEdit");
-    auto* namespaceEdit = page->findChild<QLineEdit*>("aliasNamespaceEdit");
-    auto* aliasEdit = page->findChild<QComboBox*>("aliasTargetEdit");
-
-    nameEdit->setText(QString::fromStdString(definition.name.name));
-    namespaceEdit->setText(QString::fromStdString(definition.name.namespaceString()));
-    aliasEdit->setCurrentText(QString::fromStdString(definition.alias().target.toString()));
-  }
-  else if (definition.isPrimitive())
-  {
-    mEditorStack->setCurrentIndex(static_cast<int>(EditorPage::Builtin));
-
-    auto* page = mEditorStack->widget(static_cast<int>(EditorPage::Builtin));
-    auto* nameEdit = page->findChild<QLineEdit*>("builtinNameEdit");
-    auto* kindEdit = page->findChild<QLineEdit*>("builtinKindEdit");
-
-    nameEdit->setText(QString::fromStdString(definition.name.toString()));
-    kindEdit->setText(QString::fromStdString(koda::types::toString(definition.primitive().primitive)));
-
-    mDeleteButton->setEnabled(false);
-    mApplyButton->setEnabled(false);
-    return;
-  }
-
-  mDeleteButton->setEnabled(true);
-  mApplyButton->setEnabled(true);
-}
-
 // =============================================================================
 // Record fields
-void TypeEditor::addField()
+void TypeEditor::addField(const QString& defaultName, const QString& defaultValue)
 {
   const int row = mFieldsTable->rowCount();
   mFieldsTable->insertRow(row);
 
   // Field name
-  auto* nameItem = new QTableWidgetItem(tr("field%1").arg(row + 1));
+  auto* nameItem = new QTableWidgetItem(defaultName);
 
   // Container fills the entire table cell
   auto* container = new QWidget(mFieldsTable);
-
   auto* layout = new QHBoxLayout(container);
   layout->setContentsMargins(0, 0, 0, 0);
   layout->setSpacing(0);
 
   // Type combo
-  auto* typeCombo = new QComboBox(container);
-  typeCombo->setObjectName("typeCombo");
-  const auto typeNames = maki::TypeRegistry::instance().allTypeNames();
-  typeCombo->addItems(typeNames);
-
-  // Default to String if available.
-  const int stringIndex = typeCombo->findText(QStringLiteral("Integer"));
-
-  if (stringIndex >= 0)
-    typeCombo->setCurrentIndex(stringIndex);
-
-  typeCombo->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+  auto* typeCombo = createComboBox(container, defaultValue);
   layout->addWidget(typeCombo);
 
   mFieldsTable->setItem(row, 0, nameItem);
@@ -313,13 +187,13 @@ void TypeEditor::removeField()
 
 // =============================================================================
 // Enum values
-void TypeEditor::addEnumValue()
+void TypeEditor::addEnumValue(const QString& defaultName, const QString& defaultValue)
 {
   const int row = mEnumTable->rowCount();
 
   mEnumTable->insertRow(row);
   mEnumTable->setItem(row, 0, new QTableWidgetItem(tr("Value%1").arg(row + 1)));
-  mEnumTable->setItem(row, 1, new QTableWidgetItem());
+  mEnumTable->setItem(row, 1, defaultValue.isEmpty() ? new QTableWidgetItem() : new QTableWidgetItem(defaultValue));
   mEnumTable->setCurrentCell(row, 0);
 }
 
@@ -338,6 +212,7 @@ void TypeEditor::removeEnumValue()
 void TypeEditor::buildUi()
 {
   auto* mainLayout = new QVBoxLayout(this);
+  mainLayout->setContentsMargins(0, 0, 0, 0);
 
   auto* splitter = new QSplitter(Qt::Horizontal, this);
   mainLayout->addWidget(splitter, 1);
@@ -345,41 +220,57 @@ void TypeEditor::buildUi()
   // --------------------------------------------------------------------------
   // Left side: type browser
   auto* browserWidget = new QWidget(splitter);
+  browserWidget->setMinimumWidth(200);
+
   auto* browserLayout = new QVBoxLayout(browserWidget);
-  browserLayout->setContentsMargins(0, 0, 0, 0);
+  browserLayout->setContentsMargins(0, Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING);
 
   mTypeTree = new QTreeWidget(browserWidget);
   mTypeTree->setHeaderHidden(true);
   mTypeTree->setRootIsDecorated(true);
+  mTypeTree->setSelectionMode(QAbstractItemView::SingleSelection);
+  mTypeTree->setSelectionBehavior(QAbstractItemView::SelectRows);
 
   browserLayout->addWidget(mTypeTree, 1);
 
+  auto* treeLine = new QFrame(browserWidget);
+  treeLine->setFrameShape(QFrame::HLine);
+  browserLayout->addWidget(treeLine);
+
   auto* browserButtons = new QHBoxLayout();
-  mAddButton = new QPushButton(tr("Add"), browserWidget);
-  mDeleteButton = new QPushButton(tr("Remove"), browserWidget);
+  mAddButton = new QPushButton(browserWidget);
+  mAddButton->setFixedSize(Config::MEDIUM_BUTTON_SIZE);
+  mAddButton->setIcon(QIcon(":/icons/plus.svg"));
 
-  browserButtons->addWidget(mAddButton);
-  browserButtons->addWidget(mDeleteButton);
+  auto* menu = new QMenu(mAddButton);
+  auto* recordAction = menu->addAction(tr("Record"));
+  auto* enumAction = menu->addAction(tr("Enum"));
+  auto* aliasAction = menu->addAction(tr("Alias"));
 
-  browserLayout->addLayout(browserButtons);
-
-  // Add menu
-  auto* addMenu = new QMenu(mAddButton);
-  auto* recordAction = addMenu->addAction(tr("Record"));
-  auto* enumAction = addMenu->addAction(tr("Enum"));
-  auto* aliasAction = addMenu->addAction(tr("Alias"));
-
-  mAddButton->setMenu(addMenu);
+  connect(mAddButton, &QPushButton::clicked, this, [this, menu]() {
+    const QPoint pos = mAddButton->mapToGlobal(QPoint(0, -menu->sizeHint().height() + 15));
+    menu->popup(pos);
+  });
 
   connect(recordAction, &QAction::triggered, this, &TypeEditor::createRecord);
   connect(enumAction, &QAction::triggered, this, &TypeEditor::createEnum);
   connect(aliasAction, &QAction::triggered, this, &TypeEditor::createAlias);
 
+  mDeleteButton = new QPushButton(browserWidget);
+  mDeleteButton->setFixedSize(Config::MEDIUM_BUTTON_SIZE);
+  mDeleteButton->setIcon(QIcon(":/icons/minus.svg"));
+
+  browserButtons->addWidget(mAddButton);
+  browserButtons->addWidget(mDeleteButton);
+  browserButtons->addStretch();
+
+  browserLayout->addLayout(browserButtons);
+
   // --------------------------------------------------------------------------
   // Right side: editor
   auto* editorWidget = new QWidget(splitter);
   auto* editorLayout = new QVBoxLayout(editorWidget);
-  editorLayout->setContentsMargins(0, 0, 0, 0);
+  editorLayout->setContentsMargins(Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING);
 
   mEditorStack = new QStackedWidget(editorWidget);
 
@@ -392,11 +283,16 @@ void TypeEditor::buildUi()
   editorLayout->addWidget(mEditorStack);
 
   auto* editorButtons = new QHBoxLayout();
+  editorButtons->setContentsMargins(0, 0, 0, 0);
   editorButtons->addStretch();
 
   mApplyButton = new QPushButton(tr("Apply"), editorWidget);
-
+  mApplyButton->setFixedHeight(Config::MEDIUM_BUTTON);
   editorButtons->addWidget(mApplyButton);
+
+  auto* stackLine = new QFrame(browserWidget);
+  stackLine->setFrameShape(QFrame::HLine);
+  editorLayout->addWidget(stackLine);
 
   editorLayout->addLayout(editorButtons);
 
@@ -408,83 +304,82 @@ void TypeEditor::buildUi()
   splitter->setStretchFactor(0, 0);
   splitter->setStretchFactor(1, 1);
 
+  splitter->setCollapsible(0, false);
+  splitter->setCollapsible(1, false);
+
   mDeleteButton->setEnabled(false);
   mApplyButton->setEnabled(false);
 }
 
 QWidget* TypeEditor::createBuiltinPage()
 {
-  auto* page = new QWidget(mEditorStack);
-  auto* layout = new QFormLayout(page);
+  auto* qlementineStyle = oclero::qlementine::appStyle();
+  if (!qlementineStyle)
+    return new QWidget();
 
-  auto* nameEdit = new QLineEdit(page);
-  auto* kindEdit = new QLineEdit(page);
+  auto* page = new QWidget(mEditorStack);
+  auto layout = new maki::WidgetGroup(tr("Built-in Type"), page);
+  layout->setContentsMargins(0, 0, 0, Config::CONTENT_PADDING);
+
+  auto alignment = maki::WidgetAlignment::Form(layout, 75);
+
+  auto* nameEdit = new maki::StringWidget(tr("Name"), Constants::EMPTY_COMBO, alignment, page);
+  auto* namespaceEdit = new maki::StringWidget(tr("Namespace"), Constants::EMPTY_COMBO, alignment, page);
+  auto* kindEdit = new maki::StringWidget(tr("Kind"), Constants::EMPTY_COMBO, alignment, page);
 
   nameEdit->setObjectName("builtinNameEdit");
+  namespaceEdit->setObjectName("builtinNamespaceEdit");
   kindEdit->setObjectName("builtinKindEdit");
 
-  nameEdit->setReadOnly(true);
-  kindEdit->setReadOnly(true);
+  nameEdit->widget()->setReadOnly(true);
+  nameEdit->widget()->setFocusPolicy(Qt::FocusPolicy::NoFocus);
+  namespaceEdit->widget()->setReadOnly(true);
+  namespaceEdit->widget()->setFocusPolicy(Qt::FocusPolicy::NoFocus);
+  kindEdit->widget()->setReadOnly(true);
+  kindEdit->widget()->setFocusPolicy(Qt::FocusPolicy::NoFocus);
 
-  layout->addRow(tr("Name"), nameEdit);
-  layout->addRow(tr("Kind"), kindEdit);
-
-  auto* note = new QLabel(tr("Built-in types are provided by KODA and cannot be modified."), page);
+  auto* note = new oclero::qlementine::Label(tr("Built-in types are provided by KODA and cannot be modified."), page);
   note->setWordWrap(true);
+  note->setRole(oclero::qlementine::TextRole::Caption);
+  layout->addWidget(note);
 
-  layout->addRow(note);
+  const auto theme = qlementineStyle->theme();
+  auto* pageLayout = new QVBoxLayout(page);
+  pageLayout->setContentsMargins(theme.spacing, theme.spacing, theme.spacing, theme.spacing);
+  pageLayout->addWidget(layout);
 
   return page;
 }
 
 QWidget* TypeEditor::createRecordPage()
 {
+  auto* qlementineStyle = oclero::qlementine::appStyle();
+  if (!qlementineStyle)
+    return new QWidget();
+
+  const auto theme = qlementineStyle->theme();
+
   auto* page = new QWidget(mEditorStack);
-  auto* layout = new QVBoxLayout(page);
+  auto layout = new maki::WidgetGroup(tr("Record Type"), page);
+  auto alignment = maki::WidgetAlignment::Form(layout, 75);
 
-  auto* properties = new QFormLayout();
-
-  auto* nameEdit = new QLineEdit(page);
-  auto* namespaceEdit = new QLineEdit(page);
+  auto* nameEdit = new maki::StringWidget(tr("Name"), Constants::EMPTY_COMBO, alignment, page);
+  auto* namespaceEdit = createNamespaceEdit(alignment, page);
+  auto* extendCombo = new maki::SelectorWidget(tr("Extends"), alignment, page);
 
   nameEdit->setObjectName("recordNameEdit");
   namespaceEdit->setObjectName("recordNamespaceEdit");
+  extendCombo->setObjectName("recordExtendsEdit");
 
-  mBaseTypeCombo = new QComboBox(page);
-  mBaseTypeCombo->addItem(Constants::EMPTY_COMBO, Constants::EMPTY_COMBO);
-  for (const auto& def : TypeRegistry::instance().allTypes())
-    if (def->isRecord())
-      mBaseTypeCombo->addItem(QString::fromStdString(def->name.toString()), QString::fromStdString(def->name.toString()));
+  populateExtentKind(extendCombo->widget());
+  extendCombo->widget()->setEditable(false);
 
-  mBaseTypeCombo->setEditable(false);
-
-  properties->addRow(tr("Name"), nameEdit);
-  properties->addRow(tr("Namespace"), namespaceEdit);
-  properties->addRow(tr("Extends"), mBaseTypeCombo);
-
-  layout->addLayout(properties);
-
-  auto* fieldsLabel = new QLabel(tr("Fields"), page);
-  layout->addWidget(fieldsLabel);
-
-  mFieldsTable = new QTableWidget(page);
-
-  mFieldsTable->setColumnCount(2);
-  mFieldsTable->setHorizontalHeaderLabels({tr("Name"), tr("Type")});
-
-  mFieldsTable->horizontalHeader()->setStretchLastSection(true);
-  mFieldsTable->verticalHeader()->setVisible(false);
-
-  mFieldsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
-  mFieldsTable->setSelectionMode(QAbstractItemView::SingleSelection);
-
-  mFieldsTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
-  mFieldsTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
-
-  layout->addWidget(mFieldsTable, 1);
+  auto fieldLayout = new maki::WidgetGroup(tr("Fields"), oclero::qlementine::TextRole::H5, layout);
+  mFieldsTable = createTable(page);
+  fieldLayout->addWidget(mFieldsTable);
+  fieldLayout->addSpacing(Config::CONTENT_PADDING);
 
   auto* fieldButtons = new QHBoxLayout();
-
   mAddFieldButton = new QPushButton(tr("Add field"), page);
   mRemoveFieldButton = new QPushButton(tr("Remove field"), page);
 
@@ -492,88 +387,119 @@ QWidget* TypeEditor::createRecordPage()
   fieldButtons->addWidget(mRemoveFieldButton);
   fieldButtons->addStretch();
 
-  layout->addLayout(fieldButtons);
+  fieldLayout->addLayout(fieldButtons);
+  layout->addWidget(fieldLayout);
+
+  auto* pageLayout = new QVBoxLayout(page);
+  pageLayout->setContentsMargins(theme.spacing, theme.spacing, theme.spacing, theme.spacing);
+  pageLayout->addWidget(layout);
 
   return page;
 }
 
 QWidget* TypeEditor::createEnumPage()
 {
+  auto* qlementineStyle = oclero::qlementine::appStyle();
+  if (!qlementineStyle)
+    return new QWidget();
+
   auto* page = new QWidget(mEditorStack);
-  auto* layout = new QVBoxLayout(page);
+  auto layout = new maki::WidgetGroup(tr("Enum Type"), page);
+  auto alignment = maki::WidgetAlignment::Form(layout, 75);
 
-  auto* properties = new QFormLayout();
-
-  auto* nameEdit = new QLineEdit(page);
-  auto* namespaceEdit = new QLineEdit(page);
+  auto* nameEdit = new maki::StringWidget(tr("Name"), Constants::EMPTY_COMBO, alignment, page);
+  auto* namespaceEdit = createNamespaceEdit(alignment, page);
+  auto* extendCombo = new maki::SelectorWidget(tr("Base type"), alignment, page);
 
   nameEdit->setObjectName("enumNameEdit");
   namespaceEdit->setObjectName("enumNamespaceEdit");
+  extendCombo->setObjectName("enumBaseEdit");
 
-  mEnumBackingCombo = new QComboBox(page);
-  mEnumBackingCombo->addItem(Constants::EMPTY_COMBO, Constants::EMPTY_COMBO);
-  for (int i = (int)koda::types::EnumUnderlyingKind::Int32; i <= (int)koda::types::EnumUnderlyingKind::String; ++i)
-    mEnumBackingCombo->addItem(QString::fromStdString(koda::types::toString((koda::types::EnumUnderlyingKind)i)), i);
+  populateEnumKind(extendCombo->widget());
+  extendCombo->widget()->setEditable(false);
 
-  properties->addRow(tr("Name"), nameEdit);
-  properties->addRow(tr("Namespace"), namespaceEdit);
-  properties->addRow(tr("Backing type"), mEnumBackingCombo);
+  auto fieldLayout = new maki::WidgetGroup(tr("Values"), oclero::qlementine::TextRole::H5, layout);
+  mEnumTable = createTable(page);
+  fieldLayout->addWidget(mEnumTable);
+  fieldLayout->addSpacing(Config::CONTENT_PADDING);
 
-  layout->addLayout(properties);
-
-  auto* valuesLabel = new QLabel(tr("Values"), page);
-  layout->addWidget(valuesLabel);
-
-  mEnumTable = new QTableWidget(page);
-
-  mEnumTable->setColumnCount(2);
-  mEnumTable->setHorizontalHeaderLabels({tr("Name"), tr("Value")});
-
-  mEnumTable->horizontalHeader()->setStretchLastSection(true);
-  mEnumTable->verticalHeader()->setVisible(false);
-
-  mEnumTable->setSelectionBehavior(QAbstractItemView::SelectRows);
-  mEnumTable->setSelectionMode(QAbstractItemView::SingleSelection);
-
-  mEnumTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
-  mEnumTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
-
-  layout->addWidget(mEnumTable, 1);
-
-  auto* buttons = new QHBoxLayout();
-
+  auto* fieldButtons = new QHBoxLayout();
   mAddEnumValueButton = new QPushButton(tr("Add value"), page);
   mRemoveEnumValueButton = new QPushButton(tr("Remove value"), page);
 
-  buttons->addWidget(mAddEnumValueButton);
-  buttons->addWidget(mRemoveEnumValueButton);
-  buttons->addStretch();
+  fieldButtons->addWidget(mAddEnumValueButton);
+  fieldButtons->addWidget(mRemoveEnumValueButton);
+  fieldButtons->addStretch();
 
-  layout->addLayout(buttons);
+  fieldLayout->addLayout(fieldButtons);
+  layout->addWidget(fieldLayout);
+
+  const auto theme = qlementineStyle->theme();
+  auto* pageLayout = new QVBoxLayout(page);
+  pageLayout->setContentsMargins(theme.spacing, theme.spacing, theme.spacing, theme.spacing);
+  pageLayout->addWidget(layout);
 
   return page;
 }
 
 QWidget* TypeEditor::createAliasPage()
 {
-  auto* page = new QWidget(mEditorStack);
-  auto* layout = new QFormLayout(page);
+  auto* qlementineStyle = oclero::qlementine::appStyle();
+  if (!qlementineStyle)
+    return new QWidget();
 
-  auto* nameEdit = new QLineEdit(page);
-  auto* namespaceEdit = new QLineEdit(page);
-  auto* aliasTargetCombo = new QComboBox(page);
+  auto* page = new QWidget(mEditorStack);
+  auto layout = new maki::WidgetGroup(tr("Alias Type"), page);
+  auto alignment = maki::WidgetAlignment::Form(layout, 75);
+
+  auto* nameEdit = new maki::StringWidget(tr("Name"), Constants::EMPTY_COMBO, alignment, page);
+  auto* namespaceEdit = createNamespaceEdit(alignment, page);
+
+  auto* container = new QWidget(page);
+  auto containerAlignment = maki::WidgetAlignment{
+      .type = maki::WidgetAlignment::Type::INLINE,
+      .direction = maki::WidgetAlignment::Direction::SPREAD,
+  };
+  auto* targetCombo = new maki::SelectorWidget(tr("Target type"), containerAlignment, container);
+  populateTypes(targetCombo->widget());
+
+  auto* targetButton = new maki::ButtonWidget("...", container);
+  targetButton->setToolTip(tr("More types"));
+  targetButton->setIcon(QIcon(":/icons/bars.svg"));
+  targetButton->setFixedSize(Config::MEDIUM_BUTTON_SIZE);
+
+  connect(targetButton, &maki::ButtonWidget::valueChanged, this, [this, targetCombo] {
+    maki::TypeReferenceDialog dialog(this);
+    const QVariant data = targetCombo->getData();
+    if (data.canConvert<koda::types::TypeReference>())
+      dialog.setTypeRef(data.value<koda::types::TypeReference>());
+    else
+      dialog.setTypeRef(koda::types::TypeReference::named(koda::types::QualifiedName(targetCombo->getValue().toStdString())));
+
+    if (dialog.exec() != QDialog::Accepted)
+      return;
+
+    const auto reference = QString::fromStdString(dialog.typeRef().toString());
+    targetCombo->addItem(reference, QVariant::fromValue(dialog.typeRef()));
+    targetCombo->setValue(reference);
+  });
+
+  auto* containerLayout = new QHBoxLayout(container);
+  containerLayout->setContentsMargins(0, 0, 0, 0);
+  containerLayout->setAlignment(Qt::AlignTop);
+  containerLayout->addWidget(targetCombo, 1, Qt::AlignTop);
+  containerLayout->addWidget(targetButton, 0, Qt::AlignTop);
+
+  layout->addWidget(container);
 
   nameEdit->setObjectName("aliasNameEdit");
   namespaceEdit->setObjectName("aliasNamespaceEdit");
-  aliasTargetCombo->setObjectName("aliasTargetEdit");
+  targetCombo->setObjectName("aliasTargetEdit");
 
-  const auto typeNames = maki::TypeRegistry::instance().allTypeNames();
-  aliasTargetCombo->addItem(Constants::EMPTY_COMBO);
-  aliasTargetCombo->addItems(typeNames);
-
-  layout->addRow(tr("Name"), nameEdit);
-  layout->addRow(tr("Namespace"), namespaceEdit);
-  layout->addRow(tr("Target type"), aliasTargetCombo);
+  const auto theme = qlementineStyle->theme();
+  auto* pageLayout = new QVBoxLayout(page);
+  pageLayout->setContentsMargins(theme.spacing, theme.spacing, theme.spacing, theme.spacing);
+  pageLayout->addWidget(layout);
 
   return page;
 }
@@ -593,8 +519,8 @@ koda::types::TypeDefinition TypeEditor::readDefinitionFromUi() const
       const auto* typeContainer = mFieldsTable->cellWidget(row, 1);
       if (nameItem == nullptr || typeContainer == nullptr)
       {
-        LOG_DEBUG("Error in record fields, name or type lead to nullptr");
-        continue;
+        LOG_DEBUG("Empty record field: {} {}", nameItem != nullptr, typeContainer != nullptr);
+        return definition;
       }
 
       const auto* typeItem = typeContainer->findChild<QComboBox*>("typeCombo");
@@ -603,12 +529,18 @@ koda::types::TypeDefinition TypeEditor::readDefinitionFromUi() const
     }
 
     auto* page = mEditorStack->widget(static_cast<int>(EditorPage::Record));
-    auto* nameEdit = page->findChild<QLineEdit*>("recordNameEdit");
-    auto* namespaceEdit = page->findChild<QLineEdit*>("recordNamespaceEdit");
-    auto baseType = mBaseTypeCombo->currentText();
+    auto* nameEdit = page->findChild<maki::StringWidget*>("recordNameEdit");
+    auto* namespaceEdit = page->findChild<maki::StringWidget*>("recordNamespaceEdit");
+    auto baseType = page->findChild<maki::SelectorWidget*>("recordExtendsEdit");
 
-    return koda::types::TypeDefinition::createRecord(std::format("{}::{}", namespaceEdit->text(), nameEdit->text()), fields,
-                                                     baseType == Constants::EMPTY_COMBO ? "" : baseType.toStdString(),
+    if (nameEdit == nullptr || namespaceEdit == nullptr || baseType == nullptr)
+    {
+      LOG_DEBUG("Empty field in record editor: {} {} {}", nameEdit != nullptr, namespaceEdit != nullptr, baseType != nullptr);
+      return definition;
+    }
+
+    return koda::types::TypeDefinition::createRecord(std::format("{}::{}", namespaceEdit->getValue(), nameEdit->getValue()), fields,
+                                                     baseType->getValue() == Constants::EMPTY_COMBO ? "" : baseType->getValue().toStdString(),
                                                      getIdFromItem(mSelectedQualifiedName));
   }
   else if (pageIndex == static_cast<int>(EditorPage::Enum))
@@ -618,11 +550,10 @@ koda::types::TypeDefinition TypeEditor::readDefinitionFromUi() const
     {
       const auto* nameItem = mEnumTable->item(row, 0);
       const auto* valueItem = mEnumTable->item(row, 1);
-
       if (nameItem == nullptr || valueItem == nullptr)
       {
-        LOG_DEBUG("Error in enum fields, name or value lead to nullptr");
-        continue;
+        LOG_DEBUG("Empty enum field: {} {}", nameItem != nullptr, valueItem != nullptr);
+        return definition;
       }
 
       fields.emplace(nameItem->text().toStdString(),
@@ -630,54 +561,157 @@ koda::types::TypeDefinition TypeEditor::readDefinitionFromUi() const
     }
 
     auto* page = mEditorStack->widget(static_cast<int>(EditorPage::Enum));
-    auto* nameEdit = page->findChild<QLineEdit*>("enumNameEdit");
-    if (nameEdit == nullptr)
+    auto* nameEdit = page->findChild<maki::StringWidget*>("enumNameEdit");
+    auto* namespaceEdit = page->findChild<maki::StringWidget*>("enumNamespaceEdit");
+    auto* baseType = page->findChild<maki::SelectorWidget*>("enumBaseEdit");
+    if (nameEdit == nullptr || namespaceEdit == nullptr || baseType == nullptr)
     {
-      LOG_DEBUG("Empty name field in enum editor");
+      LOG_DEBUG("Empty field in enum editor: {} {} {}", nameEdit != nullptr, namespaceEdit != nullptr, baseType != nullptr);
       return definition;
     }
-    auto* namespaceEdit = page->findChild<QLineEdit*>("enumNamespaceEdit");
-    if (namespaceEdit == nullptr)
-    {
-      LOG_DEBUG("Empty namespace field in enum editor");
-      return definition;
-    }
-    auto underlyingType = mEnumBackingCombo->currentText();
 
-    LOG_DEBUG("Creating enum with {} {}", nameEdit->text().toStdString(), namespaceEdit->text().toStdString());
-    return koda::types::TypeDefinition::createEnum(std::format("{}::{}", namespaceEdit->text(), nameEdit->text()),
-                                                   koda::types::enumKindFromString(underlyingType.toStdString()), fields,
+    return koda::types::TypeDefinition::createEnum(std::format("{}::{}", namespaceEdit->getValue(), nameEdit->getValue()),
+                                                   koda::types::enumKindFromString(baseType->getValue().toStdString()), fields,
                                                    getIdFromItem(mSelectedQualifiedName));
   }
   else if (pageIndex == static_cast<int>(EditorPage::Alias))
   {
     auto* page = mEditorStack->widget(static_cast<int>(EditorPage::Alias));
-    auto* nameEdit = page->findChild<QLineEdit*>("aliasNameEdit");
-    if (nameEdit == nullptr)
+
+    auto* nameEdit = page->findChild<maki::StringWidget*>("aliasNameEdit");
+    auto* namespaceEdit = page->findChild<maki::StringWidget*>("aliasNamespaceEdit");
+    auto* aliasTargetCombo = page->findChild<maki::SelectorWidget*>("aliasTargetEdit");
+    if (nameEdit == nullptr || namespaceEdit == nullptr || aliasTargetCombo == nullptr)
     {
-      LOG_DEBUG("Empty name field in alias editor");
+      LOG_DEBUG("Empty field in alias editor: {} {} {}", nameEdit != nullptr, namespaceEdit != nullptr, aliasTargetCombo != nullptr);
       return definition;
     }
 
-    auto* namespaceEdit = page->findChild<QLineEdit*>("aliasNamespaceEdit");
-    if (namespaceEdit == nullptr)
+    const QVariant data = aliasTargetCombo->getData();
+    const auto qname = std::format("{}::{}", namespaceEdit->getValue(), nameEdit->getValue());
+    const auto id = getIdFromItem(mSelectedQualifiedName);
+    if (data.canConvert<koda::types::TypeReference>())
     {
-      LOG_DEBUG("Empty namespace field in alias editor");
-      return definition;
+      const auto target = data.value<koda::types::TypeReference>();
+      return koda::types::TypeDefinition::createAlias(qname, target, id);
     }
-    auto* aliasTargetCombo = page->findChild<QComboBox*>("aliasTargetEdit");
-    if (aliasTargetCombo == nullptr)
+    else
     {
-      LOG_DEBUG("Empty target field in alias editor");
-      return definition;
+      return koda::types::TypeDefinition::createAlias(qname, koda::types::QualifiedName(aliasTargetCombo->getValue().toStdString()), id);
     }
-
-    return koda::types::TypeDefinition::createAlias(std::format("{}::{}", namespaceEdit->text(), nameEdit->text()),
-                                                    koda::types::QualifiedName(aliasTargetCombo->currentText().toStdString()),
-                                                    getIdFromItem(mSelectedQualifiedName));
   }
 
   return definition;
+}
+
+void TypeEditor::showDefinition(const koda::types::TypeDefinition& definition)
+{
+  TypeRegistry::instance().print();
+
+  if (definition.isRecord())
+  {
+    mEditorStack->setCurrentIndex(static_cast<int>(EditorPage::Record));
+
+    auto* page = mEditorStack->widget(static_cast<int>(EditorPage::Record));
+    auto* nameEdit = page->findChild<maki::StringWidget*>("recordNameEdit");
+    auto* namespaceEdit = page->findChild<maki::StringWidget*>("recordNamespaceEdit");
+    auto* baseType = page->findChild<maki::SelectorWidget*>("recordExtendsEdit");
+
+    addCompleter(TypeRegistry::instance().namespaces(), namespaceEdit->widget());
+    populateExtentKind(baseType->widget(), &definition.name);
+
+    nameEdit->setValue(QString::fromStdString(definition.name.name));
+    namespaceEdit->setValue(QString::fromStdString(definition.name.namespaceString()));
+
+    const auto def = definition.record();
+    if (def.baseType.has_value())
+      baseType->setData(QString::fromStdString(def.baseType.value().namedType().name.toString()));
+
+    mFieldsTable->setRowCount(0);
+    for (const auto& field : def.fields)
+      addField(QString::fromStdString(field.name), QString::fromStdString(field.type.toString()));
+  }
+  else if (definition.isEnum())
+  {
+    mEditorStack->setCurrentIndex(static_cast<int>(EditorPage::Enum));
+
+    auto* page = mEditorStack->widget(static_cast<int>(EditorPage::Enum));
+    auto* nameEdit = page->findChild<maki::StringWidget*>("enumNameEdit");
+    auto* namespaceEdit = page->findChild<maki::StringWidget*>("enumNamespaceEdit");
+    auto* baseType = page->findChild<maki::SelectorWidget*>("enumBaseEdit");
+
+    addCompleter(TypeRegistry::instance().namespaces(), namespaceEdit->widget());
+    populateEnumKind(baseType->widget());
+
+    nameEdit->setValue(QString::fromStdString(definition.name.name));
+    namespaceEdit->setValue(QString::fromStdString(definition.name.namespaceString()));
+
+    const auto def = definition.enumeration();
+    baseType->setValue(QString::fromStdString(koda::types::toString(def.underlyingType)));
+
+    mEnumTable->setRowCount(0);
+    for (const auto& value : def.values)
+      addEnumValue(QString::fromStdString(value.name), QString::fromStdString(value.value.value_or("")));
+  }
+  else if (definition.isAlias())
+  {
+    mEditorStack->setCurrentIndex(static_cast<int>(EditorPage::Alias));
+
+    auto* page = mEditorStack->widget(static_cast<int>(EditorPage::Alias));
+    auto* nameEdit = page->findChild<maki::StringWidget*>("aliasNameEdit");
+    auto* namespaceEdit = page->findChild<maki::StringWidget*>("aliasNamespaceEdit");
+    auto* aliasEdit = page->findChild<maki::SelectorWidget*>("aliasTargetEdit");
+
+    addCompleter(TypeRegistry::instance().namespaces(), namespaceEdit->widget());
+    populateTypes(aliasEdit->widget(), &definition.name);
+
+    nameEdit->setValue(QString::fromStdString(definition.name.name));
+    namespaceEdit->setValue(QString::fromStdString(definition.name.namespaceString()));
+
+    const auto target = definition.alias().target;
+    if (target.isNamed())
+    {
+      aliasEdit->setValue(QString::fromStdString(definition.alias().target.toString()));
+    }
+    else
+    {
+      const auto reference = QString::fromStdString(target.toString());
+      aliasEdit->addItem(reference, QVariant::fromValue(target));
+      aliasEdit->setValue(reference);
+    }
+  }
+  else if (definition.isPrimitive())
+  {
+    mEditorStack->setCurrentIndex(static_cast<int>(EditorPage::Builtin));
+
+    auto* page = mEditorStack->widget(static_cast<int>(EditorPage::Builtin));
+    auto* nameEdit = page->findChild<maki::StringWidget*>("builtinNameEdit");
+    auto* namespaceEdit = page->findChild<maki::StringWidget*>("builtinNamespaceEdit");
+    auto* kindEdit = page->findChild<maki::StringWidget*>("builtinKindEdit");
+
+    nameEdit->setValue(QString::fromStdString(definition.name.name));
+    namespaceEdit->setValue(QString::fromStdString(definition.name.namespaceString()));
+    kindEdit->setValue(QString::fromStdString(koda::types::toString(definition.primitive().primitive)));
+
+    mDeleteButton->setEnabled(false);
+    mApplyButton->setEnabled(false);
+    return;
+  }
+
+  mDeleteButton->setEnabled(true);
+  mApplyButton->setEnabled(true);
+}
+
+QIcon TypeEditor::typeToIcon(const koda::types::TypeDefinition& type) const
+{
+  if (type.isAlias())
+    return QIcon(":/icons/alias.svg");
+  if (type.isEnum())
+    return QIcon(":/icons/enum.svg");
+  if (type.isRecord())
+    return QIcon(":/icons/record.svg");
+
+  return QIcon(":/icons/primitive.svg");
 }
 
 void TypeEditor::reloadTypes()
@@ -721,6 +755,7 @@ void TypeEditor::reloadTypes()
       item->setText(0, QString::fromStdString(type->name.name));  // Use only the actual name for built-in types
       item->setData(0, QualifiedNameRole, QString::fromStdString(type->name.toString()));
       item->setData(0, IdRole, QString::fromStdString(type->id));
+      item->setIcon(0, typeToIcon(*type));
     }
     else
     {
@@ -729,6 +764,7 @@ void TypeEditor::reloadTypes()
       item->setText(0, QString::fromStdString(type->name.toString()));
       item->setData(0, QualifiedNameRole, QString::fromStdString(type->name.toString()));
       item->setData(0, IdRole, QString::fromStdString(type->id));
+      item->setIcon(0, typeToIcon(*type));
     }
   }
 
@@ -792,7 +828,6 @@ QTreeWidgetItem* TypeEditor::findTreeItem(const QString& qualifiedName) const
 void TypeEditor::selectType(const QString& qualifiedName)
 {
   QTreeWidgetItem* item = findTreeItem(qualifiedName);
-
   if (item == nullptr)
     return;
 
@@ -810,6 +845,120 @@ std::string TypeEditor::getIdFromItem(const QString& qualifiedName) const
   }
 
   return item->data(0, IdRole).toString().toStdString();
+}
+
+QComboBox* TypeEditor::createComboBox(QWidget* parent, const QString& defaultValue) const
+{
+  auto* typeCombo = new QComboBox(parent);
+  typeCombo->setEditable(true);
+  typeCombo->setObjectName("typeCombo");
+  typeCombo->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+  typeCombo->view()->setMinimumHeight(250);
+  typeCombo->view()->setMaximumHeight(250);
+  typeCombo->view()->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+  typeCombo->view()->verticalScrollBar()->setSingleStep(10);
+
+  if (defaultValue == Constants::EMPTY_COMBO)
+    typeCombo->setPlaceholderText(Constants::EMPTY_COMBO);
+
+  populateTypes(typeCombo);
+
+  const int defaultIndex = typeCombo->findText(defaultValue);
+  typeCombo->setCurrentIndex(defaultIndex);
+
+  addCompleter(maki::TypeRegistry::instance().allTypeNames(), typeCombo);
+
+  connect(typeCombo->lineEdit(), &QLineEdit::editingFinished, this, [typeCombo]() {
+    const QString text = typeCombo->currentText().trimmed();
+    if (!TypeRegistry::instance().findByName(text.toStdString()))
+    {
+      typeCombo->setCurrentIndex(-1);
+      LOG_WARNING("Type {} is invalid", text);
+    }
+  });
+
+  return typeCombo;
+}
+
+QTableWidget* TypeEditor::createTable(QWidget* parent) const
+{
+  auto* table = new QTableWidget(parent);
+
+  table->setColumnCount(2);
+  table->setHorizontalHeaderLabels({tr("Name"), tr("Value")});
+
+  table->horizontalHeader()->setStretchLastSection(true);
+  table->verticalHeader()->setVisible(false);
+
+  table->setSelectionBehavior(QAbstractItemView::SelectRows);
+  table->setSelectionMode(QAbstractItemView::SingleSelection);
+
+  table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+  table->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+
+  return table;
+}
+
+maki::StringWidget* TypeEditor::createNamespaceEdit(maki::WidgetAlignment& alignment, QWidget* parent) const
+{
+  auto* namespaceEdit = new maki::StringWidget(tr("Namespace"), Constants::EMPTY_COMBO, alignment,
+                                               tr("Use identifiers separated by '::', for example 'robotics' or 'robotics::geometry'."), parent);
+
+  namespaceEdit->widget()->setValidator(new NamespaceValidator());
+  addCompleter(TypeRegistry::instance().namespaces(), namespaceEdit->widget());
+
+  return namespaceEdit;
+}
+
+void TypeEditor::addCompleter(const QStringList& items, QWidget* parent) const
+{
+  auto* completer = new QCompleter(items, parent);
+  completer->setFilterMode(Qt::MatchContains);
+  completer->setCompletionMode(QCompleter::PopupCompletion);
+  completer->setCaseSensitivity(Qt::CaseInsensitive);
+
+  if (auto* underlying = qobject_cast<QComboBox*>(parent))
+  {
+    if (auto* old = underlying->completer())
+      old->deleteLater();
+
+    underlying->setCompleter(completer);
+  }
+  else if (auto* underlying = qobject_cast<oclero::qlementine::LineEdit*>(parent))
+  {
+    if (auto* old = underlying->completer())
+      old->deleteLater();
+
+    underlying->setCompleter(completer);
+  }
+  else
+  {
+    completer->deleteLater();
+  }
+}
+
+void TypeEditor::populateEnumKind(QComboBox* widget) const
+{
+  widget->clear();
+  for (int i = (int)koda::types::EnumUnderlyingKind::Int32; i <= (int)koda::types::EnumUnderlyingKind::String; ++i)
+    widget->addItem(QString::fromStdString(koda::types::toString((koda::types::EnumUnderlyingKind)i)), i);
+}
+
+void TypeEditor::populateExtentKind(QComboBox* widget, const koda::types::QualifiedName* currentName) const
+{
+  widget->clear();
+  for (const auto& def : TypeRegistry::instance().allTypes())
+    if (def->isRecord() && (currentName == nullptr || def->name != *currentName))
+      widget->addItem(QString::fromStdString(def->name.toString()), QString::fromStdString(def->name.toString()));
+}
+
+void TypeEditor::populateTypes(QComboBox* widget, const koda::types::QualifiedName* currentName) const
+{
+  widget->clear();
+  for (const auto& item : maki::TypeRegistry::instance().allTypeNames())
+    if (currentName == nullptr || item != currentName->toString())
+      widget->addItem(item, item);
 }
 
 }  // namespace maki

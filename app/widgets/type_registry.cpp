@@ -49,6 +49,15 @@ QStringList TypeRegistry::builtinTypeNames() const
   return names;
 }
 
+QStringList TypeRegistry::namespaces() const
+{
+  QStringList names;
+  for (const auto& n : allTypes())
+    names << QString::fromStdString(n->name.namespaceString());
+
+  return names;
+}
+
 koda::types::TypeRegistrationResult TypeRegistry::add(const koda::types::TypeDefinition& definition)
 {
   auto ret = koda::types::TypeRegistry::add(definition);

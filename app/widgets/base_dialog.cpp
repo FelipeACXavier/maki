@@ -26,7 +26,7 @@ BaseDialog::BaseDialog(const QString& title, double ratio, double screenFraction
   setLayout(layout);
 
   setSize(ratio, screenFraction);
-  setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+  // setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 }
 
 void BaseDialog::setSize(double ratio, double screenFraction)
@@ -85,7 +85,8 @@ QDialogButtonBox* BaseDialog::createButtons(const QString& ok, const QString& ca
     okButton->setText(" " + ok);
 
     auto textWidth = metrics.horizontalAdvance(okButton->text());
-    okButton->setFixedWidth(qMax<int>(150, textWidth));
+    okButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    okButton->setMinimumWidth(textWidth + 30);
     okButton->setIcon(QIcon(":/icons/accept.svg"));
   }
 
@@ -96,7 +97,8 @@ QDialogButtonBox* BaseDialog::createButtons(const QString& ok, const QString& ca
     cancelBtn->setText(" " + cancel);
 
     auto textWidth = metrics.horizontalAdvance(cancelBtn->text());
-    cancelBtn->setFixedWidth(qMax<int>(150, textWidth));
+    cancelBtn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    cancelBtn->setMinimumWidth(textWidth + 30);
     cancelBtn->setIcon(QIcon(":/icons/reject.svg"));
   }
 

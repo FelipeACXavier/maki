@@ -23,6 +23,7 @@ public:
   QStringList allTypeNames() const;
   QStringList userTypeNames() const;
   QStringList builtinTypeNames() const;
+  QStringList namespaces() const;
 
   koda::types::TypeRegistrationResult add(const koda::types::TypeDefinition& definition) override;
   koda::types::TypeRegistrationResult replace(const koda::types::TypeDefinition& definition) override;
