@@ -215,6 +215,9 @@ std::string TypeReference::toString() const
 
     case TypeReferenceKind::Map:
       return "Map<" + mapKeyType().toString() + ", " + mapValueType().toString() + ">";
+
+    case TypeReferenceKind::Unknown:
+      return "Unknown";
   }
 
   throw std::logic_error("Unknown type reference kind");
@@ -249,6 +252,9 @@ bool TypeReference::structurallyEquals(const TypeReference& other) const
 
     case TypeReferenceKind::Map:
       return mapKeyType().structurallyEquals(other.mapKeyType()) && mapValueType().structurallyEquals(other.mapValueType());
+
+    case TypeReferenceKind::Unknown:
+      return false;
   }
 
   return false;

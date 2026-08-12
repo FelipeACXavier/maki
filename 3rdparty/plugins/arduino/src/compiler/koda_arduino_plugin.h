@@ -2,9 +2,9 @@
 
 #include <q23utility.h>
 
-#include "ast.h"
-#include "koda_compiler.h"
-#include "koda_plugin.h"
+#include "ast/ast.h"
+#include "ast/koda_compiler.h"
+#include "ast/koda_plugin.h"
 #include "result.h"
 
 class KodaArduinoPlugin : public koda::KodaPlugin

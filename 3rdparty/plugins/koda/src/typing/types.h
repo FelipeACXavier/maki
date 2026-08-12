@@ -51,6 +51,7 @@ enum class TypeKind
 
 enum class TypeReferenceKind
 {
+  Unknown = 0,
   Primitive,
   Named,
   List,

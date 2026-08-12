@@ -669,11 +669,11 @@ bool TypeRegistry::validateReference(const TypeReference& reference, const std::
 
   if (reference.isNamed())
   {
+    LOG_DEBUG("Validating named reference: {}", reference.toString());
     if (resolve(reference) == nullptr)
     {
       addDiagnostic(diagnostics, TypeModelDiagnostic::Severity::Error, "type.unresolved_reference",
                     "The referenced type '" + reference.toString() + "' could not be resolved.", path);
-
       return false;
     }
 
@@ -681,13 +681,17 @@ bool TypeRegistry::validateReference(const TypeReference& reference, const std::
   }
 
   if (reference.isList())
+  {
+    LOG_DEBUG("Validating list reference: {}", reference.toString());
     return validateReference(reference.elementType(), path + "[]", diagnostics);
+  }
 
   if (reference.isOptional())
     return validateReference(reference.optionalValueType(), path + "?", diagnostics);
 
   if (reference.isMap())
   {
+    LOG_DEBUG("Validating map reference: {}", reference.toString());
     const bool keyValid = validateReference(reference.mapKeyType(), path + ".key", diagnostics);
     const bool valueValid = validateReference(reference.mapValueType(), path + ".value", diagnostics);
     return keyValid && valueValid;

@@ -2,7 +2,6 @@
 
 #include <fstream>
 
-#include "ast.h"
 #include "logging.h"
 #include "result.h"
 
@@ -85,9 +84,7 @@ VoidResult KodaArduinoPlugin::generateTask(koda::PComponent task)
   //   return VoidResult::Failed("Failed to open: " + filename);
 
   for (auto& statement : task->statements)
-  {
     IF_ALT(koda::PStrategyBlock, statement->node, generateStrategyBlock)
-  }
 
   return VoidResult();
 }
@@ -95,9 +92,7 @@ VoidResult KodaArduinoPlugin::generateTask(koda::PComponent task)
 VoidResult KodaArduinoPlugin::generateStrategyBlock(koda::PStrategyBlock strategy)
 {
   for (auto& flow : strategy->flows)
-  {
     RETURN_ON_FAILURE(generateStrategy(flow->strategy));
-  }
 
   return VoidResult();
 }
@@ -125,9 +120,7 @@ VoidResult KodaArduinoPlugin::generateStrategy(koda::PStrategy strategy)
 VoidResult KodaArduinoPlugin::generateSequence(koda::PSeq seq)
 {
   for (uint32_t i = 0; i < seq->alts.size(); ++i)
-  {
     RETURN_ON_FAILURE(generateStrategy(seq->alts[i]));
-  }
 
   return VoidResult();
 }

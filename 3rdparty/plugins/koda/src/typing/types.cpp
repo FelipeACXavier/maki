@@ -6,19 +6,49 @@ namespace koda::types
 {
 std::vector<std::string> split(const std::string& value, const std::string& separator)
 {
-  std::vector<std::string> splitList;
-  size_t prev = 0;
-  for (size_t idx = value.find(separator); idx != std::string::npos; idx = value.find(separator, idx + 1))
+  std::vector<std::string> result;
+
+  size_t start = 0;
+  int angleDepth = 0;
+
+  for (size_t i = 0; i < value.size();)
   {
-    splitList.push_back(value.substr(prev, idx - prev));
-    prev = idx + separator.size();
+    if (value[i] == '<')
+    {
+      ++angleDepth;
+      ++i;
+      continue;
+    }
+
+    if (value[i] == '>')
+    {
+      if (angleDepth > 0)
+        --angleDepth;
+
+      ++i;
+      continue;
+    }
+
+    // Only split when we're not inside <...>
+    if (angleDepth == 0 && value.compare(i, separator.size(), separator) == 0)
+    {
+      result.push_back(value.substr(start, i - start));
+
+      i += separator.size();
+      start = i;
+
+      continue;
+    }
+
+    ++i;
   }
 
-  std::string remainder = value.substr(prev);
-  if (!remainder.empty())
-    splitList.push_back(remainder);
+  const std::string remainder = value.substr(start);
 
-  return splitList;
+  if (!remainder.empty())
+    result.push_back(remainder);
+
+  return result;
 }
 
 bool QualifiedName::empty() const
@@ -71,7 +101,7 @@ QualifiedName::QualifiedName(const std::string& value, const std::string& separa
 {
   const auto parts = split(value, separator);
   if (parts.empty())
-    throw std::invalid_argument("No value passed");
+    return;
 
   name = parts.back();
   if (parts.size() > 1)

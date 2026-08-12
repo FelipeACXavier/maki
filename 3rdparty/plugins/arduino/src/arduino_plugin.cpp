@@ -3,11 +3,11 @@
 #include <memory>
 
 #include "actions/generate_cpp.h"
+#include "ast/koda_compiler.h"
 #include "compiler/koda_arduino_plugin.h"
 #include "ilogging.h"
 #include "ipipeline.h"
 #include "isettings.h"
-#include "koda_compiler.h"
 #include "logging.h"
 
 namespace maki

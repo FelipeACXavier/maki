@@ -108,6 +108,7 @@ struct TypeDefinition
 
   static TypeDefinition createPrimitive(const std::string& name, PrimitiveKind kind, const std::string& id = "");
   static TypeDefinition createAlias(const std::string& name, const QualifiedName& alias, const std::string& id = "");
+  static TypeDefinition createAlias(const std::string& name, const TypeReference& alias, const std::string& id = "");
   static TypeDefinition createRecord(const std::string& name, const std::map<std::string, QualifiedName>& fields, const std::string& base = "",
                                      const std::string& id = "");
   static TypeDefinition createMap(const std::string& name, const QualifiedName& keyType, const QualifiedName& fieldType, const std::string& id = "");

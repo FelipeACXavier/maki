@@ -107,9 +107,12 @@ std::string toString(TypeReferenceKind kind)
 
     case TypeReferenceKind::Map:
       return "Map";
+
+    case TypeReferenceKind::Unknown:
+      return "Unknown";
   }
 
-  return "Unknown type reference kind";
+  return "Unknown";
 }
 
 std::string toString(EnumUnderlyingKind kind)
@@ -130,6 +133,22 @@ std::string toString(EnumUnderlyingKind kind)
   }
 
   return "Unknown enum underlying kind";
+}
+
+TypeReferenceKind typeReferenceKindFromString(const std::string& kind)
+{
+  if (kind == "Primitive")
+    return TypeReferenceKind::Primitive;
+  else if (kind == "Named")
+    return TypeReferenceKind::Named;
+  else if (kind == "List")
+    return TypeReferenceKind::List;
+  else if (kind == "Optional")
+    return TypeReferenceKind::Optional;
+  else if (kind == "Map")
+    return TypeReferenceKind::Map;
+  else
+    return TypeReferenceKind::Unknown;
 }
 
 EnumUnderlyingKind enumKindFromString(const std::string& kind)

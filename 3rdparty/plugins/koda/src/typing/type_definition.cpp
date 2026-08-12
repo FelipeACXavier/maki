@@ -61,6 +61,18 @@ TypeDefinition TypeDefinition::createAlias(const std::string& name, const Qualif
   return type;
 }
 
+TypeDefinition TypeDefinition::createAlias(const std::string& name, const TypeReference& alias, const std::string& id)
+{
+  const auto qname = QualifiedName(name);
+  TypeDefinition type{
+      .id = id.empty() ? qname.toId() : id,
+      .name = qname,
+      .data = AliasTypeDefinition{.target = alias},
+  };
+
+  return type;
+}
+
 TypeDefinition TypeDefinition::createRecord(const std::string& name, const std::map<std::string, QualifiedName>& fields, const std::string& base,
                                             const std::string& id)
 {
