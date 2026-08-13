@@ -73,21 +73,17 @@ TypeDefinition TypeDefinition::createAlias(const std::string& name, const TypeRe
   return type;
 }
 
-TypeDefinition TypeDefinition::createRecord(const std::string& name, const std::map<std::string, TypeReference>& fields, const std::string& base,
+TypeDefinition TypeDefinition::createRecord(const std::string& name, const std::vector<FieldDefinition>& fields, const std::string& base,
                                             const std::string& id)
 {
   const auto qname = QualifiedName(name);
-  std::vector<FieldDefinition> ifields;
-  for (const auto& [fname, ftype] : fields)
-    ifields.push_back(FieldDefinition{.name = fname, .type = ftype});
-
   TypeDefinition type{
       .id = id.empty() ? qname.toId() : id,
       .name = qname,
       .data =
           RecordTypeDefinition{
               .baseType = base.empty() ? std::nullopt : std::optional<TypeReference>(TypeReference::named(QualifiedName(base))),
-              .fields = ifields,
+              .fields = fields,
           },
   };
 

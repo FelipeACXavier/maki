@@ -20,6 +20,7 @@ namespace koda::types
 struct QualifiedName;
 class TypeDefinition;
 class TypeReference;
+class FieldDefinition;
 }  // namespace koda::types
 
 namespace maki
@@ -48,7 +49,7 @@ private slots:
   void currentTypeChanged(QTreeWidgetItem* current, QTreeWidgetItem* previous);
 
   // Record editor
-  void addField(const QString& defaultName, const koda::types::TypeReference& defaultValue);
+  void addField(const QString& defaultName, const koda::types::FieldDefinition& field);
   void removeField();
 
   // Enum editor

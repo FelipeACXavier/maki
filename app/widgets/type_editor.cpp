@@ -1,5 +1,6 @@
 #include "type_editor.h"
 
+#include <QCheckBox>
 #include <QComboBox>
 #include <QCompleter>
 #include <QEvent>
@@ -52,7 +53,7 @@ TypeEditor::TypeEditor(QWidget* parent)
   connect(mDeleteButton, &QPushButton::clicked, this, &TypeEditor::removeCurrentType);
   connect(mApplyButton, &QPushButton::clicked, this, &TypeEditor::applyChanges);
   connect(mAddFieldButton, &QPushButton::clicked, this,
-          [this] { addField(tr("field%1").arg(mFieldsTable->rowCount() + 1), koda::types::TypeReference{}); });
+          [this] { addField(tr("field%1").arg(mFieldsTable->rowCount() + 1), koda::types::FieldDefinition{}); });
   connect(mRemoveFieldButton, &QPushButton::clicked, this, &TypeEditor::removeField);
   connect(mAddEnumValueButton, &QPushButton::clicked, this, [this] { addEnumValue(tr("Value%1").arg(mEnumTable->rowCount() + 1), ""); });
   connect(mRemoveEnumValueButton, &QPushButton::clicked, this, &TypeEditor::removeEnumValue);
@@ -77,7 +78,7 @@ void TypeEditor::createDefinition(const koda::types::TypeDefinition& definition)
 
 void TypeEditor::createRecord()
 {
-  createDefinition(koda::types::TypeDefinition::createRecord(createUniqueTypeName("Record"), std::map<std::string, koda::types::QualifiedName>{}, "",
+  createDefinition(koda::types::TypeDefinition::createRecord(createUniqueTypeName("Record"), std::vector<koda::types::FieldDefinition>{}, "",
                                                              QUuid::createUuid().toString().toStdString()));
 }
 
@@ -157,18 +158,30 @@ void TypeEditor::currentTypeChanged(QTreeWidgetItem* current, QTreeWidgetItem* /
 
 // =============================================================================
 // Tables (Record and Enum)
-void TypeEditor::addField(const QString& defaultName, const koda::types::TypeReference& defaultValue)
+void TypeEditor::addField(const QString& defaultName, const koda::types::FieldDefinition& field)
 {
   const int row = mFieldsTable->rowCount();
   mFieldsTable->insertRow(row);
 
   auto* nameItem = new QTableWidgetItem(defaultName);
   auto* selector = new TypeSelector("typeCombo", mFieldsTable);
-  if (defaultValue.isValid())
-    selector->setReference(defaultValue);
+  if (field.type.isValid())
+    selector->setReference(field.type);
+
+  auto* required = new QCheckBox(mFieldsTable);
+  required->setTristate(false);
+  required->setChecked(field.required);
+
+  auto* requiredContainer = new QWidget(mFieldsTable);
+  auto* requiredLayout = new QHBoxLayout(requiredContainer);
+  requiredLayout->setContentsMargins(0, 0, 0, 0);
+  requiredLayout->setAlignment(Qt::AlignCenter);
+  requiredLayout->addWidget(required);
 
   mFieldsTable->setItem(row, 0, nameItem);
-  mFieldsTable->setCellWidget(row, 1, selector);
+  mFieldsTable->setCellWidget(row, 1, requiredContainer);
+  mFieldsTable->setCellWidget(row, 2, selector);
+
   mFieldsTable->setCurrentCell(row, 0);
 }
 
@@ -435,7 +448,7 @@ QWidget* TypeEditor::createRecordPage()
   extendCombo->widget()->setEditable(false);
 
   auto fieldLayout = new maki::WidgetGroup(tr("Fields"), oclero::qlementine::TextRole::H5, layout);
-  mFieldsTable = createTable(page, {tr("Name"), tr("Type")});
+  mFieldsTable = createTable(page, {tr("Name"), tr("Required"), tr("Type")});
   fieldLayout->addWidget(mFieldsTable);
   fieldLayout->addSpacing(Config::CONTENT_PADDING);
 
@@ -553,26 +566,29 @@ koda::types::TypeDefinition TypeEditor::readDefinitionFromUi() const
   const int pageIndex = mEditorStack->currentIndex();
   if (pageIndex == static_cast<int>(EditorPage::Record))
   {
-    std::map<std::string, koda::types::TypeReference> fields;
+    std::vector<koda::types::FieldDefinition> fields;
     for (int row = 0; row < mFieldsTable->rowCount(); ++row)
     {
       const auto* nameItem = mFieldsTable->item(row, 0);
-      const auto* typeContainer = mFieldsTable->cellWidget(row, 1);
-      const auto* typeItem = typeContainer->findChild<TypeSelector*>("typeCombo");
-      if (nameItem == nullptr || typeContainer == nullptr || typeItem == nullptr)
+      const auto* requiredItem = mFieldsTable->cellWidget(row, 1)->findChild<QCheckBox*>();
+      const auto* typeItem = qobject_cast<TypeSelector*>(mFieldsTable->cellWidget(row, 2));
+      if (nameItem == nullptr || typeItem == nullptr || requiredItem == nullptr)
       {
-        LOG_DEBUG("Empty record field: {} {} {}", nameItem != nullptr, typeContainer != nullptr, typeItem != nullptr);
+        LOG_DEBUG("Empty record field: {} {} {}", nameItem != nullptr, typeItem != nullptr, requiredItem != nullptr);
         return definition;
       }
 
-      fields.emplace(nameItem->text().toStdString(), typeItem->getReference());
+      fields.push_back(koda::types::FieldDefinition{
+          .name = nameItem->text().toStdString(),
+          .type = typeItem->getReference(),
+          .required = requiredItem->isChecked(),
+      });
     }
 
     auto* page = mEditorStack->widget(static_cast<int>(EditorPage::Record));
     auto* nameEdit = page->findChild<maki::StringWidget*>("recordNameEdit");
     auto* namespaceEdit = page->findChild<maki::StringWidget*>("recordNamespaceEdit");
     auto baseType = page->findChild<maki::SelectorWidget*>("recordExtendsEdit");
-
     if (nameEdit == nullptr || namespaceEdit == nullptr || baseType == nullptr)
     {
       LOG_DEBUG("Empty field in record editor: {} {} {}", nameEdit != nullptr, namespaceEdit != nullptr, baseType != nullptr);
@@ -657,7 +673,7 @@ void TypeEditor::showDefinition(const koda::types::TypeDefinition& definition)
 
     mFieldsTable->setRowCount(0);
     for (const auto& field : def.fields)
-      addField(QString::fromStdString(field.name), field.type);
+      addField(QString::fromStdString(field.name), field);
   }
   else if (definition.isEnum())
   {
@@ -868,7 +884,7 @@ QTableWidget* TypeEditor::createTable(QWidget* parent, const QStringList& header
 {
   auto* table = new QTableWidget(parent);
 
-  table->setColumnCount(2);
+  table->setColumnCount(headers.size());
   table->setHorizontalHeaderLabels(headers);
 
   table->horizontalHeader()->setStretchLastSection(true);
@@ -878,7 +894,8 @@ QTableWidget* TypeEditor::createTable(QWidget* parent, const QStringList& header
   table->setSelectionMode(QAbstractItemView::SingleSelection);
 
   table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
-  table->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+  for (int i = 1; i < headers.size(); ++i)
+    table->horizontalHeader()->setSectionResizeMode(i, QHeaderView::ResizeToContents);
 
   table->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
   table->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
