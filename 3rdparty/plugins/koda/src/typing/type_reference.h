@@ -68,6 +68,7 @@ public:
   bool isList() const;
   bool isOptional() const;
   bool isMap() const;
+  bool isValid() const;
 
   PrimitiveKind primitiveKind() const;
   const Named& namedType() const;
@@ -90,14 +91,14 @@ private:
     std::variant<Primitive, Named, List, Optional, Map> value;
   };
 
+  std::vector<Node> mNodes;
+  std::size_t mRootNode = 0;
+
   TypeReference(std::vector<Node> nodes, std::size_t rootNode);
 
   static std::size_t appendTree(std::vector<Node>& target, const TypeReference& source);
 
   const Node& root() const;
   TypeReference subtree(std::size_t rootNode) const;
-
-  std::vector<Node> mNodes;
-  std::size_t mRootNode = 0;
 };
 }  // namespace koda::types

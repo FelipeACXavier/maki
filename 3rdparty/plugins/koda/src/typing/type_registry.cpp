@@ -1,8 +1,6 @@
 #include "type_registry.h"
 
 #include <algorithm>
-#include <cstdint>
-#include <limits>
 #include <unordered_set>
 #include <utility>
 
@@ -158,6 +156,7 @@ void TypeRegistry::registerBuiltinTypes()
 
   registerBuiltin(koda::types::BooleanType, PrimitiveKind::Bool);
   registerBuiltin(koda::types::IntegerType, PrimitiveKind::Int64);
+  registerBuiltin(koda::types::UnsignedType, PrimitiveKind::UInt64);
   registerBuiltin(koda::types::RealType, PrimitiveKind::Float64);
   registerBuiltin(koda::types::StringType, PrimitiveKind::String);
   registerBuiltin(koda::types::BytesType, PrimitiveKind::Bytes);
@@ -653,10 +652,12 @@ TypeRegistrationResult TypeRegistry::validateRegistration(const TypeDefinition& 
   else if (definition.isRecord())
   {
     const auto record = definition.record();
+    std::vector<TypeModelDiagnostic> recordDiagnostics;
     for (const auto& field : record.fields)
-      if (field.type.isNamed() && findByName(field.type.namedType().name) == nullptr)
-        return TypeRegistrationResult::Failed(TypeRegistrationError::InvalidDefinition,
-                                              "Unknown referenced type " + field.type.namedType().name.toString());
+      if (!validateReference(field.type, field.name, recordDiagnostics))
+        return TypeRegistrationResult::Failed(
+            TypeRegistrationError::InvalidDefinition,
+            "Record field '" + field.name + "' contains an unknown referenced type: " + recordDiagnostics.front().message);
   }
 
   return TypeRegistrationResult(TypeRegistrationError::None);
@@ -665,11 +666,14 @@ TypeRegistrationResult TypeRegistry::validateRegistration(const TypeDefinition& 
 bool TypeRegistry::validateReference(const TypeReference& reference, const std::string& path, std::vector<TypeModelDiagnostic>& diagnostics) const
 {
   if (reference.isPrimitive())
+  {
+    LOG_DEBUG("validateReference primitive: {}", reference.toString());
     return true;
+  }
 
   if (reference.isNamed())
   {
-    LOG_DEBUG("Validating named reference: {}", reference.toString());
+    LOG_DEBUG("validateReference named: {}", reference.toString());
     if (resolve(reference) == nullptr)
     {
       addDiagnostic(diagnostics, TypeModelDiagnostic::Severity::Error, "type.unresolved_reference",
@@ -682,7 +686,7 @@ bool TypeRegistry::validateReference(const TypeReference& reference, const std::
 
   if (reference.isList())
   {
-    LOG_DEBUG("Validating list reference: {}", reference.toString());
+    LOG_DEBUG("validateReference list: {}", reference.toString());
     return validateReference(reference.elementType(), path + "[]", diagnostics);
   }
 
@@ -691,7 +695,6 @@ bool TypeRegistry::validateReference(const TypeReference& reference, const std::
 
   if (reference.isMap())
   {
-    LOG_DEBUG("Validating map reference: {}", reference.toString());
     const bool keyValid = validateReference(reference.mapKeyType(), path + ".key", diagnostics);
     const bool valueValid = validateReference(reference.mapValueType(), path + ".value", diagnostics);
     return keyValid && valueValid;

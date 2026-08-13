@@ -13,10 +13,57 @@ void addDiagnostic(std::vector<TypeModelDiagnostic>& diagnostics, TypeModelDiagn
   });
 }
 
+std::string toBuiltInString(PrimitiveKind kind)
+{
+  switch (kind)
+  {
+    case PrimitiveKind::Bool:
+      return BooleanType;
+
+    case PrimitiveKind::Int8:
+    case PrimitiveKind::Int16:
+    case PrimitiveKind::Int32:
+    case PrimitiveKind::Int64:
+      return IntegerType;
+
+    case PrimitiveKind::UInt8:
+    case PrimitiveKind::UInt16:
+    case PrimitiveKind::UInt32:
+    case PrimitiveKind::UInt64:
+      return UnsignedType;
+
+    case PrimitiveKind::Float32:
+    case PrimitiveKind::Float64:
+      return RealType;
+
+    case PrimitiveKind::String:
+      return StringType;
+
+    case PrimitiveKind::Bytes:
+      return BytesType;
+
+    case PrimitiveKind::Timestamp:
+      return TimestampType;
+
+    case PrimitiveKind::Duration:
+      return DurationType;
+
+    case PrimitiveKind::Void:
+      return VoidType;
+
+    default:
+    case PrimitiveKind::Unknown:
+      return "Unknown";
+  }
+}
+
 std::string toString(PrimitiveKind kind)
 {
   switch (kind)
   {
+    case PrimitiveKind::Unknown:
+      return "Unknown";
+
     case PrimitiveKind::Bool:
       return "Bool";
 

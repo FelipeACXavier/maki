@@ -15,8 +15,6 @@ TypeReference::TypeReference(std::vector<Node> nodes, std::size_t rootNode)
     : mNodes(std::move(nodes))
     , mRootNode(rootNode)
 {
-  // if (mNodes.empty() || mRootNode >= mNodes.size())
-  // throw std::invalid_argument("Invalid TypeReference node tree");
 }
 
 TypeReference TypeReference::primitive(PrimitiveKind kind)
@@ -106,7 +104,9 @@ TypeReference TypeReference::map(TypeReference keyType, TypeReference valueType)
 
 TypeReferenceKind TypeReference::kind() const
 {
-  if (std::holds_alternative<Primitive>(root().value))
+  if (mNodes.empty())
+    return TypeReferenceKind::Unknown;
+  else if (std::holds_alternative<Primitive>(root().value))
     return TypeReferenceKind::Primitive;
   else if (std::holds_alternative<Named>(root().value))
     return TypeReferenceKind::Named;
@@ -114,8 +114,10 @@ TypeReferenceKind TypeReference::kind() const
     return TypeReferenceKind::List;
   else if (std::holds_alternative<Optional>(root().value))
     return TypeReferenceKind::Optional;
-  else
+  else if (std::holds_alternative<Map>(root().value))
     return TypeReferenceKind::Map;
+  else
+    return TypeReferenceKind::Unknown;
 }
 
 bool TypeReference::isPrimitive() const
@@ -141,6 +143,11 @@ bool TypeReference::isOptional() const
 bool TypeReference::isMap() const
 {
   return kind() == TypeReferenceKind::Map;
+}
+
+bool TypeReference::isValid() const
+{
+  return kind() != TypeReferenceKind::Unknown;
 }
 
 PrimitiveKind TypeReference::primitiveKind() const
@@ -202,7 +209,7 @@ std::string TypeReference::toString() const
   switch (kind())
   {
     case TypeReferenceKind::Primitive:
-      return koda::types::toString(primitiveKind());
+      return toBuiltInString(primitiveKind());
 
     case TypeReferenceKind::Named:
       return namedType().name.toString();

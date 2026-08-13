@@ -23,6 +23,7 @@ using Annotations = std::map<std::string, std::string>;
 
 enum class PrimitiveKind
 {
+  Unknown = 0,
   Bool,
   Int8,
   Int16,
@@ -70,6 +71,7 @@ enum class EnumUnderlyingKind
 // The default, builtin types
 static const std::string BooleanType = "builtin::Bool";
 static const std::string IntegerType = "builtin::Integer";
+static const std::string UnsignedType = "builtin::Unsigned";
 static const std::string RealType = "builtin::Real";
 static const std::string StringType = "builtin::String";
 static const std::string BytesType = "builtin::Bytes";

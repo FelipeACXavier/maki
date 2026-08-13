@@ -55,7 +55,7 @@ TypeDefinition TypeDefinition::createAlias(const std::string& name, const Qualif
   TypeDefinition type{
       .id = id.empty() ? qname.toId() : id,
       .name = qname,
-      .data = AliasTypeDefinition{.target = TypeReference::named(alias.name, alias.toId())},
+      .data = AliasTypeDefinition{.target = TypeReference::named(alias.toString(), alias.toId())},
   };
 
   return type;
@@ -73,16 +73,34 @@ TypeDefinition TypeDefinition::createAlias(const std::string& name, const TypeRe
   return type;
 }
 
+TypeDefinition TypeDefinition::createRecord(const std::string& name, const std::map<std::string, TypeReference>& fields, const std::string& base,
+                                            const std::string& id)
+{
+  const auto qname = QualifiedName(name);
+  std::vector<FieldDefinition> ifields;
+  for (const auto& [fname, ftype] : fields)
+    ifields.push_back(FieldDefinition{.name = fname, .type = ftype});
+
+  TypeDefinition type{
+      .id = id.empty() ? qname.toId() : id,
+      .name = qname,
+      .data =
+          RecordTypeDefinition{
+              .baseType = base.empty() ? std::nullopt : std::optional<TypeReference>(TypeReference::named(QualifiedName(base))),
+              .fields = ifields,
+          },
+  };
+
+  return type;
+}
+
 TypeDefinition TypeDefinition::createRecord(const std::string& name, const std::map<std::string, QualifiedName>& fields, const std::string& base,
                                             const std::string& id)
 {
   const auto qname = QualifiedName(name);
   std::vector<FieldDefinition> ifields;
   for (const auto& [fname, ftype] : fields)
-    ifields.push_back(FieldDefinition{
-        .name = fname,
-        .type = TypeReference::named(ftype, ftype.toId()),
-    });
+    ifields.push_back(FieldDefinition{.name = fname, .type = TypeReference::named(ftype, ftype.toId())});
 
   TypeDefinition type{
       .id = id.empty() ? qname.toId() : id,
@@ -339,8 +357,22 @@ void TypeDefinition::print(const std::string& indent) const
   }
   else if (isAlias())
   {
-    LOG_DEBUG("{}    {}", indent, alias().target.toString());
+    LOG_DEBUG("{} Alias target: {}", indent, alias().target.toString());
   }
+}
+
+TypeReference TypeDefinition::toReference() const
+{
+  if (isPrimitive())
+    return TypeReference::primitive(primitive().primitive);
+  else if (isRecord())
+    return TypeReference::named(name);
+  else if (isEnum())
+    return TypeReference::named(name);
+  else if (isAlias())
+    return alias().target;
+
+  return TypeReference{};
 }
 
 }  // namespace koda::types

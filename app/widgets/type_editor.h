@@ -3,7 +3,7 @@
 #include <QCompleter>
 #include <QWidget>
 
-#include "type_registry.h"
+#include "typing/types.h"
 
 class QAction;
 class QComboBox;
@@ -13,6 +13,14 @@ class QStackedWidget;
 class QTableWidget;
 class QTreeWidget;
 class QTreeWidgetItem;
+class QMouseEvent;
+
+namespace koda::types
+{
+struct QualifiedName;
+class TypeDefinition;
+class TypeReference;
+}  // namespace koda::types
 
 namespace maki
 {
@@ -40,7 +48,7 @@ private slots:
   void currentTypeChanged(QTreeWidgetItem* current, QTreeWidgetItem* previous);
 
   // Record editor
-  void addField(const QString& defaultName, const QString& defaultValue);
+  void addField(const QString& defaultName, const koda::types::TypeReference& defaultValue);
   void removeField();
 
   // Enum editor
@@ -49,6 +57,9 @@ private slots:
 
   // Registry
   void reloadTypes();
+
+protected:
+  bool eventFilter(QObject* object, QEvent* event);
 
 private:
   enum class EditorPage
@@ -67,10 +78,6 @@ private:
     RootIdRole = Qt::UserRole + 2,
   };
 
-  // --------------------------------------------------------------------------
-  // General UI
-  // --------------------------------------------------------------------------
-
   QTreeWidget* mTypeTree = nullptr;
 
   QPushButton* mAddButton = nullptr;
@@ -79,20 +86,11 @@ private:
 
   QStackedWidget* mEditorStack = nullptr;
 
-  // --------------------------------------------------------------------------
-  // Record page
-  // --------------------------------------------------------------------------
-
   QTableWidget* mFieldsTable = nullptr;
   QPushButton* mAddFieldButton = nullptr;
   QPushButton* mRemoveFieldButton = nullptr;
 
-  // --------------------------------------------------------------------------
-  // Enum page
-  // --------------------------------------------------------------------------
-
   QComboBox* mEnumBackingCombo = nullptr;
-
   QTableWidget* mEnumTable = nullptr;
   QPushButton* mAddEnumValueButton = nullptr;
   QPushButton* mRemoveEnumValueButton = nullptr;
@@ -110,10 +108,8 @@ private:
   QWidget* createEnumPage();
   QWidget* createAliasPage();
 
-  void showDefinition(const koda::types::TypeDefinition& definition);
-
   void clearEditor();
-
+  void showDefinition(const koda::types::TypeDefinition& definition);
   koda::types::TypeDefinition readDefinitionFromUi() const;
 
   std::string createUniqueTypeName(const std::string& baseName) const;
@@ -124,16 +120,17 @@ private:
 
   void selectType(const QString& qualifiedName);
 
-  QComboBox* createComboBox(QWidget* parent, const QString& defaultValue) const;
-  QTableWidget* createTable(QWidget* parent) const;
+  QTableWidget* createTable(QWidget* parent, const QStringList& headers);
   void createDefinition(const koda::types::TypeDefinition& definition);
   maki::StringWidget* createNamespaceEdit(maki::WidgetAlignment& alignment, QWidget* parent) const;
-  void addCompleter(const QStringList& items, QWidget* parent) const;
   QIcon typeToIcon(const koda::types::TypeDefinition& type) const;
 
   void populateEnumKind(QComboBox* widget) const;
   void populateExtentKind(QComboBox* widget, const koda::types::QualifiedName* currentName = nullptr) const;
-  void populateTypes(QComboBox* widget, const koda::types::QualifiedName* currentName = nullptr) const;
+
+  void validateEnumValues();
+  bool validateEnumValue(int row);
+  bool isValidEnumValue(const QString& value, koda::types::EnumUnderlyingKind type) const;
 };
 
 }  // namespace maki

@@ -367,7 +367,7 @@ void MainWindowLayout::buildCentralPanel()
   auto typeEditor = new maki::TypeEditor(typeContainer);
   typeLayout->addWidget(typeEditor);
 
-  mBottomNavigation->addItem(tr("Type Editor"), QIcon(":/icons/document-edit.svg"));
+  mBottomNavigation->addItem(tr("Datatypes"), QIcon(":/icons/database.svg"));
   mBottomPanel->addWidget(typeContainer);
 
   // -----------------------------------------------------------------

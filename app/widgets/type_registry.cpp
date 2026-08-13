@@ -1,7 +1,5 @@
 #include "type_registry.h"
 
-#include "logging.h"
-
 namespace maki
 {
 

@@ -26,7 +26,6 @@ BaseDialog::BaseDialog(const QString& title, double ratio, double screenFraction
   setLayout(layout);
 
   setSize(ratio, screenFraction);
-  // setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 }
 
 void BaseDialog::setSize(double ratio, double screenFraction)
@@ -61,7 +60,7 @@ void BaseDialog::setSize(double ratio, double screenFraction, qreal heightFracti
   }
 
   resize(targetW, targetH);
-  setFixedSize(targetW, targetH);
+  setMinimumSize(targetW, targetH);
 }
 
 QVBoxLayout* BaseDialog::layout()

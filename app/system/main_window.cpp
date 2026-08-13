@@ -88,7 +88,8 @@ VoidResult MainWindow::start()
   logging::gSilentLog = false;
   logging::gMinLogLevel = logging::LogLevel::Debugging;
   logging::gSourceName = Config::APPLICATION_NAME.toStdString();
-  logging::gLogToStream = [this](std::chrono::system_clock::time_point ts, logging::LogLevel level, const std::string& source, const std::string& filename, const uint32_t& line, const std::string& message) {
+  logging::gLogToStream = [this](std::chrono::system_clock::time_point ts, logging::LogLevel level, const std::string& source,
+                                 const std::string& filename, const uint32_t& line, const std::string& message) {
     if (mLogTable)
       mLogTable->append(level, source, filename, line, message);
   };
@@ -145,10 +146,8 @@ VoidResult MainWindow::start()
   mPropertiesMenu->start(mStorage);
 
   if (mPipelineRun)
-  {
     for (const auto& pipeline : mStorage->pipelines())
       mPipelineRun->addOption(pipeline->getname());
-  }
 
   RETURN_ON_FAILURE(loadElements());
 
@@ -204,10 +203,8 @@ void MainWindow::onThemeChanged(const AppearanceSettings& settings, bool initial
   // Update the libraries
   QList<SectionWidget*> sections = mStructureTab->findChildren<SectionWidget*>();
   for (const auto& section : sections)
-  {
     if (auto* library = qobject_cast<LibraryContainer*>(section->content()))
       qobject_cast<LibraryScene*>(library->scene())->themeChanged();
-  }
 
   // Update all items in all canvases
   for (int i = 0; i < mCanvasPanel->count(); ++i)
@@ -227,8 +224,7 @@ void MainWindow::onThemeChanged(const AppearanceSettings& settings, bool initial
   mMenuBar->setNativeMenuBar(settings.nativeMenuBar);
   if (!initialConfig && menuBarChanged)
   {
-    if (maki::confirmationPrompt("A full restart is required to for the menu bar to be updated",
-                                 "Restart now", "Restart later"))
+    if (maki::confirmationPrompt("A full restart is required to for the menu bar to be updated", "Restart now", "Restart later"))
       onActionRestart();
   }
 }
@@ -264,22 +260,16 @@ void MainWindow::onSettingsChanged()
 
   // Update node palette
   for (const auto& section : mStructureTab->findChildren<SectionWidget*>())
-  {
     if (auto* library = qobject_cast<LibraryContainer*>(section->content()))
       library->setColumnCount(mSettingsManager->appearance().numberOfColumns);
-  }
 
   for (const auto& section : mBehaviourTab->findChildren<SectionWidget*>())
-  {
     if (auto* library = qobject_cast<LibraryContainer*>(section->content()))
       library->setColumnCount(mSettingsManager->appearance().numberOfColumns);
-  }
 
   for (const auto& section : mPipelineTab->findChildren<SectionWidget*>())
-  {
     if (auto* library = qobject_cast<LibraryContainer*>(section->content()))
       library->setColumnCount(mSettingsManager->appearance().numberOfColumns);
-  }
 }
 
 void MainWindow::startUI()
@@ -358,9 +348,7 @@ void MainWindow::bind()
     {
       LOG_DEBUG("Finding in bottom container");
       if (bottom == mCentralSplitter && mBottomPanel->currentIndex() == 1)
-      {
         mLogTable->search();
-      }
       return;
     }
   });
@@ -490,9 +478,7 @@ void MainWindow::bind()
   });
 
   // Pipeline stuff =============================================================
-  connect(mPluginPipeline, &maki::PluginPipeline::pipelineStarted, [this] {
-    toggleGenerationButton(true);
-  });
+  connect(mPluginPipeline, &maki::PluginPipeline::pipelineStarted, [this] { toggleGenerationButton(true); });
   connect(mPluginPipeline, &maki::PluginPipeline::pipelineFinished, [this](const QString& outputFolder) {
     if (!outputFolder.isEmpty())
       mFileMenu->setGenerationRoot(outputFolder);
@@ -825,9 +811,10 @@ void MainWindow::onActionGenerate(const QString& pipelineId)
       .id = "maki.nodes",
       .type = "maki",
       .producer = "MAKI",
-      .paths = {
-          {"nodes", byteArray.toBase64()},
-      },
+      .paths =
+          {
+              {"nodes", byteArray.toBase64()},
+          },
   });
 
   // Make sure the project exists
@@ -1352,28 +1339,18 @@ void MainWindow::showAboutDialog()
   dialog.setApplicationName(QApplication::applicationName());
   dialog.setApplicationVersion(QApplication::applicationVersion());
 
-  dialog.setDescription(
-      "A low-code development platform for modelling, orchestrating, "
-      "simulating, and verifying component-based systems.");
+  dialog.setDescription("A low-code development platform for modelling, orchestrating, "
+                        "simulating, and verifying component-based systems.");
 
   dialog.setWebsiteUrl("https://felipeacxavier.github.io/maki/");
   dialog.setLicense("MIT License");
   dialog.setCopyright("© 2026 Felipe Xavier");
 
-  dialog.addSocialMediaLink(
-      "GitHub",
-      "https://github.com/FelipeACXavier",
-      QIcon(":/icons/github.svg"));
+  dialog.addSocialMediaLink("GitHub", "https://github.com/FelipeACXavier", QIcon(":/icons/github.svg"));
 
-  dialog.addSocialMediaLink(
-      "Research",
-      "https://research.tue.nl/nl/persons/felipe-de-azeredo-coutinho-xavier/",
-      QIcon(":/icons/research.svg"));
+  dialog.addSocialMediaLink("Research", "https://research.tue.nl/nl/persons/felipe-de-azeredo-coutinho-xavier/", QIcon(":/icons/research.svg"));
 
-  dialog.addSocialMediaLink(
-      "Website",
-      "https://felipeacxavier.github.io",
-      QIcon(":/icons/me.svg"));
+  dialog.addSocialMediaLink("Website", "https://felipeacxavier.github.io", QIcon(":/icons/me.svg"));
 
   dialog.exec();
 }

@@ -30,6 +30,8 @@ namespace maki
 {
 class WidgetGroup;
 
+void addCompleter(const QStringList& items, QWidget* parent);
+
 /**
  * @struct WidgetAlignment
  * @brief Describes how a widget should be aligned or inserted into a parent layout.
@@ -75,7 +77,7 @@ struct WidgetAlignment
     return WidgetAlignment{WidgetAlignment::Type::VERTICAL};
   };
 
-  static WidgetAlignment Form(maki::WidgetGroup* widgetGroup, int width = 0, Direction dir = Direction::LEFT)
+  static WidgetAlignment Form(maki::WidgetGroup* widgetGroup, int width = 0, Direction dir = Direction::SPREAD)
   {
     return maki::WidgetAlignment{
         .type = maki::WidgetAlignment::Type::FORM,
@@ -161,6 +163,8 @@ public:
    * @param spacing The amount of spacing to add, in pixels.
    */
   void addSpacing(int spacing);
+
+  void addContainer(const QString& lable, QWidget* container);
 
   /**
    * @brief Adds a stretchable spacer to the group layout.
@@ -541,6 +545,25 @@ public:
    * @param parent The parent widget.
    */
   TypeSelectionWidget(const QString& initial, Types::PropertyTypes last, QWidget* parent);
+};
+
+/**
+ * @class SelectorWidget
+ * @brief A widget for selecting one value from a list of options.
+ */
+class ContainerWidget : public TypedInputWidget<QString, QWidget>
+{
+  Q_OBJECT
+public:
+  /**
+   * @brief Constructs a selector widget using an existing combo box.
+   * @param label The label shown next to the widget.
+   * @param comboBox The combo box to use as the selector.
+   * @param parent The parent widget.
+   */
+  ContainerWidget(const QString& label, QWidget* widget, WidgetAlignment alignment, QWidget* parent);
+
+  void writeValueToWidget(const QString& value) override;
 };
 
 /**

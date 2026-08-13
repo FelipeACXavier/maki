@@ -3,6 +3,7 @@
 #include <QCheckBox>
 #include <QColorDialog>
 #include <QComboBox>
+#include <QCompleter>
 #include <QDoubleValidator>
 #include <QFormLayout>
 #include <QHBoxLayout>
@@ -31,6 +32,33 @@ static const int TOOLTIP_HEIGHT = 55;
 
 namespace maki
 {
+
+void addCompleter(const QStringList& items, QWidget* parent)
+{
+  auto* completer = new QCompleter(items, parent);
+  completer->setFilterMode(Qt::MatchContains);
+  completer->setCompletionMode(QCompleter::PopupCompletion);
+  completer->setCaseSensitivity(Qt::CaseInsensitive);
+
+  if (auto* underlying = qobject_cast<QComboBox*>(parent))
+  {
+    if (auto* old = underlying->completer())
+      old->deleteLater();
+
+    underlying->setCompleter(completer);
+  }
+  else if (auto* underlying = qobject_cast<oclero::qlementine::LineEdit*>(parent))
+  {
+    if (auto* old = underlying->completer())
+      old->deleteLater();
+
+    underlying->setCompleter(completer);
+  }
+  else
+  {
+    completer->deleteLater();
+  }
+}
 
 // =========================================================================================================
 GridGroup::GridGroup(const QString& label, int rows, int cols, QWidget* parent)
@@ -126,6 +154,8 @@ WidgetGroup::WidgetGroup(const QString& label, oclero::qlementine::TextRole role
   vLayout->addWidget(title);
   vLayout->addWidget(line);
   vLayout->addSpacing(2 * WIDGET_SPACING);
+
+  setFocusPolicy(Qt::FocusPolicy::ClickFocus);
 }
 
 void WidgetGroup::addWidget(QWidget* widget)
@@ -631,6 +661,15 @@ TypeSelectionWidget::TypeSelectionWidget(const QString& initial, Types::Property
   int index = findData(initial);
   if (index >= 0)
     setCurrentIndex(index);
+}
+
+ContainerWidget::ContainerWidget(const QString& label, QWidget* widget, WidgetAlignment alignment, QWidget* parent)
+    : TypedInputWidget<QString, QWidget>(label, widget, Constants::EMPTY_COMBO, alignment, parent)
+{
+}
+
+void ContainerWidget::writeValueToWidget(const QString& /* value */)
+{
 }
 
 // =========================================================================================================
