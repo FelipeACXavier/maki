@@ -197,6 +197,12 @@ TypeRegistrationResult TypeRegistry::replace(const TypeDefinition& definition)
     return add(definition);
   }
 
+  int sameNameCount = std::count_if(mTypes.begin(), mTypes.end(), [&definition](const auto& entry) {
+    return entry.second.name == definition.name && entry.first != definition.id;
+  });
+  if (sameNameCount > 0)
+    return TypeRegistrationResult::Failed(TypeRegistrationError::DuplicateName, "Name already exists: " + definition.name.toString());
+
   const TypeId replacedId = definition.id;
   const TypeRegistrationResult result = validateRegistration(definition, &replacedId);
 

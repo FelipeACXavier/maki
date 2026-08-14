@@ -3,8 +3,9 @@
 #include <QObject>
 #include <QString>
 #include <QVector>
-#include <memory>
 
+#include "json.h"
+#include "result.h"
 #include "typing/type_registry.h"
 
 namespace maki
@@ -25,15 +26,17 @@ public:
   QStringList builtinTypeNames() const;
   QStringList namespaces() const;
 
+  VoidResult loadFromLibrary(const JSON& json);
+
   koda::types::TypeRegistrationResult add(const koda::types::TypeDefinition& definition) override;
   koda::types::TypeRegistrationResult replace(const koda::types::TypeDefinition& definition) override;
   koda::types::TypeRegistrationResult remove(const std::string& qualifiedName);
 
 signals:
   void registryChanged();
-  void typeAdded(const QString& qualifiedName);
-  void typeRemoved(const QString& qualifiedName);
-  void typeChanged(const QString& qualifiedName);
+  void typeAdded(const koda::types::TypeDefinition& def);
+  void typeRemoved(const koda::types::TypeDefinition& def);
+  void typeChanged(const koda::types::TypeDefinition& def);
 
 private:
   TypeRegistry(QObject* parent = nullptr);

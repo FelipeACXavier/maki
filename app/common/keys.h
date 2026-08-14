@@ -9,6 +9,7 @@ static const QString ID = "id";
 static const QString NAME = "name";
 static const QString LABEL = "label";
 static const QString TYPE = "type";
+static const QString TYPES = "types";
 static const QString DEFAULT = "default";
 static const QString SIZE = "size";
 static const QString SCALE = "scale";

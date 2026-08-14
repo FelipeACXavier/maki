@@ -1,5 +1,12 @@
 #include "type_registry.h"
 
+#include <QJsonArray>
+#include <QJsonObject>
+
+#include "keys.h"
+#include "logging.h"
+#include "type_helpers.h"
+
 namespace maki
 {
 
@@ -56,12 +63,42 @@ QStringList TypeRegistry::namespaces() const
   return names;
 }
 
+VoidResult TypeRegistry::loadFromLibrary(const JSON& json)
+{
+  auto name = json[ConfigKeys::NAME].toString();
+  auto types = json[ConfigKeys::TYPES];
+  if (!types.isArray())
+    return VoidResult::Failed("types must be in a list in the format \"types\": []");
+
+  for (const auto& object : types.toArray())
+  {
+    if (!object.isObject())
+      return VoidResult::Failed("type must be a json object");
+
+    auto type = object.toObject();
+
+    auto result = typeDefinitionFromJson(type);
+    if (!result.IsSuccess())
+    {
+      LOG_WARNING("Error while converting type: {}", result.ErrorMessage());
+      continue;
+    }
+
+    koda::types::TypeDefinition def = result.Value();
+    auto registered = add(def);
+    if (!registered)
+      LOG_WARNING("Error while registering type: {}", registered.ErrorMessage());
+  }
+
+  return VoidResult();
+}
+
 koda::types::TypeRegistrationResult TypeRegistry::add(const koda::types::TypeDefinition& definition)
 {
   auto ret = koda::types::TypeRegistry::add(definition);
   if (ret.IsSuccess())
   {
-    emit typeAdded(QString::fromStdString(definition.name.toString()));
+    emit typeAdded(definition);
     emit registryChanged();
   }
 
@@ -76,22 +113,23 @@ koda::types::TypeRegistrationResult TypeRegistry::replace(const koda::types::Typ
   auto ret = koda::types::TypeRegistry::replace(definition);
   if (ret.IsSuccess())
   {
-    emit typeChanged(QString::fromStdString(definition.name.toString()));
+    emit typeChanged(definition);
     emit registryChanged();
   }
 
   return ret;
 }
 
-koda::types::TypeRegistrationResult TypeRegistry::remove(const std::string& fieldId)
+koda::types::TypeRegistrationResult TypeRegistry::remove(const std::string& id)
 {
-  if (isBuiltin(fieldId))
+  if (isBuiltin(id))
     return koda::types::TypeRegistrationResult::Failed(koda::types::TypeRegistrationError::BuiltIn, "Built-in types cannot be removed");
 
-  auto removed = removeById(fieldId);
+  const auto toRemove = *findById(id);
+  auto removed = removeById(id);
   if (removed)
   {
-    emit typeChanged(QString::fromStdString(fieldId));
+    emit typeRemoved(toRemove);
     emit registryChanged();
   }
 

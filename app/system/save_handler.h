@@ -7,7 +7,6 @@
 #include "node_info.h"
 #include "result.h"
 #include "save_info.h"
-#include "typing/type_definition.h"
 
 class QGraphicsItem;
 class Canvas;
@@ -108,7 +107,4 @@ private:
   Result<QString> savePipeline(const SaveInfo& project, const FlowSaveInfo& task);
 
   Result<std::shared_ptr<NodeSaveInfo>> loadNodeTree(const QString& projectRoot, const QString& nodeFile);
-
-  QJsonObject typeReferenceToJson(const koda::types::TypeReference& reference) const;
-  QJsonObject typeDefinitionToJson(const koda::types::TypeDefinition& definition) const;
 };

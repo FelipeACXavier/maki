@@ -21,6 +21,7 @@
 #include "main_window.h"
 #include "node_info.h"
 #include "result.h"
+#include "type_helpers.h"
 #include "widgets/type_registry.h"
 
 VoidResult zipFolder(const QString& sourceDir, const QString& outputFile)
@@ -293,107 +294,6 @@ VoidResult SaveHandler::writeJsonFile(const QString& path, const QJsonObject& ob
   return VoidResult();
 }
 
-QJsonObject SaveHandler::typeReferenceToJson(const koda::types::TypeReference& reference) const
-{
-  QJsonObject json;
-  json["kind"] = QString::fromStdString(koda::types::toString(reference.kind()));
-
-  if (reference.isList())
-  {
-    json["elementType"] = typeReferenceToJson(reference.elementType());
-  }
-  else if (reference.isOptional())
-  {
-    json["optionalValueType"] = typeReferenceToJson(reference.optionalValueType());
-  }
-  else if (reference.isPrimitive())
-  {
-    json["primitiveKind"] = QString::fromStdString(koda::types::toString(reference.primitiveKind()));
-  }
-  else if (reference.isNamed())
-  {
-    if (reference.namedType().id.has_value())
-      json["id"] = QString::fromStdString(reference.namedType().id.value());
-
-    json["qualifiedName"] = QString::fromStdString(reference.namedType().name.toString());
-  }
-  else if (reference.isMap())
-  {
-    json["mapKeyType"] = typeReferenceToJson(reference.mapKeyType());
-    json["mapValueType"] = typeReferenceToJson(reference.mapValueType());
-  }
-
-  return json;
-}
-
-QJsonObject SaveHandler::typeDefinitionToJson(const koda::types::TypeDefinition& definition) const
-{
-  QJsonObject json;
-  json["kind"] = QString::fromStdString(koda::types::toString(definition.kind()));
-
-  auto annotationToJson = [](koda::types::Annotations annotations) {
-    QJsonArray out;
-    for (const auto& [key, value] : annotations)
-    {
-      QJsonObject annotation;
-      annotation["key"] = QString::fromStdString(key);
-      annotation["value"] = QString::fromStdString(value);
-      out.append(annotation);
-    }
-    return out;
-  };
-
-  if (definition.isAlias())
-  {
-    json["target"] = typeReferenceToJson(definition.alias().target);
-  }
-  else if (definition.isEnum())
-  {
-    json["underlyingType"] = QString::fromStdString(koda::types::toString(definition.enumeration().underlyingType));
-    QJsonArray enumValues;
-    for (const auto& value : definition.enumeration().values)
-    {
-      QJsonObject object;
-      object["name"] = QString::fromStdString(value.name);
-      object["documentation"] = QString::fromStdString(value.documentation);
-      object["annotations"] = annotationToJson(value.annotations);
-
-      if (value.value.has_value())
-        object["value"] = QString::fromStdString(value.value.value());
-
-      enumValues.append(object);
-    }
-
-    json["values"] = enumValues;
-  }
-  else if (definition.isPrimitive())
-  {
-    json["primitive"] = QString::fromStdString(koda::types::toString(definition.primitive().primitive));
-  }
-  else if (definition.isRecord())
-  {
-    if (definition.record().baseType.has_value())
-      json["baseType"] = typeReferenceToJson(definition.record().baseType.value());
-
-    QJsonArray fieldValues;
-    for (const auto& value : definition.record().fields)
-    {
-      QJsonObject object;
-      object["name"] = QString::fromStdString(value.name);
-      object["documentation"] = QString::fromStdString(value.documentation);
-      object["type"] = typeReferenceToJson(value.type);
-      object["required"] = value.required;
-      object["annotations"] = annotationToJson(value.annotations);
-
-      fieldValues.append(object);
-    }
-
-    json["fields"] = fieldValues;
-  }
-
-  return json;
-}
-
 VoidResult SaveHandler::saveManifest(const SaveInfo& project)
 {
   QJsonObject manifest;
@@ -417,7 +317,7 @@ VoidResult SaveHandler::saveManifest(const SaveInfo& project)
   for (const auto& task : maki::TypeRegistry::instance().allTypes())
     // We don't need to save the built-in types, maki takes care of those
     if (!maki::TypeRegistry::instance().isBuiltin(*task))
-      types.append(typeDefinitionToJson(*task));
+      types.append(maki::typeDefinitionToJson(*task));
 
   manifest["types"] = types;
 

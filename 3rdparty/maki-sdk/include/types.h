@@ -103,7 +103,8 @@ enum class LibraryTypes
   UNKNOWN = 0,
   STRUCTURAL,
   BEHAVIOUR,
-  PIPELINE
+  PIPELINE,
+  DATA
 };
 
 QString LibraryTypeToString(LibraryTypes type);

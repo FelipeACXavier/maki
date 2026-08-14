@@ -131,9 +131,12 @@ std::string toString(TypeKind kind)
 
     case TypeKind::Alias:
       return "Alias";
+
+    case TypeKind::Unknown:
+      return "Unknown";
   }
 
-  return "Unknown type kind";
+  return "Unknown";
 }
 
 std::string toString(TypeReferenceKind kind)
@@ -180,6 +183,58 @@ std::string toString(EnumUnderlyingKind kind)
   }
 
   return "Unknown enum underlying kind";
+}
+
+PrimitiveKind primitiveKindFromString(const std::string& kind)
+{
+  if (kind == "Bool")
+    return PrimitiveKind::Bool;
+  else if (kind == "Int8")
+    return PrimitiveKind::Int8;
+  else if (kind == "Int16")
+    return PrimitiveKind::Int16;
+  else if (kind == "Int32")
+    return PrimitiveKind::Int32;
+  else if (kind == "Int64")
+    return PrimitiveKind::Int64;
+  else if (kind == "UInt8")
+    return PrimitiveKind::UInt8;
+  else if (kind == "UInt16")
+    return PrimitiveKind::UInt16;
+  else if (kind == "UInt32")
+    return PrimitiveKind::UInt32;
+  else if (kind == "UInt64")
+    return PrimitiveKind::UInt64;
+  else if (kind == "Float32")
+    return PrimitiveKind::Float32;
+  else if (kind == "Float64")
+    return PrimitiveKind::Float64;
+  else if (kind == "String")
+    return PrimitiveKind::String;
+  else if (kind == "Bytes")
+    return PrimitiveKind::Bytes;
+  else if (kind == "Timestamp")
+    return PrimitiveKind::Timestamp;
+  else if (kind == "Duration")
+    return PrimitiveKind::Duration;
+  else if (kind == "Void")
+    return PrimitiveKind::Void;
+
+  return PrimitiveKind::Unknown;
+}
+
+TypeKind typeKindFromString(const std::string& kind)
+{
+  if (kind == "Primitive")
+    return TypeKind::Primitive;
+  if (kind == "Record")
+    return TypeKind::Record;
+  if (kind == "Enum")
+    return TypeKind::Enum;
+  if (kind == "Alias")
+    return TypeKind::Alias;
+
+  return TypeKind::Unknown;
 }
 
 TypeReferenceKind typeReferenceKindFromString(const std::string& kind)

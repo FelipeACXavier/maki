@@ -59,6 +59,9 @@ private slots:
   // Registry
   void reloadTypes();
 
+  void exportAsJson();
+  void importFromJson();
+
 protected:
   bool eventFilter(QObject* object, QEvent* event);
 
@@ -84,6 +87,8 @@ private:
   QPushButton* mAddButton = nullptr;
   QPushButton* mDeleteButton = nullptr;
   QPushButton* mApplyButton = nullptr;
+  QPushButton* mExportButton = nullptr;
+  QPushButton* mImportButton = nullptr;
 
   QStackedWidget* mEditorStack = nullptr;
 
@@ -96,12 +101,9 @@ private:
   QPushButton* mAddEnumValueButton = nullptr;
   QPushButton* mRemoveEnumValueButton = nullptr;
 
-  QString mSelectedQualifiedName;
+  QString mSelectedId;
   bool mSelectedBuiltin = false;
   bool mReloading = false;
-
-  QTreeWidgetItem* mBuiltinRoot = nullptr;
-  QTreeWidgetItem* mProjectRoot = nullptr;
 
   void buildUi();
   QWidget* createBuiltinPage();
@@ -114,9 +116,9 @@ private:
   koda::types::TypeDefinition readDefinitionFromUi() const;
 
   std::string createUniqueTypeName(const std::string& baseName) const;
-  std::string getIdFromItem(const QString& qualifiedName) const;
 
-  QTreeWidgetItem* findTreeItem(const QString& qualifiedName) const;
+  QTreeWidgetItem* findTreeItemById(const QString& id) const;
+  QTreeWidgetItem* findTreeItemByName(const QString& qualifiedName) const;
   QTreeWidgetItem* findItemByRole(QTreeWidgetItem* parent, int role, const QVariant& value) const;
 
   void selectType(const QString& qualifiedName);

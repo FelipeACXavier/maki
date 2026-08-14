@@ -70,6 +70,7 @@
 #include "widgets/structure/file_menu.h"
 #include "widgets/structure/flow_menu.h"
 #include "widgets/structure/system_menu.h"
+#include "widgets/type_registry.h"
 
 MainWindow::MainWindow(QApplication* app, oclero::qlementine::ThemeManager* themeManager, QWidget* parent)
     : MainWindowLayout(parent)
@@ -680,6 +681,9 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
   QString type = config[ConfigKeys::TYPE].toString();
 
   LOG_DEBUG("Loading library: {} of {}", libraryName, name);
+
+  if (type == ConfigKeys::DATA)
+    return maki::TypeRegistry::instance().loadFromLibrary(config);
 
   // Every library is added to a new item in the toolbox.
   // We load those dynamically on startup.

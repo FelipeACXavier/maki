@@ -1,6 +1,8 @@
 #include "type_editor.h"
 
+#include <QApplication>
 #include <QCheckBox>
+#include <QClipboard>
 #include <QComboBox>
 #include <QCompleter>
 #include <QEvent>
@@ -27,9 +29,11 @@
 #include <oclero/qlementine/widgets/LineEdit.hpp>
 
 #include "app_configs.h"
+#include "clickable_icon.h"
 #include "dialogs/type_reference_dialog.h"
 #include "logging.h"
 #include "properties/type_selector.h"
+#include "type_helpers.h"
 #include "type_registry.h"
 #include "validators/namespace_validator.h"
 #include "widget_factory.h"
@@ -52,6 +56,8 @@ TypeEditor::TypeEditor(QWidget* parent)
   connect(mTypeTree, &QTreeWidget::currentItemChanged, this, &TypeEditor::currentTypeChanged);
   connect(mDeleteButton, &QPushButton::clicked, this, &TypeEditor::removeCurrentType);
   connect(mApplyButton, &QPushButton::clicked, this, &TypeEditor::applyChanges);
+  connect(mExportButton, &QPushButton::clicked, this, &TypeEditor::exportAsJson);
+  connect(mImportButton, &QPushButton::clicked, this, &TypeEditor::importFromJson);
   connect(mAddFieldButton, &QPushButton::clicked, this,
           [this] { addField(tr("field%1").arg(mFieldsTable->rowCount() + 1), koda::types::FieldDefinition{}); });
   connect(mRemoveFieldButton, &QPushButton::clicked, this, &TypeEditor::removeField);
@@ -73,7 +79,7 @@ void TypeEditor::createDefinition(const koda::types::TypeDefinition& definition)
     return;
   }
 
-  selectType(QString::fromStdString(definition.name.toString()));
+  selectType(QString::fromStdString(definition.id));
 }
 
 void TypeEditor::createRecord()
@@ -96,11 +102,16 @@ void TypeEditor::createAlias()
 
 void TypeEditor::removeCurrentType()
 {
-  const auto answer = QMessageBox::question(this, tr("Remove type"), tr("Are you sure you want to remove '%1'?").arg(mSelectedQualifiedName));
+  auto item = findTreeItemById(mSelectedId);
+  if (!item)
+    return;
+
+  const QString qualifiedName = item->data(0, QualifiedNameRole).toString();
+  const auto answer = QMessageBox::question(this, tr("Remove type"), tr("Are you sure you want to remove '%1'?").arg(qualifiedName));
   if (answer != QMessageBox::Yes)
     return;
 
-  auto removed = TypeRegistry::instance().remove(getIdFromItem(mSelectedQualifiedName));
+  auto removed = TypeRegistry::instance().remove(mSelectedId.toStdString());
   if (!removed.IsSuccess())
   {
     LOG_WARNING(removed.ErrorMessage());
@@ -126,7 +137,7 @@ void TypeEditor::applyChanges()
     return;
   }
 
-  selectType(mSelectedQualifiedName);
+  selectType(mSelectedId);
 }
 
 void TypeEditor::currentTypeChanged(QTreeWidgetItem* current, QTreeWidgetItem* /* previous */)
@@ -145,13 +156,13 @@ void TypeEditor::currentTypeChanged(QTreeWidgetItem* current, QTreeWidgetItem* /
   const koda::types::TypeDefinition* definition = TypeRegistry::instance().findByName(qualifiedName.toStdString());
   if (definition == nullptr)
   {
-    LOG_DEBUG("No definition found for {}", qualifiedName);
+    LOG_TRACE("No definition found for {}", qualifiedName);
     clearEditor();
     return;
   }
 
   // Since we can only show what we select, it makes sense to update this here
-  mSelectedQualifiedName = QString::fromStdString(definition->name.toString());
+  mSelectedId = QString::fromStdString(definition->id);
 
   showDefinition(*definition);
 }
@@ -313,7 +324,7 @@ void TypeEditor::buildUi()
   auto* browserButtons = new QHBoxLayout();
   mAddButton = new QPushButton(browserWidget);
   mAddButton->setFixedSize(Config::MEDIUM_BUTTON_SIZE);
-  mAddButton->setIcon(QIcon(":/icons/plus.svg"));
+  mAddButton->setIcon(iconFromTheme("plus"));
 
   auto* menu = new QMenu(mAddButton);
   auto* recordAction = menu->addAction(tr("Record"));
@@ -331,7 +342,7 @@ void TypeEditor::buildUi()
 
   mDeleteButton = new QPushButton(browserWidget);
   mDeleteButton->setFixedSize(Config::MEDIUM_BUTTON_SIZE);
-  mDeleteButton->setIcon(QIcon(":/icons/minus.svg"));
+  mDeleteButton->setIcon(iconFromTheme("minus"));
 
   browserButtons->addWidget(mAddButton);
   browserButtons->addWidget(mDeleteButton);
@@ -357,6 +368,19 @@ void TypeEditor::buildUi()
 
   auto* editorButtons = new QHBoxLayout();
   editorButtons->setContentsMargins(0, 0, 0, 0);
+
+  mImportButton = new QPushButton(editorWidget);
+  mImportButton->setIcon(iconFromTheme("document-save"));
+  mImportButton->setFixedSize(Config::MEDIUM_BUTTON_SIZE);
+  mImportButton->setToolTip(tr("Load type from JSON"));
+  editorButtons->addWidget(mImportButton);
+
+  mExportButton = new QPushButton(editorWidget);
+  mExportButton->setIcon(iconFromTheme("document-open"));
+  mExportButton->setFixedSize(Config::MEDIUM_BUTTON_SIZE);
+  mExportButton->setToolTip(tr("Save type to JSON"));
+  editorButtons->addWidget(mExportButton);
+
   editorButtons->addStretch();
 
   mApplyButton = new QPushButton(tr("Apply"), editorWidget);
@@ -382,6 +406,8 @@ void TypeEditor::buildUi()
 
   mDeleteButton->setEnabled(false);
   mApplyButton->setEnabled(false);
+  mExportButton->setEnabled(false);
+  mImportButton->setEnabled(false);
 }
 
 QWidget* TypeEditor::createBuiltinPage()
@@ -597,7 +623,7 @@ koda::types::TypeDefinition TypeEditor::readDefinitionFromUi() const
 
     return koda::types::TypeDefinition::createRecord(std::format("{}::{}", namespaceEdit->getValue(), nameEdit->getValue()), fields,
                                                      baseType->getValue() == Constants::EMPTY_COMBO ? "" : baseType->getValue().toStdString(),
-                                                     getIdFromItem(mSelectedQualifiedName));
+                                                     mSelectedId.toStdString());
   }
   else if (pageIndex == static_cast<int>(EditorPage::Enum))
   {
@@ -628,7 +654,7 @@ koda::types::TypeDefinition TypeEditor::readDefinitionFromUi() const
 
     return koda::types::TypeDefinition::createEnum(std::format("{}::{}", namespaceEdit->getValue(), nameEdit->getValue()),
                                                    koda::types::enumKindFromString(baseType->getValue().toStdString()), fields,
-                                                   getIdFromItem(mSelectedQualifiedName));
+                                                   mSelectedId.toStdString());
   }
   else if (pageIndex == static_cast<int>(EditorPage::Alias))
   {
@@ -644,7 +670,7 @@ koda::types::TypeDefinition TypeEditor::readDefinitionFromUi() const
     }
 
     const auto qname = std::format("{}::{}", namespaceEdit->getValue(), nameEdit->getValue());
-    return koda::types::TypeDefinition::createAlias(qname, aliasTargetCombo->getReference(), getIdFromItem(mSelectedQualifiedName));
+    return koda::types::TypeDefinition::createAlias(qname, aliasTargetCombo->getReference(), mSelectedId.toStdString());
   }
 
   return definition;
@@ -728,28 +754,33 @@ void TypeEditor::showDefinition(const koda::types::TypeDefinition& definition)
 
     mDeleteButton->setEnabled(false);
     mApplyButton->setEnabled(false);
+    mExportButton->setEnabled(true);
+    mImportButton->setEnabled(false);
     return;
   }
 
   mDeleteButton->setEnabled(true);
   mApplyButton->setEnabled(true);
+  mExportButton->setEnabled(true);
+  mImportButton->setEnabled(true);
 }
 
 QIcon TypeEditor::typeToIcon(const koda::types::TypeDefinition& type) const
 {
   if (type.isAlias())
-    return QIcon(":/icons/alias.svg");
+    return iconFromTheme("alias");
   if (type.isEnum())
-    return QIcon(":/icons/enum.svg");
+    return iconFromTheme("enum");
   if (type.isRecord())
-    return QIcon(":/icons/record.svg");
+    return iconFromTheme("record");
 
-  return QIcon(":/icons/primitive.svg");
+  return iconFromTheme("primitive");
 }
 
 void TypeEditor::reloadTypes()
 {
-  const QString previouslySelected = mSelectedQualifiedName;
+  // Saved it so we can reselect it after the update
+  const QString previouslySelected = mSelectedId;
 
   QHash<QString, bool> expansionState;
   for (int i = 0; i < mTypeTree->topLevelItemCount(); ++i)
@@ -809,17 +840,67 @@ void TypeEditor::reloadTypes()
     selectType(previouslySelected);
 }
 
+void TypeEditor::exportAsJson()
+{
+  if (mSelectedId.isEmpty())
+    return;
+
+  LOG_DEBUG("Copying: {}", mSelectedId);
+  const koda::types::TypeDefinition* definition = TypeRegistry::instance().findById(mSelectedId.toStdString());
+  if (definition == nullptr)
+  {
+    LOG_DEBUG("No definition found for {}", mSelectedId);
+    return;
+  }
+
+  QJsonObject json = typeDefinitionToJson(*definition);
+  QApplication::clipboard()->setText(QJsonDocument(json).toJson(QJsonDocument::Indented));
+  LOG_INFO("Copied {}", mSelectedId);
+}
+
+void TypeEditor::importFromJson()
+{
+  const QString text = QApplication::clipboard()->text();
+
+  QJsonParseError error;
+  const QJsonDocument document = QJsonDocument::fromJson(text.toUtf8(), &error);
+
+  if (error.error != QJsonParseError::NoError)
+  {
+    LOG_WARNING("Invalid JSON: {}", error.errorString());
+    return;
+  }
+
+  if (!document.isObject())
+  {
+    LOG_WARNING("Expected a JSON object");
+    return;
+  }
+
+  auto result = typeDefinitionFromJson(document.object());
+  if (!result.IsSuccess())
+  {
+    LOG_WARNING("Failed to load from json: {}", result.ErrorMessage());
+    return;
+  }
+
+  showDefinition(result.Value());
+  LOG_INFO("Loaded definition for {}", result.Value().name.toString());
+}
+
 // =============================================================================
 // Helpers
 void TypeEditor::clearEditor()
 {
   // Nothing is selected
-  mSelectedQualifiedName.clear();
+  mSelectedId.clear();
 
   mEditorStack->setCurrentIndex(static_cast<int>(EditorPage::None));
 
   mDeleteButton->setEnabled(false);
   mApplyButton->setEnabled(false);
+  mExportButton->setEnabled(false);
+  mImportButton->setEnabled(true);
 }
 
 std::string TypeEditor::createUniqueTypeName(const std::string& baseName) const
@@ -849,7 +930,16 @@ QTreeWidgetItem* TypeEditor::findItemByRole(QTreeWidgetItem* parent, int role, c
   return nullptr;
 }
 
-QTreeWidgetItem* TypeEditor::findTreeItem(const QString& qualifiedName) const
+QTreeWidgetItem* TypeEditor::findTreeItemById(const QString& id) const
+{
+  for (int i = 0; i < mTypeTree->topLevelItemCount(); ++i)
+    if (auto* found = findItemByRole(mTypeTree->topLevelItem(i), IdRole, id))
+      return found;
+
+  return nullptr;
+}
+
+QTreeWidgetItem* TypeEditor::findTreeItemByName(const QString& qualifiedName) const
 {
   for (int i = 0; i < mTypeTree->topLevelItemCount(); ++i)
     if (auto* found = findItemByRole(mTypeTree->topLevelItem(i), QualifiedNameRole, qualifiedName))
@@ -858,26 +948,14 @@ QTreeWidgetItem* TypeEditor::findTreeItem(const QString& qualifiedName) const
   return nullptr;
 }
 
-void TypeEditor::selectType(const QString& qualifiedName)
+void TypeEditor::selectType(const QString& id)
 {
-  QTreeWidgetItem* item = findTreeItem(qualifiedName);
+  QTreeWidgetItem* item = findTreeItemById(id);
   if (item == nullptr)
     return;
 
   mTypeTree->setCurrentItem(item);
   mTypeTree->scrollToItem(item);
-}
-
-std::string TypeEditor::getIdFromItem(const QString& qualifiedName) const
-{
-  QTreeWidgetItem* item = findTreeItem(qualifiedName);
-  if (item == nullptr)
-  {
-    LOG_INFO("Could not find item in tree with name {}", qualifiedName);
-    return "";
-  }
-
-  return item->data(0, IdRole).toString().toStdString();
 }
 
 QTableWidget* TypeEditor::createTable(QWidget* parent, const QStringList& headers)
@@ -943,7 +1021,6 @@ bool TypeEditor::eventFilter(QObject* object, QEvent* event)
       const auto* mouseEvent = static_cast<QMouseEvent*>(event);
       if (!table->indexAt(mouseEvent->position().toPoint()).isValid())
       {
-        LOG_DEBUG("Clearing focus!");
         table->clearFocus();
         table->clearSelection();
         table->setCurrentItem(nullptr);
