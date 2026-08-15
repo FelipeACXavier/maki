@@ -80,8 +80,9 @@ QRectF CallNode::capabilitySlotSceneRect() const
   const qreal diameter = capabilitySlotDiameter();
   const qreal radius = diameter * 0.5;
   const bool hasEvent = !call_capability::currentEventName(*this).isEmpty();
-  const QPointF localCenter =
-      behaviour::callCapabilityIconCenter(drawingBounds, diameter, hasEvent, hasCapabilitySelected());
+  const bool capabilitySelected = hasCapabilitySelected();
+  const QPointF localCenter = behaviour::callCapabilityIconCenter(
+      drawingBounds, diameter, hasEvent, capabilitySelected, !capabilitySelected);
   const QPointF center = mapToScene(localCenter);
   return QRectF(center.x() - radius, center.y() - radius, diameter, diameter);
 }
@@ -250,6 +251,7 @@ void CallNode::paintBehaviourExtras(QPainter* painter, const QStyleOptionGraphic
 
   const QRectF drawingBounds = drawingRect(nodeRect());
   const qreal diameter = capabilitySlotDiameter();
-  const QPointF center = behaviour::callCapabilityIconCenter(drawingBounds, diameter, false, false);
+  const QPointF center =
+      behaviour::callCapabilityIconCenter(drawingBounds, diameter, false, false, /*offsetPastArrow=*/true);
   behaviour::paintEmptySlotSvg(painter, center, diameter, mEmptySlotHovered);
 }

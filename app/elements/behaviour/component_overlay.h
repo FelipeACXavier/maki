@@ -11,6 +11,12 @@ namespace behaviour
 /** Diameter of the capability/empty-slot circle relative to node body * iconScale. */
 inline constexpr qreal kComponentOverlayDiameterFactor = 0.40;
 
+/**
+ * Horizontal nudge (fraction of drawing width) for Call's unset slot so it sits
+ * to the right of the arrow in node_call.svg. Not used once sync/async body SVGs apply.
+ */
+inline constexpr qreal kCallCapabilityHorizontalOffsetFactor = 0.10;
+
 /** Wait capability slot diameter relative to node body * iconScale. */
 inline constexpr qreal kWaitComponentOverlayDiameterFactor = 0.40;
 
@@ -47,11 +53,14 @@ void applyAddCapabilityHover(QGraphicsItem* item, bool& hoveredState, bool hover
 /**
  * Local-coord center for a Call capability icon.
  * When @p withEventLabel is true, the center is nudged up so icon + event (+ optional chip) read as one stack.
+ * When @p offsetPastArrow is true (unset / node_call.svg), the slot is nudged right of the arrow;
+ * sync/async bodies keep the geometric centre.
  */
 QPointF callCapabilityIconCenter(const QRectF& drawingBounds,
                                  qreal diameter,
                                  bool withEventLabel,
-                                 bool withEventChip = false);
+                                 bool withEventChip = false,
+                                 bool offsetPastArrow = false);
 
 /** Local-coord center for a Wait capability / empty slot under the pause glyph. */
 QPointF waitCapabilityIconCenter(const QRectF& drawingBounds);

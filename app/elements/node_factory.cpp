@@ -56,6 +56,8 @@ void registerKodaBehaviourTypes()
   NodeFactory::registerType(QStringLiteral("Koda::Link out"), makeNode<LinkOutNode>);
   NodeFactory::registerType(QStringLiteral("Koda::Within"), makeNode<WithinNode>);
   NodeFactory::registerType(QStringLiteral("Koda::Repeat"), makeNode<RepeatNode>);
+  NodeFactory::registerType(QStringLiteral("Koda::Wait for signal"), makeNode<WaitNode>);
+  // Legacy id from earlier Wait MVP saves.
   NodeFactory::registerType(QStringLiteral("Koda::Wait"), makeNode<WaitNode>);
 }
 }  // namespace

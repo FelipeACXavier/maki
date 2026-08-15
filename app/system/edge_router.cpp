@@ -169,7 +169,6 @@ QHash<const TransitionItem*, QPainterPath> EdgeRouter::route(const QList<NodeIte
       continue;
 
     const auto sourceRect = source->sceneNodeRect();
-    const auto targetRect = target->sceneNodeRect();
 
     auto* conn = new Avoid::ConnRef(&router);
     if (!transition->getEvent().isEmpty() && option() == Option::MANHATTAN)
@@ -189,8 +188,10 @@ QHash<const TransitionItem*, QPainterPath> EdgeRouter::route(const QList<NodeIte
       conn->setSourceEndpoint(Avoid::ConnEnd(Avoid::Point(sourceRect.right(), sourceRect.center().y()),
                                              Avoid::ConnDirRight));
     }
-    conn->setDestEndpoint(Avoid::ConnEnd(Avoid::Point(targetRect.left(), targetRect.center().y()),
-                                         Avoid::ConnDirLeft));
+
+    const QPointF destScene = target->incomingPortAnchorForEvent(transition->getEvent());
+    conn->setDestEndpoint(Avoid::ConnEnd(Avoid::Point(destScene.x(), destScene.y()), Avoid::ConnDirLeft));
+
     if (option() == Option::MANHATTAN)
       conn->setRoutingType(Avoid::ConnType_Orthogonal);
     else

@@ -243,9 +243,12 @@ qreal callCapabilityStackOverhang(qreal diameter, bool withEventLabel, bool with
 QPointF callCapabilityIconCenter(const QRectF& drawingBounds,
                                  qreal diameter,
                                  bool withEventLabel,
-                                 bool withEventChip)
+                                 bool withEventChip,
+                                 bool offsetPastArrow)
 {
   QPointF center = drawingBounds.center();
+  if (offsetPastArrow)
+    center.rx() += drawingBounds.width() * kCallCapabilityHorizontalOffsetFactor;
   if (diameter <= 0.0)
     return center;
 

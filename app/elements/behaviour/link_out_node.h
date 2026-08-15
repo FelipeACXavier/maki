@@ -12,7 +12,13 @@ inline const QString kTargetPropertyId = QStringLiteral("target");
 class LinkOutNode : public BehaviourNode
 {
 public:
-  using BehaviourNode::BehaviourNode;
+  LinkOutNode(const QString& id,
+              std::shared_ptr<NodeSaveInfo> info,
+              const QPointF& initialPosition,
+              std::shared_ptr<NodeConfig> nodeConfig,
+              QGraphicsItem* parent = nullptr);
+
+  void setProperty(const QString& key, QVariant value) override;
 
   /** Resolved Link in node id from the target property, or empty if unset. */
   QString targetId() const;
@@ -21,6 +27,9 @@ public:
   QString targetName() const;
 
 protected:
-  void paintBehaviourExtras(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget) override;
   void mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event) override;
+  QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
+
+private:
+  void syncLinkOutLabel();
 };

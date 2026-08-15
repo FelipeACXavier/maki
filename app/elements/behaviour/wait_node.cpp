@@ -16,7 +16,7 @@ namespace
 QString autoWaitTitle(const QString& capabilityTitle)
 {
   if (capabilityTitle.isEmpty())
-    return QObject::tr("Wait");
+    return QObject::tr("Wait for signal");
   return QObject::tr("Wait for %1").arg(capabilityTitle);
 }
 }  // namespace

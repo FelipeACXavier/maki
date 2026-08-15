@@ -3,19 +3,19 @@
   <!-- Generator: Adobe Illustrator 30.7.0, SVG Export Plug-In . SVG Version: 2.1.4 Build 114)  -->
   <defs>
     <style>
-      .st0 {
-        stroke-width: 2px;
-      }
-
       .st0, .st1 {
         fill: none;
-        stroke: #d1615d;
+        stroke: #967662;
         stroke-linecap: round;
         stroke-linejoin: round;
       }
+
+      .st1 {
+        stroke-width: 2px;
+      }
     </style>
   </defs>
-  <circle class="st1" cx="9.05" cy="9.05" r="8.55"/>
-  <path class="st0" d="M5.66,5.56l6.78,6.97"/>
-  <path class="st0" d="M12.53,5.66l-6.97,6.78"/>
+  <circle class="st0" cx="9.05" cy="9.05" r="8.55"/>
+  <path class="st1" d="M5.66,5.56l6.78,6.97"/>
+  <path class="st1" d="M12.53,5.66l-6.97,6.78"/>
 </svg>

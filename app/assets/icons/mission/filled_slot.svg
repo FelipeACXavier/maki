@@ -14,12 +14,12 @@
         stroke-width: 3px;
       }
 
-      .st2 {
-        fill: #ccc;
-      }
-
       .st1 {
         stroke-miterlimit: 10;
+      }
+
+      .st2 {
+        fill: #e6e6e6;
       }
     </style>
   </defs>

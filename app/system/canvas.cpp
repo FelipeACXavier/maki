@@ -819,7 +819,7 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
       if (dest && mNode && dest != mNode && dest->type() == NodeItem::Type && canCompleteTransitionTo(dest, event->scenePos()) &&
           canConnectNodes(mNode, dest))
       {
-        const QPointF endPos = dest->incomingPortAnchor();
+        const QPointF endPos = dest->incomingPortAnchorForEvent(mTransition->getEvent());
         mTransition->setEnd(dest->id(), endPos, {0, 0});
 
         // SubflowBlock loop ports have no transition events.

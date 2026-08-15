@@ -2,7 +2,9 @@
 
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsView>
+#include <QInputDialog>
 #include <QJsonObject>
+#include <QLineEdit>
 #include <QUuid>
 #include <algorithm>
 
@@ -702,6 +704,17 @@ QPointF NodeItem::incomingPortAnchor() const
   return edgePointToward(sceneBoundingRect().center(), false);
 }
 
+QPointF NodeItem::incomingPortAnchorForEvent(const QString& event) const
+{
+  QPointF anchor = incomingPortAnchor();
+  const QString e = event.trimmed();
+  if (e.compare(QStringLiteral("on abort"), Qt::CaseInsensitive) == 0)
+    anchor.ry() -= PortItem::kIncomingPortFanOffset;
+  else if (e.compare(QStringLiteral("on error"), Qt::CaseInsensitive) == 0)
+    anchor.ry() += PortItem::kIncomingPortFanOffset;
+  return anchor;
+}
+
 QPointF NodeItem::edgePointToward(const QPointF& targetScenePos, bool fromOutgoingPort) const
 {
   if (fromOutgoingPort && mOutPort)
@@ -788,4 +801,57 @@ void NodeItem::updateFlow() {}
 void NodeItem::renameNode(const QString& name)
 {
   setProperty("name", name);
+}
+
+bool NodeItem::labelContainsScenePoint(const QPointF& scenePos) const
+{
+  const QRectF local = labelBoundingRect();
+  if (local.isEmpty())
+    return false;
+  return mapRectToScene(local).contains(scenePos);
+}
+
+void NodeItem::beginRenameFromLabel()
+{
+  QWidget* parent = nullptr;
+  if (scene())
+  {
+    for (QGraphicsView* view : scene()->views())
+    {
+      if (view)
+      {
+        parent = view->viewport() ? static_cast<QWidget*>(view->viewport()) : static_cast<QWidget*>(view);
+        break;
+      }
+    }
+  }
+
+  bool ok = false;
+  const QString name = QInputDialog::getText(parent,
+                                             QObject::tr("Rename"),
+                                             QObject::tr("Name:"),
+                                             QLineEdit::Normal,
+                                             nodeName(),
+                                             &ok);
+  if (!ok)
+    return;
+
+  const QString trimmed = name.trimmed();
+  if (trimmed.isEmpty())
+    return;
+
+  setProperty(ConfigKeys::NAME, trimmed);
+  setProperty(QStringLiteral("name_auto_generated"), false);
+}
+
+void NodeItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
+{
+  if (event->button() == Qt::LeftButton && labelContainsScenePoint(event->scenePos()))
+  {
+    beginRenameFromLabel();
+    event->accept();
+    return;
+  }
+
+  QGraphicsItem::mouseDoubleClickEvent(event);
 }

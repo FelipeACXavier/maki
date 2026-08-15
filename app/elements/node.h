@@ -62,6 +62,12 @@ public:
   virtual void setProperty(const QString& key, QVariant value);
   void renameNode(const QString& name);
 
+  /** True when @p scenePos hits the painted name label under the node body. */
+  bool labelContainsScenePoint(const QPointF& scenePos) const;
+
+  /** Prompt to rename this node (sets name_auto_generated false on accept). */
+  void beginRenameFromLabel();
+
   NodeItem* parentNode() const;
 
   QVector<NodeItem*> children() const;
@@ -70,6 +76,8 @@ public:
   QPointF outgoingPortAnchorForEvent(const QString& event) const;
   PortItem::Kind outgoingPortKindForEvent(const QString& event) const;
   QPointF incomingPortAnchor() const;
+  /** Incoming anchor, with a vertical fan-out for on abort / on error so sibling edges separate. */
+  QPointF incomingPortAnchorForEvent(const QString& event) const;
 
   QVector<std::shared_ptr<IProperty>> fields() const;
   PropertyInfo getField(const QString& key) const;
@@ -182,6 +190,7 @@ protected:
   virtual void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
   virtual void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
   virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
+  virtual void mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event) override;
 
   void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
   void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;

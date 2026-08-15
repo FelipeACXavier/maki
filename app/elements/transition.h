@@ -153,6 +153,9 @@ public:
    */
   void setEvent(const QString& name);
 
+  /** True when the event is bound to an abort/error port (not choosable from menus). */
+  bool isPortBoundEvent() const;
+
   /**
    * @brief Sets the type of edge for this transition.
    * @param edge The new Edge value.

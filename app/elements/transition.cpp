@@ -17,6 +17,22 @@ QString normalizedEventLabel(const QString& event)
 {
   return (event == Constants::EMPTY_COMBO) ? QString() : event;
 }
+
+const QColor kOnErrorColor(0xd1, 0x61, 0x5d);
+const QColor kOnAbortColor(0x96, 0x76, 0x62);
+
+QColor transitionStrokeColor(const TransitionItem& transition)
+{
+  if (transition.isSelected())
+    return Config::HIGHLIGHT;
+
+  const QString event = transition.getEvent();
+  if (event.compare(QStringLiteral("on error"), Qt::CaseInsensitive) == 0)
+    return kOnErrorColor;
+  if (event.compare(QStringLiteral("on abort"), Qt::CaseInsensitive) == 0)
+    return kOnAbortColor;
+  return Config::FOREGROUND;
+}
 }  // namespace
 
 TransitionItem::TransitionItem(std::shared_ptr<TransitionSaveInfo> storage)
@@ -121,7 +137,7 @@ void TransitionItem::move(const QString& id, QPointF pos)
     if (!mDestination)
       mStorage->setDstPoint(pos);
     else if (mSource)
-      mStorage->setDstPoint(mDestination->incomingPortAnchor());
+      mStorage->setDstPoint(mDestination->incomingPortAnchorForEvent(mStorage->getevent()));
     else
       mStorage->setDstPoint(pos);
   }
@@ -144,12 +160,13 @@ void TransitionItem::move(const QString& id, QPointF pos)
 
 void TransitionItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
-  QGraphicsPathItem::paint(painter, option, widget);
-
-  setPen(isSelected() ? QPen(Config::HIGHLIGHT, 2) : QPen(Config::FOREGROUND, 2));
+  const QColor color = transitionStrokeColor(*this);
+  setPen(QPen(color, 2));
 
   if (mLabel)
-    mLabel->setDefaultTextColor(Config::FOREGROUND);
+    mLabel->setDefaultTextColor(color);
+
+  QGraphicsPathItem::paint(painter, option, widget);
 
   QLineF line = path().currentPosition() == path().pointAtPercent(1.0)
                     ? QLineF(path().pointAtPercent(0.99), path().pointAtPercent(1.0))
@@ -166,7 +183,8 @@ void TransitionItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
   QPolygonF arrowHead;
   arrowHead << line.p2() << arrowP1 << arrowP2;
 
-  painter->setBrush(isSelected() ? QBrush(Config::HIGHLIGHT) : QBrush(Config::FOREGROUND));
+  painter->setPen(Qt::NoPen);
+  painter->setBrush(QBrush(color));
   painter->drawPolygon(arrowHead);
 }
 
@@ -204,7 +222,7 @@ void TransitionItem::updatePath(QPainterPath painterPath)
 
     // Compute edge points toward the other node
     const QPointF start = mSource->outgoingPortAnchorForEvent(mStorage->getevent());
-    const QPointF end = mDestination->incomingPortAnchor();
+    const QPointF end = mDestination->incomingPortAnchorForEvent(mStorage->getevent());
 
     setPath(router->route(start, end, {}));
   }
@@ -239,12 +257,27 @@ void TransitionItem::updateLabelPosition()
   if (p.length() == 0.0)
     return;
 
-  const QPointF midPoint = p.pointAtPercent(0.5);
-  const qreal angleDeg = p.angleAtPercent(0.5);
+  // Abort / error: park labels on opposite sides and at different path fractions so they
+  // stay readable when both edges share a destination.
+  qreal pathPercent = 0.5;
+  qreal side = 1.0;
+  const QString event = getEvent();
+  if (event.compare(QStringLiteral("on abort"), Qt::CaseInsensitive) == 0)
+  {
+    pathPercent = 0.40;
+    side = 1.0;
+  }
+  else if (event.compare(QStringLiteral("on error"), Qt::CaseInsensitive) == 0)
+  {
+    pathPercent = 0.60;
+    side = -1.0;
+  }
 
+  const QPointF midPoint = p.pointAtPercent(pathPercent);
+  const qreal angleDeg = p.angleAtPercent(pathPercent);
   const qreal angleRad = qDegreesToRadians(angleDeg);
 
-  const qreal offsetDistance = 10.0;
+  const qreal offsetDistance = 12.0 * side;
   const qreal dx = -std::sin(angleRad);
   const qreal dy = -std::cos(angleRad);
 
@@ -270,4 +303,12 @@ void TransitionItem::setEvent(const QString& name)
 
   mLabel->setPlainText(normalized);
   updateLabelPosition();
+  update();
+}
+
+bool TransitionItem::isPortBoundEvent() const
+{
+  const QString event = getEvent();
+  return event.compare(QStringLiteral("on abort"), Qt::CaseInsensitive) == 0
+         || event.compare(QStringLiteral("on error"), Qt::CaseInsensitive) == 0;
 }

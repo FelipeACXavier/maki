@@ -10,6 +10,7 @@
 
 #include "app_configs.h"
 #include "app_paths.h"
+#include "elements/behaviour/component_overlay.h"
 #include "elements/behaviour/flow_call_node.h"
 #include "logging.h"
 #include "save_info.h"
@@ -127,6 +128,18 @@ void DraggableItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* sty
 
   if (config()->type == QStringLiteral("Koda::Flow call"))
     flow_call_visual::paintFlowIcon(painter, drawingRect(rect));
+  else if (config()->type == QStringLiteral("Koda::Call"))
+  {
+    // Match canvas Call layout: empty_slot to the right of the arrow in node_call.svg.
+    const QRectF drawingBounds = drawingRect(rect);
+    const qreal diameter = qMin(drawingBounds.width(), drawingBounds.height()) * config()->body.iconScale
+                           * behaviour::kComponentOverlayDiameterFactor;
+    behaviour::paintEmptySlotSvg(
+        painter,
+        behaviour::callCapabilityIconCenter(drawingBounds, diameter, false, false, /*offsetPastArrow=*/true),
+        diameter,
+        false);
+  }
 }
 
 QPainterPath DraggableItem::shape() const

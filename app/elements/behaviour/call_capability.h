@@ -17,7 +17,9 @@ inline const QString kModeAsync = QStringLiteral("async");
 inline const QString kCapabilityProperty = QStringLiteral("capability");
 inline const QString kNodeSvgAsync = QStringLiteral("node_async.svg");
 inline const QString kNodeSvgSync = QStringLiteral("node_sync.svg");
-inline const QString kNodeSvgUnset = QStringLiteral("shape_middle.svg");
+/** Initial Call body (palette + canvas before capability): arrow left; slot overlaid. */
+inline const QString kNodeSvgCall = QStringLiteral("node_call.svg");
+inline const QString kNodeSvgUnset = kNodeSvgCall;
 
 /** capability.options[0] = selected event; following entries are event arguments. */
 inline constexpr int kEventIndex = 0;
@@ -25,6 +27,11 @@ inline constexpr int kArgIndex = kEventIndex + 1;
 
 bool isCallNodeType(const QString& nodeType);
 bool isWaitNodeType(const QString& nodeType);
+/**
+ * True when @p node may author capability OUT (signal) transitions:
+ * Call in async mode, or legacy Async task.
+ */
+bool allowsCapabilitySignalTransitions(const NodeItem& node);
 bool hasCapabilitySelected(const NodeItem& node);
 
 bool canAsync(const SaveInfo& storage, const QString& capabilityId);

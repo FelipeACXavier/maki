@@ -32,10 +32,21 @@ constexpr qreal kFlowGlyphH = 85.52;
 constexpr qreal kFlowNameGap = 2.0;
 /** Nudge the flow glyph slightly above geometric center. */
 constexpr qreal kFlowIconUpNudgeFactor = 0.06;
+/** Navigate arrow size relative to the orange glyph height. */
+constexpr qreal kNavigateArrowHeightFactor = 0.38;
+constexpr qreal kNavigateArrowAspect = 37.28 / 30.31;
+/** Gap between the orange glyph and the navigate arrow. */
+constexpr qreal kNavigateArrowGapFactor = 0.08;
 
 QSvgRenderer& sharedFlowIconRenderer()
 {
   static QSvgRenderer renderer(iconPathFromTheme(QStringLiteral("node_flow.svg")));
+  return renderer;
+}
+
+QSvgRenderer& sharedNavigateArrowRenderer()
+{
+  static QSvgRenderer renderer(iconPathFromTheme(QStringLiteral("node_flow_arrow.svg")));
   return renderer;
 }
 
@@ -89,6 +100,18 @@ QRectF flowIconLocalRect(const QRectF& drawingBounds)
                 kFlowGlyphH * sy);
 }
 
+QRectF navigateArrowLocalRect(const QRectF& drawingBounds)
+{
+  const QRectF icon = flowIconLocalRect(drawingBounds);
+  if (!icon.isValid() || icon.isEmpty())
+    return {};
+
+  const qreal height = icon.height() * kNavigateArrowHeightFactor;
+  const qreal width = height * kNavigateArrowAspect;
+  const qreal gap = icon.width() * kNavigateArrowGapFactor;
+  return QRectF(icon.right() + gap, icon.center().y() - height * 0.5, width, height);
+}
+
 QRectF paintFlowIcon(QPainter* painter, const QRectF& drawingBounds)
 {
   if (!painter || !drawingBounds.isValid())
@@ -102,6 +125,23 @@ QRectF paintFlowIcon(QPainter* painter, const QRectF& drawingBounds)
   painter->setRenderHint(QPainter::Antialiasing, true);
   iconRenderer.render(painter, target);
   return target;
+}
+
+void paintNavigateArrow(QPainter* painter, const QRectF& drawingBounds)
+{
+  if (!painter || !drawingBounds.isValid())
+    return;
+
+  const QRectF arrowRect = navigateArrowLocalRect(drawingBounds);
+  if (!arrowRect.isValid() || arrowRect.isEmpty())
+    return;
+
+  QSvgRenderer& arrowRenderer = sharedNavigateArrowRenderer();
+  if (!arrowRenderer.isValid())
+    return;
+
+  painter->setRenderHint(QPainter::Antialiasing, true);
+  arrowRenderer.render(painter, arrowRect);
 }
 }  // namespace flow_call_visual
 
@@ -142,31 +182,57 @@ bool FlowCallNode::flowIconContainsScenePoint(const QPointF& scenePos) const
   return r.isValid() && r.contains(scenePos);
 }
 
-void FlowCallNode::setFlowIconHovered(bool hovered)
+QRectF FlowCallNode::navigateArrowSceneRect() const
 {
-  if (mFlowIconHovered == hovered)
+  return mapRectToScene(flow_call_visual::navigateArrowLocalRect(drawingRect(nodeRect())));
+}
+
+bool FlowCallNode::navigateArrowContainsScenePoint(const QPointF& scenePos) const
+{
+  if (calledFlowName().isEmpty())
+    return false;
+  const QRectF r = navigateArrowSceneRect();
+  return r.isValid() && r.contains(scenePos);
+}
+
+void FlowCallNode::setHoverTarget(HoverTarget target)
+{
+  if (mHoverTarget == target)
     return;
 
-  mFlowIconHovered = hovered;
+  mHoverTarget = target;
 
   if (scene())
   {
     if (auto* view = dynamic_cast<QGraphicsView*>(scene()->parent()))
-      view->setCursor(hovered ? Qt::PointingHandCursor : Qt::ArrowCursor);
+    {
+      const bool hand = target == HoverTarget::FlowIcon || target == HoverTarget::NavigateArrow;
+      view->setCursor(hand ? Qt::PointingHandCursor : Qt::ArrowCursor);
+    }
   }
 
-  setToolTip(hovered ? QObject::tr("Select task and flow") : QString());
+  if (target == HoverTarget::NavigateArrow)
+    setToolTip(QObject::tr("Navigate to the called flow."));
+  else if (target == HoverTarget::FlowIcon)
+    setToolTip(QObject::tr("Select task and flow"));
+  else
+    setToolTip(QString());
 }
 
 void FlowCallNode::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
 {
-  setFlowIconHovered(flowIconContainsScenePoint(event->scenePos()));
+  if (navigateArrowContainsScenePoint(event->scenePos()))
+    setHoverTarget(HoverTarget::NavigateArrow);
+  else if (flowIconContainsScenePoint(event->scenePos()))
+    setHoverTarget(HoverTarget::FlowIcon);
+  else
+    setHoverTarget(HoverTarget::None);
   QGraphicsItem::hoverMoveEvent(event);
 }
 
 void FlowCallNode::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 {
-  setFlowIconHovered(false);
+  setHoverTarget(HoverTarget::None);
   NodeItem::hoverLeaveEvent(event);
 }
 
@@ -183,6 +249,9 @@ void FlowCallNode::paintBehaviourExtras(QPainter* painter, const QStyleOptionGra
     return;
 
   const QString flowName = calledFlowName();
+  if (!flowName.isEmpty())
+    flow_call_visual::paintNavigateArrow(painter, drawingBounds);
+
   if (flowName.isEmpty())
     return;
 
@@ -206,6 +275,12 @@ void FlowCallNode::paintBehaviourExtras(QPainter* painter, const QStyleOptionGra
 
 void FlowCallNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
 {
+  if (event->button() == Qt::LeftButton && labelContainsScenePoint(event->scenePos()))
+  {
+    NodeItem::mouseDoubleClickEvent(event);
+    return;
+  }
+
   if (event->button() == Qt::LeftButton)
   {
     if (auto* canvas = dynamic_cast<BehaviourCanvas*>(scene()))

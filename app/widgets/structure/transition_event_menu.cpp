@@ -74,10 +74,11 @@ QVector<QPair<QString, QString>> TransitionEventMenu::buildOptions(NodeItem* sou
   for (const auto& t : source->configTransitions())
     options.append(qMakePair(t.event, t.event));
 
-  options.append(qMakePair(QStringLiteral("on error"), QStringLiteral("on error")));
-  options.append(qMakePair(QStringLiteral("on abort"), QStringLiteral("on abort")));
+  // on error / on abort are port-bound: create them only by dragging from error/abort ports.
 
-  if (!storage)
+  // Capability OUT (robot signal) transitions: Wait has its own path above;
+  // Call only when async; legacy Async task always.
+  if (!storage || !call_capability::allowsCapabilitySignalTransitions(*source))
     return options;
 
   const auto callers = storage->getPossibleCallers(source->id(), Types::PropertyTypes::UNKNOWN);
@@ -133,6 +134,13 @@ void TransitionEventMenu::populateCombo(TransitionItem* transition, SaveInfo* st
 void TransitionEventMenu::showForTransition(TransitionItem* transition, CanvasView* view, SaveInfo* storage)
 {
   if (!transition || !view || !view->viewport())
+  {
+    hideMenu();
+    return;
+  }
+
+  // Only the empty "-" placeholder would appear — nothing useful to pick.
+  if (buildOptions(transition->source(), storage).isEmpty())
   {
     hideMenu();
     return;

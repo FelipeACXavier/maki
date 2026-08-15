@@ -280,7 +280,16 @@ void BehaviourCanvas::onNodeDroppedFromPalette(NodeItem* node)
 bool BehaviourCanvas::tryOpenNodeConfigAt(NodeItem* node, const QPointF& scenePos)
 {
   auto* flowCall = dynamic_cast<FlowCallNode*>(node);
-  if (!flowCall || !flowCall->flowIconContainsScenePoint(scenePos))
+  if (!flowCall)
+    return false;
+
+  if (flowCall->navigateArrowContainsScenePoint(scenePos))
+  {
+    navigateToFlowCallTarget(flowCall);
+    return true;
+  }
+
+  if (!flowCall->flowIconContainsScenePoint(scenePos))
     return false;
 
   showFlowCallMenuFor(flowCall);
@@ -327,11 +336,15 @@ void BehaviourCanvas::onSelectionChanged()
   if (selectedTransition && mTransitionMenu)
   {
     // Loop begin/end transitions on SubflowBlock ports have no events.
+    // Abort/error transitions are port-bound and not editable via the event menu.
     const bool subflowPortTransition =
         (selectedTransition->source() && selectedTransition->source()->isSubflowContainer()) ||
         (selectedTransition->destination() && selectedTransition->destination()->isSubflowContainer());
 
-    if (subflowPortTransition)
+    const bool hasEvents =
+        !TransitionEventMenu::buildOptions(selectedTransition->source(), mStorage.get()).isEmpty();
+
+    if (subflowPortTransition || selectedTransition->isPortBoundEvent() || !hasEvents)
       mTransitionMenu->hideMenu();
     else
       mTransitionMenu->showForTransition(selectedTransition, parentView(), mStorage.get());

@@ -61,7 +61,22 @@ bool isCallNodeType(const QString& nodeType)
 
 bool isWaitNodeType(const QString& nodeType)
 {
-  return nodeType == QStringLiteral("Koda::Wait");
+  return nodeType == QStringLiteral("Koda::Wait for signal")
+         || nodeType == QStringLiteral("Koda::Wait");
+}
+
+bool allowsCapabilitySignalTransitions(const NodeItem& node)
+{
+  const QString& nodeType = node.nodeType();
+  // Legacy Async task always allows signal transitions.
+  if (nodeType == QStringLiteral("Koda::Async task") || nodeType == QStringLiteral("Mission::Async task"))
+    return true;
+
+  // Unified Call: only Async mode (Sync Call cannot attach capability OUT signals).
+  if (isCallNodeType(nodeType))
+    return node.getProperty(kModeProperty).toString() == kModeAsync;
+
+  return false;
 }
 
 bool hasCapabilitySelected(const NodeItem& node)
@@ -127,6 +142,8 @@ void resolveModeAndEvent(const SaveInfo& storage,
 
 QString nodeSvgForState(const NodeItem& node)
 {
+  // Unset: node_call.svg (arrow + overlaid empty slot). Once a capability is chosen,
+  // body switches to async/sync SVG as before.
   if (!hasCapabilitySelected(node))
     return kNodeSvgUnset;
   return node.getProperty(kModeProperty).toString() == kModeAsync ? kNodeSvgAsync : kNodeSvgSync;
