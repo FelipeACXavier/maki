@@ -81,6 +81,9 @@ void WithinNode::setSubflowsCollapsed(bool collapsed)
       mDoBlock->setCollapsed(false);
     if (mElseBlock)
       mElseBlock->setCollapsed(false);
+    // Push Else down only if it overlaps Do; keep a larger remembered gap.
+    if (mElseBlock && mDoBlock)
+      mElseBlock->ensureStackedBelow(mDoBlock);
   }
 
   SubflowCollapseUi::writePersisted(this, collapsed);

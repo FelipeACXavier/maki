@@ -6,6 +6,7 @@
 
 class NodeConfig;
 class QGraphicsProxyWidget;
+class QGraphicsSceneHoverEvent;
 class QLineEdit;
 class QPainter;
 
@@ -91,6 +92,8 @@ public:
   void syncBelow(NodeItem* above);
   void translateBy(const QPointF& delta);
   void expandToFitChildren();
+  /** Push this block below @p above only when it would overlap; keep larger gaps. */
+  void ensureStackedBelow(NodeItem* above);
 
   void paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget) override;
   QPainterPath shape() const override;
@@ -106,6 +109,8 @@ protected:
   QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
   void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
   void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
+  void hoverMoveEvent(QGraphicsSceneHoverEvent* event) override;
+  void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
 
 private:
   void setBlockGeometry(const QPointF& topLeft, const QSizeF& size);
@@ -128,13 +133,23 @@ private:
   /** Top-left X under the owner (left-aligned with the host body). */
   qreal alignedLeftUnderOwner(qreal width) const;
   void setContentsVisible(bool visible);
+  /** Record the current gap from connectorAbove() into mGapAbove. */
+  void captureGapAbove();
 
   NodeItem* mOwner = nullptr;
   NodeItem* mConnectorAbove = nullptr;
   SubflowBlock* mStackFollower = nullptr;
   Role mRole = Role::Loop;
   bool mSuppressExpand = false;
+  bool mSuppressStackFollower = false;
   bool mCollapsed = false;
+  /** Size captured when collapsing so expand can restore at least that extent. */
+  QSizeF mRememberedExpandedSize;
+  /**
+   * Vertical gap from the predecessor (owner / Do block) to this block's top.
+   * Updated on manual drag so restacking (Do move/resize) preserves it.
+   */
+  qreal mGapAbove = 40.0;
 
   QGraphicsProxyWidget* mTitleProxy = nullptr;
   QLineEdit* mTimeoutEdit = nullptr;

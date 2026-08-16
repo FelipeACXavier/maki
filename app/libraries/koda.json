@@ -164,7 +164,10 @@
               "modifiable": false,
               "linksTo": 1
             }
-          ]
+          ],
+          "help": {
+            "message": "Produces an audible sound to indicate an alert or signal."
+          }
         },
         {
           "type": "Grip",
@@ -252,7 +255,10 @@
               "modifiable": false,
               "linksTo": 0
             }
-          ]
+          ],
+          "help": {
+            "message": "Allows the robot to hold, grab, or manipulate objects."
+          }
         },
         {
           "type": "Aruco Detection",
@@ -317,7 +323,10 @@
               "modifiable": false,
               "linksTo": 0
             }
-          ]
+          ],
+          "help": {
+            "message": "Allows the robot to detect black-and-white ArUco markers with a camera to identify objects and determine their position and orientation."
+          }
         },
         {
           "type": "Drive",
@@ -435,7 +444,10 @@
               "modifiable": false,
               "linksTo": 0
             }
-          ]
+          ],
+          "help": {
+            "message": "Navigation capability that drives the robot to a pose (x, y, yaw)."
+          }
         },
         {
           "type": "Approach",
@@ -524,7 +536,10 @@
               "modifiable": false,
               "linksTo": 0
             }
-          ]
+          ],
+          "help": {
+            "message": "Moves the robot toward or away from a target."
+          }
         }
       ]
     },
@@ -604,7 +619,10 @@
               "modifiable": false,
               "linksTo": 1
             }
-          ]
+          ],
+          "help": {
+            "message": "Measures the concentration of carbon dioxide in the surrounding air and emits signals when the level is normal or high."
+          }
         },
         {
           "type": "Occupancy Sensor",
@@ -679,7 +697,10 @@
               "modifiable": false,
               "linksTo": 1
             }
-          ]
+          ],
+          "help": {
+            "message": "Emits empty or present signals when the monitored space changes state."
+          }
         },
         {
           "type": "Lighting",
@@ -746,7 +767,10 @@
                 }
               ]
             }
-          ]
+          ],
+          "help": {
+            "message": "Light source to illuminate an area. "
+          }
         },
         {
           "type": "Ventilation",
@@ -834,7 +858,10 @@
               "linksTo": 0,
               "modifiable": false
             }
-          ]
+          ],
+          "help": {
+            "message": "Moves air to provide airflow within a space."
+          }
         },
         {
           "type": "Conveyor",
@@ -907,7 +934,10 @@
               "linksTo": 0,
               "modifiable": false
             }
-          ]
+          ],
+          "help": {
+            "message": "A moving belt that transports objects from one location to another."
+          }
         },
         {
           "type": "Image Inspection",
@@ -1004,7 +1034,10 @@
               "modifiable": false,
               "linksTo": 2
             }
-          ]
+          ],
+          "help": {
+            "message": "Uses images to detect and inspect objects or features."
+          }
         },
         {
           "type": "Ticket Creation",
@@ -1055,7 +1088,10 @@
               "modifiable": false,
               "linksTo": 0
             }
-          ]
+          ],
+          "help": {
+            "message": "Creates a support or maintenance ticket in a connected system."
+          }
         }
       ]
     },
@@ -1362,7 +1398,10 @@
             "out",
             "abort",
             "error"
-          ]
+          ],
+          "help": {
+            "message": "Calls another behavioural flow of a selected task."
+          }
         },
         {
           "type": "Call",
@@ -1379,7 +1418,7 @@
             "nodeSvg": "node_call.svg"
           },
           "help": {
-            "message": "Call a capability. Choose Async (wait for return via trigger) or Sync (immediate return for a selected event)."
+            "message": "Execute a Sync Call (immediate return) or an Async Call (wait for return while being able to handle signals) to a selected Capability."
           },
           "properties": [
             {
@@ -1437,7 +1476,7 @@
             "nodeSvg": "node_wait.svg"
           },
           "help": {
-            "message": "Wait for a signal from the selected capability. Drag from the out port to author 'on <capability>.<event>' transitions."
+            "message": "Wait for a signal from the selected sensor capability."
           },
           "properties": [
             {
@@ -1485,7 +1524,7 @@
           ],
           "behaviour": {},
           "help": {
-            "message": "Performs the \"do\" strategy and if it does not conclude within the set time, it will trigger the \"else\" strategy. Define each branch in the attached Subflow blocks."
+            "message": "Performs the \"do\" subflow and if it does not conclude within the set time, it executes the \"on timeout\" subflow. "
           },
           "ports": [
             "in",
@@ -1538,7 +1577,7 @@
           ],
           "behaviour": {},
           "help": {
-            "message": "Executes the contained strategy repeatedly. Configure the number of iterations and the interval between executions using the block properties."
+            "message": "Executes the contained strategy repeatedly for a set number of iterations at a set interval of time. "
           },
           "ports": [
             "in",
@@ -1571,7 +1610,10 @@
           "ports": [
             "in",
             "out"
-          ]
+          ],
+          "help": {
+            "message": "Joins parallel branches back into a single path. Continues when incoming transitions from concurrent paths have completed."
+          }
         }
       ]
     }

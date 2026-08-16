@@ -4,17 +4,18 @@
   <defs>
     <style>
       .st0 {
+        fill: #b8b0ac;
         stroke-linecap: round;
         stroke-linejoin: round;
       }
 
       .st0, .st1 {
-        fill: none;
         stroke: #000;
         stroke-width: 3px;
       }
 
       .st1 {
+        fill: none;
         stroke-miterlimit: 10;
       }
 

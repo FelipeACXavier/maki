@@ -1,8 +1,10 @@
 #include "transition.h"
 
+#include <QLineF>
 #include <QPainter>
 #include <QPen>
 #include <QUuid>
+#include <QVector>
 #include <cmath>
 
 #include "app_configs.h"
@@ -32,6 +34,84 @@ QColor transitionStrokeColor(const TransitionItem& transition)
   if (event.compare(QStringLiteral("on abort"), Qt::CaseInsensitive) == 0)
     return kOnAbortColor;
   return Config::FOREGROUND;
+}
+
+/** Abort/error: up then right into the in-port. Abort hits a bit higher, error a bit lower. */
+constexpr qreal kAbortErrorPortFan = 3.0;
+
+void appendOrthoPoint(QVector<QPointF>& points, const QPointF& point)
+{
+  if (points.isEmpty())
+  {
+    points << point;
+    return;
+  }
+  if (QLineF(points.last(), point).length() < 0.5)
+    return;
+  points << point;
+}
+
+QPainterPath manhattanAbortErrorPath(const QPointF& start, const QPointF& end, const QString& event)
+{
+  const qreal fan = event.compare(QStringLiteral("on abort"), Qt::CaseInsensitive) == 0 ? -kAbortErrorPortFan
+                                                                                         : kAbortErrorPortFan;
+  const QPointF dest(end.x(), end.y() + fan);
+
+  QVector<QPointF> points;
+  appendOrthoPoint(points, start);
+  appendOrthoPoint(points, QPointF(start.x(), dest.y()));
+  appendOrthoPoint(points, dest);
+
+  QPainterPath path;
+  if (points.isEmpty())
+    return path;
+  path.moveTo(points.first());
+  for (int i = 1; i < points.size(); ++i)
+    path.lineTo(points.at(i));
+  return path;
+}
+
+constexpr qreal kLabelClearancePad = 6.0;
+
+QPointF unitPerpLeft(const QPointF& dir)
+{
+  const qreal len = std::hypot(dir.x(), dir.y());
+  if (len < 1e-6)
+    return QPointF(0.0, -1.0);
+  const QPointF unit(dir.x() / len, dir.y() / len);
+  return QPointF(-unit.y(), unit.x());
+}
+
+bool longestHorizontalSegment(const QPainterPath& path, QLineF& best)
+{
+  QPointF prev;
+  qreal bestLen = 0.0;
+  bool found = false;
+  for (int i = 0; i < path.elementCount(); ++i)
+  {
+    const auto element = path.elementAt(i);
+    const QPointF cur(element.x, element.y);
+    if (element.type != QPainterPath::MoveToElement)
+    {
+      const QLineF seg(prev, cur);
+      if (std::abs(seg.dx()) >= std::abs(seg.dy()) && seg.length() > bestLen)
+      {
+        best = seg;
+        bestLen = seg.length();
+        found = true;
+      }
+    }
+    prev = cur;
+  }
+  return found;
+}
+
+QPointF labelCenterBesidePath(const QPointF& sample, const QPointF& perp, const QSizeF& labelSize)
+{
+  const qreal hw = labelSize.width() / 2.0;
+  const qreal hh = labelSize.height() / 2.0;
+  const qreal dist = std::abs(perp.x()) * hw + std::abs(perp.y()) * hh + kLabelClearancePad;
+  return sample + perp * dist;
 }
 }  // namespace
 
@@ -137,7 +217,7 @@ void TransitionItem::move(const QString& id, QPointF pos)
     if (!mDestination)
       mStorage->setDstPoint(pos);
     else if (mSource)
-      mStorage->setDstPoint(mDestination->incomingPortAnchorForEvent(mStorage->getevent()));
+      mStorage->setDstPoint(mDestination->incomingPortAnchor());
     else
       mStorage->setDstPoint(pos);
   }
@@ -153,7 +233,10 @@ void TransitionItem::move(const QString& id, QPointF pos)
   if (!router)
     return;
 
-  setPath(router->route(mStorage->srcPoint(), mStorage->dstPoint(), {}));
+  if (isPortBoundEvent())
+    setPath(manhattanAbortErrorPath(mStorage->srcPoint(), mStorage->dstPoint(), getEvent()));
+  else
+    setPath(router->route(mStorage->srcPoint(), mStorage->dstPoint(), {}));
   updateLabelPosition();
   prepareGeometryChange();
 }
@@ -222,9 +305,18 @@ void TransitionItem::updatePath(QPainterPath painterPath)
 
     // Compute edge points toward the other node
     const QPointF start = mSource->outgoingPortAnchorForEvent(mStorage->getevent());
-    const QPointF end = mDestination->incomingPortAnchorForEvent(mStorage->getevent());
+    const QPointF end = mDestination->incomingPortAnchor();
 
-    setPath(router->route(start, end, {}));
+    if (isPortBoundEvent())
+      setPath(manhattanAbortErrorPath(start, end, getEvent()));
+    else
+      setPath(router->route(start, end, {}));
+  }
+  else if (isPortBoundEvent())
+  {
+    const QPointF start = mSource->outgoingPortAnchorForEvent(mStorage->getevent());
+    const QPointF end = mDestination->incomingPortAnchor();
+    setPath(manhattanAbortErrorPath(start, end, getEvent()));
   }
   else
   {
@@ -257,36 +349,48 @@ void TransitionItem::updateLabelPosition()
   if (p.length() == 0.0)
     return;
 
-  // Abort / error: park labels on opposite sides and at different path fractions so they
-  // stay readable when both edges share a destination.
-  qreal pathPercent = 0.5;
-  qreal side = 1.0;
-  const QString event = getEvent();
-  if (event.compare(QStringLiteral("on abort"), Qt::CaseInsensitive) == 0)
-  {
-    pathPercent = 0.40;
-    side = 1.0;
-  }
-  else if (event.compare(QStringLiteral("on error"), Qt::CaseInsensitive) == 0)
-  {
-    pathPercent = 0.60;
-    side = -1.0;
-  }
-
-  const QPointF midPoint = p.pointAtPercent(pathPercent);
-  const qreal angleDeg = p.angleAtPercent(pathPercent);
-  const qreal angleRad = qDegreesToRadians(angleDeg);
-
-  const qreal offsetDistance = 12.0 * side;
-  const qreal dx = -std::sin(angleRad);
-  const qreal dy = -std::cos(angleRad);
-
-  const QPointF offset(dx * offsetDistance, dy * offsetDistance);
-  const QPointF labelPos = midPoint + offset;
-
   const QSizeF labelSize = mLabel->boundingRect().size();
-  mLabel->setPos(labelPos.x() - labelSize.width() / 2,
-                 labelPos.y() - labelSize.height() / 2);
+  QPointF sample;
+  QPointF perp;
+
+  const bool abort = getEvent().compare(QStringLiteral("on abort"), Qt::CaseInsensitive) == 0;
+  const bool error = getEvent().compare(QStringLiteral("on error"), Qt::CaseInsensitive) == 0;
+
+  QLineF horiz;
+  if ((abort || error) && longestHorizontalSegment(p, horiz) && horiz.length() > 8.0)
+  {
+    sample = horiz.pointAt(abort ? 0.40 : 0.65);
+    perp = unitPerpLeft(horiz.p2() - horiz.p1());
+    // Abort stays above the line, error below, so the two labels never share a corridor.
+    if (abort && perp.y() > 0.0)
+      perp = QPointF(-perp.x(), -perp.y());
+    if (error && perp.y() < 0.0)
+      perp = QPointF(-perp.x(), -perp.y());
+  }
+  else
+  {
+    qreal pathPercent = 0.5;
+    qreal side = 1.0;
+    if (abort)
+    {
+      pathPercent = 0.45;
+      side = 1.0;
+    }
+    else if (error)
+    {
+      pathPercent = 0.70;
+      side = -1.0;
+    }
+
+    sample = p.pointAtPercent(pathPercent);
+    const qreal angleRad = qDegreesToRadians(p.angleAtPercent(pathPercent));
+    perp = QPointF(-std::sin(angleRad) * side, -std::cos(angleRad) * side);
+    const qreal len = std::hypot(perp.x(), perp.y());
+    perp = (len < 1e-6) ? QPointF(0.0, -1.0) : QPointF(perp.x() / len, perp.y() / len);
+  }
+
+  const QPointF center = labelCenterBesidePath(sample, perp, labelSize);
+  mLabel->setPos(center.x() - labelSize.width() / 2.0, center.y() - labelSize.height() / 2.0);
 }
 
 QString TransitionItem::getEvent() const

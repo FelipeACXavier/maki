@@ -189,7 +189,7 @@ QHash<const TransitionItem*, QPainterPath> EdgeRouter::route(const QList<NodeIte
                                              Avoid::ConnDirRight));
     }
 
-    const QPointF destScene = target->incomingPortAnchorForEvent(transition->getEvent());
+    const QPointF destScene = target->incomingPortAnchor();
     conn->setDestEndpoint(Avoid::ConnEnd(Avoid::Point(destScene.x(), destScene.y()), Avoid::ConnDirLeft));
 
     if (option() == Option::MANHATTAN)

@@ -704,17 +704,6 @@ QPointF NodeItem::incomingPortAnchor() const
   return edgePointToward(sceneBoundingRect().center(), false);
 }
 
-QPointF NodeItem::incomingPortAnchorForEvent(const QString& event) const
-{
-  QPointF anchor = incomingPortAnchor();
-  const QString e = event.trimmed();
-  if (e.compare(QStringLiteral("on abort"), Qt::CaseInsensitive) == 0)
-    anchor.ry() -= PortItem::kIncomingPortFanOffset;
-  else if (e.compare(QStringLiteral("on error"), Qt::CaseInsensitive) == 0)
-    anchor.ry() += PortItem::kIncomingPortFanOffset;
-  return anchor;
-}
-
 QPointF NodeItem::edgePointToward(const QPointF& targetScenePos, bool fromOutgoingPort) const
 {
   if (fromOutgoingPort && mOutPort)

@@ -19,10 +19,11 @@ namespace
 {
 QString autoCallTitle(const QString& mode, const QString& capabilityTitle)
 {
+  if (capabilityTitle.isEmpty())
+    return QObject::tr("Call");
+
   const QString prefix =
       mode == call_capability::kModeAsync ? QObject::tr("Async Call") : QObject::tr("Sync Call");
-  if (capabilityTitle.isEmpty())
-    return prefix;
   return QObject::tr("%1 to %2").arg(prefix, capabilityTitle);
 }
 }  // namespace

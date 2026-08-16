@@ -76,8 +76,6 @@ public:
   QPointF outgoingPortAnchorForEvent(const QString& event) const;
   PortItem::Kind outgoingPortKindForEvent(const QString& event) const;
   QPointF incomingPortAnchor() const;
-  /** Incoming anchor, with a vertical fan-out for on abort / on error so sibling edges separate. */
-  QPointF incomingPortAnchorForEvent(const QString& event) const;
 
   QVector<std::shared_ptr<IProperty>> fields() const;
   PropertyInfo getField(const QString& key) const;

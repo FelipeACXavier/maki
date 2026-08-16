@@ -4,6 +4,7 @@
 #include <QFont>
 #include <QGraphicsProxyWidget>
 #include <QGraphicsScene>
+#include <QGraphicsSceneHoverEvent>
 #include <QGraphicsSceneMouseEvent>
 #include <QHBoxLayout>
 #include <QIntValidator>
@@ -354,6 +355,7 @@ SubflowBlock::SubflowBlock(const QString& id,
   setCacheMode(QGraphicsItem::NoCache);
   setZValue(owner ? owner->zValue() - 1 : -1);
   setLabelName(QString());
+  setToolTip(QObject::tr("Drag the border to extend this area"));
 }
 
 void SubflowBlock::setOwnerNode(NodeItem* owner)
@@ -423,8 +425,25 @@ void SubflowBlock::setStackFollower(SubflowBlock* follower)
 
 void SubflowBlock::notifyStackFollower()
 {
-  if (mStackFollower)
+  if (mSuppressStackFollower)
+    return;
+  // A collapsed follower keeps its own remembered gap; snapping it would erase that.
+  if (mStackFollower && !mStackFollower->isCollapsed())
     mStackFollower->syncBelow(this);
+}
+
+void SubflowBlock::ensureStackedBelow(NodeItem* above)
+{
+  // Restack using the preserved user gap (syncBelow), not the default minimum only.
+  syncBelow(above);
+}
+
+void SubflowBlock::captureGapAbove()
+{
+  if (NodeItem* above = connectorAbove())
+    mGapAbove = qMax(pos().y() - sceneBottomBelowItem(above), gapBelowPredecessor());
+  else
+    mGapAbove = gapBelowPredecessor();
 }
 
 void SubflowBlock::notifyEnclosingSubflow()
@@ -492,11 +511,34 @@ void SubflowBlock::mousePressEvent(QGraphicsSceneMouseEvent* event)
 void SubflowBlock::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
   mSuppressExpand = false;
+  // Remember how far the user dragged this block below its predecessor so later
+  // Do/owner moves keep that spacing (Within "On timeout" especially).
+  captureGapAbove();
   notifyStackFollower();
   // Manual drag/extend does not go through expandToFitChildren, so notify the
   // enclosing subflow here so nested Loop blocks stay covered by their parent.
   notifyEnclosingSubflow();
   QGraphicsItem::mouseReleaseEvent(event);
+}
+
+void SubflowBlock::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
+{
+  if (!mCollapsed &&
+      isBlockChromeHit(nodeRect(), event->pos(), borderGrabWidth(this, nodeRect()), kInnerPadding))
+  {
+    setCursor(Qt::SizeVerCursor);
+  }
+  else
+  {
+    unsetCursor();
+  }
+  QGraphicsItem::hoverMoveEvent(event);
+}
+
+void SubflowBlock::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
+{
+  unsetCursor();
+  NodeItem::hoverLeaveEvent(event);
 }
 
 VoidResult SubflowBlock::start()
@@ -640,8 +682,8 @@ void SubflowBlock::syncToOwnerPosition()
     return;
 
   mSuppressExpand = true;
-  const QPointF newTopLeft(alignedLeftUnderOwner(mSize.width()),
-                           sceneBottomBelowItem(mOwner) + gapBelowPredecessor());
+  const qreal top = sceneBottomBelowItem(mOwner) + qMax(mGapAbove, gapBelowPredecessor());
+  const QPointF newTopLeft(alignedLeftUnderOwner(mSize.width()), top);
   updatePosition(newTopLeft);
   mSuppressExpand = false;
   notifyStackFollower();
@@ -653,8 +695,9 @@ void SubflowBlock::syncBelow(NodeItem* above)
     return;
 
   mSuppressExpand = true;
-  const QPointF newTopLeft(alignedLeftUnderOwner(mSize.width()),
-                           sceneBottomBelowItem(above) + gapBelowPredecessor());
+  // Keep the user-chosen gap (from dragging this block), not the default minimum.
+  const qreal top = sceneBottomBelowItem(above) + qMax(mGapAbove, gapBelowPredecessor());
+  const QPointF newTopLeft(alignedLeftUnderOwner(mSize.width()), top);
   updatePosition(newTopLeft);
   mSuppressExpand = false;
   notifyStackFollower();
@@ -1018,6 +1061,8 @@ void SubflowBlock::setCollapsed(bool collapsed)
 
   if (collapsed)
   {
+    mRememberedExpandedSize = mSize;
+    captureGapAbove();
     setContentsVisible(false);
     setVisible(false);
   }
@@ -1025,13 +1070,31 @@ void SubflowBlock::setCollapsed(bool collapsed)
   {
     setVisible(true);
     setContentsVisible(true);
-    // Restore the normal dashed-connector gap under the host / predecessor.
-    if (mConnectorAbove && mConnectorAbove != mOwner)
-      syncBelow(mConnectorAbove);
-    else
-      syncToOwnerPosition();
-    // Regrow around the (now visible) children; also re-stacks any follower.
+
+    // Restore the pre-collapse gap under the host / predecessor, and at least the
+    // remembered size. Avoid forcing the default gap — that loses user-dragged layout
+    // (especially Within "On timeout").
+    const QSizeF remembered =
+        mRememberedExpandedSize.isValid() ? mRememberedExpandedSize : mSize;
+
+    qreal top = pos().y();
+    if (NodeItem* above = connectorAbove())
+      top = sceneBottomBelowItem(above) + qMax(mGapAbove, gapBelowPredecessor());
+
+    mSuppressExpand = true;
+    mSuppressStackFollower = true;
+    setBlockGeometry(QPointF(alignedLeftUnderOwner(remembered.width()), top), remembered);
+    mSuppressExpand = false;
+
+    // Grow if children need more room, but never shrink below the remembered size.
     expandToFitChildren();
+    if (mSize.height() < remembered.height() || mSize.width() < remembered.width())
+    {
+      setBlockGeometry(QPointF(pos().x(), top),
+                       QSizeF(qMax(mSize.width(), remembered.width()),
+                              qMax(mSize.height(), remembered.height())));
+    }
+    mSuppressStackFollower = false;
   }
 
   notifyEnclosingSubflow();

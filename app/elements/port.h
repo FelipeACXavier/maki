@@ -25,8 +25,6 @@ public:
   static constexpr qreal kGap = 1.0;
   /** Extra lateral offset when placing abort/error ports above the node. */
   static constexpr qreal kAbortErrorLateralShift = 6.0;
-  /** Vertical fan-out on the target in-port for abort (up) / error (down) edges. */
-  static constexpr qreal kIncomingPortFanOffset = 16.0;
   static constexpr qreal kHitPadding = 30.0; // area around port where it's still possible to initiate/drop a transition
 
   static qreal sizeForKind(Kind kind);

@@ -19,7 +19,7 @@
             "z-index": -2
           },
           "help": {
-            "message": "Represents a single LED in the arduino board"
+            "message": "Represents a single LED in the arduino board."
           },
           "properties": [
             {
@@ -97,6 +97,9 @@
             "height": 500,
             "iconColor": "#FFFFFF",
             "iconScale": 0.8
+          },
+          "help": {
+            "message": "Represents a timer in the arduino board."
           },
           "properties": [
             {
