@@ -17,6 +17,7 @@
 #include <oclero/qlementine/style/QlementineStyle.hpp>
 
 #include "app_configs.h"
+#include "elements/behaviour/flow_call_node.h"
 #include "elements/node.h"
 #include "event_dialog.h"
 #include "flow_info.h"
@@ -29,7 +30,7 @@
 
 namespace
 {
-constexpr int kGapBelowNode = 8;
+constexpr int kGapBelowChip = 4;
 constexpr int kCreateFlowIconPx = 16;
 /** Matches CallConfigPopup so Flow call and Call menus share the same card size. */
 constexpr int kPopupMinWidth = 300;
@@ -541,12 +542,19 @@ void FlowCallMenu::updatePosition(CanvasView* view)
   if (!mNode || !view || !view->viewport())
     return;
 
-  const QRectF sceneRect = mNode->mapRectToScene(mNode->boundingRect());
-  const QPointF anchorScene(sceneRect.center().x(), sceneRect.bottom());
+  QRectF anchorRect = mNode->mapRectToScene(mNode->boundingRect());
+  if (auto* flowCall = dynamic_cast<FlowCallNode*>(mNode))
+  {
+    const QRectF chipRect = flowCall->flowChipSceneRect();
+    if (chipRect.isValid() && !chipRect.isEmpty())
+      anchorRect = chipRect;
+  }
+
+  const QPointF anchorScene(anchorRect.center().x(), anchorRect.bottom());
   QPoint viewPos = view->mapFromScene(anchorScene);
   QPoint globalPos = view->viewport()->mapToGlobal(viewPos);
   globalPos.setX(globalPos.x() - width() / 2);
-  globalPos.setY(globalPos.y() + kGapBelowNode);
+  globalPos.setY(globalPos.y() + kGapBelowChip);
   move(globalPos);
 }
 

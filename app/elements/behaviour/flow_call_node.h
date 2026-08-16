@@ -14,17 +14,13 @@ namespace flow_call_visual
  */
 QRectF paintFlowIcon(QPainter* painter, const QRectF& drawingBounds);
 
-/** Local rect of the orange flow glyph (clickable button area) inside @p drawingBounds. */
+/** Local rect of the orange flow glyph (navigate target) inside @p drawingBounds. */
 QRectF flowIconLocalRect(const QRectF& drawingBounds);
 
-/**
- * Local rect for node_flow_arrow.svg, placed to the right of the orange flow glyph.
- * Empty when the flow icon rect is invalid.
- */
-QRectF navigateArrowLocalRect(const QRectF& drawingBounds);
+/** Local rect of the flow-name chip that opens the Task/Flow menu. */
+QRectF flowChipLocalRect(const QRectF& drawingBounds, const QString& chipText);
 
-/** Paints the navigate arrow at @ref navigateArrowLocalRect. */
-void paintNavigateArrow(QPainter* painter, const QRectF& drawingBounds);
+void paintFlowChip(QPainter* painter, const QRectF& drawingBounds, const QString& chipText, bool hovered);
 }  // namespace flow_call_visual
 
 class FlowCallNode : public BehaviourNode
@@ -42,8 +38,8 @@ public:
   QRectF flowIconSceneRect() const;
   bool flowIconContainsScenePoint(const QPointF& scenePos) const;
 
-  QRectF navigateArrowSceneRect() const;
-  bool navigateArrowContainsScenePoint(const QPointF& scenePos) const;
+  QRectF flowChipSceneRect() const;
+  bool flowChipContainsScenePoint(const QPointF& scenePos) const;
 
 protected:
   void paintBehaviourExtras(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget) override;
@@ -56,9 +52,11 @@ private:
   {
     None,
     FlowIcon,
-    NavigateArrow,
+    FlowChip,
   };
 
+  QString chipLabel() const;
+  QRectF chipLocalRect() const;
   void setHoverTarget(HoverTarget target);
 
   HoverTarget mHoverTarget = HoverTarget::None;

@@ -283,13 +283,7 @@ bool BehaviourCanvas::tryOpenNodeConfigAt(NodeItem* node, const QPointF& scenePo
   if (!flowCall)
     return false;
 
-  if (flowCall->navigateArrowContainsScenePoint(scenePos))
-  {
-    navigateToFlowCallTarget(flowCall);
-    return true;
-  }
-
-  if (!flowCall->flowIconContainsScenePoint(scenePos))
+  if (!flowCall->flowChipContainsScenePoint(scenePos))
     return false;
 
   showFlowCallMenuFor(flowCall);

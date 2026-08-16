@@ -8,6 +8,7 @@
 #include <QJsonObject>
 #include <QObject>
 #include <QPainter>
+#include <QPolygonF>
 #include <QSvgRenderer>
 
 #include "app_configs.h"
@@ -29,24 +30,15 @@ constexpr qreal kFlowGlyphX = 82.98;
 constexpr qreal kFlowGlyphY = 77.24;
 constexpr qreal kFlowGlyphW = 98.49;
 constexpr qreal kFlowGlyphH = 85.52;
-constexpr qreal kFlowNameGap = 2.0;
+constexpr qreal kFlowNameGap = 3.0;
 /** Nudge the flow glyph slightly above geometric center. */
-constexpr qreal kFlowIconUpNudgeFactor = 0.06;
-/** Navigate arrow size relative to the orange glyph height. */
-constexpr qreal kNavigateArrowHeightFactor = 0.38;
-constexpr qreal kNavigateArrowAspect = 37.28 / 30.31;
-/** Gap between the orange glyph and the navigate arrow. */
-constexpr qreal kNavigateArrowGapFactor = 0.08;
+constexpr qreal kFlowIconUpNudgeFactor = 0.08;
+constexpr qreal kChipChevronGap = 3.0;
+constexpr qreal kChipHitPad = 4.0;
 
 QSvgRenderer& sharedFlowIconRenderer()
 {
   static QSvgRenderer renderer(iconPathFromTheme(QStringLiteral("node_flow.svg")));
-  return renderer;
-}
-
-QSvgRenderer& sharedNavigateArrowRenderer()
-{
-  static QSvgRenderer renderer(iconPathFromTheme(QStringLiteral("node_flow_arrow.svg")));
   return renderer;
 }
 
@@ -79,6 +71,29 @@ QRectF fittedFlowSvgTarget(const QRectF& drawingBounds)
   target.translate(0.0, -target.height() * kFlowIconUpNudgeFactor);
   return target;
 }
+
+QFont flowChipFont(const QRectF& drawingBounds)
+{
+  const qreal diameter = qMin(drawingBounds.width(), drawingBounds.height()) * 0.8
+                         * behaviour::kComponentOverlayDiameterFactor;
+  QFont font;
+  font.setPointSizeF(qBound(5.5, diameter * 0.16, 7.5));
+  return font;
+}
+
+qreal chipChevronSize(const QFontMetricsF& fm)
+{
+  return qMax(5.0, fm.height() * 0.45);
+}
+
+void paintDownChevron(QPainter* painter, const QRectF& rect)
+{
+  QPolygonF triangle;
+  triangle << QPointF(rect.left(), rect.top() + rect.height() * 0.2)
+           << QPointF(rect.right(), rect.top() + rect.height() * 0.2)
+           << QPointF(rect.center().x(), rect.bottom() - rect.height() * 0.15);
+  painter->drawPolygon(triangle);
+}
 }  // namespace
 
 namespace flow_call_visual
@@ -100,16 +115,31 @@ QRectF flowIconLocalRect(const QRectF& drawingBounds)
                 kFlowGlyphH * sy);
 }
 
-QRectF navigateArrowLocalRect(const QRectF& drawingBounds)
+QRectF flowChipLocalRect(const QRectF& drawingBounds, const QString& chipText)
 {
-  const QRectF icon = flowIconLocalRect(drawingBounds);
-  if (!icon.isValid() || icon.isEmpty())
+  if (!drawingBounds.isValid() || chipText.isEmpty())
     return {};
 
-  const qreal height = icon.height() * kNavigateArrowHeightFactor;
-  const qreal width = height * kNavigateArrowAspect;
-  const qreal gap = icon.width() * kNavigateArrowGapFactor;
-  return QRectF(icon.right() + gap, icon.center().y() - height * 0.5, width, height);
+  const QRectF target = fittedFlowSvgTarget(drawingBounds);
+  if (!target.isValid())
+    return {};
+
+  const QFont font = flowChipFont(drawingBounds);
+  const QFontMetricsF fm(font);
+  const qreal chevron = chipChevronSize(fm);
+  const qreal maxW = qMax(0.0, drawingBounds.width() - 4.0);
+  const qreal maxTextW = qMax(0.0, maxW - kChipChevronGap - chevron);
+  const QString elided = fm.elidedText(chipText, Qt::ElideRight, maxTextW);
+  const qreal textW = fm.horizontalAdvance(elided);
+  const qreal chipW = qMin(maxW, textW + kChipChevronGap + chevron);
+  const qreal chipH = fm.height();
+  const qreal iconBottom = target.top() + target.height() * (kNodeFlowIconBottomInViewBox / kNodeFlowViewBoxHeight);
+  QRectF chip(drawingBounds.center().x() - chipW * 0.5, iconBottom + kFlowNameGap, chipW, chipH);
+  if (chip.bottom() > drawingBounds.bottom() - 1.0)
+    chip.setBottom(drawingBounds.bottom() - 1.0);
+  if (chip.height() < fm.height() * 0.6)
+    return {};
+  return chip;
 }
 
 QRectF paintFlowIcon(QPainter* painter, const QRectF& drawingBounds)
@@ -127,21 +157,33 @@ QRectF paintFlowIcon(QPainter* painter, const QRectF& drawingBounds)
   return target;
 }
 
-void paintNavigateArrow(QPainter* painter, const QRectF& drawingBounds)
+void paintFlowChip(QPainter* painter, const QRectF& drawingBounds, const QString& chipText, bool hovered)
 {
-  if (!painter || !drawingBounds.isValid())
+  if (!painter)
     return;
 
-  const QRectF arrowRect = navigateArrowLocalRect(drawingBounds);
-  if (!arrowRect.isValid() || arrowRect.isEmpty())
+  const QRectF chip = flowChipLocalRect(drawingBounds, chipText);
+  if (chip.isEmpty())
     return;
 
-  QSvgRenderer& arrowRenderer = sharedNavigateArrowRenderer();
-  if (!arrowRenderer.isValid())
-    return;
+  const QFont font = flowChipFont(drawingBounds);
+  const QFontMetricsF fm(font);
+  const qreal chevron = chipChevronSize(fm);
+  const qreal maxTextW = qMax(0.0, chip.width() - kChipChevronGap - chevron);
+  const QString elided = fm.elidedText(chipText, Qt::ElideRight, maxTextW);
+  const QColor color = hovered ? Config::HOVER : Config::FOREGROUND;
 
   painter->setRenderHint(QPainter::Antialiasing, true);
-  arrowRenderer.render(painter, arrowRect);
+  const QRectF textRect(chip.left(), chip.top(), maxTextW, chip.height());
+  painter->setFont(font);
+  painter->setPen(QPen(color));
+  painter->setBrush(Qt::NoBrush);
+  painter->drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft, elided);
+
+  const QRectF chevronRect(chip.right() - chevron, chip.center().y() - chevron * 0.5, chevron, chevron);
+  painter->setPen(Qt::NoPen);
+  painter->setBrush(QBrush(color));
+  paintDownChevron(painter, chevronRect);
 }
 }  // namespace flow_call_visual
 
@@ -171,6 +213,17 @@ QString FlowCallNode::calledFlowName() const
   return flowName;
 }
 
+QString FlowCallNode::chipLabel() const
+{
+  const QString name = calledFlowName();
+  return name.isEmpty() ? QObject::tr("Select flow") : name;
+}
+
+QRectF FlowCallNode::chipLocalRect() const
+{
+  return flow_call_visual::flowChipLocalRect(drawingRect(nodeRect()), chipLabel());
+}
+
 QRectF FlowCallNode::flowIconSceneRect() const
 {
   return mapRectToScene(flow_call_visual::flowIconLocalRect(drawingRect(nodeRect())));
@@ -182,17 +235,17 @@ bool FlowCallNode::flowIconContainsScenePoint(const QPointF& scenePos) const
   return r.isValid() && r.contains(scenePos);
 }
 
-QRectF FlowCallNode::navigateArrowSceneRect() const
+QRectF FlowCallNode::flowChipSceneRect() const
 {
-  return mapRectToScene(flow_call_visual::navigateArrowLocalRect(drawingRect(nodeRect())));
+  return mapRectToScene(chipLocalRect());
 }
 
-bool FlowCallNode::navigateArrowContainsScenePoint(const QPointF& scenePos) const
+bool FlowCallNode::flowChipContainsScenePoint(const QPointF& scenePos) const
 {
-  if (calledFlowName().isEmpty())
+  const QRectF r = flowChipSceneRect();
+  if (!r.isValid() || r.isEmpty())
     return false;
-  const QRectF r = navigateArrowSceneRect();
-  return r.isValid() && r.contains(scenePos);
+  return r.adjusted(-kChipHitPad, -kChipHitPad, kChipHitPad, kChipHitPad).contains(scenePos);
 }
 
 void FlowCallNode::setHoverTarget(HoverTarget target)
@@ -206,24 +259,26 @@ void FlowCallNode::setHoverTarget(HoverTarget target)
   {
     if (auto* view = dynamic_cast<QGraphicsView*>(scene()->parent()))
     {
-      const bool hand = target == HoverTarget::FlowIcon || target == HoverTarget::NavigateArrow;
+      const bool hand = target == HoverTarget::FlowIcon || target == HoverTarget::FlowChip;
       view->setCursor(hand ? Qt::PointingHandCursor : Qt::ArrowCursor);
     }
   }
 
-  if (target == HoverTarget::NavigateArrow)
-    setToolTip(QObject::tr("Navigate to the called flow."));
-  else if (target == HoverTarget::FlowIcon)
+  if (target == HoverTarget::FlowIcon)
+    setToolTip(QObject::tr("Double-click to navigate to this flow."));
+  else if (target == HoverTarget::FlowChip)
     setToolTip(QObject::tr("Select task and flow"));
   else
     setToolTip(QString());
+
+  update();
 }
 
 void FlowCallNode::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
 {
-  if (navigateArrowContainsScenePoint(event->scenePos()))
-    setHoverTarget(HoverTarget::NavigateArrow);
-  else if (flowIconContainsScenePoint(event->scenePos()))
+  if (flowChipContainsScenePoint(event->scenePos()))
+    setHoverTarget(HoverTarget::FlowChip);
+  else if (!calledFlowName().isEmpty() && flowIconContainsScenePoint(event->scenePos()))
     setHoverTarget(HoverTarget::FlowIcon);
   else
     setHoverTarget(HoverTarget::None);
@@ -248,29 +303,7 @@ void FlowCallNode::paintBehaviourExtras(QPainter* painter, const QStyleOptionGra
   if (!target.isValid())
     return;
 
-  const QString flowName = calledFlowName();
-  if (!flowName.isEmpty())
-    flow_call_visual::paintNavigateArrow(painter, drawingBounds);
-
-  if (flowName.isEmpty())
-    return;
-
-  const qreal iconBottom = target.top() + target.height() * (kNodeFlowIconBottomInViewBox / kNodeFlowViewBoxHeight);
-  const qreal diameter = qMin(drawingBounds.width(), drawingBounds.height()) * config()->body.iconScale
-                         * behaviour::kComponentOverlayDiameterFactor;
-  QFont nameFont;
-  nameFont.setPointSizeF(qBound(5.5, diameter * 0.16, 7.5));
-  const QFontMetricsF fm(nameFont);
-  const qreal textTop = iconBottom + kFlowNameGap;
-  const qreal maxTextBottom = drawingBounds.bottom() - 1.0;
-  const qreal textHeight = qMin(fm.height(), qMax(0.0, maxTextBottom - textTop));
-  if (textHeight <= 0.0)
-    return;
-
-  const QRectF textRect(drawingBounds.left(), textTop, drawingBounds.width(), textHeight);
-  painter->setFont(nameFont);
-  painter->setPen(QPen(Config::FOREGROUND));
-  painter->drawText(textRect, Qt::AlignHCenter | Qt::AlignTop, fm.elidedText(flowName, Qt::ElideRight, textRect.width()));
+  flow_call_visual::paintFlowChip(painter, drawingBounds, chipLabel(), mHoverTarget == HoverTarget::FlowChip);
 }
 
 void FlowCallNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
@@ -281,10 +314,13 @@ void FlowCallNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
     return;
   }
 
-  if (event->button() == Qt::LeftButton)
+  if (event->button() == Qt::LeftButton && !calledFlowName().isEmpty()
+      && flowIconContainsScenePoint(event->scenePos()))
   {
     if (auto* canvas = dynamic_cast<BehaviourCanvas*>(scene()))
       canvas->navigateToFlowCallTarget(this);
+    event->accept();
+    return;
   }
 
   QGraphicsItem::mouseDoubleClickEvent(event);
