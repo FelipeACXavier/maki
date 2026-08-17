@@ -33,15 +33,22 @@ protected:
   void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
 
 private:
+  enum class HoverTarget
+  {
+    None,
+    EmptySlot,
+    EventChip,
+    CapabilityIcon,
+  };
+
   void syncNodeSvgFromState();
   void syncAbortPortFromMode();
   void syncCallLabels();
   void removeOutgoingAbortTransitions();
   qreal capabilitySlotDiameter() const;
+  QString chipLabel() const;
   QRectF eventChipLocalRect() const;
-  void paintEventChip(QPainter* painter) const;
-  void setEmptySlotHovered(bool hovered);
+  void setHoverTarget(HoverTarget target);
 
-  /** True while the pointer is over the empty (add-capability) slot. */
-  bool mEmptySlotHovered = false;
+  HoverTarget mHoverTarget = HoverTarget::None;
 };

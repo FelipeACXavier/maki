@@ -154,7 +154,7 @@
     <file alias="node_task.svg">assets/icons/mission/node_task.svg</file>
     <file alias="node_task_old.svg">assets/icons/mission/node_task_old.svg</file>
     <file alias="node_wait.svg">assets/icons/mission/node_wait.svg</file>
-    <file alias="node_wait_capability.svg">assets/icons/mission/node_wait_capability.svg</file>
+    <file alias="node_wait_icon.svg">assets/icons/mission/node_wait_icon.svg</file>
     <file alias="node_within.svg">assets/icons/mission/node_within.svg</file>
     <file alias="port_abort.svg">assets/icons/mission/port_abort.svg</file>
     <file alias="port_error.svg">assets/icons/mission/port_error.svg</file>

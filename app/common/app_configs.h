@@ -43,7 +43,13 @@ static constexpr int MAXIMUM_MENU_WIDTH = 400;
 static const qreal CONTROL_POINT_SHIFT = 100;  /// Shift value for control points.
 
 static const QString EMPTY_COMBO = "-";
+static const QString MAIN_FLOW = QStringLiteral("main");  /// Reserved Koda entry-flow name; created automatically per task.
 static const int TOOLTIP_DURATION = 2;
+
+inline bool isReservedMainFlowName(const QString& name)
+{
+  return name.trimmed().compare(MAIN_FLOW, Qt::CaseInsensitive) == 0;
+}
 }  // namespace Constants
 
 class Fonts

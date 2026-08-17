@@ -2,6 +2,7 @@
 
 #include <QCursor>
 #include <QGraphicsSceneHoverEvent>
+#include <QObject>
 #include <QPainter>
 #include <QSvgRenderer>
 #include <memory>
@@ -26,6 +27,19 @@ QString iconPathForKind(PortItem::Kind kind)
       return QStringLiteral("port_error.svg");
   }
   return QString();
+}
+
+QString tooltipForKind(PortItem::Kind kind)
+{
+  switch (kind)
+  {
+    case PortItem::Abort:
+      return QObject::tr("Define how to handle an abort command.");
+    case PortItem::Error:
+      return QObject::tr("Define how to handle an error.");
+    default:
+      return {};
+  }
 }
 
 QSvgRenderer* rendererForKind(PortItem::Kind kind)
@@ -60,6 +74,7 @@ PortItem::PortItem(Kind kind, NodeItem* parentNode)
   setAcceptedMouseButtons(Qt::LeftButton);
   setFlag(QGraphicsItem::ItemStacksBehindParent, false);
   setZValue(10);
+  setToolTip(tooltipForKind(kind));
 }
 
 QString PortItem::defaultTransitionEvent() const

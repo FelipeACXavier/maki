@@ -29,7 +29,7 @@ private:
   void setHovered(bool hovered);
 };
 
-/** Floating menu (QTreeWidget) with Add flow / Add subtask actions beside a selected Task. */
+/** Floating menu beside a hovered Task: open main flow / add flow / add subtask. */
 class NodeActionMenu : public QWidget
 {
   Q_OBJECT
@@ -44,6 +44,7 @@ public:
   QString trackedTaskId() const;
 
 signals:
+  void openMainFlowRequested(NodeItem* task);
   void addFlowRequested(NodeItem* task);
   void addSubtaskRequested(NodeItem* task);
 

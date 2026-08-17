@@ -365,6 +365,12 @@ void Canvas::ensureNodeActionMenu()
     return;
 
   mNodeActionMenu = new NodeActionMenu(view);
+  connect(mNodeActionMenu, &NodeActionMenu::openMainFlowRequested, this, [this](NodeItem* n) {
+    if (!n)
+      return;
+    if (Flow* flow = n->ensureMainFlow())
+      emit openFlow(flow, QString());
+  });
   connect(mNodeActionMenu, &NodeActionMenu::addFlowRequested, this, [this](NodeItem* n) {
     if (n)
       emit createEvent(n);
@@ -528,8 +534,10 @@ void Canvas::openWaitCapabilityMenu(NodeItem* waitNode)
       items.push_back(item);
   }
 
-  const QRectF slotRect = wait->capabilitySlotSceneRect();
-  const QPointF anchorScene(slotRect.center().x(), slotRect.bottom() + 4.0);
+  QRectF chipRect = wait->waitChipSceneRect();
+  if (!chipRect.isValid() || chipRect.isEmpty())
+    chipRect = wait->mapRectToScene(wait->boundingRect());
+  const QPointF anchorScene(chipRect.center().x(), chipRect.bottom() + 4.0);
   const QPoint globalAnchor = view->viewport()->mapToGlobal(view->mapFromScene(anchorScene));
 
   CapabilityIconMenu::exec(view, items, globalAnchor,
@@ -588,7 +596,7 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
         }
         if (auto* wait = dynamic_cast<WaitNode*>(node))
         {
-          if (wait->capabilitySlotContainsScenePoint(event->scenePos()))
+          if (wait->waitChipContainsScenePoint(event->scenePos()))
           {
             event->accept();
             openWaitCapabilityMenu(wait);
@@ -861,12 +869,6 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
         if (selectedItems().size() < 2)
           clearSelectedNodes();
 
-        qDebug() << "clicked item" << item
-                 << "type" << item->type()
-                 << "br" << item->boundingRect()
-                 << "scene br" << item->sceneBoundingRect()
-                 << "shape scene"
-                 << item->mapToScene(item->shape()).boundingRect();
         nodeClicked(node);
         selectNode(node, true);
       }
@@ -1876,6 +1878,11 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
     updateParent(node, info, true);
 
   addedItemNode(node, info);
+
+  // New tasks always get a Koda "main" entry flow. Skip Loading: saved flows
+  // are attached afterwards and must not be duplicated.
+  if (creation != NodeCreation::Loading && node->isTaskContainer())
+    node->ensureMainFlow();
 
   if (creation != NodeCreation::Populating)
     mUndoStack->push(new AddNodeCommand(this, node->saveInfo()));

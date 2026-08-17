@@ -68,15 +68,13 @@ public:
   QStandardItemModel* getArguments() const;
 
 protected:
-  /**
-   * @brief Handles key press events.
-   *
-   * @param event The QKeyEvent object.
-   */
+  void accept() override;
   void keyPressEvent(QKeyEvent* event) override;
 
 private:
   std::shared_ptr<FlowSaveInfo> mStorage; /// Pointer to the stored FlowSaveInfo object.
+  QString mOriginalName;                  /// Name when the dialog opened; used to allow editing the existing main flow.
+  QLineEdit* mNameEdit = nullptr;         /// Name field; read on Apply because editingFinished may not have fired yet.
   int mEnterCount; /// Counter for enter key presses.
 
   /**

@@ -135,7 +135,7 @@ public:
    * @param nodeId The ID of the node.
    * @return std::shared_ptr<NodeSaveInfo> A shared pointer to NodeSaveInfo object representing the node.
    */
-  std::shared_ptr<NodeSaveInfo> getNodeWithId(const QString& nodeId);
+  std::shared_ptr<NodeSaveInfo> getNodeWithId(const QString& nodeId) const;
 
   /**
    * @brief Get a flow by ID.
@@ -168,6 +168,9 @@ private:
 
   void findChildrenOfTask(const std::shared_ptr<INode> task, QVector<std::shared_ptr<NodeSaveInfo>>& nodes, const Types::PropertyTypes type) const;
 
+  /** Adds capability children of ancestor tasks (not sibling subtasks) to @p out. */
+  void findAncestorCapabilities(const std::shared_ptr<INode>& task, QVector<std::shared_ptr<NodeSaveInfo>>& out) const;
+
   /**
    * @brief Find the parent of a construct.
    * @param nodeId The ID of the node.
@@ -192,7 +195,7 @@ private:
    * @param nodes The vector of nodes to search.
    * @return std::shared_ptr<NodeSaveInfo> A shared pointer to NodeSaveInfo object representing the node.
    */
-  std::shared_ptr<NodeSaveInfo> getNodeWithId(const QString& nodeId, const QVector<std::shared_ptr<INode>>& nodes);
+  std::shared_ptr<NodeSaveInfo> getNodeWithId(const QString& nodeId, const QVector<std::shared_ptr<INode>>& nodes) const;
 
   /**
    * @brief Get a flow by ID.

@@ -102,8 +102,9 @@ QWidget* makeCapabilityIconTile(QWidget* parent,
   btn->setFixedSize(QSize(kIconBtnPx, kIconBtnPx));
   btn->setToolTip(item.name);
   btn->setStyleSheet(capabilityButtonStyle(selected));
-  if (!item.iconPath.isEmpty())
-    btn->setIcon(QIcon(item.iconPath));
+  const QIcon icon = behaviour::capabilityPickerIcon(item.iconPath, QSize(kIconPx, kIconPx), cell->devicePixelRatioF());
+  if (!icon.isNull())
+    btn->setIcon(icon);
   cv->addWidget(btn, 0, Qt::AlignHCenter);
 
   auto* lbl = new QLabel(item.name, cell);
@@ -238,6 +239,13 @@ void CapabilityIconMenu::exec(QWidget* parent,
   vbox->setContentsMargins(6, 4, 6, 4);
   vbox->setSpacing(4);
 
+  auto* title = new QLabel(QObject::tr("Select a Capability:"), host);
+  QFont titleFont = title->font();
+  titleFont.setBold(true);
+  title->setFont(titleFont);
+  vbox->addWidget(title);
+  vbox->addSpacing(QFontMetrics(titleFont).lineSpacing());
+
   if (items.isEmpty())
   {
     auto* empty = new QLabel(emptyMessage.isEmpty() ? QObject::tr("No capabilities available") : emptyMessage, host);
@@ -248,6 +256,11 @@ void CapabilityIconMenu::exec(QWidget* parent,
   {
     auto* search = new maki::SearchWidget(QObject::tr("Filter capabilities"), host);
     vbox->addWidget(search);
+
+    auto* afterSearch = new QFrame(host);
+    afterSearch->setFrameShape(QFrame::HLine);
+    afterSearch->setFrameShadow(QFrame::Sunken);
+    vbox->addWidget(afterSearch);
 
     const int tileW = computeTileWidth(host->font(), items);
 

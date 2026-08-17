@@ -75,6 +75,7 @@ file(GLOB APP_ICON_FILES
   ${MISSION_PATH}/node_link_out.svg
   ${MISSION_PATH}/node_strategy.svg
   ${MISSION_PATH}/node_within.svg
+  ${MISSION_PATH}/node_wait_icon.svg
   ${MISSION_PATH}/node_repeat.svg
   ${MISSION_PATH}/node_every.svg
   ${MISSION_PATH}/node_continue.svg

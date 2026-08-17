@@ -25,6 +25,9 @@ void paintStructuralTaskPalettePreview(QPainter* painter, const QRectF& rect, co
 /** Compact Task preview for sync/async behaviour node overlays. */
 void paintStructuralTaskOverlayPreview(QPainter* painter, const QRectF& drawingBounds, const QPen& outlinePen);
 
+/** Task glyph fitted to @p rect (rounded rect + dashed slot), for Call slots and picker tiles. */
+void paintStructuralTaskIcon(QPainter* painter, const QRectF& rect, const QPen& outlinePen);
+
 /**
  * @brief A draggable item in a graphical scene.
  */

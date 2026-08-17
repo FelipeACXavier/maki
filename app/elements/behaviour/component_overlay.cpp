@@ -4,9 +4,12 @@
 #include <QFontMetricsF>
 #include <QGraphicsScene>
 #include <QGraphicsView>
+#include <QIcon>
 #include <QObject>
 #include <QPainter>
 #include <QPen>
+#include <QPixmap>
+#include <QPolygonF>
 #include <QSvgRenderer>
 
 #include "app_configs.h"
@@ -24,16 +27,19 @@ namespace behaviour
 {
 namespace
 {
+const QString kTaskFallbackIcon = QStringLiteral("node_task.svg");
+
+bool isTaskTypeKey(const QString& nodeTypeKey, const NodeConfig* cfg)
+{
+  if (nodeTypeKey.endsWith(QStringLiteral("::Task")) || nodeTypeKey == QStringLiteral("Task"))
+    return true;
+  return cfg && cfg->type == QStringLiteral("Koda::Task");
+}
+
 bool isTaskCaller(const NodeSaveInfo& caller, const ConfigurationTable* configTable)
 {
-  if (caller.getnodeId().endsWith(QStringLiteral("::Task")))
-    return true;
-
-  if (!configTable)
-    return false;
-
-  const auto cfg = configTable->get(caller.getnodeId());
-  return cfg && cfg->type == QStringLiteral("Koda::Task");
+  const auto cfg = configTable ? configTable->get(caller.getnodeId()) : nullptr;
+  return isTaskTypeKey(caller.getnodeId(), cfg.get());
 }
 
 void renderSvgInEllipse(QPainter* painter, const QString& svgPath, const QPointF& center, qreal diameter)
@@ -174,14 +180,37 @@ QString resolveCapabilityIconPath(const QString& storedIcon,
       return byFileName;
   }
 
-  if (!configTable)
-    return {};
+  const auto cfg = configTable ? configTable->get(nodeTypeKey) : nullptr;
+  if (cfg && !cfg->body.iconPath.isEmpty())
+    return resolveConfigIconPath(cfg->body.iconPath);
 
-  const auto cfg = configTable->get(nodeTypeKey);
-  if (!cfg || cfg->body.iconPath.isEmpty())
-    return {};
+  if (isTaskTypeKey(nodeTypeKey, cfg.get()))
+    return resolveConfigIconPath(kTaskFallbackIcon);
 
-  return resolveConfigIconPath(cfg->body.iconPath);
+  return {};
+}
+
+QIcon capabilityPickerIcon(const QString& iconPath, const QSize& logicalSize, qreal devicePixelRatio)
+{
+  const bool taskIcon =
+      QFileInfo(iconPath).fileName().compare(kTaskFallbackIcon, Qt::CaseInsensitive) == 0;
+  if (!taskIcon)
+    return iconPath.isEmpty() ? QIcon() : QIcon(iconPath);
+
+  const qreal dpr = qMax(1.0, devicePixelRatio);
+  const int w = qMax(1, qRound(logicalSize.width() * dpr));
+  const int h = qMax(1, qRound(logicalSize.height() * dpr));
+  QPixmap pixmap(w, h);
+  pixmap.setDevicePixelRatio(dpr);
+  pixmap.fill(Qt::transparent);
+
+  QPainter painter(&pixmap);
+  painter.setRenderHint(QPainter::Antialiasing, true);
+  const qreal pad = 1.0 * dpr;
+  paintStructuralTaskIcon(&painter,
+                          QRectF(pad, pad, w - pad * 2.0, h - pad * 2.0),
+                          QPen(Qt::black, qMax(1.0, dpr)));
+  return QIcon(pixmap);
 }
 
 void paintEmptySlotSvg(QPainter* painter, const QPointF& center, qreal diameter, bool hovered)
@@ -201,19 +230,22 @@ void paintEmptySlotSvg(QPainter* painter, const QPointF& center, qreal diameter,
   slotRenderer.render(painter, target);
 }
 
+void setSceneViewCursor(QGraphicsItem* item, bool pointingHand)
+{
+  if (!item || !item->scene())
+    return;
+
+  if (auto* view = dynamic_cast<QGraphicsView*>(item->scene()->parent()))
+    view->setCursor(pointingHand ? Qt::PointingHandCursor : Qt::ArrowCursor);
+}
+
 void applyAddCapabilityHover(QGraphicsItem* item, bool& hoveredState, bool hovered)
 {
   if (!item || hoveredState == hovered)
     return;
 
   hoveredState = hovered;
-
-  if (QGraphicsScene* scene = item->scene())
-  {
-    if (auto* view = dynamic_cast<QGraphicsView*>(scene->parent()))
-      view->setCursor(hovered ? Qt::PointingHandCursor : Qt::ArrowCursor);
-  }
-
+  setSceneViewCursor(item, hovered);
   item->setToolTip(hovered ? QObject::tr("Add capability") : QString());
   item->update();
 }
@@ -229,26 +261,19 @@ QFont callEventLabelFont(qreal diameter)
 
 qreal callCapabilityStackOverhang(qreal diameter, bool withEventLabel, bool withEventChip)
 {
-  qreal overhang = 0.0;
-  if (withEventLabel)
-  {
-    const QFont nameFont = callEventLabelFont(diameter);
-    overhang += kCallCapabilityLabelGap + QFontMetricsF(nameFont).height();
-  }
-  if (withEventChip)
-    overhang += kCallEventChipGap + kCallEventChipSize;
-  return overhang;
+  if (!withEventLabel && !withEventChip)
+    return 0.0;
+
+  const QFont nameFont = callEventLabelFont(diameter);
+  return kCallCapabilityLabelGap + QFontMetricsF(nameFont).height();
 }
 
 QPointF callCapabilityIconCenter(const QRectF& drawingBounds,
                                  qreal diameter,
                                  bool withEventLabel,
-                                 bool withEventChip,
-                                 bool offsetPastArrow)
+                                 bool withEventChip)
 {
   QPointF center = drawingBounds.center();
-  if (offsetPastArrow)
-    center.rx() += drawingBounds.width() * kCallCapabilityHorizontalOffsetFactor;
   if (diameter <= 0.0)
     return center;
 
@@ -258,28 +283,166 @@ QPointF callCapabilityIconCenter(const QRectF& drawingBounds,
   return center;
 }
 
-QPointF waitCapabilityIconCenter(const QRectF& drawingBounds)
+qreal callChipChevronSize(const QFontMetricsF& fm)
 {
-  QPointF center = drawingBounds.center();
-  center.ry() += drawingBounds.height() * kWaitCapabilityVerticalOffsetFactor;
-  return center;
+  return qMax(5.0, fm.height() * 0.45);
 }
 
-QRectF callEventChipLocalRect(const QRectF& drawingBounds, qreal diameter, bool withEventLabel)
+void paintDownChevron(QPainter* painter, const QRectF& rect)
 {
-  if (diameter <= 0.0)
+  QPolygonF triangle;
+  triangle << QPointF(rect.left(), rect.top() + rect.height() * 0.2)
+           << QPointF(rect.right(), rect.top() + rect.height() * 0.2)
+           << QPointF(rect.center().x(), rect.bottom() - rect.height() * 0.15);
+  painter->drawPolygon(triangle);
+}
+
+qreal waitChevronSize(qreal waitIconDiameter)
+{
+  return qBound(8.0, waitIconDiameter * 0.22, 12.0);
+}
+
+struct WaitChipLayout
+{
+  QRectF pause;
+  QRectF chevron;
+};
+
+WaitChipLayout waitChipLayout(const QRectF& drawingBounds, qreal waitIconDiameter)
+{
+  WaitChipLayout layout;
+  if (waitIconDiameter <= 0.0 || !drawingBounds.isValid())
+    return layout;
+
+  const qreal chevron = waitChevronSize(waitIconDiameter);
+  constexpr qreal kPauseToChevronGap = 4.0;
+  const qreal overhang = kPauseToChevronGap + chevron;
+  QPointF center = drawingBounds.center();
+  center.ry() -= overhang * 0.5;
+
+  qreal pauseD = waitIconDiameter;
+  const qreal maxD = qMax(0.0, drawingBounds.height() - overhang - 4.0);
+  if (pauseD > maxD)
+    pauseD = maxD;
+
+  layout.pause = QRectF(center.x() - pauseD * 0.5, center.y() - pauseD * 0.5, pauseD, pauseD);
+  layout.chevron = QRectF(center.x() - chevron * 0.5, layout.pause.bottom() + kPauseToChevronGap, chevron, chevron);
+  if (layout.chevron.bottom() > drawingBounds.bottom() - 1.0)
+    layout.chevron.moveBottom(drawingBounds.bottom() - 1.0);
+  return layout;
+}
+
+QRectF waitPauseLocalRect(const QRectF& drawingBounds, qreal waitIconDiameter)
+{
+  return waitChipLayout(drawingBounds, waitIconDiameter).pause;
+}
+
+QRectF waitCapabilityChipLocalRect(const QRectF& drawingBounds, qreal waitIconDiameter)
+{
+  return waitChipLayout(drawingBounds, waitIconDiameter).chevron;
+}
+
+void paintWaitCapabilityChip(const NodeItem* node,
+                             QPainter* painter,
+                             const QRectF& drawingBounds,
+                             qreal waitIconDiameter,
+                             bool hovered)
+{
+  Q_UNUSED(node);
+  if (!painter)
+    return;
+
+  const QRectF chevron = waitCapabilityChipLocalRect(drawingBounds, waitIconDiameter);
+  if (chevron.isEmpty())
+    return;
+
+  painter->setRenderHint(QPainter::Antialiasing, true);
+  painter->setPen(Qt::NoPen);
+  painter->setBrush(QBrush(hovered ? Config::HOVER : Config::FOREGROUND));
+  paintDownChevron(painter, chevron);
+}
+
+QRectF callEventChipLocalRect(const QRectF& drawingBounds, qreal diameter, const QString& chipText)
+{
+  if (diameter <= 0.0 || chipText.isEmpty() || !drawingBounds.isValid())
     return {};
 
-  const QPointF iconCenter = callCapabilityIconCenter(drawingBounds, diameter, withEventLabel, true);
+  const QPointF iconCenter = callCapabilityIconCenter(drawingBounds, diameter, false, true);
   const qreal radius = diameter * 0.5;
-  qreal chipTop = iconCenter.y() + radius + kCallEventChipGap;
-  if (withEventLabel)
-  {
-    const QFontMetricsF fm(callEventLabelFont(diameter));
-    chipTop = iconCenter.y() + radius + kCallCapabilityLabelGap + fm.height() + kCallEventChipGap;
-  }
+  const QFont font = callEventLabelFont(diameter);
+  const QFontMetricsF fm(font);
+  const qreal chevron = callChipChevronSize(fm);
+  const qreal maxW = qMax(0.0, drawingBounds.width() - 4.0);
+  const qreal maxTextW = qMax(0.0, maxW - kCallChipChevronGap - chevron);
+  const QString elided = fm.elidedText(chipText, Qt::ElideRight, maxTextW);
+  const qreal textW = fm.horizontalAdvance(elided);
+  const qreal chipW = qMin(maxW, textW + kCallChipChevronGap + chevron);
+  const qreal chipH = fm.height();
+  QRectF chip(iconCenter.x() - chipW * 0.5, iconCenter.y() + radius + kCallCapabilityLabelGap, chipW, chipH);
+  if (chip.bottom() > drawingBounds.bottom() - 1.0)
+    chip.setBottom(drawingBounds.bottom() - 1.0);
+  if (chip.height() < fm.height() * 0.6)
+    return {};
+  return chip;
+}
 
-  return QRectF(iconCenter.x() - kCallEventChipSize * 0.5, chipTop, kCallEventChipSize, kCallEventChipSize);
+void paintCallEventChip(QPainter* painter,
+                        const QRectF& drawingBounds,
+                        qreal diameter,
+                        const QString& chipText,
+                        bool hovered)
+{
+  if (!painter)
+    return;
+
+  const QRectF chip = callEventChipLocalRect(drawingBounds, diameter, chipText);
+  if (chip.isEmpty())
+    return;
+
+  const QFont font = callEventLabelFont(diameter);
+  const QFontMetricsF fm(font);
+  const qreal chevron = callChipChevronSize(fm);
+  const qreal maxTextW = qMax(0.0, chip.width() - kCallChipChevronGap - chevron);
+  const QString elided = fm.elidedText(chipText, Qt::ElideRight, maxTextW);
+  const QColor color = hovered ? Config::HOVER : Config::FOREGROUND;
+
+  painter->setRenderHint(QPainter::Antialiasing, true);
+  const QRectF textRect(chip.left(), chip.top(), maxTextW, chip.height());
+  painter->setFont(font);
+  painter->setPen(QPen(color));
+  painter->setBrush(Qt::NoBrush);
+  painter->drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft, elided);
+
+  const QRectF chevronRect(chip.right() - chevron, chip.center().y() - chevron * 0.5, chevron, chevron);
+  painter->setPen(Qt::NoPen);
+  painter->setBrush(QBrush(color));
+  paintDownChevron(painter, chevronRect);
+}
+
+QRectF linkOutChevronLocalRect(const QRectF& drawingBounds)
+{
+  if (!drawingBounds.isValid() || drawingBounds.isEmpty())
+    return {};
+
+  const qreal size = qBound(8.0, qMin(drawingBounds.width(), drawingBounds.height()) * 0.14, 12.0);
+  constexpr qreal kRightMargin = 10.0;
+  constexpr qreal kBottomMargin = 18.0;
+  return QRectF(drawingBounds.right() - kRightMargin - size, drawingBounds.bottom() - kBottomMargin - size, size, size);
+}
+
+void paintLinkOutChevron(QPainter* painter, const QRectF& drawingBounds, bool hovered)
+{
+  if (!painter)
+    return;
+
+  const QRectF chevron = linkOutChevronLocalRect(drawingBounds);
+  if (chevron.isEmpty())
+    return;
+
+  painter->setRenderHint(QPainter::Antialiasing, true);
+  painter->setPen(Qt::NoPen);
+  painter->setBrush(QBrush(hovered ? Config::HOVER : Config::FOREGROUND));
+  paintDownChevron(painter, chevron);
 }
 
 void paintSelectedComponentOverlay(const NodeItem* node, QPainter* painter)
@@ -294,6 +457,9 @@ void paintSelectedComponentOverlay(const NodeItem* node, QPainter* painter)
   // if the capability icon is nudged away from the geometric centre.
   if (!isCapabilitySlotNode)
     paintStructuralTaskOverlayPreview(painter, drawingBounds, QPen(Config::FOREGROUND, 1.0));
+
+  if (isWait)
+    return;
 
   if (node->config()->body.nodeSvg.isEmpty())
     return;
@@ -315,46 +481,33 @@ void paintSelectedComponentOverlay(const NodeItem* node, QPainter* painter)
   if (!caller)
     return;
 
+  const bool taskCaller = isTaskCaller(*caller, configTable);
   const QString iconPath = selectedComponentIconPath(caller, configTable);
-  // Call: event name under icon. Wait: none (title already names the capability). Else: caller name.
+  // Call: event chip is painted by CallNode. Else: caller name (unused for drawing).
   QString underIconLabel;
-  if (isCall)
-    underIconLabel = call_capability::currentEventName(*node);
-  else if (!isWait)
+  if (!isCall)
     underIconLabel = caller->getProperty(ConfigKeys::NAME).toString().trimmed();
   const bool showUnderIconLabel = !underIconLabel.isEmpty();
-  if (iconPath.isEmpty() && !showUnderIconLabel)
+  if (iconPath.isEmpty() && !taskCaller && !showUnderIconLabel && !isCall)
     return;
 
-  const qreal diameterFactor = isWait ? kWaitComponentOverlayDiameterFactor : kComponentOverlayDiameterFactor;
   const qreal diameter = qMin(drawingBounds.width(), drawingBounds.height()) * node->config()->body.iconScale
-                         * diameterFactor;
+                         * kComponentOverlayDiameterFactor;
   const qreal radius = diameter * 0.5;
-  const QPointF center = isWait ? waitCapabilityIconCenter(drawingBounds)
-                                : (isCall ? callCapabilityIconCenter(drawingBounds, diameter, showUnderIconLabel, true)
-                                          : drawingBounds.center());
+  const QPointF center = isCall ? callCapabilityIconCenter(drawingBounds, diameter, false, true)
+                                : drawingBounds.center();
+
+  if (taskCaller)
+  {
+    const QRectF slot(center.x() - radius, center.y() - radius, diameter, diameter);
+    paintStructuralTaskIcon(painter, slot, QPen(Config::FOREGROUND, 1.0 / node->baseScale()));
+    return;
+  }
 
   painter->setPen(isCapabilitySlotNode ? Qt::NoPen : QPen(Qt::black, 1.0 / node->baseScale()));
   painter->setBrush(QBrush(callerBackgroundColor(*caller, configTable)));
   painter->drawEllipse(center, radius, radius);
   if (!iconPath.isEmpty())
     renderSvgInEllipse(painter, iconPath, center, diameter);
-
-  if (showUnderIconLabel && isCall)
-  {
-    const QFont nameFont = callEventLabelFont(diameter);
-    const QFontMetricsF fm(nameFont);
-    const qreal textTop = center.y() + radius + kCallCapabilityLabelGap;
-    const qreal maxTextBottom = drawingBounds.bottom() - 1.0;
-    const qreal textHeight = qMin(fm.height(), qMax(0.0, maxTextBottom - textTop));
-    if (textHeight > 0.0)
-    {
-      const QRectF textRect(drawingBounds.left(), textTop, drawingBounds.width(), textHeight);
-      painter->setFont(nameFont);
-      painter->setPen(QPen(Config::FOREGROUND));
-      painter->drawText(textRect, Qt::AlignHCenter | Qt::AlignTop,
-                        fm.elidedText(underIconLabel, Qt::ElideRight, textRect.width()));
-    }
-  }
 }
 }  // namespace behaviour

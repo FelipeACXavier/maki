@@ -145,7 +145,7 @@ QString nodeSvgForState(const NodeItem& node)
   // Unset: node_call.svg (arrow + overlaid empty slot). Once a capability is chosen,
   // body switches to async/sync SVG as before.
   if (!hasCapabilitySelected(node))
-    return kNodeSvgUnset;
+    return kNodeSvgCall;
   return node.getProperty(kModeProperty).toString() == kModeAsync ? kNodeSvgAsync : kNodeSvgSync;
 }
 

@@ -7,6 +7,7 @@
 
 class TransitionEventMenu;
 class FlowCallMenu;
+class LinkOutNode;
 
 /**
  * @class BehaviourCanvas
@@ -93,6 +94,7 @@ public:
   /** Shows (or re-shows) the Flow call Task/Flow popup for @p flowCallNode. */
   void showFlowCallMenuFor(NodeItem* flowCallNode);
   void hideFlowCallMenu();
+  void openLinkOutTargetMenu(LinkOutNode* linkOut);
 
   /**
    * @brief Used to create the start and end nodes of a flow

@@ -98,14 +98,23 @@ NodeActionMenu::NodeActionMenu(QWidget* parent)
   layout->setContentsMargins(0, 0, 0, 0);
   layout->setSpacing(0);
 
+  const QString mainIconPath = iconPathFromTheme("icon_start.svg");
   const QString flowIconPath = iconPathFromTheme("button_addflow.svg");
   const QString subtaskIconPath = iconPathFromTheme("button_addsubtask.svg");
 
+  auto* mainWidget = new NodeActionRow(mainIconPath, QStringLiteral("Open main flow"), this);
   auto* flowWidget = new NodeActionRow(flowIconPath, QStringLiteral("Add flow"), this);
   auto* subtaskWidget = new NodeActionRow(subtaskIconPath, QStringLiteral("Add subtask"), this);
+  layout->addWidget(mainWidget);
   layout->addWidget(flowWidget);
   layout->addWidget(subtaskWidget);
 
+  connect(mainWidget, &NodeActionRow::clicked, this, [this] {
+    if (mTask)
+      emit openMainFlowRequested(mTask);
+
+    hideMenu();
+  });
   connect(flowWidget, &NodeActionRow::clicked, this, [this] {
     if (mTask)
       emit addFlowRequested(mTask);

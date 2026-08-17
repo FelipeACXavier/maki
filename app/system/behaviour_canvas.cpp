@@ -6,6 +6,7 @@
 #include "canvas_view.h"
 #include "config_table.h"
 #include "elements/behaviour/flow_call_node.h"
+#include "elements/behaviour/link_out_node.h"
 #include "elements/flow.h"
 #include "elements/node.h"
 #include "elements/port.h"
@@ -16,6 +17,8 @@
 #include "types.h"
 #include "widgets/structure/flow_call_menu.h"
 #include "widgets/structure/transition_event_menu.h"
+
+#include <QMenu>
 
 BehaviourCanvas::BehaviourCanvas(Flow* flow, std::shared_ptr<SaveInfo> storage, std::shared_ptr<ConfigurationTable> configTable, std::shared_ptr<EdgeRouter> router, QObject* parent)
     : Canvas(flow->id(), configTable, router, parent)
@@ -279,15 +282,62 @@ void BehaviourCanvas::onNodeDroppedFromPalette(NodeItem* node)
 
 bool BehaviourCanvas::tryOpenNodeConfigAt(NodeItem* node, const QPointF& scenePos)
 {
-  auto* flowCall = dynamic_cast<FlowCallNode*>(node);
-  if (!flowCall)
-    return false;
+  if (auto* flowCall = dynamic_cast<FlowCallNode*>(node))
+  {
+    if (!flowCall->flowChipContainsScenePoint(scenePos))
+      return false;
 
-  if (!flowCall->flowChipContainsScenePoint(scenePos))
-    return false;
+    showFlowCallMenuFor(flowCall);
+    return true;
+  }
 
-  showFlowCallMenuFor(flowCall);
-  return true;
+  if (auto* linkOut = dynamic_cast<LinkOutNode*>(node))
+  {
+    if (!linkOut->chevronContainsScenePoint(scenePos))
+      return false;
+
+    openLinkOutTargetMenu(linkOut);
+    return true;
+  }
+
+  return false;
+}
+
+void BehaviourCanvas::openLinkOutTargetMenu(LinkOutNode* linkOut)
+{
+  if (!linkOut)
+    return;
+
+  CanvasView* view = parentView();
+  if (!view)
+    return;
+
+  QRectF chevron = linkOut->chevronSceneRect();
+  if (!chevron.isValid() || chevron.isEmpty())
+    chevron = linkOut->mapRectToScene(linkOut->boundingRect());
+  const QPointF anchorScene(chevron.center().x(), chevron.bottom() + 4.0);
+  const QPoint globalAnchor = view->viewport()->mapToGlobal(view->mapFromScene(anchorScene));
+
+  QMenu menu(view);
+  menu.setMinimumWidth(160);
+  const QString current = linkOut->targetId();
+
+  const QVector<LinkOutNode::LinkInTarget> targets = linkOut->linkInTargets();
+  if (targets.isEmpty())
+  {
+    QAction* empty = menu.addAction(tr("No Link in nodes in this flow"));
+    empty->setEnabled(false);
+  }
+  else
+  {
+    for (const LinkOutNode::LinkInTarget& target : targets)
+    {
+      const QString id = target.id;
+      addListMenuItem(&menu, target.name, id == current, [linkOut, id]() { linkOut->assignTarget(id); });
+    }
+  }
+
+  menu.exec(globalAnchor);
 }
 
 void BehaviourCanvas::onSelectionChanged()

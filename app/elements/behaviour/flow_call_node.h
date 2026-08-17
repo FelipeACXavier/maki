@@ -6,6 +6,12 @@
 
 class QPainter;
 
+namespace flow_call
+{
+inline constexpr const char* kTaskPropertyId = "task";
+inline constexpr int kFlowOptionIndex = 0;
+}
+
 namespace flow_call_visual
 {
 /**

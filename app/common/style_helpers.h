@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 #include <QIcon>
 #include <QList>
 #include <QString>
@@ -9,6 +11,8 @@
 
 #include "config.h"
 #include "logging.h"
+
+class QMenu;
 
 /**
  * @brief Represents a widget with an associated icon and path.
@@ -115,6 +119,12 @@ void addDynamicWidget(QVBoxLayout* layout, QWidget* dynamicWidget, QWidget* pare
  * @param text The text for the label.
  */
 void addSectionLabel(QMenu* menu, const QString& text);
+
+/**
+ * Adds a text list row to a popup menu (no checkbox). Matches Call's event picker.
+ * @p selected uses a midlight background; hover uses highlight.
+ */
+void addListMenuItem(QMenu* menu, const QString& name, bool selected, const std::function<void()>& onChosen);
 
 /**
  * @brief Elides text on the left side of a widget.

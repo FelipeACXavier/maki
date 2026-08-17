@@ -443,13 +443,13 @@ void StructuralNode::paint(QPainter* painter, const QStyleOptionGraphicsItem* st
 
 QPainterPath StructuralNode::shape() const
 {
+  QPainterPath path;
   if (rendersAsInsetCapability())
-  {
-    QPainterPath path;
     path.addEllipse(nodeRect().adjusted(2, 2, -2, -2));
-    return path;
-  }
-  return NodeBase::nodeShape(nodeRect());
+  else
+    path = NodeBase::nodeShape(nodeRect());
+  uniteLabelHitShape(path);
+  return path;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

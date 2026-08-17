@@ -92,6 +92,15 @@ public:
   /** Tight rectangle around the drawn label text (centered within labelBoundingRect). */
   QRectF labelTextTightRect() const;
 
+  /** Clickable area of the painted label (tight text plus a small pad). */
+  QRectF labelHitRect() const;
+
+  /** Adds the name label to a hit-test path so the caption can be clicked. */
+  void uniteLabelHitShape(QPainterPath& path) const;
+
+  QFont labelFont() const;
+  void setLabelVisible(bool visible);
+
   virtual QRectF nodeRect() const;
 
   /**

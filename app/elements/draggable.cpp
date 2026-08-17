@@ -23,6 +23,8 @@ constexpr qreal kTaskInnerPadding = 6.0;
 constexpr qreal kTaskSlotDiameterFactor = 0.30;
 constexpr qreal kPaletteMaxWidth = 60.0;
 constexpr qreal kPaletteMaxHeight = 60.0;
+/** node_call.svg only has a left arrow; nudge the slot into the remaining open area. */
+constexpr qreal kPaletteCallSlotXNudgeFactor = 0.08;
 }  // namespace
 
 QRectF structuralTaskPaletteBounds(qreal width, qreal height)
@@ -79,6 +81,30 @@ void paintStructuralTaskOverlayPreview(QPainter* painter, const QRectF& drawingB
   painter->drawEllipse(bodyRect.center(), slotRadius, slotRadius);
 }
 
+void paintStructuralTaskIcon(QPainter* painter, const QRectF& rect, const QPen& outlinePen)
+{
+  if (!painter || rect.isEmpty())
+    return;
+
+  painter->setRenderHint(QPainter::Antialiasing, true);
+  painter->setPen(outlinePen);
+  painter->setBrush(Qt::NoBrush);
+
+  const qreal pad = qMin(rect.width(), rect.height()) * 0.06;
+  const QRectF bodyRect = rect.adjusted(pad, pad, -pad, -pad);
+  if (bodyRect.width() <= 0.0 || bodyRect.height() <= 0.0)
+    return;
+
+  const qreal cornerRadius = qMin(bodyRect.width(), bodyRect.height()) * 0.28;
+  painter->drawRoundedRect(bodyRect, cornerRadius, cornerRadius);
+
+  const qreal slotDiameter = qMin(bodyRect.width(), bodyRect.height()) * 0.36;
+  const qreal slotRadius = slotDiameter * 0.5;
+  QPen dashPen(outlinePen.color(), qMax(outlinePen.widthF(), 1.0), Qt::DashLine, Qt::RoundCap, Qt::RoundJoin);
+  painter->setPen(dashPen);
+  painter->drawEllipse(bodyRect.center(), slotRadius, slotRadius);
+}
+
 DraggableItem::DraggableItem(const QString& nodeId, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
     : NodeBase(QUuid::createUuid().toString(), nodeId, nodeConfig, parent)
 {
@@ -130,15 +156,14 @@ void DraggableItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* sty
     flow_call_visual::paintFlowIcon(painter, drawingRect(rect));
   else if (config()->type == QStringLiteral("Koda::Call"))
   {
-    // Match canvas Call layout: empty_slot to the right of the arrow in node_call.svg.
+    // Palette has no event chip. Centre in the hexagon, then a little right of the left arrow.
     const QRectF drawingBounds = drawingRect(rect);
+    const QRectF shapeBounds = nodeShapeContentRect(rect);
     const qreal diameter = qMin(drawingBounds.width(), drawingBounds.height()) * config()->body.iconScale
                            * behaviour::kComponentOverlayDiameterFactor;
-    behaviour::paintEmptySlotSvg(
-        painter,
-        behaviour::callCapabilityIconCenter(drawingBounds, diameter, false, false, /*offsetPastArrow=*/true),
-        diameter,
-        false);
+    QPointF center = shapeBounds.center();
+    center.rx() += shapeBounds.width() * kPaletteCallSlotXNudgeFactor;
+    behaviour::paintEmptySlotSvg(painter, center, diameter, false);
   }
 }
 

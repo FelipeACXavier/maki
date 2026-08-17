@@ -383,7 +383,12 @@ VoidResult PropertiesMenu::loadPropertyLinkTarget(const PropertyInfo& property, 
   auto* widget = new maki::SelectorWidget(ToLabel(property.getid()), maki::WidgetAlignment::Vertical(), this);
   widget->addItem(tr("(none)"), QString());
 
-  if (node && node->scene())
+  if (auto* linkOut = dynamic_cast<LinkOutNode*>(node))
+  {
+    for (const auto& target : linkOut->linkInTargets())
+      widget->addItem(target.name, target.id);
+  }
+  else if (node && node->scene())
   {
     for (QGraphicsItem* item : node->scene()->items())
     {
@@ -1356,6 +1361,8 @@ void PropertiesMenu::openEventDialog(QTableView* tableView, NodeItem* node, int 
   connect(mCurrentDialog, &QDialog::accepted, [this, tableView, node, row] {
     auto info = qobject_cast<EventDialog*>(mCurrentDialog)->getInfo();
     Flow* flow = node->createFlow(info->getname(), info);
+    if (!flow)
+      return;
     addEventToTable((QStandardItemModel*)tableView->model(), row, info);
     if (info->getmodifiable())
       emit flowSelected(flow->id(), node->id());

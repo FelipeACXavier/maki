@@ -19,7 +19,6 @@ inline const QString kNodeSvgAsync = QStringLiteral("node_async.svg");
 inline const QString kNodeSvgSync = QStringLiteral("node_sync.svg");
 /** Initial Call body (palette + canvas before capability): arrow left; slot overlaid. */
 inline const QString kNodeSvgCall = QStringLiteral("node_call.svg");
-inline const QString kNodeSvgUnset = kNodeSvgCall;
 
 /** capability.options[0] = selected event; following entries are event arguments. */
 inline constexpr int kEventIndex = 0;

@@ -1,10 +1,8 @@
 #pragma once
 
-#include "elements/behaviour/behaviour_node.h"
+#include "elements/behaviour/subflow_block.h"
 
-class SubflowBlock;
-
-class WithinNode : public BehaviourNode
+class WithinNode : public SubflowHostNode
 {
 public:
   WithinNode(const QString& id,
@@ -18,20 +16,14 @@ public:
   void updatePosition(const QPointF& position) override;
   QVector<NodeItem*> detachOwnedSubflowBlocks() override;
 
-  QRectF boundingRect() const override;
-  QPainterPath shape() const override;
-  qreal labelCenterOffsetX() const override;
-
 protected:
   QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
-  void paintBehaviourExtras(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget) override;
-  void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
+  bool subflowsCollapsed() const override;
+  void toggleSubflowsCollapsed() override;
 
 private:
   void ensureSubflowBlocks();
   void setSubflowsCollapsed(bool collapsed);
-  void toggleSubflowsCollapsed();
-  bool subflowsCollapsed() const;
 
   SubflowBlock* mDoBlock = nullptr;
   SubflowBlock* mElseBlock = nullptr;

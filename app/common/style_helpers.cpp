@@ -1,8 +1,11 @@
 #include "style_helpers.h"
 
 #include <QApplication>
+#include <QEvent>
+#include <QHBoxLayout>
 #include <QLabel>
 #include <QMenu>
+#include <QMouseEvent>
 #include <QPainter>
 #include <QPushButton>
 #include <QStyle>
@@ -109,7 +112,106 @@ void addSectionLabel(QMenu* menu, const QString& text)
 
   // Optional: add a thin separator line below it
   menu->addSeparator();
+}
+
+namespace
+{
+class ListMenuRow : public QWidget
+{
+public:
+  std::function<void()> onClicked;
+
+  ListMenuRow(const QString& name, bool selected, QWidget* parent = nullptr)
+      : QWidget(parent)
+      , mSelected(selected)
+  {
+    setAttribute(Qt::WA_Hover, true);
+    setMouseTracking(true);
+    setCursor(Qt::PointingHandCursor);
+
+    auto* row = new QHBoxLayout(this);
+    row->setContentsMargins(12, 5, 12, 5);
+    row->setSpacing(0);
+
+    mLabel = new QLabel(name, this);
+    if (selected)
+    {
+      QFont font = mLabel->font();
+      font.setBold(true);
+      mLabel->setFont(font);
+    }
+    row->addWidget(mLabel);
+    row->addStretch(1);
+    applyStyle(false);
+  }
+
+protected:
+  bool event(QEvent* event) override
+  {
+    if (event->type() == QEvent::HoverEnter)
+    {
+      applyStyle(true);
+      return true;
+    }
+    if (event->type() == QEvent::HoverLeave)
+    {
+      applyStyle(false);
+      return true;
+    }
+    return QWidget::event(event);
+  }
+
+  void mouseReleaseEvent(QMouseEvent* event) override
+  {
+    if (event->button() == Qt::LeftButton && rect().contains(event->pos()) && onClicked)
+      onClicked();
+    QWidget::mouseReleaseEvent(event);
+  }
+
+private:
+  void applyStyle(bool hovered)
+  {
+    if (hovered)
+    {
+      setStyleSheet(QStringLiteral(
+          "QWidget { background-color: palette(highlight); border-radius: 4px; }"
+          "QLabel { color: palette(highlighted-text); background: transparent; }"));
+    }
+    else if (mSelected)
+    {
+      setStyleSheet(QStringLiteral(
+          "QWidget { background-color: palette(midlight); border-radius: 4px; }"
+          "QLabel { background: transparent; }"));
+    }
+    else
+    {
+      setStyleSheet(QStringLiteral(
+          "QWidget { background-color: transparent; border-radius: 4px; }"
+          "QLabel { background: transparent; }"));
+    }
+  }
+
+  bool mSelected = false;
+  QLabel* mLabel = nullptr;
 };
+}  // namespace
+
+void addListMenuItem(QMenu* menu, const QString& name, bool selected, const std::function<void()>& onChosen)
+{
+  if (!menu)
+    return;
+
+  auto* row = new ListMenuRow(name, selected, menu);
+  row->onClicked = [menu, onChosen]() {
+    if (onChosen)
+      onChosen();
+    menu->hide();
+  };
+
+  auto* action = new QWidgetAction(menu);
+  action->setDefaultWidget(row);
+  menu->addAction(action);
+}
 
 void updateIconTheme(QList<WidgetWithIcon>& icons)
 {

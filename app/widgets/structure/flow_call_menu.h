@@ -40,8 +40,6 @@ protected:
   void hideEvent(QHideEvent* event) override;
 
 private:
-  static constexpr int kTaskPropertyEventIndex = 0;
-  static constexpr const char* kTaskPropertyId = "task";
   /** Sentinel userData for the "Create new flow" entry in the Flow combo. */
   static constexpr const char* kCreateFlowItemData = "__create_new_flow__";
 
@@ -51,7 +49,7 @@ private:
   QString currentTaskName() const;
   void setTaskData(const QString& taskName);
   void setFlowData(NodeItem* node, const QString& flowName) const;
-  void updateBlockName(NodeItem* node, const QString& componentName, const QString& flowName) const;
+  void updateBlockName(NodeItem* node) const;
   void selectFlowInCombo(const QString& flowName);
   bool isCreateFlowItem(int index) const;
   int firstFlowOptionIndex() const;

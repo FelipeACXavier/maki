@@ -1,36 +1,21 @@
 #include "elements/behaviour/within_node.h"
 
 #include <QGraphicsScene>
-#include <QGraphicsSceneMouseEvent>
-#include <QPainter>
-#include <QPainterPath>
-#include <QStyleOptionGraphicsItem>
-
-#include "elements/behaviour/subflow_block.h"
 
 WithinNode::WithinNode(const QString& id,
                        std::shared_ptr<NodeSaveInfo> info,
                        const QPointF& initialPosition,
                        std::shared_ptr<NodeConfig> nodeConfig,
                        QGraphicsItem* parent)
-    : BehaviourNode(id, info, initialPosition, nodeConfig, parent)
+    : SubflowHostNode(id, info, initialPosition, nodeConfig, parent)
 {
-  // Avoid DeviceCoordinateCache interactions with attached SubflowBlock scene items.
-  setCacheMode(QGraphicsItem::NoCache);
 }
 
 WithinNode::~WithinNode()
 {
   // Normal deletion goes through Canvas::removeNode, which calls detachOwnedSubflowBlocks()
   // first. This only runs if the Within node is destroyed some other way.
-  for (NodeItem* block : detachOwnedSubflowBlocks())
-  {
-    if (block->scene())
-      block->scene()->removeItem(block);
-    if (auto* subflow = dynamic_cast<SubflowBlock*>(block))
-      subflow->prepareForDeletion();
-    delete block;
-  }
+  destroyDetachedBlocks(detachOwnedSubflowBlocks());
 }
 
 QVector<NodeItem*> WithinNode::detachOwnedSubflowBlocks()
@@ -137,41 +122,6 @@ void WithinNode::updatePosition(const QPointF& position)
     mDoBlock->translateBy(delta);
   else if (mElseBlock)
     mElseBlock->translateBy(delta);
-}
-
-qreal WithinNode::labelCenterOffsetX() const
-{
-  return SubflowCollapseUi::labelCenterOffsetX();
-}
-
-QRectF WithinNode::boundingRect() const
-{
-  return BehaviourNode::boundingRect().united(SubflowCollapseUi::arrowRect(*this));
-}
-
-QPainterPath WithinNode::shape() const
-{
-  QPainterPath path = BehaviourNode::shape();
-  path.addRect(SubflowCollapseUi::arrowRect(*this));
-  return path;
-}
-
-void WithinNode::paintBehaviourExtras(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget)
-{
-  Q_UNUSED(style);
-  Q_UNUSED(widget);
-  SubflowCollapseUi::paintArrow(painter, SubflowCollapseUi::arrowRect(*this), subflowsCollapsed());
-}
-
-void WithinNode::mousePressEvent(QGraphicsSceneMouseEvent* event)
-{
-  if (event && SubflowCollapseUi::arrowRect(*this).contains(event->pos()))
-  {
-    toggleSubflowsCollapsed();
-    event->accept();
-    return;
-  }
-  BehaviourNode::mousePressEvent(event);
 }
 
 QVariant WithinNode::itemChange(GraphicsItemChange change, const QVariant& value)

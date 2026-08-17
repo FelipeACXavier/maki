@@ -15,8 +15,9 @@ public:
   void setProperty(const QString& key, QVariant value) override;
 
   bool hasCapabilitySelected() const;
-  QRectF capabilitySlotSceneRect() const;
-  bool capabilitySlotContainsScenePoint(const QPointF& scenePos) const;
+
+  QRectF waitChipSceneRect() const;
+  bool waitChipContainsScenePoint(const QPointF& scenePos) const;
 
   /** Assigns a capability from the canvas picker (name only; no mode/event). */
   void assignCapability(const QString& capabilityName);
@@ -27,10 +28,17 @@ protected:
   void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
 
 private:
+  enum class HoverTarget
+  {
+    None,
+    Chip,
+  };
+
   void syncWaitLabels();
   void clearOutgoingSignalEvents();
-  qreal capabilitySlotDiameter() const;
-  void setEmptySlotHovered(bool hovered);
+  qreal waitIconDiameter() const;
+  QRectF chipLocalRect() const;
+  void setHoverTarget(HoverTarget target);
 
-  bool mEmptySlotHovered = false;
+  HoverTarget mHoverTarget = HoverTarget::None;
 };

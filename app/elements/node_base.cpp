@@ -226,6 +226,36 @@ QRectF NodeBase::labelTextTightRect() const
   return fm.boundingRect(area, Qt::AlignCenter | Qt::TextWordWrap, mLabelText);
 }
 
+QRectF NodeBase::labelHitRect() const
+{
+  QRectF hit = labelTextTightRect();
+  if (hit.isEmpty())
+    return hit;
+
+  // Keep the right pad small so Repeat/Within collapse chevrons stay distinct.
+  return hit.adjusted(-4.0, -3.0, -1.0, 3.0);
+}
+
+void NodeBase::uniteLabelHitShape(QPainterPath& path) const
+{
+  const QRectF hit = labelHitRect();
+  if (!hit.isEmpty())
+    path.addRect(hit);
+}
+
+QFont NodeBase::labelFont() const
+{
+  return mLabelFont;
+}
+
+void NodeBase::setLabelVisible(bool visible)
+{
+  if (mPaintLabel == visible)
+    return;
+  mPaintLabel = visible;
+  update();
+}
+
 QRectF NodeBase::itemRectIncludingLabel() const
 {
   return boundingRect();

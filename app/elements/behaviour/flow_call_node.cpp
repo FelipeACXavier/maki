@@ -3,12 +3,10 @@
 #include <QFontMetricsF>
 #include <QGraphicsSceneHoverEvent>
 #include <QGraphicsSceneMouseEvent>
-#include <QGraphicsView>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QObject>
 #include <QPainter>
-#include <QPolygonF>
 #include <QSvgRenderer>
 
 #include "app_configs.h"
@@ -19,8 +17,6 @@
 
 namespace
 {
-constexpr const char* kTaskPropertyId = "task";
-constexpr int kTaskPropertyFlowIndex = 0;
 /** Bottom of the orange flow glyph in node_flow.svg (viewBox height 240). */
 constexpr qreal kNodeFlowIconBottomInViewBox = 162.76;
 constexpr qreal kNodeFlowViewBoxWidth = 264.45;
@@ -33,7 +29,6 @@ constexpr qreal kFlowGlyphH = 85.52;
 constexpr qreal kFlowNameGap = 3.0;
 /** Nudge the flow glyph slightly above geometric center. */
 constexpr qreal kFlowIconUpNudgeFactor = 0.08;
-constexpr qreal kChipChevronGap = 3.0;
 constexpr qreal kChipHitPad = 4.0;
 
 QSvgRenderer& sharedFlowIconRenderer()
@@ -80,20 +75,6 @@ QFont flowChipFont(const QRectF& drawingBounds)
   font.setPointSizeF(qBound(5.5, diameter * 0.16, 7.5));
   return font;
 }
-
-qreal chipChevronSize(const QFontMetricsF& fm)
-{
-  return qMax(5.0, fm.height() * 0.45);
-}
-
-void paintDownChevron(QPainter* painter, const QRectF& rect)
-{
-  QPolygonF triangle;
-  triangle << QPointF(rect.left(), rect.top() + rect.height() * 0.2)
-           << QPointF(rect.right(), rect.top() + rect.height() * 0.2)
-           << QPointF(rect.center().x(), rect.bottom() - rect.height() * 0.15);
-  painter->drawPolygon(triangle);
-}
 }  // namespace
 
 namespace flow_call_visual
@@ -126,12 +107,12 @@ QRectF flowChipLocalRect(const QRectF& drawingBounds, const QString& chipText)
 
   const QFont font = flowChipFont(drawingBounds);
   const QFontMetricsF fm(font);
-  const qreal chevron = chipChevronSize(fm);
+  const qreal chevron = behaviour::callChipChevronSize(fm);
   const qreal maxW = qMax(0.0, drawingBounds.width() - 4.0);
-  const qreal maxTextW = qMax(0.0, maxW - kChipChevronGap - chevron);
+  const qreal maxTextW = qMax(0.0, maxW - behaviour::kCallChipChevronGap - chevron);
   const QString elided = fm.elidedText(chipText, Qt::ElideRight, maxTextW);
   const qreal textW = fm.horizontalAdvance(elided);
-  const qreal chipW = qMin(maxW, textW + kChipChevronGap + chevron);
+  const qreal chipW = qMin(maxW, textW + behaviour::kCallChipChevronGap + chevron);
   const qreal chipH = fm.height();
   const qreal iconBottom = target.top() + target.height() * (kNodeFlowIconBottomInViewBox / kNodeFlowViewBoxHeight);
   QRectF chip(drawingBounds.center().x() - chipW * 0.5, iconBottom + kFlowNameGap, chipW, chipH);
@@ -168,8 +149,8 @@ void paintFlowChip(QPainter* painter, const QRectF& drawingBounds, const QString
 
   const QFont font = flowChipFont(drawingBounds);
   const QFontMetricsF fm(font);
-  const qreal chevron = chipChevronSize(fm);
-  const qreal maxTextW = qMax(0.0, chip.width() - kChipChevronGap - chevron);
+  const qreal chevron = behaviour::callChipChevronSize(fm);
+  const qreal maxTextW = qMax(0.0, chip.width() - behaviour::kCallChipChevronGap - chevron);
   const QString elided = fm.elidedText(chipText, Qt::ElideRight, maxTextW);
   const QColor color = hovered ? Config::HOVER : Config::FOREGROUND;
 
@@ -183,7 +164,7 @@ void paintFlowChip(QPainter* painter, const QRectF& drawingBounds, const QString
   const QRectF chevronRect(chip.right() - chevron, chip.center().y() - chevron * 0.5, chevron, chevron);
   painter->setPen(Qt::NoPen);
   painter->setBrush(QBrush(color));
-  paintDownChevron(painter, chevronRect);
+  behaviour::paintDownChevron(painter, chevronRect);
 }
 }  // namespace flow_call_visual
 
@@ -199,15 +180,15 @@ FlowCallNode::FlowCallNode(const QString& id,
 
 QString FlowCallNode::calledFlowName() const
 {
-  const QVariant propValue = getProperty(QString::fromLatin1(kTaskPropertyId));
+  const QVariant propValue = getProperty(QString::fromLatin1(flow_call::kTaskPropertyId));
   if (!propValue.isValid())
     return {};
 
   const QJsonArray options = propValue.toJsonObject().value(ConfigKeys::OPTIONS).toArray();
-  if (options.size() <= kTaskPropertyFlowIndex)
+  if (options.size() <= flow_call::kFlowOptionIndex)
     return {};
 
-  const QString flowName = options.at(kTaskPropertyFlowIndex).toObject().value(ConfigKeys::DATA).toString().trimmed();
+  const QString flowName = options.at(flow_call::kFlowOptionIndex).toObject().value(ConfigKeys::DATA).toString().trimmed();
   if (flowName.isEmpty() || flowName == Constants::EMPTY_COMBO)
     return {};
   return flowName;
@@ -254,15 +235,7 @@ void FlowCallNode::setHoverTarget(HoverTarget target)
     return;
 
   mHoverTarget = target;
-
-  if (scene())
-  {
-    if (auto* view = dynamic_cast<QGraphicsView*>(scene()->parent()))
-    {
-      const bool hand = target == HoverTarget::FlowIcon || target == HoverTarget::FlowChip;
-      view->setCursor(hand ? Qt::PointingHandCursor : Qt::ArrowCursor);
-    }
-  }
+  behaviour::setSceneViewCursor(this, target == HoverTarget::FlowIcon || target == HoverTarget::FlowChip);
 
   if (target == HoverTarget::FlowIcon)
     setToolTip(QObject::tr("Double-click to navigate to this flow."));

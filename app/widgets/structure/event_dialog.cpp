@@ -17,6 +17,7 @@
 #include "logging.h"
 #include "save_info.h"
 #include "style_helpers.h"
+#include "widgets/dialogs/prompt.h"
 #include "widgets/widget_factory.h"
 
 EventDialog::EventDialog(const QString& title, QWidget* parent)
@@ -33,6 +34,7 @@ std::shared_ptr<FlowSaveInfo> EventDialog::getInfo() const
 void EventDialog::setup(std::shared_ptr<FlowSaveInfo> event)
 {
   mStorage = event;
+  mOriginalName = event ? event->getname() : QString();
 
   layout()->setContentsMargins(10, 0, 10, 0);
   layout()->setAlignment(Qt::AlignCenter);
@@ -56,6 +58,14 @@ void EventDialog::createNameInput()
   auto name = new maki::StringWidget(tr("Event name"), mStorage->getname(), {maki::WidgetAlignment::Type::VERTICAL}, this);
   name->widget()->setFocusPolicy(mStorage->getmodifiable() ? Qt::StrongFocus : Qt::NoFocus);
   name->widget()->setReadOnly(!mStorage->getmodifiable());
+  mNameEdit = name->widget();
+  if (mNameEdit)
+  {
+    connect(mNameEdit, &QLineEdit::textChanged, this, [this](const QString& text) {
+      if (mStorage)
+        mStorage->setName(text);
+    });
+  }
 
   connect(name, &maki::StringWidget::valueChanged, this, [this](const QString& text) { mStorage->setName(text); });
   layout()->addWidget(name);
@@ -232,6 +242,20 @@ void EventDialog::updateArgumentTable(int row, int column, const QString& text)
     std::dynamic_pointer_cast<PropertyInfo>(mStorage->getArgument(row))->setId(text);
   else if (column == 1)
     std::dynamic_pointer_cast<PropertyInfo>(mStorage->getArgument(row))->setType(Types::StringToPropertyTypes(text));
+}
+
+void EventDialog::accept()
+{
+  if (mStorage && mNameEdit)
+    mStorage->setName(mNameEdit->text());
+
+  const QString name = mStorage ? mStorage->getname() : QString();
+  if (Constants::isReservedMainFlowName(name) && !Constants::isReservedMainFlowName(mOriginalName))
+  {
+    maki::errorPrompt(tr("You cannot create a flow called \"main\". Each Task already has a main flow."), QString(), this);
+    return;
+  }
+  QDialog::accept();
 }
 
 void EventDialog::keyPressEvent(QKeyEvent* event)

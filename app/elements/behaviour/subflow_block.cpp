@@ -11,6 +11,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPainter>
+#include <QPainterPath>
 #include <QRegularExpression>
 #include <QRegularExpressionValidator>
 #include <QSet>
@@ -294,6 +295,66 @@ void SubflowCollapseUi::writePersisted(NodeItem* host, bool collapsed)
 {
   if (host)
     host->setProperty(QString::fromLatin1(kPropertyKey), collapsed);
+}
+
+SubflowHostNode::SubflowHostNode(const QString& id,
+                                 std::shared_ptr<NodeSaveInfo> info,
+                                 const QPointF& initialPosition,
+                                 std::shared_ptr<NodeConfig> nodeConfig,
+                                 QGraphicsItem* parent)
+    : BehaviourNode(id, info, initialPosition, nodeConfig, parent)
+{
+  // Avoid DeviceCoordinateCache interactions with attached SubflowBlock scene items.
+  setCacheMode(QGraphicsItem::NoCache);
+}
+
+QRectF SubflowHostNode::boundingRect() const
+{
+  return BehaviourNode::boundingRect().united(SubflowCollapseUi::arrowRect(*this));
+}
+
+QPainterPath SubflowHostNode::shape() const
+{
+  QPainterPath path = BehaviourNode::shape();
+  path.addRect(SubflowCollapseUi::arrowRect(*this));
+  return path;
+}
+
+qreal SubflowHostNode::labelCenterOffsetX() const
+{
+  return SubflowCollapseUi::labelCenterOffsetX();
+}
+
+void SubflowHostNode::paintBehaviourExtras(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget)
+{
+  Q_UNUSED(style);
+  Q_UNUSED(widget);
+  SubflowCollapseUi::paintArrow(painter, SubflowCollapseUi::arrowRect(*this), subflowsCollapsed());
+}
+
+void SubflowHostNode::mousePressEvent(QGraphicsSceneMouseEvent* event)
+{
+  if (event && SubflowCollapseUi::arrowRect(*this).contains(event->pos()))
+  {
+    toggleSubflowsCollapsed();
+    event->accept();
+    return;
+  }
+  BehaviourNode::mousePressEvent(event);
+}
+
+void SubflowHostNode::destroyDetachedBlocks(const QVector<NodeItem*>& blocks)
+{
+  for (NodeItem* block : blocks)
+  {
+    if (!block)
+      continue;
+    if (block->scene())
+      block->scene()->removeItem(block);
+    if (auto* subflow = dynamic_cast<SubflowBlock*>(block))
+      subflow->prepareForDeletion();
+    delete block;
+  }
 }
 
 std::shared_ptr<NodeConfig> SubflowBlock::synthesizedConfig()

@@ -7,6 +7,7 @@
 class NodeConfig;
 class QGraphicsProxyWidget;
 class QGraphicsSceneHoverEvent;
+class QGraphicsSceneMouseEvent;
 class QLineEdit;
 class QPainter;
 
@@ -27,6 +28,33 @@ void paintArrow(QPainter* painter, const QRectF& rect, bool collapsed);
 bool readPersisted(const NodeItem* host);
 void writePersisted(NodeItem* host, bool collapsed);
 }  // namespace SubflowCollapseUi
+
+/**
+ * Shared collapse-chevron hit-testing and paint for Repeat / Within hosts.
+ */
+class SubflowHostNode : public BehaviourNode
+{
+public:
+  SubflowHostNode(const QString& id,
+                  std::shared_ptr<NodeSaveInfo> info,
+                  const QPointF& initialPosition,
+                  std::shared_ptr<NodeConfig> nodeConfig,
+                  QGraphicsItem* parent = nullptr);
+
+  QRectF boundingRect() const override;
+  QPainterPath shape() const override;
+  qreal labelCenterOffsetX() const override;
+
+  /** Scene-safe teardown for blocks returned by detachOwnedSubflowBlocks(). */
+  static void destroyDetachedBlocks(const QVector<NodeItem*>& blocks);
+
+protected:
+  void paintBehaviourExtras(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget) override;
+  void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
+
+  virtual bool subflowsCollapsed() const = 0;
+  virtual void toggleSubflowsCollapsed() = 0;
+};
 
 /**
  * @brief Bordered container below a Repeat / Within node for inline subflow editing.

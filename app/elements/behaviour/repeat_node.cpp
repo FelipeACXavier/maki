@@ -1,36 +1,21 @@
 #include "elements/behaviour/repeat_node.h"
 
 #include <QGraphicsScene>
-#include <QGraphicsSceneMouseEvent>
-#include <QPainter>
-#include <QPainterPath>
-#include <QStyleOptionGraphicsItem>
-
-#include "elements/behaviour/subflow_block.h"
 
 RepeatNode::RepeatNode(const QString& id,
                        std::shared_ptr<NodeSaveInfo> info,
                        const QPointF& initialPosition,
                        std::shared_ptr<NodeConfig> nodeConfig,
                        QGraphicsItem* parent)
-    : BehaviourNode(id, info, initialPosition, nodeConfig, parent)
+    : SubflowHostNode(id, info, initialPosition, nodeConfig, parent)
 {
-  // Avoid DeviceCoordinateCache interactions with attached SubflowBlock scene items.
-  setCacheMode(QGraphicsItem::NoCache);
 }
 
 RepeatNode::~RepeatNode()
 {
   // Normal deletion goes through Canvas::removeNode, which calls detachOwnedSubflowBlocks()
   // first. This only runs if the Repeat node is destroyed some other way.
-  for (NodeItem* block : detachOwnedSubflowBlocks())
-  {
-    if (block->scene())
-      block->scene()->removeItem(block);
-    if (auto* subflow = dynamic_cast<SubflowBlock*>(block))
-      subflow->prepareForDeletion();
-    delete block;
-  }
+  destroyDetachedBlocks(detachOwnedSubflowBlocks());
 }
 
 QVector<NodeItem*> RepeatNode::detachOwnedSubflowBlocks()
@@ -84,41 +69,6 @@ void RepeatNode::updatePosition(const QPointF& position)
   BehaviourNode::updatePosition(position);
   if (mBlock && !delta.isNull())
     mBlock->translateBy(delta);
-}
-
-qreal RepeatNode::labelCenterOffsetX() const
-{
-  return SubflowCollapseUi::labelCenterOffsetX();
-}
-
-QRectF RepeatNode::boundingRect() const
-{
-  return BehaviourNode::boundingRect().united(SubflowCollapseUi::arrowRect(*this));
-}
-
-QPainterPath RepeatNode::shape() const
-{
-  QPainterPath path = BehaviourNode::shape();
-  path.addRect(SubflowCollapseUi::arrowRect(*this));
-  return path;
-}
-
-void RepeatNode::paintBehaviourExtras(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget)
-{
-  Q_UNUSED(style);
-  Q_UNUSED(widget);
-  SubflowCollapseUi::paintArrow(painter, SubflowCollapseUi::arrowRect(*this), subflowsCollapsed());
-}
-
-void RepeatNode::mousePressEvent(QGraphicsSceneMouseEvent* event)
-{
-  if (event && SubflowCollapseUi::arrowRect(*this).contains(event->pos()))
-  {
-    toggleSubflowsCollapsed();
-    event->accept();
-    return;
-  }
-  BehaviourNode::mousePressEvent(event);
 }
 
 QVariant RepeatNode::itemChange(GraphicsItemChange change, const QVariant& value)
