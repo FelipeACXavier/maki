@@ -66,44 +66,54 @@ namespace
 NodeItem* dropTargetContainer(QGraphicsItem* item, Types::LibraryTypes canvasType, QGraphicsScene* scene = nullptr,
                               const QPointF& scenePos = QPointF())
 {
-  while (item)
+  if (canvasType == Types::LibraryTypes::STRUCTURAL)
   {
-    if (item->type() == NodeItem::Type)
+    while (item)
     {
-      auto* node = static_cast<NodeItem*>(item);
-      // collapsed blocks stay hidden and don't capture drops
-      if (node->isSubflowContainer() && canvasType == Types::LibraryTypes::BEHAVIOUR && !node->isCollapsedSubflow())
-        return node;
-
-      for (NodeItem* cur = node; cur; cur = cur->parentNode())
+      if (item->type() == NodeItem::Type)
       {
-        if (cur->isTaskContainer() && cur->acceptDrops())
-          return cur;
+        auto* node = static_cast<NodeItem*>(item);
+        for (NodeItem* cur = node; cur; cur = cur->parentNode())
+        {
+          if (cur->isTaskContainer() && cur->acceptDrops())
+            return cur;
+        }
+        return nullptr;
       }
-      return nullptr;
+      item = item->parentItem();
     }
-    item = item->parentItem();
+    return nullptr;
   }
 
-  // SubflowBlock uses a border-only shape for hit-testing, so empty interior drops
-  // must still resolve the container via its body rect.
-  if (canvasType == Types::LibraryTypes::BEHAVIOUR && scene)
+  // Behaviour: SubflowBlock hit-tests as a border only, so empty interiors never
+  // come through `item`. Nested Repeat/Within blocks also sit inside their
+  // enclosing Loop/Do rect — pick the innermost body that contains the point.
+  if (canvasType != Types::LibraryTypes::BEHAVIOUR || !scene)
+    return nullptr;
+
+  NodeItem* best = nullptr;
+  qreal bestArea = std::numeric_limits<qreal>::max();
+  for (QGraphicsItem* gi : scene->items())
   {
-    for (QGraphicsItem* gi : scene->items())
+    if (!gi || gi->type() != NodeItem::Type)
+      continue;
+
+    auto* node = static_cast<NodeItem*>(gi);
+    if (!node->isVisible() || !node->isSubflowContainer() || node->isCollapsedSubflow())
+      continue;
+
+    const QRectF body = node->mapRectToScene(node->nodeRect());
+    if (!body.contains(scenePos))
+      continue;
+
+    const qreal area = body.width() * body.height();
+    if (!best || area < bestArea)
     {
-      if (!gi || gi->type() != NodeItem::Type)
-        continue;
-
-      auto* node = static_cast<NodeItem*>(gi);
-      if (!node->isSubflowContainer() || node->isCollapsedSubflow())
-        continue;
-
-      if (node->mapRectToScene(node->nodeRect()).contains(scenePos))
-        return node;
+      bestArea = area;
+      best = node;
     }
   }
-
-  return nullptr;
+  return best;
 }
 
 NodeItem* taskContainerAcceptingDrop(QGraphicsItem* item)

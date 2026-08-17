@@ -993,7 +993,7 @@ void SubflowBlock::paint(QPainter* painter, const QStyleOptionGraphicsItem* styl
 
   paintConnector(painter);
 
-  const QPen borderPen = isSelected() ? QPen(Config::HIGHLIGHT, 4 / baseScale()) : QPen(Config::FOREGROUND, 1.5 / baseScale());
+  const QPen borderPen = isSelected() ? QPen(Config::HIGHLIGHT, 4 / baseScale()) : QPen(kConnectorColor, 1.5 / baseScale());
   painter->setPen(borderPen);
   painter->setBrush(Qt::NoBrush);
   painter->drawRoundedRect(nodeRect().adjusted(0.5, 0.5, -0.5, -0.5), kCornerRadius, kCornerRadius);
