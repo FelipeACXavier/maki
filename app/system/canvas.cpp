@@ -2104,14 +2104,51 @@ void Canvas::onRemoveNode(const QString& flowId, const QString& nodeId)
 // Flow
 void Canvas::populate(const FlowSaveInfo& flow)
 {
-  // First create all the nodes
+  // Nodes are stored flat and reference their container by id, so a child may
+  // appear before it (a node inside a Repeat/Within subflow block is parented to
+  // a block that only exists once its host node is in the scene). Retry until no
+  // further parent can be resolved.
+  QVector<std::shared_ptr<NodeSaveInfo>> pending;
   for (const auto& inode : flow.getnodes())
   {
-    auto node = std::dynamic_pointer_cast<NodeSaveInfo>(inode);
-    // LOG_DEBUG("Creating behavioral node %s with parent \"%s\"", qPrintable(node->getid()), qPrintable(node->getparentId()));
-    auto created = createNode(NodeCreation::Populating, node, node->getposition(), findNodeWithId(node->getparentId()));
-    if (created)
-      LOG_DEBUG("Created node %s %s", qPrintable(node->getid()), qPrintable(created->id()));
+    if (auto node = std::dynamic_pointer_cast<NodeSaveInfo>(inode))
+      pending.append(node);
+  }
+
+  while (!pending.isEmpty())
+  {
+    QVector<std::shared_ptr<NodeSaveInfo>> deferred;
+
+    for (const auto& node : pending)
+    {
+      const QString parentId = node->getparentId();
+      NodeItem* parent = parentId.isEmpty() ? nullptr : findNodeWithId(parentId);
+      if (!parent && !parentId.isEmpty())
+      {
+        deferred.append(node);
+        continue;
+      }
+
+      if (NodeItem* created = createNode(NodeCreation::Populating, node, node->getposition(), parent))
+        LOG_DEBUG("Created node %s %s", qPrintable(node->getid()), qPrintable(created->id()));
+    }
+
+    if (deferred.size() == pending.size())
+    {
+      // The referenced container is gone (stale id from an older save). Load the
+      // nodes flat and drop the dangling reference so it is not written back.
+      for (const auto& node : deferred)
+      {
+        LOG_WARNING("Node %s references missing parent %s; loading it unparented",
+                    qPrintable(node->getid()), qPrintable(node->getparentId()));
+        node->setParentId(QString());
+        if (NodeItem* created = createNode(NodeCreation::Populating, node, node->getposition(), nullptr))
+          LOG_DEBUG("Created node %s %s", qPrintable(node->getid()), qPrintable(created->id()));
+      }
+      break;
+    }
+
+    pending = deferred;
   }
 
   // Then create the transitions between the nodes
@@ -2144,6 +2181,10 @@ void Canvas::populate(const FlowSaveInfo& flow)
 
     // First add the transition to the canvas and then mark it as done
     connection->done(srcConn, dstConn);
+
+    // Endpoints inside a collapsed subflow load hidden; the edge must match.
+    if (!srcConn->isVisible() || !dstConn->isVisible())
+      connection->setVisible(false);
   }
 }
 

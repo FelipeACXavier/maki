@@ -78,6 +78,13 @@ public:
 
   static std::shared_ptr<NodeConfig> synthesizedConfig();
 
+  /**
+   * Id of the block a host owns for @p role. Derived from the host id so that
+   * children saved with this parent id find the same block again on load
+   * (blocks themselves are synthesized, never persisted).
+   */
+  static QString blockIdForOwner(const QString& ownerId, Role role);
+
   /** Create, add to the owner's scene, start, and attach to @p owner. */
   static SubflowBlock* createAttached(NodeItem* owner, Role role);
 
@@ -128,6 +135,7 @@ public:
   QRectF boundingRect() const override;
 
   void applySize(const QSizeF& size) override;
+  void addChild(NodeItem* node, std::shared_ptr<NodeSaveInfo> info) override;
   void childRemoved(NodeItem* child) override;
   VoidResult start() override;
 

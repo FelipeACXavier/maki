@@ -93,7 +93,7 @@ public:
   QVector<std::shared_ptr<IFlow>> events() const;
 
   virtual void addParent(NodeItem* node);
-  void addChild(NodeItem* node, std::shared_ptr<NodeSaveInfo> info);
+  virtual void addChild(NodeItem* node, std::shared_ptr<NodeSaveInfo> info);
   virtual void childRemoved(NodeItem* child);
   /** Clear logical parent pointer (does not notify the former parent). */
   void clearParentNode();

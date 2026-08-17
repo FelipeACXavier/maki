@@ -16,7 +16,6 @@
 #include <QRegularExpressionValidator>
 #include <QSet>
 #include <QStyleOptionGraphicsItem>
-#include <QUuid>
 #include <algorithm>
 #include <cmath>
 
@@ -374,13 +373,23 @@ std::shared_ptr<NodeConfig> SubflowBlock::synthesizedConfig()
   return config;
 }
 
+QString SubflowBlock::blockIdForOwner(const QString& ownerId, Role role)
+{
+  QString suffix = QStringLiteral("::loop");
+  if (role == Role::Do)
+    suffix = QStringLiteral("::do");
+  else if (role == Role::Else)
+    suffix = QStringLiteral("::else");
+  return ownerId + suffix;
+}
+
 SubflowBlock* SubflowBlock::createAttached(NodeItem* owner, Role role)
 {
   if (!owner || !owner->scene())
     return nullptr;
 
   auto info = std::make_shared<NodeSaveInfo>();
-  info->setId(QUuid::createUuid().toString());
+  info->setId(blockIdForOwner(owner->id(), role));
   info->setNodeId(synthesizedConfig()->type);
   info->setSize(QSizeF(kDefaultWidth, kDefaultHeight));
 
@@ -394,6 +403,9 @@ SubflowBlock* SubflowBlock::createAttached(NodeItem* owner, Role role)
   auto* block = new SubflowBlock(info->getid(), info, owner->pos(), synthesizedConfig(), owner, role);
   owner->scene()->addItem(block);
   block->start();
+  // A host nested inside a collapsed block is hidden; its own blocks must follow.
+  if (!owner->isVisible())
+    block->setVisible(false);
   return block;
 }
 
@@ -875,6 +887,16 @@ void SubflowBlock::applySize(const QSizeF& size)
   setLabelSize(newFontSize, mSize);
   updatePortPositions();
   update();
+}
+
+void SubflowBlock::addChild(NodeItem* node, std::shared_ptr<NodeSaveInfo> info)
+{
+  BehaviourNode::addChild(node, info);
+
+  // Children arriving while the contents are hidden (loading a save that was
+  // collapsed) must not be left floating over the canvas.
+  if (node && (mCollapsed || !isVisible()))
+    node->setVisible(false);
 }
 
 void SubflowBlock::childRemoved(NodeItem* child)
