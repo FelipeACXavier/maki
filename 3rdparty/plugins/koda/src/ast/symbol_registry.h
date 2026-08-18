@@ -8,6 +8,7 @@
 
 #include "result.h"
 #include "symbol.h"
+#include "typing/type_reference.h"
 
 namespace koda
 {
@@ -23,10 +24,11 @@ public:
 
   SymbolRegistry();
 
-  void print();
+  void print() const;
   void clear();
 
-  Result<SymbolId> declare(SymbolKind kind, const std::string& name, const Type& type, const Span& span, SymbolId owner = InvalidSymbol);
+  Result<SymbolId> declare(SymbolKind kind, const std::string& name, const types::TypeReference& type, const Span& span,
+                           SymbolId owner = InvalidSymbol);
 
   std::optional<SymbolId> lookup(const std::string& name, SymbolId owner = InvalidSymbol) const;
   std::optional<SymbolId> lookupLocal(const std::string& name, SymbolId owner = InvalidSymbol) const;
@@ -39,7 +41,6 @@ public:
   std::vector<SymbolId> children(SymbolId owner, SymbolKind kind = SymbolKind::Unknown) const;
 
   std::optional<SymbolId> component(const std::string& name) const;
-  std::optional<Type> resolveType(const std::string& name) const;
 
 private:
   Scope& ensureScope(SymbolId owner);

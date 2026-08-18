@@ -4,22 +4,25 @@
 #include <variant>
 #include <vector>
 
+#include "typing/type_reference.h"
+
 namespace koda
 {
 struct Component;
+struct TypeMapping;
 struct Statement;
 struct Argument;
 
 struct Flow;
 struct VarDef;
-struct RosDef;     // trigger/return/abort/error/in/out blocks
-struct ActionDef;  // action/service/topic blocks
+struct RosDef;
+struct ActionDef;
 struct VarsBlock;
 struct StrategyBlock;
 
-struct Strategy;   // fwd
-struct Expr;       // fwd
-struct EventCall;  // fwd
+struct Strategy;
+struct Expr;
+struct EventCall;
 
 extern bool gPrintSpan;
 
@@ -35,6 +38,7 @@ struct Span
 // ---------- Top-level ----------
 struct System
 {
+  std::vector<std::shared_ptr<TypeMapping>> mappings;
   std::vector<std::shared_ptr<Component>> components;
   void print() const;
 };
@@ -68,11 +72,20 @@ struct Argument
   };
 
   Kind kind = Kind::Plain;
-  std::string a;
+  types::TypeReference a;
   std::string b;
   Span span;
 
   std::string toString() const;
+  void print(const std::string& prefix, const bool last) const;
+};
+
+struct TypeMapping
+{
+  koda::types::TypeReference source;
+  std::string destination;
+
+  Span span;
   void print(const std::string& prefix, const bool last) const;
 };
 
@@ -97,7 +110,7 @@ struct Flow
 
 struct VarDef
 {
-  std::string varType;
+  types::TypeReference varType;
   std::string name;
   std::shared_ptr<Expr> init;
   std::shared_ptr<Expr> fallback;
@@ -107,21 +120,11 @@ struct VarDef
 };
 
 // ---------- ROS defs ----------
-struct EventDefComponent
-{
-  // Keep it simple for now; you can structure this later similarly to Strategy/Expr.
-  std::string kind;  // "ros_event", "timeout", ...
-  std::string text;  // raw (or structured fields later)
-
-  void print(const std::string& prefix, const bool last) const;
-};
-
 struct EventDef
 {
   std::string typeName;
   std::string name;
   std::vector<std::shared_ptr<Argument>> args;
-  std::vector<std::shared_ptr<EventDefComponent>> components;
   Span span;
 
   void print(const std::string& prefix, const bool last) const;
@@ -158,11 +161,15 @@ struct ActionDef
     Service,
     Topic
   };
+
   Kind kind;
   std::string label1;  // String
   std::string label2;  // String
   std::vector<std::shared_ptr<RosDef>> rosDefs;
   Span span;
+
+  koda::types::TypeReference consumes;
+  koda::types::TypeReference produces;
 
   std::string toString() const;
   void print(const std::string& prefix, const bool last) const;
@@ -227,14 +234,6 @@ struct Strategy
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
 
-  struct Let
-  {
-    std::string name;
-    std::shared_ptr<EventCall> call;
-
-    void print(const std::string& prefix, const bool last, const Span& span) const;
-  };
-
   struct Within
   {
     int seconds;
@@ -245,28 +244,12 @@ struct Strategy
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
 
-  struct IfElse
-  {
-    std::shared_ptr<Expr> cond;
-    std::shared_ptr<Strategy> a;
-    std::shared_ptr<Strategy> b;
-
-    void print(const std::string& prefix, const bool last, const Span& span) const;
-  };
-
   struct Repeat
   {
     std::shared_ptr<Strategy> a;
     int seconds;
     int iterations;
     std::vector<std::shared_ptr<StrategyHandler>> handlers;
-
-    void print(const std::string& prefix, const bool last, const Span& span) const;
-  };
-
-  struct Guard
-  {
-    std::shared_ptr<Expr> cond;
 
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
@@ -301,9 +284,8 @@ struct Strategy
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
 
-  std::variant<std::shared_ptr<Seq>, std::shared_ptr<Join>, std::shared_ptr<Either>, std::shared_ptr<Let>, std::shared_ptr<Within>,
-               std::shared_ptr<IfElse>, std::shared_ptr<Repeat>, std::shared_ptr<Guard>, std::shared_ptr<End>, std::shared_ptr<Continue>,
-               std::shared_ptr<Ref>, std::shared_ptr<TaskCall>, std::shared_ptr<Paren>>
+  std::variant<std::shared_ptr<Seq>, std::shared_ptr<Join>, std::shared_ptr<Either>, std::shared_ptr<Within>, std::shared_ptr<Repeat>,
+               std::shared_ptr<End>, std::shared_ptr<Continue>, std::shared_ptr<Ref>, std::shared_ptr<TaskCall>, std::shared_ptr<Paren>>
       v;
 
   void print(const std::string& prefix, const bool last) const;
@@ -412,6 +394,7 @@ struct Expr
 
 typedef std::shared_ptr<Component> PComponent;
 typedef std::shared_ptr<Argument> PArgument;
+typedef std::shared_ptr<TypeMapping> PTypeMapping;
 typedef std::shared_ptr<Statement> PStatement;
 typedef std::shared_ptr<StrategyBlock> PStrategyBlock;
 typedef std::shared_ptr<VarsBlock> PVarsBlock;
@@ -420,17 +403,13 @@ typedef std::shared_ptr<ActionDef> PActionDef;
 typedef std::shared_ptr<VarDef> PVarDef;
 typedef std::shared_ptr<Flow> PFlow;
 typedef std::shared_ptr<Strategy> PStrategy;
-typedef std::shared_ptr<EventDefComponent> PEventDefComponent;
 typedef std::shared_ptr<EventDef> PEventDef;
 typedef std::shared_ptr<EventCall> PEventCall;
 typedef std::shared_ptr<Strategy::Seq> PSeq;
 typedef std::shared_ptr<Strategy::Join> PJoin;
 typedef std::shared_ptr<Strategy::Either> PEither;
-typedef std::shared_ptr<Strategy::Let> PLet;
 typedef std::shared_ptr<Strategy::Within> PWithin;
-typedef std::shared_ptr<Strategy::IfElse> PIfElse;
 typedef std::shared_ptr<Strategy::Repeat> PRepeat;
-typedef std::shared_ptr<Strategy::Guard> PGuard;
 typedef std::shared_ptr<Strategy::End> PEnd;
 typedef std::shared_ptr<Strategy::Continue> PContinue;
 typedef std::shared_ptr<Strategy::Ref> PRef;

@@ -8,15 +8,22 @@ namespace koda
 {
 namespace
 {
-bool compatible(const Type& expected, const Type& actual)
+bool compatible(const types::TypeReference& expected, const types::TypeReference& actual)
 {
-  if (!expected.valid() || !actual.valid())
+  if (!expected.isValid() || !actual.isValid())
     return true;
-  if (expected.kind == actual.kind)
+  if (expected.kind() == actual.kind())
     return true;
+
   return expected.isNumeric() && actual.isNumeric();
 }
 }  // namespace
+
+SemanticAnalyzer::SemanticAnalyzer(SymbolRegistry& symbols, types::TypeRegistry& types)
+    : mSymbols(symbols)
+    , mTypeRegistry(types)
+{
+}
 
 VoidResult SemanticAnalyzer::run(const System& system)
 {
@@ -31,7 +38,8 @@ VoidResult SemanticAnalyzer::run(const System& system)
     if (!result.IsSuccess())
       return result;
   }
-  return VoidResult{};
+
+  return VoidResult();
 }
 
 VoidResult SemanticAnalyzer::collectEventSignatures(const System& system)
@@ -61,24 +69,33 @@ VoidResult SemanticAnalyzer::collectEventSignatures(const System& system)
       }
     }
   }
-  return VoidResult{};
+
+  return VoidResult();
 }
 
 VoidResult SemanticAnalyzer::collectRosSignature(const PRosDef& ros, SymbolId owner)
 {
   if (!ros || !ros->def)
-    return VoidResult{};
+    return VoidResult();
 
   const auto event = mSymbols.lookupChild(owner, ros->def->name);
   if (!event)
     return VoidResult::Failed(std::format("Unknown event '{}'", ros->def->name));
 
-  std::vector<Type> args;
+  std::vector<types::TypeReference> args;
   for (const auto& arg : ros->def->args)
-    args.push_back(mSymbols.resolveType(arg->a).value_or(Type::Unknown()));
+  {
+    types::TypeReference typeRef;
+    const auto* typeDef = mTypeRegistry.findByName(arg->a.toString());
+    if (typeDef)
+      typeRef = typeDef->toReference();
+
+    args.push_back(typeRef);
+  }
 
   mModel.eventArguments[*event] = std::move(args);
-  return VoidResult{};
+
+  return VoidResult();
 }
 
 VoidResult SemanticAnalyzer::analyzeComponent(const PComponent& component)
@@ -90,11 +107,19 @@ VoidResult SemanticAnalyzer::analyzeComponent(const PComponent& component)
   // Resolve argument types now that pass 1 has registered all components.
   for (const auto& arg : component->args)
   {
-    auto symbolId = mSymbols.lookupChild(*owner, arg->a);
+    auto symbolId = mSymbols.lookupChild(*owner, arg->a.toString());
     if (!symbolId)
       continue;
+
     if (auto* symbol = mSymbols.get(*symbolId))
-      symbol->type = mSymbols.resolveType(arg->b).value_or(Type::Unknown());
+    {
+      types::TypeReference typeRef;
+      const auto* typeDef = mTypeRegistry.findByName(arg->a.toString());
+      if (typeDef)
+        typeRef = typeDef->toReference();
+
+      symbol->type = typeRef;
+    }
   }
 
   for (const auto& statement : component->statements)
@@ -103,7 +128,7 @@ VoidResult SemanticAnalyzer::analyzeComponent(const PComponent& component)
     if (!result.IsSuccess())
       return result;
   }
-  return VoidResult{};
+  return VoidResult();
 }
 
 VoidResult SemanticAnalyzer::analyzeStatement(const PStatement& statement, SymbolId owner)
@@ -137,13 +162,13 @@ VoidResult SemanticAnalyzer::analyzeStatement(const PStatement& statement, Symbo
         return result;
     }
   }
-  return VoidResult{};
+  return VoidResult();
 }
 
 VoidResult SemanticAnalyzer::analyzeStrategy(const PStrategy& strategy, SymbolId owner)
 {
   if (!strategy)
-    return VoidResult{};
+    return VoidResult();
 
   if (auto p = std::get_if<PSeq>(&strategy->v); p && *p)
   {
@@ -172,22 +197,6 @@ VoidResult SemanticAnalyzer::analyzeStrategy(const PStrategy& strategy, SymbolId
         return r;
     }
   }
-  else if (auto p = std::get_if<PLet>(&strategy->v); p && *p)
-  {
-    auto call = resolveCall((*p)->call, owner);
-    if (!call.IsSuccess())
-      return VoidResult::Failed(call.ErrorMessage());
-    mModel.calls[(*p)->call.get()] = call.Value();
-
-    // Koda currently has component-level flow scope; locals are registered here so later
-    // sequence elements can resolve them. If lexical blocks are added, make ScopeId separate from SymbolId.
-    if (!mSymbols.lookupLocal((*p)->name, owner))
-    {
-      auto local = mSymbols.declare(SymbolKind::Local, (*p)->name, call.Value().returnType, strategy->span, owner);
-      if (!local.IsSuccess())
-        return VoidResult::Failed(local.ErrorMessage());
-    }
-  }
   else if (auto p = std::get_if<PWithin>(&strategy->v); p && *p)
   {
     auto a = analyzeStrategy((*p)->a, owner);
@@ -203,23 +212,6 @@ VoidResult SemanticAnalyzer::analyzeStrategy(const PStrategy& strategy, SymbolId
         return r;
     }
   }
-  else if (auto p = std::get_if<PIfElse>(&strategy->v); p && *p)
-  {
-    auto cond = analyzeExpr((*p)->cond, owner);
-    if (!cond.IsSuccess())
-      return VoidResult::Failed(cond.ErrorMessage());
-    if (cond.Value().kind != TypeKind::Bool && cond.Value().kind != TypeKind::Unknown)
-      return VoidResult::Failed(std::format("if condition must be boolean at {}", strategy->span.toString()));
-    auto a = analyzeStrategy((*p)->a, owner);
-    if (!a.IsSuccess())
-      return a;
-    if ((*p)->b)
-    {
-      auto b = analyzeStrategy((*p)->b, owner);
-      if (!b.IsSuccess())
-        return b;
-    }
-  }
   else if (auto p = std::get_if<PRepeat>(&strategy->v); p && *p)
   {
     auto a = analyzeStrategy((*p)->a, owner);
@@ -231,14 +223,6 @@ VoidResult SemanticAnalyzer::analyzeStrategy(const PStrategy& strategy, SymbolId
       if (!r.IsSuccess())
         return r;
     }
-  }
-  else if (auto p = std::get_if<PGuard>(&strategy->v); p && *p)
-  {
-    auto cond = analyzeExpr((*p)->cond, owner);
-    if (!cond.IsSuccess())
-      return VoidResult::Failed(cond.ErrorMessage());
-    if (cond.Value().kind != TypeKind::Bool && cond.Value().kind != TypeKind::Unknown)
-      return VoidResult::Failed(std::format("guard condition must be boolean at {}", strategy->span.toString()));
   }
   else if (auto p = std::get_if<PRef>(&strategy->v); p && *p)
   {
@@ -266,13 +250,13 @@ VoidResult SemanticAnalyzer::analyzeStrategy(const PStrategy& strategy, SymbolId
     return analyzeStrategy((*p)->a, owner);
   }
 
-  return VoidResult{};
+  return VoidResult();
 }
 
 VoidResult SemanticAnalyzer::analyzeHandler(const PStrategyHandler& handler, SymbolId owner)
 {
   if (!handler)
-    return VoidResult{};
+    return VoidResult();
   if (handler->emitter)
   {
     auto call = resolveCall(handler->emitter, owner);
@@ -282,7 +266,7 @@ VoidResult SemanticAnalyzer::analyzeHandler(const PStrategyHandler& handler, Sym
   }
   if (handler->body)
     return analyzeStrategy(handler->body, owner);
-  return VoidResult{};
+  return VoidResult();
 }
 
 Result<ResolvedCall> SemanticAnalyzer::resolveCall(const PEventCall& call, SymbolId owner)
@@ -295,6 +279,7 @@ Result<ResolvedCall> SemanticAnalyzer::resolveCall(const PEventCall& call, Symbo
     auto receiverResult = resolveValue(call->name, owner, call->span);
     if (!receiverResult.IsSuccess())
       return Result<ResolvedCall>::Failed(receiverResult.ErrorMessage());
+
     const auto receiver = receiverResult.Value();
     const auto* receiverSymbol = mSymbols.get(receiver);
     if (!receiverSymbol)
@@ -304,6 +289,27 @@ Result<ResolvedCall> SemanticAnalyzer::resolveCall(const PEventCall& call, Symbo
     if (!componentResult.IsSuccess())
       return Result<ResolvedCall>::Failed(componentResult.ErrorMessage());
 
+    const auto component = componentResult.Value();
+
+    // Find the trigger component of this capability
+    Symbol triggerEventSymbol;
+    for (const auto eventId : mSymbols.children(component, SymbolKind::Event))
+    {
+      const auto* eventSymbol = mSymbols.get(eventId);
+      if (!eventSymbol)
+        continue;
+
+      LOG_DEBUG("Event for {}: {} {}", call->name, eventSymbol->name, eventSymbol->type.toString());
+      if (eventSymbol->type.toString() == "Trigger")
+      {
+        triggerEventSymbol = *eventSymbol;
+        break;
+      }
+    }
+
+    if (triggerEventSymbol.name.empty())
+      return Result<ResolvedCall>::Failed("Could not find trigger event for: {}", call->name);
+
     // Unqualified invocation means the capability's trigger/default action.
     for (const auto& arg : call->args)
     {
@@ -311,12 +317,13 @@ Result<ResolvedCall> SemanticAnalyzer::resolveCall(const PEventCall& call, Symbo
       if (!type.IsSuccess())
         return Result<ResolvedCall>::Failed(type.ErrorMessage());
     }
-    return ResolvedCall{ResolvedCallKind::CapabilityTrigger, receiver, componentResult.Value(), Type::Void()};
+    return ResolvedCall{ResolvedCallKind::CapabilityTrigger, receiver, triggerEventSymbol.id, triggerEventSymbol.type};
   }
 
   auto receiverResult = resolveValue(call->receiver, owner, call->span);
   if (!receiverResult.IsSuccess())
     return Result<ResolvedCall>::Failed(receiverResult.ErrorMessage());
+
   const auto receiver = receiverResult.Value();
   const auto* receiverSymbol = mSymbols.get(receiver);
   if (!receiverSymbol)
@@ -325,54 +332,59 @@ Result<ResolvedCall> SemanticAnalyzer::resolveCall(const PEventCall& call, Symbo
   auto componentResult = resolveComponentType(*receiverSymbol, call->span);
   if (!componentResult.IsSuccess())
     return Result<ResolvedCall>::Failed(componentResult.ErrorMessage());
-  const auto component = componentResult.Value();
 
+  const auto component = componentResult.Value();
   const auto event = mSymbols.lookupChild(component, call->name);
   const auto* eventSymbol = event ? mSymbols.get(*event) : nullptr;
   if (!eventSymbol || eventSymbol->kind != SymbolKind::Event)
-    return Result<ResolvedCall>::Failed(std::format("Component '{}' has no event '{}' at {}", mSymbols.get(component)->name, call->name, call->span.toString()));
+    return Result<ResolvedCall>::Failed(
+        std::format("Component '{}' has no event '{}' at {}", mSymbols.get(component)->name, call->name, call->span.toString()));
 
   const auto signature = mModel.eventArguments.find(*event);
   if (signature != mModel.eventArguments.end() && signature->second.size() != call->args.size())
-    return Result<ResolvedCall>::Failed(std::format("Event '{}.{}' expects {} arguments, got {} at {}", call->receiver, call->name, signature->second.size(), call->args.size(), call->span.toString()));
+    return Result<ResolvedCall>::Failed(std::format("Event '{}.{}' expects {} arguments, got {} at {}", call->receiver, call->name,
+                                                    signature->second.size(), call->args.size(), call->span.toString()));
 
   for (std::size_t i = 0; i < call->args.size(); ++i)
   {
     auto actual = analyzeExpr(call->args[i], owner);
     if (!actual.IsSuccess())
       return Result<ResolvedCall>::Failed(actual.ErrorMessage());
+
     if (signature != mModel.eventArguments.end() && !compatible(signature->second[i], actual.Value()))
-      return Result<ResolvedCall>::Failed(std::format("Argument {} of '{}.{}' has incompatible type at {}. Expected {} but got {}", i + 1, call->receiver, call->name, call->args[i]->span.toString(), signature->second[i].toString(), actual.Value().toString()));
+      return Result<ResolvedCall>::Failed(std::format("Argument {} of '{}.{}' has incompatible type at {}. Expected {} but got {}", i + 1,
+                                                      call->receiver, call->name, call->args[i]->span.toString(), signature->second[i].toString(),
+                                                      actual.Value().toString()));
   }
 
   return ResolvedCall{ResolvedCallKind::Event, receiver, *event, eventSymbol->type};
 }
 
-Result<Type> SemanticAnalyzer::analyzeExpr(const PExpr& expr, SymbolId owner)
+Result<types::TypeReference> SemanticAnalyzer::analyzeExpr(const PExpr& expr, SymbolId owner)
 {
   if (!expr)
-    return Type::Unknown();
-  Type type = Type::Unknown();
+    return types::TypeReference{};
 
+  types::TypeReference type;
   if (std::holds_alternative<PStr>(expr->v))
-    type = Type::String();
+    type = types::TypeReference::createString();
   else if (std::holds_alternative<PInt>(expr->v))
-    type = Type::Int();
+    type = types::TypeReference::createInt();
   else if (std::holds_alternative<PFloat>(expr->v))
-    type = Type::Float();
+    type = types::TypeReference::createReal();
   else if (auto p = std::get_if<PId>(&expr->v); p && *p)
   {
     auto id = resolveValue((*p)->value, owner, expr->span);
     if (!id.IsSuccess())
-      return Result<Type>::Failed(id.ErrorMessage());
+      return Result<types::TypeReference>::Failed(id.ErrorMessage());
     const auto* symbol = mSymbols.get(id.Value());
-    type = symbol ? symbol->type : Type::Unknown();
+    type = symbol ? symbol->type : types::TypeReference{};
   }
   else if (auto p = std::get_if<PCall>(&expr->v); p && *p)
   {
     auto call = resolveCall((*p)->value, owner);
     if (!call.IsSuccess())
-      return Result<Type>::Failed(call.ErrorMessage());
+      return Result<types::TypeReference>::Failed(call.ErrorMessage());
     mModel.calls[(*p)->value.get()] = call.Value();
     type = call.Value().returnType;
   }
@@ -381,8 +393,8 @@ Result<Type> SemanticAnalyzer::analyzeExpr(const PExpr& expr, SymbolId owner)
     auto inner = analyzeExpr((*p)->value, owner);
     if (!inner.IsSuccess())
       return inner;
-    if (!inner.Value().isNumeric() && inner.Value().kind != TypeKind::Unknown)
-      return Result<Type>::Failed(std::format("Unary '-' requires a numeric operand at {}", expr->span.toString()));
+    if (!inner.Value().isNumeric() && inner.Value().kind() != types::TypeReferenceKind::Unknown)
+      return Result<types::TypeReference>::Failed(std::format("Unary '-' requires a numeric operand at {}", expr->span.toString()));
     type = inner.Value();
   }
   else if (auto p = std::get_if<PNot>(&expr->v); p && *p)
@@ -390,19 +402,21 @@ Result<Type> SemanticAnalyzer::analyzeExpr(const PExpr& expr, SymbolId owner)
     auto inner = analyzeExpr((*p)->value, owner);
     if (!inner.IsSuccess())
       return inner;
-    type = Type::Bool();
+    type = types::TypeReference::createBool();
   }
   else if (auto p = std::get_if<PBinOp>(&expr->v); p && *p)
   {
     auto lhs = analyzeExpr((*p)->a, owner);
     if (!lhs.IsSuccess())
       return lhs;
-    Type rhsType = Type::Unknown();
+
+    types::TypeReference rhsType;
     if ((*p)->b)
     {
       auto rhs = analyzeExpr((*p)->b, owner);
       if (!rhs.IsSuccess())
         return rhs;
+
       rhsType = rhs.Value();
     }
 
@@ -417,15 +431,19 @@ Result<Type> SemanticAnalyzer::analyzeExpr(const PExpr& expr, SymbolId owner)
       case K::LessEqual:
       case K::Disjunction:
       case K::Conjunction:
-        type = Type::Bool();
+        type = types::TypeReference::createBool();
         break;
       case K::Addition:
       case K::Subtraction:
       case K::Multiplication:
       case K::Division:
-        if ((!lhs.Value().isNumeric() || !rhsType.isNumeric()) && lhs.Value().kind != TypeKind::Unknown && rhsType.kind != TypeKind::Unknown)
-          return Result<Type>::Failed(std::format("Arithmetic operator requires numeric operands at {}", expr->span.toString()));
-        type = lhs.Value().kind == TypeKind::Float || rhsType.kind == TypeKind::Float ? Type::Float() : Type::Int();
+        if ((!lhs.Value().isNumeric() || !rhsType.isNumeric()) && lhs.Value().kind() != types::TypeReferenceKind::Unknown &&
+            rhsType.kind() != types::TypeReferenceKind::Unknown)
+          return Result<types::TypeReference>::Failed(std::format("Arithmetic operator requires numeric operands at {}", expr->span.toString()));
+
+        type = types::isFloatingPoint(lhs.Value().primitiveKind()) || types::isFloatingPoint(rhsType.primitiveKind())
+                   ? types::TypeReference::createReal()
+                   : types::TypeReference::createInt();
         break;
       default:
         type = lhs.Value();
@@ -459,8 +477,12 @@ Result<SymbolId> SemanticAnalyzer::resolveComponentType(const Symbol& value, con
   if (value.kind == SymbolKind::Capability)
     return value.id;
 
-  if (value.type.kind == TypeKind::Component && value.type.symbol != InvalidSymbol)
-    return value.type.symbol;
+  if (value.type.isNamed())
+  {
+    auto named = value.type.namedType();
+    if (named.id && named.id.value() != std::to_string(InvalidSymbol))
+      return std::stoul(named.id.value());
+  }
 
   return Result<SymbolId>::Failed(std::format("'{}' is not a capability/component at {}", value.name, span.toString()));
 }

@@ -115,7 +115,9 @@ struct TypeDefinition
                                      const std::string& id = "");
   static TypeDefinition createMap(const std::string& name, const QualifiedName& keyType, const QualifiedName& fieldType, const std::string& id = "");
   static TypeDefinition createList(const std::string& name, const QualifiedName& listType, const std::string& id = "");
-  static TypeDefinition createEnum(const std::string& name, EnumUnderlyingKind kind, const std::map<std::string, std::optional<std::string>>& fields,
+  static TypeDefinition createEnum(const std::string& name, EnumUnderlyingKind kind, const std::vector<EnumValueDefinition>& values,
+                                   const std::string& id = "");
+  static TypeDefinition createEnum(const std::string& name, EnumUnderlyingKind kind, const std::map<std::string, std::optional<std::string>>& values,
                                    const std::string& id = "");
 
   // Performs validation that only requires one definition.

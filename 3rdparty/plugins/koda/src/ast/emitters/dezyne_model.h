@@ -143,14 +143,16 @@ class Model
 {
 public:
   void clear();
+  void print() const;
 
-  SymbolId declareComponent(std::string name, std::string fileName, Provenance origin = {}, bool helper = false, SymbolId parent = InvalidSymbol);
+  SymbolId declareComponent(const std::string& name, const std::string& fileName, Provenance origin = {}, bool helper = false,
+                            SymbolId parent = InvalidSymbol);
   SymbolId declarePort(SymbolId component, std::string name, PortDirection direction, PortProtocol protocol, Provenance origin = {});
   SymbolId declareInstance(SymbolId component, std::string name, std::string typeName, Provenance origin = {});
   SymbolId declareConnection(SymbolId component, std::string name, std::string lhs, std::string rhs, Provenance origin = {});
 
-  Component* component(SymbolId symbol);
-  const Component* component(SymbolId symbol) const;
+  Component* getComponent(SymbolId symbol);
+  const Component* getComponent(SymbolId symbol) const;
   Component* findComponent(std::string_view name);
   const Component* findComponent(std::string_view name) const;
   const Port* findPort(SymbolId component, std::string_view name) const;

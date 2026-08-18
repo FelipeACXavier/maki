@@ -6,6 +6,9 @@
 #include <string>
 
 #include "ast.h"
+#include "typing/helpers.h"
+#include "typing/type_reference.h"
+#include "typing/types.h"
 
 namespace koda
 {
@@ -24,101 +27,12 @@ enum class SymbolKind
   Local
 };
 
-enum class TypeKind
-{
-  Unknown = 0,
-  Void,
-  Bool,
-  Int,
-  Float,
-  String,
-  Component,
-  Custom
-};
-
-struct Type
-{
-  TypeKind kind = TypeKind::Unknown;
-  std::string name;
-  SymbolId symbol = InvalidSymbol;
-
-  bool valid() const
-  {
-    return kind != TypeKind::Unknown;
-  }
-
-  bool isNumeric() const
-  {
-    return kind == TypeKind::Int || kind == TypeKind::Float;
-  }
-
-  std::string toString() const
-  {
-    if (kind == TypeKind::Void)
-      return "Void";
-    if (kind == TypeKind::Bool)
-      return "Bool";
-    if (kind == TypeKind::Int)
-      return "Int";
-    if (kind == TypeKind::Float)
-      return "Float";
-    if (kind == TypeKind::String)
-      return "String";
-    if (kind == TypeKind::Component)
-      return std::format("Component ({})", name);
-    if (kind == TypeKind::Custom)
-      return std::format("Custom ({})", name);
-
-    return "Unknown";
-  }
-
-  static Type Unknown()
-  {
-    return {};
-  }
-
-  static Type Void()
-  {
-    return {TypeKind::Void, "void", InvalidSymbol};
-  }
-
-  static Type Bool()
-  {
-    return {TypeKind::Bool, "bool", InvalidSymbol};
-  }
-
-  static Type Int()
-  {
-    return {TypeKind::Int, "int", InvalidSymbol};
-  }
-
-  static Type Float()
-  {
-    return {TypeKind::Float, "float", InvalidSymbol};
-  }
-
-  static Type String()
-  {
-    return {TypeKind::String, "string", InvalidSymbol};
-  }
-
-  static Type Component(std::string name, SymbolId symbol)
-  {
-    return {TypeKind::Component, std::move(name), symbol};
-  }
-
-  static Type Custom(std::string name)
-  {
-    return {TypeKind::Custom, std::move(name), InvalidSymbol};
-  }
-};
-
 struct Symbol
 {
   SymbolId id = InvalidSymbol;
   SymbolKind kind = SymbolKind::Unknown;
   std::string name;
-  Type type;
+  types::TypeReference type;
   Span span;
   SymbolId owner = InvalidSymbol;
 };

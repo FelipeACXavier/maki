@@ -157,13 +157,22 @@ TypeDefinition TypeDefinition::createEnum(const std::string& name, EnumUnderlyin
     });
   }
 
-  TypeDefinition type{
+  return TypeDefinition{
       .id = id.empty() ? qname.toId() : id,
       .name = qname,
       .data = EnumTypeDefinition{.underlyingType = kind, .values = values},
   };
+}
 
-  return type;
+TypeDefinition TypeDefinition::createEnum(const std::string& name, EnumUnderlyingKind kind, const std::vector<EnumValueDefinition>& values,
+                                          const std::string& id)
+{
+  const auto qname = QualifiedName(name);
+  return TypeDefinition{
+      .id = id.empty() ? qname.toId() : id,
+      .name = qname,
+      .data = EnumTypeDefinition{.underlyingType = kind, .values = values},
+  };
 }
 
 TypeKind TypeDefinition::kind() const

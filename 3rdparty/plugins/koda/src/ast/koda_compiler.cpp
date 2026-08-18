@@ -42,10 +42,12 @@ VoidResult Compiler::parse(const CompilerOptions& options)
   {
     for (const auto& err : errorListener.errors)
       LOG_WARNING(err);
+
     return VoidResult::Failed("Failed to parse input file");
   }
 
-  koda::CST2AST visitor;
+  mTypeRegistry = std::make_shared<koda::types::TypeRegistry>();
+  koda::CST2AST visitor(mTypeRegistry, &errorListener);
   try
   {
     mAST = std::any_cast<System>(visitor.build(tree));
@@ -58,6 +60,14 @@ VoidResult Compiler::parse(const CompilerOptions& options)
   } catch (const std::runtime_error& e)
   {
     return VoidResult::Failed(std::string("Failed to build AST: ") + e.what());
+  }
+
+  if (errorListener.hasErrors())
+  {
+    for (const auto& err : errorListener.errors)
+      LOG_WARNING(err);
+
+    return VoidResult::Failed("Failed to build AST");
   }
 
   if (mOptions.verbose > 0)
@@ -91,7 +101,7 @@ VoidResult Compiler::runFrontend()
 {
   // Populate the symbol registry with the necessary information for lookup later, e.g., capabilities, flows,
   // tasks, args... Basically, anything that can be references later
-  DeclarationPass declarations(mSymbols);
+  DeclarationPass declarations(mSymbols, *mTypeRegistry.get());
   auto declared = declarations.run(mAST);
   if (!declared.IsSuccess())
     return declared;
@@ -99,7 +109,7 @@ VoidResult Compiler::runFrontend()
   // mSymbols.print();
 
   // With the registry created, we can verify if the semantics of the KODA program make sense
-  SemanticAnalyzer semantics(mSymbols);
+  SemanticAnalyzer semantics(mSymbols, *mTypeRegistry.get());
   auto analyzed = semantics.run(mAST);
   if (!analyzed.IsSuccess())
     return analyzed;
@@ -178,6 +188,7 @@ std::vector<std::string> Compiler::generatedFiles() const
 
 void Compiler::printAST() const
 {
+  mTypeRegistry->print();
   mAST.print();
 }
 

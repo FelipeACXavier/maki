@@ -12,6 +12,7 @@
 #include "result.h"
 #include "semantic_analyzer.h"
 #include "symbol_registry.h"
+#include "typing/type_registry.h"
 
 namespace koda
 {
@@ -45,14 +46,17 @@ public:
   {
     return mAST;
   }
+
   const SymbolRegistry& getSymbols() const
   {
     return mSymbols;
   }
+
   const SemanticModel& getSemantics() const
   {
     return mSemantics;
   }
+
   const ir::Program& getIR() const
   {
     return mIR;
@@ -79,6 +83,7 @@ private:
   SemanticModel mSemantics;
   ir::Program mIR;
 
+  std::shared_ptr<types::TypeRegistry> mTypeRegistry;
   std::vector<std::shared_ptr<Emitter>> mEmitters;
   std::map<std::string, std::shared_ptr<KodaPlugin>> mPlugins;
   std::vector<std::string> mGeneratedFiles;

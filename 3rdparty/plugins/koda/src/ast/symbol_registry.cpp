@@ -18,7 +18,7 @@ void SymbolRegistry::clear()
   mScopes.emplace(InvalidSymbol, Scope{InvalidSymbol, InvalidSymbol, {}});
 }
 
-void SymbolRegistry::print()
+void SymbolRegistry::print() const
 {
   LOG_DEBUG("Symbol register:");
   for (const auto& s : mSymbols)
@@ -31,19 +31,25 @@ void SymbolRegistry::print()
   }
 }
 
-Result<SymbolId> SymbolRegistry::declare(SymbolKind kind, const std::string& name, const Type& type, const Span& span, SymbolId owner)
+Result<SymbolId> SymbolRegistry::declare(SymbolKind kind, const std::string& name, const types::TypeReference& type, const Span& span, SymbolId owner)
 {
+  LOG_DEBUG("Declaring {} with type: {} and owner: {}", name, type.toString(), owner);
+
   auto& s = ensureScope(owner);
   if (s.symbols.contains(name))
   {
     const auto previous = s.symbols.at(name);
     const auto* previousSymbol = get(previous);
-    return Result<SymbolId>::Failed(
-        std::format("Duplicate {} '{}'; previous declaration at {}", toString(kind), name, previousSymbol ? previousSymbol->span.toString() : "unknown location"));
+    return Result<SymbolId>::Failed(std::format("Duplicate {} '{}'; previous declaration at {}", toString(kind), name,
+                                                previousSymbol ? previousSymbol->span.toString() : "unknown location"));
   }
 
   const auto id = static_cast<SymbolId>(mSymbols.size());
-  mSymbols.push_back(Symbol{id, kind, name, type, span, owner});
+  auto resolvedType = type;
+  if (type.isNamed() && !type.namedType().id.has_value())
+    resolvedType = types::TypeReference::named(type.namedType().name, std::to_string(owner));
+
+  mSymbols.push_back(Symbol{id, kind, name, resolvedType, span, owner});
   s.symbols.emplace(name, id);
 
   if (kind == SymbolKind::Task || kind == SymbolKind::Capability)
@@ -57,9 +63,11 @@ std::optional<SymbolId> SymbolRegistry::lookupLocal(const std::string& name, Sym
   auto it = mScopes.find(owner);
   if (it == mScopes.end())
     return std::nullopt;
+
   auto symbolIt = it->second.symbols.find(name);
   if (symbolIt == it->second.symbols.end())
     return std::nullopt;
+
   return symbolIt->second;
 }
 
@@ -128,23 +136,6 @@ std::optional<SymbolId> SymbolRegistry::component(const std::string& name) const
   if (!symbol || (symbol->kind != SymbolKind::Task && symbol->kind != SymbolKind::Capability))
     return std::nullopt;
   return id;
-}
-
-std::optional<Type> SymbolRegistry::resolveType(const std::string& name) const
-{
-  if (name == "int" || name == "integer")
-    return Type::Int();
-  if (name == "float" || name == "real" || name == "double")
-    return Type::Float();
-  if (name == "string" || name == "str")
-    return Type::String();
-  if (name == "bool" || name == "boolean")
-    return Type::Bool();
-
-  if (auto c = component(name))
-    return Type::Component(name, *c);
-
-  return Type::Custom(name);
 }
 
 SymbolRegistry::Scope& SymbolRegistry::ensureScope(SymbolId owner)

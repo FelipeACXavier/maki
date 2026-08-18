@@ -40,6 +40,7 @@ enum class HandlerKind
 };
 enum class CallKind
 {
+  Unknown = 0,
   CapabilityTrigger,
   Event
 };
@@ -56,7 +57,7 @@ struct Argument
 {
   SymbolId symbol = InvalidSymbol;
   std::string name;
-  Type type;
+  types::TypeReference type;
   ArgumentMode mode = ArgumentMode::Plain;
   Span span;
 
@@ -89,7 +90,7 @@ struct Expression
   struct Literal
   {
     std::string text;
-    Type type;
+    types::TypeReference type;
   };
 
   struct Reference
@@ -116,7 +117,7 @@ struct Expression
   };
 
   std::variant<Literal, Reference, CallExpr, Unary, Binary> value;
-  Type type;
+  types::TypeReference type;
   Span span;
 };
 
@@ -145,12 +146,6 @@ struct Strategy
     std::vector<PStrategy> items;
   };
 
-  struct Let
-  {
-    SymbolId symbol = InvalidSymbol;
-    Call call;
-  };
-
   struct Within
   {
     int seconds = 0;
@@ -159,24 +154,12 @@ struct Strategy
     std::vector<PHandler> handlers;
   };
 
-  struct IfElse
-  {
-    PExpression condition;
-    PStrategy thenBranch;
-    PStrategy elseBranch;
-  };
-
   struct Repeat
   {
     int seconds = 0;
     int iterations = 0;
     PStrategy body;
     std::vector<PHandler> handlers;
-  };
-
-  struct Guard
-  {
-    PExpression condition;
   };
 
   struct End
@@ -198,7 +181,7 @@ struct Strategy
     std::vector<PHandler> handlers;
   };
 
-  std::variant<Sequence, Join, Either, Let, Within, IfElse, Repeat, Guard, End, Continue, FlowRef, TaskCall> value;
+  std::variant<Sequence, Join, Either, Within, Repeat, End, Continue, FlowRef, TaskCall> value;
   Span span;
 };
 
@@ -206,7 +189,7 @@ struct Variable
 {
   SymbolId symbol = InvalidSymbol;
   std::string name;
-  Type type;
+  types::TypeReference type;
   PExpression initial;
   PExpression fallback;
   Span span;
@@ -217,7 +200,7 @@ struct Event
   SymbolId symbol = InvalidSymbol;
   EventKind kind = EventKind::Trigger;
   std::string name;
-  Type type;
+  types::TypeReference type;
   std::vector<Argument> arguments;
   Span span;
 

@@ -61,6 +61,13 @@ public:
   static TypeReference optional(TypeReference valueType);
   static TypeReference map(TypeReference keyType, TypeReference valueType);
 
+  static TypeReference createVoid();
+  static TypeReference createBool();
+  static TypeReference createInt();
+  static TypeReference createUint();
+  static TypeReference createReal();
+  static TypeReference createString();
+
   TypeReferenceKind kind() const;
 
   bool isPrimitive() const;
@@ -69,6 +76,7 @@ public:
   bool isOptional() const;
   bool isMap() const;
   bool isValid() const;
+  bool isNumeric() const;
 
   PrimitiveKind primitiveKind() const;
   const Named& namedType() const;

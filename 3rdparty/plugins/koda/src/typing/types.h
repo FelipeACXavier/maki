@@ -44,6 +44,7 @@ enum class PrimitiveKind
 
 enum class TypeKind
 {
+  Unknown = 0,
   Primitive,
   Record,
   Enum,

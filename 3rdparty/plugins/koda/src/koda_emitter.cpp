@@ -59,9 +59,7 @@ VoidResult KodaEmitter::emitTask(const koda::Component& component, std::stringst
   RETURN_ON_FAILURE(emitDefArguments(component.args, ss));
   ss << ") {\n";
   for (const auto& actions : component.statements)
-  {
     RETURN_ON_FAILURE(emitStatement(*actions, ss, INDENT));
-  }
   ss << "}\n";
 
   return VoidResult();
@@ -73,9 +71,7 @@ VoidResult KodaEmitter::emitCapability(const koda::Component& component, std::st
   RETURN_ON_FAILURE(emitDefArguments(component.args, ss));
   ss << ") {\n";
   for (const auto& actions : component.statements)
-  {
     RETURN_ON_FAILURE(emitStatement(*actions, ss, INDENT));
-  }
   ss << "}\n";
   return VoidResult();
 }
@@ -94,9 +90,7 @@ VoidResult KodaEmitter::emitStrategyBlock(const koda::StrategyBlock& node, std::
 {
   ss << format << "strategy {\n";
   for (auto& flow : node.flows)
-  {
     RETURN_ON_FAILURE(emitFlow(*flow, ss, format + INDENT));
-  }
   ss << format << "}\n";
 
   return VoidResult();
@@ -148,19 +142,14 @@ VoidResult KodaEmitter::emitVarsBlock(const koda::VarsBlock& node, std::stringst
 
   ss << format << "vars {\n";
   for (auto& var : node.vars)
-  {
     RETURN_ON_FAILURE(emitVarDef(*var, ss, format + INDENT));
-  }
   ss << format << "}\n";
   return VoidResult();
 }
 
 VoidResult KodaEmitter::emitVarDef(const koda::VarDef& varDef, std::stringstream& ss, const std::string& format)
 {
-  ss << format << " "
-     << varDef.varType << " "
-     << varDef.name << "_ = "
-     << varDef.name << " : ";
+  ss << format << " " << varDef.varType.toString() << " " << varDef.name << "_ = " << varDef.name << " : ";
 
   RETURN_ON_FAILURE(emitExpression(*varDef.init, ss, format));
 
@@ -400,9 +389,9 @@ VoidResult KodaEmitter::emitDefArguments(const std::vector<std::shared_ptr<Argum
 
     const auto& arg = args[i];
     if (arg->kind == koda::Argument::Kind::Req)
-      ss << arg->a << " req " << arg->b;
+      ss << arg->a.toString() << " req " << arg->b;
     else
-      ss << arg->a << " " << arg->b;
+      ss << arg->a.toString() << " " << arg->b;
   }
 
   return VoidResult();

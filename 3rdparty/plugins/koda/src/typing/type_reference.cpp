@@ -150,6 +150,11 @@ bool TypeReference::isValid() const
   return kind() != TypeReferenceKind::Unknown;
 }
 
+bool TypeReference::isNumeric() const
+{
+  return isPrimitive() && types::isNumeric(primitiveKind());
+}
+
 PrimitiveKind TypeReference::primitiveKind() const
 {
   const auto* value = std::get_if<Primitive>(&root().value);
@@ -202,6 +207,36 @@ TypeReference TypeReference::mapValueType() const
     throw std::logic_error("Type reference is not a map");
 
   return subtree(value->valueNode);
+}
+
+TypeReference TypeReference::createVoid()
+{
+  return TypeReference::primitive(types::PrimitiveKind::Void);
+}
+
+TypeReference TypeReference::createBool()
+{
+  return TypeReference::primitive(types::PrimitiveKind::Bool);
+}
+
+TypeReference TypeReference::createInt()
+{
+  return TypeReference::primitive(types::PrimitiveKind::Int64);
+}
+
+TypeReference TypeReference::createUint()
+{
+  return TypeReference::primitive(types::PrimitiveKind::UInt64);
+}
+
+TypeReference TypeReference::createReal()
+{
+  return TypeReference::primitive(types::PrimitiveKind::Float64);
+}
+
+TypeReference TypeReference::createString()
+{
+  return TypeReference::primitive(types::PrimitiveKind::String);
 }
 
 std::string TypeReference::toString() const

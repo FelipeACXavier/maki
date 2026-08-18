@@ -90,7 +90,8 @@ void TypeEditor::createRecord()
 
 void TypeEditor::createEnum()
 {
-  createDefinition(koda::types::TypeDefinition::createEnum(createUniqueTypeName("Enum"), koda::types::EnumUnderlyingKind::Int32, {},
+  createDefinition(koda::types::TypeDefinition::createEnum(createUniqueTypeName("Enum"), koda::types::EnumUnderlyingKind::Int32,
+                                                           std::vector<koda::types::EnumValueDefinition>{},
                                                            QUuid::createUuid().toString().toStdString()));
 }
 
@@ -812,24 +813,16 @@ void TypeEditor::reloadTypes()
   const auto& registry = TypeRegistry::instance();
   for (const auto* type : registry.allTypes())
   {
+    QTreeWidgetItem* item;
     if (registry.isBuiltin(*type))
-    {
-      // Built-ins
-      auto* item = new QTreeWidgetItem(builtinRoot);
-      item->setText(0, QString::fromStdString(type->name.name));  // Use only the actual name for built-in types
-      item->setData(0, QualifiedNameRole, QString::fromStdString(type->name.toString()));
-      item->setData(0, IdRole, QString::fromStdString(type->id));
-      item->setIcon(0, typeToIcon(*type));
-    }
+      item = new QTreeWidgetItem(builtinRoot);
     else
-    {
-      // User types
-      auto* item = new QTreeWidgetItem(projectRoot);
-      item->setText(0, QString::fromStdString(type->name.toString()));
-      item->setData(0, QualifiedNameRole, QString::fromStdString(type->name.toString()));
-      item->setData(0, IdRole, QString::fromStdString(type->id));
-      item->setIcon(0, typeToIcon(*type));
-    }
+      item = new QTreeWidgetItem(projectRoot);
+
+    item->setText(0, QString::fromStdString(type->name.toString()));
+    item->setData(0, QualifiedNameRole, QString::fromStdString(type->name.toString()));
+    item->setData(0, IdRole, QString::fromStdString(type->id));
+    item->setIcon(0, typeToIcon(*type));
   }
 
   mTypeTree->sortItems(0, Qt::AscendingOrder);

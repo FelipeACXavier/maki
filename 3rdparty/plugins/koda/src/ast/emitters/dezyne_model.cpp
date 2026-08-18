@@ -10,8 +10,7 @@ namespace
 {
 bool sameSpan(const Span& a, const Span& b)
 {
-  return a.lineStart == b.lineStart && a.colStart == b.colStart &&
-         a.lineEnd == b.lineEnd && a.colEnd == b.colEnd;
+  return a.lineStart == b.lineStart && a.colStart == b.colStart && a.lineEnd == b.lineEnd && a.colEnd == b.colEnd;
 }
 }  // namespace
 
@@ -22,8 +21,7 @@ void SymbolTable::clear()
   mBySource.clear();
 }
 
-SymbolId SymbolTable::declare(SymbolKind kind, std::string name, std::string qualifiedName,
-                              SymbolId parent, Provenance origin)
+SymbolId SymbolTable::declare(SymbolKind kind, std::string name, std::string qualifiedName, SymbolId parent, Provenance origin)
 {
   if (auto it = mByQualifiedName.find(qualifiedName); it != mByQualifiedName.end())
     return it->second;
@@ -87,11 +85,35 @@ void Model::clear()
   mFiles.clear();
 }
 
-SymbolId Model::declareComponent(std::string name, std::string fileName, Provenance origin, bool helper, SymbolId parent)
+void Model::print() const
+{
+  LOG_DEBUG("Symbols:");
+  for (const auto& s : mSymbols.all())
+  {
+    LOG_DEBUG("  Id: {}", s.id);
+    LOG_DEBUG("  Name: {}", s.name);
+  }
+
+  LOG_DEBUG("Components:");
+  for (const auto& c : mComponents)
+    LOG_DEBUG("  Id: {}", c.fileName);
+
+  LOG_DEBUG("Files:");
+  for (const auto& f : mFiles)
+  {
+    LOG_DEBUG("  Symbol: {}", f.symbol);
+    LOG_DEBUG("  Path: {}", f.path);
+  }
+}
+
+SymbolId Model::declareComponent(const std::string& name, const std::string& fileName, Provenance origin, bool helper, SymbolId parent)
 {
   const auto id = mSymbols.declare(helper ? SymbolKind::HelperComponent : SymbolKind::Component, name, name, parent, origin);
-  if (!component(id))
-    mComponents.push_back(Component{id, std::move(fileName)});
+  if (!getComponent(id))
+    mComponents.push_back(Component{
+        .symbol = id,
+        .fileName = std::move(fileName),
+    });
 
   return id;
 }
@@ -102,7 +124,7 @@ SymbolId Model::declarePort(SymbolId componentId, std::string name, PortDirectio
   const auto qualified = parent ? parent->qualifiedName + "." + name : name;
   const auto id = mSymbols.declare(SymbolKind::Port, std::move(name), qualified, componentId, origin);
 
-  auto* owner = component(componentId);
+  auto* owner = getComponent(componentId);
   if (owner && std::none_of(owner->ports.begin(), owner->ports.end(), [id](const Port& p) { return p.symbol == id; }))
     owner->ports.push_back(Port{id, direction, protocol});
 
@@ -114,7 +136,7 @@ SymbolId Model::declareInstance(SymbolId componentId, std::string name, std::str
   const auto* parent = mSymbols.get(componentId);
   const auto qualified = parent ? parent->qualifiedName + "." + name : name;
   const auto id = mSymbols.declare(SymbolKind::Instance, std::move(name), qualified, componentId, origin);
-  auto* owner = component(componentId);
+  auto* owner = getComponent(componentId);
   if (owner && std::none_of(owner->instances.begin(), owner->instances.end(), [id](const Instance& x) { return x.symbol == id; }))
     owner->instances.push_back(Instance{id, std::move(typeName)});
 
@@ -127,20 +149,20 @@ SymbolId Model::declareConnection(SymbolId componentId, std::string name, std::s
   const auto qualified = parent ? parent->qualifiedName + ".connection." + name : name;
   const auto id = mSymbols.declare(SymbolKind::Connection, std::move(name), qualified, componentId, origin);
 
-  auto* owner = component(componentId);
+  auto* owner = getComponent(componentId);
   if (owner && std::none_of(owner->connections.begin(), owner->connections.end(), [id](const Connection& x) { return x.symbol == id; }))
     owner->connections.push_back(Connection{id, std::move(lhs), std::move(rhs)});
 
   return id;
 }
 
-Component* Model::component(SymbolId id)
+Component* Model::getComponent(SymbolId id)
 {
   auto it = std::find_if(mComponents.begin(), mComponents.end(), [id](const Component& c) { return c.symbol == id; });
   return it == mComponents.end() ? nullptr : &*it;
 }
 
-const Component* Model::component(SymbolId id) const
+const Component* Model::getComponent(SymbolId id) const
 {
   auto it = std::find_if(mComponents.begin(), mComponents.end(), [id](const Component& c) { return c.symbol == id; });
   return it == mComponents.end() ? nullptr : &*it;
@@ -149,18 +171,18 @@ const Component* Model::component(SymbolId id) const
 Component* Model::findComponent(std::string_view name)
 {
   const auto* symbol = mSymbols.find(name);
-  return symbol ? component(symbol->id) : nullptr;
+  return symbol ? getComponent(symbol->id) : nullptr;
 }
 
 const Component* Model::findComponent(std::string_view name) const
 {
   const auto* symbol = mSymbols.find(name);
-  return symbol ? component(symbol->id) : nullptr;
+  return symbol ? getComponent(symbol->id) : nullptr;
 }
 
 const Port* Model::findPort(SymbolId componentId, std::string_view name) const
 {
-  const auto* owner = component(componentId);
+  const auto* owner = getComponent(componentId);
   if (!owner)
     return nullptr;
   for (const auto& port : owner->ports)

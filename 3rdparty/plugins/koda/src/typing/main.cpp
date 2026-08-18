@@ -38,7 +38,7 @@ int main()
   TypeDefinition pathType = TypeDefinition::createAlias("robotics::Path", waypointType.name);
 
   TypeDefinition robotStateType = TypeDefinition::createEnum("robotics::RobotState", EnumUnderlyingKind::String,
-                                                             {
+                                                             std::map<std::string, std::optional<std::string>>{
                                                                  {"Idle", "idle"},
                                                                  {"Driving", "driving"},
                                                                  {"Manipulating", "manipulating"},

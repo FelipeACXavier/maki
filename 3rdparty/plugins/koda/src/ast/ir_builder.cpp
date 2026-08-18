@@ -6,6 +6,27 @@
 
 namespace koda
 {
+ir::CallKind callKindFromResolvedKind(ResolvedCallKind kind)
+{
+  switch (kind)
+  {
+    case koda::ResolvedCallKind::CapabilityTrigger:
+      return ir::CallKind::CapabilityTrigger;
+    case koda::ResolvedCallKind::Event:
+      return ir::CallKind::Event;
+    case koda::ResolvedCallKind::Unknown:
+      return ir::CallKind::Unknown;
+  }
+
+  return ir::CallKind::Unknown;
+}
+
+IRBuilder::IRBuilder(const SymbolRegistry& symbols, const SemanticModel& semantics)
+    : mSymbols(symbols)
+    , mSemantics(semantics)
+{
+}
+
 Result<ir::Program> IRBuilder::build(const System& system) const
 {
   ir::Program program;
@@ -14,6 +35,7 @@ Result<ir::Program> IRBuilder::build(const System& system) const
     auto built = buildComponent(component);
     if (!built.IsSuccess())
       return Result<ir::Program>::Failed(built.ErrorMessage());
+
     program.components.push_back(built.Value());
   }
   return program;
@@ -55,7 +77,7 @@ Result<ir::Component> IRBuilder::buildComponent(const PComponent& component) con
         out.variables.push_back(ir::Variable{
             .symbol = id.value_or(InvalidSymbol),
             .name = var->name,
-            .type = symbol ? symbol->type : Type::Unknown(),
+            .type = symbol ? symbol->type : types::TypeReference{},
             .initial = initial.Value(),
             .fallback = fallback.Value(),
             .span = var->span,
@@ -97,7 +119,7 @@ ir::Argument IRBuilder::buildArg(const koda::PArgument kodaArg, SymbolId owner) 
 
   ir::Argument argument;
   argument.symbol = child.value_or(InvalidSymbol);
-  argument.type = symbol ? symbol->type : Type::Unknown();
+  argument.type = symbol ? symbol->type : types::TypeReference{};
   argument.name = kodaArg->b;
   argument.mode = ir::Argument::ModeFromKind(kodaArg->kind);
   argument.span = kodaArg->span;
@@ -116,7 +138,7 @@ void IRBuilder::appendRosDef(const PRosDef& ros, SymbolId owner, ir::Component& 
   ir::Event event;
   event.symbol = id.value_or(InvalidSymbol);
   event.name = ros->def->name;
-  event.type = symbol ? symbol->type : Type::Unknown();
+  event.type = symbol ? symbol->type : types::TypeReference{};
   event.span = ros->def->span;
   event.kind = ir::Event::fromRosKind(ros->kind);
 
@@ -194,17 +216,6 @@ Result<ir::PStrategy> IRBuilder::buildStrategy(const PStrategy& strategy, Symbol
     }
     out->value = std::move(x);
   }
-  else if (auto p = std::get_if<PLet>(&strategy->v); p && *p)
-  {
-    auto call = buildCall((*p)->call, owner);
-    if (!call.IsSuccess())
-      return Result<ir::PStrategy>::Failed(call.ErrorMessage());
-
-    out->value = ir::Strategy::Let{
-        .symbol = mSymbols.lookupLocal((*p)->name, owner).value_or(InvalidSymbol),
-        .call = call.Value(),
-    };
-  }
   else if (auto p = std::get_if<PWithin>(&strategy->v); p && *p)
   {
     auto a = buildStrategy((*p)->a, owner);
@@ -226,27 +237,6 @@ Result<ir::PStrategy> IRBuilder::buildStrategy(const PStrategy& strategy, Symbol
     }
     out->value = std::move(x);
   }
-  else if (auto p = std::get_if<PIfElse>(&strategy->v); p && *p)
-  {
-    auto c = buildExpr((*p)->cond, owner);
-    if (!c.IsSuccess())
-      return Result<ir::PStrategy>::Failed(c.ErrorMessage());
-
-    auto a = buildStrategy((*p)->a, owner);
-    if (!a.IsSuccess())
-      return a;
-
-    ir::PStrategy b;
-    if ((*p)->b)
-    {
-      auto bb = buildStrategy((*p)->b, owner);
-      if (!bb.IsSuccess())
-        return bb;
-
-      b = bb.Value();
-    }
-    out->value = ir::Strategy::IfElse{c.Value(), a.Value(), b};
-  }
   else if (auto p = std::get_if<PRepeat>(&strategy->v); p && *p)
   {
     auto body = buildStrategy((*p)->a, owner);
@@ -263,14 +253,6 @@ Result<ir::PStrategy> IRBuilder::buildStrategy(const PStrategy& strategy, Symbol
       x.handlers.push_back(bh.Value());
     }
     out->value = std::move(x);
-  }
-  else if (auto p = std::get_if<PGuard>(&strategy->v); p && *p)
-  {
-    auto c = buildExpr((*p)->cond, owner);
-    if (!c.IsSuccess())
-      return Result<ir::PStrategy>::Failed(c.ErrorMessage());
-
-    out->value = ir::Strategy::Guard{c.Value()};
   }
   else if (std::holds_alternative<PEnd>(strategy->v))
     out->value = ir::Strategy::End{};
@@ -354,19 +336,17 @@ Result<ir::PHandler> IRBuilder::buildHandler(const PStrategyHandler& handler, Sy
   return out;
 }
 
-Result<ir::Call> IRBuilder::buildCall(const PEventCall& call,
-                                      SymbolId owner) const
+Result<ir::Call> IRBuilder::buildCall(const PEventCall& call, SymbolId owner) const
 {
   auto it = mSemantics.calls.find(call.get());
   if (it == mSemantics.calls.end())
     return Result<ir::Call>::Failed(std::format("Unresolved call at {}", call->span.toString()));
 
   ir::Call out;
-  out.kind = it->second.kind == ResolvedCallKind::CapabilityTrigger
-                 ? ir::CallKind::CapabilityTrigger
-                 : ir::CallKind::Event;
+  out.kind = callKindFromResolvedKind(it->second.kind);
   out.receiver = it->second.receiver;
   out.target = it->second.target;
+  LOG_DEBUG("buildCall: {} {}", out.receiver, out.target);
   out.span = call->span;
   for (const auto& arg : call->args)
   {
@@ -388,15 +368,14 @@ Result<ir::PExpression> IRBuilder::buildExpr(const PExpr& expr, SymbolId owner) 
   auto out = std::make_shared<ir::Expression>();
   out->span = expr->span;
   auto typeIt = mSemantics.expressionTypes.find(expr.get());
-  out->type = typeIt == mSemantics.expressionTypes.end() ? Type::Unknown()
-                                                         : typeIt->second;
+  out->type = typeIt == mSemantics.expressionTypes.end() ? types::TypeReference{} : typeIt->second;
 
   if (auto p = std::get_if<PStr>(&expr->v); p && *p)
-    out->value = ir::Expression::Literal{(*p)->value, Type::String()};
+    out->value = ir::Expression::Literal{(*p)->value, types::TypeReference::createString()};
   else if (auto p = std::get_if<PInt>(&expr->v); p && *p)
-    out->value = ir::Expression::Literal{std::to_string((*p)->value), Type::Int()};
+    out->value = ir::Expression::Literal{std::to_string((*p)->value), types::TypeReference::createInt()};
   else if (auto p = std::get_if<PFloat>(&expr->v); p && *p)
-    out->value = ir::Expression::Literal{std::to_string((*p)->value), Type::Float()};
+    out->value = ir::Expression::Literal{std::to_string((*p)->value), types::TypeReference::createReal()};
   else if (auto p = std::get_if<PId>(&expr->v); p && *p)
   {
     auto id = mSymbols.lookup((*p)->value, owner);

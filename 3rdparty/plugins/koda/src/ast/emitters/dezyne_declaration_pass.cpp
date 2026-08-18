@@ -5,6 +5,7 @@
 #include <format>
 
 #include "ast/koda_compiler.h"
+#include "logging.h"
 
 namespace koda::dezyne
 {
@@ -50,10 +51,14 @@ VoidResult DeclarationPass::declareTask(const ir::Component& task)
 
   for (const auto& arg : task.arguments)
   {
-    if (arg.type.kind != TypeKind::Component || arg.type.symbol == koda::InvalidSymbol)
+    if (!arg.type.isNamed())
       continue;
 
-    mModel.declareInstance(component, arg.name, componentName(sourceName(arg.type.symbol)), {arg.symbol, arg.span});
+    const auto named = arg.type.namedType();
+    if (!named.id || named.id.value() == std::to_string(InvalidSymbol))
+      continue;
+
+    mModel.declareInstance(component, arg.name, componentName(sourceName(std::stoul(named.id.value()))), {arg.symbol, arg.span});
   }
 
   for (const auto& flow : task.flows)
@@ -89,19 +94,12 @@ VoidResult DeclarationPass::declareStrategy(const ir::PStrategy& strategy, FlowS
   else if (auto p = std::get_if<ir::Strategy::Either>(&strategy->value))
     for (const auto& item : p->items)
       RETURN_ON_FAILURE(declareStrategy(item, state));
-  else if (auto p = std::get_if<ir::Strategy::Let>(&strategy->value))
-    RETURN_ON_FAILURE(declareCall(p->call, state, false));
   else if (auto p = std::get_if<ir::Strategy::Within>(&strategy->value))
   {
     RETURN_ON_FAILURE(declareStrategy(p->body, state));
     RETURN_ON_FAILURE(declareStrategy(p->fallback, state));
     for (const auto& handler : p->handlers)
       RETURN_ON_FAILURE(declareHandler(handler, state));
-  }
-  else if (auto p = std::get_if<ir::Strategy::IfElse>(&strategy->value))
-  {
-    RETURN_ON_FAILURE(declareStrategy(p->thenBranch, state));
-    RETURN_ON_FAILURE(declareStrategy(p->elseBranch, state));
   }
   else if (auto p = std::get_if<ir::Strategy::Repeat>(&strategy->value))
   {

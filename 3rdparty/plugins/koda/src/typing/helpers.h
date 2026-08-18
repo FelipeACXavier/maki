@@ -36,9 +36,24 @@ std::string toString(TypeReferenceKind kind);
 std::string toString(EnumUnderlyingKind kind);
 
 std::string toBuiltInString(PrimitiveKind kind);
+bool isBuiltin(QualifiedName name);
+
+bool isSignedInteger(PrimitiveKind kind);
+bool isUnsignedInteger(PrimitiveKind kind);
+bool isInteger(PrimitiveKind kind);
+bool isFloatingPoint(PrimitiveKind kind);
+bool isNumeric(PrimitiveKind kind);
+bool isPrimitiveAssignable(PrimitiveKind source, PrimitiveKind target);
+
+int integerWidth(PrimitiveKind kind);
+int floatingPointWidth(PrimitiveKind kind);
 
 PrimitiveKind primitiveKindFromString(const std::string& kind);
 TypeKind typeKindFromString(const std::string& kind);
 TypeReferenceKind typeReferenceKindFromString(const std::string& kind);
 EnumUnderlyingKind enumKindFromString(const std::string& kind);
+EnumUnderlyingKind enumKindFromPrimitive(const PrimitiveKind& kind);
+
+std::string makeUuid();
+
 }  // namespace koda::types

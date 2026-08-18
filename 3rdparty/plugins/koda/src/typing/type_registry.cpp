@@ -8,128 +8,6 @@
 
 namespace koda::types
 {
-bool isSignedInteger(PrimitiveKind kind)
-{
-  switch (kind)
-  {
-    case PrimitiveKind::Int8:
-    case PrimitiveKind::Int16:
-    case PrimitiveKind::Int32:
-    case PrimitiveKind::Int64:
-      return true;
-
-    default:
-      return false;
-  }
-}
-
-bool isUnsignedInteger(PrimitiveKind kind)
-{
-  switch (kind)
-  {
-    case PrimitiveKind::UInt8:
-    case PrimitiveKind::UInt16:
-    case PrimitiveKind::UInt32:
-    case PrimitiveKind::UInt64:
-      return true;
-
-    default:
-      return false;
-  }
-}
-
-bool isInteger(PrimitiveKind kind)
-{
-  return isSignedInteger(kind) || isUnsignedInteger(kind);
-}
-
-bool isFloatingPoint(PrimitiveKind kind)
-{
-  return kind == PrimitiveKind::Float32 || kind == PrimitiveKind::Float64;
-}
-
-bool isNumeric(PrimitiveKind kind)
-{
-  return isInteger(kind) || isFloatingPoint(kind);
-}
-
-int integerWidth(PrimitiveKind kind)
-{
-  switch (kind)
-  {
-    case PrimitiveKind::Int8:
-    case PrimitiveKind::UInt8:
-      return 8;
-
-    case PrimitiveKind::Int16:
-    case PrimitiveKind::UInt16:
-      return 16;
-
-    case PrimitiveKind::Int32:
-    case PrimitiveKind::UInt32:
-      return 32;
-
-    case PrimitiveKind::Int64:
-    case PrimitiveKind::UInt64:
-      return 64;
-
-    default:
-      return 0;
-  }
-}
-
-int floatingPointWidth(PrimitiveKind kind)
-{
-  switch (kind)
-  {
-    case PrimitiveKind::Float32:
-      return 32;
-
-    case PrimitiveKind::Float64:
-      return 64;
-
-    default:
-      return 0;
-  }
-}
-
-bool isPrimitiveAssignable(PrimitiveKind source, PrimitiveKind target)
-{
-  if (source == target)
-    return true;
-
-  if (!isNumeric(source) || !isNumeric(target))
-    return false;
-
-  // Integer -> floating point is accepted.
-  //
-  // This is a semantic conversion rather than a guarantee that every integer
-  // can be represented exactly by the target floating-point format.
-  if (isInteger(source) && isFloatingPoint(target))
-    return true;
-
-  if (isFloatingPoint(source) && isFloatingPoint(target))
-    return floatingPointWidth(source) <= floatingPointWidth(target);
-
-  if (isSignedInteger(source) && isSignedInteger(target))
-    return integerWidth(source) <= integerWidth(target);
-
-  if (isUnsignedInteger(source) && isUnsignedInteger(target))
-    return integerWidth(source) <= integerWidth(target);
-
-  // An unsigned integer can only be widened safely to a larger signed type.
-  //
-  // UInt8  -> Int16  true
-  // UInt32 -> Int32  false
-  // UInt64 -> Int64  false
-  if (isUnsignedInteger(source) && isSignedInteger(target))
-    return integerWidth(source) < integerWidth(target);
-
-  // Signed -> unsigned is not implicitly safe because the source may be
-  // negative.
-  return false;
-}
-
 // ===========================================================================================================
 // TypeRegistry
 TypeRegistry::TypeRegistry()
@@ -672,14 +550,10 @@ TypeRegistrationResult TypeRegistry::validateRegistration(const TypeDefinition& 
 bool TypeRegistry::validateReference(const TypeReference& reference, const std::string& path, std::vector<TypeModelDiagnostic>& diagnostics) const
 {
   if (reference.isPrimitive())
-  {
-    LOG_DEBUG("validateReference primitive: {}", reference.toString());
     return true;
-  }
 
   if (reference.isNamed())
   {
-    LOG_DEBUG("validateReference named: {}", reference.toString());
     if (resolve(reference) == nullptr)
     {
       addDiagnostic(diagnostics, TypeModelDiagnostic::Severity::Error, "type.unresolved_reference",
@@ -691,10 +565,7 @@ bool TypeRegistry::validateReference(const TypeReference& reference, const std::
   }
 
   if (reference.isList())
-  {
-    LOG_DEBUG("validateReference list: {}", reference.toString());
     return validateReference(reference.elementType(), path + "[]", diagnostics);
-  }
 
   if (reference.isOptional())
     return validateReference(reference.optionalValueType(), path + "?", diagnostics);

@@ -11,12 +11,7 @@ namespace koda
 class IRBuilder
 {
 public:
-  IRBuilder(const SymbolRegistry& symbols, const SemanticModel& semantics)
-      : mSymbols(symbols)
-      , mSemantics(semantics)
-  {
-  }
-
+  IRBuilder(const SymbolRegistry& symbols, const SemanticModel& semantics);
   Result<ir::Program> build(const System& system) const;
 
 private:

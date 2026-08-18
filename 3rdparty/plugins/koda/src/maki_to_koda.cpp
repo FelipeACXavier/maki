@@ -19,6 +19,8 @@
 #include "result.h"
 #include "string_helpers.h"
 #include "types.h"
+#include "typing/helpers.h"
+#include "typing/type_reference.h"
 
 namespace koda
 {
@@ -69,8 +71,9 @@ Result<koda::PComponent> MakiToKoda::buildTask(const INode& task)
 
     auto parg = std::make_shared<koda::Argument>();
     parg->kind = koda::Argument::Kind::Req;
-    parg->a = format(capName);
-    ToLowerCase(parg->a, 0);
+    auto tmp = format(capName);
+    ToLowerCase(tmp, 0);
+    parg->a = types::TypeReference::named(tmp);
     parg->b = format(capName);
 
     c->args.push_back(parg);
@@ -147,7 +150,7 @@ Result<koda::PVarDef> MakiToKoda::buildVarDef(const IProperty& property)
 {
   auto varDef = std::make_shared<koda::VarDef>();
   varDef->name = property.getid().toStdString();
-  varDef->varType = Types::PropertyTypesToString(property.gettype()).toStdString();
+  varDef->varType = types::TypeReference::primitive(types::primitiveKindFromString(Types::PropertyTypesToString(property.gettype()).toStdString()));
 
   auto wrapper = std::make_shared<koda::Expr>();
   switch (property.gettype())
@@ -257,7 +260,7 @@ Result<koda::PRosDef> MakiToKoda::buildRosDef(const IFlow& event)
   {
     auto parg = std::make_shared<koda::Argument>();
     parg->kind = koda::Argument::Kind::Plain;
-    parg->a = Types::PropertyTypesToString(arg->gettype()).toStdString();
+    parg->a = types::TypeReference::primitive(types::primitiveKindFromString(Types::PropertyTypesToString(arg->gettype()).toStdString()));
     parg->b = arg->getid().toStdString();
     eventDef->args.push_back(parg);
   }
@@ -771,10 +774,8 @@ std::any MakiToKoda::buildJoinFromFanOut(const IFlow& flow, const INode& splitNo
 const INode* MakiToKoda::findStartNode(const IFlow& flow) const
 {
   for (const auto& node : flow.getnodes())
-  {
     if (node->getnodeId() == "Koda::Start")
       return node.get();
-  }
 
   return nullptr;
 }
@@ -782,10 +783,8 @@ const INode* MakiToKoda::findStartNode(const IFlow& flow) const
 const INode* MakiToKoda::findDestination(const QString& dstId, const IFlow& flow) const
 {
   for (const auto& node : flow.getnodes())
-  {
     if (node->getid() == dstId)
       return node.get();
-  }
 
   return nullptr;
 }
@@ -977,9 +976,7 @@ bool MakiToKoda::isEndNode(const INode& node) const
 
 bool MakiToKoda::isStructuralNode(const INode& node) const
 {
-  return node.getnodeId() == "Koda::Start" ||
-         node.getnodeId() == "Koda::Success" ||
-         node.getnodeId() == "Koda::Failure" ||
+  return node.getnodeId() == "Koda::Start" || node.getnodeId() == "Koda::Success" || node.getnodeId() == "Koda::Failure" ||
          node.getnodeId() == "Koda::Join";
 }
 

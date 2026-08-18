@@ -37,7 +37,13 @@ private:
     std::string localPort;
     koda::SymbolId receiver = koda::InvalidSymbol;
     koda::SymbolId target = koda::InvalidSymbol;
-    std::uint32_t ordinal = 0;
+    // Ordinal within the current flow. Used for the flow-local port name.
+    std::uint32_t localOrdinal = 0;
+
+    // Ordinal across all uses of the target event. Used for wiring to the
+    // numbered capability port.
+    std::uint32_t targetOrdinal = 0;
+
     Span span;
   };
 
@@ -65,7 +71,7 @@ private:
     std::vector<Connection> connections;
     std::vector<CallUse> calls;
     std::vector<std::string> alarms;
-    std::map<koda::SymbolId, std::uint32_t> triggerOrdinals;
+    std::map<koda::SymbolId, std::uint32_t> eventOrdinals;
   };
 
   struct FlowResult
@@ -77,9 +83,17 @@ private:
   Model& mModel;
   const SymbolRegistry& mSymbols;
   const koda::CompilerOptions& mOptions;
-  std::map<koda::SymbolId, std::uint32_t> mTriggerCount;
-  std::map<koda::SymbolId, std::uint32_t> mTriggerCounts;
-  std::map<koda::SymbolId, std::string> mTriggerNames;
+  // Total number of usages of each callable action event.
+  // Key = event symbol, e.g. Drive::to_position or Siren::start.
+  std::map<koda::SymbolId, std::uint32_t> mCallCounts;
+
+  // Current ordinal while lowering calls.
+  // Also keyed by the event symbol.
+  std::map<koda::SymbolId, std::uint32_t> mCallOrdinals;
+
+  // Events that require iaction ports and therefore support multiplicity.
+  std::set<koda::SymbolId> mActionEvents;
+
   std::map<koda::SymbolId, FlowResult> mFlows;
 
   VoidResult lowerCapability(const ir::Component& capability);
@@ -89,15 +103,12 @@ private:
   Result<std::string> lowerHandler(const ir::Flow& flow, const ir::PHandler& handler, FlowState& state);
   Result<std::string> lowerCall(const ir::Call& call, FlowState& state, bool signal);
 
-  VoidResult ensureAlarmHelper();
-  VoidResult ensureSequenceHelper(const ir::Flow& component, std::uint32_t count);
-  VoidResult ensureArbiterHelper(const Component& component, std::uint32_t count);
-  VoidResult createNecessaryArbiter(const Component& component, std::vector<Connection>& connections);
+  VoidResult createNecessaryArbiter(SymbolId componentId, std::vector<Connection>& connections);
+
   void countTriggers(const ir::PStrategy& strategy);
   void countHandlerTriggers(const ir::PHandler& handler);
 
   std::string sourceName(koda::SymbolId id) const;
-  std::string triggerName(koda::SymbolId capability) const;
   static std::string lower(std::string value);
   static std::string componentName(const std::string& name);
   static std::string flowName(const std::string& name);

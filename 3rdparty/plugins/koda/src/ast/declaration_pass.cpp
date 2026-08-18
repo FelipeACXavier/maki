@@ -5,6 +5,12 @@
 namespace koda
 {
 
+DeclarationPass::DeclarationPass(SymbolRegistry& symbols, types::TypeRegistry& types)
+    : mSymbolRegistry(symbols)
+    , mTypeRegistry(types)
+{
+}
+
 VoidResult DeclarationPass::run(const System& system)
 {
   mSymbolRegistry.clear();
@@ -14,7 +20,7 @@ VoidResult DeclarationPass::run(const System& system)
   for (const auto& component : system.components)
   {
     const auto kind = component->kind == Component::Kind::Task ? SymbolKind::Task : SymbolKind::Capability;
-    auto result = mSymbolRegistry.declare(kind, component->name, Type::Unknown(), component->span);
+    auto result = mSymbolRegistry.declare(kind, component->name, types::TypeReference::named(component->name), component->span);
     if (!result.IsSuccess())
       return VoidResult::Failed(result.ErrorMessage());
   }
@@ -27,7 +33,7 @@ VoidResult DeclarationPass::run(const System& system)
       return result;
   }
 
-  return VoidResult{};
+  return VoidResult();
 }
 
 VoidResult DeclarationPass::declareComponent(const PComponent& component)
@@ -39,7 +45,12 @@ VoidResult DeclarationPass::declareComponent(const PComponent& component)
   const auto owner = *ownerOpt;
   for (const auto& arg : component->args)
   {
-    const auto type = mSymbolRegistry.resolveType(arg->a).value_or(Type::Unknown());
+    // We know the arguments for a task are always the capabilities
+    const auto typeId = mSymbolRegistry.lookup(arg->a.toString(), InvalidSymbol);
+    if (!typeId)
+      return VoidResult::Failed("Capability {} not found", arg->a.toString());
+
+    const auto type = types::TypeReference::named(arg->a.namedType().name, std::to_string(typeId.value()));
     auto result = mSymbolRegistry.declare(SymbolKind::Argument, arg->b, type, arg->span, owner);
     if (!result.IsSuccess())
       return VoidResult::Failed(result.ErrorMessage());
@@ -52,7 +63,7 @@ VoidResult DeclarationPass::declareComponent(const PComponent& component)
       return result;
   }
 
-  return VoidResult{};
+  return VoidResult();
 }
 
 VoidResult DeclarationPass::declareStatement(const PStatement& statement, SymbolId owner)
@@ -61,8 +72,7 @@ VoidResult DeclarationPass::declareStatement(const PStatement& statement, Symbol
   {
     for (const auto& var : (*block)->vars)
     {
-      const auto type = mSymbolRegistry.resolveType(var->varType).value_or(Type::Unknown());
-      auto result = mSymbolRegistry.declare(SymbolKind::Variable, var->name, type, var->span, owner);
+      auto result = mSymbolRegistry.declare(SymbolKind::Variable, var->name, var->varType, var->span, owner);
       if (!result.IsSuccess())
         return VoidResult::Failed(result.ErrorMessage());
     }
@@ -71,7 +81,8 @@ VoidResult DeclarationPass::declareStatement(const PStatement& statement, Symbol
   {
     for (const auto& flow : (*block)->flows)
     {
-      auto symbolId = mSymbolRegistry.declare(SymbolKind::Flow, flow->name, Type::Void(), flow->span, owner);
+      auto symbolId =
+          mSymbolRegistry.declare(SymbolKind::Flow, flow->name, types::TypeReference::primitive(types::PrimitiveKind::Void), flow->span, owner);
       if (!symbolId.IsSuccess())
         return VoidResult::Failed(symbolId.ErrorMessage());
 
@@ -79,7 +90,8 @@ VoidResult DeclarationPass::declareStatement(const PStatement& statement, Symbol
       for (const auto& arg : flow->args)  // This is an awful name, by the way...
       {
         // No need for arg->a since we dont use types in flow arguments
-        auto argId = mSymbolRegistry.declare(SymbolKind::Argument, arg->b, Type::Custom("FlowTag"), arg->span, symbolId.Value());
+        auto argId = mSymbolRegistry.declare(SymbolKind::Argument, arg->b, types::TypeReference::primitive(types::PrimitiveKind::String), arg->span,
+                                             symbolId.Value());
         if (!argId.IsSuccess())
           return VoidResult::Failed(argId.ErrorMessage());
       }
@@ -99,7 +111,7 @@ VoidResult DeclarationPass::declareStatement(const PStatement& statement, Symbol
     }
   }
 
-  return VoidResult{};
+  return VoidResult();
 }
 
 VoidResult DeclarationPass::declareRosDef(const PRosDef& ros, SymbolId owner)
@@ -107,15 +119,15 @@ VoidResult DeclarationPass::declareRosDef(const PRosDef& ros, SymbolId owner)
   if (!ros || !ros->def)
     return VoidResult::Failed("Invalid ROS/event declaration");
 
-  const auto eventType = Type::Custom(ros->toString());
-  auto result = mSymbolRegistry.declare(SymbolKind::Event, ros->def->name, eventType, ros->def->span, owner);
+  // const auto eventType = Type::Custom(ros->toString());
+  auto result = mSymbolRegistry.declare(SymbolKind::Event, ros->def->name, types::TypeReference::named(ros->toString()), ros->def->span, owner);
   if (!result.IsSuccess())
     return result;
 
   // Also gotta declare the arguments in the definition
   for (const auto& arg : ros->def->args)
   {
-    auto argId = mSymbolRegistry.declare(SymbolKind::Argument, arg->b, mSymbolRegistry.resolveType(arg->a).value_or(Type::Unknown()), arg->span, result.Value());
+    auto argId = mSymbolRegistry.declare(SymbolKind::Argument, arg->b, arg->a, arg->span, result.Value());
     if (!argId.IsSuccess())
       return VoidResult::Failed(argId.ErrorMessage());
   }

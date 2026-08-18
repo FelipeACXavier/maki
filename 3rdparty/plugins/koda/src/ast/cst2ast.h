@@ -3,6 +3,7 @@
 #include <any>
 
 #include "ast/ast.h"
+#include "error_listener.h"
 #include "parser/KodaBaseVisitor.h"
 #include "parser/KodaParser.h"
 #include "typing/type_registry.h"
@@ -12,7 +13,7 @@ namespace koda
 class CST2AST final : public KodaBaseVisitor
 {
 public:
-  CST2AST();
+  CST2AST(std::shared_ptr<types::TypeRegistry> registry, CollectingErrorListener* errorListener);
 
   // Entry: build a whole System
   System build(KodaParser::SystemContext* ctx);
@@ -24,6 +25,7 @@ public:
   std::any visitSystem(KodaParser::SystemContext* ctx) override;
   std::any visitTopLevelComponent(KodaParser::TopLevelComponentContext* ctx) override;
   std::any visitArgumentList(KodaParser::ArgumentListContext* ctx) override;
+  std::any visitMappingDeclaration(KodaParser::MappingDeclarationContext* ctx) override;
   std::any visitArgPlain(KodaParser::ArgPlainContext* ctx) override;
   std::any visitArgReq(KodaParser::ArgReqContext* ctx) override;
   std::any visitArgPro(KodaParser::ArgProContext* ctx) override;
@@ -67,9 +69,7 @@ public:
   std::any visitStratJoin(KodaParser::StratJoinContext* ctx) override;
   std::any visitStratEither(KodaParser::StratEitherContext* ctx) override;
   std::any visitStratWithin(KodaParser::StratWithinContext* ctx) override;
-  std::any visitStratIfElse(KodaParser::StratIfElseContext* ctx) override;
   std::any visitStratRepeat(KodaParser::StratRepeatContext* ctx) override;
-  std::any visitStratGuard(KodaParser::StratGuardContext* ctx) override;
   std::any visitStratEnd(KodaParser::StratEndContext* ctx) override;
   std::any visitStratContinue(KodaParser::StratContinueContext* ctx) override;
   std::any visitStratRef(KodaParser::StratRefContext* ctx) override;
@@ -109,7 +109,8 @@ public:
   std::any visitExprUnary(KodaParser::ExprUnaryContext* ctx) override;
 
 private:
-  types::TypeRegistry mTypeRegistry;
+  std::shared_ptr<types::TypeRegistry> mTypeRegistry;
+  CollectingErrorListener* mErrorListener;
 
   // Build ActionDef / ServiceDef / TopicDef using the same field extraction.
   template <typename CtxT>

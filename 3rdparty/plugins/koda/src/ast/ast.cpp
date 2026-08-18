@@ -17,12 +17,7 @@
       obj->CALL;                             \
   }
 
-#define LOG_TREE(TITLE)       \
-  LOG_RAW("{}{} {}{}:\n",     \
-          prefix,             \
-          tree::branch(last), \
-          TITLE,              \
-          gPrintSpan ? span.toString() : "");
+#define LOG_TREE(TITLE) LOG_RAW("{}{} {}{}:\n", prefix, tree::branch(last), TITLE, gPrintSpan ? span.toString() : "");
 
 namespace tree
 {
@@ -44,8 +39,8 @@ bool gPrintSpan = true;
 
 std::string Span::toString() const
 {
-  return " [(" + std::to_string(lineStart) + ", " + std::to_string(colStart) + ") - " +
-         "(" + std::to_string(lineEnd) + ", " + std::to_string(colEnd) + ")]";
+  return " [(" + std::to_string(lineStart) + ", " + std::to_string(colStart) + ") - " + "(" + std::to_string(lineEnd) + ", " +
+         std::to_string(colEnd) + ")]";
 }
 
 // TODO: Implement rest of the prints
@@ -55,6 +50,9 @@ std::string Span::toString() const
 void System::print() const
 {
   LOG_RAW("  System\n");
+  for (size_t i = 0; i < mappings.size(); ++i)
+    mappings.at(i)->print(" ", i == mappings.size() - 1 && components.empty());
+
   for (size_t i = 0; i < components.size(); ++i)
     components.at(i)->print(" ", i == components.size() - 1);
 }
@@ -105,8 +103,16 @@ void Argument::print(const std::string& prefix, const bool last) const
   LOG_TREE(Format("Arg {}", toString()));
 
   const std::string childPrefix = prefix + tree::carry(last);
-  printString(childPrefix, false, Format("Type: {}", a));
+  printString(childPrefix, false, Format("Type: {}", a.toString()));
   printString(childPrefix, true, Format("Id: {}", b));
+}
+
+void TypeMapping::print(const std::string& prefix, const bool last) const
+{
+  LOG_TREE("Mapping");
+  const std::string childPrefix = prefix + tree::carry(last);
+  printString(childPrefix, false, Format("From: {}", source.toString()));
+  printString(childPrefix, true, Format("To: {}", destination));
 }
 
 // ---------- Statements ----------
@@ -186,7 +192,12 @@ void ActionDef::print(const std::string& prefix, const bool last) const
   const std::string childPrefix = prefix + tree::carry(last);
   printString(childPrefix, false, Format("Type: {}", toString()));
   printString(childPrefix, false, Format("Channel: {}", label1));
-  printString(childPrefix, rosDefs.empty(), Format("Message: {}", label2));
+  printString(childPrefix, !consumes.isValid() && !produces.isValid() && rosDefs.empty(), Format("Message: {}", label2));
+
+  if (consumes.isValid())
+    printString(childPrefix, !produces.isValid() && rosDefs.empty(), Format("Consumes: {}", consumes.toString()));
+  if (produces.isValid())
+    printString(childPrefix, rosDefs.empty(), Format("Produces: {}", produces.toString()));
 
   for (size_t i = 0; i < rosDefs.size(); ++i)
     rosDefs.at(i)->print(childPrefix, i == rosDefs.size() - 1);
@@ -196,7 +207,7 @@ void VarDef::print(const std::string& prefix, const bool last) const
 {
   LOG_TREE("VarDef");
   const std::string childPrefix = prefix + tree::carry(last);
-  printString(childPrefix, false, Format("Type: {}", varType));
+  printString(childPrefix, false, Format("Type: {}", varType.toString()));
   printString(childPrefix, false, Format("Name: {}", name));
   if (init)
     init->print(childPrefix, false);
@@ -210,16 +221,9 @@ void EventDef::print(const std::string& prefix, const bool last) const
 
   const std::string childPrefix = prefix + tree::carry(last);
   printString(childPrefix, false, Format("Type: {}", typeName));
-  printString(childPrefix, args.empty() && components.empty(), Format("Name: {}", name));
+  printString(childPrefix, args.empty(), Format("Name: {}", name));
   for (size_t i = 0; i < args.size(); ++i)
-    args.at(i)->print(childPrefix, (i == args.size() - 1) && components.empty());
-  for (size_t i = 0; i < components.size(); ++i)
-    components.at(i)->print(childPrefix, i == components.size() - 1);
-}
-
-void EventDefComponent::print(const std::string& prefix, const bool last) const
-{
-  LOG_RAW("{}{}{} {}\n", prefix, tree::branch(last), kind, text);
+    args.at(i)->print(childPrefix, (i == args.size() - 1));
 }
 
 // -------------------------------------------------------------
@@ -244,11 +248,8 @@ void Strategy::print(const std::string& prefix, const bool last) const
   IF_ALT(PSeq, v, print(prefix, last, span))
   ELSE_IF_ALT(PJoin, v, print(prefix, last, span))
   ELSE_IF_ALT(PEither, v, print(prefix, last, span))
-  ELSE_IF_ALT(PLet, v, print(prefix, last, span))
   ELSE_IF_ALT(PWithin, v, print(prefix, last, span))
-  ELSE_IF_ALT(PIfElse, v, print(prefix, last, span))
   ELSE_IF_ALT(PRepeat, v, print(prefix, last, span))
-  ELSE_IF_ALT(PGuard, v, print(prefix, last, span))
   ELSE_IF_ALT(PEnd, v, print(prefix, last, span))
   ELSE_IF_ALT(PContinue, v, print(prefix, last, span))
   ELSE_IF_ALT(PRef, v, print(prefix, last, span))
@@ -280,11 +281,6 @@ void Strategy::Either::print(const std::string& prefix, const bool last, const S
     alts.at(i)->print(childPrefix, i == alts.size() - 1);
 }
 
-void Strategy::Let::print(const std::string& prefix, const bool last, const Span& span) const
-{
-  LOG_TREE("Let");
-}
-
 void Strategy::Within::print(const std::string& prefix, const bool last, const Span& span) const
 {
   LOG_TREE("Within");
@@ -297,27 +293,12 @@ void Strategy::Within::print(const std::string& prefix, const bool last, const S
     handlers.at(i)->print(childPrefix, i + 1 == handlers.size());
 }
 
-void Strategy::IfElse::print(const std::string& prefix, const bool last, const Span& span) const
-{
-  LOG_TREE("IfElse");
-  const std::string childPrefix = prefix + tree::carry(last);
-  if (a != nullptr)
-    a->print(childPrefix, false);
-  if (b != nullptr)
-    b->print(childPrefix, true);
-}
-
 void Strategy::Repeat::print(const std::string& prefix, const bool last, const Span& span) const
 {
   LOG_TREE("Repeat");
   const std::string childPrefix = prefix + tree::carry(last);
   if (a)
     a->print(childPrefix, true);
-}
-
-void Strategy::Guard::print(const std::string& prefix, const bool last, const Span& span) const
-{
-  LOG_TREE("Guard");
 }
 
 void Strategy::End::print(const std::string& prefix, const bool last, const Span& span) const
