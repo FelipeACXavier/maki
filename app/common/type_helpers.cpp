@@ -131,13 +131,20 @@ QJsonObject typeDefinitionToJson(const koda::types::TypeDefinition& definition)
 
 // -----------------------------------------------------------------------------------------------------------
 // From JSON
-Result<koda::types::QualifiedName> qualifiedNameFromJson(const QJsonObject& json)
+Result<koda::types::QualifiedName> qualifiedNameFromJson(const QJsonObject& json, const std::string& nameSpace)
 {
   if (!json.contains("name") || !json["name"].isString())
     return Result<koda::types::QualifiedName>::Failed("Qualified name must have a string name");
 
   koda::types::QualifiedName name;
   name.name = json["name"].toString().toStdString();
+
+  if (!nameSpace.empty())
+  {
+    name.namespacePath.push_back(nameSpace);
+    return name;
+  }
+
   if (json.contains("namespace"))
   {
     if (!json["namespace"].isArray())
@@ -183,7 +190,7 @@ Result<koda::types::Annotations> annotationsFromJson(const QJsonObject& json)
   return annotations;
 }
 
-Result<koda::types::TypeReference> typeReferenceFromJson(const QJsonObject& json)
+Result<koda::types::TypeReference> typeReferenceFromJson(const QJsonObject& json, const std::string& nameSpace)
 {
   using namespace koda::types;
 
@@ -196,7 +203,7 @@ Result<koda::types::TypeReference> typeReferenceFromJson(const QJsonObject& json
     QJsonObject elementObject;
     TypeReference elementType;
     ASSIGN_OR_RETURN_ON_FAILURE_AS(elementObject, JSON::returnOrFail<QJsonObject>(json, "elementType"), TypeReference);
-    ASSIGN_OR_RETURN_ON_FAILURE_AS(elementType, typeReferenceFromJson(elementObject), TypeReference);
+    ASSIGN_OR_RETURN_ON_FAILURE_AS(elementType, typeReferenceFromJson(elementObject, nameSpace), TypeReference);
 
     return TypeReference::list(elementType);
   }
@@ -205,7 +212,7 @@ Result<koda::types::TypeReference> typeReferenceFromJson(const QJsonObject& json
     QJsonObject elementObject;
     TypeReference elementType;
     ASSIGN_OR_RETURN_ON_FAILURE_AS(elementObject, JSON::returnOrFail<QJsonObject>(json, "optionalValueType"), TypeReference);
-    ASSIGN_OR_RETURN_ON_FAILURE_AS(elementType, typeReferenceFromJson(elementObject), TypeReference);
+    ASSIGN_OR_RETURN_ON_FAILURE_AS(elementType, typeReferenceFromJson(elementObject, nameSpace), TypeReference);
 
     return TypeReference::optional(elementType);
   }
@@ -236,8 +243,8 @@ Result<koda::types::TypeReference> typeReferenceFromJson(const QJsonObject& json
     TypeReference keyType, valueType;
     ASSIGN_OR_RETURN_ON_FAILURE_AS(keyObject, JSON::returnOrFail<QJsonObject>(json, "mapKeyType"), TypeReference);
     ASSIGN_OR_RETURN_ON_FAILURE_AS(valueObject, JSON::returnOrFail<QJsonObject>(json, "mapValueType"), TypeReference);
-    ASSIGN_OR_RETURN_ON_FAILURE_AS(keyType, typeReferenceFromJson(keyObject), TypeReference);
-    ASSIGN_OR_RETURN_ON_FAILURE_AS(valueType, typeReferenceFromJson(valueObject), TypeReference);
+    ASSIGN_OR_RETURN_ON_FAILURE_AS(keyType, typeReferenceFromJson(keyObject, nameSpace), TypeReference);
+    ASSIGN_OR_RETURN_ON_FAILURE_AS(valueType, typeReferenceFromJson(valueObject, nameSpace), TypeReference);
 
     return TypeReference::map(keyType, valueType);
   }
@@ -245,7 +252,7 @@ Result<koda::types::TypeReference> typeReferenceFromJson(const QJsonObject& json
   return TypeReference{};
 }
 
-Result<koda::types::TypeDefinition> typeDefinitionFromJson(const QJsonObject& json)
+Result<koda::types::TypeDefinition> typeDefinitionFromJson(const QJsonObject& json, const std::string& nameSpace)
 {
   using namespace koda::types;
 
@@ -258,7 +265,7 @@ Result<koda::types::TypeDefinition> typeDefinitionFromJson(const QJsonObject& js
 
   QualifiedName qname;
   Annotations defAnnotations;
-  ASSIGN_OR_RETURN_ON_FAILURE_AS(qname, qualifiedNameFromJson(json["name"].toObject()), TypeDefinition);
+  ASSIGN_OR_RETURN_ON_FAILURE_AS(qname, qualifiedNameFromJson(json["name"].toObject(), nameSpace), TypeDefinition);
   ASSIGN_OR_RETURN_ON_FAILURE_AS(defAnnotations, annotationsFromJson(json), TypeDefinition);
 
   if (kind == TypeKind::Primitive)
@@ -277,14 +284,13 @@ Result<koda::types::TypeDefinition> typeDefinitionFromJson(const QJsonObject& js
         .annotations = defAnnotations,
     };
   }
-
   else if (kind == TypeKind::Alias)
   {
     QJsonObject targetObject;
     ASSIGN_OR_RETURN_ON_FAILURE_AS(targetObject, JSON::returnOrFail<QJsonObject>(json, "target"), TypeDefinition);
 
     TypeReference target;
-    ASSIGN_OR_RETURN_ON_FAILURE_AS(target, typeReferenceFromJson(json["target"].toObject()), TypeDefinition);
+    ASSIGN_OR_RETURN_ON_FAILURE_AS(target, typeReferenceFromJson(json["target"].toObject(), nameSpace), TypeDefinition);
 
     return TypeDefinition{
         .id = id,
@@ -339,7 +345,7 @@ Result<koda::types::TypeDefinition> typeDefinitionFromJson(const QJsonObject& js
   {
     std::optional<TypeReference> baseType;
     if (json.contains("baseType") && json["baseType"].isObject())
-      ASSIGN_OR_RETURN_ON_FAILURE_AS(baseType, typeReferenceFromJson(json["baseType"].toObject()), TypeDefinition);
+      ASSIGN_OR_RETURN_ON_FAILURE_AS(baseType, typeReferenceFromJson(json["baseType"].toObject(), nameSpace), TypeDefinition);
 
     std::vector<FieldDefinition> fields;
     if (json.contains("fields") && json["fields"].isArray())
@@ -360,8 +366,14 @@ Result<koda::types::TypeDefinition> typeDefinitionFromJson(const QJsonObject& js
         if (json.contains("default") && json["default"].isString())
           defaultValue = json["default"].toString().toStdString();
 
+        TypeReference fieldType;
+        QJsonObject fieldTypeObject;
+        ASSIGN_OR_RETURN_ON_FAILURE_AS(fieldTypeObject, JSON::returnOrFail<QJsonObject>(obj, "type"), TypeDefinition);
+        ASSIGN_OR_RETURN_ON_FAILURE_AS(fieldType, typeReferenceFromJson(fieldTypeObject, nameSpace), TypeDefinition);
+
         fields.push_back(FieldDefinition{
             .name = name,
+            .type = fieldType,
             .defaultValue = defaultValue,
             .required = required,
             .documentation = documentation,

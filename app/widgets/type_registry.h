@@ -26,11 +26,14 @@ public:
   QStringList builtinTypeNames() const;
   QStringList namespaces() const;
 
+  QStringList libraries() const;
   VoidResult loadFromLibrary(const JSON& json);
 
   koda::types::TypeRegistrationResult add(const koda::types::TypeDefinition& definition) override;
   koda::types::TypeRegistrationResult replace(const koda::types::TypeDefinition& definition) override;
   koda::types::TypeRegistrationResult remove(const std::string& qualifiedName);
+
+  bool isFromLibrary(const koda::types::QualifiedName& name) const;
 
 signals:
   void registryChanged();
@@ -39,6 +42,12 @@ signals:
   void typeChanged(const koda::types::TypeDefinition& def);
 
 private:
+  QSet<std::string> mLibraries{};
+
+  // TODO: I am not sure this is the place for it
+  QMap<QString, QStringList> mConsumers{};
+  QMap<QString, QStringList> mProducers{};
+
   TypeRegistry(QObject* parent = nullptr);
 };
 

@@ -70,6 +70,7 @@ VoidResult TypeRegistry::loadFromLibrary(const JSON& json)
   if (!types.isArray())
     return VoidResult::Failed("types must be in a list in the format \"types\": []");
 
+  LOG_INFO("Loading {} types from {}", name, types.toArray().size());
   for (const auto& object : types.toArray())
   {
     if (!object.isObject())
@@ -77,7 +78,8 @@ VoidResult TypeRegistry::loadFromLibrary(const JSON& json)
 
     auto type = object.toObject();
 
-    auto result = typeDefinitionFromJson(type);
+    // Use the library name as the namespace
+    auto result = typeDefinitionFromJson(type, name.toStdString());
     if (!result.IsSuccess())
     {
       LOG_WARNING("Error while converting type: {}", result.ErrorMessage());
@@ -88,9 +90,25 @@ VoidResult TypeRegistry::loadFromLibrary(const JSON& json)
     auto registered = add(def);
     if (!registered)
       LOG_WARNING("Error while registering type: {}", registered.ErrorMessage());
+
+    mLibraries.insert(name.toStdString());
   }
 
   return VoidResult();
+}
+
+QStringList TypeRegistry::libraries() const
+{
+  QStringList names;
+  for (const auto& n : mLibraries)
+    names << QString::fromStdString(n);
+
+  return names;
+}
+
+bool TypeRegistry::isFromLibrary(const koda::types::QualifiedName& name) const
+{
+  return mLibraries.contains(name.namespaceString());
 }
 
 koda::types::TypeRegistrationResult TypeRegistry::add(const koda::types::TypeDefinition& definition)

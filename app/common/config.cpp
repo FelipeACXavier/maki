@@ -142,7 +142,7 @@ FlowConfig::FlowConfig(const QJsonObject& object)
   returnType = Types::StringToPropertyTypes(object[ConfigKeys::RETURN_TYPE].toString());
   if (returnType == Types::PropertyTypes::UNKNOWN)
   {
-    setInvalid("Invalid property type: " + object[ConfigKeys::RETURN_TYPE].toString() + " for " + name);
+    setInvalid("Invalid return type: " + object[ConfigKeys::RETURN_TYPE].toString() + " for " + name);
     return;
   }
 

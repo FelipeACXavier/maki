@@ -1,0 +1,138 @@
+{
+  "name": "Robotics",
+  "author": "Felipe Xavier",
+  "libraries": [
+    {
+      "type": "data",
+      "name": "robotics",
+      "types": [
+        {
+          "id": "{9c708bce-8e78-498a-aa3b-c9049bbd4da5}",
+          "kind": "Record",
+          "name": {
+            "name": "Vector3"
+          },
+          "documentation": "",
+          "fields": [
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "x",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "Float64"
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "y",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "Float64"
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "z",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "Float64"
+              }
+            }
+          ]
+        },
+        {
+          "id": "{f7a16dac-cb24-44ea-82ad-b6152232dce4}",
+          "kind": "Record",
+          "name": {
+            "name": "Quaternion"
+          },
+          "documentation": "",
+          "fields": [
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "x",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "Float64"
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "y",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "Float64"
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "z",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "Float64"
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "w",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "Float64"
+              }
+            }
+          ]
+        },
+        {
+          "id": "{1b2fa277-bafd-46f7-a7d1-bd1e4f04bbdf}",
+          "kind": "Record",
+          "name": {
+            "name": "Pose"
+          },
+          "documentation": "",
+          "fields": [
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "position",
+              "required": true,
+              "type": {
+                "kind": "Named",
+                "qualifiedName": {
+                  "name": "Vector3",
+                  "namespace": ["robotics"]
+                }
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "orientation",
+              "required": true,
+              "type": {
+                "kind": "Named",
+                "qualifiedName": {
+                  "name": "Quaternion",
+                  "namespace": ["robotics"]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

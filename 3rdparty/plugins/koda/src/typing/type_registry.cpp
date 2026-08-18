@@ -577,6 +577,9 @@ bool TypeRegistry::validateReference(const TypeReference& reference, const std::
     return keyValid && valueValid;
   }
 
+  addDiagnostic(diagnostics, TypeModelDiagnostic::Severity::Error, "type.unknown_type",
+                "The referenced type '" + reference.toString() + "' is unknown", path);
+
   return false;
 }
 

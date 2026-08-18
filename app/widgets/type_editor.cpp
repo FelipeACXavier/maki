@@ -792,13 +792,13 @@ void TypeEditor::reloadTypes()
       expansionState[rootId] = root->isExpanded();
   }
 
-  auto createRoot = [this, &expansionState](const QString& id, const QString& title) {
+  auto createRoot = [this, &expansionState](const QString& title) {
     auto* root = new QTreeWidgetItem(mTypeTree);
     root->setText(0, title);
-    root->setData(0, RootIdRole, id);
+    root->setData(0, RootIdRole, title);
 
     // Default is collapsed if this root, e.g., did not exist before.
-    root->setExpanded(expansionState.value(id, false));
+    root->setExpanded(expansionState.value(title, false));
     return root;
   };
 
@@ -807,18 +807,26 @@ void TypeEditor::reloadTypes()
   const QSignalBlocker blocker(mTypeTree);
   mTypeTree->clear();
 
-  auto* builtinRoot = createRoot("builtin", tr("Built-in"));
-  auto* projectRoot = createRoot("project", tr("Project"));
-
   const auto& registry = TypeRegistry::instance();
+
+  const auto builtInKey = tr("Built-in");
+  const auto projectKey = tr("Project");
+  auto libs = QStringList{builtInKey, projectKey} + registry.libraries();
+  QMap<QString, QTreeWidgetItem*> libWidgets;
+  for (const auto& lib : libs)
+    libWidgets.insert(lib, createRoot(lib));
+
   for (const auto* type : registry.allTypes())
   {
     QTreeWidgetItem* item;
     if (registry.isBuiltin(*type))
-      item = new QTreeWidgetItem(builtinRoot);
+      item = new QTreeWidgetItem(libWidgets[builtInKey]);
+    else if (registry.isFromLibrary(type->name))
+      item = new QTreeWidgetItem(libWidgets[QString::fromStdString(type->name.namespaceString())]);
     else
-      item = new QTreeWidgetItem(projectRoot);
+      item = new QTreeWidgetItem(libWidgets[projectKey]);
 
+    LOG_DEBUG("Loading type: {}", type->name.toString());
     item->setText(0, QString::fromStdString(type->name.toString()));
     item->setData(0, QualifiedNameRole, QString::fromStdString(type->name.toString()));
     item->setData(0, IdRole, QString::fromStdString(type->id));

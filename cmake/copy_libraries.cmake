@@ -6,6 +6,7 @@ set(BUILD_LIB_DIR "${BUILD_ASSET_DIR}/libraries")
 file(GLOB APP_LIB_FILES
   ${SRC_LIB_DIR}/koda.json
   ${SRC_LIB_DIR}/arduino.json
+  ${SRC_LIB_DIR}/robotics.json
 )
 
 add_custom_target(copy_libraries ALL

@@ -15,7 +15,7 @@ QJsonObject typeReferenceToJson(const koda::types::TypeReference& reference);
 QJsonObject typeDefinitionToJson(const koda::types::TypeDefinition& definition);
 
 Result<koda::types::Annotations> annotationsFromJson(const QJsonObject& json);
-Result<koda::types::QualifiedName> qualifiedNameFromJson(const QJsonObject& json);
-Result<koda::types::TypeReference> typeReferenceFromJson(const QJsonObject& json);
-Result<koda::types::TypeDefinition> typeDefinitionFromJson(const QJsonObject& json);
+Result<koda::types::QualifiedName> qualifiedNameFromJson(const QJsonObject& json, const std::string& nameSpace = "");
+Result<koda::types::TypeReference> typeReferenceFromJson(const QJsonObject& json, const std::string& nameSpace = "");
+Result<koda::types::TypeDefinition> typeDefinitionFromJson(const QJsonObject& json, const std::string& nameSpace = "");
 }  // namespace maki

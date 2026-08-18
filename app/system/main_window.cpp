@@ -475,7 +475,7 @@ void MainWindow::bind()
     }
 
     library[ConfigKeys::NODES] = nodes;
-    LOG_WARN_ON_FAILURE(loadElementLibrary(library[ConfigKeys::NAME].toString(), library));
+    LOG_WARN_ON_FAILURE(loadElementLibrary(library[ConfigKeys::NAME].toString(), library, false));
   });
 
   // Pipeline stuff =============================================================
@@ -626,21 +626,29 @@ VoidResult MainWindow::loadElements()
   LOG_DEBUG("Loading the elements");
 
   auto libPaths = AppPaths::libraries();
-  for (const auto& path : libPaths)
-  {
-    QDir libDir(path);
-    QStringList files = libDir.entryList(QDir::Files);
-    for (const auto& file : files)
+  auto loadLib = [this](const QStringList& libPaths, bool dataOnly) {
+    for (const auto& path : libPaths)
     {
-      const auto fileName = libDir.absoluteFilePath(file);
-      auto libRead = JSON::fromFile(fileName);
-      if (!libRead.IsSuccess())
-        return VoidResult::Failed("Failed to open library: {}", fileName);
+      QDir libDir(path);
+      QStringList files = libDir.entryList(QDir::Files);
+      for (const auto& file : files)
+      {
+        const auto fileName = libDir.absoluteFilePath(file);
+        auto libRead = JSON::fromFile(fileName);
+        if (!libRead.IsSuccess())
+          return VoidResult::Failed("Failed to open library: {}", fileName);
 
-      auto libConfig = libRead.Value();
-      LOG_ERROR_ON_FAILURE(loadLibrary(libConfig));
+        auto libConfig = libRead.Value();
+        LOG_ERROR_ON_FAILURE(loadLibrary(libConfig, dataOnly));
+      }
     }
-  }
+    return VoidResult();
+  };
+
+  // First load all the available data types
+  RETURN_ON_FAILURE(loadLib(libPaths, true));
+  // Then the rest of the libraries
+  RETURN_ON_FAILURE(loadLib(libPaths, false));
 
   // Once we are done with the libraries, we can make sure they are positioned on the top
   dynamic_cast<QVBoxLayout*>(mStructureTab->layout())->addStretch();
@@ -650,7 +658,7 @@ VoidResult MainWindow::loadElements()
   return VoidResult();
 }
 
-VoidResult MainWindow::loadLibrary(const JSON& config)
+VoidResult MainWindow::loadLibrary(const JSON& config, bool dataOnly)
 {
   if (!config.contains(ConfigKeys::NAME))
     return VoidResult::Failed("Packages must have a name");
@@ -666,13 +674,13 @@ VoidResult MainWindow::loadLibrary(const JSON& config)
       return VoidResult::Failed("Invalid library format");
 
     QJsonObject library = value.toObject();
-    LOG_ERROR_ON_FAILURE(loadElementLibrary(name, library));
+    LOG_ERROR_ON_FAILURE(loadElementLibrary(name, library, dataOnly));
   }
 
   return VoidResult();
 }
 
-VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& config)
+VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& config, bool dataOnly)
 {
   if (!config.contains(ConfigKeys::TYPE))
     return VoidResult::Failed("Libraries must have a type");
@@ -680,15 +688,14 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
   QString libraryName = config.contains(ConfigKeys::NAME) ? config[ConfigKeys::NAME].toString() : name;
   QString type = config[ConfigKeys::TYPE].toString();
 
-  LOG_DEBUG("Loading library: {} of {}", libraryName, name);
-
-  if (type == ConfigKeys::DATA)
+  if (dataOnly && type == ConfigKeys::DATA)
     return maki::TypeRegistry::instance().loadFromLibrary(config);
+
+  LOG_DEBUG("Loading library: {} of {}", libraryName, name);
 
   // Every library is added to a new item in the toolbox.
   // We load those dynamically on startup.
   QWidget* toolbox = nullptr;
-  // SectionWidget* toolbox = nullptr;
   if (type == ConfigKeys::STRUCTURAL)
     toolbox = mStructureTab;
   else if (type == ConfigKeys::BEHAVIOURAL)

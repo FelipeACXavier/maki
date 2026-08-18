@@ -183,7 +183,7 @@ private:
    * @param config JSON object containing the library configuration.
    * @return VoidResult indicating success or failure.
    */
-  VoidResult loadLibrary(const JSON& config);
+  VoidResult loadLibrary(const JSON& config, bool dataOnly);
 
   /**
    * @brief Loads an element library based on the provided name and configuration.
@@ -192,7 +192,7 @@ private:
    * @param config JSON object containing the library configuration.
    * @return VoidResult indicating success or failure.
    */
-  VoidResult loadElementLibrary(const QString& name, const JSON& config);
+  VoidResult loadElementLibrary(const QString& name, const JSON& config, bool dataOnly);
 
   /**
    * @brief Binds signals and slots for the application.
