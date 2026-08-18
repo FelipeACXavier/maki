@@ -28,8 +28,7 @@
     formLayout->addRow(line);                                  \
   }
 
-#define ADD_SUBTITLE(TEXT) \
-  formLayout->addRow(new Label(TEXT, TextRole::H5, &owner));
+#define ADD_SUBTITLE(TEXT) formLayout->addRow(new Label(TEXT, TextRole::H5, &owner));
 
 #define ADD_DESCRIPTION(TEXT) formLayout->addRow(new Label(TEXT, TextRole::Caption, &owner));
 
@@ -75,14 +74,12 @@ struct ColorReturn
   ColorEditor* editor;
 };
 
-ColorReturn makeColorAndLabel(const QString& label, const QString& description,
-                              QWidget* parent, const QColor& initialValue, const std::function<void(const QColor&)>& onChanged)
+ColorReturn makeColorAndLabel(const QString& label, const QString& description, QWidget* parent, const QColor& initialValue,
+                              const std::function<void(const QColor&)>& onChanged)
 {
   auto* colorEditor = new ColorEditor(initialValue, parent);
   colorEditor->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
-  QObject::connect(colorEditor, &ColorEditor::colorChanged, parent, [colorEditor, onChanged]() {
-    onChanged(colorEditor->color());
-  });
+  QObject::connect(colorEditor, &ColorEditor::colorChanged, parent, [colorEditor, onChanged]() { onChanged(colorEditor->color()); });
 
   const auto hSpacing = parent->style()->pixelMetric(QStyle::PM_LayoutHorizontalSpacing);
 
@@ -114,9 +111,7 @@ std::pair<QWidget*, LineEdit*> makeTextAndLabel(const QString& label, const QStr
 {
   auto* lineEdit = new LineEdit(parent);
   lineEdit->setPlaceholderText(label);
-  QObject::connect(lineEdit, &QLineEdit::editingFinished, parent, [lineEdit, onChanged] {
-    onChanged(lineEdit->text().trimmed());
-  });
+  QObject::connect(lineEdit, &QLineEdit::editingFinished, parent, [lineEdit, onChanged] { onChanged(lineEdit->text().trimmed()); });
 
   const auto hSpacing = parent->style()->pixelMetric(QStyle::PM_LayoutHorizontalSpacing);
   auto* leftColumn = new QWidget(parent);
@@ -294,8 +289,7 @@ struct ThemeEditorWidget::Impl
           }
           else
           {
-            QMessageBox::critical(&owner, "Writing Error", QString("Can't write to file:\n%1").arg(fileName),
-                                  QMessageBox::StandardButton::Ok);
+            QMessageBox::critical(&owner, "Writing Error", QString("Can't write to file:\n%1").arg(fileName), QMessageBox::StandardButton::Ok);
           }
         }
       });

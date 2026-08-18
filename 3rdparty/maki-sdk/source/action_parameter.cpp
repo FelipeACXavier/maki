@@ -30,4 +30,9 @@ QVector<std::shared_ptr<IProperty>> ActionParameter::getoptions() const
   return {};
 }
 
+Types::ControlTypes ActionParameter::getcontrol() const
+{
+  return Types::ControlTypes::AUTO;
+}
+
 }  // namespace maki

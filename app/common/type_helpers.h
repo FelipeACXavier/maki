@@ -4,6 +4,7 @@
 #include <QJsonObject>
 
 #include "result.h"
+#include "types.h"
 #include "typing/type_definition.h"
 
 namespace maki
@@ -18,4 +19,7 @@ Result<koda::types::Annotations> annotationsFromJson(const QJsonObject& json);
 Result<koda::types::QualifiedName> qualifiedNameFromJson(const QJsonObject& json, const std::string& nameSpace = "");
 Result<koda::types::TypeReference> typeReferenceFromJson(const QJsonObject& json, const std::string& nameSpace = "");
 Result<koda::types::TypeDefinition> typeDefinitionFromJson(const QJsonObject& json, const std::string& nameSpace = "");
+
+Types::PropertyTypes propertyTypeFromReference(const koda::types::TypeReference& reference);
+
 }  // namespace maki

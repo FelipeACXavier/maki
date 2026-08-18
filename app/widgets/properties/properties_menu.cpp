@@ -36,6 +36,7 @@
 #include "oclero/qlementine/Common.hpp"
 #include "result.h"
 #include "style_helpers.h"
+#include "type_helpers.h"
 #include "types.h"
 #include "widgets/widget_factory.h"
 
@@ -204,29 +205,32 @@ VoidResult PropertiesMenu::loadProperties(NodeItem* node)
 
   for (const auto& property : node->configurationProperties())
   {
-    // LOG_DEBUG("Updating properties with {} of type {}", property.id, (int)property.type);
-    if (property.type == Types::PropertyTypes::STRING)
+    const auto type = maki::propertyTypeFromReference(property.type);
+    const auto control = property.control;
+
+    LOG_DEBUG("Updating properties with {} of type {} and control {}", property.id, (int)type, (int)control);
+    if (type == Types::PropertyTypes::STRING)
       LOG_WARN_ON_FAILURE(loadPropertyString(property, node));
-    else if (property.type == Types::PropertyTypes::INTEGER)
+    else if (type == Types::PropertyTypes::INTEGER)
       LOG_WARN_ON_FAILURE(loadPropertyInt(property, node));
-    else if (property.type == Types::PropertyTypes::REAL)
+    else if (type == Types::PropertyTypes::REAL)
       LOG_WARN_ON_FAILURE(loadPropertyReal(property, node));
-    else if (property.type == Types::PropertyTypes::BOOLEAN)
+    else if (type == Types::PropertyTypes::BOOLEAN)
       LOG_WARN_ON_FAILURE(loadPropertyBoolean(property, node));
-    else if (property.type == Types::PropertyTypes::SELECT)
+    else if (control == Types::ControlTypes::SELECT)
       LOG_WARN_ON_FAILURE(loadPropertySelect(property, node));
-    else if (property.type == Types::PropertyTypes::COLOR)
+    else if (control == Types::ControlTypes::COLOR)
       LOG_WARN_ON_FAILURE(loadPropertyColor(property, node));
-    else if (property.type == Types::PropertyTypes::EVENT_SELECT)
+    else if (control == Types::ControlTypes::EVENT_SELECT)
       LOG_WARN_ON_FAILURE(loadPropertyEventSelect(property, node));
-    else if (property.type == Types::PropertyTypes::COMPONENT_SELECT)
+    else if (control == Types::ControlTypes::COMPONENT_SELECT)
       LOG_WARN_ON_FAILURE(loadPropertyComponentSelect(property, node));
-    else if (property.type == Types::PropertyTypes::LIST)
+    else if (type == Types::PropertyTypes::LIST)
       continue;
-    else if (property.type == Types::PropertyTypes::VOID)
+    else if (type == Types::PropertyTypes::VOID)
       continue;
     else
-      LOG_WARNING("Property {} ({}) without a type, how is that possible?", property.id, (int)property.type);
+      LOG_WARNING("Property {} ({}, {}) without a type, how is that possible?", property.id, (int)type, (int)control);
   }
 
   return VoidResult();
@@ -242,7 +246,6 @@ VoidResult PropertiesMenu::loadControls(NodeItem* node)
   controls->setLayout(controlLayout);
 
   for (const auto& control : node->controls())
-  {
     if (control.type == Types::ControlTypes::ADD_FIELD)
       LOG_WARN_ON_FAILURE(loadControlAddField(control, node, controls, controlLayout));
     else if (control.type == Types::ControlTypes::ADD_EVENT)
@@ -251,7 +254,6 @@ VoidResult PropertiesMenu::loadControls(NodeItem* node)
       LOG_WARN_ON_FAILURE(loadControlAddState(control, node, controls, controlLayout));
     else
       LOG_WARNING("Unknown control type: {}", control.id);
-  }
 
   if (!node->events().isEmpty() && node->controls().isEmpty())
     loadControlAddEvent(ControlsConfig(), node, controls, controlLayout);
@@ -273,9 +275,7 @@ VoidResult PropertiesMenu::loadPropertyInt(const PropertyInfo& property, NodeIte
   if (result.isValid())
     widget->setValue(result.toString());
 
-  connect(widget, &maki::IntegerWidget::valueChanged, this, [node, property](const QString& value) {
-    node->setProperty(property.getid(), value);
-  });
+  connect(widget, &maki::IntegerWidget::valueChanged, this, [node, property](const QString& value) { node->setProperty(property.getid(), value); });
 
   layout()->addWidget(widget);
 
@@ -397,13 +397,12 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertyInfo& prope
   if (!mStorage)
     return VoidResult::Failed("No storage assigned to properties menu");
 
-  auto componentType = Types::PropertyTypes::EVENT_SELECT;
+  auto componentType = Types::ControlTypes::EVENT_SELECT;
   if (!property.getoptions().empty())
     for (const auto& option : property.getoptions())
-      if (option->gettype() == Types::PropertyTypes::FLOW_CALL ||
-          option->gettype() == Types::PropertyTypes::EVENT_SELECT ||
-          option->gettype() == Types::PropertyTypes::TRIGGER_CALL)
-        componentType = option->gettype();
+      if (option->getcontrol() == Types::ControlTypes::FLOW_CALL || option->getcontrol() == Types::ControlTypes::EVENT_SELECT ||
+          option->getcontrol() == Types::ControlTypes::TRIGGER_CALL)
+        componentType = option->getcontrol();
 
   auto* widget = new maki::SelectorWidget(ToLabel(property.getid()), maki::WidgetAlignment::Vertical(), this);
   for (const auto& child : mStorage->getPossibleCallers(node->id(), componentType))
@@ -433,7 +432,7 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertyInfo& prope
   {
     for (const auto& option : property.getoptions())
     {
-      if (option->gettype() == Types::PropertyTypes::EVENT_SELECT)
+      if (option->getcontrol() == Types::ControlTypes::EVENT_SELECT)
       {
         LOG_WARN_ON_FAILURE(loadFieldEventSelect(widget, option->getid(), property, node, [this](const QString& nodeId, QComboBox* eventWidget) {
           eventWidget->clear();
@@ -442,12 +441,12 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertyInfo& prope
             eventWidget->addItem(event->getname(), event->getname());
         }));
       }
-      else if (option->gettype() == Types::PropertyTypes::TRIGGER_CALL)
+      else if (option->getcontrol() == Types::ControlTypes::TRIGGER_CALL)
       {
         // This is used in async call type blocks, where the component itself has arguments
         LOG_WARN_ON_FAILURE(loadFieldTriggerCall(widget, option->getid(), property, node));
       }
-      else if (option->gettype() == Types::PropertyTypes::FLOW_CALL)
+      else if (option->getcontrol() == Types::ControlTypes::FLOW_CALL)
       {
         LOG_WARN_ON_FAILURE(loadFieldEventSelect(widget, option->getid(), property, node, [this](const QString& nodeId, QComboBox* eventWidget) {
           eventWidget->clear();
@@ -465,8 +464,8 @@ VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertyInfo& prope
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::loadFieldEventSelect(maki::SelectorWidget* componentSelect, const QString& optionId, const PropertyInfo& property, NodeItem* node,
-                                                std::function<void(const QString& nodeId, QComboBox* eventWidget)> populate)
+VoidResult PropertiesMenu::loadFieldEventSelect(maki::SelectorWidget* componentSelect, const QString& optionId, const PropertyInfo& property,
+                                                NodeItem* node, std::function<void(const QString& nodeId, QComboBox* eventWidget)> populate)
 {
   QComboBox* eventCombo = new QComboBox(this);
   auto* widget = new maki::SelectorWidget(ToLabel(optionId), eventCombo, maki::WidgetAlignment::Vertical(), this);
@@ -501,7 +500,7 @@ VoidResult PropertiesMenu::loadFieldEventSelect(maki::SelectorWidget* componentS
       return;
 
     clearLayout(group->layout());
-    UPDATE_PROPERTY_ARG(node, property.getid(), EVENT_INDEX, eventName, Types::PropertyTypes::EVENT_SELECT, false)
+    UPDATE_PROPERTY_ARG(node, property.getid(), EVENT_INDEX, eventName, Types::PropertyTypes::VOID, false)
     LOG_WARN_ON_FAILURE(loadEventArguments(componentSelect->getData().toString(), eventName, property, node, Types::CallType::UNKNOWN, group));
 
     // Update the node name
@@ -509,14 +508,15 @@ VoidResult PropertiesMenu::loadFieldEventSelect(maki::SelectorWidget* componentS
   });
 
   // When the component itself changes
-  connect(componentSelect, &maki::SelectorWidget::dataChanged, this, [this, populate, eventCombo, node, id = property.getid()](const QString& component, const QVariant& nodeId) {
-    if (!nodeId.isValid())
-      return;
+  connect(componentSelect, &maki::SelectorWidget::dataChanged, this,
+          [this, populate, eventCombo, node, id = property.getid()](const QString& component, const QVariant& nodeId) {
+            if (!nodeId.isValid())
+              return;
 
-    populate(nodeId.toString(), eventCombo);
-    UPDATE_PROPERTY(node, id, component)
-    updateBlockName(node, component, "");
-  });
+            populate(nodeId.toString(), eventCombo);
+            UPDATE_PROPERTY(node, id, component)
+            updateBlockName(node, component, "");
+          });
 
   // Add everything to the layout
   layout()->addWidget(widget);
@@ -525,29 +525,32 @@ VoidResult PropertiesMenu::loadFieldEventSelect(maki::SelectorWidget* componentS
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::loadFieldTriggerCall(maki::SelectorWidget* componentSelect, const QString& optionId, const PropertyInfo& property, NodeItem* node)
+VoidResult PropertiesMenu::loadFieldTriggerCall(maki::SelectorWidget* componentSelect, const QString& optionId, const PropertyInfo& property,
+                                                NodeItem* node)
 {
   auto* group = new maki::WidgetGroup(tr("Arguments"), oclero::qlementine::TextRole::Default, this);
   auto currentComponentId = componentSelect->getData().toString();
   LOG_WARN_ON_FAILURE(loadEventArguments(currentComponentId, "", property, node, Types::CallType::TRIGGER, group));
 
-  connect(componentSelect, &maki::SelectorWidget::dataChanged, this, [this, currentComponentId, group, node, property](const QString& component, const QVariant& nodeId) {
-    if (!nodeId.isValid())
-      return;
+  connect(componentSelect, &maki::SelectorWidget::dataChanged, this,
+          [this, currentComponentId, group, node, property](const QString& component, const QVariant& nodeId) {
+            if (!nodeId.isValid())
+              return;
 
-    clearLayout(group->layout());
+            clearLayout(group->layout());
 
-    UPDATE_PROPERTY(node, property.getid(), component)
-    LOG_WARN_ON_FAILURE(loadEventArguments(nodeId.toString(), "", property, node, Types::CallType::TRIGGER, group));
-    updateBlockName(node, component, "");
-  });
+            UPDATE_PROPERTY(node, property.getid(), component)
+            LOG_WARN_ON_FAILURE(loadEventArguments(nodeId.toString(), "", property, node, Types::CallType::TRIGGER, group));
+            updateBlockName(node, component, "");
+          });
 
   layout()->addWidget(group);
 
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QString& flowName, const PropertyInfo& property, NodeItem* node, Types::CallType callType, maki::WidgetGroup* group)
+VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QString& flowName, const PropertyInfo& property, NodeItem* node,
+                                              Types::CallType callType, maki::WidgetGroup* group)
 {
   std::shared_ptr<FlowSaveInfo> event = nullptr;
   if (callType == Types::CallType::UNKNOWN)
@@ -678,9 +681,7 @@ VoidResult PropertiesMenu::loadPropertyEventSelect(const PropertyInfo& property,
   else
     widget->setCurrentText("-");
 
-  connect(widget, &QComboBox::currentTextChanged, this, [=](const QString& text) {
-    node->setProperty(property.getid(), text);
-  });
+  connect(widget, &QComboBox::currentTextChanged, this, [=](const QString& text) { node->setProperty(property.getid(), text); });
 
   widget->setFont(Fonts::Property);
   layout()->addWidget(widget);
@@ -688,7 +689,8 @@ VoidResult PropertiesMenu::loadPropertyEventSelect(const PropertyInfo& property,
   return VoidResult();
 }
 
-QLineEdit* PropertiesMenu::loadPropertyEventArguments(const PropertyInfo& property, NodeItem* node, const QString& propertyId, const QString& eventName, QComboBox* eventWidget)
+QLineEdit* PropertiesMenu::loadPropertyEventArguments(const PropertyInfo& property, NodeItem* node, const QString& propertyId,
+                                                      const QString& eventName, QComboBox* eventWidget)
 {
   QString label = ToLabel(property.getid());
   QLabel* nameLabel = new QLabel(label);
@@ -717,7 +719,8 @@ QLineEdit* PropertiesMenu::loadPropertyEventArguments(const PropertyInfo& proper
   return widget;
 }
 
-void PropertiesMenu::addCompleter(oclero::qlementine::LineEdit* field, const QString& nodeId, const Types::PropertyTypes dataType, QStringList variables)
+void PropertiesMenu::addCompleter(oclero::qlementine::LineEdit* field, const QString& nodeId, const Types::PropertyTypes dataType,
+                                  QStringList variables)
 {
   auto parentStates = mStorage->getPossibleStates(nodeId);
   for (const auto& state : parentStates)
@@ -760,7 +763,7 @@ VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)
   eventWidget->addItem("on abort", "on abort");
 
   // Finally, the rest of the signals
-  auto callers = mStorage->getPossibleCallers(source->id(), Types::PropertyTypes::UNKNOWN);
+  auto callers = mStorage->getPossibleCallers(source->id(), Types::ControlTypes::AUTO);
   for (const auto& caller : callers)
   {
     auto name = caller->getProperty(ConfigKeys::NAME);
@@ -860,9 +863,7 @@ VoidResult PropertiesMenu::loadControlAddField(const ControlsConfig& control, No
     LOG_ERROR_ON_FAILURE(node->setField(json["id"].toString(), json));
   });
 
-  connect(tableView, &QTableView::customContextMenuRequested, [this, tableView, node](const QPoint& pos) {
-    showContextMenu(tableView, node, pos);
-  });
+  connect(tableView, &QTableView::customContextMenuRequested, [this, tableView, node](const QPoint& pos) { showContextMenu(tableView, node, pos); });
 
   QPushButton* button = new QPushButton(parent);
   connect(button, &QPushButton::pressed, this, [=]() {
@@ -935,22 +936,18 @@ VoidResult PropertiesMenu::loadControlAddEvent(const ControlsConfig& control, No
   // tableView->setFixedHeight(height);
   // tableView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
-  connect(tableView, &QTableView::customContextMenuRequested, [this, tableView, node](const QPoint& pos) {
-    showEventContextMenu(tableView, node, pos);
-  });
+  connect(tableView, &QTableView::customContextMenuRequested,
+          [this, tableView, node](const QPoint& pos) { showEventContextMenu(tableView, node, pos); });
 
-  connect(tableView, &QTableView::doubleClicked, [this, tableView, node](const QModelIndex& index) {
-    openEventDialog(tableView, node, index.row());
-  });
+  connect(tableView, &QTableView::doubleClicked,
+          [this, tableView, node](const QModelIndex& index) { openEventDialog(tableView, node, index.row()); });
 
   layout()->addWidget(tableView);
   if (control.id.isEmpty())
     return VoidResult();
 
   QPushButton* button = new QPushButton(parent);
-  connect(button, &QPushButton::pressed, this, [this, tableView, node, model]() {
-    openEventDialog(tableView, node, model->rowCount());
-  });
+  connect(button, &QPushButton::pressed, this, [this, tableView, node, model]() { openEventDialog(tableView, node, model->rowCount()); });
 
   button->setText(control.id);
   layout()->addWidget(button);
@@ -990,18 +987,13 @@ VoidResult PropertiesMenu::loadControlAddState(const ControlsConfig& control, No
   for (const auto& field : node->fields())
     addStateToTable(model, model->rowCount(), std::dynamic_pointer_cast<PropertyInfo>(field));
 
-  connect(tableView, &QTableView::doubleClicked, [this, tableView, node](const QModelIndex& index) {
-    openFieldDialog(tableView, node, index.row());
-  });
+  connect(tableView, &QTableView::doubleClicked,
+          [this, tableView, node](const QModelIndex& index) { openFieldDialog(tableView, node, index.row()); });
 
-  connect(tableView, &QTableView::customContextMenuRequested, [this, tableView, node](const QPoint& pos) {
-    showContextMenu(tableView, node, pos);
-  });
+  connect(tableView, &QTableView::customContextMenuRequested, [this, tableView, node](const QPoint& pos) { showContextMenu(tableView, node, pos); });
 
   QPushButton* button = new QPushButton(parent);
-  connect(button, &QPushButton::pressed, this, [this, tableView, node, model]() {
-    openFieldDialog(tableView, node, model->rowCount());
-  });
+  connect(button, &QPushButton::pressed, this, [this, tableView, node, model]() { openFieldDialog(tableView, node, model->rowCount()); });
 
   button->setText(control.id);
   layout()->addWidget(tableView);
@@ -1054,9 +1046,7 @@ void PropertiesMenu::showEventContextMenu(QTableView* tableView, NodeItem* node,
 
   QAction* actionEditProperties = contextMenu.addAction(tr("Edit event"));
   actionEditProperties->setEnabled(modifiable);
-  connect(actionEditProperties, &QAction::triggered, this, [this, row, tableView, node] {
-    openEventDialog(tableView, node, row);
-  });
+  connect(actionEditProperties, &QAction::triggered, this, [this, row, tableView, node] { openEventDialog(tableView, node, row); });
 
   // QAction* actionDelete = contextMenu.addAction(tr("Delete"));
   // connect(actionDelete, &QAction::triggered, this, [row, tableView, node] {
@@ -1126,9 +1116,7 @@ void PropertiesMenu::addEventToTable(QStandardItemModel* model, int row, std::sh
   indexItem->setData(event->getid(), Qt::UserRole);
   indexItem->setData(event->getmodifiable(), Qt::UserRole + 1);
 
-  LOG_TRACE("Adding event {} of type {} and return {} to event table",
-            event->getname(),
-            Types::CallTypeToString(event->gettype()),
+  LOG_TRACE("Adding event {} of type {} and return {} to event table", event->getname(), Types::CallTypeToString(event->gettype()),
             Types::PropertyTypesToString(event->getreturnType()));
 
   model->setItem(row, 0, indexItem);

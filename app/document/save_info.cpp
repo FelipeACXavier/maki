@@ -39,7 +39,8 @@ void SaveInfo::clearNodes()
   mStructuralNodes.clear();
 }
 
-QVector<std::shared_ptr<NodeSaveInfo>> SaveInfo::findFamilyOfFlowNode(const QString& nodeId, const QVector<std::shared_ptr<INode>>& nodes, const Types::PropertyTypes type) const
+QVector<std::shared_ptr<NodeSaveInfo>> SaveInfo::findFamilyOfFlowNode(const QString& nodeId, const QVector<std::shared_ptr<INode>>& nodes,
+                                                                      const Types::ControlTypes type) const
 {
   for (const auto& node : nodes)
   {
@@ -51,7 +52,7 @@ QVector<std::shared_ptr<NodeSaveInfo>> SaveInfo::findFamilyOfFlowNode(const QStr
     if (parent)
     {
       QVector<std::shared_ptr<NodeSaveInfo>> out = {};
-      if (type == Types::PropertyTypes::FLOW_CALL)
+      if (type == Types::ControlTypes::FLOW_CALL)
         out.push_back(std::static_pointer_cast<NodeSaveInfo>(node));
 
       findChildrenOfTask(node, out, type);
@@ -67,13 +68,14 @@ QVector<std::shared_ptr<NodeSaveInfo>> SaveInfo::findFamilyOfFlowNode(const QStr
   return {};
 }
 
-void SaveInfo::findChildrenOfTask(const std::shared_ptr<INode> task, QVector<std::shared_ptr<NodeSaveInfo>>& out, const Types::PropertyTypes type) const
+void SaveInfo::findChildrenOfTask(const std::shared_ptr<INode> task, QVector<std::shared_ptr<NodeSaveInfo>>& out,
+                                  const Types::ControlTypes type) const
 {
   for (const auto& child : task->getchildren())
   {
     // If we are looking for flows, we should only return children that actually have flows
     // Basically, we should ignore capabilities or any subtask that has no flows defined yet
-    if (type != Types::PropertyTypes::FLOW_CALL || !child->getflows().empty())
+    if (type != Types::ControlTypes::FLOW_CALL || !child->getflows().empty())
       out.push_back(std::static_pointer_cast<NodeSaveInfo>(child));
 
     findChildrenOfTask(child, out, type);
@@ -121,7 +123,7 @@ QVector<std::shared_ptr<IProperty>> SaveInfo::getPossibleStates(const QString& n
   return QVector<std::shared_ptr<IProperty>>();
 }
 
-QVector<std::shared_ptr<NodeSaveInfo>> SaveInfo::getPossibleCallers(const QString& nodeId, const Types::PropertyTypes type) const
+QVector<std::shared_ptr<NodeSaveInfo>> SaveInfo::getPossibleCallers(const QString& nodeId, const Types::ControlTypes type) const
 {
   // Get the parent
   return findFamilyOfFlowNode(nodeId, getnodes(), type);
@@ -157,12 +159,10 @@ QVector<std::shared_ptr<FlowSaveInfo>> SaveInfo::getEventsOfTypeFromNode(const Q
 {
   auto events = getEventsFromNode(nodeId, getnodes());
   for (auto it = events.begin(); it != events.end();)
-  {
     if (types.contains((*it)->gettype()))
       ++it;
     else
       it = events.erase(it);
-  }
 
   return events;
 }
@@ -197,10 +197,8 @@ std::shared_ptr<FlowSaveInfo> SaveInfo::getEventFromNode(const QString& nodeId, 
 {
   auto events = getEventsFromNode(nodeId, getnodes());
   for (const auto& event : events)
-  {
     if (event->getname() == flowName)
       return event;
-  }
 
   return nullptr;
 }
@@ -209,10 +207,8 @@ std::shared_ptr<FlowSaveInfo> SaveInfo::getFlowFromNode(const QString& nodeId, c
 {
   auto flows = getFlowsFromNode(nodeId, getnodes());
   for (const auto& flow : flows)
-  {
     if (flow->getname() == flowName)
       return flow;
-  }
 
   return nullptr;
 }
@@ -254,10 +250,8 @@ std::shared_ptr<FlowSaveInfo> SaveInfo::getFlowWithId(const QString& flowId, con
   for (const auto& node : nodes)
   {
     for (const auto& flow : node->getflows())
-    {
       if (flow->getid() == flowId)
         return std::static_pointer_cast<FlowSaveInfo>(flow);
-    }
 
     auto found = getFlowWithId(flowId, node->getchildren());
     if (found != nullptr)

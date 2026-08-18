@@ -21,6 +21,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     libcpphelpers
     libcommon
     libmaki
+    libkoda
 )
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug" AND BUILD_PLUGINS)

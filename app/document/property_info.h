@@ -55,6 +55,13 @@ public:
   Types::PropertyTypes gettype() const override;
 
   /**
+   * @brief Gets the control type of the property.
+   *
+   * @return Types::ControlTypes The control type of the property.
+   */
+  Types::ControlTypes getcontrol() const override;
+
+  /**
    * @brief Sets the ID of the property.
    *
    * @param arg The new ID for the property.
@@ -74,6 +81,13 @@ public:
    * @param arg The new type for the property.
    */
   void setType(Types::PropertyTypes arg);
+
+  /**
+   * @brief Sets the control type of the property.
+   *
+   * @param arg The new control type for the property.
+   */
+  void setControl(Types::ControlTypes arg);
 
   /**
    * @brief Gets a specific option by ID.
@@ -116,10 +130,11 @@ public:
   friend QDataStream& operator>>(QDataStream& in, PropertyInfo& config);
 
 private:
-  QString mId; /// ID of the property
-  QVariant mDefaultValue; /// Default value of the property
-  QVector<std::shared_ptr<IProperty>> mOptions; /// Options available for this property
-  Types::PropertyTypes mType; /// Type of the property
+  QString mId;                                   /// ID of the property
+  QVariant mDefaultValue;                        /// Default value of the property
+  QVector<std::shared_ptr<IProperty>> mOptions;  /// Options available for this property
+  Types::PropertyTypes mType;                    /// Type of the property
+  Types::ControlTypes mControlType;              /// Control type of the property
 };
 
 QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<PropertyInfo>>& properties);

@@ -4,9 +4,10 @@
 #include <QPoint>
 #include <QRect>
 
-#include "app_configs.h"
 #include "keys.h"
 #include "string_helpers.h"
+#include "type_helpers.h"
+#include "type_registry.h"
 
 PropertyConfig::PropertyConfig()
 {
@@ -14,32 +15,47 @@ PropertyConfig::PropertyConfig()
 
 PropertyConfig::PropertyConfig(const QJsonObject& object)
 {
-  if (!object.contains("id"))
+  if (!object.contains("id") || !object["id"].isString())
   {
     setInvalid("Missing id attribute in property");
     return;
   }
 
-  if (!object.contains("type"))
+  if (!object.contains("type") || !object["type"].isString())
   {
     setInvalid("Missing type attribute in property");
     return;
   }
 
   id = object["id"].toString();
-  type = Types::StringToPropertyTypes(object["type"].toString());
-  if (type == Types::PropertyTypes::UNKNOWN)
+  const auto typeName = object["type"].toString();
+  if (typeName == "list")
   {
-    setInvalid("Invalid property type: " + object["type"].toString() + " for " + id);
-    return;
+    using namespace koda::types;
+    type = TypeReference::list(TypeReference::primitive(PrimitiveKind::Void));
   }
+  else
+  {
+    const auto qname = koda::types::convertQualifiedName(typeName.toStdString());
+    auto definition = maki::TypeRegistry::instance().findByName(qname);
+    if (!definition)
+    {
+      setInvalid("Invalid property type: " + typeName + " for " + id);
+      return;
+    }
+    else
+      type = definition->toReference();
+  }
+
+  if (object.contains("control") && object["control"].isString())
+    control = Types::StringToControlTypes(object["control"].toString());
 
   if (object.contains(ConfigKeys::OPTIONS))
   {
     for (const auto& option : object[ConfigKeys::OPTIONS].toArray())
       options.push_back(PropertyConfig(option.toObject()));
   }
-  else if (type == Types::PropertyTypes::SELECT)
+  else if (control == Types::ControlTypes::SELECT)
   {
     setInvalid("Invalid config for " + id + ". " + object["type"].toString() + " type must have options");
     return;
@@ -49,43 +65,59 @@ PropertyConfig::PropertyConfig(const QJsonObject& object)
     info = object[ConfigKeys::INFO].toString();
 
   // Set default later for easier comparison
-  defaultValue = toDefault(object, type);
+  defaultValue = toDefault(object);
   if (!defaultValue.isValid())
     setInvalid("Invalid default value for " + id);
 }
 
-QVariant PropertyConfig::toDefault(const QJsonObject& object, Types::PropertyTypes objectType)
+QVariant PropertyConfig::toDefault(const QJsonObject& object)
 {
-  if (objectType == Types::PropertyTypes::STRING)
-    return object.contains("default") ? object["default"].toString() : QVariant(QString(""));
-  else if (objectType == Types::PropertyTypes::INTEGER)
-    return object.contains("default") ? object["default"].toInt() : QVariant(qint32(0));
-  else if (objectType == Types::PropertyTypes::REAL)
-    return object.contains("default") ? object["default"].toDouble() : QVariant(qreal(0));
-  else if (objectType == Types::PropertyTypes::BOOLEAN)
-    return object.contains("default") ? object["default"].toBool() : QVariant(false);
-  else if (objectType == Types::PropertyTypes::LIST)
+  if (type.isList())
+  {
     return object.contains("default") ? object["default"].toArray().toVariantList() : QVariantList();
-  else if (objectType == Types::PropertyTypes::COLOR)
+  }
+  else if (control == Types::ControlTypes::COLOR)
+  {
     return object.contains("default") ? object["default"].toString() : QVariant(QString("#050505"));
-  else if (objectType == Types::PropertyTypes::COMPONENT_SELECT)
+  }
+  else if (control == Types::ControlTypes::COMPONENT_SELECT)
   {
     QJsonObject defaultObject;
     defaultObject[ConfigKeys::OPTIONS] = QJsonArray();
     return defaultObject;
   }
-  else if (objectType == Types::PropertyTypes::EVENT_SELECT)
-    return toDefault(object, Types::PropertyTypes::STRING);
-  else if (objectType == Types::PropertyTypes::SELECT)
-    return toDefault(object, Types::PropertyTypes::STRING);
-  else if (objectType == Types::PropertyTypes::ENUM)
-    return toDefault(object, Types::PropertyTypes::STRING);
-  else if (objectType == Types::PropertyTypes::TRIGGER_CALL)
-    return toDefault(object, Types::PropertyTypes::STRING);
-  else if (objectType == Types::PropertyTypes::FLOW_CALL)
-    return toDefault(object, Types::PropertyTypes::STRING);
-  else if (objectType == Types::PropertyTypes::VOID)
-    return object;
+  else if (control == Types::ControlTypes::EVENT_SELECT)
+  {
+    return object.contains("default") ? object["default"].toString() : QVariant(QString(""));
+  }
+  else if (control == Types::ControlTypes::SELECT)
+  {
+    return object.contains("default") ? object["default"].toString() : QVariant(QString(""));
+  }
+  else if (control == Types::ControlTypes::TRIGGER_CALL)
+  {
+    return object.contains("default") ? object["default"].toString() : QVariant(QString(""));
+  }
+  else if (control == Types::ControlTypes::FLOW_CALL)
+  {
+    return object.contains("default") ? object["default"].toString() : QVariant(QString(""));
+  }
+  else if (type.isPrimitive())
+  {
+    const auto primitive = type.primitiveKind();
+    if (primitive == koda::types::PrimitiveKind::String)
+      return object.contains("default") ? object["default"].toString() : QVariant(QString(""));
+    else if (primitive == koda::types::PrimitiveKind::Int64)
+      return object.contains("default") ? object["default"].toInt() : QVariant(qint32(0));
+    else if (primitive == koda::types::PrimitiveKind::Float64)
+      return object.contains("default") ? object["default"].toDouble() : QVariant(qreal(0));
+    else if (primitive == koda::types::PrimitiveKind::Bool)
+      return object.contains("default") ? object["default"].toBool() : QVariant(false);
+    else if (primitive == koda::types::PrimitiveKind::Bytes)
+      return object.contains("default") ? object["default"].toString() : QVariant(QString(""));
+    else if (primitive == koda::types::PrimitiveKind::Void)
+      return object;
+  }
 
   return QVariant();
 }
@@ -139,11 +171,17 @@ FlowConfig::FlowConfig(const QJsonObject& object)
     return;
   }
 
-  returnType = Types::StringToPropertyTypes(object[ConfigKeys::RETURN_TYPE].toString());
-  if (returnType == Types::PropertyTypes::UNKNOWN)
+  const auto returnTypeName = object[ConfigKeys::RETURN_TYPE].toString();
+  const auto qname = koda::types::convertQualifiedName(returnTypeName.toStdString());
+  auto definition = maki::TypeRegistry::instance().findByName(qname);
+  if (!definition)
   {
     setInvalid("Invalid return type: " + object[ConfigKeys::RETURN_TYPE].toString() + " for " + name);
     return;
+  }
+  else
+  {
+    returnType = maki::propertyTypeFromReference(definition->toReference());
   }
 
   for (const auto& arg : object[ConfigKeys::ARGUMENTS].toArray())
@@ -492,7 +530,7 @@ QDataStream& operator<<(QDataStream& out, const PropertyConfig& config)
 {
   out << config.id;
   out << config.defaultValue;
-  out << config.type;
+  out << QString::fromStdString(config.type.toString());
   out << config.options;
   out << config.info;
 
@@ -503,7 +541,13 @@ QDataStream& operator>>(QDataStream& in, PropertyConfig& config)
 {
   in >> config.id;
   in >> config.defaultValue;
-  in >> config.type;
+
+  QString typeName;
+  in >> typeName;
+  auto definition = maki::TypeRegistry::instance().findByName(typeName.toStdString());
+  if (definition)
+    config.type = definition->toReference();
+
   in >> config.options;
   in >> config.info;
 

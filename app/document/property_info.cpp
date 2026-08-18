@@ -4,6 +4,7 @@
 
 #include "config.h"
 #include "keys.h"
+#include "type_helpers.h"
 #include "types.h"
 
 PropertyInfo::PropertyInfo()
@@ -17,7 +18,8 @@ PropertyInfo::PropertyInfo(const PropertyConfig& object)
 {
   setId(object.id);
   setDefaultValue(object.defaultValue);
-  setType(object.type);
+  setType(maki::propertyTypeFromReference(object.type));
+  setControl(object.control);
   for (const auto& opt : object.options)
     addOption(std::make_shared<PropertyInfo>(opt));
 }
@@ -42,6 +44,11 @@ Types::PropertyTypes PropertyInfo::gettype() const
   return mType;
 }
 
+Types::ControlTypes PropertyInfo::getcontrol() const
+{
+  return mControlType;
+}
+
 void PropertyInfo::setId(const QString& arg)
 {
   mId = arg;
@@ -57,13 +64,16 @@ void PropertyInfo::setType(Types::PropertyTypes arg)
   mType = arg;
 }
 
+void PropertyInfo::setControl(Types::ControlTypes arg)
+{
+  mControlType = arg;
+}
+
 PropertyInfo PropertyInfo::getOption(const QString& optionId)
 {
   for (const auto& field : getoptions())
-  {
     if (field->getid() == optionId)
       return *std::dynamic_pointer_cast<PropertyInfo>(field);
-  }
 
   return PropertyInfo();
 }

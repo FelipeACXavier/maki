@@ -56,6 +56,7 @@
 #include "structure_canvas.h"
 #include "style_helpers.h"
 #include "system/main_window_layout.h"
+#include "type_registry.h"
 #include "types.h"
 #include "widgets/dialogs/prompt.h"
 #include "widgets/dialogs/text_prompt.h"
@@ -70,7 +71,6 @@
 #include "widgets/structure/file_menu.h"
 #include "widgets/structure/flow_menu.h"
 #include "widgets/structure/system_menu.h"
-#include "widgets/type_registry.h"
 
 MainWindow::MainWindow(QApplication* app, oclero::qlementine::ThemeManager* themeManager, QWidget* parent)
     : MainWindowLayout(parent)
@@ -690,6 +690,9 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
 
   if (dataOnly && type == ConfigKeys::DATA)
     return maki::TypeRegistry::instance().loadFromLibrary(config);
+
+  if (dataOnly || type == ConfigKeys::DATA)
+    return VoidResult();
 
   LOG_DEBUG("Loading library: {} of {}", libraryName, name);
 

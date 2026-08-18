@@ -71,12 +71,6 @@ enum class PropertyTypes
   LIST,
   VOID,  // Should always be the separattor bewtween "normal" types and MAKI types
   ENUM,
-  COLOR,
-  SELECT,
-  COMPONENT_SELECT,
-  EVENT_SELECT,
-  TRIGGER_CALL,
-  FLOW_CALL,
   END
 };
 
@@ -87,12 +81,18 @@ QString PropertyTypesToString(PropertyTypes type);
 
 enum class ControlTypes
 {
-  UNKNOWN = 0,
+  AUTO = 0,
+  COLOR,
   ADD_EVENT,
   ADD_FIELD,
   ADD_CONTROL,
   REMOVE_CONTROL,
-  ADD_STATE
+  ADD_STATE,
+  SELECT,
+  COMPONENT_SELECT,
+  EVENT_SELECT,
+  TRIGGER_CALL,
+  FLOW_CALL
 };
 
 ControlTypes StringToControlTypes(const QString& type);

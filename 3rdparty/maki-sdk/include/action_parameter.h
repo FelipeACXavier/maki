@@ -15,6 +15,7 @@ public:
   QVariant getdefaultValue() const override;
   QVector<std::shared_ptr<IProperty>> getoptions() const override;
   Types::PropertyTypes gettype() const override;
+  Types::ControlTypes getcontrol() const override;
 
 private:
   const QString mId;

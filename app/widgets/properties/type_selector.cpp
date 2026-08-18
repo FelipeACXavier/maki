@@ -8,9 +8,9 @@
 
 #include "../clickable_icon.h"
 #include "../dialogs/type_reference_dialog.h"
-#include "../type_registry.h"
 #include "../widget_factory.h"
 #include "app_configs.h"
+#include "type_registry.h"
 
 namespace maki
 {

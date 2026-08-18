@@ -826,7 +826,6 @@ void TypeEditor::reloadTypes()
     else
       item = new QTreeWidgetItem(libWidgets[projectKey]);
 
-    LOG_DEBUG("Loading type: {}", type->name.toString());
     item->setText(0, QString::fromStdString(type->name.toString()));
     item->setData(0, QualifiedNameRole, QString::fromStdString(type->name.toString()));
     item->setData(0, IdRole, QString::fromStdString(type->id));

@@ -461,4 +461,28 @@ std::string makeUuid()
   return out.str();
 }
 
+QualifiedName convertQualifiedName(const std::string& name)
+{
+  if (name == "bool" || name == "boolean")
+    return types::BooleanType;
+  if (name == "int" || name == "integer")
+    return types::IntegerType;
+  if (name == "uint" || name == "unsigned")
+    return types::UnsignedType;
+  if (name == "real" || name == "float" || name == "double")
+    return types::RealType;
+  if (name == "string")
+    return types::StringType;
+  if (name == "bytes")
+    return types::BytesType;
+  if (name == "timestamp")
+    return types::TimestampType;
+  if (name == "duration")
+    return types::DurationType;
+  if (name == "void")
+    return types::VoidType;
+
+  return types::QualifiedName(name);
+}
+
 }  // namespace koda::types

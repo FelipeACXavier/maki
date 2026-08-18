@@ -22,7 +22,7 @@
 #include "node_info.h"
 #include "result.h"
 #include "type_helpers.h"
-#include "widgets/type_registry.h"
+#include "type_registry.h"
 
 VoidResult zipFolder(const QString& sourceDir, const QString& outputFile)
 {

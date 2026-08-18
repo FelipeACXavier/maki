@@ -102,24 +102,12 @@ QString Types::PropertyTypesToString(Types::PropertyTypes type)
     return "float";
   else if (type == Types::PropertyTypes::BOOLEAN)
     return "bool";
-  else if (type == Types::PropertyTypes::SELECT)
-    return "select";
   else if (type == Types::PropertyTypes::LIST)
     return "list";
-  else if (type == Types::PropertyTypes::COLOR)
-    return "color";
   else if (type == Types::PropertyTypes::VOID)
     return "void";
-  else if (type == Types::PropertyTypes::COMPONENT_SELECT)
-    return "component_select";
-  else if (type == Types::PropertyTypes::EVENT_SELECT)
-    return "event_select";
   else if (type == Types::PropertyTypes::ENUM)
     return "enum";
-  else if (type == Types::PropertyTypes::TRIGGER_CALL)
-    return "trigger_call";
-  else if (type == Types::PropertyTypes::FLOW_CALL)
-    return "user_call";
 
   return "unknown";
 }
@@ -134,24 +122,12 @@ Types::PropertyTypes Types::StringToPropertyTypes(const QString& type)
     return Types::PropertyTypes::REAL;
   else if (type == "boolean" || type == "bool")
     return Types::PropertyTypes::BOOLEAN;
-  else if (type == "select")
-    return Types::PropertyTypes::SELECT;
   else if (type == "list")
     return Types::PropertyTypes::LIST;
   else if (type == "color")
-    return Types::PropertyTypes::COLOR;
-  else if (type == "void")
     return Types::PropertyTypes::VOID;
-  else if (type == "event_select")
-    return Types::PropertyTypes::EVENT_SELECT;
-  else if (type == "component_select")
-    return Types::PropertyTypes::COMPONENT_SELECT;
   else if (type == "enum")
     return Types::PropertyTypes::ENUM;
-  else if (type == "trigger_call")
-    return Types::PropertyTypes::TRIGGER_CALL;
-  else if (type == "user_call")
-    return Types::PropertyTypes::FLOW_CALL;
 
   return Types::PropertyTypes::UNKNOWN;
 }
@@ -166,8 +142,20 @@ Types::ControlTypes Types::StringToControlTypes(const QString& type)
     return Types::ControlTypes::ADD_FIELD;
   else if (type == "add state")
     return Types::ControlTypes::ADD_STATE;
+  else if (type == "color")
+    return Types::ControlTypes::COLOR;
+  else if (type == "select")
+    return Types::ControlTypes::SELECT;
+  else if (type == "component_select")
+    return Types::ControlTypes::COMPONENT_SELECT;
+  else if (type == "event_select")
+    return Types::ControlTypes::EVENT_SELECT;
+  else if (type == "trigger_call")
+    return Types::ControlTypes::TRIGGER_CALL;
+  else if (type == "flow_call")
+    return Types::ControlTypes::FLOW_CALL;
   else
-    return Types::ControlTypes::UNKNOWN;
+    return Types::ControlTypes::AUTO;
 }
 
 QString Types::ControlTypesToString(Types::ControlTypes type)
@@ -180,7 +168,19 @@ QString Types::ControlTypesToString(Types::ControlTypes type)
       return "add event";
     case Types::ControlTypes::ADD_STATE:
       return "add state";
-    case Types::ControlTypes::UNKNOWN:
+    case Types::ControlTypes::COLOR:
+      return "color";
+    case Types::ControlTypes::SELECT:
+      return "select";
+    case Types::ControlTypes::COMPONENT_SELECT:
+      return "component_select";
+    case Types::ControlTypes::EVENT_SELECT:
+      return "event_select";
+    case Types::ControlTypes::TRIGGER_CALL:
+      return "trigger_call";
+    case Types::ControlTypes::FLOW_CALL:
+      return "flow_call";
+    case Types::ControlTypes::AUTO:
     default:
       return "unknown";
   }

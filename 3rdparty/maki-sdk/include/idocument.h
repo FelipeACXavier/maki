@@ -17,6 +17,7 @@ public:
   virtual QVariant getdefaultValue() const = 0;
   virtual QVector<std::shared_ptr<IProperty>> getoptions() const = 0;
   virtual Types::PropertyTypes gettype() const = 0;
+  virtual Types::ControlTypes getcontrol() const = 0;
 };
 
 class IFlow

@@ -70,7 +70,7 @@ VoidResult TypeRegistry::loadFromLibrary(const JSON& json)
   if (!types.isArray())
     return VoidResult::Failed("types must be in a list in the format \"types\": []");
 
-  LOG_INFO("Loading {} types from {}", name, types.toArray().size());
+  LOG_INFO("Loading {} types from {}", types.toArray().size(), name);
   for (const auto& object : types.toArray())
   {
     if (!object.isObject())

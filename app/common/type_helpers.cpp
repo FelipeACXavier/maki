@@ -4,6 +4,7 @@
 
 #include "json.h"
 #include "keys.h"
+#include "type_registry.h"
 
 namespace maki
 {
@@ -396,6 +397,37 @@ Result<koda::types::TypeDefinition> typeDefinitionFromJson(const QJsonObject& js
   }
 
   return Result<koda::types::TypeDefinition>::Failed("Unknown type {}", kindString);
+}
+
+// -----------------------------------------------------------------------------------------------------------
+Types::PropertyTypes propertyTypeFromReference(const koda::types::TypeReference& reference)
+{
+  if (reference.isList())
+    return Types::PropertyTypes::LIST;
+
+  if (reference.isPrimitive())
+  {
+    const auto primitive = reference.primitiveKind();
+    if (primitive == koda::types::PrimitiveKind::String)
+      return Types::PropertyTypes::STRING;
+    else if (primitive == koda::types::PrimitiveKind::Int64)
+      return Types::PropertyTypes::INTEGER;
+    else if (primitive == koda::types::PrimitiveKind::Float64)
+      return Types::PropertyTypes::REAL;
+    else if (primitive == koda::types::PrimitiveKind::Bool)
+      return Types::PropertyTypes::BOOLEAN;
+    else if (primitive == koda::types::PrimitiveKind::Void)
+      return Types::PropertyTypes::VOID;
+  }
+
+  if (reference.isNamed())
+  {
+    const auto* def = maki::TypeRegistry::instance().findByName(reference.namedType().name);
+    if (def)
+      return propertyTypeFromReference(def->toReference());
+  }
+
+  return Types::PropertyTypes::UNKNOWN;
 }
 
 }  // namespace maki

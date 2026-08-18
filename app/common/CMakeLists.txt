@@ -1,8 +1,9 @@
 # Define project name
 project(libcommon VERSION 1.0)
 
-include(GNUInstallDirs)
+set(CMAKE_AUTOMOC ON)
 
+include(GNUInstallDirs)
 file(GLOB SOURCES
   "${PROJECT_SOURCE_DIR}/*.cpp"
 )

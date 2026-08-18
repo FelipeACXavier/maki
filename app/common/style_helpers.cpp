@@ -78,8 +78,7 @@ QString timeToQT(std::chrono::system_clock::time_point now)
   auto t = std::chrono::system_clock::to_time_t(secs);
   std::tm tm = logging::ToLocalTm(t);
 
-  return QString::fromStdString(Format(
-      "%02d:%02d:%02d.%09lld", tm.tm_hour, tm.tm_min, tm.tm_sec, static_cast<long long>(micros)));
+  return QString::fromStdString(Format("%02d:%02d:%02d.%09lld", tm.tm_hour, tm.tm_min, tm.tm_sec, static_cast<long long>(micros)));
 }
 
 QString logLevelToQT(logging::LogLevel logLevel)
@@ -286,7 +285,7 @@ QString createInformationMessage(const NodeConfig& node)
     {
       out += "<tr>";
       out += "<td>" + htmlEscape(prop.id) + "</td>";
-      out += "<td>" + htmlEscape(Types::PropertyTypesToString(prop.type)) + "</td>";
+      out += "<td>" + htmlEscape(QString::fromStdString(prop.type.toString())) + "</td>";
       out += "<td>" + htmlEscape(prop.defaultValue.isValid() ? prop.defaultValue.toString() : "\"\"") + "</td>";
       out += "<td>" + htmlEscape(prop.info) + "</td>";
       out += "</tr>";

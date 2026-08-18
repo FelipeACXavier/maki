@@ -9,9 +9,9 @@
 #include <QStackedWidget>
 
 #include "../properties/type_selector.h"
-#include "../type_registry.h"
 #include "../widget_factory.h"
 #include "app_configs.h"
+#include "type_registry.h"
 
 namespace maki
 {
