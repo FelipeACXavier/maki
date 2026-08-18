@@ -35,11 +35,11 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitEnumDeclaration(KodaParser::EnumDeclarationContext *ctx) override {
+  virtual std::any visitFieldDeclaration(KodaParser::FieldDeclarationContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitFieldDeclaration(KodaParser::FieldDeclarationContext *ctx) override {
+  virtual std::any visitEnumDeclaration(KodaParser::EnumDeclarationContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -48,6 +48,10 @@ public:
   }
 
   virtual std::any visitEnumLiteral(KodaParser::EnumLiteralContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitMappingDeclaration(KodaParser::MappingDeclarationContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -127,75 +131,15 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitReqDefStatement(KodaParser::ReqDefStatementContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitEventDefStatement(KodaParser::EventDefStatementContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitEventDefComponentList(KodaParser::EventDefComponentListContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitEdcRosEvent(KodaParser::EdcRosEventContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitEdcTimeout(KodaParser::EdcTimeoutContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitEdcWhenAllowedIn(KodaParser::EdcWhenAllowedInContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitEdcReply(KodaParser::EdcReplyContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitEdcDependsAfter(KodaParser::EdcDependsAfterContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitEdcOnceIn(KodaParser::EdcOnceInContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitEdcStart(KodaParser::EdcStartContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitEdcReset(KodaParser::EdcResetContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitRosData(KodaParser::RosDataContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitWhenMode(KodaParser::WhenModeContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitTimeUnit(KodaParser::TimeUnitContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
   virtual std::any visitStratRef(KodaParser::StratRefContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitStratIfElse(KodaParser::StratIfElseContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitStratRepeat(KodaParser::StratRepeatContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitStratParen(KodaParser::StratParenContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual std::any visitStratGuard(KodaParser::StratGuardContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -215,10 +159,6 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitStratLet(KodaParser::StratLetContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
   virtual std::any visitStratEnd(KodaParser::StratEndContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -227,7 +167,15 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitStratRepeat(KodaParser::StratRepeatContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitStratContinue(KodaParser::StratContinueContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitStratParen(KodaParser::StratParenContext *ctx) override {
     return visitChildren(ctx);
   }
 

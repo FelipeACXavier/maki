@@ -16,6 +16,7 @@ topLevelDeclaration
   : topLevelComponent
   | typeDeclaration
   | enumDeclaration
+  | mappingDeclaration
   ;
 
 topLevelComponent
@@ -48,6 +49,10 @@ enumLiteral
   | MINUS? NATURAL
   ;
 
+mappingDeclaration
+  : MAPPING typeReference TO STRING
+  ;
+
 typeReference
   : qualifiedName                                                   # typeNamed
   | LIST LT typeReference GT                                        # typeList
@@ -67,9 +72,9 @@ argumentList
   ;
 
 argument
-  : IDENT IDENT                 # argPlain
-  | IDENT REQ IDENT             # argReq
-  | IDENT PRO IDENT             # argPro
+  : typeReference IDENT         # argPlain
+  | IDENT REQ typeReference     # argReq
+  | IDENT PRO typeReference     # argPro
   ;
 
 // =============================================================================
@@ -101,19 +106,19 @@ varsBlock
   ;
 
 variableStatement
-  : IDENT IDENT ASSIGN expression COLON expression
+  : typeReference IDENT ASSIGN expression COLON expression
   ;
 
 actionBlock
-  : ACTION STRING STRING LBRACE rosDefStatement* RBRACE
+  : ACTION STRING STRING LBRACE (reqDefStatement | rosDefStatement)* RBRACE
   ;
 
 serviceBlock
-  : SERVICE STRING STRING LBRACE rosDefStatement* RBRACE
+  : SERVICE STRING STRING LBRACE (reqDefStatement | rosDefStatement)* RBRACE
   ;
 
 topicBlock
-  : TOPIC STRING STRING LBRACE rosDefStatement* RBRACE
+  : TOPIC STRING STRING LBRACE (reqDefStatement | rosDefStatement)* RBRACE
   ;
 
 // =============================================================================
@@ -121,50 +126,21 @@ topicBlock
 // =============================================================================
 
 rosDefStatement
-  : TRIGGER COLON eventDefStatement SEMI
-  | RETURN  COLON eventDefStatement SEMI
-  | ABORT   COLON eventDefStatement SEMI
-  | ERROR   COLON eventDefStatement SEMI
-  | IN      COLON eventDefStatement SEMI
-  | OUT     COLON eventDefStatement SEMI
+  : TRIGGER  COLON eventDefStatement SEMI
+  | RETURN   COLON eventDefStatement SEMI
+  | ABORT    COLON eventDefStatement SEMI
+  | ERROR    COLON eventDefStatement SEMI
+  | IN       COLON eventDefStatement SEMI
+  | OUT      COLON eventDefStatement SEMI
+  ;
+
+reqDefStatement
+  : CONSUMES COLON typeReference SEMI
+  | PRODUCES COLON typeReference SEMI
   ;
 
 eventDefStatement
-  : IDENT identifier LPAREN argumentList? RPAREN (COLON eventDefComponentList)?
-  ;
-
-eventDefComponentList
-  : eventDefComponent (COMMA eventDefComponent)+
-  ;
-
-eventDefComponent
-  : rosData IDENT COLON STRING IDENT STRING IDENT STRING         # edcRosEvent
-  | TIMEOUT NATURAL timeUnit ARROW IDENT                         # edcTimeout
-  | ALLOWED IN whenMode                                          # edcWhenAllowedIn
-  | REPLY IDENT whenMode                                         # edcReply
-  | AFTER IDENT                                                  # edcDependsAfter
-  | ONCE IN whenMode (LBRACE statement* RBRACE)?                 # edcOnceIn
-  | TRIGGER (LBRACE statement* RBRACE)?                          # edcStart
-  | ABORT (LBRACE statement* RBRACE)?                            # edcReset
-  ;
-
-rosData
-  : TOPIC
-  | SERVICE
-  | ACTION
-  ;
-
-whenMode
-  : ALWAYS
-  | MISSION
-  | IDLE
-  ;
-
-timeUnit
-  : S
-  | MS
-  | US
-  | NS
+  : IDENT identifier LPAREN argumentList? RPAREN
   ;
 
 // =============================================================================
@@ -175,11 +151,8 @@ strategy
   : strategy (ARROW strategy)+                                     # stratSeq
   | JOIN   LPAREN strategy (PIPE strategy)+ RPAREN                 # stratJoin
   | EITHER LPAREN strategy (PIPE strategy)+ RPAREN                 # stratEither
-  | LET IDENT ASSIGN eventStatement                                # stratLet
   | WITHIN NATURAL DO strategy ELSE strategy                       # stratWithin
-  | IF expression THEN strategy (ELSE strategy)?                   # stratIfElse
   | REPEAT NATURAL NATURAL LPAREN strategy RPAREN strategyHandler* # stratRepeat
-  | GUARD LBRACE expression RBRACE                                 # stratGuard
   | END                                                            # stratEnd
   | CONTINUE                                                       # stratContinue
   | identifier                                                     # stratRef
@@ -270,6 +243,8 @@ identifier
   | ERROR
   | IN
   | OUT
+  | CONSUMES
+  | PRODUCES
   ;
 
 // --- Keywords / fixed words (put before IDENT so they win) ---
@@ -282,6 +257,8 @@ EXTENDS    : 'extends';
 LIST       : 'list';
 OPTIONAL   : 'optional';
 MAP        : 'map';
+MAPPING    : 'mapping';
+TO         : 'to';
 
 STRATEGY   : 'strategy';
 VARS       : 'vars';
@@ -297,6 +274,8 @@ ERROR      : 'error';
 IN         : 'in';
 OUT        : 'out';
 ON         : 'on';
+CONSUMES   : 'consumes';
+PRODUCES   : 'produces';
 
 REQ        : 'req';
 PRO        : 'pro';
@@ -307,29 +286,11 @@ REPEAT     : 'repeat';
 JOIN       : 'join';
 EITHER     : 'either';
 
-LET        : 'let';
 WITHIN     : 'within';
 DO         : 'do';
 ELSE       : 'else';
-IF         : 'if';
 THEN       : 'then';
-GUARD      : 'guard';
 EVERY      : 'every';
-
-TIMEOUT    : 'timeout';
-ALLOWED    : 'allowed';
-REPLY      : 'reply';
-AFTER      : 'after';
-ONCE       : 'once';
-
-ALWAYS     : 'always';
-MISSION    : 'mission';
-IDLE       : 'idle';
-
-S          : 's';
-MS         : 'ms';
-US         : 'us';
-NS         : 'ns';
 
 // --- Operators / punctuation ---
 ARROW      : '-->';

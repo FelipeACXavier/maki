@@ -29,13 +29,15 @@ public:
 
     virtual std::any visitTypeAlias(KodaParser::TypeAliasContext *context) = 0;
 
-    virtual std::any visitEnumDeclaration(KodaParser::EnumDeclarationContext *context) = 0;
-
     virtual std::any visitFieldDeclaration(KodaParser::FieldDeclarationContext *context) = 0;
+
+    virtual std::any visitEnumDeclaration(KodaParser::EnumDeclarationContext *context) = 0;
 
     virtual std::any visitEnumValue(KodaParser::EnumValueContext *context) = 0;
 
     virtual std::any visitEnumLiteral(KodaParser::EnumLiteralContext *context) = 0;
+
+    virtual std::any visitMappingDeclaration(KodaParser::MappingDeclarationContext *context) = 0;
 
     virtual std::any visitTypeNamed(KodaParser::TypeNamedContext *context) = 0;
 
@@ -75,41 +77,11 @@ public:
 
     virtual std::any visitRosDefStatement(KodaParser::RosDefStatementContext *context) = 0;
 
+    virtual std::any visitReqDefStatement(KodaParser::ReqDefStatementContext *context) = 0;
+
     virtual std::any visitEventDefStatement(KodaParser::EventDefStatementContext *context) = 0;
 
-    virtual std::any visitEventDefComponentList(KodaParser::EventDefComponentListContext *context) = 0;
-
-    virtual std::any visitEdcRosEvent(KodaParser::EdcRosEventContext *context) = 0;
-
-    virtual std::any visitEdcTimeout(KodaParser::EdcTimeoutContext *context) = 0;
-
-    virtual std::any visitEdcWhenAllowedIn(KodaParser::EdcWhenAllowedInContext *context) = 0;
-
-    virtual std::any visitEdcReply(KodaParser::EdcReplyContext *context) = 0;
-
-    virtual std::any visitEdcDependsAfter(KodaParser::EdcDependsAfterContext *context) = 0;
-
-    virtual std::any visitEdcOnceIn(KodaParser::EdcOnceInContext *context) = 0;
-
-    virtual std::any visitEdcStart(KodaParser::EdcStartContext *context) = 0;
-
-    virtual std::any visitEdcReset(KodaParser::EdcResetContext *context) = 0;
-
-    virtual std::any visitRosData(KodaParser::RosDataContext *context) = 0;
-
-    virtual std::any visitWhenMode(KodaParser::WhenModeContext *context) = 0;
-
-    virtual std::any visitTimeUnit(KodaParser::TimeUnitContext *context) = 0;
-
     virtual std::any visitStratRef(KodaParser::StratRefContext *context) = 0;
-
-    virtual std::any visitStratIfElse(KodaParser::StratIfElseContext *context) = 0;
-
-    virtual std::any visitStratRepeat(KodaParser::StratRepeatContext *context) = 0;
-
-    virtual std::any visitStratParen(KodaParser::StratParenContext *context) = 0;
-
-    virtual std::any visitStratGuard(KodaParser::StratGuardContext *context) = 0;
 
     virtual std::any visitStratSeq(KodaParser::StratSeqContext *context) = 0;
 
@@ -119,13 +91,15 @@ public:
 
     virtual std::any visitStratEither(KodaParser::StratEitherContext *context) = 0;
 
-    virtual std::any visitStratLet(KodaParser::StratLetContext *context) = 0;
-
     virtual std::any visitStratEnd(KodaParser::StratEndContext *context) = 0;
 
     virtual std::any visitStratWithin(KodaParser::StratWithinContext *context) = 0;
 
+    virtual std::any visitStratRepeat(KodaParser::StratRepeatContext *context) = 0;
+
     virtual std::any visitStratContinue(KodaParser::StratContinueContext *context) = 0;
+
+    virtual std::any visitStratParen(KodaParser::StratParenContext *context) = 0;
 
     virtual std::any visitHandlerOnError(KodaParser::HandlerOnErrorContext *context) = 0;
 
