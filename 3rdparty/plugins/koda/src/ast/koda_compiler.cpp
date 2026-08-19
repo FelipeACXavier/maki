@@ -46,6 +46,7 @@ VoidResult Compiler::parse(const CompilerOptions& options)
     return VoidResult::Failed("Failed to parse input file");
   }
 
+  mBlackboard = std::make_shared<koda::types::Blackboard>();
   mTypeRegistry = std::make_shared<koda::types::TypeRegistry>();
   koda::CST2AST visitor(mTypeRegistry, &errorListener);
   try
@@ -101,7 +102,7 @@ VoidResult Compiler::runFrontend()
 {
   // Populate the symbol registry with the necessary information for lookup later, e.g., capabilities, flows,
   // tasks, args... Basically, anything that can be references later
-  DeclarationPass declarations(mSymbols, *mTypeRegistry.get());
+  DeclarationPass declarations(mSymbols, *mTypeRegistry);
   auto declared = declarations.run(mAST);
   if (!declared.IsSuccess())
     return declared;
@@ -109,7 +110,7 @@ VoidResult Compiler::runFrontend()
   // mSymbols.print();
 
   // With the registry created, we can verify if the semantics of the KODA program make sense
-  SemanticAnalyzer semantics(mSymbols, *mTypeRegistry.get());
+  SemanticAnalyzer semantics(mSymbols, *mTypeRegistry, *mBlackboard);
   auto analyzed = semantics.run(mAST);
   if (!analyzed.IsSuccess())
     return analyzed;

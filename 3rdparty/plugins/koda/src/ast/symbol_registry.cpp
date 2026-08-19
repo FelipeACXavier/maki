@@ -33,7 +33,7 @@ void SymbolRegistry::print() const
 
 Result<SymbolId> SymbolRegistry::declare(SymbolKind kind, const std::string& name, const types::TypeReference& type, const Span& span, SymbolId owner)
 {
-  LOG_DEBUG("Declaring {} with type: {} and owner: {}", name, type.toString(), owner);
+  LOG_TRACE("Declaring {} with type: {} and owner: {}", name, type.toString(), owner);
 
   auto& s = ensureScope(owner);
   if (s.symbols.contains(name))
@@ -125,6 +125,36 @@ std::vector<SymbolId> SymbolRegistry::children(SymbolId owner, SymbolKind kind) 
       result.push_back(id);
   }
   return result;
+}
+
+const Symbol* SymbolRegistry::triggerEventOf(SymbolId owner) const
+{
+  for (const auto eventId : children(owner, SymbolKind::Event))
+  {
+    const auto* eventSymbol = get(eventId);
+    if (!eventSymbol)
+      continue;
+
+    if (eventSymbol->type.toString() == "Trigger")
+      return eventSymbol;
+  }
+
+  return nullptr;
+}
+
+const Symbol* SymbolRegistry::returnEventOf(SymbolId owner) const
+{
+  for (const auto eventId : children(owner, SymbolKind::Event))
+  {
+    const auto* eventSymbol = get(eventId);
+    if (!eventSymbol)
+      continue;
+
+    if (eventSymbol->type.toString() == "Return")
+      return eventSymbol;
+  }
+
+  return nullptr;
 }
 
 std::optional<SymbolId> SymbolRegistry::component(const std::string& name) const

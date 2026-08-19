@@ -346,7 +346,6 @@ Result<ir::Call> IRBuilder::buildCall(const PEventCall& call, SymbolId owner) co
   out.kind = callKindFromResolvedKind(it->second.kind);
   out.receiver = it->second.receiver;
   out.target = it->second.target;
-  LOG_DEBUG("buildCall: {} {}", out.receiver, out.target);
   out.span = call->span;
   for (const auto& arg : call->args)
   {

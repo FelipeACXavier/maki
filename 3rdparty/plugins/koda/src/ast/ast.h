@@ -295,9 +295,10 @@ struct Strategy
 // ---------- EventCall ----------
 struct EventCall
 {
-  // qualified: a.b(args)  OR  unqualified: a(args)
-  std::string receiver;  // a
-  std::string name;      // b or a
+  // qualified: received.name(args)  OR  unqualified: receiver(args)
+  std::string id;
+  std::string receiver;
+  std::string name;
   std::vector<std::shared_ptr<Expr>> args;
   Span span;
 

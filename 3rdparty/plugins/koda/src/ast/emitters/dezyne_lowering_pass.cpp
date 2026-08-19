@@ -75,7 +75,7 @@ VoidResult LoweringPass::lowerCapability(const ir::Component& capability)
 
   for (const auto& event : capability.events)
   {
-    LOG_INFO("Declaring event {} of type {} - {}", event.name, (int)event.kind, capability.symbol);
+    LOG_TRACE("Declaring event {} of type {} - {}", event.name, (int)event.kind, capability.symbol);
     if (isActionEvent(event.kind))
     {
       const auto count = std::max<std::uint32_t>(1, mCallCounts[event.symbol]);
@@ -186,7 +186,6 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
     for (const auto& alarm : found->second.alarms)
     {
       auto alarmName = std::format("alarm{}", alarmId++);
-      LOG_DEBUG("Adding alarm {} to flow instance {}", alarmName, flowInstance);
       mModel.declareInstance(componentId, alarmName, "calarm", {componentId, flow.span});
       connections.push_back({
           .lhs = flowInstance + "." + alarm,  // The port remains the same since that is set based on the

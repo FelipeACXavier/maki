@@ -703,7 +703,6 @@ bool TypeRegistry::isAssignableResolved(const TypeReference& source, const TypeR
     // Map keys are kept invariant. Changing a key type can alter lookup
     // semantics.
     const bool keyCompatible = source.mapKeyType() == target.mapKeyType();
-
     const bool valueCompatible = isAssignable(source.mapValueType(), target.mapValueType());
 
     return keyCompatible && valueCompatible;
@@ -713,9 +712,7 @@ bool TypeRegistry::isAssignableResolved(const TypeReference& source, const TypeR
     return false;
 
   const TypeDefinition* sourceDefinition = resolve(source);
-
   const TypeDefinition* targetDefinition = resolve(target);
-
   if (sourceDefinition == nullptr || targetDefinition == nullptr)
     return false;
 

@@ -553,10 +553,11 @@ std::any CST2AST::visitEvCall(KodaParser::EvCallContext* ctx)
 {
   // LOG_DEBUG("Visiting event call");
   auto c = std::make_shared<koda::EventCall>();
-  c->span = spanOf(ctx);
   c->receiver = "";
   c->name = ctx->identifier()->getText();
+  c->span = spanOf(ctx);
 
+  c->id = std::format("{}::{}_{}", c->name, c->span.lineStart, c->span.colStart);
   if (ctx->exprList())
     c->args = std::any_cast<std::vector<koda::PExpr>>(visit(ctx->exprList()));
 
@@ -567,9 +568,11 @@ std::any CST2AST::visitEvQualifiedCall(KodaParser::EvQualifiedCallContext* ctx)
 {
   // LOG_DEBUG("Visiting qualified call");
   auto c = std::make_shared<koda::EventCall>();
-  c->span = spanOf(ctx);
   c->receiver = ctx->identifier(0)->getText();
   c->name = ctx->identifier(1)->getText();
+  c->span = spanOf(ctx);
+
+  c->id = std::format("{}::{}::{}_{}", c->receiver, c->name, c->span.lineStart, c->span.colStart);
 
   if (ctx->exprList())
     c->args = std::any_cast<std::vector<koda::PExpr>>(visit(ctx->exprList()));

@@ -12,6 +12,7 @@
 #include "result.h"
 #include "semantic_analyzer.h"
 #include "symbol_registry.h"
+#include "typing/blackboard_model.h"
 #include "typing/type_registry.h"
 
 namespace koda
@@ -84,6 +85,7 @@ private:
   ir::Program mIR;
 
   std::shared_ptr<types::TypeRegistry> mTypeRegistry;
+  std::shared_ptr<types::Blackboard> mBlackboard;
   std::vector<std::shared_ptr<Emitter>> mEmitters;
   std::map<std::string, std::shared_ptr<KodaPlugin>> mPlugins;
   std::vector<std::string> mGeneratedFiles;

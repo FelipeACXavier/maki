@@ -19,8 +19,9 @@ bool compatible(const types::TypeReference& expected, const types::TypeReference
 }
 }  // namespace
 
-SemanticAnalyzer::SemanticAnalyzer(SymbolRegistry& symbols, types::TypeRegistry& types)
+SemanticAnalyzer::SemanticAnalyzer(SymbolRegistry& symbols, types::TypeRegistry& types, types::Blackboard& blackboard)
     : mSymbols(symbols)
+    , mBlackboard(blackboard)
     , mTypeRegistry(types)
 {
 }
@@ -94,7 +95,6 @@ VoidResult SemanticAnalyzer::collectRosSignature(const PRosDef& ros, SymbolId ow
   }
 
   mModel.eventArguments[*event] = std::move(args);
-
   return VoidResult();
 }
 
@@ -154,15 +154,44 @@ VoidResult SemanticAnalyzer::analyzeStatement(const PStatement& statement, Symbo
   }
   else if (auto block = std::get_if<PStrategyBlock>(&statement->node); block && *block)
   {
+    // Collect them but do not analyze all of them already
     for (const auto& flow : (*block)->flows)
     {
       auto flowSymbol = mSymbols.lookup(flow->name, owner);
-      auto result = analyzeStrategy(flow->strategy, flowSymbol ? *flowSymbol : owner);
-      if (!result.IsSuccess())
-        return result;
+      if (!flowSymbol)
+        return VoidResult::Failed(std::format("Unknown flow '{}'", flow->name));
+
+      mFlows[*flowSymbol] = flow;
     }
+
+    // Only start from the entry flow.
+    auto main = mSymbols.lookup("main", owner);
+    if (!main)
+      return VoidResult::Failed("Task has no main flow");
+
+    return analyzeFlow(*main);
   }
   return VoidResult();
+}
+
+VoidResult SemanticAnalyzer::analyzeFlow(SymbolId flowId)
+{
+  const auto it = mFlows.find(flowId);
+  if (it == mFlows.end())
+    return VoidResult::Failed("Unknown flow");
+
+  // Prevent recursive expansion.
+  // TODO: Maybe we want this in the future?
+  if (mActiveFlows.contains(flowId))
+    return VoidResult::Failed("Recursive flow reference detected");
+
+  mActiveFlows.insert(flowId);
+
+  const auto result = analyzeStrategy(it->second->strategy, flowId);
+
+  mActiveFlows.erase(flowId);
+
+  return result;
 }
 
 VoidResult SemanticAnalyzer::analyzeStrategy(const PStrategy& strategy, SymbolId owner)
@@ -230,14 +259,22 @@ VoidResult SemanticAnalyzer::analyzeStrategy(const PStrategy& strategy, SymbolId
     const auto* symbol = id ? mSymbols.get(*id) : nullptr;
     if (!symbol || symbol->kind != SymbolKind::Flow)
       return VoidResult::Failed(std::format("Unknown flow '{}' at {}", (*p)->name, strategy->span.toString()));
+
     mModel.flowRefs[strategy.get()] = *id;
+
+    return analyzeFlow(*id);
   }
   else if (auto p = std::get_if<PTaskCall>(&strategy->v); p && *p)
   {
     auto call = resolveCall((*p)->call, owner);
     if (!call.IsSuccess())
       return VoidResult::Failed(call.ErrorMessage());
+
     mModel.calls[(*p)->call.get()] = call.Value();
+
+    auto dataResult = resolveCapabilityData((*p)->call, call.Value());
+    LOG_WARN_ON_FAILURE(dataResult);
+
     for (const auto& h : (*p)->handlers)
     {
       auto r = analyzeHandler(h, owner);
@@ -253,10 +290,123 @@ VoidResult SemanticAnalyzer::analyzeStrategy(const PStrategy& strategy, SymbolId
   return VoidResult();
 }
 
+Result<ResolvedArgumentSource> SemanticAnalyzer::resolveArgumentSource(const PExpr& expr, const types::TypeReference& expectedType, SymbolId owner)
+{
+  if (!expr)
+    return ResolvedArgumentSource{.kind = ArgumentSourceKind::Infer};
+
+  // if (auto ref = std::get_if<PRefExpr>(&expr->v))
+  // {
+  //   auto slot = mBlackboard.lookup((*ref)->name);
+  //   if (slot)
+  //   {
+  //     const auto* bb = mBlackboard.get(*slot);
+
+  //     if (!mTypeRegistry.isAssignable(bb->type, expectedType))
+  //       return Result<ResolvedArgumentSource>::Failed("Blackboard value has incompatible type");
+
+  //     return ResolvedArgumentSource{.kind = ArgumentSourceKind::Blackboard, .slot = *slot};
+  //   }
+  // }
+
+  // Otherwise treat it as a normal KODA expression.
+  auto value = analyzeExpr(expr, owner);
+  if (!value.IsSuccess())
+    return Result<ResolvedArgumentSource>::Failed(value.ErrorMessage());
+  if (!compatible(expectedType, value.Value()))
+    return Result<ResolvedArgumentSource>::Failed("Argument has incompatible type. Expected {}, got {}", expectedType.toString(),
+                                                  value.Value().toString());
+
+  return ResolvedArgumentSource{.kind = ArgumentSourceKind::Literal};
+}
+
+VoidResult SemanticAnalyzer::resolveCapabilityData(const PEventCall& astCall, const ResolvedCall& call)
+{
+  // All of this is pure double checking
+  const auto* receiverSymbol = mSymbols.get(call.receiver);
+  if (!receiverSymbol)
+    return VoidResult::Failed("Invalid call receiver");
+
+  auto componentResult = resolveComponentType(*receiverSymbol, astCall->span);
+  if (!componentResult.IsSuccess())
+    return VoidResult::Failed(componentResult.ErrorMessage());
+
+  auto capabilityId = componentResult.Value();
+  LOG_DEBUG("Resolving data for name: {} rec: {}, Call: {} {}, Cap: {}", astCall->name, astCall->receiver, call.receiver, call.target, capabilityId);
+
+  auto event = mSymbols.get(call.target);
+  if (!event)
+    return VoidResult::Failed("No event with symbol id: {}", call.target);
+
+  if (event->type.toString() == "Trigger")
+  {
+    mBlackboard.print();
+    LOG_DEBUG("  Is trigger: {} {}", event->name, event->id);
+    // 1. Resolve consumed values.
+    for (uint32_t i = 0; i < mModel.eventArguments[event->id].size(); ++i)
+    {
+      auto input = mModel.eventArguments[event->id][i];
+      if (i < astCall->args.size())
+      {
+        auto resolvedArg = resolveArgumentSource(astCall->args.at(i), input, event->id);
+        if (!resolvedArg)
+          LOG_WARNING(resolvedArg.ErrorMessage());
+        else
+        {
+          LOG_INFO("  No need to infer, type is defined:");
+          astCall->args.at(i)->print("  ", true);
+        }
+
+        continue;
+      }
+
+      auto candidates = mBlackboard.availableCompatible(input, mTypeRegistry);
+      if (candidates.empty())
+        return VoidResult::Failed(std::format("No available value for input '{}'", input.toString()));
+      if (candidates.size() > 1)
+        return VoidResult::Failed(std::format("Ambiguous value for input '{}'", input.toString()));
+
+      // mModel.inputBindings[astCall.get()][input.id] = candidates.front()->id;
+    }
+
+    if (astCall->receiver.empty())
+    {
+      // If we are dealing with a capability call, we need to make the data available as well.
+      LOG_DEBUG("  Inferred is return: {} {}", event->name, event->id);
+      auto* returnEvent = mSymbols.returnEventOf(capabilityId);
+      if (!returnEvent)
+        return VoidResult::Failed(std::format("Async capability call with no return '{}'", astCall->name));
+
+      for (const auto& output : mModel.eventArguments[returnEvent->id])
+      {
+        const auto slot = mBlackboard.declare(astCall->id, output.toString(), output, std::to_string(capabilityId));
+        mBlackboard.makeAvailable(slot);
+        // mModel.outputBindings[astCall.get()][output.id] = slot;
+      }
+    }
+  }
+  else if (event->type.toString() == "Return")
+  {
+    mBlackboard.print();
+    LOG_DEBUG("  Is return: {} {}", event->name, event->id);
+    // 2. Create slots for produced values.
+    for (const auto& output : mModel.eventArguments[event->id])
+    {
+      const auto slot = mBlackboard.declare(astCall->id, output.toString(), output, std::to_string(capabilityId));
+
+      mBlackboard.makeAvailable(slot);
+      // mModel.outputBindings[astCall.get()][output.id] = slot;
+    }
+  }
+
+  return VoidResult();
+}
+
 VoidResult SemanticAnalyzer::analyzeHandler(const PStrategyHandler& handler, SymbolId owner)
 {
   if (!handler)
     return VoidResult();
+
   if (handler->emitter)
   {
     auto call = resolveCall(handler->emitter, owner);
@@ -264,8 +414,10 @@ VoidResult SemanticAnalyzer::analyzeHandler(const PStrategyHandler& handler, Sym
       return VoidResult::Failed(call.ErrorMessage());
     mModel.calls[handler->emitter.get()] = call.Value();
   }
+
   if (handler->body)
     return analyzeStrategy(handler->body, owner);
+
   return VoidResult();
 }
 
@@ -299,7 +451,6 @@ Result<ResolvedCall> SemanticAnalyzer::resolveCall(const PEventCall& call, Symbo
       if (!eventSymbol)
         continue;
 
-      LOG_DEBUG("Event for {}: {} {}", call->name, eventSymbol->name, eventSymbol->type.toString());
       if (eventSymbol->type.toString() == "Trigger")
       {
         triggerEventSymbol = *eventSymbol;
@@ -311,6 +462,7 @@ Result<ResolvedCall> SemanticAnalyzer::resolveCall(const PEventCall& call, Symbo
       return Result<ResolvedCall>::Failed("Could not find trigger event for: {}", call->name);
 
     // Unqualified invocation means the capability's trigger/default action.
+    std::vector<std::string> args;
     for (const auto& arg : call->args)
     {
       auto type = analyzeExpr(arg, owner);
@@ -385,6 +537,7 @@ Result<types::TypeReference> SemanticAnalyzer::analyzeExpr(const PExpr& expr, Sy
     auto call = resolveCall((*p)->value, owner);
     if (!call.IsSuccess())
       return Result<types::TypeReference>::Failed(call.ErrorMessage());
+
     mModel.calls[(*p)->value.get()] = call.Value();
     type = call.Value().returnType;
   }

@@ -39,6 +39,8 @@ public:
 
   const Scope* scope(SymbolId owner) const;
   std::vector<SymbolId> children(SymbolId owner, SymbolKind kind = SymbolKind::Unknown) const;
+  const Symbol* triggerEventOf(SymbolId owner) const;
+  const Symbol* returnEventOf(SymbolId owner) const;
 
   std::optional<SymbolId> component(const std::string& name) const;
 

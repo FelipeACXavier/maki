@@ -63,6 +63,7 @@ set(KODA_TYPE_FILES
 
   src/typing/helpers.cpp
   src/typing/type_registry.cpp
+  src/typing/blackboard_model.cpp
 )
 
 set(KODA_COMPILER_FILES

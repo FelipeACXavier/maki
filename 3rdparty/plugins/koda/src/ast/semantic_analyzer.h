@@ -1,11 +1,13 @@
 #pragma once
 
+#include <set>
 #include <unordered_map>
 #include <vector>
 
 #include "ast.h"
 #include "result.h"
 #include "symbol_registry.h"
+#include "typing/blackboard_model.h"
 #include "typing/type_registry.h"
 
 namespace koda
@@ -17,12 +19,26 @@ enum class ResolvedCallKind
   Event
 };
 
+enum class ArgumentSourceKind
+{
+  Literal,
+  Blackboard,
+  Infer
+};
+
+struct ResolvedArgumentSource
+{
+  ArgumentSourceKind kind;
+  std::optional<koda::types::SlotId> slot;
+};
+
 struct ResolvedCall
 {
   ResolvedCallKind kind = ResolvedCallKind::Unknown;
   SymbolId receiver = InvalidSymbol;  // argument/component instance symbol
   SymbolId target = InvalidSymbol;    // capability or event symbol
   types::TypeReference returnType;
+  std::vector<std::string> args = {};
 };
 
 struct SemanticModel
@@ -36,7 +52,7 @@ struct SemanticModel
 class SemanticAnalyzer
 {
 public:
-  SemanticAnalyzer(SymbolRegistry& symbols, types::TypeRegistry& types);
+  SemanticAnalyzer(SymbolRegistry& symbols, types::TypeRegistry& types, types::Blackboard& blackboard);
 
   VoidResult run(const System& system);
 
@@ -46,6 +62,14 @@ public:
   }
 
 private:
+  SemanticModel mModel;
+  SymbolRegistry& mSymbols;
+  types::Blackboard& mBlackboard;
+  types::TypeRegistry& mTypeRegistry;
+  std::unordered_map<SymbolId, PFlow> mFlows;
+  std::set<SymbolId> mActiveFlows;
+
+  VoidResult analyzeFlow(SymbolId flowId);
   VoidResult analyzeComponent(const PComponent& component);
   VoidResult analyzeStatement(const PStatement& statement, SymbolId owner);
   VoidResult analyzeStrategy(const PStrategy& strategy, SymbolId owner);
@@ -59,9 +83,8 @@ private:
   Result<SymbolId> resolveValue(const std::string& name, SymbolId owner, const Span& span) const;
   Result<SymbolId> resolveComponentType(const Symbol& value, const Span& span) const;
 
-  SymbolRegistry& mSymbols;
-  types::TypeRegistry& mTypeRegistry;
-  SemanticModel mModel;
+  VoidResult resolveCapabilityData(const PEventCall& astCall, const ResolvedCall& call);
+  Result<ResolvedArgumentSource> resolveArgumentSource(const PExpr& expr, const types::TypeReference& expectedType, SymbolId owner);
 };
 
 }  // namespace koda
