@@ -67,7 +67,7 @@ public:
   /**
    * @brief Callback triggered whenever a node moves significantly
    */
-  void onNodeMoved(const QString& nodeId) override;
+  void onNodeMoved(const NodeItem* node) override;
 
   /**
    * @brief Used to create the start and end nodes of a flow

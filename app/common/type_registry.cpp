@@ -25,6 +25,76 @@ TypeRegistry::TypeRegistry(QObject* parent)
   registerBuiltinTypes();
 }
 
+VoidResult TypeRegistry::registerNode(const QString& nodeId, const NodeConfig& node)
+{
+  if (nodeId.isEmpty())
+    return VoidResult::Failed("Could not register node with no id");
+
+  for (const auto& e : node.events)
+  {
+    if (e.type == Types::CallType::TRIGGER)
+    {
+      QStringList consumes;
+      for (const auto& arg : e.arguments)
+        consumes << QString::fromStdString(arg.type.toString());
+
+      if (!consumes.isEmpty())
+      {
+        LOG_DEBUG("Registering consumer: {}", nodeId);
+        for (const auto& c : consumes)
+          LOG_DEBUG("   {}", c);
+
+        mConsumers.insert(nodeId, consumes);
+      }
+    }
+    else if (e.type == Types::CallType::RETURN)
+    {
+      QStringList produces;
+      for (const auto& arg : e.arguments)
+        produces << QString::fromStdString(arg.type.toString());
+
+      if (!produces.isEmpty())
+      {
+        LOG_DEBUG("Registering producer: {}", nodeId);
+        for (const auto& c : produces)
+          LOG_DEBUG("   {}", c);
+
+        mProducers.insert(nodeId, produces);
+      }
+    }
+  }
+
+  return VoidResult();
+}
+
+QStringList TypeRegistry::findProducers(const koda::types::TypeReference& type) const
+{
+  LOG_DEBUG("Looking for producers of: {}", type.toString());
+  if (!type.isValid())
+    return QStringList();
+
+  QStringList out;
+  for (const auto& key : mProducers.keys())
+    if (mProducers[key].contains(QString::fromStdString(type.toString())))
+      out << key;
+
+  return out;
+}
+
+QStringList TypeRegistry::findConsumers(const koda::types::TypeReference& type) const
+{
+  LOG_DEBUG("Looking for consumers of: {}", type.toString());
+  if (!type.isValid())
+    return QStringList();
+
+  QStringList out;
+  for (const auto& key : mConsumers.keys())
+    if (mConsumers[key].contains(QString::fromStdString(type.toString())))
+      out << key;
+
+  return out;
+}
+
 QStringList TypeRegistry::allTypeNames() const
 {
   QStringList names;

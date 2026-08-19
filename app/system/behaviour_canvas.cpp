@@ -62,10 +62,8 @@ bool BehaviourCanvas::canAddTransition(NodeItem* node) const
 {
   int index = 0;
   for (const auto& t : mFlow->transitions())
-  {
     if (t->source()->id() == node->id())
       ++index;
-  }
 
   LOG_INFO("canAddTransition: {} < {}", index, node->config()->transitions.size());
   return node->config()->transitions.isEmpty() || index <= node->config()->transitions.size();
@@ -75,10 +73,8 @@ TransitionConfig BehaviourCanvas::nextTransition(NodeItem* node) const
 {
   int index = 0;
   for (const auto& t : mFlow->transitions())
-  {
     if (t->source()->id() == node->id())
       ++index;
-  }
 
   LOG_INFO("nextTransition: {} >= {}", index, node->config()->transitions.size());
   if (node->config()->transitions.isEmpty() || index >= node->config()->transitions.size())
@@ -93,8 +89,7 @@ QVector<QGraphicsItem*> BehaviourCanvas::cleanTransitionsOfNode(const QString& n
   auto toDelete = mFlow->transitions();
   for (TransitionItem* transition : toDelete)
   {
-    if (transition->source()->id() != nodeId &&
-        transition->destination()->id() != nodeId)
+    if (transition->source()->id() != nodeId && transition->destination()->id() != nodeId)
       continue;
 
     mFlow->removeTransition(transition);
@@ -116,11 +111,12 @@ void BehaviourCanvas::removeTransition(TransitionItem* transition)
   mFlow->removeTransition(transition);
 }
 
-void BehaviourCanvas::onNodeMoved(const QString& nodeId)
+void BehaviourCanvas::onNodeMoved(const NodeItem* node)
 {
+  if (!node)
+    return;
+
   for (const auto& transition : mFlow->transitions())
-  {
-    if (transition->source()->id() == nodeId || transition->destination()->id() == nodeId)
+    if (transition->source()->id() == node->id() || transition->destination()->id() == node->id())
       transition->updatePath();
-  }
 }

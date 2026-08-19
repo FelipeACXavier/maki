@@ -424,10 +424,34 @@ Types::PropertyTypes propertyTypeFromReference(const koda::types::TypeReference&
   {
     const auto* def = maki::TypeRegistry::instance().findByName(reference.namedType().name);
     if (def)
-      return propertyTypeFromReference(def->toReference());
+    {
+      def->print();
+      if (def->isPrimitive())
+        return propertyTypeFromReference(def->toReference());
+      else if (def->isAlias())
+        return propertyTypeFromReference(def->alias().target);
+    }
   }
 
   return Types::PropertyTypes::UNKNOWN;
+}
+
+koda::types::TypeReference propertyTypeFromReference(const Types::PropertyTypes& type)
+{
+  if (type == Types::PropertyTypes::STRING)
+    return koda::types::TypeReference::primitive(koda::types::PrimitiveKind::String);
+  if (type == Types::PropertyTypes::INTEGER)
+    return koda::types::TypeReference::primitive(koda::types::PrimitiveKind::Int64);
+  if (type == Types::PropertyTypes::REAL)
+    return koda::types::TypeReference::primitive(koda::types::PrimitiveKind::Float64);
+  if (type == Types::PropertyTypes::BOOLEAN)
+    return koda::types::TypeReference::primitive(koda::types::PrimitiveKind::Bool);
+  if (type == Types::PropertyTypes::LIST)
+    return koda::types::TypeReference::list(koda::types::TypeReference::primitive(koda::types::PrimitiveKind::Void));
+  if (type == Types::PropertyTypes::VOID)
+    return koda::types::TypeReference::primitive(koda::types::PrimitiveKind::Void);
+
+  return koda::types::TypeReference{};
 }
 
 }  // namespace maki

@@ -31,16 +31,17 @@
 #include "undo_commands/add_node.h"
 #include "undo_commands/align.h"
 #include "undo_commands/remove_node.h"
+#include "widgets/structure/suggestion_menu.h"
 
 static constexpr auto MAKI_CLIPBOARD_MIME = "application/x-maki-copied-nodes";
 
-Canvas::Canvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> configTable,
-               std::shared_ptr<EdgeRouter> router, QObject* parent)
+Canvas::Canvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> configTable, std::shared_ptr<EdgeRouter> router, QObject* parent)
     : QGraphicsScene(parent)
     , mConfigTable(configTable)
     , mRouter(router)
     , mId(canvasId)
     , mCopiedNodes({})
+    , mSuggestionMenu(nullptr)
 {
   setBackgroundBrush(Qt::transparent);
   // setItemIndexMethod(ItemIndexMethod::NoIndex);
@@ -83,10 +84,8 @@ QList<NodeItem*> Canvas::availableNodes()
 {
   QList<NodeItem*> nodes;
   for (auto& item : items())
-  {
     if (item->type() == NodeItem::Type)
       nodes.push_back(static_cast<NodeItem*>(item));
-  }
 
   return nodes;
 }
@@ -94,10 +93,7 @@ QList<NodeItem*> Canvas::availableNodes()
 void Canvas::onSelectionChanged()
 {
   const auto selected = selectedItems();
-  mSelectedNodes.erase(std::remove_if(mSelectedNodes.begin(), mSelectedNodes.end(),
-                                      [&selected](NodeItem* node) {
-                                        return !selected.contains(node);
-                                      }),
+  mSelectedNodes.erase(std::remove_if(mSelectedNodes.begin(), mSelectedNodes.end(), [&selected](NodeItem* node) { return !selected.contains(node); }),
                        mSelectedNodes.end());
 
   for (auto* item : selected)
@@ -395,11 +391,8 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
       for (QGraphicsItem* selectedItem : selectedItems())
       {
         QRectF itemBounds = selectedItem->sceneBoundingRect();
-        if ((draggingFromRight && !selectionPath.intersects(itemBounds)) ||
-            (!draggingFromRight && !selectionPath.contains(itemBounds)))
-        {
+        if ((draggingFromRight && !selectionPath.intersects(itemBounds)) || (!draggingFromRight && !selectionPath.contains(itemBounds)))
           selectedItem->setSelected(false);
-        }
       }
     }
 
@@ -421,22 +414,28 @@ void Canvas::createAlignMenu(QMenu* alignMenu, const QList<Types::AlignmentNode>
 {
   // QAction* distribute = alignMenu->addAction("Distribute");
   QAction* alignHCenter = alignMenu->addAction(iconFromTheme("align-horizontal-center"), "Align H center");
-  connect(alignHCenter, &QAction::triggered, [this, items]() { requestAlignNodes(items, Types::AlignmentMode::HORIZONTAL, Types::AlignmentDirection::CENTER); });
+  connect(alignHCenter, &QAction::triggered,
+          [this, items]() { requestAlignNodes(items, Types::AlignmentMode::HORIZONTAL, Types::AlignmentDirection::CENTER); });
 
   QAction* alignLeft = alignMenu->addAction(iconFromTheme("align-horizontal-left"), "Align left");
-  connect(alignLeft, &QAction::triggered, [this, items]() { requestAlignNodes(items, Types::AlignmentMode::HORIZONTAL, Types::AlignmentDirection::START); });
+  connect(alignLeft, &QAction::triggered,
+          [this, items]() { requestAlignNodes(items, Types::AlignmentMode::HORIZONTAL, Types::AlignmentDirection::START); });
 
   QAction* alignRight = alignMenu->addAction(iconFromTheme("align-horizontal-right"), "Align right");
-  connect(alignRight, &QAction::triggered, [this, items]() { requestAlignNodes(items, Types::AlignmentMode::HORIZONTAL, Types::AlignmentDirection::END); });
+  connect(alignRight, &QAction::triggered,
+          [this, items]() { requestAlignNodes(items, Types::AlignmentMode::HORIZONTAL, Types::AlignmentDirection::END); });
 
   QAction* alignVCenter = alignMenu->addAction(iconFromTheme("align-vertical-center"), "Align V center");
-  connect(alignVCenter, &QAction::triggered, [this, items]() { requestAlignNodes(items, Types::AlignmentMode::VERTICAL, Types::AlignmentDirection::CENTER); });
+  connect(alignVCenter, &QAction::triggered,
+          [this, items]() { requestAlignNodes(items, Types::AlignmentMode::VERTICAL, Types::AlignmentDirection::CENTER); });
 
   QAction* alignTop = alignMenu->addAction(iconFromTheme("align-vertical-top"), "Align top");
-  connect(alignTop, &QAction::triggered, [this, items]() { requestAlignNodes(items, Types::AlignmentMode::VERTICAL, Types::AlignmentDirection::START); });
+  connect(alignTop, &QAction::triggered,
+          [this, items]() { requestAlignNodes(items, Types::AlignmentMode::VERTICAL, Types::AlignmentDirection::START); });
 
   QAction* alignBottom = alignMenu->addAction(iconFromTheme("align-vertical-bottom"), "Align bottom");
-  connect(alignBottom, &QAction::triggered, [this, items]() { requestAlignNodes(items, Types::AlignmentMode::VERTICAL, Types::AlignmentDirection::END); });
+  connect(alignBottom, &QAction::triggered,
+          [this, items]() { requestAlignNodes(items, Types::AlignmentMode::VERTICAL, Types::AlignmentDirection::END); });
 
   alignMenu->setIcon(iconFromTheme("align-none"));
   alignMenu->setEnabled(items.size() > 1);
@@ -464,14 +463,12 @@ QList<NodeItem*> Canvas::selectedNodes() const
   return mSelectedNodes;
 }
 
-void Canvas::requestAlignNodes(const QList<Types::AlignmentNode>& items,
-                               Types::AlignmentMode mode, Types::AlignmentDirection direction)
+void Canvas::requestAlignNodes(const QList<Types::AlignmentNode>& items, Types::AlignmentMode mode, Types::AlignmentDirection direction)
 {
   mUndoStack->push(new AlignCommand(this, items, mode, direction));
 }
 
-void Canvas::alignNodes(const QList<Types::AlignmentNode>& nodes,
-                        Types::AlignmentMode mode, Types::AlignmentDirection direction, bool useGiven)
+void Canvas::alignNodes(const QList<Types::AlignmentNode>& nodes, Types::AlignmentMode mode, Types::AlignmentDirection direction, bool useGiven)
 {
   if (nodes.size() < 2)
     return;
@@ -574,10 +571,8 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
   QList<NodeItem*> items = selectedNodes();
   QList<Types::AlignmentNode> itemIds = {};
   for (const auto node : items)
-  {
     if (node != nullptr)
       itemIds.append(Types::AlignmentNode{node->id(), node->pos()});
-  }
 
   if (!item)
   {
@@ -586,22 +581,16 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 
     QAction* copyAction = menu->addAction(iconFromTheme("edit-copy"), "Copy");
     copyAction->setEnabled(items.size() > 0);
-    QObject::connect(copyAction, &QAction::triggered, [this]() {
-      copySelectedItems(nullptr);
-    });
+    QObject::connect(copyAction, &QAction::triggered, [this]() { copySelectedItems(nullptr); });
 
     QAction* pasteAction = menu->addAction(iconFromTheme("edit-paste", true), "Paste");
     const QMimeData* mimeData = QApplication::clipboard()->mimeData();
     pasteAction->setEnabled(mimeData && mimeData->hasFormat(MAKI_CLIPBOARD_MIME));
-    QObject::connect(pasteAction, &QAction::triggered, [this]() {
-      pasteCopiedItems();
-    });
+    QObject::connect(pasteAction, &QAction::triggered, [this]() { pasteCopiedItems(); });
 
     QAction* deleteAction = menu->addAction(iconFromTheme("edit-delete"), "Delete");
     deleteAction->setEnabled(items.size() > 0);
-    QObject::connect(deleteAction, &QAction::triggered, [this]() {
-      deleteSelectedItems();
-    });
+    QObject::connect(deleteAction, &QAction::triggered, [this]() { deleteSelectedItems(); });
 
     // =============================================
     addSectionLabel(menu, "Visual");
@@ -632,10 +621,8 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     toggleLabelAction->setEnabled(items.size() > 0);
     QObject::connect(toggleLabelAction, &QAction::triggered, [items]() {
       for (QGraphicsItem* item : items)
-      {
         if (item->type() == NodeItem::Type)
           dynamic_cast<NodeItem*>(item)->toggleLabelVisibility();
-      }
     });
 
     QMenu* alignMenu = menu->addMenu(iconFromTheme("align-on-canvas"), tr("Align"));
@@ -650,9 +637,7 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 
     QAction* newEventAction = menu->addAction(QIcon(":/icons/flow.svg"), tr("New flow"));
     newEventAction->setEnabled(node != nullptr || items.size() > 0);
-    QObject::connect(newEventAction, &QAction::triggered, [this, node]() {
-      emit createEvent(node);
-    });
+    QObject::connect(newEventAction, &QAction::triggered, [this, node]() { emit createEvent(node); });
     menu->addAction(newEventAction);
 
     // =============================================
@@ -660,22 +645,16 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 
     QAction* copyAction = menu->addAction(iconFromTheme("edit-copy"), "Copy");
     copyAction->setEnabled(node != nullptr || items.size() > 0);
-    QObject::connect(copyAction, &QAction::triggered, [this, node]() {
-      copySelectedItems(node);
-    });
+    QObject::connect(copyAction, &QAction::triggered, [this, node]() { copySelectedItems(node); });
 
     QAction* pasteAction = menu->addAction(iconFromTheme("edit-paste"), "Paste");
     const QMimeData* mimeData = QApplication::clipboard()->mimeData();
     pasteAction->setEnabled(mimeData && mimeData->hasFormat(MAKI_CLIPBOARD_MIME));
-    QObject::connect(pasteAction, &QAction::triggered, [this]() {
-      pasteCopiedItems();
-    });
+    QObject::connect(pasteAction, &QAction::triggered, [this]() { pasteCopiedItems(); });
 
     QAction* deleteAction = menu->addAction(iconFromTheme("edit-delete"), "Delete");
     deleteAction->setEnabled(node != nullptr || items.size() > 0);
-    QObject::connect(deleteAction, &QAction::triggered, [this]() {
-      deleteSelectedItems();
-    });
+    QObject::connect(deleteAction, &QAction::triggered, [this]() { deleteSelectedItems(); });
 
     // =============================================
     addSectionLabel(menu, "Visual");
@@ -712,10 +691,8 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     toggleLabelAction->setEnabled(node != nullptr || items.size() > 0);
     QObject::connect(toggleLabelAction, &QAction::triggered, [items]() {
       for (QGraphicsItem* item : items)
-      {
         if (item->type() == NodeItem::Type)
           dynamic_cast<NodeItem*>(item)->toggleLabelVisibility();
-      }
     });
 
     QMenu* alignMenu = menu->addMenu(iconFromTheme("align-on-canvas"), tr("Align"));
@@ -775,8 +752,7 @@ void Canvas::deleteSelectedItems()
     else if (item->type() == TransitionItem::Type)
     {
       TransitionItem* transition = static_cast<TransitionItem*>(item);
-      if (!(transition->source() && transition->source()->isSelected()) &&
-          !(transition->destination() && transition->destination()->isSelected()))
+      if (!(transition->source() && transition->source()->isSelected()) && !(transition->destination() && transition->destination()->isSelected()))
       {
         removeTransition(transition);
         connectionsToDelete.append(item);
@@ -834,8 +810,10 @@ QVector<QGraphicsItem*> Canvas::cleanTransitionsOfNode(const QString& nodeId)
   return {};
 }
 
-void Canvas::onNodeMoved(const QString& /* nodeId */)
+void Canvas::onNodeMoved(const NodeItem* node)
 {
+  if (CanvasView* view = parentView(); mSuggestionMenu)
+    mSuggestionMenu->updatePosition(node, view);
 }
 
 QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
@@ -950,8 +928,7 @@ void Canvas::copySelectedItems(NodeItem* clickedNode)
   QApplication::clipboard()->setMimeData(mimeData);
 }
 
-void Canvas::pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode,
-                              QList<CopiedNode> copiedNodes, bool absolute)
+void Canvas::pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode, QList<CopiedNode> copiedNodes, bool absolute)
 {
   for (const auto& copy : copiedNodes)
   {
@@ -961,12 +938,9 @@ void Canvas::pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode
     if (parentNode)
       newParentPosition = parentNode->saveInfo().getposition();
 
-    auto node = createNode(NodeCreation::Pasting,
-                           infoPtr,
-                           absolute
-                               ? mousePosition - copy.posRelativeToMouse
-                               : newParentPosition + (copy.info.getposition() - copy.posRelativeToMouse),
-                           parentNode);
+    auto node = createNode(
+        NodeCreation::Pasting, infoPtr,
+        absolute ? mousePosition - copy.posRelativeToMouse : newParentPosition + (copy.info.getposition() - copy.posRelativeToMouse), parentNode);
 
     QList<CopiedNode> children;
     for (const auto& child : copy.info.getchildren())
@@ -1153,8 +1127,7 @@ void Canvas::createNode(const NodeSaveInfo info)
     (void)createNode(*std::dynamic_pointer_cast<NodeSaveInfo>(child));
 }
 
-NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo> info,
-                             const QPointF& position, NodeItem* parent)
+NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo> info, const QPointF& position, NodeItem* parent)
 {
   auto config = mConfigTable->get(info->getnodeId());
   if (config == nullptr)
@@ -1165,7 +1138,8 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
 
   if (config->libraryType != type())
   {
-    LOG_WARNING("Node of type \"{}\" cannot be placed in a \"{}\" canvas", Types::LibraryTypeToString(config->libraryType), Types::LibraryTypeToString(type()));
+    LOG_WARNING("Node of type \"{}\" cannot be placed in a \"{}\" canvas", Types::LibraryTypeToString(config->libraryType),
+                Types::LibraryTypeToString(type()));
     return nullptr;
   }
 
@@ -1182,7 +1156,7 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
   // TODO(felaze): Move these to a function or so
   node->nodeModified = [this](NodeItem* item) { emit nodeModified(item); };
   node->flowAdded = [this](Flow* flow, NodeItem* node) { addedItemFlow(flow, node); };
-  node->nodeMoved = [this](const QString& id) { onNodeMoved(id); };
+  node->nodeMoved = [this](NodeItem* node) { onNodeMoved(node); };
 
   node->start();
 
@@ -1372,17 +1346,74 @@ void Canvas::autoRoute()
   QList<NodeItem*> nodes;
   QList<TransitionItem*> transitions;
   for (const auto& item : items())
-  {
     if (item->type() == NodeItem::Type)
       nodes.push_back(qgraphicsitem_cast<NodeItem*>(item));
     else if (item->type() == TransitionItem::Type)
       transitions.push_back(qgraphicsitem_cast<TransitionItem*>(item));
-  }
 
   const auto paths = router()->route(nodes, transitions);
   for (TransitionItem* transition : transitions)
-  {
     if (paths.contains(transition))
       transition->updatePath(paths.value(transition));
+}
+
+void Canvas::suggestedNodes(NodeItem* node, QStringList consumers, QStringList producers)
+{
+  if (!node)
+    return;
+
+  ensureSuggestionMenu();
+
+  // This shouldn't happen but oh well
+  if (!mSuggestionMenu)
+    return;
+
+  mSuggestionSourceNode = node;
+  mSuggestionMenu->setSuggestions(consumers, producers);
+
+  // mSuggestionHideTimer->stop();
+  mSuggestionMenu->showMenu(node, parentView());
+}
+
+void Canvas::ensureSuggestionMenu()
+{
+  if (mSuggestionMenu)
+    return;
+
+  CanvasView* view = parentView();
+  if (!view)
+    return;
+
+  mSuggestionMenu = new SuggestionMenu(view->viewport());
+  connect(mSuggestionMenu, &SuggestionMenu::accepted, this, [this](const QStringList& selected) {
+    QTimer::singleShot(0, this, [this, selected]() {
+      if (!mSuggestionSourceNode)
+        return;
+
+      for (const auto& nodeType : selected)
+        createSuggestedNode(nodeType, mSuggestionSourceNode);
+    });
+  });
+  connect(mSuggestionMenu, &SuggestionMenu::dismissed, this, [this] { mSuggestionSourceNode = nullptr; });
+}
+
+void Canvas::createSuggestedNode(const QString& nodeType, NodeItem* sourceNode)
+{
+  if (!sourceNode)
+    return;
+
+  const auto config = mConfigTable->get(nodeType);
+  if (!config)
+  {
+    LOG_WARNING("Cannot create suggested node '{}': configuration not found", nodeType);
+    return;
   }
+
+  auto info = std::make_shared<NodeSaveInfo>(*config);
+  constexpr qreal HorizontalOffset = 20.0;
+  QPointF position = sourceNode->sceneBoundingRect().topRight() + QPointF(HorizontalOffset, 0.0);
+
+  // If the source is inside another structural node, the suggested node
+  // should normally be inserted into that same parent.
+  (void)createNode(NodeCreation::Populating, info, position, sourceNode->parentNode());
 }

@@ -208,7 +208,7 @@ VoidResult PropertiesMenu::loadProperties(NodeItem* node)
     const auto type = maki::propertyTypeFromReference(property.type);
     const auto control = property.control;
 
-    LOG_DEBUG("Updating properties with {} of type {} and control {}", property.id, (int)type, (int)control);
+    // LOG_DEBUG("Updating properties with {} of type {} and control {}", property.id, (int)type, (int)control);
     if (type == Types::PropertyTypes::STRING)
       LOG_WARN_ON_FAILURE(loadPropertyString(property, node));
     else if (type == Types::PropertyTypes::INTEGER)

@@ -170,6 +170,9 @@ public:
    * @brief Adds a stretchable spacer to the group layout.
    */
   void addStretch();
+
+  void removeWidget(QWidget* widget);
+  void clear();
 };
 
 class InputWidget : public QWidget

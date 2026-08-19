@@ -35,6 +35,7 @@
 #include "compiler/plugin_action_registry.h"
 #include "compiler/plugin_pipeline.h"
 #include "config.h"
+#include "data_flow_model.h"
 #include "edge_router.h"
 #include "elements/flow.h"
 #include "elements/node.h"
@@ -56,6 +57,7 @@
 #include "structure_canvas.h"
 #include "style_helpers.h"
 #include "system/main_window_layout.h"
+#include "type_helpers.h"
 #include "type_registry.h"
 #include "types.h"
 #include "widgets/dialogs/prompt.h"
@@ -749,6 +751,7 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
 
     LOG_TRACE("Adding key: {} to the config table", nodeId);
     LOG_ERROR_ON_FAILURE(mConfigTable->add(nodeId, nodeConfig));
+    LOG_ERROR_ON_FAILURE(maki::TypeRegistry::instance().registerNode(nodeId, *nodeConfig));
   }
 
   return VoidResult();
@@ -1085,6 +1088,80 @@ void MainWindow::onNodeSelected(NodeItem* node, bool selected)
   LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeSelected(node, selected));
 }
 
+void MainWindow::suggestCapability(NodeItem* node)
+{
+  if (node->config()->libraryType != Types::LibraryTypes::STRUCTURAL)
+    return;
+
+  // We don't need to check tasks
+  if (!node->parentNode())
+    return;
+  if (!mCanvasPanel)
+    return;
+  if (mCanvasPanel->currentIndex() != libraryTypeToIndex(Types::LibraryTypes::STRUCTURAL))
+    return;
+
+  LOG_DEBUG("Looking for suggestions for {}", node->nodeName());
+  const auto config = mConfigTable->get(node->nodeType());
+  if (!config)
+    return;
+
+  QStringList producers;
+  QStringList consumers;
+
+  for (const auto& event : config->events)
+  {
+    for (const auto& argument : event.arguments)
+    {
+      const maki::DataPort port{.nodeId = node->nodeId(), .eventName = event.name, .argumentName = argument.id};
+
+      if (event.type == Types::CallType::TRIGGER)
+      {
+        // This concrete input is already connected to some DataEntry.
+        if (maki::DataFlowModel::instance().entryConsumedBy(port).has_value())
+          continue;
+
+        // The type comes from the capability definition.
+        for (const auto& producer : maki::TypeRegistry::instance().findProducers(argument.type))
+          if (!mStorage->taskHasCapability(node->parentNode()->id(), producer))
+            producers << producer;
+      }
+      else if (event.type == Types::CallType::RETURN)
+      {
+        const auto entryId = maki::DataFlowModel::instance().entryProducedBy(port);
+
+        // If this output already has a DataEntry and that entry
+        // already has consumers, don't suggest more consumers.
+        if (entryId)
+        {
+          const auto* entry = maki::DataFlowModel::instance().get(*entryId);
+          if (entry && !entry->consumers.empty())
+            continue;
+        }
+
+        for (const auto& consumer : maki::TypeRegistry::instance().findConsumers(argument.type))
+          if (!mStorage->taskHasCapability(node->parentNode()->id(), consumer))
+            consumers << consumer;
+      }
+    }
+  }
+
+  producers.removeDuplicates();
+  consumers.removeDuplicates();
+
+  for (const auto& producer : producers)
+    LOG_DEBUG("Producer suggestion: {}", producer);
+  for (const auto& consumer : consumers)
+    LOG_DEBUG("Consumer suggestion: {}", consumer);
+
+  if (producers.isEmpty() && consumers.isEmpty())
+    return;
+
+  if (auto* view = qobject_cast<CanvasView*>(mCanvasPanel->currentWidget()))
+    if (auto* canvas = qobject_cast<Canvas*>(view->scene()))
+      canvas->suggestedNodes(node, consumers, producers);
+}
+
 void MainWindow::onNodeAdded(NodeItem* node)
 {
   if (!node)
@@ -1095,6 +1172,8 @@ void MainWindow::onNodeAdded(NodeItem* node)
 
   LOG_WARN_ON_FAILURE(mSystemMenu->onNodeAdded(canvas()->id(), node));
   LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeAdded(node));
+
+  suggestCapability(node);
 }
 
 void MainWindow::onNodeRemoved(const QString& nodeId, const QString& parentId)

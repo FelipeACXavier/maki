@@ -299,6 +299,8 @@ private:
   void onActionEditPipeline(const QString& pipelineId);    /// Handles generate action.
   void onActionLogLevelChanged();                          /// Handles log level change action.
   void onFileLoaded(const QString& file, const SaveInfo& info, const QString& error);
+
+  void suggestCapability(NodeItem* node);
 };  // namespace qlementclassMainWindow:public MainWindowLayout
 
 #endif  // MAINWINDOW_H

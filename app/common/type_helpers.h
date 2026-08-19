@@ -21,5 +21,6 @@ Result<koda::types::TypeReference> typeReferenceFromJson(const QJsonObject& json
 Result<koda::types::TypeDefinition> typeDefinitionFromJson(const QJsonObject& json, const std::string& nameSpace = "");
 
 Types::PropertyTypes propertyTypeFromReference(const koda::types::TypeReference& reference);
+koda::types::TypeReference propertyTypeFromReference(const Types::PropertyTypes& type);
 
 }  // namespace maki

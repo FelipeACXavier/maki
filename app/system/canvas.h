@@ -20,6 +20,7 @@ class CanvasView;
 class TransitionItem;
 class ConfigurationTable;
 class EdgeRouter;
+class SuggestionMenu;
 
 /**
  * @brief The Canvas class represents the main drawing area for nodes and transitions.
@@ -222,14 +223,15 @@ public:
 
   std::shared_ptr<EdgeRouter> router() const;
 
+  void suggestedNodes(NodeItem* node, QStringList consumers, QStringList producers);
+
 protected:
   /**
    * @brief Handles drag enter events.
    *
    * @param event Pointer to the QGraphicsSceneDragDropEvent.
    */
-  void
-  dragEnterEvent(QGraphicsSceneDragDropEvent* event) override;
+  void dragEnterEvent(QGraphicsSceneDragDropEvent* event) override;
 
   /**
    * @brief Handles drag move events.
@@ -394,7 +396,7 @@ protected:
   virtual bool canAddTransition(NodeItem* node) const;
   virtual TransitionConfig nextTransition(NodeItem* node) const;
   virtual QVector<QGraphicsItem*> cleanTransitionsOfNode(const QString& nodeId);
-  virtual void onNodeMoved(const QString& nodeId);
+  virtual void onNodeMoved(const NodeItem* node);
 
   /**
    * @brief Returns the parent view of this canvas.
@@ -429,6 +431,13 @@ private:
 
   QList<CopiedNode> mCopiedNodes;   /// List of copied nodes.
   QList<NodeItem*> mSelectedNodes;  /// List of currently selected nodes.
+
+  NodeItem* mSuggestionSourceNode = nullptr;
+  QTimer* mSuggestionHideTimer = nullptr;
+  SuggestionMenu* mSuggestionMenu = nullptr;
+
+  void ensureSuggestionMenu();
+  void createSuggestedNode(const QString& nodeType, NodeItem* sourceNode);
 
   /**
    * @brief Clears all items from the canvas.
@@ -499,8 +508,9 @@ private:
   void createNodeContextMenu(QMenu& menu);        /// Creates a context menu for nodes.
   void createTransitionContextMenu(QMenu& menu);  /// Creates a context menu for transitions.
 
-  bool isParentSelected(NodeItem* node);                                                                              /// Checks if the parent of a node is selected.
-  void pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode, QList<CopiedNode> nodes, bool relative);  /// Pastes copied items at a specified position.
+  bool isParentSelected(NodeItem* node);  /// Checks if the parent of a node is selected.
+  void pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode, QList<CopiedNode> nodes,
+                        bool relative);  /// Pastes copied items at a specified position.
 
   VoidResult loadFromSave(const QVector<std::shared_ptr<INode>>& nodes, NodeItem* parent);  /// Loads nodes and their children from save information.
 

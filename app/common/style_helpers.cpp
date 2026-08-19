@@ -368,14 +368,14 @@ QString elideRight(const QString& text, const QWidget* const component)
   return fm.elidedText(text, Qt::ElideRight, component->maximumWidth());
 }
 
-void clearLayout(QLayout* layout)
+void clearLayout(QLayout* layout, int start)
 {
   if (!layout)
     return;
 
-  while (layout->count() > 0)
+  while (layout->count() > start)
   {
-    QLayoutItem* item = layout->takeAt(0);
+    QLayoutItem* item = layout->takeAt(start);
     if (!item)
       break;
 

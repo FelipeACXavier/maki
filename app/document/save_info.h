@@ -149,6 +149,8 @@ public:
   void addPipeline(std::shared_ptr<FlowSaveInfo> pipeline);
   void removePipeline(std::shared_ptr<FlowSaveInfo> pipeline);
 
+  bool taskHasCapability(const QString& taskId, const QString& capabilityId) const;
+
   QString name;
   QString version;
   QString rootPath;

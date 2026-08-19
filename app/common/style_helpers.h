@@ -190,7 +190,7 @@ QString elideRight(const QString& text, const QWidget* const component);
  *
  * @param layout The layout to clear.
  */
-void clearLayout(QLayout* layout);
+void clearLayout(QLayout* layout, int start = 0);
 
 /**
  * @brief Updates the icon theme for a list of widget icons.

@@ -4,6 +4,7 @@
 #include <QString>
 #include <QVector>
 
+#include "config.h"
 #include "json.h"
 #include "result.h"
 #include "typing/type_registry.h"
@@ -28,6 +29,10 @@ public:
 
   QStringList libraries() const;
   VoidResult loadFromLibrary(const JSON& json);
+
+  VoidResult registerNode(const QString& nodeId, const NodeConfig& node);
+  QStringList findProducers(const koda::types::TypeReference& type) const;
+  QStringList findConsumers(const koda::types::TypeReference& type) const;
 
   koda::types::TypeRegistrationResult add(const koda::types::TypeDefinition& definition) override;
   koda::types::TypeRegistrationResult replace(const koda::types::TypeDefinition& definition) override;

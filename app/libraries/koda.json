@@ -220,6 +220,10 @@
                 {
                   "id": "grip",
                   "type": "boolean"
+                },
+                {
+                  "id": "pose",
+                  "type": "robotics::Pose"
                 }
               ],
               "linksTo": 0
@@ -317,7 +321,13 @@
               "type": "return",
               "returnType": "void",
               "modifiable": false,
-              "linksTo": 0
+              "linksTo": 0,
+              "arguments": [
+                {
+                  "id": "pose",
+                  "type": "robotics::Pose"
+                }
+              ]
             }
           ]
         },

@@ -276,6 +276,21 @@ void SaveInfo::removePipeline(std::shared_ptr<FlowSaveInfo> pipeline)
   mPipelines.removeIf([pipeline](std::shared_ptr<FlowSaveInfo> info) { return info->getid() == pipeline->getid(); });
 }
 
+bool SaveInfo::taskHasCapability(const QString& taskId, const QString& capabilityId) const
+{
+  for (const auto& node : getnodes())
+  {
+    if (node->getid() != taskId)
+      continue;
+
+    for (const auto& child : node->getchildren())
+      if (child->getnodeId() == capabilityId)
+        return true;
+  }
+
+  return false;
+}
+
 // ==========================================================================
 // JSON serialization
 QJsonObject SaveInfo::toJson() const

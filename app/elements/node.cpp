@@ -22,7 +22,8 @@
 #include "system/undo_commands/move_node.h"
 #include "system/undo_commands/resize_node.h"
 
-NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
+NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig,
+                   QGraphicsItem* parent)
     : NodeBase((!nodeId.isEmpty() && !nodeId.isNull()) ? nodeId : QUuid::createUuid().toString(), info->getnodeId(), nodeConfig, parent)
     , mStorage(info)
     , mParentNode(nullptr)
@@ -42,10 +43,8 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
   mStorage->clearChildren();
 
   for (const auto& property : config()->properties)
-  {
     if (!mStorage->getproperties().contains(property.id))
       mStorage->addProperty(property.id, property.defaultValue);
-  }
 
   for (const auto& event : config()->events)
   {
@@ -129,9 +128,7 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
   auto color = getProperty("color");
   auto background = color.isValid() ? QColor::fromString(color.toString()) : config()->body.backgroundColor;
 
-  NodeBase::paintNode(nodeRect(),
-                      background,
-                      isSelected() ? QPen(Config::HIGHLIGHT, 4 / baseScale()) : QPen(Config::FOREGROUND, 1.0 / baseScale()),
+  NodeBase::paintNode(nodeRect(), background, isSelected() ? QPen(Config::HIGHLIGHT, 4 / baseScale()) : QPen(Config::FOREGROUND, 1.0 / baseScale()),
                       painter);
 }
 
@@ -501,7 +498,7 @@ void NodeItem::updatePosition(const QPointF& newPosition)
 void NodeItem::updateExtrasPosition()
 {
   if (nodeMoved)
-    nodeMoved(id());
+    nodeMoved(this);
 }
 
 // Slots
@@ -580,10 +577,8 @@ Flow* NodeItem::createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo
 Flow* NodeItem::getFlow(const QString& flowId) const
 {
   for (const auto& flow : mFlows)
-  {
     if (flow->id() == flowId)
       return flow;
-  }
 
   return nullptr;
 }

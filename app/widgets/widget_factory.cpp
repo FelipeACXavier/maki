@@ -149,7 +149,6 @@ WidgetGroup::WidgetGroup(const QString& label, oclero::qlementine::TextRole role
 
   auto* line = new QFrame(this);
   line->setFrameShape(QFrame::HLine);
-  // line->setFrameShadow(QFrame::Sunken);
 
   vLayout->addWidget(title);
   vLayout->addWidget(line);
@@ -180,6 +179,17 @@ void WidgetGroup::addSpacing(int spacing)
 void WidgetGroup::addStretch()
 {
   qobject_cast<QVBoxLayout*>(this->layout())->addStretch();
+}
+
+void WidgetGroup::removeWidget(QWidget* widget)
+{
+  layout()->removeWidget(widget);
+}
+
+void WidgetGroup::clear()
+{
+  // Start after the title + line + spacing
+  clearLayout(layout(), 3);
 }
 
 InputWidget::InputWidget(const QString& label, QWidget* inputField, WidgetAlignment alignment, QWidget* parent)
