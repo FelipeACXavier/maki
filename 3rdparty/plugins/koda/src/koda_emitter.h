@@ -32,7 +32,6 @@ private:
   VoidResult emitRepeat(const koda::Strategy::Repeat& node, std::stringstream& ss, const std::string& format);
   VoidResult emitEnd(const koda::Strategy::End& node, std::stringstream& ss, const std::string& format);
   VoidResult emitContinue(const koda::Strategy::Continue& node, std::stringstream& ss, const std::string& format);
-  VoidResult emitRef(const koda::Strategy::Ref& node, std::stringstream& ss, const std::string& format);
   VoidResult emitTaskCall(const koda::Strategy::TaskCall& node, std::stringstream& ss, const std::string& format);
 
   VoidResult emitEventCall(const koda::EventCall& node, std::stringstream& ss, const std::string& format);
@@ -43,6 +42,7 @@ private:
   VoidResult emitStr(const koda::Expr::Str& expr, std::stringstream& ss, const std::string& format);
   VoidResult emitInt(const koda::Expr::Int& expr, std::stringstream& ss, const std::string& format);
   VoidResult emitFloat(const koda::Expr::Float& expr, std::stringstream& ss, const std::string& format);
+  VoidResult emitBool(const koda::Expr::Bool& expr, std::stringstream& ss, const std::string& format);
   VoidResult emitCall(const koda::Expr::Call& expr, std::stringstream& ss, const std::string& format);
   VoidResult emitNeg(const koda::Expr::Neg& expr, std::stringstream& ss, const std::string& format);
   VoidResult emitNot(const koda::Expr::Not& expr, std::stringstream& ss, const std::string& format);

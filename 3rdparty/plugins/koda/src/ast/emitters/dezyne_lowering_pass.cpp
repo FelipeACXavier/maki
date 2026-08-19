@@ -540,31 +540,19 @@ Result<std::string> LoweringPass::lowerStrategy(const ir::Flow& flow, const ir::
   {
     return std::string("continue");
   }
-  else if (auto p = std::get_if<ir::Strategy::FlowRef>(&strategy->value))
-  {
-    const auto port = sourceName(p->flow);
-    state.calls.push_back({
-        .kind = CallUse::Kind::Flow,
-        .localPort = port,
-        .receiver = koda::InvalidSymbol,  // Flow has no receiver
-        .target = p->flow,
-        .localOrdinal = 0,
-        .targetOrdinal = 0,
-        .span = strategy->span,
-    });
-    return port;
-  }
-  else if (auto p = std::get_if<ir::Strategy::TaskCall>(&strategy->value))
+  else if (auto p = std::get_if<ir::Strategy::Call>(&strategy->value))
   {
     auto endpoint = lowerCall(p->call, state, false);
     if (!endpoint.IsSuccess())
       return endpoint;
 
     std::string current = endpoint.Value();
+
     for (const auto& handler : p->handlers)
     {
       state.previous = current;
       auto wrapped = lowerHandler(flow, handler, state);
+
       if (!wrapped.IsSuccess())
         return wrapped;
 
@@ -575,6 +563,7 @@ Result<std::string> LoweringPass::lowerStrategy(const ir::Flow& flow, const ir::
 
       current = wrapped.Value();
     }
+
     return current;
   }
   return Result<std::string>::Failed("Unknown strategy in Dezyne lowering");
@@ -626,6 +615,26 @@ Result<std::string> LoweringPass::lowerHandler(const ir::Flow& flow, const ir::P
 
 Result<std::string> LoweringPass::lowerCall(const ir::Call& call, FlowState& state, bool signal)
 {
+  if (call.kind == ir::CallKind::Flow)
+  {
+    if (signal)
+      return Result<std::string>::Failed("Flow call cannot be used as a signal");
+
+    const auto local = sourceName(call.target);
+
+    state.calls.push_back({
+        .kind = CallUse::Kind::Flow,
+        .localPort = local,
+        .receiver = InvalidSymbol,
+        .target = call.target,
+        .localOrdinal = 0,
+        .targetOrdinal = 0,
+        .span = call.span,
+    });
+
+    return local;
+  }
+
   // Trigger and In events both become callable iaction ports and may occur
   // multiple times.
   if (mActionEvents.contains(call.target))
@@ -753,9 +762,9 @@ void LoweringPass::countTriggers(const ir::PStrategy& strategy)
     for (const auto& h : p->handlers)
       countHandlerTriggers(h);
   }
-  else if (auto p = std::get_if<ir::Strategy::TaskCall>(&strategy->value))
+  else if (auto p = std::get_if<ir::Strategy::Call>(&strategy->value))
   {
-    if (mActionEvents.contains(p->call.target))
+    if (p->call.kind != ir::CallKind::Flow && mActionEvents.contains(p->call.target))
       ++mCallCounts[p->call.target];
 
     for (const auto& h : p->handlers)

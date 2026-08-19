@@ -137,19 +137,23 @@ VoidResult SemanticAnalyzer::analyzeStatement(const PStatement& statement, Symbo
   {
     for (const auto& var : (*vars)->vars)
     {
-      auto init = analyzeExpr(var->init, owner);
-      if (!init.IsSuccess())
-        return VoidResult::Failed(init.ErrorMessage());
-      auto fallback = analyzeExpr(var->fallback, owner);
-      if (!fallback.IsSuccess())
-        return VoidResult::Failed(fallback.ErrorMessage());
-
       const auto symbolId = mSymbols.lookupChild(owner, var->name);
       const auto* symbol = symbolId ? mSymbols.get(*symbolId) : nullptr;
-      if (symbol && !compatible(symbol->type, init.Value()))
+      if (!symbol)
+        return VoidResult::Failed(std::format("Unknown variable '{}'", var->name));
+
+      auto init = analyzeExpr(var->init, owner, symbol->type);
+      if (!init.IsSuccess())
+        return VoidResult::Failed(init.ErrorMessage());
+
+      if (!compatible(symbol->type, init.Value()))
         return VoidResult::Failed(std::format("Initializer for '{}' has incompatible type at {}", var->name, var->span.toString()));
-      if (symbol && !compatible(symbol->type, fallback.Value()))
-        return VoidResult::Failed(std::format("Fallback for '{}' has incompatible type at {}", var->name, var->span.toString()));
+
+      const auto slot = mBlackboard.declare(std::to_string(*symbolId), var->name, symbol->type, "mission");
+      mBlackboard.makeAvailable(slot);
+
+      // Useful later when resolving `drive(target1)`.
+      mModel.variableSlots[*symbolId] = slot;
     }
   }
   else if (auto block = std::get_if<PStrategyBlock>(&statement->node); block && *block)
@@ -253,17 +257,6 @@ VoidResult SemanticAnalyzer::analyzeStrategy(const PStrategy& strategy, SymbolId
         return r;
     }
   }
-  else if (auto p = std::get_if<PRef>(&strategy->v); p && *p)
-  {
-    auto id = mSymbols.lookup((*p)->name, owner);
-    const auto* symbol = id ? mSymbols.get(*id) : nullptr;
-    if (!symbol || symbol->kind != SymbolKind::Flow)
-      return VoidResult::Failed(std::format("Unknown flow '{}' at {}", (*p)->name, strategy->span.toString()));
-
-    mModel.flowRefs[strategy.get()] = *id;
-
-    return analyzeFlow(*id);
-  }
   else if (auto p = std::get_if<PTaskCall>(&strategy->v); p && *p)
   {
     auto call = resolveCall((*p)->call, owner);
@@ -272,8 +265,18 @@ VoidResult SemanticAnalyzer::analyzeStrategy(const PStrategy& strategy, SymbolId
 
     mModel.calls[(*p)->call.get()] = call.Value();
 
-    auto dataResult = resolveCapabilityData((*p)->call, call.Value());
-    LOG_WARN_ON_FAILURE(dataResult);
+    if (call.Value().kind == ResolvedCallKind::Flow)
+    {
+      auto result = analyzeFlowCall((*p)->call, call.Value(), owner);
+      if (!result.IsSuccess())
+        return result;
+    }
+    else
+    {
+      auto dataResult = resolveCapabilityData((*p)->call, call.Value(), owner);
+      if (!dataResult.IsSuccess())
+        return dataResult;
+    }
 
     for (const auto& h : (*p)->handlers)
     {
@@ -295,19 +298,43 @@ Result<ResolvedArgumentSource> SemanticAnalyzer::resolveArgumentSource(const PEx
   if (!expr)
     return ResolvedArgumentSource{.kind = ArgumentSourceKind::Infer};
 
-  // if (auto ref = std::get_if<PRefExpr>(&expr->v))
-  // {
-  //   auto slot = mBlackboard.lookup((*ref)->name);
-  //   if (slot)
-  //   {
-  //     const auto* bb = mBlackboard.get(*slot);
+  if (auto idExpr = std::get_if<PId>(&expr->v); idExpr && *idExpr)
+  {
+    // In case we have the default placeholder
+    if ((*idExpr)->value == "_")
+      return ResolvedArgumentSource{.kind = ArgumentSourceKind::Infer};
 
-  //     if (!mTypeRegistry.isAssignable(bb->type, expectedType))
-  //       return Result<ResolvedArgumentSource>::Failed("Blackboard value has incompatible type");
+    auto symbolResult = resolveValue((*idExpr)->value, owner, expr->span);
+    if (!symbolResult.IsSuccess())
+      return Result<ResolvedArgumentSource>::Failed(symbolResult.ErrorMessage());
 
-  //     return ResolvedArgumentSource{.kind = ArgumentSourceKind::Blackboard, .slot = *slot};
-  //   }
-  // }
+    const SymbolId symbolId = symbolResult.Value();
+    if (!mFlowArgumentStack.empty())
+    {
+      const auto& context = mFlowArgumentStack.back();
+      if (auto it = context.find(symbolId); it != context.end())
+        return it->second;
+    }
+
+    const auto* symbol = mSymbols.get(symbolId);
+    if (!symbol)
+      return Result<ResolvedArgumentSource>::Failed("Invalid symbol for argument '{}'", (*idExpr)->value);
+
+    // Is this symbol backed by a blackboard slot?
+    auto slotIt = mModel.variableSlots.find(symbolId);
+    if (slotIt != mModel.variableSlots.end())
+    {
+      const auto* slot = mBlackboard.get(slotIt->second);
+      if (!slot)
+        return Result<ResolvedArgumentSource>::Failed("Blackboard slot for '{}' does not exist", (*idExpr)->value);
+
+      if (!compatible(expectedType, slot->type))
+        return Result<ResolvedArgumentSource>::Failed("Blackboard value '{}' has incompatible type. Expected '{}', got '{}'", (*idExpr)->value,
+                                                      expectedType.toString(), slot->type.toString());
+
+      return ResolvedArgumentSource{.kind = ArgumentSourceKind::Blackboard, .slot = slot->id};
+    }
+  }
 
   // Otherwise treat it as a normal KODA expression.
   auto value = analyzeExpr(expr, owner);
@@ -320,7 +347,7 @@ Result<ResolvedArgumentSource> SemanticAnalyzer::resolveArgumentSource(const PEx
   return ResolvedArgumentSource{.kind = ArgumentSourceKind::Literal};
 }
 
-VoidResult SemanticAnalyzer::resolveCapabilityData(const PEventCall& astCall, const ResolvedCall& call)
+VoidResult SemanticAnalyzer::resolveCapabilityData(const PEventCall& astCall, const ResolvedCall& call, SymbolId owner)
 {
   // All of this is pure double checking
   const auto* receiverSymbol = mSymbols.get(call.receiver);
@@ -340,39 +367,49 @@ VoidResult SemanticAnalyzer::resolveCapabilityData(const PEventCall& astCall, co
 
   if (event->type.toString() == "Trigger")
   {
-    mBlackboard.print();
-    LOG_DEBUG("  Is trigger: {} {}", event->name, event->id);
+    LOG_DEBUG("Is trigger: {} {}", event->name, event->id);
     // 1. Resolve consumed values.
     for (uint32_t i = 0; i < mModel.eventArguments[event->id].size(); ++i)
     {
-      auto input = mModel.eventArguments[event->id][i];
+      const auto& input = mModel.eventArguments[event->id][i];
+      PExpr argument = nullptr;
       if (i < astCall->args.size())
+        argument = astCall->args[i];
+
+      auto source = resolveArgumentSource(argument, input, owner);  // use the call's lexical owner, not event->id
+      if (!source.IsSuccess())
+        return VoidResult::Failed(source.ErrorMessage());
+
+      switch (source.Value().kind)
       {
-        auto resolvedArg = resolveArgumentSource(astCall->args.at(i), input, event->id);
-        if (!resolvedArg)
-          LOG_WARNING(resolvedArg.ErrorMessage());
-        else
+        case ArgumentSourceKind::Literal:
+          LOG_INFO("  Using literal");
+          break;
+
+        case ArgumentSourceKind::Blackboard:
+          LOG_INFO("  Using blackboard slot: {}", source.Value().slot.value_or("None"));
+          // mModel.inputBindings[astCall.get()][i] = *source.Value().slot;
+          break;
+
+        case ArgumentSourceKind::Infer:
         {
-          LOG_INFO("  No need to infer, type is defined:");
-          astCall->args.at(i)->print("  ", true);
+          LOG_INFO("  Inferring slot");
+          auto candidates = mBlackboard.availableCompatible(input, mTypeRegistry);
+          if (candidates.empty())
+            return VoidResult::Failed("No available value for input '{}'", input.toString());
+          if (candidates.size() > 1)
+            LOG_WARNING("Ambiguous value for input '{}'", input.toString());
+
+          // mModel.inputBindings[astCall.get()][i] = candidates.front()->id;
+          break;
         }
-
-        continue;
       }
-
-      auto candidates = mBlackboard.availableCompatible(input, mTypeRegistry);
-      if (candidates.empty())
-        return VoidResult::Failed(std::format("No available value for input '{}'", input.toString()));
-      if (candidates.size() > 1)
-        return VoidResult::Failed(std::format("Ambiguous value for input '{}'", input.toString()));
-
-      // mModel.inputBindings[astCall.get()][input.id] = candidates.front()->id;
     }
 
     if (astCall->receiver.empty())
     {
       // If we are dealing with a capability call, we need to make the data available as well.
-      LOG_DEBUG("  Inferred is return: {} {}", event->name, event->id);
+      LOG_DEBUG("  Async capability call: {} {}", event->name, event->id);
       auto* returnEvent = mSymbols.returnEventOf(capabilityId);
       if (!returnEvent)
         return VoidResult::Failed(std::format("Async capability call with no return '{}'", astCall->name));
@@ -387,7 +424,6 @@ VoidResult SemanticAnalyzer::resolveCapabilityData(const PEventCall& astCall, co
   }
   else if (event->type.toString() == "Return")
   {
-    mBlackboard.print();
     LOG_DEBUG("  Is return: {} {}", event->name, event->id);
     // 2. Create slots for produced values.
     for (const auto& output : mModel.eventArguments[event->id])
@@ -421,6 +457,48 @@ VoidResult SemanticAnalyzer::analyzeHandler(const PStrategyHandler& handler, Sym
   return VoidResult();
 }
 
+VoidResult SemanticAnalyzer::analyzeFlowCall(const PEventCall& astCall, const ResolvedCall& call, SymbolId callerOwner)
+{
+  const auto it = mFlows.find(call.receiver);
+  if (it == mFlows.end())
+    return VoidResult::Failed("Unknown flow: {}", astCall->name);
+
+  const auto& flow = it->second;
+  if (flow->args.size() != astCall->args.size())
+    return VoidResult::Failed("Number of arguments in call to '{}' does not match expectation", astCall->name);
+
+  FlowArgumentContext context;
+  for (size_t i = 0; i < flow->args.size(); ++i)
+  {
+    const auto& formal = flow->args[i];
+    const auto& actual = astCall->args[i];
+
+    // The formal should already have a symbol owned by the flow.
+    auto formalId = mSymbols.lookupChild(call.receiver, formal->b);
+    if (!formalId)
+      return VoidResult::Failed("Unknown parameter '{}' for flow '{}'", formal->b, astCall->name);
+
+    // For now the actual expression determines the source.
+    auto actualType = analyzeExpr(actual, callerOwner);
+    if (!actualType.IsSuccess())
+      return VoidResult::Failed(actualType.ErrorMessage());
+
+    auto source = resolveArgumentSource(actual, actualType.Value(), callerOwner);
+    if (!source.IsSuccess())
+      return VoidResult::Failed(source.ErrorMessage());
+
+    context[*formalId] = source.Value();
+  }
+
+  mFlowArgumentStack.push_back(std::move(context));
+
+  auto result = analyzeFlow(call.receiver);
+
+  mFlowArgumentStack.pop_back();
+
+  return result;
+}
+
 Result<ResolvedCall> SemanticAnalyzer::resolveCall(const PEventCall& call, SymbolId owner)
 {
   if (!call)
@@ -437,6 +515,19 @@ Result<ResolvedCall> SemanticAnalyzer::resolveCall(const PEventCall& call, Symbo
     if (!receiverSymbol)
       return Result<ResolvedCall>::Failed("Invalid call receiver");
 
+    if (receiverSymbol->kind == SymbolKind::Flow)
+    {
+      const auto flowIt = mFlows.find(receiver);
+      if (flowIt == mFlows.end())
+        return Result<ResolvedCall>::Failed("Unknown flow '{}'", call->name);
+
+      const auto& flow = flowIt->second;
+      if (flow->args.size() != call->args.size())
+        return Result<ResolvedCall>::Failed("Flow '{}' expects {} arguments, got {}", call->name, flow->args.size(), call->args.size());
+
+      return ResolvedCall{ResolvedCallKind::Flow, receiver, InvalidSymbol, types::TypeReference{}};
+    }
+
     auto componentResult = resolveComponentType(*receiverSymbol, call->span);
     if (!componentResult.IsSuccess())
       return Result<ResolvedCall>::Failed(componentResult.ErrorMessage());
@@ -444,21 +535,8 @@ Result<ResolvedCall> SemanticAnalyzer::resolveCall(const PEventCall& call, Symbo
     const auto component = componentResult.Value();
 
     // Find the trigger component of this capability
-    Symbol triggerEventSymbol;
-    for (const auto eventId : mSymbols.children(component, SymbolKind::Event))
-    {
-      const auto* eventSymbol = mSymbols.get(eventId);
-      if (!eventSymbol)
-        continue;
-
-      if (eventSymbol->type.toString() == "Trigger")
-      {
-        triggerEventSymbol = *eventSymbol;
-        break;
-      }
-    }
-
-    if (triggerEventSymbol.name.empty())
+    const Symbol* triggerEventSymbol = mSymbols.triggerEventOf(component);
+    if (!triggerEventSymbol)
       return Result<ResolvedCall>::Failed("Could not find trigger event for: {}", call->name);
 
     // Unqualified invocation means the capability's trigger/default action.
@@ -469,7 +547,7 @@ Result<ResolvedCall> SemanticAnalyzer::resolveCall(const PEventCall& call, Symbo
       if (!type.IsSuccess())
         return Result<ResolvedCall>::Failed(type.ErrorMessage());
     }
-    return ResolvedCall{ResolvedCallKind::CapabilityTrigger, receiver, triggerEventSymbol.id, triggerEventSymbol.type};
+    return ResolvedCall{ResolvedCallKind::CapabilityTrigger, receiver, triggerEventSymbol->id, triggerEventSymbol->type};
   }
 
   auto receiverResult = resolveValue(call->receiver, owner, call->span);
@@ -512,7 +590,7 @@ Result<ResolvedCall> SemanticAnalyzer::resolveCall(const PEventCall& call, Symbo
   return ResolvedCall{ResolvedCallKind::Event, receiver, *event, eventSymbol->type};
 }
 
-Result<types::TypeReference> SemanticAnalyzer::analyzeExpr(const PExpr& expr, SymbolId owner)
+Result<types::TypeReference> SemanticAnalyzer::analyzeExpr(const PExpr& expr, SymbolId owner, const types::TypeReference& expected)
 {
   if (!expr)
     return types::TypeReference{};
@@ -524,13 +602,23 @@ Result<types::TypeReference> SemanticAnalyzer::analyzeExpr(const PExpr& expr, Sy
     type = types::TypeReference::createInt();
   else if (std::holds_alternative<PFloat>(expr->v))
     type = types::TypeReference::createReal();
+  else if (std::holds_alternative<PBool>(expr->v))
+    type = types::TypeReference::createBool();
   else if (auto p = std::get_if<PId>(&expr->v); p && *p)
   {
-    auto id = resolveValue((*p)->value, owner, expr->span);
-    if (!id.IsSuccess())
-      return Result<types::TypeReference>::Failed(id.ErrorMessage());
-    const auto* symbol = mSymbols.get(id.Value());
-    type = symbol ? symbol->type : types::TypeReference{};
+    if ((*p)->value == "_")
+    {
+      type = types::TypeReference{};
+    }
+    else
+    {
+      auto id = resolveValue((*p)->value, owner, expr->span);
+      if (!id.IsSuccess())
+        return Result<types::TypeReference>::Failed(id.ErrorMessage());
+
+      const auto* symbol = mSymbols.get(id.Value());
+      type = symbol ? symbol->type : types::TypeReference{};
+    }
   }
   else if (auto p = std::get_if<PCall>(&expr->v); p && *p)
   {
@@ -610,6 +698,45 @@ Result<types::TypeReference> SemanticAnalyzer::analyzeExpr(const PExpr& expr, Sy
       return inner;
 
     type = inner.Value();
+  }
+  else if (auto p = std::get_if<PRecordLiteral>(&expr->v); p && *p)
+  {
+    if (!expected.isValid())
+      return Result<types::TypeReference>::Failed(std::format("Cannot infer type of record literal at {}", expr->span.toString()));
+
+    const auto* definition = mTypeRegistry.resolve(expected);
+    if (!definition || !definition->isRecord())
+      return Result<types::TypeReference>::Failed(std::format("Type '{}' is not a record at {}", expected.toString(), expr->span.toString()));
+
+    const auto& recordDef = definition->record();
+    std::set<std::string> initialized;
+    for (const auto& field : (*p)->fields)
+    {
+      if (!initialized.insert(field->name).second)
+        return Result<types::TypeReference>::Failed(std::format("Field '{}' initialized more than once at {}", field->name, field->span.toString()));
+
+      auto fieldIt = std::find_if(recordDef.fields.begin(), recordDef.fields.end(),
+                                  [name = field->name](const types::FieldDefinition& f) { return name == f.name; });
+      if (fieldIt == recordDef.fields.end())
+        return Result<types::TypeReference>::Failed(std::format("Unknown field '{}' in type '{}'", field->name, expected.toString()));
+
+      auto valueType = analyzeExpr(field->value, owner, fieldIt->type);
+      if (!valueType.IsSuccess())
+        return valueType;
+
+      if (!compatible(fieldIt->type, valueType.Value()))
+      {
+        return Result<types::TypeReference>::Failed(
+            std::format("Field '{}' expects '{}' but got '{}'", field->name, fieldIt->type.toString(), valueType.Value().toString()));
+      }
+    }
+
+    type = expected;
+  }
+
+  else
+  {
+    return Result<types::TypeReference>::Failed("Unknown expression type at: {}", expr->span.toString());
   }
 
   mModel.expressionTypes[expr.get()] = type;

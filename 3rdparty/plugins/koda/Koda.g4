@@ -102,11 +102,11 @@ identList
   ;
 
 varsBlock
-  : VARS LBRACE variableStatement+ RBRACE
+  : PARAMETERS LBRACE variableStatement+ RBRACE
   ;
 
 variableStatement
-  : typeReference IDENT ASSIGN expression COLON expression
+  : typeReference IDENT ASSIGN expression SEMI
   ;
 
 actionBlock
@@ -155,7 +155,6 @@ strategy
   | REPEAT NATURAL NATURAL LPAREN strategy RPAREN strategyHandler* # stratRepeat
   | END                                                            # stratEnd
   | CONTINUE                                                       # stratContinue
-  | identifier                                                     # stratRef
   | eventStatement strategyHandler*                                # stratTask
   | LPAREN strategy RPAREN                                         # stratParen
   ;
@@ -225,11 +224,21 @@ exprUnary
 
 exprPrimary
   : eventStatement                                               # exprCall
+  | BOOLEAN                                                      # exprBoolean
   | IDENT                                                        # exprId
   | STRING                                                       # exprString
   | NATURAL                                                      # exprInt
   | REAL                                                         # exprFloat
+  | recordLiteral                                                # exprRecord
   | LPAREN expression RPAREN                                     # exprParen
+  ;
+
+recordLiteral
+  : LBRACE recordFieldInitializer* RBRACE
+  ;
+
+recordFieldInitializer
+  : IDENT COLON expression SEMI
   ;
 
 // =============================================================================
@@ -261,7 +270,7 @@ MAPPING    : 'mapping';
 TO         : 'to';
 
 STRATEGY   : 'strategy';
-VARS       : 'vars';
+PARAMETERS : 'parameters';
 
 ACTION     : 'action';
 SERVICE    : 'service';
@@ -330,6 +339,7 @@ RBRACK     : ']';
 // --- Literals ---
 NATURAL    : [0-9]+ ;
 REAL       : [0-9]+ '.' [0-9]+ ;
+BOOLEAN    : 'true' | 'false';
 
 // Rascal Ident: [a-zA-Z_\-:$][a-zA-Z0-9_\-:$]* (excluding Keywords)
 // In ANTLR: keywords are separate tokens above, so IDENT won't match them.

@@ -210,9 +210,7 @@ void VarDef::print(const std::string& prefix, const bool last) const
   printString(childPrefix, false, Format("Type: {}", varType.toString()));
   printString(childPrefix, false, Format("Name: {}", name));
   if (init)
-    init->print(childPrefix, false);
-  if (fallback)
-    fallback->print(childPrefix, true);
+    init->print(childPrefix, true);
 }
 
 void EventDef::print(const std::string& prefix, const bool last) const
@@ -252,7 +250,6 @@ void Strategy::print(const std::string& prefix, const bool last) const
   ELSE_IF_ALT(PRepeat, v, print(prefix, last, span))
   ELSE_IF_ALT(PEnd, v, print(prefix, last, span))
   ELSE_IF_ALT(PContinue, v, print(prefix, last, span))
-  ELSE_IF_ALT(PRef, v, print(prefix, last, span))
   ELSE_IF_ALT(PTaskCall, v, print(prefix, last, span))
   ELSE_IF_ALT(PParen, v, print(prefix, last, span))
 }
@@ -309,13 +306,6 @@ void Strategy::End::print(const std::string& prefix, const bool last, const Span
 void Strategy::Continue::print(const std::string& prefix, const bool last, const Span& span) const
 {
   LOG_TREE("Continue");
-}
-
-void Strategy::Ref::print(const std::string& prefix, const bool last, const Span& span) const
-{
-  LOG_TREE("Reference");
-  const std::string childPrefix = prefix + tree::carry(last);
-  printString(childPrefix, true, Format("Ref: {}", name));
 }
 
 void Strategy::TaskCall::print(const std::string& prefix, const bool last, const Span& span) const
@@ -391,11 +381,13 @@ void Expr::print(const std::string& prefix, const bool last) const
   ELSE_IF_ALT(PStr, v, print(prefix, last, span))
   ELSE_IF_ALT(PInt, v, print(prefix, last, span))
   ELSE_IF_ALT(PFloat, v, print(prefix, last, span))
+  ELSE_IF_ALT(PBool, v, print(prefix, last, span))
   ELSE_IF_ALT(PCall, v, print(prefix, last, span))
   ELSE_IF_ALT(PNeg, v, print(prefix, last, span))
   ELSE_IF_ALT(PNot, v, print(prefix, last, span))
   ELSE_IF_ALT(PBinOp, v, print(prefix, last, span))
   ELSE_IF_ALT(PEParen, v, print(prefix, last, span))
+  ELSE_IF_ALT(PRecordLiteral, v, print(prefix, last, span))
 }
 
 void Expr::Id::print(const std::string& prefix, const bool last, const Span& span) const
@@ -424,6 +416,13 @@ void Expr::Float::print(const std::string& prefix, const bool last, const Span& 
   LOG_TREE("Float");
   const std::string childPrefix = prefix + tree::carry(last);
   printString(childPrefix, true, Format("Value: {:.6f}", value));
+}
+
+void Expr::Bool::print(const std::string& prefix, const bool last, const Span& span) const
+{
+  LOG_TREE("Bool");
+  const std::string childPrefix = prefix + tree::carry(last);
+  printString(childPrefix, true, Format("Value: {}", value));
 }
 
 void Expr::Call::print(const std::string& prefix, const bool last, const Span& span) const
@@ -483,6 +482,23 @@ void Expr::Paren::print(const std::string& prefix, const bool last, const Span& 
 {
   LOG_TREE("Paren");
   const std::string childPrefix = prefix + tree::carry(last);
+  if (value)
+    value->print(childPrefix, true);
+}
+
+void Expr::RecordLiteral::print(const std::string& prefix, const bool last, const Span& span) const
+{
+  LOG_TREE("RecordLiteral");
+  const std::string childPrefix = prefix + tree::carry(last);
+  for (uint32_t i = 0; i < fields.size(); ++i)
+    fields.at(i)->print(childPrefix, i == fields.size() - 1);
+}
+
+void Expr::RecordLiteral::Field::print(const std::string& prefix, const bool last) const
+{
+  LOG_TREE("RecordLiteralField");
+  const std::string childPrefix = prefix + tree::carry(last);
+  printString(childPrefix, value == nullptr, Format("Name: {}", name));
   if (value)
     value->print(childPrefix, true);
 }

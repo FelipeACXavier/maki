@@ -42,7 +42,8 @@ enum class CallKind
 {
   Unknown = 0,
   CapabilityTrigger,
-  Event
+  Event,
+  Flow
 };
 
 struct Expression;
@@ -116,7 +117,18 @@ struct Expression
     PExpression rhs;
   };
 
-  std::variant<Literal, Reference, CallExpr, Unary, Binary> value;
+  struct RecordLiteral
+  {
+    struct Field
+    {
+      std::string name;
+      PExpression value;
+    };
+
+    std::vector<Field> fields;
+  };
+
+  std::variant<Literal, Reference, CallExpr, Unary, Binary, RecordLiteral> value;
   types::TypeReference type;
   Span span;
 };
@@ -170,18 +182,13 @@ struct Strategy
   {
   };
 
-  struct FlowRef
+  struct Call
   {
-    SymbolId flow = InvalidSymbol;
-  };
-
-  struct TaskCall
-  {
-    Call call;
+    ir::Call call;
     std::vector<PHandler> handlers;
   };
 
-  std::variant<Sequence, Join, Either, Within, Repeat, End, Continue, FlowRef, TaskCall> value;
+  std::variant<Sequence, Join, Either, Within, Repeat, End, Continue, Call> value;
   Span span;
 };
 
@@ -191,7 +198,6 @@ struct Variable
   std::string name;
   types::TypeReference type;
   PExpression initial;
-  PExpression fallback;
   Span span;
 };
 

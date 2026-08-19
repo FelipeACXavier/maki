@@ -174,13 +174,9 @@ VoidResult KodaEmitter::emitStrategy(const koda::Strategy& strategy, std::string
   ELSE_IF_ALT(PRepeat, strategy.v, emitRepeat, ss, format)
   ELSE_IF_ALT(PEnd, strategy.v, emitEnd, ss, format)
   ELSE_IF_ALT(PContinue, strategy.v, emitContinue, ss, format)
-  ELSE_IF_ALT(PRef, strategy.v, emitRef, ss, format)
   ELSE_IF_ALT(PTaskCall, strategy.v, emitTaskCall, ss, format)
   // ELSE_IF_ALT(PParen, strategy.v, emitParen, ss, format)
-  // ELSE_IF_ALT(PIfElse, strategy.v, emitIfElse, ss, format)
   // ELSE_IF_ALT(PEither, strategy.v, emitEither, ss, format)
-  // ELSE_IF_ALT(PLet, strategy.v, emitLet, ss, format)
-  // ELSE_IF_ALT(PGuard, strategy.v, emitGuard, ss, format)
 
   return VoidResult();
 }
@@ -251,12 +247,6 @@ VoidResult KodaEmitter::emitContinue(const koda::Strategy::Continue& node, std::
   return VoidResult();
 }
 
-VoidResult KodaEmitter::emitRef(const koda::Strategy::Ref& node, std::stringstream& ss, const std::string& format)
-{
-  ss << node.name;
-  return VoidResult();
-}
-
 VoidResult KodaEmitter::emitTaskCall(const koda::Strategy::TaskCall& node, std::stringstream& ss, const std::string& format)
 {
   RETURN_ON_FAILURE(emitEventCall(*node.call, ss, format));
@@ -308,6 +298,7 @@ VoidResult KodaEmitter::emitExpression(const koda::Expr& node, std::stringstream
   ELSE_IF_ALT(PStr, node.v, emitStr, ss, format)
   ELSE_IF_ALT(PInt, node.v, emitInt, ss, format)
   ELSE_IF_ALT(PFloat, node.v, emitFloat, ss, format)
+  ELSE_IF_ALT(PBool, node.v, emitBool, ss, format)
   ELSE_IF_ALT(PCall, node.v, emitCall, ss, format)
   ELSE_IF_ALT(PNeg, node.v, emitNeg, ss, format)
   ELSE_IF_ALT(PNot, node.v, emitNot, ss, format)
@@ -336,6 +327,12 @@ VoidResult KodaEmitter::emitInt(const koda::Expr::Int& expr, std::stringstream& 
 }
 
 VoidResult KodaEmitter::emitFloat(const koda::Expr::Float& expr, std::stringstream& ss, const std::string& format)
+{
+  ss << expr.value;
+  return VoidResult();
+}
+
+VoidResult KodaEmitter::emitBool(const koda::Expr::Bool& expr, std::stringstream& ss, const std::string& format)
 {
   ss << expr.value;
   return VoidResult();

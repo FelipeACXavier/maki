@@ -139,10 +139,6 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitStratRef(KodaParser::StratRefContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
   virtual std::any visitStratSeq(KodaParser::StratSeqContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -243,6 +239,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitExprBoolean(KodaParser::ExprBooleanContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitExprId(KodaParser::ExprIdContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -259,7 +259,19 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitExprRecord(KodaParser::ExprRecordContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitExprParen(KodaParser::ExprParenContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitRecordLiteral(KodaParser::RecordLiteralContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitRecordFieldInitializer(KodaParser::RecordFieldInitializerContext *ctx) override {
     return visitChildren(ctx);
   }
 

@@ -275,9 +275,7 @@ std::any CST2AST::visitVariableStatement(KodaParser::VariableStatementContext* c
   v->varType = convertTypeReference(ctx->typeReference());
   v->name = ctx->IDENT()->getText();
   // LOG_DEBUG("Visiting first expression of variable statement");
-  v->init = std::any_cast<koda::PExpr>(visit(ctx->expression(0)));
-  // LOG_DEBUG("Visiting second expression of variable statement");
-  v->fallback = std::any_cast<koda::PExpr>(visit(ctx->expression(1)));
+  v->init = std::any_cast<koda::PExpr>(visit(ctx->expression()));
 
   return v;
 }
@@ -459,19 +457,6 @@ std::any CST2AST::visitStratContinue(KodaParser::StratContinueContext* ctx)
 {
   // LOG_DEBUG("Visiting Continue");
   auto value = std::make_shared<koda::Strategy::Continue>();
-  auto node = std::make_shared<koda::Strategy>();
-  node->span = spanOf(ctx);
-  node->v = value;
-
-  return node;
-}
-
-std::any CST2AST::visitStratRef(KodaParser::StratRefContext* ctx)
-{
-  // LOG_DEBUG("Visiting Reference");
-  auto value = std::make_shared<koda::Strategy::Ref>();
-  value->name = ctx->identifier()->getText();
-
   auto node = std::make_shared<koda::Strategy>();
   node->span = spanOf(ctx);
   node->v = value;
@@ -668,6 +653,19 @@ std::any CST2AST::visitExprFloat(KodaParser::ExprFloatContext* ctx)
   return exp;
 }
 
+std::any CST2AST::visitExprBoolean(KodaParser::ExprBooleanContext* ctx)
+{
+  // LOG_DEBUG("Visiting Expression bool");
+  auto s = std::make_shared<koda::Expr::Bool>();
+  s->value = (ctx->BOOLEAN()->getText() == "true");
+
+  auto exp = std::make_shared<koda::Expr>();
+  exp->span = spanOf(ctx);
+  exp->v = s;
+
+  return exp;
+}
+
 std::any CST2AST::visitExprCall(KodaParser::ExprCallContext* ctx)
 {
   // LOG_DEBUG("Visiting Expression call");
@@ -693,6 +691,31 @@ std::any CST2AST::visitExprParen(KodaParser::ExprParenContext* ctx)
 
   // LOG_DEBUG("Done visiting Expression Par");
   return exp;
+}
+
+std::any CST2AST::visitExprRecord(KodaParser::ExprRecordContext* ctx)
+{
+  auto s = std::make_shared<koda::Expr::RecordLiteral>();
+
+  if (auto* literalCtx = ctx->recordLiteral(); literalCtx)
+    for (const auto& field : literalCtx->recordFieldInitializer())
+      s->fields.push_back(std::any_cast<PRecordLiteralField>(visit(field)));
+
+  auto expr = std::make_shared<koda::Expr>();
+  expr->span = spanOf(ctx);
+  expr->v = s;
+
+  return expr;
+}
+
+std::any CST2AST::visitRecordFieldInitializer(KodaParser::RecordFieldInitializerContext* ctx)
+{
+  auto field = std::make_shared<koda::Expr::RecordLiteral::Field>();
+  field->name = ctx->IDENT()->getText();
+  field->value = std::any_cast<koda::PExpr>(visit(ctx->expression()));
+  field->span = spanOf(ctx);
+
+  return field;
 }
 
 std::any CST2AST::visitExprOr(KodaParser::ExprOrContext* ctx)
@@ -918,7 +941,6 @@ bool CST2AST::containsContinue(koda::PStrategy s)
       [&](auto&& node) -> bool {
         using T = std::decay_t<decltype(node)>;
 
-        // Ref
         if constexpr (std::is_same_v<T, koda::PContinue>)
         {
           return true;

@@ -472,8 +472,11 @@ std::any MakiToKoda::buildStrategyExpr(const IFlow& flow, const INode& node)
     return std::any();
   }
 
-  auto expr = std::make_shared<koda::Strategy::Ref>();
-  expr->name = "f" + format(options[0].toObject()["data"].toString());
+  auto call = std::make_shared<koda::EventCall>();
+  call->name = "f" + format(options[0].toObject()["data"].toString());
+
+  auto expr = std::make_shared<koda::Strategy::TaskCall>();
+  expr->call = call;
 
   auto strat = std::make_shared<koda::Strategy>();
   strat->v = expr;
@@ -568,11 +571,14 @@ std::any MakiToKoda::buildRepeatExpr(const IFlow& flow, const INode& node)
 
   QString strategy = options[0].toObject()["data"].toString();
 
-  auto ref = std::make_shared<koda::Strategy::Ref>();
-  ref->name = "f" + format(strategy);
+  auto call = std::make_shared<koda::EventCall>();
+  call->name = "f" + format(strategy);
+
+  auto flowCall = std::make_shared<koda::Strategy::TaskCall>();
+  flowCall->call = call;
 
   auto repeatStrat = std::make_shared<koda::Strategy>();
-  repeatStrat->v = ref;
+  repeatStrat->v = flowCall;
   expr->a = repeatStrat;
 
   const auto seqSuccessors = sequentialSuccessorsOf(node, flow);

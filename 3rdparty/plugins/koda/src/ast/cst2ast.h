@@ -35,30 +35,21 @@ public:
   // -------------------------
 
   std::any visitStatement(KodaParser::StatementContext* ctx) override;
-
   std::any visitTasksBlock(KodaParser::TasksBlockContext* ctx) override;
-
   std::any visitFlow(KodaParser::FlowContext* ctx) override;
-
   std::any visitIdentList(KodaParser::IdentListContext* ctx) override;
-
   std::any visitVarsBlock(KodaParser::VarsBlockContext* ctx) override;
-
   std::any visitVariableStatement(KodaParser::VariableStatementContext* ctx) override;
 
   // Action/service/topic blocks mapped to same IR (ActionDef)
   std::any visitActionBlock(KodaParser::ActionBlockContext* ctx) override;
-
   std::any visitServiceBlock(KodaParser::ServiceBlockContext* ctx) override;
-
   std::any visitTopicBlock(KodaParser::TopicBlockContext* ctx) override;
 
   // -------------------------
   // ROS defs
   // -------------------------
-
   std::any visitRosDefStatement(KodaParser::RosDefStatementContext* ctx) override;
-
   std::any visitEventDefStatement(KodaParser::EventDefStatementContext* ctx) override;
 
   // -------------------------
@@ -72,7 +63,6 @@ public:
   std::any visitStratRepeat(KodaParser::StratRepeatContext* ctx) override;
   std::any visitStratEnd(KodaParser::StratEndContext* ctx) override;
   std::any visitStratContinue(KodaParser::StratContinueContext* ctx) override;
-  std::any visitStratRef(KodaParser::StratRefContext* ctx) override;
   std::any visitStratParen(KodaParser::StratParenContext* ctx) override;
   std::any visitStratTask(KodaParser::StratTaskContext* ctx) override;
   std::any visitHandlerOnError(KodaParser::HandlerOnErrorContext* ctx) override;
@@ -95,9 +85,13 @@ public:
   std::any visitExprString(KodaParser::ExprStringContext* ctx) override;
   std::any visitExprInt(KodaParser::ExprIntContext* ctx) override;
   std::any visitExprFloat(KodaParser::ExprFloatContext* ctx) override;
+  std::any visitExprBoolean(KodaParser::ExprBooleanContext* ctx) override;
+
   std::any visitExprCall(KodaParser::ExprCallContext* ctx) override;
 
   std::any visitExprParen(KodaParser::ExprParenContext* ctx) override;
+  std::any visitExprRecord(KodaParser::ExprRecordContext* ctx) override;
+  std::any visitRecordFieldInitializer(KodaParser::RecordFieldInitializerContext* ctx) override;
 
   std::any visitCompOp(KodaParser::CompOpContext* ctx) override;
   std::any visitExprOr(KodaParser::ExprOrContext* ctx) override;

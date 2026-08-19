@@ -107,13 +107,10 @@ VoidResult DeclarationPass::declareStrategy(const ir::PStrategy& strategy, FlowS
     for (const auto& handler : p->handlers)
       RETURN_ON_FAILURE(declareHandler(handler, state));
   }
-  else if (auto p = std::get_if<ir::Strategy::FlowRef>(&strategy->value))
-  {
-    mModel.declarePort(state.component, sourceName(p->flow), PortDirection::Requires, PortProtocol::Action, {p->flow, strategy->span});
-  }
-  else if (auto p = std::get_if<ir::Strategy::TaskCall>(&strategy->value))
+  else if (auto p = std::get_if<ir::Strategy::Call>(&strategy->value))
   {
     RETURN_ON_FAILURE(declareCall(p->call, state, false));
+
     for (const auto& handler : p->handlers)
       RETURN_ON_FAILURE(declareHandler(handler, state));
   }
@@ -134,6 +131,16 @@ VoidResult DeclarationPass::declareCall(const ir::Call& call, FlowState& state, 
   std::string name;
   PortProtocol protocol = signal ? PortProtocol::Signal : PortProtocol::Action;
 
+  if (call.kind == ir::CallKind::Flow)
+  {
+    if (signal)
+      return VoidResult::Failed("Flow call cannot be used as a signal");
+
+    name = sourceName(call.target);
+    mModel.declarePort(state.component, name, PortDirection::Requires, PortProtocol::Action, {call.target, call.span});
+    return VoidResult();
+  }
+
   if (call.kind == ir::CallKind::CapabilityTrigger)
   {
     const auto ordinal = ++state.triggerOrdinals[call.receiver];
@@ -146,7 +153,7 @@ VoidResult DeclarationPass::declareCall(const ir::Call& call, FlowState& state, 
 
   mModel.declarePort(state.component, name, PortDirection::Requires, protocol, {call.target, call.span});
 
-  return {};
+  return VoidResult();
 }
 
 std::string DeclarationPass::sourceName(koda::SymbolId id) const

@@ -14,6 +14,8 @@ ir::CallKind callKindFromResolvedKind(ResolvedCallKind kind)
       return ir::CallKind::CapabilityTrigger;
     case koda::ResolvedCallKind::Event:
       return ir::CallKind::Event;
+    case koda::ResolvedCallKind::Flow:
+      return ir::CallKind::Flow;
     case koda::ResolvedCallKind::Unknown:
       return ir::CallKind::Unknown;
   }
@@ -70,16 +72,11 @@ Result<ir::Component> IRBuilder::buildComponent(const PComponent& component) con
         if (!initial.IsSuccess())
           return Result<ir::Component>::Failed(initial.ErrorMessage());
 
-        auto fallback = buildExpr(var->fallback, owner);
-        if (!fallback.IsSuccess())
-          return Result<ir::Component>::Failed(fallback.ErrorMessage());
-
         out.variables.push_back(ir::Variable{
             .symbol = id.value_or(InvalidSymbol),
             .name = var->name,
             .type = symbol ? symbol->type : types::TypeReference{},
             .initial = initial.Value(),
-            .fallback = fallback.Value(),
             .span = var->span,
         });
       }
@@ -255,16 +252,12 @@ Result<ir::PStrategy> IRBuilder::buildStrategy(const PStrategy& strategy, Symbol
     out->value = std::move(x);
   }
   else if (std::holds_alternative<PEnd>(strategy->v))
-    out->value = ir::Strategy::End{};
-  else if (std::holds_alternative<PContinue>(strategy->v))
-    out->value = ir::Strategy::Continue{};
-  else if (std::holds_alternative<PRef>(strategy->v))
   {
-    auto it = mSemantics.flowRefs.find(strategy.get());
-    if (it == mSemantics.flowRefs.end())
-      return Result<ir::PStrategy>::Failed("Unresolved flow reference");
-
-    out->value = ir::Strategy::FlowRef{it->second};
+    out->value = ir::Strategy::End{};
+  }
+  else if (std::holds_alternative<PContinue>(strategy->v))
+  {
+    out->value = ir::Strategy::Continue{};
   }
   else if (auto p = std::get_if<PTaskCall>(&strategy->v); p && *p)
   {
@@ -272,7 +265,11 @@ Result<ir::PStrategy> IRBuilder::buildStrategy(const PStrategy& strategy, Symbol
     if (!call.IsSuccess())
       return Result<ir::PStrategy>::Failed(call.ErrorMessage());
 
-    ir::Strategy::TaskCall x{call.Value(), {}};
+    ir::Strategy::Call x{
+        .call = call.Value(),
+        .handlers = {},
+    };
+
     for (const auto& h : (*p)->handlers)
     {
       auto bh = buildHandler(h, owner);
@@ -281,6 +278,7 @@ Result<ir::PStrategy> IRBuilder::buildStrategy(const PStrategy& strategy, Symbol
 
       x.handlers.push_back(bh.Value());
     }
+
     out->value = std::move(x);
   }
   else if (auto p = std::get_if<PParen>(&strategy->v); p && *p)
@@ -342,11 +340,23 @@ Result<ir::Call> IRBuilder::buildCall(const PEventCall& call, SymbolId owner) co
   if (it == mSemantics.calls.end())
     return Result<ir::Call>::Failed(std::format("Unresolved call at {}", call->span.toString()));
 
+  const auto& resolved = it->second;
+
   ir::Call out;
-  out.kind = callKindFromResolvedKind(it->second.kind);
-  out.receiver = it->second.receiver;
-  out.target = it->second.target;
+  out.kind = callKindFromResolvedKind(resolved.kind);
   out.span = call->span;
+
+  if (resolved.kind == ResolvedCallKind::Flow)
+  {
+    out.receiver = InvalidSymbol;
+    out.target = resolved.receiver;  // flow symbol currently lives here
+  }
+  else
+  {
+    out.receiver = resolved.receiver;
+    out.target = resolved.target;
+  }
+
   for (const auto& arg : call->args)
   {
     auto e = buildExpr(arg, owner);
@@ -375,13 +385,22 @@ Result<ir::PExpression> IRBuilder::buildExpr(const PExpr& expr, SymbolId owner) 
     out->value = ir::Expression::Literal{std::to_string((*p)->value), types::TypeReference::createInt()};
   else if (auto p = std::get_if<PFloat>(&expr->v); p && *p)
     out->value = ir::Expression::Literal{std::to_string((*p)->value), types::TypeReference::createReal()};
+  else if (auto p = std::get_if<PBool>(&expr->v); p && *p)
+    out->value = ir::Expression::Literal{std::to_string((*p)->value), types::TypeReference::createBool()};
   else if (auto p = std::get_if<PId>(&expr->v); p && *p)
   {
-    auto id = mSymbols.lookup((*p)->value, owner);
-    if (!id)
-      return Result<ir::PExpression>::Failed(std::format("Unresolved identifier '{}' with owner {}", (*p)->value, owner));
+    if ((*p)->value == "_")
+    {
+      out->value = ir::Expression::Reference{};
+    }
+    else
+    {
+      auto id = mSymbols.lookup((*p)->value, owner);
+      if (!id)
+        return Result<ir::PExpression>::Failed("Unresolved identifier '{}' with owner {}", (*p)->value, owner);
 
-    out->value = ir::Expression::Reference{*id};
+      out->value = ir::Expression::Reference{*id};
+    }
   }
   else if (auto p = std::get_if<PCall>(&expr->v); p && *p)
   {
@@ -479,9 +498,30 @@ Result<ir::PExpression> IRBuilder::buildExpr(const PExpr& expr, SymbolId owner) 
       out->value = ir::Expression::Binary{op, a.Value(), b};
   }
   else if (auto p = std::get_if<PEParen>(&expr->v); p && *p)
+  {
     return buildExpr((*p)->value, owner);
+  }
+  else if (auto p = std::get_if<PRecordLiteral>(&expr->v); p && *p)
+  {
+    ir::Expression::RecordLiteral record;
+    for (const auto& field : (*p)->fields)
+    {
+      auto value = buildExpr(field->value, owner);
+      if (!value.IsSuccess())
+        return Result<ir::PExpression>::Failed(value.ErrorMessage());
+
+      record.fields.push_back({
+          .name = field->name,
+          .value = value.Value(),
+      });
+    }
+
+    out->value = std::move(record);
+  }
   else
+  {
     return Result<ir::PExpression>::Failed("Unsupported expression node");
+  }
 
   return out;
 }

@@ -113,7 +113,6 @@ struct VarDef
   types::TypeReference varType;
   std::string name;
   std::shared_ptr<Expr> init;
-  std::shared_ptr<Expr> fallback;
   Span span;
 
   void print(const std::string& prefix, const bool last) const;
@@ -264,12 +263,6 @@ struct Strategy
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
 
-  struct Ref
-  {
-    std::string name;
-    void print(const std::string& prefix, const bool last, const Span& span) const;
-  };
-
   struct TaskCall
   {
     std::shared_ptr<EventCall> call;
@@ -285,7 +278,7 @@ struct Strategy
   };
 
   std::variant<std::shared_ptr<Seq>, std::shared_ptr<Join>, std::shared_ptr<Either>, std::shared_ptr<Within>, std::shared_ptr<Repeat>,
-               std::shared_ptr<End>, std::shared_ptr<Continue>, std::shared_ptr<Ref>, std::shared_ptr<TaskCall>, std::shared_ptr<Paren>>
+               std::shared_ptr<End>, std::shared_ptr<Continue>, std::shared_ptr<TaskCall>, std::shared_ptr<Paren>>
       v;
 
   void print(const std::string& prefix, const bool last) const;
@@ -329,6 +322,12 @@ struct Expr
   struct Float
   {
     double value;
+    void print(const std::string& prefix, const bool last, const Span& span) const;
+  };
+
+  struct Bool
+  {
+    bool value;
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
 
@@ -384,8 +383,23 @@ struct Expr
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
 
-  std::variant<std::shared_ptr<Id>, std::shared_ptr<Str>, std::shared_ptr<Int>, std::shared_ptr<Float>, std::shared_ptr<Call>, std::shared_ptr<Neg>,
-               std::shared_ptr<Not>, std::shared_ptr<BinOp>, std::shared_ptr<Paren>>
+  struct RecordLiteral
+  {
+    struct Field
+    {
+      std::string name;
+      std::shared_ptr<Expr> value;
+      Span span;
+
+      void print(const std::string& prefix, const bool last) const;
+    };
+
+    std::vector<std::shared_ptr<Field>> fields;
+    void print(const std::string& prefix, const bool last, const Span& span) const;
+  };
+
+  std::variant<std::shared_ptr<Id>, std::shared_ptr<Str>, std::shared_ptr<Int>, std::shared_ptr<Float>, std::shared_ptr<Bool>, std::shared_ptr<Call>,
+               std::shared_ptr<Neg>, std::shared_ptr<Not>, std::shared_ptr<BinOp>, std::shared_ptr<Paren>, std::shared_ptr<RecordLiteral>>
       v;
 
   Span span;
@@ -413,7 +427,6 @@ typedef std::shared_ptr<Strategy::Within> PWithin;
 typedef std::shared_ptr<Strategy::Repeat> PRepeat;
 typedef std::shared_ptr<Strategy::End> PEnd;
 typedef std::shared_ptr<Strategy::Continue> PContinue;
-typedef std::shared_ptr<Strategy::Ref> PRef;
 typedef std::shared_ptr<Strategy::TaskCall> PTaskCall;
 typedef std::shared_ptr<Strategy::Paren> PParen;
 typedef std::shared_ptr<StrategyHandler> PStrategyHandler;
@@ -423,10 +436,13 @@ typedef std::shared_ptr<Expr::Id> PId;
 typedef std::shared_ptr<Expr::Str> PStr;
 typedef std::shared_ptr<Expr::Int> PInt;
 typedef std::shared_ptr<Expr::Float> PFloat;
+typedef std::shared_ptr<Expr::Bool> PBool;
 typedef std::shared_ptr<Expr::Call> PCall;
 typedef std::shared_ptr<Expr::Neg> PNeg;
 typedef std::shared_ptr<Expr::Not> PNot;
 typedef std::shared_ptr<Expr::BinOp> PBinOp;
 typedef std::shared_ptr<Expr::Paren> PEParen;
+typedef std::shared_ptr<Expr::RecordLiteral> PRecordLiteral;
+typedef std::shared_ptr<Expr::RecordLiteral::Field> PRecordLiteralField;
 
 }  // namespace koda

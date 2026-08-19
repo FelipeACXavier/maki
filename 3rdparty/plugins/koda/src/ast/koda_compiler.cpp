@@ -37,7 +37,15 @@ VoidResult Compiler::parse(const CompilerOptions& options)
   parser.removeErrorListeners();
   parser.addErrorListener(&errorListener);
 
-  auto* tree = parser.system();
+  KodaParser::SystemContext* tree = nullptr;
+  try
+  {
+    tree = parser.system();
+  } catch (const std::exception& e)
+  {
+    return VoidResult::Failed("Failed to parse input file: {}", e.what());
+  }
+
   if (errorListener.hasErrors() || tree == nullptr)
   {
     for (const auto& err : errorListener.errors)

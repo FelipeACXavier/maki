@@ -13,7 +13,7 @@ class  KodaParser : public antlr4::Parser {
 public:
   enum {
     TASK = 1, CAPABILITY = 2, TYPE = 3, ENUM = 4, EXTENDS = 5, LIST = 6, 
-    OPTIONAL = 7, MAP = 8, MAPPING = 9, TO = 10, STRATEGY = 11, VARS = 12, 
+    OPTIONAL = 7, MAP = 8, MAPPING = 9, TO = 10, STRATEGY = 11, PARAMETERS = 12, 
     ACTION = 13, SERVICE = 14, TOPIC = 15, TRIGGER = 16, RETURN = 17, ABORT = 18, 
     ERROR = 19, IN = 20, OUT = 21, ON = 22, CONSUMES = 23, PRODUCES = 24, 
     REQ = 25, PRO = 26, END = 27, CONTINUE = 28, REPEAT = 29, JOIN = 30, 
@@ -22,8 +22,8 @@ public:
     GT = 44, ASSIGN = 45, DOUBLE_COLON = 46, COLON = 47, COMMA = 48, SEMI = 49, 
     DOT = 50, PLUS = 51, MINUS = 52, STAR = 53, SLASH = 54, NOT = 55, AND = 56, 
     OR = 57, LPAREN = 58, RPAREN = 59, LBRACE = 60, RBRACE = 61, LBRACK = 62, 
-    RBRACK = 63, NATURAL = 64, REAL = 65, IDENT = 66, STRING = 67, ANY = 68, 
-    LINE_COMMENT = 69, BLOCK_COMMENT = 70, WS = 71
+    RBRACK = 63, NATURAL = 64, REAL = 65, BOOLEAN = 66, IDENT = 67, STRING = 68, 
+    ANY = 69, LINE_COMMENT = 70, BLOCK_COMMENT = 71, WS = 72
   };
 
   enum {
@@ -38,7 +38,8 @@ public:
     RuleStrategyHandler = 26, RuleEventStatement = 27, RuleExprList = 28, 
     RuleExpression = 29, RuleExprOr = 30, RuleExprAnd = 31, RuleExprCmp = 32, 
     RuleCompOp = 33, RuleExprNot = 34, RuleExprAdd = 35, RuleExprMul = 36, 
-    RuleExprUnary = 37, RuleExprPrimary = 38, RuleIdentifier = 39
+    RuleExprUnary = 37, RuleExprPrimary = 38, RuleRecordLiteral = 39, RuleRecordFieldInitializer = 40, 
+    RuleIdentifier = 41
   };
 
   explicit KodaParser(antlr4::TokenStream *input);
@@ -97,6 +98,8 @@ public:
   class ExprMulContext;
   class ExprUnaryContext;
   class ExprPrimaryContext;
+  class RecordLiteralContext;
+  class RecordFieldInitializerContext;
   class IdentifierContext; 
 
   class  SystemContext : public antlr4::ParserRuleContext {
@@ -494,7 +497,7 @@ public:
   public:
     VarsBlockContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *VARS();
+    antlr4::tree::TerminalNode *PARAMETERS();
     antlr4::tree::TerminalNode *LBRACE();
     antlr4::tree::TerminalNode *RBRACE();
     std::vector<VariableStatementContext *> variableStatement();
@@ -514,9 +517,8 @@ public:
     TypeReferenceContext *typeReference();
     antlr4::tree::TerminalNode *IDENT();
     antlr4::tree::TerminalNode *ASSIGN();
-    std::vector<ExpressionContext *> expression();
-    ExpressionContext* expression(size_t i);
-    antlr4::tree::TerminalNode *COLON();
+    ExpressionContext *expression();
+    antlr4::tree::TerminalNode *SEMI();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -654,15 +656,6 @@ public:
     virtual size_t getRuleIndex() const override;
 
    
-  };
-
-  class  StratRefContext : public StrategyContext {
-  public:
-    StratRefContext(StrategyContext *ctx);
-
-    IdentifierContext *identifier();
-
-    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   class  StratSeqContext : public StrategyContext {
@@ -1050,6 +1043,15 @@ public:
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
+  class  ExprBooleanContext : public ExprPrimaryContext {
+  public:
+    ExprBooleanContext(ExprPrimaryContext *ctx);
+
+    antlr4::tree::TerminalNode *BOOLEAN();
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
   class  ExprParenContext : public ExprPrimaryContext {
   public:
     ExprParenContext(ExprPrimaryContext *ctx);
@@ -1066,6 +1068,15 @@ public:
     ExprCallContext(ExprPrimaryContext *ctx);
 
     EventStatementContext *eventStatement();
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  ExprRecordContext : public ExprPrimaryContext {
+  public:
+    ExprRecordContext(ExprPrimaryContext *ctx);
+
+    RecordLiteralContext *recordLiteral();
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
@@ -1098,6 +1109,38 @@ public:
   };
 
   ExprPrimaryContext* exprPrimary();
+
+  class  RecordLiteralContext : public antlr4::ParserRuleContext {
+  public:
+    RecordLiteralContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *LBRACE();
+    antlr4::tree::TerminalNode *RBRACE();
+    std::vector<RecordFieldInitializerContext *> recordFieldInitializer();
+    RecordFieldInitializerContext* recordFieldInitializer(size_t i);
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  RecordLiteralContext* recordLiteral();
+
+  class  RecordFieldInitializerContext : public antlr4::ParserRuleContext {
+  public:
+    RecordFieldInitializerContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *IDENT();
+    antlr4::tree::TerminalNode *COLON();
+    ExpressionContext *expression();
+    antlr4::tree::TerminalNode *SEMI();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  RecordFieldInitializerContext* recordFieldInitializer();
 
   class  IdentifierContext : public antlr4::ParserRuleContext {
   public:

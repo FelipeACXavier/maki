@@ -16,7 +16,8 @@ enum class ResolvedCallKind
 {
   Unknown = 0,
   CapabilityTrigger,
-  Event
+  Event,
+  Flow
 };
 
 enum class ArgumentSourceKind
@@ -47,7 +48,10 @@ struct SemanticModel
   std::unordered_map<const Strategy*, SymbolId> flowRefs;
   std::unordered_map<const Expr*, types::TypeReference> expressionTypes;
   std::unordered_map<SymbolId, std::vector<types::TypeReference>> eventArguments;
+  std::unordered_map<SymbolId, koda::types::SlotId> variableSlots;
 };
+
+using FlowArgumentContext = std::map<SymbolId, ResolvedArgumentSource>;
 
 class SemanticAnalyzer
 {
@@ -68,14 +72,16 @@ private:
   types::TypeRegistry& mTypeRegistry;
   std::unordered_map<SymbolId, PFlow> mFlows;
   std::set<SymbolId> mActiveFlows;
+  std::vector<FlowArgumentContext> mFlowArgumentStack;
 
   VoidResult analyzeFlow(SymbolId flowId);
   VoidResult analyzeComponent(const PComponent& component);
   VoidResult analyzeStatement(const PStatement& statement, SymbolId owner);
   VoidResult analyzeStrategy(const PStrategy& strategy, SymbolId owner);
+  VoidResult analyzeFlowCall(const PEventCall& astCall, const ResolvedCall& call, SymbolId callerOwner);
   VoidResult analyzeHandler(const PStrategyHandler& handler, SymbolId owner);
   Result<ResolvedCall> resolveCall(const PEventCall& call, SymbolId owner);
-  Result<types::TypeReference> analyzeExpr(const PExpr& expr, SymbolId owner);
+  Result<types::TypeReference> analyzeExpr(const PExpr& expr, SymbolId owner, const types::TypeReference& expected = {});
 
   VoidResult collectEventSignatures(const System& system);
   VoidResult collectRosSignature(const PRosDef& ros, SymbolId owner);
@@ -83,7 +89,7 @@ private:
   Result<SymbolId> resolveValue(const std::string& name, SymbolId owner, const Span& span) const;
   Result<SymbolId> resolveComponentType(const Symbol& value, const Span& span) const;
 
-  VoidResult resolveCapabilityData(const PEventCall& astCall, const ResolvedCall& call);
+  VoidResult resolveCapabilityData(const PEventCall& astCall, const ResolvedCall& call, SymbolId owner);
   Result<ResolvedArgumentSource> resolveArgumentSource(const PExpr& expr, const types::TypeReference& expectedType, SymbolId owner);
 };
 

@@ -13,7 +13,7 @@ class  KodaLexer : public antlr4::Lexer {
 public:
   enum {
     TASK = 1, CAPABILITY = 2, TYPE = 3, ENUM = 4, EXTENDS = 5, LIST = 6, 
-    OPTIONAL = 7, MAP = 8, MAPPING = 9, TO = 10, STRATEGY = 11, VARS = 12, 
+    OPTIONAL = 7, MAP = 8, MAPPING = 9, TO = 10, STRATEGY = 11, PARAMETERS = 12, 
     ACTION = 13, SERVICE = 14, TOPIC = 15, TRIGGER = 16, RETURN = 17, ABORT = 18, 
     ERROR = 19, IN = 20, OUT = 21, ON = 22, CONSUMES = 23, PRODUCES = 24, 
     REQ = 25, PRO = 26, END = 27, CONTINUE = 28, REPEAT = 29, JOIN = 30, 
@@ -22,8 +22,8 @@ public:
     GT = 44, ASSIGN = 45, DOUBLE_COLON = 46, COLON = 47, COMMA = 48, SEMI = 49, 
     DOT = 50, PLUS = 51, MINUS = 52, STAR = 53, SLASH = 54, NOT = 55, AND = 56, 
     OR = 57, LPAREN = 58, RPAREN = 59, LBRACE = 60, RBRACE = 61, LBRACK = 62, 
-    RBRACK = 63, NATURAL = 64, REAL = 65, IDENT = 66, STRING = 67, ANY = 68, 
-    LINE_COMMENT = 69, BLOCK_COMMENT = 70, WS = 71
+    RBRACK = 63, NATURAL = 64, REAL = 65, BOOLEAN = 66, IDENT = 67, STRING = 68, 
+    ANY = 69, LINE_COMMENT = 70, BLOCK_COMMENT = 71, WS = 72
   };
 
   explicit KodaLexer(antlr4::CharStream *input);
