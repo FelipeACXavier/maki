@@ -491,7 +491,7 @@ VoidResult createEveryComponent(Model& model, const std::string& outdir, uint32_
   });
 }
 
-VoidResult createWithinComponent(Model& model, const std::string& outdir, uint32_t instances, SymbolId componentId)
+VoidResult createWithinComponent(Model& model, const std::string& outdir, SymbolId componentId)
 {
   return createComponent(model, outdir, "within", [&](const std::string& name, const std::string& path, std::ostringstream& out) {
     const auto component = model.declareComponent(name, path, {componentId}, true, componentId);

@@ -482,6 +482,7 @@ Result<std::string> LoweringPass::lowerStrategy(const ir::Flow& flow, const ir::
 
     RETURN_ON_FAILURE_AS(createAlarmComponent(mModel, mOptions.outputDir), std::string);
     RETURN_ON_FAILURE_AS(createAlarmInterface(mModel, mOptions.outputDir), std::string);
+    RETURN_ON_FAILURE_AS(createWithinComponent(mModel, mOptions.outputDir, flow.symbol), std::string);
 
     return instance + ".api";
   }
@@ -490,6 +491,7 @@ Result<std::string> LoweringPass::lowerStrategy(const ir::Flow& flow, const ir::
     auto endpoint = lowerStrategy(flow, p->body, state);
     if (!endpoint.IsSuccess())
       return endpoint;
+
     std::string current = endpoint.Value();
     for (const auto& handler : p->handlers)
     {
