@@ -3,8 +3,11 @@
 #include <QComboBox>
 #include <QWidget>
 
+#include "mission_parameter.h"
 #include "oclero/qlementine/widgets/ColorEditor.hpp"
 #include "style_helpers.h"
+#include "typing/type_definition.h"
+#include "typing/type_reference.h"
 
 class QLineEdit;
 class QSpinBox;
@@ -14,6 +17,7 @@ class QCheckBox;
 class QFormLayout;
 class IntegerOrVariableValidator;
 class DoubleOrVariableValidator;
+class QTableWidget;
 
 namespace oclero::qlementine
 {
@@ -137,6 +141,7 @@ private:
  */
 class WidgetGroup : public QWidget
 {
+  Q_OBJECT
 public:
   /**
    * @brief Constructs a widget group with a label.
@@ -150,29 +155,45 @@ public:
    * @brief Adds a widget to the group.
    * @param widget The widget to add.
    */
-  void addWidget(QWidget* widget);
+  virtual void addWidget(QWidget* widget);
 
   /**
    * @brief Adds a layout to the group.
    * @param layout The layout to add.
    */
-  void addLayout(QLayout* layout);
+  virtual void addLayout(QLayout* layout);
 
   /**
    * @brief Adds fixed spacing to the group layout.
    * @param spacing The amount of spacing to add, in pixels.
    */
-  void addSpacing(int spacing);
-
-  void addContainer(const QString& lable, QWidget* container);
+  virtual void addSpacing(int spacing);
 
   /**
    * @brief Adds a stretchable spacer to the group layout.
    */
-  void addStretch();
+  virtual void addStretch();
 
-  void removeWidget(QWidget* widget);
-  void clear();
+  virtual void removeWidget(QWidget* widget);
+  virtual void clear();
+  virtual void setPadding(int padding);
+
+protected:
+  int mPadding;
+  QWidget* mContentWidget = nullptr;
+  QVBoxLayout* mContentLayout = nullptr;
+};
+
+class WidgetScrollGroup : public WidgetGroup
+{
+public:
+  /**
+   * @brief Constructs a widget group with a label.
+   * @param label The visible label for the group.
+   * @param parent The parent widget.
+   */
+  WidgetScrollGroup(const QString& label, QWidget* parent);
+  WidgetScrollGroup(const QString& label, oclero::qlementine::TextRole role, QWidget* parent);
 };
 
 class InputWidget : public QWidget
@@ -180,52 +201,51 @@ class InputWidget : public QWidget
   Q_OBJECT
 public:
   InputWidget(const QString& label, QWidget* inputField, WidgetAlignment alignment, QWidget* parent = nullptr);
+  virtual ~InputWidget() = default;
 
   void addDescription(const QString& text);
   void setToolTip(const QString& text);
 
+  void setValue(const Value& value);
+  Value getValue() const;
+
+  virtual void writeValueToWidget(const Value& value) = 0;
+
+  virtual QList<QWidget*> focusWidgets() const
+  {
+    return {mInputField};
+  }
+
+signals:
+  void valueChanged();
+
 protected:
+  Value mValue{};
   QWidget* mInputField = nullptr;
 
   QWidget* createLayout(oclero::qlementine::Label* label, WidgetAlignment alignment);
 };
 
-template <typename T, typename W>
+template <typename W>
 class TypedInputWidget : public InputWidget
 {
 public:
-  TypedInputWidget(const QString& label, W* inputField, const T& value, WidgetAlignment alignment, QWidget* parent = nullptr)
+  TypedInputWidget(const QString& label, W* inputField, WidgetAlignment alignment, QWidget* parent = nullptr)
       : InputWidget(label, inputField, alignment, parent)
-      , mValue(value)
   {
-  }
-
-  void setValue(const T& value)
-  {
-    mValue = value;
-    writeValueToWidget(value);
-  }
-
-  T getValue() const
-  {
-    return mValue;
   }
 
   W* widget() const
   {
     return qobject_cast<W*>(mInputField);
   }
-
-protected:
-  virtual void writeValueToWidget(const T& value) = 0;
-  T mValue{};
 };
 
 /**
  * @class BooleanWidget
  * @brief A widget for displaying and editing boolean values.
  */
-class BooleanWidget : public TypedInputWidget<bool, QCheckBox>
+class BooleanWidget : public TypedInputWidget<QCheckBox>
 {
   Q_OBJECT
 public:
@@ -238,7 +258,10 @@ public:
    */
   BooleanWidget(const QString& label, bool value, WidgetAlignment alignment, QWidget* parent);
 
-  void writeValueToWidget(const bool& value) override;
+  bool getValue() const;
+  void setValue(bool value);
+
+  void writeValueToWidget(const Value& value) override;
 
 signals:
   /**
@@ -252,7 +275,7 @@ signals:
  * @class StringWidget
  * @brief A widget for displaying and editing string values.
  */
-class StringWidget : public TypedInputWidget<QString, oclero::qlementine::LineEdit>
+class StringWidget : public TypedInputWidget<oclero::qlementine::LineEdit>
 {
   Q_OBJECT
 public:
@@ -266,7 +289,10 @@ public:
   StringWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent);
   StringWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, const QString& tooltip, QWidget* parent);
 
-  void writeValueToWidget(const QString& value) override;
+  QString getValue() const;
+  void setValue(const QString& value);
+
+  void writeValueToWidget(const Value& value) override;
 
 signals:
   /**
@@ -280,7 +306,7 @@ signals:
  * @class IntegerWidget
  * @brief A widget for displaying and editing integer values.
  */
-class IntegerWidget : public TypedInputWidget<QString, oclero::qlementine::LineEdit>
+class IntegerWidget : public TypedInputWidget<oclero::qlementine::LineEdit>
 {
   Q_OBJECT
 public:
@@ -302,12 +328,11 @@ public:
    */
   void setAcceptVariable(bool accept);
 
-  void writeValueToWidget(const QString& value) override;
-
-  using TypedInputWidget<QString, oclero::qlementine::LineEdit>::setValue;
-  void setValue(int value);
+  void writeValueToWidget(const Value& value) override;
 
   int getValue() const;
+  void setValue(int value);
+  void setValue(const QString& value);
 
 signals:
   /**
@@ -324,7 +349,7 @@ private:
  * @class FloatWidget
  * @brief A widget for displaying and editing floating-point values.
  */
-class FloatWidget : public TypedInputWidget<QString, oclero::qlementine::LineEdit>
+class FloatWidget : public TypedInputWidget<oclero::qlementine::LineEdit>
 {
   Q_OBJECT
 public:
@@ -346,12 +371,11 @@ public:
    */
   void setAcceptVariable(bool accept);
 
-  void writeValueToWidget(const QString& value) override;
+  void writeValueToWidget(const Value& value) override;
 
-  using TypedInputWidget<QString, oclero::qlementine::LineEdit>::setValue;
-  void setValue(qreal value);
-
-  qreal getValue() const;
+  double getValue() const;
+  void setValue(double value);
+  void setValue(const QString& value);
 
 signals:
   /**
@@ -368,7 +392,7 @@ private:
  * @class SpinWidget
  * @brief A widget for displaying and editing integer values using a spin box.
  */
-class SpinWidget : public TypedInputWidget<int, QSpinBox>
+class SpinWidget : public TypedInputWidget<QSpinBox>
 {
   Q_OBJECT
 public:
@@ -382,7 +406,10 @@ public:
    */
   SpinWidget(const QString& label, int placeholder, QWidget* parent, WidgetAlignment alignment, int min = INT32_MIN, int max = INT32_MAX);
 
-  void writeValueToWidget(const int& value) override;
+  int getValue() const;
+  void setValue(int value);
+
+  void writeValueToWidget(const Value& value) override;
 
   /**
    * @brief Sets the suffix displayed by the spin box.
@@ -402,7 +429,7 @@ signals:
  * @class SelectorWidget
  * @brief A widget for selecting one value from a list of options.
  */
-class SelectorWidget : public TypedInputWidget<QString, QComboBox>
+class SelectorWidget : public TypedInputWidget<QComboBox>
 {
   Q_OBJECT
 public:
@@ -421,9 +448,11 @@ public:
    */
   SelectorWidget(const QString& label, QComboBox* comboBox, WidgetAlignment alignment, QWidget* parent);
 
+  QVariant getData() const;
   void setData(const QString& value);
 
-  QVariant getData() const;
+  QString getValue() const;
+  void setValue(const QString& value);
 
   /**
    * @brief Adds an item to the selector.
@@ -432,7 +461,7 @@ public:
    */
   void addItem(const QString& name, const QVariant& value);
 
-  void writeValueToWidget(const QString& value) override;
+  void writeValueToWidget(const Value& value) override;
 
 signals:
   /**
@@ -499,7 +528,7 @@ private:
  * @class ColorWidget
  * @brief A widget for displaying and editing a colour value.
  */
-class ColorWidget : public TypedInputWidget<QColor, oclero::qlementine::ColorEditor>
+class ColorWidget : public TypedInputWidget<oclero::qlementine::ColorEditor>
 {
   Q_OBJECT
 public:
@@ -511,7 +540,10 @@ public:
    */
   ColorWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent);
 
-  void writeValueToWidget(const QColor& color) override;
+  QColor getValue() const;
+  void setValue(const QColor& value);
+
+  void writeValueToWidget(const Value& color) override;
 signals:
   /**
    * @brief Emitted when the selected colour changes.
@@ -554,7 +586,7 @@ public:
  * @class SelectorWidget
  * @brief A widget for selecting one value from a list of options.
  */
-class ContainerWidget : public TypedInputWidget<QString, QWidget>
+class ContainerWidget : public TypedInputWidget<QWidget>
 {
   Q_OBJECT
 public:
@@ -566,7 +598,7 @@ public:
    */
   ContainerWidget(const QString& label, QWidget* widget, WidgetAlignment alignment, QWidget* parent);
 
-  void writeValueToWidget(const QString& value) override;
+  void writeValueToWidget(const Value& value) override;
 };
 
 /**
@@ -626,7 +658,106 @@ private:
   QString mValue;          ///< Cached search text.
 };
 
-// TODO
-// - Enum
+class ListWidget : public TypedInputWidget<WidgetGroup>
+{
+  Q_OBJECT
+public:
+  ListWidget(const QString& label, const koda::types::TypeReference& elementType, WidgetAlignment alignment, QWidget* parent = nullptr);
+
+  ListValue getValue() const;
+  void setValue(const ListValue& value);
+
+  void writeValueToWidget(const Value& value) override;
+
+  virtual QList<QWidget*> focusWidgets() const override;
+
+private:
+  koda::types::TypeReference mElementType;
+
+  QWidget* mItems = nullptr;
+  QVBoxLayout* mItemsLayout = nullptr;
+
+  std::vector<InputWidget*> mEditors;
+
+  void addItem(const Value& value);
+  void clear();
+};
+
+class MapWidget : public TypedInputWidget<WidgetGroup>
+{
+  Q_OBJECT
+public:
+  MapWidget(const QString& label, const koda::types::TypeReference& keyType, const koda::types::TypeReference& valueType, WidgetAlignment alignment,
+            QWidget* parent = nullptr);
+
+  MapValue getValue() const;
+  void setValue(const MapValue& value);
+
+  void writeValueToWidget(const Value& value) override;
+
+  virtual QList<QWidget*> focusWidgets() const override;
+
+private:
+  koda::types::TypeReference mKeyType;
+  koda::types::TypeReference mValueType;
+
+  QWidget* mItems = nullptr;
+  QVBoxLayout* mItemsLayout = nullptr;
+
+  struct MapField
+  {
+    InputWidget* keyEditor;
+    InputWidget* valueEditor;
+  };
+
+  std::vector<MapField> mEditors;
+
+  void addItem(const Value& key, const Value& value);
+  void clear();
+};
+
+class RecordWidget : public TypedInputWidget<WidgetGroup>
+{
+  Q_OBJECT
+public:
+  RecordWidget(const QString& label, const koda::types::RecordTypeDefinition& definition, WidgetAlignment alignment, QWidget* parent = nullptr);
+
+  RecordValue getValue() const;
+  void setValue(const RecordValue& value);
+
+  void writeValueToWidget(const Value& value) override;
+
+  virtual QList<QWidget*> focusWidgets() const override;
+
+private:
+  struct RecordField
+  {
+    QString id;
+    InputWidget* editor;
+  };
+
+  std::vector<RecordField> mEditors;
+  const koda::types::RecordTypeDefinition mDefinition;
+
+  void addItem(const QString& id, const Value& value);
+  void clear();
+};
+
+class EnumWidget : public SelectorWidget
+{
+  Q_OBJECT
+public:
+  EnumWidget(const QString& label, const koda::types::EnumTypeDefinition& definition, WidgetAlignment alignment, QWidget* parent = nullptr);
+
+private:
+  const koda::types::EnumTypeDefinition mDefinition;
+};
+
+class ValueEditorFactory
+{
+public:
+  static InputWidget* create(const QString& label, const koda::types::TypeReference& type, const Value& value, WidgetAlignment alignment,
+                             QWidget* parent);
+};
 
 }  // namespace maki

@@ -26,6 +26,7 @@ TypeSelector::TypeSelector(const QString& objectName, QWidget* parent)
   containerLayout->setAlignment(Qt::AlignTop);
 
   mSelector = createComboBox();
+  mSelector->setFocusPolicy(Qt::StrongFocus);
   populateTypes();
 
   auto* targetButton = new ClickableIcon(QIcon(":/icons/bars.svg"), Config::SMALL_BUTTON_SIZE, this);
@@ -40,9 +41,14 @@ TypeSelector::TypeSelector(const QString& objectName, QWidget* parent)
 
     const auto ref = dialog.typeRef();
     if (ref.isValid())
+    {
       setReference(dialog.typeRef());
+      emit typeChanged(dialog.typeRef());
+    }
     else
+    {
       LOG_WARNING("Failed to set type ref");
+    }
   });
 
   containerLayout->addWidget(mSelector, 1, Qt::AlignVCenter);
@@ -85,10 +91,19 @@ QComboBox* TypeSelector::createComboBox()
 
   maki::addCompleter(maki::TypeRegistry::instance().allTypeNames(), typeCombo);
 
-  connect(typeCombo->lineEdit(), &QLineEdit::editingFinished, this, [typeCombo]() {
-    const QString text = typeCombo->currentText().trimmed();
-    if (!TypeRegistry::instance().findByName(text.toStdString()))
-      typeCombo->setCurrentIndex(-1);
+  connect(typeCombo->lineEdit(), &QLineEdit::textEdited, this, [this](const QString& text) {
+    const QString trimmed = text.trimmed();
+    auto def = TypeRegistry::instance().findByName(trimmed.toStdString());
+    if (def)
+      emit typeChanged(def->toReference());
+  });
+  connect(typeCombo, &QComboBox::activated, this, [this, typeCombo](int index) {
+    if (index < 0)
+      return;
+
+    const QVariant data = typeCombo->itemData(index);
+    if (data.canConvert<koda::types::TypeReference>())
+      emit typeChanged(data.value<koda::types::TypeReference>());
   });
 
   return typeCombo;
@@ -121,5 +136,24 @@ void TypeSelector::populateTypes(const koda::types::QualifiedName* currentName)
       if (currentName == nullptr || def->name.toString() != currentName->toString())
         setReference(def->toReference());
   }
+
+  mSelector->setCurrentIndex(0);
 }
+
+void TypeSelector::focusInEvent(QFocusEvent* event)
+{
+  QWidget::focusInEvent(event);
+
+  if (mSelector)
+    mSelector->setFocus(event->reason());
+}
+
+QList<QWidget*> TypeSelector::focusWidgets() const
+{
+  if (!mSelector)
+    return {};
+
+  return {mSelector};
+}
+
 }  // namespace maki

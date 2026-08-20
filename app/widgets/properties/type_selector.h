@@ -22,6 +22,14 @@ public:
   void setEditorTitle(const QString& title);
   void populateTypes(const koda::types::QualifiedName* currentName = nullptr);
 
+  QList<QWidget*> focusWidgets() const;
+
+signals:
+  void typeChanged(const koda::types::TypeReference& reference);
+
+protected:
+  void focusInEvent(QFocusEvent* event) override;
+
 private:
   QComboBox* mSelector;
   bool mUsesPrimitives;

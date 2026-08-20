@@ -66,6 +66,7 @@
 #include "widgets/language_manager.h"
 #include "widgets/log_table_widget.h"
 #include "widgets/notification_manager.h"
+#include "widgets/properties/mission_parameter_widget.h"
 #include "widgets/properties/properties_menu.h"
 #include "widgets/section.h"
 #include "widgets/settings_dialog.h"
@@ -73,6 +74,7 @@
 #include "widgets/structure/file_menu.h"
 #include "widgets/structure/flow_menu.h"
 #include "widgets/structure/system_menu.h"
+#include "widgets/type_editor.h"
 
 MainWindow::MainWindow(QApplication* app, oclero::qlementine::ThemeManager* themeManager, QWidget* parent)
     : MainWindowLayout(parent)
@@ -504,6 +506,23 @@ void MainWindow::bind()
     }
   });
 
+  // Type Editor stuff =============================================================
+  // if (mTypeEditor)
+  // {
+  //   connect(mTypeEditor->mRecordAction, &QAction::triggered, this, [this] {
+  //     if (mBottomNavigation)
+  //       mBottomNavigation->setCurrentIndex(3);
+  //   });
+  //   connect(mTypeEditor->mAliasAction, &QAction::triggered, this, [this] {
+  //     if (mBottomNavigation)
+  //       mBottomNavigation->setCurrentIndex(3);
+  //   });
+  //   connect(mTypeEditor->mEnumAction, &QAction::triggered, this, [this] {
+  //     if (mBottomNavigation)
+  //       mBottomNavigation->setCurrentIndex(3);
+  //   });
+  // }
+
   // Canvas stuff =============================================================
   bindCanvas();
 }
@@ -547,9 +566,7 @@ void MainWindow::bindShortcuts()
     if (!fw)
       return;
 
-    LOG_INFO("Copy, focused on: {}", fw->metaObject()->className());
-
-    // 1) If focus is in the node library panel -> search there
+    LOG_TRACE("Copy, focused on: {}", fw->metaObject()->className());
     if (auto* textEdit = qobject_cast<QTextEdit*>(findAncestor(fw, &QTextEdit::staticMetaObject)))
     {
       textEdit->copy();
@@ -573,7 +590,7 @@ void MainWindow::bindShortcuts()
     if (!fw)
       return;
 
-    LOG_INFO("Copy, focused on: {}", fw->metaObject()->className());
+    LOG_TRACE("Copy, focused on: {}", fw->metaObject()->className());
 
     // 1) If focus is in the node library panel -> search there
     if (auto* textEdit = qobject_cast<QTextEdit*>(findAncestor(fw, &QTextEdit::staticMetaObject)))
@@ -598,14 +615,120 @@ void MainWindow::bindShortcuts()
       return;
     }
   });
+  new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Tab), this, [this] {
+    QWidget* fw = QApplication::focusWidget();
+    if (!fw)
+      return;
 
+    LOG_TRACE("Ctrl, tab, focused on: {}", fw->metaObject()->className());
+    if (auto* stackedWidget = qobject_cast<QStackedWidget*>(findAncestor(fw, &QStackedWidget::staticMetaObject)))
+    {
+      if (stackedWidget == mBottomPanel && mBottomNavigation)
+      {
+        int next = mBottomNavigation->currentIndex() - 1;
+        mBottomNavigation->setCurrentIndex(next < 0 ? mBottomNavigation->itemCount() - 1 : next);
+        return;
+      }
+    }
+    else if (auto* widget = qobject_cast<oclero::qlementine::AbstractItemListWidget*>(
+                 findAncestor(fw, &oclero::qlementine::AbstractItemListWidget::staticMetaObject)))
+    {
+      if (widget == mBottomNavigation)
+      {
+        int next = mBottomNavigation->currentIndex() - 1;
+        mBottomNavigation->setCurrentIndex(next < 0 ? mBottomNavigation->itemCount() - 1 : next);
+        return;
+      }
+    }
+    else if (auto* tabWidget = qobject_cast<QTabWidget*>(findAncestor(fw, &QTabWidget::staticMetaObject)))
+    {
+      if (tabWidget == mCanvasPanel)
+      {
+        int next = mCanvasPanel->currentIndex() - 1;
+        mCanvasPanel->setCurrentIndex(next < 0 ? mCanvasPanel->count() - 1 : next);
+        return;
+      }
+    }
+  });
+  new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Tab), this, [this] {
+    QWidget* fw = QApplication::focusWidget();
+    if (!fw)
+      return;
+
+    LOG_TRACE("Ctrl, shift, tab, focused on: {}", fw->metaObject()->className());
+    if (auto* stackedWidget = qobject_cast<QStackedWidget*>(findAncestor(fw, &QStackedWidget::staticMetaObject)))
+    {
+      if (stackedWidget == mBottomPanel && mBottomNavigation)
+      {
+        int next = mBottomNavigation->currentIndex() + 1;
+        mBottomNavigation->setCurrentIndex(next >= mBottomNavigation->itemCount() ? 0 : next);
+        return;
+      }
+    }
+    else if (auto* widget = qobject_cast<oclero::qlementine::AbstractItemListWidget*>(
+                 findAncestor(fw, &oclero::qlementine::AbstractItemListWidget::staticMetaObject)))
+    {
+      if (widget == mBottomNavigation)
+      {
+        int next = mBottomNavigation->currentIndex() + 1;
+        mBottomNavigation->setCurrentIndex(next >= mBottomNavigation->itemCount() ? 0 : next);
+        return;
+      }
+    }
+    else if (auto* tabWidget = qobject_cast<QTabWidget*>(findAncestor(fw, &QTabWidget::staticMetaObject)))
+    {
+      if (tabWidget == mCanvasPanel)
+      {
+        int next = mCanvasPanel->currentIndex() + 1;
+        mCanvasPanel->setCurrentIndex(next >= mCanvasPanel->count() ? 0 : next);
+        return;
+      }
+    }
+  });
   new QShortcut(QKeySequence(Qt::Key_Delete), this, [this] {
     if (canvas())
       canvas()->deleteSelectedItems();
   });
-  new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_R), this, [this] {
+  new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::ALT | Qt::Key_R), this, [this] {
     if (mPluginManager && mPluginManager->currentPlugin())
       LOG_WARN_ON_FAILURE(mPluginManager->reloadPlugin(mPluginManager->currentPlugin()->languageName(), mHostServices));
+  });
+  new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_P), this, [this] {
+    if (mBottomNavigation)
+      mBottomNavigation->setCurrentIndex(2);
+
+    if (mMissionParameters)
+      mMissionParameters->addParameter();
+  });
+  new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_R), this, [this] {
+    if (mBottomNavigation)
+      mBottomNavigation->setCurrentIndex(1);
+
+    if (mTypeEditor)
+    {
+      mTypeEditor->createRecord();
+      mTypeEditor->focusCurrentEditor();
+    }
+  });
+  new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_A), this, [this] {
+    if (mBottomNavigation)
+      mBottomNavigation->setCurrentIndex(1);
+
+    if (mTypeEditor)
+    {
+      mTypeEditor->createAlias();
+      mTypeEditor->focusCurrentEditor();
+    }
+  });
+  new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_E), this, [this] {
+    if (mBottomNavigation)
+      mBottomNavigation->setCurrentIndex(1);
+
+    if (mTypeEditor)
+    {
+      mTypeEditor->createEnum();
+      mTypeEditor->focusCurrentEditor();
+    }
   });
 
   mActionUndo->setShortcuts(QKeySequence::Undo);

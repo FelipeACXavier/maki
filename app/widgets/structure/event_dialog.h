@@ -67,17 +67,9 @@ public:
    */
   QStandardItemModel* getArguments() const;
 
-protected:
-  /**
-   * @brief Handles key press events.
-   *
-   * @param event The QKeyEvent object.
-   */
-  void keyPressEvent(QKeyEvent* event) override;
-
 private:
-  std::shared_ptr<FlowSaveInfo> mStorage; /// Pointer to the stored FlowSaveInfo object.
-  int mEnterCount; /// Counter for enter key presses.
+  std::shared_ptr<FlowSaveInfo> mStorage;  /// Pointer to the stored FlowSaveInfo object.
+  int mEnterCount;                         /// Counter for enter key presses.
 
   /**
    * @brief Populates the node list with available options.

@@ -32,6 +32,7 @@
 #include "widgets/dropdown_button.h"
 #include "widgets/frame.h"
 #include "widgets/log_table_widget.h"
+#include "widgets/properties/mission_parameter_widget.h"
 #include "widgets/properties/properties_menu.h"
 #include "widgets/structure/file_menu.h"
 #include "widgets/structure/system_menu.h"
@@ -294,81 +295,109 @@ void MainWindowLayout::buildCentralPanel()
   bottomLayout->addWidget(mBottomPanel);
 
   // ===================================================================
-  auto* infoContainer = new StyledFrame(mBottomPanel);
-  infoContainer->setBackgroundRole(StyledFrame::BackgroundRole::Base);
-  infoContainer->setBorderRole(StyledFrame::BorderRole::Mid);
-  infoContainer->setRadius(theme.borderRadius);
-  infoContainer->setBorderWidth(theme.borderWidth);
+  {
+    auto* infoContainer = new StyledFrame(mBottomPanel);
+    infoContainer->setBackgroundRole(StyledFrame::BackgroundRole::Base);
+    infoContainer->setBorderRole(StyledFrame::BorderRole::Mid);
+    infoContainer->setRadius(theme.borderRadius);
+    infoContainer->setBorderWidth(theme.borderWidth);
 
-  QVBoxLayout* infoLayout = new QVBoxLayout(infoContainer);
-  infoLayout->setContentsMargins(theme.borderWidth, theme.borderWidth, theme.borderWidth, theme.borderWidth);
-  infoLayout->setSpacing(0);
+    QVBoxLayout* infoLayout = new QVBoxLayout(infoContainer);
+    infoLayout->setContentsMargins(theme.borderWidth, theme.borderWidth, theme.borderWidth, theme.borderWidth);
+    infoLayout->setSpacing(0);
 
-  // Info tab
-  mInfoText = new QTextBrowser(mBottomPanel);
-  mInfoText->setWordWrapMode(QTextOption::WrapMode::WordWrap);
-  mInfoText->setFont(theme.fontRegular);
-  mInfoText->setHtml(createDefaultMessage());
-  mInfoText->setFocusPolicy(Qt::FocusPolicy::NoFocus);
+    // Info tab
+    mInfoText = new QTextBrowser(mBottomPanel);
+    mInfoText->setWordWrapMode(QTextOption::WrapMode::WordWrap);
+    mInfoText->setFont(theme.fontRegular);
+    mInfoText->setHtml(createDefaultMessage());
+    mInfoText->setFocusPolicy(Qt::FocusPolicy::NoFocus);
 
-  infoLayout->addWidget(mInfoText);
+    infoLayout->addWidget(mInfoText);
 
-  mBottomNavigation->addItem(tr("Info"), QIcon(":/icons/info.svg"));
-  mBottomPanel->addWidget(infoContainer);
-
-  // -----------------------------------------------------------------
-  // Log container
-  auto* logContainer = new StyledFrame(mBottomPanel);
-  logContainer->setBackgroundRole(StyledFrame::BackgroundRole::Base);
-  logContainer->setBorderRole(StyledFrame::BorderRole::Mid);
-  logContainer->setRadius(theme.borderRadius);
-  logContainer->setBorderWidth(theme.borderWidth);
-
-  QVBoxLayout* logLayout = new QVBoxLayout(logContainer);
-  logLayout->setContentsMargins(theme.spacing, theme.spacing, theme.spacing, theme.borderWidth);
-  logLayout->setSpacing(theme.spacing);
-
-  mLogTable = new LogTableWidget(logContainer);
-  logLayout->addWidget(mLogTable);
-
-  mBottomNavigation->addItem(tr("Log"), QIcon(":/icons/logs.svg"));
-  mBottomPanel->addWidget(logContainer);
-
-  // -----------------------------------------------------------------
-  // Process tab
-  auto* pluginContainer = new StyledFrame(mBottomPanel);
-  pluginContainer->setBackgroundRole(StyledFrame::BackgroundRole::Base);
-  pluginContainer->setBorderRole(StyledFrame::BorderRole::Mid);
-  pluginContainer->setRadius(theme.borderRadius);
-  pluginContainer->setBorderWidth(theme.borderWidth);
-
-  QVBoxLayout* pluginLayout = new QVBoxLayout(pluginContainer);
-  pluginLayout->setContentsMargins(theme.borderWidth, theme.borderWidth, theme.borderWidth, theme.borderWidth);
-  pluginLayout->setSpacing(0);
-
-  mProcessTab = new ProcessTab(pluginContainer);
-  pluginLayout->addWidget(mProcessTab);
-
-  mBottomNavigation->addItem(tr("Generation"), QIcon(":/icons/terminal.svg"));
-  mBottomPanel->addWidget(pluginContainer);
+    mBottomNavigation->addItem(tr("Info"), QIcon(":/icons/info.svg"));
+    mBottomPanel->addWidget(infoContainer);
+  }
 
   // -----------------------------------------------------------------
   // Type editor
-  auto* typeContainer = new StyledFrame(mBottomPanel);
-  typeContainer->setBackgroundRole(StyledFrame::BackgroundRole::Base);
-  typeContainer->setBorderRole(StyledFrame::BorderRole::Mid);
-  typeContainer->setRadius(theme.borderRadius);
-  typeContainer->setBorderWidth(theme.borderWidth);
+  {
+    auto* typeContainer = new StyledFrame(mBottomPanel);
+    typeContainer->setBackgroundRole(StyledFrame::BackgroundRole::Base);
+    typeContainer->setBorderRole(StyledFrame::BorderRole::Mid);
+    typeContainer->setRadius(theme.borderRadius);
+    typeContainer->setBorderWidth(theme.borderWidth);
 
-  QVBoxLayout* typeLayout = new QVBoxLayout(typeContainer);
-  typeLayout->setContentsMargins(theme.spacing, theme.spacing, theme.spacing, theme.borderWidth);
-  typeLayout->setSpacing(theme.spacing);
+    QVBoxLayout* typeLayout = new QVBoxLayout(typeContainer);
+    typeLayout->setContentsMargins(theme.spacing, theme.spacing, theme.spacing, theme.borderWidth);
+    typeLayout->setSpacing(theme.spacing);
 
-  auto typeEditor = new maki::TypeEditor(typeContainer);
-  typeLayout->addWidget(typeEditor);
+    mTypeEditor = new maki::TypeEditor(typeContainer);
+    typeLayout->addWidget(mTypeEditor);
 
-  mBottomNavigation->addItem(tr("Datatypes"), QIcon(":/icons/database.svg"));
-  mBottomPanel->addWidget(typeContainer);
+    mBottomNavigation->addItem(tr("Datatypes"), QIcon(":/icons/database.svg"));
+    mBottomPanel->addWidget(typeContainer);
+  }
+
+  // -----------------------------------------------------------------
+  // Mission editor
+  {
+    auto* missionContainer = new StyledFrame(mBottomPanel);
+    missionContainer->setBackgroundRole(StyledFrame::BackgroundRole::Base);
+    missionContainer->setBorderRole(StyledFrame::BorderRole::Mid);
+    missionContainer->setRadius(theme.borderRadius);
+    missionContainer->setBorderWidth(theme.borderWidth);
+
+    QVBoxLayout* missionLayout = new QVBoxLayout(missionContainer);
+    missionLayout->setContentsMargins(theme.spacing, theme.spacing, theme.spacing, theme.borderWidth);
+    missionLayout->setSpacing(theme.spacing);
+
+    mMissionParameters = new maki::MissionParameterWidget(missionContainer);
+    missionLayout->addWidget(mMissionParameters);
+
+    mBottomNavigation->addItem(tr("Mission parameters"), QIcon(":/icons/mission-parameter.svg"));
+    mBottomPanel->addWidget(missionContainer);
+  }
+
+  // -----------------------------------------------------------------
+  // Log container
+  {
+    auto* logContainer = new StyledFrame(mBottomPanel);
+    logContainer->setBackgroundRole(StyledFrame::BackgroundRole::Base);
+    logContainer->setBorderRole(StyledFrame::BorderRole::Mid);
+    logContainer->setRadius(theme.borderRadius);
+    logContainer->setBorderWidth(theme.borderWidth);
+
+    QVBoxLayout* logLayout = new QVBoxLayout(logContainer);
+    logLayout->setContentsMargins(theme.spacing, theme.spacing, theme.spacing, theme.borderWidth);
+    logLayout->setSpacing(theme.spacing);
+
+    mLogTable = new LogTableWidget(logContainer);
+    logLayout->addWidget(mLogTable);
+
+    mBottomNavigation->addItem(tr("Log"), QIcon(":/icons/logs.svg"));
+    mBottomPanel->addWidget(logContainer);
+  }
+
+  // -----------------------------------------------------------------
+  // Process tab
+  {
+    auto* pluginContainer = new StyledFrame(mBottomPanel);
+    pluginContainer->setBackgroundRole(StyledFrame::BackgroundRole::Base);
+    pluginContainer->setBorderRole(StyledFrame::BorderRole::Mid);
+    pluginContainer->setRadius(theme.borderRadius);
+    pluginContainer->setBorderWidth(theme.borderWidth);
+
+    QVBoxLayout* pluginLayout = new QVBoxLayout(pluginContainer);
+    pluginLayout->setContentsMargins(theme.borderWidth, theme.borderWidth, theme.borderWidth, theme.borderWidth);
+    pluginLayout->setSpacing(0);
+
+    mProcessTab = new ProcessTab(pluginContainer);
+    pluginLayout->addWidget(mProcessTab);
+
+    mBottomNavigation->addItem(tr("Generation"), QIcon(":/icons/terminal.svg"));
+    mBottomPanel->addWidget(pluginContainer);
+  }
 
   // -----------------------------------------------------------------
   // Final detals

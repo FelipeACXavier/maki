@@ -41,6 +41,8 @@ protected:
    */
   void setSize(double ratio, double screenFraction, qreal heightFraction);
 
+  void keyPressEvent(QKeyEvent* event) override;
+
   /**
    * @brief Returns the layout of the dialog.
    *

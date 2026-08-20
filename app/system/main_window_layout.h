@@ -32,7 +32,9 @@ class CanvasView;
 namespace maki
 {
 class SearchWidget;
-}
+class MissionParameterWidget;
+class TypeEditor;
+}  // namespace maki
 
 /**
  * @brief Main window layout class.
@@ -83,6 +85,8 @@ protected:
   LogTableWidget* mLogTable;                             /// Pointer to the log table widget.
   QTextBrowser* mInfoText;                               /// Pointer to the info text browser.
   ProcessTab* mProcessTab;                               /// Pointer to the process tab.
+  maki::MissionParameterWidget* mMissionParameters;
+  maki::TypeEditor* mTypeEditor;
 
   // === Right Panel ===
   QSplitter* mRightPanel;          /// Pointer to the right panel splitter.

@@ -10,25 +10,46 @@
 #include <QIntValidator>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QScrollArea>
 #include <QScrollBar>
 #include <QShortcut>
 #include <QSpinBox>
+#include <QTableWidget>
 #include <QToolTip>
 #include <oclero/qlementine.hpp>
 #include <oclero/qlementine/widgets/ColorEditor.hpp>
 #include <oclero/qlementine/widgets/IconWidget.hpp>
 #include <oclero/qlementine/widgets/Label.hpp>
 #include <oclero/qlementine/widgets/LineEdit.hpp>
+#include <variant>
 
 #include "app_configs.h"
 #include "oclero/qlementine/Common.hpp"
 #include "style_helpers.h"
+#include "type_registry.h"
+#include "typing/helpers.h"
 #include "validators/double_variable.h"
 #include "validators/int_variable.h"
 
 static const int WIDGET_SPACING = 2;
 static const int WIDGET_PADDING = 24;
 static const int TOOLTIP_HEIGHT = 55;
+
+#define GET_VALUE(ALT, DEFAULT)                   \
+  do                                              \
+  {                                               \
+    if (std::holds_alternative<ALT>(mValue.data)) \
+      return std::get<ALT>(mValue.data);          \
+                                                  \
+    return DEFAULT;                               \
+  } while (false);
+
+#define SET_VALUE(DATA)         \
+  do                            \
+  {                             \
+    Value val{.data = DATA};    \
+    InputWidget::setValue(val); \
+  } while (false);
 
 namespace maki
 {
@@ -137,11 +158,14 @@ WidgetGroup::WidgetGroup(const QString& label, QWidget* parent)
 
 WidgetGroup::WidgetGroup(const QString& label, oclero::qlementine::TextRole role, QWidget* parent)
     : QWidget(parent)
+    , mPadding(WIDGET_PADDING)
 {
-  auto* vLayout = new QVBoxLayout(this);
-  vLayout->setContentsMargins(0, 0, 0, 0);
-  vLayout->setSpacing(WIDGET_SPACING);
-  vLayout->setAlignment(Qt::AlignTop);
+  setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+  setMinimumWidth(0);
+
+  auto* rootLayout = new QVBoxLayout(this);
+  rootLayout->setContentsMargins(0, 0, 0, 0);
+  rootLayout->setSpacing(WIDGET_SPACING);
 
   auto* title = new oclero::qlementine::Label(label, this);
   title->setRole(role);
@@ -150,70 +174,115 @@ WidgetGroup::WidgetGroup(const QString& label, oclero::qlementine::TextRole role
   auto* line = new QFrame(this);
   line->setFrameShape(QFrame::HLine);
 
-  vLayout->addWidget(title);
-  vLayout->addWidget(line);
-  vLayout->addSpacing(2 * WIDGET_SPACING);
+  rootLayout->addWidget(title);
+  rootLayout->addWidget(line);
+  rootLayout->addSpacing(2 * WIDGET_SPACING);
 
-  setFocusPolicy(Qt::FocusPolicy::ClickFocus);
+  mContentWidget = new QWidget(this);
+
+  mContentLayout = new QVBoxLayout(mContentWidget);
+  mContentLayout->setContentsMargins(WIDGET_SPACING, WIDGET_SPACING, WIDGET_SPACING, WIDGET_SPACING);
+  mContentLayout->setSpacing(WIDGET_SPACING);
+  mContentLayout->setAlignment(Qt::AlignTop);
+
+  rootLayout->addWidget(mContentWidget);
+
+  setFocusPolicy(Qt::ClickFocus);
 }
 
 void WidgetGroup::addWidget(QWidget* widget)
 {
   auto* hlayout = new QHBoxLayout();
-  hlayout->setContentsMargins(WIDGET_PADDING, 0, 0, 0);
+  hlayout->setContentsMargins(mPadding, 0, 0, 0);
   hlayout->addWidget(widget);
 
-  qobject_cast<QVBoxLayout*>(this->layout())->addLayout(hlayout);
+  mContentLayout->addLayout(hlayout);
 }
 
 void WidgetGroup::addLayout(QLayout* layout)
 {
-  qobject_cast<QVBoxLayout*>(this->layout())->addLayout(layout);
+  mContentLayout->addLayout(layout);
 }
 
 void WidgetGroup::addSpacing(int spacing)
 {
-  qobject_cast<QVBoxLayout*>(this->layout())->addSpacing(spacing);
+  mContentLayout->addSpacing(spacing);
 }
 
 void WidgetGroup::addStretch()
 {
-  qobject_cast<QVBoxLayout*>(this->layout())->addStretch();
+  mContentLayout->addStretch();
 }
 
 void WidgetGroup::removeWidget(QWidget* widget)
 {
-  layout()->removeWidget(widget);
+  mContentLayout->removeWidget(widget);
 }
 
 void WidgetGroup::clear()
 {
   // Start after the title + line + spacing
-  clearLayout(layout(), 3);
+  clearLayout(mContentLayout);
 }
 
+void WidgetGroup::setPadding(int padding)
+{
+  mPadding = padding;
+}
+
+// =========================================================================================================
+WidgetScrollGroup::WidgetScrollGroup(const QString& label, QWidget* parent)
+    : WidgetScrollGroup(label, oclero::qlementine::TextRole::H4, parent)
+{
+}
+
+WidgetScrollGroup::WidgetScrollGroup(const QString& label, oclero::qlementine::TextRole role, QWidget* parent)
+    : WidgetGroup(label, role, parent)
+{
+  layout()->removeWidget(mContentWidget);
+
+  auto* scrollArea = new QScrollArea(this);
+  scrollArea->setWidgetResizable(true);
+  scrollArea->setFrameShape(QFrame::NoFrame);
+  scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+  scrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+  mContentWidget->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
+
+  scrollArea->setWidget(mContentWidget);
+
+  layout()->addWidget(scrollArea);
+}
+
+// =========================================================================================================
 InputWidget::InputWidget(const QString& label, QWidget* inputField, WidgetAlignment alignment, QWidget* parent)
     : QWidget(parent)
     , mInputField(inputField)
 {
-  auto* labelWidget = new oclero::qlementine::Label(label, this);
-  labelWidget->setRole(oclero::qlementine::TextRole::Default);
-  labelWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-
-  auto* qlementineStyle = oclero::qlementine::appStyle();
-  if (qlementineStyle)
+  oclero::qlementine::Label* labelWidget = nullptr;
+  if (!label.isEmpty())
   {
-    auto metric = labelWidget->fontMetrics();
-    const auto theme = qlementineStyle->theme();
-    labelWidget->setMinimumWidth(metric.horizontalAdvance(label) + theme.spacing);
+    labelWidget = new oclero::qlementine::Label(label, this);
+    labelWidget->setRole(oclero::qlementine::TextRole::Default);
+    labelWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+
+    if (auto* qlementineStyle = oclero::qlementine::appStyle())
+    {
+      auto metric = labelWidget->fontMetrics();
+      const auto theme = qlementineStyle->theme();
+      labelWidget->setMinimumWidth(metric.horizontalAdvance(label) + theme.spacing);
+    }
   }
 
   mInputField->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
   mInputField->setParent(this);
+  if (mInputField->focusPolicy() == Qt::NoFocus)
+    mInputField->setFocusPolicy(Qt::StrongFocus);
 
   if (alignment.type == WidgetAlignment::Type::FORM)
   {
-    if (alignment.labelWidth > 0)
+    if (labelWidget && alignment.labelWidth > 0)
       labelWidget->setFixedWidth(alignment.labelWidth);
 
     alignment.group->addWidget(createLayout(labelWidget, alignment));
@@ -226,7 +295,7 @@ InputWidget::InputWidget(const QString& label, QWidget* inputField, WidgetAlignm
 
     if (alignment.type == WidgetAlignment::Type::INLINE)
     {
-      if (alignment.labelWidth > 0)
+      if (labelWidget && alignment.labelWidth > 0)
         labelWidget->setFixedWidth(alignment.labelWidth);
 
       layout()->addWidget(createLayout(labelWidget, alignment));
@@ -237,6 +306,17 @@ InputWidget::InputWidget(const QString& label, QWidget* inputField, WidgetAlignm
       layout()->addWidget(mInputField);
     }
   }
+}
+
+void InputWidget::setValue(const Value& value)
+{
+  mValue = value;
+  writeValueToWidget(value);
+}
+
+Value InputWidget::getValue() const
+{
+  return mValue;
 }
 
 void InputWidget::addDescription(const QString& text)
@@ -258,9 +338,10 @@ QWidget* InputWidget::createLayout(oclero::qlementine::Label* labelWidget, Widge
   if (alignment.direction == WidgetAlignment::Direction::RIGHT || alignment.direction == WidgetAlignment::Direction::CENTER)
     hLayout->addStretch();
 
-  hLayout->addWidget(labelWidget);
+  if (labelWidget)
+    hLayout->addWidget(labelWidget);
 
-  if (alignment.direction == WidgetAlignment::Direction::SPREAD)
+  if (labelWidget && alignment.direction == WidgetAlignment::Direction::SPREAD)
     hLayout->addStretch();
 
   hLayout->addWidget(mInputField);
@@ -282,26 +363,40 @@ void InputWidget::setToolTip(const QString& text)
 
 // =========================================================================================================
 BooleanWidget::BooleanWidget(const QString& label, bool value, WidgetAlignment alignment, QWidget* parent)
-    : TypedInputWidget<bool, QCheckBox>(label, new QCheckBox(), value, alignment, parent)
+    : TypedInputWidget<QCheckBox>(label, new QCheckBox(), alignment, parent)
 {
   if (auto* combo = qobject_cast<QCheckBox*>(mInputField))
   {
     combo->setMaximumWidth(20);
     combo->setCheckState(value ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
     connect(combo, &QCheckBox::checkStateChanged, this, [this](Qt::CheckState state) {
-      mValue = (state == Qt::CheckState::Checked);
-      emit valueChanged(mValue);
+      mValue.data = (state == Qt::CheckState::Checked);
+      emit valueChanged(getValue());
+      emit InputWidget::valueChanged();
     });
   }
 
   setValue(value);
 }
 
-void maki::BooleanWidget::writeValueToWidget(const bool& value)
+bool BooleanWidget::getValue() const
 {
-  mValue = value;
+  GET_VALUE(bool, false);
+}
+
+void BooleanWidget::setValue(bool value)
+{
+  SET_VALUE(value);
+}
+
+void maki::BooleanWidget::writeValueToWidget(const Value& value)
+{
+  if (!std::holds_alternative<bool>(value.data))
+    return;
+
+  auto actualValue = std::get<bool>(value.data);
   if (auto* combo = qobject_cast<QCheckBox*>(mInputField))
-    combo->setCheckState(value ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
+    combo->setCheckState(actualValue ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
 }
 
 // =========================================================================================================
@@ -311,7 +406,7 @@ StringWidget::StringWidget(const QString& label, const QString& placeholder, Wid
 }
 
 StringWidget::StringWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, const QString& tooltip, QWidget* parent)
-    : TypedInputWidget<QString, oclero::qlementine::LineEdit>(label, new oclero::qlementine::LineEdit(), placeholder, alignment, parent)
+    : TypedInputWidget<oclero::qlementine::LineEdit>(label, new oclero::qlementine::LineEdit(), alignment, parent)
 {
   if (auto* edit = qobject_cast<oclero::qlementine::LineEdit*>(mInputField))
   {
@@ -326,25 +421,44 @@ StringWidget::StringWidget(const QString& label, const QString& placeholder, Wid
         QToolTip::showText(globalPos, edit->toolTip(), edit);
       }
     });
+    // connect(edit, &QLineEdit::textEdited, this, [this](const QString& text) {
+    //   mValue.data = text;
+    //   emit valueChanged(getValue());
+    //   emit InputWidget::valueChanged();
+    // });
     connect(edit, &QLineEdit::editingFinished, this, [this, edit]() {
-      mValue = edit->text();
-      emit valueChanged(mValue);
+      mValue.data = edit->text();
+      emit valueChanged(getValue());
+      emit InputWidget::valueChanged();
     });
   }
 
   setValue(placeholder);
 }
 
-void maki::StringWidget::writeValueToWidget(const QString& value)
+QString StringWidget::getValue() const
 {
-  mValue = value;
+  GET_VALUE(QString, "");
+}
+
+void StringWidget::setValue(const QString& value)
+{
+  SET_VALUE(value);
+}
+
+void maki::StringWidget::writeValueToWidget(const Value& value)
+{
+  if (!std::holds_alternative<QString>(value.data))
+    return;
+
+  auto actualValue = std::get<QString>(value.data);
   if (auto* edit = qobject_cast<QLineEdit*>(mInputField))
-    edit->setText(value);
+    edit->setText(actualValue);
 }
 
 // ========================================================================================================================================
 IntegerWidget::IntegerWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent, int min, int max)
-    : TypedInputWidget<QString, oclero::qlementine::LineEdit>(label, new oclero::qlementine::LineEdit(), placeholder, alignment, parent)
+    : TypedInputWidget<oclero::qlementine::LineEdit>(label, new oclero::qlementine::LineEdit(), alignment, parent)
 {
   if (auto* edit = qobject_cast<oclero::qlementine::LineEdit*>(mInputField))
   {
@@ -367,9 +481,10 @@ IntegerWidget::IntegerWidget(const QString& label, const QString& placeholder, W
       if (!edit->hasAcceptableInput())
         return;
 
-      mValue = edit->text();
+      mValue.data = edit->text();
       edit->setStatus(oclero::qlementine::Status::Default);
-      emit valueChanged(mValue);
+      emit valueChanged(std::get<QString>(mValue.data));
+      emit InputWidget::valueChanged();
     });
   }
 
@@ -382,31 +497,43 @@ void IntegerWidget::setAcceptVariable(bool accept)
     mValidator->setAcceptVariable(accept);
 }
 
-void IntegerWidget::setValue(int value)
-{
-  TypedInputWidget::setValue(QString::number(value));
-}
-
 int IntegerWidget::getValue() const
 {
+  if (!std::holds_alternative<QString>(mValue.data))
+    assert(false && "Tried to get an integer from a field that does not hold an integer");
+
+  auto actualValue = std::get<QString>(mValue.data);
   bool ok = false;
-  int value = mValue.toInt(&ok);
+  int value = actualValue.toInt(&ok);
   if (ok)
     return value;
 
   assert(false && "Tried to get an integer from a field that does not contain an integer");
 }
 
-void IntegerWidget::writeValueToWidget(const QString& value)
+void IntegerWidget::setValue(const QString& value)
 {
-  mValue = value;
+  SET_VALUE(value);
+}
+
+void IntegerWidget::setValue(int value)
+{
+  SET_VALUE(QString::number(value));
+}
+
+void IntegerWidget::writeValueToWidget(const Value& value)
+{
+  if (!std::holds_alternative<QString>(value.data))
+    return;
+
+  auto actualValue = std::get<QString>(value.data);
   if (auto* edit = qobject_cast<QLineEdit*>(mInputField))
-    edit->setText(value);
+    edit->setText(actualValue);
 }
 
 // ========================================================================================================================================
 FloatWidget::FloatWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent, qreal min, qreal max)
-    : TypedInputWidget<QString, oclero::qlementine::LineEdit>(label, new oclero::qlementine::LineEdit(), placeholder, alignment, parent)
+    : TypedInputWidget<oclero::qlementine::LineEdit>(label, new oclero::qlementine::LineEdit(), alignment, parent)
 {
   if (auto* edit = qobject_cast<oclero::qlementine::LineEdit*>(mInputField))
   {
@@ -431,9 +558,10 @@ FloatWidget::FloatWidget(const QString& label, const QString& placeholder, Widge
       if (!edit->hasAcceptableInput())
         return;
 
-      mValue = edit->text();
+      mValue.data = edit->text();
       edit->setStatus(oclero::qlementine::Status::Default);
-      emit valueChanged(mValue);
+      emit valueChanged(std::get<QString>(mValue.data));
+      emit InputWidget::valueChanged();
     });
   }
 
@@ -446,41 +574,54 @@ void FloatWidget::setAcceptVariable(bool accept)
     mValidator->setAcceptVariable(accept);
 }
 
-void FloatWidget::setValue(qreal value)
+double FloatWidget::getValue() const
 {
-  TypedInputWidget::setValue(QString::number(value));
-}
+  if (!std::holds_alternative<QString>(mValue.data))
+    assert(false && "Tried to get an integer from a field that does not hold a real");
 
-qreal FloatWidget::getValue() const
-{
+  auto actualValue = std::get<QString>(mValue.data);
   bool ok = false;
-  int value = mValue.toDouble(&ok);
+  double value = actualValue.toDouble(&ok);
   if (ok)
     return value;
 
-  assert(false && "Tried to get a real from a field that does not contain a real");
+  assert(false && "Tried to get an integer from a field that does not contain a real");
 }
 
-void FloatWidget::writeValueToWidget(const QString& value)
+void FloatWidget::setValue(double value)
 {
-  mValue = value;
+  SET_VALUE(QString::number(value));
+}
+
+void FloatWidget::setValue(const QString& value)
+{
+  SET_VALUE(value);
+}
+
+void FloatWidget::writeValueToWidget(const Value& value)
+{
+  if (!std::holds_alternative<QString>(value.data))
+    return;
+
+  auto actualValue = std::get<QString>(value.data);
   if (auto* edit = qobject_cast<QLineEdit*>(mInputField))
-    edit->setText(value);
+    edit->setText(actualValue);
 }
 
 // ========================================================================================================================================
 SpinWidget::SpinWidget(const QString& label, int placeholder, QWidget* parent, WidgetAlignment alignment, int min, int max)
-    : TypedInputWidget<int, QSpinBox>(label, new QSpinBox(), placeholder, alignment, parent)
+    : TypedInputWidget<QSpinBox>(label, new QSpinBox(), alignment, parent)
 {
   if (auto* edit = qobject_cast<QSpinBox*>(mInputField))
   {
     edit->setRange(min, max);
     edit->setAlignment(Qt::AlignRight);
-    edit->setValue(mValue);
+    edit->setValue(placeholder);
 
     connect(edit, &QSpinBox::valueChanged, this, [this](int value) {
-      mValue = value;
-      emit valueChanged(mValue);
+      mValue.data = value;
+      emit valueChanged(getValue());
+      emit InputWidget::valueChanged();
     });
   }
 
@@ -493,11 +634,24 @@ void SpinWidget::setSuffix(const QString& suffix)
     edit->setSuffix(suffix);
 }
 
-void SpinWidget::writeValueToWidget(const int& value)
+int SpinWidget::getValue() const
 {
-  mValue = value;
+  GET_VALUE(int, 0);
+}
+
+void SpinWidget::setValue(int value)
+{
+  SET_VALUE(value);
+}
+
+void SpinWidget::writeValueToWidget(const Value& value)
+{
+  if (!std::holds_alternative<int>(value.data))
+    return;
+
+  auto actualValue = std::get<int>(value.data);
   if (auto* edit = qobject_cast<QSpinBox*>(mInputField))
-    edit->setValue(mValue);
+    edit->setValue(actualValue);
 }
 
 // ========================================================================================================================================
@@ -507,7 +661,7 @@ SelectorWidget::SelectorWidget(const QString& label, WidgetAlignment alignment, 
 }
 
 SelectorWidget::SelectorWidget(const QString& label, QComboBox* comboBox, WidgetAlignment alignment, QWidget* parent)
-    : TypedInputWidget<QString, QComboBox>(label, comboBox, Constants::EMPTY_COMBO, alignment, parent)
+    : TypedInputWidget<QComboBox>(label, comboBox, alignment, parent)
 {
   if (auto* combo = qobject_cast<QComboBox*>(mInputField))
   {
@@ -516,24 +670,30 @@ SelectorWidget::SelectorWidget(const QString& label, QComboBox* comboBox, Widget
 
     setValue(Constants::EMPTY_COMBO);
     connect(combo, &QComboBox::currentTextChanged, this, [this, combo](const QString& value) {
-      mValue = value;
+      mValue.data = value;
       mData = combo->currentData();
-      emit valueChanged(mValue);
-      emit dataChanged(mValue, mData);
+      emit valueChanged(getValue());
+      emit dataChanged(getValue(), mData);
+      emit InputWidget::valueChanged();
     });
   }
 }
 
-void SelectorWidget::writeValueToWidget(const QString& text)
+void SelectorWidget::writeValueToWidget(const Value& value)
 {
   if (auto* combo = qobject_cast<QComboBox*>(mInputField))
   {
+    if (!std::holds_alternative<QString>(value.data))
+      return;
+
+    auto text = std::get<QString>(value.data);
     if (text == Constants::EMPTY_COMBO)
     {
       combo->setPlaceholderText(Constants::EMPTY_COMBO);
       combo->setCurrentIndex(-1);
+
       // Clear values
-      mValue = Constants::EMPTY_COMBO;
+      mValue = {};
       mData = QVariant();
       return;
     }
@@ -542,7 +702,7 @@ void SelectorWidget::writeValueToWidget(const QString& text)
     if (index >= 0)
     {
       combo->setCurrentIndex(index);
-      mValue = combo->currentText();
+      mValue = Value{.data = combo->currentText()};
       mData = combo->currentData();
     }
   }
@@ -556,7 +716,7 @@ void SelectorWidget::setData(const QString& data)
     if (index >= 0)
     {
       combo->setCurrentIndex(index);
-      mValue = combo->currentText();
+      mValue.data = combo->currentText();
       mData = combo->currentData();
     }
     else
@@ -579,6 +739,16 @@ void SelectorWidget::addItem(const QString& name, const QVariant& value)
     if (index < 0)
       combo->addItem(name, value);
   }
+}
+
+QString SelectorWidget::getValue() const
+{
+  GET_VALUE(QString, Constants::EMPTY_COMBO);
+}
+
+void SelectorWidget::setValue(const QString& value)
+{
+  SET_VALUE(value);
 }
 
 // =========================================================================================================
@@ -620,26 +790,39 @@ void ButtonWidget::addDescription(const QString& label)
 
 // =========================================================================================================
 ColorWidget::ColorWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent)
-    : TypedInputWidget<QColor, oclero::qlementine::ColorEditor>(label, new oclero::qlementine::ColorEditor(), QColor::fromString(placeholder),
-                                                                alignment, parent)
+    : TypedInputWidget<oclero::qlementine::ColorEditor>(label, new oclero::qlementine::ColorEditor(), alignment, parent)
 {
   if (auto* edit = qobject_cast<oclero::qlementine::ColorEditor*>(mInputField))
   {
     edit->setColor(QColor::fromString(placeholder));
     connect(edit, &oclero::qlementine::ColorEditor::colorChanged, this, [this, edit]() {
-      mValue = edit->color();
-      emit valueChanged(mValue);
+      mValue.data = edit->color();
+      emit valueChanged(getValue());
+      emit InputWidget::valueChanged();
     });
   }
 
-  setValue(placeholder);
+  setValue(QColor::fromString(placeholder));
 }
 
-void ColorWidget::writeValueToWidget(const QColor& color)
+void ColorWidget::writeValueToWidget(const Value& value)
 {
-  mValue = color;
+  if (!std::holds_alternative<QColor>(value.data))
+    return;
+
+  auto actualValue = std::get<QColor>(value.data);
   if (auto* edit = qobject_cast<oclero::qlementine::ColorEditor*>(mInputField))
-    edit->setColor(color);
+    edit->setColor(actualValue);
+}
+
+QColor ColorWidget::getValue() const
+{
+  GET_VALUE(QColor, QColor());
+}
+
+void ColorWidget::setValue(const QColor& value)
+{
+  SET_VALUE(value);
 }
 
 // =========================================================================================================
@@ -674,11 +857,11 @@ TypeSelectionWidget::TypeSelectionWidget(const QString& initial, Types::Property
 }
 
 ContainerWidget::ContainerWidget(const QString& label, QWidget* widget, WidgetAlignment alignment, QWidget* parent)
-    : TypedInputWidget<QString, QWidget>(label, widget, Constants::EMPTY_COMBO, alignment, parent)
+    : TypedInputWidget<QWidget>(label, widget, alignment, parent)
 {
 }
 
-void ContainerWidget::writeValueToWidget(const QString& /* value */)
+void ContainerWidget::writeValueToWidget(const Value& /* value */)
 {
 }
 
@@ -732,6 +915,387 @@ void SearchWidget::setValue(const QString& value)
 {
   mValue = value;
   mInputField->setText(value);
+}
+
+// =========================================================================================================
+ListWidget::ListWidget(const QString& label, const koda::types::TypeReference& elementType, WidgetAlignment alignment, QWidget* parent)
+    : TypedInputWidget<WidgetGroup>("", new maki::WidgetGroup(label, oclero::qlementine::TextRole::H5, nullptr), alignment, parent)
+    , mElementType(elementType)
+{
+  if (auto* group = qobject_cast<maki::WidgetGroup*>(mInputField))
+  {
+    mItems = new QWidget(group);
+
+    mItemsLayout = new QVBoxLayout(mItems);
+    mItemsLayout->setContentsMargins(0, 0, 0, 0);
+
+    auto* addButton = new QPushButton(this);
+    addButton->setFixedSize(Config::MEDIUM_BUTTON_SIZE);
+    addButton->setIcon(iconFromTheme("plus"));
+
+    auto* browserButtons = new QHBoxLayout();
+    browserButtons->addWidget(addButton);
+    browserButtons->addStretch();
+
+    connect(addButton, &QPushButton::clicked, this, [this]() { addItem(Value{}); });
+
+    group->addWidget(mItems);
+    group->addStretch();
+    group->addLayout(browserButtons);
+  }
+}
+
+ListValue ListWidget::getValue() const
+{
+  ListValue values;
+
+  for (const auto* editor : mEditors)
+    if (editor)
+      values.push_back(editor->getValue());
+
+  return values;
+}
+
+void ListWidget::setValue(const ListValue& value)
+{
+  SET_VALUE(value)
+}
+
+void ListWidget::writeValueToWidget(const Value& value)
+{
+  const auto* list = std::get_if<ListValue>(&value.data);
+  if (!list)
+    return;
+
+  clear();
+
+  for (const auto& item : *list)
+    addItem(item);
+}
+
+void ListWidget::addItem(const Value& value)
+{
+  auto* row = new QWidget(mItems);
+  auto* rowLayout = new QHBoxLayout(row);
+  rowLayout->setAlignment(Qt::AlignVCenter);
+  rowLayout->setContentsMargins(0, 0, 0, 0);
+
+  auto alignment = WidgetAlignment::Inline();
+  auto* editor = ValueEditorFactory::create("", mElementType, value, alignment, row);
+  if (!editor)
+  {
+    row->deleteLater();
+    return;
+  }
+
+  editor->setValue(value);
+
+  auto* removeButton = new QPushButton(this);
+  removeButton->setFixedSize(Config::MEDIUM_BUTTON_SIZE);
+  removeButton->setIcon(iconFromTheme("minus"));
+
+  rowLayout->addWidget(editor);
+  rowLayout->addWidget(removeButton);
+
+  mItemsLayout->addWidget(row);
+
+  mEditors.push_back(editor);
+
+  connect(editor, &InputWidget::valueChanged, this, [this] {
+    mValue.data = getValue();
+    emit InputWidget::valueChanged();
+  });
+  connect(removeButton, &QPushButton::clicked, this, [this, row, editor]() {
+    std::erase(mEditors, editor);
+    row->deleteLater();
+    mValue.data = getValue();
+    emit InputWidget::valueChanged();
+  });
+}
+
+void ListWidget::clear()
+{
+  mEditors.clear();
+  clearLayout(mItemsLayout);
+}
+
+QList<QWidget*> ListWidget::focusWidgets() const
+{
+  QList<QWidget*> widgets;
+
+  for (const auto& editor : mEditors)
+    widgets.append(editor->focusWidgets());
+
+  return widgets;
+}
+
+// =========================================================================================================
+MapWidget::MapWidget(const QString& label, const koda::types::TypeReference& keyType, const koda::types::TypeReference& valueType,
+                     WidgetAlignment alignment, QWidget* parent)
+    : TypedInputWidget<WidgetGroup>("", new maki::WidgetGroup(label, oclero::qlementine::TextRole::H5, nullptr), alignment, parent)
+    , mKeyType(keyType)
+    , mValueType(valueType)
+{
+  if (auto* group = qobject_cast<maki::WidgetGroup*>(mInputField))
+  {
+    mItems = new QWidget(group);
+
+    mItemsLayout = new QVBoxLayout(mItems);
+    mItemsLayout->setContentsMargins(0, 0, 0, 0);
+
+    auto* addButton = new QPushButton(this);
+    addButton->setFixedSize(Config::MEDIUM_BUTTON_SIZE);
+    addButton->setIcon(iconFromTheme("plus"));
+
+    auto* browserButtons = new QHBoxLayout();
+    browserButtons->addWidget(addButton);
+    browserButtons->addStretch();
+
+    connect(addButton, &QPushButton::clicked, this, [this]() { addItem(Value{}, Value{}); });
+
+    group->addWidget(mItems);
+    group->addStretch();
+    group->addLayout(browserButtons);
+  }
+}
+
+MapValue MapWidget::getValue() const
+{
+  MapValue values;
+
+  for (const auto& [key, value] : mEditors)
+    if (key && value)
+      values.emplace(key->getValue(), value->getValue());
+
+  return values;
+}
+
+void MapWidget::setValue(const MapValue& value)
+{
+  SET_VALUE(value)
+}
+
+void MapWidget::writeValueToWidget(const Value& value)
+{
+  const auto* mapValue = std::get_if<MapValue>(&value.data);
+  if (!mapValue)
+    return;
+
+  clear();
+
+  for (const auto& [key, item] : *mapValue)
+    addItem(key, item);
+}
+
+void MapWidget::addItem(const Value& key, const Value& value)
+{
+  auto* row = new QWidget(mItems);
+  auto* rowLayout = new QHBoxLayout(row);
+  rowLayout->setAlignment(Qt::AlignVCenter);
+  rowLayout->setContentsMargins(0, 0, 0, 0);
+
+  auto* keyEditor = ValueEditorFactory::create("", mKeyType, key, WidgetAlignment::Inline(), row);
+  if (!keyEditor)
+  {
+    row->deleteLater();
+    return;
+  }
+  auto* valueEditor = ValueEditorFactory::create("", mValueType, value, WidgetAlignment::Inline(), row);
+  if (!valueEditor)
+  {
+    keyEditor->deleteLater();
+    row->deleteLater();
+    return;
+  }
+
+  keyEditor->setValue(key);
+  valueEditor->setValue(value);
+
+  auto* removeButton = new QPushButton(this);
+  removeButton->setFixedSize(Config::MEDIUM_BUTTON_SIZE);
+  removeButton->setIcon(iconFromTheme("minus"));
+
+  rowLayout->addWidget(keyEditor);
+  rowLayout->addWidget(valueEditor);
+  rowLayout->addWidget(removeButton);
+
+  mItemsLayout->addWidget(row);
+
+  mEditors.push_back({keyEditor, valueEditor});
+
+  connect(keyEditor, &InputWidget::valueChanged, this, [this] {
+    mValue.data = getValue();
+    emit InputWidget::valueChanged();
+  });
+  connect(valueEditor, &InputWidget::valueChanged, this, [this] {
+    mValue.data = getValue();
+    emit InputWidget::valueChanged();
+  });
+  connect(removeButton, &QPushButton::clicked, this, [this, row, keyEditor, valueEditor]() {
+    mEditors.erase(std::remove_if(mEditors.begin(), mEditors.end(), [keyEditor, valueEditor](const MapField& field) {
+      return field.keyEditor == keyEditor && field.valueEditor == valueEditor;
+    }));
+    row->deleteLater();
+    mValue.data = getValue();
+    emit InputWidget::valueChanged();
+  });
+}
+
+void MapWidget::clear()
+{
+  mEditors.clear();
+  clearLayout(mItemsLayout);
+}
+
+QList<QWidget*> MapWidget::focusWidgets() const
+{
+  QList<QWidget*> widgets;
+
+  for (const auto& [key, value] : mEditors)
+  {
+    widgets.append(key->focusWidgets());
+    widgets.append(value->focusWidgets());
+  }
+
+  return widgets;
+}
+
+// =========================================================================================================
+RecordWidget::RecordWidget(const QString& label, const koda::types::RecordTypeDefinition& definition, WidgetAlignment alignment, QWidget* parent)
+    : TypedInputWidget<WidgetGroup>("", new maki::WidgetGroup(label, oclero::qlementine::TextRole::H5, nullptr), alignment, parent)
+    , mDefinition(definition)
+{
+}
+
+RecordValue RecordWidget::getValue() const
+{
+  RecordValue values;
+
+  for (const auto& field : mEditors)
+    values.emplace(field.id.toStdString(), field.editor->getValue());
+
+  return values;
+}
+
+void RecordWidget::setValue(const RecordValue& value)
+{
+  SET_VALUE(value)
+}
+
+void RecordWidget::writeValueToWidget(const Value& value)
+{
+  const auto* record = std::get_if<RecordValue>(&value.data);
+  if (!record)
+    return;
+
+  clear();
+
+  if (auto* group = qobject_cast<maki::WidgetGroup*>(mInputField))
+  {
+    for (const auto& field : mDefinition.fields)
+    {
+      auto it = record->find(field.name);
+      Value fieldValue;
+      if (it != record->end())
+        fieldValue = it->second;
+
+      auto fieldName = QString::fromStdString(field.name);
+      auto fieldWidget = ValueEditorFactory::create(fieldName, field.type, fieldValue, WidgetAlignment::Inline(), group);
+      if (!fieldWidget)
+        continue;
+
+      connect(fieldWidget, &InputWidget::valueChanged, this, [this] {
+        mValue.data = getValue();
+        emit InputWidget::valueChanged();
+      });
+
+      mEditors.push_back({fieldName, fieldWidget});
+      group->addWidget(fieldWidget);
+    }
+  }
+}
+
+void RecordWidget::clear()
+{
+  if (auto* group = qobject_cast<maki::WidgetGroup*>(mInputField))
+    group->clear();
+}
+
+QList<QWidget*> RecordWidget::focusWidgets() const
+{
+  QList<QWidget*> widgets;
+
+  for (const auto& field : mEditors)
+    widgets.append(field.editor->focusWidgets());
+
+  return widgets;
+}
+
+// =========================================================================================================
+EnumWidget::EnumWidget(const QString& label, const koda::types::EnumTypeDefinition& definition, WidgetAlignment alignment, QWidget* parent)
+    : SelectorWidget(label, alignment, parent)
+    , mDefinition(definition)
+{
+  for (const auto& field : definition.values)
+    addItem(QString::fromStdString(field.name), QString::fromStdString(field.value.value_or("None")));
+}
+
+// =========================================================================================================
+InputWidget* ValueEditorFactory::create(const QString& label, const koda::types::TypeReference& type, const Value& value, WidgetAlignment alignment,
+                                        QWidget* parent)
+{
+  LOG_INFO("Create field for: {} with {}", type.toString(), value.toReadable());
+  if (type.kind() == koda::types::TypeReferenceKind::List)
+  {
+    auto* editor = new maki::ListWidget(QString::fromStdString(type.toString()), type.elementType(), alignment, parent);
+    editor->setValue(value.toList());
+    return editor;
+  }
+  else if (type.kind() == koda::types::TypeReferenceKind::Map)
+  {
+    auto* editor = new maki::MapWidget(QString::fromStdString(type.toString()), type.mapKeyType(), type.mapValueType(), alignment, parent);
+    editor->setValue(value.toMap());
+    return editor;
+  }
+
+  const auto* definition = TypeRegistry::instance().resolve(type);
+  if (!definition)
+    return nullptr;
+
+  definition->print();
+  if (definition->isPrimitive())
+  {
+    auto kind = definition->primitive().primitive;
+
+    if (koda::types::isInteger(kind))
+      return new maki::IntegerWidget(label, QString::number(value.toInt()), alignment, parent);
+    else if (koda::types::isFloatingPoint(kind))
+      return new maki::FloatWidget(label, QString::number(value.toDouble()), alignment, parent);
+    else if (kind == koda::types::PrimitiveKind::String)
+      return new maki::StringWidget(label, value.toString(), alignment, parent);
+    else if (kind == koda::types::PrimitiveKind::Bool)
+      return new maki::BooleanWidget(label, value.toBool(), alignment, parent);
+    else
+      return new maki::StringWidget("Other", "-", alignment, parent);
+  }
+  else if (definition->isRecord())
+  {
+    auto* editor = new maki::RecordWidget(QString::fromStdString(definition->name.toString()), definition->record(), alignment, parent);
+    editor->setValue(value.toRecord());
+    return editor;
+  }
+  else if (definition->isAlias())
+  {
+    return ValueEditorFactory::create(QString::fromStdString(definition->name.toString()), definition->alias().target, value, alignment, parent);
+  }
+  else if (definition->isEnum())
+  {
+    auto* editor = new EnumWidget(QString::fromStdString(definition->name.toString()), definition->enumeration(), alignment, parent);
+    editor->setValue(value.toString());
+    return editor;
+  }
+
+  return nullptr;
 }
 
 }  // namespace maki

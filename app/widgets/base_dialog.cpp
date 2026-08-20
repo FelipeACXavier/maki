@@ -1,6 +1,8 @@
 #include "base_dialog.h"
 
 #include <QDialogButtonBox>
+#include <QKeyEvent>
+#include <QLineEdit>
 #include <QPushButton>
 #include <QRect>
 #include <QScreen>
@@ -84,7 +86,7 @@ QDialogButtonBox* BaseDialog::createButtons(const QString& ok, const QString& ca
     okButton->setText(" " + ok);
 
     auto textWidth = metrics.horizontalAdvance(okButton->text());
-    okButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    okButton->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
     okButton->setMinimumWidth(textWidth + 30);
     okButton->setIcon(QIcon(":/icons/accept.svg"));
   }
@@ -94,9 +96,10 @@ QDialogButtonBox* BaseDialog::createButtons(const QString& ok, const QString& ca
   {
     cancelBtn->setFont(Fonts::Main);
     cancelBtn->setText(" " + cancel);
+    cancelBtn->setAutoDefault(false);
 
     auto textWidth = metrics.horizontalAdvance(cancelBtn->text());
-    cancelBtn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    cancelBtn->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
     cancelBtn->setMinimumWidth(textWidth + 30);
     cancelBtn->setIcon(QIcon(":/icons/reject.svg"));
   }
@@ -112,4 +115,16 @@ void BaseDialog::limitWidth(int minWidth)
 void BaseDialog::limitHeight(int minHeight)
 {
   mMinimunHeight = minHeight;
+}
+
+void BaseDialog::keyPressEvent(QKeyEvent* event)
+{
+  if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
+  {
+    focusNextChild();
+    event->accept();
+    return;
+  }
+
+  QDialog::keyPressEvent(event);
 }

@@ -94,18 +94,13 @@ void EventDialog::createReturnTypeInput()
   returnType->setFocusPolicy(mStorage->getmodifiable() ? Qt::ClickFocus : Qt::NoFocus);
   returnType->setEnabled(mStorage->getmodifiable());
 
-  connect(returnType, &maki::SelectorWidget::valueChanged, this, [this](const QString& text) {
-    mStorage->setReturnType(Types::StringToPropertyTypes(text));
-  });
+  connect(returnType, &maki::SelectorWidget::valueChanged, this,
+          [this](const QString& text) { mStorage->setReturnType(Types::StringToPropertyTypes(text)); });
 
   if (mStorage->getreturnType() == Types::PropertyTypes::UNKNOWN)
-  {
     mStorage->setReturnType(Types::StringToPropertyTypes(returnType->getValue()));
-  }
   else
-  {
     returnType->setValue(Types::PropertyTypesToString(mStorage->getreturnType()));
-  }
 
   layout()->addWidget(returnType);
 }
@@ -154,9 +149,7 @@ void EventDialog::createArgumentInput()
     if (!mStorage->getmodifiable())
       continue;
 
-    connect(box, &QComboBox::currentTextChanged, this, [this, newRow](const QString& value) {
-      updateArgumentTable(newRow, 1, value);
-    });
+    connect(box, &QComboBox::currentTextChanged, this, [this, newRow](const QString& value) { updateArgumentTable(newRow, 1, value); });
   }
 
   connect(model, &QStandardItemModel::itemChanged, this, [this](QStandardItem* item) {
@@ -184,9 +177,7 @@ void EventDialog::createArgumentInput()
 
     auto box = new maki::TypeSelectionWidget(args);
     args->setIndexWidget(model->index(newRow, 1), box);
-    connect(box, &QComboBox::currentTextChanged, this, [this, newRow](const QString& value) {
-      updateArgumentTable(newRow, 1, value);
-    });
+    connect(box, &QComboBox::currentTextChanged, this, [this, newRow](const QString& value) { updateArgumentTable(newRow, 1, value); });
 
     // Create new argument in the storage as well
     mStorage->addArgument(std::make_shared<PropertyInfo>());
@@ -232,28 +223,4 @@ void EventDialog::updateArgumentTable(int row, int column, const QString& text)
     std::dynamic_pointer_cast<PropertyInfo>(mStorage->getArgument(row))->setId(text);
   else if (column == 1)
     std::dynamic_pointer_cast<PropertyInfo>(mStorage->getArgument(row))->setType(Types::StringToPropertyTypes(text));
-}
-
-void EventDialog::keyPressEvent(QKeyEvent* event)
-{
-  if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
-  {
-    QWidget* first = focusWidget();
-    QWidget* next = first->nextInFocusChain();
-
-    while (next && next != first)
-    {
-      // TODO: magic number
-      if ((next->focusPolicy() & 0x8) && next->isEnabled() && next->isVisible())
-      {
-        next->setFocus();
-        event->accept();
-        return;
-      }
-
-      next = next->nextInFocusChain();
-    }
-  }
-
-  QDialog::keyPressEvent(event);
 }
