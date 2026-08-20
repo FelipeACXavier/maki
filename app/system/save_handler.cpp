@@ -312,11 +312,13 @@ VoidResult SaveHandler::saveManifest(const SaveInfo& project)
     LOG_INFO("Adding task: {}", savedTask);
     tasks.append(savedTask);
   }
+  manifest["tasks"] = tasks;
 
   QJsonArray types;
-  for (const auto& task : maki::TypeRegistry::instance().allTypes())
-    // We don't need to save the built-in types, maki takes care of those
-    if (!maki::TypeRegistry::instance().isBuiltin(*task))
+  const auto& registry = maki::TypeRegistry::instance();
+  for (const auto& task : registry.allTypes())
+    // We don't need to save the built-in or the library types, maki takes care of those
+    if (!registry.isBuiltin(*task) && !registry.isFromLibrary(task->name))
       types.append(maki::typeDefinitionToJson(*task));
 
   manifest["types"] = types;
@@ -495,6 +497,21 @@ Result<SaveInfo> SaveHandler::loadProjectManifest(const QString& manifestPath)
     std::shared_ptr<NodeSaveInfo> loadedTask;
     ASSIGN_OR_RETURN_ON_FAILURE_AS(loadedTask, loadNodeTree(projectRoot, value.toString()), SaveInfo);
     project.addNode(loadedTask);
+  }
+
+  const QJsonArray types = manifestJson["types"].toArray();
+  for (const QJsonValue& value : types)
+  {
+    if (!value.isObject())
+      return Result<SaveInfo>::Failed("Invalid type entry in manifest.");
+
+    auto definition = maki::typeDefinitionFromJson(value.toObject());
+    if (!definition.IsSuccess())
+      return Result<SaveInfo>::Failed(definition.ErrorMessage());
+
+    auto added = maki::TypeRegistry::instance().add(definition.Value());
+    if (!added)
+      return Result<SaveInfo>::Failed(added.ErrorMessage());
   }
 
   const QJsonArray pipelines = manifestJson["pipelines"].toArray();

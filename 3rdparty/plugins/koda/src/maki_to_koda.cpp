@@ -25,7 +25,7 @@
 namespace koda
 {
 
-Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes)
+Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes, const QVector<koda::types::TypeDefinition>& /* types */)
 {
   koda::System sys;
 

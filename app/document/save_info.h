@@ -13,6 +13,7 @@
 // Single header for the document stuff
 #include "canvas_info.h"
 #include "flow_info.h"
+#include "mission_parameter.h"
 #include "node_info.h"
 #include "property_info.h"
 #include "transition_info.h"
@@ -30,22 +31,50 @@ public:
 
   /**
    * @brief Get the canvas save info.
+   *
    * @return CanvasSaveInfo The canvas save info.
    */
   CanvasSaveInfo canvasInfo() const;
 
   /**
    * @brief Set the canvas save info.
+   *
    * @param info The new canvas save info.
    */
   void setCanvasInfo(const CanvasSaveInfo& info);
 
   /**
    * @brief Get all nodes.
+   *
    * @return QVector<std::shared_ptr<INode>> A vector of shared pointers to INode objects.
    */
   QVector<std::shared_ptr<INode>> getnodes() const override;
 
+  /**
+   * @brief Get all types in the MAKI registry.
+   *
+   * @return QVector<koda::types::TypeDefinition> A vector of type definitions
+   */
+  QVector<koda::types::TypeDefinition> gettypes() const override;
+
+  /**
+   * @brief Get all user defined mission parameters
+   *
+   * @return QVector<maki::MissionParameter> A vector with the mission parameters
+   */
+  QVector<const IParameter*> getparameters() const override;
+  QVector<maki::MissionParameter> missionParameters() const;
+
+  void setParameters(const QVector<maki::MissionParameter>& parameters);
+
+  maki::MissionParameter getParameter(int index) const;
+  void addParameter(const maki::MissionParameter& parameter);
+  void setParameter(int index, const maki::MissionParameter& parameter);
+  void removeParameter(const maki::MissionParameter& parameter);
+
+  /**
+   * @brief Removed all nodes from the storage.
+   */
   void clearNodes();
 
   /**
@@ -157,9 +186,10 @@ public:
   QString saveFile;
 
 private:
-  CanvasSaveInfo mCanvasInfo;                         /// The canvas save info.
-  QVector<std::shared_ptr<INode>> mStructuralNodes;   /// A vector of shared pointers to INode objects representing structural nodes.
-  QVector<std::shared_ptr<FlowSaveInfo>> mPipelines;  /// A vector of shared pointers to IFlow objects representing the available pipelines.
+  CanvasSaveInfo mCanvasInfo;                          /// The canvas save info.
+  QVector<std::shared_ptr<INode>> mStructuralNodes;    /// A vector of shared pointers to INode objects representing structural nodes.
+  QVector<std::shared_ptr<FlowSaveInfo>> mPipelines;   /// A vector of shared pointers to IFlow objects representing the available pipelines.
+  QVector<maki::MissionParameter> mMissionParameters;  /// A vector to the available mission parameters
 
   /**
    * @brief Find the family of a construct.

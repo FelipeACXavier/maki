@@ -4,6 +4,7 @@
 #include <QWidget>
 
 #include "mission_parameter.h"
+#include "save_info.h"
 
 namespace maki
 {
@@ -14,19 +15,20 @@ class MissionParameterWidget : public QWidget
 public:
   MissionParameterWidget(QWidget* parent = nullptr);
 
-  const std::vector<MissionParameter>& parameters() const;
-  void setParameters(std::vector<MissionParameter> parameters);
-
   void addParameter();
+
+  void setParameters(QVector<MissionParameter> parameters);
+
+  void setStorage(std::shared_ptr<SaveInfo> storage);
 
 signals:
   void parametersChanged();
 
 private:
   QTableWidget* mTable = nullptr;
-  std::vector<MissionParameter> mParameters;
+  std::shared_ptr<SaveInfo> mStorage;
 
-  void editParameter(size_t index);
+  void editParameter(int index);
   void removeParameter();
   void rebuildTable();
 };

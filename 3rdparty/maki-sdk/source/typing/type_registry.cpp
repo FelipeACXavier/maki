@@ -1,4 +1,4 @@
-#include "type_registry.h"
+#include "typing/type_registry.h"
 
 #include <algorithm>
 #include <unordered_set>
@@ -140,18 +140,20 @@ void TypeRegistry::clear()
   mBuiltinIds.clear();
 }
 
-void TypeRegistry::clearUserTypes()
+void TypeRegistry::removeIf(std::function<bool(const TypeDefinition& type)> condition)
 {
   for (auto it = mTypes.begin(); it != mTypes.end();)
-    if (isBuiltin(it->second))
-    {
-      ++it;
-    }
-    else
+  {
+    if (condition && condition(it->second))
     {
       mIdsByName.erase(nameKey(it->second.name));
       it = mTypes.erase(it);
     }
+    else
+    {
+      ++it;
+    }
+  }
 }
 
 bool TypeRegistry::containsId(const TypeId& id) const

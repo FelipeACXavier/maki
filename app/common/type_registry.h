@@ -39,6 +39,7 @@ public:
   koda::types::TypeRegistrationResult remove(const std::string& qualifiedName);
 
   bool isFromLibrary(const koda::types::QualifiedName& name) const;
+  void removeUserTypes();
 
 signals:
   void registryChanged();

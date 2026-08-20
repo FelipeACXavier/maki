@@ -1,4 +1,4 @@
-#include "variable_model.h"
+#include "typing/variable_model.h"
 
 namespace koda
 {

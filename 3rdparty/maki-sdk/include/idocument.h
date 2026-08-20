@@ -1,11 +1,13 @@
 #pragma once
 
+#include <QColor>
 #include <QMap>
 #include <QPointF>
 #include <QString>
 #include <QVector>
 
 #include "types.h"
+#include "typing/type_definition.h"
 
 class INode;
 class ITransition;
@@ -63,10 +65,62 @@ public:
   virtual QVector<std::shared_ptr<INode>> getchildren() const = 0;
 };
 
+class IValue
+{
+public:
+  enum class Kind
+  {
+    Invalid,
+    Bool,
+    Int,
+    Double,
+    StdString,
+    Record,
+    List,
+    Map,
+    Color,
+    QString
+  };
+
+  using IValuePtr = std::shared_ptr<IValue>;
+  using IListValue = std::vector<IValuePtr>;
+  using IMapValue = std::map<IValuePtr, IValuePtr>;
+  using IRecordValue = std::map<std::string, IValuePtr>;
+
+  using Data = std::variant<std::monostate, bool, int, double, std::string, IRecordValue, IListValue, IMapValue, QColor, QString>;
+
+  virtual ~IValue() = default;
+
+  virtual Kind kind() const = 0;
+  virtual bool isValid() const = 0;
+
+  virtual bool toBoolValue() const = 0;
+  virtual int toIntValue() const = 0;
+  virtual double toDoubleValue() const = 0;
+  virtual QString toStringValue() const = 0;
+
+  virtual IRecordValue toRecordValue() const = 0;
+  virtual IListValue toListValue() const = 0;
+  virtual IMapValue toMapValue() const = 0;
+};
+
+class IParameter
+{
+public:
+  virtual ~IParameter() = default;
+
+  virtual std::string getid() const = 0;
+  virtual std::string getname() const = 0;
+  virtual koda::types::TypeReference gettype() const = 0;
+  virtual const std::shared_ptr<IValue> getvalue() const = 0;
+};
+
 class IDocument
 {
 public:
   virtual ~IDocument() = default;
 
   virtual QVector<std::shared_ptr<INode>> getnodes() const = 0;
+  virtual QVector<koda::types::TypeDefinition> gettypes() const = 0;
+  virtual QVector<const IParameter*> getparameters() const = 0;
 };

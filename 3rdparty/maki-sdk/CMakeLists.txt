@@ -10,7 +10,10 @@ include(GNUInstallDirs)
 # ------------------------------------------------------------------------------------------------------------
 find_package(Qt6 ${QT_VERSION} REQUIRED COMPONENTS Core)
 
-file(GLOB SOURCES "${PROJECT_SOURCE_DIR}/source/*.cpp")
+file(GLOB SOURCES
+  "${PROJECT_SOURCE_DIR}/source/*.cpp"
+  "${PROJECT_SOURCE_DIR}/source/typing/*.cpp"
+)
 
 add_library(${PROJECT_NAME} STATIC ${SOURCES})
 
@@ -23,6 +26,7 @@ target_include_directories(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
   Qt6::Core
+  Qt6::Gui
   libcpphelpers
 )
 

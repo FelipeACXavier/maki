@@ -1,4 +1,4 @@
-#include "blackboard_model.h"
+#include "typing/blackboard_model.h"
 
 #include "logging.h"
 

@@ -1,8 +1,8 @@
-#include "type_reference.h"
+#include "typing/type_reference.h"
 
 #include <stdexcept>
 
-#include "helpers.h"
+#include "typing/helpers.h"
 
 namespace koda::types
 {

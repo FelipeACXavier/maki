@@ -38,7 +38,7 @@ struct NodeTransition
 class MakiToKoda
 {
 public:
-  Result<QString> generate(const QVector<std::shared_ptr<INode>> nodes);
+  Result<QString> generate(const QVector<std::shared_ptr<INode>> nodes, const QVector<koda::types::TypeDefinition>& types);
 
 private:
   Result<koda::PComponent> buildTask(const INode& task);

@@ -36,7 +36,7 @@ public:
   virtual TypeRegistrationResult replace(const TypeDefinition& definition);
 
   virtual void clear();
-  virtual void clearUserTypes();
+  virtual void removeIf(std::function<bool(const TypeDefinition& type)> condition);
   virtual bool removeById(const TypeId& id);
 
   bool containsId(const TypeId& id) const;

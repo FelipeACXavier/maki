@@ -47,7 +47,8 @@ static const int TOOLTIP_HEIGHT = 55;
 #define SET_VALUE(DATA)         \
   do                            \
   {                             \
-    Value val{.data = DATA};    \
+    Value val;                  \
+    val.data = DATA;            \
     InputWidget::setValue(val); \
   } while (false);
 
@@ -421,11 +422,6 @@ StringWidget::StringWidget(const QString& label, const QString& placeholder, Wid
         QToolTip::showText(globalPos, edit->toolTip(), edit);
       }
     });
-    // connect(edit, &QLineEdit::textEdited, this, [this](const QString& text) {
-    //   mValue.data = text;
-    //   emit valueChanged(getValue());
-    //   emit InputWidget::valueChanged();
-    // });
     connect(edit, &QLineEdit::editingFinished, this, [this, edit]() {
       mValue.data = edit->text();
       emit valueChanged(getValue());
@@ -702,7 +698,7 @@ void SelectorWidget::writeValueToWidget(const Value& value)
     if (index >= 0)
     {
       combo->setCurrentIndex(index);
-      mValue = Value{.data = combo->currentText()};
+      mValue.data = combo->currentText();
       mData = combo->currentData();
     }
   }

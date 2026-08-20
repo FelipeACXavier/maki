@@ -181,6 +181,12 @@ bool TypeRegistry::isFromLibrary(const koda::types::QualifiedName& name) const
   return mLibraries.contains(name.namespaceString());
 }
 
+void TypeRegistry::removeUserTypes()
+{
+  removeIf([this](const koda::types::TypeDefinition& type) { return !isBuiltin(type) && !isFromLibrary(type.name); });
+  emit registryChanged();
+}
+
 koda::types::TypeRegistrationResult TypeRegistry::add(const koda::types::TypeDefinition& definition)
 {
   auto ret = koda::types::TypeRegistry::add(definition);

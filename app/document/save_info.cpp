@@ -6,6 +6,7 @@
 #include "json.h"
 #include "keys.h"
 #include "logging.h"
+#include "type_registry.h"
 
 Q_DECLARE_METATYPE(SaveInfo)
 
@@ -32,7 +33,62 @@ void SaveInfo::removeNode(const QString& nodeId)
 QVector<std::shared_ptr<INode>> SaveInfo::getnodes() const
 {
   return mStructuralNodes;
-};
+}
+
+QVector<koda::types::TypeDefinition> SaveInfo::gettypes() const
+{
+  QVector<koda::types::TypeDefinition> types;
+  for (const auto& type : maki::TypeRegistry::instance().allTypes())
+    types.push_back(*type);
+
+  return types;
+}
+
+QVector<const IParameter*> SaveInfo::getparameters() const
+{
+  QVector<const IParameter*> out;
+  out.reserve(mMissionParameters.size());
+
+  for (const auto& parameter : mMissionParameters)
+    out.push_back(&parameter);
+
+  return out;
+}
+
+QVector<maki::MissionParameter> SaveInfo::missionParameters() const
+{
+  return mMissionParameters;
+}
+
+void SaveInfo::setParameters(const QVector<maki::MissionParameter>& parameters)
+{
+  mMissionParameters = std::move(parameters);
+}
+
+maki::MissionParameter SaveInfo::getParameter(int index) const
+{
+  if (index < missionParameters().size())
+    return missionParameters().at(index);
+
+  return maki::MissionParameter{};
+}
+
+void SaveInfo::addParameter(const maki::MissionParameter& parameter)
+{
+  mMissionParameters.push_back(parameter);
+}
+
+void SaveInfo::setParameter(int index, const maki::MissionParameter& parameter)
+{
+  if (index < missionParameters().size())
+    mMissionParameters[index] = parameter;
+}
+
+void SaveInfo::removeParameter(const maki::MissionParameter& parameter)
+{
+  mMissionParameters.erase(std::remove_if(mMissionParameters.begin(), mMissionParameters.end(),
+                                          [parameter](const maki::MissionParameter& p) { return p.name == parameter.name; }));
+}
 
 void SaveInfo::clearNodes()
 {

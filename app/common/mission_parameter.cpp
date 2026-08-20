@@ -7,11 +7,6 @@
 
 namespace maki
 {
-bool Value::isValid() const
-{
-  return !std::holds_alternative<std::monostate>(data);
-}
-
 bool Value::toBool() const
 {
   if (std::holds_alternative<bool>(data))
@@ -279,6 +274,87 @@ bool Value::operator<(const Value& other) const
     default:
       return false;
   }
+}
+
+// ===================================================================
+// All the stuff for the interface
+IValue::Kind Value::kind() const
+{
+  return static_cast<IValue::Kind>(data.index());
+}
+
+bool Value::isValid() const
+{
+  return !std::holds_alternative<std::monostate>(data);
+}
+
+bool Value::toBoolValue() const
+{
+  return toBool();
+}
+
+int Value::toIntValue() const
+{
+  return toInt();
+}
+
+double Value::toDoubleValue() const
+{
+  return toDouble();
+}
+
+QString Value::toStringValue() const
+{
+  return toString();
+}
+
+IValue::IRecordValue Value::toRecordValue() const
+{
+  IRecordValue out;
+  for (const auto& [key, value] : toRecord())
+    out.emplace(key, std::make_shared<Value>(value));
+
+  return out;
+}
+
+IValue::IListValue Value::toListValue() const
+{
+  IListValue out;
+  for (const auto& value : toList())
+    out.push_back(std::make_shared<Value>(value));
+
+  return out;
+}
+
+IValue::IMapValue Value::toMapValue() const
+{
+  IMapValue out;
+  for (const auto& [key, value] : toMap())
+    out.emplace(std::make_shared<Value>(key), std::make_shared<Value>(value));
+
+  return out;
+}
+
+// ===================================================================
+// MissionPaarameter
+std::string MissionParameter::getid() const
+{
+  return id;
+}
+
+std::string MissionParameter::getname() const
+{
+  return name;
+}
+
+koda::types::TypeReference MissionParameter::gettype() const
+{
+  return type;
+}
+
+const std::shared_ptr<IValue> MissionParameter::getvalue() const
+{
+  return std::make_shared<Value>(value);
 }
 
 }  // namespace maki

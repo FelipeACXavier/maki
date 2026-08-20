@@ -19,6 +19,7 @@ namespace maki
 
 MissionParameterWidget::MissionParameterWidget(QWidget* parent)
     : QWidget(parent)
+    , mStorage(nullptr)
 {
   auto* layout = new QVBoxLayout(this);
   layout->setContentsMargins(Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING);
@@ -30,7 +31,7 @@ MissionParameterWidget::MissionParameterWidget(QWidget* parent)
   mTable->setHorizontalHeaderLabels({"Name", "Type", "Value", ""});
 
   mTable->verticalHeader()->hide();
-  mTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+  mTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Interactive);
   mTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
   mTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
   mTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
@@ -67,24 +68,32 @@ MissionParameterWidget::MissionParameterWidget(QWidget* parent)
   layout->addLayout(browserButtons);
 }
 
-const std::vector<MissionParameter>& MissionParameterWidget::parameters() const
+void MissionParameterWidget::setParameters(QVector<MissionParameter> parameters)
 {
-  return mParameters;
+  if (mStorage)
+    mStorage->setParameters(parameters);
+
+  rebuildTable();
 }
 
-void MissionParameterWidget::setParameters(std::vector<MissionParameter> parameters)
+void MissionParameterWidget::setStorage(std::shared_ptr<SaveInfo> storage)
 {
-  mParameters = std::move(parameters);
-  rebuildTable();
+  mStorage = storage;
 }
 
 void MissionParameterWidget::rebuildTable()
 {
+  if (!mStorage)
+  {
+    LOG_WARNING("Something went wrong, no database available");
+    return;
+  }
+
   mTable->setRowCount(0);
 
-  for (size_t i = 0; i < mParameters.size(); ++i)
+  for (int i = 0; i < mStorage->missionParameters().size(); ++i)
   {
-    const auto& parameter = mParameters[i];
+    const auto& parameter = mStorage->getParameter(i);
     const int row = mTable->rowCount();
     mTable->insertRow(row);
 
@@ -111,25 +120,33 @@ void MissionParameterWidget::addParameter()
 {
   TypeValueDialog dialog(tr("Add mission parameter"), this);
   // We only set the id once
-  MissionParameter parameter{.id = koda::types::makeUuid()};
+  MissionParameter parameter;
+  parameter.id = koda::types::makeUuid();
+
   dialog.setParameter(parameter);
   if (dialog.exec() != QDialog::Accepted)
     return;
 
   auto newParam = dialog.getParameter();
   if (newParam.type.isValid())
-    mParameters.push_back(newParam);
+    mStorage->addParameter(newParam);
 
   rebuildTable();
   emit parametersChanged();
 }
 
-void MissionParameterWidget::editParameter(size_t index)
+void MissionParameterWidget::editParameter(int index)
 {
-  if (index >= mParameters.size())
+  if (!mStorage)
+  {
+    LOG_WARNING("Something went wrong when editing parameter, no database available");
+    return;
+  }
+
+  if (index >= mStorage->missionParameters().size())
     return;
 
-  auto& parameter = mParameters[index];
+  const auto& parameter = mStorage->getParameter(index);
 
   TypeValueDialog dialog(tr("Edit ") + QString::fromStdString(parameter.name), this);
   dialog.setParameter(parameter);
@@ -139,10 +156,9 @@ void MissionParameterWidget::editParameter(size_t index)
 
   auto newParam = dialog.getParameter();
   if (newParam.type.isValid())
-    mParameters[index] = newParam;
+    mStorage->setParameter(index, newParam);
   else
-    mParameters.erase(
-        std::remove_if(mParameters.begin(), mParameters.end(), [parameter](const MissionParameter& p) { return p.name == parameter.name; }));
+    mStorage->removeParameter(parameter);
 
   rebuildTable();
   emit parametersChanged();
@@ -150,6 +166,12 @@ void MissionParameterWidget::editParameter(size_t index)
 
 void MissionParameterWidget::removeParameter()
 {
+  if (!mStorage)
+  {
+    LOG_WARNING("Something went wrong when removing parameter, no database available");
+    return;
+  }
+
   const auto selectedRows = mTable->selectionModel()->selectedRows();
   if (selectedRows.empty())
     return;
@@ -163,10 +185,10 @@ void MissionParameterWidget::removeParameter()
   std::sort(rows.begin(), rows.end(), std::greater<int>());
   for (const int row : rows)
   {
-    if (row < 0 || row >= static_cast<int>(mParameters.size()))
+    if (row < 0 || row >= mStorage->missionParameters().size())
       continue;
 
-    mParameters.erase(mParameters.begin() + row);
+    mStorage->removeParameter(*(mStorage->missionParameters().begin() + row));
     mTable->removeRow(row);
   }
 

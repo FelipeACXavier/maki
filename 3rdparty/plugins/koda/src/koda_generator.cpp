@@ -229,9 +229,7 @@ void KodaGenerator::setHostServices(maki::IHostServices* services)
   }
 
   if (auto pluginTab = mServices->ui())
-    pluginTab->registerPlugin(languageName(), [this](QGraphicsScene* scene) {
-      return createSimulationScene(scene, mLastUpdate);
-    });
+    pluginTab->registerPlugin(languageName(), [this](QGraphicsScene* scene) { return createSimulationScene(scene, mLastUpdate); });
 }
 
 void KodaGenerator::setAssetDir(const QDir& dir)
@@ -280,19 +278,14 @@ VoidResult KodaGenerator::simulate(const maki::PipelineArtifact& artifact)
 QList<std::shared_ptr<maki::IPipelineAction>> KodaGenerator::pipelineActions()
 {
   return {
-      std::make_shared<GenerateKodaAction>(this),
-      std::make_shared<GenerateDezyneAction>(this),
-      std::make_shared<GenerateCppAction>(this),
-      std::make_shared<KodaVerifyAction>(this),
-      std::make_shared<KodaSimulateAction>(this),
-      std::make_shared<GenerateRosAction>(),
-      std::make_shared<KodaRosCopySources>(),
-      std::make_shared<KodaRosBuild>(this),
-      std::make_shared<KodaRosLaunch>(this),
+      std::make_shared<GenerateKodaAction>(this), std::make_shared<GenerateDezyneAction>(this), std::make_shared<GenerateCppAction>(this),
+      std::make_shared<KodaVerifyAction>(this),   std::make_shared<KodaSimulateAction>(this),   std::make_shared<GenerateRosAction>(),
+      std::make_shared<KodaRosCopySources>(),     std::make_shared<KodaRosBuild>(this),         std::make_shared<KodaRosLaunch>(this),
   };
 }
 
-Result<maki::PipelineArtifact> KodaGenerator::generateDezyne(const maki::PipelineArtifact& artifact, const QDir& outputFolder, maki::IPipeline* pipeline)
+Result<maki::PipelineArtifact> KodaGenerator::generateDezyne(const maki::PipelineArtifact& artifact, const QDir& outputFolder,
+                                                             maki::IPipeline* pipeline)
 {
   if (!artifact.metadata.contains("sources"))
     return Result<maki::PipelineArtifact>::Failed("generateDezyne, missing input sources");
@@ -414,12 +407,7 @@ Result<maki::PipelineArtifact> KodaGenerator::generateCpp(const maki::PipelineAr
     LOG_INFO("Will generate file: {}", fullPath);
     const QString command = "dzn";
     QStringList arguments = {
-        "code",
-        "-l",
-        "c++",
-        "-o",
-        cppOutputFolder.absolutePath(),
-        fullPath,
+        "code", "-l", "c++", "-o", cppOutputFolder.absolutePath(), fullPath,
     };
 
     if (fullPath.contains("_task"))
@@ -522,7 +510,8 @@ Result<maki::PipelineArtifact> KodaGenerator::generateKoda(const maki::PipelineA
   QString code = "";
 
   koda::MakiToKoda makiToKoda;
-  auto generated = makiToKoda.generate(mServices->document()->getnodes());
+  auto types = mServices->document()->gettypes();
+  auto generated = makiToKoda.generate(mServices->document()->getnodes(), types);
   if (!generated)
     return Result<maki::PipelineArtifact>::Failed(generated.ErrorMessage());
 
@@ -545,7 +534,8 @@ Result<maki::PipelineArtifact> KodaGenerator::generateKoda(const maki::PipelineA
   return output;
 }
 
-Result<maki::PipelineArtifact> KodaGenerator::buildRosProject(const maki::PipelineArtifact& artifact, const QDir& outputFolder, maki::IPipeline* pipeline)
+Result<maki::PipelineArtifact> KodaGenerator::buildRosProject(const maki::PipelineArtifact& artifact, const QDir& outputFolder,
+                                                              maki::IPipeline* pipeline)
 {
   if (!artifact.paths.contains("rootDir"))
     return Result<maki::PipelineArtifact>::Failed("buildProject, missing root folder");
@@ -578,7 +568,8 @@ Result<maki::PipelineArtifact> KodaGenerator::buildRosProject(const maki::Pipeli
   return maki::PipelineArtifact{};
 }
 
-Result<maki::PipelineArtifact> KodaGenerator::launchRosProject(const maki::PipelineArtifact& artifact, const QDir& outputFolder, maki::IPipeline* pipeline)
+Result<maki::PipelineArtifact> KodaGenerator::launchRosProject(const maki::PipelineArtifact& artifact, const QDir& outputFolder,
+                                                               maki::IPipeline* pipeline)
 {
   if (!artifact.paths.contains("rootDir"))
     return Result<maki::PipelineArtifact>::Failed("buildProject, missing root folder");
@@ -638,21 +629,14 @@ bool KodaGenerator::startDaemon()
 {
   mDaemon = new QProcess(this);
 
-  connect(mDaemon, &QProcess::started, this, []() {
-    LOG_DEBUG("Process started");
-  });
+  connect(mDaemon, &QProcess::started, this, []() { LOG_DEBUG("Process started"); });
 
-  connect(mDaemon, &QProcess::readyReadStandardOutput, this, [this]() {
-    LOG_DEBUG("{}", mDaemon->readAllStandardOutput().trimmed().toStdString());
-  });
+  connect(mDaemon, &QProcess::readyReadStandardOutput, this, [this]() { LOG_DEBUG("{}", mDaemon->readAllStandardOutput().trimmed().toStdString()); });
 
-  connect(mDaemon, &QProcess::readyReadStandardError, this, [this]() {
-    LOG_DEBUG("{}", mDaemon->readAllStandardError().trimmed().toStdString());
-  });
+  connect(mDaemon, &QProcess::readyReadStandardError, this, [this]() { LOG_DEBUG("{}", mDaemon->readAllStandardError().trimmed().toStdString()); });
 
-  connect(mDaemon, &QProcess::finished, this, [](int exitCode, QProcess::ExitStatus status) {
-    LOG_DEBUG("Daemon finished with code {} and status {}", exitCode, (int)status);
-  });
+  connect(mDaemon, &QProcess::finished, this,
+          [](int exitCode, QProcess::ExitStatus status) { LOG_DEBUG("Daemon finished with code {} and status {}", exitCode, (int)status); });
 
   // connect(mDaemon, &QProcess::errorOccurred, this, [](QProcess::ProcessError e) {
   //   LOG_WARNING("Daemon error: {}", (int)e);

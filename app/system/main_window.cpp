@@ -131,8 +131,9 @@ VoidResult MainWindow::start()
   mPluginManager = std::make_unique<PluginManager>(mPluginPipeline->registry(), mPipeline, this);
 
   mGenerator = new Generator(mPipeline, this);
-
   mPluginTab = new PluginTab(mSpecialTabsMenu, this);
+
+  mMissionParameters->setStorage(mStorage);
 
   mHostServices = new HostServices(mStorage, mPipeline, mSettingsManager.get(), QCoreApplication::applicationDirPath(), this);
   mHostServices->setPluginTab(mPluginTab);
@@ -145,16 +146,11 @@ VoidResult MainWindow::start()
   bind();
   bindShortcuts();
 
-  if (mPluginManager)
-    LOG_WARN_ON_FAILURE(mPluginManager->start(mSettingsManager->plugins(), mHostServices));
-
   mPropertiesMenu->start(mStorage);
 
   if (mPipelineRun)
     for (const auto& pipeline : mStorage->pipelines())
       mPipelineRun->addOption(pipeline->getname());
-
-  RETURN_ON_FAILURE(loadElements());
 
   // Set initial tabs
   mPalette->setCurrentIndex(0);
@@ -183,6 +179,14 @@ VoidResult MainWindow::start()
 
     onThemeChanged(mSettingsManager->appearance(), true);
   }
+
+  // Load elements after the system started
+  QTimer::singleShot(0, this, [this]() {
+    if (mPluginManager && mSettingsManager)
+      LOG_WARN_ON_FAILURE(mPluginManager->start(mSettingsManager->plugins(), mHostServices));
+
+    LOG_WARN_ON_FAILURE(loadElements());
+  });
 
   LOG_DEBUG("Main window started");
 
@@ -780,6 +784,7 @@ VoidResult MainWindow::loadElements()
   dynamic_cast<QVBoxLayout*>(mBehaviourTab->layout())->addStretch();
   dynamic_cast<QVBoxLayout*>(mPipelineTab->layout())->addStretch();
 
+  NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Loaded all libraries");
   return VoidResult();
 }
 
@@ -895,7 +900,10 @@ void MainWindow::onActionNew()
   // Gotta make sure we don't save over an old file
   mSaveHandler->newFileCreated();
 
+  maki::TypeRegistry::instance().removeUserTypes();
   canvas()->loadFromSave(emptySave);
+
+  NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Created new project");
 }
 
 void MainWindow::onActionExit()
