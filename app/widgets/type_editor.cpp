@@ -582,6 +582,7 @@ QWidget* TypeEditor::createAliasPage()
   auto* pageLayout = new QVBoxLayout(page);
   pageLayout->setContentsMargins(theme.spacing, theme.spacing, theme.spacing, theme.spacing);
   pageLayout->addWidget(layout);
+  pageLayout->addStretch();
 
   return page;
 }
@@ -685,6 +686,8 @@ void TypeEditor::showDefinition(const koda::types::TypeDefinition& definition)
 
     auto* page = mEditorStack->widget(static_cast<int>(EditorPage::Record));
     auto* nameEdit = page->findChild<maki::StringWidget*>("recordNameEdit");
+    nameEdit->setFocus();
+
     auto* namespaceEdit = page->findChild<maki::StringWidget*>("recordNamespaceEdit");
     auto* baseType = page->findChild<maki::SelectorWidget*>("recordExtendsEdit");
 
@@ -708,6 +711,8 @@ void TypeEditor::showDefinition(const koda::types::TypeDefinition& definition)
 
     auto* page = mEditorStack->widget(static_cast<int>(EditorPage::Enum));
     auto* nameEdit = page->findChild<maki::StringWidget*>("enumNameEdit");
+    nameEdit->setFocus();
+
     auto* namespaceEdit = page->findChild<maki::StringWidget*>("enumNamespaceEdit");
     auto* baseType = page->findChild<maki::SelectorWidget*>("enumBaseEdit");
 
@@ -730,6 +735,8 @@ void TypeEditor::showDefinition(const koda::types::TypeDefinition& definition)
 
     auto* page = mEditorStack->widget(static_cast<int>(EditorPage::Alias));
     auto* nameEdit = page->findChild<maki::StringWidget*>("aliasNameEdit");
+    nameEdit->setFocus();
+
     auto* namespaceEdit = page->findChild<maki::StringWidget*>("aliasNamespaceEdit");
     auto* aliasEdit = page->findChild<TypeSelector*>("aliasTargetEdit");
 
@@ -769,13 +776,13 @@ void TypeEditor::showDefinition(const koda::types::TypeDefinition& definition)
 QIcon TypeEditor::typeToIcon(const koda::types::TypeDefinition& type) const
 {
   if (type.isAlias())
-    return iconFromTheme("alias");
+    return QIcon(":/icons/alias.svg");
   if (type.isEnum())
-    return iconFromTheme("enum");
+    return QIcon(":/icons/enum.svg");
   if (type.isRecord())
-    return iconFromTheme("record");
+    return QIcon(":/icons/record.svg");
 
-  return iconFromTheme("primitive");
+  return QIcon(":/icons/primitive.svg");
 }
 
 void TypeEditor::reloadTypes()
@@ -1029,6 +1036,27 @@ bool TypeEditor::eventFilter(QObject* object, QEvent* event)
   }
 
   return QWidget::eventFilter(object, event);
+}
+
+void TypeEditor::focusCurrentEditor()
+{
+  if (!mEditorStack)
+    return;
+
+  QWidget* page = mEditorStack->currentWidget();
+  if (!page)
+    return;
+
+  const auto edits = page->findChildren<QLineEdit*>();
+  for (auto* edit : edits)
+  {
+    if (edit->isEnabled() && edit->isVisible() && edit->focusPolicy() != Qt::NoFocus)
+    {
+      edit->setFocus(Qt::ShortcutFocusReason);
+      edit->selectAll();
+      return;
+    }
+  }
 }
 
 }  // namespace maki

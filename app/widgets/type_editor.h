@@ -36,12 +36,15 @@ class TypeEditor : public QWidget
 public:
   TypeEditor(QWidget* parent = nullptr);
 
-private slots:
+  void focusCurrentEditor();
+
+public slots:
   // Type management
   void createRecord();
   void createEnum();
   void createAlias();
 
+private slots:
   void removeCurrentType();
   void applyChanges();
 
