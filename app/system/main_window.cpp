@@ -1518,7 +1518,18 @@ void MainWindow::removePluginTab(PluginView* view)
 
 void MainWindow::addEditorTab(QPlainTextEdit* editorTab)
 {
-  mCanvasPanel->addTab(editorTab, QIcon(":/icons/file.svg"), tr("File viewer"));
+  for (int i = 0; i < mCanvasPanel->count(); ++i)
+  {
+    if (auto* editor = qobject_cast<QPlainTextEdit*>(mCanvasPanel->widget(i)))
+    {
+      editor->setPlainText(editorTab->toPlainText());
+      mCanvasPanel->setTabText(i, editorTab->accessibleName());
+      mCanvasPanel->setCurrentWidget(editor);
+      return;
+    }
+  }
+
+  mCanvasPanel->addTab(editorTab, QIcon(":/icons/file.svg"), editorTab->accessibleName());
   mCanvasPanel->setCurrentWidget(editorTab);
 }
 

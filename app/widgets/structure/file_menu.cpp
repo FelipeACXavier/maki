@@ -82,9 +82,6 @@ GeneratedFilesPanel::GeneratedFilesPanel(QWidget* parent)
       return;
 
     const QString path = mModel->filePath(sourceIndex);
-    if (path == mCurrentFile)
-      return;
-
     openPathInEditor(path);
   });
 
@@ -124,12 +121,8 @@ bool GeneratedFilesPanel::maybeSaveCurrent()
   if (!mEditor->document()->isModified())
     return true;
 
-  const auto r = QMessageBox::question(
-      this,
-      "Unsaved changes",
-      "You have unsaved changes. Save them?",
-      QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel,
-      QMessageBox::Yes);
+  const auto r = QMessageBox::question(this, "Unsaved changes", "You have unsaved changes. Save them?",
+                                       QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel, QMessageBox::Yes);
 
   if (r == QMessageBox::Cancel)
     return false;
@@ -189,7 +182,8 @@ void GeneratedFilesPanel::openPathInEditor(const QString& filePath)
   }
 
   // Optional: reject huge files
-  const qint64 size = QFileInfo(filePath).size();
+  const auto fileInfo = QFileInfo(filePath);
+  const qint64 size = fileInfo.size();
   const qint64 maxBytes = 2 * 1024 * 1024;  // 2 MB
   if (size > maxBytes)
   {
@@ -208,6 +202,7 @@ void GeneratedFilesPanel::openPathInEditor(const QString& filePath)
   }
 
   setCurrentFile(filePath);
+  mEditor->setAccessibleName(fileInfo.fileName());
   mEditor->setReadOnly(true);
   mEditor->setPlainText(text);
   mEditor->document()->setModified(false);
@@ -225,10 +220,8 @@ bool GeneratedFilesPanel::isLikelyTextFile(const QString& filePath) const
 {
   // Simple heuristic (you can expand this)
   const QString ext = QFileInfo(filePath).suffix().toLower();
-  static const QSet<QString> textExt{
-      "txt", "md", "json", "yaml", "yml", "xml", "ini", "cfg", "conf",
-      "cpp", "cc", "c", "h", "hpp", "hh", "qml", "js", "ts", "py", "sh",
-      "kd", "dzn"};
+  static const QSet<QString> textExt{"txt", "md", "json", "yaml", "yml", "xml", "ini", "cfg", "conf", "cpp", "cc",
+                                     "c",   "h",  "hpp",  "hh",   "qml", "js",  "ts",  "py",  "sh",   "kd",  "dzn"};
 
   if (textExt.contains(ext))
     return true;
