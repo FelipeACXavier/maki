@@ -250,16 +250,16 @@ std::string TypeReference::toString() const
       return namedType().name.toString();
 
     case TypeReferenceKind::List:
-      return "List<" + elementType().toString() + ">";
+      return "list<" + elementType().toString() + ">";
 
     case TypeReferenceKind::Optional:
-      return "Optional<" + optionalValueType().toString() + ">";
+      return "optional<" + optionalValueType().toString() + ">";
 
     case TypeReferenceKind::Map:
-      return "Map<" + mapKeyType().toString() + ", " + mapValueType().toString() + ">";
+      return "map<" + mapKeyType().toString() + ", " + mapValueType().toString() + ">";
 
     case TypeReferenceKind::Unknown:
-      return "Unknown";
+      return "unknown";
   }
 
   throw std::logic_error("Unknown type reference kind");

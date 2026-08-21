@@ -23,6 +23,7 @@
 #include "actions/ros_launch.h"
 #include "actions/simulate_action.h"
 #include "actions/verify_action.h"
+#include "ast/koda_compiler.h"
 #include "dzn_client/dezyne_simulator.h"
 #include "dzn_client/simulation_scene.h"
 #include "idocument.h"
@@ -36,10 +37,7 @@
 #include "result.h"
 #include "string_helpers.h"
 #include "types.h"
-
-#ifdef USE_ANTLR
-#include "ast/koda_compiler.h"
-#endif
+#include "typing/type_registry.h"
 
 #define APPEND_OR_RETURN_ON_FAILURE(v, func) \
   do                                         \
@@ -301,7 +299,6 @@ Result<maki::PipelineArtifact> KodaGenerator::generateDezyne(const maki::Pipelin
 
   modelsOutputFolder.mkpath(".");
 
-#ifdef USE_ANTLR
   koda::Compiler compiler;
   for (const auto& file : inputFiles)
   {
@@ -353,30 +350,6 @@ Result<maki::PipelineArtifact> KodaGenerator::generateDezyne(const maki::Pipelin
   mDezyneOutputFolder = modelsOutputFolder;
 
   return output;
-#else
-  for (const auto& file : inputFiles)
-  {
-    LOG_DEBUG("Generating from file: {} to {}", file, outputFolder.absolutePath());
-    const QString command = "java";
-    const QStringList arguments = {
-        "-jar",
-        QDir::homePath() + "/rascal-0.40.9.jar",
-        "Main.rsc",                   // Entrypoint for KODA
-        file,                         // Input
-        outputFolder.absolutePath(),  // Output
-        "ros"                         // Generator type
-    };
-
-    QProcess* generate = new QProcess(this);
-    generate->setWorkingDirectory("/home/felaze/Documents/PhD/Programs/DSL/koda");
-    generate->setProgram(command);
-    generate->setArguments(arguments);
-
-    pipeline->add(generate, maki::OnFail::STOP);
-  }
-
-  return maki::PipelineArtifact();
-#endif
 }
 
 Result<maki::PipelineArtifact> KodaGenerator::generateCpp(const maki::PipelineArtifact& artifact, const QDir& outputFolder, maki::IPipeline* pipeline)
@@ -480,11 +453,7 @@ VoidResult KodaGenerator::verify(const maki::PipelineArtifact& artifact, const Q
       continue;
 
     LOG_DEBUG("Will verify file: {}", f);
-#ifdef USE_ANTLR
     const QString command = "ide";
-#else
-    const QString command = "dzn";
-#endif
     QStringList arguments = {"verify", f};
     for (const auto& inc : includeFolders)
       arguments << "-I" << inc;
@@ -510,8 +479,9 @@ Result<maki::PipelineArtifact> KodaGenerator::generateKoda(const maki::PipelineA
   QString code = "";
 
   koda::MakiToKoda makiToKoda;
-  auto types = mServices->document()->gettypes();
-  auto generated = makiToKoda.generate(mServices->document()->getnodes(), types);
+  const auto* typeRegistry = mServices->document()->getTypesRegistry();
+  const auto missionParameters = mServices->document()->getparameters();
+  auto generated = makiToKoda.generate(mServices->document()->getnodes(), missionParameters, typeRegistry);
   if (!generated)
     return Result<maki::PipelineArtifact>::Failed(generated.ErrorMessage());
 

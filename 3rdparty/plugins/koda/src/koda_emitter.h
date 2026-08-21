@@ -1,20 +1,33 @@
 #pragma once
 
+#include <set>
 #include <sstream>
 
 #include "ast/ast.h"
 #include "result.h"
+#include "typing/type_definition.h"
+#include "typing/type_registry.h"
 
 namespace koda
 {
 class KodaEmitter
 {
 public:
-  static Result<std::string> emitKoda(const koda::System& ast);
+  KodaEmitter(const koda::types::TypeRegistry* registry);
+
+  static Result<std::string> emitKoda(const koda::System& ast, const koda::types::TypeRegistry* registry);
 
 private:
   VoidResult emitTask(const koda::Component& component, std::stringstream& ss);
   VoidResult emitCapability(const koda::Component& component, std::stringstream& ss);
+  VoidResult emitTypes(std::stringstream& ss);
+  Result<std::string> emitTypeReference(const koda::types::TypeReference& reference) const;
+
+  VoidResult emitType(const koda::types::TypeDefinition& definition, std::stringstream& ss, const std::string& format = "");
+  VoidResult emitTypeRecursive(const koda::types::TypeDefinition& definition, std::stringstream& ss, std::set<std::string>& emitted,
+                               std::set<std::string>& visiting);
+  void collectTypeDependencies(const koda::types::TypeReference& reference, std::vector<koda::types::TypeReference>& out) const;
+  std::vector<koda::types::TypeReference> typeDependencies(const koda::types::TypeDefinition& definition) const;
 
   VoidResult emitStatement(const koda::Statement& component, std::stringstream& ss, const std::string& format);
   VoidResult emitStrategyBlock(const koda::StrategyBlock& node, std::stringstream& ss, const std::string& format);
@@ -51,5 +64,8 @@ private:
 
   VoidResult emitCallArguments(const std::vector<std::shared_ptr<Expr>>& args, std::stringstream& ss);
   VoidResult emitDefArguments(const std::vector<std::shared_ptr<Argument>>& args, std::stringstream& ss);
+
+private:
+  const koda::types::TypeRegistry* mTypeRegistry;
 };
 }  // namespace koda

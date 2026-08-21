@@ -25,13 +25,14 @@
 namespace koda
 {
 
-Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes, const QVector<koda::types::TypeDefinition>& /* types */)
+Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes, QVector<const IParameter*> missionParameters,
+                                     const koda::types::TypeRegistry* registry)
 {
   koda::System sys;
 
   for (const auto& node : nodes)
   {
-    auto taskAny = buildTask(*node);
+    auto taskAny = buildTask(*node, missionParameters);
     if (!taskAny)
       return Result<QString>::Failed("Failed to generate task: " + taskAny.ErrorMessage());
 
@@ -47,13 +48,13 @@ Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes
     sys.components.push_back(taskAny.Value());
   }
 
-  auto contents = KodaEmitter::emitKoda(sys);
+  auto contents = KodaEmitter::emitKoda(sys, registry);
   RETURN_ON_FAILURE_AS(contents, QString);
 
   return QString::fromStdString(contents.Value());
 }
 
-Result<koda::PComponent> MakiToKoda::buildTask(const INode& task)
+Result<koda::PComponent> MakiToKoda::buildTask(const INode& task, QVector<const IParameter*> missionParameters)
 {
   auto c = std::make_shared<koda::Component>();
   c->kind = koda::Component::Kind::Task;
@@ -90,13 +91,14 @@ Result<koda::PComponent> MakiToKoda::buildTask(const INode& task)
     c->statements.push_back(statement);
   }
 
-  // Get variables
+  // Get mission parameters
   auto varsBlock = std::make_shared<koda::VarsBlock>();
-  for (const auto& child : task.getfields())
+  for (const auto* parameter : missionParameters)
   {
-    auto generated = buildVarDef(*child);
-    RETURN_ON_FAILURE_AS(generated, koda::PComponent);
-    varsBlock->vars.push_back(generated.Value());
+    // TODO: These are the mission parameters
+    // auto generated = buildVarDef(*child);
+    // RETURN_ON_FAILURE_AS(generated, koda::PComponent);
+    // varsBlock->vars.push_back(generated.Value());
   }
 
   auto varsStatement = std::make_shared<koda::Statement>();

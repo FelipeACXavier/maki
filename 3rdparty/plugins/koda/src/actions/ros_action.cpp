@@ -3,10 +3,8 @@
 #include <QString>
 #include <QVector>
 
-#ifdef USE_ANTLR
 #include "../ast/koda_compiler.h"
 // #include "../ros_emitter.h"
-#endif
 #include "logging.h"
 #include "pipeline_artifact.h"
 #include "result.h"
@@ -20,20 +18,12 @@ GenerateRosAction::GenerateRosAction()
 
 QString GenerateRosAction::id() const
 {
-#ifdef USE_ANTLR
-  return "koda_antlr.generate_ros";
-#else
   return "koda.generate_ros";
-#endif
 }
 
 QString GenerateRosAction::displayName() const
 {
-#ifdef USE_ANTLR
   return "Generate ROS";
-#else
-  return "Generate ROS";
-#endif
 }
 
 QStringList GenerateRosAction::consumes() const
@@ -80,7 +70,6 @@ maki::ResultArtifacts GenerateRosAction::run(const maki::PipelineContext& contex
 
   maki::PipelineArtifact artifact = {};
 
-#ifdef USE_ANTLR
   // koda::CompilerOptions options;
   // options.outputDir = modelsOutputFolder.absolutePath().toStdString();
   // options.dryRun = true;
@@ -137,9 +126,7 @@ maki::ResultArtifacts GenerateRosAction::run(const maki::PipelineContext& contex
   // artifact.id = "koda.generate_ros";
   // artifact.type = "ros-project";
   // artifact.producer = id();
-#else
   return maki::ResultArtifacts::Failed("Not supported");
-#endif
 
-  return maki::Artifacts{artifact};
+  // return maki::Artifacts{artifact};
 }

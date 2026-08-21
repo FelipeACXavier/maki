@@ -11,20 +11,12 @@ GenerateCppAction::GenerateCppAction(KodaGenerator* generator)
 
 QString GenerateCppAction::id() const
 {
-#ifdef USE_ANTLR
-  return "koda_antlr.generate_dezyne_cpp";
-#else
   return "koda.generate_dezyne_cpp";
-#endif
 }
 
 QString GenerateCppAction::displayName() const
 {
-#ifdef USE_ANTLR
   return "Generate Dezyne Cpp";
-#else
-  return "Generate Dezyne Cpp";
-#endif
 }
 
 QStringList GenerateCppAction::consumes() const

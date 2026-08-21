@@ -43,8 +43,7 @@ VoidResult copyTo(const QFileInfo& info, const QString& targetDir)
   {
     auto copied = copyDirectoryRecursively(source, targetDir);
     if (!copied.IsSuccess())
-      return VoidResult::Failed("Failed to copy directory: " + source.toStdString() +
-                                " to " + targetDir.toStdString());
+      return VoidResult::Failed("Failed to copy directory: " + source.toStdString() + " to " + targetDir.toStdString());
   }
   else if (info.isFile())
   {
@@ -52,9 +51,7 @@ VoidResult copyTo(const QFileInfo& info, const QString& targetDir)
     std::error_code ec;
     fs::copy(source.toStdString(), targetDir.toStdString(), fs::copy_options::overwrite_existing, ec);
     if (ec)
-      return VoidResult::Failed("Failed to copy " + source.toStdString() +
-                                " to " + targetDir.toStdString() +
-                                ": " + ec.message());
+      return VoidResult::Failed("Failed to copy " + source.toStdString() + " to " + targetDir.toStdString() + ": " + ec.message());
   }
   else
   {
@@ -70,11 +67,7 @@ KodaRosCopySources::KodaRosCopySources()
 
 QString KodaRosCopySources::id() const
 {
-#ifdef USE_ANTLR
-  return "koda_antlr.copy_sources";
-#else
   return "koda.copy_sources";
-#endif
 }
 
 QString KodaRosCopySources::displayName() const

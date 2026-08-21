@@ -447,6 +447,7 @@ QWidget* TypeEditor::createBuiltinPage()
   auto* pageLayout = new QVBoxLayout(page);
   pageLayout->setContentsMargins(theme.spacing, theme.spacing, theme.spacing, theme.spacing);
   pageLayout->addWidget(layout);
+  pageLayout->addStretch();
 
   return page;
 }

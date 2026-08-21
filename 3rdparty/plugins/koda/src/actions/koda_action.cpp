@@ -15,20 +15,12 @@ GenerateKodaAction::GenerateKodaAction(KodaGenerator* generator)
 
 QString GenerateKodaAction::id() const
 {
-#ifdef USE_ANTLR
-  return "koda_antlr.generate_koda";
-#else
   return "koda.generate_koda";
-#endif
 }
 
 QString GenerateKodaAction::displayName() const
 {
-#ifdef USE_ANTLR
   return "Generate Koda";
-#else
-  return "Generate Koda";
-#endif
 }
 
 QStringList GenerateKodaAction::consumes() const

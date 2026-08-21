@@ -14,20 +14,12 @@ GenerateDezyneAction::GenerateDezyneAction(KodaGenerator* generator)
 
 QString GenerateDezyneAction::id() const
 {
-#ifdef USE_ANTLR
-  return "koda_antlr.generate_dezyne";
-#else
   return "koda.generate_dezyne";
-#endif
 }
 
 QString GenerateDezyneAction::displayName() const
 {
-#ifdef USE_ANTLR
   return "Generate Dezyne";
-#else
-  return "Generate Dezyne";
-#endif
 }
 
 QStringList GenerateDezyneAction::consumes() const

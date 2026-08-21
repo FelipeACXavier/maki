@@ -167,16 +167,14 @@ VoidResult PluginManager::loadPlugin(const QDir& pluginDir, const maki::Manifest
 
   // If it is the first time we are seeing this plugin, then we might need to install it
   if (status == PluginSettings::Status::Unknown)
-  {
     RETURN_ON_FAILURE(installPlugin(manifest));
-  }
 
   auto loader = QSharedPointer<QPluginLoader>::create(pluginPath);
 #ifdef DEV_BUILD
   loader->setLoadHints(QLibrary::LoadHints{});
 #endif
   if (!loader->load())
-    return VoidResult::Failed("Loader: {}", loader->errorString());
+    return VoidResult::Failed("Loader: {} - {}", loader->errorString(), pluginPath);
 
   QObject* plugin = loader->instance();
   if (!plugin)
@@ -263,10 +261,8 @@ maki::IPlugin* PluginManager::currentPlugin() const
 maki::IPlugin* PluginManager::pluginByLanguage(const QString& language) const
 {
   for (const auto& plugin : mPlugins)
-  {
     if (plugin.plugin->languageName() == language)
       return plugin.plugin;
-  }
 
   return nullptr;
 }

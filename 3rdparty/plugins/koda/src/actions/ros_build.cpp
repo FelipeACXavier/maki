@@ -16,20 +16,12 @@ KodaRosBuild::KodaRosBuild(KodaGenerator* generator)
 
 QString KodaRosBuild::id() const
 {
-#ifdef USE_ANTLR
-  return "koda_antlr.build_ros";
-#else
   return "koda.build_ros";
-#endif
 }
 
 QString KodaRosBuild::displayName() const
 {
-#ifdef USE_ANTLR
   return "Build ROS";
-#else
-  return "Build ROS";
-#endif
 }
 
 QStringList KodaRosBuild::consumes() const

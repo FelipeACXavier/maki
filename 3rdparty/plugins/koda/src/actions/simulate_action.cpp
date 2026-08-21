@@ -15,20 +15,12 @@ KodaSimulateAction::KodaSimulateAction(KodaGenerator* generator)
 
 QString KodaSimulateAction::id() const
 {
-#ifdef USE_ANTLR
-  return "koda_antlr.simulate";
-#else
   return "koda.simulate";
-#endif
 }
 
 QString KodaSimulateAction::displayName() const
 {
-#ifdef USE_ANTLR
   return "Simulate Dezyne";
-#else
-  return "Simulate Dezyne";
-#endif
 }
 
 QStringList KodaSimulateAction::consumes() const

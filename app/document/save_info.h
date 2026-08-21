@@ -51,11 +51,11 @@ public:
   QVector<std::shared_ptr<INode>> getnodes() const override;
 
   /**
-   * @brief Get all types in the MAKI registry.
+   * @brief Get MAKI's type registry.
    *
-   * @return QVector<koda::types::TypeDefinition> A vector of type definitions
+   * @return const koda::types::TypeRegistry* A pointer to the type registry
    */
-  QVector<koda::types::TypeDefinition> gettypes() const override;
+  const koda::types::TypeRegistry* getTypesRegistry() const override;
 
   /**
    * @brief Get all user defined mission parameters

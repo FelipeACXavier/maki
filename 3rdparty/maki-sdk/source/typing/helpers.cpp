@@ -153,42 +153,42 @@ std::string toBuiltInString(PrimitiveKind kind)
   switch (kind)
   {
     case PrimitiveKind::Bool:
-      return BooleanType;
+      return BooleanBase;
 
     case PrimitiveKind::Int8:
     case PrimitiveKind::Int16:
     case PrimitiveKind::Int32:
     case PrimitiveKind::Int64:
-      return IntegerType;
+      return IntegerBase;
 
     case PrimitiveKind::UInt8:
     case PrimitiveKind::UInt16:
     case PrimitiveKind::UInt32:
     case PrimitiveKind::UInt64:
-      return UnsignedType;
+      return UnsignedBase;
 
     case PrimitiveKind::Float32:
     case PrimitiveKind::Float64:
-      return RealType;
+      return RealBase;
 
     case PrimitiveKind::String:
-      return StringType;
+      return StringBase;
 
     case PrimitiveKind::Bytes:
-      return BytesType;
+      return BytesBase;
 
     case PrimitiveKind::Timestamp:
-      return TimestampType;
+      return TimestampBase;
 
     case PrimitiveKind::Duration:
-      return DurationType;
+      return DurationBase;
 
     case PrimitiveKind::Void:
-      return VoidType;
+      return VoidBase;
 
     default:
     case PrimitiveKind::Unknown:
-      return "Unknown";
+      return "unknown";
   }
 }
 
@@ -197,55 +197,55 @@ std::string toString(PrimitiveKind kind)
   switch (kind)
   {
     case PrimitiveKind::Unknown:
-      return "Unknown";
+      return "unknown";
 
     case PrimitiveKind::Bool:
-      return "Bool";
+      return "bool";
 
     case PrimitiveKind::Int8:
-      return "Int8";
+      return "int8";
 
     case PrimitiveKind::Int16:
-      return "Int16";
+      return "int16";
 
     case PrimitiveKind::Int32:
-      return "Int32";
+      return types::IntegerBase;
 
     case PrimitiveKind::Int64:
-      return "Int64";
+      return "int64";
 
     case PrimitiveKind::UInt8:
-      return "UInt8";
+      return "uint8";
 
     case PrimitiveKind::UInt16:
-      return "UInt16";
+      return "uint16";
 
     case PrimitiveKind::UInt32:
-      return "UInt32";
+      return types::UnsignedBase;
 
     case PrimitiveKind::UInt64:
-      return "UInt64";
+      return "uint64";
 
     case PrimitiveKind::Float32:
-      return "Float32";
+      return "float32";
 
     case PrimitiveKind::Float64:
-      return "Float64";
+      return types::RealBase;
 
     case PrimitiveKind::String:
-      return "String";
+      return types::StringBase;
 
     case PrimitiveKind::Bytes:
-      return "Bytes";
+      return types::BytesBase;
 
     case PrimitiveKind::Timestamp:
-      return "Timestamp";
+      return types::TimestampBase;
 
     case PrimitiveKind::Duration:
-      return "Duration";
+      return types::DurationBase;
 
     case PrimitiveKind::Void:
-      return "Void";
+      return types::VoidBase;
   }
 
   return "Unknown primitive kind";
@@ -305,16 +305,16 @@ std::string toString(EnumUnderlyingKind kind)
   switch (kind)
   {
     case EnumUnderlyingKind::Int32:
-      return "Int32";
+      return types::IntegerBase;
 
     case EnumUnderlyingKind::UInt32:
-      return "UInt32";
+      return types::UnsignedBase;
 
     case EnumUnderlyingKind::String:
-      return "String";
+      return types::StringBase;
 
     case EnumUnderlyingKind::Unknown:
-      return "Unknown";
+      return "unknown";
   }
 
   return "Unknown enum underlying kind";
@@ -322,38 +322,40 @@ std::string toString(EnumUnderlyingKind kind)
 
 PrimitiveKind primitiveKindFromString(const std::string& kind)
 {
-  if (kind == "Bool" || kind == BooleanType)
+  // First check the base types
+  if (kind == types::BooleanBase || kind == "Bool" || kind == BooleanType)
     return PrimitiveKind::Bool;
-  else if (kind == "Int8")
-    return PrimitiveKind::Int8;
-  else if (kind == "Int16")
-    return PrimitiveKind::Int16;
-  else if (kind == "Int32" || kind == IntegerType)
+  else if (kind == types::IntegerBase || kind == "int32" || kind == IntegerType || kind == "Int32")
     return PrimitiveKind::Int32;
-  else if (kind == "Int64")
-    return PrimitiveKind::Int64;
-  else if (kind == "UInt8")
-    return PrimitiveKind::UInt8;
-  else if (kind == "UInt16")
-    return PrimitiveKind::UInt16;
-  else if (kind == "UInt32" || kind == UnsignedType)
+  else if (kind == types::UnsignedBase || kind == "uint32" || kind == UnsignedType || kind == "UInt32")
     return PrimitiveKind::UInt32;
-  else if (kind == "UInt64")
-    return PrimitiveKind::UInt64;
-  else if (kind == "Float32")
-    return PrimitiveKind::Float32;
-  else if (kind == "Float64" || kind == RealType)
+  else if (kind == types::RealBase || kind == "real64" || kind == RealType || kind == "Float64")
     return PrimitiveKind::Float64;
-  else if (kind == "String" || kind == StringType)
+  else if (kind == types::StringBase || kind == StringType || kind == "String")
     return PrimitiveKind::String;
-  else if (kind == "Bytes" || kind == BytesType)
+  else if (kind == types::BytesBase || kind == BytesType || kind == "Bytes")
     return PrimitiveKind::Bytes;
-  else if (kind == "Timestamp" || kind == TimestampType)
+  else if (kind == types::TimestampBase || kind == TimestampType || kind == "Timestamp")
     return PrimitiveKind::Timestamp;
-  else if (kind == "Duration" || kind == DurationType)
+  else if (kind == types::DurationBase || kind == DurationType || kind == "Duration")
     return PrimitiveKind::Duration;
-  else if (kind == "Void" || kind == VoidType)
+  else if (kind == types::VoidBase || kind == VoidType || kind == "Void")
     return PrimitiveKind::Void;
+  // Then the rest which we might introduce some day
+  else if (kind == "int8" || kind == "Int8")
+    return PrimitiveKind::Int8;
+  else if (kind == "int16" || kind == "Int16")
+    return PrimitiveKind::Int16;
+  else if (kind == "int64" || kind == "Int64")
+    return PrimitiveKind::Int64;
+  else if (kind == "uint8" || kind == "UInt8")
+    return PrimitiveKind::UInt8;
+  else if (kind == "uint16" || kind == "Uint16")
+    return PrimitiveKind::UInt16;
+  else if (kind == "uint64" || kind == "UInt64")
+    return PrimitiveKind::UInt64;
+  else if (kind == "real32" || kind == "Float32")
+    return PrimitiveKind::Float32;
 
   return PrimitiveKind::Unknown;
 }
@@ -390,11 +392,11 @@ TypeReferenceKind typeReferenceKindFromString(const std::string& kind)
 
 EnumUnderlyingKind enumKindFromString(const std::string& kind)
 {
-  if (kind == "Int32")
+  if (kind == types::IntegerBase)
     return EnumUnderlyingKind::Int32;
-  else if (kind == "UInt32")
+  else if (kind == types::UnsignedBase)
     return EnumUnderlyingKind::UInt32;
-  else if (kind == "String")
+  else if (kind == types::StringBase)
     return EnumUnderlyingKind::String;
   else
     return EnumUnderlyingKind::Unknown;
@@ -463,26 +465,50 @@ std::string makeUuid()
 
 QualifiedName convertQualifiedName(const std::string& name)
 {
-  if (name == "bool" || name == "boolean")
+  if (name == types::BooleanBase)
     return types::BooleanType;
-  if (name == "int" || name == "integer")
+  if (name == types::IntegerBase)
     return types::IntegerType;
-  if (name == "uint" || name == "unsigned")
+  if (name == types::UnsignedBase)
     return types::UnsignedType;
-  if (name == "real" || name == "float" || name == "double")
+  if (name == types::RealBase)
     return types::RealType;
-  if (name == "string")
+  if (name == types::StringBase)
     return types::StringType;
-  if (name == "bytes")
+  if (name == types::BytesBase)
     return types::BytesType;
-  if (name == "timestamp")
+  if (name == types::TimestampBase)
     return types::TimestampType;
-  if (name == "duration")
+  if (name == types::DurationBase)
     return types::DurationType;
-  if (name == "void")
+  if (name == types::VoidBase)
     return types::VoidType;
 
   return types::QualifiedName(name);
+}
+
+std::string buildInQualifiedName(const std::string& name)
+{
+  if (name == types::BooleanType)
+    return types::BooleanBase;
+  if (name == types::IntegerType)
+    return types::IntegerBase;
+  if (name == types::UnsignedType)
+    return types::UnsignedBase;
+  if (name == types::RealType)
+    return types::RealBase;
+  if (name == types::StringType)
+    return types::StringBase;
+  if (name == types::BytesType)
+    return types::BytesBase;
+  if (name == types::TimestampType)
+    return types::TimestampBase;
+  if (name == types::DurationType)
+    return types::DurationBase;
+  if (name == types::VoidType)
+    return types::VoidBase;
+
+  return name;
 }
 
 }  // namespace koda::types

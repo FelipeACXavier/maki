@@ -16,20 +16,12 @@ KodaVerifyAction::KodaVerifyAction(KodaGenerator* generator)
 
 QString KodaVerifyAction::id() const
 {
-#ifdef USE_ANTLR
-  return "koda_antlr.verify_dezyne";
-#else
   return "koda.verify_dezyne";
-#endif
 }
 
 QString KodaVerifyAction::displayName() const
 {
-#ifdef USE_ANTLR
   return "Verify Dezyne";
-#else
-  return "Verify Dezyne";
-#endif
 }
 
 QStringList KodaVerifyAction::consumes() const

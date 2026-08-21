@@ -55,17 +55,6 @@ set(KODA_DZN_CLIENT_FILES
   src/dzn_client/component_model.cpp
 )
 
-set(KODA_TYPE_FILES
-  # src/typing/types.cpp
-  # src/typing/type_reference.cpp
-  # src/typing/type_definition.cpp
-  # src/typing/variable_model.cpp
-
-  # src/typing/helpers.cpp
-  # src/typing/type_registry.cpp
-  # src/typing/blackboard_model.cpp
-)
-
 set(KODA_COMPILER_FILES
   src/ast/ast.cpp
   src/ast/cst2ast.cpp
@@ -90,8 +79,6 @@ set(KODA_COMPILER_FILES
   src/parser/KodaLexer.cpp
   src/parser/KodaVisitor.cpp
   src/parser/KodaBaseVisitor.cpp
-
-  ${KODA_TYPE_FILES}
 )
 # ==================================================================
 # Koda language
@@ -99,7 +86,6 @@ set(COMPILER_NAME "kodagen")
 add_executable(${COMPILER_NAME}
   src/ast/main.cpp
   ${KODA_COMPILER_FILES}
-  ${KODA_TYPE_FILES}
 )
 
 if (MSVC)
@@ -129,22 +115,6 @@ target_include_directories(${COMPILER_NAME} PRIVATE
 target_include_directories(${COMPILER_NAME} SYSTEM PRIVATE
   ${ANTLR4_RUNTIME_INCLUDE_DIR}
 )
-
-# ==================================================================
-# Koda language
-# set(TEST_NAME "typetest")
-# add_executable(${TEST_NAME}
-#   src/typing/main.cpp
-#   ${KODA_TYPE_FILES}
-# )
-
-# target_link_libraries(${TEST_NAME} PRIVATE
-#   libcpphelpers
-# )
-
-# target_include_directories(${TEST_NAME} PRIVATE
-#   ${CMAKE_CURRENT_SOURCE_DIR}/src
-# )
 
 # ==================================================================
 # Koda library
@@ -186,9 +156,9 @@ file(GLOB DEZYNE_LIB_FILES
 )
 
 function(add_koda_plugin TARGET_NAME USE_ANTLR_ENABLED)
-  if(USE_ANTLR_ENABLED)
-    set(JSON_FILE ${CMAKE_CURRENT_SOURCE_DIR}/src/koda_generator_antlr.json)
-    set(PLUGIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/koda_antlr_plugin.json)
+  # if(USE_ANTLR_ENABLED)
+    set(JSON_FILE ${CMAKE_CURRENT_SOURCE_DIR}/src/koda_generator.json)
+    set(PLUGIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/koda_plugin.json)
     set(COMPILER_FILES
       ${KODA_COMPILER_FILES}
     )
@@ -206,15 +176,15 @@ function(add_koda_plugin TARGET_NAME USE_ANTLR_ENABLED)
     set(COMPILER_LIBS
       ${ANTLR4_RUNTIME_LIBRARY}
     )
-  else()
-    set(JSON_FILE ${CMAKE_CURRENT_SOURCE_DIR}/src/koda_generator.json)
-    set(PLUGIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/koda_plugin.json)
-    set(COMPILER_FILES)
-    set(ANTLR_INCLUDES)
-    set(COMPILER_INCLUDES)
-    set(COMPILER_LIBS)
-    set(KODA_TO_MAKI)
-  endif()
+  # else()
+  #   set(JSON_FILE ${CMAKE_CURRENT_SOURCE_DIR}/src/koda_generator.json)
+  #   set(PLUGIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/koda_plugin.json)
+  #   set(COMPILER_FILES)
+  #   set(ANTLR_INCLUDES)
+  #   set(COMPILER_INCLUDES)
+  #   set(COMPILER_LIBS)
+  #   set(KODA_TO_MAKI)
+  # endif()
 
   add_library(${TARGET_NAME} SHARED
     ${KODA_DZN_CLIENT_FILES}
@@ -253,12 +223,12 @@ function(add_koda_plugin TARGET_NAME USE_ANTLR_ENABLED)
     ${ANTLR_INCLUDES}
   )
 
-  if(USE_ANTLR_ENABLED)
+  # if(USE_ANTLR_ENABLED)
     target_compile_definitions(${TARGET_NAME} PRIVATE USE_ANTLR=1)
-  endif()
+  # endif()
 
   # Make sure the antlr libraries are available in the target
-  if (WIN32 AND USE_ANTLR_ENABLED)
+  if (WIN32)
     add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy_if_different
         $<TARGET_FILE:${COMPILER_LIBS}>
@@ -286,5 +256,5 @@ if (NOT BUILD_PLUGINS)
   add_subdirectory(3rdparty)
 endif()
 
-add_koda_plugin(koda_generatorplugin OFF)
-add_koda_plugin(koda_generatorplugin_antlr ON)
+# add_koda_plugin(koda_generatorplugin OFF)
+add_koda_plugin(koda_generatorplugin ON)

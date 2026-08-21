@@ -81,6 +81,16 @@ static const std::string DurationType = "builtin::Duration";
 static const std::string VoidType = "builtin::Void";
 static const std::string NAMESPACE_SEPARATOR = "::";
 
+static const std::string BooleanBase = "bool";
+static const std::string IntegerBase = "int";
+static const std::string UnsignedBase = "uint";
+static const std::string RealBase = "real";
+static const std::string StringBase = "string";
+static const std::string BytesBase = "bytes";
+static const std::string TimestampBase = "timestamp";
+static const std::string DurationBase = "duration";
+static const std::string VoidBase = "void";
+
 struct QualifiedName
 {
   QualifiedName() = default;

@@ -7,7 +7,7 @@
 #include <QVector>
 
 #include "types.h"
-#include "typing/type_definition.h"
+#include "typing/type_registry.h"
 
 class INode;
 class ITransition;
@@ -121,6 +121,6 @@ public:
   virtual ~IDocument() = default;
 
   virtual QVector<std::shared_ptr<INode>> getnodes() const = 0;
-  virtual QVector<koda::types::TypeDefinition> gettypes() const = 0;
+  virtual const koda::types::TypeRegistry* getTypesRegistry() const = 0;
   virtual QVector<const IParameter*> getparameters() const = 0;
 };

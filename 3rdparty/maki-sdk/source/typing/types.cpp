@@ -2,6 +2,8 @@
 
 #include <sstream>
 
+#include "typing/helpers.h"
+
 namespace koda::types
 {
 std::vector<std::string> split(const std::string& value, const std::string& separator)
@@ -80,7 +82,7 @@ std::string QualifiedName::toString(const std::string& separator) const
     stream << name;
   }
 
-  return stream.str();
+  return buildInQualifiedName(stream.str());
 }
 
 std::string QualifiedName::namespaceString(const std::string& separator) const

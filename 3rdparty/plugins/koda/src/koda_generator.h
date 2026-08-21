@@ -17,15 +17,9 @@ class DezyneSimulator;
 
 class KodaGenerator : public QObject, public maki::IPlugin
 {
-#ifdef USE_ANTLR
-  Q_OBJECT
-  Q_PLUGIN_METADATA(IID MAKI_GENERATORPLUGIN_IID FILE "koda_generator_antlr.json")
-  Q_INTERFACES(maki::IPlugin)
-#else
   Q_OBJECT
   Q_PLUGIN_METADATA(IID MAKI_GENERATORPLUGIN_IID FILE "koda_generator.json")
   Q_INTERFACES(maki::IPlugin)
-#endif
 
 public:
   bool setup() override;

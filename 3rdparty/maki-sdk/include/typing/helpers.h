@@ -56,5 +56,6 @@ EnumUnderlyingKind enumKindFromPrimitive(const PrimitiveKind& kind);
 
 std::string makeUuid();
 QualifiedName convertQualifiedName(const std::string& name);
+std::string buildInQualifiedName(const std::string& name);
 
 }  // namespace koda::types

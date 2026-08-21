@@ -35,13 +35,9 @@ QVector<std::shared_ptr<INode>> SaveInfo::getnodes() const
   return mStructuralNodes;
 }
 
-QVector<koda::types::TypeDefinition> SaveInfo::gettypes() const
+const koda::types::TypeRegistry* SaveInfo::getTypesRegistry() const
 {
-  QVector<koda::types::TypeDefinition> types;
-  for (const auto& type : maki::TypeRegistry::instance().allTypes())
-    types.push_back(*type);
-
-  return types;
+  return &maki::TypeRegistry::instance();
 }
 
 QVector<const IParameter*> SaveInfo::getparameters() const

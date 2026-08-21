@@ -25,13 +25,21 @@ static constexpr std::string INDENT = "  ";
 
 namespace koda
 {
-Result<std::string> KodaEmitter::emitKoda(const koda::System& ast)
+KodaEmitter::KodaEmitter(const koda::types::TypeRegistry* registry)
+    : mTypeRegistry(registry)
 {
-  KodaEmitter emitter;
+}
+
+Result<std::string> KodaEmitter::emitKoda(const koda::System& ast, const koda::types::TypeRegistry* registry)
+{
+  KodaEmitter emitter(registry);
 
   ast.print();
 
+  // TODO: Emit the types
   std::stringstream ss;
+  RETURN_ON_FAILURE_AS(emitter.emitTypes(ss), std::string);
+
   for (const auto& component : ast.components)
   {
     if (component->kind != koda::Component::Kind::Capability)
@@ -51,6 +59,220 @@ Result<std::string> KodaEmitter::emitKoda(const koda::System& ast)
   // LOG_DEBUG("Koda: {}", ss.str());
 
   return ss.str();
+}
+
+VoidResult KodaEmitter::emitTypes(std::stringstream& ss)
+{
+  std::set<std::string> emitted;
+  std::set<std::string> visiting;
+
+  for (const auto& definition : mTypeRegistry->allTypes())
+  {
+    if (!definition || definition->isPrimitive())
+      continue;
+
+    RETURN_ON_FAILURE(emitTypeRecursive(*definition, ss, emitted, visiting));
+  }
+
+  return VoidResult();
+}
+
+VoidResult KodaEmitter::emitType(const koda::types::TypeDefinition& definition, std::stringstream& ss, const std::string& format)
+{
+  if (definition.isPrimitive())
+  {
+    // Built-ins don't need declarations.
+    return VoidResult();
+  }
+
+  if (definition.isAlias())
+  {
+    const auto alias = definition.alias();
+
+    auto target = emitTypeReference(alias.target);
+    RETURN_ON_FAILURE(target);
+
+    ss << format << "type " << definition.name.toString() << " = " << target.Value() << ";\n";
+
+    return VoidResult();
+  }
+
+  if (definition.isEnum())
+  {
+    const auto enumeration = definition.enumeration();
+
+    ss << format << std::format("enum {} : {} {{\n", definition.name.toString(), koda::types::toString(enumeration.underlyingType));
+
+    for (const auto& value : enumeration.values)
+    {
+      ss << format << INDENT << value.name;
+
+      if (value.value)
+        ss << " = " << value.value.value();
+
+      ss << ";\n";
+    }
+
+    ss << format << "}\n";
+
+    return VoidResult();
+  }
+
+  if (definition.isRecord())
+  {
+    const auto record = definition.record();
+
+    ss << format << "type " << definition.name.toString();
+
+    if (record.baseType)
+    {
+      const auto& baseReference = record.baseType.value();
+
+      const auto* baseDefinition = mTypeRegistry->resolve(baseReference);
+
+      if (!baseDefinition)
+        return VoidResult::Failed("Could not find base type: {}", baseReference.toString());
+
+      if (!baseDefinition->isRecord())
+        return VoidResult::Failed("Base type '{}' of record '{}' is not a record", baseReference.toString(), definition.name.toString());
+
+      auto baseType = emitTypeReference(baseReference);
+      RETURN_ON_FAILURE(baseType);
+
+      ss << " extends " << baseType.Value();
+    }
+
+    ss << " {\n";
+
+    for (const auto& field : record.fields)
+    {
+      auto fieldType = emitTypeReference(field.type);
+      RETURN_ON_FAILURE(fieldType);
+
+      ss << format << INDENT << fieldType.Value() << " " << field.name << ";\n";
+    }
+
+    ss << format << "}\n";
+
+    return VoidResult();
+  }
+
+  return VoidResult::Failed("Unsupported type definition: {}", definition.name.toString());
+}
+
+VoidResult KodaEmitter::emitTypeRecursive(const koda::types::TypeDefinition& definition, std::stringstream& ss, std::set<std::string>& emitted,
+                                          std::set<std::string>& visiting)
+{
+  const auto name = definition.name.toString();
+
+  if (emitted.contains(name))
+    return VoidResult();
+
+  if (visiting.contains(name))
+    return VoidResult::Failed("Recursive type dependency detected involving '{}'", name);
+
+  visiting.insert(name);
+
+  for (const auto& dependency : typeDependencies(definition))
+  {
+    const auto* dependencyDefinition = mTypeRegistry->resolve(dependency);
+
+    if (!dependencyDefinition)
+      return VoidResult::Failed("Could not resolve dependency '{}' of type '{}'", dependency.toString(), name);
+
+    if (!dependencyDefinition->isPrimitive())
+      RETURN_ON_FAILURE(emitTypeRecursive(*dependencyDefinition, ss, emitted, visiting));
+  }
+
+  visiting.erase(name);
+
+  RETURN_ON_FAILURE(emitType(definition, ss, ""));
+
+  emitted.insert(name);
+
+  return VoidResult();
+}
+
+Result<std::string> KodaEmitter::emitTypeReference(const koda::types::TypeReference& reference) const
+{
+  if (!reference.isValid())
+    return Result<std::string>::Failed("Invalid type reference");
+
+  switch (reference.kind())
+  {
+    case koda::types::TypeReferenceKind::List:
+    {
+      auto element = emitTypeReference(reference.elementType());
+      RETURN_ON_FAILURE_AS(element, std::string);
+
+      return std::format("list<{}>", element.Value());
+    }
+
+    case koda::types::TypeReferenceKind::Map:
+    {
+      auto key = emitTypeReference(reference.mapKeyType());
+      RETURN_ON_FAILURE_AS(key, std::string);
+
+      auto value = emitTypeReference(reference.mapValueType());
+      RETURN_ON_FAILURE_AS(value, std::string);
+
+      return std::format("map<{}, {}>", key.Value(), value.Value());
+    }
+
+    default:
+      // Primitive and named references can already render themselves.
+      return reference.toString();
+  }
+}
+
+std::vector<koda::types::TypeReference> KodaEmitter::typeDependencies(const koda::types::TypeDefinition& definition) const
+{
+  std::vector<koda::types::TypeReference> out;
+
+  if (definition.isAlias())
+  {
+    collectTypeDependencies(definition.alias().target, out);
+  }
+  else if (definition.isRecord())
+  {
+    const auto& record = definition.record();
+
+    if (record.baseType)
+      collectTypeDependencies(record.baseType.value(), out);
+
+    for (const auto& field : record.fields)
+      collectTypeDependencies(field.type, out);
+  }
+
+  return out;
+}
+
+void KodaEmitter::collectTypeDependencies(const koda::types::TypeReference& reference, std::vector<koda::types::TypeReference>& out) const
+{
+  switch (reference.kind())
+  {
+    case koda::types::TypeReferenceKind::List:
+      collectTypeDependencies(reference.elementType(), out);
+      return;
+
+    case koda::types::TypeReferenceKind::Map:
+      collectTypeDependencies(reference.mapKeyType(), out);
+
+      collectTypeDependencies(reference.mapValueType(), out);
+      return;
+
+    case koda::types::TypeReferenceKind::Named:
+      out.push_back(reference);
+      return;
+
+    case koda::types::TypeReferenceKind::Primitive:
+      return;
+
+    case koda::types::TypeReferenceKind::Optional:
+    case koda::types::TypeReferenceKind::Unknown:
+      LOG_WARNING("Unsuported type for: {}", reference.toString());
+      return;
+  }
 }
 
 VoidResult KodaEmitter::emitTask(const koda::Component& component, std::stringstream& ss)

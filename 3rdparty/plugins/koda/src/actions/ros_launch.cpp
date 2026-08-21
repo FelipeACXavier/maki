@@ -16,20 +16,12 @@ KodaRosLaunch::KodaRosLaunch(KodaGenerator* generator)
 
 QString KodaRosLaunch::id() const
 {
-#ifdef USE_ANTLR
-  return "koda_antlr.launch_ros";
-#else
   return "koda.launch_ros";
-#endif
 }
 
 QString KodaRosLaunch::displayName() const
 {
-#ifdef USE_ANTLR
   return "Launch ROS";
-#else
-  return "Launch ROS";
-#endif
 }
 
 QStringList KodaRosLaunch::consumes() const

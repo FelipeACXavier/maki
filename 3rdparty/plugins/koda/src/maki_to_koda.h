@@ -12,6 +12,7 @@
 #include "ast/ast.h"
 #include "idocument.h"
 #include "result.h"
+#include "typing/type_registry.h"
 
 class QJsonArray;
 
@@ -38,10 +39,11 @@ struct NodeTransition
 class MakiToKoda
 {
 public:
-  Result<QString> generate(const QVector<std::shared_ptr<INode>> nodes, const QVector<koda::types::TypeDefinition>& types);
+  Result<QString> generate(const QVector<std::shared_ptr<INode>> nodes, QVector<const IParameter*> parameters,
+                           const koda::types::TypeRegistry* registry);
 
 private:
-  Result<koda::PComponent> buildTask(const INode& task);
+  Result<koda::PComponent> buildTask(const INode& task, QVector<const IParameter*> missionParameters);
   Result<koda::PComponent> buildCapability(const INode& capability);
 
   Result<koda::PFlow> buildFlowAst(const IFlow& flow);
