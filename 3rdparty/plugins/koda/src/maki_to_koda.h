@@ -39,10 +39,13 @@ struct NodeTransition
 class MakiToKoda
 {
 public:
-  Result<QString> generate(const QVector<std::shared_ptr<INode>> nodes, QVector<const IParameter*> parameters,
-                           const koda::types::TypeRegistry* registry);
+  MakiToKoda(const koda::types::TypeRegistry* registry);
+
+  Result<QString> generate(const QVector<std::shared_ptr<INode>> nodes, QVector<const IParameter*> parameters);
 
 private:
+  const koda::types::TypeRegistry* mTypeRegistry;
+
   Result<koda::PComponent> buildTask(const INode& task, QVector<const IParameter*> missionParameters);
   Result<koda::PComponent> buildCapability(const INode& capability);
 
@@ -62,7 +65,7 @@ private:
   std::any buildSuccessExpr(const IFlow& flow, const INode& node);
   QList<koda::PStrategyHandler> buildHandlers(const IFlow& flow, const INode& node);
 
-  Result<koda::PVarDef> buildVarDef(const IProperty& property);
+  Result<koda::PVarDef> buildVarDef(const IParameter* property);
   Result<std::vector<koda::PActionDef>> buildActionDefs(const INode& node, const QJsonArray& typeArray);
   Result<koda::PRosDef> buildRosDef(const IFlow& flow);
   koda::PExpr buildExpr(const QJsonObject& object);
@@ -105,6 +108,8 @@ private:
   TransitionKind transitionKind(const ITransition& transition) const;
 
   std::string format(QString input, const QString& token = "") const;
+
+  Result<koda::PExpr> buildValueExpr(const koda::types::TypeReference& type, std::shared_ptr<const IValue> value);
 };
 
 }  // namespace koda

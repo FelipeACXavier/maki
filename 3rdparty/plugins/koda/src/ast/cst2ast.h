@@ -92,6 +92,9 @@ public:
   std::any visitExprParen(KodaParser::ExprParenContext* ctx) override;
   std::any visitExprRecord(KodaParser::ExprRecordContext* ctx) override;
   std::any visitRecordFieldInitializer(KodaParser::RecordFieldInitializerContext* ctx) override;
+  std::any visitExprListLiteral(KodaParser::ExprListLiteralContext* ctx) override;
+  std::any visitExprMapLiteral(KodaParser::ExprMapLiteralContext* ctx) override;
+  std::any visitMapFieldInitializer(KodaParser::MapFieldInitializerContext* ctx) override;
 
   std::any visitCompOp(KodaParser::CompOpContext* ctx) override;
   std::any visitExprOr(KodaParser::ExprOrContext* ctx) override;

@@ -307,7 +307,7 @@ Result<koda::types::TypeDefinition> typeDefinitionFromJson(const QJsonObject& js
     ASSIGN_OR_RETURN_ON_FAILURE_AS(underlyingName, JSON::returnOrFail<std::string>(json, "underlyingType"), TypeDefinition);
 
     std::vector<EnumValueDefinition> values;
-    if (json.contains("value") && json["values"].isArray())
+    if (json.contains("values") && json["values"].isArray())
     {
       for (const auto& object : json["values"].toArray())
       {

@@ -314,14 +314,13 @@ VoidResult SaveHandler::saveManifest(const SaveInfo& project)
   }
   manifest["tasks"] = tasks;
 
-  QJsonArray types;
-  const auto& registry = maki::TypeRegistry::instance();
-  for (const auto& task : registry.allTypes())
-    // We don't need to save the built-in or the library types, maki takes care of those
-    if (!registry.isBuiltin(*task) && !registry.isFromLibrary(task->name))
-      types.append(maki::typeDefinitionToJson(*task));
+  QString savedTypes;
+  ASSIGN_OR_RETURN_ON_FAILURE(savedTypes, saveTypes(project.rootPath));
+  manifest["types"] = savedTypes;
 
-  manifest["types"] = types;
+  QString savedParameters;
+  ASSIGN_OR_RETURN_ON_FAILURE(savedParameters, saveMissionParameters(project.rootPath, project.missionParameters()));
+  manifest["parameters"] = savedParameters;
 
   QJsonArray pipelines;
   for (const auto& pipeline : project.pipelines())
@@ -406,6 +405,39 @@ Result<QString> SaveHandler::savePipeline(const SaveInfo& project, const FlowSav
     return Result<QString>::Failed(wrote.ErrorMessage());
 
   return fileName;
+}
+
+Result<QString> SaveHandler::saveTypes(const QDir& root)
+{
+  QJsonArray types;
+  const auto& registry = maki::TypeRegistry::instance();
+  for (const auto& task : registry.allTypes())
+    // We don't need to save the built-in or the library types, maki takes care of those
+    if (!registry.isBuiltin(*task) && !registry.isFromLibrary(task->name))
+      types.append(maki::typeDefinitionToJson(*task));
+
+  QJsonObject json;
+  json["types"] = types;
+
+  const QString filePath = "types.json";
+  auto wrote = writeJsonFile(root.filePath(filePath), json);
+
+  return filePath;
+}
+
+Result<QString> SaveHandler::saveMissionParameters(const QDir& root, const QVector<maki::MissionParameter>& parameters)
+{
+  QJsonArray types;
+  for (const auto& parameter : parameters)
+    types.append(parameter.toJson());
+
+  QJsonObject json;
+  json["parameters"] = types;
+
+  const QString filePath = "parameters.json";
+  auto wrote = writeJsonFile(root.filePath(filePath), json);
+
+  return filePath;
 }
 
 QString SaveHandler::sanitizeFileName(QString name) const
@@ -499,20 +531,8 @@ Result<SaveInfo> SaveHandler::loadProjectManifest(const QString& manifestPath)
     project.addNode(loadedTask);
   }
 
-  const QJsonArray types = manifestJson["types"].toArray();
-  for (const QJsonValue& value : types)
-  {
-    if (!value.isObject())
-      return Result<SaveInfo>::Failed("Invalid type entry in manifest.");
-
-    auto definition = maki::typeDefinitionFromJson(value.toObject());
-    if (!definition.IsSuccess())
-      return Result<SaveInfo>::Failed(definition.ErrorMessage());
-
-    auto added = maki::TypeRegistry::instance().add(definition.Value());
-    if (!added)
-      return Result<SaveInfo>::Failed(added.ErrorMessage());
-  }
+  RETURN_ON_FAILURE_AS(loadTypes(projectRoot, manifestJson), SaveInfo);
+  RETURN_ON_FAILURE_AS(loadMissionParameters(projectRoot, manifestJson, project), SaveInfo);
 
   const QJsonArray pipelines = manifestJson["pipelines"].toArray();
   for (const QJsonValue& value : pipelines)
@@ -528,10 +548,76 @@ Result<SaveInfo> SaveHandler::loadProjectManifest(const QString& manifestPath)
   return project;
 }
 
+VoidResult SaveHandler::loadTypes(const QString& projectRoot, const QJsonObject& manifestJson)
+{
+  if (!manifestJson.contains("types"))
+    return VoidResult();
+
+  if (!manifestJson["types"].isString())
+    return VoidResult::Failed("Types entry in manifest has the wrong format");
+
+  const QString absolutePath = QDir(projectRoot).filePath(manifestJson["types"].toString());
+  auto read = JSON::fromFile(absolutePath);
+  if (!read)
+    return VoidResult::Failed(read.ErrorMessage());
+
+  const QJsonObject json = read.Value();
+  if (!json.contains("types") || !json["types"].isArray())
+    return VoidResult::Failed("Invalid type file");
+
+  for (const QJsonValue& value : json["types"].toArray())
+  {
+    if (!value.isObject())
+      return VoidResult::Failed("Invalid type entry");
+
+    auto definition = maki::typeDefinitionFromJson(value.toObject());
+    if (!definition.IsSuccess())
+      return VoidResult::Failed(definition.ErrorMessage());
+
+    auto added = maki::TypeRegistry::instance().add(definition.Value());
+    if (!added)
+      return VoidResult::Failed(added.ErrorMessage());
+  }
+
+  return VoidResult();
+}
+
+VoidResult SaveHandler::loadMissionParameters(const QString& projectRoot, const QJsonObject& manifestJson, SaveInfo& project)
+{
+  if (!manifestJson.contains("parameters"))
+    return VoidResult();
+
+  if (!manifestJson["parameters"].isString())
+    return VoidResult::Failed("Parameters entry in manifest has the wrong format");
+
+  const QString absolutePath = QDir(projectRoot).filePath(manifestJson["parameters"].toString());
+  auto read = JSON::fromFile(absolutePath);
+  if (!read)
+    return VoidResult::Failed(read.ErrorMessage());
+
+  const QJsonObject json = read.Value();
+  if (!json.contains("parameters") || !json["parameters"].isArray())
+    return VoidResult::Failed("Invalid parameter file format");
+
+  for (const QJsonValue& value : json["parameters"].toArray())
+  {
+    if (!value.isObject())
+      return VoidResult::Failed("Invalid parameter entry");
+
+    auto parameter = maki::MissionParameter::fromJson(value.toObject());
+    if (!parameter.IsSuccess())
+      return VoidResult::Failed(parameter.ErrorMessage());
+
+    project.addParameter(parameter.Value());
+  }
+
+  return VoidResult();
+}
+
 Result<std::shared_ptr<NodeSaveInfo>> SaveHandler::loadNodeTree(const QString& projectRoot, const QString& nodeFile)
 {
   const QString absolutePath = QDir(projectRoot).filePath(nodeFile);
-  LOG_INFO("loadNodeTree:\n\tprojectRoot: {}\n\tnodeFile: {}\n\tabsolutePath: {}", projectRoot, nodeFile, absolutePath);
+  LOG_TRACE("loadNodeTree - projectRoot: {} nodeFile: {} absolutePath: {}", projectRoot, nodeFile, absolutePath);
 
   auto read = JSON::fromFile(absolutePath);
   if (!read)

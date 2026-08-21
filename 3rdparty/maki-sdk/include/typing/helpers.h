@@ -53,6 +53,7 @@ TypeKind typeKindFromString(const std::string& kind);
 TypeReferenceKind typeReferenceKindFromString(const std::string& kind);
 EnumUnderlyingKind enumKindFromString(const std::string& kind);
 EnumUnderlyingKind enumKindFromPrimitive(const PrimitiveKind& kind);
+PrimitiveKind enumKindFromEnumKind(const EnumUnderlyingKind& kind);
 
 std::string makeUuid();
 QualifiedName convertQualifiedName(const std::string& name);

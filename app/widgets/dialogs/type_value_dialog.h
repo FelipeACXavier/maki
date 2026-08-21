@@ -18,9 +18,8 @@ class TypeValueDialog : public BaseDialog
   Q_OBJECT
 
 public:
-  TypeValueDialog(const QString& title, QWidget* parent = nullptr);
+  TypeValueDialog(const QString& title, const MissionParameter& parameter, QWidget* parent = nullptr);
 
-  void setParameter(const MissionParameter& parameter);
   MissionParameter getParameter() const;
 
 public slots:

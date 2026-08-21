@@ -39,7 +39,8 @@ public:
     RuleExpression = 29, RuleExprOr = 30, RuleExprAnd = 31, RuleExprCmp = 32, 
     RuleCompOp = 33, RuleExprNot = 34, RuleExprAdd = 35, RuleExprMul = 36, 
     RuleExprUnary = 37, RuleExprPrimary = 38, RuleRecordLiteral = 39, RuleRecordFieldInitializer = 40, 
-    RuleIdentifier = 41
+    RuleListLiteral = 41, RuleMapLiteral = 42, RuleMapFieldInitializer = 43, 
+    RuleIdentifier = 44
   };
 
   explicit KodaParser(antlr4::TokenStream *input);
@@ -100,6 +101,9 @@ public:
   class ExprPrimaryContext;
   class RecordLiteralContext;
   class RecordFieldInitializerContext;
+  class ListLiteralContext;
+  class MapLiteralContext;
+  class MapFieldInitializerContext;
   class IdentifierContext; 
 
   class  SystemContext : public antlr4::ParserRuleContext {
@@ -1072,11 +1076,29 @@ public:
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
+  class  ExprMapLiteralContext : public ExprPrimaryContext {
+  public:
+    ExprMapLiteralContext(ExprPrimaryContext *ctx);
+
+    MapLiteralContext *mapLiteral();
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
   class  ExprRecordContext : public ExprPrimaryContext {
   public:
     ExprRecordContext(ExprPrimaryContext *ctx);
 
     RecordLiteralContext *recordLiteral();
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  ExprListLiteralContext : public ExprPrimaryContext {
+  public:
+    ExprListLiteralContext(ExprPrimaryContext *ctx);
+
+    ListLiteralContext *listLiteral();
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
@@ -1118,6 +1140,8 @@ public:
     antlr4::tree::TerminalNode *RBRACE();
     std::vector<RecordFieldInitializerContext *> recordFieldInitializer();
     RecordFieldInitializerContext* recordFieldInitializer(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> COMMA();
+    antlr4::tree::TerminalNode* COMMA(size_t i);
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -1141,6 +1165,57 @@ public:
   };
 
   RecordFieldInitializerContext* recordFieldInitializer();
+
+  class  ListLiteralContext : public antlr4::ParserRuleContext {
+  public:
+    ListLiteralContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *LBRACK();
+    antlr4::tree::TerminalNode *RBRACK();
+    std::vector<ExpressionContext *> expression();
+    ExpressionContext* expression(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> COMMA();
+    antlr4::tree::TerminalNode* COMMA(size_t i);
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  ListLiteralContext* listLiteral();
+
+  class  MapLiteralContext : public antlr4::ParserRuleContext {
+  public:
+    MapLiteralContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *LBRACE();
+    antlr4::tree::TerminalNode *RBRACE();
+    std::vector<MapFieldInitializerContext *> mapFieldInitializer();
+    MapFieldInitializerContext* mapFieldInitializer(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> COMMA();
+    antlr4::tree::TerminalNode* COMMA(size_t i);
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  MapLiteralContext* mapLiteral();
+
+  class  MapFieldInitializerContext : public antlr4::ParserRuleContext {
+  public:
+    MapFieldInitializerContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    std::vector<ExpressionContext *> expression();
+    ExpressionContext* expression(size_t i);
+    antlr4::tree::TerminalNode *COLON();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  MapFieldInitializerContext* mapFieldInitializer();
 
   class  IdentifierContext : public antlr4::ParserRuleContext {
   public:

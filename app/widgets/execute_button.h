@@ -18,6 +18,8 @@ public:
 
   QStringList getPipelineNames() const;
 
+  void reset() override;
+
 signals:
   void executeRequested(const QString& option);
   void editOptionRequested(const QString& option);

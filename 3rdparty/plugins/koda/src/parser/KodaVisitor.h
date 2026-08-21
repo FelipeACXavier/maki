@@ -143,11 +143,21 @@ public:
 
     virtual std::any visitExprRecord(KodaParser::ExprRecordContext *context) = 0;
 
+    virtual std::any visitExprListLiteral(KodaParser::ExprListLiteralContext *context) = 0;
+
+    virtual std::any visitExprMapLiteral(KodaParser::ExprMapLiteralContext *context) = 0;
+
     virtual std::any visitExprParen(KodaParser::ExprParenContext *context) = 0;
 
     virtual std::any visitRecordLiteral(KodaParser::RecordLiteralContext *context) = 0;
 
     virtual std::any visitRecordFieldInitializer(KodaParser::RecordFieldInitializerContext *context) = 0;
+
+    virtual std::any visitListLiteral(KodaParser::ListLiteralContext *context) = 0;
+
+    virtual std::any visitMapLiteral(KodaParser::MapLiteralContext *context) = 0;
+
+    virtual std::any visitMapFieldInitializer(KodaParser::MapFieldInitializerContext *context) = 0;
 
     virtual std::any visitIdentifier(KodaParser::IdentifierContext *context) = 0;
 

@@ -902,6 +902,10 @@ void MainWindow::onActionNew()
 
   maki::TypeRegistry::instance().removeUserTypes();
   canvas()->loadFromSave(emptySave);
+  if (mMissionParameters)
+    mMissionParameters->setStorage(mStorage);
+  if (mPipelineRun)
+    mPipelineRun->reset();
 
   NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Created new project");
 }
@@ -1180,6 +1184,9 @@ void MainWindow::onFileLoaded(const QString& file, const SaveInfo& info, const Q
 
   // Repopulate the canvas (and the storage)
   canvas()->loadFromSave(info);
+
+  if (mMissionParameters)
+    mMissionParameters->setStorage(mStorage);
 
   GeneralSettings general = mSettingsManager->general();
   general.lastOpenFileDir = mSaveHandler->lastDir();

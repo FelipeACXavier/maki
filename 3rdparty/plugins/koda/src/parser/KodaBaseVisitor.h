@@ -263,6 +263,14 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitExprListLiteral(KodaParser::ExprListLiteralContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitExprMapLiteral(KodaParser::ExprMapLiteralContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitExprParen(KodaParser::ExprParenContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -272,6 +280,18 @@ public:
   }
 
   virtual std::any visitRecordFieldInitializer(KodaParser::RecordFieldInitializerContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitListLiteral(KodaParser::ListLiteralContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitMapLiteral(KodaParser::MapLiteralContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitMapFieldInitializer(KodaParser::MapFieldInitializerContext *ctx) override {
     return visitChildren(ctx);
   }
 

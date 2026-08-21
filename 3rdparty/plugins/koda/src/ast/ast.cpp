@@ -388,6 +388,8 @@ void Expr::print(const std::string& prefix, const bool last) const
   ELSE_IF_ALT(PBinOp, v, print(prefix, last, span))
   ELSE_IF_ALT(PEParen, v, print(prefix, last, span))
   ELSE_IF_ALT(PRecordLiteral, v, print(prefix, last, span))
+  ELSE_IF_ALT(PListLiteral, v, print(prefix, last, span))
+  ELSE_IF_ALT(PMapLiteral, v, print(prefix, last, span))
 }
 
 void Expr::Id::print(const std::string& prefix, const bool last, const Span& span) const
@@ -499,6 +501,32 @@ void Expr::RecordLiteral::Field::print(const std::string& prefix, const bool las
   LOG_TREE("RecordLiteralField");
   const std::string childPrefix = prefix + tree::carry(last);
   printString(childPrefix, value == nullptr, Format("Name: {}", name));
+  if (value)
+    value->print(childPrefix, true);
+}
+
+void Expr::ListLiteral::print(const std::string& prefix, const bool last, const Span& span) const
+{
+  LOG_TREE("ListLiteral");
+  const std::string childPrefix = prefix + tree::carry(last);
+  for (uint32_t i = 0; i < fields.size(); ++i)
+    fields.at(i)->print(childPrefix, i == fields.size() - 1);
+}
+
+void Expr::MapLiteral::print(const std::string& prefix, const bool last, const Span& span) const
+{
+  LOG_TREE("MapLiteral");
+  const std::string childPrefix = prefix + tree::carry(last);
+  for (uint32_t i = 0; i < fields.size(); ++i)
+    fields.at(i)->print(childPrefix, i == fields.size() - 1);
+}
+
+void Expr::MapLiteral::Field::print(const std::string& prefix, const bool last) const
+{
+  LOG_TREE("MapLiteralField");
+  const std::string childPrefix = prefix + tree::carry(last);
+  if (key)
+    key->print(childPrefix, false);
   if (value)
     value->print(childPrefix, true);
 }

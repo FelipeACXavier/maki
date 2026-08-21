@@ -25,8 +25,12 @@
 namespace koda
 {
 
-Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes, QVector<const IParameter*> missionParameters,
-                                     const koda::types::TypeRegistry* registry)
+MakiToKoda::MakiToKoda(const koda::types::TypeRegistry* registry)
+    : mTypeRegistry(registry)
+{
+}
+
+Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes, QVector<const IParameter*> missionParameters)
 {
   koda::System sys;
 
@@ -48,7 +52,7 @@ Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes
     sys.components.push_back(taskAny.Value());
   }
 
-  auto contents = KodaEmitter::emitKoda(sys, registry);
+  auto contents = KodaEmitter::emitKoda(sys, mTypeRegistry);
   RETURN_ON_FAILURE_AS(contents, QString);
 
   return QString::fromStdString(contents.Value());
@@ -93,12 +97,12 @@ Result<koda::PComponent> MakiToKoda::buildTask(const INode& task, QVector<const 
 
   // Get mission parameters
   auto varsBlock = std::make_shared<koda::VarsBlock>();
+  LOG_DEBUG("Starting generation of koda::VarsBlock with {} entries", missionParameters.size());
   for (const auto* parameter : missionParameters)
   {
-    // TODO: These are the mission parameters
-    // auto generated = buildVarDef(*child);
-    // RETURN_ON_FAILURE_AS(generated, koda::PComponent);
-    // varsBlock->vars.push_back(generated.Value());
+    auto generated = buildVarDef(parameter);
+    RETURN_ON_FAILURE_AS(generated, koda::PComponent);
+    varsBlock->vars.push_back(generated.Value());
   }
 
   auto varsStatement = std::make_shared<koda::Statement>();
@@ -148,46 +152,21 @@ Result<koda::PComponent> MakiToKoda::buildCapability(const INode& capability)
   return c;
 }
 
-Result<koda::PVarDef> MakiToKoda::buildVarDef(const IProperty& property)
+Result<koda::PVarDef> MakiToKoda::buildVarDef(const IParameter* property)
 {
-  auto varDef = std::make_shared<koda::VarDef>();
-  varDef->name = property.getid().toStdString();
-  varDef->varType = types::TypeReference::primitive(types::primitiveKindFromString(Types::PropertyTypesToString(property.gettype()).toStdString()));
+  if (!property)
+    return Result<koda::PVarDef>::Failed("Cannot build mission parameter from null property");
 
-  auto wrapper = std::make_shared<koda::Expr>();
-  switch (property.gettype())
-  {
-    case Types::PropertyTypes::BOOLEAN:
-    case Types::PropertyTypes::INTEGER:
-    {
-      auto expr = std::make_shared<koda::Expr::Int>();
-      expr->value = property.getdefaultValue().toInt();
-      wrapper->v = expr;
-      break;
-    }
-    case Types::PropertyTypes::REAL:
-    {
-      auto expr = std::make_shared<koda::Expr::Float>();
-      expr->value = property.getdefaultValue().toDouble();
-      wrapper->v = expr;
-      break;
-    }
-    case Types::PropertyTypes::STRING:
-    {
-      auto expr = std::make_shared<koda::Expr::Str>();
-      expr->value = property.getdefaultValue().toString().toStdString();
-      wrapper->v = expr;
-      break;
-    }
-    default:
-    {
-      auto expr = std::make_shared<koda::Expr::Id>();
-      expr->value = "";
-      wrapper->v = expr;
-      break;
-    }
-  }
-  varDef->init = wrapper;
+  LOG_INFO("Generating var def for: {} {}", property->getname(), property->gettype().toString());
+  auto varDef = std::make_shared<koda::VarDef>();
+  varDef->name = property->getname();
+  varDef->varType = property->gettype();
+
+  auto init = buildValueExpr(varDef->varType, property->getvalue());
+  if (!init.IsSuccess())
+    return Result<koda::PVarDef>::Failed("Could not build value for mission parameter '{}': {}", varDef->name, init.ErrorMessage());
+
+  varDef->init = init.Value();
 
   return varDef;
 }
@@ -1060,4 +1039,162 @@ std::string MakiToKoda::format(QString input, const QString& token) const
   return input.replace(" ", token).toStdString();
 }
 
+Result<koda::PExpr> MakiToKoda::buildValueExpr(const koda::types::TypeReference& type, std::shared_ptr<const IValue> value)
+{
+  auto wrapper = std::make_shared<koda::Expr>();
+  if (type.isPrimitive())
+  {
+    switch (type.primitiveKind())
+    {
+      case koda::types::PrimitiveKind::Bool:
+      {
+        auto expr = std::make_shared<koda::Expr::Bool>();
+        expr->value = value->toBoolValue();
+        wrapper->v = expr;
+        return wrapper;
+      }
+
+      case koda::types::PrimitiveKind::Int8:
+      case koda::types::PrimitiveKind::Int16:
+      case koda::types::PrimitiveKind::Int32:
+      case koda::types::PrimitiveKind::Int64:
+      case koda::types::PrimitiveKind::UInt8:
+      case koda::types::PrimitiveKind::UInt16:
+      case koda::types::PrimitiveKind::UInt32:
+      case koda::types::PrimitiveKind::UInt64:
+      {
+        auto expr = std::make_shared<koda::Expr::Int>();
+        expr->value = value->toIntValue();
+        wrapper->v = expr;
+        return wrapper;
+      }
+
+      case koda::types::PrimitiveKind::Float32:
+      case koda::types::PrimitiveKind::Float64:
+      {
+        auto expr = std::make_shared<koda::Expr::Float>();
+        expr->value = value->toDoubleValue();
+        wrapper->v = expr;
+        return wrapper;
+      }
+
+      case koda::types::PrimitiveKind::String:
+      {
+        auto expr = std::make_shared<koda::Expr::Str>();
+        expr->value = value->toStringValue().toStdString();
+        wrapper->v = expr;
+        return wrapper;
+      }
+
+      default:
+        return Result<koda::PExpr>::Failed("Unsupported primitive parameter type '{}'", type.toString());
+    }
+  }
+  else if (type.isList())
+  {
+    if (value->kind() != IValue::Kind::List)
+      return Result<koda::PExpr>::Failed("Expected list value for type '{}'", type.toString());
+
+    auto literal = std::make_shared<koda::Expr::ListLiteral>();
+
+    const auto values = value->toListValue();
+    const auto elementType = type.elementType();
+
+    for (const auto& item : values)
+    {
+      auto built = buildValueExpr(elementType, item);
+      if (!built.IsSuccess())
+        return Result<koda::PExpr>::Failed("Could not build list element for '{}': {}", type.toString(), built.ErrorMessage());
+
+      literal->fields.push_back(built.Value());
+    }
+
+    wrapper->v = literal;
+    return wrapper;
+  }
+  else if (type.isMap())
+  {
+    if (value->kind() != IValue::Kind::Map)
+      return Result<koda::PExpr>::Failed("Expected map value for type '{}'", type.toString());
+
+    auto literal = std::make_shared<koda::Expr::MapLiteral>();
+
+    const auto keyType = type.mapKeyType();
+    const auto valueType = type.mapValueType();
+    for (const auto& [key, val] : value->toMapValue())
+    {
+      auto builtKey = buildValueExpr(keyType, key);
+      if (!builtKey.IsSuccess())
+        return Result<koda::PExpr>::Failed("Could not build map key for '{}': {}", type.toString(), builtKey.ErrorMessage());
+
+      auto builtValue = buildValueExpr(valueType, val);
+      if (!builtValue.IsSuccess())
+        return Result<koda::PExpr>::Failed("Could not build map value for '{}': {}", type.toString(), builtValue.ErrorMessage());
+
+      auto fieldLiteral = std::make_shared<koda::Expr::MapLiteral::Field>();
+      fieldLiteral->key = builtKey.Value();
+      fieldLiteral->value = builtValue.Value();
+      literal->fields.push_back(fieldLiteral);
+    }
+
+    wrapper->v = literal;
+    return wrapper;
+  }
+  else if (type.isNamed())
+  {
+    const auto* definition = mTypeRegistry->resolve(type);
+    if (!definition)
+      return Result<koda::PExpr>::Failed("Could not resolve type '{}'", type.toString());
+
+    if (definition->isAlias())
+    {
+      return buildValueExpr(definition->alias().target, value);
+    }
+    else if (definition->isRecord())
+    {
+      if (value->kind() != IValue::Kind::Record)
+        return Result<koda::PExpr>::Failed("Expected record value for type '{}'", type.toString());
+
+      const auto values = value->toRecordValue();
+      const auto& record = definition->record();
+
+      auto literal = std::make_shared<koda::Expr::RecordLiteral>();
+      for (const auto& field : record.fields)
+      {
+        const auto valueIt = values.find(field.name);
+
+        // Allows partial/default initialization, including {}.
+        if (valueIt == values.end())
+          continue;
+
+        auto built = buildValueExpr(field.type, valueIt->second);
+        if (!built.IsSuccess())
+          return Result<koda::PExpr>::Failed("Could not build field '{}.{}': {}", type.toString(), field.name, built.ErrorMessage());
+
+        auto fieldLiteral = std::make_shared<koda::Expr::RecordLiteral::Field>();
+        fieldLiteral->name = field.name;
+        fieldLiteral->value = built.Value();
+        literal->fields.push_back(fieldLiteral);
+      }
+
+      wrapper->v = literal;
+      return wrapper;
+    }
+    else if (definition->isEnum())
+    {
+      if (value->kind() != IValue::Kind::StdString && value->kind() != IValue::Kind::QString)
+        return Result<koda::PExpr>::Failed("Expected string-like value for enum '{}'", type.toString());
+
+      auto expr = std::make_shared<koda::Expr::Id>();
+      expr->value = value->toStringValue().toStdString();
+
+      wrapper->v = expr;
+      return wrapper;
+    }
+
+    return Result<koda::PExpr>::Failed("Unsupported named parameter type '{}'", type.toString());
+  }
+
+  return Result<koda::PExpr>::Failed("Unsupported parameter type '{}'", type.toString());
+}
 }  // namespace koda

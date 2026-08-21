@@ -79,6 +79,7 @@ void MissionParameterWidget::setParameters(QVector<MissionParameter> parameters)
 void MissionParameterWidget::setStorage(std::shared_ptr<SaveInfo> storage)
 {
   mStorage = storage;
+  rebuildTable();
 }
 
 void MissionParameterWidget::rebuildTable()
@@ -94,6 +95,7 @@ void MissionParameterWidget::rebuildTable()
   for (int i = 0; i < mStorage->missionParameters().size(); ++i)
   {
     const auto& parameter = mStorage->getParameter(i);
+    LOG_DEBUG("Adding parameter to table: {}", parameter.value.toReadable());
     const int row = mTable->rowCount();
     mTable->insertRow(row);
 
@@ -118,18 +120,20 @@ void MissionParameterWidget::rebuildTable()
 
 void MissionParameterWidget::addParameter()
 {
-  TypeValueDialog dialog(tr("Add mission parameter"), this);
   // We only set the id once
   MissionParameter parameter;
   parameter.id = koda::types::makeUuid();
 
-  dialog.setParameter(parameter);
+  TypeValueDialog dialog(tr("Add mission parameter"), parameter, this);
   if (dialog.exec() != QDialog::Accepted)
     return;
 
   auto newParam = dialog.getParameter();
   if (newParam.type.isValid())
+  {
+    LOG_DEBUG("Adding parameter: {}", newParam.value.toReadable());
     mStorage->addParameter(newParam);
+  }
 
   rebuildTable();
   emit parametersChanged();
@@ -148,9 +152,7 @@ void MissionParameterWidget::editParameter(int index)
 
   const auto& parameter = mStorage->getParameter(index);
 
-  TypeValueDialog dialog(tr("Edit ") + QString::fromStdString(parameter.name), this);
-  dialog.setParameter(parameter);
-
+  TypeValueDialog dialog(tr("Edit ") + QString::fromStdString(parameter.name), parameter, this);
   if (dialog.exec() != QDialog::Accepted)
     return;
 

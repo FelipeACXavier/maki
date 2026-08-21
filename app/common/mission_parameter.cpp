@@ -2,6 +2,7 @@
 
 #include <format>
 
+#include "type_helpers.h"
 #include "type_registry.h"
 #include "typing/helpers.h"
 
@@ -73,6 +74,12 @@ QString Value::toString() const
     return QString::fromStdString(std::get<std::string>(data));
   else if (std::holds_alternative<QString>(data))
     return std::get<QString>(data);
+  else if (std::holds_alternative<int>(data))
+    return QString::number(std::get<int>(data));
+  else if (std::holds_alternative<double>(data))
+    return QString::number(std::get<double>(data));
+  else if (std::holds_alternative<bool>(data))
+    return std::get<bool>(data) ? "true" : "false";
   else
     return QString();
 }
@@ -208,11 +215,21 @@ Value Value::defaultValue(const koda::types::TypeReference& ref)
       return out;
 
     if (definition->isRecord())
+    {
       out.data = RecordValue{};
+    }
     else if (definition->isAlias())
+    {
       out = Value::defaultValue(definition->alias().target);
+    }
     else if (definition->isEnum())
-      out.data = QString::fromStdString(definition->enumeration().values.front().name);
+    {
+      if (!definition->enumeration().values.empty())
+        out.data = QString::fromStdString(definition->enumeration().values.front().name);
+
+      auto primitiveKind = koda::types::enumKindFromEnumKind(definition->enumeration().underlyingType);
+      out = Value::defaultValue(koda::types::TypeReference::primitive(primitiveKind));
+    }
   }
 
   return out;
@@ -335,6 +352,176 @@ IValue::IMapValue Value::toMapValue() const
   return out;
 }
 
+QJsonObject Value::toJson() const
+{
+  QJsonObject json;
+  switch (kind())
+  {
+    case IValue::Kind::Bool:
+      json["kind"] = "bool";
+      json["value"] = toBool();
+      break;
+
+    case IValue::Kind::Int:
+      json["kind"] = "int";
+      json["value"] = toInt();
+      break;
+
+    case IValue::Kind::Double:
+      json["kind"] = "double";
+      json["value"] = toDouble();
+      break;
+
+    case IValue::Kind::StdString:
+      json["kind"] = "std_string";
+      json["value"] = QString::fromStdString(std::get<std::string>(data));
+      break;
+
+    case IValue::Kind::QString:
+      json["kind"] = "qstring";
+      json["value"] = std::get<QString>(data);
+      break;
+
+    case IValue::Kind::Color:
+    {
+      json["kind"] = "color";
+      json["value"] = std::get<QColor>(data).name(QColor::HexArgb);
+      break;
+    }
+
+    case IValue::Kind::Record:
+    {
+      json["kind"] = "record";
+
+      QJsonObject fields;
+      for (const auto& [name, fieldValue] : toRecord())
+        fields[QString::fromStdString(name)] = fieldValue.toJson();
+
+      json["value"] = fields;
+      break;
+    }
+
+    case IValue::Kind::List:
+    {
+      json["kind"] = "list";
+
+      QJsonArray values;
+      for (const auto& item : toList())
+        values.append(item.toJson());
+
+      json["value"] = values;
+      break;
+    }
+
+    case IValue::Kind::Map:
+    {
+      json["kind"] = "map";
+
+      QJsonArray entries;
+      for (const auto& [key, value] : toMap())
+      {
+        QJsonObject entry;
+        entry["key"] = key.toJson();
+        entry["value"] = value.toJson();
+
+        entries.append(entry);
+      }
+
+      json["value"] = entries;
+      break;
+    }
+
+    case IValue::Kind::Invalid:
+    default:
+      json["kind"] = "invalid";
+      json["value"] = QJsonValue::Null;
+      break;
+  }
+
+  return json;
+}
+
+Value Value::fromJson(const QJsonObject& json)
+{
+  Value result;
+
+  const auto kind = json["kind"].toString();
+  const auto data = json["value"];
+
+  if (kind == "bool")
+  {
+    result.data = data.toBool();
+  }
+  else if (kind == "int")
+  {
+    result.data = data.toInt();
+  }
+  else if (kind == "double")
+  {
+    result.data = data.toDouble();
+  }
+  else if (kind == "std_string")
+  {
+    result.data = data.toString().toStdString();
+  }
+  else if (kind == "qstring")
+  {
+    result.data = data.toString();
+  }
+  else if (kind == "color")
+  {
+    result.data = QColor(data.toString());
+  }
+  else if (kind == "record")
+  {
+    RecordValue record;
+
+    const auto fields = data.toObject();
+
+    for (auto it = fields.begin(); it != fields.end(); ++it)
+      record[it.key().toStdString()] = Value::fromJson(it.value().toObject());
+
+    result.data = std::move(record);
+  }
+  else if (kind == "list")
+  {
+    ListValue list;
+
+    const auto array = data.toArray();
+
+    list.reserve(array.size());
+
+    for (const auto& item : array)
+      list.push_back(Value::fromJson(item.toObject()));
+
+    result.data = std::move(list);
+  }
+  else if (kind == "map")
+  {
+    MapValue map;
+
+    const auto entries = data.toArray();
+
+    for (const auto& item : entries)
+    {
+      const auto entry = item.toObject();
+
+      auto key = Value::fromJson(entry["key"].toObject());
+      auto mappedValue = Value::fromJson(entry["value"].toObject());
+
+      map.emplace(std::move(key), std::move(mappedValue));
+    }
+
+    result.data = std::move(map);
+  }
+  else
+  {
+    result.data = std::monostate{};
+  }
+
+  return result;
+}
+
 // ===================================================================
 // MissionPaarameter
 std::string MissionParameter::getid() const
@@ -355,6 +542,30 @@ koda::types::TypeReference MissionParameter::gettype() const
 const std::shared_ptr<IValue> MissionParameter::getvalue() const
 {
   return std::make_shared<Value>(value);
+}
+
+QJsonObject MissionParameter::toJson() const
+{
+  QJsonObject json;
+
+  json["id"] = QString::fromStdString(id);
+  json["name"] = QString::fromStdString(name);
+  json["type"] = maki::typeReferenceToJson(type);
+  json["value"] = value.toJson();
+
+  return json;
+}
+
+Result<MissionParameter> MissionParameter::fromJson(const QJsonObject& json)
+{
+  MissionParameter parameter;
+
+  parameter.id = json["id"].toString().toStdString();
+  parameter.name = json["name"].toString().toStdString();
+  ASSIGN_OR_RETURN_ON_FAILURE_AS(parameter.type, maki::typeReferenceFromJson(json["type"].toObject()), MissionParameter);
+  parameter.value = Value::fromJson(json["value"].toObject());
+
+  return parameter;
 }
 
 }  // namespace maki

@@ -30,6 +30,12 @@ ExecuteButton::ExecuteButton(QWidget* parent)
   setupDone();
 }
 
+void ExecuteButton::reset()
+{
+  DropDownButton::reset();
+  setupDone();
+}
+
 void ExecuteButton::addOption(const QString& name)
 {
   auto opts = getPipelineNames();
@@ -59,9 +65,7 @@ void ExecuteButton::setupDone()
   menu()->addSeparator();
 
   auto* addNewPipeline = menu()->addAction(iconFromTheme("document-new"), ADD_NEW_TEXT);
-  connect(addNewPipeline, &QAction::triggered, this, [this] {
-    QTimer::singleShot(0, this, [this]() { emit editOptionRequested(""); });
-  });
+  connect(addNewPipeline, &QAction::triggered, this, [this] { QTimer::singleShot(0, this, [this]() { emit editOptionRequested(""); }); });
 
   updateButtonText();
 }
@@ -124,13 +128,9 @@ void ExecuteButton::buildMenu(QMenu* menu, const QString& option, bool addSelect
   menu->addSeparator();
 
   auto* editAction = menu->addAction(iconFromTheme("document-edit"), tr("Edit"));
-  connect(editAction, &QAction::triggered, this, [this, option] {
-    emit editOptionRequested(option);
-  });
+  connect(editAction, &QAction::triggered, this, [this, option] { emit editOptionRequested(option); });
   auto* deleteAction = menu->addAction(iconFromTheme("edit-delete"), tr("Delete"));
-  connect(deleteAction, &QAction::triggered, this, [this, option] {
-    emit deleteOptionRequested(option);
-  });
+  connect(deleteAction, &QAction::triggered, this, [this, option] { emit deleteOptionRequested(option); });
 }
 
 void ExecuteButton::setRunning(bool running)
@@ -189,10 +189,7 @@ void ExecuteButton::paintLeadingContent(QPainter& painter, const QRect& contentR
     const qreal y = 0.866 * radius;
 
     QPolygonF triangle;
-    triangle
-        << QPointF(center.x() - x, center.y() - y)
-        << QPointF(center.x() - x, center.y() + y)
-        << QPointF(center.x() + radius, center.y());
+    triangle << QPointF(center.x() - x, center.y() - y) << QPointF(center.x() - x, center.y() + y) << QPointF(center.x() + radius, center.y());
 
     painter.drawPolygon(triangle);
   }

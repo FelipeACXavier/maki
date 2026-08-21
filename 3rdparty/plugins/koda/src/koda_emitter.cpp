@@ -362,20 +362,26 @@ VoidResult KodaEmitter::emitVarsBlock(const koda::VarsBlock& node, std::stringst
   if (node.vars.empty())
     return VoidResult();
 
-  ss << format << "vars {\n";
-  for (auto& var : node.vars)
+  ss << format << "parameters {\n";
+
+  for (const auto& var : node.vars)
     RETURN_ON_FAILURE(emitVarDef(*var, ss, format + INDENT));
+
   ss << format << "}\n";
+
   return VoidResult();
 }
 
 VoidResult KodaEmitter::emitVarDef(const koda::VarDef& varDef, std::stringstream& ss, const std::string& format)
 {
-  ss << format << " " << varDef.varType.toString() << " " << varDef.name << "_ = " << varDef.name << " : ";
+  auto type = emitTypeReference(varDef.varType);
+  RETURN_ON_FAILURE(type);
+
+  ss << format << type.Value() << " " << varDef.name << " = ";
 
   RETURN_ON_FAILURE(emitExpression(*varDef.init, ss, format));
 
-  ss << "\n";
+  ss << ";\n";
 
   return VoidResult();
 }
@@ -526,6 +532,9 @@ VoidResult KodaEmitter::emitExpression(const koda::Expr& node, std::stringstream
   ELSE_IF_ALT(PNot, node.v, emitNot, ss, format)
   ELSE_IF_ALT(PBinOp, node.v, emitBinOp, ss, format)
   ELSE_IF_ALT(PEParen, node.v, emitParen, ss, format)
+  ELSE_IF_ALT(PRecordLiteral, node.v, emitRecordLiteral, ss, format)
+  ELSE_IF_ALT(PListLiteral, node.v, emitListLiteral, ss, format)
+  ELSE_IF_ALT(PMapLiteral, node.v, emitMapLiteral, ss, format)
 
   return VoidResult();
 }
@@ -583,6 +592,82 @@ VoidResult KodaEmitter::emitBinOp(const koda::Expr::BinOp& expr, std::stringstre
 
 VoidResult KodaEmitter::emitParen(const koda::Expr::Paren& expr, std::stringstream& ss, const std::string& format)
 {
+  return VoidResult();
+}
+
+VoidResult KodaEmitter::emitRecordLiteral(const koda::Expr::RecordLiteral& expr, std::stringstream& ss, const std::string& format)
+{
+  if (expr.fields.empty())
+  {
+    ss << "{}";
+    return VoidResult();
+  }
+
+  ss << "{\n";
+  size_t count = 0;
+  for (const auto& field : expr.fields)
+  {
+    ss << format << INDENT << field->name << ": ";
+    RETURN_ON_FAILURE(emitExpression(*field->value, ss, format + INDENT));
+    if (count < expr.fields.size() - 1)
+      ss << ",";
+
+    ss << "\n";
+    ++count;
+  }
+  ss << format << "}";
+
+  return VoidResult();
+}
+
+VoidResult KodaEmitter::emitListLiteral(const koda::Expr::ListLiteral& expr, std::stringstream& ss, const std::string& format)
+{
+  if (expr.fields.empty())
+  {
+    ss << "[]";
+    return VoidResult();
+  }
+
+  ss << "[\n";
+  size_t count = 0;
+  for (const auto& field : expr.fields)
+  {
+    ss << format << INDENT;
+    RETURN_ON_FAILURE(emitExpression(*field, ss, format + INDENT));
+    if (count < expr.fields.size() - 1)
+      ss << ",";
+    ss << "\n";
+    ++count;
+  }
+  ss << format << "]";
+
+  return VoidResult();
+}
+
+VoidResult KodaEmitter::emitMapLiteral(const koda::Expr::MapLiteral& expr, std::stringstream& ss, const std::string& format)
+{
+  if (expr.fields.empty())
+  {
+    ss << "{}";
+    return VoidResult();
+  }
+
+  ss << "{\n";
+  size_t count = 0;
+  for (const auto& field : expr.fields)
+  {
+    ss << format << INDENT << "<";
+    RETURN_ON_FAILURE(emitExpression(*field->key, ss, format + INDENT));
+    ss << ", ";
+    RETURN_ON_FAILURE(emitExpression(*field->value, ss, ""));
+    ss << ">";
+    if (count < expr.fields.size() - 1)
+      ss << ",";
+    ss << "\n";
+    ++count;
+  }
+  ss << format << "}";
+
   return VoidResult();
 }
 

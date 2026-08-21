@@ -61,6 +61,9 @@ private:
   VoidResult emitNot(const koda::Expr::Not& expr, std::stringstream& ss, const std::string& format);
   VoidResult emitBinOp(const koda::Expr::BinOp& expr, std::stringstream& ss, const std::string& format);
   VoidResult emitParen(const koda::Expr::Paren& expr, std::stringstream& ss, const std::string& format);
+  VoidResult emitRecordLiteral(const koda::Expr::RecordLiteral& expr, std::stringstream& ss, const std::string& format);
+  VoidResult emitListLiteral(const koda::Expr::ListLiteral& expr, std::stringstream& ss, const std::string& format);
+  VoidResult emitMapLiteral(const koda::Expr::MapLiteral& expr, std::stringstream& ss, const std::string& format);
 
   VoidResult emitCallArguments(const std::vector<std::shared_ptr<Expr>>& args, std::stringstream& ss);
   VoidResult emitDefArguments(const std::vector<std::shared_ptr<Argument>>& args, std::stringstream& ss);

@@ -105,6 +105,10 @@ private:
   Result<QString> saveNodeTree(const SaveInfo& project, const NodeSaveInfo& node, const QString& folder);
   Result<QString> saveFlow(const QDir& root, const QString& nodeFolder, const FlowSaveInfo& task);
   Result<QString> savePipeline(const SaveInfo& project, const FlowSaveInfo& task);
+  Result<QString> saveTypes(const QDir& root);
+  Result<QString> saveMissionParameters(const QDir& root, const QVector<maki::MissionParameter>& parameters);
 
+  VoidResult loadTypes(const QString& projectRoot, const QJsonObject& manifestJson);
+  VoidResult loadMissionParameters(const QString& projectRoot, const QJsonObject& manifestJson, SaveInfo& project);
   Result<std::shared_ptr<NodeSaveInfo>> loadNodeTree(const QString& projectRoot, const QString& nodeFile);
 };

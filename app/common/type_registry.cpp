@@ -39,13 +39,7 @@ VoidResult TypeRegistry::registerNode(const QString& nodeId, const NodeConfig& n
         consumes << QString::fromStdString(arg.type.toString());
 
       if (!consumes.isEmpty())
-      {
-        LOG_DEBUG("Registering consumer: {}", nodeId);
-        for (const auto& c : consumes)
-          LOG_DEBUG("   {}", c);
-
         mConsumers.insert(nodeId, consumes);
-      }
     }
     else if (e.type == Types::CallType::RETURN)
     {
@@ -54,13 +48,7 @@ VoidResult TypeRegistry::registerNode(const QString& nodeId, const NodeConfig& n
         produces << QString::fromStdString(arg.type.toString());
 
       if (!produces.isEmpty())
-      {
-        LOG_DEBUG("Registering producer: {}", nodeId);
-        for (const auto& c : produces)
-          LOG_DEBUG("   {}", c);
-
         mProducers.insert(nodeId, produces);
-      }
     }
   }
 
@@ -69,7 +57,6 @@ VoidResult TypeRegistry::registerNode(const QString& nodeId, const NodeConfig& n
 
 QStringList TypeRegistry::findProducers(const koda::types::TypeReference& type) const
 {
-  LOG_DEBUG("Looking for producers of: {}", type.toString());
   if (!type.isValid())
     return QStringList();
 
@@ -83,7 +70,6 @@ QStringList TypeRegistry::findProducers(const koda::types::TypeReference& type) 
 
 QStringList TypeRegistry::findConsumers(const koda::types::TypeReference& type) const
 {
-  LOG_DEBUG("Looking for consumers of: {}", type.toString());
   if (!type.isValid())
     return QStringList();
 

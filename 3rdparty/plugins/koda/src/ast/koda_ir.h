@@ -128,7 +128,23 @@ struct Expression
     std::vector<Field> fields;
   };
 
-  std::variant<Literal, Reference, CallExpr, Unary, Binary, RecordLiteral> value;
+  struct ListLiteral
+  {
+    std::vector<PExpression> fields;
+  };
+
+  struct MapLiteral
+  {
+    struct Field
+    {
+      PExpression key;
+      PExpression value;
+    };
+
+    std::vector<Field> fields;
+  };
+
+  std::variant<Literal, Reference, CallExpr, Unary, Binary, RecordLiteral, ListLiteral, MapLiteral> value;
   types::TypeReference type;
   Span span;
 };

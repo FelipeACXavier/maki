@@ -20,10 +20,16 @@
 namespace maki
 {
 
-TypeValueDialog::TypeValueDialog(const QString& title, QWidget* parent)
+TypeValueDialog::TypeValueDialog(const QString& title, const MissionParameter& parameter, QWidget* parent)
     : BaseDialog(title, 0.8, 0.6, parent)
+    , mParameter(parameter)
 {
   setModal(true);
+
+  clearLayout(layout());
+  buildUi();
+  layout()->activate();
+  adjustSize();
 }
 
 void TypeValueDialog::buildUi()
@@ -53,30 +59,21 @@ void TypeValueDialog::buildUi()
     buildValueGroup(ref, Value::defaultValue(ref));
   });
 
+  // Set the initial value
   if (mParameter.type.isValid())
   {
-    // Set the initial value
     mTypeEditor->setReference(mParameter.type);
-    buildValueGroup(mParameter.type, mParameter.value);
   }
   else
   {
-    auto ref = mTypeEditor->getReference();
-    buildValueGroup(ref, Value::defaultValue(ref));
+    mParameter.type = mTypeEditor->getReference();
+    mParameter.value = Value::defaultValue(mParameter.type);
   }
+
+  buildValueGroup(mParameter.type, mParameter.value);
 
   // Start focusing on the name editor
   mNameEditor->widget()->setFocus();
-}
-
-void TypeValueDialog::setParameter(const MissionParameter& parameter)
-{
-  mParameter = parameter;
-
-  clearLayout(layout());
-  buildUi();
-  layout()->activate();
-  adjustSize();
 }
 
 MissionParameter TypeValueDialog::getParameter() const
@@ -87,12 +84,16 @@ MissionParameter TypeValueDialog::getParameter() const
 void TypeValueDialog::buildValueGroup(const koda::types::TypeReference& ref, const Value& value)
 {
   // Clear previous widgets
+  LOG_DEBUG("buildValueGroup START {}", ref.toString());
   mValueGroup->clear();
+
+  LOG_DEBUG("Creating editor");
   // Make sure the value is updated
   mParameter.value = value;
 
   maki::WidgetAlignment valueAlignment = maki::WidgetAlignment::Form(mValueGroup);
-  auto* editor = ValueEditorFactory::create("Value", ref, value, valueAlignment, this);
+  auto* editor = ValueEditorFactory::create("Value", ref, value, valueAlignment, mValueGroup);
+  LOG_DEBUG("Editor created");
   if (!editor)
   {
     LOG_WARNING("Failed to create editor in value dialog");
@@ -105,6 +106,7 @@ void TypeValueDialog::buildValueGroup(const koda::types::TypeReference& ref, con
   });
 
   updateFocus(editor);
+  LOG_DEBUG("buildValueGroup END");
 }
 
 void TypeValueDialog::updateFocus(maki::InputWidget* editor)
@@ -146,21 +148,32 @@ void TypeValueDialog::updateFocus(maki::InputWidget* editor)
 
 void TypeValueDialog::accept()
 {
-  if (mNameEditor->getValue().isEmpty())
+  LOG_DEBUG("Accepting: {} {} {}", mParameter.name, mParameter.type.toString(), koda::types::toString(mParameter.type.kind()));
+
+  if (mParameter.name.empty())
   {
-    mNameEditor->widget()->setStatus(oclero::qlementine::Status::Error);
-    if (!maki::warningPrompt(tr("Missing name"), tr("The parameter will not be saved.")))
-      return;
-    else
+    if (mNameEditor)
+      mNameEditor->widget()->setStatus(oclero::qlementine::Status::Error);
+
+    if (maki::warningPrompt(tr("Missing name"), tr("The parameter will not be saved.")))
+    {
       mParameter = {};
+      QDialog::accept();
+    }
+
+    return;
   }
 
-  if (!mParameter.id.empty() && !mTypeEditor->getReference().isValid())
+  // Check for the id in case
+  if (!mParameter.type.isValid())
   {
-    if (!maki::warningPrompt(tr("Invalid type"), tr("The parameter will not be saved.")))
-      return;
-    else
+    if (maki::warningPrompt(tr("Invalid type"), tr("The parameter will not be saved.")))
+    {
       mParameter = {};
+      QDialog::accept();
+    }
+
+    return;
   }
 
   QDialog::accept();

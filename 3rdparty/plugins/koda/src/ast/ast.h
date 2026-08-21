@@ -398,8 +398,30 @@ struct Expr
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
 
+  struct ListLiteral
+  {
+    std::vector<std::shared_ptr<Expr>> fields;
+    void print(const std::string& prefix, const bool last, const Span& span) const;
+  };
+
+  struct MapLiteral
+  {
+    struct Field
+    {
+      std::shared_ptr<Expr> key;
+      std::shared_ptr<Expr> value;
+      Span span;
+
+      void print(const std::string& prefix, const bool last) const;
+    };
+
+    std::vector<std::shared_ptr<Field>> fields;
+    void print(const std::string& prefix, const bool last, const Span& span) const;
+  };
+
   std::variant<std::shared_ptr<Id>, std::shared_ptr<Str>, std::shared_ptr<Int>, std::shared_ptr<Float>, std::shared_ptr<Bool>, std::shared_ptr<Call>,
-               std::shared_ptr<Neg>, std::shared_ptr<Not>, std::shared_ptr<BinOp>, std::shared_ptr<Paren>, std::shared_ptr<RecordLiteral>>
+               std::shared_ptr<Neg>, std::shared_ptr<Not>, std::shared_ptr<BinOp>, std::shared_ptr<Paren>, std::shared_ptr<RecordLiteral>,
+               std::shared_ptr<ListLiteral>, std::shared_ptr<MapLiteral>>
       v;
 
   Span span;
@@ -444,5 +466,8 @@ typedef std::shared_ptr<Expr::BinOp> PBinOp;
 typedef std::shared_ptr<Expr::Paren> PEParen;
 typedef std::shared_ptr<Expr::RecordLiteral> PRecordLiteral;
 typedef std::shared_ptr<Expr::RecordLiteral::Field> PRecordLiteralField;
+typedef std::shared_ptr<Expr::ListLiteral> PListLiteral;
+typedef std::shared_ptr<Expr::MapLiteral> PMapLiteral;
+typedef std::shared_ptr<Expr::MapLiteral::Field> PMapLiteralField;
 
 }  // namespace koda

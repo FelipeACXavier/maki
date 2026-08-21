@@ -435,6 +435,26 @@ EnumUnderlyingKind enumKindFromPrimitive(const PrimitiveKind& kind)
   return EnumUnderlyingKind::Unknown;
 }
 
+PrimitiveKind enumKindFromEnumKind(const EnumUnderlyingKind& kind)
+{
+  switch (kind)
+  {
+    case EnumUnderlyingKind::Int32:
+      return types::PrimitiveKind::Int32;
+
+    case EnumUnderlyingKind::UInt32:
+      return types::PrimitiveKind::UInt32;
+
+    case EnumUnderlyingKind::String:
+      return types::PrimitiveKind::String;
+
+    case EnumUnderlyingKind::Unknown:
+      return types::PrimitiveKind::Unknown;
+  }
+
+  return types::PrimitiveKind::Unknown;
+}
+
 std::string makeUuid()
 {
   static thread_local std::mt19937_64 rng{std::random_device{}()};

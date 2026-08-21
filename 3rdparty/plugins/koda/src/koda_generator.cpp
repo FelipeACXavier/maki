@@ -478,10 +478,10 @@ Result<maki::PipelineArtifact> KodaGenerator::generateKoda(const maki::PipelineA
   LOG_DEBUG("Generating Koda files with {} nodes", mServices->document()->getnodes().size());
   QString code = "";
 
-  koda::MakiToKoda makiToKoda;
   const auto* typeRegistry = mServices->document()->getTypesRegistry();
+  koda::MakiToKoda makiToKoda(typeRegistry);
   const auto missionParameters = mServices->document()->getparameters();
-  auto generated = makiToKoda.generate(mServices->document()->getnodes(), missionParameters, typeRegistry);
+  auto generated = makiToKoda.generate(mServices->document()->getnodes(), missionParameters);
   if (!generated)
     return Result<maki::PipelineArtifact>::Failed(generated.ErrorMessage());
 

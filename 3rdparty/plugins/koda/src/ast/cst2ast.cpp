@@ -718,6 +718,48 @@ std::any CST2AST::visitRecordFieldInitializer(KodaParser::RecordFieldInitializer
   return field;
 }
 
+std::any CST2AST::visitExprListLiteral(KodaParser::ExprListLiteralContext* ctx)
+{
+  auto s = std::make_shared<koda::Expr::ListLiteral>();
+
+  if (auto* literalCtx = ctx->listLiteral(); literalCtx)
+    for (const auto& field : literalCtx->expression())
+      s->fields.push_back(std::any_cast<PExpr>(visit(field)));
+
+  auto expr = std::make_shared<koda::Expr>();
+  expr->span = spanOf(ctx);
+  expr->v = s;
+
+  return expr;
+}
+
+std::any CST2AST::visitExprMapLiteral(KodaParser::ExprMapLiteralContext* ctx)
+{
+  auto s = std::make_shared<koda::Expr::MapLiteral>();
+
+  if (auto* literalCtx = ctx->mapLiteral(); literalCtx)
+    for (const auto& field : literalCtx->mapFieldInitializer())
+      s->fields.push_back(std::any_cast<PMapLiteralField>(visit(field)));
+
+  auto expr = std::make_shared<koda::Expr>();
+  expr->span = spanOf(ctx);
+  expr->v = s;
+
+  return expr;
+}
+
+std::any CST2AST::visitMapFieldInitializer(KodaParser::MapFieldInitializerContext* ctx)
+{
+  auto field = std::make_shared<koda::Expr::MapLiteral::Field>();
+  if (ctx->expression().size() != 2)
+    return field;
+
+  field->key = std::any_cast<koda::PExpr>(visit(ctx->expression(0)));
+  field->value = std::any_cast<koda::PExpr>(visit(ctx->expression(1)));
+  field->span = spanOf(ctx);
+  return field;
+}
+
 std::any CST2AST::visitExprOr(KodaParser::ExprOrContext* ctx)
 {
   koda::PExpr left;

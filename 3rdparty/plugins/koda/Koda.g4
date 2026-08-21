@@ -230,15 +230,29 @@ exprPrimary
   | NATURAL                                                      # exprInt
   | REAL                                                         # exprFloat
   | recordLiteral                                                # exprRecord
+  | listLiteral                                                  # exprListLiteral
+  | mapLiteral                                                   # exprMapLiteral
   | LPAREN expression RPAREN                                     # exprParen
   ;
 
 recordLiteral
-  : LBRACE recordFieldInitializer* RBRACE
+  : LBRACE (recordFieldInitializer (COMMA recordFieldInitializer)*)? RBRACE
   ;
 
 recordFieldInitializer
   : IDENT COLON expression SEMI
+  ;
+
+listLiteral
+  : LBRACK (expression (COMMA expression)*)? RBRACK
+  ;
+
+mapLiteral
+  : LBRACE (mapFieldInitializer (COMMA mapFieldInitializer)*)? RBRACE
+  ;
+
+mapFieldInitializer
+  : expression COLON expression
   ;
 
 // =============================================================================

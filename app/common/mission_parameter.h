@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QColor>
+#include <QJsonObject>
 #include <QString>
 #include <map>
 #include <string>
@@ -39,6 +40,9 @@ public:
   // So Value can be used in sets and maps
   bool operator<(const Value& other) const;
 
+  QJsonObject toJson() const;
+  static Value fromJson(const QJsonObject& json);
+
   // All the stuff for the interface
   Kind kind() const override;
   bool isValid() const override;
@@ -63,6 +67,9 @@ public:
   std::string getname() const override;
   koda::types::TypeReference gettype() const override;
   const std::shared_ptr<IValue> getvalue() const override;
+
+  QJsonObject toJson() const;
+  static Result<MissionParameter> fromJson(const QJsonObject& json);
 };
 
 }  // namespace maki
