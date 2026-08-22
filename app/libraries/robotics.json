@@ -10,7 +10,8 @@
           "id": "{9c708bce-8e78-498a-aa3b-c9049bbd4da5}",
           "kind": "Record",
           "name": {
-            "name": "Vector3"
+            "name": "Vector3",
+            "namespace": ["robotics"]
           },
           "documentation": "",
           "fields": [
@@ -21,7 +22,7 @@
               "required": true,
               "type": {
                 "kind": "Primitive",
-                "primitiveKind": "Float64"
+                "primitiveKind": "real"
               }
             },
             {
@@ -31,7 +32,7 @@
               "required": true,
               "type": {
                 "kind": "Primitive",
-                "primitiveKind": "Float64"
+                "primitiveKind": "real"
               }
             },
             {
@@ -41,7 +42,7 @@
               "required": true,
               "type": {
                 "kind": "Primitive",
-                "primitiveKind": "Float64"
+                "primitiveKind": "real"
               }
             }
           ]
@@ -50,7 +51,8 @@
           "id": "{f7a16dac-cb24-44ea-82ad-b6152232dce4}",
           "kind": "Record",
           "name": {
-            "name": "Quaternion"
+            "name": "Quaternion",
+            "namespace": ["robotics"]
           },
           "documentation": "",
           "fields": [
@@ -61,7 +63,7 @@
               "required": true,
               "type": {
                 "kind": "Primitive",
-                "primitiveKind": "Float64"
+                "primitiveKind": "real"
               }
             },
             {
@@ -71,7 +73,7 @@
               "required": true,
               "type": {
                 "kind": "Primitive",
-                "primitiveKind": "Float64"
+                "primitiveKind": "real"
               }
             },
             {
@@ -81,7 +83,7 @@
               "required": true,
               "type": {
                 "kind": "Primitive",
-                "primitiveKind": "Float64"
+                "primitiveKind": "real"
               }
             },
             {
@@ -91,7 +93,7 @@
               "required": true,
               "type": {
                 "kind": "Primitive",
-                "primitiveKind": "Float64"
+                "primitiveKind": "real"
               }
             }
           ]
@@ -100,7 +102,8 @@
           "id": "{1b2fa277-bafd-46f7-a7d1-bd1e4f04bbdf}",
           "kind": "Record",
           "name": {
-            "name": "Pose"
+            "name": "Pose",
+            "namespace": ["robotics"]
           },
           "documentation": "",
           "fields": [

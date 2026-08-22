@@ -109,4 +109,5 @@ private:
   const Node& root() const;
   TypeReference subtree(std::size_t rootNode) const;
 };
+
 }  // namespace koda::types

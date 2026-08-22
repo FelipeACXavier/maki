@@ -43,14 +43,14 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
   mStorage->clearChildren();
 
   for (const auto& property : config()->properties)
-    if (!mStorage->getproperties().contains(property.id))
-      mStorage->addProperty(property.id, property.defaultValue);
+    mStorage->addProperty(std::make_shared<PropertyInfo>(property));
 
   for (const auto& event : config()->events)
   {
     bool found = false;
-    for (const auto& flow : mStorage->getevents())
+    for (const auto& flow : mStorage->getflows())
     {
+      LOG_DEBUG("  Comparing flow with config: {} vs {}", flow->getname(), event.name);
       if (flow->getname() != event.name)
         continue;
 
@@ -61,7 +61,8 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
     if (found)
       continue;
 
-    mStorage->addEvent(std::make_shared<FlowSaveInfo>(event));
+    LOG_DEBUG("  Adding flow not in config: {}", event.name);
+    mStorage->addFlow(std::make_shared<FlowSaveInfo>(event));
   }
 
   // Add icon if it exists
@@ -69,7 +70,8 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
     setIcon(AppPaths::icon(config()->body.iconPath), config()->body.iconColor);
 
   qreal labelSize = qMax(Fonts::BaseSize, mSize.width() / Fonts::BaseFactor);
-  setLabel(getProperty("name").toString(), labelSize);
+  if (const auto* name = getProperty("name"))
+    setLabel(name->getvalue()->toStringValue(), labelSize);
 
   updatePosition(snapToGrid(initialPosition - boundingRect().center(), Config::GRID_SIZE));
   mLastPosition = pos();
@@ -93,8 +95,10 @@ Types::LibraryTypes NodeItem::function() const
 
 QString NodeItem::nodeName() const
 {
-  auto name = getProperty("name");
-  return name.toString();
+  if (const auto* name = getProperty("name"))
+    return name->getvalue()->toStringValue();
+
+  return QString();
 }
 
 QString NodeItem::nodeType() const
@@ -126,7 +130,7 @@ QRectF NodeItem::sceneNodeRect() const
 void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget)
 {
   auto color = getProperty("color");
-  auto background = color.isValid() ? QColor::fromString(color.toString()) : config()->body.backgroundColor;
+  auto background = color ? QColor::fromString(color->getvalue()->toStringValue()) : config()->body.backgroundColor;
 
   NodeBase::paintNode(nodeRect(), background, isSelected() ? QPen(Config::HIGHLIGHT, 4 / baseScale()) : QPen(Config::FOREGROUND, 1.0 / baseScale()),
                       painter);
@@ -142,12 +146,12 @@ QVector<PropertyConfig> NodeItem::configurationProperties() const
   return config()->properties;
 }
 
-QMap<QString, QVariant> NodeItem::properties() const
+QVector<std::shared_ptr<IParameter>> NodeItem::properties() const
 {
   return mStorage->getproperties();
 }
 
-QVector<std::shared_ptr<IProperty>> NodeItem::fields() const
+QVector<std::shared_ptr<IParameter>> NodeItem::fields() const
 {
   return mStorage->getfields();
 }
@@ -162,22 +166,21 @@ QVector<ControlsConfig> NodeItem::controls() const
   return config()->controls;
 }
 
-QVariant NodeItem::getProperty(const QString& key) const
+const PropertyInfo* NodeItem::getProperty(const QString& key) const
 {
   if (!mStorage)
-    return QVariant();
+    return nullptr;
 
   return mStorage->getProperty(key);
 }
 
-void NodeItem::setProperty(const QString& key, QVariant value)
+void NodeItem::setProperty(const QString& key, const maki::Value& value)
 {
-  LOG_DEBUG("[{}] Setting property {} of node: {}", id(), key, nodeId());
   if (!mStorage)
     return;
 
-  // TODO(felaze): We should check for success here
-  mStorage->addProperty(key, value);
+  LOG_TRACE("Setting property {} of node: {} to {}", key, nodeId(), value.toReadable());
+  mStorage->setProperty(key, value);
 
   if (key == "name")
     setLabelName(value.toString());
@@ -204,7 +207,7 @@ VoidResult NodeItem::setField(const QString& key, const QJsonObject& property)
   if (!mStorage)
     return VoidResult::Failed("Storage is not set");
 
-  mStorage->setField(key, std::dynamic_pointer_cast<IProperty>(std::make_shared<PropertyInfo>(property)));
+  mStorage->setField(key, std::dynamic_pointer_cast<IParameter>(std::make_shared<PropertyInfo>(property)));
 
   return VoidResult();
 }
@@ -214,7 +217,7 @@ VoidResult NodeItem::setField(const QString& key, std::shared_ptr<PropertyInfo> 
   if (!mStorage)
     return VoidResult::Failed("Storage is not set");
 
-  mStorage->setField(key, std::dynamic_pointer_cast<IProperty>(property));
+  mStorage->setField(key, std::dynamic_pointer_cast<IParameter>(property));
 
   return VoidResult();
 }

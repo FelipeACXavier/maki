@@ -156,8 +156,12 @@ VoidResult SystemMenu::onFlowAdded(Flow* flow, NodeItem* node)
 
   for (const auto& component : flow->getNodes())
   {
-    QTreeWidgetItem* newComponent = new QTreeWidgetItem(newFlow);
-    populateItem(newComponent, QIcon(":/icons/flow_block.svg"), component->getProperty("name").toString(), component->getnodeId(), component->getid(), Roles::NodeRole, flow->id());
+    if (const auto* name = component->getProperty("name"))
+    {
+      QTreeWidgetItem* newComponent = new QTreeWidgetItem(newFlow);
+      populateItem(newComponent, QIcon(":/icons/flow_block.svg"), name->getvalue()->toStringValue(), component->getnodeId(), component->getid(),
+                   Roles::NodeRole, flow->id());
+    }
   }
 
   return VoidResult();
@@ -193,8 +197,8 @@ VoidResult SystemMenu::onFlowRemoved(const QString& flowId, const QString& nodeI
   return VoidResult();
 }
 
-void SystemMenu::populateItem(QTreeWidgetItem* item, const QIcon& icon, const QString& name,
-                              const QString& type, const QString& data, const Roles role, const QString& canvas)
+void SystemMenu::populateItem(QTreeWidgetItem* item, const QIcon& icon, const QString& name, const QString& type, const QString& data,
+                              const Roles role, const QString& canvas)
 {
   item->setIcon(ICON_COLUMN, icon);
   item->setText(NAME_COLUMN, name);
@@ -283,10 +287,8 @@ QTreeWidgetItem* SystemMenu::getOrCreateChildGroup(const QString& parentId, Role
 QTreeWidgetItem* SystemMenu::getItemById(const QString& id) const
 {
   for (QTreeWidgetItemIterator it(const_cast<SystemMenu*>(this)); *it; ++it)
-  {
     if ((*it)->data(ID_DATA, Qt::UserRole).toString() == id)
       return *it;
-  }
 
   return nullptr;
 }
@@ -329,12 +331,8 @@ void SystemMenu::showContextMenu(const QPoint& pos)
   }
   else if (selectedItem->data(TYPE_DATA, Qt::UserRole) == Roles::FlowRole)
   {
-    contextMenu.addAction(iconFromTheme("document-edit"), tr("Edit"), this, [this, selectedItem]() {
-      editFlow(selectedItem);
-    });
-    contextMenu.addAction(iconFromTheme("edit-delete"), tr("Delete"), this, [this, selectedItem]() {
-      removeFlow(selectedItem);
-    });
+    contextMenu.addAction(iconFromTheme("document-edit"), tr("Edit"), this, [this, selectedItem]() { editFlow(selectedItem); });
+    contextMenu.addAction(iconFromTheme("edit-delete"), tr("Delete"), this, [this, selectedItem]() { removeFlow(selectedItem); });
   }
   else
   {

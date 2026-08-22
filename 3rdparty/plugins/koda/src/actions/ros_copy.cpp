@@ -85,15 +85,15 @@ QStringList KodaRosCopySources::produces() const
   return {"ros-project"};
 }
 
-QVariantMap KodaRosCopySources::defaultParameters() const
+maki::ValueMap KodaRosCopySources::defaultParameters() const
 {
-  QStringList ignores = {"callback.hh", "callback.cc"};
+  maki::ListValue ignores = {maki::Value::createString("callback.hh"), maki::Value::createString("callback.cc")};
   return {
-      {"ignore", ignores},
+      {"ignore", maki::Value::createList(ignores)},
   };
 }
 
-maki::ResultArtifacts KodaRosCopySources::run(const maki::PipelineContext& context, const QVariantMap& parameters, maki::IPipeline* pipeline)
+maki::ResultArtifacts KodaRosCopySources::run(const maki::PipelineContext& context, const maki::ValueMap& parameters, maki::IPipeline* pipeline)
 {
   LOG_INFO("Running {}", id());
   const auto projectArtifacts = context.artifactsOfType("ros-project");
@@ -118,7 +118,8 @@ maki::ResultArtifacts KodaRosCopySources::run(const maki::PipelineContext& conte
   QStringList sourceFiles = {};
   QStringList ignores = {};
   if (parameters.contains("ignores"))
-    ignores = parameters["ignores"].toStringList();
+    for (const auto& file : parameters.at("ignores").toListValue())
+      ignores << file->toStringValue();
 
   for (const auto& cpp : cppArtifacts)
   {

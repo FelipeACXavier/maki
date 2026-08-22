@@ -8,6 +8,55 @@
 
 namespace maki
 {
+Value Value::createBool(bool value)
+{
+  Value out;
+  out.data = value;
+  return out;
+}
+
+Value Value::createInt(int value)
+{
+  Value out;
+  out.data = value;
+  return out;
+}
+
+Value Value::createReal(double value)
+{
+  Value out;
+  out.data = value;
+  return out;
+}
+
+Value Value::createString(const QString& value)
+{
+  Value out;
+  out.data = value;
+  return out;
+}
+
+Value Value::createList(const ListValue& value)
+{
+  Value out;
+  out.data = value;
+  return out;
+}
+
+Value Value::createRecord(const RecordValue& value)
+{
+  Value out;
+  out.data = value;
+  return out;
+}
+
+Value Value::createMap(const MapValue& value)
+{
+  Value out;
+  out.data = value;
+  return out;
+}
+
 bool Value::toBool() const
 {
   if (std::holds_alternative<bool>(data))
@@ -80,6 +129,8 @@ QString Value::toString() const
     return QString::number(std::get<double>(data));
   else if (std::holds_alternative<bool>(data))
     return std::get<bool>(data) ? "true" : "false";
+  else if (std::holds_alternative<QColor>(data))
+    return std::get<QColor>(data).name();
   else
     return QString();
 }
@@ -460,11 +511,11 @@ Value Value::fromJson(const QJsonObject& json)
   {
     result.data = data.toDouble();
   }
-  else if (kind == "std_string")
+  else if (kind == "sstring")
   {
     result.data = data.toString().toStdString();
   }
-  else if (kind == "qstring")
+  else if (kind == "string")
   {
     result.data = data.toString();
   }
@@ -524,14 +575,14 @@ Value Value::fromJson(const QJsonObject& json)
 
 // ===================================================================
 // MissionPaarameter
-std::string MissionParameter::getid() const
+QString MissionParameter::getid() const
 {
-  return id;
+  return QString::fromStdString(id);
 }
 
-std::string MissionParameter::getname() const
+QString MissionParameter::getname() const
 {
-  return name;
+  return QString::fromStdString(name);
 }
 
 koda::types::TypeReference MissionParameter::gettype() const
@@ -539,9 +590,14 @@ koda::types::TypeReference MissionParameter::gettype() const
   return type;
 }
 
-const std::shared_ptr<IValue> MissionParameter::getvalue() const
+const IValue* MissionParameter::getvalue() const
 {
-  return std::make_shared<Value>(value);
+  return &value;
+}
+
+Types::ControlTypes MissionParameter::getcontrol() const
+{
+  return Types::ControlTypes::AUTO;
 }
 
 QJsonObject MissionParameter::toJson() const
@@ -566,6 +622,209 @@ Result<MissionParameter> MissionParameter::fromJson(const QJsonObject& json)
   parameter.value = Value::fromJson(json["value"].toObject());
 
   return parameter;
+}
+
+QDataStream& operator<<(QDataStream& out, const maki::Value& value)
+{
+  out << static_cast<quint8>(value.kind());
+  switch (value.kind())
+  {
+    case IValue::Kind::Bool:
+      out << value.toBool();
+      break;
+
+    case IValue::Kind::Int:
+      out << value.toInt();
+      break;
+
+    case IValue::Kind::Double:
+      out << value.toDouble();
+      break;
+
+    case IValue::Kind::StdString:
+      out << QString::fromStdString(std::get<std::string>(value.data));
+      break;
+
+    case IValue::Kind::QString:
+      out << std::get<QString>(value.data);
+      break;
+
+    case IValue::Kind::Color:
+      out << std::get<QColor>(value.data);
+      break;
+
+    case IValue::Kind::Record:
+    {
+      const auto record = value.toRecord();
+
+      out << static_cast<quint32>(record.size());
+
+      for (const auto& [name, fieldValue] : record)
+      {
+        out << QString::fromStdString(name);
+        out << fieldValue;
+      }
+
+      break;
+    }
+
+    case IValue::Kind::List:
+    {
+      const auto list = value.toList();
+      out << static_cast<quint32>(list.size());
+      for (const auto& item : list)
+        out << item;
+      break;
+    }
+
+    case IValue::Kind::Map:
+    {
+      const auto map = value.toMap();
+      out << static_cast<quint32>(map.size());
+      for (const auto& [key, mappedValue] : map)
+      {
+        out << key;
+        out << mappedValue;
+      }
+
+      break;
+    }
+
+    case IValue::Kind::Invalid:
+      break;
+  }
+
+  return out;
+}
+
+QDataStream& operator>>(QDataStream& in, maki::Value& value)
+{
+  quint8 rawKind = 0;
+  in >> rawKind;
+
+  const auto kind = static_cast<IValue::Kind>(rawKind);
+
+  switch (kind)
+  {
+    case IValue::Kind::Bool:
+    {
+      bool v = false;
+      in >> v;
+      value.data = v;
+      break;
+    }
+
+    case IValue::Kind::Int:
+    {
+      int v = 0;
+      in >> v;
+      value.data = v;
+      break;
+    }
+
+    case IValue::Kind::Double:
+    {
+      double v = 0.0;
+      in >> v;
+      value.data = v;
+      break;
+    }
+
+    case IValue::Kind::StdString:
+    {
+      QString v;
+      in >> v;
+      value.data = v.toStdString();
+      break;
+    }
+
+    case IValue::Kind::QString:
+    {
+      QString v;
+      in >> v;
+      value.data = v;
+      break;
+    }
+
+    case IValue::Kind::Color:
+    {
+      QColor v;
+      in >> v;
+      value.data = v;
+      break;
+    }
+
+    case IValue::Kind::Record:
+    {
+      quint32 size = 0;
+      in >> size;
+
+      maki::RecordValue record;
+
+      for (quint32 i = 0; i < size; ++i)
+      {
+        QString name;
+        maki::Value fieldValue;
+
+        in >> name;
+        in >> fieldValue;
+
+        record.emplace(name.toStdString(), std::move(fieldValue));
+      }
+
+      value.data = std::move(record);
+      break;
+    }
+
+    case IValue::Kind::List:
+    {
+      quint32 size = 0;
+      in >> size;
+
+      maki::ListValue list;
+      list.reserve(size);
+
+      for (quint32 i = 0; i < size; ++i)
+      {
+        maki::Value item;
+        in >> item;
+
+        list.push_back(std::move(item));
+      }
+
+      value.data = std::move(list);
+      break;
+    }
+
+    case IValue::Kind::Map:
+    {
+      quint32 size = 0;
+      in >> size;
+
+      maki::MapValue map;
+
+      for (quint32 i = 0; i < size; ++i)
+      {
+        maki::Value key;
+        maki::Value mappedValue;
+
+        in >> key;
+        in >> mappedValue;
+
+        map.emplace(std::move(key), std::move(mappedValue));
+      }
+
+      value.data = std::move(map);
+      break;
+    }
+
+    case IValue::Kind::Invalid:
+    default:
+      value.data = std::monostate{};
+      break;
+  }
+
+  return in;
 }
 
 }  // namespace maki

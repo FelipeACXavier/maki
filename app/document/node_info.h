@@ -42,15 +42,15 @@ public:
 
   /**
    * @brief Gets the fields of the node.
-   * @return A QVector of shared pointers to IProperty objects.
+   * @return A QVector of shared pointers to IParameter objects.
    */
-  QVector<std::shared_ptr<IProperty>> getfields() const override;
+  QVector<std::shared_ptr<IParameter>> getfields() const override;
 
   /**
    * @brief Gets the properties of the node.
    * @return A QMap of QString keys and QVariant values.
    */
-  QMap<QString, QVariant> getproperties() const override;
+  QVector<std::shared_ptr<IParameter>> getproperties() const override;
 
   /**
    * @brief Gets the flows of the node.
@@ -153,14 +153,16 @@ public:
    * @param key The property key as a QString.
    * @return The property value as a QVariant.
    */
-  QVariant getProperty(const QString& key) const;
+  const PropertyInfo* getProperty(const QString& key) const;
 
   /**
    * @brief Adds a property to the node.
    * @param key The property key as a QString.
    * @param value The property value as a QVariant.
    */
-  void addProperty(const QString& key, const QVariant& value);
+  void addProperty(std::shared_ptr<PropertyInfo> parameter);
+
+  void setProperty(const QString& key, const maki::Value& parameter);
 
   /**
    * @brief Removes a property from the node.
@@ -178,15 +180,15 @@ public:
   /**
    * @brief Sets a field for the node.
    * @param key The field key as a QString.
-   * @param property The new field as a shared pointer to IProperty.
+   * @param property The new field as a shared pointer to IParameter.
    */
-  void setField(const QString& key, std::shared_ptr<IProperty> property);
+  void setField(const QString& key, std::shared_ptr<IParameter> property);
 
   /**
    * @brief Adds a field to the node.
-   * @param property The new field as a shared pointer to IProperty.
+   * @param property The new field as a shared pointer to IParameter.
    */
-  void addField(std::shared_ptr<IProperty> property);
+  void addField(std::shared_ptr<IParameter> property);
 
   /**
    * @brief Removes a field from the node.
@@ -269,12 +271,12 @@ private:
   QPixmap mPixmap;    /// The pixmap of the node.
   QString mIconPath;  /// The icon path of the node.
 
-  QMap<QString, QVariant> mProperties;                 /// A map of properties for the node.
+  QVector<std::shared_ptr<IParameter>> mProperties;    /// A vector of properties for the node.
   QVector<std::shared_ptr<INode>> mChildren;           /// A vector of children nodes.
   QVector<std::shared_ptr<IFlow>> mFlows;              /// A vector of flows associated with the node.
   QVector<std::shared_ptr<IFlow>> mEvents;             /// A vector of flows associated with the node.
   QVector<std::shared_ptr<ITransition>> mTransitions;  /// A vector of transitions for the node.
-  QVector<std::shared_ptr<IProperty>> mFields;         /// A vector of fields for the node.
+  QVector<std::shared_ptr<IParameter>> mFields;        /// A vector of fields for the node.
 };
 
 /**

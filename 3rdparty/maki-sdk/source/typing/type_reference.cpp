@@ -19,31 +19,22 @@ TypeReference::TypeReference(std::vector<Node> nodes, std::size_t rootNode)
 
 TypeReference TypeReference::primitive(PrimitiveKind kind)
 {
-  return TypeReference(
-      {
-          Node{
-              .value =
-                  Primitive{
-                      .kind = kind,
-                  },
-          },
-      },
-      0);
+  return TypeReference({Node{
+                           .value = Primitive{.kind = kind},
+                       }},
+                       0);
 }
 
 TypeReference TypeReference::named(QualifiedName name, std::optional<TypeId> id)
 {
-  return TypeReference(
-      {
-          Node{
-              .value =
-                  Named{
-                      .id = std::move(id),
-                      .name = std::move(name),
-                  },
-          },
-      },
-      0);
+  return TypeReference({Node{
+                           .value =
+                               Named{
+                                   .id = std::move(id),
+                                   .name = std::move(name),
+                               },
+                       }},
+                       0);
 }
 
 TypeReference TypeReference::named(std::string name, std::optional<TypeId> id)
@@ -358,4 +349,5 @@ TypeReference TypeReference::subtree(std::size_t rootNode) const
   // avoids rebuilding nested structures.
   return TypeReference(mNodes, rootNode);
 }
+
 }  // namespace koda::types

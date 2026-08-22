@@ -35,6 +35,11 @@ void BaseDialog::setSize(double ratio, double screenFraction)
   setSize(ratio, screenFraction, TargetScreenFraction);
 }
 
+void BaseDialog::setFlexibleSize(int minWidth, int minHeight)
+{
+  adjustSize();
+}
+
 void BaseDialog::setSize(double ratio, double screenFraction, qreal heightFraction)
 {
   // Set the dialog size dynamically
@@ -109,12 +114,16 @@ QDialogButtonBox* BaseDialog::createButtons(const QString& ok, const QString& ca
 
 void BaseDialog::limitWidth(int minWidth)
 {
-  mMinimunWidth = minWidth;
+  setFixedWidth(minWidth);
+  layout()->setSizeConstraint(QLayout::SetMinimumSize);
+  adjustSize();
 }
 
 void BaseDialog::limitHeight(int minHeight)
 {
-  mMinimunHeight = minHeight;
+  setFixedHeight(minHeight);
+  layout()->setSizeConstraint(QLayout::SetMinimumSize);
+  adjustSize();
 }
 
 void BaseDialog::keyPressEvent(QKeyEvent* event)

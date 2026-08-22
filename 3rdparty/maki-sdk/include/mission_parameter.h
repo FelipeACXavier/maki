@@ -19,11 +19,20 @@ class Value;
 using ListValue = std::vector<Value>;
 using MapValue = std::map<Value, Value>;
 using RecordValue = std::map<std::string, Value>;
+using ValueMap = std::map<QString, Value>;
 
 class Value : public IValue
 {
 public:
   std::variant<std::monostate, bool, int, double, std::string, RecordValue, ListValue, MapValue, QColor, QString> data;
+
+  static Value createBool(bool value);
+  static Value createInt(int value);
+  static Value createReal(double value);
+  static Value createString(const QString& value);
+  static Value createList(const ListValue& value);
+  static Value createRecord(const RecordValue& value);
+  static Value createMap(const MapValue& value);
 
   bool toBool() const;
   int toInt() const;
@@ -63,13 +72,16 @@ public:
   koda::types::TypeReference type;
   Value value;
 
-  std::string getid() const override;
-  std::string getname() const override;
+  QString getid() const override;
+  QString getname() const override;
   koda::types::TypeReference gettype() const override;
-  const std::shared_ptr<IValue> getvalue() const override;
+  const IValue* getvalue() const override;
+  Types::ControlTypes getcontrol() const override;
 
   QJsonObject toJson() const;
   static Result<MissionParameter> fromJson(const QJsonObject& json);
 };
 
+QDataStream& operator<<(QDataStream& out, const maki::Value& value);
+QDataStream& operator>>(QDataStream& in, maki::Value& value);
 }  // namespace maki

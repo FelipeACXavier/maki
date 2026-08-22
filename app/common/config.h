@@ -6,6 +6,7 @@
 #include <QVector>
 
 #include "config_base.h"
+#include "mission_parameter.h"
 #include "types.h"
 #include "typing/type_reference.h"
 
@@ -27,17 +28,13 @@ public:
   PropertyConfig(const QJsonObject& object);
 
   QString id = "";                                          /// Unique identifier for the property.
-  QVariant defaultValue;                                    /// Default value of the property.
-  QList<PropertyConfig> options = {};                       /// List of possible options for the property.
+  maki::Value defaultValue;                                 /// Default value of the property.
   koda::types::TypeReference type = {};                     /// Type of the property.
   Types::ControlTypes control = Types::ControlTypes::AUTO;  /// Control widget in the property menu
   QString info = "";                                        /// Additional information about the property.
 
   friend QDataStream& operator<<(QDataStream& out, const PropertyConfig& config);
   friend QDataStream& operator>>(QDataStream& in, PropertyConfig& config);
-
-private:
-  QVariant toDefault(const QJsonObject& object);  /// Convert JSON object to default value.
 };
 
 /**

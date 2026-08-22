@@ -23,8 +23,14 @@ Result<PipelineNode> PipelineNode::fromJson(const QJsonObject& object)
   node.id = object["id"].toString();
   node.actionId = object["actionId"].toString();
 
-  if (object.contains("parameters"))
-    node.parameters = object["parameters"].toObject().toVariantMap();
+  if (object.contains("parameters") && object["parameters"].isArray())
+  {
+    for (const auto& obj : object["parameters"].toArray())
+    {
+      auto param = obj.toObject();
+      node.parameters[param["key"].toString()] = maki::Value::fromJson(param["value"].toObject());
+    }
+  }
 
   return node;
 }
@@ -120,8 +126,15 @@ QJsonObject PipelineGraph::toJson() const
     QJsonObject nodeObject;
     nodeObject["id"] = node.id;
     nodeObject["action"] = node.actionId;
-    nodeObject["parameters"] = QJsonObject::fromVariantMap(node.parameters);
-
+    QJsonArray params;
+    for (const auto& [key, value] : node.parameters)
+    {
+      QJsonObject param;
+      param["key"] = key;
+      param["value"] = value.toJson();
+      params.append(param);
+    }
+    nodeObject["parameters"] = params;
     nodeArray.append(nodeObject);
   }
 
@@ -156,17 +169,16 @@ Result<PipelineGraph> PipelineGraph::fromFlow(const FlowSaveInfo& info)
     PipelineNode pnode;
     pnode.id = node->getid();
     pnode.actionId = toAction(node->getnodeId());
-    pnode.displayName = node->getProperty("name").toString();
-    QVariantMap params;
-    for (const auto& key : node->getproperties().keys())
+    if (const auto* name = node->getProperty("name"))
+      pnode.displayName = name->getvalue()->toStringValue();
+
+    for (const auto& property : node->getproperties())
     {
-      if (key == "name")
+      if (property->getid() == "name")
         continue;
 
-      params[key] = node->getproperties()[key];
+      pnode.parameters[property->getid()] = *dynamic_cast<const maki::Value*>(property->getvalue());
     }
-
-    pnode.parameters = params;
 
     graph.nodes.append(pnode);
   }
@@ -197,9 +209,12 @@ Result<PipelineGraph> PipelineGraph::fromCanvas(const Canvas* canvas)
     {
       auto node = static_cast<NodeItem*>(item);
       PipelineNode pnode;
-      pnode.id = node->getProperty("name").toString();
       pnode.actionId = toAction(node->nodeType());
-      pnode.parameters = node->saveInfo().getproperties();
+      if (const auto* name = node->getProperty("name"))
+        pnode.id = name->getvalue()->toStringValue();
+
+      for (const auto& property : node->properties())
+        pnode.parameters[property->getid()] = *dynamic_cast<const maki::Value*>(property->getvalue());
 
       graph.nodes.append(pnode);
     }
@@ -207,8 +222,11 @@ Result<PipelineGraph> PipelineGraph::fromCanvas(const Canvas* canvas)
     {
       auto edge = static_cast<TransitionItem*>(item);
       PipelineEdge pedge;
-      pedge.from = edge->source()->getProperty("name").toString();
-      pedge.to = edge->destination()->getProperty("name").toString();
+      if (const auto* name = edge->source()->getProperty("name"))
+        pedge.from = name->getvalue()->toStringValue();
+      if (const auto* name = edge->destination()->getProperty("name"))
+        pedge.to = name->getvalue()->toStringValue();
+
       graph.edges.append(pedge);
     }
   }

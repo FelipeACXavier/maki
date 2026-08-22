@@ -428,6 +428,8 @@ void MainWindow::bind()
   connect(mSystemMenu, &SystemMenu::nodeRemoved, rootCanvas(), &Canvas::onRemoveNode);
   connect(mSystemMenu, &SystemMenu::nodeFocused, rootCanvas(), &Canvas::onFocusNode);
 
+  connect(mPropertiesMenu, &PropertiesMenu::flowRemoved, rootCanvas(), &Canvas::onFlowRemoved);
+
   connect(mFileMenu, &GeneratedFilesPanel::openExternallyRequested, this, &MainWindow::addEditorTab);
 
   connect(mSaveHandler.get(), &SaveHandler::fileLoaded, this, &MainWindow::onFileLoaded);
@@ -473,8 +475,9 @@ void MainWindow::bind()
       {
         QJsonObject prop;
         prop[ConfigKeys::ID] = p.getid();
-        prop[ConfigKeys::TYPE] = Types::PropertyTypesToString(p.gettype());
-        name[ConfigKeys::DEFAULT] = p.getdefaultValue().toJsonValue();
+        prop[ConfigKeys::TYPE] = QString::fromStdString(p.gettype().toString());
+        if (const auto* val = dynamic_cast<const maki::Value*>(p.getvalue()))
+          name[ConfigKeys::DEFAULT] = val->toJson();
         properties.append(prop);
       }
 
@@ -767,6 +770,7 @@ VoidResult MainWindow::loadElements()
         if (!libRead.IsSuccess())
           return VoidResult::Failed("Failed to open library: {}", fileName);
 
+        LOG_DEBUG("Trying to load library: {}", fileName);
         auto libConfig = libRead.Value();
         LOG_ERROR_ON_FAILURE(loadLibrary(libConfig, dataOnly));
       }
@@ -879,7 +883,7 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
 
     LOG_TRACE("Adding key: {} to the config table", nodeId);
     LOG_ERROR_ON_FAILURE(mConfigTable->add(nodeId, nodeConfig));
-    LOG_ERROR_ON_FAILURE(maki::TypeRegistry::instance().registerNode(nodeId, *nodeConfig));
+    LOG_ERROR_ON_FAILURE(maki::TypeRegistry::instance().registerNode(nodeId, NodeSaveInfo(*nodeConfig)));
   }
 
   return VoidResult();
@@ -1151,6 +1155,8 @@ void MainWindow::onActionLoad(const QString& filename)
     return;
   }
 
+  // Clear the previous types and parameters
+  maki::TypeRegistry::instance().removeUserTypes();
   auto loaded = mSaveHandler->loadProject(filename);
   if (!loaded.IsSuccess())
   {
@@ -1308,7 +1314,9 @@ void MainWindow::onNodeAdded(NodeItem* node)
     return;
   }
 
-  LOG_WARN_ON_FAILURE(mSystemMenu->onNodeAdded(canvas()->id(), node));
+  if (canvas()->type() != Types::LibraryTypes::PIPELINE)
+    LOG_WARN_ON_FAILURE(mSystemMenu->onNodeAdded(canvas()->id(), node));
+
   LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeAdded(node));
 
   suggestCapability(node);
@@ -1369,6 +1377,16 @@ void MainWindow::onCanvasTabChanged(int index)
     mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::BEHAVIOUR), true);
     mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::PIPELINE), false);
   }
+
+  NodeItem* toFocus = nullptr;
+  for (const auto& item : mActiveCanvas->selectedItems())
+    if (item->type() == NodeItem::Type)
+    {
+      toFocus = dynamic_cast<NodeItem*>(item);
+      break;
+    }
+
+  mPropertiesMenu->onNodeSelected(toFocus, toFocus != nullptr);
 }
 
 void MainWindow::closeCanvasTab(int index)
@@ -1543,9 +1561,10 @@ void MainWindow::addEditorTab(QPlainTextEdit* editorTab)
 void MainWindow::onFlowAdded(Flow* flow, NodeItem* node)
 {
   LOG_WARN_ON_FAILURE(mSystemMenu->onFlowAdded(flow, node));
+  LOG_WARN_ON_FAILURE(mPropertiesMenu->onFlowAdded(flow, node));
 }
 
-void MainWindow::onFlowRemoved(const QString& flowId, const QString& nodeId)
+void MainWindow::onFlowRemoved(const QString& flowId, NodeItem* node)
 {
   if (canvas()->id() == flowId)
   {
@@ -1553,8 +1572,20 @@ void MainWindow::onFlowRemoved(const QString& flowId, const QString& nodeId)
     mCanvasPanel->setCurrentIndex(oldTab - 1);
     mCanvasPanel->removeTab(oldTab);
   }
+  else
+  {
+    for (int i = 0; i < mCanvasPanel->count(); ++i)
+    {
+      auto prop = mCanvasPanel->widget(i)->property("id");
+      if (!prop.isValid() || prop.toString() != flowId)
+        continue;
 
-  LOG_WARN_ON_FAILURE(mSystemMenu->onFlowRemoved(flowId, nodeId));
+      mCanvasPanel->removeTab(i);
+    }
+  }
+
+  LOG_WARN_ON_FAILURE(mSystemMenu->onFlowRemoved(flowId, node->id()));
+  LOG_WARN_ON_FAILURE(mPropertiesMenu->onFlowRemoved(flowId, node));
 }
 
 int MainWindow::libraryTypeToIndex(Types::LibraryTypes type) const

@@ -19,6 +19,7 @@ static const QString PARENT_ID = "parentId";
 static const QString MODIFIABLE = "modifiable";
 static const QString OWNER = "owner";
 static const QString INFO = "info";
+static const QString VALUE = "value";
 static const QString LIBRARIES = "libraries";
 static const QString IS_VARIABLE = "isVariable";
 static const QString EVENT = "event";

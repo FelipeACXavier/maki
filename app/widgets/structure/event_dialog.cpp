@@ -9,10 +9,13 @@
 #include <QPushButton>
 #include <QStandardItemModel>
 #include <QStyledItemDelegate>
+#include <QTableWidget>
 #include <QTimer>
 #include <QVBoxLayout>
 #include <oclero/qlementine/widgets/LineEdit.hpp>
 
+#include "../dialogs/prompt.h"
+#include "../properties/type_selector.h"
 #include "app_configs.h"
 #include "logging.h"
 #include "save_info.h"
@@ -32,30 +35,29 @@ std::shared_ptr<FlowSaveInfo> EventDialog::getInfo() const
 
 void EventDialog::setup(std::shared_ptr<FlowSaveInfo> event)
 {
-  mStorage = event;
-
-  layout()->setContentsMargins(10, 0, 10, 0);
   layout()->setAlignment(Qt::AlignCenter);
+  layout()->setContentsMargins(10, 5, 10, 5);
+  mStorage = event;
 
   createNameInput();
   createTypeInput();
   createReturnTypeInput();
   createArgumentInput();
 
-  layout()->setContentsMargins(10, 5, 10, 5);
-
   qobject_cast<QVBoxLayout*>(layout())->addStretch();
 
   auto buttonBox = createButtons("Apply", "Cancel");
   connect(buttonBox, &QDialogButtonBox::accepted, this, &EventDialog::accept);
   connect(buttonBox, &QDialogButtonBox::rejected, this, &EventDialog::reject);
+
+  limitWidth(400);
 }
 
 void EventDialog::createNameInput()
 {
-  auto name = new maki::StringWidget(tr("Event name"), mStorage->getname(), {maki::WidgetAlignment::Type::VERTICAL}, this);
+  auto name = new maki::StringWidget(tr("Event name"), mStorage->getname(), maki::WidgetAlignment::Vertical(), this);
   name->widget()->setFocusPolicy(mStorage->getmodifiable() ? Qt::StrongFocus : Qt::NoFocus);
-  name->widget()->setReadOnly(!mStorage->getmodifiable());
+  name->setEnabled(mStorage->getmodifiable());
 
   connect(name, &maki::StringWidget::valueChanged, this, [this](const QString& text) { mStorage->setName(text); });
   layout()->addWidget(name);
@@ -70,6 +72,7 @@ void EventDialog::createTypeInput()
   // Currently, the user can only create USER calls
   auto id = Types::CallTypeToString(Types::CallType::USER);
   type->addItem(id, id);
+  type->setValue(id);
 
   connect(type, &maki::SelectorWidget::valueChanged, this, [this](const QString& text) { mStorage->setType(Types::StringToCallType(text)); });
 
@@ -88,139 +91,162 @@ void EventDialog::createTypeInput()
 
 void EventDialog::createReturnTypeInput()
 {
-  auto typeBox = new maki::TypeSelectionWidget(Types::PropertyTypesToString(Types::PropertyTypes::VOID), this);
-
-  auto returnType = new maki::SelectorWidget(tr("Return type"), typeBox, maki::WidgetAlignment::Vertical(), this);
-  returnType->setFocusPolicy(mStorage->getmodifiable() ? Qt::ClickFocus : Qt::NoFocus);
+  auto returnType = new maki::TypeSelector("typeCombo", this);
+  auto container = new maki::ContainerWidget(tr("Return type"), returnType, maki::WidgetAlignment::Vertical(), this);
   returnType->setEnabled(mStorage->getmodifiable());
 
-  connect(returnType, &maki::SelectorWidget::valueChanged, this,
-          [this](const QString& text) { mStorage->setReturnType(Types::StringToPropertyTypes(text)); });
+  connect(returnType, &maki::TypeSelector::typeChanged, this,
+          [this](const koda::types::TypeReference& ref) { mStorage->setReturnType(Types::PropertyTypes::VOID); });
 
   if (mStorage->getreturnType() == Types::PropertyTypes::UNKNOWN)
-    mStorage->setReturnType(Types::StringToPropertyTypes(returnType->getValue()));
+    mStorage->setReturnType(Types::PropertyTypes::VOID);
   else
-    returnType->setValue(Types::PropertyTypesToString(mStorage->getreturnType()));
+    returnType->setReference(koda::types::TypeReference::createVoid());
 
-  layout()->addWidget(returnType);
+  layout()->addWidget(container);
 }
 
 void EventDialog::createArgumentInput()
 {
-  QLabel* argumentLabel = new QLabel(tr("Arguments"), this);
-  argumentLabel->setObjectName("PropertyLabel");
-  layout()->addWidget(argumentLabel);
+  auto* argumentGroup = new maki::WidgetGroup(tr("Arguments"), oclero::qlementine::TextRole::H5, this);
+  argumentGroup->setPadding(0);
 
   // Create table to hold the arguments
-  QTableView* args = new QTableView(this);
-  QStandardItemModel* model = new QStandardItemModel(0, 2);
-  args->verticalHeader()->setVisible(false);
-  args->setFocusPolicy(Qt::ClickFocus);
+  QTableWidget* args = new QTableWidget(argumentGroup);
+  args->setColumnCount(2);
+  args->setHorizontalHeaderLabels({"Name", "Type"});
+  args->setEnabled(mStorage->getmodifiable());
 
-  model->setHorizontalHeaderItem(0, new QStandardItem(tr("Name")));
-  model->setHorizontalHeaderItem(1, new QStandardItem(tr("Type")));
+  args->verticalHeader()->setVisible(true);
+  args->verticalHeader()->setMinimumWidth(30);
+  args->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+  args->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
 
-  args->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-  args->setContextMenuPolicy(Qt::CustomContextMenu);
+  args->setSelectionBehavior(QAbstractItemView::SelectRows);
+  args->setSelectionMode(QAbstractItemView::ExtendedSelection);
 
-  addDynamicWidget((QVBoxLayout*)layout(), args, this);
+  args->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+  args->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+  args->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
   if (mStorage->getmodifiable())
     args->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::EditKeyPressed);
   else
     args->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
-  args->setModel(model);
-
   for (const auto& field : mStorage->getarguments())
-  {
-    int newRow = model->rowCount();
-    model->insertRow(newRow);
+    addArgumentToTable(args, std::dynamic_pointer_cast<PropertyInfo>(field));
 
-    auto nameItem = new QStandardItem(field->getid());
-    nameItem->setEnabled(mStorage->getmodifiable());
+  // --------------------------------------------------------------------------------------------------------
+  // Buttons
+  auto* browserButtons = new QHBoxLayout();
+  auto* addButton = new QPushButton(argumentGroup);
+  addButton->setFixedSize(Config::MEDIUM_BUTTON_SIZE);
+  addButton->setIcon(iconFromTheme("plus"));
+  addButton->setEnabled(mStorage->getmodifiable());
 
-    auto box = new maki::TypeSelectionWidget(Types::PropertyTypesToString(field->gettype()), args);
-    box->setEnabled(mStorage->getmodifiable());
+  auto* removeButton = new QPushButton(argumentGroup);
+  removeButton->setFixedSize(Config::MEDIUM_BUTTON_SIZE);
+  removeButton->setIcon(iconFromTheme("minus"));
+  removeButton->setEnabled(mStorage->getmodifiable());
 
-    model->setItem(newRow, 0, nameItem);
-    args->setIndexWidget(model->index(newRow, 1), box);
+  connect(addButton, &QPushButton::pressed, this, [this, args] { addArgumentToTable(args, std::make_shared<PropertyInfo>()); });
+  connect(removeButton, &QPushButton::clicked, this, [this, args] { removeArgumentFromTable(args); });
 
-    if (!mStorage->getmodifiable())
-      continue;
+  browserButtons->addWidget(addButton);
+  browserButtons->addWidget(removeButton);
+  browserButtons->addStretch();
 
-    connect(box, &QComboBox::currentTextChanged, this, [this, newRow](const QString& value) { updateArgumentTable(newRow, 1, value); });
-  }
+  // --------------------------------------------------------------------------------------------------------
+  // Final layout
+  argumentGroup->addWidget(args);
+  argumentGroup->addStretch();
+  argumentGroup->addLayout(browserButtons);
 
-  connect(model, &QStandardItemModel::itemChanged, this, [this](QStandardItem* item) {
-    if (!item)
-      return;
-
-    int row = item->row();
-    if (row >= mStorage->getarguments().size())
-      return;
-
-    auto text = item->text();
-    if (text.isNull() || text.isEmpty())
-      return;
-
-    updateArgumentTable(row, item->column(), text);
-  });
-
-  QPushButton* button = new QPushButton(this);
-  button->setObjectName("TextAndIcon");
-  button->setEnabled(mStorage->getmodifiable());
-  connect(button, &QPushButton::pressed, this, [this, model, args]() {
-    int newRow = model->rowCount();
-    model->insertRow(newRow);
-    model->setItem(newRow, 0, new QStandardItem(""));
-
-    auto box = new maki::TypeSelectionWidget(args);
-    args->setIndexWidget(model->index(newRow, 1), box);
-    connect(box, &QComboBox::currentTextChanged, this, [this, newRow](const QString& value) { updateArgumentTable(newRow, 1, value); });
-
-    // Create new argument in the storage as well
-    mStorage->addArgument(std::make_shared<PropertyInfo>());
-  });
-
-  button->setFocusPolicy(Qt::NoFocus);
-  button->setText(" " + tr("Add argument"));
-  button->setIcon(addIconWithColor(":/icons/plus.svg", Config::FOREGROUND));
-  button->setMaximumWidth(250);
-
-  QPushButton* deletebutton = new QPushButton(this);
-  deletebutton->setObjectName("TextAndIcon");
-  deletebutton->setEnabled(mStorage->getmodifiable());
-  connect(deletebutton, &QPushButton::pressed, this, [this, model, args]() {
-    QModelIndex index = args->currentIndex();
-    if (!index.isValid())
-      return;
-
-    int row = index.row();
-    model->removeRow(row);
-    if (auto property = mStorage->getArgument(row))
-      mStorage->removeArgument(property);
-  });
-
-  deletebutton->setFocusPolicy(Qt::NoFocus);
-  deletebutton->setText(" " + tr("Remove argument"));
-  deletebutton->setIcon(addIconWithColor(":/icons/clear.svg", Config::FOREGROUND));
-  deletebutton->setMaximumWidth(250);
-
-  QHBoxLayout* buttonLayout = new QHBoxLayout();
-  buttonLayout->addStretch();
-  buttonLayout->addWidget(button);
-  buttonLayout->addWidget(deletebutton);
-
-  layout()->addWidget(args);
-  layout()->addLayout(buttonLayout);
+  layout()->addWidget(argumentGroup);
 }
 
-void EventDialog::updateArgumentTable(int row, int column, const QString& text)
+void EventDialog::addArgumentToTable(QTableWidget* table, std::shared_ptr<PropertyInfo> field)
 {
-  LOG_INFO("updateArgumentTable: {}", text);
-  if (column == 0)
-    std::dynamic_pointer_cast<PropertyInfo>(mStorage->getArgument(row))->setId(text);
-  else if (column == 1)
-    std::dynamic_pointer_cast<PropertyInfo>(mStorage->getArgument(row))->setType(Types::StringToPropertyTypes(text));
+  int row = table->rowCount();
+  table->insertRow(row);
+
+  auto nameItem = new oclero::qlementine::LineEdit(table);
+  nameItem->setText(field->getid());
+
+  auto typeItem = new maki::TypeSelector("typeCombo", table);
+  typeItem->setReference(field->gettype());
+
+  table->setCellWidget(row, 0, nameItem);
+  table->setCellWidget(row, 1, typeItem);
+
+  connect(nameItem, &oclero::qlementine::LineEdit::editingFinished, this, [this, nameItem, row, field]() {
+    field->setId(nameItem->text());
+    if (row < mStorage->getarguments().size())
+      mStorage->setArgument(row, field);
+    else
+      mStorage->addArgument(field);
+  });
+  connect(typeItem, &maki::TypeSelector::typeChanged, this, [this, row, field](const koda::types::TypeReference& ref) {
+    field->setType(ref);
+    if (row < mStorage->getarguments().size())
+      mStorage->setArgument(row, field);
+    else
+      mStorage->addArgument(field);
+  });
+}
+
+void EventDialog::removeArgumentFromTable(QTableWidget* table)
+{
+  if (!table)
+    return;
+
+  const auto selectedRows = table->selectionModel()->selectedRows();
+  if (selectedRows.empty())
+    return;
+
+  std::vector<int> rows;
+  rows.reserve(selectedRows.size());
+
+  for (const auto& index : selectedRows)
+    rows.push_back(index.row());
+
+  std::sort(rows.begin(), rows.end(), std::greater<int>());
+  for (const int row : rows)
+  {
+    if (row < 0 || row >= table->rowCount())
+      continue;
+
+    mStorage->removeArgument(*(mStorage->getarguments().begin() + row));
+    table->removeRow(row);
+  }
+}
+
+void EventDialog::accept()
+{
+  if (mStorage->getname().isEmpty())
+  {
+    if (maki::warningPrompt(tr("Missing name"), tr("The flow will not be saved.")))
+      QDialog::accept();
+    return;
+  }
+
+  if (mStorage->getreturnType() == Types::PropertyTypes::UNKNOWN)
+  {
+    if (maki::warningPrompt(tr("Missing return type"), tr("The flow will not be saved.")))
+      QDialog::accept();
+    return;
+  }
+
+  for (const auto& arg : mStorage->getarguments())
+  {
+    if (arg->getname().isEmpty() || !arg->gettype().isValid())
+    {
+      if (maki::warningPrompt(tr("Argument has invalid format"), tr("The flow will not be saved.")))
+        QDialog::accept();
+      return;
+    }
+  }
+
+  QDialog::accept();
 }

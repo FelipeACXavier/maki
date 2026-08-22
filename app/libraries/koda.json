@@ -24,14 +24,20 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Task",
+              "default": {
+                "kind": "string",
+                "value": "Task"
+              },
               "info": "The name of the block"
             },
             {
               "id": "color",
               "type": "void",
               "control": "color",
-              "default": "#202020",
+              "default": {
+                "kind": "string",
+                "value": "#202020"
+              },
               "info": "The color of the block"
             }
           ],
@@ -39,10 +45,6 @@
             {
               "id": "Add event",
               "type": "add event"
-            },
-            {
-              "id": "Add state",
-              "type": "add state"
             }
           ],
           "events": [
@@ -101,40 +103,27 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Siren"
+              "default": {
+                "kind": "string",
+                "value": "Siren"
+              }
             },
             {
-              "id": "color",
+              "id": "action",
               "type": "void",
-              "control": "color",
-              "default": "#c45335"
-            },
-            {
-              "id": "type",
-              "type": "void",
-              "options": [
-                {
-                  "id": "action",
-                  "type": "string",
-                  "options": [
-                    {
-                      "id": "route",
-                      "type": "string",
-                      "default": "ventilation"
-                    },
-                    {
-                      "id": "message",
-                      "type": "string",
-                      "default": "\"nav2_msgs::action::NavigateToPose::Goal\""
-                    }
-                  ]
+              "default": {
+                "kind": "record",
+                "value": {
+                  "route": {
+                    "kind": "string",
+                    "value": "/siren"
+                  },
+                  "message": {
+                    "kind": "string",
+                    "value": "std_msgs::String"
+                  }
                 }
-              ]
-            },
-            {
-              "id": "type",
-              "type": "string",
-              "default": "sync"
+              }
             }
           ],
           "events": [
@@ -169,45 +158,52 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Grip"
+              "default": {
+                "kind": "string",
+                "value": "Grip"
+              }
             },
             {
               "id": "color",
               "type": "void",
               "control": "color",
-              "default": "#cc7a3d"
+              "default": {
+                "kind": "string",
+                "value": "#cc7a3d"
+              }
             },
             {
-              "id": "type",
+              "id": "action",
               "type": "void",
-              "options": [
-                {
-                  "id": "action",
-                  "type": "string",
-                  "options": [
-                    {
-                      "id": "route",
-                      "type": "string",
-                      "default": "/handler/action"
-                    },
-                    {
-                      "id": "message",
-                      "type": "string",
-                      "default": "std_msgs::String"
-                    }
-                  ]
+              "default": {
+                "kind": "record",
+                "value": {
+                  "route": {
+                    "kind": "string",
+                    "value": "/handler/action"
+                  },
+                  "message": {
+                    "kind": "string",
+                    "value": "std_msgs::String"
+                  }
                 }
-              ]
+              }
             },
             {
               "id": "arguments",
-              "type": "list",
-              "default": [
-                {
-                  "id": "grip",
-                  "type": "bool"
-                }
-              ]
+              "type": "void",
+              "default": {
+                "kind": "list",
+                "value": [
+                  {
+                    "kind": "record",
+                    "value": {
+                      "id": "grip",
+                      "type": "bool"
+                    }
+                  }
+                ]
+              }
             }
           ],
           "events": [
@@ -266,35 +262,36 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Aruco Detection"
+              "default": {
+                "kind": "string",
+                "value": "Aruco Detection"
+              }
             },
             {
               "id": "color",
               "type": "void",
               "control": "color",
-              "default": "#e6c994"
+              "default": {
+                "kind": "string",
+                "value": "#e6c994"
+              }
             },
             {
-              "id": "type",
+              "id": "action",
               "type": "void",
-              "options": [
-                {
-                  "id": "action",
-                  "type": "string",
-                  "options": [
-                    {
-                      "id": "route",
-                      "type": "string",
-                      "default": "/recognize"
-                    },
-                    {
-                      "id": "message",
-                      "type": "string",
-                      "default": "std_msgs::String"
-                    }
-                  ]
+              "default": {
+                "kind": "record",
+                "value": {
+                  "route": {
+                    "kind": "string",
+                    "value": "/recognize"
+                  },
+                  "message": {
+                    "kind": "string",
+                    "value": "std_msgs::String"
+                  }
                 }
-              ]
+              }
             },
             {
               "id": "marker id",
@@ -346,53 +343,36 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Drive"
+              "default": {
+                "kind": "string",
+                "value": "Drive"
+              }
             },
             {
               "id": "color",
               "type": "void",
               "control": "color",
-              "default": "#74a892"
+              "default": {
+                "kind": "string",
+                "value": "#74a892"
+              }
             },
             {
-              "id": "type",
+              "id": "action",
               "type": "void",
-              "options": [
-                {
-                  "id": "action",
-                  "type": "string",
-                  "options": [
-                    {
-                      "id": "route",
-                      "type": "string",
-                      "default": "/drive"
-                    },
-                    {
-                      "id": "message",
-                      "type": "string",
-                      "default": "nav2_msgs::action::NavigateToPose::Goal"
-                    }
-                  ]
+              "default": {
+                "kind": "record",
+                "value": {
+                  "route": {
+                    "kind": "string",
+                    "value": "/siren"
+                  },
+                  "message": {
+                    "kind": "string",
+                    "value": "std_msgs::String"
+                  }
                 }
-              ]
-            },
-            {
-              "id": "arguments",
-              "type": "list",
-              "default": [
-                {
-                  "id": "x",
-                  "type": "real"
-                },
-                {
-                  "id": "y",
-                  "type": "real"
-                },
-                {
-                  "id": "yaw",
-                  "type": "real"
-                }
-              ]
+              }
             }
           ],
           "events": [
@@ -469,39 +449,40 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Approach"
+              "default": {
+                "kind": "string",
+                "value": "Approach"
+              }
             },
             {
               "id": "color",
               "type": "void",
               "control": "color",
-              "default": "#fbf2c4"
+              "default": {
+                "kind": "string",
+                "value": "#fbf2c4"
+              }
             },
             {
-              "id": "type",
+              "id": "action",
               "type": "void",
-              "options": [
-                {
-                  "id": "action",
-                  "type": "string",
-                  "options": [
-                    {
-                      "id": "route",
-                      "type": "string",
-                      "default": "/approach_depart"
-                    },
-                    {
-                      "id": "message",
-                      "type": "string",
-                      "default": "std_msgs::String"
-                    }
-                  ]
+              "default": {
+                "kind": "record",
+                "value": {
+                  "route": {
+                    "kind": "string",
+                    "value": "/siren"
+                  },
+                  "message": {
+                    "kind": "string",
+                    "value": "std_msgs::String"
+                  }
                 }
-              ]
+              }
             },
             {
               "id": "arguments",
-              "type": "list",
+              "type": "void",
               "default": [
                 {
                   "id": "approach",
@@ -569,46 +550,36 @@
             {
               "id": "name",
               "type": "string",
-              "default": "IO Bridge"
+              "default": {
+                "kind": "string",
+                "value": "IO Bridge"
+              }
             },
             {
               "id": "color",
               "type": "void",
               "control": "color",
-              "default": "#bb2c1e"
+              "default": {
+                "kind": "string",
+                "value": "#bb2c1e"
+              }
             },
             {
-              "id": "type",
+              "id": "service",
               "type": "void",
-              "default": "service",
-              "options": [
-                {
-                  "id": "service",
-                  "type": "list",
-                  "options": [
-                    {
-                      "id": "route",
-                      "type": "string",
-                      "default": "poll"
-                    },
-                    {
-                      "id": "message",
-                      "type": "string",
-                      "default": ""
-                    }
-                  ]
+              "default": {
+                "kind": "record",
+                "value": {
+                  "route": {
+                    "kind": "string",
+                    "value": "/siren"
+                  },
+                  "message": {
+                    "kind": "string",
+                    "value": "std_msgs::String"
+                  }
                 }
-              ]
-            },
-            {
-              "id": "arguments",
-              "type": "list",
-              "default": [
-                {
-                  "id": "zone",
-                  "type": "string"
-                }
-              ]
+              }
             }
           ],
           "events": [
@@ -642,51 +613,54 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Co2Sensor"
+              "default": {
+                "kind": "string",
+                "value": "Co2Sensor"
+              }
             },
             {
               "id": "color",
               "type": "void",
               "control": "color",
-              "default": "#d73800"
+              "default": {
+                "kind": "string",
+                "value": "#d73800"
+              }
             },
             {
-              "id": "type",
+              "id": "service",
               "type": "void",
-              "options": [
-                {
-                  "id": "service",
-                  "type": "string",
-                  "options": [
-                    {
-                      "id": "route",
-                      "type": "string",
-                      "default": "co2/normal"
-                    },
-                    {
-                      "id": "message",
-                      "type": "string",
-                      "default": ""
+              "default": {
+                "kind": "list",
+                "value": [
+                  {
+                    "kind": "record",
+                    "value": {
+                      "route": {
+                        "kind": "string",
+                        "value": "co2/normal"
+                      },
+                      "message": {
+                        "kind": "string",
+                        "value": ""
+                      }
                     }
-                  ]
-                },
-                {
-                  "id": "service",
-                  "type": "string",
-                  "options": [
-                    {
-                      "id": "id",
-                      "type": "string",
-                      "default": "co2/high"
-                    },
-                    {
-                      "id": "message",
-                      "type": "string",
-                      "default": ""
+                  },
+                  {
+                    "kind": "record",
+                    "value": {
+                      "route": {
+                        "kind": "string",
+                        "value": "co2/high"
+                      },
+                      "message": {
+                        "kind": "string",
+                        "value": ""
+                      }
                     }
-                  ]
-                }
-              ]
+                  }
+                ]
+              }
             }
           ],
           "events": [
@@ -721,52 +695,54 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Occupancy Sensor"
+              "default": {
+                "kind": "string",
+                "value": "Occupancy Sensor"
+              }
             },
             {
               "id": "color",
               "type": "void",
               "control": "color",
-              "default": "#e5c185"
+              "default": {
+                "kind": "string",
+                "value": "#e5c185"
+              }
             },
             {
-              "id": "type",
+              "id": "service",
               "type": "void",
-              "default": "service",
-              "options": [
-                {
-                  "id": "service",
-                  "type": "string",
-                  "options": [
-                    {
-                      "id": "route",
-                      "type": "string",
-                      "default": "environment/empty"
-                    },
-                    {
-                      "id": "message",
-                      "type": "string",
-                      "default": ""
+              "default": {
+                "kind": "list",
+                "value": [
+                  {
+                    "kind": "record",
+                    "value": {
+                      "route": {
+                        "kind": "string",
+                        "value": "environment/empty"
+                      },
+                      "message": {
+                        "kind": "string",
+                        "value": ""
+                      }
                     }
-                  ]
-                },
-                {
-                  "id": "service",
-                  "type": "string",
-                  "options": [
-                    {
-                      "id": "id",
-                      "type": "string",
-                      "default": "environment/present"
-                    },
-                    {
-                      "id": "message",
-                      "type": "string",
-                      "default": ""
+                  },
+                  {
+                    "kind": "record",
+                    "value": {
+                      "route": {
+                        "kind": "string",
+                        "value": "environment/present"
+                      },
+                      "message": {
+                        "kind": "string",
+                        "value": ""
+                      }
                     }
-                  ]
-                }
-              ]
+                  }
+                ]
+              }
             }
           ],
           "events": [
@@ -801,39 +777,58 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Lighting"
+              "default": {
+                "kind": "string",
+                "value": "Lighting"
+              }
             },
             {
               "id": "color",
               "type": "void",
               "control": "color",
-              "default": "#fbf2c4"
+              "default": {
+                "kind": "string",
+                "value": "#fbf2c4"
+              }
             },
             {
-              "id": "type",
+              "id": "service",
               "type": "void",
-              "options": [
-                {
-                  "id": "service",
-                  "type": "string",
-                  "options": [
-                    {
-                      "id": "route",
-                      "type": "string",
-                      "default": "lighting/scene"
-                    },
-                    {
-                      "id": "message",
-                      "type": "string",
-                      "default": ""
+              "default": {
+                "kind": "list",
+                "value": [
+                  {
+                    "kind": "record",
+                    "value": {
+                      "route": {
+                        "kind": "string",
+                        "value": "environment/empty"
+                      },
+                      "message": {
+                        "kind": "string",
+                        "value": ""
+                      }
                     }
-                  ]
-                }
-              ]
+                  },
+                  {
+                    "kind": "record",
+                    "value": {
+                      "route": {
+                        "kind": "string",
+                        "value": "environment/present"
+                      },
+                      "message": {
+                        "kind": "string",
+                        "value": ""
+                      }
+                    }
+                  }
+                ]
+              }
             },
             {
               "id": "arguments",
-              "type": "list",
+              "type": "void",
               "default": [
                 {
                   "id": "scene",
@@ -873,39 +868,58 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Ventilation"
+              "default": {
+                "kind": "string",
+                "value": "Ventilation"
+              }
             },
             {
               "id": "color",
               "type": "void",
               "control": "color",
-              "default": "#7ebb9c"
+              "default": {
+                "kind": "string",
+                "value": "#7ebb9c"
+              }
             },
             {
-              "id": "type",
+              "id": "service",
               "type": "void",
-              "options": [
-                {
-                  "id": "action",
-                  "type": "string",
-                  "options": [
-                    {
-                      "id": "route",
-                      "type": "string",
-                      "default": "ventilation"
-                    },
-                    {
-                      "id": "message",
-                      "type": "string",
-                      "default": ""
+              "default": {
+                "kind": "list",
+                "value": [
+                  {
+                    "kind": "record",
+                    "value": {
+                      "route": {
+                        "kind": "string",
+                        "value": "environment/empty"
+                      },
+                      "message": {
+                        "kind": "string",
+                        "value": ""
+                      }
                     }
-                  ]
-                }
-              ]
+                  },
+                  {
+                    "kind": "record",
+                    "value": {
+                      "route": {
+                        "kind": "string",
+                        "value": "environment/present"
+                      },
+                      "message": {
+                        "kind": "string",
+                        "value": ""
+                      }
+                    }
+                  }
+                ]
+              }
             },
             {
               "id": "arguments",
-              "type": "list",
+              "type": "void",
               "default": [
                 {
                   "id": "up",
@@ -966,35 +980,54 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Conveyor"
+              "default": {
+                "kind": "string",
+                "value": "Conveyor"
+              }
             },
             {
               "id": "color",
               "type": "void",
               "control": "color",
-              "default": "#7ebb9c"
+              "default": {
+                "kind": "string",
+                "value": "#7ebb9c"
+              }
             },
             {
-              "id": "type",
+              "id": "service",
               "type": "void",
-              "options": [
-                {
-                  "id": "action",
-                  "type": "string",
-                  "options": [
-                    {
-                      "id": "route",
-                      "type": "string",
-                      "default": "conveyor"
-                    },
-                    {
-                      "id": "message",
-                      "type": "string",
-                      "default": ""
+              "default": {
+                "kind": "list",
+                "value": [
+                  {
+                    "kind": "record",
+                    "value": {
+                      "route": {
+                        "kind": "string",
+                        "value": "environment/empty"
+                      },
+                      "message": {
+                        "kind": "string",
+                        "value": ""
+                      }
                     }
-                  ]
-                }
-              ]
+                  },
+                  {
+                    "kind": "record",
+                    "value": {
+                      "route": {
+                        "kind": "string",
+                        "value": "environment/present"
+                      },
+                      "message": {
+                        "kind": "string",
+                        "value": ""
+                      }
+                    }
+                  }
+                ]
+              }
             }
           ],
           "events": [
@@ -1044,67 +1077,54 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Image Inspection"
+              "default": {
+                "kind": "string",
+                "value": "Image Inspection"
+              }
             },
             {
               "id": "color",
               "type": "void",
               "control": "color",
-              "default": "#d73800"
+              "default": {
+                "kind": "string",
+                "value": "#d73800"
+              }
             },
             {
-              "id": "type",
+              "id": "service",
               "type": "void",
-              "options": [
-                {
-                  "id": "service",
-                  "type": "string",
-                  "options": [
-                    {
-                      "id": "route",
-                      "type": "string",
-                      "default": "image/start"
-                    },
-                    {
-                      "id": "message",
-                      "type": "string",
-                      "default": ""
+              "default": {
+                "kind": "list",
+                "value": [
+                  {
+                    "kind": "record",
+                    "value": {
+                      "route": {
+                        "kind": "string",
+                        "value": "environment/empty"
+                      },
+                      "message": {
+                        "kind": "string",
+                        "value": ""
+                      }
                     }
-                  ]
-                },
-                {
-                  "id": "service",
-                  "type": "string",
-                  "options": [
-                    {
-                      "id": "route",
-                      "type": "string",
-                      "default": "image/stop"
-                    },
-                    {
-                      "id": "message",
-                      "type": "string",
-                      "default": ""
+                  },
+                  {
+                    "kind": "record",
+                    "value": {
+                      "route": {
+                        "kind": "string",
+                        "value": "environment/present"
+                      },
+                      "message": {
+                        "kind": "string",
+                        "value": ""
+                      }
                     }
-                  ]
-                },
-                {
-                  "id": "service",
-                  "type": "string",
-                  "options": [
-                    {
-                      "id": "route",
-                      "type": "string",
-                      "default": "image/invalid"
-                    },
-                    {
-                      "id": "message",
-                      "type": "string",
-                      "default": ""
-                    }
-                  ]
-                }
-              ]
+                  }
+                ]
+              }
             }
           ],
           "events": [
@@ -1146,35 +1166,54 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Ticket Creation"
+              "default": {
+                "kind": "string",
+                "value": "Ticket Creation"
+              }
             },
             {
               "id": "color",
               "type": "void",
               "control": "color",
-              "default": "#d73800"
+              "default": {
+                "kind": "string",
+                "value": "#d73800"
+              }
             },
             {
-              "id": "type",
+              "id": "service",
               "type": "void",
-              "options": [
-                {
-                  "id": "service",
-                  "type": "string",
-                  "options": [
-                    {
-                      "id": "route",
-                      "type": "string",
-                      "default": "ticket/create"
-                    },
-                    {
-                      "id": "message",
-                      "type": "string",
-                      "default": ""
+              "default": {
+                "kind": "list",
+                "value": [
+                  {
+                    "kind": "record",
+                    "value": {
+                      "route": {
+                        "kind": "string",
+                        "value": "environment/empty"
+                      },
+                      "message": {
+                        "kind": "string",
+                        "value": ""
+                      }
                     }
-                  ]
-                }
-              ]
+                  },
+                  {
+                    "kind": "record",
+                    "value": {
+                      "route": {
+                        "kind": "string",
+                        "value": "environment/present"
+                      },
+                      "message": {
+                        "kind": "string",
+                        "value": ""
+                      }
+                    }
+                  }
+                ]
+              }
             }
           ],
           "events": [
@@ -1209,23 +1248,25 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Start"
+              "default": { "kind": "string", "value": "Start" }
             },
             {
               "id": "mode",
               "type": "void",
-              "default": "signal",
               "control": "select",
-              "options": [
-                {
-                  "id": "signal",
-                  "type": "string"
-                },
-                {
-                  "id": "timed",
-                  "type": "string"
-                }
-              ]
+              "default": {
+                "kind": "list",
+                "value": [
+                  {
+                    "kind": "string",
+                    "value": "signal"
+                  },
+                  {
+                    "kind": "string",
+                    "value": "timed"
+                  }
+                ]
+              }
             }
           ],
           "connectors": [
@@ -1257,7 +1298,7 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Success"
+              "default": { "kind": "string", "value": "Success" }
             }
           ],
           "connectors": [
@@ -1289,7 +1330,7 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Failure"
+              "default": { "kind": "string", "value": "Failure" }
             }
           ],
           "connectors": [
@@ -1321,7 +1362,7 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Continue"
+              "default": { "kind": "string", "value": "Continue" }
             }
           ],
           "connectors": [
@@ -1353,7 +1394,7 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Terminate"
+              "default": { "kind": "string", "value": "Terminate" }
             }
           ],
           "connectors": [
@@ -1386,25 +1427,31 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Async task"
+              "default": { "kind": "string", "value": "Async task" }
             },
             {
               "id": "color",
               "type": "void",
               "control": "color",
-              "default": "#202020"
+              "default": { "kind": "string", "value": "#202020" }
             },
             {
               "id": "capability",
               "type": "void",
               "control": "component_select",
-              "options": [
-                {
-                  "id": "arguments",
-                  "type": "void",
-                  "control": "trigger_call"
+              "default": {
+                "kind": "record",
+                "value": {
+                  "component": {
+                    "kind": "string",
+                    "value": "-"
+                  },
+                  "control": {
+                    "kind": "string",
+                    "value": "trigger_call"
+                  }
                 }
-              ]
+              }
             }
           ],
           "controls": []
@@ -1427,24 +1474,35 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Sync task"
+              "default": { "kind": "string", "value": "Sync task" }
             },
             {
               "id": "color",
               "type": "void",
               "control": "color",
-              "default": "#202020"
+              "default": { "kind": "string", "value": "#202020" }
             },
             {
               "id": "capability",
               "type": "void",
               "control": "component_select",
-              "options": [
-                {
-                  "id": "event",
-                  "type": "event_select"
+              "default": {
+                "kind": "record",
+                "value": {
+                  "component": {
+                    "kind": "string",
+                    "value": "-"
+                  },
+                  "event": {
+                    "kind": "string",
+                    "value": "-"
+                  },
+                  "control": {
+                    "kind": "string",
+                    "value": "event_select"
+                  }
                 }
-              ]
+              }
             }
           ],
           "controls": []
@@ -1467,25 +1525,35 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Flow call"
+              "default": { "kind": "string", "value": "Flow call" }
             },
             {
               "id": "color",
               "type": "void",
               "control": "color",
-              "default": "#202020"
+              "default": { "kind": "string", "value": "#202020" }
             },
             {
-              "id": "task",
+              "id": "Task",
               "type": "void",
               "control": "component_select",
-              "options": [
-                {
-                  "id": "flow",
-                  "type": "void",
-                  "control": "user_call"
+              "default": {
+                "kind": "record",
+                "value": {
+                  "component": {
+                    "kind": "string",
+                    "value": "-"
+                  },
+                  "flow": {
+                    "kind": "string",
+                    "value": "-"
+                  },
+                  "control": {
+                    "kind": "string",
+                    "value": "user_call"
+                  }
                 }
-              ]
+              }
             }
           ],
           "controls": []
@@ -1507,13 +1575,13 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Join"
+              "default": { "kind": "string", "value": "Join" }
             },
             {
               "id": "color",
               "type": "void",
               "control": "color",
-              "default": "#74a892"
+              "default": { "kind": "string", "value": "#74a892" }
             }
           ],
           "controls": []
@@ -1536,17 +1604,21 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Within"
+              "default": { "kind": "string", "value": "Within" }
             },
             {
               "id": "color",
               "type": "void",
               "control": "color",
-              "default": "#202020"
+              "default": { "kind": "string", "value": "#202020" }
             },
             {
               "id": "timeout",
-              "type": "int"
+              "type": "int",
+              "default": {
+                "kind": "int",
+                "value": "0"
+              }
             }
           ],
           "transitions": [
@@ -1586,29 +1658,46 @@
             {
               "id": "name",
               "type": "string",
-              "default": "Repeat"
+              "default": { "kind": "string", "value": "Repeat" }
             },
             {
-              "id": "capability",
+              "id": "Task",
               "type": "void",
               "control": "component_select",
-              "options": [
-                {
-                  "id": "flow",
-                  "type": "void",
-                  "control": "user_call"
+              "default": {
+                "kind": "record",
+                "value": {
+                  "component": {
+                    "kind": "string",
+                    "value": "-"
+                  },
+                  "flow": {
+                    "kind": "string",
+                    "value": "-"
+                  },
+                  "control": {
+                    "kind": "string",
+                    "value": "user_call"
+                  }
                 }
-              ]
+              }
             },
             {
               "id": "iterations",
               "type": "int",
-              "default": "0",
+              "default": {
+                "kind": "int",
+                "value": 0
+              },
               "info": "Number of times the loop will execute. A value of 0 repeats indefinitely until the flow is stopped or aborted."
             },
             {
               "id": "rate",
               "type": "int",
+              "default": {
+                "kind": "int",
+                "value": 0
+              },
               "info": "Delay in milliseconds between consecutive iterations. For example, a value of 1000 executes the loop once per second."
             }
           ],

@@ -39,12 +39,12 @@ QStringList GenerateRosAction::produces() const
 QVector<maki::ActionParameter> GenerateRosAction::parameters() const
 {
   return {
-      maki::ActionParameter(SIMULATE_KEY, Types::PropertyTypes::BOOLEAN, true),
-      maki::ActionParameter(START_WAIT, Types::PropertyTypes::REAL, 10.0),
+      maki::ActionParameter(SIMULATE_KEY, koda::types::TypeReference::createBool(), maki::Value::createBool(true)),
+      maki::ActionParameter(START_WAIT, koda::types::TypeReference::createReal(), maki::Value::createReal(10)),
   };
 }
 
-maki::ResultArtifacts GenerateRosAction::run(const maki::PipelineContext& context, const QVariantMap& parameters, maki::IPipeline* pipeline)
+maki::ResultArtifacts GenerateRosAction::run(const maki::PipelineContext& context, const maki::ValueMap& parameters, maki::IPipeline* pipeline)
 {
   LOG_INFO("Running {}", id());
   // Get the canvas from the context

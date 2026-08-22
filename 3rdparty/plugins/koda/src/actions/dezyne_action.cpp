@@ -32,17 +32,12 @@ QStringList GenerateDezyneAction::produces() const
   return {"dezyne"};
 }
 
-QVariantMap GenerateDezyneAction::defaultParameters() const
-{
-  return {};
-}
-
 QVector<maki::ActionParameter> GenerateDezyneAction::parameters() const
 {
-  return {maki::ActionParameter("Debug", Types::PropertyTypes::BOOLEAN, false)};
+  return {maki::ActionParameter("Debug", koda::types::TypeReference::createBool(), maki::Value::createBool(false))};
 }
 
-maki::ResultArtifacts GenerateDezyneAction::run(const maki::PipelineContext& context, const QVariantMap& parameters, maki::IPipeline* pipeline)
+maki::ResultArtifacts GenerateDezyneAction::run(const maki::PipelineContext& context, const maki::ValueMap& parameters, maki::IPipeline* pipeline)
 {
   LOG_INFO("Running {}", id());
 

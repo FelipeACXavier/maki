@@ -25,27 +25,27 @@ TypeRegistry::TypeRegistry(QObject* parent)
   registerBuiltinTypes();
 }
 
-VoidResult TypeRegistry::registerNode(const QString& nodeId, const NodeConfig& node)
+VoidResult TypeRegistry::registerNode(const QString& nodeId, const INode& node)
 {
   if (nodeId.isEmpty())
     return VoidResult::Failed("Could not register node with no id");
 
-  for (const auto& e : node.events)
+  for (const auto& e : node.getevents())
   {
-    if (e.type == Types::CallType::TRIGGER)
+    if (e->gettype() == Types::CallType::TRIGGER)
     {
       QStringList consumes;
-      for (const auto& arg : e.arguments)
-        consumes << QString::fromStdString(arg.type.toString());
+      for (const auto& arg : e->getarguments())
+        consumes << QString::fromStdString(arg->gettype().toString());
 
       if (!consumes.isEmpty())
         mConsumers.insert(nodeId, consumes);
     }
-    else if (e.type == Types::CallType::RETURN)
+    else if (e->gettype() == Types::CallType::RETURN)
     {
       QStringList produces;
-      for (const auto& arg : e.arguments)
-        produces << QString::fromStdString(arg.type.toString());
+      for (const auto& arg : e->getarguments())
+        produces << QString::fromStdString(arg->gettype().toString());
 
       if (!produces.isEmpty())
         mProducers.insert(nodeId, produces);
@@ -119,14 +119,17 @@ QStringList TypeRegistry::namespaces() const
   return names;
 }
 
-VoidResult TypeRegistry::loadFromLibrary(const JSON& json)
+VoidResult TypeRegistry::loadFromLibrary(const QJsonObject& json)
 {
+  if (!json.contains(ConfigKeys::NAME))
+    return VoidResult::Failed("Type library requires a name");
+
   auto name = json[ConfigKeys::NAME].toString();
   auto types = json[ConfigKeys::TYPES];
   if (!types.isArray())
     return VoidResult::Failed("types must be in a list in the format \"types\": []");
 
-  LOG_INFO("Loading {} types from {}", types.toArray().size(), name);
+  LOG_DEBUG("Loading {} types from {}", types.toArray().size(), name);
   for (const auto& object : types.toArray())
   {
     if (!object.isObject())

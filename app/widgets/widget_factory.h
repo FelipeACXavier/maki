@@ -300,6 +300,9 @@ signals:
    * @param value The new value.
    */
   void valueChanged(const QString& value);
+
+private:
+  QTimer* mUpdateTimer = nullptr;
 };
 
 /**

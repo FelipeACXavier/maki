@@ -4,11 +4,16 @@
 #include <QLineEdit>
 #include <QTableView>
 
+#include "property_info.h"
 #include "widgets/base_dialog.h"
 
 class FlowSaveInfo;
-class QStandardItem;
-class QStandardItemModel;
+class QTableWidget;
+
+namespace maki
+{
+class WidgetGroup;
+}
 
 /**
  * @brief Dialog for managing event information.
@@ -39,33 +44,8 @@ public:
    */
   std::shared_ptr<FlowSaveInfo> getInfo() const;
 
-  /**
-   * @brief Retrieves the name of the event.
-   *
-   * @return QString The name of the event.
-   */
-  QString getName() const;
-
-  /**
-   * @brief Retrieves the type of the event.
-   *
-   * @return QString The type of the event.
-   */
-  QString getType() const;
-
-  /**
-   * @brief Retrieves the return type of the event.
-   *
-   * @return QString The return type of the event.
-   */
-  QString getReturnType() const;
-
-  /**
-   * @brief Retrieves the model containing argument information.
-   *
-   * @return QStandardItemModel* Pointer to the QStandardItemModel containing arguments.
-   */
-  QStandardItemModel* getArguments() const;
+public slots:
+  void accept() override;
 
 private:
   std::shared_ptr<FlowSaveInfo> mStorage;  /// Pointer to the stored FlowSaveInfo object.
@@ -96,12 +76,6 @@ private:
    */
   void createArgumentInput();
 
-  /**
-   * @brief Updates the argument table at the specified row and column with the given text.
-   *
-   * @param row The row index in the argument table.
-   * @param column The column index in the argument table.
-   * @param text The new text to set.
-   */
-  void updateArgumentTable(int row, int column, const QString& text);
+  void addArgumentToTable(QTableWidget* table, std::shared_ptr<PropertyInfo> field);
+  void removeArgumentFromTable(QTableWidget* table);
 };

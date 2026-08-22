@@ -1,11 +1,11 @@
 #pragma once
 
+#include <QJsonObject>
 #include <QObject>
 #include <QString>
 #include <QVector>
 
-#include "config.h"
-#include "json.h"
+#include "idocument.h"
 #include "result.h"
 #include "typing/type_registry.h"
 
@@ -28,16 +28,15 @@ public:
   QStringList namespaces() const;
 
   QStringList libraries() const;
-  VoidResult loadFromLibrary(const JSON& json);
+  VoidResult loadFromLibrary(const QJsonObject& json);
 
-  VoidResult registerNode(const QString& nodeId, const NodeConfig& node);
+  VoidResult registerNode(const QString& nodeId, const INode& node);
   QStringList findProducers(const koda::types::TypeReference& type) const;
   QStringList findConsumers(const koda::types::TypeReference& type) const;
 
   koda::types::TypeRegistrationResult add(const koda::types::TypeDefinition& definition) override;
   koda::types::TypeRegistrationResult replace(const koda::types::TypeDefinition& definition) override;
   koda::types::TypeRegistrationResult remove(const std::string& qualifiedName);
-
   bool isFromLibrary(const koda::types::QualifiedName& name) const;
   void removeUserTypes();
 

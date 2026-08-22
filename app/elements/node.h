@@ -122,7 +122,7 @@ public:
    *
    * @return The QMap of property keys to QVariant values.
    */
-  QMap<QString, QVariant> properties() const;
+  QVector<std::shared_ptr<IParameter>> properties() const;
 
   /**
    * @brief Returns the configuration properties of the node.
@@ -144,7 +144,7 @@ public:
    * @param key The property key.
    * @return The QVariant value of the property.
    */
-  QVariant getProperty(const QString& key) const;
+  const PropertyInfo* getProperty(const QString& key) const;
 
   /**
    * @brief Sets a property with a given key and value.
@@ -152,7 +152,7 @@ public:
    * @param key The property key.
    * @param value The new value for the property.
    */
-  void setProperty(const QString& key, QVariant value);
+  void setProperty(const QString& key, const maki::Value& value);
 
   /**
    * @brief Renames the node to a new name.
@@ -186,9 +186,9 @@ public:
   /**
    * @brief Returns a list of fields associated with this node.
    *
-   * @return The QVector of IProperty pointers.
+   * @return The QVector of IParameter pointers.
    */
-  QVector<std::shared_ptr<IProperty>> fields() const;
+  QVector<std::shared_ptr<IParameter>> fields() const;
 
   /**
    * @brief Gets a property info by key.

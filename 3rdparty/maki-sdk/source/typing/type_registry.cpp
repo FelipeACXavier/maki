@@ -505,7 +505,7 @@ TypeRegistrationResult TypeRegistry::validateRegistration(const TypeDefinition& 
   const auto existingId = mTypes.find(definition.id);
   if (existingId != mTypes.end() && (replacedId == nullptr || existingId->first != *replacedId))
     return TypeRegistrationResult::Failed(TypeRegistrationError::DuplicateId,
-                                          "A type with ID '" + definition.id + "' (" + definition.name.toString() + ") is already registered.");
+                                          std::format("A type with ID '{}' () is already registered.", definition.id, definition.name.toString()));
 
   const std::string qualifiedName = nameKey(definition.name);
   const auto existingName = mIdsByName.find(qualifiedName);

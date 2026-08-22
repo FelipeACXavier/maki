@@ -1,25 +1,24 @@
 #pragma once
 
-#include <qvariant.h>
-
 #include "idocument.h"
+#include "mission_parameter.h"
 
 namespace maki
 {
-class ActionParameter : public IProperty
+class ActionParameter : public IParameter
 {
 public:
-  ActionParameter(const QString& id, Types::PropertyTypes type, const QVariant& value);
+  ActionParameter(const QString& id, const koda::types::TypeReference& type, const Value& value);
 
   QString getid() const override;
-  QVariant getdefaultValue() const override;
-  QVector<std::shared_ptr<IProperty>> getoptions() const override;
-  Types::PropertyTypes gettype() const override;
+  QString getname() const override;
+  const IValue* getvalue() const override;
+  koda::types::TypeReference gettype() const override;
   Types::ControlTypes getcontrol() const override;
 
 private:
   const QString mId;
-  const Types::PropertyTypes mType;
-  const QVariant mValue;
+  const koda::types::TypeReference mType;
+  const Value mValue;
 };
 }  // namespace maki

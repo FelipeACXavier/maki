@@ -351,7 +351,7 @@ signals:
    * @param flowId The ID of the removed flow.
    * @param nodeId The ID of the node associated with the flow.
    */
-  void flowRemoved(const QString& flowId, const QString& nodeId);
+  void flowRemoved(const QString& flowId, NodeItem* node);
 
 public slots:
   /**

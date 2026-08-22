@@ -78,9 +78,9 @@ public:
   /**
    * @brief Gets the arguments of the flow.
    *
-   * @return QVector<std::shared_ptr<IProperty>> A vector of shared pointers to IProperty objects representing the arguments.
+   * @return QVector<std::shared_ptr<IParameter>> A vector of shared pointers to IParameter objects representing the arguments.
    */
-  QVector<std::shared_ptr<IProperty>> getarguments() const override;
+  QVector<std::shared_ptr<IParameter>> getarguments() const override;
 
   /**
    * @brief Gets the nodes of the flow.
@@ -158,32 +158,32 @@ public:
   /**
    * @brief Adds an argument to the flow.
    *
-   * @param arg A shared pointer to an IProperty object representing the argument to add.
+   * @param arg A shared pointer to an IParameter object representing the argument to add.
    */
-  void addArgument(std::shared_ptr<IProperty> arg);
+  void addArgument(std::shared_ptr<IParameter> arg);
 
   /**
    * @brief Sets an argument at a specific index in the flow.
    *
    * @param index The index of the argument to set.
-   * @param arg A shared pointer to an IProperty object representing the new argument.
+   * @param arg A shared pointer to an IParameter object representing the new argument.
    */
-  void setArgument(uint32_t index, std::shared_ptr<IProperty> arg);
+  void setArgument(uint32_t index, std::shared_ptr<IParameter> arg);
 
   /**
    * @brief Gets an argument at a specific index in the flow.
    *
    * @param index The index of the argument to get.
-   * @return std::shared_ptr<IProperty> A shared pointer to the IProperty object representing the argument.
+   * @return std::shared_ptr<IParameter> A shared pointer to the IParameter object representing the argument.
    */
-  std::shared_ptr<IProperty> getArgument(uint32_t index);
+  std::shared_ptr<IParameter> getArgument(uint32_t index);
 
   /**
    * @brief Removes an argument from the flow.
    *
-   * @param arg A shared pointer to an IProperty object representing the argument to remove.
+   * @param arg A shared pointer to an IParameter object representing the argument to remove.
    */
-  void removeArgument(std::shared_ptr<IProperty> arg);
+  void removeArgument(std::shared_ptr<IParameter> arg);
 
   /**
    * @brief Adds a node to the flow.
@@ -239,10 +239,10 @@ private:
   bool mModifiable;  /// Whether the flow is modifiable.
   int mLinksTo;      /// The number of links to the flow.
 
-  Types::CallType mType;                           /// The type of the call.
-  Types::PropertyTypes mReturnType;                /// The return type of the property.
-  QVector<std::shared_ptr<INode>> mNodes;          /// A vector of shared pointers to INode objects representing the nodes.
-  QVector<std::shared_ptr<IProperty>> mArguments;  /// A vector of shared pointers to IProperty objects representing the arguments.
+  Types::CallType mType;                            /// The type of the call.
+  Types::PropertyTypes mReturnType;                 /// The return type of the property.
+  QVector<std::shared_ptr<INode>> mNodes;           /// A vector of shared pointers to INode objects representing the nodes.
+  QVector<std::shared_ptr<IParameter>> mArguments;  /// A vector of shared pointers to IParameter objects representing the arguments.
   QVector<std::shared_ptr<ITransition>> mTransitions;
 };
 

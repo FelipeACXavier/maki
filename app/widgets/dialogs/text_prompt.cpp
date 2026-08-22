@@ -49,8 +49,7 @@ TextDialog::TextDialog(const QString& title, const QString& prompt, QWidget* par
   connect(buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
   connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
-  limitWidth(buttonBox->sizeHint().width());
-  setSize(3, 0.1);
+  limitWidth(400);
 
   mNameEdit->setFocus();
 }

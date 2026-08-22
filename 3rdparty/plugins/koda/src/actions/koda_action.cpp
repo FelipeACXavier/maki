@@ -33,7 +33,7 @@ QStringList GenerateKodaAction::produces() const
   return {"koda"};
 }
 
-maki::ResultArtifacts GenerateKodaAction::run(const maki::PipelineContext& context, const QVariantMap& parameters, maki::IPipeline* pipeline)
+maki::ResultArtifacts GenerateKodaAction::run(const maki::PipelineContext& context, const maki::ValueMap& parameters, maki::IPipeline* pipeline)
 {
   LOG_INFO("Running {}", id());
   // Get the canvas from the context

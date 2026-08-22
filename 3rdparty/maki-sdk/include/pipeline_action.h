@@ -22,7 +22,7 @@ public:
   virtual QStringList consumes() const = 0;
   virtual QStringList produces() const = 0;
 
-  virtual QVariantMap defaultParameters() const
+  virtual ValueMap defaultParameters() const
   {
     return {};
   }
@@ -32,7 +32,7 @@ public:
     return {};
   }
 
-  virtual ResultArtifacts run(const PipelineContext& context, const QVariantMap& parameters, maki::IPipeline* pipeline) = 0;
+  virtual ResultArtifacts run(const PipelineContext& context, const ValueMap& parameters, maki::IPipeline* pipeline) = 0;
 };
 
 }  // namespace maki

@@ -71,7 +71,7 @@ Types::PropertyTypes FlowSaveInfo::getreturnType() const
   return mReturnType;
 }
 
-QVector<std::shared_ptr<IProperty>> FlowSaveInfo::getarguments() const
+QVector<std::shared_ptr<IParameter>> FlowSaveInfo::getarguments() const
 {
   return mArguments;
 }
@@ -141,24 +141,24 @@ void FlowSaveInfo::setReturnType(Types::PropertyTypes arg)
   mReturnType = arg;
 }
 
-void FlowSaveInfo::setArgument(uint32_t index, std::shared_ptr<IProperty> arg)
+void FlowSaveInfo::setArgument(uint32_t index, std::shared_ptr<IParameter> arg)
 {
   mArguments[index] = arg;
 }
 
-std::shared_ptr<IProperty> FlowSaveInfo::getArgument(uint32_t index)
+std::shared_ptr<IParameter> FlowSaveInfo::getArgument(uint32_t index)
 {
   return mArguments.at(index);
 }
 
-void FlowSaveInfo::addArgument(std::shared_ptr<IProperty> arg)
+void FlowSaveInfo::addArgument(std::shared_ptr<IParameter> arg)
 {
   mArguments.push_back(arg);
 }
 
-void FlowSaveInfo::removeArgument(std::shared_ptr<IProperty> arg)
+void FlowSaveInfo::removeArgument(std::shared_ptr<IParameter> arg)
 {
-  mArguments.removeIf([arg](std::shared_ptr<IProperty> info) { return info->getid() == arg->getid(); });
+  mArguments.removeIf([arg](std::shared_ptr<IParameter> info) { return info->getid() == arg->getid(); });
 }
 
 void FlowSaveInfo::addNode(std::shared_ptr<INode> arg)
@@ -229,22 +229,16 @@ FlowSaveInfo FlowSaveInfo::fromJson(const QJsonObject& data)
   info.setOwner(data[ConfigKeys::OWNER].toString());
 
   if (data.contains(ConfigKeys::ARGUMENTS))
-  {
     for (const auto& argument : data[ConfigKeys::ARGUMENTS].toArray())
       info.addArgument(std::make_shared<PropertyInfo>(PropertyInfo::fromJson(argument.toObject())));
-  }
 
   if (data.contains(ConfigKeys::NODES))
-  {
     for (const auto& node : data[ConfigKeys::NODES].toArray())
       info.addNode(std::make_shared<NodeSaveInfo>(NodeSaveInfo::fromJson(node.toObject())));
-  }
 
   if (data.contains(ConfigKeys::TRANSITIONS))
-  {
     for (const auto& node : data[ConfigKeys::TRANSITIONS].toArray())
       info.addTransition(std::make_shared<TransitionSaveInfo>(TransitionSaveInfo::fromJson(node.toObject())));
-  }
 
   return info;
 }
@@ -351,7 +345,7 @@ QDataStream& operator>>(QDataStream& in, FlowSaveInfo& info)
   in >> linksTo;
   info.setLinksTo(linksTo);
 
-  QVector<std::shared_ptr<IProperty>> arguments;
+  QVector<std::shared_ptr<IParameter>> arguments;
   in >> arguments;
   for (const auto& argument : arguments)
     info.addArgument(std::dynamic_pointer_cast<PropertyInfo>(argument));

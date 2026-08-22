@@ -1,127 +1,118 @@
 #include "properties_menu.h"
 
-#include <QCheckBox>
-#include <QColorDialog>
-#include <QComboBox>
-#include <QCompleter>
-#include <QDoubleValidator>
-#include <QGroupBox>
 #include <QHBoxLayout>
 #include <QHeaderView>
-#include <QIntValidator>
-#include <QJsonArray>
-#include <QJsonObject>
-#include <QLabel>
-#include <QLineEdit>
 #include <QMenu>
 #include <QPushButton>
-#include <QScrollArea>
 #include <QStandardItemModel>
-#include <QString>
 #include <QTableWidget>
 #include <QVBoxLayout>
-#include <QWidget>
-#include <cfloat>
-#include <oclero/qlementine/widgets/LineEdit.hpp>
+#include <algorithm>
+#include <oclero/qlementine/widgets/Label.hpp>
 
+#include "../dialogs/prompt.h"
 #include "../structure/event_dialog.h"
-#include "../structure/field_dialog.h"
 #include "app_configs.h"
-#include "config.h"
 #include "elements/flow.h"
 #include "elements/node.h"
-#include "json.h"
 #include "keys.h"
 #include "logging.h"
+#include "mission_parameter.h"
 #include "oclero/qlementine/Common.hpp"
-#include "result.h"
+#include "property_info.h"
 #include "style_helpers.h"
-#include "type_helpers.h"
-#include "types.h"
-#include "widgets/widget_factory.h"
 
-static const int EVENT_INDEX = 0;
-static const int ARG_INDEX = 1;
-static const int CLEAR_INDEX = INT32_MAX;
+namespace
+{
+constexpr auto VALUE_KEY = "value";
+constexpr auto ITEMS_KEY = "items";
+constexpr auto COMPONENT_KEY = "component";
+constexpr auto EVENT_KEY = "event";
+constexpr auto FLOW_KEY = "flow";
+constexpr auto ARGUMENTS_KEY = "arguments";
 
-#define UPDATE_PROPERTY(NODE, ID, VALUE)           \
-  do                                               \
-  {                                                \
-    auto propValue = NODE->getProperty(ID);        \
-    if (!propValue.isValid())                      \
-    {                                              \
-      LOG_WARNING("Property is not valid");        \
-      return;                                      \
-    }                                              \
-                                                   \
-    QJsonObject object = propValue.toJsonObject(); \
-    object[ConfigKeys::DATA] = VALUE;              \
-    object[ConfigKeys::OPTIONS] = QJsonArray();    \
-                                                   \
-    NODE->setProperty(ID, object);                 \
-  } while (false);
+const maki::Value* asValue(const IValue* value)
+{
+  return dynamic_cast<const maki::Value*>(value);
+}
 
-#define UPDATE_PROPERTY_ARG(NODE, ID, INDEX, VALUE, DATA_TYPE, VARIABLE) \
-  do                                                                     \
-  {                                                                      \
-    auto propValue = NODE->getProperty(ID);                              \
-    if (propValue.isValid())                                             \
-    {                                                                    \
-      QJsonObject object = propValue.toJsonObject();                     \
-      QJsonArray array = object[ConfigKeys::OPTIONS].toArray();          \
-                                                                         \
-      QJsonObject item;                                                  \
-      item[ConfigKeys::DATA] = VALUE;                                    \
-      item[ConfigKeys::TYPE] = Types::PropertyTypesToString(DATA_TYPE);  \
-      item[ConfigKeys::IS_VARIABLE] = VARIABLE;                          \
-      if (INDEX == EVENT_INDEX)                                          \
-        array = QJsonArray();                                            \
-                                                                         \
-      if (INDEX < array.size())                                          \
-        array[INDEX] = item;                                             \
-      else                                                               \
-      {                                                                  \
-        while (array.size() <= INDEX)                                    \
-          array.append(QJsonObject());                                   \
-        array[INDEX] = item;                                             \
-      }                                                                  \
-                                                                         \
-      object[ConfigKeys::OPTIONS] = array;                               \
-      NODE->setProperty(ID, object);                                     \
-    }                                                                    \
-    else                                                                 \
-    {                                                                    \
-      LOG_WARNING("Property is not valid");                              \
-    }                                                                    \
-  } while (false);
+maki::Value parameterValue(const IParameter* parameter)
+{
+  if (!parameter)
+    return {};
+
+  const auto* value = asValue(parameter->getvalue());
+  return value ? *value : maki::Value{};
+}
+
+maki::RecordValue parameterRecord(const IParameter* parameter)
+{
+  const auto value = parameterValue(parameter);
+  return value.kind() == IValue::Kind::Record ? value.toRecord() : maki::RecordValue{};
+}
+
+QString recordString(const maki::RecordValue& record, const char* key)
+{
+  const auto it = record.find(key);
+  if (it == record.end())
+    return {};
+
+  return it->second.toString();
+}
+
+maki::ListValue recordList(const maki::RecordValue& record, const char* key)
+{
+  const auto it = record.find(key);
+  if (it == record.end() || it->second.kind() != IValue::Kind::List)
+    return {};
+
+  return it->second.toList();
+}
+
+bool hasRecordField(const maki::RecordValue& record, const char* key)
+{
+  return record.find(key) != record.end();
+}
+
+Types::ControlTypes callControl(const maki::RecordValue& record)
+{
+  if (hasRecordField(record, FLOW_KEY))
+    return Types::ControlTypes::FLOW_CALL;
+
+  if (hasRecordField(record, EVENT_KEY))
+    return Types::ControlTypes::EVENT_SELECT;
+
+  return Types::ControlTypes::TRIGGER_CALL;
+}
+
+}  // namespace
 
 PropertiesMenu::PropertiesMenu(QWidget* parent)
     : QFrame(parent)
     , mCurrentNode("")
 {
   auto* qlementineStyle = oclero::qlementine::appStyle();
-  if (qlementineStyle)
-  {
-    const auto theme = qlementineStyle->theme();
+  if (!qlementineStyle)
+    return;
 
-    // Set widget layout
-    QVBoxLayout* layout = new QVBoxLayout(this);
-    layout->setContentsMargins(theme.spacing, theme.spacing, 0, 0);
-    layout->setSpacing(theme.spacing);
+  const auto theme = qlementineStyle->theme();
 
-    mFrame = new StyledFrame(this);
-    mFrame->setBackgroundRole(StyledFrame::BackgroundRole::Base);
-    mFrame->setBorderRole(StyledFrame::BorderRole::Mid);
-    mFrame->setRadius(theme.borderRadius);
-    mFrame->setBorderWidth(theme.borderWidth);
-    mFrame->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+  auto* rootLayout = new QVBoxLayout(this);
+  rootLayout->setContentsMargins(theme.spacing, theme.spacing, 0, 0);
+  rootLayout->setSpacing(theme.spacing);
 
-    QVBoxLayout* frameLayout = new QVBoxLayout(mFrame);
-    frameLayout->setContentsMargins(theme.spacing, theme.spacing, theme.spacing, theme.spacing);
-    frameLayout->setSpacing(theme.spacing);
+  mFrame = new StyledFrame(this);
+  mFrame->setBackgroundRole(StyledFrame::BackgroundRole::Base);
+  mFrame->setBorderRole(StyledFrame::BorderRole::Mid);
+  mFrame->setRadius(theme.borderRadius);
+  mFrame->setBorderWidth(theme.borderWidth);
+  mFrame->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
 
-    layout->addWidget(mFrame);
-  }
+  auto* frameLayout = new QVBoxLayout(mFrame);
+  frameLayout->setContentsMargins(theme.spacing, theme.spacing, theme.spacing, theme.spacing);
+  frameLayout->setSpacing(theme.spacing);
+
+  rootLayout->addWidget(mFrame);
 }
 
 QLayout* PropertiesMenu::layout() const
@@ -131,7 +122,7 @@ QLayout* PropertiesMenu::layout() const
 
 VoidResult PropertiesMenu::start(std::shared_ptr<SaveInfo> storage)
 {
-  mStorage = storage;
+  mStorage = std::move(storage);
   return VoidResult();
 }
 
@@ -142,24 +133,21 @@ VoidResult PropertiesMenu::onNodeAdded(NodeItem* /* node */)
 
 VoidResult PropertiesMenu::onNodeRemoved(const QString& nodeId)
 {
-  // Clear the frame
   if (nodeId != mCurrentNode)
     return VoidResult();
 
   clearLayout(layout());
   mCurrentNode.clear();
-
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::onNodeModified(NodeItem* node)
+VoidResult PropertiesMenu::onNodeModified(NodeItem* /* node */)
 {
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::onNodeSelected(NodeItem* node, bool selected)
+VoidResult PropertiesMenu::onNodeSelected(NodeItem* node, bool /* selected */)
 {
-  // Clear the frame
   clearLayout(layout());
 
   if (!node)
@@ -170,7 +158,8 @@ VoidResult PropertiesMenu::onNodeSelected(NodeItem* node, bool selected)
   RETURN_ON_FAILURE(loadProperties(node));
   RETURN_ON_FAILURE(loadControls(node));
 
-  qobject_cast<QVBoxLayout*>(layout())->addStretch();
+  if (auto* vLayout = qobject_cast<QVBoxLayout*>(layout()))
+    vLayout->addStretch();
 
   return VoidResult();
 }
@@ -179,569 +168,612 @@ VoidResult PropertiesMenu::onCreateEvent(NodeItem* node)
 {
   onNodeSelected(node, true);
 
-  auto table = findChild<QTableView*>("EventTable");
+  auto table = findChild<QTableWidget*>("EventTable");
   if (table == nullptr)
     return VoidResult::Failed("Could not find the event table");
 
-  openEventDialog(table, node, table->model()->rowCount() + 1);
+  openEventDialog(table, node, table->rowCount());
 
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::onFlowAdded(Flow* flow, NodeItem* node)
+VoidResult PropertiesMenu::onFlowAdded(Flow* /* flow */, NodeItem* node)
 {
-  return VoidResult();
+  if (node->id() != mCurrentNode)
+    return VoidResult();
+
+  return onNodeSelected(node, true);
 }
 
-VoidResult PropertiesMenu::onFlowRemoved(const QString& flowId, NodeItem* node)
+VoidResult PropertiesMenu::onFlowRemoved(const QString& /* flowId */, NodeItem* node)
 {
-  return VoidResult();
+  if (node->id() != mCurrentNode)
+    return VoidResult();
+
+  return onNodeSelected(node, true);
 }
 
 VoidResult PropertiesMenu::loadProperties(NodeItem* node)
 {
-  if (node->configurationProperties().size() < 1)
-    return VoidResult();
+  if (!node)
+    return VoidResult::Failed("Cannot load properties for a null node");
 
-  for (const auto& property : node->configurationProperties())
+  for (const auto& property : node->properties())
   {
-    const auto type = maki::propertyTypeFromReference(property.type);
-    const auto control = property.control;
+    if (!property)
+      continue;
 
-    // LOG_DEBUG("Updating properties with {} of type {} and control {}", property.id, (int)type, (int)control);
-    if (type == Types::PropertyTypes::STRING)
-      LOG_WARN_ON_FAILURE(loadPropertyString(property, node));
-    else if (type == Types::PropertyTypes::INTEGER)
-      LOG_WARN_ON_FAILURE(loadPropertyInt(property, node));
-    else if (type == Types::PropertyTypes::REAL)
-      LOG_WARN_ON_FAILURE(loadPropertyReal(property, node));
-    else if (type == Types::PropertyTypes::BOOLEAN)
-      LOG_WARN_ON_FAILURE(loadPropertyBoolean(property, node));
-    else if (control == Types::ControlTypes::SELECT)
-      LOG_WARN_ON_FAILURE(loadPropertySelect(property, node));
-    else if (control == Types::ControlTypes::COLOR)
-      LOG_WARN_ON_FAILURE(loadPropertyColor(property, node));
-    else if (control == Types::ControlTypes::EVENT_SELECT)
-      LOG_WARN_ON_FAILURE(loadPropertyEventSelect(property, node));
-    else if (control == Types::ControlTypes::COMPONENT_SELECT)
-      LOG_WARN_ON_FAILURE(loadPropertyComponentSelect(property, node));
-    else if (type == Types::PropertyTypes::LIST)
-      continue;
-    else if (type == Types::PropertyTypes::VOID)
-      continue;
-    else
-      LOG_WARNING("Property {} ({}, {}) without a type, how is that possible?", property.id, (int)type, (int)control);
+    LOG_TRACE("Loading property: {} {} {}", property->getname(), dynamic_cast<const maki::Value*>(property->getvalue())->toReadable(),
+              (int)property->getcontrol());
+    switch (property->getcontrol())
+    {
+      case Types::ControlTypes::SELECT:
+      case Types::ControlTypes::EVENT_SELECT:
+        LOG_WARN_ON_FAILURE(loadSelectProperty(property, node));
+        break;
+
+      case Types::ControlTypes::COLOR:
+        LOG_WARN_ON_FAILURE(loadColorProperty(property, node));
+        break;
+
+      case Types::ControlTypes::COMPONENT_SELECT:
+        LOG_WARN_ON_FAILURE(loadComponentSelectProperty(property, node));
+        break;
+
+      default:
+        LOG_WARN_ON_FAILURE(loadValueProperty(property, node));
+        break;
+    }
   }
 
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::loadControls(NodeItem* node)
+VoidResult PropertiesMenu::loadValueProperty(const std::shared_ptr<IParameter>& property, NodeItem* node)
 {
-  if (node->controls().isEmpty() && node->events().isEmpty())
+  if (!property || !node)
+    return VoidResult::Failed("Cannot create property editor without a property and node");
+
+  const auto* storedValue = asValue(property->getvalue());
+  if (!storedValue)
+    return VoidResult::Failed("Property '{}' does not contain a MAKI Value", property->getid().toStdString());
+
+  // Void is used for special types and should not be added here
+  if (property->gettype().isPrimitive() && property->gettype().primitiveKind() == koda::types::PrimitiveKind::Void)
     return VoidResult();
 
-  QWidget* controls = new QWidget(this);
-  QHBoxLayout* controlLayout = new QHBoxLayout(controls);
-  controls->setLayout(controlLayout);
+  auto* editor =
+      maki::ValueEditorFactory::create(ToLabel(property->getid()), property->gettype(), *storedValue, maki::WidgetAlignment::Vertical(), this);
+  if (!editor)
+    return VoidResult::Failed("Could not create editor for property '{}' of type '{}'", property->getid().toStdString(),
+                              property->gettype().toString());
 
-  for (const auto& control : node->controls())
-    if (control.type == Types::ControlTypes::ADD_FIELD)
-      LOG_WARN_ON_FAILURE(loadControlAddField(control, node, controls, controlLayout));
-    else if (control.type == Types::ControlTypes::ADD_EVENT)
-      LOG_WARN_ON_FAILURE(loadControlAddEvent(control, node, controls, controlLayout));
-    else if (control.type == Types::ControlTypes::ADD_STATE)
-      LOG_WARN_ON_FAILURE(loadControlAddState(control, node, controls, controlLayout));
-    else
-      LOG_WARNING("Unknown control type: {}", control.id);
+  addCompleter(editor, node->id(), property->gettype());
 
-  if (!node->events().isEmpty() && node->controls().isEmpty())
-    loadControlAddEvent(ControlsConfig(), node, controls, controlLayout);
+  connect(editor, &maki::InputWidget::valueChanged, this, [node, editor, id = property->getid()] {
+    if (!node || !editor)
+      return;
 
-  // Controls are placed in a new horizontal widget at the bottom of the properties menu
-  layout()->addWidget(controls);
+    auto value = editor->getValue();
 
-  return VoidResult();
-}
-
-VoidResult PropertiesMenu::loadPropertyInt(const PropertyInfo& property, NodeItem* node)
-{
-  auto result = node->getProperty(property.getid());
-  if (result.isNull())
-    return VoidResult::Failed("Failed to get property {} of {}", property.getid(), node->nodeName());
-
-  auto widget = new maki::IntegerWidget(ToLabel(property.getid()), "", maki::WidgetAlignment::Vertical(), this);
-  widget->setAcceptVariable(true);
-  if (result.isValid())
-    widget->setValue(result.toString());
-
-  connect(widget, &maki::IntegerWidget::valueChanged, this, [node, property](const QString& value) { node->setProperty(property.getid(), value); });
-
-  layout()->addWidget(widget);
-
-  return VoidResult();
-}
-
-VoidResult PropertiesMenu::loadPropertyReal(const PropertyInfo& property, NodeItem* node)
-{
-  auto result = node->getProperty(property.getid());
-  if (result.isNull())
-    return VoidResult::Failed("Failed to get property {} of {}", property.getid(), node->nodeName());
-
-  auto widget = new maki::FloatWidget(ToLabel(property.getid()), "", maki::WidgetAlignment::Vertical(), this);
-  widget->setAcceptVariable(true);
-  if (result.isValid())
-    widget->setValue(result.toInt());
-
-  connect(widget, &maki::FloatWidget::valueChanged, this, [node, property](const QString& value) {
-    if (node)
-      node->setProperty(property.getid(), value);
-  });
-
-  layout()->addWidget(widget);
-
-  return VoidResult();
-}
-
-VoidResult PropertiesMenu::loadPropertyColor(const PropertyInfo& property, NodeItem* node)
-{
-  auto* colorEditor = new maki::ColorWidget(ToLabel(property.getid()), "", maki::WidgetAlignment::Vertical(), this);
-  auto result = node->getProperty(property.getid());
-  if (result.isValid())
-    colorEditor->setValue(QColor::fromString(result.toString()));
-
-  connect(colorEditor, &maki::ColorWidget::valueChanged, this, [node, property](const QColor& color) {
-    if (node)
-      node->setProperty(property.getid(), color.name());
-  });
-
-  layout()->addWidget(colorEditor);
-
-  return VoidResult();
-}
-
-VoidResult PropertiesMenu::loadPropertySelect(const PropertyInfo& property, NodeItem* node)
-{
-  auto* widget = new maki::SelectorWidget(ToLabel(property.getid()), maki::WidgetAlignment::Vertical(), this);
-  auto options = property.getoptions();
-  for (const auto& option : options)
-    widget->addItem(option->getid(), option->getid());
-
-  auto result = node->getProperty(property.getid());
-  if (result.isValid())
-    widget->setValue(result.toString());
-
-  connect(widget, &maki::SelectorWidget::valueChanged, this, [node, id = property.getid()](const QString& text) {
-    if (node)
-      node->setProperty(id, text);
-  });
-
-  layout()->addWidget(widget);
-
-  return VoidResult();
-}
-
-VoidResult PropertiesMenu::loadPropertyString(const PropertyInfo& property, NodeItem* node)
-{
-  auto* widget = new maki::StringWidget(ToLabel(property.getid()), "", maki::WidgetAlignment::Vertical(), this);
-  auto result = node->getProperty(property.getid());
-  if (result.isValid())
-    widget->setValue(result.toString());
-  else
-    LOG_DEBUG("Creation of StringWidget failed: {}", property.getid());
-
-  connect(widget, &maki::StringWidget::valueChanged, this, [node, property](const QString& text) {
-    if (node)
+    // Preserve the old automatic-name behaviour, but use Value throughout.
+    if (id == ConfigKeys::NAME)
     {
-      if (text.isEmpty())
-        node->setProperty(property.getid(), node->nodeType().replace("Koda::", ""));
+      const auto text = value.toString();
+      const bool automaticallyGenerated = text.isEmpty();
+
+      if (automaticallyGenerated)
+        node->setProperty(id, maki::Value::createString(node->nodeType().replace("Koda::", "")));
       else
-        node->setProperty(property.getid(), text);
+        node->setProperty(id, value);
+
+      if (node->getProperty("name_auto_generated"))
+        node->setProperty("name_auto_generated", maki::Value::createBool(automaticallyGenerated));
+
+      return;
     }
 
-    if (property.getid() == ConfigKeys::NAME)
-      node->setProperty("name_auto_generated", text.isEmpty());
+    node->setProperty(id, value);
   });
 
-  layout()->addWidget(widget);
-
+  layout()->addWidget(editor);
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::loadPropertyBoolean(const PropertyInfo& property, NodeItem* node)
+VoidResult PropertiesMenu::loadColorProperty(const std::shared_ptr<IParameter>& property, NodeItem* node)
 {
-  // What a hack...
-  if (property.getid() == "name_auto_generated")
-    return VoidResult();
+  if (!property || !node)
+    return VoidResult::Failed("Cannot create color editor without a property and node");
 
-  auto* widget = new maki::BooleanWidget(ToLabel(property.getid()), "", maki::WidgetAlignment::Vertical(), this);
+  const auto value = parameterValue(property.get());
+  auto* editor = new maki::ColorWidget(ToLabel(property->getid()), "", maki::WidgetAlignment::Vertical(), this);
 
-  auto result = node->getProperty(property.getid());
-  if (result.isValid())
-    widget->setValue(result.toBool());
-  else
-    LOG_DEBUG("Creation of BooleanWidget failed: {}", property.getid());
+  if (value.kind() == IValue::Kind::Color)
+    editor->setValue(std::get<QColor>(value.data));
+  else if (value.isValid())
+    editor->setValue(QColor::fromString(value.toString()));
 
-  connect(widget, &maki::BooleanWidget::valueChanged, this, [node, property](const bool value) {
-    if (node)
-      node->setProperty(property.getid(), value);
+  connect(editor, &maki::ColorWidget::valueChanged, this, [node, id = property->getid()](const QColor& color) {
+    if (!node)
+      return;
+
+    maki::Value value;
+    value.data = color;
+    node->setProperty(id, value);
   });
 
-  layout()->addWidget(widget);
-
+  layout()->addWidget(editor);
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::loadPropertyComponentSelect(const PropertyInfo& property, NodeItem* node)
+VoidResult PropertiesMenu::loadSelectProperty(const std::shared_ptr<IParameter>& property, NodeItem* node)
+{
+  if (!property || !node)
+    return VoidResult::Failed("Cannot create selector without a property and node");
+
+  auto record = parameterRecord(property.get());
+  if (!hasRecordField(record, VALUE_KEY) || !hasRecordField(record, ITEMS_KEY))
+    return VoidResult::Failed("Select property '{}' must be a record containing 'value' and 'items'", property->getid().toStdString());
+
+  const auto items = recordList(record, ITEMS_KEY);
+  const auto selected = record.at(VALUE_KEY);
+
+  auto* editor = new maki::SelectorWidget(ToLabel(property->getid()), maki::WidgetAlignment::Vertical(), this);
+  for (std::size_t i = 0; i < items.size(); ++i)
+    editor->addItem(items[i].toString(), static_cast<qulonglong>(i));
+
+  editor->setValue(selected.toString());
+
+  connect(editor, &maki::SelectorWidget::dataChanged, this,
+          [node, id = property->getid(), record, items](const QString& /* text */, const QVariant& data) mutable {
+            if (!node || !data.isValid())
+              return;
+
+            const auto index = data.toULongLong();
+            if (index >= items.size())
+              return;
+
+            record[VALUE_KEY] = items[index];
+            node->setProperty(id, maki::Value::createRecord(record));
+          });
+
+  layout()->addWidget(editor);
+  return VoidResult();
+}
+
+VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IParameter>& property, NodeItem* node)
 {
   if (!mStorage)
     return VoidResult::Failed("No storage assigned to properties menu");
+  if (!property || !node)
+    return VoidResult::Failed("Cannot create component selector without a property and node");
 
-  auto componentType = Types::ControlTypes::EVENT_SELECT;
-  if (!property.getoptions().empty())
-    for (const auto& option : property.getoptions())
-      if (option->getcontrol() == Types::ControlTypes::FLOW_CALL || option->getcontrol() == Types::ControlTypes::EVENT_SELECT ||
-          option->getcontrol() == Types::ControlTypes::TRIGGER_CALL)
-        componentType = option->getcontrol();
+  auto record = parameterRecord(property.get());
+  if (!hasRecordField(record, COMPONENT_KEY))
+    return VoidResult::Failed("Component-select property '{}' must contain a 'component' field", property->getid().toStdString());
 
-  auto* widget = new maki::SelectorWidget(ToLabel(property.getid()), maki::WidgetAlignment::Vertical(), this);
-  for (const auto& child : mStorage->getPossibleCallers(node->id(), componentType))
+  const auto mode = callControl(record);
+  LOG_DEBUG("Using control mode: {}", Types::ControlTypesToString(mode));
+  auto* componentEditor = new maki::SelectorWidget(ToLabel(property->getid()), maki::WidgetAlignment::Vertical(), this);
+
+  for (const auto& candidate : mStorage->getPossibleCallers(node->id(), mode))
   {
-    auto name = child->getProperty(ConfigKeys::NAME);
-    if (name.isNull() || !name.isValid())
+    if (!candidate)
       continue;
 
-    widget->addItem(name.toString(), child->getid());
+    const auto* name = candidate->getProperty(ConfigKeys::NAME);
+    if (!name || !name->getvalue() || !name->getvalue()->isValid())
+      continue;
+
+    componentEditor->addItem(name->getvalue()->toStringValue(), candidate->getid());
   }
 
-  // Make sure the widget shows the current selected component if it exists
-  auto selectedComponent = node->getProperty(property.getid());
-  if (selectedComponent.isValid())
+  componentEditor->setValue(recordString(record, COMPONENT_KEY));
+  layout()->addWidget(componentEditor);
+
+  auto* callEditor = static_cast<maki::SelectorWidget*>(nullptr);
+  auto* argumentsGroup = new maki::WidgetGroup(tr("Arguments"), oclero::qlementine::TextRole::Default, this);
+
+  const bool hasNamedCall = mode == Types::ControlTypes::EVENT_SELECT || mode == Types::ControlTypes::FLOW_CALL;
+  if (hasNamedCall)
   {
-    auto object = selectedComponent.toJsonObject();
-    if (object.contains(ConfigKeys::DATA))
-      widget->setValue(object[ConfigKeys::DATA].toString());
-  }
-  else
-  {
-    widget->setValue(Constants::EMPTY_COMBO);
+    const QString label = mode == Types::ControlTypes::FLOW_CALL ? tr("Flow") : tr("Event");
+    callEditor = new maki::SelectorWidget(label, maki::WidgetAlignment::Vertical(), this);
+    layout()->addWidget(callEditor);
   }
 
-  layout()->addWidget(widget);
-  if (!property.getoptions().empty())
-  {
-    for (const auto& option : property.getoptions())
-    {
-      if (option->getcontrol() == Types::ControlTypes::EVENT_SELECT)
-      {
-        LOG_WARN_ON_FAILURE(loadFieldEventSelect(widget, option->getid(), property, node, [this](const QString& nodeId, QComboBox* eventWidget) {
-          eventWidget->clear();
-          auto events = mStorage->getEventsOfTypeFromNode(nodeId, {Types::CallType::TRIGGER, Types::CallType::ABORT});
-          for (const auto& event : events)
-            eventWidget->addItem(event->getname(), event->getname());
-        }));
-      }
-      else if (option->getcontrol() == Types::ControlTypes::TRIGGER_CALL)
-      {
-        // This is used in async call type blocks, where the component itself has arguments
-        LOG_WARN_ON_FAILURE(loadFieldTriggerCall(widget, option->getid(), property, node));
-      }
-      else if (option->getcontrol() == Types::ControlTypes::FLOW_CALL)
-      {
-        LOG_WARN_ON_FAILURE(loadFieldEventSelect(widget, option->getid(), property, node, [this](const QString& nodeId, QComboBox* eventWidget) {
-          eventWidget->clear();
-          auto events = mStorage->getFlowsFromNode(nodeId);
-          for (const auto& event : events)
-            eventWidget->addItem(event->getname(), event->getname());
-        }));
-      }
-      else
-      {
-        LOG_WARNING("Configuration is not supported");
-      }
-    }
-  }
-  return VoidResult();
-}
+  layout()->addWidget(argumentsGroup);
 
-VoidResult PropertiesMenu::loadFieldEventSelect(maki::SelectorWidget* componentSelect, const QString& optionId, const PropertyInfo& property,
-                                                NodeItem* node, std::function<void(const QString& nodeId, QComboBox* eventWidget)> populate)
-{
-  QComboBox* eventCombo = new QComboBox(this);
-  auto* widget = new maki::SelectorWidget(ToLabel(optionId), eventCombo, maki::WidgetAlignment::Vertical(), this);
-  auto* group = new maki::WidgetGroup(tr("Arguments"), oclero::qlementine::TextRole::Default, this);
+  auto findCall = [this, mode](const QString& componentId, const QString& callName) -> std::shared_ptr<FlowSaveInfo> {
+    if (componentId.isEmpty())
+      return nullptr;
 
-  // Set starting values
-  auto propertyValue = node->getProperty(property.getid());
-  if (propertyValue.isValid())
-  {
-    // Based on the component, we can then set the current event
-    auto currentComponentId = componentSelect->getData().toString();
-    populate(currentComponentId, eventCombo);
+    if (mode == Types::ControlTypes::FLOW_CALL)
+      return mStorage->getFlowFromNode(componentId, callName);
 
-    QJsonObject object = propertyValue.toJsonObject();
-    if (object.contains(ConfigKeys::OPTIONS) && object[ConfigKeys::OPTIONS].toArray().size() > EVENT_INDEX)
-    {
-      auto currentEvent = object[ConfigKeys::OPTIONS][EVENT_INDEX][ConfigKeys::DATA].toString();
-      widget->setValue(currentEvent);
+    if (mode == Types::ControlTypes::EVENT_SELECT)
+      return mStorage->getEventFromNode(componentId, callName);
 
-      // Finally, based on the event, we can set the arguments
-      LOG_WARN_ON_FAILURE(loadEventArguments(currentComponentId, currentEvent, property, node, Types::CallType::UNKNOWN, group));
-    }
-    else
-    {
-      group->hide();
-    }
-  }
-
-  // When the event changes
-  connect(widget, &maki::SelectorWidget::valueChanged, this, [this, node, property, componentSelect, group](const QString& eventName) {
-    if (eventName.isEmpty())
-      return;
-
-    clearLayout(group->layout());
-    UPDATE_PROPERTY_ARG(node, property.getid(), EVENT_INDEX, eventName, Types::PropertyTypes::VOID, false)
-    LOG_WARN_ON_FAILURE(loadEventArguments(componentSelect->getData().toString(), eventName, property, node, Types::CallType::UNKNOWN, group));
-
-    // Update the node name
-    updateBlockName(node, componentSelect->getValue(), eventName);
-  });
-
-  // When the component itself changes
-  connect(componentSelect, &maki::SelectorWidget::dataChanged, this,
-          [this, populate, eventCombo, node, id = property.getid()](const QString& component, const QVariant& nodeId) {
-            if (!nodeId.isValid())
-              return;
-
-            populate(nodeId.toString(), eventCombo);
-            UPDATE_PROPERTY(node, id, component)
-            updateBlockName(node, component, "");
-          });
-
-  // Add everything to the layout
-  layout()->addWidget(widget);
-  layout()->addWidget(group);
-
-  return VoidResult();
-}
-
-VoidResult PropertiesMenu::loadFieldTriggerCall(maki::SelectorWidget* componentSelect, const QString& optionId, const PropertyInfo& property,
-                                                NodeItem* node)
-{
-  auto* group = new maki::WidgetGroup(tr("Arguments"), oclero::qlementine::TextRole::Default, this);
-  auto currentComponentId = componentSelect->getData().toString();
-  LOG_WARN_ON_FAILURE(loadEventArguments(currentComponentId, "", property, node, Types::CallType::TRIGGER, group));
-
-  connect(componentSelect, &maki::SelectorWidget::dataChanged, this,
-          [this, currentComponentId, group, node, property](const QString& component, const QVariant& nodeId) {
-            if (!nodeId.isValid())
-              return;
-
-            clearLayout(group->layout());
-
-            UPDATE_PROPERTY(node, property.getid(), component)
-            LOG_WARN_ON_FAILURE(loadEventArguments(nodeId.toString(), "", property, node, Types::CallType::TRIGGER, group));
-            updateBlockName(node, component, "");
-          });
-
-  layout()->addWidget(group);
-
-  return VoidResult();
-}
-
-VoidResult PropertiesMenu::loadEventArguments(const QString& nodeId, const QString& flowName, const PropertyInfo& property, NodeItem* node,
-                                              Types::CallType callType, maki::WidgetGroup* group)
-{
-  std::shared_ptr<FlowSaveInfo> event = nullptr;
-  if (callType == Types::CallType::UNKNOWN)
-  {
-    event = mStorage->getFlowFromNode(nodeId, flowName);
-  }
-  else
-  {
-    auto events = mStorage->getEventsOfTypeFromNode(nodeId, {callType});
-    if (!events.isEmpty())
-      event = events.first();
-  }
-
-  if (!event)
-  {
-    group->hide();
-    return VoidResult::Failed("Component does not have flow: " + flowName.toStdString());
-  }
-
-  auto jsonValue = node->getProperty(property.getid());
-  if (!jsonValue.isValid())
-  {
-    group->hide();
-    return VoidResult::Failed("Property is not valid");
-  }
-
-  if (event->getarguments().isEmpty())
-  {
-    group->hide();
-    return VoidResult();
-  }
-
-  LOG_DEBUG("Loading event {} with args: {}", event->getname(), event->getarguments().size());
-
-  group->show();
-  int index = ARG_INDEX;
-  maki::WidgetAlignment alignment = {
-      .type = maki::WidgetAlignment::Type::FORM,
-      .direction = maki::WidgetAlignment::Direction::SPREAD,
-      .group = group,
-      .labelWidth = 50,
+    const auto events = mStorage->getEventsOfTypeFromNode(componentId, {Types::CallType::TRIGGER});
+    return events.isEmpty() ? nullptr : events.first();
   };
 
-  QJsonArray argArray = jsonValue.toJsonObject()[ConfigKeys::OPTIONS].toArray();
-  for (const auto& arg : event->getarguments())
-  {
-    QJsonObject jsonItem = index < argArray.size() ? argArray[index].toObject() : QJsonObject();
-    const auto argType = arg->gettype();
-    if (argType == Types::PropertyTypes::INTEGER)
-    {
-      auto* field = new maki::IntegerWidget(arg->getid(), arg->getdefaultValue().toString(), alignment, this);
-      field->setAcceptVariable(true);
-      if (jsonItem.contains(ConfigKeys::DATA))
-        field->setValue(jsonItem[ConfigKeys::DATA].toString());
+  auto populateCalls = [this, mode, callEditor](const QString& componentId) {
+    if (!callEditor)
+      return;
 
-      addCompleter(field->widget(), node->id(), argType);
-      connect(field, &maki::IntegerWidget::valueChanged, this, [property, node, index](const QString& value) {
-        bool isLiteral = false;
-        (void)value.toInt(&isLiteral);
-        UPDATE_PROPERTY_ARG(node, property.getid(), index, value, Types::PropertyTypes::INTEGER, !isLiteral)
-        // LOG_DEBUG("Set property {} argument ({}) to {}", property.getid(), index, value);
-      });
-    }
-    else if (argType == Types::PropertyTypes::REAL)
-    {
-      auto* field = new maki::FloatWidget(arg->getid(), arg->getdefaultValue().toString(), alignment, this);
-      field->setAcceptVariable(true);
-      if (jsonItem.contains(ConfigKeys::DATA))
-        field->setValue(jsonItem[ConfigKeys::DATA].toString());
+    callEditor->widget()->clear();
 
-      addCompleter(field->widget(), node->id(), argType);
-      connect(field, &maki::FloatWidget::valueChanged, this, [property, node, index](const QString& value) {
-        bool isLiteral = false;
-        (void)value.toDouble(&isLiteral);
-        UPDATE_PROPERTY_ARG(node, property.getid(), index, value, Types::PropertyTypes::REAL, !isLiteral)
-        // LOG_DEBUG("Set property {} argument ({}) to {}", property.getid(), index, value);
-      });
-    }
-    else if (argType == Types::PropertyTypes::STRING)
+    if (mode == Types::ControlTypes::FLOW_CALL)
     {
-      auto* field = new maki::StringWidget(arg->getid(), arg->getdefaultValue().toString(), alignment, this);
-      if (jsonItem.contains(ConfigKeys::DATA))
-        field->setValue(jsonItem[ConfigKeys::DATA].toString());
-
-      addCompleter(field->widget(), node->id(), argType);
-      connect(field, &maki::StringWidget::valueChanged, this, [property, node, index](const QString& value) {
-        bool isLiteral = value.size() > 2 && value.startsWith('"') && value.endsWith('"');
-        UPDATE_PROPERTY_ARG(node, property.getid(), index, value, Types::PropertyTypes::STRING, !isLiteral)
-        // LOG_DEBUG("Set property {} argument ({}) to {}", property.getid(), index, value);
-      });
-    }
-    else if (argType == Types::PropertyTypes::BOOLEAN)
-    {
-      auto* field = new maki::StringWidget(arg->getid(), arg->getdefaultValue().toString(), alignment, this);
-      if (jsonItem.contains(ConfigKeys::DATA))
-        field->setValue(jsonItem[ConfigKeys::DATA].toString());
-
-      addCompleter(field->widget(), node->id(), argType, {"true", "false"});
-      connect(field, &maki::StringWidget::valueChanged, this, [property, node, index](const QString& value) {
-        bool isLiteral = value == "true" || value == "false" || value == "True" || value == "False";
-        UPDATE_PROPERTY_ARG(node, property.getid(), index, value, Types::PropertyTypes::BOOLEAN, !isLiteral)
-        // LOG_DEBUG("Set property {} argument ({}) to {}", property.getid(), index, value);
-      });
+      for (const auto& flow : mStorage->getFlowsFromNode(componentId))
+        if (flow)
+          callEditor->addItem(flow->getname(), flow->getname());
     }
     else
     {
-      LOG_WARNING("No support for argument of type: {}", Types::PropertyTypesToString(argType));
+      for (const auto& event : mStorage->getEventsOfTypeFromNode(componentId, {Types::CallType::TRIGGER, Types::CallType::ABORT}))
+        if (event)
+          callEditor->addItem(event->getname(), event->getname());
     }
+  };
 
-    ++index;
+  // Initialise dependent fields before connecting change handlers.
+  const auto currentComponentId = componentEditor->getData().toString();
+  if (callEditor)
+  {
+    populateCalls(currentComponentId);
+    callEditor->setValue(recordString(record, mode == Types::ControlTypes::FLOW_CALL ? FLOW_KEY : EVENT_KEY));
   }
 
+  auto currentCall = findCall(currentComponentId, mode == Types::ControlTypes::FLOW_CALL      ? recordString(record, FLOW_KEY)
+                                                  : mode == Types::ControlTypes::EVENT_SELECT ? recordString(record, EVENT_KEY)
+                                                                                              : QString());
+  LOG_WARN_ON_FAILURE(loadCallArguments(currentCall, property->getid(), node, argumentsGroup));
+
+  if (callEditor)
+  {
+    connect(callEditor, &maki::SelectorWidget::valueChanged, this,
+            [this, node, propertyId = property->getid(), componentEditor, argumentsGroup, findCall, mode](const QString& callName) {
+              if (!node || callName.isEmpty())
+                return;
+
+              const auto* current = node->getProperty(propertyId);
+              auto valueRecord = parameterRecord(current);
+              const char* key = mode == Types::ControlTypes::FLOW_CALL ? FLOW_KEY : EVENT_KEY;
+              valueRecord[key] = maki::Value::createString(callName);
+              valueRecord[ARGUMENTS_KEY] = maki::Value::createList({});
+              node->setProperty(propertyId, maki::Value::createRecord(valueRecord));
+
+              argumentsGroup->clear();
+              const auto call = findCall(componentEditor->getData().toString(), callName);
+              LOG_WARN_ON_FAILURE(loadCallArguments(call, propertyId, node, argumentsGroup));
+
+              updateBlockName(node, componentEditor->getValue(), callName);
+            });
+  }
+
+  connect(componentEditor, &maki::SelectorWidget::dataChanged, this,
+          [this, node, propertyId = property->getid(), callEditor, argumentsGroup, populateCalls, findCall, mode](const QString& componentName,
+                                                                                                                  const QVariant& componentId) {
+            if (!node || !componentId.isValid())
+              return;
+
+            const auto* current = node->getProperty(propertyId);
+            auto valueRecord = parameterRecord(current);
+            valueRecord[COMPONENT_KEY] = maki::Value::createString(componentName);
+            valueRecord[ARGUMENTS_KEY] = maki::Value::createList({});
+
+            if (mode == Types::ControlTypes::FLOW_CALL)
+              valueRecord[FLOW_KEY] = maki::Value::createString("");
+            else if (mode == Types::ControlTypes::EVENT_SELECT)
+              valueRecord[EVENT_KEY] = maki::Value::createString("");
+
+            node->setProperty(propertyId, maki::Value::createRecord(valueRecord));
+
+            argumentsGroup->clear();
+
+            if (callEditor)
+            {
+              populateCalls(componentId.toString());
+              callEditor->setValue(Constants::EMPTY_COMBO);
+            }
+            else
+            {
+              const auto call = findCall(componentId.toString(), QString());
+              LOG_WARN_ON_FAILURE(loadCallArguments(call, propertyId, node, argumentsGroup));
+            }
+
+            updateBlockName(node, componentName, "");
+          });
+
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::loadPropertyEventSelect(const PropertyInfo& property, NodeItem* node)
+VoidResult PropertiesMenu::loadCallArguments(const std::shared_ptr<FlowSaveInfo>& call, const QString& propertyId, NodeItem* node,
+                                             maki::WidgetGroup* group)
 {
-  if (!mStorage)
-    return VoidResult::Failed("No storage assigned to properties menu");
+  if (!group || !node)
+    return VoidResult::Failed("Cannot load call arguments without a group and node");
 
-  QComboBox* widget = new QComboBox(this);
-  widget->setObjectName(property.getid());
+  group->clear();
 
-  // Make sure the widget shows the current selected component if it exists
-  auto currentValue = node->getProperty(property.getid());
-  if (currentValue.isValid())
-    widget->setCurrentText(currentValue.toString());
-  else
-    widget->setCurrentText("-");
+  if (!call || call->getarguments().isEmpty())
+  {
+    group->hide();
+    return VoidResult();
+  }
 
-  connect(widget, &QComboBox::currentTextChanged, this, [=](const QString& text) { node->setProperty(property.getid(), text); });
+  group->show();
 
-  widget->setFont(Fonts::Property);
-  layout()->addWidget(widget);
+  const auto* property = node->getProperty(propertyId);
+  auto record = parameterRecord(property);
+  auto values = recordList(record, ARGUMENTS_KEY);
 
-  return VoidResult();
-}
+  const auto arguments = call->getarguments();
+  if (values.size() < static_cast<std::size_t>(arguments.size()))
+    values.resize(arguments.size());
 
-QLineEdit* PropertiesMenu::loadPropertyEventArguments(const PropertyInfo& property, NodeItem* node, const QString& propertyId,
-                                                      const QString& eventName, QComboBox* eventWidget)
-{
-  QString label = ToLabel(property.getid());
-  QLabel* nameLabel = new QLabel(label);
+  for (int index = 0; index < arguments.size(); ++index)
+  {
+    const auto& argument = arguments[index];
+    if (!argument)
+      continue;
 
-  nameLabel->setFont(Fonts::Label);
-  layout()->addWidget(nameLabel);
-
-  QLineEdit* widget = new QLineEdit(this);
-  auto result = node->getProperty(propertyId);
-  if (!result.isValid())
-    return NULL;
-
-  widget->setText(result.toString());
-  connect(widget, &QLineEdit::editingFinished, this, [=]() {
-    auto value = node->getProperty(propertyId);
+    maki::Value value = values[static_cast<std::size_t>(index)];
     if (!value.isValid())
-      return;
+    {
+      const auto* defaultValue = asValue(argument->getvalue());
+      if (defaultValue)
+        value = *defaultValue;
+      else
+        value = maki::Value::defaultValue(argument->gettype());
 
-    QJsonObject object = value.toJsonObject();
-    object[ConfigKeys::OPTION_DATA] = eventName;
-    object["option_data_id"] = eventWidget->currentData().toString();
-  });
+      values[static_cast<std::size_t>(index)] = value;
+    }
 
-  widget->setFont(Fonts::Property);
-  layout()->addWidget(widget);
-  return widget;
+    auto* editor = maki::ValueEditorFactory::create(argument->getid(), argument->gettype(), value, maki::WidgetAlignment::Form(group, 70), this);
+    if (!editor)
+    {
+      LOG_WARNING("Could not create argument editor '{}' of type '{}'", argument->getid(), argument->gettype().toString());
+      continue;
+    }
+
+    addCompleter(editor, node->id(), argument->gettype());
+
+    connect(editor, &maki::InputWidget::valueChanged, this, [node, propertyId, editor, index] {
+      if (!node || !editor)
+        return;
+
+      const auto* current = node->getProperty(propertyId);
+      auto valueRecord = parameterRecord(current);
+      auto arguments = recordList(valueRecord, ARGUMENTS_KEY);
+
+      if (arguments.size() <= static_cast<std::size_t>(index))
+        arguments.resize(static_cast<std::size_t>(index) + 1);
+
+      arguments[static_cast<std::size_t>(index)] = editor->getValue();
+      valueRecord[ARGUMENTS_KEY] = maki::Value::createList(arguments);
+      node->setProperty(propertyId, maki::Value::createRecord(valueRecord));
+    });
+  }
+
+  // Store defaulted values immediately, so the record always matches the call signature.
+  record[ARGUMENTS_KEY] = maki::Value::createList(values);
+  node->setProperty(propertyId, maki::Value::createRecord(record));
+
+  return VoidResult();
 }
 
-void PropertiesMenu::addCompleter(oclero::qlementine::LineEdit* field, const QString& nodeId, const Types::PropertyTypes dataType,
-                                  QStringList variables)
+void PropertiesMenu::addCompleter(maki::InputWidget* editor, const QString& nodeId, const koda::types::TypeReference& type,
+                                  QStringList additionalValues)
 {
-  auto parentStates = mStorage->getPossibleStates(nodeId);
-  for (const auto& state : parentStates)
+  if (!editor || !mStorage)
+    return;
+
+  auto variables = std::move(additionalValues);
+
+  for (const auto& state : mStorage->getPossibleStates(nodeId))
   {
     if (!state)
       continue;
 
-    if (state->gettype() == dataType)
+    if (state->gettype().structurallyEquals(type))
       variables.append(state->getid());
   }
 
-  auto* completer = new QCompleter(variables, field);
-  completer->setCompletionMode(QCompleter::PopupCompletion);
-  completer->setCaseSensitivity(Qt::CaseInsensitive);
+  variables.removeDuplicates();
+  if (variables.isEmpty())
+    return;
 
-  field->setCompleter(completer);
+  for (auto* widget : editor->focusWidgets())
+    if (widget)
+      maki::addCompleter(variables, widget);
+}
+
+VoidResult PropertiesMenu::loadControls(NodeItem* node)
+{
+  if (!node)
+    return VoidResult();
+
+  auto eventsTable = loadEventTable(node);
+  LOG_WARN_ON_FAILURE(eventsTable);
+
+  for (const auto& control : node->controls())
+  {
+    switch (control.type)
+    {
+      case Types::ControlTypes::ADD_EVENT:
+        LOG_WARN_ON_FAILURE(loadControlAddEvent(eventsTable.Value(), node));
+        break;
+
+      case Types::ControlTypes::ADD_STATE:
+      case Types::ControlTypes::ADD_FIELD:
+      default:
+        break;
+    }
+  }
+
+  return VoidResult();
+}
+
+Result<QTableWidget*> PropertiesMenu::loadEventTable(NodeItem* node)
+{
+  if (node->events().isEmpty() || node->function() != Types::LibraryTypes::STRUCTURAL)
+    return nullptr;
+
+  // Create it once
+  auto* eventsTable = new QTableWidget(this);
+  eventsTable->setObjectName("EventTable");
+  eventsTable->setColumnCount(4);
+  eventsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+  eventsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+  eventsTable->setSelectionMode(QAbstractItemView::ExtendedSelection);
+  eventsTable->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
+  eventsTable->setHorizontalHeaderLabels({"Name", "Type", "Return", "Arguments"});
+
+  eventsTable->verticalHeader()->hide();
+  eventsTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+  eventsTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+  eventsTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+  eventsTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Stretch);
+
+  for (const auto& event : node->events())
+  {
+    const auto concrete = std::dynamic_pointer_cast<FlowSaveInfo>(event);
+    if (concrete)
+      addEventToTable(eventsTable, eventsTable->rowCount(), concrete);
+  }
+
+  connect(eventsTable, &QTableWidget::doubleClicked, this,
+          [this, eventsTable, node](const QModelIndex& index) { openEventDialog(eventsTable, node, index.row()); });
+
+  auto group = new maki::ContainerWidget(tr("Events/Flows"), eventsTable, maki::WidgetAlignment::Vertical(), this);
+  layout()->addWidget(group);
+
+  if (auto* vLayout = qobject_cast<QVBoxLayout*>(layout()))
+    vLayout->addStretch();
+
+  return eventsTable;
+}
+
+VoidResult PropertiesMenu::loadControlAddEvent(QTableWidget* table, NodeItem* node)
+{
+  auto* browserButtons = new QHBoxLayout();
+  auto* addButton = new QPushButton(this);
+  addButton->setFixedSize(Config::MEDIUM_BUTTON_SIZE);
+  addButton->setIcon(iconFromTheme("plus"));
+
+  auto* removeButton = new QPushButton(this);
+  removeButton->setFixedSize(Config::MEDIUM_BUTTON_SIZE);
+  removeButton->setIcon(iconFromTheme("minus"));
+
+  connect(addButton, &QPushButton::pressed, this, [this, table, node] {
+    if (table)
+      openEventDialog(table, node, table->rowCount());
+  });
+  connect(removeButton, &QPushButton::clicked, this, [this, table, node] { removeEventFromTable(table, node); });
+
+  browserButtons->addWidget(addButton);
+  browserButtons->addWidget(removeButton);
+  browserButtons->addStretch();
+
+  if (auto* vLayout = qobject_cast<QVBoxLayout*>(layout()))
+    vLayout->addLayout(browserButtons);
+
+  return VoidResult();
+}
+
+void PropertiesMenu::openEventDialog(QTableWidget* table, NodeItem* node, int row)
+{
+  if (!table || !node)
+    return;
+
+  EventDialog dialog(tr("Edit event"), this);
+
+  auto config = row < node->events().size() ? std::dynamic_pointer_cast<FlowSaveInfo>(node->events().at(row)) : std::make_shared<FlowSaveInfo>();
+  dialog.setup(config);
+  if (dialog.exec() != QDialog::Accepted)
+    return;
+
+  auto info = dialog.getInfo();
+  if (!info)
+    return;
+
+  for (const auto& f : node->events())
+    if (f->getname() == info->getname())
+    {
+      if (maki::errorPrompt(tr("A flow with the same name already exists"), tr("Would you like to open it?")))
+        emit flowSelected(f->getid(), node->id());
+      return;
+    }
+
+  Flow* flow = node->createFlow(info->getname(), info);
+  addEventToTable(table, row, info);
+
+  if (flow && info->getmodifiable())
+    emit flowSelected(flow->id(), node->id());
+}
+
+void PropertiesMenu::addEventToTable(QTableWidget* table, int row, const std::shared_ptr<FlowSaveInfo>& event)
+{
+  if (!table || !event)
+    return;
+
+  if (row >= table->rowCount())
+    table->insertRow(row);
+
+  auto* indexItem = new QTableWidgetItem(event->getname());
+  indexItem->setData(TableRole::IdRole, event->getid());
+  indexItem->setData(TableRole::ModifiableRole, event->getmodifiable());
+
+  table->setItem(row, 0, indexItem);
+  table->setItem(row, 1, new QTableWidgetItem(Types::CallTypeToString(event->gettype())));
+  table->setItem(row, 2, new QTableWidgetItem(Types::PropertyTypesToString(event->getreturnType())));
+
+  QStringList arguments;
+  for (const auto& argument : event->getarguments())
+    if (argument)
+      arguments.append(argument->getid());
+
+  table->setItem(row, 3, new QTableWidgetItem(arguments.join(", ")));
+}
+
+void PropertiesMenu::removeEventFromTable(QTableWidget* table, NodeItem* node)
+{
+  if (!table || !node)
+  {
+    LOG_DEBUG("Cannot remove events with no table or node");
+    return;
+  }
+
+  const auto selectedRows = table->selectionModel()->selectedRows();
+  if (selectedRows.empty())
+  {
+    LOG_DEBUG("No rows selected for removal");
+    return;
+  }
+
+  std::vector<int> rows;
+  rows.reserve(selectedRows.size());
+
+  for (const auto& index : selectedRows)
+    rows.push_back(index.row());
+
+  std::sort(rows.begin(), rows.end(), std::greater<int>());
+  for (const int row : rows)
+  {
+    if (row < 0 || row >= table->rowCount())
+      continue;
+
+    auto flowId = table->item(row, 0)->data(TableRole::IdRole).toString();
+    table->removeRow(row);
+    emit flowRemoved(flowId, node->id());
+  }
 }
 
 VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)
 {
-  // Clear the frame
   clearLayout(layout());
 
   if (!transition)
@@ -750,403 +782,57 @@ VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)
   mCurrentNode = transition->id();
 
   auto source = transition->source();
-  if (source == nullptr)
+  if (!source)
     return VoidResult::Failed("Transition with no source");
 
   auto* eventWidget = new maki::SelectorWidget(tr("Transition event"), maki::WidgetAlignment::Vertical(), this);
-  // First, we add the node specific transitions
-  for (const auto& t : source->configTransitions())
-    eventWidget->addItem(t.event, t.event);
 
-  // Then the generic handlers
+  for (const auto& configured : source->configTransitions())
+    eventWidget->addItem(configured.event, configured.event);
+
   eventWidget->addItem("on error", "on error");
   eventWidget->addItem("on abort", "on abort");
 
-  // Finally, the rest of the signals
-  auto callers = mStorage->getPossibleCallers(source->id(), Types::ControlTypes::AUTO);
-  for (const auto& caller : callers)
+  if (mStorage)
   {
-    auto name = caller->getProperty(ConfigKeys::NAME);
-    if (name.isNull() || !name.isValid())
-      continue;
+    for (const auto& caller : mStorage->getPossibleCallers(source->id(), Types::ControlTypes::AUTO))
+    {
+      if (!caller)
+        continue;
 
-    auto events = mStorage->getEventsOfTypeFromNode(caller->getid(), {Types::CallType::OUT});
-    for (const auto& event : events)
-      eventWidget->addItem(name.toString() + "." + event->getname(), "on");
+      const auto* name = caller->getProperty(ConfigKeys::NAME);
+      if (!name || !name->getvalue() || !name->getvalue()->isValid())
+        continue;
+
+      const auto componentName = name->getvalue()->toStringValue();
+      for (const auto& event : mStorage->getEventsOfTypeFromNode(caller->getid(), {Types::CallType::OUT}))
+        if (event)
+          eventWidget->addItem(componentName + "." + event->getname(), "on");
+    }
   }
 
-  // Set the initial value
-  auto currentEvent = transition->getEvent();
+  const auto currentEvent = transition->getEvent();
   eventWidget->setValue(currentEvent.isEmpty() ? Constants::EMPTY_COMBO : currentEvent);
 
   connect(eventWidget, &maki::SelectorWidget::dataChanged, this, [transition](const QString& text, const QVariant& data) {
     transition->setEvent(text);
     transition->setName(data.toString());
-    LOG_TRACE("Setting transition to: {} and {}", text, data.toString());
   });
 
-  QPushButton* button = new QPushButton(this);
-  button->setText(tr("Reset"));
-  connect(button, &QPushButton::pressed, this, [transition, eventWidget]() {
+  auto* resetButton = new QPushButton(tr("Reset"), this);
+  connect(resetButton, &QPushButton::pressed, this, [transition, eventWidget] {
     transition->setEvent("");
     transition->setName("");
     eventWidget->setValue(Constants::EMPTY_COMBO);
   });
 
   layout()->addWidget(eventWidget);
-  layout()->addWidget(button);
+  layout()->addWidget(resetButton);
 
-  qobject_cast<QVBoxLayout*>(layout())->addStretch();
-
-  return VoidResult();
-}
-
-VoidResult PropertiesMenu::loadControlAddField(const ControlsConfig& control, NodeItem* node, QWidget* parent, QHBoxLayout* controlLayout)
-{
-  // Create table to hold new fields
-  QTableView* tableView = new QTableView(parent);
-  QStandardItemModel* model = new QStandardItemModel(0, 3);
-
-  model->setHorizontalHeaderItem(0, new QStandardItem("Name"));
-  model->setHorizontalHeaderItem(1, new QStandardItem("Value"));
-  model->setHorizontalHeaderItem(2, new QStandardItem("Type"));
-
-  tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-  tableView->setContextMenuPolicy(Qt::CustomContextMenu);
-
-  addDynamicWidget((QVBoxLayout*)layout(), tableView, parent);
-
-  tableView->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::EditKeyPressed);
-  tableView->setModel(model);
-
-  for (const auto& field : node->fields())
-  {
-    int newRow = model->rowCount();
-    model->insertRow(newRow);
-    model->setItem(newRow, 0, new QStandardItem(field->getid()));
-    model->setItem(newRow, 2, new QStandardItem(Types::PropertyTypesToString(field->gettype())));
-
-    if (field->gettype() == Types::PropertyTypes::LIST)
-      model->setItem(newRow, 1, new QStandardItem(JSON::fromArray(field->getdefaultValue().toList(), ',')));
-    else
-      model->setItem(newRow, 1, new QStandardItem(field->getdefaultValue().toString()));
-  }
-
-  connect(model, &QStandardItemModel::itemChanged, [=](QStandardItem* item) {
-    if (!item)
-      return;
-
-    QJsonObject json;
-
-    // TODO: clean this up and make the divider a configuration option
-    int row = item->row();
-    for (int i = 0; i < model->columnCount(); ++i)
-    {
-      if (!model->item(row, i))
-        return;
-
-      auto text = model->item(row, i)->text();
-      if (text.isNull() || text.isEmpty())
-        return;
-
-      if (i == 0)
-        json["id"] = text;
-      else if (i == 1)
-        json["default"] = text;
-      else
-        json["type"] = text;
-    }
-
-    if (json["type"] == "list")
-      json["default"] = JSON::toArray(json["default"], ',');
-
-    LOG_ERROR_ON_FAILURE(node->setField(json["id"].toString(), json));
-  });
-
-  connect(tableView, &QTableView::customContextMenuRequested, [this, tableView, node](const QPoint& pos) { showContextMenu(tableView, node, pos); });
-
-  QPushButton* button = new QPushButton(parent);
-  connect(button, &QPushButton::pressed, this, [=]() {
-    int newRow = model->rowCount();
-    model->insertRow(newRow);
-    model->setItem(newRow, 0, new QStandardItem(""));
-    model->setItem(newRow, 1, new QStandardItem(""));
-    model->setItem(newRow, 2, new QStandardItem(""));
-  });
-
-  button->setText(control.id);
-  controlLayout->addWidget(button);
+  if (auto* vLayout = qobject_cast<QVBoxLayout*>(layout()))
+    vLayout->addStretch();
 
   return VoidResult();
-}
-
-VoidResult PropertiesMenu::loadControlAddEvent(const ControlsConfig& control, NodeItem* node, QWidget* parent, QHBoxLayout* controlLayout)
-{
-  QString label = ToLabel(QStringLiteral("Events"));
-  QLabel* nameLabel = new QLabel(label);
-  nameLabel->setObjectName("PropertyLabel");
-  nameLabel->setFont(Fonts::Label);
-
-  layout()->addWidget(nameLabel);
-
-  // Create table to hold new fields
-  QTableView* tableView = new QTableView(parent);
-  tableView->setObjectName("EventTable");
-  tableView->verticalHeader()->setVisible(false);
-
-  QStandardItemModel* model = new QStandardItemModel(0, 4);
-
-  model->setHorizontalHeaderItem(0, new QStandardItem("Name"));
-  model->setHorizontalHeaderItem(1, new QStandardItem("Type"));
-  model->setHorizontalHeaderItem(2, new QStandardItem("Return"));
-  model->setHorizontalHeaderItem(3, new QStandardItem("Argument"));
-
-  tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-
-  // We do not support editing values in the table directly. I want to avoid issues caused by a wrong click
-  // Instead, we open a dialog with a complete overview of the event.
-  // TODO(felaze): It would be nice to also show the nodes that trigger this event
-  tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
-  tableView->setModel(model);
-
-  // tableView->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
-  // tableView->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
-  // tableView->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
-  // tableView->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Stretch);
-
-  // tableView->setContextMenuPolicy(Qt::CustomContextMenu);
-  // tableView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-  // tableView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-
-  for (const std::shared_ptr<IFlow>& event : node->events())
-  {
-    // LOG_INFO("Setting events for {} ({}): {}", node->nodeName(), model->rowCount(), event->getname());
-    addEventToTable(model, model->rowCount(), std::dynamic_pointer_cast<FlowSaveInfo>(event));
-  }
-
-  // tableView->resizeRowsToContents();
-
-  // int height = tableView->horizontalHeader()->height();
-  // for (int i = 0; i < tableView->model()->rowCount(); ++i)
-  //   height += tableView->rowHeight(i);
-
-  // if (!tableView->horizontalHeader()->isHidden())
-  //   height += 2;
-
-  // tableView->setFixedHeight(height);
-  // tableView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-
-  connect(tableView, &QTableView::customContextMenuRequested,
-          [this, tableView, node](const QPoint& pos) { showEventContextMenu(tableView, node, pos); });
-
-  connect(tableView, &QTableView::doubleClicked,
-          [this, tableView, node](const QModelIndex& index) { openEventDialog(tableView, node, index.row()); });
-
-  layout()->addWidget(tableView);
-  if (control.id.isEmpty())
-    return VoidResult();
-
-  QPushButton* button = new QPushButton(parent);
-  connect(button, &QPushButton::pressed, this, [this, tableView, node, model]() { openEventDialog(tableView, node, model->rowCount()); });
-
-  button->setText(control.id);
-  layout()->addWidget(button);
-
-  return VoidResult();
-}
-
-VoidResult PropertiesMenu::loadControlAddState(const ControlsConfig& control, NodeItem* node, QWidget* parent, QHBoxLayout* controlLayout)
-{
-  QString label = ToLabel(QStringLiteral("States"));
-  QLabel* nameLabel = new QLabel(label);
-  nameLabel->setObjectName("PropertyLabel");
-  nameLabel->setFont(Fonts::Label);
-
-  layout()->addWidget(nameLabel);
-
-  // Create table to hold new fields
-  QTableView* tableView = new QTableView(parent);
-  QStandardItemModel* model = new QStandardItemModel(0, 3);
-
-  model->setHorizontalHeaderItem(0, new QStandardItem("Name"));
-  model->setHorizontalHeaderItem(1, new QStandardItem("Type"));
-  model->setHorizontalHeaderItem(2, new QStandardItem("Value"));
-
-  tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-  tableView->setContextMenuPolicy(Qt::CustomContextMenu);
-
-  // addDynamicWidget((QVBoxLayout*)layout(), tableView, parent);
-
-  // We do not support editing values in the table directly. I want to avoid issues caused by a wrong click
-  // Instead, we open a dialog with a complete overview of the event.
-  // TODO(felaze): It would be nice to also show the nodes that trigger this event
-  // tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
-  tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
-  tableView->setModel(model);
-
-  for (const auto& field : node->fields())
-    addStateToTable(model, model->rowCount(), std::dynamic_pointer_cast<PropertyInfo>(field));
-
-  connect(tableView, &QTableView::doubleClicked,
-          [this, tableView, node](const QModelIndex& index) { openFieldDialog(tableView, node, index.row()); });
-
-  connect(tableView, &QTableView::customContextMenuRequested, [this, tableView, node](const QPoint& pos) { showContextMenu(tableView, node, pos); });
-
-  QPushButton* button = new QPushButton(parent);
-  connect(button, &QPushButton::pressed, this, [this, tableView, node, model]() { openFieldDialog(tableView, node, model->rowCount()); });
-
-  button->setText(control.id);
-  layout()->addWidget(tableView);
-  layout()->addWidget(button);
-
-  return VoidResult();
-}
-
-void PropertiesMenu::showContextMenu(QTableView* tableView, NodeItem* node, const QPoint& pos)
-{
-  // Get the index of the clicked row
-  QModelIndex index = tableView->indexAt(pos);
-  if (!index.isValid())
-    return;
-
-  QMenu contextMenu;
-  QAction* actionDelete = contextMenu.addAction("Delete");
-
-  int row = index.row();
-  connect(actionDelete, &QAction::triggered, this, [row, tableView, node] {
-    auto key = static_cast<QStandardItemModel*>(tableView->model())->item(row, 0);
-    if (key && !key->text().isNull())
-      node->removeField(key->text());
-
-    tableView->model()->removeRow(row);
-  });
-
-  contextMenu.exec(tableView->viewport()->mapToGlobal(pos));
-}
-
-void PropertiesMenu::showEventContextMenu(QTableView* tableView, NodeItem* node, const QPoint& pos)
-{
-  // Get the index of the clicked row
-  QModelIndex index = tableView->indexAt(pos);
-  if (!index.isValid())
-    return;
-
-  int row = index.row();
-
-  auto model = static_cast<QStandardItemModel*>(tableView->model());
-  auto modifiable = model->item(row)->data(Qt::UserRole + 1).toBool();
-
-  QMenu contextMenu;
-  QAction* actionEditFlow = contextMenu.addAction(tr("Edit flow"));
-  actionEditFlow->setEnabled(modifiable);
-  connect(actionEditFlow, &QAction::triggered, this, [this, row, model, node] {
-    auto flowId = model->item(row)->data(Qt::UserRole).toString();
-    emit flowSelected(flowId, node->id());
-  });
-
-  QAction* actionEditProperties = contextMenu.addAction(tr("Edit event"));
-  actionEditProperties->setEnabled(modifiable);
-  connect(actionEditProperties, &QAction::triggered, this, [this, row, tableView, node] { openEventDialog(tableView, node, row); });
-
-  // QAction* actionDelete = contextMenu.addAction(tr("Delete"));
-  // connect(actionDelete, &QAction::triggered, this, [row, tableView, node] {
-  //   auto key = static_cast<QStandardItemModel*>(tableView->model())->item(row, 0);
-  //   if (key && !key->text().isNull())
-  //     node->removeField(key->text());
-
-  //   tableView->model()->removeRow(row);
-  // });
-
-  contextMenu.exec(tableView->viewport()->mapToGlobal(pos));
-}
-
-void PropertiesMenu::openEventDialog(QTableView* tableView, NodeItem* node, int row)
-{
-  // Open the dialog
-  mCurrentDialog = new EventDialog(tr("Edit event"), this);
-
-  auto config = row < node->events().size() ? std::dynamic_pointer_cast<FlowSaveInfo>(node->events().at(row)) : std::make_shared<FlowSaveInfo>();
-  qobject_cast<EventDialog*>(mCurrentDialog)->setup(config);
-
-  connect(mCurrentDialog, &QDialog::accepted, [this, tableView, node, row] {
-    auto info = qobject_cast<EventDialog*>(mCurrentDialog)->getInfo();
-    Flow* flow = node->createFlow(info->getname(), info);
-    addEventToTable((QStandardItemModel*)tableView->model(), row, info);
-    if (info->getmodifiable())
-      emit flowSelected(flow->id(), node->id());
-  });
-  connect(mCurrentDialog, &QDialog::rejected, [this] {
-    mCurrentDialog->close();
-    mCurrentDialog->deleteLater();
-  });
-
-  mCurrentDialog->setAttribute(Qt::WA_DeleteOnClose);
-  mCurrentDialog->exec();
-}
-
-void PropertiesMenu::openFieldDialog(QTableView* tableView, NodeItem* node, int row)
-{
-  // Open the dialog
-  mCurrentDialog = new FieldDialog(tr("Edit field"), this);
-
-  auto config = row < node->fields().size() ? node->fields().at(row) : std::make_shared<PropertyInfo>();
-  qobject_cast<FieldDialog*>(mCurrentDialog)->setup(std::dynamic_pointer_cast<PropertyInfo>(config));
-
-  connect(mCurrentDialog, &QDialog::accepted, [this, tableView, node, row] {
-    auto info = qobject_cast<FieldDialog*>(mCurrentDialog)->getInfo();
-    node->setField(info->getid(), info);
-    addStateToTable((QStandardItemModel*)tableView->model(), row, info);
-  });
-  connect(mCurrentDialog, &QDialog::rejected, [this] {
-    mCurrentDialog->close();
-    mCurrentDialog->deleteLater();
-  });
-
-  mCurrentDialog->setAttribute(Qt::WA_DeleteOnClose);
-  mCurrentDialog->exec();
-}
-
-void PropertiesMenu::addEventToTable(QStandardItemModel* model, int row, std::shared_ptr<FlowSaveInfo> event)
-{
-  // If the row is not in the table yet, add it
-  if (row >= model->rowCount())
-    model->insertRow(row);
-
-  auto indexItem = new QStandardItem(event->getname());
-  indexItem->setData(event->getid(), Qt::UserRole);
-  indexItem->setData(event->getmodifiable(), Qt::UserRole + 1);
-
-  LOG_TRACE("Adding event {} of type {} and return {} to event table", event->getname(), Types::CallTypeToString(event->gettype()),
-            Types::PropertyTypesToString(event->getreturnType()));
-
-  model->setItem(row, 0, indexItem);
-  model->setItem(row, 1, new QStandardItem(Types::CallTypeToString(event->gettype())));
-  model->setItem(row, 2, new QStandardItem(Types::PropertyTypesToString(event->getreturnType())));
-
-  if (event->getarguments().isEmpty())
-    return;
-
-  QString args = "";
-  for (auto arg : event->getarguments())
-    args += arg->getid() + ", ";
-
-  // Remove the trailing ", "
-  args.chop(2);
-  model->setItem(row, 3, new QStandardItem(args));
-}
-
-void PropertiesMenu::addStateToTable(QStandardItemModel* model, int row, std::shared_ptr<PropertyInfo> field)
-{
-  if (row >= model->rowCount())
-    model->insertRow(row);
-
-  model->setItem(row, 0, new QStandardItem(field->getid()));
-  model->setItem(row, 1, new QStandardItem(Types::PropertyTypesToString(field->gettype())));
-
-  if (field->gettype() == Types::PropertyTypes::LIST)
-    model->setItem(row, 2, new QStandardItem(JSON::fromArray(field->getdefaultValue().toList(), ',')));
-  else
-    model->setItem(row, 2, new QStandardItem(field->getdefaultValue().toString()));
 }
 
 void PropertiesMenu::updateBlockName(NodeItem* node, const QString& componentName, const QString& eventName) const
@@ -1154,17 +840,14 @@ void PropertiesMenu::updateBlockName(NodeItem* node, const QString& componentNam
   if (!node)
     return;
 
-  // Sanity check, make sure the name property exists
-  auto name = node->getProperty(ConfigKeys::NAME);
-  if (!name.isValid())
+  const auto* name = node->getProperty(ConfigKeys::NAME);
+  if (!name || !name->getvalue() || !name->getvalue()->isValid())
     return;
 
-  // We are only allowed to update the name if it wasn't set by the user
-  auto wasAutoGenerated = node->getProperty("name_auto_generated");
-  if (wasAutoGenerated.isValid() && !wasAutoGenerated.toBool())
+  const auto* autoGenerated = node->getProperty("name_auto_generated");
+  if (autoGenerated && autoGenerated->getvalue() && autoGenerated->getvalue()->isValid() && !autoGenerated->getvalue()->toBoolValue())
     return;
 
-  auto type = node->nodeType();
-  auto newName = componentName + (eventName.isEmpty() ? "" : " " + eventName);
-  node->setProperty(ConfigKeys::NAME, newName);
+  const auto newName = componentName + (eventName.isEmpty() ? "" : " " + eventName);
+  node->setProperty(ConfigKeys::NAME, maki::Value::createString(newName));
 }

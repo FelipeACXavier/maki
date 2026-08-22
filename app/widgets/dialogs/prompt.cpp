@@ -53,7 +53,7 @@ PromptDialog::PromptDialog(const QString& title, const QString& accept, const QS
   connect(buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
   connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
-  layout()->setSizeConstraint(QLayout::SetFixedSize);
+  limitWidth(400);
 }
 
 void PromptDialog::setType(oclero::qlementine::StatusBadge type)

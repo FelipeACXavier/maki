@@ -8,9 +8,6 @@
 #include "types.h"
 
 PropertyInfo::PropertyInfo()
-    : mId("")
-    , mOptions({})
-    , mType(Types::PropertyTypes::UNKNOWN)
 {
 }
 
@@ -18,10 +15,8 @@ PropertyInfo::PropertyInfo(const PropertyConfig& object)
 {
   setId(object.id);
   setDefaultValue(object.defaultValue);
-  setType(maki::propertyTypeFromReference(object.type));
+  setType(object.type);
   setControl(object.control);
-  for (const auto& opt : object.options)
-    addOption(std::make_shared<PropertyInfo>(opt));
 }
 
 QString PropertyInfo::getid() const
@@ -29,17 +24,17 @@ QString PropertyInfo::getid() const
   return mId;
 }
 
-QVariant PropertyInfo::getdefaultValue() const
+QString PropertyInfo::getname() const
 {
-  return mDefaultValue;
+  return mId;
 }
 
-QVector<std::shared_ptr<IProperty>> PropertyInfo::getoptions() const
+const IValue* PropertyInfo::getvalue() const
 {
-  return mOptions;
+  return &mDefaultValue;
 }
 
-Types::PropertyTypes PropertyInfo::gettype() const
+koda::types::TypeReference PropertyInfo::gettype() const
 {
   return mType;
 }
@@ -54,12 +49,12 @@ void PropertyInfo::setId(const QString& arg)
   mId = arg;
 }
 
-void PropertyInfo::setDefaultValue(const QVariant& arg)
+void PropertyInfo::setDefaultValue(const maki::Value& arg)
 {
   mDefaultValue = arg;
 }
 
-void PropertyInfo::setType(Types::PropertyTypes arg)
+void PropertyInfo::setType(const koda::types::TypeReference& arg)
 {
   mType = arg;
 }
@@ -69,56 +64,14 @@ void PropertyInfo::setControl(Types::ControlTypes arg)
   mControlType = arg;
 }
 
-PropertyInfo PropertyInfo::getOption(const QString& optionId)
-{
-  for (const auto& field : getoptions())
-    if (field->getid() == optionId)
-      return *std::dynamic_pointer_cast<PropertyInfo>(field);
-
-  return PropertyInfo();
-}
-
-void PropertyInfo::addOption(std::shared_ptr<IProperty> option)
-{
-  mOptions.push_back(option);
-}
-
-void PropertyInfo::removeOption(std::shared_ptr<IProperty> option)
-{
-  mOptions.removeIf([option](std::shared_ptr<IProperty> info) { return info->getid() == option->getid(); });
-}
-
 // ==========================================================================
 // JSON serialization
 QJsonObject PropertyInfo::toJson() const
 {
   QJsonObject data;
   data[ConfigKeys::ID] = getid();
-
-  if (getdefaultValue().isValid() && !getdefaultValue().isNull())
-  {
-    if (gettype() == Types::PropertyTypes::STRING)
-      data[ConfigKeys::DEFAULT] = getdefaultValue().toString();
-    else if (gettype() == Types::PropertyTypes::BOOLEAN)
-      data[ConfigKeys::DEFAULT] = getdefaultValue().toBool();
-    else if (gettype() == Types::PropertyTypes::INTEGER)
-      data[ConfigKeys::DEFAULT] = getdefaultValue().toInt();
-    else if (gettype() == Types::PropertyTypes::REAL)
-      data[ConfigKeys::DEFAULT] = getdefaultValue().toDouble();
-    else if (gettype() == Types::PropertyTypes::ENUM)
-      data[ConfigKeys::DEFAULT] = getdefaultValue().toString();
-    else
-      data[ConfigKeys::DEFAULT] = getdefaultValue().toJsonObject();
-  }
-
-  QJsonArray optionArray;
-  for (const auto& opt : getoptions())
-    optionArray.append(std::dynamic_pointer_cast<PropertyInfo>(opt)->toJson());
-
-  if (!optionArray.isEmpty())
-    data[ConfigKeys::OPTIONS] = optionArray;
-
-  data[ConfigKeys::TYPE] = (int)gettype();
+  data[ConfigKeys::DEFAULT] = mDefaultValue.toJson();
+  data[ConfigKeys::TYPE] = maki::typeReferenceToJson(mType);
 
   return data;
 }
@@ -127,12 +80,10 @@ PropertyInfo PropertyInfo::fromJson(const QJsonObject& data)
 {
   PropertyInfo config;
   config.setId(data[ConfigKeys::ID].toString());
-  config.setDefaultValue(QJsonValue(data[ConfigKeys::DEFAULT]).toVariant());
-
-  for (const auto& value : data[ConfigKeys::OPTIONS].toArray())
-    config.addOption(std::make_shared<PropertyInfo>(fromJson(value.toObject())));
-
-  config.setType((Types::PropertyTypes)data[ConfigKeys::TYPE].toInt());
+  config.setDefaultValue(maki::Value::fromJson(data[ConfigKeys::DEFAULT].toObject()));
+  auto ref = maki::typeReferenceFromJson(data[ConfigKeys::TYPE].toObject());
+  if (ref.IsSuccess())
+    config.setType(ref.Value());
 
   return config;
 }
@@ -143,10 +94,23 @@ QDataStream& operator<<(QDataStream& out, const PropertyInfo& config)
 {
   out << config.getid();
   out << config.gettype();
-  out << config.getdefaultValue();
+  out << config.getcontrol();
 
-  out << config.getoptions();
+  auto value = config.getvalue();
+  if (!value)
+  {
+    out << maki::Value{};
+    return out;
+  }
 
+  const auto* concrete = dynamic_cast<const maki::Value*>(config.getvalue());
+  if (!concrete)
+  {
+    out << maki::Value{};
+    return out;
+  }
+
+  out << *concrete;
   return out;
 }
 
@@ -156,18 +120,17 @@ QDataStream& operator>>(QDataStream& in, PropertyInfo& config)
   in >> id;
   config.setId(id);
 
-  Types::PropertyTypes type;
+  koda::types::TypeReference type;
   in >> type;
   config.setType(type);
 
-  QVariant defaultValue;
+  Types::ControlTypes control;
+  in >> control;
+  config.setControl(control);
+
+  maki::Value defaultValue;
   in >> defaultValue;
   config.setDefaultValue(defaultValue);
-
-  QVector<std::shared_ptr<PropertyInfo>> options;
-  in >> options;
-  for (const auto& option : options)
-    config.addOption(std::dynamic_pointer_cast<IProperty>(option));
 
   return in;
 }
@@ -186,14 +149,20 @@ QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<PropertyInfo>>&
   qint32 size;
   in >> size;
 
-  properties.resize(size);
-  for (int i = 0; i < size; ++i)
-    in >> *properties[i];
+  properties.clear();
+  properties.reserve(size);
+
+  for (qint32 i = 0; i < size; ++i)
+  {
+    auto property = std::make_shared<PropertyInfo>();
+    in >> *property;
+    properties.push_back(std::move(property));
+  }
 
   return in;
 }
 
-QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<IProperty>>& properties)
+QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<IParameter>>& properties)
 {
   out << static_cast<qint32>(properties.size());
   for (const auto& prop : properties)
@@ -202,16 +171,19 @@ QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<IPropert
   return out;
 }
 
-QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<IProperty>>& properties)
+QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<IParameter>>& properties)
 {
   qint32 size;
   in >> size;
 
-  properties.resize(size);
-  for (int i = 0; i < size; ++i)
+  properties.clear();
+  properties.reserve(size);
+
+  for (qint32 i = 0; i < size; ++i)
   {
-    properties[i] = std::make_shared<PropertyInfo>();
-    in >> *std::dynamic_pointer_cast<PropertyInfo>(properties[i]);
+    auto property = std::make_shared<PropertyInfo>();
+    in >> *property;
+    properties.push_back(std::move(property));
   }
 
   return in;

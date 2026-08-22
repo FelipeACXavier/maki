@@ -33,7 +33,7 @@ QStringList KodaSimulateAction::produces() const
   return {};
 }
 
-maki::ResultArtifacts KodaSimulateAction::run(const maki::PipelineContext& context, const QVariantMap& parameters, maki::IPipeline* pipeline)
+maki::ResultArtifacts KodaSimulateAction::run(const maki::PipelineContext& context, const maki::ValueMap& parameters, maki::IPipeline* pipeline)
 {
   LOG_INFO("Running {}", id());
 

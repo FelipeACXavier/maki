@@ -15,6 +15,7 @@
 #include <QShortcut>
 #include <QSpinBox>
 #include <QTableWidget>
+#include <QTimer>
 #include <QToolTip>
 #include <oclero/qlementine.hpp>
 #include <oclero/qlementine/widgets/ColorEditor.hpp>
@@ -303,7 +304,9 @@ InputWidget::InputWidget(const QString& label, QWidget* inputField, WidgetAlignm
     }
     else
     {
-      layout()->addWidget(labelWidget);
+      if (labelWidget)
+        layout()->addWidget(labelWidget);
+
       layout()->addWidget(mInputField);
     }
   }
@@ -409,6 +412,10 @@ StringWidget::StringWidget(const QString& label, const QString& placeholder, Wid
 StringWidget::StringWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, const QString& tooltip, QWidget* parent)
     : TypedInputWidget<oclero::qlementine::LineEdit>(label, new oclero::qlementine::LineEdit(), alignment, parent)
 {
+  mUpdateTimer = new QTimer(this);
+  mUpdateTimer->setSingleShot(true);
+  mUpdateTimer->setInterval(300);
+
   if (auto* edit = qobject_cast<oclero::qlementine::LineEdit*>(mInputField))
   {
     if (!tooltip.isEmpty())
@@ -422,7 +429,16 @@ StringWidget::StringWidget(const QString& label, const QString& placeholder, Wid
         QToolTip::showText(globalPos, edit->toolTip(), edit);
       }
     });
+    connect(edit, &QLineEdit::textChanged, this, [this]() { mUpdateTimer->start(); });
+
+    connect(mUpdateTimer, &QTimer::timeout, this, [this, edit]() {
+      mValue.data = edit->text();
+      emit valueChanged(getValue());
+      emit InputWidget::valueChanged();
+    });
+
     connect(edit, &QLineEdit::editingFinished, this, [this, edit]() {
+      mUpdateTimer->stop();
       mValue.data = edit->text();
       emit valueChanged(getValue());
       emit InputWidget::valueChanged();
@@ -1240,7 +1256,6 @@ EnumWidget::EnumWidget(const QString& label, const koda::types::EnumTypeDefiniti
 InputWidget* ValueEditorFactory::create(const QString& label, const koda::types::TypeReference& type, const Value& value, WidgetAlignment alignment,
                                         QWidget* parent)
 {
-  LOG_INFO("Create field for: {} with {}", type.toString(), value.toReadable());
   if (type.kind() == koda::types::TypeReferenceKind::List)
   {
     auto* editor = new maki::ListWidget(QString::fromStdString(type.toString()), type.elementType(), alignment, parent);
@@ -1258,7 +1273,6 @@ InputWidget* ValueEditorFactory::create(const QString& label, const koda::types:
   if (!definition)
     return nullptr;
 
-  definition->print();
   if (definition->isPrimitive())
   {
     auto kind = definition->primitive().primitive;

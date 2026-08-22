@@ -837,7 +837,7 @@ QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
   for (Flow* flow : flows)
   {
     node->deleteFlow(flow->id());
-    emit flowRemoved(flow->id(), node->id());
+    emit flowRemoved(flow->id(), node);
   }
 
   auto parent = node->parentNode();
@@ -879,9 +879,7 @@ void Canvas::copySelectedItems(NodeItem* clickedNode)
       return;
 
     auto info = node->saveInfo();
-
     LOG_DEBUG("Copied {} ({:.2f} {:.2f})", node->id(), info.getposition().x(), info.getposition().y());
-
     copiedNodes.append({info, mousePosition - info.getposition()});
   };
 
@@ -933,7 +931,6 @@ void Canvas::pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode
   for (const auto& copy : copiedNodes)
   {
     auto infoPtr = std::make_shared<NodeSaveInfo>(copy.info);
-
     QPointF newParentPosition = {0.0, 0.0};
     if (parentNode)
       newParentPosition = parentNode->saveInfo().getposition();
@@ -1320,7 +1317,7 @@ void Canvas::onFlowRemoved(const QString& flowId, const QString& nodeId)
   }
 
   node->deleteFlow(flowId);
-  emit flowRemoved(flowId, nodeId);
+  emit flowRemoved(flowId, node);
 }
 
 void Canvas::updateParent(NodeItem* /* node */, std::shared_ptr<NodeSaveInfo> /* storage */, bool /* adding */)

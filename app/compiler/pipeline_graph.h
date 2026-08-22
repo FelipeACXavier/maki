@@ -5,6 +5,7 @@
 #include <QString>
 #include <QVariantMap>
 
+#include "mission_parameter.h"
 #include "plugin_version.h"
 #include "result.h"
 #include "save_info.h"
@@ -18,7 +19,7 @@ struct PipelineNode
   QString id;
   QString actionId;
   QString displayName;
-  QVariantMap parameters;
+  maki::ValueMap parameters;
 
   static Result<PipelineNode> fromJson(const QJsonObject& object);
   void print() const;

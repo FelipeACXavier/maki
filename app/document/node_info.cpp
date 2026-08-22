@@ -43,7 +43,7 @@ NodeSaveInfo::NodeSaveInfo(const NodeConfig& config)
     , mFields({})
 {
   for (const auto& property : config.properties)
-    addProperty(property.id, property.defaultValue);
+    addProperty(std::make_shared<PropertyInfo>(property));
 
   for (const auto& event : config.events)
     addEvent(std::make_shared<FlowSaveInfo>(event));
@@ -89,12 +89,12 @@ QString NodeSaveInfo::getIcon() const
   return mIconPath;
 }
 
-QVector<std::shared_ptr<IProperty>> NodeSaveInfo::getfields() const
+QVector<std::shared_ptr<IParameter>> NodeSaveInfo::getfields() const
 {
   return mFields;
 }
 
-QMap<QString, QVariant> NodeSaveInfo::getproperties() const
+QVector<std::shared_ptr<IParameter>> NodeSaveInfo::getproperties() const
 {
   return mProperties;
 }
@@ -154,36 +154,51 @@ void NodeSaveInfo::setScale(qreal arg)
   mScale = arg;
 }
 
-QVariant NodeSaveInfo::getProperty(const QString& key) const
+const PropertyInfo* NodeSaveInfo::getProperty(const QString& key) const
 {
-  if (mProperties.find(key) == mProperties.end())
-    return QVariant();
+  for (const auto& property : mProperties)
+    if (property->getid() == key)
+      return dynamic_cast<const PropertyInfo*>(property.get());
 
-  return mProperties[key];
+  return nullptr;
 }
 
-void NodeSaveInfo::addProperty(const QString& key, const QVariant& value)
+void NodeSaveInfo::addProperty(std::shared_ptr<PropertyInfo> parameter)
 {
-  mProperties[key] = value;
+  if (getProperty(parameter->getid()))
+    return;
+
+  mProperties.push_back(parameter);
+}
+
+void NodeSaveInfo::setProperty(const QString& key, const maki::Value& parameter)
+{
+  for (auto& property : mProperties)
+  {
+    if (property->getid() != key)
+      continue;
+
+    dynamic_cast<PropertyInfo*>(property.get())->setDefaultValue(parameter);
+    return;
+  }
 }
 
 void NodeSaveInfo::removeProperty(const QString& key)
 {
-  mProperties.remove(key);
+  mProperties.erase(
+      std::remove_if(mProperties.begin(), mProperties.end(), [key](std::shared_ptr<IParameter> param) { return param->getid() == key; }));
 }
 
 PropertyInfo NodeSaveInfo::getField(const QString& key) const
 {
   for (const auto& field : getfields())
-  {
     if (field->getid() == key)
       return *std::dynamic_pointer_cast<PropertyInfo>(field);
-  }
 
   return PropertyInfo();
 }
 
-void NodeSaveInfo::setField(const QString& key, std::shared_ptr<IProperty> property)
+void NodeSaveInfo::setField(const QString& key, std::shared_ptr<IParameter> property)
 {
   // Check if key exists
   for (auto& field : getfields())
@@ -199,19 +214,18 @@ void NodeSaveInfo::setField(const QString& key, std::shared_ptr<IProperty> prope
   addField(property);
 }
 
-void NodeSaveInfo::addField(std::shared_ptr<IProperty> property)
+void NodeSaveInfo::addField(std::shared_ptr<IParameter> property)
 {
   mFields.push_back(property);
 }
 
 void NodeSaveInfo::removeField(const QString& key)
 {
-  mFields.removeIf([key](std::shared_ptr<IProperty> info) { return info->getid() == key; });
+  mFields.removeIf([key](std::shared_ptr<IParameter> info) { return info->getid() == key; });
 }
 
 void NodeSaveInfo::addFlow(std::shared_ptr<IFlow> flow)
 {
-  LOG_INFO("Adding flow: {}", flow->getname());
   mFlows.push_back(flow);
 }
 
@@ -280,12 +294,12 @@ QJsonObject NodeSaveInfo::toJson() const
   for (const auto& flow : getevents())
     eventArray.append(std::dynamic_pointer_cast<FlowSaveInfo>(flow)->toJson());
 
-  QJsonObject propertiesObject;
-  for (auto it = mProperties.constBegin(); it != mProperties.constEnd(); ++it)
-    propertiesObject[it.key()] = it.value().toJsonValue();
+  QJsonArray propertyArray;
+  for (const auto& property : mProperties)
+    eventArray.append(std::dynamic_pointer_cast<PropertyInfo>(property)->toJson());
 
   if (mProperties.size() > 0)
-    data[ConfigKeys::PROPERTIES] = propertiesObject;
+    data[ConfigKeys::PROPERTIES] = propertyArray;
   if (fieldArray.size() > 0)
     data[ConfigKeys::FIELDS] = fieldArray;
   if (childrenArray.size() > 0)
@@ -317,36 +331,16 @@ NodeSaveInfo NodeSaveInfo::fromJson(const QJsonObject& data)
     info.setParentId(data[ConfigKeys::PARENT_ID].toString());
 
   if (data.contains(ConfigKeys::FIELDS))
-  {
     for (const auto& node : data[ConfigKeys::FIELDS].toArray())
       info.addField(std::make_shared<PropertyInfo>(PropertyInfo::fromJson(node.toObject())));
-  }
-
-  // These are populated by the loader
-  // if (data.contains(ConfigKeys::CHILDREN))
-  // {
-  //   for (const auto& node : data[ConfigKeys::CHILDREN].toArray())
-  //     info.addChild(std::make_shared<NodeSaveInfo>(NodeSaveInfo::fromJson(node.toObject())));
-  // }
-
-  // if (data.contains(ConfigKeys::FLOWS))
-  // {
-  //   for (const auto& node : data[ConfigKeys::FLOWS].toArray())
-  //     info.addFlow(std::make_shared<FlowSaveInfo>(FlowSaveInfo::fromJson(node.toObject())));
-  // }
 
   if (data.contains(ConfigKeys::EVENTS))
-  {
     for (const auto& node : data[ConfigKeys::EVENTS].toArray())
       info.addEvent(std::make_shared<FlowSaveInfo>(FlowSaveInfo::fromJson(node.toObject())));
-  }
 
   if (data.contains(ConfigKeys::PROPERTIES))
-  {
-    const auto propertiesObject = data[ConfigKeys::PROPERTIES].toObject();
-    for (const QString& key : propertiesObject.keys())
-      info.addProperty(key, propertiesObject.value(key));
-  }
+    for (const auto& node : data[ConfigKeys::PROPERTIES].toArray())
+      info.addProperty(std::make_shared<PropertyInfo>(PropertyInfo::fromJson(node.toObject())));
 
   info.setPixmap(JSON::toPixmap(data[ConfigKeys::PIXMAP].toObject()));
   info.setIcon(data[ConfigKeys::ICON_PATH].toString());
@@ -457,10 +451,10 @@ QDataStream& operator>>(QDataStream& in, NodeSaveInfo& info)
   in >> scale;
   info.setScale(scale);
 
-  QMap<QString, QVariant> properties;
+  QVector<std::shared_ptr<PropertyInfo>> properties;
   in >> properties;
-  for (auto iter = properties.keyValueBegin(); iter != properties.keyValueEnd(); ++iter)
-    info.addProperty(iter->first, iter->second);
+  for (const auto& property : properties)
+    info.addProperty(property);
 
   QVector<std::shared_ptr<NodeSaveInfo>> children;
   in >> children;
@@ -480,7 +474,7 @@ QDataStream& operator>>(QDataStream& in, NodeSaveInfo& info)
   QVector<std::shared_ptr<PropertyInfo>> fields;
   in >> fields;
   for (const auto& field : fields)
-    info.addField(std::dynamic_pointer_cast<IProperty>(field));
+    info.addField(std::dynamic_pointer_cast<IParameter>(field));
 
   QPixmap pixmap;
   QByteArray pixmapData;

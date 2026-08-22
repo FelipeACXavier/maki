@@ -156,7 +156,7 @@ std::shared_ptr<NodeSaveInfo> SaveInfo::findOwnerTaskOfFlowNode(const QString& n
   return nullptr;
 }
 
-QVector<std::shared_ptr<IProperty>> SaveInfo::getPossibleStates(const QString& nodeId) const
+QVector<std::shared_ptr<IParameter>> SaveInfo::getPossibleStates(const QString& nodeId) const
 {
   for (const auto& node : getnodes())
   {
@@ -172,7 +172,7 @@ QVector<std::shared_ptr<IProperty>> SaveInfo::getPossibleStates(const QString& n
     }
   }
 
-  return QVector<std::shared_ptr<IProperty>>();
+  return QVector<std::shared_ptr<IParameter>>();
 }
 
 QVector<std::shared_ptr<NodeSaveInfo>> SaveInfo::getPossibleCallers(const QString& nodeId, const Types::ControlTypes type) const

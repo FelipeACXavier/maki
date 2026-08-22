@@ -24,8 +24,8 @@ TypeReferenceDialog::TypeReferenceDialog(const QString& title, QWidget* parent)
   buildUi();
   setTypeRef(defaultNamedType());
 
-  layout()->activate();
-  adjustSize();
+  limitWidth(300);
+  limitHeight(200);
 }
 
 void TypeReferenceDialog::buildUi()
@@ -62,6 +62,7 @@ void TypeReferenceDialog::buildUi()
       auto* containerLayout = new maki::ContainerWidget(tr("Primitive"), selector, alignment, group);
       Q_UNUSED(containerLayout);
 
+      group->addStretch();
       mStack->addWidget(group);
     }
 
@@ -75,6 +76,7 @@ void TypeReferenceDialog::buildUi()
       auto* containerLayout = new maki::ContainerWidget(tr("Type"), selector, alignment, group);
       Q_UNUSED(containerLayout);
 
+      group->addStretch();
       mStack->addWidget(group);
     }
 
@@ -88,6 +90,7 @@ void TypeReferenceDialog::buildUi()
       auto* containerLayout = new maki::ContainerWidget(tr("List type"), selector, alignment, group);
       Q_UNUSED(containerLayout);
 
+      group->addStretch();
       mStack->addWidget(group);
     }
 
@@ -101,6 +104,7 @@ void TypeReferenceDialog::buildUi()
       auto* containerLayout = new maki::ContainerWidget(tr("Optional type"), selector, alignment, group);
       Q_UNUSED(containerLayout);
 
+      group->addStretch();
       mStack->addWidget(group);
     }
 
@@ -119,6 +123,7 @@ void TypeReferenceDialog::buildUi()
       Q_UNUSED(k);
       Q_UNUSED(v);
 
+      group->addStretch();
       mStack->addWidget(group);
     }
 

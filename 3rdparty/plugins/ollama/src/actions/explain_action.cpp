@@ -32,7 +32,7 @@ QStringList OllamaExplainAction::produces() const
   return {"ai-text"};
 }
 
-maki::ResultArtifacts OllamaExplainAction::run(const maki::PipelineContext& context, const QVariantMap& parameters, maki::IPipeline* pipeline)
+maki::ResultArtifacts OllamaExplainAction::run(const maki::PipelineContext& context, const maki::ValueMap& parameters, maki::IPipeline* pipeline)
 {
   LOG_INFO("Running {}", id());
   // Get the canvas from the context
@@ -51,8 +51,8 @@ maki::ResultArtifacts OllamaExplainAction::run(const maki::PipelineContext& cont
 
   QFile file(filename.at(0));
   if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
-    return maki::ResultArtifacts::Failed("Failed to open KODA source file: " + file.fileName().toStdString() +
-                                         ": " + file.errorString().toStdString());
+    return maki::ResultArtifacts::Failed("Failed to open KODA source file: " + file.fileName().toStdString() + ": " +
+                                         file.errorString().toStdString());
 
   const QString fileContents = QString::fromUtf8(file.readAll());
 

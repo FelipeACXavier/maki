@@ -44,8 +44,7 @@ VoidResult copyTo(const QFileInfo& info, const QString& targetDir)
   {
     auto copied = copyDirectoryRecursively(source, targetDir);
     if (!copied.IsSuccess())
-      return VoidResult::Failed("Failed to copy directory: " + source.toStdString() +
-                                " to " + targetDir.toStdString());
+      return VoidResult::Failed("Failed to copy directory: " + source.toStdString() + " to " + targetDir.toStdString());
   }
   else if (info.isFile())
   {
@@ -54,9 +53,7 @@ VoidResult copyTo(const QFileInfo& info, const QString& targetDir)
     std::error_code ec;
     fs::copy(source.toStdString(), targetDir.toStdString(), fs::copy_options::overwrite_existing, ec);
     if (ec)
-      return VoidResult::Failed("Failed to copy " + source.toStdString() +
-                                " to " + targetDir.toStdString() +
-                                ": " + ec.message());
+      return VoidResult::Failed("Failed to copy " + source.toStdString() + " to " + targetDir.toStdString() + ": " + ec.message());
   }
   else
   {
@@ -91,15 +88,15 @@ QStringList PlatformIOCopySources::produces() const
   return {"platformio-project"};
 }
 
-QVariantMap PlatformIOCopySources::defaultParameters() const
+maki::ValueMap PlatformIOCopySources::defaultParameters() const
 {
-  QStringList ignores = {"callback.hh", "callback.cc"};
+  maki::ListValue ignores = {maki::Value::createString("callback.hh"), maki::Value::createString("callback.cc")};
   return {
-      {"ignore", ignores},
+      {"ignore", maki::Value::createList(ignores)},
   };
 }
 
-maki::ResultArtifacts PlatformIOCopySources::run(const maki::PipelineContext& context, const QVariantMap& parameters, maki::IPipeline* pipeline)
+maki::ResultArtifacts PlatformIOCopySources::run(const maki::PipelineContext& context, const maki::ValueMap& parameters, maki::IPipeline* pipeline)
 {
   LOG_INFO("Running {}", id());
   const auto projectArtifacts = context.artifactsOfType("platformio-project");
@@ -124,7 +121,8 @@ maki::ResultArtifacts PlatformIOCopySources::run(const maki::PipelineContext& co
   QStringList sourceFiles = {};
   QStringList ignores = {};
   if (parameters.contains("ignores"))
-    ignores = parameters["ignores"].toStringList();
+    for (const auto& file : parameters.at("ignores").toListValue())
+      ignores << file->toStringValue();
 
   for (const auto& cpp : cppArtifacts)
   {

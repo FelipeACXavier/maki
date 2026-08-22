@@ -124,7 +124,7 @@ private slots:
    * @param flowId ID of the removed flow.
    * @param nodeId ID of the parent node.
    */
-  void onFlowRemoved(const QString& flowId, const QString& nodeId);
+  void onFlowRemoved(const QString& flowId, NodeItem* node);
 
   /**
    * @brief Handles change events.

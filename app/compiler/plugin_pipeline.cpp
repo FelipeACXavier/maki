@@ -44,9 +44,8 @@ PluginPipeline::PluginPipeline(Pipeline* pipeline, QObject* parent)
     LOG_INFO("Error occurred: {}", message);
     mProgressId = NOTIFY_LONG_ERROR(mProgressId, "Pipeline Progress", progressWidget());
   });
-  connect(mPipeline, &Pipeline::startingPipeline, [this](const Pipeline::Info& info) {
-    mProgressId = NOTIFY_LONG_INFO(mProgressId, "Pipeline Progress", progressWidget());
-  });
+  connect(mPipeline, &Pipeline::startingPipeline,
+          [this](const Pipeline::Info& info) { mProgressId = NOTIFY_LONG_INFO(mProgressId, "Pipeline Progress", progressWidget()); });
   connect(mPipeline, &Pipeline::startingGroup, [this](const Pipeline::Info& info, const QString& groupName) {
     mProgressId = NOTIFY_LONG_INFO(mProgressId, "Pipeline Progress", progressWidget());
   });
@@ -124,7 +123,7 @@ VoidResult PluginPipeline::runNextNode()
     return validation;
 
   auto args = node->parameters;
-  if (args.isEmpty())
+  if (args.empty())
     args = action->defaultParameters();
 
   // for (const auto& arg : args)
@@ -205,10 +204,8 @@ void PluginPipeline::done(const QString& message)
 std::optional<PipelineNode> PluginPipeline::findNode(const PipelineGraph& graph, const QString& nodeId) const
 {
   for (const auto& node : graph.nodes)
-  {
     if (node.id == nodeId)
       return node;
-  }
 
   return std::nullopt;
 }
@@ -217,10 +214,8 @@ VoidResult PluginPipeline::validateInputs(const IPipelineAction& action, const P
 {
   // We must check in the execution context if there are any artefacts of the types we need
   for (const auto& requiredType : action.consumes())
-  {
     if (!context.hasType(requiredType))
       return VoidResult::Failed("Action '{}' requires artefact type '{}', but none exists.", action.id(), requiredType);
-  }
 
   return VoidResult();
 }
@@ -249,10 +244,8 @@ Result<QList<QString>> PluginPipeline::executionOrder(const PipelineGraph& graph
 
   QList<QString> queue;
   for (auto it = indegree.begin(); it != indegree.end(); ++it)
-  {
     if (it.value() == 0)
       queue.append(it.key());
-  }
 
   QList<QString> order;
 

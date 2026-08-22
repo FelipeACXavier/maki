@@ -31,9 +31,12 @@ Result<JSON> JSON::fromFile(const QString& filename)
   if (!configFile.open(QFile::ReadOnly))
     return Result<JSON>::Failed("Failed to open configuration");
 
-  QJsonDocument document = QJsonDocument::fromJson(configFile.readAll());
-
+  QJsonParseError error;
+  QJsonDocument document = QJsonDocument::fromJson(configFile.readAll(), &error);
   configFile.close();
+
+  if (error.error != QJsonParseError::NoError)
+    return Result<JSON>::Failed("Failed to parse file: {}", error.errorString());
 
   return Result<JSON>(document.object());
 }

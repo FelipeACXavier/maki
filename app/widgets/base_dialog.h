@@ -32,6 +32,8 @@ protected:
    */
   void setSize(double ratio, double screenFraction);
 
+  void setFlexibleSize(int minWidth, int minHeight);
+
   /**
    * @brief Sets the size of the dialog based on the given ratio, screen fraction, and height fraction.
    *

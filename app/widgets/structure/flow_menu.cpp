@@ -70,10 +70,13 @@ VoidResult FlowMenu::onFlowAdded(Flow* flow, NodeItem* node)
 
   for (const auto& component : flow->getNodes())
   {
-    QTreeWidgetItem* newComponent = new QTreeWidgetItem(newFlow);
-    newComponent->setText(NAME_INDEX, component->getProperty("name").toString());
-    newComponent->setData(ID_DATA, Qt::UserRole, component->getid());
-    newComponent->setData(TYPE_DATA, Qt::UserRole, Roles::NodeRole);
+    if (const auto* name = component->getProperty("name"))
+    {
+      QTreeWidgetItem* newComponent = new QTreeWidgetItem(newFlow);
+      newComponent->setText(NAME_INDEX, name->getvalue()->toStringValue());
+      newComponent->setData(ID_DATA, Qt::UserRole, component->getid());
+      newComponent->setData(TYPE_DATA, Qt::UserRole, Roles::NodeRole);
+    }
   }
 
   return VoidResult();
@@ -154,10 +157,8 @@ VoidResult FlowMenu::onNodeSelected(const QString& flowId, NodeItem* node, bool 
 QTreeWidgetItem* FlowMenu::getItemById(const QString& id)
 {
   for (QTreeWidgetItemIterator it(this); *it; ++it)
-  {
     if ((*it)->data(ID_DATA, Qt::UserRole).toString() == id)
       return *it;
-  }
 
   return nullptr;
 }

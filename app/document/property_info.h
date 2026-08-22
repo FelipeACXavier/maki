@@ -4,6 +4,7 @@
 #include <QList>
 
 #include "idocument.h"
+#include "mission_parameter.h"
 #include "types.h"
 
 class PropertyConfig;
@@ -11,7 +12,7 @@ class PropertyConfig;
 /**
  * @brief Represents a property with configuration and options.
  */
-class PropertyInfo : public IProperty
+class PropertyInfo : public IParameter
 {
 public:
   /**
@@ -33,26 +34,21 @@ public:
    */
   QString getid() const override;
 
+  QString getname() const override;
+
   /**
    * @brief Gets the default value of the property.
    *
    * @return QVariant The default value of the property.
    */
-  QVariant getdefaultValue() const override;
-
-  /**
-   * @brief Gets the options available for this property.
-   *
-   * @return QVector<std::shared_ptr<IProperty>> A vector of options.
-   */
-  QVector<std::shared_ptr<IProperty>> getoptions() const override;
+  const IValue* getvalue() const override;
 
   /**
    * @brief Gets the type of the property.
    *
    * @return Types::PropertyTypes The type of the property.
    */
-  Types::PropertyTypes gettype() const override;
+  koda::types::TypeReference gettype() const override;
 
   /**
    * @brief Gets the control type of the property.
@@ -73,14 +69,14 @@ public:
    *
    * @param arg The new default value for the property.
    */
-  void setDefaultValue(const QVariant& arg);
+  void setDefaultValue(const maki::Value& arg);
 
   /**
    * @brief Sets the type of the property.
    *
    * @param arg The new type for the property.
    */
-  void setType(Types::PropertyTypes arg);
+  void setType(const koda::types::TypeReference& arg);
 
   /**
    * @brief Sets the control type of the property.
@@ -96,20 +92,6 @@ public:
    * @return PropertyInfo The option with the specified ID.
    */
   PropertyInfo getOption(const QString& optionId);
-
-  /**
-   * @brief Adds an option to this property.
-   *
-   * @param option The option to add.
-   */
-  void addOption(std::shared_ptr<IProperty> option);
-
-  /**
-   * @brief Removes an option from this property.
-   *
-   * @param option The option to remove.
-   */
-  void removeOption(std::shared_ptr<IProperty> option);
 
   /**
    * @brief Converts the PropertyInfo object to a JSON object.
@@ -130,14 +112,13 @@ public:
   friend QDataStream& operator>>(QDataStream& in, PropertyInfo& config);
 
 private:
-  QString mId;                                   /// ID of the property
-  QVariant mDefaultValue;                        /// Default value of the property
-  QVector<std::shared_ptr<IProperty>> mOptions;  /// Options available for this property
-  Types::PropertyTypes mType;                    /// Type of the property
-  Types::ControlTypes mControlType;              /// Control type of the property
+  QString mId;                       /// ID of the property
+  maki::Value mDefaultValue;         /// Default value of the property
+  koda::types::TypeReference mType;  /// Type of the property
+  Types::ControlTypes mControlType;  /// Control type of the property
 };
 
 QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<PropertyInfo>>& properties);
 QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<PropertyInfo>>& properties);
-QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<IProperty>>& properties);
-QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<IProperty>>& properties);
+QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<IParameter>>& properties);
+QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<IParameter>>& properties);

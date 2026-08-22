@@ -121,9 +121,9 @@ public:
   /**
    * @brief Get possible states for a node.
    * @param nodeId The ID of the node.
-   * @return QVector<std::shared_ptr<IProperty>> A vector of shared pointers to IProperty objects representing possible states.
+   * @return QVector<std::shared_ptr<IParameter>> A vector of shared pointers to IParameter objects representing possible states.
    */
-  QVector<std::shared_ptr<IProperty>> getPossibleStates(const QString& nodeId) const;
+  QVector<std::shared_ptr<IParameter>> getPossibleStates(const QString& nodeId) const;
 
   /**
    * @brief Get possible callers for a node.

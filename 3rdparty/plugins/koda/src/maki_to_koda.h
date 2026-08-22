@@ -109,7 +109,8 @@ private:
 
   std::string format(QString input, const QString& token = "") const;
 
-  Result<koda::PExpr> buildValueExpr(const koda::types::TypeReference& type, std::shared_ptr<const IValue> value);
+  Result<koda::PExpr> buildValueExpr(const koda::types::TypeReference& type, const IValue* value);
+  const IValue* getProperty(const QString& key, const INode& node) const;
 };
 
 }  // namespace koda
