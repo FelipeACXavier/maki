@@ -149,7 +149,7 @@ VoidResult KodaEmitter::emitType(const koda::types::TypeDefinition& definition, 
       auto fieldType = emitTypeReference(field.type);
       RETURN_ON_FAILURE(fieldType);
 
-      ss << format << INDENT << fieldType.Value() << " " << field.name << ";\n";
+      ss << format << INDENT << field.name << ": " << fieldType.Value() << ";\n";
     }
 
     ss << format << "}\n";
@@ -388,7 +388,21 @@ VoidResult KodaEmitter::emitVarDef(const koda::VarDef& varDef, std::stringstream
 
 VoidResult KodaEmitter::emitFlow(const koda::Flow& flow, std::stringstream& ss, const std::string& format)
 {
-  ss << format << flow.name << ": ";
+  ss << format << flow.name;
+  if (!flow.args.empty())
+  {
+    ss << "[";
+    bool first = true;
+    for (const auto& arg : flow.args)
+    {
+      if (!first)
+        ss << ", ";
+      ss << arg->b;
+      first = false;
+    }
+    ss << "]";
+  }
+  ss << ": ";
   RETURN_ON_FAILURE(emitStrategy(*flow.strategy, ss, ""));
   ss << ";\n";
   return VoidResult();
@@ -559,7 +573,7 @@ VoidResult KodaEmitter::emitInt(const koda::Expr::Int& expr, std::stringstream& 
 
 VoidResult KodaEmitter::emitFloat(const koda::Expr::Float& expr, std::stringstream& ss, const std::string& format)
 {
-  ss << expr.value;
+  ss << std::fixed << std::setprecision(6) << expr.value;
   return VoidResult();
 }
 

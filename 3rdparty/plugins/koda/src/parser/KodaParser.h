@@ -1157,7 +1157,6 @@ public:
     antlr4::tree::TerminalNode *IDENT();
     antlr4::tree::TerminalNode *COLON();
     ExpressionContext *expression();
-    antlr4::tree::TerminalNode *SEMI();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -1206,9 +1205,11 @@ public:
   public:
     MapFieldInitializerContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *LT();
     std::vector<ExpressionContext *> expression();
     ExpressionContext* expression(size_t i);
-    antlr4::tree::TerminalNode *COLON();
+    antlr4::tree::TerminalNode *COMMA();
+    antlr4::tree::TerminalNode *GT();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;

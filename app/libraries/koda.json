@@ -109,20 +109,29 @@
               }
             },
             {
-              "id": "action",
+              "id": "calldef",
               "type": "void",
               "default": {
-                "kind": "record",
-                "value": {
-                  "route": {
-                    "kind": "string",
-                    "value": "/siren"
-                  },
-                  "message": {
-                    "kind": "string",
-                    "value": "std_msgs::String"
+                "kind": "list",
+                "value": [
+                  {
+                    "kind": "record",
+                    "value": {
+                      "type": {
+                        "kind": "string",
+                        "value": "action"
+                      },
+                      "route": {
+                        "kind": "string",
+                        "value": "/siren"
+                      },
+                      "message": {
+                        "kind": "string",
+                        "value": "std_msgs::String"
+                      }
+                    }
                   }
-                }
+                ]
               }
             }
           ],
@@ -173,20 +182,29 @@
               }
             },
             {
-              "id": "action",
+              "id": "calldef",
               "type": "void",
               "default": {
-                "kind": "record",
-                "value": {
-                  "route": {
-                    "kind": "string",
-                    "value": "/handler/action"
-                  },
-                  "message": {
-                    "kind": "string",
-                    "value": "std_msgs::String"
+                "kind": "list",
+                "value": [
+                  {
+                    "kind": "record",
+                    "value": {
+                      "type": {
+                        "kind": "string",
+                        "value": "action"
+                      },
+                      "route": {
+                        "kind": "string",
+                        "value": "/siren"
+                      },
+                      "message": {
+                        "kind": "string",
+                        "value": "std_msgs::String"
+                      }
+                    }
                   }
-                }
+                ]
               }
             },
             {
@@ -277,20 +295,29 @@
               }
             },
             {
-              "id": "action",
+              "id": "calldef",
               "type": "void",
               "default": {
-                "kind": "record",
-                "value": {
-                  "route": {
-                    "kind": "string",
-                    "value": "/recognize"
-                  },
-                  "message": {
-                    "kind": "string",
-                    "value": "std_msgs::String"
+                "kind": "list",
+                "value": [
+                  {
+                    "kind": "record",
+                    "value": {
+                      "type": {
+                        "kind": "string",
+                        "value": "action"
+                      },
+                      "route": {
+                        "kind": "string",
+                        "value": "/siren"
+                      },
+                      "message": {
+                        "kind": "string",
+                        "value": "std_msgs::String"
+                      }
+                    }
                   }
-                }
+                ]
               }
             },
             {
@@ -358,20 +385,29 @@
               }
             },
             {
-              "id": "action",
+              "id": "calldef",
               "type": "void",
               "default": {
-                "kind": "record",
-                "value": {
-                  "route": {
-                    "kind": "string",
-                    "value": "/siren"
-                  },
-                  "message": {
-                    "kind": "string",
-                    "value": "std_msgs::String"
+                "kind": "list",
+                "value": [
+                  {
+                    "kind": "record",
+                    "value": {
+                      "type": {
+                        "kind": "string",
+                        "value": "action"
+                      },
+                      "route": {
+                        "kind": "string",
+                        "value": "/siren"
+                      },
+                      "message": {
+                        "kind": "string",
+                        "value": "std_msgs::String"
+                      }
+                    }
                   }
-                }
+                ]
               }
             }
           ],
@@ -464,20 +500,29 @@
               }
             },
             {
-              "id": "action",
+              "id": "calldef",
               "type": "void",
               "default": {
-                "kind": "record",
-                "value": {
-                  "route": {
-                    "kind": "string",
-                    "value": "/siren"
-                  },
-                  "message": {
-                    "kind": "string",
-                    "value": "std_msgs::String"
+                "kind": "list",
+                "value": [
+                  {
+                    "kind": "record",
+                    "value": {
+                      "type": {
+                        "kind": "string",
+                        "value": "action"
+                      },
+                      "route": {
+                        "kind": "string",
+                        "value": "/siren"
+                      },
+                      "message": {
+                        "kind": "string",
+                        "value": "std_msgs::String"
+                      }
+                    }
                   }
-                }
+                ]
               }
             },
             {
@@ -565,20 +610,29 @@
               }
             },
             {
-              "id": "service",
+              "id": "calldef",
               "type": "void",
               "default": {
-                "kind": "record",
-                "value": {
-                  "route": {
-                    "kind": "string",
-                    "value": "/siren"
-                  },
-                  "message": {
-                    "kind": "string",
-                    "value": "std_msgs::String"
+                "kind": "list",
+                "value": [
+                  {
+                    "kind": "record",
+                    "value": {
+                      "type": {
+                        "kind": "string",
+                        "value": "action"
+                      },
+                      "route": {
+                        "kind": "string",
+                        "value": "/siren"
+                      },
+                      "message": {
+                        "kind": "string",
+                        "value": "std_msgs::String"
+                      }
+                    }
                   }
-                }
+                ]
               }
             }
           ],
@@ -628,7 +682,7 @@
               }
             },
             {
-              "id": "service",
+              "id": "calldef",
               "type": "void",
               "default": {
                 "kind": "list",
@@ -636,6 +690,10 @@
                   {
                     "kind": "record",
                     "value": {
+                      "type": {
+                        "kind": "string",
+                        "value": "service"
+                      },
                       "route": {
                         "kind": "string",
                         "value": "co2/normal"
@@ -649,6 +707,10 @@
                   {
                     "kind": "record",
                     "value": {
+                      "type": {
+                        "kind": "string",
+                        "value": "service"
+                      },
                       "route": {
                         "kind": "string",
                         "value": "co2/high"
@@ -710,7 +772,7 @@
               }
             },
             {
-              "id": "service",
+              "id": "calldef",
               "type": "void",
               "default": {
                 "kind": "list",
@@ -718,6 +780,10 @@
                   {
                     "kind": "record",
                     "value": {
+                      "type": {
+                        "kind": "string",
+                        "value": "service"
+                      },
                       "route": {
                         "kind": "string",
                         "value": "environment/empty"
@@ -731,6 +797,10 @@
                   {
                     "kind": "record",
                     "value": {
+                      "type": {
+                        "kind": "string",
+                        "value": "service"
+                      },
                       "route": {
                         "kind": "string",
                         "value": "environment/present"
@@ -792,7 +862,7 @@
               }
             },
             {
-              "id": "service",
+              "id": "calldef",
               "type": "void",
               "default": {
                 "kind": "list",
@@ -800,6 +870,10 @@
                   {
                     "kind": "record",
                     "value": {
+                      "type": {
+                        "kind": "string",
+                        "value": "service"
+                      },
                       "route": {
                         "kind": "string",
                         "value": "environment/empty"
@@ -813,6 +887,10 @@
                   {
                     "kind": "record",
                     "value": {
+                      "type": {
+                        "kind": "string",
+                        "value": "service"
+                      },
                       "route": {
                         "kind": "string",
                         "value": "environment/present"
@@ -883,7 +961,7 @@
               }
             },
             {
-              "id": "service",
+              "id": "calldef",
               "type": "void",
               "default": {
                 "kind": "list",
@@ -891,22 +969,13 @@
                   {
                     "kind": "record",
                     "value": {
-                      "route": {
+                      "type": {
                         "kind": "string",
-                        "value": "environment/empty"
+                        "value": "action"
                       },
-                      "message": {
-                        "kind": "string",
-                        "value": ""
-                      }
-                    }
-                  },
-                  {
-                    "kind": "record",
-                    "value": {
                       "route": {
                         "kind": "string",
-                        "value": "environment/present"
+                        "value": "ventilation/empty"
                       },
                       "message": {
                         "kind": "string",
@@ -995,7 +1064,7 @@
               }
             },
             {
-              "id": "service",
+              "id": "calldef",
               "type": "void",
               "default": {
                 "kind": "list",
@@ -1092,7 +1161,7 @@
               }
             },
             {
-              "id": "service",
+              "id": "calldef",
               "type": "void",
               "default": {
                 "kind": "list",
@@ -1181,7 +1250,7 @@
               }
             },
             {
-              "id": "service",
+              "id": "calldef",
               "type": "void",
               "default": {
                 "kind": "list",
@@ -1189,6 +1258,10 @@
                   {
                     "kind": "record",
                     "value": {
+                      "type": {
+                        "kind": "string",
+                        "value": "action"
+                      },
                       "route": {
                         "kind": "string",
                         "value": "environment/empty"
@@ -1534,7 +1607,7 @@
               "default": { "kind": "string", "value": "#202020" }
             },
             {
-              "id": "Task",
+              "id": "task",
               "type": "void",
               "control": "component_select",
               "default": {
@@ -1661,7 +1734,7 @@
               "default": { "kind": "string", "value": "Repeat" }
             },
             {
-              "id": "Task",
+              "id": "task",
               "type": "void",
               "control": "component_select",
               "default": {

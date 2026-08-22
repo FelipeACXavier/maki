@@ -356,6 +356,41 @@ bool Value::isValid() const
   return !std::holds_alternative<std::monostate>(data);
 }
 
+bool Value::isBool() const
+{
+  return kind() == IValue::Kind::Bool;
+}
+
+bool Value::isInt() const
+{
+  return kind() == IValue::Kind::Int;
+}
+
+bool Value::isReal() const
+{
+  return kind() == IValue::Kind::Double;
+}
+
+bool Value::isString() const
+{
+  return kind() == IValue::Kind::QString || kind() == IValue::Kind::StdString;
+}
+
+bool Value::isList() const
+{
+  return kind() == IValue::Kind::List;
+}
+
+bool Value::isRecord() const
+{
+  return kind() == IValue::Kind::Record;
+}
+
+bool Value::isMap() const
+{
+  return kind() == IValue::Kind::Map;
+}
+
 bool Value::toBoolValue() const
 {
   return toBool();
@@ -825,6 +860,44 @@ QDataStream& operator>>(QDataStream& in, maki::Value& value)
   }
 
   return in;
+}
+
+const maki::Value* asValue(const IValue* value)
+{
+  return dynamic_cast<const maki::Value*>(value);
+}
+
+maki::Value parameterValue(const IParameter* parameter)
+{
+  if (!parameter)
+    return {};
+
+  const auto* value = asValue(parameter->getvalue());
+  return value ? *value : maki::Value{};
+}
+
+QString recordString(const maki::RecordValue& record, const QString& key)
+{
+  const auto it = record.find(key.toStdString());
+  if (it == record.end())
+    return {};
+
+  return it->second.toString();
+}
+
+maki::RecordValue parameterRecord(const IParameter* parameter)
+{
+  const auto value = maki::parameterValue(parameter);
+  return value.kind() == IValue::Kind::Record ? value.toRecord() : maki::RecordValue{};
+}
+
+maki::ListValue recordList(const maki::RecordValue& record, const QString& key)
+{
+  const auto it = record.find(key.toStdString());
+  if (it == record.end() || !it->second.isList())
+    return {};
+
+  return it->second.toList();
 }
 
 }  // namespace maki

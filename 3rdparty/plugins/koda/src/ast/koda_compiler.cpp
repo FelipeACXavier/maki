@@ -49,7 +49,7 @@ VoidResult Compiler::parse(const CompilerOptions& options)
   if (errorListener.hasErrors() || tree == nullptr)
   {
     for (const auto& err : errorListener.errors)
-      LOG_WARNING(err);
+      LOG_WARNING("{}", err);
 
     return VoidResult::Failed("Failed to parse input file");
   }
@@ -74,7 +74,7 @@ VoidResult Compiler::parse(const CompilerOptions& options)
   if (errorListener.hasErrors())
   {
     for (const auto& err : errorListener.errors)
-      LOG_WARNING(err);
+      LOG_WARNING("{}", err);
 
     return VoidResult::Failed("Failed to build AST");
   }

@@ -240,7 +240,7 @@ recordLiteral
   ;
 
 recordFieldInitializer
-  : IDENT COLON expression SEMI
+  : IDENT COLON expression
   ;
 
 listLiteral
@@ -252,7 +252,7 @@ mapLiteral
   ;
 
 mapFieldInitializer
-  : expression COLON expression
+  : LT expression COMMA expression GT
   ;
 
 // =============================================================================

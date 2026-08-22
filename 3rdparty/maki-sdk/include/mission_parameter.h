@@ -34,6 +34,14 @@ public:
   static Value createRecord(const RecordValue& value);
   static Value createMap(const MapValue& value);
 
+  bool isBool() const;
+  bool isInt() const;
+  bool isReal() const;
+  bool isString() const;
+  bool isList() const;
+  bool isRecord() const;
+  bool isMap() const;
+
   bool toBool() const;
   int toInt() const;
   double toDouble() const;
@@ -84,4 +92,12 @@ public:
 
 QDataStream& operator<<(QDataStream& out, const maki::Value& value);
 QDataStream& operator>>(QDataStream& in, maki::Value& value);
+
+// Helpers
+const maki::Value* asValue(const IValue* value);
+maki::Value parameterValue(const IParameter* parameter);
+maki::RecordValue parameterRecord(const IParameter* parameter);
+QString recordString(const maki::RecordValue& record, const QString& key);
+maki::ListValue recordList(const maki::RecordValue& record, const QString& key);
+
 }  // namespace maki

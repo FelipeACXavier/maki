@@ -493,9 +493,9 @@ IntegerWidget::IntegerWidget(const QString& label, const QString& placeholder, W
       if (!edit->hasAcceptableInput())
         return;
 
-      mValue.data = edit->text();
+      mValue.data = edit->text().toInt();
       edit->setStatus(oclero::qlementine::Status::Default);
-      emit valueChanged(std::get<QString>(mValue.data));
+      emit valueChanged(mValue.toString());
       emit InputWidget::valueChanged();
     });
   }
@@ -511,10 +511,13 @@ void IntegerWidget::setAcceptVariable(bool accept)
 
 int IntegerWidget::getValue() const
 {
-  if (!std::holds_alternative<QString>(mValue.data))
+  if (mValue.isInt())
+    return mValue.toInt();
+
+  if (!mValue.isString())
     assert(false && "Tried to get an integer from a field that does not hold an integer");
 
-  auto actualValue = std::get<QString>(mValue.data);
+  auto actualValue = mValue.toString();
   bool ok = false;
   int value = actualValue.toInt(&ok);
   if (ok)
@@ -525,22 +528,25 @@ int IntegerWidget::getValue() const
 
 void IntegerWidget::setValue(const QString& value)
 {
-  SET_VALUE(value);
+  bool ok = false;
+  int actualValue = value.toInt(&ok);
+  if (!ok)
+    return;
+
+  Value val;
+  val.data = actualValue;
+  InputWidget::setValue(val);
 }
 
 void IntegerWidget::setValue(int value)
 {
-  SET_VALUE(QString::number(value));
+  SET_VALUE(value);
 }
 
 void IntegerWidget::writeValueToWidget(const Value& value)
 {
-  if (!std::holds_alternative<QString>(value.data))
-    return;
-
-  auto actualValue = std::get<QString>(value.data);
   if (auto* edit = qobject_cast<QLineEdit*>(mInputField))
-    edit->setText(actualValue);
+    edit->setText(value.toString());
 }
 
 // ========================================================================================================================================
@@ -570,9 +576,9 @@ FloatWidget::FloatWidget(const QString& label, const QString& placeholder, Widge
       if (!edit->hasAcceptableInput())
         return;
 
-      mValue.data = edit->text();
+      mValue.data = edit->text().toDouble();
       edit->setStatus(oclero::qlementine::Status::Default);
-      emit valueChanged(std::get<QString>(mValue.data));
+      emit valueChanged(mValue.toString());
       emit InputWidget::valueChanged();
     });
   }
@@ -588,36 +594,42 @@ void FloatWidget::setAcceptVariable(bool accept)
 
 double FloatWidget::getValue() const
 {
-  if (!std::holds_alternative<QString>(mValue.data))
-    assert(false && "Tried to get an integer from a field that does not hold a real");
+  if (mValue.isReal())
+    return mValue.toDouble();
 
-  auto actualValue = std::get<QString>(mValue.data);
+  if (!mValue.isString())
+    assert(false && "Tried to get a real from a field that does not hold a real");
+
+  auto actualValue = mValue.toString();
   bool ok = false;
   double value = actualValue.toDouble(&ok);
   if (ok)
     return value;
 
-  assert(false && "Tried to get an integer from a field that does not contain a real");
+  assert(false && "Tried to get a real from a field that does not contain a real");
 }
 
 void FloatWidget::setValue(double value)
 {
-  SET_VALUE(QString::number(value));
+  SET_VALUE(value);
 }
 
 void FloatWidget::setValue(const QString& value)
 {
-  SET_VALUE(value);
+  bool ok = false;
+  double actualValue = value.toDouble(&ok);
+  if (!ok)
+    return;
+
+  Value val;
+  val.data = actualValue;
+  InputWidget::setValue(val);
 }
 
 void FloatWidget::writeValueToWidget(const Value& value)
 {
-  if (!std::holds_alternative<QString>(value.data))
-    return;
-
-  auto actualValue = std::get<QString>(value.data);
   if (auto* edit = qobject_cast<QLineEdit*>(mInputField))
-    edit->setText(actualValue);
+    edit->setText(value.toString());
 }
 
 // ========================================================================================================================================

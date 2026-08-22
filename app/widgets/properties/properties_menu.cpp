@@ -31,44 +31,6 @@ constexpr auto EVENT_KEY = "event";
 constexpr auto FLOW_KEY = "flow";
 constexpr auto ARGUMENTS_KEY = "arguments";
 
-const maki::Value* asValue(const IValue* value)
-{
-  return dynamic_cast<const maki::Value*>(value);
-}
-
-maki::Value parameterValue(const IParameter* parameter)
-{
-  if (!parameter)
-    return {};
-
-  const auto* value = asValue(parameter->getvalue());
-  return value ? *value : maki::Value{};
-}
-
-maki::RecordValue parameterRecord(const IParameter* parameter)
-{
-  const auto value = parameterValue(parameter);
-  return value.kind() == IValue::Kind::Record ? value.toRecord() : maki::RecordValue{};
-}
-
-QString recordString(const maki::RecordValue& record, const char* key)
-{
-  const auto it = record.find(key);
-  if (it == record.end())
-    return {};
-
-  return it->second.toString();
-}
-
-maki::ListValue recordList(const maki::RecordValue& record, const char* key)
-{
-  const auto it = record.find(key);
-  if (it == record.end() || it->second.kind() != IValue::Kind::List)
-    return {};
-
-  return it->second.toList();
-}
-
 bool hasRecordField(const maki::RecordValue& record, const char* key)
 {
   return record.find(key) != record.end();
@@ -234,7 +196,7 @@ VoidResult PropertiesMenu::loadValueProperty(const std::shared_ptr<IParameter>& 
   if (!property || !node)
     return VoidResult::Failed("Cannot create property editor without a property and node");
 
-  const auto* storedValue = asValue(property->getvalue());
+  const auto* storedValue = maki::asValue(property->getvalue());
   if (!storedValue)
     return VoidResult::Failed("Property '{}' does not contain a MAKI Value", property->getid().toStdString());
 
@@ -285,7 +247,7 @@ VoidResult PropertiesMenu::loadColorProperty(const std::shared_ptr<IParameter>& 
   if (!property || !node)
     return VoidResult::Failed("Cannot create color editor without a property and node");
 
-  const auto value = parameterValue(property.get());
+  const auto value = maki::parameterValue(property.get());
   auto* editor = new maki::ColorWidget(ToLabel(property->getid()), "", maki::WidgetAlignment::Vertical(), this);
 
   if (value.kind() == IValue::Kind::Color)
@@ -311,11 +273,11 @@ VoidResult PropertiesMenu::loadSelectProperty(const std::shared_ptr<IParameter>&
   if (!property || !node)
     return VoidResult::Failed("Cannot create selector without a property and node");
 
-  auto record = parameterRecord(property.get());
+  auto record = maki::parameterRecord(property.get());
   if (!hasRecordField(record, VALUE_KEY) || !hasRecordField(record, ITEMS_KEY))
     return VoidResult::Failed("Select property '{}' must be a record containing 'value' and 'items'", property->getid().toStdString());
 
-  const auto items = recordList(record, ITEMS_KEY);
+  const auto items = maki::recordList(record, ITEMS_KEY);
   const auto selected = record.at(VALUE_KEY);
 
   auto* editor = new maki::SelectorWidget(ToLabel(property->getid()), maki::WidgetAlignment::Vertical(), this);
@@ -348,7 +310,7 @@ VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IPa
   if (!property || !node)
     return VoidResult::Failed("Cannot create component selector without a property and node");
 
-  auto record = parameterRecord(property.get());
+  auto record = maki::parameterRecord(property.get());
   if (!hasRecordField(record, COMPONENT_KEY))
     return VoidResult::Failed("Component-select property '{}' must contain a 'component' field", property->getid().toStdString());
 
@@ -368,7 +330,7 @@ VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IPa
     componentEditor->addItem(name->getvalue()->toStringValue(), candidate->getid());
   }
 
-  componentEditor->setValue(recordString(record, COMPONENT_KEY));
+  componentEditor->setValue(maki::recordString(record, COMPONENT_KEY));
   layout()->addWidget(componentEditor);
 
   auto* callEditor = static_cast<maki::SelectorWidget*>(nullptr);
@@ -423,11 +385,11 @@ VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IPa
   if (callEditor)
   {
     populateCalls(currentComponentId);
-    callEditor->setValue(recordString(record, mode == Types::ControlTypes::FLOW_CALL ? FLOW_KEY : EVENT_KEY));
+    callEditor->setValue(maki::recordString(record, mode == Types::ControlTypes::FLOW_CALL ? FLOW_KEY : EVENT_KEY));
   }
 
-  auto currentCall = findCall(currentComponentId, mode == Types::ControlTypes::FLOW_CALL      ? recordString(record, FLOW_KEY)
-                                                  : mode == Types::ControlTypes::EVENT_SELECT ? recordString(record, EVENT_KEY)
+  auto currentCall = findCall(currentComponentId, mode == Types::ControlTypes::FLOW_CALL      ? maki::recordString(record, FLOW_KEY)
+                                                  : mode == Types::ControlTypes::EVENT_SELECT ? maki::recordString(record, EVENT_KEY)
                                                                                               : QString());
   LOG_WARN_ON_FAILURE(loadCallArguments(currentCall, property->getid(), node, argumentsGroup));
 
@@ -439,7 +401,7 @@ VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IPa
                 return;
 
               const auto* current = node->getProperty(propertyId);
-              auto valueRecord = parameterRecord(current);
+              auto valueRecord = maki::parameterRecord(current);
               const char* key = mode == Types::ControlTypes::FLOW_CALL ? FLOW_KEY : EVENT_KEY;
               valueRecord[key] = maki::Value::createString(callName);
               valueRecord[ARGUMENTS_KEY] = maki::Value::createList({});
@@ -460,7 +422,7 @@ VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IPa
               return;
 
             const auto* current = node->getProperty(propertyId);
-            auto valueRecord = parameterRecord(current);
+            auto valueRecord = maki::parameterRecord(current);
             valueRecord[COMPONENT_KEY] = maki::Value::createString(componentName);
             valueRecord[ARGUMENTS_KEY] = maki::Value::createList({});
 
@@ -507,8 +469,8 @@ VoidResult PropertiesMenu::loadCallArguments(const std::shared_ptr<FlowSaveInfo>
   group->show();
 
   const auto* property = node->getProperty(propertyId);
-  auto record = parameterRecord(property);
-  auto values = recordList(record, ARGUMENTS_KEY);
+  auto record = maki::parameterRecord(property);
+  auto values = maki::recordList(record, ARGUMENTS_KEY);
 
   const auto arguments = call->getarguments();
   if (values.size() < static_cast<std::size_t>(arguments.size()))
@@ -523,8 +485,8 @@ VoidResult PropertiesMenu::loadCallArguments(const std::shared_ptr<FlowSaveInfo>
     maki::Value value = values[static_cast<std::size_t>(index)];
     if (!value.isValid())
     {
-      const auto* defaultValue = asValue(argument->getvalue());
-      if (defaultValue)
+      const auto* defaultValue = maki::asValue(argument->getvalue());
+      if (defaultValue && defaultValue->isValid())
         value = *defaultValue;
       else
         value = maki::Value::defaultValue(argument->gettype());
@@ -546,8 +508,8 @@ VoidResult PropertiesMenu::loadCallArguments(const std::shared_ptr<FlowSaveInfo>
         return;
 
       const auto* current = node->getProperty(propertyId);
-      auto valueRecord = parameterRecord(current);
-      auto arguments = recordList(valueRecord, ARGUMENTS_KEY);
+      auto valueRecord = maki::parameterRecord(current);
+      auto arguments = maki::recordList(valueRecord, ARGUMENTS_KEY);
 
       if (arguments.size() <= static_cast<std::size_t>(index))
         arguments.resize(static_cast<std::size_t>(index) + 1);
@@ -556,6 +518,9 @@ VoidResult PropertiesMenu::loadCallArguments(const std::shared_ptr<FlowSaveInfo>
       valueRecord[ARGUMENTS_KEY] = maki::Value::createList(arguments);
       node->setProperty(propertyId, maki::Value::createRecord(valueRecord));
     });
+
+    // Make sure there is an inital value there
+    editor->setValue(value);
   }
 
   // Store defaulted values immediately, so the record always matches the call signature.

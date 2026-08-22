@@ -11,6 +11,7 @@
 
 #include "ast/ast.h"
 #include "idocument.h"
+#include "mission_parameter.h"
 #include "result.h"
 #include "typing/type_registry.h"
 
@@ -66,10 +67,10 @@ private:
   QList<koda::PStrategyHandler> buildHandlers(const IFlow& flow, const INode& node);
 
   Result<koda::PVarDef> buildVarDef(const IParameter* property);
-  Result<std::vector<koda::PActionDef>> buildActionDefs(const INode& node, const QJsonArray& typeArray);
+  Result<std::vector<koda::PActionDef>> buildActionDefs(const INode& node, const maki::ListValue& definition);
   Result<koda::PRosDef> buildRosDef(const IFlow& flow);
-  koda::PExpr buildExpr(const QJsonObject& object);
-  std::vector<koda::PExpr> buildArgumentExpr(const QJsonArray& options, int start);
+  koda::PExpr buildExpr(const maki::Value& object);
+  std::vector<koda::PExpr> buildArgumentExpr(const maki::ListValue& options);
 
   QList<NodeTransition> sequentialPredecessorsOf(const INode& node, const IFlow& flow) const;
   QSet<QString> sequentiallyReachableFrom(const INode& node, const IFlow& flow) const;
@@ -109,8 +110,8 @@ private:
 
   std::string format(QString input, const QString& token = "") const;
 
-  Result<koda::PExpr> buildValueExpr(const koda::types::TypeReference& type, const IValue* value);
-  const IValue* getProperty(const QString& key, const INode& node) const;
+  Result<koda::PExpr> buildValueExpr(const koda::types::TypeReference& type, const maki::Value* value);
+  const maki::Value* getProperty(const QString& key, const INode& node) const;
 };
 
 }  // namespace koda

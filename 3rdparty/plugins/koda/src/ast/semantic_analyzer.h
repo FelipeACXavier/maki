@@ -91,6 +91,8 @@ private:
 
   VoidResult resolveCapabilityData(const PEventCall& astCall, const ResolvedCall& call, SymbolId owner);
   Result<ResolvedArgumentSource> resolveArgumentSource(const PExpr& expr, const types::TypeReference& expectedType, SymbolId owner);
+
+  bool compatible(const types::TypeReference& expected, const types::TypeReference& actual);
 };
 
 }  // namespace koda

@@ -79,7 +79,7 @@ void kodaParserInitialize() {
     }
   );
   static const int32_t serializedATNSegment[] = {
-  	4,1,72,613,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,6,2,
+  	4,1,72,614,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,6,2,
   	7,7,7,2,8,7,8,2,9,7,9,2,10,7,10,2,11,7,11,2,12,7,12,2,13,7,13,2,14,7,
   	14,2,15,7,15,2,16,7,16,2,17,7,17,2,18,7,18,2,19,7,19,2,20,7,20,2,21,7,
   	21,2,22,7,22,2,23,7,23,2,24,7,24,2,25,7,25,2,26,7,26,2,27,7,27,2,28,7,
@@ -123,28 +123,28 @@ void kodaParserInitialize() {
   	36,1,36,5,36,538,8,36,10,36,12,36,541,9,36,1,37,1,37,1,37,3,37,546,8,
   	37,1,38,1,38,1,38,1,38,1,38,1,38,1,38,1,38,1,38,1,38,1,38,1,38,1,38,3,
   	38,561,8,38,1,39,1,39,1,39,1,39,5,39,567,8,39,10,39,12,39,570,9,39,3,
-  	39,572,8,39,1,39,1,39,1,40,1,40,1,40,1,40,1,40,1,41,1,41,1,41,1,41,5,
-  	41,585,8,41,10,41,12,41,588,9,41,3,41,590,8,41,1,41,1,41,1,42,1,42,1,
-  	42,1,42,5,42,598,8,42,10,42,12,42,601,9,42,3,42,603,8,42,1,42,1,42,1,
-  	43,1,43,1,43,1,43,1,44,1,44,1,44,0,1,50,45,0,2,4,6,8,10,12,14,16,18,20,
-  	22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62,64,66,
-  	68,70,72,74,76,78,80,82,84,86,88,0,4,1,0,39,44,1,0,51,52,1,0,53,54,3,
-  	0,16,21,23,24,67,67,655,0,93,1,0,0,0,2,102,1,0,0,0,4,134,1,0,0,0,6,157,
-  	1,0,0,0,8,159,1,0,0,0,10,164,1,0,0,0,12,179,1,0,0,0,14,191,1,0,0,0,16,
-  	193,1,0,0,0,18,216,1,0,0,0,20,218,1,0,0,0,22,226,1,0,0,0,24,243,1,0,0,
-  	0,26,251,1,0,0,0,28,253,1,0,0,0,30,262,1,0,0,0,32,274,1,0,0,0,34,282,
-  	1,0,0,0,36,291,1,0,0,0,38,297,1,0,0,0,40,310,1,0,0,0,42,323,1,0,0,0,44,
-  	366,1,0,0,0,46,378,1,0,0,0,48,380,1,0,0,0,50,443,1,0,0,0,52,467,1,0,0,
-  	0,54,485,1,0,0,0,56,487,1,0,0,0,58,495,1,0,0,0,60,497,1,0,0,0,62,505,
-  	1,0,0,0,64,513,1,0,0,0,66,519,1,0,0,0,68,524,1,0,0,0,70,526,1,0,0,0,72,
-  	534,1,0,0,0,74,545,1,0,0,0,76,560,1,0,0,0,78,562,1,0,0,0,80,575,1,0,0,
-  	0,82,580,1,0,0,0,84,593,1,0,0,0,86,606,1,0,0,0,88,610,1,0,0,0,90,92,3,
-  	2,1,0,91,90,1,0,0,0,92,95,1,0,0,0,93,91,1,0,0,0,93,94,1,0,0,0,94,96,1,
-  	0,0,0,95,93,1,0,0,0,96,97,5,0,0,1,97,1,1,0,0,0,98,103,3,4,2,0,99,103,
-  	3,6,3,0,100,103,3,10,5,0,101,103,3,16,8,0,102,98,1,0,0,0,102,99,1,0,0,
-  	0,102,100,1,0,0,0,102,101,1,0,0,0,103,3,1,0,0,0,104,105,5,1,0,0,105,106,
-  	5,67,0,0,106,108,5,58,0,0,107,109,3,22,11,0,108,107,1,0,0,0,108,109,1,
-  	0,0,0,109,110,1,0,0,0,110,111,5,59,0,0,111,115,5,60,0,0,112,114,3,26,
+  	39,572,8,39,1,39,1,39,1,40,1,40,1,40,1,40,1,41,1,41,1,41,1,41,5,41,584,
+  	8,41,10,41,12,41,587,9,41,3,41,589,8,41,1,41,1,41,1,42,1,42,1,42,1,42,
+  	5,42,597,8,42,10,42,12,42,600,9,42,3,42,602,8,42,1,42,1,42,1,43,1,43,
+  	1,43,1,43,1,43,1,43,1,44,1,44,1,44,0,1,50,45,0,2,4,6,8,10,12,14,16,18,
+  	20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62,64,
+  	66,68,70,72,74,76,78,80,82,84,86,88,0,4,1,0,39,44,1,0,51,52,1,0,53,54,
+  	3,0,16,21,23,24,67,67,656,0,93,1,0,0,0,2,102,1,0,0,0,4,134,1,0,0,0,6,
+  	157,1,0,0,0,8,159,1,0,0,0,10,164,1,0,0,0,12,179,1,0,0,0,14,191,1,0,0,
+  	0,16,193,1,0,0,0,18,216,1,0,0,0,20,218,1,0,0,0,22,226,1,0,0,0,24,243,
+  	1,0,0,0,26,251,1,0,0,0,28,253,1,0,0,0,30,262,1,0,0,0,32,274,1,0,0,0,34,
+  	282,1,0,0,0,36,291,1,0,0,0,38,297,1,0,0,0,40,310,1,0,0,0,42,323,1,0,0,
+  	0,44,366,1,0,0,0,46,378,1,0,0,0,48,380,1,0,0,0,50,443,1,0,0,0,52,467,
+  	1,0,0,0,54,485,1,0,0,0,56,487,1,0,0,0,58,495,1,0,0,0,60,497,1,0,0,0,62,
+  	505,1,0,0,0,64,513,1,0,0,0,66,519,1,0,0,0,68,524,1,0,0,0,70,526,1,0,0,
+  	0,72,534,1,0,0,0,74,545,1,0,0,0,76,560,1,0,0,0,78,562,1,0,0,0,80,575,
+  	1,0,0,0,82,579,1,0,0,0,84,592,1,0,0,0,86,605,1,0,0,0,88,611,1,0,0,0,90,
+  	92,3,2,1,0,91,90,1,0,0,0,92,95,1,0,0,0,93,91,1,0,0,0,93,94,1,0,0,0,94,
+  	96,1,0,0,0,95,93,1,0,0,0,96,97,5,0,0,1,97,1,1,0,0,0,98,103,3,4,2,0,99,
+  	103,3,6,3,0,100,103,3,10,5,0,101,103,3,16,8,0,102,98,1,0,0,0,102,99,1,
+  	0,0,0,102,100,1,0,0,0,102,101,1,0,0,0,103,3,1,0,0,0,104,105,5,1,0,0,105,
+  	106,5,67,0,0,106,108,5,58,0,0,107,109,3,22,11,0,108,107,1,0,0,0,108,109,
+  	1,0,0,0,109,110,1,0,0,0,110,111,5,59,0,0,111,115,5,60,0,0,112,114,3,26,
   	13,0,113,112,1,0,0,0,114,117,1,0,0,0,115,113,1,0,0,0,115,116,1,0,0,0,
   	116,118,1,0,0,0,117,115,1,0,0,0,118,135,5,61,0,0,119,120,5,2,0,0,120,
   	121,5,67,0,0,121,123,5,58,0,0,122,124,3,22,11,0,123,122,1,0,0,0,123,124,
@@ -273,19 +273,20 @@ void kodaParserInitialize() {
   	565,567,3,80,40,0,566,564,1,0,0,0,567,570,1,0,0,0,568,566,1,0,0,0,568,
   	569,1,0,0,0,569,572,1,0,0,0,570,568,1,0,0,0,571,563,1,0,0,0,571,572,1,
   	0,0,0,572,573,1,0,0,0,573,574,5,61,0,0,574,79,1,0,0,0,575,576,5,67,0,
-  	0,576,577,5,47,0,0,577,578,3,58,29,0,578,579,5,49,0,0,579,81,1,0,0,0,
-  	580,589,5,62,0,0,581,586,3,58,29,0,582,583,5,48,0,0,583,585,3,58,29,0,
-  	584,582,1,0,0,0,585,588,1,0,0,0,586,584,1,0,0,0,586,587,1,0,0,0,587,590,
-  	1,0,0,0,588,586,1,0,0,0,589,581,1,0,0,0,589,590,1,0,0,0,590,591,1,0,0,
-  	0,591,592,5,63,0,0,592,83,1,0,0,0,593,602,5,60,0,0,594,599,3,86,43,0,
-  	595,596,5,48,0,0,596,598,3,86,43,0,597,595,1,0,0,0,598,601,1,0,0,0,599,
-  	597,1,0,0,0,599,600,1,0,0,0,600,603,1,0,0,0,601,599,1,0,0,0,602,594,1,
-  	0,0,0,602,603,1,0,0,0,603,604,1,0,0,0,604,605,5,61,0,0,605,85,1,0,0,0,
-  	606,607,3,58,29,0,607,608,5,47,0,0,608,609,3,58,29,0,609,87,1,0,0,0,610,
-  	611,7,3,0,0,611,89,1,0,0,0,60,93,102,108,115,123,130,134,140,146,157,
-  	168,174,182,188,191,216,223,231,243,251,258,265,268,279,287,303,305,316,
-  	318,329,331,366,378,384,396,407,427,436,443,450,454,467,474,481,485,492,
-  	502,510,517,524,531,539,545,560,568,571,586,589,599,602
+  	0,576,577,5,47,0,0,577,578,3,58,29,0,578,81,1,0,0,0,579,588,5,62,0,0,
+  	580,585,3,58,29,0,581,582,5,48,0,0,582,584,3,58,29,0,583,581,1,0,0,0,
+  	584,587,1,0,0,0,585,583,1,0,0,0,585,586,1,0,0,0,586,589,1,0,0,0,587,585,
+  	1,0,0,0,588,580,1,0,0,0,588,589,1,0,0,0,589,590,1,0,0,0,590,591,5,63,
+  	0,0,591,83,1,0,0,0,592,601,5,60,0,0,593,598,3,86,43,0,594,595,5,48,0,
+  	0,595,597,3,86,43,0,596,594,1,0,0,0,597,600,1,0,0,0,598,596,1,0,0,0,598,
+  	599,1,0,0,0,599,602,1,0,0,0,600,598,1,0,0,0,601,593,1,0,0,0,601,602,1,
+  	0,0,0,602,603,1,0,0,0,603,604,5,61,0,0,604,85,1,0,0,0,605,606,5,43,0,
+  	0,606,607,3,58,29,0,607,608,5,48,0,0,608,609,3,58,29,0,609,610,5,44,0,
+  	0,610,87,1,0,0,0,611,612,7,3,0,0,612,89,1,0,0,0,60,93,102,108,115,123,
+  	130,134,140,146,157,168,174,182,188,191,216,223,231,243,251,258,265,268,
+  	279,287,303,305,316,318,329,331,366,378,384,396,407,427,436,443,450,454,
+  	467,474,481,485,492,502,510,517,524,531,539,545,560,568,571,585,588,598,
+  	601
   };
   staticData->serializedATN = antlr4::atn::SerializedATNView(serializedATNSegment, sizeof(serializedATNSegment) / sizeof(serializedATNSegment[0]));
 
@@ -4166,7 +4167,6 @@ std::any KodaParser::ExprCmpContext::accept(tree::ParseTreeVisitor *visitor) {
 KodaParser::ExprCmpContext* KodaParser::exprCmp() {
   ExprCmpContext *_localctx = _tracker.createInstance<ExprCmpContext>(_ctx, getState());
   enterRule(_localctx, 64, KodaParser::RuleExprCmp);
-  size_t _la = 0;
 
 #if __cplusplus > 201703L
   auto onExit = finally([=, this] {
@@ -4182,18 +4182,17 @@ KodaParser::ExprCmpContext* KodaParser::exprCmp() {
     setState(517);
     _errHandler->sync(this);
 
-    _la = _input->LA(1);
-    if ((((_la & ~ 0x3fULL) == 0) &&
-      ((1ULL << _la) & ((1ULL << KodaParser::EQ)
-      | (1ULL << KodaParser::NEQ)
-      | (1ULL << KodaParser::LEQ)
-      | (1ULL << KodaParser::GEQ)
-      | (1ULL << KodaParser::LT)
-      | (1ULL << KodaParser::GT))) != 0)) {
+    switch (getInterpreter<atn::ParserATNSimulator>()->adaptivePredict(_input, 48, _ctx)) {
+    case 1: {
       setState(514);
       compOp();
       setState(515);
       exprNot();
+      break;
+    }
+
+    default:
+      break;
     }
    
   }
@@ -5054,10 +5053,6 @@ KodaParser::ExpressionContext* KodaParser::RecordFieldInitializerContext::expres
   return getRuleContext<KodaParser::ExpressionContext>(0);
 }
 
-tree::TerminalNode* KodaParser::RecordFieldInitializerContext::SEMI() {
-  return getToken(KodaParser::SEMI, 0);
-}
-
 
 size_t KodaParser::RecordFieldInitializerContext::getRuleIndex() const {
   return KodaParser::RuleRecordFieldInitializer;
@@ -5090,8 +5085,6 @@ KodaParser::RecordFieldInitializerContext* KodaParser::recordFieldInitializer() 
     match(KodaParser::COLON);
     setState(577);
     expression();
-    setState(578);
-    match(KodaParser::SEMI);
    
   }
   catch (RecognitionException &e) {
@@ -5160,9 +5153,9 @@ KodaParser::ListLiteralContext* KodaParser::listLiteral() {
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(580);
+    setState(579);
     match(KodaParser::LBRACK);
-    setState(589);
+    setState(588);
     _errHandler->sync(this);
 
     _la = _input->LA(1);
@@ -5185,22 +5178,22 @@ KodaParser::ListLiteralContext* KodaParser::listLiteral() {
       | (1ULL << (KodaParser::BOOLEAN - 16))
       | (1ULL << (KodaParser::IDENT - 16))
       | (1ULL << (KodaParser::STRING - 16)))) != 0)) {
-      setState(581);
+      setState(580);
       expression();
-      setState(586);
+      setState(585);
       _errHandler->sync(this);
       _la = _input->LA(1);
       while (_la == KodaParser::COMMA) {
-        setState(582);
+        setState(581);
         match(KodaParser::COMMA);
-        setState(583);
+        setState(582);
         expression();
-        setState(588);
+        setState(587);
         _errHandler->sync(this);
         _la = _input->LA(1);
       }
     }
-    setState(591);
+    setState(590);
     match(KodaParser::RBRACK);
    
   }
@@ -5270,47 +5263,29 @@ KodaParser::MapLiteralContext* KodaParser::mapLiteral() {
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(593);
+    setState(592);
     match(KodaParser::LBRACE);
-    setState(602);
+    setState(601);
     _errHandler->sync(this);
 
     _la = _input->LA(1);
-    if (((((_la - 16) & ~ 0x3fULL) == 0) &&
-      ((1ULL << (_la - 16)) & ((1ULL << (KodaParser::TRIGGER - 16))
-      | (1ULL << (KodaParser::RETURN - 16))
-      | (1ULL << (KodaParser::ABORT - 16))
-      | (1ULL << (KodaParser::ERROR - 16))
-      | (1ULL << (KodaParser::IN - 16))
-      | (1ULL << (KodaParser::OUT - 16))
-      | (1ULL << (KodaParser::CONSUMES - 16))
-      | (1ULL << (KodaParser::PRODUCES - 16))
-      | (1ULL << (KodaParser::MINUS - 16))
-      | (1ULL << (KodaParser::NOT - 16))
-      | (1ULL << (KodaParser::LPAREN - 16))
-      | (1ULL << (KodaParser::LBRACE - 16))
-      | (1ULL << (KodaParser::LBRACK - 16))
-      | (1ULL << (KodaParser::NATURAL - 16))
-      | (1ULL << (KodaParser::REAL - 16))
-      | (1ULL << (KodaParser::BOOLEAN - 16))
-      | (1ULL << (KodaParser::IDENT - 16))
-      | (1ULL << (KodaParser::STRING - 16)))) != 0)) {
-      setState(594);
+    if (_la == KodaParser::LT) {
+      setState(593);
       mapFieldInitializer();
-      setState(599);
+      setState(598);
       _errHandler->sync(this);
       _la = _input->LA(1);
       while (_la == KodaParser::COMMA) {
-        setState(595);
+        setState(594);
         match(KodaParser::COMMA);
-        setState(596);
+        setState(595);
         mapFieldInitializer();
-        setState(601);
+        setState(600);
         _errHandler->sync(this);
         _la = _input->LA(1);
       }
     }
-    setState(604);
+    setState(603);
     match(KodaParser::RBRACE);
    
   }
@@ -5329,6 +5304,10 @@ KodaParser::MapFieldInitializerContext::MapFieldInitializerContext(ParserRuleCon
   : ParserRuleContext(parent, invokingState) {
 }
 
+tree::TerminalNode* KodaParser::MapFieldInitializerContext::LT() {
+  return getToken(KodaParser::LT, 0);
+}
+
 std::vector<KodaParser::ExpressionContext *> KodaParser::MapFieldInitializerContext::expression() {
   return getRuleContexts<KodaParser::ExpressionContext>();
 }
@@ -5337,8 +5316,12 @@ KodaParser::ExpressionContext* KodaParser::MapFieldInitializerContext::expressio
   return getRuleContext<KodaParser::ExpressionContext>(i);
 }
 
-tree::TerminalNode* KodaParser::MapFieldInitializerContext::COLON() {
-  return getToken(KodaParser::COLON, 0);
+tree::TerminalNode* KodaParser::MapFieldInitializerContext::COMMA() {
+  return getToken(KodaParser::COMMA, 0);
+}
+
+tree::TerminalNode* KodaParser::MapFieldInitializerContext::GT() {
+  return getToken(KodaParser::GT, 0);
 }
 
 
@@ -5367,12 +5350,16 @@ KodaParser::MapFieldInitializerContext* KodaParser::mapFieldInitializer() {
   });
   try {
     enterOuterAlt(_localctx, 1);
+    setState(605);
+    match(KodaParser::LT);
     setState(606);
     expression();
     setState(607);
-    match(KodaParser::COLON);
+    match(KodaParser::COMMA);
     setState(608);
     expression();
+    setState(609);
+    match(KodaParser::GT);
    
   }
   catch (RecognitionException &e) {
@@ -5453,7 +5440,7 @@ KodaParser::IdentifierContext* KodaParser::identifier() {
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(610);
+    setState(611);
     _la = _input->LA(1);
     if (!(((((_la - 16) & ~ 0x3fULL) == 0) &&
       ((1ULL << (_la - 16)) & ((1ULL << (KodaParser::TRIGGER - 16))

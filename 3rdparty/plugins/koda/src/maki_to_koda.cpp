@@ -14,6 +14,7 @@
 #include <memory>
 
 #include "ast/ast.h"
+#include "keys.h"
 #include "koda_emitter.h"
 #include "logging.h"
 #include "result.h"
@@ -21,6 +22,13 @@
 #include "types.h"
 #include "typing/helpers.h"
 #include "typing/type_reference.h"
+
+#define LOG_AND_FAIL(m, ...)     \
+  do                             \
+  {                              \
+    LOG_ERROR(m, ##__VA_ARGS__); \
+    return std::any();           \
+  } while (false)
 
 namespace koda
 {
@@ -44,7 +52,7 @@ Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes
     {
       auto generated = buildCapability(*child);
       if (!generated)
-        return Result<QString>::Failed("Failed to generate capability: " + generated.ErrorMessage());
+        return Result<QString>::Failed("Failed to generate capability: {}", generated.ErrorMessage());
 
       sys.components.push_back(generated.Value());
     }
@@ -58,13 +66,13 @@ Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes
   return QString::fromStdString(contents.Value());
 }
 
-const IValue* MakiToKoda::getProperty(const QString& key, const INode& node) const
+const maki::Value* MakiToKoda::getProperty(const QString& key, const INode& node) const
 {
   for (const auto& property : node.getproperties())
   {
     LOG_INFO("Looking for: {} vs {}", property->getid(), key);
     if (property->getid() == key)
-      return property->getvalue();
+      return dynamic_cast<const maki::Value*>(property->getvalue());
   }
 
   return nullptr;
@@ -83,7 +91,7 @@ Result<koda::PComponent> MakiToKoda::buildTask(const INode& task, QVector<const 
   for (const auto& cap : task.getchildren())
   {
     const auto* capName = getProperty("name", *cap);
-    if (!cap)
+    if (!capName)
       return Result<koda::PComponent>::Failed("Capability does not have a name");
 
     auto parg = std::make_shared<koda::Argument>();
@@ -110,7 +118,6 @@ Result<koda::PComponent> MakiToKoda::buildTask(const INode& task, QVector<const 
 
   // Get mission parameters
   auto varsBlock = std::make_shared<koda::VarsBlock>();
-  LOG_DEBUG("Starting generation of koda::VarsBlock with {} entries", missionParameters.size());
   for (const auto* parameter : missionParameters)
   {
     auto generated = buildVarDef(parameter);
@@ -142,26 +149,27 @@ Result<koda::PComponent> MakiToKoda::buildCapability(const INode& capability)
 {
   auto c = std::make_shared<koda::Component>();
   c->kind = koda::Component::Kind::Capability;
-
-  if (const auto* prop = getProperty("name", capability))
-    c->name = format(prop->toStringValue());
-  else
+  const auto* name = getProperty("name", capability);
+  if (!name)
     return Result<koda::PComponent>::Failed("Capability does not have a name");
 
-  if (const auto* prop = getProperty("type", capability))
-  {
-    // auto typeArray = properties["type"].toJsonObject()["options"].toArray();
-    // if (typeArray.isEmpty())
-    //   return Result<koda::PComponent>::Failed("Type options is empty: " + c->name);
+  c->name = format(name->toStringValue());
 
-    // auto actions = buildActionDefs(capability, typeArray);
-    // RETURN_ON_FAILURE_AS(actions, koda::PComponent);
-    // for (const auto& action : actions.Value())
-    // {
-    //   auto statement = std::make_shared<koda::Statement>();
-    //   statement->node = action;
-    //   c->statements.push_back(statement);
-    // }
+  if (const auto* prop = getProperty("calldef", capability))
+  {
+    auto record = prop->toList();
+    if (record.empty())
+      return Result<koda::PComponent>::Failed("Call definition is empty: " + c->name);
+
+    LOG_DEBUG("Capability {} has a definition", name->toString());
+    auto actions = buildActionDefs(capability, record);
+    RETURN_ON_FAILURE_AS(actions, koda::PComponent);
+    for (const auto& action : actions.Value())
+    {
+      auto statement = std::make_shared<koda::Statement>();
+      statement->node = action;
+      c->statements.push_back(statement);
+    }
   }
 
   return c;
@@ -177,7 +185,7 @@ Result<koda::PVarDef> MakiToKoda::buildVarDef(const IParameter* property)
   varDef->name = property->getname().toStdString();
   varDef->varType = property->gettype();
 
-  auto init = buildValueExpr(varDef->varType, property->getvalue());
+  auto init = buildValueExpr(varDef->varType, maki::asValue(property->getvalue()));
   if (!init.IsSuccess())
     return Result<koda::PVarDef>::Failed("Could not build value for mission parameter '{}': {}", varDef->name, init.ErrorMessage());
 
@@ -186,20 +194,29 @@ Result<koda::PVarDef> MakiToKoda::buildVarDef(const IParameter* property)
   return varDef;
 }
 
-Result<std::vector<koda::PActionDef>> MakiToKoda::buildActionDefs(const INode& node, const QJsonArray& typeArray)
+Result<std::vector<koda::PActionDef>> MakiToKoda::buildActionDefs(const INode& node, const maki::ListValue& definition)
 {
   std::vector<koda::PActionDef> actions;
 
-  for (int i = 0; i < typeArray.size(); ++i)
+  for (size_t i = 0; i < definition.size(); ++i)
   {
-    const auto item = typeArray.at(i).toObject();
-    auto callType = item["id"].toString();
-    auto callOptions = item["options"].toArray();
-    if (callOptions.size() < 2)
-      return Result<std::vector<koda::PActionDef>>::Failed("Action definition does follow the expected format: " + callType.toStdString());
+    if (definition.at(i).kind() != IValue::Kind::Record)
+    {
+      LOG_WARNING("Definition of {} in {} is not a record", definition.at(i).toReadable(), node.getnodeId());
+      continue;
+    }
 
-    auto callRoute = callOptions.at(0).toObject()["default"].toString();
-    auto callMessage = callOptions.at(1).toObject()["default"].toString();
+    const auto item = definition.at(i).toRecord();
+    if (!item.contains("type"))
+      return Result<std::vector<koda::PActionDef>>::Failed("Definition missing type: {}", definition.at(i).toReadable());
+    if (!item.contains("route"))
+      return Result<std::vector<koda::PActionDef>>::Failed("Definition missing route: {}", definition.at(i).toReadable());
+    if (!item.contains("message"))
+      return Result<std::vector<koda::PActionDef>>::Failed("Definition missing message: {}", definition.at(i).toReadable());
+
+    auto callType = item.at("type").toString();
+    auto callRoute = item.at("route").toString();
+    auto callMessage = item.at("message").toString();
 
     auto action = std::make_shared<koda::ActionDef>();
     if (callType.trimmed() == "action")
@@ -209,14 +226,13 @@ Result<std::vector<koda::PActionDef>> MakiToKoda::buildActionDefs(const INode& n
     else if (callType.trimmed() == "topic")
       action->kind = koda::ActionDef::Kind::Topic;
     else
-      return Result<std::vector<koda::PActionDef>>::Failed("Unknown action definition type: " + callType.trimmed().toStdString());
+      return Result<std::vector<koda::PActionDef>>::Failed("Unknown action definition type: {}", callType.trimmed().toStdString());
 
     action->label1 = callRoute.toStdString();
     action->label2 = callMessage.toStdString();
-
     for (const auto& event : node.getevents())
     {
-      if (event->getlinksTo() != i)
+      if (event->getlinksTo() != static_cast<int>(i))
         continue;
 
       auto rosDef = buildRosDef(*event);
@@ -246,7 +262,7 @@ Result<koda::PRosDef> MakiToKoda::buildRosDef(const IFlow& event)
   else if (event.gettype() == Types::CallType::OUT)
     def->kind = koda::RosDef::Kind::Out;
   else
-    return Result<koda::PRosDef>::Failed("Unknown call type");
+    return Result<koda::PRosDef>::Failed("Unknown call type: {} in {}", (int)event.gettype(), event.getname());
 
   auto eventDef = std::make_shared<koda::EventDef>();
   eventDef->typeName = Types::PropertyTypesToString(event.getreturnType()).toStdString();
@@ -283,6 +299,14 @@ Result<koda::PFlow> MakiToKoda::buildFlowAst(const IFlow& flow)
   if (flowName != "main")
     flowName = "f" + flowName;
 
+  for (const auto& argument : flow.getarguments())
+  {
+    auto arg = std::make_shared<koda::Argument>();
+    arg->kind = koda::Argument::Kind::Plain;
+    arg->a = argument->gettype();
+    arg->b = argument->getid().toStdString();
+    pflow->args.push_back(arg);
+  }
   pflow->name = flowName;
   pflow->strategy = std::any_cast<koda::PStrategy>(seq);
 
@@ -394,204 +418,220 @@ std::any MakiToKoda::buildNodeExpr(const IFlow& flow, const INode& node)
 
 std::any MakiToKoda::buildAsyncExpr(const IFlow& flow, const INode& node)
 {
-  // QJsonObject object = node.getproperties()["capability"].toJsonObject();
-  // QString val = object["data"].toString();
-  // if (val.isEmpty())
-  // {
-  //   LOG_ERROR("AsyncTask component does not have a valid capability");
-  //   return std::any();
-  // }
-  // QJsonArray options = object["options"].toArray();
-  // if (val.isEmpty())
-  // {
-  //   LOG_ERROR("AsyncTask component is missing an associated call");
-  //   return std::any();
-  // }
+  const auto* cap = getProperty("capability", node);
+  if (!cap)
+    LOG_AND_FAIL("AsyncTask component does not have a valid capability");
+  if (!cap->isRecord())
+    LOG_AND_FAIL("AsyncTask component capability does not have a valid format: {}", cap->toReadable());
 
-  // auto task = std::make_shared<koda::EventCall>();
-  // task->receiver = format(val);
-  // ToLowerCase(task->receiver, 0);
+  const auto record = cap->toRecord();
+  if (!record.contains("component"))
+    LOG_AND_FAIL("Component name missing in async call: {}", cap->toReadable());
+  if (!record.at("component").isString())
+    LOG_AND_FAIL("Component name has wrong format in async call: {}", cap->toReadable());
+  if (!record.contains("arguments"))
+    LOG_AND_FAIL("Component arguments missing in async call: {}", cap->toReadable());
+  if (!record.at("arguments").isList())
+    LOG_AND_FAIL("Component arguments has wrong format in async call: {}", cap->toReadable());
 
-  // auto expr = std::make_shared<koda::Strategy::TaskCall>();
-  // expr->call = task;
-  // task->args = buildArgumentExpr(options, 1);
+  auto call = std::make_shared<koda::EventCall>();
+  call->receiver = format(maki::recordString(record, "component"));
+  ToLowerCase(call->receiver, 0);
+  call->args = buildArgumentExpr(maki::recordList(record, "arguments"));
 
-  // auto handlers = buildHandlers(flow, node);
-  // for (const auto& handler : handlers)
-  //   expr->handlers.push_back(handler);
+  auto expr = std::make_shared<koda::Strategy::TaskCall>();
+  expr->call = call;
+
+  auto handlers = buildHandlers(flow, node);
+  for (const auto& handler : handlers)
+    expr->handlers.push_back(handler);
 
   auto strat = std::make_shared<koda::Strategy>();
-  // strat->v = expr;
+  strat->v = expr;
   return strat;
 }
 
 std::any MakiToKoda::buildSyncExpr(const IFlow& flow, const INode& node)
 {
-  // QJsonObject object = node.getproperties()["capability"].toJsonObject();
-  // QString val = object["data"].toString();
-  // if (val.isEmpty())
-  // {
-  //   LOG_ERROR("AsyncTask component does not have a valid capability");
-  //   return std::any();
-  // }
-  // QJsonArray options = object["options"].toArray();
-  // if (val.isEmpty())
-  // {
-  //   LOG_ERROR("SyncTask component is missing an associated call");
-  //   return std::any();
-  // }
-  // const auto method = options.at(0).toObject();
+  const auto* cap = getProperty("capability", node);
+  if (!cap)
+    LOG_AND_FAIL("SyncTask component does not have a valid capability");
+  if (!cap->isRecord())
+    LOG_AND_FAIL("SyncTask component capability does not have a valid format: {}", cap->toReadable());
 
-  // auto task = std::make_shared<koda::EventCall>();
-  // task->receiver = format(val);
-  // ToLowerCase(task->receiver, 0);
+  const auto record = cap->toRecord();
+  if (!record.contains("component"))
+    LOG_AND_FAIL("Component name missing in sync call: {}", cap->toReadable());
+  if (!record.at("component").isString())
+    LOG_AND_FAIL("Component name has wrong format in sync call: {}", cap->toReadable());
 
-  // task->name = method["data"].toString().toStdString();
-  // task->args = buildArgumentExpr(options, 1);
+  if (!record.contains("event"))
+    LOG_AND_FAIL("Component event missing in sync call: {}", cap->toReadable());
+  if (!record.at("event").isString())
+    LOG_AND_FAIL("Component event has wrong format in sync call: {}", cap->toReadable());
 
-  // auto expr = std::make_shared<koda::Strategy::TaskCall>();
-  // expr->call = task;
+  if (!record.contains("arguments"))
+    LOG_AND_FAIL("Component arguments missing in sync call: {}", cap->toReadable());
+  if (!record.at("arguments").isList())
+    LOG_AND_FAIL("Component arguments has wrong format in sync call: {}", cap->toReadable());
+
+  auto call = std::make_shared<koda::EventCall>();
+  call->receiver = format(maki::recordString(record, "component"));
+  call->name = maki::recordString(record, "event").toStdString();
+  ToLowerCase(call->receiver, 0);
+  call->args = buildArgumentExpr(maki::recordList(record, "arguments"));
+
+  auto expr = std::make_shared<koda::Strategy::TaskCall>();
+  expr->call = call;
 
   auto strat = std::make_shared<koda::Strategy>();
-  // strat->v = expr;
+  strat->v = expr;
   return strat;
 }
 
 std::any MakiToKoda::buildStrategyExpr(const IFlow& flow, const INode& node)
 {
-  // QJsonObject object = node.getproperties()["task"].toJsonObject();
-  // QString val = object["data"].toString();
-  // QJsonArray options = object["options"].toArray();
-  // if (options.isEmpty())
-  // {
-  //   LOG_ERROR("Call Flow component does not have a valid flow");
-  //   return std::any();
-  // }
+  const auto* cap = getProperty("task", node);
+  if (!cap)
+    LOG_AND_FAIL("Flow call does not have a valid task");
+  if (!cap->isRecord())
+    LOG_AND_FAIL("Flow call task does not have a valid format: {}", cap->toReadable());
 
-  // auto call = std::make_shared<koda::EventCall>();
-  // call->name = "f" + format(options[0].toObject()["data"].toString());
+  const auto record = cap->toRecord();
+  if (!record.contains("flow"))
+    LOG_AND_FAIL("Flow name missing in flow call: {}", cap->toReadable());
+  if (!record.at("flow").isString())
+    LOG_AND_FAIL("Flow name has wrong format in flow call: {}", cap->toReadable());
 
-  // auto expr = std::make_shared<koda::Strategy::TaskCall>();
-  // expr->call = call;
+  if (!record.contains("arguments"))
+    LOG_AND_FAIL("Flow arguments missing in flow call: {}", cap->toReadable());
+  if (!record.at("arguments").isList())
+    LOG_AND_FAIL("Flow arguments has wrong format in flow call: {}", cap->toReadable());
+
+  auto call = std::make_shared<koda::EventCall>();
+  call->receiver = "f" + format(maki::recordString(record, "flow"));
+  call->args = buildArgumentExpr(maki::recordList(record, "arguments"));
+
+  auto expr = std::make_shared<koda::Strategy::TaskCall>();
+  expr->call = call;
+
+  auto handlers = buildHandlers(flow, node);
+  for (const auto& handler : handlers)
+    expr->handlers.push_back(handler);
 
   auto strat = std::make_shared<koda::Strategy>();
-  // strat->v = expr;
+  strat->v = expr;
   return strat;
 }
 
 std::any MakiToKoda::buildWithinExpr(const IFlow& flow, const INode& node)
 {
-  // auto expr = std::make_shared<koda::Strategy::Within>();
+  auto expr = std::make_shared<koda::Strategy::Within>();
 
-  // const auto doSuccessors = doSuccessorsOf(node, flow);
-  // const auto elseSuccessors = elseSuccessorsOf(node, flow);
+  const auto doSuccessors = doSuccessorsOf(node, flow);
+  const auto elseSuccessors = elseSuccessorsOf(node, flow);
 
-  // if (doSuccessors.size() != 1)
-  // {
-  //   LOG_ERROR("Within node must have exactly one 'do' transition: " + node.getid().toStdString());
-  //   return std::any();
-  // }
+  if (doSuccessors.size() != 1)
+  {
+    LOG_ERROR("Within node must have exactly one 'do' transition: " + node.getid().toStdString());
+    return std::any();
+  }
 
-  // if (elseSuccessors.size() > 1)
-  // {
-  //   LOG_ERROR("Within node cannot have more than one 'else' transition: " + node.getid().toStdString());
-  //   return std::any();
-  // }
+  if (elseSuccessors.size() > 1)
+  {
+    LOG_ERROR("Within node cannot have more than one 'else' transition: " + node.getid().toStdString());
+    return std::any();
+  }
 
-  // auto doSequence = buildSequenceFrom(flow, doSuccessors.first().node, nullptr);
-  // if (!doSequence.has_value())
-  // {
-  //   LOG_ERROR("Failed to create do sequence");
-  //   return std::any();
-  // }
+  auto doSequence = buildSequenceFrom(flow, doSuccessors.first().node, nullptr);
+  if (!doSequence.has_value())
+  {
+    LOG_ERROR("Failed to create do sequence");
+    return std::any();
+  }
 
-  // expr->a = std::any_cast<koda::PStrategy>(doSequence);
+  expr->a = std::any_cast<koda::PStrategy>(doSequence);
 
-  // if (!elseSuccessors.isEmpty())
-  // {
-  //   auto elseSequence = buildSequenceFrom(flow, elseSuccessors.first().node, nullptr);
-  //   if (!elseSequence.has_value())
-  //   {
-  //     LOG_ERROR("Failed to create else sequence");
-  //     return std::any();
-  //   }
+  if (!elseSuccessors.isEmpty())
+  {
+    auto elseSequence = buildSequenceFrom(flow, elseSuccessors.first().node, nullptr);
+    if (!elseSequence.has_value())
+    {
+      LOG_ERROR("Failed to create else sequence");
+      return std::any();
+    }
 
-  //   expr->b = std::any_cast<koda::PStrategy>(elseSequence);
-  // }
+    expr->b = std::any_cast<koda::PStrategy>(elseSequence);
+  }
 
-  // auto properties = node.getproperties();
-  // if (!properties.contains("timeout"))
-  // {
-  //   LOG_ERROR("Within missing timeout property");
-  //   return std::any();
-  // }
-  // expr->seconds = properties["timeout"].toInt();
+  auto timeout = getProperty("timeout", node);
+  if (!timeout)
+    LOG_AND_FAIL("Within missing timeout property");
+  if (!timeout->isInt() && !timeout->isString())
+    LOG_AND_FAIL("Within timeout property should be an integer");
+
+  expr->seconds = timeout->toInt();
+
+  auto handlers = buildHandlers(flow, node);
+  for (const auto& handler : handlers)
+    expr->handlers.push_back(handler);
 
   auto strat = std::make_shared<koda::Strategy>();
-  // strat->v = expr;
+  strat->v = expr;
 
   return strat;
 }
 
 std::any MakiToKoda::buildRepeatExpr(const IFlow& flow, const INode& node)
 {
-  auto expr = std::make_shared<koda::Strategy::Repeat>();
+  const auto* task = getProperty("task", node);
+  if (!task)
+    LOG_AND_FAIL("Repeat task property is missing");
+  if (!task->isRecord())
+    LOG_AND_FAIL("Repeat task property should be a record");
 
-  const auto* capabilty = getProperty("capability", node);
-  if (!capabilty)
-  {
-    LOG_ERROR("Repeat component does not have an associated flow");
-    return std::any();
-  }
   const auto* iterations = getProperty("iterations", node);
   if (!iterations)
-  {
-    LOG_ERROR("Repeat component is missing the iterations property");
-    return std::any();
-  }
+    LOG_AND_FAIL("Repeat iterations property is missing");
+  if (!iterations->isInt() && !iterations->isString())
+    LOG_AND_FAIL("Repeat iterations property should be an integer");
+
   const auto* rate = getProperty("rate", node);
   if (!rate)
+    LOG_AND_FAIL("Repeat rate property is missing");
+  if (!rate->isInt() && !rate->isString())
+    LOG_AND_FAIL("Repeat rate property should be an integer");
+
+  auto record = task->toRecord();
+  auto call = std::make_shared<koda::EventCall>();
+  call->receiver = "f" + format(maki::recordString(record, "flow"));
+  call->args = buildArgumentExpr(maki::recordList(record, "arguments"));
+
+  auto flowCall = std::make_shared<koda::Strategy::TaskCall>();
+  flowCall->call = call;
+
+  auto expr = std::make_shared<koda::Strategy::Repeat>();
+  expr->iterations = iterations->toInt();
+  expr->seconds = rate->toInt();
+
+  auto handlers = buildHandlers(flow, node);
+  for (const auto& handler : handlers)
+    expr->handlers.push_back(handler);
+
+  auto repeatStrat = std::make_shared<koda::Strategy>();
+  repeatStrat->v = flowCall;
+  expr->a = repeatStrat;
+
+  const auto seqSuccessors = sequentialSuccessorsOf(node, flow);
+  if (!seqSuccessors.empty())
   {
-    LOG_ERROR("Repeat component is missing the rate property");
-    return std::any();
+    auto sequence = buildSequenceFrom(flow, seqSuccessors.first().node, nullptr);
+    if (!sequence.has_value())
+      LOG_AND_FAIL("Failed to create do sequence");
   }
 
-  // QJsonObject object = properties["capability"].toJsonObject();
-  // QJsonArray options = object["options"].toArray();
-  // if (options.isEmpty())
-  // {
-  //   LOG_ERROR("Repeat component does not have an associated flow");
-  //   return std::any();
-  // }
-
-  // expr->iterations = properties["iterations"].toInt();
-  // expr->seconds = properties["rate"].toInt();
-
-  // QString strategy = options[0].toObject()["data"].toString();
-
-  // auto call = std::make_shared<koda::EventCall>();
-  // call->name = "f" + format(strategy);
-
-  // auto flowCall = std::make_shared<koda::Strategy::TaskCall>();
-  // flowCall->call = call;
-
-  // auto repeatStrat = std::make_shared<koda::Strategy>();
-  // repeatStrat->v = flowCall;
-  // expr->a = repeatStrat;
-
-  // const auto seqSuccessors = sequentialSuccessorsOf(node, flow);
-  // if (!seqSuccessors.empty())
-  // {
-  //   auto sequence = buildSequenceFrom(flow, seqSuccessors.first().node, nullptr);
-  //   if (!sequence.has_value())
-  //   {
-  //     LOG_ERROR("Failed to create do sequence");
-  //     return std::any();
-  //   }
-  // }
-
   auto strat = std::make_shared<koda::Strategy>();
-  // strat->v = expr;
+  strat->v = expr;
   return strat;
 }
 
@@ -675,71 +715,91 @@ QList<koda::PStrategyHandler> MakiToKoda::buildHandlers(const IFlow& flow, const
   return handlers;
 }
 
-std::shared_ptr<koda::Expr> MakiToKoda::buildExpr(const QJsonObject& object)
+std::shared_ptr<koda::Expr> MakiToKoda::buildExpr(const maki::Value& value)
 {
-  if (!object.contains("type"))
-  {
-    LOG_ERROR("Expr with no type");
-    return nullptr;
-  }
-
-  if (!object.contains("data"))
-  {
-    LOG_ERROR("Expr with no data");
-    return nullptr;
-  }
-
-  auto type = Types::StringToPropertyTypes(object["type"].toString());
   auto wrapper = std::make_shared<koda::Expr>();
-  switch (type)
+  switch (value.kind())
   {
-    case Types::PropertyTypes::BOOLEAN:
+    case IValue::Kind::Bool:
     {
-      auto expr = std::make_shared<koda::Expr::Int>();
-      expr->value = (object["data"].toString().toLower() == "true");
+      auto expr = std::make_shared<koda::Expr::Bool>();
+      expr->value = value.toBool();
       wrapper->v = expr;
       break;
     }
-    case Types::PropertyTypes::INTEGER:
+    case IValue::Kind::Int:
     {
       auto expr = std::make_shared<koda::Expr::Int>();
-      expr->value = object["data"].toInt();
+      expr->value = value.toInt();
       wrapper->v = expr;
       break;
     }
-    case Types::PropertyTypes::REAL:
+    case IValue::Kind::Double:
     {
       auto expr = std::make_shared<koda::Expr::Float>();
-      expr->value = object["data"].toString().toDouble();
+      expr->value = value.toDouble();
       wrapper->v = expr;
       break;
     }
-    case Types::PropertyTypes::STRING:
+    case IValue::Kind::StdString:
+    case IValue::Kind::QString:
     {
       auto expr = std::make_shared<koda::Expr::Str>();
-      expr->value = object["data"].toString().toStdString();
+      expr->value = value.toString().toStdString();
       wrapper->v = expr;
       break;
     }
-    default:
+    case IValue::Kind::List:
     {
-      auto expr = std::make_shared<koda::Expr::Id>();
-      expr->value = object["data"].toString().toStdString();
+      auto expr = std::make_shared<koda::Expr::ListLiteral>();
+      for (const auto& item : value.toList())
+        expr->fields.push_back(buildExpr(item));
       wrapper->v = expr;
       break;
+    }
+    case IValue::Kind::Map:
+    {
+      auto expr = std::make_shared<koda::Expr::MapLiteral>();
+      for (const auto& [key, item] : value.toMap())
+      {
+        auto field = std::make_shared<koda::Expr::MapLiteral::Field>();
+        field->key = buildExpr(key);
+        field->value = buildExpr(item);
+        expr->fields.push_back(field);
+      }
+      wrapper->v = expr;
+      break;
+    }
+    case IValue::Kind::Record:
+    {
+      auto expr = std::make_shared<koda::Expr::RecordLiteral>();
+      for (const auto& [key, item] : value.toRecord())
+      {
+        auto field = std::make_shared<koda::Expr::RecordLiteral::Field>();
+        field->name = key;
+        field->value = buildExpr(item);
+        expr->fields.push_back(field);
+      }
+      wrapper->v = expr;
+      break;
+    }
+    case IValue::Kind::Color:
+    default:
+    {
+      LOG_ERROR("Value not supported in expression: {}", value.toReadable());
+      return nullptr;
     }
   }
 
   return wrapper;
 }
 
-std::vector<std::shared_ptr<Expr>> MakiToKoda::buildArgumentExpr(const QJsonArray& options, int start)
+std::vector<std::shared_ptr<Expr>> MakiToKoda::buildArgumentExpr(const maki::ListValue& list)
 {
   std::vector<std::shared_ptr<Expr>> args = {};
 
-  for (int i = start; i < options.size(); ++i)
+  for (const auto& arg : list)
   {
-    const auto arg = options.at(i).toObject();
     auto parg = buildExpr(arg);
     if (parg != nullptr)
       args.push_back(parg);
@@ -1056,7 +1116,7 @@ std::string MakiToKoda::format(QString input, const QString& token) const
   return input.replace(" ", token).toStdString();
 }
 
-Result<koda::PExpr> MakiToKoda::buildValueExpr(const koda::types::TypeReference& type, const IValue* value)
+Result<koda::PExpr> MakiToKoda::buildValueExpr(const koda::types::TypeReference& type, const maki::Value* value)
 {
   auto wrapper = std::make_shared<koda::Expr>();
   if (type.isPrimitive())
@@ -1109,7 +1169,7 @@ Result<koda::PExpr> MakiToKoda::buildValueExpr(const koda::types::TypeReference&
   }
   else if (type.isList())
   {
-    if (value->kind() != IValue::Kind::List)
+    if (!value->isList())
       return Result<koda::PExpr>::Failed("Expected list value for type '{}'", type.toString());
 
     auto literal = std::make_shared<koda::Expr::ListLiteral>();
@@ -1119,7 +1179,7 @@ Result<koda::PExpr> MakiToKoda::buildValueExpr(const koda::types::TypeReference&
 
     for (const auto& item : values)
     {
-      auto built = buildValueExpr(elementType, item.get());
+      auto built = buildValueExpr(elementType, maki::asValue(item.get()));
       if (!built.IsSuccess())
         return Result<koda::PExpr>::Failed("Could not build list element for '{}': {}", type.toString(), built.ErrorMessage());
 
@@ -1140,11 +1200,11 @@ Result<koda::PExpr> MakiToKoda::buildValueExpr(const koda::types::TypeReference&
     const auto valueType = type.mapValueType();
     for (const auto& [key, val] : value->toMapValue())
     {
-      auto builtKey = buildValueExpr(keyType, key.get());
+      auto builtKey = buildValueExpr(keyType, maki::asValue(key.get()));
       if (!builtKey.IsSuccess())
         return Result<koda::PExpr>::Failed("Could not build map key for '{}': {}", type.toString(), builtKey.ErrorMessage());
 
-      auto builtValue = buildValueExpr(valueType, val.get());
+      auto builtValue = buildValueExpr(valueType, maki::asValue(val.get()));
       if (!builtValue.IsSuccess())
         return Result<koda::PExpr>::Failed("Could not build map value for '{}': {}", type.toString(), builtValue.ErrorMessage());
 
@@ -1184,7 +1244,7 @@ Result<koda::PExpr> MakiToKoda::buildValueExpr(const koda::types::TypeReference&
         if (valueIt == values.end())
           continue;
 
-        auto built = buildValueExpr(field.type, valueIt->second.get());
+        auto built = buildValueExpr(field.type, maki::asValue(valueIt->second.get()));
         if (!built.IsSuccess())
           return Result<koda::PExpr>::Failed("Could not build field '{}.{}': {}", type.toString(), field.name, built.ErrorMessage());
 

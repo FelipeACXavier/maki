@@ -6,19 +6,6 @@
 
 namespace koda
 {
-namespace
-{
-bool compatible(const types::TypeReference& expected, const types::TypeReference& actual)
-{
-  if (!expected.isValid() || !actual.isValid())
-    return true;
-  if (expected.kind() == actual.kind())
-    return true;
-
-  return expected.isNumeric() && actual.isNumeric();
-}
-}  // namespace
-
 SemanticAnalyzer::SemanticAnalyzer(SymbolRegistry& symbols, types::TypeRegistry& types, types::Blackboard& blackboard)
     : mSymbols(symbols)
     , mBlackboard(blackboard)
@@ -726,8 +713,9 @@ Result<types::TypeReference> SemanticAnalyzer::analyzeExpr(const PExpr& expr, Sy
 
       if (!compatible(fieldIt->type, valueType.Value()))
       {
-        return Result<types::TypeReference>::Failed(
-            std::format("Field '{}' expects '{}' but got '{}'", field->name, fieldIt->type.toString(), valueType.Value().toString()));
+        return Result<types::TypeReference>::Failed("Field '{}' expects '{}' ({}) but got '{}' ({})", field->name, fieldIt->type.toString(),
+                                                    types::toString(fieldIt->type.kind()), valueType.Value().toString(),
+                                                    types::toString(valueType.Value().kind()));
       }
     }
 
@@ -765,6 +753,26 @@ Result<SymbolId> SemanticAnalyzer::resolveComponentType(const Symbol& value, con
   }
 
   return Result<SymbolId>::Failed(std::format("'{}' is not a capability/component at {}", value.name, span.toString()));
+}
+
+bool SemanticAnalyzer::compatible(const types::TypeReference& expected, const types::TypeReference& actual)
+{
+  if (!expected.isValid() || !actual.isValid())
+    return true;
+
+  const auto* expectedDef = mTypeRegistry.resolve(expected);
+  const auto* actualDef = mTypeRegistry.resolve(actual);
+
+  if (!expectedDef || !actualDef)
+    return false;
+
+  if (expectedDef->id == actualDef->id)
+    return true;
+
+  if (expectedDef->isPrimitive() && actualDef->isPrimitive())
+    return types::isPrimitiveAssignable(actualDef->primitive().primitive, expectedDef->primitive().primitive);
+
+  return false;
 }
 
 }  // namespace koda
