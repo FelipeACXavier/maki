@@ -72,6 +72,7 @@ QJsonObject PropertyInfo::toJson() const
   data[ConfigKeys::ID] = getid();
   data[ConfigKeys::DEFAULT] = mDefaultValue.toJson();
   data[ConfigKeys::TYPE] = maki::typeReferenceToJson(mType);
+  data[ConfigKeys::CONTROL] = Types::ControlTypesToString(mControlType);
 
   return data;
 }
@@ -79,11 +80,21 @@ QJsonObject PropertyInfo::toJson() const
 PropertyInfo PropertyInfo::fromJson(const QJsonObject& data)
 {
   PropertyInfo config;
-  config.setId(data[ConfigKeys::ID].toString());
-  config.setDefaultValue(maki::Value::fromJson(data[ConfigKeys::DEFAULT].toObject()));
-  auto ref = maki::typeReferenceFromJson(data[ConfigKeys::TYPE].toObject());
-  if (ref.IsSuccess())
-    config.setType(ref.Value());
+  if (data.contains(ConfigKeys::ID))
+    config.setId(data[ConfigKeys::ID].toString());
+
+  if (data.contains(ConfigKeys::DEFAULT))
+    config.setDefaultValue(maki::Value::fromJson(data[ConfigKeys::DEFAULT].toObject()));
+
+  if (data.contains(ConfigKeys::TYPE))
+  {
+    auto ref = maki::typeReferenceFromJson(data[ConfigKeys::TYPE].toObject());
+    if (ref.IsSuccess())
+      config.setType(ref.Value());
+  }
+
+  if (data.contains(ConfigKeys::CONTROL))
+    config.setControl(Types::StringToControlTypes(data[ConfigKeys::CONTROL].toString()));
 
   return config;
 }

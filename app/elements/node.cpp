@@ -48,9 +48,8 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
   for (const auto& event : config()->events)
   {
     bool found = false;
-    for (const auto& flow : mStorage->getflows())
+    for (const auto& flow : mStorage->getevents())
     {
-      LOG_DEBUG("  Comparing flow with config: {} vs {}", flow->getname(), event.name);
       if (flow->getname() != event.name)
         continue;
 
@@ -61,8 +60,7 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
     if (found)
       continue;
 
-    LOG_DEBUG("  Adding flow not in config: {}", event.name);
-    mStorage->addFlow(std::make_shared<FlowSaveInfo>(event));
+    mStorage->addEvent(std::make_shared<FlowSaveInfo>(event));
   }
 
   // Add icon if it exists
@@ -156,9 +154,19 @@ QVector<std::shared_ptr<IParameter>> NodeItem::fields() const
   return mStorage->getfields();
 }
 
-QVector<std::shared_ptr<IFlow>> NodeItem::events() const
+QVector<std::shared_ptr<IFlow>> NodeItem::eventConfigs() const
+{
+  return mStorage->getevents();
+}
+
+QVector<std::shared_ptr<IFlow>> NodeItem::flowConfigs() const
 {
   return mStorage->getflows();
+}
+
+QVector<std::shared_ptr<IFlow>> NodeItem::allEventFlowConfigs() const
+{
+  return eventConfigs() + flowConfigs();
 }
 
 QVector<ControlsConfig> NodeItem::controls() const
@@ -546,7 +554,7 @@ Flow* NodeItem::createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo
   if (info != nullptr)
   {
     // Clean up
-    for (const auto& f : mStorage->getflows())
+    for (const auto& f : allEventFlowConfigs())
     {
       if (f->getid() != info->getid())
         continue;

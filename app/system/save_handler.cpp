@@ -361,11 +361,7 @@ Result<QString> SaveHandler::saveNodeTree(const SaveInfo& project, const NodeSav
 
     QString flowFile;
     ASSIGN_OR_RETURN_ON_FAILURE(flowFile, saveFlow(root, nodeFolder, *flow));
-    // const QString flowFile = QDir(nodeFolder).filePath(QString("flows/%1.json").arg(sanitizeFileName(flow->getname())));
-    // auto wrote = writeJsonFile(root.filePath(flowFile), flow->toJson());
-    // if (!wrote)
-    // return Result<QString>::Failed(wrote.ErrorMessage());
-
+    LOG_DEBUG("Saving flow: {}", flowFile);
     flows.append(flowFile);
   }
 

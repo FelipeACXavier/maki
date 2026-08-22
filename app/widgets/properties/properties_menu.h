@@ -107,4 +107,6 @@ private:
   void removeEventFromTable(QTableWidget* table, NodeItem* node);
 
   void updateBlockName(NodeItem* node, const QString& componentName, const QString& eventName) const;
+
+  std::shared_ptr<IFlow> getFlowConfigOfRow(const NodeItem* node, QTableWidget* table, int row) const;
 };

@@ -604,7 +604,8 @@ VoidResult PropertiesMenu::loadControls(NodeItem* node)
     switch (control.type)
     {
       case Types::ControlTypes::ADD_EVENT:
-        LOG_WARN_ON_FAILURE(loadControlAddEvent(eventsTable.Value(), node));
+        if (eventsTable)
+          LOG_WARN_ON_FAILURE(loadControlAddEvent(eventsTable.Value(), node));
         break;
 
       case Types::ControlTypes::ADD_STATE:
@@ -619,7 +620,10 @@ VoidResult PropertiesMenu::loadControls(NodeItem* node)
 
 Result<QTableWidget*> PropertiesMenu::loadEventTable(NodeItem* node)
 {
-  if (node->events().isEmpty() || node->function() != Types::LibraryTypes::STRUCTURAL)
+  if (node->function() != Types::LibraryTypes::STRUCTURAL)
+    return nullptr;
+
+  if (node->flowConfigs().isEmpty() && node->eventConfigs().isEmpty())
     return nullptr;
 
   // Create it once
@@ -631,6 +635,7 @@ Result<QTableWidget*> PropertiesMenu::loadEventTable(NodeItem* node)
   eventsTable->setSelectionMode(QAbstractItemView::ExtendedSelection);
   eventsTable->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
   eventsTable->setHorizontalHeaderLabels({"Name", "Type", "Return", "Arguments"});
+  eventsTable->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
   eventsTable->verticalHeader()->hide();
   eventsTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
@@ -638,7 +643,7 @@ Result<QTableWidget*> PropertiesMenu::loadEventTable(NodeItem* node)
   eventsTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
   eventsTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Stretch);
 
-  for (const auto& event : node->events())
+  for (const auto& event : node->allEventFlowConfigs())
   {
     const auto concrete = std::dynamic_pointer_cast<FlowSaveInfo>(event);
     if (concrete)
@@ -650,9 +655,6 @@ Result<QTableWidget*> PropertiesMenu::loadEventTable(NodeItem* node)
 
   auto group = new maki::ContainerWidget(tr("Events/Flows"), eventsTable, maki::WidgetAlignment::Vertical(), this);
   layout()->addWidget(group);
-
-  if (auto* vLayout = qobject_cast<QVBoxLayout*>(layout()))
-    vLayout->addStretch();
 
   return eventsTable;
 }
@@ -684,6 +686,27 @@ VoidResult PropertiesMenu::loadControlAddEvent(QTableWidget* table, NodeItem* no
   return VoidResult();
 }
 
+std::shared_ptr<IFlow> PropertiesMenu::getFlowConfigOfRow(const NodeItem* node, QTableWidget* table, int row) const
+{
+  if (!table || !node || row >= table->rowCount())
+    return nullptr;
+
+  const auto item = table->item(row, 0);
+  if (!item)
+    return nullptr;
+
+  const auto data = item->data(TableRole::IdRole);
+  if (data.isNull())
+    return nullptr;
+
+  const auto flowId = data.toString();
+  for (const auto& flowConfig : node->allEventFlowConfigs())
+    if (flowConfig->getid() == flowId)
+      return flowConfig;
+
+  return nullptr;
+}
+
 void PropertiesMenu::openEventDialog(QTableWidget* table, NodeItem* node, int row)
 {
   if (!table || !node)
@@ -691,7 +714,8 @@ void PropertiesMenu::openEventDialog(QTableWidget* table, NodeItem* node, int ro
 
   EventDialog dialog(tr("Edit event"), this);
 
-  auto config = row < node->events().size() ? std::dynamic_pointer_cast<FlowSaveInfo>(node->events().at(row)) : std::make_shared<FlowSaveInfo>();
+  auto flowConfig = getFlowConfigOfRow(node, table, row);
+  auto config = flowConfig ? std::dynamic_pointer_cast<FlowSaveInfo>(flowConfig) : std::make_shared<FlowSaveInfo>();
   dialog.setup(config);
   if (dialog.exec() != QDialog::Accepted)
     return;
@@ -700,7 +724,7 @@ void PropertiesMenu::openEventDialog(QTableWidget* table, NodeItem* node, int ro
   if (!info)
     return;
 
-  for (const auto& f : node->events())
+  for (const auto& f : node->allEventFlowConfigs())
     if (f->getname() == info->getname())
     {
       if (maki::errorPrompt(tr("A flow with the same name already exists"), tr("Would you like to open it?")))

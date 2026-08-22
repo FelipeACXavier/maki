@@ -1184,6 +1184,9 @@ void MainWindow::onFileLoaded(const QString& file, const SaveInfo& info, const Q
   for (int i = 1; i < mCanvasPanel->count(); ++i)
     closeCanvasTab(i);
 
+  // Force the structural canvas
+  mCanvasPanel->setCurrentIndex(0);
+
   // Clear the storage so it can be populated by the canvas
   *mStorage = info;
   mStorage->clearNodes();

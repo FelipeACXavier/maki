@@ -424,12 +424,12 @@ QJsonObject Value::toJson() const
       break;
 
     case IValue::Kind::StdString:
-      json["kind"] = "std_string";
+      json["kind"] = "sstring";
       json["value"] = QString::fromStdString(std::get<std::string>(data));
       break;
 
     case IValue::Kind::QString:
-      json["kind"] = "qstring";
+      json["kind"] = "string";
       json["value"] = std::get<QString>(data);
       break;
 

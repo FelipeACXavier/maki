@@ -291,14 +291,14 @@ QJsonObject NodeSaveInfo::toJson() const
     flowArray.append(std::dynamic_pointer_cast<FlowSaveInfo>(flow)->toJson());
 
   QJsonArray eventArray;
-  for (const auto& flow : getevents())
-    eventArray.append(std::dynamic_pointer_cast<FlowSaveInfo>(flow)->toJson());
+  for (const auto& event : getevents())
+    eventArray.append(std::dynamic_pointer_cast<FlowSaveInfo>(event)->toJson());
 
   QJsonArray propertyArray;
-  for (const auto& property : mProperties)
-    eventArray.append(std::dynamic_pointer_cast<PropertyInfo>(property)->toJson());
+  for (const auto& property : getproperties())
+    propertyArray.append(std::dynamic_pointer_cast<PropertyInfo>(property)->toJson());
 
-  if (mProperties.size() > 0)
+  if (propertyArray.size() > 0)
     data[ConfigKeys::PROPERTIES] = propertyArray;
   if (fieldArray.size() > 0)
     data[ConfigKeys::FIELDS] = fieldArray;

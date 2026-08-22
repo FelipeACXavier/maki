@@ -236,7 +236,11 @@ public:
    *
    * @return The QVector of IFlow pointers.
    */
-  QVector<std::shared_ptr<IFlow>> events() const;
+  QVector<std::shared_ptr<IFlow>> flowConfigs() const;
+
+  QVector<std::shared_ptr<IFlow>> eventConfigs() const;
+
+  QVector<std::shared_ptr<IFlow>> allEventFlowConfigs() const;
 
   /**
    * @brief Adds a parent node to this item.
