@@ -23,7 +23,7 @@ void ProgressBar::setError(bool error)
 void ProgressBar::paintEvent(QPaintEvent* event)
 {
   const auto* qlementineStyle = oclero::qlementine::appStyle();
-  if (!mError || !qlementineStyle)
+  if (!qlementineStyle)
   {
     QProgressBar::paintEvent(event);
     return;
@@ -69,10 +69,9 @@ void ProgressBar::paintEvent(QPaintEvent* event)
       progressRect.moveBottom(contentsRect.bottom());
   }
 
-  const QColor errorColor = qlementineStyle->theme().statusColorError;
-
+  const QColor color = mError ? qlementineStyle->theme().statusColorError : qlementineStyle->theme().statusColorInfo;
   painter.setPen(Qt::NoPen);
-  painter.setBrush(errorColor);
+  painter.setBrush(color);
 
   // Qlementine uses a pill-like progress bar.
   const qreal radius = std::min(progressRect.width(), progressRect.height()) / 2.0;

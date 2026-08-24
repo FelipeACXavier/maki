@@ -469,9 +469,12 @@ void MainWindow::bind()
 
       QJsonArray properties;
       QJsonObject name;
+      QJsonObject nameDefault;
       name[ConfigKeys::ID] = "name";
       name[ConfigKeys::TYPE] = "string";
-      name[ConfigKeys::DEFAULT] = action->displayName();
+      nameDefault["kind"] = "string";
+      nameDefault["value"] = action->displayName();
+      name[ConfigKeys::DEFAULT] = nameDefault;
       properties.append(name);
 
       for (const auto& p : action->parameters())
@@ -1208,7 +1211,6 @@ void MainWindow::onFileLoaded(const QString& file, const SaveInfo& info, const Q
   if (mPipelineRun)
   {
     mPipelineRun->reset();
-
     for (const auto& pipeline : mStorage->pipelines())
       mPipelineRun->addOption(pipeline->getname());
   }

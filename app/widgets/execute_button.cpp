@@ -72,7 +72,7 @@ void ExecuteButton::setupDone()
 
 void ExecuteButton::rebuildMenu(const QStringList& pipelines)
 {
-  reset();
+  DropDownButton::reset();
 
   for (const auto& pipeline : pipelines)
   {
