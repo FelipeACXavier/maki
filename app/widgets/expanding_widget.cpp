@@ -113,12 +113,27 @@ void ExpandingWidget::setExpandedSize(int size)
   mExpandedSize = std::max(0, size);
 
   if (mDirection == Direction::Up)
-    qobject_cast<CollapsibleAreaHeight*>(mSearchArea)->setMaximumHeight(mExpandedSize);
+  {
+    auto* area = qobject_cast<CollapsibleAreaHeight*>(mSearchArea);
+
+    const bool expanded = area->contentHeight() > 0;
+    area->setMaximumHeight(mExpandedSize);
+    if (expanded)
+      area->setContentHeight(mExpandedSize);
+  }
   else
-    qobject_cast<CollapsibleAreaWidth*>(mSearchArea)->setMaximumWidth(mExpandedSize);
+  {
+    auto* area = qobject_cast<CollapsibleAreaWidth*>(mSearchArea);
+
+    const bool expanded = area->contentWidth() > 0;
+    area->setMaximumWidth(mExpandedSize);
+    if (expanded)
+      area->setContentWidth(mExpandedSize);
+  }
 
   updateCrossAxisSize();
   updateContentGeometry();
+  updateGeometry();
 }
 
 void ExpandingWidget::setButtonIcon(const QIcon& icon)

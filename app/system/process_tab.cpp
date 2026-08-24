@@ -13,6 +13,7 @@
 ProcessTab::ProcessTab(QWidget* parent)
     : QWidget(parent)
     , mCurrentProgram("")
+    , mMergeLogs(false)
 {
   mOutput = new QTextBrowser(this);
   mOutput->setReadOnly(true);
@@ -35,6 +36,11 @@ void ProcessTab::addPipeline(Pipeline* pipeline)
   connect(pipeline, &Pipeline::readyReadStandardOutput, this, &ProcessTab::onReadyReadStandardOutput);
   connect(pipeline, &Pipeline::readyReadStandardError, this, &ProcessTab::onReadyReadStandardError);
   connect(pipeline, &Pipeline::errorOccurred, this, &ProcessTab::onErrorOccurred);
+}
+
+void ProcessTab::setMergedLogs(bool mergeLogs)
+{
+  mMergeLogs = mergeLogs;
 }
 
 void ProcessTab::onReadyReadStandardOutput(const QByteArray& message)
@@ -73,10 +79,7 @@ void ProcessTab::onErrorOccurred(const Pipeline::Info& /* info */, QProcess::Pro
 
 void ProcessTab::appendText(const QString& text)
 {
-  if (text.toLower().contains("error"))
-    LOG_ERROR("[{}] > {}", mCurrentProgram, text);
-  else
-    LOG_DEBUG("[{}] > {}", mCurrentProgram, text);
+  logMessage(text);
 
   mOutput->moveCursor(QTextCursor::End);
   mOutput->append(text);
@@ -221,15 +224,28 @@ void ProcessTab::handleProcessData(const QByteArray& raw)
 
       cursor.insertText(text, mCurrentFormat);
 
-      if (text.toLower().contains("error"))
-        LOG_ERROR("[{}] > {}", mCurrentProgram, text);
-      else
-        LOG_DEBUG("[{}] > {}", mCurrentProgram, text);
+      logMessage(text);
     }
   }
 
   mOutput->setTextCursor(cursor);
   mOutput->verticalScrollBar()->setValue(mOutput->verticalScrollBar()->maximum());
+}
+
+void ProcessTab::logMessage(const QString& message) const
+{
+  if (mMergeLogs)
+  {
+    auto cleaned = message;
+    cleaned.replace("\r\n", " ");
+    cleaned.replace("\n", " ");
+    cleaned.replace("\r", " ");
+
+    if (cleaned.toLower().contains("error"))
+      LOG_ERROR("[{}] > {}", mCurrentProgram, cleaned);
+    else
+      LOG_DEBUG("[{}] > {}", mCurrentProgram, cleaned);
+  }
 }
 
 void ProcessTab::deleteLastLine(QTextCursor& cursor)
@@ -253,25 +269,11 @@ void ProcessTab::deleteLastLine(QTextCursor& cursor)
 static QColor ansiBasicColor(int code, bool bright)
 {
   // 0–7 (black, red, green, yellow, blue, magenta, cyan, white)
-  static const QVector<QColor> base = {
-      QColor(0, 0, 0),
-      QColor(205, 49, 49),
-      QColor(13, 188, 121),
-      QColor(229, 229, 16),
-      QColor(36, 114, 200),
-      QColor(188, 63, 188),
-      QColor(17, 168, 205),
-      QColor(229, 229, 229)};
+  static const QVector<QColor> base = {QColor(0, 0, 0),      QColor(205, 49, 49),  QColor(13, 188, 121), QColor(229, 229, 16),
+                                       QColor(36, 114, 200), QColor(188, 63, 188), QColor(17, 168, 205), QColor(229, 229, 229)};
 
-  static const QVector<QColor> brightBase = {
-      QColor(102, 102, 102),
-      QColor(241, 76, 76),
-      QColor(35, 209, 139),
-      QColor(245, 245, 67),
-      QColor(59, 142, 234),
-      QColor(214, 112, 214),
-      QColor(41, 184, 219),
-      QColor(255, 255, 255)};
+  static const QVector<QColor> brightBase = {QColor(102, 102, 102), QColor(241, 76, 76),   QColor(35, 209, 139), QColor(245, 245, 67),
+                                             QColor(59, 142, 234),  QColor(214, 112, 214), QColor(41, 184, 219), QColor(255, 255, 255)};
 
   int idx = qBound(0, code, 7);
   return bright ? brightBase[idx] : base[idx];

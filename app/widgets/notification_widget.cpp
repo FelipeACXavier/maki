@@ -49,9 +49,7 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
 
   // Header
   auto* headerLayout = new QHBoxLayout(header);
-  headerLayout->setContentsMargins(
-      Config::CONTENT_PADDING, Config::CONTENT_PADDING,
-      Config::CONTENT_PADDING, Config::CONTENT_PADDING);
+  headerLayout->setContentsMargins(Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING);
   headerLayout->setSpacing(5);
 
   auto* titleLabel = new oclero::qlementine::Label(title.size() > 1 ? title : "Notification", header);
@@ -95,9 +93,7 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
   mBody->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
   // Since we want to be able to fully collapse, the padding should be set in content layout
-  mBody->getContent()->setContentsMargins(
-      Config::CONTENT_PADDING, Config::CONTENT_PADDING,
-      Config::CONTENT_PADDING, Config::CONTENT_PADDING);
+  mBody->getContent()->setContentsMargins(Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING);
 
   if (!text.isEmpty())
   {
@@ -144,7 +140,7 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
   });
 
   // Only enable in short notification
-  if (!text.isEmpty())
+  if (!text.isEmpty() && disappearing())
     setupAlarm(3000);
 }
 

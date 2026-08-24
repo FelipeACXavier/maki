@@ -247,10 +247,9 @@ bool PluginManager::setPlugin(const QString& language)
   }
 
   mPlugin = plugin;
-  plugin->setup();
 
   LOG_DEBUG("Setting plugin: {}", language);
-  return true;
+  return plugin->setup();
 }
 
 maki::IPlugin* PluginManager::currentPlugin() const

@@ -34,16 +34,10 @@ struct GeneralSettings
 
   bool operator!=(const GeneralSettings& s) const
   {
-    return restoreLastSession != s.restoreLastSession ||
-           autosaveEnabled != s.autosaveEnabled ||
-           autosaveIntervalMinutes != s.autosaveIntervalMinutes ||
-           confirmOnCloseWithExecution != s.confirmOnCloseWithExecution ||
-           enableDebugLogs != s.enableDebugLogs ||
-           recentHistorySize != s.recentHistorySize ||
-           recentFiles != s.recentFiles ||
-           showWelcomeMessage != s.showWelcomeMessage ||
-           lastOpenFileDir != s.lastOpenFileDir ||
-           language != s.language;
+    return restoreLastSession != s.restoreLastSession || autosaveEnabled != s.autosaveEnabled ||
+           autosaveIntervalMinutes != s.autosaveIntervalMinutes || confirmOnCloseWithExecution != s.confirmOnCloseWithExecution ||
+           enableDebugLogs != s.enableDebugLogs || recentHistorySize != s.recentHistorySize || recentFiles != s.recentFiles ||
+           showWelcomeMessage != s.showWelcomeMessage || lastOpenFileDir != s.lastOpenFileDir || language != s.language;
   }
 };
 
@@ -64,15 +58,9 @@ struct AppearanceSettings
 
   bool operator!=(const AppearanceSettings& s) const
   {
-    return theme != s.theme ||
-           uiScalePercent != s.uiScalePercent ||
-           showCanvasGrid != s.showCanvasGrid ||
-           nativeMenuBar != s.nativeMenuBar ||
-           nodeCornerRadius != s.nodeCornerRadius ||
-           themeVars != s.themeVars ||
-           startLogFilterExpanded != s.startLogFilterExpanded ||
-           numberOfColumns != s.numberOfColumns ||
-           edgeShape != s.edgeShape;
+    return theme != s.theme || uiScalePercent != s.uiScalePercent || showCanvasGrid != s.showCanvasGrid || nativeMenuBar != s.nativeMenuBar ||
+           nodeCornerRadius != s.nodeCornerRadius || themeVars != s.themeVars || startLogFilterExpanded != s.startLogFilterExpanded ||
+           numberOfColumns != s.numberOfColumns || edgeShape != s.edgeShape;
   }
 };
 
@@ -86,8 +74,7 @@ struct GenerationSettings
 
   bool operator!=(const GenerationSettings& s) const
   {
-    return generationDir != s.generationDir ||
-           pluginSearchPaths != s.pluginSearchPaths;
+    return generationDir != s.generationDir || pluginSearchPaths != s.pluginSearchPaths;
   }
 };
 
@@ -104,11 +91,7 @@ struct PluginInfo
 
   bool operator==(const PluginInfo& s) const
   {
-    return name == s.name &&
-           enabled == s.enabled &&
-           version == s.version &&
-           settings == s.settings &&
-           icon == s.icon;
+    return name == s.name && enabled == s.enabled && version == s.version && settings == s.settings && icon == s.icon;
   }
 
   bool operator!=(const PluginInfo& s) const
@@ -122,7 +105,8 @@ struct PluginInfo
  */
 struct PluginSettings
 {
-  QString defaultPlugin;             /// The default plugin to be used
+  QString defaultPlugin = "";        /// The default plugin to be used
+  bool showCombinedLogs = false;     /// Whether the plugin logs should be printed with the normal logs
   QVector<PluginInfo> plugins = {};  /// The list of plugin settings
 
   enum class Status
@@ -134,8 +118,7 @@ struct PluginSettings
 
   bool operator!=(const PluginSettings& s) const
   {
-    return defaultPlugin != s.defaultPlugin ||
-           plugins != s.plugins;
+    return defaultPlugin != s.defaultPlugin || showCombinedLogs != s.showCombinedLogs || plugins != s.plugins;
   }
 
   Status pluginStatus(const QString& pluginName) const
@@ -195,7 +178,8 @@ public:
   /**
    * @brief Applies the current temporary settings to the permanent settings and emits a signal indicating that settings have changed.
    *
-   * This function is called to save any changes made during the user interface session. It copies the temporary settings to their corresponding permanent settings, and then calls save() to persist these changes to storage.
+   * This function is called to save any changes made during the user interface session. It copies the temporary settings to their corresponding
+   * permanent settings, and then calls save() to persist these changes to storage.
    */
   void applySettings();
 

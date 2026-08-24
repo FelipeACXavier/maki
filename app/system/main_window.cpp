@@ -259,6 +259,9 @@ void MainWindow::onSettingsChanged()
   if (mRouter)
     mRouter->setRouteOption((EdgeRouter::Option)mSettingsManager->appearance().edgeShape);
 
+  if (mProcessTab)
+    mProcessTab->setMergedLogs(mSettingsManager->plugins().showCombinedLogs);
+
   // Clean and repopulate the recent files
   mActionOpenRecent->clear();
   for (const auto& file : mSettingsManager->general().recentFiles)

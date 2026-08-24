@@ -20,12 +20,7 @@ QString LongNotificationWidget::id() const
 void LongNotificationWidget::updateContent(QWidget* content)
 {
   if (content == nullptr)
-  {
-    setupAlarm(3000);
-    mFadeAnim->setDuration(duration() * 2);
-    mAutoCloseTimer.start();
     return;
-  }
 
   clearLayout(mBody->getContent());
 

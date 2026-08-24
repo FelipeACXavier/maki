@@ -159,7 +159,8 @@ LogTableWidget::LogTableWidget(QWidget* parent)
   connect(nextButton, &ClickableIcon::clicked, this, &LogTableWidget::nextSearchMatch);
 
   connect(mSearchBox, &ExpandingWidget::areaExpanded, [this](ClickableIcon* button) { onAreaExpanded(button, mSearchField); });
-  connect(mSearchBox, &ExpandingWidget::areaCollapsed, [this](ClickableIcon* button) { onAreaCollapsed(button, mSearchField, ":/icons/search.svg"); });
+  connect(mSearchBox, &ExpandingWidget::areaCollapsed,
+          [this](ClickableIcon* button) { onAreaCollapsed(button, mSearchField, ":/icons/search.svg"); });
   connect(mFilterBox, &ExpandingWidget::areaExpanded, [this](ClickableIcon* button) { onAreaExpanded(button, mFileFilter); });
   connect(mFilterBox, &ExpandingWidget::areaCollapsed, [this](ClickableIcon* button) { onAreaCollapsed(button, mFileFilter, ":/icons/filter.svg"); });
 
@@ -289,7 +290,8 @@ void LogTableWidget::append(logging::LogLevel level, const QString& source, cons
     mTable->scrollToBottom();
 }
 
-void LogTableWidget::append(logging::LogLevel level, const std::string& source, const std::string& file, const uint32_t line, const std::string& message)
+void LogTableWidget::append(logging::LogLevel level, const std::string& source, const std::string& file, const uint32_t line,
+                            const std::string& message)
 {
   append(level, QString::fromStdString(source), QString::fromStdString(file), line, QString::fromStdString(message));
 }
@@ -398,21 +400,13 @@ void LogTableWidget::showContextMenu(const QPoint& pos)
 {
   QMenu menu(this);
 
-  menu.addAction("Copy selected rows", this, [this]() {
-    copySelectedRows();
-  });
+  menu.addAction("Copy selected rows", this, [this]() { copySelectedRows(); });
 
-  menu.addAction("Copy messages", this, [this]() {
-    copySelectedColumn(LogTableModel::MessageColumn);
-  });
+  menu.addAction("Copy messages", this, [this]() { copySelectedColumn(LogTableModel::MessageColumn); });
 
-  menu.addAction("Copy sources", this, [this]() {
-    copySelectedColumn(LogTableModel::FileColumn);
-  });
+  menu.addAction("Copy sources", this, [this]() { copySelectedColumn(LogTableModel::FileColumn); });
 
-  menu.addAction("Copy sources and messages", this, [this]() {
-    copySelectedColumns({LogTableModel::FileColumn, LogTableModel::MessageColumn});
-  });
+  menu.addAction("Copy sources and messages", this, [this]() { copySelectedColumns({LogTableModel::FileColumn, LogTableModel::MessageColumn}); });
 
   menu.exec(mTable->viewport()->mapToGlobal(pos));
 }
@@ -433,12 +427,8 @@ QVector<int> LogTableWidget::selectedRows() const
 
 void LogTableWidget::copySelectedRows() const
 {
-  copySelectedColumns({LogTableModel::TimeColumn,
-                       LogTableModel::LevelColumn,
-                       LogTableModel::SourceColumn,
-                       LogTableModel::FileColumn,
-                       LogTableModel::LineColumn,
-                       LogTableModel::MessageColumn});
+  copySelectedColumns({LogTableModel::TimeColumn, LogTableModel::LevelColumn, LogTableModel::SourceColumn, LogTableModel::FileColumn,
+                       LogTableModel::LineColumn, LogTableModel::MessageColumn});
 }
 
 void LogTableWidget::copySelectedColumn(int column) const

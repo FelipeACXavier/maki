@@ -461,6 +461,9 @@ VoidResult SettingsDialog::createPluginPages()
   mDefaultPlugin->addDescription(tr("MAKI will set this plugin as the default on start"));
   mDefaultPlugin->addItem(Constants::EMPTY_COMBO, "");
 
+  mMergeLogs = new maki::BooleanWidget(tr("Merge plugin logs"), mPluginSettings.showCombinedLogs, maki::WidgetAlignment::Inline(), generalLayout);
+  mMergeLogs->addDescription(tr("If enabled, plugin logs will be available in the log table"));
+
   // -------------------------------------------------------------------------
   // Go through all the plugins and build the page
   for (const auto& plugin : mPluginSettings.plugins)
@@ -542,6 +545,7 @@ VoidResult SettingsDialog::createPluginPages()
   tableLayout->addWidget(table);
   tableLayout->addLayout(buttonRow);
   generalLayout->addWidget(mDefaultPlugin);
+  generalLayout->addWidget(mMergeLogs);
 
   layout->addWidget(tableLayout);
   layout->addWidget(generalLayout);
@@ -579,6 +583,7 @@ void SettingsDialog::saveToSettings()
   generation.generationDir = mGenerationDirEdit->getValue();
 
   mPluginSettings.defaultPlugin = mDefaultPlugin->getValue();
+  mPluginSettings.showCombinedLogs = mMergeLogs->getValue();
 
   mSettingsManager->setGeneral(general);
   mSettingsManager->setAppearance(appearance);

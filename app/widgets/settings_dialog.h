@@ -45,7 +45,8 @@ public:
    * @param languageManager A shared pointer to the LanguageManager.
    * @param parent The parent widget.
    */
-  SettingsDialog(const QString& title, std::shared_ptr<SettingsManager> manager, std::shared_ptr<LanguageManager> languageManager, QWidget* parent = nullptr);
+  SettingsDialog(const QString& title, std::shared_ptr<SettingsManager> manager, std::shared_ptr<LanguageManager> languageManager,
+                 QWidget* parent = nullptr);
 
 private slots:
   /**
@@ -100,6 +101,7 @@ private:
   // Plugins
   PluginSettings mPluginSettings;                  /// Vector of plugin settings.
   maki::SelectorWidget* mDefaultPlugin = nullptr;  /// Widget for editing the default plugin
+  maki::BooleanWidget* mMergeLogs = nullptr;       /// Widget for editing the default plugin
 
   oclero::qlementine::Theme mTheme;  /// Current theme.
 

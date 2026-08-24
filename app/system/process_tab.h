@@ -20,7 +20,7 @@ public:
    *
    * @param parent The parent widget.
    */
-  explicit ProcessTab(QWidget* parent = nullptr);
+  ProcessTab(QWidget* parent = nullptr);
 
   /**
    * @brief Sets the pipeline for this tab.
@@ -28,6 +28,8 @@ public:
    * @param pipeline The pipeline to set.
    */
   void addPipeline(Pipeline* pipeline);
+
+  void setMergedLogs(bool mergeLogs);
 
 signals:
   /**
@@ -98,6 +100,7 @@ private:
   QString mCurrentProgram;
   QTextBrowser* mOutput;           /// Pointer to the text browser for displaying output.
   QTextCharFormat mCurrentFormat;  /// Current text format for output.
+  bool mMergeLogs;
 
   int mOverwriteNextLine = 0;  // after ESC[1F]
 
@@ -128,4 +131,6 @@ private:
    * @param cursor The text cursor.
    */
   void deleteLastLine(QTextCursor& cursor);
+
+  inline void logMessage(const QString& message) const;
 };

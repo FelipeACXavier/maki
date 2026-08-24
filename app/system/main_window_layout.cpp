@@ -261,7 +261,7 @@ void MainWindowLayout::buildCentralPanel()
   // Add the whole widget to the corner
   mCanvasPanel->setCornerWidget(corner, Qt::TopRightCorner);
 
-  QWidget* canvasContainer = new QWidget();
+  QWidget* canvasContainer = new QWidget(mCentralSplitter);
   QVBoxLayout* canvasLayout = new QVBoxLayout(canvasContainer);
   canvasLayout->setContentsMargins(0, 0, 0, 0);
   canvasLayout->setSpacing(0);
@@ -275,7 +275,7 @@ void MainWindowLayout::buildCentralPanel()
 
   // =================================================================
   // Bottom panel
-  mBottomContainer = new QWidget();
+  mBottomContainer = new QWidget(mCentralSplitter);
   QVBoxLayout* bottomLayout = new QVBoxLayout(mBottomContainer);
   bottomLayout->setContentsMargins(theme.spacing, theme.spacing / 2, theme.spacing, theme.borderWidth);
   bottomLayout->setSpacing(theme.spacing);
@@ -286,7 +286,7 @@ void MainWindowLayout::buildCentralPanel()
   bottomNavLayout->setSpacing(0);
 
   mBottomNavigation = new oclero::qlementine::NavigationBar(mBottomContainer);
-  mBottomNavigation->setMaximumHeight(40);
+  mBottomNavigation->setFixedHeight(40);
   mBottomPanel = new QStackedWidget(mBottomContainer);
 
   bottomNavLayout->addWidget(mBottomNavigation);
@@ -774,6 +774,9 @@ void MainWindowLayout::applyTheme()
     });
   }
 
+  if (mBottomContainer && mBottomNavigation && mBottomPanel)
+    mBottomContainer->setMinimumHeight(100);
+
   if (mRightPanel)
   {
     int navigationTabWidth = 0;
@@ -785,6 +788,7 @@ void MainWindowLayout::applyTheme()
 
       navigationTabWidth = setTabBarWidth(mNavigationTab->tabBar(), minWidth, tabPadding, tabBorderSize);
       mNavigationTab->setMinimumWidth(navigationTabWidth);
+      mNavigationTab->setMinimumHeight(100);
 
       mNavigationTab->tabBar()->setExpanding(false);
       mNavigationTab->tabBar()->setDocumentMode(true);
@@ -802,8 +806,7 @@ void MainWindowLayout::applyTheme()
 
       propertiesTabWidth = setTabBarWidth(mPropertiesTab->tabBar(), minWidth, tabPadding, tabBorderSize);
       mPropertiesTab->setMinimumWidth(propertiesTabWidth);
-      // No need for a minimum height
-      mPropertiesTab->resize(mPropertiesTab->width(), 450);
+      mPropertiesTab->setMinimumHeight(100);
 
       mPropertiesTab->tabBar()->setExpanding(false);
       mPropertiesTab->tabBar()->setDocumentMode(true);
