@@ -7,6 +7,9 @@
 #include "pipeline_artifact.h"
 #include "types.h"
 
+static const QString SIMULATE_KEY = "Simulate";
+static const QString START_WAIT = "Start wait";
+
 GenerateDezyneAction::GenerateDezyneAction(KodaGenerator* generator)
     : mGenerator(generator)
 {
@@ -29,12 +32,16 @@ QStringList GenerateDezyneAction::consumes() const
 
 QStringList GenerateDezyneAction::produces() const
 {
-  return {"dezyne"};
+  return {"dezyne", "ros-project"};
 }
 
 QVector<maki::ActionParameter> GenerateDezyneAction::parameters() const
 {
-  return {maki::ActionParameter("Debug", koda::types::TypeReference::createBool(), maki::Value::createBool(false))};
+  return {
+      maki::ActionParameter("Debug", koda::types::TypeReference::createBool(), maki::Value::createBool(false)),
+      maki::ActionParameter(SIMULATE_KEY, koda::types::TypeReference::createBool(), maki::Value::createBool(true)),
+      maki::ActionParameter(START_WAIT, koda::types::TypeReference::createReal(), maki::Value::createReal(10)),
+  };
 }
 
 maki::ResultArtifacts GenerateDezyneAction::run(const maki::PipelineContext& context, const maki::ValueMap& parameters, maki::IPipeline* pipeline)
@@ -46,7 +53,7 @@ maki::ResultArtifacts GenerateDezyneAction::run(const maki::PipelineContext& con
     return maki::ResultArtifacts::Failed("No artifacts available, requires \"koda\"");
 
   const auto koda = artifacts.at(0);
-  auto result = mGenerator->generateDezyne(koda, context.buildDir, pipeline);
+  auto result = mGenerator->generateDezyne(koda, context.buildDir, parameters, pipeline);
   if (!result.IsSuccess())
     return maki::ResultArtifacts::Failed(result.ErrorMessage());
 
@@ -55,5 +62,25 @@ maki::ResultArtifacts GenerateDezyneAction::run(const maki::PipelineContext& con
   artifact.type = "dezyne";
   artifact.producer = id();
 
-  return maki::Artifacts{artifact};
+  auto modelsOutputFolder = QDir(context.buildDir.absolutePath() + "/ros");
+
+  maki::PipelineArtifact rosArtifact = result.Value();
+  rosArtifact.id = "dezyne.generate_ros";
+  rosArtifact.type = "ros-project";
+  rosArtifact.producer = id();
+  rosArtifact.paths = {
+      {"rootDir", modelsOutputFolder.absolutePath()},
+      {"includeDir", modelsOutputFolder.absolutePath() + "/include"},
+      {"sourceDir", modelsOutputFolder.absolutePath() + "/src"},
+      {"launchDir", modelsOutputFolder.absolutePath() + "/launch"},
+      {"configDir", modelsOutputFolder.absolutePath() + "/config"},
+  };
+  rosArtifact.metadata = {
+      {"package", modelsOutputFolder.absolutePath() + "/package.xml"},
+      {"cmake", modelsOutputFolder.absolutePath() + "/CMakeLists.txt"},
+      {"packageName", QString::fromStdString("koda_ros")},
+      {"launchFile", QString::fromStdString("koda.launch.py")},
+  };
+
+  return maki::Artifacts{artifact, rosArtifact};
 }

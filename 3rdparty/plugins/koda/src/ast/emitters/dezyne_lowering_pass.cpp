@@ -75,16 +75,22 @@ VoidResult LoweringPass::lowerCapability(const ir::Component& capability)
 
   for (const auto& event : capability.events)
   {
-    LOG_TRACE("Declaring event {} of type {} - {}", event.name, (int)event.kind, capability.symbol);
+    LOG_DEBUG("Declaring event {} of type {} - {} {}", event.name, (int)event.kind, capability.symbol, event.symbol);
     if (isActionEvent(event.kind))
     {
       const auto count = std::max<std::uint32_t>(1, mCallCounts[event.symbol]);
       for (std::uint32_t i = 0; i < count; ++i)
       {
         const auto name = count == 1 ? event.name : std::format("{}_{}", event.name, i + 1);
+        LOG_DEBUG("Declaring new event {} of type {} - {}", name, (int)event.kind, capability.symbol);
         mModel.declarePort(component->symbol, name, PortDirection::Provides, PortProtocol::Action, {event.symbol, event.span});
         out << std::format("  provides iaction {};\n", name);
       }
+
+      // Remove old port
+      auto port = mModel.findPort(component->symbol, event.name);
+      if (port)
+        mModel.removePort(component->symbol, port->symbol);
     }
     else if (event.kind == ir::EventKind::Out)
     {
@@ -93,6 +99,20 @@ VoidResult LoweringPass::lowerCapability(const ir::Component& capability)
     else if (event.kind == ir::EventKind::Abort)
     {
       out << std::format("  provides iaction {};\n", event.name);
+    }
+    else if (event.kind == ir::EventKind::Return)
+    {
+      // Remove old port
+      auto port = mModel.findPort(component->symbol, event.name);
+      if (port)
+        mModel.removePort(component->symbol, port->symbol);
+    }
+    else if (event.kind == ir::EventKind::Error)
+    {
+      // Remove old port
+      auto port = mModel.findPort(component->symbol, event.name);
+      if (port)
+        mModel.removePort(component->symbol, port->symbol);
     }
   }
   out << "}\n";
@@ -165,6 +185,25 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
             .span = call.span,
         });
 
+        mModel.declareCallSite({
+            .kind = CallSiteKind::Flow,
+            .flow = call.flow,
+            .receiver = koda::InvalidSymbol,
+            .target = call.target,
+
+            .localPort = call.localPort,
+            .targetPort = {},
+
+            .localOrdinal = call.localOrdinal,
+            .targetOrdinal = call.targetOrdinal,
+
+            .arguments = call.arguments,
+            .inputSlots = call.inputSlots,
+            .outputSlots = call.outputSlots,
+
+            .origin = {.sourceSymbol = call.target, .sourceSpan = call.span},
+        });
+
         continue;
       }
 
@@ -180,6 +219,35 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
           .lhs = flowInstance + "." + call.localPort,
           .rhs = sourceName(call.receiver) + "." + targetPort,
           .span = call.span,
+      });
+
+      CallSiteKind kind = call.toCallSiteKind();
+      const auto* receiver = mSymbols.get(call.receiver);  // This is the instantiation of a capability
+      if (!receiver)
+        return VoidResult::Failed("No receiver for call {} in {} ({})", call.localPort, task.name, call.target);
+
+      // We need to get the actual capability, which can be found by using the capability type
+      const auto receiverComponent = mSymbols.component(receiver->type.toString());
+      if (!receiverComponent)
+        return VoidResult::Failed("Unknown capability type for {} in {}", receiver->name, task.name);
+
+      mModel.declareCallSite({
+          .kind = kind,
+          .flow = call.flow,
+          .receiver = receiverComponent.value(),
+          .target = call.target,
+
+          .localPort = call.localPort,
+          .targetPort = targetPort,
+
+          .localOrdinal = call.localOrdinal,
+          .targetOrdinal = call.targetOrdinal,
+
+          .arguments = call.arguments,
+          .inputSlots = call.inputSlots,
+          .outputSlots = call.outputSlots,
+
+          .origin = {.sourceSymbol = call.target, .sourceSpan = call.span},
       });
     }
 
@@ -290,6 +358,7 @@ Result<LoweringPass::FlowResult> LoweringPass::lowerFlow(const ir::Flow& flow)
 
   FlowState state;
   state.component = componentId;
+  state.flow = flow.symbol;
 
   auto endpoint = lowerStrategy(flow, flow.strategy, state);
   if (!endpoint.IsSuccess())
@@ -626,11 +695,15 @@ Result<std::string> LoweringPass::lowerCall(const ir::Call& call, FlowState& sta
 
     state.calls.push_back({
         .kind = CallUse::Kind::Flow,
+        .flow = state.flow,
         .localPort = local,
         .receiver = InvalidSymbol,
         .target = call.target,
         .localOrdinal = 0,
         .targetOrdinal = 0,
+        .arguments = call.arguments,
+        .inputSlots = call.inputSlots,
+        .outputSlots = call.outputSlots,
         .span = call.span,
     });
 
@@ -670,11 +743,19 @@ Result<std::string> LoweringPass::lowerCall(const ir::Call& call, FlowState& sta
 
     state.calls.push_back({
         .kind = call.kind == ir::CallKind::CapabilityTrigger ? CallUse::Kind::Trigger : CallUse::Kind::Action,
+
+        .flow = state.flow,
         .localPort = local,
         .receiver = call.receiver,
         .target = call.target,
+
         .localOrdinal = localOrdinal,
         .targetOrdinal = targetOrdinal,
+
+        .arguments = call.arguments,
+        .inputSlots = call.inputSlots,
+        .outputSlots = call.outputSlots,
+
         .span = call.span,
     });
 
@@ -688,11 +769,19 @@ Result<std::string> LoweringPass::lowerCall(const ir::Call& call, FlowState& sta
 
   state.calls.push_back({
       .kind = signal ? CallUse::Kind::Signal : CallUse::Kind::Action,
+
+      .flow = state.flow,
       .localPort = local,
       .receiver = call.receiver,
       .target = call.target,
+
       .localOrdinal = 0,
       .targetOrdinal = 0,
+
+      .arguments = call.arguments,
+      .inputSlots = call.inputSlots,
+      .outputSlots = call.outputSlots,
+
       .span = call.span,
   });
 

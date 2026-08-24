@@ -95,12 +95,29 @@ Result<ir::Component> IRBuilder::buildComponent(const PComponent& component) con
     }
     else if (auto ros = std::get_if<PRosDef>(&statement->node); ros && *ros)
     {
+      // This is a single definition, e.g., trigger, return, etc...
       appendRosDef(*ros, owner, out);
     }
     else if (auto action = std::get_if<PActionDef>(&statement->node); action && *action)
     {
-      out.title = (*action)->label1;
-      out.message = (*action)->label2;
+      // This is a a ros definition, like action, service, etc... I need to fix the names
+      switch ((*action)->kind)
+      {
+        case ActionDef::Kind::Unknown:
+          out.metadata["call_kind"] = "unknown";
+          break;
+        case ActionDef::Kind::Action:
+          out.metadata["call_kind"] = "action";
+          break;
+        case ActionDef::Kind::Service:
+          out.metadata["call_kind"] = "service";
+          break;
+        case ActionDef::Kind::Topic:
+          out.metadata["call_kind"] = "topic";
+          break;
+      }
+      out.metadata["route"] = (*action)->label1;
+      out.metadata["message"] = (*action)->label2;
       for (const auto& ros : (*action)->rosDefs)
         appendRosDef(ros, owner, out);
     }

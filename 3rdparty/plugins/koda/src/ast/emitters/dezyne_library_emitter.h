@@ -21,7 +21,6 @@ VoidResult createSignalInterface(Model& model, const std::string& outdir);
 // Main orchestration components
 VoidResult createSequenceComponent(Model& model, const std::string& outdir, uint32_t instances, SymbolId componentId);
 VoidResult createParallelComponent(Model& model, const std::string& outdir, uint32_t instances, SymbolId componentId);
-VoidResult createEveryComponent(Model& model, const std::string& outdir, uint32_t instances, SymbolId componentId);
 VoidResult createWithinComponent(Model& model, const std::string& outdir, SymbolId componentId);
 VoidResult createRepeatComponent(Model& model, const std::string& outdir, SymbolId componentId);
 VoidResult createEveryComponent(Model& model, const std::string& outdir, SymbolId componentId);

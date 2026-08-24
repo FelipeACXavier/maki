@@ -74,6 +74,7 @@ set(KODA_COMPILER_FILES
   src/ast/emitters/dezyne_model.cpp
   src/ast/emitters/dezyne_writer.cpp
   src/ast/emitters/dezyne_library_emitter.cpp
+  src/ast/emitters/dezyne_ros_emitter.cpp
 
   src/parser/KodaParser.cpp
   src/parser/KodaLexer.cpp

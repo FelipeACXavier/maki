@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "ast/ast.h"
+#include "ast/koda_ir.h"
 #include "ast/symbol.h"
 
 namespace koda::dezyne
@@ -95,6 +96,8 @@ public:
     return mSymbols;
   }
 
+  void remove(SymbolId id);
+
 private:
   std::vector<Symbol> mSymbols;
   std::unordered_map<std::string, SymbolId> mByQualifiedName;
@@ -119,6 +122,38 @@ struct Connection
   SymbolId symbol = InvalidSymbol;
   std::string lhs;
   std::string rhs;
+};
+
+enum class CallSiteKind
+{
+  Trigger,
+  Action,
+  Signal,
+  Flow
+};
+
+struct CallSite
+{
+  CallSiteKind kind = CallSiteKind::Action;
+
+  // KODA provenance
+  koda::SymbolId flow = koda::InvalidSymbol;
+  koda::SymbolId receiver = koda::InvalidSymbol;
+  koda::SymbolId target = koda::InvalidSymbol;
+
+  // Dezyne realization
+  std::string localPort;
+  std::string targetPort;
+
+  std::uint32_t localOrdinal = 0;
+  std::uint32_t targetOrdinal = 0;
+
+  // Data realization
+  std::vector<koda::ir::PExpression> arguments;
+  std::vector<std::optional<std::string>> inputSlots;
+  std::vector<std::string> outputSlots;
+
+  Provenance origin;
 };
 
 struct Component
@@ -147,7 +182,8 @@ public:
 
   SymbolId declareComponent(const std::string& name, const std::string& fileName, Provenance origin = {}, bool helper = false,
                             SymbolId parent = InvalidSymbol);
-  SymbolId declarePort(SymbolId component, std::string name, PortDirection direction, PortProtocol protocol, Provenance origin = {});
+  SymbolId declarePort(SymbolId componentId, const std::string& name, PortDirection direction, PortProtocol protocol, Provenance origin = {});
+  void removePort(SymbolId componentId, SymbolId portId);
   SymbolId declareInstance(SymbolId component, std::string name, std::string typeName, Provenance origin = {});
   SymbolId declareConnection(SymbolId component, std::string name, std::string lhs, std::string rhs, Provenance origin = {});
 
@@ -155,13 +191,20 @@ public:
   const Component* getComponent(SymbolId symbol) const;
   Component* findComponent(std::string_view name);
   const Component* findComponent(std::string_view name) const;
-  const Port* findPort(SymbolId component, std::string_view name) const;
+  const Port* findPort(SymbolId component, const std::string& name) const;
 
   void setGeneratedFile(std::string path, std::string contents, Provenance origin = {});
+
+  void declareCallSite(CallSite call);
+  const std::vector<CallSite>& callSites() const;
+  std::vector<const CallSite*> callSitesForReceiver(koda::SymbolId receiver) const;
 
   SymbolTable mSymbols;
   std::vector<Component> mComponents;
   std::vector<GeneratedFile> mFiles;
+
+private:
+  std::vector<CallSite> mCallSites;
 };
 
 }  // namespace koda::dezyne

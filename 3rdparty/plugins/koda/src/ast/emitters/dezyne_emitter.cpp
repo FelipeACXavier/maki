@@ -3,6 +3,7 @@
 #include "ast/koda_compiler.h"
 #include "dezyne_declaration_pass.h"
 #include "dezyne_lowering_pass.h"
+#include "dezyne_ros_emitter.h"
 #include "logging.h"
 
 namespace koda
@@ -25,6 +26,21 @@ VoidResult DezyneEmitter::generate(const ir::Program& program, const SymbolRegis
 
   RETURN_ON_FAILURE(mWriter.write(mModel, options.dryRun));
   mGeneratedFiles = mWriter.generatedFiles();
+
+  if (!options.dryRun)
+  {
+    dezyne::RosEmitterOptions rosOptions;
+    std::filesystem::path path = options.outputDir;
+    rosOptions.outputDir = path.parent_path().string() + "/ros";
+    rosOptions.simulation = options.simulation;
+    rosOptions.startWait = options.startWait;
+
+    dezyne::RosEmitter rosEmitter;
+    RETURN_ON_FAILURE(rosEmitter.write(program, mModel, symbols, rosOptions));
+
+    const auto& rosFiles = rosEmitter.generatedFiles();
+    mGeneratedFiles.insert(mGeneratedFiles.end(), rosFiles.begin(), rosFiles.end());
+  }
 
   return {};
 }

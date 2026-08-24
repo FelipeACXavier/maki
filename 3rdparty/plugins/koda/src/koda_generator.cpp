@@ -74,10 +74,13 @@ VoidResult copyDirectory(const QString& sourceDir, const QString& targetDir)
 
 bool KodaGenerator::setup()
 {
-  mSimulator = new DezyneSimulator(this);
+  if (!mSimulator)
+  {
+    mSimulator = new DezyneSimulator(this);
 
-  connect(mSimulator, &DezyneSimulator::simulationStarted, this, &KodaGenerator::simulationStarted);
-  connect(mSimulator, &DezyneSimulator::simulationUpdated, this, &KodaGenerator::simulationUpdated);
+    connect(mSimulator, &DezyneSimulator::simulationStarted, this, &KodaGenerator::simulationStarted);
+    connect(mSimulator, &DezyneSimulator::simulationUpdated, this, &KodaGenerator::simulationUpdated);
+  }
 
   // Start the ide daemon on a specific port
   return startDaemon();
@@ -85,26 +88,10 @@ bool KodaGenerator::setup()
 
 bool KodaGenerator::tearDown()
 {
-  if (mDaemon == nullptr)
-    return true;
-
   if (auto* tab = mServices->ui())
     tab->deregisterPlugin(languageName());
 
-  if (mDaemon->state() == QProcess::Running)
-  {
-    mDaemon->terminate();
-
-    if (!mDaemon->waitForFinished(2500))
-    {
-      mDaemon->kill();
-      mDaemon->waitForFinished();
-    }
-  }
-
-  mDaemon = nullptr;
-
-  return true;
+  return stopDaemon();
 }
 
 void KodaGenerator::buildSettings()
@@ -235,44 +222,6 @@ void KodaGenerator::setAssetDir(const QDir& dir)
   mAssetDir = dir;
 }
 
-VoidResult KodaGenerator::simulate(const maki::PipelineArtifact& artifact)
-{
-  LOG_INFO("Running simulation");
-
-  if (mServices == nullptr)
-    return VoidResult::Failed("Cannot proceed with simulation, no services provided");
-  else if (mServices->ui() == nullptr)
-    return VoidResult::Failed("Cannot proceed with simulation, no plugin tab provided");
-  else if (mServices->document() == nullptr)
-    return VoidResult::Failed("Cannot proceed with simulation, no document provided");
-
-  if (!artifact.paths.contains("modelDir"))
-    return VoidResult::Failed("No model folder provided");
-  if (!artifact.metadata.contains("sources"))
-    return VoidResult::Failed("No sources provided");
-  if (!artifact.metadata.contains("includes"))
-    return VoidResult::Failed("No includes provided");
-
-  const auto modelsFolder = artifact.paths["modelDir"].toString();
-  const auto sourceFiles = artifact.metadata["sources"].toStringList();
-  const auto includeFolders = artifact.metadata["includes"].toStringList();
-
-  for (const QString& file : sourceFiles)
-  {
-    if (!file.contains("_task"))
-      continue;
-
-    LOG_INFO("Will simulate: {}", file);
-
-    mSimulator->setWorkingDirectory(modelsFolder);
-    mSimulator->setSimulationModel(file);
-    mSimulator->setSimulationIncludes(includeFolders);
-    return mSimulator->startSimulation(QUuid::createUuid().toString());
-  }
-
-  return VoidResult();
-}
-
 QList<std::shared_ptr<maki::IPipelineAction>> KodaGenerator::pipelineActions()
 {
   return {
@@ -283,7 +232,7 @@ QList<std::shared_ptr<maki::IPipelineAction>> KodaGenerator::pipelineActions()
 }
 
 Result<maki::PipelineArtifact> KodaGenerator::generateDezyne(const maki::PipelineArtifact& artifact, const QDir& outputFolder,
-                                                             maki::IPipeline* pipeline)
+                                                             const maki::ValueMap& parameters, maki::IPipeline* pipeline)
 {
   if (!artifact.metadata.contains("sources"))
     return Result<maki::PipelineArtifact>::Failed("generateDezyne, missing input sources");
@@ -294,6 +243,7 @@ Result<maki::PipelineArtifact> KodaGenerator::generateDezyne(const maki::Pipelin
 
   // Make sure the output is clean before the generation
   auto modelsOutputFolder = QDir(outputFolder.absolutePath() + "/models");
+  auto libOutputFolder = QDir(outputFolder.absolutePath() + "/models/lib");
   if (modelsOutputFolder.exists())
     modelsOutputFolder.removeRecursively();
 
@@ -303,6 +253,11 @@ Result<maki::PipelineArtifact> KodaGenerator::generateDezyne(const maki::Pipelin
   for (const auto& file : inputFiles)
   {
     koda::CompilerOptions options;
+    if (parameters.contains("Simulate"))
+      options.simulation = parameters.at("Simulate").toBool();
+    if (parameters.contains("Start wait"))
+      options.startWait = parameters.at("Start wait").toDouble();
+
     options.inputFile = file.toStdString();
     options.outputDir = modelsOutputFolder.absolutePath().toStdString();
     LOG_DEBUG("Generating from file: {} to {}", file, outputFolder.absolutePath());
@@ -311,19 +266,11 @@ Result<maki::PipelineArtifact> KodaGenerator::generateDezyne(const maki::Pipelin
   }
 
   QStringList includeFolders = {};
-  QString libDstPath = modelsOutputFolder.absolutePath() + "/lib";
-  if (mAssetDir)
-  {
-    LOG_DEBUG("Using asset dir: {}", mAssetDir->absolutePath());
-    QString libSrcPath = mAssetDir->absoluteFilePath("lib");
-    auto copied = copyDirectory(libSrcPath, libDstPath);
-    if (!copied.IsSuccess())
-      return Result<maki::PipelineArtifact>::Failed(copied.ErrorMessage());
-
-    includeFolders << libDstPath;
-  }
+  includeFolders << modelsOutputFolder.absolutePath();
+  includeFolders << libOutputFolder.absolutePath();
 
   // Finally, set the files to be verified
+  // We don't need to verify the library files
   QStringList filters;
   filters << "*.dzn";
 
@@ -331,12 +278,8 @@ Result<maki::PipelineArtifact> KodaGenerator::generateDezyne(const maki::Pipelin
   for (const auto& file : modelsOutputFolder.entryList(filters, QDir::Files))
     outputFiles << modelsOutputFolder.absoluteFilePath(file);
 
-  if (mAssetDir)
-  {
-    auto libDir = QDir(libDstPath);
-    for (const auto& file : libDir.entryList(filters, QDir::Files))
-      outputFiles << libDir.absoluteFilePath(file);
-  }
+  for (const auto& file : libOutputFolder.entryList(filters, QDir::Files))
+    outputFiles << libOutputFolder.absoluteFilePath(file);
 
   maki::PipelineArtifact output;
   output.paths = {
@@ -438,6 +381,8 @@ VoidResult KodaGenerator::verify(const maki::PipelineArtifact& artifact, const Q
   if (mServices->document()->getnodes().isEmpty())
     return VoidResult::Failed("Nothing to verify");
 
+  setup();
+
   const QStringList inputFiles = artifact.metadata["sources"].toStringList();
   const QStringList includeFolders = artifact.metadata["includes"].toStringList();
 
@@ -465,6 +410,46 @@ VoidResult KodaGenerator::verify(const maki::PipelineArtifact& artifact, const Q
     pipeline->add(generate, maki::OnFail::STOP);
   }
   pipeline->endGroup();
+
+  return VoidResult();
+}
+
+VoidResult KodaGenerator::simulate(const maki::PipelineArtifact& artifact)
+{
+  LOG_INFO("Running simulation");
+
+  if (mServices == nullptr)
+    return VoidResult::Failed("Cannot proceed with simulation, no services provided");
+  else if (mServices->ui() == nullptr)
+    return VoidResult::Failed("Cannot proceed with simulation, no plugin tab provided");
+  else if (mServices->document() == nullptr)
+    return VoidResult::Failed("Cannot proceed with simulation, no document provided");
+
+  if (!artifact.paths.contains("modelDir"))
+    return VoidResult::Failed("No model folder provided");
+  if (!artifact.metadata.contains("sources"))
+    return VoidResult::Failed("No sources provided");
+  if (!artifact.metadata.contains("includes"))
+    return VoidResult::Failed("No includes provided");
+
+  setup();
+
+  const auto modelsFolder = artifact.paths["modelDir"].toString();
+  const auto sourceFiles = artifact.metadata["sources"].toStringList();
+  const auto includeFolders = artifact.metadata["includes"].toStringList();
+
+  for (const QString& file : sourceFiles)
+  {
+    if (!file.contains("_task"))
+      continue;
+
+    LOG_INFO("Will simulate: {}", file);
+
+    mSimulator->setWorkingDirectory(modelsFolder);
+    mSimulator->setSimulationModel(file);
+    mSimulator->setSimulationIncludes(includeFolders);
+    return mSimulator->startSimulation(QUuid::createUuid().toString());
+  }
 
   return VoidResult();
 }
@@ -580,7 +565,7 @@ Result<maki::PipelineArtifact> KodaGenerator::launchRosProject(const maki::Pipel
     "-v", projectDir + ":/home/felaze/ros2_ws/src/koda_ros:rw",
     "-w", "/home/felaze/ros2_ws",
     "ros2:v1.0.0",
-    "bash", "-ic", QString("source /opt/ros/humble/setup.bash && source install/setup.bash && ros2 launch %1 %2").arg(packageName, launchFile),
+    "bash", "-ic", QString("source /opt/ros/humble/setup.bash && source install/setup.bash && ros2 launch %1 %2 | grep -v \"Sensor origin\" | grep -v rviz").arg(packageName, launchFile),
   };
   // clang-format on
   generate->setArguments(args);
@@ -604,20 +589,18 @@ Result<maki::PipelineArtifact> KodaGenerator::launchRosProject(const maki::Pipel
 
 bool KodaGenerator::startDaemon()
 {
+  if (mDaemon && mDaemon->state() != QProcess::ProcessState::NotRunning)
+    return true;
+
+  LOG_DEBUG("Setting up daemon");
+  stopDaemon();
+
   mDaemon = new QProcess(this);
-
   connect(mDaemon, &QProcess::started, this, []() { LOG_DEBUG("Process started"); });
-
   connect(mDaemon, &QProcess::readyReadStandardOutput, this, [this]() { LOG_DEBUG("{}", mDaemon->readAllStandardOutput().trimmed().toStdString()); });
-
   connect(mDaemon, &QProcess::readyReadStandardError, this, [this]() { LOG_DEBUG("{}", mDaemon->readAllStandardError().trimmed().toStdString()); });
-
   connect(mDaemon, &QProcess::finished, this,
           [](int exitCode, QProcess::ExitStatus status) { LOG_DEBUG("Daemon finished with code {} and status {}", exitCode, (int)status); });
-
-  // connect(mDaemon, &QProcess::errorOccurred, this, [](QProcess::ProcessError e) {
-  //   LOG_WARNING("Daemon error: {}", (int)e);
-  // });
 
   // Non-blocking start
   QStringList arguments = {"daemon"};
@@ -630,6 +613,27 @@ bool KodaGenerator::startDaemon()
   mDaemon->start();
 
   return mDaemon->waitForStarted();
+}
+
+bool KodaGenerator::stopDaemon()
+{
+  if (!mDaemon)
+    return true;
+
+  bool terminate = true;
+  if (mDaemon->state() != QProcess::NotRunning)
+  {
+    mDaemon->terminate();
+    terminate = mDaemon->waitForFinished(2500);
+    if (!terminate)
+    {
+      mDaemon->kill();
+      terminate = mDaemon->waitForFinished();
+    }
+  }
+
+  mDaemon = nullptr;
+  return terminate;
 }
 
 void KodaGenerator::simulationStarted()

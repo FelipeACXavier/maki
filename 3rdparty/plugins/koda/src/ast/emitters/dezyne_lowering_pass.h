@@ -34,17 +34,37 @@ private:
       Flow
     } kind = Kind::Action;
 
+    koda::SymbolId flow = koda::InvalidSymbol;
+
     std::string localPort;
+
     koda::SymbolId receiver = koda::InvalidSymbol;
     koda::SymbolId target = koda::InvalidSymbol;
-    // Ordinal within the current flow. Used for the flow-local port name.
-    std::uint32_t localOrdinal = 0;
 
-    // Ordinal across all uses of the target event. Used for wiring to the
-    // numbered capability port.
+    std::uint32_t localOrdinal = 0;
     std::uint32_t targetOrdinal = 0;
 
+    std::vector<koda::ir::PExpression> arguments;
+    std::vector<std::optional<std::string>> inputSlots;
+    std::vector<std::string> outputSlots;
+
     Span span;
+
+    CallSiteKind toCallSiteKind() const
+    {
+      switch (kind)
+      {
+        case CallUse::Kind::Trigger:
+          return CallSiteKind::Trigger;
+        case CallUse::Kind::Signal:
+          return CallSiteKind::Signal;
+        case CallUse::Kind::Flow:
+          return CallSiteKind::Flow;
+        default:
+        case CallUse::Kind::Action:
+          return CallSiteKind::Action;
+      }
+    }
   };
 
   struct PortRef
@@ -63,6 +83,8 @@ private:
   struct FlowState
   {
     SymbolId component = InvalidSymbol;
+    koda::SymbolId flow = koda::InvalidSymbol;
+
     std::uint32_t sequence = 0, join = 0, repeat = 0, within = 0, every = 0;
     std::uint32_t abortHandler = 0, errorHandler = 0, signalHandler = 0, alarm = 0;
     std::string previous;

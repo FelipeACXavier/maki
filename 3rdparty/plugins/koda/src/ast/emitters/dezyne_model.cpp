@@ -50,6 +50,21 @@ const Symbol* SymbolTable::find(std::string_view qualifiedName) const
   return it == mByQualifiedName.end() ? nullptr : get(it->second);
 }
 
+void SymbolTable::remove(SymbolId id)
+{
+  auto it = std::find_if(mSymbols.begin(), mSymbols.end(), [id](const Symbol& symbol) { return symbol.id == id; });
+  if (it == mSymbols.end())
+    return;
+
+  // Remove lookup entries before erasing the symbol itself.
+  // mByQualifiedName.erase(it->qualifiedName);
+  // if (it->origin.sourceSymbol)
+  // mBySource.erase(*it->origin.sourceSymbol);
+
+  // Remove the symbol.
+  mSymbols.erase(it);
+}
+
 std::vector<const Symbol*> SymbolTable::children(SymbolId parent, std::optional<SymbolKind> kind) const
 {
   std::vector<const Symbol*> result;
@@ -83,6 +98,7 @@ void Model::clear()
   mSymbols.clear();
   mComponents.clear();
   mFiles.clear();
+  mCallSites.clear();
 }
 
 void Model::print() const
@@ -104,6 +120,13 @@ void Model::print() const
     LOG_DEBUG("  Symbol: {}", f.symbol);
     LOG_DEBUG("  Path: {}", f.path);
   }
+
+  LOG_DEBUG("Call sites:");
+  for (const auto& call : mCallSites)
+  {
+    LOG_DEBUG("  Flow: {} Receiver: {} Target: {} {} -> {} ({}/{})", call.flow, call.receiver, call.target, call.localPort, call.targetPort,
+              call.localOrdinal, call.targetOrdinal);
+  }
 }
 
 SymbolId Model::declareComponent(const std::string& name, const std::string& fileName, Provenance origin, bool helper, SymbolId parent)
@@ -118,17 +141,29 @@ SymbolId Model::declareComponent(const std::string& name, const std::string& fil
   return id;
 }
 
-SymbolId Model::declarePort(SymbolId componentId, std::string name, PortDirection direction, PortProtocol protocol, Provenance origin)
+SymbolId Model::declarePort(SymbolId componentId, const std::string& name, PortDirection direction, PortProtocol protocol, Provenance origin)
 {
   const auto* parent = mSymbols.get(componentId);
   const auto qualified = parent ? parent->qualifiedName + "." + name : name;
-  const auto id = mSymbols.declare(SymbolKind::Port, std::move(name), qualified, componentId, origin);
+  const auto id = mSymbols.declare(SymbolKind::Port, name, qualified, componentId, origin);
 
   auto* owner = getComponent(componentId);
   if (owner && std::none_of(owner->ports.begin(), owner->ports.end(), [id](const Port& p) { return p.symbol == id; }))
     owner->ports.push_back(Port{id, direction, protocol});
 
   return id;
+}
+
+void Model::removePort(SymbolId componentId, SymbolId portId)
+{
+  auto* component = getComponent(componentId);
+  if (!component)
+    return;
+
+  // TODO: Figure out why this fails
+  // mSymbols.remove(portId);
+  component->ports.erase(
+      std::remove_if(component->ports.begin(), component->ports.end(), [portId](const Port& port) { return port.symbol == portId; }));
 }
 
 SymbolId Model::declareInstance(SymbolId componentId, std::string name, std::string typeName, Provenance origin)
@@ -180,11 +215,12 @@ const Component* Model::findComponent(std::string_view name) const
   return symbol ? getComponent(symbol->id) : nullptr;
 }
 
-const Port* Model::findPort(SymbolId componentId, std::string_view name) const
+const Port* Model::findPort(SymbolId componentId, const std::string& name) const
 {
   const auto* owner = getComponent(componentId);
   if (!owner)
     return nullptr;
+
   for (const auto& port : owner->ports)
   {
     const auto* symbol = mSymbols.get(port.symbol);
@@ -206,6 +242,27 @@ void Model::setGeneratedFile(std::string path, std::string contents, Provenance 
   const auto name = path;
   const auto id = mSymbols.declare(SymbolKind::GeneratedFile, name, "file:" + name, InvalidSymbol, origin);
   mFiles.push_back(GeneratedFile{id, std::move(path), std::move(contents)});
+}
+
+void Model::declareCallSite(CallSite call)
+{
+  mCallSites.push_back(std::move(call));
+}
+
+const std::vector<CallSite>& Model::callSites() const
+{
+  return mCallSites;
+}
+
+std::vector<const CallSite*> Model::callSitesForReceiver(koda::SymbolId receiver) const
+{
+  std::vector<const CallSite*> result;
+
+  for (const auto& call : mCallSites)
+    if (call.receiver == receiver)
+      result.push_back(&call);
+
+  return result;
 }
 
 }  // namespace koda::dezyne

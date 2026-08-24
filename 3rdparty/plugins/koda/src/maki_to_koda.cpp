@@ -23,12 +23,19 @@
 #include "typing/helpers.h"
 #include "typing/type_reference.h"
 
-#define LOG_AND_FAIL(M, ...)                                                       \
-  do                                                                               \
-  {                                                                                \
-    LOG_ERROR(M, ##__VA_ARGS__);                                                   \
-    mErrorListener.addError(node.getid(), flow.getid(), Format(M, ##__VA_ARGS__)); \
-    return std::any();                                                             \
+#define LOG_AND_FAIL(NODE_ID, FLOW_ID, M, ...)                           \
+  do                                                                     \
+  {                                                                      \
+    LOG_ERROR(M, ##__VA_ARGS__);                                         \
+    mErrorListener.addError(NODE_ID, FLOW_ID, Format(M, ##__VA_ARGS__)); \
+    return std::any();                                                   \
+  } while (false)
+
+#define RETURN_FAIL(NODE_ID, RET, M, ...)                           \
+  do                                                                \
+  {                                                                 \
+    mErrorListener.addError(NODE_ID, "", Format(M, ##__VA_ARGS__)); \
+    return RET::Failed(M, ##__VA_ARGS__);                           \
   } while (false)
 
 namespace koda
@@ -89,9 +96,16 @@ Result<koda::PComponent> MakiToKoda::buildTask(const INode& task, QVector<const 
   auto c = std::make_shared<koda::Component>();
   c->kind = koda::Component::Kind::Task;
   if (const auto* prop = getProperty("name", task))
+  {
+    if (prop->toStringValue().toLower() == "task")
+      RETURN_FAIL(task.getid(), Result<koda::PComponent>, "Tasks may not be called 'Task' or 'task'");
+
     c->name = format(prop->toStringValue().toLower(), "_");
+  }
   else
-    return Result<koda::PComponent>::Failed("Task does not have a name");
+  {
+    RETURN_FAIL(task.getid(), Result<koda::PComponent>, "Task does not have a name");
+  }
 
   // Get arguments
   for (const auto& cap : task.getchildren())
@@ -426,19 +440,19 @@ std::any MakiToKoda::buildAsyncExpr(const IFlow& flow, const INode& node)
 {
   const auto* cap = getProperty("capability", node);
   if (!cap)
-    LOG_AND_FAIL("AsyncTask component does not have a valid capability");
+    LOG_AND_FAIL(node.getid(), flow.getid(), "AsyncTask component does not have a valid capability");
   if (!cap->isRecord())
-    LOG_AND_FAIL("AsyncTask component capability does not have a valid format: {}", cap->toReadable());
+    LOG_AND_FAIL(node.getid(), flow.getid(), "AsyncTask component capability does not have a valid format: {}", cap->toReadable());
 
   const auto record = cap->toRecord();
   if (!record.contains("component"))
-    LOG_AND_FAIL("Component name missing in async call: {}", cap->toReadable());
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Component name missing in async call: {}", cap->toReadable());
   if (!record.at("component").isString())
-    LOG_AND_FAIL("Component name has wrong format in async call: {}", cap->toReadable());
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Component name has wrong format in async call: {}", cap->toReadable());
   if (!record.contains("arguments"))
-    LOG_AND_FAIL("Component arguments missing in async call: {}", cap->toReadable());
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Component arguments missing in async call: {}", cap->toReadable());
   if (!record.at("arguments").isList())
-    LOG_AND_FAIL("Component arguments has wrong format in async call: {}", cap->toReadable());
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Component arguments has wrong format in async call: {}", cap->toReadable());
 
   auto call = std::make_shared<koda::EventCall>();
   call->receiver = format(maki::recordString(record, "component"));
@@ -461,25 +475,25 @@ std::any MakiToKoda::buildSyncExpr(const IFlow& flow, const INode& node)
 {
   const auto* cap = getProperty("capability", node);
   if (!cap)
-    LOG_AND_FAIL("SyncTask component does not have a valid capability");
+    LOG_AND_FAIL(node.getid(), flow.getid(), "SyncTask component does not have a valid capability");
   if (!cap->isRecord())
-    LOG_AND_FAIL("SyncTask component capability does not have a valid format: {}", cap->toReadable());
+    LOG_AND_FAIL(node.getid(), flow.getid(), "SyncTask component capability does not have a valid format: {}", cap->toReadable());
 
   const auto record = cap->toRecord();
   if (!record.contains("component"))
-    LOG_AND_FAIL("Component name missing in sync call: {}", cap->toReadable());
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Component name missing in sync call: {}", cap->toReadable());
   if (!record.at("component").isString())
-    LOG_AND_FAIL("Component name has wrong format in sync call: {}", cap->toReadable());
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Component name has wrong format in sync call: {}", cap->toReadable());
 
   if (!record.contains("event"))
-    LOG_AND_FAIL("Component event missing in sync call: {}", cap->toReadable());
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Component event missing in sync call: {}", cap->toReadable());
   if (!record.at("event").isString())
-    LOG_AND_FAIL("Component event has wrong format in sync call: {}", cap->toReadable());
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Component event has wrong format in sync call: {}", cap->toReadable());
 
   if (!record.contains("arguments"))
-    LOG_AND_FAIL("Component arguments missing in sync call: {}", cap->toReadable());
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Component arguments missing in sync call: {}", cap->toReadable());
   if (!record.at("arguments").isList())
-    LOG_AND_FAIL("Component arguments has wrong format in sync call: {}", cap->toReadable());
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Component arguments has wrong format in sync call: {}", cap->toReadable());
 
   auto call = std::make_shared<koda::EventCall>();
   call->receiver = format(maki::recordString(record, "component"));
@@ -499,20 +513,20 @@ std::any MakiToKoda::buildStrategyExpr(const IFlow& flow, const INode& node)
 {
   const auto* cap = getProperty("task", node);
   if (!cap)
-    LOG_AND_FAIL("Flow call does not have a valid task");
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Flow call does not have a valid task");
   if (!cap->isRecord())
-    LOG_AND_FAIL("Flow call task does not have a valid format: {}", cap->toReadable());
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Flow call task does not have a valid format: {}", cap->toReadable());
 
   const auto record = cap->toRecord();
   if (!record.contains("flow"))
-    LOG_AND_FAIL("Flow name missing in flow call: {}", cap->toReadable());
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Flow name missing in flow call: {}", cap->toReadable());
   if (!record.at("flow").isString())
-    LOG_AND_FAIL("Flow name has wrong format in flow call: {}", cap->toReadable());
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Flow name has wrong format in flow call: {}", cap->toReadable());
 
   if (!record.contains("arguments"))
-    LOG_AND_FAIL("Flow arguments missing in flow call: {}", cap->toReadable());
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Flow arguments missing in flow call: {}", cap->toReadable());
   if (!record.at("arguments").isList())
-    LOG_AND_FAIL("Flow arguments has wrong format in flow call: {}", cap->toReadable());
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Flow arguments has wrong format in flow call: {}", cap->toReadable());
 
   auto call = std::make_shared<koda::EventCall>();
   call->receiver = "f" + format(maki::recordString(record, "flow"));
@@ -572,9 +586,9 @@ std::any MakiToKoda::buildWithinExpr(const IFlow& flow, const INode& node)
 
   auto timeout = getProperty("timeout", node);
   if (!timeout)
-    LOG_AND_FAIL("Within missing timeout property");
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Within missing timeout property");
   if (!timeout->isInt() && !timeout->isString())
-    LOG_AND_FAIL("Within timeout property should be an integer");
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Within timeout property should be an integer");
 
   expr->seconds = timeout->toInt();
 
@@ -592,21 +606,21 @@ std::any MakiToKoda::buildRepeatExpr(const IFlow& flow, const INode& node)
 {
   const auto* task = getProperty("task", node);
   if (!task)
-    LOG_AND_FAIL("Repeat task property is missing");
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Repeat task property is missing");
   if (!task->isRecord())
-    LOG_AND_FAIL("Repeat task property should be a record");
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Repeat task property should be a record");
 
   const auto* iterations = getProperty("iterations", node);
   if (!iterations)
-    LOG_AND_FAIL("Repeat iterations property is missing");
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Repeat iterations property is missing");
   if (!iterations->isInt() && !iterations->isString())
-    LOG_AND_FAIL("Repeat iterations property should be an integer");
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Repeat iterations property should be an integer");
 
   const auto* rate = getProperty("rate", node);
   if (!rate)
-    LOG_AND_FAIL("Repeat rate property is missing");
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Repeat rate property is missing");
   if (!rate->isInt() && !rate->isString())
-    LOG_AND_FAIL("Repeat rate property should be an integer");
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Repeat rate property should be an integer");
 
   auto record = task->toRecord();
   auto call = std::make_shared<koda::EventCall>();
@@ -633,7 +647,7 @@ std::any MakiToKoda::buildRepeatExpr(const IFlow& flow, const INode& node)
   {
     auto sequence = buildSequenceFrom(flow, seqSuccessors.first().node, nullptr);
     if (!sequence.has_value())
-      LOG_AND_FAIL("Failed to create do sequence");
+      LOG_AND_FAIL(node.getid(), flow.getid(), "Failed to create do sequence");
   }
 
   auto strat = std::make_shared<koda::Strategy>();

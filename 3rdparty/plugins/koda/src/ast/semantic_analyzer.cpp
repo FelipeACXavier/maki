@@ -370,11 +370,9 @@ VoidResult SemanticAnalyzer::resolveCapabilityData(const PEventCall& astCall, co
       switch (source.Value().kind)
       {
         case ArgumentSourceKind::Literal:
-          LOG_INFO("  Using literal");
           break;
 
         case ArgumentSourceKind::Blackboard:
-          LOG_INFO("  Using blackboard slot: {}", source.Value().slot.value_or("None"));
           // mModel.inputBindings[astCall.get()][i] = *source.Value().slot;
           break;
 

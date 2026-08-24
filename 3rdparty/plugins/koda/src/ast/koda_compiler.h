@@ -26,6 +26,8 @@ struct CompilerOptions
   bool showHelp = false;
   bool dryRun = false;
   bool showVersion = false;
+  bool simulation = false;
+  double startWait = 0.0;
 
   enum class PluginOption
   {

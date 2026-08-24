@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -83,6 +84,14 @@ struct Call
   SymbolId receiver = InvalidSymbol;
   SymbolId target = InvalidSymbol;
   std::vector<PExpression> arguments;
+
+  // Resolved by semantic analysis / copied during IR lowering.
+  // nullopt means the corresponding IR expression should be emitted directly.
+  std::vector<std::optional<std::string>> inputSlots;
+
+  // Slots receiving values produced by the successful completion event.
+  std::vector<std::string> outputSlots;
+
   Span span;
 };
 
@@ -261,12 +270,11 @@ struct Component
   SymbolId symbol = InvalidSymbol;
   ComponentKind kind = ComponentKind::Task;
   std::string name;
-  std::string title;
-  std::string message;
   std::vector<Argument> arguments;
   std::vector<Variable> variables;
   std::vector<Event> events;
   std::vector<Flow> flows;
+  std::map<std::string, std::string> metadata;
   Span span;
 };
 

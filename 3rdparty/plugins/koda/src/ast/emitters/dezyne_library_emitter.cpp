@@ -23,7 +23,7 @@ VoidResult createComponent(Model& model, const std::string& outdir, const std::s
 // Main interfaces
 VoidResult createTypes(Model& model, const std::string& outdir)
 {
-  const auto path = std::format("{}/types.dzn", outdir);
+  const auto path = std::format("{}/lib/types.dzn", outdir);
   std::ostringstream out;
 
   out << "  enum Result {\n";
@@ -47,7 +47,7 @@ VoidResult createTypes(Model& model, const std::string& outdir)
 
 VoidResult createActionInterface(Model& model, const std::string& outdir)
 {
-  const auto path = std::format("{}/iaction.dzn", outdir);
+  const auto path = std::format("{}/lib/iaction.dzn", outdir);
 
   std::ostringstream out;
   out << "import types.dzn;\n\n";
@@ -93,7 +93,7 @@ VoidResult createActionInterface(Model& model, const std::string& outdir)
 
 VoidResult createSignalInterface(Model& model, const std::string& outdir)
 {
-  const auto path = std::format("{}/isignal.dzn", outdir);
+  const auto path = std::format("{}/lib/isignal.dzn", outdir);
 
   std::ostringstream out;
   out << "  import types.dzn;\n\n";
@@ -363,88 +363,65 @@ VoidResult createParallelComponent(Model& model, const std::string& outdir, uint
   });
 }
 
-VoidResult createEveryComponent(Model& model, const std::string& outdir, uint32_t instances, SymbolId componentId)
+VoidResult createEveryComponent(Model& model, const std::string& outdir, SymbolId componentId)
 {
-  return createComponent(model, outdir, "abort_handler", [&](const std::string& name, const std::string& path, std::ostringstream& out) {
+  return createComponent(model, outdir, "every", [&](const std::string& name, const std::string& path, std::ostringstream& out) {
     const auto component = model.declareComponent(name, path, {componentId}, true, componentId);
     model.declarePort(component, "api", PortDirection::Provides, PortProtocol::Action);
     model.declarePort(component, "action", PortDirection::Requires, PortProtocol::Action);
-    model.declarePort(component, "handler", PortDirection::Requires, PortProtocol::Action);
 
     out << "import types.dzn;\n";
     out << "import iaction.dzn;\n";
-    out << "import isignal.dzn;\n";
-
-    out << std::format("component {} {{\n", name);
+    out << "import ialarm.dzn;\n";
+    out << "component cevery {\n";
     out << "  provides iaction api;\n";
+    out << "  requires ialarm alarm;\n";
     out << "  requires iaction action;\n";
-    out << "  requires iaction handler;\n";
-    out << "\n";
     out << "  behaviour {\n";
     out << "    enum State { State0, State1, State2, Error };\n";
     out << "    State state = State.State0;\n";
-    out << "\n";
     out << "    [state.State0] {\n";
     out << "      on api.trigger(): {\n";
-    out << "        Result res1 = action.trigger();\n";
-    out << "        if (res1.Success)\n";
-    out << "          state = State.State1;\n";
-    out << "        else if (res1.Failure)\n";
-    out << "          state = State.Error;\n";
-    out << "\n";
-    out << "        reply(res1);\n";
+    out << "        alarm.set($30$);\n";
+    out << "        state = State.State1;\n";
+    out << "        reply(Result.Success);\n";
     out << "      }\n";
-    out << "\n";
     out << "      // on api.abort(): { reply(Result.Success); }\n";
     out << "    }\n";
     out << "\n";
     out << "    [state.State1] {\n";
-    out << "      on action.failure(): {\n";
-    out << "        api.failure();\n";
-    out << "        state = State.Error;\n";
-    out << "      }\n";
-    out << "\n";
-    out << "      on action.success(): {\n";
-    out << "        api.success();\n";
-    out << "        state = State.State0;\n";
+    out << "      on alarm.timeout(): {\n";
+    out << "        Result triggered = action1.trigger();\n";
+    out << "        if (triggered.Error) {\n";
+    out << "          api.failure();\n";
+    out << "          state = State.Error;\n";
+    out << "        } else {\n";
+    out << "          state = State.State2;\n";
+    out << "        }\n";
     out << "      }\n";
     out << "\n";
     out << "      on api.abort(): {\n";
-    out << "        Result aborted = action.abort();\n";
-    out << "        if (aborted.Success) {\n";
-    out << "          Result handled = handler.trigger();\n";
-    out << "          if (handled.Success) {\n";
-    out << "            state = State.State2;\n";
-    out << "            reply(Result.Running);\n";
-    out << "          } else if (handled.Failure) {\n";
-    out << "            state = State.Error;\n";
-    out << "            reply(handled);\n";
-    out << "          } else {\n";
-    out << "            state = State.State0;\n";
-    out << "            reply(Result.Success);\n";
-    out << "          }\n";
-    out << "        } else if (aborted.Failure) {\n";
-    out << "          state = State.Error;\n";
-    out << "          reply(aborted);\n";
-    out << "        } else {\n";
-    out << "          reply (aborted);\n";
-    out << "        }\n";
+    out << "        alarm.reset();\n";
+    out << "        state = State.State0;\n";
+    out << "        reply(Result.Success);\n";
     out << "      }\n";
     out << "    }\n";
     out << "\n";
     out << "    [state.State2] {\n";
-    out << "      on handler.success(): {\n";
-    out << "        api.success();\n";
-    out << "        state = State.State0;\n";
+    out << "      on action1.success(): {\n";
+    out << "        alarm.set($30$);\n";
+    out << "        state = State.State1;\n";
     out << "      }\n";
     out << "\n";
-    out << "      on handler.failure(): {\n";
+    out << "      on action1.failure(): {\n";
     out << "        api.failure();\n";
     out << "        state = State.Error;\n";
     out << "      }\n";
     out << "\n";
     out << "      on api.abort(): {\n";
-    out << "        Result res = handler.abort();\n";
+    out << "        alarm.reset();\n";
+    out << "\n";
+    out << "        Result res = action1.abort();\n";
     out << "        if (res.Success)\n";
     out << "          state = State.State0;\n";
     out << "        else if (res.Failure)\n";
@@ -452,39 +429,18 @@ VoidResult createEveryComponent(Model& model, const std::string& outdir, uint32_
     out << "\n";
     out << "        reply(res);\n";
     out << "      }\n";
-    out << "\n";
-    out << "      // TODO(felaze): Is this correct?\n";
-    out << "      on action.success(): {}\n";
-    out << "      on action.failure(): {}\n";
     out << "    }\n";
     out << "\n";
     out << "    [state.Error] {\n";
     out << "      on api.reset(): {\n";
-    out << "        Result ret1 = Result.Success;\n";
-    out << "        Result ret2 = Result.Success;\n";
-    out << "\n";
-    out << "        if (action.state.Error) {\n";
-    out << "          ret1 = action.reset();\n";
-    out << "        }\n";
-    out << "\n";
-    out << "        if (handler.state.Error) {\n";
-    out << "          ret2 = handler.reset();\n";
-    out << "        }\n";
-    out << "\n";
-    out << "        if (ret1.Success && ret2.Success) {\n";
+    out << "        Result reset = action1.reset();\n";
+    out << "        if (reset.Success)\n";
     out << "          state = State.State0;\n";
-    out << "          reply(Result.Success);\n";
-    out << "        } else {\n";
-    out << "          reply(Result.Failure);\n";
-    out << "        }\n";
+    out << "\n";
+    out << "        reply(reset);\n";
     out << "      }\n";
     out << "\n";
     out << "      on api.abort(): { reply(Result.Error); }\n";
-    out << "\n";
-    out << "      on action.success(): {}\n";
-    out << "      on action.failure(): {}\n";
-    out << "      on handler.success(): {}\n";
-    out << "      on handler.failure(): {}\n";
     out << "    }\n";
     out << "  }\n";
     out << "}\n";
@@ -663,12 +619,10 @@ VoidResult createRepeatComponent(Model& model, const std::string& outdir, Symbol
 
     out << "  import types.dzn;\n";
     out << "  import iaction.dzn;\n";
-    out << "  \n";
     out << "  component crepeat {\n";
     out << "    provides iaction api;\n";
-    out << "  \n";
-    out << "    requires iaction action;\n";
-    out << "  \n";
+    out << "    requires iaction action;\n\n";
+
     out << "    behaviour {\n";
     out << "      enum State { Idle, Running, Error };\n";
     out << "      State state = State.Idle;\n";
@@ -728,11 +682,6 @@ VoidResult createRepeatComponent(Model& model, const std::string& outdir, Symbol
     out << "  }\n";
   });
 
-  return VoidResult();
-}
-
-VoidResult createEveryComponent(Model& model, const std::string& outdir, SymbolId componentId)
-{
   return VoidResult();
 }
 
@@ -1001,7 +950,7 @@ VoidResult createErrorHandlerComponent(Model& model, const std::string& outdir, 
 // Helper components
 VoidResult createAlarmComponent(Model& model, const std::string& outdir)
 {
-  const auto path = std::format("{}/alarm.dzn", outdir);
+  const auto path = std::format("{}/lib/alarm.dzn", outdir);
   std::ostringstream out;
 
   out << "import ialarm.dzn;\n\n";
@@ -1017,7 +966,7 @@ VoidResult createAlarmComponent(Model& model, const std::string& outdir)
 
 VoidResult createAlarmInterface(Model& model, const std::string& outdir)
 {
-  const auto path = std::format("{}/ialarm.dzn", outdir);
+  const auto path = std::format("{}/lib/ialarm.dzn", outdir);
 
   std::ostringstream out;
   out << "import types.dzn;\n\n";
@@ -1049,7 +998,7 @@ VoidResult createAlarmInterface(Model& model, const std::string& outdir)
 VoidResult createActionArbiterComponent(Model& model, const std::string& outdir, uint32_t instances, SymbolId componentId)
 {
   const auto name = std::format("caction_arbiter{}", instances);
-  const auto path = std::format("{}/action_arbiter{}.dzn", outdir, instances);
+  const auto path = std::format("{}/lib/action_arbiter{}.dzn", outdir, instances);
   const auto arbiter = model.declareComponent(name, path, {componentId}, true, componentId);
 
   for (std::uint32_t i = 0; i < instances; ++i)

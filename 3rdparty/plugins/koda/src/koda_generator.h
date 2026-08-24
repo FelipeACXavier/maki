@@ -29,7 +29,8 @@ public:
 
   Result<maki::PipelineArtifact> generateKoda(const maki::PipelineArtifact& artifact, const QDir& outputFolder);
   Result<maki::PipelineArtifact> generateCpp(const maki::PipelineArtifact& artifact, const QDir& outputFolder, maki::IPipeline* pipeline);
-  Result<maki::PipelineArtifact> generateDezyne(const maki::PipelineArtifact& artifact, const QDir& outputFolder, maki::IPipeline* pipeline);
+  Result<maki::PipelineArtifact> generateDezyne(const maki::PipelineArtifact& artifact, const QDir& outputFolder, const maki::ValueMap& parameters,
+                                                maki::IPipeline* pipeline);
   Result<maki::PipelineArtifact> buildRosProject(const maki::PipelineArtifact& artifact, const QDir& outputFolder, maki::IPipeline* pipeline);
   Result<maki::PipelineArtifact> launchRosProject(const maki::PipelineArtifact& artifact, const QDir& outputFolder, maki::IPipeline* pipeline);
 
@@ -63,6 +64,7 @@ private:
 
   // Setup
   bool startDaemon();
+  bool stopDaemon();
   void buildSettings();
 
   maki::SettingField getSetting(const QString& key) const;
