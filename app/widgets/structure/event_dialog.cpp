@@ -192,14 +192,14 @@ void EventDialog::createArgumentInput()
     model->insertRow(newRow);
     model->setItem(newRow, 0, new QStandardItem(""));
 
+    // Storage first: TypeSelectionWidget may emit currentTextChanged as it is shown.
+    mStorage->addArgument(std::make_shared<PropertyInfo>());
+
     auto box = new maki::TypeSelectionWidget(args);
     args->setIndexWidget(model->index(newRow, 1), box);
     connect(box, &QComboBox::currentTextChanged, this, [this, newRow](const QString& value) {
       updateArgumentTable(newRow, 1, value);
     });
-
-    // Create new argument in the storage as well
-    mStorage->addArgument(std::make_shared<PropertyInfo>());
   });
 
   button->setFocusPolicy(Qt::NoFocus);
@@ -216,6 +216,9 @@ void EventDialog::createArgumentInput()
       return;
 
     int row = index.row();
+    if (!mStorage || row < 0 || row >= mStorage->getarguments().size())
+      return;
+
     model->removeRow(row);
     if (auto property = mStorage->getArgument(row))
       mStorage->removeArgument(property);
@@ -238,10 +241,17 @@ void EventDialog::createArgumentInput()
 void EventDialog::updateArgumentTable(int row, int column, const QString& text)
 {
   LOG_INFO("updateArgumentTable: %s", qPrintable(text));
+  if (!mStorage || row < 0 || row >= mStorage->getarguments().size())
+    return;
+
+  auto argument = std::dynamic_pointer_cast<PropertyInfo>(mStorage->getArgument(row));
+  if (!argument)
+    return;
+
   if (column == 0)
-    std::dynamic_pointer_cast<PropertyInfo>(mStorage->getArgument(row))->setId(text);
+    argument->setId(text);
   else if (column == 1)
-    std::dynamic_pointer_cast<PropertyInfo>(mStorage->getArgument(row))->setType(Types::StringToPropertyTypes(text));
+    argument->setType(Types::StringToPropertyTypes(text));
 }
 
 void EventDialog::accept()
@@ -249,7 +259,15 @@ void EventDialog::accept()
   if (mStorage && mNameEdit)
     mStorage->setName(mNameEdit->text());
 
-  const QString name = mStorage ? mStorage->getname() : QString();
+  const QString name = mStorage ? mStorage->getname().trimmed() : QString();
+  if (name.isEmpty())
+  {
+    maki::errorPrompt(tr("Please enter a name."), QString(), this);
+    return;
+  }
+  if (mStorage)
+    mStorage->setName(name);
+
   if (Constants::isReservedMainFlowName(name) && !Constants::isReservedMainFlowName(mOriginalName))
   {
     maki::errorPrompt(tr("You cannot create a flow called \"main\". Each Task already has a main flow."), QString(), this);
@@ -263,6 +281,12 @@ void EventDialog::keyPressEvent(QKeyEvent* event)
   if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
   {
     QWidget* first = focusWidget();
+    if (!first)
+    {
+      QDialog::keyPressEvent(event);
+      return;
+    }
+
     QWidget* next = first->nextInFocusChain();
 
     while (next && next != first)

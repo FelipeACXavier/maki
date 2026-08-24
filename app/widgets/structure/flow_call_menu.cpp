@@ -12,6 +12,7 @@
 #include <QPixmap>
 #include <QSizePolicy>
 #include <QSvgRenderer>
+#include <QTimer>
 #include <QVBoxLayout>
 
 #include <oclero/qlementine/style/QlementineStyle.hpp>
@@ -109,7 +110,7 @@ FlowCallMenu::FlowCallMenu(QWidget* parent)
   });
 
   connect(mFlowCombo, QOverload<int>::of(&QComboBox::activated), this, [this](int index) {
-    if (!mNode || !mView || index < 0)
+    if (index < 0)
       return;
 
     if (isCreateFlowItem(index))
@@ -118,7 +119,8 @@ FlowCallMenu::FlowCallMenu(QWidget* parent)
       return;
     }
 
-    mLastFlowComboIndex = index;
+    if (!mNode || !mView)
+      return;
 
     const QString flowName = mFlowCombo->itemText(index);
     mFlowCombo->blockSignals(true);
@@ -173,9 +175,14 @@ std::shared_ptr<FlowSaveInfo> FlowCallMenu::promptNewFlow(QWidget* parent)
     return nullptr;
 
   auto info = dialog.getInfo();
-  if (info && Constants::isReservedMainFlowName(info->getname()))
+  if (!info)
     return nullptr;
 
+  const QString name = info->getname().trimmed();
+  if (name.isEmpty() || Constants::isReservedMainFlowName(name))
+    return nullptr;
+
+  info->setName(name);
   return info;
 }
 
@@ -282,14 +289,6 @@ QString FlowCallMenu::currentTaskId() const
   return mTaskCombo->itemData(mTaskCombo->currentIndex()).toString();
 }
 
-QString FlowCallMenu::currentTaskName() const
-{
-  if (!mTaskCombo || mTaskCombo->currentIndex() < 0)
-    return QString();
-
-  return mTaskCombo->itemText(mTaskCombo->currentIndex());
-}
-
 bool FlowCallMenu::isCreateFlowItem(int index) const
 {
   if (!mFlowCombo || index < 0 || index >= mFlowCombo->count())
@@ -316,13 +315,11 @@ void FlowCallMenu::selectFirstFlowAndApply()
   if (flowIndex < 0)
   {
     mFlowCombo->setCurrentIndex(-1);
-    mLastFlowComboIndex = -1;
     updateBlockName(mNode);
     return;
   }
 
   mFlowCombo->setCurrentIndex(flowIndex);
-  mLastFlowComboIndex = flowIndex;
   const QString flowName = mFlowCombo->itemText(flowIndex);
   setFlowData(mNode, flowName);
   updateBlockName(mNode);
@@ -343,79 +340,46 @@ void FlowCallMenu::populateFlowCombo(const QString& taskId, SaveInfo* storage)
   mFlowCombo->setEnabled(!taskId.isEmpty());
 }
 
-void FlowCallMenu::selectFlowInCombo(const QString& flowName)
-{
-  if (!mFlowCombo || flowName.isEmpty())
-    return;
-
-  mFlowCombo->blockSignals(true);
-  int flowIndex = mFlowCombo->findText(flowName);
-  if (flowIndex < 0)
-  {
-    const int createIndex = mFlowCombo->count() - 1;
-    if (createIndex >= 0 && isCreateFlowItem(createIndex))
-      mFlowCombo->insertItem(createIndex, flowName, flowName);
-    else
-      mFlowCombo->addItem(flowName, flowName);
-    flowIndex = mFlowCombo->findText(flowName);
-  }
-  if (flowIndex >= 0)
-  {
-    mFlowCombo->setCurrentIndex(flowIndex);
-    mLastFlowComboIndex = flowIndex;
-  }
-  mFlowCombo->blockSignals(false);
-}
-
 void FlowCallMenu::handleCreateFlowRequested()
 {
-  // Capture before the dialog: this menu is a Qt::Popup and auto-closes (clearing mNode)
-  // as soon as the modal EventDialog takes focus.
+  // Capture before this Qt::Popup hides. On WebAssembly the popup can close as
+  // soon as the combo dropdown closes; hideEvent defers clearTracking so mNode
+  // is still valid here. Never setFlowData() with the Create row's label.
   NodeItem* node = mNode;
   CanvasView* view = mView;
-  SaveInfo* storage = mStorage;
-  if (!node || !view)
-    return;
-
   const QString taskId = currentTaskId();
-  const QString taskName = currentTaskName();
-  if (taskId.isEmpty())
+  if (!node || !view || taskId.isEmpty())
     return;
 
-  // Parent to the main window, not this popup, so the dialog isn't destroyed with us.
   QWidget* dialogParent = view->window() ? view->window() : static_cast<QWidget*>(view);
-  const auto info = promptNewFlow(dialogParent);
-  if (!info)
-  {
-    if (mFlowCombo)
-    {
-      mFlowCombo->blockSignals(true);
-      const int restore = (mLastFlowComboIndex >= 0 && mLastFlowComboIndex < mFlowCombo->count()
-                           && !isCreateFlowItem(mLastFlowComboIndex))
-                              ? mLastFlowComboIndex
-                              : firstFlowOptionIndex();
-      mFlowCombo->setCurrentIndex(restore);
-      mFlowCombo->blockSignals(false);
-    }
+
+  // Leave the combo/popup event stack before QDialog::exec(). Nested popups plus
+  // ASYNCIFY's nested event loop are a common wasm crash.
+  QTimer::singleShot(0, this, [this, node, taskId, dialogParent]() {
+    hideMenu();
+    completeCreateFlow(node, taskId, dialogParent);
+  });
+}
+
+void FlowCallMenu::completeCreateFlow(NodeItem* node, const QString& taskId, QWidget* dialogParent)
+{
+  if (!node || !node->scene() || taskId.isEmpty() || !dialogParent)
     return;
-  }
+
+  const auto info = promptNewFlow(dialogParent);
+  if (!info || !node->scene())
+    return;
 
   const QString flowName = info->getname();
-
-  // Must use the captured node: mNode is often null after the popup auto-hid.
   setFlowData(node, flowName);
   updateBlockName(node);
   node->update();
 
-  emit createFlowRequested(taskId, info);
-
-  // Refresh combo if the menu was re-shown / still tracking this node.
-  if (mNode == node && mView && storage)
-  {
-    populateFlowCombo(taskId, storage);
-    selectFlowInCombo(flowName);
-    updatePosition(mView);
-  }
+  // Open the new flow on a fresh event-loop turn so tab creation is not still
+  // inside QDialog::exec()'s ASYNCIFY nested loop (wasm).
+  QTimer::singleShot(0, this, [this, taskId, info]() {
+    emit createFlowRequested(taskId, info);
+  });
 }
 
 void FlowCallMenu::populateCombos(SaveInfo* storage)
@@ -459,7 +423,6 @@ void FlowCallMenu::populateCombos(SaveInfo* storage)
     mFlowCombo->setEnabled(false);
     mTaskCombo->blockSignals(false);
     mFlowCombo->blockSignals(false);
-    mLastFlowComboIndex = -1;
     return;
   }
 
@@ -490,29 +453,25 @@ void FlowCallMenu::populateCombos(SaveInfo* storage)
   else
   {
     const int flowIndex = mFlowCombo->findText(currentFlowName);
-    if (flowIndex >= 0)
+    if (flowIndex >= 0 && !isCreateFlowItem(flowIndex))
     {
       mFlowCombo->setCurrentIndex(flowIndex);
-      mLastFlowComboIndex = flowIndex;
     }
     else
     {
-      // Insert recovered name before the trailing "Create new flow" entry.
       const int createIndex = mFlowCombo->count() - 1;
       if (createIndex >= 0 && isCreateFlowItem(createIndex))
         mFlowCombo->insertItem(createIndex, currentFlowName, currentFlowName);
       else
         mFlowCombo->addItem(currentFlowName, currentFlowName);
       const int recovered = mFlowCombo->findText(currentFlowName);
-      mFlowCombo->setCurrentIndex(recovered);
-      mLastFlowComboIndex = recovered;
+      if (recovered >= 0 && !isCreateFlowItem(recovered))
+        mFlowCombo->setCurrentIndex(recovered);
     }
   }
 
   mTaskCombo->blockSignals(false);
   mFlowCombo->blockSignals(false);
-  if (mLastFlowComboIndex < 0)
-    mLastFlowComboIndex = mFlowCombo->currentIndex();
 }
 
 void FlowCallMenu::showForNode(NodeItem* node, CanvasView* view, SaveInfo* storage)
@@ -572,8 +531,13 @@ void FlowCallMenu::hideMenu()
 
 void FlowCallMenu::hideEvent(QHideEvent* event)
 {
-  clearTracking();
   QWidget::hideEvent(event);
+  // Defer clearing so QComboBox::activated can still read mNode after this
+  // Qt::Popup auto-hides (common when the nested combo list closes on wasm).
+  QTimer::singleShot(0, this, [this]() {
+    if (!isVisible())
+      clearTracking();
+  });
 }
 
 QString FlowCallMenu::trackedNodeId() const

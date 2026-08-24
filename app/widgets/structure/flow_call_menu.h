@@ -46,15 +46,14 @@ private:
   void populateCombos(SaveInfo* storage);
   void populateFlowCombo(const QString& taskId, SaveInfo* storage);
   QString currentTaskId() const;
-  QString currentTaskName() const;
   void setTaskData(const QString& taskName);
   void setFlowData(NodeItem* node, const QString& flowName) const;
   void updateBlockName(NodeItem* node) const;
-  void selectFlowInCombo(const QString& flowName);
   bool isCreateFlowItem(int index) const;
   int firstFlowOptionIndex() const;
   void selectFirstFlowAndApply();
   void handleCreateFlowRequested();
+  void completeCreateFlow(NodeItem* node, const QString& taskId, QWidget* dialogParent);
   void clearTracking();
 
   QComboBox* mTaskCombo = nullptr;
@@ -64,6 +63,4 @@ private:
   SaveInfo* mStorage = nullptr;
   /** Stable id for move/delete checks without dereferencing mNode after teardown. */
   QString mTrackedNodeId;
-  /** Last non-create Flow combo index, used to restore selection if create is cancelled. */
-  int mLastFlowComboIndex = -1;
 };
