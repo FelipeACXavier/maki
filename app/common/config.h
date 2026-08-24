@@ -80,13 +80,13 @@ public:
    */
   FlowConfig(const QJsonObject& object);
 
-  QString name = "";                                                /// Name of the flow.
-  Types::CallType type = Types::CallType::UNKNOWN;                  /// Type of the call.
-  Types::PropertyTypes returnType = Types::PropertyTypes::UNKNOWN;  /// Return type of the call.
-  QList<PropertyConfig> arguments = {};                             /// List of arguments for the call.
-  bool modifiable = true;                                           /// Whether the flow is modifiable.
-  QString info = "";                                                /// Additional information about the flow.
-  int linksTo = INT32_MAX;                                          /// Number of links to this flow.
+  QString name = "";                                /// Name of the flow.
+  Types::CallType type = Types::CallType::UNKNOWN;  /// Type of the call.
+  koda::types::TypeReference returnType = {};       /// Return type of the call.
+  QList<PropertyConfig> arguments = {};             /// List of arguments for the call.
+  bool modifiable = true;                           /// Whether the flow is modifiable.
+  QString info = "";                                /// Additional information about the flow.
+  int linksTo = INT32_MAX;                          /// Number of links to this flow.
 
   friend QDataStream& operator<<(QDataStream& out, const FlowConfig& config);
   friend QDataStream& operator>>(QDataStream& in, FlowConfig& config);

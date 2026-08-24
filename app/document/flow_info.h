@@ -73,7 +73,7 @@ public:
    *
    * @return Types::PropertyTypes The return type of the property.
    */
-  Types::PropertyTypes getreturnType() const override;
+  koda::types::TypeReference getreturnType() const override;
 
   /**
    * @brief Gets the arguments of the flow.
@@ -153,7 +153,7 @@ public:
    *
    * @param arg The new return type for the property.
    */
-  void setReturnType(Types::PropertyTypes arg);
+  void setReturnType(const koda::types::TypeReference& arg);
 
   /**
    * @brief Adds an argument to the flow.
@@ -240,7 +240,7 @@ private:
   int mLinksTo;      /// The number of links to the flow.
 
   Types::CallType mType;                            /// The type of the call.
-  Types::PropertyTypes mReturnType;                 /// The return type of the property.
+  koda::types::TypeReference mReturnType;           /// The return type of the property.
   QVector<std::shared_ptr<INode>> mNodes;           /// A vector of shared pointers to INode objects representing the nodes.
   QVector<std::shared_ptr<IParameter>> mArguments;  /// A vector of shared pointers to IParameter objects representing the arguments.
   QVector<std::shared_ptr<ITransition>> mTransitions;

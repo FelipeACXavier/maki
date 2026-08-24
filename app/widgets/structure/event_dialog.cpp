@@ -95,13 +95,12 @@ void EventDialog::createReturnTypeInput()
   auto container = new maki::ContainerWidget(tr("Return type"), returnType, maki::WidgetAlignment::Vertical(), this);
   returnType->setEnabled(mStorage->getmodifiable());
 
-  connect(returnType, &maki::TypeSelector::typeChanged, this,
-          [this](const koda::types::TypeReference& ref) { mStorage->setReturnType(Types::PropertyTypes::VOID); });
+  connect(returnType, &maki::TypeSelector::typeChanged, this, [this](const koda::types::TypeReference& ref) { mStorage->setReturnType(ref); });
 
-  if (mStorage->getreturnType() == Types::PropertyTypes::UNKNOWN)
-    mStorage->setReturnType(Types::PropertyTypes::VOID);
+  if (!mStorage->getreturnType().isValid())
+    mStorage->setReturnType(koda::types::TypeReference::createVoid());
   else
-    returnType->setReference(koda::types::TypeReference::createVoid());
+    returnType->setReference(mStorage->getreturnType());
 
   layout()->addWidget(container);
 }
@@ -231,9 +230,9 @@ void EventDialog::accept()
     return;
   }
 
-  if (mStorage->getreturnType() == Types::PropertyTypes::UNKNOWN)
+  if (!mStorage->getreturnType().isValid())
   {
-    if (maki::warningPrompt(tr("Missing return type"), tr("The flow will not be saved.")))
+    if (maki::warningPrompt(tr("Invalid return type"), tr("The flow will not be saved.")))
       QDialog::accept();
     return;
   }

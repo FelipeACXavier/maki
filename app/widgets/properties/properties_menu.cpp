@@ -690,7 +690,7 @@ void PropertiesMenu::openEventDialog(QTableWidget* table, NodeItem* node, int ro
     return;
 
   for (const auto& f : node->allEventFlowConfigs())
-    if (f->getname() == info->getname())
+    if (f->getname() == info->getname() && f->getid() != info->getid())
     {
       if (maki::errorPrompt(tr("A flow with the same name already exists"), tr("Would you like to open it?")))
         emit flowSelected(f->getid(), node->id());
@@ -718,7 +718,7 @@ void PropertiesMenu::addEventToTable(QTableWidget* table, int row, const std::sh
 
   table->setItem(row, 0, indexItem);
   table->setItem(row, 1, new QTableWidgetItem(Types::CallTypeToString(event->gettype())));
-  table->setItem(row, 2, new QTableWidgetItem(Types::PropertyTypesToString(event->getreturnType())));
+  table->setItem(row, 2, new QTableWidgetItem(QString::fromStdString(event->getreturnType().toString())));
 
   QStringList arguments;
   for (const auto& argument : event->getarguments())

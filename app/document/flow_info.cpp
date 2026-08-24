@@ -8,6 +8,7 @@
 #include "node_info.h"
 #include "property_info.h"
 #include "transition_info.h"
+#include "type_helpers.h"
 
 Q_DECLARE_METATYPE(FlowSaveInfo)
 
@@ -17,7 +18,7 @@ FlowSaveInfo::FlowSaveInfo()
     , mOwner("")
     , mModifiable(true)
     , mType(Types::CallType::UNKNOWN)
-    , mReturnType(Types::PropertyTypes::UNKNOWN)
+    , mReturnType({})
     , mNodes({})
     , mArguments({})
     , mTransitions({})
@@ -66,7 +67,7 @@ int FlowSaveInfo::getlinksTo() const
   return mLinksTo;
 }
 
-Types::PropertyTypes FlowSaveInfo::getreturnType() const
+koda::types::TypeReference FlowSaveInfo::getreturnType() const
 {
   return mReturnType;
 }
@@ -136,7 +137,7 @@ void FlowSaveInfo::setType(Types::CallType arg)
   mType = arg;
 }
 
-void FlowSaveInfo::setReturnType(Types::PropertyTypes arg)
+void FlowSaveInfo::setReturnType(const koda::types::TypeReference& arg)
 {
   mReturnType = arg;
 }
@@ -188,7 +189,7 @@ QJsonObject FlowSaveInfo::toJson() const
   data[ConfigKeys::NAME] = getname();
   data[ConfigKeys::MODIFIABLE] = getmodifiable();
   data[ConfigKeys::TYPE] = Types::CallTypeToString(gettype());
-  data[ConfigKeys::RETURN_TYPE] = Types::PropertyTypesToString(getreturnType());
+  data[ConfigKeys::RETURN_TYPE] = maki::typeReferenceToJson(getreturnType());
   data[ConfigKeys::OWNER] = getowner();
   data["linksTo"] = getlinksTo();
 
@@ -225,7 +226,10 @@ FlowSaveInfo FlowSaveInfo::fromJson(const QJsonObject& data)
     info.setLinksTo(data["linksTo"].toInt());
 
   info.setType(Types::StringToCallType(data[ConfigKeys::TYPE].toString()));
-  info.setReturnType(Types::StringToPropertyTypes(data[ConfigKeys::RETURN_TYPE].toString()));
+  auto ref = maki::typeReferenceFromJson(data[ConfigKeys::TYPE].toObject());
+  if (ref.IsSuccess())
+    info.setReturnType(ref.Value());
+
   info.setOwner(data[ConfigKeys::OWNER].toString());
 
   if (data.contains(ConfigKeys::ARGUMENTS))
@@ -333,7 +337,7 @@ QDataStream& operator>>(QDataStream& in, FlowSaveInfo& info)
   in >> type;
   info.setType(type);
 
-  Types::PropertyTypes returnType;
+  koda::types::TypeReference returnType;
   in >> returnType;
   info.setReturnType(returnType);
 

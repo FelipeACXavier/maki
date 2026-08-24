@@ -9,6 +9,31 @@
 #include "type_helpers.h"
 #include "type_registry.h"
 
+namespace config
+{
+Result<koda::types::TypeReference> parseTypeReference(const QJsonObject& object, const QString& key, const QString& propertyId)
+{
+  if (object[key].isString())
+  {
+    const auto* def = maki::TypeRegistry::instance().findByName(object[key].toString().toStdString());
+    if (!def)
+      return Result<koda::types::TypeReference>::Failed("Unknown type in field '{}' of {}", key, propertyId);
+
+    return def->toReference();
+  }
+  else if (object[key].isObject())
+  {
+    auto typeResult = maki::typeReferenceFromJson(object[key].toObject());
+    if (!typeResult.IsSuccess())
+      return Result<koda::types::TypeReference>::Failed("Failed to parse type in field '{}' of {}: {}", key, propertyId, typeResult.ErrorMessage());
+
+    return typeResult;
+  }
+
+  return Result<koda::types::TypeReference>::Failed("Invalid type representation for {}", propertyId);
+}
+}  // namespace config
+
 PropertyConfig::PropertyConfig()
 {
 }
@@ -28,31 +53,13 @@ PropertyConfig::PropertyConfig(const QJsonObject& object)
     return;
   }
 
-  if (object["type"].isString())
+  auto typeResult = config::parseTypeReference(object, ConfigKeys::TYPE, id);
+  if (!typeResult.IsSuccess())
   {
-    const auto* def = maki::TypeRegistry::instance().findByName(object["type"].toString().toStdString());
-    if (!def)
-    {
-      setInvalid(QString("Unknown type %1 for %2").arg(object["type"].toString(), id));
-      return;
-    }
-    type = def->toReference();
-  }
-  else if (object["type"].isObject())
-  {
-    auto typeResult = maki::typeReferenceFromJson(object["type"].toObject());
-    if (!typeResult.IsSuccess())
-    {
-      setInvalid(QString::fromStdString(typeResult.ErrorMessage()));
-      return;
-    }
-    type = typeResult.Value();
-  }
-  else
-  {
-    setInvalid(QString("Invalid type representation for %1").arg(id));
+    setInvalid(QString::fromStdString(typeResult.ErrorMessage()));
     return;
   }
+  type = typeResult.Value();
 
   if (object.contains("control") && object["control"].isString())
     control = Types::StringToControlTypes(object["control"].toString());
@@ -114,18 +121,13 @@ FlowConfig::FlowConfig(const QJsonObject& object)
     return;
   }
 
-  const auto returnTypeName = object[ConfigKeys::RETURN_TYPE].toString();
-  const auto qname = koda::types::convertQualifiedName(returnTypeName.toStdString());
-  auto definition = maki::TypeRegistry::instance().findByName(qname);
-  if (!definition)
+  auto typeResult = config::parseTypeReference(object, ConfigKeys::RETURN_TYPE, name);
+  if (!typeResult.IsSuccess())
   {
-    setInvalid("Invalid return type: " + object[ConfigKeys::RETURN_TYPE].toString() + " for " + name);
+    setInvalid(QString::fromStdString(typeResult.ErrorMessage()));
     return;
   }
-  else
-  {
-    returnType = maki::propertyTypeFromReference(definition->toReference());
-  }
+  returnType = typeResult.Value();
 
   for (const auto& arg : object[ConfigKeys::ARGUMENTS].toArray())
     arguments.push_back(PropertyConfig(arg.toObject()));
