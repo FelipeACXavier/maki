@@ -11,6 +11,7 @@
 
 #include "ast/ast.h"
 #include "idocument.h"
+#include "maki_error_listener.h"
 #include "mission_parameter.h"
 #include "result.h"
 #include "typing/type_registry.h"
@@ -42,10 +43,12 @@ class MakiToKoda
 public:
   MakiToKoda(const koda::types::TypeRegistry* registry);
 
+  std::vector<MakiErrorListener::Error> getErrors() const;
   Result<QString> generate(const QVector<std::shared_ptr<INode>> nodes, QVector<const IParameter*> parameters);
 
 private:
   const koda::types::TypeRegistry* mTypeRegistry;
+  MakiErrorListener mErrorListener;
 
   Result<koda::PComponent> buildTask(const INode& task, QVector<const IParameter*> missionParameters);
   Result<koda::PComponent> buildCapability(const INode& capability);

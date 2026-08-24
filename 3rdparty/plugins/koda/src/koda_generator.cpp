@@ -482,6 +482,13 @@ Result<maki::PipelineArtifact> KodaGenerator::generateKoda(const maki::PipelineA
   koda::MakiToKoda makiToKoda(typeRegistry);
   const auto missionParameters = mServices->document()->getparameters();
   auto generated = makiToKoda.generate(mServices->document()->getnodes(), missionParameters);
+  auto errors = makiToKoda.getErrors();
+  if (!errors.empty())
+  {
+    auto firstError = errors.front();
+    if (mServices)
+      mServices->errorOnNode(firstError.nodeId, firstError.flowId, QString::fromStdString(firstError.message));
+  }
   if (!generated)
     return Result<maki::PipelineArtifact>::Failed(generated.ErrorMessage());
 

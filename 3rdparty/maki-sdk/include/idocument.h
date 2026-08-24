@@ -73,7 +73,7 @@ public:
   virtual int getlinksTo() const = 0;
 
   virtual Types::CallType gettype() const = 0;
-  virtual Types::PropertyTypes getreturnType() const = 0;
+  virtual koda::types::TypeReference getreturnType() const = 0;
   virtual QVector<std::shared_ptr<IParameter>> getarguments() const = 0;
 
   virtual QVector<std::shared_ptr<INode>> getnodes() const = 0;

@@ -1009,7 +1009,11 @@ void Canvas::clearCanvas()
 void Canvas::selectNode(NodeItem* node, bool select)
 {
   if (node)
+  {
     node->setSelected(select);
+    if (select)
+      node->dismissHighlight();
+  }
 
   emit nodeSelected(node, select);
 }
@@ -1206,7 +1210,7 @@ QPointF Canvas::getCenter() const
   return parentView()->getCenter();
 }
 
-void Canvas::onFocusNode(const QString& flowId, const QString& nodeId)
+void Canvas::onFocusNode(const QString& flowId, const QString& nodeId, const QString& message)
 {
   // If no flow id was provided, then we are already in the right canvas, or in the structural canvas
   if (flowId.isEmpty())
@@ -1219,6 +1223,8 @@ void Canvas::onFocusNode(const QString& flowId, const QString& nodeId)
 
     // Center the node in the view
     parentView()->centerOn(node);
+    if (const auto* style = oclero::qlementine::appStyle())
+      node->highlight(style->theme().statusColorError, message);
   }
   else
   {
@@ -1236,7 +1242,7 @@ void Canvas::onFocusNode(const QString& flowId, const QString& nodeId)
       for (const auto& child : flow->getNodes())
         if (child->getid() == nodeId)
         {
-          emit openFlow(flow, nodeId);
+          emit openFlow(flow, nodeId, message);
           return;
         }
     }
@@ -1304,7 +1310,7 @@ void Canvas::onFlowSelected(const QString& flowId, const QString& nodeId)
   }
 
   auto flow = node->getFlow(flowId);
-  emit openFlow(flow, "");
+  emit openFlow(flow, "", "");
 }
 
 void Canvas::onFlowRemoved(const QString& flowId, const QString& nodeId)

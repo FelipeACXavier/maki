@@ -5,7 +5,8 @@
 #include "ipipeline.h"
 #include "iui.h"
 
-HostServices::HostServices(std::shared_ptr<IDocument> document, maki::IPipeline* pipeline, maki::ISettings* settings, const QString& root, QObject* parent)
+HostServices::HostServices(std::shared_ptr<IDocument> document, maki::IPipeline* pipeline, maki::ISettings* settings, const QString& root,
+                           QObject* parent)
     : QObject(parent)
     , mDocument(document)
     , mPipeline(pipeline)
@@ -53,4 +54,9 @@ QString HostServices::projectRoot() const
 maki::ILogging* HostServices::logger() const
 {
   return mLogger;
+}
+
+void HostServices::errorOnNode(const QString& nodeId, const QString& flowId, const QString& message)
+{
+  emit onErrorOnNode(nodeId, flowId, message);
 }

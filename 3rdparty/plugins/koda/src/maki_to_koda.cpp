@@ -23,11 +23,12 @@
 #include "typing/helpers.h"
 #include "typing/type_reference.h"
 
-#define LOG_AND_FAIL(m, ...)     \
-  do                             \
-  {                              \
-    LOG_ERROR(m, ##__VA_ARGS__); \
-    return std::any();           \
+#define LOG_AND_FAIL(M, ...)                                                       \
+  do                                                                               \
+  {                                                                                \
+    LOG_ERROR(M, ##__VA_ARGS__);                                                   \
+    mErrorListener.addError(node.getid(), flow.getid(), Format(M, ##__VA_ARGS__)); \
+    return std::any();                                                             \
   } while (false)
 
 namespace koda
@@ -36,6 +37,11 @@ namespace koda
 MakiToKoda::MakiToKoda(const koda::types::TypeRegistry* registry)
     : mTypeRegistry(registry)
 {
+}
+
+std::vector<MakiErrorListener::Error> MakiToKoda::getErrors() const
+{
+  return mErrorListener.mErrors;
 }
 
 Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes, QVector<const IParameter*> missionParameters)
@@ -265,7 +271,7 @@ Result<koda::PRosDef> MakiToKoda::buildRosDef(const IFlow& event)
     return Result<koda::PRosDef>::Failed("Unknown call type: {} in {}", (int)event.gettype(), event.getname());
 
   auto eventDef = std::make_shared<koda::EventDef>();
-  eventDef->typeName = Types::PropertyTypesToString(event.getreturnType()).toStdString();
+  eventDef->typeName = event.getreturnType().toString();
   eventDef->name = event.getname().toStdString();
 
   for (const auto& arg : event.getarguments())

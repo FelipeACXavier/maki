@@ -30,7 +30,8 @@ public:
    * @param root Project root directory as a QString.
    * @param parent Parent QObject, defaults to nullptr.
    */
-  HostServices(std::shared_ptr<IDocument> document, maki::IPipeline* pipeline, maki::ISettings* settings, const QString& root, QObject* parent = nullptr);
+  HostServices(std::shared_ptr<IDocument> document, maki::IPipeline* pipeline, maki::ISettings* settings, const QString& root,
+               QObject* parent = nullptr);
 
   /**
    * @brief Sets the plugin tab.
@@ -74,6 +75,8 @@ public:
    */
   QString projectRoot() const override;
 
+  void errorOnNode(const QString& nodeId, const QString& flowId, const QString& message) override;
+
   /**
    * @brief Returns the plugin tab.
    *
@@ -87,6 +90,9 @@ public:
    * @return maki::ILogging* Pointer to the logger.
    */
   maki::ILogging* logger() const override;
+
+signals:
+  void onErrorOnNode(const QString& nodeId, const QString& flowId, const QString& message);
 
 private:
   std::shared_ptr<IDocument> mDocument;  /// Shared pointer to the document.

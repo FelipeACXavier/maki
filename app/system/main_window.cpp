@@ -422,11 +422,14 @@ void MainWindow::bind()
   connect(rootCanvas(), &Canvas::flowRemoved, this, &MainWindow::onFlowRemoved);
 
   connect(mPropertiesMenu, &PropertiesMenu::flowSelected, rootCanvas(), &Canvas::onFlowSelected);
+  connect(mHostServices, &HostServices::onErrorOnNode, this,
+          [this](const QString& nodeId, const QString& flowId, const QString& message) { rootCanvas()->onFocusNode(flowId, nodeId, message); });
 
   connect(mSystemMenu, &SystemMenu::flowSelected, rootCanvas(), &Canvas::onFlowSelected);
   connect(mSystemMenu, &SystemMenu::flowRemoved, rootCanvas(), &Canvas::onFlowRemoved);
   connect(mSystemMenu, &SystemMenu::nodeRemoved, rootCanvas(), &Canvas::onRemoveNode);
-  connect(mSystemMenu, &SystemMenu::nodeFocused, rootCanvas(), &Canvas::onFocusNode);
+  connect(mSystemMenu, &SystemMenu::nodeFocused, this,
+          [this](const QString& nodeId, const QString& flowId) { rootCanvas()->onFocusNode(flowId, nodeId, ""); });
 
   connect(mPropertiesMenu, &PropertiesMenu::flowRemoved, rootCanvas(), &Canvas::onFlowRemoved);
 
@@ -1451,7 +1454,7 @@ void MainWindow::closeCanvasTab(int index)
   mCanvasPanel->removeTab(index);
 }
 
-void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId)
+void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId, const QString& message)
 {
   QString flowName;
   if (flow == nullptr)
@@ -1498,7 +1501,7 @@ void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId)
       if (!nodeId.isEmpty())
         if (auto* view = qobject_cast<CanvasView*>(mCanvasPanel->currentWidget()))
           if (auto* canvas = qobject_cast<Canvas*>(view->scene()))
-            canvas->onFocusNode("", nodeId);
+            canvas->onFocusNode("", nodeId, message);
       return;
     }
   }
@@ -1528,7 +1531,7 @@ void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId)
   canvas->populate(*flow->config());
 
   if (!nodeId.isEmpty())
-    canvas->onFocusNode("", nodeId);
+    canvas->onFocusNode("", nodeId, message);
 }
 
 void MainWindow::addPluginTab(const QString& name, PluginView* view)

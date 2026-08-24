@@ -14,6 +14,7 @@
 #include "types.h"
 
 class Flow;
+class CanvasMessage;
 class QGraphicsSceneMouseEvent;
 
 /**
@@ -65,6 +66,9 @@ public:
    */
   QRectF nodeRect() const override;
   QRectF sceneNodeRect() const;
+
+  void highlight(const QColor& color, const QString& message, int durationMs = 1000);
+  void dismissHighlight();
 
   /**
    * @brief Returns the shape of this item.
@@ -399,6 +403,7 @@ private:
   QVector<Flow*> mFlows;              /// List of flows associated with this node.
   NodeItem* mParentNode;              /// Parent node of this item, if any.
   QVector<NodeItem*> mChildrenNodes;  /// List of child nodes.
+  CanvasMessage* mHighlightMessage = nullptr;
 
   qreal mBaseScale;             /// Base scale for the node.
   QSizeF mSize{0, 0};           /// Current size of the node.

@@ -22,6 +22,8 @@ public:
   virtual IUI* ui() const = 0;
   virtual ILogging* logger() const = 0;
 
+  virtual void errorOnNode(const QString& nodeId, const QString& flowId, const QString& message) = 0;
+
   // Optional later: logger(), settings(), uiHooks(), etc.
 };
 

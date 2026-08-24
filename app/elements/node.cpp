@@ -1,5 +1,6 @@
 #include "node.h"
 
+#include <QGraphicsDropShadowEffect>
 #include <QGraphicsScene>
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsView>
@@ -14,6 +15,7 @@
 
 #include "app_configs.h"
 #include "app_paths.h"
+#include "canvas_message.h"
 #include "flow.h"
 #include "logging.h"
 #include "style_helpers.h"
@@ -123,6 +125,55 @@ QRectF NodeItem::nodeRect() const
 QRectF NodeItem::sceneNodeRect() const
 {
   return mapRectToScene(nodeRect());
+}
+
+void NodeItem::highlight(const QColor& color, const QString& message, int durationMs)
+{
+  auto* glow = new QGraphicsDropShadowEffect();
+  glow->setOffset(0, 0);
+  glow->setBlurRadius(16);
+  glow->setColor(color);
+
+  setGraphicsEffect(glow);
+
+  // Persistent message
+  if (!message.isEmpty())
+  {
+    if (!mHighlightMessage)
+    {
+      mHighlightMessage = new CanvasMessage(message, [this]() { dismissHighlight(); }, this);
+      if (!mHighlightMessage)
+        return;
+
+      // Centered on top
+      constexpr qreal spacing = 10.0;
+      const QRectF messageRect = mHighlightMessage->boundingRect();
+      const qreal x = nodeRect().center().x() - messageRect.width() / 2.0;
+      const qreal y = nodeRect().top() - messageRect.height() - spacing;
+      mHighlightMessage->setPos(x, y);
+    }
+    else
+    {
+      mHighlightMessage->setMessage(message);
+      mHighlightMessage->show();
+    }
+  }
+  else
+  {
+    QTimer::singleShot(durationMs, [this]() {
+      setGraphicsEffect(nullptr);
+      update();
+    });
+  }
+}
+
+void NodeItem::dismissHighlight()
+{
+  if (mHighlightMessage)
+    mHighlightMessage->hide();
+
+  setGraphicsEffect(nullptr);
+  update();
 }
 
 void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget)
