@@ -10,6 +10,7 @@
 #include "typing/type_reference.h"
 
 class QLineEdit;
+class QToolButton;
 class QSpinBox;
 class QPushButton;
 class QLabel;
@@ -33,6 +34,7 @@ class ColorEditor;
 namespace maki
 {
 class WidgetGroup;
+class ClickableLabel;
 
 void addCompleter(const QStringList& items, QWidget* parent);
 
@@ -206,6 +208,7 @@ public:
   void addDescription(const QString& text);
   void setToolTip(const QString& text);
 
+  void setType(const koda::types::TypeReference& type);
   void setValue(const Value& value);
   Value getValue() const;
 
@@ -216,13 +219,25 @@ public:
     return {mInputField};
   }
 
+  bool isReference() const;
+  void setReference(const QString& id);
+  void clearReference();
+  void setSupportedReferences(const QVector<MissionParameter>& parameters);
+
 signals:
   void valueChanged();
+  void openParameter(const QString& parameter);
 
 protected:
+  koda::types::TypeReference mType;
   Value mValue{};
   QWidget* mInputField = nullptr;
+  QMenu* mParameterMenu;
+  ClickableLabel* mParameterLabel = nullptr;
+  QToolButton* mParameterButton = nullptr;
+  QHBoxLayout* mContainerLayout = nullptr;
 
+  void createReferenceWidgets();
   QWidget* createLayout(oclero::qlementine::Label* label, WidgetAlignment alignment);
 };
 

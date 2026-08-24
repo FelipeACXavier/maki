@@ -9,6 +9,7 @@
 #include <QHBoxLayout>
 #include <QIntValidator>
 #include <QLineEdit>
+#include <QMenu>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QScrollBar>
@@ -16,15 +17,16 @@
 #include <QSpinBox>
 #include <QTableWidget>
 #include <QTimer>
+#include <QToolButton>
 #include <QToolTip>
 #include <oclero/qlementine.hpp>
 #include <oclero/qlementine/widgets/ColorEditor.hpp>
 #include <oclero/qlementine/widgets/IconWidget.hpp>
-#include <oclero/qlementine/widgets/Label.hpp>
 #include <oclero/qlementine/widgets/LineEdit.hpp>
 #include <variant>
 
 #include "app_configs.h"
+#include "clickable_label.h"
 #include "oclero/qlementine/Common.hpp"
 #include "style_helpers.h"
 #include "type_registry.h"
@@ -51,6 +53,16 @@ static const int TOOLTIP_HEIGHT = 55;
     Value val;                  \
     val.data = DATA;            \
     InputWidget::setValue(val); \
+  } while (false);
+
+#define SET_REF_OR_VALUE(WIDGET, VALUE, CONVERSION) \
+  do                                                \
+  {                                                 \
+    if (VALUE.isReference())                        \
+      WIDGET->setReference(VALUE.toString());       \
+    else                                            \
+      WIDGET->setValue(VALUE.CONVERSION());         \
+    WIDGET->setType(type);                          \
   } while (false);
 
 namespace maki
@@ -300,14 +312,16 @@ InputWidget::InputWidget(const QString& label, QWidget* inputField, WidgetAlignm
       if (labelWidget && alignment.labelWidth > 0)
         labelWidget->setFixedWidth(alignment.labelWidth);
 
-      layout()->addWidget(createLayout(labelWidget, alignment));
+      vLayout->addWidget(createLayout(labelWidget, alignment));
     }
     else
     {
       if (labelWidget)
         layout()->addWidget(labelWidget);
 
-      layout()->addWidget(mInputField);
+      mContainerLayout = new QHBoxLayout();
+      mContainerLayout->addWidget(mInputField, 1);
+      vLayout->addLayout(mContainerLayout);
     }
   }
 }
@@ -316,6 +330,11 @@ void InputWidget::setValue(const Value& value)
 {
   mValue = value;
   writeValueToWidget(value);
+}
+
+void InputWidget::setType(const koda::types::TypeReference& type)
+{
+  mType = type;
 }
 
 Value InputWidget::getValue() const
@@ -335,23 +354,23 @@ void InputWidget::addDescription(const QString& text)
 QWidget* InputWidget::createLayout(oclero::qlementine::Label* labelWidget, WidgetAlignment alignment)
 {
   auto* container = new QWidget(this);
-  auto* hLayout = new QHBoxLayout(container);
-  hLayout->setContentsMargins(0, 0, 0, 0);
-  hLayout->setSpacing(WIDGET_SPACING);
+  mContainerLayout = new QHBoxLayout(container);
+  mContainerLayout->setContentsMargins(0, 0, 0, 0);
+  mContainerLayout->setSpacing(WIDGET_SPACING);
 
   if (alignment.direction == WidgetAlignment::Direction::RIGHT || alignment.direction == WidgetAlignment::Direction::CENTER)
-    hLayout->addStretch();
+    mContainerLayout->addStretch();
 
   if (labelWidget)
-    hLayout->addWidget(labelWidget);
+    mContainerLayout->addWidget(labelWidget);
 
   if (labelWidget && alignment.direction == WidgetAlignment::Direction::SPREAD)
-    hLayout->addStretch();
+    mContainerLayout->addStretch();
 
-  hLayout->addWidget(mInputField);
+  mContainerLayout->addWidget(mInputField, 1);
 
   if (alignment.direction == WidgetAlignment::Direction::LEFT || alignment.direction == WidgetAlignment::Direction::CENTER)
-    hLayout->addStretch();
+    mContainerLayout->addStretch();
 
   return container;
 }
@@ -363,6 +382,106 @@ void InputWidget::setToolTip(const QString& text)
 
   mInputField->setToolTip(text);
   mInputField->setToolTipDuration(Constants::TOOLTIP_DURATION);
+}
+
+void InputWidget::createReferenceWidgets()
+{
+  if (!mParameterLabel)
+  {
+    mParameterLabel = new ClickableLabel(this);
+    mParameterLabel->setRole(oclero::qlementine::TextRole::H5);
+    mParameterLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    mParameterLabel->hide();
+
+    if (mContainerLayout)
+      mContainerLayout->addWidget(mParameterLabel, 1);
+  }
+
+  if (!mParameterButton)
+  {
+    mParameterButton = new QToolButton(this);
+    mParameterButton->setIcon(QIcon(":/icons/bars.svg"));
+    mParameterButton->setIconSize(Config::SMALL_BUTTON_SIZE);
+    mParameterButton->setFixedSize(Config::MEDIUM_SMALL_BUTTON_SIZE);
+    mParameterButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    mParameterButton->setToolTip(tr("Use mission parameter"));
+
+    mParameterMenu = new QMenu(mParameterButton);
+    mParameterMenu->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+
+    connect(mParameterButton, &QToolButton::clicked, this, [this] {
+      if (!mParameterButton || !mParameterMenu)
+        return;
+
+      const auto pos = mParameterButton->mapToGlobal(QPoint(0, mParameterButton->height()));
+      mParameterMenu->popup(pos);
+    });
+
+    if (mContainerLayout)
+      mContainerLayout->addWidget(mParameterButton, 0, Qt::AlignTop);
+  }
+}
+
+void InputWidget::setSupportedReferences(const QVector<MissionParameter>& parameters)
+{
+  createReferenceWidgets();
+
+  mParameterMenu->clear();
+  for (const auto& parameter : parameters)
+  {
+    auto action = mParameterMenu->addAction(parameter.getname());
+    connect(action, &QAction::triggered, this, [this, name = parameter.getname()] { setReference(name); });
+  }
+
+  mParameterMenu->addSeparator();
+  auto* clearAction = mParameterMenu->addAction(tr("Use literal value"));
+  connect(clearAction, &QAction::triggered, this, [this] { clearReference(); });
+}
+
+bool InputWidget::isReference() const
+{
+  return mValue.isReference();
+}
+
+void InputWidget::setReference(const QString& id)
+{
+  Value value;
+  value.data = ValueReference{id.toStdString()};
+
+  createReferenceWidgets();
+
+  if (mParameterLabel)
+  {
+    disconnect(mParameterLabel, &ClickableLabel::clicked, this, nullptr);
+    connect(mParameterLabel, &ClickableLabel::clicked, this, [this, id] { emit openParameter(id); });
+    mParameterLabel->setText(id);
+    mParameterLabel->show();
+  }
+
+  if (mInputField)
+    mInputField->hide();
+
+  setValue(value);
+  emit valueChanged();
+}
+
+void InputWidget::clearReference()
+{
+  if (!mValue.isReference())
+    return;
+
+  if (mParameterLabel)
+  {
+    mParameterLabel->setText("");
+    mParameterLabel->hide();
+  }
+
+  if (mInputField)
+    mInputField->show();
+
+  auto literal = Value::defaultValue(mType);
+  setValue(literal);
+  emit valueChanged();
 }
 
 // =========================================================================================================
@@ -381,6 +500,7 @@ BooleanWidget::BooleanWidget(const QString& label, bool value, WidgetAlignment a
   }
 
   setValue(value);
+  ;
 }
 
 bool BooleanWidget::getValue() const
@@ -446,6 +566,7 @@ StringWidget::StringWidget(const QString& label, const QString& placeholder, Wid
   }
 
   setValue(placeholder);
+  ;
 }
 
 QString StringWidget::getValue() const
@@ -501,6 +622,7 @@ IntegerWidget::IntegerWidget(const QString& label, const QString& placeholder, W
   }
 
   setValue(placeholder);
+  ;
 }
 
 void IntegerWidget::setAcceptVariable(bool accept)
@@ -546,7 +668,12 @@ void IntegerWidget::setValue(int value)
 void IntegerWidget::writeValueToWidget(const Value& value)
 {
   if (auto* edit = qobject_cast<QLineEdit*>(mInputField))
-    edit->setText(value.toString());
+  {
+    if (value.isReference())
+      edit->setText(QString::fromStdString(value.toReference().id));
+    else
+      edit->setText(value.toString());
+  }
 }
 
 // ========================================================================================================================================
@@ -584,6 +711,7 @@ FloatWidget::FloatWidget(const QString& label, const QString& placeholder, Widge
   }
 
   setValue(placeholder);
+  ;
 }
 
 void FloatWidget::setAcceptVariable(bool accept)
@@ -629,7 +757,12 @@ void FloatWidget::setValue(const QString& value)
 void FloatWidget::writeValueToWidget(const Value& value)
 {
   if (auto* edit = qobject_cast<QLineEdit*>(mInputField))
-    edit->setText(value.toString());
+  {
+    if (value.isReference())
+      edit->setText(QString::fromStdString(value.toReference().id));
+    else
+      edit->setText(value.toString());
+  }
 }
 
 // ========================================================================================================================================
@@ -967,6 +1100,8 @@ ListWidget::ListWidget(const QString& label, const koda::types::TypeReference& e
     group->addStretch();
     group->addLayout(browserButtons);
   }
+
+  ;
 }
 
 ListValue ListWidget::getValue() const
@@ -1241,6 +1376,8 @@ void RecordWidget::writeValueToWidget(const Value& value)
 
 void RecordWidget::clear()
 {
+  mEditors.clear();
+
   if (auto* group = qobject_cast<maki::WidgetGroup*>(mInputField))
     group->clear();
 }
@@ -1271,13 +1408,13 @@ InputWidget* ValueEditorFactory::create(const QString& label, const koda::types:
   if (type.kind() == koda::types::TypeReferenceKind::List)
   {
     auto* editor = new maki::ListWidget(QString::fromStdString(type.toString()), type.elementType(), alignment, parent);
-    editor->setValue(value.toList());
+    SET_REF_OR_VALUE(editor, value, toList)
     return editor;
   }
   else if (type.kind() == koda::types::TypeReferenceKind::Map)
   {
     auto* editor = new maki::MapWidget(QString::fromStdString(type.toString()), type.mapKeyType(), type.mapValueType(), alignment, parent);
-    editor->setValue(value.toMap());
+    SET_REF_OR_VALUE(editor, value, toMap)
     return editor;
   }
 
@@ -1290,20 +1427,36 @@ InputWidget* ValueEditorFactory::create(const QString& label, const koda::types:
     auto kind = definition->primitive().primitive;
 
     if (koda::types::isInteger(kind))
-      return new maki::IntegerWidget(label, QString::number(value.toInt()), alignment, parent);
+    {
+      auto* editor = new maki::IntegerWidget(label, value.toString(), alignment, parent);
+      SET_REF_OR_VALUE(editor, value, toInt)
+      return editor;
+    }
     else if (koda::types::isFloatingPoint(kind))
-      return new maki::FloatWidget(label, QString::number(value.toDouble()), alignment, parent);
+    {
+      auto* editor = new maki::FloatWidget(label, value.toString(), alignment, parent);
+      SET_REF_OR_VALUE(editor, value, toDouble)
+      return editor;
+    }
     else if (kind == koda::types::PrimitiveKind::String)
-      return new maki::StringWidget(label, value.toString(), alignment, parent);
+    {
+      auto* editor = new maki::StringWidget(label, value.toString(), alignment, parent);
+      SET_REF_OR_VALUE(editor, value, toString)
+      return editor;
+    }
     else if (kind == koda::types::PrimitiveKind::Bool)
-      return new maki::BooleanWidget(label, value.toBool(), alignment, parent);
+    {
+      auto* editor = new maki::BooleanWidget(label, value.toBool(), alignment, parent);
+      SET_REF_OR_VALUE(editor, value, toBool)
+      return editor;
+    }
     else
       return new maki::StringWidget("Other", "-", alignment, parent);
   }
   else if (definition->isRecord())
   {
     auto* editor = new maki::RecordWidget(QString::fromStdString(definition->name.toString()), definition->record(), alignment, parent);
-    editor->setValue(value.toRecord());
+    SET_REF_OR_VALUE(editor, value, toRecord)
     return editor;
   }
   else if (definition->isAlias())
@@ -1313,7 +1466,7 @@ InputWidget* ValueEditorFactory::create(const QString& label, const koda::types:
   else if (definition->isEnum())
   {
     auto* editor = new EnumWidget(QString::fromStdString(definition->name.toString()), definition->enumeration(), alignment, parent);
-    editor->setValue(value.toString());
+    SET_REF_OR_VALUE(editor, value, toString)
     return editor;
   }
 

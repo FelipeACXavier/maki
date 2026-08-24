@@ -102,7 +102,7 @@ QVector<QGraphicsItem*> BehaviourCanvas::cleanTransitionsOfNode(const QString& n
 
 void BehaviourCanvas::addTransition(TransitionItem* transition)
 {
-  LOG_INFO("Adding transition: {} {}", transition->getName(), transition->getEvent());
+  LOG_TRACE("Adding transition: {} {}", transition->getName(), transition->getEvent());
   mFlow->addTransition(transition);
 }
 

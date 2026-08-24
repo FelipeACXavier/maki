@@ -519,6 +519,8 @@ VoidResult PropertiesMenu::loadCallArguments(const std::shared_ptr<FlowSaveInfo>
       node->setProperty(propertyId, maki::Value::createRecord(valueRecord));
     });
 
+    connect(editor, &maki::InputWidget::openParameter, this, [this](const QString& parameterId) { emit openParameter(parameterId); });
+
     // Make sure there is an inital value there
     editor->setValue(value);
   }
@@ -536,24 +538,27 @@ void PropertiesMenu::addCompleter(maki::InputWidget* editor, const QString& node
   if (!editor || !mStorage)
     return;
 
-  auto variables = std::move(additionalValues);
+  if (auto* intEditor = qobject_cast<maki::IntegerWidget*>(editor))
+    intEditor->setAcceptVariable(true);
+  if (auto* realEditor = qobject_cast<maki::FloatWidget*>(editor))
+    realEditor->setAcceptVariable(true);
 
-  for (const auto& state : mStorage->getPossibleStates(nodeId))
-  {
-    if (!state)
-      continue;
+  QVector<maki::MissionParameter> variables = {};  // std::move(additionalValues);
+  for (const auto& parameter : mStorage->missionParameters())
+    if (parameter.gettype().structurallyEquals(type))
+    {
+      LOG_DEBUG("Adding variable: {} {}", parameter.getname(), maki::asValue(parameter.getvalue())->toReadable());
+      variables.append(parameter);
+    }
 
-    if (state->gettype().structurallyEquals(type))
-      variables.append(state->getid());
-  }
-
-  variables.removeDuplicates();
+  // variables.removeDuplicates();
   if (variables.isEmpty())
     return;
 
-  for (auto* widget : editor->focusWidgets())
-    if (widget)
-      maki::addCompleter(variables, widget);
+  editor->setSupportedReferences(variables);
+  // for (auto* widget : editor->focusWidgets())
+  //   if (widget)
+  //     maki::addCompleter(variables, widget);
 }
 
 VoidResult PropertiesMenu::loadControls(NodeItem* node)

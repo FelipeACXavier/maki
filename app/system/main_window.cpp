@@ -435,6 +435,13 @@ void MainWindow::bind()
           [this](const QString& nodeId, const QString& flowId) { rootCanvas()->onFocusNode(flowId, nodeId, ""); });
 
   connect(mPropertiesMenu, &PropertiesMenu::flowRemoved, rootCanvas(), &Canvas::onFlowRemoved);
+  connect(mPropertiesMenu, &PropertiesMenu::openParameter, this, [this](const QString& parameterId) {
+    if (mBottomNavigation)
+      mBottomNavigation->setCurrentIndex(2);
+
+    if (mMissionParameters)
+      mMissionParameters->editParameter(parameterId);
+  });
 
   connect(mFileMenu, &GeneratedFilesPanel::openExternallyRequested, this, &MainWindow::addEditorTab);
 
@@ -951,7 +958,7 @@ void MainWindow::onActionGenerate(const QString& pipelineId)
   // If we are running, then we should cancel
   if (mPluginPipeline->isRunning())
   {
-    LOG_WARN_ON_FAILURE(mPluginPipeline->abort());
+    QTimer::singleShot(0, [this] { LOG_WARN_ON_FAILURE(mPluginPipeline->abort()); });
     return;
   }
 

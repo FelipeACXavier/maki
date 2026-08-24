@@ -26,7 +26,8 @@ public:
     List,
     Map,
     Color,
-    QString
+    QString,
+    Reference
   };
 
   using IValuePtr = std::shared_ptr<IValue>;

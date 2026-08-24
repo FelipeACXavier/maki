@@ -16,6 +16,7 @@ public:
   MissionParameterWidget(QWidget* parent = nullptr);
 
   void addParameter();
+  void editParameter(const QString& parameterId);
 
   void setParameters(QVector<MissionParameter> parameters);
 

@@ -21,10 +21,15 @@ using MapValue = std::map<Value, Value>;
 using RecordValue = std::map<std::string, Value>;
 using ValueMap = std::map<QString, Value>;
 
+struct ValueReference
+{
+  std::string id;
+};
+
 class Value : public IValue
 {
 public:
-  std::variant<std::monostate, bool, int, double, std::string, RecordValue, ListValue, MapValue, QColor, QString> data;
+  std::variant<std::monostate, bool, int, double, std::string, RecordValue, ListValue, MapValue, QColor, QString, ValueReference> data;
 
   static Value createBool(bool value);
   static Value createInt(int value);
@@ -41,6 +46,7 @@ public:
   bool isList() const;
   bool isRecord() const;
   bool isMap() const;
+  bool isReference() const;
 
   bool toBool() const;
   int toInt() const;
@@ -49,6 +55,7 @@ public:
   RecordValue toRecord() const;
   ListValue toList() const;
   MapValue toMap() const;
+  ValueReference toReference() const;
 
   QString toReadable() const;
 

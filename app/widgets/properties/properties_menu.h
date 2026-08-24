@@ -70,6 +70,7 @@ public:
   QLayout* layout() const;
 
 signals:
+  void openParameter(const QString& parameterId);
   void nodeFocused(const QString& nodeId);
   void flowSelected(const QString& flowId, const QString& nodeId);
   void flowRemoved(const QString& flowId, const QString& nodeId);

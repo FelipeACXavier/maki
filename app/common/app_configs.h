@@ -21,13 +21,15 @@ static const int CONNECTOR_RADIUS = 5;        /// Radius of connectors in pixels
 static const qreal MINIMUM_NODE_SIZE = 50;    /// Minimum size of a node.
 static const qreal OPACITY_THRESHOLD = 0.25;  /// Opacity threshold for visibility.
 
-static const int LONG_LABEL_WIDTH = 85;                                  /// Width of a controller label
-static const int SHORT_LABEL_WIDTH = 75;                                 /// Width of a controller label
-static const int CONTENT_PADDING = 5;                                    /// Padding around content.
-static const int SMALL_BUTTON = 16;                                      /// Width and height of a small button
-static const QSize SMALL_BUTTON_SIZE = {SMALL_BUTTON, SMALL_BUTTON};     /// Size of a small button
-static const int MEDIUM_BUTTON = 30;                                     /// Width and height of a medium button
-static const QSize MEDIUM_BUTTON_SIZE = {MEDIUM_BUTTON, MEDIUM_BUTTON};  /// Size of a medium button
+static const int LONG_LABEL_WIDTH = 85;                                                    /// Width of a controller label
+static const int SHORT_LABEL_WIDTH = 75;                                                   /// Width of a controller label
+static const int CONTENT_PADDING = 5;                                                      /// Padding around content.
+static const int SMALL_BUTTON = 16;                                                        /// Width and height of a small button
+static const QSize SMALL_BUTTON_SIZE = {SMALL_BUTTON, SMALL_BUTTON};                       /// Size of a small button
+static const int MEDIUM_SMALL_BUTTON = 24;                                                 /// Width and height of a medium button
+static const QSize MEDIUM_SMALL_BUTTON_SIZE = {MEDIUM_SMALL_BUTTON, MEDIUM_SMALL_BUTTON};  /// Size of a medium button
+static const int MEDIUM_BUTTON = 30;                                                       /// Width and height of a medium button
+static const QSize MEDIUM_BUTTON_SIZE = {MEDIUM_BUTTON, MEDIUM_BUTTON};                    /// Size of a medium button
 
 extern QColor FOREGROUND;  /// Foreground color.
 extern QColor HIGHLIGHT;   /// Highlight color.

@@ -139,6 +139,25 @@ void MissionParameterWidget::addParameter()
   emit parametersChanged();
 }
 
+void MissionParameterWidget::editParameter(const QString& parameterId)
+{
+  if (!mStorage)
+  {
+    LOG_WARNING("Something went wrong when editing parameter, no database available");
+    return;
+  }
+
+  for (int i = 0; i < mStorage->missionParameters().size(); ++i)
+  {
+    const auto& param = mStorage->getParameter(i);
+    if (param.name != parameterId)
+      continue;
+
+    editParameter(i);
+    break;
+  }
+}
+
 void MissionParameterWidget::editParameter(int index)
 {
   if (!mStorage)

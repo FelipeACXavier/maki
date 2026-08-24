@@ -131,6 +131,8 @@ QString Value::toString() const
     return std::get<bool>(data) ? "true" : "false";
   else if (std::holds_alternative<QColor>(data))
     return std::get<QColor>(data).name();
+  else if (std::holds_alternative<ValueReference>(data))
+    return QString::fromStdString(std::get<ValueReference>(data).id);
   else
     return QString();
 }
@@ -157,6 +159,11 @@ MapValue Value::toMap() const
     return std::get<MapValue>(data);
   else
     return MapValue{};
+}
+
+ValueReference Value::toReference() const
+{
+  return isReference() ? std::get<ValueReference>(data) : ValueReference{};
 }
 
 QString Value::toReadable() const
@@ -391,6 +398,11 @@ bool Value::isMap() const
   return kind() == IValue::Kind::Map;
 }
 
+bool Value::isReference() const
+{
+  return kind() == IValue::Kind::Reference;
+}
+
 bool Value::toBoolValue() const
 {
   return toBool();
@@ -472,6 +484,13 @@ QJsonObject Value::toJson() const
     {
       json["kind"] = "color";
       json["value"] = std::get<QColor>(data).name(QColor::HexArgb);
+      break;
+    }
+
+    case IValue::Kind::Reference:
+    {
+      json["kind"] = "reference";
+      json["value"] = QString::fromStdString(std::get<ValueReference>(data).id);
       break;
     }
 
@@ -557,6 +576,10 @@ Value Value::fromJson(const QJsonObject& json)
   else if (kind == "color")
   {
     result.data = QColor(data.toString());
+  }
+  else if (kind == "reference")
+  {
+    result.data = ValueReference{.id = data.toString().toStdString()};
   }
   else if (kind == "record")
   {
@@ -725,6 +748,12 @@ QDataStream& operator<<(QDataStream& out, const maki::Value& value)
       break;
     }
 
+    case IValue::Kind::Reference:
+    {
+      const auto ref = value.toReference();
+      out << QString::fromStdString(ref.id);
+    }
+
     case IValue::Kind::Invalid:
       break;
   }
@@ -851,6 +880,13 @@ QDataStream& operator>>(QDataStream& in, maki::Value& value)
 
       value.data = std::move(map);
       break;
+    }
+
+    case IValue::Kind::Reference:
+    {
+      QString ref;
+      in >> ref;
+      value.data = ValueReference{.id = ref.toStdString()};
     }
 
     case IValue::Kind::Invalid:
