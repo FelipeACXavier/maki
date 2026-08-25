@@ -63,6 +63,7 @@ add_library(${PLUGIN_NAME} SHARED
   src/actions/build_project.cpp
   src/actions/copy_sources.cpp
   ${JSON_FILE}
+  assets/icon.svg
 )
 
 target_link_libraries(${PLUGIN_NAME} PRIVATE
