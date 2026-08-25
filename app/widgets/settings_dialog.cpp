@@ -15,6 +15,7 @@
 #include <QSpinBox>
 #include <QStackedWidget>
 #include <QStandardItemModel>
+#include <QSvgWidget>
 #include <QTableView>
 #include <QToolButton>
 #include <QTreeWidget>
@@ -101,7 +102,11 @@ SettingsDialog::SelectorPage SettingsDialog::addPage(const QString& pageName, co
   headerRow->setContentsMargins(10, 0, 10, 0);
 
   auto icon = iconFromTheme(iconName, true);
-  auto* titleIcon = new oclero::qlementine::IconWidget(icon, QSize(16, 16), page);
+  auto iconPath = AppPaths::icon(iconName + ".svg");
+
+  // We use an svg widget here so we can show the icon colours
+  auto* titleIcon = new QSvgWidget(iconPath, page);
+  titleIcon->setFixedSize(Config::MEDIUM_BUTTON_SIZE);
   auto* title = new oclero::qlementine::Label(pageName, page);
   title->setRole(oclero::qlementine::TextRole::H3);
 
@@ -112,7 +117,7 @@ SettingsDialog::SelectorPage SettingsDialog::addPage(const QString& pageName, co
 
   connect(resetButton, &QPushButton::pressed, resetCallback);
 
-  headerRow->addWidget(titleIcon);
+  headerRow->addWidget(titleIcon, 0, Qt::AlignVCenter);
   headerRow->addWidget(title);
   headerRow->addStretch();
   headerRow->addWidget(resetButton);
@@ -468,6 +473,9 @@ VoidResult SettingsDialog::createPluginPages()
   // Go through all the plugins and build the page
   for (const auto& plugin : mPluginSettings.plugins)
   {
+    if (!plugin.registered)
+      continue;
+
     auto pluginId = plugin.name;
     auto settings = plugin.settings;
 
@@ -493,12 +501,7 @@ VoidResult SettingsDialog::createPluginPages()
     item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled | Qt::ItemIsUserCheckable);
     model->setItem(newRow, 2, item);
 
-    auto [selector, page] = addPage(
-        pluginId, plugin.icon,
-        [] {
-          // mSettingsManager->setGeneration(GenerationSettings());
-        },
-        topSelector);
+    auto [selector, page] = addPage(pluginId, plugin.icon, nullptr, topSelector);
 
     QVBoxLayout* layout = page->findChild<QVBoxLayout*>("ContentArea");
     layout->setSpacing(2);
@@ -599,6 +602,7 @@ void SettingsDialog::apply()
 
 void SettingsDialog::updatePluginSetting(const QString& pluginId, const QString& key, QVariant value)
 {
+  LOG_DEBUG("Updating plugin {} with {}", pluginId, key);
   for (auto& plugin : mPluginSettings.plugins)
   {
     if (plugin.name != pluginId)
@@ -611,4 +615,6 @@ void SettingsDialog::updatePluginSetting(const QString& pluginId, const QString&
         return;
       }
   }
+
+  LOG_DEBUG("Could not find it");
 }

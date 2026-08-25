@@ -53,8 +53,8 @@ struct AppearanceSettings
   int nodeCornerRadius = 8;             /// Node corner radius.
   bool startLogFilterExpanded = true;   /// Start the log table filters collapsed or expanded.
   oclero::qlementine::Theme themeVars;  /// Theme variables.
-  int numberOfColumns = 1;
-  int edgeShape = 0;
+  int numberOfColumns = 2;              /// The number of columns to use in the node paletter
+  int edgeShape = 0;                    /// The shape of the transition arrows
 
   bool operator!=(const AppearanceSettings& s) const
   {
@@ -88,6 +88,7 @@ struct PluginInfo
   maki::PluginVersion version;           /// Version of the plugin.
   QVector<maki::SettingField> settings;  /// Settings for the plugin.
   QString icon;
+  bool registered;
 
   bool operator==(const PluginInfo& s) const
   {

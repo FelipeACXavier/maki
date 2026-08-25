@@ -135,6 +135,7 @@ void SettingsManager::load()
 
   mSettings.beginGroup("Plugins");
   LOAD_SETTING(mPluginSettings, defaultPlugin, String);
+  LOAD_SETTING(mPluginSettings, showCombinedLogs, Bool);
   const QStringList pluginGroups = mSettings.childGroups();
   for (const QString& pg : pluginGroups)
   {
@@ -145,6 +146,7 @@ void SettingsManager::load()
     info.enabled = mSettings.value("enabled", info.enabled).toBool();
     info.version = maki::PluginVersion::fromString(mSettings.value("version", "").toString());
     info.icon = mSettings.value("icon", "").toString();
+    info.registered = false;
 
     const QStringList settingGroups = mSettings.childGroups();
     info.settings.resize(settingGroups.size());
@@ -204,9 +206,7 @@ void SettingsManager::save()
   SAVE_SETTING(mGeneral, lastOpenFileDir);
   mSettings.beginGroup("RecentFiles");
   for (int i = 0; i < mGeneral.recentFiles.size(); ++i)
-  {
     mSettings.setValue(QString("%1").arg(i), mGeneral.recentFiles.at(i));
-  }
   mSettings.endGroup();  // RecentFiles
   mSettings.endGroup();  // General
 
@@ -228,8 +228,12 @@ void SettingsManager::save()
 
   mSettings.beginGroup("Plugins");
   SAVE_SETTING(mPluginSettings, defaultPlugin);
+  SAVE_SETTING(mPluginSettings, showCombinedLogs);
   for (const auto& plugin : plugins().plugins)
   {
+    if (!plugin.registered || plugin.name.isEmpty())
+      continue;
+
     mSettings.beginGroup(plugin.name);
     mSettings.setValue("name", plugin.name);
     mSettings.setValue("version", plugin.version.toString());
@@ -331,10 +335,8 @@ void SettingsManager::addRecentFile(const QString& s)
 QVector<maki::SettingField> SettingsManager::getPluginSettings(const QString& id) const
 {
   for (const auto& plugin : plugins().plugins)
-  {
     if (plugin.name == id)
       return plugin.settings;
-  }
 
   return {};
 }
@@ -354,6 +356,7 @@ VoidResult SettingsManager::registerSettings(const QString& id, const maki::Plug
       continue;
 
     exists = true;
+    plugin.registered = true;  // Make sure the settings are loaded since the plugin registered
 
     if (plugin.version != version)
     {
@@ -387,7 +390,14 @@ VoidResult SettingsManager::registerSettings(const QString& id, const maki::Plug
   if (!exists)
   {
     LOG_DEBUG("Registering plugin \"{}\" settings", id);
-    mPluginSettings.plugins.append({id, true, version, settings, fixedIconPath});
+    mPluginSettings.plugins.append({
+        .name = id,
+        .enabled = true,
+        .version = version,
+        .settings = settings,
+        .icon = fixedIconPath,
+        .registered = true,
+    });
   }
   else
   {
