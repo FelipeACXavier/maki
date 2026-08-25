@@ -309,8 +309,6 @@ Result<ir::PStrategy> IRBuilder::buildStrategy(const PStrategy& strategy, Symbol
   out->id = std::format("{}_{}", strategy->id, owner);
   if (mTraceMap)
     mTraceMap->mapIr(out->id, strategy->id);
-  else
-    LOG_WARNING("No traceability map available");
 
   return out;
 }

@@ -215,7 +215,6 @@ void NodeItem::showSimulationControls(QWidget* controls, const QColor& highlight
 
     constexpr qreal spacing = 10.0;
     const QRectF controlRect = mControlWidget->boundingRect();
-    LOG_DEBUG("Final control size: {}x{}", controlRect.width(), controlRect.height());
     const qreal x = nodeRect().center().x() - controlRect.width() / 2.0;
     const qreal y = nodeRect().top() - controlRect.height() - spacing;
     mControlWidget->setPos(x, y);

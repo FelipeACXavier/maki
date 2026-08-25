@@ -85,8 +85,10 @@ PluginManager::PluginManager(maki::PipelineActionRegistry* registry, Pipeline* p
 
 PluginManager::~PluginManager()
 {
-  if (mPlugin != nullptr)
-    mPlugin->tearDown();
+  for (const auto& plugin : mPlugins)
+    plugin.plugin->tearDown();
+
+  mPlugin = nullptr;
 }
 
 VoidResult PluginManager::start(const PluginSettings& settings, HostServices* services)
@@ -193,6 +195,9 @@ VoidResult PluginManager::loadPlugin(const QDir& pluginDir, const maki::Manifest
   LOG_DEBUG("Using asset path: {}", assets.absolutePath());
   if (assets.exists())
     codeGen->setAssetDir(assets);
+
+  if (!codeGen->setup())
+    return VoidResult::Failed("Could not setup plugin");
 
   // Register plugin actions in
   for (const auto& action : codeGen->pipelineActions())

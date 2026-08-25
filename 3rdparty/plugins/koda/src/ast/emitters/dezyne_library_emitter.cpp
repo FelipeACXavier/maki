@@ -209,6 +209,9 @@ VoidResult createSequenceComponent(Model& model, const std::string& outdir, uint
       out << "          reply(ret);\n";
       out << "        }\n";
     }
+    out << "          else {\n";
+    out << "            reply(Result.Success);\n";
+    out << "          }\n";
     out << "      }\n\n";
 
     out << "      on api.abort(): {\n";

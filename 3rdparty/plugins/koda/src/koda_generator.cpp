@@ -426,7 +426,8 @@ VoidResult KodaGenerator::verify(const maki::PipelineArtifact& artifact, const Q
   if (mServices->document()->getnodes().isEmpty())
     return VoidResult::Failed("Nothing to verify");
 
-  setup();
+  if (!setup())
+    return VoidResult::Failed("Failed to setup the daemon");
 
   const QStringList inputFiles = artifact.metadata["sources"].toStringList();
   const QStringList includeFolders = artifact.metadata["includes"].toStringList();
@@ -477,7 +478,8 @@ VoidResult KodaGenerator::simulate(const maki::PipelineArtifact& artifact)
   if (!artifact.metadata.contains("includes"))
     return VoidResult::Failed("No includes provided");
 
-  setup();
+  if (!setup())
+    return VoidResult::Failed("Failed to setup the daemon");
 
   const auto modelsFolder = artifact.paths["modelDir"].toString();
   const auto sourceFiles = artifact.metadata["sources"].toStringList();
