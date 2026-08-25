@@ -77,7 +77,8 @@ public:
    * @param callback Optional callback executed when the process finishes.
    * @return VoidResult indicating whether the process was successfully added.
    */
-  VoidResult add(QProcess* process, maki::OnFail onFail, std::function<void(int& exitCode, QProcess::ExitStatus& status)> callback = nullptr) override;
+  VoidResult add(QProcess* process, maki::OnFail onFail,
+                 std::function<void(int& exitCode, QProcess::ExitStatus& status)> callback = nullptr) override;
 
   /**
    * @brief Starts executing the pipeline.
@@ -125,7 +126,7 @@ public:
    *
    * @return VoidResult indicating whether the abort request succeeded.
    */
-  VoidResult abort();
+  VoidResult abort(bool syncAbort = false);
 
   void startGroup(const QString& groupName) override;
   void endGroup() override;
@@ -347,4 +348,6 @@ private:
   QString getRunningTask(GroupInfo info) const;
   bool tasksInError(GroupInfo info) const;
   int getCompleteTasks(GroupInfo info) const;
+
+  void finishAbort();
 };

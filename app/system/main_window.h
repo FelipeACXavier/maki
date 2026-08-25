@@ -17,6 +17,7 @@
 #include "logging.h"
 #include "main_window_layout.h"
 #include "result.h"
+#include "test_and_set.h"
 #include "widgets/notification_manager.h"
 #include "widgets/settings_manager.h"
 
@@ -156,6 +157,7 @@ private:
   std::shared_ptr<EdgeRouter> mRouter;
 
   QApplication* mApp;  /// Pointer to the QApplication instance.
+  TestAndSet<bool> mLoading;
 
   /**
    * @brief Returns the active canvas.

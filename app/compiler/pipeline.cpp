@@ -5,6 +5,7 @@
 #include <QProgressBar>
 #include <QRegularExpression>
 #include <QStandardPaths>
+#include <QTimer>
 #include <QVBoxLayout>
 #include <oclero/qlementine/widgets/Label.hpp>
 
@@ -15,6 +16,7 @@
 
 static const QString DEFAULT_GROUP = "Default";
 static const int SUCCESS = 0;
+static const bool SYNC_ABORT = true;
 static const QRegularExpression ansiRe("\x1B\\[[0-9;?]*[ -/]*[@-~]", QRegularExpression::DontCaptureOption);
 
 Pipeline::Pipeline(QObject* parent)
@@ -34,7 +36,7 @@ Pipeline::Pipeline(QObject* parent)
 
 Pipeline::~Pipeline()
 {
-  abort();
+  abort(SYNC_ABORT);
 }
 
 QString Pipeline::name() const
@@ -62,9 +64,8 @@ bool Pipeline::isRunning() const
   return mState != State::Idle;
 }
 
-VoidResult Pipeline::abort()
+VoidResult Pipeline::abort(bool syncAbort)
 {
-  // Nothing to abort
   if (!mRunningProcess || !mRunningProcess->process)
     return VoidResult();
 
@@ -73,27 +74,47 @@ VoidResult Pipeline::abort()
     mState = State::Aborting;
   }
 
-  // Abort the running process
-  auto process = mRunningProcess->process;
-  if (process->state() == QProcess::Running)
+  auto* process = mRunningProcess->process;
+  if (process->state() == QProcess::NotRunning)
+  {
+    finishAbort();
+    return VoidResult();
+  }
+
+  if (syncAbort)
   {
     process->terminate();
-
     if (!process->waitForFinished(2500))
     {
       process->kill();
-      process->waitForFinished();
+      if (!process->waitForFinished(2500))
+        return VoidResult::Failed("Failed to abort running process");
     }
+    finishAbort();
+  }
+  else
+  {
+    connect(process, &QProcess::finished, this, [this](int, QProcess::ExitStatus) { finishAbort(); }, Qt::SingleShotConnection);
+    process->terminate();
+
+    // Give the process 2.5 seconds to terminate gracefully.
+    QTimer::singleShot(2500, this, [process]() {
+      if (process->state() != QProcess::NotRunning)
+        process->kill();
+    });
   }
 
+  return VoidResult();
+}
+
+void Pipeline::finishAbort()
+{
   clearGroups();
 
   {
     std::unique_lock<std::mutex> lock(mStateMutex);
     mState = State::Idle;
   }
-
-  return VoidResult();
 }
 
 int Pipeline::getIndexOfGroup(const QString& name) const
@@ -394,7 +415,6 @@ void Pipeline::onFinished(int exitCode, QProcess::ExitStatus status)
     return;
   }
 
-  // LOG_DEBUG("Process finished: {}", mRunningProcess->process->program());
   if (mRunningProcess->onFinish &&
       ((exitCode != SUCCESS && mRunningProcess->onFail == maki::OnFail::EXECUTE) || mRunningProcess->onFail == maki::OnFail::ALWAYS_EXECUTE))
   {
@@ -403,9 +423,7 @@ void Pipeline::onFinished(int exitCode, QProcess::ExitStatus status)
 
   emit finished(constructInfo(), exitCode, status);
 
-  startNextOrEnd(
-      (exitCode == SUCCESS || mRunningProcess->onFail == maki::OnFail::CONTINUE) ? SUCCESS : exitCode,
-      status);
+  startNextOrEnd((exitCode == SUCCESS || mRunningProcess->onFail == maki::OnFail::CONTINUE) ? SUCCESS : exitCode, status);
 }
 
 void Pipeline::onErrorOccurred(QProcess::ProcessError error)

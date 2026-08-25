@@ -81,6 +81,7 @@ MainWindow::MainWindow(QApplication* app, oclero::qlementine::ThemeManager* them
     , mActiveCanvas(nullptr)
     , mThemeManager(themeManager)
     , mApp(app)
+    , mLoading(false)
 {
 }
 
@@ -610,7 +611,7 @@ void MainWindow::bindShortcuts()
       return;
     }
   });
-  new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_V), this, [] {
+  new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_V), this, [this] {
     QWidget* fw = QApplication::focusWidget();
     if (!fw)
       return;
@@ -635,7 +636,11 @@ void MainWindow::bindShortcuts()
     else if (auto* canvasView = qobject_cast<CanvasView*>(findAncestor(fw, &CanvasView::staticMetaObject)))
     {
       if (auto* canvas = qobject_cast<Canvas*>(canvasView->scene()))
+      {
+        mLoading.SetUnconditionally(true);
         canvas->pasteCopiedItems();
+        mLoading.SetUnconditionally(false);
+      }
 
       return;
     }
@@ -960,7 +965,7 @@ void MainWindow::onActionGenerate(const QString& pipelineId)
   // If we are running, then we should cancel
   if (mPluginPipeline->isRunning())
   {
-    QTimer::singleShot(0, [this] { LOG_WARN_ON_FAILURE(mPluginPipeline->abort()); });
+    LOG_WARN_ON_FAILURE(mPluginPipeline->abort());
     return;
   }
 
@@ -1210,7 +1215,9 @@ void MainWindow::onFileLoaded(const QString& file, const SaveInfo& info, const Q
   mStorage->clearNodes();
 
   // Repopulate the canvas (and the storage)
+  mLoading.SetUnconditionally(true);
   canvas()->loadFromSave(info);
+  mLoading.SetUnconditionally(false);
 
   if (mMissionParameters)
     mMissionParameters->setStorage(mStorage);
@@ -1255,6 +1262,9 @@ void MainWindow::onNodeSelected(NodeItem* node, bool selected)
 void MainWindow::suggestCapability(NodeItem* node)
 {
   if (node->config()->libraryType != Types::LibraryTypes::STRUCTURAL)
+    return;
+
+  if (mLoading.Value())
     return;
 
   // We don't need to check tasks
