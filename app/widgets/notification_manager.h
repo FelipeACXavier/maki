@@ -31,6 +31,11 @@ public:
    */
   explicit NotificationManager(QWidget* parentWindow, QObject* parent = nullptr);
 
+  /**
+   * @brief Minimizes or expands all notifications.
+   */
+  void toggleMinimize(bool minimize);
+
 public slots:
   /**
    * @brief Displays a new notification toast.
@@ -94,8 +99,10 @@ private:
    * @param contents The new body of the notification.
    * @return QString The updated notification's ID.
    */
-  QString updateExistingNotification(const QString& id, QWidget* contents);
+  QString updateExistingNotification(const QString& id, QWidget* contents, logging::LogLevel level);
 
   QPointer<QWidget> mParentWindow;     ///< Weak pointer to the parent window used for positioning.
   QList<NotificationWidget*> mToasts;  ///< List of active notification toasts.
+
+  bool mMinimize;  ///< Whether toasts should be minimized
 };

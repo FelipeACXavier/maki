@@ -1,8 +1,12 @@
 #include "clickable_icon.h"
 
-#include "logging.h"
+#include <QPainter>
+#include <oclero/qlementine.hpp>
+
+#include "app_configs.h"
+
 ClickableIcon::ClickableIcon(const QIcon& icon, QWidget* parent)
-    : ClickableIcon(icon, QSize(16, 16), parent)
+    : ClickableIcon(icon, Config::SMALL_BUTTON_SIZE, parent)
 {
 }
 
@@ -10,6 +14,7 @@ ClickableIcon::ClickableIcon(const QIcon& icon, const QSize& size, QWidget* pare
     : oclero::qlementine::IconWidget(icon, size, parent)
     , mChecked(false)
     , mCheckable(false)
+    , mHovered(false)
 {
   setIcon(icon);
   setIconSize(size);
@@ -50,4 +55,37 @@ void ClickableIcon::mousePressEvent(QMouseEvent* event)
   }
 
   QWidget::mousePressEvent(event);
+}
+
+void ClickableIcon::enterEvent(QEnterEvent* event)
+{
+  mHovered = true;
+  oclero::qlementine::IconWidget::enterEvent(event);
+  update();
+}
+
+void ClickableIcon::leaveEvent(QEvent* event)
+{
+  mHovered = false;
+  oclero::qlementine::IconWidget::leaveEvent(event);
+  update();
+}
+
+void ClickableIcon::paintEvent(QPaintEvent* event)
+{
+  const auto* qlementineStyle = oclero::qlementine::appStyle();
+  if (mHovered && qlementineStyle)
+  {
+    const auto theme = qlementineStyle->theme();
+
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(theme.neutralColorHovered);
+
+    const qreal radius = theme.borderRadius;
+    painter.drawRoundedRect(rect(), radius, radius);
+  }
+
+  oclero::qlementine::IconWidget::paintEvent(event);
 }

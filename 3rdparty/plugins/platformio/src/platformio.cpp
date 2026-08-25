@@ -236,7 +236,7 @@ VoidResult PlatformIOPlugin::writePlatformIni(const QDir& outputFolder)
 {
   const auto profile = mProjectPage->profile();
 
-  LOG_DEBUG("Writing platform ini file on: %s", qPrintable(outputFolder.absolutePath()));
+  LOG_DEBUG("Writing platform ini file on: {}", outputFolder.absolutePath());
 
   QFile file(outputFolder.filePath("platformio.ini"));
   if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
@@ -399,7 +399,7 @@ void PlatformIOPlugin::appendOutput(const QString& text)
     mOutputPanel->appendPlainText(text.trimmed());
 
   if (mServices)
-    LOG_INFO(qPrintable(text.trimmed()));
+    LOG_INFO("{}", text.trimmed());
 }
 
 void PlatformIOPlugin::settingsChanged(const QVector<maki::SettingField>& /* settings */)

@@ -55,7 +55,7 @@ Result<maki::PipelineArtifact> OllamaPlugin::sendRequest(const QString& request,
       request,
   };
 
-  LOG_DEBUG("Sending prompt: %s", qPrintable(arguments.join("\n")));
+  LOG_DEBUG("Sending prompt: {}", arguments.join("\n"));
 
   QProcess* generate = new QProcess(this);
   generate->setProgram(command);

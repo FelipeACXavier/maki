@@ -5,7 +5,7 @@
 #include <oclero/qlementine/widgets/NavigationBar.hpp>
 
 #include "style_helpers.h"
-#include "widgets/dropdown_button.h"
+#include "widgets/execute_button.h"
 #include "widgets/settings_manager.h"
 
 class QWidget;
@@ -76,7 +76,7 @@ protected:
   QWidget* mHeaderCentre = nullptr;
   QWidget* mHeaderRight = nullptr;
   BreadcrumbWidget* mBreadcrumb = nullptr;
-  DropDownButton* mPipelineRun = nullptr;                            /// Pointer to the generator option combo box.
+  ExecuteButton* mPipelineRun = nullptr;                             /// Pointer to the generator option combo box.
   oclero::qlementine::LoadingSpinner* mGenerationSpinner = nullptr;  /// Pointer to the generation spinner.
 
   QSplitter* mCentralSplitter = nullptr;  /// Pointer to the central splitter.
@@ -126,10 +126,11 @@ protected:
   QAction* mActionDelete = nullptr;  /// Pointer to the delete action.
 
   // View menu
-  QAction* mActionZoomIn = nullptr;       /// Pointer to the zoom in action.
-  QAction* mActionZoomOut = nullptr;      /// Pointer to the zoom out action.
-  QAction* mActionResetZoom = nullptr;    /// Pointer to the reset zoom action.
-  QAction* mActionFitToScreen = nullptr;  /// Pointer to the fit to screen action.
+  QAction* mActionZoomIn = nullptr;        /// Pointer to the zoom in action.
+  QAction* mActionZoomOut = nullptr;       /// Pointer to the zoom out action.
+  QAction* mActionResetZoom = nullptr;     /// Pointer to the reset zoom action.
+  QAction* mActionFitToScreen = nullptr;   /// Pointer to the fit to screen action.
+  QAction* mActionToggleToasts = nullptr;  /// Pointer to the minimize notification toasts action.
 
   QAction* mOpenComponentsPanel = nullptr;  /// Pointer to the open components panel action.
   QAction* mOpenPropertiesPanel = nullptr;  /// Pointer to the open properties panel action.

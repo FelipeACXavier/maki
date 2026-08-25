@@ -80,7 +80,7 @@ bool BehaviourCanvas::canAddTransition(NodeItem* node) const
       ++index;
   }
 
-  LOG_INFO("canAddTransition: %d < %d", index, node->config()->transitions.size());
+  LOG_INFO("canAddTransition: {} < {}", index, node->config()->transitions.size());
   return node->config()->transitions.isEmpty() || index <= node->config()->transitions.size();
 }
 
@@ -93,7 +93,7 @@ TransitionConfig BehaviourCanvas::nextTransition(NodeItem* node) const
       ++index;
   }
 
-  LOG_INFO("nextTransition: %d >= %d", index, node->config()->transitions.size());
+  LOG_INFO("nextTransition: {} >= {}", index, node->config()->transitions.size());
   if (node->config()->transitions.isEmpty() || index >= node->config()->transitions.size())
     return TransitionConfig();
 
@@ -122,7 +122,7 @@ QVector<QGraphicsItem*> BehaviourCanvas::cleanTransitionsOfNode(const QString& n
 
 void BehaviourCanvas::addTransition(TransitionItem* transition)
 {
-  LOG_INFO("Adding transition: %s %s", qPrintable(transition->getName()), qPrintable(transition->getEvent()));
+  LOG_INFO("Adding transition: {} {}", transition->getName(), transition->getEvent());
   mFlow->addTransition(transition);
 }
 

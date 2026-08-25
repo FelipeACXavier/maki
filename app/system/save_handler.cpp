@@ -26,7 +26,7 @@ VoidResult zipFolder(const QString& sourceDir, const QString& outputFile)
 {
   QuaZip zip(QDir::toNativeSeparators(outputFile));
   if (!zip.open(QuaZip::mdCreate))
-    return VoidResult::Failed("Could not create archive: " + outputFile.toStdString() + " - " + std::to_string(zip.getZipError()));
+    return VoidResult::Failed("Could not create archive: {}", outputFile.toStdString());
 
   QDir base(QDir::toNativeSeparators(sourceDir));
   QDirIterator it(sourceDir, QDir::Files, QDirIterator::Subdirectories);
@@ -37,13 +37,13 @@ VoidResult zipFolder(const QString& sourceDir, const QString& outputFile)
 
     QFile input(filePath);
     if (!input.open(QIODevice::ReadOnly))
-      return VoidResult::Failed("Could not read file: " + filePath.toStdString());
+      return VoidResult::Failed("Could not read file: {}", filePath.toStdString());
 
     QuaZipFile outFile(&zip);
     QuaZipNewInfo info(relativePath, filePath);
 
     if (!outFile.open(QIODevice::WriteOnly, info))
-      return VoidResult::Failed("Could not add file: " + relativePath.toStdString());
+      return VoidResult::Failed("Could not add file: {}", relativePath.toStdString());
 
     outFile.write(input.readAll());
     outFile.close();
@@ -80,15 +80,13 @@ Result<QByteArray> zipFolderToBytes(const QString& sourceDir)
 
     QFile input(filePath);
     if (!input.open(QIODevice::ReadOnly))
-      return Result<QByteArray>::Failed(
-          "Could not read file: " + filePath.toStdString());
+      return Result<QByteArray>::Failed("Could not read file: {}", filePath.toStdString());
 
     QuaZipFile outFile(&zip);
     QuaZipNewInfo info(relativePath);
 
     if (!outFile.open(QIODevice::WriteOnly, info))
-      return Result<QByteArray>::Failed(
-          "Could not add file: " + relativePath.toStdString());
+      return Result<QByteArray>::Failed("Could not add file: {}", relativePath.toStdString());
 
     outFile.write(input.readAll());
     outFile.close();
@@ -116,14 +114,14 @@ VoidResult unzipProject(const QString& makiFile, const QString& outputDir)
 
     QuaZipFile file(&zip);
     if (!file.open(QIODevice::ReadOnly))
-      return VoidResult::Failed("Could not read archive entry: " + name.toStdString());
+      return VoidResult::Failed("Could not read archive entry: {}", name);
 
     const QString outPath = QDir(outputDir).filePath(name);
     QDir().mkpath(QFileInfo(outPath).absolutePath());
 
     QFile outFile(outPath);
     if (!outFile.open(QIODevice::WriteOnly))
-      return VoidResult::Failed("Could not write file: " + outPath.toStdString());
+      return VoidResult::Failed("Could not write file: {}", outPath);
 
     outFile.write(file.readAll());
     outFile.close();
@@ -228,7 +226,7 @@ VoidResult SaveHandler::saveProjectInternal(const SaveInfo& project)
   QDir root(project.rootPath);
   root.removeRecursively();
   if (!root.mkpath("."))
-    return VoidResult::Failed("No project directory: " + project.rootPath.toStdString());
+    return VoidResult::Failed("No project directory: {}", project.rootPath);
 
   if (!root.mkpath("capabilities"))
     return VoidResult::Failed("Could not create capabilities directory.");
@@ -268,11 +266,11 @@ VoidResult SaveHandler::writeJsonFile(const QString& path, const QJsonObject& ob
   QDir dir = fileInfo.absoluteDir();
 
   if (!dir.exists())
-    return VoidResult::Failed("Save directory does not exist: " + dir.absolutePath().toStdString());
+    return VoidResult::Failed("Save directory does not exist: {}", dir.absolutePath());
 
   QFile file(path);
   if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
-    return VoidResult::Failed("Could not open file for writing: " + path.toStdString());
+    return VoidResult::Failed("Could not open file for writing: {}", path);
 
   QJsonDocument document(object);
   auto data = document.toJson(QJsonDocument::Indented);
@@ -296,7 +294,7 @@ VoidResult SaveHandler::saveManifest(const SaveInfo& project)
     auto node = std::static_pointer_cast<NodeSaveInfo>(task);
     QString savedTask;
     ASSIGN_OR_RETURN_ON_FAILURE(savedTask, saveNodeTree(project, *node, "tasks"));
-    LOG_INFO("Adding task: %s", qPrintable(savedTask));
+    LOG_INFO("Adding task: {}", savedTask);
     tasks.append(savedTask);
   }
 
@@ -351,7 +349,7 @@ Result<QString> SaveHandler::saveNodeTree(const SaveInfo& project, const NodeSav
 
     QString childNodeFile;
     ASSIGN_OR_RETURN_ON_FAILURE(childNodeFile, saveNodeTree(project, *child, QDir(nodeFolder).filePath("children")));
-    LOG_INFO("Saving child: %s", qPrintable(childNodeFile));
+    LOG_INFO("Saving child: {}", childNodeFile);
     children.append(childNodeFile);
   }
 
@@ -465,12 +463,12 @@ Result<SaveInfo> SaveHandler::loadProjectManifest(const QString& projectFile, co
   QFileInfo manifestInfo(manifestPath);
 
   if (!manifestInfo.exists())
-    return Result<SaveInfo>::Failed("Project manifest not found: " + manifestPath.toStdString());
+    return Result<SaveInfo>::Failed("Project manifest not found: '{}'", manifestPath);
 
   const QString projectRoot = manifestInfo.absoluteDir().absolutePath();
   auto manifestFile = JSON::fromFile(manifestPath);
   if (!manifestFile.IsSuccess())
-    return Result<SaveInfo>::Failed("Failed to open manifest: " + manifestFile.ErrorMessage());
+    return Result<SaveInfo>::Failed("Failed to open manifest: {}", manifestFile.ErrorMessage());
 
   QJsonObject manifestJson = manifestFile.Value();
 
@@ -515,6 +513,8 @@ Result<SaveInfo> SaveHandler::loadProjectManifest(const QString& projectFile, co
 Result<std::shared_ptr<NodeSaveInfo>> SaveHandler::loadNodeTree(const QString& projectRoot, const QString& nodeFile)
 {
   const QString absolutePath = QDir(projectRoot).filePath(nodeFile);
+  LOG_INFO("loadNodeTree:\n\tprojectRoot: {}\n\tnodeFile: {}\n\tabsolutePath: {}", projectRoot, nodeFile, absolutePath);
+
   auto read = JSON::fromFile(absolutePath);
   if (!read)
     return Result<std::shared_ptr<NodeSaveInfo>>::Failed(read.ErrorMessage());

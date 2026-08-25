@@ -265,7 +265,7 @@ bool Canvas::nodeClickHandler(QGraphicsSceneMouseEvent* event, QGraphicsItem* it
     auto info = std::make_shared<TransitionSaveInfo>();
     mTransition = new TransitionItem(std::make_shared<TransitionSaveInfo>());
     mTransition->setZValue(node->zValue() - 1);
-    // LOG_INFO("Node: %s ZValue: %f %f", qPrintable(node->nodeId()), node->zValue(), mTransition->zValue());
+    // LOG_INFO("Node: {} ZValue: {} {}", node->nodeId(), node->zValue(), mTransition->zValue());
 
     auto config = nextTransition(node);
     mTransition->setEvent(config.event);
@@ -459,7 +459,7 @@ void Canvas::nodeClicked(NodeItem* node)
   if (!node)
     return;
 
-  LOG_DEBUG("Selecting node: %s", qPrintable(node->nodeId()));
+  LOG_DEBUG("Selecting node: {}", node->nodeId());
 
   // Remove if it was already in the list
   mSelectedNodes.removeAll(node);
@@ -699,7 +699,7 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
       for (QGraphicsItem* item : this->items())
         topZLevel = qMax(item->zValue(), topZLevel);
 
-      LOG_DEBUG("Moving front: %.2lf", topZLevel);
+      LOG_DEBUG("Moving front: {:.2f}", topZLevel);
       node->setZValue(++topZLevel);
     });
 
@@ -713,7 +713,7 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
       for (QGraphicsItem* item : this->items())
         topZLevel = qMin(item->zValue(), topZLevel);
 
-      LOG_DEBUG("Moving back: %.2lf", topZLevel);
+      LOG_DEBUG("Moving back: {:.2f}", topZLevel);
       node->setZValue(--topZLevel);
     });
 
@@ -813,7 +813,7 @@ void Canvas::triggerNodeRemoval(const NodeSaveInfo& nodeInfo)
 {
   // We have to remember that QT QUndoCommands trigger the 'redo' method after creation. Thus, the node
   // removal is not explicit (as I would like) but happens through the RemoveNodeCommand below
-  LOG_INFO("Removing node: %s", qPrintable(nodeInfo.getnodeId()));
+  LOG_INFO("Removing node: {}", nodeInfo.getnodeId());
   mUndoStack->push(new RemoveNodeCommand(this, nodeInfo));
 }
 
@@ -830,7 +830,7 @@ void Canvas::removeNode(const NodeSaveInfo info)
     for (int i = toRemove.size() - 1; i >= 0; --i)
     {
       if (auto node = dynamic_cast<NodeItem*>(toRemove[i]))
-        LOG_DEBUG("Deleting: %s, has parent: %d", qPrintable(node->id()), node->parentNode() != nullptr);
+        LOG_DEBUG("Deleting: {}, has parent: {}", node->id(), node->parentNode() != nullptr);
 
       delete toRemove[i];
     }
@@ -860,7 +860,7 @@ QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
   node->flowAdded = nullptr;
   node->nodeMoved = nullptr;
 
-  LOG_DEBUG("Removing node: %s %d", qPrintable(node->id()), (int)type());
+  LOG_TRACE("Removing node: {}", node->id());
 
   QVector<QGraphicsItem*> itemsToRemove = {node};
   updateParent(node, nullptr, false);
@@ -912,7 +912,7 @@ void Canvas::copySelectedItems(NodeItem* clickedNode)
 
     auto info = node->saveInfo();
 
-    LOG_DEBUG("Copied %s (%.2f %.2f)", qPrintable(node->id()), info.getposition().x(), info.getposition().y());
+    LOG_DEBUG("Copied {} ({:.2f} {:.2f})", node->id(), info.getposition().x(), info.getposition().y());
 
     copiedNodes.append({info, mousePosition - info.getposition()});
   };
@@ -1041,7 +1041,7 @@ void Canvas::clearCanvas()
   for (QGraphicsItem* item : toRemove)
     delete item;
 
-  LOG_DEBUG("Number of items after clearCanvas: %d", items().size());
+  LOG_DEBUG("Number of items after clearCanvas: {}", items().size());
 }
 
 void Canvas::selectNode(NodeItem* node, bool select)
@@ -1080,7 +1080,7 @@ VoidResult Canvas::loadFromSave(const QVector<std::shared_ptr<INode>>& nodes, No
 
     auto node = std::make_shared<NodeSaveInfo>(*nodeInfo);
 
-    LOG_DEBUG("Creating node %s with parent %s", qPrintable(node->getid()), qPrintable(node->getparentId()));
+    LOG_DEBUG("Creating node {} with parent {}", node->getid(), node->getparentId());
     auto createdNode = createNode(NodeCreation::Loading, node, node->getposition(), parent);
     if (!createdNode)
       return VoidResult::Failed("Failed to load node: " + node->getnodeId().toStdString());
@@ -1088,7 +1088,7 @@ VoidResult Canvas::loadFromSave(const QVector<std::shared_ptr<INode>>& nodes, No
     auto ret = loadFromSave(nodeInfo->getchildren(), createdNode);
     if (!ret.IsSuccess())
     {
-      LOG_ERROR("%s", ret.ErrorMessage().c_str());
+      LOG_ERROR(ret.ErrorMessage());
       return VoidResult::Failed(ret.ErrorMessage());
     }
 
@@ -1113,7 +1113,7 @@ VoidResult Canvas::loadFromSave(const SaveInfo& info)
   parentView()->setScale(canvasInfo.scale());
   parentView()->centerOn(canvasInfo.center());
 
-  LOG_DEBUG("Loading canvas from save with %d nodes", info.getnodes().size());
+  LOG_DEBUG("Loading canvas from save with {} nodes", info.getnodes().size());
 
   return loadFromSave(info.getnodes(), nullptr);
 }
@@ -1178,7 +1178,7 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
 
   if (config->libraryType != type())
   {
-    LOG_WARNING("Node of type \"%s\" cannot be placed in a \"%s\" canvas", qPrintable(Types::LibraryTypeToString(config->libraryType)), qPrintable(Types::LibraryTypeToString(type())));
+    LOG_WARNING("Node of type \"{}\" cannot be placed in a \"{}\" canvas", Types::LibraryTypeToString(config->libraryType), Types::LibraryTypeToString(type()));
     return nullptr;
   }
 
@@ -1300,7 +1300,7 @@ void Canvas::populate(const FlowSaveInfo& flow)
     // LOG_DEBUG("Creating behavioral node %s with parent \"%s\"", qPrintable(node->getid()), qPrintable(node->getparentId()));
     auto created = createNode(NodeCreation::Populating, node, node->getposition(), findNodeWithId(node->getparentId()));
     if (created)
-      LOG_DEBUG("Created node %s %s", qPrintable(node->getid()), qPrintable(created->id()));
+      LOG_DEBUG("Created node {} {}", node->getid(), created->id());
   }
 
   // Then create the transitions between the nodes
@@ -1321,7 +1321,7 @@ void Canvas::populate(const FlowSaveInfo& flow)
       continue;
     }
 
-    LOG_DEBUG("Creating transitions %s -> %s", qPrintable(transition->getsrcId()), qPrintable(transition->getdstId()));
+    LOG_DEBUG("Creating transitions {} -> {}", transition->getsrcId(), transition->getdstId());
 
     auto connection = new TransitionItem(transition);
 
@@ -1341,7 +1341,7 @@ void Canvas::onFlowSelected(const QString& flowId, const QString& nodeId)
   auto node = findNodeWithId(nodeId);
   if (!node)
   {
-    LOG_WARNING("Flow %s is not tied to any nodes", qPrintable(flowId));
+    LOG_WARNING("Flow {} is not tied to any nodes", flowId);
     return;
   }
 

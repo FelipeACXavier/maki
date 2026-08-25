@@ -147,6 +147,7 @@ public:
   QVector<std::shared_ptr<FlowSaveInfo>> pipelines() const;
 
   void addPipeline(std::shared_ptr<FlowSaveInfo> pipeline);
+  void removePipeline(std::shared_ptr<FlowSaveInfo> pipeline);
 
   QString name;
   QString version;

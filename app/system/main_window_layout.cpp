@@ -184,7 +184,7 @@ void MainWindowLayout::buildLeftPanel()
   }
 
   // Rest of palette
-  mPalette->tabBar()->setIconSize(QSize(16, 16));
+  mPalette->tabBar()->setIconSize(Config::SMALL_BUTTON_SIZE);
 
   mPaletteSearch = new maki::SearchWidget(tr("Filter nodes"), mLeftPanel);
   mPaletteSearch->hide();
@@ -230,7 +230,7 @@ void MainWindowLayout::buildCentralPanel()
   centreLayout->setSpacing(0);
   centreLayout->setAlignment(Qt::AlignCenter);
 
-  mPipelineRun = new DropDownButton(mHeaderCentre);
+  mPipelineRun = new ExecuteButton(mHeaderCentre);
   mPipelineRun->setIcon(iconFromTheme("exaile-play"));
   mPipelineRun->setToolTip(tr("Run pipeline"));
 
@@ -286,7 +286,7 @@ void MainWindowLayout::buildCentralPanel()
   // Bottom panel
   mBottomContainer = new QWidget();
   QVBoxLayout* bottomLayout = new QVBoxLayout(mBottomContainer);
-  bottomLayout->setContentsMargins(theme.spacing, theme.spacing, theme.spacing, theme.borderWidth);
+  bottomLayout->setContentsMargins(theme.spacing, theme.spacing / 2, theme.spacing, theme.borderWidth);
   bottomLayout->setSpacing(theme.spacing);
 
   auto* bottomNavContainer = new QWidget();
@@ -295,6 +295,7 @@ void MainWindowLayout::buildCentralPanel()
   bottomNavLayout->setSpacing(0);
 
   mBottomNavigation = new oclero::qlementine::NavigationBar(mBottomContainer);
+  mBottomNavigation->setMaximumHeight(40);
   mBottomPanel = new QStackedWidget(mBottomContainer);
 
   bottomNavLayout->addWidget(mBottomNavigation);
@@ -303,7 +304,6 @@ void MainWindowLayout::buildCentralPanel()
   bottomLayout->addWidget(mBottomPanel);
 
   // ===================================================================
-  // QWidget* infoContainer = new QWidget(mBottomPanel);
   auto* infoContainer = new StyledFrame(mBottomPanel);
   infoContainer->setBackgroundRole(StyledFrame::BackgroundRole::Base);
   infoContainer->setBorderRole(StyledFrame::BorderRole::Mid);
@@ -319,6 +319,7 @@ void MainWindowLayout::buildCentralPanel()
   mInfoText->setWordWrapMode(QTextOption::WrapMode::WordWrap);
   mInfoText->setFont(theme.fontRegular);
   mInfoText->setHtml(createDefaultMessage());
+  mInfoText->setFocusPolicy(Qt::FocusPolicy::NoFocus);
 
   infoLayout->addWidget(mInfoText);
 
@@ -591,6 +592,17 @@ QMenu* MainWindowLayout::createViewMenu(QWidget* parent)
 
   view->addSeparator();
 
+  mActionToggleToasts = new QAction(iconFromTheme("notifications"), tr("Minimize Toasts"), this);
+  mTranslatable.push_back({mActionToggleToasts, "Minimize Toasts"});
+  mActionToggleToasts->setCheckable(true);
+  mActionToggleToasts->setChecked(false);
+  connect(mActionToggleToasts, &QAction::toggled, [this](bool toggled) {
+    mActionToggleToasts->setIcon(iconFromTheme(toggled ? "notifications-disabled" : "notifications"));
+  });
+  view->addAction(mActionToggleToasts);
+
+  view->addSeparator();
+
   QMenu* showMenu = view->addMenu(tr("Show/Hide"));
   showMenu->setIcon(iconFromTheme("view-visible", false));
   mTranslatable.push_back({showMenu, "Show/Hide"});
@@ -793,7 +805,7 @@ void MainWindowLayout::applyTheme()
     QTimer::singleShot(0, this, [this, theme] {
       int documentHeight = int(std::ceil(mInfoText->document()->documentLayout()->documentSize().height()));
       int height = documentHeight + mInfoText->contentsMargins().top() + mInfoText->contentsMargins().bottom() + theme.spacing;
-      mInfoText->setMinimumHeight(height);
+      mInfoText->resize(mInfoText->width(), height);
     });
   }
 
@@ -825,6 +837,8 @@ void MainWindowLayout::applyTheme()
 
       propertiesTabWidth = setTabBarWidth(mPropertiesTab->tabBar(), minWidth, tabPadding, tabBorderSize);
       mPropertiesTab->setMinimumWidth(propertiesTabWidth);
+      // No need for a minimum height
+      mPropertiesTab->resize(mPropertiesTab->width(), 450);
 
       mPropertiesTab->tabBar()->setExpanding(false);
       mPropertiesTab->tabBar()->setDocumentMode(true);
@@ -873,7 +887,7 @@ void MainWindowLayout::onLanguageChanged()
       }
       else
       {
-        LOG_WARNING("Unsupported widget: %s", item.widget->metaObject()->className());
+        LOG_WARNING("Unsupported widget: {}", item.widget->metaObject()->className());
       }
     }
   }

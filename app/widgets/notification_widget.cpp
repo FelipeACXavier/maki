@@ -10,7 +10,6 @@
 #include <QScreen>
 #include <QVBoxLayout>
 #include <oclero/qlementine/widgets/Label.hpp>
-#include <oclero/qlementine/widgets/StatusBadgeWidget.hpp>
 
 #include "app_configs.h"
 #include "logging.h"
@@ -20,9 +19,11 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
     : StyledFrame(parent)
     , mAlarmSetup(false)
     , mFadeAnim(nullptr)
+    , mBody(nullptr)
+    , mMinimizeButton(nullptr)
     , mCloseButton(nullptr)
+    , mMinimized(false)
     , mOpacity(0.0)
-    , mContentLayout(nullptr)
 {
   const auto* qlementineStyle = oclero::qlementine::appStyle();
   const auto theme = qlementineStyle->theme();
@@ -31,7 +32,7 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
   setBorderRole(StyledFrame::BorderRole::Custom);
   setRadius(theme.borderRadius);
   setBorderWidth(theme.borderWidth);
-  setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+  setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
 
   // Make sure the notifications don't take too much space
   QScreen* screen = this->screen();
@@ -60,55 +61,59 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
   titleLabel->setContentsMargins(0, 0, 0, 0);
   titleLabel->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
 
-  auto* statusBadge = new oclero::qlementine::StatusBadgeWidget(header);
+  mStatusBadge = new oclero::qlementine::StatusBadgeWidget(header);
   switch (level)
   {
     case logging::LogLevel::Warning:
       setCustomBorderColor(theme.statusColorWarning);
-      statusBadge->setBadge(oclero::qlementine::StatusBadge::Warning);
+      mStatusBadge->setBadge(oclero::qlementine::StatusBadge::Warning);
       break;
     case logging::LogLevel::Error:
       setCustomBorderColor(theme.statusColorError);
-      statusBadge->setBadge(oclero::qlementine::StatusBadge::Error);
+      mStatusBadge->setBadge(oclero::qlementine::StatusBadge::Error);
       break;
     default:
-      setCustomBorderColor(theme.statusColorInfo);
-      statusBadge->setBadge(oclero::qlementine::StatusBadge::Info);
+      setCustomBorderColor(theme.statusColorSuccess);
+      mStatusBadge->setBadge(oclero::qlementine::StatusBadge::Info);
       break;
   }
-  statusBadge->setBadgeSize(oclero::qlementine::StatusBadgeSize::Medium);
+  mStatusBadge->setBadgeSize(oclero::qlementine::StatusBadgeSize::Medium);
 
-  mCloseButton = new QPushButton(header);
-  mCloseButton->setFlat(true);
-  mCloseButton->setIcon(iconFromTheme("close"));
+  mCloseButton = new ClickableIcon(iconFromTheme("close"), Config::SMALL_BUTTON_SIZE, header);
+  mCloseButton->setFixedSize(Config::MEDIUM_BUTTON_SIZE);
 
-  headerLayout->addWidget(statusBadge, 0, Qt::AlignVCenter);
+  mMinimizeButton = new ClickableIcon(iconFromTheme("arrow-up"), Config::SMALL_BUTTON_SIZE, header);
+  mMinimizeButton->setFixedSize(Config::MEDIUM_BUTTON_SIZE);
+
+  headerLayout->addWidget(mStatusBadge, 0, Qt::AlignVCenter);
   headerLayout->addSpacing(Config::CONTENT_PADDING);
   headerLayout->addWidget(titleLabel, 0, Qt::AlignVCenter);
   headerLayout->addStretch();
+  headerLayout->addWidget(mMinimizeButton, 0, Qt::AlignVCenter);
   headerLayout->addWidget(mCloseButton, 0, Qt::AlignVCenter);
 
   // Body
-  auto body = new QWidget(this);
-  body->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+  mBody = new ExpandingWidget(ExpandingWidget::Direction::Up, this);
+  mBody->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
-  mContentLayout = new QVBoxLayout(body);
-  mContentLayout->setContentsMargins(
+  // Since we want to be able to fully collapse, the padding should be set in content layout
+  mBody->getContent()->setContentsMargins(
       Config::CONTENT_PADDING, Config::CONTENT_PADDING,
       Config::CONTENT_PADDING, Config::CONTENT_PADDING);
-  mContentLayout->setAlignment(Qt::AlignVCenter);
-  mContentLayout->setSpacing(0);
 
   if (!text.isEmpty())
   {
-    auto* notificationText = new oclero::qlementine::Label(text, body);
-    notificationText->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    auto* notificationText = new oclero::qlementine::Label(text, this);
+    notificationText->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     notificationText->setWordWrap(true);
     notificationText->setRole(oclero::qlementine::TextRole::Default);
     notificationText->setMinimumWidth(300 - 2 * Config::CONTENT_PADDING);
     notificationText->setMinimumHeight(2 * notificationText->fontMetrics().height());
 
-    mContentLayout->addWidget(notificationText);
+    mBody->addCollapsableWidget(notificationText);
+
+    // Adjust to content size
+    mBody->setExpandedSize(notificationText->sizeHint().height() + 2 * Config::CONTENT_PADDING);
   }
 
   auto layout = new QVBoxLayout(this);
@@ -117,12 +122,13 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
   layout->setAlignment(Qt::AlignLeft);
 
   layout->addWidget(header);
-  layout->addWidget(body);
+  layout->addWidget(mBody);
 
   // Opacity effect
   auto* effect = new QGraphicsOpacityEffect(this);
   setGraphicsEffect(effect);
 
+  // Close animation
   mFadeAnim = new QPropertyAnimation(this, "opacity", this);
   mFadeAnim->setDuration(duration());
   mFadeAnim->setStartValue(opacity());
@@ -135,7 +141,16 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
     deleteLater();
   });
 
-  connect(mCloseButton, &QPushButton::clicked, this, &NotificationWidget::hideAnimated);
+  connect(mCloseButton, &ClickableIcon::clicked, this, &NotificationWidget::hideAnimated);
+  connect(mMinimizeButton, &ClickableIcon::clicked, this, &NotificationWidget::toggleMinimized);
+  connect(mBody, &ExpandingWidget::areaExpanded, [this](ClickableIcon* /* button */) {
+    if (mMinimizeButton)
+      mMinimizeButton->setIcon(QIcon(":/icons/arrow-up.svg"));
+  });
+  connect(mBody, &ExpandingWidget::areaCollapsed, [this](ClickableIcon* /* button */) {
+    if (mMinimizeButton)
+      mMinimizeButton->setIcon(QIcon(":/icons/arrow-down.svg"));
+  });
 
   // Only enable in short notification
   if (!text.isEmpty())
@@ -171,20 +186,44 @@ qreal NotificationWidget::opacity() const
 void NotificationWidget::setOpacity(qreal o)
 {
   mOpacity = std::clamp(o, 0.0, 1.0);
-  if (auto* eff = qobject_cast<QGraphicsOpacityEffect*>(graphicsEffect()))
-    eff->setOpacity(o);
+  if (auto* effect = qobject_cast<QGraphicsOpacityEffect*>(graphicsEffect()))
+    effect->setOpacity(o);
 
+  update();
+}
+
+void NotificationWidget::setBadge(oclero::qlementine::StatusBadge badge)
+{
+  if (!mStatusBadge)
+    return;
+
+  if (mStatusBadge->badge() == badge)
+    return;
+
+  const auto* qlementineStyle = oclero::qlementine::appStyle();
+  if (!qlementineStyle)
+    return;
+
+  const auto theme = qlementineStyle->theme();
+  switch (badge)
+  {
+    case oclero::qlementine::StatusBadge::Warning:
+      setCustomBorderColor(theme.statusColorWarning);
+      break;
+    case oclero::qlementine::StatusBadge::Error:
+      setCustomBorderColor(theme.statusColorError);
+      break;
+    default:
+      setCustomBorderColor(theme.statusColorSuccess);
+      break;
+  }
+  mStatusBadge->setBadge(badge);
   update();
 }
 
 bool NotificationWidget::disappearing() const
 {
   return true;
-}
-
-QVBoxLayout* NotificationWidget::getContent()
-{
-  return mContentLayout;
 }
 
 void NotificationWidget::showAnimated()
@@ -212,4 +251,19 @@ void NotificationWidget::hideAnimated()
   mFadeAnim->setEndValue(opacity());
   mFadeAnim->setDirection(QAbstractAnimation::Backward);
   mFadeAnim->start();
+}
+
+void NotificationWidget::minimize(bool minimize)
+{
+  mMinimized = minimize;
+  toggleMinimized();
+}
+
+void NotificationWidget::toggleMinimized()
+{
+  if (!mBody)
+    return;
+
+  mBody->setExpanded(!mMinimized);
+  mMinimized = !mMinimized;
 }

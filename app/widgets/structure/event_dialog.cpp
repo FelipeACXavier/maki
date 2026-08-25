@@ -227,7 +227,7 @@ void EventDialog::createArgumentInput()
 
 void EventDialog::updateArgumentTable(int row, int column, const QString& text)
 {
-  LOG_INFO("updateArgumentTable: %s", qPrintable(text));
+  LOG_INFO("updateArgumentTable: {}", text);
   if (column == 0)
     std::dynamic_pointer_cast<PropertyInfo>(mStorage->getArgument(row))->setId(text);
   else if (column == 1)

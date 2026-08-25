@@ -284,12 +284,12 @@ VoidResult SettingsDialog::createAppearancePage()
       mTheme = theme;
     });
     connect(mThemeEditor, &oclero::qlementine::ThemeEditorWidget::themeSaved, [this](const QString& path, const oclero::qlementine::Theme& theme) {
-      LOG_TRACE("Theme saved: %s", qPrintable(path));
+      LOG_TRACE("Theme saved: {}", path);
       mThemeCombo->addItem(theme.meta.name, theme.meta.name);
       mSettingsManager->themeCreated(path);
     });
     connect(mThemeEditor, &oclero::qlementine::ThemeEditorWidget::themeLoaded, [this](const QString& path, const oclero::qlementine::Theme& theme) {
-      LOG_TRACE("Theme loaded: %s", qPrintable(path));
+      LOG_TRACE("Theme loaded: {}", path);
       mThemeCombo->addItem(theme.meta.name, theme.meta.name);
       mSettingsManager->themeCreated(path);
     });
@@ -389,7 +389,7 @@ VoidResult SettingsDialog::createPluginPages()
   // -----------------------------------------------------------------
   // Load Plugin settings
   mPluginSettings = mSettingsManager->plugins();
-  LOG_DEBUG("Loaded from settings with %d plugins", mPluginSettings.plugins.size());
+  LOG_DEBUG("Loaded from settings with {} plugins", mPluginSettings.plugins.size());
 
   // Add top level plugin page
   auto [topSelector, topPage] = addPage(tr("Plugins"), "plugins", [] {

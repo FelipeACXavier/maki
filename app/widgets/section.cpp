@@ -62,10 +62,10 @@ void SectionWidget::addItem(QWidget* container, const QString& title, oclero::ql
   labelLayout->addWidget(label, 0, Qt::AlignVCenter);
   labelLayout->addWidget(line);
 
-  mToggleButton = new ClickableIcon(iconFromTheme("arrow-down"), QSize(16, 16), header);
+  mToggleButton = new ClickableIcon(iconFromTheme("arrow-down"), Config::SMALL_BUTTON_SIZE, header);
   mToggleButton->setCheckable(true);
   mToggleButton->setChecked(true);
-  mToggleButton->setFixedSize(24, 24);
+  mToggleButton->setFixedSize(Config::MEDIUM_BUTTON_SIZE);
   mToggleButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
   QHBoxLayout* hLayout = new QHBoxLayout(header);
@@ -97,7 +97,7 @@ void SectionWidget::updateContentHeight(int height)
 
   mContentArea->setContentHeight(height);
   mContentArea->setMaximumHeight(height);
-  // LOG_TRACE("New content area height: %d", height);
+  // LOG_TRACE("New content area height: {}", height);
 }
 
 void SectionWidget::setExpanded(bool expanded)
@@ -134,7 +134,7 @@ void SectionWidget::toggled(bool checked)
     mAnimation->setDuration(duration);
     mAnimation->setStartValue(currentHeight);
     mAnimation->setEndValue(targetHeight);
-    // LOG_TRACE("Section mAnimation expand: %d to %d in %dms", currentHeight, targetHeight, duration);
+    // LOG_TRACE("Section mAnimation expand: {} to {} in {}ms", currentHeight, targetHeight, duration);
   }
   else
   {
@@ -144,7 +144,7 @@ void SectionWidget::toggled(bool checked)
     mAnimation->setDuration(duration);
     mAnimation->setStartValue(mContentArea->contentHeight());
     mAnimation->setEndValue(0);
-    // LOG_TRACE("Section mAnimation collapse: %d to %d in %dms", currentHeight, targetHeight, duration);
+    // LOG_TRACE("Section mAnimation collapse: {} to {} in {}ms", currentHeight, targetHeight, duration);
 
     connect(mAnimation, &QPropertyAnimation::finished, mContentArea, [this]() {
       if (!mToggleButton->isChecked())

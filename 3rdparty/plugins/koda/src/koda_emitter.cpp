@@ -48,7 +48,7 @@ Result<std::string> KodaEmitter::emitKoda(const koda::System& ast)
     RETURN_ON_FAILURE_AS(emitter.emitTask(*component, ss), std::string);
   }
 
-  // LOG_DEBUG("Koda: %s", ss.str().c_str());
+  // LOG_DEBUG("Koda: {}", ss.str());
 
   return ss.str();
 }
@@ -172,14 +172,14 @@ VoidResult KodaEmitter::emitVarDef(const koda::VarDef& varDef, std::stringstream
 VoidResult KodaEmitter::emitFlow(const koda::Flow& flow, std::stringstream& ss, const std::string& format)
 {
   ss << format << flow.name;
-  if (!flow.tags.empty())
+  if (!flow.args.empty())
   {
     ss << "[";
-    for (size_t i = 0; i < flow.tags.size(); ++i)
+    for (size_t i = 0; i < flow.args.size(); ++i)
     {
       if (i > 0)
         ss << ", ";
-      ss << flow.tags.at(i);
+      ss << flow.args.at(i)->b;
     }
     ss << "]";
   }

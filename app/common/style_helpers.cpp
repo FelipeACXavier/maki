@@ -65,7 +65,61 @@ QIcon iconFromTheme(const QString& name, bool useLocal)
   if (name.contains("/"))
     return QIcon(AppPaths::icon(name + ".svg"));
 
-  return QIcon::fromTheme(useLocal ? "There is no way in hell this icon exists" : name, QIcon(":/icons/" + name + ".svg"));
+  return QIcon::fromTheme(name, QIcon(AppPaths::icon(name + ".svg")));
+}
+
+QString timeToQT(std::chrono::system_clock::time_point now)
+{
+  // const struct tm* time = localtime(&ts.tv_sec);
+  // return QString::fromStdString(Format("%2d:%02d:%02d.%03ld", time->tm_hour, time->tm_min, time->tm_sec, ts.tv_nsec));
+
+  auto secs = std::chrono::time_point_cast<std::chrono::seconds>(now);
+  auto micros = std::chrono::duration_cast<std::chrono::microseconds>(now - secs).count();
+  auto t = std::chrono::system_clock::to_time_t(secs);
+  std::tm tm = logging::ToLocalTm(t);
+
+  return QString::fromStdString(Format(
+      "%02d:%02d:%02d.%09lld", tm.tm_hour, tm.tm_min, tm.tm_sec, static_cast<long long>(micros)));
+}
+
+QString logLevelToQT(logging::LogLevel logLevel)
+{
+  switch (logLevel)
+  {
+    case logging::LogLevel::Error:
+      return QString("[<font color='red'>E</font>]");
+    case logging::LogLevel::Warning:
+      return QString("[<font color='yellow'>W</font>]");
+    case logging::LogLevel::Info:
+      return QString("[<font color='green'>I</font>]");
+    case logging::LogLevel::Debugging:
+      return QString("[<font color='cyan'>D</font>]");
+    case logging::LogLevel::Trace:
+      return QString("[<font color='blue'>T</font>]");
+    default:
+      return QString("[<font color='magenta'>U</font>]");
+  }
+}
+
+oclero::qlementine::StatusBadge logLevelToStatusBadge(logging::LogLevel logLevel)
+{
+  switch (logLevel)
+  {
+    case logging::LogLevel::Error:
+      return oclero::qlementine::StatusBadge::Error;
+    case logging::LogLevel::Warning:
+      return oclero::qlementine::StatusBadge::Warning;
+    case logging::LogLevel::Info:
+    case logging::LogLevel::Debugging:
+    case logging::LogLevel::Trace:
+    default:
+      return oclero::qlementine::StatusBadge::Info;
+  }
+}
+
+QString toQT(std::chrono::system_clock::time_point ts, logging::LogLevel level, const std::string& message)
+{
+  return QStringLiteral("%1 %2: %3").arg(timeToQT(ts), logLevelToQT(level), QString::fromStdString(message));
 }
 
 void addDynamicWidget(QVBoxLayout* layout, QWidget* dynamicWidget, QWidget* parent)
@@ -126,7 +180,7 @@ void updateIconTheme(QList<WidgetWithIcon>& icons)
       }
       else
       {
-        LOG_WARNING("Unsupported widget: %s", item.widget->metaObject()->className());
+        LOG_WARNING("Unsupported widget: {}", item.widget->metaObject()->className());
       }
     }
   }

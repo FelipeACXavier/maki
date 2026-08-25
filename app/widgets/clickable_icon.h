@@ -69,8 +69,13 @@ protected:
    * @param event The QMouseEvent to handle.
    */
   void mousePressEvent(QMouseEvent* event) override;
+  void enterEvent(QEnterEvent* event) override;
+  void leaveEvent(QEvent* event) override;
+
+  void paintEvent(QPaintEvent* event) override;
 
 private:
-  bool mChecked;  /// True if the icon is currently checked, false otherwise.
+  bool mChecked;    /// True if the icon is currently checked, false otherwise.
   bool mCheckable;  /// True if the icon can be checked or unchecked, false otherwise.
+  bool mHovered;    /// True when the button is hovered
 };

@@ -606,7 +606,7 @@ SearchWidget::SearchWidget(const QString& placeholder, QWidget* parent)
   searchLayout->setContentsMargins(5, 0, 5, 0);
   searchLayout->setSpacing(5);
 
-  auto* icon = new oclero::qlementine::IconWidget(iconFromTheme("search"), QSize(16, 16), this);
+  auto* icon = new oclero::qlementine::IconWidget(iconFromTheme("search"), Config::SMALL_BUTTON_SIZE, this);
 
   mInputField = new QLineEdit(this);
   mInputField->setPlaceholderText(placeholder);

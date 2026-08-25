@@ -6,13 +6,24 @@
 
 #include "app_configs.h"
 #include "long_notification.h"
+#include "style_helpers.h"
 
 NotificationManager::NotificationManager(QWidget* parentWindow, QObject* parent)
     : QObject(parent)
     , mParentWindow(parentWindow)
+    , mMinimize(false)
 {
   // This lets us listen to resize events of the parent so the notification toasts can react to layout changes.
   mParentWindow->installEventFilter(this);
+}
+
+void NotificationManager::toggleMinimize(bool minimize)
+{
+  // Expand or minimize all the toasts
+  for (const auto& t : mToasts)
+    t->minimize(minimize);
+
+  mMinimize = minimize;
 }
 
 void NotificationManager::showNotification(const QString& header, const QString& text, logging::LogLevel level)
@@ -28,6 +39,13 @@ void NotificationManager::showNotification(const QString& header, const QString&
   mToasts.prepend(toast);
   repositionToasts();
 
+  // Oh, the classic layout timing issue. Right after constructing the toast and inserting some content, Qt has not
+  // yet completed the layout pass that determines the toast’s final width or the wrapped/content-dependent height,
+  // We must, thus, defer the initial minimize/expand call until after Qt has processed the initial layout.
+  QMetaObject::invokeMethod(toast, [toast, minimize = mMinimize]() {
+        if (toast)
+          toast->minimize(minimize); }, Qt::QueuedConnection);
+
   toast->showAnimated();
 }
 
@@ -36,7 +54,7 @@ QString NotificationManager::showLongNotification(const QString& id, const QStri
   if (!mParentWindow)
     return QString();
 
-  auto uuid = updateExistingNotification(id, contents);
+  auto uuid = updateExistingNotification(id, contents, level);
   if (!uuid.isEmpty())
     return uuid;
 
@@ -50,12 +68,17 @@ QString NotificationManager::showLongNotification(const QString& id, const QStri
   mToasts.prepend(toast);
   repositionToasts();
 
+  // See showNotification above
+  QMetaObject::invokeMethod(toast, [toast, minimize = mMinimize]() {
+        if (toast)
+          toast->minimize(minimize); }, Qt::QueuedConnection);
+
   toast->showAnimated();
 
   return uuid;
 }
 
-QString NotificationManager::updateExistingNotification(const QString& id, QWidget* contents)
+QString NotificationManager::updateExistingNotification(const QString& id, QWidget* contents, logging::LogLevel level)
 {
   if (id.isEmpty())
     return QString();
@@ -65,13 +88,14 @@ QString NotificationManager::updateExistingNotification(const QString& id, QWidg
     if (t->disappearing())
       continue;
 
-    if (auto* d = qobject_cast<maki::LongNotificationWidget*>(t))
+    if (auto* widget = qobject_cast<maki::LongNotificationWidget*>(t); widget)
     {
-      if (d->id() != id)
+      if (widget->id() != id)
         continue;
 
-      d->updateContent(contents);
-      d->showAnimated();
+      widget->setBadge(logLevelToStatusBadge(level));
+      widget->updateContent(contents);
+      widget->showAnimated();
       return id;
     }
   }

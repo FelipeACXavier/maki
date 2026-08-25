@@ -11,6 +11,7 @@ GenerateDezyneAction::GenerateDezyneAction(KodaGenerator* generator)
     : mGenerator(generator)
 {
 }
+
 QString GenerateDezyneAction::id() const
 {
 #ifdef USE_ANTLR
@@ -51,7 +52,7 @@ QVector<maki::ActionParameter> GenerateDezyneAction::parameters() const
 
 maki::ResultArtifacts GenerateDezyneAction::run(const maki::PipelineContext& context, const QVariantMap& parameters, maki::IPipeline* pipeline)
 {
-  LOG_INFO("Running %s", qPrintable(id()));
+  LOG_INFO("Running {}", id());
 
   const auto artifacts = context.artifactsOfType("koda");
   if (artifacts.isEmpty())

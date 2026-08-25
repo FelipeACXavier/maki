@@ -21,7 +21,7 @@ void MoveNodeCommand::undo()
     return;
 
   mCanvas->moveNodeTo(mNodeId, mPreviousPosition);
-  LOG_TRACE("Undo MoveNodeCommand: %d %d", mCurrentPosition.x(), mCurrentPosition.y());
+  LOG_TRACE("Undo MoveNodeCommand: {} {}", mCurrentPosition.x(), mCurrentPosition.y());
 }
 
 void MoveNodeCommand::redo()
@@ -30,5 +30,5 @@ void MoveNodeCommand::redo()
     return;
 
   mCanvas->moveNodeTo(mNodeId, mCurrentPosition);
-  LOG_TRACE("Redo MoveNodeCommand: %d %d", mCurrentPosition.x(), mCurrentPosition.y());
+  LOG_TRACE("Redo MoveNodeCommand: {} {}", mCurrentPosition.x(), mCurrentPosition.y());
 }

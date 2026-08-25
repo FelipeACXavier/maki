@@ -16,7 +16,7 @@ LanguageManager::LanguageManager(QObject* parent)
 #ifndef __EMSCRIPTEN__
   for (const auto& path : AppPaths::translations())
   {
-    LOG_DEBUG("Looking for languages in: %s", qPrintable(path));
+    LOG_DEBUG("Looking for languages in: {}", path);
     loadFromDir(path);
   }
 #else
@@ -72,7 +72,7 @@ bool LanguageManager::setLanguage(const QString& code)
   if (code == mCurrentLanguage)
     return true;
 
-  LOG_DEBUG("Setting language %s, current: %s", qPrintable(code), qPrintable(mCurrentLanguage));
+  LOG_DEBUG("Setting language {}, current: {}", code, mCurrentLanguage);
   // English as source language: remove translator and use source strings
   if (code == "en_US")
   {

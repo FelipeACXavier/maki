@@ -1,5 +1,7 @@
 #include "log_table_model.h"
 
+#include <oclero/qlementine.hpp>
+
 #include "style_helpers.h"
 
 LogTableModel::LogTableModel(QObject* parent)
@@ -32,8 +34,10 @@ QVariant LogTableModel::data(const QModelIndex& index, int role) const
 
   if (index.column() == LevelColumn)
   {
-    if (role == Qt::ToolTipRole || role == Qt::UserRole)
+    if (role == Qt::ToolTipRole)
       return toString(entry.level);
+    else if (role == Qt::UserRole)
+      return static_cast<int>(entry.level);
     else if (role == Qt::DecorationRole)
       return toIcon(entry.level);
     else if (role == Qt::DisplayRole)
@@ -63,12 +67,13 @@ QVariant LogTableModel::data(const QModelIndex& index, int role) const
 
   if (role == Qt::BackgroundRole)
   {
-    // TODO: Get these from the theme
+    const auto* qlementineStyle = oclero::qlementine::appStyle();
+
     if (entry.level == logging::LogLevel::Error)
-      return QBrush(QColor(255, 80, 80, 45));
+      return QBrush(qlementineStyle ? qlementineStyle->theme().statusColorError : QColor(255, 80, 80, 45));
 
     if (entry.level == logging::LogLevel::Warning)
-      return QBrush(QColor(255, 210, 80, 45));
+      return QBrush(qlementineStyle ? qlementineStyle->theme().statusColorWarning : QColor(255, 210, 80, 45));
   }
 
   if (role == Qt::UserRole)
@@ -143,18 +148,19 @@ QString LogTableModel::toString(logging::LogLevel level) const
 
 QIcon LogTableModel::toIcon(logging::LogLevel level) const
 {
+  const auto* qlementineStyle = oclero::qlementine::appStyle();
   switch (level)
   {
     case logging::LogLevel::Trace:
       return addIconWithColor(":/icons/trace.svg", QColor("purple"));
     case logging::LogLevel::Debugging:
-      return addIconWithColor(":/icons/debug.svg", QColor("green"));
+      return addIconWithColor(":/icons/debug.svg", qlementineStyle ? qlementineStyle->theme().statusColorSuccess : QColor("green"));
     case logging::LogLevel::Info:
-      return addIconWithColor(":/icons/info.svg", QColor("blue"));
+      return addIconWithColor(":/icons/info.svg", qlementineStyle ? qlementineStyle->theme().statusColorInfo : QColor("blue"));
     case logging::LogLevel::Warning:
-      return addIconWithColor(":/icons/warning.svg", QColor("yellow"));
+      return addIconWithColor(":/icons/warning.svg", qlementineStyle ? qlementineStyle->theme().statusColorWarning : QColor("yellow"));
     case logging::LogLevel::Error:
-      return addIconWithColor(":/icons/error.svg", QColor("red"));
+      return addIconWithColor(":/icons/error.svg", qlementineStyle ? qlementineStyle->theme().statusColorError : QColor("red"));
   }
 
   return QIcon(":/icons/trace.svg");

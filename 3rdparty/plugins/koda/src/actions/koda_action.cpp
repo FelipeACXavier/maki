@@ -43,7 +43,7 @@ QStringList GenerateKodaAction::produces() const
 
 maki::ResultArtifacts GenerateKodaAction::run(const maki::PipelineContext& context, const QVariantMap& parameters, maki::IPipeline* pipeline)
 {
-  LOG_INFO("Running %s", qPrintable(id()));
+  LOG_INFO("Running {}", id());
   // Get the canvas from the context
   // const auto artifacts = context.artifactsOfType("maki");
   // if (artifacts.isEmpty())
@@ -53,7 +53,7 @@ maki::ResultArtifacts GenerateKodaAction::run(const maki::PipelineContext& conte
   // QVector<std::shared_ptr<INode>> nodes;
   // maki >> nodes;
   // for (const auto& n : nodes)
-  //   LOG_DEBUG("Will explore node: %s", qPrintable(n->id()));
+  //   LOG_DEBUG("Will explore node: {}", n->id());
 
   // Generate files
   auto output = mGenerator->generateKoda(maki::PipelineArtifact{}, context.buildDir);

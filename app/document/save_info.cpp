@@ -43,7 +43,7 @@ QVector<std::shared_ptr<NodeSaveInfo>> SaveInfo::findFamilyOfFlowNode(const QStr
 {
   for (const auto& node : nodes)
   {
-    LOG_TRACE("Looking into: %s %s", qPrintable(node->getid()), qPrintable(node->getnodeId()));
+    LOG_TRACE("Looking into: {} {}", node->getid(), node->getnodeId());
 
     // Find the task which owns the given behaviour node
     // If the task is found, then we start building the family
@@ -85,11 +85,11 @@ std::shared_ptr<NodeSaveInfo> SaveInfo::findOwnerTaskOfFlowNode(const QString& n
   if (!node)
     return nullptr;
 
-  LOG_TRACE("Node info: %s %d %d", qPrintable(node->getnodeId()), node->getchildren().size(), node->getflows().size());
+  LOG_TRACE("Node info: {} {} {}", node->getnodeId(), node->getchildren().size(), node->getflows().size());
 
   for (const auto& flow : node->getflows())
   {
-    LOG_TRACE("Looking into flow: %s", qPrintable(flow->getname()));
+    LOG_TRACE("Looking into flow: {}", flow->getname());
     for (const auto& construct : flow->getnodes())
     {
       if (construct->getid() != nodeId)
@@ -275,6 +275,11 @@ QVector<std::shared_ptr<FlowSaveInfo>> SaveInfo::pipelines() const
 void SaveInfo::addPipeline(std::shared_ptr<FlowSaveInfo> pipeline)
 {
   mPipelines.push_back(pipeline);
+}
+
+void SaveInfo::removePipeline(std::shared_ptr<FlowSaveInfo> pipeline)
+{
+  mPipelines.removeIf([pipeline](std::shared_ptr<FlowSaveInfo> info) { return info->getid() == pipeline->getid(); });
 }
 
 // ==========================================================================

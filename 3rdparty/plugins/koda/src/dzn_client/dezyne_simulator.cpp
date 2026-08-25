@@ -114,7 +114,7 @@ void DezyneSimulator::onDisconnected()
 
 void DezyneSimulator::onError(const QString& error)
 {
-  LOG_ERROR("Error in daemon: %s", qPrintable(error));
+  LOG_ERROR("Error in daemon: {}", error);
   mState = State::Idle;
 }
 
@@ -123,7 +123,7 @@ void DezyneSimulator::onMessageReceived(const QJsonObject& obj)
   LOG_DEBUG("Message received");
 
   // auto pretty = QJsonDocument(obj).toJson(QJsonDocument::Indented);
-  // LOG_DEBUG("Received message: %s", qPrintable(pretty));
+  // LOG_DEBUG("Received message: {}", pretty);
 
   if (!obj.contains("type"))
   {

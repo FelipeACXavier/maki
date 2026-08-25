@@ -27,11 +27,13 @@ void LongNotificationWidget::updateContent(QWidget* content)
     return;
   }
 
-  QVBoxLayout* layout = getContent();
-  clearLayout(layout);
+  clearLayout(mBody->getContent());
 
   content->setParent(this);
-  layout->addWidget(content);
+
+  // Adjust to content size
+  mBody->setExpandedSize(content->sizeHint().height());
+  mBody->addCollapsableWidget(content);
 }
 
 bool LongNotificationWidget::disappearing() const

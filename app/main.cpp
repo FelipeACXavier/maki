@@ -72,7 +72,7 @@ int main(int argc, char* argv[])
   auto started = system.start();
   if (!started.IsSuccess())
   {
-    LOG_ERROR("Failed to start main window: %s", started.ErrorMessage().c_str());
+    LOG_ERROR("Failed to start main window: {}", started.ErrorMessage());
     return -1;
   }
 

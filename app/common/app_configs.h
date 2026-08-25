@@ -2,6 +2,7 @@
 
 #include <QColor>
 #include <QFont>
+#include <QSize>
 #include <QString>
 
 namespace Config
@@ -23,6 +24,11 @@ static const qreal OPACITY_THRESHOLD = 0.25;  /// Opacity threshold for visibili
 static const int CONTENT_PADDING = 5;           /// Padding around content.
 static const int CANVAS_OVERLAY_X_MARGIN = 10;  /// X margin for objects that overaly the canvas
 static const int CANVAS_OVERLAY_Y_MARGIN = 50;  /// Y margin for objects that overaly the canvas
+
+static const int SMALL_BUTTON = 16;                                      /// Width and height of a small button
+static const QSize SMALL_BUTTON_SIZE = {SMALL_BUTTON, SMALL_BUTTON};     /// Size of a small button
+static const int MEDIUM_BUTTON = 30;                                     /// Width and height of a medium button
+static const QSize MEDIUM_BUTTON_SIZE = {MEDIUM_BUTTON, MEDIUM_BUTTON};  /// Size of a medium button
 
 extern QColor FOREGROUND;  /// Foreground color.
 extern QColor HIGHLIGHT;   /// Highlight color.

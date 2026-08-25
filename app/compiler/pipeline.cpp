@@ -1,5 +1,6 @@
 #include "pipeline.h"
 
+#include <QFileInfo>
 #include <QProcess>
 #include <QProgressBar>
 #include <QRegularExpression>
@@ -10,6 +11,7 @@
 #include "ipipeline.h"
 #include "logging.h"
 #include "result.h"
+#include "widgets/progress_bar.h"
 
 static const QString DEFAULT_GROUP = "Default";
 static const int SUCCESS = 0;
@@ -169,7 +171,7 @@ VoidResult Pipeline::add(QProcess* process, maki::OnFail onFail, std::function<v
 {
   QString exe = QStandardPaths::findExecutable(process->program());
   if (exe.isEmpty())
-    return VoidResult::Failed("Executable not found in PATH: " + process->program().toStdString());
+    return VoidResult::Failed("Executable not found in PATH: {}", process->program());
 
   auto group = getGroup();
   if (!group)
@@ -188,7 +190,7 @@ VoidResult Pipeline::add(QProcess* process, maki::OnFail onFail, std::function<v
 
   group->processes.push_back(pp);
 
-  LOG_DEBUG("Adding process to group: %s (%d)", qPrintable(group->name), group->size());
+  LOG_DEBUG("Adding process to group: {} ({})", group->name, group->size());
 
   return VoidResult();
 }
@@ -214,7 +216,7 @@ VoidResult Pipeline::start(const QString& groupName, bool first)
 
   int index = getIndexOfGroup(groupName);
   if (index < 0)
-    return VoidResult::Failed("No group with name: " + groupName.toStdString());
+    return VoidResult::Failed("No group with name: {}", groupName);
 
   auto group = mGroups.at(index);
   if (group->isEmpty())
@@ -244,7 +246,7 @@ VoidResult Pipeline::start(const QString& groupName, bool first)
   if (first)
     emit startingPipeline(constructInfo());
 
-  // LOG_DEBUG("Starting group: %s, was running %s", qPrintable(group->name), qPrintable(mCurrentGroup));
+  // LOG_DEBUG("Starting group: {}, was running {}", group->name, mCurrentGroup);
   if (mCurrentGroup != group->name)
   {
     mCurrentGroup = group->name;
@@ -287,7 +289,7 @@ void Pipeline::startNextOrEnd(int exitCode, QProcess::ExitStatus status)
     aborting = mState == State::Aborting;
   }
 
-  // LOG_DEBUG("Process ended with code: %d", exitCode);
+  // LOG_DEBUG("Process ended with code: {}", exitCode);
 
   auto group = getGroup();
   if (exitCode != SUCCESS)
@@ -309,7 +311,7 @@ void Pipeline::startNextOrEnd(int exitCode, QProcess::ExitStatus status)
     emit finishedGroup(constructInfo(), group->name, exitCode, "Success");
 
     // Check if there are more groups to run
-    LOG_DEBUG("Done running group: %s. (%d of %d)", qPrintable(group->name), mGroupIndex + 1, mGroups.size());
+    LOG_DEBUG("Done running group: {}. ({} of {})", group->name, mGroupIndex + 1, mGroups.size());
     if (mGroupIndex + 1 < mGroups.size())
     {
       // Move on to the next group
@@ -380,8 +382,6 @@ void Pipeline::onReadyReadStandardError()
   }
 
   QByteArray data = mRunningProcess->process->readAllStandardError();
-  // QString text = handleInputData(data);
-
   if (handleInputData(data))
     emit readyReadStandardError(data);
 }
@@ -394,7 +394,7 @@ void Pipeline::onFinished(int exitCode, QProcess::ExitStatus status)
     return;
   }
 
-  // LOG_DEBUG("Process finished: %s", qPrintable(mRunningProcess->process->program()));
+  // LOG_DEBUG("Process finished: {}", mRunningProcess->process->program());
   if (mRunningProcess->onFinish &&
       ((exitCode != SUCCESS && mRunningProcess->onFail == maki::OnFail::EXECUTE) || mRunningProcess->onFail == maki::OnFail::ALWAYS_EXECUTE))
   {
@@ -460,6 +460,14 @@ void Pipeline::onErrorOccurred(QProcess::ProcessError error)
 Pipeline::Info Pipeline::constructInfo() const
 {
   Info info;
+
+  if (mRunningProcess && mRunningProcess->process)
+  {
+    const auto fileInfo = QFileInfo(mRunningProcess->process->program());
+    info.current = fileInfo.fileName();
+    info.currentPath = fileInfo.absolutePath();
+  }
+
   for (const auto& g : mGroups)
   {
     GroupInfo groupInfo;
@@ -501,6 +509,15 @@ int Pipeline::getCompleteTasks(GroupInfo info) const
       count++;
 
   return count;
+}
+
+bool Pipeline::tasksInError(GroupInfo info) const
+{
+  for (const auto& p : info.processes)
+    if (p.status == Pipeline::State::Error)
+      return true;
+
+  return false;
 }
 
 QWidget* Pipeline::progressWidget(bool subMenu) const
@@ -546,7 +563,7 @@ QWidget* Pipeline::progressWidget(bool subMenu) const
     headerLayout->addWidget(countLabel);
 
     // Progress bar
-    auto* progress = new QProgressBar(row);
+    auto* progress = new maki::ProgressBar(row);
     progress->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     progress->setRange(0, total);
     progress->setValue(completed);
@@ -554,6 +571,12 @@ QWidget* Pipeline::progressWidget(bool subMenu) const
 
     // Current task label
     auto currentTask = getRunningTask(group);
+    if (currentTask == "Error")
+    {
+      progress->setError(true);
+      progress->setValue(total);
+    }
+
     auto* currentTaskLabel = new oclero::qlementine::Label(currentTask, row);
     currentTaskLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     currentTaskLabel->setWordWrap(false);

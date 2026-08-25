@@ -274,7 +274,8 @@ Result<koda::PRosDef> MakiToKoda::buildRosDef(const IFlow& event)
 
 Result<koda::PFlow> MakiToKoda::buildFlowAst(const IFlow& flow)
 {
-  LOG_DEBUG("Building flow AST for %s", qPrintable(flow.getname()));
+  auto flowName = format(flow.getname());
+  LOG_DEBUG("Building AST for flow: {}", flowName);
 
   const auto* start = findStartNode(flow);
   if (start == nullptr)
@@ -289,14 +290,17 @@ Result<koda::PFlow> MakiToKoda::buildFlowAst(const IFlow& flow)
     return Result<koda::PFlow>::Failed("Failed to build first sequence");
 
   auto pflow = std::make_shared<koda::Flow>();
-  auto flowName = flow.getname();
   if (flowName != "main")
     flowName = "f" + flowName;
 
-  pflow->name = format(flowName);
+  pflow->name = flowName;
   pflow->strategy = std::any_cast<koda::PStrategy>(seq);
   for (const auto& arg : flow.getarguments())
-    pflow->tags.push_back(arg->getid().toStdString());
+  {
+    auto parg = std::make_shared<koda::Argument>();
+    parg->b = arg->getid().toStdString();
+    pflow->args.push_back(parg);
+  }
 
   // Clear variables at the end of the flow
   mVariables.clear();
@@ -403,7 +407,7 @@ std::any MakiToKoda::buildNodeExpr(const IFlow& flow, const INode& node)
   else if (node.getnodeId() == "Koda::Terminate")
     return buildSuccessExpr(flow, node);
 
-  LOG_ERROR("Unknown expression: %s", qPrintable(node.getnodeId()));
+  LOG_ERROR("Unknown expression: {}", node.getnodeId());
   return std::any();
 }
 
@@ -479,7 +483,7 @@ std::any MakiToKoda::buildStrategyExpr(const IFlow& flow, const INode& node)
   QJsonArray options = object["options"].toArray();
   if (options.isEmpty())
   {
-    LOG_ERROR("Strategy component does not have a valid flow");
+    LOG_ERROR("Call Flow component does not have a valid flow");
     return std::any();
   }
 
@@ -1006,7 +1010,10 @@ bool MakiToKoda::isEndNode(const INode& node) const
 
 bool MakiToKoda::isStructuralNode(const INode& node) const
 {
-  return node.getnodeId() == "Koda::Start" || node.getnodeId() == "Koda::Success" || node.getnodeId() == "Koda::Failure";
+  return node.getnodeId() == "Koda::Start" ||
+         node.getnodeId() == "Koda::Success" ||
+         node.getnodeId() == "Koda::Failure" ||
+         node.getnodeId() == "Koda::Join";
 }
 
 QList<NodeTransition> MakiToKoda::successorsOfKind(const INode& node, const IFlow& flow, TransitionKind kind) const

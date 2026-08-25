@@ -70,7 +70,7 @@ Result<oclero::qlementine::Theme> SettingsManager::themeByName(const QString& th
     if (theme.meta.name == themeName)
       return theme;
 
-  return Result<oclero::qlementine::Theme>::Failed("No theme named: " + themeName.toStdString());
+  return Result<oclero::qlementine::Theme>::Failed("No theme named: {}", themeName);
 }
 
 void SettingsManager::themeCreated(const QString& themePath)
@@ -86,7 +86,7 @@ void SettingsManager::load()
     return;
 #endif
 
-  LOG_DEBUG("Loading from: %s", qPrintable(mSettings.fileName()));
+  LOG_DEBUG("Loading from: {}", mSettings.fileName());
   mSettings.beginGroup("General");
   LOAD_SETTING(mGeneral, restoreLastSession, Bool);
   LOAD_SETTING(mGeneral, restoreLastSession, Bool);
@@ -176,7 +176,7 @@ void SettingsManager::load()
         setting.setMetadata(metdata);
       }
 
-      LOG_TRACE("Adding setting %s to index %d of %d", qPrintable(setting.getKey()), index, info.settings.size());
+      LOG_TRACE("Adding setting {} to index {} of {}", setting.getKey(), index, info.settings.size());
       info.settings[index] = setting;
       mSettings.endGroup();  // setting.name
     }
@@ -362,7 +362,7 @@ VoidResult SettingsManager::registerSettings(const QString& id, const maki::Plug
       const auto message = QString(tr("Current: %1 Incoming: %2")).arg(plugin.version.toString(), version.toString());
       if (maki::warningPrompt(tr("Plugin version mismatch. Replace?"), message))
         // The user confirmed that the version should be replaced
-        LOG_WARNING("Versions are different: %s", qPrintable(message));
+        LOG_WARNING("Versions are different: {}", message);
       else
         continue;
     }
@@ -377,7 +377,7 @@ VoidResult SettingsManager::registerSettings(const QString& id, const maki::Plug
       if (!current.getKey().isEmpty())
         continue;
 
-      LOG_DEBUG("New setting (%s) added to plugin %s", qPrintable(incoming.getKey()), qPrintable(id));
+      LOG_DEBUG("New setting ({}) added to plugin {}", incoming.getKey(), id);
       plugin.settings.append(incoming);
     }
 
@@ -388,12 +388,12 @@ VoidResult SettingsManager::registerSettings(const QString& id, const maki::Plug
   // If it is a new plugin, then we must register it
   if (!exists)
   {
-    LOG_DEBUG("Registering plugin \"%s\" settings", qPrintable(id));
+    LOG_DEBUG("Registering plugin \"{}\" settings", id);
     mPluginSettings.plugins.append({id, true, version, settings, fixedIconPath});
   }
   else
   {
-    LOG_DEBUG("Settings for plugin \"%s\" are already registered", qPrintable(id));
+    LOG_DEBUG("Settings for plugin \"{}\" are already registered", id);
   }
 
   return VoidResult();

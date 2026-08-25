@@ -23,6 +23,7 @@ public:
    */
   enum class Direction
   {
+    Up,
     Right,  /// Expands to the right.
     Left    /// Expands to the left.
   };
@@ -54,14 +55,14 @@ public:
    *
    * @param widget The QWidget to add to the collapsible area.
    */
-  void addCollapsableWidget(QWidget* widget);
+  void addCollapsableWidget(QWidget* widget, const QString& label = "");
 
   /**
-   * @brief Sets the width of the expanded state.
+   * @brief Sets the size of the expanded state. The height in vertical mode, the width in horizontal mode
    *
-   * @param width The int width to set for the expanded state.
+   * @param size The int size to set for the expanded state.
    */
-  void setExpandedWidth(int width);
+  void setExpandedSize(int size);
 
   /**
    * @brief Expands the area controlled by the button.
@@ -72,6 +73,8 @@ public:
    * @brief Collapses the area controlled by the button.
    */
   void collapseArea();
+
+  QVBoxLayout* getContent() const;
 
 signals:
   /**
@@ -103,10 +106,21 @@ public slots:
    */
   void setExpanded(bool expanded);
 
-private:
-  ClickableIcon* mButton = nullptr;  /// Pointer to the button that controls expansion/collapse.
-  CollapsibleAreaWidth* mSearchArea = nullptr;  /// Pointer to the collapsible area widget.
-  QPropertyAnimation* mAnimation = nullptr;  /// Pointer to the property animation for expanding/collapsing.
+protected:
+  void resizeEvent(QResizeEvent* event) override;
 
-  int mExpandedWidth;  /// The width of the expanded state.
+private:
+  ClickableIcon* mButton;          /// Pointer to the button that controls expansion/collapse.
+  QWidget* mSearchArea;            /// Pointer to the collapsible area widget.
+  QWidget* mContentWidget;         /// Pointer to the actual content inside the mCollapsibleArea
+  QPropertyAnimation* mAnimation;  /// Pointer to the property animation for expanding/collapsing.
+
+  Direction mDirection;
+  int mExpandedSize;  /// The width of the expanded state.
+
+  void setupVerticalWidget();
+  void setupHorizontalWidget();
+
+  void updateCrossAxisSize();
+  void updateContentGeometry();
 };

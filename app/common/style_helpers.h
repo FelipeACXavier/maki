@@ -6,6 +6,7 @@
 #include <QTreeWidgetItem>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <oclero/qlementine/utils/BadgeUtils.hpp>
 
 #include "config.h"
 #include "logging.h"
@@ -96,7 +97,41 @@ QIcon addIconWithColor(const QString& path, const QColor& color);
  * @param path The path to the icon.
  * @return QIcon The icon with the applied color.
  */
-QIcon iconFromTheme(const QString& name, bool useLocal = true);
+QIcon iconFromTheme(const QString& name, bool fallback = false);
+
+/**
+ * @brief Converts a time point to a string in QT format.
+ *
+ * @param ts The time point to convert.
+ * @return QString The converted string.
+ */
+QString timeToQT(std::chrono::system_clock::time_point ts);
+
+/**
+ * @brief Converts a log level to a string in QT format.
+ *
+ * @param logLevel The log level to convert.
+ * @return QString The converted string.
+ */
+QString logLevelToQT(logging::LogLevel logLevel);
+
+/**
+ * @brief Converts a log level to a qlementine StatusBadge
+ *
+ * @param logLevel The log level to convert.
+ * @return oclero::qlementine::StatusBadge The converted badge.
+ */
+oclero::qlementine::StatusBadge logLevelToStatusBadge(logging::LogLevel logLevel);
+
+/**
+ * @brief Converts a time point and log level to a string in QT format.
+ *
+ * @param ts The time point to convert.
+ * @param level The log level to convert.
+ * @param message The message to convert.
+ * @return QString The converted string.
+ */
+QString toQT(std::chrono::system_clock::time_point ts, logging::LogLevel level, const std::string& message);
 
 /**
  * @brief Adds a dynamic widget to a layout.
