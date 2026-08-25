@@ -14,7 +14,7 @@ class ILogging;
 struct SimulationProperties
 {
   QWidget* widget;
-  bool highlight = false;
+  QColor highlight = QColor();
 };
 
 class IHostServices

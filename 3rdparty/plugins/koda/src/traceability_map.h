@@ -36,9 +36,11 @@ public:
 
   // Later: IR -> Dezyne
   void mapEmitter(const std::string& emitter, const std::string& ir);
+  void mapEvent(const std::string& emitterEvent, const std::string& capabilityEvent);
 
   std::optional<MakiSource> sourceForEmitter(const std::string& emitter) const;
   std::vector<std::string> EmitterForSource(const std::string& makiId) const;
+  std::optional<std::string> eventForEmitterEvent(const std::string& emitter) const;
 
   void print() const;
 
@@ -51,6 +53,8 @@ private:
 
   std::unordered_map<std::string, std::string> mEmitterToIr;
   std::unordered_map<std::string, std::vector<std::string>> mIrToEmitter;
+
+  std::unordered_map<std::string, std::string> mEventMap;
 };
 
 }  // namespace koda

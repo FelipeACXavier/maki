@@ -62,6 +62,26 @@ private:
 
   std::unique_ptr<TraceSceneBuilder> mTraceBuilder;
 
+  struct Candidate
+  {
+    QString instance;
+    QString instanceState;
+    QVector<QString> labels;
+    koda::MakiSource source;
+    QString event;
+  };
+
+  struct SimulationControlConfig
+  {
+    QString text;
+    QString iconPath;
+    bool requiresAbort = true;
+    QColor buttonColor;
+    QColor highlightColor;
+  };
+
+  QVector<Candidate> mPreviousCandidates;
+
   void simulationStarted();
   void simulationUpdated(const QJsonObject& obj);
   VoidResult createSimulationScene(QGraphicsScene* scene, const QJsonObject& obj);
@@ -70,6 +90,12 @@ private:
   bool startDaemon();
   bool stopDaemon();
   void buildSettings();
+
+  QWidget* createControl(const QString&, const QString& iconPath, const QString& event, int labelWidth, QWidget* parent);
+  std::optional<SimulationControlConfig> getConfigFromCandidate(const Candidate& candidate, const QString& label, const maki::Theme& theme);
+  QString getCandidatesState(const QString& instance, const QJsonArray& json);
+  QVector<Candidate> collectCandidates(const QJsonObject& json);
+  void highlightActiveNode(const QJsonObject& json, QGraphicsScene* currentScene, const maki::Theme& theme);
 
   maki::SettingField getSetting(const QString& key) const;
 };

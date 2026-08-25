@@ -310,6 +310,18 @@ Result<koda::PFlow> MakiToKoda::buildFlowAst(const IFlow& flow)
   if (start == nullptr)
     return Result<koda::PFlow>::Failed("Flow has no Koda::Start node");
 
+  if (flow.getname() == "main")
+  {
+    const std::string mainStartId = "main_start_id";
+    if (mTraceMap)
+    {
+      mTraceMap->mapAst(mainStartId,
+                        MakiSource{.id = start->getid().toStdString(), .flowId = flow.getid().toStdString(), .kind = MakiElementKind::Node});
+      mTraceMap->mapIr(mainStartId, mainStartId);
+      mTraceMap->mapEmitter("api", mainStartId);
+    }
+  }
+
   auto seq = buildSequenceFrom(flow, start, nullptr);
   if (!seq.has_value())
     return Result<koda::PFlow>::Failed("Failed to build first sequence");
@@ -463,11 +475,7 @@ void MakiToKoda::traceNode(const IFlow& flow, const INode& node, const koda::PSt
   else if (node.getnodeId() == "Koda::Sync task")
     kind = MakiElementKind::Sync;
 
-  mTraceMap->mapAst(strategy->id, MakiSource{
-                                      .id = node.getid().toStdString(),
-                                      .flowId = flow.getid().toStdString(),
-                                      .kind = kind,
-                                  });
+  mTraceMap->mapAst(strategy->id, MakiSource{.id = node.getid().toStdString(), .flowId = flow.getid().toStdString(), .kind = kind});
 }
 
 std::any MakiToKoda::buildAsyncExpr(const IFlow& flow, const INode& node)

@@ -1210,7 +1210,7 @@ QPointF Canvas::getCenter() const
   return parentView()->getCenter();
 }
 
-void Canvas::onFocusNode(const QString& flowId, const QString& nodeId, const QString& message, QWidget* widget)
+void Canvas::onFocusNode(const QString& flowId, const QString& nodeId, const maki::FocusProperties& properties)
 {
   // If no flow id was provided, then we are already in the right canvas, or in the structural canvas
   if (flowId.isEmpty())
@@ -1223,13 +1223,10 @@ void Canvas::onFocusNode(const QString& flowId, const QString& nodeId, const QSt
 
     // Center the node in the view
     parentView()->centerOn(node);
-    if (const auto* style = oclero::qlementine::appStyle())
-    {
-      if (widget)
-        showSimulationControls(node, widget);
-      else
-        node->highlight(style->theme().statusColorError, message);
-    }
+    if (properties.reason == maki::FocusReason::SIMULATION)
+      showSimulationControls(node, properties.widget, properties.color);
+    else if (properties.reason != maki::FocusReason::UNKNOWN)
+      node->highlight(properties.color, properties.message);
   }
   else
   {
@@ -1247,14 +1244,14 @@ void Canvas::onFocusNode(const QString& flowId, const QString& nodeId, const QSt
       for (const auto& child : flow->getNodes())
         if (child->getid() == nodeId)
         {
-          emit openFlow(flow, nodeId, message, widget);
+          emit openFlow(flow, nodeId, properties);
           return;
         }
     }
   }
 }
 
-void Canvas::showSimulationControls(NodeItem* node, QWidget* controls)
+void Canvas::showSimulationControls(NodeItem* node, QWidget* controls, const QColor& highlightColor)
 {
   for (auto& item : items())
   {
@@ -1266,7 +1263,7 @@ void Canvas::showSimulationControls(NodeItem* node, QWidget* controls)
       nodeItem->dismissControl();
   }
 
-  node->showSimulationControls(controls);
+  node->showSimulationControls(controls, highlightColor);
 }
 
 void Canvas::onRemoveNode(const QString& flowId, const QString& nodeId)
@@ -1330,7 +1327,7 @@ void Canvas::onFlowSelected(const QString& flowId, const QString& nodeId)
   }
 
   auto flow = node->getFlow(flowId);
-  emit openFlow(flow, "", "", nullptr);
+  emit openFlow(flow, "", maki::FocusProperties::internal());
 }
 
 void Canvas::onFlowRemoved(const QString& flowId, const QString& nodeId)

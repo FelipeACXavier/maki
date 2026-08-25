@@ -15,7 +15,7 @@
 #include <QProcess>
 #include <QTextStream>
 #include <QTimer>
-#include <filesystem>
+#include <algorithm>
 
 #include "actions/cpp_action.h"
 #include "actions/dezyne_action.h"
@@ -43,44 +43,8 @@
 #include "types.h"
 #include "typing/type_registry.h"
 
-#define APPEND_OR_RETURN_ON_FAILURE(v, func) \
-  do                                         \
-  {                                          \
-    auto ret = func;                         \
-    if (!ret.IsSuccess())                    \
-      return ret;                            \
-                                             \
-    v += ret.Value();                        \
-  } while (0)
-
-struct Candidate
-{
-  QString instance;
-  QVector<QString> labels;
-};
-
-VoidResult copyDirectory(const QString& sourceDir, const QString& targetDir)
-{
-  namespace fs = std::filesystem;
-
-  fs::path libSrcPath = sourceDir.toStdString();
-  fs::path libDstPath = targetDir.toStdString();
-
-  std::error_code ec;
-  if (!fs::exists(libSrcPath, ec))
-    return VoidResult::Failed("Dezyne library source folder does not exist: " + libSrcPath.string());
-
-  // Make sure the files exist
-  fs::create_directories(libDstPath, ec);
-  if (ec)
-    return VoidResult::Failed("Could not create Dezyne library output folder: " + libDstPath.string());
-
-  fs::copy(libSrcPath, libDstPath, fs::copy_options::recursive | fs::copy_options::overwrite_existing, ec);
-  if (ec)
-    return VoidResult::Failed("Could not copy Dezyne libraries to output folder: " + ec.message());
-
-  return VoidResult();
-}
+static const QString ACCEPT_TEXT = "Accept";
+static const QString REJECT_TEXT = "Reject";
 
 bool KodaGenerator::setup()
 {
@@ -187,6 +151,14 @@ void KodaGenerator::buildSettings()
   validateOnSave.setDefaultValue(false);
   validateOnSave.setType(Types::PropertyTypes::BOOLEAN);
   mSettings.push_back(validateOnSave);
+
+  maki::SettingField focusOnSimulation;
+  focusOnSimulation.setKey("focusOnSimulation");
+  focusOnSimulation.setLabel("Simulate with MAKI blocks");
+  focusOnSimulation.setDescription("If set, the simulator will focus on the MAKI blocks instead of the sequence diagram");
+  focusOnSimulation.setDefaultValue(true);
+  focusOnSimulation.setType(Types::PropertyTypes::BOOLEAN);
+  mSettings.push_back(focusOnSimulation);
 }
 
 void KodaGenerator::settingsChanged(const QVector<maki::SettingField>& settings)
@@ -672,7 +644,7 @@ void KodaGenerator::simulationStarted()
   if (!mServices)
     return;
 
-  mSimulator->triggerEvent("api.trigger");
+  // mSimulator->triggerEvent("api.trigger");
 
   if (auto pluginTab = mServices->ui())
   {
@@ -703,12 +675,12 @@ VoidResult KodaGenerator::createSimulationScene(QGraphicsScene* scene, const QJs
   if (obj.isEmpty())
     return VoidResult();
 
-  auto pretty = QJsonDocument(obj).toJson(QJsonDocument::Indented);
-  LOG_DEBUG("Received message: {}", pretty.toStdString());
+  // auto pretty = QJsonDocument(obj).toJson(QJsonDocument::Indented);
+  // LOG_DEBUG("Received message: {}", pretty.toStdString());
 
-  auto theme = mServices->ui()->currentTheme();
+  auto currentTheme = mServices->ui()->currentTheme();
   if (!mTraceBuilder)
-    mTraceBuilder = std::make_unique<TraceSceneBuilder>(theme, TraceSceneBuilder::Style{});
+    mTraceBuilder = std::make_unique<TraceSceneBuilder>(currentTheme, TraceSceneBuilder::Style{});
 
   auto clickHandler = [this](const QString& instance, const QString& labelText, bool illegal) {
     LOG_DEBUG("Sending data: {} {}", instance, labelText);
@@ -719,39 +691,282 @@ VoidResult KodaGenerator::createSimulationScene(QGraphicsScene* scene, const QJs
   if (!mTraceBuilder->buildScene(obj, scene, clickHandler, &err))
     return VoidResult::Failed("Failed to build scene: " + err.toStdString());
 
+  auto focus = getSetting("focusOnSimulation");
+  if (focus.getType() == Types::PropertyTypes::BOOLEAN && focus.getValue().toBool())
+    highlightActiveNode(obj, scene, currentTheme);
+
+  return VoidResult();
+};
+
+void KodaGenerator::highlightActiveNode(const QJsonObject& json, QGraphicsScene* currentScene, const maki::Theme& theme)
+{
   if (!mServices)
-    return VoidResult();
+    return;
 
   if (!mTraceMap)
-    return VoidResult();
+    return;
 
-  if (!obj.contains("lifelines") || !obj.value("lifelines").isArray() || obj.value("lifelines").toArray().isEmpty())
+  QString lastEvent;
+  if (json.contains("trail") && json["trail"].isArray() && !json["trail"].toArray().isEmpty())
   {
-    LOG_WARNING("1");
-    return VoidResult();
+    auto emitterEvent = json["trail"].toArray().last().toString();
+    auto makiEvent = mTraceMap->eventForEmitterEvent(emitterEvent.toStdString());
+    if (makiEvent)
+      lastEvent = QString::fromStdString(makiEvent.value());
   }
 
+  auto candidates = collectCandidates(json);
+  for (auto& candidate : candidates)
+  {
+    LOG_DEBUG("Trying to find node of candidate: {}", candidate.instance);
+    auto* container = new QWidget();
+    container->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+
+    auto* containerLayout = new QVBoxLayout(container);
+    containerLayout->setContentsMargins(theme.spacing, 4, theme.spacing, 4);
+    containerLayout->setSpacing(4);
+
+    auto* controlsContainer = new QWidget(container);
+    auto* controlsLayout = new QHBoxLayout(controlsContainer);
+    controlsLayout->setContentsMargins(4, 4, 4, 4);
+    controlsLayout->setAlignment(Qt::AlignCenter);
+    controlsLayout->setSpacing(4);
+
+    QColor highlight;
+    bool isFirst = true;
+    bool requiresAbort = true;
+    int maxLabelWidth = 0;
+    QFontMetrics fm(controlsContainer->font());
+    for (const auto& label : candidate.labels)
+    {
+      auto config = getConfigFromCandidate(candidate, label, theme);
+      if (!config)
+        continue;
+
+      maxLabelWidth = std::max(maxLabelWidth, fm.horizontalAdvance(config->text));
+    }
+
+    // Make sure the labels are ordered
+    std::stable_sort(candidate.labels.begin(), candidate.labels.end(), [&](const QString& a, const QString& b) {
+      const auto ca = getConfigFromCandidate(candidate, a, theme);
+      const auto cb = getConfigFromCandidate(candidate, b, theme);
+
+      if (!ca || !cb)
+        return false;
+
+      return ca->text == ACCEPT_TEXT && cb->text != ACCEPT_TEXT;
+    });
+
+    for (const auto& label : candidate.labels)
+    {
+      auto palette = currentScene->palette();
+      auto config = getConfigFromCandidate(candidate, label, theme);
+      if (!config)
+        continue;
+
+      if (!isFirst)
+      {
+        auto* line = new QFrame(controlsContainer);
+        line->setFrameShape(QFrame::VLine);
+        controlsLayout->addWidget(line);
+      }
+
+      controlsLayout->addWidget(createControl(config->text, config->iconPath, label, maxLabelWidth, controlsContainer), 1);
+
+      if (config->highlightColor.isValid())
+        highlight = config->highlightColor;
+      if (!config->requiresAbort)
+        requiresAbort = config->requiresAbort;
+
+      isFirst = false;
+    }
+
+    if (!candidate.instanceState.isEmpty())
+    {
+      auto stateLabel = new QLabel(tr("State") + ": " + candidate.instanceState, container);
+      stateLabel->setAlignment(Qt::AlignLeft);
+      containerLayout->addWidget(stateLabel);
+    }
+
+    if (!lastEvent.isEmpty())
+    {
+      auto eventLabel = new QLabel(tr("Event") + ": " + lastEvent, container);
+      eventLabel->setAlignment(Qt::AlignLeft);
+      containerLayout->addWidget(eventLabel);
+    }
+
+    if (!candidate.instanceState.isEmpty() || !lastEvent.isEmpty())
+    {
+      auto* line = new QFrame(container);
+      line->setFrameShape(QFrame::HLine);
+      containerLayout->addWidget(line);
+    }
+
+    if (requiresAbort)
+    {
+      if (controlsLayout->count() > 0)
+      {
+        auto* line = new QFrame(controlsContainer);
+        line->setFrameShape(QFrame::VLine);
+        controlsLayout->addWidget(line);
+      }
+
+      controlsLayout->addWidget(createControl("Abort", ":/icons/abort.svg", "api.abort", maxLabelWidth, controlsContainer), 1);
+    }
+
+    containerLayout->addWidget(controlsContainer);
+
+    LOG_DEBUG("Sending simulateOnNode: {} {}", candidate.source.id, candidate.source.flowId);
+    mServices->simulateOnNode(QString::fromStdString(candidate.source.id), QString::fromStdString(candidate.source.flowId),
+                              maki::SimulationProperties{
+                                  .widget = container,
+                                  .highlight = highlight,
+                              });
+  }
+
+  // Clean the controls
+  if (candidates.isEmpty())
+    for (const auto& candidate : mPreviousCandidates)
+      mServices->simulateOnNode(QString::fromStdString(candidate.source.id), QString::fromStdString(candidate.source.flowId),
+                                maki::SimulationProperties{
+                                    .widget = nullptr,
+                                });
+
+  mPreviousCandidates = candidates;
+}
+
+QWidget* KodaGenerator::createControl(const QString& label, const QString& iconPath, const QString& event, int labelWidth, QWidget* parent)
+{
+  auto* control = new QWidget(parent);
+  control->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+
+  auto* labelLayout = new QVBoxLayout(control);
+  labelLayout->setContentsMargins(0, 0, 0, 0);
+  labelLayout->setSpacing(4);
+
+  auto* button = new SvgToolButton(iconPath, control);
+  button->setFixedSize(30, 30);
+  button->setAutoRaise(true);
+
+  connect(button, &SvgToolButton::clicked, this, [this, event] {
+    if (mSimulator)
+      mSimulator->triggerEvent(event);
+  });
+
+  auto* qlabel = new QLabel(label, control);
+  qlabel->setAlignment(Qt::AlignCenter);
+  qlabel->setMinimumWidth(labelWidth);
+
+  labelLayout->addWidget(button, 1, Qt::AlignVCenter | Qt::AlignHCenter);
+  labelLayout->addWidget(qlabel, 0, Qt::AlignHCenter);
+
+  return control;
+}
+
+std::optional<KodaGenerator::SimulationControlConfig> KodaGenerator::getConfigFromCandidate(const Candidate& candidate, const QString& label,
+                                                                                            const maki::Theme& theme)
+{
+  if (label.contains("Result:Failure"))
+  {
+    return SimulationControlConfig{
+        .text = REJECT_TEXT,
+        .iconPath = ":/icons/reject.svg",
+        .requiresAbort = false,
+        .buttonColor = theme.statusColorError,
+        .highlightColor = QColor(),
+    };
+  }
+  else if (label.contains("Result:Success"))
+  {
+    if (candidate.source.kind == koda::MakiElementKind::Sync)
+      return std::nullopt;
+
+    return SimulationControlConfig{
+        .text = ACCEPT_TEXT,
+        .iconPath = ":/icons/accept.svg",
+        .requiresAbort = false,
+        .buttonColor = theme.statusColorInfo,
+        .highlightColor = QColor(),
+    };
+  }
+  else if (label.contains("Result:Done"))
+  {
+    if (candidate.source.kind != koda::MakiElementKind::Sync)
+      return std::nullopt;
+
+    return SimulationControlConfig{
+        .text = ACCEPT_TEXT,
+        .iconPath = ":/icons/accept.svg",
+        .requiresAbort = false,
+        .buttonColor = theme.statusColorInfo,
+        .highlightColor = QColor(),
+    };
+  }
+  else if (label.contains(".failure"))
+  {
+    return SimulationControlConfig{
+        .text = "Failure",
+        .iconPath = ":/icons/reject.svg",
+        .buttonColor = theme.statusColorError,
+        .highlightColor = theme.primaryColor,
+    };
+  }
+  else if (label.contains(".success"))
+  {
+    return SimulationControlConfig{
+        .text = "Success",
+        .iconPath = ":/icons/accept.svg",
+        .buttonColor = theme.statusColorInfo,
+        .highlightColor = theme.primaryColor,
+    };
+  }
+  else if (label.contains("api.trigger"))
+  {
+    return SimulationControlConfig{
+        .text = "Start simulation",
+        .iconPath = ":/icons/accept.svg",
+        .requiresAbort = false,
+        .buttonColor = theme.primaryColor,
+        .highlightColor = theme.primaryColor,
+    };
+  }
+  else if (label.contains("api.reset"))
+  {
+    return SimulationControlConfig{
+        .text = "Reset task",
+        .iconPath = ":/icons/reset.svg",
+        .buttonColor = theme.primaryColor,
+        .highlightColor = theme.primaryColor,
+    };
+  }
+
+  return std::nullopt;
+}
+
+QVector<KodaGenerator::Candidate> KodaGenerator::collectCandidates(const QJsonObject& json)
+{
+  if (!json.contains("lifelines") || !json.value("lifelines").isArray() || json.value("lifelines").toArray().isEmpty())
+    return {};
+
+  if (!json.contains("states") || !json.value("states").isArray() || json.value("states").toArray().isEmpty())
+    return {};
+
   QVector<Candidate> candidates;
-  for (const auto& ll : obj.value("lifelines").toArray())
+  for (const auto& ll : json.value("lifelines").toArray())
   {
     auto lifeline = ll.toObject();
     if (!lifeline.contains("header") || !lifeline["header"].isObject())
-    {
-      LOG_WARNING("2");
       continue;
-    }
 
     auto header = lifeline["header"].toObject();
     if (!header.contains("instance") || !header["instance"].isString())
-    {
-      LOG_WARNING("3");
       continue;
-    }
 
     if (!lifeline.contains("labels") || !lifeline["labels"].isArray())
       continue;
 
     QStringList labels;
+    const QString instanceName = header["instance"].toString();
     for (const auto& l : lifeline["labels"].toArray())
     {
       auto label = l.toObject();
@@ -773,121 +988,56 @@ VoidResult KodaGenerator::createSimulationScene(QGraphicsScene* scene, const QJs
             mSimulator->triggerEvent(text);
         });
 
-        return VoidResult();
+        return {};
       }
 
       const auto role = label["role"].toString();
-      if (role != "requires")
+      if (role != "requires" && role != "provides")
         continue;
 
       labels.push_back(text);
     }
 
-    if (!labels.empty())
-      candidates.append(Candidate{
-          .instance = header["instance"].toString(),
-          .labels = labels,
-      });
-  }
+    if (labels.empty())
+      continue;
 
-  for (const auto& candidate : candidates)
-  {
-    LOG_DEBUG("Trying to find node of candidate: {}", candidate.instance);
-    auto source = mTraceMap->sourceForEmitter(candidate.instance.toStdString());
+    LOG_INFO("Looking for source: {}", instanceName.toStdString());
+    auto source = mTraceMap->sourceForEmitter(instanceName.toStdString());
     if (!source)
       continue;
 
-    auto* container = new QWidget();
-    auto* containerLayout = new QHBoxLayout(container);
-    containerLayout->setContentsMargins(4, 4, 4, 4);
-    containerLayout->setSpacing(4);
-
-    bool isSync = false;
-    bool highlight = false;
-    bool isFirst = true;
-    for (const auto& label : candidate.labels)
-    {
-      // Sync tasks can only send Completed
-      if (isSync)
-        continue;
-
-      QString text = "";
-      QString icon = "";
-      auto palette = scene->palette();
-      if (source->kind == koda::MakiElementKind::Sync)
-      {
-        palette.setColor(QPalette::Button, QColor("#1ba8d5"));
-        text = "Completed";
-        icon = ":/icons/accept.svg";
-        isSync = true;
-      }
-      else if (label.contains("Result:Failure"))
-      {
-        text = "Reject";
-        palette.setColor(QPalette::Button, QColor("#e96b72"));
-        icon = ":/icons/reject.svg";
-      }
-      else if (label.contains(".failure"))
-      {
-        palette.setColor(QPalette::Button, QColor("#e96b72"));
-        text = "Failure";
-        icon = ":/icons/reject.svg";
-        highlight = true;
-      }
-      else if (label.contains("Result:Success"))
-      {
-        palette.setColor(QPalette::Button, QColor("#2bb5a0"));
-        text = "Accept";
-        icon = ":/icons/accept.svg";
-      }
-      else if (label.contains(".success"))
-      {
-        palette.setColor(QPalette::Button, QColor("#2bb5a0"));
-        text = "Success";
-        icon = ":/icons/accept.svg";
-        highlight = true;
-      }
-      else
-      {
-        continue;
-      }
-
-      auto* labelLayout = new QVBoxLayout();
-      labelLayout->setContentsMargins(0, 0, 0, 0);
-      labelLayout->setSpacing(4);
-
-      auto* qlabel = new QLabel(text, container);
-
-      auto* button = new SvgToolButton(icon, container);
-      button->setFixedSize(30, 30);
-      button->setAutoRaise(true);
-
-      connect(button, &SvgToolButton::clicked, this, [this, instance = candidate.instance, label] {
-        LOG_DEBUG("Sending data: {} {}", instance, label);
-        if (mSimulator)
-          mSimulator->triggerEvent(label);
-      });
-
-      labelLayout->addWidget(button, 1, Qt::AlignVCenter | Qt::AlignHCenter);
-      labelLayout->addWidget(qlabel, 0);
-
-      if (!isFirst)
-      {
-        auto* line = new QFrame(container);
-        line->setFrameShape(QFrame::VLine);
-        containerLayout->addWidget(line);
-      }
-
-      containerLayout->addLayout(labelLayout, 1);
-      isFirst = false;
-    }
-
-    mServices->simulateOnNode(QString::fromStdString(source.value().id), QString::fromStdString(source.value().flowId),
-                              maki::SimulationProperties{
-                                  .widget = container,
-                                  .highlight = highlight = true,
-                              });
+    QString instanceStateValue = getCandidatesState(instanceName, json.value("states").toArray());
+    candidates.append(Candidate{.instance = instanceName, .instanceState = instanceStateValue, .labels = labels, .source = source.value()});
   }
 
-  return VoidResult();
+  return candidates;
+}
+
+QString KodaGenerator::getCandidatesState(const QString& instance, const QJsonArray& json)
+{
+  if (json.isEmpty())
+    return QString();
+
+  if (!json.last().isArray())
+    return QString();
+
+  LOG_INFO("Looking for state for candidate: {}", instance);
+  for (const auto& state : json.last().toArray())
+  {
+    auto stateObj = state.toObject();
+    if (!stateObj.contains("instance") || stateObj["instance"].toString() != instance)
+      continue;
+
+    if (!stateObj.contains("state") || !stateObj["state"].isArray() || stateObj["state"].toArray().isEmpty())
+      continue;
+
+    auto instanceState = stateObj["state"].toArray().last().toObject();
+    if (!instanceState.contains("value") || !instanceState["value"].isString())
+      continue;
+
+    LOG_INFO("  Setting: {}", instanceState["value"].toString());
+    return instanceState["value"].toString();
+  }
+
+  return QString();
 }

@@ -71,7 +71,7 @@ public:
   void highlight(const QColor& color, const QString& message, int durationMs = 1000);
   void dismissHighlight();
 
-  void showSimulationControls(QWidget* controls);
+  void showSimulationControls(QWidget* controls, const QColor& highlightColor);
   void dismissControl();
 
   /**

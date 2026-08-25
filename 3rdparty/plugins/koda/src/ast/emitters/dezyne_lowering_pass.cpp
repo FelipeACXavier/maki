@@ -239,6 +239,15 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
         mOptions.traceability->mapEmitter(emitterBase, call.traceId);
         mOptions.traceability->mapEmitter(std::format("{}.trigger", emitterBase), call.traceId);
         mOptions.traceability->mapEmitter(std::format("{}.abort", emitterBase), call.traceId);
+
+        auto eventName = targetPort;
+        int ordinalIndex = targetPort.find_last_of("_");
+        if (ordinalIndex >= 0)
+          eventName = eventName.substr(0, ordinalIndex);
+
+        mOptions.traceability->mapEvent(std::format("{}.trigger", emitterBase), std::format("{} {}", sourceName(call.receiver), eventName));
+        mOptions.traceability->mapEvent(std::format("{}.reset", emitterBase), std::format("{} recover", sourceName(call.receiver)));
+        mOptions.traceability->mapEvent(std::format("{}.abort", emitterBase), std::format("{} abort", sourceName(call.receiver)));
       }
 
       mModel.declareCallSite({

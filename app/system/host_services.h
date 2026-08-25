@@ -2,6 +2,7 @@
 
 #include <QObject>
 
+#include "focus_properties.h"
 #include "ihost_services.h"
 
 namespace maki
@@ -93,8 +94,7 @@ public:
   maki::ILogging* logger() const override;
 
 signals:
-  void onErrorOnNode(const QString& nodeId, const QString& flowId, const QString& message);
-  void onSimulateOnNode(const QString& nodeId, const QString& flowId, maki::SimulationProperties properties);
+  void onFocusOnNode(const QString& nodeId, const QString& flowId, const maki::FocusProperties& properties);
 
 private:
   std::shared_ptr<IDocument> mDocument;  /// Shared pointer to the document.

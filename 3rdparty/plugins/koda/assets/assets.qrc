@@ -3,5 +3,7 @@
   <qresource prefix="/icons">
     <file alias="accept.svg">icons/circle-check.svg</file>
     <file alias="reject.svg">icons/circle-xmark.svg</file>
+    <file alias="abort.svg">icons/circle-dot.svg</file>
+    <file alias="reset.svg">icons/circle-h.svg</file>
   </qresource>
 </RCC>

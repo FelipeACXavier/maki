@@ -58,10 +58,10 @@ maki::ILogging* HostServices::logger() const
 
 void HostServices::errorOnNode(const QString& nodeId, const QString& flowId, const QString& message)
 {
-  emit onErrorOnNode(nodeId, flowId, message);
+  emit onFocusOnNode(nodeId, flowId, maki::FocusProperties::fromErrorMessage(message));
 }
 
 void HostServices::simulateOnNode(const QString& nodeId, const QString& flowId, maki::SimulationProperties properties)
 {
-  emit onSimulateOnNode(nodeId, flowId, properties);
+  emit onFocusOnNode(nodeId, flowId, maki::FocusProperties::fromSimulation(properties));
 }

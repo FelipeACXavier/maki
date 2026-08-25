@@ -14,6 +14,7 @@
 #include "json.h"
 #include "node_info.h"
 #include "save_info.h"
+#include "system/focus_properties.h"
 
 class QUndoStack;
 class CanvasView;
@@ -335,7 +336,7 @@ signals:
    * @param flow Pointer to the opened flow.
    * @param node Pointer to the node associated with the flow.
    */
-  void openFlow(Flow* flow, const QString& nodeId, const QString& message, QWidget* widget);
+  void openFlow(Flow* flow, const QString& nodeId, const maki::FocusProperties& properties);
 
   /**
    * @brief Emitted when a flow is added.
@@ -360,7 +361,7 @@ public slots:
    * @param flowId The ID of the flow that contains the given node.
    * @param nodeId The ID of the focused node.
    */
-  void onFocusNode(const QString& flowId, const QString& nodeId, const QString& message, QWidget* widget);
+  void onFocusNode(const QString& flowId, const QString& nodeId, const maki::FocusProperties& properties);
 
   /**
    * @brief Handles removal of a node.
@@ -397,7 +398,7 @@ protected:
   virtual TransitionConfig nextTransition(NodeItem* node) const;
   virtual QVector<QGraphicsItem*> cleanTransitionsOfNode(const QString& nodeId);
   virtual void onNodeMoved(const NodeItem* node);
-  virtual void showSimulationControls(NodeItem* node, QWidget* controls);
+  virtual void showSimulationControls(NodeItem* node, QWidget* controls, const QColor& highlightColor);
 
   /**
    * @brief Returns the parent view of this canvas.

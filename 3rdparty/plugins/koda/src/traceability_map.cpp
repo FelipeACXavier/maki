@@ -16,6 +16,9 @@ void TraceabilityMap::mapAst(const std::string& astId, const MakiSource& source)
   if (astId.empty() || source.id.empty())
     return;
 
+  if (mAstToMaki.find(astId) != mAstToMaki.end())
+    return;
+
   mMakiToAst[source.id].push_back(astId);
   mAstToMaki[astId] = source;
 }
@@ -38,6 +41,14 @@ void TraceabilityMap::mapEmitter(const std::string& emitter, const std::string& 
   mEmitterToIr[emitter] = ir;
 }
 
+void TraceabilityMap::mapEvent(const std::string& emitterEvent, const std::string& capabilityEvent)
+{
+  if (emitterEvent.empty() || capabilityEvent.empty())
+    return;
+
+  mEventMap[emitterEvent] = capabilityEvent;
+}
+
 void TraceabilityMap::print() const
 {
   LOG_INFO("MAKI to AST:");
@@ -51,6 +62,10 @@ void TraceabilityMap::print() const
   LOG_INFO("IR to Emitter:");
   for (const auto& [key, value] : mEmitterToIr)
     LOG_INFO("  {} <-> {}", value, key);
+
+  LOG_INFO("Events:");
+  for (const auto& [key, value] : mEventMap)
+    LOG_INFO("  Event: {} Maki: {}", key, value);
 }
 
 std::optional<MakiSource> TraceabilityMap::sourceForEmitter(const std::string& emitter) const
@@ -81,6 +96,15 @@ std::vector<std::string> TraceabilityMap::EmitterForSource(const std::string& ma
     return {};
 
   return it->second;
+}
+
+std::optional<std::string> TraceabilityMap::eventForEmitterEvent(const std::string& emitter) const
+{
+  auto event = mEventMap.find(emitter);
+  if (event == mEventMap.end())
+    return std::nullopt;
+
+  return event->second;
 }
 
 }  // namespace koda

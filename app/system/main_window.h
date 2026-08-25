@@ -12,6 +12,7 @@
 #include "compiler/pipeline_graph.h"
 #include "config_table.h"
 #include "flow_info.h"
+#include "focus_properties.h"
 #include "json.h"
 #include "logging.h"
 #include "main_window_layout.h"
@@ -108,7 +109,7 @@ private slots:
    * @param flow Pointer to the opened Flow.
    * @param node Pointer to the associated NodeItem.
    */
-  void onOpenFlow(Flow* flow, const QString& nodeId, const QString& message, QWidget* widget);
+  void onOpenFlow(Flow* flow, const QString& nodeId, const maki::FocusProperties& properties);
 
   /**
    * @brief Handles flow addition events.

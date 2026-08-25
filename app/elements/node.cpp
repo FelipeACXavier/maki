@@ -177,12 +177,26 @@ void NodeItem::dismissHighlight()
   update();
 }
 
-void NodeItem::showSimulationControls(QWidget* controls)
+void NodeItem::showSimulationControls(QWidget* controls, const QColor& highlightColor)
 {
   if (!controls)
   {
     dismissControl();
     return;
+  }
+
+  if (highlightColor.isValid())
+  {
+    auto* glow = new QGraphicsDropShadowEffect();
+    glow->setOffset(0, 0);
+    glow->setBlurRadius(16);
+    glow->setColor(highlightColor);
+
+    setGraphicsEffect(glow);
+  }
+  else
+  {
+    setGraphicsEffect(nullptr);
   }
 
   if (!mControlWidget)
@@ -213,6 +227,7 @@ void NodeItem::dismissControl()
   if (mControlWidget)
     mControlWidget->hide();
 
+  setGraphicsEffect(nullptr);
   update();
 }
 
