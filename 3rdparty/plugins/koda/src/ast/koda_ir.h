@@ -213,6 +213,7 @@ struct Strategy
     std::vector<PHandler> handlers;
   };
 
+  std::string id;
   std::variant<Sequence, Join, Either, Within, Repeat, End, Continue, Call> value;
   Span span;
 };

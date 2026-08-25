@@ -231,6 +231,16 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
       if (!receiverComponent)
         return VoidResult::Failed("Unknown capability type for {} in {}", receiver->name, task.name);
 
+      if (mOptions.traceability)
+      {
+        // We need the whole tree, so
+        auto emitterBase = std::format("sut.{}.{}", sourceName(call.receiver), targetPort);
+        LOG_DEBUG("Mapping {} to {}", call.traceId, emitterBase);
+        mOptions.traceability->mapEmitter(emitterBase, call.traceId);
+        mOptions.traceability->mapEmitter(std::format("{}.trigger", emitterBase), call.traceId);
+        mOptions.traceability->mapEmitter(std::format("{}.abort", emitterBase), call.traceId);
+      }
+
       mModel.declareCallSite({
           .kind = kind,
           .flow = call.flow,
@@ -267,8 +277,6 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
   RETURN_ON_FAILURE(createNecessaryArbiter(componentId, connections));
 
   // Emit any instances introduced during topology lowering (alarms/arbiters).
-  // out.str("");
-  // out.clear();
   out << "import iaction.dzn;\n";
   out << "import isignal.dzn;\n";
   for (auto symbol : importedCapabilities)
@@ -613,12 +621,11 @@ Result<std::string> LoweringPass::lowerStrategy(const ir::Flow& flow, const ir::
   }
   else if (auto p = std::get_if<ir::Strategy::Call>(&strategy->value))
   {
-    auto endpoint = lowerCall(p->call, state, false);
+    auto endpoint = lowerCall(p->call, state, false, strategy->id);
     if (!endpoint.IsSuccess())
       return endpoint;
 
     std::string current = endpoint.Value();
-
     for (const auto& handler : p->handlers)
     {
       state.previous = current;
@@ -670,7 +677,7 @@ Result<std::string> LoweringPass::lowerHandler(const ir::Flow& flow, const ir::P
   state.imports.insert(cont ? "signal_continue.dzn" : "signal_handler.dzn");
   state.definitions.push_back(std::string(type) + " " + instance);
   mModel.declareInstance(state.component, instance, type, {std::nullopt, handler->span});
-  auto signal = lowerCall(*handler->emitter, state, true);
+  auto signal = lowerCall(*handler->emitter, state, true, "");
   if (!signal.IsSuccess())
     return signal;
 
@@ -684,7 +691,7 @@ Result<std::string> LoweringPass::lowerHandler(const ir::Flow& flow, const ir::P
   return instance + ".api";
 }
 
-Result<std::string> LoweringPass::lowerCall(const ir::Call& call, FlowState& state, bool signal)
+Result<std::string> LoweringPass::lowerCall(const ir::Call& call, FlowState& state, bool signal, const std::string& traceId)
 {
   if (call.kind == ir::CallKind::Flow)
   {
@@ -704,6 +711,7 @@ Result<std::string> LoweringPass::lowerCall(const ir::Call& call, FlowState& sta
         .arguments = call.arguments,
         .inputSlots = call.inputSlots,
         .outputSlots = call.outputSlots,
+        .traceId = traceId,
         .span = call.span,
     });
 
@@ -756,6 +764,7 @@ Result<std::string> LoweringPass::lowerCall(const ir::Call& call, FlowState& sta
         .inputSlots = call.inputSlots,
         .outputSlots = call.outputSlots,
 
+        .traceId = traceId,
         .span = call.span,
     });
 
@@ -782,6 +791,7 @@ Result<std::string> LoweringPass::lowerCall(const ir::Call& call, FlowState& sta
       .inputSlots = call.inputSlots,
       .outputSlots = call.outputSlots,
 
+      .traceId = traceId,
       .span = call.span,
   });
 

@@ -39,6 +39,8 @@ QVector<maki::ActionParameter> GenerateDezyneAction::parameters() const
 {
   return {
       maki::ActionParameter("Debug", koda::types::TypeReference::createBool(), maki::Value::createBool(false)),
+      maki::ActionParameter("From file", koda::types::TypeReference::createBool(), maki::Value::createBool(true)),
+      maki::ActionParameter("Verbose", koda::types::TypeReference::createBool(), maki::Value::createBool(false)),
       maki::ActionParameter(SIMULATE_KEY, koda::types::TypeReference::createBool(), maki::Value::createBool(true)),
       maki::ActionParameter(START_WAIT, koda::types::TypeReference::createReal(), maki::Value::createReal(10)),
   };

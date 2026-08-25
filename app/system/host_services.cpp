@@ -60,3 +60,8 @@ void HostServices::errorOnNode(const QString& nodeId, const QString& flowId, con
 {
   emit onErrorOnNode(nodeId, flowId, message);
 }
+
+void HostServices::simulateOnNode(const QString& nodeId, const QString& flowId, maki::SimulationProperties properties)
+{
+  emit onSimulateOnNode(nodeId, flowId, properties);
+}

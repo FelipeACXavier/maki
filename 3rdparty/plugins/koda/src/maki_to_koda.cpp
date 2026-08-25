@@ -41,8 +41,9 @@
 namespace koda
 {
 
-MakiToKoda::MakiToKoda(const koda::types::TypeRegistry* registry)
+MakiToKoda::MakiToKoda(const koda::types::TypeRegistry* registry, std::shared_ptr<koda::TraceabilityMap> traceMap)
     : mTypeRegistry(registry)
+    , mTraceMap(traceMap)
 {
 }
 
@@ -51,29 +52,34 @@ std::vector<MakiErrorListener::Error> MakiToKoda::getErrors() const
   return mErrorListener.mErrors;
 }
 
+koda::System MakiToKoda::getAST() const
+{
+  return mAST;
+}
+
 Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes, QVector<const IParameter*> missionParameters)
 {
-  koda::System sys;
+  mAST = koda::System{};
 
   for (const auto& node : nodes)
   {
-    auto taskAny = buildTask(*node, missionParameters);
-    if (!taskAny)
-      return Result<QString>::Failed("Failed to generate task: " + taskAny.ErrorMessage());
-
     for (const auto& child : node->getchildren())
     {
       auto generated = buildCapability(*child);
       if (!generated)
         return Result<QString>::Failed("Failed to generate capability: {}", generated.ErrorMessage());
 
-      sys.components.push_back(generated.Value());
+      mAST.components.push_back(generated.Value());
     }
 
-    sys.components.push_back(taskAny.Value());
+    auto taskAny = buildTask(*node, missionParameters);
+    if (!taskAny)
+      return Result<QString>::Failed("Failed to generate task: " + taskAny.ErrorMessage());
+
+    mAST.components.push_back(taskAny.Value());
   }
 
-  auto contents = KodaEmitter::emitKoda(sys, mTypeRegistry);
+  auto contents = KodaEmitter::emitKoda(mAST, mTypeRegistry);
   RETURN_ON_FAILURE_AS(contents, QString);
 
   return QString::fromStdString(contents.Value());
@@ -82,11 +88,8 @@ Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes
 const maki::Value* MakiToKoda::getProperty(const QString& key, const INode& node) const
 {
   for (const auto& property : node.getproperties())
-  {
-    LOG_INFO("Looking for: {} vs {}", property->getid(), key);
     if (property->getid() == key)
       return dynamic_cast<const maki::Value*>(property->getvalue());
-  }
 
   return nullptr;
 }
@@ -118,8 +121,8 @@ Result<koda::PComponent> MakiToKoda::buildTask(const INode& task, QVector<const 
     parg->kind = koda::Argument::Kind::Req;
     auto tmp = format(capName->toStringValue());
     ToLowerCase(tmp, 0);
-    parg->a = types::TypeReference::named(tmp);
-    parg->b = format(capName->toStringValue());
+    parg->a = types::TypeReference::named(capName->toStringValue().toStdString());
+    parg->b = tmp;
 
     c->args.push_back(parg);
   }
@@ -127,7 +130,6 @@ Result<koda::PComponent> MakiToKoda::buildTask(const INode& task, QVector<const 
   // Get events
   for (const auto& event : task.getevents())
   {
-    LOG_DEBUG("Generating event: {} {}", event->getname(), (int)event->gettype());
     auto rosDef = buildRosDef(*event);
     RETURN_ON_FAILURE_AS(rosDef, koda::PComponent);
 
@@ -181,7 +183,6 @@ Result<koda::PComponent> MakiToKoda::buildCapability(const INode& capability)
     if (record.empty())
       return Result<koda::PComponent>::Failed("Call definition is empty: " + c->name);
 
-    LOG_DEBUG("Capability {} has a definition", name->toString());
     auto actions = buildActionDefs(capability, record);
     RETURN_ON_FAILURE_AS(actions, koda::PComponent);
     for (const auto& action : actions.Value())
@@ -305,8 +306,6 @@ Result<koda::PRosDef> MakiToKoda::buildRosDef(const IFlow& event)
 Result<koda::PFlow> MakiToKoda::buildFlowAst(const IFlow& flow)
 {
   auto flowName = format(flow.getname());
-  LOG_DEBUG("Building AST for flow: {}", flowName);
-
   const auto* start = findStartNode(flow);
   if (start == nullptr)
     return Result<koda::PFlow>::Failed("Flow has no Koda::Start node");
@@ -327,8 +326,15 @@ Result<koda::PFlow> MakiToKoda::buildFlowAst(const IFlow& flow)
     arg->b = argument->getid().toStdString();
     pflow->args.push_back(arg);
   }
+  pflow->id = flow.getid().toStdString();
   pflow->name = flowName;
   pflow->strategy = std::any_cast<koda::PStrategy>(seq);
+  if (mTraceMap)
+    mTraceMap->mapAst(pflow->id, MakiSource{
+                                     .id = pflow->id,
+                                     .flowId = pflow->id,
+                                     .kind = MakiElementKind::Flow,
+                                 });
 
   return pflow;
 }
@@ -417,23 +423,51 @@ std::any MakiToKoda::buildSequenceFrom(const IFlow& flow, const INode* start, co
 
 std::any MakiToKoda::buildNodeExpr(const IFlow& flow, const INode& node)
 {
-  if (node.getnodeId() == "Koda::Async task")
-    return buildAsyncExpr(flow, node);
-  else if (node.getnodeId() == "Koda::Sync task")
-    return buildSyncExpr(flow, node);
-  else if (node.getnodeId() == "Koda::Flow call")
-    return buildStrategyExpr(flow, node);
-  else if (node.getnodeId() == "Koda::Within")
-    return buildWithinExpr(flow, node);
-  else if (node.getnodeId() == "Koda::Repeat")
-    return buildRepeatExpr(flow, node);
-  else if (node.getnodeId() == "Koda::Continue")
-    return buildContinueExpr(flow, node);
-  else if (node.getnodeId() == "Koda::Terminate")
-    return buildSuccessExpr(flow, node);
+  std::any result;
 
-  LOG_ERROR("Unknown expression: {}", node.getnodeId());
-  return std::any();
+  if (node.getnodeId() == "Koda::Async task")
+    result = buildAsyncExpr(flow, node);
+  else if (node.getnodeId() == "Koda::Sync task")
+    result = buildSyncExpr(flow, node);
+  else if (node.getnodeId() == "Koda::Flow call")
+    result = buildStrategyExpr(flow, node);
+  else if (node.getnodeId() == "Koda::Within")
+    result = buildWithinExpr(flow, node);
+  else if (node.getnodeId() == "Koda::Repeat")
+    result = buildRepeatExpr(flow, node);
+  else if (node.getnodeId() == "Koda::Continue")
+    result = buildContinueExpr(flow, node);
+  else if (node.getnodeId() == "Koda::Terminate")
+    result = buildSuccessExpr(flow, node);
+  else
+  {
+    LOG_ERROR("Unknown expression: {}", node.getnodeId());
+    return result;
+  }
+
+  auto strategy = std::any_cast<koda::PStrategy>(result);
+  strategy->id = std::format("{}_{}", node.getid(), flow.getid());
+  traceNode(flow, node, strategy);
+
+  return result;
+}
+
+void MakiToKoda::traceNode(const IFlow& flow, const INode& node, const koda::PStrategy& strategy)
+{
+  if (!mTraceMap)
+    return;
+
+  MakiElementKind kind = MakiElementKind::Node;
+  if (node.getnodeId() == "Koda::Async task")
+    kind = MakiElementKind::Async;
+  else if (node.getnodeId() == "Koda::Sync task")
+    kind = MakiElementKind::Sync;
+
+  mTraceMap->mapAst(strategy->id, MakiSource{
+                                      .id = node.getid().toStdString(),
+                                      .flowId = flow.getid().toStdString(),
+                                      .kind = kind,
+                                  });
 }
 
 std::any MakiToKoda::buildAsyncExpr(const IFlow& flow, const INode& node)
@@ -455,8 +489,8 @@ std::any MakiToKoda::buildAsyncExpr(const IFlow& flow, const INode& node)
     LOG_AND_FAIL(node.getid(), flow.getid(), "Component arguments has wrong format in async call: {}", cap->toReadable());
 
   auto call = std::make_shared<koda::EventCall>();
-  call->receiver = format(maki::recordString(record, "component"));
-  ToLowerCase(call->receiver, 0);
+  call->name = format(maki::recordString(record, "component"));
+  ToLowerCase(call->name, 0);
   call->args = buildArgumentExpr(maki::recordList(record, "arguments"));
 
   auto expr = std::make_shared<koda::Strategy::TaskCall>();
@@ -497,8 +531,8 @@ std::any MakiToKoda::buildSyncExpr(const IFlow& flow, const INode& node)
 
   auto call = std::make_shared<koda::EventCall>();
   call->receiver = format(maki::recordString(record, "component"));
-  call->name = maki::recordString(record, "event").toStdString();
   ToLowerCase(call->receiver, 0);
+  call->name = maki::recordString(record, "event").toStdString();
   call->args = buildArgumentExpr(maki::recordList(record, "arguments"));
 
   auto expr = std::make_shared<koda::Strategy::TaskCall>();
@@ -529,7 +563,7 @@ std::any MakiToKoda::buildStrategyExpr(const IFlow& flow, const INode& node)
     LOG_AND_FAIL(node.getid(), flow.getid(), "Flow arguments has wrong format in flow call: {}", cap->toReadable());
 
   auto call = std::make_shared<koda::EventCall>();
-  call->receiver = "f" + format(maki::recordString(record, "flow"));
+  call->name = "f" + format(maki::recordString(record, "flow"));
   call->args = buildArgumentExpr(maki::recordList(record, "arguments"));
 
   auto expr = std::make_shared<koda::Strategy::TaskCall>();
@@ -624,7 +658,7 @@ std::any MakiToKoda::buildRepeatExpr(const IFlow& flow, const INode& node)
 
   auto record = task->toRecord();
   auto call = std::make_shared<koda::EventCall>();
-  call->receiver = "f" + format(maki::recordString(record, "flow"));
+  call->name = "f" + format(maki::recordString(record, "flow"));
   call->args = buildArgumentExpr(maki::recordList(record, "arguments"));
 
   auto flowCall = std::make_shared<koda::Strategy::TaskCall>();
@@ -724,9 +758,10 @@ QList<koda::PStrategyHandler> MakiToKoda::buildHandlers(const IFlow& flow, const
     auto emitter = std::make_shared<koda::EventCall>();
     auto event = signalStart.transition->getevent().toStdString();
     auto receiverIndex = event.find_first_of('.');
-    emitter->name = event.substr(receiverIndex + 1);
-    emitter->receiver = event.substr(0, receiverIndex);
-    ToLowerCase(emitter->receiver, 0);
+    emitter->receiver = event.substr(receiverIndex + 1);
+    emitter->name = event.substr(0, receiverIndex);
+    ToLowerCase(emitter->name, 0);
+
     value->emitter = emitter;
 
     handlers.append(value);

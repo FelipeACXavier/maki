@@ -76,6 +76,7 @@ public:
   QString projectRoot() const override;
 
   void errorOnNode(const QString& nodeId, const QString& flowId, const QString& message) override;
+  void simulateOnNode(const QString& nodeId, const QString& flowId, maki::SimulationProperties properties) override;
 
   /**
    * @brief Returns the plugin tab.
@@ -93,6 +94,7 @@ public:
 
 signals:
   void onErrorOnNode(const QString& nodeId, const QString& flowId, const QString& message);
+  void onSimulateOnNode(const QString& nodeId, const QString& flowId, maki::SimulationProperties properties);
 
 private:
   std::shared_ptr<IDocument> mDocument;  /// Shared pointer to the document.

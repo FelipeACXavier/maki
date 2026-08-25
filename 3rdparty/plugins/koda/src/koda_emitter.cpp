@@ -34,9 +34,6 @@ Result<std::string> KodaEmitter::emitKoda(const koda::System& ast, const koda::t
 {
   KodaEmitter emitter(registry);
 
-  ast.print();
-
-  // TODO: Emit the types
   std::stringstream ss;
   RETURN_ON_FAILURE_AS(emitter.emitTypes(ss), std::string);
 
@@ -500,9 +497,11 @@ VoidResult KodaEmitter::emitTaskCall(const koda::Strategy::TaskCall& node, std::
 
 VoidResult KodaEmitter::emitEventCall(const koda::EventCall& node, std::stringstream& ss, const std::string& format)
 {
-  ss << node.receiver;
-  if (!node.name.empty())
-    ss << "." << node.name;
+  // Async call
+  if (node.receiver.empty())
+    ss << node.name;
+  else
+    ss << node.receiver << "." << node.name;
 
   ss << "(";
   RETURN_ON_FAILURE(emitCallArguments(node.args, ss));
@@ -707,7 +706,7 @@ VoidResult KodaEmitter::emitDefArguments(const std::vector<std::shared_ptr<Argum
 
     const auto& arg = args[i];
     if (arg->kind == koda::Argument::Kind::Req)
-      ss << arg->a.toString() << " req " << arg->b;
+      ss << arg->b << " req " << arg->a.toString();
     else
       ss << arg->a.toString() << " " << arg->b;
   }

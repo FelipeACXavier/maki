@@ -248,7 +248,7 @@ VoidResult SemanticAnalyzer::analyzeStrategy(const PStrategy& strategy, SymbolId
   {
     auto call = resolveCall((*p)->call, owner);
     if (!call.IsSuccess())
-      return VoidResult::Failed(call.ErrorMessage());
+      return VoidResult::Failed("analyzeStrategy: {}", call.ErrorMessage());
 
     mModel.calls[(*p)->call.get()] = call.Value();
 
@@ -346,15 +346,12 @@ VoidResult SemanticAnalyzer::resolveCapabilityData(const PEventCall& astCall, co
     return VoidResult::Failed(componentResult.ErrorMessage());
 
   auto capabilityId = componentResult.Value();
-  LOG_DEBUG("Resolving data for name: {} rec: {}, Call: {} {}, Cap: {}", astCall->name, astCall->receiver, call.receiver, call.target, capabilityId);
-
   auto event = mSymbols.get(call.target);
   if (!event)
     return VoidResult::Failed("No event with symbol id: {}", call.target);
 
   if (event->type.toString() == "Trigger")
   {
-    LOG_DEBUG("Is trigger: {} {}", event->name, event->id);
     // 1. Resolve consumed values.
     for (uint32_t i = 0; i < mModel.eventArguments[event->id].size(); ++i)
     {
@@ -378,7 +375,6 @@ VoidResult SemanticAnalyzer::resolveCapabilityData(const PEventCall& astCall, co
 
         case ArgumentSourceKind::Infer:
         {
-          LOG_INFO("  Inferring slot");
           auto candidates = mBlackboard.availableCompatible(input, mTypeRegistry);
           if (candidates.empty())
             return VoidResult::Failed("No available value for input '{}'", input.toString());
@@ -394,7 +390,6 @@ VoidResult SemanticAnalyzer::resolveCapabilityData(const PEventCall& astCall, co
     if (astCall->receiver.empty())
     {
       // If we are dealing with a capability call, we need to make the data available as well.
-      LOG_DEBUG("  Async capability call: {} {}", event->name, event->id);
       auto* returnEvent = mSymbols.returnEventOf(capabilityId);
       if (!returnEvent)
         return VoidResult::Failed(std::format("Async capability call with no return '{}'", astCall->name));
@@ -409,7 +404,6 @@ VoidResult SemanticAnalyzer::resolveCapabilityData(const PEventCall& astCall, co
   }
   else if (event->type.toString() == "Return")
   {
-    LOG_DEBUG("  Is return: {} {}", event->name, event->id);
     // 2. Create slots for produced values.
     for (const auto& output : mModel.eventArguments[event->id])
     {
@@ -432,7 +426,7 @@ VoidResult SemanticAnalyzer::analyzeHandler(const PStrategyHandler& handler, Sym
   {
     auto call = resolveCall(handler->emitter, owner);
     if (!call.IsSuccess())
-      return VoidResult::Failed(call.ErrorMessage());
+      return VoidResult::Failed("analyzeHandler: {}", call.ErrorMessage());
     mModel.calls[handler->emitter.get()] = call.Value();
   }
 
@@ -609,7 +603,7 @@ Result<types::TypeReference> SemanticAnalyzer::analyzeExpr(const PExpr& expr, Sy
   {
     auto call = resolveCall((*p)->value, owner);
     if (!call.IsSuccess())
-      return Result<types::TypeReference>::Failed(call.ErrorMessage());
+      return Result<types::TypeReference>::Failed("analyzeExpr: {}", call.ErrorMessage());
 
     mModel.calls[(*p)->value.get()] = call.Value();
     type = call.Value().returnType;

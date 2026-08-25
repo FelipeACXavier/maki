@@ -16,14 +16,28 @@ namespace koda
 {
 Compiler::Compiler()
 {
+  mBlackboard = std::make_shared<koda::types::Blackboard>();
+  mTypeRegistry = std::make_shared<koda::types::TypeRegistry>();
+
   mEmitters.push_back(std::make_shared<DezyneEmitter>());
 }
 
 VoidResult Compiler::parse(const CompilerOptions& options)
 {
   mOptions = options;
-  LOG_DEBUG("Parsing {}", options.inputFile);
 
+  if (options.ast)
+  {
+    // If the AST was provided, just use that one directly
+    mAST = *options.ast;
+    mTypeRegistry = options.typeRegistry;
+    if (mOptions.verbose > 0)
+      printAST();
+
+    return VoidResult{};
+  }
+
+  LOG_DEBUG("Parsing {}", options.inputFile);
   std::ifstream stream(options.inputFile);
   if (!stream.is_open())
     return VoidResult::Failed("Failed to open: " + options.inputFile);
@@ -54,8 +68,6 @@ VoidResult Compiler::parse(const CompilerOptions& options)
     return VoidResult::Failed("Failed to parse input file");
   }
 
-  mBlackboard = std::make_shared<koda::types::Blackboard>();
-  mTypeRegistry = std::make_shared<koda::types::TypeRegistry>();
   koda::CST2AST visitor(mTypeRegistry, &errorListener);
   try
   {
@@ -126,7 +138,7 @@ VoidResult Compiler::runFrontend()
   mSemantics = semantics.model();
 
   // Finally, we build the intermediate representation that emitters can use
-  IRBuilder builder(mSymbols, mSemantics);
+  IRBuilder builder(mSymbols, mSemantics, mOptions.traceability);
   auto ir = builder.build(mAST);
   if (!ir.IsSuccess())
     return VoidResult::Failed(ir.ErrorMessage());

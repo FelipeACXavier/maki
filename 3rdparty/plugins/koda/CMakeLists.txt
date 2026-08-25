@@ -5,6 +5,7 @@ set(PLUGIN_NAME koda_generatorplugin)
 project(${PLUGIN_NAME})
 
 set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -60,7 +61,6 @@ set(KODA_COMPILER_FILES
   src/ast/cst2ast.cpp
 
   src/ast/declaration_pass.cpp
-  # src/ast/ir_declaration_pass.cpp
   src/ast/ir_builder.cpp
   src/ast/koda_compiler.cpp
 
@@ -80,6 +80,8 @@ set(KODA_COMPILER_FILES
   src/parser/KodaLexer.cpp
   src/parser/KodaVisitor.cpp
   src/parser/KodaBaseVisitor.cpp
+
+  src/traceability_map.cpp
 )
 # ==================================================================
 # Koda language
@@ -147,6 +149,7 @@ install(TARGETS ${LIB_NAME}
 find_package(Qt6 REQUIRED COMPONENTS
   Core
   Gui
+  Svg
   Widgets
   WebSockets
 )
@@ -177,21 +180,14 @@ function(add_koda_plugin TARGET_NAME USE_ANTLR_ENABLED)
     set(COMPILER_LIBS
       ${ANTLR4_RUNTIME_LIBRARY}
     )
-  # else()
-  #   set(JSON_FILE ${CMAKE_CURRENT_SOURCE_DIR}/src/koda_generator.json)
-  #   set(PLUGIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/koda_plugin.json)
-  #   set(COMPILER_FILES)
-  #   set(ANTLR_INCLUDES)
-  #   set(COMPILER_INCLUDES)
-  #   set(COMPILER_LIBS)
-  #   set(KODA_TO_MAKI)
-  # endif()
 
   add_library(${TARGET_NAME} SHARED
     ${KODA_DZN_CLIENT_FILES}
     ${COMPILER_FILES}
     src/koda_generator.cpp
     src/koda_generator.h
+    src/svg_tool_button.cpp
+
     ${KODA_TO_MAKI}
     src/actions/koda_action.cpp
     src/actions/dezyne_action.cpp
@@ -203,6 +199,8 @@ function(add_koda_plugin TARGET_NAME USE_ANTLR_ENABLED)
     src/actions/ros_build.cpp
     src/actions/ros_launch.cpp
     ${JSON_FILE}
+
+    assets/assets.qrc
   )
 
   target_link_libraries(${TARGET_NAME} PRIVATE
@@ -210,6 +208,7 @@ function(add_koda_plugin TARGET_NAME USE_ANTLR_ENABLED)
     Qt6::Gui
     Qt6::Widgets
     Qt6::WebSockets
+    Qt6::Svg
     ${COMPILER_LIBS}
     libcpphelpers
     libmaki
@@ -257,5 +256,4 @@ if (NOT BUILD_PLUGINS)
   add_subdirectory(3rdparty)
 endif()
 
-# add_koda_plugin(koda_generatorplugin OFF)
 add_koda_plugin(koda_generatorplugin ON)

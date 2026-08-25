@@ -5,13 +5,14 @@
 #include "result.h"
 #include "semantic_analyzer.h"
 #include "symbol_registry.h"
+#include "traceability_map.h"
 
 namespace koda
 {
 class IRBuilder
 {
 public:
-  IRBuilder(const SymbolRegistry& symbols, const SemanticModel& semantics);
+  IRBuilder(const SymbolRegistry& symbols, const SemanticModel& semantics, std::shared_ptr<TraceabilityMap> traceability);
   Result<ir::Program> build(const System& system) const;
 
 private:
@@ -27,6 +28,7 @@ private:
 
   const SymbolRegistry& mSymbols;
   const SemanticModel& mSemantics;
+  std::shared_ptr<TraceabilityMap> mTraceMap;
 };
 
 }  // namespace koda

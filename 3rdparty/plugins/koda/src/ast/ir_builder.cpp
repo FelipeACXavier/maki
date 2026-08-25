@@ -23,9 +23,10 @@ ir::CallKind callKindFromResolvedKind(ResolvedCallKind kind)
   return ir::CallKind::Unknown;
 }
 
-IRBuilder::IRBuilder(const SymbolRegistry& symbols, const SemanticModel& semantics)
+IRBuilder::IRBuilder(const SymbolRegistry& symbols, const SemanticModel& semantics, std::shared_ptr<TraceabilityMap> traceability)
     : mSymbols(symbols)
     , mSemantics(semantics)
+    , mTraceMap(traceability)
 {
 }
 
@@ -304,6 +305,12 @@ Result<ir::PStrategy> IRBuilder::buildStrategy(const PStrategy& strategy, Symbol
   }
   else
     return Result<ir::PStrategy>::Failed("Unsupported strategy node");
+
+  out->id = std::format("{}_{}", strategy->id, owner);
+  if (mTraceMap)
+    mTraceMap->mapIr(out->id, strategy->id);
+  else
+    LOG_WARNING("No traceability map available");
 
   return out;
 }

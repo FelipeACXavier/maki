@@ -2,6 +2,8 @@
 
 #include <format>
 
+#include "logging.h"
+
 namespace koda
 {
 
@@ -46,6 +48,7 @@ VoidResult DeclarationPass::declareComponent(const PComponent& component)
   for (const auto& arg : component->args)
   {
     // We know the arguments for a task are always the capabilities
+    LOG_DEBUG("Looking for capability: {}", arg->a.toString());
     const auto typeId = mSymbolRegistry.lookup(arg->a.toString(), InvalidSymbol);
     if (!typeId)
       return VoidResult::Failed("Capability {} not found", arg->a.toString());

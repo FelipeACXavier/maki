@@ -39,8 +39,7 @@ bool gPrintSpan = true;
 
 std::string Span::toString() const
 {
-  return " [(" + std::to_string(lineStart) + ", " + std::to_string(colStart) + ") - " + "(" + std::to_string(lineEnd) + ", " +
-         std::to_string(colEnd) + ")]";
+  return std::format(" [({},{}) - ({}, {})]", lineStart, colStart, lineEnd, colEnd);
 }
 
 // TODO: Implement rest of the prints
@@ -241,6 +240,7 @@ void Flow::print(const std::string& prefix, const bool last) const
   strategy->print(childPrefix, true);
 }
 
+// clang-format off
 void Strategy::print(const std::string& prefix, const bool last) const
 {
   IF_ALT(PSeq, v, print(prefix, last, span))

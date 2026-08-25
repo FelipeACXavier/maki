@@ -6,10 +6,12 @@
 #include <QProcess>
 #include <memory>
 
+#include "ast/ast.h"
 #include "dzn_client/simulation_scene.h"
 #include "iplugin.h"
 #include "isettings.h"
 #include "pipeline_action.h"
+#include "traceability_map.h"
 
 class INode;
 class IFlow;
@@ -49,6 +51,8 @@ private:
   QList<QString> mGeneratedDznFiles = {};
   maki::IHostServices* mServices = nullptr;
   QVector<maki::SettingField> mSettings = {};
+  std::shared_ptr<koda::TraceabilityMap> mTraceMap;
+  std::shared_ptr<koda::System> mAST;
 
   std::optional<QDir> mAssetDir;
 

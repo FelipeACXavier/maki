@@ -15,6 +15,7 @@
 
 #include "app_configs.h"
 #include "app_paths.h"
+#include "canvas_control_widget.h"
 #include "canvas_message.h"
 #include "flow.h"
 #include "logging.h"
@@ -173,6 +174,45 @@ void NodeItem::dismissHighlight()
     mHighlightMessage->hide();
 
   setGraphicsEffect(nullptr);
+  update();
+}
+
+void NodeItem::showSimulationControls(QWidget* controls)
+{
+  if (!controls)
+  {
+    dismissControl();
+    return;
+  }
+
+  if (!mControlWidget)
+  {
+    mControlWidget = new CanvasControlWidget(controls, [this]() { dismissControl(); }, this);
+  }
+  else
+  {
+    mControlWidget->setControlWidget(controls);
+    mControlWidget->show();
+  }
+
+  QTimer::singleShot(0, [this]() {
+    if (!mControlWidget)
+      return;
+
+    constexpr qreal spacing = 10.0;
+    const QRectF controlRect = mControlWidget->boundingRect();
+    LOG_DEBUG("Final control size: {}x{}", controlRect.width(), controlRect.height());
+    const qreal x = nodeRect().center().x() - controlRect.width() / 2.0;
+    const qreal y = nodeRect().top() - controlRect.height() - spacing;
+    mControlWidget->setPos(x, y);
+  });
+}
+
+void NodeItem::dismissControl()
+{
+  if (mControlWidget)
+    mControlWidget->hide();
+
   update();
 }
 

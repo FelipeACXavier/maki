@@ -1,5 +1,6 @@
 #pragma once
 #include <QString>
+#include <QWidget>
 
 class IDocument;
 
@@ -9,6 +10,12 @@ class IPipeline;
 class ISettings;
 class IUI;
 class ILogging;
+
+struct SimulationProperties
+{
+  QWidget* widget;
+  bool highlight = false;
+};
 
 class IHostServices
 {
@@ -23,6 +30,7 @@ public:
   virtual ILogging* logger() const = 0;
 
   virtual void errorOnNode(const QString& nodeId, const QString& flowId, const QString& message) = 0;
+  virtual void simulateOnNode(const QString& nodeId, const QString& flowId, SimulationProperties options) = 0;
 
   // Optional later: logger(), settings(), uiHooks(), etc.
 };

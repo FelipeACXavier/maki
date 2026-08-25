@@ -14,6 +14,7 @@
 #include "maki_error_listener.h"
 #include "mission_parameter.h"
 #include "result.h"
+#include "traceability_map.h"
 #include "typing/type_registry.h"
 
 class QJsonArray;
@@ -41,14 +42,19 @@ struct NodeTransition
 class MakiToKoda
 {
 public:
-  MakiToKoda(const koda::types::TypeRegistry* registry);
+  MakiToKoda(const koda::types::TypeRegistry* registry, std::shared_ptr<koda::TraceabilityMap> traceMap);
 
+  koda::System getAST() const;
   std::vector<MakiErrorListener::Error> getErrors() const;
   Result<QString> generate(const QVector<std::shared_ptr<INode>> nodes, QVector<const IParameter*> parameters);
 
 private:
   const koda::types::TypeRegistry* mTypeRegistry;
   MakiErrorListener mErrorListener;
+  std::shared_ptr<koda::TraceabilityMap> mTraceMap;
+  koda::System mAST;
+
+  void traceNode(const IFlow& flow, const INode& node, const koda::PStrategy& strategy);
 
   Result<koda::PComponent> buildTask(const INode& task, QVector<const IParameter*> missionParameters);
   Result<koda::PComponent> buildCapability(const INode& capability);

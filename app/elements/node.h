@@ -15,6 +15,7 @@
 
 class Flow;
 class CanvasMessage;
+class CanvasControlWidget;
 class QGraphicsSceneMouseEvent;
 
 /**
@@ -69,6 +70,9 @@ public:
 
   void highlight(const QColor& color, const QString& message, int durationMs = 1000);
   void dismissHighlight();
+
+  void showSimulationControls(QWidget* controls);
+  void dismissControl();
 
   /**
    * @brief Returns the shape of this item.
@@ -404,6 +408,7 @@ private:
   NodeItem* mParentNode;              /// Parent node of this item, if any.
   QVector<NodeItem*> mChildrenNodes;  /// List of child nodes.
   CanvasMessage* mHighlightMessage = nullptr;
+  CanvasControlWidget* mControlWidget = nullptr;
 
   qreal mBaseScale;             /// Base scale for the node.
   QSizeF mSize{0, 0};           /// Current size of the node.

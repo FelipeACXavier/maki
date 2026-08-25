@@ -201,14 +201,19 @@ VoidResult PropertiesMenu::loadValueProperty(const std::shared_ptr<IParameter>& 
     return VoidResult::Failed("Property '{}' does not contain a MAKI Value", property->getid().toStdString());
 
   // Void is used for special types and should not be added here
-  if (property->gettype().isPrimitive() && property->gettype().primitiveKind() == koda::types::PrimitiveKind::Void)
-    return VoidResult();
+  bool isBoolean = false;
+  if (property->gettype().isPrimitive())
+  {
+    if (property->gettype().primitiveKind() == koda::types::PrimitiveKind::Void)
+      return VoidResult();
+    else if (property->gettype().primitiveKind() == koda::types::PrimitiveKind::Bool)
+      isBoolean = true;
+  }
 
-  auto* editor =
-      maki::ValueEditorFactory::create(ToLabel(property->getid()), property->gettype(), *storedValue, maki::WidgetAlignment::Vertical(), this);
+  auto* editor = maki::ValueEditorFactory::create(ToLabel(property->getid()), property->gettype(), *storedValue,
+                                                  isBoolean ? maki::WidgetAlignment::Inline() : maki::WidgetAlignment::Vertical(), this);
   if (!editor)
-    return VoidResult::Failed("Could not create editor for property '{}' of type '{}'", property->getid().toStdString(),
-                              property->gettype().toString());
+    return VoidResult::Failed("Could not create editor for property '{}' of type '{}'", property->getid(), property->gettype().toString());
 
   addCompleter(editor, node->id(), property->gettype());
 

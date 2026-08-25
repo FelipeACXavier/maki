@@ -48,6 +48,8 @@ private:
     std::vector<std::optional<std::string>> inputSlots;
     std::vector<std::string> outputSlots;
 
+    std::string traceId;
+
     Span span;
 
     CallSiteKind toCallSiteKind() const
@@ -123,7 +125,7 @@ private:
   Result<FlowResult> lowerFlow(const ir::Flow& flow);
   Result<std::string> lowerStrategy(const ir::Flow& flow, const ir::PStrategy& strategy, FlowState& state);
   Result<std::string> lowerHandler(const ir::Flow& flow, const ir::PHandler& handler, FlowState& state);
-  Result<std::string> lowerCall(const ir::Call& call, FlowState& state, bool signal);
+  Result<std::string> lowerCall(const ir::Call& call, FlowState& state, bool signal, const std::string& traceId);
 
   VoidResult createNecessaryArbiter(SymbolId componentId, std::vector<Connection>& connections);
 

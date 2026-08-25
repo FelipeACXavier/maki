@@ -425,14 +425,19 @@ void MainWindow::bind()
   connect(rootCanvas(), &Canvas::flowRemoved, this, &MainWindow::onFlowRemoved);
 
   connect(mPropertiesMenu, &PropertiesMenu::flowSelected, rootCanvas(), &Canvas::onFlowSelected);
-  connect(mHostServices, &HostServices::onErrorOnNode, this,
-          [this](const QString& nodeId, const QString& flowId, const QString& message) { rootCanvas()->onFocusNode(flowId, nodeId, message); });
+  connect(mHostServices, &HostServices::onErrorOnNode, this, [this](const QString& nodeId, const QString& flowId, const QString& message) {
+    rootCanvas()->onFocusNode(flowId, nodeId, message, nullptr);
+  });
+  connect(mHostServices, &HostServices::onSimulateOnNode, this,
+          [this](const QString& nodeId, const QString& flowId, maki::SimulationProperties properties) {
+            rootCanvas()->onFocusNode(flowId, nodeId, "", properties.widget);
+          });
 
   connect(mSystemMenu, &SystemMenu::flowSelected, rootCanvas(), &Canvas::onFlowSelected);
   connect(mSystemMenu, &SystemMenu::flowRemoved, rootCanvas(), &Canvas::onFlowRemoved);
   connect(mSystemMenu, &SystemMenu::nodeRemoved, rootCanvas(), &Canvas::onRemoveNode);
   connect(mSystemMenu, &SystemMenu::nodeFocused, this,
-          [this](const QString& nodeId, const QString& flowId) { rootCanvas()->onFocusNode(flowId, nodeId, ""); });
+          [this](const QString& nodeId, const QString& flowId) { rootCanvas()->onFocusNode(flowId, nodeId, "", nullptr); });
 
   connect(mPropertiesMenu, &PropertiesMenu::flowRemoved, rootCanvas(), &Canvas::onFlowRemoved);
   connect(mPropertiesMenu, &PropertiesMenu::openParameter, this, [this](const QString& parameterId) {
@@ -1466,7 +1471,7 @@ void MainWindow::closeCanvasTab(int index)
   mCanvasPanel->removeTab(index);
 }
 
-void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId, const QString& message)
+void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId, const QString& message, QWidget* widget)
 {
   QString flowName;
   if (flow == nullptr)
@@ -1513,7 +1518,7 @@ void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId, const QString& me
       if (!nodeId.isEmpty())
         if (auto* view = qobject_cast<CanvasView*>(mCanvasPanel->currentWidget()))
           if (auto* canvas = qobject_cast<Canvas*>(view->scene()))
-            canvas->onFocusNode("", nodeId, message);
+            canvas->onFocusNode("", nodeId, message, widget);
       return;
     }
   }
@@ -1543,7 +1548,7 @@ void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId, const QString& me
   canvas->populate(*flow->config());
 
   if (!nodeId.isEmpty())
-    canvas->onFocusNode("", nodeId, message);
+    canvas->onFocusNode("", nodeId, message, widget);
 }
 
 void MainWindow::addPluginTab(const QString& name, PluginView* view)

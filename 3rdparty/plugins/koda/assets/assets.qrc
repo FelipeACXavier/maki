@@ -1,0 +1,7 @@
+<!DOCTYPE RCC>
+<RCC>
+  <qresource prefix="/icons">
+    <file alias="accept.svg">icons/circle-check.svg</file>
+    <file alias="reject.svg">icons/circle-xmark.svg</file>
+  </qresource>
+</RCC>

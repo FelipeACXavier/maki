@@ -32,12 +32,12 @@ CanvasMessage::CanvasMessage(const QString& message, std::function<void()> dismi
     layout->setSpacing(theme.spacing);
   }
 
-  auto* label = new QLabel(message);
+  auto* label = new QLabel(message, frame);
   label->setObjectName("messageLabel");
   label->setWordWrap(true);
   label->setMaximumWidth(500);
 
-  auto* closeButton = new CloseButton();
+  auto* closeButton = new CloseButton(frame);
   closeButton->setFixedSize(Config::SMALL_BUTTON_SIZE);
 
   layout->addWidget(label);

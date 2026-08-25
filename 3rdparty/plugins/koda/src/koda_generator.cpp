@@ -7,11 +7,14 @@
 #include <QDirIterator>
 #include <QFile>
 #include <QFileInfo>
+#include <QHBoxLayout>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QLabel>
 #include <QProcess>
 #include <QTextStream>
+#include <QTimer>
 #include <filesystem>
 
 #include "actions/cpp_action.h"
@@ -36,6 +39,7 @@
 #include "pipeline_artifact.h"
 #include "result.h"
 #include "string_helpers.h"
+#include "svg_tool_button.h"
 #include "types.h"
 #include "typing/type_registry.h"
 
@@ -48,6 +52,12 @@
                                              \
     v += ret.Value();                        \
   } while (0)
+
+struct Candidate
+{
+  QString instance;
+  QVector<QString> labels;
+};
 
 VoidResult copyDirectory(const QString& sourceDir, const QString& targetDir)
 {
@@ -81,6 +91,9 @@ bool KodaGenerator::setup()
     connect(mSimulator, &DezyneSimulator::simulationStarted, this, &KodaGenerator::simulationStarted);
     connect(mSimulator, &DezyneSimulator::simulationUpdated, this, &KodaGenerator::simulationUpdated);
   }
+
+  if (!mTraceMap)
+    mTraceMap = std::make_shared<koda::TraceabilityMap>();
 
   // Start the ide daemon on a specific port
   return startDaemon();
@@ -231,6 +244,54 @@ QList<std::shared_ptr<maki::IPipelineAction>> KodaGenerator::pipelineActions()
   };
 }
 
+Result<maki::PipelineArtifact> KodaGenerator::generateKoda(const maki::PipelineArtifact& artifact, const QDir& outputFolder)
+{
+  mOutputFolder = outputFolder;
+  if (!mOutputFolder.exists())
+    mOutputFolder.mkdir(".");
+
+  LOG_DEBUG("Generating Koda files with {} nodes", mServices->document()->getnodes().size());
+  QString code = "";
+
+  // Clean before generation
+  if (mTraceMap)
+    mTraceMap->clear();
+
+  const auto* typeRegistry = mServices->document()->getTypesRegistry();
+  koda::MakiToKoda makiToKoda(typeRegistry, mTraceMap);
+  const auto missionParameters = mServices->document()->getparameters();
+  auto generated = makiToKoda.generate(mServices->document()->getnodes(), missionParameters);
+  auto errors = makiToKoda.getErrors();
+  if (!errors.empty())
+  {
+    auto firstError = errors.front();
+    if (mServices)
+      mServices->errorOnNode(firstError.nodeId, firstError.flowId, QString::fromStdString(firstError.message));
+  }
+  if (!generated)
+    return Result<maki::PipelineArtifact>::Failed(generated.ErrorMessage());
+
+  mAST = std::make_shared<koda::System>(makiToKoda.getAST());
+
+  QString fileName = mOutputFolder.filePath("task.kd");
+  QFile file(fileName);
+  if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
+    return Result<maki::PipelineArtifact>::Failed("Failed to open device for writing: " + fileName.toStdString());
+
+  QTextStream out(&file);
+  out << generated.Value();
+  file.close();
+
+  LOG_DEBUG("Created file: {}", fileName);
+
+  maki::PipelineArtifact output;
+  output.metadata = {
+      {"sources", {fileName}},
+  };
+
+  return output;
+}
+
 Result<maki::PipelineArtifact> KodaGenerator::generateDezyne(const maki::PipelineArtifact& artifact, const QDir& outputFolder,
                                                              const maki::ValueMap& parameters, maki::IPipeline* pipeline)
 {
@@ -256,8 +317,17 @@ Result<maki::PipelineArtifact> KodaGenerator::generateDezyne(const maki::Pipelin
     if (parameters.contains("Simulate"))
       options.simulation = parameters.at("Simulate").toBool();
     if (parameters.contains("Start wait"))
-      options.startWait = parameters.at("Start wait").toDouble();
 
+      options.startWait = parameters.at("Start wait").toDouble();
+    if (parameters.contains("Verbose"))
+      options.verbose = 1;
+    if (mAST && !(parameters.contains("From file") && parameters.at("From file").toBool()))
+    {
+      options.ast = mAST;
+      options.typeRegistry = std::make_shared<koda::types::TypeRegistry>(*mServices->document()->getTypesRegistry());
+    }
+
+    options.traceability = mTraceMap;
     options.inputFile = file.toStdString();
     options.outputDir = modelsOutputFolder.absolutePath().toStdString();
     LOG_DEBUG("Generating from file: {} to {}", file, outputFolder.absolutePath());
@@ -291,6 +361,9 @@ Result<maki::PipelineArtifact> KodaGenerator::generateDezyne(const maki::Pipelin
   };
 
   mDezyneOutputFolder = modelsOutputFolder;
+
+  if (mTraceMap)
+    mTraceMap->print();
 
   return output;
 }
@@ -454,48 +527,6 @@ VoidResult KodaGenerator::simulate(const maki::PipelineArtifact& artifact)
   return VoidResult();
 }
 
-Result<maki::PipelineArtifact> KodaGenerator::generateKoda(const maki::PipelineArtifact& artifact, const QDir& outputFolder)
-{
-  mOutputFolder = outputFolder;
-  if (!mOutputFolder.exists())
-    mOutputFolder.mkdir(".");
-
-  LOG_DEBUG("Generating Koda files with {} nodes", mServices->document()->getnodes().size());
-  QString code = "";
-
-  const auto* typeRegistry = mServices->document()->getTypesRegistry();
-  koda::MakiToKoda makiToKoda(typeRegistry);
-  const auto missionParameters = mServices->document()->getparameters();
-  auto generated = makiToKoda.generate(mServices->document()->getnodes(), missionParameters);
-  auto errors = makiToKoda.getErrors();
-  if (!errors.empty())
-  {
-    auto firstError = errors.front();
-    if (mServices)
-      mServices->errorOnNode(firstError.nodeId, firstError.flowId, QString::fromStdString(firstError.message));
-  }
-  if (!generated)
-    return Result<maki::PipelineArtifact>::Failed(generated.ErrorMessage());
-
-  QString fileName = mOutputFolder.filePath("task.kd");
-  QFile file(fileName);
-  if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
-    return Result<maki::PipelineArtifact>::Failed("Failed to open device for writing: " + fileName.toStdString());
-
-  QTextStream out(&file);
-  out << generated.Value();
-  file.close();
-
-  LOG_DEBUG("Created file: {}", fileName);
-
-  maki::PipelineArtifact output;
-  output.metadata = {
-      {"sources", {fileName}},
-  };
-
-  return output;
-}
-
 Result<maki::PipelineArtifact> KodaGenerator::buildRosProject(const maki::PipelineArtifact& artifact, const QDir& outputFolder,
                                                               maki::IPipeline* pipeline)
 {
@@ -641,6 +672,8 @@ void KodaGenerator::simulationStarted()
   if (!mServices)
     return;
 
+  mSimulator->triggerEvent("api.trigger");
+
   if (auto pluginTab = mServices->ui())
   {
     LOG_INFO("Simulation started");
@@ -670,8 +703,8 @@ VoidResult KodaGenerator::createSimulationScene(QGraphicsScene* scene, const QJs
   if (obj.isEmpty())
     return VoidResult();
 
-  // auto pretty = QJsonDocument(obj).toJson(QJsonDocument::Indented);
-  // LOG_DEBUG("Received message: {}", pretty);
+  auto pretty = QJsonDocument(obj).toJson(QJsonDocument::Indented);
+  LOG_DEBUG("Received message: {}", pretty.toStdString());
 
   auto theme = mServices->ui()->currentTheme();
   if (!mTraceBuilder)
@@ -685,6 +718,176 @@ VoidResult KodaGenerator::createSimulationScene(QGraphicsScene* scene, const QJs
   QString err;
   if (!mTraceBuilder->buildScene(obj, scene, clickHandler, &err))
     return VoidResult::Failed("Failed to build scene: " + err.toStdString());
+
+  if (!mServices)
+    return VoidResult();
+
+  if (!mTraceMap)
+    return VoidResult();
+
+  if (!obj.contains("lifelines") || !obj.value("lifelines").isArray() || obj.value("lifelines").toArray().isEmpty())
+  {
+    LOG_WARNING("1");
+    return VoidResult();
+  }
+
+  QVector<Candidate> candidates;
+  for (const auto& ll : obj.value("lifelines").toArray())
+  {
+    auto lifeline = ll.toObject();
+    if (!lifeline.contains("header") || !lifeline["header"].isObject())
+    {
+      LOG_WARNING("2");
+      continue;
+    }
+
+    auto header = lifeline["header"].toObject();
+    if (!header.contains("instance") || !header["instance"].isString())
+    {
+      LOG_WARNING("3");
+      continue;
+    }
+
+    if (!lifeline.contains("labels") || !lifeline["labels"].isArray())
+      continue;
+
+    QStringList labels;
+    for (const auto& l : lifeline["labels"].toArray())
+    {
+      auto label = l.toObject();
+      if (label.contains("illegal") && label["illegal"].isBool() && label["illegal"].toBool())
+        continue;
+
+      if (!label.contains("role") || !label["role"].isString())
+        continue;
+
+      if (!label.contains("text") || !label["text"].isString())
+        continue;
+
+      const auto text = label["text"].toString();
+      if (text == "<defer>")
+      {
+        QTimer::singleShot(0, [this, text]() {
+          LOG_DEBUG("Sending defer");
+          if (mSimulator)
+            mSimulator->triggerEvent(text);
+        });
+
+        return VoidResult();
+      }
+
+      const auto role = label["role"].toString();
+      if (role != "requires")
+        continue;
+
+      labels.push_back(text);
+    }
+
+    if (!labels.empty())
+      candidates.append(Candidate{
+          .instance = header["instance"].toString(),
+          .labels = labels,
+      });
+  }
+
+  for (const auto& candidate : candidates)
+  {
+    LOG_DEBUG("Trying to find node of candidate: {}", candidate.instance);
+    auto source = mTraceMap->sourceForEmitter(candidate.instance.toStdString());
+    if (!source)
+      continue;
+
+    auto* container = new QWidget();
+    auto* containerLayout = new QHBoxLayout(container);
+    containerLayout->setContentsMargins(4, 4, 4, 4);
+    containerLayout->setSpacing(4);
+
+    bool isSync = false;
+    bool highlight = false;
+    bool isFirst = true;
+    for (const auto& label : candidate.labels)
+    {
+      // Sync tasks can only send Completed
+      if (isSync)
+        continue;
+
+      QString text = "";
+      QString icon = "";
+      auto palette = scene->palette();
+      if (source->kind == koda::MakiElementKind::Sync)
+      {
+        palette.setColor(QPalette::Button, QColor("#1ba8d5"));
+        text = "Completed";
+        icon = ":/icons/accept.svg";
+        isSync = true;
+      }
+      else if (label.contains("Result:Failure"))
+      {
+        text = "Reject";
+        palette.setColor(QPalette::Button, QColor("#e96b72"));
+        icon = ":/icons/reject.svg";
+      }
+      else if (label.contains(".failure"))
+      {
+        palette.setColor(QPalette::Button, QColor("#e96b72"));
+        text = "Failure";
+        icon = ":/icons/reject.svg";
+        highlight = true;
+      }
+      else if (label.contains("Result:Success"))
+      {
+        palette.setColor(QPalette::Button, QColor("#2bb5a0"));
+        text = "Accept";
+        icon = ":/icons/accept.svg";
+      }
+      else if (label.contains(".success"))
+      {
+        palette.setColor(QPalette::Button, QColor("#2bb5a0"));
+        text = "Success";
+        icon = ":/icons/accept.svg";
+        highlight = true;
+      }
+      else
+      {
+        continue;
+      }
+
+      auto* labelLayout = new QVBoxLayout();
+      labelLayout->setContentsMargins(0, 0, 0, 0);
+      labelLayout->setSpacing(4);
+
+      auto* qlabel = new QLabel(text, container);
+
+      auto* button = new SvgToolButton(icon, container);
+      button->setFixedSize(30, 30);
+      button->setAutoRaise(true);
+
+      connect(button, &SvgToolButton::clicked, this, [this, instance = candidate.instance, label] {
+        LOG_DEBUG("Sending data: {} {}", instance, label);
+        if (mSimulator)
+          mSimulator->triggerEvent(label);
+      });
+
+      labelLayout->addWidget(button, 1, Qt::AlignVCenter | Qt::AlignHCenter);
+      labelLayout->addWidget(qlabel, 0);
+
+      if (!isFirst)
+      {
+        auto* line = new QFrame(container);
+        line->setFrameShape(QFrame::VLine);
+        containerLayout->addWidget(line);
+      }
+
+      containerLayout->addLayout(labelLayout, 1);
+      isFirst = false;
+    }
+
+    mServices->simulateOnNode(QString::fromStdString(source.value().id), QString::fromStdString(source.value().flowId),
+                              maki::SimulationProperties{
+                                  .widget = container,
+                                  .highlight = highlight = true,
+                              });
+  }
 
   return VoidResult();
 }

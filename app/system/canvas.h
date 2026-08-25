@@ -335,7 +335,7 @@ signals:
    * @param flow Pointer to the opened flow.
    * @param node Pointer to the node associated with the flow.
    */
-  void openFlow(Flow* flow, const QString& nodeId, const QString& message);
+  void openFlow(Flow* flow, const QString& nodeId, const QString& message, QWidget* widget);
 
   /**
    * @brief Emitted when a flow is added.
@@ -360,7 +360,7 @@ public slots:
    * @param flowId The ID of the flow that contains the given node.
    * @param nodeId The ID of the focused node.
    */
-  void onFocusNode(const QString& flowId, const QString& nodeId, const QString& message);
+  void onFocusNode(const QString& flowId, const QString& nodeId, const QString& message, QWidget* widget);
 
   /**
    * @brief Handles removal of a node.
@@ -397,6 +397,7 @@ protected:
   virtual TransitionConfig nextTransition(NodeItem* node) const;
   virtual QVector<QGraphicsItem*> cleanTransitionsOfNode(const QString& nodeId);
   virtual void onNodeMoved(const NodeItem* node);
+  virtual void showSimulationControls(NodeItem* node, QWidget* controls);
 
   /**
    * @brief Returns the parent view of this canvas.

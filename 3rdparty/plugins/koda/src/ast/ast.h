@@ -100,6 +100,7 @@ struct Statement
 
 struct Flow
 {
+  std::string id;
   std::string name;
   std::vector<std::shared_ptr<Argument>> args;
   std::shared_ptr<Strategy> strategy;
@@ -215,21 +216,18 @@ struct Strategy
   struct Seq
   {
     std::vector<std::shared_ptr<Strategy>> alts;
-
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
 
   struct Join
   {
     std::vector<std::shared_ptr<Strategy>> alts;
-
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
 
   struct Either
   {
     std::vector<std::shared_ptr<Strategy>> alts;
-
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
 
@@ -239,7 +237,6 @@ struct Strategy
     std::shared_ptr<Strategy> a;
     std::shared_ptr<Strategy> b;
     std::vector<std::shared_ptr<StrategyHandler>> handlers;
-
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
 
@@ -249,7 +246,6 @@ struct Strategy
     int seconds;
     int iterations;
     std::vector<std::shared_ptr<StrategyHandler>> handlers;
-
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
 
@@ -267,7 +263,6 @@ struct Strategy
   {
     std::shared_ptr<EventCall> call;
     std::vector<std::shared_ptr<StrategyHandler>> handlers;
-
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
 
@@ -281,6 +276,7 @@ struct Strategy
                std::shared_ptr<End>, std::shared_ptr<Continue>, std::shared_ptr<TaskCall>, std::shared_ptr<Paren>>
       v;
 
+  std::string id;
   void print(const std::string& prefix, const bool last) const;
   Span span;
 };
