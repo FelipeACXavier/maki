@@ -17,6 +17,11 @@ class INode;
 class IFlow;
 class DezyneSimulator;
 
+namespace koda
+{
+struct Error;
+}
+
 class KodaGenerator : public QObject, public maki::IPlugin
 {
   Q_OBJECT
@@ -98,4 +103,5 @@ private:
   void highlightActiveNode(const QJsonObject& json, QGraphicsScene* currentScene, const maki::Theme& theme);
 
   maki::SettingField getSetting(const QString& key) const;
+  void publishErrors(const std::vector<koda::Error>& errors) const;
 };

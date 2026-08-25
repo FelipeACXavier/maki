@@ -2,11 +2,9 @@
 
 #include <fstream>
 
-#include "antlr4-runtime.h"
 #include "cst2ast.h"
 #include "declaration_pass.h"
 #include "emitters/dezyne_emitter.h"
-#include "error_listener.h"
 #include "ir_builder.h"
 #include "logging.h"
 #include "parser/KodaLexer.h"
@@ -18,8 +16,17 @@ Compiler::Compiler()
 {
   mBlackboard = std::make_shared<koda::types::Blackboard>();
   mTypeRegistry = std::make_shared<koda::types::TypeRegistry>();
+  mErrorListener = std::make_shared<CollectingErrorListener>();
 
   mEmitters.push_back(std::make_shared<DezyneEmitter>());
+}
+
+std::vector<Error> Compiler::getErrors() const
+{
+  if (!mErrorListener)
+    return {};
+
+  return mErrorListener->mErrors;
 }
 
 VoidResult Compiler::parse(const CompilerOptions& options)
@@ -47,9 +54,8 @@ VoidResult Compiler::parse(const CompilerOptions& options)
   antlr4::CommonTokenStream tokens(&lexer);
   KodaParser parser(&tokens);
 
-  CollectingErrorListener errorListener;
   parser.removeErrorListeners();
-  parser.addErrorListener(&errorListener);
+  parser.addErrorListener(mErrorListener.get());
 
   KodaParser::SystemContext* tree = nullptr;
   try
@@ -60,15 +66,15 @@ VoidResult Compiler::parse(const CompilerOptions& options)
     return VoidResult::Failed("Failed to parse input file: {}", e.what());
   }
 
-  if (errorListener.hasErrors() || tree == nullptr)
+  if (mErrorListener->hasErrors() || tree == nullptr)
   {
-    for (const auto& err : errorListener.errors)
+    for (const auto& err : mErrorListener->errors)
       LOG_WARNING("{}", err);
 
     return VoidResult::Failed("Failed to parse input file");
   }
 
-  koda::CST2AST visitor(mTypeRegistry, &errorListener);
+  koda::CST2AST visitor(mTypeRegistry, mErrorListener.get());
   try
   {
     mAST = std::any_cast<System>(visitor.build(tree));
@@ -83,9 +89,9 @@ VoidResult Compiler::parse(const CompilerOptions& options)
     return VoidResult::Failed(std::string("Failed to build AST: ") + e.what());
   }
 
-  if (errorListener.hasErrors())
+  if (mErrorListener->hasErrors())
   {
-    for (const auto& err : errorListener.errors)
+    for (const auto& err : mErrorListener->errors)
       LOG_WARNING("{}", err);
 
     return VoidResult::Failed("Failed to build AST");

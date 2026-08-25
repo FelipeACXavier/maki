@@ -10,8 +10,8 @@
 #include <any>
 
 #include "ast/ast.h"
+#include "ast/error_listener.h"
 #include "idocument.h"
-#include "maki_error_listener.h"
 #include "mission_parameter.h"
 #include "result.h"
 #include "traceability_map.h"
@@ -45,12 +45,12 @@ public:
   MakiToKoda(const koda::types::TypeRegistry* registry, std::shared_ptr<koda::TraceabilityMap> traceMap);
 
   koda::System getAST() const;
-  std::vector<MakiErrorListener::Error> getErrors() const;
+  std::vector<koda::Error> getErrors() const;
   Result<QString> generate(const QVector<std::shared_ptr<INode>> nodes, QVector<const IParameter*> parameters);
 
 private:
   const koda::types::TypeRegistry* mTypeRegistry;
-  MakiErrorListener mErrorListener;
+  std::shared_ptr<koda::CollectingErrorListener> mErrorListener;
   std::shared_ptr<koda::TraceabilityMap> mTraceMap;
   koda::System mAST;
 
@@ -73,7 +73,7 @@ private:
   std::any buildRepeatExpr(const IFlow& flow, const INode& node);
   std::any buildContinueExpr(const IFlow& flow, const INode& node);
   std::any buildSuccessExpr(const IFlow& flow, const INode& node);
-  QList<koda::PStrategyHandler> buildHandlers(const IFlow& flow, const INode& node);
+  Result<QList<koda::PStrategyHandler>> buildHandlers(const IFlow& flow, const INode& node);
 
   Result<koda::PVarDef> buildVarDef(const IParameter* property);
   Result<std::vector<koda::PActionDef>> buildActionDefs(const INode& node, const maki::ListValue& definition);

@@ -681,7 +681,8 @@ Result<types::TypeReference> SemanticAnalyzer::analyzeExpr(const PExpr& expr, Sy
   else if (auto p = std::get_if<PRecordLiteral>(&expr->v); p && *p)
   {
     if (!expected.isValid())
-      return Result<types::TypeReference>::Failed(std::format("Cannot infer type of record literal at {}", expr->span.toString()));
+      return Result<types::TypeReference>::Failed(
+          std::format("Cannot infer type of record literal {} at {}", expected.toString(), expr->span.toString()));
 
     const auto* definition = mTypeRegistry.resolve(expected);
     if (!definition || !definition->isRecord())

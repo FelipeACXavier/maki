@@ -216,6 +216,17 @@ QList<std::shared_ptr<maki::IPipelineAction>> KodaGenerator::pipelineActions()
   };
 }
 
+void KodaGenerator::publishErrors(const std::vector<koda::Error>& errors) const
+{
+  if (!errors.empty())
+  {
+    auto firstError = errors.front();
+    if (mServices)
+      mServices->errorOnNode(QString::fromStdString(firstError.nodeId), QString::fromStdString(firstError.flowId),
+                             QString::fromStdString(firstError.message));
+  }
+}
+
 Result<maki::PipelineArtifact> KodaGenerator::generateKoda(const maki::PipelineArtifact& artifact, const QDir& outputFolder)
 {
   mOutputFolder = outputFolder;
@@ -233,13 +244,7 @@ Result<maki::PipelineArtifact> KodaGenerator::generateKoda(const maki::PipelineA
   koda::MakiToKoda makiToKoda(typeRegistry, mTraceMap);
   const auto missionParameters = mServices->document()->getparameters();
   auto generated = makiToKoda.generate(mServices->document()->getnodes(), missionParameters);
-  auto errors = makiToKoda.getErrors();
-  if (!errors.empty())
-  {
-    auto firstError = errors.front();
-    if (mServices)
-      mServices->errorOnNode(firstError.nodeId, firstError.flowId, QString::fromStdString(firstError.message));
-  }
+  publishErrors(makiToKoda.getErrors());
   if (!generated)
     return Result<maki::PipelineArtifact>::Failed(generated.ErrorMessage());
 
@@ -575,17 +580,31 @@ Result<maki::PipelineArtifact> KodaGenerator::launchRosProject(const maki::Pipel
   // clang-format on
   generate->setArguments(args);
 
-  pipeline->add(generate, maki::OnFail::EXECUTE, [](int& exitCode, QProcess::ExitStatus& status) {
-    // On end, stop the docker
-    LOG_DEBUG("Stopping the docker container");
-    exitCode = QProcess::execute("docker", {"stop", "-t", "5", "maki_koda_runtime"});
-    if (exitCode != 0)
-    {
-      LOG_DEBUG("Failed to stop cleanly, killing the docker container");
-      exitCode = QProcess::execute("docker", {"kill", "maki_koda_runtime"});
-    }
-    if (exitCode == 0)
-      status = QProcess::ExitStatus::NormalExit;
+  pipeline->add(generate, maki::OnFail::EXECUTE, [this](int& exitCode, QProcess::ExitStatus& status) {
+    LOG_DEBUG("Stopping docker container");
+
+    auto* stop = new QProcess(this);
+    connect(stop, &QProcess::finished, this, [this, stop, &exitCode, &status](int code, QProcess::ExitStatus) {
+      stop->deleteLater();
+      if (code == 0)
+      {
+        exitCode = 0;
+        status = QProcess::NormalExit;
+        return;
+      }
+
+      LOG_DEBUG("Failed to stop cleanly, killing docker container");
+      auto* kill = new QProcess(this);
+      connect(kill, &QProcess::finished, this, [kill, &exitCode, &status](int code, QProcess::ExitStatus) {
+        exitCode = code;
+        if (code == 0)
+          status = QProcess::NormalExit;
+
+        kill->deleteLater();
+      });
+      kill->start("docker", {"kill", "maki_koda_runtime"});
+    });
+    stop->start("docker", {"stop", "-t", "5", "maki_koda_runtime"});
   });
   pipeline->endGroup();
 

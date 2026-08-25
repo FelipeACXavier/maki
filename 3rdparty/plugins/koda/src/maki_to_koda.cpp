@@ -1,9 +1,5 @@
 #include "maki_to_koda.h"
 
-#include <qdir.h>
-#include <qhashfunctions.h>
-#include <qjsonobject.h>
-
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QQueue>
@@ -23,19 +19,19 @@
 #include "typing/helpers.h"
 #include "typing/type_reference.h"
 
-#define LOG_AND_FAIL(NODE_ID, FLOW_ID, M, ...)                           \
-  do                                                                     \
-  {                                                                      \
-    LOG_ERROR(M, ##__VA_ARGS__);                                         \
-    mErrorListener.addError(NODE_ID, FLOW_ID, Format(M, ##__VA_ARGS__)); \
-    return std::any();                                                   \
+#define LOG_AND_FAIL(NODE_ID, FLOW_ID, M, ...)                                                        \
+  do                                                                                                  \
+  {                                                                                                   \
+    LOG_ERROR(M, ##__VA_ARGS__);                                                                      \
+    mErrorListener->addError(NODE_ID.toStdString(), FLOW_ID.toStdString(), Format(M, ##__VA_ARGS__)); \
+    return std::any();                                                                                \
   } while (false)
 
-#define RETURN_FAIL(NODE_ID, RET, M, ...)                           \
-  do                                                                \
-  {                                                                 \
-    mErrorListener.addError(NODE_ID, "", Format(M, ##__VA_ARGS__)); \
-    return RET::Failed(M, ##__VA_ARGS__);                           \
+#define RETURN_FAIL(NODE_ID, FLOW_ID, RET, M, ...)                                                    \
+  do                                                                                                  \
+  {                                                                                                   \
+    mErrorListener->addError(NODE_ID.toStdString(), FLOW_ID.toStdString(), Format(M, ##__VA_ARGS__)); \
+    return RET::Failed(M, ##__VA_ARGS__);                                                             \
   } while (false)
 
 namespace koda
@@ -45,11 +41,12 @@ MakiToKoda::MakiToKoda(const koda::types::TypeRegistry* registry, std::shared_pt
     : mTypeRegistry(registry)
     , mTraceMap(traceMap)
 {
+  mErrorListener = std::make_shared<CollectingErrorListener>();
 }
 
-std::vector<MakiErrorListener::Error> MakiToKoda::getErrors() const
+std::vector<Error> MakiToKoda::getErrors() const
 {
-  return mErrorListener.mErrors;
+  return mErrorListener->mErrors;
 }
 
 koda::System MakiToKoda::getAST() const
@@ -101,13 +98,13 @@ Result<koda::PComponent> MakiToKoda::buildTask(const INode& task, QVector<const 
   if (const auto* prop = getProperty("name", task))
   {
     if (prop->toStringValue().toLower() == "task")
-      RETURN_FAIL(task.getid(), Result<koda::PComponent>, "Tasks may not be called 'Task' or 'task'");
+      RETURN_FAIL(task.getid(), QString(), Result<koda::PComponent>, "Tasks may not be called 'Task' or 'task'");
 
     c->name = format(prop->toStringValue().toLower(), "_");
   }
   else
   {
-    RETURN_FAIL(task.getid(), Result<koda::PComponent>, "Task does not have a name");
+    RETURN_FAIL(task.getid(), QString(), Result<koda::PComponent>, "Task does not have a name");
   }
 
   // Get arguments
@@ -361,10 +358,7 @@ std::any MakiToKoda::buildSequenceFrom(const IFlow& flow, const INode* start, co
   while (current != nullptr && current != stop)
   {
     if (visited.contains(current->getid()))
-    {
-      LOG_ERROR("Cycle detected while building Koda AST at node: " + current->getid().toStdString());
-      return std::any();
-    }
+      LOG_AND_FAIL(current->getid(), flow.getid(), "Cycle detected while building Koda AST at node: {}", current->getid());
 
     visited.insert(current->getid());
 
@@ -381,10 +375,7 @@ std::any MakiToKoda::buildSequenceFrom(const IFlow& flow, const INode* start, co
     {
       auto nodeExpr = buildNodeExpr(flow, *current);
       if (!nodeExpr.has_value())
-      {
-        LOG_ERROR("Could not build non structural node");
-        return std::any();
-      }
+        LOG_AND_FAIL(current->getid(), flow.getid(), "Could not build non structural node");
 
       sequence->alts.push_back(std::any_cast<koda::PStrategy>(nodeExpr));
     }
@@ -397,25 +388,16 @@ std::any MakiToKoda::buildSequenceFrom(const IFlow& flow, const INode* start, co
 
       auto joinExpr = buildJoinFromFanOut(flow, *current, normalSuccessors, joinNode);
       if (!joinExpr.has_value())
-      {
-        LOG_ERROR("Failed to build join expression");
-        return std::any();
-      }
+        LOG_AND_FAIL(current->getid(), flow.getid(), "Failed to build join expression");
 
       if (joinNode == nullptr)
-      {
-        LOG_ERROR("Internal error: join node was not resolved");
-        return std::any();
-      }
+        LOG_AND_FAIL(current->getid(), flow.getid(), "Internal error: join node was not resolved");
 
       sequence->alts.push_back(std::any_cast<koda::PStrategy>(joinExpr));
       const auto afterJoin = sequentialSuccessorsOf(*joinNode, flow);
 
       if (afterJoin.size() > 1)
-      {
-        LOG_ERROR("Join node has multiple sequential outgoing transitions: " + joinNode->getid().toStdString());
-        return std::any();
-      }
+        LOG_AND_FAIL(joinNode->getid(), flow.getid(), "Join node has multiple sequential outgoing transitions");
 
       current = afterJoin.isEmpty() ? nullptr : afterJoin.first().node;
       continue;
@@ -452,14 +434,13 @@ std::any MakiToKoda::buildNodeExpr(const IFlow& flow, const INode& node)
   else if (node.getnodeId() == "Koda::Terminate")
     result = buildSuccessExpr(flow, node);
   else
-  {
-    LOG_ERROR("Unknown expression: {}", node.getnodeId());
-    return result;
-  }
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Unknown expression: {}", node.getnodeId());
 
-  auto strategy = std::any_cast<koda::PStrategy>(result);
-  strategy->id = std::format("{}_{}", node.getid(), flow.getid());
-  traceNode(flow, node, strategy);
+  if (auto strategy = std::any_cast<koda::PStrategy>(&result))
+  {
+    (*strategy)->id = std::format("{}_{}", node.getid(), flow.getid());
+    traceNode(flow, node, *strategy);
+  }
 
   return result;
 }
@@ -505,8 +486,9 @@ std::any MakiToKoda::buildAsyncExpr(const IFlow& flow, const INode& node)
   expr->call = call;
 
   auto handlers = buildHandlers(flow, node);
-  for (const auto& handler : handlers)
-    expr->handlers.push_back(handler);
+  if (handlers.IsSuccess())
+    for (const auto& handler : handlers.Value())
+      expr->handlers.push_back(handler);
 
   auto strat = std::make_shared<koda::Strategy>();
   strat->v = expr;
@@ -578,8 +560,9 @@ std::any MakiToKoda::buildStrategyExpr(const IFlow& flow, const INode& node)
   expr->call = call;
 
   auto handlers = buildHandlers(flow, node);
-  for (const auto& handler : handlers)
-    expr->handlers.push_back(handler);
+  if (handlers.IsSuccess())
+    for (const auto& handler : handlers.Value())
+      expr->handlers.push_back(handler);
 
   auto strat = std::make_shared<koda::Strategy>();
   strat->v = expr;
@@ -594,23 +577,14 @@ std::any MakiToKoda::buildWithinExpr(const IFlow& flow, const INode& node)
   const auto elseSuccessors = elseSuccessorsOf(node, flow);
 
   if (doSuccessors.size() != 1)
-  {
-    LOG_ERROR("Within node must have exactly one 'do' transition: " + node.getid().toStdString());
-    return std::any();
-  }
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Within node must have exactly one 'do' transition: {}", node.getid());
 
   if (elseSuccessors.size() > 1)
-  {
-    LOG_ERROR("Within node cannot have more than one 'else' transition: " + node.getid().toStdString());
-    return std::any();
-  }
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Within node cannot have more than one 'else' transition: {}", node.getid());
 
   auto doSequence = buildSequenceFrom(flow, doSuccessors.first().node, nullptr);
   if (!doSequence.has_value())
-  {
-    LOG_ERROR("Failed to create do sequence");
-    return std::any();
-  }
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Invalid strategy for 'do' branch of within node");
 
   expr->a = std::any_cast<koda::PStrategy>(doSequence);
 
@@ -618,10 +592,7 @@ std::any MakiToKoda::buildWithinExpr(const IFlow& flow, const INode& node)
   {
     auto elseSequence = buildSequenceFrom(flow, elseSuccessors.first().node, nullptr);
     if (!elseSequence.has_value())
-    {
-      LOG_ERROR("Failed to create else sequence");
-      return std::any();
-    }
+      LOG_AND_FAIL(node.getid(), flow.getid(), "Invalid strategy for 'else' branch of within node");
 
     expr->b = std::any_cast<koda::PStrategy>(elseSequence);
   }
@@ -635,8 +606,9 @@ std::any MakiToKoda::buildWithinExpr(const IFlow& flow, const INode& node)
   expr->seconds = timeout->toInt();
 
   auto handlers = buildHandlers(flow, node);
-  for (const auto& handler : handlers)
-    expr->handlers.push_back(handler);
+  if (handlers.IsSuccess())
+    for (const auto& handler : handlers.Value())
+      expr->handlers.push_back(handler);
 
   auto strat = std::make_shared<koda::Strategy>();
   strat->v = expr;
@@ -677,8 +649,9 @@ std::any MakiToKoda::buildRepeatExpr(const IFlow& flow, const INode& node)
   expr->seconds = rate->toInt();
 
   auto handlers = buildHandlers(flow, node);
-  for (const auto& handler : handlers)
-    expr->handlers.push_back(handler);
+  if (handlers.IsSuccess())
+    for (const auto& handler : handlers.Value())
+      expr->handlers.push_back(handler);
 
   auto repeatStrat = std::make_shared<koda::Strategy>();
   repeatStrat->v = flowCall;
@@ -715,7 +688,7 @@ std::any MakiToKoda::buildSuccessExpr(const IFlow& flow, const INode& node)
   return strat;
 }
 
-QList<koda::PStrategyHandler> MakiToKoda::buildHandlers(const IFlow& flow, const INode& node)
+Result<QList<koda::PStrategyHandler>> MakiToKoda::buildHandlers(const IFlow& flow, const INode& node)
 {
   QList<koda::PStrategyHandler> handlers;
 
@@ -723,10 +696,7 @@ QList<koda::PStrategyHandler> MakiToKoda::buildHandlers(const IFlow& flow, const
   {
     auto sequence = buildSequenceFrom(flow, errorStart.node, nullptr);
     if (!sequence.has_value())
-    {
-      LOG_ERROR("Failed to parse error handler");
-      return {};
-    }
+      RETURN_FAIL(node.getid(), flow.getid(), Result<QList<koda::PStrategyHandler>>, "Failed to parse error handler");
 
     auto value = std::make_shared<koda::StrategyHandler>();
     value->kind = koda::StrategyHandler::Kind::OnError;
@@ -739,10 +709,7 @@ QList<koda::PStrategyHandler> MakiToKoda::buildHandlers(const IFlow& flow, const
   {
     auto sequence = buildSequenceFrom(flow, abortStart.node, nullptr);
     if (!sequence.has_value())
-    {
-      LOG_ERROR("Failed to parse abort handler");
-      return {};
-    }
+      RETURN_FAIL(node.getid(), flow.getid(), Result<QList<koda::PStrategyHandler>>, "Failed to parse abort handler");
 
     auto value = std::make_shared<koda::StrategyHandler>();
     value->kind = koda::StrategyHandler::Kind::OnAbort;
@@ -754,10 +721,7 @@ QList<koda::PStrategyHandler> MakiToKoda::buildHandlers(const IFlow& flow, const
   {
     auto sequence = buildSequenceFrom(flow, signalStart.node, nullptr);
     if (!sequence.has_value())
-    {
-      LOG_ERROR("Failed to parse signal handler");
-      return {};
-    }
+      RETURN_FAIL(node.getid(), flow.getid(), Result<QList<koda::PStrategyHandler>>, "Failed to parse signal handler");
 
     auto value = std::make_shared<koda::StrategyHandler>();
     value->kind = koda::StrategyHandler::Kind::OnEmitter;

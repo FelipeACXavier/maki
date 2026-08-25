@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "ast.h"
+#include "ast/error_listener.h"
 #include "emitters/emitter.h"
 #include "koda_ir.h"
 #include "koda_plugin.h"
@@ -54,6 +55,8 @@ public:
     return mAST;
   }
 
+  std::vector<Error> getErrors() const;
+
   const SymbolRegistry& getSymbols() const
   {
     return mSymbols;
@@ -76,6 +79,19 @@ public:
   std::vector<std::string> generatedFiles() const;
 
 private:
+  CompilerOptions mOptions;
+  System mAST;
+  SymbolRegistry mSymbols;
+  SemanticModel mSemantics;
+  ir::Program mIR;
+
+  std::shared_ptr<CollectingErrorListener> mErrorListener;
+  std::shared_ptr<types::TypeRegistry> mTypeRegistry;
+  std::shared_ptr<types::Blackboard> mBlackboard;
+  std::vector<std::shared_ptr<Emitter>> mEmitters;
+  std::map<std::string, std::shared_ptr<KodaPlugin>> mPlugins;
+  std::vector<std::string> mGeneratedFiles;
+
   VoidResult runFrontend();
   VoidResult runEmitters();
   VoidResult runPlugins();
@@ -83,18 +99,6 @@ private:
   static std::string toFilename(const std::string& name);
   static std::string componentName(const std::string& name);
   static std::string flowName(const std::string& name);
-
-  CompilerOptions mOptions;
-  System mAST;
-  SymbolRegistry mSymbols;
-  SemanticModel mSemantics;
-  ir::Program mIR;
-
-  std::shared_ptr<types::TypeRegistry> mTypeRegistry;
-  std::shared_ptr<types::Blackboard> mBlackboard;
-  std::vector<std::shared_ptr<Emitter>> mEmitters;
-  std::map<std::string, std::shared_ptr<KodaPlugin>> mPlugins;
-  std::vector<std::string> mGeneratedFiles;
 };
 
 }  // namespace koda
