@@ -11,6 +11,7 @@ function printHelp()
   echo "    --clean             | Clean the build directory"
   echo "    --prefix            | CMake QT install prefix"
   echo "    --docs              | Build docs"
+  echo "    --wasm              | Build for the web"
   echo ""
 }
 
