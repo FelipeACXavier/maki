@@ -104,7 +104,7 @@ VoidResult unzipProject(const QString& makiFile, const QString& outputDir)
 {
   QuaZip zip(QDir::toNativeSeparators(makiFile));
   if (!zip.open(QuaZip::mdUnzip))
-    return VoidResult::Failed("Could not open archive: " + zip.getZipError());
+    return VoidResult::Failed("Could not open archive: {}", zip.getZipError());
 
   QDir().mkpath(QDir::toNativeSeparators(outputDir));
 

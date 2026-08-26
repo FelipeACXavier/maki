@@ -665,12 +665,14 @@ VoidResult MainWindow::loadElements()
 #ifndef __EMSCRIPTEN__
       const auto fileName = libDir.absoluteFilePath(file);
       auto libRead = JSON::fromFile(fileName);
+      if (!libRead.IsSuccess())
+        return VoidResult::Failed("Failed to open library: {}", fileName);
 #else
     LOG_DEBUG("Loading library: %s", qPrintable(file));
     auto libRead = JSON::fromFile(file);
+    if (!libRead.IsSuccess())
+      return VoidResult::Failed("Failed to open library: {}", file);
 #endif
-      if (!libRead.IsSuccess())
-        return VoidResult::Failed("Failed to open library: {}", fileName);
 
       auto libConfig = libRead.Value();
       LOG_ERROR_ON_FAILURE(loadLibrary(libConfig));

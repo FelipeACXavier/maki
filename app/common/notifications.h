@@ -8,8 +8,10 @@
 #include <string>
 
 #include "logging.h"
+#include "string_helpers.h"
 
-namespace notification {
+namespace notification
+{
 
 /**
  * @brief Represents the body of a notification which can be either a string or a QWidget pointer.
@@ -63,27 +65,14 @@ void Notify(logging::LogLevel level, const std::string& header, const Notificati
  */
 QString NotifyLongRunning(const QString& id, logging::LogLevel level, const std::string& header, const NotificationBody& body);
 
-/**
- * @brief Format a string using format specifiers and arguments.
- *
- * @param fmt The format string.
- * @param args The arguments to be formatted into the string.
- * @return std::string The formatted string.
- */
-template <typename... Args>
-std::string format(std::string_view fmt, Args&&... args)
-{
-  return std::vformat(fmt, std::make_format_args(args...));
-}
-
 }  // namespace notification
 
 #define NOTIFY_ERROR(header, s, ...) \
-  notification::Notify(logging::LogLevel::Error, header, notification::format(s, ##__VA_ARGS__))
+  notification::Notify(logging::LogLevel::Error, header, Format(s, ##__VA_ARGS__))
 #define NOTIFY_WARNING(header, s, ...) \
-  notification::Notify(logging::LogLevel::Warning, header, notification::format(s, ##__VA_ARGS__))
+  notification::Notify(logging::LogLevel::Warning, header, Format(s, ##__VA_ARGS__))
 #define NOTIFY_INFO(header, s, ...) \
-  notification::Notify(logging::LogLevel::Info, header, notification::format(s, ##__VA_ARGS__))
+  notification::Notify(logging::LogLevel::Info, header, Format(s, ##__VA_ARGS__))
 
 #define NOTIFY_LONG_ERROR(id, header, content) \
   notification::NotifyLongRunning(id, logging::LogLevel::Error, header, content)

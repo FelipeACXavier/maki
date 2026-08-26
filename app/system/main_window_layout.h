@@ -82,7 +82,6 @@ protected:
   QSplitter* mCentralSplitter = nullptr;  /// Pointer to the central splitter.
   QTabWidget* mCanvasPanel = nullptr;     /// Pointer to the canvas panel tab widget.
 
-  // BadgedTabWidget* mBottomPanel;
   QWidget* mBottomContainer = nullptr;
   QStackedWidget* mBottomPanel = nullptr;                          /// Pointer to the bottom panel stacked widget.
   oclero::qlementine::NavigationBar* mBottomNavigation = nullptr;  /// Pointer to the bottom navigation bar.
@@ -101,6 +100,7 @@ protected:
 
   // === Menu Bar ===
   QMenuBar* mMenuBar = nullptr;  /// Pointer to the menu bar.
+  QToolButton* mMenuButton = nullptr;
 
   // === Actions ===
   // File menu

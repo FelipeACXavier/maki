@@ -6,6 +6,7 @@
 #include <QVector>
 
 #include "config_base.h"
+#include "logging.h"
 #include "types.h"
 
 /**
@@ -25,11 +26,11 @@ public:
    */
   PropertyConfig(const QJsonObject& object);
 
-  QString id = "";  /// Unique identifier for the property.
-  QVariant defaultValue;  /// Default value of the property.
-  QList<PropertyConfig> options = {};  /// List of possible options for the property.
+  QString id = "";                                            /// Unique identifier for the property.
+  QVariant defaultValue;                                      /// Default value of the property.
+  QList<PropertyConfig> options = {};                         /// List of possible options for the property.
   Types::PropertyTypes type = Types::PropertyTypes::UNKNOWN;  /// Type of the property.
-  QString info = "";  /// Additional information about the property.
+  QString info = "";                                          /// Additional information about the property.
 
   friend QDataStream& operator<<(QDataStream& out, const PropertyConfig& config);
   friend QDataStream& operator>>(QDataStream& in, PropertyConfig& config);
@@ -55,9 +56,9 @@ public:
    */
   TransitionConfig(const QJsonObject& object);
 
-  QString id = "";  /// Unique identifier for the transition.
-  QString label = "";  /// Label of the transition.
-  QString event = "";  /// Event that triggers the transition.
+  QString id = "";         /// Unique identifier for the transition.
+  QString label = "";      /// Label of the transition.
+  QString event = "";      /// Event that triggers the transition.
   bool modifiable = true;  /// Whether the transition is modifiable.
 
   friend QDataStream& operator<<(QDataStream& out, const TransitionConfig& config);
@@ -81,13 +82,13 @@ public:
    */
   FlowConfig(const QJsonObject& object);
 
-  QString name = "";  /// Name of the flow.
-  Types::CallType type = Types::CallType::UNKNOWN;  /// Type of the call.
+  QString name = "";                                                /// Name of the flow.
+  Types::CallType type = Types::CallType::UNKNOWN;                  /// Type of the call.
   Types::PropertyTypes returnType = Types::PropertyTypes::UNKNOWN;  /// Return type of the call.
-  QList<PropertyConfig> arguments = {};  /// List of arguments for the call.
-  bool modifiable = true;  /// Whether the flow is modifiable.
-  QString info = "";  /// Additional information about the flow.
-  int linksTo = INT32_MAX;  /// Number of links to this flow.
+  QList<PropertyConfig> arguments = {};                             /// List of arguments for the call.
+  bool modifiable = true;                                           /// Whether the flow is modifiable.
+  QString info = "";                                                /// Additional information about the flow.
+  int linksTo = INT32_MAX;                                          /// Number of links to this flow.
 
   friend QDataStream& operator<<(QDataStream& out, const FlowConfig& config);
   friend QDataStream& operator>>(QDataStream& in, FlowConfig& config);
@@ -110,9 +111,9 @@ public:
    */
   ControlsConfig(const QJsonObject& object);
 
-  QString id = "";  /// Unique identifier for the control.
+  QString id = "";                                          /// Unique identifier for the control.
   Types::ControlTypes type = Types::ControlTypes::UNKNOWN;  /// Type of the control.
-  QString format = "";  /// Format of the control.
+  QString format = "";                                      /// Format of the control.
 
   friend QDataStream& operator<<(QDataStream& out, const ControlsConfig& config);
   friend QDataStream& operator>>(QDataStream& in, ControlsConfig& config);
@@ -183,18 +184,18 @@ public:
 
   Types::Shape shape = Types::Shape::ROUNDED_RECTANGLE;  /// Shape of the body.
 
-  QColor textColor = Qt::black;  /// Text color.
-  QColor iconColor = Qt::black;  /// Icon color.
+  QColor textColor = Qt::black;            /// Text color.
+  QColor iconColor = Qt::black;            /// Icon color.
   QColor backgroundColor = Qt::lightGray;  /// Background color.
-  QColor borderColor = Qt::black;  /// Border color.
+  QColor borderColor = Qt::black;          /// Border color.
 
-  int width = 100;  /// Width of the body.
-  int height = 50;  /// Height of the body.
-  int zIndex = 1;  /// Z-index for stacking order.
+  int width = 100;        /// Width of the body.
+  int height = 50;        /// Height of the body.
+  int zIndex = 1;         /// Z-index for stacking order.
   int borderRadius = 10;  /// Border radius for rounded corners.
 
   QString iconPath = "";  /// Path to the icon image.
-  qreal iconScale = 1;  /// Scale factor for the icon.
+  qreal iconScale = 1;    /// Scale factor for the icon.
 
   friend QDataStream& operator<<(QDataStream& out, const BodyConfig& config);
   friend QDataStream& operator>>(QDataStream& in, BodyConfig& config);
@@ -220,13 +221,13 @@ public:
    */
   NodeConfig(const QJsonObject& object);
 
-  QString type;  /// Type of the node.
-  BodyConfig body;  /// Configuration for the body of the node.
-  HelpConfig help;  /// Configuration for help information.
-  BehaviourConfig behaviour;  /// Configuration for the behaviour associated with the node.
-  QVector<ControlsConfig> controls = {};  /// List of controls within the node.
-  QVector<PropertyConfig> properties = {};  /// List of properties associated with the node.
-  QVector<FlowConfig> events = {};  /// List of events associated with the node.
+  QString type;                                /// Type of the node.
+  BodyConfig body;                             /// Configuration for the body of the node.
+  HelpConfig help;                             /// Configuration for help information.
+  BehaviourConfig behaviour;                   /// Configuration for the behaviour associated with the node.
+  QVector<ControlsConfig> controls = {};       /// List of controls within the node.
+  QVector<PropertyConfig> properties = {};     /// List of properties associated with the node.
+  QVector<FlowConfig> events = {};             /// List of events associated with the node.
   QVector<TransitionConfig> transitions = {};  /// List of transitions associated with the node.
 
   Types::LibraryTypes libraryType = Types::LibraryTypes::UNKNOWN;  /// Type of the library.

@@ -62,10 +62,13 @@ QIcon addIconWithColor(const QString& path, const QColor& color)
 
 QIcon iconFromTheme(const QString& name, bool useLocal)
 {
-  if (name.contains("/"))
-    return QIcon(AppPaths::icon(name + ".svg"));
-
-  return QIcon::fromTheme(name, QIcon(AppPaths::icon(name + ".svg")));
+  // Make sure any extensions are gone
+  auto iconName = QString(name).replace(".svg", "") + ".svg";
+#ifndef __EMSCRIPTEN__
+  if (!useLocal)
+    return QIcon::fromTheme(iconName, QIcon(":/icons/" + iconName));
+#endif
+  return QIcon(":/icons/" + iconName);
 }
 
 QString timeToQT(std::chrono::system_clock::time_point now)

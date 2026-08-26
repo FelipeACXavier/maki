@@ -450,7 +450,6 @@ void MainWindowLayout::buildMenuBar()
 #else
   mMenuButton = new QToolButton(this);
   mMenuButton->setIcon(iconFromTheme("bars"));
-  // mMenuButton->setPopupMode(ToolButtonPopupMode::);
 
   auto* menu = new QMenu(mMenuButton);
 
