@@ -99,6 +99,8 @@ QIcon addIconWithColor(const QString& path, const QColor& color);
  */
 QIcon iconFromTheme(const QString& name, bool fallback = false);
 
+QString iconPathFromTheme(const QString& name, bool useLocal = true);
+
 /**
  * @brief Converts a time point to a string in QT format.
  *

@@ -68,6 +68,20 @@ QIcon iconFromTheme(const QString& name, bool fallback)
   return QIcon::fromTheme(name, QIcon(AppPaths::icon(name + ".svg")));
 }
 
+QString iconPathFromTheme(const QString& name, bool useLocal)
+{
+  auto iconName = QString(name).replace(".svg", "") + ".svg";
+#ifndef __EMSCRIPTEN__
+  if (!useLocal)
+    return AppPaths::icon(iconName);
+#endif
+  if (name.contains("plugin"))
+    return AppPaths::icon(iconName);
+
+  // return QString(":/icons/" + iconName);
+  return AppPaths::icon(iconName);
+}
+
 QString timeToQT(std::chrono::system_clock::time_point now)
 {
   // const struct tm* time = localtime(&ts.tv_sec);

@@ -7,16 +7,17 @@
 #include <memory>
 
 #include "config.h"
-// #include "inode.h"
+#include "control_widget.h"
 #include "node_base.h"
 #include "save_info.h"
 #include "transition.h"
 #include "types.h"
+#include "widgets/controls/canvas_control_widget.h"
 
 class Flow;
 class CanvasMessage;
-class CanvasControlWidget;
 class QGraphicsSceneMouseEvent;
+class QGraphicsSceneHoverEvent;
 
 /**
  * @brief Represents a graphical node item in a flowchart.
@@ -68,11 +69,21 @@ public:
   QRectF nodeRect() const override;
   QRectF sceneNodeRect() const;
 
+  bool hasControl();
+
+  template <typename T>
+  bool hasControl()
+  {
+    return mControlActive && mControlWidget && qobject_cast<T*>(mControlWidget->controlWidget()) != nullptr;
+  }
+
   void highlight(const QColor& color, const QString& message, int durationMs = 1000);
   void dismissHighlight();
 
-  void showSimulationControls(QWidget* controls, const QColor& highlightColor);
+  void showSimulationControls(maki::ControlWidget* controls, const QColor& highlightColor);
+  void showControls(maki::ControlWidget* controls, const ControlProperties& properties);
   void dismissControl();
+  void hideControl();
 
   /**
    * @brief Returns the shape of this item.
@@ -340,6 +351,7 @@ public:
   std::function<void(NodeItem* item)> nodeModified;
   std::function<void(Flow* flow, NodeItem* item)> flowAdded;
   std::function<void(NodeItem* item)> nodeMoved;
+  std::function<void(NodeItem* item, bool enter)> nodeHovered;
 
   // "slots":
   void onProperties();
@@ -392,6 +404,9 @@ protected:
    */
   void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
 
+  void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
+  void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
+
   /**
    * @brief Handles changes to the item's properties.
    *
@@ -409,6 +424,7 @@ private:
   QVector<NodeItem*> mChildrenNodes;  /// List of child nodes.
   CanvasMessage* mHighlightMessage = nullptr;
   CanvasControlWidget* mControlWidget = nullptr;
+  bool mControlActive = false;
 
   qreal mBaseScale;             /// Base scale for the node.
   QSizeF mSize{0, 0};           /// Current size of the node.

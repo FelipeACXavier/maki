@@ -54,17 +54,7 @@ file(GLOB APP_ICON_FILES
   ${FONT_AWESOME_PATH}/rectangle-list.svg
   ${FONT_AWESOME_PATH}/angle-right.svg
   ${FONT_AWESOME_PATH}/angles-right.svg
-  ${MISSION_PATH}/koda_async.svg
-  ${MISSION_PATH}/koda_continue.svg
-  ${MISSION_PATH}/koda_every.svg
-  ${MISSION_PATH}/koda_failure.svg
-  ${MISSION_PATH}/koda_join.svg
-  ${MISSION_PATH}/koda_repeat.svg
-  ${MISSION_PATH}/koda_start.svg
-  ${MISSION_PATH}/koda_strategy.svg
-  ${MISSION_PATH}/koda_success.svg
-  ${MISSION_PATH}/koda_sync.svg
-  ${MISSION_PATH}/koda_within.svg
+  ${MISSION_PATH}/*.svg
   ${FALLBACK_PATH}/*.svg
 )
 

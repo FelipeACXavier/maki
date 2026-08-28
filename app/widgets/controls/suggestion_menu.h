@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "../frame.h"
+#include "control_widget.h"
 
 class QEnterEvent;
 class QEvent;
@@ -52,27 +53,18 @@ private:
   bool mHovered = false;
 };
 
-class SuggestionMenu : public StyledFrame
+class SuggestionMenu : public maki::ControlWidget
 {
   Q_OBJECT
 
 public:
+  static SuggestionMenu* create(QWidget* parent = nullptr);
   SuggestionMenu(QWidget* parent = nullptr);
 
   void setSuggestions(const QStringList& consumers, const QStringList& producers);
 
-  void showMenu(NodeItem* node, CanvasView* view);
-  void hideMenu();
-
-  void updatePosition(const NodeItem* node, CanvasView* view);
-
 signals:
   void accepted(const QStringList& suggestions);
-  void dismissed();
-
-protected:
-  void enterEvent(QEnterEvent* event) override;
-  void leaveEvent(QEvent* event) override;
 
 private:
   maki::WidgetGroup* mConsumersGroup = nullptr;
@@ -81,15 +73,6 @@ private:
   std::vector<SuggestionRow*> mConsumerRows;
   std::vector<SuggestionRow*> mProducerRows;
 
-  QTimer* mFadeTimer = nullptr;
-  QPropertyAnimation* mFadeAnimation = nullptr;
-
-  bool mMouseInside = false;
-
   void clearSuggestions();
-
   QStringList selectedSuggestions() const;
-
-  void startFadeOut();
-  void cancelFadeOut();
 };

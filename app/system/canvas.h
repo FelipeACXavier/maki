@@ -21,7 +21,6 @@ class CanvasView;
 class TransitionItem;
 class ConfigurationTable;
 class EdgeRouter;
-class SuggestionMenu;
 
 /**
  * @brief The Canvas class represents the main drawing area for nodes and transitions.
@@ -392,13 +391,14 @@ protected:
 
   virtual void addedItemNode(NodeItem* node, std::shared_ptr<NodeSaveInfo> info);
   virtual void addedItemFlow(Flow* flow, NodeItem* node);
+  virtual void onNodeHovered(NodeItem* node, bool entered);
   virtual void addTransition(TransitionItem* transition);
   virtual void removeTransition(TransitionItem* transition);
   virtual bool canAddTransition(NodeItem* node) const;
   virtual TransitionConfig nextTransition(NodeItem* node) const;
   virtual QVector<QGraphicsItem*> cleanTransitionsOfNode(const QString& nodeId);
   virtual void onNodeMoved(const NodeItem* node);
-  virtual void showSimulationControls(NodeItem* node, QWidget* controls, const QColor& highlightColor);
+  virtual void showSimulationControls(NodeItem* node, maki::ControlWidget* controls, const QColor& highlightColor);
 
   /**
    * @brief Returns the parent view of this canvas.
@@ -436,9 +436,7 @@ private:
 
   NodeItem* mSuggestionSourceNode = nullptr;
   QTimer* mSuggestionHideTimer = nullptr;
-  SuggestionMenu* mSuggestionMenu = nullptr;
 
-  void ensureSuggestionMenu();
   void createSuggestedNode(const QString& nodeType, NodeItem* sourceNode);
 
   /**

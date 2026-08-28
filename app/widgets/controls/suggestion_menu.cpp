@@ -20,10 +20,6 @@
 #include "elements/node.h"
 #include "system/canvas_view.h"
 
-constexpr int MENU_WIDTH = 280;
-constexpr int FADE_DELAY_MS = 2000;
-constexpr int FADE_DURATION_MS = 150;
-
 SuggestionRow::SuggestionRow(const QString& svgPath, const QString& labelText, QWidget* parent)
     : QWidget(parent)
     , mText(labelText)
@@ -102,6 +98,7 @@ void SuggestionRow::setHovered(bool hovered)
     return;
 
   mHovered = hovered;
+  update();
 }
 
 void SuggestionRow::paintEvent(QPaintEvent* event)
@@ -121,25 +118,33 @@ void SuggestionRow::paintEvent(QPaintEvent* event)
 // ============================================================================
 // SuggestionMenu
 // ============================================================================
+SuggestionMenu* SuggestionMenu::create(QWidget* parent)
+{
+  auto* menu = new SuggestionMenu(parent);
+  return menu;
+}
 
 SuggestionMenu::SuggestionMenu(QWidget* parent)
-    : StyledFrame(parent)
+    : maki::ControlWidget(parent)
 {
   const auto* qlementineStyle = oclero::qlementine::appStyle();
   if (!qlementineStyle)
     return;
 
+  const auto theme = qlementineStyle->theme();
+
   // Since this is an overlay, keep it above the normal canvas widgets.
   raise();
 
-  const auto theme = qlementineStyle->theme();
-  setFixedWidth(MENU_WIDTH);
-  setBackgroundRole(StyledFrame::BackgroundRole::Base);
-  setBorderWidth(theme.borderWidth);
-  setRadius(theme.borderRadius);
-  setCustomBorderColor(theme.primaryColor);
+  setFixedWidth(Config::MENU_WIDTH);
 
-  auto* mainLayout = new QVBoxLayout(this);
+  auto frame = new StyledFrame(this);
+  frame->setBackgroundRole(StyledFrame::BackgroundRole::Base);
+  frame->setBorderWidth(theme.borderWidth);
+  frame->setRadius(theme.borderRadius);
+  frame->setCustomBorderColor(theme.primaryColor);
+
+  auto* mainLayout = new QVBoxLayout(frame);
   mainLayout->setContentsMargins(theme.spacing, theme.spacing, theme.spacing, theme.spacing);
   mainLayout->setSpacing(theme.spacing);
 
@@ -183,46 +188,20 @@ SuggestionMenu::SuggestionMenu(QWidget* parent)
   buttonLayout->addWidget(addButton);
   mainLayout->addWidget(buttons);
 
-  connect(skipButton, &QPushButton::clicked, this, [this]() {
-    hideMenu();
-    emit dismissed();
-  });
+  connect(skipButton, &QPushButton::clicked, this, [this]() { emit dismissed(); });
 
   connect(addButton, &QPushButton::clicked, this, [this]() {
     const auto selected = selectedSuggestions();
     if (selected.empty())
       return;
 
-    hideMenu();
     emit accepted(selected);
   });
 
-  // --------------------------------------------------------------------------
-  // Fade timer
-  mFadeTimer = new QTimer(this);
-  mFadeTimer->setSingleShot(true);
-  mFadeTimer->setInterval(FADE_DELAY_MS);
-
-  connect(mFadeTimer, &QTimer::timeout, this, &SuggestionMenu::startFadeOut);
-
-  // --------------------------------------------------------------------------
-  // Fade animation
-  auto* opacityEffect = new QGraphicsOpacityEffect(this);
-
-  opacityEffect->setOpacity(1.0);
-  setGraphicsEffect(opacityEffect);
-
-  mFadeAnimation = new QPropertyAnimation(opacityEffect, "opacity", this);
-  mFadeAnimation->setDuration(FADE_DURATION_MS);
-  connect(mFadeAnimation, &QPropertyAnimation::finished, this, [this, opacityEffect]() {
-    if (opacityEffect->opacity() > 0.0)
-      return;
-
-    QWidget::hide();
-    opacityEffect->setOpacity(1.0);
-  });
-
-  hide();
+  auto* layout = new QVBoxLayout(this);
+  layout->setContentsMargins(0, 0, 0, 0);
+  layout->setSpacing(0);
+  layout->addWidget(frame);
 }
 
 void SuggestionMenu::setSuggestions(const QStringList& consumers, const QStringList& producers)
@@ -262,76 +241,6 @@ void SuggestionMenu::setSuggestions(const QStringList& consumers, const QStringL
   adjustSize();
 }
 
-void SuggestionMenu::updatePosition(const NodeItem* node, CanvasView* view)
-{
-  if (!node || !view)
-    return;
-
-  const QRectF sceneRect = node->mapRectToScene(node->boundingRect());
-  const QPointF anchorScene(sceneRect.right(), sceneRect.center().y());
-
-  QPoint viewPos = view->mapFromScene(anchorScene);
-  viewPos.rx() += 10;
-
-  move(viewPos.x(), viewPos.y() - height() / 2);
-}
-
-void SuggestionMenu::showMenu(NodeItem* node, CanvasView* view)
-{
-  if (mConsumerRows.empty() && mProducerRows.empty())
-    return;
-
-  if (!node || !view || !view->viewport())
-    return;
-
-  cancelFadeOut();
-
-  if (auto* effect = qobject_cast<QGraphicsOpacityEffect*>(graphicsEffect()))
-    effect->setOpacity(1.0);
-
-  if (layout())
-  {
-    layout()->invalidate();
-    layout()->activate();
-  }
-
-  adjustSize();
-  updateGeometry();
-  updatePosition(node, view);
-
-  LOG_DEBUG("Updating menu with {} and {}", width(), height());
-  show();
-  raise();
-
-  mFadeTimer->start();
-}
-
-void SuggestionMenu::hideMenu()
-{
-  cancelFadeOut();
-
-  QWidget::hide();
-
-  if (auto* effect = qobject_cast<QGraphicsOpacityEffect*>(graphicsEffect()))
-    effect->setOpacity(1.0);
-}
-
-void SuggestionMenu::enterEvent(QEnterEvent* event)
-{
-  mMouseInside = true;
-  cancelFadeOut();
-  QWidget::enterEvent(event);
-}
-
-void SuggestionMenu::leaveEvent(QEvent* event)
-{
-  mMouseInside = false;
-
-  // Don't disappear immediately when the user accidentally moves a few pixels away from the popup.
-  mFadeTimer->start();
-  QWidget::leaveEvent(event);
-}
-
 void SuggestionMenu::clearSuggestions()
 {
   for (auto* row : mConsumerRows)
@@ -365,34 +274,4 @@ QStringList SuggestionMenu::selectedSuggestions() const
       result << row->text();
 
   return result;
-}
-
-void SuggestionMenu::startFadeOut()
-{
-  if (mMouseInside)
-    return;
-
-  auto* effect = qobject_cast<QGraphicsOpacityEffect*>(graphicsEffect());
-  if (!effect)
-  {
-    QWidget::hide();
-    return;
-  }
-
-  mFadeAnimation->stop();
-  mFadeAnimation->setStartValue(effect->opacity());
-  mFadeAnimation->setEndValue(0.0);
-  mFadeAnimation->start();
-}
-
-void SuggestionMenu::cancelFadeOut()
-{
-  if (mFadeTimer)
-    mFadeTimer->stop();
-
-  if (mFadeAnimation)
-    mFadeAnimation->stop();
-
-  if (auto* effect = qobject_cast<QGraphicsOpacityEffect*>(graphicsEffect()))
-    effect->setOpacity(1.0);
 }

@@ -27,6 +27,7 @@
 #include "actions/simulate_action.h"
 #include "actions/verify_action.h"
 #include "ast/koda_compiler.h"
+#include "control_widget.h"
 #include "dzn_client/dezyne_simulator.h"
 #include "dzn_client/simulation_scene.h"
 #include "idocument.h"
@@ -740,7 +741,7 @@ void KodaGenerator::highlightActiveNode(const QJsonObject& json, QGraphicsScene*
   for (auto& candidate : candidates)
   {
     LOG_DEBUG("Trying to find node of candidate: {}", candidate.instance);
-    auto* container = new QWidget();
+    auto* container = new maki::ControlWidget();
     container->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
     auto* containerLayout = new QVBoxLayout(container);

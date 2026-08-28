@@ -31,7 +31,8 @@
 #include "undo_commands/add_node.h"
 #include "undo_commands/align.h"
 #include "undo_commands/remove_node.h"
-#include "widgets/structure/suggestion_menu.h"
+#include "widgets/controls/suggestion_menu.h"
+#include "widgets/controls/task_node_menu.h"
 
 static constexpr auto MAKI_CLIPBOARD_MIME = "application/x-maki-copied-nodes";
 
@@ -41,13 +42,8 @@ Canvas::Canvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> conf
     , mRouter(router)
     , mId(canvasId)
     , mCopiedNodes({})
-    , mSuggestionMenu(nullptr)
 {
   setBackgroundBrush(Qt::transparent);
-  // setItemIndexMethod(ItemIndexMethod::NoIndex);
-
-  // mHoverTimer = new QTimer(this);
-  // mHoverTimer->setSingleShot(true);
 
   mUndoStack = new QUndoStack(this);
   mUndoStack->setUndoLimit(20);
@@ -812,8 +808,6 @@ QVector<QGraphicsItem*> Canvas::cleanTransitionsOfNode(const QString& nodeId)
 
 void Canvas::onNodeMoved(const NodeItem* node)
 {
-  if (CanvasView* view = parentView(); mSuggestionMenu)
-    mSuggestionMenu->updatePosition(node, view);
 }
 
 QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
@@ -827,6 +821,7 @@ QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
   node->nodeModified = nullptr;
   node->flowAdded = nullptr;
   node->nodeMoved = nullptr;
+  node->nodeHovered = nullptr;
 
   LOG_TRACE("Removing node: {}", node->id());
 
@@ -1158,6 +1153,7 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
   node->nodeModified = [this](NodeItem* item) { emit nodeModified(item); };
   node->flowAdded = [this](Flow* flow, NodeItem* node) { addedItemFlow(flow, node); };
   node->nodeMoved = [this](NodeItem* node) { onNodeMoved(node); };
+  node->nodeHovered = [this](NodeItem* node, bool entered) { onNodeHovered(node, entered); };
 
   node->start();
 
@@ -1183,6 +1179,34 @@ void Canvas::addedItemNode(NodeItem* node, std::shared_ptr<NodeSaveInfo> /* info
 void Canvas::addedItemFlow(Flow* flow, NodeItem* node)
 {
   emit flowAdded(flow, node);
+}
+
+void Canvas::onNodeHovered(NodeItem* node, bool entered)
+{
+  if (entered)
+  {
+    if (type() != Types::LibraryTypes::STRUCTURAL)
+      return;
+
+    if (!node || node->hasControl())
+      return;
+
+    if (node->nodeType() != "Koda::Task")
+      return;
+
+    auto* control = TaskNodeMenu::create(parentView());
+    connect(control, &TaskNodeMenu::openMainFlowRequested, [this, node] { emit createEvent(node); });
+    connect(control, &TaskNodeMenu::addFlowRequested, [this, node] { emit createEvent(node); });
+    node->showControls(control, ControlProperties{
+                                    .isFading = true,
+                                    .position = Config::ControlPosition::Right,
+                                });
+  }
+  else
+  {
+    if (node->hasControl<TaskNodeMenu>())
+      node->hideControl();
+  }
 }
 
 NodeItem* Canvas::findNodeWithId(const QString& id) const
@@ -1251,7 +1275,7 @@ void Canvas::onFocusNode(const QString& flowId, const QString& nodeId, const mak
   }
 }
 
-void Canvas::showSimulationControls(NodeItem* node, QWidget* controls, const QColor& highlightColor)
+void Canvas::showSimulationControls(NodeItem* node, maki::ControlWidget* controls, const QColor& highlightColor)
 {
   for (auto& item : items())
   {
@@ -1379,33 +1403,10 @@ void Canvas::autoRoute()
 
 void Canvas::suggestedNodes(NodeItem* node, QStringList consumers, QStringList producers)
 {
-  if (!node)
-    return;
-
-  ensureSuggestionMenu();
-
-  // This shouldn't happen but oh well
-  if (!mSuggestionMenu)
-    return;
-
   mSuggestionSourceNode = node;
-  mSuggestionMenu->setSuggestions(consumers, producers);
-
-  // mSuggestionHideTimer->stop();
-  mSuggestionMenu->showMenu(node, parentView());
-}
-
-void Canvas::ensureSuggestionMenu()
-{
-  if (mSuggestionMenu)
-    return;
-
-  CanvasView* view = parentView();
-  if (!view)
-    return;
-
-  mSuggestionMenu = new SuggestionMenu(view->viewport());
-  connect(mSuggestionMenu, &SuggestionMenu::accepted, this, [this](const QStringList& selected) {
+  auto* menu = SuggestionMenu::create(parentView());
+  menu->setSuggestions(consumers, producers);
+  connect(menu, &SuggestionMenu::accepted, this, [this](const QStringList& selected) {
     QTimer::singleShot(0, this, [this, selected]() {
       if (!mSuggestionSourceNode)
         return;
@@ -1414,7 +1415,10 @@ void Canvas::ensureSuggestionMenu()
         createSuggestedNode(nodeType, mSuggestionSourceNode);
     });
   });
-  connect(mSuggestionMenu, &SuggestionMenu::dismissed, this, [this] { mSuggestionSourceNode = nullptr; });
+  node->parentNode()->showControls(menu, ControlProperties{
+                                             .isFading = true,
+                                             .position = Config::ControlPosition::Right,
+                                         });
 }
 
 void Canvas::createSuggestedNode(const QString& nodeType, NodeItem* sourceNode)

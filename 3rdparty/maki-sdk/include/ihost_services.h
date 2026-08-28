@@ -2,6 +2,8 @@
 #include <QString>
 #include <QWidget>
 
+#include "control_widget.h"
+
 class IDocument;
 
 namespace maki
@@ -13,7 +15,7 @@ class ILogging;
 
 struct SimulationProperties
 {
-  QWidget* widget;
+  maki::ControlWidget* widget;
   QColor highlight = QColor();
 };
 

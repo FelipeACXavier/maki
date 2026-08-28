@@ -15,13 +15,11 @@
 
 #include "app_configs.h"
 #include "app_paths.h"
-#include "canvas_control_widget.h"
 #include "canvas_message.h"
 #include "flow.h"
 #include "logging.h"
 #include "style_helpers.h"
 #include "system/canvas.h"
-#include "system/structure_canvas.h"
 #include "system/undo_commands/move_node.h"
 #include "system/undo_commands/resize_node.h"
 
@@ -177,7 +175,7 @@ void NodeItem::dismissHighlight()
   update();
 }
 
-void NodeItem::showSimulationControls(QWidget* controls, const QColor& highlightColor)
+void NodeItem::showSimulationControls(maki::ControlWidget* controls, const QColor& highlightColor)
 {
   if (!controls)
   {
@@ -200,14 +198,16 @@ void NodeItem::showSimulationControls(QWidget* controls, const QColor& highlight
   }
 
   if (!mControlWidget)
-  {
-    mControlWidget = new CanvasControlWidget(controls, [this]() { dismissControl(); }, this);
-  }
+    mControlWidget = new CanvasControlWidget([this]() { dismissControl(); }, this);
   else
-  {
-    mControlWidget->setControlWidget(controls);
     mControlWidget->show();
-  }
+
+  mControlActive = true;
+  mControlWidget->setControlWidget(controls, ControlProperties{
+                                                 .isFading = false,
+                                                 .highlightColor = highlightColor,
+                                                 .position = Config::ControlPosition::Top,
+                                             });
 
   QTimer::singleShot(0, [this]() {
     if (!mControlWidget)
@@ -221,13 +221,93 @@ void NodeItem::showSimulationControls(QWidget* controls, const QColor& highlight
   });
 }
 
+void NodeItem::showControls(maki::ControlWidget* controls, const ControlProperties& properties)
+{
+  if (!controls)
+  {
+    dismissControl();
+    return;
+  }
+
+  if (properties.highlightColor.isValid())
+  {
+    auto* glow = new QGraphicsDropShadowEffect();
+    glow->setOffset(0, 0);
+    glow->setBlurRadius(16);
+    glow->setColor(properties.highlightColor);
+
+    setGraphicsEffect(glow);
+  }
+  else
+  {
+    setGraphicsEffect(nullptr);
+  }
+
+  if (!mControlWidget)
+    mControlWidget = new CanvasControlWidget([this]() { dismissControl(); }, this);
+  else
+    mControlWidget->show();
+
+  mControlActive = true;
+  mControlWidget->setControlWidget(controls, properties);
+
+  QTimer::singleShot(0, [this, position = properties.position]() {
+    if (!mControlWidget)
+      return;
+
+    constexpr qreal spacing = 10.0;
+
+    const QRectF node = nodeRect();
+    const QRectF control = mControlWidget->boundingRect();
+
+    QPointF pos;
+
+    switch (position)
+    {
+      case Config::ControlPosition::Top:
+        pos = {node.center().x() - control.width() / 2.0, node.top() - control.height() - spacing};
+        break;
+
+      case Config::ControlPosition::Bottom:
+        pos = {node.center().x() - control.width() / 2.0, node.bottom() + spacing};
+        break;
+
+      case Config::ControlPosition::Left:
+        pos = {node.left() - control.width() - spacing, node.center().y() - control.height() / 2.0};
+        break;
+
+      case Config::ControlPosition::Right:
+        pos = {node.right() + spacing, node.center().y() - control.height() / 2.0};
+        break;
+    }
+
+    mControlWidget->setPos(pos);
+  });
+}
+
 void NodeItem::dismissControl()
 {
   if (mControlWidget)
     mControlWidget->hide();
 
+  mControlActive = false;
+  LOG_DEBUG("Setting mControlActive to {}", mControlActive);
+
   setGraphicsEffect(nullptr);
   update();
+}
+
+void NodeItem::hideControl()
+{
+  if (mControlWidget && mControlWidget->hideControl())
+    return;
+
+  dismissControl();
+}
+
+bool NodeItem::hasControl()
+{
+  return mControlActive;
 }
 
 void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget)
@@ -556,6 +636,20 @@ void NodeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
   }
 
   QGraphicsItem::mouseReleaseEvent(event);
+}
+
+void NodeItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
+{
+  NodeBase::hoverEnterEvent(event);
+  if (nodeHovered)
+    nodeHovered(this, true);
+}
+
+void NodeItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
+{
+  NodeBase::hoverLeaveEvent(event);
+  if (nodeHovered)
+    nodeHovered(this, false);
 }
 
 QVariant NodeItem::itemChange(GraphicsItemChange change, const QVariant& value)

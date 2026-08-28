@@ -21,6 +21,7 @@ static const int CONNECTOR_RADIUS = 5;        /// Radius of connectors in pixels
 static const qreal MINIMUM_NODE_SIZE = 50;    /// Minimum size of a node.
 static const qreal OPACITY_THRESHOLD = 0.25;  /// Opacity threshold for visibility.
 
+static const int MENU_WIDTH = 280;
 static const int LONG_LABEL_WIDTH = 85;                                                    /// Width of a controller label
 static const int SHORT_LABEL_WIDTH = 75;                                                   /// Width of a controller label
 static const int CONTENT_PADDING = 5;                                                      /// Padding around content.
@@ -34,6 +35,14 @@ static const QSize MEDIUM_BUTTON_SIZE = {MEDIUM_BUTTON, MEDIUM_BUTTON};         
 extern QColor FOREGROUND;  /// Foreground color.
 extern QColor HIGHLIGHT;   /// Highlight color.
 extern QColor HOVER;       /// Hover color.
+
+enum class ControlPosition
+{
+  Top,
+  Bottom,
+  Left,
+  Right
+};
 }  // namespace Config
 
 namespace Constants

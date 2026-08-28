@@ -15,7 +15,7 @@ enum class FocusReason
 
 struct FocusProperties
 {
-  QWidget* widget;
+  maki::ControlWidget* widget;
   QString message;
   QColor color;
   FocusReason reason;
