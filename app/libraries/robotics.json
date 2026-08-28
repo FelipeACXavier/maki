@@ -11,7 +11,9 @@
           "kind": "Record",
           "name": {
             "name": "Vector3",
-            "namespace": ["robotics"]
+            "namespace": [
+              "robotics"
+            ]
           },
           "documentation": "",
           "fields": [
@@ -52,7 +54,9 @@
           "kind": "Record",
           "name": {
             "name": "Quaternion",
-            "namespace": ["robotics"]
+            "namespace": [
+              "robotics"
+            ]
           },
           "documentation": "",
           "fields": [
@@ -103,7 +107,9 @@
           "kind": "Record",
           "name": {
             "name": "Pose",
-            "namespace": ["robotics"]
+            "namespace": [
+              "robotics"
+            ]
           },
           "documentation": "",
           "fields": [
@@ -116,7 +122,9 @@
                 "kind": "Named",
                 "qualifiedName": {
                   "name": "Vector3",
-                  "namespace": ["robotics"]
+                  "namespace": [
+                    "robotics"
+                  ]
                 }
               }
             },
@@ -129,8 +137,447 @@
                 "kind": "Named",
                 "qualifiedName": {
                   "name": "Quaternion",
-                  "namespace": ["robotics"]
+                  "namespace": [
+                    "robotics"
+                  ]
                 }
+              }
+            }
+          ]
+        },
+        {
+          "id": "{dd7cdc52-c069-471c-8b4f-2f9fd8f941dc}",
+          "kind": "Record",
+          "name": {
+            "name": "RobotPose",
+            "namespace": [
+              "robotics"
+            ]
+          },
+          "documentation": "Semantic specialization of Pose for the pose of a robot. Ontology-grounded in IEEE 1872/CORA robot concepts.",
+          "fields": [],
+          "baseType": {
+            "kind": "Named",
+            "qualifiedName": {
+              "name": "Pose",
+              "namespace": [
+                "robotics"
+              ]
+            }
+          }
+        },
+        {
+          "id": "{3361f476-ae0a-4204-b152-7b1db0c6afb4}",
+          "kind": "Record",
+          "name": {
+            "name": "ObjectPose",
+            "namespace": [
+              "robotics"
+            ]
+          },
+          "documentation": "Semantic specialization of Pose for the pose of a physical object. Ontology-grounded in IEEE 1872/CORA physical-object concepts.",
+          "fields": [],
+          "baseType": {
+            "kind": "Named",
+            "qualifiedName": {
+              "name": "Pose",
+              "namespace": [
+                "robotics"
+              ]
+            }
+          }
+        },
+        {
+          "id": "{f36dab46-1c7e-448d-8ac6-95b9d1830084}",
+          "kind": "Record",
+          "name": {
+            "name": "GoalPose",
+            "namespace": [
+              "robotics"
+            ]
+          },
+          "documentation": "Semantic specialization of Pose representing an intended target pose for a task or motion goal. Ontology-grounded in robotics goal concepts.",
+          "fields": [],
+          "baseType": {
+            "kind": "Named",
+            "qualifiedName": {
+              "name": "Pose",
+              "namespace": [
+                "robotics"
+              ]
+            }
+          }
+        },
+        {
+          "id": "{093bf832-1822-4282-b794-bf028737218a}",
+          "kind": "Record",
+          "name": {
+            "name": "EndEffectorPose",
+            "namespace": [
+              "robotics"
+            ]
+          },
+          "documentation": "Semantic specialization of Pose for the pose of a manipulator end effector. Robotics-domain specialization used for manipulation contracts.",
+          "fields": [],
+          "baseType": {
+            "kind": "Named",
+            "qualifiedName": {
+              "name": "Pose",
+              "namespace": [
+                "robotics"
+              ]
+            }
+          }
+        },
+        {
+          "id": "{d9091d10-99dc-4af4-88cb-b63ef4a5131b}",
+          "kind": "Record",
+          "name": {
+            "name": "Object",
+            "namespace": [
+              "robotics"
+            ]
+          },
+          "documentation": "Mission-relevant physical object. Ontology-grounded in IEEE 1872/CORA physical-object concepts.",
+          "fields": [
+            {
+              "annotations": [],
+              "documentation": "Stable identifier of the object.",
+              "name": "id",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "Domain label or class of the object.",
+              "name": "label",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            }
+          ]
+        },
+        {
+          "id": "{88eb78c6-0ba6-4dbe-a181-d9da9fb5b4c1}",
+          "kind": "Record",
+          "name": {
+            "name": "Observation",
+            "namespace": [
+              "robotics"
+            ]
+          },
+          "documentation": "Generic observation result aligned with the W3C SOSA Observation concept.",
+          "fields": [
+            {
+              "annotations": [],
+              "documentation": "Confidence associated with the observation.",
+              "name": "confidence",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "real"
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "Identifier or description of the observation source.",
+              "name": "source",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            }
+          ]
+        },
+        {
+          "id": "{07fd4ed5-fe9a-4867-8eeb-02e5b5b8cbd5}",
+          "kind": "Record",
+          "name": {
+            "name": "ObjectDetection",
+            "namespace": [
+              "robotics"
+            ]
+          },
+          "documentation": "Object-focused observation combining an observed object with its estimated pose. Aligned with SOSA Observation/FeatureOfInterest concepts and robotics object semantics.",
+          "fields": [
+            {
+              "annotations": [],
+              "documentation": "Object identified by the observation.",
+              "name": "object",
+              "required": true,
+              "type": {
+                "kind": "Named",
+                "qualifiedName": {
+                  "name": "Object",
+                  "namespace": [
+                    "robotics"
+                  ]
+                }
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "Estimated pose of the detected object.",
+              "name": "pose",
+              "required": true,
+              "type": {
+                "kind": "Named",
+                "qualifiedName": {
+                  "name": "ObjectPose",
+                  "namespace": [
+                    "robotics"
+                  ]
+                }
+              }
+            }
+          ],
+          "baseType": {
+            "kind": "Named",
+            "qualifiedName": {
+              "name": "Observation",
+              "namespace": [
+                "robotics"
+              ]
+            }
+          }
+        },
+        {
+          "id": "{10e5b9c9-6dce-451b-b11e-495f8314ace3}",
+          "kind": "Record",
+          "name": {
+            "name": "Location",
+            "namespace": [
+              "robotics"
+            ]
+          },
+          "documentation": "Semantic mission location associated with a geometric goal pose.",
+          "fields": [
+            {
+              "annotations": [],
+              "documentation": "Human-readable or symbolic name of the location.",
+              "name": "name",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "Geometric realization of the location when available.",
+              "name": "pose",
+              "required": true,
+              "type": {
+                "kind": "Named",
+                "qualifiedName": {
+                  "name": "GoalPose",
+                  "namespace": [
+                    "robotics"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "{e46937be-c159-479b-bac7-39c92312231f}",
+          "kind": "Record",
+          "name": {
+            "name": "Path",
+            "namespace": [
+              "robotics"
+            ]
+          },
+          "documentation": "Ordered spatial route through a set of goal poses.",
+          "fields": [
+            {
+              "annotations": [],
+              "documentation": "Ordered poses describing the path.",
+              "name": "waypoints",
+              "required": true,
+              "type": {
+                "kind": "List",
+                "elementType": {
+                  "kind": "Named",
+                  "qualifiedName": {
+                    "name": "GoalPose",
+                    "namespace": [
+                      "robotics"
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "{8f71e62e-f1f4-40c6-b15c-1c0c2ca96a15}",
+          "kind": "Record",
+          "name": {
+            "name": "Trajectory",
+            "namespace": [
+              "robotics"
+            ]
+          },
+          "documentation": "Ordered motion specification over time. Robotics-domain engineering type.",
+          "fields": [
+            {
+              "annotations": [],
+              "documentation": "Ordered poses describing the motion trajectory.",
+              "name": "poses",
+              "required": true,
+              "type": {
+                "kind": "List",
+                "elementType": {
+                  "kind": "Named",
+                  "qualifiedName": {
+                    "name": "Pose",
+                    "namespace": [
+                      "robotics"
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "Expected or specified trajectory duration.",
+              "name": "duration",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "duration"
+              }
+            }
+          ]
+        },
+        {
+          "id": "{21bc2720-8794-4ec0-9655-057c170a17e8}",
+          "kind": "Record",
+          "name": {
+            "name": "BatteryState",
+            "namespace": [
+              "robotics"
+            ]
+          },
+          "documentation": "Battery-related robot state used by monitoring and energy-management capabilities. Engineering/domain type rather than a direct IEEE 1872 concept.",
+          "fields": [
+            {
+              "annotations": [],
+              "documentation": "Battery charge level, typically normalized or expressed as a percentage by the realization.",
+              "name": "level",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "real"
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "Whether the battery is currently charging.",
+              "name": "charging",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "bool"
+              }
+            }
+          ]
+        },
+        {
+          "id": "{9b6a2714-c25f-4635-9842-083782a76556}",
+          "kind": "Record",
+          "name": {
+            "name": "JointState",
+            "namespace": [
+              "robotics"
+            ]
+          },
+          "documentation": "Configuration state of one or more robot joints. Robotics-domain engineering type.",
+          "fields": [
+            {
+              "annotations": [],
+              "documentation": "Names of the joints represented by this state.",
+              "name": "names",
+              "required": true,
+              "type": {
+                "kind": "List",
+                "elementType": {
+                  "kind": "Primitive",
+                  "primitiveKind": "string"
+                }
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "Joint positions in the same order as the joint names.",
+              "name": "positions",
+              "required": true,
+              "type": {
+                "kind": "List",
+                "elementType": {
+                  "kind": "Primitive",
+                  "primitiveKind": "real"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "{d0c6cd61-2636-4bc8-b1ad-ed57132f047d}",
+          "kind": "Record",
+          "name": {
+            "name": "Grasp",
+            "namespace": [
+              "robotics"
+            ]
+          },
+          "documentation": "Manipulation intent describing how a target object should be grasped. Robotics-domain specialization associated with physical interaction.",
+          "fields": [
+            {
+              "annotations": [],
+              "documentation": "Object to be grasped.",
+              "name": "target",
+              "required": true,
+              "type": {
+                "kind": "Named",
+                "qualifiedName": {
+                  "name": "Object",
+                  "namespace": [
+                    "robotics"
+                  ]
+                }
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "Desired end-effector pose for the grasp.",
+              "name": "pose",
+              "required": true,
+              "type": {
+                "kind": "Named",
+                "qualifiedName": {
+                  "name": "EndEffectorPose",
+                  "namespace": [
+                    "robotics"
+                  ]
+                }
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "Requested grasp force or effort.",
+              "name": "force",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "real"
               }
             }
           ]

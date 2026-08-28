@@ -1,0 +1,732 @@
+{
+  "name": "Ethics",
+  "author": "Felipe Xavier",
+  "libraries": [
+    {
+      "type": "data",
+      "name": "ethics",
+      "types": [
+        {
+          "id": "{b67b7b55-71ac-4236-b24e-af1da5c90e02}",
+          "kind": "Record",
+          "name": {
+            "name": "Situation",
+            "namespace": [
+              "ethics"
+            ]
+          },
+          "documentation": "Grounded in IEEE 7007 ERAS TLO/NEP Situation.",
+          "fields": [
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "description",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            }
+          ]
+        },
+        {
+          "id": "{db48510a-1583-46d7-8c71-72806a2bdc3b}",
+          "kind": "Record",
+          "name": {
+            "name": "Norm",
+            "namespace": [
+              "ethics"
+            ]
+          },
+          "documentation": "Grounded in IEEE 7007 NEP Norm.",
+          "fields": [
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "name",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "description",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "category",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            }
+          ]
+        },
+        {
+          "id": "{eacfcd10-b776-4ac8-8327-7bd6ca3ff925}",
+          "kind": "Record",
+          "name": {
+            "name": "EthicalTheory",
+            "namespace": [
+              "ethics"
+            ]
+          },
+          "documentation": "Grounded in IEEE 7007 NEP Ethical Theory.",
+          "fields": [
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "name",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "description",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "norms",
+              "required": true,
+              "type": {
+                "kind": "List",
+                "elementType": {
+                  "kind": "Named",
+                  "qualifiedName": {
+                    "name": "Norm",
+                    "namespace": [
+                      "ethics"
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "{fa4278ff-0a1d-479d-872b-1627ec8517b8}",
+          "kind": "Record",
+          "name": {
+            "name": "ActionRationale",
+            "namespace": [
+              "ethics"
+            ]
+          },
+          "documentation": "Grounded in IEEE 7007 NEP Action Rationale.",
+          "fields": [
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "description",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "norm",
+              "required": true,
+              "type": {
+                "kind": "Named",
+                "qualifiedName": {
+                  "name": "Norm",
+                  "namespace": [
+                    "ethics"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "{99a59043-d9e5-4e5a-b05c-8128cb94bf88}",
+          "kind": "Record",
+          "name": {
+            "name": "EthicalDilemma",
+            "namespace": [
+              "ethics"
+            ]
+          },
+          "documentation": "Grounded in IEEE 7007 NEP Ethical Dilemma.",
+          "fields": [
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "description",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "conflictingNorms",
+              "required": true,
+              "type": {
+                "kind": "List",
+                "elementType": {
+                  "kind": "Named",
+                  "qualifiedName": {
+                    "name": "Norm",
+                    "namespace": [
+                      "ethics"
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "{e16e3c26-95d1-4043-bafb-5d2278bc695f}",
+          "kind": "Record",
+          "name": {
+            "name": "PersonalData",
+            "namespace": [
+              "ethics"
+            ]
+          },
+          "documentation": "Grounded in IEEE 7007 DPP Personal Data.",
+          "fields": [
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "subjectId",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "category",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "value",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            }
+          ]
+        },
+        {
+          "id": "{60b77b4e-c123-48c8-aee8-e78c877d9cd5}",
+          "kind": "Record",
+          "name": {
+            "name": "AccessPolicy",
+            "namespace": [
+              "ethics"
+            ]
+          },
+          "documentation": "Grounded in IEEE 7007 DPP Access Policy.",
+          "fields": [
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "name",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "description",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            }
+          ]
+        },
+        {
+          "id": "{723fa99b-7646-42d4-a029-ac25626a5bce}",
+          "kind": "Record",
+          "name": {
+            "name": "Consent",
+            "namespace": [
+              "ethics"
+            ]
+          },
+          "documentation": "Application-level type derived from the IEEE 7007 DPP consents-to relation.",
+          "fields": [
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "subjectId",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "controllerId",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "granted",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "bool"
+              }
+            }
+          ]
+        },
+        {
+          "id": "{9dd99e38-51be-4adb-9b32-1252f1d06811}",
+          "kind": "Record",
+          "name": {
+            "name": "TransparencyConcern",
+            "namespace": [
+              "ethics"
+            ]
+          },
+          "documentation": "Grounded in IEEE 7007 TA Transparency Concern.",
+          "fields": [
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "description",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            }
+          ]
+        },
+        {
+          "id": "{9783fa8b-42fb-4d4a-95ab-33cc7b589459}",
+          "kind": "Record",
+          "name": {
+            "name": "ContentProvenance",
+            "namespace": [
+              "ethics"
+            ]
+          },
+          "documentation": "Grounded in IEEE 7007 TA Content Provenance.",
+          "fields": [
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "source",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "generatedBy",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "description",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            }
+          ]
+        },
+        {
+          "id": "{bf799931-ecaa-4861-ae90-b727d6e7d978}",
+          "kind": "Record",
+          "name": {
+            "name": "Explanation",
+            "namespace": [
+              "ethics"
+            ]
+          },
+          "documentation": "Grounded in IEEE 7007 TA Explanation.",
+          "fields": [
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "content",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "concern",
+              "required": true,
+              "type": {
+                "kind": "Named",
+                "qualifiedName": {
+                  "name": "TransparencyConcern",
+                  "namespace": [
+                    "ethics"
+                  ]
+                }
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "provenance",
+              "required": true,
+              "type": {
+                "kind": "List",
+                "elementType": {
+                  "kind": "Named",
+                  "qualifiedName": {
+                    "name": "ContentProvenance",
+                    "namespace": [
+                      "ethics"
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "{150fb7d8-84a3-424a-b7e0-dacf0620d9b2}",
+          "kind": "Record",
+          "name": {
+            "name": "NormViolation",
+            "namespace": [
+              "ethics"
+            ]
+          },
+          "documentation": "Grounded in IEEE 7007 EVM Norm Violation.",
+          "fields": [
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "norm",
+              "required": true,
+              "type": {
+                "kind": "Named",
+                "qualifiedName": {
+                  "name": "Norm",
+                  "namespace": [
+                    "ethics"
+                  ]
+                }
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "description",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            }
+          ]
+        },
+        {
+          "id": "{1823a582-153c-4d85-95ea-57c1518b05b5}",
+          "kind": "Record",
+          "name": {
+            "name": "EventCausation",
+            "namespace": [
+              "ethics"
+            ]
+          },
+          "documentation": "Grounded in IEEE 7007 EVM Event Causation.",
+          "fields": [
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "actorId",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "actionId",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "effect",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            }
+          ]
+        },
+        {
+          "id": "{6931e329-1b63-44c5-a51c-5fb76232d4f5}",
+          "kind": "Record",
+          "name": {
+            "name": "AgentAccountability",
+            "namespace": [
+              "ethics"
+            ]
+          },
+          "documentation": "Grounded in IEEE 7007 EVM Agent Accountability.",
+          "fields": [
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "agentId",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "role",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "description",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            }
+          ]
+        },
+        {
+          "id": "{9935ad69-d0a3-41dc-8e8f-424725ee3899}",
+          "kind": "Record",
+          "name": {
+            "name": "AscriptionJustification",
+            "namespace": [
+              "ethics"
+            ]
+          },
+          "documentation": "Grounded in IEEE 7007 EVM Ascription Justification.",
+          "fields": [
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "description",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "causation",
+              "required": true,
+              "type": {
+                "kind": "Named",
+                "qualifiedName": {
+                  "name": "EventCausation",
+                  "namespace": [
+                    "ethics"
+                  ]
+                }
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "accountability",
+              "required": true,
+              "type": {
+                "kind": "Named",
+                "qualifiedName": {
+                  "name": "AgentAccountability",
+                  "namespace": [
+                    "ethics"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "{736d006a-fccd-4379-9217-7be6060738a1}",
+          "kind": "Record",
+          "name": {
+            "name": "ResponsibilityAscription",
+            "namespace": [
+              "ethics"
+            ]
+          },
+          "documentation": "Grounded in IEEE 7007 EVM Responsibility Ascription.",
+          "fields": [
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "responsibleAgentId",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "violation",
+              "required": true,
+              "type": {
+                "kind": "Named",
+                "qualifiedName": {
+                  "name": "NormViolation",
+                  "namespace": [
+                    "ethics"
+                  ]
+                }
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "justification",
+              "required": true,
+              "type": {
+                "kind": "Named",
+                "qualifiedName": {
+                  "name": "AscriptionJustification",
+                  "namespace": [
+                    "ethics"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "{6dea0c4f-c1c5-4741-81ed-d088c7d1ec7f}",
+          "kind": "Record",
+          "name": {
+            "name": "ViolationReport",
+            "namespace": [
+              "ethics"
+            ]
+          },
+          "documentation": "Practical type derived from IEEE 7007 EVM concepts.",
+          "fields": [
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "violation",
+              "required": true,
+              "type": {
+                "kind": "Named",
+                "qualifiedName": {
+                  "name": "NormViolation",
+                  "namespace": [
+                    "ethics"
+                  ]
+                }
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "detectedBy",
+              "required": true,
+              "type": {
+                "kind": "Primitive",
+                "primitiveKind": "string"
+              }
+            },
+            {
+              "annotations": [],
+              "documentation": "",
+              "name": "causation",
+              "required": true,
+              "type": {
+                "kind": "Named",
+                "qualifiedName": {
+                  "name": "EventCausation",
+                  "namespace": [
+                    "ethics"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

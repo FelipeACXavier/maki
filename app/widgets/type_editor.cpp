@@ -304,7 +304,7 @@ void TypeEditor::buildUi()
 
   // --------------------------------------------------------------------------
   // Left side: type browser
-  auto* browserWidget = new QWidget(splitter);
+  auto* browserWidget = new QWidget();
   browserWidget->setMinimumWidth(200);
 
   auto* browserLayout = new QVBoxLayout(browserWidget);
@@ -353,11 +353,12 @@ void TypeEditor::buildUi()
 
   // --------------------------------------------------------------------------
   // Right side: editor
-  auto* editorWidget = new QWidget(splitter);
+  auto* editorWidget = new QWidget();
   auto* editorLayout = new QVBoxLayout(editorWidget);
   editorLayout->setContentsMargins(Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING);
 
   mEditorStack = new QStackedWidget(editorWidget);
+  mEditorStack->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Expanding);
 
   mEditorStack->addWidget(new QWidget(mEditorStack));  // Empty when nothing is selected
   mEditorStack->addWidget(createBuiltinPage());
@@ -402,6 +403,8 @@ void TypeEditor::buildUi()
   splitter->setStretchFactor(0, 0);
   splitter->setStretchFactor(1, 1);
 
+  // The second value does not matter as long as it forces the initial tree size of 200
+  splitter->setSizes({200, 1000});
   splitter->setCollapsible(0, false);
   splitter->setCollapsible(1, false);
 
@@ -488,6 +491,7 @@ QWidget* TypeEditor::createRecordPage()
   fieldButtons->addWidget(mRemoveFieldButton);
   fieldButtons->addStretch();
 
+  fieldLayout->addStretch();
   fieldLayout->addLayout(fieldButtons);
   layout->addWidget(fieldLayout);
 
@@ -549,6 +553,7 @@ QWidget* TypeEditor::createEnumPage()
   fieldButtons->addWidget(mRemoveEnumValueButton);
   fieldButtons->addStretch();  // Push buttons to the left
 
+  layout->addStretch();
   layout->addLayout(fieldButtons);
 
   const auto theme = qlementineStyle->theme();
@@ -699,8 +704,8 @@ void TypeEditor::showDefinition(const koda::types::TypeDefinition& definition)
     namespaceEdit->setValue(QString::fromStdString(definition.name.namespaceString()));
 
     const auto def = definition.record();
-    if (def.baseType.has_value())
-      baseType->setData(QString::fromStdString(def.baseType.value().namedType().name.toString()));
+    if (def.baseType.has_value() && def.baseType->isNamed())
+      baseType->setValue(QString::fromStdString(def.baseType->namedType().name.toString()));
 
     mFieldsTable->setRowCount(0);
     for (const auto& field : def.fields)

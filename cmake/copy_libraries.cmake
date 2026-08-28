@@ -7,6 +7,7 @@ file(GLOB APP_LIB_FILES
   ${SRC_LIB_DIR}/koda.json
   ${SRC_LIB_DIR}/arduino.json
   ${SRC_LIB_DIR}/robotics.json
+  ${SRC_LIB_DIR}/ethics.json
 )
 
 add_custom_target(copy_libraries ALL
