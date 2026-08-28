@@ -75,6 +75,9 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
   updatePosition(snapToGrid(initialPosition - boundingRect().center(), Config::GRID_SIZE));
   mLastPosition = pos();
 
+  if (nodeType() == "Koda::Task")
+    ensureMainFlowExists();
+
   LOG_DEBUG("{} created at: ({}, {}) with size ({}, {}) and scale {}", id(), pos().x(), pos().y(), mSize.width(), mSize.height(), baseScale());
 }
 
@@ -801,4 +804,18 @@ void NodeItem::deleteFlow(const QString& flowId)
 
 void NodeItem::updateFlow()
 {
+}
+
+// This should only exists in the Task node specialization
+void NodeItem::ensureMainFlowExists()
+{
+  for (const auto& flow : flowConfigs())
+    if (flow->getname() == Constants::MAIN_FLOW)
+      return;
+
+  auto info = std::make_shared<FlowSaveInfo>();
+  info->setType(Types::CallType::USER);
+  info->setModifiable(true);
+  info->setReturnType(koda::types::TypeReference::createVoid());
+  (void)createFlow(Constants::MAIN_FLOW, info);
 }

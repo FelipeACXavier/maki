@@ -1195,7 +1195,14 @@ void Canvas::onNodeHovered(NodeItem* node, bool entered)
       return;
 
     auto* control = TaskNodeMenu::create(parentView());
-    connect(control, &TaskNodeMenu::openMainFlowRequested, [this, node] { emit createEvent(node); });
+    connect(control, &TaskNodeMenu::openMainFlowRequested, [this, node] {
+      for (const auto& flow : node->flows())
+        if (flow->name() == Constants::MAIN_FLOW)
+        {
+          emit openFlow(flow, node->id(), maki::FocusProperties::internal());
+          break;
+        }
+    });
     connect(control, &TaskNodeMenu::addFlowRequested, [this, node] { emit createEvent(node); });
     node->showControls(control, ControlProperties{
                                     .isFading = true,

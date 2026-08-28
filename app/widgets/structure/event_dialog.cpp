@@ -78,8 +78,8 @@ void EventDialog::createTypeInput()
 
   if (mStorage->gettype() == Types::CallType::UNKNOWN)
   {
-    type->setValue(Types::CallTypeToString((Types::CallType)((uint16_t)Types::CallType::UNKNOWN + 1)));
-    mStorage->setType(Types::StringToCallType(type->getValue()));
+    type->setValue(id);
+    mStorage->setType(Types::StringToCallType(id));
   }
   else
   {
