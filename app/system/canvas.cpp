@@ -26,6 +26,7 @@
 #include "flow_info.h"
 #include "logging.h"
 #include "node_info.h"
+#include "notifications.h"
 #include "result.h"
 #include "save_info.h"
 #include "undo_commands/add_node.h"
@@ -160,7 +161,7 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
     // Add error message
     if (!parentNode->acceptDrops())
     {
-      LOG_WARNING("Tried to drop node on parent that does not accept drops");
+      NOTIFY_WARNING(Config::APPLICATION_NAME.toStdString(), "Tried to drop node on parent that does not accept drops");
       return;
     }
   }
@@ -617,12 +618,11 @@ void Canvas::alignNodesVertically(const QList<Types::AlignmentNode>& nodes, Type
 void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 {
   QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
-  const auto width = qobject_cast<QGraphicsView*>(parent())->viewport()->width();
 
   // Define menu actions
   auto* menu = new QMenu(parentView());
   menu->setAttribute(Qt::WA_DeleteOnClose);
-  menu->setMinimumWidth(width / 6);
+  menu->setFixedWidth(Config::MENU_WIDTH);
 
   QList<NodeItem*> items = selectedNodes();
   QList<Types::AlignmentNode> itemIds = {};
@@ -630,158 +630,91 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     if (node != nullptr)
       itemIds.append(Types::AlignmentNode{node->id(), node->pos()});
 
-  if (!item)
-  {
-    // =============================================
-    addSectionLabel(menu, "Edit");
-
-    QAction* copyAction = menu->addAction(iconFromTheme("edit-copy"), "Copy");
-    copyAction->setEnabled(items.size() > 0);
-    QObject::connect(copyAction, &QAction::triggered, [this]() { copySelectedItems(nullptr); });
-
-    QAction* pasteAction = menu->addAction(iconFromTheme("edit-paste", true), "Paste");
-    const QMimeData* mimeData = QApplication::clipboard()->mimeData();
-    pasteAction->setEnabled(mimeData && mimeData->hasFormat(MAKI_CLIPBOARD_MIME));
-    QObject::connect(pasteAction, &QAction::triggered, [this]() { pasteCopiedItems(); });
-
-    QAction* deleteAction = menu->addAction(iconFromTheme("edit-delete"), "Delete");
-    deleteAction->setEnabled(items.size() > 0);
-    QObject::connect(deleteAction, &QAction::triggered, [this]() { deleteSelectedItems(); });
-
-    // =============================================
-    addSectionLabel(menu, "Visual");
-
-    QAction* forwardAction = menu->addAction(iconFromTheme("object-order-front"), "To front");
-    forwardAction->setEnabled(items.size() > 0);
-    QObject::connect(forwardAction, &QAction::triggered, [this, items]() {
-      qreal topZLevel = 0;
-      for (QGraphicsItem* item : this->items())
-        topZLevel = qMax(item->zValue(), topZLevel);
-
-      for (NodeItem* node : items)
-        node->setZValue(topZLevel);
-    });
-
-    QAction* backwardAction = menu->addAction(iconFromTheme("object-order-back"), "To back");
-    backwardAction->setEnabled(items.size() > 0);
-    QObject::connect(backwardAction, &QAction::triggered, [this, items]() {
-      qreal topZLevel = 0;
-      for (QGraphicsItem* item : this->items())
-        topZLevel = qMin(item->zValue(), topZLevel);
-
-      for (NodeItem* node : items)
-        node->setZValue(topZLevel);
-    });
-
-    QAction* toggleLabelAction = menu->addAction(iconFromTheme("view-visible"), "Toggle label");
-    toggleLabelAction->setEnabled(items.size() > 0);
-    QObject::connect(toggleLabelAction, &QAction::triggered, [items]() {
-      for (QGraphicsItem* item : items)
-        if (item->type() == NodeItem::Type)
-          dynamic_cast<NodeItem*>(item)->toggleLabelVisibility();
-    });
-
-    QMenu* alignMenu = menu->addMenu(iconFromTheme("align-on-canvas"), tr("Align"));
-    createAlignMenu(alignMenu, itemIds);
-  }
-  else if (item->type() == NodeItem::Type || item->type() == QGraphicsSvgItem::Type)
+  // =============================================
+  // First populate the item specific menu
+  if (item && (item->type() == NodeItem::Type || item->type() == QGraphicsSvgItem::Type))
   {
     NodeItem* node = static_cast<NodeItem*>(item->type() == NodeItem::Type ? item : item->parentItem());
+    createNodeContextMenu(menu, node, items);
+  }
+  else if (item && item->type() == TransitionItem::Type)
+  {
+    createTransitionContextMenu(menu, items);
+  }
 
-    // =============================================
+  // =============================================
+  // Then we populate the common actions
+  addSectionLabel(menu, "Edit");
+
+  QAction* copyAction = menu->addAction(iconFromTheme("edit-copy"), "Copy");
+  copyAction->setEnabled(items.size() > 0);
+  QObject::connect(copyAction, &QAction::triggered, [this]() { copySelectedItems(nullptr); });
+
+  QAction* pasteAction = menu->addAction(iconFromTheme("edit-paste", true), "Paste");
+  const QMimeData* mimeData = QApplication::clipboard()->mimeData();
+  pasteAction->setEnabled(mimeData && mimeData->hasFormat(MAKI_CLIPBOARD_MIME));
+  QObject::connect(pasteAction, &QAction::triggered, [this]() { pasteCopiedItems(); });
+
+  QAction* deleteAction = menu->addAction(iconFromTheme("edit-delete"), "Delete");
+  deleteAction->setEnabled(items.size() > 0);
+  QObject::connect(deleteAction, &QAction::triggered, [this]() { deleteSelectedItems(); });
+
+  // =============================================
+  addSectionLabel(menu, "Visual");
+
+  QAction* forwardAction = menu->addAction(iconFromTheme("object-order-front"), "To front");
+  forwardAction->setEnabled(items.size() > 0);
+  QObject::connect(forwardAction, &QAction::triggered, [this, items]() {
+    qreal topZLevel = 0;
+    for (QGraphicsItem* item : this->items())
+      topZLevel = qMax(item->zValue(), topZLevel);
+
+    for (NodeItem* node : items)
+      node->setZValue(topZLevel);
+  });
+
+  QAction* backwardAction = menu->addAction(iconFromTheme("object-order-back"), "To back");
+  backwardAction->setEnabled(items.size() > 0);
+  QObject::connect(backwardAction, &QAction::triggered, [this, items]() {
+    qreal topZLevel = 0;
+    for (QGraphicsItem* item : this->items())
+      topZLevel = qMin(item->zValue(), topZLevel);
+
+    for (NodeItem* node : items)
+      node->setZValue(topZLevel);
+  });
+
+  QAction* toggleLabelAction = menu->addAction(iconFromTheme("view-visible"), "Toggle label");
+  toggleLabelAction->setEnabled(items.size() > 0);
+  QObject::connect(toggleLabelAction, &QAction::triggered, [items]() {
+    for (QGraphicsItem* item : items)
+      if (item->type() == NodeItem::Type)
+        dynamic_cast<NodeItem*>(item)->toggleLabelVisibility();
+  });
+
+  QMenu* alignMenu = menu->addMenu(iconFromTheme("align-on-canvas"), tr("Align"));
+  createAlignMenu(alignMenu, itemIds);
+
+  // Execute the menu at the mouse cursor's position
+  menu->popup(event->screenPos());
+}
+
+void Canvas::createNodeContextMenu(QMenu* menu, NodeItem* node, const QList<NodeItem*>& items)
+{
+  // =============================================
+
+  if (type() == Types::LibraryTypes::STRUCTURAL)
+  {
     addSectionLabel(menu, "Creation");
 
     QAction* newEventAction = menu->addAction(QIcon(":/icons/flow.svg"), tr("New flow"));
     newEventAction->setEnabled(node != nullptr || items.size() > 0);
     QObject::connect(newEventAction, &QAction::triggered, [this, node]() { emit createEvent(node); });
     menu->addAction(newEventAction);
-
-    // =============================================
-    addSectionLabel(menu, "Edit");
-
-    QAction* copyAction = menu->addAction(iconFromTheme("edit-copy"), "Copy");
-    copyAction->setEnabled(node != nullptr || items.size() > 0);
-    QObject::connect(copyAction, &QAction::triggered, [this, node]() { copySelectedItems(node); });
-
-    QAction* pasteAction = menu->addAction(iconFromTheme("edit-paste"), "Paste");
-    const QMimeData* mimeData = QApplication::clipboard()->mimeData();
-    pasteAction->setEnabled(mimeData && mimeData->hasFormat(MAKI_CLIPBOARD_MIME));
-    QObject::connect(pasteAction, &QAction::triggered, [this]() { pasteCopiedItems(); });
-
-    QAction* deleteAction = menu->addAction(iconFromTheme("edit-delete"), "Delete");
-    deleteAction->setEnabled(node != nullptr || items.size() > 0);
-    QObject::connect(deleteAction, &QAction::triggered, [this]() { deleteSelectedItems(); });
-
-    // =============================================
-    addSectionLabel(menu, "Visual");
-
-    QAction* forwardAction = menu->addAction(iconFromTheme("object-order-front"), "To front");
-    forwardAction->setEnabled(node != nullptr || items.size() > 0);
-    QObject::connect(forwardAction, &QAction::triggered, [this, node]() {
-      if (!node)
-        return;
-
-      qreal topZLevel = std::numeric_limits<double>::min();
-      for (QGraphicsItem* item : this->items())
-        topZLevel = qMax(item->zValue(), topZLevel);
-
-      LOG_DEBUG("Moving front: {:.2f}", topZLevel);
-      node->setZValue(++topZLevel);
-    });
-
-    QAction* backwardAction = menu->addAction(iconFromTheme("object-order-back"), "To back");
-    backwardAction->setEnabled(node != nullptr || items.size() > 0);
-    QObject::connect(backwardAction, &QAction::triggered, [this, node]() {
-      if (!node)
-        return;
-
-      qreal topZLevel = std::numeric_limits<double>::max();
-      for (QGraphicsItem* item : this->items())
-        topZLevel = qMin(item->zValue(), topZLevel);
-
-      LOG_DEBUG("Moving back: {:.2f}", topZLevel);
-      node->setZValue(--topZLevel);
-    });
-
-    QAction* toggleLabelAction = menu->addAction(iconFromTheme("view-visible"), "Toggle label");
-    toggleLabelAction->setEnabled(node != nullptr || items.size() > 0);
-    QObject::connect(toggleLabelAction, &QAction::triggered, [items]() {
-      for (QGraphicsItem* item : items)
-        if (item->type() == NodeItem::Type)
-          dynamic_cast<NodeItem*>(item)->toggleLabelVisibility();
-    });
-
-    QMenu* alignMenu = menu->addMenu(iconFromTheme("align-on-canvas"), tr("Align"));
-    createAlignMenu(alignMenu, itemIds);
   }
-  else if (item->type() == TransitionItem::Type)
-  {
-    // =============================================
-    addSectionLabel(menu, "Visual");
-
-    // TransitionItem* transition = static_cast<TransitionItem*>(item);
-
-    QAction* toggleLabelAction = menu->addAction(iconFromTheme("view-visible"), "Toggle label");
-    toggleLabelAction->setEnabled(items.size() > 0);
-    QObject::connect(toggleLabelAction, &QAction::triggered, [items]() {
-      // for (QGraphicsItem* item : items)
-      // {
-      //   if (item->type() == TransitionItem::Type)
-      //     dynamic_cast<TransitionItem*>(item)->toggleLabelVisibility();
-      // }
-    });
-  }
-
-  // Execute the menu at the mouse cursor's position
-  menu->popup(event->screenPos());
-  // menu->exec(event->screenPos());
 }
 
-void Canvas::createNodeContextMenu(QMenu& menu)
-{
-}
-
-void Canvas::createTransitionContextMenu(QMenu& menu)
+void Canvas::createTransitionContextMenu(QMenu* menu, const QList<NodeItem*>& items)
 {
 }
 
@@ -1275,8 +1208,8 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
 
   if (config->libraryType != type())
   {
-    LOG_WARNING("Node of type \"{}\" cannot be placed in a \"{}\" canvas", Types::LibraryTypeToString(config->libraryType),
-                Types::LibraryTypeToString(type()));
+    NOTIFY_WARNING(Config::APPLICATION_NAME.toStdString(), "Node of type \"{}\" cannot be placed in a \"{}\" canvas",
+                   Types::LibraryTypeToString(config->libraryType), Types::LibraryTypeToString(type()));
     return nullptr;
   }
 
@@ -1512,7 +1445,7 @@ void Canvas::onFlowSelected(const QString& flowId, const QString& nodeId)
   auto node = findNodeWithId(nodeId);
   if (!node)
   {
-    LOG_WARNING("Flow {} is not tied to any nodes", flowId);
+    LOG_WARNING("Flow {} is not tied to any nodes ({})", flowId, nodeId);
     return;
   }
 
@@ -1529,6 +1462,12 @@ void Canvas::onFlowRemoved(const QString& flowId, const QString& nodeId)
     return;
   }
 
+  auto flow = node->getFlow(flowId);
+  if (flow && flow->name() == Constants::MAIN_FLOW)
+  {
+    NOTIFY_WARNING(Config::APPLICATION_NAME.toStdString(), "Cannot remove");
+    return;
+  }
   node->deleteFlow(flowId);
   emit flowRemoved(flowId, node);
 }

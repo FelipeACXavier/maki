@@ -13,7 +13,6 @@ class QSplitter;
 class QTabWidget;
 
 class SystemMenu;
-class FlowMenu;
 class QTextBrowser;
 class QComboBox;
 class QPushButton;

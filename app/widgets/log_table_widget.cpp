@@ -11,6 +11,7 @@
 #include "app_configs.h"
 #include "clickable_icon.h"
 #include "expanding_widget.h"
+#include "style_helpers.h"
 
 class CenterIconDelegate : public QStyledItemDelegate
 {
@@ -398,17 +399,15 @@ void LogTableWidget::updateSearchCounter()
 
 void LogTableWidget::showContextMenu(const QPoint& pos)
 {
-  QMenu menu(this);
+  QMenu contextMenu(this);
+  contextMenu.setFixedWidth(Config::MENU_WIDTH);
+  contextMenu.addAction(iconFromTheme("edit-copy"), "Copy selected rows", this, [this]() { copySelectedRows(); });
+  contextMenu.addAction(iconFromTheme("mail-message-new"), "Copy messages", this, [this]() { copySelectedColumn(LogTableModel::MessageColumn); });
+  contextMenu.addAction(iconFromTheme("text-x-generic"), "Copy sources", this, [this]() { copySelectedColumn(LogTableModel::FileColumn); });
+  contextMenu.addAction(iconFromTheme("edit-copy"), "Copy sources and messages", this,
+                        [this]() { copySelectedColumns({LogTableModel::FileColumn, LogTableModel::MessageColumn}); });
 
-  menu.addAction("Copy selected rows", this, [this]() { copySelectedRows(); });
-
-  menu.addAction("Copy messages", this, [this]() { copySelectedColumn(LogTableModel::MessageColumn); });
-
-  menu.addAction("Copy sources", this, [this]() { copySelectedColumn(LogTableModel::FileColumn); });
-
-  menu.addAction("Copy sources and messages", this, [this]() { copySelectedColumns({LogTableModel::FileColumn, LogTableModel::MessageColumn}); });
-
-  menu.exec(mTable->viewport()->mapToGlobal(pos));
+  contextMenu.exec(mTable->viewport()->mapToGlobal(pos));
 }
 
 QVector<int> LogTableWidget::selectedRows() const

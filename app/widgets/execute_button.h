@@ -9,20 +9,17 @@ class ExecuteButton : public DropDownButton
 public:
   ExecuteButton(QWidget* parent = nullptr);
 
-  QString currentOption();
-  void addOption(const QString& name);
-  void removeOption(const QString& name);
-  void setCurrentOption(const QString& name);
+  void addOption(const QString& name, const QString& id);
+  void removeOption(const QString& id);
 
   void setRunning(bool running);
-
-  QStringList getPipelineNames() const;
 
   void reset() override;
 
 signals:
   void executeRequested(const QString& option);
   void editOptionRequested(const QString& option);
+  void renameOptionRequested(const QString& option);
   void deleteOptionRequested(const QString& option);
 
 protected:
@@ -32,15 +29,27 @@ protected:
   void paintLeadingContent(QPainter& painter, const QRect& rect, const oclero::qlementine::Theme& theme) override;
 
 private:
-  QString mCurrentOption;
+  struct OptionInfo
+  {
+    QString id;
+    QString name;
+  };
+
+  OptionInfo mCurrentOption;
   bool mRunning = false;
   const QString DEFAULT_TEXT;
   const QString ADD_NEW_TEXT;
 
-  void buildMenu(QMenu* menu, const QString& option, bool addSelect);
-  void rebuildMenu(const QStringList& pipelines);
+  void setCurrentOption(const OptionInfo& option);
+  OptionInfo currentOption();
+
+  void buildMenu(QMenu* menu, const OptionInfo& option, bool addSelect);
+
+  void rebuildMenu(const std::vector<OptionInfo>& pipelines);
   void setupDone();
 
   void updateButtonText();
   void showContextMenu(const QPoint& point);
+
+  std::vector<OptionInfo> getPipelineNames() const;
 };

@@ -57,12 +57,10 @@
 #include "structure_canvas.h"
 #include "style_helpers.h"
 #include "system/main_window_layout.h"
-#include "type_helpers.h"
 #include "type_registry.h"
 #include "types.h"
 #include "widgets/dialogs/prompt.h"
 #include "widgets/dialogs/text_prompt.h"
-#include "widgets/dropdown_button.h"
 #include "widgets/language_manager.h"
 #include "widgets/log_table_widget.h"
 #include "widgets/notification_manager.h"
@@ -72,7 +70,6 @@
 #include "widgets/settings_dialog.h"
 #include "widgets/settings_manager.h"
 #include "widgets/structure/file_menu.h"
-#include "widgets/structure/flow_menu.h"
 #include "widgets/structure/system_menu.h"
 #include "widgets/type_editor.h"
 
@@ -150,7 +147,7 @@ VoidResult MainWindow::start()
 
   if (mPipelineRun)
     for (const auto& pipeline : mStorage->pipelines())
-      mPipelineRun->addOption(pipeline->getname());
+      mPipelineRun->addOption(pipeline->getname(), pipeline->getid());
 
   // Set initial tabs
   mPalette->setCurrentIndex(0);
@@ -382,6 +379,7 @@ void MainWindow::bind()
 
   connect(mPipelineRun, &ExecuteButton::executeRequested, this, &MainWindow::onActionGenerate);
   connect(mPipelineRun, &ExecuteButton::editOptionRequested, this, &MainWindow::onActionEditPipeline);
+  connect(mPipelineRun, &ExecuteButton::renameOptionRequested, this, &MainWindow::onActionRenamePipeline);
   connect(mPipelineRun, &ExecuteButton::deleteOptionRequested, this, &MainWindow::onActionDeletePipeline);
 
   // View actions =============================================================
@@ -430,6 +428,8 @@ void MainWindow::bind()
             rootCanvas()->onFocusNode(flowId, nodeId, properties);
           });
 
+  connect(mSystemMenu, &SystemMenu::editPipeline, this, &MainWindow::onActionEditPipeline);
+  connect(mSystemMenu, &SystemMenu::removePipeline, this, &MainWindow::onActionDeletePipeline);
   connect(mSystemMenu, &SystemMenu::flowSelected, rootCanvas(), &Canvas::onFlowSelected);
   connect(mSystemMenu, &SystemMenu::flowRemoved, rootCanvas(), &Canvas::onFlowRemoved);
   connect(mSystemMenu, &SystemMenu::nodeRemoved, rootCanvas(), &Canvas::onRemoveNode);
@@ -1020,25 +1020,32 @@ void MainWindow::onActionGenerate(const QString& pipelineId)
 void MainWindow::onActionDeletePipeline(const QString& pipelineId)
 {
   if (!mPluginPipeline)
+  {
     LOG_WARNING("No pipeline available");
+    return;
+  }
 
-  QString pipelineName;
   std::shared_ptr<FlowSaveInfo> pipeline;
   for (const auto& p : mStorage->pipelines())
   {
-    if (p->getname() != pipelineId)
+    if (p->getid() != pipelineId)
       continue;
 
-    pipelineName = pipelineId;
     pipeline = p;
     break;
+  }
+
+  if (!pipeline)
+  {
+    LOG_WARNING("Could not find pipeline: {}", pipelineId);
+    return;
   }
 
   // Check if the pipeline is currently open
   for (int i = 1; i < mCanvasPanel->count(); ++i)
   {
     auto prop = mCanvasPanel->widget(i)->property("id");
-    if (!prop.isValid() || prop.toString() != pipelineName)
+    if (!prop.isValid() || prop.toString() != pipeline->getid())
       continue;
 
     // Change to the previous tab and remove the pipeline tab
@@ -1048,44 +1055,101 @@ void MainWindow::onActionDeletePipeline(const QString& pipelineId)
   }
 
   mStorage->removePipeline(pipeline);
-  mPipelineRun->removeOption(pipelineName);  // Update the UI as well
+  mPipelineRun->removeOption(pipeline->getid());  // Update the UI as well
+  mSystemMenu->onPipelineRemoved(pipelineId);
+}
+
+void MainWindow::onActionRenamePipeline(const QString& pipelineId)
+{
+  std::shared_ptr<FlowSaveInfo> pipeline;
+  for (const auto& p : mStorage->pipelines())
+  {
+    if (p->getid() != pipelineId)
+      continue;
+
+    pipeline = p;
+    break;
+  }
+
+  if (!pipeline)
+  {
+    LOG_WARNING("No pipeline with id {}", pipelineId);
+    return;
+  }
+
+  auto name = maki::textPrompt(tr("Pipeline rename"), tr("Choose a new pipeline name"), this);
+  if (name.isEmpty())
+    return;
+
+  for (const auto& p : mStorage->pipelines())
+  {
+    if (p->getname() == name)
+    {
+      NOTIFY_WARNING(Config::APPLICATION_NAME.toStdString(), "{}: {}", tr("There is already a pipeline named"), name);
+      return;
+    }
+  }
+
+  pipeline->setName(name);
+  mPipelineRun->addOption(pipeline->getname(), pipeline->getid());
+  mSystemMenu->onPipelineAdded(pipeline);
+
+  for (int i = 1; i < mCanvasPanel->count(); ++i)
+  {
+    auto prop = mCanvasPanel->widget(i)->property("id");
+    if (prop.isValid() && prop.toString() == pipeline->getid())
+    {
+      mCanvasPanel->setTabText(i, pipeline->getname());
+      break;
+    }
+  }
+
+  NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "{}", tr("Pipeline renamed successfully"));
 }
 
 void MainWindow::onActionEditPipeline(const QString& pipelineId)
 {
-  QString pipelineName;
   std::shared_ptr<FlowSaveInfo> pipeline;
   for (const auto& p : mStorage->pipelines())
   {
-    if (p->getname() != pipelineId)
+    if (p->getid() != pipelineId)
       continue;
 
-    pipelineName = pipelineId;
     pipeline = p;
     break;
   }
 
   // If we are dealing with an unknown or new pipeline, we must create it
-  if (pipelineName.isEmpty() || !pipeline)
+  if (!pipeline)
   {
     FlowSaveInfo info;
     auto name = maki::textPrompt(tr("Pipeline name"), tr("Choose a pipeline name"), this);
     if (name.isEmpty())
       return;
 
-    pipelineName = name;
-    info.setName(pipelineName);
+    for (const auto& p : mStorage->pipelines())
+    {
+      if (p->getname() == name)
+      {
+        NOTIFY_WARNING(Config::APPLICATION_NAME.toStdString(), "{}: {}", tr("There is already a pipeline named"), name);
+        return;
+      }
+    }
+
     pipeline = std::make_shared<FlowSaveInfo>(info);
+    pipeline->setId(QUuid::createUuid().toString());
+    pipeline->setName(name);
 
     mStorage->addPipeline(pipeline);
-    mPipelineRun->addOption(pipelineName);  // Update the UI as well
+    mPipelineRun->addOption(pipeline->getname(), pipeline->getid());  // Update the UI as well
+    mSystemMenu->onPipelineAdded(pipeline);
   }
 
   // Check if the pipeline is already open
   for (int i = 1; i < mCanvasPanel->count(); ++i)
   {
     auto prop = mCanvasPanel->widget(i)->property("id");
-    if (prop.isValid() && prop.toString() == pipelineName)
+    if (prop.isValid() && prop.toString() == pipeline->getid())
     {
       mCanvasPanel->setCurrentIndex(i);
       return;
@@ -1093,7 +1157,7 @@ void MainWindow::onActionEditPipeline(const QString& pipelineId)
   }
 
   CanvasView* newView = new CanvasView(mCanvasPanel);
-  newView->setProperty("id", pipelineName);
+  newView->setProperty("id", pipeline->getid());
 
   PipelineCanvas* canvas = new PipelineCanvas(pipeline, mConfigTable, mRouter, newView);
   newView->setScene(canvas);
@@ -1105,7 +1169,7 @@ void MainWindow::onActionEditPipeline(const QString& pipelineId)
   mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::PIPELINE), true);
   mPalette->setCurrentIndex(libraryTypeToIndex(Types::LibraryTypes::PIPELINE));
 
-  mCanvasPanel->addTab(newView, QIcon(":/icons/deploy.svg"), pipeline->getname());
+  mCanvasPanel->addTab(newView, QIcon(":/icons/pipeline.svg"), pipeline->getname());
   mCanvasPanel->setCurrentWidget(newView);
 }
 
@@ -1224,7 +1288,7 @@ void MainWindow::onFileLoaded(const QString& file, const SaveInfo& info, const Q
   {
     mPipelineRun->reset();
     for (const auto& pipeline : mStorage->pipelines())
-      mPipelineRun->addOption(pipeline->getname());
+      mPipelineRun->addOption(pipeline->getname(), pipeline->getid());
   }
 
   if (mSystemMenu)
@@ -1260,9 +1324,7 @@ void MainWindow::onNodeAdded(NodeItem* node)
     return;
   }
 
-  if (canvas()->type() != Types::LibraryTypes::PIPELINE)
-    LOG_WARN_ON_FAILURE(mSystemMenu->onNodeAdded(canvas()->id(), node));
-
+  LOG_WARN_ON_FAILURE(mSystemMenu->onNodeAdded(canvas()->id(), node, canvas()->type()));
   LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeAdded(node));
 }
 

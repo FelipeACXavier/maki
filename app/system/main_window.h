@@ -296,6 +296,7 @@ private:
   void onActionGenerate(const QString& pipelineId);        /// Handles generate action.
   void onActionDeletePipeline(const QString& pipelineId);  /// Handles pipeline deletion.
   void onActionEditPipeline(const QString& pipelineId);    /// Handles generate action.
+  void onActionRenamePipeline(const QString& pipelineId);  /// Handles generate action.
   void onActionLogLevelChanged();                          /// Handles log level change action.
   void onFileLoaded(const QString& file, const SaveInfo& info, const QString& error);
 };  // namespace qlementclassMainWindow:public MainWindowLayout

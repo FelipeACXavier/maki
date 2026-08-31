@@ -502,8 +502,8 @@ private:
   bool nodeClickHandler(QGraphicsSceneMouseEvent* event, QGraphicsItem* item);        /// Handles node click events.
   bool transitionClickHandler(QGraphicsSceneMouseEvent* event, QGraphicsItem* item);  /// Handles transition click events.
 
-  void createNodeContextMenu(QMenu& menu);        /// Creates a context menu for nodes.
-  void createTransitionContextMenu(QMenu& menu);  /// Creates a context menu for transitions.
+  void createNodeContextMenu(QMenu* menu, NodeItem* node, const QList<NodeItem*>& items);  /// Creates a context menu for nodes.
+  void createTransitionContextMenu(QMenu* menu, const QList<NodeItem*>& items);            /// Creates a context menu for transitions.
 
   bool isParentSelected(NodeItem* node);  /// Checks if the parent of a node is selected.
   void pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode, QList<CopiedNode> nodes,

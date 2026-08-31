@@ -11,6 +11,8 @@
 #include "notifications.h"
 #include "style_helpers.h"
 
+static const QString CREATE_NEW = "";
+
 ExecuteButton::ExecuteButton(QWidget* parent)
     : DropDownButton(parent)
     , mCurrentOption("")
@@ -21,10 +23,10 @@ ExecuteButton::ExecuteButton(QWidget* parent)
   connect(this, &QWidget::customContextMenuRequested, this, &ExecuteButton::showContextMenu);
   connect(this, &QToolButton::clicked, this, [this] {
     const auto option = currentOption();
-    if (option.isEmpty() || option == DEFAULT_TEXT)
-      NOTIFY_WARNING(Config::APPLICATION_NAME.toStdString(), "No option selected, you must first create a pipeline.");
+    if (option.name.isEmpty() || option.name == DEFAULT_TEXT)
+      emit editOptionRequested(CREATE_NEW);
     else
-      emit executeRequested(currentOption());
+      emit executeRequested(option.id);
   });
 
   setupDone();
@@ -36,28 +38,37 @@ void ExecuteButton::reset()
   setupDone();
 }
 
-void ExecuteButton::addOption(const QString& name)
+void ExecuteButton::addOption(const QString& name, const QString& id)
 {
   auto opts = getPipelineNames();
-  opts.append(name);
+  auto option = std::find_if(opts.begin(), opts.end(), [id](const OptionInfo& opt) { return opt.id == id; });
+  if (option != opts.end())
+  {
+    // We are editing an existing pipeline
+    option->name = name;
+  }
+  else
+  {
+    opts.push_back({.id = id, .name = name});
+  }
   rebuildMenu(opts);
 }
 
-void ExecuteButton::removeOption(const QString& name)
+void ExecuteButton::removeOption(const QString& id)
 {
   auto opts = getPipelineNames();
-  opts.removeAll(name);
+  opts.erase(std::remove_if(opts.begin(), opts.end(), [id](const OptionInfo& opt) { return opt.id == id; }));
   rebuildMenu(opts);
 }
 
-QString ExecuteButton::currentOption()
+ExecuteButton::OptionInfo ExecuteButton::currentOption()
 {
   return mCurrentOption;
 }
 
-void ExecuteButton::setCurrentOption(const QString& name)
+void ExecuteButton::setCurrentOption(const OptionInfo& option)
 {
-  mCurrentOption = name;
+  mCurrentOption = option;
 }
 
 void ExecuteButton::setupDone()
@@ -65,19 +76,19 @@ void ExecuteButton::setupDone()
   menu()->addSeparator();
 
   auto* addNewPipeline = menu()->addAction(iconFromTheme("document-new"), ADD_NEW_TEXT);
-  connect(addNewPipeline, &QAction::triggered, this, [this] { QTimer::singleShot(0, this, [this]() { emit editOptionRequested(""); }); });
+  connect(addNewPipeline, &QAction::triggered, this, [this] { QTimer::singleShot(0, this, [this]() { emit editOptionRequested(CREATE_NEW); }); });
 
   updateButtonText();
 }
 
-void ExecuteButton::rebuildMenu(const QStringList& pipelines)
+void ExecuteButton::rebuildMenu(const std::vector<OptionInfo>& pipelines)
 {
   DropDownButton::reset();
 
   for (const auto& pipeline : pipelines)
   {
-    auto* pipelineMenu = menu()->addMenu(pipeline);
-    pipelineMenu->setProperty("id", pipeline);
+    auto* pipelineMenu = menu()->addMenu(pipeline.name);
+    pipelineMenu->menuAction()->setData(pipeline.id);
     buildMenu(pipelineMenu, pipeline, true);
   }
 
@@ -87,17 +98,19 @@ void ExecuteButton::rebuildMenu(const QStringList& pipelines)
 void ExecuteButton::updateButtonText()
 {
   const auto options = getPipelineNames();
-  QString optionName = currentOption();
+  auto option = currentOption();
 
   // If there are no options, then we just take the default
-  if (optionName.isEmpty() || options.isEmpty())
-    optionName = DEFAULT_TEXT;
+  if (option.name.isEmpty() || options.empty())
+    option.name = DEFAULT_TEXT;
   // If an option was deleted, then we can just take the first option
-  else if (!options.contains(optionName))
-    optionName = options.first();
+  else if (std::count_if(options.begin(), options.end(), [option](const OptionInfo& opt) { return opt.name == option.name && opt.id == option.id; }) <
+           1)
+    option = *options.begin();
 
-  setCurrentOption(optionName);
-  setText(optionName);
+  LOG_DEBUG("Setting option: {} {}", option.name, option.id);
+  setCurrentOption(option);
+  setText(option.name);
 }
 
 void ExecuteButton::showContextMenu(const QPoint& event)
@@ -107,13 +120,13 @@ void ExecuteButton::showContextMenu(const QPoint& event)
   menu.exec(mapToGlobal(event));
 }
 
-void ExecuteButton::buildMenu(QMenu* menu, const QString& option, bool addSelect)
+void ExecuteButton::buildMenu(QMenu* menu, const OptionInfo& option, bool addSelect)
 {
   auto* runAction = menu->addAction(iconFromTheme("run-build"), tr("Run"));
   connect(runAction, &QAction::triggered, this, [this, option] {
     setCurrentOption(option);
     updateButtonText();
-    emit executeRequested(option);
+    emit executeRequested(option.id);
   });
 
   if (addSelect)
@@ -128,9 +141,11 @@ void ExecuteButton::buildMenu(QMenu* menu, const QString& option, bool addSelect
   menu->addSeparator();
 
   auto* editAction = menu->addAction(iconFromTheme("document-edit"), tr("Edit"));
-  connect(editAction, &QAction::triggered, this, [this, option] { emit editOptionRequested(option); });
+  connect(editAction, &QAction::triggered, this, [this, option] { emit editOptionRequested(option.id); });
+  auto* renameAction = menu->addAction(iconFromTheme("insert-text"), tr("Rename"));
+  connect(renameAction, &QAction::triggered, this, [this, option] { emit renameOptionRequested(option.id); });
   auto* deleteAction = menu->addAction(iconFromTheme("edit-delete"), tr("Delete"));
-  connect(deleteAction, &QAction::triggered, this, [this, option] { emit deleteOptionRequested(option); });
+  connect(deleteAction, &QAction::triggered, this, [this, option] { emit deleteOptionRequested(option.id); });
 }
 
 void ExecuteButton::setRunning(bool running)
@@ -187,21 +202,22 @@ void ExecuteButton::paintLeadingContent(QPainter& painter, const QRect& contentR
     const qreal radius = (circleSize - theme.spacing) / 2.0;
     const qreal x = 0.5 * radius;
     const qreal y = 0.866 * radius;
+    const QPointF shift = {0.5, 0};
 
     QPolygonF triangle;
-    triangle << QPointF(center.x() - x, center.y() - y) << QPointF(center.x() - x, center.y() + y) << QPointF(center.x() + radius, center.y());
-
+    triangle << QPointF(center.x() - x, center.y() - y) - shift << QPointF(center.x() - x, center.y() + y) - shift
+             << QPointF(center.x() + radius, center.y()) - shift;
     painter.drawPolygon(triangle);
   }
 }
 
-QStringList ExecuteButton::getPipelineNames() const
+std::vector<ExecuteButton::OptionInfo> ExecuteButton::getPipelineNames() const
 {
-  QStringList pipelineNames;
+  std::vector<OptionInfo> pipelines;
 
   for (const QAction* action : menu()->actions())
     if (!action->isSeparator() && action->text() != ADD_NEW_TEXT)
-      pipelineNames.append(action->text());
+      pipelines.push_back({.id = action->data().toString(), .name = action->text()});
 
-  return pipelineNames;
+  return pipelines;
 }

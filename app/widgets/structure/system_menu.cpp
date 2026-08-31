@@ -8,6 +8,7 @@
 #include "elements/flow.h"
 #include "elements/node.h"
 #include "logging.h"
+#include "style_helpers.h"
 
 static const int ICON_COLUMN = 0;
 static const int NAME_COLUMN = 0;
@@ -16,6 +17,9 @@ static const int TYPE_COLUMN = 1;
 static const int ID_DATA = 0;
 static const int TYPE_DATA = 1;
 static const int CANVAS_DATA = 2;
+
+static const QString PIPELINE_ROOT = "pipeline_root_id";
+static constexpr int MIN_COLUMN_WIDTH = 75;
 
 SystemMenu::SystemMenu(QWidget* parent)
     : QTreeWidget(parent)
@@ -26,20 +30,32 @@ SystemMenu::SystemMenu(QWidget* parent)
   setIndentation(15);
   setExpandsOnDoubleClick(false);
   setHeaderLabels({tr("Name"), tr("Type")});
-  header()->setAlternatingRowColors(true);
-  header()->setSectionResizeMode(NAME_COLUMN, QHeaderView::Stretch);
 
-  setColumnWidth(TYPE_COLUMN, 100);
+  header()->setMinimumSectionSize(MIN_COLUMN_WIDTH);
   header()->setStretchLastSection(false);
-  header()->setSectionResizeMode(TYPE_COLUMN, QHeaderView::Fixed);
+  header()->setAlternatingRowColors(true);
+
+  header()->setSectionResizeMode(NAME_COLUMN, QHeaderView::Interactive);
+  header()->setSectionResizeMode(TYPE_COLUMN, QHeaderView::Interactive);
+
+  setColumnWidth(NAME_COLUMN, 220);
+
   header()->setTextElideMode(Qt::ElideRight);
   header()->setSectionsMovable(false);
 
+  setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
   connect(this, &QTreeWidget::customContextMenuRequested, this, &SystemMenu::showContextMenu);
   connect(this, &QTreeWidget::itemDoubleClicked, this, &SystemMenu::onItemClicked);
+  connect(header(), &QHeaderView::sectionResized, this, [this](int logicalIndex, int /*oldSize*/, int newSize) {
+    if (logicalIndex != NAME_COLUMN && logicalIndex != TYPE_COLUMN)
+      return;
+
+    resizeColumns(logicalIndex, newSize);
+  });
 }
 
-VoidResult SystemMenu::onNodeAdded(const QString& flowId, NodeItem* node)
+VoidResult SystemMenu::onNodeAdded(const QString& flowId, NodeItem* node, const Types::LibraryTypes canvasType)
 {
   if (!node)
     return VoidResult::Failed("No node provided");
@@ -69,9 +85,16 @@ VoidResult SystemMenu::onNodeAdded(const QString& flowId, NodeItem* node)
   if (parent == nullptr)
     return VoidResult::Failed("Could not add node, no such flow");
 
-  // Add item to the tree
   QTreeWidgetItem* newNode = new QTreeWidgetItem(parent);
-  populateItem(newNode, QIcon(":/icons/flow_block.svg"), node->nodeName(), node->nodeType(), node->id(), Roles::NodeRole, flowId);
+  if (canvasType == Types::LibraryTypes::BEHAVIOUR)
+  {
+    // Add item to the tree
+    populateItem(newNode, QIcon(":/icons/flow_block.svg"), node->nodeName(), node->nodeType(), node->id(), Roles::NodeRole, flowId);
+  }
+  else
+  {
+    populateItem(newNode, QIcon(":/icons/flow_block.svg"), node->nodeName(), node->nodeType(), node->id(), Roles::PipelineRole, flowId);
+  }
 
   return VoidResult();
 }
@@ -82,7 +105,7 @@ VoidResult SystemMenu::onNodeRemoved(const QString& flowId, const QString& nodeI
 
   if (flowId == Config::MAIN_CANVAS)
   {
-    auto item = getItemById(nodeId);
+    auto* item = getItemById(nodeId);
     if (!item)
       return VoidResult::Failed("Node is not in the tree");
 
@@ -93,20 +116,22 @@ VoidResult SystemMenu::onNodeRemoved(const QString& flowId, const QString& nodeI
       return VoidResult();
     }
 
-    auto parentItem = getItemById(parentId);
-    if (!parentItem)
-      return VoidResult::Failed("The parent node is not on the tree");
+    auto* group = item->parent();
+    if (!group)
+      return VoidResult::Failed("Node has no parent group");
 
-    parentItem->removeChild(item);
+    group->removeChild(item);
     delete item;
+
+    removeGroupIfEmpty(group);
   }
   else
   {
-    auto flow = getItemById(flowId);
+    auto* flow = getItemById(flowId);
     if (!flow)
       return VoidResult::Failed("Flow is not in the tree");
 
-    auto component = getItemById(nodeId);
+    auto* component = getItemById(nodeId);
     if (!component)
       return VoidResult::Failed("The node is not in the tree");
 
@@ -114,6 +139,7 @@ VoidResult SystemMenu::onNodeRemoved(const QString& flowId, const QString& nodeI
       return VoidResult::Failed("Item is in the tree but it is not a node");
 
     flow->removeChild(component);
+    delete component;
   }
 
   return VoidResult();
@@ -179,20 +205,63 @@ void collectTreeItems(QTreeWidgetItem* item, QSet<QTreeWidgetItem*>& out)
 
 VoidResult SystemMenu::onFlowRemoved(const QString& flowId, const QString& nodeId)
 {
-  auto nodeItem = getItemById(nodeId);
-  if (nodeItem == nullptr)
+  auto* nodeItem = getItemById(nodeId);
+  if (!nodeItem)
     return VoidResult();
 
-  auto flowItem = getItemById(flowId);
-  if (flowItem == nullptr)
+  auto* flowItem = getItemById(flowId);
+  if (!flowItem)
     return VoidResult();
 
-  // If a flow is removed, all the icons from the child nodes also need to be removed
-  QSet<QTreeWidgetItem*> itemsToRemove = {flowItem};
-  collectTreeItems(flowItem, itemsToRemove);
+  auto* group = flowItem->parent();
+  if (group)
+    group->removeChild(flowItem);
 
-  nodeItem->removeChild(flowItem);
   delete flowItem;
+  removeGroupIfEmpty(group);
+
+  return VoidResult();
+}
+
+VoidResult SystemMenu::onPipelineAdded(std::shared_ptr<const FlowSaveInfo> info)
+{
+  if (!info)
+    return VoidResult::Failed("No pipeline info provided");
+
+  auto existing = getItemById(info->getid());
+  if (existing)
+  {
+    existing->setText(NAME_COLUMN, info->getname());
+    return VoidResult();
+  }
+
+  LOG_DEBUG("Pipeline added to system menu: {} - {}", info->getid(), info->getname());
+
+  auto* pipelineRoot = getOrCreateGroup(PIPELINE_ROOT, Roles::PipelineRoot, nullptr);
+  if (!pipelineRoot)
+    return VoidResult::Failed("Could not create pipeline root");
+
+  auto* item = new QTreeWidgetItem(pipelineRoot);
+  populateItem(item, QIcon(":/icons/pipeline_item.svg"), info->getname(), "Pipeline", info->getid(), Roles::Pipeline);
+
+  return VoidResult();
+}
+
+VoidResult SystemMenu::onPipelineRemoved(const QString& pipelineId)
+{
+  LOG_DEBUG("Pipeline removed from system menu: {}", pipelineId);
+
+  auto pipelineRoot = getItemById(PIPELINE_ROOT);
+  if (pipelineRoot == nullptr)
+    return VoidResult();
+
+  auto pipelineItem = getItemById(pipelineId);
+  if (pipelineItem == nullptr)
+    return VoidResult();
+
+  pipelineRoot->removeChild(pipelineItem);
+
+  removeGroupIfEmpty(pipelineRoot);
 
   return VoidResult();
 }
@@ -252,36 +321,71 @@ VoidResult SystemMenu::addLeafNode(NodeItem* node)
   return VoidResult();
 }
 
+QTreeWidgetItem* SystemMenu::getOrCreateGroup(const QString& id, Roles role, QTreeWidgetItem* parent)
+{
+  if (auto* existing = getItemById(id))
+    return existing;
+
+  auto* group = parent ? new QTreeWidgetItem(parent) : new QTreeWidgetItem(this);
+
+  switch (role)
+  {
+    case Roles::SubTasks:
+      populateItem(group, QIcon(":/icons/structure.svg"), tr("Sub-tasks"), "", id, Roles::SubTasks);
+      break;
+
+    case Roles::Capabilities:
+      populateItem(group, QIcon(":/icons/structure.svg"), tr("Capabilities"), "", id, Roles::Capabilities);
+      break;
+
+    case Roles::Flows:
+      populateItem(group, QIcon(":/icons/behaviour.svg"), tr("Flows"), "", id, Roles::Flows);
+      break;
+
+    case Roles::PipelineRoot:
+      populateItem(group, QIcon(":/icons/pipeline.svg"), tr("Pipelines"), "", id, Roles::PipelineRoot);
+      break;
+
+    default:
+      assert(false && "Invalid role for group");
+      delete group;
+      return nullptr;
+  }
+
+  return group;
+}
+
 QTreeWidgetItem* SystemMenu::getOrCreateChildGroup(const QString& parentId, Roles role)
 {
-  auto parent = findParentItemByRole(parentId, role);
+  auto* parent = findParentItemByRole(parentId, role);
   if (!parent)
     return nullptr;
 
   if (parent->data(TYPE_DATA, Qt::UserRole) == role)
     return parent;
 
-  auto* group = new QTreeWidgetItem(parent);
+  QString groupId;
+
   switch (role)
   {
     case Roles::SubTasks:
-      populateItem(group, QIcon(":/icons/structure.svg"), tr("Sub-tasks"), "", parentId, Roles::SubTasks);
+      groupId = parentId + "::subtasks";
       break;
 
     case Roles::Capabilities:
-      populateItem(group, QIcon(":/icons/structure.svg"), tr("Capabilities"), "", parentId, Roles::Capabilities);
+      groupId = parentId + "::capabilities";
       break;
 
     case Roles::Flows:
-      populateItem(group, QIcon(":/icons/behaviour.svg"), tr("Flows"), "", parentId, Roles::Flows);
+      groupId = parentId + "::flows";
       break;
 
     default:
       assert(false && "Invalid role for child group");
-      break;
+      return nullptr;
   }
 
-  return group;
+  return getOrCreateGroup(groupId, role, parent);
 }
 
 QTreeWidgetItem* SystemMenu::getItemById(const QString& id) const
@@ -309,6 +413,43 @@ QTreeWidgetItem* SystemMenu::findParentItemByRole(const QString& id, Roles role)
   return parent;
 }
 
+void SystemMenu::removeGroupIfEmpty(QTreeWidgetItem* group)
+{
+  if (!group)
+    return;
+
+  if (group->childCount() > 0)
+    return;
+
+  // Only remove organizational groups, not normal nodes.
+  const auto role = static_cast<Roles>(group->data(TYPE_DATA, Qt::UserRole).toInt());
+  switch (role)
+  {
+    case Roles::SubTasks:
+    case Roles::Capabilities:
+    case Roles::Flows:
+    case Roles::PipelineRoot:
+      break;
+
+    default:
+      return;
+  }
+
+  if (auto* parent = group->parent())
+  {
+    parent->removeChild(group);
+    delete group;
+    return;
+  }
+
+  const int index = indexOfTopLevelItem(group);
+  if (index >= 0)
+  {
+    takeTopLevelItem(index);
+    delete group;
+  }
+}
+
 void SystemMenu::showContextMenu(const QPoint& pos)
 {
   QTreeWidgetItem* selectedItem = itemAt(pos);
@@ -316,9 +457,7 @@ void SystemMenu::showContextMenu(const QPoint& pos)
     return;
 
   QMenu contextMenu(this);
-
-  LOG_DEBUG("COntext menu type: {}", selectedItem->data(TYPE_DATA, Qt::UserRole).toInt());
-
+  contextMenu.setFixedWidth(Config::MENU_WIDTH);
   if (selectedItem->data(TYPE_DATA, Qt::UserRole) == Roles::NodeRole)
   {
     contextMenu.addAction(iconFromTheme("search"), tr("Focus"), this, [this, selectedItem]() {
@@ -333,6 +472,13 @@ void SystemMenu::showContextMenu(const QPoint& pos)
   {
     contextMenu.addAction(iconFromTheme("document-edit"), tr("Edit"), this, [this, selectedItem]() { editFlow(selectedItem); });
     contextMenu.addAction(iconFromTheme("edit-delete"), tr("Delete"), this, [this, selectedItem]() { removeFlow(selectedItem); });
+  }
+  else if (selectedItem->data(TYPE_DATA, Qt::UserRole) == Roles::Pipeline)
+  {
+    contextMenu.addAction(iconFromTheme("document-edit"), tr("Edit"), this,
+                          [this, selectedItem]() { emit editPipeline(selectedItem->data(ID_DATA, Qt::UserRole).toString()); });
+    contextMenu.addAction(iconFromTheme("edit-delete"), tr("Delete"), this,
+                          [this, selectedItem]() { emit removePipeline(selectedItem->data(ID_DATA, Qt::UserRole).toString()); });
   }
   else
   {
@@ -351,14 +497,23 @@ void SystemMenu::onItemClicked(QTreeWidgetItem* item, int /* column */)
     editFlow(item);
   else if (item->data(TYPE_DATA, Qt::UserRole) == Roles::NodeRole)
     emit nodeFocused(item->data(CANVAS_DATA, Qt::UserRole).toString(), item->data(ID_DATA, Qt::UserRole).toString());
+  else if (item->data(TYPE_DATA, Qt::UserRole) == Roles::Pipeline)
+    emit editPipeline(item->data(ID_DATA, Qt::UserRole).toString());
 }
 
 void SystemMenu::editFlow(QTreeWidgetItem* item)
 {
-  auto node = item->parent();
+  auto group = item->parent();
+  if (group == nullptr)
+  {
+    LOG_WARNING("Invalid flow, it has no parent group");
+    return;
+  }
+
+  auto node = group->parent();
   if (node == nullptr)
   {
-    LOG_WARNING("Invalid flow, it has no parent");
+    LOG_WARNING("Invalid flow, it has no parent node");
     return;
   }
 
@@ -380,4 +535,52 @@ void SystemMenu::removeFlow(QTreeWidgetItem* item)
   auto flowId = item->data(ID_DATA, Qt::UserRole).toString();
   LOG_DEBUG("Removing flow");
   emit flowRemoved(flowId, nodeId);
+}
+
+void SystemMenu::resizeEvent(QResizeEvent* event)
+{
+  QTreeWidget::resizeEvent(event);
+  resizeColumns();
+}
+
+void SystemMenu::resizeColumns(int changedColumn, int requestedWidth)
+{
+  if (mAdjustingColumns.Value())
+    return;
+
+  const int totalWidth = viewport()->width();
+  if (totalWidth <= 0)
+    return;
+
+  mAdjustingColumns.SetUnconditionally(true);
+
+  int nameWidth = 0;
+  if (totalWidth <= 2 * MIN_COLUMN_WIDTH)
+  {
+    // Not enough room to respect the minimum for both columns.
+    nameWidth = totalWidth / 2;
+  }
+  else if (changedColumn == NAME_COLUMN)
+  {
+    nameWidth = std::clamp(requestedWidth, MIN_COLUMN_WIDTH, totalWidth - MIN_COLUMN_WIDTH);
+
+    mNameColumnRatio = static_cast<qreal>(nameWidth) / totalWidth;
+  }
+  else if (changedColumn == TYPE_COLUMN)
+  {
+    const int typeWidth = std::clamp(requestedWidth, MIN_COLUMN_WIDTH, totalWidth - MIN_COLUMN_WIDTH);
+    nameWidth = totalWidth - typeWidth;
+    mNameColumnRatio = static_cast<qreal>(nameWidth) / totalWidth;
+  }
+  else
+  {
+    // Parent widget was resized: preserve the user's chosen ratio.
+    nameWidth = static_cast<int>(totalWidth * mNameColumnRatio);
+    nameWidth = std::clamp(nameWidth, MIN_COLUMN_WIDTH, totalWidth - MIN_COLUMN_WIDTH);
+  }
+
+  header()->resizeSection(NAME_COLUMN, nameWidth);
+  header()->resizeSection(TYPE_COLUMN, totalWidth - nameWidth);
+
+  mAdjustingColumns.SetUnconditionally(false);
 }

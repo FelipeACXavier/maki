@@ -4,12 +4,13 @@
 #include <QTreeWidget>
 
 #include "result.h"
-#include "style_helpers.h"
-#include "widgets/settings_manager.h"
+#include "test_and_set.h"
+#include "types.h"
 
 class NodeItem;
 class Flow;
 class QTreeWidgetItem;
+class FlowSaveInfo;
 
 /**
  * @class SystemMenu
@@ -35,7 +36,7 @@ public:
    * @param node The node that was added.
    * @return A result indicating whether the operation succeeded.
    */
-  VoidResult onNodeAdded(const QString& flowId, NodeItem* node);
+  VoidResult onNodeAdded(const QString& flowId, NodeItem* node, const Types::LibraryTypes canvasType);
 
   /**
    * @brief Handles the removal of a node from a flow.
@@ -79,6 +80,9 @@ public:
    */
   VoidResult onFlowRemoved(const QString& flowId, const QString& nodeId);
 
+  VoidResult onPipelineAdded(std::shared_ptr<const FlowSaveInfo> info);
+  VoidResult onPipelineRemoved(const QString& id);
+
 signals:
   /**
    * @brief Emitted when a node should be focused in the editor.
@@ -115,6 +119,9 @@ signals:
    */
   void flowRenamed(const QString& flowId, const QString& nodeId);
 
+  void editPipeline(const QString& pipelineId);
+  void removePipeline(const QString& pipelineId);
+
 private slots:
   /**
    * @brief Shows the context menu at the given position.
@@ -129,6 +136,9 @@ private slots:
    */
   void onItemClicked(QTreeWidgetItem* item, int /* column */);
 
+protected:
+  void resizeEvent(QResizeEvent* event) override;
+
 private:
   /**
    * @enum Roles
@@ -140,10 +150,18 @@ private:
     Capabilities,
     SubTasks,
     Flows,
+    PipelineRoot,
+    Pipeline,
     ComponentRole,  ///< Item represents a component category or container.
     FlowRole,       ///< Item represents a flow.
-    NodeRole        ///< Item represents a node within a flow.
+    NodeRole,       ///< Item represents a node within a flow.
+    PipelineRole    ///< Item represents a pipeline
   };
+
+  qreal mNameColumnRatio = 0.7;
+  TestAndSet<bool> mAdjustingColumns = false;
+
+  void resizeColumns(int changedColumn = -1, int requestedWidth = -1);
 
   /**
    * @brief Adds a root node to the menu.
@@ -164,9 +182,8 @@ private:
    * @param item The tree item to populate.
    * @param node The source node.
    */
-  void populateItem(QTreeWidgetItem* item, const QIcon& icon,
-                    const QString& name, const QString& type,
-                    const QString& data, const Roles role, const QString& canvas = "");
+  void populateItem(QTreeWidgetItem* item, const QIcon& icon, const QString& name, const QString& type, const QString& data, const Roles role,
+                    const QString& canvas = "");
 
   void populateTaskItem(QTreeWidgetItem* item, NodeItem* node);
 
@@ -178,8 +195,10 @@ private:
   QTreeWidgetItem* getItemById(const QString& id) const;
 
   QTreeWidgetItem* findParentItemByRole(const QString& id, Roles role) const;
-
   QTreeWidgetItem* getOrCreateChildGroup(const QString& parentId, Roles role);
+  QTreeWidgetItem* getOrCreateGroup(const QString& id, Roles role, QTreeWidgetItem* parent);
+
+  void removeGroupIfEmpty(QTreeWidgetItem* group);
 
   /**
    * @brief Returns the root item containing system flows.
