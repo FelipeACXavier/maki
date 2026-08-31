@@ -1328,17 +1328,23 @@
               "type": "void",
               "control": "select",
               "default": {
-                "kind": "list",
-                "value": [
-                  {
-                    "kind": "string",
-                    "value": "signal"
-                  },
-                  {
-                    "kind": "string",
-                    "value": "timed"
+                "kind": "record",
+                "value": {
+                  "value": "signal",
+                  "items": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "string",
+                        "value": "signal"
+                      },
+                      {
+                        "kind": "string",
+                        "value": "timed"
+                      }
+                    ]
                   }
-                ]
+                }
               }
             }
           ],
