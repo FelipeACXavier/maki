@@ -16,7 +16,7 @@ void RemoveTransitionCommand::undo()
   if (!mCanvas)
     return;
 
-  // mCanvas->createNode(mDesc);
+  mCanvas->createTransition(mDesc);
   LOG_DEBUG("Undo RemoveTransitionCommand: {}", mDesc.getlabel());
 }
 
@@ -25,6 +25,6 @@ void RemoveTransitionCommand::redo()
   if (!mCanvas)
     return;
 
-  // mCanvas->onRemoveNode(mDesc.id);
+  mCanvas->removeTransition(mDesc);
   LOG_DEBUG("Redo RemoveTransitionCommand: {}", mDesc.getlabel());
 }

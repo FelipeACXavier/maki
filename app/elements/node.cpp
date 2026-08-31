@@ -75,9 +75,6 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
   updatePosition(snapToGrid(initialPosition - boundingRect().center(), Config::GRID_SIZE));
   mLastPosition = pos();
 
-  if (nodeType() == "Koda::Task")
-    ensureMainFlowExists();
-
   LOG_DEBUG("{} created at: ({}, {}) with size ({}, {}) and scale {}", id(), pos().x(), pos().y(), mSize.width(), mSize.height(), baseScale());
 }
 
@@ -116,6 +113,9 @@ qreal NodeItem::baseScale() const
 
 VoidResult NodeItem::start()
 {
+  if (nodeType() == "Koda::Task")
+    ensureMainFlowExists();
+
   return NodeBase::start();
 }
 
@@ -294,7 +294,6 @@ void NodeItem::dismissControl()
     mControlWidget->hide();
 
   mControlActive = false;
-  LOG_DEBUG("Setting mControlActive to {}", mControlActive);
 
   setGraphicsEffect(nullptr);
   update();
@@ -500,12 +499,14 @@ void NodeItem::applySize(const QSizeF& size)
   mSize = size;
   mStorage->setSize(mSize);
 
-  // Same scale logic as before
+  qreal newFontSize = qMax(Fonts::BaseSize, mSize.width() / Fonts::BaseFactor);
+  setLabelSize(newFontSize, mSize);
+
+  // The saved position represents the center of the node. Since changing the
+  // size changes the center while pos() remains fixed, keep storage in sync.
+  mStorage->setPosition(pos() + boundingRect().center());
   mStorage->setScale(qMax(config()->body.width / mSize.width(), config()->body.height / mSize.height()));
 
-  qreal newFontSize = qMax(Fonts::BaseSize, mSize.width() / Fonts::BaseFactor);
-
-  setLabelSize(newFontSize, mSize);
   update();
 }
 
@@ -697,10 +698,8 @@ void NodeItem::updatePosition(const QPointF& newPosition)
 
   QPointF delta = newPosition - mLastPosition;
   for (auto* child : children())
-  {
-    auto childNode = static_cast<NodeItem*>(child);
-    childNode->updatePosition(childNode->pos() + delta);
-  }
+    if (child)
+      child->updatePosition(child->pos() + delta);
 
   mLastPosition = newPosition;
 

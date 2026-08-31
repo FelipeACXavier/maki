@@ -29,8 +29,9 @@
 #include "result.h"
 #include "save_info.h"
 #include "undo_commands/add_node.h"
+#include "undo_commands/add_transition.h"
 #include "undo_commands/align.h"
-#include "undo_commands/remove_node.h"
+#include "undo_commands/batch_remove.h"
 #include "widgets/controls/suggestion_menu.h"
 #include "widgets/controls/task_node_menu.h"
 
@@ -101,13 +102,24 @@ void Canvas::onSelectionChanged()
 void Canvas::dragEnterEvent(QGraphicsSceneDragDropEvent* event)
 {
   if (event->mimeData()->hasFormat(Constants::TYPE_NODE))
+  {
     event->acceptProposedAction();
+    return;
+  }
+
+  QGraphicsScene::dragEnterEvent(event);
 }
 
 void Canvas::dragMoveEvent(QGraphicsSceneDragDropEvent* event)
 {
   if (event->mimeData()->hasFormat(Constants::TYPE_NODE))
+  {
+    updateCapabilityDropPreview(event->scenePos());
     event->acceptProposedAction();
+    return;
+  }
+
+  QGraphicsScene::dragMoveEvent(event);
 }
 
 void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
@@ -115,7 +127,31 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
   if (!event->mimeData()->hasFormat(Constants::TYPE_NODE))
     return;
 
+  // Make sure that no other nodes are selected before dropping
+  clearSelectedNodes();
+
+  QByteArray data = event->mimeData()->data(Constants::TYPE_NODE);
+  QDataStream stream(&data, QIODevice::ReadOnly);
+
+  auto info = std::make_shared<NodeSaveInfo>();
+  stream >> *info;
+  info->setScale(parentView()->getScale());
+
   NodeItem* parentNode = nullptr;
+  if (TransitionItem* transition = transitionAt(event->scenePos()))
+  {
+    auto dropConfig = getNodeConfig(info->getnodeId());
+    if (dropConfig && dropConfig->libraryType == type())
+    {
+      if (insertDroppedNodeOnTransition(transition, info))
+      {
+        event->acceptProposedAction();
+        dynamic_cast<QGraphicsView*>(parent())->setCursor(Qt::ArrowCursor);
+        return;
+      }
+    }
+  }
+
   QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
   if (item && item->type() == NodeItem::Type)
   {
@@ -129,20 +165,11 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
     }
   }
 
-  // Make sure that no other nodes are selected before dropping
-  clearSelectedNodes();
-
-  QByteArray data = event->mimeData()->data(Constants::TYPE_NODE);
-  QDataStream stream(&data, QIODevice::ReadOnly);
-
-  auto info = std::make_shared<NodeSaveInfo>();
-  stream >> *info;
-  info->setScale(parentView()->getScale());
-
   auto node = createNode(NodeCreation::Dropping, info, event->scenePos(), parentNode);
   if (node)
   {
     selectNode(node, true);
+    suggestCapability(node);
     event->acceptProposedAction();
   }
   else
@@ -152,6 +179,38 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
 
   // Make sure we show that we are no longer dragging
   dynamic_cast<QGraphicsView*>(parent())->setCursor(Qt::ArrowCursor);
+}
+
+bool Canvas::insertDroppedNodeOnTransition(TransitionItem* /* transition */, std::shared_ptr<NodeSaveInfo> /* info */)
+{
+  return false;
+}
+
+void Canvas::updateCapabilityDropPreview(const QPointF& scenePos)
+{
+  if (TransitionItem* transition = transitionAt(scenePos))
+    transition->setSelected(true);
+  else
+    clearSelection();
+}
+
+TransitionItem* Canvas::transitionAt(const QPointF& scenePos) const
+{
+  const QList<QGraphicsItem*> hits = items(scenePos, Qt::IntersectsItemShape, Qt::DescendingOrder);
+  for (QGraphicsItem* item : hits)
+  {
+    if (item->type() == NodeItem::Type)
+      return nullptr;
+
+    if (item->type() == TransitionItem::Type)
+      return static_cast<TransitionItem*>(item);
+
+    for (QGraphicsItem* parent = item->parentItem(); parent; parent = parent->parentItem())
+      if (parent->type() == TransitionItem::Type)
+        return static_cast<TransitionItem*>(parent);
+  }
+
+  return nullptr;
 }
 
 bool Canvas::isModifierSet(QGraphicsSceneMouseEvent* event, Qt::KeyboardModifier modifier)
@@ -224,11 +283,11 @@ TransitionConfig Canvas::nextTransition(NodeItem* /* node */) const
   return TransitionConfig{};
 }
 
-void Canvas::addTransition(TransitionItem* transition)
+void Canvas::addTransition(TransitionItem* /* transition */)
 {
 }
 
-void Canvas::removeTransition(TransitionItem* transition)
+void Canvas::removeTransition(TransitionItem* /* transition */)
 {
 }
 
@@ -337,8 +396,9 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
         if (node)
         {
           mTransition->setEnd(node->id(), node->mapToScene(node->boundingRect().center()), {0, 0});
-          mTransition->done(mNode, node);
-          addTransition(mTransition);
+          auto info = mTransition->saveInfo();
+          removeItem(mTransition);  // Remove the mTransition so the new one can be added
+          mUndoStack->push(new AddTransitionCommand(this, info));
         }
         else
         {
@@ -727,77 +787,117 @@ void Canvas::createTransitionContextMenu(QMenu& menu)
 
 void Canvas::deleteSelectedItems()
 {
-  QList<QGraphicsItem*> items = selectedItems();
-  QList<NodeItem*> nodesToDelete;
-  QList<QGraphicsItem*> connectionsToDelete;
+  const QList<QGraphicsItem*> selected = selectedItems();
 
-  for (QGraphicsItem* item : items)
+  QVector<NodeSaveInfo> nodesToDelete;
+  QVector<TransitionSaveInfo> transitionsToDelete;
+
+  QSet<QString> deletedNodeIds;
+  QSet<QString> deletedTransitionIds;
+
+  std::function<std::shared_ptr<NodeSaveInfo>(const NodeSaveInfo& info)> copyAll;
+  copyAll = [&](const NodeSaveInfo& info) {
+    NodeSaveInfo toReturn = info;
+    toReturn.clearChildren();
+
+    LOG_DEBUG("Copying node {} at ({} x {})", toReturn.getnodeId(), toReturn.getposition().x(), toReturn.getposition().y());
+    for (const auto& child : info.getchildren())
+    {
+      auto childInfo = std::dynamic_pointer_cast<NodeSaveInfo>(child);
+      if (childInfo)
+        toReturn.addChild(copyAll(*childInfo));
+    }
+
+    return std::make_shared<NodeSaveInfo>(toReturn);
+  };
+
+  // --------------------------------------------------------------------------
+  // First collect the root nodes that should be deleted.
+  //
+  // If both a parent and its child are selected, only store the parent because
+  // removing/restoring the parent already recursively handles its children.
+  for (QGraphicsItem* item : selected)
   {
-    if (!item)
+    if (!item || item->type() != NodeItem::Type)
       continue;
 
-    if (item->type() == NodeItem::Type)
-    {
-      NodeItem* node = static_cast<NodeItem*>(item);
-      NodeItem* parent = static_cast<NodeItem*>(node->parentNode());
+    auto* node = static_cast<NodeItem*>(item);
+    auto* parent = static_cast<NodeItem*>(node->parentNode());
 
-      // Only delete if no parent OR parent is not selected
-      if (!parent || !parent->isSelected())
-        nodesToDelete.append(node);
-    }
-    else if (item->type() == TransitionItem::Type)
-    {
-      TransitionItem* transition = static_cast<TransitionItem*>(item);
-      if (!(transition->source() && transition->source()->isSelected()) && !(transition->destination() && transition->destination()->isSelected()))
-      {
-        removeTransition(transition);
-        connectionsToDelete.append(item);
-      }
-    }
+    if (parent && parent->isSelected())
+      continue;
+
+    nodesToDelete.push_back(*copyAll(node->saveInfo()));
   }
 
-  // First delete the connections
-  for (QGraphicsItem* connection : connectionsToDelete)
+  // --------------------------------------------------------------------------
+  // Collect the IDs of every node that will disappear, including children.
+  //
+  // This is important because transitions can be connected to a child of a
+  // selected parent even though that child was not explicitly selected.
+  std::function<void(const NodeSaveInfo&)> collectNodeIds;
+  collectNodeIds = [&](const NodeSaveInfo& nodeInfo) {
+    deletedNodeIds.insert(nodeInfo.getid());
+
+    for (const auto& child : nodeInfo.getchildren())
+    {
+      auto childInfo = std::dynamic_pointer_cast<NodeSaveInfo>(child);
+      if (childInfo)
+        collectNodeIds(*childInfo);
+    }
+  };
+
+  for (const auto& nodeInfo : nodesToDelete)
+    collectNodeIds(nodeInfo);
+
+  // --------------------------------------------------------------------------
+  // Collect every transition connected to any node that will disappear.
+  //
+  // Use the transition ID set to avoid duplicates, e.g. A -> B where both
+  // A and B are being deleted.
+  for (const QString& nodeId : deletedNodeIds)
   {
-    removeItem(connection);
-    delete connection;
+    LOG_DEBUG("Will delete: {}", nodeId);
+    for (const auto& transitionInfo : transitionsOfNode(nodeId))
+    {
+      if (deletedTransitionIds.contains(transitionInfo.getid()))
+        continue;
+
+      deletedTransitionIds.insert(transitionInfo.getid());
+      transitionsToDelete.push_back(transitionInfo);
+    }
   }
 
-  // Then delete the nodes
-  mUndoStack->beginMacro("Remove nodes");
+  // --------------------------------------------------------------------------
+  // Also collect explicitly selected transitions that are unrelated to any
+  // deleted node.
+  for (QGraphicsItem* item : selected)
+  {
+    if (!item || item->type() != TransitionItem::Type)
+      continue;
 
-  for (NodeItem* node : nodesToDelete)
-    triggerNodeRemoval(node->saveInfo());
+    auto* transition = static_cast<TransitionItem*>(item);
+    const auto info = transition->saveInfo();
 
-  mUndoStack->endMacro();
-}
+    if (deletedTransitionIds.contains(info.getid()))
+      continue;
 
-void Canvas::triggerNodeRemoval(const NodeSaveInfo& nodeInfo)
-{
-  // We have to remember that QT QUndoCommands trigger the 'redo' method after creation. Thus, the node
-  // removal is not explicit (as I would like) but happens through the RemoveNodeCommand below
-  LOG_INFO("Removing node: {}", nodeInfo.getnodeId());
-  mUndoStack->push(new RemoveNodeCommand(this, nodeInfo));
-}
+    deletedTransitionIds.insert(info.getid());
+    transitionsToDelete.push_back(info);
+  }
 
-void Canvas::removeNode(const NodeSaveInfo info)
-{
-  auto node = findNodeWithId(info.getid());
-  if (!node)
+  // Nothing to do.
+  if (nodesToDelete.isEmpty() && transitionsToDelete.isEmpty())
     return;
 
-  QTimer::singleShot(0, this, [this, node]() {
-    auto toRemove = removeNode(node);
+  // --------------------------------------------------------------------------
+  // One user operation = one undo command.
+  mUndoStack->push(new BatchRemoveCommand(this, nodesToDelete, transitionsToDelete));
+}
 
-    // Delete children before parents (important if parent owns child QGraphicsItems)
-    for (int i = toRemove.size() - 1; i >= 0; --i)
-    {
-      if (auto node = dynamic_cast<NodeItem*>(toRemove[i]))
-        LOG_DEBUG("Deleting: {}, has parent: {}", node->id(), node->parentNode() != nullptr);
-
-      delete toRemove[i];
-    }
-  });
+QVector<TransitionSaveInfo> Canvas::transitionsOfNode(const QString& nodeId)
+{
+  return {};
 }
 
 QVector<QGraphicsItem*> Canvas::cleanTransitionsOfNode(const QString& nodeId)
@@ -823,7 +923,7 @@ QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
   node->nodeMoved = nullptr;
   node->nodeHovered = nullptr;
 
-  LOG_TRACE("Removing node: {}", node->id());
+  LOG_DEBUG("Removing node: {}", node->id());
 
   QVector<QGraphicsItem*> itemsToRemove = {node};
   updateParent(node, nullptr, false);
@@ -1035,23 +1135,14 @@ VoidResult Canvas::loadFromSave(const QVector<std::shared_ptr<INode>>& nodes, No
   {
     // TODO(felaze): This is necessary because the save info is using shared ptr when it shouldn't...
     // I need to make a proper distinction between save and run-time store structures.
-    std::shared_ptr<NodeSaveInfo> nodeInfo = std::dynamic_pointer_cast<NodeSaveInfo>(inodeInfo);
+    auto nodeInfo = std::dynamic_pointer_cast<NodeSaveInfo>(inodeInfo);
+    if (!nodeInfo)
+      continue;
 
     auto node = std::make_shared<NodeSaveInfo>(*nodeInfo);
 
-    LOG_DEBUG("Creating node {} with parent {}", node->getid(), node->getparentId());
+    LOG_DEBUG("Creating node {} with parent {} and {} children", node->getid(), node->getparentId(), node->getchildren().size());
     auto createdNode = createNode(NodeCreation::Loading, node, node->getposition(), parent);
-
-    auto ret = loadFromSave(nodeInfo->getchildren(), createdNode);
-    if (!ret.IsSuccess())
-    {
-      LOG_ERROR(ret.ErrorMessage());
-      return VoidResult::Failed(ret.ErrorMessage());
-    }
-
-    for (const auto& flow : node->getflows())
-      (void)createdNode->createFlow(flow->getname(), std::dynamic_pointer_cast<FlowSaveInfo>(flow));
-
     selectNode(createdNode, false);
   }
 
@@ -1098,37 +1189,87 @@ void Canvas::setNodeSize(const QString& nodeId, const QSizeF& size)
   node->applySize(size);
 }
 
+// ====================================================================================
+// Undo commands
 void Canvas::createTransition(const TransitionSaveInfo& info)
 {
+  auto exists = findTransitionWithId(info.getid());
+  if (exists)
+    return;
+
+  auto source = findNodeWithId(info.getsrcId());
+  if (!source)
+  {
+    LOG_DEBUG("Source {} does not exist", info.getsrcId());
+    return;
+  }
+
+  auto destination = findNodeWithId(info.getdstId());
+  if (!destination)
+  {
+    LOG_DEBUG("Destination {} does not exist", info.getdstId());
+    return;
+  }
+
+  auto infoPtr = std::make_shared<TransitionSaveInfo>(info);
+
+  auto transition = new TransitionItem(infoPtr);
+  transition->setStart(infoPtr->getsrcId(), infoPtr->srcPoint(), infoPtr->srcShift());
+  transition->setEnd(infoPtr->getdstId(), infoPtr->dstPoint(), infoPtr->dstShift());
+
+  addTransition(transition);
+  addItem(transition);
+
+  transition->done(source, destination);
 }
 
 void Canvas::removeTransition(const TransitionSaveInfo& info)
 {
+  auto transition = findTransitionWithId(info.getid());
+  if (!transition)
+    return;
+
+  removeTransition(transition);
+  delete transition;
 }
 
 // TODO: Properly integrate the creation with the undo command
-void Canvas::createNode(const NodeSaveInfo info)
+void Canvas::createNode(const NodeSaveInfo& info)
 {
   auto exists = findNodeWithId(info.getid());
   if (exists)
     return;
 
   auto parent = findNodeWithId(info.getparentId());
-
   auto infoPtr = std::make_shared<NodeSaveInfo>(info);
   (void)createNode(NodeCreation::Populating, infoPtr, info.getposition(), parent);
-
-  // We also need to create the children of the node
-  for (const auto& child : info.getchildren())
-    (void)createNode(*std::dynamic_pointer_cast<NodeSaveInfo>(child));
 }
 
+void Canvas::removeNode(const NodeSaveInfo& info)
+{
+  auto node = findNodeWithId(info.getid());
+  if (!node)
+    return;
+
+  auto toRemove = removeNode(node);
+
+  // Delete children before parents (important if parent owns child QGraphicsItems)
+  for (int i = toRemove.size() - 1; i >= 0; --i)
+  {
+    if (auto node = qgraphicsitem_cast<NodeItem*>(toRemove[i]))
+      LOG_DEBUG("Deleting: {}, has parent: {}", node->id(), node->parentNode() != nullptr);
+
+    delete toRemove[i];
+  }
+}
+
+// ====================================================================================
 NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo> info, const QPointF& position, NodeItem* parent)
 {
-  auto config = mConfigTable->get(info->getnodeId());
+  auto config = getNodeConfig(info->getnodeId());
   if (config == nullptr)
   {
-    LOG_WARNING("Added node with no configuration");
+    LOG_WARNING("Added node with no configuration: {}", info->getnodeId());
     return nullptr;
   }
 
@@ -1141,6 +1282,7 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
 
   // If no parent is defined, we must create a "base node" in the canvas
   auto nodeId = creation == NodeCreation::Pasting ? "" : info->getid();
+  auto originalInfo = *info;
   NodeItem* node = new NodeItem(nodeId, info, position, config);
 
   if (parent != nullptr)
@@ -1155,8 +1297,6 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
   node->nodeMoved = [this](NodeItem* node) { onNodeMoved(node); };
   node->nodeHovered = [this](NodeItem* node, bool entered) { onNodeHovered(node, entered); };
 
-  node->start();
-
   // All nodes are children of the canvas
   addItem(node);
 
@@ -1168,7 +1308,36 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
   if (creation != NodeCreation::Populating)
     mUndoStack->push(new AddNodeCommand(this, node->saveInfo()));
 
+  // We also need to create the children of the node
+  for (const auto& childInfo : originalInfo.getchildren())
+  {
+    auto ci = std::dynamic_pointer_cast<NodeSaveInfo>(childInfo);
+    if (!ci)
+      continue;
+
+    createNode(*ci);
+  }
+
+  // And its flows
+  for (const auto& flow : originalInfo.getflows())
+    (void)node->createFlow(flow->getname(), std::dynamic_pointer_cast<FlowSaveInfo>(flow));
+
+  // Call start after the setup is done
+  node->start();
+
+  // Always select node on creation
+  clearSelectedNodes();
+  selectNode(node, true);
+
   return node;
+}
+
+std::shared_ptr<NodeConfig> Canvas::getNodeConfig(const QString& key) const
+{
+  if (!mConfigTable)
+    return nullptr;
+
+  return mConfigTable->get(key);
 }
 
 void Canvas::addedItemNode(NodeItem* node, std::shared_ptr<NodeSaveInfo> /* info */)
@@ -1226,6 +1395,21 @@ NodeItem* Canvas::findNodeWithId(const QString& id) const
     auto node = static_cast<NodeItem*>(item);
     if (node->id() == id)
       return node;
+  }
+
+  return nullptr;
+}
+
+TransitionItem* Canvas::findTransitionWithId(const QString& id) const
+{
+  for (const auto& item : items())
+  {
+    if (item->type() != TransitionItem::Type)
+      continue;
+
+    auto transition = static_cast<TransitionItem*>(item);
+    if (transition->id() == id)
+      return transition;
   }
 
   return nullptr;
@@ -1319,32 +1503,7 @@ void Canvas::populate(const FlowSaveInfo& flow)
   for (std::shared_ptr<ITransition> itransition : flow.gettransitions())
   {
     auto transition = std::dynamic_pointer_cast<TransitionSaveInfo>(itransition);
-    auto srcConn = findNodeWithId(transition->getsrcId());
-    if (!srcConn)
-    {
-      LOG_WARNING("Could not find source node");
-      continue;
-    }
-
-    auto dstConn = findNodeWithId(transition->getdstId());
-    if (!dstConn)
-    {
-      LOG_WARNING("Could not find destination node");
-      continue;
-    }
-
-    LOG_DEBUG("Creating transitions {} -> {}", transition->getsrcId(), transition->getdstId());
-
-    auto connection = new TransitionItem(transition);
-
-    connection->setStart(transition->getsrcId(), transition->srcPoint(), transition->srcShift());
-    connection->setEnd(transition->getdstId(), transition->dstPoint(), transition->dstShift());
-
-    addTransition(connection);
-    addItem(connection);
-
-    // First add the transition to the canvas and then mark it as done
-    connection->done(srcConn, dstConn);
+    createTransition(*transition);
   }
 }
 
@@ -1408,6 +1567,10 @@ void Canvas::autoRoute()
       transition->updatePath(paths.value(transition));
 }
 
+void Canvas::suggestCapability(NodeItem* node)
+{
+}
+
 void Canvas::suggestedNodes(NodeItem* node, QStringList consumers, QStringList producers)
 {
   mSuggestionSourceNode = node;
@@ -1433,7 +1596,7 @@ void Canvas::createSuggestedNode(const QString& nodeType, NodeItem* sourceNode)
   if (!sourceNode)
     return;
 
-  const auto config = mConfigTable->get(nodeType);
+  const auto config = getNodeConfig(nodeType);
   if (!config)
   {
     LOG_WARNING("Cannot create suggested node '{}': configuration not found", nodeType);

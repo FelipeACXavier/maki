@@ -16,8 +16,8 @@ void AddTransitionCommand::undo()
   if (!mCanvas)
     return;
 
-  // mCanvas->onRemoveNode(mDesc.id);
-  LOG_DEBUG("Undo AddTransitionCommand: {}", mDesc.getlabel());
+  mCanvas->removeTransition(mDesc);
+  LOG_TRACE("Undo AddTransitionCommand: {}", mDesc.getlabel());
 }
 
 void AddTransitionCommand::redo()
@@ -25,6 +25,6 @@ void AddTransitionCommand::redo()
   if (!mCanvas)
     return;
 
-  // mCanvas->createNode(mDesc);
-  LOG_DEBUG("Redo AddTransitionCommand: {}", mDesc.getlabel());
+  mCanvas->createTransition(mDesc);
+  LOG_TRACE("Redo AddTransitionCommand: {}", mDesc.getlabel());
 }

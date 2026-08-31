@@ -156,21 +156,14 @@ public:
    *
    * @param info The save information for the node.
    */
-  void createNode(const NodeSaveInfo info);
+  void createNode(const NodeSaveInfo& info);
 
   /**
    * @brief Removes a node based on save information.
    *
    * @param info The save information for the node.
    */
-  void removeNode(const NodeSaveInfo info);
-
-  /**
-   * @brief Triggers the removal of a node.
-   *
-   * @param node Pointer to the node to be removed.
-   */
-  void triggerNodeRemoval(const NodeSaveInfo& nodeInfo);
+  void removeNode(const NodeSaveInfo& info);
 
   /**
    * @brief Moves a node to a new position.
@@ -223,7 +216,8 @@ public:
 
   std::shared_ptr<EdgeRouter> router() const;
 
-  void suggestedNodes(NodeItem* node, QStringList consumers, QStringList producers);
+  virtual void suggestCapability(NodeItem* node);
+  virtual void suggestedNodes(NodeItem* node, QStringList consumers, QStringList producers);
 
 protected:
   /**
@@ -386,9 +380,19 @@ public slots:
   void onFlowRemoved(const QString& flowId, const QString& nodeId);
 
 protected:
+  enum class NodeCreation
+  {
+    Dropping,
+    Pasting,
+    Loading,
+    Populating
+  };
+
   std::shared_ptr<ConfigurationTable> mConfigTable;  /// Pointer to the configuration table.
   std::shared_ptr<EdgeRouter> mRouter;               /// Pointer to the system edge router.
+  QUndoStack* mUndoStack = nullptr;                  /// Pointer to the undo stack.
 
+  std::shared_ptr<NodeConfig> getNodeConfig(const QString& key) const;
   virtual void addedItemNode(NodeItem* node, std::shared_ptr<NodeSaveInfo> info);
   virtual void addedItemFlow(Flow* flow, NodeItem* node);
   virtual void onNodeHovered(NodeItem* node, bool entered);
@@ -396,9 +400,23 @@ protected:
   virtual void removeTransition(TransitionItem* transition);
   virtual bool canAddTransition(NodeItem* node) const;
   virtual TransitionConfig nextTransition(NodeItem* node) const;
+  virtual QVector<TransitionSaveInfo> transitionsOfNode(const QString& nodeId);
   virtual QVector<QGraphicsItem*> cleanTransitionsOfNode(const QString& nodeId);
   virtual void onNodeMoved(const NodeItem* node);
   virtual void showSimulationControls(NodeItem* node, maki::ControlWidget* controls, const QColor& highlightColor);
+
+  virtual bool insertDroppedNodeOnTransition(TransitionItem* transition, std::shared_ptr<NodeSaveInfo> info);
+
+  /**
+   * @brief Creates a new node based on save information and other parameters.
+   *
+   * @param creation The type of node creation (e.g., dropping, pasting).
+   * @param info Shared pointer to the save information for the node.
+   * @param position The initial position of the node.
+   * @param parent Pointer to the parent node.
+   * @return Pointer to the created NodeItem.
+   */
+  NodeItem* createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo> info, const QPointF& position, NodeItem* parent);
 
   /**
    * @brief Returns the parent view of this canvas.
@@ -408,14 +426,6 @@ protected:
   CanvasView* parentView() const;
 
 private:
-  enum class NodeCreation
-  {
-    Dropping,
-    Pasting,
-    Loading,
-    Populating
-  };
-
   NodeItem* mHoveredNode = nullptr;       /// Pointer to the hovered node.
   TransitionItem* mTransition = nullptr;  /// Pointer to the current transition being created.
   NodeItem* mNode = nullptr;              /// Pointer to the currently clicked node.
@@ -425,9 +435,6 @@ private:
 
   QPointF mSelectionStart;
   QGraphicsRectItem* mSelectionRect = nullptr;
-
-  QTimer* mHoverTimer = nullptr;     /// Timer for handling hover events.
-  QUndoStack* mUndoStack = nullptr;  /// Pointer to the undo stack.
 
   const QString mId;  /// Unique identifier for this canvas.
 
@@ -453,23 +460,13 @@ private:
   void selectNode(NodeItem* node, bool select);
 
   /**
-   * @brief Creates a new node based on save information and other parameters.
-   *
-   * @param creation The type of node creation (e.g., dropping, pasting).
-   * @param info Shared pointer to the save information for the node.
-   * @param position The initial position of the node.
-   * @param parent Pointer to the parent node.
-   * @return Pointer to the created NodeItem.
-   */
-  NodeItem* createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo> info, const QPointF& position, NodeItem* parent);
-
-  /**
    * @brief Finds a node by its ID.
    *
    * @param id The ID of the node to find.
    * @return Pointer to the found NodeItem, or nullptr if not found.
    */
   NodeItem* findNodeWithId(const QString& id) const;
+  TransitionItem* findTransitionWithId(const QString& id) const;
 
   /**
    * @brief Returns a list of currently selected nodes.
@@ -515,6 +512,9 @@ private:
   VoidResult loadFromSave(const QVector<std::shared_ptr<INode>>& nodes, NodeItem* parent);  /// Loads nodes and their children from save information.
 
   void onSelectionChanged();
+
+  TransitionItem* transitionAt(const QPointF& scenePos) const;
+  void updateCapabilityDropPreview(const QPointF& scenePos);
 };
 
 inline QDataStream& operator<<(QDataStream& out, const Canvas::CopiedNode& node)

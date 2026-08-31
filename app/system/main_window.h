@@ -11,13 +11,10 @@
 
 #include "compiler/pipeline_graph.h"
 #include "config_table.h"
-#include "flow_info.h"
 #include "focus_properties.h"
 #include "json.h"
-#include "logging.h"
 #include "main_window_layout.h"
 #include "result.h"
-#include "test_and_set.h"
 #include "widgets/notification_manager.h"
 #include "widgets/settings_manager.h"
 
@@ -157,7 +154,6 @@ private:
   std::shared_ptr<EdgeRouter> mRouter;
 
   QApplication* mApp;  /// Pointer to the QApplication instance.
-  TestAndSet<bool> mLoading;
 
   /**
    * @brief Returns the active canvas.
@@ -302,8 +298,6 @@ private:
   void onActionEditPipeline(const QString& pipelineId);    /// Handles generate action.
   void onActionLogLevelChanged();                          /// Handles log level change action.
   void onFileLoaded(const QString& file, const SaveInfo& info, const QString& error);
-
-  void suggestCapability(NodeItem* node);
 };  // namespace qlementclassMainWindow:public MainWindowLayout
 
 #endif  // MAINWINDOW_H

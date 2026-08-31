@@ -54,6 +54,8 @@ public:
    */
   QVector<QGraphicsItem*> cleanTransitionsOfNode(const QString& nodeId) override;
 
+  QVector<TransitionSaveInfo> transitionsOfNode(const QString& nodeId) override;
+
   /**
    * @brief Add the TransitionItem to the Flow managed by this Canvas
    */
@@ -80,6 +82,8 @@ protected:
    */
   void cleanFlow();
 
+  bool insertDroppedNodeOnTransition(TransitionItem* transition, std::shared_ptr<NodeSaveInfo> info) override;
+
 private:
   /**
    * @brief A pointer to the Flow object associated with this canvas.
@@ -98,4 +102,6 @@ private:
   void updateParent(NodeItem* node, std::shared_ptr<NodeSaveInfo> storage, bool adding) override;
 
   void addInitialNode(const QString& nodeType, const QPointF& position);
+
+  TransitionSaveInfo makeTransitionInfo(const QString& sourceId, const QString& destinationId, const QString& event, const QString& label) const;
 };

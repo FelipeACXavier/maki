@@ -114,6 +114,12 @@ void Flow::addTransition(TransitionItem* transition)
 
 void Flow::removeTransition(TransitionItem* transition)
 {
+  if (!transition)
+  {
+    LOG_DEBUG("Tried removing unknown transition");
+    return;
+  }
+
   mStorage->removeTransition(transition->storage());
   mTransitions.removeIf([transition](TransitionItem* item) { return item->id() == transition->id(); });
 }
