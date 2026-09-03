@@ -261,12 +261,12 @@ VoidResult createParallelComponent(Model& model, const std::string& outdir, uint
     // Idle state
     out << "    [state.Idle] {\n";
     out << "      on api.trigger(): {\n";
-    out << "        complete = 0;\n";
+    out << "        completed = 0;\n";
     out << "        Result ret = action0.trigger();\n";
     out << "        if (ret.Success) {\n";
     createParallelDoneRecursion(true, false, 1, instances, out, "          ");
     out << "        } else if (ret.Done) {\n";
-    out << "          completed = complete + 1;\n";
+    out << "          completed = completed + 1;\n";
     createParallelDoneRecursion(true, true, 1, instances, out, "          ");
     out << "        } else {\n";
     out << "          state = State.Error;\n";
@@ -327,7 +327,7 @@ VoidResult createParallelComponent(Model& model, const std::string& outdir, uint
     out << "          reply(Result.Running);\n";
     out << "        }\n";
     out << "      }\n";
-    out << "    }\n";
+    out << "    }\n";  // Running state
 
     // ------------------------------------------------------------------
     // Error state
@@ -361,8 +361,9 @@ VoidResult createParallelComponent(Model& model, const std::string& outdir, uint
       out << std::format("      on action{}.success(): {{}}\n", i);
       out << std::format("      on action{}.failure(): {{}}\n", i);
     }
-    out << "  }\n";
-    out << "}\n";
+    out << "    }\n";  // Error state
+    out << "  }\n";    // Behaviour
+    out << "}\n";      // Component
   });
 }
 

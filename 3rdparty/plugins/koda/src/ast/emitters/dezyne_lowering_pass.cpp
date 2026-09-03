@@ -523,20 +523,20 @@ Result<std::string> LoweringPass::lowerStrategy(const ir::Flow& flow, const ir::
   {
     const auto instance = std::format("p{}", state.join++);
     const auto count = p->items.size();
-    state.imports.insert("parallel.dzn");
-    state.definitions.push_back("cparallel " + instance);
-    mModel.declareInstance(state.component, instance, "cparallel", {std::nullopt, strategy->span});
+    state.imports.insert(std::format("parallel{}.dzn", count));
+    state.definitions.push_back(std::format("cparallel{} {}", count, instance));
+    mModel.declareInstance(state.component, instance, std::format("cparallel{}", count), {std::nullopt, strategy->span});
+
+    RETURN_ON_FAILURE_AS(createParallelComponent(mModel, mOptions.outputDir, count, flow.symbol), std::string);
+
     for (std::size_t i = 0; i < count; ++i)
     {
       auto child = lowerStrategy(flow, p->items[i], state);
       if (!child.IsSuccess())
         return child;
 
-      state.connections.push_back({.lhs = std::format("{}.action{}", instance, i + 1),  // TODO: Remoce the +1
-                                   .rhs = child.Value()});
+      state.connections.push_back({.lhs = std::format("{}.action{}", instance, i), .rhs = child.Value()});
     }
-
-    RETURN_ON_FAILURE_AS(createParallelComponent(mModel, mOptions.outputDir, count, flow.symbol), std::string);
 
     return instance + ".api";
   }

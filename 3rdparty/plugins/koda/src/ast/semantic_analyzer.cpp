@@ -377,7 +377,7 @@ VoidResult SemanticAnalyzer::resolveCapabilityData(const PEventCall& astCall, co
         {
           auto candidates = mBlackboard.availableCompatible(input, mTypeRegistry);
           if (candidates.empty())
-            return VoidResult::Failed("No available value for input '{}'", input.toString());
+            return VoidResult::Failed("No available value for input '{}' in '{}' at {}", input.toString(), event->name, event->span.toString());
           if (candidates.size() > 1)
             LOG_WARNING("Ambiguous value for input '{}'", input.toString());
 
@@ -509,7 +509,7 @@ Result<ResolvedCall> SemanticAnalyzer::resolveCall(const PEventCall& call, Symbo
 
     auto componentResult = resolveComponentType(*receiverSymbol, call->span);
     if (!componentResult.IsSuccess())
-      return Result<ResolvedCall>::Failed(componentResult.ErrorMessage());
+      return Result<ResolvedCall>::Failed("in flow call: {}", componentResult.ErrorMessage());
 
     const auto component = componentResult.Value();
 
@@ -540,7 +540,7 @@ Result<ResolvedCall> SemanticAnalyzer::resolveCall(const PEventCall& call, Symbo
 
   auto componentResult = resolveComponentType(*receiverSymbol, call->span);
   if (!componentResult.IsSuccess())
-    return Result<ResolvedCall>::Failed(componentResult.ErrorMessage());
+    return Result<ResolvedCall>::Failed("in event call: {}", componentResult.ErrorMessage());
 
   const auto component = componentResult.Value();
   const auto event = mSymbols.lookupChild(component, call->name);
@@ -548,23 +548,6 @@ Result<ResolvedCall> SemanticAnalyzer::resolveCall(const PEventCall& call, Symbo
   if (!eventSymbol || eventSymbol->kind != SymbolKind::Event)
     return Result<ResolvedCall>::Failed(
         std::format("Component '{}' has no event '{}' at {}", mSymbols.get(component)->name, call->name, call->span.toString()));
-
-  const auto signature = mModel.eventArguments.find(*event);
-  if (signature != mModel.eventArguments.end() && signature->second.size() != call->args.size())
-    return Result<ResolvedCall>::Failed(std::format("Event '{}.{}' expects {} arguments, got {} at {}", call->receiver, call->name,
-                                                    signature->second.size(), call->args.size(), call->span.toString()));
-
-  for (std::size_t i = 0; i < call->args.size(); ++i)
-  {
-    auto actual = analyzeExpr(call->args[i], owner);
-    if (!actual.IsSuccess())
-      return Result<ResolvedCall>::Failed(actual.ErrorMessage());
-
-    if (signature != mModel.eventArguments.end() && !compatible(signature->second[i], actual.Value()))
-      return Result<ResolvedCall>::Failed(std::format("Argument {} of '{}.{}' has incompatible type at {}. Expected {} but got {}", i + 1,
-                                                      call->receiver, call->name, call->args[i]->span.toString(), signature->second[i].toString(),
-                                                      actual.Value().toString()));
-  }
 
   return ResolvedCall{ResolvedCallKind::Event, receiver, *event, eventSymbol->type};
 }
@@ -688,16 +671,15 @@ Result<types::TypeReference> SemanticAnalyzer::analyzeExpr(const PExpr& expr, Sy
     if (!definition || !definition->isRecord())
       return Result<types::TypeReference>::Failed(std::format("Type '{}' is not a record at {}", expected.toString(), expr->span.toString()));
 
-    const auto& recordDef = definition->record();
+    const auto& fields = mTypeRegistry.fieldsOf(definition->name);
     std::set<std::string> initialized;
     for (const auto& field : (*p)->fields)
     {
       if (!initialized.insert(field->name).second)
         return Result<types::TypeReference>::Failed(std::format("Field '{}' initialized more than once at {}", field->name, field->span.toString()));
 
-      auto fieldIt = std::find_if(recordDef.fields.begin(), recordDef.fields.end(),
-                                  [name = field->name](const types::FieldDefinition& f) { return name == f.name; });
-      if (fieldIt == recordDef.fields.end())
+      auto fieldIt = std::find_if(fields.begin(), fields.end(), [name = field->name](const types::FieldDefinition& f) { return name == f.name; });
+      if (fieldIt == fields.end())
         return Result<types::TypeReference>::Failed(std::format("Unknown field '{}' in type '{}'", field->name, expected.toString()));
 
       auto valueType = analyzeExpr(field->value, owner, fieldIt->type);
@@ -735,7 +717,9 @@ Result<SymbolId> SemanticAnalyzer::resolveValue(const std::string& name, SymbolI
 
 Result<SymbolId> SemanticAnalyzer::resolveComponentType(const Symbol& value, const Span& span) const
 {
-  if (value.kind == SymbolKind::Capability)
+  LOG_DEBUG("Resolving component {} with id {} and type {} {} at {}", value.name, value.id, toString(value.kind), value.type.toString(),
+            value.span.toString());
+  if (value.kind == SymbolKind::Capability || value.kind == SymbolKind::Flow)
     return value.id;
 
   if (value.type.isNamed())

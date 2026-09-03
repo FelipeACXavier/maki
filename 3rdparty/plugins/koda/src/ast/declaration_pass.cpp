@@ -89,6 +89,11 @@ VoidResult DeclarationPass::declareStatement(const PStatement& statement, Symbol
       if (!symbolId.IsSuccess())
         return VoidResult::Failed(symbolId.ErrorMessage());
 
+      // Flows can be explicitly aborted
+      auto abortEventId = mSymbolRegistry.declare(SymbolKind::Event, "abort", types::TypeReference::named("abort"), Span{}, symbolId.Value());
+      if (!abortEventId.IsSuccess())
+        return abortEventId;
+
       // We also need to declare the flow arguments, of course
       for (const auto& arg : flow->args)  // This is an awful name, by the way...
       {
