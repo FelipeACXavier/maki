@@ -29,6 +29,7 @@ VoidResult LoweringPass::run(const ir::Program& program)
   mCallOrdinals.clear();
   mActionEvents.clear();
   mFlows.clear();
+  mCapabilities.clear();
 
   // First determine which event symbols correspond to callable Dezyne action ports
   for (const auto& component : program.components)
@@ -39,6 +40,10 @@ VoidResult LoweringPass::run(const ir::Program& program)
     for (const auto& event : component.events)
       if (isActionEvent(event.kind))
         mActionEvents.insert(event.symbol);
+      else if (event.kind == ir::EventKind::Abort)
+        mAbortEvents.insert(event.symbol);
+
+    mCapabilities[component.symbol] = &component;
   }
 
   // Then count their usages across all flows.
@@ -54,8 +59,10 @@ VoidResult LoweringPass::run(const ir::Program& program)
     if (component.kind == ir::ComponentKind::Task)
       RETURN_ON_FAILURE(lowerTask(component));
 
+  RETURN_ON_FAILURE(createExternalInterface(mModel, mOptions.outputDir));
   RETURN_ON_FAILURE(createActionInterface(mModel, mOptions.outputDir));
   RETURN_ON_FAILURE(createSignalInterface(mModel, mOptions.outputDir));
+  RETURN_ON_FAILURE(createAbortInterface(mModel, mOptions.outputDir));
   RETURN_ON_FAILURE(createTypes(mModel, mOptions.outputDir));
 
   return VoidResult();
@@ -64,59 +71,53 @@ VoidResult LoweringPass::run(const ir::Program& program)
 VoidResult LoweringPass::lowerCapability(const ir::Component& capability)
 {
   auto* component = mModel.findComponent(componentName(capability.name));
+
   if (!component)
     return VoidResult::Failed("Missing declared Dezyne capability: " + capability.name);
 
   std::ostringstream out;
-  out << "import iaction.dzn;\n";
+
+  out << "import iexternal.dzn;\n";
   out << "import isignal.dzn;\n\n";
 
   out << std::format("component {} {{\n", componentName(capability.name));
 
   for (const auto& event : capability.events)
   {
-    LOG_DEBUG("Declaring event {} of type {} - {} {}", event.name, (int)event.kind, capability.symbol, event.symbol);
+    LOG_DEBUG("Declaring event {} of type {} - {} {}", event.name, static_cast<int>(event.kind), capability.symbol, event.symbol);
+
     if (isActionEvent(event.kind))
     {
       const auto count = std::max<std::uint32_t>(1, mCallCounts[event.symbol]);
       for (std::uint32_t i = 0; i < count; ++i)
       {
         const auto name = count == 1 ? event.name : std::format("{}_{}", event.name, i + 1);
-        LOG_DEBUG("Declaring new event {} of type {} - {}", name, (int)event.kind, capability.symbol);
-        mModel.declarePort(component->symbol, name, PortDirection::Provides, PortProtocol::Action, {event.symbol, event.span});
-        out << std::format("  provides iaction {};\n", name);
+        mModel.declarePort(component->symbol, name, PortDirection::Provides, PortProtocol::External, {event.symbol, event.span});
+        out << std::format("  provides iexternal {};\n", name);
       }
 
-      // Remove old port
-      auto port = mModel.findPort(component->symbol, event.name);
-      if (port)
+      if (auto port = mModel.findPort(component->symbol, event.name))
         mModel.removePort(component->symbol, port->symbol);
     }
     else if (event.kind == ir::EventKind::Out)
     {
       out << std::format("  provides isignal {};\n", event.name);
     }
-    else if (event.kind == ir::EventKind::Abort)
+    else if (event.kind == ir::EventKind::Abort || event.kind == ir::EventKind::Return || event.kind == ir::EventKind::Error)
     {
-      out << std::format("  provides iaction {};\n", event.name);
-    }
-    else if (event.kind == ir::EventKind::Return)
-    {
-      // Remove old port
-      auto port = mModel.findPort(component->symbol, event.name);
-      if (port)
-        mModel.removePort(component->symbol, port->symbol);
-    }
-    else if (event.kind == ir::EventKind::Error)
-    {
-      // Remove old port
-      auto port = mModel.findPort(component->symbol, event.name);
-      if (port)
+      // Abort is exposed once by the armour.
+      //
+      // Return and Error are represented by the corresponding
+      // iexternal interaction protocol rather than separate ports.
+      if (auto port = mModel.findPort(component->symbol, event.name))
         mModel.removePort(component->symbol, port->symbol);
     }
   }
+
   out << "}\n";
+
   mModel.setGeneratedFile(component->fileName, out.str(), {capability.symbol, capability.span});
+
   return {};
 }
 
@@ -140,13 +141,13 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
   const auto componentId = component->symbol;
 
   std::ostringstream out;
-  std::set<koda::SymbolId> importedCapabilities;
+  std::map<koda::SymbolId, std::string> importedCapabilities;
   for (const auto& arg : task.arguments)
     if (arg.type.isNamed())
     {
       const auto named = arg.type.namedType();
       if (named.id && named.id.value() != std::to_string(InvalidSymbol))
-        importedCapabilities.insert(std::stoul(named.id.value()));
+        importedCapabilities[std::stoul(named.id.value())] = arg.name;
     }
 
   bool hasAlarm = false;
@@ -164,6 +165,48 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
         .rhs = "f_" + lower(entry.name) + ".api",
         .span = entry.span,
     });
+  }
+
+  for (const auto& arg : task.arguments)
+  {
+    if (!arg.type.isNamed())
+      continue;
+
+    const auto named = arg.type.namedType();
+
+    if (!named.id || named.id.value() == std::to_string(InvalidSymbol))
+      continue;
+
+    const auto capabilityId = std::stoul(named.id.value());
+    const auto found = mCapabilities.find(capabilityId);
+    if (found == mCapabilities.end())
+      continue;
+
+    const auto& capability = *found->second;
+    const auto externalInstance = lower(arg.name);
+    const auto armourInstance = externalInstance + "_armour";
+    std::vector<std::string> ports;
+    for (const auto& event : capability.events)
+    {
+      if (!isActionEvent(event.kind))
+        continue;
+
+      const auto count = std::max<std::uint32_t>(1, mCallCounts[event.symbol]);
+      for (std::uint32_t i = 0; i < count; ++i)
+      {
+        const auto port = count == 1 ? event.name : std::format("{}_{}", event.name, i + 1);
+
+        connections.push_back({
+            .lhs = std::format("{}.r_{}", armourInstance, port),
+            .rhs = std::format("{}.{}", externalInstance, port),
+            .span = arg.span,
+        });
+
+        ports.push_back(port);
+      }
+    }
+
+    RETURN_ON_FAILURE(createCapabilityArmour(mModel, mOptions.outputDir, externalInstance, ports, componentId));
   }
 
   // We must update the alarm name since we have multiple alarms at the top level
@@ -215,10 +258,17 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
           targetPort = std::format("{}_{}", targetPort, call.targetOrdinal);
       }
 
+      const auto receiverName = sourceName(call.receiver);
+      const auto armourName = lower(receiverName) + "_armour";
+      std::string resourcePort = targetPort;
+      if (call.kind == CallUse::Kind::Abort)
+        resourcePort = "abort";
+
       connections.push_back({
           .lhs = flowInstance + "." + call.localPort,
-          .rhs = sourceName(call.receiver) + "." + targetPort,
+          .rhs = armourName + "." + resourcePort,
           .span = call.span,
+          .kind = CallUse::toPortProtocol(call.kind),
       });
 
       CallSiteKind kind = call.toCallSiteKind();
@@ -288,8 +338,11 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
   // Emit any instances introduced during topology lowering (alarms/arbiters).
   out << "import iaction.dzn;\n";
   out << "import isignal.dzn;\n";
-  for (auto symbol : importedCapabilities)
+  for (const auto& [symbol, name] : importedCapabilities)
+  {
     out << std::format("import a_{}.dzn;\n", lower(sourceName(symbol)));
+    out << std::format("import {}_armour.dzn;\n", lower(name));  // TODO: This should contain the actual name
+  }
 
   for (const auto& flow : task.flows)
     out << std::format("import {}.dzn;\n", lower(flow.name));
@@ -304,15 +357,33 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
 
   std::vector<std::string> seenImports;
   for (const auto& instance : component->instances)
-    if (const auto* s = mModel.mSymbols.get(instance.symbol); s && instance.typeName.starts_with("caction_arbiter"))
-    {
-      std::string name = std::format("action_arbiter{}", instance.typeName.substr(std::string("caction_arbiter").size()));
-      if (std::count(seenImports.begin(), seenImports.end(), name) > 0)
-        continue;
+  {
+    const auto* symbol = mModel.mSymbols.get(instance.symbol);
+    if (!symbol)
+      continue;
 
-      out << std::format("import {}.dzn;\n", name);
-      seenImports.push_back(name);
+    LOG_DEBUG("Adding import: {} {}", symbol->name, instance.typeName);
+    if (instance.typeName.starts_with("caction_arbiter"))
+    {
+      const auto suffix = instance.typeName.substr(std::string("caction_arbiter").size());
+      const auto name = std::format("action_arbiter{}", suffix);
+      if (std::count(seenImports.begin(), seenImports.end(), name) == 0)
+      {
+        out << std::format("import {}.dzn;\n", name);
+        seenImports.push_back(name);
+      }
     }
+    else if (instance.typeName.starts_with("cabort_arbiter"))
+    {
+      const auto suffix = instance.typeName.substr(std::string("cabort_arbiter").size());
+      const auto name = std::format("abort_arbiter{}", suffix);
+      if (std::count(seenImports.begin(), seenImports.end(), name) == 0)
+      {
+        out << std::format("import {}.dzn;\n", name);
+        seenImports.push_back(name);
+      }
+    }
+  }
 
   out << std::format("\ncomponent {} {{\n", componentName(task.name));
   out << "  provides iaction api;\n\n";
@@ -394,7 +465,7 @@ Result<LoweringPass::FlowResult> LoweringPass::lowerFlow(const ir::Flow& flow)
 
   for (const auto& call : requiredCalls)
   {
-    const auto protocol = call.kind == CallUse::Kind::Signal ? PortProtocol::Signal : PortProtocol::Action;
+    const auto protocol = CallUse::toPortProtocol(call.kind);
     mModel.declarePort(componentId, call.localPort, PortDirection::Requires, protocol, {call.target, call.span});
   }
 
@@ -421,15 +492,30 @@ Result<LoweringPass::FlowResult> LoweringPass::lowerFlow(const ir::Flow& flow)
 
   for (const auto& instance : component->instances)
   {
-    if (const auto* symbol = mModel.mSymbols.get(instance.symbol); symbol && instance.typeName.starts_with("caction_arbiter"))
+    const auto* symbol = mModel.mSymbols.get(instance.symbol);
+    if (!symbol)
+      continue;
+
+    LOG_DEBUG("Adding import: {} {}", symbol->name, instance.typeName);
+    if (instance.typeName.starts_with("caction_arbiter"))
     {
-      const auto name = std::format("action_arbiter{}", instance.typeName.substr(std::string("caction_arbiter").size()));
-
-      if (std::count(seenImports.begin(), seenImports.end(), name) > 0)
-        continue;
-
-      out << std::format("import {}.dzn;\n", name);
-      seenImports.push_back(name);
+      const auto suffix = instance.typeName.substr(std::string("caction_arbiter").size());
+      const auto name = std::format("action_arbiter{}", suffix);
+      if (std::count(seenImports.begin(), seenImports.end(), name) == 0)
+      {
+        out << std::format("import {}.dzn;\n", name);
+        seenImports.push_back(name);
+      }
+    }
+    else if (instance.typeName.starts_with("cabort_arbiter"))
+    {
+      const auto suffix = instance.typeName.substr(std::string("cabort_arbiter").size());
+      const auto name = std::format("abort_arbiter{}", suffix);
+      if (std::count(seenImports.begin(), seenImports.end(), name) == 0)
+      {
+        out << std::format("import {}.dzn;\n", name);
+        seenImports.push_back(name);
+      }
     }
   }
 
@@ -442,7 +528,7 @@ Result<LoweringPass::FlowResult> LoweringPass::lowerFlow(const ir::Flow& flow)
       continue;
 
     const auto direction = port.direction == PortDirection::Provides ? "provides" : "requires";
-    const auto protocol = port.protocol == PortProtocol::Signal ? "isignal" : port.protocol == PortProtocol::Alarm ? "ialarm" : "iaction";
+    const auto protocol = portToString(port.protocol);
 
     out << std::format("  {} {} {};\n", direction, protocol, symbol->name);
   }
@@ -783,23 +869,58 @@ Result<std::string> LoweringPass::lowerCall(const ir::Call& call, FlowState& sta
   // Abort/action/signal resources that do not have multiplicity keep one
   // flow-local port. Repeated internal users will be connected through a
   // flow-local arbiter.
+  bool isAbort = mAbortEvents.contains(call.target);
   const auto local = std::format("{}_{}", sourceName(call.receiver), sourceName(call.target));
+  // const auto* targetSymbol = mSymbols.get(call.target);
+
+  if (isAbort && !signal)
+  {
+    const auto abortPort = local;
+    const auto abortCall = std::format("acall{}", state.abortCall++);
+
+    RETURN_ON_FAILURE_AS(createAbortCallComponent(mModel, mOptions.outputDir, state.component), std::string);
+
+    state.imports.insert("iabort.dzn");
+    state.imports.insert("abort_call.dzn");
+    mModel.declareInstance(state.component, abortCall, "cabort_call", {call.target, call.span});
+
+    // Internal orchestration uses iaction. cabort_call converts that to the capability-level iabort.
+    state.connections.push_back({
+        .lhs = abortCall + ".action",
+        .rhs = abortPort,
+        .span = call.span,
+        .kind = PortProtocol::Abort,
+    });
+
+    state.calls.push_back({
+        .kind = CallUse::Kind::Abort,
+        .flow = state.flow,
+        .localPort = abortPort,
+        .receiver = call.receiver,
+        .target = call.target,
+        .localOrdinal = 0,
+        .targetOrdinal = 0,
+        .arguments = call.arguments,
+        .inputSlots = call.inputSlots,
+        .outputSlots = call.outputSlots,
+        .traceId = traceId,
+        .span = call.span,
+    });
+
+    return abortCall + ".api";
+  }
 
   state.calls.push_back({
       .kind = signal ? CallUse::Kind::Signal : CallUse::Kind::Action,
-
       .flow = state.flow,
       .localPort = local,
       .receiver = call.receiver,
       .target = call.target,
-
       .localOrdinal = 0,
       .targetOrdinal = 0,
-
       .arguments = call.arguments,
       .inputSlots = call.inputSlots,
       .outputSlots = call.outputSlots,
-
       .traceId = traceId,
       .span = call.span,
   });
@@ -809,34 +930,108 @@ Result<std::string> LoweringPass::lowerCall(const ir::Call& call, FlowState& sta
 
 VoidResult LoweringPass::createNecessaryArbiter(SymbolId componentId, std::vector<Connection>& connections)
 {
-  std::map<std::string, std::vector<std::size_t>> clients;
+  struct ClientInfo
+  {
+    PortProtocol kind;
+    std::size_t size;
+  };
+
+  std::map<std::string, std::vector<ClientInfo>> clients;
 
   for (std::size_t i = 0; i < connections.size(); ++i)
     if (connections[i].lhs != "api")
-      clients[connections[i].rhs].push_back(i);
+      clients[connections[i].rhs].push_back({.kind = connections[i].kind, .size = i});
 
-  std::uint32_t arbiterId = 0;
+  std::uint32_t actionArbiterId = 0;
+  std::uint32_t abortArbiterId = 0;
+
   for (const auto& [resource, uses] : clients)
   {
     if (uses.size() < 2)
       continue;
 
-    RETURN_ON_FAILURE(createActionArbiterComponent(mModel, mOptions.outputDir, static_cast<std::uint32_t>(uses.size()), componentId));
+    LOG_DEBUG("Creating arbiter for {} with kind {}", resource, portToString(uses.front().kind));
+    if (uses.at(0).kind == PortProtocol::Abort)
+    {
+      RETURN_ON_FAILURE(createAbortArbiterComponent(mModel, mOptions.outputDir, uses.size(), componentId));
 
-    const auto name = std::format("arbiter{}_{}", uses.size(), arbiterId++);
-    mModel.declareInstance(componentId, name, std::format("caction_arbiter{}", uses.size()), {componentId});
+      const auto name = std::format("abort_arbiter{}_{}", uses.size(), abortArbiterId++);
+      mModel.declareInstance(componentId, name, std::format("cabort_arbiter{}", uses.size()), {componentId});
 
-    for (std::size_t i = 0; i < uses.size(); ++i)
-      connections[uses[i]].rhs = std::format("{}.client{}", name, i);
+      for (std::size_t i = 0; i < uses.size(); ++i)
+        connections[uses[i].size].rhs = std::format("{}.client{}", name, i);
 
-    connections.push_back({
-        .lhs = name + ".resource",
-        .rhs = resource,
-        .span = connections[uses.front()].span,
-    });
+      connections.push_back({
+          .lhs = name + ".resource",
+          .rhs = resource,
+          .span = connections[uses.front().size].span,
+          .kind = PortProtocol::Abort,
+      });
+    }
+    else
+    {
+      RETURN_ON_FAILURE(createActionArbiterComponent(mModel, mOptions.outputDir, uses.size(), componentId));
+
+      const auto name = std::format("arbiter{}_{}", uses.size(), actionArbiterId++);
+      mModel.declareInstance(componentId, name, std::format("caction_arbiter{}", uses.size()), {componentId});
+
+      for (std::size_t i = 0; i < uses.size(); ++i)
+        connections[uses[i].size].rhs = std::format("{}.client{}", name, i);
+
+      connections.push_back({
+          .lhs = name + ".resource",
+          .rhs = resource,
+          .span = connections[uses.front().size].span,
+      });
+    }
   }
 
-  return {};
+  return VoidResult();
+}
+
+PortProtocol LoweringPass::protocolOfResource(SymbolId componentId, const std::string& resource) const
+{
+  const auto dot = resource.find('.');
+
+  // Resource is a port directly on this component:
+  //
+  //   drive_abort
+  if (dot == std::string::npos)
+  {
+    if (const auto* port = mModel.findPort(componentId, resource))
+      return port->protocol;
+
+    return PortProtocol::Unknown;
+  }
+
+  // Resource is a port on an instance:
+  //
+  //   drivearmour.abort
+  const auto instanceName = resource.substr(0, dot);
+  const auto portName = resource.substr(dot + 1);
+
+  const auto* component = mModel.getComponent(componentId);
+  if (!component)
+    return PortProtocol::Unknown;
+
+  const auto instanceIt = std::find_if(component->instances.begin(), component->instances.end(), [&](const auto& instance) {
+    const auto* symbol = mModel.mSymbols.get(instance.symbol);
+
+    return symbol && symbol->name == instanceName;
+  });
+
+  if (instanceIt == component->instances.end())
+    return PortProtocol::Unknown;
+
+  const auto* instanceType = mModel.findComponent(instanceIt->typeName);
+
+  if (!instanceType)
+    return PortProtocol::Unknown;
+
+  if (const auto* port = mModel.findPort(instanceType->symbol, portName))
+    return port->protocol;
+
+  return PortProtocol::Unknown;
 }
 
 void LoweringPass::countTriggers(const ir::PStrategy& strategy)

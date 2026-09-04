@@ -36,10 +36,14 @@ enum class PortDirection
 enum class PortProtocol
 {
   Action,
+  External,
+  Abort,
   Signal,
   Alarm,
   Unknown
 };
+
+std::string portToString(PortProtocol port);
 
 struct Provenance
 {
@@ -128,6 +132,7 @@ enum class CallSiteKind
 {
   Trigger,
   Action,
+  Abort,
   Signal,
   Flow
 };

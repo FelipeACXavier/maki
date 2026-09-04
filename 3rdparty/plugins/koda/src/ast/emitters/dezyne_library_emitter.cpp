@@ -58,7 +58,8 @@ VoidResult createActionInterface(Model& model, const std::string& outdir)
   out << "  in Result reset();\n\n";
 
   out << "  out void success();\n";
-  out << "  out void failure();\n\n";
+  out << "  out void failure();\n";
+  out << "  out void aborted();\n\n";
 
   out << "  behavior {\n";
   out << "    enum State { Idle, Running, Error };\n";
@@ -71,10 +72,11 @@ VoidResult createActionInterface(Model& model, const std::string& outdir)
   out << "    }\n\n";
 
   out << "    [state.Running] {\n";
-  out << "      on abort: { state = State.Idle; reply(Result.Success); }\n";
+  out << "      on abort: { state = State.Idle; aborted; reply(Result.Success); }\n";
   out << "      on abort: { state = State.Error; reply(Result.Failure); }\n";
   out << "      on abort: { reply(Result.Running); }\n";
   out << "      on optional: { state = State.Idle; success; }\n";
+  out << "      on optional: { state = State.Idle; aborted; }\n";
   out << "      on optional: { state = State.Error; failure; }\n";
   out << "    }\n\n";
 
@@ -106,6 +108,75 @@ VoidResult createSignalInterface(Model& model, const std::string& outdir)
   out << "      on inevitable: { raise; }\n";
   out << "    }\n";
   out << "  }\n";
+
+  model.setGeneratedFile(path, out.str());
+
+  return VoidResult();
+}
+
+VoidResult createExternalInterface(Model& model, const std::string& outdir)
+{
+  const auto path = std::format("{}/lib/iexternal.dzn", outdir);
+
+  std::ostringstream out;
+  out << "import types.dzn;\n";
+  out << "\n";
+  out << "interface iexternal {\n";
+  out << "  in Result trigger();\n";
+  out << "  in Result abort();\n";
+  out << "  in Result reset();\n";
+  out << "\n";
+  out << "  out void success();\n";
+  out << "  out void failure();\n";
+  out << "\n";
+  out << "  behavior {\n";
+  out << "    enum State { Idle, Running, Error };\n";
+  out << "    State state = State.Idle;\n";
+  out << "\n";
+  out << "    [state.Idle] {\n";
+  out << "      on trigger: { state = State.Running; reply(Result.Success); }\n";
+  out << "      on trigger: { state = State.Error; reply(Result.Failure); }\n";
+  out << "      on trigger: { reply(Result.Done); }\n";
+  out << "    }\n";
+  out << "\n";
+  out << "    [state.Running] {\n";
+  out << "      on abort: { state = State.Idle; reply(Result.Success); }\n";
+  out << "      on abort: { state = State.Error; reply(Result.Failure); }\n";
+  out << "      on abort: { reply(Result.Running); }\n";
+  out << "\n";
+  out << "      on optional: { state = State.Idle; success; }\n";
+  out << "      on optional: { state = State.Error; failure; }\n";
+  out << "    }\n";
+  out << "\n";
+  out << "    [state.Error] {\n";
+  out << "      on reset: { state = State.Idle; reply(Result.Success); }\n";
+  out << "      on reset: { reply(Result.Failure); }\n";
+  out << "      on abort: { reply(Result.Error); }\n";
+  out << "    }\n";
+  out << "  }\n";
+  out << "}\n";
+
+  model.setGeneratedFile(path, out.str());
+
+  return VoidResult();
+}
+
+VoidResult createAbortInterface(Model& model, const std::string& outdir)
+{
+  const auto path = std::format("{}/lib/iabort.dzn", outdir);
+
+  std::ostringstream out;
+  out << "import types.dzn;\n";
+  out << "\n";
+  out << "interface iabort {\n";
+  out << "  in Result abort();\n";
+  out << "\n";
+  out << "  behavior {\n";
+  out << "    on abort: { reply(Result.Success); }\n";
+  out << "    on abort: { reply(Result.Running); }\n";
+  out << "    on abort: { reply(Result.Failure); }\n";
+  out << "  }\n";
+  out << "}\n";
 
   model.setGeneratedFile(path, out.str());
 
@@ -950,6 +1021,221 @@ VoidResult createErrorHandlerComponent(Model& model, const std::string& outdir, 
   });
 }
 
+VoidResult createAbortCallComponent(Model& model, const std::string& outdir, SymbolId componentId)
+{
+  return createComponent(model, outdir, "abort_call", [&](const std::string& name, const std::string& path, std::ostringstream& out) {
+    const auto component = model.declareComponent(name, path, {componentId}, true, componentId);
+    model.declarePort(component, "api", PortDirection::Provides, PortProtocol::Action);
+    model.declarePort(component, "action", PortDirection::Requires, PortProtocol::Action);
+
+    out << "import types.dzn;\n";
+    out << "import iaction.dzn;\n";
+    out << "import iabort.dzn;\n";
+    out << "\n";
+    out << std::format("component {} {{\n", name);
+    out << "  provides iaction api;\n";
+    out << "  requires iabort action;\n";
+    out << "\n";
+    out << "  behaviour {\n";
+    out << "    enum State { Idle, Error };\n";
+    out << "    State state = State.Idle;\n";
+    out << "\n";
+    out << "    [state.Idle] {\n";
+    out << "      on api.trigger(): {\n";
+    out << "        Result res1 = action.abort();\n";
+    out << "        if (res1.Failure)\n";
+    out << "        {\n";
+    out << "          state = State.Error;\n";
+    out << "          reply(Result.Failure);\n";
+    out << "        }\n";
+    out << "        else\n";
+    out << "        {\n";
+    out << "          reply(Result.Done);\n";
+    out << "        }\n";
+    out << "      }\n";
+    out << "    }\n";
+    out << "\n";
+    out << "    [state.Error] {\n";
+    out << "      on api.reset(): {\n";
+    out << "        state = State.Idle;\n";
+    out << "        reply(Result.Success);\n";
+    out << "      }\n";
+    out << "\n";
+    out << "      on api.abort(): { reply(Result.Error); }\n";
+    out << "    }\n";
+    out << "  }\n";
+    out << "}\n";
+  });
+}
+
+VoidResult createAbortArbiterComponent(Model& model, const std::string& outdir, uint32_t instances, SymbolId componentId)
+{
+  const auto name = std::format("cabort_arbiter{}", instances);
+  const auto path = std::format("{}/lib/abort_arbiter{}.dzn", outdir, instances);
+  const auto arbiter = model.declareComponent(name, path, {componentId}, true, componentId);
+
+  for (uint32_t i = 0; i < instances; ++i)
+    model.declarePort(arbiter, std::format("client{}", i), PortDirection::Provides, PortProtocol::Action, {componentId});
+
+  model.declarePort(arbiter, "resource", PortDirection::Requires, PortProtocol::Action, {componentId});
+
+  std::ostringstream out;
+  out << "import types.dzn;\n";
+  out << "import iabort.dzn;\n";
+  out << "\n";
+  out << std::format("component {} {{\n", name);
+  for (uint32_t i = 0; i < instances; ++i)
+    out << std::format("  provides iabort client{};\n", i);
+
+  out << "\n";
+  out << "  requires iabort resource;\n";
+  out << "\n";
+  out << "  behaviour {\n";
+  for (uint32_t i = 0; i < instances; ++i)
+    out << std::format("    on client{}.abort(): {{ resource.abort(); }}\n", i);
+  out << "  }\n";
+  out << "}\n";
+
+  model.setGeneratedFile(path, out.str());
+
+  return VoidResult();
+}
+
+VoidResult createCapabilityArmour(Model& model, const std::string& outdir, const std::string& capabilityName, const std::vector<std::string>& ports,
+                                  SymbolId componentId)
+{
+  const auto name = std::format("{}_armour", capabilityName);
+  const auto typeName = std::format("c{}", name);
+  const auto path = std::format("{}/lib/{}.dzn", outdir, name);
+  model.declareInstance(componentId, name, typeName, {componentId});
+
+  std::ostringstream out;
+
+  out << "import types.dzn;\n";
+  out << "import iaction.dzn;\n";
+  out << "import iabort.dzn;\n";
+  out << "import iexternal.dzn;\n";
+  out << "\n";
+  out << std::format("component {} {{\n", typeName);
+  for (const auto& port : ports)
+  {
+    out << std::format("  provides iaction {};\n", port);
+    out << std::format("  requires iexternal r_{};\n", port);
+  }
+
+  out << "\n";
+  out << "  provides iabort abort;\n";
+  out << "\n";
+  out << "  behavior {\n";
+  out << "    enum State { Idle";
+  for (size_t i = 0; i < ports.size(); ++i)
+    out << std::format(", Action{}, Aborting{}", i, i);
+
+  out << ", Error };\n";
+  out << "    State state = State.Idle;\n";
+  out << "\n";
+  out << "    [state.Idle] {\n";
+  for (size_t i = 0; i < ports.size(); ++i)
+  {
+    const auto port = ports.at(i);
+    out << std::format("      on {}.trigger(): {{\n", port);
+    out << std::format("        Result ret = r_{}.trigger();\n", port);
+    out << "\n";
+    out << "        if (ret.Success)\n";
+    out << std::format("          state = State.Action{};\n", i);
+    out << "        else if (ret.Failure)\n";
+    out << "          state = State.Error;\n";
+    out << "\n";
+    out << "        reply(ret);\n";
+    out << "      }\n";
+    out << "\n";
+  }
+  out << "      on abort.abort(): {\n";
+  out << "        reply(Result.Success);\n";
+  out << "      }\n";
+  out << "    }\n";
+  out << "\n";
+  for (size_t i = 0; i < ports.size(); ++i)
+  {
+    const auto port = ports.at(i);
+    out << std::format("    [state.Action{}] {{\n", i);
+    out << std::format("      on r_{}.success(): {{\n", port);
+    out << "        state = State.Idle;\n";
+    out << std::format("        {}.success();\n", port);
+    out << "      }\n";
+    out << "\n";
+    out << std::format("      on r_{}.failure(): {{\n", port);
+    out << "        state = State.Error;\n";
+    out << std::format("        {}.failure();\n", port);
+    out << "      }\n";
+    out << "\n";
+    out << std::format("      on {}.abort(): {{\n", port);
+    out << std::format("        Result ret = r_{}.abort();\n", port);
+    out << "        if (ret.Failure)\n";
+    out << "          state = State.Error;\n";
+    out << "        else if (ret.Success)\n";
+    out << "        {\n";
+    out << "          state = State.Idle;\n";
+    out << std::format("          {}.aborted();\n", port);
+    out << "        }\n";
+    out << "\n";
+    out << "        reply(ret);\n";
+    out << "      }\n";
+    out << "\n";
+    out << "      on abort.abort(): {\n";
+    out << std::format("        Result ret = r_{}.abort();\n", port);
+    out << "        if (ret.Failure)\n";
+    out << "        {\n";
+    out << "          state = State.Error;\n";
+    out << "          reply(Result.Failure);\n";
+    out << "        }\n";
+    out << "        else if (ret.Success)\n";
+    out << "        {\n";
+    out << std::format("          state = State.Aborting{};\n", i);
+    out << std::format("          defer(state) {{ state = State.Idle; {}.aborted(); }}\n", port);
+    out << "          reply(Result.Success);\n";
+    out << "        }\n";
+    out << "        else\n";
+    out << "        {\n";
+    out << "          reply(Result.Running);\n";
+    out << "        }\n";
+    out << "      }\n";
+    out << "    }\n";
+    out << "\n";
+    out << std::format("    [state.Aborting{}] {{\n", i);
+    out << std::format("      on {}.abort(): {{ {}.aborted(); state = State.Idle; reply(Result.Success); }}\n", port, port);
+    out << "    }\n";
+  }
+
+  out << "    [state.Error] {\n";
+  for (const auto& port : ports)
+  {
+    out << std::format("      on {}.reset(): {{\n", port);
+    out << std::format("        Result ret = r_{}.reset();\n", port);
+    out << "\n";
+    out << "        if (ret.Success)\n";
+    out << "          state = State.Idle;\n";
+    out << "\n";
+    out << "        reply(ret);\n";
+    out << "      }\n";
+    out << "\n";
+    out << std::format("      on {}.abort(): {{\n", port);
+    out << "        reply(Result.Error);\n";
+    out << "      }\n";
+    out << "\n";
+  }
+  out << "      on abort.abort(): {\n";
+  out << "        reply(Result.Failure);\n";
+  out << "      }\n";
+  out << "    }\n";
+  out << "  }\n";
+  out << "}\n";
+
+  model.setGeneratedFile(path, out.str());
+
+  return VoidResult();
+}
+
 // ===========================================================================================================
 // Helper components
 VoidResult createAlarmComponent(Model& model, const std::string& outdir)
@@ -1211,7 +1497,7 @@ void createParallelDoneRecursion(bool fromIdle, bool fromDone, uint32_t start, u
     out << std::format("{}  completed = completed + 1;\n", indent);
     createParallelDoneRecursion(fromIdle, fromDone, start + 1, instances, out, indent + "  ");
     out << std::format("{}}} else if (ret.Failure) {{\n", indent);
-    for (uint32_t i = 0; i < start; ++i)
+    for (uint32_t i = 0; i < start && !fromDone; ++i)
       out << std::format("{}  Result abrt{} = action{}.abort();\n", indent, i, i);
     out << std::format("{}  state = State.Error;\n", indent);
     out << std::format("{}}}\n", indent);

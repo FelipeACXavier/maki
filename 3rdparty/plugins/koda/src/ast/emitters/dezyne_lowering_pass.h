@@ -30,6 +30,7 @@ private:
     {
       Trigger,
       Action,
+      Abort,
       Signal,
       Flow
     } kind = Kind::Action;
@@ -67,6 +68,22 @@ private:
           return CallSiteKind::Action;
       }
     }
+
+    static PortProtocol toPortProtocol(Kind kind)
+    {
+      switch (kind)
+      {
+        case CallUse::Kind::Abort:
+          return PortProtocol::Abort;
+        case CallUse::Kind::Signal:
+          return PortProtocol::Signal;
+        default:
+        case CallUse::Kind::Flow:
+        case CallUse::Kind::Trigger:
+        case CallUse::Kind::Action:
+          return PortProtocol::Action;
+      }
+    }
   };
 
   struct PortRef
@@ -80,6 +97,7 @@ private:
     std::string lhs;
     std::string rhs;
     Span span;
+    PortProtocol kind = PortProtocol::Action;
   };
 
   struct FlowState
@@ -88,7 +106,11 @@ private:
     koda::SymbolId flow = koda::InvalidSymbol;
 
     std::uint32_t sequence = 0, join = 0, repeat = 0, within = 0, every = 0;
-    std::uint32_t abortHandler = 0, errorHandler = 0, signalHandler = 0, alarm = 0;
+    std::uint32_t abortHandler = 0;
+    std::uint32_t abortCall = 0;
+    std::uint32_t errorHandler = 0;
+    std::uint32_t signalHandler = 0;
+    std::uint32_t alarm = 0;
     std::string previous;
     std::set<std::string> imports;
     std::vector<std::string> definitions;
@@ -117,8 +139,11 @@ private:
 
   // Events that require iaction ports and therefore support multiplicity.
   std::set<koda::SymbolId> mActionEvents;
+  std::set<koda::SymbolId> mAbortEvents;
 
   std::map<koda::SymbolId, FlowResult> mFlows;
+
+  std::map<koda::SymbolId, const ir::Component*> mCapabilities;
 
   VoidResult lowerCapability(const ir::Component& capability);
   VoidResult lowerTask(const ir::Component& task);
@@ -131,6 +156,7 @@ private:
 
   void countTriggers(const ir::PStrategy& strategy);
   void countHandlerTriggers(const ir::PHandler& handler);
+  PortProtocol protocolOfResource(SymbolId componentId, const std::string& resource) const;
 
   std::string sourceName(koda::SymbolId id) const;
   static std::string lower(std::string value);

@@ -14,6 +14,26 @@ bool sameSpan(const Span& a, const Span& b)
 }
 }  // namespace
 
+std::string portToString(PortProtocol port)
+{
+  switch (port)
+  {
+    case koda::dezyne::PortProtocol::Action:
+      return "iaction";
+    case koda::dezyne::PortProtocol::External:
+      return "iexternal";
+    case koda::dezyne::PortProtocol::Abort:
+      return "iabort";
+    case koda::dezyne::PortProtocol::Signal:
+      return "isignal";
+    case koda::dezyne::PortProtocol::Alarm:
+      return "ialarm";
+    default:
+    case koda::dezyne::PortProtocol::Unknown:
+      return "unknown port";
+  }
+}
+
 void SymbolTable::clear()
 {
   mSymbols.clear();

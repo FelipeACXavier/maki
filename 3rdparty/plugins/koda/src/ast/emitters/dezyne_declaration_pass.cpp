@@ -36,11 +36,29 @@ VoidResult DeclarationPass::declareCapability(const ir::Component& capability)
 
   for (const auto& event : capability.events)
   {
-    auto protocol = event.kind == ir::EventKind::Out ? PortProtocol::Signal : PortProtocol::Action;
-    mModel.declarePort(component, event.name, PortDirection::Provides, protocol, {event.symbol, event.span});
+    if (event.kind == ir::EventKind::Trigger || event.kind == ir::EventKind::In)
+    {
+      // External capability operations use iexternal.
+      mModel.declarePort(component, event.name, PortDirection::Provides, PortProtocol::External, {event.symbol, event.span});
+    }
+    else if (event.kind == ir::EventKind::Out)
+    {
+      mModel.declarePort(component, event.name, PortDirection::Provides, PortProtocol::Signal, {event.symbol, event.span});
+    }
+    else if (event.kind == ir::EventKind::Abort)
+    {
+      mModel.declarePort(component, event.name, PortDirection::Provides, PortProtocol::Abort, {event.symbol, event.span});
+    }
+
+    // Return/Error are part of the interaction protocol and therefore do
+    // not become separate ports.
+    //
+    // Abort is now exposed once by the generated armour rather than by
+    // the external capability itself.
   }
 
-  return {};
+  return VoidResult();
+  ;
 }
 
 VoidResult DeclarationPass::declareTask(const ir::Component& task)
@@ -129,8 +147,6 @@ VoidResult DeclarationPass::declareHandler(const ir::PHandler& handler, FlowStat
 VoidResult DeclarationPass::declareCall(const ir::Call& call, FlowState& state, bool signal)
 {
   std::string name;
-  PortProtocol protocol = signal ? PortProtocol::Signal : PortProtocol::Action;
-
   if (call.kind == ir::CallKind::Flow)
   {
     if (signal)
@@ -151,9 +167,26 @@ VoidResult DeclarationPass::declareCall(const ir::Call& call, FlowState& state, 
     name = std::format("{}_{}", sourceName(call.receiver), sourceName(call.target));
   }
 
+  PortProtocol protocol = PortProtocol::Action;
+  if (signal)
+  {
+    protocol = PortProtocol::Signal;
+  }
+  else
+  {
+    const auto* event = mSymbols.get(call.target);
+    if (event && event->kind == koda::SymbolKind::Event)
+    {
+      // Use whatever accessor your Symbol has for the IR event kind.
+      //
+      // If Symbol does not retain EventKind, omit this here: lowerFlow()
+      // performs the authoritative declaration later.
+    }
+  }
+
   mModel.declarePort(state.component, name, PortDirection::Requires, protocol, {call.target, call.span});
 
-  return VoidResult();
+  return {};
 }
 
 std::string DeclarationPass::sourceName(koda::SymbolId id) const
