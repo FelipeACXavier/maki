@@ -11,11 +11,15 @@ function printHelp()
   echo "    --clean             | Clean the build directory"
   echo "    --prefix            | CMake QT install prefix"
   echo "    --docs              | Build docs"
+  echo "    --list              | List available targets"
+  echo "    --target            | Build specific target"
   echo ""
 }
 
 DOCS=0
 CLEAN=0
+LIST_TARGETS=0
+BUILD_TARGET=""
 BUILD_TYPE="Debug"
 TARGET="linux"
 CURR_DIR=`pwd`
@@ -46,6 +50,15 @@ while [[ $# -gt 0 ]]; do
       ;;
       --docs)
       DOCS=1
+      shift
+      ;;
+      --list)
+      LIST_TARGETS=1
+      shift
+      ;;
+      --target)
+      BUILD_TARGET=$2
+      shift
       shift
       ;;
       --release)
@@ -87,6 +100,9 @@ if [ $CLEAN -eq 1 ]; then
   echo "Cleaning $BUILD_PATH"
   rm -rf $BUILD_PATH
   rm -rf $INSTALL_PREFIX
+elif [ $LIST_TARGETS -eq 1 ]; then
+  echo "Listing targets"
+  cmake --build "$BUILD_PATH" -j 4 --target help
 else
   cmake -S "$SOURCE_DIR" -B "$BUILD_PATH"\
     -DDEPLOY_TARGET="$TARGET" \
@@ -101,6 +117,8 @@ else
     cmake --build "$BUILD_PATH" -j 4 --target docs
   elif [ "$BUILD_TYPE" == "Release" ]; then
     cmake --build "$BUILD_PATH" -j 4 --target deploy-linux
+  elif [ "$BUILD_TARGET" != "" ]; then
+    cmake --build "$BUILD_PATH" -j 4 --target "$BUILD_TARGET"
   else
     cmake --build "$BUILD_PATH" -j 4
   fi
