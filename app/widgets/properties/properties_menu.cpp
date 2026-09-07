@@ -320,10 +320,11 @@ VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IPa
     return VoidResult::Failed("Component-select property '{}' must contain a 'component' field", property->getid().toStdString());
 
   const auto mode = callControl(record);
-  LOG_DEBUG("Using control mode: {}", Types::ControlTypesToString(mode));
   auto* componentEditor = new maki::SelectorWidget(ToLabel(property->getid()), maki::WidgetAlignment::Vertical(), this);
 
-  for (const auto& candidate : mStorage->getPossibleCallers(node->id(), mode))
+  const auto candidates = mStorage->getPossibleCallers(node->id(), mode);
+  LOG_DEBUG("Using control mode: {} with {} candidates", Types::ControlTypesToString(mode), candidates.size());
+  for (const auto& candidate : candidates)
   {
     if (!candidate)
       continue;

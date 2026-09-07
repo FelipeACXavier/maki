@@ -101,7 +101,7 @@ private:
    */
   void updateParent(NodeItem* node, std::shared_ptr<NodeSaveInfo> storage, bool adding) override;
 
-  void addInitialNode(const QString& nodeType, const QPointF& position);
+  std::shared_ptr<const NodeSaveInfo> addInitialNode(const QString& nodeType, const QPointF& position);
 
   TransitionSaveInfo makeTransitionInfo(const QString& sourceId, const QString& destinationId, const QString& event, const QString& label) const;
 };

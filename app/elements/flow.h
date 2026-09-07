@@ -94,6 +94,13 @@ public:
   void addTransition(TransitionItem* transition);
 
   /**
+   * @brief Adds a transition to the node.
+   *
+   * @param transition The TransitionItem to add.
+   */
+  void addTransition(std::shared_ptr<TransitionSaveInfo> info);
+
+  /**
    * @brief Removes a transition from the node.
    *
    * @param transition The TransitionItem to remove.

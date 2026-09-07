@@ -364,7 +364,7 @@ std::any MakiToKoda::buildSequenceFrom(const IFlow& flow, const INode* start, co
 
     if (isEndNode(*current))
     {
-      auto value = std::make_shared<koda::Strategy::End>();
+      auto value = std::make_shared<koda::Strategy::Failure>();
       auto node = std::make_shared<koda::Strategy>();
       node->v = value;
       sequence->alts.push_back(node);
@@ -431,8 +431,10 @@ std::any MakiToKoda::buildNodeExpr(const IFlow& flow, const INode& node)
     result = buildRepeatExpr(flow, node);
   else if (node.getnodeId() == "Koda::Continue")
     result = buildContinueExpr(flow, node);
-  else if (node.getnodeId() == "Koda::Terminate")
+  else if (node.getnodeId() == "Koda::Success")
     result = buildSuccessExpr(flow, node);
+  else if (node.getnodeId() == "Koda::Terminate")
+    result = buildTerminateExpr(flow, node);
   else
     LOG_AND_FAIL(node.getid(), flow.getid(), "Unknown expression: {}", node.getnodeId());
 
@@ -681,7 +683,16 @@ std::any MakiToKoda::buildContinueExpr(const IFlow& flow, const INode& node)
 
 std::any MakiToKoda::buildSuccessExpr(const IFlow& flow, const INode& node)
 {
-  auto expr = std::make_shared<koda::Strategy::End>();
+  auto expr = std::make_shared<koda::Strategy::Success>();
+  auto strat = std::make_shared<koda::Strategy>();
+  strat->v = expr;
+
+  return strat;
+}
+
+std::any MakiToKoda::buildTerminateExpr(const IFlow& flow, const INode& node)
+{
+  auto expr = std::make_shared<koda::Strategy::Failure>();
   auto strat = std::make_shared<koda::Strategy>();
   strat->v = expr;
 

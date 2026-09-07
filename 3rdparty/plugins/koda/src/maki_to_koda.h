@@ -73,6 +73,7 @@ private:
   std::any buildRepeatExpr(const IFlow& flow, const INode& node);
   std::any buildContinueExpr(const IFlow& flow, const INode& node);
   std::any buildSuccessExpr(const IFlow& flow, const INode& node);
+  std::any buildTerminateExpr(const IFlow& flow, const INode& node);
   Result<QList<koda::PStrategyHandler>> buildHandlers(const IFlow& flow, const INode& node);
 
   Result<koda::PVarDef> buildVarDef(const IParameter* property);

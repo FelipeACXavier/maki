@@ -25,6 +25,6 @@ void AddNodeCommand::redo()
   if (!mCanvas)
     return;
 
-  mCanvas->createNode(mDesc);
+  mCanvas->createNode(mDesc, Canvas::NodeCreation::Populating);
   LOG_TRACE("Redo AddNodeCommand: {} {}", mDesc.getnodeId(), mDesc.getid());
 }

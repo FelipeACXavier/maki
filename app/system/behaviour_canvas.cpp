@@ -23,20 +23,39 @@ void BehaviourCanvas::setupInitialNodes()
     const qreal y = visible.center().y();
     const QPointF startPos{visible.left(), y};
     const QPointF endPos{visible.left() + visible.width(), y};
-    addInitialNode("Koda::Start", startPos);
-    addInitialNode("Koda::Success", endPos);
+    auto src = addInitialNode("Koda::Start", startPos);
+    auto dst = addInitialNode("Koda::Success", endPos);
+
+    if (!(src && dst))
+      return;
+
+    auto initial = std::make_shared<TransitionSaveInfo>();
+    initial->setId(QUuid::createUuid().toString());
+
+    initial->setSrcId(src->getid());
+    initial->setDstId(dst->getid());
+
+    initial->setSrcPoint(src->getposition());
+    initial->setDstPoint(dst->getposition());
+    initial->setSrcShift({0, 0});
+    initial->setDstShift({0, 0});
+
+    mFlow->addTransition(initial);
   }
 }
 
-void BehaviourCanvas::addInitialNode(const QString& nodeType, const QPointF& position)
+std::shared_ptr<const NodeSaveInfo> BehaviourCanvas::addInitialNode(const QString& nodeType, const QPointF& position)
 {
   auto config = mConfigTable->get(nodeType);
   if (config == nullptr)
-    return;
+    return nullptr;
 
   auto info = std::make_shared<NodeSaveInfo>(*config);
+  info->setId(QUuid::createUuid().toString());
   info->setPosition(position);
   mFlow->config()->addNode(info);
+
+  return info;
 }
 
 Types::LibraryTypes BehaviourCanvas::type() const

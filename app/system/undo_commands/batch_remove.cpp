@@ -19,7 +19,7 @@ void BatchRemoveCommand::undo()
     return;
 
   for (auto& node : mNodes)
-    mCanvas->createNode(node);
+    mCanvas->createNode(node, Canvas::NodeCreation::Populating);
 
   for (auto& transition : mTransitions)
     mCanvas->createTransition(transition);

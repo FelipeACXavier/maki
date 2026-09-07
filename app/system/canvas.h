@@ -51,6 +51,15 @@ public:
     }
   };
 
+  enum class NodeCreation
+  {
+    Dropping,
+    Pasting,
+    Loading,
+    Populating,
+    Inserting
+  };
+
   /**
    * @brief Constructs a new Canvas object.
    *
@@ -156,7 +165,7 @@ public:
    *
    * @param info The save information for the node.
    */
-  void createNode(const NodeSaveInfo& info);
+  void createNode(const NodeSaveInfo& info, NodeCreation creation);
 
   /**
    * @brief Removes a node based on save information.
@@ -380,14 +389,6 @@ public slots:
   void onFlowRemoved(const QString& flowId, const QString& nodeId);
 
 protected:
-  enum class NodeCreation
-  {
-    Dropping,
-    Pasting,
-    Loading,
-    Populating
-  };
-
   std::shared_ptr<ConfigurationTable> mConfigTable;  /// Pointer to the configuration table.
   std::shared_ptr<EdgeRouter> mRouter;               /// Pointer to the system edge router.
   QUndoStack* mUndoStack = nullptr;                  /// Pointer to the undo stack.

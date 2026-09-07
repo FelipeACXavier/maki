@@ -15,6 +15,7 @@ public:
 
   QAction* addAction(const QString& text);
   QAction* addAction(const QIcon& icon, const QString& text);
+  QList<QAction*> actions() const;
 
 protected:
   int mWidth = 150;

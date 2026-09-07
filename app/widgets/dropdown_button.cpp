@@ -36,6 +36,11 @@ void DropDownButton::reset()
   menu()->clear();
 }
 
+QList<QAction*> DropDownButton::actions() const
+{
+  return menu()->actions();
+}
+
 void DropDownButton::setSize(int width, int height)
 {
   mWidth = width;
@@ -104,8 +109,7 @@ void DropDownButton::paintEvent(QPaintEvent* event)
   // Draw the dropdown menu arrow
   const QPointF arrowCenter(dividerX + arrowAreaWidth / 2.0, r.center().y() + 1.0);
   QPolygonF arrow;
-  arrow << QPointF(arrowCenter.x() - 4, arrowCenter.y() - 2)
-        << QPointF(arrowCenter.x() + 4, arrowCenter.y() - 2)
+  arrow << QPointF(arrowCenter.x() - 4, arrowCenter.y() - 2) << QPointF(arrowCenter.x() + 4, arrowCenter.y() - 2)
         << QPointF(arrowCenter.x(), arrowCenter.y() + 3);
 
   painter.setPen(Qt::NoPen);

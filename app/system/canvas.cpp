@@ -1166,8 +1166,7 @@ void Canvas::removeTransition(const TransitionSaveInfo& info)
   delete transition;
 }
 
-// TODO: Properly integrate the creation with the undo command
-void Canvas::createNode(const NodeSaveInfo& info)
+void Canvas::createNode(const NodeSaveInfo& info, NodeCreation creation)
 {
   auto exists = findNodeWithId(info.getid());
   if (exists)
@@ -1175,7 +1174,7 @@ void Canvas::createNode(const NodeSaveInfo& info)
 
   auto parent = findNodeWithId(info.getparentId());
   auto infoPtr = std::make_shared<NodeSaveInfo>(info);
-  (void)createNode(NodeCreation::Populating, infoPtr, info.getposition(), parent);
+  (void)createNode(creation, infoPtr, info.getposition(), parent);
 }
 
 void Canvas::removeNode(const NodeSaveInfo& info)
@@ -1238,7 +1237,7 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
 
   addedItemNode(node, info);
 
-  if (creation != NodeCreation::Populating)
+  if (creation != NodeCreation::Populating && creation != NodeCreation::Inserting)
     mUndoStack->push(new AddNodeCommand(this, node->saveInfo()));
 
   // We also need to create the children of the node
@@ -1248,7 +1247,7 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
     if (!ci)
       continue;
 
-    createNode(*ci);
+    createNode(*ci, creation);
   }
 
   // And its flows

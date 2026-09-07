@@ -65,6 +65,8 @@ public:
    */
   void showAll();
 
+  void logLevelChanged();
+
 private slots:
   /**
    * @brief Handles area expansion events.

@@ -112,6 +112,15 @@ void Flow::addTransition(TransitionItem* transition)
     mTransitions.push_back(transition);
 }
 
+void Flow::addTransition(std::shared_ptr<TransitionSaveInfo> info)
+{
+  for (const auto& t : mStorage->gettransitions())
+    if (t->getid() == info->getid())
+      return;
+
+  mStorage->addTransition(info);
+}
+
 void Flow::removeTransition(TransitionItem* transition)
 {
   if (!transition)

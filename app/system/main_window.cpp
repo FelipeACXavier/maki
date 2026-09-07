@@ -174,6 +174,16 @@ VoidResult MainWindow::start()
     if (mSettingsManager->appearance().startLogFilterExpanded)
       mLogTable->showAll();
 
+    if (mSettingsManager->general().enableDebugLogs)
+    {
+      logging::gMinLogLevel = logging::LogLevel::Trace;
+      mLogTable->logLevelChanged();
+    }
+    else
+    {
+      logging::gMinLogLevel = logging::LogLevel::Debugging;
+    }
+
     onThemeChanged(mSettingsManager->appearance(), true);
   }
 
@@ -183,6 +193,8 @@ VoidResult MainWindow::start()
       LOG_WARN_ON_FAILURE(mPluginManager->start(mSettingsManager->plugins(), mHostServices));
 
     LOG_WARN_ON_FAILURE(loadElements());
+
+    LOG_WARN_ON_FAILURE(loadLastSession());
   });
 
   LOG_DEBUG("Main window started");
@@ -248,7 +260,17 @@ void MainWindow::onSettingsChanged()
     mLanguageManager->setLanguage(mSettingsManager->general().language);
 
   if (mSettingsManager->general().enableDebugLogs)
+  {
     logging::gMinLogLevel = logging::LogLevel::Trace;
+    if (mLogTable)
+      mLogTable->logLevelChanged();
+  }
+  else
+  {
+    logging::gMinLogLevel = logging::LogLevel::Debugging;
+    if (mLogTable)
+      mLogTable->logLevelChanged();
+  }
 
   if (mPluginManager)
     mPluginManager->settingsChanged(mSettingsManager->plugins(), mHostServices);
@@ -1632,4 +1654,22 @@ void MainWindow::showAboutDialog()
   dialog.addSocialMediaLink("Website", "https://felipeacxavier.github.io", QIcon(":/icons/me.svg"));
 
   dialog.exec();
+}
+
+VoidResult MainWindow::loadLastSession()
+{
+  if (!mSettingsManager || !mSettingsManager->general().restoreLastSession)
+    return VoidResult();
+
+  if (mSettingsManager->general().recentFiles.empty())
+    return VoidResult::Failed("No file to load");
+
+  const auto toLoad = mSettingsManager->general().recentFiles.front();
+  QFileInfo info(toLoad);
+  if (!info.exists())
+    return VoidResult::Failed("Project file {} does not exist", toLoad);
+
+  onActionLoad(toLoad);
+
+  return VoidResult();
 }

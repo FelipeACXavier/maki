@@ -42,7 +42,7 @@ void InsertNodeCommand::redo()
   mCanvas->removeTransition(mOriginalTransition);
 
   // Both replacement transitions depend on the inserted node existing.
-  mCanvas->createNode(mNode);
+  mCanvas->createNode(mNode, Canvas::NodeCreation::Inserting);
 
   mCanvas->createTransition(mIncomingTransition);
   mCanvas->createTransition(mOutgoingTransition);

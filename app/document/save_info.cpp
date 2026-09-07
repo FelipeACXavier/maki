@@ -143,7 +143,7 @@ std::shared_ptr<NodeSaveInfo> SaveInfo::findOwnerTaskOfFlowNode(const QString& n
 
   for (const auto& flow : node->getflows())
   {
-    LOG_TRACE("Looking into flow: {}", flow->getname());
+    LOG_TRACE("Looking into flow: {} with {} nodes", flow->getname(), flow->getnodes().size());
     for (const auto& construct : flow->getnodes())
     {
       if (construct->getid() != nodeId)

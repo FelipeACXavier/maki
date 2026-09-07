@@ -54,20 +54,7 @@ LogTableWidget::LogTableWidget(QWidget* parent)
   mLevelFilter = new DropDownButton(this);
   mLevelFilter->setFixedWidth(100 + Config::CONTENT_PADDING);
 
-  for (int value = static_cast<int>(logging::LogLevel::Error); value <= static_cast<int>(logging::gMinLogLevel); ++value)
-  {
-    const auto level = static_cast<logging::LogLevel>(value);
-    auto* action = mLevelFilter->addAction(mModel->toString(level));
-    action->setCheckable(true);
-    action->setChecked(true);
-    action->setData(value);
-
-    connect(action, &QAction::toggled, this, [this, action](bool enabled) {
-      const auto level = static_cast<logging::LogLevel>(action->data().toInt());
-      mProxy->setLevelEnabled(level, enabled);
-      updateFilterText(mLevelFilter, tr("Levels"));
-    });
-  }
+  logLevelChanged();
 
   mSourceFilter = new DropDownButton(this);
   mSourceFilter->setFixedWidth(110 + Config::CONTENT_PADDING);
@@ -172,6 +159,36 @@ LogTableWidget::LogTableWidget(QWidget* parent)
 
   updateFilterText(mLevelFilter, tr("Levels"));
   updateFilterText(mSourceFilter, tr("Sources"));
+}
+
+void LogTableWidget::logLevelChanged()
+{
+  if (!mLevelFilter)
+    return;
+
+  QMap<QString, bool> currentStates;
+  for (const auto& action : mLevelFilter->actions())
+    currentStates[action->text()] = action->isChecked();
+
+  mLevelFilter->reset();
+  for (int value = static_cast<int>(logging::LogLevel::Error); value <= static_cast<int>(logging::gMinLogLevel); ++value)
+  {
+    const auto level = static_cast<logging::LogLevel>(value);
+    const auto name = mModel->toString(level);
+    const auto currentState = currentStates.find(name);
+    auto* action = mLevelFilter->addAction(name);
+    action->setCheckable(true);
+    action->setChecked(currentState == currentStates.end() || currentState.value());
+    action->setData(value);
+
+    connect(action, &QAction::toggled, this, [this, action](bool enabled) {
+      const auto level = static_cast<logging::LogLevel>(action->data().toInt());
+      mProxy->setLevelEnabled(level, enabled);
+      updateFilterText(mLevelFilter, tr("Levels"));
+    });
+
+    mProxy->setLevelEnabled(level, action->isChecked());
+  }
 }
 
 void LogTableWidget::updateFilterText(QToolButton* button, const QString& base)
