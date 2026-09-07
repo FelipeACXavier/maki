@@ -572,6 +572,10 @@ Result<ResolvedCall> SemanticAnalyzer::resolveCall(const PEventCall& call, Symbo
 
       return ResolvedCall{ResolvedCallKind::Flow, receiver, InvalidSymbol, types::TypeReference{}};
     }
+    else
+    {
+      return Result<ResolvedCall>::Failed("Async call format '{}()' is no longer supported. A trigger must be specified.", receiverSymbol->name);
+    }
 
     auto componentResult = resolveComponentType(*receiverSymbol, call->span);
     if (!componentResult.IsSuccess())

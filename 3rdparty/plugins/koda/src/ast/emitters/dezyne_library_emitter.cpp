@@ -450,17 +450,16 @@ Result<LibraryComponent> createParallelComponent(Model& model, const std::string
 
     // ------------------------------------------------------------------
     // Aborting state
-    out << "[state.Aborting] {\n";
+    out << "    [state.Aborting] {\n";
     for (uint32_t i = 0; i < instances; ++i)
-    {
-      out << std::format("  on action{}.aborted(): {{\n", i);
-      out << "    completed = completed + 1;\n";
-      out << std::format("        if (completed == {}) {{\n", instances);
-      out << "      api.aborted();\n";
-      out << "      state = State.Idle;\n";
-      out << "    }\n";
-      out << "  }\n";
-    }
+      out << std::format("      on action{}.aborted(): {{\n"
+                         "        completed = completed + 1;\n"
+                         "        if (completed == {}) {{\n"
+                         "          api.aborted();\n"
+                         "          state = State.Idle;\n"
+                         "        }}\n"
+                         "      }}\n",
+                         i, instances);
     out << "}\n";
 
     // ------------------------------------------------------------------

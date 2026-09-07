@@ -280,9 +280,9 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
         return VoidResult::Failed("No receiver for call {} in {} ({})", call.localPort, task.name, call.target);
 
       // We need to get the actual capability, which can be found by using the capability type
-      const auto receiverComponent = mSymbols.component(receiver->type.toString());
+      const auto receiverComponent = mSymbols.get(receiver->id);
       if (!receiverComponent)
-        return VoidResult::Failed("Unknown capability type for {} in {}", receiver->name, task.name);
+        return VoidResult::Failed("Unknown capability type for {} ({}) in {}", receiver->name, receiver->id, task.name);
 
       if (mOptions.traceability)
       {
@@ -306,7 +306,7 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
       mModel.declareCallSite({
           .kind = kind,
           .flow = call.flow,
-          .receiver = receiverComponent.value(),
+          .receiver = receiverComponent->id,
           .target = call.target,
 
           .localPort = call.localPort,
