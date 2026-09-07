@@ -18,6 +18,7 @@ struct VarDef;
 struct RosDef;
 struct ActionDef;
 struct VarsBlock;
+struct DataBlock;
 struct StrategyBlock;
 
 struct Strategy;
@@ -92,7 +93,9 @@ struct TypeMapping
 // ---------- Statements ----------
 struct Statement
 {
-  std::variant<std::shared_ptr<StrategyBlock>, std::shared_ptr<VarsBlock>, std::shared_ptr<RosDef>, std::shared_ptr<ActionDef>> node;
+  std::variant<std::shared_ptr<StrategyBlock>, std::shared_ptr<VarsBlock>, std::shared_ptr<RosDef>, std::shared_ptr<ActionDef>,
+               std::shared_ptr<DataBlock>>
+      node;
   Span span;
 
   void print(const std::string& prefix, const bool last) const;
@@ -191,6 +194,14 @@ struct VarsBlock
   void print(const std::string& prefix, const bool last) const;
 };
 
+struct DataBlock
+{
+  std::vector<std::shared_ptr<VarDef>> vars;
+  Span span;
+
+  void print(const std::string& prefix, const bool last) const;
+};
+
 // ---------- Strategy ----------
 struct StrategyHandler
 {
@@ -272,8 +283,23 @@ struct Strategy
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
 
+  struct Choose
+  {
+    struct When
+    {
+      std::shared_ptr<Expr> condition;
+      std::shared_ptr<Strategy> strategy;
+
+      Span span;
+      void print(const std::string& prefix, const bool last) const;
+    };
+
+    std::vector<std::shared_ptr<When>> options;
+    void print(const std::string& prefix, const bool last, const Span& span) const;
+  };
+
   std::variant<std::shared_ptr<Seq>, std::shared_ptr<Join>, std::shared_ptr<Either>, std::shared_ptr<Within>, std::shared_ptr<Repeat>,
-               std::shared_ptr<End>, std::shared_ptr<Continue>, std::shared_ptr<TaskCall>, std::shared_ptr<Paren>>
+               std::shared_ptr<End>, std::shared_ptr<Continue>, std::shared_ptr<TaskCall>, std::shared_ptr<Paren>, std::shared_ptr<Choose>>
       v;
 
   std::string id;
@@ -415,9 +441,16 @@ struct Expr
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
 
+  struct DataAccess
+  {
+    std::string capability;
+    std::string data;
+    void print(const std::string& prefix, const bool last, const Span& span) const;
+  };
+
   std::variant<std::shared_ptr<Id>, std::shared_ptr<Str>, std::shared_ptr<Int>, std::shared_ptr<Float>, std::shared_ptr<Bool>, std::shared_ptr<Call>,
                std::shared_ptr<Neg>, std::shared_ptr<Not>, std::shared_ptr<BinOp>, std::shared_ptr<Paren>, std::shared_ptr<RecordLiteral>,
-               std::shared_ptr<ListLiteral>, std::shared_ptr<MapLiteral>>
+               std::shared_ptr<ListLiteral>, std::shared_ptr<MapLiteral>, std::shared_ptr<DataAccess>>
       v;
 
   Span span;
@@ -431,10 +464,12 @@ typedef std::shared_ptr<TypeMapping> PTypeMapping;
 typedef std::shared_ptr<Statement> PStatement;
 typedef std::shared_ptr<StrategyBlock> PStrategyBlock;
 typedef std::shared_ptr<VarsBlock> PVarsBlock;
+typedef std::shared_ptr<DataBlock> PDataBlock;
 typedef std::shared_ptr<RosDef> PRosDef;
 typedef std::shared_ptr<ActionDef> PActionDef;
 typedef std::shared_ptr<VarDef> PVarDef;
 typedef std::shared_ptr<Flow> PFlow;
+typedef std::shared_ptr<StrategyHandler> PStrategyHandler;
 typedef std::shared_ptr<Strategy> PStrategy;
 typedef std::shared_ptr<EventDef> PEventDef;
 typedef std::shared_ptr<EventCall> PEventCall;
@@ -447,7 +482,8 @@ typedef std::shared_ptr<Strategy::End> PEnd;
 typedef std::shared_ptr<Strategy::Continue> PContinue;
 typedef std::shared_ptr<Strategy::TaskCall> PTaskCall;
 typedef std::shared_ptr<Strategy::Paren> PParen;
-typedef std::shared_ptr<StrategyHandler> PStrategyHandler;
+typedef std::shared_ptr<Strategy::Choose> PChoose;
+typedef std::shared_ptr<Strategy::Choose::When> PWhen;
 
 typedef std::shared_ptr<Expr> PExpr;
 typedef std::shared_ptr<Expr::Id> PId;
@@ -465,5 +501,6 @@ typedef std::shared_ptr<Expr::RecordLiteral::Field> PRecordLiteralField;
 typedef std::shared_ptr<Expr::ListLiteral> PListLiteral;
 typedef std::shared_ptr<Expr::MapLiteral> PMapLiteral;
 typedef std::shared_ptr<Expr::MapLiteral::Field> PMapLiteralField;
+typedef std::shared_ptr<Expr::DataAccess> PDataAccess;
 
 }  // namespace koda

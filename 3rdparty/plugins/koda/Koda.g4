@@ -87,6 +87,7 @@ statement
   | serviceBlock
   | topicBlock
   | rosDefStatement
+  | dataBlock
   ;
 
 tasksBlock
@@ -106,7 +107,7 @@ varsBlock
   ;
 
 variableStatement
-  : typeReference IDENT ASSIGN expression SEMI
+  : typeReference IDENT (ASSIGN expression)? SEMI
   ;
 
 actionBlock
@@ -124,7 +125,6 @@ topicBlock
 // =============================================================================
 // ROS def statements / event defs
 // =============================================================================
-
 rosDefStatement
   : TRIGGER  COLON eventDefStatement SEMI
   | RETURN   COLON eventDefStatement SEMI
@@ -144,6 +144,13 @@ eventDefStatement
   ;
 
 // =============================================================================
+// Data statements
+// =============================================================================
+dataBlock
+  : DATA LBRACE (variableStatement)* RBRACE
+  ;
+
+// =============================================================================
 // Strategy language
 // =============================================================================
 
@@ -157,6 +164,11 @@ strategy
   | CONTINUE                                                       # stratContinue
   | eventStatement strategyHandler*                                # stratTask
   | LPAREN strategy RPAREN                                         # stratParen
+  | CHOOSE LBRACE (chooseWhenStatement)* RBRACE                    # stratChoose
+  ;
+
+chooseWhenStatement
+  : WHEN (expression)? COLON strategy SEMI                        # whenStatement
   ;
 
 strategyHandler
@@ -232,6 +244,7 @@ exprPrimary
   | recordLiteral                                                # exprRecord
   | listLiteral                                                  # exprListLiteral
   | mapLiteral                                                   # exprMapLiteral
+  | IDENT DOT IDENT                                              # exprDataAccess
   | LPAREN expression RPAREN                                     # exprParen
   ;
 
@@ -299,6 +312,7 @@ OUT        : 'out';
 ON         : 'on';
 CONSUMES   : 'consumes';
 PRODUCES   : 'produces';
+DATA       : 'data';
 
 REQ        : 'req';
 PRO        : 'pro';
@@ -308,6 +322,8 @@ CONTINUE   : 'continue';
 REPEAT     : 'repeat';
 JOIN       : 'join';
 EITHER     : 'either';
+WHEN       : 'when';
+CHOOSE     : 'choose';
 
 WITHIN     : 'within';
 DO         : 'do';

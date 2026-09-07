@@ -59,6 +59,7 @@ VoidResult LoweringPass::run(const ir::Program& program)
     if (component.kind == ir::ComponentKind::Task)
       RETURN_ON_FAILURE(lowerTask(component));
 
+  RETURN_ON_FAILURE(createConditionInterface(mModel, mOptions.outputDir));
   RETURN_ON_FAILURE(createExternalInterface(mModel, mOptions.outputDir));
   RETURN_ON_FAILURE(createActionInterface(mModel, mOptions.outputDir));
   RETURN_ON_FAILURE(createSignalInterface(mModel, mOptions.outputDir));
@@ -206,7 +207,9 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
       }
     }
 
-    RETURN_ON_FAILURE(createCapabilityArmour(mModel, mOptions.outputDir, externalInstance, ports, componentId));
+    LibraryComponent libArmour;
+    ASSIGN_OR_RETURN_ON_FAILURE(libArmour, createCapabilityArmour(mModel, mOptions.outputDir, externalInstance, ports, componentId));
+    mModel.declareInstance(componentId, armourInstance, libArmour.name);
   }
 
   // We must update the alarm name since we have multiple alarms at the top level
@@ -345,7 +348,33 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
   }
 
   for (const auto& flow : task.flows)
+  {
     out << std::format("import {}.dzn;\n", lower(flow.name));
+    const auto flowInstance = std::format("f_{}", sourceName(flow.symbol));
+    const auto resultIt = mFlows.find(flow.symbol);
+
+    if (resultIt == mFlows.end())
+      return VoidResult::Failed(std::format("Missing lowering result for flow '{}'", sourceName(flow.symbol)));
+
+    const auto& flowResult = resultIt->second;
+    for (const auto& condition : flowResult.conditions)
+    {
+      // const auto conditionId = conditionInstanceId++;
+      const auto conditionName = std::format("{}_{}", flow.name, condition.localPort);
+      const auto conditionType = std::format("c{}", conditionName);
+
+      out << std::format("import {}.dzn;\n", conditionName);
+      RETURN_ON_FAILURE(createConditionComponent(mModel, mOptions.outputDir, conditionName, componentId));
+      mModel.declareInstance(componentId, conditionName, conditionType, {componentId, condition.span});
+
+      connections.push_back({
+          .lhs = std::format("{}.{}", flowInstance, condition.localPort),
+          .rhs = conditionName + ".api",
+          .span = condition.span,
+          .kind = PortProtocol::Condition,
+      });
+    }
+  }
 
   if (hasAlarm)
     out << "import alarm.dzn;\n";
@@ -469,6 +498,9 @@ Result<LoweringPass::FlowResult> LoweringPass::lowerFlow(const ir::Flow& flow)
     mModel.declarePort(componentId, call.localPort, PortDirection::Requires, protocol, {call.target, call.span});
   }
 
+  for (const auto& condition : state.conditions)
+    mModel.declarePort(componentId, condition.localPort, PortDirection::Requires, PortProtocol::Condition, {componentId, condition.span});
+
   // Resolve repeated uses of the same external resource inside the flow.
   RETURN_ON_FAILURE_AS(createNecessaryArbiter(componentId, state.connections), LoweringPass::FlowResult);
 
@@ -558,7 +590,7 @@ Result<LoweringPass::FlowResult> LoweringPass::lowerFlow(const ir::Flow& flow)
 
   mModel.setGeneratedFile(component->fileName, out.str(), {flow.symbol, flow.span});
 
-  return FlowResult{requiredCalls, state.alarms};
+  return FlowResult{requiredCalls, state.alarms, state.conditions};
 }
 
 LoweringPass::PortRef LoweringPass::portFromString(const std::string& ref) const
@@ -588,14 +620,15 @@ Result<std::string> LoweringPass::lowerStrategy(const ir::Flow& flow, const ir::
     if (items.empty())
       return std::string("continue");
 
-    RETURN_ON_FAILURE_AS(createSequenceComponent(mModel, mOptions.outputDir, items.size(), flow.symbol), std::string);
+    LibraryComponent libComponent;
+    ASSIGN_OR_RETURN_ON_FAILURE_AS(libComponent, createSequenceComponent(mModel, mOptions.outputDir, items.size(), flow.symbol), std::string);
 
     const auto id = state.sequence++;
     const auto instance = std::format("s{}", id);
-    state.imports.insert(std::format("sequence{}.dzn", items.size()));
-    state.definitions.push_back(std::format("csequence{} {}", items.size(), instance));
-    mModel.declareInstance(state.component, instance, std::format("csequence{}", items.size()), {std::nullopt, strategy->span});
-    for (std::size_t i = 0; i < items.size(); ++i)
+    state.imports.insert(libComponent.filename);
+    state.definitions.push_back(std::format("{} {}", libComponent.name, instance));
+    mModel.declareInstance(state.component, instance, libComponent.name, {std::nullopt, strategy->span});
+    for (size_t i = 0; i < items.size(); ++i)
     {
       auto child = lowerStrategy(flow, items[i], state);
       if (!child.IsSuccess())
@@ -609,13 +642,15 @@ Result<std::string> LoweringPass::lowerStrategy(const ir::Flow& flow, const ir::
   {
     const auto instance = std::format("p{}", state.join++);
     const auto count = p->items.size();
-    state.imports.insert(std::format("parallel{}.dzn", count));
-    state.definitions.push_back(std::format("cparallel{} {}", count, instance));
-    mModel.declareInstance(state.component, instance, std::format("cparallel{}", count), {std::nullopt, strategy->span});
 
-    RETURN_ON_FAILURE_AS(createParallelComponent(mModel, mOptions.outputDir, count, flow.symbol), std::string);
+    LibraryComponent libComponent;
+    ASSIGN_OR_RETURN_ON_FAILURE_AS(libComponent, createParallelComponent(mModel, mOptions.outputDir, count, flow.symbol), std::string);
 
-    for (std::size_t i = 0; i < count; ++i)
+    state.imports.insert(libComponent.filename);
+    state.definitions.push_back(std::format("{} {}", libComponent.name, instance));
+    mModel.declareInstance(state.component, instance, libComponent.name, {std::nullopt, strategy->span});
+
+    for (size_t i = 0; i < count; ++i)
     {
       auto child = lowerStrategy(flow, p->items[i], state);
       if (!child.IsSuccess())
@@ -640,21 +675,23 @@ Result<std::string> LoweringPass::lowerStrategy(const ir::Flow& flow, const ir::
     if (!fallback.IsSuccess())
       return fallback;
 
-    const auto instance = std::format("w{}", state.within++);
-    const auto alarm = std::format("alarm{}", state.alarm++);
-    state.imports.insert("within.dzn");
-    state.imports.insert("ialarm.dzn");
-    state.definitions.push_back("cwithin " + instance);
-    mModel.declareInstance(state.component, instance, "cwithin", {std::nullopt, strategy->span});
-    mModel.declarePort(state.component, alarm, PortDirection::Requires, PortProtocol::Alarm, {std::nullopt, strategy->span});
-    state.alarms.push_back(alarm);
-    state.connections.push_back({.lhs = instance + ".action1", .rhs = body.Value()});
-    state.connections.push_back({.lhs = instance + ".action2", .rhs = fallback.Value()});
-    state.connections.push_back({.lhs = instance + ".alarm", .rhs = alarm});
-
     RETURN_ON_FAILURE_AS(createAlarmComponent(mModel, mOptions.outputDir), std::string);
     RETURN_ON_FAILURE_AS(createAlarmInterface(mModel, mOptions.outputDir), std::string);
-    RETURN_ON_FAILURE_AS(createWithinComponent(mModel, mOptions.outputDir, flow.symbol), std::string);
+
+    LibraryComponent libWithin;
+    ASSIGN_OR_RETURN_ON_FAILURE_AS(libWithin, createWithinComponent(mModel, mOptions.outputDir, p->seconds, flow.symbol), std::string);
+
+    const auto instance = std::format("w{}", state.within++);
+    const auto alarm = std::format("alarm{}", state.alarm++);
+    state.imports.insert(libWithin.filename);
+    state.imports.insert("ialarm.dzn");
+    state.definitions.push_back(libWithin.name + instance);
+    mModel.declareInstance(state.component, instance, libWithin.name, {std::nullopt, strategy->span});
+    mModel.declarePort(state.component, alarm, PortDirection::Requires, PortProtocol::Alarm, {std::nullopt, strategy->span});
+    state.alarms.push_back(alarm);
+    state.connections.push_back({.lhs = instance + ".actionDo", .rhs = body.Value()});
+    state.connections.push_back({.lhs = instance + ".actionElse", .rhs = fallback.Value()});
+    state.connections.push_back({.lhs = instance + ".alarm", .rhs = alarm});
 
     return instance + ".api";
   }
@@ -739,7 +776,201 @@ Result<std::string> LoweringPass::lowerStrategy(const ir::Flow& flow, const ir::
 
     return current;
   }
+  else if (auto p = std::get_if<ir::Strategy::Choose>(&strategy->value))
+  {
+    if (p->options.empty())
+      return Result<std::string>::Failed("Dezyne lowering: choose contains no branches at " + strategy->span.toString());
+
+    const auto id = state.choose++;
+    const auto instance = std::format("ch{}", id);
+
+    std::vector<std::string> endpoints;
+    endpoints.reserve(p->options.size());
+
+    std::size_t conditionCount = 0;
+    bool seenElse = false;
+
+    for (std::size_t branchIndex = 0; branchIndex < p->options.size(); ++branchIndex)
+    {
+      const auto& branch = p->options[branchIndex];
+
+      // ------------------------------------------------------------
+      // Lower the branch body.
+      auto child = lowerStrategy(flow, branch.strategy, state);
+
+      if (!child.IsSuccess())
+        return child;
+
+      endpoints.push_back(child.Value());
+
+      // ------------------------------------------------------------
+      // A branch with a condition gets an icondition input.
+      if (branch.condition)
+      {
+        if (seenElse)
+          return Result<std::string>::Failed("Dezyne lowering: conditional branch after else in choose at " + strategy->span.toString());
+
+        // conditionIndex is LOCAL to this selector:
+        //
+        // selector.condition0
+        // selector.condition1
+        // ...
+        const auto selectorConditionIndex = conditionCount++;
+
+        // conditionName must be unique within the containing flow.
+        const auto flowConditionIndex = state.condition++;
+        const auto conditionName = std::format("condition{}", flowConditionIndex);
+
+        state.conditions.push_back({
+            .localPort = conditionName,
+            .expression = *branch.condition,
+            .span = branch.condition->span,
+        });
+
+        state.connections.push_back({
+            .lhs = std::format("{}.condition{}", instance, selectorConditionIndex),
+            .rhs = conditionName,
+            .span = branch.condition->span,
+            .kind = PortProtocol::Condition,
+        });
+      }
+      else
+      {
+        // No condition means the default/else branch.
+        if (seenElse)
+          return Result<std::string>::Failed("Dezyne lowering: choose contains multiple else branches at " + strategy->span.toString());
+
+        seenElse = true;
+
+        if (branchIndex != p->options.size() - 1)
+          return Result<std::string>::Failed("Dezyne lowering: else branch must be last in choose at " + strategy->span.toString());
+      }
+    }
+
+    // For now we require a total choose.
+    if (!seenElse)
+      return Result<std::string>::Failed("Dezyne lowering: choose requires an else branch at " + strategy->span.toString());
+
+    // --------------------------------------------------------------
+    // Create selector component.
+    RETURN_ON_FAILURE_AS(createSelectorComponent(mModel, mOptions.outputDir, conditionCount, endpoints.size(), flow.symbol), std::string);
+
+    const auto selectoName = std::format("selector{}", endpoints.size());
+    const auto type = std::format("c{}", selectoName);
+    state.imports.insert(std::format("{}.dzn", selectoName));
+    state.definitions.push_back(std::format("{} {}", type, instance));
+    mModel.declareInstance(state.component, instance, type, {std::nullopt, strategy->span});
+
+    // --------------------------------------------------------------
+    // Connect branch actions.
+    for (std::size_t i = 0; i < endpoints.size(); ++i)
+    {
+      state.connections.push_back({
+          .lhs = std::format("{}.flow{}", instance, i),
+          .rhs = endpoints[i],
+          .span = strategy->span,
+          .kind = PortProtocol::Action,
+      });
+    }
+
+    return instance + ".api";
+  }
+
   return Result<std::string>::Failed("Unknown strategy in Dezyne lowering");
+}
+
+Result<std::string> LoweringPass::lowerExpression(const ir::Flow& flow, const ir::PExpression& expression, FlowState& state)
+{
+  if (auto expr = std::get_if<ir::Expression::Literal>(&expression->value))
+  {
+    // Literals are copied directly
+    return expr->text;
+  }
+  else if (auto expr = std::get_if<ir::Expression::DataExpr>(&expression->value))
+  {
+    return std::format("{}.{}", expr->capability, expr->data);
+  }
+  else if (auto expr = std::get_if<ir::Expression::Reference>(&expression->value))
+  {
+    return std::format("{}", expr->symbol);
+  }
+  else if (auto expr = std::get_if<ir::Expression::CallExpr>(&expression->value))
+  {
+    std::string toReturn;
+    auto call = expr->call;
+    if (call.receiver != InvalidSymbol)
+    {
+      toReturn += sourceName(call.receiver);
+      toReturn += ".";
+    }
+
+    toReturn += sourceName(call.target);
+    toReturn += "()";
+    return toReturn;
+  }
+  else if (auto expr = std::get_if<ir::Expression::Unary>(&expression->value))
+  {
+    auto subexpr = lowerExpression(flow, expr->value, state);
+    RETURN_ON_FAILURE(subexpr);
+    return std::format("{}{}", expr->op, subexpr.Value());
+  }
+  else if (auto expr = std::get_if<ir::Expression::Binary>(&expression->value))
+  {
+    auto left = lowerExpression(flow, expr->lhs, state);
+    RETURN_ON_FAILURE(left);
+    auto right = lowerExpression(flow, expr->rhs, state);
+    RETURN_ON_FAILURE(right);
+    return std::format("{} {} {}", left.Value(), expr->op, right.Value());
+  }
+  else if (auto expr = std::get_if<ir::Expression::RecordLiteral>(&expression->value))
+  {
+    std::string toReturn = "{";
+    bool first = true;
+    for (const auto& field : expr->fields)
+    {
+      if (!first)
+        toReturn += ", ";
+
+      auto subexpr = lowerExpression(flow, field.value, state);
+      RETURN_ON_FAILURE(subexpr);
+      toReturn += std::format("{} = {}", field.name, subexpr.Value());
+    }
+    return toReturn + "}";
+  }
+  else if (auto expr = std::get_if<ir::Expression::ListLiteral>(&expression->value))
+  {
+    std::string toReturn = "[";
+    bool first = true;
+    for (const auto& field : expr->fields)
+    {
+      if (!first)
+        toReturn += ", ";
+
+      auto subexpr = lowerExpression(flow, field, state);
+      RETURN_ON_FAILURE(subexpr);
+      toReturn += subexpr.Value();
+    }
+    return toReturn + "]";
+  }
+  else if (auto expr = std::get_if<ir::Expression::MapLiteral>(&expression->value))
+  {
+    std::string toReturn = "{";
+    bool first = true;
+    for (const auto& field : expr->fields)
+    {
+      if (!first)
+        toReturn += ", ";
+
+      auto keyexpr = lowerExpression(flow, field.key, state);
+      RETURN_ON_FAILURE(keyexpr);
+      auto subexpr = lowerExpression(flow, field.value, state);
+      RETURN_ON_FAILURE(subexpr);
+      toReturn += std::format("{} = {}", keyexpr.Value(), subexpr.Value());
+    }
+    return toReturn + "}";
+  }
+
+  return Result<std::string>::Failed("Unknown expression type at {}", expression->span.toString());
 }
 
 Result<std::string> LoweringPass::lowerHandler(const ir::Flow& flow, const ir::PHandler& handler, FlowState& state)
@@ -871,8 +1102,6 @@ Result<std::string> LoweringPass::lowerCall(const ir::Call& call, FlowState& sta
   // flow-local arbiter.
   bool isAbort = mAbortEvents.contains(call.target);
   const auto local = std::format("{}_{}", sourceName(call.receiver), sourceName(call.target));
-  // const auto* targetSymbol = mSymbols.get(call.target);
-
   if (isAbort && !signal)
   {
     const auto abortPort = local;

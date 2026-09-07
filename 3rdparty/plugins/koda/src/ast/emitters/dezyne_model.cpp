@@ -28,6 +28,8 @@ std::string portToString(PortProtocol port)
       return "isignal";
     case koda::dezyne::PortProtocol::Alarm:
       return "ialarm";
+    case koda::dezyne::PortProtocol::Condition:
+      return "icondition";
     default:
     case koda::dezyne::PortProtocol::Unknown:
       return "unknown port";

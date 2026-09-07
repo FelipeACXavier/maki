@@ -194,6 +194,8 @@ std::any CST2AST::visitStatement(KodaParser::StatementContext* ctx)
     s->node = std::any_cast<koda::PActionDef>(visit(ctx->serviceBlock()));
   else if (ctx->topicBlock())
     s->node = std::any_cast<koda::PActionDef>(visit(ctx->topicBlock()));
+  else if (ctx->dataBlock())
+    s->node = std::any_cast<koda::PDataBlock>(visit(ctx->dataBlock()));
   else
     throw std::runtime_error("Unknown statement kind");
 
@@ -267,6 +269,17 @@ std::any CST2AST::visitVarsBlock(KodaParser::VarsBlockContext* ctx)
   return vb;
 }
 
+std::any CST2AST::visitDataBlock(KodaParser::DataBlockContext* ctx)
+{
+  auto vb = std::make_shared<koda::DataBlock>();
+  vb->span = spanOf(ctx);
+
+  for (auto* v : ctx->variableStatement())
+    vb->vars.push_back(std::any_cast<koda::PVarDef>(visit(v)));
+
+  return vb;
+}
+
 std::any CST2AST::visitVariableStatement(KodaParser::VariableStatementContext* ctx)
 {
   // LOG_DEBUG("Visiting variable statement");
@@ -275,7 +288,8 @@ std::any CST2AST::visitVariableStatement(KodaParser::VariableStatementContext* c
   v->varType = convertTypeReference(ctx->typeReference());
   v->name = ctx->IDENT()->getText();
   // LOG_DEBUG("Visiting first expression of variable statement");
-  v->init = std::any_cast<koda::PExpr>(visit(ctx->expression()));
+  if (ctx->expression())
+    v->init = std::any_cast<koda::PExpr>(visit(ctx->expression()));
 
   return v;
 }
@@ -492,6 +506,37 @@ std::any CST2AST::visitStratTask(KodaParser::StratTaskContext* ctx)
   return node;
 }
 
+std::any CST2AST::visitStratChoose(KodaParser::StratChooseContext* ctx)
+{
+  auto choose = std::make_shared<koda::Strategy::Choose>();
+
+  for (const auto& statement : ctx->chooseWhenStatement())
+    if (auto when = std::any_cast<koda::PWhen>(visit(statement)))
+      choose->options.push_back(when);
+
+  auto node = std::make_shared<koda::Strategy>();
+  node->span = spanOf(ctx);
+  node->v = choose;
+
+  return node;
+}
+
+std::any CST2AST::visitWhenStatement(KodaParser::WhenStatementContext* ctx)
+{
+  auto when = std::make_shared<koda::Strategy::Choose::When>();
+  when->span = spanOf(ctx);
+
+  if (ctx->expression())
+    if (auto condition = std::any_cast<koda::PExpr>(visit(ctx->expression())))
+      when->condition = condition;
+
+  if (ctx->strategy())
+    if (auto strategy = std::any_cast<koda::PStrategy>(visit(ctx->strategy())))
+      when->strategy = strategy;
+
+  return when;
+}
+
 std::any CST2AST::visitHandlerOnError(KodaParser::HandlerOnErrorContext* ctx)
 {
   // LOG_DEBUG("Visiting On error");
@@ -581,7 +626,6 @@ std::any CST2AST::visitExprList(KodaParser::ExprListContext* ctx)
 
 // Because we factored expression into precedence rules (exprOr -> exprAnd -> ...),
 // many nodes are built in the lower-level visit methods. Here are the leaves:
-
 std::any CST2AST::visitIdentifier(KodaParser::IdentifierContext* ctx)
 {
   if (ctx->IDENT())
@@ -673,6 +717,22 @@ std::any CST2AST::visitExprCall(KodaParser::ExprCallContext* ctx)
   s->value = std::any_cast<koda::PEventCall>(visit(ctx->eventStatement()));
 
   auto exp = std::make_shared<koda::Expr>();
+  exp->span = spanOf(ctx);
+  exp->v = s;
+
+  return exp;
+}
+
+std::any CST2AST::visitExprDataAccess(KodaParser::ExprDataAccessContext* ctx)
+{
+  auto exp = std::make_shared<koda::Expr>();
+  if (ctx->IDENT().size() != 2)
+    ERROR_AND_RETURN(ctx, "Wrong format in data access", exp);
+
+  auto s = std::make_shared<koda::Expr::DataAccess>();
+  s->capability = ctx->IDENT(0)->getText();
+  s->data = ctx->IDENT(1)->getText();
+
   exp->span = spanOf(ctx);
   exp->v = s;
 

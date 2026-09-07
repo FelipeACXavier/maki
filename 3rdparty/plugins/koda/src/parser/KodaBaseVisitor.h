@@ -139,6 +139,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitDataBlock(KodaParser::DataBlockContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitStratSeq(KodaParser::StratSeqContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -172,6 +176,14 @@ public:
   }
 
   virtual std::any visitStratParen(KodaParser::StratParenContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitStratChoose(KodaParser::StratChooseContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitWhenStatement(KodaParser::WhenStatementContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -268,6 +280,10 @@ public:
   }
 
   virtual std::any visitExprMapLiteral(KodaParser::ExprMapLiteralContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitExprDataAccess(KodaParser::ExprDataAccessContext *ctx) override {
     return visitChildren(ctx);
   }
 

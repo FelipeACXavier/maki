@@ -142,6 +142,7 @@ VoidResult Compiler::runFrontend()
     return analyzed;
 
   mSemantics = semantics.model();
+  // mSemantics.print();
 
   // Finally, we build the intermediate representation that emitters can use
   IRBuilder builder(mSymbols, mSemantics, mOptions.traceability);

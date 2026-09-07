@@ -82,6 +82,21 @@ Result<ir::Component> IRBuilder::buildComponent(const PComponent& component) con
         });
       }
     }
+    else if (auto vars = std::get_if<PDataBlock>(&statement->node); vars && *vars)
+    {
+      for (const auto& var : (*vars)->vars)
+      {
+        const auto id = mSymbols.lookupChild(owner, var->name);
+        const auto* symbol = id ? mSymbols.get(*id) : nullptr;
+        out.variables.push_back(ir::Variable{
+            .symbol = id.value_or(InvalidSymbol),
+            .name = var->name,
+            .type = symbol ? symbol->type : types::TypeReference{},
+            .initial = nullptr,
+            .span = var->span,
+        });
+      }
+    }
     else if (auto flows = std::get_if<PStrategyBlock>(&statement->node); flows && *flows)
     {
       for (const auto& flow : (*flows)->flows)
@@ -303,8 +318,37 @@ Result<ir::PStrategy> IRBuilder::buildStrategy(const PStrategy& strategy, Symbol
   {
     return buildStrategy((*p)->a, owner);
   }
+  else if (auto p = std::get_if<PChoose>(&strategy->v); p && *p)
+  {
+    ir::Strategy::Choose choose;
+    for (const auto& pwhen : (*p)->options)
+    {
+      ir::Strategy::Choose::When when;
+      if (pwhen->strategy)
+      {
+        auto strat = buildStrategy(pwhen->strategy, owner);
+        if (!strat.IsSuccess())
+          return strat;
+
+        when.strategy = strat.Value();
+      }
+
+      if (pwhen->condition)
+      {
+        auto expr = buildExpr(pwhen->condition, owner);
+        if (!expr.IsSuccess())
+          return Result<ir::PStrategy>::Failed(expr.ErrorMessage());
+
+        when.condition = expr.Value();
+      }
+
+      choose.options.push_back(std::move(when));
+    }
+
+    out->value = std::move(choose);
+  }
   else
-    return Result<ir::PStrategy>::Failed("Unsupported strategy node");
+    return Result<ir::PStrategy>::Failed("Unsupported strategy node at {}", strategy->span.toString());
 
   out->id = std::format("{}_{}", strategy->id, owner);
   if (mTraceMap)
@@ -360,7 +404,7 @@ Result<ir::Call> IRBuilder::buildCall(const PEventCall& call, SymbolId owner) co
 {
   auto it = mSemantics.calls.find(call.get());
   if (it == mSemantics.calls.end())
-    return Result<ir::Call>::Failed(std::format("Unresolved call at {}", call->span.toString()));
+    return Result<ir::Call>::Failed(std::format("Unresolved call to '{}' at {}", call->name, call->span.toString()));
 
   const auto& resolved = it->second;
 
@@ -539,6 +583,48 @@ Result<ir::PExpression> IRBuilder::buildExpr(const PExpr& expr, SymbolId owner) 
     }
 
     out->value = std::move(record);
+  }
+  else if (auto p = std::get_if<PListLiteral>(&expr->v); p && *p)
+  {
+    ir::Expression::ListLiteral list;
+    for (const auto& field : (*p)->fields)
+    {
+      auto value = buildExpr(field, owner);
+      if (!value.IsSuccess())
+        return Result<ir::PExpression>::Failed(value.ErrorMessage());
+
+      list.fields.push_back(value.Value());
+    }
+
+    out->value = std::move(list);
+  }
+  else if (auto p = std::get_if<PMapLiteral>(&expr->v); p && *p)
+  {
+    ir::Expression::MapLiteral map;
+    for (const auto& field : (*p)->fields)
+    {
+      auto key = buildExpr(field->key, owner);
+      if (!key.IsSuccess())
+        return Result<ir::PExpression>::Failed(key.ErrorMessage());
+
+      auto value = buildExpr(field->value, owner);
+      if (!value.IsSuccess())
+        return Result<ir::PExpression>::Failed(value.ErrorMessage());
+
+      map.fields.push_back({
+          .key = key.Value(),
+          .value = value.Value(),
+      });
+    }
+
+    out->value = std::move(map);
+  }
+  else if (auto p = std::get_if<PDataAccess>(&expr->v); p && *p)
+  {
+    ir::Expression::DataExpr data;
+    data.capability = (*p)->capability;
+    data.data = (*p)->data;
+    out->value = std::move(data);
   }
   else
   {

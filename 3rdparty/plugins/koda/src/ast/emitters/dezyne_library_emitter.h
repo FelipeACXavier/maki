@@ -12,35 +12,56 @@
 namespace koda::dezyne
 {
 
-VoidResult createComponent(Model& model, const std::string& outdir, const std::string& name,
-                           std::function<void(const std::string& name, const std::string& path, std::ostringstream& out)> callback);
+struct LibraryPort
+{
+  std::string name;
+  PortProtocol kind = PortProtocol::Action;
+};
+
+struct LibraryComponent
+{
+  std::string name = "";
+  std::string filename = "";
+  std::string path = "";
+  std::vector<LibraryPort> providesPorts = {};
+  std::vector<LibraryPort> requiresPorts = {};
+  SymbolId symbol = InvalidSymbol;
+};
+
+Result<LibraryComponent> createComponent(Model& model, const std::string& outdir, const std::string& name, SymbolId componentId,
+                                         std::function<void(LibraryComponent& name, std::ostringstream& out)> callback);
 VoidResult createTypes(Model& model, const std::string& outdir);
 VoidResult createAbortInterface(Model& model, const std::string& outdir);
 VoidResult createActionInterface(Model& model, const std::string& outdir);
 VoidResult createSignalInterface(Model& model, const std::string& outdir);
 VoidResult createExternalInterface(Model& model, const std::string& outdir);
+VoidResult createConditionInterface(Model& model, const std::string& outdir);
 
 // Main orchestration components
-VoidResult createSequenceComponent(Model& model, const std::string& outdir, uint32_t instances, SymbolId componentId);
-VoidResult createParallelComponent(Model& model, const std::string& outdir, uint32_t instances, SymbolId componentId);
-VoidResult createWithinComponent(Model& model, const std::string& outdir, SymbolId componentId);
-VoidResult createRepeatComponent(Model& model, const std::string& outdir, SymbolId componentId);
-VoidResult createEveryComponent(Model& model, const std::string& outdir, SymbolId componentId);
-VoidResult createSignalHandlerComponent(Model& model, const std::string& outdir, uint32_t instances, SymbolId componentId);
-VoidResult createSignalContinueComponent(Model& model, const std::string& outdir, uint32_t instances, SymbolId componentId);
-VoidResult createAbortHandlerComponent(Model& model, const std::string& outdir, SymbolId componentId);
-VoidResult createErrorHandlerComponent(Model& model, const std::string& outdir, SymbolId componentId);
+Result<LibraryComponent> createSequenceComponent(Model& model, const std::string& outdir, uint32_t instances, SymbolId componentId);
+Result<LibraryComponent> createParallelComponent(Model& model, const std::string& outdir, uint32_t instances, SymbolId componentId);
+Result<LibraryComponent> createWithinComponent(Model& model, const std::string& outdir, int timeout, SymbolId componentId);
+Result<LibraryComponent> createRepeatComponent(Model& model, const std::string& outdir, SymbolId componentId);
+Result<LibraryComponent> createEveryComponent(Model& model, const std::string& outdir, SymbolId componentId);
+Result<LibraryComponent> createSignalHandlerComponent(Model& model, const std::string& outdir, uint32_t instances, SymbolId componentId);
+Result<LibraryComponent> createSignalContinueComponent(Model& model, const std::string& outdir, uint32_t instances, SymbolId componentId);
+Result<LibraryComponent> createAbortHandlerComponent(Model& model, const std::string& outdir, SymbolId componentId);
+Result<LibraryComponent> createErrorHandlerComponent(Model& model, const std::string& outdir, SymbolId componentId);
 
-VoidResult createAbortCallComponent(Model& model, const std::string& outdir, SymbolId componentId);
-VoidResult createCapabilityArmour(Model& model, const std::string& outdir, const std::string& capabilityName, const std::vector<std::string>& ports,
-                                  SymbolId componentId);
+Result<LibraryComponent> createSelectorComponent(Model& model, const std::string& outdir, uint32_t conditionCount, uint32_t branchCount,
+                                                 SymbolId componentId);
+Result<LibraryComponent> createAbortCallComponent(Model& model, const std::string& outdir, SymbolId componentId);
+Result<LibraryComponent> createCapabilityArmour(Model& model, const std::string& outdir, const std::string& capabilityName,
+                                                const std::vector<std::string>& ports, SymbolId componentId);
 
 // Helpers
 VoidResult createAlarmComponent(Model& model, const std::string& outdir);
 VoidResult createAlarmInterface(Model& model, const std::string& outdir);
-VoidResult createActionArbiterComponent(Model& model, const std::string& outdir, uint32_t instances, SymbolId componentId);
-VoidResult createAbortArbiterComponent(Model& model, const std::string& outdir, uint32_t instances, SymbolId componentId);
+Result<LibraryComponent> createActionArbiterComponent(Model& model, const std::string& outdir, uint32_t instances, SymbolId componentId);
+Result<LibraryComponent> createAbortArbiterComponent(Model& model, const std::string& outdir, uint32_t instances, SymbolId componentId);
+Result<LibraryComponent> createConditionComponent(Model& model, const std::string& outdir, const std::string& name, SymbolId componentId);
 
+void createSelectorRecursion(uint32_t start, uint32_t instances, std::ostringstream& out, const std::string& indent);
 void createSequenceDoneRecursion(bool fromIdle, uint32_t start, uint32_t instances, std::ostringstream& out, const std::string& indent);
 void createParallelDoneRecursion(bool fromIdle, bool fromDone, uint32_t start, uint32_t instances, std::ostringstream& out,
                                  const std::string& indent);

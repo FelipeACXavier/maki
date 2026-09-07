@@ -16,14 +16,15 @@ public:
     OPTIONAL = 7, MAP = 8, MAPPING = 9, TO = 10, STRATEGY = 11, PARAMETERS = 12, 
     ACTION = 13, SERVICE = 14, TOPIC = 15, TRIGGER = 16, RETURN = 17, ABORT = 18, 
     ERROR = 19, IN = 20, OUT = 21, ON = 22, CONSUMES = 23, PRODUCES = 24, 
-    REQ = 25, PRO = 26, END = 27, CONTINUE = 28, REPEAT = 29, JOIN = 30, 
-    EITHER = 31, WITHIN = 32, DO = 33, ELSE = 34, THEN = 35, EVERY = 36, 
-    ARROW = 37, PIPE = 38, EQ = 39, NEQ = 40, LEQ = 41, GEQ = 42, LT = 43, 
-    GT = 44, ASSIGN = 45, DOUBLE_COLON = 46, COLON = 47, COMMA = 48, SEMI = 49, 
-    DOT = 50, PLUS = 51, MINUS = 52, STAR = 53, SLASH = 54, NOT = 55, AND = 56, 
-    OR = 57, LPAREN = 58, RPAREN = 59, LBRACE = 60, RBRACE = 61, LBRACK = 62, 
-    RBRACK = 63, NATURAL = 64, REAL = 65, BOOLEAN = 66, IDENT = 67, STRING = 68, 
-    ANY = 69, LINE_COMMENT = 70, BLOCK_COMMENT = 71, WS = 72
+    DATA = 25, REQ = 26, PRO = 27, END = 28, CONTINUE = 29, REPEAT = 30, 
+    JOIN = 31, EITHER = 32, WHEN = 33, CHOOSE = 34, WITHIN = 35, DO = 36, 
+    ELSE = 37, THEN = 38, EVERY = 39, ARROW = 40, PIPE = 41, EQ = 42, NEQ = 43, 
+    LEQ = 44, GEQ = 45, LT = 46, GT = 47, ASSIGN = 48, DOUBLE_COLON = 49, 
+    COLON = 50, COMMA = 51, SEMI = 52, DOT = 53, PLUS = 54, MINUS = 55, 
+    STAR = 56, SLASH = 57, NOT = 58, AND = 59, OR = 60, LPAREN = 61, RPAREN = 62, 
+    LBRACE = 63, RBRACE = 64, LBRACK = 65, RBRACK = 66, NATURAL = 67, REAL = 68, 
+    BOOLEAN = 69, IDENT = 70, STRING = 71, ANY = 72, LINE_COMMENT = 73, 
+    BLOCK_COMMENT = 74, WS = 75
   };
 
   enum {
@@ -34,13 +35,13 @@ public:
     RuleArgument = 12, RuleStatement = 13, RuleTasksBlock = 14, RuleFlow = 15, 
     RuleIdentList = 16, RuleVarsBlock = 17, RuleVariableStatement = 18, 
     RuleActionBlock = 19, RuleServiceBlock = 20, RuleTopicBlock = 21, RuleRosDefStatement = 22, 
-    RuleReqDefStatement = 23, RuleEventDefStatement = 24, RuleStrategy = 25, 
-    RuleStrategyHandler = 26, RuleEventStatement = 27, RuleExprList = 28, 
-    RuleExpression = 29, RuleExprOr = 30, RuleExprAnd = 31, RuleExprCmp = 32, 
-    RuleCompOp = 33, RuleExprNot = 34, RuleExprAdd = 35, RuleExprMul = 36, 
-    RuleExprUnary = 37, RuleExprPrimary = 38, RuleRecordLiteral = 39, RuleRecordFieldInitializer = 40, 
-    RuleListLiteral = 41, RuleMapLiteral = 42, RuleMapFieldInitializer = 43, 
-    RuleIdentifier = 44
+    RuleReqDefStatement = 23, RuleEventDefStatement = 24, RuleDataBlock = 25, 
+    RuleStrategy = 26, RuleChooseWhenStatement = 27, RuleStrategyHandler = 28, 
+    RuleEventStatement = 29, RuleExprList = 30, RuleExpression = 31, RuleExprOr = 32, 
+    RuleExprAnd = 33, RuleExprCmp = 34, RuleCompOp = 35, RuleExprNot = 36, 
+    RuleExprAdd = 37, RuleExprMul = 38, RuleExprUnary = 39, RuleExprPrimary = 40, 
+    RuleRecordLiteral = 41, RuleRecordFieldInitializer = 42, RuleListLiteral = 43, 
+    RuleMapLiteral = 44, RuleMapFieldInitializer = 45, RuleIdentifier = 46
   };
 
   explicit KodaParser(antlr4::TokenStream *input);
@@ -85,7 +86,9 @@ public:
   class RosDefStatementContext;
   class ReqDefStatementContext;
   class EventDefStatementContext;
+  class DataBlockContext;
   class StrategyContext;
+  class ChooseWhenStatementContext;
   class StrategyHandlerContext;
   class EventStatementContext;
   class ExprListContext;
@@ -437,6 +440,7 @@ public:
     ServiceBlockContext *serviceBlock();
     TopicBlockContext *topicBlock();
     RosDefStatementContext *rosDefStatement();
+    DataBlockContext *dataBlock();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -520,9 +524,9 @@ public:
     virtual size_t getRuleIndex() const override;
     TypeReferenceContext *typeReference();
     antlr4::tree::TerminalNode *IDENT();
+    antlr4::tree::TerminalNode *SEMI();
     antlr4::tree::TerminalNode *ASSIGN();
     ExpressionContext *expression();
-    antlr4::tree::TerminalNode *SEMI();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -649,6 +653,23 @@ public:
 
   EventDefStatementContext* eventDefStatement();
 
+  class  DataBlockContext : public antlr4::ParserRuleContext {
+  public:
+    DataBlockContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *DATA();
+    antlr4::tree::TerminalNode *LBRACE();
+    antlr4::tree::TerminalNode *RBRACE();
+    std::vector<VariableStatementContext *> variableStatement();
+    VariableStatementContext* variableStatement(size_t i);
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  DataBlockContext* dataBlock();
+
   class  StrategyContext : public antlr4::ParserRuleContext {
   public:
     StrategyContext(antlr4::ParserRuleContext *parent, size_t invokingState);
@@ -774,8 +795,49 @@ public:
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
+  class  StratChooseContext : public StrategyContext {
+  public:
+    StratChooseContext(StrategyContext *ctx);
+
+    antlr4::tree::TerminalNode *CHOOSE();
+    antlr4::tree::TerminalNode *LBRACE();
+    antlr4::tree::TerminalNode *RBRACE();
+    std::vector<ChooseWhenStatementContext *> chooseWhenStatement();
+    ChooseWhenStatementContext* chooseWhenStatement(size_t i);
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
   StrategyContext* strategy();
   StrategyContext* strategy(int precedence);
+  class  ChooseWhenStatementContext : public antlr4::ParserRuleContext {
+  public:
+    ChooseWhenStatementContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+   
+    ChooseWhenStatementContext() = default;
+    void copyFrom(ChooseWhenStatementContext *context);
+    using antlr4::ParserRuleContext::copyFrom;
+
+    virtual size_t getRuleIndex() const override;
+
+   
+  };
+
+  class  WhenStatementContext : public ChooseWhenStatementContext {
+  public:
+    WhenStatementContext(ChooseWhenStatementContext *ctx);
+
+    antlr4::tree::TerminalNode *WHEN();
+    antlr4::tree::TerminalNode *COLON();
+    StrategyContext *strategy();
+    antlr4::tree::TerminalNode *SEMI();
+    ExpressionContext *expression();
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  ChooseWhenStatementContext* chooseWhenStatement();
+
   class  StrategyHandlerContext : public antlr4::ParserRuleContext {
   public:
     StrategyHandlerContext(antlr4::ParserRuleContext *parent, size_t invokingState);
@@ -1126,6 +1188,17 @@ public:
     ExprFloatContext(ExprPrimaryContext *ctx);
 
     antlr4::tree::TerminalNode *REAL();
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  ExprDataAccessContext : public ExprPrimaryContext {
+  public:
+    ExprDataAccessContext(ExprPrimaryContext *ctx);
+
+    std::vector<antlr4::tree::TerminalNode *> IDENT();
+    antlr4::tree::TerminalNode* IDENT(size_t i);
+    antlr4::tree::TerminalNode *DOT();
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };

@@ -121,6 +121,8 @@ void Statement::print(const std::string& prefix, const bool last) const
     std::get<PStrategyBlock>(node)->print(prefix, last);
   else if (std::holds_alternative<PVarsBlock>(node))
     std::get<PVarsBlock>(node)->print(prefix, last);
+  else if (std::holds_alternative<PDataBlock>(node))
+    std::get<PDataBlock>(node)->print(prefix, last);
   else if (std::holds_alternative<PRosDef>(node))
     std::get<PRosDef>(node)->print(prefix, last);
   else if (std::holds_alternative<PActionDef>(node))
@@ -139,6 +141,15 @@ void StrategyBlock::print(const std::string& prefix, const bool last) const
 void VarsBlock::print(const std::string& prefix, const bool last) const
 {
   LOG_TREE("VarsBlock");
+
+  const std::string childPrefix = prefix + tree::carry(last);
+  for (size_t i = 0; i < vars.size(); ++i)
+    vars.at(i)->print(childPrefix, i == vars.size() - 1);
+}
+
+void DataBlock::print(const std::string& prefix, const bool last) const
+{
+  LOG_TREE("DataBlock");
 
   const std::string childPrefix = prefix + tree::carry(last);
   for (size_t i = 0; i < vars.size(); ++i)
@@ -252,6 +263,7 @@ void Strategy::print(const std::string& prefix, const bool last) const
   ELSE_IF_ALT(PContinue, v, print(prefix, last, span))
   ELSE_IF_ALT(PTaskCall, v, print(prefix, last, span))
   ELSE_IF_ALT(PParen, v, print(prefix, last, span))
+  ELSE_IF_ALT(PChoose, v, print(prefix, last, span))
 }
 
 void Strategy::Seq::print(const std::string& prefix, const bool last, const Span& span) const
@@ -327,6 +339,24 @@ void Strategy::Paren::print(const std::string& prefix, const bool last, const Sp
     a->print(childPrefix, true);
 }
 
+void Strategy::Choose::print(const std::string& prefix, const bool last, const Span& span) const
+{
+  LOG_TREE("Choose");
+  const std::string childPrefix = prefix + tree::carry(last);
+  for (size_t i = 0; i < options.size(); ++i)
+    options.at(i)->print(childPrefix, i == options.size() - 1);
+}
+
+void Strategy::Choose::When::print(const std::string& prefix, const bool last) const
+{
+  LOG_TREE("When");
+  const std::string childPrefix = prefix + tree::carry(last);
+  if (condition)
+    condition->print(childPrefix, strategy == nullptr);
+  if (strategy)
+    strategy->print(childPrefix, true);
+}
+
 std::string StrategyHandler::toString() const
 {
   if (kind == Kind::OnError)
@@ -390,6 +420,7 @@ void Expr::print(const std::string& prefix, const bool last) const
   ELSE_IF_ALT(PRecordLiteral, v, print(prefix, last, span))
   ELSE_IF_ALT(PListLiteral, v, print(prefix, last, span))
   ELSE_IF_ALT(PMapLiteral, v, print(prefix, last, span))
+  ELSE_IF_ALT(PDataAccess, v, print(prefix, last, span))
 }
 
 void Expr::Id::print(const std::string& prefix, const bool last, const Span& span) const
@@ -453,20 +484,41 @@ void Expr::Not::print(const std::string& prefix, const bool last, const Span& sp
 
 std::string Expr::BinOp::toString() const
 {
-  if (operation == Expr::BinOp::Kind::Equal)
-    return "Equal";
-  else if (operation == Expr::BinOp::Kind::NotEqual)
-    return "NotEqual";
-  else if (operation == Expr::BinOp::Kind::GreaterThan)
-    return "GreaterThan";
-  else if (operation == Expr::BinOp::Kind::GreaterEqual)
-    return "GreaterEqual";
-  else if (operation == Expr::BinOp::Kind::LessThan)
-    return "LessThan";
-  else if (operation == Expr::BinOp::Kind::LessEqual)
-    return "LessEqual";
-  else
-    return "Unknown";
+  switch (operation)
+  {
+    case Expr::BinOp::Kind::Unknown:
+        return "Unknown";
+    case Expr::BinOp::Kind::Equal:
+      return "Equal";
+    case Expr::BinOp::Kind::NotEqual:
+      return "NotEqual";
+    case Expr::BinOp::Kind::GreaterThan:
+      return "GreaterThan";
+    case Expr::BinOp::Kind::GreaterEqual:
+      return "GreaterEqual";
+    case Expr::BinOp::Kind::LessThan:
+      return "LessThan";
+    case Expr::BinOp::Kind::LessEqual:
+      return "LessEqual";
+    case Expr::BinOp::Kind::Addition:
+      return "Addition";
+    case Expr::BinOp::Kind::Subtraction:
+      return "Subtraction";
+    case Expr::BinOp::Kind::Multiplication:
+      return "Multiplication";
+    case Expr::BinOp::Kind::Division:
+      return "Division";
+    case Expr::BinOp::Kind::Negation:
+      return "Negation";
+    case Expr::BinOp::Kind::Unary:
+      return "Unary";
+    case Expr::BinOp::Kind::Disjunction:
+      return "Disjunction";
+    case Expr::BinOp::Kind::Conjunction:
+      return "Conjunction";
+  }
+
+  return "Unknown";
 }
 
 void Expr::BinOp::print(const std::string& prefix, const bool last, const Span& span) const
@@ -526,10 +578,16 @@ void Expr::MapLiteral::Field::print(const std::string& prefix, const bool last) 
   LOG_TREE("MapLiteralField");
   const std::string childPrefix = prefix + tree::carry(last);
   if (key)
-    key->print(childPrefix, false);
+    key->print(childPrefix, value == nullptr);
   if (value)
     value->print(childPrefix, true);
 }
 
-// =============================================================
+void Expr::DataAccess::print(const std::string& prefix, const bool last, const Span& span) const
+{
+  LOG_TREE("DataAccess");
+  const std::string childPrefix = prefix + tree::carry(last);
+  printString(childPrefix, false, Format("Capability: {}", capability));
+  printString(childPrefix, true, Format("Data: {}", data));
+}
 }  // namespace koda

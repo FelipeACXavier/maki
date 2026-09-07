@@ -6,6 +6,42 @@
 
 namespace koda
 {
+
+void SemanticModel::print() const
+{
+  LOG_INFO("Calls:");
+  for (const auto& [call, resolved] : calls)
+    LOG_INFO("  {} {} {} -> {} {}", call->name, call->receiver, call->span.toString(), resolved.target, resolved.receiver);
+
+  LOG_INFO("Flow refs:");
+  for (const auto& [strat, symbol] : flowRefs)
+    LOG_INFO("  {} -> {}", strat->id, symbol);
+
+  LOG_INFO("Expression types:");
+  for (const auto& [expr, type] : expressionTypes)
+    LOG_INFO("  {} -> {}", expr->span.toString(), type.toString());
+
+  LOG_INFO("Event arguments:");
+  for (const auto& [symbol, type] : eventArguments)
+  {
+    std::string args;
+    bool first = true;
+    for (const auto& arg : type)
+    {
+      if (!first)
+        args += ", ";
+      args += arg.toString();
+
+      first = false;
+    }
+
+    LOG_INFO("  {} -> {}", symbol, args.empty() ? "No arguments" : args);
+  }
+  LOG_INFO("Variable slots:");
+  for (const auto& [symbol, slot] : variableSlots)
+    LOG_INFO("  {} -> {}", symbol, slot);
+}
+
 SemanticAnalyzer::SemanticAnalyzer(SymbolRegistry& symbols, types::TypeRegistry& types, types::Blackboard& blackboard)
     : mSymbols(symbols)
     , mBlackboard(blackboard)
@@ -143,6 +179,26 @@ VoidResult SemanticAnalyzer::analyzeStatement(const PStatement& statement, Symbo
       mModel.variableSlots[*symbolId] = slot;
     }
   }
+  else if (auto vars = std::get_if<PDataBlock>(&statement->node); vars && *vars)
+  {
+    for (const auto& var : (*vars)->vars)
+    {
+      const auto symbolId = mSymbols.lookupChild(owner, var->name);
+      const auto* symbol = symbolId ? mSymbols.get(*symbolId) : nullptr;
+      if (!symbol)
+        return VoidResult::Failed(std::format("Unknown variable '{}'", var->name));
+
+      auto definition = mTypeRegistry.resolve(var->varType);
+      if (!definition)
+        return VoidResult::Failed(std::format("Data '{}' at {} with unknown type '{}'", var->name, var->span.toString(), var->varType.toString()));
+
+      // const auto slot = mBlackboard.declare(std::to_string(*symbolId), var->name, symbol->type, "mission");
+      // mBlackboard.makeAvailable(slot);
+
+      // Useful later when resolving `drive(target1)`.
+      // mModel.variableSlots[*symbolId] = slot;
+    }
+  }
   else if (auto block = std::get_if<PStrategyBlock>(&statement->node); block && *block)
   {
     // Collect them but do not analyze all of them already
@@ -237,6 +293,7 @@ VoidResult SemanticAnalyzer::analyzeStrategy(const PStrategy& strategy, SymbolId
     auto a = analyzeStrategy((*p)->a, owner);
     if (!a.IsSuccess())
       return a;
+
     for (const auto& h : (*p)->handlers)
     {
       auto r = analyzeHandler(h, owner);
@@ -275,6 +332,15 @@ VoidResult SemanticAnalyzer::analyzeStrategy(const PStrategy& strategy, SymbolId
   else if (auto p = std::get_if<PParen>(&strategy->v); p && *p)
   {
     return analyzeStrategy((*p)->a, owner);
+  }
+  else if (auto p = std::get_if<PChoose>(&strategy->v); p && *p)
+  {
+    for (const auto& child : (*p)->options)
+    {
+      auto r = analyzeStrategy(child->strategy, owner);
+      if (!r.IsSuccess())
+        return r;
+    }
   }
 
   return VoidResult();
@@ -717,7 +783,7 @@ Result<SymbolId> SemanticAnalyzer::resolveValue(const std::string& name, SymbolI
 
 Result<SymbolId> SemanticAnalyzer::resolveComponentType(const Symbol& value, const Span& span) const
 {
-  LOG_DEBUG("Resolving component {} with id {} and type {} {} at {}", value.name, value.id, toString(value.kind), value.type.toString(),
+  LOG_TRACE("Resolving component {} with id {} and type {} {} at {}", value.name, value.id, toString(value.kind), value.type.toString(),
             value.span.toString());
   if (value.kind == SymbolKind::Capability || value.kind == SymbolKind::Flow)
     return value.id;

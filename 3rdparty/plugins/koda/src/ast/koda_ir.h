@@ -153,7 +153,13 @@ struct Expression
     std::vector<Field> fields;
   };
 
-  std::variant<Literal, Reference, CallExpr, Unary, Binary, RecordLiteral, ListLiteral, MapLiteral> value;
+  struct DataExpr
+  {
+    std::string capability;
+    std::string data;
+  };
+
+  std::variant<Literal, Reference, CallExpr, Unary, Binary, RecordLiteral, ListLiteral, MapLiteral, DataExpr> value;
   types::TypeReference type;
   Span span;
 };
@@ -213,8 +219,19 @@ struct Strategy
     std::vector<PHandler> handlers;
   };
 
+  struct Choose
+  {
+    struct When
+    {
+      std::shared_ptr<ir::Expression> condition;
+      std::shared_ptr<ir::Strategy> strategy;
+    };
+
+    std::vector<When> options;
+  };
+
   std::string id;
-  std::variant<Sequence, Join, Either, Within, Repeat, End, Continue, Call> value;
+  std::variant<Sequence, Join, Either, Within, Repeat, End, Continue, Call, Choose> value;
   Span span;
 };
 

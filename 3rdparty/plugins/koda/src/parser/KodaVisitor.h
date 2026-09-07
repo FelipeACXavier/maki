@@ -81,6 +81,8 @@ public:
 
     virtual std::any visitEventDefStatement(KodaParser::EventDefStatementContext *context) = 0;
 
+    virtual std::any visitDataBlock(KodaParser::DataBlockContext *context) = 0;
+
     virtual std::any visitStratSeq(KodaParser::StratSeqContext *context) = 0;
 
     virtual std::any visitStratTask(KodaParser::StratTaskContext *context) = 0;
@@ -98,6 +100,10 @@ public:
     virtual std::any visitStratContinue(KodaParser::StratContinueContext *context) = 0;
 
     virtual std::any visitStratParen(KodaParser::StratParenContext *context) = 0;
+
+    virtual std::any visitStratChoose(KodaParser::StratChooseContext *context) = 0;
+
+    virtual std::any visitWhenStatement(KodaParser::WhenStatementContext *context) = 0;
 
     virtual std::any visitHandlerOnError(KodaParser::HandlerOnErrorContext *context) = 0;
 
@@ -146,6 +152,8 @@ public:
     virtual std::any visitExprListLiteral(KodaParser::ExprListLiteralContext *context) = 0;
 
     virtual std::any visitExprMapLiteral(KodaParser::ExprMapLiteralContext *context) = 0;
+
+    virtual std::any visitExprDataAccess(KodaParser::ExprDataAccessContext *context) = 0;
 
     virtual std::any visitExprParen(KodaParser::ExprParenContext *context) = 0;
 

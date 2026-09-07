@@ -39,6 +39,7 @@ enum class PortProtocol
   External,
   Abort,
   Signal,
+  Condition,
   Alarm,
   Unknown
 };

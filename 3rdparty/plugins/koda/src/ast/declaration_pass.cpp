@@ -1,6 +1,7 @@
 #include "declaration_pass.h"
 
 #include <format>
+#include <variant>
 
 #include "logging.h"
 
@@ -80,6 +81,15 @@ VoidResult DeclarationPass::declareStatement(const PStatement& statement, Symbol
         return VoidResult::Failed(result.ErrorMessage());
     }
   }
+  else if (auto block = std::get_if<PDataBlock>(&statement->node); block && *block)
+  {
+    for (const auto& var : (*block)->vars)
+    {
+      auto result = mSymbolRegistry.declare(SymbolKind::Variable, var->name, var->varType, var->span, owner);
+      if (!result.IsSuccess())
+        return VoidResult::Failed(result.ErrorMessage());
+    }
+  }
   else if (auto block = std::get_if<PStrategyBlock>(&statement->node); block && *block)
   {
     for (const auto& flow : (*block)->flows)
@@ -93,6 +103,10 @@ VoidResult DeclarationPass::declareStatement(const PStatement& statement, Symbol
       auto abortEventId = mSymbolRegistry.declare(SymbolKind::Event, "abort", types::TypeReference::named("abort"), Span{}, symbolId.Value());
       if (!abortEventId.IsSuccess())
         return abortEventId;
+
+      // auto declaredStrategy = declareInsideStrategy(flow->strategy, owner);
+      // if (!declaredStrategy)
+      //   return declaredStrategy;
 
       // We also need to declare the flow arguments, of course
       for (const auto& arg : flow->args)  // This is an awful name, by the way...
@@ -138,6 +152,59 @@ VoidResult DeclarationPass::declareRosDef(const PRosDef& ros, SymbolId owner)
     auto argId = mSymbolRegistry.declare(SymbolKind::Argument, arg->b, arg->a, arg->span, result.Value());
     if (!argId.IsSuccess())
       return VoidResult::Failed(argId.ErrorMessage());
+  }
+
+  return VoidResult();
+}
+
+VoidResult DeclarationPass::declareInsideStrategy(const PStrategy& strategy, SymbolId owner)
+{
+  if (auto value = std::get_if<PSeq>(&strategy->v); value && *value)
+  {
+    for (const auto& alt : (*value)->alts)
+      RETURN_ON_FAILURE(declareInsideStrategy(alt, owner));
+  }
+  else if (auto value = std::get_if<PJoin>(&strategy->v); value && *value)
+  {
+    for (const auto& alt : (*value)->alts)
+      RETURN_ON_FAILURE(declareInsideStrategy(alt, owner));
+  }
+  else if (auto value = std::get_if<PEither>(&strategy->v); value && *value)
+  {
+    for (const auto& alt : (*value)->alts)
+      RETURN_ON_FAILURE(declareInsideStrategy(alt, owner));
+  }
+  else if (auto value = std::get_if<PWithin>(&strategy->v); value && *value)
+  {
+    RETURN_ON_FAILURE(declareInsideStrategy((*value)->a, owner));
+    RETURN_ON_FAILURE(declareInsideStrategy((*value)->b, owner));
+    return VoidResult();
+  }
+  else if (auto value = std::get_if<PRepeat>(&strategy->v); value && *value)
+  {
+    RETURN_ON_FAILURE(declareInsideStrategy((*value)->a, owner));
+    return VoidResult();
+  }
+  else if (auto value = std::get_if<PEnd>(&strategy->v); value && *value)
+  {
+    return VoidResult();
+  }
+  else if (auto value = std::get_if<PContinue>(&strategy->v); value && *value)
+  {
+    return VoidResult();
+  }
+  else if (auto value = std::get_if<PTaskCall>(&strategy->v); value && *value)
+  {
+    return VoidResult();
+  }
+  else if (auto value = std::get_if<PParen>(&strategy->v); value && *value)
+  {
+    return declareInsideStrategy((*value)->a, owner);
+  }
+  else if (auto value = std::get_if<PChoose>(&strategy->v); value && *value)
+  {
+    for (const auto& opt : (*value)->options)
+      RETURN_ON_FAILURE(declareInsideStrategy(opt->strategy, owner));
   }
 
   return VoidResult();

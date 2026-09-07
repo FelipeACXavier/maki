@@ -18,6 +18,7 @@ private:
   VoidResult declareComponent(const PComponent& component);
   VoidResult declareStatement(const PStatement& statement, SymbolId owner);
   VoidResult declareRosDef(const PRosDef& ros, SymbolId owner);
+  VoidResult declareInsideStrategy(const PStrategy& strategy, SymbolId owner);
 
   SymbolRegistry& mSymbolRegistry;
   types::TypeRegistry& mTypeRegistry;

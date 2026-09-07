@@ -86,6 +86,13 @@ private:
     }
   };
 
+  struct ConditionUse
+  {
+    std::string localPort;
+    ir::Expression expression;
+    Span span;
+  };
+
   struct PortRef
   {
     std::string instance;
@@ -105,17 +112,19 @@ private:
     SymbolId component = InvalidSymbol;
     koda::SymbolId flow = koda::InvalidSymbol;
 
-    std::uint32_t sequence = 0, join = 0, repeat = 0, within = 0, every = 0;
+    std::uint32_t sequence = 0, join = 0, repeat = 0, within = 0, every = 0, choose = 0;
     std::uint32_t abortHandler = 0;
     std::uint32_t abortCall = 0;
     std::uint32_t errorHandler = 0;
     std::uint32_t signalHandler = 0;
+    std::uint32_t condition = 0;
     std::uint32_t alarm = 0;
     std::string previous;
     std::set<std::string> imports;
     std::vector<std::string> definitions;
     std::vector<Connection> connections;
     std::vector<CallUse> calls;
+    std::vector<ConditionUse> conditions;
     std::vector<std::string> alarms;
     std::map<koda::SymbolId, std::uint32_t> eventOrdinals;
   };
@@ -124,6 +133,7 @@ private:
   {
     std::vector<CallUse> calls;
     std::vector<std::string> alarms;
+    std::vector<ConditionUse> conditions;
   };
 
   Model& mModel;
@@ -149,6 +159,7 @@ private:
   VoidResult lowerTask(const ir::Component& task);
   Result<FlowResult> lowerFlow(const ir::Flow& flow);
   Result<std::string> lowerStrategy(const ir::Flow& flow, const ir::PStrategy& strategy, FlowState& state);
+  Result<std::string> lowerExpression(const ir::Flow& flow, const ir::PExpression& expression, FlowState& state);
   Result<std::string> lowerHandler(const ir::Flow& flow, const ir::PHandler& handler, FlowState& state);
   Result<std::string> lowerCall(const ir::Call& call, FlowState& state, bool signal, const std::string& traceId);
 

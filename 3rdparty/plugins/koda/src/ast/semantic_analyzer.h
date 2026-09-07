@@ -49,6 +49,8 @@ struct SemanticModel
   std::unordered_map<const Expr*, types::TypeReference> expressionTypes;
   std::unordered_map<SymbolId, std::vector<types::TypeReference>> eventArguments;
   std::unordered_map<SymbolId, koda::types::SlotId> variableSlots;
+
+  void print() const;
 };
 
 using FlowArgumentContext = std::map<SymbolId, ResolvedArgumentSource>;

@@ -39,6 +39,7 @@ public:
   std::any visitFlow(KodaParser::FlowContext* ctx) override;
   std::any visitIdentList(KodaParser::IdentListContext* ctx) override;
   std::any visitVarsBlock(KodaParser::VarsBlockContext* ctx) override;
+  std::any visitDataBlock(KodaParser::DataBlockContext* ctx) override;
   std::any visitVariableStatement(KodaParser::VariableStatementContext* ctx) override;
 
   // Action/service/topic blocks mapped to same IR (ActionDef)
@@ -65,6 +66,9 @@ public:
   std::any visitStratContinue(KodaParser::StratContinueContext* ctx) override;
   std::any visitStratParen(KodaParser::StratParenContext* ctx) override;
   std::any visitStratTask(KodaParser::StratTaskContext* ctx) override;
+  std::any visitStratChoose(KodaParser::StratChooseContext* ctx) override;
+
+  std::any visitWhenStatement(KodaParser::WhenStatementContext* ctx) override;
   std::any visitHandlerOnError(KodaParser::HandlerOnErrorContext* ctx) override;
   std::any visitHandlerOnAbort(KodaParser::HandlerOnAbortContext* ctx) override;
   std::any visitHandlerOnEmitter(KodaParser::HandlerOnEmitterContext* ctx) override;
@@ -88,6 +92,7 @@ public:
   std::any visitExprBoolean(KodaParser::ExprBooleanContext* ctx) override;
 
   std::any visitExprCall(KodaParser::ExprCallContext* ctx) override;
+  std::any visitExprDataAccess(KodaParser::ExprDataAccessContext* ctx) override;
 
   std::any visitExprParen(KodaParser::ExprParenContext* ctx) override;
   std::any visitExprRecord(KodaParser::ExprRecordContext* ctx) override;
