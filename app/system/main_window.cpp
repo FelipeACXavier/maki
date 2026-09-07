@@ -147,7 +147,11 @@ VoidResult MainWindow::start()
 
   if (mPipelineRun)
     for (const auto& pipeline : mStorage->pipelines())
+    {
       mPipelineRun->addOption(pipeline->getname(), pipeline->getid());
+      if (mSystemMenu)
+        mSystemMenu->onPipelineAdded(pipeline);
+    }
 
   // Set initial tabs
   mPalette->setCurrentIndex(0);
@@ -448,6 +452,8 @@ void MainWindow::bind()
   connect(mHostServices, &HostServices::onFocusOnNode, this,
           [this](const QString& nodeId, const QString& flowId, const maki::FocusProperties& properties) {
             rootCanvas()->onFocusNode(flowId, nodeId, properties);
+            if (flowId.isEmpty())
+              mCanvasPanel->setCurrentIndex(0);
           });
 
   connect(mSystemMenu, &SystemMenu::editPipeline, this, &MainWindow::onActionEditPipeline);
@@ -455,8 +461,11 @@ void MainWindow::bind()
   connect(mSystemMenu, &SystemMenu::flowSelected, rootCanvas(), &Canvas::onFlowSelected);
   connect(mSystemMenu, &SystemMenu::flowRemoved, rootCanvas(), &Canvas::onFlowRemoved);
   connect(mSystemMenu, &SystemMenu::nodeRemoved, rootCanvas(), &Canvas::onRemoveNode);
-  connect(mSystemMenu, &SystemMenu::nodeFocused, this,
-          [this](const QString& nodeId, const QString& flowId) { rootCanvas()->onFocusNode(flowId, nodeId, maki::FocusProperties::internal()); });
+  connect(mSystemMenu, &SystemMenu::nodeFocused, this, [this](const QString& nodeId, const QString& flowId) {
+    rootCanvas()->onFocusNode(flowId, nodeId, maki::FocusProperties::internal());
+    if (flowId.isEmpty())
+      mCanvasPanel->setCurrentIndex(0);
+  });
 
   connect(mPropertiesMenu, &PropertiesMenu::flowRemoved, rootCanvas(), &Canvas::onFlowRemoved);
   connect(mPropertiesMenu, &PropertiesMenu::openParameter, this, [this](const QString& parameterId) {
@@ -944,12 +953,24 @@ void MainWindow::onActionNew()
   // Gotta make sure we don't save over an old file
   mSaveHandler->newFileCreated();
 
+  for (int i = 0; i < mCanvasPanel->count(); ++i)
+  {
+    QWidget* w = mCanvasPanel->widget(i);
+    if (auto view = qobject_cast<CanvasView*>(w))
+      if (auto* canvas = qobject_cast<Canvas*>(view->scene()))
+        canvas->loadFromSave(emptySave);
+
+    if (i != 0)
+      closeCanvasTab(i);
+  }
+
   maki::TypeRegistry::instance().removeUserTypes();
-  canvas()->loadFromSave(emptySave);
   if (mMissionParameters)
     mMissionParameters->setStorage(mStorage);
   if (mPipelineRun)
     mPipelineRun->reset();
+  if (mSystemMenu)
+    mSystemMenu->clear();
 
   NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Created new project");
 }
@@ -982,17 +1003,11 @@ void MainWindow::onActionGenerate(const QString& pipelineId)
   // If we are running, then we should cancel
   if (mPluginPipeline->isRunning())
   {
+    LOG_DEBUG("Plugin pipeline is running, stopping");
     LOG_WARN_ON_FAILURE(mPluginPipeline->abort());
     return;
   }
 
-  // We should have three buttons:
-  // - Verify
-  // - Simulate
-  // - Deploy
-  // Each has a different pipeline graph
-  // We no longer select plugins, we just modify the pipeline directly
-  // This is similar to the eclipse run configuration
   QByteArray byteArray;
   QDataStream out(&byteArray, QIODevice::WriteOnly);
   out << mHostServices->document()->getnodes();
@@ -1019,7 +1034,7 @@ void MainWindow::onActionGenerate(const QString& pipelineId)
 
   for (const auto& pipeline : mStorage->pipelines())
   {
-    if (pipeline->getname() != pipelineId)
+    if (pipeline->getid() != pipelineId)
       continue;
 
     auto graph = maki::PipelineGraph::fromFlow(*pipeline);
@@ -1310,7 +1325,11 @@ void MainWindow::onFileLoaded(const QString& file, const SaveInfo& info, const Q
   {
     mPipelineRun->reset();
     for (const auto& pipeline : mStorage->pipelines())
+    {
       mPipelineRun->addOption(pipeline->getname(), pipeline->getid());
+      if (mSystemMenu)
+        mSystemMenu->onPipelineAdded(pipeline);
+    }
   }
 
   if (mSystemMenu)
@@ -1553,7 +1572,7 @@ void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId, const maki::Focus
   canvas->populate(*flow->config());
 
   if (!nodeId.isEmpty())
-    canvas->onFocusNode("", nodeId, properties);
+    canvas->onFocusNode(flow->id(), nodeId, properties);
 }
 
 void MainWindow::addPluginTab(const QString& name, PluginView* view)

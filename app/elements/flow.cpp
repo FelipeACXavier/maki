@@ -66,39 +66,23 @@ QVector<TransitionItem*> Flow::transitions() const
 
 void Flow::addTransition(TransitionItem* transition)
 {
-  // Make sure the source node holds the transition info
-  if (transition->destination() && (id() != transition->destination()->id()))
+  if (!transition)
+    return;
+
+  bool found = false;
+  for (const auto& t : mStorage->gettransitions())
   {
-    bool found = false;
-    for (const auto& t : mStorage->gettransitions())
+    if (t->getid() == transition->id())
     {
-      if (t->getid() == transition->id())
-      {
-        found = true;
-        break;
-      }
-    }
-
-    if (!found)
-      mStorage->addTransition(transition->storage());
-
-    for (auto& t : transitions())
-    {
-      // If I am the source of this transition
-      // Check whether we have another transition with me as destination
-      auto src1 = transition->source()->id();
-      auto dst1 = transition->destination()->id();
-      auto src2 = t->source()->id();
-      auto dst2 = t->destination()->id();
-      if (((src1 == dst2) && (src2 == dst1)))
-      {
-        transition->setEdge(TransitionItem::Edge::FORWARD);
-        t->setEdge(TransitionItem::Edge::BACKWARD);
-      }
+      found = true;
+      break;
     }
   }
 
-  bool found = false;
+  if (!found)
+    mStorage->addTransition(transition->storage());
+
+  found = false;
   for (const auto& t : transitions())
   {
     if (t->id() == transition->id())
@@ -110,15 +94,6 @@ void Flow::addTransition(TransitionItem* transition)
 
   if (!found)
     mTransitions.push_back(transition);
-}
-
-void Flow::addTransition(std::shared_ptr<TransitionSaveInfo> info)
-{
-  for (const auto& t : mStorage->gettransitions())
-    if (t->getid() == info->getid())
-      return;
-
-  mStorage->addTransition(info);
 }
 
 void Flow::removeTransition(TransitionItem* transition)

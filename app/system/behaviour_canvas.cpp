@@ -40,7 +40,7 @@ void BehaviourCanvas::setupInitialNodes()
     initial->setSrcShift({0, 0});
     initial->setDstShift({0, 0});
 
-    mFlow->addTransition(initial);
+    mFlow->config()->addTransition(initial);
   }
 }
 
@@ -87,7 +87,7 @@ bool BehaviourCanvas::canAddTransition(NodeItem* node) const
     if (t->source()->id() == node->id())
       ++index;
 
-  LOG_TRACE("canAddTransition: {} < {}", index, node->config()->transitions.size());
+  LOG_TRACE("canAddTransition: {} <= {}", index, node->config()->transitions.size());
   return node->config()->transitions.isEmpty() || index <= node->config()->transitions.size();
 }
 

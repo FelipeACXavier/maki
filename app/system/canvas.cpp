@@ -1016,14 +1016,19 @@ void Canvas::clearCanvas()
     if (!item)
       continue;
 
-    if (item->type() != NodeItem::Type)
-      continue;
+    if (item->type() == NodeItem::Type)
+    {
+      NodeItem* node = static_cast<NodeItem*>(item);
+      if (node->parentNode())
+        continue;
 
-    NodeItem* node = static_cast<NodeItem*>(item);
-    if (node->parentNode())
-      continue;
-
-    toRemove += removeNode(node);
+      toRemove += removeNode(node);
+    }
+    else if (item->type() == TransitionItem::Type)
+    {
+      removeTransition(qgraphicsitem_cast<TransitionItem*>(item));
+      toRemove += item;
+    }
   }
 
   QTimer::singleShot(0, this, [toRemove]() {
@@ -1133,14 +1138,14 @@ void Canvas::createTransition(const TransitionSaveInfo& info)
   auto source = findNodeWithId(info.getsrcId());
   if (!source)
   {
-    LOG_DEBUG("Source {} does not exist", info.getsrcId());
+    LOG_WARNING("Source {} does not exist", info.getsrcId());
     return;
   }
 
   auto destination = findNodeWithId(info.getdstId());
   if (!destination)
   {
-    LOG_DEBUG("Destination {} does not exist", info.getdstId());
+    LOG_WARNING("Destination {} does not exist", info.getdstId());
     return;
   }
 
