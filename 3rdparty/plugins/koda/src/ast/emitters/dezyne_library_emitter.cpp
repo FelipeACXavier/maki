@@ -41,13 +41,8 @@ VoidResult createTypes(Model& model, const std::string& outdir)
   out << "    Failure,\n";
   out << "    Running,\n";
   out << "    Done,\n";
-  out << "    Pending,\n";
   out << "    Error\n";
   out << "  };\n\n";
-
-  out << "  extern float $float$;\n";
-  out << "  extern int $int$;\n";
-  out << "  extern boolean $bool$;\n";
 
   model.setGeneratedFile(path, out.str());
 
@@ -1135,6 +1130,42 @@ Result<LibraryComponent> createErrorHandlerComponent(Model& model, const std::st
     out << "      }\n\n";
 
     out << "      on api.abort(): { reply(Result.Error); }\n";
+    out << "    }\n";
+    out << "  }\n";
+    out << "}\n";
+  });
+}
+
+Result<LibraryComponent> createFailureComponent(Model& model, const std::string& outdir, SymbolId componentId)
+{
+  return createComponent(model, outdir, "failure", componentId, [&](LibraryComponent& component, std::ostringstream& out) {
+    component.providesPorts.push_back({"api", PortProtocol::Action});
+
+    out << "import types.dzn;\n";
+    out << "import iaction.dzn;\n\n";
+
+    out << std::format("component {} {{\n", component.name);
+    out << "  provides iaction api;\n\n";
+
+    out << "  behaviour {\n";
+    out << "    enum State { Idle, Error };\n";
+    out << "    State state = State.Idle;\n\n";
+
+    out << "    [state.Idle] {\n";
+    out << "      on api.trigger(): {\n";
+    out << "        state = State.Error;\n";
+    out << "        reply(Result.Failure);\n";
+    out << "      }\n";
+    out << "    }\n\n";
+
+    out << "    [state.Error] {\n";
+    out << "      on api.reset(): {\n";
+    out << "        state = State.Idle;\n";
+    out << "        reply(Result.Success);\n";
+    out << "      }\n";
+    out << "      on api.abort(): {\n";
+    out << "        reply(Result.Error);\n";
+    out << "      }\n";
     out << "    }\n";
     out << "  }\n";
     out << "}\n";

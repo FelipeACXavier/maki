@@ -284,9 +284,13 @@ Result<ir::PStrategy> IRBuilder::buildStrategy(const PStrategy& strategy, Symbol
     }
     out->value = std::move(x);
   }
-  else if (std::holds_alternative<PEnd>(strategy->v))
+  else if (std::holds_alternative<PSuccess>(strategy->v))
   {
     out->value = ir::Strategy::End{};
+  }
+  else if (std::holds_alternative<PFailure>(strategy->v))
+  {
+    out->value = ir::Strategy::Failure{};
   }
   else if (std::holds_alternative<PContinue>(strategy->v))
   {

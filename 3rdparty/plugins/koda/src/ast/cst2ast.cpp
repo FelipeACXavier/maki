@@ -371,11 +371,11 @@ std::any CST2AST::visitStratSeq(KodaParser::StratSeqContext* ctx)
   {
     auto child = std::any_cast<koda::PStrategy>(visit(s));
     // TODO: For now, we don't handle the end, fix this
-    if (std::holds_alternative<koda::PEnd>(child->v))
-      continue;
-    if (auto* paren = std::get_if<koda::PParen>(&child->v))
-      if (std::holds_alternative<koda::PEnd>((*paren)->a->v))
-        continue;
+    // if (std::holds_alternative<koda::PSuccess>(child->v))
+    //   continue;
+    // if (auto* paren = std::get_if<koda::PParen>(&child->v))
+    //   if (std::holds_alternative<koda::PSuccess>((*paren)->a->v))
+    //     continue;
 
     // if (std::get_if<koda::PContinue>(&child->v))
     //   continue;
@@ -456,10 +456,21 @@ std::any CST2AST::visitStratRepeat(KodaParser::StratRepeatContext* ctx)
   return node;
 }
 
-std::any CST2AST::visitStratEnd(KodaParser::StratEndContext* ctx)
+std::any CST2AST::visitStratSuccess(KodaParser::StratSuccessContext* ctx)
 {
   // LOG_DEBUG("Visiting End");
-  auto value = std::make_shared<koda::Strategy::End>();
+  auto value = std::make_shared<koda::Strategy::Success>();
+  auto node = std::make_shared<koda::Strategy>();
+  node->span = spanOf(ctx);
+  node->v = value;
+
+  return node;
+}
+
+std::any CST2AST::visitStratFailure(KodaParser::StratFailureContext* ctx)
+{
+  // LOG_DEBUG("Visiting Failure");
+  auto value = std::make_shared<koda::Strategy::Failure>();
   auto node = std::make_shared<koda::Strategy>();
   node->span = spanOf(ctx);
   node->v = value;

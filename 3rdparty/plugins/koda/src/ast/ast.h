@@ -260,7 +260,12 @@ struct Strategy
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
 
-  struct End
+  struct Success
+  {
+    void print(const std::string& prefix, const bool last, const Span& span) const;
+  };
+
+  struct Failure
   {
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
@@ -299,7 +304,8 @@ struct Strategy
   };
 
   std::variant<std::shared_ptr<Seq>, std::shared_ptr<Join>, std::shared_ptr<Either>, std::shared_ptr<Within>, std::shared_ptr<Repeat>,
-               std::shared_ptr<End>, std::shared_ptr<Continue>, std::shared_ptr<TaskCall>, std::shared_ptr<Paren>, std::shared_ptr<Choose>>
+               std::shared_ptr<Success>, std::shared_ptr<Failure>, std::shared_ptr<Continue>, std::shared_ptr<TaskCall>, std::shared_ptr<Paren>,
+               std::shared_ptr<Choose>>
       v;
 
   std::string id;
@@ -478,7 +484,8 @@ typedef std::shared_ptr<Strategy::Join> PJoin;
 typedef std::shared_ptr<Strategy::Either> PEither;
 typedef std::shared_ptr<Strategy::Within> PWithin;
 typedef std::shared_ptr<Strategy::Repeat> PRepeat;
-typedef std::shared_ptr<Strategy::End> PEnd;
+typedef std::shared_ptr<Strategy::Success> PSuccess;
+typedef std::shared_ptr<Strategy::Failure> PFailure;
 typedef std::shared_ptr<Strategy::Continue> PContinue;
 typedef std::shared_ptr<Strategy::TaskCall> PTaskCall;
 typedef std::shared_ptr<Strategy::Paren> PParen;

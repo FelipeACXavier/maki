@@ -159,11 +159,15 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitStratEnd(KodaParser::StratEndContext *ctx) override {
+  virtual std::any visitStratSuccess(KodaParser::StratSuccessContext *ctx) override {
     return visitChildren(ctx);
   }
 
   virtual std::any visitStratWithin(KodaParser::StratWithinContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitStratFailure(KodaParser::StratFailureContext *ctx) override {
     return visitChildren(ctx);
   }
 

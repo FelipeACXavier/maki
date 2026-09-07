@@ -48,6 +48,7 @@ Result<LibraryComponent> createSignalContinueComponent(Model& model, const std::
 Result<LibraryComponent> createAbortHandlerComponent(Model& model, const std::string& outdir, SymbolId componentId);
 Result<LibraryComponent> createErrorHandlerComponent(Model& model, const std::string& outdir, SymbolId componentId);
 
+Result<LibraryComponent> createFailureComponent(Model& model, const std::string& outdir, SymbolId componentId);
 Result<LibraryComponent> createSelectorComponent(Model& model, const std::string& outdir, uint32_t conditionCount, uint32_t branchCount,
                                                  SymbolId componentId);
 Result<LibraryComponent> createAbortCallComponent(Model& model, const std::string& outdir, SymbolId componentId);

@@ -209,6 +209,10 @@ struct Strategy
   {
   };
 
+  struct Failure
+  {
+  };
+
   struct Continue
   {
   };
@@ -231,7 +235,7 @@ struct Strategy
   };
 
   std::string id;
-  std::variant<Sequence, Join, Either, Within, Repeat, End, Continue, Call, Choose> value;
+  std::variant<Sequence, Join, Either, Within, Repeat, End, Failure, Continue, Call, Choose> value;
   Span span;
 };
 

@@ -391,7 +391,7 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
     if (!symbol)
       continue;
 
-    LOG_DEBUG("Adding import: {} {}", symbol->name, instance.typeName);
+    LOG_TRACE("Adding import: {} {}", symbol->name, instance.typeName);
     if (instance.typeName.starts_with("caction_arbiter"))
     {
       const auto suffix = instance.typeName.substr(std::string("caction_arbiter").size());
@@ -746,6 +746,17 @@ Result<std::string> LoweringPass::lowerStrategy(const ir::Flow& flow, const ir::
   else if (std::holds_alternative<ir::Strategy::End>(strategy->value))
   {
     return std::string("end");
+  }
+  else if (std::holds_alternative<ir::Strategy::Failure>(strategy->value))
+  {
+    LibraryComponent libFailure;
+    ASSIGN_OR_RETURN_ON_FAILURE_AS(libFailure, createFailureComponent(mModel, mOptions.outputDir, flow.symbol), std::string);
+
+    const auto instance = std::format("f{}", state.failure++);
+    state.imports.insert(libFailure.filename);
+    state.definitions.push_back(libFailure.name + instance);
+    mModel.declareInstance(state.component, instance, libFailure.name, {std::nullopt, strategy->span});
+    return instance + ".api";
   }
   else if (std::holds_alternative<ir::Strategy::Continue>(strategy->value))
   {

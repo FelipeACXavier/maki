@@ -91,9 +91,11 @@ public:
 
     virtual std::any visitStratEither(KodaParser::StratEitherContext *context) = 0;
 
-    virtual std::any visitStratEnd(KodaParser::StratEndContext *context) = 0;
+    virtual std::any visitStratSuccess(KodaParser::StratSuccessContext *context) = 0;
 
     virtual std::any visitStratWithin(KodaParser::StratWithinContext *context) = 0;
+
+    virtual std::any visitStratFailure(KodaParser::StratFailureContext *context) = 0;
 
     virtual std::any visitStratRepeat(KodaParser::StratRepeatContext *context) = 0;
 

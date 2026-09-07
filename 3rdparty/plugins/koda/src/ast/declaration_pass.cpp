@@ -185,7 +185,11 @@ VoidResult DeclarationPass::declareInsideStrategy(const PStrategy& strategy, Sym
     RETURN_ON_FAILURE(declareInsideStrategy((*value)->a, owner));
     return VoidResult();
   }
-  else if (auto value = std::get_if<PEnd>(&strategy->v); value && *value)
+  else if (auto value = std::get_if<PSuccess>(&strategy->v); value && *value)
+  {
+    return VoidResult();
+  }
+  else if (auto value = std::get_if<PFailure>(&strategy->v); value && *value)
   {
     return VoidResult();
   }

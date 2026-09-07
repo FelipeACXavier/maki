@@ -411,7 +411,8 @@ VoidResult KodaEmitter::emitStrategy(const koda::Strategy& strategy, std::string
   ELSE_IF_ALT(PJoin, strategy.v, emitJoin, ss, format)
   ELSE_IF_ALT(PWithin, strategy.v, emitWithin, ss, format)
   ELSE_IF_ALT(PRepeat, strategy.v, emitRepeat, ss, format)
-  ELSE_IF_ALT(PEnd, strategy.v, emitEnd, ss, format)
+  ELSE_IF_ALT(PSuccess, strategy.v, emitSuccess, ss, format)
+  ELSE_IF_ALT(PFailure, strategy.v, emitFailure, ss, format)
   ELSE_IF_ALT(PContinue, strategy.v, emitContinue, ss, format)
   ELSE_IF_ALT(PTaskCall, strategy.v, emitTaskCall, ss, format)
   // ELSE_IF_ALT(PParen, strategy.v, emitParen, ss, format)
@@ -474,9 +475,15 @@ VoidResult KodaEmitter::emitRepeat(const koda::Strategy::Repeat& node, std::stri
   return VoidResult();
 }
 
-VoidResult KodaEmitter::emitEnd(const koda::Strategy::End& node, std::stringstream& ss, const std::string& format)
+VoidResult KodaEmitter::emitSuccess(const koda::Strategy::Success& node, std::stringstream& ss, const std::string& format)
 {
-  ss << "end";
+  ss << "success";
+  return VoidResult();
+}
+
+VoidResult KodaEmitter::emitFailure(const koda::Strategy::Failure& node, std::stringstream& ss, const std::string& format)
+{
+  ss << "failure";
   return VoidResult();
 }
 

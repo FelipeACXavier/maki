@@ -112,7 +112,7 @@ private:
     SymbolId component = InvalidSymbol;
     koda::SymbolId flow = koda::InvalidSymbol;
 
-    std::uint32_t sequence = 0, join = 0, repeat = 0, within = 0, every = 0, choose = 0;
+    std::uint32_t sequence = 0, join = 0, repeat = 0, within = 0, every = 0, choose = 0, failure = 0;
     std::uint32_t abortHandler = 0;
     std::uint32_t abortCall = 0;
     std::uint32_t errorHandler = 0;

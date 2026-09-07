@@ -16,15 +16,15 @@ public:
     OPTIONAL = 7, MAP = 8, MAPPING = 9, TO = 10, STRATEGY = 11, PARAMETERS = 12, 
     ACTION = 13, SERVICE = 14, TOPIC = 15, TRIGGER = 16, RETURN = 17, ABORT = 18, 
     ERROR = 19, IN = 20, OUT = 21, ON = 22, CONSUMES = 23, PRODUCES = 24, 
-    DATA = 25, REQ = 26, PRO = 27, END = 28, CONTINUE = 29, REPEAT = 30, 
-    JOIN = 31, EITHER = 32, WHEN = 33, CHOOSE = 34, WITHIN = 35, DO = 36, 
-    ELSE = 37, THEN = 38, EVERY = 39, ARROW = 40, PIPE = 41, EQ = 42, NEQ = 43, 
-    LEQ = 44, GEQ = 45, LT = 46, GT = 47, ASSIGN = 48, DOUBLE_COLON = 49, 
-    COLON = 50, COMMA = 51, SEMI = 52, DOT = 53, PLUS = 54, MINUS = 55, 
-    STAR = 56, SLASH = 57, NOT = 58, AND = 59, OR = 60, LPAREN = 61, RPAREN = 62, 
-    LBRACE = 63, RBRACE = 64, LBRACK = 65, RBRACK = 66, NATURAL = 67, REAL = 68, 
-    BOOLEAN = 69, IDENT = 70, STRING = 71, ANY = 72, LINE_COMMENT = 73, 
-    BLOCK_COMMENT = 74, WS = 75
+    DATA = 25, REQ = 26, PRO = 27, SUCCESS = 28, FAILURE = 29, CONTINUE = 30, 
+    REPEAT = 31, JOIN = 32, EITHER = 33, WHEN = 34, CHOOSE = 35, WITHIN = 36, 
+    DO = 37, ELSE = 38, THEN = 39, EVERY = 40, ARROW = 41, PIPE = 42, EQ = 43, 
+    NEQ = 44, LEQ = 45, GEQ = 46, LT = 47, GT = 48, ASSIGN = 49, DOUBLE_COLON = 50, 
+    COLON = 51, COMMA = 52, SEMI = 53, DOT = 54, PLUS = 55, MINUS = 56, 
+    STAR = 57, SLASH = 58, NOT = 59, AND = 60, OR = 61, LPAREN = 62, RPAREN = 63, 
+    LBRACE = 64, RBRACE = 65, LBRACK = 66, RBRACK = 67, NATURAL = 68, REAL = 69, 
+    BOOLEAN = 70, IDENT = 71, STRING = 72, ANY = 73, LINE_COMMENT = 74, 
+    BLOCK_COMMENT = 75, WS = 76
   };
 
   enum {
@@ -736,11 +736,11 @@ public:
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
-  class  StratEndContext : public StrategyContext {
+  class  StratSuccessContext : public StrategyContext {
   public:
-    StratEndContext(StrategyContext *ctx);
+    StratSuccessContext(StrategyContext *ctx);
 
-    antlr4::tree::TerminalNode *END();
+    antlr4::tree::TerminalNode *SUCCESS();
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
@@ -755,6 +755,15 @@ public:
     std::vector<StrategyContext *> strategy();
     StrategyContext* strategy(size_t i);
     antlr4::tree::TerminalNode *ELSE();
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  StratFailureContext : public StrategyContext {
+  public:
+    StratFailureContext(StrategyContext *ctx);
+
+    antlr4::tree::TerminalNode *FAILURE();
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };

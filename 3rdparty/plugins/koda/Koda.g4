@@ -160,7 +160,8 @@ strategy
   | EITHER LPAREN strategy (PIPE strategy)+ RPAREN                 # stratEither
   | WITHIN NATURAL DO strategy ELSE strategy                       # stratWithin
   | REPEAT NATURAL NATURAL LPAREN strategy RPAREN strategyHandler* # stratRepeat
-  | END                                                            # stratEnd
+  | SUCCESS                                                        # stratSuccess
+  | FAILURE                                                        # stratFailure
   | CONTINUE                                                       # stratContinue
   | eventStatement strategyHandler*                                # stratTask
   | LPAREN strategy RPAREN                                         # stratParen
@@ -317,7 +318,8 @@ DATA       : 'data';
 REQ        : 'req';
 PRO        : 'pro';
 
-END        : 'end';
+SUCCESS    : 'success';
+FAILURE    : 'failure';
 CONTINUE   : 'continue';
 REPEAT     : 'repeat';
 JOIN       : 'join';

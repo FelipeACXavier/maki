@@ -259,7 +259,8 @@ void Strategy::print(const std::string& prefix, const bool last) const
   ELSE_IF_ALT(PEither, v, print(prefix, last, span))
   ELSE_IF_ALT(PWithin, v, print(prefix, last, span))
   ELSE_IF_ALT(PRepeat, v, print(prefix, last, span))
-  ELSE_IF_ALT(PEnd, v, print(prefix, last, span))
+  ELSE_IF_ALT(PSuccess, v, print(prefix, last, span))
+  ELSE_IF_ALT(PFailure, v, print(prefix, last, span))
   ELSE_IF_ALT(PContinue, v, print(prefix, last, span))
   ELSE_IF_ALT(PTaskCall, v, print(prefix, last, span))
   ELSE_IF_ALT(PParen, v, print(prefix, last, span))
@@ -310,9 +311,14 @@ void Strategy::Repeat::print(const std::string& prefix, const bool last, const S
     a->print(childPrefix, true);
 }
 
-void Strategy::End::print(const std::string& prefix, const bool last, const Span& span) const
+void Strategy::Success::print(const std::string& prefix, const bool last, const Span& span) const
 {
-  LOG_TREE("End");
+  LOG_TREE("Success");
+}
+
+void Strategy::Failure::print(const std::string& prefix, const bool last, const Span& span) const
+{
+  LOG_TREE("Failure");
 }
 
 void Strategy::Continue::print(const std::string& prefix, const bool last, const Span& span) const

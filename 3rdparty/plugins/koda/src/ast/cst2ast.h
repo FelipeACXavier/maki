@@ -62,7 +62,8 @@ public:
   std::any visitStratEither(KodaParser::StratEitherContext* ctx) override;
   std::any visitStratWithin(KodaParser::StratWithinContext* ctx) override;
   std::any visitStratRepeat(KodaParser::StratRepeatContext* ctx) override;
-  std::any visitStratEnd(KodaParser::StratEndContext* ctx) override;
+  std::any visitStratSuccess(KodaParser::StratSuccessContext* ctx) override;
+  std::any visitStratFailure(KodaParser::StratFailureContext* ctx) override;
   std::any visitStratContinue(KodaParser::StratContinueContext* ctx) override;
   std::any visitStratParen(KodaParser::StratParenContext* ctx) override;
   std::any visitStratTask(KodaParser::StratTaskContext* ctx) override;
