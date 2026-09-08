@@ -121,6 +121,12 @@ public:
   static QStringList libraries();
 
   /**
+   * @brief Returns a list of all available templates.
+   * @return QStringList A list of template file paths.
+   */
+  static QStringList templates();
+
+  /**
    * @brief Returns a list of directories to search for assets.
    * @return QStringList A list of asset directory paths.
    */

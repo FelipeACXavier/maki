@@ -23,7 +23,7 @@ public:
   PluginPipeline(Pipeline* pipeline, QObject* parent = nullptr);
   ~PluginPipeline();
 
-  VoidResult run(const PipelineGraph& graph, PipelineContext& context);
+  VoidResult run(const PipelineGraph& graph, PipelineContext& context, bool clearCache);
 
   PipelineActionRegistry* registry() const;
   bool isRunning() const;
@@ -63,7 +63,7 @@ private:
   void done(const QString& message);
 
   int mInitialCount = 0;
-  QVector<QWidget*> mOldWidgets = {};
+  QVector<QPointer<QWidget>> mOldWidgets = {};
   QWidget* progressWidget() const;
 };
 

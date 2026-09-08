@@ -478,9 +478,32 @@ void MainWindowLayout::buildMenuBar()
   QMenu* file = mMenuBar->addMenu(tr("File"));
   mTranslatable.push_back({file, "File"});
 
+  QMenu* newMenu = file->addMenu(iconFromTheme("document-new"), tr("New"));
+  mTranslatable.push_back({newMenu, "New"});
+
   mActionNew = new QAction(iconFromTheme("document-new"), tr("New"), this);
-  mTranslatable.push_back({mActionNew, "New"});
-  file->addAction(mActionNew);
+  newMenu->addAction(mActionNew);
+
+  bool first = true;
+  for (const auto& path : AppPaths::templates())
+  {
+    QDir templateDir(path);
+    QStringList files = templateDir.entryList({"*.maki"}, QDir::Files);
+    for (const auto& t : files)
+    {
+      const auto filepath = templateDir.absoluteFilePath(t);
+      QFileInfo info(filepath);
+      if (!info.exists())
+        continue;
+
+      if (first)
+        newMenu->addSeparator();
+
+      auto* action = newMenu->addAction(iconFromTheme("document-new"), tr("Template") + ": " + info.baseName());
+      connect(action, &QAction::triggered, this, [this, filepath] { onActionNew(filepath); });
+      first = false;
+    }
+  }
 
   mActionOpen = new QAction(iconFromTheme("document-open"), tr("Open"), this);
   mTranslatable.push_back({mActionOpen, "Open"});
@@ -903,6 +926,11 @@ void MainWindowLayout::toggleGenerationButton(bool running)
   }
 
   mPipelineRun->setRunning(running);
+}
+
+void MainWindowLayout::onActionNew(const QString& templatePath)
+{
+  Q_UNUSED(templatePath);
 }
 
 void MainWindowLayout::togglePanelVisibility(QWidget* panel, QAction* action)

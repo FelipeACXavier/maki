@@ -12,6 +12,7 @@
 #include "style_helpers.h"
 
 static const QString CREATE_NEW = "";
+static const bool CLEAR_CACHE = true;
 
 ExecuteButton::ExecuteButton(QWidget* parent)
     : DropDownButton(parent)
@@ -26,7 +27,7 @@ ExecuteButton::ExecuteButton(QWidget* parent)
     if (option.name.isEmpty() || option.name == DEFAULT_TEXT)
       emit editOptionRequested(CREATE_NEW);
     else
-      emit executeRequested(option.id);
+      emit executeRequested(option.id, !CLEAR_CACHE);
   });
 
   setupDone();
@@ -126,7 +127,14 @@ void ExecuteButton::buildMenu(QMenu* menu, const OptionInfo& option, bool addSel
   connect(runAction, &QAction::triggered, this, [this, option] {
     setCurrentOption(option);
     updateButtonText();
-    emit executeRequested(option.id);
+    emit executeRequested(option.id, !CLEAR_CACHE);
+  });
+
+  auto* runFromScracthAction = menu->addAction(iconFromTheme("system-restart"), tr("Clear cache and Run"));
+  connect(runFromScracthAction, &QAction::triggered, this, [this, option] {
+    setCurrentOption(option);
+    updateButtonText();
+    emit executeRequested(option.id, CLEAR_CACHE);
   });
 
   if (addSelect)

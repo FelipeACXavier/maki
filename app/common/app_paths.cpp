@@ -207,6 +207,15 @@ QStringList AppPaths::libraries()
   return paths;
 }
 
+QStringList AppPaths::templates()
+{
+  auto paths = assetSearchPaths();
+  for (auto& path : paths)
+    path = path + "/templates";
+
+  return paths;
+}
+
 QStringList AppPaths::fonts()
 {
   auto paths = assetSearchPaths();

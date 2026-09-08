@@ -33,7 +33,15 @@ PluginPipeline::PluginPipeline(Pipeline* pipeline, QObject* parent)
     if (exitCode == 0)
     {
       mContext.commitPendingArtifact();
-      QTimer::singleShot(0, this, [this]() { LOG_WARN_ON_FAILURE(continueAfterNode()); });
+      QTimer::singleShot(0, this, [this]() {
+        auto continued = continueAfterNode();
+        if (!continued)
+        {
+          LOG_WARNING(continued.ErrorMessage());
+          NOTIFY_LONG_ERROR(mProgressId, "Pipeline Progress", progressWidget());
+          NOTIFY_ERROR("Pipeline Progress", continued.ErrorMessage());
+        }
+      });
     }
     else
     {
@@ -163,12 +171,13 @@ VoidResult PluginPipeline::continueAfterNode()
   return ran;
 }
 
-VoidResult PluginPipeline::run(const PipelineGraph& graph, PipelineContext& context)
+VoidResult PluginPipeline::run(const PipelineGraph& graph, PipelineContext& context, bool clearCache)
 {
   mGraph = graph;
-  mContext = context;
-  mCurrentIndex = 0;
+  if (clearCache || mContext.artifacts().isEmpty())
+    mContext = context;
 
+  mCurrentIndex = 0;
   auto orderResult = executionOrder(graph);
   if (!orderResult)
     return VoidResult::Failed(orderResult.ErrorMessage());
@@ -335,8 +344,10 @@ QWidget* PluginPipeline::progressWidget() const
 
   rowLayout->addWidget(header);
   rowLayout->addWidget(progress);
-  for (QWidget* old : mOldWidgets)
-    rowLayout->addWidget(old);
+  for (const QPointer<QWidget>& old : mOldWidgets)
+    if (old)
+      rowLayout->addWidget(old);
+
   if (currentTaskWidget)
     rowLayout->addWidget(currentTaskWidget);
 

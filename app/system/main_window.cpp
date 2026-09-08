@@ -389,7 +389,7 @@ void MainWindow::bind()
   });
 
   // File actions =============================================================
-  connect(mActionNew, &QAction::triggered, this, &MainWindow::onActionNew);
+  connect(mActionNew, &QAction::triggered, this, [this] { onActionNew(""); });
   mActionNew->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_N));
 
   connect(mActionOpen, &QAction::triggered, [this] { onActionLoad(""); });
@@ -938,7 +938,7 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
   return VoidResult();
 }
 
-void MainWindow::onActionNew()
+void MainWindow::onActionNew(const QString& templateName)
 {
   if (!mSaveHandler)
   {
@@ -972,6 +972,9 @@ void MainWindow::onActionNew()
   if (mSystemMenu)
     mSystemMenu->clear();
 
+  if (!templateName.isEmpty())
+    onActionLoad(templateName);
+
   NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Created new project");
 }
 
@@ -995,7 +998,7 @@ void MainWindow::onActionRestart()
   onActionExit();
 }
 
-void MainWindow::onActionGenerate(const QString& pipelineId)
+void MainWindow::onActionGenerate(const QString& pipelineId, bool fromScratch)
 {
   if (!mPluginPipeline)
     LOG_WARNING("No pipeline available");
@@ -1046,7 +1049,7 @@ void MainWindow::onActionGenerate(const QString& pipelineId)
 
     graph.Value().print();
 
-    LOG_ERROR_ON_FAILURE(mPluginPipeline->run(graph.Value(), context));
+    LOG_ERROR_ON_FAILURE(mPluginPipeline->run(graph.Value(), context, fromScratch));
     return;
   }
 

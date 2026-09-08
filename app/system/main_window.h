@@ -287,17 +287,17 @@ private:
 
   // ================================================
   // Actions
-  void onActionNew();                                      /// Handles new action.
-  void onActionLoad(const QString& filename);              /// Handles load action with a specified file name.
-  VoidResult onActionSave();                               /// Handles save action.
-  void onActionExit();                                     /// Handles exit action.
-  void onActionRestart();                                  /// Handles restart action.
-  void onActionSaveAs();                                   /// Handles save as action.
-  void onActionGenerate(const QString& pipelineId);        /// Handles generate action.
-  void onActionDeletePipeline(const QString& pipelineId);  /// Handles pipeline deletion.
-  void onActionEditPipeline(const QString& pipelineId);    /// Handles generate action.
-  void onActionRenamePipeline(const QString& pipelineId);  /// Handles generate action.
-  void onActionLogLevelChanged();                          /// Handles log level change action.
+  void onActionNew(const QString& templatePath) override;              /// Handles new action.
+  void onActionLoad(const QString& filename);                          /// Handles load action with a specified file name.
+  VoidResult onActionSave();                                           /// Handles save action.
+  void onActionExit();                                                 /// Handles exit action.
+  void onActionRestart();                                              /// Handles restart action.
+  void onActionSaveAs();                                               /// Handles save as action.
+  void onActionGenerate(const QString& pipelineId, bool fromScratch);  /// Handles generate action.
+  void onActionDeletePipeline(const QString& pipelineId);              /// Handles pipeline deletion.
+  void onActionEditPipeline(const QString& pipelineId);                /// Handles generate action.
+  void onActionRenamePipeline(const QString& pipelineId);              /// Handles generate action.
+  void onActionLogLevelChanged();                                      /// Handles log level change action.
   void onFileLoaded(const QString& file, const SaveInfo& info, const QString& error);
   VoidResult loadLastSession();
 };  // namespace qlementclassMainWindow:public MainWindowLayout

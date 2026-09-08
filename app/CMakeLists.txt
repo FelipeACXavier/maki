@@ -15,6 +15,7 @@ include(${CMAKE_SOURCE_DIR}/cmake/copy_themes.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/copy_libraries.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/doxygen.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/copy_translations.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/copy_templates.cmake)
 
 # ------------------------------------------------------------------------------------------------------------
 # Main application

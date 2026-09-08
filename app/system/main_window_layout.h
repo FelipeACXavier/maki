@@ -101,11 +101,12 @@ protected:
 
   // === Actions ===
   // File menu
-  QAction* mActionNew;       /// Pointer to the new action.
-  QAction* mActionOpen;      /// Pointer to the open action.
-  QMenu* mActionOpenRecent;  /// Pointer to the open recent menu.
-  QAction* mActionSave;      /// Pointer to the save action.
-  QAction* mActionSaveAs;    /// Pointer to the save as action.
+  QAction* mActionNew;              /// Pointer to the new action.
+  QAction* mActionNewFromTemplate;  /// Pointer to the new from template action.
+  QAction* mActionOpen;             /// Pointer to the open action.
+  QMenu* mActionOpenRecent;         /// Pointer to the open recent menu.
+  QAction* mActionSave;             /// Pointer to the save action.
+  QAction* mActionSaveAs;           /// Pointer to the save as action.
 
   QAction* mActionImportLibrary;  /// Pointer to the import library action.
   QAction* mActionInstallPlugin;  /// Pointer to the install plugin action.
@@ -167,6 +168,8 @@ protected:
    * @param running True if running, false otherwise.
    */
   void toggleGenerationButton(bool running);
+
+  virtual void onActionNew(const QString& templatePath);
 
 private:
   QList<TranslatableWidget> mTranslatable;  /// List of translatable widgets.

@@ -17,7 +17,7 @@ public:
   void reset() override;
 
 signals:
-  void executeRequested(const QString& option);
+  void executeRequested(const QString& option, bool fromScratch);
   void editOptionRequested(const QString& option);
   void renameOptionRequested(const QString& option);
   void deleteOptionRequested(const QString& option);
