@@ -738,7 +738,7 @@ class RecordWidget : public TypedInputWidget<WidgetGroup>
 {
   Q_OBJECT
 public:
-  RecordWidget(const QString& label, const koda::types::RecordTypeDefinition& definition, WidgetAlignment alignment, QWidget* parent = nullptr);
+  RecordWidget(const QString& label, const koda::types::TypeDefinition& definition, WidgetAlignment alignment, QWidget* parent = nullptr);
 
   RecordValue getValue() const;
   void setValue(const RecordValue& value);
@@ -755,7 +755,7 @@ private:
   };
 
   std::vector<RecordField> mEditors;
-  const koda::types::RecordTypeDefinition mDefinition;
+  const koda::types::TypeDefinition mDefinition;
 
   void addItem(const QString& id, const Value& value);
   void clear();
@@ -765,10 +765,10 @@ class EnumWidget : public SelectorWidget
 {
   Q_OBJECT
 public:
-  EnumWidget(const QString& label, const koda::types::EnumTypeDefinition& definition, WidgetAlignment alignment, QWidget* parent = nullptr);
+  EnumWidget(const QString& label, const koda::types::TypeDefinition& definition, WidgetAlignment alignment, QWidget* parent = nullptr);
 
 private:
-  const koda::types::EnumTypeDefinition mDefinition;
+  const koda::types::TypeDefinition mDefinition;
 };
 
 class ValueEditorFactory

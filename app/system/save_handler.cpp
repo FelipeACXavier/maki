@@ -453,7 +453,7 @@ VoidResult SaveHandler::loadProject()
   QFileDialog::getOpenFileContent("MAKI projects (*.maki)", [this](const QString& fileName, const QByteArray& content) {
     if (fileName.isEmpty())
     {
-      emit fileLoaded("", SaveInfo(), "No file selected.");
+      emit fileLoaded("", SaveInfo(), "No file selected.", false);
       return;
     }
 
@@ -461,7 +461,7 @@ VoidResult SaveHandler::loadProject()
     QFile file(tempFile);
     if (!file.open(QIODevice::WriteOnly))
     {
-      emit fileLoaded("", SaveInfo(), "No file selected.");
+      emit fileLoaded("", SaveInfo(), "No file selected.", false);
       return;
     }
 
@@ -470,11 +470,11 @@ VoidResult SaveHandler::loadProject()
 
     auto loaded = loadProject(tempFile);
     if (!loaded.IsSuccess())
-      emit fileLoaded(fileName, SaveInfo(), QString::fromStdString(loaded.ErrorMessage()));
+      emit fileLoaded(fileName, SaveInfo(), QString::fromStdString(loaded.ErrorMessage()), false);
     else
     {
       auto info = loaded.Value();
-      emit fileLoaded(fileName, info, QString());
+      emit fileLoaded(fileName, info, QString(), false);
     }
   });
 

@@ -558,8 +558,8 @@ void PropertiesMenu::addCompleter(maki::InputWidget* editor, const QString& node
     }
 
   // variables.removeDuplicates();
-  if (variables.isEmpty())
-    return;
+  // if (variables.isEmpty())
+  // return;
 
   editor->setSupportedReferences(variables);
   // for (auto* widget : editor->focusWidgets())

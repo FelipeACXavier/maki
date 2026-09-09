@@ -66,7 +66,7 @@ signals:
    *
    * @param file The name of the loaded file.
    */
-  void fileLoaded(const QString& file, const SaveInfo& info, const QString& error);
+  void fileLoaded(const QString& file, const SaveInfo& info, const QString& error, bool fromTemplate);
 
   /**
    * @brief Emitted when a file is saved.

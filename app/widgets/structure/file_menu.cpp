@@ -5,6 +5,7 @@
 #include <QSortFilterProxyModel>
 #include <QVBoxLayout>
 
+#include "../code_viewer.h"
 #include "file_menu_proxy.h"
 #include "logging.h"
 
@@ -52,7 +53,7 @@ GeneratedFilesPanel::GeneratedFilesPanel(QWidget* parent)
   // mRevertAction = toolbar->addAction("Revert");
   // mOpenExternalAction = toolbar->addAction("Open externally");
 
-  mEditor = new QPlainTextEdit(this);
+  mEditor = new CodeViewer(this);
   mEditor->setLineWrapMode(QPlainTextEdit::NoWrap);
   mEditor->hide();
 

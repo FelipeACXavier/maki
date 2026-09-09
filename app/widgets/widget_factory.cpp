@@ -432,8 +432,11 @@ void InputWidget::setSupportedReferences(const QVector<MissionParameter>& parame
     auto action = mParameterMenu->addAction(parameter.getname());
     connect(action, &QAction::triggered, this, [this, name = parameter.getname()] { setReference(name); });
   }
+  if (!parameters.isEmpty())
+    mParameterMenu->addSeparator();
 
-  mParameterMenu->addSeparator();
+  auto* inferAction = mParameterMenu->addAction(tr("Use inferred value"));
+  connect(inferAction, &QAction::triggered, this, [this] { setReference(Types::INFERRED); });
   auto* clearAction = mParameterMenu->addAction(tr("Use literal value"));
   connect(clearAction, &QAction::triggered, this, [this] { clearReference(); });
 }
@@ -581,12 +584,13 @@ void StringWidget::setValue(const QString& value)
 
 void maki::StringWidget::writeValueToWidget(const Value& value)
 {
-  if (!std::holds_alternative<QString>(value.data))
-    return;
-
-  auto actualValue = std::get<QString>(value.data);
   if (auto* edit = qobject_cast<QLineEdit*>(mInputField))
-    edit->setText(actualValue);
+  {
+    if (value.isReference())
+      edit->setText(QString::fromStdString(value.toReference().id));
+    else
+      edit->setText(value.toString());
+  }
 }
 
 // ========================================================================================================================================
@@ -1320,7 +1324,7 @@ QList<QWidget*> MapWidget::focusWidgets() const
 }
 
 // =========================================================================================================
-RecordWidget::RecordWidget(const QString& label, const koda::types::RecordTypeDefinition& definition, WidgetAlignment alignment, QWidget* parent)
+RecordWidget::RecordWidget(const QString& label, const koda::types::TypeDefinition& definition, WidgetAlignment alignment, QWidget* parent)
     : TypedInputWidget<WidgetGroup>("", new maki::WidgetGroup(label, oclero::qlementine::TextRole::H5, nullptr), alignment, parent)
     , mDefinition(definition)
 {
@@ -1351,7 +1355,7 @@ void RecordWidget::writeValueToWidget(const Value& value)
 
   if (auto* group = qobject_cast<maki::WidgetGroup*>(mInputField))
   {
-    for (const auto& field : mDefinition.fields)
+    for (const auto& field : maki::TypeRegistry::instance().fieldsOf(mDefinition.name))
     {
       auto it = record->find(field.name);
       Value fieldValue;
@@ -1393,11 +1397,11 @@ QList<QWidget*> RecordWidget::focusWidgets() const
 }
 
 // =========================================================================================================
-EnumWidget::EnumWidget(const QString& label, const koda::types::EnumTypeDefinition& definition, WidgetAlignment alignment, QWidget* parent)
+EnumWidget::EnumWidget(const QString& label, const koda::types::TypeDefinition& definition, WidgetAlignment alignment, QWidget* parent)
     : SelectorWidget(label, alignment, parent)
     , mDefinition(definition)
 {
-  for (const auto& field : definition.values)
+  for (const auto& field : definition.enumeration().values)
     addItem(QString::fromStdString(field.name), QString::fromStdString(field.value.value_or("None")));
 }
 
@@ -1455,7 +1459,7 @@ InputWidget* ValueEditorFactory::create(const QString& label, const koda::types:
   }
   else if (definition->isRecord())
   {
-    auto* editor = new maki::RecordWidget(QString::fromStdString(definition->name.toString()), definition->record(), alignment, parent);
+    auto* editor = new maki::RecordWidget(QString::fromStdString(definition->name.toString()), *definition, alignment, parent);
     SET_REF_OR_VALUE(editor, value, toRecord)
     return editor;
   }
@@ -1465,7 +1469,7 @@ InputWidget* ValueEditorFactory::create(const QString& label, const koda::types:
   }
   else if (definition->isEnum())
   {
-    auto* editor = new EnumWidget(QString::fromStdString(definition->name.toString()), definition->enumeration(), alignment, parent);
+    auto* editor = new EnumWidget(QString::fromStdString(definition->name.toString()), *definition, alignment, parent);
     SET_REF_OR_VALUE(editor, value, toString)
     return editor;
   }

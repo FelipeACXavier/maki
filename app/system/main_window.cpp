@@ -973,7 +973,7 @@ void MainWindow::onActionNew(const QString& templateName)
     mSystemMenu->clear();
 
   if (!templateName.isEmpty())
-    onActionLoad(templateName);
+    onActionLoad(templateName, true);
 
   NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Created new project");
 }
@@ -1263,7 +1263,7 @@ void MainWindow::onActionSaveAs()
   }
 }
 
-void MainWindow::onActionLoad(const QString& filename)
+void MainWindow::onActionLoad(const QString& filename, bool fromTemplate)
 {
   if (!mSaveHandler)
   {
@@ -1282,15 +1282,15 @@ void MainWindow::onActionLoad(const QString& filename)
   auto loaded = mSaveHandler->loadProject(filename);
   if (!loaded.IsSuccess())
   {
-    onFileLoaded(filename, SaveInfo(), QString::fromStdString(loaded.ErrorMessage()));
+    onFileLoaded(filename, SaveInfo(), QString::fromStdString(loaded.ErrorMessage()), fromTemplate);
     return;
   }
 
   auto info = loaded.Value();
-  onFileLoaded(filename, info, "");
+  onFileLoaded(filename, info, "", fromTemplate);
 }
 
-void MainWindow::onFileLoaded(const QString& file, const SaveInfo& info, const QString& error)
+void MainWindow::onFileLoaded(const QString& file, const SaveInfo& info, const QString& error, bool fromTemplate)
 {
   if (!error.isEmpty())
   {
@@ -1337,6 +1337,14 @@ void MainWindow::onFileLoaded(const QString& file, const SaveInfo& info, const Q
 
   if (mSystemMenu)
     mSystemMenu->expandToDepth(1);
+
+  if (fromTemplate)
+  {
+    mStorage->rootPath.clear();
+    mStorage->name.clear();
+    mStorage->version.clear();
+    mStorage->saveFile.clear();
+  }
 
   LOG_INFO("Project with {} nodes after", mStorage->getnodes().size());
   NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Loaded project: {}", mStorage->name.toStdString());
