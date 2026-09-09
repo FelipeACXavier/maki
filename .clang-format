@@ -1,6 +1,6 @@
 BasedOnStyle: Google
 AccessModifierOffset: -2
-ColumnLimit: 150 # Just a bit more than the editor columns
+ColumnLimit: 160 # Just a bit more than the editor columns
 BreakBeforeBraces: Custom
 RemoveBracesLLVM: true
 BraceWrapping:
