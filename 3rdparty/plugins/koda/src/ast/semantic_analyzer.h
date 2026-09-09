@@ -39,7 +39,11 @@ struct ResolvedCall
   SymbolId receiver = InvalidSymbol;  // argument/component instance symbol
   SymbolId target = InvalidSymbol;    // capability or event symbol
   types::TypeReference returnType;
-  std::vector<std::string> args = {};
+
+  std::vector<koda::types::TypeReference> args = {};
+
+  std::vector<std::optional<types::SlotId>> inputSlots = {};
+  std::vector<types::SlotId> outputSlots = {};
 };
 
 struct SemanticModel
@@ -91,9 +95,10 @@ private:
   Result<SymbolId> resolveValue(const std::string& name, SymbolId owner, const Span& span) const;
   Result<SymbolId> resolveComponentType(const Symbol& value, const Span& span) const;
 
-  VoidResult resolveCapabilityData(const PEventCall& astCall, const ResolvedCall& call, SymbolId owner);
+  VoidResult resolveCapabilityData(const PEventCall& astCall, ResolvedCall& call, SymbolId owner);
   Result<ResolvedArgumentSource> resolveArgumentSource(const PExpr& expr, const types::TypeReference& expectedType, SymbolId owner);
 
+  Result<std::vector<koda::types::TypeReference>> analyseArgs(const PEventCall& call, SymbolId owner);
   bool compatible(const types::TypeReference& expected, const types::TypeReference& actual);
 };
 

@@ -52,7 +52,7 @@ Result<LibraryComponent> createFailureComponent(Model& model, const std::string&
 Result<LibraryComponent> createSelectorComponent(Model& model, const std::string& outdir, uint32_t conditionCount, uint32_t branchCount,
                                                  SymbolId componentId);
 Result<LibraryComponent> createAbortCallComponent(Model& model, const std::string& outdir, SymbolId componentId);
-Result<LibraryComponent> createCapabilityArmour(Model& model, const std::string& outdir, const std::string& capabilityName,
+Result<LibraryComponent> createCapabilityArmour(Model& model, const std::string& outdir, const std::string& capabilityName, bool hasAbort,
                                                 const std::vector<std::string>& ports, SymbolId componentId);
 
 // Helpers

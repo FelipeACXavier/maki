@@ -12,6 +12,7 @@
 #include "ast/symbol_registry.h"
 #include "dezyne_model.h"
 #include "result.h"
+#include "typing/ros_data_mapper.h"
 
 namespace koda::dezyne
 {
@@ -48,7 +49,8 @@ struct RosEmitterOptions
 class RosEmitter
 {
 public:
-  VoidResult write(const ir::Program& program, const Model& model, const SymbolRegistry& symbols, const RosEmitterOptions& options);
+  VoidResult write(const ir::Program& program, const Model& model, const SymbolRegistry& symbols, const koda::types::TypeRegistry& registry,
+                   const RosEmitterOptions& options);
 
   const std::vector<std::string>& generatedFiles() const
   {
@@ -56,6 +58,15 @@ public:
   }
 
 private:
+  struct Action
+  {
+    std::string name = "";
+    const ir::Event* trigger = nullptr;
+    const ir::Event* onReturn = nullptr;
+    const ir::Event* onError = nullptr;
+    const ir::Event* onAbort = nullptr;
+  };
+
   struct Capability
   {
     const ir::Component* component = nullptr;
@@ -70,11 +81,7 @@ private:
     std::string route;
     std::string message;
 
-    const ir::Event* trigger = nullptr;
-    const ir::Event* onReturn = nullptr;
-    const ir::Event* onError = nullptr;
-    const ir::Event* onAbort = nullptr;
-
+    std::vector<Action> actions = {};
     std::vector<const CallSite*> calls;
 
     // Capability-specific generation payload. These fields intentionally mirror
@@ -120,6 +127,8 @@ private:
   std::set<std::string> mCmakeDeps;
   std::vector<std::string> mGeneratedFiles;
 
+  std::shared_ptr<koda::ros::RosDatatypeMapper> mRosMapper;
+
   VoidResult collect();
   VoidResult collectCapability(const ir::Component& component);
   void collectTask(const ir::Component& component);
@@ -154,7 +163,7 @@ private:
   std::string cppType(const types::TypeReference& type) const;
 
   std::string argDecls(const std::vector<ir::Argument>& args) const;
-  static std::string argNames(const std::vector<ir::Argument>& args);
+  std::string argNames(const std::vector<ir::Argument>& args, bool startWithComma = false) const;
   std::string callbackType(const ir::Event& event) const;
 
   static std::string cppName(std::string value);
@@ -167,6 +176,7 @@ private:
   void collectObjectDetection(Capability& capability);
   void collectApproach(Capability& capability);
   void collectGrip(Capability& capability);
+  void collectBatteryMonitor(Capability& capability);
 };
 
 }  // namespace koda::dezyne

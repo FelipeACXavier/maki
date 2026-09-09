@@ -13,7 +13,8 @@ class DezyneEmitter final : public Emitter
 {
 public:
   std::string id() const override;
-  VoidResult generate(const ir::Program& program, const SymbolRegistry& symbols, const CompilerOptions& options) override;
+  VoidResult generate(const ir::Program& program, const SymbolRegistry& symbols, const koda::types::TypeRegistry& registry,
+                      const CompilerOptions& options) override;
   const std::vector<std::string>& generatedFiles() const override;
   const dezyne::Model& model() const;
 

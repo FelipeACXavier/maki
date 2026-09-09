@@ -57,6 +57,10 @@ public:
   std::vector<FieldDefinition> fieldsOf(const TypeReference& reference) const;
   std::vector<FieldDefinition> fieldsOf(const TypeDefinition& definition) const;
 
+  Annotations annotationsOf(const QualifiedName& name) const;
+  Annotations annotationsOf(const TypeDefinition& definition) const;
+  Annotations annotationsOf(const TypeReference& reference) const;
+
   const FieldDefinition* findField(const TypeReference& recordType, const std::string& fieldName) const;
 
   bool isBuiltin(const TypeDefinition& type) const;
@@ -82,10 +86,12 @@ private:
   bool validateReference(const TypeReference& reference, const std::string& path, std::vector<TypeModelDiagnostic>& diagnostics) const;
   bool hasAliasCycle(const TypeDefinition& definition) const;
   bool hasInheritanceCycle(const TypeDefinition& definition) const;
-  bool collectFields(const TypeDefinition& definition, std::vector<FieldDefinition>& fields, std::vector<TypeId>& activeTypes) const;
   bool isAssignableResolved(const TypeReference& source, const TypeReference& target) const;
   const TypeDefinition* builtinDefinition(PrimitiveKind primitive) const;
   static std::string nameKey(const QualifiedName& name);
+
+  bool collectFields(const TypeDefinition& definition, std::vector<FieldDefinition>& fields, std::vector<TypeId>& activeTypes) const;
+  bool collectAnnotations(const TypeDefinition& definition, Annotations& annotations, std::vector<TypeId>& activeTypes) const;
 };
 
 }  // namespace koda::types

@@ -37,11 +37,12 @@ VoidResult LoweringPass::run(const ir::Program& program)
     if (component.kind != ir::ComponentKind::Capability)
       continue;
 
-    for (const auto& event : component.events)
-      if (isActionEvent(event.kind))
-        mActionEvents.insert(event.symbol);
-      else if (event.kind == ir::EventKind::Abort)
-        mAbortEvents.insert(event.symbol);
+    for (const auto& action : component.actions)
+      for (const auto& event : action.events)
+        if (isActionEvent(event.kind))
+          mActionEvents.insert(event.symbol);
+        else if (event.kind == ir::EventKind::Abort)
+          mAbortEvents.insert(event.symbol);
 
     mCapabilities[component.symbol] = &component;
   }
@@ -72,54 +73,51 @@ VoidResult LoweringPass::run(const ir::Program& program)
 VoidResult LoweringPass::lowerCapability(const ir::Component& capability)
 {
   auto* component = mModel.findComponent(componentName(capability.name));
-
   if (!component)
     return VoidResult::Failed("Missing declared Dezyne capability: " + capability.name);
 
   std::ostringstream out;
-
   out << "import iexternal.dzn;\n";
   out << "import isignal.dzn;\n\n";
-
   out << std::format("component {} {{\n", componentName(capability.name));
-
-  for (const auto& event : capability.events)
+  for (const auto& action : capability.actions)
   {
-    LOG_DEBUG("Declaring event {} of type {} - {} {}", event.name, static_cast<int>(event.kind), capability.symbol, event.symbol);
-
-    if (isActionEvent(event.kind))
+    for (const auto& event : action.events)
     {
-      const auto count = std::max<std::uint32_t>(1, mCallCounts[event.symbol]);
-      for (std::uint32_t i = 0; i < count; ++i)
+      if (isActionEvent(event.kind))
       {
-        const auto name = count == 1 ? event.name : std::format("{}_{}", event.name, i + 1);
-        mModel.declarePort(component->symbol, name, PortDirection::Provides, PortProtocol::External, {event.symbol, event.span});
-        out << std::format("  provides iexternal {};\n", name);
-      }
+        // Remove the port before in case the name remains the same during declaration
+        if (auto port = mModel.findPort(component->symbol, event.name))
+          mModel.removePort(component->symbol, port->symbol);
 
-      if (auto port = mModel.findPort(component->symbol, event.name))
-        mModel.removePort(component->symbol, port->symbol);
-    }
-    else if (event.kind == ir::EventKind::Out)
-    {
-      out << std::format("  provides isignal {};\n", event.name);
-    }
-    else if (event.kind == ir::EventKind::Abort || event.kind == ir::EventKind::Return || event.kind == ir::EventKind::Error)
-    {
-      // Abort is exposed once by the armour.
-      //
-      // Return and Error are represented by the corresponding
-      // iexternal interaction protocol rather than separate ports.
-      if (auto port = mModel.findPort(component->symbol, event.name))
-        mModel.removePort(component->symbol, port->symbol);
+        const auto count = std::max<std::uint32_t>(0, mCallCounts[event.symbol]);
+        for (std::uint32_t i = 0; i < count; ++i)
+        {
+          const auto name = count == 1 ? event.name : std::format("{}_{}", event.name, i + 1);
+          mModel.declarePort(component->symbol, name, PortDirection::Provides, PortProtocol::External, {event.symbol, event.span});
+          out << std::format("  provides iexternal {};\n", name);
+        }
+      }
+      else if (event.kind == ir::EventKind::Out)
+      {
+        out << std::format("  provides isignal {};\n", event.name);
+      }
+      else if (event.kind == ir::EventKind::Abort || event.kind == ir::EventKind::Return || event.kind == ir::EventKind::Error)
+      {
+        // Abort is exposed once by the armour.
+        //
+        // Return and Error are represented by the corresponding
+        // iexternal interaction protocol rather than separate ports.
+        if (auto port = mModel.findPort(component->symbol, event.name))
+          mModel.removePort(component->symbol, port->symbol);
+      }
     }
   }
-
   out << "}\n";
 
   mModel.setGeneratedFile(component->fileName, out.str(), {capability.symbol, capability.span});
 
-  return {};
+  return VoidResult();
 }
 
 VoidResult LoweringPass::lowerTask(const ir::Component& task)
@@ -166,50 +164,6 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
         .rhs = "f_" + lower(entry.name) + ".api",
         .span = entry.span,
     });
-  }
-
-  for (const auto& arg : task.arguments)
-  {
-    if (!arg.type.isNamed())
-      continue;
-
-    const auto named = arg.type.namedType();
-
-    if (!named.id || named.id.value() == std::to_string(InvalidSymbol))
-      continue;
-
-    const auto capabilityId = std::stoul(named.id.value());
-    const auto found = mCapabilities.find(capabilityId);
-    if (found == mCapabilities.end())
-      continue;
-
-    const auto& capability = *found->second;
-    const auto externalInstance = lower(arg.name);
-    const auto armourInstance = externalInstance + "_armour";
-    std::vector<std::string> ports;
-    for (const auto& event : capability.events)
-    {
-      if (!isActionEvent(event.kind))
-        continue;
-
-      const auto count = std::max<std::uint32_t>(1, mCallCounts[event.symbol]);
-      for (std::uint32_t i = 0; i < count; ++i)
-      {
-        const auto port = count == 1 ? event.name : std::format("{}_{}", event.name, i + 1);
-
-        connections.push_back({
-            .lhs = std::format("{}.r_{}", armourInstance, port),
-            .rhs = std::format("{}.{}", externalInstance, port),
-            .span = arg.span,
-        });
-
-        ports.push_back(port);
-      }
-    }
-
-    LibraryComponent libArmour;
-    ASSIGN_OR_RETURN_ON_FAILURE(libArmour, createCapabilityArmour(mModel, mOptions.outputDir, externalInstance, ports, componentId));
-    mModel.declareInstance(componentId, armourInstance, libArmour.name);
   }
 
   // We must update the alarm name since we have multiple alarms at the top level
@@ -333,6 +287,57 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
           .span = flow.span,
       });
     }
+  }
+
+  for (const auto& arg : task.arguments)
+  {
+    if (!arg.type.isNamed())
+      continue;
+
+    const auto named = arg.type.namedType();
+
+    if (!named.id || named.id.value() == std::to_string(InvalidSymbol))
+      continue;
+
+    const auto capabilityId = std::stoul(named.id.value());
+    const auto found = mCapabilities.find(capabilityId);
+    if (found == mCapabilities.end())
+      continue;
+
+    const auto& capability = *found->second;
+    const auto externalInstance = lower(arg.name);
+    const auto armourInstance = externalInstance + "_armour";
+    std::vector<std::string> ports;
+    for (const auto& action : capability.actions)
+      for (const auto& event : action.events)
+      {
+        if (!isActionEvent(event.kind))
+          continue;
+
+        const auto count = std::max<std::uint32_t>(0, mCallCounts[event.symbol]);
+        for (std::uint32_t i = 0; i < count; ++i)
+        {
+          const auto port = count == 1 ? event.name : std::format("{}_{}", event.name, i + 1);
+
+          connections.push_back({
+              .lhs = std::format("{}.r_{}", armourInstance, port),
+              .rhs = std::format("{}.{}", externalInstance, port),
+              .span = arg.span,
+          });
+
+          ports.push_back(port);
+        }
+      }
+
+    bool hasAbort = true;
+    const auto instances = mSymbols.instancesOf(capabilityId);
+    for (const auto& instance : instances)
+      hasAbort = hasAbort && usesCapabilityAbort(instance);
+
+    LOG_DEBUG("Generating armour for {} {} abort", externalInstance, hasAbort ? "with" : "without");
+    LibraryComponent libArmour;
+    ASSIGN_OR_RETURN_ON_FAILURE(libArmour, createCapabilityArmour(mModel, mOptions.outputDir, externalInstance, hasAbort, ports, componentId));
+    mModel.declareInstance(componentId, armourInstance, libArmour.name);
   }
 
   // Make sure the arbiters exists in case they are needed
@@ -1326,6 +1331,22 @@ void LoweringPass::countHandlerTriggers(const ir::PHandler& handler)
     ++mCallCounts[handler->emitter->target];
 
   countTriggers(handler->body);
+}
+
+bool LoweringPass::usesCapabilityAbort(SymbolId receiver) const
+{
+  LOG_TRACE("Looking for abort use with receiver: {}", receiver);
+  for (const auto& [_, flow] : mFlows)
+  {
+    for (const auto& call : flow.calls)
+    {
+      LOG_TRACE("  Receiver {} vs {} and type: {}", call.receiver, receiver, (int)call.kind);
+      if (call.kind == CallUse::Kind::Abort && call.receiver == receiver)
+        return true;
+    }
+  }
+
+  return false;
 }
 
 std::string LoweringPass::sourceName(koda::SymbolId id) const

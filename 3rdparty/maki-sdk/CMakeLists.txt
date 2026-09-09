@@ -11,6 +11,8 @@ include(GNUInstallDirs)
 # ------------------------------------------------------------------------------------------------------------
 find_package(Qt6 ${QT_VERSION} REQUIRED COMPONENTS Core)
 
+find_package(ament_index_cpp REQUIRED)
+
 file(GLOB SOURCES
   "${PROJECT_SOURCE_DIR}/source/*.cpp"
   "${PROJECT_SOURCE_DIR}/source/typing/*.cpp"
@@ -33,11 +35,15 @@ target_include_directories(${PROJECT_NAME}
     include
 )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE
+target_link_libraries(${PROJECT_NAME}
+ PRIVATE
   Qt6::Core
   Qt6::Gui
   Qt6::Widgets
   libcpphelpers
+
+ PUBLIC
+  ament_index_cpp::ament_index_cpp
 )
 
 install(TARGETS ${PROJECT_NAME}

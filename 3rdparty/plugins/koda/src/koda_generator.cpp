@@ -20,7 +20,6 @@
 #include "actions/cpp_action.h"
 #include "actions/dezyne_action.h"
 #include "actions/koda_action.h"
-#include "actions/ros_action.h"
 #include "actions/ros_build.h"
 #include "actions/ros_copy.h"
 #include "actions/ros_launch.h"
@@ -212,8 +211,8 @@ QList<std::shared_ptr<maki::IPipelineAction>> KodaGenerator::pipelineActions()
 {
   return {
       std::make_shared<GenerateKodaAction>(this), std::make_shared<GenerateDezyneAction>(this), std::make_shared<GenerateCppAction>(this),
-      std::make_shared<KodaVerifyAction>(this),   std::make_shared<KodaSimulateAction>(this),   std::make_shared<GenerateRosAction>(),
-      std::make_shared<KodaRosCopySources>(),     std::make_shared<KodaRosBuild>(this),         std::make_shared<KodaRosLaunch>(this),
+      std::make_shared<KodaVerifyAction>(this),   std::make_shared<KodaSimulateAction>(this),   std::make_shared<KodaRosCopySources>(),
+      std::make_shared<KodaRosBuild>(this),       std::make_shared<KodaRosLaunch>(this),
   };
 }
 
@@ -508,13 +507,14 @@ VoidResult KodaGenerator::simulate(const maki::PipelineArtifact& artifact)
 }
 
 Result<maki::PipelineArtifact> KodaGenerator::buildRosProject(const maki::PipelineArtifact& artifact, const QDir& outputFolder,
-                                                              maki::IPipeline* pipeline)
+                                                              const QString& rosFolder, maki::IPipeline* pipeline)
 {
   if (!artifact.paths.contains("rootDir"))
     return Result<maki::PipelineArtifact>::Failed("buildProject, missing root folder");
 
   const QString projectDir = artifact.paths["rootDir"].toString();
 
+  LOG_DEBUG("Building ROS project in {} with ROS workspace: {}", projectDir, rosFolder);
   pipeline->startGroup("Build ROS");
   QProcess* generate = new QProcess(this);
   generate->setWorkingDirectory(projectDir);
@@ -526,9 +526,9 @@ Result<maki::PipelineArtifact> KodaGenerator::buildRosProject(const maki::Pipeli
       "-u", "felaze",
       "-e", "TERM=xterm-256color",
       "-e", "CLICOLOR_FORCE=1",
-      "-v", "/home/felaze/ros2_ws:/home/felaze/ros2_ws",
-      "-v", projectDir + ":/home/felaze/ros2_ws/src/koda_ros",
-      "-w", "/home/felaze/ros2_ws",
+      "-v", rosFolder + ":" + rosFolder,
+      "-v", projectDir + ":" + rosFolder + "/src/koda_ros",
+      "-w", rosFolder,
       "ros2:v1.0.0",
       "bash", "-ic", "source /opt/ros/humble/setup.bash && colcon build --symlink-install",
   };
@@ -542,7 +542,7 @@ Result<maki::PipelineArtifact> KodaGenerator::buildRosProject(const maki::Pipeli
 }
 
 Result<maki::PipelineArtifact> KodaGenerator::launchRosProject(const maki::PipelineArtifact& artifact, const QDir& outputFolder,
-                                                               maki::IPipeline* pipeline)
+                                                               const QString& rosFolder, maki::IPipeline* pipeline)
 {
   if (!artifact.paths.contains("rootDir"))
     return Result<maki::PipelineArtifact>::Failed("buildProject, missing root folder");
@@ -576,7 +576,7 @@ Result<maki::PipelineArtifact> KodaGenerator::launchRosProject(const maki::Pipel
     "-v", projectDir + ":/home/felaze/ros2_ws/src/koda_ros:rw",
     "-w", "/home/felaze/ros2_ws",
     "ros2:v1.0.0",
-    "bash", "-ic", QString("source /opt/ros/humble/setup.bash && source install/setup.bash && ros2 launch %1 %2 | grep -v \"Sensor origin\" | grep -v rviz").arg(packageName, launchFile),
+    "bash", "-ic", QString("source /opt/ros/humble/setup.bash && source install/setup.bash && ros2 launch %1 %2 | grep -v \"Sensor origin\" | grep -v rviz | grep -v \"frame does not exist\"").arg(packageName, launchFile),
   };
   // clang-format on
   generate->setArguments(args);

@@ -28,10 +28,13 @@ void SymbolRegistry::print() const
     LOG_DEBUG("    Type: {}", s.type.toString());
     LOG_DEBUG("    Span: {}", s.span.toString());
     LOG_DEBUG("    Owner: {}", s.owner);
+    if (s.kind == SymbolKind::Event)
+      LOG_DEBUG("    Action: {}", s.actionId);
   }
 }
 
-Result<SymbolId> SymbolRegistry::declare(SymbolKind kind, const std::string& name, const types::TypeReference& type, const Span& span, SymbolId owner)
+Result<SymbolId> SymbolRegistry::declare(SymbolKind kind, const std::string& name, const types::TypeReference& type, const Span& span, SymbolId owner,
+                                         SymbolId actionId)
 {
   LOG_TRACE("Declaring {} with type: {} and owner: {}", name, type.toString(), owner);
 
@@ -49,7 +52,7 @@ Result<SymbolId> SymbolRegistry::declare(SymbolKind kind, const std::string& nam
   if (type.isNamed() && !type.namedType().id.has_value())
     resolvedType = types::TypeReference::named(type.namedType().name, std::to_string(owner));
 
-  mSymbols.push_back(Symbol{id, kind, name, resolvedType, span, owner});
+  mSymbols.push_back(Symbol{id, kind, name, resolvedType, span, owner, actionId});
   s.symbols.emplace(name, id);
 
   if (kind == SymbolKind::Task || kind == SymbolKind::Capability)
@@ -127,7 +130,7 @@ std::vector<SymbolId> SymbolRegistry::children(SymbolId owner, SymbolKind kind) 
   return result;
 }
 
-const Symbol* SymbolRegistry::triggerEventOf(SymbolId owner) const
+const Symbol* SymbolRegistry::eventOfAction(SymbolId owner, OSymbolId actionId, const std::string& type) const
 {
   for (const auto eventId : children(owner, SymbolKind::Event))
   {
@@ -135,22 +138,7 @@ const Symbol* SymbolRegistry::triggerEventOf(SymbolId owner) const
     if (!eventSymbol)
       continue;
 
-    if (eventSymbol->type.toString() == "Trigger")
-      return eventSymbol;
-  }
-
-  return nullptr;
-}
-
-const Symbol* SymbolRegistry::returnEventOf(SymbolId owner) const
-{
-  for (const auto eventId : children(owner, SymbolKind::Event))
-  {
-    const auto* eventSymbol = get(eventId);
-    if (!eventSymbol)
-      continue;
-
-    if (eventSymbol->type.toString() == "Return")
+    if ((!actionId || eventSymbol->actionId == *actionId) && eventSymbol->type.toString() == type)
       return eventSymbol;
   }
 
@@ -166,6 +154,26 @@ std::optional<SymbolId> SymbolRegistry::component(const std::string& name) const
   if (!symbol || (symbol->kind != SymbolKind::Task && symbol->kind != SymbolKind::Capability))
     return std::nullopt;
   return id;
+}
+
+std::vector<SymbolId> SymbolRegistry::instancesOf(SymbolId componentId) const
+{
+  std::vector<SymbolId> result;
+
+  const auto* component = get(componentId);
+  if (!component)
+    return result;
+
+  for (const auto& symbol : mSymbols)
+  {
+    if (symbol.kind != SymbolKind::Argument)
+      continue;
+
+    if (symbol.type.toString() == component->name)
+      result.push_back(symbol.id);
+  }
+
+  return result;
 }
 
 SymbolRegistry::Scope& SymbolRegistry::ensureScope(SymbolId owner)

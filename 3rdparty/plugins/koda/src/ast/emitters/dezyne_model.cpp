@@ -129,12 +129,20 @@ void Model::print() const
   for (const auto& s : mSymbols.all())
   {
     LOG_DEBUG("  Id: {}", s.id);
-    LOG_DEBUG("  Name: {}", s.name);
+    LOG_DEBUG("    Name: {}", s.name);
+    LOG_DEBUG("    Kind: {}", Symbol::kindToString(s.kind));
+    LOG_DEBUG("    Parent: {}", s.parent);
   }
 
   LOG_DEBUG("Components:");
   for (const auto& c : mComponents)
+  {
     LOG_DEBUG("  Id: {}", c.fileName);
+    for (const auto& i : c.instances)
+      LOG_DEBUG("    Instance: {} {}", i.typeName, i.typeName);
+    for (const auto& p : c.ports)
+      LOG_DEBUG("    Port: {} {} {}", p.symbol, portToString(p.protocol), (int)p.direction);
+  }
 
   LOG_DEBUG("Files:");
   for (const auto& f : mFiles)
@@ -281,7 +289,7 @@ std::vector<const CallSite*> Model::callSitesForReceiver(koda::SymbolId receiver
   std::vector<const CallSite*> result;
 
   for (const auto& call : mCallSites)
-    if (call.receiver == receiver)
+    if (call.receiver == receiver && call.kind != CallSiteKind::Abort)
       result.push_back(&call);
 
   return result;

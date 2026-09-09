@@ -821,6 +821,13 @@ std::shared_ptr<koda::Expr> MakiToKoda::buildExpr(const maki::Value& value)
       wrapper->v = expr;
       break;
     }
+    case IValue::Kind::Reference:
+    {
+      auto expr = std::make_shared<koda::Expr::Id>();
+      expr->value = value.toReference().id == Types::INFERRED ? Types::KODA_INFERRED : value.toReference().id;
+      wrapper->v = expr;
+      break;
+    }
     case IValue::Kind::Color:
     default:
     {
@@ -1271,10 +1278,8 @@ Result<koda::PExpr> MakiToKoda::buildValueExpr(const koda::types::TypeReference&
         return Result<koda::PExpr>::Failed("Expected record value for type '{}'", type.toString());
 
       const auto values = value->toRecordValue();
-      const auto& record = definition->record();
-
       auto literal = std::make_shared<koda::Expr::RecordLiteral>();
-      for (const auto& field : record.fields)
+      for (const auto& field : mTypeRegistry->fieldsOf(definition->name))
       {
         const auto valueIt = values.find(field.name);
 

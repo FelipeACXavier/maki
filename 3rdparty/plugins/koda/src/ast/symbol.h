@@ -24,6 +24,7 @@ enum class SymbolKind
   Variable,
   Flow,
   Event,
+  Action,
   Local
 };
 
@@ -35,6 +36,7 @@ struct Symbol
   types::TypeReference type;
   Span span;
   SymbolId owner = InvalidSymbol;
+  SymbolId actionId = InvalidSymbol;
 };
 
 inline const std::string toString(SymbolKind kind)
@@ -55,6 +57,8 @@ inline const std::string toString(SymbolKind kind)
       return "event";
     case SymbolKind::Local:
       return "local";
+    case SymbolKind::Action:
+      return "action";
     default:
       return "symbol";
   }

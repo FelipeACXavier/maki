@@ -246,6 +246,7 @@ struct Variable
   types::TypeReference type;
   PExpression initial;
   Span span;
+  std::optional<std::string> slot;
 };
 
 struct Event
@@ -287,6 +288,11 @@ struct Flow
   Span span;
 };
 
+struct Action
+{
+  std::vector<Event> events;
+};
+
 struct Component
 {
   SymbolId symbol = InvalidSymbol;
@@ -294,7 +300,7 @@ struct Component
   std::string name;
   std::vector<Argument> arguments;
   std::vector<Variable> variables;
-  std::vector<Event> events;
+  std::vector<Action> actions;
   std::vector<Flow> flows;
   std::map<std::string, std::string> metadata;
   Span span;

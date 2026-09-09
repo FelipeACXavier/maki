@@ -423,7 +423,6 @@ Types::PropertyTypes propertyTypeFromReference(const koda::types::TypeReference&
     const auto* def = maki::TypeRegistry::instance().findByName(reference.namedType().name);
     if (def)
     {
-      def->print();
       if (def->isPrimitive())
         return propertyTypeFromReference(def->toReference());
       else if (def->isAlias())

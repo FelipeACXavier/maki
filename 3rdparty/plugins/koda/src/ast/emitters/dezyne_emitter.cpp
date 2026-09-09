@@ -13,7 +13,8 @@ std::string DezyneEmitter::id() const
   return "dezyne";
 }
 
-VoidResult DezyneEmitter::generate(const ir::Program& program, const SymbolRegistry& symbols, const CompilerOptions& options)
+VoidResult DezyneEmitter::generate(const ir::Program& program, const SymbolRegistry& symbols, const koda::types::TypeRegistry& registry,
+                                   const CompilerOptions& options)
 {
   mModel.clear();
   mGeneratedFiles.clear();
@@ -36,7 +37,7 @@ VoidResult DezyneEmitter::generate(const ir::Program& program, const SymbolRegis
     rosOptions.startWait = options.startWait;
 
     dezyne::RosEmitter rosEmitter;
-    RETURN_ON_FAILURE(rosEmitter.write(program, mModel, symbols, rosOptions));
+    RETURN_ON_FAILURE(rosEmitter.write(program, mModel, symbols, registry, rosOptions));
 
     const auto& rosFiles = rosEmitter.generatedFiles();
     mGeneratedFiles.insert(mGeneratedFiles.end(), rosFiles.begin(), rosFiles.end());

@@ -3,6 +3,7 @@
 #include <format>
 
 #include "logging.h"
+#include "types.h"
 
 namespace koda
 {
@@ -11,7 +12,13 @@ void SemanticModel::print() const
 {
   LOG_INFO("Calls:");
   for (const auto& [call, resolved] : calls)
+  {
     LOG_INFO("  {} {} {} -> {} {}", call->name, call->receiver, call->span.toString(), resolved.target, resolved.receiver);
+    for (const auto& slot : resolved.inputSlots)
+      LOG_INFO("    Input slot: {}", slot.value_or("-"));
+    for (const auto& slot : resolved.outputSlots)
+      LOG_INFO("    Output slot: {}", slot);
+  }
 
   LOG_INFO("Flow refs:");
   for (const auto& [strat, symbol] : flowRefs)
@@ -167,7 +174,7 @@ VoidResult SemanticAnalyzer::analyzeStatement(const PStatement& statement, Symbo
 
       auto init = analyzeExpr(var->init, owner, symbol->type);
       if (!init.IsSuccess())
-        return VoidResult::Failed(init.ErrorMessage());
+        return VoidResult::Failed("Analysing parameter definition: {}", init.ErrorMessage());
 
       if (!compatible(symbol->type, init.Value()))
         return VoidResult::Failed(std::format("Initializer for '{}' has incompatible type at {}", var->name, var->span.toString()));
@@ -307,8 +314,7 @@ VoidResult SemanticAnalyzer::analyzeStrategy(const PStrategy& strategy, SymbolId
     if (!call.IsSuccess())
       return VoidResult::Failed("analyzeStrategy: {}", call.ErrorMessage());
 
-    mModel.calls[(*p)->call.get()] = call.Value();
-
+    auto resolvedCall = call.Value();
     if (call.Value().kind == ResolvedCallKind::Flow)
     {
       auto result = analyzeFlowCall((*p)->call, call.Value(), owner);
@@ -317,10 +323,12 @@ VoidResult SemanticAnalyzer::analyzeStrategy(const PStrategy& strategy, SymbolId
     }
     else
     {
-      auto dataResult = resolveCapabilityData((*p)->call, call.Value(), owner);
+      auto dataResult = resolveCapabilityData((*p)->call, resolvedCall, owner);
       if (!dataResult.IsSuccess())
         return dataResult;
     }
+
+    mModel.calls[(*p)->call.get()] = resolvedCall;
 
     for (const auto& h : (*p)->handlers)
     {
@@ -348,13 +356,14 @@ VoidResult SemanticAnalyzer::analyzeStrategy(const PStrategy& strategy, SymbolId
 
 Result<ResolvedArgumentSource> SemanticAnalyzer::resolveArgumentSource(const PExpr& expr, const types::TypeReference& expectedType, SymbolId owner)
 {
+  LOG_TRACE("Resolving argument of expected type: {} with owner {}", expectedType.toString(), owner);
   if (!expr)
     return ResolvedArgumentSource{.kind = ArgumentSourceKind::Infer};
 
   if (auto idExpr = std::get_if<PId>(&expr->v); idExpr && *idExpr)
   {
     // In case we have the default placeholder
-    if ((*idExpr)->value == "_")
+    if ((*idExpr)->value == Types::KODA_INFERRED)
       return ResolvedArgumentSource{.kind = ArgumentSourceKind::Infer};
 
     auto symbolResult = resolveValue((*idExpr)->value, owner, expr->span);
@@ -392,7 +401,7 @@ Result<ResolvedArgumentSource> SemanticAnalyzer::resolveArgumentSource(const PEx
   // Otherwise treat it as a normal KODA expression.
   auto value = analyzeExpr(expr, owner);
   if (!value.IsSuccess())
-    return Result<ResolvedArgumentSource>::Failed(value.ErrorMessage());
+    return Result<ResolvedArgumentSource>::Failed("Resolving arguments: {}", value.ErrorMessage());
   if (!compatible(expectedType, value.Value()))
     return Result<ResolvedArgumentSource>::Failed("Argument has incompatible type. Expected {}, got {}", expectedType.toString(),
                                                   value.Value().toString());
@@ -400,22 +409,26 @@ Result<ResolvedArgumentSource> SemanticAnalyzer::resolveArgumentSource(const PEx
   return ResolvedArgumentSource{.kind = ArgumentSourceKind::Literal};
 }
 
-VoidResult SemanticAnalyzer::resolveCapabilityData(const PEventCall& astCall, const ResolvedCall& call, SymbolId owner)
+VoidResult SemanticAnalyzer::resolveCapabilityData(const PEventCall& astCall, ResolvedCall& call, SymbolId owner)
 {
+  LOG_TRACE("Resolving data of call, name: {} received: {}, target: {}, creceiver: {}", astCall->name, astCall->receiver, call.target, call.receiver);
   // All of this is pure double checking
   const auto* receiverSymbol = mSymbols.get(call.receiver);
   if (!receiverSymbol)
     return VoidResult::Failed("Invalid call receiver");
 
+  LOG_TRACE("Resolved to {}", receiverSymbol->name);
   auto componentResult = resolveComponentType(*receiverSymbol, astCall->span);
   if (!componentResult.IsSuccess())
     return VoidResult::Failed(componentResult.ErrorMessage());
 
   auto capabilityId = componentResult.Value();
+  LOG_TRACE("Resolved to component {}", capabilityId);
   auto event = mSymbols.get(call.target);
   if (!event)
     return VoidResult::Failed("No event with symbol id: {}", call.target);
 
+  LOG_TRACE("Found event {} of type {}", event->name, event->type.toString());
   if (event->type.toString() == "Trigger")
   {
     // 1. Resolve consumed values.
@@ -426,45 +439,48 @@ VoidResult SemanticAnalyzer::resolveCapabilityData(const PEventCall& astCall, co
       if (i < astCall->args.size())
         argument = astCall->args[i];
 
-      auto source = resolveArgumentSource(argument, input, owner);  // use the call's lexical owner, not event->id
+      auto source = resolveArgumentSource(argument, input, owner);
       if (!source.IsSuccess())
         return VoidResult::Failed(source.ErrorMessage());
 
       switch (source.Value().kind)
       {
         case ArgumentSourceKind::Literal:
+          call.inputSlots.push_back(source.Value().slot);
           break;
 
         case ArgumentSourceKind::Blackboard:
+          call.inputSlots.push_back(source.Value().slot);
           // mModel.inputBindings[astCall.get()][i] = *source.Value().slot;
           break;
 
+        default:
         case ArgumentSourceKind::Infer:
         {
           auto candidates = mBlackboard.availableCompatible(input, mTypeRegistry);
           if (candidates.empty())
             return VoidResult::Failed("No available value for input '{}' in '{}' at {}", input.toString(), event->name, event->span.toString());
+
+          // TODO: Focus on the node where a conflict exists and ask for user input
           if (candidates.size() > 1)
             LOG_WARNING("Ambiguous value for input '{}'", input.toString());
 
-          // mModel.inputBindings[astCall.get()][i] = candidates.front()->id;
+          call.inputSlots.push_back(candidates.front()->id);
           break;
         }
       }
     }
 
-    if (astCall->receiver.empty())
+    // 2. We need to check whether this trigger has an attached async return.
+    // If it does, then we need to make the return available here directly
+    auto returnEvent = mSymbols.eventOfAction(capabilityId, event->actionId, "Return");
+    if (returnEvent)
     {
-      // If we are dealing with a capability call, we need to make the data available as well.
-      auto* returnEvent = mSymbols.returnEventOf(capabilityId);
-      if (!returnEvent)
-        return VoidResult::Failed(std::format("Async capability call with no return '{}'", astCall->name));
-
       for (const auto& output : mModel.eventArguments[returnEvent->id])
       {
         const auto slot = mBlackboard.declare(astCall->id, output.toString(), output, std::to_string(capabilityId));
         mBlackboard.makeAvailable(slot);
-        // mModel.outputBindings[astCall.get()][output.id] = slot;
+        call.outputSlots.push_back(slot);
       }
     }
   }
@@ -474,9 +490,7 @@ VoidResult SemanticAnalyzer::resolveCapabilityData(const PEventCall& astCall, co
     for (const auto& output : mModel.eventArguments[event->id])
     {
       const auto slot = mBlackboard.declare(astCall->id, output.toString(), output, std::to_string(capabilityId));
-
       mBlackboard.makeAvailable(slot);
-      // mModel.outputBindings[astCall.get()][output.id] = slot;
     }
   }
 
@@ -526,7 +540,7 @@ VoidResult SemanticAnalyzer::analyzeFlowCall(const PEventCall& astCall, const Re
     // For now the actual expression determines the source.
     auto actualType = analyzeExpr(actual, callerOwner);
     if (!actualType.IsSuccess())
-      return VoidResult::Failed(actualType.ErrorMessage());
+      return VoidResult::Failed("Flow call analysis arguments: {}", actualType.ErrorMessage());
 
     auto source = resolveArgumentSource(actual, actualType.Value(), callerOwner);
     if (!source.IsSuccess())
@@ -584,19 +598,14 @@ Result<ResolvedCall> SemanticAnalyzer::resolveCall(const PEventCall& call, Symbo
     const auto component = componentResult.Value();
 
     // Find the trigger component of this capability
-    const Symbol* triggerEventSymbol = mSymbols.triggerEventOf(component);
+    const Symbol* triggerEventSymbol = mSymbols.eventOfAction(component, NullSymbolId, "Trigger");
     if (!triggerEventSymbol)
       return Result<ResolvedCall>::Failed("Could not find trigger event for: {}", call->name);
 
-    // Unqualified invocation means the capability's trigger/default action.
-    std::vector<std::string> args;
-    for (const auto& arg : call->args)
-    {
-      auto type = analyzeExpr(arg, owner);
-      if (!type.IsSuccess())
-        return Result<ResolvedCall>::Failed(type.ErrorMessage());
-    }
-    return ResolvedCall{ResolvedCallKind::CapabilityTrigger, receiver, triggerEventSymbol->id, triggerEventSymbol->type};
+    std::vector<koda::types::TypeReference> args;
+    ASSIGN_OR_RETURN_ON_FAILURE_AS(args, analyseArgs(call, owner), ResolvedCall);
+
+    return ResolvedCall{ResolvedCallKind::CapabilityTrigger, receiver, triggerEventSymbol->id, triggerEventSymbol->type, args};
   }
 
   auto receiverResult = resolveValue(call->receiver, owner, call->span);
@@ -616,10 +625,27 @@ Result<ResolvedCall> SemanticAnalyzer::resolveCall(const PEventCall& call, Symbo
   const auto event = mSymbols.lookupChild(component, call->name);
   const auto* eventSymbol = event ? mSymbols.get(*event) : nullptr;
   if (!eventSymbol || eventSymbol->kind != SymbolKind::Event)
-    return Result<ResolvedCall>::Failed(
-        std::format("Component '{}' has no event '{}' at {}", mSymbols.get(component)->name, call->name, call->span.toString()));
+    return Result<ResolvedCall>::Failed("Component '{}' has no event '{}' at {}", mSymbols.get(component)->name, call->name, call->span.toString());
 
-  return ResolvedCall{ResolvedCallKind::Event, receiver, *event, eventSymbol->type};
+  std::vector<koda::types::TypeReference> args;
+  ASSIGN_OR_RETURN_ON_FAILURE_AS(args, analyseArgs(call, owner), ResolvedCall);
+
+  return ResolvedCall{ResolvedCallKind::Event, receiver, *event, eventSymbol->type, args};
+}
+
+Result<std::vector<koda::types::TypeReference>> SemanticAnalyzer::analyseArgs(const PEventCall& call, SymbolId owner)
+{
+  std::vector<koda::types::TypeReference> args;
+  for (const auto& arg : call->args)
+  {
+    auto type = analyzeExpr(arg, owner);
+    if (!type.IsSuccess())
+      return Result<std::vector<koda::types::TypeReference>>::Failed("Resolve receiver call args: {}", type.ErrorMessage());
+
+    args.push_back(type.Value());
+  }
+
+  return args;
 }
 
 Result<types::TypeReference> SemanticAnalyzer::analyzeExpr(const PExpr& expr, SymbolId owner, const types::TypeReference& expected)
@@ -638,7 +664,7 @@ Result<types::TypeReference> SemanticAnalyzer::analyzeExpr(const PExpr& expr, Sy
     type = types::TypeReference::createBool();
   else if (auto p = std::get_if<PId>(&expr->v); p && *p)
   {
-    if ((*p)->value == "_")
+    if ((*p)->value == Types::KODA_INFERRED)
     {
       type = types::TypeReference{};
     }

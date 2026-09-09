@@ -63,6 +63,8 @@ private:
           return CallSiteKind::Signal;
         case CallUse::Kind::Flow:
           return CallSiteKind::Flow;
+        case CallUse::Kind::Abort:
+          return CallSiteKind::Abort;
         default:
         case CallUse::Kind::Action:
           return CallSiteKind::Action;
@@ -173,6 +175,8 @@ private:
   static std::string lower(std::string value);
   static std::string componentName(const std::string& name);
   static std::string flowName(const std::string& name);
+
+  bool usesCapabilityAbort(SymbolId receiver) const;
 
   std::vector<LoweringPass::CallUse> uniqueRequiredPorts(const FlowState& state) const;
   PortRef portFromString(const std::string& ref) const;

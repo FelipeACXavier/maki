@@ -24,7 +24,7 @@ private:
   Result<ir::PExpression> buildExpr(const PExpr& expr, SymbolId owner) const;
 
   ir::Argument buildArg(const koda::PArgument kodaArg, SymbolId owner) const;
-  void appendRosDef(const PRosDef& ros, SymbolId owner, ir::Component& out) const;
+  void appendRosDef(const PRosDef& ros, SymbolId owner, ir::Action& out) const;
 
   const SymbolRegistry& mSymbols;
   const SemanticModel& mSemantics;

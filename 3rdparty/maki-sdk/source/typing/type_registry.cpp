@@ -317,6 +317,35 @@ std::vector<FieldDefinition> TypeRegistry::fieldsOf(const TypeReference& referen
   return fields;
 }
 
+Annotations TypeRegistry::annotationsOf(const QualifiedName& name) const
+{
+  return annotationsOf(TypeReference::named(name));
+}
+
+Annotations TypeRegistry::annotationsOf(const TypeDefinition& definition) const
+{
+  return annotationsOf(definition.name);
+}
+
+Annotations TypeRegistry::annotationsOf(const TypeReference& reference) const
+{
+  const auto resolvedReference = resolveAliases(reference);
+  if (!resolvedReference.has_value())
+    return {};
+
+  const TypeDefinition* definition = resolve(*resolvedReference);
+  if (definition == nullptr)
+    return {};
+
+  Annotations annotations;
+  std::vector<TypeId> activeTypes;
+
+  if (!collectAnnotations(*definition, annotations, activeTypes))
+    return {};
+
+  return annotations;
+}
+
 const FieldDefinition* TypeRegistry::findField(const TypeReference& recordType, const std::string& fieldName) const
 {
   const auto resolvedReference = resolveAliases(recordType);
@@ -671,6 +700,43 @@ bool TypeRegistry::collectFields(const TypeDefinition& definition, std::vector<F
   }
 
   fields.insert(fields.end(), definition.record().fields.begin(), definition.record().fields.end());
+
+  activeTypes.pop_back();
+  return true;
+}
+
+bool TypeRegistry::collectAnnotations(const TypeDefinition& definition, Annotations& annotations, std::vector<TypeId>& activeTypes) const
+{
+  if (std::find(activeTypes.begin(), activeTypes.end(), definition.id) != activeTypes.end())
+    return false;
+
+  activeTypes.push_back(definition.id);
+
+  if (definition.isRecord() && definition.record().baseType.has_value())
+  {
+    const auto resolvedBase = resolveAliases(*definition.record().baseType);
+    if (!resolvedBase.has_value())
+    {
+      activeTypes.pop_back();
+      return false;
+    }
+
+    const TypeDefinition* base = resolve(*resolvedBase);
+    if (base == nullptr || !base->isRecord())
+    {
+      activeTypes.pop_back();
+      return false;
+    }
+
+    // We first collect the base type, any repeated fields in the child will take over
+    if (!collectAnnotations(*base, annotations, activeTypes))
+    {
+      activeTypes.pop_back();
+      return false;
+    }
+  }
+
+  annotations.insert(definition.annotations.begin(), definition.annotations.end());
 
   activeTypes.pop_back();
   return true;

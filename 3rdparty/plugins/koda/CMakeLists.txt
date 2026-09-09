@@ -194,7 +194,6 @@ function(add_koda_plugin TARGET_NAME USE_ANTLR_ENABLED)
     src/actions/cpp_action.cpp
     src/actions/verify_action.cpp
     src/actions/simulate_action.cpp
-    src/actions/ros_action.cpp
     src/actions/ros_copy.cpp
     src/actions/ros_build.cpp
     src/actions/ros_launch.cpp

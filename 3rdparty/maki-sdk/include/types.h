@@ -109,5 +109,6 @@ enum class LibraryTypes
 
 QString LibraryTypeToString(LibraryTypes type);
 
-// typedef QJsonValueConstRef Config;
+static const QString INFERRED = "Inferred";
+static const std::string KODA_INFERRED = "_";
 }  // namespace Types

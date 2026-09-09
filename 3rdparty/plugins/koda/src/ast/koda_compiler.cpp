@@ -142,7 +142,13 @@ VoidResult Compiler::runFrontend()
     return analyzed;
 
   mSemantics = semantics.model();
-  // mSemantics.print();
+
+  if (mOptions.verbose > 2)
+  {
+    mSymbols.print();
+    mSemantics.print();
+    mBlackboard->print();
+  }
 
   // Finally, we build the intermediate representation that emitters can use
   IRBuilder builder(mSymbols, mSemantics, mOptions.traceability);
@@ -159,7 +165,7 @@ VoidResult Compiler::runEmitters()
 {
   for (const auto& emitter : mEmitters)
   {
-    auto result = emitter->generate(mIR, mSymbols, mOptions);
+    auto result = emitter->generate(mIR, mSymbols, *mTypeRegistry, mOptions);
     if (!result.IsSuccess())
       return result;
 
@@ -216,7 +222,7 @@ std::vector<std::string> Compiler::generatedFiles() const
 
 void Compiler::printAST() const
 {
-  mTypeRegistry->print();
+  // mTypeRegistry->print();
   mAST.print();
 }
 

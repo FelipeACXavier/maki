@@ -1297,7 +1297,7 @@ Result<LibraryComponent> createAbortCallComponent(Model& model, const std::strin
     out << "  requires iabort action;\n";
     out << "\n";
     out << "  behaviour {\n";
-    out << "    enum State { Idle, Error };\n";
+    out << "    enum State { Idle, Aborting, Error };\n";
     out << "    State state = State.Idle;\n";
     out << "\n";
     out << "    [state.Idle] {\n";
@@ -1310,17 +1310,27 @@ Result<LibraryComponent> createAbortCallComponent(Model& model, const std::strin
     out << "        }\n";
     out << "        else\n";
     out << "        {\n";
-    out << "          reply(Result.Done);\n";
+    out << "          state = State.Aborting;\n";
+    out << "          defer(state) { state = State.Idle; api.success(); }\n";
+    out << "          reply(Result.Success);\n";
     out << "        }\n";
     out << "      }\n";
-    out << "    }\n";
-    out << "\n";
+    out << "    }\n\n";
+
+    out << "    [state.Aborting] {\n";
+    out << "      on api.abort(): {\n";
+    out << "        state = State.Idle;\n";
+    out << "        api.aborted();\n";
+    out << "        reply(Result.Success);\n";
+    out << "      }\n";
+    out << "    }\n\n";
+
     out << "    [state.Error] {\n";
     out << "      on api.reset(): {\n";
     out << "        state = State.Idle;\n";
     out << "        reply(Result.Success);\n";
-    out << "      }\n";
-    out << "\n";
+    out << "      }\n\n";
+
     out << "      on api.abort(): { reply(Result.Error); }\n";
     out << "    }\n";
     out << "  }\n";
@@ -1513,7 +1523,7 @@ Result<LibraryComponent> createConditionComponent(Model& model, const std::strin
   });
 }
 
-Result<LibraryComponent> createCapabilityArmour(Model& model, const std::string& outdir, const std::string& capabilityName,
+Result<LibraryComponent> createCapabilityArmour(Model& model, const std::string& outdir, const std::string& capabilityName, bool hasAbort,
                                                 const std::vector<std::string>& ports, SymbolId componentId)
 {
   const auto componentName = std::format("{}_armour", capabilityName);
@@ -1537,8 +1547,12 @@ Result<LibraryComponent> createCapabilityArmour(Model& model, const std::string&
     }
 
     out << "\n";
-    out << "  provides iabort abort;\n";
-    out << "\n";
+    if (hasAbort)
+    {
+      out << "  provides iabort abort;\n";
+      out << "\n";
+    }
+
     out << "  behavior {\n";
     out << "    enum State { Idle";
     for (size_t i = 0; i < ports.size(); ++i)
@@ -1563,9 +1577,12 @@ Result<LibraryComponent> createCapabilityArmour(Model& model, const std::string&
       out << "      }\n";
       out << "\n";
     }
-    out << "      on abort.abort(): {\n";
-    out << "        reply(Result.Success);\n";
-    out << "      }\n";
+    if (hasAbort)
+    {
+      out << "      on abort.abort(): {\n";
+      out << "        reply(Result.Success);\n";
+      out << "      }\n";
+    }
     out << "    }\n";
     out << "\n";
     for (size_t i = 0; i < ports.size(); ++i)
@@ -1582,6 +1599,7 @@ Result<LibraryComponent> createCapabilityArmour(Model& model, const std::string&
       out << std::format("        {}.failure();\n", port);
       out << "      }\n";
       out << "\n";
+
       out << std::format("      on {}.abort(): {{\n", port);
       out << std::format("        Result ret = r_{}.abort();\n", port);
       out << "        if (ret.Failure)\n";
@@ -1595,28 +1613,36 @@ Result<LibraryComponent> createCapabilityArmour(Model& model, const std::string&
       out << "        reply(ret);\n";
       out << "      }\n";
       out << "\n";
-      out << "      on abort.abort(): {\n";
-      out << std::format("        Result ret = r_{}.abort();\n", port);
-      out << "        if (ret.Failure)\n";
-      out << "        {\n";
-      out << "          state = State.Error;\n";
-      out << "          reply(Result.Failure);\n";
-      out << "        }\n";
-      out << "        else if (ret.Success)\n";
-      out << "        {\n";
-      out << std::format("          state = State.Aborting{};\n", i);
-      out << std::format("          defer(state) {{ state = State.Idle; {}.aborted(); }}\n", port);
-      out << "          reply(Result.Success);\n";
-      out << "        }\n";
-      out << "        else\n";
-      out << "        {\n";
-      out << "          reply(Result.Running);\n";
-      out << "        }\n";
-      out << "      }\n";
+      if (hasAbort)
+      {
+        out << "      on abort.abort(): {\n";
+        out << std::format("        Result ret = r_{}.abort();\n", port);
+        out << "        if (ret.Failure)\n";
+        out << "        {\n";
+        out << "          state = State.Error;\n";
+        out << "          reply(Result.Failure);\n";
+        out << "        }\n";
+        out << "        else if (ret.Success)\n";
+        out << "        {\n";
+        out << std::format("          state = State.Aborting{};\n", i);
+        out << std::format("          defer(state) {{ state = State.Idle; {}.aborted(); }}\n", port);
+        out << "          reply(Result.Success);\n";
+        out << "        }\n";
+        out << "        else\n";
+        out << "        {\n";
+        out << "          reply(Result.Running);\n";
+        out << "        }\n";
+        out << "      }\n";
+      }
       out << "    }\n";
       out << "\n";
       out << std::format("    [state.Aborting{}] {{\n", i);
-      out << std::format("      on {}.abort(): {{ {}.aborted(); state = State.Idle; reply(Result.Success); }}\n", port, port);
+      out << std::format("      on {}.abort(): {{\n"
+                         "        {}.aborted();\n"
+                         "        state = State.Idle;\n"
+                         "        reply(Result.Success);\n"
+                         "      }}\n",
+                         port, port);
       out << "    }\n";
     }
 
@@ -1637,9 +1663,12 @@ Result<LibraryComponent> createCapabilityArmour(Model& model, const std::string&
       out << "      }\n";
       out << "\n";
     }
-    out << "      on abort.abort(): {\n";
-    out << "        reply(Result.Failure);\n";
-    out << "      }\n";
+    if (hasAbort)
+    {
+      out << "      on abort.abort(): {\n";
+      out << "        reply(Result.Failure);\n";
+      out << "      }\n";
+    }
     out << "    }\n";
     out << "  }\n";
     out << "}\n";

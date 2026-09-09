@@ -3,6 +3,7 @@
 #include <format>
 
 #include "logging.h"
+#include "types.h"
 
 namespace koda
 {
@@ -67,18 +68,25 @@ Result<ir::Component> IRBuilder::buildComponent(const PComponent& component) con
     {
       for (const auto& var : (*vars)->vars)
       {
-        const auto id = mSymbols.lookupChild(owner, var->name);
-        const auto* symbol = id ? mSymbols.get(*id) : nullptr;
+        auto id = mSymbols.lookupChild(owner, var->name);
         auto initial = buildExpr(var->init, owner);
         if (!initial.IsSuccess())
           return Result<ir::Component>::Failed(initial.ErrorMessage());
 
+        const auto* symbol = id ? mSymbols.get(*id) : nullptr;
+        if (!symbol)
+          return Result<ir::Component>::Failed("Parameter '{}' at {} was not declared", var->name, var->span.toString());
+
+        if (!mSemantics.variableSlots.contains(*id))
+          return Result<ir::Component>::Failed("Parameter '{}' at {} has no declared slot", var->name, var->span.toString());
+
         out.variables.push_back(ir::Variable{
             .symbol = id.value_or(InvalidSymbol),
             .name = var->name,
-            .type = symbol ? symbol->type : types::TypeReference{},
+            .type = symbol->type,
             .initial = initial.Value(),
             .span = var->span,
+            .slot = mSemantics.variableSlots.at(*id),
         });
       }
     }
@@ -112,7 +120,16 @@ Result<ir::Component> IRBuilder::buildComponent(const PComponent& component) con
     else if (auto ros = std::get_if<PRosDef>(&statement->node); ros && *ros)
     {
       // This is a single definition, e.g., trigger, return, etc...
-      appendRosDef(*ros, owner, out);
+      if (out.actions.empty())
+      {
+        ir::Action irAction;
+        appendRosDef(*ros, owner, irAction);
+        out.actions.push_back(std::move(irAction));
+      }
+      else
+      {
+        appendRosDef(*ros, owner, out.actions.front());
+      }
     }
     else if (auto action = std::get_if<PActionDef>(&statement->node); action && *action)
     {
@@ -134,8 +151,11 @@ Result<ir::Component> IRBuilder::buildComponent(const PComponent& component) con
       }
       out.metadata["route"] = (*action)->label1;
       out.metadata["message"] = (*action)->label2;
+      ir::Action irAction;
       for (const auto& ros : (*action)->rosDefs)
-        appendRosDef(ros, owner, out);
+        appendRosDef(ros, owner, irAction);
+
+      out.actions.push_back(std::move(irAction));
     }
   }
 
@@ -157,7 +177,7 @@ ir::Argument IRBuilder::buildArg(const koda::PArgument kodaArg, SymbolId owner) 
   return argument;
 }
 
-void IRBuilder::appendRosDef(const PRosDef& ros, SymbolId owner, ir::Component& out) const
+void IRBuilder::appendRosDef(const PRosDef& ros, SymbolId owner, ir::Action& out) const
 {
   if (!ros || !ros->def)
     return;
@@ -436,6 +456,9 @@ Result<ir::Call> IRBuilder::buildCall(const PEventCall& call, SymbolId owner) co
     out.arguments.push_back(e.Value());
   }
 
+  out.inputSlots = resolved.inputSlots;
+  out.outputSlots = resolved.outputSlots;
+
   return out;
 }
 
@@ -459,7 +482,7 @@ Result<ir::PExpression> IRBuilder::buildExpr(const PExpr& expr, SymbolId owner) 
     out->value = ir::Expression::Literal{std::to_string((*p)->value), types::TypeReference::createBool()};
   else if (auto p = std::get_if<PId>(&expr->v); p && *p)
   {
-    if ((*p)->value == "_")
+    if ((*p)->value == Types::KODA_INFERRED)
     {
       out->value = ir::Expression::Reference{};
     }

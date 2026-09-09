@@ -121,13 +121,18 @@ VoidResult DeclarationPass::declareStatement(const PStatement& statement, Symbol
   }
   else if (auto ros = std::get_if<PRosDef>(&statement->node); ros && *ros)
   {
-    return declareRosDef(*ros, owner);
+    return declareRosDef(*ros, owner, NullSymbolId);
   }
   else if (auto action = std::get_if<PActionDef>(&statement->node); action && *action)
   {
+    auto actionId =
+        mSymbolRegistry.declare(SymbolKind::Action, (*action)->label1, types::TypeReference::named((*action)->toString()), (*action)->span, owner);
+    if (!actionId)
+      return actionId;
+
     for (const auto& ros : (*action)->rosDefs)
     {
-      auto result = declareRosDef(ros, owner);
+      auto result = declareRosDef(ros, owner, actionId.Value());
       if (!result.IsSuccess())
         return result;
     }
@@ -136,13 +141,14 @@ VoidResult DeclarationPass::declareStatement(const PStatement& statement, Symbol
   return VoidResult();
 }
 
-VoidResult DeclarationPass::declareRosDef(const PRosDef& ros, SymbolId owner)
+VoidResult DeclarationPass::declareRosDef(const PRosDef& ros, SymbolId owner, OSymbolId actionId)
 {
   if (!ros || !ros->def)
     return VoidResult::Failed("Invalid ROS/event declaration");
 
   // const auto eventType = Type::Custom(ros->toString());
-  auto result = mSymbolRegistry.declare(SymbolKind::Event, ros->def->name, types::TypeReference::named(ros->toString()), ros->def->span, owner);
+  auto result = mSymbolRegistry.declare(SymbolKind::Event, ros->def->name, types::TypeReference::named(ros->toString()), ros->def->span, owner,
+                                        actionId.value_or(InvalidSymbol));
   if (!result.IsSuccess())
     return result;
 

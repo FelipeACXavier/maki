@@ -619,7 +619,7 @@ VoidResult KodaEmitter::emitRecordLiteral(const koda::Expr::RecordLiteral& expr,
 {
   if (expr.fields.empty())
   {
-    ss << "{}";
+    ss << Types::KODA_INFERRED;
     return VoidResult();
   }
 

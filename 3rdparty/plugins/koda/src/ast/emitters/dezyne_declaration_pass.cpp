@@ -34,31 +34,29 @@ VoidResult DeclarationPass::declareCapability(const ir::Component& capability)
   const auto file = std::format("{}/a_{}.dzn", mOptions.outputDir, lower(capability.name));
   const auto component = mModel.declareComponent(componentName(capability.name), file, {capability.symbol, capability.span});
 
-  for (const auto& event : capability.events)
+  LOG_TRACE("Declaring capability {} with {} actions", capability.name, capability.actions.size());
+  for (const auto& action : capability.actions)
   {
-    if (event.kind == ir::EventKind::Trigger || event.kind == ir::EventKind::In)
+    LOG_TRACE("  Declaring action of capability {} with {} events", capability.name, action.events.size());
+    for (const auto& event : action.events)
     {
-      // External capability operations use iexternal.
-      mModel.declarePort(component, event.name, PortDirection::Provides, PortProtocol::External, {event.symbol, event.span});
+      if (event.kind == ir::EventKind::Trigger || event.kind == ir::EventKind::In)
+      {
+        // External capability operations use iexternal.
+        mModel.declarePort(component, event.name, PortDirection::Provides, PortProtocol::External, {event.symbol, event.span});
+      }
+      else if (event.kind == ir::EventKind::Out)
+      {
+        mModel.declarePort(component, event.name, PortDirection::Provides, PortProtocol::Signal, {event.symbol, event.span});
+      }
+      else if (event.kind == ir::EventKind::Abort)
+      {
+        mModel.declarePort(component, event.name, PortDirection::Provides, PortProtocol::Abort, {event.symbol, event.span});
+      }
     }
-    else if (event.kind == ir::EventKind::Out)
-    {
-      mModel.declarePort(component, event.name, PortDirection::Provides, PortProtocol::Signal, {event.symbol, event.span});
-    }
-    else if (event.kind == ir::EventKind::Abort)
-    {
-      mModel.declarePort(component, event.name, PortDirection::Provides, PortProtocol::Abort, {event.symbol, event.span});
-    }
-
-    // Return/Error are part of the interaction protocol and therefore do
-    // not become separate ports.
-    //
-    // Abort is now exposed once by the generated armour rather than by
-    // the external capability itself.
   }
 
   return VoidResult();
-  ;
 }
 
 VoidResult DeclarationPass::declareTask(const ir::Component& task)

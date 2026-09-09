@@ -28,7 +28,7 @@ public:
   void clear();
 
   Result<SymbolId> declare(SymbolKind kind, const std::string& name, const types::TypeReference& type, const Span& span,
-                           SymbolId owner = InvalidSymbol);
+                           SymbolId owner = InvalidSymbol, SymbolId actionId = InvalidSymbol);
 
   std::optional<SymbolId> lookup(const std::string& name, SymbolId owner = InvalidSymbol) const;
   std::optional<SymbolId> lookupLocal(const std::string& name, SymbolId owner = InvalidSymbol) const;
@@ -39,9 +39,9 @@ public:
 
   const Scope* scope(SymbolId owner) const;
   std::vector<SymbolId> children(SymbolId owner, SymbolKind kind = SymbolKind::Unknown) const;
-  const Symbol* triggerEventOf(SymbolId owner) const;
-  const Symbol* returnEventOf(SymbolId owner) const;
+  const Symbol* eventOfAction(SymbolId owner, OSymbolId actionId, const std::string& type) const;
 
+  std::vector<SymbolId> instancesOf(SymbolId componentId) const;
   std::optional<SymbolId> component(const std::string& name) const;
 
 private:
