@@ -34,8 +34,17 @@ typeDeclaration
 
 fieldDeclaration
   : IDENT COLON typeReference SEMI
+  | annotationDeclaration
   ;
 
+annotationDeclaration
+  : ANNOTATIONS LBRACE (annotation (COMMA annotation)*)? RBRACE
+  ;
+
+annotation
+  : STRING COLON STRING
+  ;
+  
 enumDeclaration
   : ENUM qualifiedName (COLON typeReference)? LBRACE enumValue* RBRACE
   ;
@@ -296,6 +305,7 @@ OPTIONAL   : 'optional';
 MAP        : 'map';
 MAPPING    : 'mapping';
 TO         : 'to';
+ANNOTATIONS : 'annotations';
 
 STRATEGY   : 'strategy';
 PARAMETERS : 'parameters';

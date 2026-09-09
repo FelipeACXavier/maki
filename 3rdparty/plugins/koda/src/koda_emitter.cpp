@@ -124,7 +124,6 @@ VoidResult KodaEmitter::emitType(const koda::types::TypeDefinition& definition, 
     if (record.baseType)
     {
       const auto& baseReference = record.baseType.value();
-
       const auto* baseDefinition = mTypeRegistry->resolve(baseReference);
 
       if (!baseDefinition)
@@ -148,6 +147,13 @@ VoidResult KodaEmitter::emitType(const koda::types::TypeDefinition& definition, 
 
       ss << format << INDENT << field.name << ": " << fieldType.Value() << ";\n";
     }
+
+    if (!definition.annotations.empty())
+      ss << "  annotations {\n";
+    for (const auto& [key, value] : definition.annotations)
+      ss << std::format("    \"{}\": \"{}\"\n", key, value);
+    if (!definition.annotations.empty())
+      ss << "  }\n";
 
     ss << format << "}\n";
 

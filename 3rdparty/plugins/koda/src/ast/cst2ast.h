@@ -30,6 +30,8 @@ public:
   std::any visitArgReq(KodaParser::ArgReqContext* ctx) override;
   std::any visitArgPro(KodaParser::ArgProContext* ctx) override;
 
+  std::any visitAnnotationDeclaration(KodaParser::AnnotationDeclarationContext* ctx) override;
+  std::any visitAnnotation(KodaParser::AnnotationContext* ctx) override;
   // -------------------------
   // Statements
   // -------------------------
@@ -126,5 +128,7 @@ private:
   types::TypeReference convertTypeReference(KodaParser::TypeReferenceContext* ctx);
   types::QualifiedName convertQualifiedName(KodaParser::QualifiedNameContext* ctx);
   types::EnumUnderlyingKind convertEnumUnderlyingType(KodaParser::TypeReferenceContext* ctx);
+
+  std::string format(const std::string& toFormat) const;
 };
 }  // namespace koda

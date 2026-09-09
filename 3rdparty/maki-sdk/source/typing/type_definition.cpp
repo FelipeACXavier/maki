@@ -74,7 +74,7 @@ TypeDefinition TypeDefinition::createAlias(const std::string& name, const TypeRe
 }
 
 TypeDefinition TypeDefinition::createRecord(const std::string& name, const std::vector<FieldDefinition>& fields, const std::string& base,
-                                            const std::string& id)
+                                            const std::string& id, const Annotations& annotations)
 {
   const auto qname = QualifiedName(name);
   TypeDefinition type{
@@ -85,6 +85,7 @@ TypeDefinition TypeDefinition::createRecord(const std::string& name, const std::
               .baseType = base.empty() ? std::nullopt : std::optional<TypeReference>(TypeReference::named(QualifiedName(base))),
               .fields = fields,
           },
+      .annotations = annotations,
   };
 
   return type;

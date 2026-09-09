@@ -312,8 +312,7 @@ Result<koda::PFlow> MakiToKoda::buildFlowAst(const IFlow& flow)
     const std::string mainStartId = "main_start_id";
     if (mTraceMap)
     {
-      mTraceMap->mapAst(mainStartId,
-                        MakiSource{.id = start->getid().toStdString(), .flowId = flow.getid().toStdString(), .kind = MakiElementKind::Node});
+      mTraceMap->mapAst(mainStartId, MakiSource{.id = start->getid().toStdString(), .flowId = flow.getid().toStdString(), .kind = MakiElementKind::Node});
       mTraceMap->mapIr(mainStartId, mainStartId);
       mTraceMap->mapEmitter("api", mainStartId);
     }
@@ -483,6 +482,7 @@ std::any MakiToKoda::buildAsyncExpr(const IFlow& flow, const INode& node)
   call->name = format(maki::recordString(record, "component"));
   ToLowerCase(call->name, 0);
   call->args = buildArgumentExpr(maki::recordList(record, "arguments"));
+  call->id = std::format("{}::{}", call->name, node.getid());
 
   auto expr = std::make_shared<koda::Strategy::TaskCall>();
   expr->call = call;
@@ -526,6 +526,7 @@ std::any MakiToKoda::buildSyncExpr(const IFlow& flow, const INode& node)
   ToLowerCase(call->receiver, 0);
   call->name = maki::recordString(record, "event").toStdString();
   call->args = buildArgumentExpr(maki::recordList(record, "arguments"));
+  call->id = std::format("{}::{}", call->name, node.getid());
 
   auto expr = std::make_shared<koda::Strategy::TaskCall>();
   expr->call = call;
@@ -557,6 +558,7 @@ std::any MakiToKoda::buildStrategyExpr(const IFlow& flow, const INode& node)
   auto call = std::make_shared<koda::EventCall>();
   call->name = "f" + format(maki::recordString(record, "flow"));
   call->args = buildArgumentExpr(maki::recordList(record, "arguments"));
+  call->id = std::format("{}::{}", call->name, node.getid());
 
   auto expr = std::make_shared<koda::Strategy::TaskCall>();
   expr->call = call;
@@ -642,6 +644,7 @@ std::any MakiToKoda::buildRepeatExpr(const IFlow& flow, const INode& node)
   auto call = std::make_shared<koda::EventCall>();
   call->name = "f" + format(maki::recordString(record, "flow"));
   call->args = buildArgumentExpr(maki::recordList(record, "arguments"));
+  call->id = std::format("{}::{}", call->name, node.getid());
 
   auto flowCall = std::make_shared<koda::Strategy::TaskCall>();
   flowCall->call = call;
@@ -743,6 +746,7 @@ Result<QList<koda::PStrategyHandler>> MakiToKoda::buildHandlers(const IFlow& flo
     auto receiverIndex = event.find_first_of('.');
     emitter->receiver = event.substr(receiverIndex + 1);
     emitter->name = event.substr(0, receiverIndex);
+    emitter->id = std::format("{}::{}", emitter->name, node.getid());
     ToLowerCase(emitter->name, 0);
 
     value->emitter = emitter;
@@ -1085,8 +1089,7 @@ bool MakiToKoda::isEndNode(const INode& node) const
 
 bool MakiToKoda::isStructuralNode(const INode& node) const
 {
-  return node.getnodeId() == "Koda::Start" || node.getnodeId() == "Koda::Success" || node.getnodeId() == "Koda::Failure" ||
-         node.getnodeId() == "Koda::Join";
+  return node.getnodeId() == "Koda::Start" || node.getnodeId() == "Koda::Success" || node.getnodeId() == "Koda::Failure" || node.getnodeId() == "Koda::Join";
 }
 
 QList<NodeTransition> MakiToKoda::successorsOfKind(const INode& node, const IFlow& flow, TransitionKind kind) const

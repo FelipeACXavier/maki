@@ -13,35 +13,35 @@ class  KodaParser : public antlr4::Parser {
 public:
   enum {
     TASK = 1, CAPABILITY = 2, TYPE = 3, ENUM = 4, EXTENDS = 5, LIST = 6, 
-    OPTIONAL = 7, MAP = 8, MAPPING = 9, TO = 10, STRATEGY = 11, PARAMETERS = 12, 
-    ACTION = 13, SERVICE = 14, TOPIC = 15, TRIGGER = 16, RETURN = 17, ABORT = 18, 
-    ERROR = 19, IN = 20, OUT = 21, ON = 22, CONSUMES = 23, PRODUCES = 24, 
-    DATA = 25, REQ = 26, PRO = 27, SUCCESS = 28, FAILURE = 29, CONTINUE = 30, 
-    REPEAT = 31, JOIN = 32, EITHER = 33, WHEN = 34, CHOOSE = 35, WITHIN = 36, 
-    DO = 37, ELSE = 38, THEN = 39, EVERY = 40, ARROW = 41, PIPE = 42, EQ = 43, 
-    NEQ = 44, LEQ = 45, GEQ = 46, LT = 47, GT = 48, ASSIGN = 49, DOUBLE_COLON = 50, 
-    COLON = 51, COMMA = 52, SEMI = 53, DOT = 54, PLUS = 55, MINUS = 56, 
-    STAR = 57, SLASH = 58, NOT = 59, AND = 60, OR = 61, LPAREN = 62, RPAREN = 63, 
-    LBRACE = 64, RBRACE = 65, LBRACK = 66, RBRACK = 67, NATURAL = 68, REAL = 69, 
-    BOOLEAN = 70, IDENT = 71, STRING = 72, ANY = 73, LINE_COMMENT = 74, 
-    BLOCK_COMMENT = 75, WS = 76
+    OPTIONAL = 7, MAP = 8, MAPPING = 9, TO = 10, ANNOTATIONS = 11, STRATEGY = 12, 
+    PARAMETERS = 13, ACTION = 14, SERVICE = 15, TOPIC = 16, TRIGGER = 17, 
+    RETURN = 18, ABORT = 19, ERROR = 20, IN = 21, OUT = 22, ON = 23, CONSUMES = 24, 
+    PRODUCES = 25, DATA = 26, REQ = 27, PRO = 28, SUCCESS = 29, FAILURE = 30, 
+    CONTINUE = 31, REPEAT = 32, JOIN = 33, EITHER = 34, WHEN = 35, CHOOSE = 36, 
+    WITHIN = 37, DO = 38, ELSE = 39, THEN = 40, EVERY = 41, ARROW = 42, 
+    PIPE = 43, EQ = 44, NEQ = 45, LEQ = 46, GEQ = 47, LT = 48, GT = 49, 
+    ASSIGN = 50, DOUBLE_COLON = 51, COLON = 52, COMMA = 53, SEMI = 54, DOT = 55, 
+    PLUS = 56, MINUS = 57, STAR = 58, SLASH = 59, NOT = 60, AND = 61, OR = 62, 
+    LPAREN = 63, RPAREN = 64, LBRACE = 65, RBRACE = 66, LBRACK = 67, RBRACK = 68, 
+    NATURAL = 69, REAL = 70, BOOLEAN = 71, IDENT = 72, STRING = 73, ANY = 74, 
+    LINE_COMMENT = 75, BLOCK_COMMENT = 76, WS = 77
   };
 
   enum {
     RuleSystem = 0, RuleTopLevelDeclaration = 1, RuleTopLevelComponent = 2, 
-    RuleTypeDeclaration = 3, RuleFieldDeclaration = 4, RuleEnumDeclaration = 5, 
-    RuleEnumValue = 6, RuleEnumLiteral = 7, RuleMappingDeclaration = 8, 
-    RuleTypeReference = 9, RuleQualifiedName = 10, RuleArgumentList = 11, 
-    RuleArgument = 12, RuleStatement = 13, RuleTasksBlock = 14, RuleFlow = 15, 
-    RuleIdentList = 16, RuleVarsBlock = 17, RuleVariableStatement = 18, 
-    RuleActionBlock = 19, RuleServiceBlock = 20, RuleTopicBlock = 21, RuleRosDefStatement = 22, 
-    RuleReqDefStatement = 23, RuleEventDefStatement = 24, RuleDataBlock = 25, 
-    RuleStrategy = 26, RuleChooseWhenStatement = 27, RuleStrategyHandler = 28, 
-    RuleEventStatement = 29, RuleExprList = 30, RuleExpression = 31, RuleExprOr = 32, 
-    RuleExprAnd = 33, RuleExprCmp = 34, RuleCompOp = 35, RuleExprNot = 36, 
-    RuleExprAdd = 37, RuleExprMul = 38, RuleExprUnary = 39, RuleExprPrimary = 40, 
-    RuleRecordLiteral = 41, RuleRecordFieldInitializer = 42, RuleListLiteral = 43, 
-    RuleMapLiteral = 44, RuleMapFieldInitializer = 45, RuleIdentifier = 46
+    RuleTypeDeclaration = 3, RuleFieldDeclaration = 4, RuleAnnotationDeclaration = 5, 
+    RuleAnnotation = 6, RuleEnumDeclaration = 7, RuleEnumValue = 8, RuleEnumLiteral = 9, 
+    RuleMappingDeclaration = 10, RuleTypeReference = 11, RuleQualifiedName = 12, 
+    RuleArgumentList = 13, RuleArgument = 14, RuleStatement = 15, RuleTasksBlock = 16, 
+    RuleFlow = 17, RuleIdentList = 18, RuleVarsBlock = 19, RuleVariableStatement = 20, 
+    RuleActionBlock = 21, RuleServiceBlock = 22, RuleTopicBlock = 23, RuleRosDefStatement = 24, 
+    RuleReqDefStatement = 25, RuleEventDefStatement = 26, RuleDataBlock = 27, 
+    RuleStrategy = 28, RuleChooseWhenStatement = 29, RuleStrategyHandler = 30, 
+    RuleEventStatement = 31, RuleExprList = 32, RuleExpression = 33, RuleExprOr = 34, 
+    RuleExprAnd = 35, RuleExprCmp = 36, RuleCompOp = 37, RuleExprNot = 38, 
+    RuleExprAdd = 39, RuleExprMul = 40, RuleExprUnary = 41, RuleExprPrimary = 42, 
+    RuleRecordLiteral = 43, RuleRecordFieldInitializer = 44, RuleListLiteral = 45, 
+    RuleMapLiteral = 46, RuleMapFieldInitializer = 47, RuleIdentifier = 48
   };
 
   explicit KodaParser(antlr4::TokenStream *input);
@@ -66,6 +66,8 @@ public:
   class TopLevelComponentContext;
   class TypeDeclarationContext;
   class FieldDeclarationContext;
+  class AnnotationDeclarationContext;
+  class AnnotationContext;
   class EnumDeclarationContext;
   class EnumValueContext;
   class EnumLiteralContext;
@@ -214,6 +216,7 @@ public:
     antlr4::tree::TerminalNode *COLON();
     TypeReferenceContext *typeReference();
     antlr4::tree::TerminalNode *SEMI();
+    AnnotationDeclarationContext *annotationDeclaration();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -221,6 +224,40 @@ public:
   };
 
   FieldDeclarationContext* fieldDeclaration();
+
+  class  AnnotationDeclarationContext : public antlr4::ParserRuleContext {
+  public:
+    AnnotationDeclarationContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *ANNOTATIONS();
+    antlr4::tree::TerminalNode *LBRACE();
+    antlr4::tree::TerminalNode *RBRACE();
+    std::vector<AnnotationContext *> annotation();
+    AnnotationContext* annotation(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> COMMA();
+    antlr4::tree::TerminalNode* COMMA(size_t i);
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  AnnotationDeclarationContext* annotationDeclaration();
+
+  class  AnnotationContext : public antlr4::ParserRuleContext {
+  public:
+    AnnotationContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    std::vector<antlr4::tree::TerminalNode *> STRING();
+    antlr4::tree::TerminalNode* STRING(size_t i);
+    antlr4::tree::TerminalNode *COLON();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  AnnotationContext* annotation();
 
   class  EnumDeclarationContext : public antlr4::ParserRuleContext {
   public:

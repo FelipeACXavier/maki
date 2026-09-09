@@ -20,6 +20,7 @@ VoidResult RosEmitter::write(const ir::Program& program, const Model& model, con
   mSymbols = &symbols;
   mOptions = options;
 
+  mTypeRegistry = registry;
   mRosMapper = std::make_shared<koda::ros::RosDatatypeMapper>(registry);
 
   mCapabilities.clear();
@@ -125,8 +126,7 @@ VoidResult RosEmitter::collectCapability(const ir::Component& component)
         case ir::EventKind::Trigger:
         case ir::EventKind::In:
         {
-          auto callSite =
-              std::find_if(cap.calls.begin(), cap.calls.end(), [event](const CallSite* site) { return site && site->target == event.symbol; });
+          auto callSite = std::find_if(cap.calls.begin(), cap.calls.end(), [event](const CallSite* site) { return site && site->target == event.symbol; });
 
           if (callSite != cap.calls.end())
             rosAction.trigger = &event;
@@ -145,16 +145,14 @@ VoidResult RosEmitter::collectCapability(const ir::Component& component)
         }
         case ir::EventKind::Abort:
         {
-          auto callSite =
-              std::find_if(cap.calls.begin(), cap.calls.end(), [event](const CallSite* site) { return site && site->target == event.symbol; });
-
-          if (callSite != cap.calls.end())
-            rosAction.onAbort = &event;
+          rosAction.onAbort = &event;
           break;
         }
       }
     }
-    cap.actions.push_back(rosAction);
+
+    if (rosAction.trigger)
+      cap.actions.push_back(rosAction);
   }
 
   // Temporary hard-coded capability emitter registry.
@@ -212,9 +210,7 @@ const ir::Event* RosEmitter::findEvent(const ir::Component& component, SymbolId 
 
 const CallSite* RosEmitter::callForPort(const Capability& capability, const std::string& port) const
 {
-  const auto it =
-      std::find_if(capability.calls.begin(), capability.calls.end(), [&port](const CallSite* call) { return call && call->targetPort == port; });
-
+  const auto it = std::find_if(capability.calls.begin(), capability.calls.end(), [&port](const CallSite* call) { return call && call->targetPort == port; });
   return it == capability.calls.end() ? nullptr : *it;
 }
 
@@ -559,12 +555,13 @@ std::string RosEmitter::emitSupervisorHeader() const
 
   for (const auto& cap : mCapabilities)
   {
+    const auto ports = actionPorts(cap);
     for (const auto& action : cap.actions)
     {
-      if (action.onReturn)
+      if (action.onReturn && isTriggerEnabled(action.onReturn, ports))
         ss << "  " << callbackType(*action.onReturn) << " " << cap.name << "_" << action.onReturn->name << ";\n";
 
-      if (action.onError)
+      if (action.onError && isTriggerEnabled(action.onError, ports))
         ss << "  " << callbackType(*action.onError) << " " << cap.name << "_" << action.onError->name << ";\n";
     }
   }
@@ -683,6 +680,35 @@ std::string RosEmitter::emitGlueSource(const Capability& cap) const
   ss << "#include <dzn/pump.hh>\n";
   ss << "#include <iostream>\n\n";
 
+  // We need to include the mapped ros types
+  std::set<std::string> includes;
+  auto argumentToInclude = [this, &includes](const ir::Event* event) {
+    if (!event)
+      return;
+
+    for (const auto& arg : event->arguments)
+      if (auto file = mRosMapper->includeFor(arg.type))
+        includes.insert(*file);
+    ;
+  };
+
+  for (const auto& action : cap.actions)
+  {
+    argumentToInclude(action.trigger);
+    argumentToInclude(action.onAbort);
+    argumentToInclude(action.onReturn);
+    argumentToInclude(action.onError);
+  }
+
+  if (!includes.empty())
+    ss << "// ROS types ================================\n";
+
+  for (const auto& inc : includes)
+    ss << "#include <" << inc << ">\n";
+
+  if (!includes.empty())
+    ss << "\n";
+
   ss << cap.className << "::" << cap.className << "(dzn::locator const& locator)\n";
   ss << "  : skel::" << cap.className << "(locator)\n";
   ss << "{\n}\n\n";
@@ -693,14 +719,17 @@ std::string RosEmitter::emitGlueSource(const Capability& cap) const
   ss << "  if (!supervisor)\n";
   ss << "    return;\n\n";
 
+  const auto ports = actionPorts(cap);
   for (const auto& action : cap.actions)
   {
     if (action.onReturn)
     {
-      ss << "  supervisor->" << cap.name << "_" << action.onReturn->name << " = [this, supervisor](" << argDecls(action.onReturn->arguments)
-         << ") {\n";
+      if (!isTriggerEnabled(action.onReturn, ports))
+        continue;
+
+      ss << "  supervisor->" << cap.name << "_" << action.onReturn->name << " = [this, supervisor](" << argDecls(action.onReturn->arguments) << ") {\n";
       ss << "    auto& pump = dzn_locator.get<dzn::pump>();\n";
-      ss << std::format("    std::cout << \"onReturn outside: {} - \" << mActivePort << std::endl;\n", action.onReturn->name);
+      ss << std::format("    RCLCPP_INFO(supervisor->get_logger(), \"onReturn outside: {} %s\", mActivePort.c_str());\n", action.onReturn->name);
       ss << "    pump([this, supervisor" << argNames(action.onReturn->arguments, true) << "] {\n";
       ss << "      const auto activePort = mActivePort;\n";
       ss << "      mActivePort.clear();\n";
@@ -721,16 +750,19 @@ std::string RosEmitter::emitGlueSource(const Capability& cap) const
         first = false;
       }
 
-      ss << std::format("      std::cout << \"onReturn: {}\" << std::endl;\n", action.onReturn->name);
+      ss << std::format("    RCLCPP_INFO(supervisor->get_logger(), \"onReturn after outside: {} %s\", mActivePort.c_str());\n", action.onReturn->name);
       ss << "    });\n";
       ss << "  };\n\n";
     }
 
     if (action.onError)
     {
+      if (!isTriggerEnabled(action.onError, ports))
+        continue;
+
       ss << "  supervisor->" << cap.name << "_" << action.onError->name << " = [this, supervisor](" << argDecls(action.onError->arguments) << ") {\n";
       ss << "    auto& pump = dzn_locator.get<dzn::pump>();\n";
-      ss << std::format("    std::cout << \"onError outside: {}\" << std::endl;\n", action.onError->name);
+      ss << std::format("    RCLCPP_INFO(supervisor->get_logger(), \"onError outside: {} %s\", mActivePort.c_str());\n", action.onError->name);
       ss << "    pump([this, supervisor" << argNames(action.onError->arguments, true) << "] {\n";
       ss << "      const auto activePort = mActivePort;\n";
       ss << "      mActivePort.clear();\n";
@@ -751,7 +783,7 @@ std::string RosEmitter::emitGlueSource(const Capability& cap) const
         first = false;
       }
 
-      ss << std::format("      std::cout << \"onError: {}\" << std::endl;\n", action.onError->name);
+      ss << std::format("    RCLCPP_INFO(supervisor->get_logger(), \"onError outside: {} %s\", mActivePort.c_str());\n", action.onError->name);
       ss << "    });\n";
       ss << "  };\n\n";
     }
@@ -759,15 +791,15 @@ std::string RosEmitter::emitGlueSource(const Capability& cap) const
 
   ss << "}\n\n";
 
-  for (const auto& port : actionPorts(cap))
+  for (const auto& port : ports)
   {
     ss << "Result " << cap.className << "::" << port.port << "_trigger()\n";
     ss << "{\n";
-    ss << std::format("  std::cout << \"Trigger before: {}\" << std::endl;\n", port.port);
     ss << "  auto supervisor = dzn_locator.get<std::shared_ptr<Supervisor>>();\n";
     ss << "  if (!supervisor)\n";
     ss << "    return Result::Failure;\n\n";
 
+    ss << std::format("  RCLCPP_INFO(supervisor->get_logger(), \"Trigger before: {}\");\n", port.port);
     if (!port.event)
     {
       ss << "  // No event for port\n";
@@ -785,35 +817,42 @@ std::string RosEmitter::emitGlueSource(const Capability& cap) const
       else
       {
         ss << "  mActivePort = \"" << port.port << "\";\n";
-        ss << std::format("  std::cout << \"Trigger after: {}\" << std::endl;\n", port.port);
-        ss << "  return supervisor->" << cap.name << port.event->name << "(" << emitCallArguments(cap, port) << ");\n";
+        ss << "  auto result = supervisor->" << cap.name << port.event->name << "(" << emitCallArguments(cap, port) << ");\n";
+        ss << std::format("  RCLCPP_INFO(supervisor->get_logger(), \"Trigger after: {}\");\n", port.port);
+        ss << "  return result;\n";
       }
     }
     ss << "}\n\n";
 
     for (const auto& action : cap.actions)
     {
-      if (!action.trigger || action.trigger->symbol != port.event->symbol)
-        continue;
-
-      if (!action.onAbort)
+      if (!action.trigger || action.trigger->name != port.event->name)
         continue;
 
       // Preserve the old external-interface lifecycle semantics. Explicit KODA
       // abort calls use their own Abort event port above.
       ss << "Result " << cap.className << "::" << port.port << "_abort()\n";
       ss << "{\n";
-      ss << "  auto supervisor = dzn_locator.get<std::shared_ptr<Supervisor>>();\n";
-      ss << "  if (!supervisor)\n";
-      ss << "    return Result::Failure;\n\n";
+      if (action.onAbort)
+      {
+        ss << "  auto supervisor = dzn_locator.get<std::shared_ptr<Supervisor>>();\n";
+        ss << "  if (!supervisor)\n";
+        ss << "    return Result::Failure;\n\n";
+        ss << std::format("  RCLCPP_INFO(supervisor->get_logger(), \"Abort before: {}\");\n", port.port);
+        ss << "  auto result = supervisor->" << cap.name << action.onAbort->name << "();\n";
+        ss << std::format("  RCLCPP_INFO(supervisor->get_logger(), \"Abort after: {}\");\n", port.port);
+        ss << "  return result;";
+      }
+      else
+      {
+        ss << "  return Result::Success;\n";
+      }
 
-      ss << std::format("  std::cout << \"Abort: {}\" << std::endl;\n", port.port);
-      ss << "  return supervisor->" << cap.name << action.onAbort->name << "();\n";
       ss << "}\n\n";
     }
 
     ss << "Result " << cap.className << "::" << port.port << "_reset()\n";
-    ss << "{ return Result::Success; }\n\n";
+    ss << "{\n  return Result::Success;\n}\n\n";
   }
 
   return ss.str();
@@ -828,12 +867,9 @@ std::string RosEmitter::emitCallArguments(const Capability& capability, const Po
     return {};
 
   std::ostringstream ss;
-
   for (size_t i = 0; i < port.event->arguments.size(); ++i)
   {
-    if (i > 0)
-      ss << ", ";
-
+    ss << (i == 0 ? "\n" : ",\n") << "    ";
     if (i < port.call->inputSlots.size() && port.call->inputSlots[i])
     {
       ss << "dzn_locator.get<Blackboard>().get<" << cppType(port.event->arguments[i].type) << ">(\"" << *port.call->inputSlots[i] << "\")";
@@ -852,26 +888,39 @@ std::string RosEmitter::emitCallArguments(const Capability& capability, const Po
   return ss.str();
 }
 
+bool RosEmitter::isTriggerEnabled(const ir::Event* event, const std::vector<PortBinding>& ports) const
+{
+  if (!event)
+    return false;
+
+  auto symbol = mSymbols->get(event->symbol);
+  if (!symbol)
+    return false;
+
+  auto trigger = mSymbols->eventOfAction(symbol->owner, symbol->actionId, "Trigger");
+  if (!trigger)
+    return false;
+
+  auto port = std::ranges::find_if(ports, [trigger](const PortBinding& port) { return trigger->name == port.event->name; });
+
+  return port != ports.end();
+}
+
 std::string RosEmitter::emitExpression(const ir::PExpression& expression) const
 {
   if (!expression)
     return "{}";
 
   // Add support for other types
-  if (const auto* literal = std::get_if<ir::Expression::Literal>(&expression->value))
+  if (const auto* literal = std::get_if<ir::Expression::Literal>(&expression->value); literal)
   {
     const auto type = literal->type.toString();
-
     if (type == "string" || type == "bytes")
       return std::format("\"{}\"", literal->text);
 
     return literal->text;
   }
-  else if (const auto* unary = std::get_if<ir::Expression::Unary>(&expression->value))
-  {
-    return emitExpression(unary->value);
-  }
-  else if (const auto* unary = std::get_if<ir::Expression::Unary>(&expression->value))
+  else if (const auto* unary = std::get_if<ir::Expression::Unary>(&expression->value); unary)
   {
     return emitExpression(unary->value);
   }
@@ -885,29 +934,78 @@ std::string RosEmitter::emitExpression(const ir::PExpression& expression) const
   return "/* unresolved non-literal expression */ {}";
 }
 
+std::string RosEmitter::emitRosValue(const types::TypeReference& type, const ir::PExpression& expression, const std::string& variableName,
+                                     const std::string& indent) const
+{
+  LOG_DEBUG("Emitting ros value for: {} of type {}", type.toString(), koda::types::toString(type.kind()));
+  std::ostringstream ss;
+
+  const auto mapping = mRosMapper->resolve(type);
+  if (!mapping)
+    return {};
+
+  ss << std::format("{}{} {};\n", indent, mapping->cppType, variableName);
+
+  const auto values = flattenRecordValue(type, expression, "");
+  for (const auto& value : values)
+  {
+    auto target = mRosMapper->targetField(type, value.path);
+    if (!target)
+    {
+      LOG_WARNING("No ROS field mapping for '{}.{}'", type.toString(), value.path);
+      continue;
+    }
+
+    ss << std::format("{}{}.{} = {};\n", indent, variableName, *target, emitExpression(value.value));
+  }
+
+  return ss.str();
+}
+
+std::vector<RosEmitter::FlatValue> RosEmitter::flattenRecordValue(const types::TypeReference& type, const ir::PExpression& expression,
+                                                                  const std::string& prefix) const
+{
+  std::vector<FlatValue> result;
+  if (!expression)
+    return result;
+
+  const auto* definition = mTypeRegistry.resolve(type);
+  if (!definition)
+    return result;
+
+  const auto* record = std::get_if<ir::Expression::RecordLiteral>(&expression->value);
+  if (!record)
+  {
+    result.push_back({.path = prefix, .value = expression});
+    return result;
+  }
+
+  const auto rfields = mTypeRegistry.fieldsOf(*definition);
+  for (const auto& fieldValue : record->fields)
+  {
+    const auto field = std::ranges::find_if(rfields, [fieldValue](const types::FieldDefinition& def) { return def.name == fieldValue.name; });
+    if (field == rfields.end())
+      continue;
+
+    const auto path = prefix.empty() ? fieldValue.name : prefix + "." + fieldValue.name;
+    auto nested = flattenRecordValue(field->type, fieldValue.value, path);
+    result.insert(result.end(), nested.begin(), nested.end());
+  }
+
+  return result;
+}
+
 std::string RosEmitter::cppType(const types::TypeReference& type) const
 {
-  const auto text = type.toString();
+  if (!mRosMapper)
+    return "/* Mapper is not initialized */ {}";
 
-  if (text == "bool")
-    return "bool";
-  if (text == "int")
-    return "int";
-  if (text == "uint")
-    return "unsigned int";
-  if (text == "real")
-    return "double";
-  if (text == "string" || text == "bytes")
-    return "std::string";
-  if (text == "void")
-    return "void";
+  const auto cpp = mRosMapper->cppType(type);
+  if (!cpp)
+    LOG_WARNING("Failed to map: {}", type.toString());
 
-  // Temporary technology mappings. Move these to the type-mapping/plugin
-  // infrastructure once that becomes available to this emitter.
-  if (text == "robotics::Pose")
-    return "geometry_msgs::msg::PoseStamped";
-
-  return text;
+  // Just return the actual type in case the mapping fails
+  return cpp.value_or(type.toString());
 }
 
 std::string RosEmitter::argDecls(const std::vector<ir::Argument>& args) const
@@ -958,8 +1056,7 @@ std::string RosEmitter::cppName(std::string value)
 
 std::string RosEmitter::identifier(std::string value)
 {
-  value.erase(std::remove_if(value.begin(), value.end(), [](char c) { return !(std::isalnum(static_cast<unsigned char>(c)) || c == '_'); }),
-              value.end());
+  value.erase(std::remove_if(value.begin(), value.end(), [](char c) { return !(std::isalnum(static_cast<unsigned char>(c)) || c == '_'); }), value.end());
 
   return value;
 }
@@ -1079,6 +1176,28 @@ std::string RosEmitter::emitMainCpp() const
   ss << "dzn::runtime runtime;\n";
   ss << "dzn::locator locator;\n\n";
 
+  ss << "void populateBlackboard(Blackboard& blackboard)\n";
+  ss << "{\n";
+  for (const auto& component : mProgram->components)
+  {
+    for (const auto& variable : component.variables)
+    {
+      if (!variable.initial)
+        continue;
+
+      if (!variable.slot)
+        continue;
+
+      // Let's add some context protection
+      ss << "  {\n";
+      const std::string indent = "    ";  // Hopefully the compiler optizes this away
+      const std::string varName = lower(variable.name);
+      ss << emitRosValue(variable.type, variable.initial, varName, indent);
+      ss << std::format("{}blackboard.set(\"{}\", {});\n", indent, *variable.slot, varName);
+      ss << "  }\n";
+    }
+  }
+  ss << "}\n\n";
   ss << "int main(int argc, char** argv)\n";
   ss << "{\n";
   ss << "  rclcpp::init(argc, argv);\n";
@@ -1090,26 +1209,8 @@ std::string RosEmitter::emitMainCpp() const
     ss << "    locator.set(runtime).set(nullstream).set(node).set(blackboard));\n";
   }
   ss << "\n";
-
-  bool firstParameter = true;
-  for (const auto& component : mProgram->components)
-  {
-    for (const auto& variable : component.variables)
-    {
-      if (!variable.initial)
-        continue;
-
-      if (!variable.slot)
-        continue;
-
-      if (firstParameter)
-        ss << "  // Populate the blackboard with the mission parameters";
-
-      ss << std::format("  blackboard.set(\"{}\", {});\n", *variable.slot, emitExpression(variable.initial));
-      firstParameter = false;
-    }
-  }
-
+  ss << "  // Populate the blackboard with the mission parameters\n";
+  ss << "  populateBlackboard(blackboard);\n\n";
   ss << "  system->api.out.success = [] {\n";
   ss << "    std::cout << \"Task succeeded\" << std::endl;\n ";
   ss << "  };\n";
@@ -1192,6 +1293,7 @@ std::string RosEmitter::emitLaunchPy() const
     ss << "            executable='" << lower(mOptions.packageName) << "',\n";
     ss << "            name='supervisor',\n";
     ss << "            output='screen',\n";
+    ss << "            emulate_tty=True,\n";
     ss << "            parameters=[params],\n";
     ss << "          )\n";
     ss << "        ])\n";
@@ -1377,18 +1479,12 @@ void RosEmitter::collectDrive(Capability& cap)
   // Methods - Here we add any methods that this capability might add to the supervisor
   // First the trigger
   cap.supervisorMethods.push_back("// Drive ========================================================================== ");
-  cap.supervisorMethods.push_back(
-      std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, trigger->name, argDecls(trigger->arguments)));
+  cap.supervisorMethods.push_back(std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, trigger->name, argDecls(trigger->arguments)));
   cap.supervisorMethods.push_back("{");
   cap.supervisorMethods.push_back("  auto frame_id = get_parameter(\"map_frame\").as_string();");
-  cap.supervisorMethods.push_back("  auto goal_msg = nav2_msgs::action::NavigateToPose::Goal();");
+  cap.supervisorMethods.push_back(std::format("  auto goal_msg = {};", argNames(onReturn->arguments)));
   cap.supervisorMethods.push_back("  goal_msg.pose.header.stamp = now();");
-  cap.supervisorMethods.push_back("  goal_msg.pose.header.frame_id = frame_id;");
-  cap.supervisorMethods.push_back("  goal_msg.pose.pose.position.x = x;");
-  cap.supervisorMethods.push_back("  goal_msg.pose.pose.position.y = y;\n");
-  cap.supervisorMethods.push_back("  tf2::Quaternion q;");
-  cap.supervisorMethods.push_back("  q.setRPY(0, 0, yaw);");
-  cap.supervisorMethods.push_back("  goal_msg.pose.pose.orientation = tf2::toMsg(q);\n");
+  cap.supervisorMethods.push_back("  goal_msg.pose.header.frame_id = frame_id;\n");
   cap.supervisorMethods.push_back("  if (!nav_client_->wait_for_action_server(std::chrono::seconds(5)))");
   cap.supervisorMethods.push_back("  {");
   cap.supervisorMethods.push_back("    RCLCPP_ERROR(get_logger(), \"NavigateToPose action server not available\");");
@@ -1401,17 +1497,16 @@ void RosEmitter::collectDrive(Capability& cap)
   cap.supervisorMethods.push_back("        current_goal_ = gh;");
   cap.supervisorMethods.push_back("      };");
   cap.supervisorMethods.push_back("  opts.result_callback =");
-  cap.supervisorMethods.push_back("      [this, x, y, yaw](const auto& wr) {");
+  cap.supervisorMethods.push_back(std::format("      [this{}{}](const auto& wr) {{", argNames(onReturn->arguments, true), argNames(onError->arguments, true)));
   cap.supervisorMethods.push_back("        RCLCPP_INFO(this->get_logger(), \"Result code=%d\", (int)wr.code);");
   cap.supervisorMethods.push_back("        if (wr.code != rclcpp_action::ResultCode::SUCCEEDED) {");
   cap.supervisorMethods.push_back(std::format("          if ({}_{})", cap.name, onError->name));
   cap.supervisorMethods.push_back(std::format("            {}_{}({});", cap.name, onError->name, argNames(onError->arguments)));
   cap.supervisorMethods.push_back("        } else {");
   cap.supervisorMethods.push_back(std::format("          if ({}_{})", cap.name, onReturn->name));
-  cap.supervisorMethods.push_back(std::format("            {}_{}({});", cap.name, onReturn->name, argNames(onReturn->arguments)));
+  cap.supervisorMethods.push_back(std::format("            {}_{}({}.pose);", cap.name, onReturn->name, argNames(onReturn->arguments)));
   cap.supervisorMethods.push_back("        }");
   cap.supervisorMethods.push_back("      };\n");
-  cap.supervisorMethods.push_back("  RCLCPP_INFO(get_logger(), \"Goal: frame='%s', x=%f y=%f yaw=%f\", frame_id.c_str(), x, y, yaw);");
   cap.supervisorMethods.push_back("  nav_client_->async_send_goal(goal_msg, opts);");
   cap.supervisorMethods.push_back("  return Result::Success;");
   cap.supervisorMethods.push_back("}");
@@ -1419,8 +1514,7 @@ void RosEmitter::collectDrive(Capability& cap)
   // Then the abort
   if (onAbort)
   {
-    cap.supervisorMethods.push_back(
-        std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, onAbort->name, argDecls(onAbort->arguments)));
+    cap.supervisorMethods.push_back(std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, onAbort->name, argDecls(onAbort->arguments)));
     cap.supervisorMethods.push_back("{");
     cap.supervisorMethods.push_back("  if (current_goal_) {");
     cap.supervisorMethods.push_back("    RCLCPP_INFO(this->get_logger(), \"Trying to abort\");");
@@ -1586,8 +1680,7 @@ void RosEmitter::collectApproach(Capability& cap)
   // Methods - Here we add any methods that this capability might add to the supervisor
   // Trigger
   {
-    cap.supervisorMethods.push_back(
-        std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, trigger->name, argDecls(trigger->arguments)));
+    cap.supervisorMethods.push_back(std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, trigger->name, argDecls(trigger->arguments)));
     cap.supervisorMethods.push_back("{");
     cap.supervisorMethods.push_back("   if (approach)");
     cap.supervisorMethods.push_back("   {");
@@ -1609,8 +1702,7 @@ void RosEmitter::collectApproach(Capability& cap)
   // Abort
   if (onAbort)
   {
-    cap.supervisorMethods.push_back(
-        std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, onAbort->name, argDecls(onAbort->arguments)));
+    cap.supervisorMethods.push_back(std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, onAbort->name, argDecls(onAbort->arguments)));
     cap.supervisorMethods.push_back("{");
     cap.supervisorMethods.push_back("  // We use the standard abort");
     cap.supervisorMethods.push_back("  return Result::Success;");
@@ -1645,8 +1737,7 @@ void RosEmitter::collectApproach(Capability& cap)
 
     cap.supervisorMethods.push_back("  try");
     cap.supervisorMethods.push_back("  {");
-    cap.supervisorMethods.push_back(
-        std::format("    auto out = {}.transform(cam_pose, target_frame, tf2::durationFromSec(0.2));", mOptions.tfBuffer));
+    cap.supervisorMethods.push_back(std::format("    auto out = {}.transform(cam_pose, target_frame, tf2::durationFromSec(0.2));", mOptions.tfBuffer));
     cap.supervisorMethods.push_back("    return out;");
     cap.supervisorMethods.push_back("  } catch (const tf2::TransformException& ex)");
     cap.supervisorMethods.push_back("  {");
@@ -1655,8 +1746,8 @@ void RosEmitter::collectApproach(Capability& cap)
     cap.supervisorMethods.push_back("  }");
     cap.supervisorMethods.push_back("}\n");
 
-    cap.supervisorMethods.push_back(std::format(
-        "Result {}::dockWithOdom(const geometry_msgs::msg::PoseStamped& cam_pose, double standoff_m, double timeout_s)", mOptions.supervisorClass));
+    cap.supervisorMethods.push_back(
+        std::format("Result {}::dockWithOdom(const geometry_msgs::msg::PoseStamped& cam_pose, double standoff_m, double timeout_s)", mOptions.supervisorClass));
     cap.supervisorMethods.push_back("{");
     cap.supervisorMethods.push_back("  // 1. Get marker pose in odom frame");
     cap.supervisorMethods.push_back("  auto opt = lookupMarkerIn(cam_pose, \"odom\");");
@@ -1690,8 +1781,7 @@ void RosEmitter::collectApproach(Capability& cap)
     cap.supervisorMethods.push_back("    const double ux = vx / dist, uy = vy / dist;");
     cap.supervisorMethods.push_back("    const double target_x = marker_in_odom.pose.position.x - standoff_m * ux;");
     cap.supervisorMethods.push_back("    const double target_y = marker_in_odom.pose.position.y - standoff_m * uy;");
-    cap.supervisorMethods.push_back(
-        "    RCLCPP_INFO(get_logger(), \"Dock goal in odom : (%.3f, %.3f, %.1f°)\", target_x, target_y, target_yaw * 180 / M_PI);");
+    cap.supervisorMethods.push_back("    RCLCPP_INFO(get_logger(), \"Dock goal in odom : (%.3f, %.3f, %.1f°)\", target_x, target_y, target_yaw * 180 / M_PI);");
     cap.supervisorMethods.push_back("    RCLCPP_INFO(get_logger(), \"Position in odom : (%.3f, %.3f, %.1f°)\", current_pose->x, current_pose->y, "
                                     "current_pose->yaw * 180 / M_PI);\n");
     cap.supervisorMethods.push_back("    const double k_lin = 0.8;");
@@ -1728,8 +1818,7 @@ void RosEmitter::collectApproach(Capability& cap)
     cap.supervisorMethods.push_back("      if (dist < 0.02 && std::abs(yaw_err) < 0.1)");
     cap.supervisorMethods.push_back("      {");
     cap.supervisorMethods.push_back("        stopBase();");
-    cap.supervisorMethods.push_back(
-        "        RCLCPP_INFO(get_logger(), \"Dock: reached (%.2fm from goal, yaw err %.1f°)\", dist, yaw_err * 180 / M_PI);");
+    cap.supervisorMethods.push_back("        RCLCPP_INFO(get_logger(), \"Dock: reached (%.2fm from goal, yaw err %.1f°)\", dist, yaw_err * 180 / M_PI);");
     cap.supervisorMethods.push_back(std::format("        if ({}_{})", cap.name, onReturn->name));
     cap.supervisorMethods.push_back(std::format("          {}_{}({});", cap.name, onReturn->name, argNames(onReturn->arguments)));
     cap.supervisorMethods.push_back("        return;");
@@ -1814,7 +1903,7 @@ void RosEmitter::collectObjectDetection(Capability& cap)
 
   const auto* trigger = cap.actions.front().trigger;
   const auto* onReturn = cap.actions.front().onReturn;
-  const auto* onError = cap.actions.front().onError;
+  // const auto* onError = cap.actions.front().onError;
   const auto* onAbort = cap.actions.front().onAbort;
 
   // ======================================================================================================
@@ -1912,8 +2001,7 @@ void RosEmitter::collectObjectDetection(Capability& cap)
   // Trigger
   {
     cap.supervisorMethods.push_back("// ArucoVision ========================================================================== ");
-    cap.supervisorMethods.push_back(
-        std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, trigger->name, argDecls(trigger->arguments)));
+    cap.supervisorMethods.push_back(std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, trigger->name, argDecls(trigger->arguments)));
     cap.supervisorMethods.push_back("{");
     cap.supervisorMethods.push_back(std::format("  if ({}.joinable())", mOptions.taskThread));
     cap.supervisorMethods.push_back(std::format("    {}.join();\n", mOptions.taskThread));
@@ -2000,8 +2088,7 @@ void RosEmitter::collectObjectDetection(Capability& cap)
 
   // Abort
   {
-    cap.supervisorMethods.push_back(
-        std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, onAbort->name, argDecls(onAbort->arguments)));
+    cap.supervisorMethods.push_back(std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, onAbort->name, argDecls(onAbort->arguments)));
     cap.supervisorMethods.push_back("{");
     cap.supervisorMethods.push_back("  // We use the standard abort");
     cap.supervisorMethods.push_back("  return Result::Success;");
@@ -2076,8 +2163,7 @@ void RosEmitter::collectGrip(Capability& cap)
   cap.supervisorStart.push_back("  arm_mgi_->setEndEffectorLink(get_parameter(\"eef_link\").as_string());");
   cap.supervisorStart.push_back("}");
   cap.supervisorStart.push_back("if (gripper_mgi_ == nullptr){ ");
-  cap.supervisorStart.push_back(
-      "  gripper_mgi_ = std::make_shared<moveit::planning_interface::MoveGroupInterface>(shared_from_this(), \"gripper\");");
+  cap.supervisorStart.push_back("  gripper_mgi_ = std::make_shared<moveit::planning_interface::MoveGroupInterface>(shared_from_this(), \"gripper\");");
   cap.supervisorStart.push_back("}");
   cap.supervisorStart.push_back("if (!moveGripperHome()) {");
   cap.supervisorStart.push_back("  RCLCPP_ERROR(get_logger(), \"Failed to set arm to drive position.\");");
@@ -2089,8 +2175,7 @@ void RosEmitter::collectGrip(Capability& cap)
   // Methods - Here we add any methods that this capability might add to the supervisor
   // Trigger
   {
-    cap.supervisorMethods.push_back(
-        std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, trigger->name, argDecls(trigger->arguments)));
+    cap.supervisorMethods.push_back(std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, trigger->name, argDecls(trigger->arguments)));
     cap.supervisorMethods.push_back("{");
     cap.supervisorMethods.push_back("  geometry_msgs::msg::PoseStamped goal_pose;");
     cap.supervisorMethods.push_back("  {");
@@ -2148,8 +2233,7 @@ void RosEmitter::collectGrip(Capability& cap)
 
   // Abort
   {
-    cap.supervisorMethods.push_back(
-        std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, onAbort->name, argDecls(onAbort->arguments)));
+    cap.supervisorMethods.push_back(std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, onAbort->name, argDecls(onAbort->arguments)));
     cap.supervisorMethods.push_back("{");
     cap.supervisorMethods.push_back("  // We use the standard abort");
     cap.supervisorMethods.push_back("  return Result::Success;");
@@ -2242,6 +2326,7 @@ void RosEmitter::collectBatteryMonitor(Capability& cap)
   cap.supervisorIncludes.push_back("// BatteryMonitoring ========================================================================== ");
   cap.supervisorIncludes.push_back("#include <sensor_msgs/msg/battery_state.hpp>");
   cap.supervisorIncludes.push_back("#include <std_msgs/msg/bool.hpp>");
+  cap.supervisorIncludes.push_back("#include <geometry_msgs/msg/pose_stamped.hpp>");
 
   // ======================================================================================================
   // Members - These are the members needed for this capability
@@ -2268,7 +2353,7 @@ void RosEmitter::collectBatteryMonitor(Capability& cap)
   {
     const auto* trigger = action.trigger;
     const auto* onReturn = action.onReturn;
-    const auto* onError = action.onError;
+    // const auto* onError = action.onError;
     const auto* onAbort = action.onAbort;
 
     if (trigger && trigger->name == "monitor")
@@ -2279,8 +2364,7 @@ void RosEmitter::collectBatteryMonitor(Capability& cap)
       auto thresholdName = trigger->arguments.at(0).name;
 
       // Trigger
-      cap.supervisorMethods.push_back(
-          std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, trigger->name, argDecls(trigger->arguments)));
+      cap.supervisorMethods.push_back(std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, trigger->name, argDecls(trigger->arguments)));
       cap.supervisorMethods.push_back("{");
       cap.supervisorMethods.push_back("  if (battery_sub_)\n"
                                       "    return Result::Success;\n");
@@ -2306,8 +2390,7 @@ void RosEmitter::collectBatteryMonitor(Capability& cap)
       // Abort
       if (onAbort)
       {
-        cap.supervisorMethods.push_back(
-            std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, onAbort->name, argDecls(onAbort->arguments)));
+        cap.supervisorMethods.push_back(std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, onAbort->name, argDecls(onAbort->arguments)));
         cap.supervisorMethods.push_back("{");
         cap.supervisorMethods.push_back("  battery_sub_.reset();");
         cap.supervisorMethods.push_back("  low_ = false;");
@@ -2318,8 +2401,7 @@ void RosEmitter::collectBatteryMonitor(Capability& cap)
     else if (trigger && trigger->name == "charge")
     {
       // Trigger
-      cap.supervisorMethods.push_back(
-          std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, trigger->name, argDecls(trigger->arguments)));
+      cap.supervisorMethods.push_back(std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, trigger->name, argDecls(trigger->arguments)));
       cap.supervisorMethods.push_back("{");
       cap.supervisorMethods.push_back("  if (!charging_sub_)");
       cap.supervisorMethods.push_back("  {");
@@ -2334,6 +2416,12 @@ void RosEmitter::collectBatteryMonitor(Capability& cap)
                       "          }});",
                       cap.name, onReturn->name, cap.name, onReturn->name));
       cap.supervisorMethods.push_back("  }");
+      cap.supervisorMethods.push_back("  double dx = (charger_pose.pose.position.x - pose.pose.position.x);");
+      cap.supervisorMethods.push_back("  double dy = (charger_pose.pose.position.y - pose.pose.position.y);");
+      cap.supervisorMethods.push_back("  double distance = (dx * dx) + (dy * dy);");
+      cap.supervisorMethods.push_back("  RCLCPP_INFO(get_logger(), \"Distance to charger: %.2lf > 1\", distance);");
+      cap.supervisorMethods.push_back("  if (distance > 1)");
+      cap.supervisorMethods.push_back("    return Result::Failure;\n");
       cap.supervisorMethods.push_back("  std_msgs::msg::Bool msg;");
       cap.supervisorMethods.push_back("  msg.data = true;");
       cap.supervisorMethods.push_back("  charging_pub_->publish(msg);");
@@ -2344,8 +2432,7 @@ void RosEmitter::collectBatteryMonitor(Capability& cap)
       // Abort
       if (onAbort)
       {
-        cap.supervisorMethods.push_back(
-            std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, onAbort->name, argDecls(onAbort->arguments)));
+        cap.supervisorMethods.push_back(std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, onAbort->name, argDecls(onAbort->arguments)));
         cap.supervisorMethods.push_back("{");
         cap.supervisorMethods.push_back("  charging_sub_.reset();");
         cap.supervisorMethods.push_back("  std_msgs::msg::Bool msg;");

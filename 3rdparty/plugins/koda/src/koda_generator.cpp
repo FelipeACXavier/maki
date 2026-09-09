@@ -222,8 +222,7 @@ void KodaGenerator::publishErrors(const std::vector<koda::Error>& errors) const
   {
     auto firstError = errors.front();
     if (mServices)
-      mServices->errorOnNode(QString::fromStdString(firstError.nodeId), QString::fromStdString(firstError.flowId),
-                             QString::fromStdString(firstError.message));
+      mServices->errorOnNode(QString::fromStdString(firstError.nodeId), QString::fromStdString(firstError.flowId), QString::fromStdString(firstError.message));
   }
 }
 
@@ -269,8 +268,8 @@ Result<maki::PipelineArtifact> KodaGenerator::generateKoda(const maki::PipelineA
   return output;
 }
 
-Result<maki::PipelineArtifact> KodaGenerator::generateDezyne(const maki::PipelineArtifact& artifact, const QDir& outputFolder,
-                                                             const maki::ValueMap& parameters, maki::IPipeline* pipeline)
+Result<maki::PipelineArtifact> KodaGenerator::generateDezyne(const maki::PipelineArtifact& artifact, const QDir& outputFolder, const maki::ValueMap& parameters,
+                                                             maki::IPipeline* pipeline)
 {
   if (!artifact.metadata.contains("sources"))
     return Result<maki::PipelineArtifact>::Failed("generateDezyne, missing input sources");
@@ -506,8 +505,8 @@ VoidResult KodaGenerator::simulate(const maki::PipelineArtifact& artifact)
   return VoidResult();
 }
 
-Result<maki::PipelineArtifact> KodaGenerator::buildRosProject(const maki::PipelineArtifact& artifact, const QDir& outputFolder,
-                                                              const QString& rosFolder, maki::IPipeline* pipeline)
+Result<maki::PipelineArtifact> KodaGenerator::buildRosProject(const maki::PipelineArtifact& artifact, const QDir& outputFolder, const QString& rosFolder,
+                                                              maki::IPipeline* pipeline)
 {
   if (!artifact.paths.contains("rootDir"))
     return Result<maki::PipelineArtifact>::Failed("buildProject, missing root folder");
@@ -541,8 +540,8 @@ Result<maki::PipelineArtifact> KodaGenerator::buildRosProject(const maki::Pipeli
   return maki::PipelineArtifact{};
 }
 
-Result<maki::PipelineArtifact> KodaGenerator::launchRosProject(const maki::PipelineArtifact& artifact, const QDir& outputFolder,
-                                                               const QString& rosFolder, maki::IPipeline* pipeline)
+Result<maki::PipelineArtifact> KodaGenerator::launchRosProject(const maki::PipelineArtifact& artifact, const QDir& outputFolder, const QString& rosFolder,
+                                                               maki::IPipeline* pipeline)
 {
   if (!artifact.paths.contains("rootDir"))
     return Result<maki::PipelineArtifact>::Failed("buildProject, missing root folder");

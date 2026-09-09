@@ -75,9 +75,8 @@ TypeRegistrationResult TypeRegistry::replace(const TypeDefinition& definition)
     return add(definition);
   }
 
-  int sameNameCount = std::count_if(mTypes.begin(), mTypes.end(), [&definition](const auto& entry) {
-    return entry.second.name == definition.name && entry.first != definition.id;
-  });
+  int sameNameCount = std::count_if(mTypes.begin(), mTypes.end(),
+                                    [&definition](const auto& entry) { return entry.second.name == definition.name && entry.first != definition.id; });
   if (sameNameCount > 0)
     return TypeRegistrationResult::Failed(TypeRegistrationError::DuplicateName, "Name already exists: " + definition.name.toString());
 
@@ -331,11 +330,17 @@ Annotations TypeRegistry::annotationsOf(const TypeReference& reference) const
 {
   const auto resolvedReference = resolveAliases(reference);
   if (!resolvedReference.has_value())
+  {
+    LOG_DEBUG("Could not resolve alias for: {}", reference.toString());
     return {};
+  }
 
   const TypeDefinition* definition = resolve(*resolvedReference);
   if (definition == nullptr)
+  {
+    LOG_DEBUG("Could not resolve: {}", resolvedReference->toString());
     return {};
+  }
 
   Annotations annotations;
   std::vector<TypeId> activeTypes;
@@ -367,8 +372,7 @@ const FieldDefinition* TypeRegistry::findField(const TypeReference& recordType, 
 
     const auto& fields = current->record().fields;
 
-    const auto field =
-        std::find_if(fields.begin(), fields.end(), [&fieldName](const FieldDefinition& candidate) { return candidate.name == fieldName; });
+    const auto field = std::find_if(fields.begin(), fields.end(), [&fieldName](const FieldDefinition& candidate) { return candidate.name == fieldName; });
 
     if (field != fields.end())
       return &*field;
@@ -439,8 +443,8 @@ std::vector<TypeModelDiagnostic> TypeRegistry::validate() const
             const TypeDefinition* baseDefinition = resolve(*resolvedBase);
             if (baseDefinition == nullptr || !baseDefinition->isRecord())
             {
-              addDiagnostic(diagnostics, TypeModelDiagnostic::Severity::Error, "record.invalid_base_type",
-                            "The base type of a record must also be a record.", basePath);
+              addDiagnostic(diagnostics, TypeModelDiagnostic::Severity::Error, "record.invalid_base_type", "The base type of a record must also be a record.",
+                            basePath);
             }
           }
         }
@@ -451,8 +455,8 @@ std::vector<TypeModelDiagnostic> TypeRegistry::validate() const
 
       if (hasInheritanceCycle(definition))
       {
-        addDiagnostic(diagnostics, TypeModelDiagnostic::Severity::Error, "record.inheritance_cycle",
-                      "The record participates in an inheritance cycle.", typePath);
+        addDiagnostic(diagnostics, TypeModelDiagnostic::Severity::Error, "record.inheritance_cycle", "The record participates in an inheritance cycle.",
+                      typePath);
       }
 
       const std::vector<FieldDefinition> allFields = fieldsOf(TypeReference::named(definition.name, definition.id));
@@ -542,9 +546,8 @@ TypeRegistrationResult TypeRegistry::validateRegistration(const TypeDefinition& 
     return TypeRegistrationResult::Failed(TypeRegistrationError::DuplicateName, "A type named '" + qualifiedName + "' is already registered.");
 
   const auto diagnostics = definition.validate();
-  const bool hasErrors = std::any_of(diagnostics.begin(), diagnostics.end(), [](const TypeModelDiagnostic& diagnostic) {
-    return diagnostic.severity == TypeModelDiagnostic::Severity::Error;
-  });
+  const bool hasErrors = std::any_of(diagnostics.begin(), diagnostics.end(),
+                                     [](const TypeModelDiagnostic& diagnostic) { return diagnostic.severity == TypeModelDiagnostic::Severity::Error; });
 
   if (hasErrors)
   {
@@ -571,9 +574,8 @@ TypeRegistrationResult TypeRegistry::validateRegistration(const TypeDefinition& 
     std::vector<TypeModelDiagnostic> recordDiagnostics;
     for (const auto& field : record.fields)
       if (!validateReference(field.type, field.name, recordDiagnostics))
-        return TypeRegistrationResult::Failed(
-            TypeRegistrationError::InvalidDefinition,
-            "Record field '" + field.name + "' contains an unknown referenced type: " + recordDiagnostics.front().message);
+        return TypeRegistrationResult::Failed(TypeRegistrationError::InvalidDefinition,
+                                              "Record field '" + field.name + "' contains an unknown referenced type: " + recordDiagnostics.front().message);
   }
 
   return TypeRegistrationResult(TypeRegistrationError::None);
@@ -609,8 +611,7 @@ bool TypeRegistry::validateReference(const TypeReference& reference, const std::
     return keyValid && valueValid;
   }
 
-  addDiagnostic(diagnostics, TypeModelDiagnostic::Severity::Error, "type.unknown_type",
-                "The referenced type '" + reference.toString() + "' is unknown", path);
+  addDiagnostic(diagnostics, TypeModelDiagnostic::Severity::Error, "type.unknown_type", "The referenced type '" + reference.toString() + "' is unknown", path);
 
   return false;
 }
@@ -736,7 +737,8 @@ bool TypeRegistry::collectAnnotations(const TypeDefinition& definition, Annotati
     }
   }
 
-  annotations.insert(definition.annotations.begin(), definition.annotations.end());
+  for (const auto& [key, value] : definition.annotations)
+    annotations[key] = value;
 
   activeTypes.pop_back();
   return true;

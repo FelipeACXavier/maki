@@ -43,6 +43,7 @@ std::optional<RosTypeMapping> RosDatatypeMapper::resolve(const koda::types::Type
       .fields = inferMappings(sourceFields, targetFields),
   };
 
+  LOG_DEBUG("Stored mapping: {} -> {}", type.toString(), result.cppType);
   mCache.emplace(key, result);
   return result;
 }
@@ -88,7 +89,6 @@ std::optional<std::string> RosDatatypeMapper::includeFor(const koda::types::Type
 std::optional<std::string> RosDatatypeMapper::targetField(const koda::types::TypeReference& type, const std::string& sourcePath)
 {
   const auto mapping = resolve(type);
-
   if (!mapping)
     return std::nullopt;
 
@@ -104,7 +104,10 @@ std::optional<std::string> RosDatatypeMapper::rosAnnotationFor(const koda::types
 {
   auto definition = mRegistry.resolve(type);
   if (!definition)
+  {
+    LOG_WARNING("  Could not resolve type '{}', not in the registry", type.toString());
     return std::nullopt;
+  }
 
   std::string rosType = "";
   for (const auto& [key, value] : mRegistry.annotationsOf(definition->name))
@@ -112,85 +115,51 @@ std::optional<std::string> RosDatatypeMapper::rosAnnotationFor(const koda::types
     if (key != "rosType")
       continue;
 
-    LOG_DEBUG("Using rosType {} for {}", value, type.toString());
+    LOG_TRACE("Using rosType {} for {}", value, type.toString());
     return value;
   }
-  /*
-   * PROJECT-SPECIFIC ADAPTER.
-   *
-   * Replace this with your TypeRegistry API.
-   *
-   * Intended semantics:
-   *
-   *   robotics::GoalPose
-   *       annotation "ros"
-   *       = "nav2_msgs/action/NavigateToPose::Goal"
-   *
-   * Example shape:
-   *
-   * const auto* definition = mRegistry.get(type);
-   * if (!definition)
-   *   return std::nullopt;
-   *
-   * auto it = definition->annotations.find("ros");
-   * if (it == definition->annotations.end())
-   *   return std::nullopt;
-   *
-   * return it->second;
-   */
 
   return std::nullopt;
 }
 
 std::vector<FlatField> RosDatatypeMapper::flattenKodaRecord(const koda::types::TypeReference& type) const
 {
-  /*
-   * PROJECT-SPECIFIC ADAPTER.
-   *
-   * This must recursively flatten a KODA record.
-   *
-   * Example:
-   *
-   * robotics::GoalPose
-   *
-   *   position:
-   *     x: real
-   *     y: real
-   *     z: real
-   *
-   *   orientation:
-   *     x: real
-   *     y: real
-   *     z: real
-   *     w: real
-   *
-   * should produce:
-   *
-   * {
-   *   {"position.x", "real"},
-   *   {"position.y", "real"},
-   *   {"position.z", "real"},
-   *   {"orientation.x", "real"},
-   *   {"orientation.y", "real"},
-   *   {"orientation.z", "real"},
-   *   {"orientation.w", "real"},
-   * }
-   *
-   * I would implement the recursion against TypeRegistry here,
-   * because the exact Record/Field API is repository-specific.
-   */
+  std::vector<FlatField> result;
+  std::function<void(const koda::types::TypeReference&, const std::string&)> flatten;
 
-  return {};
+  flatten = [&](const koda::types::TypeReference& currentType, const std::string& prefix) {
+    const auto definition = mRegistry.resolve(currentType);
+    if (!definition)
+    {
+      LOG_WARNING("Could not resolve KODA type '{}'", currentType.toString());
+      return;
+    }
+
+    // Leaf type: primitive, enum, etc.
+    if (!definition->isRecord())
+    {
+      result.push_back({
+          .path = prefix,
+          .type = definition->toReference().toString(),
+      });
+
+      return;
+    }
+
+    for (const auto& field : mRegistry.fieldsOf(*definition))
+    {
+      const auto path = prefix.empty() ? field.name : prefix + "." + field.name;
+      flatten(field.type, path);
+    }
+  };
+
+  flatten(type, "");
+
+  return result;
 }
 
 std::optional<RosDatatypeMapper::RosInterfaceRef> RosDatatypeMapper::parseRosInterface(const std::string& annotation) const
 {
-  // Supported:
-  //
-  // geometry_msgs/msg/PoseStamped
-  // nav2_msgs/action/NavigateToPose::Goal
-  // example_interfaces/srv/AddTwoInts::Request
-
   const auto subtypePos = annotation.find("::");
 
   std::string base = annotation;
@@ -203,9 +172,11 @@ std::optional<RosDatatypeMapper::RosInterfaceRef> RosDatatypeMapper::parseRosInt
   }
 
   const auto parts = split(base, '/');
-
   if (parts.size() != 3)
+  {
+    LOG_WARNING("    Invalid annotation, expected 3 parts, got {} - {}", parts.size(), annotation);
     return std::nullopt;
+  }
 
   RosInterfaceRef result;
   result.package = parts[0];
@@ -222,7 +193,10 @@ std::optional<RosDatatypeMapper::RosInterfaceRef> RosDatatypeMapper::parseRosInt
     return std::nullopt;
 
   if (result.kind == RosInterfaceRef::Kind::Message && result.subType)
+  {
+    LOG_WARNING("    Unknown kind: {} / {} / {}", parts[0], parts[1], parts[2]);
     return std::nullopt;
+  }
 
   return result;
 }
@@ -330,8 +304,8 @@ std::vector<FlatField> RosDatatypeMapper::flattenRosFile(const std::filesystem::
   return flattenRosSection(lines, package, prefix, depth);
 }
 
-std::vector<FlatField> RosDatatypeMapper::flattenRosSection(const std::vector<std::string>& lines, const std::string& package,
-                                                            const std::string& prefix, std::size_t depth) const
+std::vector<FlatField> RosDatatypeMapper::flattenRosSection(const std::vector<std::string>& lines, const std::string& package, const std::string& prefix,
+                                                            std::size_t depth) const
 {
   std::vector<FlatField> result;
 

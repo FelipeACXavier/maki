@@ -155,6 +155,39 @@ std::any CST2AST::visitArgPro(KodaParser::ArgProContext* ctx)
   return a;
 }
 
+std::any CST2AST::visitAnnotationDeclaration(KodaParser::AnnotationDeclarationContext* ctx)
+{
+  koda::types::Annotations annotations;
+  for (auto* a : ctx->annotation())
+  {
+    auto annotation = std::any_cast<std::pair<std::string, std::string>>(visitAnnotation(a));
+    annotations.insert(annotation);
+  }
+
+  return annotations;
+}
+
+std::any CST2AST::visitAnnotation(KodaParser::AnnotationContext* ctx)
+{
+  std::string key = "";
+  std::string value = "";
+  if (ctx->STRING().size() == 2)
+  {
+    key = format(ctx->STRING(0)->getText());
+    value = format(ctx->STRING(1)->getText());
+  }
+
+  return std::make_pair(key, value);
+}
+
+std::string CST2AST::format(const std::string& value) const
+{
+  if (value.size() >= 2 && value.front() == '"' && value.back() == '"')
+    return value.substr(1, value.size() - 2);
+
+  return value;
+}
+
 std::any CST2AST::visitMappingDeclaration(KodaParser::MappingDeclarationContext* ctx)
 {
   auto mapping = std::make_shared<koda::TypeMapping>();
@@ -614,7 +647,6 @@ std::any CST2AST::visitEvQualifiedCall(KodaParser::EvQualifiedCallContext* ctx)
   c->span = spanOf(ctx);
 
   c->id = std::format("{}::{}::{}_{}", c->receiver, c->name, c->span.lineStart, c->span.colStart);
-
   if (ctx->exprList())
     c->args = std::any_cast<std::vector<koda::PExpr>>(visit(ctx->exprList()));
 
@@ -1126,18 +1158,24 @@ types::TypeDefinition CST2AST::convertTypeDeclaration(KodaParser::TypeDeclaratio
       baseType = baseName.toString();
     }
 
+    koda::types::Annotations annotations;
     std::vector<types::FieldDefinition> fields;
-    fields.reserve(record->fieldDeclaration().size());
-
     for (auto* field : record->fieldDeclaration())
     {
-      fields.push_back(types::FieldDefinition{
-          .name = field->IDENT()->getText(),
-          .type = convertTypeReference(field->typeReference()),
-      });
+      if (auto* a = field->annotationDeclaration(); a)
+      {
+        annotations = std::any_cast<koda::types::Annotations>(visitAnnotationDeclaration(a));
+      }
+      else
+      {
+        fields.push_back(types::FieldDefinition{
+            .name = field->IDENT()->getText(),
+            .type = convertTypeReference(field->typeReference()),
+        });
+      }
     }
 
-    return types::TypeDefinition::createRecord(name.toString(), fields, baseType.value_or(""), types::makeUuid());
+    return types::TypeDefinition::createRecord(name.toString(), fields, baseType.value_or(""), types::makeUuid(), annotations);
   }
 
   if (auto* alias = dynamic_cast<KodaParser::TypeAliasContext*>(ctx))

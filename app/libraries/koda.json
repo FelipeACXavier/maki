@@ -237,7 +237,7 @@
                 },
                 {
                   "id": "pose",
-                  "type": "robotics::Pose"
+                  "type": "robotics::ObjectPose"
                 }
               ],
               "linksTo": 0
@@ -349,7 +349,7 @@
               "arguments": [
                 {
                   "id": "pose",
-                  "type": "robotics::Pose"
+                  "type": "robotics::ObjectPose"
                 }
               ]
             }
@@ -419,16 +419,8 @@
               "modifiable": false,
               "arguments": [
                 {
-                  "id": "x",
-                  "type": "real"
-                },
-                {
-                  "id": "y",
-                  "type": "real"
-                },
-                {
-                  "id": "yaw",
-                  "type": "real"
+                  "id": "pose",
+                  "type": "robotics::GoalPose"
                 }
               ],
               "linksTo": 0
@@ -447,16 +439,8 @@
               "modifiable": false,
               "arguments": [
                 {
-                  "id": "x",
-                  "type": "real"
-                },
-                {
-                  "id": "y",
-                  "type": "real"
-                },
-                {
-                  "id": "yaw",
-                  "type": "real"
+                  "id": "pose",
+                  "type": "robotics::RobotPose"
                 }
               ],
               "linksTo": 0
@@ -571,6 +555,147 @@
               "returnType": "void",
               "modifiable": false,
               "linksTo": 0
+            }
+          ]
+        },
+        {
+          "type": "BatteryMonitoring",
+          "body": {
+            "shape": "Rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#e6c994",
+            "borderColor": "#FFFFFF",
+            "width": 500,
+            "height": 500,
+            "z-index": -2
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": {
+                "kind": "string",
+                "value": "BatteryMonitoring"
+              }
+            },
+            {
+              "id": "color",
+              "type": "void",
+              "control": "color",
+              "default": {
+                "kind": "string",
+                "value": "#e6c994"
+              }
+            },
+            {
+              "id": "calldef",
+              "type": "void",
+              "default": {
+                "kind": "list",
+                "value": [
+                  {
+                    "kind": "record",
+                    "value": {
+                      "type": {
+                        "kind": "string",
+                        "value": "action"
+                      },
+                      "route": {
+                        "kind": "string",
+                        "value": "/battery_monitor"
+                      },
+                      "message": {
+                        "kind": "string",
+                        "value": "std_msgs::String"
+                      }
+                    }
+                  },
+                  {
+                    "kind": "record",
+                    "value": {
+                      "type": {
+                        "kind": "string",
+                        "value": "action"
+                      },
+                      "route": {
+                        "kind": "string",
+                        "value": "/charge"
+                      },
+                      "message": {
+                        "kind": "string",
+                        "value": "std_msgs::String"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "events": [
+            {
+              "id": "monitor",
+              "type": "trigger",
+              "returnType": "void",
+              "modifiable": false,
+              "linksTo": 0,
+              "arguments": [
+                {
+                  "id": "threshold",
+                  "type": "real"
+                }
+              ]
+            },
+            {
+              "id": "stop_monitor",
+              "type": "abort",
+              "returnType": "void",
+              "modifiable": false,
+              "linksTo": 0
+            },
+            {
+              "id": "low_battery",
+              "type": "return",
+              "returnType": "void",
+              "modifiable": false,
+              "linksTo": 0
+            },
+            {
+              "id": "charge",
+              "type": "trigger",
+              "returnType": "void",
+              "modifiable": false,
+              "linksTo": 1,
+              "arguments": [
+                {
+                  "id": "charger_pose",
+                  "type": "robotics::Pose"
+                },
+                {
+                  "id": "pose",
+                  "type": "robotics::RobotPose"
+                }
+              ]
+            },
+            {
+              "id": "stop_charging",
+              "type": "abort",
+              "returnType": "void",
+              "modifiable": false,
+              "linksTo": 1
+            },
+            {
+              "id": "charged",
+              "type": "return",
+              "returnType": "void",
+              "modifiable": false,
+              "linksTo": 1
+            },
+            {
+              "id": "charging_failed",
+              "type": "error",
+              "returnType": "void",
+              "modifiable": false,
+              "linksTo": 1
             }
           ]
         }

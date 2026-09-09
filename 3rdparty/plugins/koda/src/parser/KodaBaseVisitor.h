@@ -39,6 +39,14 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitAnnotationDeclaration(KodaParser::AnnotationDeclarationContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitAnnotation(KodaParser::AnnotationContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitEnumDeclaration(KodaParser::EnumDeclarationContext *ctx) override {
     return visitChildren(ctx);
   }

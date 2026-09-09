@@ -31,6 +31,10 @@ public:
 
     virtual std::any visitFieldDeclaration(KodaParser::FieldDeclarationContext *context) = 0;
 
+    virtual std::any visitAnnotationDeclaration(KodaParser::AnnotationDeclarationContext *context) = 0;
+
+    virtual std::any visitAnnotation(KodaParser::AnnotationContext *context) = 0;
+
     virtual std::any visitEnumDeclaration(KodaParser::EnumDeclarationContext *context) = 0;
 
     virtual std::any visitEnumValue(KodaParser::EnumValueContext *context) = 0;

@@ -356,10 +356,10 @@ VoidResult SemanticAnalyzer::analyzeStrategy(const PStrategy& strategy, SymbolId
 
 Result<ResolvedArgumentSource> SemanticAnalyzer::resolveArgumentSource(const PExpr& expr, const types::TypeReference& expectedType, SymbolId owner)
 {
-  LOG_TRACE("Resolving argument of expected type: {} with owner {}", expectedType.toString(), owner);
   if (!expr)
     return ResolvedArgumentSource{.kind = ArgumentSourceKind::Infer};
 
+  LOG_TRACE("  Resolving argument of expected type: {} with owner {} ({})", expectedType.toString(), owner, expr->v.index());
   if (auto idExpr = std::get_if<PId>(&expr->v); idExpr && *idExpr)
   {
     // In case we have the default placeholder
@@ -403,8 +403,7 @@ Result<ResolvedArgumentSource> SemanticAnalyzer::resolveArgumentSource(const PEx
   if (!value.IsSuccess())
     return Result<ResolvedArgumentSource>::Failed("Resolving arguments: {}", value.ErrorMessage());
   if (!compatible(expectedType, value.Value()))
-    return Result<ResolvedArgumentSource>::Failed("Argument has incompatible type. Expected {}, got {}", expectedType.toString(),
-                                                  value.Value().toString());
+    return Result<ResolvedArgumentSource>::Failed("Argument has incompatible type. Expected {}, got {}", expectedType.toString(), value.Value().toString());
 
   return ResolvedArgumentSource{.kind = ArgumentSourceKind::Literal};
 }
@@ -443,6 +442,7 @@ VoidResult SemanticAnalyzer::resolveCapabilityData(const PEventCall& astCall, Re
       if (!source.IsSuccess())
         return VoidResult::Failed(source.ErrorMessage());
 
+      LOG_TRACE("  Resolved source, kind: {} slot: {}", (int)source.Value().kind, source.Value().slot.value_or("999"));
       switch (source.Value().kind)
       {
         case ArgumentSourceKind::Literal:
@@ -464,6 +464,8 @@ VoidResult SemanticAnalyzer::resolveCapabilityData(const PEventCall& astCall, Re
           // TODO: Focus on the node where a conflict exists and ask for user input
           if (candidates.size() > 1)
             LOG_WARNING("Ambiguous value for input '{}'", input.toString());
+          else
+            LOG_TRACE(" Found compatible type in blackboard: {}", candidates.front()->id);
 
           call.inputSlots.push_back(candidates.front()->id);
           break;
@@ -473,12 +475,15 @@ VoidResult SemanticAnalyzer::resolveCapabilityData(const PEventCall& astCall, Re
 
     // 2. We need to check whether this trigger has an attached async return.
     // If it does, then we need to make the return available here directly
+    LOG_TRACE("  Looking for return event of capabilty {} and action {}", capabilityId, event->actionId);
     auto returnEvent = mSymbols.eventOfAction(capabilityId, event->actionId, "Return");
     if (returnEvent)
     {
+      LOG_TRACE("    Found return event: {} {}", returnEvent->name, returnEvent->id);
       for (const auto& output : mModel.eventArguments[returnEvent->id])
       {
         const auto slot = mBlackboard.declare(astCall->id, output.toString(), output, std::to_string(capabilityId));
+        LOG_TRACE("    Making slot {} available", slot);
         mBlackboard.makeAvailable(slot);
         call.outputSlots.push_back(slot);
       }
@@ -740,9 +745,8 @@ Result<types::TypeReference> SemanticAnalyzer::analyzeExpr(const PExpr& expr, Sy
             rhsType.kind() != types::TypeReferenceKind::Unknown)
           return Result<types::TypeReference>::Failed(std::format("Arithmetic operator requires numeric operands at {}", expr->span.toString()));
 
-        type = types::isFloatingPoint(lhs.Value().primitiveKind()) || types::isFloatingPoint(rhsType.primitiveKind())
-                   ? types::TypeReference::createReal()
-                   : types::TypeReference::createInt();
+        type = types::isFloatingPoint(lhs.Value().primitiveKind()) || types::isFloatingPoint(rhsType.primitiveKind()) ? types::TypeReference::createReal()
+                                                                                                                      : types::TypeReference::createInt();
         break;
       default:
         type = lhs.Value();
@@ -760,8 +764,7 @@ Result<types::TypeReference> SemanticAnalyzer::analyzeExpr(const PExpr& expr, Sy
   else if (auto p = std::get_if<PRecordLiteral>(&expr->v); p && *p)
   {
     if (!expected.isValid())
-      return Result<types::TypeReference>::Failed(
-          std::format("Cannot infer type of record literal {} at {}", expected.toString(), expr->span.toString()));
+      return Result<types::TypeReference>::Failed(std::format("Cannot infer type of record literal {} at {}", expected.toString(), expr->span.toString()));
 
     const auto* definition = mTypeRegistry.resolve(expected);
     if (!definition || !definition->isRecord())
@@ -813,8 +816,7 @@ Result<SymbolId> SemanticAnalyzer::resolveValue(const std::string& name, SymbolI
 
 Result<SymbolId> SemanticAnalyzer::resolveComponentType(const Symbol& value, const Span& span) const
 {
-  LOG_TRACE("Resolving component {} with id {} and type {} {} at {}", value.name, value.id, toString(value.kind), value.type.toString(),
-            value.span.toString());
+  LOG_TRACE("Resolving component {} with id {} and type {} {} at {}", value.name, value.id, toString(value.kind), value.type.toString(), value.span.toString());
   if (value.kind == SymbolKind::Capability || value.kind == SymbolKind::Flow)
     return value.id;
 

@@ -128,6 +128,7 @@ private:
   std::vector<std::string> mGeneratedFiles;
 
   std::shared_ptr<koda::ros::RosDatatypeMapper> mRosMapper;
+  koda::types::TypeRegistry mTypeRegistry;
 
   VoidResult collect();
   VoidResult collectCapability(const ir::Component& component);
@@ -166,6 +167,16 @@ private:
   std::string argNames(const std::vector<ir::Argument>& args, bool startWithComma = false) const;
   std::string callbackType(const ir::Event& event) const;
 
+  struct FlatValue
+  {
+    std::string path;
+    ir::PExpression value;
+  };
+
+  std::string emitRosValue(const types::TypeReference& type, const ir::PExpression& expression, const std::string& variableName,
+                           const std::string& indent) const;
+  std::vector<FlatValue> flattenRecordValue(const types::TypeReference& type, const ir::PExpression& expression, const std::string& prefix) const;
+
   static std::string cppName(std::string value);
   static std::string lower(std::string value);
   static std::string identifier(std::string value);
@@ -177,6 +188,8 @@ private:
   void collectApproach(Capability& capability);
   void collectGrip(Capability& capability);
   void collectBatteryMonitor(Capability& capability);
+
+  bool isTriggerEnabled(const ir::Event* event, const std::vector<PortBinding>& ports) const;
 };
 
 }  // namespace koda::dezyne

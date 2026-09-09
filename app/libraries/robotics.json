@@ -111,6 +111,12 @@
               "robotics"
             ]
           },
+          "annotations": [
+            {
+              "key": "rosType",
+              "value": "geometry_msgs/msg/PoseStamped"
+            }
+          ],
           "documentation": "",
           "fields": [
             {
@@ -196,6 +202,12 @@
               "robotics"
             ]
           },
+          "annotations": [
+            {
+              "key": "rosType",
+              "value": "nav2_msgs/action/NavigateToPose::Goal"
+            }
+          ],
           "documentation": "Semantic specialization of Pose representing an intended target pose for a task or motion goal. Ontology-grounded in robotics goal concepts.",
           "fields": [],
           "baseType": {
