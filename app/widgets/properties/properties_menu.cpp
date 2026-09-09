@@ -11,6 +11,7 @@
 #include <oclero/qlementine/widgets/Label.hpp>
 
 #include "../dialogs/prompt.h"
+#include "../scroll_area.h"
 #include "../structure/event_dialog.h"
 #include "app_configs.h"
 #include "elements/flow.h"
@@ -63,18 +64,37 @@ PropertiesMenu::PropertiesMenu(QWidget* parent)
   rootLayout->setContentsMargins(theme.spacing, theme.spacing, 0, 0);
   rootLayout->setSpacing(theme.spacing);
 
+  auto* scrollArea = new StyledScrollArea(this);
+  scrollArea->setWidgetResizable(true);
+  scrollArea->setFrameShape(QFrame::NoFrame);
+  scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+  scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  scrollArea->setBackgroundRole(StyledScrollArea::BackgroundRole::Base);
+
+  // Wrapper fills the scroll area's viewport.
+  auto* scrollContents = new QWidget(scrollArea);
+  scrollContents->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
+
+  auto* scrollLayout = new QVBoxLayout(scrollContents);
+  scrollLayout->setContentsMargins(0, 0, 0, 0);
+  scrollLayout->setSpacing(0);
+
   mFrame = new StyledFrame(this);
   mFrame->setBackgroundRole(StyledFrame::BackgroundRole::Base);
   mFrame->setBorderRole(StyledFrame::BorderRole::Mid);
   mFrame->setRadius(theme.borderRadius);
   mFrame->setBorderWidth(theme.borderWidth);
-  mFrame->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+  mFrame->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Expanding);
 
   auto* frameLayout = new QVBoxLayout(mFrame);
   frameLayout->setContentsMargins(theme.spacing, theme.spacing, theme.spacing, theme.spacing);
+  frameLayout->setAlignment(Qt::AlignTop);
   frameLayout->setSpacing(theme.spacing);
 
-  rootLayout->addWidget(mFrame);
+  scrollLayout->addWidget(mFrame);
+  scrollArea->setWidget(scrollContents);
+
+  rootLayout->addWidget(scrollArea);
 }
 
 QLayout* PropertiesMenu::layout() const
@@ -458,8 +478,7 @@ VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IPa
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::loadCallArguments(const std::shared_ptr<FlowSaveInfo>& call, const QString& propertyId, NodeItem* node,
-                                             maki::WidgetGroup* group)
+VoidResult PropertiesMenu::loadCallArguments(const std::shared_ptr<FlowSaveInfo>& call, const QString& propertyId, NodeItem* node, maki::WidgetGroup* group)
 {
   if (!group || !node)
     return VoidResult::Failed("Cannot load call arguments without a group and node");
@@ -538,8 +557,7 @@ VoidResult PropertiesMenu::loadCallArguments(const std::shared_ptr<FlowSaveInfo>
   return VoidResult();
 }
 
-void PropertiesMenu::addCompleter(maki::InputWidget* editor, const QString& nodeId, const koda::types::TypeReference& type,
-                                  QStringList additionalValues)
+void PropertiesMenu::addCompleter(maki::InputWidget* editor, const QString& nodeId, const koda::types::TypeReference& type, QStringList additionalValues)
 {
   if (!editor || !mStorage)
     return;
