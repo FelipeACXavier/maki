@@ -722,6 +722,22 @@ std::string RosEmitter::emitGlueSource(const Capability& cap) const
   const auto ports = actionPorts(cap);
   for (const auto& action : cap.actions)
   {
+    if (!action.trigger)
+      continue;
+
+    // Find only the call sites that invoke THIS action.
+    std::vector<const CallSite*> actionCalls;
+
+    for (const auto* call : cap.calls)
+    {
+      if (!call)
+        continue;
+
+      if (call->target == action.trigger->symbol)
+        actionCalls.push_back(call);
+    }
+
+    // onReturn
     if (action.onReturn)
     {
       if (!isTriggerEnabled(action.onReturn, ports))
@@ -729,32 +745,34 @@ std::string RosEmitter::emitGlueSource(const Capability& cap) const
 
       ss << "  supervisor->" << cap.name << "_" << action.onReturn->name << " = [this, supervisor](" << argDecls(action.onReturn->arguments) << ") {\n";
       ss << "    auto& pump = dzn_locator.get<dzn::pump>();\n";
-      ss << std::format("    RCLCPP_INFO(supervisor->get_logger(), \"onReturn outside: {} %s\", mActivePort.c_str());\n", action.onReturn->name);
       ss << "    pump([this, supervisor" << argNames(action.onReturn->arguments, true) << "] {\n";
       ss << "      const auto activePort = mActivePort;\n";
-      ss << "      mActivePort.clear();\n";
+      ss << std::format("      RCLCPP_INFO(supervisor->get_logger(), \"onReturn outside: {} %s\", activePort.c_str());\n", action.onReturn->name);
 
       bool first = true;
-      for (const auto* call : cap.calls)
+      for (const auto* call : actionCalls)
       {
-        if (!call)
-          continue;
-
         ss << (first ? "      if" : "      else if") << " (activePort == \"" << call->targetPort << "\")\n";
         ss << "      {\n";
+
+        // Clear only if this callback actually belongs to the currently active port.
+        ss << "        mActivePort.clear();\n";
+
         const auto count = std::min(call->outputSlots.size(), action.onReturn->arguments.size());
         for (size_t i = 0; i < count; ++i)
           ss << "        dzn_locator.get<Blackboard>().set(\"" << call->outputSlots[i] << "\", " << action.onReturn->arguments[i].name << ");\n";
+
         ss << "        " << call->targetPort << "_success();\n";
         ss << "      }\n";
         first = false;
       }
 
-      ss << std::format("    RCLCPP_INFO(supervisor->get_logger(), \"onReturn after outside: {} %s\", mActivePort.c_str());\n", action.onReturn->name);
+      ss << std::format("      RCLCPP_INFO(supervisor->get_logger(), \"onReturn after outside: {} %s\", mActivePort.c_str());\n", action.onReturn->name);
       ss << "    });\n";
       ss << "  };\n\n";
     }
 
+    // onError
     if (action.onError)
     {
       if (!isTriggerEnabled(action.onError, ports))
@@ -762,33 +780,32 @@ std::string RosEmitter::emitGlueSource(const Capability& cap) const
 
       ss << "  supervisor->" << cap.name << "_" << action.onError->name << " = [this, supervisor](" << argDecls(action.onError->arguments) << ") {\n";
       ss << "    auto& pump = dzn_locator.get<dzn::pump>();\n";
-      ss << std::format("    RCLCPP_INFO(supervisor->get_logger(), \"onError outside: {} %s\", mActivePort.c_str());\n", action.onError->name);
       ss << "    pump([this, supervisor" << argNames(action.onError->arguments, true) << "] {\n";
       ss << "      const auto activePort = mActivePort;\n";
-      ss << "      mActivePort.clear();\n";
+      ss << std::format("      RCLCPP_INFO(supervisor->get_logger(), \"onError outside: {} %s\", activePort.c_str());\n", action.onError->name);
 
       bool first = true;
-      for (const auto* call : cap.calls)
+      for (const auto* call : actionCalls)
       {
-        if (!call)
-          continue;
-
         ss << (first ? "      if" : "      else if") << " (activePort == \"" << call->targetPort << "\")\n";
         ss << "      {\n";
+        ss << "        mActivePort.clear();\n";
+
         const auto count = std::min(call->outputSlots.size(), action.onError->arguments.size());
         for (size_t i = 0; i < count; ++i)
           ss << "        dzn_locator.get<Blackboard>().set(\"" << call->outputSlots[i] << "\", " << action.onError->arguments[i].name << ");\n";
+
         ss << "        " << call->targetPort << "_failure();\n";
         ss << "      }\n";
+
         first = false;
       }
 
-      ss << std::format("    RCLCPP_INFO(supervisor->get_logger(), \"onError outside: {} %s\", mActivePort.c_str());\n", action.onError->name);
+      ss << std::format("      RCLCPP_INFO(supervisor->get_logger(), \"onError after outside: {} %s\", mActivePort.c_str());\n", action.onError->name);
       ss << "    });\n";
       ss << "  };\n\n";
     }
   }
-
   ss << "}\n\n";
 
   for (const auto& port : ports)
@@ -1426,6 +1443,9 @@ void RosEmitter::collectDrive(Capability& cap)
   cap.supervisorIncludes.push_back("#include <nav2_msgs/action/navigate_to_pose.hpp>");
   cap.supervisorIncludes.push_back("#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>");
 
+  cap.supervisorIncludes.push_back("#include <mutex>");
+  cap.supervisorIncludes.push_back("#include <condition_variable>");
+
   // ======================================================================================================
   // Members - These are the members needed for this capability
   cap.supervisorMembers.push_back("// Drive members ==========================================================================");
@@ -1434,6 +1454,10 @@ void RosEmitter::collectDrive(Capability& cap)
   cap.supervisorMembers.push_back("rclcpp_action::ClientGoalHandle<nav2_msgs::action::NavigateToPose>::SharedPtr current_goal_;");
   cap.supervisorMembers.push_back("// Initial pose stuff");
   cap.supervisorMembers.push_back("std::atomic<bool> got_amcl_pose_{false};");
+  cap.supervisorMembers.push_back("std::atomic<bool> drive_running_{false};");
+  cap.supervisorMembers.push_back("std::atomic<bool> drive_aborting_{false};");
+  cap.supervisorMembers.push_back("std::mutex drive_mutex_;");
+  cap.supervisorMembers.push_back("std::condition_variable drive_cv_;");
   cap.supervisorMembers.push_back("void publishInitialPose();");
   cap.supervisorMembers.push_back("rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr initialpose_pub_;\n");
   cap.supervisorMembers.push_back("rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr amcl_pose_sub_;");
@@ -1490,6 +1514,11 @@ void RosEmitter::collectDrive(Capability& cap)
   cap.supervisorMethods.push_back("    RCLCPP_ERROR(get_logger(), \"NavigateToPose action server not available\");");
   cap.supervisorMethods.push_back("    return Result::Failure;");
   cap.supervisorMethods.push_back("  }\n");
+  cap.supervisorMethods.push_back("  {");
+  cap.supervisorMethods.push_back("    std::lock_guard lock(drive_mutex_);");
+  cap.supervisorMethods.push_back("    drive_running_ = true;");
+  cap.supervisorMethods.push_back("    drive_aborting_ = false;");
+  cap.supervisorMethods.push_back("  }");
   cap.supervisorMethods.push_back("  rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::SendGoalOptions opts;");
   cap.supervisorMethods.push_back("  opts.goal_response_callback =");
   cap.supervisorMethods.push_back("      [this](auto gh) {");
@@ -1499,7 +1528,16 @@ void RosEmitter::collectDrive(Capability& cap)
   cap.supervisorMethods.push_back("  opts.result_callback =");
   cap.supervisorMethods.push_back(std::format("      [this{}{}](const auto& wr) {{", argNames(onReturn->arguments, true), argNames(onError->arguments, true)));
   cap.supervisorMethods.push_back("        RCLCPP_INFO(this->get_logger(), \"Result code=%d\", (int)wr.code);");
-  cap.supervisorMethods.push_back("        if (wr.code != rclcpp_action::ResultCode::SUCCEEDED) {");
+  cap.supervisorMethods.push_back("        bool aborting = false;");
+  cap.supervisorMethods.push_back("        {");
+  cap.supervisorMethods.push_back("          std::lock_guard lock(drive_mutex_);");
+  cap.supervisorMethods.push_back("          drive_running_ = false;");
+  cap.supervisorMethods.push_back("          aborting = drive_aborting_;");
+  cap.supervisorMethods.push_back("        }");
+  cap.supervisorMethods.push_back("        if (wr.code == rclcpp_action::ResultCode::CANCELED && aborting) {");
+  cap.supervisorMethods.push_back("          RCLCPP_INFO(this->get_logger(), \"Aborted successfully\");");
+  cap.supervisorMethods.push_back("          drive_cv_.notify_all();");
+  cap.supervisorMethods.push_back("        } else if (wr.code != rclcpp_action::ResultCode::SUCCEEDED) {");
   cap.supervisorMethods.push_back(std::format("          if ({}_{})", cap.name, onError->name));
   cap.supervisorMethods.push_back(std::format("            {}_{}({});", cap.name, onError->name, argNames(onError->arguments)));
   cap.supervisorMethods.push_back("        } else {");
@@ -1516,12 +1554,41 @@ void RosEmitter::collectDrive(Capability& cap)
   {
     cap.supervisorMethods.push_back(std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, onAbort->name, argDecls(onAbort->arguments)));
     cap.supervisorMethods.push_back("{");
-    cap.supervisorMethods.push_back("  if (current_goal_) {");
-    cap.supervisorMethods.push_back("    RCLCPP_INFO(this->get_logger(), \"Trying to abort\");");
-    cap.supervisorMethods.push_back("    nav_client_->async_cancel_goal(current_goal_);");
-    cap.supervisorMethods.push_back("  }");
+    cap.supervisorMethods.push_back("  {");
+    cap.supervisorMethods.push_back("    std::lock_guard lock(drive_mutex_);");
+    cap.supervisorMethods.push_back("    if (!current_goal_ || !drive_running_)");
+    cap.supervisorMethods.push_back("      return Result::Success;\n");
+
+    cap.supervisorMethods.push_back("    drive_aborting_ = true;");
+    cap.supervisorMethods.push_back("  }\n");
+
+    cap.supervisorMethods.push_back("  RCLCPP_INFO(this->get_logger(), \"Trying to abort\");");
+    cap.supervisorMethods.push_back("  auto future = nav_client_->async_cancel_goal(current_goal_);");
+    cap.supervisorMethods.push_back("  const auto status = future.wait_for(std::chrono::seconds(5));");
+    cap.supervisorMethods.push_back("  if (status != std::future_status::ready)");
+    cap.supervisorMethods.push_back("  {");
+    cap.supervisorMethods.push_back("    RCLCPP_WARN(this->get_logger(), \"Timed out while cancelling navigation goal\");");
+    cap.supervisorMethods.push_back("    return Result::Failure;");
+    cap.supervisorMethods.push_back("  }\n");
+
+    cap.supervisorMethods.push_back("  const auto response = future.get();");
+    cap.supervisorMethods.push_back("  if (!response || response->goals_canceling.empty())");
+    cap.supervisorMethods.push_back("  {");
+    cap.supervisorMethods.push_back("    RCLCPP_WARN(this->get_logger(), \"Navigation goal could not be cancelled\");");
+    cap.supervisorMethods.push_back("    return Result::Failure;");
+    cap.supervisorMethods.push_back("  }\n");
+
+    cap.supervisorMethods.push_back("  std::unique_lock lock(drive_mutex_);");
+    cap.supervisorMethods.push_back("  const bool finished = drive_cv_.wait_for(lock, std::chrono::seconds(5), [this] { return !drive_running_; });");
+    cap.supervisorMethods.push_back("  if (!finished)");
+    cap.supervisorMethods.push_back("  {");
+    cap.supervisorMethods.push_back("    RCLCPP_ERROR(get_logger(), \"Timed out waiting for canceled goal to finish\");");
+    cap.supervisorMethods.push_back("    return Result::Failure;");
+    cap.supervisorMethods.push_back("  }\n");
+
+    cap.supervisorMethods.push_back("  current_goal_.reset();");
     cap.supervisorMethods.push_back("  return Result::Success;");
-    cap.supervisorMethods.push_back("}");
+    cap.supervisorMethods.push_back("}\n");
   }
 
   // Initial position
@@ -2410,8 +2477,13 @@ void RosEmitter::collectBatteryMonitor(Capability& cap)
                       "          \"/battery/state\", rclcpp::SensorDataQoS(), [this](sensor_msgs::msg::BatteryState::SharedPtr msg) {{\n"
                       "            if (!std::isfinite(msg->percentage) || msg->percentage < 0.0) return;\n"
                       "            if (!charging_) return;\n"
-                      "            if (msg->percentage >= 0.95 && {}_{})\n"
-                      "              {}_{}();\n\n"
+                      "            if (msg->percentage >= 0.4 && {}_{})\n"
+                      "            {{"
+                      "              charging_ = false;"
+                      "              {}_{}();\n"
+                      "              auto tmp = charging_sub_;\n"
+                      "              charging_sub_.reset();\n"
+                      "            }}"
                       "            RCLCPP_INFO(get_logger(), \" Battery during charge: %.1f%%\", msg->percentage * 100.0);\n"
                       "          }});",
                       cap.name, onReturn->name, cap.name, onReturn->name));
