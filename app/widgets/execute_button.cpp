@@ -105,8 +105,7 @@ void ExecuteButton::updateButtonText()
   if (option.name.isEmpty() || options.empty())
     option.name = DEFAULT_TEXT;
   // If an option was deleted, then we can just take the first option
-  else if (std::count_if(options.begin(), options.end(), [option](const OptionInfo& opt) { return opt.name == option.name && opt.id == option.id; }) <
-           1)
+  else if (std::count_if(options.begin(), options.end(), [option](const OptionInfo& opt) { return opt.name == option.name && opt.id == option.id; }) < 1)
     option = *options.begin();
 
   LOG_DEBUG("Setting option: {} {}", option.name, option.id);
@@ -130,11 +129,12 @@ void ExecuteButton::buildMenu(QMenu* menu, const OptionInfo& option, bool addSel
     emit executeRequested(option.id, !CLEAR_CACHE);
   });
 
-  auto* runFromScracthAction = menu->addAction(iconFromTheme("system-restart"), tr("Clear cache and Run"));
+  auto* runFromScracthAction = menu->addAction(iconFromTheme("system-restart-panel"), tr("Clear cache and Run"));
   connect(runFromScracthAction, &QAction::triggered, this, [this, option] {
     setCurrentOption(option);
     updateButtonText();
     emit executeRequested(option.id, CLEAR_CACHE);
+    2
   });
 
   if (addSelect)

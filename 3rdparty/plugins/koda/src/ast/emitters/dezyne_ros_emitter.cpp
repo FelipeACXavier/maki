@@ -1285,7 +1285,12 @@ std::string RosEmitter::emitMainCpp() const
       ss << "  {\n";
       const std::string indent = "    ";  // Hopefully the compiler optizes this away
       const std::string varName = lower(variable.name);
-      ss << emitRosValue(variable.type, variable.initial, varName, indent);
+      const std::string rosValue = emitRosValue(variable.type, variable.initial, varName, indent);
+      if (component.kind == ir::ComponentKind::Task)
+        ss << emitRosValue(variable.type, variable.initial, varName, indent);
+      else
+        ss << std::format("  {} {} = {};\n", cppType(variable.type), varName, emitExpression(variable.initial));
+
       ss << std::format("{}blackboard.set(\"{}\", {});\n", indent, *variable.slot, varName);
       ss << "  }\n";
     }

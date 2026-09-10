@@ -629,6 +629,17 @@
                   }
                 ]
               }
+            },
+            {
+              "id": "threshold",
+              "type": "real",
+              "default": {
+                "kind": "real",
+                "value": "0.25"
+              },
+              "help": {
+                "message": "Minimum level before the battery needs to be charged"
+              }
             }
           ],
           "events": [

@@ -190,6 +190,35 @@ Result<koda::PComponent> MakiToKoda::buildCapability(const INode& capability)
     }
   }
 
+  std::vector<koda::PVarDef> parameters;
+  for (const auto& prop : capability.getproperties())
+  {
+    if (prop->getid() == "name")
+      continue;
+
+    if (prop->getid() == "color")
+      continue;
+
+    if (prop->getid() == "calldef")
+      continue;
+
+    auto result = buildVarDef(prop.get());
+    if (!result)
+      return Result<koda::PComponent>::Failed("Failed to create parameter: {}", result.ErrorMessage());
+
+    parameters.push_back(result.Value());
+  }
+
+  if (!parameters.empty())
+  {
+    auto varsBlock = std::make_shared<koda::VarsBlock>();
+    varsBlock->vars.insert(varsBlock->vars.end(), parameters.begin(), parameters.end());
+
+    auto varsStatement = std::make_shared<koda::Statement>();
+    varsStatement->node = varsBlock;
+    c->statements.push_back(varsStatement);
+  }
+
   return c;
 }
 
