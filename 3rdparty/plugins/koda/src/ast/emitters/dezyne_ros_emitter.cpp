@@ -549,9 +549,17 @@ std::string RosEmitter::emitSupervisorHeader() const
       if (action.onAbort)
         ss << "  Result " << cap.name << action.onAbort->name << "(" << argDecls(action.onAbort->arguments) << ");\n";
     }
+
+    if (!cap.component)
+      continue;
+
+    for (const auto& param : cap.component->variables)
+      ss << std::format("  {} get_{}_{}();\n", cppType(param.type), cap.name, param.name);
+
+    ss << "\n";
   }
 
-  ss << "\n  std::function<void()> started;\n";
+  ss << "  std::function<void()> started;\n";
 
   for (const auto& cap : mCapabilities)
   {
@@ -604,11 +612,21 @@ std::string RosEmitter::emitSupervisorSource() const
 
   for (const auto& cap : mCapabilities)
   {
+    ss << std::format("  // {} =====================================================\n", cap.name);
     for (const auto& parameter : cap.parameters)
       ss << "  " << parameter << "\n";
 
+    for (const auto& param : cap.component->variables)
+    {
+      const std::string varName = std::format("{}_{}", cap.name, param.name);
+      ss << std::format("  {} {} = {};\n", cppType(param.type), varName, emitExpression(param.initial));
+      ss << std::format("  declare_parameter<{}>(\"{}.{}\", {});\n", cppType(param.type), cap.name, param.name, varName);
+    }
+
     for (const auto& ctor : cap.supervisorCtor)
       ss << "  " << ctor << "\n";
+
+    ss << "\n";
   }
 
   ss << "  timer_ = create_wall_timer(2s, std::bind(&" << mOptions.supervisorClass << "::start, this));\n";
@@ -633,8 +651,18 @@ std::string RosEmitter::emitSupervisorSource() const
 
   for (const auto& cap : mCapabilities)
   {
+    for (const auto& param : cap.component->variables)
+    {
+      ss << std::format("{} {}::get_{}_{}()\n", cppType(param.type), mOptions.supervisorClass, cap.name, param.name);
+      ss << std::format("{{\n"
+                        "  return get_parameter(\"{}.{}\").as_{}();\n"
+                        "}}\n",
+                        cap.name, param.name, cppType(param.type));
+    }
+
     for (const auto& line : cap.supervisorMethods)
       ss << line << "\n";
+
     ss << "\n";
   }
 
@@ -936,6 +964,54 @@ std::string RosEmitter::emitExpression(const ir::PExpression& expression) const
       return std::format("\"{}\"", literal->text);
 
     return literal->text;
+  }
+  else if (const auto* binary = std::get_if<ir::Expression::Binary>(&expression->value); binary)
+  {
+    auto lhs = emitExpression(binary->lhs);
+    auto rhs = emitExpression(binary->rhs);
+    return std::format("{} {} {}", lhs, binary->op, rhs);
+  }
+  else if (const auto* list = std::get_if<ir::Expression::ListLiteral>(&expression->value); list)
+  {
+    std::string result = "[";
+    bool first = true;
+    for (const auto& value : list->fields)
+    {
+      if (!first)
+        result += ", ";
+      result += emitExpression(value);
+      first = false;
+    }
+
+    return result + "]";
+  }
+  else if (const auto* map = std::get_if<ir::Expression::MapLiteral>(&expression->value); map)
+  {
+    std::string result = "{";
+    bool first = true;
+    for (const auto& field : map->fields)
+    {
+      if (!first)
+        result += ", ";
+      result += std::format("{{{}, {}}}", emitExpression(field.key), emitExpression(field.value));
+      first = false;
+    }
+
+    return result + "}";
+  }
+  else if (const auto* record = std::get_if<ir::Expression::RecordLiteral>(&expression->value); record)
+  {
+    std::string result = "{";
+    bool first = true;
+    for (const auto& field : record->fields)
+    {
+      if (!first)
+        result += ", ";
+      result += std::format(".{} = {}", field.name, emitExpression(field.value));
+      first = false;
+    }
+
+    return result + "}";
   }
   else if (const auto* unary = std::get_if<ir::Expression::Unary>(&expression->value); unary)
   {
@@ -1435,7 +1511,6 @@ void RosEmitter::collectDrive(Capability& cap)
 
   // ======================================================================================================
   // Includes - These are the necessary headers
-  cap.supervisorIncludes.push_back("// Drive includes ==========================================================================");
   cap.supervisorIncludes.push_back("#include <geometry_msgs/msg/twist.hpp>");
   cap.supervisorIncludes.push_back("#include <geometry_msgs/msg/pose_stamped.hpp>");
   cap.supervisorIncludes.push_back("#include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>");
@@ -1448,7 +1523,6 @@ void RosEmitter::collectDrive(Capability& cap)
 
   // ======================================================================================================
   // Members - These are the members needed for this capability
-  cap.supervisorMembers.push_back("// Drive members ==========================================================================");
   cap.supervisorMembers.push_back("// Navigation goal stuff");
   cap.supervisorMembers.push_back("rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::SharedPtr nav_client_;");
   cap.supervisorMembers.push_back("rclcpp_action::ClientGoalHandle<nav2_msgs::action::NavigateToPose>::SharedPtr current_goal_;");
@@ -1464,7 +1538,6 @@ void RosEmitter::collectDrive(Capability& cap)
 
   // ======================================================================================================
   // Constructor - These are the actions necessary for the correct construction of this capability
-  cap.supervisorCtor.push_back("// Drive ==========================================================================");
   cap.supervisorCtor.push_back("nav_client_ = ");
   cap.supervisorCtor.push_back(
       std::format("    rclcpp_action::create_client<nav2_msgs::action::NavigateToPose>(this, \"navigate_to_pose\", {});", mOptions.callbackGroup));
@@ -1477,7 +1550,6 @@ void RosEmitter::collectDrive(Capability& cap)
 
   // ======================================================================================================
   // Parameters - These are the paramaters needed for this capability
-  cap.parameters.push_back("  // Drive ========================================================================== \n");
   cap.parameters.push_back("declare_parameter<bool>(\"from_start\", true);");
   cap.parameters.push_back("declare_parameter<std::string>(\"map_frame\", \"map\");");
   cap.parameters.push_back("declare_parameter<double>(\"initial_x\", 0.0);");
@@ -1502,7 +1574,6 @@ void RosEmitter::collectDrive(Capability& cap)
   // ======================================================================================================
   // Methods - Here we add any methods that this capability might add to the supervisor
   // First the trigger
-  cap.supervisorMethods.push_back("// Drive ========================================================================== ");
   cap.supervisorMethods.push_back(std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, trigger->name, argDecls(trigger->arguments)));
   cap.supervisorMethods.push_back("{");
   cap.supervisorMethods.push_back("  auto frame_id = get_parameter(\"map_frame\").as_string();");
@@ -1689,7 +1760,6 @@ void RosEmitter::collectApproach(Capability& cap)
   // ======================================================================================================
   // Constructor - These are the actions necessary for the correct construction of this capability
   {
-    cap.supervisorCtor.push_back("// Approach ===============================================================");
     cap.supervisorCtor.push_back("vel_pub_ = create_publisher<geometry_msgs::msg::Twist>(\"cmd_vel\", 10);");
     cap.supervisorCtor.push_back("odom_sub_ = create_subscription<nav_msgs::msg::Odometry>(");
     cap.supervisorCtor.push_back("    \"/odom\", rclcpp::QoS(50),");
@@ -1988,7 +2058,6 @@ void RosEmitter::collectObjectDetection(Capability& cap)
   // ======================================================================================================
   // Includes - These are the necessary headers
   {
-    cap.supervisorIncludes.push_back("// ArucoVision ========================================================================== ");
     cap.supervisorIncludes.push_back("#include <opencv2/aruco.hpp>");
     cap.supervisorIncludes.push_back("#include <opencv2/opencv.hpp>");
     cap.supervisorIncludes.push_back("#include <sensor_msgs/msg/image.hpp>");
@@ -2000,7 +2069,6 @@ void RosEmitter::collectObjectDetection(Capability& cap)
   // ======================================================================================================
   // Members - These are the members needed for this capability
   {
-    cap.supervisorMembers.push_back("// ArucoVision ========================================================================== ");
     cap.supervisorMembers.push_back("rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_;");
     cap.supervisorMembers.push_back("rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr cam_info_sub_;");
 
@@ -2023,7 +2091,6 @@ void RosEmitter::collectObjectDetection(Capability& cap)
   // ======================================================================================================
   // Constructor - These are the actions necessary for the correct construction of this capability
   {
-    cap.supervisorCtor.push_back("// ArucoVision ========================================================================== ");
     cap.supervisorCtor.push_back("aruco_dict_ = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50);");
     cap.supervisorCtor.push_back("detector_params_ = cv::aruco::DetectorParameters::create();");
     cap.supervisorCtor.push_back("image_sub_ = create_subscription<sensor_msgs::msg::Image>(");
@@ -2048,7 +2115,6 @@ void RosEmitter::collectObjectDetection(Capability& cap)
   // ======================================================================================================
   // Parameters - These are the paramaters needed for this capability
   {
-    cap.parameters.push_back("// ArucoVision ========================================================================== ");
     cap.parameters.push_back("declare_parameter<std::string>(\"camera_topic\", \"/pi_camera/image_raw\");");
     cap.parameters.push_back("declare_parameter<std::string>(\"camera_frame\", \"camera_link\");");
     cap.parameters.push_back("declare_parameter<int>(\"aruco_id\", 23);");
@@ -2067,7 +2133,6 @@ void RosEmitter::collectObjectDetection(Capability& cap)
   // Methods - Here we add any methods that this capability might add to the supervisor
   // Trigger
   {
-    cap.supervisorMethods.push_back("// ArucoVision ========================================================================== ");
     cap.supervisorMethods.push_back(std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, trigger->name, argDecls(trigger->arguments)));
     cap.supervisorMethods.push_back("{");
     cap.supervisorMethods.push_back(std::format("  if ({}.joinable())", mOptions.taskThread));
@@ -2192,13 +2257,13 @@ void RosEmitter::collectGrip(Capability& cap)
 
   // ======================================================================================================
   // Includes - These are the necessary headers
-  cap.supervisorIncludes.push_back("// Grip ========================================================================== ");
+
   cap.supervisorIncludes.push_back("#include <moveit/move_group_interface/move_group_interface.h>");
   cap.supervisorIncludes.push_back("#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>");
 
   // ======================================================================================================
   // Members - These are the members needed for this capability
-  cap.supervisorMembers.push_back("// Grip ========================================================================== ");
+
   cap.supervisorMembers.push_back("std::shared_ptr<moveit::planning_interface::MoveGroupInterface> arm_mgi_;");
   cap.supervisorMembers.push_back("std::shared_ptr<moveit::planning_interface::MoveGroupInterface> gripper_mgi_;");
   cap.supervisorMembers.push_back("bool moveGripperHome();\n");
@@ -2209,7 +2274,7 @@ void RosEmitter::collectGrip(Capability& cap)
 
   // ======================================================================================================
   // Parameters - These are the paramaters needed for this capability
-  cap.parameters.push_back("// Grip ========================================================================== ");
+
   cap.parameters.push_back("declare_parameter<std::vector<double>>(\"target_offset_xyz\", {0.18, 0.0, 0.2});");
   cap.parameters.push_back("declare_parameter<std::vector<double>>(\"target_offset_rpy\", {0.0, 0.0, 0.03});");
   cap.parameters.push_back("declare_parameter<std::vector<double>>(\"drive_pose\", {-0.068, 0.0, 0.26});");
@@ -2390,14 +2455,14 @@ void RosEmitter::collectBatteryMonitor(Capability& cap)
 
   // ======================================================================================================
   // Includes - These are the necessary headers
-  cap.supervisorIncludes.push_back("// BatteryMonitoring ========================================================================== ");
+
   cap.supervisorIncludes.push_back("#include <sensor_msgs/msg/battery_state.hpp>");
   cap.supervisorIncludes.push_back("#include <std_msgs/msg/bool.hpp>");
   cap.supervisorIncludes.push_back("#include <geometry_msgs/msg/pose_stamped.hpp>");
 
   // ======================================================================================================
   // Members - These are the members needed for this capability
-  cap.supervisorMembers.push_back("// BatteryMonitoring ========================================================================== ");
+
   cap.supervisorMembers.push_back("rclcpp::Subscription<sensor_msgs::msg::BatteryState>::SharedPtr battery_sub_;");
   cap.supervisorMembers.push_back("rclcpp::Subscription<sensor_msgs::msg::BatteryState>::SharedPtr charging_sub_;");
   cap.supervisorMembers.push_back("rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr charging_pub_;");
@@ -2409,11 +2474,10 @@ void RosEmitter::collectBatteryMonitor(Capability& cap)
 
   // ======================================================================================================
   // Parameters - These are the paramaters needed for this capability
-  // cap.parameters.push_back("// BatteryMonitoring ========================================================================== ");
 
   // ======================================================================================================
   // Constructor - These are the actions necessary for the correct construction of this capability
-  cap.supervisorCtor.push_back("// BatteryMonitoring ==========================================================================");
+
   cap.supervisorCtor.push_back("charging_pub_ = create_publisher<std_msgs::msg::Bool>(\"/battery/charging_cmd\", 10);");
 
   for (const auto& action : cap.actions)

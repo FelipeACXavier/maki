@@ -172,6 +172,10 @@ VoidResult SemanticAnalyzer::analyzeStatement(const PStatement& statement, Symbo
       if (!symbol)
         return VoidResult::Failed(std::format("Unknown variable '{}'", var->name));
 
+      auto component = mSymbols.get(owner);
+      if (!component)
+        return VoidResult::Failed(std::format("Parameter with no owner '{}'", var->name));
+
       auto init = analyzeExpr(var->init, owner, symbol->type);
       if (!init.IsSuccess())
         return VoidResult::Failed("Analysing parameter definition: {}", init.ErrorMessage());
@@ -179,6 +183,9 @@ VoidResult SemanticAnalyzer::analyzeStatement(const PStatement& statement, Symbo
       if (!compatible(symbol->type, init.Value()))
         return VoidResult::Failed(std::format("Initializer for '{}' has incompatible type at {}", var->name, var->span.toString()));
 
+      // Let's also store the capability data in the blackboard for now, in the future this might hellp us access
+      // the parameters for data operations
+      LOG_TRACE("Storing task parameter in blackboard");
       const auto slot = mBlackboard.declare(std::to_string(*symbolId), var->name, symbol->type, "mission");
       mBlackboard.makeAvailable(slot);
 

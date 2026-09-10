@@ -76,6 +76,10 @@ VoidResult DeclarationPass::declareStatement(const PStatement& statement, Symbol
   {
     for (const auto& var : (*block)->vars)
     {
+      auto capability = mSymbolRegistry.get(owner);
+      if (!capability)
+        return VoidResult::Failed("No owner for variable: {}", var->name);
+
       auto result = mSymbolRegistry.declare(SymbolKind::Variable, var->name, var->varType, var->span, owner);
       if (!result.IsSuccess())
         return VoidResult::Failed(result.ErrorMessage());
@@ -94,8 +98,7 @@ VoidResult DeclarationPass::declareStatement(const PStatement& statement, Symbol
   {
     for (const auto& flow : (*block)->flows)
     {
-      auto symbolId =
-          mSymbolRegistry.declare(SymbolKind::Flow, flow->name, types::TypeReference::primitive(types::PrimitiveKind::Void), flow->span, owner);
+      auto symbolId = mSymbolRegistry.declare(SymbolKind::Flow, flow->name, types::TypeReference::primitive(types::PrimitiveKind::Void), flow->span, owner);
       if (!symbolId.IsSuccess())
         return VoidResult::Failed(symbolId.ErrorMessage());
 
@@ -112,8 +115,8 @@ VoidResult DeclarationPass::declareStatement(const PStatement& statement, Symbol
       for (const auto& arg : flow->args)  // This is an awful name, by the way...
       {
         // No need for arg->a since we dont use types in flow arguments
-        auto argId = mSymbolRegistry.declare(SymbolKind::Argument, arg->b, types::TypeReference::primitive(types::PrimitiveKind::String), arg->span,
-                                             symbolId.Value());
+        auto argId =
+            mSymbolRegistry.declare(SymbolKind::Argument, arg->b, types::TypeReference::primitive(types::PrimitiveKind::String), arg->span, symbolId.Value());
         if (!argId.IsSuccess())
           return VoidResult::Failed(argId.ErrorMessage());
       }
@@ -125,8 +128,7 @@ VoidResult DeclarationPass::declareStatement(const PStatement& statement, Symbol
   }
   else if (auto action = std::get_if<PActionDef>(&statement->node); action && *action)
   {
-    auto actionId =
-        mSymbolRegistry.declare(SymbolKind::Action, (*action)->label1, types::TypeReference::named((*action)->toString()), (*action)->span, owner);
+    auto actionId = mSymbolRegistry.declare(SymbolKind::Action, (*action)->label1, types::TypeReference::named((*action)->toString()), (*action)->span, owner);
     if (!actionId)
       return actionId;
 
