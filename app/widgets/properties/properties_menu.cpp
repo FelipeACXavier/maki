@@ -627,7 +627,6 @@ Result<QTableWidget*> PropertiesMenu::loadEventTable(NodeItem* node)
   eventsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
   eventsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
   eventsTable->setSelectionMode(QAbstractItemView::ExtendedSelection);
-  eventsTable->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
   eventsTable->setHorizontalHeaderLabels({"Name", "Type", "Return", "Arguments"});
   eventsTable->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 

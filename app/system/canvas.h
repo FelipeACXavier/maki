@@ -223,6 +223,11 @@ public:
    */
   void alignNodes(const QList<Types::AlignmentNode>& items, Types::AlignmentMode mode, Types::AlignmentDirection direction, bool useGiven);
 
+  void alignSelectedNodes(Types::AlignmentMode mode);
+  void distributeSelectedNodes();
+  void distributeNodesVertically(const QList<Types::AlignmentNode>& nodes);
+  void distributeNodesHorizontally(const QList<Types::AlignmentNode>& nodes);
+
   std::shared_ptr<EdgeRouter> router() const;
 
   virtual void suggestCapability(NodeItem* node);

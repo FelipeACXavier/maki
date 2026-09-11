@@ -28,16 +28,17 @@ MissionParameterWidget::MissionParameterWidget(QWidget* parent)
   // Table
   mTable = new QTableWidget(this);
   mTable->setColumnCount(4);
+  mTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+  mTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+  mTable->setSelectionMode(QAbstractItemView::ExtendedSelection);
   mTable->setHorizontalHeaderLabels({"Name", "Type", "Value", ""});
+  mTable->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
   mTable->verticalHeader()->hide();
   mTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Interactive);
   mTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
   mTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
   mTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
-
-  mTable->setSelectionBehavior(QAbstractItemView::SelectRows);
-  mTable->setSelectionMode(QAbstractItemView::ExtendedSelection);
 
   // ------------------------------------------------------
   // Separator

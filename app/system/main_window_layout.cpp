@@ -311,7 +311,7 @@ void MainWindowLayout::buildCentralPanel()
     mInfoText->setWordWrapMode(QTextOption::WrapMode::WordWrap);
     mInfoText->setFont(theme.fontRegular);
     mInfoText->setHtml(createDefaultMessage());
-    mInfoText->setFocusPolicy(Qt::FocusPolicy::NoFocus);
+    mInfoText->setFocusPolicy(Qt::FocusPolicy::ClickFocus);
 
     infoLayout->addWidget(mInfoText);
 
@@ -646,6 +646,14 @@ void MainWindowLayout::buildMenuBar()
 
   mActionAutoRoute = new QAction(tr("Auto-route"), this);
   diagram->addAction(mActionAutoRoute);
+
+  diagram->addSeparator();
+  mActionAlignV = new QAction(iconFromTheme("align-vertical-center"), tr("Align nodes vertically"), this);
+  diagram->addAction(mActionAlignV);
+  mActionAlignH = new QAction(iconFromTheme("align-horizontal-center"), tr("Align nodes horizontally"), this);
+  diagram->addAction(mActionAlignH);
+  mActionDistribute = new QAction(iconFromTheme("distribute-horizontal"), tr("Distribute nodes"), this);
+  diagram->addAction(mActionDistribute);
 
   // ----------------------------------------------------------
   // Tools menu

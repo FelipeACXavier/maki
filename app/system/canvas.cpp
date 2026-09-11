@@ -470,29 +470,28 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 void Canvas::createAlignMenu(QMenu* alignMenu, const QList<Types::AlignmentNode>& items)
 {
   // QAction* distribute = alignMenu->addAction("Distribute");
-  QAction* alignHCenter = alignMenu->addAction(iconFromTheme("align-horizontal-center"), "Align H center");
-  connect(alignHCenter, &QAction::triggered,
-          [this, items]() { requestAlignNodes(items, Types::AlignmentMode::HORIZONTAL, Types::AlignmentDirection::CENTER); });
-
-  QAction* alignLeft = alignMenu->addAction(iconFromTheme("align-horizontal-left"), "Align left");
-  connect(alignLeft, &QAction::triggered,
-          [this, items]() { requestAlignNodes(items, Types::AlignmentMode::HORIZONTAL, Types::AlignmentDirection::START); });
-
-  QAction* alignRight = alignMenu->addAction(iconFromTheme("align-horizontal-right"), "Align right");
-  connect(alignRight, &QAction::triggered,
-          [this, items]() { requestAlignNodes(items, Types::AlignmentMode::HORIZONTAL, Types::AlignmentDirection::END); });
-
   QAction* alignVCenter = alignMenu->addAction(iconFromTheme("align-vertical-center"), "Align V center");
-  connect(alignVCenter, &QAction::triggered,
+  connect(alignVCenter, &QAction::triggered, this,
           [this, items]() { requestAlignNodes(items, Types::AlignmentMode::VERTICAL, Types::AlignmentDirection::CENTER); });
 
   QAction* alignTop = alignMenu->addAction(iconFromTheme("align-vertical-top"), "Align top");
-  connect(alignTop, &QAction::triggered,
-          [this, items]() { requestAlignNodes(items, Types::AlignmentMode::VERTICAL, Types::AlignmentDirection::START); });
+  connect(alignTop, &QAction::triggered, this, [this, items]() { requestAlignNodes(items, Types::AlignmentMode::VERTICAL, Types::AlignmentDirection::START); });
 
   QAction* alignBottom = alignMenu->addAction(iconFromTheme("align-vertical-bottom"), "Align bottom");
-  connect(alignBottom, &QAction::triggered,
+  connect(alignBottom, &QAction::triggered, this,
           [this, items]() { requestAlignNodes(items, Types::AlignmentMode::VERTICAL, Types::AlignmentDirection::END); });
+
+  QAction* alignHCenter = alignMenu->addAction(iconFromTheme("align-horizontal-center"), "Align H center");
+  connect(alignHCenter, &QAction::triggered, this,
+          [this, items]() { requestAlignNodes(items, Types::AlignmentMode::HORIZONTAL, Types::AlignmentDirection::CENTER); });
+
+  QAction* alignLeft = alignMenu->addAction(iconFromTheme("align-horizontal-left"), "Align left");
+  connect(alignLeft, &QAction::triggered, this,
+          [this, items]() { requestAlignNodes(items, Types::AlignmentMode::HORIZONTAL, Types::AlignmentDirection::START); });
+
+  QAction* alignRight = alignMenu->addAction(iconFromTheme("align-horizontal-right"), "Align right");
+  connect(alignRight, &QAction::triggered, this,
+          [this, items]() { requestAlignNodes(items, Types::AlignmentMode::HORIZONTAL, Types::AlignmentDirection::END); });
 
   alignMenu->setIcon(iconFromTheme("align-none"));
   alignMenu->setEnabled(items.size() > 1);
@@ -612,6 +611,118 @@ void Canvas::alignNodesVertically(const QList<Types::AlignmentNode>& nodes, Type
       node->updatePosition(QPointF(p.x(), refY - node->boundingRect().height()));
     else
       node->updatePosition(QPointF(p.x(), refY - node->boundingRect().height() / 2));
+  }
+}
+
+void Canvas::alignSelectedNodes(Types::AlignmentMode mode)
+{
+  QList<NodeItem*> items = selectedNodes();
+  if (items.isEmpty())
+    return;
+
+  QList<Types::AlignmentNode> itemIds = {};
+  for (const auto node : items)
+    if (node != nullptr)
+      itemIds.append(Types::AlignmentNode{node->id(), node->pos()});
+
+  requestAlignNodes(itemIds, mode, Types::AlignmentDirection::CENTER);
+}
+
+void Canvas::distributeSelectedNodes()
+{
+  QList<NodeItem*> items = selectedNodes();
+  if (items.isEmpty())
+    return;
+
+  QList<Types::AlignmentNode> itemIds = {};
+  for (const auto node : items)
+    if (node != nullptr)
+      itemIds.append(Types::AlignmentNode{node->id(), node->pos()});
+
+  distributeNodesHorizontally(itemIds);
+  distributeNodesVertically(itemIds);
+}
+
+void Canvas::distributeNodesHorizontally(const QList<Types::AlignmentNode>& nodes)
+{
+  if (nodes.size() < 3)
+    return;
+
+  QList<NodeItem*> items;
+  items.reserve(nodes.size());
+
+  for (const auto& item : nodes)
+    if (auto* node = findNodeWithId(item.id))
+      items.append(node);
+
+  if (items.size() < 3)
+    return;
+
+  // Sort by current visual position.
+  std::sort(items.begin(), items.end(), [](const NodeItem* a, const NodeItem* b) { return a->pos().x() < b->pos().x(); });
+
+  NodeItem* first = items.first();
+  NodeItem* last = items.last();
+
+  const qreal start = first->pos().x();
+  const qreal end = last->pos().x() + last->boundingRect().width();
+
+  qreal totalWidth = 0.0;
+  for (const auto* node : items)
+    totalWidth += node->boundingRect().width();
+
+  const qreal availableSpace = end - start - totalWidth;
+  const qreal spacing = availableSpace / (items.size() - 1);
+
+  qreal x = start;
+
+  for (auto* node : items)
+  {
+    const QPointF p = node->pos();
+    node->updatePosition(QPointF(x, p.y()));
+
+    x += node->boundingRect().width() + spacing;
+  }
+}
+
+void Canvas::distributeNodesVertically(const QList<Types::AlignmentNode>& nodes)
+{
+  if (nodes.size() < 3)
+    return;
+
+  QList<NodeItem*> items;
+  items.reserve(nodes.size());
+
+  for (const auto& item : nodes)
+    if (auto* node = findNodeWithId(item.id))
+      items.append(node);
+
+  if (items.size() < 3)
+    return;
+
+  std::sort(items.begin(), items.end(), [](const NodeItem* a, const NodeItem* b) { return a->pos().y() < b->pos().y(); });
+
+  NodeItem* first = items.first();
+  NodeItem* last = items.last();
+
+  const qreal start = first->pos().y();
+  const qreal end = last->pos().y() + last->boundingRect().height();
+
+  qreal totalHeight = 0.0;
+  for (const auto* node : items)
+    totalHeight += node->boundingRect().height();
+
+  const qreal availableSpace = end - start - totalHeight;
+  const qreal spacing = availableSpace / (items.size() - 1);
+
+  qreal y = start;
+
+  for (auto* node : items)
+  {
+    const QPointF p = node->pos();
+    node->updatePosition(QPointF(p.x(), y));
+
+    y += node->boundingRect().height() + spacing;
   }
 }
 
@@ -963,9 +1074,9 @@ void Canvas::pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode
     if (parentNode)
       newParentPosition = parentNode->saveInfo().getposition();
 
-    auto node = createNode(
-        NodeCreation::Pasting, infoPtr,
-        absolute ? mousePosition - copy.posRelativeToMouse : newParentPosition + (copy.info.getposition() - copy.posRelativeToMouse), parentNode);
+    auto node =
+        createNode(NodeCreation::Pasting, infoPtr,
+                   absolute ? mousePosition - copy.posRelativeToMouse : newParentPosition + (copy.info.getposition() - copy.posRelativeToMouse), parentNode);
 
     QList<CopiedNode> children;
     for (const auto& child : copy.info.getchildren())

@@ -134,7 +134,6 @@ void ExecuteButton::buildMenu(QMenu* menu, const OptionInfo& option, bool addSel
     setCurrentOption(option);
     updateButtonText();
     emit executeRequested(option.id, CLEAR_CACHE);
-    2
   });
 
   if (addSelect)

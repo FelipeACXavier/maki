@@ -18,7 +18,7 @@ ProcessTab::ProcessTab(QWidget* parent)
   mOutput = new QTextBrowser(this);
   mOutput->setReadOnly(true);
   mOutput->setWordWrapMode(QTextOption::WordWrap);
-  mOutput->setFocusPolicy(Qt::FocusPolicy::NoFocus);
+  mOutput->setFocusPolicy(Qt::FocusPolicy::ClickFocus);
 
   auto* layout = new QVBoxLayout(this);
   layout->setContentsMargins(0, 0, 0, 0);

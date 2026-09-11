@@ -90,8 +90,8 @@ VoidResult MainWindow::start()
   logging::gSilentLog = false;
   logging::gMinLogLevel = logging::LogLevel::Debugging;
   logging::gSourceName = Config::APPLICATION_NAME.toStdString();
-  logging::gLogToStream = [this](std::chrono::system_clock::time_point ts, logging::LogLevel level, const std::string& source,
-                                 const std::string& filename, const uint32_t& line, const std::string& message) {
+  logging::gLogToStream = [this](std::chrono::system_clock::time_point ts, logging::LogLevel level, const std::string& source, const std::string& filename,
+                                 const uint32_t& line, const std::string& message) {
     if (mLogTable)
       mLogTable->append(level, source, filename, line, message);
   };
@@ -428,6 +428,21 @@ void MainWindow::bind()
       canvas()->autoRoute();
   });
   mActionAutoRoute->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_L));
+  connect(mActionDistribute, &QAction::triggered, this, [this] {
+    if (canvas())
+      canvas()->distributeSelectedNodes();
+  });
+  mActionDistribute->setShortcut(QKeySequence(Qt::ALT | Qt::Key_D));
+  connect(mActionAlignH, &QAction::triggered, this, [this] {
+    if (canvas())
+      canvas()->alignSelectedNodes(Types::AlignmentMode::HORIZONTAL);
+  });
+  mActionAlignH->setShortcut(QKeySequence(Qt::ALT | Qt::Key_H));
+  connect(mActionAlignV, &QAction::triggered, this, [this] {
+    if (canvas())
+      canvas()->alignSelectedNodes(Types::AlignmentMode::VERTICAL);
+  });
+  mActionAlignV->setShortcut(QKeySequence(Qt::ALT | Qt::Key_V));
 
   // Setting actions =============================================================
   connect(mOpenAllSettings, &QAction::triggered, this, [this] {
@@ -449,12 +464,11 @@ void MainWindow::bind()
   connect(rootCanvas(), &Canvas::flowRemoved, this, &MainWindow::onFlowRemoved);
 
   connect(mPropertiesMenu, &PropertiesMenu::flowSelected, rootCanvas(), &Canvas::onFlowSelected);
-  connect(mHostServices, &HostServices::onFocusOnNode, this,
-          [this](const QString& nodeId, const QString& flowId, const maki::FocusProperties& properties) {
-            rootCanvas()->onFocusNode(flowId, nodeId, properties);
-            if (flowId.isEmpty())
-              mCanvasPanel->setCurrentIndex(0);
-          });
+  connect(mHostServices, &HostServices::onFocusOnNode, this, [this](const QString& nodeId, const QString& flowId, const maki::FocusProperties& properties) {
+    rootCanvas()->onFocusNode(flowId, nodeId, properties);
+    if (flowId.isEmpty())
+      mCanvasPanel->setCurrentIndex(0);
+  });
 
   connect(mSystemMenu, &SystemMenu::editPipeline, this, &MainWindow::onActionEditPipeline);
   connect(mSystemMenu, &SystemMenu::removePipeline, this, &MainWindow::onActionDeletePipeline);
@@ -617,6 +631,7 @@ void MainWindow::unbindCanvas()
 
 void MainWindow::bindShortcuts()
 {
+  // Copy
   new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_C), this, [] {
     QWidget* fw = QApplication::focusWidget();
     if (!fw)
@@ -641,6 +656,7 @@ void MainWindow::bindShortcuts()
       return;
     }
   });
+  // Paste
   new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_V), this, [this] {
     QWidget* fw = QApplication::focusWidget();
     if (!fw)
@@ -671,6 +687,7 @@ void MainWindow::bindShortcuts()
       return;
     }
   });
+  // Focus shift backward
   new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Tab), this, [this] {
     QWidget* fw = QApplication::focusWidget();
     if (!fw)
@@ -686,8 +703,8 @@ void MainWindow::bindShortcuts()
         return;
       }
     }
-    else if (auto* widget = qobject_cast<oclero::qlementine::AbstractItemListWidget*>(
-                 findAncestor(fw, &oclero::qlementine::AbstractItemListWidget::staticMetaObject)))
+    else if (auto* widget =
+                 qobject_cast<oclero::qlementine::AbstractItemListWidget*>(findAncestor(fw, &oclero::qlementine::AbstractItemListWidget::staticMetaObject)))
     {
       if (widget == mBottomNavigation)
       {
@@ -706,6 +723,7 @@ void MainWindow::bindShortcuts()
       }
     }
   });
+  // Focus shift forward
   new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Tab), this, [this] {
     QWidget* fw = QApplication::focusWidget();
     if (!fw)
@@ -721,8 +739,8 @@ void MainWindow::bindShortcuts()
         return;
       }
     }
-    else if (auto* widget = qobject_cast<oclero::qlementine::AbstractItemListWidget*>(
-                 findAncestor(fw, &oclero::qlementine::AbstractItemListWidget::staticMetaObject)))
+    else if (auto* widget =
+                 qobject_cast<oclero::qlementine::AbstractItemListWidget*>(findAncestor(fw, &oclero::qlementine::AbstractItemListWidget::staticMetaObject)))
     {
       if (widget == mBottomNavigation)
       {
@@ -741,14 +759,17 @@ void MainWindow::bindShortcuts()
       }
     }
   });
+  // Delete
   new QShortcut(QKeySequence(Qt::Key_Delete), this, [this] {
     if (canvas())
       canvas()->deleteSelectedItems();
   });
+  // Reload plugins
   new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::ALT | Qt::Key_R), this, [this] {
     if (mPluginManager && mPluginManager->currentPlugin())
       LOG_WARN_ON_FAILURE(mPluginManager->reloadPlugin(mPluginManager->currentPlugin()->languageName(), mHostServices));
   });
+  // Add new mission parameter
   new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_P), this, [this] {
     if (mBottomNavigation)
       mBottomNavigation->setCurrentIndex(2);
@@ -756,6 +777,7 @@ void MainWindow::bindShortcuts()
     if (mMissionParameters)
       mMissionParameters->addParameter();
   });
+  // Add new record type
   new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_R), this, [this] {
     if (mBottomNavigation)
       mBottomNavigation->setCurrentIndex(1);
@@ -766,6 +788,7 @@ void MainWindow::bindShortcuts()
       mTypeEditor->focusCurrentEditor();
     }
   });
+  // Add new alias type
   new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_A), this, [this] {
     if (mBottomNavigation)
       mBottomNavigation->setCurrentIndex(1);
@@ -776,6 +799,7 @@ void MainWindow::bindShortcuts()
       mTypeEditor->focusCurrentEditor();
     }
   });
+  // Add new enum type
   new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_E), this, [this] {
     if (mBottomNavigation)
       mBottomNavigation->setCurrentIndex(1);
