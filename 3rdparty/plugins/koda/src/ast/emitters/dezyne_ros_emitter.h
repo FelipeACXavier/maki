@@ -163,6 +163,8 @@ private:
   std::string emitExpression(const ir::PExpression& expression) const;
   std::string cppType(const types::TypeReference& type) const;
 
+  std::pair<std::string, std::string> createThread(const std::string& id) const;
+
   std::string argDecls(const std::vector<ir::Argument>& args) const;
   std::string argNames(const std::vector<ir::Argument>& args, bool startWithComma = false) const;
   std::string callbackType(const ir::Event& event) const;

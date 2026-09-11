@@ -206,22 +206,6 @@
                   }
                 ]
               }
-            },
-            {
-              "id": "arguments",
-              "type": "void",
-              "default": {
-                "kind": "list",
-                "value": [
-                  {
-                    "kind": "record",
-                    "value": {
-                      "id": "grip",
-                      "type": "bool"
-                    }
-                  }
-                ]
-              }
             }
           ],
           "events": [
@@ -319,10 +303,6 @@
                   }
                 ]
               }
-            },
-            {
-              "id": "marker id",
-              "type": "bytes"
             }
           ],
           "events": [
@@ -508,16 +488,6 @@
                   }
                 ]
               }
-            },
-            {
-              "id": "arguments",
-              "type": "void",
-              "default": [
-                {
-                  "id": "approach",
-                  "type": "bool"
-                }
-              ]
             }
           ],
           "events": [
@@ -528,8 +498,12 @@
               "modifiable": false,
               "arguments": [
                 {
-                  "id": "approach",
-                  "type": "bool"
+                  "type": "robotics::ObjectPose",
+                  "id": "pose"
+                },
+                {
+                  "type": "bool",
+                  "id": "approach"
                 }
               ],
               "linksTo": 0

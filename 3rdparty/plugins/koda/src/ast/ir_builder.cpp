@@ -447,7 +447,7 @@ Result<ir::Call> IRBuilder::buildCall(const PEventCall& call, SymbolId owner) co
     out.target = resolved.target;
   }
 
-  for (const auto& arg : call->args)
+  for (const auto& arg : resolved.argExpressions)
   {
     auto e = buildExpr(arg, owner);
     if (!e.IsSuccess())
@@ -479,7 +479,7 @@ Result<ir::PExpression> IRBuilder::buildExpr(const PExpr& expr, SymbolId owner) 
   else if (auto p = std::get_if<PFloat>(&expr->v); p && *p)
     out->value = ir::Expression::Literal{std::to_string((*p)->value), types::TypeReference::createReal()};
   else if (auto p = std::get_if<PBool>(&expr->v); p && *p)
-    out->value = ir::Expression::Literal{std::to_string((*p)->value), types::TypeReference::createBool()};
+    out->value = ir::Expression::Literal{(*p)->value ? "true" : "false", types::TypeReference::createBool()};
   else if (auto p = std::get_if<PId>(&expr->v); p && *p)
   {
     if ((*p)->value == Types::KODA_INFERRED)

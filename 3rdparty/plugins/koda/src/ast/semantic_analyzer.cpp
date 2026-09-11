@@ -361,6 +361,30 @@ VoidResult SemanticAnalyzer::analyzeStrategy(const PStrategy& strategy, SymbolId
   return VoidResult();
 }
 
+bool SemanticAnalyzer::isVisible(uint32_t producerFlow, uint32_t consumerFlow) const
+{
+  // Same flow.
+  if (producerFlow == consumerFlow)
+    return true;
+
+  // Walk upward from the consumer.
+  auto current = consumerFlow;
+
+  while (current != InvalidSymbol)
+  {
+    const auto* symbol = mSymbols.get(current);
+    if (!symbol)
+      break;
+
+    current = symbol->owner;
+
+    if (current == producerFlow)
+      return true;
+  }
+
+  return false;
+}
+
 Result<ResolvedArgumentSource> SemanticAnalyzer::resolveArgumentSource(const PExpr& expr, const types::TypeReference& expectedType, SymbolId owner)
 {
   if (!expr)
@@ -371,7 +395,7 @@ Result<ResolvedArgumentSource> SemanticAnalyzer::resolveArgumentSource(const PEx
   {
     // In case we have the default placeholder
     if ((*idExpr)->value == Types::KODA_INFERRED)
-      return ResolvedArgumentSource{.kind = ArgumentSourceKind::Infer};
+      return ResolvedArgumentSource{.kind = ArgumentSourceKind::Infer, .expression = expr};
 
     auto symbolResult = resolveValue((*idExpr)->value, owner, expr->span);
     if (!symbolResult.IsSuccess())
@@ -382,7 +406,12 @@ Result<ResolvedArgumentSource> SemanticAnalyzer::resolveArgumentSource(const PEx
     {
       const auto& context = mFlowArgumentStack.back();
       if (auto it = context.find(symbolId); it != context.end())
+      {
+        if (const auto s = mSymbols.get(it->first); s)
+          LOG_TRACE("    Using flow argument: {}", s->name);
+
         return it->second;
+      }
     }
 
     const auto* symbol = mSymbols.get(symbolId);
@@ -401,7 +430,7 @@ Result<ResolvedArgumentSource> SemanticAnalyzer::resolveArgumentSource(const PEx
         return Result<ResolvedArgumentSource>::Failed("Blackboard value '{}' has incompatible type. Expected '{}', got '{}'", (*idExpr)->value,
                                                       expectedType.toString(), slot->type.toString());
 
-      return ResolvedArgumentSource{.kind = ArgumentSourceKind::Blackboard, .slot = slot->id};
+      return ResolvedArgumentSource{.kind = ArgumentSourceKind::Blackboard, .slot = slot->id, .expression = expr};
     }
   }
 
@@ -412,7 +441,7 @@ Result<ResolvedArgumentSource> SemanticAnalyzer::resolveArgumentSource(const PEx
   if (!compatible(expectedType, value.Value()))
     return Result<ResolvedArgumentSource>::Failed("Argument has incompatible type. Expected {}, got {}", expectedType.toString(), value.Value().toString());
 
-  return ResolvedArgumentSource{.kind = ArgumentSourceKind::Literal};
+  return ResolvedArgumentSource{.kind = ArgumentSourceKind::Literal, .expression = expr};
 }
 
 VoidResult SemanticAnalyzer::resolveCapabilityData(const PEventCall& astCall, ResolvedCall& call, SymbolId owner)
@@ -449,6 +478,7 @@ VoidResult SemanticAnalyzer::resolveCapabilityData(const PEventCall& astCall, Re
       if (!source.IsSuccess())
         return VoidResult::Failed(source.ErrorMessage());
 
+      call.argExpressions.push_back(source.Value().expression);
       LOG_TRACE("  Resolved source, kind: {} slot: {}", (int)source.Value().kind, source.Value().slot.value_or("999"));
       switch (source.Value().kind)
       {
@@ -465,6 +495,13 @@ VoidResult SemanticAnalyzer::resolveCapabilityData(const PEventCall& astCall, Re
         case ArgumentSourceKind::Infer:
         {
           auto candidates = mBlackboard.availableCompatible(input, mTypeRegistry);
+          for (auto it = candidates.begin(); it != candidates.end();)
+            // Slots with not ownerFlows are mission or capability parameters, they are globally visible
+            if (!(*it)->ownerFlow || isVisible((*it)->ownerFlow.value(), owner))
+              ++it;
+            else
+              it = candidates.erase(it);
+
           if (candidates.empty())
             return VoidResult::Failed("No available value for input '{}' in '{}' at {}", input.toString(), event->name, event->span.toString());
 
@@ -474,7 +511,7 @@ VoidResult SemanticAnalyzer::resolveCapabilityData(const PEventCall& astCall, Re
           else
             LOG_TRACE(" Found compatible type in blackboard: {}", candidates.front()->id);
 
-          call.inputSlots.push_back(candidates.front()->id);
+          call.inputSlots.push_back(candidates.back()->id);
           break;
         }
       }
@@ -489,7 +526,7 @@ VoidResult SemanticAnalyzer::resolveCapabilityData(const PEventCall& astCall, Re
       LOG_TRACE("    Found return event: {} {}", returnEvent->name, returnEvent->id);
       for (const auto& output : mModel.eventArguments[returnEvent->id])
       {
-        const auto slot = mBlackboard.declare(astCall->id, output.toString(), output, std::to_string(capabilityId));
+        const auto slot = mBlackboard.declare(astCall->id, output.toString(), output, std::to_string(capabilityId), owner);
         LOG_TRACE("    Making slot {} available", slot);
         mBlackboard.makeAvailable(slot);
         call.outputSlots.push_back(slot);
@@ -563,6 +600,7 @@ VoidResult SemanticAnalyzer::analyzeFlowCall(const PEventCall& astCall, const Re
 
   mFlowArgumentStack.push_back(std::move(context));
 
+  LOG_TRACE("Analysing flow {} with {} arguments", flow->name, mFlowArgumentStack.back().size());
   auto result = analyzeFlow(call.receiver);
 
   mFlowArgumentStack.pop_back();

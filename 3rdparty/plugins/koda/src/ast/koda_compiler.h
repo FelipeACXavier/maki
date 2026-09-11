@@ -33,6 +33,7 @@ struct CompilerOptions
   std::shared_ptr<TraceabilityMap> traceability;
   std::shared_ptr<koda::System> ast;
   std::shared_ptr<types::TypeRegistry> typeRegistry;
+  bool checkAll = false;
 
   enum class PluginOption
   {

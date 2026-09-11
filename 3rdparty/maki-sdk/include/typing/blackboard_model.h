@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <map>
 #include <optional>
 #include <string>
@@ -19,6 +20,7 @@ struct BlackboardSlot
   std::string name;
   types::TypeReference type;
 
+  std::optional<uint32_t> ownerFlow;
   // Who created this value, useful for diagnostics/traceability.
   std::optional<std::string> producerId;
 };
@@ -27,14 +29,13 @@ class Blackboard
 {
 public:
   // Declare a logical slot. Call once when the slot is created.
-  SlotId declare(const std::string& id, const std::string& name, const types::TypeReference& type,
-                 std::optional<std::string> producerId = std::nullopt);
+  SlotId declare(const std::string& id, const std::string& name, const types::TypeReference& type, std::optional<std::string> producerId = std::nullopt,
+                 std::optional<uint32_t> ownerFlow = std::nullopt);
 
   void makeAvailable(const SlotId& id);
   void invalidate(const SlotId& id);
 
   bool isAvailable(const SlotId& id) const;
-
   const BlackboardSlot* get(const SlotId& id) const;
 
   std::vector<const BlackboardSlot*> availableCompatible(const types::TypeReference& requiredType, const types::TypeRegistry& registry) const;

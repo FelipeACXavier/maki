@@ -16,12 +16,14 @@ void Blackboard::print() const
     LOG_DEBUG("  Id: {} Available? {} ", id, availability);
 }
 
-SlotId Blackboard::declare(const std::string& id, const std::string& name, const types::TypeReference& type, std::optional<std::string> producerId)
+SlotId Blackboard::declare(const std::string& id, const std::string& name, const types::TypeReference& type, std::optional<std::string> producerId,
+                           std::optional<uint32_t> ownerFlow)
 {
   mSlots.insert_or_assign(id, BlackboardSlot{
                                   .id = id,
                                   .name = name,
                                   .type = type,
+                                  .ownerFlow = ownerFlow,
                                   .producerId = std::move(producerId),
                               });
 
@@ -52,8 +54,7 @@ const BlackboardSlot* Blackboard::get(const SlotId& id) const
   return it == mSlots.end() ? nullptr : &it->second;
 }
 
-std::vector<const BlackboardSlot*> Blackboard::availableCompatible(const types::TypeReference& requiredType,
-                                                                   const types::TypeRegistry& registry) const
+std::vector<const BlackboardSlot*> Blackboard::availableCompatible(const types::TypeReference& requiredType, const types::TypeRegistry& registry) const
 {
   std::vector<const BlackboardSlot*> result;
   for (const auto& [id, available] : mAvailable)
@@ -67,7 +68,7 @@ std::vector<const BlackboardSlot*> Blackboard::availableCompatible(const types::
 
     if (registry.isAssignable(slot->type, requiredType))
     {
-      LOG_DEBUG("    Found assignable {} for {}", slot->id, requiredType.toString());
+      LOG_TRACE("    Found assignable {} for {}", slot->id, requiredType.toString());
       result.push_back(slot);
     }
   }

@@ -27,6 +27,11 @@ bool parseCommandLine(int argc, const char* argv[], koda::CompilerOptions& optio
       options.showVersion = true;
       return true;
     }
+    else if (arg == "--all")
+    {
+      options.checkAll = true;
+      return true;
+    }
     else if (arg == "-v")
       options.verbose = 1;
     else if (arg == "-vv")
@@ -77,15 +82,14 @@ bool parseCommandLine(int argc, const char* argv[], koda::CompilerOptions& optio
 
 void printHelp(const char* programName)
 {
-  std::cout
-      << "Usage: " << programName << " [options]\n\n"
-      << "Options:\n"
-      << "  -i, --input <file>     Input Koda file\n"
-      << "  -o, --output <dir>     Output directory (default: ./out)\n"
-      << "      --dry              Do not create any files, just print what would be done\n"
-      << "  -h, --help             Show this help message\n"
-      << "      --version          Show version information\n"
-      << "  -v                     Enable verbose output (can repeat: -vv, -vvv)\n";
+  std::cout << "Usage: " << programName << " [options]\n\n"
+            << "Options:\n"
+            << "  -i, --input <file>     Input Koda file\n"
+            << "  -o, --output <dir>     Output directory (default: ./out)\n"
+            << "      --dry              Do not create any files, just print what would be done\n"
+            << "  -h, --help             Show this help message\n"
+            << "      --version          Show version information\n"
+            << "  -v                     Enable verbose output (can repeat: -vv, -vvv)\n";
 }
 
 void printVersion()
@@ -117,16 +121,19 @@ int main(int argc, const char* argv[])
     return 0;
   }
 
+  auto traceMap = std::make_shared<koda::TraceabilityMap>();
+  options.traceability = traceMap;
+
   std::error_code ec;
   std::filesystem::create_directories(options.outputDir, ec);
   if (ec)
   {
-    std::cerr << "Error: Failed to create output directory: "
-              << options.outputDir << "\nReason: " << ec.message() << "\n";
+    std::cerr << "Error: Failed to create output directory: " << options.outputDir << "\nReason: " << ec.message() << "\n";
     return 1;
   }
 
   koda::gPrintSpan = (options.verbose > 1);
+  logging::gMinLogLevel = (logging::LogLevel)(options.verbose + 1);
 
   koda::Compiler compiler;
   auto parsed = compiler.parse(options);
@@ -138,6 +145,9 @@ int main(int argc, const char* argv[])
   LOG_ERROR_ON_FAILURE(generated);
   if (!generated.IsSuccess())
     return -1;
+
+  if (options.verbose > 2)
+    traceMap->print();
 
   return 0;
 }

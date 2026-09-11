@@ -44,6 +44,8 @@ VoidResult createTypes(Model& model, const std::string& outdir)
   out << "    Error\n";
   out << "  };\n\n";
 
+  out << "extern int $int$;\n";
+
   model.setGeneratedFile(path, out.str());
 
   return VoidResult();
@@ -1172,8 +1174,7 @@ Result<LibraryComponent> createFailureComponent(Model& model, const std::string&
   });
 }
 
-Result<LibraryComponent> createSelectorComponent(Model& model, const std::string& outdir, uint32_t conditionCount, uint32_t branchCount,
-                                                 SymbolId componentId)
+Result<LibraryComponent> createSelectorComponent(Model& model, const std::string& outdir, uint32_t conditionCount, uint32_t branchCount, SymbolId componentId)
 {
   const auto componentName = std::format("selector{}", branchCount);
   return createComponent(model, outdir, componentName, componentId, [&](LibraryComponent& component, std::ostringstream& out) {

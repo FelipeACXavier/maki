@@ -340,7 +340,7 @@ std::string RosEmitter::emitAlarmHeader() const
 #include <condition_variable>
 #include <mutex>
 
-#include "a_calarm.hh"
+#include "alarm.hh"
 #include "async_task.hh"
 
 class calarm : public skel::calarm
@@ -410,7 +410,7 @@ calarm::~calarm()
 
 void calarm::api_set(int millis)
 {
-  WakeUpIn(std::chrono::milliseconds(millis * 100), [this]() { api_timeout(); });
+  WakeUpIn(std::chrono::milliseconds(millis), [this]() { api_timeout(); });
 }
 
 void calarm::api_reset()
@@ -954,7 +954,10 @@ bool RosEmitter::isTriggerEnabled(const ir::Event* event, const std::vector<Port
 std::string RosEmitter::emitExpression(const ir::PExpression& expression) const
 {
   if (!expression)
+  {
+    LOG_WARNING("No expression provided");
     return "{}";
+  }
 
   // Add support for other types
   if (const auto* literal = std::get_if<ir::Expression::Literal>(&expression->value); literal)
@@ -964,6 +967,11 @@ std::string RosEmitter::emitExpression(const ir::PExpression& expression) const
       return std::format("\"{}\"", literal->text);
 
     return literal->text;
+  }
+  else if (const auto* ref = std::get_if<ir::Expression::Reference>(&expression->value); ref)
+  {
+    LOG_WARNING("We should not have gotten a reference at ths stage.");
+    return std::format("/* Unknown reference to symbol {}*/{{}}", ref->symbol);
   }
   else if (const auto* binary = std::get_if<ir::Expression::Binary>(&expression->value); binary)
   {
@@ -1489,6 +1497,15 @@ std::string RosEmitter::emitParamsYaml() const
   return ss.str();
 }
 
+std::pair<std::string, std::string> RosEmitter::createThread(const std::string& id) const
+{
+  const std::string varName = std::format("{}_thread", id);
+  return std::make_pair(varName, std::format("  auto& {} = {}[\"{}\"];\n"
+                                             "  if ({}.joinable())\n"
+                                             "    {}.join();\n",
+                                             varName, mOptions.taskThread, id, varName, varName));
+}
+
 // TODO: All of these should be moved to their own plugins
 void RosEmitter::collectDrive(Capability& cap)
 {
@@ -1757,10 +1774,14 @@ void RosEmitter::collectApproach(Capability& cap)
   // ======================================================================================================
   // Include dependencies
   mCmakeDeps.insert("sensor_msgs");
+  mCmakeDeps.insert("nav_msgs");
 
   // ======================================================================================================
   // Package xml dependencies
   mPackageDeps.insert("sensor_msgs");
+  mPackageDeps.insert("nav_msgs");
+
+  cap.supervisorIncludes.push_back("#include <nav_msgs/msg/odometry.hpp>");
 
   // ======================================================================================================
   // Constructor - These are the actions necessary for the correct construction of this capability
@@ -1789,6 +1810,7 @@ void RosEmitter::collectApproach(Capability& cap)
   {
     cap.supervisorMembers.push_back("std::mutex odom_mtx_;");
     cap.supervisorMembers.push_back("bool have_odom_{false};");
+    cap.supervisorMembers.push_back("bool odom_aborting_{false};");
     cap.supervisorMembers.push_back("struct OdomPose { double x; double y; double yaw; };");
     cap.supervisorMembers.push_back("OdomPose odom_pose_{0.0, 0.0, 0.0};");
     cap.supervisorMembers.push_back("rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr vel_pub_;");
@@ -1811,10 +1833,10 @@ void RosEmitter::collectApproach(Capability& cap)
   // ======================================================================================================
   // Parameters - These are the paramaters needed for this capability
   {
-    cap.parameters.push_back("declare_parameter<double>(\"approach_distance\", 0.1);");
-    cap.parameters.push_back("declare_parameter<double>(\"depart_distance\", 0.1);");
+    cap.parameters.push_back("declare_parameter<double>(\"approach_distance\", 0.25);");
+    cap.parameters.push_back("declare_parameter<double>(\"depart_distance\", 0.2);");
 
-    cap.configParams.push_back("approach_distance: 0.25");
+    cap.configParams.push_back("approach_distance: 0.4");
     cap.configParams.push_back("depart_distance: 0.2");
   }
 
@@ -1824,20 +1846,18 @@ void RosEmitter::collectApproach(Capability& cap)
   {
     cap.supervisorMethods.push_back(std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, trigger->name, argDecls(trigger->arguments)));
     cap.supervisorMethods.push_back("{");
-    cap.supervisorMethods.push_back("   if (approach)");
-    cap.supervisorMethods.push_back("   {");
-    cap.supervisorMethods.push_back("     geometry_msgs::msg::PoseStamped goal_pose;");
-    cap.supervisorMethods.push_back("     {");
-    cap.supervisorMethods.push_back("       std::lock_guard<std::mutex> lock(aruco_pose_mtx_);");
-    cap.supervisorMethods.push_back("       if (!aruco_pose_)");
-    cap.supervisorMethods.push_back("         return Result::Failure;\n");
-    cap.supervisorMethods.push_back("       goal_pose = aruco_pose_.value();");
-    cap.supervisorMethods.push_back("     }\n");
-    cap.supervisorMethods.push_back("     auto pose_plan = lookupMarkerIn(goal_pose, arm_mgi_->getPlanningFrame());");
-    cap.supervisorMethods.push_back("     if (!pose_plan) return Result::Failure;\n");
-    cap.supervisorMethods.push_back("     return dockWithOdom(*pose_plan, get_parameter(\"approach_distance\").as_double(), 20);");
-    cap.supervisorMethods.push_back("    } else");
-    cap.supervisorMethods.push_back("     return undockWithOdom(get_parameter(\"depart_distance\").as_double(), 20);");
+    cap.supervisorMethods.push_back("  {");
+    cap.supervisorMethods.push_back("    std::lock_guard<std::mutex> lock(odom_mtx_);");
+    cap.supervisorMethods.push_back("    odom_aborting_ = false;");
+    cap.supervisorMethods.push_back("  }");
+    cap.supervisorMethods.push_back("  if (approach)");
+    cap.supervisorMethods.push_back("  {");
+    cap.supervisorMethods.push_back("    auto pose_plan = lookupMarkerIn(pose, arm_mgi_->getPlanningFrame());");
+    cap.supervisorMethods.push_back("    if (!pose_plan) return Result::Failure;\n");
+    cap.supervisorMethods.push_back("    return dockWithOdom(*pose_plan, get_parameter(\"approach_distance\").as_double(), 20);");
+    cap.supervisorMethods.push_back("  } else {");
+    cap.supervisorMethods.push_back("    return undockWithOdom(get_parameter(\"depart_distance\").as_double(), 20);");
+    cap.supervisorMethods.push_back("  }");
     cap.supervisorMethods.push_back("}");
   }
 
@@ -1846,7 +1866,11 @@ void RosEmitter::collectApproach(Capability& cap)
   {
     cap.supervisorMethods.push_back(std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, onAbort->name, argDecls(onAbort->arguments)));
     cap.supervisorMethods.push_back("{");
-    cap.supervisorMethods.push_back("  // We use the standard abort");
+    cap.supervisorMethods.push_back("  {");
+    cap.supervisorMethods.push_back("    std::lock_guard<std::mutex> lock(odom_mtx_);");
+    cap.supervisorMethods.push_back("    odom_aborting_ = true;");
+    cap.supervisorMethods.push_back("  }\n");
+
     cap.supervisorMethods.push_back("  return Result::Success;");
     cap.supervisorMethods.push_back("}");
   }
@@ -1888,153 +1912,174 @@ void RosEmitter::collectApproach(Capability& cap)
     cap.supervisorMethods.push_back("  }");
     cap.supervisorMethods.push_back("}\n");
 
-    cap.supervisorMethods.push_back(
-        std::format("Result {}::dockWithOdom(const geometry_msgs::msg::PoseStamped& cam_pose, double standoff_m, double timeout_s)", mOptions.supervisorClass));
-    cap.supervisorMethods.push_back("{");
-    cap.supervisorMethods.push_back("  // 1. Get marker pose in odom frame");
-    cap.supervisorMethods.push_back("  auto opt = lookupMarkerIn(cam_pose, \"odom\");");
-    cap.supervisorMethods.push_back("  if (!opt)");
-    cap.supervisorMethods.push_back("  {");
-    cap.supervisorMethods.push_back("    RCLCPP_ERROR(get_logger(), \"Failed to convert to odom frame\");");
-    cap.supervisorMethods.push_back("    return Result::Failure;");
-    cap.supervisorMethods.push_back("  }\n");
+    {
+      cap.supervisorMethods.push_back(std::format(
+          "Result {}::dockWithOdom(const geometry_msgs::msg::PoseStamped& cam_pose, double standoff_m, double timeout_s)", mOptions.supervisorClass));
+      cap.supervisorMethods.push_back("{");
+      cap.supervisorMethods.push_back("  // 1. Get marker pose in odom frame");
+      cap.supervisorMethods.push_back("  auto opt = lookupMarkerIn(cam_pose, \"odom\");");
+      cap.supervisorMethods.push_back("  if (!opt)");
+      cap.supervisorMethods.push_back("  {");
+      cap.supervisorMethods.push_back("    RCLCPP_ERROR(get_logger(), \"Failed to convert to odom frame\");");
+      cap.supervisorMethods.push_back("    return Result::Failure;");
+      cap.supervisorMethods.push_back("  }\n");
 
-    cap.supervisorMethods.push_back("  auto marker_in_odom = *opt;");
-    cap.supervisorMethods.push_back("  auto current_pose = getOdomPose();");
-    cap.supervisorMethods.push_back("  if (!current_pose)");
-    cap.supervisorMethods.push_back("  {");
-    cap.supervisorMethods.push_back("    RCLCPP_ERROR(get_logger(), \"Current pose is not available\");");
-    cap.supervisorMethods.push_back("    return Result::Failure;");
-    cap.supervisorMethods.push_back("  }\n");
+      cap.supervisorMethods.push_back("  auto marker_in_odom = *opt;");
+      cap.supervisorMethods.push_back("  auto current_pose = getOdomPose();");
+      cap.supervisorMethods.push_back("  if (!current_pose)");
+      cap.supervisorMethods.push_back("  {");
+      cap.supervisorMethods.push_back("    RCLCPP_ERROR(get_logger(), \"Current pose is not available\");");
+      cap.supervisorMethods.push_back("    return Result::Failure;");
+      cap.supervisorMethods.push_back("  }\n");
 
-    cap.supervisorMethods.push_back("  // 3. Control loop using odometry");
-    cap.supervisorMethods.push_back(std::format("  auto it = {}.find(\"approach\");"
-                                                "  if (it != action_threads_.end() && it->second.joinable())"
-                                                "    it->second.join();",
-                                                mOptions.taskThread));
-    cap.supervisorMethods.push_back(
-        std::format("  {}.emplace(\"approach\", [this, cam_pose, standoff_m, timeout_s, marker_in_odom, current_pose] {{", mOptions.taskThread));
-    cap.supervisorMethods.push_back("    rclcpp::Rate rate(20);");
-    cap.supervisorMethods.push_back("    auto t0 = now();");
-    cap.supervisorMethods.push_back("    const double vx = marker_in_odom.pose.position.x - current_pose->x;");
-    cap.supervisorMethods.push_back("    const double vy = marker_in_odom.pose.position.y - current_pose->y;");
-    cap.supervisorMethods.push_back("    const double target_yaw = std::atan2(vy, vx);");
-    cap.supervisorMethods.push_back("    const double dist = std::hypot(vx, vy);");
-    cap.supervisorMethods.push_back("    const double ux = vx / dist, uy = vy / dist;");
-    cap.supervisorMethods.push_back("    const double target_x = marker_in_odom.pose.position.x - standoff_m * ux;");
-    cap.supervisorMethods.push_back("    const double target_y = marker_in_odom.pose.position.y - standoff_m * uy;");
-    cap.supervisorMethods.push_back("    RCLCPP_INFO(get_logger(), \"Dock goal in odom : (%.3f, %.3f, %.1f°)\", target_x, target_y, target_yaw * 180 / M_PI);");
-    cap.supervisorMethods.push_back("    RCLCPP_INFO(get_logger(), \"Position in odom : (%.3f, %.3f, %.1f°)\", current_pose->x, current_pose->y, "
-                                    "current_pose->yaw * 180 / M_PI);\n");
-    cap.supervisorMethods.push_back("    const double k_lin = 0.8;");
-    cap.supervisorMethods.push_back("    const double k_ang = 1.1;");
-    cap.supervisorMethods.push_back("    const double vmax = 0.1;");
-    cap.supervisorMethods.push_back("    const double wmax = 0.3;\n");
+      cap.supervisorMethods.push_back("  // 3. Control loop using odometry");
+      auto [threadName, content] = createThread(cap.name);
+      cap.supervisorMethods.push_back(content);
+      cap.supervisorMethods.push_back(std::format("  {} = std::thread([this, cam_pose, standoff_m, timeout_s, marker_in_odom, current_pose] {{", threadName));
+      cap.supervisorMethods.push_back("    rclcpp::Rate rate(20);");
+      cap.supervisorMethods.push_back("    auto t0 = now();");
+      cap.supervisorMethods.push_back("    const double vx = marker_in_odom.pose.position.x - current_pose->x;");
+      cap.supervisorMethods.push_back("    const double vy = marker_in_odom.pose.position.y - current_pose->y;");
+      cap.supervisorMethods.push_back("    const double target_yaw = std::atan2(vy, vx);");
+      cap.supervisorMethods.push_back("    const double dist = std::hypot(vx, vy);");
+      cap.supervisorMethods.push_back("    const double ux = vx / dist, uy = vy / dist;");
+      cap.supervisorMethods.push_back("    const double target_x = marker_in_odom.pose.position.x - standoff_m * ux;");
+      cap.supervisorMethods.push_back("    const double target_y = marker_in_odom.pose.position.y - standoff_m * uy;");
+      cap.supervisorMethods.push_back(
+          "    RCLCPP_INFO(get_logger(), \"Dock goal in odom : (%.3f, %.3f, %.1f°)\", target_x, target_y, target_yaw * 180 / M_PI);");
+      cap.supervisorMethods.push_back("    RCLCPP_INFO(get_logger(), \"Position in odom : (%.3f, %.3f, %.1f°)\", current_pose->x, current_pose->y, "
+                                      "current_pose->yaw * 180 / M_PI);\n");
+      cap.supervisorMethods.push_back("    const double k_lin = 0.8;");
+      cap.supervisorMethods.push_back("    const double k_ang = 1.1;");
+      cap.supervisorMethods.push_back("    const double vmax = 0.1;");
+      cap.supervisorMethods.push_back("    const double wmax = 0.3;\n");
 
-    cap.supervisorMethods.push_back("    while (rclcpp::ok())");
-    cap.supervisorMethods.push_back("    {");
-    cap.supervisorMethods.push_back("      if ((now() - t0).seconds() > timeout_s)");
-    cap.supervisorMethods.push_back("      {");
-    cap.supervisorMethods.push_back("        RCLCPP_WARN(get_logger(), \"dockWithOdom: timeout\");");
-    cap.supervisorMethods.push_back("        break;");
-    cap.supervisorMethods.push_back("      }\n");
-    cap.supervisorMethods.push_back("      auto od = getOdomPose();");
-    cap.supervisorMethods.push_back("      if (!od)");
-    cap.supervisorMethods.push_back("      {");
-    cap.supervisorMethods.push_back("        rate.sleep();");
-    cap.supervisorMethods.push_back("        continue;");
-    cap.supervisorMethods.push_back("      }\n");
-    cap.supervisorMethods.push_back("      // error in odom frame");
-    cap.supervisorMethods.push_back("      double dx = target_x - od->x;");
-    cap.supervisorMethods.push_back("      double dy = target_y - od->y;");
-    cap.supervisorMethods.push_back("      double dist = std::hypot(dx, dy);");
-    cap.supervisorMethods.push_back("      double target_heading = std::atan2(dy, dx);");
-    cap.supervisorMethods.push_back("      double heading_err = target_heading - od->yaw;");
-    cap.supervisorMethods.push_back("      while (heading_err > M_PI) heading_err -= 2 * M_PI;");
-    cap.supervisorMethods.push_back("      while (heading_err < -M_PI) heading_err += 2 * M_PI;");
-    cap.supervisorMethods.push_back("      double yaw_err = target_yaw - od->yaw;");
-    cap.supervisorMethods.push_back("      while (yaw_err > M_PI) yaw_err -= 2 * M_PI;");
-    cap.supervisorMethods.push_back("      while (yaw_err < -M_PI) yaw_err += 2 * M_PI;");
-    cap.supervisorMethods.push_back("      RCLCPP_INFO(get_logger(), \"Dock : moving. %.2fm from goal, heading err: %.1f°, yaw err %.1f°(%.3f "
-                                    "%.3f)\", dist, heading_err * 180 / M_PI, yaw_err * 180 / M_PI, od->x, od->y);");
-    cap.supervisorMethods.push_back("      if (dist < 0.02 && std::abs(yaw_err) < 0.1)");
-    cap.supervisorMethods.push_back("      {");
-    cap.supervisorMethods.push_back("        stopBase();");
-    cap.supervisorMethods.push_back("        RCLCPP_INFO(get_logger(), \"Dock: reached (%.2fm from goal, yaw err %.1f°)\", dist, yaw_err * 180 / M_PI);");
-    cap.supervisorMethods.push_back(std::format("        if ({}_{})", cap.name, onReturn->name));
-    cap.supervisorMethods.push_back(std::format("          {}_{}({});", cap.name, onReturn->name, argNames(onReturn->arguments)));
-    cap.supervisorMethods.push_back("        return;");
-    cap.supervisorMethods.push_back("      }\n");
-    cap.supervisorMethods.push_back("      // Control: rotate toward target, move forward");
-    cap.supervisorMethods.push_back("      geometry_msgs::msg::Twist cmd;");
-    cap.supervisorMethods.push_back("      if (dist < 0.01)");
-    cap.supervisorMethods.push_back("      {");
-    cap.supervisorMethods.push_back("        cmd.linear.x = 0.0;");
-    cap.supervisorMethods.push_back("        cmd.angular.z = clamp(k_ang * yaw_err, -wmax, wmax);");
-    cap.supervisorMethods.push_back("      }");
-    cap.supervisorMethods.push_back("      else");
-    cap.supervisorMethods.push_back("      {");
-    cap.supervisorMethods.push_back("        cmd.angular.z = clamp(k_ang * heading_err, -wmax, wmax);");
-    cap.supervisorMethods.push_back("        cmd.linear.x = clamp(k_lin * dist, -vmax, vmax);");
-    cap.supervisorMethods.push_back("      }");
-    cap.supervisorMethods.push_back("      vel_pub_->publish(cmd);");
-    cap.supervisorMethods.push_back("      rate.sleep();");
-    cap.supervisorMethods.push_back("    }\n");
-    cap.supervisorMethods.push_back("    stopBase();");
-    cap.supervisorMethods.push_back(std::format("    if ({}_{})", cap.name, onError->name));
-    cap.supervisorMethods.push_back(std::format("      {}_{}({});", cap.name, onError->name, argNames(onError->arguments)));
-    cap.supervisorMethods.push_back("    return;");
-    cap.supervisorMethods.push_back("  });");
-    cap.supervisorMethods.push_back("  return Result::Success;");
-    cap.supervisorMethods.push_back("}");
+      cap.supervisorMethods.push_back("    while (rclcpp::ok())");
+      cap.supervisorMethods.push_back("    {");
+      cap.supervisorMethods.push_back("      if ((now() - t0).seconds() > timeout_s)");
+      cap.supervisorMethods.push_back("      {");
+      cap.supervisorMethods.push_back("        RCLCPP_WARN(get_logger(), \"dockWithOdom: timeout\");");
+      cap.supervisorMethods.push_back("        break;");
+      cap.supervisorMethods.push_back("      }\n");
 
-    cap.supervisorMethods.push_back(std::format("Result {}::undockWithOdom(double back_m, double timeout_s)", mOptions.supervisorClass));
-    cap.supervisorMethods.push_back("{");
-    cap.supervisorMethods.push_back("  auto od0 = getOdomPose();");
-    cap.supervisorMethods.push_back("  if (!od0)");
-    cap.supervisorMethods.push_back("  {");
-    cap.supervisorMethods.push_back("    RCLCPP_ERROR(get_logger(), \"undock: no odom\");");
-    cap.supervisorMethods.push_back("    return Result::Failure;");
-    cap.supervisorMethods.push_back("  }\n");
-    cap.supervisorMethods.push_back(std::format("  if ({}.joinable())", mOptions.taskThread));
-    cap.supervisorMethods.push_back(std::format("    {}.join();\n", mOptions.taskThread));
-    cap.supervisorMethods.push_back(std::format("  {} = std::thread([this, back_m, timeout_s, od0] {{", mOptions.taskThread));
-    cap.supervisorMethods.push_back("    rclcpp::Rate rate(20);");
-    cap.supervisorMethods.push_back("    auto t0 = now();");
-    cap.supervisorMethods.push_back("    double last_x = od0->x, last_y = od0->y, traveled = 0.0;\n");
-    cap.supervisorMethods.push_back("    while (rclcpp::ok())");
-    cap.supervisorMethods.push_back("    {");
-    cap.supervisorMethods.push_back("      if ((now() - t0).seconds() > timeout_s)");
-    cap.supervisorMethods.push_back("        break;\n");
-    cap.supervisorMethods.push_back("      auto od = getOdomPose();");
-    cap.supervisorMethods.push_back("      if (!od)");
-    cap.supervisorMethods.push_back("      {");
-    cap.supervisorMethods.push_back("        rate.sleep();");
-    cap.supervisorMethods.push_back("        continue;");
-    cap.supervisorMethods.push_back("      }\n");
-    cap.supervisorMethods.push_back("      traveled += std::hypot(od->x - last_x, od->y - last_y);");
-    cap.supervisorMethods.push_back("      last_x = od->x;");
-    cap.supervisorMethods.push_back("      last_y = od->y;");
-    cap.supervisorMethods.push_back("      if (traveled >= back_m)");
-    cap.supervisorMethods.push_back("      {");
-    cap.supervisorMethods.push_back("        stopBase();");
-    cap.supervisorMethods.push_back("        RCLCPP_INFO(get_logger(), \"undock: backed %.2fm\", traveled);");
-    cap.supervisorMethods.push_back(std::format("        if ({}_{})", cap.name, onReturn->name));
-    cap.supervisorMethods.push_back(std::format("          {}_{}({});", cap.name, onReturn->name, argNames(onError->arguments)));
-    cap.supervisorMethods.push_back("        return;");
-    cap.supervisorMethods.push_back("      }");
-    cap.supervisorMethods.push_back("      geometry_msgs::msg::Twist cmd;");
-    cap.supervisorMethods.push_back("      cmd.linear.x = -0.06;  // slow, safe");
-    cap.supervisorMethods.push_back("      vel_pub_->publish(cmd);");
-    cap.supervisorMethods.push_back("      rate.sleep();");
-    cap.supervisorMethods.push_back("    }");
-    cap.supervisorMethods.push_back("    stopBase();");
-    cap.supervisorMethods.push_back(std::format("    if ({}_{})", cap.name, onError->name));
-    cap.supervisorMethods.push_back(std::format("      {}_{}({});", cap.name, onError->name, argNames(onError->arguments)));
-    cap.supervisorMethods.push_back("    return;");
-    cap.supervisorMethods.push_back("  });\n");
-    cap.supervisorMethods.push_back("  return Result::Success;");
-    cap.supervisorMethods.push_back("}");
+      cap.supervisorMethods.push_back("      {");
+      cap.supervisorMethods.push_back("        std::lock_guard<std::mutex> lock(odom_mtx_);");
+      cap.supervisorMethods.push_back("        if (odom_aborting_) {");
+      cap.supervisorMethods.push_back("          stopBase();");
+      cap.supervisorMethods.push_back("          return;");
+      cap.supervisorMethods.push_back("        }");
+      cap.supervisorMethods.push_back("      }\n");
+
+      cap.supervisorMethods.push_back("      auto od = getOdomPose();");
+      cap.supervisorMethods.push_back("      if (!od)");
+      cap.supervisorMethods.push_back("      {");
+      cap.supervisorMethods.push_back("        rate.sleep();");
+      cap.supervisorMethods.push_back("        continue;");
+      cap.supervisorMethods.push_back("      }\n");
+      cap.supervisorMethods.push_back("      // error in odom frame");
+      cap.supervisorMethods.push_back("      double dx = target_x - od->x;");
+      cap.supervisorMethods.push_back("      double dy = target_y - od->y;");
+      cap.supervisorMethods.push_back("      double dist = std::hypot(dx, dy);");
+      cap.supervisorMethods.push_back("      double target_heading = std::atan2(dy, dx);");
+      cap.supervisorMethods.push_back("      double heading_err = target_heading - od->yaw;");
+      cap.supervisorMethods.push_back("      while (heading_err > M_PI) heading_err -= 2 * M_PI;");
+      cap.supervisorMethods.push_back("      while (heading_err < -M_PI) heading_err += 2 * M_PI;");
+      cap.supervisorMethods.push_back("      double yaw_err = target_yaw - od->yaw;");
+      cap.supervisorMethods.push_back("      while (yaw_err > M_PI) yaw_err -= 2 * M_PI;");
+      cap.supervisorMethods.push_back("      while (yaw_err < -M_PI) yaw_err += 2 * M_PI;");
+      cap.supervisorMethods.push_back("      RCLCPP_INFO(get_logger(), \"Dock : moving. %.2fm from goal, heading err: %.1f°, yaw err %.1f°(%.3f "
+                                      "%.3f)\", dist, heading_err * 180 / M_PI, yaw_err * 180 / M_PI, od->x, od->y);");
+      cap.supervisorMethods.push_back("      if (dist < 0.02 && std::abs(yaw_err) < 0.1)");
+      cap.supervisorMethods.push_back("      {");
+      cap.supervisorMethods.push_back("        stopBase();");
+      cap.supervisorMethods.push_back("        RCLCPP_INFO(get_logger(), \"Dock: reached (%.2fm from goal, yaw err %.1f°)\", dist, yaw_err * 180 / M_PI);");
+      cap.supervisorMethods.push_back(std::format("        if ({}_{})", cap.name, onReturn->name));
+      cap.supervisorMethods.push_back(std::format("          {}_{}({});", cap.name, onReturn->name, argNames(onReturn->arguments)));
+      cap.supervisorMethods.push_back("        return;");
+      cap.supervisorMethods.push_back("      }\n");
+      cap.supervisorMethods.push_back("      // Control: rotate toward target, move forward");
+      cap.supervisorMethods.push_back("      geometry_msgs::msg::Twist cmd;");
+      cap.supervisorMethods.push_back("      if (dist < 0.01)");
+      cap.supervisorMethods.push_back("      {");
+      cap.supervisorMethods.push_back("        cmd.linear.x = 0.0;");
+      cap.supervisorMethods.push_back("        cmd.angular.z = clamp(k_ang * yaw_err, -wmax, wmax);");
+      cap.supervisorMethods.push_back("      }");
+      cap.supervisorMethods.push_back("      else");
+      cap.supervisorMethods.push_back("      {");
+      cap.supervisorMethods.push_back("        cmd.angular.z = clamp(k_ang * heading_err, -wmax, wmax);");
+      cap.supervisorMethods.push_back("        cmd.linear.x = clamp(k_lin * dist, -vmax, vmax);");
+      cap.supervisorMethods.push_back("      }");
+      cap.supervisorMethods.push_back("      vel_pub_->publish(cmd);");
+      cap.supervisorMethods.push_back("      rate.sleep();");
+      cap.supervisorMethods.push_back("    }\n");
+      cap.supervisorMethods.push_back("    stopBase();");
+      cap.supervisorMethods.push_back(std::format("    if (!odom_aborting_ && {}_{})", cap.name, onError->name));
+      cap.supervisorMethods.push_back(std::format("      {}_{}({});", cap.name, onError->name, argNames(onError->arguments)));
+      cap.supervisorMethods.push_back("    return;");
+      cap.supervisorMethods.push_back("  });");
+      cap.supervisorMethods.push_back("  return Result::Success;");
+      cap.supervisorMethods.push_back("}");
+    }
+
+    {
+      cap.supervisorMethods.push_back(std::format("Result {}::undockWithOdom(double back_m, double timeout_s)", mOptions.supervisorClass));
+      cap.supervisorMethods.push_back("{");
+      cap.supervisorMethods.push_back("  auto od0 = getOdomPose();");
+      cap.supervisorMethods.push_back("  if (!od0)");
+      cap.supervisorMethods.push_back("  {");
+      cap.supervisorMethods.push_back("    RCLCPP_ERROR(get_logger(), \"undock: no odom\");");
+      cap.supervisorMethods.push_back("    return Result::Failure;");
+      cap.supervisorMethods.push_back("  }\n");
+      auto [threadName, content] = createThread(cap.name);
+      cap.supervisorMethods.push_back(content);
+      cap.supervisorMethods.push_back(std::format("  {} = std::thread([this, back_m, timeout_s, od0] {{", threadName));
+      cap.supervisorMethods.push_back("    rclcpp::Rate rate(20);");
+      cap.supervisorMethods.push_back("    auto t0 = now();");
+      cap.supervisorMethods.push_back("    double last_x = od0->x, last_y = od0->y, traveled = 0.0;\n");
+      cap.supervisorMethods.push_back("    while (rclcpp::ok())");
+      cap.supervisorMethods.push_back("    {");
+      cap.supervisorMethods.push_back("      if ((now() - t0).seconds() > timeout_s)");
+      cap.supervisorMethods.push_back("        break;\n");
+
+      cap.supervisorMethods.push_back("      {");
+      cap.supervisorMethods.push_back("        std::lock_guard<std::mutex> lock(odom_mtx_);");
+      cap.supervisorMethods.push_back("        if (odom_aborting_) {");
+      cap.supervisorMethods.push_back("          stopBase();");
+      cap.supervisorMethods.push_back("          return;");
+      cap.supervisorMethods.push_back("        }");
+      cap.supervisorMethods.push_back("      }\n");
+
+      cap.supervisorMethods.push_back("      auto od = getOdomPose();");
+      cap.supervisorMethods.push_back("      if (!od)");
+      cap.supervisorMethods.push_back("      {");
+      cap.supervisorMethods.push_back("        rate.sleep();");
+      cap.supervisorMethods.push_back("        continue;");
+      cap.supervisorMethods.push_back("      }\n");
+      cap.supervisorMethods.push_back("      traveled += std::hypot(od->x - last_x, od->y - last_y);");
+      cap.supervisorMethods.push_back("      last_x = od->x;");
+      cap.supervisorMethods.push_back("      last_y = od->y;");
+      cap.supervisorMethods.push_back("      RCLCPP_INFO(get_logger(), \"undock: backed %.2lfm of %.2lf\", traveled, back_m);");
+      cap.supervisorMethods.push_back("      if (traveled >= back_m)");
+      cap.supervisorMethods.push_back("      {");
+      cap.supervisorMethods.push_back("        stopBase();");
+      cap.supervisorMethods.push_back("        RCLCPP_INFO(get_logger(), \"undock done, traveled: %.2lfm\", traveled);");
+      cap.supervisorMethods.push_back(std::format("        if ({}_{})", cap.name, onReturn->name));
+      cap.supervisorMethods.push_back(std::format("          {}_{}({});", cap.name, onReturn->name, argNames(onReturn->arguments)));
+      cap.supervisorMethods.push_back("        return;");
+      cap.supervisorMethods.push_back("      }");
+      cap.supervisorMethods.push_back("      geometry_msgs::msg::Twist cmd;");
+      cap.supervisorMethods.push_back("      cmd.linear.x = -0.06;  // slow, safe");
+      cap.supervisorMethods.push_back("      vel_pub_->publish(cmd);");
+      cap.supervisorMethods.push_back("      rate.sleep();");
+      cap.supervisorMethods.push_back("    }");
+      cap.supervisorMethods.push_back("    stopBase();");
+      cap.supervisorMethods.push_back(std::format("    if (!odom_aborting_ && {}_{})", cap.name, onError->name));
+      cap.supervisorMethods.push_back(std::format("      {}_{}({});", cap.name, onError->name, argNames(onError->arguments)));
+      cap.supervisorMethods.push_back("    return;");
+      cap.supervisorMethods.push_back("  });\n");
+      cap.supervisorMethods.push_back("  return Result::Success;");
+      cap.supervisorMethods.push_back("}");
+    }
   }
 }
 
@@ -2081,6 +2126,7 @@ void RosEmitter::collectObjectDetection(Capability& cap)
     cap.supervisorMembers.push_back("cv::Ptr<cv::aruco::DetectorParameters> detector_params_;");
 
     cap.supervisorMembers.push_back("std::mutex img_mtx_;");
+    cap.supervisorMembers.push_back("bool img_aborting_;");
     cap.supervisorMembers.push_back("std::condition_variable img_cv_;");
     cap.supervisorMembers.push_back("sensor_msgs::msg::Image::SharedPtr last_img_;");
 
@@ -2088,9 +2134,6 @@ void RosEmitter::collectObjectDetection(Capability& cap)
     cap.supervisorMembers.push_back("std::vector<double> D_;");
     cap.supervisorMembers.push_back("std::string cam_optical_frame_;");
     cap.supervisorMembers.push_back("std::atomic<bool> have_cam_info_{false};");
-    cap.supervisorMembers.push_back("std::mutex aruco_pose_mtx_;");
-    cap.supervisorMembers.push_back("std::optional<geometry_msgs::msg::PoseStamped> aruco_pose_;");
-
     cap.supervisorMembers.push_back("void imageCb(const sensor_msgs::msg::Image::SharedPtr msg);");
   }
   // ======================================================================================================
@@ -2140,80 +2183,83 @@ void RosEmitter::collectObjectDetection(Capability& cap)
   {
     cap.supervisorMethods.push_back(std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, trigger->name, argDecls(trigger->arguments)));
     cap.supervisorMethods.push_back("{");
-    cap.supervisorMethods.push_back(std::format("  if ({}.joinable())", mOptions.taskThread));
-    cap.supervisorMethods.push_back(std::format("    {}.join();\n", mOptions.taskThread));
-    cap.supervisorMethods.push_back(std::format("  {} = std::thread([this] {{", mOptions.taskThread));
-    cap.supervisorMethods.push_back("    const int target_id = get_parameter(\"aruco_id\").as_int();");
-    cap.supervisorMethods.push_back("    const double size_m = get_parameter(\"aruco_size_m\").as_double();");
-    cap.supervisorMethods.push_back("    const double tol_m = get_parameter(\"arrival_tolerance_m\").as_double();");
+    auto [threadName, content] = createThread(cap.name);
+    cap.supervisorMethods.push_back(content);
+    cap.supervisorMethods.push_back(std::format("  {} = std::thread([this] {{", threadName));
+    cap.supervisorMethods.push_back("  const int target_id = get_parameter(\"aruco_id\").as_int();");
+    cap.supervisorMethods.push_back("  const double size_m = get_parameter(\"aruco_size_m\").as_double();");
+    cap.supervisorMethods.push_back("  const double tol_m = get_parameter(\"arrival_tolerance_m\").as_double();");
     cap.supervisorMethods.push_back(
-        "    RCLCPP_INFO(get_logger(), \"Checking ArUco id=%d within %.2f size and %.2fm tolerance...\", target_id, size_m, tol_m);\n");
+        "  RCLCPP_INFO(get_logger(), \"Checking ArUco id=%d within %.2f size and %.2fm tolerance...\", target_id, size_m, tol_m);\n");
 
-    cap.supervisorMethods.push_back("    while (true) {");
+    cap.supervisorMethods.push_back("  {");
+    cap.supervisorMethods.push_back("    std::unique_lock<std::mutex> lk(img_mtx_);");
+    cap.supervisorMethods.push_back("    img_aborting_ = false;");
+    cap.supervisorMethods.push_back("  }\n");
+
+    cap.supervisorMethods.push_back("  while (true) {");
+    // cap.supervisorMethods.push_back("    {");
+    // cap.supervisorMethods.push_back(std::format("    std::unique_lock<std::mutex> lock({});", mOptions.abortLock));
+    // cap.supervisorMethods.push_back(std::format("    if ({})", mOptions.abortFlag));
+    // cap.supervisorMethods.push_back("      break;");
+    // cap.supervisorMethods.push_back("    }\n");
+    cap.supervisorMethods.push_back("    sensor_msgs::msg::Image::SharedPtr img;");
+    cap.supervisorMethods.push_back("    {");
+    cap.supervisorMethods.push_back("      std::unique_lock<std::mutex> lk(img_mtx_);");
+    cap.supervisorMethods.push_back("      if (img_aborting_) break;");
+    cap.supervisorMethods.push_back("      if (!img_cv_.wait_for(lk, 500ms, [&] { return last_img_ != nullptr; }))");
+    cap.supervisorMethods.push_back("        continue;");
+    cap.supervisorMethods.push_back("      img = last_img_;");
+    cap.supervisorMethods.push_back("      last_img_.reset();  // consume");
+    cap.supervisorMethods.push_back("    }\n");
+
+    cap.supervisorMethods.push_back("    cv::Mat frame;");
+    cap.supervisorMethods.push_back("    try {");
+    cap.supervisorMethods.push_back("      frame = cv_bridge::toCvCopy(img, \"bgr8\")->image;");
+    cap.supervisorMethods.push_back("    } catch (const std::exception& e) {");
+    cap.supervisorMethods.push_back("      RCLCPP_WARN(get_logger(), \"Failed to cv_bridge::toCvCopy\");");
+    cap.supervisorMethods.push_back("      continue;");
+    cap.supervisorMethods.push_back("    }");
+    cap.supervisorMethods.push_back("    if (frame.empty()) {\n");
+    cap.supervisorMethods.push_back("      RCLCPP_WARN(get_logger(), \"Frame is empty\");");
+    cap.supervisorMethods.push_back("      continue;");
+    cap.supervisorMethods.push_back("    }\n");
+    cap.supervisorMethods.push_back("    std::vector<int> ids;");
+    cap.supervisorMethods.push_back("    std::vector<std::vector<cv::Point2f>> corners;");
+    cap.supervisorMethods.push_back("    cv::aruco::detectMarkers(frame, aruco_dict_, corners, ids, detector_params_);");
+    cap.supervisorMethods.push_back("    if (ids.empty()) {");
+    cap.supervisorMethods.push_back("      RCLCPP_WARN(get_logger(), \"Failed to detect markers, saving image\");");
+    cap.supervisorMethods.push_back("      cv::imwrite(\"/tmp/cam.png\", frame);");
+    cap.supervisorMethods.push_back("      continue;");
+    cap.supervisorMethods.push_back("    } else {");
+    cap.supervisorMethods.push_back("      RCLCPP_INFO(get_logger(), \"Found %ld ids\", ids.size());");
+    cap.supervisorMethods.push_back("      cv::Mat K = (cv::Mat_<double>(3, 3) << K_[0], K_[1], K_[2], K_[3], K_[4], K_[5], K_[6], K_[7], K_[8]);");
+    cap.supervisorMethods.push_back("      cv::Mat D(D_);");
+    cap.supervisorMethods.push_back("      std::vector<cv::Vec3d> rvecs, tvecs;");
+    cap.supervisorMethods.push_back("      cv::aruco::estimatePoseSingleMarkers(corners, size_m, K, D, rvecs, tvecs);");
+    cap.supervisorMethods.push_back("      for (size_t i = 0; i < ids.size(); ++i)");
     cap.supervisorMethods.push_back("      {");
-    cap.supervisorMethods.push_back(std::format("        std::unique_lock<std::mutex> lock({});", mOptions.abortLock));
-    cap.supervisorMethods.push_back(std::format("        if ({})", mOptions.abortFlag));
-    cap.supervisorMethods.push_back("          break;");
-    cap.supervisorMethods.push_back("      }\n");
-    cap.supervisorMethods.push_back("      sensor_msgs::msg::Image::SharedPtr img;");
-    cap.supervisorMethods.push_back("      {");
-    cap.supervisorMethods.push_back("        std::unique_lock<std::mutex> lk(img_mtx_);");
-    cap.supervisorMethods.push_back("        if (!img_cv_.wait_for(lk, 500ms, [&] { return last_img_ != nullptr; }))");
-    cap.supervisorMethods.push_back("          continue;");
-    cap.supervisorMethods.push_back("        img = last_img_;");
-    cap.supervisorMethods.push_back("        last_img_.reset();  // consume");
-    cap.supervisorMethods.push_back("      }\n");
-    cap.supervisorMethods.push_back("      cv::Mat frame;");
-    cap.supervisorMethods.push_back("      try {");
-    cap.supervisorMethods.push_back("        frame = cv_bridge::toCvCopy(img, \"bgr8\")->image;");
-    cap.supervisorMethods.push_back("      } catch (const std::exception& e) {");
-    cap.supervisorMethods.push_back("        RCLCPP_WARN(get_logger(), \"Failed to cv_bridge::toCvCopy\");");
-    cap.supervisorMethods.push_back("        continue;");
-    cap.supervisorMethods.push_back("      }");
-    cap.supervisorMethods.push_back("      if (frame.empty()) {\n");
-    cap.supervisorMethods.push_back("        RCLCPP_WARN(get_logger(), \"Frame is empty\");");
-    cap.supervisorMethods.push_back("        continue;");
-    cap.supervisorMethods.push_back("      }\n");
-    cap.supervisorMethods.push_back("      std::vector<int> ids;");
-    cap.supervisorMethods.push_back("      std::vector<std::vector<cv::Point2f>> corners;");
-    cap.supervisorMethods.push_back("      cv::aruco::detectMarkers(frame, aruco_dict_, corners, ids, detector_params_);");
-    cap.supervisorMethods.push_back("      if (ids.empty()) {");
-    cap.supervisorMethods.push_back("        RCLCPP_WARN(get_logger(), \"Failed to detect markers, saving image\");");
-    cap.supervisorMethods.push_back("        cv::imwrite(\"/tmp/cam.png\", frame);");
-    cap.supervisorMethods.push_back("        continue;");
-    cap.supervisorMethods.push_back("      } else {");
-    cap.supervisorMethods.push_back("        RCLCPP_INFO(get_logger(), \"Found %ld ids\", ids.size());");
-    cap.supervisorMethods.push_back("        cv::Mat K = (cv::Mat_<double>(3, 3) << K_[0], K_[1], K_[2], K_[3], K_[4], K_[5], K_[6], K_[7], K_[8]);");
-    cap.supervisorMethods.push_back("        cv::Mat D(D_);");
-    cap.supervisorMethods.push_back("        std::vector<cv::Vec3d> rvecs, tvecs;");
-    cap.supervisorMethods.push_back("        cv::aruco::estimatePoseSingleMarkers(corners, size_m, K, D, rvecs, tvecs);");
-    cap.supervisorMethods.push_back("        for (size_t i = 0; i < ids.size(); ++i)");
-    cap.supervisorMethods.push_back("        {");
-    cap.supervisorMethods.push_back("          if (ids[i] != target_id) continue;");
-    cap.supervisorMethods.push_back("          cv::Mat Rcv;");
-    cap.supervisorMethods.push_back("          cv::Rodrigues(rvecs[i], Rcv);  // 3x3 rotation matrix");
-    cap.supervisorMethods.push_back("          tf2::Matrix3x3 R(");
-    cap.supervisorMethods.push_back("              Rcv.at<double>(0, 0), Rcv.at<double>(0, 1), Rcv.at<double>(0, 2),");
-    cap.supervisorMethods.push_back("              Rcv.at<double>(1, 0), Rcv.at<double>(1, 1), Rcv.at<double>(1, 2),");
-    cap.supervisorMethods.push_back("              Rcv.at<double>(2, 0), Rcv.at<double>(2, 1), Rcv.at<double>(2, 2));");
-    cap.supervisorMethods.push_back("          tf2::Quaternion q;");
-    cap.supervisorMethods.push_back("          R.getRotation(q);");
-    cap.supervisorMethods.push_back("          geometry_msgs::msg::PoseStamped out;");
-    cap.supervisorMethods.push_back("          out.header.stamp = now();");
-    cap.supervisorMethods.push_back("          out.header.frame_id = \"camera_rgb_optical_frame\";");
-    cap.supervisorMethods.push_back("          out.pose.position.x = tvecs[i][0];");
-    cap.supervisorMethods.push_back("          out.pose.position.y = tvecs[i][1];");
-    cap.supervisorMethods.push_back("          out.pose.position.z = tvecs[i][2];");
-    cap.supervisorMethods.push_back("          out.pose.orientation = tf2::toMsg(q.normalize());");
-    cap.supervisorMethods.push_back("          RCLCPP_ERROR(get_logger(), \"Found ArUco (%s) %.2f %.2f %.2f\", cam_optical_frame_.c_str(), "
-                                    "out.pose.position.x, out.pose.position.y, out.pose.position.z);\n");
-    cap.supervisorMethods.push_back("          {");
-    cap.supervisorMethods.push_back("            std::lock_guard<std::mutex> lock(aruco_pose_mtx_);");
-    cap.supervisorMethods.push_back("            aruco_pose_ = out;");
-    cap.supervisorMethods.push_back("          }");
-    cap.supervisorMethods.push_back(std::format("          if ({}_{})", cap.name, onReturn->name));
-    cap.supervisorMethods.push_back(std::format("            {}_{}({});", cap.name, onReturn->name, argNames(onReturn->arguments)));
-    cap.supervisorMethods.push_back("          break;");
+    cap.supervisorMethods.push_back("        if (ids[i] != target_id) continue;");
+    cap.supervisorMethods.push_back("        cv::Mat Rcv;");
+    cap.supervisorMethods.push_back("        cv::Rodrigues(rvecs[i], Rcv);  // 3x3 rotation matrix");
+    cap.supervisorMethods.push_back("        tf2::Matrix3x3 R(");
+    cap.supervisorMethods.push_back("            Rcv.at<double>(0, 0), Rcv.at<double>(0, 1), Rcv.at<double>(0, 2),");
+    cap.supervisorMethods.push_back("            Rcv.at<double>(1, 0), Rcv.at<double>(1, 1), Rcv.at<double>(1, 2),");
+    cap.supervisorMethods.push_back("            Rcv.at<double>(2, 0), Rcv.at<double>(2, 1), Rcv.at<double>(2, 2));");
+    cap.supervisorMethods.push_back("        tf2::Quaternion q;");
+    cap.supervisorMethods.push_back("        R.getRotation(q);");
+    cap.supervisorMethods.push_back("        geometry_msgs::msg::PoseStamped pose;");
+    cap.supervisorMethods.push_back("        pose.header.stamp = now();");
+    cap.supervisorMethods.push_back("        pose.header.frame_id = \"camera_rgb_optical_frame\";");
+    cap.supervisorMethods.push_back("        pose.pose.position.x = tvecs[i][0];");
+    cap.supervisorMethods.push_back("        pose.pose.position.y = tvecs[i][1];");
+    cap.supervisorMethods.push_back("        pose.pose.position.z = tvecs[i][2];");
+    cap.supervisorMethods.push_back("        pose.pose.orientation = tf2::toMsg(q.normalize());");
+    cap.supervisorMethods.push_back("        RCLCPP_ERROR(get_logger(), \"Found ArUco (%s) %.2f %.2f %.2f\", cam_optical_frame_.c_str(),"
+                                    "pose.pose.position.x, pose.pose.position.y, pose.pose.position.z);\n");
+    cap.supervisorMethods.push_back(std::format("        if ({}_{})", cap.name, onReturn->name));
+    cap.supervisorMethods.push_back(std::format("          {}_{}({});", cap.name, onReturn->name, argNames(onReturn->arguments)));
+    cap.supervisorMethods.push_back("        break;");
     cap.supervisorMethods.push_back("        }");
     cap.supervisorMethods.push_back("        return;");
     cap.supervisorMethods.push_back("      }");
@@ -2227,7 +2273,11 @@ void RosEmitter::collectObjectDetection(Capability& cap)
   {
     cap.supervisorMethods.push_back(std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, onAbort->name, argDecls(onAbort->arguments)));
     cap.supervisorMethods.push_back("{");
-    cap.supervisorMethods.push_back("  // We use the standard abort");
+    cap.supervisorMethods.push_back("  {");
+    cap.supervisorMethods.push_back("    std::unique_lock<std::mutex> lk(img_mtx_);");
+    cap.supervisorMethods.push_back("    img_aborting_ = true;");
+    cap.supervisorMethods.push_back("  }\n");
+
     cap.supervisorMethods.push_back("  return Result::Success;");
     cap.supervisorMethods.push_back("}");
   }
@@ -2269,9 +2319,15 @@ void RosEmitter::collectGrip(Capability& cap)
   // ======================================================================================================
   // Members - These are the members needed for this capability
 
+  cap.supervisorMembers.push_back("std::mutex grip_mtx_;");
+  cap.supervisorMembers.push_back("bool grip_aborted_{false};");
+  cap.supervisorMembers.push_back("bool grip_aborting_{false};");
+  cap.supervisorMembers.push_back("std::condition_variable grip_cv_;");
   cap.supervisorMembers.push_back("std::shared_ptr<moveit::planning_interface::MoveGroupInterface> arm_mgi_;");
   cap.supervisorMembers.push_back("std::shared_ptr<moveit::planning_interface::MoveGroupInterface> gripper_mgi_;");
   cap.supervisorMembers.push_back("bool moveGripperHome();\n");
+  cap.supervisorMembers.push_back("bool grip_cancelled();");
+  cap.supervisorMembers.push_back("void grip_cancel_done();");
   cap.supervisorMembers.push_back("geometry_msgs::msg::PoseStamped applyToolOffset(const geometry_msgs::msg::PoseStamped& at_marker);\n");
 
   // ======================================================================================================
@@ -2310,21 +2366,35 @@ void RosEmitter::collectGrip(Capability& cap)
 
   // ======================================================================================================
   // Methods - Here we add any methods that this capability might add to the supervisor
+  {
+    cap.supervisorMethods.push_back(std::format("bool {}::grip_cancelled()", mOptions.supervisorClass));
+    cap.supervisorMethods.push_back("{");
+    cap.supervisorMethods.push_back("  std::lock_guard<std::mutex> lock(grip_mtx_);");
+    cap.supervisorMethods.push_back("  return grip_aborting_;");
+    cap.supervisorMethods.push_back("}");
+
+    cap.supervisorMethods.push_back(std::format("void {}::grip_cancel_done()", mOptions.supervisorClass));
+    cap.supervisorMethods.push_back("{");
+    cap.supervisorMethods.push_back("  {");
+    cap.supervisorMethods.push_back("    std::lock_guard<std::mutex> lock(grip_mtx_);");
+    cap.supervisorMethods.push_back("    grip_aborted_ = true;");
+    cap.supervisorMethods.push_back("  }");
+    cap.supervisorMethods.push_back("  grip_cv_.notify_all();");
+    cap.supervisorMethods.push_back("}");
+  }
   // Trigger
   {
     cap.supervisorMethods.push_back(std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, trigger->name, argDecls(trigger->arguments)));
     cap.supervisorMethods.push_back("{");
-    cap.supervisorMethods.push_back("  geometry_msgs::msg::PoseStamped goal_pose;");
     cap.supervisorMethods.push_back("  {");
-    cap.supervisorMethods.push_back("    std::lock_guard<std::mutex> lock(aruco_pose_mtx_);");
-    cap.supervisorMethods.push_back("    if (!aruco_pose_)");
-    cap.supervisorMethods.push_back("      return Result::Failure;\n");
-    cap.supervisorMethods.push_back("    goal_pose = aruco_pose_.value();");
-    cap.supervisorMethods.push_back("  }");
-    cap.supervisorMethods.push_back(std::format("  if ({}.joinable())", mOptions.taskThread));
-    cap.supervisorMethods.push_back(std::format("    {}.join();\n", mOptions.taskThread));
-    cap.supervisorMethods.push_back(std::format("  {} = std::thread([this, goal_pose, grip] {{", mOptions.taskThread));
-    cap.supervisorMethods.push_back("    auto goal = applyToolOffset(goal_pose);");
+    cap.supervisorMethods.push_back("    std::lock_guard<std::mutex> lock(grip_mtx_);");
+    cap.supervisorMethods.push_back("    grip_aborting_ = false;");
+    cap.supervisorMethods.push_back("    grip_aborted_ = false;");
+    cap.supervisorMethods.push_back("  }\n");
+    auto [threadName, content] = createThread(cap.name);
+    cap.supervisorMethods.push_back(content);
+    cap.supervisorMethods.push_back(std::format("  {} = std::thread([this, pose, grip] {{", threadName));
+    cap.supervisorMethods.push_back("    auto goal = applyToolOffset(pose);");
     cap.supervisorMethods.push_back("    const auto planning_frame = arm_mgi_->getPlanningFrame();");
     cap.supervisorMethods.push_back("    arm_mgi_->setPoseReferenceFrame(planning_frame);");
     cap.supervisorMethods.push_back("    arm_mgi_->setStartStateToCurrentState();");
@@ -2336,13 +2406,31 @@ void RosEmitter::collectGrip(Capability& cap)
     cap.supervisorMethods.push_back(
         "    arm_mgi_->setPositionTarget(goal.pose.position.x, goal.pose.position.y, goal.pose.position.z, arm_mgi_->getEndEffectorLink());\n");
     cap.supervisorMethods.push_back("    moveit::planning_interface::MoveGroupInterface::Plan plan;");
-    cap.supervisorMethods.push_back("    if (arm_mgi_->plan(plan) != moveit::core::MoveItErrorCode::SUCCESS) {");
+
+    cap.supervisorMethods.push_back("    auto planResult = arm_mgi_->plan(plan);");
+    cap.supervisorMethods.push_back("    if (grip_cancelled())");
+    cap.supervisorMethods.push_back("    {");
+    cap.supervisorMethods.push_back("      RCLCPP_INFO(get_logger(), \"Grip operation cancelled while planning\");");
+    cap.supervisorMethods.push_back("      grip_cancel_done();");
+    cap.supervisorMethods.push_back("      return;");
+    cap.supervisorMethods.push_back("    }");
+
+    cap.supervisorMethods.push_back("    if (planResult != moveit::core::MoveItErrorCode::SUCCESS) {");
     cap.supervisorMethods.push_back("      RCLCPP_ERROR(get_logger(), \"MoveIt plan failed.\");");
     cap.supervisorMethods.push_back(std::format("      if ({}_{})", cap.name, onError->name));
     cap.supervisorMethods.push_back(std::format("        {}_{}();", cap.name, onError->name, argNames(onError->arguments)));
     cap.supervisorMethods.push_back("      return;");
     cap.supervisorMethods.push_back("    }\n");
-    cap.supervisorMethods.push_back("    if (arm_mgi_->execute(plan) != moveit::core::MoveItErrorCode::SUCCESS) {");
+
+    cap.supervisorMethods.push_back("    auto executionResult = arm_mgi_->execute(plan);");
+    cap.supervisorMethods.push_back("    if (grip_cancelled())");
+    cap.supervisorMethods.push_back("    {");
+    cap.supervisorMethods.push_back("      RCLCPP_INFO(get_logger(), \"Grip operation cancelled while executing\");");
+    cap.supervisorMethods.push_back("      grip_cancel_done();");
+    cap.supervisorMethods.push_back("      return;");
+    cap.supervisorMethods.push_back("    }\n");
+
+    cap.supervisorMethods.push_back("    if (executionResult != moveit::core::MoveItErrorCode::SUCCESS) {");
     cap.supervisorMethods.push_back("      RCLCPP_ERROR(get_logger(), \"MoveIt exec failed.\");");
     cap.supervisorMethods.push_back(std::format("      if ({}_{})", cap.name, onError->name));
     cap.supervisorMethods.push_back(std::format("        {}_{}();", cap.name, onError->name, argNames(onError->arguments)));
@@ -2357,7 +2445,7 @@ void RosEmitter::collectGrip(Capability& cap)
     cap.supervisorMethods.push_back("    if (!moveGripperHome())");
     cap.supervisorMethods.push_back("    {");
     cap.supervisorMethods.push_back("      RCLCPP_ERROR(get_logger(), \"Failed to set arm to drive position.\");");
-    cap.supervisorMethods.push_back(std::format("      if ({}_{})", cap.name, onError->name));
+    cap.supervisorMethods.push_back(std::format("      if (!grip_cancelled() && {}_{})", cap.name, onError->name));
     cap.supervisorMethods.push_back(std::format("        {}_{}();", cap.name, onError->name, argNames(onError->arguments)));
     cap.supervisorMethods.push_back("      return;");
     cap.supervisorMethods.push_back("    }\n");
@@ -2373,6 +2461,23 @@ void RosEmitter::collectGrip(Capability& cap)
     cap.supervisorMethods.push_back(std::format("Result {}::{}{}({})", mOptions.supervisorClass, cap.name, onAbort->name, argDecls(onAbort->arguments)));
     cap.supervisorMethods.push_back("{");
     cap.supervisorMethods.push_back("  // We use the standard abort");
+    cap.supervisorMethods.push_back("  {");
+    cap.supervisorMethods.push_back("    std::lock_guard<std::mutex> lock(grip_mtx_);");
+    cap.supervisorMethods.push_back("    grip_aborting_ = true;");
+    cap.supervisorMethods.push_back("    grip_aborted_ = false; // Ensure it needs to be updated");
+    cap.supervisorMethods.push_back("  }\n");
+
+    cap.supervisorMethods.push_back("  if (arm_mgi_) arm_mgi_->stop();");
+    cap.supervisorMethods.push_back("  if (gripper_mgi_) gripper_mgi_->stop();\n");
+
+    cap.supervisorMethods.push_back("  std::unique_lock lock(grip_mtx_);");
+    cap.supervisorMethods.push_back("  const bool finished = grip_cv_.wait_for(lock, std::chrono::seconds(5), [this] { return grip_aborted_; });");
+    cap.supervisorMethods.push_back("  if (!finished)");
+    cap.supervisorMethods.push_back("  {");
+    cap.supervisorMethods.push_back("    RCLCPP_ERROR(get_logger(), \"Timed out waiting for canceled handling to finish\");");
+    cap.supervisorMethods.push_back("    return Result::Failure;");
+    cap.supervisorMethods.push_back("  }\n");
+
     cap.supervisorMethods.push_back("  return Result::Success;");
     cap.supervisorMethods.push_back("}\n");
   }
@@ -2423,11 +2528,28 @@ void RosEmitter::collectGrip(Capability& cap)
   cap.supervisorMethods.push_back("  arm_mgi_->setNumPlanningAttempts(10);\n");
   cap.supervisorMethods.push_back("  arm_mgi_->setPositionTarget(drive_pose[0], drive_pose[1], drive_pose[2], arm_mgi_->getEndEffectorLink());\n");
   cap.supervisorMethods.push_back("  moveit::planning_interface::MoveGroupInterface::Plan plan;");
-  cap.supervisorMethods.push_back("  if (arm_mgi_->plan(plan) != moveit::core::MoveItErrorCode::SUCCESS) {");
+  cap.supervisorMethods.push_back("  auto planResult = arm_mgi_->plan(plan);");
+  cap.supervisorMethods.push_back("    if (grip_cancelled())");
+  cap.supervisorMethods.push_back("    {");
+  cap.supervisorMethods.push_back("      RCLCPP_INFO(get_logger(), \"Grip operation cancelled while planning homing\");");
+  cap.supervisorMethods.push_back("      grip_cancel_done();");
+  cap.supervisorMethods.push_back("      return false;");
+  cap.supervisorMethods.push_back("    }\n");
+
+  cap.supervisorMethods.push_back("  if (planResult != moveit::core::MoveItErrorCode::SUCCESS) {");
   cap.supervisorMethods.push_back("    RCLCPP_ERROR(get_logger(), \"MoveIt plan to home failed.\");");
   cap.supervisorMethods.push_back("    return false;");
   cap.supervisorMethods.push_back("  }\n");
-  cap.supervisorMethods.push_back("  if (arm_mgi_->execute(plan) != moveit::core::MoveItErrorCode::SUCCESS)");
+
+  cap.supervisorMethods.push_back("  auto executionResult = arm_mgi_->execute(plan);");
+  cap.supervisorMethods.push_back("    if (grip_cancelled())");
+  cap.supervisorMethods.push_back("    {");
+  cap.supervisorMethods.push_back("      RCLCPP_INFO(get_logger(), \"Grip operation cancelled while homing\");");
+  cap.supervisorMethods.push_back("      grip_cancel_done();");
+  cap.supervisorMethods.push_back("      return false;");
+  cap.supervisorMethods.push_back("    }\n");
+
+  cap.supervisorMethods.push_back("  if (executionResult != moveit::core::MoveItErrorCode::SUCCESS)");
   cap.supervisorMethods.push_back("  {");
   cap.supervisorMethods.push_back("    RCLCPP_ERROR(get_logger(), \"MoveIt exec failed.\");");
   cap.supervisorMethods.push_back("    return false;");

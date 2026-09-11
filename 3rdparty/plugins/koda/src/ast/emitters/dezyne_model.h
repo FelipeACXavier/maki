@@ -186,8 +186,7 @@ public:
   void clear();
   void print() const;
 
-  SymbolId declareComponent(const std::string& name, const std::string& fileName, Provenance origin = {}, bool helper = false,
-                            SymbolId parent = InvalidSymbol);
+  SymbolId declareComponent(const std::string& name, const std::string& fileName, Provenance origin = {}, bool helper = false, SymbolId parent = InvalidSymbol);
   SymbolId declarePort(SymbolId componentId, const std::string& name, PortDirection direction, PortProtocol protocol, Provenance origin = {});
   void removePort(SymbolId componentId, SymbolId portId);
   SymbolId declareInstance(SymbolId component, std::string name, std::string typeName, Provenance origin = {});

@@ -492,10 +492,7 @@ Result<LoweringPass::FlowResult> LoweringPass::lowerFlow(const ir::Flow& flow)
   // required action/signal ports declared earlier and replace them with the
   // actual flow interface. Keep provides ports (api) and alarm ports.
   if (auto* flowComponent = mModel.getComponent(componentId))
-  {
-    std::erase_if(flowComponent->ports,
-                  [](const Port& port) { return port.direction == PortDirection::Requires && port.protocol != PortProtocol::Alarm; });
-  }
+    std::erase_if(flowComponent->ports, [](const Port& port) { return port.direction == PortDirection::Requires && port.protocol != PortProtocol::Alarm; });
 
   for (const auto& call : requiredCalls)
   {
@@ -533,7 +530,7 @@ Result<LoweringPass::FlowResult> LoweringPass::lowerFlow(const ir::Flow& flow)
     if (!symbol)
       continue;
 
-    LOG_DEBUG("Adding import: {} {}", symbol->name, instance.typeName);
+    LOG_TRACE("Adding import: {} {}", symbol->name, instance.typeName);
     if (instance.typeName.starts_with("caction_arbiter"))
     {
       const auto suffix = instance.typeName.substr(std::string("caction_arbiter").size());

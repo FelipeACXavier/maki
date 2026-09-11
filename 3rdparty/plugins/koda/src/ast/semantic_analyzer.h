@@ -31,6 +31,7 @@ struct ResolvedArgumentSource
 {
   ArgumentSourceKind kind;
   std::optional<koda::types::SlotId> slot;
+  PExpr expression;
 };
 
 struct ResolvedCall
@@ -41,6 +42,7 @@ struct ResolvedCall
   types::TypeReference returnType;
 
   std::vector<koda::types::TypeReference> args = {};
+  std::vector<PExpr> argExpressions = {};
 
   std::vector<std::optional<types::SlotId>> inputSlots = {};
   std::vector<types::SlotId> outputSlots = {};
@@ -100,6 +102,7 @@ private:
 
   Result<std::vector<koda::types::TypeReference>> analyseArgs(const PEventCall& call, SymbolId owner);
   bool compatible(const types::TypeReference& expected, const types::TypeReference& actual);
+  bool isVisible(uint32_t producerFlow, uint32_t consumerFlow) const;
 };
 
 }  // namespace koda
