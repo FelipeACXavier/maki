@@ -353,6 +353,25 @@ void InputWidget::addDescription(const QString& text)
 
 QWidget* InputWidget::createLayout(oclero::qlementine::Label* labelWidget, WidgetAlignment alignment)
 {
+  if (alignment.direction == WidgetAlignment::Direction::ABOVE)
+  {
+    auto* above = new QWidget(this);
+    auto* aboveLayout = new QVBoxLayout(above);
+    aboveLayout->setContentsMargins(0, 0, 0, 0);
+    aboveLayout->setSpacing(WIDGET_SPACING);
+
+    if (labelWidget)
+      aboveLayout->addWidget(labelWidget);
+
+    mContainerLayout = new QHBoxLayout();
+    mContainerLayout->setContentsMargins(0, 0, 0, 0);
+    mContainerLayout->setSpacing(WIDGET_SPACING);
+    mContainerLayout->addWidget(mInputField, 1);
+    aboveLayout->addLayout(mContainerLayout);
+
+    return above;
+  }
+
   auto* container = new QWidget(this);
   mContainerLayout = new QHBoxLayout(container);
   mContainerLayout->setContentsMargins(0, 0, 0, 0);
@@ -1193,8 +1212,8 @@ QList<QWidget*> ListWidget::focusWidgets() const
 }
 
 // =========================================================================================================
-MapWidget::MapWidget(const QString& label, const koda::types::TypeReference& keyType, const koda::types::TypeReference& valueType,
-                     WidgetAlignment alignment, QWidget* parent)
+MapWidget::MapWidget(const QString& label, const koda::types::TypeReference& keyType, const koda::types::TypeReference& valueType, WidgetAlignment alignment,
+                     QWidget* parent)
     : TypedInputWidget<WidgetGroup>("", new maki::WidgetGroup(label, oclero::qlementine::TextRole::H5, nullptr), alignment, parent)
     , mKeyType(keyType)
     , mValueType(valueType)
@@ -1324,8 +1343,9 @@ QList<QWidget*> MapWidget::focusWidgets() const
 }
 
 // =========================================================================================================
-RecordWidget::RecordWidget(const QString& label, const koda::types::TypeDefinition& definition, WidgetAlignment alignment, QWidget* parent)
-    : TypedInputWidget<WidgetGroup>("", new maki::WidgetGroup(label, oclero::qlementine::TextRole::H5, nullptr), alignment, parent)
+RecordWidget::RecordWidget(const QString& containerLabel, const QString& label, const koda::types::TypeDefinition& definition, WidgetAlignment alignment,
+                           QWidget* parent)
+    : TypedInputWidget<WidgetGroup>(containerLabel, new maki::WidgetGroup(label, oclero::qlementine::TextRole::H5, nullptr), alignment, parent)
     , mDefinition(definition)
 {
 }
@@ -1459,7 +1479,7 @@ InputWidget* ValueEditorFactory::create(const QString& label, const koda::types:
   }
   else if (definition->isRecord())
   {
-    auto* editor = new maki::RecordWidget(QString::fromStdString(definition->name.toString()), *definition, alignment, parent);
+    auto* editor = new maki::RecordWidget(label, QString::fromStdString(definition->name.toString()), *definition, alignment, parent);
     SET_REF_OR_VALUE(editor, value, toRecord)
     return editor;
   }

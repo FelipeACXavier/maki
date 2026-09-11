@@ -45,8 +45,7 @@ public:
    * @param languageManager A shared pointer to the LanguageManager.
    * @param parent The parent widget.
    */
-  SettingsDialog(const QString& title, std::shared_ptr<SettingsManager> manager, std::shared_ptr<LanguageManager> languageManager,
-                 QWidget* parent = nullptr);
+  SettingsDialog(const QString& title, std::shared_ptr<SettingsManager> manager, std::shared_ptr<LanguageManager> languageManager, QWidget* parent = nullptr);
 
 private slots:
   /**
@@ -78,6 +77,7 @@ private:
   maki::BooleanWidget* mConfirmOnClose = nullptr;      /// Widget for enabling/disabling confirmation on close.
   maki::BooleanWidget* mEnableDebugLogs = nullptr;     /// Widget for enabling debug logs.
   maki::IntegerWidget* mRecentHistorySize = nullptr;   /// Widget for setting recent history size.
+  maki::IntegerWidget* mLogHistorySize = nullptr;      /// Widget for setting the log history size.
   maki::BooleanWidget* mShowWelcomeMessage = nullptr;  /// Widget for enabling/disabling welcome message.
   maki::SelectorWidget* mLanguageCombo = nullptr;      /// Widget for selecting language.
 

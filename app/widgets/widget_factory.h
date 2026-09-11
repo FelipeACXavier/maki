@@ -68,6 +68,7 @@ struct WidgetAlignment
     RIGHT,
     CENTER,
     SPREAD,
+    ABOVE
   } direction;  ///< The alignment mode to apply.
 
   WidgetGroup* group;  ///< Optional form layout associated with this alignment.
@@ -337,8 +338,7 @@ public:
    * @param min The minimum allowed value.
    * @param max The maximum allowed value.
    */
-  IntegerWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent, int min = INT32_MIN,
-                int max = INT32_MAX);
+  IntegerWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent, int min = INT32_MIN, int max = INT32_MAX);
 
   /**
    * @brief Sets the widget to accept variables
@@ -380,8 +380,8 @@ public:
    * @param min The minimum allowed value.
    * @param max The maximum allowed value.
    */
-  FloatWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent,
-              qreal min = std::numeric_limits<qreal>::min(), qreal max = std::numeric_limits<qreal>::max());
+  FloatWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent, qreal min = std::numeric_limits<qreal>::min(),
+              qreal max = std::numeric_limits<qreal>::max());
 
   /**
    * @brief Sets the widget to accept variables
@@ -738,7 +738,8 @@ class RecordWidget : public TypedInputWidget<WidgetGroup>
 {
   Q_OBJECT
 public:
-  RecordWidget(const QString& label, const koda::types::TypeDefinition& definition, WidgetAlignment alignment, QWidget* parent = nullptr);
+  RecordWidget(const QString& containerLabel, const QString& label, const koda::types::TypeDefinition& definition, WidgetAlignment alignment,
+               QWidget* parent = nullptr);
 
   RecordValue getValue() const;
   void setValue(const RecordValue& value);
@@ -774,8 +775,7 @@ private:
 class ValueEditorFactory
 {
 public:
-  static InputWidget* create(const QString& label, const koda::types::TypeReference& type, const Value& value, WidgetAlignment alignment,
-                             QWidget* parent);
+  static InputWidget* create(const QString& label, const koda::types::TypeReference& type, const Value& value, WidgetAlignment alignment, QWidget* parent);
 };
 
 }  // namespace maki

@@ -9,6 +9,7 @@
 #include "log_table_highlight.h"
 #include "log_table_model.h"
 #include "logging.h"
+#include "settings_manager.h"
 
 class ClickableIcon;
 class ExpandingWidget;
@@ -65,7 +66,7 @@ public:
    */
   void showAll();
 
-  void logLevelChanged();
+  void onSettingsChanged(const GeneralSettings& settings);
 
 private slots:
   /**
@@ -113,6 +114,8 @@ private:
 
   int mCurrentSearchMatch = -1;  /// Index of the current search match.
   int mDefaultRowHeight = 24;    /// Default row height in pixels.
+  int mMaximumRows = 1000;
+  logging::LogLevel mCurrentLevel = logging::LogLevel::Error;
 
   /**
    * @brief Sets the search text and updates the search matches.

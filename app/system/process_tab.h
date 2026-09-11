@@ -5,6 +5,7 @@
 #include <QWidget>
 
 #include "compiler/pipeline.h"
+#include "widgets/settings_manager.h"
 
 class QTextBrowser;
 
@@ -30,6 +31,8 @@ public:
   void addPipeline(Pipeline* pipeline);
 
   void setMergedLogs(bool mergeLogs);
+
+  void onSettingsChanged(const GeneralSettings& settings);
 
 signals:
   /**
@@ -103,6 +106,7 @@ private:
   bool mMergeLogs;
 
   int mOverwriteNextLine = 0;  // after ESC[1F]
+  int mMaximumRows = 1000;
 
   /**
    * @brief Appends text to the output.

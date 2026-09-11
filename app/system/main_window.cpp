@@ -179,15 +179,12 @@ VoidResult MainWindow::start()
       mLogTable->showAll();
 
     if (mSettingsManager->general().enableDebugLogs)
-    {
       logging::gMinLogLevel = logging::LogLevel::Trace;
-      mLogTable->logLevelChanged();
-    }
     else
-    {
       logging::gMinLogLevel = logging::LogLevel::Debugging;
-    }
 
+    mLogTable->onSettingsChanged(mSettingsManager->general());
+    mProcessTab->onSettingsChanged(mSettingsManager->general());
     onThemeChanged(mSettingsManager->appearance(), true);
   }
 
@@ -264,17 +261,12 @@ void MainWindow::onSettingsChanged()
     mLanguageManager->setLanguage(mSettingsManager->general().language);
 
   if (mSettingsManager->general().enableDebugLogs)
-  {
     logging::gMinLogLevel = logging::LogLevel::Trace;
-    if (mLogTable)
-      mLogTable->logLevelChanged();
-  }
   else
-  {
     logging::gMinLogLevel = logging::LogLevel::Debugging;
-    if (mLogTable)
-      mLogTable->logLevelChanged();
-  }
+
+  if (mLogTable)
+    mLogTable->onSettingsChanged(mSettingsManager->general());
 
   if (mPluginManager)
     mPluginManager->settingsChanged(mSettingsManager->plugins(), mHostServices);
@@ -283,7 +275,10 @@ void MainWindow::onSettingsChanged()
     mRouter->setRouteOption((EdgeRouter::Option)mSettingsManager->appearance().edgeShape);
 
   if (mProcessTab)
+  {
     mProcessTab->setMergedLogs(mSettingsManager->plugins().showCombinedLogs);
+    mProcessTab->onSettingsChanged(mSettingsManager->general());
+  }
 
   // Clean and repopulate the recent files
   mActionOpenRecent->clear();
@@ -1360,7 +1355,7 @@ void MainWindow::onFileLoaded(const QString& file, const SaveInfo& info, const Q
   }
 
   if (mSystemMenu)
-    mSystemMenu->expandToDepth(1);
+    mSystemMenu->expandToDepth(0);
 
   if (fromTemplate)
   {

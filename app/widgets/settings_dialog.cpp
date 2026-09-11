@@ -168,6 +168,7 @@ VoidResult SettingsDialog::createGeneralPage()
     mAutosaveMinutes->setValue(defaultSettings.autosaveIntervalMinutes);
     mAutosaveEnabled->setValue(defaultSettings.autosaveEnabled);
     mRecentHistorySize->setValue(defaultSettings.recentHistorySize);
+    mLogHistorySize->setValue(defaultSettings.maximumLogHistory);
     mRestoreLastSession->setValue(defaultSettings.restoreLastSession);
     mConfirmOnClose->setValue(defaultSettings.confirmOnCloseWithExecution);
     mEnableDebugLogs->setValue(defaultSettings.enableDebugLogs);
@@ -203,8 +204,8 @@ VoidResult SettingsDialog::createGeneralPage()
       new maki::IntegerWidget(tr("Recent History Size"), QString::number(generalSettings.recentHistorySize), alignment, page, INT32_MIN, INT32_MAX);
 
   mRestoreLastSession = new maki::BooleanWidget(tr("Restore last session on startup"), generalSettings.restoreLastSession, alignment, page);
-  mConfirmOnClose = new maki::BooleanWidget(tr("Confirm before closing editor with running execution"), generalSettings.confirmOnCloseWithExecution,
-                                            alignment, page);
+  mConfirmOnClose =
+      new maki::BooleanWidget(tr("Confirm before closing editor with running execution"), generalSettings.confirmOnCloseWithExecution, alignment, page);
   mShowWelcomeMessage = new maki::BooleanWidget(tr("Show welcome message"), generalSettings.showWelcomeMessage, alignment, page);
 
   auto closingLayout = new maki::WidgetGroup(tr("Opening/Closing"), page);
@@ -214,8 +215,12 @@ VoidResult SettingsDialog::createGeneralPage()
   closingLayout->addWidget(mRecentHistorySize);
 
   mEnableDebugLogs = new maki::BooleanWidget(tr("Enable debug logs"), generalSettings.enableDebugLogs, alignment, page);
+  mLogHistorySize = new maki::IntegerWidget(tr("Log History Size"), QString::number(generalSettings.maximumLogHistory), alignment, page, 250, INT32_MAX);
+  mLogHistorySize->addDescription(tr("A large value may require a higher memory usage"));
+
   auto logLayout = new maki::WidgetGroup(tr("Logging and Notifications"), page);
   logLayout->addWidget(mEnableDebugLogs);
+  logLayout->addWidget(mLogHistorySize);
 
   QVBoxLayout* layout = page->findChild<QVBoxLayout*>("ContentArea");
   layout->addWidget(languageLayout);
@@ -564,6 +569,7 @@ void SettingsDialog::saveToSettings()
   general.autosaveEnabled = mAutosaveEnabled->getValue();
   general.enableDebugLogs = mEnableDebugLogs->getValue();
   general.recentHistorySize = mRecentHistorySize->getValue();
+  general.maximumLogHistory = mLogHistorySize->getValue();
   general.showWelcomeMessage = mShowWelcomeMessage->getValue();
   general.restoreLastSession = mRestoreLastSession->getValue();
   general.autosaveIntervalMinutes = mAutosaveMinutes->getValue();

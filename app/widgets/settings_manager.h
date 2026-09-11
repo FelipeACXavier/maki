@@ -26,6 +26,7 @@ struct GeneralSettings
   int autosaveIntervalMinutes = 5;          /// Interval for autosave in minutes.
   bool confirmOnCloseWithExecution = true;  /// Whether to confirm close with execution.
   bool enableDebugLogs = true;              /// Whether debug logs are enabled.
+  int maximumLogHistory = 2000;             /// How many rows to keep in the log table
   int recentHistorySize = 10;               /// Size of the recent history list.
   bool showWelcomeMessage = true;           /// Whether to show the welcome message.
   QVector<QString> recentFiles = {};        /// List of recent files.
@@ -34,10 +35,10 @@ struct GeneralSettings
 
   bool operator!=(const GeneralSettings& s) const
   {
-    return restoreLastSession != s.restoreLastSession || autosaveEnabled != s.autosaveEnabled ||
-           autosaveIntervalMinutes != s.autosaveIntervalMinutes || confirmOnCloseWithExecution != s.confirmOnCloseWithExecution ||
-           enableDebugLogs != s.enableDebugLogs || recentHistorySize != s.recentHistorySize || recentFiles != s.recentFiles ||
-           showWelcomeMessage != s.showWelcomeMessage || lastOpenFileDir != s.lastOpenFileDir || language != s.language;
+    return restoreLastSession != s.restoreLastSession || autosaveEnabled != s.autosaveEnabled || autosaveIntervalMinutes != s.autosaveIntervalMinutes ||
+           confirmOnCloseWithExecution != s.confirmOnCloseWithExecution || enableDebugLogs != s.enableDebugLogs || recentHistorySize != s.recentHistorySize ||
+           recentFiles != s.recentFiles || showWelcomeMessage != s.showWelcomeMessage || lastOpenFileDir != s.lastOpenFileDir || language != s.language ||
+           maximumLogHistory != s.maximumLogHistory;
   }
 };
 

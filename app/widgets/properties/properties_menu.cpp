@@ -519,7 +519,8 @@ VoidResult PropertiesMenu::loadCallArguments(const std::shared_ptr<FlowSaveInfo>
       values[static_cast<std::size_t>(index)] = value;
     }
 
-    auto* editor = maki::ValueEditorFactory::create(argument->getid(), argument->gettype(), value, maki::WidgetAlignment::Form(group, 70), this);
+    auto alignment = !argument->gettype().isPrimitive() ? maki::WidgetAlignment::Direction::ABOVE : maki::WidgetAlignment::Direction::SPREAD;
+    auto* editor = maki::ValueEditorFactory::create(argument->getid(), argument->gettype(), value, maki::WidgetAlignment::Form(group, 70, alignment), this);
     if (!editor)
     {
       LOG_WARNING("Could not create argument editor '{}' of type '{}'", argument->getid(), argument->gettype().toString());
@@ -623,18 +624,16 @@ Result<QTableWidget*> PropertiesMenu::loadEventTable(NodeItem* node)
   // Create it once
   auto* eventsTable = new QTableWidget(this);
   eventsTable->setObjectName("EventTable");
-  eventsTable->setColumnCount(4);
+  eventsTable->setColumnCount(3);
   eventsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
   eventsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
   eventsTable->setSelectionMode(QAbstractItemView::ExtendedSelection);
-  eventsTable->setHorizontalHeaderLabels({"Name", "Type", "Return", "Arguments"});
-  eventsTable->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+  eventsTable->setHorizontalHeaderLabels({tr("Name"), tr("Type"), tr("Arguments")});
 
   eventsTable->verticalHeader()->hide();
-  eventsTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+  eventsTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Interactive);
   eventsTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
-  eventsTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
-  eventsTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Stretch);
+  eventsTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
 
   for (const auto& event : node->allEventFlowConfigs())
   {
@@ -647,6 +646,9 @@ Result<QTableWidget*> PropertiesMenu::loadEventTable(NodeItem* node)
           [this, eventsTable, node](const QModelIndex& index) { openEventDialog(eventsTable, node, index.row()); });
 
   auto group = new maki::ContainerWidget(tr("Events/Flows"), eventsTable, maki::WidgetAlignment::Vertical(), this);
+  // Set this after adding to the container so the container does not override it
+  eventsTable->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+  eventsTable->setMaximumHeight(500);  // Let the table expand but not infinitelly
   layout()->addWidget(group);
 
   return eventsTable;
@@ -746,14 +748,14 @@ void PropertiesMenu::addEventToTable(QTableWidget* table, int row, const std::sh
 
   table->setItem(row, 0, indexItem);
   table->setItem(row, 1, new QTableWidgetItem(Types::CallTypeToString(event->gettype())));
-  table->setItem(row, 2, new QTableWidgetItem(QString::fromStdString(event->getreturnType().toString())));
 
   QStringList arguments;
   for (const auto& argument : event->getarguments())
     if (argument)
       arguments.append(argument->getid());
 
-  table->setItem(row, 3, new QTableWidgetItem(arguments.join(", ")));
+  table->setItem(row, 2, new QTableWidgetItem(arguments.join(", ")));
+  table->adjustSize();
 }
 
 void PropertiesMenu::removeEventFromTable(QTableWidget* table, NodeItem* node)

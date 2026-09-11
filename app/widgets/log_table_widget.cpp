@@ -53,7 +53,7 @@ LogTableWidget::LogTableWidget(QWidget* parent)
   mLevelFilter = new DropDownButton(this);
   mLevelFilter->setFixedWidth(100 + Config::CONTENT_PADDING);
 
-  logLevelChanged();
+  onSettingsChanged(GeneralSettings{});
 
   mSourceFilter = new DropDownButton(this);
   mSourceFilter->setFixedWidth(110 + Config::CONTENT_PADDING);
@@ -159,10 +159,18 @@ LogTableWidget::LogTableWidget(QWidget* parent)
   updateFilterText(mSourceFilter, tr("Sources"));
 }
 
-void LogTableWidget::logLevelChanged()
+void LogTableWidget::onSettingsChanged(const GeneralSettings& settings)
 {
+  mMaximumRows = settings.maximumLogHistory;
+
   if (!mLevelFilter)
     return;
+
+  // No need to update the filter if the level didnt change
+  if (logging::gMinLogLevel == mCurrentLevel)
+    return;
+
+  mCurrentLevel = logging::gMinLogLevel;
 
   QMap<QString, bool> currentStates;
   for (const auto& action : mLevelFilter->actions())
@@ -281,6 +289,9 @@ void LogTableWidget::append(logging::LogLevel level, const QString& source, cons
   cleaned.replace("\n", " ");
   cleaned.replace("\r", " ");
   mModel->append(level, source, file, line, cleaned);
+
+  if (mModel->rowCount() > mMaximumRows)
+    mModel->removeRow(0);
 
   if (!mSources.contains(source))
   {

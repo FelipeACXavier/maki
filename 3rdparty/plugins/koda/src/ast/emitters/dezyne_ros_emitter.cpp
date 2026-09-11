@@ -5,7 +5,6 @@
 #include <format>
 #include <fstream>
 #include <sstream>
-#include <stdexcept>
 
 #include "logging.h"
 

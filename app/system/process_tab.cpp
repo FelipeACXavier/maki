@@ -77,6 +77,11 @@ void ProcessTab::onErrorOccurred(const Pipeline::Info& /* info */, QProcess::Pro
   emit processFinished(1, QProcess::ExitStatus::CrashExit);
 }
 
+void ProcessTab::onSettingsChanged(const GeneralSettings& settings)
+{
+  mMaximumRows = settings.maximumLogHistory;
+}
+
 void ProcessTab::appendText(const QString& text)
 {
   logMessage(text);
@@ -84,6 +89,16 @@ void ProcessTab::appendText(const QString& text)
   mOutput->moveCursor(QTextCursor::End);
   mOutput->append(text);
   mOutput->verticalScrollBar()->setValue(mOutput->verticalScrollBar()->maximum());
+
+  // Do not store everything, make sure we don't consume all the memory in the world
+  auto* doc = mOutput->document();
+  while (doc->blockCount() > mMaximumRows)
+  {
+    QTextCursor cursor(doc);
+    cursor.movePosition(QTextCursor::Start);
+    cursor.movePosition(QTextCursor::NextBlock, QTextCursor::KeepAnchor);
+    cursor.removeSelectedText();
+  }
 }
 
 void ProcessTab::handleProcessData(const QByteArray& raw)
