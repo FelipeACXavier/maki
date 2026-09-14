@@ -50,8 +50,8 @@ void LibraryContainer::updateSceneSize()
   if (!scene())
     return;
 
-  QRectF bounds = qobject_cast<LibraryScene*>(scene())->visibleItemsBounds();
-  const int contentHeight = qCeil(bounds.height()) + 20;
+  const QRectF bounds = qobject_cast<LibraryScene*>(scene())->visibleItemsBounds();
+  const int contentHeight = qCeil(bounds.height()) + PADDING;
 
   scene()->setSceneRect(0, 0, viewport()->width(), contentHeight);
   setFixedHeight(contentHeight + frameWidth() * 2);
@@ -97,14 +97,8 @@ bool LibraryContainer::filterNodes(const QString& query)
 
 void LibraryContainer::relayoutItems()
 {
-  QList<DraggableItem*> items;
-  for (QGraphicsItem* graphicsItem : scene()->items(Qt::AscendingOrder))
-  {
-    if (graphicsItem->type() != DraggableItem::Type)
-      continue;
-
-    items.append(dynamic_cast<DraggableItem*>(graphicsItem));
-  }
+  // We calculate the cellHeight before based on the tallest item
+  auto cellHeight = 0;
 
   const qreal availableWidth = viewport()->width();
   const int columnCount = mColumnCount;
@@ -112,18 +106,31 @@ void LibraryContainer::relayoutItems()
   const qreal columnWidth = availableWidth / columnCount;
   const qreal itemWidth = columnWidth - PADDING;
 
+  QList<DraggableItem*> items;
+  for (QGraphicsItem* graphicsItem : scene()->items(Qt::AscendingOrder))
+  {
+    if (graphicsItem->type() != DraggableItem::Type)
+      continue;
+
+    if (auto item = qgraphicsitem_cast<DraggableItem*>(graphicsItem))
+    {
+      item->adjustWidth(itemWidth);
+      item->update();
+      if (item->boundingRect().height() > cellHeight)
+        cellHeight = item->boundingRect().height();
+
+      items.append(item);
+    }
+  }
+
   for (int i = 0; i < items.size(); ++i)
   {
     const int column = i % columnCount;
     const int row = i / columnCount;
-
-    items[i]->adjustWidth(itemWidth);
-
-    QRectF itemBounds = items[i]->boundingRect();
+    const QRectF itemBounds = items[i]->boundingRect();
     const qreal x = (column * columnWidth + columnWidth / 2.0) - (itemBounds.width() / 2);
-    const qreal y = PADDING + row * (CELL_HEIGHT + PADDING);
-
-    items[i]->setPos(x, y + CELL_HEIGHT - itemBounds.bottom());
+    const qreal y = (PADDING + row * (cellHeight + PADDING)) + qMax<int>(0, cellHeight - itemBounds.bottom());
+    items[i]->setPos(x, y);
   }
 
   updateSceneSize();

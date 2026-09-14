@@ -196,6 +196,22 @@ QString Types::LibraryTypeToString(Types::LibraryTypes type)
     return "behavioural";
   else if (type == Types::LibraryTypes::PIPELINE)
     return "pipeline";
+  else if (type == Types::LibraryTypes::DATA)
+    return "data";
 
   return "unknown";
+}
+
+Types::LibraryTypes Types::LibraryTypeFromString(const QString& type)
+{
+  if (type == "structural")
+    return Types::LibraryTypes::STRUCTURAL;
+  else if (type == "behavioural")
+    return Types::LibraryTypes::BEHAVIOUR;
+  else if (type == "pipeline")
+    return Types::LibraryTypes::PIPELINE;
+  else if (type == "data")
+    return Types::LibraryTypes::DATA;
+
+  return Types::LibraryTypes::UNKNOWN;
 }

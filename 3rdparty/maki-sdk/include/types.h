@@ -107,6 +107,7 @@ enum class LibraryTypes
   DATA
 };
 
+Types::LibraryTypes LibraryTypeFromString(const QString& type);
 QString LibraryTypeToString(LibraryTypes type);
 
 static const QString INFERRED = "Inferred";
