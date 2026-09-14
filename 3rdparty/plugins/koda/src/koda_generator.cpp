@@ -575,7 +575,7 @@ Result<maki::PipelineArtifact> KodaGenerator::launchRosProject(const maki::Pipel
     "-v", projectDir + ":/home/felaze/ros2_ws/src/koda_ros:rw",
     "-w", "/home/felaze/ros2_ws",
     "ros2:v1.0.0",
-    "bash", "-ic", QString("source /opt/ros/humble/setup.bash && source install/setup.bash && ros2 launch %1 %2 | grep -v \"Sensor origin\" | grep -v rviz | grep -v \"frame does not exist\"").arg(packageName, launchFile),
+    "bash", "-ic", QString("source /opt/ros/humble/setup.bash && source install/setup.bash && ros2 launch %1 %2 2>&1 | grep --line-buffered -v \"Sensor origin\" | grep --line-buffered -v rviz | grep --line-buffered -v \"frame does not exist\"").arg(packageName, launchFile),
   };
   // clang-format on
   generate->setArguments(args);

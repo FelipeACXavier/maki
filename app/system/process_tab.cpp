@@ -86,10 +86,6 @@ void ProcessTab::appendText(const QString& text)
 {
   logMessage(text);
 
-  mOutput->moveCursor(QTextCursor::End);
-  mOutput->append(text);
-  mOutput->verticalScrollBar()->setValue(mOutput->verticalScrollBar()->maximum());
-
   // Do not store everything, make sure we don't consume all the memory in the world
   auto* doc = mOutput->document();
   while (doc->blockCount() > mMaximumRows)
@@ -99,6 +95,10 @@ void ProcessTab::appendText(const QString& text)
     cursor.movePosition(QTextCursor::NextBlock, QTextCursor::KeepAnchor);
     cursor.removeSelectedText();
   }
+
+  mOutput->moveCursor(QTextCursor::End);
+  mOutput->append(text);
+  mOutput->verticalScrollBar()->setValue(mOutput->verticalScrollBar()->maximum());
 }
 
 void ProcessTab::handleProcessData(const QByteArray& raw)
