@@ -1,8 +1,7 @@
 #pragma once
 
 #include <QDialog>
-
-#include "style_helpers.h"
+#include <QVBoxLayout>
 
 class QDialogButtonBox;
 
@@ -31,8 +30,6 @@ protected:
    * @param screenFraction The fraction of the screen to use for the dialog.
    */
   void setSize(double ratio, double screenFraction);
-
-  void setFlexibleSize(int minWidth, int minHeight);
 
   /**
    * @brief Sets the size of the dialog based on the given ratio, screen fraction, and height fraction.

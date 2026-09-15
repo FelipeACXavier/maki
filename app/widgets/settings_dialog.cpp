@@ -305,7 +305,7 @@ VoidResult SettingsDialog::createAppearancePage()
   editorLayout->addWidget(mNumberOfTaskColumns);
   editorLayout->addWidget(mTransitionShape);
 
-  auto themeLayout = new maki::WidgetGroup(tr("Theming"), page);
+  auto themeLayout = new maki::WidgetGroup(tr("Theme editor"), page);
   auto* qlementineStyle = oclero::qlementine::appStyle();
   if (qlementineStyle)
   {

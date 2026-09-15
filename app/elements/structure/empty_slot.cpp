@@ -62,7 +62,7 @@ void EmptySlot::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidge
   const qreal radius = mDiameter * 0.5;
   const QRectF circleRect(-radius, -radius, mDiameter, mDiameter);
 
-  QColor background = mHovered ? theme.backgroundColorMain3 : theme.backgroundColorMain2;
+  QColor background = mHovered ? theme.neutralColorHovered : theme.neutralColor;
   if (mPressed)
     background = background.darker(104);
 

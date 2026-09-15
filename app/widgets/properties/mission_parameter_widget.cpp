@@ -11,7 +11,7 @@
 
 #include "../dialogs/type_value_dialog.h"
 #include "app_configs.h"
-#include "type_selector.h"
+#include "style_helpers.h"
 #include "typing/helpers.h"
 
 namespace maki

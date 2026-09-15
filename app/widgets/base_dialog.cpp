@@ -9,9 +9,7 @@
 #include <QString>
 #include <QVBoxLayout>
 #include <QWidget>
-
-#include "app_configs.h"
-#include "style_helpers.h"
+#include <oclero/qlementine.hpp>
 
 constexpr double MinScreenFraction = 0.10;
 constexpr double TargetScreenFraction = 0.50;
@@ -33,11 +31,6 @@ BaseDialog::BaseDialog(const QString& title, double ratio, double screenFraction
 void BaseDialog::setSize(double ratio, double screenFraction)
 {
   setSize(ratio, screenFraction, TargetScreenFraction);
-}
-
-void BaseDialog::setFlexibleSize(int minWidth, int minHeight)
-{
-  adjustSize();
 }
 
 void BaseDialog::setSize(double ratio, double screenFraction, qreal heightFraction)
@@ -77,17 +70,19 @@ QVBoxLayout* BaseDialog::layout()
 
 QDialogButtonBox* BaseDialog::createButtons(const QString& ok, const QString& cancel)
 {
-  QDialogButtonBox* buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Close, this);
-  layout()->addWidget(buttonBox);
+  oclero::qlementine::Theme theme;
+  if (const auto* style = oclero::qlementine::appStyle())
+    theme = style->theme();
 
-  QFontMetricsF metrics(Fonts::Main);
+  QFontMetricsF metrics(theme.fontRegular);
+  QDialogButtonBox* buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Close, this);
+
   auto okButton = buttonBox->button(QDialogButtonBox::Ok);
   if (okButton)
   {
     okButton->setDefault(false);
     okButton->setAutoDefault(false);
 
-    okButton->setFont(Fonts::Main);
     okButton->setText(" " + ok);
 
     auto textWidth = metrics.horizontalAdvance(okButton->text());
@@ -99,7 +94,6 @@ QDialogButtonBox* BaseDialog::createButtons(const QString& ok, const QString& ca
   auto* cancelBtn = buttonBox->button(QDialogButtonBox::Close);
   if (cancelBtn)
   {
-    cancelBtn->setFont(Fonts::Main);
     cancelBtn->setText(" " + cancel);
     cancelBtn->setAutoDefault(false);
 
@@ -109,6 +103,7 @@ QDialogButtonBox* BaseDialog::createButtons(const QString& ok, const QString& ca
     cancelBtn->setIcon(QIcon(":/icons/reject.svg"));
   }
 
+  layout()->addWidget(buttonBox);
   return buttonBox;
 }
 

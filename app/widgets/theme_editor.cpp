@@ -690,6 +690,7 @@ void ThemeEditorWidget::setTheme(const Theme& theme)
   {
     _impl->theme = theme;
     _impl->updateUi();
+
     Q_EMIT themeChanged(_impl->theme);
   }
 }

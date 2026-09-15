@@ -158,43 +158,14 @@ VoidResult MainWindow::start()
   mNavigationTab->setCurrentIndex(0);
   mPropertiesTab->setCurrentIndex(0);
 
-  if (mSettingsManager)
-  {
-    mFileMenu->setGenerationRoot(mSettingsManager->generation().generationDir);
-    mLanguageManager->setLanguage(mSettingsManager->general().language);
-    mSaveHandler->setLastDir(mSettingsManager->general().lastOpenFileDir);
-    mRouter->setRouteOption((EdgeRouter::Option)mSettingsManager->appearance().edgeShape);
-
-    for (const auto& file : mSettingsManager->general().recentFiles)
-    {
-      QAction* action = mActionOpenRecent->addAction(elideLeft(file, mActionOpenRecent));
-      connect(action, &QAction::triggered, [this, file] { onActionLoad(file); });
-    }
-    connect(mSettingsManager.get(), &SettingsManager::settingsChanged, this, &MainWindow::onSettingsChanged);
-
-    if (!mSettingsManager->general().showWelcomeMessage)
-      mInfoText->clear();
-
-    if (mSettingsManager->appearance().startLogFilterExpanded)
-      mLogTable->showAll();
-
-    if (mSettingsManager->general().enableDebugLogs)
-      logging::gMinLogLevel = logging::LogLevel::Trace;
-    else
-      logging::gMinLogLevel = logging::LogLevel::Debugging;
-
-    mLogTable->onSettingsChanged(mSettingsManager->general());
-    mProcessTab->onSettingsChanged(mSettingsManager->general());
-    onThemeChanged(mSettingsManager->appearance(), true);
-  }
-
   // Load elements after the system started
   QTimer::singleShot(0, this, [this]() {
     if (mPluginManager && mSettingsManager)
       LOG_WARN_ON_FAILURE(mPluginManager->start(mSettingsManager->plugins(), mHostServices));
 
-    LOG_WARN_ON_FAILURE(loadElements());
+    onSettingsChanged();
 
+    LOG_WARN_ON_FAILURE(loadElements());
     LOG_WARN_ON_FAILURE(loadLastSession());
   });
 
@@ -233,6 +204,7 @@ void MainWindow::onThemeChanged(const AppearanceSettings& settings, bool initial
     {
       canvas->onSettingsChanged(settings);
       static_cast<Canvas*>(canvas->scene())->themeChanged();
+      static_cast<Canvas*>(canvas->scene())->settingsChanged(settings);
     }
   }
 
@@ -250,6 +222,9 @@ void MainWindow::onThemeChanged(const AppearanceSettings& settings, bool initial
 
 void MainWindow::onSettingsChanged()
 {
+  if (!mSettingsManager)
+    return;
+
   LOG_DEBUG("Settings changed");
 
   onThemeChanged(mSettingsManager->appearance(), false);
@@ -260,13 +235,23 @@ void MainWindow::onSettingsChanged()
   if (mLanguageManager)
     mLanguageManager->setLanguage(mSettingsManager->general().language);
 
+  if (mSaveHandler)
+    mSaveHandler->setLastDir(mSettingsManager->general().lastOpenFileDir);
+
   if (mSettingsManager->general().enableDebugLogs)
     logging::gMinLogLevel = logging::LogLevel::Trace;
   else
     logging::gMinLogLevel = logging::LogLevel::Debugging;
 
   if (mLogTable)
+  {
     mLogTable->onSettingsChanged(mSettingsManager->general());
+    if (mSettingsManager->appearance().startLogFilterExpanded)
+      mLogTable->showAll();
+  }
+
+  if (mInfoText && !mSettingsManager->general().showWelcomeMessage)
+    mInfoText->clear();
 
   if (mPluginManager)
     mPluginManager->settingsChanged(mSettingsManager->plugins(), mHostServices);
@@ -300,11 +285,6 @@ void MainWindow::onSettingsChanged()
   for (const auto& section : mPipelineTab->findChildren<SectionWidget*>())
     if (auto* library = qobject_cast<LibraryContainer*>(section->content()))
       library->setColumnCount(mSettingsManager->appearance().numberOfColumns);
-
-  for (int i = 0; i < mCanvasPanel->count(); ++i)
-    if (auto view = qobject_cast<CanvasView*>(mCanvasPanel->widget(i)))
-      if (auto* canvas = qobject_cast<Canvas*>(view->scene()))
-        canvas->settingsChanged(mSettingsManager->appearance());
 }
 
 void MainWindow::startUI()
@@ -551,6 +531,7 @@ void MainWindow::bind()
     library[ConfigKeys::NODES] = nodes;
     LOG_WARN_ON_FAILURE(loadElementLibrary(library[ConfigKeys::NAME].toString(), library, false));
   });
+  connect(mSettingsManager.get(), &SettingsManager::settingsChanged, this, &MainWindow::onSettingsChanged);
 
   // Pipeline stuff =============================================================
   connect(mPluginPipeline, &maki::PluginPipeline::pipelineStarted, [this] { toggleGenerationButton(true); });
@@ -575,23 +556,6 @@ void MainWindow::bind()
       }
     }
   });
-
-  // Type Editor stuff =============================================================
-  // if (mTypeEditor)
-  // {
-  //   connect(mTypeEditor->mRecordAction, &QAction::triggered, this, [this] {
-  //     if (mBottomNavigation)
-  //       mBottomNavigation->setCurrentIndex(3);
-  //   });
-  //   connect(mTypeEditor->mAliasAction, &QAction::triggered, this, [this] {
-  //     if (mBottomNavigation)
-  //       mBottomNavigation->setCurrentIndex(3);
-  //   });
-  //   connect(mTypeEditor->mEnumAction, &QAction::triggered, this, [this] {
-  //     if (mBottomNavigation)
-  //       mBottomNavigation->setCurrentIndex(3);
-  //   });
-  // }
 
   // Canvas stuff =============================================================
   bindCanvas();

@@ -30,7 +30,7 @@ CanvasControlWidget::CanvasControlWidget(std::function<void()> dismissed, QGraph
     const auto theme = qlementineStyle->theme();
 
     mFrame->setRadius(theme.borderRadius);
-    mFrame->setBorderWidth(theme.borderWidth);
+    mFrame->setBorderWidth(theme.tabBarPaddingTop);
 
     mFrameLayout->setContentsMargins(0, 0, 0, 0);
     mFrameLayout->setSpacing(0);

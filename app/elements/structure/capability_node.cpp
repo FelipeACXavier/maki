@@ -37,7 +37,7 @@ void CapabilityNode::paint(QPainter* painter, const QStyleOptionGraphicsItem* st
   if (auto qlementinestyle = oclero::qlementine::appStyle())
     theme = qlementinestyle->theme();
 
-  const auto background = theme.backgroundColorMain2;
+  QColor background = theme.neutralColor;
   const QPen pen = isSelected() ? QPen(Config::HIGHLIGHT, 4 / baseScale()) : QPen(Config::FOREGROUND, 1.0 / baseScale());
 
   painter->setPen(pen);
@@ -51,7 +51,7 @@ void CapabilityNode::paint(QPainter* painter, const QStyleOptionGraphicsItem* st
     paintSvg(iconPathFromTheme(config()->body.iconPath), painter, r.center(), r.width(), r.height());
   }
 
-  NodeBase::paintLabel(painter, drawingRect(nodeRect()), pen);
+  NodeBase::paintLabel(painter, drawingRect(nodeRect()), pen, true);
 }
 
 QPainterPath CapabilityNode::shape() const

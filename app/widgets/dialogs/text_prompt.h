@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QLineEdit>
+
 #include "../base_dialog.h"
 
 namespace maki

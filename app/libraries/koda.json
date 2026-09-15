@@ -15,7 +15,8 @@
             "borderColor": "#FFFFFF",
             "width": 250,
             "height": 250,
-            "z-index": -2
+            "z-index": -2,
+            "icon": "node_task.svg"
           },
           "help": {
             "message": "Represents a Task in a single system. Tasks must be populated with Capabilities."
@@ -547,7 +548,7 @@
             "width": 500,
             "height": 500,
             "z-index": -2,
-            "icon": "approach.svg"
+            "icon": "capability_battery_monitoring.svg"
           },
           "properties": [
             {

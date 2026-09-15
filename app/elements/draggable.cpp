@@ -20,9 +20,7 @@ DraggableItem::DraggableItem(const QString& nodeId, std::shared_ptr<NodeConfig> 
   setFlag(QGraphicsItem::ItemIsSelectable, true);
 
   if (!config()->body.iconPath.isEmpty())
-  {
     setIcon(AppPaths::icon(config()->body.iconPath), config()->body.iconColor);
-  }
 
   setLabel(config()->type, Fonts::BaseSize);
 }
@@ -44,10 +42,33 @@ QRectF DraggableItem::nodeRect() const
 void DraggableItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget)
 {
   Q_UNUSED(widget);
-  NodeBase::paintNode(nodeRect(),
-                      config()->body.backgroundColor,
-                      isSelected() ? QPen(Config::HIGHLIGHT, 2.0) : QPen(Config::FOREGROUND, 1.0),
-                      painter);
+  if (config()->libraryType != Types::LibraryTypes::STRUCTURAL || config()->body.iconPath.isEmpty())
+  {
+    NodeBase::paintNode(nodeRect(), config()->body.backgroundColor, isSelected() ? QPen(Config::HIGHLIGHT, 2.0) : QPen(Config::FOREGROUND, 1.0), painter);
+  }
+  else
+  {
+    // I think this can become its own function
+    oclero::qlementine::Theme theme;
+    if (auto qlementinestyle = oclero::qlementine::appStyle())
+      theme = qlementinestyle->theme();
+
+    const auto background = theme.neutralColor;
+    const QPen pen = QPen(Config::FOREGROUND, 1.0);
+
+    painter->setPen(pen);
+    painter->setBrush(QBrush(background));
+
+    const auto rect = scaledRect();
+    if (config()->type != "Koda::Task")
+    {
+      const QRectF r = rect.adjusted(2, 2, -2, -2);
+      painter->drawEllipse(r);
+    }
+    paintSvg(iconPathFromTheme(config()->body.iconPath), painter, nodeRect().center(), rect.width(), rect.height());
+
+    NodeBase::paintLabel(painter, rect, pen);
+  }
 }
 
 QPainterPath DraggableItem::shape() const

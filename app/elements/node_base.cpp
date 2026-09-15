@@ -14,7 +14,7 @@
 const qreal MAX_WIDTH = 60.0;
 const qreal MAX_HEIGHT = 60.0;
 const qreal LABEL_H_SPACING = 8;
-const qreal LABEL_V_SPACING = 4;
+const qreal LABEL_V_SPACING = 2;
 
 NodeBase::NodeBase(const QString& id, const QString& nodeId, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
     : QGraphicsItem(parent)
@@ -151,7 +151,7 @@ QPainterPath NodeBase::nodeShape(const QRectF& bounds) const
   return path;
 }
 
-void NodeBase::paintLabel(QPainter* painter, const QRectF& drawingBounds, const QPen& pen) const
+void NodeBase::paintLabel(QPainter* painter, const QRectF& drawingBounds, const QPen& pen, bool elide) const
 {
   if (mLabelText.isEmpty() || !mPaintLabel)
     return;
@@ -159,16 +159,20 @@ void NodeBase::paintLabel(QPainter* painter, const QRectF& drawingBounds, const 
   painter->setFont(mLabelFont);
   painter->setPen(pen);
 
-  // QTextOption textOption;
-  // textOption.setAlignment(Qt::AlignCenter);
-  // textOption.setWrapMode(QTextOption::WrapAtWordBoundaryOrAnywhere);
-
-  // painter->drawText(labelBoundingRect(), mLabelText, textOption);
-
-  const QFontMetricsF metrics(mLabelFont);
-  const qreal availableWidth = labelBoundingRect().width();
-  const QString elidedText = metrics.elidedText(mLabelText, Qt::ElideRight, static_cast<int>(availableWidth));
-  painter->drawText(labelBoundingRect(), Qt::AlignHCenter | Qt::AlignVCenter, elidedText);
+  QString text = mLabelText;
+  QTextOption textOption;
+  textOption.setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
+  if (!elide)
+  {
+    textOption.setWrapMode(QTextOption::WrapAtWordBoundaryOrAnywhere);
+  }
+  else
+  {
+    const QFontMetricsF metrics(mLabelFont);
+    const qreal availableWidth = labelBoundingRect().width();
+    text = metrics.elidedText(mLabelText, Qt::ElideRight, static_cast<int>(availableWidth));
+  }
+  painter->drawText(labelBoundingRect(), text, textOption);
 }
 
 void NodeBase::paintPixmap(QPainter* painter) const

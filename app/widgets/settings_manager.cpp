@@ -297,10 +297,11 @@ void SettingsManager::applySettings()
     changed = true;
   }
 
-  save();
-
   if (changed)
+  {
+    save();
     emit settingsChanged();
+  }
 }
 
 void SettingsManager::setGeneral(const GeneralSettings& s)

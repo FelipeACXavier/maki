@@ -76,7 +76,7 @@ void TaskNode::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
   painter->setBrush(background);
 
   const QRectF bodyRect = nodeRect().adjusted(theme.spacing, theme.spacing, -theme.spacing, -theme.spacing);
-  painter->drawRoundedRect(bodyRect, theme.borderRadius, theme.borderRadius);
+  painter->drawRoundedRect(bodyRect, 2 * theme.borderRadius, 2 * theme.borderRadius);
 
   NodeBase::paintLabel(painter, drawingRect(nodeRect()), pen);
 }
