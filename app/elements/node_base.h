@@ -9,6 +9,7 @@
 #include "config.h"
 #include "ids.h"
 #include "result.h"
+#include "widgets/settings_manager.h"
 
 /**
  * @brief Base class for all graphical nodes.
@@ -139,6 +140,11 @@ public:
    */
   virtual void toggleLabelVisibility();
 
+  /**
+   * @brief Update the node on setting change
+   */
+  virtual void settingsChanged(const AppearanceSettings& appearance);
+
 protected:
   std::shared_ptr<NodeConfig> mConfig;  /// Configuration settings for the node.
 
@@ -198,6 +204,11 @@ protected:
    * @param painter Painter to use for drawing.
    */
   virtual void paintPixmap(QPainter* painter) const;
+
+  /**
+   * @brief Called by children after setup to fix size
+   */
+  virtual void initializeNodeSize();
 
 private:
   const QString mId;     /// Unique identifier of the node.

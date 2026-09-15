@@ -300,6 +300,11 @@ void MainWindow::onSettingsChanged()
   for (const auto& section : mPipelineTab->findChildren<SectionWidget*>())
     if (auto* library = qobject_cast<LibraryContainer*>(section->content()))
       library->setColumnCount(mSettingsManager->appearance().numberOfColumns);
+
+  for (int i = 0; i < mCanvasPanel->count(); ++i)
+    if (auto view = qobject_cast<CanvasView*>(mCanvasPanel->widget(i)))
+      if (auto* canvas = qobject_cast<Canvas*>(view->scene()))
+        canvas->settingsChanged(mSettingsManager->appearance());
 }
 
 void MainWindow::startUI()

@@ -97,7 +97,8 @@
             "borderColor": "#FFFFFF",
             "width": 500,
             "height": 500,
-            "z-index": -2
+            "z-index": -2,
+            "icon": "capability_siren.svg"
           },
           "properties": [
             {
@@ -161,7 +162,8 @@
             "borderColor": "#FFFFFF",
             "width": 500,
             "height": 500,
-            "z-index": -2
+            "z-index": -2,
+            "icon": "capability_grip.svg"
           },
           "properties": [
             {
@@ -258,7 +260,8 @@
             "borderColor": "#FFFFFF",
             "width": 500,
             "height": 500,
-            "z-index": -2
+            "z-index": -2,
+            "icon": "capability_imageinspector.svg"
           },
           "properties": [
             {
@@ -344,7 +347,8 @@
             "borderColor": "#FFFFFF",
             "width": 500,
             "height": 500,
-            "z-index": -2
+            "z-index": -2,
+            "icon": "capability_drive.svg"
           },
           "properties": [
             {
@@ -443,7 +447,8 @@
             "borderColor": "#FFFFFF",
             "width": 500,
             "height": 500,
-            "z-index": -2
+            "z-index": -2,
+            "icon": "capability_approach.svg"
           },
           "properties": [
             {
@@ -541,7 +546,8 @@
             "borderColor": "#FFFFFF",
             "width": 500,
             "height": 500,
-            "z-index": -2
+            "z-index": -2,
+            "icon": "approach.svg"
           },
           "properties": [
             {
@@ -691,78 +697,6 @@
       "type": "structural",
       "nodes": [
         {
-          "type": "IO Bridge",
-          "body": {
-            "shape": "Rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#bb2c1e",
-            "borderColor": "#FFFFFF",
-            "width": 500,
-            "height": 500,
-            "z-index": -2
-          },
-          "properties": [
-            {
-              "id": "name",
-              "type": "string",
-              "default": {
-                "kind": "string",
-                "value": "IO Bridge"
-              }
-            },
-            {
-              "id": "color",
-              "type": "void",
-              "control": "color",
-              "default": {
-                "kind": "string",
-                "value": "#bb2c1e"
-              }
-            },
-            {
-              "id": "calldef",
-              "type": "void",
-              "default": {
-                "kind": "list",
-                "value": [
-                  {
-                    "kind": "record",
-                    "value": {
-                      "type": {
-                        "kind": "string",
-                        "value": "action"
-                      },
-                      "route": {
-                        "kind": "string",
-                        "value": "/siren"
-                      },
-                      "message": {
-                        "kind": "string",
-                        "value": "std_msgs::String"
-                      }
-                    }
-                  }
-                ]
-              }
-            }
-          ],
-          "events": [
-            {
-              "id": "poll",
-              "type": "in",
-              "returnType": "void",
-              "modifiable": false,
-              "linksTo": 0,
-              "arguments": [
-                {
-                  "id": "zone",
-                  "type": "string"
-                }
-              ]
-            }
-          ]
-        },
-        {
           "type": "Co2Sensor",
           "body": {
             "shape": "Rectangle",
@@ -771,7 +705,8 @@
             "borderColor": "#FFFFFF",
             "width": 500,
             "height": 500,
-            "z-index": -2
+            "z-index": -2,
+            "icon": "capability_co2sensor.svg"
           },
           "properties": [
             {
@@ -861,7 +796,8 @@
             "borderColor": "#FFFFFF",
             "width": 500,
             "height": 500,
-            "z-index": -2
+            "z-index": -2,
+            "icon": "capability_occupancysensor.svg"
           },
           "properties": [
             {
@@ -951,7 +887,8 @@
             "borderColor": "#FFFFFF",
             "width": 500,
             "height": 500,
-            "z-index": -2
+            "z-index": -2,
+            "icon": "capability_lighting.svg"
           },
           "properties": [
             {
@@ -1050,7 +987,8 @@
             "borderColor": "#FFFFFF",
             "width": 500,
             "height": 500,
-            "z-index": -2
+            "z-index": -2,
+            "icon": "capability_ventilation.svg"
           },
           "properties": [
             {
@@ -1153,7 +1091,8 @@
             "borderColor": "#FFFFFF",
             "width": 500,
             "height": 500,
-            "z-index": -2
+            "z-index": -2,
+            "icon": "capability_conveyor.svg"
           },
           "properties": [
             {
@@ -1250,7 +1189,8 @@
             "borderColor": "#FFFFFF",
             "width": 500,
             "height": 500,
-            "z-index": -2
+            "z-index": -2,
+            "icon": "capability_imageinspector.svg"
           },
           "properties": [
             {
@@ -1339,7 +1279,8 @@
             "borderColor": "#FFFFFF",
             "width": 500,
             "height": 500,
-            "z-index": -2
+            "z-index": -2,
+            "icon": "capability_ticketcreation.svg"
           },
           "properties": [
             {

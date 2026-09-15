@@ -55,13 +55,14 @@ struct AppearanceSettings
   bool startLogFilterExpanded = true;   /// Start the log table filters collapsed or expanded.
   oclero::qlementine::Theme themeVars;  /// Theme variables.
   int numberOfColumns = 2;              /// The number of columns to use in the node paletter
+  int numberOfColumnsTask = 2;          /// The number of columns to use in the task node
   int edgeShape = 0;                    /// The shape of the transition arrows
 
   bool operator!=(const AppearanceSettings& s) const
   {
     return theme != s.theme || uiScalePercent != s.uiScalePercent || showCanvasGrid != s.showCanvasGrid || nativeMenuBar != s.nativeMenuBar ||
            nodeCornerRadius != s.nodeCornerRadius || themeVars != s.themeVars || startLogFilterExpanded != s.startLogFilterExpanded ||
-           numberOfColumns != s.numberOfColumns || edgeShape != s.edgeShape;
+           numberOfColumns != s.numberOfColumns || edgeShape != s.edgeShape || numberOfColumnsTask != s.numberOfColumnsTask;
   }
 };
 

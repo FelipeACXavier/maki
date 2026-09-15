@@ -89,6 +89,7 @@ private:
   maki::BooleanWidget* mStartLogTableFilters = nullptr;  /// Widget for enabling/disabling log table filters on start up.
   maki::SpinWidget* mNodeCornerRadius = nullptr;         /// Widget for setting node corner radius.
   maki::SpinWidget* mNumberOfColumns = nullptr;          /// Widget for setting the palette number of columns
+  maki::SpinWidget* mNumberOfTaskColumns = nullptr;      /// Widget for setting the task node number of columns
   maki::GridGroup* mColorGrid = nullptr;                 /// Group widget for color settings.
   maki::StringWidget* mUserThemeName = nullptr;          /// Widget for entering user theme name.
   maki::SelectorWidget* mTransitionShape = nullptr;      /// Widget for selecting the transition shape.

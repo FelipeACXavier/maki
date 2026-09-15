@@ -2,10 +2,10 @@
 
 #include <QUndoCommand>
 
+#include "../canvas.h"
 #include "save_info.h"
 
-class Canvas; /// Forward declaration of Canvas class.
-class QPointF; /// Forward declaration of QPointF class.
+class QPointF;  /// Forward declaration of QPointF class.
 
 /**
  * @brief Command to add a node to the canvas.
@@ -20,7 +20,7 @@ public:
    * @param desc Description of the node to be added.
    * @param parent Parent command for undo/redo functionality.
    */
-  AddNodeCommand(Canvas* canvas, const NodeSaveInfo& desc, QUndoCommand* parent = nullptr);
+  AddNodeCommand(Canvas* canvas, const NodeSaveInfo& desc, Canvas::NodeCreation creation, QUndoCommand* parent = nullptr);
 
   /**
    * @brief Undoes the addition of a node from the canvas.
@@ -33,6 +33,7 @@ public:
   void redo() override;
 
 private:
-  Canvas* mCanvas = nullptr; /// Pointer to the Canvas where the node will be added.
-  const NodeSaveInfo mDesc; /// Description of the node to be added.
+  Canvas* mCanvas = nullptr;  /// Pointer to the Canvas where the node will be added.
+  const NodeSaveInfo mDesc;   /// Description of the node to be added.
+  const Canvas::NodeCreation mCreation;
 };

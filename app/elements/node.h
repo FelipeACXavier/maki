@@ -266,7 +266,7 @@ public:
    *
    * @param node The NodeItem to add as a parent.
    */
-  void addParent(NodeItem* node);
+  virtual void addParent(NodeItem* node);
 
   /**
    * @brief Adds a child node with the given save information.
@@ -274,14 +274,14 @@ public:
    * @param node The NodeItem to add as a child.
    * @param info The save information for the child node.
    */
-  void addChild(NodeItem* node, std::shared_ptr<NodeSaveInfo> info);
+  virtual void addChild(NodeItem* node, std::shared_ptr<NodeSaveInfo> info);
 
   /**
    * @brief Handles when a child is removed from this item.
    *
    * @param child The NodeItem that was removed.
    */
-  void childRemoved(NodeItem* child);
+  virtual void childRemoved(NodeItem* child);
 
   /**
    * @brief Returns a list of flows associated with this node.
@@ -338,20 +338,24 @@ public:
    *
    * @param size The new QSizeF for the node.
    */
-  void applySize(const QSizeF& size);
+  virtual void applySize(const QSizeF& size);
 
   /**
    * @brief Updates the position of the node.
    *
    * @param position The new QPointF for the node's position.
    */
-  void updatePosition(const QPointF& position);
+  virtual void updatePosition(const QPointF& position);
+
+  QPointF centerPosition() const;
+  void setCenterPosition(const QPointF& center);
 
   // "signals":
   std::function<void(NodeItem* item)> nodeModified;
   std::function<void(Flow* flow, NodeItem* item)> flowAdded;
   std::function<void(NodeItem* item)> nodeMoved;
   std::function<void(NodeItem* item, bool enter)> nodeHovered;
+  std::function<void(const QString& name, int type)> focusOn;
 
   // "slots":
   void onProperties();
@@ -383,6 +387,9 @@ public:
   friend QDataStream& operator>>(QDataStream& in, NodeItem& config);
 
 protected:
+  std::shared_ptr<NodeSaveInfo> mStorage;  /// Save information for the node.
+  QSizeF mSize{0, 0};                      /// Current size of the node.
+
   /**
    * @brief Handles mouse move events for this item.
    *
@@ -416,18 +423,20 @@ protected:
    */
   QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
 
-private:
-  std::shared_ptr<NodeSaveInfo> mStorage;  /// Save information for the node.
+  void paintDefaultNode(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget);
 
+  bool isHovered() const;
+
+private:
   QVector<Flow*> mFlows;              /// List of flows associated with this node.
   NodeItem* mParentNode;              /// Parent node of this item, if any.
   QVector<NodeItem*> mChildrenNodes;  /// List of child nodes.
   CanvasMessage* mHighlightMessage = nullptr;
   CanvasControlWidget* mControlWidget = nullptr;
   bool mControlActive = false;
+  bool mHovered = false;
 
   qreal mBaseScale;             /// Base scale for the node.
-  QSizeF mSize{0, 0};           /// Current size of the node.
   QPointF mDragStartPos{0, 0};  /// Position where dragging started.
   QPointF mLastPosition{0, 0};  /// Last known position of the node.
 

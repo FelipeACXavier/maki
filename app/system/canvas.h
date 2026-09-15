@@ -15,6 +15,7 @@
 #include "node_info.h"
 #include "save_info.h"
 #include "system/focus_properties.h"
+#include "widgets/settings_manager.h"
 
 class QUndoStack;
 class CanvasView;
@@ -158,6 +159,11 @@ public:
    * @brief Handles theme change events.
    */
   void themeChanged();
+
+  /**
+   * @brief Handles settings change events.
+   */
+  void settingsChanged(const AppearanceSettings& appearance);
 
   // Used for undo commands
   /**

@@ -3,10 +3,11 @@
 #include "logging.h"
 #include "system/canvas.h"
 
-AddNodeCommand::AddNodeCommand(Canvas* canvas, const NodeSaveInfo& desc, QUndoCommand* parent)
+AddNodeCommand::AddNodeCommand(Canvas* canvas, const NodeSaveInfo& desc, Canvas::NodeCreation creation, QUndoCommand* parent)
     : QUndoCommand(parent)
     , mCanvas(canvas)
     , mDesc(desc)
+    , mCreation(creation)
 {
   setText(QObject::tr("Add node"));
 }
@@ -25,6 +26,6 @@ void AddNodeCommand::redo()
   if (!mCanvas)
     return;
 
-  mCanvas->createNode(mDesc, Canvas::NodeCreation::Populating);
+  mCanvas->createNode(mDesc, mCreation);
   LOG_TRACE("Redo AddNodeCommand: {} {}", mDesc.getnodeId(), mDesc.getid());
 }

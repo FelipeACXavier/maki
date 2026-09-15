@@ -27,10 +27,10 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
                    QGraphicsItem* parent)
     : NodeBase((!nodeId.isEmpty() && !nodeId.isNull()) ? nodeId : QUuid::createUuid().toString(), info->getnodeId(), nodeConfig, parent)
     , mStorage(info)
+    , mSize(mStorage->getSize())
     , mParentNode(nullptr)
     , mChildrenNodes({})
     , mBaseScale(config()->libraryType == Types::LibraryTypes::STRUCTURAL ? mStorage->getScale() : 1.0)
-    , mSize(mStorage->getSize())
 {
   setFlags(ItemIsMovable | ItemIsSelectable | ItemSendsScenePositionChanges);
   setCacheMode(DeviceCoordinateCache);
@@ -312,13 +312,21 @@ bool NodeItem::hasControl()
   return mControlActive;
 }
 
-void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget)
+void NodeItem::paintDefaultNode(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget)
 {
+  Q_UNUSED(style);
+  Q_UNUSED(widget);
+
   auto color = getProperty("color");
   auto background = color ? QColor::fromString(color->getvalue()->toStringValue()) : config()->body.backgroundColor;
+  const QPen outlinePen = isSelected() ? QPen(Config::HIGHLIGHT, 4 / baseScale()) : QPen(Config::FOREGROUND, 1.0 / baseScale());
 
-  NodeBase::paintNode(nodeRect(), background, isSelected() ? QPen(Config::HIGHLIGHT, 4 / baseScale()) : QPen(Config::FOREGROUND, 1.0 / baseScale()),
-                      painter);
+  NodeBase::paintNode(nodeRect(), background, outlinePen, painter);
+}
+
+void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget)
+{
+  paintDefaultNode(painter, style, widget);
 }
 
 QPainterPath NodeItem::shape() const
@@ -644,6 +652,7 @@ void NodeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 
 void NodeItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
 {
+  mHovered = true;
   NodeBase::hoverEnterEvent(event);
   if (nodeHovered)
     nodeHovered(this, true);
@@ -651,9 +660,15 @@ void NodeItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
 
 void NodeItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 {
+  mHovered = false;
   NodeBase::hoverLeaveEvent(event);
   if (nodeHovered)
     nodeHovered(this, false);
+}
+
+bool NodeItem::isHovered() const
+{
+  return mHovered;
 }
 
 QVariant NodeItem::itemChange(GraphicsItemChange change, const QVariant& value)
@@ -705,6 +720,22 @@ void NodeItem::updatePosition(const QPointF& newPosition)
 
   updateExtrasPosition();
   mStorage->setPosition(pos() + boundingRect().center());
+}
+
+QPointF NodeItem::centerPosition() const
+{
+  return pos() + nodeRect().center();
+}
+
+void NodeItem::setCenterPosition(const QPointF& center)
+{
+  setPos(center - nodeRect().center());
+
+  mLastPosition = pos();
+  updateExtrasPosition();
+
+  if (mStorage)
+    mStorage->setPosition(center);
 }
 
 void NodeItem::updateExtrasPosition()

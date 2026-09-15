@@ -6,6 +6,7 @@
 #include <QPainter>
 #include <QPushButton>
 #include <QStyle>
+#include <QSvgRenderer>
 #include <QTabBar>
 #include <QTreeWidgetItem>
 #include <QVariant>
@@ -78,7 +79,6 @@ QString iconPathFromTheme(const QString& name, bool useLocal)
   if (name.contains("plugin"))
     return AppPaths::icon(iconName);
 
-  // return QString(":/icons/" + iconName);
   return AppPaths::icon(iconName);
 }
 
@@ -409,4 +409,18 @@ void clearLayout(QLayout* layout, int start)
 
     delete item;  // spacer etc.
   }
+}
+
+void paintSvg(const QString& path, QPainter* painter, const QPointF& center, qreal width, qreal height)
+{
+  if (!painter || width <= 0.0)
+    return;
+
+  QSvgRenderer slotRenderer(path);
+  if (!slotRenderer.isValid())
+    return;
+
+  const QRectF target(center.x() - (width * 0.5), center.y() - (height * 0.5), width, height);
+  painter->setRenderHint(QPainter::Antialiasing, true);
+  slotRenderer.render(painter, target);
 }

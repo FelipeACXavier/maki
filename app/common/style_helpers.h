@@ -230,3 +230,11 @@ QString createInformationMessage(const NodeConfig& node);
  * @return QString The default message.
  */
 QString createDefaultMessage();
+
+/**
+ * @brief Uses a QSvgRenderer to paint an SVG
+ *
+ *
+ * @param iconPath Path of the SVG
+ */
+void paintSvg(const QString& iconPath, QPainter* painter, const QPointF& center, qreal width, qreal height);

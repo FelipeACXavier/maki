@@ -22,6 +22,9 @@
 #include "edge_router.h"
 #include "elements/flow.h"
 #include "elements/node.h"
+#include "elements/node_factory.h"
+#include "elements/structure/capability_node.h"
+#include "elements/structure/empty_slot.h"
 #include "elements/transition.h"
 #include "flow_info.h"
 #include "logging.h"
@@ -154,29 +157,30 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
   }
 
   QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
-  if (item && item->type() == NodeItem::Type)
+  if (item)
   {
-    parentNode = static_cast<NodeItem*>(item);
-
-    // Add error message
-    if (!parentNode->acceptDrops())
-    {
-      NOTIFY_WARNING(Config::APPLICATION_NAME.toStdString(), "Tried to drop node on parent that does not accept drops");
-      return;
-    }
+    if (auto* cast = dynamic_cast<CapabilityNode*>(item); cast && cast->parentNode())
+      parentNode = cast->parentNode();
+    else if (auto cast = qgraphicsitem_cast<EmptySlot*>(item); cast && cast->parentItem())
+      parentNode = qgraphicsitem_cast<NodeItem*>(cast->parentItem());
+    else if (auto* cast = qgraphicsitem_cast<NodeItem*>(item); cast)
+      parentNode = cast;
   }
 
-  auto node = createNode(NodeCreation::Dropping, info, event->scenePos(), parentNode);
-  if (node)
+  // Add error message
+  if (parentNode && !parentNode->acceptDrops())
   {
-    selectNode(node, true);
-    suggestCapability(node);
-    event->acceptProposedAction();
+    NOTIFY_WARNING(Config::APPLICATION_NAME.toStdString(), "Tried to drop node on parent that does not accept drops");
+    return;
   }
-  else
-  {
-    event->ignore();
-  }
+
+  info->setId(QUuid::createUuid().toString());
+  info->setPosition(event->scenePos());
+  if (parentNode)
+    info->setParentId(parentNode->id());
+
+  mUndoStack->push(new AddNodeCommand(this, *info, NodeCreation::Dropping));
+  event->acceptProposedAction();
 
   // Make sure we show that we are no longer dragging
   dynamic_cast<QGraphicsView*>(parent())->setCursor(Qt::ArrowCursor);
@@ -229,17 +233,32 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
     mMouseDown = true;
 
     QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
-    if (item && item->type() == NodeItem::Type)
+    if (!item)
+    {
+      LOG_DEBUG("Clearing selected nodes");
+      mSelectionStart = event->scenePos();
+      auto color = Config::HIGHLIGHT;
+      color.setAlpha(15);
+      mSelectionRect = addRect(QRectF(mSelectionStart, mSelectionStart), QPen(color, 1, Qt::DashLine), QColor(color));
+      mSelectionRect->setZValue(1'000'000);
+
+      mSelectedNodes.clear();
+      clearSelectedNodes();
+      QGraphicsScene::mousePressEvent(event);
+      return;
+    }
+
+    if (item->type() == NodeItem::Type)
     {
       if (!nodeClickHandler(event, item))
         return;
     }
-    else if (item && (item->type() == TransitionItem::Type))
+    else if (item->type() == TransitionItem::Type)
     {
       if (!transitionClickHandler(event, item))
         return;
     }
-    else if (item && (item->type() == QGraphicsTextItem::Type || item->type() == QGraphicsSvgItem::Type))
+    else if (item->type() == QGraphicsTextItem::Type || item->type() == QGraphicsSvgItem::Type)
     {
       auto parent = item->parentItem();
       if (parent && parent->type() == NodeItem::Type)
@@ -252,18 +271,6 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
         if (!transitionClickHandler(event, parent))
           return;
       }
-    }
-    else if (!item)
-    {
-      LOG_DEBUG("Clearing selected nodes");
-      mSelectionStart = event->scenePos();
-      auto color = Config::HIGHLIGHT;
-      color.setAlpha(15);
-      mSelectionRect = addRect(QRectF(mSelectionStart, mSelectionStart), QPen(color, 1, Qt::DashLine), QColor(color));
-      mSelectionRect->setZValue(1'000'000);
-
-      mSelectedNodes.clear();
-      clearSelectedNodes();
     }
   }
   else if (event->button() == Qt::MiddleButton)
@@ -329,15 +336,10 @@ bool Canvas::nodeClickHandler(QGraphicsSceneMouseEvent* event, QGraphicsItem* it
     event->accept();
     return false;
   }
-  // else
-  // {
-  //   // We cannot clear if there are multiple nodes selected
-  //   if (selectedItems().size() < 2)
-  //     clearSelectedNodes();
-
-  //   nodeClicked(node);
-  //   selectNode(node, true);
-  // }
+  else
+  {
+    selectNode(node, true);
+  }
 
   return true;
 }
@@ -1192,7 +1194,7 @@ VoidResult Canvas::loadFromSave(const QVector<std::shared_ptr<INode>>& nodes, No
 
     LOG_DEBUG("Creating node {} with parent {} and {} children", node->getid(), node->getparentId(), node->getchildren().size());
     auto createdNode = createNode(NodeCreation::Loading, node, node->getposition(), parent);
-    selectNode(createdNode, false);
+    selectNode(createdNode, false);  // Remove selection
   }
 
   return VoidResult();
@@ -1297,7 +1299,10 @@ void Canvas::removeNode(const NodeSaveInfo& info)
 {
   auto node = findNodeWithId(info.getid());
   if (!node)
+  {
+    LOG_DEBUG("Could not find node with id: {}", info.getid());
     return;
+  }
 
   auto toRemove = removeNode(node);
 
@@ -1331,7 +1336,7 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
   // If no parent is defined, we must create a "base node" in the canvas
   auto nodeId = creation == NodeCreation::Pasting ? "" : info->getid();
   auto originalInfo = *info;
-  NodeItem* node = new NodeItem(nodeId, info, position, config);
+  NodeItem* node = NodeFactory::create(nodeId, info, position, config);
 
   if (parent != nullptr)
   {
@@ -1353,9 +1358,6 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
 
   addedItemNode(node, info);
 
-  if (creation != NodeCreation::Populating && creation != NodeCreation::Inserting)
-    mUndoStack->push(new AddNodeCommand(this, node->saveInfo()));
-
   // We also need to create the children of the node
   for (const auto& childInfo : originalInfo.getchildren())
   {
@@ -1376,6 +1378,9 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
   // Always select node on creation
   clearSelectedNodes();
   selectNode(node, true);
+
+  if (creation == NodeCreation::Dropping)
+    suggestCapability(node);
 
   return node;
 }
@@ -1541,10 +1546,8 @@ void Canvas::populate(const FlowSaveInfo& flow)
   for (const auto& inode : flow.getnodes())
   {
     auto node = std::dynamic_pointer_cast<NodeSaveInfo>(inode);
-    // LOG_DEBUG("Creating behavioral node {} with parent \"{}\"", node->getid(), node->getparentId());
+    LOG_TRACE("Creating behavioral node {} with parent \"{}\"", node->getid(), node->getparentId());
     (void)createNode(NodeCreation::Populating, node, node->getposition(), findNodeWithId(node->getparentId()));
-    // if (created)
-    //   LOG_DEBUG("Created node {}", created->id());
   }
 
   // Then create the transitions between the nodes
@@ -1597,6 +1600,17 @@ void Canvas::themeChanged()
   {
     if (item->type() == TransitionItem::Type)
       qgraphicsitem_cast<TransitionItem*>(item)->updatePath();
+
+    item->update();
+  }
+}
+
+void Canvas::settingsChanged(const AppearanceSettings& appearance)
+{
+  for (QGraphicsItem* item : items())
+  {
+    if (item->type() == NodeItem::Type)
+      qgraphicsitem_cast<NodeItem*>(item)->settingsChanged(appearance);
 
     item->update();
   }
@@ -1663,5 +1677,10 @@ void Canvas::createSuggestedNode(const QString& nodeType, NodeItem* sourceNode)
 
   // If the source is inside another structural node, the suggested node
   // should normally be inserted into that same parent.
-  (void)createNode(NodeCreation::Populating, info, position, sourceNode->parentNode());
+  info->setId(QUuid::createUuid().toString());
+  info->setPosition(position);
+  if (sourceNode->parentNode())
+    info->setParentId(sourceNode->parentNode()->id());
+
+  mUndoStack->push(new AddNodeCommand(this, *info, NodeCreation::Populating));
 }

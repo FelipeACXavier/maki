@@ -75,8 +75,7 @@ QRectF NodeBase::labelBoundingRect() const
     return QRectF();
 
   const auto bounds = drawingRect(nodeRect());
-  return QRectF(bounds.left() - LABEL_H_SPACING, bounds.bottom() + LABEL_V_SPACING,
-                bounds.width() + 2 * LABEL_H_SPACING, mLabelFont.pointSizeF() * 3);
+  return QRectF(bounds.left() - LABEL_H_SPACING, bounds.bottom() + LABEL_V_SPACING, bounds.width() + 2 * LABEL_H_SPACING, mLabelFont.pointSizeF() * 3);
 }
 
 QRectF NodeBase::scaledRect() const
@@ -160,11 +159,16 @@ void NodeBase::paintLabel(QPainter* painter, const QRectF& drawingBounds, const 
   painter->setFont(mLabelFont);
   painter->setPen(pen);
 
-  QTextOption textOption;
-  textOption.setAlignment(Qt::AlignCenter);
-  textOption.setWrapMode(QTextOption::WrapAtWordBoundaryOrAnywhere);
+  // QTextOption textOption;
+  // textOption.setAlignment(Qt::AlignCenter);
+  // textOption.setWrapMode(QTextOption::WrapAtWordBoundaryOrAnywhere);
 
-  painter->drawText(labelBoundingRect(), mLabelText, textOption);
+  // painter->drawText(labelBoundingRect(), mLabelText, textOption);
+
+  const QFontMetricsF metrics(mLabelFont);
+  const qreal availableWidth = labelBoundingRect().width();
+  const QString elidedText = metrics.elidedText(mLabelText, Qt::ElideRight, static_cast<int>(availableWidth));
+  painter->drawText(labelBoundingRect(), Qt::AlignHCenter | Qt::AlignVCenter, elidedText);
 }
 
 void NodeBase::paintPixmap(QPainter* painter) const
@@ -176,6 +180,10 @@ void NodeBase::paintPixmap(QPainter* painter) const
   QPointF center = rect.center();
   QPointF topLeft = center - QPointF((qreal)mPixmapItem->pixmap().width() / 2, (qreal)mPixmapItem->pixmap().height() / 2);
   painter->drawPixmap(topLeft, mPixmapItem->pixmap());
+}
+
+void NodeBase::initializeNodeSize()
+{
 }
 
 void NodeBase::setLabel(const QString& name, qreal fontSize)
@@ -204,6 +212,10 @@ void NodeBase::toggleLabelVisibility()
   update();
 }
 
+void NodeBase::settingsChanged(const AppearanceSettings& appearance)
+{
+}
+
 void NodeBase::setPixmap(const QPixmap& pixmap)
 {
   mPixmapItem = new QGraphicsPixmapItem(pixmap);
@@ -211,49 +223,45 @@ void NodeBase::setPixmap(const QPixmap& pixmap)
 
 void NodeBase::setIcon(const QString& path, const QColor& iconColor)
 {
-  mIconPath = path;
-  mIconItem = new QGraphicsSvgItem(mIconPath, this);
+  // mIconPath = path;
+  // mIconItem = new QGraphicsSvgItem(mIconPath, this);
 
-  QRectF nodeRect = boundingRect();
-  QRectF svgRect = mIconItem->boundingRect();
+  // QRectF nodeRect = boundingRect();
+  // QRectF svgRect = mIconItem->boundingRect();
 
-  constexpr qreal padding = 2.0;
+  // constexpr qreal padding = 2.0;
 
-  // available space inside the node
-  QRectF contentRect = nodeRect.adjusted(padding, padding, -padding, -padding);
+  // // available space inside the node
+  // QRectF contentRect = nodeRect.adjusted(padding, padding, -padding, -padding);
 
-  // scale SVG to fit inside contentRect while keeping aspect ratio
-  qreal sx = contentRect.width() / svgRect.width();
-  qreal sy = contentRect.height() / svgRect.height();
-  qreal scale = std::min(sx, sy);
+  // // scale SVG to fit inside contentRect while keeping aspect ratio
+  // qreal sx = contentRect.width() / svgRect.width();
+  // qreal sy = contentRect.height() / svgRect.height();
+  // qreal scale = std::min(sx, sy);
 
-  mIconItem->setScale(scale);
+  // mIconItem->setScale(scale);
 
-  // after scaling, compute displayed size
-  QSizeF scaledSize(svgRect.width() * scale, svgRect.height() * scale);
+  // // after scaling, compute displayed size
+  // QSizeF scaledSize(svgRect.width() * scale, svgRect.height() * scale);
 
-  // centre inside contentRect
-  qreal x = contentRect.x() + (contentRect.width() - scaledSize.width()) / 2.0;
-  qreal y = contentRect.y() + (contentRect.height() - scaledSize.height()) / 2.0;
+  // // centre inside contentRect
+  // qreal x = contentRect.x() + (contentRect.width() - scaledSize.width()) / 2.0;
+  // qreal y = contentRect.y() + (contentRect.height() - scaledSize.height()) / 2.0;
 
-  mIconItem->setPos(x, y);
+  // mIconItem->setPos(x, y);
 
-  auto* effect = new QGraphicsColorizeEffect();
-  effect->setColor(iconColor);
-  effect->setStrength(1.0);
+  // auto* effect = new QGraphicsColorizeEffect();
+  // effect->setColor(iconColor);
+  // effect->setStrength(1.0);
 
-  mIconItem->setGraphicsEffect(effect);
+  // mIconItem->setGraphicsEffect(effect);
 }
 
 qreal NodeBase::computeScaleFactor() const
 {
-  qreal widthScale = (config()->body.width > MAX_WIDTH)
-                         ? MAX_WIDTH / config()->body.width
-                         : 1.0;
+  qreal widthScale = (config()->body.width > MAX_WIDTH) ? MAX_WIDTH / config()->body.width : 1.0;
 
-  qreal heightScale = (config()->body.height > MAX_HEIGHT)
-                          ? MAX_HEIGHT / config()->body.height
-                          : 1.0;
+  qreal heightScale = (config()->body.height > MAX_HEIGHT) ? MAX_HEIGHT / config()->body.height : 1.0;
 
   return qMin(widthScale, heightScale);  // Use the smallest scale to maintain aspect ratio
 }

@@ -28,6 +28,8 @@ file(GLOB SYSTEM_FILES
 )
 file(GLOB ELEMENT_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/elements/*.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/elements/behaviour/*.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/elements/structure/*.cpp
 )
 file(GLOB WIDGET_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/widgets/*.cpp

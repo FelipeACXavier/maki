@@ -243,6 +243,7 @@ VoidResult SettingsDialog::createAppearancePage()
     mUiScale->setValue(defaultSettings.uiScalePercent);
     mNodeCornerRadius->setValue(defaultSettings.nodeCornerRadius);
     mNumberOfColumns->setValue(defaultSettings.numberOfColumns);
+    mNumberOfTaskColumns->setValue(defaultSettings.numberOfColumnsTask);
     mShowGrid->setValue(defaultSettings.showCanvasGrid);
     mStartLogTableFilters->setValue(defaultSettings.startLogFilterExpanded);
     mTransitionShape->setValue(EdgeRouter::optionToString(defaultSettings.edgeShape));
@@ -250,14 +251,15 @@ VoidResult SettingsDialog::createAppearancePage()
     mSettingsManager->setAppearance(defaultSettings);
   });
 
-  // First entry: system theme (no QSS)
-  mThemeCombo = new maki::SelectorWidget(tr("Theme"), maki::WidgetAlignment::Inline(), page);
-  // Then all discovered themes
+  maki::WidgetAlignment alignment = {
+      .type = maki::WidgetAlignment::Type::INLINE,
+      .direction = maki::WidgetAlignment::Direction::SPREAD,
+      .labelWidth = 300,
+  };
+
+  mThemeCombo = new maki::SelectorWidget(tr("Theme"), alignment, page);
   for (const auto& info : mSettingsManager->availableThemes())
-  {
-    QString label = info.meta.name;
-    mThemeCombo->addItem(label, label);
-  }
+    mThemeCombo->addItem(info.meta.name, info.meta.name);
 
   mThemeCombo->setValue(appearance.theme);
   connect(mThemeCombo, &maki::SelectorWidget::valueChanged, [this](const QString& themeName) {
@@ -269,9 +271,41 @@ VoidResult SettingsDialog::createAppearancePage()
       mThemeEditor->setTheme(theme.Value());
   });
 
-  auto themeLayout = new maki::WidgetGroup(tr("Theming"), page);
-  themeLayout->addWidget(mThemeCombo);
+  mNativeMenuBar = new maki::BooleanWidget(tr("Use native menubar"), appearance.nativeMenuBar, alignment, page);
 
+  mUiScale = new maki::SpinWidget(tr("UI scale"), appearance.uiScalePercent, page, alignment, 80, 200);
+  mUiScale->setSuffix(" %");
+
+  mNodeCornerRadius = new maki::SpinWidget(tr("Node corner radius"), appearance.nodeCornerRadius, page, alignment, 0, 30);
+  mNodeCornerRadius->setSuffix(" pixels");
+
+  mNumberOfColumns = new maki::SpinWidget(tr("Number of columns in the node palette"), appearance.numberOfColumns, page, alignment, 1, 4);
+  mNumberOfColumns->setSuffix(" " + tr("columns"));
+  mNumberOfColumns->addDescription(tr("Note: The width of the palette will not update automatically"));
+
+  mNumberOfTaskColumns = new maki::SpinWidget(tr("Number of columns in the task node"), appearance.numberOfColumnsTask, page, alignment, 1, 4);
+  mNumberOfTaskColumns->setSuffix(" " + tr("columns"));
+
+  mTransitionShape = new maki::SelectorWidget(tr("Shape of the transtion edges"), alignment, page);
+  for (int i = (int)EdgeRouter::Option::DIRECT; i < (int)EdgeRouter::Option::OGDF; ++i)
+    mTransitionShape->addItem(EdgeRouter::optionToString((EdgeRouter::Option)i), i);
+  mTransitionShape->setValue(EdgeRouter::optionToString(appearance.edgeShape));
+
+  mShowGrid = new maki::BooleanWidget(tr("Show canvas grid"), appearance.showCanvasGrid, alignment, page);
+  mStartLogTableFilters = new maki::BooleanWidget(tr("Show log table filters on start"), appearance.startLogFilterExpanded, alignment, page);
+
+  auto editorLayout = new maki::WidgetGroup(tr("UI changes"), page);
+  editorLayout->addWidget(mThemeCombo);
+  editorLayout->addWidget(mNativeMenuBar);
+  editorLayout->addWidget(mUiScale);
+  editorLayout->addWidget(mShowGrid);
+  editorLayout->addWidget(mStartLogTableFilters);
+  editorLayout->addWidget(mNodeCornerRadius);
+  editorLayout->addWidget(mNumberOfColumns);
+  editorLayout->addWidget(mNumberOfTaskColumns);
+  editorLayout->addWidget(mTransitionShape);
+
+  auto themeLayout = new maki::WidgetGroup(tr("Theming"), page);
   auto* qlementineStyle = oclero::qlementine::appStyle();
   if (qlementineStyle)
   {
@@ -315,44 +349,9 @@ VoidResult SettingsDialog::createAppearancePage()
     themeLayout->addWidget(editorFrame);
   }
 
-  maki::WidgetAlignment alignment = {
-      .type = maki::WidgetAlignment::Type::INLINE,
-      .direction = maki::WidgetAlignment::Direction::SPREAD,
-      .labelWidth = 300,
-  };
-
-  mNativeMenuBar = new maki::BooleanWidget(tr("Use native menubar"), appearance.nativeMenuBar, alignment, page);
-
-  mUiScale = new maki::SpinWidget(tr("UI scale"), appearance.uiScalePercent, page, alignment, 80, 200);
-  mUiScale->setSuffix(" %");
-
-  mNodeCornerRadius = new maki::SpinWidget(tr("Node corner radius"), appearance.nodeCornerRadius, page, alignment, 0, 30);
-  mNodeCornerRadius->setSuffix(" pixels");
-
-  mNumberOfColumns = new maki::SpinWidget(tr("Number of columns in the node palette"), appearance.numberOfColumns, page, alignment, 0, 4);
-  mNumberOfColumns->setSuffix(" " + tr("columns"));
-  mNumberOfColumns->addDescription(tr("Note: The width of the palette will not update automatically"));
-
-  mTransitionShape = new maki::SelectorWidget(tr("Shape of the transtion edges"), alignment, page);
-  for (int i = (int)EdgeRouter::Option::DIRECT; i < (int)EdgeRouter::Option::OGDF; ++i)
-    mTransitionShape->addItem(EdgeRouter::optionToString((EdgeRouter::Option)i), i);
-  mTransitionShape->setValue(EdgeRouter::optionToString(appearance.edgeShape));
-
-  mShowGrid = new maki::BooleanWidget(tr("Show canvas grid"), appearance.showCanvasGrid, alignment, page);
-  mStartLogTableFilters = new maki::BooleanWidget(tr("Show log table filters on start"), appearance.startLogFilterExpanded, alignment, page);
-
-  auto editorLayout = new maki::WidgetGroup(tr("UI changes"), page);
-  editorLayout->addWidget(mNativeMenuBar);
-  editorLayout->addWidget(mUiScale);
-  editorLayout->addWidget(mShowGrid);
-  editorLayout->addWidget(mStartLogTableFilters);
-  editorLayout->addWidget(mNodeCornerRadius);
-  editorLayout->addWidget(mNumberOfColumns);
-  editorLayout->addWidget(mTransitionShape);
-
   QVBoxLayout* layout = page->findChild<QVBoxLayout*>("ContentArea");
-  layout->addWidget(themeLayout);
   layout->addWidget(editorLayout);
+  layout->addWidget(themeLayout);
   layout->addStretch();
 
   return VoidResult();
@@ -586,6 +585,7 @@ void SettingsDialog::saveToSettings()
   appearance.nativeMenuBar = mNativeMenuBar->getValue();
   appearance.nodeCornerRadius = mNodeCornerRadius->getValue();
   appearance.numberOfColumns = mNumberOfColumns->getValue();
+  appearance.numberOfColumnsTask = mNumberOfTaskColumns->getValue();
   appearance.edgeShape = mTransitionShape->getData().toInt();
 
   GenerationSettings generation;
