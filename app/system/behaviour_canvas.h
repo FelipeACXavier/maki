@@ -69,7 +69,7 @@ public:
   /**
    * @brief Callback triggered whenever a node moves significantly
    */
-  void onNodeMoved(const NodeItem* node) override;
+  void onNodeMoved(NodeItem* node, bool done) override;
 
   /**
    * @brief Used to create the start and end nodes of a flow
@@ -82,7 +82,8 @@ protected:
    */
   void cleanFlow();
 
-  bool insertDroppedNodeOnTransition(TransitionItem* transition, std::shared_ptr<NodeSaveInfo> info) override;
+  bool insertDroppedNodeOnTransition(TransitionItem* transition, NodeSaveInfo info) override;
+  bool insertNodeOnTransition(TransitionItem* transition, NodeItem* node) override;
 
 private:
   /**

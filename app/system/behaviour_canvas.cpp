@@ -6,6 +6,7 @@
 #include "config_table.h"
 #include "elements/flow.h"
 #include "logging.h"
+#include "undo_commands/insert_existing_node.h"
 #include "undo_commands/insert_node.h"
 
 BehaviourCanvas::BehaviourCanvas(Flow* flow, std::shared_ptr<ConfigurationTable> configTable, std::shared_ptr<EdgeRouter> router, QObject* parent)
@@ -146,7 +147,7 @@ void BehaviourCanvas::removeTransition(TransitionItem* transition)
   }
 }
 
-void BehaviourCanvas::onNodeMoved(const NodeItem* node)
+void BehaviourCanvas::onNodeMoved(NodeItem* node, bool done)
 {
   if (!node)
     return;
@@ -154,11 +155,13 @@ void BehaviourCanvas::onNodeMoved(const NodeItem* node)
   for (const auto& transition : mFlow->transitions())
     if (transition->source()->id() == node->id() || transition->destination()->id() == node->id())
       transition->updatePath();
+
+  Canvas::onNodeMoved(node, done);
 }
 
-bool BehaviourCanvas::insertDroppedNodeOnTransition(TransitionItem* transition, std::shared_ptr<NodeSaveInfo> info)
+bool BehaviourCanvas::insertDroppedNodeOnTransition(TransitionItem* transition, NodeSaveInfo info)
 {
-  if (!transition || !info)
+  if (!transition)
     return false;
 
   NodeItem* source = transition->source();
@@ -169,14 +172,14 @@ bool BehaviourCanvas::insertDroppedNodeOnTransition(TransitionItem* transition, 
   // The node already adjust the node size + label during creation, so we can just use the boundingRect
   const auto srcCenter = source->mapRectToScene(source->boundingRect()).center();
   const auto dstCenter = destination->mapRectToScene(destination->boundingRect()).center();
-  const auto insertCenter = (srcCenter + dstCenter) * 0.5;
+  const QPointF insertCenter = QPointF(info.getposition().x(), (srcCenter.y() + dstCenter.y()) * 0.5);
 
   auto originalTransition = transition->saveInfo();
 
   // Update the info before inserting
   const QString insertedNodeId = QUuid::createUuid().toString();
-  info->setId(insertedNodeId);
-  info->setPosition(insertCenter);
+  info.setId(insertedNodeId);
+  info.setPosition(insertCenter);
 
   // --------------------------------------------------------------------------
   // Source -> inserted node
@@ -196,7 +199,7 @@ bool BehaviourCanvas::insertDroppedNodeOnTransition(TransitionItem* transition, 
   // --------------------------------------------------------------------------
   // Inserted node -> destination
   const TransitionConfig outConfig =
-      mConfigTable->get(info->getnodeId())->transitions.isEmpty() ? TransitionConfig{} : mConfigTable->get(info->getnodeId())->transitions.front();
+      mConfigTable->get(info.getnodeId())->transitions.isEmpty() ? TransitionConfig{} : mConfigTable->get(info.getnodeId())->transitions.front();
 
   TransitionSaveInfo outgoing;
   outgoing.setId(QUuid::createUuid().toString());
@@ -211,7 +214,62 @@ bool BehaviourCanvas::insertDroppedNodeOnTransition(TransitionItem* transition, 
   outgoing.setSrcShift({0, 0});
   outgoing.setDstShift({0, 0});
 
-  mUndoStack->push(new InsertNodeCommand(this, *info, originalTransition, incoming, outgoing));
+  mUndoStack->push(new InsertNodeCommand(this, info, originalTransition, incoming, outgoing));
+
+  return true;
+}
+
+bool BehaviourCanvas::insertNodeOnTransition(TransitionItem* transition, NodeItem* node)
+{
+  if (!transition || !node)
+    return false;
+
+  NodeItem* source = transition->source();
+  NodeItem* destination = transition->destination();
+
+  if (!source || !destination || source == destination || node == source || node == destination)
+    return false;
+
+  const QPointF originalNodeCenter = node->centerPosition();
+  const QPointF srcCenter = source->sceneNodeRect().center();
+  const QPointF dstCenter = destination->sceneNodeRect().center();
+  const QPointF insertCenter = QPointF(originalNodeCenter.x(), (srcCenter.y() + dstCenter.y()) * 0.5);
+  const TransitionSaveInfo originalTransition = transition->saveInfo();
+
+  TransitionSaveInfo incoming;
+  incoming.setId(QUuid::createUuid().toString());
+  incoming.setEvent(originalTransition.getevent());
+  incoming.setLabel(originalTransition.getlabel());
+
+  incoming.setSrcId(source->id());
+  incoming.setDstId(node->id());
+
+  incoming.setSrcPoint(srcCenter);
+  incoming.setDstPoint(insertCenter);
+
+  incoming.setSrcShift({0, 0});
+  incoming.setDstShift({0, 0});
+
+  TransitionConfig outConfig;
+  if (const auto config = mConfigTable->get(node->nodeId()); config && !config->transitions.isEmpty())
+    outConfig = config->transitions.front();
+
+  TransitionSaveInfo outgoing;
+  outgoing.setId(QUuid::createUuid().toString());
+
+  outgoing.setEvent(outConfig.event);
+  outgoing.setLabel(outConfig.label);
+
+  outgoing.setSrcId(node->id());
+  outgoing.setDstId(destination->id());
+
+  outgoing.setSrcPoint(insertCenter);
+  outgoing.setDstPoint(dstCenter);
+
+  outgoing.setSrcShift({0, 0});
+  outgoing.setDstShift({0, 0});
+
+  mUndoStack->push(new InsertExistingNodeCommand(this, node->id(), originalNodeCenter, insertCenter, originalTransition, incoming, outgoing));
 
   return true;
 }

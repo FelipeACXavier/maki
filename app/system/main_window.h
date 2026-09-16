@@ -107,7 +107,7 @@ private slots:
    * @param flow Pointer to the opened Flow.
    * @param node Pointer to the associated NodeItem.
    */
-  void onOpenFlow(Flow* flow, const QString& nodeId, const maki::FocusProperties& properties);
+  int onOpenFlow(Flow* flow, const QString& nodeId, const maki::FocusProperties& properties);
 
   /**
    * @brief Handles flow addition events.
@@ -284,6 +284,8 @@ private:
    * @param view Pointer to the QPlainTextEdit instance.
    */
   void addEditorTab(QPlainTextEdit* view);
+
+  void focusOn(const QString& nodeId, const QString& flowId, const maki::FocusProperties& properties);
 
   // ================================================
   // Actions

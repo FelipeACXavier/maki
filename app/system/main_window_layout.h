@@ -156,8 +156,11 @@ protected:
   QAction* mActionReportIssue;      /// Pointer to the report issue action.
   QAction* mAboutAction;            /// Pointer to the about action.
 
-  int LOG_TAB_INDEX = 0;      /// Index of the log tab.
-  int PROCESS_TAB_INDEX = 0;  /// Index of the process tab.
+  int INFO_TAB = 0;                 /// Index of the info tab.
+  int LOG_TAB_INDEX = 0;            /// Index of the log tab.
+  int PROCESS_TAB_INDEX = 0;        /// Index of the process tab.
+  int MISSION_PARAMETER_INDEX = 0;  /// Index of the mission parameter tab.
+  int TYPE_EDITOR_INDEX = 0;        /// Index of the type editor tab.
 
 protected:
   /**

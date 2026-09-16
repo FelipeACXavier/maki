@@ -315,8 +315,9 @@ void MainWindowLayout::buildCentralPanel()
 
     infoLayout->addWidget(mInfoText);
 
-    mBottomNavigation->addItem(tr("Info"), QIcon(":/icons/info.svg"));
-    mBottomPanel->addWidget(infoContainer);
+    INFO_TAB = mBottomNavigation->addItem(tr("Info"), QIcon(":/icons/info.svg"));
+    auto widgetIndex = mBottomPanel->addWidget(infoContainer);
+    assert(INFO_TAB == widgetIndex);
   }
 
   // -----------------------------------------------------------------
@@ -335,8 +336,9 @@ void MainWindowLayout::buildCentralPanel()
     mTypeEditor = new maki::TypeEditor(typeContainer);
     typeLayout->addWidget(mTypeEditor);
 
-    mBottomNavigation->addItem(tr("Datatypes"), QIcon(":/icons/database.svg"));
-    mBottomPanel->addWidget(typeContainer);
+    TYPE_EDITOR_INDEX = mBottomNavigation->addItem(tr("Datatypes"), QIcon(":/icons/database.svg"));
+    auto widgetIndex = mBottomPanel->addWidget(typeContainer);
+    assert(TYPE_EDITOR_INDEX == widgetIndex);
   }
 
   // -----------------------------------------------------------------
@@ -355,8 +357,9 @@ void MainWindowLayout::buildCentralPanel()
     mMissionParameters = new maki::MissionParameterWidget(missionContainer);
     missionLayout->addWidget(mMissionParameters);
 
-    mBottomNavigation->addItem(tr("Mission parameters"), QIcon(":/icons/mission-parameter.svg"));
-    mBottomPanel->addWidget(missionContainer);
+    MISSION_PARAMETER_INDEX = mBottomNavigation->addItem(tr("Mission parameters"), QIcon(":/icons/mission-parameter.svg"));
+    auto widgetIndex = mBottomPanel->addWidget(missionContainer);
+    assert(MISSION_PARAMETER_INDEX == widgetIndex);
   }
 
   // -----------------------------------------------------------------
@@ -375,8 +378,9 @@ void MainWindowLayout::buildCentralPanel()
     mLogTable = new LogTableWidget(logContainer);
     logLayout->addWidget(mLogTable);
 
-    mBottomNavigation->addItem(tr("Log"), QIcon(":/icons/logs.svg"));
-    mBottomPanel->addWidget(logContainer);
+    LOG_TAB_INDEX = mBottomNavigation->addItem(tr("Log"), QIcon(":/icons/logs.svg"));
+    auto widgetIndex = mBottomPanel->addWidget(logContainer);
+    assert(LOG_TAB_INDEX == widgetIndex);
   }
 
   // -----------------------------------------------------------------
@@ -395,8 +399,9 @@ void MainWindowLayout::buildCentralPanel()
     mProcessTab = new ProcessTab(pluginContainer);
     pluginLayout->addWidget(mProcessTab);
 
-    mBottomNavigation->addItem(tr("Generation"), QIcon(":/icons/terminal.svg"));
-    mBottomPanel->addWidget(pluginContainer);
+    PROCESS_TAB_INDEX = mBottomNavigation->addItem(tr("Generation"), QIcon(":/icons/terminal.svg"));
+    auto widgetIndex = mBottomPanel->addWidget(pluginContainer);
+    assert(PROCESS_TAB_INDEX == widgetIndex);
   }
 
   // -----------------------------------------------------------------

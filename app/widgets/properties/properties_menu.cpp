@@ -31,6 +31,8 @@ constexpr auto COMPONENT_KEY = "component";
 constexpr auto EVENT_KEY = "event";
 constexpr auto FLOW_KEY = "flow";
 constexpr auto ARGUMENTS_KEY = "arguments";
+constexpr auto COMPONENT_ID_KEY = "componentId";
+constexpr auto CALL_ID_KEY = "callId";
 
 bool hasRecordField(const maki::RecordValue& record, const char* key)
 {
@@ -128,12 +130,24 @@ VoidResult PropertiesMenu::onNodeModified(NodeItem* /* node */)
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::onNodeSelected(NodeItem* node, bool /* selected */)
+VoidResult PropertiesMenu::onNodeSelected(NodeItem* node, bool selected)
 {
+  LOG_DEBUG("Node selected: {} vs {}", node ? node->id() : "-", mCurrentNode);
+
+  // If we are already showing this node, then there is nothing to do
+  if (node && node->id() == mCurrentNode)
+  {
+    LOG_DEBUG("Comparing: {} vs {}", node->id(), mCurrentNode);
+    return VoidResult();
+  }
+
   clearLayout(layout());
 
   if (!node)
+  {
+    mCurrentNode.clear();
     return VoidResult();
+  }
 
   mCurrentNode = node->id();
 
@@ -385,7 +399,6 @@ VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IPa
     const auto events = mStorage->getEventsOfTypeFromNode(componentId, {Types::CallType::TRIGGER});
     return events.isEmpty() ? nullptr : events.first();
   };
-
   auto populateCalls = [this, mode, callEditor](const QString& componentId) {
     if (!callEditor)
       return;
@@ -396,13 +409,13 @@ VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IPa
     {
       for (const auto& flow : mStorage->getFlowsFromNode(componentId))
         if (flow)
-          callEditor->addItem(flow->getname(), flow->getname());
+          callEditor->addItem(flow->getname(), flow->getid());
     }
     else
     {
       for (const auto& event : mStorage->getEventsOfTypeFromNode(componentId, {Types::CallType::TRIGGER, Types::CallType::ABORT}))
         if (event)
-          callEditor->addItem(event->getname(), event->getname());
+          callEditor->addItem(event->getname(), event->getid());
     }
   };
 
@@ -421,8 +434,8 @@ VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IPa
 
   if (callEditor)
   {
-    connect(callEditor, &maki::SelectorWidget::valueChanged, this,
-            [this, node, propertyId = property->getid(), componentEditor, argumentsGroup, findCall, mode](const QString& callName) {
+    connect(callEditor, &maki::SelectorWidget::dataChanged, this,
+            [this, node, propertyId = property->getid(), componentEditor, argumentsGroup, findCall, mode](const QString& callName, const QVariant& callId) {
               if (!node || callName.isEmpty())
                 return;
 
@@ -430,9 +443,9 @@ VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IPa
               auto valueRecord = maki::parameterRecord(current);
               const char* key = mode == Types::ControlTypes::FLOW_CALL ? FLOW_KEY : EVENT_KEY;
               valueRecord[key] = maki::Value::createString(callName);
+              valueRecord[CALL_ID_KEY] = maki::Value::createString(callId.toString());
               valueRecord[ARGUMENTS_KEY] = maki::Value::createList({});
               node->setProperty(propertyId, maki::Value::createRecord(valueRecord));
-
               argumentsGroup->clear();
               const auto call = findCall(componentEditor->getData().toString(), callName);
               LOG_WARN_ON_FAILURE(loadCallArguments(call, propertyId, node, argumentsGroup));
@@ -456,6 +469,9 @@ VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IPa
               valueRecord[FLOW_KEY] = maki::Value::createString("");
             else if (mode == Types::ControlTypes::EVENT_SELECT)
               valueRecord[EVENT_KEY] = maki::Value::createString("");
+
+            valueRecord[COMPONENT_ID_KEY] = maki::Value::createString(componentId.toString());
+            valueRecord[CALL_ID_KEY] = maki::Value::createString("");
 
             node->setProperty(propertyId, maki::Value::createRecord(valueRecord));
 

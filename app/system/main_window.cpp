@@ -73,6 +73,20 @@
 #include "widgets/structure/system_menu.h"
 #include "widgets/type_editor.h"
 
+static QWidget* findAncestor(QWidget* w, const QMetaObject* type)
+{
+  while (w)
+  {
+    // LOG_TRACE("Finding: {} vs {}", type->className(), w->metaObject(->className()));
+    if (w->metaObject()->inherits(type))
+      return w;
+    w = w->parentWidget();
+  }
+  return nullptr;
+}
+
+#define IN_TYPE(OBJ, TYPE) qobject_cast<TYPE*>(findAncestor(OBJ, &TYPE::staticMetaObject))
+
 MainWindow::MainWindow(QApplication* app, oclero::qlementine::ThemeManager* themeManager, QWidget* parent)
     : MainWindowLayout(parent)
     , mActiveCanvas(nullptr)
@@ -299,18 +313,6 @@ void MainWindow::startUI()
   mUndoGroup->setActiveStack(canvas->undoStack());
 }
 
-static QWidget* findAncestor(QWidget* w, const QMetaObject* type)
-{
-  while (w)
-  {
-    // LOG_TRACE("Finding: {} vs {}", type->className(), w->metaObject(->className()));
-    if (w->metaObject()->inherits(type))
-      return w;
-    w = w->parentWidget();
-  }
-  return nullptr;
-}
-
 void MainWindow::bind()
 {
   LOG_DEBUG("Binding UI callbacks");
@@ -326,43 +328,34 @@ void MainWindow::bind()
     if (!fw)
       return;
 
-    LOG_INFO("Focused on: {}", fw->metaObject()->className());
-
+    LOG_TRACE("Focused on: {}", fw->metaObject()->className());
     // 1) If focus is in the node library panel -> search there
-    if (QScrollArea* lib = qobject_cast<QScrollArea*>(findAncestor(fw, &QScrollArea::staticMetaObject)))
+    if (auto* lib = IN_TYPE(fw, QScrollArea); lib == mStructureScrollArea)
     {
       // For now, we only search in the structure tab
-      if (lib == mStructureScrollArea)
-      {
-        LOG_DEBUG("Finding in palette");
-        mPaletteSearch->show();
-        mPaletteSearch->widget()->setFocus(Qt::ShortcutFocusReason);
-        return;
-      }
-    }
-    if (auto* search = qobject_cast<maki::SearchWidget*>(findAncestor(fw, &maki::SearchWidget::staticMetaObject)))
-    {
-      if (search == mPaletteSearch)
-      {
-        LOG_DEBUG("Finding in palette");
-        mPaletteSearch->show();
-        mPaletteSearch->widget()->setFocus(Qt::ShortcutFocusReason);
-      }
+      LOG_DEBUG("Finding in palette");
+      mPaletteSearch->show();
+      mPaletteSearch->widget()->setFocus(Qt::ShortcutFocusReason);
       return;
     }
-
+    else if (auto* search = IN_TYPE(fw, maki::SearchWidget); search == mPaletteSearch)
+    {
+      LOG_DEBUG("Finding in palette");
+      mPaletteSearch->show();
+      mPaletteSearch->widget()->setFocus(Qt::ShortcutFocusReason);
+      return;
+    }
     // 2) If focus is in the canvas -> search there
-    if (auto* canvas = qobject_cast<CanvasView*>(findAncestor(fw, &CanvasView::staticMetaObject)))
+    else if (auto* canvas = IN_TYPE(fw, CanvasView))
     {
       Q_UNUSED(canvas);
       LOG_DEBUG("Finding in canvas");
       return;
     }
-
-    if (auto* bottom = qobject_cast<QSplitter*>(findAncestor(fw, &QSplitter::staticMetaObject)))
+    else if (auto* bottom = IN_TYPE(fw, QStackedWidget); bottom == mBottomPanel)
     {
       LOG_DEBUG("Finding in bottom container");
-      if (bottom == mCentralSplitter && mBottomPanel->currentIndex() == 1)
+      if (mBottomPanel->currentIndex() == LOG_TAB_INDEX)
         mLogTable->search();
       return;
     }
@@ -410,7 +403,7 @@ void MainWindow::bind()
   mActionAutoRoute->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_L));
   connect(mActionDistribute, &QAction::triggered, this, [this] {
     if (canvas())
-      canvas()->distributeSelectedNodes();
+      canvas()->requestDistributeNodes();
   });
   mActionDistribute->setShortcut(QKeySequence(Qt::ALT | Qt::Key_D));
   connect(mActionAlignH, &QAction::triggered, this, [this] {
@@ -443,23 +436,18 @@ void MainWindow::bind()
   connect(rootCanvas(), &Canvas::flowAdded, this, &MainWindow::onFlowAdded);
   connect(rootCanvas(), &Canvas::flowRemoved, this, &MainWindow::onFlowRemoved);
 
-  connect(mPropertiesMenu, &PropertiesMenu::flowSelected, rootCanvas(), &Canvas::onFlowSelected);
-  connect(mHostServices, &HostServices::onFocusOnNode, this, [this](const QString& nodeId, const QString& flowId, const maki::FocusProperties& properties) {
-    rootCanvas()->onFocusNode(flowId, nodeId, properties);
-    if (flowId.isEmpty())
-      mCanvasPanel->setCurrentIndex(0);
-  });
+  connect(mPropertiesMenu, &PropertiesMenu::flowSelected, this,
+          [this](const QString& flowId, const QString& nodeId) { focusOn(nodeId, flowId, maki::FocusProperties::internal()); });
+  connect(mHostServices, &HostServices::onFocusOnNode, this, &MainWindow::focusOn);
 
   connect(mSystemMenu, &SystemMenu::editPipeline, this, &MainWindow::onActionEditPipeline);
   connect(mSystemMenu, &SystemMenu::removePipeline, this, &MainWindow::onActionDeletePipeline);
-  connect(mSystemMenu, &SystemMenu::flowSelected, rootCanvas(), &Canvas::onFlowSelected);
+  connect(mSystemMenu, &SystemMenu::flowSelected, this,
+          [this](const QString& flowId, const QString& nodeId) { focusOn(nodeId, flowId, maki::FocusProperties::internal()); });
   connect(mSystemMenu, &SystemMenu::flowRemoved, rootCanvas(), &Canvas::onFlowRemoved);
   connect(mSystemMenu, &SystemMenu::nodeRemoved, rootCanvas(), &Canvas::onRemoveNode);
-  connect(mSystemMenu, &SystemMenu::nodeFocused, this, [this](const QString& nodeId, const QString& flowId) {
-    rootCanvas()->onFocusNode(flowId, nodeId, maki::FocusProperties::internal());
-    if (flowId.isEmpty())
-      mCanvasPanel->setCurrentIndex(0);
-  });
+  connect(mSystemMenu, &SystemMenu::nodeFocused, this,
+          [this](const QString& flowId, const QString& nodeId) { focusOn(nodeId, flowId, maki::FocusProperties::internal()); });
 
   connect(mPropertiesMenu, &PropertiesMenu::flowRemoved, rootCanvas(), &Canvas::onFlowRemoved);
   connect(mPropertiesMenu, &PropertiesMenu::openParameter, this, [this](const QString& parameterId) {
@@ -577,6 +565,7 @@ void MainWindow::bindCanvas()
   connect(canvas(), &Canvas::nodeAdded, this, &MainWindow::onNodeAdded);
   connect(canvas(), &Canvas::nodeRemoved, this, &MainWindow::onNodeRemoved);
   connect(canvas(), &Canvas::nodeModified, this, &MainWindow::onNodeModified);
+  connect(canvas(), &Canvas::focusOn, this, &MainWindow::focusOn);
 
   connect(canvas(), &Canvas::createEvent, mPropertiesMenu, &PropertiesMenu::onCreateEvent);
   connect(canvas(), &Canvas::transitionSelected, mPropertiesMenu, &PropertiesMenu::onTransitionSelected);
@@ -588,6 +577,7 @@ void MainWindow::unbindCanvas()
   disconnect(canvas(), &Canvas::nodeAdded, this, &MainWindow::onNodeAdded);
   disconnect(canvas(), &Canvas::nodeRemoved, this, &MainWindow::onNodeRemoved);
   disconnect(canvas(), &Canvas::nodeModified, this, &MainWindow::onNodeModified);
+  disconnect(canvas(), &Canvas::focusOn, this, &MainWindow::focusOn);
 
   disconnect(canvas(), &Canvas::createEvent, mPropertiesMenu, &PropertiesMenu::onCreateEvent);
   disconnect(canvas(), &Canvas::transitionSelected, mPropertiesMenu, &PropertiesMenu::onTransitionSelected);
@@ -602,17 +592,17 @@ void MainWindow::bindShortcuts()
       return;
 
     LOG_TRACE("Copy, focused on: {}", fw->metaObject()->className());
-    if (auto* textEdit = qobject_cast<QTextEdit*>(findAncestor(fw, &QTextEdit::staticMetaObject)))
+    if (auto* textEdit = IN_TYPE(fw, QTextEdit))
     {
       textEdit->copy();
       return;
     }
-    else if (auto* browser = qobject_cast<QTextBrowser*>(findAncestor(fw, &QTextBrowser::staticMetaObject)))
+    else if (auto* browser = IN_TYPE(fw, QTextBrowser))
     {
       browser->copy();
       return;
     }
-    else if (auto* canvasView = qobject_cast<CanvasView*>(findAncestor(fw, &CanvasView::staticMetaObject)))
+    else if (auto* canvasView = IN_TYPE(fw, CanvasView))
     {
       if (auto* canvas = qobject_cast<Canvas*>(canvasView->scene()))
         canvas->copySelectedItems(nullptr);
@@ -629,21 +619,21 @@ void MainWindow::bindShortcuts()
     LOG_TRACE("Copy, focused on: {}", fw->metaObject()->className());
 
     // 1) If focus is in the node library panel -> search there
-    if (auto* textEdit = qobject_cast<QTextEdit*>(findAncestor(fw, &QTextEdit::staticMetaObject)))
+    if (auto* textEdit = IN_TYPE(fw, QTextEdit))
     {
       if (!textEdit->isReadOnly())
         textEdit->paste();
 
       return;
     }
-    else if (auto* browser = qobject_cast<QTextBrowser*>(findAncestor(fw, &QTextBrowser::staticMetaObject)))
+    else if (auto* browser = IN_TYPE(fw, QTextBrowser))
     {
       if (!browser->isReadOnly())
         browser->paste();
 
       return;
     }
-    else if (auto* canvasView = qobject_cast<CanvasView*>(findAncestor(fw, &CanvasView::staticMetaObject)))
+    else if (auto* canvasView = IN_TYPE(fw, CanvasView))
     {
       if (auto* canvas = qobject_cast<Canvas*>(canvasView->scene()))
         canvas->pasteCopiedItems();
@@ -658,33 +648,23 @@ void MainWindow::bindShortcuts()
       return;
 
     LOG_TRACE("Ctrl, tab, focused on: {}", fw->metaObject()->className());
-    if (auto* stackedWidget = qobject_cast<QStackedWidget*>(findAncestor(fw, &QStackedWidget::staticMetaObject)))
+    if (auto* stackedWidget = IN_TYPE(fw, QStackedWidget); stackedWidget == mBottomPanel && mBottomNavigation)
     {
-      if (stackedWidget == mBottomPanel && mBottomNavigation)
-      {
-        int next = mBottomNavigation->currentIndex() - 1;
-        mBottomNavigation->setCurrentIndex(next < 0 ? mBottomNavigation->itemCount() - 1 : next);
-        return;
-      }
+      int next = mBottomNavigation->currentIndex() - 1;
+      mBottomNavigation->setCurrentIndex(next < 0 ? mBottomNavigation->itemCount() - 1 : next);
+      return;
     }
-    else if (auto* widget =
-                 qobject_cast<oclero::qlementine::AbstractItemListWidget*>(findAncestor(fw, &oclero::qlementine::AbstractItemListWidget::staticMetaObject)))
+    else if (auto* widget = IN_TYPE(fw, oclero::qlementine::AbstractItemListWidget); widget == mBottomNavigation)
     {
-      if (widget == mBottomNavigation)
-      {
-        int next = mBottomNavigation->currentIndex() - 1;
-        mBottomNavigation->setCurrentIndex(next < 0 ? mBottomNavigation->itemCount() - 1 : next);
-        return;
-      }
+      int next = mBottomNavigation->currentIndex() - 1;
+      mBottomNavigation->setCurrentIndex(next < 0 ? mBottomNavigation->itemCount() - 1 : next);
+      return;
     }
-    else if (auto* tabWidget = qobject_cast<QTabWidget*>(findAncestor(fw, &QTabWidget::staticMetaObject)))
+    else if (auto* tabWidget = IN_TYPE(fw, QTabWidget); tabWidget == mCanvasPanel)
     {
-      if (tabWidget == mCanvasPanel)
-      {
-        int next = mCanvasPanel->currentIndex() - 1;
-        mCanvasPanel->setCurrentIndex(next < 0 ? mCanvasPanel->count() - 1 : next);
-        return;
-      }
+      int next = mCanvasPanel->currentIndex() - 1;
+      mCanvasPanel->setCurrentIndex(next < 0 ? mCanvasPanel->count() - 1 : next);
+      return;
     }
   });
   // Focus shift forward
@@ -694,33 +674,49 @@ void MainWindow::bindShortcuts()
       return;
 
     LOG_TRACE("Ctrl, shift, tab, focused on: {}", fw->metaObject()->className());
-    if (auto* stackedWidget = qobject_cast<QStackedWidget*>(findAncestor(fw, &QStackedWidget::staticMetaObject)))
+    if (auto* stackedWidget = IN_TYPE(fw, QStackedWidget); stackedWidget == mBottomPanel && mBottomNavigation)
     {
-      if (stackedWidget == mBottomPanel && mBottomNavigation)
-      {
-        int next = mBottomNavigation->currentIndex() + 1;
-        mBottomNavigation->setCurrentIndex(next >= mBottomNavigation->itemCount() ? 0 : next);
-        return;
-      }
+      int next = mBottomNavigation->currentIndex() + 1;
+      mBottomNavigation->setCurrentIndex(next >= mBottomNavigation->itemCount() ? 0 : next);
+      return;
     }
-    else if (auto* widget =
-                 qobject_cast<oclero::qlementine::AbstractItemListWidget*>(findAncestor(fw, &oclero::qlementine::AbstractItemListWidget::staticMetaObject)))
+    else if (auto* widget = IN_TYPE(fw, oclero::qlementine::AbstractItemListWidget); widget == mBottomNavigation)
     {
-      if (widget == mBottomNavigation)
-      {
-        int next = mBottomNavigation->currentIndex() + 1;
-        mBottomNavigation->setCurrentIndex(next >= mBottomNavigation->itemCount() ? 0 : next);
-        return;
-      }
+      int next = mBottomNavigation->currentIndex() + 1;
+      mBottomNavigation->setCurrentIndex(next >= mBottomNavigation->itemCount() ? 0 : next);
+      return;
     }
-    else if (auto* tabWidget = qobject_cast<QTabWidget*>(findAncestor(fw, &QTabWidget::staticMetaObject)))
+    else if (auto* tabWidget = IN_TYPE(fw, QTabWidget); tabWidget == mCanvasPanel)
     {
-      if (tabWidget == mCanvasPanel)
-      {
-        int next = mCanvasPanel->currentIndex() + 1;
-        mCanvasPanel->setCurrentIndex(next >= mCanvasPanel->count() ? 0 : next);
-        return;
-      }
+      int next = mCanvasPanel->currentIndex() + 1;
+      mCanvasPanel->setCurrentIndex(next >= mCanvasPanel->count() ? 0 : next);
+      return;
+    }
+  });
+  // Center nodes
+  new QShortcut(QKeySequence(Qt::ALT | Qt::Key_C), this, [this] {
+    QWidget* fw = QApplication::focusWidget();
+    if (!fw)
+      return;
+
+    LOG_TRACE("ALT+C, focused on: {}", fw->metaObject()->className());
+    if (auto* tabWidget = IN_TYPE(fw, QTabWidget); tabWidget == mCanvasPanel)
+    {
+      if (auto* view = qobject_cast<CanvasView*>(mCanvasPanel->currentWidget()); view)
+        qobject_cast<Canvas*>(view->scene())->centerOnNodes();
+    }
+  });
+  // Select all
+  new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_A), this, [this] {
+    QWidget* fw = QApplication::focusWidget();
+    if (!fw)
+      return;
+
+    LOG_TRACE("CTRL+A, focused on: {}", fw->metaObject()->className());
+    if (auto* tabWidget = IN_TYPE(fw, QTabWidget); tabWidget == mCanvasPanel)
+    {
+      if (auto* view = qobject_cast<CanvasView*>(mCanvasPanel->currentWidget()); view)
+        qobject_cast<Canvas*>(view->scene())->selectAll();
     }
   });
   // Delete
@@ -1494,7 +1490,7 @@ void MainWindow::closeCanvasTab(int index)
   mCanvasPanel->removeTab(index);
 }
 
-void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId, const maki::FocusProperties& properties)
+int MainWindow::onOpenFlow(Flow* flow, const QString& nodeId, const maki::FocusProperties& properties)
 {
   QString flowName;
   if (flow == nullptr)
@@ -1515,7 +1511,7 @@ void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId, const maki::Focus
 
     // Execute the dialog
     if (dialog->exec() != QDialog::Accepted)
-      return;
+      return -1;
 
     flowName = dialog->textValue().trimmed();
   }
@@ -1527,33 +1523,27 @@ void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId, const maki::Focus
   if (flowName.isEmpty())
   {
     LOG_INFO("No name provided, skipping flow creation");
-    return;
-  }
-
-  for (int i = 1; i < mCanvasPanel->count() && flow != nullptr; ++i)
-  {
-    // Check if the flow is already open in some tab
-    auto prop = mCanvasPanel->widget(i)->property("id");
-    if (prop.isValid() && prop.toString() == flow->id())
-    {
-      mCanvasPanel->setCurrentIndex(i);
-      // TODO: clean this up
-      if (!nodeId.isEmpty())
-        if (auto* view = qobject_cast<CanvasView*>(mCanvasPanel->currentWidget()))
-          if (auto* canvas = qobject_cast<Canvas*>(view->scene()))
-            canvas->onFocusNode("", nodeId, properties);
-      return;
-    }
+    return -1;
   }
 
   if (flow == nullptr)
   {
     LOG_WARNING("This shouldn't happen, no flow was found");
-    return;
+    return -1;
+  }
+
+  // Check if the flow is already open in some tab
+  for (int i = 1; i < mCanvasPanel->count(); ++i)
+  {
+    auto prop = mCanvasPanel->widget(i)->property("id");
+    if (!prop.isValid() || prop.toString() != flow->id())
+      continue;
+
+    mCanvasPanel->setCurrentIndex(i);
+    return i;
   }
 
   CanvasView* newView = new CanvasView(mCanvasPanel);
-
   BehaviourCanvas* canvas = new BehaviourCanvas(flow, mConfigTable, mRouter, newView);
   canvas->setupInitialNodes();
   newView->setScene(canvas);
@@ -1564,14 +1554,73 @@ void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId, const maki::Focus
 
   LOG_DEBUG("Set tab property to {}", flow->id());
   newView->setProperty("id", flow->id());
-  mCanvasPanel->addTab(newView, QIcon(":/icons/behaviour.svg"), flowName);
+  auto tabIndex = mCanvasPanel->addTab(newView, QIcon(":/icons/behaviour.svg"), flowName);
   mCanvasPanel->setCurrentWidget(newView);
 
   // Populate after creation
   canvas->populate(*flow->config());
+  return tabIndex;
+}
 
-  if (!nodeId.isEmpty())
-    canvas->onFocusNode(flow->id(), nodeId, properties);
+void MainWindow::focusOn(const QString& nodeId, const QString& flowId, const maki::FocusProperties& properties)
+{
+  LOG_DEBUG("focusOn with node: {} and flow: {}, reason: {}", nodeId, flowId, (int)properties.reason);
+  // If we are focusing on a behaviour node
+  if (!nodeId.isEmpty() && !flowId.isEmpty())
+  {
+    auto flow = rootCanvas()->getFlow(flowId);
+    if (!flow)
+    {
+      LOG_WARNING("Could not find flow with id: {}", flowId);
+      return;
+    }
+
+    auto index = onOpenFlow(flow, nodeId, properties);
+    if (index < 0)
+    {
+      LOG_WARNING("Could not open flow with id: {}", flowId);
+      return;
+    }
+
+    if (auto canvas = qobject_cast<CanvasView*>(mCanvasPanel->widget(index)); canvas)
+      qobject_cast<Canvas*>(canvas->scene())->focusOnNode(nodeId, properties);
+  }
+  // If we are focusing on a structural node
+  else if (flowId.isEmpty() && !nodeId.isEmpty())
+  {
+    if (properties.reason == maki::FocusReason::SIMULATION)
+    {
+      const auto flow = rootCanvas()->getFlowWithNode(nodeId);
+      if (!flow)
+        return;
+
+      auto index = onOpenFlow(flow, nodeId, properties);
+      if (index < 0)
+        return;
+
+      if (auto canvas = qobject_cast<CanvasView*>(mCanvasPanel->widget(index)); canvas)
+        qobject_cast<Canvas*>(canvas->scene())->focusOnNode(nodeId, properties);
+    }
+    else
+    {
+      mCanvasPanel->setCurrentIndex(0);
+      rootCanvas()->focusOnNode(nodeId, properties);
+    }
+  }
+  // If we are focusing on a flow
+  else if (!flowId.isEmpty() && nodeId.isEmpty())
+  {
+    auto flow = rootCanvas()->getFlow(flowId);
+    if (!flow)
+      return;
+
+    auto index = onOpenFlow(flow, nodeId, properties);
+    if (index < 0 || index >= mCanvasPanel->count())
+      return;
+
+    if (auto view = qobject_cast<CanvasView*>(mCanvasPanel->widget(index)); view)
+      qobject_cast<Canvas*>(view->scene())->centerOnNodes();
+  }
 }
 
 void MainWindow::addPluginTab(const QString& name, PluginView* view)
@@ -1666,9 +1715,7 @@ void MainWindow::showAboutDialog()
   dialog.setCopyright("© 2026 Felipe Xavier");
 
   dialog.addSocialMediaLink("GitHub", "https://github.com/FelipeACXavier", QIcon(":/icons/github.svg"));
-
   dialog.addSocialMediaLink("Research", "https://research.tue.nl/nl/persons/felipe-de-azeredo-coutinho-xavier/", QIcon(":/icons/research.svg"));
-
   dialog.addSocialMediaLink("Website", "https://felipeacxavier.github.io", QIcon(":/icons/me.svg"));
 
   dialog.exec();

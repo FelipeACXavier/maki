@@ -3,14 +3,15 @@
 #include "logging.h"
 #include "system/canvas.h"
 
-AlignCommand::AlignCommand(Canvas* canvas, const QList<Types::AlignmentNode>& items, Types::AlignmentMode mode, Types::AlignmentDirection direction, QUndoCommand* parent)
+AlignCommand::AlignCommand(Canvas* canvas, const QList<Types::AlignmentNode>& items, Types::AlignmentMode mode, Types::AlignmentDirection direction,
+                           QUndoCommand* parent)
     : QUndoCommand(parent)
     , mCanvas(canvas)
     , mItems(items)
     , mMode(mode)
     , mDirection(direction)
 {
-  setText(QObject::tr("Align"));
+  setText(QObject::tr("Align nodes"));
 }
 
 void AlignCommand::undo()

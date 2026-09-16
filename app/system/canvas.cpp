@@ -36,6 +36,7 @@
 #include "undo_commands/add_transition.h"
 #include "undo_commands/align.h"
 #include "undo_commands/batch_remove.h"
+#include "undo_commands/distribute.h"
 #include "widgets/controls/suggestion_menu.h"
 #include "widgets/controls/task_node_menu.h"
 
@@ -134,11 +135,20 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
   // Make sure that no other nodes are selected before dropping
   clearSelectedNodes();
 
+  if (auto* view = parentView())
+  {
+    view->activateWindow();
+    view->setFocus(Qt::MouseFocusReason);
+  }
+
   QByteArray data = event->mimeData()->data(Constants::TYPE_NODE);
   QDataStream stream(&data, QIODevice::ReadOnly);
 
   auto info = std::make_shared<NodeSaveInfo>();
   stream >> *info;
+
+  info->setId(QUuid::createUuid().toString());
+  info->setPosition(event->scenePos());
   info->setScale(parentView()->getScale());
 
   NodeItem* parentNode = nullptr;
@@ -147,7 +157,7 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
     auto dropConfig = getNodeConfig(info->getnodeId());
     if (dropConfig && dropConfig->libraryType == type())
     {
-      if (insertDroppedNodeOnTransition(transition, info))
+      if (insertDroppedNodeOnTransition(transition, *info))
       {
         event->acceptProposedAction();
         dynamic_cast<QGraphicsView*>(parent())->setCursor(Qt::ArrowCursor);
@@ -174,8 +184,6 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
     return;
   }
 
-  info->setId(QUuid::createUuid().toString());
-  info->setPosition(event->scenePos());
   if (parentNode)
     info->setParentId(parentNode->id());
 
@@ -186,33 +194,49 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
   dynamic_cast<QGraphicsView*>(parent())->setCursor(Qt::ArrowCursor);
 }
 
-bool Canvas::insertDroppedNodeOnTransition(TransitionItem* /* transition */, std::shared_ptr<NodeSaveInfo> /* info */)
+bool Canvas::insertDroppedNodeOnTransition(TransitionItem* /* transition */, NodeSaveInfo /* info */)
 {
   return false;
 }
 
-void Canvas::updateCapabilityDropPreview(const QPointF& scenePos)
+bool Canvas::insertNodeOnTransition(TransitionItem* transition, NodeItem* node)
 {
-  if (TransitionItem* transition = transitionAt(scenePos))
+  return false;
+}
+
+void Canvas::updateCapabilityDropPreview(const QPointF& scenePos, const QGraphicsItem* toIgnore)
+{
+  if (TransitionItem* transition = transitionAt(scenePos, toIgnore))
     transition->setSelected(true);
   else
     clearSelection();
 }
 
-TransitionItem* Canvas::transitionAt(const QPointF& scenePos) const
+bool belongsTo(const QGraphicsItem* item, const QGraphicsItem* child)
 {
-  const QList<QGraphicsItem*> hits = items(scenePos, Qt::IntersectsItemShape, Qt::DescendingOrder);
-  for (QGraphicsItem* item : hits)
+  for (QGraphicsItem* parent = item->parentItem(); parent; parent = parent->parentItem())
+    if (parent == child)
+      return true;
+
+  return false;
+}
+
+TransitionItem* Canvas::transitionAt(const QPointF& scenePos, const QGraphicsItem* toIgnore) const
+{
+  for (QGraphicsItem* item : items(scenePos, Qt::IntersectsItemShape, Qt::DescendingOrder))
   {
-    if (item->type() == NodeItem::Type)
+    if (!item)
+      continue;
+
+    if (belongsTo(item, toIgnore))
       return nullptr;
 
     if (item->type() == TransitionItem::Type)
-      return static_cast<TransitionItem*>(item);
+      return qgraphicsitem_cast<TransitionItem*>(item);
 
     for (QGraphicsItem* parent = item->parentItem(); parent; parent = parent->parentItem())
       if (parent->type() == TransitionItem::Type)
-        return static_cast<TransitionItem*>(parent);
+        return qgraphicsitem_cast<TransitionItem*>(parent);
   }
 
   return nullptr;
@@ -221,64 +245,6 @@ TransitionItem* Canvas::transitionAt(const QPointF& scenePos) const
 bool Canvas::isModifierSet(QGraphicsSceneMouseEvent* event, Qt::KeyboardModifier modifier)
 {
   return (event->modifiers() & modifier) > 0;
-}
-
-void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
-{
-  // If the press is on the left or right connection point of a node, start
-  // drawing
-  if (event->button() == Qt::LeftButton)
-  {
-    mStartDragPosition = event->scenePos();
-    mMouseDown = true;
-
-    QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
-    if (!item)
-    {
-      LOG_DEBUG("Clearing selected nodes");
-      mSelectionStart = event->scenePos();
-      auto color = Config::HIGHLIGHT;
-      color.setAlpha(15);
-      mSelectionRect = addRect(QRectF(mSelectionStart, mSelectionStart), QPen(color, 1, Qt::DashLine), QColor(color));
-      mSelectionRect->setZValue(1'000'000);
-
-      mSelectedNodes.clear();
-      clearSelectedNodes();
-      QGraphicsScene::mousePressEvent(event);
-      return;
-    }
-
-    if (item->type() == NodeItem::Type)
-    {
-      if (!nodeClickHandler(event, item))
-        return;
-    }
-    else if (item->type() == TransitionItem::Type)
-    {
-      if (!transitionClickHandler(event, item))
-        return;
-    }
-    else if (item->type() == QGraphicsTextItem::Type || item->type() == QGraphicsSvgItem::Type)
-    {
-      auto parent = item->parentItem();
-      if (parent && parent->type() == NodeItem::Type)
-      {
-        if (!nodeClickHandler(event, parent))
-          return;
-      }
-      else if (parent && parent->type() == TransitionItem::Type)
-      {
-        if (!transitionClickHandler(event, parent))
-          return;
-      }
-    }
-  }
-  else if (event->button() == Qt::MiddleButton)
-  {
-    parentView()->setDragMode(QGraphicsView::NoDrag);
-  }
-
-  QGraphicsScene::mousePressEvent(event);
 }
 
 bool Canvas::canAddTransition(NodeItem* /* node */) const
@@ -336,10 +302,10 @@ bool Canvas::nodeClickHandler(QGraphicsSceneMouseEvent* event, QGraphicsItem* it
     event->accept();
     return false;
   }
-  else
-  {
-    selectNode(node, true);
-  }
+  // else
+  // {
+  //   selectNode(node, true);
+  // }
 
   return true;
 }
@@ -352,6 +318,65 @@ bool Canvas::transitionClickHandler(QGraphicsSceneMouseEvent* event, QGraphicsIt
   emit transitionSelected(transition);
 
   return true;
+}
+
+void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
+{
+  // If the press is on the left or right connection point of a node, start
+  // drawing
+  if (event->button() == Qt::LeftButton)
+  {
+    mStartDragPosition = event->scenePos();
+    mMouseDown = true;
+
+    QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
+    if (!item)
+    {
+      LOG_TRACE("Clearing selected nodes");
+      mSelectionStart = event->scenePos();
+      auto color = Config::HIGHLIGHT;
+      color.setAlpha(15);
+      mSelectionRect = addRect(QRectF(mSelectionStart, mSelectionStart), QPen(color, 1, Qt::DashLine), QColor(color));
+      mSelectionRect->setZValue(1'000'000);
+
+      mSelectedNodes.clear();
+      clearSelectedNodes();
+
+      QGraphicsScene::mousePressEvent(event);
+      return;
+    }
+
+    if (item->type() == NodeItem::Type)
+    {
+      if (!nodeClickHandler(event, item))
+        return;
+    }
+    else if (item->type() == TransitionItem::Type)
+    {
+      if (!transitionClickHandler(event, item))
+        return;
+    }
+    else if (item->type() == QGraphicsTextItem::Type || item->type() == QGraphicsSvgItem::Type)
+    {
+      auto parent = item->parentItem();
+      if (parent && parent->type() == NodeItem::Type)
+      {
+        if (!nodeClickHandler(event, parent))
+          return;
+      }
+      else if (parent && parent->type() == TransitionItem::Type)
+      {
+        if (!transitionClickHandler(event, parent))
+          return;
+      }
+    }
+  }
+  else if (event->button() == Qt::MiddleButton)
+  {
+    parentView()->setDragMode(QGraphicsView::NoDrag);
+  }
+
+  QGraphicsScene::mousePressEvent(event);
 }
 
 void Canvas::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
@@ -469,6 +494,27 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
   QGraphicsScene::mouseReleaseEvent(event);  // Allow normal item drop behavior
 }
 
+void Canvas::nodeClicked(NodeItem* node)
+{
+  if (!node)
+    return;
+
+  LOG_DEBUG("Selecting node: {}", node->nodeId());
+
+  // Remove if it was already in the list
+  mSelectedNodes.removeAll(node);
+
+  // Append as "last clicked"
+  mSelectedNodes.append(node);
+}
+
+QList<NodeItem*> Canvas::selectedNodes() const
+{
+  return mSelectedNodes;
+}
+
+// ==========================================================================================================
+// Alignment and distribution
 void Canvas::createAlignMenu(QMenu* alignMenu, const QList<Types::AlignmentNode>& items)
 {
   // QAction* distribute = alignMenu->addAction("Distribute");
@@ -502,25 +548,6 @@ void Canvas::createAlignMenu(QMenu* alignMenu, const QList<Types::AlignmentNode>
   alignMenu->setMinimumWidth(width / 6);
 }
 
-void Canvas::nodeClicked(NodeItem* node)
-{
-  if (!node)
-    return;
-
-  LOG_DEBUG("Selecting node: {}", node->nodeId());
-
-  // Remove if it was already in the list
-  mSelectedNodes.removeAll(node);
-
-  // Append as "last clicked"
-  mSelectedNodes.append(node);
-}
-
-QList<NodeItem*> Canvas::selectedNodes() const
-{
-  return mSelectedNodes;
-}
-
 void Canvas::requestAlignNodes(const QList<Types::AlignmentNode>& items, Types::AlignmentMode mode, Types::AlignmentDirection direction)
 {
   mUndoStack->push(new AlignCommand(this, items, mode, direction));
@@ -551,6 +578,8 @@ void Canvas::alignNodes(const QList<Types::AlignmentNode>& nodes, Types::Alignme
   {
     alignNodesVertically(nodes, direction);
   }
+
+  autoRoute();
 }
 
 void Canvas::alignNodesHorizontally(const QList<Types::AlignmentNode>& nodes, Types::AlignmentDirection direction)
@@ -630,19 +659,22 @@ void Canvas::alignSelectedNodes(Types::AlignmentMode mode)
   requestAlignNodes(itemIds, mode, Types::AlignmentDirection::CENTER);
 }
 
-void Canvas::distributeSelectedNodes()
+void Canvas::requestDistributeNodes()
 {
-  QList<NodeItem*> items = selectedNodes();
-  if (items.isEmpty())
-    return;
-
   QList<Types::AlignmentNode> itemIds = {};
-  for (const auto node : items)
+  for (const auto node : selectedNodes())
     if (node != nullptr)
       itemIds.append(Types::AlignmentNode{node->id(), node->pos()});
 
-  distributeNodesHorizontally(itemIds);
-  distributeNodesVertically(itemIds);
+  if (!itemIds.isEmpty())
+    mUndoStack->push(new DistributeCommand(this, itemIds));
+}
+
+void Canvas::distributeNodes(QList<Types::AlignmentNode> items)
+{
+  distributeNodesHorizontally(items);
+  distributeNodesVertically(items);
+  autoRoute();
 }
 
 void Canvas::distributeNodesHorizontally(const QList<Types::AlignmentNode>& nodes)
@@ -728,6 +760,8 @@ void Canvas::distributeNodesVertically(const QList<Types::AlignmentNode>& nodes)
   }
 }
 
+// ==========================================================================================================
+// Context menu stuff
 void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 {
   QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
@@ -952,8 +986,27 @@ QVector<QGraphicsItem*> Canvas::cleanTransitionsOfNode(const QString& nodeId)
   return {};
 }
 
-void Canvas::onNodeMoved(const NodeItem* node)
+void Canvas::onNodeMoved(NodeItem* node, bool done)
 {
+  if (!node)
+    return;
+
+  if (selectedNodes().size() > 1)
+    return;
+
+  if (TransitionItem* transition = transitionAt(node->sceneNodeRect().center(), node))
+  {
+    if (!canAddTransition(node))
+      return;
+
+    updateCapabilityDropPreview(node->sceneNodeRect().center(), node);
+    if (done)
+      insertNodeOnTransition(transition, node);
+  }
+  else
+  {
+    clearSelection();
+  }
 }
 
 QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
@@ -968,6 +1021,7 @@ QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
   node->flowAdded = nullptr;
   node->nodeMoved = nullptr;
   node->nodeHovered = nullptr;
+  node->focusOn = nullptr;
 
   LOG_DEBUG("Removing node: {}", node->id());
 
@@ -998,6 +1052,17 @@ QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
   // Since this function can be called in loops or recusively, we do not perform the deletion of the pointer.
   // Deletion is the responsibility of the outer caller
   return itemsToRemove;
+}
+
+void Canvas::selectAll()
+{
+  for (auto* item : items())
+  {
+    if (!item || item->type() != NodeItem::Type)
+      continue;
+
+    item->setSelected(true);
+  }
 }
 
 bool Canvas::isParentSelected(NodeItem* node)
@@ -1347,8 +1412,9 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
   // TODO(felaze): Move these to a function or so
   node->nodeModified = [this](NodeItem* item) { emit nodeModified(item); };
   node->flowAdded = [this](Flow* flow, NodeItem* node) { addedItemFlow(flow, node); };
-  node->nodeMoved = [this](NodeItem* node) { onNodeMoved(node); };
+  node->nodeMoved = [this](NodeItem* node, bool done) { onNodeMoved(node, done); };
   node->nodeHovered = [this](NodeItem* node, bool entered) { onNodeHovered(node, entered); };
+  node->focusOn = [this](NodeItem* node, const QString& nodeId, const QString& flowId, int type) { onNodeFocusOn(node, nodeId, flowId, type); };
 
   // All nodes are children of the canvas
   addItem(node);
@@ -1438,6 +1504,14 @@ void Canvas::onNodeHovered(NodeItem* node, bool entered)
   }
 }
 
+void Canvas::onNodeFocusOn(NodeItem* node, const QString& nodeId, const QString& flowId, int type)
+{
+  if (type == Flow::Type)
+    emit focusOn("", flowId, maki::FocusProperties::internal());
+  else if (type == NodeItem::Type)
+    emit focusOn(nodeId, flowId, maki::FocusProperties::internal());
+}
+
 NodeItem* Canvas::findNodeWithId(const QString& id) const
 {
   for (const auto& item : items())
@@ -1478,45 +1552,24 @@ QPointF Canvas::getCenter() const
   return parentView()->getCenter();
 }
 
-void Canvas::onFocusNode(const QString& flowId, const QString& nodeId, const maki::FocusProperties& properties)
+void Canvas::focusOnNode(const QString& nodeId, const maki::FocusProperties& properties)
 {
   // If no flow id was provided, then we are already in the right canvas, or in the structural canvas
-  if (flowId.isEmpty())
-  {
-    auto node = findNodeWithId(nodeId);
-    if (!node)
-      return;
+  if (nodeId.isEmpty())
+    return;
 
-    parentView()->zoom(2 * node->baseScale() / parentView()->getScale());
+  auto node = findNodeWithId(nodeId);
+  if (!node)
+    return;
 
-    // Center the node in the view
-    parentView()->centerOn(node);
-    if (properties.reason == maki::FocusReason::SIMULATION)
-      showSimulationControls(node, properties.widget, properties.color);
-    else if (properties.reason != maki::FocusReason::UNKNOWN)
-      node->highlight(properties.color, properties.message);
-  }
-  else
-  {
-    // If we have a flow id, we need to find that flow and the node inside it
-    for (const auto& item : items())
-    {
-      if (item->type() != NodeItem::Type)
-        continue;
+  parentView()->zoom(2 * node->baseScale() / parentView()->getScale());
 
-      auto node = static_cast<NodeItem*>(item);
-      const auto flow = node->getFlow(flowId);
-      if (!flow)
-        continue;
-
-      for (const auto& child : flow->getNodes())
-        if (child->getid() == nodeId)
-        {
-          emit openFlow(flow, nodeId, properties);
-          return;
-        }
-    }
-  }
+  // Center the node in the view
+  parentView()->centerOn(node);
+  if (properties.reason == maki::FocusReason::SIMULATION)
+    showSimulationControls(node, properties.widget, properties.color);
+  else if (properties.reason != maki::FocusReason::UNKNOWN)
+    node->highlight(properties.color, properties.message);
 }
 
 void Canvas::showSimulationControls(NodeItem* node, maki::ControlWidget* controls, const QColor& highlightColor)
@@ -1683,4 +1736,63 @@ void Canvas::createSuggestedNode(const QString& nodeType, NodeItem* sourceNode)
     info->setParentId(sourceNode->parentNode()->id());
 
   mUndoStack->push(new AddNodeCommand(this, *info, NodeCreation::Populating));
+}
+
+Flow* Canvas::getFlow(const QString& flowId) const
+{
+  for (const auto& item : items())
+    if (auto node = qgraphicsitem_cast<NodeItem*>(item); node)
+    {
+      const auto flow = node->getFlow(flowId);
+      if (flow)
+        return flow;
+    }
+
+  return nullptr;
+}
+
+Flow* Canvas::getFlowWithNode(const QString& nodeId) const
+{
+  for (const auto& item : items())
+    if (auto node = qgraphicsitem_cast<NodeItem*>(item); node)
+    {
+      for (const auto& flow : node->flows())
+        for (const auto& bnode : flow->getNodes())
+          if (bnode->getid() == nodeId)
+            return flow;
+    }
+
+  return nullptr;
+}
+
+void Canvas::centerOnNodes()
+{
+  if (!parentView())
+    return;
+
+  QRectF bounds;
+  bool first = true;
+  for (const auto* item : items())
+  {
+    if (!item || item->type() != NodeItem::Type)
+      continue;
+
+    const QRectF nodeBounds = item->sceneBoundingRect();
+    if (first)
+    {
+      bounds = nodeBounds;
+      first = false;
+    }
+    else
+    {
+      bounds = bounds.united(nodeBounds);
+    }
+  }
+
+  if (parentView())
+  {
+    constexpr qreal padding = 40.0;
+    bounds.adjust(-padding, -padding, padding, padding);
+    parentView()->fitInView(bounds, Qt::KeepAspectRatio);
+  }
 }

@@ -113,6 +113,11 @@ public:
   QPointF getCenter() const;
 
   /**
+   * @brief Centers the canvas so the nodes are distributed.
+   */
+  void centerOnNodes();
+
+  /**
    * @brief Loads the canvas from save information.
    *
    * @param info The save information to load.
@@ -230,7 +235,9 @@ public:
   void alignNodes(const QList<Types::AlignmentNode>& items, Types::AlignmentMode mode, Types::AlignmentDirection direction, bool useGiven);
 
   void alignSelectedNodes(Types::AlignmentMode mode);
-  void distributeSelectedNodes();
+
+  void requestDistributeNodes();
+  void distributeNodes(QList<Types::AlignmentNode> items);
   void distributeNodesVertically(const QList<Types::AlignmentNode>& nodes);
   void distributeNodesHorizontally(const QList<Types::AlignmentNode>& nodes);
 
@@ -239,7 +246,138 @@ public:
   virtual void suggestCapability(NodeItem* node);
   virtual void suggestedNodes(NodeItem* node, QStringList consumers, QStringList producers);
 
+  /**
+   * @brief Returns a pointer to the flow if it exists;
+   */
+  Flow* getFlow(const QString& flowId) const;
+
+  Flow* getFlowWithNode(const QString& nodeId) const;
+
+  /**
+   * @brief Finds a node by its ID.
+   *
+   * @param id The ID of the node to find.
+   * @return Pointer to the found NodeItem, or nullptr if not found.
+   */
+  NodeItem* findNodeWithId(const QString& id) const;
+  TransitionItem* findTransitionWithId(const QString& id) const;
+
+  void selectAll();
+
+signals:
+  /**
+   * @brief Emitted when a node is selected.
+   *
+   * @param node Pointer to the selected node.
+   * @param selected Whether the node is selected or not.
+   */
+  void nodeSelected(NodeItem* node, bool selected);
+
+  /**
+   * @brief Emitted when a node is added.
+   *
+   * @param node Pointer to the added node.
+   */
+  void nodeAdded(NodeItem* node);
+
+  /**
+   * @brief Emitted when a node is removed.
+   *
+   * @param nodeId The ID of the removed node.
+   * @param parentId The ID of the parent node.
+   */
+  void nodeRemoved(const QString& nodeId, const QString& parentId);
+
+  /**
+   * @brief Emitted when a node is modified.
+   *
+   * @param node Pointer to the modified node.
+   */
+  void nodeModified(NodeItem* node);
+
+  /**
+   * @brief Emitted when a transition is selected.
+   *
+   * @param transtion Pointer to the selected transition.
+   */
+  void transitionSelected(TransitionItem* transtion);
+
+  /**
+   * @brief Emitted when an event is created.
+   *
+   * @param node Pointer to the node where the event is created.
+   */
+  void createEvent(NodeItem* node);
+
+  /**
+   * @brief Emitted when a flow is opened.
+   *
+   * @param flow Pointer to the opened flow.
+   * @param node Pointer to the node associated with the flow.
+   */
+  int openFlow(Flow* flow, const QString& nodeId, const maki::FocusProperties& properties);
+
+  /**
+   * @brief Emitted when the user requests to focus on a node from the Canvas.
+   *
+   * @param flowId Id of the flow.
+   * @param nodeId Id of the flow owner.
+   * @param properties The focus properties.
+   */
+  void focusOn(const QString& flowId, const QString& nodeId, const maki::FocusProperties& properties);
+
+  /**
+   * @brief Emitted when a flow is added.
+   *
+   * @param flow Pointer to the added flow.
+   * @param node Pointer to the node associated with the flow.
+   */
+  void flowAdded(Flow* flow, NodeItem* node);
+
+  /**
+   * @brief Emitted when a flow is removed.
+   *
+   * @param flowId The ID of the removed flow.
+   * @param nodeId The ID of the node associated with the flow.
+   */
+  void flowRemoved(const QString& flowId, NodeItem* node);
+
+public slots:
+  /**
+   * @brief Handles focus on a node.
+   *
+   * @param nodeId The ID of the focused node.
+   */
+  void focusOnNode(const QString& nodeId, const maki::FocusProperties& properties);
+
+  /**
+   * @brief Handles removal of a node.
+   *
+   * @param nodeId The ID of the node to remove.
+   */
+  void onRemoveNode(const QString& flowId, const QString& nodeId);
+
+  /**
+   * @brief Handles selection of a flow.
+   *
+   * @param flowId The ID of the selected flow.
+   * @param nodeId The ID of the node associated with the flow.
+   */
+  void onFlowSelected(const QString& flowId, const QString& nodeId);
+
+  /**
+   * @brief Handles removal of a flow.
+   *
+   * @param flowId The ID of the removed flow.
+   * @param nodeId The ID of the node associated with the flow.
+   */
+  void onFlowRemoved(const QString& flowId, const QString& nodeId);
+
 protected:
+  std::shared_ptr<ConfigurationTable> mConfigTable;  /// Pointer to the configuration table.
+  std::shared_ptr<EdgeRouter> mRouter;               /// Pointer to the system edge router.
+  QUndoStack* mUndoStack = nullptr;                  /// Pointer to the undo stack.
+
   /**
    * @brief Handles drag enter events.
    *
@@ -298,126 +436,22 @@ protected:
    */
   virtual void updateParent(NodeItem* node, std::shared_ptr<NodeSaveInfo> storage, bool adding);
 
-signals:
-  /**
-   * @brief Emitted when a node is selected.
-   *
-   * @param node Pointer to the selected node.
-   * @param selected Whether the node is selected or not.
-   */
-  void nodeSelected(NodeItem* node, bool selected);
-
-  /**
-   * @brief Emitted when a node is added.
-   *
-   * @param node Pointer to the added node.
-   */
-  void nodeAdded(NodeItem* node);
-
-  /**
-   * @brief Emitted when a node is removed.
-   *
-   * @param nodeId The ID of the removed node.
-   * @param parentId The ID of the parent node.
-   */
-  void nodeRemoved(const QString& nodeId, const QString& parentId);
-
-  /**
-   * @brief Emitted when a node is modified.
-   *
-   * @param node Pointer to the modified node.
-   */
-  void nodeModified(NodeItem* node);
-
-  /**
-   * @brief Emitted when a transition is selected.
-   *
-   * @param transtion Pointer to the selected transition.
-   */
-  void transitionSelected(TransitionItem* transtion);
-
-  /**
-   * @brief Emitted when an event is created.
-   *
-   * @param node Pointer to the node where the event is created.
-   */
-  void createEvent(NodeItem* node);
-
-  /**
-   * @brief Emitted when a flow is opened.
-   *
-   * @param flow Pointer to the opened flow.
-   * @param node Pointer to the node associated with the flow.
-   */
-  void openFlow(Flow* flow, const QString& nodeId, const maki::FocusProperties& properties);
-
-  /**
-   * @brief Emitted when a flow is added.
-   *
-   * @param flow Pointer to the added flow.
-   * @param node Pointer to the node associated with the flow.
-   */
-  void flowAdded(Flow* flow, NodeItem* node);
-
-  /**
-   * @brief Emitted when a flow is removed.
-   *
-   * @param flowId The ID of the removed flow.
-   * @param nodeId The ID of the node associated with the flow.
-   */
-  void flowRemoved(const QString& flowId, NodeItem* node);
-
-public slots:
-  /**
-   * @brief Handles focus on a node.
-   *
-   * @param flowId The ID of the flow that contains the given node.
-   * @param nodeId The ID of the focused node.
-   */
-  void onFocusNode(const QString& flowId, const QString& nodeId, const maki::FocusProperties& properties);
-
-  /**
-   * @brief Handles removal of a node.
-   *
-   * @param nodeId The ID of the node to remove.
-   */
-  void onRemoveNode(const QString& flowId, const QString& nodeId);
-
-  /**
-   * @brief Handles selection of a flow.
-   *
-   * @param flowId The ID of the selected flow.
-   * @param nodeId The ID of the node associated with the flow.
-   */
-  void onFlowSelected(const QString& flowId, const QString& nodeId);
-
-  /**
-   * @brief Handles removal of a flow.
-   *
-   * @param flowId The ID of the removed flow.
-   * @param nodeId The ID of the node associated with the flow.
-   */
-  void onFlowRemoved(const QString& flowId, const QString& nodeId);
-
-protected:
-  std::shared_ptr<ConfigurationTable> mConfigTable;  /// Pointer to the configuration table.
-  std::shared_ptr<EdgeRouter> mRouter;               /// Pointer to the system edge router.
-  QUndoStack* mUndoStack = nullptr;                  /// Pointer to the undo stack.
-
   std::shared_ptr<NodeConfig> getNodeConfig(const QString& key) const;
   virtual void addedItemNode(NodeItem* node, std::shared_ptr<NodeSaveInfo> info);
   virtual void addedItemFlow(Flow* flow, NodeItem* node);
   virtual void onNodeHovered(NodeItem* node, bool entered);
+  virtual void onNodeFocusOn(NodeItem* node, const QString& nodeId, const QString& flowId, int type);
   virtual void addTransition(TransitionItem* transition);
   virtual void removeTransition(TransitionItem* transition);
   virtual bool canAddTransition(NodeItem* node) const;
   virtual TransitionConfig nextTransition(NodeItem* node) const;
   virtual QVector<TransitionSaveInfo> transitionsOfNode(const QString& nodeId);
   virtual QVector<QGraphicsItem*> cleanTransitionsOfNode(const QString& nodeId);
-  virtual void onNodeMoved(const NodeItem* node);
+  virtual void onNodeMoved(NodeItem* node, bool done);
   virtual void showSimulationControls(NodeItem* node, maki::ControlWidget* controls, const QColor& highlightColor);
 
-  virtual bool insertDroppedNodeOnTransition(TransitionItem* transition, std::shared_ptr<NodeSaveInfo> info);
+  virtual bool insertDroppedNodeOnTransition(TransitionItem* transition, NodeSaveInfo info);
+  virtual bool insertNodeOnTransition(TransitionItem* transition, NodeItem* node);
 
   /**
    * @brief Creates a new node based on save information and other parameters.
@@ -472,15 +506,6 @@ private:
   void selectNode(NodeItem* node, bool select);
 
   /**
-   * @brief Finds a node by its ID.
-   *
-   * @param id The ID of the node to find.
-   * @return Pointer to the found NodeItem, or nullptr if not found.
-   */
-  NodeItem* findNodeWithId(const QString& id) const;
-  TransitionItem* findTransitionWithId(const QString& id) const;
-
-  /**
    * @brief Returns a list of currently selected nodes.
    *
    * @return List of NodeItem pointers.
@@ -525,8 +550,8 @@ private:
 
   void onSelectionChanged();
 
-  TransitionItem* transitionAt(const QPointF& scenePos) const;
-  void updateCapabilityDropPreview(const QPointF& scenePos);
+  TransitionItem* transitionAt(const QPointF& scenePos, const QGraphicsItem* toIgnore = nullptr) const;
+  void updateCapabilityDropPreview(const QPointF& scenePos, const QGraphicsItem* toIgnore = nullptr);
 };
 
 inline QDataStream& operator<<(QDataStream& out, const Canvas::CopiedNode& node)
