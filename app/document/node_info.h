@@ -1,7 +1,6 @@
 #pragma once
 
 #include <QMap>
-#include <QPixmap>
 #include <QPointF>
 #include <QSizeF>
 #include <QString>
@@ -89,12 +88,6 @@ public:
   QSizeF getSize() const;
 
   /**
-   * @brief Gets the pixmap of the node.
-   * @return The pixmap as a QPixmap.
-   */
-  QPixmap getPixmap() const;
-
-  /**
    * @brief Gets the icon path of the node.
    * @return The icon path as a QString.
    */
@@ -123,12 +116,6 @@ public:
    * @param arg The new position as a QPointF.
    */
   void setPosition(const QPointF& arg);
-
-  /**
-   * @brief Sets the pixmap of the node.
-   * @param arg The new pixmap as a QPixmap.
-   */
-  void setPixmap(const QPixmap& arg);
 
   /**
    * @brief Sets the icon path of the node.
@@ -268,7 +255,6 @@ private:
   QSizeF mSize;       /// The size of the node.
   qreal mScale;       /// The scale of the node.
 
-  QPixmap mPixmap;    /// The pixmap of the node.
   QString mIconPath;  /// The icon path of the node.
 
   QVector<std::shared_ptr<IParameter>> mProperties;    /// A vector of properties for the node.

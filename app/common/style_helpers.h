@@ -11,6 +11,8 @@
 #include "config.h"
 #include "logging.h"
 
+class QSvgRenderer;
+
 /**
  * @brief Represents a widget with an associated icon and path.
  */
@@ -234,7 +236,6 @@ QString createDefaultMessage();
 /**
  * @brief Uses a QSvgRenderer to paint an SVG
  *
- *
  * @param iconPath Path of the SVG
  */
-void paintSvg(const QString& iconPath, QPainter* painter, const QPointF& center, qreal width, qreal height);
+void paintSvg(QSvgRenderer* renderer, const QString& iconPath, QPainter* painter, const QPointF& center, qreal width, qreal height);

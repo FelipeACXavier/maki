@@ -319,7 +319,7 @@ void NodeItem::paintDefaultNode(QPainter* painter, const QStyleOptionGraphicsIte
 
   auto color = getProperty("color");
   auto background = color ? QColor::fromString(color->getvalue()->toStringValue()) : config()->body.backgroundColor;
-  const QPen outlinePen = isSelected() ? QPen(Config::HIGHLIGHT, 4 / baseScale()) : QPen(Config::FOREGROUND, 1.0 / baseScale());
+  const QPen outlinePen = isSelected() ? QPen(Config::HIGHLIGHT, 3.0 / baseScale()) : QPen(Config::FOREGROUND, 1.0 / baseScale());
 
   NodeBase::paintNode(nodeRect(), background, outlinePen, painter);
 }
@@ -614,19 +614,19 @@ void NodeItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 
 void NodeItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
-  if (config()->libraryType == Types::LibraryTypes::STRUCTURAL && event->modifiers() & Qt::ShiftModifier)
-  {
-    mIsResizing = true;
-    mResizeStartMousePos = event->pos();
-    mResizeStartSize = mSize;
-    dynamic_cast<QGraphicsView*>(scene()->parent())->setCursor(Qt::SizeFDiagCursor);
-    event->accept();
-  }
-  else
-  {
-    mDragStartPos = pos();
-    QGraphicsItem::mousePressEvent(event);
-  }
+  // if (config()->libraryType == Types::LibraryTypes::STRUCTURAL && event->modifiers() & Qt::ShiftModifier)
+  // {
+  //   mIsResizing = true;
+  //   mResizeStartMousePos = event->pos();
+  //   mResizeStartSize = mSize;
+  //   dynamic_cast<QGraphicsView*>(scene()->parent())->setCursor(Qt::SizeFDiagCursor);
+  //   event->accept();
+  // }
+  // else
+  // {
+  mDragStartPos = pos();
+  QGraphicsItem::mousePressEvent(event);
+  // }
 }
 
 void NodeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
@@ -645,6 +645,9 @@ void NodeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     auto canvas = static_cast<Canvas*>(scene());
     if (canvas)
       canvas->undoStack()->push(new MoveNodeCommand(canvas, id(), mDragStartPos, pos()));
+
+    if (nodeMoved)
+      nodeMoved(this, true);
   }
 
   QGraphicsItem::mouseReleaseEvent(event);
@@ -741,7 +744,7 @@ void NodeItem::setCenterPosition(const QPointF& center)
 void NodeItem::updateExtrasPosition()
 {
   if (nodeMoved)
-    nodeMoved(this);
+    nodeMoved(this, false);
 }
 
 // Slots
@@ -819,9 +822,13 @@ Flow* NodeItem::createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo
 
 Flow* NodeItem::getFlow(const QString& flowId) const
 {
+  LOG_DEBUG("getFlow: {}", id());
   for (const auto& flow : mFlows)
+  {
+    LOG_DEBUG("  {} vs {}", flowId, flow->id());
     if (flow->id() == flowId)
       return flow;
+  }
 
   return nullptr;
 }

@@ -35,8 +35,7 @@ public:
   FlowCallNode(const QString& id, std::shared_ptr<NodeSaveInfo> info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig,
                QGraphicsItem* parent = nullptr);
 
-  /** Selected flow name from the task property, or empty if unset. */
-  QString calledFlowName() const;
+  std::pair<QString, QString> calledFlowId() const;
 
 protected:
   void hoverMoveEvent(QGraphicsSceneHoverEvent* event) override;

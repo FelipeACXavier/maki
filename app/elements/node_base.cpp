@@ -19,6 +19,7 @@ const qreal LABEL_V_SPACING = 2;
 NodeBase::NodeBase(const QString& id, const QString& nodeId, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
     : QGraphicsItem(parent)
     , mConfig(nodeConfig)
+    , mRenderer(nullptr)
     , mId(id)
     , mBounds(0, 0, config()->body.width, config()->body.height)
 {
@@ -26,12 +27,16 @@ NodeBase::NodeBase(const QString& id, const QString& nodeId, std::shared_ptr<Nod
 
   qreal scaleFactor = computeScaleFactor();
   mScaledBounds = QRectF(0, 0, config()->body.width * scaleFactor, config()->body.height * scaleFactor);
+
+  if (!config()->body.iconPath.isEmpty())
+    if (auto icon = iconPathFromTheme(config()->body.iconPath); !icon.isEmpty())
+      mRenderer = new QSvgRenderer(icon);
 }
 
 NodeBase::~NodeBase()
 {
-  if (mPixmapItem)
-    delete mPixmapItem;
+  if (mRenderer)
+    delete mRenderer;
 }
 
 QString NodeBase::id() const
@@ -95,7 +100,12 @@ void NodeBase::paintNode(const QRectF& bounds, const QColor& background, const Q
   painter->setRenderHint(QPainter::Antialiasing, false);
 
   const auto drawingBounds = drawingRect(bounds);
-  if (config()->body.shape == Types::Shape::RECTANGLE)
+  if (mRenderer)
+  {
+    auto rect = shapeSvgTargetRect(mRenderer, drawingBounds);
+    paintSvg(mRenderer, iconPathFromTheme(config()->body.iconPath), painter, rect.center(), rect.width(), rect.height());
+  }
+  else if (config()->body.shape == Types::Shape::RECTANGLE)
   {
     painter->drawRect(drawingBounds);
   }
@@ -119,36 +129,198 @@ void NodeBase::paintNode(const QRectF& bounds, const QColor& background, const Q
   }
 
   paintLabel(painter, drawingBounds, text);
-  paintPixmap(painter);
+  if (isSelected())
+    paintSelectionOutline(painter, text, bounds);
 }
 
-QPainterPath NodeBase::nodeShape(const QRectF& bounds) const
+void NodeBase::paintSelectionOutline(QPainter* painter, const QPen& text, const QRectF& bounds) const
+{
+  const QPainterPath outline = nodeShape(bounds);
+  if (outline.isEmpty())
+    return;
+
+  painter->save();
+  painter->setPen(text);
+  painter->setBrush(Qt::NoBrush);
+  painter->setRenderHint(QPainter::Antialiasing, true);
+  painter->drawPath(outline);
+  painter->restore();
+}
+
+QRectF NodeBase::shapeSvgTargetRect(const QSvgRenderer* renderer, const QRectF& drawingBounds) const
+{
+  QRectF viewBox = renderer->viewBoxF();
+  if (!viewBox.isValid() || viewBox.isEmpty())
+    viewBox = QRectF(0, 0, 1, 1);
+
+  constexpr qreal padding = 2.0;
+  QRectF contentRect = drawingBounds.adjusted(padding, padding, -padding, -padding);
+  const qreal sx = contentRect.width() / viewBox.width();
+  const qreal sy = contentRect.height() / viewBox.height();
+  const qreal scale = qMin(sx, sy);
+  const QSizeF scaledSize(viewBox.width() * scale, viewBox.height() * scale);
+  return QRectF(contentRect.x() + (contentRect.width() - scaledSize.width()) / 2.0, contentRect.y() + (contentRect.height() - scaledSize.height()) / 2.0,
+                scaledSize.width(), scaledSize.height());
+}
+
+bool pixelOpaque(const QImage& image, int x, int y, int threshold)
+{
+  if (x < 0 || x >= image.width() || y < 0 || y >= image.height())
+    return false;
+  return qAlpha(image.pixel(x, y)) > threshold;
+}
+
+bool pixelOnSilhouetteEdge(const QImage& image, int x, int y, int threshold)
+{
+  if (!pixelOpaque(image, x, y, threshold))
+    return false;
+
+  static constexpr int kDx[8] = {1, 1, 0, -1, -1, -1, 0, 1};
+  static constexpr int kDy[8] = {0, 1, 1, 1, 0, -1, -1, -1};
+  for (int i = 0; i < 8; ++i)
+    if (!pixelOpaque(image, x + kDx[i], y + kDy[i], threshold))
+      return true;
+  return false;
+}
+
+QVector<QPoint> traceOuterSilhouetteContour(const QImage& image, int threshold)
+{
+  QPoint start(-1, -1);
+  for (int y = 0; y < image.height() && start.x() < 0; ++y)
+  {
+    for (int x = 0; x < image.width(); ++x)
+    {
+      if (pixelOnSilhouetteEdge(image, x, y, threshold))
+      {
+        start = QPoint(x, y);
+        break;
+      }
+    }
+  }
+
+  if (start.x() < 0)
+    return {};
+
+  static constexpr int kDx[8] = {1, 1, 0, -1, -1, -1, 0, 1};
+  static constexpr int kDy[8] = {0, 1, 1, 1, 0, -1, -1, -1};
+
+  QVector<QPoint> contour;
+  int x = start.x();
+  int y = start.y();
+  int dir = 0;
+  const int maxSteps = image.width() * image.height() * 4;
+
+  for (int step = 0; step < maxSteps; ++step)
+  {
+    contour.append(QPoint(x, y));
+
+    bool foundNext = false;
+    const int searchStart = (dir + 5) % 8;
+    for (int i = 0; i < 8; ++i)
+    {
+      const int nd = (searchStart + i) % 8;
+      const int nx = x + kDx[nd];
+      const int ny = y + kDy[nd];
+      if (pixelOnSilhouetteEdge(image, nx, ny, threshold))
+      {
+        x = nx;
+        y = ny;
+        dir = nd;
+        foundNext = true;
+        break;
+      }
+    }
+
+    if (!foundNext)
+      break;
+
+    if (contour.size() > 2 && x == start.x() && y == start.y())
+      break;
+  }
+
+  return contour;
+}
+
+QPainterPath contourToPath(const QVector<QPoint>& contour, const QRectF& targetRect, const QSize& imageSize)
+{
+  if (contour.size() < 3 || imageSize.width() <= 0 || imageSize.height() <= 0)
+    return {};
+
+  const qreal scaleX = targetRect.width() / imageSize.width();
+  const qreal scaleY = targetRect.height() / imageSize.height();
+  const int stride = qMax(1, contour.size() / 96);
+
+  QPainterPath path;
+  path.moveTo(targetRect.x() + (contour.first().x() + 0.5) * scaleX, targetRect.y() + (contour.first().y() + 0.5) * scaleY);
+  for (int i = stride; i < contour.size(); i += stride)
+    path.lineTo(targetRect.x() + (contour.at(i).x() + 0.5) * scaleX, targetRect.y() + (contour.at(i).y() + 0.5) * scaleY);
+  path.closeSubpath();
+  return path.simplified();
+}
+
+QPainterPath NodeBase::svgSilhouetteOutlinePath(QSvgRenderer* renderer, const QRectF& drawingBounds) const
+{
+  const QRectF target = shapeSvgTargetRect(renderer, drawingBounds);
+  const int pixelWidth = qMax(12, qRound(target.width() * 3));
+  const int pixelHeight = qMax(12, qRound(target.height() * 3));
+  const QSize pixelSize(pixelWidth, pixelHeight);
+
+  if (mSvgOutlineCacheKey == config()->body.iconPath && mSvgOutlineCacheTarget == target && !mSvgOutlineCachePath.isEmpty())
+    return mSvgOutlineCachePath;
+
+  QImage image(pixelSize.width(), pixelSize.height(), QImage::Format_ARGB32_Premultiplied);
+  image.fill(Qt::transparent);
+  {
+    QPainter imagePainter(&image);
+    imagePainter.setRenderHint(QPainter::Antialiasing, true);
+    renderer->render(&imagePainter, QRectF(QPointF(0, 0), pixelSize));
+  }
+
+  const QVector<QPoint> contour = traceOuterSilhouetteContour(image, 48);
+  QPainterPath outline = contourToPath(contour, target, pixelSize);
+  if (outline.isEmpty())
+    outline = geometricBodyOutlinePath(drawingBounds);
+
+  // Hopefully, we only need to run this once per node
+  // It would be even better if we had a global storage for these...
+  mSvgOutlineCacheKey = config()->body.iconPath;
+  mSvgOutlineCachePath = outline;
+  mSvgOutlineCacheTarget = target;
+  return outline;
+}
+
+QPainterPath NodeBase::geometricBodyOutlinePath(const QRectF& drawingBounds) const
 {
   QPainterPath path;
   if (config()->body.shape == Types::Shape::RECTANGLE)
   {
-    path.addRect(bounds);
+    path.addRect(drawingBounds);
   }
   else if (config()->body.shape == Types::Shape::ELLIPSE)
   {
-    path.addEllipse(bounds);
+    path.addEllipse(drawingBounds);
   }
   else if (config()->body.shape == Types::Shape::DIAMOND)
   {
     QPolygonF diamond;
-    diamond << QPointF(bounds.center().x(), bounds.top())     // Top
-            << QPointF(bounds.right(), bounds.center().y())   // Right
-            << QPointF(bounds.center().x(), bounds.bottom())  // Bottom
-            << QPointF(bounds.left(), bounds.center().y());   // Left
-
+    diamond << QPointF(drawingBounds.center().x(), drawingBounds.top()) << QPointF(drawingBounds.right(), drawingBounds.center().y())
+            << QPointF(drawingBounds.center().x(), drawingBounds.bottom()) << QPointF(drawingBounds.left(), drawingBounds.center().y());
     path.addPolygon(diamond);
   }
   else
   {
-    path.addRoundedRect(bounds, config()->body.borderRadius, config()->body.borderRadius);  // 10 is the corner radius
+    const qreal radius = config()->body.borderRadius > 0 ? config()->body.borderRadius : 5.0;
+    path.addRoundedRect(drawingBounds, radius, radius);
   }
-
   return path;
+}
+
+QPainterPath NodeBase::nodeShape(const QRectF& bounds) const
+{
+  if (mRenderer && config()->libraryType != Types::LibraryTypes::STRUCTURAL)
+    return svgSilhouetteOutlinePath(mRenderer, drawingRect(bounds));
+
+  return geometricBodyOutlinePath(drawingRect(bounds));
 }
 
 void NodeBase::paintLabel(QPainter* painter, const QRectF& drawingBounds, const QPen& pen, bool elide) const
@@ -173,17 +345,6 @@ void NodeBase::paintLabel(QPainter* painter, const QRectF& drawingBounds, const 
     text = metrics.elidedText(mLabelText, Qt::ElideRight, static_cast<int>(availableWidth));
   }
   painter->drawText(labelBoundingRect(), text, textOption);
-}
-
-void NodeBase::paintPixmap(QPainter* painter) const
-{
-  if (!mPixmapItem)
-    return;
-
-  QRectF rect = boundingRect();
-  QPointF center = rect.center();
-  QPointF topLeft = center - QPointF((qreal)mPixmapItem->pixmap().width() / 2, (qreal)mPixmapItem->pixmap().height() / 2);
-  painter->drawPixmap(topLeft, mPixmapItem->pixmap());
 }
 
 void NodeBase::initializeNodeSize()
@@ -218,11 +379,6 @@ void NodeBase::toggleLabelVisibility()
 
 void NodeBase::settingsChanged(const AppearanceSettings& appearance)
 {
-}
-
-void NodeBase::setPixmap(const QPixmap& pixmap)
-{
-  mPixmapItem = new QGraphicsPixmapItem(pixmap);
 }
 
 void NodeBase::setIcon(const QString& path, const QColor& iconColor)

@@ -19,8 +19,8 @@ DraggableItem::DraggableItem(const QString& nodeId, std::shared_ptr<NodeConfig> 
 {
   setFlag(QGraphicsItem::ItemIsSelectable, true);
 
-  if (!config()->body.iconPath.isEmpty())
-    setIcon(AppPaths::icon(config()->body.iconPath), config()->body.iconColor);
+  // if (!config()->body.iconPath.isEmpty())
+  //   setIcon(AppPaths::icon(config()->body.iconPath), config()->body.iconColor);
 
   setLabel(config()->type, Fonts::BaseSize);
 }
@@ -65,7 +65,7 @@ void DraggableItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* sty
       const QRectF r = rect.adjusted(2, 2, -2, -2);
       painter->drawEllipse(r);
     }
-    paintSvg(iconPathFromTheme(config()->body.iconPath), painter, nodeRect().center(), rect.width(), rect.height());
+    paintSvg(mRenderer, iconPathFromTheme(config()->body.iconPath), painter, nodeRect().center(), rect.width(), rect.height());
 
     NodeBase::paintLabel(painter, rect, pen);
   }
@@ -99,7 +99,6 @@ void DraggableItem::startDrag(QGraphicsSceneMouseEvent* event)
 
   NodeSaveInfo info;
   info.setNodeId(nodeId());
-  info.setPixmap(nodePixmap());
   info.setIcon(nodeIcon());
   info.setSize(QSize(config()->body.width, config()->body.height));
 

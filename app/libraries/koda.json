@@ -1360,14 +1360,9 @@
           "type": "Start",
           "body": {
             "shape": "Ellipse",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#ffc300",
-            "borderColor": "#FFFFFF",
-            "width": 50,
-            "height": 50,
-            "iconColor": "#FFFFFF",
-            "iconScale": 0.8,
-            "icon": "koda_start.svg"
+            "width": 100,
+            "height": 100,
+            "icon": "node_start.svg"
           },
           "properties": [
             {
@@ -1416,14 +1411,9 @@
           "type": "Success",
           "body": {
             "shape": "Ellipse",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#6a994e",
-            "borderColor": "#FFFFFF",
-            "width": 50,
-            "height": 50,
-            "iconColor": "#FFFFFF",
-            "iconScale": 0.8,
-            "icon": "koda_success.svg"
+            "width": 100,
+            "height": 100,
+            "icon": "node_success.svg"
           },
           "properties": [
             {
@@ -1448,14 +1438,9 @@
           "type": "Failure",
           "body": {
             "shape": "Ellipse",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#bc4749",
-            "borderColor": "#FFFFFF",
-            "width": 50,
-            "height": 50,
-            "iconColor": "#FFFFFF",
-            "iconScale": 0.8,
-            "icon": "koda_failure.svg"
+            "width": 100,
+            "height": 100,
+            "icon": "node_failure.svg"
           },
           "properties": [
             {
@@ -1480,14 +1465,9 @@
           "type": "Continue",
           "body": {
             "shape": "Ellipse",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#FF6D7A",
-            "borderColor": "#FFFFFF",
-            "width": 50,
-            "height": 50,
-            "iconColor": "#FFFFFF",
-            "iconScale": 0.8,
-            "icon": "koda_continue.svg"
+            "width": 100,
+            "height": 100,
+            "icon": "node_continue.svg"
           },
           "properties": [
             {
@@ -1512,14 +1492,9 @@
           "type": "Terminate",
           "body": {
             "shape": "Ellipse",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#C2222C",
-            "borderColor": "#FFFFFF",
-            "width": 50,
-            "height": 50,
-            "iconColor": "#FFFFFF",
-            "iconScale": 0.8,
-            "icon": "koda_success.svg"
+            "width": 100,
+            "height": 100,
+            "icon": "node_terminate.svg"
           },
           "properties": [
             {
@@ -1541,65 +1516,12 @@
           }
         },
         {
-          "type": "Async task",
+          "type": "Call capability",
           "body": {
             "shape": "rounded rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#202020",
-            "borderColor": "#FFFFFF",
-            "borderRadius": 10,
             "width": 100,
-            "height": 50,
-            "iconColor": "#FFFFFF",
-            "iconScale": 0.8,
-            "icon": "koda_async.svg"
-          },
-          "properties": [
-            {
-              "id": "name",
-              "type": "string",
-              "default": { "kind": "string", "value": "Async task" }
-            },
-            {
-              "id": "color",
-              "type": "void",
-              "control": "color",
-              "default": { "kind": "string", "value": "#202020" }
-            },
-            {
-              "id": "capability",
-              "type": "void",
-              "control": "component_select",
-              "default": {
-                "kind": "record",
-                "value": {
-                  "component": {
-                    "kind": "string",
-                    "value": "-"
-                  },
-                  "control": {
-                    "kind": "string",
-                    "value": "trigger_call"
-                  }
-                }
-              }
-            }
-          ],
-          "controls": []
-        },
-        {
-          "type": "Sync task",
-          "body": {
-            "shape": "rounded rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#202020",
-            "borderColor": "#FFFFFF",
-            "borderRadius": 10,
-            "width": 100,
-            "height": 50,
-            "iconColor": "#FFFFFF",
-            "iconScale": 0.8,
-            "icon": "koda_sync.svg"
+            "height": 100,
+            "icon": "node_call.svg"
           },
           "properties": [
             {
@@ -1631,6 +1553,14 @@
                   "control": {
                     "kind": "string",
                     "value": "event_select"
+                  },
+                  "componentId": {
+                    "kind": "string",
+                    "value": ""
+                  },
+                  "callId": {
+                    "kind": "string",
+                    "value": ""
                   }
                 }
               }
@@ -1642,15 +1572,9 @@
           "type": "Flow call",
           "body": {
             "shape": "rounded rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#202020",
-            "borderColor": "#FFFFFF",
-            "borderRadius": 10,
             "width": 100,
-            "height": 50,
-            "iconColor": "#FFFFFF",
-            "iconScale": 0.8,
-            "icon": "koda_strategy.svg"
+            "height": 100,
+            "icon": "node_flow_call.svg"
           },
           "properties": [
             {
@@ -1682,6 +1606,14 @@
                   "control": {
                     "kind": "string",
                     "value": "user_call"
+                  },
+                  "componentId": {
+                    "kind": "string",
+                    "value": ""
+                  },
+                  "callId": {
+                    "kind": "string",
+                    "value": ""
                   }
                 }
               }
@@ -1693,14 +1625,9 @@
           "type": "Join",
           "body": {
             "shape": "Ellipse",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#74a892",
-            "borderColor": "#FFFFFF",
-            "width": 50,
-            "height": 50,
-            "iconColor": "#FFFFFF",
-            "iconScale": 0.8,
-            "icon": "koda_join.svg"
+            "width": 100,
+            "height": 100,
+            "icon": "node_join.svg"
           },
           "properties": [
             {
@@ -1721,15 +1648,9 @@
           "type": "Within",
           "body": {
             "shape": "rounded rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#202020",
-            "borderColor": "#FFFFFF",
-            "borderRadius": 10,
             "width": 100,
-            "height": 50,
-            "iconColor": "#FFFFFF",
-            "iconScale": 0.8,
-            "icon": "koda_within.svg"
+            "height": 100,
+            "icon": "node_within.svg"
           },
           "properties": [
             {
@@ -1775,15 +1696,9 @@
           "type": "Repeat",
           "body": {
             "shape": "rounded rectangle",
-            "textColor": "#FFFFFF",
-            "backgroundColor": "#202020",
-            "borderColor": "#FFFFFF",
-            "borderRadius": 10,
-            "width": 200,
+            "width": 100,
             "height": 100,
-            "iconColor": "#FFFFFF",
-            "iconScale": 0.8,
-            "icon": "koda_repeat.svg"
+            "icon": "node_repeat.svg"
           },
           "properties": [
             {
@@ -1809,6 +1724,14 @@
                   "control": {
                     "kind": "string",
                     "value": "user_call"
+                  },
+                  "componentId": {
+                    "kind": "string",
+                    "value": ""
+                  },
+                  "callId": {
+                    "kind": "string",
+                    "value": ""
                   }
                 }
               }

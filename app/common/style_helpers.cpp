@@ -411,16 +411,24 @@ void clearLayout(QLayout* layout, int start)
   }
 }
 
-void paintSvg(const QString& path, QPainter* painter, const QPointF& center, qreal width, qreal height)
+void paintSvg(QSvgRenderer* renderer, const QString& path, QPainter* painter, const QPointF& center, qreal width, qreal height)
 {
   if (!painter || width <= 0.0)
     return;
 
-  QSvgRenderer slotRenderer(path);
-  if (!slotRenderer.isValid())
-    return;
-
   const QRectF target(center.x() - (width * 0.5), center.y() - (height * 0.5), width, height);
   painter->setRenderHint(QPainter::Antialiasing, true);
-  slotRenderer.render(painter, target);
+
+  if (!renderer || renderer->isValid())
+  {
+    QSvgRenderer slotRenderer(path);
+    if (!slotRenderer.isValid())
+      return;
+
+    slotRenderer.render(painter, target);
+  }
+  else
+  {
+    renderer->render(painter, target);
+  }
 }

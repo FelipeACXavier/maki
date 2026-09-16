@@ -1,6 +1,8 @@
 #include "node_factory.h"
 
 #include "elements/behaviour/continue_node.h"
+#include "elements/behaviour/failure_node.h"
+#include "elements/behaviour/flow_call_node.h"
 #include "elements/behaviour/start_node.h"
 #include "elements/behaviour/success_node.h"
 #include "elements/behaviour/terminate_node.h"
@@ -17,15 +19,15 @@ NodeItem* NodeFactory::create(const QString& id, std::shared_ptr<NodeSaveInfo> i
   LOG_DEBUG("Creating: {}", info->getnodeId());
 
   // TODO: Stop using these fleamsy strings
-  if (info->getnodeId() == "Koda::Async task")
-    return new NodeItem(id, info, initialPosition, nodeConfig, parent);
-  else if (info->getnodeId() == "Koda::Sync task")
+  if (info->getnodeId() == "Koda::Call capability")
     return new NodeItem(id, info, initialPosition, nodeConfig, parent);
   else if (info->getnodeId() == "Koda::Flow call")
-    return new NodeItem(id, info, initialPosition, nodeConfig, parent);
+    return new FlowCallNode(id, info, initialPosition, nodeConfig, parent);
   else if (info->getnodeId() == "Koda::Within")
     return new NodeItem(id, info, initialPosition, nodeConfig, parent);
   else if (info->getnodeId() == "Koda::Repeat")
+    return new NodeItem(id, info, initialPosition, nodeConfig, parent);
+  else if (info->getnodeId() == "Koda::Join")
     return new NodeItem(id, info, initialPosition, nodeConfig, parent);
   // Link nodes
   else if (info->getnodeId() == "Koda::LinkIn")
@@ -41,6 +43,8 @@ NodeItem* NodeFactory::create(const QString& id, std::shared_ptr<NodeSaveInfo> i
     return new SuccessNode(id, info, initialPosition, nodeConfig, parent);
   else if (info->getnodeId() == "Koda::Terminate")
     return new TerminateNode(id, info, initialPosition, nodeConfig, parent);
+  else if (info->getnodeId() == "Koda::Failure")
+    return new FailureNode(id, info, initialPosition, nodeConfig, parent);
   // Structure
   else if (info->getnodeId() == "Koda::Task")
     return new TaskNode(id, info, initialPosition, nodeConfig, parent);

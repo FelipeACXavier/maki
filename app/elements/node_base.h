@@ -111,6 +111,8 @@ public:
    */
   virtual QPainterPath nodeShape(const QRectF& bounds) const;
 
+  QPainterPath geometricBodyOutlinePath(const QRectF& drawingBounds) const;
+
   /**
    * @brief Paints the node using the provided painter.
    *
@@ -148,16 +150,17 @@ public:
 protected:
   std::shared_ptr<NodeConfig> mConfig;  /// Configuration settings for the node.
 
-  QGraphicsPixmapItem* mPixmapItem = nullptr;  /// Pointer to the pixmap item.
-  QString mIconPath = "";                      /// Path to the icon image.
-  QGraphicsSvgItem* mIconItem = nullptr;       /// Pointer to the SVG icon item.
+  QString mIconPath = "";                 /// Path to the icon image.
+  QGraphicsSvgItem* mIconItem = nullptr;  /// Pointer to the SVG icon item.
+  QSvgRenderer* mRenderer;
+  mutable QPainterPath mSvgOutlineCachePath{};
+  mutable QString mSvgOutlineCacheKey{};
+  mutable QRectF mSvgOutlineCacheTarget{};
 
-  /**
-   * @brief Sets the pixmap for the node.
-   *
-   * @param pixmap The new pixmap.
-   */
-  virtual void setPixmap(const QPixmap& pixmap);
+  QRectF shapeSvgTargetRect(const QSvgRenderer* renderer, const QRectF& drawingBounds) const;
+  QPainterPath svgSilhouetteOutlinePath(QSvgRenderer* renderer, const QRectF& drawingBounds) const;
+
+  void paintSelectionOutline(QPainter* painter, const QPen& text, const QRectF& bounds) const;
 
   /**
    * @brief Sets the icon for the node.
@@ -197,13 +200,6 @@ protected:
    * @param area Area to paint the label in.
    */
   virtual void paintLabel(QPainter* painter, const QRectF& area, const QPen& pen, bool elide = false) const;
-
-  /**
-   * @brief Paints the pixmap using the provided painter.
-   *
-   * @param painter Painter to use for drawing.
-   */
-  virtual void paintPixmap(QPainter* painter) const;
 
   /**
    * @brief Called by children after setup to fix size

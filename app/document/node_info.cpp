@@ -79,11 +79,6 @@ QSizeF NodeSaveInfo::getSize() const
   return mSize;
 }
 
-QPixmap NodeSaveInfo::getPixmap() const
-{
-  return mPixmap;
-}
-
 QString NodeSaveInfo::getIcon() const
 {
   return mIconPath;
@@ -134,11 +129,6 @@ void NodeSaveInfo::setPosition(const QPointF& arg)
   mPosition = arg;
 }
 
-void NodeSaveInfo::setPixmap(const QPixmap& arg)
-{
-  mPixmap = arg;
-}
-
 void NodeSaveInfo::setIcon(const QString& arg)
 {
   mIconPath = arg;
@@ -185,8 +175,7 @@ void NodeSaveInfo::setProperty(const QString& key, const maki::Value& parameter)
 
 void NodeSaveInfo::removeProperty(const QString& key)
 {
-  mProperties.erase(
-      std::remove_if(mProperties.begin(), mProperties.end(), [key](std::shared_ptr<IParameter> param) { return param->getid() == key; }));
+  mProperties.erase(std::remove_if(mProperties.begin(), mProperties.end(), [key](std::shared_ptr<IParameter> param) { return param->getid() == key; }));
 }
 
 PropertyInfo NodeSaveInfo::getField(const QString& key) const
@@ -309,8 +298,6 @@ QJsonObject NodeSaveInfo::toJson() const
   if (eventArray.size() > 0)
     data[ConfigKeys::EVENTS] = eventArray;
 
-  data[ConfigKeys::PIXMAP] = JSON::fromPixmap(getPixmap());
-
   data[ConfigKeys::ICON_PATH] = getIcon();
 
   return data;
@@ -342,7 +329,6 @@ NodeSaveInfo NodeSaveInfo::fromJson(const QJsonObject& data)
     for (const auto& node : data[ConfigKeys::PROPERTIES].toArray())
       info.addProperty(std::make_shared<PropertyInfo>(PropertyInfo::fromJson(node.toObject())));
 
-  info.setPixmap(JSON::toPixmap(data[ConfigKeys::PIXMAP].toObject()));
   info.setIcon(data[ConfigKeys::ICON_PATH].toString());
 
   return info;
@@ -414,12 +400,6 @@ QDataStream& operator<<(QDataStream& out, const NodeSaveInfo& info)
   out << info.getevents();
   out << info.getfields();
 
-  QByteArray pixmapData;
-  QBuffer buffer(&pixmapData);
-  buffer.open(QIODevice::WriteOnly);
-  info.getPixmap().save(&buffer, "PNG");
-
-  out << pixmapData;
   out << info.getIcon();
 
   return out;
@@ -475,13 +455,6 @@ QDataStream& operator>>(QDataStream& in, NodeSaveInfo& info)
   in >> fields;
   for (const auto& field : fields)
     info.addField(std::dynamic_pointer_cast<IParameter>(field));
-
-  QPixmap pixmap;
-  QByteArray pixmapData;
-  in >> pixmapData;
-
-  pixmap.loadFromData(pixmapData, "PNG");
-  info.setPixmap(pixmap);
 
   QString iconPath;
   in >> iconPath;

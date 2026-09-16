@@ -353,9 +353,9 @@ public:
   // "signals":
   std::function<void(NodeItem* item)> nodeModified;
   std::function<void(Flow* flow, NodeItem* item)> flowAdded;
-  std::function<void(NodeItem* item)> nodeMoved;
+  std::function<void(NodeItem* item, bool done)> nodeMoved;
   std::function<void(NodeItem* item, bool enter)> nodeHovered;
-  std::function<void(const QString& name, int type)> focusOn;
+  std::function<void(NodeItem* node, const QString& nodeId, const QString& flowId, int type)> focusOn;
 
   // "slots":
   void onProperties();
