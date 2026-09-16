@@ -208,6 +208,10 @@ VoidResult PropertiesMenu::loadProperties(NodeItem* node)
         LOG_WARN_ON_FAILURE(loadSelectProperty(property, node));
         break;
 
+      case Types::ControlTypes::LINK:
+        LOG_WARNING("Link support coming soon");
+        break;
+
       case Types::ControlTypes::COLOR:
         LOG_WARN_ON_FAILURE(loadColorProperty(property, node));
         break;
@@ -619,6 +623,7 @@ VoidResult PropertiesMenu::loadControls(NodeItem* node)
           LOG_WARN_ON_FAILURE(loadControlAddEvent(eventsTable.Value(), node));
         break;
 
+      case Types::ControlTypes::LINK:
       case Types::ControlTypes::ADD_STATE:
       case Types::ControlTypes::ADD_FIELD:
       default:

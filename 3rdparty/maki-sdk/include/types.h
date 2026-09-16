@@ -92,7 +92,8 @@ enum class ControlTypes
   COMPONENT_SELECT,
   EVENT_SELECT,
   TRIGGER_CALL,
-  FLOW_CALL
+  FLOW_CALL,
+  LINK
 };
 
 ControlTypes StringToControlTypes(const QString& type);

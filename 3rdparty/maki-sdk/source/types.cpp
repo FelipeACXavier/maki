@@ -154,6 +154,8 @@ Types::ControlTypes Types::StringToControlTypes(const QString& type)
     return Types::ControlTypes::TRIGGER_CALL;
   else if (type == "flow_call")
     return Types::ControlTypes::FLOW_CALL;
+  else if (type == "link")
+    return Types::ControlTypes::LINK;
   else
     return Types::ControlTypes::AUTO;
 }
@@ -180,6 +182,8 @@ QString Types::ControlTypesToString(Types::ControlTypes type)
       return "trigger_call";
     case Types::ControlTypes::FLOW_CALL:
       return "flow_call";
+    case Types::ControlTypes::LINK:
+      return "link";
     case Types::ControlTypes::AUTO:
     default:
       return "unknown";

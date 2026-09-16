@@ -1759,6 +1759,64 @@
           "help": {
             "message": "Executes the contained strategy repeatedly. Configure the number of iterations and the interval between executions using the block properties."
           }
+        },
+        {
+          "type": "Link in",
+          "body": {
+            "shape": "ellipse",
+            "width": 100,
+            "height": 100,
+            "icon": "node_link_in.svg"
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": { "kind": "string", "value": "Link in" }
+            }
+          ],
+          "behaviour": {},
+          "help": {
+            "message": "Entry point for a linked piece of flow. Other Link out nodes in the same flow can jump here."
+          }
+        },
+        {
+          "type": "Link out",
+          "body": {
+            "shape": "ellipse",
+            "width": 100,
+            "height": 100,
+            "icon": "node_link_out.svg"
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": { "kind": "string", "value": "Link out" }
+            },
+            {
+              "id": "target",
+              "type": "void",
+              "control": "link",
+              "default": {
+                "kind": "record",
+                "name": {
+                  "component": {
+                    "kind": "string",
+                    "value": "-"
+                  },
+                  "id": {
+                    "kind": "string",
+                    "value": "-"
+                  }
+                }
+              }
+            }
+          ],
+          "behaviour": {},
+          "help": {
+            "message": "Entry point for a linked piece of flow. Other Link out nodes in the same flow can jump here."
+          }
         }
       ]
     }
