@@ -9,8 +9,7 @@
 #include <QUuid>
 
 #include "app_configs.h"
-#include "app_paths.h"
-#include "logging.h"
+#include "keys.h"
 #include "save_info.h"
 #include "style_helpers.h"
 
@@ -18,10 +17,6 @@ DraggableItem::DraggableItem(const QString& nodeId, std::shared_ptr<NodeConfig> 
     : NodeBase(QUuid::createUuid().toString(), nodeId, nodeConfig, parent)
 {
   setFlag(QGraphicsItem::ItemIsSelectable, true);
-
-  // if (!config()->body.iconPath.isEmpty())
-  //   setIcon(AppPaths::icon(config()->body.iconPath), config()->body.iconColor);
-
   setLabel(config()->type, Fonts::BaseSize);
 }
 
@@ -60,7 +55,7 @@ void DraggableItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* sty
     painter->setBrush(QBrush(background));
 
     const auto rect = scaledRect();
-    if (config()->type != "Koda::Task")
+    if (config()->type != ConfigKeys::TASK_NODE)
     {
       const QRectF r = rect.adjusted(2, 2, -2, -2);
       painter->drawEllipse(r);

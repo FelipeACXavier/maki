@@ -481,6 +481,4 @@ private:
    * @return The QRectF representing the inner scene rectangle.
    */
   QRectF parentInnerSceneRect(qreal padding) const;
-
-  void ensureMainFlowExists();
 };

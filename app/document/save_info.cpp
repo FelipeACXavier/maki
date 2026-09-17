@@ -82,13 +82,25 @@ void SaveInfo::setParameter(int index, const maki::MissionParameter& parameter)
 
 void SaveInfo::removeParameter(const maki::MissionParameter& parameter)
 {
-  mMissionParameters.erase(std::remove_if(mMissionParameters.begin(), mMissionParameters.end(),
-                                          [parameter](const maki::MissionParameter& p) { return p.name == parameter.name; }));
+  mMissionParameters.erase(
+      std::remove_if(mMissionParameters.begin(), mMissionParameters.end(), [parameter](const maki::MissionParameter& p) { return p.name == parameter.name; }));
 }
 
 void SaveInfo::clearNodes()
 {
   mStructuralNodes.clear();
+}
+
+QVector<std::pair<QString, QString>> SaveInfo::getLinkNodes() const
+{
+  QVector<std::pair<QString, QString>> result;
+  for (const auto& node : getnodes())
+    for (const auto& flow : node->getflows())
+      for (const auto& child : flow->getnodes())
+        if (child && child->getnodeId() == ConfigKeys::LINK_IN_NODE)
+          result.append(std::make_pair(child->getid(), maki::getProperty(ConfigKeys::NAME, *child)->toString()));
+
+  return result;
 }
 
 QVector<std::shared_ptr<NodeSaveInfo>> SaveInfo::findFamilyOfFlowNode(const QString& nodeId, const QVector<std::shared_ptr<INode>>& nodes,
@@ -120,8 +132,7 @@ QVector<std::shared_ptr<NodeSaveInfo>> SaveInfo::findFamilyOfFlowNode(const QStr
   return {};
 }
 
-void SaveInfo::findChildrenOfTask(const std::shared_ptr<INode> task, QVector<std::shared_ptr<NodeSaveInfo>>& out,
-                                  const Types::ControlTypes type) const
+void SaveInfo::findChildrenOfTask(const std::shared_ptr<INode> task, QVector<std::shared_ptr<NodeSaveInfo>>& out, const Types::ControlTypes type) const
 {
   for (const auto& child : task->getchildren())
   {

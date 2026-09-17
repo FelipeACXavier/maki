@@ -11,7 +11,6 @@
 #include <QMessageBox>
 #include <QMimeData>
 #include <QUndoStack>
-#include <limits>
 #include <memory>
 
 #include "app_configs.h"
@@ -27,6 +26,7 @@
 #include "elements/structure/empty_slot.h"
 #include "elements/transition.h"
 #include "flow_info.h"
+#include "keys.h"
 #include "logging.h"
 #include "node_info.h"
 #include "notifications.h"
@@ -1479,7 +1479,7 @@ void Canvas::onNodeHovered(NodeItem* node, bool entered)
     if (!node || node->hasControl())
       return;
 
-    if (node->nodeType() != "Koda::Task")
+    if (node->nodeType() != ConfigKeys::TASK_NODE)
       return;
 
     auto* control = TaskNodeMenu::create(parentView());

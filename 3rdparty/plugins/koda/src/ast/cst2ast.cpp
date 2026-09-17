@@ -51,7 +51,10 @@ std::any CST2AST::visitSystem(KodaParser::SystemContext* ctx)
 {
   koda::System sys;
   if (!ctx)
-    ERROR_AND_RETURN(ctx, "No KodaParser::SystemContext provided", sys);
+  {
+    mErrorListener->addError(0, 0, "No KodaParser::SystemContext provided");
+    return sys;
+  }
 
   // First, collect all the defined types
   for (auto* declaration : ctx->topLevelDeclaration())

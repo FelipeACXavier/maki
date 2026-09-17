@@ -912,6 +912,16 @@ maki::Value parameterValue(const IParameter* parameter)
   return value ? *value : maki::Value{};
 }
 
+void setRecordValue(maki::RecordValue& record, const QString& key, const Value& value)
+{
+  record[key.toStdString()] = value;
+}
+
+bool recordHasField(const maki::RecordValue& record, const QString& key)
+{
+  return record.find(key.toStdString()) != record.end();
+}
+
 QString recordString(const maki::RecordValue& record, const QString& key)
 {
   const auto it = record.find(key.toStdString());
@@ -934,6 +944,15 @@ maki::ListValue recordList(const maki::RecordValue& record, const QString& key)
     return {};
 
   return it->second.toList();
+}
+
+const maki::Value* getProperty(const QString& key, const INode& node)
+{
+  for (const auto& property : node.getproperties())
+    if (property->getid() == key)
+      return dynamic_cast<const maki::Value*>(property->getvalue());
+
+  return nullptr;
 }
 
 }  // namespace maki

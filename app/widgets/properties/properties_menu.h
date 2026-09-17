@@ -92,6 +92,7 @@ private:
   VoidResult loadValueProperty(const std::shared_ptr<IParameter>& property, NodeItem* node);
   VoidResult loadColorProperty(const std::shared_ptr<IParameter>& property, NodeItem* node);
   VoidResult loadSelectProperty(const std::shared_ptr<IParameter>& property, NodeItem* node);
+  VoidResult loadLinkProperty(const std::shared_ptr<IParameter>& property, NodeItem* node);
   VoidResult loadComponentSelectProperty(const std::shared_ptr<IParameter>& property, NodeItem* node);
 
   VoidResult loadCallArguments(const std::shared_ptr<FlowSaveInfo>& call, const QString& propertyId, NodeItem* node, maki::WidgetGroup* group);

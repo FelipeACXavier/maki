@@ -5,6 +5,7 @@
 #include "canvas_view.h"
 #include "config_table.h"
 #include "elements/flow.h"
+#include "keys.h"
 #include "logging.h"
 #include "undo_commands/insert_existing_node.h"
 #include "undo_commands/insert_node.h"
@@ -24,8 +25,8 @@ void BehaviourCanvas::setupInitialNodes()
     const qreal y = visible.center().y();
     const QPointF startPos{visible.left(), y};
     const QPointF endPos{visible.left() + visible.width(), y};
-    auto src = addInitialNode("Koda::Start", startPos);
-    auto dst = addInitialNode("Koda::Success", endPos);
+    auto src = addInitialNode(ConfigKeys::START_NODE, startPos);
+    auto dst = addInitialNode(ConfigKeys::SUCCESS_NODE, endPos);
 
     if (!(src && dst))
       return;

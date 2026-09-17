@@ -660,7 +660,10 @@ int IntegerWidget::getValue() const
     return mValue.toInt();
 
   if (!mValue.isString())
+  {
     assert(false && "Tried to get an integer from a field that does not hold an integer");
+    return INT32_MIN;
+  }
 
   auto actualValue = mValue.toString();
   bool ok = false;
@@ -669,6 +672,7 @@ int IntegerWidget::getValue() const
     return value;
 
   assert(false && "Tried to get an integer from a field that does not contain an integer");
+  return INT32_MIN;
 }
 
 void IntegerWidget::setValue(const QString& value)

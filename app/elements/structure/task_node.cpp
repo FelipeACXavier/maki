@@ -43,6 +43,8 @@ void TaskNode::initializeNodeSize()
 
 VoidResult TaskNode::start()
 {
+  ensureMainFlowExists();
+
   if (mEmptySlot)
   {
     const qreal bbW = nodeRect().width();
@@ -255,4 +257,17 @@ QVector<QPointF> TaskNode::capabilitySlotCenters(const SlotLayout& layout, int s
   }
 
   return centers;
+}
+
+void TaskNode::ensureMainFlowExists()
+{
+  for (const auto& flow : flowConfigs())
+    if (flow->getname() == Constants::MAIN_FLOW)
+      return;
+
+  auto info = std::make_shared<FlowSaveInfo>();
+  info->setType(Types::CallType::USER);
+  info->setModifiable(true);
+  info->setReturnType(koda::types::TypeReference::createVoid());
+  (void)createFlow(Constants::MAIN_FLOW, info);
 }

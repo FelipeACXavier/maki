@@ -50,4 +50,6 @@ private:
 
   void relayoutCapabilitySlots();
   QSizeF minimumSizeForCapabilitySlots(const SlotLayout& layout, int slotCount) const;
+
+  void ensureMainFlowExists();
 };

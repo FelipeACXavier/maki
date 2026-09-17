@@ -7,6 +7,7 @@
 #include "app_configs.h"
 #include "elements/flow.h"
 #include "elements/node.h"
+#include "keys.h"
 #include "logging.h"
 #include "style_helpers.h"
 
@@ -266,8 +267,8 @@ VoidResult SystemMenu::onPipelineRemoved(const QString& pipelineId)
   return VoidResult();
 }
 
-void SystemMenu::populateItem(QTreeWidgetItem* item, const QIcon& icon, const QString& name, const QString& type, const QString& data,
-                              const Roles role, const QString& canvas)
+void SystemMenu::populateItem(QTreeWidgetItem* item, const QIcon& icon, const QString& name, const QString& type, const QString& data, const Roles role,
+                              const QString& canvas)
 {
   item->setIcon(ICON_COLUMN, icon);
   item->setText(NAME_COLUMN, name);
@@ -308,15 +309,12 @@ VoidResult SystemMenu::addLeafNode(NodeItem* node)
   if (!parent)
     return VoidResult::Failed("No parent, this should be a root");
 
-  auto parentItem = getOrCreateChildGroup(parent->id(), node->nodeType() == "Koda::Task" ? Roles::SubTasks : Roles::Capabilities);
+  auto parentItem = getOrCreateChildGroup(parent->id(), node->nodeType() == ConfigKeys::TASK_NODE ? Roles::SubTasks : Roles::Capabilities);
   if (!parentItem)
     return VoidResult::Failed("The parent node is not on the tree");
 
   QTreeWidgetItem* item = new QTreeWidgetItem(parentItem);
   populateItem(item, QIcon(":/icons/capability.svg"), node->nodeName(), node->nodeType(), node->id(), Roles::NodeRole);
-
-  // if (node->nodeType() == "Koda::Task")
-  //   populateTaskItem(item, node);
 
   return VoidResult();
 }

@@ -24,6 +24,12 @@ static const QString VALUE = "value";
 static const QString LIBRARIES = "libraries";
 static const QString IS_VARIABLE = "isVariable";
 static const QString EVENT = "event";
+static const QString COMPONENT = "component";
+static const QString COMPONENT_ID = "componentId";
+static const QString ITEMS = "items";
+static const QString FLOW = "flow";
+static const QString CALL = "call";
+static const QString CALL_ID = "callId";
 
 static const QString FIELDS = "fields";
 static const QString EVENTS = "events";
@@ -60,5 +66,22 @@ static const QString BEHAVIOURAL = "behavioural";
 static const QString PIPELINE = "pipeline";
 static const QString TRANSITIONS = "transitions";
 static const QString NODES = "nodes";
+
+// =======================================
+// Node types
+static const QString KODA_NAMESPACE = "Koda::";
+static const QString CAPABILITY_CALL_NODE = KODA_NAMESPACE + "Call capability";
+static const QString FLOW_CALL_NODE = KODA_NAMESPACE + "Flow call";
+static const QString WITHIN_NODE = KODA_NAMESPACE + "Within";
+static const QString REPEAT_NODE = KODA_NAMESPACE + "Repeat";
+static const QString JOIN_NODE = KODA_NAMESPACE + "Join";
+static const QString LINK_IN_NODE = KODA_NAMESPACE + "Link in";
+static const QString LINK_OUT_NODE = KODA_NAMESPACE + "Link out";
+static const QString CONTINUE_NODE = KODA_NAMESPACE + "Continue";
+static const QString START_NODE = KODA_NAMESPACE + "Start";
+static const QString SUCCESS_NODE = KODA_NAMESPACE + "Success";
+static const QString TERMINATE_NODE = KODA_NAMESPACE + "Terminate";
+static const QString FAILURE_NODE = KODA_NAMESPACE + "Failure";
+static const QString TASK_NODE = KODA_NAMESPACE + "Task";
 
 }  // namespace ConfigKeys

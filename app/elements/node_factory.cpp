@@ -14,6 +14,7 @@
 #include "elements/behaviour/within_node.h"
 #include "elements/structure/capability_node.h"
 #include "elements/structure/task_node.h"
+#include "keys.h"
 #include "logging.h"
 
 NodeItem* NodeFactory::create(const QString& id, std::shared_ptr<NodeSaveInfo> info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig,
@@ -24,35 +25,34 @@ NodeItem* NodeFactory::create(const QString& id, std::shared_ptr<NodeSaveInfo> i
 
   LOG_DEBUG("Creating: {}", info->getnodeId());
 
-  // TODO: Stop using these fleamsy strings
-  if (info->getnodeId() == "Koda::Call capability")
+  if (info->getnodeId() == ConfigKeys::CAPABILITY_CALL_NODE)
     return new CapabilityCallNode(id, info, initialPosition, nodeConfig, parent);
-  else if (info->getnodeId() == "Koda::Flow call")
+  else if (info->getnodeId() == ConfigKeys::FLOW_CALL_NODE)
     return new FlowCallNode(id, info, initialPosition, nodeConfig, parent);
-  else if (info->getnodeId() == "Koda::Within")
+  else if (info->getnodeId() == ConfigKeys::WITHIN_NODE)
     return new WithinNode(id, info, initialPosition, nodeConfig, parent);
-  else if (info->getnodeId() == "Koda::Repeat")
+  else if (info->getnodeId() == ConfigKeys::REPEAT_NODE)
     return new RepeatNode(id, info, initialPosition, nodeConfig, parent);
-  else if (info->getnodeId() == "Koda::Join")
+  else if (info->getnodeId() == ConfigKeys::JOIN_NODE)
     return new JoinNode(id, info, initialPosition, nodeConfig, parent);
   // Link nodes
-  else if (info->getnodeId() == "Koda::Link in")
+  else if (info->getnodeId() == ConfigKeys::LINK_IN_NODE)
     return new LinkInNode(id, info, initialPosition, nodeConfig, parent);
-  else if (info->getnodeId() == "Koda::Link out")
+  else if (info->getnodeId() == ConfigKeys::LINK_OUT_NODE)
     return new LinkOutNode(id, info, initialPosition, nodeConfig, parent);
   // Header only nodes
-  else if (info->getnodeId() == "Koda::Continue")
+  else if (info->getnodeId() == ConfigKeys::CONTINUE_NODE)
     return new ContinueNode(id, info, initialPosition, nodeConfig, parent);
-  else if (info->getnodeId() == "Koda::Start")
+  else if (info->getnodeId() == ConfigKeys::START_NODE)
     return new StartNode(id, info, initialPosition, nodeConfig, parent);
-  else if (info->getnodeId() == "Koda::Success")
+  else if (info->getnodeId() == ConfigKeys::SUCCESS_NODE)
     return new SuccessNode(id, info, initialPosition, nodeConfig, parent);
-  else if (info->getnodeId() == "Koda::Terminate")
+  else if (info->getnodeId() == ConfigKeys::TERMINATE_NODE)
     return new TerminateNode(id, info, initialPosition, nodeConfig, parent);
-  else if (info->getnodeId() == "Koda::Failure")
+  else if (info->getnodeId() == ConfigKeys::FAILURE_NODE)
     return new FailureNode(id, info, initialPosition, nodeConfig, parent);
   // Structure
-  else if (info->getnodeId() == "Koda::Task")
+  else if (info->getnodeId() == ConfigKeys::TASK_NODE)
     return new TaskNode(id, info, initialPosition, nodeConfig, parent);
   else
     return new CapabilityNode(id, info, initialPosition, nodeConfig, parent);

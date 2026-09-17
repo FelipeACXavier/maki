@@ -104,7 +104,10 @@ QDataStream& operator>>(QDataStream& in, maki::Value& value);
 const maki::Value* asValue(const IValue* value);
 maki::Value parameterValue(const IParameter* parameter);
 maki::RecordValue parameterRecord(const IParameter* parameter);
+void setRecordValue(maki::RecordValue& record, const QString& key, const Value& value);
+bool recordHasField(const maki::RecordValue& record, const QString& key);
 QString recordString(const maki::RecordValue& record, const QString& key);
 maki::ListValue recordList(const maki::RecordValue& record, const QString& key);
+const maki::Value* getProperty(const QString& key, const INode& node);
 
 }  // namespace maki

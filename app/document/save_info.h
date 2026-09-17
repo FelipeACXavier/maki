@@ -65,6 +65,8 @@ public:
   QVector<const IParameter*> getparameters() const override;
   QVector<maki::MissionParameter> missionParameters() const;
 
+  QVector<std::pair<QString, QString>> getLinkNodes() const;
+
   void setParameters(const QVector<maki::MissionParameter>& parameters);
 
   maki::MissionParameter getParameter(int index) const;

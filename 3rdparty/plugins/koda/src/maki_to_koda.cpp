@@ -82,20 +82,11 @@ Result<QString> MakiToKoda::generate(const QVector<std::shared_ptr<INode>> nodes
   return QString::fromStdString(contents.Value());
 }
 
-const maki::Value* MakiToKoda::getProperty(const QString& key, const INode& node) const
-{
-  for (const auto& property : node.getproperties())
-    if (property->getid() == key)
-      return dynamic_cast<const maki::Value*>(property->getvalue());
-
-  return nullptr;
-}
-
 Result<koda::PComponent> MakiToKoda::buildTask(const INode& task, QVector<const IParameter*> missionParameters)
 {
   auto c = std::make_shared<koda::Component>();
   c->kind = koda::Component::Kind::Task;
-  if (const auto* prop = getProperty("name", task))
+  if (const auto* prop = maki::getProperty("name", task))
   {
     if (prop->toStringValue().toLower() == "task")
       RETURN_FAIL(task.getid(), QString(), Result<koda::PComponent>, "Tasks may not be called 'Task' or 'task'");
@@ -110,7 +101,7 @@ Result<koda::PComponent> MakiToKoda::buildTask(const INode& task, QVector<const 
   // Get arguments
   for (const auto& cap : task.getchildren())
   {
-    const auto* capName = getProperty("name", *cap);
+    const auto* capName = maki::getProperty("name", *cap);
     if (!capName)
       return Result<koda::PComponent>::Failed("Capability does not have a name");
 
@@ -168,13 +159,13 @@ Result<koda::PComponent> MakiToKoda::buildCapability(const INode& capability)
 {
   auto c = std::make_shared<koda::Component>();
   c->kind = koda::Component::Kind::Capability;
-  const auto* name = getProperty("name", capability);
+  const auto* name = maki::getProperty("name", capability);
   if (!name)
     return Result<koda::PComponent>::Failed("Capability does not have a name");
 
   c->name = format(name->toStringValue());
 
-  if (const auto* prop = getProperty("calldef", capability))
+  if (const auto* prop = maki::getProperty("calldef", capability))
   {
     auto record = prop->toList();
     if (record.empty())
@@ -447,21 +438,21 @@ std::any MakiToKoda::buildNodeExpr(const IFlow& flow, const INode& node)
 {
   std::any result;
 
-  if (node.getnodeId() == "Koda::Async task")
-    result = buildAsyncExpr(flow, node);
-  else if (node.getnodeId() == "Koda::Sync task")
+  // if (node.getnodeId() == "Koda::Async task")
+  //   result = buildAsyncExpr(flow, node);
+  if (node.getnodeId() == ConfigKeys::CAPABILITY_CALL_NODE)
     result = buildSyncExpr(flow, node);
-  else if (node.getnodeId() == "Koda::Flow call")
+  else if (node.getnodeId() == ConfigKeys::FLOW_CALL_NODE)
     result = buildStrategyExpr(flow, node);
-  else if (node.getnodeId() == "Koda::Within")
+  else if (node.getnodeId() == ConfigKeys::WITHIN_NODE)
     result = buildWithinExpr(flow, node);
-  else if (node.getnodeId() == "Koda::Repeat")
+  else if (node.getnodeId() == ConfigKeys::REPEAT_NODE)
     result = buildRepeatExpr(flow, node);
-  else if (node.getnodeId() == "Koda::Continue")
+  else if (node.getnodeId() == ConfigKeys::CONTINUE_NODE)
     result = buildContinueExpr(flow, node);
-  else if (node.getnodeId() == "Koda::Success")
+  else if (node.getnodeId() == ConfigKeys::SUCCESS_NODE)
     result = buildSuccessExpr(flow, node);
-  else if (node.getnodeId() == "Koda::Terminate")
+  else if (node.getnodeId() == ConfigKeys::TERMINATE_NODE)
     result = buildTerminateExpr(flow, node);
   else
     LOG_AND_FAIL(node.getid(), flow.getid(), "Unknown expression: {}", node.getnodeId());
@@ -480,6 +471,7 @@ void MakiToKoda::traceNode(const IFlow& flow, const INode& node, const koda::PSt
   if (!mTraceMap)
     return;
 
+  // TODO: Fix this, it should be based on the capability being called
   MakiElementKind kind = MakiElementKind::Node;
   if (node.getnodeId() == "Koda::Async task")
     kind = MakiElementKind::Async;
@@ -491,7 +483,7 @@ void MakiToKoda::traceNode(const IFlow& flow, const INode& node, const koda::PSt
 
 std::any MakiToKoda::buildAsyncExpr(const IFlow& flow, const INode& node)
 {
-  const auto* cap = getProperty("capability", node);
+  const auto* cap = maki::getProperty("capability", node);
   if (!cap)
     LOG_AND_FAIL(node.getid(), flow.getid(), "AsyncTask component does not have a valid capability");
   if (!cap->isRecord())
@@ -528,7 +520,7 @@ std::any MakiToKoda::buildAsyncExpr(const IFlow& flow, const INode& node)
 
 std::any MakiToKoda::buildSyncExpr(const IFlow& flow, const INode& node)
 {
-  const auto* cap = getProperty("capability", node);
+  const auto* cap = maki::getProperty("capability", node);
   if (!cap)
     LOG_AND_FAIL(node.getid(), flow.getid(), "SyncTask component does not have a valid capability");
   if (!cap->isRecord())
@@ -567,7 +559,7 @@ std::any MakiToKoda::buildSyncExpr(const IFlow& flow, const INode& node)
 
 std::any MakiToKoda::buildStrategyExpr(const IFlow& flow, const INode& node)
 {
-  const auto* cap = getProperty("task", node);
+  const auto* cap = maki::getProperty("task", node);
   if (!cap)
     LOG_AND_FAIL(node.getid(), flow.getid(), "Flow call does not have a valid task");
   if (!cap->isRecord())
@@ -630,7 +622,7 @@ std::any MakiToKoda::buildWithinExpr(const IFlow& flow, const INode& node)
     expr->b = std::any_cast<koda::PStrategy>(elseSequence);
   }
 
-  auto timeout = getProperty("timeout", node);
+  auto timeout = maki::getProperty("timeout", node);
   if (!timeout)
     LOG_AND_FAIL(node.getid(), flow.getid(), "Within missing timeout property");
   if (!timeout->isInt() && !timeout->isString())
@@ -651,19 +643,19 @@ std::any MakiToKoda::buildWithinExpr(const IFlow& flow, const INode& node)
 
 std::any MakiToKoda::buildRepeatExpr(const IFlow& flow, const INode& node)
 {
-  const auto* task = getProperty("task", node);
+  const auto* task = maki::getProperty("task", node);
   if (!task)
     LOG_AND_FAIL(node.getid(), flow.getid(), "Repeat task property is missing");
   if (!task->isRecord())
     LOG_AND_FAIL(node.getid(), flow.getid(), "Repeat task property should be a record");
 
-  const auto* iterations = getProperty("iterations", node);
+  const auto* iterations = maki::getProperty("iterations", node);
   if (!iterations)
     LOG_AND_FAIL(node.getid(), flow.getid(), "Repeat iterations property is missing");
   if (!iterations->isInt() && !iterations->isString())
     LOG_AND_FAIL(node.getid(), flow.getid(), "Repeat iterations property should be an integer");
 
-  const auto* rate = getProperty("rate", node);
+  const auto* rate = maki::getProperty("rate", node);
   if (!rate)
     LOG_AND_FAIL(node.getid(), flow.getid(), "Repeat rate property is missing");
   if (!rate->isInt() && !rate->isString())
@@ -916,7 +908,7 @@ std::any MakiToKoda::buildJoinFromFanOut(const IFlow& flow, const INode& splitNo
 const INode* MakiToKoda::findStartNode(const IFlow& flow) const
 {
   for (const auto& node : flow.getnodes())
-    if (node->getnodeId() == "Koda::Start")
+    if (node->getnodeId() == ConfigKeys::START_NODE)
       return node.get();
 
   return nullptr;
@@ -1113,12 +1105,13 @@ int MakiToKoda::sequentialDistanceBetween(const IFlow& flow, const INode& start,
 
 bool MakiToKoda::isEndNode(const INode& node) const
 {
-  return node.getnodeId() == "Koda::Terminate";
+  return node.getnodeId() == ConfigKeys::TERMINATE_NODE;
 }
 
 bool MakiToKoda::isStructuralNode(const INode& node) const
 {
-  return node.getnodeId() == "Koda::Start" || node.getnodeId() == "Koda::Success" || node.getnodeId() == "Koda::Failure" || node.getnodeId() == "Koda::Join";
+  return node.getnodeId() == ConfigKeys::START_NODE || node.getnodeId() == ConfigKeys::SUCCESS_NODE || node.getnodeId() == ConfigKeys::FAILURE_NODE ||
+         node.getnodeId() == ConfigKeys::JOIN_NODE;
 }
 
 QList<NodeTransition> MakiToKoda::successorsOfKind(const INode& node, const IFlow& flow, TransitionKind kind) const

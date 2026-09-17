@@ -121,7 +121,6 @@ private:
   std::string format(QString input, const QString& token = "") const;
 
   Result<koda::PExpr> buildValueExpr(const koda::types::TypeReference& type, const maki::Value* value);
-  const maki::Value* getProperty(const QString& key, const INode& node) const;
 };
 
 }  // namespace koda

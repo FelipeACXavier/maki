@@ -113,9 +113,6 @@ qreal NodeItem::baseScale() const
 
 VoidResult NodeItem::start()
 {
-  if (nodeType() == "Koda::Task")
-    ensureMainFlowExists();
-
   return NodeBase::start();
 }
 
@@ -841,18 +838,4 @@ void NodeItem::deleteFlow(const QString& flowId)
 
 void NodeItem::updateFlow()
 {
-}
-
-// This should only exists in the Task node specialization
-void NodeItem::ensureMainFlowExists()
-{
-  for (const auto& flow : flowConfigs())
-    if (flow->getname() == Constants::MAIN_FLOW)
-      return;
-
-  auto info = std::make_shared<FlowSaveInfo>();
-  info->setType(Types::CallType::USER);
-  info->setModifiable(true);
-  info->setReturnType(koda::types::TypeReference::createVoid());
-  (void)createFlow(Constants::MAIN_FLOW, info);
 }
