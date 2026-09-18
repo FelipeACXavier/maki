@@ -151,10 +151,22 @@ void CanvasView::mouseReleaseEvent(QMouseEvent* event)
 
 void CanvasView::wheelEvent(QWheelEvent* event)
 {
-  QPoint scrollAmount = event->angleDelta();
+  if (!event)
+    return;
+
+  QGraphicsItem* item = itemAt(event->position().toPoint());
+  for (QGraphicsItem* current = item; current; current = current->parentItem())
+  {
+    if (current->type() == QGraphicsProxyWidget::Type)
+    {
+      QGraphicsView::wheelEvent(event);
+      return;
+    }
+  }
 
   // Apply zoom.
-  scrollAmount.y() > 0 ? zoomIn() : zoomOut();
+  event->angleDelta().y() > 0 ? zoomIn() : zoomOut();
+  event->accept();
 }
 
 void CanvasView::zoomIn()

@@ -172,7 +172,7 @@ public:
    * @param key The property key.
    * @param value The new value for the property.
    */
-  void setProperty(const QString& key, const maki::Value& value);
+  virtual void setProperty(const QString& key, const maki::Value& value);
 
   /**
    * @brief Renames the node to a new name.
@@ -362,6 +362,7 @@ public:
   std::function<void(NodeItem* item, bool done)> nodeMoved;
   std::function<void(NodeItem* item, bool enter)> nodeHovered;
   std::function<void(NodeItem* node, const QString& nodeId, const QString& flowId, int type)> focusOn;
+  std::function<void(NodeItem* item, const QPointF& scenePos, maki::ControlWidget* control)> nodeControlRequested;
 
   // "slots":
   void onProperties();

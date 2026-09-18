@@ -10,6 +10,7 @@ class ControlWidget : public QWidget
 public:
   ControlWidget(QWidget* parent = nullptr);
 
+  virtual void start();
 signals:
   void dismissed();
 };

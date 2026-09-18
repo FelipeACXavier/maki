@@ -32,7 +32,7 @@ public:
   void setDiameter(qreal diameter);
   qreal diameter() const;
 
-  std::function<void()> clicked;
+  std::function<void(const QPointF& scenePos)> clicked;
 
 protected:
   void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;

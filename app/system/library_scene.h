@@ -46,6 +46,8 @@ public:
    */
   void themeChanged();
 
+  void setDraggable(bool draggable);
+
 signals:
   /**
    * @brief Emitted when a library node is selected.
@@ -85,6 +87,7 @@ protected:
 
 private:
   QPointF mPressScenePos;       /// Scene position where mouse was pressed.
+  bool mSupportsDrags = true;   /// Flag indicating whether this scene accepts node dragging
   bool mPressed = false;        /// Flag indicating if mouse is currently pressed.
   bool mDragging = false;       /// Flag indicating if dragging is in progress.
   DraggableItem* mClickedItem;  /// Pointer to the item that was clicked.

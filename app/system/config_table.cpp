@@ -1,5 +1,11 @@
 #include "config_table.h"
 
+ConfigurationTable& ConfigurationTable::instance()
+{
+  static ConfigurationTable table;
+  return table;
+}
+
 ConfigurationTable::ConfigurationTable()
     : mMap({})
 {
@@ -21,4 +27,9 @@ std::shared_ptr<NodeConfig> ConfigurationTable::get(const QString& key) const
     return nullptr;
 
   return mMap.at(key);
+}
+
+const std::map<QString, std::shared_ptr<NodeConfig>> ConfigurationTable::entries() const
+{
+  return mMap;
 }

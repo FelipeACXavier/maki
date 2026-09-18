@@ -15,6 +15,7 @@
 #include <QScrollBar>
 #include <QShortcut>
 #include <QSpinBox>
+#include <QSvgWidget>
 #include <QTableWidget>
 #include <QTimer>
 #include <QToolButton>
@@ -1058,7 +1059,8 @@ SearchWidget::SearchWidget(const QString& placeholder, QWidget* parent)
   searchLayout->setContentsMargins(5, 0, 5, 0);
   searchLayout->setSpacing(5);
 
-  auto* icon = new oclero::qlementine::IconWidget(QIcon(":/icons/search.svg"), Config::SMALL_BUTTON_SIZE, this);
+  QSvgWidget* icon = new QSvgWidget(":/icons/search.svg", this);
+  icon->setFixedSize(Config::SMALL_BUTTON_SIZE);
 
   mInputField = new QLineEdit(this);
   mInputField->setPlaceholderText(placeholder);

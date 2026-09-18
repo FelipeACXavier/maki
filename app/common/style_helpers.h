@@ -238,4 +238,14 @@ QString createDefaultMessage();
  *
  * @param iconPath Path of the SVG
  */
-void paintSvg(QSvgRenderer* renderer, const QString& iconPath, QPainter* painter, const QPointF& center, qreal width, qreal height);
+void paintSvg(QSvgRenderer* renderer, QPainter* painter, const QPointF& center, qreal width, qreal height);
+
+/**
+ * @brief Returns the name of the node from its id.
+ * For example, Koda::Siren becomes Siren.
+ *
+ * @param id The id of the node.
+ *
+ * @return QString The name of the node
+ */
+QString nameFromNodeId(const QString& id);

@@ -69,7 +69,7 @@ public:
    * @param configTable Shared pointer to the configuration table.
    * @param parent Pointer to the parent object.
    */
-  Canvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> configTable, std::shared_ptr<EdgeRouter> router, QObject* parent = nullptr);
+  Canvas(const QString& canvasId, std::shared_ptr<EdgeRouter> router, QObject* parent = nullptr);
 
   ~Canvas();
   /**
@@ -374,10 +374,10 @@ public slots:
   void onFlowRemoved(const QString& flowId, const QString& nodeId);
 
 protected:
-  std::shared_ptr<ConfigurationTable> mConfigTable;  /// Pointer to the configuration table.
-  std::shared_ptr<EdgeRouter> mRouter;               /// Pointer to the system edge router.
-  QUndoStack* mUndoStack = nullptr;                  /// Pointer to the undo stack.
+  std::shared_ptr<EdgeRouter> mRouter;  /// Pointer to the system edge router.
+  QUndoStack* mUndoStack = nullptr;     /// Pointer to the undo stack.
 
+  void onNodeControlRequested(NodeItem* node, const QPointF& scenePos, maki::ControlWidget* control);
   /**
    * @brief Handles drag enter events.
    *
@@ -534,6 +534,7 @@ private:
   QVector<QGraphicsItem*> removeNode(NodeItem* node);  /// Removes a node and its associated connections.
 
   void clearSelectedNodes();                                                           /// Clears all selected nodes.
+  void clearNodeControls();                                                            /// Clears all the active node controls.
   bool isModifierSet(QGraphicsSceneMouseEvent* event, Qt::KeyboardModifier modifier);  /// Checks if a specific keyboard modifier is set.
 
   bool nodeClickHandler(QGraphicsSceneMouseEvent* event, QGraphicsItem* item);        /// Handles node click events.

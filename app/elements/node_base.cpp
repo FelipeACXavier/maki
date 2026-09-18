@@ -103,7 +103,7 @@ void NodeBase::paintNode(const QRectF& bounds, const QColor& background, const Q
   if (mRenderer)
   {
     auto rect = shapeSvgTargetRect(mRenderer, drawingBounds);
-    paintSvg(mRenderer, iconPathFromTheme(config()->body.iconPath), painter, rect.center(), rect.width(), rect.height());
+    paintSvg(mRenderer, painter, rect.center(), rect.width(), rect.height());
   }
   else if (config()->body.shape == Types::Shape::RECTANGLE)
   {

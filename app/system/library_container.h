@@ -50,6 +50,8 @@ public:
    */
   void setColumnCount(int count);
 
+  void setDraggable(bool clickable);
+
 protected:
   /**
    * @brief Handles resize events for the LibraryContainer.
@@ -57,6 +59,8 @@ protected:
    * @param event The resize event.
    */
   void resizeEvent(QResizeEvent* event) override;
+
+  void mousePressEvent(QMouseEvent* event) override;
 
 private:
   int mLastItemY;  /// The last Y position of an item in the scene.

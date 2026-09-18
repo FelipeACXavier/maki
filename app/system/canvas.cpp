@@ -37,14 +37,14 @@
 #include "undo_commands/align.h"
 #include "undo_commands/batch_remove.h"
 #include "undo_commands/distribute.h"
+#include "widgets/controls/capability_selector.h"
 #include "widgets/controls/suggestion_menu.h"
 #include "widgets/controls/task_node_menu.h"
 
 static constexpr auto MAKI_CLIPBOARD_MIME = "application/x-maki-copied-nodes";
 
-Canvas::Canvas(const QString& canvasId, std::shared_ptr<ConfigurationTable> configTable, std::shared_ptr<EdgeRouter> router, QObject* parent)
+Canvas::Canvas(const QString& canvasId, std::shared_ptr<EdgeRouter> router, QObject* parent)
     : QGraphicsScene(parent)
-    , mConfigTable(configTable)
     , mRouter(router)
     , mId(canvasId)
     , mCopiedNodes({})
@@ -350,6 +350,7 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
 
       mSelectedNodes.clear();
       clearSelectedNodes();
+      clearNodeControls();
 
       QGraphicsScene::mousePressEvent(event);
       return;
@@ -1260,16 +1261,18 @@ void Canvas::selectNode(NodeItem* node, bool select)
   emit nodeSelected(node, select);
 }
 
+void Canvas::clearNodeControls()
+{
+  for (QGraphicsItem* item : items())
+    if (auto node = qgraphicsitem_cast<NodeItem*>(item))
+      node->hideControl();
+}
+
 void Canvas::clearSelectedNodes()
 {
   for (QGraphicsItem* item : selectedItems())
-  {
-    if (item->type() == NodeItem::Type)
-    {
-      auto node = static_cast<NodeItem*>(item);
+    if (auto* node = qgraphicsitem_cast<NodeItem*>(item))
       selectNode(node, false);
-    }
-  }
 
   clearSelection();
 
@@ -1446,6 +1449,9 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
   node->nodeMoved = [this](NodeItem* node, bool done) { onNodeMoved(node, done); };
   node->nodeHovered = [this](NodeItem* node, bool entered) { onNodeHovered(node, entered); };
   node->focusOn = [this](NodeItem* node, const QString& nodeId, const QString& flowId, int type) { onNodeFocusOn(node, nodeId, flowId, type); };
+  node->nodeControlRequested = [this](NodeItem* node, const QPointF& scenePos, maki::ControlWidget* control) {
+    onNodeControlRequested(node, scenePos, control);
+  };
 
   // All nodes are children of the canvas
   addItem(node);
@@ -1484,10 +1490,7 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
 
 std::shared_ptr<NodeConfig> Canvas::getNodeConfig(const QString& key) const
 {
-  if (!mConfigTable)
-    return nullptr;
-
-  return mConfigTable->get(key);
+  return ConfigurationTable::instance().get(key);
 }
 
 void Canvas::addedItemNode(NodeItem* node, std::shared_ptr<NodeSaveInfo> /* info */)
@@ -1518,8 +1521,9 @@ void Canvas::onNodeHovered(NodeItem* node, bool entered)
       for (const auto& flow : node->flows())
         if (flow->name() == Constants::MAIN_FLOW)
         {
-          emit openFlow(flow, node->id(), maki::FocusProperties::internal());
-          break;
+          QMetaObject::invokeMethod(
+              this, [this, flow, nodeId = node->id()] { emit openFlow(flow, nodeId, maki::FocusProperties::internal()); }, Qt::QueuedConnection);
+          return;
         }
     });
     connect(control, &TaskNodeMenu::addFlowRequested, [this, node] { emit createEvent(node); });
@@ -1541,6 +1545,26 @@ void Canvas::onNodeFocusOn(NodeItem* node, const QString& nodeId, const QString&
     emit focusOn("", flowId, maki::FocusProperties::internal());
   else if (type == NodeItem::Type)
     emit focusOn(nodeId, flowId, maki::FocusProperties::internal());
+}
+
+void Canvas::onNodeControlRequested(NodeItem* node, const QPointF& scenePos, maki::ControlWidget* control)
+{
+  if (!node || !control)
+    return;
+
+  if (auto capSelect = qobject_cast<CapabilitySelector*>(control))
+    connect(capSelect, &CapabilitySelector::accepted, this, [this, node](const QStringList& nodes) {
+      for (const auto& nodeType : nodes)
+        createSuggestedNode(nodeType, node);
+    });
+
+  // Nodes cannot be parents since they are not qobjects, so the CanvasView must parent the widget
+  control->setParent(parentView());
+  control->start();
+  node->showControls(control, ControlProperties{
+                                  .isFading = false,
+                                  .position = Config::ControlPosition::Right,
+                              });
 }
 
 NodeItem* Canvas::findNodeWithId(const QString& id) const
@@ -1612,7 +1636,7 @@ void Canvas::showSimulationControls(NodeItem* node, maki::ControlWidget* control
 
     auto nodeItem = qgraphicsitem_cast<NodeItem*>(item);
     if (nodeItem->id() != node->id())
-      nodeItem->dismissControl();
+      nodeItem->hideControl();
   }
 
   node->showSimulationControls(controls, highlightColor);
@@ -1745,6 +1769,7 @@ void Canvas::suggestedNodes(NodeItem* node, QStringList consumers, QStringList p
 
 void Canvas::createSuggestedNode(const QString& nodeType, NodeItem* sourceNode)
 {
+  LOG_DEBUG("createSuggestedNode: {}", nodeType);
   if (!sourceNode)
     return;
 
@@ -1755,18 +1780,21 @@ void Canvas::createSuggestedNode(const QString& nodeType, NodeItem* sourceNode)
     return;
   }
 
-  auto info = std::make_shared<NodeSaveInfo>(*config);
+  NodeSaveInfo info(*config);
   constexpr qreal HorizontalOffset = 20.0;
   QPointF position = sourceNode->sceneBoundingRect().topRight() + QPointF(HorizontalOffset, 0.0);
 
   // If the source is inside another structural node, the suggested node
   // should normally be inserted into that same parent.
-  info->setId(QUuid::createUuid().toString());
-  info->setPosition(position);
+  info.setId(QUuid::createUuid().toString());
+  info.setPosition(position);
   if (sourceNode->parentNode())
-    info->setParentId(sourceNode->parentNode()->id());
+    info.setParentId(sourceNode->parentNode()->id());
+  else
+    info.setParentId(sourceNode->id());
 
-  mUndoStack->push(new AddNodeCommand(this, *info, NodeCreation::Populating));
+  LOG_DEBUG("Adding node {} with parent: {}", nodeType, info.getparentId());
+  mUndoStack->push(new AddNodeCommand(this, info, NodeCreation::Populating));
 }
 
 Flow* Canvas::getFlow(const QString& flowId) const

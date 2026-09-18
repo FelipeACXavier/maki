@@ -26,6 +26,7 @@ struct ControlProperties
   bool isFading = false;
   int fadeDurationMs = 150;
   int fadeDelayMs = 1000;
+  QPointF fixedPosition = {};
 
   QColor highlightColor;
   Config::ControlPosition position = Config::ControlPosition::Top;

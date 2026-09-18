@@ -14,7 +14,7 @@
 #include "document/node_info.h"
 #include "elements/flow.h"
 #include "logging.h"
-#include "style_helpers.h"
+#include "widgets/controls/capability_selector.h"
 
 static constexpr qreal TASK_WIDTH = 324.0;
 static constexpr qreal TASK_HEIGHT = 300.0;
@@ -29,6 +29,10 @@ TaskNode::TaskNode(const QString& id, std::shared_ptr<NodeSaveInfo> info, const 
   setAcceptDrops(true);
   setAcceptHoverEvents(true);
   mEmptySlot = new EmptySlot(0, this);
+  mEmptySlot->clicked = [this](const QPointF& scenePos) {
+    if (nodeControlRequested)
+      nodeControlRequested(this, scenePos, CapabilitySelector::create());
+  };
 }
 
 TaskNode::~TaskNode()

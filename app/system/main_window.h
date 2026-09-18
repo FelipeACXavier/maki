@@ -135,7 +135,6 @@ private slots:
 private:
   std::unique_ptr<SaveHandler> mSaveHandler;          /// Handler for saving data.
   std::unique_ptr<PluginManager> mPluginManager;      /// Manager for plugins.
-  std::shared_ptr<ConfigurationTable> mConfigTable;   /// Configuration table shared pointer.
   std::shared_ptr<SettingsManager> mSettingsManager;  /// Settings manager shared pointer.
   std::shared_ptr<LanguageManager> mLanguageManager;  /// Language manager shared pointer.
 

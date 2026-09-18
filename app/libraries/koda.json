@@ -1558,6 +1558,10 @@
                     "kind": "string",
                     "value": ""
                   },
+                  "componentType": {
+                    "kind": "string",
+                    "value": ""
+                  },
                   "callId": {
                     "kind": "string",
                     "value": ""

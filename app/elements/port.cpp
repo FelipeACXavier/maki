@@ -68,7 +68,6 @@ PortItem::PortItem(Types::Port kind, QGraphicsItem* parentNode)
 
   if (auto* node = qgraphicsitem_cast<NodeItem*>(parentNode))
   {
-    LOG_DEBUG("Creating port of type: {} for {}", Types::PortToString(this->kind()), node->nodeId());
     const QRectF portRect = node->drawingRect(node->nodeRect());
     const qreal left = portRect.left();
     const qreal top = portRect.top();
@@ -98,7 +97,6 @@ PortItem::PortItem(Types::Port kind, QGraphicsItem* parentNode)
       y = top + PortItem::kGap - (PortItem::kErrorPortSize / 2);
     }
 
-    LOG_DEBUG("  Setting position: ({}, {}), shift: {}, left: {}, top: {}, w: {}, h: {}", x, y, shift, left, top, w, h);
     setPos(x, y);
   }
 }

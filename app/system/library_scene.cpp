@@ -31,7 +31,6 @@ void LibraryScene::mousePressEvent(QGraphicsSceneMouseEvent* event)
 
       if (mClickedItem)
       {
-        // mPressed = true;
         mDragging = false;
         mPressScenePos = event->scenePos();
 
@@ -48,7 +47,7 @@ void LibraryScene::mousePressEvent(QGraphicsSceneMouseEvent* event)
 
 void LibraryScene::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
-  if (!mClickedItem || !(event->buttons() & Qt::LeftButton))
+  if (!mClickedItem || !(event->buttons() & Qt::LeftButton) || !mSupportsDrags)
   {
     QGraphicsScene::mouseMoveEvent(event);
     return;
@@ -56,7 +55,7 @@ void LibraryScene::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 
   // Use screenPos so it feels right across view transforms/zoom; scenePos is also ok.
   const int dist = (event->scenePos() - event->buttonDownScreenPos(Qt::LeftButton)).manhattanLength();
-  if (mClickedItem && !mDragging && dist >= MIN_DRAG_DISTANCE)
+  if (mClickedItem && mSupportsDrags && !mDragging && dist >= MIN_DRAG_DISTANCE)
   {
     mDragging = true;
     mClickedItem->startDrag(event);
@@ -98,10 +97,8 @@ void LibraryScene::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 void LibraryScene::clearSelectedNodes()
 {
   for (QGraphicsItem* item : selectedItems())
-  {
     if (item->type() == DraggableItem::Type)
       item->setSelected(false);
-  }
 
   clearSelection();
   mClickedItem = nullptr;
@@ -169,4 +166,9 @@ void LibraryScene::themeChanged()
 {
   for (QGraphicsItem* item : items())
     item->update();
+}
+
+void LibraryScene::setDraggable(bool draggable)
+{
+  mSupportsDrags = draggable;
 }

@@ -123,7 +123,6 @@ VoidResult MainWindow::start()
   for (const auto& t : AppPaths::themes())
     mThemeManager->loadDirectory(t);
 
-  mConfigTable = std::make_shared<ConfigurationTable>();
   mStorage = std::make_shared<SaveInfo>();
 
   LOG_DEBUG("Starting the main window");
@@ -304,7 +303,7 @@ void MainWindow::onSettingsChanged()
 void MainWindow::startUI()
 {
   CanvasView* currentCanvas = static_cast<CanvasView*>(mCanvasPanel->currentWidget());
-  StructureCanvas* canvas = new StructureCanvas(mStorage, Config::MAIN_CANVAS, mConfigTable, mRouter, currentCanvas);
+  StructureCanvas* canvas = new StructureCanvas(mStorage, Config::MAIN_CANVAS, mRouter, currentCanvas);
 
   mActiveCanvas = canvas;
   currentCanvas->setScene(canvas);
@@ -330,7 +329,7 @@ void MainWindow::bind()
 
     LOG_TRACE("Focused on: {}", fw->metaObject()->className());
     // 1) If focus is in the node library panel -> search there
-    if (auto* lib = IN_TYPE(fw, QScrollArea); lib == mStructureScrollArea)
+    if (auto* lib = IN_TYPE(fw, QScrollArea); lib == mStructureScrollArea || lib == mBehaviourScrollArea)
     {
       // For now, we only search in the structure tab
       LOG_DEBUG("Finding in palette");
@@ -878,7 +877,7 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
   LibraryContainer* sidebarview = LibraryContainer::create(libraryName, toolbox);
   LibraryScene* sidebarScene = dynamic_cast<LibraryScene*>(sidebarview->scene());
   connect(sidebarScene, &LibraryScene::libraryNodeSelected, [this](const QString& nodeType) {
-    if (auto info = mConfigTable->get(nodeType))
+    if (auto info = ConfigurationTable::instance().get(nodeType))
       mInfoText->setHtml(createInformationMessage(*info));
   });
   // Make sure the configured value is there by default
@@ -911,11 +910,11 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
       nodeConfig->libraryType = Types::LibraryTypes::PIPELINE;
 
     auto nodeId = QStringLiteral("%1::%2").arg(name, nodeConfig->type);
-    sidebarview->addNode(nodeId, nodeConfig);
     nodeConfig->type = nodeId;
+    sidebarview->addNode(nodeId, nodeConfig);
 
     LOG_TRACE("Adding key: {} to the config table", nodeId);
-    LOG_ERROR_ON_FAILURE(mConfigTable->add(nodeId, nodeConfig));
+    LOG_ERROR_ON_FAILURE(ConfigurationTable::instance().add(nodeId, nodeConfig));
     LOG_ERROR_ON_FAILURE(maki::TypeRegistry::instance().registerNode(nodeId, NodeSaveInfo(*nodeConfig)));
   }
 
@@ -1183,7 +1182,7 @@ void MainWindow::onActionEditPipeline(const QString& pipelineId)
   CanvasView* newView = new CanvasView(mCanvasPanel);
   newView->setProperty("id", pipeline->getid());
 
-  PipelineCanvas* canvas = new PipelineCanvas(pipeline, mConfigTable, mRouter, newView);
+  PipelineCanvas* canvas = new PipelineCanvas(pipeline, mRouter, newView);
   newView->setScene(canvas);
   canvas->populate(*pipeline);
 
@@ -1338,7 +1337,7 @@ void MainWindow::onNodeSelected(NodeItem* node, bool selected)
 {
   if (node)
   {
-    if (auto info = mConfigTable->get(node->nodeType()))
+    if (auto info = ConfigurationTable::instance().get(node->nodeType()))
       mInfoText->setHtml(createInformationMessage(*info));
   }
   else
@@ -1544,7 +1543,7 @@ int MainWindow::onOpenFlow(Flow* flow, const QString& nodeId, const maki::FocusP
   }
 
   CanvasView* newView = new CanvasView(mCanvasPanel);
-  BehaviourCanvas* canvas = new BehaviourCanvas(flow, mConfigTable, mRouter, newView);
+  BehaviourCanvas* canvas = new BehaviourCanvas(flow, mRouter, newView);
   canvas->setupInitialNodes();
   newView->setScene(canvas);
 

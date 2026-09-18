@@ -46,7 +46,7 @@ void CapabilityNode::paint(QPainter* painter, const QStyleOptionGraphicsItem* st
   painter->drawEllipse(r);
 
   if (!config()->body.iconPath.isEmpty())
-    paintSvg(mRenderer, iconPathFromTheme(config()->body.iconPath), painter, r.center(), r.width(), r.height());
+    paintSvg(mRenderer, painter, r.center(), r.width(), r.height());
 
   NodeBase::paintLabel(painter, drawingRect(nodeRect()), pen, true);
 }

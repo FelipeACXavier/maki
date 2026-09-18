@@ -8,9 +8,8 @@
 #include "node_info.h"
 #include "type_registry.h"
 
-StructureCanvas::StructureCanvas(std::shared_ptr<SaveInfo> storage, const QString& canvasId, std::shared_ptr<ConfigurationTable> configTable,
-                                 std::shared_ptr<EdgeRouter> router, QObject* parent)
-    : Canvas(canvasId, configTable, router, parent)
+StructureCanvas::StructureCanvas(std::shared_ptr<SaveInfo> storage, const QString& canvasId, std::shared_ptr<EdgeRouter> router, QObject* parent)
+    : Canvas(canvasId, router, parent)
     , mStorage(storage)
 {
 }

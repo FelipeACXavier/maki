@@ -17,7 +17,7 @@ DraggableItem::DraggableItem(const QString& nodeId, std::shared_ptr<NodeConfig> 
     : NodeBase(QUuid::createUuid().toString(), nodeId, nodeConfig, parent)
 {
   setFlag(QGraphicsItem::ItemIsSelectable, true);
-  setLabel(config()->type, Fonts::BaseSize);
+  setLabel(nameFromNodeId(config()->type), Fonts::BaseSize);
 }
 
 DraggableItem::~DraggableItem()
@@ -60,7 +60,7 @@ void DraggableItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* sty
       const QRectF r = rect.adjusted(2, 2, -2, -2);
       painter->drawEllipse(r);
     }
-    paintSvg(mRenderer, iconPathFromTheme(config()->body.iconPath), painter, nodeRect().center(), rect.width(), rect.height());
+    paintSvg(mRenderer, painter, nodeRect().center(), rect.width(), rect.height());
 
     NodeBase::paintLabel(painter, rect, pen);
   }

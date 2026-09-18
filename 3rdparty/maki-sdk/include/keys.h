@@ -26,6 +26,7 @@ static const QString IS_VARIABLE = "isVariable";
 static const QString EVENT = "event";
 static const QString COMPONENT = "component";
 static const QString COMPONENT_ID = "componentId";
+static const QString COMPONENT_TYPE = "componentType";
 static const QString ITEMS = "items";
 static const QString FLOW = "flow";
 static const QString CALL = "call";
@@ -66,6 +67,7 @@ static const QString BEHAVIOURAL = "behavioural";
 static const QString PIPELINE = "pipeline";
 static const QString TRANSITIONS = "transitions";
 static const QString NODES = "nodes";
+static const QString CAPABILITY = "capability";
 
 // =======================================
 // Node types

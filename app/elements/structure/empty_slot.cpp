@@ -137,7 +137,7 @@ void EmptySlot::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
    * Emit only when the release still happens inside the item.
    */
   if (wasPressed && clicked && contains(event->pos()))
-    clicked();
+    clicked(event->scenePos());
 
   event->accept();
 }

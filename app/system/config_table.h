@@ -12,6 +12,8 @@
 class ConfigurationTable
 {
 public:
+  static ConfigurationTable& instance();
+
   /**
    * @brief Constructs an empty ConfigurationTable.
    */
@@ -33,6 +35,8 @@ public:
    * @return A shared pointer to the NodeConfig object representing the configuration, or nullptr if not found.
    */
   std::shared_ptr<NodeConfig> get(const QString& key) const;
+
+  const std::map<QString, std::shared_ptr<NodeConfig>> entries() const;
 
 private:
   /**

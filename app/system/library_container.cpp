@@ -1,6 +1,7 @@
 #include "library_container.h"
 
 #include <QGraphicsScene>
+#include <QMouseEvent>
 #include <QVBoxLayout>
 
 #include "config.h"
@@ -19,6 +20,8 @@ LibraryContainer::LibraryContainer(QWidget* parent)
   // We don't want to scroll our inner container, only the outer widget should be scrollable
   setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+  setFocusPolicy(Qt::StrongFocus);
+  viewport()->setFocusPolicy(Qt::StrongFocus);
 }
 
 LibraryContainer* LibraryContainer::create(const QString& name, QWidget* parent)
@@ -77,6 +80,15 @@ void LibraryContainer::setColumnCount(int count)
   relayoutItems();
 }
 
+void LibraryContainer::setDraggable(bool draggable)
+{
+  if (auto* scene = qobject_cast<LibraryScene*>(this->scene()))
+  {
+    scene->setDraggable(draggable);
+    relayoutItems();
+  }
+}
+
 void LibraryContainer::resizeEvent(QResizeEvent* event)
 {
   QGraphicsView::resizeEvent(event);
@@ -98,7 +110,7 @@ bool LibraryContainer::filterNodes(const QString& query)
 void LibraryContainer::relayoutItems()
 {
   // We calculate the cellHeight before based on the tallest item
-  auto cellHeight = 0;
+  int cellHeight = 0;
 
   const qreal availableWidth = viewport()->width();
   const int columnCount = mColumnCount;
@@ -129,9 +141,15 @@ void LibraryContainer::relayoutItems()
     const int row = i / columnCount;
     const QRectF itemBounds = items[i]->boundingRect();
     const qreal x = (column * columnWidth + columnWidth / 2.0) - (itemBounds.width() / 2);
-    const qreal y = (PADDING + row * (cellHeight + PADDING)) + qMax<int>(0, cellHeight - itemBounds.bottom());
+    const qreal y = (PADDING + row * (cellHeight + PADDING)) + qMax<int>(0, cellHeight - itemBounds.height());
     items[i]->setPos(x, y);
   }
 
   updateSceneSize();
+}
+
+void LibraryContainer::mousePressEvent(QMouseEvent* event)
+{
+  setFocus(Qt::MouseFocusReason);
+  QGraphicsView::mousePressEvent(event);
 }

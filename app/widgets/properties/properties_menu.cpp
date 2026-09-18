@@ -119,14 +119,9 @@ VoidResult PropertiesMenu::onNodeModified(NodeItem* /* node */)
 
 VoidResult PropertiesMenu::onNodeSelected(NodeItem* node, bool selected)
 {
-  LOG_DEBUG("Node selected: {} vs {}", node ? node->id() : "-", mCurrentNode);
-
   // If we are already showing this node, then there is nothing to do
   if (node && node->id() == mCurrentNode)
-  {
-    LOG_DEBUG("Comparing: {} vs {}", node->id(), mCurrentNode);
     return VoidResult();
-  }
 
   clearLayout(layout());
 
@@ -387,7 +382,6 @@ VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IPa
   auto* componentEditor = new maki::SelectorWidget(ToLabel(property->getid()), maki::WidgetAlignment::Vertical(), this);
 
   const auto candidates = mStorage->getPossibleCallers(node->id(), mode);
-  LOG_DEBUG("Using control mode: {} with {} candidates", Types::ControlTypesToString(mode), candidates.size());
   for (const auto& candidate : candidates)
   {
     if (!candidate)
@@ -397,7 +391,7 @@ VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IPa
     if (!name || !name->getvalue() || !name->getvalue()->isValid())
       continue;
 
-    componentEditor->addItem(name->getvalue()->toStringValue(), candidate->getid());
+    componentEditor->addItem(name->getvalue()->toStringValue(), QStringList{candidate->getid(), candidate->getnodeId()});
   }
 
   componentEditor->setValue(maki::recordString(record, ConfigKeys::COMPONENT));
@@ -450,7 +444,8 @@ VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IPa
   };
 
   // Initialise dependent fields before connecting change handlers.
-  const auto currentComponentId = componentEditor->getData().toString();
+  const auto currentComponentId =
+      componentEditor->getData().toStringList().isEmpty() ? Constants::EMPTY_COMBO : componentEditor->getData().toStringList().at(0);
   if (callEditor)
   {
     populateCalls(currentComponentId);
@@ -486,8 +481,8 @@ VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IPa
 
   connect(componentEditor, &maki::SelectorWidget::dataChanged, this,
           [this, node, propertyId = property->getid(), callEditor, argumentsGroup, populateCalls, findCall, mode](const QString& componentName,
-                                                                                                                  const QVariant& componentId) {
-            if (!node || !componentId.isValid())
+                                                                                                                  const QVariant& componentInfo) {
+            if (!node || !componentInfo.isValid() || componentInfo.toStringList().size() != 2)
               return;
 
             const auto* current = node->getProperty(propertyId);
@@ -500,7 +495,9 @@ VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IPa
             else if (mode == Types::ControlTypes::EVENT_SELECT)
               setRecordValue(valueRecord, ConfigKeys::EVENT, maki::Value::createString(""));
 
-            setRecordValue(valueRecord, ConfigKeys::COMPONENT_ID, maki::Value::createString(componentId.toString()));
+            const auto componentId = componentInfo.toStringList().at(0);
+            setRecordValue(valueRecord, ConfigKeys::COMPONENT_ID, maki::Value::createString(componentId));
+            setRecordValue(valueRecord, ConfigKeys::COMPONENT_TYPE, maki::Value::createString(componentInfo.toStringList().at(1)));
             setRecordValue(valueRecord, ConfigKeys::CALL_ID, maki::Value::createString(""));
 
             node->setProperty(propertyId, maki::Value::createRecord(valueRecord));
@@ -509,12 +506,12 @@ VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IPa
 
             if (callEditor)
             {
-              populateCalls(componentId.toString());
+              populateCalls(componentId);
               callEditor->setValue(Constants::EMPTY_COMBO);
             }
             else
             {
-              const auto call = findCall(componentId.toString(), QString());
+              const auto call = findCall(componentId, QString());
               LOG_WARN_ON_FAILURE(loadCallArguments(call, propertyId, node, argumentsGroup));
             }
 

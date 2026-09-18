@@ -41,7 +41,8 @@ enum class ControlPosition
   Top,
   Bottom,
   Left,
-  Right
+  Right,
+  Fixed
 };
 }  // namespace Config
 

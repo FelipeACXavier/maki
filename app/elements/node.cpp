@@ -328,7 +328,11 @@ void NodeItem::showControls(maki::ControlWidget* controls, const ControlProperti
 void NodeItem::dismissControl()
 {
   if (mControlWidget)
+  {
     mControlWidget->hide();
+    mControlWidget->deleteLater();
+    mControlWidget = nullptr;
+  }
 
   mControlActive = false;
 
@@ -338,6 +342,9 @@ void NodeItem::dismissControl()
 
 void NodeItem::hideControl()
 {
+  if (!hasControl())
+    return;
+
   if (mControlWidget && mControlWidget->hideControl())
     return;
 

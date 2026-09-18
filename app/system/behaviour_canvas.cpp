@@ -10,8 +10,8 @@
 #include "undo_commands/insert_existing_node.h"
 #include "undo_commands/insert_node.h"
 
-BehaviourCanvas::BehaviourCanvas(Flow* flow, std::shared_ptr<ConfigurationTable> configTable, std::shared_ptr<EdgeRouter> router, QObject* parent)
-    : Canvas(flow->id(), configTable, router, parent)
+BehaviourCanvas::BehaviourCanvas(Flow* flow, std::shared_ptr<EdgeRouter> router, QObject* parent)
+    : Canvas(flow->id(), router, parent)
     , mFlow(flow)
 {
 }
@@ -48,7 +48,7 @@ void BehaviourCanvas::setupInitialNodes()
 
 std::shared_ptr<const NodeSaveInfo> BehaviourCanvas::addInitialNode(const QString& nodeType, const QPointF& position)
 {
-  auto config = mConfigTable->get(nodeType);
+  auto config = getNodeConfig(nodeType);
   if (config == nullptr)
     return nullptr;
 
@@ -215,7 +215,7 @@ bool BehaviourCanvas::insertDroppedNodeOnTransition(TransitionItem* transition, 
   // --------------------------------------------------------------------------
   // Inserted node -> destination
   const TransitionConfig outConfig =
-      mConfigTable->get(info.getnodeId())->transitions.isEmpty() ? TransitionConfig{} : mConfigTable->get(info.getnodeId())->transitions.front();
+      getNodeConfig(info.getnodeId())->transitions.isEmpty() ? TransitionConfig{} : getNodeConfig(info.getnodeId())->transitions.front();
 
   TransitionSaveInfo outgoing;
   outgoing.setId(QUuid::createUuid().toString());
@@ -267,7 +267,7 @@ bool BehaviourCanvas::insertNodeOnTransition(TransitionItem* transition, NodeIte
   incoming.setDstShift({0, 0});
 
   TransitionConfig outConfig;
-  if (const auto config = mConfigTable->get(node->nodeId()); config && !config->transitions.isEmpty())
+  if (const auto config = getNodeConfig(node->nodeId()); config && !config->transitions.isEmpty())
     outConfig = config->transitions.front();
 
   TransitionSaveInfo outgoing;
