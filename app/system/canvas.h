@@ -96,7 +96,7 @@ public:
    */
   void deleteSelectedItems();
 
-  void autoRoute();
+  void autoRoute(QList<TransitionItem*> transitions = {});
 
   /**
    * @brief Returns the current scale of the canvas.
@@ -443,7 +443,7 @@ protected:
   virtual void onNodeFocusOn(NodeItem* node, const QString& nodeId, const QString& flowId, int type);
   virtual void addTransition(TransitionItem* transition);
   virtual void removeTransition(TransitionItem* transition);
-  virtual bool canAddTransition(NodeItem* node) const;
+  virtual bool canAddTransition(NodeItem* node, PortItem* port) const;
   virtual TransitionConfig nextTransition(NodeItem* node) const;
   virtual QVector<TransitionSaveInfo> transitionsOfNode(const QString& nodeId);
   virtual QVector<QGraphicsItem*> cleanTransitionsOfNode(const QString& nodeId);
@@ -538,6 +538,7 @@ private:
 
   bool nodeClickHandler(QGraphicsSceneMouseEvent* event, QGraphicsItem* item);        /// Handles node click events.
   bool transitionClickHandler(QGraphicsSceneMouseEvent* event, QGraphicsItem* item);  /// Handles transition click events.
+  bool beginTransitionFromOutPort(PortItem* port, const QPointF& cursorScenePos);
 
   void createNodeContextMenu(QMenu* menu, NodeItem* node, const QList<NodeItem*>& items);  /// Creates a context menu for nodes.
   void createTransitionContextMenu(QMenu* menu, const QList<NodeItem*>& items);            /// Creates a context menu for transitions.

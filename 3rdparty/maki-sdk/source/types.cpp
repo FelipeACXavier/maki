@@ -219,3 +219,36 @@ Types::LibraryTypes Types::LibraryTypeFromString(const QString& type)
 
   return Types::LibraryTypes::UNKNOWN;
 }
+
+// =====================================================================================
+// Port type
+Types::Port Types::PortFromString(const QString& type)
+{
+  if (type == "in")
+    return Types::Port::IN;
+  if (type == "out")
+    return Types::Port::OUT;
+  if (type == "abort")
+    return Types::Port::ABORT;
+  if (type == "error")
+    return Types::Port::ERROR;
+
+  return Types::Port::UNKNOWN;
+}
+
+QString Types::PortToString(Port type)
+{
+  switch (type)
+  {
+    case Types::Port::IN:
+      return "in";
+    case Types::Port::OUT:
+      return "out";
+    case Types::Port::ABORT:
+      return "abort";
+    case Types::Port::ERROR:
+      return "error";
+    default:
+      return "unknown";
+  }
+}

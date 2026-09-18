@@ -435,7 +435,7 @@ Result<ResolvedArgumentSource> SemanticAnalyzer::resolveArgumentSource(const PEx
   }
 
   // Otherwise treat it as a normal KODA expression.
-  auto value = analyzeExpr(expr, owner);
+  auto value = analyzeExpr(expr, owner, expectedType);
   if (!value.IsSuccess())
     return Result<ResolvedArgumentSource>::Failed("Resolving arguments: {}", value.ErrorMessage());
   if (!compatible(expectedType, value.Value()))
@@ -587,7 +587,7 @@ VoidResult SemanticAnalyzer::analyzeFlowCall(const PEventCall& astCall, const Re
       return VoidResult::Failed("Unknown parameter '{}' for flow '{}'", formal->b, astCall->name);
 
     // For now the actual expression determines the source.
-    auto actualType = analyzeExpr(actual, callerOwner);
+    auto actualType = analyzeExpr(actual, callerOwner, formal->a);
     if (!actualType.IsSuccess())
       return VoidResult::Failed("Flow call analysis arguments: {}", actualType.ErrorMessage());
 
@@ -653,7 +653,7 @@ Result<ResolvedCall> SemanticAnalyzer::resolveCall(const PEventCall& call, Symbo
       return Result<ResolvedCall>::Failed("Could not find trigger event for: {}", call->name);
 
     std::vector<koda::types::TypeReference> args;
-    ASSIGN_OR_RETURN_ON_FAILURE_AS(args, analyseArgs(call, owner), ResolvedCall);
+    ASSIGN_OR_RETURN_ON_FAILURE_AS(args, analyseArgs(call, owner, triggerEventSymbol), ResolvedCall);
 
     return ResolvedCall{ResolvedCallKind::CapabilityTrigger, receiver, triggerEventSymbol->id, triggerEventSymbol->type, args};
   }
@@ -678,17 +678,27 @@ Result<ResolvedCall> SemanticAnalyzer::resolveCall(const PEventCall& call, Symbo
     return Result<ResolvedCall>::Failed("Component '{}' has no event '{}' at {}", mSymbols.get(component)->name, call->name, call->span.toString());
 
   std::vector<koda::types::TypeReference> args;
-  ASSIGN_OR_RETURN_ON_FAILURE_AS(args, analyseArgs(call, owner), ResolvedCall);
+  ASSIGN_OR_RETURN_ON_FAILURE_AS(args, analyseArgs(call, owner, eventSymbol), ResolvedCall);
 
   return ResolvedCall{ResolvedCallKind::Event, receiver, *event, eventSymbol->type, args};
 }
 
-Result<std::vector<koda::types::TypeReference>> SemanticAnalyzer::analyseArgs(const PEventCall& call, SymbolId owner)
+Result<std::vector<koda::types::TypeReference>> SemanticAnalyzer::analyseArgs(const PEventCall& call, SymbolId owner, const Symbol* event)
 {
+  auto formalArgs = mSymbols.children(event->id, SymbolKind::Argument);
+  if (call->args.size() != formalArgs.size())
+    return Result<std::vector<koda::types::TypeReference>>::Failed("Call arguments do not match definition. Expected {} but got {} arguments",
+                                                                   formalArgs.size(), call->args.size());
+
   std::vector<koda::types::TypeReference> args;
-  for (const auto& arg : call->args)
+  for (size_t i = 0; i < call->args.size(); ++i)
   {
-    auto type = analyzeExpr(arg, owner);
+    const auto arg = call->args.at(i);
+    auto* formal = mSymbols.get(formalArgs.at(i));
+    if (!formal)
+      return Result<std::vector<koda::types::TypeReference>>::Failed("Could not find declaration for argument at: {}", arg->span.toString());
+
+    auto type = analyzeExpr(arg, owner, formal->type);
     if (!type.IsSuccess())
       return Result<std::vector<koda::types::TypeReference>>::Failed("Resolve receiver call args: {}", type.ErrorMessage());
 
@@ -739,7 +749,7 @@ Result<types::TypeReference> SemanticAnalyzer::analyzeExpr(const PExpr& expr, Sy
   }
   else if (auto p = std::get_if<PNeg>(&expr->v); p && *p)
   {
-    auto inner = analyzeExpr((*p)->value, owner);
+    auto inner = analyzeExpr((*p)->value, owner, expected);
     if (!inner.IsSuccess())
       return inner;
     if (!inner.Value().isNumeric() && inner.Value().kind() != types::TypeReferenceKind::Unknown)
@@ -748,21 +758,21 @@ Result<types::TypeReference> SemanticAnalyzer::analyzeExpr(const PExpr& expr, Sy
   }
   else if (auto p = std::get_if<PNot>(&expr->v); p && *p)
   {
-    auto inner = analyzeExpr((*p)->value, owner);
+    auto inner = analyzeExpr((*p)->value, owner, expected);
     if (!inner.IsSuccess())
       return inner;
     type = types::TypeReference::createBool();
   }
   else if (auto p = std::get_if<PBinOp>(&expr->v); p && *p)
   {
-    auto lhs = analyzeExpr((*p)->a, owner);
+    auto lhs = analyzeExpr((*p)->a, owner, expected);
     if (!lhs.IsSuccess())
       return lhs;
 
     types::TypeReference rhsType;
     if ((*p)->b)
     {
-      auto rhs = analyzeExpr((*p)->b, owner);
+      auto rhs = analyzeExpr((*p)->b, owner, expected);
       if (!rhs.IsSuccess())
         return rhs;
 
@@ -800,7 +810,7 @@ Result<types::TypeReference> SemanticAnalyzer::analyzeExpr(const PExpr& expr, Sy
   }
   else if (auto p = std::get_if<PEParen>(&expr->v); p && *p)
   {
-    auto inner = analyzeExpr((*p)->value, owner);
+    auto inner = analyzeExpr((*p)->value, owner, expected);
     if (!inner.IsSuccess())
       return inner;
 

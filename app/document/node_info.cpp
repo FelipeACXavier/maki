@@ -26,6 +26,7 @@ NodeSaveInfo::NodeSaveInfo()
     , mEvents({})
     , mTransitions({})
     , mFields({})
+    , mPorts({})
 {
 }
 
@@ -47,6 +48,8 @@ NodeSaveInfo::NodeSaveInfo(const NodeConfig& config)
 
   for (const auto& event : config.events)
     addEvent(std::make_shared<FlowSaveInfo>(event));
+
+  mPorts = config.ports;
 }
 
 QString NodeSaveInfo::getid() const
@@ -253,6 +256,16 @@ void NodeSaveInfo::clearChildren()
   mChildren.clear();
 }
 
+void NodeSaveInfo::addPort(const PortConfig& port)
+{
+  mPorts.append(port);
+}
+
+QVector<PortConfig> NodeSaveInfo::ports() const
+{
+  return mPorts;
+}
+
 // ==========================================================================
 // JSON serialization
 QJsonObject NodeSaveInfo::toJson() const
@@ -287,6 +300,10 @@ QJsonObject NodeSaveInfo::toJson() const
   for (const auto& property : getproperties())
     propertyArray.append(std::dynamic_pointer_cast<PropertyInfo>(property)->toJson());
 
+  QJsonArray portArray;
+  for (const auto& port : mPorts)
+    portArray.append(port.toJson());
+
   if (propertyArray.size() > 0)
     data[ConfigKeys::PROPERTIES] = propertyArray;
   if (fieldArray.size() > 0)
@@ -297,6 +314,8 @@ QJsonObject NodeSaveInfo::toJson() const
     data[ConfigKeys::FLOWS] = flowArray;
   if (eventArray.size() > 0)
     data[ConfigKeys::EVENTS] = eventArray;
+  if (portArray.size() > 0)
+    data[ConfigKeys::CONNECTORS] = portArray;
 
   data[ConfigKeys::ICON_PATH] = getIcon();
 
@@ -328,6 +347,10 @@ NodeSaveInfo NodeSaveInfo::fromJson(const QJsonObject& data)
   if (data.contains(ConfigKeys::PROPERTIES))
     for (const auto& node : data[ConfigKeys::PROPERTIES].toArray())
       info.addProperty(std::make_shared<PropertyInfo>(PropertyInfo::fromJson(node.toObject())));
+
+  if (data.contains(ConfigKeys::CONNECTORS))
+    for (const auto& node : data[ConfigKeys::CONNECTORS].toArray())
+      info.addPort(PortConfig(node.toObject()));
 
   info.setIcon(data[ConfigKeys::ICON_PATH].toString());
 

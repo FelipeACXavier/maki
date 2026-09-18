@@ -150,7 +150,6 @@ public:
   void addProperty(std::shared_ptr<PropertyInfo> parameter);
 
   void setProperty(const QString& key, const maki::Value& parameter);
-
   /**
    * @brief Removes a property from the node.
    * @param key The property key as a QString.
@@ -182,6 +181,9 @@ public:
    * @param key The field key as a QString.
    */
   void removeField(const QString& key);
+
+  void addPort(const PortConfig& port);
+  QVector<PortConfig> ports() const;
 
   /**
    * @brief Adds a flow to the node.
@@ -263,6 +265,7 @@ private:
   QVector<std::shared_ptr<IFlow>> mEvents;             /// A vector of flows associated with the node.
   QVector<std::shared_ptr<ITransition>> mTransitions;  /// A vector of transitions for the node.
   QVector<std::shared_ptr<IParameter>> mFields;        /// A vector of fields for the node.
+  QVector<PortConfig> mPorts;                          /// A vector of ports for the node.
 };
 
 /**

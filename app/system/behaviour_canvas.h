@@ -37,7 +37,7 @@ public:
    * @param node A pointer to the node of interest
    * @return True if the node allows more transitions, and false otherwise.
    */
-  bool canAddTransition(NodeItem* node) const override;
+  bool canAddTransition(NodeItem* node, PortItem* port) const override;
 
   /**
    * @brief Gets the next transition configuration for a given node

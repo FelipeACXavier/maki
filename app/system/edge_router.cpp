@@ -168,29 +168,17 @@ QHash<const TransitionItem*, QPainterPath> EdgeRouter::route(const QList<NodeIte
     if (!source || !target)
       continue;
 
-    const auto sourceRect = source->sceneNodeRect();
-    const auto targetRect = target->sceneNodeRect();
+    const auto srcPoint = source->outgoingPortAnchorForEvent(transition->getEvent());
+    const auto dstPoint = target->incomingPortAnchor();
 
     auto* conn = new Avoid::ConnRef(&router);
     if (!transition->getEvent().isEmpty() && option() == Option::MANHATTAN)
-    {
-      if (transition->getEvent() == "on error")
-        conn->setSourceEndpoint(Avoid::ConnEnd(Avoid::Point(sourceRect.center().x(), sourceRect.top()),
-                                               Avoid::ConnDirUp));
-      else if (transition->getEvent() == "on abort")
-        conn->setSourceEndpoint(Avoid::ConnEnd(Avoid::Point(sourceRect.center().x(), sourceRect.bottom()),
-                                               Avoid::ConnDirDown));
-      else
-        conn->setSourceEndpoint(Avoid::ConnEnd(Avoid::Point(sourceRect.right(), sourceRect.center().y()),
-                                               Avoid::ConnDirRight));
-    }
+      conn->setSourceEndpoint(Avoid::ConnEnd(Avoid::Point(srcPoint.x(), srcPoint.y()), Avoid::ConnDirUp));
     else
-    {
-      conn->setSourceEndpoint(Avoid::ConnEnd(Avoid::Point(sourceRect.right(), sourceRect.center().y()),
-                                             Avoid::ConnDirRight));
-    }
-    conn->setDestEndpoint(Avoid::ConnEnd(Avoid::Point(targetRect.left(), targetRect.center().y()),
-                                         Avoid::ConnDirLeft));
+      conn->setSourceEndpoint(Avoid::ConnEnd(Avoid::Point(srcPoint.x(), srcPoint.y()), Avoid::ConnDirRight));
+
+    conn->setDestEndpoint(Avoid::ConnEnd(Avoid::Point(dstPoint.x(), dstPoint.y()), Avoid::ConnDirLeft));
+
     if (option() == Option::MANHATTAN)
       conn->setRoutingType(Avoid::ConnType_Orthogonal);
     else

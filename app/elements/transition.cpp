@@ -68,9 +68,7 @@ void TransitionItem::done(NodeItem* source, NodeItem* destination)
   mSource = source;
   mDestination = destination;
 
-  // Make sure line is update with new control points
-  move(mStorage->getsrcId(), mStorage->srcPoint());
-  move(mStorage->getdstId(), mStorage->dstPoint());
+  updatePath();
 }
 
 void TransitionItem::setEdge(Edge edge)
@@ -91,15 +89,16 @@ NodeItem* TransitionItem::destination() const
 void TransitionItem::move(const QString& id, QPointF pos)
 {
   if (id == mStorage->getsrcId())
-    mStorage->setSrcPoint(mSource ? mSource->edgePointToward(mDestination->sceneNodeRect().center()) : pos);
+    mStorage->setSrcPoint(mSource ? mSource->outgoingPortAnchorForEvent(getEvent()) : pos);
   else if (id == mStorage->getdstId())
-    mStorage->setDstPoint(mDestination ? mDestination->edgePointToward(mSource->sceneNodeRect().center()) : pos);
+    mStorage->setDstPoint(mDestination ? mSource->incomingPortAnchor() : pos);
   else
     return;
 
-  const auto canvas = static_cast<Canvas*>(scene());
+  const auto canvas = qobject_cast<Canvas*>(scene());
   if (!canvas)
     return;
+
   const auto router = canvas->router();
   if (!router)
     return;
@@ -118,17 +117,14 @@ void TransitionItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
   if (mLabel)
     mLabel->setDefaultTextColor(Config::FOREGROUND);
 
-  QLineF line = path().currentPosition() == path().pointAtPercent(1.0)
-                    ? QLineF(path().pointAtPercent(0.99), path().pointAtPercent(1.0))
-                    : QLineF(path().pointAtPercent(0.98), path().pointAtPercent(1.0));
+  QLineF line = path().currentPosition() == path().pointAtPercent(1.0) ? QLineF(path().pointAtPercent(0.99), path().pointAtPercent(1.0))
+                                                                       : QLineF(path().pointAtPercent(0.98), path().pointAtPercent(1.0));
 
   double angle = std::atan2(-line.dy(), line.dx());
   const qreal arrowSize = 10;
 
-  QPointF arrowP1 = line.p2() - QPointF(std::cos(angle + M_PI / 6) * arrowSize,
-                                        -std::sin(angle + M_PI / 6) * arrowSize);
-  QPointF arrowP2 = line.p2() - QPointF(std::cos(angle - M_PI / 6) * arrowSize,
-                                        -std::sin(angle - M_PI / 6) * arrowSize);
+  QPointF arrowP1 = line.p2() - QPointF(std::cos(angle + M_PI / 6) * arrowSize, -std::sin(angle + M_PI / 6) * arrowSize);
+  QPointF arrowP2 = line.p2() - QPointF(std::cos(angle - M_PI / 6) * arrowSize, -std::sin(angle - M_PI / 6) * arrowSize);
 
   QPolygonF arrowHead;
   arrowHead << line.p2() << arrowP1 << arrowP2;
@@ -161,7 +157,7 @@ void TransitionItem::updatePath(QPainterPath painterPath)
 
   if (painterPath.isEmpty())
   {
-    const auto canvas = static_cast<Canvas*>(scene());
+    const auto canvas = qobject_cast<Canvas*>(scene());
     if (!canvas)
       return;
 
@@ -169,12 +165,9 @@ void TransitionItem::updatePath(QPainterPath painterPath)
     if (!router)
       return;
 
-    QPointF fromCenter = mSource->sceneNodeRect().center();
-    QPointF toCenter = mDestination->sceneNodeRect().center();
-
     // Compute edge points toward the other node
-    const QPointF start = mSource->edgePointToward(toCenter);
-    const QPointF end = mDestination->edgePointToward(fromCenter);
+    const QPointF start = mSource->outgoingPortAnchorForEvent(getEvent());
+    const QPointF end = mDestination->incomingPortAnchor();
 
     setPath(router->route(start, end, {}));
   }
@@ -182,6 +175,7 @@ void TransitionItem::updatePath(QPainterPath painterPath)
   {
     setPath(painterPath);
   }
+
   updateLabelPosition();
   prepareGeometryChange();
 }
@@ -223,8 +217,7 @@ void TransitionItem::updateLabelPosition()
   QPointF labelPos = midPoint + offset;
 
   QSizeF labelSize = mLabel->boundingRect().size();
-  mLabel->setPos(labelPos.x() - labelSize.width() / 2,
-                 labelPos.y() - labelSize.height() / 2);
+  mLabel->setPos(labelPos.x() - labelSize.width() / 2, labelPos.y() - labelSize.height() / 2);
 }
 
 QString TransitionItem::getEvent() const

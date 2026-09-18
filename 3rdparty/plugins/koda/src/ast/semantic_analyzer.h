@@ -100,7 +100,7 @@ private:
   VoidResult resolveCapabilityData(const PEventCall& astCall, ResolvedCall& call, SymbolId owner);
   Result<ResolvedArgumentSource> resolveArgumentSource(const PExpr& expr, const types::TypeReference& expectedType, SymbolId owner);
 
-  Result<std::vector<koda::types::TypeReference>> analyseArgs(const PEventCall& call, SymbolId owner);
+  Result<std::vector<koda::types::TypeReference>> analyseArgs(const PEventCall& call, SymbolId owner, const Symbol* event);
   bool compatible(const types::TypeReference& expected, const types::TypeReference& actual);
   bool isVisible(uint32_t producerFlow, uint32_t consumerFlow) const;
 };

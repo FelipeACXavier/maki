@@ -176,6 +176,38 @@ BehaviourConfig::BehaviourConfig(const QJsonObject& object)
     code = object["code"].toString();
 }
 
+PortConfig::PortConfig()
+{
+}
+
+PortConfig::PortConfig(const QJsonObject& object)
+{
+  if (object.contains(ConfigKeys::ID))
+    id = object[ConfigKeys::ID].toString();
+  else
+    setInvalid("No id provided for port");
+
+  if (object.contains(ConfigKeys::POSITION))
+    position = object[ConfigKeys::POSITION].toString();
+
+  if (object.contains(ConfigKeys::TYPE))
+    type = Types::PortFromString(object[ConfigKeys::TYPE].toString());
+
+  if (type == Types::Port::UNKNOWN)
+    setInvalid("Invalid port type provided");
+}
+
+QJsonObject PortConfig::toJson() const
+{
+  QJsonObject json;
+
+  json[ConfigKeys::ID] = id;
+  json[ConfigKeys::POSITION] = position;
+  json[ConfigKeys::TYPE] = Types::PortToString(type);
+
+  return json;
+}
+
 HelpConfig::HelpConfig()
 {
 }
@@ -278,6 +310,18 @@ NodeConfig::NodeConfig(const QJsonObject& object)
       setInvalid(help.errorMessage);
   }
 
+  if (object.contains(ConfigKeys::CONNECTORS) && object[ConfigKeys::CONNECTORS].isArray())
+  {
+    for (const auto& connector : object[ConfigKeys::CONNECTORS].toArray())
+    {
+      auto port = PortConfig(connector.toObject());
+      if (!port.isValid())
+        setInvalid(port.errorMessage);
+
+      ports.append(port);
+    }
+  }
+
   if (object.contains("properties"))
   {
     for (const auto& property : object["properties"].toArray())
@@ -340,6 +384,7 @@ QDataStream& operator<<(QDataStream& out, const NodeConfig& config)
   out << config.libraryType;
   out << config.events;
   out << config.transitions;
+  out << config.ports;
 
   return out;
 }
@@ -355,6 +400,7 @@ QDataStream& operator>>(QDataStream& in, NodeConfig& config)
   in >> config.libraryType;
   in >> config.events;
   in >> config.transitions;
+  in >> config.ports;
 
   return in;
 }
@@ -388,12 +434,31 @@ QDataStream& operator>>(QDataStream& in, BodyConfig& config)
 QDataStream& operator<<(QDataStream& out, const HelpConfig& config)
 {
   out << config.message;
-
   return out;
 }
 
 QDataStream& operator>>(QDataStream& in, HelpConfig& config)
 {
+  in >> config.message;
+  return in;
+}
+
+// ===========================================================================================================
+// PortConfig
+QDataStream& operator<<(QDataStream& out, const PortConfig& config)
+{
+  out << config.id;
+  out << config.position;
+  out << config.type;
+
+  return out;
+}
+
+QDataStream& operator>>(QDataStream& in, PortConfig& config)
+{
+  in >> config.id;
+  in >> config.position;
+  in >> config.type;
   return in;
 }
 

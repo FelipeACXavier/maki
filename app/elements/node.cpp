@@ -64,6 +64,15 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
     mStorage->addEvent(std::make_shared<FlowSaveInfo>(event));
   }
 
+  for (const auto& port : config()->ports)
+    mPorts[port.type] = new PortItem(port.type, this);
+
+  if (config()->ports.isEmpty() && config()->libraryType == Types::LibraryTypes::PIPELINE)
+  {
+    mPorts[Types::Port::IN] = new PortItem(Types::Port::IN, this);
+    mPorts[Types::Port::OUT] = new PortItem(Types::Port::OUT, this);
+  }
+
   // Add icon if it exists
   if (!mStorage->getIcon().isEmpty())
     setIcon(AppPaths::icon(config()->body.iconPath), config()->body.iconColor);
@@ -75,7 +84,8 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
   updatePosition(snapToGrid(initialPosition - boundingRect().center(), Config::GRID_SIZE));
   mLastPosition = pos();
 
-  LOG_DEBUG("{} created at: ({}, {}) with size ({}, {}) and scale {}", id(), pos().x(), pos().y(), mSize.width(), mSize.height(), baseScale());
+  LOG_DEBUG("{} created at: ({}, {}) with size ({}, {}), scale {} and {} ports", id(), pos().x(), pos().y(), mSize.width(), mSize.height(), baseScale(),
+            config()->ports.size());
 }
 
 NodeItem::~NodeItem()
@@ -124,6 +134,36 @@ QRectF NodeItem::nodeRect() const
 QRectF NodeItem::sceneNodeRect() const
 {
   return mapRectToScene(nodeRect());
+}
+
+PortItem* NodeItem::getPort(Types::Port type) const
+{
+  if (!mPorts.contains(type))
+    return nullptr;
+
+  return mPorts[type];
+}
+
+QPointF NodeItem::incomingPortAnchor() const
+{
+  if (auto port = getPort(Types::Port::IN))
+    return port->anchorScenePos();
+
+  return sceneBoundingRect().center();
+}
+
+QPointF NodeItem::outgoingPortAnchorForEvent(const QString& event) const
+{
+  for (const auto& port : mPorts)
+  {
+    if (!port || !port->isOutgoing())
+      continue;
+
+    if (port->defaultTransitionEvent() == event)
+      return port->anchorScenePos();
+  }
+
+  return sceneBoundingRect().center();
 }
 
 void NodeItem::highlight(const QColor& color, const QString& message, int durationMs)

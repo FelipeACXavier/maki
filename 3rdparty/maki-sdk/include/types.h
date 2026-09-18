@@ -111,6 +111,18 @@ enum class LibraryTypes
 Types::LibraryTypes LibraryTypeFromString(const QString& type);
 QString LibraryTypeToString(LibraryTypes type);
 
+enum Port
+{
+  UNKNOWN = 0,
+  IN,
+  OUT,
+  ABORT,
+  ERROR
+};
+
+Types::Port PortFromString(const QString& type);
+QString PortToString(Port type);
+
 static const QString INFERRED = "Inferred";
 static const std::string KODA_INFERRED = "_";
 }  // namespace Types

@@ -1566,6 +1566,28 @@
               }
             }
           ],
+          "connectors": [
+            {
+              "id": "input",
+              "type": "in",
+              "position": "west"
+            },
+            {
+              "id": "output",
+              "type": "out",
+              "position": "west"
+            },
+            {
+              "id": "abort",
+              "type": "abort",
+              "position": "west"
+            },
+            {
+              "id": "error",
+              "type": "error",
+              "position": "west"
+            }
+          ],
           "controls": []
         },
         {
@@ -1619,6 +1641,28 @@
               }
             }
           ],
+          "connectors": [
+            {
+              "id": "input",
+              "type": "in",
+              "position": "west"
+            },
+            {
+              "id": "output",
+              "type": "out",
+              "position": "west"
+            },
+            {
+              "id": "abort",
+              "type": "abort",
+              "position": "west"
+            },
+            {
+              "id": "error",
+              "type": "error",
+              "position": "west"
+            }
+          ],
           "controls": []
         },
         {
@@ -1640,6 +1684,18 @@
               "type": "void",
               "control": "color",
               "default": { "kind": "string", "value": "#74a892" }
+            }
+          ],
+          "connectors": [
+            {
+              "id": "input",
+              "type": "in",
+              "position": "west"
+            },
+            {
+              "id": "output",
+              "type": "out",
+              "position": "west"
             }
           ],
           "controls": []
@@ -1685,6 +1741,28 @@
               "label": "else",
               "event": "else",
               "modifiable": false
+            }
+          ],
+          "connectors": [
+            {
+              "id": "input",
+              "type": "in",
+              "position": "west"
+            },
+            {
+              "id": "output",
+              "type": "out",
+              "position": "west"
+            },
+            {
+              "id": "abort",
+              "type": "abort",
+              "position": "west"
+            },
+            {
+              "id": "error",
+              "type": "error",
+              "position": "west"
             }
           ],
           "behaviour": {},
@@ -1755,6 +1833,28 @@
               "info": "Delay in milliseconds between consecutive iterations. For example, a value of 1000 executes the loop once per second."
             }
           ],
+          "connectors": [
+            {
+              "id": "input",
+              "type": "in",
+              "position": "west"
+            },
+            {
+              "id": "output",
+              "type": "out",
+              "position": "west"
+            },
+            {
+              "id": "abort",
+              "type": "abort",
+              "position": "west"
+            },
+            {
+              "id": "error",
+              "type": "error",
+              "position": "west"
+            }
+          ],
           "behaviour": {},
           "help": {
             "message": "Executes the contained strategy repeatedly. Configure the number of iterations and the interval between executions using the block properties."
@@ -1773,6 +1873,13 @@
               "id": "name",
               "type": "string",
               "default": { "kind": "string", "value": "Link in" }
+            }
+          ],
+          "connectors": [
+            {
+              "id": "output",
+              "type": "out",
+              "position": "west"
             }
           ],
           "behaviour": {},
@@ -1811,6 +1918,13 @@
                   }
                 }
               }
+            }
+          ],
+          "connectors": [
+            {
+              "id": "input",
+              "type": "in",
+              "position": "west"
             }
           ],
           "behaviour": {},

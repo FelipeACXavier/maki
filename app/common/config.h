@@ -141,6 +141,33 @@ public:
 };
 
 /**
+ * @brief Configuration for port information.
+ */
+class PortConfig : public ConfigBase
+{
+public:
+  /**
+   * @brief Default constructor.
+   */
+  PortConfig();
+
+  /**
+   * @brief Constructor from JSON object.
+   * @param object The JSON object to initialize the configuration from.
+   */
+  PortConfig(const QJsonObject& object);
+
+  QJsonObject toJson() const;
+
+  Types::Port type = Types::Port::UNKNOWN;
+  QString id = "";
+  QString position = "";
+
+  friend QDataStream& operator<<(QDataStream& out, const PortConfig& config);
+  friend QDataStream& operator>>(QDataStream& in, PortConfig& config);
+};
+
+/**
  * @brief Configuration for help information.
  */
 class HelpConfig : public ConfigBase
@@ -227,6 +254,7 @@ public:
   QVector<PropertyConfig> properties = {};     /// List of properties associated with the node.
   QVector<FlowConfig> events = {};             /// List of events associated with the node.
   QVector<TransitionConfig> transitions = {};  /// List of transitions associated with the node.
+  QVector<PortConfig> ports = {};
 
   Types::LibraryTypes libraryType = Types::LibraryTypes::UNKNOWN;  /// Type of the library.
 

@@ -9,6 +9,7 @@
 #include "config.h"
 #include "control_widget.h"
 #include "node_base.h"
+#include "port.h"
 #include "save_info.h"
 #include "transition.h"
 #include "types.h"
@@ -179,6 +180,11 @@ public:
    * @param name The new name for the node.
    */
   void renameNode(const QString& name);
+
+  PortItem* getPort(Types::Port type) const;
+
+  QPointF incomingPortAnchor() const;
+  QPointF outgoingPortAnchorForEvent(const QString& event) const;
 
   /**
    * @brief Returns the parent node of this item.
@@ -443,6 +449,7 @@ private:
   bool mIsResizing{false};             /// Flag indicating if the node is being resized.
   QPointF mResizeStartMousePos{0, 0};  /// Mouse position when resizing started.
   QSizeF mResizeStartSize{0, 0};       /// Size of the node when resizing started.
+  QMap<Types::Port, PortItem*> mPorts;
 
   /**
    * @brief Updates extra positions related to this node.

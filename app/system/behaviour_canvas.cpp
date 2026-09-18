@@ -82,12 +82,20 @@ void BehaviourCanvas::updateParent(NodeItem* node, std::shared_ptr<NodeSaveInfo>
     mFlow->removeNode(node);
 }
 
-bool BehaviourCanvas::canAddTransition(NodeItem* node) const
+bool BehaviourCanvas::canAddTransition(NodeItem* node, PortItem* port) const
 {
+  if (!node || !port)
+    return false;
+
   int index = 0;
   for (const auto& t : mFlow->transitions())
+  {
     if (t->source()->id() == node->id())
       ++index;
+
+    if ((port->isAbort() || port->isError()) && port->nodeItem() == node && t->getEvent() == port->defaultTransitionEvent())
+      return false;
+  }
 
   LOG_TRACE("canAddTransition: {} <= {}", index, node->config()->transitions.size());
   return node->config()->transitions.isEmpty() || index <= node->config()->transitions.size();
@@ -153,11 +161,18 @@ void BehaviourCanvas::onNodeMoved(NodeItem* node, bool done)
   if (!node)
     return;
 
+  QList<TransitionItem*> transitions;
   for (const auto& transition : mFlow->transitions())
     if (transition->source()->id() == node->id() || transition->destination()->id() == node->id())
+    {
       transition->updatePath();
+      transitions.append(transition);
+    }
 
   Canvas::onNodeMoved(node, done);
+
+  if (done)
+    autoRoute(transitions);
 }
 
 bool BehaviourCanvas::insertDroppedNodeOnTransition(TransitionItem* transition, NodeSaveInfo info)
