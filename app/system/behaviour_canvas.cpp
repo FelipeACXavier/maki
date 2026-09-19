@@ -92,8 +92,10 @@ bool BehaviourCanvas::canAddTransition(NodeItem* node, PortItem* port) const
   {
     if (t->source()->id() == node->id())
       ++index;
+    else
+      continue;
 
-    if ((port->isAbort() || port->isError()) && port->nodeItem() == node && t->getEvent() == port->defaultTransitionEvent())
+    if ((port->isAbort() || port->isError()) && t->getEvent() == port->defaultTransitionEvent())
       return false;
   }
 
