@@ -1676,6 +1676,39 @@ Result<LibraryComponent> createCapabilityArmour(Model& model, const std::string&
   });
 }
 
+Result<LibraryComponent> createFlowArmour(Model& model, const std::string& outdir, SymbolId componentId)
+{
+  return createComponent(model, outdir, "flow_armour", componentId, [&](LibraryComponent& component, std::ostringstream& out) {
+    out << "import iaction.dzn;\n";
+    out << "import iabort.dzn;\n\n";
+
+    out << std::format("component {} {{\n", component.name);
+    out << "  provides iaction api;\n";
+    out << "  provides iabort abort;\n\n";
+
+    out << "  requires iaction resource;\n\n";
+
+    out << "  behaviour {\n";
+    out << "    on api.trigger(): {\n";
+    out << "      reply(resource.trigger());\n";
+    out << "    }\n";
+    out << "    on api.abort(): {\n";
+    out << "      reply(resource.abort());\n";
+    out << "    }\n";
+    out << "    on api.reset(): {\n";
+    out << "      reply(resource.reset());\n";
+    out << "    }\n";
+    out << "    on abort.abort(): {\n";
+    out << "      reply(resource.abort());\n";
+    out << "    }\n";
+    out << "    on resource.success(): api.success();\n";
+    out << "    on resource.failure(): api.failure();\n";
+    out << "    on resource.aborted(): api.aborted();\n";
+    out << "  }\n";
+    out << "}\n";
+  });
+}
+
 // ===========================================================================================================
 // Helper components
 VoidResult createAlarmComponent(Model& model, const std::string& outdir)

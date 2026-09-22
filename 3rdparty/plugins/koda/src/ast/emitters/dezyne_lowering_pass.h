@@ -32,7 +32,8 @@ private:
       Action,
       Abort,
       Signal,
-      Flow
+      Flow,
+      FlowAbort
     } kind = Kind::Action;
 
     koda::SymbolId flow = koda::InvalidSymbol;
@@ -64,6 +65,7 @@ private:
         case CallUse::Kind::Flow:
           return CallSiteKind::Flow;
         case CallUse::Kind::Abort:
+        case CallUse::Kind::FlowAbort:
           return CallSiteKind::Abort;
         default:
         case CallUse::Kind::Action:
@@ -76,6 +78,7 @@ private:
       switch (kind)
       {
         case CallUse::Kind::Abort:
+        case CallUse::Kind::FlowAbort:
           return PortProtocol::Abort;
         case CallUse::Kind::Signal:
           return PortProtocol::Signal;
@@ -175,7 +178,10 @@ private:
   static std::string lower(std::string value);
   static std::string componentName(const std::string& name);
   static std::string flowName(const std::string& name);
+  std::string flowApi(SymbolId flow) const;
+  std::string flowAbort(SymbolId flow) const;
 
+  bool usesFlowAbort(SymbolId flow) const;
   bool usesCapabilityAbort(SymbolId receiver) const;
 
   std::vector<LoweringPass::CallUse> uniqueRequiredPorts(const FlowState& state) const;

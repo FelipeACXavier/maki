@@ -33,13 +33,30 @@ bool parseCommandLine(int argc, const char* argv[], koda::CompilerOptions& optio
       return true;
     }
     else if (arg == "-v")
+    {
       options.verbose = 1;
+    }
     else if (arg == "-vv")
+    {
       options.verbose = 2;
+    }
     else if (arg == "-vvv")
+    {
       options.verbose = 3;
+    }
     else if (arg == "--dry")
+    {
       options.dryRun = true;
+    }
+    else if (arg == "-e" || arg == "--emitter")
+    {
+      if (i + 1 >= argc)
+      {
+        error = "Missing value for " + arg;
+        return false;
+      }
+      options.emitters.push_back(argv[++i]);
+    }
     else if (arg == "-i" || arg == "--input")
     {
       if (i + 1 >= argc)
@@ -89,7 +106,8 @@ void printHelp(const char* programName)
             << "      --dry              Do not create any files, just print what would be done\n"
             << "  -h, --help             Show this help message\n"
             << "      --version          Show version information\n"
-            << "  -v                     Enable verbose output (can repeat: -vv, -vvv)\n";
+            << "  -v                     Enable verbose output (can repeat: -vv, -vvv)\n"
+            << "  -e  --emitter          Set the desired emitter. (dezyne, nuxmv, etc)\n";
 }
 
 void printVersion()
@@ -133,7 +151,11 @@ int main(int argc, const char* argv[])
   }
 
   koda::gPrintSpan = (options.verbose > 1);
-  logging::gMinLogLevel = (logging::LogLevel)(options.verbose + 1);
+  logging::gMinLogLevel = logging::LogLevel::Warning;
+  if (options.verbose == 3)
+    logging::gMinLogLevel = logging::LogLevel::Trace;
+  else if (options.verbose > 0)
+    logging::gMinLogLevel = logging::LogLevel::Debugging;
 
   koda::Compiler compiler;
   auto parsed = compiler.parse(options);

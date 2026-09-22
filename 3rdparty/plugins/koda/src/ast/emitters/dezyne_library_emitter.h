@@ -49,9 +49,9 @@ Result<LibraryComponent> createAbortHandlerComponent(Model& model, const std::st
 Result<LibraryComponent> createErrorHandlerComponent(Model& model, const std::string& outdir, SymbolId componentId);
 
 Result<LibraryComponent> createFailureComponent(Model& model, const std::string& outdir, SymbolId componentId);
-Result<LibraryComponent> createSelectorComponent(Model& model, const std::string& outdir, uint32_t conditionCount, uint32_t branchCount,
-                                                 SymbolId componentId);
+Result<LibraryComponent> createSelectorComponent(Model& model, const std::string& outdir, uint32_t conditionCount, uint32_t branchCount, SymbolId componentId);
 Result<LibraryComponent> createAbortCallComponent(Model& model, const std::string& outdir, SymbolId componentId);
+Result<LibraryComponent> createFlowArmour(Model& model, const std::string& outdir, SymbolId componentId);
 Result<LibraryComponent> createCapabilityArmour(Model& model, const std::string& outdir, const std::string& capabilityName, bool hasAbort,
                                                 const std::vector<std::string>& ports, SymbolId componentId);
 
@@ -64,7 +64,6 @@ Result<LibraryComponent> createConditionComponent(Model& model, const std::strin
 
 void createSelectorRecursion(uint32_t start, uint32_t instances, std::ostringstream& out, const std::string& indent);
 void createSequenceDoneRecursion(bool fromIdle, uint32_t start, uint32_t instances, std::ostringstream& out, const std::string& indent);
-void createParallelDoneRecursion(bool fromIdle, bool fromDone, uint32_t start, uint32_t instances, std::ostringstream& out,
-                                 const std::string& indent);
+void createParallelDoneRecursion(bool fromIdle, bool fromDone, uint32_t start, uint32_t instances, std::ostringstream& out, const std::string& indent);
 
 }  // namespace koda::dezyne

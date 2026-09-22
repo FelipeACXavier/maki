@@ -50,7 +50,13 @@ VoidResult LoweringPass::run(const ir::Program& program)
   // Then count their usages across all flows.
   for (const auto& component : program.components)
     for (const auto& flow : component.flows)
+    {
       countTriggers(flow.strategy);
+      // Make sure flows also have abort events
+      auto events = mSymbols.children(flow.symbol, koda::SymbolKind::Event);
+      if (auto event = events.size() == 1 ? mSymbols.get(events.front()) : nullptr; event)
+        mAbortEvents.insert(event->id);
+    }
 
   for (const auto& component : program.components)
     if (component.kind == ir::ComponentKind::Capability)
@@ -166,6 +172,31 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
     });
   }
 
+  // Create the armour for the flows which are externally aborted
+  bool hasFlowArmour = false;
+  for (const auto& flow : task.flows)
+  {
+    if (!usesFlowAbort(flow.symbol))
+      continue;
+
+    hasFlowArmour = true;
+    const auto name = lower(flow.name);
+    const auto flowInstance = "f_" + name;
+    const auto armourInstance = name + "_armour";
+
+    LibraryComponent libArmour;
+    ASSIGN_OR_RETURN_ON_FAILURE(libArmour, createFlowArmour(mModel, mOptions.outputDir, componentId));
+    mModel.declareInstance(componentId, armourInstance, libArmour.name, {componentId, flow.span});
+
+    // The armour owns the actual generated flow.
+    connections.push_back({
+        .lhs = armourInstance + ".resource",
+        .rhs = flowInstance + ".api",
+        .span = flow.span,
+        .kind = PortProtocol::Action,
+    });
+  }
+
   // We must update the alarm name since we have multiple alarms at the top level
   uint32_t alarmId = 0;
   for (const auto& flow : task.flows)
@@ -181,8 +212,9 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
       {
         connections.push_back({
             .lhs = flowInstance + "." + call.localPort,
-            .rhs = "f_" + lower(sourceName(call.target)) + ".api",
+            .rhs = flowApi(call.target),
             .span = call.span,
+            .kind = PortProtocol::Action,
         });
 
         mModel.declareCallSite({
@@ -202,6 +234,18 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
             .outputSlots = call.outputSlots,
 
             .origin = {.sourceSymbol = call.target, .sourceSpan = call.span},
+        });
+
+        continue;
+      }
+
+      if (call.kind == CallUse::Kind::FlowAbort)
+      {
+        connections.push_back({
+            .lhs = flowInstance + "." + call.localPort,
+            .rhs = flowAbort(call.receiver),
+            .span = call.span,
+            .kind = PortProtocol::Abort,
         });
 
         continue;
@@ -352,9 +396,13 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
     out << std::format("import {}_armour.dzn;\n", lower(name));  // TODO: This should contain the actual name
   }
 
+  if (hasFlowArmour)
+    out << "import flow_armour.dzn;\n";
+
   for (const auto& flow : task.flows)
   {
     out << std::format("import {}.dzn;\n", lower(flow.name));
+
     const auto flowInstance = std::format("f_{}", sourceName(flow.symbol));
     const auto resultIt = mFlows.find(flow.symbol);
 
@@ -1057,8 +1105,7 @@ Result<std::string> LoweringPass::lowerCall(const ir::Call& call, FlowState& sta
     return local;
   }
 
-  // Trigger and In events both become callable iaction ports and may occur
-  // multiple times.
+  // Trigger and In events both become callable iaction ports and may occur multiple times.
   if (mActionEvents.contains(call.target))
   {
     if (signal)
@@ -1110,9 +1157,8 @@ Result<std::string> LoweringPass::lowerCall(const ir::Call& call, FlowState& sta
     return local;
   }
 
-  // Abort/action/signal resources that do not have multiplicity keep one
-  // flow-local port. Repeated internal users will be connected through a
-  // flow-local arbiter.
+  // Abort/action/signal resources that do not have multiplicity keep one flow-local port.
+  // Repeated internal users will be connected through a flow-local arbiter.
   bool isAbort = mAbortEvents.contains(call.target);
   const auto local = std::format("{}_{}", sourceName(call.receiver), sourceName(call.target));
   if (isAbort && !signal)
@@ -1134,8 +1180,13 @@ Result<std::string> LoweringPass::lowerCall(const ir::Call& call, FlowState& sta
         .kind = PortProtocol::Abort,
     });
 
+    auto receiver = mSymbols.get(call.receiver);
+    auto abortKind = CallUse::Kind::Abort;
+    if (receiver && receiver->kind == koda::SymbolKind::Flow)
+      abortKind = CallUse::Kind::FlowAbort;
+
     state.calls.push_back({
-        .kind = CallUse::Kind::Abort,
+        .kind = abortKind,
         .flow = state.flow,
         .localPort = abortPort,
         .receiver = call.receiver,
@@ -1330,20 +1381,38 @@ void LoweringPass::countHandlerTriggers(const ir::PHandler& handler)
   countTriggers(handler->body);
 }
 
-bool LoweringPass::usesCapabilityAbort(SymbolId receiver) const
+bool LoweringPass::usesFlowAbort(SymbolId flow) const
 {
-  LOG_TRACE("Looking for abort use with receiver: {}", receiver);
-  for (const auto& [_, flow] : mFlows)
-  {
-    for (const auto& call : flow.calls)
-    {
-      LOG_TRACE("  Receiver {} vs {} and type: {}", call.receiver, receiver, (int)call.kind);
-      if (call.kind == CallUse::Kind::Abort && call.receiver == receiver)
+  for (const auto& [_, result] : mFlows)
+    for (const auto& call : result.calls)
+      if (call.kind == CallUse::Kind::FlowAbort && call.receiver == flow)
         return true;
-    }
-  }
 
   return false;
+}
+
+bool LoweringPass::usesCapabilityAbort(SymbolId receiver) const
+{
+  for (const auto& [_, flow] : mFlows)
+    for (const auto& call : flow.calls)
+      if (call.kind == CallUse::Kind::Abort && call.receiver == receiver)
+        return true;
+
+  return false;
+}
+
+std::string LoweringPass::flowApi(SymbolId flow) const
+{
+  const auto name = lower(sourceName(flow));
+  if (usesFlowAbort(flow))
+    return name + "_armour.api";
+
+  return "f_" + name + ".api";
+}
+
+std::string LoweringPass::flowAbort(SymbolId flow) const
+{
+  return lower(sourceName(flow)) + "_armour.abort";
 }
 
 std::string LoweringPass::sourceName(koda::SymbolId id) const

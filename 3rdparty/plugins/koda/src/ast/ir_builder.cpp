@@ -238,6 +238,7 @@ Result<ir::PStrategy> IRBuilder::buildStrategy(const PStrategy& strategy, Symbol
 
       x.items.push_back(b.Value());
     }
+    out->name = "sequence";
     out->value = std::move(x);
   }
   else if (auto p = std::get_if<PJoin>(&strategy->v); p && *p)
@@ -251,6 +252,7 @@ Result<ir::PStrategy> IRBuilder::buildStrategy(const PStrategy& strategy, Symbol
 
       x.items.push_back(b.Value());
     }
+    out->name = "join";
     out->value = std::move(x);
   }
   else if (auto p = std::get_if<PEither>(&strategy->v); p && *p)
@@ -264,6 +266,7 @@ Result<ir::PStrategy> IRBuilder::buildStrategy(const PStrategy& strategy, Symbol
 
       x.items.push_back(b.Value());
     }
+    out->name = "either";
     out->value = std::move(x);
   }
   else if (auto p = std::get_if<PWithin>(&strategy->v); p && *p)
@@ -285,6 +288,7 @@ Result<ir::PStrategy> IRBuilder::buildStrategy(const PStrategy& strategy, Symbol
 
       x.handlers.push_back(bh.Value());
     }
+    out->name = "within";
     out->value = std::move(x);
   }
   else if (auto p = std::get_if<PRepeat>(&strategy->v); p && *p)
@@ -302,18 +306,22 @@ Result<ir::PStrategy> IRBuilder::buildStrategy(const PStrategy& strategy, Symbol
 
       x.handlers.push_back(bh.Value());
     }
+    out->name = "repeat";
     out->value = std::move(x);
   }
   else if (std::holds_alternative<PSuccess>(strategy->v))
   {
+    out->name = "end";
     out->value = ir::Strategy::End{};
   }
   else if (std::holds_alternative<PFailure>(strategy->v))
   {
+    out->name = "failure";
     out->value = ir::Strategy::Failure{};
   }
   else if (std::holds_alternative<PContinue>(strategy->v))
   {
+    out->name = "continue";
     out->value = ir::Strategy::Continue{};
   }
   else if (auto p = std::get_if<PTaskCall>(&strategy->v); p && *p)
@@ -336,6 +344,7 @@ Result<ir::PStrategy> IRBuilder::buildStrategy(const PStrategy& strategy, Symbol
       x.handlers.push_back(bh.Value());
     }
 
+    out->name = (*p)->call->receiver + "_" + (*p)->call->name;
     out->value = std::move(x);
   }
   else if (auto p = std::get_if<PParen>(&strategy->v); p && *p)
@@ -369,12 +378,14 @@ Result<ir::PStrategy> IRBuilder::buildStrategy(const PStrategy& strategy, Symbol
       choose.options.push_back(std::move(when));
     }
 
+    out->name = "choose";
     out->value = std::move(choose);
   }
   else
     return Result<ir::PStrategy>::Failed("Unsupported strategy node at {}", strategy->span.toString());
 
   out->id = std::format("{}_{}", strategy->id, owner);
+  out->owner = owner;
   if (mTraceMap)
     mTraceMap->mapIr(out->id, strategy->id);
 

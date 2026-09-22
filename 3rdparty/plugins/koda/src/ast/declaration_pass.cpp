@@ -107,10 +107,6 @@ VoidResult DeclarationPass::declareStatement(const PStatement& statement, Symbol
       if (!abortEventId.IsSuccess())
         return abortEventId;
 
-      // auto declaredStrategy = declareInsideStrategy(flow->strategy, owner);
-      // if (!declaredStrategy)
-      //   return declaredStrategy;
-
       // We also need to declare the flow arguments, of course
       for (const auto& arg : flow->args)  // This is an awful name, by the way...
       {

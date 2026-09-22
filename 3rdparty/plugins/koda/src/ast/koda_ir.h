@@ -235,6 +235,8 @@ struct Strategy
   };
 
   std::string id;
+  std::string name;
+  SymbolId owner = InvalidSymbol;
   std::variant<Sequence, Join, Either, Within, Repeat, End, Failure, Continue, Call, Choose> value;
   Span span;
 };
