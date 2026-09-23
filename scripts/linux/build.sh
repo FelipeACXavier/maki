@@ -9,6 +9,7 @@ function printHelp()
   echo "    --local-qt          | Path to the local Qt installation"
   echo "    --local-project     | Path to the local project"
   echo "    --clean             | Clean the build directory"
+  echo "    --no-test           | Do not build the tests"
   echo "    --prefix            | CMake QT install prefix"
   echo "    --docs              | Build docs"
   echo "    --list              | List available targets"
@@ -30,6 +31,7 @@ BUILD_PATH="$SOURCE_DIR/build/linux/debug"
 PREFIX_PATH="$HOME/Qt/$QT_VERSION/gcc_64"
 INSTALL_PREFIX="$SOURCE_DIR/release/linux"
 EXTRA_ARGS=""
+BUILD_TESTING="ON"
 
 while [[ $# -gt 0 ]]; do
   key="$1"
@@ -50,6 +52,10 @@ while [[ $# -gt 0 ]]; do
       ;;
       --docs)
       DOCS=1
+      shift
+      ;;
+      --no-test)
+      BUILD_TESTING="OFF"
       shift
       ;;
       --list)
@@ -81,6 +87,8 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+EXTRA_ARGS="${EXTRA_ARGS} -DBUILD_TESTING=${BUILD_TESTING}"
 
 echo "--------------------------------------"
 echo "Running with:"
