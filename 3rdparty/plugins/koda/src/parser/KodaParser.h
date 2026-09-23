@@ -14,17 +14,20 @@ public:
   enum {
     TASK = 1, CAPABILITY = 2, TYPE = 3, ENUM = 4, EXTENDS = 5, LIST = 6, 
     OPTIONAL = 7, MAP = 8, MAPPING = 9, TO = 10, ANNOTATIONS = 11, STRATEGY = 12, 
-    PARAMETERS = 13, ACTION = 14, SERVICE = 15, TOPIC = 16, TRIGGER = 17, 
-    RETURN = 18, ABORT = 19, ERROR = 20, IN = 21, OUT = 22, ON = 23, CONSUMES = 24, 
-    PRODUCES = 25, DATA = 26, REQ = 27, PRO = 28, SUCCESS = 29, FAILURE = 30, 
-    CONTINUE = 31, REPEAT = 32, JOIN = 33, EITHER = 34, WHEN = 35, CHOOSE = 36, 
-    WITHIN = 37, DO = 38, ELSE = 39, THEN = 40, EVERY = 41, ARROW = 42, 
-    PIPE = 43, EQ = 44, NEQ = 45, LEQ = 46, GEQ = 47, LT = 48, GT = 49, 
-    ASSIGN = 50, DOUBLE_COLON = 51, COLON = 52, COMMA = 53, SEMI = 54, DOT = 55, 
-    PLUS = 56, MINUS = 57, STAR = 58, SLASH = 59, NOT = 60, AND = 61, OR = 62, 
-    LPAREN = 63, RPAREN = 64, LBRACE = 65, RBRACE = 66, LBRACK = 67, RBRACK = 68, 
-    NATURAL = 69, REAL = 70, BOOLEAN = 71, IDENT = 72, STRING = 73, ANY = 74, 
-    LINE_COMMENT = 75, BLOCK_COMMENT = 76, WS = 77
+    PARAMETERS = 13, PROPERTIES = 14, ACTION = 15, SERVICE = 16, TOPIC = 17, 
+    IMPLIES = 18, WHILE = 19, ALWAYS = 20, EVENTUALLY = 21, NEXT = 22, NEVER = 23, 
+    NEGATION = 24, IF = 25, BETWEEN = 26, UNTIL = 27, IS = 28, WAS = 29, 
+    RUNNING = 30, STARTED = 31, REJECTED = 32, STOPPED = 33, ABORTED = 34, 
+    TRIGGER = 35, RETURN = 36, ABORT = 37, ERROR = 38, IN = 39, OUT = 40, 
+    ON = 41, CONSUMES = 42, PRODUCES = 43, DATA = 44, REQ = 45, PRO = 46, 
+    SUCCESS = 47, FAILURE = 48, CONTINUE = 49, REPEAT = 50, JOIN = 51, EITHER = 52, 
+    WHEN = 53, CHOOSE = 54, WITHIN = 55, DO = 56, ELSE = 57, THEN = 58, 
+    EVERY = 59, ARROW = 60, PIPE = 61, EQ = 62, NEQ = 63, LEQ = 64, GEQ = 65, 
+    LT = 66, GT = 67, ASSIGN = 68, DOUBLE_COLON = 69, COLON = 70, COMMA = 71, 
+    SEMI = 72, DOT = 73, PLUS = 74, MINUS = 75, STAR = 76, SLASH = 77, NOT = 78, 
+    AND = 79, OR = 80, LPAREN = 81, RPAREN = 82, LBRACE = 83, RBRACE = 84, 
+    LBRACK = 85, RBRACK = 86, NATURAL = 87, REAL = 88, BOOLEAN = 89, IDENT = 90, 
+    STRING = 91, ANY = 92, LINE_COMMENT = 93, BLOCK_COMMENT = 94, WS = 95
   };
 
   enum {
@@ -34,14 +37,18 @@ public:
     RuleMappingDeclaration = 10, RuleTypeReference = 11, RuleQualifiedName = 12, 
     RuleArgumentList = 13, RuleArgument = 14, RuleStatement = 15, RuleTasksBlock = 16, 
     RuleFlow = 17, RuleIdentList = 18, RuleVarsBlock = 19, RuleVariableStatement = 20, 
-    RuleActionBlock = 21, RuleServiceBlock = 22, RuleTopicBlock = 23, RuleRosDefStatement = 24, 
-    RuleReqDefStatement = 25, RuleEventDefStatement = 26, RuleDataBlock = 27, 
-    RuleStrategy = 28, RuleChooseWhenStatement = 29, RuleStrategyHandler = 30, 
-    RuleEventStatement = 31, RuleExprList = 32, RuleExpression = 33, RuleExprOr = 34, 
-    RuleExprAnd = 35, RuleExprCmp = 36, RuleCompOp = 37, RuleExprNot = 38, 
-    RuleExprAdd = 39, RuleExprMul = 40, RuleExprUnary = 41, RuleExprPrimary = 42, 
-    RuleRecordLiteral = 43, RuleRecordFieldInitializer = 44, RuleListLiteral = 45, 
-    RuleMapLiteral = 46, RuleMapFieldInitializer = 47, RuleIdentifier = 48
+    RulePropertiesBlock = 21, RulePropertyStatement = 22, RuleActionBlock = 23, 
+    RuleServiceBlock = 24, RuleTopicBlock = 25, RulePropertyExpr = 26, RulePropertyHelper = 27, 
+    RulePropertyImplication = 28, RulePropertyConditionOr = 29, RulePropertyConditionAnd = 30, 
+    RulePropertyConditionUntil = 31, RulePropertyConditionUnary = 32, RulePropertyConsequence = 33, 
+    RulePropertyObservation = 34, RulePropertyReference = 35, RuleRosDefStatement = 36, 
+    RuleReqDefStatement = 37, RuleEventDefStatement = 38, RuleDataBlock = 39, 
+    RuleStrategy = 40, RuleChooseWhenStatement = 41, RuleStrategyHandler = 42, 
+    RuleEventStatement = 43, RuleExprList = 44, RuleExpression = 45, RuleExprOr = 46, 
+    RuleExprAnd = 47, RuleExprCmp = 48, RuleCompOp = 49, RuleExprNot = 50, 
+    RuleExprAdd = 51, RuleExprMul = 52, RuleExprUnary = 53, RuleExprPrimary = 54, 
+    RuleRecordLiteral = 55, RuleRecordFieldInitializer = 56, RuleListLiteral = 57, 
+    RuleMapLiteral = 58, RuleMapFieldInitializer = 59, RuleIdentifier = 60
   };
 
   explicit KodaParser(antlr4::TokenStream *input);
@@ -82,9 +89,21 @@ public:
   class IdentListContext;
   class VarsBlockContext;
   class VariableStatementContext;
+  class PropertiesBlockContext;
+  class PropertyStatementContext;
   class ActionBlockContext;
   class ServiceBlockContext;
   class TopicBlockContext;
+  class PropertyExprContext;
+  class PropertyHelperContext;
+  class PropertyImplicationContext;
+  class PropertyConditionOrContext;
+  class PropertyConditionAndContext;
+  class PropertyConditionUntilContext;
+  class PropertyConditionUnaryContext;
+  class PropertyConsequenceContext;
+  class PropertyObservationContext;
+  class PropertyReferenceContext;
   class RosDefStatementContext;
   class ReqDefStatementContext;
   class EventDefStatementContext;
@@ -473,6 +492,7 @@ public:
     virtual size_t getRuleIndex() const override;
     TasksBlockContext *tasksBlock();
     VarsBlockContext *varsBlock();
+    PropertiesBlockContext *propertiesBlock();
     ActionBlockContext *actionBlock();
     ServiceBlockContext *serviceBlock();
     TopicBlockContext *topicBlock();
@@ -572,6 +592,39 @@ public:
 
   VariableStatementContext* variableStatement();
 
+  class  PropertiesBlockContext : public antlr4::ParserRuleContext {
+  public:
+    PropertiesBlockContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *PROPERTIES();
+    antlr4::tree::TerminalNode *LBRACE();
+    antlr4::tree::TerminalNode *RBRACE();
+    std::vector<PropertyStatementContext *> propertyStatement();
+    PropertyStatementContext* propertyStatement(size_t i);
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  PropertiesBlockContext* propertiesBlock();
+
+  class  PropertyStatementContext : public antlr4::ParserRuleContext {
+  public:
+    PropertyStatementContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *IDENT();
+    antlr4::tree::TerminalNode *COLON();
+    PropertyExprContext *propertyExpr();
+    antlr4::tree::TerminalNode *SEMI();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  PropertyStatementContext* propertyStatement();
+
   class  ActionBlockContext : public antlr4::ParserRuleContext {
   public:
     ActionBlockContext(antlr4::ParserRuleContext *parent, size_t invokingState);
@@ -634,6 +687,178 @@ public:
   };
 
   TopicBlockContext* topicBlock();
+
+  class  PropertyExprContext : public antlr4::ParserRuleContext {
+  public:
+    PropertyExprContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    PropertyHelperContext *propertyHelper();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  PropertyExprContext* propertyExpr();
+
+  class  PropertyHelperContext : public antlr4::ParserRuleContext {
+  public:
+    PropertyHelperContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *IF();
+    std::vector<PropertyConditionOrContext *> propertyConditionOr();
+    PropertyConditionOrContext* propertyConditionOr(size_t i);
+    PropertyConsequenceContext *propertyConsequence();
+    antlr4::tree::TerminalNode *BETWEEN();
+    antlr4::tree::TerminalNode *AND();
+    PropertyImplicationContext *propertyImplication();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  PropertyHelperContext* propertyHelper();
+
+  class  PropertyImplicationContext : public antlr4::ParserRuleContext {
+  public:
+    PropertyImplicationContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    PropertyConditionOrContext *propertyConditionOr();
+    antlr4::tree::TerminalNode *IMPLIES();
+    PropertyImplicationContext *propertyImplication();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  PropertyImplicationContext* propertyImplication();
+
+  class  PropertyConditionOrContext : public antlr4::ParserRuleContext {
+  public:
+    PropertyConditionOrContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    PropertyConditionAndContext *propertyConditionAnd();
+    antlr4::tree::TerminalNode *OR();
+    PropertyConditionOrContext *propertyConditionOr();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  PropertyConditionOrContext* propertyConditionOr();
+
+  class  PropertyConditionAndContext : public antlr4::ParserRuleContext {
+  public:
+    PropertyConditionAndContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    PropertyConditionUntilContext *propertyConditionUntil();
+    PropertyConditionAndContext *propertyConditionAnd();
+    antlr4::tree::TerminalNode *AND();
+    antlr4::tree::TerminalNode *WHILE();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  PropertyConditionAndContext* propertyConditionAnd();
+
+  class  PropertyConditionUntilContext : public antlr4::ParserRuleContext {
+  public:
+    PropertyConditionUntilContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    std::vector<PropertyConditionUnaryContext *> propertyConditionUnary();
+    PropertyConditionUnaryContext* propertyConditionUnary(size_t i);
+    antlr4::tree::TerminalNode *UNTIL();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  PropertyConditionUntilContext* propertyConditionUntil();
+
+  class  PropertyConditionUnaryContext : public antlr4::ParserRuleContext {
+  public:
+    PropertyConditionUnaryContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *NEGATION();
+    PropertyExprContext *propertyExpr();
+    antlr4::tree::TerminalNode *ALWAYS();
+    antlr4::tree::TerminalNode *EVENTUALLY();
+    antlr4::tree::TerminalNode *NEVER();
+    antlr4::tree::TerminalNode *NEXT();
+    PropertyObservationContext *propertyObservation();
+    antlr4::tree::TerminalNode *LPAREN();
+    antlr4::tree::TerminalNode *RPAREN();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  PropertyConditionUnaryContext* propertyConditionUnary();
+
+  class  PropertyConsequenceContext : public antlr4::ParserRuleContext {
+  public:
+    PropertyConsequenceContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *ALWAYS();
+    PropertyExprContext *propertyExpr();
+    antlr4::tree::TerminalNode *EVENTUALLY();
+    antlr4::tree::TerminalNode *NEVER();
+    antlr4::tree::TerminalNode *NEXT();
+    antlr4::tree::TerminalNode *BETWEEN();
+    std::vector<PropertyConditionOrContext *> propertyConditionOr();
+    PropertyConditionOrContext* propertyConditionOr(size_t i);
+    antlr4::tree::TerminalNode *AND();
+    PropertyConsequenceContext *propertyConsequence();
+    PropertyImplicationContext *propertyImplication();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  PropertyConsequenceContext* propertyConsequence();
+
+  class  PropertyObservationContext : public antlr4::ParserRuleContext {
+  public:
+    PropertyObservationContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    PropertyReferenceContext *propertyReference();
+    antlr4::tree::TerminalNode *IS();
+    antlr4::tree::TerminalNode *RUNNING();
+    antlr4::tree::TerminalNode *STARTED();
+    antlr4::tree::TerminalNode *WAS();
+    antlr4::tree::TerminalNode *REJECTED();
+    antlr4::tree::TerminalNode *STOPPED();
+    antlr4::tree::TerminalNode *ABORTED();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  PropertyObservationContext* propertyObservation();
+
+  class  PropertyReferenceContext : public antlr4::ParserRuleContext {
+  public:
+    PropertyReferenceContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    std::vector<antlr4::tree::TerminalNode *> IDENT();
+    antlr4::tree::TerminalNode* IDENT(size_t i);
+    antlr4::tree::TerminalNode *DOT();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  PropertyReferenceContext* propertyReference();
 
   class  RosDefStatementContext : public antlr4::ParserRuleContext {
   public:

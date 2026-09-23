@@ -232,6 +232,8 @@ std::any CST2AST::visitStatement(KodaParser::StatementContext* ctx)
     s->node = std::any_cast<koda::PActionDef>(visit(ctx->topicBlock()));
   else if (ctx->dataBlock())
     s->node = std::any_cast<koda::PDataBlock>(visit(ctx->dataBlock()));
+  else if (ctx->propertiesBlock())
+    s->node = std::any_cast<koda::PPropertiesBlock>(visit(ctx->propertiesBlock()));
   else
     throw std::runtime_error("Unknown statement kind");
 
@@ -1053,6 +1055,254 @@ std::any CST2AST::visitExprUnary(KodaParser::ExprUnaryContext* ctx)
 
   // LOG_DEBUG("Done visiting Expression Unary");
   return exp;
+}
+
+std::any CST2AST::visitPropertiesBlock(KodaParser::PropertiesBlockContext* ctx)
+{
+  auto block = std::make_shared<koda::PropertiesBlock>();
+  block->span = spanOf(ctx);
+
+  for (auto* v : ctx->propertyStatement())
+    block->properties.push_back(std::any_cast<koda::PPropertyStatement>(visit(v)));
+
+  return block;
+}
+
+std::any CST2AST::visitPropertyStatement(KodaParser::PropertyStatementContext* ctx)
+{
+  auto statement = std::make_shared<PropertyStatement>();
+  statement->span = spanOf(ctx);
+  statement->name = ctx->IDENT()->getText();
+  statement->property = std::any_cast<koda::PPropertyExpr>(visit(ctx->propertyExpr()));
+
+  return statement;
+}
+
+std::any CST2AST::visitPropertyHelper(KodaParser::PropertyHelperContext* ctx)
+{
+  if (auto implication = ctx->propertyImplication(); implication)
+    return visit(implication);
+
+  auto property = std::make_shared<PropertyExpr>();
+  property->span = spanOf(ctx);
+
+  if (ctx->IF() && ctx->propertyConditionOr().size() == 1)
+  {
+    auto statement = std::make_shared<PropertyExpr::If>();
+    statement->condition = std::any_cast<koda::PPropertyExpr>(visit(ctx->propertyConditionOr().at(0)));
+    statement->consequence = std::any_cast<koda::PPropertyExpr>(visit(ctx->propertyConsequence()));
+    property->value = statement;
+  }
+  else if (ctx->BETWEEN() && ctx->propertyConditionOr().size() == 2)
+  {
+    auto statement = std::make_shared<PropertyExpr::Between>();
+    statement->lhs = std::any_cast<koda::PPropertyExpr>(visit(ctx->propertyConditionOr().at(0)));
+    statement->rhs = std::any_cast<koda::PPropertyExpr>(visit(ctx->propertyConditionOr().at(1)));
+    statement->consequence = std::any_cast<koda::PPropertyExpr>(visit(ctx->propertyConsequence()));
+    property->value = statement;
+  }
+
+  return property;
+}
+
+std::any CST2AST::visitPropertyImplication(KodaParser::PropertyImplicationContext* ctx)
+{
+  if (!ctx->propertyImplication())
+    return visit(ctx->propertyConditionOr());
+
+  auto statement = std::make_shared<PropertyExpr::Binary>();
+  statement->operation = PropertyExpr::BinOp::IMPLICATION;
+  statement->lhs = std::any_cast<koda::PPropertyExpr>(visit(ctx->propertyConditionOr()));
+  statement->rhs = std::any_cast<koda::PPropertyExpr>(visit(ctx->propertyImplication()));
+
+  auto property = std::make_shared<PropertyExpr>();
+  property->value = statement;
+  property->span = spanOf(ctx);
+
+  return property;
+}
+
+std::any CST2AST::visitPropertyConditionOr(KodaParser::PropertyConditionOrContext* ctx)
+{
+  if (!ctx->propertyConditionOr())
+    return visit(ctx->propertyConditionAnd());
+
+  auto statement = std::make_shared<PropertyExpr::Binary>();
+  statement->operation = PropertyExpr::BinOp::DISJUNCTION;
+  statement->lhs = std::any_cast<koda::PPropertyExpr>(visit(ctx->propertyConditionAnd()));
+  statement->rhs = std::any_cast<koda::PPropertyExpr>(visit(ctx->propertyConditionOr()));
+
+  auto property = std::make_shared<PropertyExpr>();
+  property->value = statement;
+  property->span = spanOf(ctx);
+
+  return property;
+}
+
+std::any CST2AST::visitPropertyConditionAnd(KodaParser::PropertyConditionAndContext* ctx)
+{
+  if (!ctx->propertyConditionAnd())
+    return visit(ctx->propertyConditionUntil());
+
+  auto statement = std::make_shared<PropertyExpr::Binary>();
+  statement->operation = ctx->AND() ? PropertyExpr::BinOp::CONJUNCTION : PropertyExpr::BinOp::WHILE;
+  statement->lhs = std::any_cast<koda::PPropertyExpr>(visit(ctx->propertyConditionUntil()));
+  statement->rhs = std::any_cast<koda::PPropertyExpr>(visit(ctx->propertyConditionAnd()));
+
+  auto property = std::make_shared<PropertyExpr>();
+  property->value = statement;
+  property->span = spanOf(ctx);
+  return property;
+}
+
+std::any CST2AST::visitPropertyConditionUntil(KodaParser::PropertyConditionUntilContext* ctx)
+{
+  if (ctx->propertyConditionUnary().size() == 1)
+    return visit(ctx->propertyConditionUnary().at(0));
+
+  auto property = std::make_shared<PropertyExpr>();
+  property->span = spanOf(ctx);
+
+  if (ctx->propertyConditionUnary().size() == 2)
+  {
+    auto statement = std::make_shared<PropertyExpr::Binary>();
+    statement->operation = PropertyExpr::BinOp::UNTIL;
+    statement->lhs = std::any_cast<koda::PPropertyExpr>(visit(ctx->propertyConditionUnary().at(0)));
+    statement->rhs = std::any_cast<koda::PPropertyExpr>(visit(ctx->propertyConditionUnary().at(1)));
+    property->value = statement;
+  }
+
+  return property;
+}
+
+std::any CST2AST::visitPropertyConditionUnary(KodaParser::PropertyConditionUnaryContext* ctx)
+{
+  if (auto pass = ctx->propertyObservation(); pass)
+    return visit(pass);
+
+  if (ctx->LPAREN() && ctx->RPAREN())
+  {
+    auto statement = std::make_shared<PropertyExpr::Paren>();
+    statement->value = std::any_cast<koda::PPropertyExpr>(visit(ctx->propertyExpr()));
+
+    auto property = std::make_shared<PropertyExpr>();
+    property->value = statement;
+    property->span = spanOf(ctx);
+    return property;
+  }
+
+  auto statement = std::make_shared<PropertyExpr::Unary>();
+  if (ctx->ALWAYS())
+    statement->operation = PropertyExpr::UnaryOp::ALWAYS;
+  else if (ctx->EVENTUALLY())
+    statement->operation = PropertyExpr::UnaryOp::EVENTUALLY;
+  else if (ctx->NEVER())
+    statement->operation = PropertyExpr::UnaryOp::NEVER;
+  else if (ctx->NEXT())
+    statement->operation = PropertyExpr::UnaryOp::NEXT;
+  else if (ctx->NEGATION())
+    statement->operation = PropertyExpr::UnaryOp::NEGATION;
+
+  statement->lhs = std::any_cast<koda::PPropertyExpr>(visit(ctx->propertyExpr()));
+
+  auto property = std::make_shared<PropertyExpr>();
+  property->span = spanOf(ctx);
+  property->value = statement;
+
+  return property;
+}
+
+std::any CST2AST::visitPropertyConsequence(KodaParser::PropertyConsequenceContext* ctx)
+{
+  if (auto pass = ctx->propertyImplication(); pass)
+    return visit(pass);
+
+  auto property = std::make_shared<PropertyExpr>();
+  property->span = spanOf(ctx);
+
+  if (ctx->propertyConditionOr().size() == 2 && ctx->propertyConsequence())
+  {
+    auto statement = std::make_shared<PropertyExpr::Between>();
+    statement->lhs = std::any_cast<koda::PPropertyExpr>(visit(ctx->propertyConditionOr().at(0)));
+    statement->rhs = std::any_cast<koda::PPropertyExpr>(visit(ctx->propertyConditionOr().at(1)));
+    statement->consequence = std::any_cast<koda::PPropertyExpr>(visit(ctx->propertyConsequence()));
+    property->value = statement;
+  }
+  else
+  {
+    auto statement = std::make_shared<PropertyExpr::Unary>();
+    if (ctx->ALWAYS())
+      statement->operation = PropertyExpr::UnaryOp::ALWAYS;
+    else if (ctx->EVENTUALLY())
+      statement->operation = PropertyExpr::UnaryOp::EVENTUALLY;
+    else if (ctx->NEVER())
+      statement->operation = PropertyExpr::UnaryOp::NEVER;
+    else if (ctx->NEXT())
+      statement->operation = PropertyExpr::UnaryOp::NEXT;
+
+    statement->lhs = std::any_cast<koda::PPropertyExpr>(visit(ctx->propertyExpr()));
+    property->value = statement;
+  }
+
+  return property;
+}
+
+std::any CST2AST::visitPropertyObservation(KodaParser::PropertyObservationContext* ctx)
+{
+  auto statement = std::make_shared<PropertyExpr::Observation>();
+  if (ctx->IS() && ctx->RUNNING())
+    statement->operation = PropertyExpr::ObservationOp::IS_RUNNING;
+  else if (ctx->STARTED())
+    statement->operation = PropertyExpr::ObservationOp::STARTED;
+  else if (ctx->WAS() && ctx->REJECTED())
+    statement->operation = PropertyExpr::ObservationOp::WAS_REJECTED;
+  else if (ctx->STOPPED())
+    statement->operation = PropertyExpr::ObservationOp::STOPPED;
+  else if (ctx->WAS() && ctx->ABORTED())
+    statement->operation = PropertyExpr::ObservationOp::WAS_ABORTED;
+
+  statement->lhs = std::any_cast<koda::PPropertyExpr>(visit(ctx->propertyReference()));
+
+  auto property = std::make_shared<PropertyExpr>();
+  property->span = spanOf(ctx);
+  property->value = statement;
+  return property;
+}
+
+std::any CST2AST::visitPropertyReference(KodaParser::PropertyReferenceContext* ctx)
+{
+  auto statement = std::make_shared<PropertyExpr::Ref>();
+  if (ctx->IDENT().size() > 0)
+    statement->capability = ctx->IDENT().at(0)->getText();
+  if (ctx->IDENT().size() > 1)
+    statement->event = ctx->IDENT().at(1)->getText();
+
+  auto property = std::make_shared<PropertyExpr>();
+  property->span = spanOf(ctx);
+  property->value = statement;
+  return property;
+}
+
+template <typename Context>
+koda::PPropertyExpr CST2AST::foldPropertyBinary(const std::vector<Context*>& contexts, PropertyExpr::BinOp operation)
+{
+  auto result = std::any_cast<koda::PPropertyExpr>(visit(contexts.front()));
+
+  for (std::size_t i = 1; i < contexts.size(); ++i)
+  {
+    auto statement = std::make_shared<PropertyExpr::Binary>();
+    statement->operation = operation;
+    statement->lhs = result;
+    statement->rhs = std::any_cast<koda::PPropertyExpr>(visit(contexts[i]));
+
+    auto property = std::make_shared<PropertyExpr>();
+    property->value = statement;
+    property->span = spanOf(contexts[i]);
+
+    result = property;
+  }
+
+  return result;
 }
 
 template <typename CtxT>

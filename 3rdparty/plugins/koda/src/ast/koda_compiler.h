@@ -34,6 +34,7 @@ struct CompilerOptions
   std::shared_ptr<koda::System> ast;
   std::shared_ptr<types::TypeRegistry> typeRegistry;
   bool checkAll = false;
+  std::vector<std::string> emitters = {};
 
   enum class PluginOption
   {

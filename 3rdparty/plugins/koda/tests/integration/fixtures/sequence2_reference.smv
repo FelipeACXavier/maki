@@ -1,0 +1,135 @@
+-- KODA Sequence(a,b) semantic reference model.
+-- Synchronous Done chains are collapsed into one macrostep.
+-- Sequence abort is synchronous: no Dezyne-only Aborting0/Aborting1 states.
+MODULE main
+
+IVAR
+  command : {CMD_NONE, CMD_TRIGGER, CMD_ABORT, CMD_RESET};
+
+  a_state : {ChildIdle, ChildRunning, ChildError};
+  b_state : {ChildIdle, ChildRunning, ChildError};
+
+  a_trigger : {RESULT_SUCCESS, RESULT_FAILURE, RESULT_DONE};
+  b_trigger : {RESULT_SUCCESS, RESULT_FAILURE, RESULT_DONE};
+  a_abort   : {RESULT_SUCCESS, RESULT_FAILURE, RESULT_RUNNING};
+  b_abort   : {RESULT_SUCCESS, RESULT_FAILURE, RESULT_RUNNING};
+  a_reset   : {RESULT_SUCCESS, RESULT_FAILURE};
+  b_reset   : {RESULT_SUCCESS, RESULT_FAILURE};
+
+  a_event : {EVENT_NONE, EVENT_SUCCESS, EVENT_FAILURE};
+  b_event : {EVENT_NONE, EVENT_SUCCESS, EVENT_FAILURE};
+
+VAR
+  state : {Idle, Action0, Action1, Error};
+
+DEFINE
+  RESULT_NONE := 0;
+
+  -- Which child operation is invoked in this reaction. These are semantic
+  -- effects for the future flat emitter, not SMV module ports.
+  invoke_a_trigger := state = Idle & command = CMD_TRIGGER;
+  invoke_b_trigger :=
+    (state = Idle & command = CMD_TRIGGER & a_trigger = RESULT_DONE) |
+    (state = Action0 & command = CMD_NONE & a_event = EVENT_SUCCESS);
+
+  invoke_a_abort := state = Action0 & command = CMD_ABORT;
+  invoke_b_abort := state = Action1 & command = CMD_ABORT;
+
+  invoke_a_reset := state = Error & command = CMD_RESET & a_state = ChildError;
+  invoke_b_reset := state = Error & command = CMD_RESET & a_state != ChildError & b_state = ChildError;
+
+  reply :=
+    case
+      -- trigger: a, then synchronously b if a is Done
+      state = Idle & command = CMD_TRIGGER & a_trigger = RESULT_SUCCESS : RESULT_SUCCESS;
+      state = Idle & command = CMD_TRIGGER & a_trigger = RESULT_FAILURE : RESULT_FAILURE;
+      state = Idle & command = CMD_TRIGGER & a_trigger = RESULT_DONE : b_trigger;
+
+      -- synchronous abort abstraction
+      state = Action0 & command = CMD_ABORT : a_abort;
+      state = Action1 & command = CMD_ABORT : b_abort;
+
+      -- Dezyne reset selects the erroneous child, action0 first.
+      state = Error & command = CMD_RESET & a_state = ChildError : a_reset;
+      state = Error & command = CMD_RESET & a_state != ChildError & b_state = ChildError : b_reset;
+
+      state = Error & command = CMD_ABORT & a_state = ChildError : a_abort;
+      state = Error & command = CMD_ABORT & a_state != ChildError & b_state = ChildError : b_abort;
+      TRUE : RESULT_NONE;
+    esac;
+
+  outcome :=
+    case
+      state = Action0 & command = CMD_NONE & a_event = EVENT_FAILURE : EVENT_FAILURE;
+      state = Action0 & command = CMD_NONE & a_event = EVENT_SUCCESS & b_trigger = RESULT_FAILURE : EVENT_FAILURE;
+      state = Action0 & command = CMD_NONE & a_event = EVENT_SUCCESS & b_trigger = RESULT_DONE : EVENT_SUCCESS;
+      state = Action1 & command = CMD_NONE & b_event = EVENT_SUCCESS : EVENT_SUCCESS;
+      state = Action1 & command = CMD_NONE & b_event = EVENT_FAILURE : EVENT_FAILURE;
+      TRUE : EVENT_NONE;
+    esac;
+
+TRANS
+  (state = Idle -> (command = CMD_NONE | command = CMD_TRIGGER)) &
+  (state = Action0 -> (command = CMD_NONE | command = CMD_ABORT)) &
+  (state = Action1 -> (command = CMD_NONE | command = CMD_ABORT)) &
+  (state = Error -> (command = CMD_NONE | command = CMD_RESET | command = CMD_ABORT)) &
+  (state != Action0 -> a_event = EVENT_NONE) &
+  (state != Action1 -> b_event = EVENT_NONE);
+
+ASSIGN
+  init(state) := Idle;
+  next(state) :=
+    case
+      -- Trigger chain
+      state = Idle & command = CMD_TRIGGER & a_trigger = RESULT_SUCCESS : Action0;
+      state = Idle & command = CMD_TRIGGER & a_trigger = RESULT_FAILURE : Error;
+      state = Idle & command = CMD_TRIGGER & a_trigger = RESULT_DONE & b_trigger = RESULT_SUCCESS : Action1;
+      state = Idle & command = CMD_TRIGGER & a_trigger = RESULT_DONE & b_trigger = RESULT_DONE : Idle;
+      state = Idle & command = CMD_TRIGGER & a_trigger = RESULT_DONE & b_trigger = RESULT_FAILURE : Error;
+
+      -- a asynchronous completion; b.trigger belongs to the same reaction.
+      state = Action0 & command = CMD_NONE & a_event = EVENT_SUCCESS & b_trigger = RESULT_SUCCESS : Action1;
+      state = Action0 & command = CMD_NONE & a_event = EVENT_SUCCESS & b_trigger = RESULT_DONE : Idle;
+      state = Action0 & command = CMD_NONE & a_event = EVENT_SUCCESS & b_trigger = RESULT_FAILURE : Error;
+      state = Action0 & command = CMD_NONE & a_event = EVENT_FAILURE : Error;
+
+      -- b asynchronous completion
+      state = Action1 & command = CMD_NONE & b_event = EVENT_SUCCESS : Idle;
+      state = Action1 & command = CMD_NONE & b_event = EVENT_FAILURE : Error;
+
+      -- Conceptual KODA abort is synchronous.
+      state = Action0 & command = CMD_ABORT & a_abort = RESULT_SUCCESS : Idle;
+      state = Action0 & command = CMD_ABORT & a_abort = RESULT_FAILURE : Error;
+      state = Action0 & command = CMD_ABORT & a_abort = RESULT_RUNNING : Action0;
+      state = Action1 & command = CMD_ABORT & b_abort = RESULT_SUCCESS : Idle;
+      state = Action1 & command = CMD_ABORT & b_abort = RESULT_FAILURE : Error;
+      state = Action1 & command = CMD_ABORT & b_abort = RESULT_RUNNING : Action1;
+
+      -- Reset mirrors csequence2: first erroneous child wins.
+      state = Error & command = CMD_RESET & a_state = ChildError & a_reset = RESULT_SUCCESS : Idle;
+      state = Error & command = CMD_RESET & a_state != ChildError & b_state = ChildError & b_reset = RESULT_SUCCESS : Idle;
+      TRUE : state;
+    esac;
+
+-- Trigger branches
+LTLSPEC NAME a_success_waits_a := G(state = Idle & command = CMD_TRIGGER & a_trigger = RESULT_SUCCESS -> X state = Action0);
+LTLSPEC NAME a_failure_errors := G(state = Idle & command = CMD_TRIGGER & a_trigger = RESULT_FAILURE -> X state = Error);
+LTLSPEC NAME both_done_sync := G(state = Idle & command = CMD_TRIGGER & a_trigger = RESULT_DONE & b_trigger = RESULT_DONE -> X state = Idle);
+LTLSPEC NAME a_done_b_success := G(state = Idle & command = CMD_TRIGGER & a_trigger = RESULT_DONE & b_trigger = RESULT_SUCCESS -> X state = Action1);
+LTLSPEC NAME a_done_b_failure := G(state = Idle & command = CMD_TRIGGER & a_trigger = RESULT_DONE & b_trigger = RESULT_FAILURE -> X state = Error);
+
+-- Async branches
+LTLSPEC NAME a_async_success_b_success := G(state = Action0 & command = CMD_NONE & a_event = EVENT_SUCCESS & b_trigger = RESULT_SUCCESS -> X state = Action1);
+LTLSPEC NAME a_async_success_b_done := G(state = Action0 & command = CMD_NONE & a_event = EVENT_SUCCESS & b_trigger = RESULT_DONE -> X state = Idle);
+LTLSPEC NAME a_async_success_b_failure := G(state = Action0 & command = CMD_NONE & a_event = EVENT_SUCCESS & b_trigger = RESULT_FAILURE -> X state = Error);
+LTLSPEC NAME a_async_failure := G(state = Action0 & command = CMD_NONE & a_event = EVENT_FAILURE -> X state = Error);
+LTLSPEC NAME b_async_success := G(state = Action1 & command = CMD_NONE & b_event = EVENT_SUCCESS -> X state = Idle);
+LTLSPEC NAME b_async_failure := G(state = Action1 & command = CMD_NONE & b_event = EVENT_FAILURE -> X state = Error);
+
+-- Abort/reset
+LTLSPEC NAME abort_a_success_sync := G(state = Action0 & command = CMD_ABORT & a_abort = RESULT_SUCCESS -> X state = Idle);
+LTLSPEC NAME abort_b_success_sync := G(state = Action1 & command = CMD_ABORT & b_abort = RESULT_SUCCESS -> X state = Idle);
+LTLSPEC NAME abort_a_failure := G(state = Action0 & command = CMD_ABORT & a_abort = RESULT_FAILURE -> X state = Error);
+LTLSPEC NAME abort_b_failure := G(state = Action1 & command = CMD_ABORT & b_abort = RESULT_FAILURE -> X state = Error);
+LTLSPEC NAME reset_a_success := G(state = Error & command = CMD_RESET & a_state = ChildError & a_reset = RESULT_SUCCESS -> X state = Idle);
+LTLSPEC NAME reset_b_success := G(state = Error & command = CMD_RESET & a_state != ChildError & b_state = ChildError & b_reset = RESULT_SUCCESS -> X state = Idle);

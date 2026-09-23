@@ -103,7 +103,7 @@ VoidResult DeclarationPass::declareStatement(const PStatement& statement, Symbol
         return VoidResult::Failed(symbolId.ErrorMessage());
 
       // Flows can be explicitly aborted
-      auto abortEventId = mSymbolRegistry.declare(SymbolKind::Event, "abort", types::TypeReference::named("abort"), Span{}, symbolId.Value());
+      auto abortEventId = mSymbolRegistry.declare(SymbolKind::Event, "abort", types::TypeReference::named("Abort"), Span{}, symbolId.Value());
       if (!abortEventId.IsSuccess())
         return abortEventId;
 
@@ -144,7 +144,6 @@ VoidResult DeclarationPass::declareRosDef(const PRosDef& ros, SymbolId owner, OS
   if (!ros || !ros->def)
     return VoidResult::Failed("Invalid ROS/event declaration");
 
-  // const auto eventType = Type::Custom(ros->toString());
   auto result = mSymbolRegistry.declare(SymbolKind::Event, ros->def->name, types::TypeReference::named(ros->toString()), ros->def->span, owner,
                                         actionId.value_or(InvalidSymbol));
   if (!result.IsSuccess())

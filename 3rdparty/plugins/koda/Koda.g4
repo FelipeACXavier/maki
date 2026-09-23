@@ -44,7 +44,7 @@ annotationDeclaration
 annotation
   : STRING COLON STRING
   ;
-  
+
 enumDeclaration
   : ENUM qualifiedName (COLON typeReference)? LBRACE enumValue* RBRACE
   ;
@@ -92,6 +92,7 @@ argument
 statement
   : tasksBlock
   | varsBlock
+  | propertiesBlock
   | actionBlock
   | serviceBlock
   | topicBlock
@@ -100,7 +101,7 @@ statement
   ;
 
 tasksBlock
-  : STRATEGY LBRACE flow+ RBRACE
+  : STRATEGY LBRACE flow* RBRACE
   ;
 
 flow
@@ -112,11 +113,19 @@ identList
   ;
 
 varsBlock
-  : PARAMETERS LBRACE variableStatement+ RBRACE
+  : PARAMETERS LBRACE variableStatement* RBRACE
   ;
 
 variableStatement
   : typeReference IDENT (ASSIGN expression)? SEMI
+  ;
+
+propertiesBlock
+  : PROPERTIES LBRACE propertyStatement* RBRACE
+  ;
+
+propertyStatement
+  : IDENT COLON propertyExpr SEMI
   ;
 
 actionBlock
@@ -129,6 +138,66 @@ serviceBlock
 
 topicBlock
   : TOPIC STRING STRING LBRACE (reqDefStatement | rosDefStatement)* RBRACE
+  ;
+
+// =============================================================================
+// Property language
+// =============================================================================
+propertyExpr
+  : propertyHelper
+  ;
+
+propertyHelper
+  : IF propertyConditionOr propertyConsequence
+  | BETWEEN propertyConditionOr AND propertyConditionOr propertyConsequence
+  | propertyImplication
+  ;
+
+propertyImplication
+  : propertyConditionOr (IMPLIES propertyImplication)?
+  ;
+
+propertyConditionOr
+  : propertyConditionAnd (OR propertyConditionOr)?
+  ;
+
+propertyConditionAnd
+  : propertyConditionUntil ((AND | WHILE) propertyConditionAnd)?
+  ;
+
+propertyConditionUntil
+  : propertyConditionUnary (UNTIL propertyConditionUnary)?
+  ;
+
+propertyConditionUnary
+  : NEGATION propertyExpr
+  | ALWAYS propertyExpr
+  | EVENTUALLY propertyExpr
+  | NEVER propertyExpr
+  | NEXT propertyExpr
+  | propertyObservation
+  | LPAREN propertyExpr RPAREN
+  ;
+
+propertyConsequence
+  : ALWAYS propertyExpr
+  | EVENTUALLY propertyExpr
+  | NEVER propertyExpr
+  | NEXT propertyExpr
+  | BETWEEN propertyConditionOr AND propertyConditionOr propertyConsequence
+  | propertyImplication
+  ;
+
+propertyObservation
+  : propertyReference IS RUNNING
+  | propertyReference STARTED
+  | propertyReference WAS REJECTED
+  | propertyReference STOPPED
+  | propertyReference WAS ABORTED
+  ;
+
+propertyReference
+  : IDENT (DOT IDENT)?
   ;
 
 // =============================================================================
@@ -309,10 +378,29 @@ ANNOTATIONS : 'annotations';
 
 STRATEGY   : 'strategy';
 PARAMETERS : 'parameters';
+PROPERTIES : 'properties';
 
 ACTION     : 'action';
 SERVICE    : 'service';
 TOPIC      : 'topic';
+
+IMPLIES    : 'implies';
+WHILE      : 'while';
+ALWAYS     : 'always';
+EVENTUALLY : 'eventually';
+NEXT       : 'next';
+NEVER      : 'never';
+NEGATION   : 'not';
+IF         : 'if';
+BETWEEN    : 'between';
+UNTIL      : 'until';
+IS         : 'is';
+WAS        : 'was';
+RUNNING    : 'running';
+STARTED    : 'started';
+REJECTED   : 'rejected';
+STOPPED    : 'stopped';
+ABORTED    : 'aborted';
 
 TRIGGER    : 'trigger';
 RETURN     : 'return';

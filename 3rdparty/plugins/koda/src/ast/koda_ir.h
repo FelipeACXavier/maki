@@ -47,10 +47,12 @@ enum class CallKind
   Flow
 };
 
+struct PropertyExpr;
 struct Expression;
 struct Strategy;
 struct Handler;
 
+using PPropertyExpr = std::shared_ptr<PropertyExpr>;
 using PExpression = std::shared_ptr<Expression>;
 using PStrategy = std::shared_ptr<Strategy>;
 using PHandler = std::shared_ptr<Handler>;
@@ -295,6 +297,95 @@ struct Action
   std::vector<Event> events;
 };
 
+struct Observation
+{
+  enum class Kind
+  {
+    Running,
+    Started,
+    Rejected,
+    Stopped,
+    Succeeded,
+    Failed,
+    Aborted
+  };
+
+  Kind kind = Kind::Running;
+
+  // Capability instance / flow.
+  SymbolId receiver = InvalidSymbol;
+
+  // Event/action when applicable. InvalidSymbol for observations such as
+  // "drive is running" or "fdrive_loop was aborted".
+  SymbolId target = InvalidSymbol;
+
+  Span span;
+};
+
+struct PropertyExpr
+{
+  struct Not
+  {
+    PPropertyExpr operand;
+  };
+
+  struct And
+  {
+    PPropertyExpr lhs;
+    PPropertyExpr rhs;
+  };
+
+  struct Or
+  {
+    PPropertyExpr lhs;
+    PPropertyExpr rhs;
+  };
+
+  struct Implies
+  {
+    PPropertyExpr lhs;
+    PPropertyExpr rhs;
+  };
+
+  struct Always
+  {
+    PPropertyExpr operand;
+  };
+
+  struct Eventually
+  {
+    PPropertyExpr operand;
+  };
+
+  struct Next
+  {
+    PPropertyExpr operand;
+  };
+
+  struct Until
+  {
+    PPropertyExpr lhs;
+    PPropertyExpr rhs;
+  };
+
+  struct WeakUntil
+  {
+    PPropertyExpr lhs;
+    PPropertyExpr rhs;
+  };
+
+  std::variant<Observation, Not, And, Or, Implies, Always, Eventually, Next, Until, WeakUntil> value;
+
+  Span span;
+};
+
+struct Property
+{
+  std::string name;
+  PPropertyExpr expression;
+  Span span;
+};
+
 struct Component
 {
   SymbolId symbol = InvalidSymbol;
@@ -304,6 +395,7 @@ struct Component
   std::vector<Variable> variables;
   std::vector<Action> actions;
   std::vector<Flow> flows;
+  std::vector<Property> properties;
   std::map<std::string, std::string> metadata;
   Span span;
 };

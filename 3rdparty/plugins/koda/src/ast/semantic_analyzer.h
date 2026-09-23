@@ -48,6 +48,14 @@ struct ResolvedCall
   std::vector<types::SlotId> outputSlots = {};
 };
 
+struct ResolvedPropertyReference
+{
+  SymbolId receiver = InvalidSymbol;
+  SymbolId target = InvalidSymbol;
+
+  PropertyExpr::ObservationOp kind;
+};
+
 struct SemanticModel
 {
   std::unordered_map<const EventCall*, ResolvedCall> calls;
@@ -55,6 +63,7 @@ struct SemanticModel
   std::unordered_map<const Expr*, types::TypeReference> expressionTypes;
   std::unordered_map<SymbolId, std::vector<types::TypeReference>> eventArguments;
   std::unordered_map<SymbolId, koda::types::SlotId> variableSlots;
+  std::unordered_map<const PropertyExpr::Observation*, ResolvedPropertyReference> propertyObservations;
 
   void print() const;
 };
@@ -85,6 +94,7 @@ private:
   VoidResult analyzeFlow(SymbolId flowId);
   VoidResult analyzeComponent(const PComponent& component);
   VoidResult analyzeStatement(const PStatement& statement, SymbolId owner);
+  VoidResult analyzePropertyExpression(const std::string& name, const PPropertyExpr& expression, SymbolId owner);
   VoidResult analyzeStrategy(const PStrategy& strategy, SymbolId owner);
   VoidResult analyzeFlowCall(const PEventCall& astCall, const ResolvedCall& call, SymbolId callerOwner);
   VoidResult analyzeHandler(const PStrategyHandler& handler, SymbolId owner);

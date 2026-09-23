@@ -150,7 +150,7 @@ int main(int argc, const char* argv[])
     return 1;
   }
 
-  koda::gPrintSpan = (options.verbose > 1);
+  koda::gPrintSpan = (options.verbose > 2);
   logging::gMinLogLevel = logging::LogLevel::Warning;
   if (options.verbose == 3)
     logging::gMinLogLevel = logging::LogLevel::Trace;

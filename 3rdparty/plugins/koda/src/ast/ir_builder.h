@@ -23,6 +23,10 @@ private:
   Result<ir::Call> buildCall(const PEventCall& call, SymbolId owner) const;
   Result<ir::PExpression> buildExpr(const PExpr& expr, SymbolId owner) const;
 
+  Result<ir::Property> buildProperty(const PPropertyStatement& property, SymbolId owner) const;
+  Result<ir::PPropertyExpr> buildPropertyExpr(const PPropertyExpr& expr, SymbolId owner) const;
+  Result<ir::Observation> buildObservation(const PPropertyObservation& observation, const Span& span, SymbolId owner) const;
+
   ir::Argument buildArg(const koda::PArgument kodaArg, SymbolId owner) const;
   void appendRosDef(const PRosDef& ros, SymbolId owner, ir::Action& out) const;
 

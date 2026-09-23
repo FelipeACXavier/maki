@@ -158,6 +158,7 @@ VoidResult SemanticAnalyzer::analyzeComponent(const PComponent& component)
     if (!result.IsSuccess())
       return result;
   }
+
   return VoidResult();
 }
 
@@ -232,7 +233,100 @@ VoidResult SemanticAnalyzer::analyzeStatement(const PStatement& statement, Symbo
 
     return analyzeFlow(*main);
   }
+  else if (auto block = std::get_if<PPropertiesBlock>(&statement->node); block && *block)
+  {
+    for (const auto& property : (*block)->properties)
+      RETURN_ON_FAILURE(analyzePropertyExpression(property->name, property->property, owner));
+  }
   return VoidResult();
+}
+
+VoidResult SemanticAnalyzer::analyzePropertyExpression(const std::string& name, const PPropertyExpr& expression, SymbolId owner)
+{
+  if (!expression)
+    return VoidResult();
+
+  if (auto p = std::get_if<PPropertyParen>(&expression->value); p && *p)
+  {
+    return analyzePropertyExpression(name, (*p)->value, owner);
+  }
+  else if (auto p = std::get_if<PPropertyRef>(&expression->value); p && *p)
+  {
+    return VoidResult::Failed("Bare property reference at {}", expression->span.toString());
+  }
+  else if (auto p = std::get_if<PPropertyUnary>(&expression->value); p && *p)
+  {
+    if ((*p)->operation == PropertyExpr::UnaryOp::UNKNOWN)
+      return VoidResult::Failed("Unknown unary operation at {}", expression->span.toString());
+
+    RETURN_ON_FAILURE(analyzePropertyExpression(name, (*p)->lhs, owner));
+    return VoidResult();
+  }
+  else if (auto p = std::get_if<PPropertyBinary>(&expression->value); p && *p)
+  {
+    if ((*p)->operation == PropertyExpr::BinOp::UNKNOWN)
+      return VoidResult::Failed("Unknown binary operation at {}", expression->span.toString());
+
+    RETURN_ON_FAILURE(analyzePropertyExpression(name, (*p)->lhs, owner));
+    RETURN_ON_FAILURE(analyzePropertyExpression(name, (*p)->rhs, owner));
+    return VoidResult();
+  }
+  else if (auto p = std::get_if<PPropertyObservation>(&expression->value); p && *p)
+  {
+    if ((*p)->operation == PropertyExpr::ObservationOp::UNKNOWN)
+      return VoidResult::Failed("Unknown property at {}", expression->span.toString());
+
+    if (auto ref = std::get_if<PPropertyRef>(&(*p)->lhs->value); ref && *ref)
+    {
+      auto eventKind = (*p)->operation;
+      const auto capability = (*ref)->capability;
+      const auto cId = mSymbols.lookup(capability, owner);
+      const auto cSymbol = mSymbols.get(cId.value_or(InvalidSymbol));
+      if (!cSymbol)
+        return VoidResult::Failed("Could not find receiver: {}", capability);
+
+      const auto component = resolveComponentType(*cSymbol, expression->span);
+      RETURN_ON_FAILURE(component);
+
+      const auto event = (*ref)->event;
+      if (event.empty())
+      {
+        mModel.propertyObservations[(*p).get()] = {.receiver = cId.value(), .kind = eventKind};
+        return VoidResult();
+      }
+
+      auto cEventId = mSymbols.lookupChild(component.Value(), event);
+      if (!cEventId)
+        return VoidResult::Failed("Could not find event {} for capability {}", event, capability);
+
+      const auto eSymbol = mSymbols.get(cEventId.value());
+      if (eSymbol->type.toString() == "Return")
+        eventKind = PropertyExpr::ObservationOp::SUCCEEDED;
+      else if (eSymbol->type.toString() == "Error")
+        eventKind = PropertyExpr::ObservationOp::FAILED;
+
+      mModel.propertyObservations[(*p).get()] = {.receiver = cId.value(), .target = cEventId.value(), .kind = eventKind};
+      return VoidResult();
+    }
+
+    RETURN_ON_FAILURE(analyzePropertyExpression(name, (*p)->lhs, owner));
+    return VoidResult();
+  }
+  else if (auto p = std::get_if<PPropertyIf>(&expression->value); p && *p)
+  {
+    RETURN_ON_FAILURE(analyzePropertyExpression(name, (*p)->condition, owner));
+    RETURN_ON_FAILURE(analyzePropertyExpression(name, (*p)->consequence, owner));
+    return VoidResult();
+  }
+  else if (auto p = std::get_if<PPropertyBetween>(&expression->value); p && *p)
+  {
+    RETURN_ON_FAILURE(analyzePropertyExpression(name, (*p)->lhs, owner));
+    RETURN_ON_FAILURE(analyzePropertyExpression(name, (*p)->rhs, owner));
+    RETURN_ON_FAILURE(analyzePropertyExpression(name, (*p)->consequence, owner));
+    return VoidResult();
+  }
+
+  return VoidResult::Failed("Unknown property expression: {}", expression->value.index());
 }
 
 VoidResult SemanticAnalyzer::analyzeFlow(SymbolId flowId)

@@ -123,6 +123,8 @@ void Statement::print(const std::string& prefix, const bool last) const
     std::get<PVarsBlock>(node)->print(prefix, last);
   else if (std::holds_alternative<PDataBlock>(node))
     std::get<PDataBlock>(node)->print(prefix, last);
+  else if (std::holds_alternative<PPropertiesBlock>(node))
+    std::get<PPropertiesBlock>(node)->print(prefix, last);
   else if (std::holds_alternative<PRosDef>(node))
     std::get<PRosDef>(node)->print(prefix, last);
   else if (std::holds_alternative<PActionDef>(node))
@@ -154,6 +156,25 @@ void DataBlock::print(const std::string& prefix, const bool last) const
   const std::string childPrefix = prefix + tree::carry(last);
   for (size_t i = 0; i < vars.size(); ++i)
     vars.at(i)->print(childPrefix, i == vars.size() - 1);
+}
+
+void PropertiesBlock::print(const std::string& prefix, const bool last) const
+{
+  LOG_TREE("PropertiesBlock");
+
+  const std::string childPrefix = prefix + tree::carry(last);
+  for (size_t i = 0; i < properties.size(); ++i)
+    properties.at(i)->print(childPrefix, i == properties.size() - 1);
+}
+
+void PropertyStatement::print(const std::string& prefix, const bool last) const
+{
+  LOG_TREE("PropertyStatement");
+
+  const std::string childPrefix = prefix + tree::carry(last);
+  printString(childPrefix, false, Format("Name: {}", name));
+  if (property)
+    property->print(childPrefix, true);
 }
 
 std::string RosDef::toString() const
@@ -387,6 +408,158 @@ void StrategyHandler::print(const std::string& prefix, const bool last) const
     emitter->print(childPrefix, false);
   if (body)
     body->print(childPrefix, true);
+}
+
+void PropertyExpr::print(const std::string& prefix, const bool last) const
+{
+  IF_ALT(PPropertyParen, value, print(prefix, last, span))
+  ELSE_IF_ALT(PPropertyRef, value, print(prefix, last, span))
+  ELSE_IF_ALT(PPropertyBinary, value, print(prefix, last, span))
+  ELSE_IF_ALT(PPropertyUnary, value, print(prefix, last, span))
+  ELSE_IF_ALT(PPropertyIf, value, print(prefix, last, span))
+  ELSE_IF_ALT(PPropertyBetween, value, print(prefix, last, span))
+  ELSE_IF_ALT(PPropertyObservation, value, print(prefix, last, span))
+}
+
+void PropertyExpr::Paren::print(const std::string& prefix, const bool last, const Span& span) const
+{
+  LOG_TREE("Parenthesis");
+  if (value)
+    value->print(prefix + tree::carry(true), last);
+}
+
+void PropertyExpr::Ref::print(const std::string& prefix, const bool last, const Span& span) const
+{
+  LOG_TREE("Ref");
+  const std::string childPrefix = prefix + tree::carry(last);
+
+  printString(childPrefix, event.empty(), Format("Receiver: {}", capability));
+  if (!event.empty())
+    printString(childPrefix, true, Format("Target: {}", event));
+}
+
+std::string PropertyExpr::Unary::toString() const
+{
+  switch (operation)
+  {
+    case PropertyExpr::UnaryOp::ALWAYS:
+      return "Always";
+    case PropertyExpr::UnaryOp::EVENTUALLY:
+      return "Eventually";
+    case PropertyExpr::UnaryOp::NEXT:
+      return "Next";
+    case PropertyExpr::UnaryOp::NEVER:
+      return "Never";
+    case PropertyExpr::UnaryOp::NEGATION:
+      return "Negation";
+    case PropertyExpr::UnaryOp::UNKNOWN:
+    default:
+      return "Unknown";
+  }
+
+  return "Unknown";
+}
+
+void PropertyExpr::Unary::print(const std::string& prefix, const bool last, const Span& span) const
+{
+  LOG_TREE("Unary");
+  const std::string childPrefix = prefix + tree::carry(last);
+  printString(childPrefix, false, Format("Operation: {}", toString()));
+  if (lhs)
+    lhs->print(childPrefix, true);
+}
+
+std::string PropertyExpr::Binary::toString() const
+{
+  switch (operation)
+  {
+    case PropertyExpr::BinOp::CONJUNCTION:
+      return "Conjunction";
+    case PropertyExpr::BinOp::DISJUNCTION:
+      return "Disjunction";
+    case PropertyExpr::BinOp::IMPLICATION:
+      return "Implication";
+    case PropertyExpr::BinOp::WHILE:
+      return "While";
+    case PropertyExpr::BinOp::UNTIL:
+      return "Until";
+    case PropertyExpr::BinOp::UNKNOWN:
+    default:
+      return "Unknown";
+  }
+
+  return "Unknown";
+}
+
+void PropertyExpr::Binary::print(const std::string& prefix, const bool last, const Span& span) const
+{
+  LOG_TREE("Binary");
+  const std::string childPrefix = prefix + tree::carry(last);
+  printString(childPrefix, false, Format("Operation: {}", toString()));
+  if (lhs)
+    lhs->print(childPrefix, rhs == nullptr);
+  if (rhs)
+    rhs->print(childPrefix, true);
+}
+
+void PropertyExpr::If::print(const std::string& prefix, const bool last, const Span& span) const
+{
+  LOG_TREE("If");
+  const std::string childPrefix = prefix + tree::carry(last);
+  if (condition)
+    condition->print(childPrefix, consequence == nullptr);
+  if (consequence)
+    consequence->print(childPrefix, true);
+}
+
+void PropertyExpr::Between::print(const std::string& prefix, const bool last, const Span& span) const
+{
+  LOG_TREE("Between");
+  const std::string childPrefix = prefix + tree::carry(last);
+  if (lhs && rhs)
+  {
+    lhs->print(childPrefix, false);
+    rhs->print(childPrefix, consequence == nullptr);
+  }
+  if (consequence)
+  {
+    consequence->print(childPrefix, true);
+  }
+}
+
+std::string PropertyExpr::Observation::toString() const
+{
+  switch (operation)
+  {
+    case PropertyExpr::ObservationOp::IS_RUNNING:
+      return "is running";
+    case PropertyExpr::ObservationOp::STARTED:
+      return "started";
+    case PropertyExpr::ObservationOp::WAS_REJECTED:
+      return "was rejected";
+    case PropertyExpr::ObservationOp::SUCCEEDED:
+      return "succeeded";
+    case PropertyExpr::ObservationOp::FAILED:
+      return "failed";
+    case PropertyExpr::ObservationOp::STOPPED:
+      return "stopped";
+    case PropertyExpr::ObservationOp::WAS_ABORTED:
+      return "was aborted";
+    case PropertyExpr::ObservationOp::UNKNOWN:
+    default:
+      return "Unknown";
+  }
+
+  return "Unknown";
+}
+
+void PropertyExpr::Observation::print(const std::string& prefix, const bool last, const Span& span) const
+{
+  LOG_TREE("Observation");
+  const std::string childPrefix = prefix + tree::carry(last);
+  printString(childPrefix, false, Format("Operation: {}", toString()));
+  if (lhs)
+    lhs->print(childPrefix, true);
 }
 
 // -------------------------------------------------------------

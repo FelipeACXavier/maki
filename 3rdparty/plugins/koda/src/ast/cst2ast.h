@@ -32,16 +32,17 @@ public:
 
   std::any visitAnnotationDeclaration(KodaParser::AnnotationDeclarationContext* ctx) override;
   std::any visitAnnotation(KodaParser::AnnotationContext* ctx) override;
+
   // -------------------------
   // Statements
   // -------------------------
-
   std::any visitStatement(KodaParser::StatementContext* ctx) override;
   std::any visitTasksBlock(KodaParser::TasksBlockContext* ctx) override;
   std::any visitFlow(KodaParser::FlowContext* ctx) override;
   std::any visitIdentList(KodaParser::IdentListContext* ctx) override;
   std::any visitVarsBlock(KodaParser::VarsBlockContext* ctx) override;
   std::any visitDataBlock(KodaParser::DataBlockContext* ctx) override;
+  std::any visitPropertiesBlock(KodaParser::PropertiesBlockContext* ctx) override;
   std::any visitVariableStatement(KodaParser::VariableStatementContext* ctx) override;
 
   // Action/service/topic blocks mapped to same IR (ActionDef)
@@ -58,7 +59,6 @@ public:
   // -------------------------
   // Strategy
   // -------------------------
-
   std::any visitStratSeq(KodaParser::StratSeqContext* ctx) override;
   std::any visitStratJoin(KodaParser::StratJoinContext* ctx) override;
   std::any visitStratEither(KodaParser::StratEitherContext* ctx) override;
@@ -79,7 +79,6 @@ public:
   // -------------------------
   // Event calls
   // -------------------------
-
   std::any visitEvCall(KodaParser::EvCallContext* ctx) override;
   std::any visitEvQualifiedCall(KodaParser::EvQualifiedCallContext* ctx) override;
   std::any visitExprList(KodaParser::ExprListContext* ctx) override;
@@ -113,6 +112,20 @@ public:
   std::any visitExprMul(KodaParser::ExprMulContext* ctx) override;
   std::any visitExprUnary(KodaParser::ExprUnaryContext* ctx) override;
 
+  // -------------------------
+  // Properties
+  // -------------------------
+  std::any visitPropertyStatement(KodaParser::PropertyStatementContext* ctx) override;
+  std::any visitPropertyHelper(KodaParser::PropertyHelperContext* ctx) override;
+  std::any visitPropertyImplication(KodaParser::PropertyImplicationContext* ctx) override;
+  std::any visitPropertyConditionOr(KodaParser::PropertyConditionOrContext* ctx) override;
+  std::any visitPropertyConditionAnd(KodaParser::PropertyConditionAndContext* ctx) override;
+  std::any visitPropertyConditionUntil(KodaParser::PropertyConditionUntilContext* ctx) override;
+  std::any visitPropertyConditionUnary(KodaParser::PropertyConditionUnaryContext* ctx) override;
+  std::any visitPropertyConsequence(KodaParser::PropertyConsequenceContext* ctx) override;
+  std::any visitPropertyObservation(KodaParser::PropertyObservationContext* ctx) override;
+  std::any visitPropertyReference(KodaParser::PropertyReferenceContext* ctx) override;
+
 private:
   std::shared_ptr<types::TypeRegistry> mTypeRegistry;
   CollectingErrorListener* mErrorListener;
@@ -120,6 +133,9 @@ private:
   // Build ActionDef / ServiceDef / TopicDef using the same field extraction.
   template <typename CtxT>
   std::any buildActionLike(CtxT* ctx, ActionDef::Kind kind);
+
+  template <typename Context>
+  koda::PPropertyExpr foldPropertyBinary(const std::vector<Context*>& contexts, PropertyExpr::BinOp operation);
 
   bool containsContinue(PStrategy s);
 

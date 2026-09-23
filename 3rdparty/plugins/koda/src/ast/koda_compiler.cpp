@@ -4,7 +4,8 @@
 
 #include "cst2ast.h"
 #include "declaration_pass.h"
-#include "emitters/dezyne_emitter.h"
+#include "emitters/dezyne/dezyne_emitter.h"
+#include "emitters/nuxmv/nuxmv_emitter.h"
 #include "ir_builder.h"
 #include "logging.h"
 #include "parser/KodaLexer.h"
@@ -19,6 +20,7 @@ Compiler::Compiler()
   mErrorListener = std::make_shared<CollectingErrorListener>();
 
   mEmitters.push_back(std::make_shared<DezyneEmitter>());
+  mEmitters.push_back(std::make_shared<NuXmvEmitter>());
 }
 
 std::vector<Error> Compiler::getErrors() const
@@ -38,7 +40,7 @@ VoidResult Compiler::parse(const CompilerOptions& options)
     // If the AST was provided, just use that one directly
     mAST = *options.ast;
     mTypeRegistry = options.typeRegistry;
-    if (mOptions.verbose > 0)
+    if (mOptions.verbose > 1)
       printAST();
 
     return VoidResult{};
@@ -97,7 +99,7 @@ VoidResult Compiler::parse(const CompilerOptions& options)
     return VoidResult::Failed("Failed to build AST");
   }
 
-  if (mOptions.verbose > 0)
+  if (mOptions.verbose > 1)
     printAST();
 
   return VoidResult{};
@@ -105,6 +107,22 @@ VoidResult Compiler::parse(const CompilerOptions& options)
 
 VoidResult Compiler::generate()
 {
+  if (mOptions.emitters.empty())
+  {
+    std::string options;
+    bool first = true;
+    for (const auto& e : mEmitters)
+    {
+      if (!first)
+        options += ", ";
+
+      options += e->id();
+      first = false;
+    }
+
+    return VoidResult::Failed("No emitter selected. Options available: {}", options);
+  }
+
   mGeneratedFiles.clear();
 
   auto frontend = runFrontend();
@@ -165,6 +183,9 @@ VoidResult Compiler::runEmitters()
 {
   for (const auto& emitter : mEmitters)
   {
+    if (std::count(mOptions.emitters.begin(), mOptions.emitters.end(), emitter->id()) <= 0)
+      continue;
+
     auto result = emitter->generate(mIR, mSymbols, *mTypeRegistry, mOptions);
     if (!result.IsSuccess())
       return result;

@@ -1,0 +1,75 @@
+-- KODA nuXmv semantic reference model
+-- Numeric interface shared with the existing reference suite.
+MODULE main
+
+DEFINE
+  RESULT_NONE    := 0;
+  RESULT_SUCCESS := 1;
+  RESULT_FAILURE := 2;
+  RESULT_RUNNING := 3;
+  RESULT_ERROR   := 4;
+  RESULT_DONE    := 5;
+
+  CMD_NONE       := 0;
+  CMD_TRIGGER    := 1;
+  CMD_ABORT      := 2;
+  CMD_RESET      := 3;
+
+  EVENT_NONE     := 0;
+  EVENT_SUCCESS  := 1;
+  EVENT_FAILURE  := 2;
+  EVENT_ABORTED  := 3;
+
+-- KODA-level semantics of AbortCall.
+-- Dezyne's deferred Aborting state is intentionally collapsed:
+-- the call is a synchronous operation at KODA level.
+
+IVAR
+  command      : 0..3;
+  abort_result : 1..3; -- Success, Failure, Running
+
+VAR
+  state : {Idle, Error};
+
+DEFINE
+  reply :=
+    case
+      state = Idle & command = CMD_TRIGGER & abort_result = RESULT_FAILURE : RESULT_FAILURE;
+      state = Idle & command = CMD_TRIGGER & abort_result = RESULT_RUNNING : RESULT_RUNNING;
+      state = Idle & command = CMD_TRIGGER & abort_result = RESULT_SUCCESS : RESULT_DONE;
+      state = Error & command = CMD_RESET : RESULT_SUCCESS;
+      state = Error & command = CMD_ABORT : RESULT_ERROR;
+      TRUE : RESULT_NONE;
+    esac;
+
+  outcome := EVENT_NONE;
+
+INIT state = Idle;
+
+TRANS
+  (state = Idle  -> command = CMD_NONE | command = CMD_TRIGGER) &
+  (state = Error -> command = CMD_NONE | command = CMD_RESET | command = CMD_ABORT);
+
+ASSIGN
+  next(state) :=
+    case
+      state = Idle & command = CMD_TRIGGER & abort_result = RESULT_FAILURE : Error;
+      state = Error & command = CMD_RESET : Idle;
+      TRUE : state;
+    esac;
+
+LTLSPEC NAME successful_abort_call_completes_synchronously :=
+  G ((state = Idle & command = CMD_TRIGGER & abort_result = RESULT_SUCCESS) ->
+     (reply = RESULT_DONE & X state = Idle));
+
+LTLSPEC NAME failed_abort_call_enters_error :=
+  G ((state = Idle & command = CMD_TRIGGER & abort_result = RESULT_FAILURE) ->
+     (reply = RESULT_FAILURE & X state = Error));
+
+LTLSPEC NAME running_abort_call_does_not_fake_completion :=
+  G ((state = Idle & command = CMD_TRIGGER & abort_result = RESULT_RUNNING) ->
+     (reply = RESULT_RUNNING & X state = Idle));
+
+LTLSPEC NAME reset_recovers :=
+  G ((state = Error & command = CMD_RESET) ->
+     (reply = RESULT_SUCCESS & X state = Idle));

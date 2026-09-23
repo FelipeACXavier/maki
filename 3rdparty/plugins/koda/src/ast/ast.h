@@ -19,7 +19,10 @@ struct RosDef;
 struct ActionDef;
 struct VarsBlock;
 struct DataBlock;
+struct PropertiesBlock;
 struct StrategyBlock;
+struct PropertyStatement;
+struct PropertyExpr;
 
 struct Strategy;
 struct Expr;
@@ -93,8 +96,8 @@ struct TypeMapping
 // ---------- Statements ----------
 struct Statement
 {
-  std::variant<std::shared_ptr<StrategyBlock>, std::shared_ptr<VarsBlock>, std::shared_ptr<RosDef>, std::shared_ptr<ActionDef>,
-               std::shared_ptr<DataBlock>>
+  std::variant<std::shared_ptr<StrategyBlock>, std::shared_ptr<VarsBlock>, std::shared_ptr<RosDef>, std::shared_ptr<ActionDef>, std::shared_ptr<DataBlock>,
+               std::shared_ptr<PropertiesBlock>>
       node;
   Span span;
 
@@ -202,6 +205,125 @@ struct DataBlock
   void print(const std::string& prefix, const bool last) const;
 };
 
+struct PropertiesBlock
+{
+  std::vector<std::shared_ptr<PropertyStatement>> properties;
+  Span span;
+
+  void print(const std::string& prefix, const bool last) const;
+};
+
+struct PropertyStatement
+{
+  std::string name;
+  std::shared_ptr<PropertyExpr> property;
+  Span span;
+
+  void print(const std::string& prefix, const bool last) const;
+};
+
+struct PropertyExpr
+{
+  enum class UnaryOp
+  {
+    UNKNOWN = 0,
+    ALWAYS,
+    EVENTUALLY,
+    NEXT,
+    NEVER,
+    NEGATION
+  };
+
+  enum class BinOp
+  {
+    UNKNOWN = 0,
+    IMPLICATION,
+    CONJUNCTION,
+    DISJUNCTION,
+    WHILE,
+    UNTIL
+  };
+
+  enum class ObservationOp
+  {
+    UNKNOWN = 0,
+    IS_RUNNING,
+    STARTED,
+    WAS_REJECTED,
+    STOPPED,
+    SUCCEEDED,
+    FAILED,
+    WAS_ABORTED
+  };
+
+  struct Paren
+  {
+    std::shared_ptr<PropertyExpr> value;
+    void print(const std::string& prefix, const bool last, const Span& span) const;
+  };
+
+  struct Ref
+  {
+    std::string capability;
+    std::string event;
+    void print(const std::string& prefix, const bool last, const Span& span) const;
+  };
+
+  struct Unary
+  {
+    UnaryOp operation = UnaryOp::UNKNOWN;
+    std::shared_ptr<PropertyExpr> lhs;
+
+    std::string toString() const;
+    void print(const std::string& prefix, const bool last, const Span& span) const;
+  };
+
+  struct Binary
+  {
+    BinOp operation = BinOp::UNKNOWN;
+    std::shared_ptr<PropertyExpr> lhs;
+    std::shared_ptr<PropertyExpr> rhs;
+
+    std::string toString() const;
+    void print(const std::string& prefix, const bool last, const Span& span) const;
+  };
+
+  struct Observation
+  {
+    ObservationOp operation = ObservationOp::UNKNOWN;
+    std::shared_ptr<PropertyExpr> lhs;
+
+    std::string toString() const;
+    void print(const std::string& prefix, const bool last, const Span& span) const;
+  };
+
+  struct Between
+  {
+    std::shared_ptr<PropertyExpr> lhs;
+    std::shared_ptr<PropertyExpr> rhs;
+    std::shared_ptr<PropertyExpr> consequence;
+
+    void print(const std::string& prefix, const bool last, const Span& span) const;
+  };
+
+  struct If
+  {
+    std::shared_ptr<PropertyExpr> condition;
+    std::shared_ptr<PropertyExpr> consequence;
+
+    void print(const std::string& prefix, const bool last, const Span& span) const;
+  };
+
+  std::variant<std::shared_ptr<Paren>, std::shared_ptr<Ref>, std::shared_ptr<Unary>, std::shared_ptr<Binary>, std::shared_ptr<If>, std::shared_ptr<Between>,
+               std::shared_ptr<Observation>>
+      value;
+
+  std::string id;
+  Span span;
+
+  void print(const std::string& prefix, const bool last) const;
+};
+
 // ---------- Strategy ----------
 struct StrategyHandler
 {
@@ -303,9 +425,8 @@ struct Strategy
     void print(const std::string& prefix, const bool last, const Span& span) const;
   };
 
-  std::variant<std::shared_ptr<Seq>, std::shared_ptr<Join>, std::shared_ptr<Either>, std::shared_ptr<Within>, std::shared_ptr<Repeat>,
-               std::shared_ptr<Success>, std::shared_ptr<Failure>, std::shared_ptr<Continue>, std::shared_ptr<TaskCall>, std::shared_ptr<Paren>,
-               std::shared_ptr<Choose>>
+  std::variant<std::shared_ptr<Seq>, std::shared_ptr<Join>, std::shared_ptr<Either>, std::shared_ptr<Within>, std::shared_ptr<Repeat>, std::shared_ptr<Success>,
+               std::shared_ptr<Failure>, std::shared_ptr<Continue>, std::shared_ptr<TaskCall>, std::shared_ptr<Paren>, std::shared_ptr<Choose>>
       v;
 
   std::string id;
@@ -470,15 +591,27 @@ typedef std::shared_ptr<TypeMapping> PTypeMapping;
 typedef std::shared_ptr<Statement> PStatement;
 typedef std::shared_ptr<StrategyBlock> PStrategyBlock;
 typedef std::shared_ptr<VarsBlock> PVarsBlock;
+typedef std::shared_ptr<PropertiesBlock> PPropertiesBlock;
+typedef std::shared_ptr<PropertyStatement> PPropertyStatement;
 typedef std::shared_ptr<DataBlock> PDataBlock;
 typedef std::shared_ptr<RosDef> PRosDef;
 typedef std::shared_ptr<ActionDef> PActionDef;
 typedef std::shared_ptr<VarDef> PVarDef;
 typedef std::shared_ptr<Flow> PFlow;
 typedef std::shared_ptr<StrategyHandler> PStrategyHandler;
-typedef std::shared_ptr<Strategy> PStrategy;
 typedef std::shared_ptr<EventDef> PEventDef;
 typedef std::shared_ptr<EventCall> PEventCall;
+
+typedef std::shared_ptr<PropertyExpr> PPropertyExpr;
+typedef std::shared_ptr<PropertyExpr::Paren> PPropertyParen;
+typedef std::shared_ptr<PropertyExpr::Ref> PPropertyRef;
+typedef std::shared_ptr<PropertyExpr::Unary> PPropertyUnary;
+typedef std::shared_ptr<PropertyExpr::Binary> PPropertyBinary;
+typedef std::shared_ptr<PropertyExpr::Observation> PPropertyObservation;
+typedef std::shared_ptr<PropertyExpr::If> PPropertyIf;
+typedef std::shared_ptr<PropertyExpr::Between> PPropertyBetween;
+
+typedef std::shared_ptr<Strategy> PStrategy;
 typedef std::shared_ptr<Strategy::Seq> PSeq;
 typedef std::shared_ptr<Strategy::Join> PJoin;
 typedef std::shared_ptr<Strategy::Either> PEither;

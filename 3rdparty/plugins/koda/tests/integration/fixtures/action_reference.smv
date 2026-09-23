@@ -1,0 +1,67 @@
+-- KODA Action semantic reference model
+MODULE main
+
+IVAR
+  command        : {CMD_NONE, CMD_TRIGGER, CMD_ABORT, CMD_RESET};
+  trigger_result : {RESULT_SUCCESS, RESULT_FAILURE, RESULT_DONE};
+  abort_result   : {RESULT_SUCCESS, RESULT_FAILURE, RESULT_RUNNING};
+  reset_result   : {RESULT_SUCCESS, RESULT_FAILURE};
+  async_outcome  : {OUTCOME_NONE, OUTCOME_SUCCESS, OUTCOME_FAILURE};
+
+VAR
+  state : {Idle, Running, Error};
+
+DEFINE
+  reply :=
+    case
+      state = Idle & command = CMD_TRIGGER : trigger_result;
+      state = Running & command = CMD_ABORT : abort_result;
+      state = Error & command = CMD_RESET : reset_result;
+      state = Error & command = CMD_ABORT : RESULT_FAILURE;
+      TRUE : RESULT_NONE;
+    esac;
+
+  RESULT_NONE := 0;
+
+  outcome :=
+    case
+      state = Running & command = CMD_NONE : async_outcome;
+      TRUE : OUTCOME_NONE;
+    esac;
+
+TRANS
+  (state = Idle -> (command = CMD_NONE | command = CMD_TRIGGER)) &
+  (state = Running -> (command = CMD_NONE | command = CMD_ABORT)) &
+  (state = Error -> (command = CMD_NONE | command = CMD_RESET | command = CMD_ABORT)) &
+  (state != Running -> async_outcome = OUTCOME_NONE);
+
+ASSIGN
+  init(state) := Idle;
+  next(state) :=
+    case
+      state = Idle & command = CMD_TRIGGER & trigger_result = RESULT_SUCCESS : Running;
+      state = Idle & command = CMD_TRIGGER & trigger_result = RESULT_FAILURE : Error;
+      state = Idle & command = CMD_TRIGGER & trigger_result = RESULT_DONE : Idle;
+
+      state = Running & command = CMD_NONE & async_outcome = OUTCOME_SUCCESS : Idle;
+      state = Running & command = CMD_NONE & async_outcome = OUTCOME_FAILURE : Error;
+
+      -- Abort is conceptually synchronous at KODA level.
+      state = Running & command = CMD_ABORT & abort_result = RESULT_SUCCESS : Idle;
+      state = Running & command = CMD_ABORT & abort_result = RESULT_FAILURE : Error;
+      state = Running & command = CMD_ABORT & abort_result = RESULT_RUNNING : Running;
+
+      state = Error & command = CMD_RESET & reset_result = RESULT_SUCCESS : Idle;
+      TRUE : state;
+    esac;
+
+-- Unit properties
+LTLSPEC NAME trigger_success_runs := G(state = Idle & command = CMD_TRIGGER & trigger_result = RESULT_SUCCESS -> X state = Running);
+LTLSPEC NAME trigger_done_is_sync := G(state = Idle & command = CMD_TRIGGER & trigger_result = RESULT_DONE -> X state = Idle);
+LTLSPEC NAME trigger_failure_errors := G(state = Idle & command = CMD_TRIGGER & trigger_result = RESULT_FAILURE -> X state = Error);
+LTLSPEC NAME async_success_completes := G(state = Running & command = CMD_NONE & async_outcome = OUTCOME_SUCCESS -> X state = Idle);
+LTLSPEC NAME async_failure_errors := G(state = Running & command = CMD_NONE & async_outcome = OUTCOME_FAILURE -> X state = Error);
+LTLSPEC NAME abort_success_is_sync := G(state = Running & command = CMD_ABORT & abort_result = RESULT_SUCCESS -> X state = Idle);
+LTLSPEC NAME abort_running_stays_running := G(state = Running & command = CMD_ABORT & abort_result = RESULT_RUNNING -> X state = Running);
+LTLSPEC NAME abort_failure_errors := G(state = Running & command = CMD_ABORT & abort_result = RESULT_FAILURE -> X state = Error);
+LTLSPEC NAME reset_success_recovers := G(state = Error & command = CMD_RESET & reset_result = RESULT_SUCCESS -> X state = Idle);

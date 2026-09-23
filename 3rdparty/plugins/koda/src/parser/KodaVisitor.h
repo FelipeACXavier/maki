@@ -73,11 +73,35 @@ public:
 
     virtual std::any visitVariableStatement(KodaParser::VariableStatementContext *context) = 0;
 
+    virtual std::any visitPropertiesBlock(KodaParser::PropertiesBlockContext *context) = 0;
+
+    virtual std::any visitPropertyStatement(KodaParser::PropertyStatementContext *context) = 0;
+
     virtual std::any visitActionBlock(KodaParser::ActionBlockContext *context) = 0;
 
     virtual std::any visitServiceBlock(KodaParser::ServiceBlockContext *context) = 0;
 
     virtual std::any visitTopicBlock(KodaParser::TopicBlockContext *context) = 0;
+
+    virtual std::any visitPropertyExpr(KodaParser::PropertyExprContext *context) = 0;
+
+    virtual std::any visitPropertyHelper(KodaParser::PropertyHelperContext *context) = 0;
+
+    virtual std::any visitPropertyImplication(KodaParser::PropertyImplicationContext *context) = 0;
+
+    virtual std::any visitPropertyConditionOr(KodaParser::PropertyConditionOrContext *context) = 0;
+
+    virtual std::any visitPropertyConditionAnd(KodaParser::PropertyConditionAndContext *context) = 0;
+
+    virtual std::any visitPropertyConditionUntil(KodaParser::PropertyConditionUntilContext *context) = 0;
+
+    virtual std::any visitPropertyConditionUnary(KodaParser::PropertyConditionUnaryContext *context) = 0;
+
+    virtual std::any visitPropertyConsequence(KodaParser::PropertyConsequenceContext *context) = 0;
+
+    virtual std::any visitPropertyObservation(KodaParser::PropertyObservationContext *context) = 0;
+
+    virtual std::any visitPropertyReference(KodaParser::PropertyReferenceContext *context) = 0;
 
     virtual std::any visitRosDefStatement(KodaParser::RosDefStatementContext *context) = 0;
 

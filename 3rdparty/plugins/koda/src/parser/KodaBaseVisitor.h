@@ -123,6 +123,14 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitPropertiesBlock(KodaParser::PropertiesBlockContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitPropertyStatement(KodaParser::PropertyStatementContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitActionBlock(KodaParser::ActionBlockContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -132,6 +140,46 @@ public:
   }
 
   virtual std::any visitTopicBlock(KodaParser::TopicBlockContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitPropertyExpr(KodaParser::PropertyExprContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitPropertyHelper(KodaParser::PropertyHelperContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitPropertyImplication(KodaParser::PropertyImplicationContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitPropertyConditionOr(KodaParser::PropertyConditionOrContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitPropertyConditionAnd(KodaParser::PropertyConditionAndContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitPropertyConditionUntil(KodaParser::PropertyConditionUntilContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitPropertyConditionUnary(KodaParser::PropertyConditionUnaryContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitPropertyConsequence(KodaParser::PropertyConsequenceContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitPropertyObservation(KodaParser::PropertyObservationContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitPropertyReference(KodaParser::PropertyReferenceContext *ctx) override {
     return visitChildren(ctx);
   }
 

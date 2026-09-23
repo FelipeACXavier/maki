@@ -64,17 +64,24 @@ set(KODA_COMPILER_FILES
   src/ast/ir_builder.cpp
   src/ast/koda_compiler.cpp
 
-  src/ast/main.cpp
   src/ast/semantic_analyzer.cpp
   src/ast/symbol_registry.cpp
 
-  src/ast/emitters/dezyne_declaration_pass.cpp
-  src/ast/emitters/dezyne_emitter.cpp
-  src/ast/emitters/dezyne_lowering_pass.cpp
-  src/ast/emitters/dezyne_model.cpp
-  src/ast/emitters/dezyne_writer.cpp
-  src/ast/emitters/dezyne_library_emitter.cpp
-  src/ast/emitters/dezyne_ros_emitter.cpp
+  src/ast/emitters/dezyne/dezyne_declaration_pass.cpp
+  src/ast/emitters/dezyne/dezyne_emitter.cpp
+  src/ast/emitters/dezyne/dezyne_lowering_pass.cpp
+  src/ast/emitters/dezyne/dezyne_model.cpp
+  src/ast/emitters/dezyne/dezyne_writer.cpp
+  src/ast/emitters/dezyne/dezyne_library_emitter.cpp
+  src/ast/emitters/dezyne/dezyne_ros_emitter.cpp
+
+  src/ast/emitters/nuxmv/nuxmv_writer.cpp
+  src/ast/emitters/nuxmv/nuxmv_emitter.cpp
+  src/ast/emitters/nuxmv/nuxmv_expression.cpp
+  src/ast/emitters/nuxmv/nuxmv_model.cpp
+  src/ast/emitters/nuxmv/nuxmv_semantic_compiler.cpp
+  src/ast/emitters/nuxmv/nuxmv_composite_semantics.cpp
+  src/ast/emitters/nuxmv/nuxmv_handler_semantics.cpp
 
   src/parser/KodaParser.cpp
   src/parser/KodaLexer.cpp
@@ -256,3 +263,33 @@ if (NOT BUILD_PLUGINS)
 endif()
 
 add_koda_plugin(koda_generatorplugin ON)
+
+# ==================================================================
+# Tests
+if (BUILD_TESTING)
+  find_package(GTest CONFIG REQUIRED)
+
+  set(KODA_UNIT_TEST_NAME "koda_unit_tests")
+
+  file(GLOB KODA_TEST_FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/*.cpp
+  )
+
+  add_executable(${KODA_UNIT_TEST_NAME}
+    ${KODA_TEST_FILES}
+  )
+
+  target_link_libraries(${KODA_UNIT_TEST_NAME} PRIVATE
+    libkoda
+    libmaki
+    libcpphelpers
+    GTest::gtest_main
+  )
+
+  target_include_directories(${KODA_UNIT_TEST_NAME} PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+  )
+
+  include(GoogleTest)
+  gtest_discover_tests(${KODA_UNIT_TEST_NAME})
+endif()

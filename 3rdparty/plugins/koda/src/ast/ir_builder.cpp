@@ -157,6 +157,17 @@ Result<ir::Component> IRBuilder::buildComponent(const PComponent& component) con
 
       out.actions.push_back(std::move(irAction));
     }
+    else if (auto properties = std::get_if<PPropertiesBlock>(&statement->node); properties && *properties)
+    {
+      for (const auto& property : (*properties)->properties)
+      {
+        auto built = buildProperty(property, owner);
+        if (!built.IsSuccess())
+          return Result<ir::Component>::Failed(built.ErrorMessage());
+
+        out.properties.push_back(built.Value());
+      }
+    }
   }
 
   return out;
@@ -667,6 +678,230 @@ Result<ir::PExpression> IRBuilder::buildExpr(const PExpr& expr, SymbolId owner) 
   else
   {
     return Result<ir::PExpression>::Failed("Unsupported expression node");
+  }
+
+  return out;
+}
+
+Result<ir::Property> IRBuilder::buildProperty(const PPropertyStatement& property, SymbolId owner) const
+{
+  if (!property || !property->property)
+    return Result<ir::Property>::Failed("Invalid property");
+
+  auto expression = buildPropertyExpr(property->property, owner);
+  if (!expression.IsSuccess())
+    return Result<ir::Property>::Failed(expression.ErrorMessage());
+
+  ir::Property out;
+  out.name = property->name;
+  out.expression = expression.Value();
+  out.span = property->span;
+
+  return out;
+}
+
+Result<ir::PPropertyExpr> IRBuilder::buildPropertyExpr(const PPropertyExpr& expr, SymbolId owner) const
+{
+  if (!expr)
+    return Result<ir::PPropertyExpr>::Failed("Invalid property expression");
+
+  // Parentheses disappear from the semantic IR.
+  if (auto p = std::get_if<PPropertyParen>(&expr->value); p && *p)
+    return buildPropertyExpr((*p)->value, owner);
+
+  auto out = std::make_shared<ir::PropertyExpr>();
+  out->span = expr->span;
+
+  if (auto p = std::get_if<PPropertyObservation>(&expr->value); p && *p)
+  {
+    auto observation = buildObservation(*p, expr->span, owner);
+    if (!observation.IsSuccess())
+      return Result<ir::PPropertyExpr>::Failed(observation.ErrorMessage());
+
+    out->value = observation.Value();
+    return out;
+  }
+  else if (auto p = std::get_if<PPropertyUnary>(&expr->value); p && *p)
+  {
+    auto operand = buildPropertyExpr((*p)->lhs, owner);
+    if (!operand.IsSuccess())
+      return operand;
+
+    switch ((*p)->operation)
+    {
+      case PropertyExpr::UnaryOp::ALWAYS:
+        out->value = ir::PropertyExpr::Always{operand.Value()};
+        break;
+
+      case PropertyExpr::UnaryOp::EVENTUALLY:
+        out->value = ir::PropertyExpr::Eventually{operand.Value()};
+        break;
+
+      case PropertyExpr::UnaryOp::NEXT:
+        out->value = ir::PropertyExpr::Next{operand.Value()};
+        break;
+
+      case PropertyExpr::UnaryOp::NEGATION:
+        out->value = ir::PropertyExpr::Not{operand.Value()};
+        break;
+
+      case PropertyExpr::UnaryOp::NEVER:
+      {
+        // Sugar for always not P
+        auto negated = std::make_shared<ir::PropertyExpr>();
+        negated->span = expr->span;
+        negated->value = ir::PropertyExpr::Not{operand.Value()};
+
+        out->value = ir::PropertyExpr::Always{negated};
+        break;
+      }
+
+      default:
+        return Result<ir::PPropertyExpr>::Failed("Unsupported unary property operation at {}", expr->span.toString());
+    }
+
+    return out;
+  }
+  else if (auto p = std::get_if<PPropertyBinary>(&expr->value); p && *p)
+  {
+    auto lhs = buildPropertyExpr((*p)->lhs, owner);
+    RETURN_ON_FAILURE(lhs);
+
+    auto rhs = buildPropertyExpr((*p)->rhs, owner);
+    RETURN_ON_FAILURE(rhs);
+
+    switch ((*p)->operation)
+    {
+      case PropertyExpr::BinOp::IMPLICATION:
+        out->value = ir::PropertyExpr::Implies{lhs.Value(), rhs.Value()};
+        break;
+
+      case PropertyExpr::BinOp::CONJUNCTION:
+        out->value = ir::PropertyExpr::And{lhs.Value(), rhs.Value()};
+        break;
+
+      case PropertyExpr::BinOp::DISJUNCTION:
+        out->value = ir::PropertyExpr::Or{lhs.Value(), rhs.Value()};
+        break;
+
+      // "while" currently has conjunction semantics.
+      case PropertyExpr::BinOp::WHILE:
+        out->value = ir::PropertyExpr::And{lhs.Value(), rhs.Value()};
+        break;
+
+      case PropertyExpr::BinOp::UNTIL:
+        out->value = ir::PropertyExpr::Until{lhs.Value(), rhs.Value()};
+        break;
+
+      default:
+        return Result<ir::PPropertyExpr>::Failed("Unsupported binary property operation at {}", expr->span.toString());
+    }
+
+    return out;
+  }
+  else if (auto p = std::get_if<PPropertyIf>(&expr->value); p && *p)
+  {
+    // Sugar for always (P implies Q)
+    auto condition = buildPropertyExpr((*p)->condition, owner);
+    RETURN_ON_FAILURE(condition);
+
+    auto consequence = buildPropertyExpr((*p)->consequence, owner);
+    RETURN_ON_FAILURE(consequence);
+
+    auto implication = std::make_shared<ir::PropertyExpr>();
+    implication->span = expr->span;
+    implication->value = ir::PropertyExpr::Implies{
+        condition.Value(),
+        consequence.Value(),
+    };
+
+    out->value = ir::PropertyExpr::Always{implication};
+    return out;
+  }
+  else if (auto p = std::get_if<PPropertyBetween>(&expr->value); p && *p)
+  {
+    // Sugar for always (P implies (R until Q))
+    auto start = buildPropertyExpr((*p)->lhs, owner);
+    RETURN_ON_FAILURE(start);
+
+    auto end = buildPropertyExpr((*p)->rhs, owner);
+    RETURN_ON_FAILURE(end);
+
+    auto consequence = buildPropertyExpr((*p)->consequence, owner);
+    RETURN_ON_FAILURE(consequence);
+
+    auto until = std::make_shared<ir::PropertyExpr>();
+    until->span = expr->span;
+    until->value = ir::PropertyExpr::WeakUntil{
+        consequence.Value(),
+        end.Value(),
+    };
+
+    auto implication = std::make_shared<ir::PropertyExpr>();
+    implication->span = expr->span;
+    implication->value = ir::PropertyExpr::Implies{
+        start.Value(),
+        until,
+    };
+
+    out->value = ir::PropertyExpr::Always{implication};
+    return out;
+  }
+
+  if (std::holds_alternative<PPropertyRef>(expr->value))
+    return Result<ir::PPropertyExpr>::Failed("Bare property reference at {}", expr->span.toString());
+
+  return Result<ir::PPropertyExpr>::Failed("Unsupported property expression at {}", expr->span.toString());
+}
+
+Result<ir::Observation> IRBuilder::buildObservation(const PPropertyObservation& observation, const Span& span, SymbolId owner) const
+{
+  if (!observation)
+    return Result<ir::Observation>::Failed("Invalid property observation");
+
+  const auto it = mSemantics.propertyObservations.find(observation.get());
+  if (it == mSemantics.propertyObservations.end())
+    return Result<ir::Observation>::Failed("Unresolved property observation at {}", span.toString());
+
+  const auto& resolved = it->second;
+
+  ir::Observation out;
+  out.receiver = resolved.receiver;
+  out.target = resolved.target;
+  out.span = span;
+
+  switch (resolved.kind)
+  {
+    case PropertyExpr::ObservationOp::IS_RUNNING:
+      out.kind = ir::Observation::Kind::Running;
+      break;
+
+    case PropertyExpr::ObservationOp::STARTED:
+      out.kind = ir::Observation::Kind::Started;
+      break;
+
+    case PropertyExpr::ObservationOp::WAS_REJECTED:
+      out.kind = ir::Observation::Kind::Rejected;
+      break;
+
+    case PropertyExpr::ObservationOp::STOPPED:
+      out.kind = ir::Observation::Kind::Stopped;
+      break;
+
+    case PropertyExpr::ObservationOp::WAS_ABORTED:
+      out.kind = ir::Observation::Kind::Aborted;
+      break;
+
+    case PropertyExpr::ObservationOp::SUCCEEDED:
+      out.kind = ir::Observation::Kind::Succeeded;
+      break;
+
+    case PropertyExpr::ObservationOp::FAILED:
+      out.kind = ir::Observation::Kind::Failed;
+      break;
+
+    default:
+      return Result<ir::Observation>::Failed("Unsupported property observation {} at {}", (int)resolved.kind, span.toString());
   }
 
   return out;
