@@ -29,3 +29,4 @@ The platform focuses on:
 - @subpage building
 - @subpage customization
 - @subpage examples
+- @subpage koda
