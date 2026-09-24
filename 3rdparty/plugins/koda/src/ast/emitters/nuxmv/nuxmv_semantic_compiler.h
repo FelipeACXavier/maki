@@ -111,10 +111,10 @@ private:
   void materializeFlows(Behaviour& behaviour);
   void materializeBehaviourInterface(Behaviour& behaviour, const std::string& suffix = "");
   void mergeBehaviour(koda::nuxmv::Behaviour& target, koda::nuxmv::Behaviour&& child);
-  void registerMainFlow(const Behaviour& behaviour, SymbolId flow, const PExpression command);
+  VoidResult registerMainFlow(const Behaviour& behaviour, SymbolId flow, const PExpression command);
 
   Result<CapabilityInstance*> findCapability(SymbolId symbol);
-  FlowInstance& findFlow(SymbolId symbol);
+  Result<FlowInstance*> findFlow(SymbolId symbol);
 
   VoidResult compileChoose(const ir::PStrategy& strategy, const ir::Strategy::Choose& choose, const PExpression& trigger, const PExpression& abort,
                            const PExpression& reset, Behaviour& behaviour);

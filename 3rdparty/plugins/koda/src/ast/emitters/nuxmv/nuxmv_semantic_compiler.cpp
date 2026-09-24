@@ -102,7 +102,7 @@ VoidResult SemanticCompiler::compileFlow(const ir::Component& component, const i
                                     is(command, constants::commandReset()), root));
 
   materializeBehaviourInterface(root);
-  registerMainFlow(root, flow.symbol, command);
+  RETURN_ON_FAILURE(registerMainFlow(root, flow.symbol, command));
 
   // Capability calls are collected while recursively compiling the strategy.
   // Materialize one shared state machine per capability only after all call
@@ -125,9 +125,12 @@ VoidResult SemanticCompiler::compileFlow(const ir::Component& component, const i
   return VoidResult();
 }
 
-void SemanticCompiler::registerMainFlow(const Behaviour& behaviour, SymbolId flow, const PExpression command)
+VoidResult SemanticCompiler::registerMainFlow(const Behaviour& behaviour, SymbolId flow, const PExpression command)
 {
-  auto& rootFlow = findFlow(flow);
+  auto flowResult = findFlow(flow);
+  RETURN_ON_FAILURE(flowResult);
+
+  auto& rootFlow = *flowResult.Value();
   rootFlow.calls.push_back(FlowCallSite{
       .id = behaviour.id,
       .trigger = equal(command, constants::commandTrigger()),
@@ -137,6 +140,8 @@ void SemanticCompiler::registerMainFlow(const Behaviour& behaviour, SymbolId flo
       .abortReply = behaviour.abortReply,
       .running = runningExpression(behaviour),
   });
+
+  return VoidResult();
 }
 
 VoidResult SemanticCompiler::compileStrategy(const ir::PStrategy& strategy, const PExpression& trigger, const PExpression& abort, const PExpression& reset,
@@ -1389,7 +1394,9 @@ VoidResult SemanticCompiler::compileFlowCall(const ir::PStrategy& strategy, cons
   if (!target->strategy)
     return VoidResult::Failed("nuXmv: flow '{}' has no strategy", target->name);
 
-  auto& flow = findFlow(call.target);
+  auto flowResult = findFlow(call.target);
+  RETURN_ON_FAILURE(flowResult);
+  auto& flow = *flowResult.Value();
 
   // A flow can be aborted either by its normal parent or by an explicit
   // flow.abort() call elsewhere in the task.
@@ -1425,7 +1432,9 @@ VoidResult SemanticCompiler::compileFlowAbort(const ir::PStrategy& strategy, con
                                               const PExpression& reset, Behaviour& behaviour)
 {
   const auto [id, _] = uniqueId(strategy, "flow_abort");
-  auto& flow = findFlow(call.receiver);
+  auto flowResult = findFlow(call.receiver);
+  RETURN_ON_FAILURE(flowResult);
+  auto& flow = *flowResult.Value();
 
   behaviour.id = id;
   behaviour.origin = provenance(strategy);
@@ -1899,10 +1908,10 @@ Result<SemanticCompiler::CapabilityInstance*> SemanticCompiler::findCapability(S
   return &it->second;
 }
 
-SemanticCompiler::FlowInstance& SemanticCompiler::findFlow(SymbolId symbol)
+Result<SemanticCompiler::FlowInstance*> SemanticCompiler::findFlow(SymbolId symbol)
 {
   if (const auto it = mFlowInstances.find(symbol); it != mFlowInstances.end())
-    return it->second;
+    return &it->second;
 
   FlowInstance instance{
       .symbol = symbol,
@@ -1912,7 +1921,8 @@ SemanticCompiler::FlowInstance& SemanticCompiler::findFlow(SymbolId symbol)
       .abortReplies = {},
   };
 
-  return mFlowInstances.emplace(symbol, std::move(instance)).first->second;
+  auto [it, _] = mFlowInstances.emplace(symbol, std::move(instance));
+  return &it->second;
 }
 
 void SemanticCompiler::materializeCapabilities(Behaviour& behaviour)
