@@ -52,11 +52,13 @@ maki::ResultArtifacts KodaRosBuild::run(const maki::PipelineContext& context, co
     return maki::ResultArtifacts::Failed("No artifacts available, requires \"ros-project\"");
 
   if (!parameters.contains(ROS_FOLDER))
-    return maki::ResultArtifacts::Failed("No ROS folder provided");
+    return maki::ResultArtifacts::Failed("No {} provided", ROS_FOLDER);
 
   auto rosFolder = parameters.at(ROS_FOLDER).toString();
+  if (rosFolder.isEmpty())
+    return maki::ResultArtifacts::Failed("{} is empty", ROS_FOLDER);
   if (!QDir(rosFolder).exists())
-    return maki::ResultArtifacts::Failed("ROS folder '{}' does no exist", rosFolder);
+    return maki::ResultArtifacts::Failed("{} '{}' does no exist", ROS_FOLDER, rosFolder);
 
   // Generate files
   // If there are multiple artifacts, use the latest one

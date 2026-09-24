@@ -1521,8 +1521,7 @@ void Canvas::onNodeHovered(NodeItem* node, bool entered)
       for (const auto& flow : node->flows())
         if (flow->name() == Constants::MAIN_FLOW)
         {
-          QMetaObject::invokeMethod(
-              this, [this, flow, nodeId = node->id()] { emit openFlow(flow, nodeId, maki::FocusProperties::internal()); }, Qt::QueuedConnection);
+          emit openFlow(flow, node->id(), maki::FocusProperties::internal());
           return;
         }
     });

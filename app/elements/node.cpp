@@ -284,7 +284,7 @@ void NodeItem::showControls(maki::ControlWidget* controls, const ControlProperti
   }
 
   if (!mControlWidget)
-    mControlWidget = new CanvasControlWidget([this]() { dismissControl(); }, this);
+    mControlWidget = new CanvasControlWidget([this] { QMetaObject::invokeMethod(mControlWidget, [this] { dismissControl(); }, Qt::QueuedConnection); }, this);
   else
     mControlWidget->show();
 
@@ -316,6 +316,7 @@ void NodeItem::showControls(maki::ControlWidget* controls, const ControlProperti
         pos = {node.left() - control.width() - spacing, node.center().y() - control.height() / 2.0};
         break;
 
+      case Config::ControlPosition::Fixed:
       case Config::ControlPosition::Right:
         pos = {node.right() + spacing, node.center().y() - control.height() / 2.0};
         break;

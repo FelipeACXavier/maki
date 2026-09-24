@@ -293,15 +293,16 @@ Result<maki::PipelineArtifact> KodaGenerator::generateDezyne(const maki::Pipelin
     if (parameters.contains("Simulate"))
       options.simulation = parameters.at("Simulate").toBool();
     if (parameters.contains("Start wait"))
-
       options.startWait = parameters.at("Start wait").toDouble();
     if (parameters.contains("Verbose"))
       options.verbose = 1;
+
     if (mAST && !(parameters.contains("From file") && parameters.at("From file").toBool()))
     {
       options.ast = mAST;
       options.typeRegistry = std::make_shared<koda::types::TypeRegistry>(*mServices->document()->getTypesRegistry());
     }
+    options.emitters.push_back("dezyne");
 
     options.traceability = mTraceMap;
     options.inputFile = file.toStdString();
@@ -512,6 +513,8 @@ Result<maki::PipelineArtifact> KodaGenerator::buildRosProject(const maki::Pipeli
     return Result<maki::PipelineArtifact>::Failed("buildProject, missing root folder");
 
   const QString projectDir = artifact.paths["rootDir"].toString();
+  if (rosFolder.isEmpty())
+    return Result<maki::PipelineArtifact>::Failed("buildProject, missing ros folder");
 
   LOG_DEBUG("Building ROS project in {} with ROS workspace: {}", projectDir, rosFolder);
   pipeline->startGroup("Build ROS");

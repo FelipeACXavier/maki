@@ -68,10 +68,14 @@ void NodeActionRow::leaveEvent(QEvent* event)
 
 void NodeActionRow::mousePressEvent(QMouseEvent* event)
 {
-  if (event->button() == Qt::LeftButton)
-    emit clicked();
+  if (event->button() != Qt::LeftButton)
+  {
+    QWidget::mousePressEvent(event);
+    return;
+  }
 
-  QWidget::mousePressEvent(event);
+  event->accept();
+  emit clicked();
 }
 
 void NodeActionRow::setHovered(bool hovered)
@@ -140,16 +144,16 @@ TaskNodeMenu::TaskNodeMenu(QWidget* parent)
   mainLayout->addWidget(subtaskWidget);
 
   connect(mainWidget, &NodeActionRow::clicked, this, [this] {
-    emit openMainFlowRequested();
     hideMenu();
+    emit openMainFlowRequested();
   });
   connect(flowWidget, &NodeActionRow::clicked, this, [this] {
-    emit addFlowRequested();
     hideMenu();
+    emit addFlowRequested();
   });
   connect(subtaskWidget, &NodeActionRow::clicked, this, [this] {
-    emit addSubtaskRequested();
     hideMenu();
+    emit addSubtaskRequested();
   });
 
   auto* layout = new QVBoxLayout(this);

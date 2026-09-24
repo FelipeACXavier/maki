@@ -54,9 +54,8 @@ PluginPipeline::PluginPipeline(Pipeline* pipeline, QObject* parent)
   });
   connect(mPipeline, &Pipeline::startingPipeline,
           [this](const Pipeline::Info& info) { mProgressId = NOTIFY_LONG_INFO(mProgressId, "Pipeline Progress", progressWidget()); });
-  connect(mPipeline, &Pipeline::startingGroup, [this](const Pipeline::Info& info, const QString& groupName) {
-    mProgressId = NOTIFY_LONG_INFO(mProgressId, "Pipeline Progress", progressWidget());
-  });
+  connect(mPipeline, &Pipeline::startingGroup,
+          [this](const Pipeline::Info& info, const QString& groupName) { mProgressId = NOTIFY_LONG_INFO(mProgressId, "Pipeline Progress", progressWidget()); });
   connect(mPipeline, &Pipeline::processStarted, [this](const Pipeline::Info& info, const QString& process, const QStringList& /* arguments */) {
     mProgressId = NOTIFY_LONG_INFO(mProgressId, "Pipeline Progress", progressWidget());
   });
@@ -134,8 +133,8 @@ VoidResult PluginPipeline::runNextNode()
   if (args.empty())
     args = action->defaultParameters();
 
-  // for (const auto& arg : args)
-  //   qDebug() << "Running with : " << arg;
+  for (const auto& arg : args)
+    LOG_DEBUG("Running with: {} {}", arg.first, arg.second.toString());
 
   auto result = action->run(mContext, args, mPipeline);
   if (!result)
@@ -166,7 +165,7 @@ VoidResult PluginPipeline::continueAfterNode()
   ++mCurrentIndex;
   auto ran = runNextNode();
   if (!ran.IsSuccess())
-    emit pipelineFinished("");
+    done(QString::fromStdString(ran.ErrorMessage()));
 
   return ran;
 }
@@ -195,19 +194,19 @@ VoidResult PluginPipeline::run(const PipelineGraph& graph, PipelineContext& cont
 
   auto ran = runNextNode();
   if (!ran.IsSuccess())
-    done("");
+    done(QString::fromStdString(ran.ErrorMessage()));
 
   return ran;
 }
 
 void PluginPipeline::done(const QString& message)
 {
-  emit pipelineFinished(message);
-
   {
     std::unique_lock<std::mutex> lock(mStateMutex);
     mRunning = State::Idle;
   }
+
+  emit pipelineFinished(message);
 }
 
 std::optional<PipelineNode> PluginPipeline::findNode(const PipelineGraph& graph, const QString& nodeId) const
