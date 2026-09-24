@@ -122,6 +122,7 @@ public:
    * @param painter Painter to use for drawing.
    */
   void paintNode(const QRectF& bounds, const QColor& background, const QPen& text, QPainter* painter);
+  void paintNodeBody(const QRectF& bounds, QPainter* painter);
 
   /**
    * @brief Retrieves the pixmap of the node.

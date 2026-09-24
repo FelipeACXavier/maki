@@ -533,13 +533,22 @@ HelpConfig NodeItem::help() const
   return config()->help;
 }
 
+bool NodeItem::constrainChildren() const
+{
+  return true;
+}
+
+QRectF NodeItem::childAreaSceneRect() const
+{
+  return mapRectToScene(nodeRect());
+}
+
 QRectF NodeItem::parentInnerSceneRect(qreal padding) const
 {
   if (!parentNode())
     return {};
 
-  QRectF r = parentNode()->mapRectToScene(parentNode()->nodeRect());
-  return r.adjusted(padding, padding, -padding, -padding);
+  return parentNode()->childAreaSceneRect().adjusted(padding, padding, -padding, -padding);
 }
 
 // Apply a new logical size to this node in one place
@@ -607,28 +616,31 @@ QSizeF NodeItem::clampSize(qreal width, qreal height) const
 
 void NodeItem::fitInsideParent(qreal padding)
 {
-  QRectF inner = parentInnerSceneRect(padding);
-  if (!inner.isValid())
+  auto* parent = parentNode();
+  if (!parent)
     return;
 
-  // 1) Clamp size so we're not bigger than the inner rect
-  QSizeF currentSize = mSize;
-  qreal maxW = inner.width();
-  qreal maxH = inner.height();
+  if (parent->constrainChildren())
+  {
+    QRectF inner = parentInnerSceneRect(padding);
+    if (!inner.isValid())
+      return;
 
-  maxW = qMax(maxW, Config::MINIMUM_NODE_SIZE);
-  maxH = qMax(maxH, Config::MINIMUM_NODE_SIZE);
+    QSizeF currentSize = mSize;
+    const qreal maxW = qMax(inner.width(), Config::MINIMUM_NODE_SIZE);
+    const qreal maxH = qMax(inner.height(), Config::MINIMUM_NODE_SIZE);
 
-  qreal newW = qMin(currentSize.width(), maxW);
-  qreal newH = qMin(currentSize.height(), maxH);
+    const qreal newW = qMin(currentSize.width(), maxW);
+    const qreal newH = qMin(currentSize.height(), maxH);
 
-  if (newW != currentSize.width() || newH != currentSize.height())
-    applySize(QSizeF(newW, newH));
+    if (newW != currentSize.width() || newH != currentSize.height())
+      applySize(QSizeF(newW, newH));
+  }
 
-  // 2) Clamp position so we're fully inside `inner`
-  QRectF childSceneRect = mapRectToScene(boundingRect());
-  QPointF newPos = clampPosInside(inner, childSceneRect);
-  updatePosition(newPos);
+  const QPointF constrained = parent->constrainChildPosition(this, pos());
+
+  if (constrained != pos())
+    updatePosition(constrained);
 }
 
 void NodeItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
@@ -646,10 +658,8 @@ void NodeItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 
     // After the parent resizes, keep children inside
     for (auto* child : children())
-    {
-      auto* nodeChild = static_cast<NodeItem*>(child);
-      nodeChild->fitInsideParent(10);
-    }
+      if (auto* nodeChild = qgraphicsitem_cast<NodeItem*>(child))
+        nodeChild->fitInsideParent(10);
   }
   else
   {
@@ -723,28 +733,8 @@ QVariant NodeItem::itemChange(GraphicsItemChange change, const QVariant& value)
 {
   if (change == QGraphicsItem::ItemPositionChange)
   {
-    if (NodeItem* parent = parentNode())
-    {
-      QPointF newPos = value.toPointF();  // proposed new pos in scene coords
-      QRectF parentRect = parent->nodeRect();
-      parentRect = parentRect.adjusted(10, 10, -10, -10);
-      parentRect.translate(parent->pos());
-
-      // Child rect in its own coords
-      QRectF childLocalRect = nodeRect();
-
-      // Compute allowed range so childSceneRect stays inside parentRect
-      const qreal minX = parentRect.left();
-      const qreal maxX = parentRect.right() - childLocalRect.width();
-      const qreal minY = parentRect.top();
-      const qreal maxY = parentRect.bottom() - childLocalRect.height();
-
-      // Clamp
-      newPos.setX(std::clamp(newPos.x(), minX, maxX));
-      newPos.setY(std::clamp(newPos.y(), minY, maxY));
-
-      return newPos;  // this replaces the proposed position
-    }
+    if (auto* parent = parentNode())
+      return parent->constrainChildPosition(this, value.toPointF());
   }
   else if (change == QGraphicsItem::ItemPositionHasChanged)
   {
@@ -786,8 +776,35 @@ void NodeItem::setCenterPosition(const QPointF& center)
     mStorage->setPosition(center);
 }
 
+void NodeItem::childPositionUpdated()
+{
+}
+
+QPointF NodeItem::constrainChildPosition(const NodeItem* child, const QPointF& proposedPosition) const
+{
+  if (!child)
+    return proposedPosition;
+
+  QPointF newPos = proposedPosition;
+  QRectF parentRect = parentInnerSceneRect(10.0);
+  QRectF childLocalRect = nodeRect();
+
+  const qreal minX = parentRect.left();
+  const qreal maxX = parentRect.right() - childLocalRect.width();
+  const qreal minY = parentRect.top();
+  const qreal maxY = parentRect.bottom() - childLocalRect.height();
+
+  newPos.setX(std::clamp(newPos.x(), minX, maxX));
+  newPos.setY(std::clamp(newPos.y(), minY, maxY));
+
+  return newPos;
+}
+
 void NodeItem::updateExtrasPosition()
 {
+  if (auto* parent = parentNode())
+    parent->childPositionUpdated();
+
   if (nodeMoved)
     nodeMoved(this, false);
 }

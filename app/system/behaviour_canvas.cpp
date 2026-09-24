@@ -87,16 +87,20 @@ bool BehaviourCanvas::canAddTransition(NodeItem* node, PortItem* port) const
   if (!node || !port)
     return false;
 
+  // Expanded sub-flow input marker may start the internal flow.
+  if (port->isMarker())
+    return true;
+
   int index = 0;
   for (const auto& t : mFlow->transitions())
   {
-    if (t->source()->id() == node->id())
-      ++index;
-    else
+    if (t->source()->id() != node->id())
       continue;
 
     if ((port->isAbort() || port->isError()) && t->getEvent() == port->defaultTransitionEvent())
       return false;
+
+    ++index;
   }
 
   LOG_TRACE("canAddTransition: {} <= {}", index, node->config()->transitions.size());
@@ -205,6 +209,8 @@ bool BehaviourCanvas::insertDroppedNodeOnTransition(TransitionItem* transition, 
   incoming.setId(QUuid::createUuid().toString());
   incoming.setEvent(originalTransition.getevent());
   incoming.setLabel(originalTransition.getlabel());
+  incoming.setSrcPort(originalTransition.srcPort());
+  incoming.setDstPort(Types::Port::IN);
 
   incoming.setSrcId(source->id());
   incoming.setDstId(insertedNodeId);
@@ -223,6 +229,8 @@ bool BehaviourCanvas::insertDroppedNodeOnTransition(TransitionItem* transition, 
   outgoing.setId(QUuid::createUuid().toString());
   outgoing.setEvent(outConfig.event);
   outgoing.setLabel(outConfig.label);
+  outgoing.setSrcPort(Types::Port::OUT);
+  outgoing.setDstPort(Types::Port::IN);
 
   outgoing.setSrcId(insertedNodeId);
   outgoing.setDstId(destination->id());

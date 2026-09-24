@@ -13,10 +13,10 @@ public:
   BehaviourNode(const QString& id, std::shared_ptr<NodeSaveInfo> info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig,
                 QGraphicsItem* parent = nullptr);
 
-  void paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget) override;
-
 protected:
   void initializeNodeSize() override;
+
+  virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget) override;
 
   /** Override to add type-specific painting after the default body. */
   virtual void paintBehaviourExtras(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget);

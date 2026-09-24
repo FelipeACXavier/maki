@@ -3,6 +3,7 @@
 #include <QGraphicsItem>
 #include <QGraphicsSceneHoverEvent>
 #include <QStyleOptionGraphicsItem>
+#include <QSvgRenderer>
 
 #include "ids.h"
 #include "types.h"
@@ -24,6 +25,7 @@ public:
   static constexpr qreal kHitPadding = 30.0;  // area around port where it's still possible to initiate/drop a transition
 
   PortItem(Types::Port kind, QGraphicsItem* parentNode);
+  PortItem(Types::Port kind, bool isMarker, QGraphicsItem* parentNode);
 
   int type() const override;
   QRectF boundingRect() const override;
@@ -37,19 +39,36 @@ public:
   bool isAbort() const;
   bool isError() const;
 
+  bool canStartTransition() const;
+  bool canEndTransition() const;
+
   QString defaultTransitionEvent() const;
   QString defaultTransitionLabel() const;
   NodeItem* nodeItem() const;
 
   /** Scene position for transition endpoints (center of the port square). */
   QPointF anchorScenePos() const;
+  void setAnchorOverride(const QPointF& scenePos);
+  void clearAnchorOverride();
+
+  bool isMarker() const;
+  void setMarker(bool isMarker);
 
 protected:
   void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
   void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
 
 private:
+  bool mIsMarker;
   Types::Port mKind;
+  std::optional<QPointF> mAnchorOverride;
+
+  std::unique_ptr<QSvgRenderer> mRenderer;
+  QString mCurrentIconPath;
 
   qreal getSize() const;
+  QPointF defaultPosition() const;
+  void updatePosition();
+  void updateRenderer();
+  QString iconPath() const;
 };

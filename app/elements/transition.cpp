@@ -48,18 +48,20 @@ int TransitionItem::type() const
   return Type;
 }
 
-void TransitionItem::setStart(const QString& id, const QPointF& point, const QPointF& controlShift)
+void TransitionItem::setStart(const QString& id, const QPointF& point, const QPointF& controlShift, const Types::Port& port)
 {
   mStorage->setSrcId(id);
   mStorage->setSrcPoint(point);
   mStorage->setSrcShift(controlShift);
+  mStorage->setSrcPort(port);
 }
 
-void TransitionItem::setEnd(const QString& id, const QPointF& point, const QPointF& controlShift)
+void TransitionItem::setEnd(const QString& id, const QPointF& point, const QPointF& controlShift, const Types::Port& port)
 {
   mStorage->setDstId(id);
   mStorage->setDstPoint(point);
   mStorage->setDstShift(controlShift);
+  mStorage->setDstPort(port);
 }
 
 void TransitionItem::done(NodeItem* source, NodeItem* destination)
@@ -155,7 +157,7 @@ void TransitionItem::updatePath(QPainterPath painterPath)
   if (!mSource || !mDestination)
     return;
 
-  if (painterPath.isEmpty())
+  if (painterPath.isEmpty() && mStorage->srcPort() != Types::Port::UNKNOWN && mStorage->dstPort() != Types::Port::UNKNOWN)
   {
     const auto canvas = qobject_cast<Canvas*>(scene());
     if (!canvas)
@@ -165,9 +167,8 @@ void TransitionItem::updatePath(QPainterPath painterPath)
     if (!router)
       return;
 
-    // Compute edge points toward the other node
-    const QPointF start = mSource->outgoingPortAnchorForEvent(getEvent());
-    const QPointF end = mDestination->incomingPortAnchor();
+    const QPointF start = sourceAnchor();
+    const QPointF end = destinationAnchor();
 
     setPath(router->route(start, end, {}));
   }
@@ -178,6 +179,28 @@ void TransitionItem::updatePath(QPainterPath painterPath)
 
   updateLabelPosition();
   prepareGeometryChange();
+}
+
+QPointF TransitionItem::sourceAnchor() const
+{
+  if (!mSource)
+    return mStorage->srcPoint();
+
+  if (auto* port = mSource->getPort(mStorage->srcPort()))
+    return port->anchorScenePos();
+
+  return mStorage->srcPoint();
+}
+
+QPointF TransitionItem::destinationAnchor() const
+{
+  if (!mDestination)
+    return mStorage->dstPoint();
+
+  if (auto* port = mDestination->getPort(mStorage->dstPort()))
+    return port->anchorScenePos();
+
+  return mStorage->dstPoint();
 }
 
 QString TransitionItem::getName() const

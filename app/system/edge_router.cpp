@@ -168,8 +168,8 @@ QHash<const TransitionItem*, QPainterPath> EdgeRouter::route(const QList<NodeIte
     if (!source || !target)
       continue;
 
-    const auto srcPoint = source->outgoingPortAnchorForEvent(transition->getEvent());
-    const auto dstPoint = target->incomingPortAnchor();
+    const auto srcPoint = transition->sourceAnchor();
+    const auto dstPoint = transition->destinationAnchor();
 
     auto* conn = new Avoid::ConnRef(&router);
     if (!transition->getEvent().isEmpty() && option() == Option::MANHATTAN)

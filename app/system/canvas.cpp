@@ -19,6 +19,7 @@
 #include "config.h"
 #include "config_table.h"
 #include "edge_router.h"
+#include "elements/behaviour/sub_flow.h"
 #include "elements/flow.h"
 #include "elements/node.h"
 #include "elements/node_factory.h"
@@ -173,11 +174,12 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
       parentNode = cast->parentNode();
     else if (auto cast = qgraphicsitem_cast<EmptySlot*>(item); cast && cast->parentItem())
       parentNode = qgraphicsitem_cast<NodeItem*>(cast->parentItem());
+    else if (auto* cast = qgraphicsitem_cast<SubFlow*>(item); cast)
+      parentNode = qgraphicsitem_cast<NodeItem*>(cast->parentItem());
     else if (auto* cast = qgraphicsitem_cast<NodeItem*>(item); cast)
       parentNode = cast;
   }
 
-  // Add error message
   if (parentNode && !parentNode->acceptDrops())
   {
     NOTIFY_WARNING(Config::APPLICATION_NAME.toStdString(), "Tried to drop node on parent that does not accept drops");
@@ -267,13 +269,16 @@ void Canvas::removeTransition(TransitionItem* /* transition */)
 
 bool Canvas::beginTransitionFromOutPort(PortItem* port, const QPointF& cursorScenePos)
 {
-  if (!port || !port->isOutgoing())
+  LOG_DEBUG("1");
+  if (!port || !port->canStartTransition())
     return false;
 
+  LOG_DEBUG("2");
   NodeItem* node = port->nodeItem();
   if (!node || !canAddTransition(node, port))
     return false;
 
+  LOG_DEBUG("3");
   mNode = node;
   mTransition = new TransitionItem(std::make_shared<TransitionSaveInfo>());
   mTransition->setZValue(node->zValue() - 1);
@@ -293,8 +298,8 @@ bool Canvas::beginTransitionFromOutPort(PortItem* port, const QPointF& cursorSce
 
   mTransition->setEvent(config.event);
   mTransition->setName(config.label);
-  mTransition->setStart(node->id(), port->anchorScenePos(), {0, 0});
-  mTransition->setEnd(Constants::TMP_CONNECTION_ID, cursorScenePos, {0, 0});
+  mTransition->setStart(node->id(), port->anchorScenePos(), {0, 0}, port->kind());
+  mTransition->setEnd(Constants::TMP_CONNECTION_ID, cursorScenePos, {0, 0}, Types::Port::IN);
 
   addItem(mTransition);
   parentView()->setDragMode(QGraphicsView::NoDrag);
@@ -329,23 +334,52 @@ bool Canvas::transitionClickHandler(QGraphicsSceneMouseEvent* event, QGraphicsIt
   return true;
 }
 
+QGraphicsItem* Canvas::firstValidItemAt(const QPointF& scenePos, const std::function<bool(QGraphicsItem*)>& predicate) const
+{
+  const auto hitItems = items(scenePos, Qt::IntersectsItemShape, Qt::DescendingOrder);
+  for (auto* item : hitItems)
+  {
+    if (!item)
+      continue;
+
+    if (!predicate || predicate(item))
+      return item;
+  }
+
+  return nullptr;
+}
+
 void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
-  // If the press is on the left or right connection point of a node, start
-  // drawing
   if (event->button() == Qt::LeftButton)
   {
     mStartDragPosition = event->scenePos();
     mMouseDown = true;
 
-    QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
+    // Ports that may initiate a transition get priority over overlapping
+    // subflow/frame/path graphics.
+    QGraphicsItem* item = firstValidItemAt(event->scenePos(), [](QGraphicsItem* candidate) {
+      if (auto* port = qgraphicsitem_cast<PortItem*>(candidate))
+        return port->canStartTransition();
+
+      return false;
+    });
+
+    // If no valid start port was hit, fall back to the topmost item.
+    if (!item)
+      item = firstValidItemAt(event->scenePos(), nullptr);
+
     if (!item)
     {
       LOG_TRACE("Clearing selected nodes");
+
       mSelectionStart = event->scenePos();
+
       auto color = Config::HIGHLIGHT;
       color.setAlpha(15);
+
       mSelectionRect = addRect(QRectF(mSelectionStart, mSelectionStart), QPen(color, 1, Qt::DashLine), QColor(color));
+
       mSelectionRect->setZValue(1'000'000);
 
       mSelectedNodes.clear();
@@ -353,6 +387,16 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
       clearNodeControls();
 
       QGraphicsScene::mousePressEvent(event);
+      return;
+    }
+
+    if (item->type() == PortItem::Type)
+    {
+      auto* port = qgraphicsitem_cast<PortItem*>(item);
+      if (!beginTransitionFromOutPort(port, event->scenePos()))
+        return;
+
+      event->accept();
       return;
     }
 
@@ -366,15 +410,10 @@ void Canvas::mousePressEvent(QGraphicsSceneMouseEvent* event)
       if (!transitionClickHandler(event, item))
         return;
     }
-    else if (item->type() == PortItem::Type)
-    {
-      auto port = qgraphicsitem_cast<PortItem*>(item);
-      if (!beginTransitionFromOutPort(port, event->scenePos()))
-        return;
-    }
     else if (item->type() == QGraphicsTextItem::Type || item->type() == QGraphicsSvgItem::Type)
     {
-      auto parent = item->parentItem();
+      auto* parent = item->parentItem();
+
       if (parent && parent->type() == NodeItem::Type)
       {
         if (!nodeClickHandler(event, parent))
@@ -435,35 +474,79 @@ void Canvas::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
   parentView()->setDragMode(QGraphicsView::RubberBandDrag);
-
   QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
-
   if (mTransition)
   {
     if (event->button() == Qt::LeftButton)
     {
-      if (item)
+      NodeItem* node = nullptr;
+      PortItem* targetPort = nullptr;
+
+      const auto hitItems = items(event->scenePos(), Qt::IntersectsItemShape, Qt::DescendingOrder);
+
+      // First, prefer an explicit valid destination port.
+      for (auto* candidate : hitItems)
       {
-        NodeItem* node = nullptr;
+        if (!candidate)
+          continue;
 
-        if (item->type() == NodeItem::Type)
-          node = qgraphicsitem_cast<NodeItem*>(item);
-        else if (item->type() == QGraphicsTextItem::Type || item->type() == QGraphicsSvgItem::Type)
-          node = qgraphicsitem_cast<NodeItem*>(item->parentItem());
-        else if (item->type() == PortItem::Type)
-          node = qgraphicsitem_cast<PortItem*>(item)->nodeItem();
+        if (auto* port = qgraphicsitem_cast<PortItem*>(candidate))
+        {
+          if (!port->canEndTransition())
+            continue;
 
-        if (node && node->id() != mTransition->saveInfo().getsrcId())
-        {
-          mTransition->setEnd(node->id(), node->incomingPortAnchor(), {0, 0});
-          auto info = mTransition->saveInfo();
-          removeItem(mTransition);  // Remove the mTransition so the new one can be added
-          mUndoStack->push(new AddTransitionCommand(this, info));
+          targetPort = port;
+          node = port->nodeItem();
+
+          LOG_DEBUG("Dropped on destination port: {}", static_cast<int>(port->kind()));
+          break;
         }
-        else
+      }
+
+      // If no port was hit, fall back to a node.
+      if (!node)
+      {
+        for (auto* candidate : hitItems)
         {
-          removeItem(mTransition);
+          if (!candidate)
+            continue;
+
+          if (auto* hitNode = qgraphicsitem_cast<NodeItem*>(candidate))
+          {
+            node = hitNode;
+            LOG_DEBUG("Dropped on node");
+            break;
+          }
+
+          if (candidate->type() == QGraphicsTextItem::Type || candidate->type() == QGraphicsSvgItem::Type)
+          {
+            auto* parent = candidate->parentItem();
+
+            if (parent && parent->type() == NodeItem::Type)
+            {
+              node = qgraphicsitem_cast<NodeItem*>(parent);
+              LOG_DEBUG("Dropped on node graphics child");
+              break;
+            }
+          }
         }
+      }
+
+      if (node)
+      {
+        const QPointF endpoint = targetPort ? targetPort->anchorScenePos() : node->incomingPortAnchor();
+
+        mTransition->setEnd(node->id(), endpoint, {0, 0}, targetPort ? targetPort->kind() : Types::Port::IN);
+
+        const auto info = mTransition->saveInfo();
+
+        // Remove temporary transition before AddTransitionCommand recreates it.
+        removeItem(mTransition);
+        mUndoStack->push(new AddTransitionCommand(this, info));
+      }
+      else
+      {
+        removeItem(mTransition);
       }
 
       mTransition = nullptr;
@@ -475,14 +558,20 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     if (!mDragging)
     {
       NodeItem* node = nullptr;
+
       if (item->type() == NodeItem::Type)
+      {
         node = static_cast<NodeItem*>(item);
-      else if ((item->type() == QGraphicsTextItem::Type || item->type() == QGraphicsSvgItem::Type) && item->parentItem()->type() == NodeItem::Type)
+      }
+      else if ((item->type() == QGraphicsTextItem::Type || item->type() == QGraphicsSvgItem::Type) && item->parentItem() &&
+               item->parentItem()->type() == NodeItem::Type)
+      {
         node = static_cast<NodeItem*>(item->parentItem());
+      }
 
       if (node)
       {
-        // We cannot clear if there are multiple nodes selected
+        // We cannot clear if there are multiple nodes selected.
         if (selectedItems().size() < 2)
           clearSelectedNodes();
 
@@ -499,14 +588,14 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
   {
     if (parentView()->dragMode() == QGraphicsView::RubberBandDrag && !isModifierSet(event, Qt::ControlModifier))
     {
-      bool draggingFromRight = mStartDragPosition.x() > event->scenePos().x();
+      const bool draggingFromRight = mStartDragPosition.x() > event->scenePos().x();
 
-      QPainterPath selectionPath = selectionArea();
-      QList<QGraphicsItem*> allSelectedItems = selectedItems();
+      const QPainterPath selectionPath = selectionArea();
 
       for (QGraphicsItem* selectedItem : selectedItems())
       {
-        QRectF itemBounds = selectedItem->sceneBoundingRect();
+        const QRectF itemBounds = selectedItem->sceneBoundingRect();
+
         if ((draggingFromRight && !selectionPath.intersects(itemBounds)) || (!draggingFromRight && !selectionPath.contains(itemBounds)))
           selectedItem->setSelected(false);
       }
@@ -523,7 +612,7 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
   mMouseDown = false;
   mDragging = false;
 
-  QGraphicsScene::mouseReleaseEvent(event);  // Allow normal item drop behavior
+  QGraphicsScene::mouseReleaseEvent(event);
 }
 
 void Canvas::nodeClicked(NodeItem* node)
@@ -1364,8 +1453,8 @@ void Canvas::createTransition(const TransitionSaveInfo& info)
   auto infoPtr = std::make_shared<TransitionSaveInfo>(info);
 
   auto transition = new TransitionItem(infoPtr);
-  transition->setStart(infoPtr->getsrcId(), infoPtr->srcPoint(), infoPtr->srcShift());
-  transition->setEnd(infoPtr->getdstId(), infoPtr->dstPoint(), infoPtr->dstShift());
+  transition->setStart(infoPtr->getsrcId(), infoPtr->srcPoint(), infoPtr->srcShift(), infoPtr->srcPort());
+  transition->setEnd(infoPtr->getdstId(), infoPtr->dstPoint(), infoPtr->dstShift(), infoPtr->dstPort());
 
   addTransition(transition);
   addItem(transition);

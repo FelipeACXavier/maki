@@ -72,6 +72,9 @@ public:
    */
   QPointF dstShift() const;
 
+  Types::Port srcPort() const;
+  Types::Port dstPort() const;
+
   /**
    * @brief Sets the ID of the transition.
    * @param arg The new ID for the transition.
@@ -126,6 +129,8 @@ public:
    */
   void setDstShift(const QPointF& arg);
 
+  void setSrcPort(Types::Port port);
+  void setDstPort(Types::Port port);
   /**
    * @brief Converts the transition save info to a JSON object.
    * @return QJsonObject The JSON representation of the transition save info.
@@ -143,17 +148,20 @@ public:
   friend QDataStream& operator>>(QDataStream& in, TransitionSaveInfo& info);
 
 private:
-  QString mId; /// The ID of the transition.
-  QString mLabel; /// The label of the transition.
-  QString mEvent; /// The event associated with the transition.
+  QString mId;     /// The ID of the transition.
+  QString mLabel;  /// The label of the transition.
+  QString mEvent;  /// The event associated with the transition.
 
-  QString mSrcId; /// The source ID of the transition.
-  QPointF mSrcPoint; /// The source point of the transition.
-  QPointF mSrcShift; /// The source shift of the transition.
+  QString mSrcId;     /// The source ID of the transition.
+  QPointF mSrcPoint;  /// The source point of the transition.
+  QPointF mSrcShift;  /// The source shift of the transition.
 
-  QString mDstId; /// The destination ID of the transition.
-  QPointF mDstPoint; /// The destination point of the transition.
-  QPointF mDstShift; /// The destination shift of the transition.
+  QString mDstId;     /// The destination ID of the transition.
+  QPointF mDstPoint;  /// The destination point of the transition.
+  QPointF mDstShift;  /// The destination shift of the transition.
+
+  Types::Port mSrcPort;
+  Types::Port mDstPort;
 };
 
 QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<TransitionSaveInfo>>& nodes);

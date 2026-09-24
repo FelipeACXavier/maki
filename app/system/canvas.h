@@ -377,6 +377,8 @@ protected:
   std::shared_ptr<EdgeRouter> mRouter;  /// Pointer to the system edge router.
   QUndoStack* mUndoStack = nullptr;     /// Pointer to the undo stack.
 
+  QGraphicsItem* firstValidItemAt(const QPointF& scenePos, const std::function<bool(QGraphicsItem*)>& predicate) const;
+
   void onNodeControlRequested(NodeItem* node, const QPointF& scenePos, maki::ControlWidget* control);
   /**
    * @brief Handles drag enter events.

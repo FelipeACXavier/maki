@@ -13,23 +13,6 @@
 
 namespace
 {
-QString iconPathForKind(Types::Port kind)
-{
-  switch (kind)
-  {
-    case Types::Port::OUT:
-      return QStringLiteral("port_out.svg");
-    case Types::Port::ABORT:
-      return QStringLiteral("port_abort.svg");
-    case Types::Port::ERROR:
-      return QStringLiteral("port_error.svg");
-    case Types::Port::IN:
-    default:
-      return QStringLiteral("port_in.svg");
-  }
-  return QString();
-}
-
 QString tooltipForKind(Types::Port kind)
 {
   switch (kind)
@@ -42,23 +25,18 @@ QString tooltipForKind(Types::Port kind)
       return {};
   }
 }
-
-QSvgRenderer* rendererForKind(Types::Port kind)
-{
-  static std::map<Types::Port, std::unique_ptr<QSvgRenderer>> renderers;
-  if (!renderers.contains(kind))
-  {
-    const QString path = iconPathFromTheme(iconPathForKind(kind));
-    renderers[kind] = std::make_unique<QSvgRenderer>(path);
-  }
-
-  return renderers[kind].get();
-}
 }  // namespace
 
 PortItem::PortItem(Types::Port kind, QGraphicsItem* parentNode)
+    : PortItem(kind, false, parentNode)
+{
+}
+
+PortItem::PortItem(Types::Port kind, bool isMarker, QGraphicsItem* parentNode)
     : QGraphicsItem(parentNode)
+    , mIsMarker(isMarker)
     , mKind(kind)
+    , mCurrentIconPath("")
 {
   setAcceptHoverEvents(true);
   setAcceptedMouseButtons(Qt::LeftButton);
@@ -66,44 +44,27 @@ PortItem::PortItem(Types::Port kind, QGraphicsItem* parentNode)
   setZValue(10);
   setToolTip(tooltipForKind(kind));
 
-  if (auto* node = qgraphicsitem_cast<NodeItem*>(parentNode))
-  {
-    const QRectF portRect = node->drawingRect(node->nodeRect());
-    const qreal left = portRect.left();
-    const qreal top = portRect.top();
-    const qreal w = portRect.width();
-    const qreal h = portRect.height();
-    const qreal shift = (h / 2 * qTan(qDegreesToRadians(30))) - 5;
-    qreal x = 0;
-    qreal y = 0;
-    if (isIncoming())
-    {
-      x = left - PortItem::kSize - PortItem::kGap;
-      y = top + (h - PortItem::kSize) / 2.0;
-    }
-    else if (isOut())
-    {
-      x = left + w + PortItem::kGap;
-      y = top + (h - PortItem::kSize) / 2.0;
-    }
-    else if (isAbort())
-    {
-      x = left + (shift - PortItem::kAbortPortSize / 2);
-      y = top + PortItem::kGap - (PortItem::kAbortPortSize / 2);
-    }
-    else
-    {
-      x = left + w / 2 + (shift - PortItem::kErrorPortSize / 2);
-      y = top + PortItem::kGap - (PortItem::kErrorPortSize / 2);
-    }
-
-    setPos(x, y);
-  }
+  updateRenderer();
+  updatePosition();
 }
 
 Types::Port PortItem::kind() const
 {
   return mKind;
+}
+
+void PortItem::setMarker(bool marker)
+{
+  if (isMarker() == marker)
+    return;
+
+  prepareGeometryChange();
+
+  mIsMarker = marker;
+
+  updateRenderer();
+  updatePosition();
+  update();
 }
 
 bool PortItem::isIncoming() const
@@ -131,11 +92,28 @@ bool PortItem::isError() const
   return mKind == Types::Port::ERROR;
 }
 
+bool PortItem::isMarker() const
+{
+  return mIsMarker;
+}
+
+bool PortItem::canStartTransition() const
+{
+  return isOutgoing() || (isMarker() && isIncoming());
+}
+
+bool PortItem::canEndTransition() const
+{
+  return isIncoming() || (isMarker() && isOutgoing());
+}
+
 qreal PortItem::getSize() const
 {
-  if (isAbort())
+  if (isMarker())
+    return 30;
+  else if (isAbort())
     return kAbortPortSize;
-  if (isError())
+  else if (isError())
     return kErrorPortSize;
 
   return kSize;
@@ -179,15 +157,14 @@ QPainterPath PortItem::shape() const
 
 void PortItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* /*option*/, QWidget* /*widget*/)
 {
-  QSvgRenderer* r = rendererForKind(mKind);
-  if (!r)
+  if (!mRenderer || !mRenderer->isValid())
     return;
 
   painter->setRenderHint(QPainter::Antialiasing, false);
   painter->setRenderHint(QPainter::SmoothPixmapTransform, false);
 
   const QRectF target = boundingRect();
-  r->render(painter, target);
+  mRenderer->render(painter, target);
 }
 
 NodeItem* PortItem::nodeItem() const
@@ -211,4 +188,86 @@ void PortItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 {
   unsetCursor();
   QGraphicsItem::hoverLeaveEvent(event);
+}
+
+void PortItem::setAnchorOverride(const QPointF& scenePos)
+{
+  mAnchorOverride = scenePos;
+  updatePosition();
+}
+
+void PortItem::clearAnchorOverride()
+{
+  mAnchorOverride.reset();
+  updatePosition();
+}
+
+void PortItem::updatePosition()
+{
+  if (isMarker() && mAnchorOverride)
+  {
+    const QPointF localCenter = parentItem()->mapFromScene(*mAnchorOverride);
+    setPos(localCenter - boundingRect().center());
+    return;
+  }
+
+  setPos(defaultPosition());
+}
+
+QPointF PortItem::defaultPosition() const
+{
+  auto* node = nodeItem();
+  if (!node)
+    return {};
+
+  const QRectF portRect = node->drawingRect(node->nodeRect());
+
+  const qreal left = portRect.left();
+  const qreal top = portRect.top();
+  const qreal w = portRect.width();
+  const qreal h = portRect.height();
+
+  const qreal shift = (h / 2.0 * qTan(qDegreesToRadians(30.0))) - 5.0;
+
+  if (isIncoming())
+    return {left - kSize - kGap, top + (h - kSize) / 2.0};
+
+  if (isOut())
+    return {left + w + kGap, top + (h - kSize) / 2.0};
+
+  if (isAbort())
+    return {left + shift - kAbortPortSize / 2.0, top + kGap - kAbortPortSize / 2.0};
+
+  return {left + w / 2.0 + shift - kErrorPortSize / 2.0, top + kGap - kErrorPortSize / 2.0};
+}
+
+QString PortItem::iconPath() const
+{
+  switch (mKind)
+  {
+    case Types::Port::OUT:
+      return isMarker() ? "node_success.svg" : "port_out.svg";
+    case Types::Port::ABORT:
+      return isMarker() ? "node_failure.svg" : "port_abort.svg";
+    case Types::Port::ERROR:
+      return isMarker() ? "node_failure.svg" : "port_error.svg";
+    case Types::Port::IN:
+    default:
+      return isMarker() ? "node_start.svg" : "port_in.svg";
+  }
+}
+
+void PortItem::updateRenderer()
+{
+  const QString path = iconPathFromTheme(iconPath());
+  if (path == mCurrentIconPath)
+    return;
+
+  mCurrentIconPath = path;
+
+  if (!mRenderer)
+    mRenderer = std::make_unique<QSvgRenderer>();
+
+  mRenderer->load(path);
+  update();
 }

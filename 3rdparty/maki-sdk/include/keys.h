@@ -56,6 +56,7 @@ static const QString OPTION_DATA = "option_data";
 static const QString SHIFT = "shift";
 static const QString SOURCE = "source";
 static const QString DESTINATION = "destination";
+static const QString PORT = "port";
 
 // Ids
 static const QString CONFIG_ID = "configId";

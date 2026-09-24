@@ -62,7 +62,7 @@ void DraggableItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* sty
     }
     paintSvg(mRenderer, painter, nodeRect().center(), rect.width(), rect.height());
 
-    NodeBase::paintLabel(painter, rect, pen);
+    NodeBase::paintLabel(painter, labelBoundingRect(), pen);
   }
 }
 

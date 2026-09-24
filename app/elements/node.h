@@ -100,7 +100,7 @@ public:
    * @param style The style option for the graphics item.
    * @param widget The parent widget, if any.
    */
-  void paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget) override;
+  virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget) override;
 
   /**
    * @brief Returns help configuration for this node.
@@ -183,8 +183,8 @@ public:
 
   PortItem* getPort(Types::Port type) const;
 
-  QPointF incomingPortAnchor() const;
-  QPointF outgoingPortAnchorForEvent(const QString& event) const;
+  virtual QPointF incomingPortAnchor() const;
+  virtual QPointF outgoingPortAnchorForEvent(const QString& event) const;
 
   /**
    * @brief Returns the parent node of this item.
@@ -396,6 +396,17 @@ public:
 protected:
   std::shared_ptr<NodeSaveInfo> mStorage;  /// Save information for the node.
   QSizeF mSize{0, 0};                      /// Current size of the node.
+  QMap<Types::Port, PortItem*> mPorts;
+
+  virtual QRectF childAreaSceneRect() const;
+  virtual bool constrainChildren() const;
+
+  virtual QPointF constrainChildPosition(const NodeItem* child, const QPointF& proposedPosition) const;
+
+  /**
+   * @brief Called to tell the parent that the position of this node was updated.
+   */
+  virtual void childPositionUpdated();
 
   /**
    * @brief Handles mouse move events for this item.
@@ -428,7 +439,7 @@ protected:
    * @param value The new value for the property.
    * @return The modified QVariant value.
    */
-  QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
+  virtual QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
 
   void paintDefaultNode(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget);
 
@@ -450,7 +461,6 @@ private:
   bool mIsResizing{false};             /// Flag indicating if the node is being resized.
   QPointF mResizeStartMousePos{0, 0};  /// Mouse position when resizing started.
   QSizeF mResizeStartSize{0, 0};       /// Size of the node when resizing started.
-  QMap<Types::Port, PortItem*> mPorts;
 
   /**
    * @brief Updates extra positions related to this node.

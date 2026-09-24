@@ -17,6 +17,8 @@ TransitionSaveInfo::TransitionSaveInfo()
     , mDstId("")
     , mDstPoint(QPointF{0, 0})
     , mDstShift(QPointF{0, 0})
+    , mSrcPort(Types::Port::OUT)
+    , mDstPort(Types::Port::IN)
 {
 }
 
@@ -65,6 +67,16 @@ QPointF TransitionSaveInfo::dstShift() const
   return mDstShift;
 }
 
+Types::Port TransitionSaveInfo::srcPort() const
+{
+  return mSrcPort;
+}
+
+Types::Port TransitionSaveInfo::dstPort() const
+{
+  return mDstPort;
+}
+
 void TransitionSaveInfo::setId(const QString& arg)
 {
   mId = arg;
@@ -107,7 +119,17 @@ void TransitionSaveInfo::setDstPoint(const QPointF& arg)
 
 void TransitionSaveInfo::setDstShift(const QPointF& arg)
 {
-  mDstPoint = arg;
+  mDstShift = arg;
+}
+
+void TransitionSaveInfo::setSrcPort(Types::Port port)
+{
+  mSrcPort = port;
+}
+
+void TransitionSaveInfo::setDstPort(Types::Port port)
+{
+  mDstPort = port;
 }
 
 // ==========================================================================
@@ -123,12 +145,14 @@ QJsonObject TransitionSaveInfo::toJson() const
   source[ConfigKeys::ID] = getsrcId();
   source[ConfigKeys::POSITION] = JSON::fromPointF(srcPoint());
   source[ConfigKeys::SHIFT] = JSON::fromPointF(srcShift());
+  source[ConfigKeys::PORT] = (int)mSrcPort;
   data[ConfigKeys::SOURCE] = source;
 
   QJsonObject destination;
   destination[ConfigKeys::ID] = getdstId();
   destination[ConfigKeys::POSITION] = JSON::fromPointF(dstPoint());
   destination[ConfigKeys::SHIFT] = JSON::fromPointF(dstShift());
+  destination[ConfigKeys::PORT] = (int)mDstPort;
   data[ConfigKeys::DESTINATION] = destination;
 
   return data;
@@ -144,10 +168,12 @@ TransitionSaveInfo TransitionSaveInfo::fromJson(const QJsonObject& data)
   info.setSrcId(data[ConfigKeys::SOURCE][ConfigKeys::ID].toString());
   info.setSrcPoint(JSON::toPointF(data[ConfigKeys::SOURCE][ConfigKeys::POSITION].toObject()));
   info.setSrcShift(JSON::toPointF(data[ConfigKeys::SOURCE][ConfigKeys::SHIFT].toObject()));
+  info.setSrcPort((Types::Port)data[ConfigKeys::SOURCE][ConfigKeys::PORT].toInt());
 
   info.setDstId(data[ConfigKeys::DESTINATION][ConfigKeys::ID].toString());
   info.setDstPoint(JSON::toPointF(data[ConfigKeys::DESTINATION][ConfigKeys::POSITION].toObject()));
   info.setDstShift(JSON::toPointF(data[ConfigKeys::DESTINATION][ConfigKeys::SHIFT].toObject()));
+  info.setDstPort((Types::Port)data[ConfigKeys::DESTINATION][ConfigKeys::PORT].toInt());
 
   return info;
 }
@@ -208,10 +234,12 @@ QDataStream& operator<<(QDataStream& out, const TransitionSaveInfo& info)
   out << info.getsrcId();
   out << info.srcPoint();
   out << info.srcShift();
+  out << info.srcPort();
 
   out << info.getdstId();
   out << info.dstPoint();
   out << info.dstShift();
+  out << info.dstPort();
 
   return out;
 }
@@ -242,6 +270,10 @@ QDataStream& operator>>(QDataStream& in, TransitionSaveInfo& info)
   in >> srcShift;
   info.setSrcShift(srcShift);
 
+  Types::Port srcPort;
+  in >> srcPort;
+  info.setSrcPort(srcPort);
+
   QString dstId;
   in >> dstId;
   info.setDstId(dstId);
@@ -253,6 +285,10 @@ QDataStream& operator>>(QDataStream& in, TransitionSaveInfo& info)
   QPointF dstShift;
   in >> dstShift;
   info.setDstShift(dstShift);
+
+  Types::Port dstPort;
+  in >> dstPort;
+  info.setDstPort(dstPort);
 
   return in;
 }

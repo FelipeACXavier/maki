@@ -1778,8 +1778,8 @@
           "type": "Repeat",
           "body": {
             "shape": "rounded rectangle",
-            "width": 100,
-            "height": 100,
+            "width": 70,
+            "height": 70,
             "icon": "node_repeat.svg"
           },
           "properties": [

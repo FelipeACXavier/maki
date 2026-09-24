@@ -93,6 +93,37 @@ QRectF NodeBase::drawingRect(const QRectF& input) const
   return input.adjusted(2, 2, -2, -2);
 }
 
+void NodeBase::paintNodeBody(const QRectF& bounds, QPainter* painter)
+{
+  if (mRenderer)
+  {
+    auto rect = shapeSvgTargetRect(mRenderer, bounds);
+    paintSvg(mRenderer, painter, rect.center(), rect.width(), rect.height());
+  }
+  else if (config()->body.shape == Types::Shape::RECTANGLE)
+  {
+    painter->drawRect(bounds);
+  }
+  else if (config()->body.shape == Types::Shape::ELLIPSE)
+  {
+    painter->drawEllipse(bounds);
+  }
+  else if (config()->body.shape == Types::Shape::DIAMOND)
+  {
+    QPolygonF diamond;
+    diamond << QPointF(bounds.center().x(), bounds.top())     // Top
+            << QPointF(bounds.right(), bounds.center().y())   // Right
+            << QPointF(bounds.center().x(), bounds.bottom())  // Bottom
+            << QPointF(bounds.left(), bounds.center().y());   // Left
+
+    painter->drawPolygon(diamond);
+  }
+  else
+  {
+    painter->drawRoundedRect(bounds, 5, 5);
+  }
+}
+
 void NodeBase::paintNode(const QRectF& bounds, const QColor& background, const QPen& text, QPainter* painter)
 {
   painter->setPen(text);
@@ -100,35 +131,8 @@ void NodeBase::paintNode(const QRectF& bounds, const QColor& background, const Q
   painter->setRenderHint(QPainter::Antialiasing, false);
 
   const auto drawingBounds = drawingRect(bounds);
-  if (mRenderer)
-  {
-    auto rect = shapeSvgTargetRect(mRenderer, drawingBounds);
-    paintSvg(mRenderer, painter, rect.center(), rect.width(), rect.height());
-  }
-  else if (config()->body.shape == Types::Shape::RECTANGLE)
-  {
-    painter->drawRect(drawingBounds);
-  }
-  else if (config()->body.shape == Types::Shape::ELLIPSE)
-  {
-    painter->drawEllipse(drawingBounds);
-  }
-  else if (config()->body.shape == Types::Shape::DIAMOND)
-  {
-    QPolygonF diamond;
-    diamond << QPointF(drawingBounds.center().x(), drawingBounds.top())     // Top
-            << QPointF(drawingBounds.right(), drawingBounds.center().y())   // Right
-            << QPointF(drawingBounds.center().x(), drawingBounds.bottom())  // Bottom
-            << QPointF(drawingBounds.left(), drawingBounds.center().y());   // Left
-
-    painter->drawPolygon(diamond);
-  }
-  else
-  {
-    painter->drawRoundedRect(drawingBounds, 5, 5);
-  }
-
-  paintLabel(painter, drawingBounds, text);
+  paintNodeBody(drawingBounds, painter);
+  paintLabel(painter, labelBoundingRect(), text);
   if (isSelected())
     paintSelectionOutline(painter, text, bounds);
 }
@@ -341,10 +345,10 @@ void NodeBase::paintLabel(QPainter* painter, const QRectF& drawingBounds, const 
   else
   {
     const QFontMetricsF metrics(mLabelFont);
-    const qreal availableWidth = labelBoundingRect().width();
+    const qreal availableWidth = drawingBounds.width();
     text = metrics.elidedText(mLabelText, Qt::ElideRight, static_cast<int>(availableWidth));
   }
-  painter->drawText(labelBoundingRect(), text, textOption);
+  painter->drawText(drawingBounds, text, textOption);
 }
 
 void NodeBase::initializeNodeSize()

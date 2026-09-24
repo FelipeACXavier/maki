@@ -4,6 +4,7 @@
 #include <QGraphicsPathItem>
 
 #include "ids.h"
+#include "types.h"
 
 class NodeItem;
 class TransitionSaveInfo;
@@ -54,7 +55,7 @@ public:
    * @param point Start position.
    * @param controlShift Control point shift.
    */
-  void setStart(const QString& id, const QPointF& point, const QPointF& controlShift);
+  void setStart(const QString& id, const QPointF& point, const QPointF& controlShift, const Types::Port& port);
 
   /**
    * @brief Sets the end point and control shift for the transition.
@@ -62,7 +63,7 @@ public:
    * @param point End position.
    * @param controlShift Control point shift.
    */
-  void setEnd(const QString& id, const QPointF& point, const QPointF& controlShift);
+  void setEnd(const QString& id, const QPointF& point, const QPointF& controlShift, const Types::Port& port);
 
   /**
    * @brief Completes the transition by setting source and destination nodes.
@@ -82,6 +83,12 @@ public:
    * @return Pointer to the destination node item.
    */
   NodeItem* destination() const;
+
+  Types::Port srcPort() const;
+  Types::Port dstPort() const;
+
+  void setSrcPort(Types::Port port);
+  void setDstPort(Types::Port port);
 
   /**
    * @brief Moves the transition to a new position.
@@ -150,6 +157,9 @@ public:
    * @param edge The new Edge value.
    */
   void setEdge(Edge edge);
+
+  QPointF sourceAnchor() const;
+  QPointF destinationAnchor() const;
 
   // "signals":
   std::function<void(TransitionItem* item)> transitionDeleted;   /// Signal emitted when the transition is deleted.
