@@ -136,6 +136,11 @@ QRectF NodeItem::sceneNodeRect() const
   return mapRectToScene(nodeRect());
 }
 
+QRectF NodeItem::sceneAlignRect() const
+{
+  return sceneNodeRect();
+}
+
 PortItem* NodeItem::getPort(Types::Port type) const
 {
   if (!mPorts.contains(type))
@@ -496,11 +501,23 @@ void NodeItem::addParent(NodeItem* parent)
   if (!parent)
     return;
 
+  LOG_DEBUG("Setting parent {} of node {}", parent->nodeId(), nodeId());
   mParentNode = parent;
   mStorage->setParentId(parent->id());
   setZValue(parent->zValue() + 2);
 
   fitInsideParent(20);
+}
+
+void NodeItem::removeParent()
+{
+  if (!parentNode())
+    return;
+
+  LOG_DEBUG("Removing parent {} of node {}", parentNode()->nodeId(), nodeId());
+  mParentNode = nullptr;
+  mStorage->setParentId("");
+  setZValue(config()->body.zIndex);
 }
 
 void NodeItem::addChild(NodeItem* node, std::shared_ptr<NodeSaveInfo> info)

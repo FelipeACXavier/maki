@@ -32,6 +32,8 @@ public:
    */
   virtual Types::LibraryTypes type() const override;
 
+  void nodeStarted(NodeItem* node) override;
+
   /**
    * @brief Checkes whether it is possible to add a new trasition to a node
    * @param node A pointer to the node of interest
@@ -71,6 +73,7 @@ public:
    */
   void onNodeMoved(NodeItem* node, bool done) override;
 
+  void onNodeGeometryChanged(NodeItem* node) override;
   /**
    * @brief Used to create the start and end nodes of a flow
    */
@@ -84,6 +87,8 @@ protected:
 
   bool insertDroppedNodeOnTransition(TransitionItem* transition, NodeSaveInfo info) override;
   bool insertNodeOnTransition(TransitionItem* transition, NodeItem* node) override;
+
+  void onSubFlowCollapsed(NodeItem* node, bool collapsed) override;
 
 private:
   /**
@@ -105,4 +110,7 @@ private:
   std::shared_ptr<const NodeSaveInfo> addInitialNode(const QString& nodeType, const QPointF& position);
 
   TransitionSaveInfo makeTransitionInfo(const QString& sourceId, const QString& destinationId, const QString& event, const QString& label) const;
+
+  NodeItem* insertionParentForTransition(const TransitionItem* transition) const;
+  QPointF transitionPortAnchor(NodeItem* node, Types::Port port, const QPointF& fallback) const;
 };

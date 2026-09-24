@@ -3,7 +3,6 @@
 #include <QUndoStack>
 
 #include "canvas_view.h"
-#include "config_table.h"
 #include "elements/flow.h"
 #include "keys.h"
 #include "logging.h"
@@ -71,6 +70,38 @@ void BehaviourCanvas::cleanFlow()
     delete mFlow;
 }
 
+void BehaviourCanvas::nodeStarted(NodeItem* node)
+{
+  if (node && node->nodeId() == ConfigKeys::REPEAT_NODE)
+  {
+    if (!node->children().isEmpty())
+      return;
+
+    TransitionSaveInfo initial;
+
+    initial.setId(QUuid::createUuid().toString());
+
+    initial.setSrcId(node->id());
+    initial.setDstId(node->id());
+
+    initial.setSrcPort(Types::Port::IN);
+    initial.setDstPort(Types::Port::OUT);
+
+    if (auto* inPort = node->getPort(Types::Port::IN))
+      initial.setSrcPoint(inPort->anchorScenePos());
+
+    if (auto* outPort = node->getPort(Types::Port::OUT))
+      initial.setDstPoint(outPort->anchorScenePos());
+
+    initial.setSrcShift({0, 0});
+    initial.setDstShift({0, 0});
+
+    createTransition(initial);
+  }
+
+  Canvas::nodeStarted(node);
+}
+
 void BehaviourCanvas::updateParent(NodeItem* node, std::shared_ptr<NodeSaveInfo> storage, bool adding)
 {
   if (mFlow == nullptr)
@@ -103,7 +134,7 @@ bool BehaviourCanvas::canAddTransition(NodeItem* node, PortItem* port) const
     ++index;
   }
 
-  LOG_TRACE("canAddTransition: {} <= {}", index, node->config()->transitions.size());
+  // LOG_TRACE("canAddTransition: {} <= {}", index, node->config()->transitions.size());
   return node->config()->transitions.isEmpty() || index <= node->config()->transitions.size();
 }
 
@@ -114,7 +145,7 @@ TransitionConfig BehaviourCanvas::nextTransition(NodeItem* node) const
     if (t->source()->id() == node->id())
       ++index;
 
-  LOG_TRACE("nextTransition: {} >= {}", index, node->config()->transitions.size());
+  // LOG_TRACE("nextTransition: {} >= {}", index, node->config()->transitions.size());
   if (node->config()->transitions.isEmpty() || index >= node->config()->transitions.size())
     return TransitionConfig();
 
@@ -149,7 +180,7 @@ QVector<TransitionSaveInfo> BehaviourCanvas::transitionsOfNode(const QString& no
 
 void BehaviourCanvas::addTransition(TransitionItem* transition)
 {
-  LOG_TRACE("Adding transition: {} {}", transition->getName(), transition->getEvent());
+  // LOG_TRACE("Adding transition: {} {}", transition->getName(), transition->getEvent());
   mFlow->addTransition(transition);
 }
 
@@ -157,9 +188,51 @@ void BehaviourCanvas::removeTransition(TransitionItem* transition)
 {
   if (transition != nullptr)
   {
-    LOG_TRACE("Removing transition: {}", transition->id());
+    // LOG_TRACE("Removing transition: {}", transition->id());
     mFlow->removeTransition(transition);
   }
+}
+
+void BehaviourCanvas::onSubFlowCollapsed(NodeItem* owner, bool collapsed)
+{
+  if (!owner || !mFlow)
+    return;
+
+  for (auto* transition : mFlow->transitions())
+  {
+    if (!transition)
+      continue;
+
+    auto* source = transition->source();
+    auto* destination = transition->destination();
+
+    if (!source || !destination)
+      continue;
+
+    const bool sourceInside = isDescendantOf(source, owner);
+    const bool destinationInside = isDescendantOf(destination, owner);
+
+    const bool sourceIsOwner = source == owner;
+    const bool destinationIsOwner = destination == owner;
+
+    const bool internal = sourceInside && destinationInside;
+    const bool enteringSubFlow = sourceIsOwner && destinationInside && transition->storage()->srcPort() == Types::Port::IN;
+    const bool leavingSubFlow = sourceInside && destinationIsOwner && transition->storage()->dstPort() != Types::Port::IN;
+
+    transition->setVisible(collapsed ? !(internal || enteringSubFlow || leavingSubFlow) : true);
+  }
+
+  onNodeMoved(owner, true);
+}
+
+void BehaviourCanvas::onNodeGeometryChanged(NodeItem* node)
+{
+  if (!node)
+    return;
+
+  for (const auto& transition : mFlow->transitions())
+    if (transition->source()->id() == node->id() || transition->destination()->id() == node->id())
+      transition->updatePath();
 }
 
 void BehaviourCanvas::onNodeMoved(NodeItem* node, bool done)
@@ -181,6 +254,80 @@ void BehaviourCanvas::onNodeMoved(NodeItem* node, bool done)
     autoRoute(transitions);
 }
 
+NodeItem* BehaviourCanvas::insertionParentForTransition(const TransitionItem* transition) const
+{
+  if (!transition)
+    return nullptr;
+
+  auto* source = transition->source();
+  auto* destination = transition->destination();
+
+  if (!source || !destination)
+    return nullptr;
+
+  const auto info = transition->saveInfo();
+
+  auto* sourceParent = source->parentNode();
+  auto* destinationParent = destination->parentNode();
+
+  // --------------------------------------------------------------------------
+  // Empty subflow pass-through:
+  //
+  // Repeat.IN ------> Repeat.OUT
+  //
+  // Source and destination are the same container node, but the transition
+  // connects two different boundary ports.
+  if (source == destination && info.srcPort() == Types::Port::IN && info.dstPort() == Types::Port::OUT)
+    return source;
+
+  // --------------------------------------------------------------------------
+  // Normal transition between two nodes inside the same subflow:
+  //
+  // Repeat
+  //   A ------> B
+  //
+  // The inserted node belongs to Repeat too.
+  if (sourceParent && sourceParent == destinationParent)
+    return sourceParent;
+
+  // --------------------------------------------------------------------------
+  // Subflow entry:
+  //
+  // Repeat.IN ------> A
+  //
+  // A is a child of Repeat, while Repeat itself is the source.
+  if (destinationParent && source == destinationParent && info.srcPort() == Types::Port::IN)
+    return destinationParent;
+
+  // --------------------------------------------------------------------------
+  // Subflow exit:
+  //
+  // A ------> Repeat.OUT
+  // A ------> Repeat.ERROR
+  // A ------> Repeat.ABORT
+  //
+  // A is a child of Repeat and the destination is Repeat itself.
+  const bool destinationIsSubFlowExit = info.dstPort() == Types::Port::OUT || info.dstPort() == Types::Port::ERROR || info.dstPort() == Types::Port::ABORT;
+
+  if (sourceParent && destination == sourceParent && destinationIsSubFlowExit)
+    return sourceParent;
+
+  // This is a transition outside a subflow, or one crossing unrelated
+  // containers.
+  return nullptr;
+}
+
+QPointF BehaviourCanvas::transitionPortAnchor(NodeItem* node, Types::Port port, const QPointF& fallback) const
+{
+  if (!node || port == Types::Port::UNKNOWN)
+    return fallback;
+
+  if (auto* item = node->getPort(port))
+    return item->anchorScenePos();
+
+  return fallback;
+}
+
 bool BehaviourCanvas::insertDroppedNodeOnTransition(TransitionItem* transition, NodeSaveInfo info)
 {
   if (!transition)
@@ -188,58 +335,97 @@ bool BehaviourCanvas::insertDroppedNodeOnTransition(TransitionItem* transition, 
 
   NodeItem* source = transition->source();
   NodeItem* destination = transition->destination();
-  if (!source || !destination || source == destination)
+
+  if (!source || !destination)
     return false;
 
-  // The node already adjust the node size + label during creation, so we can just use the boundingRect
+  const TransitionSaveInfo originalTransition = transition->saveInfo();
+
+  // Determine whether this transition belongs to a subflow.
+  NodeItem* insertionParent = insertionParentForTransition(transition);
   const auto srcCenter = source->mapRectToScene(source->boundingRect()).center();
   const auto dstCenter = destination->mapRectToScene(destination->boundingRect()).center();
   const QPointF insertCenter = QPointF(info.getposition().x(), (srcCenter.y() + dstCenter.y()) * 0.5);
 
-  auto originalTransition = transition->saveInfo();
-
-  // Update the info before inserting
+  // The user dropped directly on the transition, so use that position.
   const QString insertedNodeId = QUuid::createUuid().toString();
+
   info.setId(insertedNodeId);
   info.setPosition(insertCenter);
 
-  // --------------------------------------------------------------------------
-  // Source -> inserted node
+  if (insertionParent)
+    info.setParentId(insertionParent->id());
+  else
+    info.setParentId("");
+
+  const QPointF srcPoint = transitionPortAnchor(source, originalTransition.srcPort(), originalTransition.srcPoint());
+  const QPointF dstPoint = transitionPortAnchor(destination, originalTransition.dstPort(), originalTransition.dstPoint());
+
+  // ==========================================================================
+  // Original source -> inserted node
+  //
+  // Preserve the original source port.
+  //
+  // This matters for:
+  //   OUT   -> inserted
+  //   ERROR -> inserted
+  //   ABORT -> inserted
+  //   Repeat.IN -> inserted
+  // ==========================================================================
   TransitionSaveInfo incoming;
+
   incoming.setId(QUuid::createUuid().toString());
+
   incoming.setEvent(originalTransition.getevent());
   incoming.setLabel(originalTransition.getlabel());
+
   incoming.setSrcPort(originalTransition.srcPort());
   incoming.setDstPort(Types::Port::IN);
 
   incoming.setSrcId(source->id());
   incoming.setDstId(insertedNodeId);
 
-  incoming.setSrcPoint(source->sceneNodeRect().center());
+  incoming.setSrcPoint(srcPoint);
   incoming.setDstPoint(insertCenter);
+
   incoming.setSrcShift({0, 0});
   incoming.setDstShift({0, 0});
 
-  // --------------------------------------------------------------------------
-  // Inserted node -> destination
-  const TransitionConfig outConfig =
-      getNodeConfig(info.getnodeId())->transitions.isEmpty() ? TransitionConfig{} : getNodeConfig(info.getnodeId())->transitions.front();
+  // ==========================================================================
+  // Inserted node -> original destination
+  //
+  // Preserve the original destination port.
+  //
+  // This matters especially for:
+  //   inserted -> Repeat.OUT
+  //   inserted -> Repeat.ERROR
+  //   inserted -> Repeat.ABORT
+  // ==========================================================================
+  TransitionConfig outConfig;
+
+  if (const auto config = getNodeConfig(info.getnodeId()); config && !config->transitions.isEmpty())
+    outConfig = config->transitions.front();
 
   TransitionSaveInfo outgoing;
+
   outgoing.setId(QUuid::createUuid().toString());
+
   outgoing.setEvent(outConfig.event);
   outgoing.setLabel(outConfig.label);
+
   outgoing.setSrcPort(Types::Port::OUT);
-  outgoing.setDstPort(Types::Port::IN);
+  outgoing.setDstPort(originalTransition.dstPort());
 
   outgoing.setSrcId(insertedNodeId);
   outgoing.setDstId(destination->id());
 
   outgoing.setSrcPoint(insertCenter);
-  outgoing.setDstPoint(destination->sceneNodeRect().center());
+  outgoing.setDstPoint(dstPoint);
+
   outgoing.setSrcShift({0, 0});
   outgoing.setDstShift({0, 0});
 
+  LOG_DEBUG("Inserting node: {} on transition {} with parent {}", info.getid(), transition->id(), info.getparentId());
   mUndoStack->push(new InsertNodeCommand(this, info, originalTransition, incoming, outgoing));
 
   return true;
@@ -256,46 +442,74 @@ bool BehaviourCanvas::insertNodeOnTransition(TransitionItem* transition, NodeIte
   if (!source || !destination || source == destination || node == source || node == destination)
     return false;
 
-  const QPointF originalNodeCenter = node->centerPosition();
-  const QPointF srcCenter = source->sceneNodeRect().center();
-  const QPointF dstCenter = destination->sceneNodeRect().center();
-  const QPointF insertCenter = QPointF(originalNodeCenter.x(), (srcCenter.y() + dstCenter.y()) * 0.5);
   const TransitionSaveInfo originalTransition = transition->saveInfo();
+  NodeItem* insertionParent = insertionParentForTransition(transition);
+  const QPointF originalNodeCenter = node->centerPosition();
 
+  // The node is already being dragged over the transition, so retaining its
+  // current X and placing it at the transition's vertical position works well.
+  const QPointF pathCenter =
+      transition->path().isEmpty() ? (originalTransition.srcPoint() + originalTransition.dstPoint()) / 2.0 : transition->path().pointAtPercent(0.5);
+
+  const QPointF insertCenter{originalNodeCenter.x(), pathCenter.y()};
+  const QPointF srcPoint = transitionPortAnchor(source, originalTransition.srcPort(), originalTransition.srcPoint());
+  const QPointF dstPoint = transitionPortAnchor(destination, originalTransition.dstPort(), originalTransition.dstPoint());
+
+  // ==========================================================================
+  // Original source -> inserted node
+  // ==========================================================================
   TransitionSaveInfo incoming;
+
   incoming.setId(QUuid::createUuid().toString());
+
   incoming.setEvent(originalTransition.getevent());
   incoming.setLabel(originalTransition.getlabel());
+
+  incoming.setSrcPort(originalTransition.srcPort());
+  incoming.setDstPort(Types::Port::IN);
 
   incoming.setSrcId(source->id());
   incoming.setDstId(node->id());
 
-  incoming.setSrcPoint(srcCenter);
+  incoming.setSrcPoint(srcPoint);
   incoming.setDstPoint(insertCenter);
 
   incoming.setSrcShift({0, 0});
   incoming.setDstShift({0, 0});
 
+  // ==========================================================================
+  // Inserted node -> original destination
+  // ==========================================================================
   TransitionConfig outConfig;
+
   if (const auto config = getNodeConfig(node->nodeId()); config && !config->transitions.isEmpty())
     outConfig = config->transitions.front();
 
   TransitionSaveInfo outgoing;
+
   outgoing.setId(QUuid::createUuid().toString());
 
   outgoing.setEvent(outConfig.event);
   outgoing.setLabel(outConfig.label);
 
+  outgoing.setSrcPort(Types::Port::OUT);
+  outgoing.setDstPort(originalTransition.dstPort());
+
   outgoing.setSrcId(node->id());
   outgoing.setDstId(destination->id());
 
   outgoing.setSrcPoint(insertCenter);
-  outgoing.setDstPoint(dstCenter);
+  outgoing.setDstPoint(dstPoint);
 
   outgoing.setSrcShift({0, 0});
   outgoing.setDstShift({0, 0});
 
-  mUndoStack->push(new InsertExistingNodeCommand(this, node->id(), originalNodeCenter, insertCenter, originalTransition, incoming, outgoing));
+  const QString oldParentId = node->parentNode() ? node->parentNode()->id() : QString{};
+  const QString newParentId = insertionParent ? insertionParent->id() : QString{};
+
+  LOG_DEBUG("Inserting node: {} in transition between: {} {}", node->nodeId(), source->nodeId(), destination->nodeId());
+  mUndoStack->push(
+      new InsertExistingNodeCommand(this, node->id(), originalNodeCenter, insertCenter, oldParentId, newParentId, originalTransition, incoming, outgoing));
 
   return true;
 }

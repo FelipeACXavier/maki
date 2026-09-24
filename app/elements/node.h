@@ -8,9 +8,10 @@
 
 #include "config.h"
 #include "control_widget.h"
+#include "flow_info.h"
 #include "node_base.h"
+#include "node_info.h"
 #include "port.h"
-#include "save_info.h"
 #include "transition.h"
 #include "types.h"
 #include "widgets/controls/canvas_control_widget.h"
@@ -67,8 +68,9 @@ public:
    *
    * @return The bounding rectangle.
    */
-  QRectF nodeRect() const override;
+  virtual QRectF nodeRect() const override;
   QRectF sceneNodeRect() const;
+  virtual QRectF sceneAlignRect() const;
 
   bool hasControl();
 
@@ -91,7 +93,7 @@ public:
    *
    * @return The QPainterPath representing the shape.
    */
-  QPainterPath shape() const override;
+  virtual QPainterPath shape() const override;
 
   /**
    * @brief Paints the item using the given painter.
@@ -274,6 +276,8 @@ public:
    */
   virtual void addParent(NodeItem* node);
 
+  void removeParent();
+
   /**
    * @brief Adds a child node with the given save information.
    *
@@ -360,7 +364,9 @@ public:
   std::function<void(NodeItem* item)> nodeModified;
   std::function<void(Flow* flow, NodeItem* item)> flowAdded;
   std::function<void(NodeItem* item, bool done)> nodeMoved;
+  std::function<void(NodeItem* item)> geometryChanged;
   std::function<void(NodeItem* item, bool enter)> nodeHovered;
+  std::function<void(NodeItem* item, bool collapsed)> subflowCollapsed;
   std::function<void(NodeItem* node, const QString& nodeId, const QString& flowId, int type)> focusOn;
   std::function<void(NodeItem* item, const QPointF& scenePos, maki::ControlWidget* control)> nodeControlRequested;
 
@@ -393,12 +399,13 @@ public:
    */
   friend QDataStream& operator>>(QDataStream& in, NodeItem& config);
 
+  virtual QRectF childAreaSceneRect() const;
+
 protected:
   std::shared_ptr<NodeSaveInfo> mStorage;  /// Save information for the node.
   QSizeF mSize{0, 0};                      /// Current size of the node.
   QMap<Types::Port, PortItem*> mPorts;
 
-  virtual QRectF childAreaSceneRect() const;
   virtual bool constrainChildren() const;
 
   virtual QPointF constrainChildPosition(const NodeItem* child, const QPointF& proposedPosition) const;

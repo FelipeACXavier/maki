@@ -66,12 +66,22 @@ std::shared_ptr<NodeConfig> NodeBase::config() const
 
 QRectF NodeBase::boundingRect() const
 {
-  return nodeRect().united(labelBoundingRect());
+  auto bounds = nodeRect().united(labelBoundingRect());
+  auto extra = extraBoundingRect();
+  if (!extra.isEmpty())
+    bounds = bounds.united(extra);
+
+  return bounds;
 }
 
 QRectF NodeBase::nodeRect() const
 {
   return mBounds;
+}
+
+QRectF NodeBase::extraBoundingRect() const
+{
+  return {};
 }
 
 QRectF NodeBase::labelBoundingRect() const

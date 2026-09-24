@@ -24,7 +24,6 @@ public:
   QRectF boundingRect() const override;
 
   void setRect(const QRectF& rect);
-  QRectF rect() const;
 
   void setCollapsed(bool collapsed);
   bool isCollapsed() const;

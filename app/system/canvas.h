@@ -215,6 +215,8 @@ public:
    */
   void removeTransition(const TransitionSaveInfo& info);
 
+  void reparentNode(const QString& nodeId, const QString& parentId);
+
   /**
    * @brief Requests alignment of nodes.
    *
@@ -234,12 +236,15 @@ public:
    */
   void alignNodes(const QList<Types::AlignmentNode>& items, Types::AlignmentMode mode, Types::AlignmentDirection direction, bool useGiven);
 
+  void alignNodeGroup(const QList<NodeItem*>& nodes, Types::AlignmentMode mode, Types::AlignmentDirection direction);
   void alignSelectedNodes(Types::AlignmentMode mode);
+  QList<NodeItem*> topLevelSelectedNodes() const;
+  QHash<NodeItem*, QList<NodeItem*>> groupNodesByParent(const QList<NodeItem*>& nodes) const;
 
   void requestDistributeNodes();
   void distributeNodes(QList<Types::AlignmentNode> items);
-  void distributeNodesVertically(const QList<Types::AlignmentNode>& nodes);
-  void distributeNodesHorizontally(const QList<Types::AlignmentNode>& nodes);
+  void distributeNodeGroupVertically(QList<NodeItem*> nodes);
+  void distributeNodeGroupHorizontally(QList<NodeItem*> nodes);
 
   std::shared_ptr<EdgeRouter> router() const;
 
@@ -440,6 +445,7 @@ protected:
 
   std::shared_ptr<NodeConfig> getNodeConfig(const QString& key) const;
   virtual void addedItemNode(NodeItem* node, std::shared_ptr<NodeSaveInfo> info);
+  virtual void nodeStarted(NodeItem* node);
   virtual void addedItemFlow(Flow* flow, NodeItem* node);
   virtual void onNodeHovered(NodeItem* node, bool entered);
   virtual void onNodeFocusOn(NodeItem* node, const QString& nodeId, const QString& flowId, int type);
@@ -450,6 +456,8 @@ protected:
   virtual QVector<TransitionSaveInfo> transitionsOfNode(const QString& nodeId);
   virtual QVector<QGraphicsItem*> cleanTransitionsOfNode(const QString& nodeId);
   virtual void onNodeMoved(NodeItem* node, bool done);
+  virtual void onNodeGeometryChanged(NodeItem* node);
+  virtual void onSubFlowCollapsed(NodeItem* node, bool collapsed);
   virtual void showSimulationControls(NodeItem* node, maki::ControlWidget* controls, const QColor& highlightColor);
 
   virtual bool insertDroppedNodeOnTransition(TransitionItem* transition, NodeSaveInfo info);
@@ -472,6 +480,8 @@ protected:
    * @return Pointer to CanvasView.
    */
   CanvasView* parentView() const;
+
+  bool isDescendantOf(const NodeItem* node, const NodeItem* parent) const;
 
 private:
   NodeItem* mHoveredNode = nullptr;       /// Pointer to the hovered node.
@@ -555,7 +565,13 @@ private:
   void onSelectionChanged();
 
   TransitionItem* transitionAt(const QPointF& scenePos, const QGraphicsItem* toIgnore = nullptr) const;
+  TransitionItem* transitionAt(const QRectF& sceneRect, const QGraphicsItem* toIgnore = nullptr) const;
+
   void updateCapabilityDropPreview(const QPointF& scenePos, const QGraphicsItem* toIgnore = nullptr);
+  void updateCapabilityDropPreview(const QRectF& sceneRect, const QGraphicsItem* toIgnore = nullptr);
+
+  QList<NodeItem*> nodesInRoutingScope(NodeItem* scope) const;
+  NodeItem* routingScopeForTransition(const TransitionItem* transition) const;
 };
 
 inline QDataStream& operator<<(QDataStream& out, const Canvas::CopiedNode& node)

@@ -4,6 +4,9 @@
 #include <libavoid/router.h>
 #include <libavoid/shape.h>
 
+#include "keys.h"
+#include "transition_info.h"
+
 QString EdgeRouter::optionToString(int option)
 {
   return optionToString((EdgeRouter::Option)option);
@@ -128,7 +131,7 @@ QPainterPath EdgeRouter::pathFromPoints(const QVector<QPointF>& points) const
   return path;
 }
 
-static Avoid::Polygon polygonFromRect(const QRectF& rect, qreal margin = 12.0)
+static Avoid::Polygon polygonFromRect(const QRectF& rect, qreal margin = 5.0)
 {
   QRectF r = rect.adjusted(-margin, -margin, margin, margin);
 
@@ -139,6 +142,45 @@ static Avoid::Polygon polygonFromRect(const QRectF& rect, qreal margin = 12.0)
   polygon.ps[3] = Avoid::Point(r.left(), r.bottom());
 
   return polygon;
+}
+
+static Avoid::ConnDirFlags sourceDirection(Types::Port port)
+{
+  switch (port)
+  {
+    case Types::Port::IN:
+      // Subflow IN marker is on the left and flows inward.
+      return Avoid::ConnDirRight;
+
+    case Types::Port::OUT:
+    case Types::Port::ERROR:
+    case Types::Port::ABORT:
+      return Avoid::ConnDirRight;
+
+    case Types::Port::UNKNOWN:
+    default:
+      return Avoid::ConnDirAll;
+  }
+}
+
+static Avoid::ConnDirFlags destinationDirection(Types::Port port)
+{
+  switch (port)
+  {
+    case Types::Port::IN:
+      return Avoid::ConnDirLeft;
+
+    case Types::Port::OUT:
+    case Types::Port::ERROR:
+    case Types::Port::ABORT:
+      // These are subflow boundary destinations. The transition approaches
+      // them from inside the subflow, i.e. from the left.
+      return Avoid::ConnDirLeft;
+
+    case Types::Port::UNKNOWN:
+    default:
+      return Avoid::ConnDirAll;
+  }
 }
 
 QHash<const TransitionItem*, QPainterPath> EdgeRouter::route(const QList<NodeItem*>& nodes, const QList<TransitionItem*>& transitions) const
@@ -162,22 +204,24 @@ QHash<const TransitionItem*, QPainterPath> EdgeRouter::route(const QList<NodeIte
 
   for (const TransitionItem* transition : transitions)
   {
+    if (!transition)
+      continue;
+
     const NodeItem* source = transition->source();
     const NodeItem* target = transition->destination();
 
     if (!source || !target)
       continue;
 
-    const auto srcPoint = transition->sourceAnchor();
-    const auto dstPoint = transition->destinationAnchor();
+    const QPointF srcPoint = transition->sourceAnchor();
+    const QPointF dstPoint = transition->destinationAnchor();
+
+    const auto storage = transition->storage();
 
     auto* conn = new Avoid::ConnRef(&router);
-    if (!transition->getEvent().isEmpty() && option() == Option::MANHATTAN)
-      conn->setSourceEndpoint(Avoid::ConnEnd(Avoid::Point(srcPoint.x(), srcPoint.y()), Avoid::ConnDirUp));
-    else
-      conn->setSourceEndpoint(Avoid::ConnEnd(Avoid::Point(srcPoint.x(), srcPoint.y()), Avoid::ConnDirRight));
 
-    conn->setDestEndpoint(Avoid::ConnEnd(Avoid::Point(dstPoint.x(), dstPoint.y()), Avoid::ConnDirLeft));
+    conn->setSourceEndpoint(Avoid::ConnEnd(Avoid::Point(srcPoint.x(), srcPoint.y()), sourceDirection(storage->srcPort())));
+    conn->setDestEndpoint(Avoid::ConnEnd(Avoid::Point(dstPoint.x(), dstPoint.y()), destinationDirection(storage->dstPort())));
 
     if (option() == Option::MANHATTAN)
       conn->setRoutingType(Avoid::ConnType_Orthogonal);
@@ -186,7 +230,6 @@ QHash<const TransitionItem*, QPainterPath> EdgeRouter::route(const QList<NodeIte
 
     connectorMap[transition] = conn;
   }
-
   router.processTransaction();
 
   QHash<const TransitionItem*, QPainterPath> result;

@@ -7,6 +7,7 @@
 SubFlow::SubFlow(QGraphicsItem* parent)
     : QGraphicsItem(parent)
 {
+  setFlag(QGraphicsItem::ItemStacksBehindParent, true);
   setZValue(-1.0);
 }
 
@@ -52,11 +53,6 @@ void SubFlow::setRect(const QRectF& rect)
   prepareGeometryChange();
   mRect = rect;
   update();
-}
-
-QRectF SubFlow::rect() const
-{
-  return mRect;
 }
 
 void SubFlow::setCollapsed(bool collapsed)

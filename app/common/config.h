@@ -215,7 +215,7 @@ public:
   QColor borderColor = Qt::black;          /// Border color.
 
   int width = 100;        /// Width of the body.
-  int height = 50;        /// Height of the body.
+  int height = 100;       /// Height of the body.
   int zIndex = 1;         /// Z-index for stacking order.
   int borderRadius = 10;  /// Border radius for rounded corners.
 

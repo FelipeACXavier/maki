@@ -16,8 +16,13 @@ public:
   void updatePosition(const QPointF& position) override;
   void addChild(NodeItem* node, std::shared_ptr<NodeSaveInfo> info) override;
   void childRemoved(NodeItem* child) override;
+  QRectF sceneAlignRect() const override;
+
+  QRectF nodeRect() const override;
+  QPainterPath shape() const override;
 
 protected:
+  QRectF extraBoundingRect() const override;
   QPointF constrainChildPosition(const NodeItem* child, const QPointF& proposedPosition) const override;
   void childPositionUpdated() override;
   QRectF childAreaSceneRect() const override;

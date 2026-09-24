@@ -90,7 +90,6 @@ void DraggableItem::startDrag(QGraphicsSceneMouseEvent* event)
   QStyleOptionGraphicsItem opt;
   opt.state = QStyle::State_Active;
   paint(&painter, &opt, nullptr);
-  paintLabel(&painter, pixmap.rect(), QPen(Config::FOREGROUND));
 
   NodeSaveInfo info;
   info.setNodeId(nodeId());

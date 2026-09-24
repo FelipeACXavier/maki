@@ -4,6 +4,7 @@
 
 #include "data_flow_model.h"
 #include "elements/flow.h"
+#include "keys.h"
 #include "logging.h"
 #include "node_info.h"
 #include "type_registry.h"
@@ -27,7 +28,7 @@ void StructureCanvas::updateParent(NodeItem* node, std::shared_ptr<NodeSaveInfo>
 
 void StructureCanvas::addedItemNode(NodeItem* node, std::shared_ptr<NodeSaveInfo> info)
 {
-  if (node->parentNode() == nullptr)
+  if (node->nodeId() == ConfigKeys::TASK_NODE)
   {
     // Adding task
     mStorage->addNode(info);

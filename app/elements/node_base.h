@@ -87,6 +87,7 @@ public:
   virtual QRectF labelBoundingRect() const;
 
   virtual QRectF nodeRect() const;
+  virtual QRectF extraBoundingRect() const;
 
   /**
    * @brief Returns the scaled rectangle of the node.
