@@ -27,8 +27,8 @@ public:
   void print() const;
   void clear();
 
-  Result<SymbolId> declare(SymbolKind kind, const std::string& name, const types::TypeReference& type, const Span& span,
-                           SymbolId owner = InvalidSymbol, SymbolId actionId = InvalidSymbol);
+  Result<SymbolId> declare(SymbolKind kind, const std::string& name, const types::TypeReference& type, const Span& span, SymbolId owner = InvalidSymbol,
+                           SymbolId actionId = InvalidSymbol);
 
   std::optional<SymbolId> lookup(const std::string& name, SymbolId owner = InvalidSymbol) const;
   std::optional<SymbolId> lookupLocal(const std::string& name, SymbolId owner = InvalidSymbol) const;

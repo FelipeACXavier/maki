@@ -17,6 +17,12 @@ enum class ComponentKind
   Task,
   Capability
 };
+enum class CapabilityKind
+{
+  Unknown = 0,
+  Sync,
+  Async
+};
 enum class ArgumentMode
 {
   Plain,
@@ -390,6 +396,7 @@ struct Component
 {
   SymbolId symbol = InvalidSymbol;
   ComponentKind kind = ComponentKind::Task;
+  CapabilityKind capabilityKind = CapabilityKind::Unknown;
   std::string name;
   std::vector<Argument> arguments;
   std::vector<Variable> variables;

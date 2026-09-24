@@ -9,7 +9,6 @@
 #include "logging.h"
 #include "nuxmv_composite_semantics.h"
 #include "nuxmv_constants.h"
-#include "nuxmv_control_flow.h"
 #include "nuxmv_handler_semantics.h"
 
 namespace koda::nuxmv
@@ -250,7 +249,10 @@ VoidResult SemanticCompiler::compileAction(const ir::PStrategy& strategy, const 
   // invocations targeting the same capability symbol share one capability
   // state machine, materialized after the complete flow has been compiled.
   const auto [id, _] = uniqueId(strategy, "action");
-  auto& capability = findCapability(call.receiver);
+  auto capabilityResult = findCapability(call.receiver);
+  RETURN_ON_FAILURE(capabilityResult);
+
+  auto& capability = *capabilityResult.Value();
 
   behaviour.id = id;
   behaviour.origin = provenance(strategy);
@@ -1488,6 +1490,38 @@ VoidResult SemanticCompiler::compileProperties(const ir::Component& component, M
   return VoidResult();
 }
 
+PExpression SemanticCompiler::flowRisingExpression(const FlowCallSite& call) const
+{
+  // Started: externally Idle -> active. Internal active-state changes do not
+  // count as another start.
+  return logicalAnd(equal(reference(call.id + "_state"), reference("Idle")), unary("X", call.running));
+}
+
+PExpression SemanticCompiler::flowFallingExpression(const FlowCallSite& call) const
+{
+  // Stopped is outcome-agnostic: any active -> non-active transition.
+  return logicalAnd(call.running, unary("X", logicalNot(call.running)));
+}
+
+PExpression SemanticCompiler::capabilityRunningExpression(const CapabilityInstance& capability, const CapabilityCallSite* call) const
+{
+  const auto running = equal(reference(capability.id + "_state"), reference("Running"));
+  if (!call)
+    return running;
+  return logicalAnd(running, equal(reference(capability.id + "_owner"), reference(call->id)));
+}
+
+PExpression SemanticCompiler::capabilityRisingExpression(const CapabilityInstance& capability, const CapabilityCallSite* call) const
+{
+  return logicalAnd(equal(reference(capability.id + "_state"), reference("Idle")), unary("X", capabilityRunningExpression(capability, call)));
+}
+
+PExpression SemanticCompiler::capabilityFallingExpression(const CapabilityInstance& capability, const CapabilityCallSite* call) const
+{
+  const auto running = capabilityRunningExpression(capability, call);
+  return logicalAnd(running, unary("X", logicalNot(capabilityRunningExpression(capability, call))));
+}
+
 PExpression SemanticCompiler::runningExpression(const Behaviour& behaviour) const
 {
   const auto stateName = behaviour.id + "_state";
@@ -1612,12 +1646,12 @@ Result<PExpression> SemanticCompiler::compileObservation(const ir::Observation& 
     {
       case ir::Observation::Kind::Started:
       {
+        // A flow starts on the rising edge of a call site's persistent
+        // running state. This avoids expanding the synchronous trigger-reply
+        // tree in temporal properties.
         std::vector<PExpression> expressions;
         for (const auto& call : flow.calls)
-          expressions.push_back(logicalAnd(call.trigger, anyOf({
-                                                             equal(call.triggerReply, constants::resultSuccess()),
-                                                             equal(call.triggerReply, constants::resultDone()),
-                                                         })));
+          expressions.push_back(flowRisingExpression(call));
 
         return anyOf(expressions);
       }
@@ -1633,11 +1667,7 @@ Result<PExpression> SemanticCompiler::compileObservation(const ir::Observation& 
       {
         std::vector<PExpression> expressions;
         for (const auto& call : flow.calls)
-          expressions.push_back(anyOf({
-              equal(call.outcome, constants::eventSuccess()),
-              equal(call.outcome, constants::eventFailure()),
-              equal(call.outcome, constants::eventAborted()),
-          }));
+          expressions.push_back(flowFallingExpression(call));
 
         return anyOf(expressions);
       }
@@ -1683,25 +1713,19 @@ Result<PExpression> SemanticCompiler::compileObservation(const ir::Observation& 
   {
     case ir::Observation::Kind::Running:
     {
-      const auto running = equal(reference(instance.id + "_state"), reference("Running"));
       if (observation.target == InvalidSymbol)
-        return running;
+        return capabilityRunningExpression(instance);
 
-      std::vector<PExpression> owners;
+      std::vector<PExpression> expressions;
       for (const auto* call : calls)
-        owners.push_back(equal(reference(instance.id + "_owner"), reference(call->id)));
-
-      return logicalAnd(running, anyOf(owners));
+        expressions.push_back(capabilityRunningExpression(instance, call));
+      return anyOf(expressions);
     }
     case ir::Observation::Kind::Started:
     {
       std::vector<PExpression> expressions;
       for (const auto* call : calls)
-        expressions.push_back(logicalAnd(call->trigger, anyOf({
-                                                            equal(call->triggerReply, constants::resultSuccess()),
-                                                            equal(call->triggerReply, constants::resultDone()),
-                                                        })));
-
+        expressions.push_back(capabilityRisingExpression(instance, call));
       return anyOf(expressions);
     }
     case ir::Observation::Kind::Rejected:
@@ -1716,12 +1740,7 @@ Result<PExpression> SemanticCompiler::compileObservation(const ir::Observation& 
     {
       std::vector<PExpression> expressions;
       for (const auto* call : calls)
-        expressions.push_back(anyOf({
-            equal(call->outcome, constants::eventSuccess()),
-            equal(call->outcome, constants::eventFailure()),
-            equal(call->outcome, constants::eventAborted()),
-        }));
-
+        expressions.push_back(capabilityFallingExpression(instance, call));
       return anyOf(expressions);
     }
     case ir::Observation::Kind::Aborted:
@@ -1842,20 +1861,42 @@ void SemanticCompiler::indexFlowAborts(const ir::PStrategy& strategy)
   }
 }
 
-SemanticCompiler::CapabilityInstance& SemanticCompiler::findCapability(SymbolId symbol)
+Result<SemanticCompiler::CapabilityInstance*> SemanticCompiler::findCapability(SymbolId symbol)
 {
   if (const auto it = mCapabilities.find(symbol); it != mCapabilities.end())
-    return it->second;
+    return &it->second;
 
   const auto* info = mSymbols.get(symbol);
-  const auto name = sanitize(info ? info->name : "capability");
+  if (!info || info->kind != SymbolKind::Argument)
+    return Result<SemanticCompiler::CapabilityInstance*>::Failed("Could not find capability with symbol: {}", symbol);
+
+  const auto cId = mSymbols.component(info->type.toString());
+  if (!cId)
+    return Result<SemanticCompiler::CapabilityInstance*>::Failed("No component of type: {}", info->type.toString());
+
+  const auto* cap = mSymbols.get(cId.value());
+  if (!cap)
+    return Result<SemanticCompiler::CapabilityInstance*>::Failed("No symbol for type: {}", info->type.toString());
+
+  ir::CapabilityKind kind = ir::CapabilityKind::Unknown;
+  for (const auto& component : mProgram.components)
+  {
+    if (component.symbol == cap->id)
+    {
+      kind = component.capabilityKind;
+      break;
+    }
+  }
+
   CapabilityInstance instance{
       .symbol = symbol,
-      .id = name,
+      .id = sanitize(info ? info->name : "capability"),
+      .kind = kind,
       .calls = {},
   };
 
-  return mCapabilities.emplace(symbol, std::move(instance)).first->second;
+  auto [it, _] = mCapabilities.emplace(symbol, std::move(instance));
+  return &it->second;
 }
 
 SemanticCompiler::FlowInstance& SemanticCompiler::findFlow(SymbolId symbol)
@@ -1881,96 +1922,168 @@ void SemanticCompiler::materializeCapabilities(Behaviour& behaviour)
     if (capability.calls.empty())
       continue;
 
-    const auto& id = capability.id;
-    const auto state = reference(id + "_state");
-    const auto owner = reference(id + "_owner");
-    const auto triggerResult = reference(id + "_trigger_result");
-    const auto abortResult = reference(id + "_abort_result");
-    const auto resetResult = reference(id + "_reset_result");
-    const auto event = reference(id + "_event");
-
-    auto origin = capability.calls.front().origin;
-    origin.sourceSymbol = symbol;
-
-    std::string ownerDomain = "{None";
-    for (const auto& call : capability.calls)
-      ownerDomain += ", " + call.id;
-    ownerDomain += "}";
-
-    behaviour.variables.push_back({VariableKind::Input, id + "_trigger_result", "{1, 2, 5}", {}, origin});
-    behaviour.variables.push_back({VariableKind::Input, id + "_abort_result", "{1, 2, 3}", {}, origin});
-    behaviour.variables.push_back({VariableKind::Input, id + "_reset_result", "{1, 2}", {}, origin});
-    behaviour.variables.push_back({VariableKind::Input, id + "_event", "0..2", {}, origin});
-    behaviour.variables.push_back({VariableKind::State, id + "_state", "{Idle, Running, Error}", reference("Idle"), origin});
-    behaviour.variables.push_back({VariableKind::State, id + "_owner", ownerDomain, reference("None"), origin});
-
-    std::vector<PExpression> triggers;
-    std::vector<PExpression> resets;
-    std::vector<PExpression> ownedAborts;
-    for (const auto& call : capability.calls)
+    switch (capability.kind)
     {
-      triggers.push_back(call.trigger);
-      resets.push_back(call.reset);
-      ownedAborts.push_back(logicalAnd(equal(owner, reference(call.id)), call.abort));
+      case ir::CapabilityKind::Sync:
+        materializeSyncCapability(capability, behaviour);
+        break;
+
+      case ir::CapabilityKind::Async:
+        materializeAsyncCapability(capability, behaviour);
+        break;
+
+      case ir::CapabilityKind::Unknown:
+      default:
+        LOG_ERROR("Cannot materialize capability '{}': capability kind is unknown", capability.id);
+        break;
     }
-
-    const auto anyTrigger = anyOf(triggers);
-    const auto anyReset = anyOf(resets);
-    const auto anyOwnedAbort = anyOf(ownedAborts);
-    const auto noCommand = logicalNot(logicalOr(anyTrigger, logicalOr(anyOwnedAbort, anyReset)));
-
-    std::vector<GuardedValue> stateCases;
-    for (const auto& call : capability.calls)
-    {
-      stateCases.push_back({and3(equal(state, reference("Idle")), call.trigger, equal(triggerResult, constants::resultSuccess())), reference("Running")});
-      stateCases.push_back({and3(equal(state, reference("Idle")), call.trigger, equal(triggerResult, constants::resultFailure())), reference("Error")});
-    }
-
-    stateCases.push_back({allOf({equal(state, reference("Running")), noCommand, equal(event, constants::eventSuccess())}), reference("Idle")});
-    stateCases.push_back({allOf({equal(state, reference("Running")), noCommand, equal(event, constants::eventFailure())}), reference("Error")});
-    stateCases.push_back({allOf({equal(state, reference("Running")), anyOwnedAbort, equal(abortResult, constants::resultSuccess())}), reference("Idle")});
-    stateCases.push_back({allOf({equal(state, reference("Running")), anyOwnedAbort, equal(abortResult, constants::resultFailure())}), reference("Error")});
-    stateCases.push_back({allOf({equal(state, reference("Running")), anyOwnedAbort, equal(abortResult, constants::resultRunning())}), reference("Running")});
-    stateCases.push_back({allOf({equal(state, reference("Error")), anyReset, equal(resetResult, constants::resultSuccess())}), reference("Idle")});
-
-    behaviour.nextAssignments.push_back({id + "_state", std::move(stateCases), state, origin});
-
-    std::vector<GuardedValue> ownerCases;
-    for (const auto& call : capability.calls)
-      ownerCases.push_back({allOf({equal(state, reference("Idle")), call.trigger, equal(triggerResult, constants::resultSuccess())}), reference(call.id)});
-    ownerCases.push_back({allOf({equal(state, reference("Running")), noCommand, equal(event, constants::eventSuccess())}), reference("None")});
-    ownerCases.push_back({allOf({equal(state, reference("Running")), noCommand, equal(event, constants::eventFailure())}), reference("None")});
-    ownerCases.push_back({allOf({equal(state, reference("Running")), anyOwnedAbort, equal(abortResult, constants::resultSuccess())}), reference("None")});
-    ownerCases.push_back({allOf({equal(state, reference("Running")), anyOwnedAbort, equal(abortResult, constants::resultFailure())}), reference("None")});
-    ownerCases.push_back({allOf({equal(state, reference("Error")), anyReset, equal(resetResult, constants::resultSuccess())}), reference("None")});
-
-    behaviour.nextAssignments.push_back({id + "_owner", std::move(ownerCases), owner, origin});
-
-    // The current KODA orchestration semantics assumes exclusive invocation of
-    // a capability.  Keep that assumption explicit: two call sites may not
-    // trigger/reset the same capability in the same macrostep.  If KODA later
-    // defines queueing or priority arbitration, this is the single place where
-    // that policy should be encoded.
-    for (std::size_t i = 0; i < capability.calls.size(); ++i)
-    {
-      for (std::size_t j = i + 1; j < capability.calls.size(); ++j)
-      {
-        behaviour.constraints.push_back({logicalNot(logicalAnd(capability.calls[i].trigger, capability.calls[j].trigger)), origin});
-        behaviour.constraints.push_back({logicalNot(logicalAnd(capability.calls[i].reset, capability.calls[j].reset)), origin});
-      }
-    }
-
-    behaviour.constraints.push_back({
-        allOf({
-            binary(equal(state, reference("Idle")), "->", logicalOr(noCommand, anyTrigger)),
-            binary(equal(state, reference("Running")), "->", logicalOr(noCommand, anyOwnedAbort)),
-            binary(equal(state, reference("Error")), "->", logicalOr(noCommand, anyReset)),
-            binary(logicalNot(equal(state, reference("Running"))), "->", equal(event, constants::eventNone())),
-            binary(logicalAnd(equal(state, reference("Running")), logicalNot(noCommand)), "->", equal(event, constants::eventNone())),
-        }),
-        origin,
-    });
   }
+}
+
+void SemanticCompiler::materializeSyncCapability(const CapabilityInstance& capability, Behaviour& behaviour)
+{
+  const auto& id = capability.id;
+  const auto state = reference(id + "_state");
+  const auto triggerResult = reference(id + "_trigger_result");
+  const auto resetResult = reference(id + "_reset_result");
+
+  auto origin = capability.calls.front().origin;
+  origin.sourceSymbol = capability.symbol;
+
+  // A synchronous capability either completes in the invocation macrostep or
+  // rejects it. It can therefore never become Running and has no asynchronous
+  // owner/event/abort machinery.
+  behaviour.variables.push_back({VariableKind::Input, id + "_trigger_result", "{2, 5}", {}, origin});
+  behaviour.variables.push_back({VariableKind::Input, id + "_reset_result", "{1, 2}", {}, origin});
+  behaviour.variables.push_back({VariableKind::State, id + "_state", "{Idle, Error}", reference("Idle"), origin});
+
+  std::vector<PExpression> triggers;
+  std::vector<PExpression> resets;
+  std::vector<GuardedValue> stateCases;
+
+  for (const auto& call : capability.calls)
+  {
+    triggers.push_back(call.trigger);
+    resets.push_back(call.reset);
+
+    // RESULT_DONE leaves the capability in Idle (the fallback below). Only a
+    // rejected synchronous invocation enters Error.
+    stateCases.push_back({and3(equal(state, reference("Idle")), call.trigger, equal(triggerResult, constants::resultFailure())), reference("Error")});
+  }
+
+  const auto anyTrigger = anyOf(triggers);
+  const auto anyReset = anyOf(resets);
+  const auto noCommand = logicalNot(logicalOr(anyTrigger, anyReset));
+
+  stateCases.push_back({allOf({equal(state, reference("Error")), anyReset, equal(resetResult, constants::resultSuccess())}), reference("Idle")});
+
+  behaviour.nextAssignments.push_back({id + "_state", std::move(stateCases), state, origin});
+
+  // A capability instance is exclusive even when calls complete synchronously.
+  for (std::size_t i = 0; i < capability.calls.size(); ++i)
+  {
+    for (std::size_t j = i + 1; j < capability.calls.size(); ++j)
+    {
+      behaviour.constraints.push_back({logicalNot(logicalAnd(capability.calls[i].trigger, capability.calls[j].trigger)), origin});
+      behaviour.constraints.push_back({logicalNot(logicalAnd(capability.calls[i].reset, capability.calls[j].reset)), origin});
+    }
+  }
+
+  behaviour.constraints.push_back({
+      allOf({
+          binary(equal(state, reference("Idle")), "->", logicalOr(noCommand, anyTrigger)),
+          binary(equal(state, reference("Error")), "->", logicalOr(noCommand, anyReset)),
+      }),
+      origin,
+  });
+}
+
+void SemanticCompiler::materializeAsyncCapability(const CapabilityInstance& capability, Behaviour& behaviour)
+{
+  const auto& id = capability.id;
+  const auto state = reference(id + "_state");
+  const auto owner = reference(id + "_owner");
+  const auto triggerResult = reference(id + "_trigger_result");
+  const auto abortResult = reference(id + "_abort_result");
+  const auto resetResult = reference(id + "_reset_result");
+  const auto event = reference(id + "_event");
+
+  auto origin = capability.calls.front().origin;
+  origin.sourceSymbol = capability.symbol;
+
+  std::string ownerDomain = "{None";
+  for (const auto& call : capability.calls)
+    ownerDomain += ", " + call.id;
+  ownerDomain += "}";
+
+  // Async invocation is either accepted (SUCCESS -> Running) or rejected.
+  // RESULT_DONE is deliberately excluded: completion must arrive as an event.
+  behaviour.variables.push_back({VariableKind::Input, id + "_trigger_result", "{1, 2}", {}, origin});
+  behaviour.variables.push_back({VariableKind::Input, id + "_abort_result", "{1, 2, 3}", {}, origin});
+  behaviour.variables.push_back({VariableKind::Input, id + "_reset_result", "{1, 2}", {}, origin});
+  behaviour.variables.push_back({VariableKind::Input, id + "_event", "0..2", {}, origin});
+  behaviour.variables.push_back({VariableKind::State, id + "_state", "{Idle, Running, Error}", reference("Idle"), origin});
+  behaviour.variables.push_back({VariableKind::State, id + "_owner", ownerDomain, reference("None"), origin});
+
+  std::vector<PExpression> triggers;
+  std::vector<PExpression> resets;
+  std::vector<PExpression> ownedAborts;
+  for (const auto& call : capability.calls)
+  {
+    triggers.push_back(call.trigger);
+    resets.push_back(call.reset);
+    ownedAborts.push_back(logicalAnd(equal(owner, reference(call.id)), call.abort));
+  }
+
+  const auto anyTrigger = anyOf(triggers);
+  const auto anyReset = anyOf(resets);
+  const auto anyOwnedAbort = anyOf(ownedAborts);
+  const auto noCommand = logicalNot(logicalOr(anyTrigger, logicalOr(anyOwnedAbort, anyReset)));
+
+  std::vector<GuardedValue> stateCases;
+  for (const auto& call : capability.calls)
+  {
+    stateCases.push_back({and3(equal(state, reference("Idle")), call.trigger, equal(triggerResult, constants::resultSuccess())), reference("Running")});
+    stateCases.push_back({and3(equal(state, reference("Idle")), call.trigger, equal(triggerResult, constants::resultFailure())), reference("Error")});
+  }
+
+  stateCases.push_back({allOf({equal(state, reference("Running")), noCommand, equal(event, constants::eventSuccess())}), reference("Idle")});
+  stateCases.push_back({allOf({equal(state, reference("Running")), noCommand, equal(event, constants::eventFailure())}), reference("Error")});
+  stateCases.push_back({allOf({equal(state, reference("Running")), anyOwnedAbort, equal(abortResult, constants::resultSuccess())}), reference("Idle")});
+  stateCases.push_back({allOf({equal(state, reference("Running")), anyOwnedAbort, equal(abortResult, constants::resultFailure())}), reference("Error")});
+  stateCases.push_back({allOf({equal(state, reference("Running")), anyOwnedAbort, equal(abortResult, constants::resultRunning())}), reference("Running")});
+  stateCases.push_back({allOf({equal(state, reference("Error")), anyReset, equal(resetResult, constants::resultSuccess())}), reference("Idle")});
+  behaviour.nextAssignments.push_back({id + "_state", std::move(stateCases), state, origin});
+
+  std::vector<GuardedValue> ownerCases;
+  for (const auto& call : capability.calls)
+    ownerCases.push_back({allOf({equal(state, reference("Idle")), call.trigger, equal(triggerResult, constants::resultSuccess())}), reference(call.id)});
+  ownerCases.push_back({allOf({equal(state, reference("Running")), noCommand, equal(event, constants::eventSuccess())}), reference("None")});
+  ownerCases.push_back({allOf({equal(state, reference("Running")), noCommand, equal(event, constants::eventFailure())}), reference("None")});
+  ownerCases.push_back({allOf({equal(state, reference("Running")), anyOwnedAbort, equal(abortResult, constants::resultSuccess())}), reference("None")});
+  ownerCases.push_back({allOf({equal(state, reference("Running")), anyOwnedAbort, equal(abortResult, constants::resultFailure())}), reference("None")});
+  ownerCases.push_back({allOf({equal(state, reference("Error")), anyReset, equal(resetResult, constants::resultSuccess())}), reference("None")});
+  behaviour.nextAssignments.push_back({id + "_owner", std::move(ownerCases), owner, origin});
+
+  for (std::size_t i = 0; i < capability.calls.size(); ++i)
+  {
+    for (std::size_t j = i + 1; j < capability.calls.size(); ++j)
+    {
+      behaviour.constraints.push_back({logicalNot(logicalAnd(capability.calls[i].trigger, capability.calls[j].trigger)), origin});
+      behaviour.constraints.push_back({logicalNot(logicalAnd(capability.calls[i].reset, capability.calls[j].reset)), origin});
+    }
+  }
+
+  behaviour.constraints.push_back({
+      allOf({
+          binary(equal(state, reference("Idle")), "->", logicalOr(noCommand, anyTrigger)),
+          binary(equal(state, reference("Running")), "->", logicalOr(noCommand, anyOwnedAbort)),
+          binary(equal(state, reference("Error")), "->", logicalOr(noCommand, anyReset)),
+          binary(logicalNot(equal(state, reference("Running"))), "->", equal(event, constants::eventNone())),
+          binary(logicalAnd(equal(state, reference("Running")), logicalNot(noCommand)), "->", equal(event, constants::eventNone())),
+      }),
+      origin,
+  });
 }
 
 void SemanticCompiler::materializeFlows(Behaviour& behaviour)

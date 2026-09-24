@@ -74,6 +74,7 @@ private:
   {
     SymbolId symbol;
     std::string id;
+    ir::CapabilityKind kind = ir::CapabilityKind::Unknown;
     std::vector<CapabilityCallSite> calls;
   };
 
@@ -105,12 +106,14 @@ private:
   std::unordered_map<SymbolId, FlowInstance> mFlowInstances;
 
   void materializeCapabilities(Behaviour& behaviour);
+  void materializeSyncCapability(const CapabilityInstance& capability, Behaviour& behaviour);
+  void materializeAsyncCapability(const CapabilityInstance& capability, Behaviour& behaviour);
   void materializeFlows(Behaviour& behaviour);
   void materializeBehaviourInterface(Behaviour& behaviour, const std::string& suffix = "");
   void mergeBehaviour(koda::nuxmv::Behaviour& target, koda::nuxmv::Behaviour&& child);
   void registerMainFlow(const Behaviour& behaviour, SymbolId flow, const PExpression command);
 
-  CapabilityInstance& findCapability(SymbolId symbol);
+  Result<CapabilityInstance*> findCapability(SymbolId symbol);
   FlowInstance& findFlow(SymbolId symbol);
 
   VoidResult compileChoose(const ir::PStrategy& strategy, const ir::Strategy::Choose& choose, const PExpression& trigger, const PExpression& abort,
@@ -150,6 +153,11 @@ private:
   VoidResult compileWithin(const ir::PStrategy& strategy, const ir::Strategy::Within& within, const PExpression& trigger, const PExpression& abort,
                            const PExpression& reset, Behaviour& behaviour);
 
+  PExpression flowRisingExpression(const FlowCallSite& call) const;
+  PExpression flowFallingExpression(const FlowCallSite& call) const;
+  PExpression capabilityRunningExpression(const CapabilityInstance& capability, const CapabilityCallSite* call = nullptr) const;
+  PExpression capabilityRisingExpression(const CapabilityInstance& capability, const CapabilityCallSite* call) const;
+  PExpression capabilityFallingExpression(const CapabilityInstance& capability, const CapabilityCallSite* call) const;
   PExpression runningExpression(const Behaviour& behaviour) const;
   Result<PExpression> compilePropertyExpr(const ir::PPropertyExpr& expression);
   Result<PExpression> compileObservation(const ir::Observation& observation);

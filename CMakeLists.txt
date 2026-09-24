@@ -32,6 +32,8 @@ message(STATUS "Using Qt version from .qt-version: ${QT_VERSION}")
 
 project(${APPLICATION_NAME} LANGUAGES CXX)
 
+include(CTest)
+
 set(QT_REQUIRED_PACKAGES
   Core
   Gui

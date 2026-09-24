@@ -58,6 +58,11 @@ Result<ir::Component> IRBuilder::buildComponent(const PComponent& component) con
   out.kind = component->kind == Component::Kind::Task ? ir::ComponentKind::Task : ir::ComponentKind::Capability;
   out.name = component->name;
   out.span = component->span;
+  if (out.kind == ir::ComponentKind::Capability)
+  {
+    const auto* returnEvent = mSymbols.eventOfAction(out.symbol, NullSymbolId, "Return");
+    out.capabilityKind = returnEvent == nullptr ? ir::CapabilityKind::Sync : ir::CapabilityKind::Async;
+  }
 
   for (const auto& arg : component->args)
     out.arguments.push_back(buildArg(arg, owner));
