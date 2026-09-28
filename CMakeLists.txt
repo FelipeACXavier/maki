@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.22)
 set(APPLICATION_NAME maki)
 
 option(DEBUG "Build with debug symbols" OFF)
+option(TRACE "Build with trace logs" OFF)
 option(BUILD_DOC "Build documentation" ON)
 option(BUILD_PLUGINS "Build plugins as part of the application" ON)
 
