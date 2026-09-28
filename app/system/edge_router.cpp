@@ -4,8 +4,8 @@
 #include <libavoid/router.h>
 #include <libavoid/shape.h>
 
-#include "keys.h"
 #include "transition_info.h"
+#include "types.h"
 
 QString EdgeRouter::optionToString(int option)
 {
@@ -72,22 +72,9 @@ QVector<QPointF> EdgeRouter::manhattanRoute(const QPointF& start, const QPointF&
   QVector<QPointF> points;
   points << start;
 
-  const qreal dx = qAbs(end.x() - start.x());
-  const qreal dy = qAbs(end.y() - start.y());
-
-  if (dx > dy)
-  {
-    const qreal midX = (start.x() + end.x()) / 2.0;
-    appendPoint(points, QPointF(midX, start.y()));
-    appendPoint(points, QPointF(midX, end.y()));
-  }
-  else
-  {
-    const qreal midY = (start.y() + end.y()) / 2.0;
-    appendPoint(points, QPointF(start.x(), midY));
-    appendPoint(points, QPointF(end.x(), midY));
-  }
-
+  const qreal midX = (start.x() + end.x()) / 2.0;
+  appendPoint(points, QPointF(midX, start.y()));
+  appendPoint(points, QPointF(midX, end.y()));
   points << end;
 
   return points;
@@ -197,7 +184,7 @@ QHash<const TransitionItem*, QPainterPath> EdgeRouter::route(const QList<NodeIte
 
   for (const NodeItem* node : nodes)
   {
-    QRectF rect = node->sceneNodeRect();
+    QRectF rect = node->sceneAlignRect();
     auto poly = polygonFromRect(rect);
     shapeMap[node] = new Avoid::ShapeRef(&router, poly);
   }
@@ -216,12 +203,10 @@ QHash<const TransitionItem*, QPainterPath> EdgeRouter::route(const QList<NodeIte
     const QPointF srcPoint = transition->sourceAnchor();
     const QPointF dstPoint = transition->destinationAnchor();
 
-    const auto storage = transition->storage();
-
+    const TransitionSaveInfo storage = transition->saveInfo();
     auto* conn = new Avoid::ConnRef(&router);
-
-    conn->setSourceEndpoint(Avoid::ConnEnd(Avoid::Point(srcPoint.x(), srcPoint.y()), sourceDirection(storage->srcPort())));
-    conn->setDestEndpoint(Avoid::ConnEnd(Avoid::Point(dstPoint.x(), dstPoint.y()), destinationDirection(storage->dstPort())));
+    conn->setSourceEndpoint(Avoid::ConnEnd(Avoid::Point(srcPoint.x(), srcPoint.y()), sourceDirection(storage.srcPort())));
+    conn->setDestEndpoint(Avoid::ConnEnd(Avoid::Point(dstPoint.x(), dstPoint.y()), destinationDirection(storage.dstPort())));
 
     if (option() == Option::MANHATTAN)
       conn->setRoutingType(Avoid::ConnType_Orthogonal);

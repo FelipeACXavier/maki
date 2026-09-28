@@ -567,25 +567,30 @@ void MainWindow::changeEvent(QEvent* event)
 
 void MainWindow::bindCanvas()
 {
+  connect(canvas(), &Canvas::openFlow, this, &MainWindow::onOpenFlow);
   connect(canvas(), &Canvas::nodeSelected, this, &MainWindow::onNodeSelected);
   connect(canvas(), &Canvas::nodeAdded, this, &MainWindow::onNodeAdded);
   connect(canvas(), &Canvas::nodeRemoved, this, &MainWindow::onNodeRemoved);
   connect(canvas(), &Canvas::nodeModified, this, &MainWindow::onNodeModified);
   connect(canvas(), &Canvas::focusOn, this, &MainWindow::focusOn);
 
-  connect(canvas(), &Canvas::createEvent, mPropertiesMenu, &PropertiesMenu::onCreateEvent);
+  connect(canvas(), &Canvas::createEvent, this, [this](NodeItem* node) {
+    if (mPropertiesMenu)
+      LOG_WARN_ON_FAILURE(mPropertiesMenu->onCreateEvent(node, false));
+  });
   connect(canvas(), &Canvas::transitionSelected, mPropertiesMenu, &PropertiesMenu::onTransitionSelected);
 }
 
 void MainWindow::unbindCanvas()
 {
+  disconnect(canvas(), &Canvas::openFlow, this, &MainWindow::onOpenFlow);
   disconnect(canvas(), &Canvas::nodeSelected, this, &MainWindow::onNodeSelected);
   disconnect(canvas(), &Canvas::nodeAdded, this, &MainWindow::onNodeAdded);
   disconnect(canvas(), &Canvas::nodeRemoved, this, &MainWindow::onNodeRemoved);
   disconnect(canvas(), &Canvas::nodeModified, this, &MainWindow::onNodeModified);
   disconnect(canvas(), &Canvas::focusOn, this, &MainWindow::focusOn);
 
-  disconnect(canvas(), &Canvas::createEvent, mPropertiesMenu, &PropertiesMenu::onCreateEvent);
+  disconnect(canvas(), &Canvas::createEvent, this, nullptr);
   disconnect(canvas(), &Canvas::transitionSelected, mPropertiesMenu, &PropertiesMenu::onTransitionSelected);
 }
 
@@ -1074,7 +1079,7 @@ void MainWindow::onActionDeletePipeline(const QString& pipelineId)
   // Check if the pipeline is currently open
   for (int i = 1; i < mCanvasPanel->count(); ++i)
   {
-    auto prop = mCanvasPanel->widget(i)->property("id");
+    auto prop = mCanvasPanel->widget(i)->property(ConfigKeys::ID.toUtf8());
     if (!prop.isValid() || prop.toString() != pipeline->getid())
       continue;
 
@@ -1126,7 +1131,7 @@ void MainWindow::onActionRenamePipeline(const QString& pipelineId)
 
   for (int i = 1; i < mCanvasPanel->count(); ++i)
   {
-    auto prop = mCanvasPanel->widget(i)->property("id");
+    auto prop = mCanvasPanel->widget(i)->property(ConfigKeys::ID.toUtf8());
     if (prop.isValid() && prop.toString() == pipeline->getid())
     {
       mCanvasPanel->setTabText(i, pipeline->getname());
@@ -1178,7 +1183,7 @@ void MainWindow::onActionEditPipeline(const QString& pipelineId)
   // Check if the pipeline is already open
   for (int i = 1; i < mCanvasPanel->count(); ++i)
   {
-    auto prop = mCanvasPanel->widget(i)->property("id");
+    auto prop = mCanvasPanel->widget(i)->property(ConfigKeys::ID.toUtf8());
     if (prop.isValid() && prop.toString() == pipeline->getid())
     {
       mCanvasPanel->setCurrentIndex(i);
@@ -1187,7 +1192,7 @@ void MainWindow::onActionEditPipeline(const QString& pipelineId)
   }
 
   CanvasView* newView = new CanvasView(mCanvasPanel);
-  newView->setProperty("id", pipeline->getid());
+  newView->setProperty(ConfigKeys::ID.toUtf8(), pipeline->getid());
 
   PipelineCanvas* canvas = new PipelineCanvas(pipeline, mRouter, newView);
   newView->setScene(canvas);
@@ -1366,12 +1371,14 @@ void MainWindow::onNodeAdded(NodeItem* node)
     return;
   }
 
+  LOG_WARNING("NODE ADDED: {}", node->nodeId());
   LOG_WARN_ON_FAILURE(mSystemMenu->onNodeAdded(canvas()->id(), node, canvas()->type()));
   LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeAdded(node));
 }
 
 void MainWindow::onNodeRemoved(const QString& nodeId, const QString& parentId)
 {
+  LOG_WARNING("NODE REMOVED: {}", nodeId);
   LOG_WARN_ON_FAILURE(mSystemMenu->onNodeRemoved(canvas()->id(), nodeId, parentId));
   LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeRemoved(nodeId));
 }
@@ -1496,61 +1503,57 @@ void MainWindow::closeCanvasTab(int index)
   mCanvasPanel->removeTab(index);
 }
 
-int MainWindow::onOpenFlow(Flow* flow, const QString& nodeId, const maki::FocusProperties& properties)
+void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId, const maki::FocusProperties& properties, int& createdIndex)
 {
   QString flowName;
-  if (flow == nullptr)
+  if (flow == nullptr && mPropertiesMenu)
   {
-    QInputDialog* dialog = new QInputDialog(this);
-    dialog->setWindowTitle(tr("Flow name"));
-    dialog->setLabelText(tr("Enter a name for the new flow") + ":");
-    dialog->setTextValue(tr(""));
+    auto node = rootCanvas()->findNodeWithId(nodeId);
+    if (!node)
+    {
+      LOG_WARNING("Could not find task node with id: {}", nodeId);
+      createdIndex = -1;
+      return;
+    }
 
-    // Set a validator: allow only alphanumerics and spaces
-    QRegularExpression rx("[A-Za-z ]+");
-    QValidator* validator = new QRegularExpressionValidator(rx, dialog);
+    const auto ret = mPropertiesMenu->onCreateEvent(node, true);
+    if (!ret.IsSuccess())
+    {
+      LOG_WARNING("Could not create flow for node: {}", nodeId);
+      createdIndex = -1;
+      return;
+    }
 
-    // Access the line edit and assign the validator
-    QLineEdit* lineEdit = dialog->findChild<QLineEdit*>();
-    if (lineEdit)
-      lineEdit->setValidator(validator);
-
-    // Execute the dialog
-    if (dialog->exec() != QDialog::Accepted)
-      return -1;
-
-    flowName = dialog->textValue().trimmed();
+    flow = ret.Value();
+    flowName = flow->name();
   }
   else
   {
     flowName = flow->name();
   }
 
-  if (flowName.isEmpty())
+  if (flowName.isEmpty() || flow == nullptr)
   {
     LOG_INFO("No name provided, skipping flow creation");
-    return -1;
-  }
-
-  if (flow == nullptr)
-  {
-    LOG_WARNING("This shouldn't happen, no flow was found");
-    return -1;
+    createdIndex = -1;
+    return;
   }
 
   // Check if the flow is already open in some tab
+  const QString tabId = QString::fromStdString(std::format("{}_{}", flow->id(), nodeId));
   for (int i = 1; i < mCanvasPanel->count(); ++i)
   {
-    auto prop = mCanvasPanel->widget(i)->property("id");
-    if (!prop.isValid() || prop.toString() != flow->id())
+    auto prop = mCanvasPanel->widget(i)->property(ConfigKeys::ID.toUtf8());
+    if (!prop.isValid() || prop.toString() != tabId)
       continue;
 
     mCanvasPanel->setCurrentIndex(i);
-    return i;
+    createdIndex = i;
+    return;
   }
 
   CanvasView* newView = new CanvasView(mCanvasPanel);
-  BehaviourCanvas* canvas = new BehaviourCanvas(flow, mRouter, newView);
+  BehaviourCanvas* canvas = new BehaviourCanvas(flow, nodeId, mRouter, newView);
   canvas->setupInitialNodes();
   newView->setScene(canvas);
 
@@ -1558,14 +1561,13 @@ int MainWindow::onOpenFlow(Flow* flow, const QString& nodeId, const maki::FocusP
   auto index = libraryTypeToIndex(canvas->type());
   mPalette->setCurrentIndex(index);
 
-  LOG_DEBUG("Set tab property to {}", flow->id());
-  newView->setProperty("id", flow->id());
-  auto tabIndex = mCanvasPanel->addTab(newView, QIcon(":/icons/behaviour.svg"), flowName);
+  LOG_DEBUG("Set tab property to {}", tabId);
+  newView->setProperty(ConfigKeys::ID.toUtf8(), tabId);
+  createdIndex = mCanvasPanel->addTab(newView, QIcon(":/icons/behaviour.svg"), flowName);
   mCanvasPanel->setCurrentWidget(newView);
 
   // Populate after creation
   canvas->populate(*flow->config());
-  return tabIndex;
 }
 
 void MainWindow::focusOn(const QString& nodeId, const QString& flowId, const maki::FocusProperties& properties)
@@ -1574,14 +1576,15 @@ void MainWindow::focusOn(const QString& nodeId, const QString& flowId, const mak
   // If we are focusing on a behaviour node
   if (!nodeId.isEmpty() && !flowId.isEmpty())
   {
-    auto flow = rootCanvas()->getFlow(flowId);
+    auto [node, flow] = rootCanvas()->getFlow(flowId);
     if (!flow)
     {
       LOG_WARNING("Could not find flow with id: {}", flowId);
       return;
     }
 
-    auto index = onOpenFlow(flow, nodeId, properties);
+    int index = -1;
+    onOpenFlow(flow, nodeId, properties, index);
     if (index < 0)
     {
       LOG_WARNING("Could not open flow with id: {}", flowId);
@@ -1600,7 +1603,8 @@ void MainWindow::focusOn(const QString& nodeId, const QString& flowId, const mak
       if (!flow)
         return;
 
-      auto index = onOpenFlow(flow, nodeId, properties);
+      int index = -1;
+      onOpenFlow(flow, nodeId, properties, index);
       if (index < 0)
         return;
 
@@ -1616,11 +1620,12 @@ void MainWindow::focusOn(const QString& nodeId, const QString& flowId, const mak
   // If we are focusing on a flow
   else if (!flowId.isEmpty() && nodeId.isEmpty())
   {
-    auto flow = rootCanvas()->getFlow(flowId);
+    auto [node, flow] = rootCanvas()->getFlow(flowId);
     if (!flow)
       return;
 
-    auto index = onOpenFlow(flow, nodeId, properties);
+    int index = -1;
+    onOpenFlow(flow, nodeId, properties, index);
     if (index < 0 || index >= mCanvasPanel->count())
       return;
 
@@ -1675,10 +1680,11 @@ void MainWindow::onFlowRemoved(const QString& flowId, NodeItem* node)
   }
   else
   {
+    const QString tabId = QString::fromStdString(std::format("{}_{}", flowId, node ? node->id() : ""));
     for (int i = 0; i < mCanvasPanel->count(); ++i)
     {
-      auto prop = mCanvasPanel->widget(i)->property("id");
-      if (!prop.isValid() || prop.toString() != flowId)
+      auto prop = mCanvasPanel->widget(i)->property(ConfigKeys::ID.toUtf8());
+      if (!prop.isValid() || prop.toString() != tabId)
         continue;
 
       mCanvasPanel->removeTab(i);

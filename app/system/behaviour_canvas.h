@@ -23,7 +23,7 @@ public:
    * @param configTable A shared pointer to the ConfigurationTable for configuration data.
    * @param parent An optional QObject parent for this canvas.
    */
-  BehaviourCanvas(Flow* flow, std::shared_ptr<EdgeRouter> router, QObject* parent = nullptr);
+  BehaviourCanvas(Flow* flow, const QString& flowOwner, std::shared_ptr<EdgeRouter> router, QObject* parent = nullptr);
 
   /**
    * @brief Retrieves the type of library associated with this canvas.
@@ -31,6 +31,8 @@ public:
    * @return The library type as a value of `Types::LibraryTypes`.
    */
   virtual Types::LibraryTypes type() const override;
+
+  Flow* flow() const;
 
   void nodeStarted(NodeItem* node) override;
 
@@ -92,11 +94,14 @@ protected:
 
   void onSubFlowCollapsed(NodeItem* node, const QString& subflowId, bool collapsed) override;
 
+  void createNodeContextMenu(QMenu* menu, NodeItem* node, const QList<NodeItem*>& items) override;
+
 private:
   /**
    * @brief A pointer to the Flow object associated with this canvas.
    */
   Flow* mFlow;
+  const QString mOwner;
 
   /**
    * @brief Updates the parent node of a given node item.

@@ -272,9 +272,12 @@ public:
   /**
    * @brief Returns a pointer to the flow if it exists;
    */
-  Flow* getFlow(const QString& flowId) const;
+  std::pair<NodeItem*, Flow*> getFlow(const QString& flowId) const;
 
   Flow* getFlowWithNode(const QString& nodeId) const;
+
+  QTabWidget* canvasTabWidget() const;
+  Canvas* requestNewFlow(const QString& nodeId);
 
   /**
    * @brief Finds a node by its ID.
@@ -339,7 +342,7 @@ signals:
    * @param flow Pointer to the opened flow.
    * @param node Pointer to the node associated with the flow.
    */
-  int openFlow(Flow* flow, const QString& nodeId, const maki::FocusProperties& properties);
+  void openFlow(Flow* flow, const QString& nodeId, const maki::FocusProperties& properties, int& createdIndex);
 
   /**
    * @brief Emitted when the user requests to focus on a node from the Canvas.
@@ -556,8 +559,8 @@ private:
   bool transitionClickHandler(QGraphicsSceneMouseEvent* event, QGraphicsItem* item);  /// Handles transition click events.
   bool beginTransitionFromOutPort(PortItem* port, const QPointF& cursorScenePos);
 
-  void createNodeContextMenu(QMenu* menu, NodeItem* node, const QList<NodeItem*>& items);  /// Creates a context menu for nodes.
-  void createTransitionContextMenu(QMenu* menu, const QList<NodeItem*>& items);            /// Creates a context menu for transitions.
+  virtual void createNodeContextMenu(QMenu* menu, NodeItem* node, const QList<NodeItem*>& items);  /// Creates a context menu for nodes.
+  void createTransitionContextMenu(QMenu* menu, const QList<NodeItem*>& items);                    /// Creates a context menu for transitions.
 
   bool isParentSelected(NodeItem* node);  /// Checks if the parent of a node is selected.
   void pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode, QList<CopiedNode> nodes,

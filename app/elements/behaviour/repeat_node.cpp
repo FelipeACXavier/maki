@@ -21,7 +21,7 @@ RepeatNode::RepeatNode(const QString& id, std::shared_ptr<NodeSaveInfo> info, co
   mSubFlow = new SubFlow(Constants::MAIN_SUB_FLOW, this);
   mSubFlow->setCollapsed(true);
   mSubFlow->setTitle("Repeat");
-  mSubFlow->setTitlePosition(Config::ControlPosition::Top, ICON_WIDTH + SUB_FLOW_TOP_LEFT_PADDING, ICON_WIDTH / 2 + SUB_FLOW_TOP_LEFT_PADDING);
+  mSubFlow->setTitlePosition(Config::ControlPosition::Top, ICON_WIDTH + SUB_FLOW_TOP_LEFT_PADDING, (ICON_WIDTH / 2));
 
   setProperty(ITERATIONS, maki::Value::createInt(0));
   setProperty(RATE, maki::Value::createInt(0));

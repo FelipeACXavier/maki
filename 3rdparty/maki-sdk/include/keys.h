@@ -26,6 +26,7 @@ static const QString LIBRARIES = "libraries";
 static const QString IS_VARIABLE = "isVariable";
 static const QString EVENT = "event";
 static const QString COMPONENT = "component";
+static const QString TASK = "task";
 static const QString COMPONENT_ID = "componentId";
 static const QString COMPONENT_TYPE = "componentType";
 static const QString ITEMS = "items";

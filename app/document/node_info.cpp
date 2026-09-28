@@ -360,6 +360,10 @@ NodeSaveInfo NodeSaveInfo::fromJson(const QJsonObject& data)
     for (const auto& node : data[ConfigKeys::EVENTS].toArray())
       info.addEvent(std::make_shared<FlowSaveInfo>(FlowSaveInfo::fromJson(node.toObject())));
 
+  if (data.contains(ConfigKeys::CHILDREN))
+    for (const auto& child : data[ConfigKeys::CHILDREN].toArray())
+      info.addChild(std::make_shared<NodeSaveInfo>(NodeSaveInfo::fromJson(child.toObject())));
+
   if (data.contains(ConfigKeys::PROPERTIES))
     for (const auto& node : data[ConfigKeys::PROPERTIES].toArray())
       info.addProperty(std::make_shared<PropertyInfo>(PropertyInfo::fromJson(node.toObject())));

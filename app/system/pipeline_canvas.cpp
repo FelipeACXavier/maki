@@ -10,7 +10,7 @@
 #include "system/behaviour_canvas.h"
 
 PipelineCanvas::PipelineCanvas(std::shared_ptr<FlowSaveInfo> storage, std::shared_ptr<EdgeRouter> router, QObject* parent)
-    : BehaviourCanvas(new Flow(storage->getname(), storage), router, parent)
+    : BehaviourCanvas(new Flow(storage->getname(), storage), "", router, parent)
 {
 }
 

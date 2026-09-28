@@ -9,6 +9,7 @@
 #include <QPainter>
 #include <QSvgRenderer>
 
+#include "keys.h"
 #include "mission_parameter.h"
 
 FlowCallNode::FlowCallNode(const QString& id, std::shared_ptr<NodeSaveInfo> info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig,
@@ -20,7 +21,7 @@ FlowCallNode::FlowCallNode(const QString& id, std::shared_ptr<NodeSaveInfo> info
 
 std::pair<QString, QString> FlowCallNode::calledFlowId() const
 {
-  const auto propValue = getProperty("task");
+  const auto propValue = getProperty(ConfigKeys::TASK);
   if (!propValue || !propValue->getvalue())
     return std::make_pair(QString(), QString());
 
@@ -28,8 +29,8 @@ std::pair<QString, QString> FlowCallNode::calledFlowId() const
   if (!prop->isRecord())
     return std::make_pair(QString(), QString());
 
-  auto name = maki::recordString(prop->toRecord(), "componentId");
-  auto id = maki::recordString(prop->toRecord(), "callId");
+  auto name = maki::recordString(prop->toRecord(), ConfigKeys::COMPONENT_ID);
+  auto id = maki::recordString(prop->toRecord(), ConfigKeys::CALL_ID);
   LOG_DEBUG("calledFlowName: {} {}", name, id);
   return std::make_pair(name, id);
 }

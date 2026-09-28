@@ -59,13 +59,6 @@ public:
   virtual QString nodeId() const;
 
   /**
-   * @brief Starts the node.
-   *
-   * @return A VoidResult indicating success or failure.
-   */
-  virtual VoidResult start();
-
-  /**
    * @brief Retrieves the configuration settings for the node.
    *
    * @return The configuration settings.

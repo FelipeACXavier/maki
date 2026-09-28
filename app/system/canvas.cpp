@@ -14,6 +14,7 @@
 #include <memory>
 
 #include "app_configs.h"
+#include "behaviour_canvas.h"
 #include "canvas_view.h"
 #include "common/style_helpers.h"
 #include "config.h"
@@ -801,7 +802,6 @@ void Canvas::alignNodeGroup(const QList<NodeItem*>& nodes, Types::AlignmentMode 
     return;
 
   const QRectF referenceRect = reference->sceneAlignRect();
-
   if (mode == Types::AlignmentMode::HORIZONTAL)
   {
     qreal targetX = 0.0;
@@ -1149,23 +1149,23 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 
   QAction* copyAction = menu->addAction(iconFromTheme("edit-copy"), "Copy");
   copyAction->setEnabled(items.size() > 0);
-  QObject::connect(copyAction, &QAction::triggered, [this]() { copySelectedItems(nullptr); });
+  connect(copyAction, &QAction::triggered, this, [this]() { copySelectedItems(nullptr); });
 
   QAction* pasteAction = menu->addAction(iconFromTheme("edit-paste", true), "Paste");
   const QMimeData* mimeData = QApplication::clipboard()->mimeData();
   pasteAction->setEnabled(mimeData && mimeData->hasFormat(MAKI_CLIPBOARD_MIME));
-  QObject::connect(pasteAction, &QAction::triggered, [this]() { pasteCopiedItems(); });
+  connect(pasteAction, &QAction::triggered, [this]() { pasteCopiedItems(); });
 
   QAction* deleteAction = menu->addAction(iconFromTheme("edit-delete"), "Delete");
   deleteAction->setEnabled(items.size() > 0);
-  QObject::connect(deleteAction, &QAction::triggered, [this]() { deleteSelectedItems(); });
+  connect(deleteAction, &QAction::triggered, this, [this]() { deleteSelectedItems(); });
 
   // =============================================
   addSectionLabel(menu, "Visual");
 
   QAction* forwardAction = menu->addAction(iconFromTheme("object-order-front"), "To front");
   forwardAction->setEnabled(items.size() > 0);
-  QObject::connect(forwardAction, &QAction::triggered, [this, items]() {
+  connect(forwardAction, &QAction::triggered, this, [this, items]() {
     qreal topZLevel = 0;
     for (QGraphicsItem* item : this->items())
       topZLevel = qMax(item->zValue(), topZLevel);
@@ -1176,7 +1176,7 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 
   QAction* backwardAction = menu->addAction(iconFromTheme("object-order-back"), "To back");
   backwardAction->setEnabled(items.size() > 0);
-  QObject::connect(backwardAction, &QAction::triggered, [this, items]() {
+  connect(backwardAction, &QAction::triggered, this, [this, items]() {
     qreal topZLevel = 0;
     for (QGraphicsItem* item : this->items())
       topZLevel = qMin(item->zValue(), topZLevel);
@@ -1187,7 +1187,7 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 
   QAction* toggleLabelAction = menu->addAction(iconFromTheme("view-visible"), "Toggle label");
   toggleLabelAction->setEnabled(items.size() > 0);
-  QObject::connect(toggleLabelAction, &QAction::triggered, [items]() {
+  connect(toggleLabelAction, &QAction::triggered, this, [items]() {
     for (QGraphicsItem* item : items)
       if (item->type() == NodeItem::Type)
         dynamic_cast<NodeItem*>(item)->toggleLabelVisibility();
@@ -1203,14 +1203,13 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 void Canvas::createNodeContextMenu(QMenu* menu, NodeItem* node, const QList<NodeItem*>& items)
 {
   // =============================================
-
   if (type() == Types::LibraryTypes::STRUCTURAL)
   {
     addSectionLabel(menu, "Creation");
 
     QAction* newEventAction = menu->addAction(QIcon(":/icons/flow.svg"), tr("New flow"));
     newEventAction->setEnabled(node != nullptr || items.size() > 0);
-    QObject::connect(newEventAction, &QAction::triggered, [this, node]() { emit createEvent(node); });
+    connect(newEventAction, &QAction::triggered, this, [this, node]() { emit createEvent(node); });
     menu->addAction(newEventAction);
   }
 }
@@ -1448,11 +1447,10 @@ void Canvas::selectAll()
 
 bool Canvas::isParentSelected(NodeItem* node)
 {
-  if (node->parentNode() == nullptr)
-    return false;
+  if (auto parent = qgraphicsitem_cast<NodeItem*>(node->parentNode()))
+    return parent->isSelected() || isParentSelected(parent);
 
-  auto parent = static_cast<NodeItem*>(node->parentNode());
-  return parent->isSelected() || isParentSelected(parent);
+  return false;
 }
 
 void Canvas::copySelectedItems(NodeItem* clickedNode)
@@ -1526,11 +1524,11 @@ void Canvas::pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode
         createNode(NodeCreation::Pasting, infoPtr,
                    absolute ? mousePosition - copy.posRelativeToMouse : newParentPosition + (copy.info.getposition() - copy.posRelativeToMouse), parentNode);
 
-    QList<CopiedNode> children;
-    for (const auto& child : copy.info.getchildren())
-      children.push_back({*std::dynamic_pointer_cast<NodeSaveInfo>(child), copy.info.getposition()});
+    // QList<CopiedNode> children;
+    // for (const auto& child : copy.info.getchildren())
+    //   children.push_back({*std::dynamic_pointer_cast<NodeSaveInfo>(child), copy.info.getposition()});
 
-    pasteCopiedItems(mousePosition, node, children, false);
+    // pasteCopiedItems(mousePosition, node, children, false);
     selectNode(node, false);
   }
 }
@@ -1792,11 +1790,6 @@ void Canvas::createNode(const NodeSaveInfo& info, NodeCreation creation)
     return;
 
   auto parent = findNodeWithId(info.getparentId());
-  if (info.getparentId().isEmpty())
-    LOG_WARNING("No parent Id provided");
-  if (!parent)
-    LOG_WARNING("No parent for node with id: {}", info.getparentId());
-
   auto infoPtr = std::make_shared<NodeSaveInfo>(info);
   (void)createNode(creation, infoPtr, info.getposition(), parent);
 }
@@ -1877,12 +1870,19 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
     if (!ci)
       continue;
 
+    if (type() == Types::LibraryTypes::STRUCTURAL)
+    {
+      (*ci).setId("");
+      (*ci).setParentId(node->id());
+    }
+
     createNode(*ci, creation);
   }
 
   // And its flows
   for (const auto& flow : originalInfo.getflows())
-    (void)node->createFlow(flow->getname(), std::dynamic_pointer_cast<FlowSaveInfo>(flow));
+    (void)node->createFlow(flow->getname(), std::dynamic_pointer_cast<FlowSaveInfo>(flow),
+                           (flow->getname() == Constants::MAIN_FLOW && creation == NodeCreation::Pasting));
 
   // Call start after the setup is done
   node->start();
@@ -1932,15 +1932,16 @@ void Canvas::onNodeHovered(NodeItem* node, bool entered)
       return;
 
     auto* control = TaskNodeMenu::create(parentView());
-    connect(control, &TaskNodeMenu::openMainFlowRequested, [this, node] {
+    connect(control, &TaskNodeMenu::openMainFlowRequested, this, [this, node] {
       for (const auto& flow : node->flows())
         if (flow->name() == Constants::MAIN_FLOW)
         {
-          emit openFlow(flow, node->id(), maki::FocusProperties::internal());
+          int placeholder;
+          emit openFlow(flow, node->id(), maki::FocusProperties::internal(), placeholder);
           return;
         }
     });
-    connect(control, &TaskNodeMenu::addFlowRequested, [this, node] { emit createEvent(node); });
+    connect(control, &TaskNodeMenu::addFlowRequested, this, [this, node] { emit createEvent(node); });
     node->showControls(control, ControlProperties{
                                     .isFading = true,
                                     .position = Config::ControlPosition::Right,
@@ -2067,6 +2068,10 @@ void Canvas::populate(const FlowSaveInfo& flow)
   // First create all the nodes
   for (const auto& inode : flow.getnodes())
   {
+    const auto exists = findNodeWithId(inode->getid());
+    if (exists)
+      continue;
+
     auto node = std::dynamic_pointer_cast<NodeSaveInfo>(inode);
     LOG_TRACE("Creating behavioral node {} with parent \"{}\"", node->getid(), node->getparentId());
     (void)createNode(NodeCreation::Populating, node, node->getposition(), findNodeWithId(node->getparentId()));
@@ -2089,8 +2094,9 @@ void Canvas::onFlowSelected(const QString& flowId, const QString& nodeId)
     return;
   }
 
+  int placeholder;
   auto flow = node->getFlow(flowId);
-  emit openFlow(flow, "", maki::FocusProperties::internal());
+  emit openFlow(flow, node->id(), maki::FocusProperties::internal(), placeholder);
 }
 
 void Canvas::onFlowRemoved(const QString& flowId, const QString& nodeId)
@@ -2105,7 +2111,7 @@ void Canvas::onFlowRemoved(const QString& flowId, const QString& nodeId)
   auto flow = node->getFlow(flowId);
   if (flow && flow->name() == Constants::MAIN_FLOW)
   {
-    NOTIFY_WARNING(Config::APPLICATION_NAME.toStdString(), "Cannot remove");
+    NOTIFY_WARNING(Config::APPLICATION_NAME.toStdString(), "{}", tr("Cannot remove the main flow"));
     return;
   }
   node->deleteFlow(flowId);
@@ -2295,17 +2301,17 @@ void Canvas::createSuggestedNode(const QString& nodeType, NodeItem* sourceNode)
   mUndoStack->push(new AddNodeCommand(this, info, NodeCreation::Populating));
 }
 
-Flow* Canvas::getFlow(const QString& flowId) const
+std::pair<NodeItem*, Flow*> Canvas::getFlow(const QString& flowId) const
 {
   for (const auto& item : items())
     if (auto node = qgraphicsitem_cast<NodeItem*>(item); node)
     {
       const auto flow = node->getFlow(flowId);
       if (flow)
-        return flow;
+        return std::make_pair(node, flow);
     }
 
-  return nullptr;
+  return std::make_pair(nullptr, nullptr);
 }
 
 Flow* Canvas::getFlowWithNode(const QString& nodeId) const
@@ -2318,6 +2324,42 @@ Flow* Canvas::getFlowWithNode(const QString& nodeId) const
           if (bnode->getid() == nodeId)
             return flow;
     }
+
+  return nullptr;
+}
+
+QTabWidget* Canvas::canvasTabWidget() const
+{
+  QObject* current = parentView();
+  while (current)
+  {
+    if (auto* tabWidget = qobject_cast<QTabWidget*>(current))
+      return tabWidget;
+
+    current = current->parent();
+  }
+
+  return nullptr;
+}
+
+Canvas* Canvas::requestNewFlow(const QString& nodeId)
+{
+  int index = -1;
+  emit openFlow(nullptr, nodeId, maki::FocusProperties::internal(), index);
+  if (index < 0)
+  {
+    LOG_WARNING("Could not create the new flow");
+    return nullptr;
+  }
+
+  // Get the new flow
+  if (auto* tabWidget = canvasTabWidget(); tabWidget)
+  {
+    tabWidget->setCurrentIndex(index);
+    if (auto* newView = qobject_cast<CanvasView*>(tabWidget->widget(index)); newView)
+      if (auto* canvas = qobject_cast<BehaviourCanvas*>(newView->scene()); canvas)
+        return canvas;
+  }
 
   return nullptr;
 }

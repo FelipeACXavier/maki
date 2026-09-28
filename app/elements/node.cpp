@@ -127,7 +127,7 @@ qreal NodeItem::baseScale() const
 VoidResult NodeItem::start()
 {
   createPorts();
-  return NodeBase::start();
+  return VoidResult();
 }
 
 QRectF NodeItem::nodeRect() const
@@ -863,7 +863,7 @@ QVector<Flow*> NodeItem::flows() const
   return mFlows;
 }
 
-Flow* NodeItem::createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo> info)
+Flow* NodeItem::createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo> info, bool resetId)
 {
   std::shared_ptr<FlowSaveInfo> flowConfig = info;
   bool found = false;
@@ -884,6 +884,9 @@ Flow* NodeItem::createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo
   {
     flowConfig = std::make_shared<FlowSaveInfo>();
   }
+
+  if (resetId)
+    flowConfig->setId(QUuid::createUuid().toString());
 
   if (!found)
   {

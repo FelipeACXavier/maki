@@ -1,20 +1,24 @@
 #include "behaviour_canvas.h"
 
+#include <QMenu>
 #include <QUndoStack>
 
 #include "canvas_view.h"
 #include "elements/flow.h"
 #include "keys.h"
 #include "logging.h"
+#include "undo_commands/flow_from_selection.h"
 #include "undo_commands/insert_existing_node.h"
 #include "undo_commands/insert_node.h"
 
 static constexpr qreal MIN_NODE_SPACING = 40.0;
 
-BehaviourCanvas::BehaviourCanvas(Flow* flow, std::shared_ptr<EdgeRouter> router, QObject* parent)
+BehaviourCanvas::BehaviourCanvas(Flow* flow, const QString& flowOwner, std::shared_ptr<EdgeRouter> router, QObject* parent)
     : Canvas(flow->id(), router, parent)
     , mFlow(flow)
+    , mOwner(flowOwner)
 {
+  LOG_DEBUG("Opening canvas with flow {} of {}", flow->id(), flowOwner);
 }
 
 void BehaviourCanvas::setupInitialNodes()
@@ -66,6 +70,11 @@ Types::LibraryTypes BehaviourCanvas::type() const
   return Types::LibraryTypes::BEHAVIOUR;
 }
 
+Flow* BehaviourCanvas::flow() const
+{
+  return mFlow;
+}
+
 void BehaviourCanvas::cleanFlow()
 {
   if (mFlow)
@@ -74,6 +83,7 @@ void BehaviourCanvas::cleanFlow()
 
 void BehaviourCanvas::nodeStarted(NodeItem* node)
 {
+  LOG_DEBUG("Node of type: {} started with {} children", node->nodeType(), node->children().size());
   if (node && node->nodeId() == ConfigKeys::REPEAT_NODE)
   {
     if (!node->children().isEmpty())
@@ -104,6 +114,7 @@ void BehaviourCanvas::nodeStarted(NodeItem* node)
   {
     if (!node->children().isEmpty())
       return;
+
     {
       TransitionSaveInfo initial;
       initial.setId(QUuid::createUuid().toString());
@@ -356,7 +367,7 @@ void BehaviourCanvas::onNodeGeometryChanged(NodeItem* node, const QRectF& oldRec
   const qreal newRight = currentRect.right();
   const qreal deltaX = newRight - oldRight;
 
-  LOG_INFO("Geometry change: oldRight={} newRight={} delta={}", oldRight, newRight, deltaX);
+  // LOG_INFO("Geometry change: oldRight={} newRight={} delta={}", oldRight, newRight, deltaX);
   if (!qFuzzyIsNull(deltaX))
     ensureMinimumSpacing(node->id());
 
@@ -516,6 +527,97 @@ void BehaviourCanvas::ensureMinimumSpacing(const QString& nodeId)
   // const auto groups = groupNodesByParent(neighbours);
   // for (auto group : groups)
   //   distributeNodeGroupHorizontally(group);
+}
+
+void BehaviourCanvas::createNodeContextMenu(QMenu* menu, NodeItem* node, const QList<NodeItem*>& items)
+{
+  addSectionLabel(menu, "Creation");
+
+  QAction* newEventAction = menu->addAction(QIcon(":/icons/flow.svg"), tr("New flow from nodes"));
+
+  newEventAction->setEnabled(!items.isEmpty());
+
+  QObject::connect(newEventAction, &QAction::triggered, [this, items]() {
+    if (!mFlow)
+      return;
+
+    NodeSaveInfo startNode;
+    NodeSaveInfo endNode;
+
+    TransitionSaveInfo incomingTransition;
+    TransitionSaveInfo outgoingTransition;
+
+    FlowSaveInfo info;
+
+    QSet<QString> selectedIds;
+
+    for (auto* item : items)
+    {
+      if (!item)
+        continue;
+
+      selectedIds.insert(item->id());
+
+      info.addNode(std::make_shared<NodeSaveInfo>(item->saveInfo()));
+    }
+
+    int incomingCount = 0;
+    int outgoingCount = 0;
+
+    for (auto* transition : mFlow->transitions())
+    {
+      if (!transition)
+        continue;
+
+      auto* source = transition->source();
+      auto* destination = transition->destination();
+      if (!source || !destination)
+        continue;
+
+      const bool sourceSelected = selectedIds.contains(source->id());
+      const bool destinationSelected = selectedIds.contains(destination->id());
+
+      // ------------------------------------------------------------
+      // External -> selected
+      // A -> [B, C, D]
+      // ------------------------------------------------------------
+      if (!sourceSelected && destinationSelected)
+      {
+        ++incomingCount;
+        startNode = destination->saveInfo();
+        incomingTransition = transition->saveInfo();
+      }
+      // ------------------------------------------------------------
+      // Selected -> external
+      // [B, C, D] -> E
+      // ------------------------------------------------------------
+      else if (sourceSelected && !destinationSelected)
+      {
+        ++outgoingCount;
+
+        endNode = source->saveInfo();
+
+        outgoingTransition = transition->saveInfo();
+      }
+      // ------------------------------------------------------------
+      // Selected -> selected
+      // [B] -> [C]
+      // ------------------------------------------------------------
+      else if (sourceSelected && destinationSelected)
+      {
+        info.addTransition(std::make_shared<TransitionSaveInfo>(transition->saveInfo()));
+      }
+    }
+
+    if (incomingCount != 1 || outgoingCount != 1)
+    {
+      LOG_WARNING("Flow extraction currently requires exactly one incoming and one outgoing transition");
+      return;
+    }
+
+    mUndoStack->push(new FlowFromSelectionCommand(this, mFlow->id(), mOwner, info, startNode, endNode, incomingTransition, outgoingTransition));
+  });
+  menu->addAction(newEventAction);
 }
 
 // =======================================================================

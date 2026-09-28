@@ -271,6 +271,7 @@ void TaskNode::ensureMainFlowExists()
       return;
 
   auto info = std::make_shared<FlowSaveInfo>();
+  info->setId(QUuid::createUuid().toString());
   info->setType(Types::CallType::USER);
   info->setModifiable(true);
   info->setReturnType(koda::types::TypeReference::createVoid());

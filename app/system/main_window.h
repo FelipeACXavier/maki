@@ -107,7 +107,7 @@ private slots:
    * @param flow Pointer to the opened Flow.
    * @param node Pointer to the associated NodeItem.
    */
-  int onOpenFlow(Flow* flow, const QString& nodeId, const maki::FocusProperties& properties);
+  void onOpenFlow(Flow* flow, const QString& nodeId, const maki::FocusProperties& properties, int& createdIndex);
 
   /**
    * @brief Handles flow addition events.

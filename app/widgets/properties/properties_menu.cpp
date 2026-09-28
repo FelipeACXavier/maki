@@ -142,17 +142,15 @@ VoidResult PropertiesMenu::onNodeSelected(NodeItem* node, bool selected)
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::onCreateEvent(NodeItem* node)
+Result<Flow*> PropertiesMenu::onCreateEvent(NodeItem* node, bool synchronousCreation)
 {
   onNodeSelected(node, true);
 
   auto table = findChild<QTableWidget*>("EventTable");
   if (table == nullptr)
-    return VoidResult::Failed("Could not find the event table");
+    return Result<Flow*>::Failed("Could not find the event table");
 
-  openEventDialog(table, node, table->rowCount());
-
-  return VoidResult();
+  return openEventDialog(table, node, table->rowCount(), synchronousCreation);
 }
 
 VoidResult PropertiesMenu::onFlowAdded(Flow* /* flow */, NodeItem* node)
@@ -687,7 +685,7 @@ Result<QTableWidget*> PropertiesMenu::loadEventTable(NodeItem* node)
   }
 
   connect(eventsTable, &QTableWidget::doubleClicked, this,
-          [this, eventsTable, node](const QModelIndex& index) { openEventDialog(eventsTable, node, index.row()); });
+          [this, eventsTable, node](const QModelIndex& index) { (void)openEventDialog(eventsTable, node, index.row()); });
 
   auto group = new maki::ContainerWidget(tr("Events/Flows"), eventsTable, maki::WidgetAlignment::Vertical(), this);
   // Set this after adding to the container so the container does not override it
@@ -711,7 +709,7 @@ VoidResult PropertiesMenu::loadControlAddEvent(QTableWidget* table, NodeItem* no
 
   connect(addButton, &QPushButton::pressed, this, [this, table, node] {
     if (table)
-      openEventDialog(table, node, table->rowCount());
+      (void)openEventDialog(table, node, table->rowCount());
   });
   connect(removeButton, &QPushButton::clicked, this, [this, table, node] { removeEventFromTable(table, node); });
 
@@ -746,10 +744,10 @@ std::shared_ptr<IFlow> PropertiesMenu::getFlowConfigOfRow(const NodeItem* node, 
   return nullptr;
 }
 
-void PropertiesMenu::openEventDialog(QTableWidget* table, NodeItem* node, int row)
+Flow* PropertiesMenu::openEventDialog(QTableWidget* table, NodeItem* node, int row, bool synchronousCreation)
 {
   if (!table || !node)
-    return;
+    return nullptr;
 
   EventDialog dialog(tr("Edit event"), this);
 
@@ -757,25 +755,28 @@ void PropertiesMenu::openEventDialog(QTableWidget* table, NodeItem* node, int ro
   auto config = flowConfig ? std::dynamic_pointer_cast<FlowSaveInfo>(flowConfig) : std::make_shared<FlowSaveInfo>();
   dialog.setup(config);
   if (dialog.exec() != QDialog::Accepted)
-    return;
+    return nullptr;
 
   auto info = dialog.getInfo();
   if (!info)
-    return;
+    return nullptr;
 
   for (const auto& f : node->allEventFlowConfigs())
     if (f->getname() == info->getname() && f->getid() != info->getid())
     {
       if (maki::errorPrompt(tr("A flow with the same name already exists"), tr("Would you like to open it?")))
         emit flowSelected(f->getid(), node->id());
-      return;
+
+      return nullptr;
     }
 
   Flow* flow = node->createFlow(info->getname(), info);
   addEventToTable(table, row, info);
 
-  if (flow && info->getmodifiable())
+  if (flow && !synchronousCreation && info->getmodifiable())
     emit flowSelected(flow->id(), node->id());
+
+  return flow;
 }
 
 void PropertiesMenu::addEventToTable(QTableWidget* table, int row, const std::shared_ptr<FlowSaveInfo>& event)

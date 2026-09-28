@@ -54,11 +54,6 @@ QString NodeBase::nodeId() const
   return config()->type;
 }
 
-VoidResult NodeBase::start()
-{
-  return VoidResult();
-}
-
 std::shared_ptr<NodeConfig> NodeBase::config() const
 {
   return mConfig;

@@ -223,7 +223,10 @@ QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<TransitionSaveI
 
   transitions.resize(size);
   for (int i = 0; i < size; ++i)
+  {
+    transitions[i] = std::make_shared<TransitionSaveInfo>();
     in >> *transitions[i];
+  }
 
   return in;
 }

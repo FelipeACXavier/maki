@@ -61,7 +61,7 @@ public:
    *
    * @return VoidResult indicating success or failure.
    */
-  VoidResult start() override;
+  virtual VoidResult start();
 
   /**
    * @brief Returns the bounding rectangle for this item.
@@ -306,7 +306,7 @@ public:
    * @param info The save information for the flow.
    * @return The created Flow object, if successful.
    */
-  Flow* createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo> info);
+  Flow* createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo> info, bool resetId = false);
 
   /**
    * @brief Gets a flow by its ID.
