@@ -84,7 +84,7 @@ void TaskNode::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
   const QRectF bodyRect = nodeRect().adjusted(theme.spacing, theme.spacing, -theme.spacing, -theme.spacing);
   painter->drawRoundedRect(bodyRect, 2 * theme.borderRadius, 2 * theme.borderRadius);
 
-  NodeBase::paintLabel(painter, drawingRect(nodeRect()), pen);
+  NodeBase::paintLabel(painter, labelBoundingRect(), pen);
 }
 
 QPainterPath TaskNode::shape() const
@@ -190,6 +190,7 @@ void TaskNode::relayoutCapabilitySlots()
 
   for (qsizetype i = 0; i < capabilities.size(); ++i)
   {
+    LOG_DEBUG("Setting position {}: {} {}", nodeId(), centers[i].x(), centers[i].y());
     auto* capability = capabilities[i];
     capability->applySize(QSizeF(layout.diameter, layout.diameter));
     capability->setCenterPosition(mapToScene(centers[i]));

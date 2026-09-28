@@ -790,19 +790,33 @@ QPointF NodeItem::constrainChildPosition(const NodeItem* child, const QPointF& p
   if (!child)
     return proposedPosition;
 
-  QPointF newPos = proposedPosition;
-  QRectF parentRect = parentInnerSceneRect(10.0);
-  QRectF childLocalRect = nodeRect();
+  constexpr qreal padding = 10.0;
+  const QRectF allowed = childAreaSceneRect().adjusted(padding, padding, -padding, -padding);
 
-  const qreal minX = parentRect.left();
-  const qreal maxX = parentRect.right() - childLocalRect.width();
-  const qreal minY = parentRect.top();
-  const qreal maxY = parentRect.bottom() - childLocalRect.height();
+  if (!allowed.isValid())
+    return proposedPosition;
 
-  newPos.setX(std::clamp(newPos.x(), minX, maxX));
-  newPos.setY(std::clamp(newPos.y(), minY, maxY));
+  const QRectF childSceneRect = child->sceneBoundingRect();
 
-  return newPos;
+  // pos() is the scene position for your semantic children because they are
+  // not QGraphicsItem children of the parent.
+  const QPointF offset = childSceneRect.topLeft() - child->pos();
+
+  QPointF result = proposedPosition;
+
+  const qreal minX = allowed.left() - offset.x();
+  const qreal maxX = allowed.right() - childSceneRect.width() - offset.x();
+  const qreal minY = allowed.top() - offset.y();
+  const qreal maxY = allowed.bottom() - childSceneRect.height() - offset.y();
+
+  // Avoid calling std::clamp with min > max.
+  if (minX <= maxX)
+    result.setX(std::clamp(result.x(), minX, maxX));
+
+  if (minY <= maxY)
+    result.setY(std::clamp(result.y(), minY, maxY));
+
+  return result;
 }
 
 void NodeItem::updateExtrasPosition(Config::NodeMove reason)

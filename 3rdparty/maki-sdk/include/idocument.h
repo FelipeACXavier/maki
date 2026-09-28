@@ -91,6 +91,9 @@ public:
 
   virtual QString getsrcId() const = 0;
   virtual QString getdstId() const = 0;
+
+  virtual QString srcPortSubFlow() const = 0;
+  virtual QString dstPortSubFlow() const = 0;
 };
 
 class INode

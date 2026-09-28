@@ -399,15 +399,30 @@ std::any MakiToKoda::buildSequenceFrom(const IFlow& flow, const INode* start, co
       sequence->alts.push_back(std::any_cast<koda::PStrategy>(nodeExpr));
     }
 
-    const auto normalSuccessors = sequentialSuccessorsOf(*current, flow);
+    auto normalSuccessors = sequentialSuccessorsOf(*current, flow);
+    const auto currChildren = current->getchildren();
+    // For now, just remove the internal nodes from here
+    normalSuccessors.removeIf([currChildren](const NodeTransition& successor) {
+      if (!successor.node)
+        return false;
+
+      if (currChildren.isEmpty())
+        return false;
+
+      return std::any_of(currChildren.begin(), currChildren.end(),
+                         [&successor](const auto& child) { return child && child->getid() == successor.node->getid(); });
+    });
 
     if (normalSuccessors.size() > 1)
     {
+      for (const auto& succ : normalSuccessors)
+        LOG_DEBUG("  Successor of {} = {}", current->getnodeId(), succ.node->getnodeId());
+
       const INode* joinNode = nullptr;
 
       auto joinExpr = buildJoinFromFanOut(flow, *current, normalSuccessors, joinNode);
       if (!joinExpr.has_value())
-        LOG_AND_FAIL(current->getid(), flow.getid(), "Failed to build join expression");
+        LOG_AND_FAIL(current->getid(), flow.getid(), "Failed to build join expression coming from: {}", current->getnodeId());
 
       if (joinNode == nullptr)
         LOG_AND_FAIL(current->getid(), flow.getid(), "Internal error: join node was not resolved");
@@ -598,44 +613,63 @@ std::any MakiToKoda::buildWithinExpr(const IFlow& flow, const INode& node)
 {
   auto expr = std::make_shared<koda::Strategy::Within>();
 
-  const auto doSuccessors = doSuccessorsOf(node, flow);
-  const auto elseSuccessors = elseSuccessorsOf(node, flow);
+  // ==========================================================================
+  // Do subflow
+  // ==========================================================================
 
-  if (doSuccessors.size() != 1)
-    LOG_AND_FAIL(node.getid(), flow.getid(), "Within node must have exactly one 'do' transition: {}", node.getid());
+  const auto doEntries = subFlowEntrySuccessorsOf(node, flow, "do");
+  if (doEntries.size() != 1)
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Within 'do' subflow must have exactly one entry: {}", node.getid());
 
-  if (elseSuccessors.size() > 1)
-    LOG_AND_FAIL(node.getid(), flow.getid(), "Within node cannot have more than one 'else' transition: {}", node.getid());
-
-  auto doSequence = buildSequenceFrom(flow, doSuccessors.first().node, nullptr);
+  auto doSequence = buildSequenceFrom(flow, doEntries.first().node, &node);
   if (!doSequence.has_value())
-    LOG_AND_FAIL(node.getid(), flow.getid(), "Invalid strategy for 'do' branch of within node");
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Invalid strategy for 'do' subflow of Within node");
 
   expr->a = std::any_cast<koda::PStrategy>(doSequence);
 
-  if (!elseSuccessors.isEmpty())
+  // ==========================================================================
+  // Else / timeout subflow
+  // ==========================================================================
+  const auto elseEntries = subFlowEntrySuccessorsOf(node, flow, "else");
+  if (elseEntries.size() > 1)
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Within 'else' subflow cannot have more than one entry: {}", node.getid());
+
+  if (!elseEntries.isEmpty())
   {
-    auto elseSequence = buildSequenceFrom(flow, elseSuccessors.first().node, nullptr);
+    auto elseSequence = buildSequenceFrom(flow, elseEntries.first().node, &node);
+
     if (!elseSequence.has_value())
-      LOG_AND_FAIL(node.getid(), flow.getid(), "Invalid strategy for 'else' branch of within node");
+      LOG_AND_FAIL(node.getid(), flow.getid(), "Invalid strategy for 'else' subflow of Within node");
 
     expr->b = std::any_cast<koda::PStrategy>(elseSequence);
   }
 
-  auto timeout = maki::getProperty("timeout", node);
+  // ==========================================================================
+  // Timeout
+  // ==========================================================================
+
+  const auto* timeout = maki::getProperty("timeout", node);
+
   if (!timeout)
     LOG_AND_FAIL(node.getid(), flow.getid(), "Within missing timeout property");
+
   if (!timeout->isInt() && !timeout->isString())
     LOG_AND_FAIL(node.getid(), flow.getid(), "Within timeout property should be an integer");
 
   expr->seconds = timeout->toInt();
 
+  // ==========================================================================
+  // External handlers
+  // ==========================================================================
+
   auto handlers = buildHandlers(flow, node);
+
   if (handlers.IsSuccess())
     for (const auto& handler : handlers.Value())
       expr->handlers.push_back(handler);
 
   auto strat = std::make_shared<koda::Strategy>();
+
   strat->v = expr;
 
   return strat;
@@ -643,13 +677,8 @@ std::any MakiToKoda::buildWithinExpr(const IFlow& flow, const INode& node)
 
 std::any MakiToKoda::buildRepeatExpr(const IFlow& flow, const INode& node)
 {
-  const auto* task = maki::getProperty("task", node);
-  if (!task)
-    LOG_AND_FAIL(node.getid(), flow.getid(), "Repeat task property is missing");
-  if (!task->isRecord())
-    LOG_AND_FAIL(node.getid(), flow.getid(), "Repeat task property should be a record");
-
   const auto* iterations = maki::getProperty("iterations", node);
+
   if (!iterations)
     LOG_AND_FAIL(node.getid(), flow.getid(), "Repeat iterations property is missing");
   if (!iterations->isInt() && !iterations->isString())
@@ -661,38 +690,39 @@ std::any MakiToKoda::buildRepeatExpr(const IFlow& flow, const INode& node)
   if (!rate->isInt() && !rate->isString())
     LOG_AND_FAIL(node.getid(), flow.getid(), "Repeat rate property should be an integer");
 
-  auto record = task->toRecord();
-  auto call = std::make_shared<koda::EventCall>();
-  call->name = "f" + format(maki::recordString(record, "flow"));
-  call->args = buildArgumentExpr(maki::recordList(record, "arguments"));
-  call->id = std::format("{}::{}", call->name, node.getid());
-
-  auto flowCall = std::make_shared<koda::Strategy::TaskCall>();
-  flowCall->call = call;
-
   auto expr = std::make_shared<koda::Strategy::Repeat>();
   expr->iterations = iterations->toInt();
   expr->seconds = rate->toInt();
 
+  // --------------------------------------------------------------------------
+  // Build the Repeat body from the nodes contained in its "body" subflow.
+  // --------------------------------------------------------------------------
+  const auto bodyEntries = subFlowEntrySuccessorsOf(node, flow, "body");
+  if (bodyEntries.size() > 1)
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Repeat body must have exactly one entry transition");
+  if (bodyEntries.isEmpty())
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Repeat body is empty");
+
+  const auto& bodyEntry = bodyEntries.first();
+  auto body = buildSequenceFrom(flow, bodyEntry.node, &node);
+  if (!body.has_value())
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Failed to build Repeat body");
+
+  expr->a = std::any_cast<koda::PStrategy>(body);
+
+  // --------------------------------------------------------------------------
+  // Handlers on the Repeat construct itself.
+  // --------------------------------------------------------------------------
+
   auto handlers = buildHandlers(flow, node);
+
   if (handlers.IsSuccess())
     for (const auto& handler : handlers.Value())
       expr->handlers.push_back(handler);
 
-  auto repeatStrat = std::make_shared<koda::Strategy>();
-  repeatStrat->v = flowCall;
-  expr->a = repeatStrat;
-
-  const auto seqSuccessors = sequentialSuccessorsOf(node, flow);
-  if (!seqSuccessors.empty())
-  {
-    auto sequence = buildSequenceFrom(flow, seqSuccessors.first().node, nullptr);
-    if (!sequence.has_value())
-      LOG_AND_FAIL(node.getid(), flow.getid(), "Failed to create do sequence");
-  }
-
   auto strat = std::make_shared<koda::Strategy>();
   strat->v = expr;
+
   return strat;
 }
 
@@ -881,7 +911,6 @@ std::vector<std::shared_ptr<Expr>> MakiToKoda::buildArgumentExpr(const maki::Lis
 std::any MakiToKoda::buildJoinFromFanOut(const IFlow& flow, const INode& splitNode, const QList<NodeTransition>& successors, const INode*& joinNode)
 {
   joinNode = findNearestCommonJoin(flow, successors);
-
   if (joinNode == nullptr)
   {
     LOG_ERROR("Could not find common join node for sequential fan-out after node: " + splitNode.getid().toStdString());
@@ -1341,5 +1370,49 @@ Result<koda::PExpr> MakiToKoda::buildValueExpr(const koda::types::TypeReference&
   }
 
   return Result<koda::PExpr>::Failed("Unsupported parameter type '{}'", type.toString());
+}
+
+QList<NodeTransition> MakiToKoda::subFlowEntrySuccessorsOf(const INode& owner, const IFlow& flow, const QString& subFlowId) const
+{
+  QList<NodeTransition> result;
+
+  // Build a set of the nodes that actually belong to this owner.
+  QSet<QString> childIds;
+  for (const auto& child : owner.getchildren())
+  {
+    if (!child)
+      continue;
+
+    // If getchildren() can include children from multiple subflows,
+    // filter by parentSubFlow here as well once exposed through INode.
+    childIds.insert(child->getid());
+  }
+
+  for (const auto& transition : flow.gettransitions(owner.getid()))
+  {
+    if (!transition)
+      continue;
+
+    // Must originate from this particular subflow boundary.
+    if (transition->srcPortSubFlow() != subFlowId)
+      continue;
+
+    // Ignore the empty owner -> owner pass-through.
+    if (transition->getdstId() == owner.getid())
+      continue;
+
+    // Most importantly: don't mistake the external successor for
+    // the first node inside the Repeat.
+    if (!childIds.contains(transition->getdstId()))
+      continue;
+
+    const auto* destination = findDestination(transition->getdstId(), flow);
+    if (!destination)
+      continue;
+
+    result.append({destination, transition.get()});
+  }
+
+  return result;
 }
 }  // namespace koda

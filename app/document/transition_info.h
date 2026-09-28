@@ -75,8 +75,8 @@ public:
   Types::Port srcPort() const;
   Types::Port dstPort() const;
 
-  QString srcPortSubFlow() const;
-  QString dstPortSubFlow() const;
+  QString srcPortSubFlow() const override;
+  QString dstPortSubFlow() const override;
 
   /**
    * @brief Sets the ID of the transition.

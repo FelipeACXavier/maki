@@ -48,7 +48,7 @@ void CapabilityNode::paint(QPainter* painter, const QStyleOptionGraphicsItem* st
   if (!config()->body.iconPath.isEmpty())
     paintSvg(mRenderer, painter, r.center(), r.width(), r.height());
 
-  NodeBase::paintLabel(painter, drawingRect(nodeRect()), pen, true);
+  NodeBase::paintLabel(painter, labelBoundingRect(), pen);
 }
 
 QPainterPath CapabilityNode::shape() const

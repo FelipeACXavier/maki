@@ -121,6 +121,7 @@ private:
   std::string format(QString input, const QString& token = "") const;
 
   Result<koda::PExpr> buildValueExpr(const koda::types::TypeReference& type, const maki::Value* value);
+  QList<NodeTransition> subFlowEntrySuccessorsOf(const INode& owner, const IFlow& flow, const QString& subFlowId) const;
 };
 
 }  // namespace koda
