@@ -1527,7 +1527,7 @@
             {
               "id": "name",
               "type": "string",
-              "default": { "kind": "string", "value": "Sync task" }
+              "default": { "kind": "string", "value": "Call capability" }
             },
             {
               "id": "color",
@@ -1733,20 +1733,7 @@
               }
             }
           ],
-          "transitions": [
-            {
-              "id": "Do",
-              "label": "do",
-              "event": "do",
-              "modifiable": false
-            },
-            {
-              "id": "Else",
-              "label": "else",
-              "event": "else",
-              "modifiable": false
-            }
-          ],
+          "transitions": [],
           "connectors": [
             {
               "id": "input",

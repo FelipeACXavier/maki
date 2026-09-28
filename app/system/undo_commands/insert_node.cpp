@@ -47,5 +47,6 @@ void InsertNodeCommand::redo()
   mCanvas->createTransition(mIncomingTransition);
   mCanvas->createTransition(mOutgoingTransition);
 
+  mCanvas->ensureMinimumSpacing(mNode.getid());
   LOG_TRACE("Redo InsertNodeCommand");
 }

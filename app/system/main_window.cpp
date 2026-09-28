@@ -251,10 +251,17 @@ void MainWindow::onSettingsChanged()
   if (mSaveHandler)
     mSaveHandler->setLastDir(mSettingsManager->general().lastOpenFileDir);
 
+#ifdef TRACE_LOGS
   if (mSettingsManager->general().enableDebugLogs)
     logging::gMinLogLevel = logging::LogLevel::Trace;
   else
     logging::gMinLogLevel = logging::LogLevel::Debugging;
+#else
+  if (mSettingsManager->general().enableDebugLogs)
+    logging::gMinLogLevel = logging::LogLevel::Debugging;
+  else
+    logging::gMinLogLevel = logging::LogLevel::Info;
+#endif
 
   if (mLogTable)
   {

@@ -68,6 +68,9 @@ else()
   endif()
 endif()
 
+if (TRACE)
+  target_compile_definitions(${APPLICATION_NAME} PUBLIC TRACE_LOGS=1)
+endif()
 
 set_target_properties(${APPLICATION_NAME} PROPERTIES
     WIN32_EXECUTABLE TRUE

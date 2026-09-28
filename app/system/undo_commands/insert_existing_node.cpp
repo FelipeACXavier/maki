@@ -6,7 +6,7 @@
 InsertExistingNodeCommand::InsertExistingNodeCommand(Canvas* canvas, const QString& nodeId, const QPointF& oldCenter, const QPointF& newCenter,
                                                      const QString& oldParent, const QString& newParent, const TransitionSaveInfo& originalTransition,
                                                      const TransitionSaveInfo& incomingTransition, const TransitionSaveInfo& outgoingTransition,
-                                                     QUndoCommand* parent)
+                                                     const QString& oldSubflow, QUndoCommand* parent)
     : QUndoCommand(parent)
     , mCanvas(canvas)
     , mNodeId(nodeId)
@@ -17,6 +17,7 @@ InsertExistingNodeCommand::InsertExistingNodeCommand(Canvas* canvas, const QStri
     , mOriginalTransition(originalTransition)
     , mIncomingTransition(incomingTransition)
     , mOutgoingTransition(outgoingTransition)
+    , mOriginalSubflow(oldSubflow)
 {
   setText(QObject::tr("Insert node on transition"));
 }
@@ -36,7 +37,7 @@ void InsertExistingNodeCommand::redo()
 
   mCanvas->createTransition(mIncomingTransition);
   mCanvas->createTransition(mOutgoingTransition);
-  mCanvas->reparentNode(mNodeId, mOldParentId);
+  mCanvas->reparentNode(mNodeId, mOldParentId, mOriginalTransition.srcPortSubFlow());
 }
 
 void InsertExistingNodeCommand::undo()
@@ -44,7 +45,7 @@ void InsertExistingNodeCommand::undo()
   if (!mCanvas)
     return;
 
-  mCanvas->reparentNode(mNodeId, mNewParentId);
+  mCanvas->reparentNode(mNodeId, mNewParentId, mOriginalSubflow);
   mCanvas->removeTransition(mIncomingTransition);
   mCanvas->removeTransition(mOutgoingTransition);
   mCanvas->createTransition(mOriginalTransition);

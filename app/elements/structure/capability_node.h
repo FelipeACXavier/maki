@@ -16,7 +16,7 @@ public:
   QPainterPath shape() const override;
   void paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget) override;
 
-  void addParent(NodeItem* node) override;
+  void addParent(NodeItem* node, const QString& subflow) override;
 
   bool rendersAsInsetCapability() const;
 };

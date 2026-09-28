@@ -36,6 +36,12 @@ extern QColor FOREGROUND;  /// Foreground color.
 extern QColor HIGHLIGHT;   /// Highlight color.
 extern QColor HOVER;       /// Hover color.
 
+enum class NodeMove
+{
+  User,
+  Relayout
+};
+
 enum class ControlPosition
 {
   Top,
@@ -55,6 +61,7 @@ static const QString TYPE_PIXMAP = QStringLiteral("application/x-pixmap");      
 static const QString TYPE_CONFIG = QStringLiteral("application/x-configuration");  /// MIME type for configurations.
 static const QString TYPE_NODE_ID = QStringLiteral("application/x-node-id");       /// MIME type for node IDs.
 static const QString MAIN_FLOW = "main";
+static const QString MAIN_SUB_FLOW = "body";
 
 static const qreal CONTROL_POINT_SHIFT = 100;  /// Shift value for control points.
 

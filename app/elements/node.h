@@ -183,10 +183,7 @@ public:
    */
   void renameNode(const QString& name);
 
-  PortItem* getPort(Types::Port type) const;
-
-  virtual QPointF incomingPortAnchor() const;
-  virtual QPointF outgoingPortAnchorForEvent(const QString& event) const;
+  PortItem* getPort(Types::Port type, const QString& subFlowId = Constants::MAIN_SUB_FLOW) const;
 
   /**
    * @brief Returns the parent node of this item.
@@ -195,12 +192,14 @@ public:
    */
   NodeItem* parentNode() const;
 
+  QString parentSubFlow() const;
+
   /**
    * @brief Returns a list of child nodes.
    *
    * @return The QVector of child NodeItems.
    */
-  QVector<NodeItem*> children() const;
+  virtual QVector<NodeItem*> children(const QString& subflow = Constants::MAIN_SUB_FLOW) const;
 
   /**
    * @brief Calculates an edge point toward a target scene position.
@@ -274,7 +273,7 @@ public:
    *
    * @param node The NodeItem to add as a parent.
    */
-  virtual void addParent(NodeItem* node);
+  virtual void addParent(NodeItem* node, const QString& subflow);
 
   void removeParent();
 
@@ -355,7 +354,7 @@ public:
    *
    * @param position The new QPointF for the node's position.
    */
-  virtual void updatePosition(const QPointF& position);
+  virtual void updatePosition(const QPointF& position, Config::NodeMove reason = Config::NodeMove::User);
 
   QPointF centerPosition() const;
   void setCenterPosition(const QPointF& center);
@@ -364,9 +363,9 @@ public:
   std::function<void(NodeItem* item)> nodeModified;
   std::function<void(Flow* flow, NodeItem* item)> flowAdded;
   std::function<void(NodeItem* item, bool done)> nodeMoved;
-  std::function<void(NodeItem* item)> geometryChanged;
+  std::function<void(NodeItem* item, const QRectF& oldRect)> geometryChanged;
   std::function<void(NodeItem* item, bool enter)> nodeHovered;
-  std::function<void(NodeItem* item, bool collapsed)> subflowCollapsed;
+  std::function<void(NodeItem* item, const QString& subflowId, bool collapsed)> subflowCollapsed;
   std::function<void(NodeItem* node, const QString& nodeId, const QString& flowId, int type)> focusOn;
   std::function<void(NodeItem* item, const QPointF& scenePos, maki::ControlWidget* control)> nodeControlRequested;
 
@@ -399,21 +398,42 @@ public:
    */
   friend QDataStream& operator>>(QDataStream& in, NodeItem& config);
 
-  virtual QRectF childAreaSceneRect() const;
+  virtual QRectF childAreaSceneRect(const QString& subflow = Constants::MAIN_SUB_FLOW) const;
 
 protected:
   std::shared_ptr<NodeSaveInfo> mStorage;  /// Save information for the node.
   QSizeF mSize{0, 0};                      /// Current size of the node.
-  QMap<Types::Port, PortItem*> mPorts;
+
+  struct PortKey
+  {
+    QString subFlowId;
+    Types::Port type;
+
+    bool operator==(const PortKey& other) const
+    {
+      return subFlowId == other.subFlowId && type == other.type;
+    }
+
+    friend size_t qHash(const PortKey& key, size_t seed = 0) noexcept
+    {
+      seed = ::qHash(key.subFlowId, seed);
+      seed = ::qHash(static_cast<int>(key.type), seed);
+
+      return seed;
+    }
+  };
+
+  QHash<PortKey, PortItem*> mPorts;
+
+  virtual void createPorts();
 
   virtual bool constrainChildren() const;
-
   virtual QPointF constrainChildPosition(const NodeItem* child, const QPointF& proposedPosition) const;
 
   /**
    * @brief Called to tell the parent that the position of this node was updated.
    */
-  virtual void childPositionUpdated();
+  virtual void childPositionUpdated(NodeItem* node);
 
   /**
    * @brief Handles mouse move events for this item.
@@ -452,6 +472,11 @@ protected:
 
   bool isHovered() const;
 
+  /**
+   * @brief Updates extra positions related to this node.
+   */
+  virtual void updateExtrasPosition(Config::NodeMove reason);
+
 private:
   QVector<Flow*> mFlows;              /// List of flows associated with this node.
   NodeItem* mParentNode;              /// Parent node of this item, if any.
@@ -468,11 +493,6 @@ private:
   bool mIsResizing{false};             /// Flag indicating if the node is being resized.
   QPointF mResizeStartMousePos{0, 0};  /// Mouse position when resizing started.
   QSizeF mResizeStartSize{0, 0};       /// Size of the node when resizing started.
-
-  /**
-   * @brief Updates extra positions related to this node.
-   */
-  void updateExtrasPosition();
 
   /**
    * @brief Clamps a size within valid limits.

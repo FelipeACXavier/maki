@@ -36,7 +36,7 @@ VoidResult CapabilityCallNode::start()
     mEmptySlot->setPos(nodeRect().center());
   }
 
-  return VoidResult();
+  return BehaviourNode::start();
 }
 
 void CapabilityCallNode::setProperty(const QString& key, const maki::Value& value)

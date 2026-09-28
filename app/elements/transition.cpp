@@ -48,20 +48,22 @@ int TransitionItem::type() const
   return Type;
 }
 
-void TransitionItem::setStart(const QString& id, const QPointF& point, const QPointF& controlShift, const Types::Port& port)
+void TransitionItem::setStart(const QString& id, const QPointF& point, const QPointF& controlShift, const Types::Port& port, const QString& subflow)
 {
   mStorage->setSrcId(id);
   mStorage->setSrcPoint(point);
   mStorage->setSrcShift(controlShift);
   mStorage->setSrcPort(port);
+  mStorage->setSrcPortSubFlow(subflow);
 }
 
-void TransitionItem::setEnd(const QString& id, const QPointF& point, const QPointF& controlShift, const Types::Port& port)
+void TransitionItem::setEnd(const QString& id, const QPointF& point, const QPointF& controlShift, const Types::Port& port, const QString& subflow)
 {
   mStorage->setDstId(id);
   mStorage->setDstPoint(point);
   mStorage->setDstShift(controlShift);
   mStorage->setDstPort(port);
+  mStorage->setDstPortSubFlow(subflow);
 }
 
 void TransitionItem::done(NodeItem* source, NodeItem* destination)
@@ -91,9 +93,9 @@ NodeItem* TransitionItem::destination() const
 void TransitionItem::move(const QString& id, QPointF pos)
 {
   if (id == mStorage->getsrcId())
-    mStorage->setSrcPoint(mSource ? mSource->outgoingPortAnchorForEvent(getEvent()) : pos);
+    mStorage->setSrcPoint(mSource ? sourceAnchor() : pos);
   else if (id == mStorage->getdstId())
-    mStorage->setDstPoint(mDestination ? mSource->incomingPortAnchor() : pos);
+    mStorage->setDstPoint(mDestination ? destinationAnchor() : pos);
   else
     return;
 
@@ -186,7 +188,7 @@ QPointF TransitionItem::sourceAnchor() const
   if (!mSource)
     return mStorage->srcPoint();
 
-  if (auto* port = mSource->getPort(mStorage->srcPort()))
+  if (auto* port = mSource->getPort(mStorage->srcPort(), mStorage->srcPortSubFlow()))
     return port->anchorScenePos();
 
   return mStorage->srcPoint();
@@ -197,7 +199,7 @@ QPointF TransitionItem::destinationAnchor() const
   if (!mDestination)
     return mStorage->dstPoint();
 
-  if (auto* port = mDestination->getPort(mStorage->dstPort()))
+  if (auto* port = mDestination->getPort(mStorage->dstPort(), mStorage->dstPortSubFlow()))
     return port->anchorScenePos();
 
   return mStorage->dstPoint();

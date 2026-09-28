@@ -149,7 +149,13 @@ public:
    */
   void addProperty(std::shared_ptr<PropertyInfo> parameter);
 
+  /**
+   * @brief Sets a property to the node.
+   * @param key The property key as a QString.
+   * @param value The property value as a QVariant.
+   */
   void setProperty(const QString& key, const maki::Value& parameter);
+
   /**
    * @brief Removes a property from the node.
    * @param key The property key as a QString.
@@ -185,6 +191,8 @@ public:
   void addPort(const PortConfig& port);
   QVector<PortConfig> ports() const;
 
+  QString getParentSubFlow() const;
+  void setParentSubFlow(const QString& subFlowId);
   /**
    * @brief Adds a flow to the node.
    * @param flow The new flow as a shared pointer to IFlow.
@@ -249,9 +257,10 @@ public:
   friend QDataStream& operator>>(QDataStream& in, NodeSaveInfo& info);
 
 private:
-  QString mId;        /// The ID of the node.
-  QString mNodeId;    /// The node ID.
-  QString mParentId;  /// The parent ID of the node.
+  QString mId;             /// The ID of the node.
+  QString mNodeId;         /// The node ID.
+  QString mParentId;       /// The parent ID of the node.
+  QString mParentSubFlow;  /// The subflow ID of this node.
 
   QPointF mPosition;  /// The position of the node.
   QSizeF mSize;       /// The size of the node.

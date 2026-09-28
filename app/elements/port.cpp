@@ -28,14 +28,15 @@ QString tooltipForKind(Types::Port kind)
 }  // namespace
 
 PortItem::PortItem(Types::Port kind, QGraphicsItem* parentNode)
-    : PortItem(kind, false, parentNode)
+    : PortItem(kind, Constants::MAIN_SUB_FLOW, false, parentNode)
 {
 }
 
-PortItem::PortItem(Types::Port kind, bool isMarker, QGraphicsItem* parentNode)
+PortItem::PortItem(Types::Port kind, const QString& subFlowId, bool isMarker, QGraphicsItem* parentNode)
     : QGraphicsItem(parentNode)
     , mIsMarker(isMarker)
     , mKind(kind)
+    , mSubFlow(subFlowId)
     , mCurrentIconPath("")
 {
   setAcceptHoverEvents(true);
@@ -65,6 +66,11 @@ void PortItem::setMarker(bool marker)
   updateRenderer();
   updatePosition();
   update();
+}
+
+QString PortItem::subFlow() const
+{
+  return mSubFlow;
 }
 
 bool PortItem::isIncoming() const
@@ -107,16 +113,16 @@ bool PortItem::canEndTransition() const
   return isIncoming() || (isMarker() && isOutgoing());
 }
 
-qreal PortItem::getSize() const
+QSizeF PortItem::getSize() const
 {
   if (isMarker())
-    return 30;
+    return QSizeF{20, 17};
   else if (isAbort())
-    return kAbortPortSize;
+    return QSizeF{kAbortPortSize, kAbortPortSize};
   else if (isError())
-    return kErrorPortSize;
+    return QSizeF{kErrorPortSize, kErrorPortSize};
 
-  return kSize;
+  return QSizeF{kSize, kSize};
 }
 
 QString PortItem::defaultTransitionEvent() const
@@ -144,8 +150,8 @@ int PortItem::type() const
 
 QRectF PortItem::boundingRect() const
 {
-  const qreal s = getSize();
-  return QRectF(0, 0, s, s);
+  const auto s = getSize();
+  return QRectF(0, 0, s.width(), s.height());
 }
 
 QPainterPath PortItem::shape() const

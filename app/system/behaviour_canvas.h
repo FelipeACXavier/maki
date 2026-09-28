@@ -73,11 +73,13 @@ public:
    */
   void onNodeMoved(NodeItem* node, bool done) override;
 
-  void onNodeGeometryChanged(NodeItem* node) override;
+  void onNodeGeometryChanged(NodeItem* node, const QRectF& oldRect) override;
   /**
    * @brief Used to create the start and end nodes of a flow
    */
   void setupInitialNodes();
+
+  void ensureMinimumSpacing(const QString& nodeId) override;
 
 protected:
   /**
@@ -88,7 +90,7 @@ protected:
   bool insertDroppedNodeOnTransition(TransitionItem* transition, NodeSaveInfo info) override;
   bool insertNodeOnTransition(TransitionItem* transition, NodeItem* node) override;
 
-  void onSubFlowCollapsed(NodeItem* node, bool collapsed) override;
+  void onSubFlowCollapsed(NodeItem* node, const QString& subflowId, bool collapsed) override;
 
 private:
   /**
@@ -111,6 +113,9 @@ private:
 
   TransitionSaveInfo makeTransitionInfo(const QString& sourceId, const QString& destinationId, const QString& event, const QString& label) const;
 
+  QList<NodeItem*> getNeighboursOf(const NodeItem* node, int depth = -1) const;
   NodeItem* insertionParentForTransition(const TransitionItem* transition) const;
   QPointF transitionPortAnchor(NodeItem* node, Types::Port port, const QPointF& fallback) const;
+  void pushDownstreamNodes(NodeItem* source, qreal deltaX);
+  bool sameLayoutScope(const NodeItem* lhs, const NodeItem* rhs) const;
 };

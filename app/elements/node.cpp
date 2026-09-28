@@ -64,15 +64,6 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
     mStorage->addEvent(std::make_shared<FlowSaveInfo>(event));
   }
 
-  for (const auto& port : config()->ports)
-    mPorts[port.type] = new PortItem(port.type, this);
-
-  if (config()->ports.isEmpty() && config()->libraryType == Types::LibraryTypes::PIPELINE)
-  {
-    mPorts[Types::Port::IN] = new PortItem(Types::Port::IN, this);
-    mPorts[Types::Port::OUT] = new PortItem(Types::Port::OUT, this);
-  }
-
   // Add icon if it exists
   if (!mStorage->getIcon().isEmpty())
     setIcon(AppPaths::icon(config()->body.iconPath), config()->body.iconColor);
@@ -102,6 +93,18 @@ Types::LibraryTypes NodeItem::function() const
   return config()->libraryType;
 }
 
+void NodeItem::createPorts()
+{
+  for (const auto& port : config()->ports)
+    mPorts[{Constants::MAIN_SUB_FLOW, port.type}] = new PortItem(port.type, this);
+
+  if (config()->ports.isEmpty() && config()->libraryType == Types::LibraryTypes::PIPELINE)
+  {
+    mPorts[{Constants::MAIN_SUB_FLOW, Types::Port::IN}] = new PortItem(Types::Port::IN, this);
+    mPorts[{Constants::MAIN_SUB_FLOW, Types::Port::OUT}] = new PortItem(Types::Port::OUT, this);
+  }
+}
+
 QString NodeItem::nodeName() const
 {
   if (const auto* name = getProperty("name"))
@@ -123,6 +126,7 @@ qreal NodeItem::baseScale() const
 
 VoidResult NodeItem::start()
 {
+  createPorts();
   return NodeBase::start();
 }
 
@@ -141,34 +145,12 @@ QRectF NodeItem::sceneAlignRect() const
   return sceneNodeRect();
 }
 
-PortItem* NodeItem::getPort(Types::Port type) const
+PortItem* NodeItem::getPort(Types::Port type, const QString& subFlowId) const
 {
-  if (!mPorts.contains(type))
+  if (!mPorts.contains({subFlowId, type}))
     return nullptr;
 
-  return mPorts[type];
-}
-
-QPointF NodeItem::incomingPortAnchor() const
-{
-  if (auto port = getPort(Types::Port::IN))
-    return port->anchorScenePos();
-
-  return sceneBoundingRect().center();
-}
-
-QPointF NodeItem::outgoingPortAnchorForEvent(const QString& event) const
-{
-  for (const auto& port : mPorts)
-  {
-    if (!port || !port->isOutgoing())
-      continue;
-
-    if (port->defaultTransitionEvent() == event)
-      return port->anchorScenePos();
-  }
-
-  return sceneBoundingRect().center();
+  return mPorts[{subFlowId, type}];
 }
 
 void NodeItem::highlight(const QColor& color, const QString& message, int durationMs)
@@ -491,12 +473,12 @@ void NodeItem::removeField(const QString& key)
   mStorage->removeField(key);
 }
 
-QVector<NodeItem*> NodeItem::children() const
+QVector<NodeItem*> NodeItem::children(const QString& subflow) const
 {
   return mChildrenNodes;
 }
 
-void NodeItem::addParent(NodeItem* parent)
+void NodeItem::addParent(NodeItem* parent, const QString& subflow)
 {
   if (!parent)
     return;
@@ -504,6 +486,7 @@ void NodeItem::addParent(NodeItem* parent)
   LOG_DEBUG("Setting parent {} of node {}", parent->nodeId(), nodeId());
   mParentNode = parent;
   mStorage->setParentId(parent->id());
+  mStorage->setParentSubFlow(subflow);
   setZValue(parent->zValue() + 2);
 
   fitInsideParent(20);
@@ -517,6 +500,7 @@ void NodeItem::removeParent()
   LOG_DEBUG("Removing parent {} of node {}", parentNode()->nodeId(), nodeId());
   mParentNode = nullptr;
   mStorage->setParentId("");
+  mStorage->setParentSubFlow(Constants::MAIN_SUB_FLOW);
   setZValue(config()->body.zIndex);
 }
 
@@ -540,6 +524,11 @@ NodeItem* NodeItem::parentNode() const
   return mParentNode;
 }
 
+QString NodeItem::parentSubFlow() const
+{
+  return mStorage->getParentSubFlow();
+}
+
 QString NodeItem::behaviour() const
 {
   return config()->behaviour.code;
@@ -555,7 +544,7 @@ bool NodeItem::constrainChildren() const
   return true;
 }
 
-QRectF NodeItem::childAreaSceneRect() const
+QRectF NodeItem::childAreaSceneRect(const QString& subflow) const
 {
   return mapRectToScene(nodeRect());
 }
@@ -761,19 +750,18 @@ QVariant NodeItem::itemChange(GraphicsItemChange change, const QVariant& value)
   return QGraphicsItem::itemChange(change, value);
 }
 
-void NodeItem::updatePosition(const QPointF& newPosition)
+void NodeItem::updatePosition(const QPointF& newPosition, Config::NodeMove reason)
 {
-  prepareGeometryChange();
   setPos(newPosition);
 
   QPointF delta = newPosition - mLastPosition;
   for (auto* child : children())
     if (child)
-      child->updatePosition(child->pos() + delta);
+      child->updatePosition(child->pos() + delta, reason);
 
   mLastPosition = newPosition;
 
-  updateExtrasPosition();
+  updateExtrasPosition(reason);
   mStorage->setPosition(pos() + boundingRect().center());
 }
 
@@ -787,13 +775,13 @@ void NodeItem::setCenterPosition(const QPointF& center)
   setPos(center - nodeRect().center());
 
   mLastPosition = pos();
-  updateExtrasPosition();
+  updateExtrasPosition(Config::NodeMove::Relayout);
 
   if (mStorage)
     mStorage->setPosition(center);
 }
 
-void NodeItem::childPositionUpdated()
+void NodeItem::childPositionUpdated(NodeItem* /* child */)
 {
 }
 
@@ -817,12 +805,12 @@ QPointF NodeItem::constrainChildPosition(const NodeItem* child, const QPointF& p
   return newPos;
 }
 
-void NodeItem::updateExtrasPosition()
+void NodeItem::updateExtrasPosition(Config::NodeMove reason)
 {
   if (auto* parent = parentNode())
-    parent->childPositionUpdated();
+    parent->childPositionUpdated(this);
 
-  if (nodeMoved)
+  if (nodeMoved && reason == Config::NodeMove::User)
     nodeMoved(this, false);
 }
 

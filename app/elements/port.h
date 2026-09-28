@@ -25,12 +25,14 @@ public:
   static constexpr qreal kHitPadding = 30.0;  // area around port where it's still possible to initiate/drop a transition
 
   PortItem(Types::Port kind, QGraphicsItem* parentNode);
-  PortItem(Types::Port kind, bool isMarker, QGraphicsItem* parentNode);
+  PortItem(Types::Port kind, const QString& subflowId, bool isMarker, QGraphicsItem* parentNode);
 
   int type() const override;
   QRectF boundingRect() const override;
   QPainterPath shape() const override;
   void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
+
+  QString subFlow() const;
 
   Types::Port kind() const;
   bool isIncoming() const;
@@ -61,12 +63,13 @@ protected:
 private:
   bool mIsMarker;
   Types::Port mKind;
+  const QString mSubFlow;
   std::optional<QPointF> mAnchorOverride;
 
   std::unique_ptr<QSvgRenderer> mRenderer;
   QString mCurrentIconPath;
 
-  qreal getSize() const;
+  QSizeF getSize() const;
   QPointF defaultPosition() const;
   void updatePosition();
   void updateRenderer();

@@ -62,9 +62,9 @@ QPainterPath CapabilityNode::shape() const
 // Parent / child management
 // ─────────────────────────────────────────────────────────────────────────────
 
-void CapabilityNode::addParent(NodeItem* parent)
+void CapabilityNode::addParent(NodeItem* parent, const QString& subflow)
 {
-  NodeItem::addParent(parent);
+  NodeItem::addParent(parent, subflow);
   if (!parent)
     return;
 

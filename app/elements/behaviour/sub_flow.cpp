@@ -4,11 +4,18 @@
 
 #include "app_configs.h"
 
-SubFlow::SubFlow(QGraphicsItem* parent)
+SubFlow::SubFlow(const QString& id, QGraphicsItem* parent)
     : QGraphicsItem(parent)
+    , mId(id)
+    , mTitle("")
 {
   setFlag(QGraphicsItem::ItemStacksBehindParent, true);
   setZValue(-1.0);
+}
+
+QString SubFlow::id() const
+{
+  return mId;
 }
 
 int SubFlow::type() const
@@ -42,6 +49,18 @@ void SubFlow::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, Q
   painter->setBrush(background);
   painter->drawRoundedRect(mRect, 12.0, 12.0);
 
+  if (!title().isEmpty())
+  {
+    QFont titleFont = painter->font();
+
+    titleFont.setBold(true);
+    painter->setFont(titleFont);
+    painter->setPen(Config::FOREGROUND);
+
+    painter->setBrush(Qt::NoBrush);
+    painter->drawText(mTextRect, Qt::AlignLeft | Qt::AlignVCenter, mTitle);
+  }
+
   painter->restore();
 }
 
@@ -52,7 +71,18 @@ void SubFlow::setRect(const QRectF& rect)
 
   prepareGeometryChange();
   mRect = rect;
+  if (mPosition == Config::ControlPosition::Bottom)
+    mTextRect = QRectF(mRect.left() + mLeftPadding, mRect.bottom() - mTopPadding - 12, qMax(0.0, mRect.width() - mLeftPadding), 12);
+  else
+    mTextRect = QRectF(mRect.left() + mLeftPadding, mRect.top() + mTopPadding, qMax(0.0, mRect.width() - mLeftPadding), 12);
   update();
+}
+
+void SubFlow::setTitlePosition(const Config::ControlPosition pos, int leftPadding, int topPadding)
+{
+  mPosition = pos;
+  mLeftPadding = leftPadding;
+  mTopPadding = topPadding;
 }
 
 void SubFlow::setCollapsed(bool collapsed)
@@ -72,4 +102,18 @@ void SubFlow::setCollapsed(bool collapsed)
 bool SubFlow::isCollapsed() const
 {
   return mIsCollapsed;
+}
+
+void SubFlow::setTitle(const QString& title)
+{
+  if (mTitle == title)
+    return;
+
+  mTitle = title;
+  update();
+}
+
+QString SubFlow::title() const
+{
+  return mTitle;
 }

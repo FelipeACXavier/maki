@@ -2,6 +2,7 @@
 
 #include <QJsonObject>
 
+#include "app_configs.h"
 #include "json.h"
 #include "keys.h"
 
@@ -19,6 +20,8 @@ TransitionSaveInfo::TransitionSaveInfo()
     , mDstShift(QPointF{0, 0})
     , mSrcPort(Types::Port::OUT)
     , mDstPort(Types::Port::IN)
+    , mSrcSubFlow(Constants::MAIN_SUB_FLOW)
+    , mDstSubFlow(Constants::MAIN_SUB_FLOW)
 {
 }
 
@@ -72,9 +75,19 @@ Types::Port TransitionSaveInfo::srcPort() const
   return mSrcPort;
 }
 
+QString TransitionSaveInfo::srcPortSubFlow() const
+{
+  return mSrcSubFlow;
+}
+
 Types::Port TransitionSaveInfo::dstPort() const
 {
   return mDstPort;
+}
+
+QString TransitionSaveInfo::dstPortSubFlow() const
+{
+  return mDstSubFlow;
 }
 
 void TransitionSaveInfo::setId(const QString& arg)
@@ -132,6 +145,16 @@ void TransitionSaveInfo::setDstPort(Types::Port port)
   mDstPort = port;
 }
 
+void TransitionSaveInfo::setSrcPortSubFlow(const QString& subflow)
+{
+  mSrcSubFlow = subflow;
+}
+
+void TransitionSaveInfo::setDstPortSubFlow(const QString& subflow)
+{
+  mDstSubFlow = subflow;
+}
+
 // ==========================================================================
 // JSON serialization
 QJsonObject TransitionSaveInfo::toJson() const
@@ -146,6 +169,7 @@ QJsonObject TransitionSaveInfo::toJson() const
   source[ConfigKeys::POSITION] = JSON::fromPointF(srcPoint());
   source[ConfigKeys::SHIFT] = JSON::fromPointF(srcShift());
   source[ConfigKeys::PORT] = (int)mSrcPort;
+  source[ConfigKeys::PARENT_SUB_FLOW_ID] = srcPortSubFlow();
   data[ConfigKeys::SOURCE] = source;
 
   QJsonObject destination;
@@ -153,6 +177,7 @@ QJsonObject TransitionSaveInfo::toJson() const
   destination[ConfigKeys::POSITION] = JSON::fromPointF(dstPoint());
   destination[ConfigKeys::SHIFT] = JSON::fromPointF(dstShift());
   destination[ConfigKeys::PORT] = (int)mDstPort;
+  destination[ConfigKeys::PARENT_SUB_FLOW_ID] = dstPortSubFlow();
   data[ConfigKeys::DESTINATION] = destination;
 
   return data;
@@ -169,11 +194,13 @@ TransitionSaveInfo TransitionSaveInfo::fromJson(const QJsonObject& data)
   info.setSrcPoint(JSON::toPointF(data[ConfigKeys::SOURCE][ConfigKeys::POSITION].toObject()));
   info.setSrcShift(JSON::toPointF(data[ConfigKeys::SOURCE][ConfigKeys::SHIFT].toObject()));
   info.setSrcPort((Types::Port)data[ConfigKeys::SOURCE][ConfigKeys::PORT].toInt());
+  info.setSrcPortSubFlow(data[ConfigKeys::SOURCE][ConfigKeys::PARENT_SUB_FLOW_ID].toString());
 
   info.setDstId(data[ConfigKeys::DESTINATION][ConfigKeys::ID].toString());
   info.setDstPoint(JSON::toPointF(data[ConfigKeys::DESTINATION][ConfigKeys::POSITION].toObject()));
   info.setDstShift(JSON::toPointF(data[ConfigKeys::DESTINATION][ConfigKeys::SHIFT].toObject()));
   info.setDstPort((Types::Port)data[ConfigKeys::DESTINATION][ConfigKeys::PORT].toInt());
+  info.setDstPortSubFlow(data[ConfigKeys::DESTINATION][ConfigKeys::PARENT_SUB_FLOW_ID].toString());
 
   return info;
 }
@@ -235,11 +262,13 @@ QDataStream& operator<<(QDataStream& out, const TransitionSaveInfo& info)
   out << info.srcPoint();
   out << info.srcShift();
   out << info.srcPort();
+  out << info.srcPortSubFlow();
 
   out << info.getdstId();
   out << info.dstPoint();
   out << info.dstShift();
   out << info.dstPort();
+  out << info.dstPortSubFlow();
 
   return out;
 }
@@ -274,6 +303,10 @@ QDataStream& operator>>(QDataStream& in, TransitionSaveInfo& info)
   in >> srcPort;
   info.setSrcPort(srcPort);
 
+  QString srcSubFlow;
+  in >> srcSubFlow;
+  info.setSrcPortSubFlow(srcSubFlow);
+
   QString dstId;
   in >> dstId;
   info.setDstId(dstId);
@@ -289,6 +322,10 @@ QDataStream& operator>>(QDataStream& in, TransitionSaveInfo& info)
   Types::Port dstPort;
   in >> dstPort;
   info.setDstPort(dstPort);
+
+  QString dstSubFlow;
+  in >> dstSubFlow;
+  info.setDstPortSubFlow(dstSubFlow);
 
   return in;
 }

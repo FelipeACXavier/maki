@@ -4,10 +4,10 @@
 #include <QJsonArray>
 #include <QJsonObject>
 
+#include "app_configs.h"
 #include "flow_info.h"
 #include "json.h"
 #include "keys.h"
-#include "logging.h"
 #include "transition_info.h"
 
 Q_DECLARE_METATYPE(NodeSaveInfo)
@@ -16,6 +16,7 @@ NodeSaveInfo::NodeSaveInfo()
     : mId("")
     , mNodeId("")
     , mParentId("")
+    , mParentSubFlow(Constants::MAIN_SUB_FLOW)
     , mPosition(QPointF{0, 0})
     , mSize(QSizeF{0, 0})
     , mScale(1.0)
@@ -34,6 +35,7 @@ NodeSaveInfo::NodeSaveInfo(const NodeConfig& config)
     : mId("")
     , mNodeId(config.type)
     , mParentId("")
+    , mParentSubFlow(Constants::MAIN_SUB_FLOW)
     , mPosition(QPointF{0, 0})
     , mSize(QSizeF{static_cast<qreal>(config.body.width), static_cast<qreal>(config.body.height)})
     , mScale(1)
@@ -266,6 +268,16 @@ QVector<PortConfig> NodeSaveInfo::ports() const
   return mPorts;
 }
 
+QString NodeSaveInfo::getParentSubFlow() const
+{
+  return mParentSubFlow;
+}
+
+void NodeSaveInfo::setParentSubFlow(const QString& subFlowId)
+{
+  mParentSubFlow = subFlowId;
+}
+
 // ==========================================================================
 // JSON serialization
 QJsonObject NodeSaveInfo::toJson() const
@@ -275,6 +287,7 @@ QJsonObject NodeSaveInfo::toJson() const
   data[ConfigKeys::ID] = getid();
   data[ConfigKeys::NODE_ID] = getnodeId();
   data[ConfigKeys::PARENT_ID] = getparentId();
+  data[ConfigKeys::PARENT_SUB_FLOW_ID] = getParentSubFlow();
 
   data[ConfigKeys::SCALE] = getScale();
   data[ConfigKeys::SIZE] = JSON::fromSizeF(getSize());
@@ -335,6 +348,9 @@ NodeSaveInfo NodeSaveInfo::fromJson(const QJsonObject& data)
 
   if (data.contains(ConfigKeys::PARENT_ID))
     info.setParentId(data[ConfigKeys::PARENT_ID].toString());
+
+  if (data.contains(ConfigKeys::PARENT_SUB_FLOW_ID))
+    info.setParentSubFlow(data[ConfigKeys::PARENT_SUB_FLOW_ID].toString());
 
   if (data.contains(ConfigKeys::FIELDS))
     for (const auto& node : data[ConfigKeys::FIELDS].toArray())
@@ -412,6 +428,7 @@ QDataStream& operator<<(QDataStream& out, const NodeSaveInfo& info)
   out << info.getid();
   out << info.getnodeId();
   out << info.getparentId();
+  out << info.getParentSubFlow();
 
   out << info.getposition();
   out << info.getSize();
@@ -441,6 +458,10 @@ QDataStream& operator>>(QDataStream& in, NodeSaveInfo& info)
   QString parentId;
   in >> parentId;
   info.setParentId(parentId);
+
+  QString parentSubFlowId;
+  in >> parentSubFlowId;
+  info.setParentSubFlow(parentSubFlowId);
 
   QPointF position;
   in >> position;

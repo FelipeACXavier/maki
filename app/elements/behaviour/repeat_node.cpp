@@ -8,19 +8,38 @@ static const qreal SUB_FLOW_SPACING = 30.0;
 static const qreal SUB_FLOW_WIDTH = 400.0;
 static const qreal SUB_FLOW_HEIGHT = 220.0;
 static const qreal SUB_FLOW_TOP_LEFT_PADDING = 5.0;
+static const int ICON_WIDTH = 50;
+
+static const QString ITERATIONS = "iterations";
+static const QString RATE = "rate";
 
 RepeatNode::RepeatNode(const QString& id, std::shared_ptr<NodeSaveInfo> info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig,
                        QGraphicsItem* parent)
     : BehaviourNode(id, info, initialPosition, nodeConfig, parent)
 {
   setAcceptDrops(true);
-  mSubFlow = new SubFlow(this);
+  mSubFlow = new SubFlow(Constants::MAIN_SUB_FLOW, this);
+  mSubFlow->setCollapsed(true);
+  mSubFlow->setTitle("Repeat");
+  mSubFlow->setTitlePosition(Config::ControlPosition::Top, ICON_WIDTH + SUB_FLOW_TOP_LEFT_PADDING, ICON_WIDTH / 2 + SUB_FLOW_TOP_LEFT_PADDING);
+
+  setProperty(ITERATIONS, maki::Value::createInt(0));
+  setProperty(RATE, maki::Value::createInt(0));
+
   toggleCollapsed(mSubFlow, false);
 }
 
 SubFlow* RepeatNode::subFlow() const
 {
   return mSubFlow;
+}
+
+void RepeatNode::createPorts()
+{
+  for (const auto& port : config()->ports)
+    mPorts[{Constants::MAIN_SUB_FLOW, port.type}] = new PortItem(port.type, Constants::MAIN_SUB_FLOW, true, this);
+
+  layoutSubFlow();
 }
 
 QRectF RepeatNode::extraBoundingRect() const
@@ -47,7 +66,7 @@ QRectF RepeatNode::nodeRect() const
   if (!flow || flow->isCollapsed())
     return NodeItem::nodeRect();
 
-  return QRectF(QPointF(0, 0), QSizeF{50, 50});
+  return QRectF(QPointF(0, 0), QSizeF{ICON_WIDTH, ICON_WIDTH});
 }
 
 QPainterPath RepeatNode::shape() const
@@ -55,14 +74,17 @@ QPainterPath RepeatNode::shape() const
   return NodeBase::nodeShape(nodeRect());
 }
 
-void RepeatNode::updatePosition(const QPointF& position)
+void RepeatNode::updateExtrasPosition(Config::NodeMove reason)
 {
-  BehaviourNode::updatePosition(position);
+  BehaviourNode::updateExtrasPosition(reason);
   layoutSubFlow();
 }
 
-void RepeatNode::childPositionUpdated()
+void RepeatNode::childPositionUpdated(NodeItem* child)
 {
+  if (!child)
+    return;
+
   layoutSubFlow();
 }
 
@@ -91,12 +113,12 @@ QPointF RepeatNode::constrainChildPosition(const NodeItem* child, const QPointF&
   return result;
 }
 
-QRectF RepeatNode::childAreaSceneRect() const
+QRectF RepeatNode::childAreaSceneRect(const QString& subflow) const
 {
   if (auto* flow = subFlow())
     return flow->sceneBoundingRect();
 
-  return BehaviourNode::childAreaSceneRect();
+  return BehaviourNode::childAreaSceneRect(subflow);
 }
 
 void RepeatNode::addChild(NodeItem* node, std::shared_ptr<NodeSaveInfo> info)
@@ -109,6 +131,24 @@ void RepeatNode::childRemoved(NodeItem* child)
 {
   NodeItem::childRemoved(child);
   layoutSubFlow();
+}
+
+void RepeatNode::setProperty(const QString& key, const maki::Value& value)
+{
+  NodeItem::setProperty(key, value);
+  if (key == ITERATIONS || key == RATE)
+  {
+    const auto iterProp = getProperty(ITERATIONS);
+    const auto rateProp = getProperty(RATE);
+    if (const auto iter = maki::asValue(iterProp->getvalue()); const auto* rate = maki::asValue(rateProp->getvalue()))
+    {
+      const auto iString = iter->toIntValue() == 0 ? "forever " : iter->toStringValue() + " times ";
+      const auto rString = rate->toIntValue() == 0 ? "" : "every " + rate->toStringValue() + " ms";
+      mSubFlow->setTitle("Repeat " + iString + rString);
+    }
+    else
+      mSubFlow->setTitle("Repeat");
+  }
 }
 
 void RepeatNode::layoutSubFlow()
@@ -124,7 +164,7 @@ void RepeatNode::layoutSubFlow()
   }
 
   const QRectF repeatRect = sceneNodeRect();
-  const QRectF previousRect = flow->boundingRect();
+  const QRectF previousRect = sceneAlignRect();
 
   // Keep the Repeat icon inside the top-left of the subflow.
   const QPointF topLeft(repeatRect.left() - SUB_FLOW_TOP_LEFT_PADDING, repeatRect.top() - SUB_FLOW_TOP_LEFT_PADDING);
@@ -140,7 +180,6 @@ void RepeatNode::layoutSubFlow()
       continue;
 
     const QRectF childRect = child->sceneBoundingRect();
-
     if (first)
     {
       childrenRect = childRect;
@@ -158,13 +197,13 @@ void RepeatNode::layoutSubFlow()
 
     // Keep top-left fixed and grow only right/down.
     sceneRect.setRight(qMax(sceneRect.right(), childrenRect.right()));
-
     sceneRect.setBottom(qMax(sceneRect.bottom(), childrenRect.bottom()));
   }
 
   const QRectF localRect = mapRectFromScene(sceneRect);
 
-  if (previousRect != localRect)
+  const bool changed = previousRect != sceneRect;
+  if (changed)
   {
     prepareGeometryChange();
     flow->setRect(localRect);
@@ -172,8 +211,8 @@ void RepeatNode::layoutSubFlow()
 
   layoutSubFlowMarkers();
 
-  if (geometryChanged && previousRect != localRect)
-    geometryChanged(this);
+  if (geometryChanged && changed)
+    geometryChanged(this, previousRect);
 }
 
 void RepeatNode::layoutSubFlowMarkers()
@@ -229,6 +268,12 @@ void RepeatNode::toggleCollapsed(SubFlow* flow, bool collapsed)
   if (!flow)
     return;
 
+  if (flow->isCollapsed() == collapsed)
+    return;
+
+  const auto previousRect = sceneAlignRect();
+
+  prepareGeometryChange();
   flow->setCollapsed(collapsed);
 
   for (auto* port : mPorts)
@@ -243,7 +288,12 @@ void RepeatNode::toggleCollapsed(SubFlow* flow, bool collapsed)
   layoutSubFlow();
 
   if (subflowCollapsed)
-    subflowCollapsed(this, collapsed);
+    subflowCollapsed(this, flow->id(), collapsed);
+
+  // The layout does not trigger when toggling since the rect never really changes
+  // So we should trigger it here
+  if (geometryChanged)
+    geometryChanged(this, previousRect);
 }
 
 void RepeatNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)

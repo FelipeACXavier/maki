@@ -75,6 +75,9 @@ public:
   Types::Port srcPort() const;
   Types::Port dstPort() const;
 
+  QString srcPortSubFlow() const;
+  QString dstPortSubFlow() const;
+
   /**
    * @brief Sets the ID of the transition.
    * @param arg The new ID for the transition.
@@ -131,6 +134,8 @@ public:
 
   void setSrcPort(Types::Port port);
   void setDstPort(Types::Port port);
+  void setSrcPortSubFlow(const QString& subFlowId);
+  void setDstPortSubFlow(const QString& subFlowId);
   /**
    * @brief Converts the transition save info to a JSON object.
    * @return QJsonObject The JSON representation of the transition save info.
@@ -162,6 +167,9 @@ private:
 
   Types::Port mSrcPort;
   Types::Port mDstPort;
+
+  QString mSrcSubFlow;
+  QString mDstSubFlow;
 };
 
 QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<TransitionSaveInfo>>& nodes);

@@ -167,6 +167,7 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
   const QRectF dragRect(center.x() - size.width() / 2.0, center.y() - size.height() / 2.0, size.width(), size.height());
 
   NodeItem* parentNode = nullptr;
+  QString subFlowId = Constants::MAIN_SUB_FLOW;
   if (TransitionItem* transition = transitionAt(dragRect))
   {
     auto dropConfig = getNodeConfig(info->getnodeId());
@@ -189,7 +190,10 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
     else if (auto cast = qgraphicsitem_cast<EmptySlot*>(item); cast && cast->parentItem())
       parentNode = qgraphicsitem_cast<NodeItem*>(cast->parentItem());
     else if (auto* cast = qgraphicsitem_cast<SubFlow*>(item); cast)
+    {
       parentNode = qgraphicsitem_cast<NodeItem*>(cast->parentItem());
+      subFlowId = cast->id();
+    }
     else if (auto* cast = qgraphicsitem_cast<NodeItem*>(item); cast)
       parentNode = cast;
   }
@@ -201,7 +205,11 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
   }
 
   if (parentNode)
+  {
+    LOG_DEBUG("CREATING NODE WITH PARENT {} AND SUB FLOW {}", parentNode->nodeId(), subFlowId);
     info->setParentId(parentNode->id());
+    info->setParentSubFlow(subFlowId);
+  }
 
   mUndoStack->push(new AddNodeCommand(this, *info, NodeCreation::Dropping));
   event->acceptProposedAction();
@@ -360,6 +368,10 @@ TransitionConfig Canvas::nextTransition(NodeItem* /* node */) const
   return TransitionConfig{};
 }
 
+void Canvas::ensureMinimumSpacing(const QString& /* nodeId */)
+{
+}
+
 void Canvas::addTransition(TransitionItem* /* transition */)
 {
 }
@@ -396,8 +408,8 @@ bool Canvas::beginTransitionFromOutPort(PortItem* port, const QPointF& cursorSce
 
   mTransition->setEvent(config.event);
   mTransition->setName(config.label);
-  mTransition->setStart(node->id(), port->anchorScenePos(), {0, 0}, port->kind());
-  mTransition->setEnd(Constants::TMP_CONNECTION_ID, cursorScenePos, {0, 0}, Types::Port::IN);
+  mTransition->setStart(node->id(), port->anchorScenePos(), {0, 0}, port->kind(), port->subFlow());
+  mTransition->setEnd(Constants::TMP_CONNECTION_ID, cursorScenePos, {0, 0}, Types::Port::IN, Constants::MAIN_SUB_FLOW);
 
   addItem(mTransition);
   parentView()->setDragMode(QGraphicsView::NoDrag);
@@ -612,6 +624,7 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
           if (auto* hitNode = qgraphicsitem_cast<NodeItem*>(candidate))
           {
             node = hitNode;
+            targetPort = hitNode->getPort(Types::Port::IN);
             LOG_DEBUG("Dropped on node");
             break;
           }
@@ -623,6 +636,7 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
             if (parent && parent->type() == NodeItem::Type)
             {
               node = qgraphicsitem_cast<NodeItem*>(parent);
+              targetPort = node->getPort(Types::Port::IN);
               LOG_DEBUG("Dropped on node graphics child");
               break;
             }
@@ -630,11 +644,9 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
         }
       }
 
-      if (node)
+      if (node && targetPort)
       {
-        const QPointF endpoint = targetPort ? targetPort->anchorScenePos() : node->incomingPortAnchor();
-
-        mTransition->setEnd(node->id(), endpoint, {0, 0}, targetPort ? targetPort->kind() : Types::Port::IN);
+        mTransition->setEnd(node->id(), targetPort->anchorScenePos(), {0, 0}, targetPort->kind(), targetPort->subFlow());
 
         const auto info = mTransition->saveInfo();
 
@@ -763,15 +775,17 @@ QList<NodeItem*> Canvas::topLevelSelectedNodes() const
   return result;
 }
 
-QHash<NodeItem*, QList<NodeItem*>> Canvas::groupNodesByParent(const QList<NodeItem*>& nodes) const
+QHash<Canvas::LayoutScope, QList<NodeItem*>> Canvas::groupNodesByParent(const QList<NodeItem*>& nodes) const
 {
-  QHash<NodeItem*, QList<NodeItem*>> groups;
+  auto scopeOf = [](const NodeItem* node) { return LayoutScope{.parent = node->parentNode(), .subFlowId = node->parentSubFlow()}; };
+
+  QHash<LayoutScope, QList<NodeItem*>> groups;
   for (auto* node : nodes)
   {
     if (!node)
       continue;
 
-    groups[node->parentNode()].append(node);
+    groups[scopeOf(node)].append(node);
   }
 
   return groups;
@@ -831,7 +845,7 @@ void Canvas::alignNodeGroup(const QList<NodeItem*>& nodes, Types::AlignmentMode 
           break;
       }
 
-      node->updatePosition(node->pos() + QPointF(deltaX, 0.0));
+      node->updatePosition(node->pos() + QPointF(deltaX, 0.0), Config::NodeMove::Relayout);
     }
   }
   else
@@ -879,7 +893,7 @@ void Canvas::alignNodeGroup(const QList<NodeItem*>& nodes, Types::AlignmentMode 
           break;
       }
 
-      node->updatePosition(node->pos() + QPointF(0.0, deltaY));
+      node->updatePosition(node->pos() + QPointF(0.0, deltaY), Config::NodeMove::Relayout);
     }
   }
 }
@@ -936,7 +950,7 @@ void Canvas::alignNodes(const QList<Types::AlignmentNode>& nodes, Types::Alignme
         continue;
 
       if (!item.pos.isNull())
-        node->updatePosition(item.pos);
+        node->updatePosition(item.pos, Config::NodeMove::Relayout);
     }
 
     autoRoute();
@@ -955,69 +969,6 @@ void Canvas::alignNodes(const QList<Types::AlignmentNode>& nodes, Types::Alignme
     alignNodeGroup(group, mode, direction);
 
   autoRoute();
-}
-
-void Canvas::alignNodesHorizontally(const QList<Types::AlignmentNode>& nodes, Types::AlignmentDirection direction)
-{
-  auto ref = nodes.first();
-  auto refNode = findNodeWithId(ref.id);
-  if (!refNode)
-    return;
-
-  qreal refX = 0;
-  if (direction == Types::AlignmentDirection::START)
-    refX = refNode->pos().x();
-  else if (direction == Types::AlignmentDirection::END)
-    refX = refNode->pos().x() + refNode->boundingRect().width();
-  else
-    refX = refNode->pos().x() + refNode->boundingRect().width() / 2;
-
-  for (Types::AlignmentNode item : nodes)
-  {
-    auto node = findNodeWithId(item.id);
-    if (!node || node == refNode)
-      continue;
-
-    QPointF p = node->pos();
-
-    if (direction == Types::AlignmentDirection::START)
-      node->updatePosition(QPointF(refX, p.y()));
-    else if (direction == Types::AlignmentDirection::END)
-      node->updatePosition(QPointF(refX - node->boundingRect().width(), p.y()));
-    else
-      node->updatePosition(QPointF(refX - node->boundingRect().width() / 2, p.y()));
-  }
-}
-
-void Canvas::alignNodesVertically(const QList<Types::AlignmentNode>& nodes, Types::AlignmentDirection direction)
-{
-  auto ref = nodes.first();
-  auto refNode = findNodeWithId(ref.id);
-  if (!refNode)
-    return;
-
-  qreal refY = 0;
-  if (direction == Types::AlignmentDirection::START)
-    refY = refNode->pos().y();
-  else if (direction == Types::AlignmentDirection::END)
-    refY = refNode->pos().y() + refNode->boundingRect().height();
-  else
-    refY = refNode->pos().y() + refNode->boundingRect().height() / 2;
-
-  for (auto item : nodes)
-  {
-    auto node = findNodeWithId(item.id);
-    if (!node || node == refNode)
-      continue;
-
-    QPointF p = node->pos();
-    if (direction == Types::AlignmentDirection::START)
-      node->updatePosition(QPointF(p.x(), refY));
-    else if (direction == Types::AlignmentDirection::END)
-      node->updatePosition(QPointF(p.x(), refY - node->boundingRect().height()));
-    else
-      node->updatePosition(QPointF(p.x(), refY - node->boundingRect().height() / 2));
-  }
 }
 
 void Canvas::alignSelectedNodes(Types::AlignmentMode mode)
@@ -1059,10 +1010,7 @@ void Canvas::distributeNodes(QList<Types::AlignmentNode> items)
 
   const auto groups = groupNodesByParent(resolved);
   for (auto group : groups)
-  {
     distributeNodeGroupHorizontally(group);
-    // distributeNodeGroupVertically(group);
-  }
 
   autoRoute();
 }
@@ -1076,13 +1024,12 @@ void Canvas::distributeNodeGroupHorizontally(QList<NodeItem*> nodes)
             [](const NodeItem* a, const NodeItem* b) { return a->sceneAlignRect().center().x() < b->sceneAlignRect().center().x(); });
 
   NodeItem* parent = nodes.first()->parentNode();
-
+  const auto parentSubFlow = nodes.first()->parentSubFlow();
   QRectF available;
-
   if (parent)
   {
     // Children inside a container/subflow should use the full available area.
-    available = parent->childAreaSceneRect();
+    available = parent->childAreaSceneRect(parentSubFlow);
 
     constexpr qreal padding = 60.0;
     available.adjust(padding, padding, -padding, -padding);
@@ -1114,7 +1061,7 @@ void Canvas::distributeNodeGroupHorizontally(QList<NodeItem*> nodes)
 
     const qreal deltaX = x - rect.left();
 
-    node->updatePosition(node->pos() + QPointF(deltaX, 0.0));
+    node->updatePosition(node->pos() + QPointF(deltaX, 0.0), Config::NodeMove::Relayout);
 
     x += rect.width() + spacing;
   }
@@ -1129,12 +1076,11 @@ void Canvas::distributeNodeGroupVertically(QList<NodeItem*> nodes)
             [](const NodeItem* a, const NodeItem* b) { return a->sceneAlignRect().center().y() < b->sceneAlignRect().center().y(); });
 
   NodeItem* parent = nodes.first()->parentNode();
-
+  const auto parentSubFlow = nodes.first()->parentSubFlow();
   QRectF available;
-
   if (parent)
   {
-    available = parent->childAreaSceneRect();
+    available = parent->childAreaSceneRect(parentSubFlow);
 
     constexpr qreal padding = 60.0;
     available.adjust(padding, padding, -padding, -padding);
@@ -1162,7 +1108,7 @@ void Canvas::distributeNodeGroupVertically(QList<NodeItem*> nodes)
 
     const qreal deltaY = y - rect.top();
 
-    node->updatePosition(node->pos() + QPointF(0.0, deltaY));
+    node->updatePosition(node->pos() + QPointF(0.0, deltaY), Config::NodeMove::Relayout);
 
     y += rect.height() + spacing;
   }
@@ -1394,23 +1340,27 @@ QVector<QGraphicsItem*> Canvas::cleanTransitionsOfNode(const QString& nodeId)
   return {};
 }
 
-bool Canvas::isDescendantOf(const NodeItem* node, const NodeItem* parent) const
+bool Canvas::isDescendantOf(const NodeItem* node, const NodeItem* parent, const QString& subFlowId) const
 {
   if (!node || !parent)
     return false;
 
   for (auto* current = node->parentNode(); current; current = current->parentNode())
     if (current == parent)
-      return true;
+    {
+      // LOG_INFO("  is {} DescendantOf: {} - {} vs {}", node->nodeId(), current->nodeId(), node->parentSubFlow(), subFlowId);
+      if (subFlowId.isEmpty() || node->parentSubFlow() == subFlowId)
+        return true;
+    }
 
   return false;
 }
 
-void Canvas::onSubFlowCollapsed(NodeItem* node, bool collapsed)
+void Canvas::onSubFlowCollapsed(NodeItem* node, const QString& subflowId, bool collapsed)
 {
 }
 
-void Canvas::onNodeGeometryChanged(NodeItem* node)
+void Canvas::onNodeGeometryChanged(NodeItem* node, const QRectF& oldRect)
 {
 }
 
@@ -1763,8 +1713,8 @@ void Canvas::createTransition(const TransitionSaveInfo& info)
   auto infoPtr = std::make_shared<TransitionSaveInfo>(info);
 
   auto transition = new TransitionItem(infoPtr);
-  transition->setStart(infoPtr->getsrcId(), infoPtr->srcPoint(), infoPtr->srcShift(), infoPtr->srcPort());
-  transition->setEnd(infoPtr->getdstId(), infoPtr->dstPoint(), infoPtr->dstShift(), infoPtr->dstPort());
+  transition->setStart(infoPtr->getsrcId(), infoPtr->srcPoint(), infoPtr->srcShift(), infoPtr->srcPort(), infoPtr->srcPortSubFlow());
+  transition->setEnd(infoPtr->getdstId(), infoPtr->dstPoint(), infoPtr->dstShift(), infoPtr->dstPort(), infoPtr->dstPortSubFlow());
 
   addTransition(transition);
   addItem(transition);
@@ -1772,7 +1722,7 @@ void Canvas::createTransition(const TransitionSaveInfo& info)
   transition->done(source, destination);
 }
 
-void Canvas::reparentNode(const QString& nodeId, const QString& parentId)
+void Canvas::reparentNode(const QString& nodeId, const QString& parentId, const QString& subflow)
 {
   NodeItem* node = findNodeWithId(nodeId);
   if (!node)
@@ -1813,7 +1763,7 @@ void Canvas::reparentNode(const QString& nodeId, const QString& parentId)
   // Update child's semantic parent.
   if (newParent)
   {
-    node->addParent(newParent);
+    node->addParent(newParent, subflow);
     newParent->addChild(node, std::make_shared<NodeSaveInfo>(node->saveInfo()));
     onNodeMoved(newParent, true);
   }
@@ -1842,6 +1792,11 @@ void Canvas::createNode(const NodeSaveInfo& info, NodeCreation creation)
     return;
 
   auto parent = findNodeWithId(info.getparentId());
+  if (info.getparentId().isEmpty())
+    LOG_WARNING("No parent Id provided");
+  if (!parent)
+    LOG_WARNING("No parent for node with id: {}", info.getparentId());
+
   auto infoPtr = std::make_shared<NodeSaveInfo>(info);
   (void)createNode(creation, infoPtr, info.getposition(), parent);
 }
@@ -1891,7 +1846,7 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
 
   if (parent != nullptr)
   {
-    node->addParent(parent);
+    node->addParent(parent, info->getParentSubFlow());
     parent->addChild(node, info);
   }
 
@@ -1899,10 +1854,10 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
   node->nodeModified = [this](NodeItem* item) { emit nodeModified(item); };
   node->flowAdded = [this](Flow* flow, NodeItem* node) { addedItemFlow(flow, node); };
   node->nodeMoved = [this](NodeItem* node, bool done) { onNodeMoved(node, done); };
-  node->geometryChanged = [this](NodeItem* node) { onNodeGeometryChanged(node); };
+  node->geometryChanged = [this](NodeItem* node, const QRectF& oldRect) { onNodeGeometryChanged(node, oldRect); };
   node->nodeHovered = [this](NodeItem* node, bool entered) { onNodeHovered(node, entered); };
   node->focusOn = [this](NodeItem* node, const QString& nodeId, const QString& flowId, int type) { onNodeFocusOn(node, nodeId, flowId, type); };
-  node->subflowCollapsed = [this](NodeItem* node, bool collapsed) { onSubFlowCollapsed(node, collapsed); };
+  node->subflowCollapsed = [this](NodeItem* node, const QString& subflowId, bool collapsed) { onSubFlowCollapsed(node, subflowId, collapsed); };
   node->nodeControlRequested = [this](NodeItem* node, const QPointF& scenePos, maki::ControlWidget* control) {
     onNodeControlRequested(node, scenePos, control);
   };

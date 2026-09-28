@@ -215,7 +215,7 @@ public:
    */
   void removeTransition(const TransitionSaveInfo& info);
 
-  void reparentNode(const QString& nodeId, const QString& parentId);
+  void reparentNode(const QString& nodeId, const QString& parentId, const QString& subflow);
 
   /**
    * @brief Requests alignment of nodes.
@@ -239,7 +239,25 @@ public:
   void alignNodeGroup(const QList<NodeItem*>& nodes, Types::AlignmentMode mode, Types::AlignmentDirection direction);
   void alignSelectedNodes(Types::AlignmentMode mode);
   QList<NodeItem*> topLevelSelectedNodes() const;
-  QHash<NodeItem*, QList<NodeItem*>> groupNodesByParent(const QList<NodeItem*>& nodes) const;
+
+  struct LayoutScope
+  {
+    NodeItem* parent = nullptr;
+    QString subFlowId;
+
+    friend bool operator==(const LayoutScope&, const LayoutScope&) = default;
+
+    friend size_t qHash(const LayoutScope& scope, size_t seed = 0) noexcept
+    {
+      seed = ::qHash(reinterpret_cast<quintptr>(scope.parent), seed);
+
+      seed = ::qHash(scope.subFlowId, seed);
+
+      return seed;
+    }
+  };
+
+  QHash<LayoutScope, QList<NodeItem*>> groupNodesByParent(const QList<NodeItem*>& nodes) const;
 
   void requestDistributeNodes();
   void distributeNodes(QList<Types::AlignmentNode> items);
@@ -269,6 +287,7 @@ public:
 
   void selectAll();
 
+  virtual void ensureMinimumSpacing(const QString& nodeId);
 signals:
   /**
    * @brief Emitted when a node is selected.
@@ -456,8 +475,8 @@ protected:
   virtual QVector<TransitionSaveInfo> transitionsOfNode(const QString& nodeId);
   virtual QVector<QGraphicsItem*> cleanTransitionsOfNode(const QString& nodeId);
   virtual void onNodeMoved(NodeItem* node, bool done);
-  virtual void onNodeGeometryChanged(NodeItem* node);
-  virtual void onSubFlowCollapsed(NodeItem* node, bool collapsed);
+  virtual void onNodeGeometryChanged(NodeItem* node, const QRectF& oldRect);
+  virtual void onSubFlowCollapsed(NodeItem* node, const QString& subflowId, bool collapsed);
   virtual void showSimulationControls(NodeItem* node, maki::ControlWidget* controls, const QColor& highlightColor);
 
   virtual bool insertDroppedNodeOnTransition(TransitionItem* transition, NodeSaveInfo info);
@@ -481,7 +500,7 @@ protected:
    */
   CanvasView* parentView() const;
 
-  bool isDescendantOf(const NodeItem* node, const NodeItem* parent) const;
+  bool isDescendantOf(const NodeItem* node, const NodeItem* parent, const QString& subFlowId = "") const;
 
 private:
   NodeItem* mHoveredNode = nullptr;       /// Pointer to the hovered node.
@@ -523,22 +542,6 @@ private:
    * @return List of NodeItem pointers.
    */
   QList<NodeItem*> selectedNodes() const;
-
-  /**
-   * @brief Aligns nodes horizontally based on the given parameters.
-   *
-   * @param items List of alignment nodes.
-   * @param direction The alignment direction.
-   */
-  void alignNodesHorizontally(const QList<Types::AlignmentNode>& items, Types::AlignmentDirection direction);
-
-  /**
-   * @brief Aligns nodes vertically based on the given parameters.
-   *
-   * @param items List of alignment nodes.
-   * @param direction The alignment direction.
-   */
-  void alignNodesVertically(const QList<Types::AlignmentNode>& items, Types::AlignmentDirection direction);
 
   // Context menu
   void createAlignMenu(QMenu* alignMenu, const QList<Types::AlignmentNode>& items);  /// Creates a context menu for alignment options.

@@ -17,6 +17,7 @@ static const QString SCALE = "scale";
 static const QString NODE_ID = "nodeId";
 static const QString POSITION = "position";
 static const QString PARENT_ID = "parentId";
+static const QString PARENT_SUB_FLOW_ID = "parentSubFlowId";
 static const QString MODIFIABLE = "modifiable";
 static const QString OWNER = "owner";
 static const QString INFO = "info";
