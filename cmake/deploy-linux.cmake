@@ -56,9 +56,32 @@ else()
   message(WARNING "No Qt-related libraries detected in ldd output for ${APP_PATH}")
 endif()
 
-# TODO: Make this more robust
-file(COPY_FILE "${CMAKE_PREFIX_PATH}/lib/libQt6XcbQpa.so.6.8.3" "${CMAKE_INSTALL_PREFIX}/lib/libQt6XcbQpa.so.6")
-file(COPY_FILE "${CMAKE_PREFIX_PATH}/lib/libQt6Svg.so.6.8.3" "${CMAKE_INSTALL_PREFIX}/lib/libQt6Svg.so.6")
+# ---------------------------------------------------------------------------
+# ICU
+#
+# Qt's prebuilt Linux binaries depend on the ICU version shipped together
+# with that Qt installation. These cannot be assumed to exist on the target
+# Linux distribution.
+file(GLOB ICU_LIBS
+  "${QT_RUNTIME_PREFIX}/lib/libicuuc.so.*"
+  "${QT_RUNTIME_PREFIX}/lib/libicui18n.so.*"
+  "${QT_RUNTIME_PREFIX}/lib/libicudata.so.*"
+)
+
+foreach(lib IN LISTS ICU_LIBS)
+  get_filename_component(basename "${lib}" NAME)
+  message(STATUS "Bundling ICU library: ${basename}")
+  file(COPY_FILE
+    "${lib}"
+    "${CMAKE_INSTALL_PREFIX}/lib/${basename}"
+    ONLY_IF_DIFFERENT
+  )
+endforeach()
+
+# ---------------------------------------------------------------------------
+# Explicit Qt libraries currently needed by the deployment.
+file(COPY_FILE "${CMAKE_PREFIX_PATH}/lib/libQt6XcbQpa.so.6.8.3" "${CMAKE_INSTALL_PREFIX}/lib/libQt6XcbQpa.so.6" ONLY_IF_DIFFERENT)
+file(COPY_FILE "${CMAKE_PREFIX_PATH}/lib/libQt6Svg.so.6.8.3" "${CMAKE_INSTALL_PREFIX}/lib/libQt6Svg.so.6" ONLY_IF_DIFFERENT)
 
 # Hopefully we never need this awful creation again, but I will keep it here just in case
 # Copy the stuff needed by qtwebengine
