@@ -11,6 +11,7 @@
 
 #include "keys.h"
 #include "mission_parameter.h"
+#include "notifications.h"
 
 FlowCallNode::FlowCallNode(const QString& id, std::shared_ptr<NodeSaveInfo> info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig,
                            QGraphicsItem* parent)
@@ -57,6 +58,7 @@ void FlowCallNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
   const auto [componentId, flowId] = calledFlowId();
   if (componentId.isEmpty() || flowId.isEmpty())
   {
+    NOTIFY_WARNING(Config::APPLICATION_NAME.toStdString(), "Cannot focus on empty flow");
     NodeItem::mouseDoubleClickEvent(event);
     return;
   }

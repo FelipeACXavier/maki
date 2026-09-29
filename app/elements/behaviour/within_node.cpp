@@ -4,7 +4,7 @@
 
 #include "elements/behaviour/sub_flow.h"
 
-static const qreal SUB_FLOW_SPACING = 30.0;
+static const qreal SUB_FLOW_SPACING = 5.0;
 static const qreal SUB_FLOW_WIDTH = 400.0;
 static const qreal SUB_FLOW_HEIGHT = 220.0;
 static const int ICON_WIDTH = 50;
@@ -23,7 +23,7 @@ WithinNode::WithinNode(const QString& id, std::shared_ptr<NodeSaveInfo> info, co
   mElseFlow = new SubFlow(ELSE_FLOW_ID, this);
   mDoFlow->setCollapsed(true);
   mElseFlow->setCollapsed(true);
-  mDoFlow->setTitle("Try to do");
+  mDoFlow->setTitle("Do");
   mElseFlow->setTitle("On timeout");
   mDoFlow->setTitlePosition(Config::ControlPosition::Top, PADDING, PADDING);
   mElseFlow->setTitlePosition(Config::ControlPosition::Top, PADDING, PADDING);
@@ -51,12 +51,21 @@ QList<SubFlow*> WithinNode::subFlows() const
 void WithinNode::createPorts()
 {
   // Add the placeholder ports for the sub-flows
-  mPorts[{DO_FLOW_ID, Types::Port::IN}] = new PortItem(Types::Port::IN, DO_FLOW_ID, true, this);
-  mPorts[{ELSE_FLOW_ID, Types::Port::IN}] = new PortItem(Types::Port::IN, ELSE_FLOW_ID, true, this);
+  auto doPort = new PortItem(Types::Port::IN, DO_FLOW_ID, true, this);
+  doPort->setCanFinishTranstions(false);
+  mPorts[{DO_FLOW_ID, Types::Port::IN}] = doPort;
+
+  auto elsePort = new PortItem(Types::Port::IN, ELSE_FLOW_ID, true, this);
+  elsePort->setCanFinishTranstions(false);
+  mPorts[{ELSE_FLOW_ID, Types::Port::IN}] = elsePort;
 
   // Create the normal ports
   for (const auto& port : config()->ports)
-    mPorts[{Constants::MAIN_SUB_FLOW, port.type}] = new PortItem(port.type, Constants::MAIN_SUB_FLOW, true, this);
+  {
+    auto item = new PortItem(port.type, Constants::MAIN_SUB_FLOW, true, this);
+    item->setCanCreateTranstions(port.type != Types::Port::IN);
+    mPorts[{Constants::MAIN_SUB_FLOW, port.type}] = item;
+  }
 
   layoutSubFlows();
 }
@@ -292,9 +301,9 @@ void WithinNode::setProperty(const QString& key, const maki::Value& value)
   {
     const auto iterProp = getProperty(TIMEOUT);
     if (const auto iter = maki::asValue(iterProp->getvalue()))
-      mDoFlow->setTitle("Try to do within " + iter->toStringValue() + " ms");
+      mDoFlow->setTitle("Do within " + iter->toStringValue() + " ms");
     else
-      mDoFlow->setTitle("Try to do");
+      mDoFlow->setTitle("Do");
   }
 }
 
@@ -328,15 +337,15 @@ void WithinNode::layoutSubFlowMarkers()
         break;
 
       case Types::Port::OUT:
-        localAnchor = {rect.right(), rect.top() + rect.height() / 2.0};
+        localAnchor = {rect.right(), rect.center().y()};
         break;
 
       case Types::Port::ERROR:
-        localAnchor = {rect.right(), rect.top() + 3.0 * rect.height() / 4.0};
+        localAnchor = {rect.left() + 2 * rect.width() / 3, rect.top()};
         break;
 
       case Types::Port::ABORT:
-        localAnchor = {rect.right(), rect.top() + rect.height() / 4.0};
+        localAnchor = {rect.left() + rect.width() / 3, rect.top()};
         break;
 
       default:
@@ -344,6 +353,7 @@ void WithinNode::layoutSubFlowMarkers()
     }
     port->setAnchorOverride(this->mapToScene(localAnchor));
   }
+
   const QRectF doRect = doFlow->boundingRect();
   const QRectF elseRect = elseFlow->boundingRect();
   auto doPort = getPort(Types::Port::IN, DO_FLOW_ID);
@@ -376,6 +386,8 @@ void WithinNode::toggleCollapsed(SubFlow* flow, bool collapsed)
   for (auto& child : children())
     if (child && child->parentSubFlow() == flow->id())
       child->setVisible(!collapsed);
+
+  layoutSubFlows();
 
   if (subflowCollapsed)
     subflowCollapsed(this, flow->id(), collapsed);

@@ -23,7 +23,8 @@ public:
    * @param configTable A shared pointer to the ConfigurationTable for configuration data.
    * @param parent An optional QObject parent for this canvas.
    */
-  BehaviourCanvas(Flow* flow, const QString& flowOwner, std::shared_ptr<EdgeRouter> router, QObject* parent = nullptr);
+  BehaviourCanvas(std::shared_ptr<FlowSaveInfo> flow, const QString& flowOwner, std::shared_ptr<EdgeRouter> router, QObject* parent = nullptr);
+  ~BehaviourCanvas();
 
   /**
    * @brief Retrieves the type of library associated with this canvas.
@@ -69,6 +70,8 @@ public:
    * @brief Removed the TransitionItem from the Flow managed by this Canvas
    */
   void removeTransition(TransitionItem* transition) override;
+
+  void removeTransition(const TransitionSaveInfo& info) override;
 
   /**
    * @brief Callback triggered whenever a node moves significantly

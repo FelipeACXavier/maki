@@ -906,13 +906,9 @@ Flow* NodeItem::createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo
 
 Flow* NodeItem::getFlow(const QString& flowId) const
 {
-  LOG_DEBUG("getFlow: {}", id());
   for (const auto& flow : mFlows)
-  {
-    LOG_DEBUG("  {} vs {}", flowId, flow->id());
     if (flow->id() == flowId)
       return flow;
-  }
 
   return nullptr;
 }

@@ -311,6 +311,7 @@ void MainWindow::startUI()
 {
   CanvasView* currentCanvas = static_cast<CanvasView*>(mCanvasPanel->currentWidget());
   StructureCanvas* canvas = new StructureCanvas(mStorage, Config::MAIN_CANVAS, mRouter, currentCanvas);
+  bindCanvas(canvas);
 
   mActiveCanvas = canvas;
   currentCanvas->setScene(canvas);
@@ -550,9 +551,6 @@ void MainWindow::bind()
       }
     }
   });
-
-  // Canvas stuff =============================================================
-  bindCanvas();
 }
 
 void MainWindow::changeEvent(QEvent* event)
@@ -565,33 +563,31 @@ void MainWindow::changeEvent(QEvent* event)
   }
 }
 
-void MainWindow::bindCanvas()
+void MainWindow::bindCanvas(Canvas* canvas)
 {
-  connect(canvas(), &Canvas::openFlow, this, &MainWindow::onOpenFlow);
-  connect(canvas(), &Canvas::nodeSelected, this, &MainWindow::onNodeSelected);
-  connect(canvas(), &Canvas::nodeAdded, this, &MainWindow::onNodeAdded);
-  connect(canvas(), &Canvas::nodeRemoved, this, &MainWindow::onNodeRemoved);
-  connect(canvas(), &Canvas::nodeModified, this, &MainWindow::onNodeModified);
-  connect(canvas(), &Canvas::focusOn, this, &MainWindow::focusOn);
-
-  connect(canvas(), &Canvas::createEvent, this, [this](NodeItem* node) {
+  connect(canvas, &Canvas::openFlow, this, &MainWindow::onOpenFlow);
+  connect(canvas, &Canvas::nodeSelected, this, &MainWindow::onNodeSelected);
+  connect(canvas, &Canvas::nodeAdded, this, &MainWindow::onNodeAdded);
+  connect(canvas, &Canvas::nodeRemoved, this, &MainWindow::onNodeRemoved);
+  connect(canvas, &Canvas::nodeModified, this, &MainWindow::onNodeModified);
+  connect(canvas, &Canvas::focusOn, this, &MainWindow::focusOn);
+  connect(canvas, &Canvas::createEvent, this, [this](NodeItem* node) {
     if (mPropertiesMenu)
       LOG_WARN_ON_FAILURE(mPropertiesMenu->onCreateEvent(node, false));
   });
-  connect(canvas(), &Canvas::transitionSelected, mPropertiesMenu, &PropertiesMenu::onTransitionSelected);
+  connect(canvas, &Canvas::transitionSelected, mPropertiesMenu, &PropertiesMenu::onTransitionSelected);
 }
 
-void MainWindow::unbindCanvas()
+void MainWindow::unbindCanvas(Canvas* canvas)
 {
-  disconnect(canvas(), &Canvas::openFlow, this, &MainWindow::onOpenFlow);
-  disconnect(canvas(), &Canvas::nodeSelected, this, &MainWindow::onNodeSelected);
-  disconnect(canvas(), &Canvas::nodeAdded, this, &MainWindow::onNodeAdded);
-  disconnect(canvas(), &Canvas::nodeRemoved, this, &MainWindow::onNodeRemoved);
-  disconnect(canvas(), &Canvas::nodeModified, this, &MainWindow::onNodeModified);
-  disconnect(canvas(), &Canvas::focusOn, this, &MainWindow::focusOn);
-
-  disconnect(canvas(), &Canvas::createEvent, this, nullptr);
-  disconnect(canvas(), &Canvas::transitionSelected, mPropertiesMenu, &PropertiesMenu::onTransitionSelected);
+  disconnect(canvas, &Canvas::openFlow, this, &MainWindow::onOpenFlow);
+  disconnect(canvas, &Canvas::nodeSelected, this, &MainWindow::onNodeSelected);
+  disconnect(canvas, &Canvas::nodeAdded, this, &MainWindow::onNodeAdded);
+  disconnect(canvas, &Canvas::nodeRemoved, this, &MainWindow::onNodeRemoved);
+  disconnect(canvas, &Canvas::nodeModified, this, &MainWindow::onNodeModified);
+  disconnect(canvas, &Canvas::focusOn, this, &MainWindow::focusOn);
+  disconnect(canvas, &Canvas::createEvent, this, nullptr);
+  disconnect(canvas, &Canvas::transitionSelected, mPropertiesMenu, &PropertiesMenu::onTransitionSelected);
 }
 
 void MainWindow::bindShortcuts()
@@ -1195,6 +1191,7 @@ void MainWindow::onActionEditPipeline(const QString& pipelineId)
   newView->setProperty(ConfigKeys::ID.toUtf8(), pipeline->getid());
 
   PipelineCanvas* canvas = new PipelineCanvas(pipeline, mRouter, newView);
+  bindCanvas(canvas);
   newView->setScene(canvas);
   canvas->populate(*pipeline);
 
@@ -1309,7 +1306,7 @@ void MainWindow::onFileLoaded(const QString& file, const SaveInfo& info, const Q
   mStorage->clearNodes();
 
   // Repopulate the canvas (and the storage)
-  canvas()->loadFromSave(info);
+  rootCanvas()->loadFromSave(info);
 
   if (mMissionParameters)
     mMissionParameters->setStorage(mStorage);
@@ -1363,35 +1360,51 @@ void MainWindow::onNodeSelected(NodeItem* node, bool selected)
   LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeSelected(node, selected));
 }
 
-void MainWindow::onNodeAdded(NodeItem* node)
+void MainWindow::onNodeAdded(Canvas* canvas, NodeItem* node)
 {
+  if (!canvas)
+  {
+    LOG_WARNING("A node was added but no canvas was provided");
+    return;
+  }
+
   if (!node)
   {
     LOG_WARNING("A node was added but no node was provided");
     return;
   }
 
-  LOG_WARNING("NODE ADDED: {}", node->nodeId());
-  LOG_WARN_ON_FAILURE(mSystemMenu->onNodeAdded(canvas()->id(), node, canvas()->type()));
+  LOG_WARN_ON_FAILURE(mSystemMenu->onNodeAdded(canvas->id(), node, canvas->type()));
   LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeAdded(node));
 }
 
-void MainWindow::onNodeRemoved(const QString& nodeId, const QString& parentId)
+void MainWindow::onNodeRemoved(Canvas* canvas, const QString& nodeId, const QString& parentId)
 {
-  LOG_WARNING("NODE REMOVED: {}", nodeId);
-  LOG_WARN_ON_FAILURE(mSystemMenu->onNodeRemoved(canvas()->id(), nodeId, parentId));
+  if (!canvas)
+  {
+    LOG_WARNING("A node was added but no canvas was provided");
+    return;
+  }
+
+  LOG_WARN_ON_FAILURE(mSystemMenu->onNodeRemoved(canvas->id(), nodeId, parentId));
   LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeRemoved(nodeId));
 }
 
-void MainWindow::onNodeModified(NodeItem* node)
+void MainWindow::onNodeModified(Canvas* canvas, NodeItem* node)
 {
+  if (!canvas)
+  {
+    LOG_WARNING("A node was added but no canvas was provided");
+    return;
+  }
+
   if (!node)
   {
     LOG_WARNING("A node was removed but no node was provided");
     return;
   }
 
-  LOG_WARN_ON_FAILURE(mSystemMenu->onNodeModified(canvas()->id(), node));
+  LOG_WARN_ON_FAILURE(mSystemMenu->onNodeModified(canvas->id(), node));
 }
 
 void MainWindow::onCanvasTabChanged(int index)
@@ -1400,15 +1413,9 @@ void MainWindow::onCanvasTabChanged(int index)
   if (!newCanvas)
     return;
 
-  // Disconnect signals from the previous canvas
-  if (canvas())
-    unbindCanvas();
-
   mActiveCanvas = qobject_cast<Canvas*>(newCanvas->scene());
   if (!canvas())
     return;
-
-  bindCanvas();
 
   auto libIndex = libraryTypeToIndex(canvas()->type());
   mPalette->setCurrentIndex(libIndex);
@@ -1446,15 +1453,17 @@ void MainWindow::onCanvasTabChanged(int index)
 
 void MainWindow::closeCanvasTab(int index)
 {
-  if (CanvasView* closedCanvas = qobject_cast<CanvasView*>(mCanvasPanel->widget(index)))
+  QWidget* page = mCanvasPanel->widget(index);
+  if (!page)
+    return;
+
+  if (CanvasView* closedCanvas = qobject_cast<CanvasView*>(page))
   {
     auto toBeRemoved = qobject_cast<Canvas*>(closedCanvas->scene());
     mUndoGroup->removeStack(toBeRemoved->undoStack());
-
     if (closedCanvas->scene() == canvas())
     {
-      unbindCanvas();
-
+      unbindCanvas(toBeRemoved);
       if (index > 0)
       {
         // The previous tab becomes the new active tab
@@ -1463,8 +1472,6 @@ void MainWindow::closeCanvasTab(int index)
           mActiveCanvas = qobject_cast<Canvas*>(newCanvas->scene());
           if (canvas())
           {
-            bindCanvas();
-
             if (canvas()->type() == Types::LibraryTypes::PIPELINE)
             {
               // If we are closing a pipeline canvas, then we must hide it
@@ -1490,24 +1497,31 @@ void MainWindow::closeCanvasTab(int index)
   // {
   //   Q_UNUSED(tab);
   // }
-  else if (QPlainTextEdit* tab = qobject_cast<QPlainTextEdit*>(mCanvasPanel->widget(index)))
+  else if (QPlainTextEdit* tab = qobject_cast<QPlainTextEdit*>(page))
   {
     LOG_DEBUG("Closing editor tab");
     Q_UNUSED(tab);
   }
-  else if (ProcessTab* tab = qobject_cast<ProcessTab*>(mCanvasPanel->widget(index)))
+  else if (ProcessTab* tab = qobject_cast<ProcessTab*>(page))
   {
     tab->hide();
   }
 
   mCanvasPanel->removeTab(index);
+  page->deleteLater();
 }
 
-void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId, const maki::FocusProperties& properties, int& createdIndex)
+void MainWindow::onOpenFlow(std::shared_ptr<FlowSaveInfo> flow, const QString& nodeId, const maki::FocusProperties& properties, int& createdIndex)
 {
-  QString flowName;
-  if (flow == nullptr && mPropertiesMenu)
+  if (!flow)
   {
+    if (!mPropertiesMenu)
+    {
+      LOG_WARNING("System not initialized");
+      createdIndex = -1;
+      return;
+    }
+
     auto node = rootCanvas()->findNodeWithId(nodeId);
     if (!node)
     {
@@ -1519,20 +1533,15 @@ void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId, const maki::Focus
     const auto ret = mPropertiesMenu->onCreateEvent(node, true);
     if (!ret.IsSuccess())
     {
-      LOG_WARNING("Could not create flow for node: {}", nodeId);
+      LOG_WARNING("Could not create flow for node {}: {}", nodeId, ret.ErrorMessage());
       createdIndex = -1;
       return;
     }
 
     flow = ret.Value();
-    flowName = flow->name();
-  }
-  else
-  {
-    flowName = flow->name();
   }
 
-  if (flowName.isEmpty() || flow == nullptr)
+  if (!flow)
   {
     LOG_INFO("No name provided, skipping flow creation");
     createdIndex = -1;
@@ -1540,10 +1549,11 @@ void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId, const maki::Focus
   }
 
   // Check if the flow is already open in some tab
-  const QString tabId = QString::fromStdString(std::format("{}_{}", flow->id(), nodeId));
+  const QString tabId = QString::fromStdString(std::format("{}_{}", flow->getid(), nodeId));
   for (int i = 1; i < mCanvasPanel->count(); ++i)
   {
     auto prop = mCanvasPanel->widget(i)->property(ConfigKeys::ID.toUtf8());
+    LOG_DEBUG("Trying to open: {} vs {}", prop.toString(), tabId);
     if (!prop.isValid() || prop.toString() != tabId)
       continue;
 
@@ -1554,6 +1564,7 @@ void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId, const maki::Focus
 
   CanvasView* newView = new CanvasView(mCanvasPanel);
   BehaviourCanvas* canvas = new BehaviourCanvas(flow, nodeId, mRouter, newView);
+  bindCanvas(canvas);
   canvas->setupInitialNodes();
   newView->setScene(canvas);
 
@@ -1563,11 +1574,11 @@ void MainWindow::onOpenFlow(Flow* flow, const QString& nodeId, const maki::Focus
 
   LOG_DEBUG("Set tab property to {}", tabId);
   newView->setProperty(ConfigKeys::ID.toUtf8(), tabId);
-  createdIndex = mCanvasPanel->addTab(newView, QIcon(":/icons/behaviour.svg"), flowName);
+  createdIndex = mCanvasPanel->addTab(newView, QIcon(":/icons/behaviour.svg"), flow->getname());
   mCanvasPanel->setCurrentWidget(newView);
 
   // Populate after creation
-  canvas->populate(*flow->config());
+  canvas->populate(*flow);
 }
 
 void MainWindow::focusOn(const QString& nodeId, const QString& flowId, const maki::FocusProperties& properties)
@@ -1584,7 +1595,7 @@ void MainWindow::focusOn(const QString& nodeId, const QString& flowId, const mak
     }
 
     int index = -1;
-    onOpenFlow(flow, nodeId, properties, index);
+    onOpenFlow(flow->config(), node->id(), properties, index);
     if (index < 0)
     {
       LOG_WARNING("Could not open flow with id: {}", flowId);
@@ -1604,7 +1615,7 @@ void MainWindow::focusOn(const QString& nodeId, const QString& flowId, const mak
         return;
 
       int index = -1;
-      onOpenFlow(flow, nodeId, properties, index);
+      onOpenFlow(flow->config(), nodeId, properties, index);
       if (index < 0)
         return;
 
@@ -1625,7 +1636,7 @@ void MainWindow::focusOn(const QString& nodeId, const QString& flowId, const mak
       return;
 
     int index = -1;
-    onOpenFlow(flow, nodeId, properties, index);
+    onOpenFlow(flow->config(), node->id(), properties, index);
     if (index < 0 || index >= mCanvasPanel->count())
       return;
 

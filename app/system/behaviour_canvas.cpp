@@ -13,12 +13,21 @@
 
 static constexpr qreal MIN_NODE_SPACING = 40.0;
 
-BehaviourCanvas::BehaviourCanvas(Flow* flow, const QString& flowOwner, std::shared_ptr<EdgeRouter> router, QObject* parent)
-    : Canvas(flow->id(), router, parent)
-    , mFlow(flow)
+BehaviourCanvas::BehaviourCanvas(std::shared_ptr<FlowSaveInfo> flow, const QString& flowOwner, std::shared_ptr<EdgeRouter> router, QObject* parent)
+    : Canvas(flow->getid(), router, parent)
+    , mFlow(new Flow(flow->getname(), flow))
     , mOwner(flowOwner)
 {
-  LOG_DEBUG("Opening canvas with flow {} of {}", flow->id(), flowOwner);
+  LOG_DEBUG("Opening canvas with flow {} of {}", flow->getid(), flowOwner);
+}
+
+BehaviourCanvas::~BehaviourCanvas()
+{
+  if (mFlow)
+  {
+    delete mFlow;
+    mFlow = nullptr;
+  }
 }
 
 void BehaviourCanvas::setupInitialNodes()
@@ -248,6 +257,11 @@ void BehaviourCanvas::removeTransition(TransitionItem* transition)
   }
 }
 
+void BehaviourCanvas::removeTransition(const TransitionSaveInfo& info)
+{
+  Canvas::removeTransition(info);
+}
+
 void BehaviourCanvas::onSubFlowCollapsed(NodeItem* owner, const QString& subflowId, bool collapsed)
 {
   if (!owner || !mFlow)
@@ -382,7 +396,6 @@ void BehaviourCanvas::onNodeMoved(NodeItem* node, bool done)
     return;
 
   QList<TransitionItem*> transitions;
-
   for (auto* transition : mFlow->transitions())
   {
     if (!transition)
@@ -390,7 +403,6 @@ void BehaviourCanvas::onNodeMoved(NodeItem* node, bool done)
 
     auto* source = transition->source();
     auto* destination = transition->destination();
-
     if (!source || !destination)
       continue;
 
@@ -523,7 +535,7 @@ void BehaviourCanvas::ensureMinimumSpacing(const QString& nodeId)
     }
   }
 
-  alignNodeGroup(neighbours, Types::AlignmentMode::VERTICAL, Types::AlignmentDirection::CENTER);
+  // alignNodeGroup(neighbours, Types::AlignmentMode::VERTICAL, Types::AlignmentDirection::CENTER);
   // const auto groups = groupNodesByParent(neighbours);
   // for (auto group : groups)
   //   distributeNodeGroupHorizontally(group);
@@ -594,9 +606,7 @@ void BehaviourCanvas::createNodeContextMenu(QMenu* menu, NodeItem* node, const Q
       else if (sourceSelected && !destinationSelected)
       {
         ++outgoingCount;
-
         endNode = source->saveInfo();
-
         outgoingTransition = transition->saveInfo();
       }
       // ------------------------------------------------------------

@@ -8,13 +8,10 @@
 #include <QtGlobal>
 
 #include "app_configs.h"
-#include "logging.h"
-#include "node.h"
 
 const qreal MAX_WIDTH = 60.0;
 const qreal MAX_HEIGHT = 60.0;
 const qreal LABEL_H_SPACING = 8;
-const qreal LABEL_V_SPACING = 2;
 
 NodeBase::NodeBase(const QString& id, const QString& nodeId, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
     : QGraphicsItem(parent)
@@ -85,7 +82,7 @@ QRectF NodeBase::labelBoundingRect() const
     return QRectF();
 
   const auto bounds = drawingRect(nodeRect());
-  return QRectF(bounds.left() - LABEL_H_SPACING, bounds.bottom() + LABEL_V_SPACING, bounds.width() + 2 * LABEL_H_SPACING, mLabelFont.pointSizeF() * 3);
+  return QRectF(bounds.left() - LABEL_H_SPACING, bounds.bottom(), bounds.width() + 2 * LABEL_H_SPACING, mLabelFont.pointSizeF() * 3);
 }
 
 QRectF NodeBase::scaledRect() const

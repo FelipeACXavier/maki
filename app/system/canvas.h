@@ -213,7 +213,7 @@ public:
    *
    * @param info The save information for the transition.
    */
-  void removeTransition(const TransitionSaveInfo& info);
+  virtual void removeTransition(const TransitionSaveInfo& info);
 
   void reparentNode(const QString& nodeId, const QString& parentId, const QString& subflow);
 
@@ -305,7 +305,7 @@ signals:
    *
    * @param node Pointer to the added node.
    */
-  void nodeAdded(NodeItem* node);
+  void nodeAdded(Canvas* canvas, NodeItem* node);
 
   /**
    * @brief Emitted when a node is removed.
@@ -313,14 +313,14 @@ signals:
    * @param nodeId The ID of the removed node.
    * @param parentId The ID of the parent node.
    */
-  void nodeRemoved(const QString& nodeId, const QString& parentId);
+  void nodeRemoved(Canvas* canvas, const QString& nodeId, const QString& parentId);
 
   /**
    * @brief Emitted when a node is modified.
    *
    * @param node Pointer to the modified node.
    */
-  void nodeModified(NodeItem* node);
+  void nodeModified(Canvas* canvas, NodeItem* node);
 
   /**
    * @brief Emitted when a transition is selected.
@@ -342,7 +342,7 @@ signals:
    * @param flow Pointer to the opened flow.
    * @param node Pointer to the node associated with the flow.
    */
-  void openFlow(Flow* flow, const QString& nodeId, const maki::FocusProperties& properties, int& createdIndex);
+  void openFlow(std::shared_ptr<FlowSaveInfo> flow, const QString& nodeId, const maki::FocusProperties& properties, int& createdIndex);
 
   /**
    * @brief Emitted when the user requests to focus on a node from the Canvas.

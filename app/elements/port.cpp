@@ -37,6 +37,8 @@ PortItem::PortItem(Types::Port kind, const QString& subFlowId, bool isMarker, QG
     , mIsMarker(isMarker)
     , mKind(kind)
     , mSubFlow(subFlowId)
+    , mCanCreateTransitions(true)
+    , mCanEndTransitions(true)
     , mCurrentIconPath("")
 {
   setAcceptHoverEvents(true);
@@ -105,19 +107,20 @@ bool PortItem::isMarker() const
 
 bool PortItem::canStartTransition() const
 {
-  return isOutgoing() || (isMarker() && isIncoming());
+  return (!isMarker() && isOutgoing()) || (isMarker() && canCreateTransitions());
 }
 
 bool PortItem::canEndTransition() const
 {
-  return isIncoming() || (isMarker() && isOutgoing());
+  return (!isMarker() && isIncoming()) || (isMarker() && canFinishTransitions());
 }
 
 QSizeF PortItem::getSize() const
 {
   if (isMarker())
-    return QSizeF{20, 17};
-  else if (isAbort())
+    return isError() || isAbort() ? QSizeF{17, 20} : QSizeF{20, 17};
+
+  if (isAbort())
     return QSizeF{kAbortPortSize, kAbortPortSize};
   else if (isError())
     return QSizeF{kErrorPortSize, kErrorPortSize};
@@ -185,8 +188,9 @@ QPointF PortItem::anchorScenePos() const
 
 void PortItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
 {
-  if (isOutgoing())
+  if (canStartTransition())
     setCursor(Qt::CrossCursor);
+
   QGraphicsItem::hoverEnterEvent(event);
 }
 
@@ -254,9 +258,9 @@ QString PortItem::iconPath() const
     case Types::Port::OUT:
       return isMarker() ? "node_success.svg" : "port_out.svg";
     case Types::Port::ABORT:
-      return isMarker() ? "node_failure.svg" : "port_abort.svg";
+      return isMarker() ? "node_abort.svg" : "port_abort.svg";
     case Types::Port::ERROR:
-      return isMarker() ? "node_failure.svg" : "port_error.svg";
+      return isMarker() ? "port_failure.svg" : "port_error.svg";
     case Types::Port::IN:
     default:
       return isMarker() ? "node_start.svg" : "port_in.svg";
@@ -276,4 +280,24 @@ void PortItem::updateRenderer()
 
   mRenderer->load(path);
   update();
+}
+
+bool PortItem::canCreateTransitions() const
+{
+  return mCanCreateTransitions;
+}
+
+void PortItem::setCanCreateTranstions(bool canCreate)
+{
+  mCanCreateTransitions = canCreate;
+}
+
+bool PortItem::canFinishTransitions() const
+{
+  return mCanEndTransitions;
+}
+
+void PortItem::setCanFinishTranstions(bool canEnd)
+{
+  mCanEndTransitions = canEnd;
 }

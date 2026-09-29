@@ -673,7 +673,7 @@ int IntegerWidget::getValue() const
     return value;
 
   assert(false && "Tried to get an integer from a field that does not contain an integer");
-  return INT32_MIN;
+  return std::numeric_limits<int>::max();
 }
 
 void IntegerWidget::setValue(const QString& value)
@@ -763,6 +763,7 @@ double FloatWidget::getValue() const
     return value;
 
   assert(false && "Tried to get a real from a field that does not contain a real");
+  return std::numeric_limits<double>::max();
 }
 
 void FloatWidget::setValue(double value)

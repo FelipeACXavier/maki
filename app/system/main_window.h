@@ -84,7 +84,7 @@ private slots:
    *
    * @param node Pointer to the added NodeItem.
    */
-  void onNodeAdded(NodeItem* node);
+  void onNodeAdded(Canvas* canvas, NodeItem* node);
 
   /**
    * @brief Handles node removal events.
@@ -92,14 +92,14 @@ private slots:
    * @param nodeId ID of the removed node.
    * @param parentId ID of the parent node.
    */
-  void onNodeRemoved(const QString& nodeId, const QString& parentId);
+  void onNodeRemoved(Canvas* canvas, const QString& nodeId, const QString& parentId);
 
   /**
    * @brief Handles node modification events.
    *
    * @param node Pointer to the modified NodeItem.
    */
-  void onNodeModified(NodeItem* node);
+  void onNodeModified(Canvas* canvas, NodeItem* node);
 
   /**
    * @brief Handles open flow events.
@@ -107,7 +107,7 @@ private slots:
    * @param flow Pointer to the opened Flow.
    * @param node Pointer to the associated NodeItem.
    */
-  void onOpenFlow(Flow* flow, const QString& nodeId, const maki::FocusProperties& properties, int& createdIndex);
+  void onOpenFlow(std::shared_ptr<FlowSaveInfo> flow, const QString& nodeId, const maki::FocusProperties& properties, int& createdIndex);
 
   /**
    * @brief Handles flow addition events.
@@ -200,12 +200,12 @@ private:
   /**
    * @brief Binds signals and slots for the canvas.
    */
-  void bindCanvas();
+  void bindCanvas(Canvas* canvas);
 
   /**
    * @brief Unbinds signals and slots for the canvas.
    */
-  void unbindCanvas();
+  void unbindCanvas(Canvas* canvas);
 
   /**
    * @brief Binds shortcuts to actions.

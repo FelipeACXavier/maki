@@ -56,6 +56,12 @@ public:
   bool isMarker() const;
   void setMarker(bool isMarker);
 
+  void setCanFinishTranstions(bool canEnd);
+  bool canFinishTransitions() const;
+
+  void setCanCreateTranstions(bool canCreate);
+  bool canCreateTransitions() const;
+
 protected:
   void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
   void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
@@ -65,6 +71,8 @@ private:
   Types::Port mKind;
   const QString mSubFlow;
   std::optional<QPointF> mAnchorOverride;
+  bool mCanCreateTransitions;
+  bool mCanEndTransitions;
 
   std::unique_ptr<QSvgRenderer> mRenderer;
   QString mCurrentIconPath;

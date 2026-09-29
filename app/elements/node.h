@@ -400,6 +400,11 @@ public:
 
   virtual QRectF childAreaSceneRect(const QString& subflow = Constants::MAIN_SUB_FLOW) const;
 
+  /**
+   * @brief Called to tell the parent that the position of this node was updated.
+   */
+  virtual void childPositionUpdated(NodeItem* node);
+
 protected:
   std::shared_ptr<NodeSaveInfo> mStorage;  /// Save information for the node.
   QSizeF mSize{0, 0};                      /// Current size of the node.
@@ -429,11 +434,6 @@ protected:
 
   virtual bool constrainChildren() const;
   virtual QPointF constrainChildPosition(const NodeItem* child, const QPointF& proposedPosition) const;
-
-  /**
-   * @brief Called to tell the parent that the position of this node was updated.
-   */
-  virtual void childPositionUpdated(NodeItem* node);
 
   /**
    * @brief Handles mouse move events for this item.

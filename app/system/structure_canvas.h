@@ -17,6 +17,5 @@ public:
 
 private:
   std::shared_ptr<SaveInfo> mStorage;
-
   void updateParent(NodeItem* node, std::shared_ptr<NodeSaveInfo> storage, bool adding) override;
 };

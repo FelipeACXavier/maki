@@ -62,7 +62,6 @@ VoidResult SystemMenu::onNodeAdded(const QString& flowId, NodeItem* node, const 
     return VoidResult::Failed("No node provided");
 
   LOG_DEBUG("Node added to system menu: {} - {} ({})", node->id(), node->nodeType(), flowId);
-
   auto exists = getItemById(node->id());
   if (exists)
     return VoidResult();
@@ -168,6 +167,10 @@ VoidResult SystemMenu::onFlowAdded(Flow* flow, NodeItem* node)
     return VoidResult();
 
   if (!flow->modifiable())
+    return VoidResult();
+
+  auto exists = getItemById(flow->id());
+  if (exists)
     return VoidResult();
 
   LOG_INFO("Adding flow: {} to {}", flow->name(), node->nodeType());

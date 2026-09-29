@@ -4,7 +4,8 @@
 
 #include "elements/behaviour/sub_flow.h"
 
-static const qreal SUB_FLOW_SPACING = 30.0;
+static const qreal SUB_FLOW_SPACING = 5.0;
+static const qreal HORIZONTAL_SPACING = 30.0;
 static const qreal SUB_FLOW_WIDTH = 400.0;
 static const qreal SUB_FLOW_HEIGHT = 220.0;
 static const qreal SUB_FLOW_TOP_LEFT_PADDING = 5.0;
@@ -98,8 +99,7 @@ QPointF RepeatNode::constrainChildPosition(const NodeItem* child, const QPointF&
   if (!child || !subFlow())
     return proposedPosition;
 
-  constexpr qreal markerSpace = 60.0;
-  const QRectF allowed = subFlow()->sceneBoundingRect().adjusted(markerSpace, SUB_FLOW_SPACING, -markerSpace, -SUB_FLOW_SPACING);
+  const QRectF allowed = subFlow()->sceneBoundingRect().adjusted(HORIZONTAL_SPACING, SUB_FLOW_SPACING, -HORIZONTAL_SPACING, -SUB_FLOW_SPACING);
 
   const QRectF childSceneRect = child->sceneBoundingRect();
   const QPointF offset = childSceneRect.topLeft() - child->pos();
@@ -193,7 +193,7 @@ void RepeatNode::layoutSubFlow()
 
   if (!first)
   {
-    childrenRect.adjust(-SUB_FLOW_SPACING, -SUB_FLOW_SPACING, SUB_FLOW_SPACING, SUB_FLOW_SPACING);
+    childrenRect.adjust(-HORIZONTAL_SPACING, -SUB_FLOW_SPACING, HORIZONTAL_SPACING, SUB_FLOW_SPACING);
 
     // Keep top-left fixed and grow only right/down.
     sceneRect.setRight(qMax(sceneRect.right(), childrenRect.right()));
@@ -207,6 +207,9 @@ void RepeatNode::layoutSubFlow()
   {
     prepareGeometryChange();
     flow->setRect(localRect);
+
+    if (auto parent = parentNode())
+      parent->childPositionUpdated(this);
   }
 
   layoutSubFlowMarkers();
@@ -244,15 +247,15 @@ void RepeatNode::layoutSubFlowMarkers()
         break;
 
       case Types::Port::OUT:
-        localAnchor = {rect.right(), rect.top() + rect.height() / 2.0};
+        localAnchor = {rect.right(), rect.center().y()};
         break;
 
       case Types::Port::ERROR:
-        localAnchor = {rect.right(), rect.top() + 3.0 * rect.height() / 4.0};
+        localAnchor = {rect.left() + 2 * rect.width() / 3, rect.top()};
         break;
 
       case Types::Port::ABORT:
-        localAnchor = {rect.right(), rect.top() + rect.height() / 4.0};
+        localAnchor = {rect.left() + rect.width() / 3, rect.top()};
         break;
 
       default:

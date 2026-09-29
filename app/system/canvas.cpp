@@ -393,8 +393,7 @@ bool Canvas::beginTransitionFromOutPort(PortItem* port, const QPointF& cursorSce
   mNode = node;
   mTransition = new TransitionItem(std::make_shared<TransitionSaveInfo>());
   mTransition->setZValue(node->zValue() - 1);
-  LOG_DEBUG("Node: {} ZValue: {} {}", qPrintable(node->nodeId()), node->zValue(), mTransition->zValue());
-
+  LOG_TRACE("Node: {} ZValue: {} {}", qPrintable(node->nodeId()), node->zValue(), mTransition->zValue());
   TransitionConfig config;
   if (port->isOut())
   {
@@ -1427,7 +1426,7 @@ QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
 
   mSelectedNodes.removeAll(node);
 
-  emit nodeRemoved(node->id(), parent ? parent->id() : "");
+  emit nodeRemoved(this, node->id(), parent ? parent->id() : "");
 
   // Since this function can be called in loops or recusively, we do not perform the deletion of the pointer.
   // Deletion is the responsibility of the outer caller
@@ -1844,7 +1843,7 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
   }
 
   // TODO(felaze): Move these to a function or so
-  node->nodeModified = [this](NodeItem* item) { emit nodeModified(item); };
+  node->nodeModified = [this](NodeItem* item) { emit nodeModified(this, item); };
   node->flowAdded = [this](Flow* flow, NodeItem* node) { addedItemFlow(flow, node); };
   node->nodeMoved = [this](NodeItem* node, bool done) { onNodeMoved(node, done); };
   node->geometryChanged = [this](NodeItem* node, const QRectF& oldRect) { onNodeGeometryChanged(node, oldRect); };
@@ -1910,7 +1909,7 @@ void Canvas::nodeStarted(NodeItem* node)
 
 void Canvas::addedItemNode(NodeItem* node, std::shared_ptr<NodeSaveInfo> /* info */)
 {
-  emit nodeAdded(node);
+  emit nodeAdded(this, node);
 }
 
 void Canvas::addedItemFlow(Flow* flow, NodeItem* node)
@@ -1937,7 +1936,7 @@ void Canvas::onNodeHovered(NodeItem* node, bool entered)
         if (flow->name() == Constants::MAIN_FLOW)
         {
           int placeholder;
-          emit openFlow(flow, node->id(), maki::FocusProperties::internal(), placeholder);
+          emit openFlow(flow->config(), node->id(), maki::FocusProperties::internal(), placeholder);
           return;
         }
     });
@@ -2096,7 +2095,8 @@ void Canvas::onFlowSelected(const QString& flowId, const QString& nodeId)
 
   int placeholder;
   auto flow = node->getFlow(flowId);
-  emit openFlow(flow, node->id(), maki::FocusProperties::internal(), placeholder);
+  if (flow)
+    emit openFlow(flow->config(), node->id(), maki::FocusProperties::internal(), placeholder);
 }
 
 void Canvas::onFlowRemoved(const QString& flowId, const QString& nodeId)

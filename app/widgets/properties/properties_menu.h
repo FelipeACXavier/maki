@@ -64,7 +64,7 @@ public:
 
   VoidResult onTransitionSelected(TransitionItem* transition);
   VoidResult onFlowAdded(Flow* flow, NodeItem* node);
-  Result<Flow*> onCreateEvent(NodeItem* node, bool synchronousCreation);
+  Result<std::shared_ptr<FlowSaveInfo>> onCreateEvent(NodeItem* node, bool synchronousCreation);
   VoidResult onFlowRemoved(const QString& flowId, NodeItem* node);
 
   QLayout* layout() const;
@@ -104,7 +104,7 @@ private:
   Result<QTableWidget*> loadEventTable(NodeItem* node);
   VoidResult loadControlAddEvent(QTableWidget* table, NodeItem* node);
 
-  Flow* openEventDialog(QTableWidget* table, NodeItem* node, int row, bool synchronousCreation = false);
+  std::shared_ptr<FlowSaveInfo> openEventDialog(QTableWidget* table, NodeItem* node, int row, bool synchronousCreation = false);
   void addEventToTable(QTableWidget* table, int row, const std::shared_ptr<FlowSaveInfo>& event);
   void removeEventFromTable(QTableWidget* table, NodeItem* node);
 

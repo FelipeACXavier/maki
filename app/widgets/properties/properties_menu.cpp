@@ -142,13 +142,13 @@ VoidResult PropertiesMenu::onNodeSelected(NodeItem* node, bool selected)
   return VoidResult();
 }
 
-Result<Flow*> PropertiesMenu::onCreateEvent(NodeItem* node, bool synchronousCreation)
+Result<std::shared_ptr<FlowSaveInfo>> PropertiesMenu::onCreateEvent(NodeItem* node, bool synchronousCreation)
 {
   onNodeSelected(node, true);
 
   auto table = findChild<QTableWidget*>("EventTable");
   if (table == nullptr)
-    return Result<Flow*>::Failed("Could not find the event table");
+    return Result<std::shared_ptr<FlowSaveInfo>>::Failed("Could not find the event table");
 
   return openEventDialog(table, node, table->rowCount(), synchronousCreation);
 }
@@ -744,7 +744,7 @@ std::shared_ptr<IFlow> PropertiesMenu::getFlowConfigOfRow(const NodeItem* node, 
   return nullptr;
 }
 
-Flow* PropertiesMenu::openEventDialog(QTableWidget* table, NodeItem* node, int row, bool synchronousCreation)
+std::shared_ptr<FlowSaveInfo> PropertiesMenu::openEventDialog(QTableWidget* table, NodeItem* node, int row, bool synchronousCreation)
 {
   if (!table || !node)
     return nullptr;
@@ -776,7 +776,7 @@ Flow* PropertiesMenu::openEventDialog(QTableWidget* table, NodeItem* node, int r
   if (flow && !synchronousCreation && info->getmodifiable())
     emit flowSelected(flow->id(), node->id());
 
-  return flow;
+  return flow->config();
 }
 
 void PropertiesMenu::addEventToTable(QTableWidget* table, int row, const std::shared_ptr<FlowSaveInfo>& event)

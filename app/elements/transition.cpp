@@ -159,6 +159,7 @@ void TransitionItem::updatePath(QPainterPath painterPath)
   if (!mSource || !mDestination)
     return;
 
+  prepareGeometryChange();
   if (painterPath.isEmpty() && mStorage->srcPort() != Types::Port::UNKNOWN && mStorage->dstPort() != Types::Port::UNKNOWN)
   {
     const auto canvas = qobject_cast<Canvas*>(scene());
@@ -180,7 +181,7 @@ void TransitionItem::updatePath(QPainterPath painterPath)
   }
 
   updateLabelPosition();
-  prepareGeometryChange();
+  update();
 }
 
 QPointF TransitionItem::sourceAnchor() const
