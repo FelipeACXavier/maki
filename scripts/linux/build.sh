@@ -106,7 +106,7 @@ BUILD_PATH="$SOURCE_DIR/build/$TARGET_BUILD/$BUILD_TYPE_DIR"
 INSTALL_PREFIX="$SOURCE_DIR/release/$TARGET_BUILD"
 EXTRA_ARGS="${EXTRA_ARGS} -DBUILD_TESTING=${BUILD_TESTING}"
 
-# We need to explictly set the compiler when building in the docker container
+# Let's add those beautiful docker specific commands
 if [ $DOCKER -eq 1 ]; then
   # GitHub Actions and other non-interactive shells may not source ~/.bashrc, so explicitly initialise the ROS environment.
   if [ -f "/opt/ros/${MAKI_ROS_DISTRO}/setup.bash" ]; then
@@ -117,6 +117,7 @@ if [ $DOCKER -eq 1 ]; then
     exit 1
   fi
 
+  # We need to explictly set the compiler when building in the docker container
   EXTRA_ARGS="${EXTRA_ARGS} -DCMAKE_C_COMPILER=gcc-13 -DCMAKE_CXX_COMPILER=g++-13"
 fi
 
