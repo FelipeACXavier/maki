@@ -616,34 +616,18 @@ std::any MakiToKoda::buildWithinExpr(const IFlow& flow, const INode& node)
   // ==========================================================================
   // Do subflow
   // ==========================================================================
+  auto doBody = buildSubFlow(flow, node, "do");
+  if (!doBody.has_value())
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Within 'do' subflow is empty");
 
-  const auto doEntries = subFlowEntrySuccessorsOf(node, flow, "do");
-  if (doEntries.size() != 1)
-    LOG_AND_FAIL(node.getid(), flow.getid(), "Within 'do' subflow must have exactly one entry: {}", node.getid());
-
-  auto doSequence = buildSequenceFrom(flow, doEntries.first().node, &node);
-  if (!doSequence.has_value())
-    LOG_AND_FAIL(node.getid(), flow.getid(), "Invalid strategy for 'do' subflow of Within node");
-
-  expr->a = std::any_cast<koda::PStrategy>(doSequence);
+  expr->a = std::any_cast<koda::PStrategy>(doBody);
 
   // ==========================================================================
   // Else / timeout subflow
   // ==========================================================================
-  const auto elseEntries = subFlowEntrySuccessorsOf(node, flow, "else");
-  if (elseEntries.size() > 1)
-    LOG_AND_FAIL(node.getid(), flow.getid(), "Within 'else' subflow cannot have more than one entry: {}", node.getid());
-
-  if (!elseEntries.isEmpty())
-  {
-    auto elseSequence = buildSequenceFrom(flow, elseEntries.first().node, &node);
-
-    if (!elseSequence.has_value())
-      LOG_AND_FAIL(node.getid(), flow.getid(), "Invalid strategy for 'else' subflow of Within node");
-
-    expr->b = std::any_cast<koda::PStrategy>(elseSequence);
-  }
-
+  auto elseBody = buildSubFlow(flow, node, "else");
+  if (elseBody.has_value())
+    expr->b = std::any_cast<koda::PStrategy>(elseBody);
   // ==========================================================================
   // Timeout
   // ==========================================================================
@@ -697,16 +681,9 @@ std::any MakiToKoda::buildRepeatExpr(const IFlow& flow, const INode& node)
   // --------------------------------------------------------------------------
   // Build the Repeat body from the nodes contained in its "body" subflow.
   // --------------------------------------------------------------------------
-  const auto bodyEntries = subFlowEntrySuccessorsOf(node, flow, "body");
-  if (bodyEntries.size() > 1)
-    LOG_AND_FAIL(node.getid(), flow.getid(), "Repeat body must have exactly one entry transition");
-  if (bodyEntries.isEmpty())
-    LOG_AND_FAIL(node.getid(), flow.getid(), "Repeat body is empty");
-
-  const auto& bodyEntry = bodyEntries.first();
-  auto body = buildSequenceFrom(flow, bodyEntry.node, &node);
+  auto body = buildSubFlow(flow, node, "body");
   if (!body.has_value())
-    LOG_AND_FAIL(node.getid(), flow.getid(), "Failed to build Repeat body");
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Repeat body is empty");
 
   expr->a = std::any_cast<koda::PStrategy>(body);
 
@@ -715,7 +692,6 @@ std::any MakiToKoda::buildRepeatExpr(const IFlow& flow, const INode& node)
   // --------------------------------------------------------------------------
 
   auto handlers = buildHandlers(flow, node);
-
   if (handlers.IsSuccess())
     for (const auto& handler : handlers.Value())
       expr->handlers.push_back(handler);
@@ -897,7 +873,6 @@ std::shared_ptr<koda::Expr> MakiToKoda::buildExpr(const maki::Value& value)
 std::vector<std::shared_ptr<Expr>> MakiToKoda::buildArgumentExpr(const maki::ListValue& list)
 {
   std::vector<std::shared_ptr<Expr>> args = {};
-
   for (const auto& arg : list)
   {
     auto parg = buildExpr(arg);
@@ -918,7 +893,6 @@ std::any MakiToKoda::buildJoinFromFanOut(const IFlow& flow, const INode& splitNo
   }
 
   auto join = std::make_shared<koda::Strategy::Join>();
-
   for (const auto& branchStart : successors)
   {
     auto branch = buildSequenceFrom(flow, branchStart.node, joinNode);
@@ -1372,6 +1346,74 @@ Result<koda::PExpr> MakiToKoda::buildValueExpr(const koda::types::TypeReference&
   return Result<koda::PExpr>::Failed("Unsupported parameter type '{}'", type.toString());
 }
 
+std::any MakiToKoda::buildSubFlow(const IFlow& flow, const INode& owner, const QString& subFlowId)
+{
+  const auto entries = subFlowEntrySuccessorsOf(owner, flow, subFlowId);
+  if (entries.isEmpty())
+    return {};
+
+  // Simple sequential body:
+  //
+  // Repeat
+  //   |
+  //   A -> B -> C
+  //             |
+  //           Repeat
+  //
+  // The owner itself is the stop node. This prevents traversal from
+  // escaping the subflow and following the Repeat's external successor.
+  if (entries.size() == 1)
+    return buildSequenceFrom(flow, entries.first().node, &owner);
+
+  // Multiple entry transitions mean that the subflow boundary itself
+  // is the fan-out point:
+  //
+  //              +-> A --+
+  // Repeat ------+-> B --+--> Join --> ...
+  //              +-> C --+
+  //
+  // This is equivalent to the branching case handled by
+  // buildSequenceFrom().
+  const INode* joinNode = nullptr;
+
+  auto parallelExpr = buildJoinFromFanOut(flow, owner, entries, joinNode);
+  if (!parallelExpr.has_value())
+    LOG_AND_FAIL(owner.getid(), flow.getid(), "Failed to build branching subflow '{}'", subFlowId);
+  if (!joinNode)
+    LOG_AND_FAIL(owner.getid(), flow.getid(), "Could not resolve join for branching subflow '{}'", subFlowId);
+
+  auto sequence = std::make_shared<koda::Strategy::Seq>();
+  sequence->alts.push_back(std::any_cast<koda::PStrategy>(parallelExpr));
+
+  // There may be more behaviour after the join:
+  //
+  //        +-> A --+
+  // Repeat +-> B --+ -> Join -> C -> D -> Repeat
+  //
+  // Starting from the join is convenient because buildSequenceFrom()
+  // ignores structural nodes and follows its successor. Passing owner
+  // as stop prevents us from escaping the Repeat body.
+  auto tail = buildSequenceFrom(flow, joinNode, &owner);
+  if (tail.has_value())
+  {
+    auto tailStrategy = std::any_cast<koda::PStrategy>(tail);
+
+    // Ideally buildSequenceFrom() should return no expression for an
+    // empty sequence. If it currently returns an empty Seq instead,
+    // you can either handle that here or adjust buildSequenceFrom().
+    if (tailStrategy && !tailStrategy->id.empty())
+      sequence->alts.push_back(tailStrategy);
+  }
+
+  if (sequence->alts.size() == 1)
+    return sequence->alts.front();
+
+  auto result = std::make_shared<koda::Strategy>();
+  result->v = sequence;
+
+  return result;
+}
+
 QList<NodeTransition> MakiToKoda::subFlowEntrySuccessorsOf(const INode& owner, const IFlow& flow, const QString& subFlowId) const
 {
   QList<NodeTransition> result;
@@ -1393,7 +1435,6 @@ QList<NodeTransition> MakiToKoda::subFlowEntrySuccessorsOf(const INode& owner, c
     if (!transition)
       continue;
 
-    // Must originate from this particular subflow boundary.
     if (transition->srcPortSubFlow() != subFlowId)
       continue;
 

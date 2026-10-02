@@ -184,6 +184,7 @@ VoidResult SemanticCompiler::compileFailure(const ir::PStrategy& strategy, const
   behaviour.trigger = trigger;
   behaviour.abort = abort;
   behaviour.reset = reset;
+  behaviour.error = equal(state, reference("Error"));
 
   behaviour.variables.push_back({
       .kind = VariableKind::State,
@@ -259,12 +260,6 @@ VoidResult SemanticCompiler::compileAction(const ir::PStrategy& strategy, const 
 
   auto& capability = *capabilityResult.Value();
 
-  behaviour.id = id;
-  behaviour.origin = provenance(strategy);
-  behaviour.trigger = trigger;
-  behaviour.abort = abort;
-  behaviour.reset = reset;
-
   const auto capState = reference(capability.id + "_state");
   const auto capOwner = reference(capability.id + "_owner");
   const auto triggerResult = reference(capability.id + "_trigger_result");
@@ -272,6 +267,13 @@ VoidResult SemanticCompiler::compileAction(const ir::PStrategy& strategy, const 
   const auto resetResult = reference(capability.id + "_reset_result");
   const auto event = reference(capability.id + "_event");
   const auto owns = equal(capOwner, reference(id));
+
+  behaviour.id = id;
+  behaviour.origin = provenance(strategy);
+  behaviour.trigger = trigger;
+  behaviour.abort = abort;
+  behaviour.reset = reset;
+  behaviour.error = equal(capState, reference("Error"));
 
   // Replies/outcomes remain call-site specific, while the underlying state,
   // environment result and asynchronous event belong to the shared capability.
@@ -315,16 +317,17 @@ VoidResult SemanticCompiler::compileAbortCall(const ir::PStrategy& strategy, con
   behaviour.trigger = trigger;
   behaviour.abort = abort;
   behaviour.reset = reset;
+  behaviour.error = equal(state, reference("Error"));
 
   behaviour.variables = {
-      {VariableKind::Input, id + "_abort_result", "{1, 2, 3}", {}, behaviour.origin},
+      {VariableKind::Input, id + "_abort_result", "{0, 1, 2}", {}, behaviour.origin},
       {VariableKind::State, id + "_state", "{Idle, Error}", reference("Idle"), behaviour.origin},
   };
 
   behaviour.triggerReply = cases(
       {
           {logicalAnd(is(state, reference("Idle")), is(abortResult, constants::resultFailure())), constants::resultFailure()},
-          {logicalAnd(is(state, reference("Idle")), is(abortResult, constants::resultRunning())), constants::resultRunning()},
+          // {logicalAnd(is(state, reference("Idle")), is(abortResult, constants::resultRunning())), constants::resultRunning()},
           {logicalAnd(is(state, reference("Idle")), is(abortResult, constants::resultSuccess())), constants::resultDone()},
       },
       constants::resultNone());
@@ -408,6 +411,7 @@ VoidResult SemanticCompiler::compileSequence(const ir::PStrategy& strategy, cons
   behaviour.trigger = trigger;
   behaviour.abort = abort;
   behaviour.reset = reset;
+  behaviour.error = equal(state, reference("Error"));
 
   // A sequence has one persistent state for each asynchronously active child,
   // plus Idle and Error. Synchronous Done chains never become persistent states.
@@ -467,12 +471,6 @@ VoidResult SemanticCompiler::compileSequence(const ir::PStrategy& strategy, cons
     abortCases.push_back({equal(state, reference("Child" + std::to_string(i))), children[i].abortReply});
   abortCases.push_back({equal(state, reference("Error")), constants::resultError()});
   behaviour.abortReply = cases(std::move(abortCases), constants::resultNone());
-
-  // Reset is only meaningful after an error. The current flat reference
-  // semantics treat recovery of the composite as a successful reset of its
-  // control state. Child-specific reset bookkeeping will be refined when
-  // RecoveryHandler is added.
-  behaviour.resetReply = cases({{equal(state, reference("Error")), constants::resultSuccess()}}, constants::resultNone());
 
   // Parent asynchronous outcome is the active child's outcome, except that a
   // child's success may synchronously start subsequent children. We compute
@@ -567,8 +565,34 @@ VoidResult SemanticCompiler::compileSequence(const ir::PStrategy& strategy, cons
         logicalAnd(equal(state, reference("Child" + std::to_string(i))), abort),
         behaviour.origin,
     });
-    behaviour.definitions.push_back({prefix + "_reset", boolean(false), behaviour.origin});
+    behaviour.definitions.push_back({
+        prefix + "_reset",
+        allOf({equal(state, reference("Error")), reset, children[i].error}),
+        behaviour.origin,
+    });
   }
+
+  std::vector<PExpression> resetSucceeded;
+  std::vector<PExpression> resetFailed;
+  for (const auto& child : children)
+  {
+    resetSucceeded.push_back(logicalOr(logicalNot(child.error), equal(child.resetReply, constants::resultSuccess())));
+    resetFailed.push_back(logicalAnd(child.error, equal(child.resetReply, constants::resultFailure())));
+  }
+
+  const auto allResetSucceeded = allOf(resetSucceeded);
+  const auto anyResetFailed = anyOf(resetFailed);
+
+  // Reset is only meaningful after an error. The current flat reference
+  // semantics treat recovery of the composite as a successful reset of its
+  // control state. Child-specific reset bookkeeping will be refined when
+  // RecoveryHandler is added.
+  behaviour.resetReply = cases(
+      {
+          {allOf({equal(state, reference("Error")), reset, anyResetFailed}), constants::resultFailure()},
+          {allOf({equal(state, reference("Error")), reset, allResetSucceeded}), constants::resultSuccess()},
+      },
+      constants::resultNone());
 
   // Persistent sequence-state transitions.
   std::vector<GuardedValue> nextCases;
@@ -713,6 +737,7 @@ VoidResult SemanticCompiler::compileRepeat(const ir::PStrategy& strategy, const 
   behaviour.trigger = trigger;
   behaviour.abort = abort;
   behaviour.reset = reset;
+  behaviour.error = equal(state, reference("Error"));
 
   behaviour.variables.push_back({VariableKind::State, id + "_state", "{Idle, Running, Retrigger, Error}", reference("Idle"), behaviour.origin});
 
@@ -744,11 +769,8 @@ VoidResult SemanticCompiler::compileRepeat(const ir::PStrategy& strategy, const 
   // the internal Retrigger state. In particular, child.outcome is NOT used
   // directly to trigger the body again.
   behaviour.definitions.push_back({childTriggerName, logicalOr(logicalAnd(idle, trigger), retrigger), behaviour.origin});
-
   behaviour.definitions.push_back({childAbortName, logicalAnd(running, abort), behaviour.origin});
-
-  behaviour.definitions.push_back({childResetName, boolean(false), behaviour.origin});
-
+  behaviour.definitions.push_back({childResetName, allOf({error, reset, child.error}), behaviour.origin});
   behaviour.triggerReply = cases({{logicalAnd(idle, equal(child.triggerReply, constants::resultSuccess())), constants::resultSuccess()},
                                   {logicalAnd(idle, equal(child.triggerReply, constants::resultFailure())), constants::resultFailure()},
                                   {logicalAnd(idle, equal(child.triggerReply, constants::resultDone())), constants::resultDone()}},
@@ -756,7 +778,13 @@ VoidResult SemanticCompiler::compileRepeat(const ir::PStrategy& strategy, const 
 
   behaviour.abortReply = cases({{running, child.abortReply}, {error, constants::resultError()}}, constants::resultNone());
 
-  behaviour.resetReply = cases({{error, constants::resultSuccess()}}, constants::resultNone());
+  const auto childResetSucceeded = logicalOr(logicalNot(child.error), equal(child.resetReply, constants::resultSuccess()));
+  behaviour.resetReply = cases(
+      {
+          {allOf({error, reset, childResetSucceeded}), constants::resultSuccess()},
+          {allOf({error, reset, child.error, equal(child.resetReply, constants::resultFailure())}), constants::resultFailure()},
+      },
+      constants::resultNone());
 
   behaviour.outcome = cases(
       {
@@ -774,29 +802,20 @@ VoidResult SemanticCompiler::compileRepeat(const ir::PStrategy& strategy, const 
                                        {
                                            // Initial invocation.
                                            {allOf({idle, trigger, equal(child.triggerReply, constants::resultSuccess())}), reference("Running")},
-
                                            {allOf({idle, trigger, equal(child.triggerReply, constants::resultFailure())}), reference("Error")},
-
                                            // Async completion schedules another iteration.
                                            // Do NOT retrigger combinationally here.
                                            {logicalAnd(running, success), reference("Retrigger")},
-
                                            {logicalAnd(running, failure), reference("Error")},
-
                                            // Execute the scheduled retrigger.
                                            {logicalAnd(retrigger, equal(child.triggerReply, constants::resultSuccess())), reference("Running")},
-
                                            {logicalAnd(retrigger, equal(child.triggerReply, constants::resultFailure())), reference("Error")},
-
                                            {logicalAnd(retrigger, equal(child.triggerReply, constants::resultDone())), reference("Idle")},
-
                                            // External abort while the body is running.
                                            {allOf({running, abort, equal(child.abortReply, constants::resultSuccess())}), reference("Idle")},
-
                                            {allOf({running, abort, equal(child.abortReply, constants::resultFailure())}), reference("Error")},
-
                                            // Recovery from Error.
-                                           {logicalAnd(error, reset), reference("Idle")},
+                                           {allOf({error, reset, childResetSucceeded}), reference("Idle")},
                                        },
                                        state,
                                        behaviour.origin});
@@ -826,12 +845,12 @@ VoidResult SemanticCompiler::compileJoin(const ir::PStrategy& strategy, const ir
   behaviour.trigger = trigger;
   behaviour.abort = abort;
   behaviour.reset = reset;
+  behaviour.error = equal(state, reference("Error"));
 
   // Aborting is an internal encoding state. It separates detection of a child
   // failure / external abort from cancellation of the remaining children,
   // avoiding combinational cycles through sibling outcomes.
   behaviour.variables.push_back({VariableKind::State, id + "_state", "{Idle, Running, Aborting, Error}", reference("Idle"), behaviour.origin});
-
   behaviour.variables.push_back({VariableKind::State, id + "_failure_abort", "boolean", boolean(false), behaviour.origin});
 
   std::vector<Behaviour> children(join.items.size());
@@ -883,7 +902,7 @@ VoidResult SemanticCompiler::compileJoin(const ir::PStrategy& strategy, const ir
     // Instead, failure first moves Join into Aborting. Remaining active
     // children are cancelled on the following transition.
     behaviour.definitions.push_back({p + "_abort", logicalAnd(logicalNot(completed[i]), logicalOr(aborting, logicalAnd(running, abort))), behaviour.origin});
-    behaviour.definitions.push_back({p + "_reset", boolean(false), behaviour.origin});
+    behaviour.definitions.push_back({p + "_reset", allOf({error, reset, children[i].error}), behaviour.origin});
   }
 
   // -------------------------------------------------------------------------
@@ -936,14 +955,16 @@ VoidResult SemanticCompiler::compileJoin(const ir::PStrategy& strategy, const ir
   for (std::size_t i = 0; i < children.size(); ++i)
   {
     // Already completed children require no cleanup.
-    abortSucceeded.push_back(logicalOr(completed[i], equal(children[i].abortReply, constants::resultSuccess())));
-    abortFailed.push_back(logicalAnd(logicalNot(completed[i]), equal(children[i].abortReply, constants::resultFailure())));
-    abortRunning.push_back(logicalAnd(logicalNot(completed[i]), equal(children[i].abortReply, constants::resultRunning())));
+    abortSucceeded.push_back(anyOf({completed[i], children[i].error, equal(children[i].abortReply, constants::resultSuccess())}));
+    abortFailed.push_back(allOf({logicalNot(completed[i]), logicalNot(children[i].error),
+                                 equal(children[i].abortReply, constants::resultFailure())}));  // abortRunning.push_back(logicalAnd(logicalNot(completed[i]),
+                                                                                                // equal(children[i].abortReply, constants::resultRunning())));
   }
 
   const auto allAbortSucceeded = allOf(abortSucceeded);
   const auto anyAbortFailed = anyOf(abortFailed);
-  const auto anyAbortRunning = anyOf(abortRunning);
+  const auto cleanupComplete = logicalOr(allAbortSucceeded, anyAbortFailed);
+  // const auto anyAbortRunning = anyOf(abortRunning);
 
   // -------------------------------------------------------------------------
   // Public interface
@@ -954,15 +975,26 @@ VoidResult SemanticCompiler::compileJoin(const ir::PStrategy& strategy, const ir
   behaviour.abortReply = cases(
       {
           {logicalAnd(running, anyAbortFailed), constants::resultFailure()},
-          {logicalAnd(running, anyAbortRunning), constants::resultRunning()},
+          // {logicalAnd(running, anyAbortRunning), constants::resultRunning()},
           {logicalAnd(running, allAbortSucceeded), constants::resultSuccess()},
           {error, constants::resultError()},
       },
       constants::resultNone());
 
+  std::vector<PExpression> resetSucceeded;
+  std::vector<PExpression> resetFailed;
+  for (const auto& child : children)
+  {
+    resetSucceeded.push_back(logicalOr(logicalNot(child.error), equal(child.resetReply, constants::resultSuccess())));
+    resetFailed.push_back(logicalAnd(child.error, equal(child.resetReply, constants::resultFailure())));
+  }
+
+  const auto allResetSucceeded = allOf(resetSucceeded);
+  const auto anyResetFailed = anyOf(resetFailed);
   behaviour.resetReply = cases(
       {
-          {error, constants::resultSuccess()},
+          {allOf({equal(state, reference("Error")), reset, anyResetFailed}), constants::resultFailure()},
+          {allOf({equal(state, reference("Error")), reset, allResetSucceeded}), constants::resultSuccess()},
       },
       constants::resultNone());
 
@@ -972,8 +1004,8 @@ VoidResult SemanticCompiler::compileJoin(const ir::PStrategy& strategy, const ir
   // is no longer combinationally connected to the failing child.
   behaviour.outcome = cases(
       {
-          {logicalAnd(aborting, failureAbort), constants::eventFailure()},
-
+          // {logicalAnd(aborting, failureAbort), constants::eventFailure()},
+          {allOf({aborting, failureAbort, logicalOr(allAbortSucceeded, anyAbortFailed)}), constants::eventFailure()},
           {logicalAnd(running, allDoneNow), constants::eventSuccess()},
       },
       constants::eventNone());
@@ -1011,13 +1043,11 @@ VoidResult SemanticCompiler::compileJoin(const ir::PStrategy& strategy, const ir
                                            {logicalAnd(running, allDoneNow), reference("Idle")},
 
                                            // Cleanup caused by failure finishes in Error.
-                                           {logicalAnd(aborting, failureAbort), reference("Error")},
-
-                                           // Cleanup caused by external abort finishes in Idle.
-                                           {logicalAnd(aborting, logicalNot(failureAbort)), reference("Idle")},
+                                           {allOf({aborting, failureAbort, cleanupComplete}), reference("Error")},
+                                           {allOf({aborting, logicalNot(failureAbort), cleanupComplete}), reference("Idle")},
 
                                            // Reset error state.
-                                           {logicalAnd(error, reset), reference("Idle")},
+                                           {allOf({error, reset, allResetSucceeded}), reference("Idle")},
                                        },
                                        state,
                                        behaviour.origin});
@@ -1026,12 +1056,10 @@ VoidResult SemanticCompiler::compileJoin(const ir::PStrategy& strategy, const ir
   behaviour.nextAssignments.push_back({id + "_failure_abort",
                                        {
                                            {logicalAnd(running, anyFailure), boolean(true)},
-                                           {aborting, boolean(false)},
                                            {logicalAnd(error, reset), boolean(false)},
                                        },
                                        failureAbort,
                                        behaviour.origin});
-
   // -------------------------------------------------------------------------
   // Child completion bookkeeping
   // -------------------------------------------------------------------------
@@ -1084,6 +1112,7 @@ VoidResult SemanticCompiler::compileEither(const ir::PStrategy& strategy, const 
   behaviour.trigger = trigger;
   behaviour.abort = abort;
   behaviour.reset = reset;
+  behaviour.error = equal(state, reference("Error"));
   behaviour.variables.push_back({VariableKind::State, id + "_state", "{Idle, Running, Error}", reference("Idle"), behaviour.origin});
 
   std::vector<Behaviour> children(either.items.size());
@@ -1109,7 +1138,7 @@ VoidResult SemanticCompiler::compileEither(const ir::PStrategy& strategy, const 
         otherSuccess.push_back(equal(children[j].outcome, constants::eventSuccess()));
     behaviour.definitions.push_back(
         {p + "_abort", logicalAnd(running, logicalOr(abort, otherSuccess.empty() ? boolean(false) : anyOf(otherSuccess))), behaviour.origin});
-    behaviour.definitions.push_back({p + "_reset", boolean(false), behaviour.origin});
+    behaviour.definitions.push_back({p + "_reset", allOf({error, reset, children[i].error}), behaviour.origin});
   }
 
   std::vector<PExpression> syncDone, syncFailure, syncRunning;
@@ -1182,6 +1211,7 @@ VoidResult SemanticCompiler::compileWithin(const ir::PStrategy& strategy, const 
   behaviour.trigger = trigger;
   behaviour.abort = abort;
   behaviour.reset = reset;
+  behaviour.error = equal(state, reference("Error"));
   behaviour.variables.push_back({VariableKind::Input, id + "_timeout", "boolean", nullptr, behaviour.origin});
   behaviour.variables.push_back({VariableKind::State, id + "_state", "{Idle, Do, Else, Error}", reference("Idle"), behaviour.origin});
 
@@ -1201,17 +1231,31 @@ VoidResult SemanticCompiler::compileWithin(const ir::PStrategy& strategy, const 
 
   behaviour.definitions.push_back({id + "_body_trigger", logicalAnd(idle, trigger), behaviour.origin});
   behaviour.definitions.push_back({id + "_body_abort", logicalAnd(doing, logicalOr(abort, timeout)), behaviour.origin});
-  behaviour.definitions.push_back({id + "_body_reset", boolean(false), behaviour.origin});
+  behaviour.definitions.push_back({id + "_body_reset", allOf({error, reset, body.error}), behaviour.origin});
   behaviour.definitions.push_back({id + "_fallback_trigger", logicalAnd(doing, timeout), behaviour.origin});
   behaviour.definitions.push_back({id + "_fallback_abort", logicalAnd(elsing, abort), behaviour.origin});
-  behaviour.definitions.push_back({id + "_fallback_reset", boolean(false), behaviour.origin});
+  behaviour.definitions.push_back({id + "_fallback_reset", allOf({error, reset, fallback.error}), behaviour.origin});
 
   behaviour.triggerReply = cases({{allOf({idle, equal(body.triggerReply, constants::resultDone())}), constants::resultDone()},
                                   {allOf({idle, equal(body.triggerReply, constants::resultFailure())}), constants::resultFailure()},
                                   {allOf({idle, equal(body.triggerReply, constants::resultSuccess())}), constants::resultSuccess()}},
                                  constants::resultNone());
   behaviour.abortReply = cases({{doing, body.abortReply}, {elsing, fallback.abortReply}, {error, constants::resultError()}}, constants::resultNone());
-  behaviour.resetReply = cases({{error, constants::resultSuccess()}}, constants::resultNone());
+
+  const auto resetSucceeded = allOf({
+      logicalOr(logicalNot(body.error), equal(body.resetReply, constants::resultSuccess())),
+      logicalOr(logicalNot(fallback.error), equal(fallback.resetReply, constants::resultSuccess())),
+  });
+  const auto resetFailed = anyOf({
+      logicalAnd(body.error, equal(body.resetReply, constants::resultFailure())),
+      logicalAnd(fallback.error, equal(fallback.resetReply, constants::resultFailure())),
+  });
+  behaviour.resetReply = cases(
+      {
+          {allOf({error, reset, resetFailed}), constants::resultFailure()},
+          {allOf({error, reset, resetSucceeded}), constants::resultSuccess()},
+      },
+      constants::resultNone());  // behaviour.resetReply = cases({{error, constants::resultSuccess()}}, constants::resultNone());
 
   behaviour.outcome = cases({{logicalAnd(doing, bodySuccess), constants::eventSuccess()},
                              {logicalAnd(doing, bodyFailure), constants::eventFailure()},
@@ -1256,6 +1300,7 @@ VoidResult SemanticCompiler::compileEnd(const ir::PStrategy& strategy, const PEx
   behaviour.trigger = trigger;
   behaviour.abort = abort;
   behaviour.reset = reset;
+  behaviour.error = boolean(false);
 
   // End is an immediate successful termination marker. It has no persistent state.
   behaviour.triggerReply = cases({{trigger, constants::resultDone()}}, constants::resultNone());
@@ -1275,6 +1320,7 @@ VoidResult SemanticCompiler::compileContinue(const ir::PStrategy& strategy, cons
   behaviour.trigger = trigger;
   behaviour.abort = abort;
   behaviour.reset = reset;
+  behaviour.error = boolean(false);
 
   // Continue completes the current body synchronously. The enclosing Repeat consumes
   // RESULT_DONE as its loop-control result. No artificial runtime state is needed.
@@ -1441,6 +1487,7 @@ VoidResult SemanticCompiler::compileFlowAbort(const ir::PStrategy& strategy, con
   behaviour.trigger = trigger;
   behaviour.abort = abort;
   behaviour.reset = reset;
+  behaviour.error = boolean(false);
 
   // Triggering this call raises the shared abort request of the target flow.
   flow.abortRequests.push_back(trigger);
@@ -1454,7 +1501,7 @@ VoidResult SemanticCompiler::compileFlowAbort(const ir::PStrategy& strategy, con
   behaviour.triggerReply = cases(
       {
           {equal(abortReply, constants::resultFailure()), constants::resultFailure()},
-          {equal(abortReply, constants::resultRunning()), constants::resultRunning()},
+          // {equal(abortReply, constants::resultRunning()), constants::resultRunning()},
           {equal(abortReply, constants::resultSuccess()), constants::resultDone()},
       },
       constants::resultNone());
@@ -1963,8 +2010,8 @@ void SemanticCompiler::materializeSyncCapability(const CapabilityInstance& capab
   // A synchronous capability either completes in the invocation macrostep or
   // rejects it. It can therefore never become Running and has no asynchronous
   // owner/event/abort machinery.
-  behaviour.variables.push_back({VariableKind::Input, id + "_trigger_result", "{2, 5}", {}, origin});
-  behaviour.variables.push_back({VariableKind::Input, id + "_reset_result", "{1, 2}", {}, origin});
+  behaviour.variables.push_back({VariableKind::Input, id + "_trigger_result", "{0, 2, 5}", {}, origin});
+  behaviour.variables.push_back({VariableKind::Input, id + "_reset_result", "{0, 1, 2}", {}, origin});
   behaviour.variables.push_back({VariableKind::State, id + "_state", "{Idle, Error}", reference("Idle"), origin});
 
   std::vector<PExpression> triggers;
@@ -1985,6 +2032,15 @@ void SemanticCompiler::materializeSyncCapability(const CapabilityInstance& capab
   const auto anyReset = anyOf(resets);
   const auto noCommand = logicalNot(logicalOr(anyTrigger, anyReset));
 
+  behaviour.constraints.push_back({
+      allOf({
+          binary(logicalNot(anyTrigger), "->", equal(triggerResult, constants::resultNone())),
+          binary(anyTrigger, "->", notEqual(triggerResult, constants::resultNone())),
+          binary(logicalNot(anyReset), "->", equal(resetResult, constants::resultNone())),
+          binary(anyReset, "->", notEqual(resetResult, constants::resultNone())),
+      }),
+      origin,
+  });
   stateCases.push_back({allOf({equal(state, reference("Error")), anyReset, equal(resetResult, constants::resultSuccess())}), reference("Idle")});
 
   behaviour.nextAssignments.push_back({id + "_state", std::move(stateCases), state, origin});
@@ -2028,9 +2084,9 @@ void SemanticCompiler::materializeAsyncCapability(const CapabilityInstance& capa
 
   // Async invocation is either accepted (SUCCESS -> Running) or rejected.
   // RESULT_DONE is deliberately excluded: completion must arrive as an event.
-  behaviour.variables.push_back({VariableKind::Input, id + "_trigger_result", "{1, 2}", {}, origin});
-  behaviour.variables.push_back({VariableKind::Input, id + "_abort_result", "{1, 2, 3}", {}, origin});
-  behaviour.variables.push_back({VariableKind::Input, id + "_reset_result", "{1, 2}", {}, origin});
+  behaviour.variables.push_back({VariableKind::Input, id + "_trigger_result", "{0, 1, 2}", {}, origin});
+  behaviour.variables.push_back({VariableKind::Input, id + "_abort_result", "{0, 1, 2}", {}, origin});
+  behaviour.variables.push_back({VariableKind::Input, id + "_reset_result", "{0, 1, 2}", {}, origin});
   behaviour.variables.push_back({VariableKind::Input, id + "_event", "0..2", {}, origin});
   behaviour.variables.push_back({VariableKind::State, id + "_state", "{Idle, Running, Error}", reference("Idle"), origin});
   behaviour.variables.push_back({VariableKind::State, id + "_owner", ownerDomain, reference("None"), origin});
@@ -2050,6 +2106,18 @@ void SemanticCompiler::materializeAsyncCapability(const CapabilityInstance& capa
   const auto anyOwnedAbort = anyOf(ownedAborts);
   const auto noCommand = logicalNot(logicalOr(anyTrigger, logicalOr(anyOwnedAbort, anyReset)));
 
+  behaviour.constraints.push_back({
+      allOf({
+          binary(logicalNot(anyTrigger), "->", equal(triggerResult, constants::resultNone())),
+          binary(anyTrigger, "->", notEqual(triggerResult, constants::resultNone())),
+          binary(logicalNot(anyOwnedAbort), "->", equal(abortResult, constants::resultNone())),
+          binary(anyOwnedAbort, "->", notEqual(abortResult, constants::resultNone())),
+          binary(logicalNot(anyReset), "->", equal(resetResult, constants::resultNone())),
+          binary(anyReset, "->", notEqual(resetResult, constants::resultNone())),
+      }),
+      origin,
+  });
+
   std::vector<GuardedValue> stateCases;
   for (const auto& call : capability.calls)
   {
@@ -2061,7 +2129,7 @@ void SemanticCompiler::materializeAsyncCapability(const CapabilityInstance& capa
   stateCases.push_back({allOf({equal(state, reference("Running")), noCommand, equal(event, constants::eventFailure())}), reference("Error")});
   stateCases.push_back({allOf({equal(state, reference("Running")), anyOwnedAbort, equal(abortResult, constants::resultSuccess())}), reference("Idle")});
   stateCases.push_back({allOf({equal(state, reference("Running")), anyOwnedAbort, equal(abortResult, constants::resultFailure())}), reference("Error")});
-  stateCases.push_back({allOf({equal(state, reference("Running")), anyOwnedAbort, equal(abortResult, constants::resultRunning())}), reference("Running")});
+  // stateCases.push_back({allOf({equal(state, reference("Running")), anyOwnedAbort, equal(abortResult, constants::resultRunning())}), reference("Running")});
   stateCases.push_back({allOf({equal(state, reference("Error")), anyReset, equal(resetResult, constants::resultSuccess())}), reference("Idle")});
   behaviour.nextAssignments.push_back({id + "_state", std::move(stateCases), state, origin});
 

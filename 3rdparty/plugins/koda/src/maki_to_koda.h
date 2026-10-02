@@ -122,6 +122,7 @@ private:
 
   Result<koda::PExpr> buildValueExpr(const koda::types::TypeReference& type, const maki::Value* value);
   QList<NodeTransition> subFlowEntrySuccessorsOf(const INode& owner, const IFlow& flow, const QString& subFlowId) const;
+  std::any buildSubFlow(const IFlow& flow, const INode& owner, const QString& subFlowId);
 };
 
 }  // namespace koda

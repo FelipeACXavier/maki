@@ -781,7 +781,7 @@ Result<std::vector<koda::types::TypeReference>> SemanticAnalyzer::analyseArgs(co
 {
   auto formalArgs = mSymbols.children(event->id, SymbolKind::Argument);
   if (call->args.size() != formalArgs.size())
-    return Result<std::vector<koda::types::TypeReference>>::Failed("Call arguments do not match definition. Expected {} but got {} arguments",
+    return Result<std::vector<koda::types::TypeReference>>::Failed("Call '{}' arguments do not match definition. Expected {} but got {} arguments", event->name,
                                                                    formalArgs.size(), call->args.size());
 
   std::vector<koda::types::TypeReference> args;

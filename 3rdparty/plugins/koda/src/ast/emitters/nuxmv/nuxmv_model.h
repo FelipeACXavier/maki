@@ -73,6 +73,7 @@ struct Behaviour
   PExpression trigger;
   PExpression abort;
   PExpression reset;
+  PExpression error;
 
   PExpression triggerReply;
   PExpression abortReply;

@@ -237,6 +237,10 @@ QString Value::toReadable() const
   {
     return std::get<QColor>(data).name();
   }
+  else if (std::holds_alternative<ValueReference>(data))
+  {
+    return QString::fromStdString("Ref: " + std::get<ValueReference>(data).id);
+  }
 
   return QString("None");
 }
