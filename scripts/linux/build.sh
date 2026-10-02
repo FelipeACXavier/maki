@@ -15,6 +15,7 @@ function printHelp()
   echo "    --list              | List available targets"
   echo "    --target            | Build specific target"
   echo "    --docker            | Build in the docker folder"
+  echo "    --ros               | Set the ROS distro: humble, jazzy, etc"
   echo ""
 }
 
@@ -34,6 +35,7 @@ QT_VERSION="$(tr -d ' \n' < $CURR_DIR/.qt-version)"
 PREFIX_PATH="$HOME/Qt/$QT_VERSION/gcc_64"
 EXTRA_ARGS=""
 BUILD_TESTING="ON"
+MAKI_ROS_DISTRO="humble"
 
 while [[ $# -gt 0 ]]; do
   key="$1"
@@ -58,6 +60,11 @@ while [[ $# -gt 0 ]]; do
       ;;
       --no-test)
       BUILD_TESTING="OFF"
+      shift
+      ;;
+      --ros)
+      MAKI_ROS_DISTRO="$2"
+      shift
       shift
       ;;
       --docker)
@@ -101,6 +108,15 @@ EXTRA_ARGS="${EXTRA_ARGS} -DBUILD_TESTING=${BUILD_TESTING}"
 
 # We need to explictly set the compiler when building in the docker container
 if [ $DOCKER -eq 1 ]; then
+  # GitHub Actions and other non-interactive shells may not source ~/.bashrc, so explicitly initialise the ROS environment.
+  if [ -f "/opt/ros/${MAKI_ROS_DISTRO}/setup.bash" ]; then
+    echo "Sourcing ROS ${MAKI_ROS_DISTRO} environment"
+    source "/opt/ros/${MAKI_ROS_DISTRO}/setup.bash"
+  else
+    echo "ERROR: ROS setup script '/opt/ros/${MAKI_ROS_DISTRO}/setup.bash' not found."
+    exit 1
+  fi
+
   EXTRA_ARGS="${EXTRA_ARGS} -DCMAKE_C_COMPILER=gcc-13 -DCMAKE_CXX_COMPILER=g++-13"
 fi
 
