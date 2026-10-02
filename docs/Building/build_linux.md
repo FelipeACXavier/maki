@@ -11,7 +11,7 @@ A Dockerfile is provided to ensure everyone has the same build and run environme
 ```bash
 docker build . \
   --build-arg USERNAME=$(id -un) \
-  -f docker/maki \
+  -f docker/maki_humble \
   -t maki:v1.0.0
 ```
 

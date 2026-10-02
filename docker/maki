@@ -148,6 +148,20 @@ RUN wget https://update.rascal-mpl.org/console/rascal-0.40.9.jar -O rascal-0.40.
 
 RUN git clone https://github.com/FelipeACXavier/KODA.git
 
+# Install antlr
+RUN git clone \
+  --depth 1 \
+  --branch ${ANTLR_VERSION} \
+  https://github.com/antlr/antlr4.git \
+  /tmp/antlr4 \
+ && cmake \
+  -S /tmp/antlr4/runtime/Cpp \
+  -B /tmp/antlr4-build \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_INSTALL_PREFIX=/usr/local \
+  -DANTLR_BUILD_CPP_TESTS=OFF \
+ && cmake --build /tmp/antlr4-build -j 4
+
 # -----------------------------------------------------------------------------------------------------------
 # Make the shell look a bit nicer
 RUN echo "function custom_prompt() {" >> /home/${USERNAME}/.bashrc \

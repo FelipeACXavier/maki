@@ -9,6 +9,7 @@ ARG NODE_VERSION=23.8.0
 ARG NVM_VERSION=v0.40.2
 ARG USERNAME=ubuntu
 ARG HOME=/home/${USERNAME}
+ARG DOXYGEN_VERSION=1.18.0
 
 # -----------------------------------------------------------------------------------------------------------
 # Essential packages
@@ -158,7 +159,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libxkbfile-dev \
   # Should be Java 21
   default-jdk \
-  doxygen \
   graphviz \
   && rm -rf /var/lib/apt/lists/*
 
@@ -200,7 +200,15 @@ RUN git clone \
 USER root
 WORKDIR ${HOME}
 RUN cmake --install /tmp/antlr4-build \
-&& rm -rf /tmp/antlr4 /tmp/antlr4-build
+ && rm -rf /tmp/antlr4 /tmp/antlr4-build
+
+# Install doxygen
+RUN wget -q "https://sourceforge.net/projects/doxygen/files/rel-${DOXYGEN_VERSION}/doxygen-${DOXYGEN_VERSION}.linux.bin.tar.gz/download" -O /tmp/doxygen.tar.gz \
+ && tar -xzf /tmp/doxygen.tar.gz -C /tmp \
+ && cp /tmp/doxygen-${DOXYGEN_VERSION}/bin/doxygen /usr/local/bin/doxygen \
+ && chmod +x /usr/local/bin/doxygen \
+ && rm -rf /tmp/doxygen.tar.gz /tmp/doxygen-${DOXYGEN_VERSION} \
+ && doxygen --version
 
 USER ${USERNAME}
 # -----------------------------------------------------------------------------------------------------------
