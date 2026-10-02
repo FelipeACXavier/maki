@@ -12,6 +12,8 @@ on:
   # Also on direct pushes to master
   push:
     branches: ["**"]
+  # Manually
+  workflow_dispatch: {}
 
 jobs:
   # ====================================================================================
