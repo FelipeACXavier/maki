@@ -9,27 +9,31 @@ function printHelp()
   echo "    --local-qt          | Path to the local Qt installation"
   echo "    --local-project     | Path to the local project"
   echo "    --clean             | Clean the build directory"
+  echo "    --no-test           | Do not build the tests"
   echo "    --prefix            | CMake QT install prefix"
   echo "    --docs              | Build docs"
   echo "    --list              | List available targets"
   echo "    --target            | Build specific target"
+  echo "    --docker            | Build in the docker folder"
   echo ""
 }
 
+DOCKER=0
 DOCS=0
 CLEAN=0
 LIST_TARGETS=0
 BUILD_TARGET=""
 BUILD_TYPE="Debug"
+BUILD_TYPE_DIR="debug"
+TARGET_BUILD="linux"
 TARGET="linux"
 CURR_DIR=`pwd`
 SOURCE_DIR=$CURR_DIR
 # Use QT version from the single source of truth file
 QT_VERSION="$(tr -d ' \n' < $CURR_DIR/.qt-version)"
-BUILD_PATH="$SOURCE_DIR/build/linux/debug"
 PREFIX_PATH="$HOME/Qt/$QT_VERSION/gcc_64"
-INSTALL_PREFIX="$SOURCE_DIR/release/linux"
 EXTRA_ARGS=""
+BUILD_TESTING="ON"
 
 while [[ $# -gt 0 ]]; do
   key="$1"
@@ -52,6 +56,15 @@ while [[ $# -gt 0 ]]; do
       DOCS=1
       shift
       ;;
+      --no-test)
+      BUILD_TESTING="OFF"
+      shift
+      ;;
+      --docker)
+      DOCKER=1
+      TARGET_BUILD="docker"
+      shift
+      ;;
       --list)
       LIST_TARGETS=1
       shift
@@ -63,7 +76,7 @@ while [[ $# -gt 0 ]]; do
       ;;
       --release)
       BUILD_TYPE="Release"
-      BUILD_PATH="$SOURCE_DIR/build/linux/release"
+      BUILD_TYPE_DIR="release"
       shift
       ;;
       --prefix)
@@ -82,6 +95,15 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+BUILD_PATH="$SOURCE_DIR/build/$TARGET_BUILD/$BUILD_TYPE_DIR"
+INSTALL_PREFIX="$SOURCE_DIR/release/$TARGET_BUILD"
+EXTRA_ARGS="${EXTRA_ARGS} -DBUILD_TESTING=${BUILD_TESTING}"
+
+# We need to explictly set the compiler when building in the docker container
+if [ $DOCKER -eq 1 ]; then
+  EXTRA_ARGS="${EXTRA_ARGS} -DCMAKE_C_COMPILER=gcc-13 -DCMAKE_CXX_COMPILER=g++-13"
+fi
+
 echo "--------------------------------------"
 echo "Running with:"
 echo "  CURR_DIR: ${CURR_DIR}"
@@ -98,6 +120,7 @@ echo "--------------------------------------"
 # Main
 if [ $CLEAN -eq 1 ]; then
   echo "Cleaning $BUILD_PATH"
+  echo "Cleaning $INSTALL_PREFIX"
   rm -rf $BUILD_PATH
   rm -rf $INSTALL_PREFIX
 elif [ $LIST_TARGETS -eq 1 ]; then

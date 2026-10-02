@@ -9,14 +9,14 @@ VERUM_DEZYNE_VERSION="2.20.0"
 ARCHITECTURE="x86_64-linux"
 
 # Derived paths based on version
-DEFAULT_INSTALL_DIR="$HOME/verum-dezyne-$VERUM_DEZYNE_VERSION"
+VERUM_DEZYNE_NAME="verum-dezyne-$VERUM_DEZYNE_VERSION"
+VERUM_DEZYNE_NAME_ARCH="$VERUM_DEZYNE_NAME-$ARCHITECTURE"
 INSTALL_DIR=""
 # This is the old installer
-# DEZYNE_INSTALLER_NAME="verum-dezyne-$VERUM_DEZYNE_VERSION-$ARCHITECTURE-installer"
-# The new installer uses vsm-core
-DEZYNE_INSTALLER_NAME="vsm-core-$VERUM_DEZYNE_VERSION-$ARCHITECTURE-installer"
-# TAR_FILE="$HOME/$DEZYNE_INSTALLER_NAME/verum-dezyne-$VERUM_DEZYNE_VERSION-$ARCHITECTURE.tar.gz"
-TAR_FILE="$HOME/$DEZYNE_INSTALLER_NAME/vsm-core-$VERUM_DEZYNE_VERSION-$ARCHITECTURE.tar.gz"
+DEZYNE_INSTALLER_PATH="$VERUM_DEZYNE_NAME_ARCH-installer"
+# There are two tar files, one for the installer and an internal one with the actual dezyne package
+INSTALLER_TAR_FILE="$DEZYNE_INSTALLER_PATH.tar.gz"
+TAR_FILE="$HOME/$DEZYNE_INSTALLER_PATH/$VERUM_DEZYNE_NAME_ARCH.tar.gz"
 
 # Colors for output
 RED='\033[0;31m'
@@ -420,13 +420,10 @@ main() {
 }
 
 # Get the installer
-# This is used for the old installer
-# wget https://downloads.verum.com/download/verum-dezyne/$DEZYNE_INSTALLER_NAME.tar.gz -O $DEZYNE_INSTALLER_NAME.tar.gz
-# This is for the new, maybe temporary installer
-wget https://downloads.verum.com/download/vsm-core/$DEZYNE_INSTALLER_NAME.tar.gz -O $DEZYNE_INSTALLER_NAME.tar.gz
+wget https://downloads.verum.com/download/verum-dezyne/$INSTALLER_TAR_FILE -O $INSTALLER_TAR_FILE
 
 # Extract the archive
-tar xf $DEZYNE_INSTALLER_NAME.tar.gz -C "$HOME"
+tar xf $INSTALLER_TAR_FILE -C "$HOME"
 
 # Run main function
 main "$@"

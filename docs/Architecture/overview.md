@@ -1,5 +1,10 @@
 @page architecture_overview Architecture
 
+
+The abstract software architecture of MAKI is shown below:
+
+\image html ./Figures/top_level_architecture.png width=75%
+
 # Use cases
 
 The use cases capture the main interactions supported by the platform from the perspective of its users and external stakeholders. They provide a high-level view of the expected behaviour of the system, helping define its scope and the value it offers in practice. By identifying the core tasks and workflows, this view serves as the starting point for both the functional and architectural design.

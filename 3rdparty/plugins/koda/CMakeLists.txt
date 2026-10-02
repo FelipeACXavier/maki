@@ -30,11 +30,11 @@ if (NOT BUILD_PLUGINS)
 
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
       message(STATUS "Compiling with debug symbols")
-      set(LINUX_BUILD_DIR "${CMAKE_SOURCE_DIR}/build/linux/debug")
+      set(LINUX_BUILD_DIR "${CMAKE_BINARY_DIR}")
       add_compile_options(-g -O0)
     elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
       message("Compiling in release version")
-      set(LINUX_BUILD_DIR "${CMAKE_SOURCE_DIR}/build/linux/release")
+      set(LINUX_BUILD_DIR "${CMAKE_BINARY_DIR}")
       add_compile_options(-O2)
     endif()
 
@@ -45,7 +45,7 @@ if (NOT BUILD_PLUGINS)
 endif()
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets WebSockets)
-find_package(antlr4-runtime CONFIG REQUIRED)
+find_package(antlr4-runtime CONFIG QUIET)
 
 # Sources
 set(KODA_DZN_CLIENT_FILES

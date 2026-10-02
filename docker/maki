@@ -7,7 +7,6 @@ ARG NODE_VERSION=23.8.0
 ARG NVM_VERSION=v0.40.2
 ARG USERNAME=ubuntu
 ARG HOME=/home/${USERNAME}
-ARG TOOLCHAIN_FILE=toolchain-mingw64.cmake
 
 # -----------------------------------------------------------------------------------------------------------
 # Essential packages
@@ -40,6 +39,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   fonts-dejavu-core \
   libfreetype6-dev libfontconfig1-dev libharfbuzz-dev \
   && rm -rf /var/lib/apt/lists/*
+
+# -----------------------------------------------------------------------------------------------------------
+# Niceties
+ARG UID=1000
+ARG GID=1000
+RUN groupadd -g ${GID} ${USERNAME} \
+ && useradd -m -u ${UID} -g ${GID} -s /bin/bash ${USERNAME} \
+ && mkdir -p /home/${USERNAME}/.ros \
+ && chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}
 
 # -----------------------------------------------------------------------------------------------------------
 # Make sure the fonts are loaded

@@ -17,3 +17,29 @@ html.dark-mode {
   --page-foreground-color: #e6e6e6;
   --page-secondary-foreground-color: #a0a0a0; */
 }
+
+.rounded-image {
+    border-radius: 12px;
+}
+/* Display stuff */
+.d-block {
+  display: block;  
+}
+
+/* Width stuff */
+.w-75 {
+  width: 75%
+}
+.w-50 {
+  width: 50%
+}
+.w-100 {
+  width: 100%
+}
+
+/* Margin stuff */
+.m-auto {
+  margin: 0 auto;
+}
+
+
