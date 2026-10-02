@@ -50,7 +50,7 @@ jobs:
       # 2) Build for given target
       - name: Build script Linux
         run: |
-          chmod +x ./scripts/linux/build.sh
+          chmod +x ./scripts/linux/build.sh --docker
           ./scripts/linux/build.sh
 
       # 3) Run tests for given target (optional)
@@ -58,7 +58,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: linux-build
-          path: build/linux/debug
+          path: build/docker/debug
 
   # ====================================================================================
   # 3) Build the Windows version
@@ -138,7 +138,7 @@ jobs:
       - name: Build docs
         run: |
           chmod +x ./scripts/linux/build.sh
-          ./scripts/linux/build.sh --docs
+          ./scripts/linux/build.sh --docker --docs
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
@@ -146,7 +146,7 @@ jobs:
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: ./build/linux/debug/docs/html
+          path: ./build/docker/debug/docs/html
 
   # ====================================================================================
   # 4) Deploy documentation to GitHub Pages

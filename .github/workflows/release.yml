@@ -42,8 +42,8 @@ jobs:
       # Create the package
       - name: Build Linux
         run: |
-          chmod +x scripts/linux/release.sh
-          ./scripts/linux/release.sh
+          chmod +x scripts/linux/build.sh
+          ./scripts/linux/build.sh --docker --release
 
       # --------------------------------------------------------------------------------------
       # Upload artifact for next job
