@@ -7,7 +7,6 @@ ARG NODE_VERSION=23.8.0
 ARG NVM_VERSION=v0.40.2
 ARG USERNAME=ubuntu
 ARG HOME=/home/${USERNAME}
-ARG TOOLCHAIN_FILE=toolchain-mingw64.cmake
 
 # -----------------------------------------------------------------------------------------------------------
 # Essential packages
@@ -40,6 +39,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   fonts-dejavu-core \
   libfreetype6-dev libfontconfig1-dev libharfbuzz-dev \
   && rm -rf /var/lib/apt/lists/*
+
+# -----------------------------------------------------------------------------------------------------------
+# Niceties
+ARG UID=1000
+ARG GID=1000
+RUN groupadd -g ${GID} ${USERNAME} \
+ && useradd -m -u ${UID} -g ${GID} -s /bin/bash ${USERNAME} \
+ && mkdir -p /home/${USERNAME}/.ros \
+ && chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}
 
 # -----------------------------------------------------------------------------------------------------------
 # Make sure the fonts are loaded
@@ -139,6 +147,20 @@ RUN wget https://update.rascal-mpl.org/console/rascal-0.40.9.jar -O rascal-0.40.
 # java -jar ~/rascal-0.40.9.jar Main.rsc <input>  <output>
 
 RUN git clone https://github.com/FelipeACXavier/KODA.git
+
+# Install antlr
+RUN git clone \
+  --depth 1 \
+  --branch ${ANTLR_VERSION} \
+  https://github.com/antlr/antlr4.git \
+  /tmp/antlr4 \
+ && cmake \
+  -S /tmp/antlr4/runtime/Cpp \
+  -B /tmp/antlr4-build \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_INSTALL_PREFIX=/usr/local \
+  -DANTLR_BUILD_CPP_TESTS=OFF \
+ && cmake --build /tmp/antlr4-build -j 4
 
 # -----------------------------------------------------------------------------------------------------------
 # Make the shell look a bit nicer

@@ -2,7 +2,6 @@
 find_package(Doxygen)
 
 find_package(Doxygen QUIET)
-
 if (NOT DOXYGEN_FOUND)
   message(STATUS "Doxygen not found; docs target will not be created.")
   return()

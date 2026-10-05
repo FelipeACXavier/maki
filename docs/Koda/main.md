@@ -17,7 +17,7 @@ while KODA provides their textual representation and compiler infrastructure.
 
 # Core concepts
 
-A KODA application is built from a small number of concepts:
+A KODA application is built from a few of concepts:
 
 - **Data** describe the information exchanged between components.
 - **Capabilities** describe functionality provided by the robotic system.
