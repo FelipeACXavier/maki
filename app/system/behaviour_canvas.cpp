@@ -23,11 +23,7 @@ BehaviourCanvas::BehaviourCanvas(std::shared_ptr<FlowSaveInfo> flow, const QStri
 
 BehaviourCanvas::~BehaviourCanvas()
 {
-  if (mFlow)
-  {
-    delete mFlow;
-    mFlow = nullptr;
-  }
+  cleanFlow();
 }
 
 void BehaviourCanvas::setupInitialNodes()
@@ -87,7 +83,10 @@ Flow* BehaviourCanvas::flow() const
 void BehaviourCanvas::cleanFlow()
 {
   if (mFlow)
+  {
     delete mFlow;
+    mFlow = nullptr;
+  }
 }
 
 void BehaviourCanvas::nodeStarted(NodeItem* node)
