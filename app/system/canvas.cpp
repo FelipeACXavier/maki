@@ -39,6 +39,7 @@
 #include "undo_commands/align.h"
 #include "undo_commands/batch_remove.h"
 #include "undo_commands/distribute.h"
+#include "widgets/controls/capability_call_selector.h"
 #include "widgets/controls/capability_selector.h"
 #include "widgets/controls/suggestion_menu.h"
 #include "widgets/controls/task_node_menu.h"
@@ -1971,6 +1972,8 @@ void Canvas::onNodeControlRequested(NodeItem* node, const QPointF& scenePos, mak
       for (const auto& nodeType : nodes)
         createSuggestedNode(nodeType, node);
     });
+  else if (auto capSelect = qobject_cast<CapabilityCallSelector*>(control))
+    capSelect->buildLibraries(SaveInfo::instance().getPossibleCallers(node->id(), Types::ControlTypes::AUTO));
 
   // Nodes cannot be parents since they are not qobjects, so the CanvasView must parent the widget
   control->setParent(parentView());
