@@ -5,8 +5,10 @@ release/
 generated/
 .cache
 .flatpak-builder
+aqtinstall.log
 
 compile_commands.json
+vcpkg_installed/
 
 # Helix editor stuff
 history
