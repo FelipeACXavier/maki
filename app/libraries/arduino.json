@@ -15,7 +15,8 @@
             "borderColor": "#FFFFFF",
             "width": 100,
             "height": 100,
-            "z-index": -2
+            "z-index": -2,
+            "icon": "capability_led.svg"
           },
           "help": {
             "message": "Represents a single LED in the arduino board"
@@ -93,9 +94,10 @@
             "borderColor": "#FFFFFF",
             "borderRadius": 10,
             "width": 100,
-            "height": 50,
+            "height": 100,
             "iconColor": "#FFFFFF",
-            "iconScale": 0.8
+            "iconScale": 0.8,
+            "icon": "capability_timer.svg"
           },
           "properties": [
             {

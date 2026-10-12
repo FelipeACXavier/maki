@@ -4,6 +4,7 @@
 
 #include "keys.h"
 #include "system/config_table.h"
+#include "widgets/controls/capability_call_selector.h"
 
 CapabilityCallNode::CapabilityCallNode(const QString& id, std::shared_ptr<NodeSaveInfo> info, const QPointF& initialPosition,
                                        std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
@@ -17,7 +18,7 @@ CapabilityCallNode::CapabilityCallNode(const QString& id, std::shared_ptr<NodeSa
     mEmptySlot = new EmptySlot(0, this);
     mEmptySlot->clicked = [this](const QPointF& scenePos) {
       if (nodeControlRequested)
-        nodeControlRequested(this, scenePos, nullptr);
+        nodeControlRequested(this, scenePos, CapabilityCallSelector::create(this));
     };
   }
 }
@@ -102,4 +103,19 @@ bool CapabilityCallNode::ensureRenderer()
   }
 
   return false;
+}
+
+void CapabilityCallNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
+{
+  if (event->button() != Qt::LeftButton)
+  {
+    NodeItem::mouseDoubleClickEvent(event);
+    return;
+  }
+
+  if (nodeControlRequested)
+    nodeControlRequested(this, event->scenePos(), CapabilityCallSelector::create(this));
+
+  event->accept();
+  return;
 }

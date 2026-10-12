@@ -1069,8 +1069,8 @@ SearchWidget::SearchWidget(const QString& placeholder, QWidget* parent)
   mInputField->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
   mValue = placeholder;
 
-  connect(mInputField, &QLineEdit::textChanged, this, [this]() {
-    mValue = mInputField->text();
+  connect(mInputField, &QLineEdit::textChanged, this, [this](const QString& text) {
+    mValue = text;
     emit valueChanged(mValue);
   });
 

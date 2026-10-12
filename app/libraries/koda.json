@@ -19,7 +19,7 @@
             "icon": "node_task.svg"
           },
           "help": {
-            "message": "Represents a Task in a single system. Tasks must be populated with Capabilities."
+            "message": "Defines a task that coordinates capabilities to achieve a goal. Add the required capabilities, then define the task’s events and behavioural flows."
           },
           "properties": [
             {
@@ -29,7 +29,7 @@
                 "kind": "string",
                 "value": "Task"
               },
-              "info": "The name of the block"
+              "info": "Display name used to identify this node in the editor."
             },
             {
               "id": "color",
@@ -39,7 +39,7 @@
                 "kind": "string",
                 "value": "#202020"
               },
-              "info": "The color of the block"
+              "info": "Display color of this node in the editor."
             }
           ],
           "controls": [
@@ -55,7 +55,7 @@
               "returnType": "void",
               "modifiable": true,
               "linksTo": 0,
-              "info": "Called to start the task"
+              "info": "Starts this task and its associated behavioural flow."
             },
             {
               "id": "abort",
@@ -63,7 +63,7 @@
               "returnType": "void",
               "modifiable": false,
               "linksTo": 0,
-              "info": "Called to abort the task when it is running"
+              "info": "Requests that the running task stop."
             },
             {
               "id": "done",
@@ -71,7 +71,7 @@
               "returnType": "void",
               "modifiable": false,
               "linksTo": 0,
-              "info": "Emitted when the task is completed successfully"
+              "info": "Emitted when the task completes successfully."
             },
             {
               "id": "failed",
@@ -79,7 +79,7 @@
               "returnType": "void",
               "modifiable": false,
               "linksTo": 0,
-              "info": "Emitted when the task is completed unsuccessfully"
+              "info": "Emitted when the task ends in failure."
             }
           ]
         }
@@ -108,7 +108,8 @@
               "default": {
                 "kind": "string",
                 "value": "Siren"
-              }
+              },
+              "info": "Display name used to identify this node in the editor."
             },
             {
               "id": "calldef",
@@ -134,7 +135,8 @@
                     }
                   }
                 ]
-              }
+              },
+              "info": "Communication bindings for this capability, including the underlying route and message type."
             }
           ],
           "events": [
@@ -143,16 +145,21 @@
               "type": "trigger",
               "returnType": "void",
               "modifiable": false,
-              "linksTo": 0
+              "linksTo": 0,
+              "info": "Activates the siren."
             },
             {
               "id": "stop",
               "type": "abort",
               "returnType": "void",
               "modifiable": false,
-              "linksTo": 0
+              "linksTo": 0,
+              "info": "Stops the siren if it is active."
             }
-          ]
+          ],
+          "help": {
+            "message": "Controls an audible warning signal. Use the start event to activate the siren and stop to turn it off."
+          }
         },
         {
           "type": "Grip",
@@ -173,7 +180,8 @@
               "default": {
                 "kind": "string",
                 "value": "Grip"
-              }
+              },
+              "info": "Display name used to identify this node in the editor."
             },
             {
               "id": "color",
@@ -182,7 +190,8 @@
               "default": {
                 "kind": "string",
                 "value": "#cc7a3d"
-              }
+              },
+              "info": "Display color of this node in the editor."
             },
             {
               "id": "calldef",
@@ -208,7 +217,8 @@
                     }
                   }
                 ]
-              }
+              },
+              "info": "Communication bindings for this capability, including the underlying route and message type."
             }
           ],
           "events": [
@@ -220,37 +230,46 @@
               "arguments": [
                 {
                   "id": "grip",
-                  "type": "bool"
+                  "type": "bool",
+                  "info": "Whether to grasp (true) or release (false) the object."
                 },
                 {
                   "id": "pose",
-                  "type": "robotics::ObjectPose"
+                  "type": "robotics::ObjectPose",
+                  "info": "Pose of the object to grasp or release."
                 }
               ],
-              "linksTo": 0
+              "linksTo": 0,
+              "info": "Requests a grasp or release operation at @pose. Set @grip to true to grasp and false to release."
             },
             {
               "id": "cancel",
               "type": "abort",
               "returnType": "void",
               "modifiable": false,
-              "linksTo": 0
+              "linksTo": 0,
+              "info": "Requests cancellation of the current gripper operation."
             },
             {
               "id": "handled",
               "type": "return",
               "returnType": "void",
               "modifiable": false,
-              "linksTo": 0
+              "linksTo": 0,
+              "info": "Emitted after the requested gripper operation completes successfully."
             },
             {
               "id": "failed",
               "type": "error",
               "returnType": "void",
               "modifiable": false,
-              "linksTo": 0
+              "linksTo": 0,
+              "info": "Emitted when the requested gripper operation cannot be completed."
             }
-          ]
+          ],
+          "help": {
+            "message": "Controls a robot gripper for grasping or releasing an object at a specified pose. Reports whether the operation succeeds or fails."
+          }
         },
         {
           "type": "Aruco Detection",
@@ -271,7 +290,8 @@
               "default": {
                 "kind": "string",
                 "value": "Aruco Detection"
-              }
+              },
+              "info": "Display name used to identify this node in the editor."
             },
             {
               "id": "color",
@@ -280,7 +300,8 @@
               "default": {
                 "kind": "string",
                 "value": "#e6c994"
-              }
+              },
+              "info": "Display color of this node in the editor."
             },
             {
               "id": "calldef",
@@ -306,7 +327,8 @@
                     }
                   }
                 ]
-              }
+              },
+              "info": "Communication bindings for this capability, including the underlying route and message type."
             }
           ],
           "events": [
@@ -315,14 +337,16 @@
               "type": "trigger",
               "returnType": "void",
               "modifiable": false,
-              "linksTo": 0
+              "linksTo": 0,
+              "info": "Starts detection of an ArUco marker. A successful detection produces the $return event with the detected pose."
             },
             {
               "id": "cancel",
               "type": "abort",
               "returnType": "void",
               "modifiable": false,
-              "linksTo": 0
+              "linksTo": 0,
+              "info": "Cancels an ongoing marker detection operation."
             },
             {
               "id": "found",
@@ -333,11 +357,16 @@
               "arguments": [
                 {
                   "id": "pose",
-                  "type": "robotics::ObjectPose"
+                  "type": "robotics::ObjectPose",
+                  "info": "Detected pose of the ArUco marker or associated object."
                 }
-              ]
+              ],
+              "info": "Emitted when a marker is detected, providing the detected @pose."
             }
-          ]
+          ],
+          "help": {
+            "message": "Detects an ArUco marker and reports the pose of the detected object. Detection can be cancelled while it is running."
+          }
         },
         {
           "type": "Drive",
@@ -358,7 +387,8 @@
               "default": {
                 "kind": "string",
                 "value": "Drive"
-              }
+              },
+              "info": "Display name used to identify this node in the editor."
             },
             {
               "id": "color",
@@ -367,7 +397,8 @@
               "default": {
                 "kind": "string",
                 "value": "#74a892"
-              }
+              },
+              "info": "Display color of this node in the editor."
             },
             {
               "id": "calldef",
@@ -393,7 +424,8 @@
                     }
                   }
                 ]
-              }
+              },
+              "info": "Communication bindings for this capability, including the underlying route and message type."
             }
           ],
           "events": [
@@ -405,17 +437,20 @@
               "arguments": [
                 {
                   "id": "pose",
-                  "type": "robotics::GoalPose"
+                  "type": "robotics::GoalPose",
+                  "info": "Target pose the robot should navigate to."
                 }
               ],
-              "linksTo": 0
+              "linksTo": 0,
+              "info": "Starts navigation towards the requested @pose. On success, the $return event reports the robot pose."
             },
             {
               "id": "abort",
               "type": "abort",
               "returnType": "void",
               "modifiable": false,
-              "linksTo": 0
+              "linksTo": 0,
+              "info": "Requests cancellation of the current navigation operation."
             },
             {
               "id": "in_position",
@@ -425,19 +460,25 @@
               "arguments": [
                 {
                   "id": "pose",
-                  "type": "robotics::RobotPose"
+                  "type": "robotics::RobotPose",
+                  "info": "Robot pose reported after reaching the destination."
                 }
               ],
-              "linksTo": 0
+              "linksTo": 0,
+              "info": "Emitted when the destination is reached, providing the current @pose of the robot."
             },
             {
               "id": "path_blocked",
               "type": "error",
               "returnType": "void",
               "modifiable": false,
-              "linksTo": 0
+              "linksTo": 0,
+              "info": "Emitted when the robot cannot continue because the planned route is blocked."
             }
-          ]
+          ],
+          "help": {
+            "message": "Moves a mobile robot towards a target pose. Reports the robot’s resulting pose on success or signals when the path is blocked."
+          }
         },
         {
           "type": "Approach",
@@ -458,7 +499,8 @@
               "default": {
                 "kind": "string",
                 "value": "Approach"
-              }
+              },
+              "info": "Display name used to identify this node in the editor."
             },
             {
               "id": "color",
@@ -467,7 +509,8 @@
               "default": {
                 "kind": "string",
                 "value": "#fbf2c4"
-              }
+              },
+              "info": "Display color of this node in the editor."
             },
             {
               "id": "calldef",
@@ -493,7 +536,8 @@
                     }
                   }
                 ]
-              }
+              },
+              "info": "Communication bindings for this capability, including the underlying route and message type."
             }
           ],
           "events": [
@@ -505,21 +549,25 @@
               "arguments": [
                 {
                   "type": "robotics::ObjectPose",
-                  "id": "pose"
+                  "id": "pose",
+                  "info": "Pose of the object used as the reference for the movement."
                 },
                 {
                   "type": "bool",
-                  "id": "approach"
+                  "id": "approach",
+                  "info": "True to approach the object; false to move away from it."
                 }
               ],
-              "linksTo": 0
+              "linksTo": 0,
+              "info": "Starts movement relative to @pose. Use @approach to choose whether the robot approaches or moves away."
             },
             {
               "id": "abort",
               "type": "abort",
               "returnType": "void",
               "modifiable": false,
-              "linksTo": 0
+              "linksTo": 0,
+              "info": "Requests cancellation of the current approach or retreat movement."
             },
             {
               "id": "finished",
@@ -527,16 +575,21 @@
               "returnType": "void",
               "modifiable": false,
               "arguments": [],
-              "linksTo": 0
+              "linksTo": 0,
+              "info": "Emitted when the requested movement completes successfully."
             },
             {
               "id": "failed",
               "type": "error",
               "returnType": "void",
               "modifiable": false,
-              "linksTo": 0
+              "linksTo": 0,
+              "info": "Emitted if the requested movement cannot be completed."
             }
-          ]
+          ],
+          "help": {
+            "message": "Moves the robot towards or away from an object pose, depending on the selected direction. Reports completion or failure."
+          }
         },
         {
           "type": "BatteryMonitoring",
@@ -557,7 +610,8 @@
               "default": {
                 "kind": "string",
                 "value": "BatteryMonitoring"
-              }
+              },
+              "info": "Display name used to identify this node in the editor."
             },
             {
               "id": "color",
@@ -566,7 +620,8 @@
               "default": {
                 "kind": "string",
                 "value": "#e6c994"
-              }
+              },
+              "info": "Display color of this node in the editor."
             },
             {
               "id": "calldef",
@@ -609,7 +664,8 @@
                     }
                   }
                 ]
-              }
+              },
+              "info": "Communication bindings for this capability, including the underlying route and message type."
             },
             {
               "id": "threshold",
@@ -619,7 +675,7 @@
                 "value": "0.25"
               },
               "help": {
-                "message": "Minimum level before the battery needs to be charged"
+                "message": "Default battery threshold used by this capability. A value of 0.25 represents 25% of battery capacity."
               }
             }
           ],
@@ -630,10 +686,12 @@
               "returnType": "void",
               "modifiable": false,
               "linksTo": 0,
+              "info": "Starts monitoring the battery level. When it falls below @threshold, the capability emits the $return event.",
               "arguments": [
                 {
                   "id": "threshold",
-                  "type": "real"
+                  "type": "real",
+                  "info": "Battery level below which the $return event is emitted. For example, 0.25 means 25%."
                 }
               ]
             },
@@ -642,14 +700,16 @@
               "type": "abort",
               "returnType": "void",
               "modifiable": false,
-              "linksTo": 0
+              "linksTo": 0,
+              "info": "Stops the current battery-monitoring operation."
             },
             {
               "id": "low_battery",
               "type": "return",
               "returnType": "void",
               "modifiable": false,
-              "linksTo": 0
+              "linksTo": 0,
+              "info": "Emitted when the monitored battery level falls below the configured threshold."
             },
             {
               "id": "charge",
@@ -657,14 +717,17 @@
               "returnType": "void",
               "modifiable": false,
               "linksTo": 1,
+              "info": "Requests charging at @charger_pose, using @pose as the robot’s current pose. The operation can report success or failure.",
               "arguments": [
                 {
                   "id": "charger_pose",
-                  "type": "robotics::Pose"
+                  "type": "robotics::Pose",
+                  "info": "Location and orientation of the charging station in world coordinates."
                 },
                 {
                   "id": "pose",
-                  "type": "robotics::RobotPose"
+                  "type": "robotics::RobotPose",
+                  "info": "Current robot pose in world coordinates, used in relation to @charger_pose before charging."
                 }
               ]
             },
@@ -673,23 +736,29 @@
               "type": "abort",
               "returnType": "void",
               "modifiable": false,
-              "linksTo": 1
+              "linksTo": 1,
+              "info": "Stops or cancels the current charging operation."
             },
             {
               "id": "charged",
               "type": "return",
               "returnType": "void",
               "modifiable": false,
-              "linksTo": 1
+              "linksTo": 1,
+              "info": "Emitted when the charging operation completes successfully."
             },
             {
               "id": "charging_failed",
               "type": "error",
               "returnType": "void",
               "modifiable": false,
-              "linksTo": 1
+              "linksTo": 1,
+              "info": "Emitted if the charging operation cannot be completed."
             }
-          ]
+          ],
+          "help": {
+            "message": "Monitors the robot’s battery level and controls charging. Start monitoring with a threshold, or request charging using the charger and robot poses."
+          }
         }
       ]
     },
@@ -716,7 +785,8 @@
               "default": {
                 "kind": "string",
                 "value": "Co2Sensor"
-              }
+              },
+              "info": "Display name used to identify this node in the editor."
             },
             {
               "id": "color",
@@ -725,7 +795,8 @@
               "default": {
                 "kind": "string",
                 "value": "#d73800"
-              }
+              },
+              "info": "Display color of this node in the editor."
             },
             {
               "id": "calldef",
@@ -768,7 +839,8 @@
                     }
                   }
                 ]
-              }
+              },
+              "info": "Communication bindings for this capability, including the underlying route and message type."
             }
           ],
           "events": [
@@ -777,16 +849,21 @@
               "type": "out",
               "returnType": "void",
               "modifiable": false,
-              "linksTo": 0
+              "linksTo": 0,
+              "info": "Emitted when the sensor reports a normal CO₂ level."
             },
             {
               "id": "high",
               "type": "out",
               "returnType": "void",
               "modifiable": false,
-              "linksTo": 1
+              "linksTo": 1,
+              "info": "Emitted when the sensor reports a high CO₂ level."
             }
-          ]
+          ],
+          "help": {
+            "message": "Provides events indicating whether the measured CO₂ level is normal or high. Use these events to react to changes in air quality."
+          }
         },
         {
           "type": "Occupancy Sensor",
@@ -807,7 +884,8 @@
               "default": {
                 "kind": "string",
                 "value": "Occupancy Sensor"
-              }
+              },
+              "info": "Display name used to identify this node in the editor."
             },
             {
               "id": "color",
@@ -816,7 +894,8 @@
               "default": {
                 "kind": "string",
                 "value": "#e5c185"
-              }
+              },
+              "info": "Display color of this node in the editor."
             },
             {
               "id": "calldef",
@@ -859,7 +938,8 @@
                     }
                   }
                 ]
-              }
+              },
+              "info": "Communication bindings for this capability, including the underlying route and message type."
             }
           ],
           "events": [
@@ -868,16 +948,21 @@
               "type": "out",
               "returnType": "void",
               "modifiable": false,
-              "linksTo": 0
+              "linksTo": 0,
+              "info": "Emitted when the monitored area is reported as empty."
             },
             {
               "id": "present",
               "type": "out",
               "returnType": "void",
               "modifiable": false,
-              "linksTo": 1
+              "linksTo": 1,
+              "info": "Emitted when presence is detected in the monitored area."
             }
-          ]
+          ],
+          "help": {
+            "message": "Reports whether an area is empty or occupied. Use its events to control behaviour based on detected presence."
+          }
         },
         {
           "type": "Lighting",
@@ -898,7 +983,8 @@
               "default": {
                 "kind": "string",
                 "value": "Lighting"
-              }
+              },
+              "info": "Display name used to identify this node in the editor."
             },
             {
               "id": "color",
@@ -907,7 +993,8 @@
               "default": {
                 "kind": "string",
                 "value": "#fbf2c4"
-              }
+              },
+              "info": "Display color of this node in the editor."
             },
             {
               "id": "calldef",
@@ -950,7 +1037,8 @@
                     }
                   }
                 ]
-              }
+              },
+              "info": "Communication bindings for this capability, including the underlying route and message type."
             },
             {
               "id": "arguments",
@@ -960,7 +1048,8 @@
                   "id": "scene",
                   "type": "string"
                 }
-              ]
+              ],
+              "info": "Configured input values for the lighting operation, such as the scene identifier."
             }
           ],
           "events": [
@@ -973,11 +1062,16 @@
               "arguments": [
                 {
                   "id": "scene",
-                  "type": "string"
+                  "type": "string",
+                  "info": "Name or identifier of the lighting scene to activate."
                 }
-              ]
+              ],
+              "info": "Sets the lighting scene identified by @scene."
             }
-          ]
+          ],
+          "help": {
+            "message": "Controls a lighting scene. Send a scene identifier to select the desired lighting configuration."
+          }
         },
         {
           "type": "Ventilation",
@@ -998,7 +1092,8 @@
               "default": {
                 "kind": "string",
                 "value": "Ventilation"
-              }
+              },
+              "info": "Display name used to identify this node in the editor."
             },
             {
               "id": "color",
@@ -1007,7 +1102,8 @@
               "default": {
                 "kind": "string",
                 "value": "#7ebb9c"
-              }
+              },
+              "info": "Display color of this node in the editor."
             },
             {
               "id": "calldef",
@@ -1033,7 +1129,8 @@
                     }
                   }
                 ]
-              }
+              },
+              "info": "Communication bindings for this capability, including the underlying route and message type."
             },
             {
               "id": "arguments",
@@ -1043,7 +1140,8 @@
                   "id": "up",
                   "type": "bool"
                 }
-              ]
+              ],
+              "info": "Configured input values for the ventilation operation."
             }
           ],
           "events": [
@@ -1056,32 +1154,40 @@
               "arguments": [
                 {
                   "id": "mode",
-                  "type": "string"
+                  "type": "string",
+                  "info": "Name of the requested ventilation mode."
                 }
-              ]
+              ],
+              "info": "Starts a ventilation operation using the selected @mode."
             },
             {
               "id": "done",
               "type": "return",
               "returnType": "void",
               "linksTo": 0,
-              "modifiable": false
+              "modifiable": false,
+              "info": "Emitted when the ventilation operation completes successfully."
             },
             {
               "id": "stop",
               "type": "abort",
               "returnType": "void",
               "linksTo": 0,
-              "modifiable": false
+              "modifiable": false,
+              "info": "Requests that the current ventilation operation stop."
             },
             {
               "id": "failed",
               "type": "error",
               "returnType": "void",
               "linksTo": 0,
-              "modifiable": false
+              "modifiable": false,
+              "info": "Emitted when the ventilation operation fails."
             }
-          ]
+          ],
+          "help": {
+            "message": "Controls a ventilation operation using a selected mode. Reports completion or failure and supports stopping the operation."
+          }
         },
         {
           "type": "Conveyor",
@@ -1102,7 +1208,8 @@
               "default": {
                 "kind": "string",
                 "value": "Conveyor"
-              }
+              },
+              "info": "Display name used to identify this node in the editor."
             },
             {
               "id": "color",
@@ -1111,7 +1218,8 @@
               "default": {
                 "kind": "string",
                 "value": "#7ebb9c"
-              }
+              },
+              "info": "Display color of this node in the editor."
             },
             {
               "id": "calldef",
@@ -1146,7 +1254,8 @@
                     }
                   }
                 ]
-              }
+              },
+              "info": "Communication bindings for this capability, including the underlying route and message type."
             }
           ],
           "events": [
@@ -1156,30 +1265,37 @@
               "returnType": "void",
               "modifiable": false,
               "linksTo": 0,
-              "arguments": []
+              "arguments": [],
+              "info": "Starts moving the conveyor."
             },
             {
               "id": "done",
               "type": "return",
               "returnType": "void",
               "linksTo": 0,
-              "modifiable": false
+              "modifiable": false,
+              "info": "Emitted when the conveyor movement completes successfully."
             },
             {
               "id": "stop",
               "type": "abort",
               "returnType": "void",
               "linksTo": 0,
-              "modifiable": false
+              "modifiable": false,
+              "info": "Requests that the conveyor stop moving."
             },
             {
               "id": "failed",
               "type": "error",
               "returnType": "void",
               "linksTo": 0,
-              "modifiable": false
+              "modifiable": false,
+              "info": "Emitted if the conveyor movement fails."
             }
-          ]
+          ],
+          "help": {
+            "message": "Starts and stops a conveyor movement. Reports completion or failure of the movement operation."
+          }
         },
         {
           "type": "Image Inspection",
@@ -1200,7 +1316,8 @@
               "default": {
                 "kind": "string",
                 "value": "Image Inspection"
-              }
+              },
+              "info": "Display name used to identify this node in the editor."
             },
             {
               "id": "color",
@@ -1209,7 +1326,8 @@
               "default": {
                 "kind": "string",
                 "value": "#d73800"
-              }
+              },
+              "info": "Display color of this node in the editor."
             },
             {
               "id": "calldef",
@@ -1244,7 +1362,8 @@
                     }
                   }
                 ]
-              }
+              },
+              "info": "Communication bindings for this capability, including the underlying route and message type."
             }
           ],
           "events": [
@@ -1253,23 +1372,29 @@
               "type": "in",
               "returnType": "void",
               "modifiable": false,
-              "linksTo": 0
+              "linksTo": 0,
+              "info": "Starts inspecting images for invalid items."
             },
             {
               "id": "stop",
               "type": "in",
               "returnType": "void",
               "modifiable": false,
-              "linksTo": 1
+              "linksTo": 1,
+              "info": "Stops the image inspection operation."
             },
             {
               "id": "invalid",
               "type": "out",
               "returnType": "void",
               "modifiable": false,
-              "linksTo": 2
+              "linksTo": 2,
+              "info": "Emitted when an inspected item is classified as invalid."
             }
-          ]
+          ],
+          "help": {
+            "message": "Starts or stops image inspection and reports when an inspected item is invalid."
+          }
         },
         {
           "type": "Ticket Creation",
@@ -1290,7 +1415,8 @@
               "default": {
                 "kind": "string",
                 "value": "Ticket Creation"
-              }
+              },
+              "info": "Display name used to identify this node in the editor."
             },
             {
               "id": "color",
@@ -1299,7 +1425,8 @@
               "default": {
                 "kind": "string",
                 "value": "#d73800"
-              }
+              },
+              "info": "Display color of this node in the editor."
             },
             {
               "id": "calldef",
@@ -1338,7 +1465,8 @@
                     }
                   }
                 ]
-              }
+              },
+              "info": "Communication bindings for this capability, including the underlying route and message type."
             }
           ],
           "events": [
@@ -1347,9 +1475,13 @@
               "type": "in",
               "returnType": "void",
               "modifiable": false,
-              "linksTo": 0
+              "linksTo": 0,
+              "info": "Requests creation of a new ticket or record."
             }
-          ]
+          ],
+          "help": {
+            "message": "Creates a ticket or record when requested, for example to document an item requiring attention."
+          }
         }
       ]
     },
@@ -1368,7 +1500,11 @@
             {
               "id": "name",
               "type": "string",
-              "default": { "kind": "string", "value": "Start" }
+              "default": {
+                "kind": "string",
+                "value": "Start"
+              },
+              "info": "Display name used to identify this node in the editor."
             },
             {
               "id": "mode",
@@ -1392,7 +1528,8 @@
                     ]
                   }
                 }
-              }
+              },
+              "info": "Choose whether the flow is activated by a signal or by a timed condition."
             }
           ],
           "connectors": [
@@ -1404,7 +1541,7 @@
           ],
           "behaviour": {},
           "help": {
-            "message": "Start of a behavioural flow. This can be a reaction to an event or a timed action"
+            "message": "Entry point of a behavioural flow. Select whether the flow starts in response to a signal or a timed condition."
           }
         },
         {
@@ -1419,7 +1556,11 @@
             {
               "id": "name",
               "type": "string",
-              "default": { "kind": "string", "value": "Success" }
+              "default": {
+                "kind": "string",
+                "value": "Success"
+              },
+              "info": "Display name used to identify this node in the editor."
             }
           ],
           "connectors": [
@@ -1431,7 +1572,7 @@
           ],
           "behaviour": {},
           "help": {
-            "message": "End of a happy behavioural flow. This must always be present in a flow"
+            "message": "Marks the successful completion of a behavioural flow. Connect the successful execution path to this node."
           }
         },
         {
@@ -1446,7 +1587,11 @@
             {
               "id": "name",
               "type": "string",
-              "default": { "kind": "string", "value": "Failure" }
+              "default": {
+                "kind": "string",
+                "value": "Failure"
+              },
+              "info": "Display name used to identify this node in the editor."
             }
           ],
           "connectors": [
@@ -1458,7 +1603,7 @@
           ],
           "behaviour": {},
           "help": {
-            "message": "End of an errored behavioural flow. This indicates the flow of a bad behaviour."
+            "message": "Marks a failed execution path in a behavioural flow. Use it when the flow cannot complete successfully."
           }
         },
         {
@@ -1473,7 +1618,11 @@
             {
               "id": "name",
               "type": "string",
-              "default": { "kind": "string", "value": "Continue" }
+              "default": {
+                "kind": "string",
+                "value": "Continue"
+              },
+              "info": "Display name used to identify this node in the editor."
             }
           ],
           "connectors": [
@@ -1485,7 +1634,7 @@
           ],
           "behaviour": {},
           "help": {
-            "message": "Used with signal handlers to indicate that the main behaviour should continue executing after the signal was handled."
+            "message": "Returns from a signal-handling flow and allows the main behaviour to continue."
           }
         },
         {
@@ -1500,7 +1649,11 @@
             {
               "id": "name",
               "type": "string",
-              "default": { "kind": "string", "value": "Terminate" }
+              "default": {
+                "kind": "string",
+                "value": "Terminate"
+              },
+              "info": "Display name used to identify this node in the editor."
             }
           ],
           "connectors": [
@@ -1512,7 +1665,7 @@
           ],
           "behaviour": {},
           "help": {
-            "message": "End of a task. This will end the current task, independent of where it is triggered."
+            "message": "Terminates the current task, regardless of which behavioural flow reaches this node."
           }
         },
         {
@@ -1527,13 +1680,21 @@
             {
               "id": "name",
               "type": "string",
-              "default": { "kind": "string", "value": "Call capability" }
+              "default": {
+                "kind": "string",
+                "value": "Call capability"
+              },
+              "info": "Display name used to identify this node in the editor."
             },
             {
               "id": "color",
               "type": "void",
               "control": "color",
-              "default": { "kind": "string", "value": "#202020" }
+              "default": {
+                "kind": "string",
+                "value": "#202020"
+              },
+              "info": "Display color of this node in the editor."
             },
             {
               "id": "capability",
@@ -1567,7 +1728,8 @@
                     "value": ""
                   }
                 }
-              }
+              },
+              "info": "Choose the capability and event to invoke at this point in the flow."
             }
           ],
           "connectors": [
@@ -1592,7 +1754,10 @@
               "position": "west"
             }
           ],
-          "controls": []
+          "controls": [],
+          "help": {
+            "message": "Invokes a selected event on a capability used by the task. Select the capability and event, then connect the desired outcomes."
+          }
         },
         {
           "type": "Flow call",
@@ -1606,13 +1771,21 @@
             {
               "id": "name",
               "type": "string",
-              "default": { "kind": "string", "value": "Flow call" }
+              "default": {
+                "kind": "string",
+                "value": "Flow call"
+              },
+              "info": "Display name used to identify this node in the editor."
             },
             {
               "id": "color",
               "type": "void",
               "control": "color",
-              "default": { "kind": "string", "value": "#202020" }
+              "default": {
+                "kind": "string",
+                "value": "#202020"
+              },
+              "info": "Display color of this node in the editor."
             },
             {
               "id": "task",
@@ -1642,7 +1815,8 @@
                     "value": ""
                   }
                 }
-              }
+              },
+              "info": "Choose the task and flow to invoke."
             }
           ],
           "connectors": [
@@ -1667,7 +1841,10 @@
               "position": "west"
             }
           ],
-          "controls": []
+          "controls": [],
+          "help": {
+            "message": "Invokes another flow belonging to a selected task. Use it to reuse a behavioural flow without duplicating its contents."
+          }
         },
         {
           "type": "Join",
@@ -1681,13 +1858,21 @@
             {
               "id": "name",
               "type": "string",
-              "default": { "kind": "string", "value": "Join" }
+              "default": {
+                "kind": "string",
+                "value": "Join"
+              },
+              "info": "Display name used to identify this node in the editor."
             },
             {
               "id": "color",
               "type": "void",
               "control": "color",
-              "default": { "kind": "string", "value": "#74a892" }
+              "default": {
+                "kind": "string",
+                "value": "#74a892"
+              },
+              "info": "Display color of this node in the editor."
             }
           ],
           "connectors": [
@@ -1702,7 +1887,10 @@
               "position": "west"
             }
           ],
-          "controls": []
+          "controls": [],
+          "help": {
+            "message": "Combines incoming execution paths into a single outgoing path. Use it where branches of a flow converge."
+          }
         },
         {
           "type": "Within",
@@ -1716,13 +1904,21 @@
             {
               "id": "name",
               "type": "string",
-              "default": { "kind": "string", "value": "Within" }
+              "default": {
+                "kind": "string",
+                "value": "Within"
+              },
+              "info": "Display name used to identify this node in the editor."
             },
             {
               "id": "color",
               "type": "void",
               "control": "color",
-              "default": { "kind": "string", "value": "#202020" }
+              "default": {
+                "kind": "string",
+                "value": "#202020"
+              },
+              "info": "Display color of this node in the editor."
             },
             {
               "id": "timeout",
@@ -1730,7 +1926,8 @@
               "default": {
                 "kind": "int",
                 "value": "0"
-              }
+              },
+              "info": "Maximum duration allowed for the contained behaviour before taking the timeout branch. Check the editor’s expected time unit."
             }
           ],
           "transitions": [],
@@ -1758,7 +1955,7 @@
           ],
           "behaviour": {},
           "help": {
-            "message": "Performs the \"do\" strategy and if it does not conclude within the set time, it will trigger the \"else\" strategy."
+            "message": "Executes a contained behaviour within a configured time limit. If the limit is exceeded, execution follows the alternative flow."
           }
         },
         {
@@ -1773,7 +1970,11 @@
             {
               "id": "name",
               "type": "string",
-              "default": { "kind": "string", "value": "Repeat" }
+              "default": {
+                "kind": "string",
+                "value": "Repeat"
+              },
+              "info": "Display name used to identify this node in the editor."
             },
             {
               "id": "task",
@@ -1803,7 +2004,8 @@
                     "value": ""
                   }
                 }
-              }
+              },
+              "info": "Select the flow associated with this repeat operation."
             },
             {
               "id": "iterations",
@@ -1812,7 +2014,7 @@
                 "kind": "int",
                 "value": 0
               },
-              "info": "Number of times the loop will execute. A value of 0 repeats indefinitely until the flow is stopped or aborted."
+              "info": "Number of repetitions. Set to 0 to repeat indefinitely until execution is stopped or aborted."
             },
             {
               "id": "rate",
@@ -1821,7 +2023,7 @@
                 "kind": "int",
                 "value": 0
               },
-              "info": "Delay in milliseconds between consecutive iterations. For example, a value of 1000 executes the loop once per second."
+              "info": "Delay in milliseconds between consecutive iterations. For example, 1000 waits one second."
             }
           ],
           "connectors": [
@@ -1848,7 +2050,7 @@
           ],
           "behaviour": {},
           "help": {
-            "message": "Executes the contained strategy repeatedly. Configure the number of iterations and the interval between executions using the block properties."
+            "message": "Executes a contained behaviour repeatedly. Configure how many times it runs and the delay between iterations."
           }
         },
         {
@@ -1863,7 +2065,11 @@
             {
               "id": "name",
               "type": "string",
-              "default": { "kind": "string", "value": "Link in" }
+              "default": {
+                "kind": "string",
+                "value": "Link in"
+              },
+              "info": "Display name used to identify this node in the editor."
             }
           ],
           "connectors": [
@@ -1875,7 +2081,7 @@
           ],
           "behaviour": {},
           "help": {
-            "message": "Entry point for a linked piece of flow. Other Link out nodes in the same flow can jump here."
+            "message": "Defines a named destination within a behavioural flow. A Link out node can redirect execution to it."
           }
         },
         {
@@ -1890,7 +2096,11 @@
             {
               "id": "name",
               "type": "string",
-              "default": { "kind": "string", "value": "Link out" }
+              "default": {
+                "kind": "string",
+                "value": "Link out"
+              },
+              "info": "Display name used to identify this node in the editor."
             },
             {
               "id": "target",
@@ -1908,7 +2118,8 @@
                     "value": "-"
                   }
                 }
-              }
+              },
+              "info": "Select the Link in node to which execution should jump."
             }
           ],
           "connectors": [
@@ -1920,7 +2131,7 @@
           ],
           "behaviour": {},
           "help": {
-            "message": "Entry point for a linked piece of flow. Other Link out nodes in the same flow can jump here."
+            "message": "Redirects execution to a selected Link in node in the same behavioural flow."
           }
         }
       ]

@@ -36,7 +36,7 @@ CapabilitySelector::CapabilitySelector(QWidget* parent)
   connect(search, &maki::SearchWidget::valueChanged, this, [this](const QString& query) {
     for (const auto& section : findChildren<SectionWidget*>())
       if (auto* library = qobject_cast<LibraryContainer*>(section->content()))
-        section->setExpanded(query.isEmpty() || library->filterNodes(query));
+        section->setExpanded(library->filterNodes(query) || query.isEmpty());
   });
 
   vlayout->addWidget(search);
@@ -111,7 +111,7 @@ LibraryContainer* CapabilitySelector::getLibrary(const QString& id)
   library->setColumnCount(4);
   library->setDraggable(false);
   if (auto* scene = qobject_cast<LibraryScene*>(library->scene()))
-    connect(scene, &LibraryScene::libraryNodeSelected, [this](const QString& nodeType) {
+    connect(scene, &LibraryScene::libraryNodeSelected, [this](const QString& nodeType, const QString& /* instanceId */) {
       emit accepted({nodeType});
       emit dismissed();
     });

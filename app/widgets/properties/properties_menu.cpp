@@ -405,7 +405,7 @@ VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IPa
 
   layout()->addWidget(argumentsGroup);
 
-  auto findCall = [this, mode](const QString& componentId, const QString& callName) -> std::shared_ptr<FlowSaveInfo> {
+  auto findCall = [mode](const QString& componentId, const QString& callName) -> std::shared_ptr<FlowSaveInfo> {
     if (componentId.isEmpty())
       return nullptr;
 
@@ -418,7 +418,7 @@ VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IPa
     const auto events = SaveInfo::instance().getEventsOfTypeFromNode(componentId, {Types::CallType::TRIGGER});
     return events.isEmpty() ? nullptr : events.first();
   };
-  auto populateCalls = [this, mode, callEditor](const QString& componentId) {
+  auto populateCalls = [mode, callEditor](const QString& componentId) {
     if (!callEditor)
       return;
 

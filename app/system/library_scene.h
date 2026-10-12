@@ -37,11 +37,6 @@ public:
   bool filterNodes(const QString& query);
 
   /**
-   * @brief Relayouts the visible items in the scene.
-   */
-  void relayoutVisibleItems();
-
-  /**
    * @brief Handles theme change events.
    */
   void themeChanged();
@@ -54,7 +49,7 @@ signals:
    *
    * @param nodeType The type of the selected node.
    */
-  void libraryNodeSelected(const QString& nodeType);
+  void libraryNodeSelected(const QString& nodeType, const QString& instanceId);
 
 protected:
   /**

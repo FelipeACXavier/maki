@@ -78,7 +78,7 @@ void LibraryScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
   if (mClickedItem && !mDragging)
   {
     mClickedItem->handleClick(event);
-    emit libraryNodeSelected(mClickedItem->nodeId());
+    emit libraryNodeSelected(mClickedItem->nodeId(), mClickedItem->id());
   }
 
   mDragging = false;
@@ -111,7 +111,7 @@ bool LibraryScene::filterNodes(const QString& query)
 
   for (QGraphicsItem* graphicsItem : items())
   {
-    auto* item = dynamic_cast<DraggableItem*>(graphicsItem);
+    auto* item = qgraphicsitem_cast<DraggableItem*>(graphicsItem);
     if (!item)
       continue;
 
@@ -123,26 +123,7 @@ bool LibraryScene::filterNodes(const QString& query)
       anyVisible = true;
   }
 
-  relayoutVisibleItems();
-
   return anyVisible;
-}
-
-void LibraryScene::relayoutVisibleItems()
-{
-  int y = 0;
-  QList<QGraphicsItem*> allItems = items(Qt::AscendingOrder);
-  const auto width = qobject_cast<QGraphicsView*>(parent())->viewport()->width();
-  for (QGraphicsItem* graphicsItem : allItems)
-  {
-    auto* item = dynamic_cast<DraggableItem*>(graphicsItem);
-    if (!item || !item->isVisible())
-      continue;
-
-    const auto itemBounds = item->boundingRect();
-    item->setPos(static_cast<int>((width - itemBounds.width()) / 2), y + 15);
-    y = item->mapToScene(itemBounds.bottomLeft()).y();
-  }
 }
 
 QRectF LibraryScene::visibleItemsBounds() const

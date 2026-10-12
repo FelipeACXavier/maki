@@ -5,12 +5,15 @@
 #include <QMenu>
 #include <QPainter>
 #include <QPushButton>
+#include <QRegularExpression>
+#include <QSet>
 #include <QStyle>
 #include <QSvgRenderer>
 #include <QTabBar>
 #include <QTreeWidgetItem>
 #include <QVariant>
 #include <QWidgetAction>
+#include <oclero/qlementine.hpp>
 
 #include "app_configs.h"
 #include "app_paths.h"
@@ -232,113 +235,239 @@ QString htmlEscape(const QString& s)
   return s.toHtmlEscaped();
 }
 
+QColor blendColors(const QColor& foreground, const QColor& background, qreal opacity)
+{
+  opacity = qBound(0.0, opacity, 1.0);
+  return QColor::fromRgbF(foreground.redF() * opacity + background.redF() * (1.0 - opacity),
+                          foreground.greenF() * opacity + background.greenF() * (1.0 - opacity),
+                          foreground.blueF() * opacity + background.blueF() * (1.0 - opacity));
+}
+
+QString maki::textStyleCss(maki::Styles styles)
+{
+  QStringList css;
+  if (styles.testFlag(Bold))
+    css << "font-weight: 600;";
+
+  if (styles.testFlag(Italic))
+    css << "font-style: italic;";
+
+  if (styles.testFlag(Monospace))
+    css << "font-family: monospace;";
+
+  if (styles.testFlag(Underline) || styles.testFlag(Strikeout))
+  {
+    QStringList decorations;
+    if (styles.testFlag(Underline))
+      decorations << "underline";
+
+    if (styles.testFlag(Strikeout))
+      decorations << "line-through";
+
+    css << "text-decoration: " + decorations.join(' ') + ";";
+  }
+
+  return css.join(' ');
+}
+
+QString referenceHtml(const QString& text, const QString& foreground, const QString& background, const QString& browserBackground)
+{
+  return QString("<span style='font-family: monospace; color: %1; background-color: %2; padding: 1px 4px;'>"
+                 "  %3"
+                 "</span>")
+      .arg(foreground, blendColors(QColor(background), QColor(browserBackground), 0.3).name(), htmlEscape(text));
+}
+
+QString formatDescriptionHtml(const QString& description, const FlowConfig& event)
+{
+  const auto theme = oclero::qlementine::appStyle()->theme();
+  const QString textColor = theme.secondaryColor.name();
+  const QString argumentBackground = theme.primaryColorHovered.name();
+  const QString eventBackground = theme.semiTransparentColor1.name();
+  const QString background = theme.backgroundColorMain1.name();
+
+  static const QRegularExpression pattern(R"((@[A-Za-z_][A-Za-z0-9_]*|\$[A-Za-z_][A-Za-z0-9_]*))");
+  static const QSet<QString> eventReferences = {"trigger", "return", "error", "abort"};
+
+  QString result;
+  qsizetype lastPos = 0;
+
+  auto matches = pattern.globalMatch(description);
+  while (matches.hasNext())
+  {
+    const auto match = matches.next();
+
+    // Escape the ordinary text preceding the reference.
+    result += htmlEscape(description.mid(lastPos, match.capturedStart() - lastPos));
+
+    const QString reference = match.captured(0);
+    const QString name = reference.mid(1);
+
+    if (reference.startsWith('@'))
+      result += referenceHtml(name, textColor, argumentBackground, background);
+    else if (eventReferences.contains(name))
+      result += referenceHtml(name, textColor, eventBackground, background);
+    else
+      result += htmlEscape(reference);
+
+    lastPos = match.capturedEnd();
+  }
+
+  result += htmlEscape(description.mid(lastPos));
+
+  return result;
+}
+
+QString textHtml(const QString& text, const QString& color, maki::Styles styles)
+{
+  return QString("<p style='color: %1; margin: 4px 0; %2'>"
+                 "%3"
+                 "</p>")
+      .arg(color, maki::textStyleCss(styles), text);
+}
+
+QString fieldHtml(const QString& title, const QString& field, const QString& titleColor, const QString& fieldColor, maki::Styles styles)
+{
+  return QString("<p style='margin: 0 0 4px 0;'>"
+                 "  <span style='color: %1;'>%2</span>"
+                 "  &nbsp;&nbsp;"
+                 "  <span style='color: %3; %5'>%4</span>"
+                 "</p>")
+      .arg(titleColor, title, fieldColor, field, maki::textStyleCss(styles));
+}
+
+QString hlineHtml(const QString& foreground, const QString& background, qreal opacity)
+{
+  const QString color = blendColors(QColor(foreground), QColor(background), opacity).name();
+  return QString("<hr style='background-color: %1; border: none; height: 1px;'/>").arg(color);
+}
+
+QString spacerHtml(int height)
+{
+  return QString("<p style='margin: 0; font-size: %1px;'>&nbsp;</p>").arg(height);
+}
+
+QString indentHtml(const QString& content, int indentation)
+{
+  return QString("<table width='100%' cellspacing='0' cellpadding='0' "
+                 "style='border: none; margin: 0;'>"
+                 "  <tr>"
+                 "    <td width='%1' style='border: none;'></td>"
+                 "    <td style='border: none;'>%2</td>"
+                 "  </tr>"
+                 "</table>")
+      .arg(indentation)
+      .arg(content);
+}
+
 QString createInformationMessage(const NodeConfig& node)
 {
-  QString out;
-  out += R"(
-<!doctype html>
-<html>
-<head>
-<meta charset="utf-8">
-<style>
-  body { font-family: sans-serif; font-size: 14pt; }
-  p  { margin: 0 0 0 8px; }
+  const auto theme = oclero::qlementine::appStyle()->theme();
+  const QString textColor = theme.secondaryColor.name();
+  const QString mutedColor = theme.secondaryAlternativeColor.name();
+  const QString borderColor = theme.borderColor.name();
+  const QString accentColor = theme.primaryColor.name();
+  const QString background = theme.backgroundColorMain1.name();
 
-  table.info {
-    width: 80%;
-    border-collapse: collapse;
-    margin: 6px 0 12px 0;
-  }
-  table.info td {
-    border-bottom: 1px solid #999;
-    padding: 6px 8px;
-    vertical-align: top;
-  }
-  table.info th {
-    font-weight: 600;
-    text-align: left;
-    padding: 6px 8px;
-    vertical-align: top;
-    border-bottom: 4px solid #999;
-  }
-  .section-title {
-    font-size: 20pt;
-    margin: 8px 0 8px 0;
-  }
-</style>
-</head>
-<body>
-)";
+  QString out = QString("<html>"
+                        "<body style='font-family: sans-serif; font-size: 10pt; color: %1;'>")
+                    .arg(textColor);
 
   // Title / message
+  out += textHtml("Description", textColor, maki::Bold);
+  out += hlineHtml(borderColor, background, 0.8);
+  out += spacerHtml();
+  auto description = fieldHtml("Type", node.type, textColor, accentColor, maki::Bold | maki::Monospace);
+
   if (!node.help.message.isEmpty())
-  {
-    out += "<h3>Description</h3>";
-    out += "<p> Info: " + htmlEscape(node.help.message) + "</p>";
-    out += "<p> Type: " + htmlEscape(node.type) + "</p>";
-  }
+    description += fieldHtml("Info", formatDescriptionHtml(node.help.message, FlowConfig()), textColor, mutedColor);
+
+  out += indentHtml(description, 16);
 
   // Properties
   if (!node.properties.isEmpty())
   {
-    out += "<h4 class='section-title'>Properties</h4>";
-    out += R"(
-      <table class="info">
-        <thead>
-          <tr>
-            <th width="10%">Id</th>
-            <th width="10%">Type</th>
-            <th width="30%">Default</th>
-            <th width="50%">Info</th>
-          </tr>
-        </thead>
-        <tbody>
-      )";
-
-    for (const auto& prop : node.properties)
+    out += textHtml("Properties", textColor, maki::Bold);
+    out += spacerHtml();
+    for (const auto& arg : node.properties)
     {
-      out += "<tr>";
-      out += "<td>" + htmlEscape(prop.id) + "</td>";
-      out += "<td>" + htmlEscape(QString::fromStdString(prop.type.toString())) + "</td>";
-      out += "<td>" + htmlEscape(prop.defaultValue.isValid() ? prop.defaultValue.toString() : "\"\"") + "</td>";
-      out += "<td>" + htmlEscape(prop.info) + "</td>";
-      out += "</tr>";
-    }
+      const QString name = htmlEscape(arg.id);
+      const QString argType = htmlEscape(QString::fromStdString(arg.type.toString()));
 
-    out += "</tbody></table>";
+      QString prop = fieldHtml("Name", name, textColor, textColor, maki::Bold);
+      prop += fieldHtml("Type", argType, textColor, accentColor, maki::Bold | maki::Monospace);
+      if (!arg.info.isEmpty())
+        prop += fieldHtml("Info", formatDescriptionHtml(arg.info, FlowConfig()), textColor, mutedColor);
+
+      prop += hlineHtml(borderColor, background, 0.6);
+      out += indentHtml(prop, 16);
+    }
   }
 
   // Events
   if (!node.events.isEmpty())
   {
-    out += "<h4 class='section-title'>Events</h4>";
-    out += R"(
-      <table class="info">
-        <thead>
-          <tr>
-            <th width="20%">Id</th>
-            <th width="10%">Type</th>
-            <th width="20%">Return Type</th>
-            <th width="50%">Description</th>
-          </tr>
-        </thead>
-        <tbody>
-      )";
-
+    out += textHtml("Events", textColor, maki::Bold);
+    out += spacerHtml();
     for (const auto& e : node.events)
     {
-      out += "<tr>";
-      out += "<td>" + htmlEscape(e.name) + "</td>";
-      out += "<td>" + htmlEscape(Types::CallTypeToString(e.type)) + "</td>";
-      out += "<td>" + htmlEscape(QString::fromStdString(e.returnType.toString())) + "</td>";
-      out += "<td>" + htmlEscape(e.info) + "</td>";
-      out += "</tr>";
+      auto event = createInformationMessage(e, false);
+      event += hlineHtml(borderColor, background, 0.6);
+      out += indentHtml(event, 16);
     }
-
-    out += "</tbody></table>";
   }
 
   out += "</body></html>";
+  return out;
+}
+
+QString createInformationMessage(const FlowConfig& event, bool defineBody)
+{
+  const auto theme = oclero::qlementine::appStyle()->theme();
+  const QString textColor = theme.secondaryColor.name();
+  const QString mutedColor = theme.secondaryAlternativeColor.name();
+  const QString borderColor = theme.borderColor.name();
+  const QString accentColor = theme.primaryColor.name();
+  const QString background = theme.backgroundColorMain1.name();
+
+  const QString type = htmlEscape(Types::CallTypeToString(event.type));
+  const QString returnType = htmlEscape(QString::fromStdString(event.returnType.toString()));
+
+  QString out = "";
+  if (defineBody)
+    out += QString("<html>"
+                   "<body style='font-family: sans-serif; font-size: 10pt; color: %1;'>")
+               .arg(textColor);
+
+  out += fieldHtml("Name", event.name, textColor, mutedColor, maki::Bold);
+  out += fieldHtml("Type", type, textColor, accentColor, maki::Bold);
+  out += fieldHtml("Returns", returnType, textColor, mutedColor, maki::Bold | maki::Monospace);
+
+  if (!event.info.isEmpty())
+    out += fieldHtml("Info", formatDescriptionHtml(event.info, event), textColor, mutedColor);
+
+  if (!event.arguments.isEmpty())
+  {
+    out += textHtml("Arguments", textColor, maki::Bold);
+    out += spacerHtml(2);
+    for (const auto& arg : event.arguments)
+    {
+      const QString name = htmlEscape(arg.id);
+      const QString argType = htmlEscape(QString::fromStdString(arg.type.toString()));
+
+      auto argument = hlineHtml(borderColor, background, 0.4);
+      argument += fieldHtml("Name", name, textColor, textColor, maki::Bold);
+      argument += fieldHtml("Type", argType, textColor, accentColor, maki::Bold | maki::Monospace);
+      if (!arg.info.isEmpty())
+        argument += fieldHtml("Info", formatDescriptionHtml(arg.info, event), textColor, mutedColor);
+
+      out += indentHtml(argument, 16);
+    }
+  }
+
+  if (defineBody)
+    out += "</body></html>";
+
   return out;
 }
 

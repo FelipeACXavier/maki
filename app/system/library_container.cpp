@@ -63,9 +63,9 @@ void LibraryContainer::updateSceneSize()
     parent->updateContentHeight(contentHeight + frameWidth() * 2);
 }
 
-VoidResult LibraryContainer::addNode(const QString& id, std::shared_ptr<NodeConfig> config)
+VoidResult LibraryContainer::addNode(const QString& nodeId, std::shared_ptr<NodeConfig> config, const QString& instanceId)
 {
-  auto* item = new DraggableItem(id, config);
+  auto* item = new DraggableItem(instanceId, nodeId, config);
 
   // Add item to scene
   scene()->addItem(item);
@@ -102,7 +102,7 @@ bool LibraryContainer::filterNodes(const QString& query)
     return false;
 
   const bool hasMatches = libraryScene->filterNodes(query);
-  updateSceneSize();
+  relayoutItems();
 
   return hasMatches;
 }
@@ -122,6 +122,8 @@ void LibraryContainer::relayoutItems()
   for (QGraphicsItem* graphicsItem : scene()->items(Qt::AscendingOrder))
   {
     if (graphicsItem->type() != DraggableItem::Type)
+      continue;
+    if (!graphicsItem->isVisible())
       continue;
 
     if (auto item = qgraphicsitem_cast<DraggableItem*>(graphicsItem))

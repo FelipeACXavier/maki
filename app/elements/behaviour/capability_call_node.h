@@ -17,6 +17,7 @@ public:
 
 protected:
   void paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget) override;
+  void mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event) override;
 
 private:
   /** True while the pointer is over the Task empty-slot (add-capability) control. */

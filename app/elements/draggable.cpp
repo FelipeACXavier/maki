@@ -13,8 +13,8 @@
 #include "save_info.h"
 #include "style_helpers.h"
 
-DraggableItem::DraggableItem(const QString& nodeId, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
-    : NodeBase(QUuid::createUuid().toString(), nodeId, nodeConfig, parent)
+DraggableItem::DraggableItem(const QString& instanceId, const QString& nodeId, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
+    : NodeBase(instanceId.isEmpty() ? QUuid::createUuid().toString() : instanceId, nodeId, nodeConfig, parent)
 {
   setFlag(QGraphicsItem::ItemIsSelectable, true);
   setLabel(nameFromNodeId(config()->type), Fonts::BaseSize);

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QFlags>
 #include <QIcon>
 #include <QList>
 #include <QString>
@@ -225,6 +226,36 @@ QString htmlEscape(const QString& s);
  * @return QString The created message.
  */
 QString createInformationMessage(const NodeConfig& node);
+
+QString createInformationMessage(const FlowConfig& flow, bool defineBody = true);
+
+namespace maki
+{
+enum Style
+{
+  Normal = 0,
+  Bold = 1 << 0,
+  Italic = 1 << 1,
+  Monospace = 1 << 2,
+  Underline = 1 << 3,
+  Strikeout = 1 << 4
+};
+
+Q_DECLARE_FLAGS(Styles, Style)
+QString textStyleCss(Styles styles);
+
+Q_DECLARE_OPERATORS_FOR_FLAGS(Styles)
+}  // namespace maki
+
+QString textHtml(const QString& text, const QString& color, maki::Styles styles = maki::Normal);
+QString fieldHtml(const QString& title, const QString& field, const QString& textColor, const QString& fieldColor, maki::Styles styles = maki::Normal);
+QString hlineHtml(const QString& foreground, const QString& background = "#FFFFFF", qreal opacity = 1);
+QString referenceHtml(const QString& text, const QString& foreground, const QString& background, const QString& browserBackground);
+QString formatDescriptionHtml(const QString& description, const FlowConfig& event);
+
+QColor blendColors(const QColor& foreground, const QColor& background, qreal opacity);
+QString spacerHtml(int height = 4);
+QString indentHtml(const QString& content, int indentation = 16);
 
 /**
  * @brief Creates a default message for the application.

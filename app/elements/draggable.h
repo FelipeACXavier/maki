@@ -32,7 +32,7 @@ public:
    * @param config The configuration settings for this item.
    * @param parent The parent QGraphicsItem.
    */
-  DraggableItem(const QString& id, std::shared_ptr<NodeConfig> config, QGraphicsItem* parent = nullptr);
+  DraggableItem(const QString& instanceId, const QString& nodeId, std::shared_ptr<NodeConfig> config, QGraphicsItem* parent = nullptr);
 
   /**
    * @brief Destroys the DraggableItem.

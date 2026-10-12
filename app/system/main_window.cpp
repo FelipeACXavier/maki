@@ -543,13 +543,8 @@ void MainWindow::bind()
     // Still, it is enough for now
     QList<SectionWidget*> sections = mStructureTab->findChildren<SectionWidget*>();
     for (const auto& section : sections)
-    {
       if (auto* library = qobject_cast<LibraryContainer*>(section->content()))
-      {
-        const bool hasMatches = library->filterNodes(query);
-        section->setExpanded(hasMatches || query.isEmpty());
-      }
-    }
+        section->setExpanded(library->filterNodes(query) || query.isEmpty());
   });
 }
 
@@ -884,7 +879,7 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
 
   LibraryContainer* sidebarview = LibraryContainer::create(libraryName, toolbox);
   LibraryScene* sidebarScene = dynamic_cast<LibraryScene*>(sidebarview->scene());
-  connect(sidebarScene, &LibraryScene::libraryNodeSelected, [this](const QString& nodeType) {
+  connect(sidebarScene, &LibraryScene::libraryNodeSelected, [this](const QString& nodeType, const QString& /* instanceId */) {
     if (auto info = ConfigurationTable::instance().get(nodeType))
       mInfoText->setHtml(createInformationMessage(*info));
   });

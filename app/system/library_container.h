@@ -35,7 +35,7 @@ public:
    * @param config The configuration for the node.
    * @return A VoidResult indicating success or failure.
    */
-  VoidResult addNode(const QString& id, std::shared_ptr<NodeConfig> config);
+  VoidResult addNode(const QString& nodeId, std::shared_ptr<NodeConfig> config, const QString& instanceId = "");
 
   /**
    * @brief Filters nodes based on the given query string.
