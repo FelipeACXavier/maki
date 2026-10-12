@@ -13,8 +13,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # If we are building with MAKI (with BUILD_PLUGINS), then just use MAKI's settings
 if (NOT BUILD_PLUGINS)
   if (MSVC)
-    set(antlr4-runtime_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg_installed/x64-windows/share/antlr4-runtime")
-    add_compile_options(/W4 /MP)
+    add_compile_options(/W4)
 
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
       add_compile_options(/Zi /Od)
@@ -45,7 +44,11 @@ if (NOT BUILD_PLUGINS)
 endif()
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets WebSockets)
-find_package(antlr4-runtime CONFIG QUIET)
+find_package(antlr4-runtime CONFIG REQUIRED)
+
+get_property(imported_targets DIRECTORY PROPERTY IMPORTED_TARGETS)
+message(STATUS "Imported targets: ${imported_targets}")
+message(STATUS "Required QT packages: ${QT_REQUIRED_PACKAGES}")
 
 # Sources
 set(KODA_DZN_CLIENT_FILES
@@ -64,7 +67,6 @@ set(KODA_COMPILER_FILES
   src/ast/ir_builder.cpp
   src/ast/koda_compiler.cpp
 
-  src/ast/main.cpp
   src/ast/semantic_analyzer.cpp
   src/ast/symbol_registry.cpp
 
@@ -107,9 +109,9 @@ else()
 endif()
 
 target_link_libraries(${COMPILER_NAME} PRIVATE
-  ${ANTLR4_RUNTIME_LIBRARY}
   libcpphelpers
   libmaki
+  ${ANTLR4_RUNTIME_LIBRARY}
 )
 
 target_include_directories(${COMPILER_NAME} PRIVATE
@@ -134,8 +136,10 @@ target_include_directories(${LIB_NAME}
     ${ANTLR4_RUNTIME_INCLUDE_DIR}
 )
 
-target_link_libraries(${LIB_NAME} PRIVATE
+target_link_libraries(${LIB_NAME}
+ PUBLIC
   ${ANTLR4_RUNTIME_LIBRARY}
+ PRIVATE
   libcpphelpers
   libmaki
 )
@@ -222,17 +226,15 @@ function(add_koda_plugin TARGET_NAME USE_ANTLR_ENABLED)
     ${ANTLR_INCLUDES}
   )
 
-  # if(USE_ANTLR_ENABLED)
-    target_compile_definitions(${TARGET_NAME} PRIVATE USE_ANTLR=1)
-  # endif()
+  target_compile_definitions(${TARGET_NAME} PRIVATE USE_ANTLR=1)
 
   # Make sure the antlr libraries are available in the target
-  if (WIN32)
+  if(WIN32 AND TARGET antlr4_shared)
     add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        $<TARGET_FILE:${COMPILER_LIBS}>
+        $<TARGET_FILE:antlr4_shared>
         $<TARGET_FILE_DIR:${TARGET_NAME}>
-      COMMAND_EXPAND_LISTS
+      VERBATIM
     )
   endif()
 

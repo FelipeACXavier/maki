@@ -1,6 +1,5 @@
 #pragma once
 
-#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <cstddef>
 #include <filesystem>
 #include <optional>
@@ -96,8 +95,7 @@ private:
   std::vector<FlatField> flattenRosInterface(const RosInterfaceRef& ref) const;
 
   [[nodiscard]]
-  std::vector<FlatField> flattenRosFile(const std::filesystem::path& file, const std::string& package, const std::string& prefix,
-                                        std::size_t depth = 0) const;
+  std::vector<FlatField> flattenRosFile(const std::filesystem::path& file, const std::string& package, const std::string& prefix, std::size_t depth = 0) const;
 
   [[nodiscard]]
   std::vector<FlatField> flattenRosSection(const std::vector<std::string>& lines, const std::string& package, const std::string& prefix,

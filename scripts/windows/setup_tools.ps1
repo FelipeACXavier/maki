@@ -43,8 +43,14 @@ $packages = @(
 
 LogDebug "==> Ensuring base tools are installed: $($packages -join ', ')"
 foreach ($pkg in $packages) {
-    LogDebug "  - $pkg"
-    if ($pkg == "python") {
+    $installed = choco list --exact --limit-output $pkg | Select-String "^$([regex]::Escape($pkg))\|"
+    if ($installed) {
+        LogDebug "  - $pkg already installed, skipping."
+        continue
+    }
+
+    LogDebug "  - $pkg installing"
+    if ($pkg -eq "python") {
       choco install python --version=$PythonVersion -y --no-progress | Out-Null
     } else {
       choco install $pkg -y --no-progress | Out-Null

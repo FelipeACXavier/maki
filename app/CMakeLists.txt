@@ -53,11 +53,15 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug" AND BUILD_PLUGINS)
 endif()
 
 if (MSVC)
+  set_target_properties(${APPLICATION_NAME} PROPERTIES
+    WIN32_EXECUTABLE "$<NOT:$<CONFIG:Debug>>"
+    MACOSX_BUNDLE TRUE
+  )
 else()
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_compile_options(${APPLICATION_NAME} PRIVATE
       -fsanitize=address,undefined
-      -fno-omit-frame-pointer
+      -fno-omit-frame-pointer$LASTEXITCODE
       -g
     )
     target_link_options(${APPLICATION_NAME} PRIVATE
@@ -65,12 +69,6 @@ else()
     )
   endif()
 endif()
-
-
-set_target_properties(${APPLICATION_NAME} PROPERTIES
-    WIN32_EXECUTABLE TRUE
-    MACOSX_BUNDLE TRUE
-)
 
 target_link_libraries(${APPLICATION_NAME} PRIVATE
     Qt6::Core
@@ -153,6 +151,11 @@ if (DEPLOY_TARGET STREQUAL "windows" AND WIN32 AND NOT CMAKE_CROSSCOMPILING)
       # Make sure the target directory exists
       COMMAND "${CMAKE_COMMAND}" -E make_directory "${CMAKE_BINARY_DIR}/bin"
 
+      # Copy linked runtime DLLs (QuaZip, vcpkg libraries, etc.)
+      COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+              $<TARGET_RUNTIME_DLLS:${APPLICATION_NAME}>
+              "${CMAKE_BINARY_DIR}/bin"
+
       # Run windeployqt so the libraries are all in place
       COMMAND $<$<CONFIG:Debug>:${QT_WINDEPLOYQT_EXECUTABLE}>
               $<$<CONFIG:Debug>:--dir>
@@ -170,6 +173,7 @@ if (DEPLOY_TARGET STREQUAL "windows" AND WIN32 AND NOT CMAKE_CROSSCOMPILING)
               "${CMAKE_BINARY_DIR}/bin/assets"
 
       COMMENT "Running ${QT_WINDEPLOYQT_EXECUTABLE} for $<TARGET_FILE_NAME:${APPLICATION_NAME}>"
+      COMMAND_EXPAND_LISTS
       VERBATIM
     )
   else()
@@ -181,7 +185,12 @@ if (DEPLOY_TARGET STREQUAL "windows" AND WIN32 AND NOT CMAKE_CROSSCOMPILING)
       # Create final binary dir
       COMMAND "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --target install --config Release
 
-      # 1. Run windeployqt
+      # Deploy linked runtime DLLs
+      COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+              $<TARGET_RUNTIME_DLLS:${APPLICATION_NAME}>
+              "${CMAKE_INSTALL_PREFIX}"
+
+      # Run windeployqt
       COMMAND "${QT_WINDEPLOYQT_EXECUTABLE}"
               --release
               --dir "${CMAKE_INSTALL_PREFIX}"
@@ -189,6 +198,8 @@ if (DEPLOY_TARGET STREQUAL "windows" AND WIN32 AND NOT CMAKE_CROSSCOMPILING)
               "${CMAKE_INSTALL_PREFIX}/$<TARGET_FILE_NAME:${APPLICATION_NAME}>"
 
       COMMENT "Running windeployqt for ${APPLICATION_NAME}"
+      COMMAND_EXPAND_LISTS
+      VERBATIM
     )
 
     add_dependencies(deploy-windows ${APPLICATION_NAME})

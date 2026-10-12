@@ -52,7 +52,6 @@ private slots:
   void currentTypeChanged(QTreeWidgetItem* current, QTreeWidgetItem* previous);
 
   // Record editor
-  void addField(const QString& defaultName, const koda::types::FieldDefinition& field);
   void removeField();
 
   // Enum editor
@@ -125,6 +124,8 @@ private:
   QTreeWidgetItem* findItemByRole(QTreeWidgetItem* parent, int role, const QVariant& value) const;
 
   void selectType(const QString& qualifiedName);
+
+  void addField(const QString& defaultName, const koda::types::FieldDefinition& field);
 
   QTableWidget* createTable(QWidget* parent, const QStringList& headers);
   void createDefinition(const koda::types::TypeDefinition& definition);
