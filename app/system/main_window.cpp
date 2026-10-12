@@ -123,7 +123,7 @@ VoidResult MainWindow::start()
   for (const auto& t : AppPaths::themes())
     mThemeManager->loadDirectory(t);
 
-  mStorage = std::make_shared<SaveInfo>();
+  // mStorage = std::make_shared<SaveInfo>();
 
   LOG_DEBUG("Starting the main window");
 
@@ -143,9 +143,9 @@ VoidResult MainWindow::start()
   mGenerator = new Generator(mPipeline, this);
   mPluginTab = new PluginTab(mSpecialTabsMenu, this);
 
-  mMissionParameters->setStorage(mStorage);
+  mMissionParameters->documentUpdated();
 
-  mHostServices = new HostServices(mStorage, mPipeline, mSettingsManager.get(), QCoreApplication::applicationDirPath(), this);
+  mHostServices = new HostServices(mPipeline, mSettingsManager.get(), QCoreApplication::applicationDirPath(), this);
   mHostServices->setPluginTab(mPluginTab);
   mHostServices->setLogger(mLogger);
 
@@ -156,10 +156,10 @@ VoidResult MainWindow::start()
   bind();
   bindShortcuts();
 
-  mPropertiesMenu->start(mStorage);
+  // mPropertiesMenu->start(mStorage);
 
   if (mPipelineRun)
-    for (const auto& pipeline : mStorage->pipelines())
+    for (const auto& pipeline : SaveInfo::instance().pipelines())
     {
       mPipelineRun->addOption(pipeline->getname(), pipeline->getid());
       if (mSystemMenu)
@@ -310,7 +310,7 @@ void MainWindow::onSettingsChanged()
 void MainWindow::startUI()
 {
   CanvasView* currentCanvas = static_cast<CanvasView*>(mCanvasPanel->currentWidget());
-  StructureCanvas* canvas = new StructureCanvas(mStorage, Config::MAIN_CANVAS, mRouter, currentCanvas);
+  StructureCanvas* canvas = new StructureCanvas(Config::MAIN_CANVAS, mRouter, currentCanvas);
   bindCanvas(canvas);
 
   mActiveCanvas = canvas;
@@ -939,7 +939,7 @@ void MainWindow::onActionNew(const QString& templateName)
 
   // Repopulate the canvas
   SaveInfo emptySave;
-  *mStorage = emptySave;
+  SaveInfo::instance().reset();
 
   // Gotta make sure we don't save over an old file
   mSaveHandler->newFileCreated();
@@ -957,7 +957,7 @@ void MainWindow::onActionNew(const QString& templateName)
 
   maki::TypeRegistry::instance().removeUserTypes();
   if (mMissionParameters)
-    mMissionParameters->setStorage(mStorage);
+    mMissionParameters->documentUpdated();
   if (mPipelineRun)
     mPipelineRun->reset();
   if (mSystemMenu)
@@ -1006,12 +1006,12 @@ void MainWindow::onActionGenerate(const QString& pipelineId, bool fromScratch)
   QDataStream out(&byteArray, QIODevice::WriteOnly);
   out << mHostServices->document()->getnodes();
 
-  if (mStorage->name.isEmpty() && !onActionSave().IsSuccess())
+  if (SaveInfo::instance().name.isEmpty() && !onActionSave().IsSuccess())
     return;
 
   maki::PipelineContext context;
-  context.buildDir = QDir(mSettingsManager->generation().generationDir + "/" + mStorage->name);
-  context.projectDir = QDir(mSettingsManager->generation().generationDir + "/" + mStorage->name);
+  context.buildDir = QDir(mSettingsManager->generation().generationDir + "/" + SaveInfo::instance().name);
+  context.projectDir = QDir(mSettingsManager->generation().generationDir + "/" + SaveInfo::instance().name);
   context.addArtifact({
       .id = "maki.nodes",
       .type = "maki",
@@ -1026,7 +1026,7 @@ void MainWindow::onActionGenerate(const QString& pipelineId, bool fromScratch)
   if (!context.buildDir.exists())
     context.buildDir.mkpath(".");
 
-  for (const auto& pipeline : mStorage->pipelines())
+  for (const auto& pipeline : SaveInfo::instance().pipelines())
   {
     if (pipeline->getid() != pipelineId)
       continue;
@@ -1057,7 +1057,7 @@ void MainWindow::onActionDeletePipeline(const QString& pipelineId)
   }
 
   std::shared_ptr<FlowSaveInfo> pipeline;
-  for (const auto& p : mStorage->pipelines())
+  for (const auto& p : SaveInfo::instance().pipelines())
   {
     if (p->getid() != pipelineId)
       continue;
@@ -1085,7 +1085,7 @@ void MainWindow::onActionDeletePipeline(const QString& pipelineId)
     break;
   }
 
-  mStorage->removePipeline(pipeline);
+  SaveInfo::instance().removePipeline(pipeline);
   mPipelineRun->removeOption(pipeline->getid());  // Update the UI as well
   mSystemMenu->onPipelineRemoved(pipelineId);
 }
@@ -1093,7 +1093,7 @@ void MainWindow::onActionDeletePipeline(const QString& pipelineId)
 void MainWindow::onActionRenamePipeline(const QString& pipelineId)
 {
   std::shared_ptr<FlowSaveInfo> pipeline;
-  for (const auto& p : mStorage->pipelines())
+  for (const auto& p : SaveInfo::instance().pipelines())
   {
     if (p->getid() != pipelineId)
       continue;
@@ -1112,7 +1112,7 @@ void MainWindow::onActionRenamePipeline(const QString& pipelineId)
   if (name.isEmpty())
     return;
 
-  for (const auto& p : mStorage->pipelines())
+  for (const auto& p : SaveInfo::instance().pipelines())
   {
     if (p->getname() == name)
     {
@@ -1141,7 +1141,7 @@ void MainWindow::onActionRenamePipeline(const QString& pipelineId)
 void MainWindow::onActionEditPipeline(const QString& pipelineId)
 {
   std::shared_ptr<FlowSaveInfo> pipeline;
-  for (const auto& p : mStorage->pipelines())
+  for (const auto& p : SaveInfo::instance().pipelines())
   {
     if (p->getid() != pipelineId)
       continue;
@@ -1158,7 +1158,7 @@ void MainWindow::onActionEditPipeline(const QString& pipelineId)
     if (name.isEmpty())
       return;
 
-    for (const auto& p : mStorage->pipelines())
+    for (const auto& p : SaveInfo::instance().pipelines())
     {
       if (p->getname() == name)
       {
@@ -1171,7 +1171,7 @@ void MainWindow::onActionEditPipeline(const QString& pipelineId)
     pipeline->setId(QUuid::createUuid().toString());
     pipeline->setName(name);
 
-    mStorage->addPipeline(pipeline);
+    SaveInfo::instance().addPipeline(pipeline);
     mPipelineRun->addOption(pipeline->getname(), pipeline->getid());  // Update the UI as well
     mSystemMenu->onPipelineAdded(pipeline);
   }
@@ -1217,19 +1217,19 @@ VoidResult MainWindow::onActionSave()
       CanvasSaveInfo info;
       info.setCenter(canvas->getCenter());
       info.setScale(canvas->getScale());
-      mStorage->setCanvasInfo(info);
+      SaveInfo::instance().setCanvasInfo(info);
     }
   }
 
-  auto saved = mSaveHandler->saveProject(*mStorage);
+  auto saved = mSaveHandler->saveProject(SaveInfo::instance());
   if (saved)
   {
-    NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Saved project: {}", mStorage->name.toStdString());
+    NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Saved project: {}", SaveInfo::instance().name.toStdString());
   }
   else
   {
     LOG_ERROR(saved.ErrorMessage());
-    NOTIFY_ERROR(Config::APPLICATION_NAME.toStdString(), "Could not save project: {}\n{}", mStorage->name.toStdString(), saved.ErrorMessage());
+    NOTIFY_ERROR(Config::APPLICATION_NAME.toStdString(), "Could not save project: {}\n{}", SaveInfo::instance().name.toStdString(), saved.ErrorMessage());
   }
 
   return saved;
@@ -1243,15 +1243,15 @@ void MainWindow::onActionSaveAs()
     return;
   }
 
-  auto saved = mSaveHandler->saveProjectAs(*mStorage);
+  auto saved = mSaveHandler->saveProjectAs(SaveInfo::instance());
   if (saved)
   {
-    NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Saved project: {}", mStorage->name.toStdString());
+    NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Saved project: {}", SaveInfo::instance().name.toStdString());
   }
   else
   {
     LOG_ERROR(saved.ErrorMessage());
-    NOTIFY_ERROR(Config::APPLICATION_NAME.toStdString(), "Could not save project: {}\n{}", mStorage->name.toStdString(), saved.ErrorMessage());
+    NOTIFY_ERROR(Config::APPLICATION_NAME.toStdString(), "Could not save project: {}\n{}", SaveInfo::instance().name.toStdString(), saved.ErrorMessage());
   }
 }
 
@@ -1302,14 +1302,14 @@ void MainWindow::onFileLoaded(const QString& file, const SaveInfo& info, const Q
   mCanvasPanel->setCurrentIndex(0);
 
   // Clear the storage so it can be populated by the canvas
-  *mStorage = info;
-  mStorage->clearNodes();
+  SaveInfo::instance() = info;
+  SaveInfo::instance().clearNodes();
 
   // Repopulate the canvas (and the storage)
   rootCanvas()->loadFromSave(info);
 
   if (mMissionParameters)
-    mMissionParameters->setStorage(mStorage);
+    mMissionParameters->documentUpdated();
 
   GeneralSettings general = mSettingsManager->general();
   general.lastOpenFileDir = mSaveHandler->lastDir();
@@ -1319,7 +1319,7 @@ void MainWindow::onFileLoaded(const QString& file, const SaveInfo& info, const Q
   if (mPipelineRun)
   {
     mPipelineRun->reset();
-    for (const auto& pipeline : mStorage->pipelines())
+    for (const auto& pipeline : SaveInfo::instance().pipelines())
     {
       mPipelineRun->addOption(pipeline->getname(), pipeline->getid());
       if (mSystemMenu)
@@ -1332,14 +1332,14 @@ void MainWindow::onFileLoaded(const QString& file, const SaveInfo& info, const Q
 
   if (fromTemplate)
   {
-    mStorage->rootPath.clear();
-    mStorage->name.clear();
-    mStorage->version.clear();
-    mStorage->saveFile.clear();
+    SaveInfo::instance().rootPath.clear();
+    SaveInfo::instance().name.clear();
+    SaveInfo::instance().version.clear();
+    SaveInfo::instance().saveFile.clear();
   }
 
-  LOG_INFO("Project with {} nodes after", mStorage->getnodes().size());
-  NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Loaded project: {}", mStorage->name.toStdString());
+  LOG_INFO("Project with {} nodes after", SaveInfo::instance().getnodes().size());
+  NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Loaded project: {}", SaveInfo::instance().name.toStdString());
 }
 
 void MainWindow::onNodeSelected(NodeItem* node, bool selected)

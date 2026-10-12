@@ -4,7 +4,6 @@
 #include <QWidget>
 
 #include "mission_parameter.h"
-#include "save_info.h"
 
 namespace maki
 {
@@ -20,14 +19,13 @@ public:
 
   void setParameters(QVector<MissionParameter> parameters);
 
-  void setStorage(std::shared_ptr<SaveInfo> storage);
+  void documentUpdated();
 
 signals:
   void parametersChanged();
 
 private:
   QTableWidget* mTable = nullptr;
-  std::shared_ptr<SaveInfo> mStorage;
 
   void editParameter(int index);
   void removeParameter();

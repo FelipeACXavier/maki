@@ -9,9 +9,8 @@
 #include "node_info.h"
 #include "type_registry.h"
 
-StructureCanvas::StructureCanvas(std::shared_ptr<SaveInfo> storage, const QString& canvasId, std::shared_ptr<EdgeRouter> router, QObject* parent)
+StructureCanvas::StructureCanvas(const QString& canvasId, std::shared_ptr<EdgeRouter> router, QObject* parent)
     : Canvas(canvasId, router, parent)
-    , mStorage(storage)
 {
 }
 
@@ -23,7 +22,7 @@ Types::LibraryTypes StructureCanvas::type() const
 void StructureCanvas::updateParent(NodeItem* node, std::shared_ptr<NodeSaveInfo> storage, bool adding)
 {
   if (!adding)
-    mStorage->removeNode(node->id());
+    SaveInfo::instance().removeNode(node->id());
 }
 
 void StructureCanvas::addedItemNode(NodeItem* node, std::shared_ptr<NodeSaveInfo> info)
@@ -31,7 +30,7 @@ void StructureCanvas::addedItemNode(NodeItem* node, std::shared_ptr<NodeSaveInfo
   if (node->nodeId() == ConfigKeys::TASK_NODE)
   {
     // Adding task
-    mStorage->addNode(info);
+    SaveInfo::instance().addNode(info);
   }
 
   Canvas::addedItemNode(node, info);
@@ -65,7 +64,7 @@ void StructureCanvas::suggestCapability(NodeItem* node)
 
         // The type comes from the capability definition.
         for (const auto& producer : maki::TypeRegistry::instance().findProducers(argument.type))
-          if (!mStorage->taskHasCapability(node->parentNode()->id(), producer))
+          if (!SaveInfo::instance().taskHasCapability(node->parentNode()->id(), producer))
             producers << producer;
       }
       else if (event.type == Types::CallType::RETURN)
@@ -82,7 +81,7 @@ void StructureCanvas::suggestCapability(NodeItem* node)
         }
 
         for (const auto& consumer : maki::TypeRegistry::instance().findConsumers(argument.type))
-          if (!mStorage->taskHasCapability(node->parentNode()->id(), consumer))
+          if (!SaveInfo::instance().taskHasCapability(node->parentNode()->id(), consumer))
             consumers << consumer;
       }
     }
@@ -93,11 +92,6 @@ void StructureCanvas::suggestCapability(NodeItem* node)
 
   if (producers.isEmpty() && consumers.isEmpty())
     return;
-
-  // for (const auto& producer : producers)
-  //   LOG_DEBUG("Producer suggestion: {}", producer);
-  // for (const auto& consumer : consumers)
-  //   LOG_DEBUG("Consumer suggestion: {}", consumer);
 
   suggestedNodes(node, consumers, producers);
 }

@@ -32,7 +32,7 @@ CapabilitySelector::CapabilitySelector(QWidget* parent)
   setMinimumWidth(400);
   setMinimumHeight(400);
 
-  auto search = new maki::SearchWidget(tr("Filter nodes"), this);
+  auto search = new maki::SearchWidget(tr("Filter capabilities"), this);
   connect(search, &maki::SearchWidget::valueChanged, this, [this](const QString& query) {
     for (const auto& section : findChildren<SectionWidget*>())
       if (auto* library = qobject_cast<LibraryContainer*>(section->content()))

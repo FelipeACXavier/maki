@@ -10,6 +10,20 @@
 
 Q_DECLARE_METATYPE(SaveInfo)
 
+SaveInfo& SaveInfo::instance()
+{
+  static SaveInfo storage;
+  return storage;
+}
+
+void SaveInfo::reset()
+{
+  mCanvasInfo = CanvasSaveInfo();
+  mStructuralNodes.clear();
+  mPipelines.clear();
+  mMissionParameters.clear();
+}
+
 CanvasSaveInfo SaveInfo::canvasInfo() const
 {
   return mCanvasInfo;

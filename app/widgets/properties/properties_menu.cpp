@@ -91,9 +91,8 @@ QLayout* PropertiesMenu::layout() const
   return mFrame ? mFrame->layout() : QFrame::layout();
 }
 
-VoidResult PropertiesMenu::start(std::shared_ptr<SaveInfo> storage)
+VoidResult PropertiesMenu::start()
 {
-  mStorage = std::move(storage);
   return VoidResult();
 }
 
@@ -336,7 +335,7 @@ VoidResult PropertiesMenu::loadLinkProperty(const std::shared_ptr<IParameter>& p
 
   const auto component = maki::recordString(record, ConfigKeys::COMPONENT);
   auto* editor = new maki::SelectorWidget(ToLabel(property->getid()), maki::WidgetAlignment::Vertical(), this);
-  const auto targetNodes = mStorage->getLinkNodes();
+  const auto targetNodes = SaveInfo::instance().getLinkNodes();
   for (int i = 0; i < targetNodes.size(); ++i)
     editor->addItem(targetNodes[i].second, targetNodes[i].first);  // Add name and id of node
 
@@ -367,8 +366,6 @@ VoidResult PropertiesMenu::loadLinkProperty(const std::shared_ptr<IParameter>& p
 
 VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IParameter>& property, NodeItem* node)
 {
-  if (!mStorage)
-    return VoidResult::Failed("No storage assigned to properties menu");
   if (!property || !node)
     return VoidResult::Failed("Cannot create component selector without a property and node");
 
@@ -379,7 +376,7 @@ VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IPa
   const auto mode = callControl(record);
   auto* componentEditor = new maki::SelectorWidget(ToLabel(property->getid()), maki::WidgetAlignment::Vertical(), this);
 
-  const auto candidates = mStorage->getPossibleCallers(node->id(), mode);
+  const auto candidates = SaveInfo::instance().getPossibleCallers(node->id(), mode);
   for (const auto& candidate : candidates)
   {
     if (!candidate)
@@ -413,12 +410,12 @@ VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IPa
       return nullptr;
 
     if (mode == Types::ControlTypes::FLOW_CALL)
-      return mStorage->getFlowFromNode(componentId, callName);
+      return SaveInfo::instance().getFlowFromNode(componentId, callName);
 
     if (mode == Types::ControlTypes::EVENT_SELECT)
-      return mStorage->getEventFromNode(componentId, callName);
+      return SaveInfo::instance().getEventFromNode(componentId, callName);
 
-    const auto events = mStorage->getEventsOfTypeFromNode(componentId, {Types::CallType::TRIGGER});
+    const auto events = SaveInfo::instance().getEventsOfTypeFromNode(componentId, {Types::CallType::TRIGGER});
     return events.isEmpty() ? nullptr : events.first();
   };
   auto populateCalls = [this, mode, callEditor](const QString& componentId) {
@@ -429,13 +426,13 @@ VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IPa
 
     if (mode == Types::ControlTypes::FLOW_CALL)
     {
-      for (const auto& flow : mStorage->getFlowsFromNode(componentId))
+      for (const auto& flow : SaveInfo::instance().getFlowsFromNode(componentId))
         if (flow)
           callEditor->addItem(flow->getname(), flow->getid());
     }
     else
     {
-      for (const auto& event : mStorage->getEventsOfTypeFromNode(componentId, {Types::CallType::TRIGGER, Types::CallType::ABORT}))
+      for (const auto& event : SaveInfo::instance().getEventsOfTypeFromNode(componentId, {Types::CallType::TRIGGER, Types::CallType::ABORT}))
         if (event)
           callEditor->addItem(event->getname(), event->getid());
     }
@@ -601,7 +598,7 @@ VoidResult PropertiesMenu::loadCallArguments(const std::shared_ptr<FlowSaveInfo>
 
 void PropertiesMenu::addCompleter(maki::InputWidget* editor, const QString& nodeId, const koda::types::TypeReference& type, QStringList additionalValues)
 {
-  if (!editor || !mStorage)
+  if (!editor)
     return;
 
   if (auto* intEditor = qobject_cast<maki::IntegerWidget*>(editor))
@@ -610,7 +607,7 @@ void PropertiesMenu::addCompleter(maki::InputWidget* editor, const QString& node
     realEditor->setAcceptVariable(true);
 
   QVector<maki::MissionParameter> variables = {};  // std::move(additionalValues);
-  for (const auto& parameter : mStorage->missionParameters())
+  for (const auto& parameter : SaveInfo::instance().missionParameters())
     if (parameter.gettype().structurallyEquals(type))
     {
       LOG_DEBUG("Adding variable: {} {}", parameter.getname(), maki::asValue(parameter.getvalue())->toReadable());
@@ -857,22 +854,19 @@ VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)
   eventWidget->addItem("on error", "on error");
   eventWidget->addItem("on abort", "on abort");
 
-  if (mStorage)
+  for (const auto& caller : SaveInfo::instance().getPossibleCallers(source->id(), Types::ControlTypes::AUTO))
   {
-    for (const auto& caller : mStorage->getPossibleCallers(source->id(), Types::ControlTypes::AUTO))
-    {
-      if (!caller)
-        continue;
+    if (!caller)
+      continue;
 
-      const auto* name = caller->getProperty(ConfigKeys::NAME);
-      if (!name || !name->getvalue() || !name->getvalue()->isValid())
-        continue;
+    const auto* name = caller->getProperty(ConfigKeys::NAME);
+    if (!name || !name->getvalue() || !name->getvalue()->isValid())
+      continue;
 
-      const auto componentName = name->getvalue()->toStringValue();
-      for (const auto& event : mStorage->getEventsOfTypeFromNode(caller->getid(), {Types::CallType::OUT}))
-        if (event)
-          eventWidget->addItem(componentName + "." + event->getname(), "on");
-    }
+    const auto componentName = name->getvalue()->toStringValue();
+    for (const auto& event : SaveInfo::instance().getEventsOfTypeFromNode(caller->getid(), {Types::CallType::OUT}))
+      if (event)
+        eventWidget->addItem(componentName + "." + event->getname(), "on");
   }
 
   const auto currentEvent = transition->getEvent();

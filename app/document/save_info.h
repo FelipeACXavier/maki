@@ -24,6 +24,8 @@
 class SaveInfo : public IDocument
 {
 public:
+  static SaveInfo& instance();
+
   /**
    * @brief Default constructor.
    */
@@ -90,6 +92,8 @@ public:
    * @param node The node to remove.
    */
   void removeNode(const QString& nodeId);
+
+  void reset();
 
   /**
    * @brief Convert the object to JSON format.

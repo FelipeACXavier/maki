@@ -55,7 +55,7 @@ class PropertiesMenu : public QFrame, public MenuBase
 public:
   PropertiesMenu(QWidget* parent);
 
-  VoidResult start(std::shared_ptr<SaveInfo> storage);
+  VoidResult start();
 
   VoidResult onNodeAdded(NodeItem* node) override;
   VoidResult onNodeRemoved(const QString& nodeId) override;
@@ -84,7 +84,6 @@ private:
 
   QString mCurrentNode;
   QDialog* mCurrentDialog = nullptr;
-  std::shared_ptr<SaveInfo> mStorage;
   StyledFrame* mFrame = nullptr;
 
   // Property editors.

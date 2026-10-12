@@ -11,6 +11,7 @@
 
 #include "../dialogs/type_value_dialog.h"
 #include "app_configs.h"
+#include "save_info.h"
 #include "style_helpers.h"
 #include "typing/helpers.h"
 
@@ -19,7 +20,6 @@ namespace maki
 
 MissionParameterWidget::MissionParameterWidget(QWidget* parent)
     : QWidget(parent)
-    , mStorage(nullptr)
 {
   auto* layout = new QVBoxLayout(this);
   layout->setContentsMargins(Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING);
@@ -71,31 +71,22 @@ MissionParameterWidget::MissionParameterWidget(QWidget* parent)
 
 void MissionParameterWidget::setParameters(QVector<MissionParameter> parameters)
 {
-  if (mStorage)
-    mStorage->setParameters(parameters);
-
+  SaveInfo::instance().setParameters(parameters);
   rebuildTable();
 }
 
-void MissionParameterWidget::setStorage(std::shared_ptr<SaveInfo> storage)
+void MissionParameterWidget::documentUpdated()
 {
-  mStorage = storage;
   rebuildTable();
 }
 
 void MissionParameterWidget::rebuildTable()
 {
-  if (!mStorage)
-  {
-    LOG_WARNING("Something went wrong, no database available");
-    return;
-  }
-
   mTable->setRowCount(0);
 
-  for (int i = 0; i < mStorage->missionParameters().size(); ++i)
+  for (int i = 0; i < SaveInfo::instance().missionParameters().size(); ++i)
   {
-    const auto& parameter = mStorage->getParameter(i);
+    const auto& parameter = SaveInfo::instance().getParameter(i);
     LOG_DEBUG("Adding parameter to table: {}", parameter.value.toReadable());
     const int row = mTable->rowCount();
     mTable->insertRow(row);
@@ -133,7 +124,7 @@ void MissionParameterWidget::addParameter()
   if (newParam.type.isValid())
   {
     LOG_DEBUG("Adding parameter: {}", newParam.value.toReadable());
-    mStorage->addParameter(newParam);
+    SaveInfo::instance().addParameter(newParam);
   }
 
   rebuildTable();
@@ -142,15 +133,9 @@ void MissionParameterWidget::addParameter()
 
 void MissionParameterWidget::editParameter(const QString& parameterId)
 {
-  if (!mStorage)
+  for (int i = 0; i < SaveInfo::instance().missionParameters().size(); ++i)
   {
-    LOG_WARNING("Something went wrong when editing parameter, no database available");
-    return;
-  }
-
-  for (int i = 0; i < mStorage->missionParameters().size(); ++i)
-  {
-    const auto& param = mStorage->getParameter(i);
+    const auto& param = SaveInfo::instance().getParameter(i);
     if (param.name != parameterId)
       continue;
 
@@ -161,16 +146,10 @@ void MissionParameterWidget::editParameter(const QString& parameterId)
 
 void MissionParameterWidget::editParameter(int index)
 {
-  if (!mStorage)
-  {
-    LOG_WARNING("Something went wrong when editing parameter, no database available");
-    return;
-  }
-
-  if (index >= mStorage->missionParameters().size())
+  if (index >= SaveInfo::instance().missionParameters().size())
     return;
 
-  const auto& parameter = mStorage->getParameter(index);
+  const auto& parameter = SaveInfo::instance().getParameter(index);
 
   TypeValueDialog dialog(tr("Edit ") + QString::fromStdString(parameter.name), parameter, this);
   if (dialog.exec() != QDialog::Accepted)
@@ -178,9 +157,9 @@ void MissionParameterWidget::editParameter(int index)
 
   auto newParam = dialog.getParameter();
   if (newParam.type.isValid())
-    mStorage->setParameter(index, newParam);
+    SaveInfo::instance().setParameter(index, newParam);
   else
-    mStorage->removeParameter(parameter);
+    SaveInfo::instance().removeParameter(parameter);
 
   rebuildTable();
   emit parametersChanged();
@@ -188,12 +167,6 @@ void MissionParameterWidget::editParameter(int index)
 
 void MissionParameterWidget::removeParameter()
 {
-  if (!mStorage)
-  {
-    LOG_WARNING("Something went wrong when removing parameter, no database available");
-    return;
-  }
-
   const auto selectedRows = mTable->selectionModel()->selectedRows();
   if (selectedRows.empty())
     return;
@@ -207,10 +180,10 @@ void MissionParameterWidget::removeParameter()
   std::sort(rows.begin(), rows.end(), std::greater<int>());
   for (const int row : rows)
   {
-    if (row < 0 || row >= mStorage->missionParameters().size())
+    if (row < 0 || row >= SaveInfo::instance().missionParameters().size())
       continue;
 
-    mStorage->removeParameter(*(mStorage->missionParameters().begin() + row));
+    SaveInfo::instance().removeParameter(*(SaveInfo::instance().missionParameters().begin() + row));
     mTable->removeRow(row);
   }
 
