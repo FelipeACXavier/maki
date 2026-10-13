@@ -66,6 +66,17 @@ CanvasControlWidget::CanvasControlWidget(std::function<void()> dismissed, QGraph
   });
 }
 
+bool CanvasControlWidget::permanent() const
+{
+  return !mProperties.isFading;
+}
+
+void CanvasControlWidget::setPermanent()
+{
+  LOG_DEBUG("CONTROL IS PERMANENT");
+  mProperties.isFading = false;
+}
+
 maki::ControlWidget* CanvasControlWidget::controlWidget() const
 {
   return mControls;
@@ -153,7 +164,7 @@ void CanvasControlWidget::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 
 void CanvasControlWidget::startFadeOut()
 {
-  if (!mProperties.isFading || mMouseInside)
+  if (permanent() || mMouseInside)
     return;
 
   auto* effect = qobject_cast<QGraphicsOpacityEffect*>(graphicsEffect());
@@ -172,7 +183,7 @@ void CanvasControlWidget::startFadeOut()
 
 void CanvasControlWidget::cancelFadeOut()
 {
-  if (!mProperties.isFading)
+  if (permanent())
     return;
 
   if (mFadeTimer)
@@ -188,6 +199,11 @@ void CanvasControlWidget::cancelFadeOut()
 bool CanvasControlWidget::hideControl()
 {
   startFadeOut();
+  return permanent();
+}
 
-  return mProperties.isFading;
+void CanvasControlWidget::activate()
+{
+  if (mControls)
+    mControls->activate();
 }

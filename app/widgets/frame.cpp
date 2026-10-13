@@ -1,7 +1,7 @@
 #include "frame.h"
 
-StyledFrame::StyledFrame(QWidget* parent)
-    : QFrame(parent)
+StyledFrame::StyledFrame(QWidget* parent, Qt::WindowFlags flags)
+    : QFrame(parent, flags)
 {
   setFrameShape(QFrame::NoFrame);
   setAttribute(Qt::WA_StyledBackground, false);
@@ -54,11 +54,7 @@ void StyledFrame::paintEvent(QPaintEvent* event)
   painter.setRenderHint(QPainter::Antialiasing);
 
   const qreal halfPen = mBorderWidth > 0 ? mBorderWidth / 2.0 : 0.0;
-  const QRectF r = rect().adjusted(
-      halfPen,
-      halfPen,
-      -halfPen,
-      -halfPen);
+  const QRectF r = rect().adjusted(halfPen, halfPen, -halfPen, -halfPen);
 
   QPainterPath path;
   path.addRoundedRect(r, mRadius, mRadius);

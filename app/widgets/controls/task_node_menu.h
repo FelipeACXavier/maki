@@ -42,6 +42,8 @@ public:
 
   TaskNodeMenu(QWidget* parent = nullptr);
 
+  void setTouring() override;
+
 signals:
   void openMainFlowRequested();
   void addFlowRequested();
@@ -49,5 +51,6 @@ signals:
 
 private:
   QTreeWidget* mTree = nullptr;
+
   void hideMenu();
 };

@@ -310,6 +310,7 @@ void NodeItem::showControls(maki::ControlWidget* controls, const ControlProperti
     }
 
     mControlWidget->setPos(pos);
+    mControlWidget->activate();
   });
 }
 

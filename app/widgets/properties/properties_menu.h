@@ -70,6 +70,7 @@ public:
   QLayout* layout() const;
 
 signals:
+  void propertyUpdated(const QString& parameterId, const QString& nodeId, const maki::Value& value);
   void openParameter(const QString& parameterId);
   void nodeFocused(const QString& nodeId);
   void flowSelected(const QString& flowId, const QString& nodeId);

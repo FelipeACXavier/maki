@@ -502,7 +502,10 @@ void MainWindowLayout::buildMenuBar()
         continue;
 
       if (first)
+      {
         newMenu->addSeparator();
+        DEFAULT_TEMPLATE = filepath;
+      }
 
       auto* action = newMenu->addAction(iconFromTheme("document-new"), tr("Template") + ": " + info.baseName());
       connect(action, &QAction::triggered, this, [this, filepath] { onActionNew(filepath); });
@@ -695,12 +698,10 @@ void MainWindowLayout::buildMenuBar()
 
   mActionDocumentation = new QAction(iconFromTheme("help-browser"), tr("Documentation"), this);
   mTranslatable.push_back({mActionDocumentation, "Documentation"});
-  mActionDocumentation->setEnabled(false);
   help->addAction(mActionDocumentation);
 
   mActionQuickStartGuide = new QAction(iconFromTheme("show-guides"), tr("Quick Start Guide"), this);
   mTranslatable.push_back({mActionQuickStartGuide, "Quick Start Guide"});
-  mActionQuickStartGuide->setEnabled(false);
   help->addAction(mActionQuickStartGuide);
 
   mOpenAllSettings = new QAction(iconFromTheme("preferences-system"), tr("Open All Settings"), this);

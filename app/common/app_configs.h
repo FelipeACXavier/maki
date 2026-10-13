@@ -14,7 +14,8 @@ static const QString ORGANIZATION_NAME = QString("Savant"_L1);  /// Organization
 static const QString APPLICATION_NAME = QString("MAKI"_L1);     /// Application name.
 static const QString VERSION = QString("0.0.1"_L1);             /// Application version.
 
-static const QString MAIN_CANVAS = QString("MainSystemCanvas"_L1);  /// Main canvas identifier.
+static const QString MAIN_CANVAS = QString("MainSystemCanvas"_L1);             /// Main canvas identifier.
+static const QString MAKI_WEBSITE = "https://felipeacxavier.github.io/maki/";  /// Url to MAKI's documentation
 
 static const int GRID_SIZE = 20;              /// Grid size for the application.
 static const int CONNECTOR_RADIUS = 5;        /// Radius of connectors in pixels.

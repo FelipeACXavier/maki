@@ -17,6 +17,7 @@
 
 #include "app_configs.h"
 #include "style_helpers.h"
+#include "widgets/controls/canvas_control_widget.h"
 
 NodeActionRow::NodeActionRow(const QString& svgPath, const QString& labelText, QWidget* parent)
     : StyledFrame(parent)
@@ -160,6 +161,18 @@ TaskNodeMenu::TaskNodeMenu(QWidget* parent)
   layout->setContentsMargins(0, 0, 0, 0);
   layout->setSpacing(0);
   layout->addWidget(frame);
+}
+
+void TaskNodeMenu::setTouring()
+{
+  for (QWidget* widget = this; widget; widget = widget->parentWidget())
+  {
+    if (auto* canvasWidget = dynamic_cast<CanvasControlWidget*>(widget->graphicsProxyWidget()))
+    {
+      canvasWidget->setPermanent();
+      return;
+    }
+  }
 }
 
 void TaskNodeMenu::hideMenu()

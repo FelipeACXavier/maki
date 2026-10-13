@@ -1941,6 +1941,9 @@ void Canvas::onNodeHovered(NodeItem* node, bool entered)
           return;
         }
     });
+    connect(control, &maki::ControlWidget::activated, this, [this, control] { emit controlCreated(control); });
+    connect(control, &maki::ControlWidget::dismissed, this, [this, control] { emit controlDismissed(control); });
+
     connect(control, &TaskNodeMenu::addFlowRequested, this, [this, node] { emit createEvent(node); });
     node->showControls(control, ControlProperties{
                                     .isFading = true,
@@ -1949,8 +1952,8 @@ void Canvas::onNodeHovered(NodeItem* node, bool entered)
   }
   else
   {
-    if (node->hasControl<TaskNodeMenu>())
-      node->hideControl();
+    // if (node->hasControl<TaskNodeMenu>())
+    //   node->hideControl();
   }
 }
 
@@ -1974,6 +1977,9 @@ void Canvas::onNodeControlRequested(NodeItem* node, const QPointF& scenePos, mak
     });
   else if (auto capSelect = qobject_cast<CapabilityCallSelector*>(control))
     capSelect->buildLibraries(SaveInfo::instance().getPossibleCallers(node->id(), Types::ControlTypes::AUTO));
+
+  connect(control, &maki::ControlWidget::activated, this, [this, control] { emit controlCreated(control); });
+  connect(control, &maki::ControlWidget::dismissed, this, [this, control] { emit controlDismissed(control); });
 
   // Nodes cannot be parents since they are not qobjects, so the CanvasView must parent the widget
   control->setParent(parentView());

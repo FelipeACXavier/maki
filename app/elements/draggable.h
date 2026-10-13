@@ -58,7 +58,7 @@ public:
    *
    * @param event The QGraphicsSceneMouseEvent that triggered the drag.
    */
-  void startDrag(QGraphicsSceneMouseEvent* event);
+  Qt::DropAction startDrag(QGraphicsSceneMouseEvent* event);
 
   /**
    * @brief Handles a click event based on the given mouse event.

@@ -77,7 +77,7 @@ void DraggableItem::adjustWidth(int width)
   setPos(centerX, pos().y());
 }
 
-void DraggableItem::startDrag(QGraphicsSceneMouseEvent* event)
+Qt::DropAction DraggableItem::startDrag(QGraphicsSceneMouseEvent* event)
 {
   // Draggable pixmap from the scale
   QPixmap pixmap(scaledRect().size().toSize());
@@ -108,10 +108,11 @@ void DraggableItem::startDrag(QGraphicsSceneMouseEvent* event)
   drag->setMimeData(mimeData);
   drag->setPixmap(pixmap);
   drag->setHotSpot(QPoint(scaledRect().width() / 2, scaledRect().height() / 2));
-  drag->exec(Qt::MoveAction);
-
+  const Qt::DropAction result = drag->exec(Qt::MoveAction);
   // Nicety, let's make the cursor show a drag action
   setCursor(Qt::ClosedHandCursor);
+
+  return result;
 }
 
 void DraggableItem::handleClick(QGraphicsSceneMouseEvent* event)

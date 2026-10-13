@@ -34,7 +34,10 @@ class PluginView;
 class QPlainTextEdit;
 class Logger;
 class LanguageManager;
+class TourGuide;
 class EdgeRouter;
+class DraggableItem;
+class LibraryContainer;
 
 namespace maki
 {
@@ -137,6 +140,7 @@ private:
   std::unique_ptr<PluginManager> mPluginManager;      /// Manager for plugins.
   std::shared_ptr<SettingsManager> mSettingsManager;  /// Settings manager shared pointer.
   std::shared_ptr<LanguageManager> mLanguageManager;  /// Language manager shared pointer.
+  std::shared_ptr<TourGuide> mTourGuide;              /// Language manager shared pointer.
 
   Pipeline* mPipeline = nullptr;                        /// Pointer to the pipeline.
   Generator* mGenerator = nullptr;                      /// Pointer to the generator.
@@ -250,7 +254,7 @@ private:
   /**
    * @brief Handles settings change events.
    */
-  void onSettingsChanged();
+  void onSettingsChanged(bool initialSetup);
 
   /**
    * @brief Shows the about dialog.
@@ -285,6 +289,9 @@ private:
   void addEditorTab(QPlainTextEdit* view);
 
   void focusOn(const QString& nodeId, const QString& flowId, const maki::FocusProperties& properties);
+
+  void startTourGuide(bool runningOnStartUp);
+  std::pair<LibraryContainer*, DraggableItem*> findDraggableInPalette(const QString& nodeType) const;
 
   // ================================================
   // Actions

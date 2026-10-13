@@ -21,6 +21,7 @@
 #include "system/config_table.h"
 #include "system/library_container.h"
 #include "system/library_scene.h"
+#include "widgets/controls/canvas_control_widget.h"
 #include "widgets/frame.h"
 #include "widgets/section.h"
 #include "widgets/widget_factory.h"
@@ -208,21 +209,55 @@ void CapabilityCallSelector::selectCapability(const QString& instanceId, const Q
     return;
   }
 
+  disconnect(mEventCombo, &maki::SelectorWidget::valueChanged, this, nullptr);
   mEventCombo->widget()->clear();
   for (const auto& event : SaveInfo::instance().getEventsOfTypeFromNode(instanceId, {Types::CallType::TRIGGER, Types::CallType::ABORT}))
     if (!event->getid().isEmpty())
       mEventCombo->addItem(event->getname(), event->getid());
 
+  connect(mEventCombo, &maki::SelectorWidget::valueChanged, this, [this](const QString& text) { emit eventSelected(text); });
+
   const auto enoughEvents = mEventCombo->widget()->count() > 0;
   // An empty event list should not allow confirmation.
   mConfirmButton->setEnabled(enoughEvents);
-  mStack->setCurrentIndex(1);
+  updateTab(1);
 
   mSelectedCapability = info;
   mCapabilityLabel->setText(nameFromNodeId(capabilityType));
 
   if (enoughEvents)
     mEventCombo->setFocus();
+}
+
+void CapabilityCallSelector::updateTab(const int tab)
+{
+  if (!mStack)
+    return;
+
+  mStack->setCurrentIndex(tab);
+  emit changedTabs(tab);
+}
+
+QPushButton* CapabilityCallSelector::confirmButton() const
+{
+  return mConfirmButton;
+}
+
+maki::SelectorWidget* CapabilityCallSelector::eventSelector() const
+{
+  return mEventCombo;
+}
+
+void CapabilityCallSelector::setTouring()
+{
+  for (QWidget* widget = this; widget; widget = widget->parentWidget())
+  {
+    if (auto* canvasWidget = dynamic_cast<CanvasControlWidget*>(widget->graphicsProxyWidget()))
+    {
+      canvasWidget->setPermanent();
+      return;
+    }
+  }
 }
 
 void CapabilityCallSelector::confirmSelection()
@@ -257,6 +292,7 @@ void CapabilityCallSelector::confirmSelection()
   setRecordValue(valueRecord, ConfigKeys::CALL_ID, maki::Value::createString(eventId));
   mNode->setProperty(ConfigKeys::CAPABILITY, maki::Value::createRecord(valueRecord));
 
+  emit accepted({});
   emit dismissed();
 }
 
@@ -267,8 +303,7 @@ void CapabilityCallSelector::showCapabilityPage()
 
   mSelectedCapability.reset();
 
-  if (mStack)
-    mStack->setCurrentIndex(0);
+  updateTab(0);
 }
 
 QString CapabilityCallSelector::libraryFromId(const QString& id) const

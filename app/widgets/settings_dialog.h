@@ -79,6 +79,7 @@ private:
   maki::IntegerWidget* mRecentHistorySize = nullptr;   /// Widget for setting recent history size.
   maki::IntegerWidget* mLogHistorySize = nullptr;      /// Widget for setting the log history size.
   maki::BooleanWidget* mShowWelcomeMessage = nullptr;  /// Widget for enabling/disabling welcome message.
+  maki::BooleanWidget* mShowTourOnStart = nullptr;     /// Widget for enabling/disabling start tour.
   maki::SelectorWidget* mLanguageCombo = nullptr;      /// Widget for selecting language.
 
   // Appearance

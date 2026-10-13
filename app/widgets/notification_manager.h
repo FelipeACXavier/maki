@@ -36,6 +36,9 @@ public:
    */
   void toggleMinimize(bool minimize);
 
+signals:
+  void showingNotification(NotificationWidget* toast);
+
 public slots:
   /**
    * @brief Displays a new notification toast.

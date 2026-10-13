@@ -54,11 +54,21 @@ void LibraryScene::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
   }
 
   // Use screenPos so it feels right across view transforms/zoom; scenePos is also ok.
-  const int dist = (event->scenePos() - event->buttonDownScreenPos(Qt::LeftButton)).manhattanLength();
+  const qreal dist = (event->scenePos() - event->buttonDownScenePos(Qt::LeftButton)).manhattanLength();
   if (mClickedItem && mSupportsDrags && !mDragging && dist >= MIN_DRAG_DISTANCE)
   {
+    const auto nodeType = mClickedItem->nodeId();
+    emit dragStarted(nodeType);
     mDragging = true;
-    mClickedItem->startDrag(event);
+    const Qt::DropAction result = mClickedItem->startDrag(event);
+    mDragging = false;
+    mClickedItem = nullptr;
+
+    if (result == Qt::IgnoreAction)
+    {
+      LOG_DEBUG("Drag cancelled or drop rejected");
+      emit dragCancelled(nodeType);
+    }
   }
 
   event->accept();

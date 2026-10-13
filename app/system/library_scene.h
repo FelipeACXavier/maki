@@ -51,6 +51,9 @@ signals:
    */
   void libraryNodeSelected(const QString& nodeType, const QString& instanceId);
 
+  void dragStarted(const QString& nodeType);
+  void dragCancelled(const QString& nodeType);
+
 protected:
   /**
    * @brief Handles mouse press events in the scene.

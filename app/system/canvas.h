@@ -369,6 +369,9 @@ signals:
    */
   void flowRemoved(const QString& flowId, NodeItem* node);
 
+  void controlCreated(maki::ControlWidget* control);
+  void controlDismissed(maki::ControlWidget* control);
+
 public slots:
   /**
    * @brief Handles focus on a node.

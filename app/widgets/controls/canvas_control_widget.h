@@ -41,6 +41,9 @@ public:
   void setControlWidget(maki::ControlWidget* controls, const ControlProperties& properties);
 
   bool hideControl();
+  void activate();
+  void setPermanent();
+  bool permanent() const;
 
 protected:
   void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
@@ -55,7 +58,6 @@ private:
   QHBoxLayout* mFrameLayout = nullptr;
   maki::ControlWidget* mControls = nullptr;
   CloseButton* mCloseButton = nullptr;
-
   std::function<void()> mDismissed;
 
   ControlProperties mProperties;

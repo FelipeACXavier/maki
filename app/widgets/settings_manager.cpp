@@ -95,6 +95,7 @@ void SettingsManager::load()
   LOAD_SETTING(mGeneral, recentHistorySize, Int);
   LOAD_SETTING(mGeneral, maximumLogHistory, Int);
   LOAD_SETTING(mGeneral, showWelcomeMessage, Bool);
+  LOAD_SETTING(mGeneral, showTourOnStart, Bool);
   LOAD_SETTING(mGeneral, language, String);
   LOAD_SETTING(mGeneral, lastOpenFileDir, String);
 
@@ -205,6 +206,7 @@ void SettingsManager::save()
   SAVE_SETTING(mGeneral, recentHistorySize);
   SAVE_SETTING(mGeneral, maximumLogHistory);
   SAVE_SETTING(mGeneral, showWelcomeMessage);
+  SAVE_SETTING(mGeneral, showTourOnStart);
   SAVE_SETTING(mGeneral, language);
   SAVE_SETTING(mGeneral, lastOpenFileDir);
   mSettings.beginGroup("RecentFiles");

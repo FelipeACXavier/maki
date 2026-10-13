@@ -161,6 +161,7 @@ protected:
   int PROCESS_TAB_INDEX = 0;        /// Index of the process tab.
   int MISSION_PARAMETER_INDEX = 0;  /// Index of the mission parameter tab.
   int TYPE_EDITOR_INDEX = 0;        /// Index of the type editor tab.
+  QString DEFAULT_TEMPLATE = "";
 
 protected:
   /**

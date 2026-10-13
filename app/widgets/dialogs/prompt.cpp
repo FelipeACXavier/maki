@@ -40,7 +40,7 @@ PromptDialog::PromptDialog(const QString& title, const QString& accept, const QS
   auto* label = new oclero::qlementine::Label(message, this);
   label->setRole(oclero::qlementine::TextRole::H5);
   label->setWordWrap(true);
-  label->setAlignment(Qt::AlignVCenter);
+  label->setAlignment(Qt::AlignVCenter | Qt::AlignCenter);
 
   row->addWidget(mBadge);
   row->addWidget(label);
@@ -89,7 +89,7 @@ void PromptDialog::setExtraInfo(const QString& info)
 
   auto* label = new oclero::qlementine::Label(info, this);
   label->setWordWrap(true);
-  label->setAlignment(Qt::AlignVCenter);
+  label->setAlignment(Qt::AlignVCenter | Qt::AlignCenter);
   label->setContentsMargins(0, 0, 0, 0);
   label->setRole(oclero::qlementine::TextRole::Default);
 

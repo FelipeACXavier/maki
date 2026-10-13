@@ -41,11 +41,16 @@ void NotificationManager::showNotification(const QString& header, const QString&
   // Oh, the classic layout timing issue. Right after constructing the toast and inserting some content, Qt has not
   // yet completed the layout pass that determines the toast’s final width or the wrapped/content-dependent height,
   // We must, thus, defer the initial minimize/expand call until after Qt has processed the initial layout.
-  QMetaObject::invokeMethod(toast, [toast, minimize = mMinimize]() {
+  QMetaObject::invokeMethod(
+      toast,
+      [toast, minimize = mMinimize]() {
         if (toast)
-          toast->minimize(minimize); }, Qt::QueuedConnection);
+          toast->minimize(minimize);
+      },
+      Qt::QueuedConnection);
 
   toast->showAnimated();
+  emit showingNotification(toast);
 }
 
 QString NotificationManager::showLongNotification(const QString& id, const QString& header, QWidget* contents, logging::LogLevel level)
@@ -68,11 +73,16 @@ QString NotificationManager::showLongNotification(const QString& id, const QStri
   repositionToasts();
 
   // See showNotification above
-  QMetaObject::invokeMethod(toast, [toast, minimize = mMinimize]() {
+  QMetaObject::invokeMethod(
+      toast,
+      [toast, minimize = mMinimize]() {
         if (toast)
-          toast->minimize(minimize); }, Qt::QueuedConnection);
+          toast->minimize(minimize);
+      },
+      Qt::QueuedConnection);
 
   toast->showAnimated();
+  emit showingNotification(toast);
 
   return uuid;
 }

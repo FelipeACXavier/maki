@@ -29,6 +29,7 @@ struct GeneralSettings
   int maximumLogHistory = 2000;             /// How many rows to keep in the log table
   int recentHistorySize = 10;               /// Size of the recent history list.
   bool showWelcomeMessage = true;           /// Whether to show the welcome message.
+  bool showTourOnStart = true;              /// Whether to show the welcome message.
   QVector<QString> recentFiles = {};        /// List of recent files.
   QString lastOpenFileDir = "";             /// Directory of the last opened file.
   QString language = "en_US";               /// Application language.
@@ -38,7 +39,7 @@ struct GeneralSettings
     return restoreLastSession != s.restoreLastSession || autosaveEnabled != s.autosaveEnabled || autosaveIntervalMinutes != s.autosaveIntervalMinutes ||
            confirmOnCloseWithExecution != s.confirmOnCloseWithExecution || enableDebugLogs != s.enableDebugLogs || recentHistorySize != s.recentHistorySize ||
            recentFiles != s.recentFiles || showWelcomeMessage != s.showWelcomeMessage || lastOpenFileDir != s.lastOpenFileDir || language != s.language ||
-           maximumLogHistory != s.maximumLogHistory;
+           maximumLogHistory != s.maximumLogHistory || showTourOnStart != s.showTourOnStart;
   }
 };
 

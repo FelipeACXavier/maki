@@ -42,20 +42,20 @@ public:
   void start() override;
   void buildLibraries(const QVector<std::shared_ptr<NodeSaveInfo>>& nodes);
 
+  QPushButton* confirmButton() const;
+  maki::SelectorWidget* eventSelector() const;
+
+  void setTouring() override;
+
 signals:
   void accepted(const QStringList& selected);
+  void changedTabs(const int index);
+  void eventSelected(const QString& eventName);
 
 protected:
   void wheelEvent(QWheelEvent* event) override;
 
 private:
-  void selectCapability(const QString& instanceId, const QString& capabilityType);
-  void confirmSelection();
-  void showCapabilityPage();
-
-  QString libraryFromId(const QString& id) const;
-  LibraryContainer* getLibrary(const QString& id);
-
   QStackedWidget* mStack = nullptr;
   StyledFrame* mContent = nullptr;
 
@@ -66,4 +66,12 @@ private:
   std::shared_ptr<NodeSaveInfo> mSelectedCapability;
   NodeItem* mNode;
   QTextBrowser* mEventInfo;
+
+  void updateTab(const int tab);
+  void selectCapability(const QString& instanceId, const QString& capabilityType);
+  void confirmSelection();
+  void showCapabilityPage();
+
+  QString libraryFromId(const QString& id) const;
+  LibraryContainer* getLibrary(const QString& id);
 };

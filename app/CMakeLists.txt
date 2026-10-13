@@ -25,6 +25,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 file(GLOB SYSTEM_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/system/*.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/system/undo_commands/*.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/system/tutorials/*.cpp
 )
 file(GLOB ELEMENT_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/elements/*.cpp

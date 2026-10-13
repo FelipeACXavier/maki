@@ -138,6 +138,7 @@ VoidResult PropertiesMenu::onNodeSelected(NodeItem* node, bool selected)
   if (auto* vLayout = qobject_cast<QVBoxLayout*>(layout()))
     vLayout->addStretch();
 
+  emit nodeFocused(mCurrentNode);
   return VoidResult();
 }
 
@@ -233,7 +234,7 @@ VoidResult PropertiesMenu::loadValueProperty(const std::shared_ptr<IParameter>& 
 
   addCompleter(editor, node->id(), property->gettype());
 
-  connect(editor, &maki::InputWidget::valueChanged, this, [node, editor, id = property->getid()] {
+  connect(editor, &maki::InputWidget::valueChanged, this, [this, node, editor, id = property->getid()] {
     if (!node || !editor)
       return;
 
@@ -245,18 +246,20 @@ VoidResult PropertiesMenu::loadValueProperty(const std::shared_ptr<IParameter>& 
       const auto text = value.toString();
       const bool automaticallyGenerated = text.isEmpty();
 
+      auto propertyValue = value;
       if (automaticallyGenerated)
-        node->setProperty(id, maki::Value::createString(node->nodeType().replace(ConfigKeys::KODA_NAMESPACE, "")));
-      else
-        node->setProperty(id, value);
+        propertyValue = maki::Value::createString(node->nodeType().replace(ConfigKeys::KODA_NAMESPACE, ""));
 
       if (node->getProperty("name_auto_generated"))
         node->setProperty("name_auto_generated", maki::Value::createBool(automaticallyGenerated));
 
+      node->setProperty(id, propertyValue);
+      emit propertyUpdated(id, node->id(), propertyValue);
       return;
     }
 
     node->setProperty(id, value);
+    emit propertyUpdated(id, node->id(), value);
   });
 
   layout()->addWidget(editor);
@@ -276,13 +279,15 @@ VoidResult PropertiesMenu::loadColorProperty(const std::shared_ptr<IParameter>& 
   else if (value.isValid())
     editor->setValue(QColor::fromString(value.toString()));
 
-  connect(editor, &maki::ColorWidget::valueChanged, this, [node, id = property->getid()](const QColor& color) {
+  connect(editor, &maki::ColorWidget::valueChanged, this, [this, node, id = property->getid()](const QColor& color) {
     if (!node)
       return;
 
     maki::Value value;
     value.data = color;
     node->setProperty(id, value);
+
+    emit propertyUpdated(id, node->id(), value);
   });
 
   layout()->addWidget(editor);
@@ -567,7 +572,7 @@ VoidResult PropertiesMenu::loadCallArguments(const std::shared_ptr<FlowSaveInfo>
 
     addCompleter(editor, node->id(), argument->gettype());
 
-    connect(editor, &maki::InputWidget::valueChanged, this, [node, propertyId, editor, index] {
+    connect(editor, &maki::InputWidget::valueChanged, this, [this, node, propertyId, editor, index] {
       if (!node || !editor)
         return;
 
@@ -580,7 +585,10 @@ VoidResult PropertiesMenu::loadCallArguments(const std::shared_ptr<FlowSaveInfo>
 
       arguments[static_cast<std::size_t>(index)] = editor->getValue();
       maki::setRecordValue(valueRecord, ConfigKeys::ARGUMENTS, maki::Value::createList(arguments));
-      node->setProperty(propertyId, maki::Value::createRecord(valueRecord));
+      auto propertyValue = maki::Value::createRecord(valueRecord);
+      node->setProperty(propertyId, propertyValue);
+
+      emit propertyUpdated(propertyId, node->id(), propertyValue);
     });
 
     connect(editor, &maki::InputWidget::openParameter, this, [this](const QString& parameterId) { emit openParameter(parameterId); });
