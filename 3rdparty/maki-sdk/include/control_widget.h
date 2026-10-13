@@ -11,7 +11,11 @@ public:
   ControlWidget(QWidget* parent = nullptr);
 
   virtual void start();
+  virtual void activate();
+  virtual void setTouring();
+
 signals:
+  void activated();
   void dismissed();
 };
 }  // namespace maki
