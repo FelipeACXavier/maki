@@ -1,24 +1,5 @@
 # ----------------------------------
-# Helpers and arg parsing
-function printHelp()
-{
-  echo "Usage:"
-  echo "  $1"
-  echo ""
-  echo "    --release           | Create release"
-  echo "    --local-qt          | Path to the local Qt installation"
-  echo "    --local-project     | Path to the local project"
-  echo "    --clean             | Clean the build directory"
-  echo "    --no-test           | Do not build the tests"
-  echo "    --prefix            | CMake QT install prefix"
-  echo "    --docs              | Build docs"
-  echo "    --list              | List available targets"
-  echo "    --target            | Build specific target"
-  echo "    --docker            | Build in the docker folder"
-  echo "    --ros               | Set the ROS distro: humble, jazzy, etc"
-  echo ""
-}
-
+# Flags
 DOCKER=0
 DOCS=0
 CLEAN=0
@@ -35,7 +16,44 @@ QT_VERSION="$(tr -d ' \n' < $CURR_DIR/.qt-version)"
 PREFIX_PATH="$HOME/Qt/$QT_VERSION/gcc_64"
 EXTRA_ARGS=""
 BUILD_TESTING="ON"
+CPPCHECK="OFF"
+MAKI_PEDANTIC="OFF"
+MAKI_WARNINGS_AS_ERRORS="OFF"
 MAKI_ROS_DISTRO="humble"
+
+# Helpers and arg parsing
+function printHelp()
+{
+  echo "Usage:"
+  echo "  $1"
+  echo ""
+  echo " General flags:"
+  echo ""
+  echo "    --release           | Create release"
+  echo "    --prefix            | CMake QT install prefix. Default: ${PREFIX_PATH}"
+  echo "    --clean             | Clean the build directory"
+  echo "    --list              | List available targets"
+  echo "    --docs              | Build docs"
+  echo "    --target            | Build specific target"
+  echo "    --no-test           | Do not build the tests"
+  echo ""
+  echo " Compilation warnings and errors:"
+  echo ""
+  echo "    --check             | Enable cppcheck"
+  echo "    --pedantic          | Enable all warnings. It also enables cppcheck"
+  echo "    --picky             | Makes compile warnings into errors"
+  echo ""
+  echo " Docker related flags:"
+  echo ""
+  echo "    --docker            | Build in the docker folder"
+  echo "    --ros               | Set the ROS distro: humble, jazzy, etc"
+  echo ""
+  echo " Niceties for local development:"
+  echo ""
+  echo "    --local-qt          | Path to the local Qt installation"
+  echo "    --local-project     | Path to the local project"
+  echo ""
+}
 
 while [[ $# -gt 0 ]]; do
   key="$1"
@@ -60,6 +78,18 @@ while [[ $# -gt 0 ]]; do
       ;;
       --no-test)
       BUILD_TESTING="OFF"
+      shift
+      ;;
+      --check)
+      CPPCHECK="ON"
+      shift
+      ;;
+      --pedantic)
+      MAKI_PEDANTIC="ON"
+      shift
+      ;;
+      --picky)
+      MAKI_WARNINGS_AS_ERRORS="ON"
       shift
       ;;
       --ros)
@@ -104,7 +134,12 @@ done
 
 BUILD_PATH="$SOURCE_DIR/build/$TARGET_BUILD/$BUILD_TYPE_DIR"
 INSTALL_PREFIX="$SOURCE_DIR/release/$TARGET_BUILD"
-EXTRA_ARGS="${EXTRA_ARGS} -DBUILD_TESTING=${BUILD_TESTING}"
+EXTRA_ARGS="${EXTRA_ARGS} -DBUILD_TESTING=${BUILD_TESTING} -DMAKI_ENABLE_CPPCHECK=${CPPCHECK} -DMAKI_PEDANTIC=${MAKI_PEDANTIC} -DMAKI_WARNINGS_AS_ERRORS=${MAKI_WARNINGS_AS_ERRORS}"
+
+# Run the check command
+if [[ "$CPPCHECK" == "ON" ]]; then
+  BUILD_TARGET="cppcheck-maki"
+fi
 
 # Let's add those beautiful docker specific commands
 if [ $DOCKER -eq 1 ]; then

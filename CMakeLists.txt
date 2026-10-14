@@ -6,6 +6,8 @@ option(DEBUG "Build with debug symbols" OFF)
 option(TRACE "Build with trace logs" OFF)
 option(BUILD_DOC "Build documentation" ON)
 option(BUILD_PLUGINS "Build plugins as part of the application" ON)
+option(MAKI_PEDANTIC "Enable all warnings" OFF)
+option(MAKI_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 
 # Paths as configurable cache variables
 set(LOCAL_QT_PATH "" CACHE PATH "Qt path on this machine")
@@ -60,8 +62,6 @@ if (MSVC)
     ${QT_REQUIRED_PACKAGES}
   )
 else()
-  add_compile_options(-Wall)
-
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
       set(LINUX_BUILD_DIR "${CMAKE_SOURCE_DIR}/build/linux/debug")
       add_compile_options(-g -O0)

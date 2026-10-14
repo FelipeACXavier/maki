@@ -16,6 +16,7 @@ include(${CMAKE_SOURCE_DIR}/cmake/copy_libraries.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/doxygen.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/copy_translations.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/copy_templates.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/cppcheck.cmake)
 
 # ------------------------------------------------------------------------------------------------------------
 # Main application
@@ -56,13 +57,31 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug" AND BUILD_PLUGINS)
 endif()
 
 if (MSVC)
+  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    if(MAKI_WARNINGS_AS_ERRORS)
+      target_compile_options(${APPLICATION_NAME} PRIVATE /WX)
+    endif()
+  endif()
 else()
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_compile_options(${APPLICATION_NAME} PRIVATE
       -fsanitize=address,undefined
       -fno-omit-frame-pointer
       -g
+      -Wall
     )
+    if(MAKI_PEDANTIC)
+      target_compile_options(${APPLICATION_NAME} PRIVATE
+        -Wextra
+        -Wpedantic
+        -Wshadow
+        -Wnon-virtual-dtor
+        -Woverloaded-virtual
+      )
+    endif()
+    if(MAKI_WARNINGS_AS_ERRORS)
+      target_compile_options(${APPLICATION_NAME} PRIVATE -Werror)
+    endif()
     target_link_options(${APPLICATION_NAME} PRIVATE
       -fsanitize=address,undefined
     )
@@ -104,6 +123,24 @@ add_dependencies(${APPLICATION_NAME}
 )
 
 # ------------------------------------------------------------------------------------------------------------
+# CppCheck stuff
+if(MAKI_PEDANTIC)
+  maki_enable_code_analysis(${APPLICATION_NAME})
+endif()
+
+maki_add_cppcheck_target(${APPLICATION_NAME}
+  SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
+    ${SYSTEM_FILES}
+    ${WIDGET_FILES}
+    ${ELEMENT_FILES}
+    ${COMPILER_FILES}
+  INCLUDE_DIRS
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${PROJECT_SOURCE_DIR}
+)
+
+# ------------------------------------------------------------------------------------------------------------
 # Linux deployment
 if (DEPLOY_TARGET STREQUAL "linux" AND UNIX AND NOT APPLE)
   # Where Qt is installed in the container
@@ -139,7 +176,7 @@ if (DEPLOY_TARGET STREQUAL "linux" AND UNIX AND NOT APPLE)
   add_dependencies(deploy-linux ${APPLICATION_NAME})
 endif()
 
-# TODO: Test this with a windows machine
+# ------------------------------------------------------------------------------------------------------------
 # Windows deployment
 if (DEPLOY_TARGET STREQUAL "windows" AND WIN32 AND NOT CMAKE_CROSSCOMPILING)
   # Make sure windeployqt is available
