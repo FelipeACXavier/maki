@@ -161,7 +161,7 @@ VoidResult SystemMenu::onNodeSelected(const QString& flowId, NodeItem* node, boo
   return VoidResult();
 }
 
-VoidResult SystemMenu::onFlowAdded(Flow* flow, NodeItem* node)
+VoidResult SystemMenu::onFlowAdded(PFlow flow, NodeItem* node)
 {
   if (!flow)
     return VoidResult();

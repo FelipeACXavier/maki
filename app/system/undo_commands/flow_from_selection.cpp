@@ -50,7 +50,7 @@ void FlowFromSelectionCommand::redo()
     return;
   }
 
-  auto* newFlow = newCanvas->flow();
+  PFlow newFlow = newCanvas->flow();
   if (!newFlow)
   {
     LOG_WARNING("Could not create new flow");

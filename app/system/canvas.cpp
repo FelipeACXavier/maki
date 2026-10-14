@@ -1409,7 +1409,7 @@ QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
   updateParent(node, nullptr, false);
 
   auto flows = node->flows();
-  for (Flow* flow : flows)
+  for (auto& flow : flows)
   {
     node->deleteFlow(flow->id());
     emit flowRemoved(flow->id(), node);
@@ -1845,7 +1845,7 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
 
   // TODO(felaze): Move these to a function or so
   node->nodeModified = [this](NodeItem* item) { emit nodeModified(this, item); };
-  node->flowAdded = [this](Flow* flow, NodeItem* node) { addedItemFlow(flow, node); };
+  node->flowAdded = [this](PFlow flow, NodeItem* node) { addedItemFlow(flow, node); };
   node->nodeMoved = [this](NodeItem* node, bool done) { onNodeMoved(node, done); };
   node->geometryChanged = [this](NodeItem* node, const QRectF& oldRect) { onNodeGeometryChanged(node, oldRect); };
   node->nodeHovered = [this](NodeItem* node, bool entered) { onNodeHovered(node, entered); };
@@ -1913,7 +1913,7 @@ void Canvas::addedItemNode(NodeItem* node, std::shared_ptr<NodeSaveInfo> /* info
   emit nodeAdded(this, node);
 }
 
-void Canvas::addedItemFlow(Flow* flow, NodeItem* node)
+void Canvas::addedItemFlow(PFlow flow, NodeItem* node)
 {
   emit flowAdded(flow, node);
 }
@@ -1949,8 +1949,7 @@ void Canvas::onNodeHovered(NodeItem* node, bool entered)
   }
   else
   {
-    if (node->hasControl<TaskNodeMenu>())
-      node->hideControl();
+    node->hideControlOfType<TaskNodeMenu>();
   }
 }
 
@@ -2233,21 +2232,6 @@ void Canvas::autoRoute(QList<TransitionItem*> transitions)
       if (paths.contains(transition))
         transition->updatePath(paths.value(transition));
   }
-  // if (!router())
-  //   return;
-
-  // QList<NodeItem*> nodes;
-  // QList<TransitionItem*> toAutoRoute = transitions;
-  // for (const auto& item : items())
-  //   if (item->type() == NodeItem::Type)
-  //     nodes.push_back(qgraphicsitem_cast<NodeItem*>(item));
-  //   else if (item->type() == TransitionItem::Type && transitions.isEmpty())
-  //     toAutoRoute.push_back(qgraphicsitem_cast<TransitionItem*>(item));
-
-  // const auto paths = router()->route(nodes, toAutoRoute);
-  // for (TransitionItem* transition : toAutoRoute)
-  //   if (paths.contains(transition))
-  //     transition->updatePath(paths.value(transition));
 }
 
 void Canvas::suggestCapability(NodeItem* node)
@@ -2301,7 +2285,7 @@ void Canvas::createSuggestedNode(const QString& nodeType, NodeItem* sourceNode)
   mUndoStack->push(new AddNodeCommand(this, info, NodeCreation::Populating));
 }
 
-std::pair<NodeItem*, Flow*> Canvas::getFlow(const QString& flowId) const
+std::pair<NodeItem*, PFlow> Canvas::getFlow(const QString& flowId) const
 {
   for (const auto& item : items())
     if (auto node = qgraphicsitem_cast<NodeItem*>(item); node)
@@ -2314,7 +2298,7 @@ std::pair<NodeItem*, Flow*> Canvas::getFlow(const QString& flowId) const
   return std::make_pair(nullptr, nullptr);
 }
 
-Flow* Canvas::getFlowWithNode(const QString& nodeId) const
+PFlow Canvas::getFlowWithNode(const QString& nodeId) const
 {
   for (const auto& item : items())
     if (auto node = qgraphicsitem_cast<NodeItem*>(item); node)

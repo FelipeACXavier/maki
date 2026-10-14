@@ -3,12 +3,12 @@
 #include <QList>
 #include <QTreeWidget>
 
+#include "elements/flow.h"
 #include "result.h"
 #include "test_and_set.h"
 #include "types.h"
 
 class NodeItem;
-class Flow;
 class QTreeWidgetItem;
 class FlowSaveInfo;
 
@@ -70,7 +70,7 @@ public:
    * @param node The node associated with the flow.
    * @return A result indicating whether the operation succeeded.
    */
-  VoidResult onFlowAdded(Flow* flow, NodeItem* node);
+  VoidResult onFlowAdded(PFlow flow, NodeItem* node);
 
   /**
    * @brief Handles the removal of a flow from the menu.

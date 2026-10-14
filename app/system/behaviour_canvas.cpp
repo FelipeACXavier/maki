@@ -15,7 +15,7 @@ static constexpr qreal MIN_NODE_SPACING = 40.0;
 
 BehaviourCanvas::BehaviourCanvas(std::shared_ptr<FlowSaveInfo> flow, const QString& flowOwner, std::shared_ptr<EdgeRouter> router, QObject* parent)
     : Canvas(flow->getid(), router, parent)
-    , mFlow(new Flow(flow->getname(), flow))
+    , mFlow(std::make_shared<Flow>(flow->getname(), flow))
     , mOwner(flowOwner)
 {
   LOG_DEBUG("Opening canvas with flow {} of {}", flow->getid(), flowOwner);
@@ -75,7 +75,7 @@ Types::LibraryTypes BehaviourCanvas::type() const
   return Types::LibraryTypes::BEHAVIOUR;
 }
 
-Flow* BehaviourCanvas::flow() const
+PFlow BehaviourCanvas::flow() const
 {
   return mFlow;
 }
@@ -84,7 +84,7 @@ void BehaviourCanvas::cleanFlow()
 {
   if (mFlow)
   {
-    delete mFlow;
+    mFlow.reset();
     mFlow = nullptr;
   }
 }

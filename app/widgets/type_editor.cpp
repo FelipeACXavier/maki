@@ -1165,7 +1165,7 @@ maki::StringWidget* TypeEditor::createNamespaceEdit(maki::WidgetAlignment& align
   auto* namespaceEdit = new maki::StringWidget(tr("Namespace"), Constants::EMPTY_COMBO, alignment,
                                                tr("Use identifiers separated by '::', for example 'robotics' or 'robotics::geometry'."), parent);
 
-  namespaceEdit->widget()->setValidator(new NamespaceValidator());
+  namespaceEdit->widget()->setValidator(new NamespaceValidator(namespaceEdit->widget()));
   maki::addCompleter(TypeRegistry::instance().namespaces(), namespaceEdit->widget());
 
   return namespaceEdit;

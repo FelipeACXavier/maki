@@ -1,7 +1,6 @@
 
 #pragma once
 
-#include <QPointer>
 #include <QString>
 #include <QStringList>
 #include <QWidget>

@@ -153,7 +153,7 @@ Result<std::shared_ptr<FlowSaveInfo>> PropertiesMenu::onCreateEvent(NodeItem* no
   return openEventDialog(table, node, table->rowCount(), synchronousCreation);
 }
 
-VoidResult PropertiesMenu::onFlowAdded(Flow* /* flow */, NodeItem* node)
+VoidResult PropertiesMenu::onFlowAdded(PFlow /* flow */, NodeItem* node)
 {
   if (node->id() != mCurrentNode)
     return VoidResult();
@@ -775,10 +775,13 @@ std::shared_ptr<FlowSaveInfo> PropertiesMenu::openEventDialog(QTableWidget* tabl
       return nullptr;
     }
 
-  Flow* flow = node->createFlow(info->getname(), info);
+  PFlow flow = node->createFlow(info->getname(), info);
+  if (!flow)
+    return nullptr;
+
   addEventToTable(table, row, info);
 
-  if (flow && !synchronousCreation && info->getmodifiable())
+  if (!synchronousCreation && info->getmodifiable())
     emit flowSelected(flow->id(), node->id());
 
   return flow->config();

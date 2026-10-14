@@ -32,7 +32,7 @@ PluginManager::PluginManager(maki::PipelineActionRegistry* registry, Pipeline* p
     , mPipeline(pipeline)
     , mIsRunning(false)
 {
-  connect(mPipeline, &Pipeline::finishedLast, [this](const Pipeline::Info& info, int exitCode, const QString& message) {
+  connect(mPipeline, &Pipeline::finishedLast, this, [this](const Pipeline::Info& info, int exitCode, const QString& message) {
     if (!mIsRunning)
       return;
 
@@ -44,7 +44,7 @@ PluginManager::PluginManager(maki::PipelineActionRegistry* registry, Pipeline* p
     mProgressId.clear();
     mIsRunning = false;
   });
-  connect(mPipeline, &Pipeline::errorOccurred, [this](const Pipeline::Info& info, QProcess::ProcessError /* error */, const QString& message) {
+  connect(mPipeline, &Pipeline::errorOccurred, this, [this](const Pipeline::Info& info, QProcess::ProcessError /* error */, const QString& message) {
     if (!mIsRunning)
       return;
 
@@ -53,28 +53,28 @@ PluginManager::PluginManager(maki::PipelineActionRegistry* registry, Pipeline* p
     mProgressId.clear();
     mIsRunning = false;
   });
-  connect(mPipeline, &Pipeline::startingPipeline, [this](const Pipeline::Info& info) {
+  connect(mPipeline, &Pipeline::startingPipeline, this, [this](const Pipeline::Info& info) {
     if (!mIsRunning)
       return;
 
     mInfo = info;
     mProgressId = NOTIFY_LONG_INFO(mProgressId, "Installation Progress", progressContent());
   });
-  connect(mPipeline, &Pipeline::startingGroup, [this](const Pipeline::Info& info, const QString& groupName) {
+  connect(mPipeline, &Pipeline::startingGroup, this, [this](const Pipeline::Info& info, const QString& groupName) {
     if (!mIsRunning)
       return;
 
     mInfo = info;
     mProgressId = NOTIFY_LONG_INFO(mProgressId, "Installation Progress", progressContent());
   });
-  connect(mPipeline, &Pipeline::processStarted, [this](const Pipeline::Info& info, const QString& /* process */, const QStringList& /* arguments */) {
+  connect(mPipeline, &Pipeline::processStarted, this, [this](const Pipeline::Info& info, const QString& /* process */, const QStringList& /* arguments */) {
     if (!mIsRunning)
       return;
 
     mInfo = info;
     mProgressId = NOTIFY_LONG_INFO(mProgressId, "Installation Progress", progressContent());
   });
-  connect(mPipeline, &Pipeline::finishedGroup, [this](const Pipeline::Info& info, const QString& groupName, int exitCode, const QString& message) {
+  connect(mPipeline, &Pipeline::finishedGroup, this, [this](const Pipeline::Info& info, const QString& groupName, int exitCode, const QString& message) {
     if (!mIsRunning)
       return;
 

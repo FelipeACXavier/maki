@@ -4,13 +4,11 @@
 #include <memory>
 
 #include "../menu_base.h"
-#include "config.h"
+#include "elements/flow.h"
 #include "result.h"
-#include "save_info.h"
 #include "widgets/frame.h"
 #include "widgets/widget_factory.h"
 
-class Flow;
 class NodeItem;
 class QDialog;
 class QLayout;
@@ -63,7 +61,7 @@ public:
   VoidResult onNodeSelected(NodeItem* node, bool selected) override;
 
   VoidResult onTransitionSelected(TransitionItem* transition);
-  VoidResult onFlowAdded(Flow* flow, NodeItem* node);
+  VoidResult onFlowAdded(PFlow flow, NodeItem* node);
   Result<std::shared_ptr<FlowSaveInfo>> onCreateEvent(NodeItem* node, bool synchronousCreation);
   VoidResult onFlowRemoved(const QString& flowId, NodeItem* node);
 

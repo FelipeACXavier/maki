@@ -101,6 +101,11 @@ MainWindow::MainWindow(QApplication* app, oclero::qlementine::ThemeManager* them
 
 MainWindow::~MainWindow()
 {
+  if (mNotificationManager)
+  {
+    delete mNotificationManager;
+    mNotificationManager = nullptr;
+  }
 }
 
 VoidResult MainWindow::start()
@@ -141,7 +146,7 @@ VoidResult MainWindow::start()
   mPipeline = new Pipeline(this);
   mPluginPipeline = new maki::PluginPipeline(processPipeline, this);
   mLogger = new Logger(this);
-  mNotificationManager = new NotificationManager(mCanvasPanel);  // TODO(felaze): Check leaks here
+  mNotificationManager = new NotificationManager(mCanvasPanel, this);
   mPluginManager = std::make_unique<PluginManager>(mPluginPipeline->registry(), mPipeline, this);
 
   mGenerator = new Generator(mPipeline, this);
@@ -2068,7 +2073,7 @@ void MainWindow::addEditorTab(QPlainTextEdit* editorTab)
   mCanvasPanel->setCurrentWidget(editorTab);
 }
 
-void MainWindow::onFlowAdded(Flow* flow, NodeItem* node)
+void MainWindow::onFlowAdded(PFlow flow, NodeItem* node)
 {
   LOG_WARN_ON_FAILURE(mSystemMenu->onFlowAdded(flow, node));
   LOG_WARN_ON_FAILURE(mPropertiesMenu->onFlowAdded(flow, node));

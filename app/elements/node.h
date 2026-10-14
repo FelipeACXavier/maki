@@ -8,6 +8,7 @@
 
 #include "config.h"
 #include "control_widget.h"
+#include "flow.h"
 #include "flow_info.h"
 #include "node_base.h"
 #include "node_info.h"
@@ -16,7 +17,6 @@
 #include "types.h"
 #include "widgets/controls/canvas_control_widget.h"
 
-class Flow;
 class CanvasMessage;
 class QGraphicsSceneMouseEvent;
 class QGraphicsSceneHoverEvent;
@@ -75,9 +75,13 @@ public:
   bool hasControl();
 
   template <typename T>
-  bool hasControl()
+  void hideControlOfType()
   {
-    return mControlActive && mControlWidget && qobject_cast<T*>(mControlWidget->controlWidget()) != nullptr;
+    if (!mControlActive)
+      return;
+
+    if (auto control = qobject_cast<T*>(mControlWidget->controlWidget()); control && !mControlWidget->permanent())
+      hideControl();
   }
 
   void highlight(const QColor& color, const QString& message, int durationMs = 1000);
@@ -297,7 +301,7 @@ public:
    *
    * @return The QVector of Flow pointers.
    */
-  QVector<Flow*> flows() const;
+  std::vector<std::shared_ptr<Flow>> flows() const;
 
   /**
    * @brief Creates a new flow with the given name and save information.
@@ -306,7 +310,7 @@ public:
    * @param info The save information for the flow.
    * @return The created Flow object, if successful.
    */
-  Flow* createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo> info, bool resetId = false);
+  PFlow createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo> info, bool resetId = false);
 
   /**
    * @brief Gets a flow by its ID.
@@ -314,7 +318,7 @@ public:
    * @param flowId The ID of the flow to retrieve.
    * @return The Flow object, if found.
    */
-  Flow* getFlow(const QString& flowId) const;
+  PFlow getFlow(const QString& flowId) const;
 
   /**
    * @brief Deletes a flow by its ID.
@@ -361,7 +365,7 @@ public:
 
   // "signals":
   std::function<void(NodeItem* item)> nodeModified;
-  std::function<void(Flow* flow, NodeItem* item)> flowAdded;
+  std::function<void(PFlow flow, NodeItem* item)> flowAdded;
   std::function<void(NodeItem* item, bool done)> nodeMoved;
   std::function<void(NodeItem* item, const QRectF& oldRect)> geometryChanged;
   std::function<void(NodeItem* item, bool enter)> nodeHovered;
@@ -478,9 +482,9 @@ protected:
   virtual void updateExtrasPosition(Config::NodeMove reason);
 
 private:
-  QVector<Flow*> mFlows;              /// List of flows associated with this node.
-  NodeItem* mParentNode;              /// Parent node of this item, if any.
-  QVector<NodeItem*> mChildrenNodes;  /// List of child nodes.
+  std::vector<std::shared_ptr<Flow>> mFlows;  /// List of flows associated with this node.
+  NodeItem* mParentNode;                      /// Parent node of this item, if any.
+  QVector<NodeItem*> mChildrenNodes;          /// List of child nodes.
   CanvasMessage* mHighlightMessage = nullptr;
   CanvasControlWidget* mControlWidget = nullptr;
   bool mControlActive = false;

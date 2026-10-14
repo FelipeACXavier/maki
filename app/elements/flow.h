@@ -115,3 +115,5 @@ private:
   /// List of transitions in this flow
   QVector<TransitionItem*> mTransitions;
 };
+
+typedef std::shared_ptr<Flow> PFlow;

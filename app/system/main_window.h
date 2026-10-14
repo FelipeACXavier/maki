@@ -118,7 +118,7 @@ private slots:
    * @param flow Pointer to the added Flow.
    * @param node Pointer to the associated NodeItem.
    */
-  void onFlowAdded(Flow* flow, NodeItem* node);
+  void onFlowAdded(PFlow flow, NodeItem* node);
 
   /**
    * @brief Handles flow removal events.

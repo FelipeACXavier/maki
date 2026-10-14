@@ -24,7 +24,7 @@ TourGuide::TourGuide(QWidget* topLevel, QObject* parent)
     , m_window(topLevel)
 {
   m_overlay = new TourOverlay(topLevel, this);
-  m_bubble = new TourBubble(nullptr);
+  m_bubble = new TourBubble(topLevel);
 
   connect(m_bubble->nextButton(), &QPushButton::clicked, this, &TourGuide::advance);
   connect(m_bubble->backButton(), &QPushButton::clicked, this, &TourGuide::back);
@@ -38,7 +38,17 @@ TourGuide::TourGuide(QWidget* topLevel, QObject* parent)
 TourGuide::~TourGuide()
 {
   stop();
-  m_bubble->deleteLater();
+  if (m_overlay)
+  {
+    delete m_overlay;
+    m_overlay = nullptr;
+  }
+
+  if (m_bubble)
+  {
+    delete m_bubble;
+    m_bubble = nullptr;
+  }
 }
 
 // --- building the pipeline (append) ------------------------------------

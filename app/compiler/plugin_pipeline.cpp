@@ -330,6 +330,7 @@ QWidget* PluginPipeline::progressWidget() const
   if (mPipeline && mPipeline->size() > 0)
   {
     currentTaskWidget = mPipeline->progressWidget(true);
+    currentTaskWidget->setParent(row);
   }
   else if (mCurrentIndex < mExecutionOrder.size())
   {

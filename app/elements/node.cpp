@@ -16,7 +16,6 @@
 #include "app_configs.h"
 #include "app_paths.h"
 #include "canvas_message.h"
-#include "flow.h"
 #include "logging.h"
 #include "style_helpers.h"
 #include "system/canvas.h"
@@ -859,12 +858,12 @@ QVector<TransitionConfig> NodeItem::configTransitions() const
   return config()->transitions;
 }
 
-QVector<Flow*> NodeItem::flows() const
+std::vector<std::shared_ptr<Flow>> NodeItem::flows() const
 {
   return mFlows;
 }
 
-Flow* NodeItem::createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo> info, bool resetId)
+PFlow NodeItem::createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo> info, bool resetId)
 {
   std::shared_ptr<FlowSaveInfo> flowConfig = info;
   bool found = false;
@@ -896,7 +895,7 @@ Flow* NodeItem::createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo
     mStorage->addFlow(flowConfig);
   }
 
-  Flow* flow = new Flow(flowName, flowConfig);
+  auto flow = std::make_shared<Flow>(flowName, flowConfig);
   mFlows.push_back(flow);
 
   if (flowAdded)
@@ -905,9 +904,9 @@ Flow* NodeItem::createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo
   return flow;
 }
 
-Flow* NodeItem::getFlow(const QString& flowId) const
+PFlow NodeItem::getFlow(const QString& flowId) const
 {
-  for (const auto& flow : mFlows)
+  for (const auto& flow : flows())
     if (flow->id() == flowId)
       return flow;
 
@@ -917,7 +916,7 @@ Flow* NodeItem::getFlow(const QString& flowId) const
 void NodeItem::deleteFlow(const QString& flowId)
 {
   mStorage->removeFlow(flowId);
-  mFlows.removeIf([flowId](Flow* flow) { return flow->id() == flowId; });
+  std::erase_if(mFlows, [&flowId](const std::shared_ptr<Flow>& flow) { return flow->id() == flowId; });
 }
 
 void NodeItem::updateFlow()

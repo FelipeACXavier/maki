@@ -137,9 +137,9 @@ TaskNodeMenu::TaskNodeMenu(QWidget* parent)
   const QString flowIconPath = iconPathFromTheme("button_addflow");
   const QString subtaskIconPath = iconPathFromTheme("button_addsubtask");
 
-  auto* mainWidget = new NodeActionRow(mainIconPath, tr("Open main flow"), this);
-  auto* flowWidget = new NodeActionRow(flowIconPath, tr("Add flow"), this);
-  auto* subtaskWidget = new NodeActionRow(subtaskIconPath, tr("Add subtask"), this);
+  auto* mainWidget = new NodeActionRow(mainIconPath, tr("Open main flow"), frame);
+  auto* flowWidget = new NodeActionRow(flowIconPath, tr("Add flow"), frame);
+  auto* subtaskWidget = new NodeActionRow(subtaskIconPath, tr("Add subtask"), frame);
   mainLayout->addWidget(mainWidget);
   mainLayout->addWidget(flowWidget);
   mainLayout->addWidget(subtaskWidget);

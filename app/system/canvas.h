@@ -272,9 +272,9 @@ public:
   /**
    * @brief Returns a pointer to the flow if it exists;
    */
-  std::pair<NodeItem*, Flow*> getFlow(const QString& flowId) const;
+  std::pair<NodeItem*, PFlow> getFlow(const QString& flowId) const;
 
-  Flow* getFlowWithNode(const QString& nodeId) const;
+  PFlow getFlowWithNode(const QString& nodeId) const;
 
   QTabWidget* canvasTabWidget() const;
   Canvas* requestNewFlow(const QString& nodeId);
@@ -359,7 +359,7 @@ signals:
    * @param flow Pointer to the added flow.
    * @param node Pointer to the node associated with the flow.
    */
-  void flowAdded(Flow* flow, NodeItem* node);
+  void flowAdded(PFlow flow, NodeItem* node);
 
   /**
    * @brief Emitted when a flow is removed.
@@ -471,7 +471,7 @@ protected:
   std::shared_ptr<NodeConfig> getNodeConfig(const QString& key) const;
   virtual void addedItemNode(NodeItem* node, std::shared_ptr<NodeSaveInfo> info);
   virtual void nodeStarted(NodeItem* node);
-  virtual void addedItemFlow(Flow* flow, NodeItem* node);
+  virtual void addedItemFlow(PFlow flow, NodeItem* node);
   virtual void onNodeHovered(NodeItem* node, bool entered);
   virtual void onNodeFocusOn(NodeItem* node, const QString& nodeId, const QString& flowId, int type);
   virtual void addTransition(TransitionItem* transition);

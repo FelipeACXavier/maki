@@ -33,7 +33,7 @@ public:
    */
   virtual Types::LibraryTypes type() const override;
 
-  Flow* flow() const;
+  PFlow flow() const;
 
   void nodeStarted(NodeItem* node) override;
 
@@ -103,7 +103,7 @@ private:
   /**
    * @brief A pointer to the Flow object associated with this canvas.
    */
-  Flow* mFlow;
+  PFlow mFlow;
   const QString mOwner;
 
   /**

@@ -709,7 +709,7 @@ void MainWindowLayout::buildMenuBar()
   mTranslatable.push_back({mActionDocumentation, "Documentation"});
   help->addAction(mActionDocumentation);
 
-  mActionQuickStartGuide = new QAction(iconFromTheme("show-guides"), tr("Quick Start Guide"), this);
+  mActionQuickStartGuide = new QAction(iconFromTheme("route"), tr("Quick Start Guide"), this);
   mTranslatable.push_back({mActionQuickStartGuide, "Quick Start Guide"});
   help->addAction(mActionQuickStartGuide);
 
