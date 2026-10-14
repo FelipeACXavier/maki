@@ -18,7 +18,7 @@ public:
     Type = Types::EMPTY_SLOT
   };
 
-  EmptySlot(qreal diameter, QGraphicsItem* parent = nullptr);
+  explicit EmptySlot(qreal diameter, QGraphicsItem* parent = nullptr);
 
   /**
    * @brief Returns the type of this item.

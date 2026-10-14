@@ -8,7 +8,7 @@ namespace maki
 class ProgressBar : public QProgressBar
 {
 public:
-  ProgressBar(QWidget* parent = nullptr);
+  explicit ProgressBar(QWidget* parent = nullptr);
 
   void setError(bool error);
 

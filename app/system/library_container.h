@@ -17,7 +17,7 @@ public:
    *
    * @param parent The parent widget.
    */
-  LibraryContainer(QWidget* parent = nullptr);
+  explicit LibraryContainer(QWidget* parent = nullptr);
 
   /**
    * @brief Creates and returns a new LibraryContainer instance with the specified name and parent widget.

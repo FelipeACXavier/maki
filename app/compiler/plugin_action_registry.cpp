@@ -28,9 +28,11 @@ std::shared_ptr<IPipelineAction> PipelineActionRegistry::action(const QString& i
 
 QVector<std::shared_ptr<IPipelineAction>> PipelineActionRegistry::actionsOfPlugin(const QString& pluginId) const
 {
-  QVector<std::shared_ptr<IPipelineAction>> actions = {};
-  for (const auto& a : mActionPluginIds[pluginId])
-    actions.push_back(action(a));
+  const auto& actionIds = mActionPluginIds.value(pluginId);
+
+  QVector<std::shared_ptr<IPipelineAction>> actions;
+  actions.reserve(actionIds.size());
+  std::transform(actionIds.cbegin(), actionIds.cend(), std::back_inserter(actions), [this](const auto& id) { return action(id); });
 
   return actions;
 }
@@ -43,9 +45,7 @@ bool PipelineActionRegistry::contains(const QString& id) const
 void PipelineActionRegistry::printAll() const
 {
   LOG_INFO("Available actions:");
-  for (const auto& action : mActions)
-  {
-    LOG_INFO("Id: {} - Action Id: {}", action->id(), action->displayName());
-  }
+  for (const auto& a : mActions)
+    LOG_INFO("Id: {} - Action Id: {}", a->id(), a->displayName());
 }
 }  // namespace maki

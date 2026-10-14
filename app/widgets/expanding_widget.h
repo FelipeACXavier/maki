@@ -34,7 +34,7 @@ public:
    * @param direction The direction in which the widget expands and collapses.
    * @param parent The parent widget of this ExpandingWidget.
    */
-  ExpandingWidget(Direction direction, QWidget* parent = nullptr);
+  explicit ExpandingWidget(Direction direction, QWidget* parent = nullptr);
 
   /**
    * @brief Sets the icon for the button that controls the expansion/collapse.

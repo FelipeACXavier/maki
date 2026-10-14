@@ -20,7 +20,7 @@ public:
    *
    * @param parent Pointer to the parent widget.
    */
-  CanvasView(QWidget* parent = nullptr);
+  explicit CanvasView(QWidget* parent = nullptr);
 
   /**
    * @brief Gets the current center point of the view.

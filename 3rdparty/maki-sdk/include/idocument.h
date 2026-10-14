@@ -67,6 +67,7 @@ public:
 class IFlow
 {
 public:
+  virtual ~IFlow() = default;
   virtual QString getid() const = 0;
   virtual QString getname() const = 0;
   virtual QString getowner() const = 0;

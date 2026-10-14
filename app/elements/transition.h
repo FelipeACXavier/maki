@@ -30,7 +30,7 @@ public:
    * @brief Constructs a new TransitionItem with the given storage information.
    * @param storage Shared pointer to the transition save info.
    */
-  TransitionItem(std::shared_ptr<TransitionSaveInfo> storage);
+  explicit TransitionItem(std::shared_ptr<TransitionSaveInfo> storage);
 
   /**
    * @brief Destructor for TransitionItem.

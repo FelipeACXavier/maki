@@ -40,7 +40,7 @@ class TaskNodeMenu : public maki::ControlWidget
 public:
   static TaskNodeMenu* create(QWidget* parent = nullptr);
 
-  TaskNodeMenu(QWidget* parent = nullptr);
+  explicit TaskNodeMenu(QWidget* parent = nullptr);
 
   void setTouring() override;
 

@@ -17,7 +17,7 @@ public:
    *
    * @param parent The parent object.
    */
-  LogFilterProxyModel(QObject* parent = nullptr);
+  explicit LogFilterProxyModel(QObject* parent = nullptr);
 
   /**
    * @brief Sets the filter for log levels.

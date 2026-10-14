@@ -8,7 +8,7 @@ class DropDownButton : public QToolButton
   Q_OBJECT
 
 public:
-  DropDownButton(QWidget* parent = nullptr);
+  explicit DropDownButton(QWidget* parent = nullptr);
 
   virtual void setSize(int width, int height);
   virtual void reset();

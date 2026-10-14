@@ -31,7 +31,7 @@ public:
    * @param root Project root directory as a QString.
    * @param parent Parent QObject, defaults to nullptr.
    */
-  HostServices(maki::IPipeline* pipeline, maki::ISettings* settings, const QString& root, QObject* parent = nullptr);
+  explicit HostServices(maki::IPipeline* pipeline, maki::ISettings* settings, const QString& root, QObject* parent = nullptr);
 
   /**
    * @brief Sets the plugin tab.

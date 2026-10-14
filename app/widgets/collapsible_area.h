@@ -17,7 +17,7 @@ public:
    *
    * @param parent The parent widget.
    */
-  CollapsibleAreaWidth(QWidget* parent = nullptr);
+  explicit CollapsibleAreaWidth(QWidget* parent = nullptr);
 
   /**
    * @brief Returns the current content width.
@@ -64,7 +64,7 @@ public:
    *
    * @param parent The parent widget.
    */
-  CollapsibleAreaHeight(QWidget* parent = nullptr);
+  explicit CollapsibleAreaHeight(QWidget* parent = nullptr);
 
   /**
    * @brief Returns the current content height.

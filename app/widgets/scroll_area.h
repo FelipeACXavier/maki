@@ -17,11 +17,11 @@ public:
    */
   enum class BackgroundRole
   {
-    Window,     /// The window background role.
-    Base,       /// The base background role.
-    Button,     /// The button background role.
-    Midlight,   /// The midlight background role.
-    Custom      /// A custom background role.
+    Window,    /// The window background role.
+    Base,      /// The base background role.
+    Button,    /// The button background role.
+    Midlight,  /// The midlight background role.
+    Custom     /// A custom background role.
   };
 
   /**
@@ -29,7 +29,7 @@ public:
    *
    * @param parent The parent widget.
    */
-  StyledScrollArea(QWidget* parent = nullptr);
+  explicit StyledScrollArea(QWidget* parent = nullptr);
 
   /**
    * @brief Sets the background role for the scroll area.
@@ -55,8 +55,8 @@ protected:
   bool viewportEvent(QEvent* event) override;
 
 private:
-  BackgroundRole mBackgroundRole = BackgroundRole::Base; /// The current background role.
-  QColor mCustomBackgroundColor; /// The custom background color.
+  BackgroundRole mBackgroundRole = BackgroundRole::Base;  /// The current background role.
+  QColor mCustomBackgroundColor;                          /// The custom background color.
 
   /**
    * @brief Returns the current background color based on the role.

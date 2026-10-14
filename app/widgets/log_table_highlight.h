@@ -15,7 +15,7 @@ public:
    *
    * @param parent The parent object.
    */
-  LogHighlightDelegate(QObject* parent = nullptr);
+  explicit LogHighlightDelegate(QObject* parent = nullptr);
 
   /**
    * @brief Sets the search text used for highlighting log entries.

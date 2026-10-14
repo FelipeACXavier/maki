@@ -39,7 +39,7 @@ void LogHighlightDelegate::clearExpandedRows()
 void LogHighlightDelegate::updatePadding(int hPadding, int vPadding)
 {
   mExpandedHPadding = hPadding;
-  mExpandedHPadding = vPadding;
+  mExpandedVPadding = vPadding;
 }
 
 QSize LogHighlightDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
@@ -70,17 +70,16 @@ QSize LogHighlightDelegate::sizeHint(const QStyleOptionViewItem& option, const Q
 
   const QFontMetrics fontMetrics(opt.font);
 
-  const QRect wrappedRect = fontMetrics.boundingRect(
-      QRect(0, 0, availableWidth, std::numeric_limits<int>::max()),
-      Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap,
-      opt.text);
+  const QRect wrappedRect =
+      fontMetrics.boundingRect(QRect(0, 0, availableWidth, std::numeric_limits<int>::max()), Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, opt.text);
 
   const int requiredHeight = wrappedRect.height() + 2 * mExpandedVPadding + 2;  // Safety margin for font/device-pixel rounding.
   size.setHeight(std::max(size.height(), requiredHeight));
   return size;
 }
 
-void LogHighlightDelegate::paintSearchHighlights(QPainter* painter, const QStyleOptionViewItem& option, const QRect& textRect, const QString& text, bool wordWrap) const
+void LogHighlightDelegate::paintSearchHighlights(QPainter* painter, const QStyleOptionViewItem& option, const QRect& textRect, const QString& text,
+                                                 bool wordWrap) const
 {
   if (mSearchText.isEmpty() || text.isEmpty() || !text.contains(mSearchText, Qt::CaseInsensitive) || textRect.width() <= 0)
     return;
@@ -147,11 +146,7 @@ void LogHighlightDelegate::paintSearchHighlights(QPainter* painter, const QStyle
       if (endX < startX)
         std::swap(startX, endX);
 
-      QRectF highlightRect(
-          textRect.left() + line.position().x() + startX,
-          textRect.top() + verticalOffset + line.position().y(),
-          endX - startX,
-          line.height());
+      QRectF highlightRect(textRect.left() + line.position().x() + startX, textRect.top() + verticalOffset + line.position().y(), endX - startX, line.height());
 
       painter->fillRect(highlightRect, qlementinestyle->theme().statusColorWarning);
     }

@@ -226,7 +226,7 @@ void PortItem::updatePosition()
 
 QPointF PortItem::defaultPosition() const
 {
-  auto* node = nodeItem();
+  const auto* node = nodeItem();
   if (!node)
     return {};
 

@@ -41,8 +41,8 @@ public:
    * @param nodeConfig The configuration for the node.
    * @param parent The parent graphics item, if any.
    */
-  NodeItem(const QString& id, std::shared_ptr<NodeSaveInfo> info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig,
-           QGraphicsItem* parent = nullptr);
+  explicit NodeItem(const QString& id, std::shared_ptr<NodeSaveInfo> info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig,
+                    QGraphicsItem* parent = nullptr);
 
   /**
    * @brief Destructor for the NodeItem.

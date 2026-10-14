@@ -19,13 +19,13 @@ public:
   /**
    * @brief Default constructor.
    */
-  PropertyConfig();
+  explicit PropertyConfig();
 
   /**
    * @brief Constructor from JSON object.
    * @param object The JSON object to initialize the configuration from.
    */
-  PropertyConfig(const QJsonObject& object);
+  explicit PropertyConfig(const QJsonObject& object);
 
   QString id = "";                                          /// Unique identifier for the property.
   maki::Value defaultValue;                                 /// Default value of the property.
@@ -46,13 +46,13 @@ public:
   /**
    * @brief Default constructor.
    */
-  TransitionConfig();
+  explicit TransitionConfig();
 
   /**
    * @brief Constructor from JSON object.
    * @param object The JSON object to initialize the configuration from.
    */
-  TransitionConfig(const QJsonObject& object);
+  explicit TransitionConfig(const QJsonObject& object);
 
   QString id = "";         /// Unique identifier for the transition.
   QString label = "";      /// Label of the transition.
@@ -72,13 +72,13 @@ public:
   /**
    * @brief Default constructor.
    */
-  FlowConfig();
+  explicit FlowConfig();
 
   /**
    * @brief Constructor from JSON object.
    * @param object The JSON object to initialize the configuration from.
    */
-  FlowConfig(const QJsonObject& object);
+  explicit FlowConfig(const QJsonObject& object);
 
   QString name = "";                                /// Name of the flow.
   Types::CallType type = Types::CallType::UNKNOWN;  /// Type of the call.
@@ -101,13 +101,13 @@ public:
   /**
    * @brief Default constructor.
    */
-  ControlsConfig();
+  explicit ControlsConfig();
 
   /**
    * @brief Constructor from JSON object.
    * @param object The JSON object to initialize the configuration from.
    */
-  ControlsConfig(const QJsonObject& object);
+  explicit ControlsConfig(const QJsonObject& object);
 
   QString id = "";                                       /// Unique identifier for the control.
   Types::ControlTypes type = Types::ControlTypes::AUTO;  /// Type of the control.
@@ -126,13 +126,13 @@ public:
   /**
    * @brief Default constructor.
    */
-  BehaviourConfig();
+  explicit BehaviourConfig();
 
   /**
    * @brief Constructor from JSON object.
    * @param object The JSON object to initialize the configuration from.
    */
-  BehaviourConfig(const QJsonObject& object);
+  explicit BehaviourConfig(const QJsonObject& object);
 
   QString code = "";  /// Code associated with the behaviour.
 
@@ -149,13 +149,13 @@ public:
   /**
    * @brief Default constructor.
    */
-  PortConfig();
+  explicit PortConfig();
 
   /**
    * @brief Constructor from JSON object.
    * @param object The JSON object to initialize the configuration from.
    */
-  PortConfig(const QJsonObject& object);
+  explicit PortConfig(const QJsonObject& object);
 
   QJsonObject toJson() const;
 
@@ -176,13 +176,13 @@ public:
   /**
    * @brief Default constructor.
    */
-  HelpConfig();
+  explicit HelpConfig();
 
   /**
    * @brief Constructor from JSON object.
    * @param object The JSON object to initialize the configuration from.
    */
-  HelpConfig(const QJsonObject& object);
+  explicit HelpConfig(const QJsonObject& object);
 
   QString message = "";  /// Message containing help information.
 
@@ -199,13 +199,13 @@ public:
   /**
    * @brief Default constructor.
    */
-  BodyConfig();
+  explicit BodyConfig();
 
   /**
    * @brief Constructor from JSON object.
    * @param object The JSON object to initialize the configuration from.
    */
-  BodyConfig(const QJsonObject& object);
+  explicit BodyConfig(const QJsonObject& object);
 
   Types::Shape shape = Types::Shape::ROUNDED_RECTANGLE;  /// Shape of the body.
 
@@ -238,13 +238,13 @@ public:
   /**
    * @brief Default constructor.
    */
-  NodeConfig();
+  explicit NodeConfig();
 
   /**
    * @brief Constructor from JSON object.
    * @param object The JSON object to initialize the configuration from.
    */
-  NodeConfig(const QJsonObject& object);
+  explicit NodeConfig(const QJsonObject& object);
 
   QString type;                                /// Type of the node.
   BodyConfig body;                             /// Configuration for the body of the node.

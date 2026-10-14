@@ -48,7 +48,7 @@ public:
    *
    * @param parent Pointer to the parent widget.
    */
-  MainWindowLayout(QWidget* parent = nullptr);
+  explicit MainWindowLayout(QWidget* parent = nullptr);
 
 protected:
   // === Main ===

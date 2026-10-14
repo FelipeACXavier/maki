@@ -91,7 +91,6 @@ void BehaviourCanvas::cleanFlow()
 
 void BehaviourCanvas::nodeStarted(NodeItem* node)
 {
-  LOG_DEBUG("Node of type: {} started with {} children", node->nodeType(), node->children().size());
   if (node && node->nodeId() == ConfigKeys::REPEAT_NODE)
   {
     if (!node->children().isEmpty())
@@ -107,10 +106,10 @@ void BehaviourCanvas::nodeStarted(NodeItem* node)
     initial.setSrcPort(Types::Port::IN);
     initial.setDstPort(Types::Port::OUT);
 
-    if (auto* inPort = node->getPort(Types::Port::IN))
+    if (const auto* inPort = node->getPort(Types::Port::IN))
       initial.setSrcPoint(inPort->anchorScenePos());
 
-    if (auto* outPort = node->getPort(Types::Port::OUT))
+    if (const auto* outPort = node->getPort(Types::Port::OUT))
       initial.setDstPoint(outPort->anchorScenePos());
 
     initial.setSrcShift({0, 0});
@@ -130,13 +129,14 @@ void BehaviourCanvas::nodeStarted(NodeItem* node)
       initial.setDstId(node->id());
       initial.setSrcPort(Types::Port::IN);
       initial.setDstPort(Types::Port::OUT);
-      if (auto* inPort = node->getPort(Types::Port::IN, "do"))
+      if (const auto* inPort = node->getPort(Types::Port::IN, "do"))
       {
         initial.setSrcPoint(inPort->anchorScenePos());
         initial.setSrcPortSubFlow(inPort->subFlow());
       }
-      if (auto* outPort = node->getPort(Types::Port::OUT))
+      if (const auto* outPort = node->getPort(Types::Port::OUT))
         initial.setDstPoint(outPort->anchorScenePos());
+
       initial.setSrcShift({0, 0});
       initial.setDstShift({0, 0});
       createTransition(initial);
@@ -148,13 +148,14 @@ void BehaviourCanvas::nodeStarted(NodeItem* node)
       initial.setDstId(node->id());
       initial.setSrcPort(Types::Port::IN);
       initial.setDstPort(Types::Port::OUT);
-      if (auto* inPort = node->getPort(Types::Port::IN, "else"))
+      if (const auto* inPort = node->getPort(Types::Port::IN, "else"))
       {
         initial.setSrcPoint(inPort->anchorScenePos());
         initial.setSrcPortSubFlow(inPort->subFlow());
       }
-      if (auto* outPort = node->getPort(Types::Port::OUT))
+      if (const auto* outPort = node->getPort(Types::Port::OUT))
         initial.setDstPoint(outPort->anchorScenePos());
+
       initial.setSrcShift({0, 0});
       initial.setDstShift({0, 0});
       createTransition(initial);
@@ -185,7 +186,7 @@ bool BehaviourCanvas::canAddTransition(NodeItem* node, PortItem* port) const
     return true;
 
   int index = 0;
-  for (const auto& t : mFlow->transitions())
+  for (const auto* t : mFlow->transitions())
   {
     if (t->source()->id() != node->id())
       continue;
@@ -202,10 +203,8 @@ bool BehaviourCanvas::canAddTransition(NodeItem* node, PortItem* port) const
 
 TransitionConfig BehaviourCanvas::nextTransition(NodeItem* node) const
 {
-  int index = 0;
-  for (const auto& t : mFlow->transitions())
-    if (t->source()->id() == node->id())
-      ++index;
+  const auto& transitions = mFlow->transitions();
+  const auto index = std::count_if(transitions.cbegin(), transitions.cend(), [&node](const auto* t) { return t->source()->id() == node->id(); });
 
   // LOG_TRACE("nextTransition: {} >= {}", index, node->config()->transitions.size());
   if (node->config()->transitions.isEmpty() || index >= node->config()->transitions.size())
@@ -234,7 +233,8 @@ QVector<TransitionSaveInfo> BehaviourCanvas::transitionsOfNode(const QString& no
 {
   QVector<TransitionSaveInfo> info = {};
 
-  for (TransitionItem* transition : mFlow->transitions())
+  // cppcheck-suppress constVariableReference
+  for (const auto& transition : mFlow->transitions())
     if (transition->source()->id() == nodeId || transition->destination()->id() == nodeId)
       info.append(transition->saveInfo());
 
@@ -271,8 +271,8 @@ void BehaviourCanvas::onSubFlowCollapsed(NodeItem* owner, const QString& subflow
     if (!transition)
       continue;
 
-    auto* source = transition->source();
-    auto* destination = transition->destination();
+    const auto* source = transition->source();
+    const auto* destination = transition->destination();
     if (!source || !destination)
       continue;
 
@@ -336,7 +336,8 @@ QList<NodeItem*> BehaviourCanvas::getNeighboursOf(const NodeItem* node, int dept
     if (depth >= 0 && currentDepth >= depth)
       continue;
 
-    for (auto* transition : mFlow->transitions())
+    // cppcheck-suppress constVariableReference
+    for (const auto& transition : mFlow->transitions())
     {
       if (!transition)
         continue;
@@ -384,7 +385,7 @@ void BehaviourCanvas::onNodeGeometryChanged(NodeItem* node, const QRectF& oldRec
   if (!qFuzzyIsNull(deltaX))
     ensureMinimumSpacing(node->id());
 
-  for (const auto& transition : mFlow->transitions())
+  for (TransitionItem* transition : mFlow->transitions())
     if (transition->source()->id() == node->id() || transition->destination()->id() == node->id())
       transition->updatePath();
 }
@@ -400,8 +401,8 @@ void BehaviourCanvas::onNodeMoved(NodeItem* node, bool done)
     if (!transition)
       continue;
 
-    auto* source = transition->source();
-    auto* destination = transition->destination();
+    const auto* source = transition->source();
+    const auto* destination = transition->destination();
     if (!source || !destination)
       continue;
 
@@ -561,8 +562,7 @@ void BehaviourCanvas::createNodeContextMenu(QMenu* menu, NodeItem* node, const Q
     FlowSaveInfo info;
 
     QSet<QString> selectedIds;
-
-    for (auto* item : items)
+    for (const auto* item : items)
     {
       if (!item)
         continue;
@@ -575,13 +575,13 @@ void BehaviourCanvas::createNodeContextMenu(QMenu* menu, NodeItem* node, const Q
     int incomingCount = 0;
     int outgoingCount = 0;
 
-    for (auto* transition : mFlow->transitions())
+    for (const auto* transition : mFlow->transitions())
     {
       if (!transition)
         continue;
 
-      auto* source = transition->source();
-      auto* destination = transition->destination();
+      const auto* source = transition->source();
+      const auto* destination = transition->destination();
       if (!source || !destination)
         continue;
 
@@ -702,7 +702,7 @@ QPointF BehaviourCanvas::transitionPortAnchor(NodeItem* node, Types::Port port, 
   if (!node || port == Types::Port::UNKNOWN)
     return fallback;
 
-  if (auto* item = node->getPort(port))
+  if (const auto* item = node->getPort(port))
     return item->anchorScenePos();
 
   return fallback;
@@ -722,7 +722,7 @@ bool BehaviourCanvas::insertDroppedNodeOnTransition(TransitionItem* transition, 
   const TransitionSaveInfo originalTransition = transition->saveInfo();
 
   // Determine whether this transition belongs to a subflow.
-  NodeItem* insertionParent = insertionParentForTransition(transition);
+  const NodeItem* insertionParent = insertionParentForTransition(transition);
   const auto srcCenter = source->mapRectToScene(source->boundingRect()).center();
   const auto dstCenter = destination->mapRectToScene(destination->boundingRect()).center();
   const QPointF insertCenter = QPointF(info.getposition().x(), (srcCenter.y() + dstCenter.y()) * 0.5);
@@ -834,7 +834,7 @@ bool BehaviourCanvas::insertNodeOnTransition(TransitionItem* transition, NodeIte
     return false;
 
   const TransitionSaveInfo originalTransition = transition->saveInfo();
-  NodeItem* insertionParent = insertionParentForTransition(transition);
+  const NodeItem* insertionParent = insertionParentForTransition(transition);
   const QPointF originalNodeCenter = node->centerPosition();
 
   // The node is already being dragged over the transition, so retaining its

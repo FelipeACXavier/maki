@@ -17,7 +17,7 @@ public:
     Type = Types::SUB_FLOW
   };
 
-  SubFlow(const QString& id, QGraphicsItem* parent = nullptr);
+  explicit SubFlow(const QString& id, QGraphicsItem* parent = nullptr);
   ~SubFlow() override = default;
 
   QString id() const;

@@ -204,6 +204,7 @@ void PluginTab::registerPlugin(const QString& name, std::function<VoidResult(QGr
   pd.scene = new QGraphicsScene(pd.view);
   pd.view->setScene(pd.scene);
   pd.callback = callback;
+  pd.tab = nullptr;
 
   pd.action = new QAction(tr("Open") + " " + name, mMenu);
   connect(pd.action, &QAction::triggered, [this, name] { openScene(name); });

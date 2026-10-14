@@ -442,7 +442,7 @@ VoidResult NodeItem::setField(const QString& key, const QJsonObject& property)
   if (!mStorage)
     return VoidResult::Failed("Storage is not set");
 
-  mStorage->setField(key, std::dynamic_pointer_cast<IParameter>(std::make_shared<PropertyInfo>(property)));
+  mStorage->setField(key, std::dynamic_pointer_cast<IParameter>(std::make_shared<PropertyInfo>(PropertyConfig(property))));
 
   return VoidResult();
 }

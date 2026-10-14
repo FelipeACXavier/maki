@@ -22,7 +22,7 @@ public:
    *
    * @param parent Pointer to the parent QObject.
    */
-  Logger(QObject* parent = nullptr);
+  explicit Logger(QObject* parent = nullptr);
 
   /**
    * @brief Registers a plugin with a callback function.

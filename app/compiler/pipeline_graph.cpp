@@ -205,9 +205,8 @@ Result<PipelineGraph> PipelineGraph::fromCanvas(const Canvas* canvas)
 
   for (const auto& item : canvas->items())
   {
-    if (item->type() == NodeItem::Type)
+    if (const auto* node = qgraphicsitem_cast<NodeItem*>(item))
     {
-      auto node = static_cast<NodeItem*>(item);
       PipelineNode pnode;
       pnode.actionId = toAction(node->nodeType());
       if (const auto* name = node->getProperty("name"))
@@ -218,9 +217,8 @@ Result<PipelineGraph> PipelineGraph::fromCanvas(const Canvas* canvas)
 
       graph.nodes.append(pnode);
     }
-    else if (item->type() == TransitionItem::Type)
+    else if (const auto* edge = qgraphicsitem_cast<TransitionItem*>(item))
     {
-      auto edge = static_cast<TransitionItem*>(item);
       PipelineEdge pedge;
       if (const auto* name = edge->source()->getProperty("name"))
         pedge.from = name->getvalue()->toStringValue();

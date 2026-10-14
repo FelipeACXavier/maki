@@ -35,7 +35,7 @@ struct ControlProperties
 class CanvasControlWidget : public QGraphicsProxyWidget
 {
 public:
-  CanvasControlWidget(std::function<void()> dismissed, QGraphicsItem* parent = nullptr);
+  explicit CanvasControlWidget(std::function<void()> dismissed, QGraphicsItem* parent = nullptr);
 
   maki::ControlWidget* controlWidget() const;
   void setControlWidget(maki::ControlWidget* controls, const ControlProperties& properties);

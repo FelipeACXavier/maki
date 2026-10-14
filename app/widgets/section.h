@@ -23,7 +23,7 @@ public:
    *
    * @param parent The parent widget.
    */
-  SectionWidget(QWidget* parent = nullptr);
+  explicit SectionWidget(QWidget* parent = nullptr);
 
   /**
    * @brief Adds an item to the section with a title.
@@ -78,12 +78,12 @@ public:
   void updateContentHeight(int height);
 
 private:
-  ClickableIcon* mToggleButton = nullptr; /// Pointer to the toggle button for expanding/collapsing.
-  QWidget* mContent = nullptr; /// Pointer to the content widget.
-  CollapsibleAreaHeight* mContentArea = nullptr; /// Pointer to the collapsible area.
-  bool mExpanded = true; /// Current state of the section (expanded or collapsed).
-  std::optional<int> mDuration = std::nullopt; /// Duration of the animation for expanding and collapsing.
-  QPropertyAnimation* mAnimation = nullptr; /// Pointer to the property animation.
+  ClickableIcon* mToggleButton = nullptr;         /// Pointer to the toggle button for expanding/collapsing.
+  QWidget* mContent = nullptr;                    /// Pointer to the content widget.
+  CollapsibleAreaHeight* mContentArea = nullptr;  /// Pointer to the collapsible area.
+  bool mExpanded = true;                          /// Current state of the section (expanded or collapsed).
+  std::optional<int> mDuration = std::nullopt;    /// Duration of the animation for expanding and collapsing.
+  QPropertyAnimation* mAnimation = nullptr;       /// Pointer to the property animation.
 
   /**
    * @brief Calculates the duration of the animation based on target and current heights.

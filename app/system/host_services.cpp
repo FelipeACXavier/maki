@@ -10,6 +10,7 @@ HostServices::HostServices(maki::IPipeline* pipeline, maki::ISettings* settings,
     , mPipeline(pipeline)
     , mSettings(settings)
     , mPluginTab(nullptr)
+    , mLogger(nullptr)
     , mRoot(root)
 {
 }

@@ -127,11 +127,11 @@ struct PluginSettings
 
   Status pluginStatus(const QString& pluginName) const
   {
-    for (const auto& p : plugins)
-      if (p.name == pluginName)
-        return p.enabled ? Status::Enabled : Status::Disabled;
+    const auto it = std::find_if(plugins.cbegin(), plugins.cend(), [&pluginName](const auto& plugin) { return plugin.name == pluginName; });
+    if (it == plugins.cend())
+      return Status::Unknown;
 
-    return Status::Unknown;
+    return it->enabled ? Status::Enabled : Status::Disabled;
   }
 };
 
@@ -149,7 +149,7 @@ public:
    * @param themeManager Pointer to the ThemeManager.
    * @param parent Parent object.
    */
-  SettingsManager(oclero::qlementine::ThemeManager* themeManager, QObject* parent = nullptr);
+  explicit SettingsManager(oclero::qlementine::ThemeManager* themeManager, QObject* parent = nullptr);
 
   /**
    * @brief Gets the general settings.

@@ -33,7 +33,7 @@ public:
    *
    * @param parent The parent widget.
    */
-  StyledFrame(QWidget* parent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags());
+  explicit StyledFrame(QWidget* parent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags());
 
   /**
    * @brief Sets the background role of the frame.

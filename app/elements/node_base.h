@@ -30,7 +30,7 @@ public:
    * @param config Configuration settings for the node.
    * @param parent Parent QGraphicsItem.
    */
-  NodeBase(const QString& id, const QString& nodeId, std::shared_ptr<NodeConfig> config, QGraphicsItem* parent);
+  explicit NodeBase(const QString& id, const QString& nodeId, std::shared_ptr<NodeConfig> config, QGraphicsItem* parent);
 
   /**
    * @brief Destructor.
@@ -63,7 +63,7 @@ public:
    *
    * @return The configuration settings.
    */
-  virtual std::shared_ptr<NodeConfig> config() const;
+  std::shared_ptr<NodeConfig> config() const;
 
   /**
    * @brief Returns the bounding rectangle of the node.

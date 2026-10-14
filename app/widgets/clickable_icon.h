@@ -17,7 +17,7 @@ public:
    * @param icon The QIcon to display on the button.
    * @param parent The parent QWidget of this ClickableIcon.
    */
-  ClickableIcon(const QIcon& icon, QWidget* parent = nullptr);
+  explicit ClickableIcon(const QIcon& icon, QWidget* parent = nullptr);
 
   /**
    * @brief Constructs a new ClickableIcon with the given icon, size, and parent widget.
@@ -26,7 +26,7 @@ public:
    * @param size The QSize of the button.
    * @param parent The parent QWidget of this ClickableIcon.
    */
-  ClickableIcon(const QIcon& icon, const QSize& size, QWidget* parent = nullptr);
+  explicit ClickableIcon(const QIcon& icon, const QSize& size, QWidget* parent = nullptr);
 
   /**
    * @brief Sets whether the icon is checkable.

@@ -7,7 +7,7 @@ class ExecuteButton : public DropDownButton
   Q_OBJECT
 
 public:
-  ExecuteButton(QWidget* parent = nullptr);
+  explicit ExecuteButton(QWidget* parent = nullptr);
 
   void addOption(const QString& name, const QString& id);
   void removeOption(const QString& id);

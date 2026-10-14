@@ -22,23 +22,23 @@ class LogTableModel : public QAbstractTableModel
 public:
   enum Column
   {
-    LevelColumn,  /// The column index for the log level.
-    TimeColumn,   /// The column index for the timestamp.
-    MessageColumn,/// The column index for the log message.
-    SourceColumn, /// The column index for the source of the log entry.
-    FileColumn,   /// The column index for the file where the log entry was generated.
-    LineColumn,   /// The column index for the line number in the file.
-    ColumnCount   /// The total number of columns.
+    LevelColumn,    /// The column index for the log level.
+    TimeColumn,     /// The column index for the timestamp.
+    MessageColumn,  /// The column index for the log message.
+    SourceColumn,   /// The column index for the source of the log entry.
+    FileColumn,     /// The column index for the file where the log entry was generated.
+    LineColumn,     /// The column index for the line number in the file.
+    ColumnCount     /// The total number of columns.
   };
 
   struct LogEntry
   {
-    QDateTime timestamp;  /// The timestamp of the log entry.
+    QDateTime timestamp;      /// The timestamp of the log entry.
     logging::LogLevel level;  /// The log level of the entry.
-    QString file;         /// The file where the log entry was generated.
-    uint32_t line;        /// The line number in the file.
-    QString source;       /// The source of the log entry.
-    QString message;      /// The log message.
+    QString file;             /// The file where the log entry was generated.
+    uint32_t line;            /// The line number in the file.
+    QString source;           /// The source of the log entry.
+    QString message;          /// The log message.
   };
 
   /**
@@ -46,7 +46,7 @@ public:
    *
    * @param parent The parent object.
    */
-  LogTableModel(QObject* parent = nullptr);
+  explicit LogTableModel(QObject* parent = nullptr);
 
   /**
    * @brief Returns the number of rows in the model.

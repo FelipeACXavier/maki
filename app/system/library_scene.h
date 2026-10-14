@@ -19,7 +19,7 @@ public:
    *
    * @param parent The parent QObject, if any.
    */
-  LibraryScene(QObject* parent = nullptr);
+  explicit LibraryScene(QObject* parent = nullptr);
 
   /**
    * @brief Returns the bounding rectangle of all visible items in the scene.

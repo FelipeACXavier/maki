@@ -7,8 +7,7 @@
 class CanvasMessage : public QGraphicsProxyWidget
 {
 public:
-  CanvasMessage(const QString& message, std::function<void()> dismissed = {}, QGraphicsItem* parent = nullptr);
-
+  explicit CanvasMessage(const QString& message, std::function<void()> dismissed = {}, QGraphicsItem* parent = nullptr);
   void setMessage(const QString& message);
 
 private:
