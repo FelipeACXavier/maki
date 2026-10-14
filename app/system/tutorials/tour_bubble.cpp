@@ -41,6 +41,7 @@ TourBubble::TourBubble(QWidget* parent)
   m_text = new oclero::qlementine::Label(this);
   m_text->setRole(oclero::qlementine::TextRole::Default);
   m_text->setWordWrap(true);
+  m_text->setFont(theme.fontH3);
   m_text->setAlignment(Qt::AlignVCenter | Qt::AlignCenter);
 
   layout->addWidget(m_text);

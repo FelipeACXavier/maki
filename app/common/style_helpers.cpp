@@ -466,7 +466,7 @@ QString createInformationMessage(const FlowConfig& event, bool defineBody)
 
   out += fieldHtml("Name", event.name, textColor, mutedColor, maki::Bold);
   out += fieldHtml("Type", type, textColor, accentColor, maki::Bold);
-  out += fieldHtml("Returns", typeLinkHtml(returnType, false), textColor, mutedColor, maki::Bold | maki::Monospace);
+  out += fieldHtml("Returns", typeLinkHtml(returnType, true), textColor, mutedColor, maki::Bold | maki::Monospace);
 
   if (!event.info.isEmpty())
     out += fieldHtml("Info", formatDescriptionHtml(event.info, event), textColor, mutedColor);

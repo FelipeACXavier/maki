@@ -1943,17 +1943,14 @@ void Canvas::onNodeHovered(NodeItem* node, bool entered)
     });
     connect(control, &maki::ControlWidget::activated, this, [this, control] { emit controlCreated(control); });
     connect(control, &maki::ControlWidget::dismissed, this, [this, control] { emit controlDismissed(control); });
-
     connect(control, &TaskNodeMenu::addFlowRequested, this, [this, node] { emit createEvent(node); });
-    node->showControls(control, ControlProperties{
-                                    .isFading = true,
-                                    .position = Config::ControlPosition::Right,
-                                });
+
+    node->showControls(control, ControlProperties{.isFading = true, .position = Config::ControlPosition::Right});
   }
   else
   {
-    // if (node->hasControl<TaskNodeMenu>())
-    //   node->hideControl();
+    if (node->hasControl<TaskNodeMenu>())
+      node->hideControl();
   }
 }
 
@@ -1984,10 +1981,7 @@ void Canvas::onNodeControlRequested(NodeItem* node, const QPointF& scenePos, mak
   // Nodes cannot be parents since they are not qobjects, so the CanvasView must parent the widget
   control->setParent(parentView());
   control->start();
-  node->showControls(control, ControlProperties{
-                                  .isFading = false,
-                                  .position = Config::ControlPosition::Right,
-                              });
+  node->showControls(control, ControlProperties{.isFading = false, .position = Config::ControlPosition::Right});
 }
 
 NodeItem* Canvas::findNodeWithId(const QString& id) const
@@ -2274,10 +2268,7 @@ void Canvas::suggestedNodes(NodeItem* node, QStringList consumers, QStringList p
         createSuggestedNode(nodeType, mSuggestionSourceNode);
     });
   });
-  node->parentNode()->showControls(menu, ControlProperties{
-                                             .isFading = true,
-                                             .position = Config::ControlPosition::Right,
-                                         });
+  node->parentNode()->showControls(menu, ControlProperties{.isFading = true, .position = Config::ControlPosition::Right});
 }
 
 void Canvas::createSuggestedNode(const QString& nodeType, NodeItem* sourceNode)

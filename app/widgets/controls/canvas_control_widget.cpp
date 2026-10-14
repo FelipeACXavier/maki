@@ -62,7 +62,7 @@ CanvasControlWidget::CanvasControlWidget(std::function<void()> dismissed, QGraph
     if (mDismissed)
       mDismissed();
 
-    opacityEffect->setOpacity(1.0);
+    // opacityEffect->setOpacity(1.0);
   });
 }
 
@@ -73,7 +73,6 @@ bool CanvasControlWidget::permanent() const
 
 void CanvasControlWidget::setPermanent()
 {
-  LOG_DEBUG("CONTROL IS PERMANENT");
   mProperties.isFading = false;
 }
 
@@ -170,9 +169,15 @@ void CanvasControlWidget::startFadeOut()
   auto* effect = qobject_cast<QGraphicsOpacityEffect*>(graphicsEffect());
   if (!effect)
   {
+    // If there is not effect, just dismiss immediatelly
     if (mDismissed)
       mDismissed();
+
+    return;
   }
+
+  // Always reset the opacity before starting the animation
+  effect->setOpacity(1.0);
 
   mFadeAnimation->stop();
   mFadeAnimation->setDuration(mProperties.fadeDurationMs);
@@ -191,15 +196,12 @@ void CanvasControlWidget::cancelFadeOut()
 
   if (mFadeAnimation)
     mFadeAnimation->stop();
-
-  if (auto* effect = qobject_cast<QGraphicsOpacityEffect*>(graphicsEffect()))
-    effect->setOpacity(1.0);
 }
 
 bool CanvasControlWidget::hideControl()
 {
   startFadeOut();
-  return permanent();
+  return !permanent();
 }
 
 void CanvasControlWidget::activate()

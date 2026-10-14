@@ -11,7 +11,6 @@
 
 #include "app_configs.h"
 #include "logging.h"
-#include "style_helpers.h"
 
 NotificationWidget::NotificationWidget(const QString& title, const QString& text, logging::LogLevel level, QWidget* parent)
     : StyledFrame(parent)

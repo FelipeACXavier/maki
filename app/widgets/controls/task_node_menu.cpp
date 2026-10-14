@@ -177,6 +177,5 @@ void TaskNodeMenu::setTouring()
 
 void TaskNodeMenu::hideMenu()
 {
-  LOG_DEBUG("Sending dismissed");
   emit dismissed();
 }

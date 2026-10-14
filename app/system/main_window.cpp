@@ -212,7 +212,7 @@ std::pair<LibraryContainer*, DraggableItem*> MainWindow::findDraggableInPalette(
 void MainWindow::startTourGuide(bool runningOnStartUp)
 {
   mTourGuide = std::make_shared<TourGuide>(this, this);
-  if (mSettingsManager && !mSettingsManager->general().showTourOnStart)
+  if (runningOnStartUp && mSettingsManager && !mSettingsManager->general().showTourOnStart)
     return;
 
   auto [taskLibrary, taskNode] = findDraggableInPalette(ConfigKeys::TASK_NODE);
