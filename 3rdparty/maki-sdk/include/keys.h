@@ -5,6 +5,7 @@
 namespace ConfigKeys
 {
 // Generic
+static const QString MAKI = "maki";
 static const QString ID = "id";
 static const QString NAME = "name";
 static const QString LABEL = "label";

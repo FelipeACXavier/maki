@@ -256,6 +256,9 @@ QString formatDescriptionHtml(const QString& description, const FlowConfig& even
 QColor blendColors(const QColor& foreground, const QColor& background, qreal opacity);
 QString spacerHtml(int height = 4);
 QString indentHtml(const QString& content, int indentation = 16);
+QString typeLinkHtml(const QString& typeName, const QString& color, bool clickable);
+
+QString typeFromLink(const QUrl& url);
 
 /**
  * @brief Creates a default message for the application.

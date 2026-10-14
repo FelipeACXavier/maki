@@ -38,6 +38,9 @@ public:
 
   void focusCurrentEditor();
 
+signals:
+  void requestFocus();
+
 public slots:
   // Type management
   void createRecord();
@@ -127,6 +130,7 @@ private:
   void selectType(const QString& qualifiedName);
 
   QTableWidget* createTable(QWidget* parent, const QStringList& headers);
+  void adjustTableHeight(QTableWidget* table);
   void createDefinition(const koda::types::TypeDefinition& definition);
   maki::StringWidget* createNamespaceEdit(maki::WidgetAlignment& alignment, QWidget* parent) const;
   QIcon typeToIcon(const koda::types::TypeDefinition& type) const;

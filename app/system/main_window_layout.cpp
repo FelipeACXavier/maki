@@ -29,6 +29,7 @@
 #include "process_tab.h"
 #include "style_helpers.h"
 #include "system/canvas_view.h"
+#include "type_registry.h"
 #include "widgets/dropdown_button.h"
 #include "widgets/frame.h"
 #include "widgets/log_table_widget.h"
@@ -308,10 +309,18 @@ void MainWindowLayout::buildCentralPanel()
 
     // Info tab
     mInfoText = new QTextBrowser(mBottomPanel);
-    mInfoText->setWordWrapMode(QTextOption::WrapMode::WordWrap);
     mInfoText->setFont(theme.fontRegular);
     mInfoText->setHtml(createDefaultMessage());
-    mInfoText->setFocusPolicy(Qt::FocusPolicy::ClickFocus);
+    mInfoText->setWordWrapMode(QTextOption::WrapMode::WordWrap);
+    // The editor supports selecting text, e.g., for copying, but that is it
+    mInfoText->setReadOnly(true);
+    mInfoText->setFocusPolicy(Qt::FocusPolicy::NoFocus);
+    mInfoText->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::LinksAccessibleByMouse);
+    // Make sure the editor support links but does not change focus when those are clicked
+    mInfoText->setOpenLinks(false);
+    mInfoText->setOpenExternalLinks(false);
+    // Hide the cursor when the user clicks on the editor
+    mInfoText->setCursorWidth(0);
 
     infoLayout->addWidget(mInfoText);
 

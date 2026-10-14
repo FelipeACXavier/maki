@@ -176,6 +176,18 @@ void TypeRegistry::removeUserTypes()
   emit registryChanged();
 }
 
+void TypeRegistry::showDefinition(const QString& name)
+{
+  const auto* definition = koda::types::TypeRegistry::findByName(name.toStdString());
+  if (!definition)
+  {
+    LOG_DEBUG("No definition for {}", name);
+    return;
+  }
+
+  emit definitionRequested(*definition);
+}
+
 koda::types::TypeRegistrationResult TypeRegistry::add(const koda::types::TypeDefinition& definition)
 {
   auto ret = koda::types::TypeRegistry::add(definition);

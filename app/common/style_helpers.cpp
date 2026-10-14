@@ -17,6 +17,7 @@
 
 #include "app_configs.h"
 #include "app_paths.h"
+#include "keys.h"
 #include "logging.h"
 #include "string_helpers.h"
 
@@ -360,6 +361,30 @@ QString indentHtml(const QString& content, int indentation)
       .arg(content);
 }
 
+QString typeLinkHtml(const QString& typeName, bool clickable)
+{
+  const QString label = htmlEscape(typeName);
+  if (!clickable)
+    return label;
+
+  const QString url = QString("%1://%2/").arg(ConfigKeys::MAKI, ConfigKeys::TYPE) + QString::fromLatin1(QUrl::toPercentEncoding(typeName));
+  return QString("<a href='%1' title='Open type definition'; font-family: monospace;"
+                 "font-weight: 600; text-decoration: none;'>%3</a>")
+      .arg(htmlEscape(url), label);
+}
+
+QString typeFromLink(const QUrl& url)
+{
+  if (url.scheme() != ConfigKeys::MAKI || url.host() != ConfigKeys::TYPE)
+    return QString();
+
+  QString typeId = url.path();
+  if (typeId.startsWith('/'))
+    typeId.remove(0, 1);
+
+  return QUrl::fromPercentEncoding(typeId.toUtf8());
+}
+
 QString createInformationMessage(const NodeConfig& node)
 {
   const auto theme = oclero::qlementine::appStyle()->theme();
@@ -395,7 +420,7 @@ QString createInformationMessage(const NodeConfig& node)
       const QString argType = htmlEscape(QString::fromStdString(arg.type.toString()));
 
       QString prop = fieldHtml("Name", name, textColor, textColor, maki::Bold);
-      prop += fieldHtml("Type", argType, textColor, accentColor, maki::Bold | maki::Monospace);
+      prop += fieldHtml("Type", typeLinkHtml(argType, true), textColor, accentColor, maki::Bold | maki::Monospace);
       if (!arg.info.isEmpty())
         prop += fieldHtml("Info", formatDescriptionHtml(arg.info, FlowConfig()), textColor, mutedColor);
 
@@ -441,7 +466,7 @@ QString createInformationMessage(const FlowConfig& event, bool defineBody)
 
   out += fieldHtml("Name", event.name, textColor, mutedColor, maki::Bold);
   out += fieldHtml("Type", type, textColor, accentColor, maki::Bold);
-  out += fieldHtml("Returns", returnType, textColor, mutedColor, maki::Bold | maki::Monospace);
+  out += fieldHtml("Returns", typeLinkHtml(returnType, false), textColor, mutedColor, maki::Bold | maki::Monospace);
 
   if (!event.info.isEmpty())
     out += fieldHtml("Info", formatDescriptionHtml(event.info, event), textColor, mutedColor);
@@ -457,7 +482,7 @@ QString createInformationMessage(const FlowConfig& event, bool defineBody)
 
       auto argument = hlineHtml(borderColor, background, 0.4);
       argument += fieldHtml("Name", name, textColor, textColor, maki::Bold);
-      argument += fieldHtml("Type", argType, textColor, accentColor, maki::Bold | maki::Monospace);
+      argument += fieldHtml("Type", typeLinkHtml(argType, true), textColor, accentColor, maki::Bold | maki::Monospace);
       if (!arg.info.isEmpty())
         argument += fieldHtml("Info", formatDescriptionHtml(arg.info, event), textColor, mutedColor);
 

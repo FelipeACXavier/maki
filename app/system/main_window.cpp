@@ -854,11 +854,18 @@ void MainWindow::bind()
   connect(mPropertiesMenu, &PropertiesMenu::flowRemoved, rootCanvas(), &Canvas::onFlowRemoved);
   connect(mPropertiesMenu, &PropertiesMenu::openParameter, this, [this](const QString& parameterId) {
     if (mBottomNavigation)
-      mBottomNavigation->setCurrentIndex(2);
+      mBottomNavigation->setCurrentIndex(MISSION_PARAMETER_INDEX);
 
     if (mMissionParameters)
       mMissionParameters->editParameter(parameterId);
   });
+
+  connect(mTypeEditor, &maki::TypeEditor::requestFocus, this, [this] {
+    if (mBottomNavigation)
+      mBottomNavigation->setCurrentIndex(TYPE_EDITOR_INDEX);
+  });
+
+  connect(mInfoText, &QTextBrowser::anchorClicked, this, [](const QUrl& url) { maki::TypeRegistry::instance().showDefinition(typeFromLink(url)); });
 
   connect(mFileMenu, &GeneratedFilesPanel::openExternallyRequested, this, &MainWindow::addEditorTab);
 
@@ -881,13 +888,9 @@ void MainWindow::bind()
       body["shape"] = "circle";
       body["textColor"] = "#FFFFFF";
       body["backgroundColor"] = "#202020";
-      body["borderColor"] = "#FFFFFF";
-      body["borderRadius"] = 10;
       body["width"] = 100;
       body["height"] = 100;
-      body["iconColor"] = "#FFFFFF";
-      body["iconScale"] = 0.8;
-      body["nodeSvg"] = plugin.plugin->manifest().iconPath();
+      body["icon"] = plugin.plugin->manifest().iconPath();
 
       node["body"] = body;
 
@@ -1129,7 +1132,7 @@ void MainWindow::bindShortcuts()
   // Add new mission parameter
   new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_P), this, [this] {
     if (mBottomNavigation)
-      mBottomNavigation->setCurrentIndex(2);
+      mBottomNavigation->setCurrentIndex(MISSION_PARAMETER_INDEX);
 
     if (mMissionParameters)
       mMissionParameters->addParameter();
@@ -1137,7 +1140,7 @@ void MainWindow::bindShortcuts()
   // Add new record type
   new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_R), this, [this] {
     if (mBottomNavigation)
-      mBottomNavigation->setCurrentIndex(1);
+      mBottomNavigation->setCurrentIndex(TYPE_EDITOR_INDEX);
 
     if (mTypeEditor)
     {
@@ -1148,7 +1151,7 @@ void MainWindow::bindShortcuts()
   // Add new alias type
   new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_A), this, [this] {
     if (mBottomNavigation)
-      mBottomNavigation->setCurrentIndex(1);
+      mBottomNavigation->setCurrentIndex(TYPE_EDITOR_INDEX);
 
     if (mTypeEditor)
     {
@@ -1159,7 +1162,7 @@ void MainWindow::bindShortcuts()
   // Add new enum type
   new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_E), this, [this] {
     if (mBottomNavigation)
-      mBottomNavigation->setCurrentIndex(1);
+      mBottomNavigation->setCurrentIndex(TYPE_EDITOR_INDEX);
 
     if (mTypeEditor)
     {

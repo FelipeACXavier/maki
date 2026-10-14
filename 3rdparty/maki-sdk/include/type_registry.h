@@ -39,12 +39,14 @@ public:
   koda::types::TypeRegistrationResult remove(const std::string& qualifiedName);
   bool isFromLibrary(const koda::types::QualifiedName& name) const;
   void removeUserTypes();
+  void showDefinition(const QString& name);
 
 signals:
   void registryChanged();
   void typeAdded(const koda::types::TypeDefinition& def);
   void typeRemoved(const koda::types::TypeDefinition& def);
   void typeChanged(const koda::types::TypeDefinition& def);
+  void definitionRequested(const koda::types::TypeDefinition& def);
 
 private:
   QSet<std::string> mLibraries{};

@@ -16,6 +16,7 @@
 #include <QMouseEvent>
 #include <QProxyStyle>
 #include <QPushButton>
+#include <QScrollArea>
 #include <QScrollBar>
 #include <QSignalBlocker>
 #include <QSplitter>
@@ -29,7 +30,6 @@
 #include <oclero/qlementine/widgets/LineEdit.hpp>
 
 #include "app_configs.h"
-#include "clickable_icon.h"
 #include "dialogs/type_reference_dialog.h"
 #include "logging.h"
 #include "properties/type_selector.h"
@@ -37,6 +37,7 @@
 #include "type_registry.h"
 #include "validators/namespace_validator.h"
 #include "widget_factory.h"
+#include "widgets/frame.h"
 
 namespace maki
 {
@@ -53,13 +54,18 @@ TypeEditor::TypeEditor(QWidget* parent)
   auto& registry = TypeRegistry::instance();
 
   connect(&registry, &TypeRegistry::registryChanged, this, &TypeEditor::reloadTypes);
+  connect(&registry, &TypeRegistry::definitionRequested, this, [this](const koda::types::TypeDefinition& def) {
+    // First focus on the type editor
+    emit requestFocus();
+    // Then show the definition, this avoid any weird layouting issues
+    showDefinition(def);
+  });
   connect(mTypeTree, &QTreeWidget::currentItemChanged, this, &TypeEditor::currentTypeChanged);
   connect(mDeleteButton, &QPushButton::clicked, this, &TypeEditor::removeCurrentType);
   connect(mApplyButton, &QPushButton::clicked, this, &TypeEditor::applyChanges);
   connect(mExportButton, &QPushButton::clicked, this, &TypeEditor::exportAsJson);
   connect(mImportButton, &QPushButton::clicked, this, &TypeEditor::importFromJson);
-  connect(mAddFieldButton, &QPushButton::clicked, this,
-          [this] { addField(tr("field%1").arg(mFieldsTable->rowCount() + 1), koda::types::FieldDefinition{}); });
+  connect(mAddFieldButton, &QPushButton::clicked, this, [this] { addField(tr("field%1").arg(mFieldsTable->rowCount() + 1), koda::types::FieldDefinition{}); });
   connect(mRemoveFieldButton, &QPushButton::clicked, this, &TypeEditor::removeField);
   connect(mAddEnumValueButton, &QPushButton::clicked, this, [this] { addEnumValue(tr("Value%1").arg(mEnumTable->rowCount() + 1), ""); });
   connect(mRemoveEnumValueButton, &QPushButton::clicked, this, &TypeEditor::removeEnumValue);
@@ -91,14 +97,13 @@ void TypeEditor::createRecord()
 void TypeEditor::createEnum()
 {
   createDefinition(koda::types::TypeDefinition::createEnum(createUniqueTypeName("Enum"), koda::types::EnumUnderlyingKind::Int32,
-                                                           std::vector<koda::types::EnumValueDefinition>{},
-                                                           QUuid::createUuid().toString().toStdString()));
+                                                           std::vector<koda::types::EnumValueDefinition>{}, QUuid::createUuid().toString().toStdString()));
 }
 
 void TypeEditor::createAlias()
 {
-  createDefinition(koda::types::TypeDefinition::createAlias(createUniqueTypeName("Alias"), koda::types::IntegerType,
-                                                            QUuid::createUuid().toString().toStdString()));
+  createDefinition(
+      koda::types::TypeDefinition::createAlias(createUniqueTypeName("Alias"), koda::types::IntegerType, QUuid::createUuid().toString().toStdString()));
 }
 
 void TypeEditor::removeCurrentType()
@@ -358,7 +363,7 @@ void TypeEditor::buildUi()
   editorLayout->setContentsMargins(Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING);
 
   mEditorStack = new QStackedWidget(editorWidget);
-  mEditorStack->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Expanding);
+  mEditorStack->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
   mEditorStack->addWidget(new QWidget(mEditorStack));  // Empty when nothing is selected
   mEditorStack->addWidget(createBuiltinPage());
@@ -418,39 +423,75 @@ QWidget* TypeEditor::createBuiltinPage()
 {
   auto* qlementineStyle = oclero::qlementine::appStyle();
   if (!qlementineStyle)
-    return new QWidget();
+    return new QWidget(mEditorStack);
 
+  const auto theme = qlementineStyle->theme();
   auto* page = new QWidget(mEditorStack);
-  auto layout = new maki::WidgetGroup(tr("Built-in Type"), page);
-  layout->setContentsMargins(0, 0, 0, Config::CONTENT_PADDING);
+  // --------------------------------------------------------------------------
+  // Content wrapper for the scroll widget
+  auto* content = new StyledFrame();
+  content->setBackgroundRole(StyledFrame::BackgroundRole::Base);
+  content->setBorderRole(StyledFrame::BorderRole::None);
 
-  auto alignment = maki::WidgetAlignment::Form(layout, Config::LONG_LABEL_WIDTH);
+  auto* contentLayout = new QVBoxLayout(content);
+  contentLayout->setContentsMargins(theme.spacing, theme.spacing, theme.spacing, theme.spacing);
+  contentLayout->setSpacing(0);
+  contentLayout->setSizeConstraint(QLayout::SetMinimumSize);
 
-  auto* nameEdit = new maki::StringWidget(tr("Name"), Constants::EMPTY_COMBO, alignment, page);
-  auto* namespaceEdit = new maki::StringWidget(tr("Namespace"), Constants::EMPTY_COMBO, alignment, page);
-  auto* kindEdit = new maki::StringWidget(tr("Kind"), Constants::EMPTY_COMBO, alignment, page);
+  // --------------------------------------------------------------------------
+  // The fields
+  auto* groupWidget = new maki::WidgetGroup(tr("Built-in Type"), content);
+  groupWidget->setContentsMargins(0, 0, 0, Config::CONTENT_PADDING);
+
+  auto alignment = maki::WidgetAlignment::Form(groupWidget, Config::LONG_LABEL_WIDTH);
+
+  auto* nameEdit = new maki::StringWidget(tr("Name"), Constants::EMPTY_COMBO, alignment, content);
+  auto* namespaceEdit = new maki::StringWidget(tr("Namespace"), Constants::EMPTY_COMBO, alignment, content);
+  auto* kindEdit = new maki::StringWidget(tr("Kind"), Constants::EMPTY_COMBO, alignment, content);
 
   nameEdit->setObjectName("builtinNameEdit");
   namespaceEdit->setObjectName("builtinNamespaceEdit");
   kindEdit->setObjectName("builtinKindEdit");
 
   nameEdit->widget()->setReadOnly(true);
-  nameEdit->widget()->setFocusPolicy(Qt::FocusPolicy::NoFocus);
-  namespaceEdit->widget()->setReadOnly(true);
-  namespaceEdit->widget()->setFocusPolicy(Qt::FocusPolicy::NoFocus);
-  kindEdit->widget()->setReadOnly(true);
-  kindEdit->widget()->setFocusPolicy(Qt::FocusPolicy::NoFocus);
+  nameEdit->widget()->setFocusPolicy(Qt::NoFocus);
 
-  auto* note = new oclero::qlementine::Label(tr("Built-in types are provided by KODA and cannot be modified."), page);
+  namespaceEdit->widget()->setReadOnly(true);
+  namespaceEdit->widget()->setFocusPolicy(Qt::NoFocus);
+
+  kindEdit->widget()->setReadOnly(true);
+  kindEdit->widget()->setFocusPolicy(Qt::NoFocus);
+
+  auto* note = new oclero::qlementine::Label(tr("Built-in types are provided by KODA and cannot be modified."), content);
   note->setWordWrap(true);
   note->setRole(oclero::qlementine::TextRole::Caption);
-  layout->addWidget(note);
+  groupWidget->addWidget(note);
 
-  const auto theme = qlementineStyle->theme();
+  // Push everything up
+  groupWidget->addStretch();
+
+  // Make sure the group widget is inside the content
+  contentLayout->addWidget(groupWidget);
+
+  // --------------------------------------------------------------------------
+  // Scroll area
+  auto* scrollArea = new QScrollArea(page);
+  scrollArea->setWidgetResizable(true);
+  scrollArea->setFrameShape(QFrame::NoFrame);
+  scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+  scrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+  scrollArea->setWidget(content);
+
+  // --------------------------------------------------------------------------
+  // Page layout
   auto* pageLayout = new QVBoxLayout(page);
-  pageLayout->setContentsMargins(theme.spacing, theme.spacing, theme.spacing, theme.spacing);
-  pageLayout->addWidget(layout);
-  pageLayout->addStretch();
+  pageLayout->setContentsMargins(0, 0, 0, 0);
+  pageLayout->setSpacing(0);
+
+  // Stretch factor 1: the scroll area takes all available space.
+  pageLayout->addWidget(scrollArea, 1);
 
   return page;
 }
@@ -459,17 +500,31 @@ QWidget* TypeEditor::createRecordPage()
 {
   auto* qlementineStyle = oclero::qlementine::appStyle();
   if (!qlementineStyle)
-    return new QWidget();
+    return new QWidget(mEditorStack);
 
   const auto theme = qlementineStyle->theme();
-
   auto* page = new QWidget(mEditorStack);
-  auto layout = new maki::WidgetGroup(tr("Record Type"), page);
-  auto alignment = maki::WidgetAlignment::Form(layout, Config::LONG_LABEL_WIDTH);
+  // --------------------------------------------------------------------------
+  // Content wrapper for the scroll widget
+  auto* content = new StyledFrame();
+  content->setBackgroundRole(StyledFrame::BackgroundRole::Base);
+  content->setBorderRole(StyledFrame::BorderRole::None);
 
-  auto* nameEdit = new maki::StringWidget(tr("Name"), Constants::EMPTY_COMBO, alignment, page);
-  auto* namespaceEdit = createNamespaceEdit(alignment, page);
-  auto* extendCombo = new maki::SelectorWidget(tr("Extends"), alignment, page);
+  auto* contentLayout = new QVBoxLayout(content);
+  contentLayout->setContentsMargins(theme.spacing, theme.spacing, theme.spacing, theme.spacing);
+  contentLayout->setSpacing(0);
+  contentLayout->setSizeConstraint(QLayout::SetMinimumSize);
+
+  // --------------------------------------------------------------------------
+  // The fields
+  auto groupWidget = new maki::WidgetGroup(tr("Record Type"), content);
+  groupWidget->setContentsMargins(0, 0, 0, Config::CONTENT_PADDING);
+
+  auto alignment = maki::WidgetAlignment::Form(groupWidget, Config::LONG_LABEL_WIDTH);
+
+  auto* nameEdit = new maki::StringWidget(tr("Name"), Constants::EMPTY_COMBO, alignment, content);
+  auto* namespaceEdit = createNamespaceEdit(alignment, content);
+  auto* extendCombo = new maki::SelectorWidget(tr("Extends"), alignment, content);
 
   nameEdit->setObjectName("recordNameEdit");
   namespaceEdit->setObjectName("recordNamespaceEdit");
@@ -478,26 +533,48 @@ QWidget* TypeEditor::createRecordPage()
   populateExtentKind(extendCombo->widget());
   extendCombo->widget()->setEditable(false);
 
-  auto fieldLayout = new maki::WidgetGroup(tr("Fields"), oclero::qlementine::TextRole::H5, layout);
+  auto fieldGroup = new maki::WidgetGroup(tr("Fields"), oclero::qlementine::TextRole::H5, groupWidget);
   mFieldsTable = createTable(page, {tr("Name"), tr("Required"), tr("Type")});
-  fieldLayout->addWidget(mFieldsTable);
-  fieldLayout->addSpacing(Config::CONTENT_PADDING);
 
   auto* fieldButtons = new QHBoxLayout();
-  mAddFieldButton = new QPushButton(tr("Add field"), page);
-  mRemoveFieldButton = new QPushButton(tr("Remove field"), page);
+  mAddFieldButton = new QPushButton(tr("Add field"), content);
+  mRemoveFieldButton = new QPushButton(tr("Remove field"), content);
 
+  // Layout the buttons shifted to the left
   fieldButtons->addWidget(mAddFieldButton);
   fieldButtons->addWidget(mRemoveFieldButton);
   fieldButtons->addStretch();
 
-  fieldLayout->addStretch();
-  fieldLayout->addLayout(fieldButtons);
-  layout->addWidget(fieldLayout);
+  // Layout everything inside the argument group
+  fieldGroup->addWidget(mFieldsTable);
+  fieldGroup->addStretch();
+  fieldGroup->addLayout(fieldButtons);
 
+  // Add the fields to the outer group
+  groupWidget->addWidget(fieldGroup);
+
+  // Make sure the group widget is inside the content
+  contentLayout->addWidget(groupWidget);
+
+  // --------------------------------------------------------------------------
+  // Scroll area
+  auto* scrollArea = new QScrollArea(page);
+  scrollArea->setWidgetResizable(true);
+  scrollArea->setFrameShape(QFrame::NoFrame);
+  scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+  scrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+  scrollArea->setWidget(content);
+
+  // --------------------------------------------------------------------------
+  // Page layout
   auto* pageLayout = new QVBoxLayout(page);
-  pageLayout->setContentsMargins(theme.spacing, theme.spacing, theme.spacing, theme.spacing);
-  pageLayout->addWidget(layout);
+  pageLayout->setContentsMargins(0, 0, 0, 0);
+  pageLayout->setSpacing(0);
+
+  // Stretch factor 1: the scroll area takes all available space.
+  pageLayout->addWidget(scrollArea, 1);
 
   return page;
 }
@@ -506,15 +583,31 @@ QWidget* TypeEditor::createEnumPage()
 {
   auto* qlementineStyle = oclero::qlementine::appStyle();
   if (!qlementineStyle)
-    return new QWidget();
+    return new QWidget(mEditorStack);
 
+  const auto theme = qlementineStyle->theme();
   auto* page = new QWidget(mEditorStack);
-  auto layout = new maki::WidgetGroup(tr("Enum Type"), page);
-  auto alignment = maki::WidgetAlignment::Form(layout, Config::LONG_LABEL_WIDTH);
+  // --------------------------------------------------------------------------
+  // Content wrapper for the scroll widget
+  auto* content = new StyledFrame();
+  content->setBackgroundRole(StyledFrame::BackgroundRole::Base);
+  content->setBorderRole(StyledFrame::BorderRole::None);
 
-  auto* nameEdit = new maki::StringWidget(tr("Name"), Constants::EMPTY_COMBO, alignment, page);
-  auto* namespaceEdit = createNamespaceEdit(alignment, page);
-  auto* extendCombo = new maki::SelectorWidget(tr("Base type"), alignment, page);
+  auto* contentLayout = new QVBoxLayout(content);
+  contentLayout->setContentsMargins(theme.spacing, theme.spacing, theme.spacing, theme.spacing);
+  contentLayout->setSpacing(0);
+  contentLayout->setSizeConstraint(QLayout::SetMinimumSize);
+
+  // --------------------------------------------------------------------------
+  // The fields
+  auto groupWidget = new maki::WidgetGroup(tr("Enum Type"), page);
+  groupWidget->setContentsMargins(0, 0, 0, Config::CONTENT_PADDING);
+
+  auto alignment = maki::WidgetAlignment::Form(groupWidget, Config::LONG_LABEL_WIDTH);
+
+  auto* nameEdit = new maki::StringWidget(tr("Name"), Constants::EMPTY_COMBO, alignment, content);
+  auto* namespaceEdit = createNamespaceEdit(alignment, content);
+  auto* extendCombo = new maki::SelectorWidget(tr("Base type"), alignment, content);
 
   nameEdit->setObjectName("enumNameEdit");
   namespaceEdit->setObjectName("enumNamespaceEdit");
@@ -524,9 +617,7 @@ QWidget* TypeEditor::createEnumPage()
   extendCombo->widget()->setEditable(false);
 
   // Create table
-  auto fieldLayout = new maki::WidgetGroup(tr("Values"), oclero::qlementine::TextRole::H5, layout);
-  fieldLayout->addSpacing(Config::CONTENT_PADDING);
-
+  auto fieldGroup = new maki::WidgetGroup(tr("Values"), oclero::qlementine::TextRole::H5, groupWidget);
   mEnumTable = createTable(page, {tr("Name"), tr("Value")});
 
   connect(extendCombo, &maki::SelectorWidget::valueChanged, this, [this](const QString&) { validateEnumValues(); });
@@ -534,32 +625,51 @@ QWidget* TypeEditor::createEnumPage()
     if (!item)
       return;
 
-    if (item->column() == 1)  // The value columng
+    if (item->column() == 1)  // The value column
       validateEnumValue(item->row());
 
     mEnumTable->clearFocus();
     mEnumTable->clearSelection();
   });
 
-  fieldLayout->addWidget(mEnumTable);
-  layout->addWidget(fieldLayout);
-  layout->addStretch();
-
   // Create buttons
   auto* fieldButtons = new QHBoxLayout();
-  mAddEnumValueButton = new QPushButton(tr("Add value"), page);
-  mRemoveEnumValueButton = new QPushButton(tr("Remove value"), page);
+  mAddEnumValueButton = new QPushButton(tr("Add value"), content);
+  mRemoveEnumValueButton = new QPushButton(tr("Remove value"), content);
+
+  // Layout the buttons shifted to the left
   fieldButtons->addWidget(mAddEnumValueButton);
   fieldButtons->addWidget(mRemoveEnumValueButton);
-  fieldButtons->addStretch();  // Push buttons to the left
+  fieldButtons->addStretch();
 
-  layout->addStretch();
-  layout->addLayout(fieldButtons);
+  // Layout everything inside the field group
+  fieldGroup->addWidget(mEnumTable);
+  fieldGroup->addStretch();
+  fieldGroup->addLayout(fieldButtons);
 
-  const auto theme = qlementineStyle->theme();
+  // Add the fields to the outer group
+  groupWidget->addWidget(fieldGroup);
+
+  // Make sure the group widget is inside the content
+  contentLayout->addWidget(groupWidget);
+
+  // --------------------------------------------------------------------------
+  // Scroll area
+  auto* scrollArea = new QScrollArea(page);
+  scrollArea->setWidgetResizable(true);
+  scrollArea->setFrameShape(QFrame::NoFrame);
+  scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+  scrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+  scrollArea->setWidget(content);
+
+  // --------------------------------------------------------------------------
+  // Page layout
   auto* pageLayout = new QVBoxLayout(page);
-  pageLayout->setContentsMargins(theme.spacing, theme.spacing, theme.spacing, theme.spacing);
-  pageLayout->addWidget(layout);
+  pageLayout->setContentsMargins(0, 0, 0, 0);
+  pageLayout->setSpacing(0);
+  pageLayout->addWidget(scrollArea, 1);
 
   return page;
 }
@@ -568,27 +678,61 @@ QWidget* TypeEditor::createAliasPage()
 {
   auto* qlementineStyle = oclero::qlementine::appStyle();
   if (!qlementineStyle)
-    return new QWidget();
+    return new QWidget(mEditorStack);
 
+  const auto theme = qlementineStyle->theme();
   auto* page = new QWidget(mEditorStack);
-  auto layout = new maki::WidgetGroup(tr("Alias Type"), page);
-  auto alignment = maki::WidgetAlignment::Form(layout, Config::LONG_LABEL_WIDTH);
+  // --------------------------------------------------------------------------
+  // Content wrapper for the scroll widget
+  auto* content = new StyledFrame();
+  content->setBackgroundRole(StyledFrame::BackgroundRole::Base);
+  content->setBorderRole(StyledFrame::BorderRole::None);
 
-  auto* nameEdit = new maki::StringWidget(tr("Name"), Constants::EMPTY_COMBO, alignment, page);
-  auto* namespaceEdit = createNamespaceEdit(alignment, page);
+  auto* contentLayout = new QVBoxLayout(content);
+  contentLayout->setContentsMargins(theme.spacing, theme.spacing, theme.spacing, theme.spacing);
+  contentLayout->setSpacing(0);
+  contentLayout->setSizeConstraint(QLayout::SetMinimumSize);
 
-  auto* selector = new TypeSelector("aliasTargetEdit", page);
-  auto* containerLayout = new maki::ContainerWidget(tr("Target type"), selector, alignment, page);
+  // --------------------------------------------------------------------------
+  // The fields
+  auto groupWidget = new maki::WidgetGroup(tr("Alias Type"), page);
+  groupWidget->setContentsMargins(0, 0, 0, Config::CONTENT_PADDING);
+
+  auto alignment = maki::WidgetAlignment::Form(groupWidget, Config::LONG_LABEL_WIDTH);
+
+  auto* nameEdit = new maki::StringWidget(tr("Name"), Constants::EMPTY_COMBO, alignment, content);
+  auto* namespaceEdit = createNamespaceEdit(alignment, content);
+
+  auto* selector = new TypeSelector("aliasTargetEdit", content);
+  auto* containerLayout = new maki::ContainerWidget(tr("Target type"), selector, alignment, content);
   Q_UNUSED(containerLayout);
 
   nameEdit->setObjectName("aliasNameEdit");
   namespaceEdit->setObjectName("aliasNamespaceEdit");
 
-  const auto theme = qlementineStyle->theme();
+  // Push everything up
+  groupWidget->addStretch();
+
+  // Make sure the group widget is inside the content
+  contentLayout->addWidget(groupWidget);
+
+  // --------------------------------------------------------------------------
+  // Scroll area
+  auto* scrollArea = new QScrollArea(page);
+  scrollArea->setWidgetResizable(true);
+  scrollArea->setFrameShape(QFrame::NoFrame);
+  scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+  scrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+  scrollArea->setWidget(content);
+
+  // --------------------------------------------------------------------------
+  // Page layout
   auto* pageLayout = new QVBoxLayout(page);
-  pageLayout->setContentsMargins(theme.spacing, theme.spacing, theme.spacing, theme.spacing);
-  pageLayout->addWidget(layout);
-  pageLayout->addStretch();
+  pageLayout->setContentsMargins(0, 0, 0, 0);
+  pageLayout->setSpacing(0);
+  pageLayout->addWidget(scrollArea, 1);
 
   return page;
 }
@@ -646,8 +790,7 @@ koda::types::TypeDefinition TypeEditor::readDefinitionFromUi() const
         return definition;
       }
 
-      fields.emplace(nameItem->text().toStdString(),
-                     valueItem != nullptr ? std::optional<std::string>(valueItem->text().toStdString()) : std::nullopt);
+      fields.emplace(nameItem->text().toStdString(), valueItem != nullptr ? std::optional<std::string>(valueItem->text().toStdString()) : std::nullopt);
     }
 
     auto* page = mEditorStack->widget(static_cast<int>(EditorPage::Enum));
@@ -661,8 +804,7 @@ koda::types::TypeDefinition TypeEditor::readDefinitionFromUi() const
     }
 
     return koda::types::TypeDefinition::createEnum(std::format("{}::{}", namespaceEdit->getValue(), nameEdit->getValue()),
-                                                   koda::types::enumKindFromString(baseType->getValue().toStdString()), fields,
-                                                   mSelectedId.toStdString());
+                                                   koda::types::enumKindFromString(baseType->getValue().toStdString()), fields, mSelectedId.toStdString());
   }
   else if (pageIndex == static_cast<int>(EditorPage::Alias))
   {
@@ -759,24 +901,24 @@ void TypeEditor::showDefinition(const koda::types::TypeDefinition& definition)
 
     auto* page = mEditorStack->widget(static_cast<int>(EditorPage::Builtin));
     auto* nameEdit = page->findChild<maki::StringWidget*>("builtinNameEdit");
+    nameEdit->setFocus();
+
     auto* namespaceEdit = page->findChild<maki::StringWidget*>("builtinNamespaceEdit");
     auto* kindEdit = page->findChild<maki::StringWidget*>("builtinKindEdit");
 
     nameEdit->setValue(QString::fromStdString(definition.name.name));
     namespaceEdit->setValue(QString::fromStdString(definition.name.namespaceString()));
     kindEdit->setValue(QString::fromStdString(koda::types::toString(definition.primitive().primitive)));
-
-    mDeleteButton->setEnabled(false);
-    mApplyButton->setEnabled(false);
-    mExportButton->setEnabled(true);
-    mImportButton->setEnabled(false);
-    return;
+  }
+  else
+  {
+    LOG_WARNING("Could not find {} of type {}", definition.toReference().toString(), koda::types::toString(definition.kind()));
   }
 
-  mDeleteButton->setEnabled(true);
-  mApplyButton->setEnabled(true);
+  mDeleteButton->setEnabled(!definition.isPrimitive());
+  mApplyButton->setEnabled(!definition.isPrimitive());
   mExportButton->setEnabled(true);
-  mImportButton->setEnabled(true);
+  mImportButton->setEnabled(!definition.isPrimitive());
 }
 
 QIcon TypeEditor::typeToIcon(const koda::types::TypeDefinition& type) const
@@ -971,6 +1113,23 @@ void TypeEditor::selectType(const QString& id)
   mTypeTree->scrollToItem(item);
 }
 
+void TypeEditor::adjustTableHeight(QTableWidget* table)
+{
+  if (!table)
+    return;
+
+  int height = 2 * table->frameWidth();
+
+  if (!table->horizontalHeader()->isHidden())
+    height += table->horizontalHeader()->height();
+
+  for (int row = 0; row < table->rowCount(); ++row)
+    if (!table->isRowHidden(row))
+      height += table->rowHeight(row);
+
+  table->setFixedHeight(height);
+}
+
 QTableWidget* TypeEditor::createTable(QWidget* parent, const QStringList& headers)
 {
   auto* table = new QTableWidget(parent);
@@ -988,11 +1147,15 @@ QTableWidget* TypeEditor::createTable(QWidget* parent, const QStringList& header
   for (int i = 1; i < headers.size(); ++i)
     table->horizontalHeader()->setSectionResizeMode(i, QHeaderView::ResizeToContents);
 
-  table->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
-  table->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-  table->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-
+  table->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
   table->viewport()->installEventFilter(this);
+
+  connect(table->model(), &QAbstractItemModel::rowsInserted, table, [this, table]() { adjustTableHeight(table); });
+  connect(table->model(), &QAbstractItemModel::rowsRemoved, table, [this, table]() { adjustTableHeight(table); });
+  connect(table->verticalHeader(), &QHeaderView::sectionResized, table, [this, table]() { adjustTableHeight(table); });
+
+  // Make sure the size is set on creation
+  adjustTableHeight(table);
 
   return table;
 }

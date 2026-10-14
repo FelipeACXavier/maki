@@ -21,6 +21,7 @@
 #include "system/config_table.h"
 #include "system/library_container.h"
 #include "system/library_scene.h"
+#include "type_registry.h"
 #include "widgets/controls/canvas_control_widget.h"
 #include "widgets/frame.h"
 #include "widgets/section.h"
@@ -121,10 +122,14 @@ CapabilityCallSelector::CapabilityCallSelector(NodeItem* node, QWidget* parent)
     mEventInfo = new QTextBrowser(eventPage);
     mEventInfo->setWordWrapMode(QTextOption::WrapMode::WordWrap);
     mEventInfo->setFont(theme.fontRegular);
-    mEventInfo->setFocusPolicy(Qt::FocusPolicy::ClickFocus);
+    mEventInfo->setCursorWidth(0);
+    mEventInfo->setFocusPolicy(Qt::FocusPolicy::NoFocus);
     mEventInfo->setReadOnly(true);
     mEventInfo->setContextMenuPolicy(Qt::NoContextMenu);
-    mEventInfo->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);
+    mEventInfo->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::LinksAccessibleByMouse);
+    mEventInfo->setOpenLinks(false);
+    mEventInfo->setOpenExternalLinks(false);
+    connect(mEventInfo, &QTextBrowser::anchorClicked, this, [](const QUrl& url) { maki::TypeRegistry::instance().showDefinition(typeFromLink(url)); });
 
     group->addWidget(mEventInfo);
 
