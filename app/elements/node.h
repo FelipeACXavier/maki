@@ -203,7 +203,7 @@ public:
    *
    * @return The QVector of child NodeItems.
    */
-  virtual QVector<NodeItem*> children(const QString& subflow = Constants::MAIN_SUB_FLOW) const;
+  QVector<NodeItem*> children(const QString& subflow = Constants::MAIN_SUB_FLOW) const;
 
   /**
    * @brief Calculates an edge point toward a target scene position.

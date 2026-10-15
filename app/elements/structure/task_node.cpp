@@ -48,6 +48,8 @@ void TaskNode::initializeNodeSize()
 
 VoidResult TaskNode::start()
 {
+  RETURN_ON_FAILURE(NodeItem::start());
+
   ensureMainFlowExists();
 
   if (mEmptySlot)
@@ -59,7 +61,7 @@ VoidResult TaskNode::start()
 
   relayoutCapabilitySlots();
 
-  return NodeItem::start();
+  return VoidResult();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -194,9 +196,13 @@ void TaskNode::relayoutCapabilitySlots()
     LOG_DEBUG("Setting position {}: {} {}", nodeId(), centers[i].x(), centers[i].y());
     auto* capability = capabilities[i];
     capability->applySize(QSizeF(layout.diameter, layout.diameter));
-    capability->setCenterPosition(mapToScene(centers[i]));
+    const QPointF expected = mapToScene(centers[i]);
+    capability->setCenterPosition(expected);
+    const QPointF actual = capability->centerPosition();
+    LOG_DEBUG("Capability {}: expected ({}, {}), actual ({}, {})", capability->nodeName(), expected.x(), expected.y(), actual.x(), actual.y());
   }
 
+  LOG_DEBUG("Setting empty slot at {} {}", centers.back().x(), centers.back().y());
   mEmptySlot->setDiameter(layout.diameter);
   mEmptySlot->setPos(centers.back());
 }

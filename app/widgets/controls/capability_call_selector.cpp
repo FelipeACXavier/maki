@@ -318,7 +318,8 @@ QString CapabilityCallSelector::libraryFromId(const QString& id) const
 
 LibraryContainer* CapabilityCallSelector::getLibrary(const QString& id)
 {
-  auto existingLib = maki::findIf(findChildren<LibraryContainer*>(), [&id](const auto& opt) { return opt->property(ConfigKeys::NAME.toUtf8()) == id; });
+  auto existingLib = maki::findIf(findChildren<LibraryContainer*>(),
+                                  [&id](const auto& opt) { return opt->property(ConfigKeys::ID.toUtf8()).toString() == id; });
   if (existingLib)
     return *existingLib;
 

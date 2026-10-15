@@ -72,8 +72,7 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
   if (const auto* name = getProperty("name"))
     setLabel(name->getvalue()->toStringValue(), labelSize);
 
-  mLastPosition = initialPosition;
-
+  updatePosition(snapToGrid(initialPosition - boundingRect().center(), Config::GRID_SIZE), Config::NodeMove::Start);
   LOG_DEBUG("{} created at: ({}, {}) with size ({}, {}), scale {} and {} ports", id(), pos().x(), pos().y(), mSize.width(), mSize.height(), baseScale(),
             config()->ports.size());
 }
@@ -125,7 +124,7 @@ qreal NodeItem::baseScale() const
 
 VoidResult NodeItem::start()
 {
-  updatePosition(snapToGrid(mLastPosition - boundingRect().center(), Config::GRID_SIZE));
+  // updatePosition(snapToGrid(mLastPosition - boundingRect().center(), Config::GRID_SIZE));
   createPorts();
   return VoidResult();
 }
@@ -761,8 +760,9 @@ void NodeItem::updatePosition(const QPointF& newPosition, Config::NodeMove reaso
       child->updatePosition(child->pos() + delta, reason);
 
   mLastPosition = newPosition;
+  if (reason != Config::NodeMove::Start)
+    updateExtrasPosition(reason);
 
-  updateExtrasPosition(reason);
   mStorage->setPosition(pos() + boundingRect().center());
 }
 

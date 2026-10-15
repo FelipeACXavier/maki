@@ -40,7 +40,8 @@ extern QColor HOVER;       /// Hover color.
 enum class NodeMove
 {
   User,
-  Relayout
+  Relayout,
+  Start
 };
 
 enum class ControlPosition

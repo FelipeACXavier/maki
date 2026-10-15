@@ -1150,8 +1150,8 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
   forwardAction->setEnabled(items.size() > 0);
   connect(forwardAction, &QAction::triggered, this, [this, items]() {
     const auto sceneItems = this->items();
-    const qreal topZLevel =
-        std::accumulate(sceneItems.cbegin(), sceneItems.cend(), 0, [](qreal maxZ, const QGraphicsItem* item) { return qMax(maxZ, item->zValue()); });
+    const qreal topZLevel = std::accumulate(sceneItems.cbegin(), sceneItems.cend(), 0,
+                                            [](qreal maxZ, const QGraphicsItem* item) { return qMax(maxZ, item->zValue()); });
 
     for (NodeItem* node : items)
       node->setZValue(topZLevel);
@@ -1161,8 +1161,8 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
   backwardAction->setEnabled(items.size() > 0);
   connect(backwardAction, &QAction::triggered, this, [this, items]() {
     const auto sceneItems = this->items();
-    const qreal bottomZLevel =
-        std::accumulate(sceneItems.cbegin(), sceneItems.cend(), 0, [](qreal minZ, const QGraphicsItem* item) { return qMin(minZ, item->zValue()); });
+    const qreal bottomZLevel = std::accumulate(sceneItems.cbegin(), sceneItems.cend(), 0,
+                                               [](qreal minZ, const QGraphicsItem* item) { return qMin(minZ, item->zValue()); });
 
     for (NodeItem* node : items)
       node->setZValue(bottomZLevel);
@@ -1502,9 +1502,9 @@ void Canvas::pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode
     if (parentNode)
       newParentPosition = parentNode->saveInfo().getposition();
 
-    auto node =
-        createNode(NodeCreation::Pasting, infoPtr,
-                   absolute ? mousePosition - copy.posRelativeToMouse : newParentPosition + (copy.info.getposition() - copy.posRelativeToMouse), parentNode);
+    auto node = createNode(NodeCreation::Pasting, infoPtr,
+                           absolute ? mousePosition - copy.posRelativeToMouse : newParentPosition + (copy.info.getposition() - copy.posRelativeToMouse),
+                           parentNode);
 
     // QList<CopiedNode> children;
     // for (const auto& child : copy.info.getchildren())
