@@ -99,7 +99,7 @@ void FlowFromSelectionCommand::redo()
 
   // Remove any existing transitions
   auto toDelete = newFlow->transitions();
-  for (auto* transition : toDelete)
+  for (const auto* transition : toDelete)
     newCanvas->removeTransition(transition->saveInfo());
 
   // --------------------------------------------------------------------------

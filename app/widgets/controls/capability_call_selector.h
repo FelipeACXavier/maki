@@ -36,7 +36,7 @@ class CapabilityCallSelector : public maki::ControlWidget
 
 public:
   static CapabilityCallSelector* create(NodeItem* node, QWidget* parent = nullptr);
-  CapabilityCallSelector(NodeItem* node, QWidget* parent = nullptr);
+  explicit CapabilityCallSelector(NodeItem* node, QWidget* parent = nullptr);
 
   void start() override;
   void buildLibraries(const QVector<std::shared_ptr<NodeSaveInfo>>& nodes);

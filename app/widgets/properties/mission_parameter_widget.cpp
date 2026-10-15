@@ -11,6 +11,7 @@
 
 #include "../dialogs/type_value_dialog.h"
 #include "app_configs.h"
+#include "macros.h"
 #include "save_info.h"
 #include "style_helpers.h"
 #include "typing/helpers.h"
@@ -167,27 +168,13 @@ void MissionParameterWidget::editParameter(int index)
 
 void MissionParameterWidget::removeParameter()
 {
-  const auto selectedRows = mTable->selectionModel()->selectedRows();
-  if (selectedRows.empty())
-    return;
-
-  std::vector<int> rows;
-  rows.reserve(selectedRows.size());
-
-  for (const auto& index : selectedRows)
-    rows.push_back(index.row());
-
-  std::sort(rows.begin(), rows.end(), std::greater<int>());
-  for (const int row : rows)
-  {
-    if (row < 0 || row >= SaveInfo::instance().missionParameters().size())
-      continue;
-
+  auto applied = maki::applyOnSortedTable(mTable, [this](const auto& row) {
     SaveInfo::instance().removeParameter(*(SaveInfo::instance().missionParameters().begin() + row));
     mTable->removeRow(row);
-  }
+  });
 
-  emit parametersChanged();
+  if (applied)
+    emit parametersChanged();
 }
 
 }  // namespace maki

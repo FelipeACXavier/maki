@@ -10,6 +10,7 @@
 #include "app_configs.h"
 #include "clickable_icon.h"
 #include "expanding_widget.h"
+#include "macros.h"
 #include "style_helpers.h"
 
 class CenterIconDelegate : public QStyledItemDelegate
@@ -201,11 +202,7 @@ void LogTableWidget::updateFilterText(QToolButton* button, const QString& base)
 {
   const auto actions = button->menu()->actions();
 
-  int checkedCount = 0;
-  for (const auto* action : actions)
-    if (action->isCheckable() && action->isChecked())
-      ++checkedCount;
-
+  int checkedCount = maki::countIf<int>(actions, [](const auto& action) { return action->isCheckable() && action->isChecked(); });
   if (checkedCount == actions.size())
     button->setText(tr("All") + " " + base);
   else if (checkedCount == 0)
@@ -435,20 +432,6 @@ void LogTableWidget::showContextMenu(const QPoint& pos)
   contextMenu.exec(mTable->viewport()->mapToGlobal(pos));
 }
 
-QVector<int> LogTableWidget::selectedRows() const
-{
-  QVector<int> rows;
-
-  const auto indexes = mTable->selectionModel()->selectedRows();
-
-  for (const QModelIndex& index : indexes)
-    rows.push_back(index.row());
-
-  std::sort(rows.begin(), rows.end());
-
-  return rows;
-}
-
 void LogTableWidget::copySelectedRows() const
 {
   copySelectedColumns({LogTableModel::TimeColumn, LogTableModel::LevelColumn, LogTableModel::SourceColumn, LogTableModel::FileColumn, LogTableModel::LineColumn,
@@ -462,9 +445,8 @@ void LogTableWidget::copySelectedColumn(int column) const
 
 void LogTableWidget::copySelectedColumns(std::initializer_list<int> columns) const
 {
-  const QVector<int> rows = selectedRows();
-
-  if (rows.isEmpty())
+  const auto rows = maki::sortedRows(mTable);
+  if (rows.empty())
     return;
 
   QStringList lines;

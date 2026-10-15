@@ -22,8 +22,8 @@ BaseDialog::BaseDialog(const QString& title, double ratio, double screenFraction
   setWindowTitle(title);
 
   // Create and set dialog layout
-  QVBoxLayout* layout = new QVBoxLayout();
-  setLayout(layout);
+  QVBoxLayout* vlayout = new QVBoxLayout();
+  setLayout(vlayout);
 
   setSize(ratio, screenFraction);
 }

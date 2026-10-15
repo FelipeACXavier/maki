@@ -27,7 +27,7 @@ public:
    *
    * @param parent The parent widget.
    */
-  LogTableWidget(QWidget* parent = nullptr);
+  explicit LogTableWidget(QWidget* parent = nullptr);
 
   /**
    * @brief Appends a log message with a QString source and file.
@@ -148,13 +148,6 @@ private:
    * @brief Updates the search counter label.
    */
   void updateSearchCounter();
-
-  /**
-   * @brief Returns a vector of selected row indices.
-   *
-   * @return A vector of selected row indices.
-   */
-  QVector<int> selectedRows() const;
 
   /**
    * @brief Shows the context menu at the specified position.

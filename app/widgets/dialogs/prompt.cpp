@@ -49,7 +49,7 @@ PromptDialog::PromptDialog(const QString& title, const QString& accept, const QS
   layout()->addWidget(header);
 
   // --- Buttons ---
-  auto* buttonBox = createButtons(accept, reject);
+  const auto* buttonBox = createButtons(accept, reject);
   connect(buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
   connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
 

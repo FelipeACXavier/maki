@@ -18,6 +18,7 @@
 #include "elements/node.h"
 #include "keys.h"
 #include "logging.h"
+#include "macros.h"
 #include "mission_parameter.h"
 #include "oclero/qlementine/Common.hpp"
 #include "property_info.h"
@@ -25,7 +26,6 @@
 
 namespace
 {
-
 Types::ControlTypes callControl(const maki::RecordValue& record)
 {
   if (recordHasField(record, ConfigKeys::FLOW))
@@ -36,7 +36,6 @@ Types::ControlTypes callControl(const maki::RecordValue& record)
 
   return Types::ControlTypes::TRIGGER_CALL;
 }
-
 }  // namespace
 
 PropertiesMenu::PropertiesMenu(QWidget* parent)
@@ -235,11 +234,10 @@ VoidResult PropertiesMenu::loadValueProperty(const std::shared_ptr<IParameter>& 
   addCompleter(editor, node->id(), property->gettype());
 
   connect(editor, &maki::InputWidget::valueChanged, this, [this, node, editor, id = property->getid()] {
-    if (!node || !editor)
+    if (!node)
       return;
 
     auto value = editor->getValue();
-
     // Preserve the old automatic-name behaviour, but use Value throughout.
     if (id == ConfigKeys::NAME)
     {
@@ -444,8 +442,8 @@ VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IPa
   };
 
   // Initialise dependent fields before connecting change handlers.
-  const auto currentComponentId =
-      componentEditor->getData().toStringList().isEmpty() ? Constants::EMPTY_COMBO : componentEditor->getData().toStringList().at(0);
+  const auto currentComponentId = componentEditor->getData().toStringList().isEmpty() ? Constants::EMPTY_COMBO
+                                                                                      : componentEditor->getData().toStringList().at(0);
   if (callEditor)
   {
     populateCalls(currentComponentId);
@@ -604,7 +602,7 @@ VoidResult PropertiesMenu::loadCallArguments(const std::shared_ptr<FlowSaveInfo>
   return VoidResult();
 }
 
-void PropertiesMenu::addCompleter(maki::InputWidget* editor, const QString& nodeId, const koda::types::TypeReference& type, QStringList additionalValues)
+void PropertiesMenu::addCompleter(maki::InputWidget* editor, const QString& nodeId, const koda::types::TypeReference& type)
 {
   if (!editor)
     return;
@@ -742,9 +740,9 @@ std::shared_ptr<IFlow> PropertiesMenu::getFlowConfigOfRow(const NodeItem* node, 
     return nullptr;
 
   const auto flowId = data.toString();
-  for (const auto& flowConfig : node->allEventFlowConfigs())
-    if (flowConfig->getid() == flowId)
-      return flowConfig;
+  auto existing = maki::findBy(node->allEventFlowConfigs(), &IFlow::getid, flowId);
+  if (existing)
+    return *existing;
 
   return nullptr;
 }
@@ -766,14 +764,15 @@ std::shared_ptr<FlowSaveInfo> PropertiesMenu::openEventDialog(QTableWidget* tabl
   if (!info)
     return nullptr;
 
-  for (const auto& f : node->allEventFlowConfigs())
-    if (f->getname() == info->getname() && f->getid() != info->getid())
-    {
-      if (maki::errorPrompt(tr("A flow with the same name already exists"), tr("Would you like to open it?")))
-        emit flowSelected(f->getid(), node->id());
+  auto existingFlow = maki::findIf(node->allEventFlowConfigs(),
+                                   [&info](const auto& opt) { return opt->getname() == info->getname() && opt->getid() != info->getid(); });
+  if (existingFlow)
+  {
+    if (maki::errorPrompt(tr("A flow with the same name already exists"), tr("Would you like to open it?")))
+      emit flowSelected((*existingFlow)->getid(), node->id());
 
-      return nullptr;
-    }
+    return nullptr;
+  }
 
   PFlow flow = node->createFlow(info->getname(), info);
   if (!flow)
@@ -813,35 +812,14 @@ void PropertiesMenu::addEventToTable(QTableWidget* table, int row, const std::sh
 
 void PropertiesMenu::removeEventFromTable(QTableWidget* table, NodeItem* node)
 {
-  if (!table || !node)
-  {
-    LOG_DEBUG("Cannot remove events with no table or node");
+  if (!node)
     return;
-  }
 
-  const auto selectedRows = table->selectionModel()->selectedRows();
-  if (selectedRows.empty())
-  {
-    LOG_DEBUG("No rows selected for removal");
-    return;
-  }
-
-  std::vector<int> rows;
-  rows.reserve(selectedRows.size());
-
-  for (const auto& index : selectedRows)
-    rows.push_back(index.row());
-
-  std::sort(rows.begin(), rows.end(), std::greater<int>());
-  for (const int row : rows)
-  {
-    if (row < 0 || row >= table->rowCount())
-      continue;
-
+  maki::applyOnSortedTable(table, [this, table, nodeId = node->id()](const auto& row) {
     auto flowId = table->item(row, 0)->data(TableRole::IdRole).toString();
     table->removeRow(row);
-    emit flowRemoved(flowId, node->id());
-  }
+    emit flowRemoved(flowId, nodeId);
+  });
 }
 
 VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)

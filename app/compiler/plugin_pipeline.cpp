@@ -211,7 +211,7 @@ void PluginPipeline::done(const QString& message)
 
 std::optional<PipelineNode> PluginPipeline::findNode(const PipelineGraph& graph, const QString& nodeId) const
 {
-  auto node = maki::findIf(graph.nodes, [&nodeId](const auto& opt) { return opt.id == nodeId; });
+  auto node = maki::findBy(graph.nodes, &PipelineNode::id, nodeId);
   if (node)
     return *node;
 

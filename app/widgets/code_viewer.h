@@ -9,7 +9,7 @@ class CodeViewer : public QPlainTextEdit
   Q_OBJECT
 
 public:
-  CodeViewer(QWidget* parent = nullptr);
+  explicit CodeViewer(QWidget* parent = nullptr);
 
   void lineNumberAreaPaintEvent(QPaintEvent* event);
   int lineNumberAreaWidth() const;
@@ -29,7 +29,7 @@ private:
 class LineNumberArea : public QWidget
 {
 public:
-  LineNumberArea(CodeViewer* editor)
+  explicit LineNumberArea(CodeViewer* editor)
       : QWidget(editor)
       , mEditor(editor)
   {

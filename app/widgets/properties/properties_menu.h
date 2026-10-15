@@ -26,32 +26,13 @@ class PropertyInfo;
  * IParameter. TypeReference describes the value type; ControlTypes only selects
  * a specialised editor when the generic ValueEditorFactory is not sufficient.
  *
- * Special control value conventions:
- *
- * SELECT / EVENT_SELECT:
- *   record {
- *     value: <selected value>,
- *     items: list<value>
- *   }
- *
- * COMPONENT_SELECT:
- *   record {
- *     component: string,
- *     event: string,          // optional: event call
- *     flow: string,           // optional: flow call
- *     arguments: list<value>  // optional
- *   }
- *
- * The presence of "flow" selects FLOW_CALL semantics, the presence of "event"
- * selects EVENT_SELECT semantics, and otherwise the component is treated as a
- * TRIGGER_CALL.
  */
 class PropertiesMenu : public QFrame, public MenuBase
 {
   Q_OBJECT
 
 public:
-  PropertiesMenu(QWidget* parent);
+  explicit PropertiesMenu(QWidget* parent);
 
   VoidResult start();
 
@@ -95,7 +76,7 @@ private:
 
   VoidResult loadCallArguments(const std::shared_ptr<FlowSaveInfo>& call, const QString& propertyId, NodeItem* node, maki::WidgetGroup* group);
 
-  void addCompleter(maki::InputWidget* editor, const QString& nodeId, const koda::types::TypeReference& type, QStringList additionalValues = {});
+  void addCompleter(maki::InputWidget* editor, const QString& nodeId, const koda::types::TypeReference& type);
 
   // Controls for dynamically defined fields/events.
   VoidResult loadControls(NodeItem* node);

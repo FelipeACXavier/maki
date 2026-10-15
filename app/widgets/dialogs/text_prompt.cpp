@@ -45,7 +45,7 @@ TextDialog::TextDialog(const QString& title, const QString& prompt, QWidget* par
   layout()->addWidget(mNameEdit);
 
   // --- Buttons ---
-  auto* buttonBox = createButtons(tr("Accept"), tr("Cancel"));
+  const auto* buttonBox = createButtons(tr("Accept"), tr("Cancel"));
   connect(buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
   connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
 

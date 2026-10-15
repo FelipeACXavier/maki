@@ -4,6 +4,7 @@
 #include <QGraphicsView>
 #include <QPushButton>
 
+#include "macros.h"
 #include "tour_bubble.h"
 #include "tour_overlay.h"
 #include "widgets/dialogs/prompt.h"
@@ -235,13 +236,9 @@ int TourGuide::appendStep(QWidget* target, QGraphicsView* view, QGraphicsItem* i
     return s.id;
   }
 
-  for (auto& existing : m_steps)
-    if (existing.id == expectedId)
-    {
-      LOG_DEBUG("Updating step: {}", expectedId);
-      existing = s;
-      break;
-    }
+  auto existing = maki::findByRef(m_steps, &TourStep::id, expectedId);
+  if (existing)
+    *existing = s;
 
   return s.id;
 }
@@ -270,13 +267,10 @@ int TourGuide::insertStep(int beforeId, QGraphicsView* view, QGraphicsItem* item
 
     return s.id;
   }
-  for (auto& existing : m_steps)
-    if (existing.id == expectedId)
-    {
-      LOG_DEBUG("Updating item step: {}", expectedId);
-      existing = s;
-      break;
-    }
+
+  auto existing = maki::findByRef(m_steps, &TourStep::id, expectedId);
+  if (existing)
+    *existing = s;
 
   return s.id;
 }

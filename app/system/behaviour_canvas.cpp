@@ -296,8 +296,8 @@ void BehaviourCanvas::onSubFlowCollapsed(NodeItem* owner, const QString& subflow
     //
     // These transitions belong to the expanded subflow even though neither
     // endpoint is represented by a child NodeItem.
-    const bool ownerInternalTransition =
-        source == owner && destination == owner && (storage->srcPortSubFlow() == subflowId || storage->dstPortSubFlow() == subflowId);
+    const bool ownerInternalTransition = source == owner && destination == owner &&
+                                         (storage->srcPortSubFlow() == subflowId || storage->dstPortSubFlow() == subflowId);
 
     const bool belongsToSubFlow = sourceDescendant || destinationDescendant || ownerInternalTransition;
     if (!belongsToSubFlow)
@@ -637,7 +637,7 @@ NodeItem* BehaviourCanvas::insertionParentForTransition(const TransitionItem* tr
     return nullptr;
 
   auto* source = transition->source();
-  auto* destination = transition->destination();
+  const auto* destination = transition->destination();
 
   if (!source || !destination)
     return nullptr;
@@ -839,8 +839,8 @@ bool BehaviourCanvas::insertNodeOnTransition(TransitionItem* transition, NodeIte
 
   // The node is already being dragged over the transition, so retaining its
   // current X and placing it at the transition's vertical position works well.
-  const QPointF pathCenter =
-      transition->path().isEmpty() ? (originalTransition.srcPoint() + originalTransition.dstPoint()) / 2.0 : transition->path().pointAtPercent(0.5);
+  const QPointF pathCenter = transition->path().isEmpty() ? (originalTransition.srcPoint() + originalTransition.dstPoint()) / 2.0
+                                                          : transition->path().pointAtPercent(0.5);
 
   const QPointF insertCenter{originalNodeCenter.x(), pathCenter.y()};
   const QPointF srcPoint = transitionPortAnchor(source, originalTransition.srcPort(), originalTransition.srcPoint());

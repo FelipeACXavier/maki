@@ -11,7 +11,6 @@
 #include "../properties/type_selector.h"
 #include "../widget_factory.h"
 #include "app_configs.h"
-#include "type_registry.h"
 
 namespace maki
 {
@@ -132,7 +131,7 @@ void TypeReferenceDialog::buildUi()
 
   layout()->addWidget(groupLayout);
 
-  auto* buttonBox = createButtons(tr("Accept"), tr("Cancel"));
+  const auto* buttonBox = createButtons(tr("Accept"), tr("Cancel"));
   connect(buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
   connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
   connect(mKindCombo, &maki::SelectorWidget::valueChanged, this, &TypeReferenceDialog::kindChanged);

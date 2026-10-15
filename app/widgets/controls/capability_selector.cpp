@@ -7,6 +7,7 @@
 
 #include "app_configs.h"
 #include "keys.h"
+#include "macros.h"
 #include "system/config_table.h"
 #include "system/library_container.h"
 #include "system/library_scene.h"
@@ -80,7 +81,6 @@ void CapabilitySelector::start()
 
 void CapabilitySelector::buildLibraries()
 {
-  QVector<QString> libraries;
   for (const auto& [id, entry] : ConfigurationTable::instance().entries())
   {
     if (entry->libraryType != Types::LibraryTypes::STRUCTURAL)
@@ -102,9 +102,9 @@ QString CapabilitySelector::libraryFromId(const QString& id) const
 
 LibraryContainer* CapabilitySelector::getLibrary(const QString& id)
 {
-  for (const auto& lib : findChildren<LibraryContainer*>())
-    if (lib->property(ConfigKeys::ID.toUtf8()).toString() == id)
-      return lib;
+  auto existingLib = maki::findIf(findChildren<LibraryContainer*>(), [&id](const auto& opt) { return opt->property(ConfigKeys::NAME.toUtf8()) == id; });
+  if (existingLib)
+    return *existingLib;
 
   auto library = LibraryContainer::create(id, mContent);
   library->setProperty(ConfigKeys::ID.toUtf8(), id);

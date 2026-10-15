@@ -21,7 +21,7 @@ public:
    *
    * @param parent The parent widget.
    */
-  ProcessTab(QWidget* parent = nullptr);
+  explicit ProcessTab(QWidget* parent = nullptr);
 
   /**
    * @brief Sets the pipeline for this tab.

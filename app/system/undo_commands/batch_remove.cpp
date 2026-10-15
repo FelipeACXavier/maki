@@ -3,8 +3,7 @@
 #include "logging.h"
 #include "system/canvas.h"
 
-BatchRemoveCommand::BatchRemoveCommand(Canvas* canvas, const QVector<NodeSaveInfo>& nodes, const QVector<TransitionSaveInfo>& transitions,
-                                       QUndoCommand* parent)
+BatchRemoveCommand::BatchRemoveCommand(Canvas* canvas, const QVector<NodeSaveInfo>& nodes, const QVector<TransitionSaveInfo>& transitions, QUndoCommand* parent)
     : QUndoCommand(parent)
     , mCanvas(canvas)
     , mNodes(nodes)
@@ -18,10 +17,10 @@ void BatchRemoveCommand::undo()
   if (!mCanvas)
     return;
 
-  for (auto& node : mNodes)
+  for (const auto& node : mNodes)
     mCanvas->createNode(node, Canvas::NodeCreation::Populating);
 
-  for (auto& transition : mTransitions)
+  for (const auto& transition : mTransitions)
     mCanvas->createTransition(transition);
 
   LOG_TRACE("Undo BatchRemoveCommand");
@@ -32,10 +31,10 @@ void BatchRemoveCommand::redo()
   if (!mCanvas)
     return;
 
-  for (auto& transition : mTransitions)
+  for (const auto& transition : mTransitions)
     mCanvas->removeTransition(transition);
 
-  for (auto& node : mNodes)
+  for (const auto& node : mNodes)
     mCanvas->removeNode(node);
 
   LOG_TRACE("Redo BatchRemoveCommand");

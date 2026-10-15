@@ -16,7 +16,7 @@ class TourBubble : public StyledFrame
 {
   Q_OBJECT
 public:
-  TourBubble(QWidget* parent = nullptr);
+  explicit TourBubble(QWidget* parent = nullptr);
 
   void setContent(const QString& title, const QString& text, int currentStep, int totalSteps, bool lastStep, bool showBack, bool showNext);
 

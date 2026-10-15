@@ -42,6 +42,9 @@ public:
    */
   bool disappearing() const override;
 
+protected:
+  void setupAlarm(int msec) override;
+
 private:
   /// Unique identifier for the widget.
   const QString mId;

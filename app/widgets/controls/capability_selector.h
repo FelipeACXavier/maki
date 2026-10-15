@@ -14,7 +14,7 @@ class CapabilitySelector : public maki::ControlWidget
 
 public:
   static CapabilitySelector* create(QWidget* parent = nullptr);
-  CapabilitySelector(QWidget* parent = nullptr);
+  explicit CapabilitySelector(QWidget* parent = nullptr);
 
   void start() override;
 

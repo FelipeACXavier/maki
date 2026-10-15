@@ -66,6 +66,21 @@ auto findIf(const Container& container, Func&& predicate) -> std::optional<typen
   return *it;
 }
 
+template <typename Container, typename Func>
+auto findIfRef(Container& container, Func&& predicate) -> typename Container::value_type*
+{
+  const auto it = std::find_if(std::begin(container), std::end(container), std::forward<Func>(predicate));
+  return it != std::end(container) ? std::addressof(*it) : nullptr;
+}
+
+template <typename Container, typename Func>
+auto findIfPtr(const Container& container, Func&& predicate) -> typename Container::value_type
+{
+  static_assert(std::is_pointer_v<typename Container::value_type>, "findIfPtr requires a container of pointers");
+  const auto it = std::find_if(std::cbegin(container), std::cend(container), std::forward<Func>(predicate));
+  return it != std::cend(container) ? *it : nullptr;
+}
+
 template <typename Container, typename Projection, typename Value>
 auto findBy(const Container& container, Projection&& projection, const Value& value) -> std::optional<typename Container::value_type>
 {

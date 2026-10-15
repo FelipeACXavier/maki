@@ -34,7 +34,7 @@ class TypeEditor : public QWidget
   Q_OBJECT
 
 public:
-  TypeEditor(QWidget* parent = nullptr);
+  explicit TypeEditor(QWidget* parent = nullptr);
 
   void focusCurrentEditor();
 

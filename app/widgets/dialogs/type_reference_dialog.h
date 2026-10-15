@@ -21,7 +21,7 @@ class TypeReferenceDialog : public BaseDialog
   Q_OBJECT
 
 public:
-  TypeReferenceDialog(const QString& title, QWidget* parent = nullptr);
+  explicit TypeReferenceDialog(const QString& title, QWidget* parent = nullptr);
 
   void setTypeRef(const koda::types::TypeReference& ref);
   koda::types::TypeReference typeRef() const;

@@ -17,14 +17,14 @@ public:
   /**
    * @brief Constructs an empty FlowSaveInfo object.
    */
-  FlowSaveInfo();
+  explicit FlowSaveInfo();
 
   /**
    * @brief Constructs a FlowSaveInfo object with the given configuration.
    *
    * @param config The configuration to initialize the flow save info with.
    */
-  FlowSaveInfo(const FlowConfig& config);
+  explicit FlowSaveInfo(const FlowConfig& config);
 
   /**
    * @brief Gets the ID of the flow.

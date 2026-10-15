@@ -28,7 +28,7 @@ class SuggestionRow : public QWidget
   Q_OBJECT
 
 public:
-  SuggestionRow(const QString& svgPath, const QString& labelText, QWidget* parent = nullptr);
+  explicit SuggestionRow(const QString& svgPath, const QString& labelText, QWidget* parent = nullptr);
 
   const QString& text() const;
 
@@ -59,7 +59,7 @@ class SuggestionMenu : public maki::ControlWidget
 
 public:
   static SuggestionMenu* create(QWidget* parent = nullptr);
-  SuggestionMenu(QWidget* parent = nullptr);
+  explicit SuggestionMenu(QWidget* parent = nullptr);
 
   void setSuggestions(const QStringList& consumers, const QStringList& producers);
 

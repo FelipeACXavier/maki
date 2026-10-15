@@ -11,10 +11,10 @@
 #include <oclero/qlementine/widgets/Label.hpp>
 
 #include "app_paths.h"
-#include "common/style_helpers.h"
 #include "compiler/plugin_action_registry.h"
 #include "host_services.h"
 #include "logging.h"
+#include "macros.h"
 #include "notifications.h"
 #include "pipeline_action.h"
 #include "result.h"
@@ -163,7 +163,7 @@ VoidResult PluginManager::loadPlugin(const QDir& pluginDir, const maki::Manifest
   auto pluginPath = manifest.pluginPath();
 
   LOG_DEBUG("Loading plugin: {} from {} with status: {}", pluginName, pluginPath, (int)status);
-  auto exists = pluginByLanguage(pluginName);
+  const auto* exists = pluginByLanguage(pluginName);
   if (exists != nullptr)
     return VoidResult::Failed("Plugin {} ({}) already exists", pluginName, pluginPath);
 
@@ -266,9 +266,9 @@ maki::IPlugin* PluginManager::currentPlugin() const
 
 maki::IPlugin* PluginManager::pluginByLanguage(const QString& language) const
 {
-  for (const auto& plugin : mPlugins)
-    if (plugin.plugin->languageName() == language)
-      return plugin.plugin;
+  auto existing = maki::findIf(mPlugins, [&language](const auto& opt) { return opt.plugin->languageName() == language; });
+  if (existing)
+    return existing->plugin;
 
   return nullptr;
 }
@@ -338,7 +338,7 @@ void PluginManager::settingsChanged(const PluginSettings& settings, HostServices
       else
         mPlugins.at(index).plugin->settingsChanged(ps.settings);
     }
-    else if (index < 0 && ps.enabled)
+    else if (ps.enabled)
     {
       for (const auto& path : AppPaths::pluginSearchPaths())
       {
@@ -444,7 +444,7 @@ QWidget* PluginManager::progressContent()
 
   QVBoxLayout* layout = new QVBoxLayout(container);
 
-  auto getRunningTask = [](Pipeline::GroupInfo group) {
+  auto getRunningTask = [](const Pipeline::GroupInfo& group) -> QString {
     bool allDone = true;
     for (const auto& p : group.processes)
     {
@@ -458,13 +458,8 @@ QWidget* PluginManager::progressContent()
 
     return QString(allDone ? "Done" : "Waiting");
   };
-  auto getCompleteTasks = [](Pipeline::GroupInfo group) {
-    int count = 0;
-    for (const auto& p : group.processes)
-      if (p.status == Pipeline::State::Done)
-        count++;
-
-    return count;
+  auto getCompleteTasks = [](const Pipeline::GroupInfo& group) -> int {
+    return maki::countIf<int>(group.processes, [](const auto& opt) { return opt.status == Pipeline::State::Done; });
   };
 
   // For each group, we have

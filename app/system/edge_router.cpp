@@ -222,11 +222,11 @@ QHash<const TransitionItem*, QPainterPath> EdgeRouter::route(const QList<NodeIte
   for (auto it = connectorMap.constBegin(); it != connectorMap.constEnd(); ++it)
   {
     const TransitionItem* transition = it.key();
-    const Avoid::PolyLine& route = it.value()->displayRoute();
+    const Avoid::PolyLine& displayRoute = it.value()->displayRoute();
 
     QVector<QPointF> points;
-    for (size_t i = 0; i < route.size(); ++i)
-      points << QPointF(route.ps[i].x, route.ps[i].y);
+    for (size_t i = 0; i < displayRoute.size(); ++i)
+      points << QPointF(displayRoute.ps[i].x, displayRoute.ps[i].y);
 
     result[transition] = pathFromPoints(points);
   }

@@ -1,6 +1,3 @@
-// Copyright (C) 2023 The Qt Company Ltd.
-// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
-
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
@@ -10,7 +7,6 @@
 #include <oclero/qlementine.hpp>
 
 #include "compiler/pipeline_graph.h"
-#include "config_table.h"
 #include "focus_properties.h"
 #include "json.h"
 #include "main_window_layout.h"
@@ -22,7 +18,6 @@ class Flow;
 class Canvas;
 class NodeItem;
 class Pipeline;
-class Generator;
 class SaveInfo;
 class SaveHandler;
 class HostServices;
@@ -143,7 +138,6 @@ private:
   std::shared_ptr<TourGuide> mTourGuide;              /// Language manager shared pointer.
 
   Pipeline* mPipeline = nullptr;                        /// Pointer to the pipeline.
-  Generator* mGenerator = nullptr;                      /// Pointer to the generator.
   HostServices* mHostServices = nullptr;                /// Pointer to the host services.
   Canvas* mActiveCanvas = nullptr;                      /// Pointer to the active canvas.
   PluginTab* mPluginTab = nullptr;                      /// Pointer to the plugin tab.

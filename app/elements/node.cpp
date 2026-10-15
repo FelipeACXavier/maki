@@ -231,9 +231,9 @@ void NodeItem::showSimulationControls(maki::ControlWidget* controls, const QColo
 
   mControlActive = true;
   mControlWidget->setControlWidget(controls, ControlProperties{
-                                                 .isFading = false,
-                                                 .highlightColor = highlightColor,
-                                                 .position = Config::ControlPosition::Top,
+                                               .isFading = false,
+                                               .highlightColor = highlightColor,
+                                               .position = Config::ControlPosition::Top,
                                              });
 
   QTimer::singleShot(0, [this]() {
@@ -907,7 +907,7 @@ PFlow NodeItem::createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo
 
 PFlow NodeItem::getFlow(const QString& flowId) const
 {
-  auto flow = maki::findIf(flows(), [&flowId](const auto& flow) { return flow->id() == flowId; });
+  auto flow = maki::findBy(flows(), &Flow::id, flowId);
   if (flow)
     return *flow;
 

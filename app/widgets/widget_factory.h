@@ -87,10 +87,10 @@ struct WidgetAlignment
   static WidgetAlignment Form(maki::WidgetGroup* widgetGroup, int width = 0, Direction dir = Direction::SPREAD)
   {
     return maki::WidgetAlignment{
-        .type = maki::WidgetAlignment::Type::FORM,
-        .direction = dir,
-        .group = widgetGroup,
-        .labelWidth = width,
+      .type = maki::WidgetAlignment::Type::FORM,
+      .direction = dir,
+      .group = widgetGroup,
+      .labelWidth = width,
     };
   };
 };
@@ -582,14 +582,14 @@ public:
    * @brief Constructs a type selection widget.
    * @param parent The parent widget.
    */
-  TypeSelectionWidget(QWidget* parent);
+  explicit TypeSelectionWidget(QWidget* parent);
 
   /**
    * @brief Constructs a type selection widget with an initial value.
    * @param initial The initial selected value.
    * @param parent The parent widget.
    */
-  TypeSelectionWidget(const QString& initial, QWidget* parent);
+  explicit TypeSelectionWidget(const QString& initial, QWidget* parent);
 
   /**
    * @brief Constructs a type selection widget with an initial value and a last allowed type.

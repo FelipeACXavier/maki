@@ -36,4 +36,7 @@ bool LongNotificationWidget::disappearing() const
   return false;
 }
 
+void LongNotificationWidget::setupAlarm(int msec)
+{
+}
 }  // namespace maki

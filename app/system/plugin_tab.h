@@ -31,7 +31,7 @@ public:
    * @param menu Menu where plugin entries will be added.
    * @param parent Optional Qt parent object.
    */
-  PluginTab(QMenu* menu, QObject* parent = nullptr);
+  explicit PluginTab(QMenu* menu, QObject* parent = nullptr);
 
   /**
    * @brief Updates the scene associated with a plugin tab.

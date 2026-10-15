@@ -12,7 +12,7 @@ class MissionParameterWidget : public QWidget
   Q_OBJECT
 
 public:
-  MissionParameterWidget(QWidget* parent = nullptr);
+  explicit MissionParameterWidget(QWidget* parent = nullptr);
 
   void addParameter();
   void editParameter(const QString& parameterId);

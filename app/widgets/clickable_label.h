@@ -9,7 +9,7 @@ class ClickableLabel : public oclero::qlementine::Label
   Q_OBJECT
 
 public:
-  ClickableLabel(QWidget* parent = nullptr);
+  explicit ClickableLabel(QWidget* parent = nullptr);
 
 signals:
   void clicked();

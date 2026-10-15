@@ -23,7 +23,7 @@ public:
    *
    * @param parent The parent widget.
    */
-  SaveHandler(QWidget* parent);
+  explicit SaveHandler(QWidget* parent);
 
   VoidResult saveProject(SaveInfo& project, bool override = false);
   VoidResult saveProjectAs(SaveInfo& project);

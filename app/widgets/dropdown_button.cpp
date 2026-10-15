@@ -7,6 +7,7 @@
 
 DropDownButton::DropDownButton(QWidget* parent)
     : QToolButton(parent)
+    , mHovered(false)
 {
   auto menu = new QMenu(this);
   menu->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);

@@ -18,14 +18,14 @@ public:
   /**
    * @brief Constructs an empty PropertyInfo object.
    */
-  PropertyInfo();
+  explicit PropertyInfo();
 
   /**
    * @brief Constructs a PropertyInfo object from a PropertyConfig.
    *
    * @param object The PropertyConfig to initialize the object with.
    */
-  PropertyInfo(const PropertyConfig& object);
+  explicit PropertyInfo(const PropertyConfig& object);
 
   /**
    * @brief Gets the ID of the property.

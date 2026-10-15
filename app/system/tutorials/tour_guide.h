@@ -51,7 +51,7 @@ class TourGuide : public QObject
 {
   Q_OBJECT
 public:
-  TourGuide(QWidget* topLevel, QObject* parent = nullptr);
+  explicit TourGuide(QWidget* topLevel, QObject* parent = nullptr);
   ~TourGuide() override;
 
   // --- building the pipeline (append) ------------------------------------

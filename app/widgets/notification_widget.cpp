@@ -137,10 +137,6 @@ NotificationWidget::NotificationWidget(const QString& title, const QString& text
     if (mMinimizeButton)
       mMinimizeButton->setIcon(QIcon(":/icons/arrow-down.svg"));
   });
-
-  // Only enable in short notification
-  if (!text.isEmpty() && disappearing())
-    setupAlarm(3000);
 }
 
 int NotificationWidget::duration() const
@@ -150,6 +146,9 @@ int NotificationWidget::duration() const
 
 void NotificationWidget::setupAlarm(int msec)
 {
+  if (mAlarmSetup)
+    return;
+
   mAlarmSetup = true;
   mAutoCloseTimer.setSingleShot(true);
   mAutoCloseTimer.setInterval(msec);
@@ -208,6 +207,8 @@ void NotificationWidget::showAnimated()
 {
   if (opacity() == 1.0)
     return;
+
+  setupAlarm(3000);
 
   show();
   raise();

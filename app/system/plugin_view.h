@@ -17,7 +17,7 @@ public:
    *
    * @param parent Pointer to the parent widget.
    */
-  PluginView(QWidget* parent = nullptr);
+  explicit PluginView(QWidget* parent = nullptr);
 
   /**
    * @brief Gets the current center point of the view.

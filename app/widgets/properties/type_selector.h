@@ -13,7 +13,7 @@ class TypeSelector : public QWidget
 {
   Q_OBJECT
 public:
-  TypeSelector(const QString& objectName, QWidget* parent = nullptr);
+  explicit TypeSelector(const QString& objectName, QWidget* parent = nullptr);
 
   koda::types::TypeReference getReference() const;
   void setReference(const koda::types::TypeReference& reference);

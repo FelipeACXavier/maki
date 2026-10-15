@@ -10,8 +10,6 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QPushButton>
-#include <QRegularExpression>
-#include <QRegularExpressionValidator>
 #include <QScrollArea>
 #include <QShortcut>
 #include <QStackedWidget>
@@ -31,13 +29,12 @@
 #include "canvas.h"
 #include "canvas_info.h"
 #include "canvas_view.h"
-#include "compiler/generator.h"
 #include "compiler/pipeline.h"
 #include "compiler/pipeline_graph.h"
 #include "compiler/plugin_action_registry.h"
 #include "compiler/plugin_pipeline.h"
 #include "config.h"
-#include "data_flow_model.h"
+#include "config_table.h"
 #include "edge_router.h"
 #include "elements/flow.h"
 #include "elements/node.h"
@@ -48,6 +45,7 @@
 #include "library_scene.h"
 #include "logger.h"
 #include "logging.h"
+#include "macros.h"
 #include "notifications.h"
 #include "pipeline_canvas.h"
 #include "plugin_manager.h"
@@ -149,7 +147,6 @@ VoidResult MainWindow::start()
   mNotificationManager = new NotificationManager(mCanvasPanel, this);
   mPluginManager = std::make_unique<PluginManager>(mPluginPipeline->registry(), mPipeline, this);
 
-  mGenerator = new Generator(mPipeline, this);
   mPluginTab = new PluginTab(mSpecialTabsMenu, this);
 
   mMissionParameters->documentUpdated();
@@ -203,8 +200,7 @@ VoidResult MainWindow::start()
 
 std::pair<LibraryContainer*, DraggableItem*> MainWindow::findDraggableInPalette(const QString& nodeType) const
 {
-  QList<SectionWidget*> sections = mPalette->findChildren<SectionWidget*>();
-  for (const auto& section : sections)
+  for (const auto* section : mPalette->findChildren<SectionWidget*>())
     if (auto* library = qobject_cast<LibraryContainer*>(section->content()))
       if (auto palette = qobject_cast<LibraryScene*>(library->scene()))
         for (const auto& item : palette->items())
@@ -276,34 +272,34 @@ void MainWindow::startTourGuide(bool runningOnStartUp)
 
   auto steps = std::make_shared<Steps>();
   auto canvasView = qobject_cast<CanvasView*>(mCanvasPanel->widget(0));
-  auto canvas = qobject_cast<Canvas*>(canvasView->scene());
+  auto structureCanvas = qobject_cast<Canvas*>(canvasView->scene());
 
   steps->showWelcome = mTourGuide->addStep(nullptr, tr("Welcome to %1").arg(Config::APPLICATION_NAME),
                                            tr("This quick tour shows you how to create a simple application with %1.").arg(Config::APPLICATION_NAME));
   steps->showPalette = mTourGuide->addStep(
-      mPalette, tr("Structure Tab"),
-      tr("%1 applications revolved around nodes. Structural nodes define the structure of the application. They can be found in the Structure Tab.")
-          .arg(Config::APPLICATION_NAME));
+    mPalette, tr("Structure Tab"),
+    tr("%1 applications revolved around nodes. Structural nodes define the structure of the application. They can be found in the Structure Tab.")
+      .arg(Config::APPLICATION_NAME));
   steps->startDragTask = mTourGuide->addItemStep(taskLibrary, taskNode, tr("Task node"), tr("Click and drag the Task node onto the Canvas"),
                                                  TourStep::AdvanceOn::UserAction, steps->showPalette);
   steps->endDragTask = mTourGuide->addStep(canvasView, tr("Drop it on the Canvas"), tr("Release the Task node anywhere on the Canvas."),
                                            TourStep::AdvanceOn::UserAction, steps->startDragTask);
 
   steps->showProperties = mTourGuide->addStep(
-      mPropertiesTab, tr("Properties"),
-      tr("Nodes may have properties that are used to modify how they behave. In the \"Property Tab\" you can find the properties of the dropped node"));
+    mPropertiesTab, tr("Properties"),
+    tr("Nodes may have properties that are used to modify how they behave. In the \"Property Tab\" you can find the properties of the dropped node"));
 
   steps->showCapabilities = mTourGuide->addStep(
-      capabilityLibrary, tr("Capabilities"),
-      tr("Capabilities define the robot functions available to a Task. Capabilities are Structural nodes and can be found in the Structure Tab."));
+    capabilityLibrary, tr("Capabilities"),
+    tr("Capabilities define the robot functions available to a Task. Capabilities are Structural nodes and can be found in the Structure Tab."));
   steps->startDragCapability = mTourGuide->addItemStep(
-      capabilityLibrary, capabilityNode, tr("%1 Capability").arg(tour::QUICK_TOUR_CAPABILTY),
-      tr("To add a Capability to a Task. Click on the %1 Capablity and drag in onto a Task node in the Canvas.").arg(tour::QUICK_TOUR_CAPABILTY),
-      TourStep::AdvanceOn::UserAction, steps->showCapabilities);
+    capabilityLibrary, capabilityNode, tr("%1 Capability").arg(tour::QUICK_TOUR_CAPABILTY),
+    tr("To add a Capability to a Task. Click on the %1 Capablity and drag in onto a Task node in the Canvas.").arg(tour::QUICK_TOUR_CAPABILTY),
+    TourStep::AdvanceOn::UserAction, steps->showCapabilities);
 
   steps->end = mTourGuide->addStep(
-      nullptr, tr("Congratulations!"),
-      tr("You should be ready to start creating your application. For more information, explore the other available nodes and the help menu in the toolbar."));
+    nullptr, tr("Congratulations!"),
+    tr("You should be ready to start creating your application. For more information, explore the other available nodes and the help menu in the toolbar."));
 
   connect(mPropertiesMenu, &PropertiesMenu::nodeFocused, this, [this, steps](const QString& nodeId) {
     if (!mTourGuide->isActive())
@@ -350,13 +346,13 @@ void MainWindow::startTourGuide(bool runningOnStartUp)
                                               tr("You can monitor the verification progress here. Depending on the size of your "
                                                  "application, the verification may take some time. Let's wait a bit until it is done."),
                                               TourStep::AdvanceOn::UserAction, TourStep::Invalid, steps->verifying);
-    steps->verificationDone =
-        mTourGuide->insertStep(steps->end, toast, tr("Verification done"), tr("And there we go! Our program has being verified and no errors were found!"),
-                               TourStep::AdvanceOn::Button, TourStep::Invalid, steps->verificationDone);
+    steps->verificationDone = mTourGuide->insertStep(steps->end, toast, tr("Verification done"),
+                                                     tr("And there we go! Our program has being verified and no errors were found!"),
+                                                     TourStep::AdvanceOn::Button, TourStep::Invalid, steps->verificationDone);
 
     mTourGuide->advance();
   });
-  connect(canvas, &Canvas::nodeAdded, this, [this, canvasView, steps](Canvas* /* canvas */, NodeItem* node) {
+  connect(structureCanvas, &Canvas::nodeAdded, this, [this, canvasView, steps](Canvas* /* canvas */, NodeItem* node) {
     if (!mTourGuide->isActive())
       return;
 
@@ -365,9 +361,9 @@ void MainWindow::startTourGuide(bool runningOnStartUp)
 
     steps->taskId = node->id();
 
-    steps->highlightTask =
-        mTourGuide->insertItemStep(steps->showProperties, canvasView, node, tr("Task node"), tr("Nice! Now we have a Task node on the Canvas."),
-                                   TourStep::AdvanceOn::Button, TourStep::Invalid, steps->highlightTask);
+    steps->highlightTask = mTourGuide->insertItemStep(steps->showProperties, canvasView, node, tr("Task node"),
+                                                      tr("Nice! Now we have a Task node on the Canvas."), TourStep::AdvanceOn::Button, TourStep::Invalid,
+                                                      steps->highlightTask);
 
     steps->highlightTaskName = mTourGuide->insertItemStep(steps->showCapabilities, canvasView, node, tr("Name updated"),
                                                           tr("Good job! You can see that the node label was also updated."), TourStep::AdvanceOn::Button,
@@ -381,11 +377,11 @@ void MainWindow::startTourGuide(bool runningOnStartUp)
                                                             tr("Great! Now, our Task is able to access the %1 Capability.").arg(tour::QUICK_TOUR_CAPABILTY),
                                                             TourStep::AdvanceOn::Button, TourStep::Invalid, steps->highlightCapability);
 
-    steps->preControlHover =
-        mTourGuide->insertItemStep(steps->end, canvasView, node, tr("Modifying behavior"), tr("Move the mouse over the Task node to see what else we can do."),
-                                   TourStep::AdvanceOn::UserAction, steps->highlightCapability, steps->preControlHover);
+    steps->preControlHover = mTourGuide->insertItemStep(steps->end, canvasView, node, tr("Modifying behavior"),
+                                                        tr("Move the mouse over the Task node to see what else we can do."), TourStep::AdvanceOn::UserAction,
+                                                        steps->highlightCapability, steps->preControlHover);
   });
-  connect(canvas, &Canvas::controlCreated, this, [this, steps](maki::ControlWidget* control) {
+  connect(structureCanvas, &Canvas::controlCreated, this, [this, steps](maki::ControlWidget* control) {
     if (!mTourGuide->isActive())
       return;
 
@@ -395,127 +391,126 @@ void MainWindow::startTourGuide(bool runningOnStartUp)
     control->setTouring();
 
     steps->highlightControl = mTourGuide->insertStep(
-        steps->end, control, tr("Task node menu"),
-        tr("This is the task node menu. Here, you can open the main flow or add new Flows to Tasks. Click on \"Open main flow\" to start updating it."),
-        TourStep::AdvanceOn::UserAction, TourStep::Invalid, steps->highlightControl);
+      steps->end, control, tr("Task node menu"),
+      tr("This is the task node menu. Here, you can open the main flow or add new Flows to Tasks. Click on \"Open main flow\" to start updating it."),
+      TourStep::AdvanceOn::UserAction, TourStep::Invalid, steps->highlightControl);
 
     mTourGuide->advance();
   });
   connect(
-      canvas, &Canvas::openFlow, this,
-      [this, callLibrary, callNode, steps](std::shared_ptr<FlowSaveInfo> /* flow */, const QString& /* nodeId */, const maki::FocusProperties& /* properties */,
-                                           int& /* createdIndex */) {
+    structureCanvas, &Canvas::openFlow, this,
+    [this, callLibrary, callNode, steps](std::shared_ptr<FlowSaveInfo> /* flow */, const QString& /* nodeId */, const maki::FocusProperties& /* properties */,
+                                         int& /* createdIndex */) {
+      if (!mTourGuide->isActive())
+        return;
+
+      if (mTourGuide->currentStepId() != steps->highlightControl)
+        return;
+
+      if (mCanvasPanel->count() != 2)
+        return;
+
+      auto behaviourView = qobject_cast<CanvasView*>(mCanvasPanel->widget(1));
+      auto behaviorCanvas = qobject_cast<Canvas*>(behaviourView->scene());
+
+      steps->showBehaviourCanvas = mTourGuide->insertStep(steps->end, behaviourView, tr("Behavior Canvas"),
+                                                          tr("This is the Behavior Canvas. Here, you can compose the behavior of Task Flows."),
+                                                          TourStep::AdvanceOn::Button, TourStep::Invalid, steps->showBehaviourCanvas);
+      steps->showBehaviourPalette = mTourGuide->insertStep(steps->end, mPalette, tr("Behavior Tab"),
+                                                           tr("In the Behavior Tab, you can find the available behavior nodes. Behavior nodes define how "
+                                                              "the different Capabilities must be executed in order to complete the Task."),
+                                                           TourStep::AdvanceOn::Button, TourStep::Invalid, steps->showBehaviourPalette);
+
+      steps->startDragCall = mTourGuide->insertItemStep(
+        steps->end, callLibrary, callNode, tr("%1 node").arg(tour::QUICK_TOUR_CAPABILTY),
+        tr("Let's update the Flow. You know the drill by now, click the \"%1\" node and dragging it onto the Canvas.").arg(tour::QUICK_TOUR_CAPABILTY),
+        TourStep::AdvanceOn::UserAction, steps->showBehaviourPalette, steps->startDragCall);
+
+      steps->endDragCall =
+        mTourGuide->insertStep(steps->end, behaviourView, tr("Node connection feedback"),
+                               tr("Nodes can dropped anywhere in the Canvas. If they are dropped on an existing Transition, %1 will automatically "
+                                  "connect the new node. Transitions will update their color when a node can be dropped on them")
+                                 .arg(Config::APPLICATION_NAME),
+                               TourStep::AdvanceOn::UserAction, steps->startDragCall, steps->endDragCall);
+
+      connect(behaviorCanvas, &Canvas::nodeAdded, this, [this, behaviourView, steps](Canvas* /* canvas */, NodeItem* node) {
         if (!mTourGuide->isActive())
           return;
 
-        if (mTourGuide->currentStepId() != steps->highlightControl)
+        if (mTourGuide->currentStepId() != steps->endDragCall)
           return;
 
-        if (mCanvasPanel->count() != 2)
+        steps->highlightCall = mTourGuide->insertItemStep(steps->end, behaviourView, node, tr("Updating the call node"),
+                                                          tr("Perfect! Currently, the node doesn't do anything. You need to assign a Capability to be "
+                                                             "called by this node. Click on the plus icon in the \"%1\" node.")
+                                                            .arg(tour::QUICK_TOUR_CAPABILTY),
+                                                          TourStep::AdvanceOn::UserAction, steps->endDragCall, steps->highlightCall);
+        steps->completeCall =
+          mTourGuide->insertItemStep(steps->end, behaviourView, node, tr("Complete call node"),
+                                     tr("That is it! Now, %1 knows which Capability to call during execution.").arg(Config::APPLICATION_NAME),
+                                     TourStep::AdvanceOn::Button, TourStep::Invalid, steps->completeCall);
+
+        steps->startVerification = mTourGuide->insertStep(
+          steps->end, mPipelineRun, tr("Verification"),
+          tr("With the behavior defined, it can be verified. Click the \"Verify\" button. You will then be "
+             "prompted to save the application and %1 will handle the rest. A formal model will be automatically generated and verified.")
+            .arg(Config::APPLICATION_NAME),
+          TourStep::AdvanceOn::UserAction, steps->completeCall, steps->startVerification);
+      });
+      connect(behaviorCanvas, &Canvas::controlCreated, this, [this, steps](maki::ControlWidget* control) {
+        if (!mTourGuide->isActive())
           return;
 
-        auto behaviourView = qobject_cast<CanvasView*>(mCanvasPanel->widget(1));
-        auto behaviorCanvas = qobject_cast<Canvas*>(behaviourView->scene());
+        if (mTourGuide->currentStepId() != steps->highlightCall)
+          return;
 
-        steps->showBehaviourCanvas = mTourGuide->insertStep(steps->end, behaviourView, tr("Behavior Canvas"),
-                                                            tr("This is the Behavior Canvas. Here, you can compose the behavior of Task Flows."),
-                                                            TourStep::AdvanceOn::Button, TourStep::Invalid, steps->showBehaviourCanvas);
-        steps->showBehaviourPalette = mTourGuide->insertStep(steps->end, mPalette, tr("Behavior Tab"),
-                                                             tr("In the Behavior Tab, you can find the available behavior nodes. Behavior nodes define how "
-                                                                "the different Capabilities must be executed in order to complete the Task."),
-                                                             TourStep::AdvanceOn::Button, TourStep::Invalid, steps->showBehaviourPalette);
+        control->setTouring();
+        steps->selectCapability =
+          mTourGuide->insertStep(steps->completeCall, control, tr("%1 menu").arg(tour::QUICK_TOUR_CAPABILTY),
+                                 tr("Here, you can find the Capabilities which can be called. Let's select our %1 capabilty.").arg(tour::QUICK_TOUR_CAPABILTY),
+                                 TourStep::AdvanceOn::UserAction, steps->highlightCall, steps->selectCapability);
 
-        steps->startDragCall = mTourGuide->insertItemStep(
-            steps->end, callLibrary, callNode, tr("%1 node").arg(tour::QUICK_TOUR_CAPABILTY),
-            tr("Let's update the Flow. You know the drill by now, click the \"%1\" node and dragging it onto the Canvas.").arg(tour::QUICK_TOUR_CAPABILTY),
-            TourStep::AdvanceOn::UserAction, steps->showBehaviourPalette, steps->startDragCall);
+        if (auto capSelect = qobject_cast<CapabilityCallSelector*>(control))
+        {
+          connect(capSelect, &CapabilityCallSelector::changedTabs, this, [this, capSelect, steps](const int tab) {
+            if (auto eventSelector = capSelect->eventSelector(); eventSelector)
+            {
+              steps->selectCapabilityEvent = mTourGuide->insertStep(steps->completeCall, eventSelector, tr("%1 event selection").arg(tour::QUICK_TOUR_NODE),
+                                                                    tr("After seleting the Capability, you must select the event that should be called by "
+                                                                       "the \"%1\" node. Select \"%2\" in the Event drop-down list.")
+                                                                      .arg(tour::QUICK_TOUR_NODE, tour::QUICK_TOUR_EVENT),
+                                                                    TourStep::AdvanceOn::UserAction, steps->selectCapability, steps->selectCapabilityEvent);
+              mTourGuide->advance();
+            }
+          });
 
-        steps->endDragCall =
-            mTourGuide->insertStep(steps->end, behaviourView, tr("Node connection feedback"),
-                                   tr("Nodes can dropped anywhere in the Canvas. If they are dropped on an existing Transition, %1 will automatically "
-                                      "connect the new node. Transitions will update their color when a node can be dropped on them")
-                                       .arg(Config::APPLICATION_NAME),
-                                   TourStep::AdvanceOn::UserAction, steps->startDragCall, steps->endDragCall);
+          connect(capSelect, &CapabilityCallSelector::eventSelected, this, [this, capSelect, steps](const QString& event) {
+            if (event != tour::QUICK_TOUR_EVENT)
+              return;
 
-        connect(behaviorCanvas, &Canvas::nodeAdded, this, [this, behaviourView, steps](Canvas* /* canvas */, NodeItem* node) {
-          if (!mTourGuide->isActive())
-            return;
-
-          if (mTourGuide->currentStepId() != steps->endDragCall)
-            return;
-
-          steps->highlightCall = mTourGuide->insertItemStep(steps->end, behaviourView, node, tr("Updating the call node"),
-                                                            tr("Perfect! Currently, the node doesn't do anything. You need to assign a Capability to be "
-                                                               "called by this node. Click on the plus icon in the \"%1\" node.")
-                                                                .arg(tour::QUICK_TOUR_CAPABILTY),
-                                                            TourStep::AdvanceOn::UserAction, steps->endDragCall, steps->highlightCall);
-          steps->completeCall =
-              mTourGuide->insertItemStep(steps->end, behaviourView, node, tr("Complete call node"),
-                                         tr("That is it! Now, %1 knows which Capability to call during execution.").arg(Config::APPLICATION_NAME),
-                                         TourStep::AdvanceOn::Button, TourStep::Invalid, steps->completeCall);
-
-          steps->startVerification = mTourGuide->insertStep(
-              steps->end, mPipelineRun, tr("Verification"),
-              tr("With the behavior defined, it can be verified. Click the \"Verify\" button. You will then be "
-                 "prompted to save the application and %1 will handle the rest. A formal model will be automatically generated and verified.")
-                  .arg(Config::APPLICATION_NAME),
-              TourStep::AdvanceOn::UserAction, steps->completeCall, steps->startVerification);
-        });
-        connect(behaviorCanvas, &Canvas::controlCreated, this, [this, steps](maki::ControlWidget* control) {
-          if (!mTourGuide->isActive())
-            return;
-
-          if (mTourGuide->currentStepId() != steps->highlightCall)
-            return;
-
-          control->setTouring();
-          steps->selectCapability = mTourGuide->insertStep(
-              steps->completeCall, control, tr("%1 menu").arg(tour::QUICK_TOUR_CAPABILTY),
-              tr("Here, you can find the Capabilities which can be called. Let's select our %1 capabilty.").arg(tour::QUICK_TOUR_CAPABILTY),
-              TourStep::AdvanceOn::UserAction, steps->highlightCall, steps->selectCapability);
-
-          if (auto capSelect = qobject_cast<CapabilityCallSelector*>(control))
-          {
-            connect(capSelect, &CapabilityCallSelector::changedTabs, this, [this, capSelect, steps](const int tab) {
-              if (auto eventSelector = capSelect->eventSelector(); eventSelector)
-              {
-                steps->selectCapabilityEvent = mTourGuide->insertStep(steps->completeCall, eventSelector, tr("%1 event selection").arg(tour::QUICK_TOUR_NODE),
-                                                                      tr("After seleting the Capability, you must select the event that should be called by "
-                                                                         "the \"%1\" node. Select \"%2\" in the Event drop-down list.")
-                                                                          .arg(tour::QUICK_TOUR_NODE, tour::QUICK_TOUR_EVENT),
-                                                                      TourStep::AdvanceOn::UserAction, steps->selectCapability, steps->selectCapabilityEvent);
-                mTourGuide->advance();
-              }
-            });
-
-            connect(capSelect, &CapabilityCallSelector::eventSelected, this, [this, capSelect, steps](const QString& event) {
-              if (event != tour::QUICK_TOUR_EVENT)
-                return;
-
-              if (auto button = capSelect->confirmButton(); button)
-              {
-                steps->confirmCapability = mTourGuide->insertStep(steps->completeCall, button, tr("%1 menu").arg(tour::QUICK_TOUR_CAPABILTY),
-                                                                  tr("Fantastic! Now, press the Confirm button to accept your changes."),
-                                                                  TourStep::AdvanceOn::UserAction, steps->selectCapabilityEvent, steps->confirmCapability);
-                mTourGuide->advance();
-              }
-            });
-          }
-
-          mTourGuide->advance();
-        });
-
-        mTourGuide->connectTriggerSuccess(behaviorCanvas, &Canvas::nodeAdded,
-                                          [steps](const int currentStep) { return (currentStep == steps->endDragCall) ? TourStep::Valid : TourStep::Invalid; });
-        mTourGuide->connectTriggerSuccess(behaviorCanvas, &Canvas::controlDismissed, [steps](const int currentStep) {
-          return (currentStep == steps->confirmCapability) ? TourStep::Valid : TourStep::Invalid;
-        });
+            if (auto button = capSelect->confirmButton(); button)
+            {
+              steps->confirmCapability = mTourGuide->insertStep(steps->completeCall, button, tr("%1 menu").arg(tour::QUICK_TOUR_CAPABILTY),
+                                                                tr("Fantastic! Now, press the Confirm button to accept your changes."),
+                                                                TourStep::AdvanceOn::UserAction, steps->selectCapabilityEvent, steps->confirmCapability);
+              mTourGuide->advance();
+            }
+          });
+        }
 
         mTourGuide->advance();
       });
 
-  QList<SectionWidget*> sections = mPalette->findChildren<SectionWidget*>();
-  for (const auto& section : sections)
+      mTourGuide->connectTriggerSuccess(behaviorCanvas, &Canvas::nodeAdded,
+                                        [steps](const int currentStep) { return (currentStep == steps->endDragCall) ? TourStep::Valid : TourStep::Invalid; });
+      mTourGuide->connectTriggerSuccess(behaviorCanvas, &Canvas::controlDismissed, [steps](const int currentStep) {
+        return (currentStep == steps->confirmCapability) ? TourStep::Valid : TourStep::Invalid;
+      });
+
+      mTourGuide->advance();
+    });
+
+  for (const auto* section : mPalette->findChildren<SectionWidget*>())
     if (auto* library = qobject_cast<LibraryContainer*>(section->content()))
     {
       if (auto palette = qobject_cast<LibraryScene*>(library->scene()))
@@ -539,7 +534,7 @@ void MainWindow::startTourGuide(bool runningOnStartUp)
     }
 
   // triggers for the action-driven steps:
-  mTourGuide->connectTriggerSuccess(canvas, &Canvas::nodeAdded, [steps](const int currentStep) {
+  mTourGuide->connectTriggerSuccess(structureCanvas, &Canvas::nodeAdded, [steps](const int currentStep) {
     return (currentStep == steps->endDragTask || currentStep == steps->endDragCapability) ? TourStep::Valid : TourStep::Invalid;
   });
   mTourGuide->connectTriggerSuccess(mPluginPipeline, &maki::PluginPipeline::pipelineFinished,
@@ -587,8 +582,7 @@ void MainWindow::onThemeChanged(const AppearanceSettings& settings, bool initial
   Config::FOREGROUND = theme.secondaryColor;
 
   // Update the libraries
-  QList<SectionWidget*> sections = mStructureTab->findChildren<SectionWidget*>();
-  for (const auto& section : sections)
+  for (const auto& section : mStructureTab->findChildren<SectionWidget*>())
     if (auto* library = qobject_cast<LibraryContainer*>(section->content()))
       qobject_cast<LibraryScene*>(library->scene())->themeChanged();
 
@@ -596,11 +590,11 @@ void MainWindow::onThemeChanged(const AppearanceSettings& settings, bool initial
   for (int i = 0; i < mCanvasPanel->count(); ++i)
   {
     QWidget* w = mCanvasPanel->widget(i);
-    if (auto canvas = qobject_cast<CanvasView*>(w))
+    if (auto view = qobject_cast<CanvasView*>(w))
     {
-      canvas->onSettingsChanged(settings);
-      static_cast<Canvas*>(canvas->scene())->themeChanged();
-      static_cast<Canvas*>(canvas->scene())->settingsChanged(settings);
+      view->onSettingsChanged(settings);
+      qobject_cast<Canvas*>(view->scene())->themeChanged();
+      qobject_cast<Canvas*>(view->scene())->settingsChanged(settings);
     }
   }
 
@@ -672,20 +666,12 @@ void MainWindow::onSettingsChanged(bool initialSetup)
   mActionOpenRecent->clear();
   for (const auto& file : mSettingsManager->general().recentFiles)
   {
-    QAction* action = mActionOpenRecent->addAction(elideLeft(file, mActionOpenRecent));
+    const QAction* action = mActionOpenRecent->addAction(elideLeft(file, mActionOpenRecent));
     connect(action, &QAction::triggered, [this, file] { onActionLoad(file); });
   }
 
   // Update node palette
-  for (const auto& section : mStructureTab->findChildren<SectionWidget*>())
-    if (auto* library = qobject_cast<LibraryContainer*>(section->content()))
-      library->setColumnCount(mSettingsManager->appearance().numberOfColumns);
-
-  for (const auto& section : mBehaviourTab->findChildren<SectionWidget*>())
-    if (auto* library = qobject_cast<LibraryContainer*>(section->content()))
-      library->setColumnCount(mSettingsManager->appearance().numberOfColumns);
-
-  for (const auto& section : mPipelineTab->findChildren<SectionWidget*>())
+  for (const auto& section : mPalette->findChildren<SectionWidget*>())
     if (auto* library = qobject_cast<LibraryContainer*>(section->content()))
       library->setColumnCount(mSettingsManager->appearance().numberOfColumns);
 }
@@ -693,14 +679,14 @@ void MainWindow::onSettingsChanged(bool initialSetup)
 void MainWindow::startUI()
 {
   CanvasView* currentCanvas = static_cast<CanvasView*>(mCanvasPanel->currentWidget());
-  StructureCanvas* canvas = new StructureCanvas(Config::MAIN_CANVAS, mRouter, currentCanvas);
-  bindCanvas(canvas);
+  StructureCanvas* structureCanvas = new StructureCanvas(Config::MAIN_CANVAS, mRouter, currentCanvas);
+  bindCanvas(structureCanvas);
 
-  mActiveCanvas = canvas;
-  currentCanvas->setScene(canvas);
+  mActiveCanvas = structureCanvas;
+  currentCanvas->setScene(structureCanvas);
 
-  mUndoGroup->addStack(canvas->undoStack());
-  mUndoGroup->setActiveStack(canvas->undoStack());
+  mUndoGroup->addStack(structureCanvas->undoStack());
+  mUndoGroup->setActiveStack(structureCanvas->undoStack());
 }
 
 void MainWindow::bind()
@@ -736,9 +722,9 @@ void MainWindow::bind()
       return;
     }
     // 2) If focus is in the canvas -> search there
-    else if (auto* canvas = IN_TYPE(fw, CanvasView))
+    else if (auto* view = IN_TYPE(fw, CanvasView))
     {
-      Q_UNUSED(canvas);
+      Q_UNUSED(view);
       LOG_DEBUG("Finding in canvas");
       return;
     }
@@ -1009,8 +995,8 @@ void MainWindow::bindShortcuts()
     }
     else if (auto* canvasView = IN_TYPE(fw, CanvasView))
     {
-      if (auto* canvas = qobject_cast<Canvas*>(canvasView->scene()))
-        canvas->copySelectedItems(nullptr);
+      if (auto* scene = qobject_cast<Canvas*>(canvasView->scene()))
+        scene->copySelectedItems(nullptr);
 
       return;
     }
@@ -1040,8 +1026,8 @@ void MainWindow::bindShortcuts()
     }
     else if (auto* canvasView = IN_TYPE(fw, CanvasView))
     {
-      if (auto* canvas = qobject_cast<Canvas*>(canvasView->scene()))
-        canvas->pasteCopiedItems();
+      if (auto* scene = qobject_cast<Canvas*>(canvasView->scene()))
+        scene->pasteCopiedItems();
 
       return;
     }
@@ -1281,7 +1267,7 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
     return VoidResult::Failed("Unknown library type: {}", type);
 
   LibraryContainer* sidebarview = LibraryContainer::create(libraryName, toolbox);
-  LibraryScene* sidebarScene = dynamic_cast<LibraryScene*>(sidebarview->scene());
+  const auto* sidebarScene = dynamic_cast<LibraryScene*>(sidebarview->scene());
   connect(sidebarScene, &LibraryScene::libraryNodeSelected, [this](const QString& nodeType, const QString& /* instanceId */) {
     if (auto info = ConfigurationTable::instance().get(nodeType))
       mInfoText->setHtml(createInformationMessage(*info));
@@ -1346,8 +1332,8 @@ void MainWindow::onActionNew(const QString& templateName)
   {
     QWidget* w = mCanvasPanel->widget(i);
     if (auto view = qobject_cast<CanvasView*>(w))
-      if (auto* canvas = qobject_cast<Canvas*>(view->scene()))
-        canvas->loadFromSave(emptySave);
+      if (auto* scene = qobject_cast<Canvas*>(view->scene()))
+        scene->loadFromSave(emptySave);
 
     if (i != 0)
       closeCanvasTab(i);
@@ -1411,13 +1397,13 @@ void MainWindow::onActionGenerate(const QString& pipelineId, bool fromScratch)
   context.buildDir = QDir(mSettingsManager->generation().generationDir + "/" + SaveInfo::instance().name);
   context.projectDir = QDir(mSettingsManager->generation().generationDir + "/" + SaveInfo::instance().name);
   context.addArtifact({
-      .id = "maki.nodes",
-      .type = "maki",
-      .producer = Config::APPLICATION_NAME,
-      .paths =
-          {
-              {"nodes", byteArray.toBase64()},
-          },
+    .id = "maki.nodes",
+    .type = "maki",
+    .producer = Config::APPLICATION_NAME,
+    .paths =
+      {
+        {"nodes", byteArray.toBase64()},
+      },
   });
 
   // Make sure the project exists
@@ -1510,13 +1496,11 @@ void MainWindow::onActionRenamePipeline(const QString& pipelineId)
   if (name.isEmpty())
     return;
 
-  for (const auto& p : SaveInfo::instance().pipelines())
+  auto exists = maki::anyOf(SaveInfo::instance().pipelines(), [&name](const auto& opt) { return opt->getname() == name; });
+  if (exists)
   {
-    if (p->getname() == name)
-    {
-      NOTIFY_WARNING(Config::APPLICATION_NAME.toStdString(), "{}: {}", tr("There is already a pipeline named"), name);
-      return;
-    }
+    NOTIFY_WARNING(Config::APPLICATION_NAME.toStdString(), "{}: {}", tr("There is already a pipeline named"), name);
+    return;
   }
 
   pipeline->setName(name);
@@ -1556,13 +1540,11 @@ void MainWindow::onActionEditPipeline(const QString& pipelineId)
     if (name.isEmpty())
       return;
 
-    for (const auto& p : SaveInfo::instance().pipelines())
+    auto exists = maki::anyOf(SaveInfo::instance().pipelines(), [&name](const auto& opt) { return opt->getname() == name; });
+    if (exists)
     {
-      if (p->getname() == name)
-      {
-        NOTIFY_WARNING(Config::APPLICATION_NAME.toStdString(), "{}: {}", tr("There is already a pipeline named"), name);
-        return;
-      }
+      NOTIFY_WARNING(Config::APPLICATION_NAME.toStdString(), "{}: {}", tr("There is already a pipeline named"), name);
+      return;
     }
 
     pipeline = std::make_shared<FlowSaveInfo>(info);
@@ -1588,10 +1570,10 @@ void MainWindow::onActionEditPipeline(const QString& pipelineId)
   CanvasView* newView = new CanvasView(mCanvasPanel);
   newView->setProperty(ConfigKeys::ID.toUtf8(), pipeline->getid());
 
-  PipelineCanvas* canvas = new PipelineCanvas(pipeline, mRouter, newView);
-  bindCanvas(canvas);
-  newView->setScene(canvas);
-  canvas->populate(*pipeline);
+  PipelineCanvas* pipelineCanvas = new PipelineCanvas(pipeline, mRouter, newView);
+  bindCanvas(pipelineCanvas);
+  newView->setScene(pipelineCanvas);
+  pipelineCanvas->populate(*pipeline);
 
   // Hide all tabs in the palette but the pipeline one
   mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::STRUCTURAL), false);
@@ -1610,11 +1592,11 @@ VoidResult MainWindow::onActionSave()
 
   if (CanvasView* view = qobject_cast<CanvasView*>(mCanvasPanel->widget(0)))
   {
-    if (auto* canvas = qobject_cast<Canvas*>(view->scene()))
+    if (auto* scene = qobject_cast<Canvas*>(view->scene()))
     {
       CanvasSaveInfo info;
-      info.setCenter(canvas->getCenter());
-      info.setScale(canvas->getScale());
+      info.setCenter(scene->getCenter());
+      info.setScale(scene->getScale());
       SaveInfo::instance().setCanvasInfo(info);
     }
   }
@@ -1838,15 +1820,11 @@ void MainWindow::onCanvasTabChanged(int index)
     mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::PIPELINE), false);
   }
 
-  NodeItem* toFocus = nullptr;
-  for (const auto& item : mActiveCanvas->selectedItems())
-    if (item->type() == NodeItem::Type)
-    {
-      toFocus = dynamic_cast<NodeItem*>(item);
-      break;
-    }
+  // Select the first available node
+  auto existing = maki::findIfPtr(canvas()->selectedItems(), [](const auto& opt) { return opt->type() == NodeItem::Type; });
 
-  mPropertiesMenu->onNodeSelected(toFocus, toFocus != nullptr);
+  if (auto* nodeItem = qgraphicsitem_cast<NodeItem*>(existing))
+    onNodeSelected(nodeItem, true);
 }
 
 void MainWindow::closeCanvasTab(int index)
@@ -1961,13 +1939,13 @@ void MainWindow::onOpenFlow(std::shared_ptr<FlowSaveInfo> flow, const QString& n
   }
 
   CanvasView* newView = new CanvasView(mCanvasPanel);
-  BehaviourCanvas* canvas = new BehaviourCanvas(flow, nodeId, mRouter, newView);
-  bindCanvas(canvas);
-  canvas->setupInitialNodes();
-  newView->setScene(canvas);
+  BehaviourCanvas* behaviourCanvas = new BehaviourCanvas(flow, nodeId, mRouter, newView);
+  bindCanvas(behaviourCanvas);
+  behaviourCanvas->setupInitialNodes();
+  newView->setScene(behaviourCanvas);
 
   // Change to respective tabs
-  auto index = libraryTypeToIndex(canvas->type());
+  auto index = libraryTypeToIndex(behaviourCanvas->type());
   mPalette->setCurrentIndex(index);
 
   LOG_DEBUG("Set tab property to {}", tabId);
@@ -1976,7 +1954,7 @@ void MainWindow::onOpenFlow(std::shared_ptr<FlowSaveInfo> flow, const QString& n
   mCanvasPanel->setCurrentWidget(newView);
 
   // Populate after creation
-  canvas->populate(*flow);
+  behaviourCanvas->populate(*flow);
 }
 
 void MainWindow::focusOn(const QString& nodeId, const QString& flowId, const maki::FocusProperties& properties)
@@ -2000,8 +1978,8 @@ void MainWindow::focusOn(const QString& nodeId, const QString& flowId, const mak
       return;
     }
 
-    if (auto canvas = qobject_cast<CanvasView*>(mCanvasPanel->widget(index)); canvas)
-      qobject_cast<Canvas*>(canvas->scene())->focusOnNode(nodeId, properties);
+    if (auto view = qobject_cast<CanvasView*>(mCanvasPanel->widget(index)); view)
+      qobject_cast<Canvas*>(view->scene())->focusOnNode(nodeId, properties);
   }
   // If we are focusing on a structural node
   else if (flowId.isEmpty() && !nodeId.isEmpty())
@@ -2017,8 +1995,8 @@ void MainWindow::focusOn(const QString& nodeId, const QString& flowId, const mak
       if (index < 0)
         return;
 
-      if (auto canvas = qobject_cast<CanvasView*>(mCanvasPanel->widget(index)); canvas)
-        qobject_cast<Canvas*>(canvas->scene())->focusOnNode(nodeId, properties);
+      if (auto* view = qobject_cast<CanvasView*>(mCanvasPanel->widget(index)); view)
+        qobject_cast<Canvas*>(view->scene())->focusOnNode(nodeId, properties);
     }
     else
     {

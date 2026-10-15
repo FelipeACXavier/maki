@@ -28,7 +28,7 @@ public:
    * @brief Constructs the system menu widget.
    * @param parent The parent widget.
    */
-  SystemMenu(QWidget* parent);
+  explicit SystemMenu(QWidget* parent);
 
   /**
    * @brief Handles the addition of a node to a flow.

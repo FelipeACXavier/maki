@@ -93,7 +93,7 @@ protected:
 
   ExpandingWidget* mBody;
 
-  void setupAlarm(int msec);
+  virtual void setupAlarm(int msec);
 
 private:
   ClickableIcon* mMinimizeButton;  ///< Button used to manually minimize the notification.
