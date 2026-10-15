@@ -26,10 +26,10 @@ IndentWidth: 2
 PointerAlignment: Left
 AlignTrailingComments: true
 DerivePointerAlignment: false
-AllowShortLambdasOnASingleLine: true
+AllowShortLambdasOnASingleLine: All
 AllowShortFunctionsOnASingleLine: None
 BreakConstructorInitializers: BeforeComma
-AllowShortIfStatementsOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: Never
 AllowShortLoopsOnASingleLine: false
 ConstructorInitializerAllOnOneLineOrOnePerLine: false
 AlwaysBreakBeforeMultilineStrings: false
@@ -38,5 +38,7 @@ BreakAdjacentStringLiterals: true
 SeparateDefinitionBlocks: Always
 # Lets discourage one argument per line
 BinPackArguments: true
-BinPackParameters: true
 AllowAllParametersOfDeclarationOnNextLine: false
+ContinuationIndentWidth: 2
+PenaltyBreakAssignment: 100
+PenaltyBreakBeforeFirstCallParameter: 100
