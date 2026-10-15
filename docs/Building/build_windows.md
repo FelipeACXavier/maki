@@ -13,36 +13,41 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 Once that is done, you can proceed with the build process:
 
-<ol start="1"> <li>Run the setup scripts to install the necessary tools (this only needs to be done once).</li></ol>
+<ol start="1"> <li>Run the setup scripts to install the necessary tools (this only needs to be done once).</li>
 
 ```powershell
 .\scripts\windows\setup_tools.ps1
 ```
+</ol>
 
-<ol start="2"> <li>Run the setup scripts to install the necessary packages (this only needs to be done once).</li></ol>
+<ol start="2"> <li>Run the setup scripts to install the necessary packages (this only needs to be done once).</li>
 
 ```powershell
-.\scripts\windows\setup_tools.ps1
+.\scripts\windows\setup.ps1
 ```
+</ol>
 
-<ol start="3"> <li>If you are building KODA as part of maki, you need to change the directory to koda and install the necessary Antlr dependencies</li></ol>
+<ol start="3"> <li>If you are building KODA as part of maki, you need to change the directory to koda and install the necessary Antlr dependencies</li>
 
 ```powershell
 cd 3rdparty/plugins/koda
  C:\vcpkg\vcpkg install
 ```
+</ol>
 
-<ol start="4"> <li>With the tools and packages installed we can build the app</li></ol>
+<ol start="4"> <li>With the tools and packages installed we can build the app</li>
 
 ```powershell
 .\scripts\windows\build.ps1
 ```
+</ol>
 
-<ol start="4"> <li>Finally, to install the tool</li></ol>
+<ol start="4"> <li>Finally, to install the tool</li>
 
 ```powershell
-.\scripts\windows\release.ps1
+.\scripts\windows\build.ps1 -Release
 ```
+</ol>
 
 ## Running
 

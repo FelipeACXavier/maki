@@ -7,7 +7,7 @@
 #include "result.h"
 #include "types.h"
 
-static constexpr std::string INDENT = "  ";
+static const std::string INDENT = "  ";
 
 #define IF_ALT(ALT, OBJ, CALL, ...)     \
   if (std::holds_alternative<ALT>(OBJ)) \

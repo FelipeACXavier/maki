@@ -1,0 +1,13 @@
+{
+  "name": "maki",
+  "version-string": "0.0.5",
+  "builtin-baseline": "62159a45e18f3a9ac0548628dcaf74fcb60c6ff9",
+  "dependencies": [
+    "vcpkg-cmake",
+    "zlib",
+    {
+      "name": "antlr4",
+      "version>=": "4.10.1"
+    }
+  ]
+}

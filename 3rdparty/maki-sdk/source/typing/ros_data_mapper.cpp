@@ -1,5 +1,9 @@
 #include "typing/ros_data_mapper.h"
 
+#ifdef MAKI_HAS_AMENT
+#include <ament_index_cpp/get_package_share_directory.hpp>
+#endif
+
 #include <algorithm>
 #include <cctype>
 #include <fstream>
@@ -203,6 +207,7 @@ std::optional<RosDatatypeMapper::RosInterfaceRef> RosDatatypeMapper::parseRosInt
 
 std::optional<std::filesystem::path> RosDatatypeMapper::interfaceFile(const RosInterfaceRef& ref) const
 {
+#ifdef MAKI_HAS_AMENT
   std::filesystem::path share;
 
   try
@@ -224,7 +229,7 @@ std::optional<std::filesystem::path> RosDatatypeMapper::interfaceFile(const RosI
     case RosInterfaceRef::Kind::Action:
       return share / "action" / (ref.interfaceName + ".action");
   }
-
+#endif
   return std::nullopt;
 }
 
@@ -518,8 +523,9 @@ std::optional<std::filesystem::path> RosDatatypeMapper::nestedRosMessageFile(con
     return std::nullopt;
   }
 
-  std::filesystem::path share;
+  std::filesystem::path share = "invalid path";
 
+#ifdef MAKI_HAS_AMENT
   try
   {
     share = ament_index_cpp::get_package_share_directory(package);
@@ -527,6 +533,7 @@ std::optional<std::filesystem::path> RosDatatypeMapper::nestedRosMessageFile(con
   {
     return std::nullopt;
   }
+#endif
 
   const auto file = share / "msg" / (message + ".msg");
 
