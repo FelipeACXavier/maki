@@ -44,7 +44,26 @@ if (NOT BUILD_PLUGINS)
 endif()
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets WebSockets)
-find_package(antlr4-runtime CONFIG REQUIRED)
+find_package(antlr4-runtime CONFIG QUIET)
+if (NOT antlr4-runtime_FOUND)
+  message(STATUS "ANTLR4 CMake package not found, searching for runtime library")
+  find_path(ANTLR4_INCLUDE_DIR
+    NAMES antlr4-runtime.h
+    PATH_SUFFIXES antlr4-runtime
+    REQUIRED
+  )
+  find_library(ANTLR4_LIBRARY
+    NAMES antlr4-runtime
+    REQUIRED
+  )
+  if (NOT TARGET antlr4_shared)
+    add_library(antlr4_shared SHARED IMPORTED)
+    set_target_properties(antlr4_shared PROPERTIES
+      IMPORTED_LOCATION "${ANTLR4_LIBRARY}"
+      INTERFACE_INCLUDE_DIRECTORIES "${ANTLR4_INCLUDE_DIR}"
+    )
+  endif()
+endif()
 
 get_property(imported_targets DIRECTORY PROPERTY IMPORTED_TARGETS)
 message(STATUS "Imported targets: ${imported_targets}")
