@@ -1,6 +1,7 @@
 #include "flow.h"
 
 #include "logging.h"
+#include "macros.h"
 #include "node.h"
 #include "transition_info.h"
 
@@ -33,7 +34,7 @@ bool Flow::modifiable() const
   return mStorage->getmodifiable();
 }
 
-void Flow::removeNode(NodeItem* node)
+void Flow::removeNode(const NodeItem* node)
 {
   mStorage->removeNode(std::make_shared<NodeSaveInfo>(node->saveInfo()));
 }
@@ -51,11 +52,10 @@ std::shared_ptr<FlowSaveInfo> Flow::config() const
 
 QVector<std::shared_ptr<NodeSaveInfo>> Flow::getNodes() const
 {
+  const auto& nodes = mStorage->getnodes();
   QVector<std::shared_ptr<NodeSaveInfo>> out;
-  out.reserve(mStorage->getnodes().size());
-  for (const auto& f : mStorage->getnodes())
-    out.push_back(std::static_pointer_cast<NodeSaveInfo>(f));
-
+  out.reserve(nodes.size());
+  maki::transform(nodes, out, [](const auto& node) { return std::static_pointer_cast<NodeSaveInfo>(node); });
   return out;
 }
 
@@ -64,35 +64,17 @@ QVector<TransitionItem*> Flow::transitions() const
   return mTransitions;
 }
 
+// cppcheck-suppress constParameterPointer
 void Flow::addTransition(TransitionItem* transition)
 {
   if (!transition)
     return;
 
-  bool found = false;
-  for (const auto& t : mStorage->gettransitions())
-  {
-    if (t->getid() == transition->id())
-    {
-      found = true;
-      break;
-    }
-  }
-
-  if (!found)
+  const auto transitionId = transition->id();
+  if (!maki::anyOf(mStorage->gettransitions(), [&transitionId](const auto& t) { return t->getid() == transitionId; }))
     mStorage->addTransition(transition->storage());
 
-  found = false;
-  for (const auto& t : transitions())
-  {
-    if (t->id() == transition->id())
-    {
-      found = true;
-      break;
-    }
-  }
-
-  if (!found)
+  if (!maki::anyOf(transitions(), [&transitionId](const auto& t) { return t->id() == transitionId; }))
     mTransitions.push_back(transition);
 }
 
@@ -105,5 +87,5 @@ void Flow::removeTransition(TransitionItem* transition)
   }
 
   mStorage->removeTransition(transition->storage());
-  mTransitions.removeIf([transition](TransitionItem* item) { return item->id() == transition->id(); });
+  mTransitions.removeIf([transition](const TransitionItem* item) { return item->id() == transition->id(); });
 }

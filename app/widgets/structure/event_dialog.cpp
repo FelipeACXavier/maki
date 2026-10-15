@@ -17,8 +17,8 @@
 #include "../dialogs/prompt.h"
 #include "../properties/type_selector.h"
 #include "app_configs.h"
-#include "logging.h"
-#include "save_info.h"
+#include "flow_info.h"
+#include "macros.h"
 #include "style_helpers.h"
 #include "widgets/widget_factory.h"
 
@@ -46,7 +46,7 @@ void EventDialog::setup(std::shared_ptr<FlowSaveInfo> event)
 
   qobject_cast<QVBoxLayout*>(layout())->addStretch();
 
-  auto buttonBox = createButtons("Apply", "Cancel");
+  const auto* buttonBox = createButtons("Apply", "Cancel");
   connect(buttonBox, &QDialogButtonBox::accepted, this, &EventDialog::accept);
   connect(buttonBox, &QDialogButtonBox::rejected, this, &EventDialog::reject);
 
@@ -200,25 +200,10 @@ void EventDialog::removeArgumentFromTable(QTableWidget* table)
   if (!table)
     return;
 
-  const auto selectedRows = table->selectionModel()->selectedRows();
-  if (selectedRows.empty())
-    return;
-
-  std::vector<int> rows;
-  rows.reserve(selectedRows.size());
-
-  for (const auto& index : selectedRows)
-    rows.push_back(index.row());
-
-  std::sort(rows.begin(), rows.end(), std::greater<int>());
-  for (const int row : rows)
-  {
-    if (row < 0 || row >= table->rowCount())
-      continue;
-
+  maki::applyOnSortedTable(table, [this, table](const auto& row) {
     mStorage->removeArgument(*(mStorage->getarguments().begin() + row));
     table->removeRow(row);
-  }
+  });
 }
 
 void EventDialog::accept()
@@ -237,14 +222,11 @@ void EventDialog::accept()
     return;
   }
 
-  for (const auto& arg : mStorage->getarguments())
+  if (maki::anyOf(mStorage->getarguments(), [](const auto& opt) { return opt->getname().isEmpty() || !opt->gettype().isValid(); }))
   {
-    if (arg->getname().isEmpty() || !arg->gettype().isValid())
-    {
-      if (maki::warningPrompt(tr("Argument has invalid format"), tr("The flow will not be saved.")))
-        QDialog::accept();
-      return;
-    }
+    if (maki::warningPrompt(tr("Argument has invalid format"), tr("The flow will not be saved.")))
+      QDialog::accept();
+    return;
   }
 
   QDialog::accept();

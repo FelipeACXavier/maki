@@ -87,7 +87,7 @@ struct GenerationSettings
 struct PluginInfo
 {
   QString name;                          /// Name of the plugin.
-  bool enabled;                          /// Whether the plugin is enabled.
+  bool enabled = true;                   /// Whether the plugin is enabled.
   maki::PluginVersion version;           /// Version of the plugin.
   QVector<maki::SettingField> settings;  /// Settings for the plugin.
   QString icon;

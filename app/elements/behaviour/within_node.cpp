@@ -29,8 +29,14 @@ WithinNode::WithinNode(const QString& id, std::shared_ptr<NodeSaveInfo> info, co
   mElseFlow->setTitlePosition(Config::ControlPosition::Top, PADDING, PADDING);
 
   setProperty(TIMEOUT, maki::Value::createInt(0));
+}
+
+VoidResult WithinNode::start()
+{
+  RETURN_ON_FAILURE(NodeItem::start());
   toggleCollapsed(mDoFlow, false);
   toggleCollapsed(mElseFlow, false);
+  return VoidResult();
 }
 
 SubFlow* WithinNode::subFlow(const QString& subflow) const

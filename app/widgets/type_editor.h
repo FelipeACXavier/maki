@@ -132,7 +132,7 @@ private:
   QTableWidget* createTable(QWidget* parent, const QStringList& headers);
   void adjustTableHeight(QTableWidget* table);
   void createDefinition(const koda::types::TypeDefinition& definition);
-  maki::StringWidget* createNamespaceEdit(maki::WidgetAlignment& alignment, QWidget* parent) const;
+  maki::StringWidget* createNamespaceEdit(const maki::WidgetAlignment& alignment, QWidget* parent) const;
   QIcon typeToIcon(const koda::types::TypeDefinition& type) const;
 
   void populateEnumKind(QComboBox* widget) const;

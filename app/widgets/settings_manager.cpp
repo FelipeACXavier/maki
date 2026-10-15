@@ -1,4 +1,3 @@
-// SettingsManager.cpp
 #include "settings_manager.h"
 
 #include <QDir>
@@ -8,6 +7,7 @@
 #include "common/app_configs.h"
 #include "isettings.h"
 #include "logging.h"
+#include "macros.h"
 #include "oclero/qlementine/style/Theme.hpp"
 #include "result.h"
 #include "widgets/dialogs/prompt.h"
@@ -66,9 +66,9 @@ std::vector<oclero::qlementine::Theme> SettingsManager::availableThemes() const
 
 Result<oclero::qlementine::Theme> SettingsManager::themeByName(const QString& themeName) const
 {
-  for (const auto& theme : availableThemes())
-    if (theme.meta.name == themeName)
-      return theme;
+  auto theme = maki::findIf(availableThemes(), [&themeName](const auto& opt) { return opt.meta.name == themeName; });
+  if (theme)
+    return *theme;
 
   return Result<oclero::qlementine::Theme>::Failed("No theme named: {}", themeName);
 }
@@ -341,9 +341,9 @@ void SettingsManager::addRecentFile(const QString& s)
 
 QVector<maki::SettingField> SettingsManager::getPluginSettings(const QString& id) const
 {
-  for (const auto& plugin : plugins().plugins)
-    if (plugin.name == id)
-      return plugin.settings;
+  auto plugin = maki::findBy(plugins().plugins, &PluginInfo::name, id);
+  if (plugin)
+    return plugin->settings;
 
   return {};
 }
@@ -398,12 +398,12 @@ VoidResult SettingsManager::registerSettings(const QString& id, const maki::Plug
   {
     LOG_DEBUG("Registering plugin \"{}\" settings", id);
     mPluginSettings.plugins.append({
-        .name = id,
-        .enabled = true,
-        .version = version,
-        .settings = settings,
-        .icon = fixedIconPath,
-        .registered = true,
+      .name = id,
+      .enabled = true,
+      .version = version,
+      .settings = settings,
+      .icon = fixedIconPath,
+      .registered = true,
     });
   }
   else
@@ -416,9 +416,9 @@ VoidResult SettingsManager::registerSettings(const QString& id, const maki::Plug
 
 maki::SettingField SettingsManager::settingFromName(const QVector<maki::SettingField>& settings, const QString& fieldName) const
 {
-  for (const auto& s : settings)
-    if (fieldName == s.getKey())
-      return s;
+  auto setting = maki::findBy(settings, &maki::SettingField::getKey, fieldName);
+  if (setting)
+    return *setting;
 
   return maki::SettingField{};
 }

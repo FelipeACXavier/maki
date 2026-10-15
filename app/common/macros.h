@@ -66,6 +66,20 @@ auto findIf(const Container& container, Func&& predicate) -> std::optional<typen
   return *it;
 }
 
+template <typename Container, typename Projection, typename Value>
+auto findBy(const Container& container, Projection&& projection, const Value& value) -> std::optional<typename Container::value_type>
+{
+  return findIf(container, [&](const auto& item) { return std::invoke(projection, item) == value; });
+}
+
+template <typename Container, typename Value, typename Projection>
+auto findByRef(Container& container, Projection&& projection, const Value& value) -> typename Container::value_type*
+{
+  auto it = std::find_if(std::begin(container), std::end(container), [&](const auto& item) { return std::invoke(projection, item) == value; });
+
+  return it != std::end(container) ? std::addressof(*it) : nullptr;
+}
+
 template <class T, typename Container, typename Func>
 T countIf(const Container& container, Func&& predicate)
 {
@@ -82,6 +96,12 @@ template <typename Container, typename Func>
 bool anyOf(const Container& container, Func&& predicate)
 {
   return std::any_of(std::cbegin(container), std::cend(container), std::forward<Func>(predicate));
+}
+
+template <typename Container1, typename Container2, typename Func>
+void transform(const Container1& source, Container2& destination, Func&& predicate)
+{
+  std::transform(cbegin(source), cend(source), std::back_inserter(destination), std::forward<Func>(predicate));
 }
 
 inline bool isInt(const QString& value)

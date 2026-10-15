@@ -221,7 +221,7 @@ struct ThemeEditorWidget::Impl
   LineEdit* authorEditor{};
   LineEdit* versionEditor{};
 
-  Impl(ThemeEditorWidget& o)
+  explicit Impl(ThemeEditorWidget& o)
       : owner(o)
   {
   }

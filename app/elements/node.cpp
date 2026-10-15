@@ -17,6 +17,7 @@
 #include "app_paths.h"
 #include "canvas_message.h"
 #include "logging.h"
+#include "macros.h"
 #include "style_helpers.h"
 #include "system/canvas.h"
 #include "system/undo_commands/move_node.h"
@@ -71,8 +72,7 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
   if (const auto* name = getProperty("name"))
     setLabel(name->getvalue()->toStringValue(), labelSize);
 
-  updatePosition(snapToGrid(initialPosition - boundingRect().center(), Config::GRID_SIZE));
-  mLastPosition = pos();
+  mLastPosition = initialPosition;
 
   LOG_DEBUG("{} created at: ({}, {}) with size ({}, {}), scale {} and {} ports", id(), pos().x(), pos().y(), mSize.width(), mSize.height(), baseScale(),
             config()->ports.size());
@@ -125,6 +125,7 @@ qreal NodeItem::baseScale() const
 
 VoidResult NodeItem::start()
 {
+  updatePosition(snapToGrid(mLastPosition - boundingRect().center(), Config::GRID_SIZE));
   createPorts();
   return VoidResult();
 }
@@ -622,7 +623,7 @@ QSizeF NodeItem::clampSize(qreal width, qreal height) const
 
 void NodeItem::fitInsideParent(qreal padding)
 {
-  auto* parent = parentNode();
+  const auto* parent = parentNode();
   if (!parent)
     return;
 
@@ -739,7 +740,7 @@ QVariant NodeItem::itemChange(GraphicsItemChange change, const QVariant& value)
 {
   if (change == QGraphicsItem::ItemPositionChange)
   {
-    if (auto* parent = parentNode())
+    if (const auto* parent = parentNode())
       return parent->constrainChildPosition(this, value.toPointF());
   }
   else if (change == QGraphicsItem::ItemPositionHasChanged)
@@ -906,9 +907,9 @@ PFlow NodeItem::createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo
 
 PFlow NodeItem::getFlow(const QString& flowId) const
 {
-  for (const auto& flow : flows())
-    if (flow->id() == flowId)
-      return flow;
+  auto flow = maki::findIf(flows(), [&flowId](const auto& flow) { return flow->id() == flowId; });
+  if (flow)
+    return *flow;
 
   return nullptr;
 }

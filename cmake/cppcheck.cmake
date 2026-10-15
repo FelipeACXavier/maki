@@ -10,6 +10,7 @@ set(cppcheck_args
   --template=gcc
   --library=qt
   --force
+  --suppress=duplInheritedMember 
 )
 
 if(MAKI_WARNINGS_AS_ERRORS)

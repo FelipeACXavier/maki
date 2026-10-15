@@ -449,15 +449,15 @@ void InputWidget::setSupportedReferences(const QVector<MissionParameter>& parame
   mParameterMenu->clear();
   for (const auto& parameter : parameters)
   {
-    auto action = mParameterMenu->addAction(parameter.getname());
+    const auto* action = mParameterMenu->addAction(parameter.getname());
     connect(action, &QAction::triggered, this, [this, name = parameter.getname()] { setReference(name); });
   }
   if (!parameters.isEmpty())
     mParameterMenu->addSeparator();
 
-  auto* inferAction = mParameterMenu->addAction(tr("Use inferred value"));
+  const auto* inferAction = mParameterMenu->addAction(tr("Use inferred value"));
   connect(inferAction, &QAction::triggered, this, [this] { setReference(Types::INFERRED); });
-  auto* clearAction = mParameterMenu->addAction(tr("Use literal value"));
+  const auto* clearAction = mParameterMenu->addAction(tr("Use literal value"));
   connect(clearAction, &QAction::triggered, this, [this] { clearReference(); });
 }
 
@@ -1212,7 +1212,7 @@ QList<QWidget*> ListWidget::focusWidgets() const
 {
   QList<QWidget*> widgets;
 
-  for (const auto& editor : mEditors)
+  for (const auto* editor : mEditors)
     widgets.append(editor->focusWidgets());
 
   return widgets;

@@ -1,5 +1,6 @@
 #include "double_variable.h"
 
+#include "macros.h"
 #include "validate.h"
 
 DoubleOrVariableValidator::DoubleOrVariableValidator(double bottom, double top, int decimals, QObject* parent)
@@ -19,9 +20,7 @@ QValidator::State DoubleOrVariableValidator::validate(QString& input, int& pos) 
   if (input.isEmpty())
     return Intermediate;
 
-  bool ok = false;
-  input.toDouble(&ok);
-  if (ok)
+  if (maki::isDouble(input))
     return Acceptable;
 
   if (mAcceptVariable)

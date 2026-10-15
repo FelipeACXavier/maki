@@ -62,7 +62,7 @@ public:
    *
    * @param node The node to remove.
    */
-  void removeNode(NodeItem* node);
+  void removeNode(const NodeItem* node);
 
   /**
    * @brief Updates a node in the flow with new save information.

@@ -26,8 +26,13 @@ RepeatNode::RepeatNode(const QString& id, std::shared_ptr<NodeSaveInfo> info, co
 
   setProperty(ITERATIONS, maki::Value::createInt(0));
   setProperty(RATE, maki::Value::createInt(0));
+}
 
+VoidResult RepeatNode::start()
+{
+  RETURN_ON_FAILURE(NodeItem::start());
   toggleCollapsed(mSubFlow, false);
+  return VoidResult();
 }
 
 SubFlow* RepeatNode::subFlow() const
@@ -63,7 +68,7 @@ QRectF RepeatNode::sceneAlignRect() const
 
 QRectF RepeatNode::nodeRect() const
 {
-  const auto flow = subFlow();
+  const auto* flow = subFlow();
   if (!flow || flow->isCollapsed())
     return NodeItem::nodeRect();
 

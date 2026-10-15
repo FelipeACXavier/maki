@@ -28,7 +28,7 @@ public:
    * @param title The title of the dialog.
    * @param parent The parent widget.
    */
-  EventDialog(const QString& title, QWidget* parent = nullptr);
+  explicit EventDialog(const QString& title, QWidget* parent = nullptr);
 
   /**
    * @brief Sets up the dialog with event information.

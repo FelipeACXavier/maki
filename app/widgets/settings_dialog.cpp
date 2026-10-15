@@ -28,6 +28,7 @@
 #include "app_paths.h"
 #include "frame.h"
 #include "logging.h"
+#include "macros.h"
 #include "scroll_area.h"
 #include "section.h"
 #include "style_helpers.h"
@@ -82,7 +83,7 @@ SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsMan
 
   layout()->addLayout(mainLayout);
 
-  auto buttonBox = createButtons("Apply", "Close");
+  const auto* buttonBox = createButtons("Apply", "Close");
   connect(buttonBox, &QDialogButtonBox::accepted, this, &SettingsDialog::apply);
   connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
@@ -177,9 +178,9 @@ VoidResult SettingsDialog::createGeneralPage()
   });
 
   maki::WidgetAlignment alignment = {
-      .type = maki::WidgetAlignment::Type::INLINE,
-      .direction = maki::WidgetAlignment::Direction::SPREAD,
-      .labelWidth = 300,
+    .type = maki::WidgetAlignment::Type::INLINE,
+    .direction = maki::WidgetAlignment::Direction::SPREAD,
+    .labelWidth = 300,
   };
   auto languageLayout = new maki::WidgetGroup(tr("Language"), page);
   mLanguageCombo = new maki::SelectorWidget(tr("Set language"), alignment, page);
@@ -200,12 +201,12 @@ VoidResult SettingsDialog::createGeneralPage()
   autoSaveLayout->addWidget(mAutosaveEnabled);
   autoSaveLayout->addWidget(mAutosaveMinutes);
 
-  mRecentHistorySize =
-      new maki::IntegerWidget(tr("Recent History Size"), QString::number(generalSettings.recentHistorySize), alignment, page, INT32_MIN, INT32_MAX);
+  mRecentHistorySize = new maki::IntegerWidget(tr("Recent History Size"), QString::number(generalSettings.recentHistorySize), alignment, page, INT32_MIN,
+                                               INT32_MAX);
 
   mRestoreLastSession = new maki::BooleanWidget(tr("Restore last session on startup"), generalSettings.restoreLastSession, alignment, page);
-  mConfirmOnClose =
-      new maki::BooleanWidget(tr("Confirm before closing editor with running execution"), generalSettings.confirmOnCloseWithExecution, alignment, page);
+  mConfirmOnClose = new maki::BooleanWidget(tr("Confirm before closing editor with running execution"), generalSettings.confirmOnCloseWithExecution, alignment,
+                                            page);
   mShowWelcomeMessage = new maki::BooleanWidget(tr("Show welcome message"), generalSettings.showWelcomeMessage, alignment, page);
   mShowTourOnStart = new maki::BooleanWidget(tr("Show Quick Start Tour on startup"), generalSettings.showTourOnStart, alignment, page);
 
@@ -254,9 +255,9 @@ VoidResult SettingsDialog::createAppearancePage()
   });
 
   maki::WidgetAlignment alignment = {
-      .type = maki::WidgetAlignment::Type::INLINE,
-      .direction = maki::WidgetAlignment::Direction::SPREAD,
-      .labelWidth = 300,
+    .type = maki::WidgetAlignment::Type::INLINE,
+    .direction = maki::WidgetAlignment::Direction::SPREAD,
+    .labelWidth = 300,
   };
 
   mThemeCombo = new maki::SelectorWidget(tr("Theme"), alignment, page);
@@ -296,16 +297,16 @@ VoidResult SettingsDialog::createAppearancePage()
   mShowGrid = new maki::BooleanWidget(tr("Show canvas grid"), appearance.showCanvasGrid, alignment, page);
   mStartLogTableFilters = new maki::BooleanWidget(tr("Show log table filters on start"), appearance.startLogFilterExpanded, alignment, page);
 
-  auto editorLayout = new maki::WidgetGroup(tr("UI changes"), page);
-  editorLayout->addWidget(mThemeCombo);
-  editorLayout->addWidget(mNativeMenuBar);
-  editorLayout->addWidget(mUiScale);
-  editorLayout->addWidget(mShowGrid);
-  editorLayout->addWidget(mStartLogTableFilters);
-  editorLayout->addWidget(mNodeCornerRadius);
-  editorLayout->addWidget(mNumberOfColumns);
-  editorLayout->addWidget(mNumberOfTaskColumns);
-  editorLayout->addWidget(mTransitionShape);
+  auto* editorGroup = new maki::WidgetGroup(tr("UI changes"), page);
+  editorGroup->addWidget(mThemeCombo);
+  editorGroup->addWidget(mNativeMenuBar);
+  editorGroup->addWidget(mUiScale);
+  editorGroup->addWidget(mShowGrid);
+  editorGroup->addWidget(mStartLogTableFilters);
+  editorGroup->addWidget(mNodeCornerRadius);
+  editorGroup->addWidget(mNumberOfColumns);
+  editorGroup->addWidget(mNumberOfTaskColumns);
+  editorGroup->addWidget(mTransitionShape);
 
   auto themeLayout = new maki::WidgetGroup(tr("Theme editor"), page);
   auto* qlementineStyle = oclero::qlementine::appStyle();
@@ -352,7 +353,7 @@ VoidResult SettingsDialog::createAppearancePage()
   }
 
   QVBoxLayout* layout = page->findChild<QVBoxLayout*>("ContentArea");
-  layout->addWidget(editorLayout);
+  layout->addWidget(editorGroup);
   layout->addWidget(themeLayout);
   layout->addStretch();
 
@@ -455,12 +456,9 @@ VoidResult SettingsDialog::createPluginPages()
     if (!nameItem)
       return;
 
-    for (auto& p : mPluginSettings.plugins)
-      if (p.name == nameItem->text())
-      {
-        p.enabled = item->checkState() == Qt::Checked;
-        return;
-      }
+    auto* plugin = maki::findByRef(mPluginSettings.plugins, &PluginInfo::name, nameItem->text());
+    if (plugin)
+      plugin->enabled = item->checkState() == Qt::Checked;
   });
 
   buttonRow->addStretch();
@@ -513,9 +511,9 @@ VoidResult SettingsDialog::createPluginPages()
     layout->setSpacing(2);
 
     maki::WidgetAlignment alignment = {
-        .type = maki::WidgetAlignment::Type::INLINE,
-        .direction = maki::WidgetAlignment::Direction::SPREAD,
-        .labelWidth = 300,
+      .type = maki::WidgetAlignment::Type::INLINE,
+      .direction = maki::WidgetAlignment::Direction::SPREAD,
+      .labelWidth = 300,
     };
     for (const auto& setting : settings)
     {

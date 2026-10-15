@@ -32,6 +32,7 @@
 #include "app_configs.h"
 #include "dialogs/type_reference_dialog.h"
 #include "logging.h"
+#include "macros.h"
 #include "properties/type_selector.h"
 #include "type_helpers.h"
 #include "type_registry.h"
@@ -51,7 +52,7 @@ TypeEditor::TypeEditor(QWidget* parent)
 {
   buildUi();
 
-  auto& registry = TypeRegistry::instance();
+  const auto& registry = TypeRegistry::instance();
 
   connect(&registry, &TypeRegistry::registryChanged, this, &TypeEditor::reloadTypes);
   connect(&registry, &TypeRegistry::definitionRequested, this, [this](const koda::types::TypeDefinition& def) {
@@ -103,7 +104,7 @@ void TypeEditor::createEnum()
 void TypeEditor::createAlias()
 {
   createDefinition(
-      koda::types::TypeDefinition::createAlias(createUniqueTypeName("Alias"), koda::types::IntegerType, QUuid::createUuid().toString().toStdString()));
+    koda::types::TypeDefinition::createAlias(createUniqueTypeName("Alias"), koda::types::IntegerType, QUuid::createUuid().toString().toStdString()));
 }
 
 void TypeEditor::removeCurrentType()
@@ -282,15 +283,11 @@ bool TypeEditor::isValidEnumValue(const QString& value, koda::types::EnumUnderly
       return true;
     case koda::types::EnumUnderlyingKind::Int32:
     {
-      bool ok = false;
-      value.toInt(&ok);
-      return ok;
+      return maki::isInt(value);
     }
     case koda::types::EnumUnderlyingKind::UInt32:
     {
-      bool ok = false;
-      value.toUInt(&ok);
-      return ok;
+      return maki::isUInt(value);
     }
   }
 
@@ -333,9 +330,9 @@ void TypeEditor::buildUi()
   mAddButton->setIcon(iconFromTheme("plus"));
 
   auto* menu = new QMenu(mAddButton);
-  auto* recordAction = menu->addAction(tr("Record"));
-  auto* enumAction = menu->addAction(tr("Enum"));
-  auto* aliasAction = menu->addAction(tr("Alias"));
+  const auto* recordAction = menu->addAction(tr("Record"));
+  const auto* enumAction = menu->addAction(tr("Enum"));
+  const auto* aliasAction = menu->addAction(tr("Alias"));
 
   connect(mAddButton, &QPushButton::clicked, this, [this, menu]() {
     const QPoint pos = mAddButton->mapToGlobal(QPoint(0, -menu->sizeHint().height() + 15));
@@ -757,9 +754,9 @@ koda::types::TypeDefinition TypeEditor::readDefinitionFromUi() const
       }
 
       fields.push_back(koda::types::FieldDefinition{
-          .name = nameItem->text().toStdString(),
-          .type = typeItem->getReference(),
-          .required = requiredItem->isChecked(),
+        .name = nameItem->text().toStdString(),
+        .type = typeItem->getReference(),
+        .required = requiredItem->isChecked(),
       });
     }
 
@@ -1160,7 +1157,7 @@ QTableWidget* TypeEditor::createTable(QWidget* parent, const QStringList& header
   return table;
 }
 
-maki::StringWidget* TypeEditor::createNamespaceEdit(maki::WidgetAlignment& alignment, QWidget* parent) const
+maki::StringWidget* TypeEditor::createNamespaceEdit(const maki::WidgetAlignment& alignment, QWidget* parent) const
 {
   auto* namespaceEdit = new maki::StringWidget(tr("Namespace"), Constants::EMPTY_COMBO, alignment,
                                                tr("Use identifiers separated by '::', for example 'robotics' or 'robotics::geometry'."), parent);

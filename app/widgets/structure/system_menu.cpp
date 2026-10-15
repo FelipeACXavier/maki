@@ -62,14 +62,14 @@ VoidResult SystemMenu::onNodeAdded(const QString& flowId, NodeItem* node, const 
     return VoidResult::Failed("No node provided");
 
   LOG_DEBUG("Node added to system menu: {} - {} ({})", node->id(), node->nodeType(), flowId);
-  auto exists = getItemById(node->id());
+  const auto* exists = getItemById(node->id());
   if (exists)
     return VoidResult();
 
   // Check if we are adding a structural node
   if (flowId == Config::MAIN_CANVAS)
   {
-    auto parent = static_cast<NodeItem*>(node->parentNode());
+    const auto* parent = qgraphicsitem_cast<NodeItem*>(node->parentNode());
     if (!parent)
     {
       LOG_DEBUG("{} is a root node", node->nodeType());
@@ -169,7 +169,7 @@ VoidResult SystemMenu::onFlowAdded(PFlow flow, NodeItem* node)
   if (!flow->modifiable())
     return VoidResult();
 
-  auto exists = getItemById(flow->id());
+  const auto* exists = getItemById(flow->id());
   if (exists)
     return VoidResult();
 
@@ -209,7 +209,7 @@ void collectTreeItems(QTreeWidgetItem* item, QSet<QTreeWidgetItem*>& out)
 
 VoidResult SystemMenu::onFlowRemoved(const QString& flowId, const QString& nodeId)
 {
-  auto* nodeItem = getItemById(nodeId);
+  const auto* nodeItem = getItemById(nodeId);
   if (!nodeItem)
     return VoidResult();
 
@@ -308,7 +308,7 @@ VoidResult SystemMenu::addRootNode(NodeItem* node)
 
 VoidResult SystemMenu::addLeafNode(NodeItem* node)
 {
-  auto parent = static_cast<NodeItem*>(node->parentNode());
+  const auto* parent = qgraphicsitem_cast<NodeItem*>(node->parentNode());
   if (!parent)
     return VoidResult::Failed("No parent, this should be a root");
 

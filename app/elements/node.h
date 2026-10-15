@@ -358,7 +358,7 @@ public:
    *
    * @param position The new QPointF for the node's position.
    */
-  virtual void updatePosition(const QPointF& position, Config::NodeMove reason = Config::NodeMove::User);
+  void updatePosition(const QPointF& position, Config::NodeMove reason = Config::NodeMove::User);
 
   QPointF centerPosition() const;
   void setCenterPosition(const QPointF& center);

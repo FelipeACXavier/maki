@@ -1,5 +1,6 @@
 #include "int_variable.h"
 
+#include "macros.h"
 #include "validate.h"
 
 IntegerOrVariableValidator::IntegerOrVariableValidator(int min, int max, QObject* parent)
@@ -19,9 +20,7 @@ QValidator::State IntegerOrVariableValidator::validate(QString& input, int& pos)
   if (input.isEmpty())
     return Intermediate;
 
-  bool ok = false;
-  input.toInt(&ok);
-  if (ok)
+  if (maki::isInt(input))
     return Acceptable;
 
   if (mAcceptVariable)

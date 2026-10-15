@@ -11,6 +11,7 @@ public:
   RepeatNode(const QString& id, std::shared_ptr<NodeSaveInfo> info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig,
              QGraphicsItem* parent = nullptr);
 
+  VoidResult start() override;
   SubFlow* subFlow() const;
 
   void addChild(NodeItem* node, std::shared_ptr<NodeSaveInfo> info) override;

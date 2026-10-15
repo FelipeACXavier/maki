@@ -5,5 +5,5 @@
 class NamespaceValidator : public QRegularExpressionValidator
 {
 public:
-  NamespaceValidator(QObject* parent = nullptr);
+  explicit NamespaceValidator(QObject* parent = nullptr);
 };
