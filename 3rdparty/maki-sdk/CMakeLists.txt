@@ -12,20 +12,6 @@ option(MAKI_WITH_ROS "Enable ROS package discovery" ON)
 
 # ------------------------------------------------------------------------------------------------------------
 find_package(Qt6 ${QT_VERSION} REQUIRED COMPONENTS Core)
-if(MAKI_WITH_ROS)
-  find_package(ament_index_cpp QUIET)
-endif()
-if(ament_index_cpp_FOUND)
-  message(STATUS "ROS package discovery enabled")
-  target_link_libraries(${PROJECT_NAME}
-    PUBLIC ament_index_cpp::ament_index_cpp
-  )
-  target_compile_definitions(${PROJECT_NAME}
-    PRIVATE MAKI_HAS_AMENT=1
-  )
-else()
-  message(STATUS "ROS package discovery disabled")
-endif()
 
 file(GLOB SOURCES
   "${PROJECT_SOURCE_DIR}/source/*.cpp"
@@ -56,6 +42,21 @@ target_link_libraries(${PROJECT_NAME}
   Qt6::Widgets
   libcpphelpers
 )
+
+if(MAKI_WITH_ROS)
+  find_package(ament_index_cpp QUIET)
+endif()
+if(ament_index_cpp_FOUND)
+  message(STATUS "ROS package discovery enabled")
+  target_link_libraries(${PROJECT_NAME}
+    PUBLIC ament_index_cpp::ament_index_cpp
+  )
+  target_compile_definitions(${PROJECT_NAME}
+    PRIVATE MAKI_HAS_AMENT=1
+  )
+else()
+  message(STATUS "ROS package discovery disabled")
+endif()
 
 install(TARGETS ${PROJECT_NAME}
     LIBRARY       DESTINATION ${CMAKE_INSTALL_LIBDIR}
