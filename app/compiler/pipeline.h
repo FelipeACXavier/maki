@@ -59,7 +59,7 @@ public:
    *
    * @param parent Optional Qt parent object.
    */
-  Pipeline(QObject* parent = nullptr);
+  explicit Pipeline(QObject* parent = nullptr);
 
   /**
    * @brief Destructs a Pipeline instance.
@@ -77,8 +77,7 @@ public:
    * @param callback Optional callback executed when the process finishes.
    * @return VoidResult indicating whether the process was successfully added.
    */
-  VoidResult add(QProcess* process, maki::OnFail onFail,
-                 std::function<void(int& exitCode, QProcess::ExitStatus& status)> callback = nullptr) override;
+  VoidResult add(QProcess* process, maki::OnFail onFail, std::function<void(int& exitCode, QProcess::ExitStatus& status)> callback = nullptr) override;
 
   /**
    * @brief Starts executing the pipeline.
@@ -345,9 +344,9 @@ private:
 
   Info constructInfo() const;
 
-  QString getRunningTask(GroupInfo info) const;
-  bool tasksInError(GroupInfo info) const;
-  int getCompleteTasks(GroupInfo info) const;
+  QString getRunningTask(const GroupInfo& info) const;
+  bool tasksInError(const GroupInfo& info) const;
+  int getCompleteTasks(const GroupInfo& info) const;
 
   void finishAbort();
 };

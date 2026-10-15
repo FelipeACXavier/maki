@@ -23,7 +23,7 @@ public:
    * @param configTable A shared pointer to the ConfigurationTable for configuration data.
    * @param parent An optional QObject parent for this canvas.
    */
-  BehaviourCanvas(std::shared_ptr<FlowSaveInfo> flow, const QString& flowOwner, std::shared_ptr<EdgeRouter> router, QObject* parent = nullptr);
+  explicit BehaviourCanvas(std::shared_ptr<FlowSaveInfo> flow, const QString& flowOwner, std::shared_ptr<EdgeRouter> router, QObject* parent = nullptr);
   ~BehaviourCanvas();
 
   /**

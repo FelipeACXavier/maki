@@ -189,7 +189,7 @@ QPointF TransitionItem::sourceAnchor() const
   if (!mSource)
     return mStorage->srcPoint();
 
-  if (auto* port = mSource->getPort(mStorage->srcPort(), mStorage->srcPortSubFlow()))
+  if (const auto* port = mSource->getPort(mStorage->srcPort(), mStorage->srcPortSubFlow()))
     return port->anchorScenePos();
 
   return mStorage->srcPoint();
@@ -200,7 +200,7 @@ QPointF TransitionItem::destinationAnchor() const
   if (!mDestination)
     return mStorage->dstPoint();
 
-  if (auto* port = mDestination->getPort(mStorage->dstPort(), mStorage->dstPortSubFlow()))
+  if (const auto* port = mDestination->getPort(mStorage->dstPort(), mStorage->dstPortSubFlow()))
     return port->anchorScenePos();
 
   return mStorage->dstPoint();

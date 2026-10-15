@@ -9,8 +9,8 @@
 class TaskNode : public NodeItem
 {
 public:
-  TaskNode(const QString& id, std::shared_ptr<NodeSaveInfo> info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig,
-           QGraphicsItem* parent = nullptr);
+  explicit TaskNode(const QString& id, std::shared_ptr<NodeSaveInfo> info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig,
+                    QGraphicsItem* parent = nullptr);
 
   ~TaskNode() override;
 

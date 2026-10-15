@@ -11,6 +11,7 @@
 
 #include "ipipeline.h"
 #include "logging.h"
+#include "macros.h"
 #include "result.h"
 #include "widgets/progress_bar.h"
 
@@ -51,11 +52,7 @@ void Pipeline::setName(const QString& name)
 
 int Pipeline::size() const
 {
-  int accumulation = 0;
-  for (const auto& group : mGroups)
-    accumulation += group->size();
-
-  return accumulation;
+  return maki::accumulate<int>(mGroups, [](int total, const auto& opt) { return total + opt->size(); });
 }
 
 bool Pipeline::isRunning() const
@@ -259,7 +256,7 @@ VoidResult Pipeline::start(const QString& groupName, bool first)
   if (mRunningProcess->state != State::Idle)
     return VoidResult::Failed("Something went wrong, cannot start process that is not idle");
 
-  const QString name = mRunningProcess->process->program();
+  const QString programName = mRunningProcess->process->program();
   const QStringList args = mRunningProcess->process->arguments();
 
   mRunningProcess->state = State::Running;
@@ -274,7 +271,7 @@ VoidResult Pipeline::start(const QString& groupName, bool first)
     emit startingGroup(constructInfo(), group->name);
   }
 
-  emit startingProcess(constructInfo(), name, args);
+  emit startingProcess(constructInfo(), programName, args);
   mRunningProcess->process->start();
 
   // This makes the ide work
@@ -283,7 +280,7 @@ VoidResult Pipeline::start(const QString& groupName, bool first)
   if (!mRunningProcess->process->waitForStarted())
     return VoidResult::Failed("Command not found or not executable!");
 
-  emit processStarted(constructInfo(), name, args);
+  emit processStarted(constructInfo(), programName, args);
 
   {
     std::unique_lock<std::mutex> lock(mStateMutex);
@@ -503,7 +500,7 @@ Pipeline::Info Pipeline::constructInfo() const
   return info;
 }
 
-QString Pipeline::getRunningTask(GroupInfo info) const
+QString Pipeline::getRunningTask(const GroupInfo& info) const
 {
   bool allDone = true;
   for (const auto& p : info.processes)
@@ -519,23 +516,14 @@ QString Pipeline::getRunningTask(GroupInfo info) const
   return QString(allDone ? "Done" : "Waiting");
 }
 
-int Pipeline::getCompleteTasks(GroupInfo info) const
+int Pipeline::getCompleteTasks(const GroupInfo& info) const
 {
-  int count = 0;
-  for (const auto& p : info.processes)
-    if (p.status == Pipeline::State::Done)
-      count++;
-
-  return count;
+  return maki::countIf<int>(info.processes, [](const auto& opt) { return opt.status == Pipeline::State::Done; });
 }
 
-bool Pipeline::tasksInError(GroupInfo info) const
+bool Pipeline::tasksInError(const GroupInfo& info) const
 {
-  for (const auto& p : info.processes)
-    if (p.status == Pipeline::State::Error)
-      return true;
-
-  return false;
+  return maki::anyOf(info.processes, [](const auto& opt) { return opt.status == Pipeline::State::Error; });
 }
 
 QWidget* Pipeline::progressWidget(bool subMenu) const

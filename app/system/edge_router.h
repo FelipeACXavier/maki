@@ -20,7 +20,7 @@ public:
     END
   };
 
-  EdgeRouter(QObject* parent = nullptr);
+  explicit EdgeRouter(QObject* parent = nullptr);
   virtual ~EdgeRouter() = default;
 
   Option option() const;

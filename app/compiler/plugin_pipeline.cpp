@@ -8,6 +8,7 @@
 #include <oclero/qlementine/widgets/Label.hpp>
 
 #include "logging.h"
+#include "macros.h"
 #include "notifications.h"
 #include "pipeline.h"
 #include "pipeline_action.h"
@@ -161,7 +162,6 @@ VoidResult PluginPipeline::runNextNode()
 
 VoidResult PluginPipeline::continueAfterNode()
 {
-  const auto nodeId = mExecutionOrder.at(mCurrentIndex);
   ++mCurrentIndex;
   auto ran = runNextNode();
   if (!ran.IsSuccess())
@@ -170,7 +170,7 @@ VoidResult PluginPipeline::continueAfterNode()
   return ran;
 }
 
-VoidResult PluginPipeline::run(const PipelineGraph& graph, PipelineContext& context, bool clearCache)
+VoidResult PluginPipeline::run(const PipelineGraph& graph, const PipelineContext& context, bool clearCache)
 {
   mGraph = graph;
   if (clearCache || mContext.artifacts().isEmpty())
@@ -211,19 +211,20 @@ void PluginPipeline::done(const QString& message)
 
 std::optional<PipelineNode> PluginPipeline::findNode(const PipelineGraph& graph, const QString& nodeId) const
 {
-  for (const auto& node : graph.nodes)
-    if (node.id == nodeId)
-      return node;
+  auto node = maki::findIf(graph.nodes, [&nodeId](const auto& opt) { return opt.id == nodeId; });
+  if (node)
+    return *node;
 
   return std::nullopt;
 }
 
 VoidResult PluginPipeline::validateInputs(const IPipelineAction& action, const PipelineContext& context) const
 {
+  auto type = maki::findIf(action.consumes(), [&context](const auto& opt) { return !context.hasType(opt); });
+
   // We must check in the execution context if there are any artefacts of the types we need
-  for (const auto& requiredType : action.consumes())
-    if (!context.hasType(requiredType))
-      return VoidResult::Failed("Action '{}' requires artefact type '{}', but none exists.", action.id(), requiredType);
+  if (type)
+    return VoidResult::Failed("Action '{}' requires artefact type '{}', but none exists.", action.id(), *type);
 
   return VoidResult();
 }

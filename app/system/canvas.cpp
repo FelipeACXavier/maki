@@ -187,17 +187,17 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
   QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
   if (item)
   {
-    if (auto* cast = dynamic_cast<CapabilityNode*>(item); cast && cast->parentNode())
-      parentNode = cast->parentNode();
-    else if (auto cast = qgraphicsitem_cast<EmptySlot*>(item); cast && cast->parentItem())
-      parentNode = qgraphicsitem_cast<NodeItem*>(cast->parentItem());
-    else if (auto* cast = qgraphicsitem_cast<SubFlow*>(item); cast)
+    if (const auto* capNode = dynamic_cast<CapabilityNode*>(item); capNode && capNode->parentNode())
+      parentNode = capNode->parentNode();
+    else if (const auto* emptySlot = qgraphicsitem_cast<EmptySlot*>(item); emptySlot && emptySlot->parentItem())
+      parentNode = qgraphicsitem_cast<NodeItem*>(emptySlot->parentItem());
+    else if (const auto* subFlow = qgraphicsitem_cast<SubFlow*>(item); subFlow)
     {
-      parentNode = qgraphicsitem_cast<NodeItem*>(cast->parentItem());
-      subFlowId = cast->id();
+      parentNode = qgraphicsitem_cast<NodeItem*>(subFlow->parentItem());
+      subFlowId = subFlow->id();
     }
-    else if (auto* cast = qgraphicsitem_cast<NodeItem*>(item); cast)
-      parentNode = cast;
+    else if (auto* nodeItem = qgraphicsitem_cast<NodeItem*>(item); nodeItem)
+      parentNode = nodeItem;
   }
 
   if (parentNode && !parentNode->acceptDrops())
@@ -291,7 +291,7 @@ TransitionItem* Canvas::transitionAt(const QRectF& sceneRect, const QGraphicsIte
 {
   const auto hitItems = items(sceneRect, Qt::IntersectsItemShape, Qt::DescendingOrder);
 
-  const auto isInvalidTransition = [this, toIgnore](TransitionItem* transition) {
+  const auto isInvalidTransition = [this, toIgnore](const TransitionItem* transition) {
     if (!transition)
       return true;
 
@@ -299,8 +299,8 @@ TransitionItem* Canvas::transitionAt(const QRectF& sceneRect, const QGraphicsIte
     if (!ignoredNode)
       return false;
 
-    auto* source = transition->source();
-    auto* destination = transition->destination();
+    const auto* source = transition->source();
+    const auto* destination = transition->destination();
 
     if (!source || !destination)
       return true;
@@ -404,7 +404,6 @@ bool Canvas::beginTransitionFromOutPort(PortItem* port, const QPointF& cursorSce
   {
     config.event = port->defaultTransitionEvent();
     config.label = port->defaultTransitionLabel();
-    config.modifiable = false;
   }
 
   mTransition->setEvent(config.event);
@@ -437,12 +436,14 @@ bool Canvas::nodeClickHandler(QGraphicsSceneMouseEvent* event, QGraphicsItem* it
 
 bool Canvas::transitionClickHandler(QGraphicsSceneMouseEvent* event, QGraphicsItem* item)
 {
-  TransitionItem* transition = static_cast<TransitionItem*>(item);
-  transition->setSelected(true);
+  if (TransitionItem* transition = qgraphicsitem_cast<TransitionItem*>(item))
+  {
+    transition->setSelected(true);
+    emit transitionSelected(transition);
+    return true;
+  }
 
-  emit transitionSelected(transition);
-
-  return true;
+  return false;
 }
 
 QGraphicsItem* Canvas::firstValidItemAt(const QPointF& scenePos, const std::function<bool(QGraphicsItem*)>& predicate) const
@@ -590,9 +591,8 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
   {
     if (event->button() == Qt::LeftButton)
     {
-      NodeItem* node = nullptr;
-      PortItem* targetPort = nullptr;
-
+      const NodeItem* node = nullptr;
+      const PortItem* targetPort = nullptr;
       const auto hitItems = items(event->scenePos(), Qt::IntersectsItemShape, Qt::DescendingOrder);
 
       // First, prefer an explicit valid destination port.
@@ -752,7 +752,8 @@ QList<NodeItem*> Canvas::topLevelSelectedNodes() const
   QList<NodeItem*> result;
 
   const auto selected = selectedNodes();
-
+  // Sometimes cppcheck is very stupid... why would node be a const when we need to append it to result?
+  // cppcheck-suppress constVariablePointer
   for (auto* node : selected)
   {
     if (!node)
@@ -797,7 +798,7 @@ void Canvas::alignNodeGroup(const QList<NodeItem*>& nodes, Types::AlignmentMode 
   if (nodes.size() < 2)
     return;
 
-  NodeItem* reference = nodes.first();
+  const NodeItem* reference = nodes.first();
   if (!reference)
     return;
 
@@ -901,26 +902,26 @@ void Canvas::alignNodeGroup(const QList<NodeItem*>& nodes, Types::AlignmentMode 
 void Canvas::createAlignMenu(QMenu* alignMenu, const QList<Types::AlignmentNode>& items)
 {
   // QAction* distribute = alignMenu->addAction("Distribute");
-  QAction* alignVCenter = alignMenu->addAction(iconFromTheme("align-vertical-center"), "Align V center");
+  const QAction* alignVCenter = alignMenu->addAction(iconFromTheme("align-vertical-center"), tr("Align V center"));
   connect(alignVCenter, &QAction::triggered, this,
           [this, items]() { requestAlignNodes(items, Types::AlignmentMode::VERTICAL, Types::AlignmentDirection::CENTER); });
 
-  QAction* alignTop = alignMenu->addAction(iconFromTheme("align-vertical-top"), "Align top");
+  const QAction* alignTop = alignMenu->addAction(iconFromTheme("align-vertical-top"), tr("Align top"));
   connect(alignTop, &QAction::triggered, this, [this, items]() { requestAlignNodes(items, Types::AlignmentMode::VERTICAL, Types::AlignmentDirection::START); });
 
-  QAction* alignBottom = alignMenu->addAction(iconFromTheme("align-vertical-bottom"), "Align bottom");
+  const QAction* alignBottom = alignMenu->addAction(iconFromTheme("align-vertical-bottom"), tr("Align bottom"));
   connect(alignBottom, &QAction::triggered, this,
           [this, items]() { requestAlignNodes(items, Types::AlignmentMode::VERTICAL, Types::AlignmentDirection::END); });
 
-  QAction* alignHCenter = alignMenu->addAction(iconFromTheme("align-horizontal-center"), "Align H center");
+  const QAction* alignHCenter = alignMenu->addAction(iconFromTheme("align-horizontal-center"), tr("Align H center"));
   connect(alignHCenter, &QAction::triggered, this,
           [this, items]() { requestAlignNodes(items, Types::AlignmentMode::HORIZONTAL, Types::AlignmentDirection::CENTER); });
 
-  QAction* alignLeft = alignMenu->addAction(iconFromTheme("align-horizontal-left"), "Align left");
+  const QAction* alignLeft = alignMenu->addAction(iconFromTheme("align-horizontal-left"), tr("Align left"));
   connect(alignLeft, &QAction::triggered, this,
           [this, items]() { requestAlignNodes(items, Types::AlignmentMode::HORIZONTAL, Types::AlignmentDirection::START); });
 
-  QAction* alignRight = alignMenu->addAction(iconFromTheme("align-horizontal-right"), "Align right");
+  const QAction* alignRight = alignMenu->addAction(iconFromTheme("align-horizontal-right"), tr("Align right"));
   connect(alignRight, &QAction::triggered, this,
           [this, items]() { requestAlignNodes(items, Types::AlignmentMode::HORIZONTAL, Types::AlignmentDirection::END); });
 
@@ -958,9 +959,9 @@ void Canvas::alignNodes(const QList<Types::AlignmentNode>& nodes, Types::Alignme
   }
 
   QList<NodeItem*> resolved;
-
   for (const auto& item : nodes)
-    if (auto* node = findNodeWithId(item.id))
+    // cppcheck-suppress constVariablePointer
+    if (auto* node = findNodeWithId(item.id); node)
       resolved.append(node);
 
   const auto groups = groupNodesByParent(resolved);
@@ -1000,11 +1001,11 @@ void Canvas::requestDistributeNodes()
     mUndoStack->push(new DistributeCommand(this, itemIds));
 }
 
-void Canvas::distributeNodes(QList<Types::AlignmentNode> items)
+void Canvas::distributeNodes(const QList<Types::AlignmentNode>& items)
 {
   QList<NodeItem*> resolved;
-
   for (const auto& item : items)
+    // cppcheck-suppress constVariablePointer
     if (auto* node = findNodeWithId(item.id))
       resolved.append(node);
 
@@ -1023,7 +1024,7 @@ void Canvas::distributeNodeGroupHorizontally(QList<NodeItem*> nodes)
   std::sort(nodes.begin(), nodes.end(),
             [](const NodeItem* a, const NodeItem* b) { return a->sceneAlignRect().center().x() < b->sceneAlignRect().center().x(); });
 
-  NodeItem* parent = nodes.first()->parentNode();
+  const NodeItem* parent = nodes.first()->parentNode();
   const auto parentSubFlow = nodes.first()->parentSubFlow();
   QRectF available;
   if (parent)
@@ -1039,30 +1040,21 @@ void Canvas::distributeNodeGroupHorizontally(QList<NodeItem*> nodes)
     // Root-level nodes preserve their current outer span.
     available = nodes.first()->sceneAlignRect();
 
-    for (auto* node : nodes)
+    for (const auto* node : nodes)
       available = available.united(node->sceneAlignRect());
   }
-
-  qreal totalWidth = 0.0;
-
-  for (const auto* node : nodes)
-    totalWidth += node->sceneAlignRect().width();
 
   if (nodes.size() == 1)
     return;
 
+  qreal totalWidth = std::accumulate(nodes.cbegin(), nodes.cend(), 0, [](qreal total, const auto& node) { return total + node->sceneAlignRect().width(); });
   const qreal spacing = (available.width() - totalWidth) / (nodes.size() - 1);
-
   qreal x = available.left();
-
   for (auto* node : nodes)
   {
     const QRectF rect = node->sceneAlignRect();
-
     const qreal deltaX = x - rect.left();
-
     node->updatePosition(node->pos() + QPointF(deltaX, 0.0), Config::NodeMove::Relayout);
-
     x += rect.width() + spacing;
   }
 }
@@ -1075,41 +1067,32 @@ void Canvas::distributeNodeGroupVertically(QList<NodeItem*> nodes)
   std::sort(nodes.begin(), nodes.end(),
             [](const NodeItem* a, const NodeItem* b) { return a->sceneAlignRect().center().y() < b->sceneAlignRect().center().y(); });
 
-  NodeItem* parent = nodes.first()->parentNode();
+  const NodeItem* parent = nodes.first()->parentNode();
   const auto parentSubFlow = nodes.first()->parentSubFlow();
   QRectF available;
   if (parent)
   {
     available = parent->childAreaSceneRect(parentSubFlow);
 
+    // Let's add some considerable padding...
     constexpr qreal padding = 60.0;
     available.adjust(padding, padding, -padding, -padding);
   }
   else
   {
     available = nodes.first()->sceneAlignRect();
-
-    for (auto* node : nodes)
+    for (const auto* node : nodes)
       available = available.united(node->sceneAlignRect());
   }
 
-  qreal totalHeight = 0.0;
-
-  for (const auto* node : nodes)
-    totalHeight += node->sceneAlignRect().height();
-
+  qreal totalHeight = std::accumulate(nodes.cbegin(), nodes.cend(), 0, [](qreal total, const auto& node) { return total + node->sceneAlignRect().height(); });
   const qreal spacing = (available.height() - totalHeight) / (nodes.size() - 1);
-
   qreal y = available.top();
-
   for (auto* node : nodes)
   {
     const QRectF rect = node->sceneAlignRect();
-
     const qreal deltaY = y - rect.top();
-
     node->updatePosition(node->pos() + QPointF(0.0, deltaY), Config::NodeMove::Relayout);
-
     y += rect.height() + spacing;
   }
 }
@@ -1166,9 +1149,9 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
   QAction* forwardAction = menu->addAction(iconFromTheme("object-order-front"), "To front");
   forwardAction->setEnabled(items.size() > 0);
   connect(forwardAction, &QAction::triggered, this, [this, items]() {
-    qreal topZLevel = 0;
-    for (QGraphicsItem* item : this->items())
-      topZLevel = qMax(item->zValue(), topZLevel);
+    const auto sceneItems = this->items();
+    const qreal topZLevel =
+        std::accumulate(sceneItems.cbegin(), sceneItems.cend(), 0, [](qreal maxZ, const QGraphicsItem* item) { return qMax(maxZ, item->zValue()); });
 
     for (NodeItem* node : items)
       node->setZValue(topZLevel);
@@ -1177,20 +1160,20 @@ void Canvas::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
   QAction* backwardAction = menu->addAction(iconFromTheme("object-order-back"), "To back");
   backwardAction->setEnabled(items.size() > 0);
   connect(backwardAction, &QAction::triggered, this, [this, items]() {
-    qreal topZLevel = 0;
-    for (QGraphicsItem* item : this->items())
-      topZLevel = qMin(item->zValue(), topZLevel);
+    const auto sceneItems = this->items();
+    const qreal bottomZLevel =
+        std::accumulate(sceneItems.cbegin(), sceneItems.cend(), 0, [](qreal minZ, const QGraphicsItem* item) { return qMin(minZ, item->zValue()); });
 
     for (NodeItem* node : items)
-      node->setZValue(topZLevel);
+      node->setZValue(bottomZLevel);
   });
 
   QAction* toggleLabelAction = menu->addAction(iconFromTheme("view-visible"), "Toggle label");
   toggleLabelAction->setEnabled(items.size() > 0);
   connect(toggleLabelAction, &QAction::triggered, this, [items]() {
     for (QGraphicsItem* item : items)
-      if (item->type() == NodeItem::Type)
-        dynamic_cast<NodeItem*>(item)->toggleLabelVisibility();
+      if (auto* node = qgraphicsitem_cast<NodeItem*>(item))
+        node->toggleLabelVisibility();
   });
 
   QMenu* alignMenu = menu->addMenu(iconFromTheme("align-on-canvas"), tr("Align"));
@@ -1309,7 +1292,7 @@ void Canvas::deleteSelectedItems()
     if (!item || item->type() != TransitionItem::Type)
       continue;
 
-    auto* transition = static_cast<TransitionItem*>(item);
+    const auto* transition = static_cast<TransitionItem*>(item);
     const auto info = transition->saveInfo();
 
     if (deletedTransitionIds.contains(info.getid()))
@@ -1408,8 +1391,7 @@ QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
   QVector<QGraphicsItem*> itemsToRemove = {node};
   updateParent(node, nullptr, false);
 
-  auto flows = node->flows();
-  for (auto& flow : flows)
+  for (const auto& flow : node->flows())
   {
     node->deleteFlow(flow->id());
     emit flowRemoved(flow->id(), node);
@@ -1459,7 +1441,7 @@ void Canvas::copySelectedItems(NodeItem* clickedNode)
 
   const QPointF mousePosition = parentView()->mapToScene(parentView()->mapFromGlobal(QCursor::pos()));
 
-  auto copyNode = [&](NodeItem* node) {
+  auto copyNode = [&](const NodeItem* node) {
     if (!node)
       return;
 
@@ -1511,7 +1493,7 @@ void Canvas::copySelectedItems(NodeItem* clickedNode)
   QApplication::clipboard()->setMimeData(mimeData);
 }
 
-void Canvas::pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode, QList<CopiedNode> copiedNodes, bool absolute)
+void Canvas::pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode, const QList<CopiedNode>& copiedNodes, bool absolute)
 {
   for (const auto& copy : copiedNodes)
   {
@@ -1690,7 +1672,7 @@ void Canvas::setNodeSize(const QString& nodeId, const QSizeF& size)
 // Undo commands
 void Canvas::createTransition(const TransitionSaveInfo& info)
 {
-  auto exists = findTransitionWithId(info.getid());
+  const auto* exists = findTransitionWithId(info.getid());
   if (exists)
     return;
 
@@ -1785,7 +1767,7 @@ void Canvas::removeTransition(const TransitionSaveInfo& info)
 
 void Canvas::createNode(const NodeSaveInfo& info, NodeCreation creation)
 {
-  auto exists = findNodeWithId(info.getid());
+  const auto* exists = findNodeWithId(info.getid());
   if (exists)
     return;
 
@@ -1808,8 +1790,8 @@ void Canvas::removeNode(const NodeSaveInfo& info)
   // Delete children before parents (important if parent owns child QGraphicsItems)
   for (int i = toRemove.size() - 1; i >= 0; --i)
   {
-    if (auto node = qgraphicsitem_cast<NodeItem*>(toRemove[i]))
-      LOG_DEBUG("Deleting: {}, has parent: {}", node->id(), node->parentNode() != nullptr);
+    if (const auto* removedNode = qgraphicsitem_cast<NodeItem*>(toRemove[i]))
+      LOG_DEBUG("Deleting: {}, has parent: {}", removedNode->id(), removedNode->parentNode() != nullptr);
 
     delete toRemove[i];
   }
@@ -1933,13 +1915,13 @@ void Canvas::onNodeHovered(NodeItem* node, bool entered)
 
     auto* control = TaskNodeMenu::create(parentView());
     connect(control, &TaskNodeMenu::openMainFlowRequested, this, [this, node] {
-      for (const auto& flow : node->flows())
-        if (flow->name() == Constants::MAIN_FLOW)
-        {
-          int placeholder;
-          emit openFlow(flow->config(), node->id(), maki::FocusProperties::internal(), placeholder);
-          return;
-        }
+      const auto& flows = node->flows();
+      auto option = std::find_if(flows.cbegin(), flows.cend(), [](const auto& opt) { return opt->name() == Constants::MAIN_FLOW; });
+      if (option != flows.end())
+      {
+        int placeholder;
+        emit openFlow((*option)->config(), node->id(), maki::FocusProperties::internal(), placeholder);
+      }
     });
     connect(control, &maki::ControlWidget::activated, this, [this, control] { emit controlCreated(control); });
     connect(control, &maki::ControlWidget::dismissed, this, [this, control] { emit controlDismissed(control); });
@@ -2069,7 +2051,7 @@ void Canvas::populate(const FlowSaveInfo& flow)
   // First create all the nodes
   for (const auto& inode : flow.getnodes())
   {
-    const auto exists = findNodeWithId(inode->getid());
+    const auto* exists = findNodeWithId(inode->getid());
     if (exists)
       continue;
 
@@ -2088,17 +2070,19 @@ void Canvas::populate(const FlowSaveInfo& flow)
 
 void Canvas::onFlowSelected(const QString& flowId, const QString& nodeId)
 {
-  auto node = findNodeWithId(nodeId);
+  const auto* node = findNodeWithId(nodeId);
   if (!node)
   {
     LOG_WARNING("Flow {} is not tied to any nodes ({})", flowId, nodeId);
     return;
   }
 
-  int placeholder;
   auto flow = node->getFlow(flowId);
   if (flow)
+  {
+    int placeholder;
     emit openFlow(flow->config(), node->id(), maki::FocusProperties::internal(), placeholder);
+  }
 }
 
 void Canvas::onFlowRemoved(const QString& flowId, const QString& nodeId)
@@ -2152,7 +2136,7 @@ NodeItem* Canvas::routingScopeForTransition(const TransitionItem* transition) co
     return nullptr;
 
   auto* source = transition->source();
-  auto* destination = transition->destination();
+  const auto* destination = transition->destination();
 
   if (!source || !destination)
     return nullptr;
@@ -2197,7 +2181,7 @@ QList<NodeItem*> Canvas::nodesInRoutingScope(NodeItem* scope) const
   return result;
 }
 
-void Canvas::autoRoute(QList<TransitionItem*> transitions)
+void Canvas::autoRoute(const QList<TransitionItem*>& transitions)
 {
   return;
 
@@ -2298,16 +2282,24 @@ std::pair<NodeItem*, PFlow> Canvas::getFlow(const QString& flowId) const
   return std::make_pair(nullptr, nullptr);
 }
 
+#include <algorithm>
+
 PFlow Canvas::getFlowWithNode(const QString& nodeId) const
 {
-  for (const auto& item : items())
-    if (auto node = qgraphicsitem_cast<NodeItem*>(item); node)
+  for (auto* item : items())
+  {
+    const auto* node = qgraphicsitem_cast<NodeItem*>(item);
+    if (!node)
+      continue;
+
+    for (const auto& flow : node->flows())
     {
-      for (const auto& flow : node->flows())
-        for (const auto& bnode : flow->getNodes())
-          if (bnode->getid() == nodeId)
-            return flow;
+      const auto nodes = flow->getNodes();
+      const auto containsNode = std::any_of(nodes.cbegin(), nodes.cend(), [&nodeId](const auto& bnode) { return bnode->getid() == nodeId; });
+      if (containsNode)
+        return flow;
     }
+  }
 
   return nullptr;
 }

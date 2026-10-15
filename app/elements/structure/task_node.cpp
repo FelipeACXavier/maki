@@ -14,6 +14,7 @@
 #include "document/node_info.h"
 #include "elements/flow.h"
 #include "logging.h"
+#include "macros.h"
 #include "widgets/controls/capability_selector.h"
 
 static constexpr qreal TASK_WIDTH = 324.0;
@@ -266,9 +267,8 @@ QVector<QPointF> TaskNode::capabilitySlotCenters(const SlotLayout& layout, int s
 
 void TaskNode::ensureMainFlowExists()
 {
-  for (const auto& flow : flowConfigs())
-    if (flow->getname() == Constants::MAIN_FLOW)
-      return;
+  if (maki::anyOf(flowConfigs(), [](const auto& flow) { return flow->getname() == Constants::MAIN_FLOW; }))
+    return;
 
   auto info = std::make_shared<FlowSaveInfo>();
   info->setId(QUuid::createUuid().toString());

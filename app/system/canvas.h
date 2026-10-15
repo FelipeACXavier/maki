@@ -96,7 +96,7 @@ public:
    */
   void deleteSelectedItems();
 
-  void autoRoute(QList<TransitionItem*> transitions = {});
+  void autoRoute(const QList<TransitionItem*>& transitions = {});
 
   /**
    * @brief Returns the current scale of the canvas.
@@ -260,7 +260,7 @@ public:
   QHash<LayoutScope, QList<NodeItem*>> groupNodesByParent(const QList<NodeItem*>& nodes) const;
 
   void requestDistributeNodes();
-  void distributeNodes(QList<Types::AlignmentNode> items);
+  void distributeNodes(const QList<Types::AlignmentNode>& items);
   void distributeNodeGroupVertically(QList<NodeItem*> nodes);
   void distributeNodeGroupHorizontally(QList<NodeItem*> nodes);
 
@@ -566,7 +566,7 @@ private:
   void createTransitionContextMenu(QMenu* menu, const QList<NodeItem*>& items);                    /// Creates a context menu for transitions.
 
   bool isParentSelected(NodeItem* node);  /// Checks if the parent of a node is selected.
-  void pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode, QList<CopiedNode> nodes,
+  void pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode, const QList<CopiedNode>& nodes,
                         bool relative);  /// Pastes copied items at a specified position.
 
   VoidResult loadFromSave(const QVector<std::shared_ptr<INode>>& nodes, NodeItem* parent);  /// Loads nodes and their children from save information.

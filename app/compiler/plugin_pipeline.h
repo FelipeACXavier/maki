@@ -18,12 +18,11 @@ class PipelineActionRegistry;
 class PluginPipeline : public QObject
 {
   Q_OBJECT
-
 public:
-  PluginPipeline(Pipeline* pipeline, QObject* parent = nullptr);
+  explicit PluginPipeline(Pipeline* pipeline, QObject* parent = nullptr);
   ~PluginPipeline();
 
-  VoidResult run(const PipelineGraph& graph, PipelineContext& context, bool clearCache);
+  VoidResult run(const PipelineGraph& graph, const PipelineContext& context, bool clearCache);
 
   PipelineActionRegistry* registry() const;
   bool isRunning() const;
