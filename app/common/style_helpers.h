@@ -84,6 +84,15 @@ QString ToLabel(const std::string& str);
 QPixmap applyColorToIcon(const QString& path, const QColor& color);
 
 /**
+ * @brief Applies a color to an icon.
+ *
+ * @param pixmap The pixmap of the icon.
+ * @param color The color to apply.
+ * @return QPixmap The colored icon.
+ */
+QPixmap applyColorToIcon(QPixmap pixmap, const QColor& color);
+
+/**
  * @brief Adds a colored icon to a QIcon.
  *
  * @param path The path to the icon.

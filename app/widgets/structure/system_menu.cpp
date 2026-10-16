@@ -156,7 +156,7 @@ VoidResult SystemMenu::onNodeModified(const QString& flowId, NodeItem* node)
   return VoidResult();
 }
 
-VoidResult SystemMenu::onNodeSelected(const QString& flowId, NodeItem* node, bool selected)
+VoidResult SystemMenu::onNodeSelected(const QString& /* flowId */, NodeItem* /* node */, bool /* selected */)
 {
   return VoidResult();
 }
@@ -173,7 +173,7 @@ VoidResult SystemMenu::onFlowAdded(PFlow flow, NodeItem* node)
   if (exists)
     return VoidResult();
 
-  LOG_INFO("Adding flow: {} to {}", flow->name(), node->nodeType());
+  LOG_INFO("Adding flow: {} ({}) to {}", flow->name(), flow->id(), node->nodeType());
 
   auto parent = getOrCreateChildGroup(node->id(), Roles::Flows);
   if (!parent)

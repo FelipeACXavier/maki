@@ -40,6 +40,7 @@ file(GLOB WIDGET_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/widgets/dialogs/*.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/widgets/validators/*.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/widgets/controls/*.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/widgets/editor/*.cpp
 )
 file(GLOB COMPILER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/compiler/*.cpp)
 

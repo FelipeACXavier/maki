@@ -33,6 +33,7 @@ namespace maki
 class SearchWidget;
 class MissionParameterWidget;
 class TypeEditor;
+class EditorWorkspace;
 }  // namespace maki
 
 /**
@@ -73,9 +74,9 @@ protected:
   ExecuteButton* mPipelineRun;                             /// Pointer to the generator option combo box.
   oclero::qlementine::LoadingSpinner* mGenerationSpinner;  /// Pointer to the generation spinner.
 
-  QSplitter* mCentralSplitter;     /// Pointer to the central splitter.
-  QTabWidget* mCanvasPanel;        /// Pointer to the canvas panel tab widget.
-  QPushButton* mBrowserTabButton;  /// Pointer to the browser tab button.
+  QSplitter* mCentralSplitter;              /// Pointer to the central splitter.
+  maki::EditorWorkspace* mEditorWorkspace;  /// Pointer to the canvas/editor workspace widget.
+  QPushButton* mBrowserTabButton;           /// Pointer to the browser tab button.
 
   // BadgedTabWidget* mBottomPanel;
   QWidget* mBottomContainer;

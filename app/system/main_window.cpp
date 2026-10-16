@@ -63,6 +63,8 @@
 #include "widgets/controls/capability_call_selector.h"
 #include "widgets/dialogs/prompt.h"
 #include "widgets/dialogs/text_prompt.h"
+#include "widgets/editor/editor_tab_group.h"
+#include "widgets/editor/editor_workspace.h"
 #include "widgets/language_manager.h"
 #include "widgets/log_table_widget.h"
 #include "widgets/notification_manager.h"
@@ -144,7 +146,7 @@ VoidResult MainWindow::start()
   mPipeline = new Pipeline(this);
   mPluginPipeline = new maki::PluginPipeline(processPipeline, this);
   mLogger = new Logger(this);
-  mNotificationManager = new NotificationManager(mCanvasPanel, this);
+  mNotificationManager = new NotificationManager(mEditorWorkspace, this);
   mPluginManager = std::make_unique<PluginManager>(mPluginPipeline->registry(), mPipeline, this);
 
   mPluginTab = new PluginTab(mSpecialTabsMenu, this);
@@ -271,7 +273,13 @@ void MainWindow::startTourGuide(bool runningOnStartUp)
   };
 
   auto steps = std::make_shared<Steps>();
-  auto canvasView = qobject_cast<CanvasView*>(mCanvasPanel->widget(0));
+  auto canvasView = qobject_cast<CanvasView*>(mEditorWorkspace->activeEditor());
+  if (!canvasView)
+  {
+    LOG_DEBUG("Failed to focus on active editor");
+    return;
+  }
+
   auto structureCanvas = qobject_cast<Canvas*>(canvasView->scene());
 
   steps->showWelcome = mTourGuide->addStep(nullptr, tr("Welcome to %1").arg(Config::APPLICATION_NAME),
@@ -399,18 +407,22 @@ void MainWindow::startTourGuide(bool runningOnStartUp)
   });
   connect(
     structureCanvas, &Canvas::openFlow, this,
-    [this, callLibrary, callNode, steps](std::shared_ptr<FlowSaveInfo> /* flow */, const QString& /* nodeId */, const maki::FocusProperties& /* properties */,
-                                         int& /* createdIndex */) {
+    [this, callLibrary, callNode, steps](std::shared_ptr<FlowSaveInfo> flow, const QString& nodeId, const maki::FocusProperties& /* properties */
+    ) {
       if (!mTourGuide->isActive())
         return;
 
       if (mTourGuide->currentStepId() != steps->highlightControl)
         return;
 
-      if (mCanvasPanel->count() != 2)
+      const QString tabId = QString::fromStdString(std::format("{}_{}", flow->getid(), nodeId));
+      auto behaviourView = qobject_cast<CanvasView*>(mEditorWorkspace->findEditor(tabId));
+      if (!behaviourView)
+      {
+        LOG_DEBUG("Could not find editor: {}", tabId);
         return;
+      }
 
-      auto behaviourView = qobject_cast<CanvasView*>(mCanvasPanel->widget(1));
       auto behaviorCanvas = qobject_cast<Canvas*>(behaviourView->scene());
 
       steps->showBehaviourCanvas = mTourGuide->insertStep(steps->end, behaviourView, tr("Behavior Canvas"),
@@ -587,16 +599,16 @@ void MainWindow::onThemeChanged(const AppearanceSettings& settings, bool initial
       qobject_cast<LibraryScene*>(library->scene())->themeChanged();
 
   // Update all items in all canvases
-  for (int i = 0; i < mCanvasPanel->count(); ++i)
-  {
-    QWidget* w = mCanvasPanel->widget(i);
-    if (auto view = qobject_cast<CanvasView*>(w))
+  for (auto* editor : mEditorWorkspace->editors())
+    if (auto* view = qobject_cast<CanvasView*>(editor))
     {
       view->onSettingsChanged(settings);
-      qobject_cast<Canvas*>(view->scene())->themeChanged();
-      qobject_cast<Canvas*>(view->scene())->settingsChanged(settings);
+      if (auto* scene = qobject_cast<Canvas*>(view->scene()))
+      {
+        scene->themeChanged();
+        scene->settingsChanged(settings);
+      }
     }
-  }
 
   if (mPluginTab)
     mPluginTab->onThemeChanged();
@@ -605,7 +617,7 @@ void MainWindow::onThemeChanged(const AppearanceSettings& settings, bool initial
   mMenuBar->setNativeMenuBar(settings.nativeMenuBar);
   if (!initialConfig && menuBarChanged)
   {
-    if (maki::confirmationPrompt("A full restart is required to for the menu bar to be updated", "Restart now", "Restart later"))
+    if (maki::confirmationPrompt("A full restart is required for the menu bar to be updated", "Restart now", "Restart later"))
       onActionRestart();
   }
 }
@@ -678,12 +690,15 @@ void MainWindow::onSettingsChanged(bool initialSetup)
 
 void MainWindow::startUI()
 {
-  CanvasView* currentCanvas = static_cast<CanvasView*>(mCanvasPanel->currentWidget());
-  StructureCanvas* structureCanvas = new StructureCanvas(Config::MAIN_CANVAS, mRouter, currentCanvas);
+  CanvasView* canvasView = new CanvasView(mEditorWorkspace);
+  StructureCanvas* structureCanvas = new StructureCanvas(Config::MAIN_CANVAS, mRouter, canvasView);
   bindCanvas(structureCanvas);
 
   mActiveCanvas = structureCanvas;
-  currentCanvas->setScene(structureCanvas);
+  canvasView->setScene(structureCanvas);
+
+  // Add the editor to the canvas and make sure it is active
+  mEditorWorkspace->addEditor(Config::MAIN_CANVAS, canvasView, tr("System"), QIcon(":/icons/structure.svg"), false);
 
   mUndoGroup->addStack(structureCanvas->undoStack());
   mUndoGroup->setActiveStack(structureCanvas->undoStack());
@@ -822,8 +837,8 @@ void MainWindow::bind()
   mAboutAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_F1));
 
   // Internal actions =============================================================
-  connect(mCanvasPanel, &QTabWidget::currentChanged, this, &MainWindow::onCanvasTabChanged);
-  connect(mCanvasPanel, &QTabWidget::tabCloseRequested, this, &MainWindow::closeCanvasTab);
+  connect(mEditorWorkspace, &maki::EditorWorkspace::activeEditorChanged, this, &MainWindow::onCanvasTabChanged);
+  connect(mEditorWorkspace, &maki::EditorWorkspace::editorCloseRequested, this, &MainWindow::closeCanvasTab);
 
   connect(rootCanvas(), &Canvas::openFlow, this, &MainWindow::onOpenFlow);
   connect(rootCanvas(), &Canvas::flowAdded, this, &MainWindow::onFlowAdded);
@@ -878,7 +893,7 @@ void MainWindow::bind()
       QJsonObject body;
       body["shape"] = "circle";
       body["textColor"] = "#FFFFFF";
-      body["backgroundColor"] = "#202020";
+      body["backgroundColor"] = "#D1D1D1";
       body["width"] = 100;
       body["height"] = 100;
       body["icon"] = plugin.plugin->manifest().iconPath();
@@ -1051,10 +1066,14 @@ void MainWindow::bindShortcuts()
       mBottomNavigation->setCurrentIndex(next < 0 ? mBottomNavigation->itemCount() - 1 : next);
       return;
     }
-    else if (auto* tabWidget = IN_TYPE(fw, QTabWidget); tabWidget == mCanvasPanel)
+    else if (auto* tabWidget = IN_TYPE(fw, maki::EditorWorkspace); tabWidget == mEditorWorkspace)
     {
-      int next = mCanvasPanel->currentIndex() - 1;
-      mCanvasPanel->setCurrentIndex(next < 0 ? mCanvasPanel->count() - 1 : next);
+      auto* group = mEditorWorkspace->activeGroup();
+      if (!group)
+        return;
+
+      int next = group->currentIndex() - 1;
+      group->setCurrentIndex(next < 0 ? group->count() - 1 : next);
       return;
     }
   });
@@ -1077,10 +1096,14 @@ void MainWindow::bindShortcuts()
       mBottomNavigation->setCurrentIndex(next >= mBottomNavigation->itemCount() ? 0 : next);
       return;
     }
-    else if (auto* tabWidget = IN_TYPE(fw, QTabWidget); tabWidget == mCanvasPanel)
+    else if (auto* tabWidget = IN_TYPE(fw, maki::EditorWorkspace); tabWidget == mEditorWorkspace)
     {
-      int next = mCanvasPanel->currentIndex() + 1;
-      mCanvasPanel->setCurrentIndex(next >= mCanvasPanel->count() ? 0 : next);
+      auto* group = mEditorWorkspace->activeGroup();
+      if (!group)
+        return;
+
+      int next = group->currentIndex() + 1;
+      group->setCurrentIndex(next >= group->count() ? 0 : next);
       return;
     }
   });
@@ -1091,9 +1114,9 @@ void MainWindow::bindShortcuts()
       return;
 
     LOG_TRACE("ALT+C, focused on: {}", fw->metaObject()->className());
-    if (auto* tabWidget = IN_TYPE(fw, QTabWidget); tabWidget == mCanvasPanel)
+    if (auto* tabWidget = IN_TYPE(fw, maki::EditorWorkspace); tabWidget == mEditorWorkspace)
     {
-      if (auto* view = qobject_cast<CanvasView*>(mCanvasPanel->currentWidget()); view)
+      if (auto* view = qobject_cast<CanvasView*>(mEditorWorkspace->activeEditor()); view)
         qobject_cast<Canvas*>(view->scene())->centerOnNodes();
     }
   });
@@ -1104,9 +1127,9 @@ void MainWindow::bindShortcuts()
       return;
 
     LOG_TRACE("CTRL+A, focused on: {}", fw->metaObject()->className());
-    if (auto* tabWidget = IN_TYPE(fw, QTabWidget); tabWidget == mCanvasPanel)
+    if (auto* tabWidget = IN_TYPE(fw, maki::EditorWorkspace); tabWidget == mEditorWorkspace)
     {
-      if (auto* view = qobject_cast<CanvasView*>(mCanvasPanel->currentWidget()); view)
+      if (auto* view = qobject_cast<CanvasView*>(mEditorWorkspace->activeEditor()); view)
         qobject_cast<Canvas*>(view->scene())->selectAll();
     }
   });
@@ -1173,8 +1196,11 @@ Canvas* MainWindow::canvas() const
 
 Canvas* MainWindow::rootCanvas() const
 {
-  auto view = static_cast<CanvasView*>(mCanvasPanel->widget(0));
-  return static_cast<Canvas*>(view->scene());
+  auto* view = qobject_cast<CanvasView*>(mEditorWorkspace->findEditor(Config::MAIN_CANVAS));
+  if (!view)
+    return nullptr;
+
+  return qobject_cast<Canvas*>(view->scene());
 }
 
 VoidResult MainWindow::loadElements()
@@ -1328,15 +1354,15 @@ void MainWindow::onActionNew(const QString& templateName)
   // Gotta make sure we don't save over an old file
   mSaveHandler->newFileCreated();
 
-  for (int i = 0; i < mCanvasPanel->count(); ++i)
+  for (auto* editor : mEditorWorkspace->editors())
   {
-    QWidget* w = mCanvasPanel->widget(i);
-    if (auto view = qobject_cast<CanvasView*>(w))
+    if (auto view = qobject_cast<CanvasView*>(editor))
       if (auto* scene = qobject_cast<Canvas*>(view->scene()))
         scene->loadFromSave(emptySave);
 
-    if (i != 0)
-      closeCanvasTab(i);
+    const auto tabId = mEditorWorkspace->editorId(editor);
+    if (tabId != Config::MAIN_CANVAS)
+      closeCanvasTab(editor);
   }
 
   maki::TypeRegistry::instance().removeUserTypes();
@@ -1457,15 +1483,14 @@ void MainWindow::onActionDeletePipeline(const QString& pipelineId)
   }
 
   // Check if the pipeline is currently open
-  for (int i = 1; i < mCanvasPanel->count(); ++i)
+  for (auto* editor : mEditorWorkspace->editors())
   {
-    auto prop = mCanvasPanel->widget(i)->property(ConfigKeys::ID.toUtf8());
-    if (!prop.isValid() || prop.toString() != pipeline->getid())
+    auto editorId = mEditorWorkspace->editorId(editor);
+    if (editorId != pipeline->getid())
       continue;
 
     // Change to the previous tab and remove the pipeline tab
-    mCanvasPanel->setCurrentIndex(qMax<int>(0, i - 1));
-    mCanvasPanel->removeTab(i);
+    closeCanvasTab(editor);
     break;
   }
 
@@ -1507,14 +1532,14 @@ void MainWindow::onActionRenamePipeline(const QString& pipelineId)
   mPipelineRun->addOption(pipeline->getname(), pipeline->getid());
   mSystemMenu->onPipelineAdded(pipeline);
 
-  for (int i = 1; i < mCanvasPanel->count(); ++i)
+  for (const auto* editor : mEditorWorkspace->editors())
   {
-    auto prop = mCanvasPanel->widget(i)->property(ConfigKeys::ID.toUtf8());
-    if (prop.isValid() && prop.toString() == pipeline->getid())
-    {
-      mCanvasPanel->setTabText(i, pipeline->getname());
-      break;
-    }
+    auto editorId = mEditorWorkspace->editorId(editor);
+    if (editorId != pipeline->getid())
+      continue;
+
+    mEditorWorkspace->setEditorTitle(editorId, pipeline->getname());
+    break;
   }
 
   NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "{}", tr("Pipeline renamed successfully"));
@@ -1557,19 +1582,17 @@ void MainWindow::onActionEditPipeline(const QString& pipelineId)
   }
 
   // Check if the pipeline is already open
-  for (int i = 1; i < mCanvasPanel->count(); ++i)
+  for (const auto* editor : mEditorWorkspace->editors())
   {
-    auto prop = mCanvasPanel->widget(i)->property(ConfigKeys::ID.toUtf8());
-    if (prop.isValid() && prop.toString() == pipeline->getid())
-    {
-      mCanvasPanel->setCurrentIndex(i);
-      return;
-    }
+    auto editorId = mEditorWorkspace->editorId(editor);
+    if (editorId != pipeline->getid())
+      continue;
+
+    mEditorWorkspace->activateEditor(editorId);
+    return;
   }
 
-  CanvasView* newView = new CanvasView(mCanvasPanel);
-  newView->setProperty(ConfigKeys::ID.toUtf8(), pipeline->getid());
-
+  CanvasView* newView = new CanvasView(mEditorWorkspace);
   PipelineCanvas* pipelineCanvas = new PipelineCanvas(pipeline, mRouter, newView);
   bindCanvas(pipelineCanvas);
   newView->setScene(pipelineCanvas);
@@ -1581,8 +1604,8 @@ void MainWindow::onActionEditPipeline(const QString& pipelineId)
   mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::PIPELINE), true);
   mPalette->setCurrentIndex(libraryTypeToIndex(Types::LibraryTypes::PIPELINE));
 
-  mCanvasPanel->addTab(newView, QIcon(":/icons/pipeline.svg"), pipeline->getname());
-  mCanvasPanel->setCurrentWidget(newView);
+  mEditorWorkspace->addEditor(pipelineId, newView, pipeline->getname(), QIcon(":/icons/pipeline.svg"), true);
+  mEditorWorkspace->activateEditor(pipelineId);
 }
 
 VoidResult MainWindow::onActionSave()
@@ -1590,7 +1613,7 @@ VoidResult MainWindow::onActionSave()
   if (!mSaveHandler)
     return VoidResult::Failed("System not initialized");
 
-  if (CanvasView* view = qobject_cast<CanvasView*>(mCanvasPanel->widget(0)))
+  if (CanvasView* view = qobject_cast<CanvasView*>(mEditorWorkspace->findEditor(Config::MAIN_CANVAS)))
   {
     if (auto* scene = qobject_cast<Canvas*>(view->scene()))
     {
@@ -1675,11 +1698,7 @@ void MainWindow::onFileLoaded(const QString& file, const SaveInfo& info, const Q
     mSettingsManager->addRecentFile(file);
 
   // Close all tabs except the first
-  for (int i = 1; i < mCanvasPanel->count(); ++i)
-    closeCanvasTab(i);
-
-  // Force the structural canvas
-  mCanvasPanel->setCurrentIndex(0);
+  mEditorWorkspace->closeAllExcept(Config::MAIN_CANVAS);
 
   // Clear the storage so it can be populated by the canvas
   SaveInfo::instance() = info;
@@ -1787,9 +1806,9 @@ void MainWindow::onNodeModified(Canvas* canvas, NodeItem* node)
   LOG_WARN_ON_FAILURE(mSystemMenu->onNodeModified(canvas->id(), node));
 }
 
-void MainWindow::onCanvasTabChanged(int index)
+void MainWindow::onCanvasTabChanged(QWidget* widget)
 {
-  CanvasView* newCanvas = qobject_cast<CanvasView*>(mCanvasPanel->widget(index));
+  CanvasView* newCanvas = qobject_cast<CanvasView*>(widget);
   if (!newCanvas)
     return;
 
@@ -1822,79 +1841,49 @@ void MainWindow::onCanvasTabChanged(int index)
 
   // Select the first available node
   auto existing = maki::findIfPtr(canvas()->selectedItems(), [](const auto& opt) { return opt->type() == NodeItem::Type; });
-
   if (auto* nodeItem = qgraphicsitem_cast<NodeItem*>(existing))
     onNodeSelected(nodeItem, true);
 }
 
-void MainWindow::closeCanvasTab(int index)
+void MainWindow::closeCanvasTab(QWidget* page)
 {
-  QWidget* page = mCanvasPanel->widget(index);
-  if (!page)
-    return;
-
+  const auto editorId = mEditorWorkspace->editorId(page);
   if (CanvasView* closedCanvas = qobject_cast<CanvasView*>(page))
   {
     auto toBeRemoved = qobject_cast<Canvas*>(closedCanvas->scene());
     mUndoGroup->removeStack(toBeRemoved->undoStack());
-    if (closedCanvas->scene() == canvas())
-    {
-      unbindCanvas(toBeRemoved);
-      if (index > 0)
-      {
-        // The previous tab becomes the new active tab
-        if (auto* newCanvas = qobject_cast<CanvasView*>(mCanvasPanel->widget(index - 1)))
-        {
-          mActiveCanvas = qobject_cast<Canvas*>(newCanvas->scene());
-          if (canvas())
-          {
-            if (canvas()->type() == Types::LibraryTypes::PIPELINE)
-            {
-              // If we are closing a pipeline canvas, then we must hide it
-              mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::STRUCTURAL), false);
-              mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::BEHAVIOUR), false);
-              mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::PIPELINE), true);
-            }
-            else
-            {
-              mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::STRUCTURAL), true);
-              mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::BEHAVIOUR), true);
-              mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::PIPELINE), false);
-            }
 
-            auto libIndex = libraryTypeToIndex(canvas()->type());
-            mPalette->setCurrentIndex(libIndex);
-          }
-        }
-      }
-    }
+    if (mPropertiesMenu)
+      mPropertiesMenu->onNodeSelected(nullptr, false);
+
+    // If we are closing the currently focused canvas, we need to unbind its callbacks
+    if (toBeRemoved->id() == canvas()->id())
+      unbindCanvas(toBeRemoved);
   }
-  // else if (PluginView* tab = qobject_cast<PluginView*>(mCanvasPanel->widget(index)))
-  // {
-  //   Q_UNUSED(tab);
-  // }
-  else if (QPlainTextEdit* tab = qobject_cast<QPlainTextEdit*>(page))
+  else if (PluginView* pluginView = qobject_cast<PluginView*>(page))
+  {
+    Q_UNUSED(pluginView);
+  }
+  else if (QPlainTextEdit* textView = qobject_cast<QPlainTextEdit*>(page))
   {
     LOG_DEBUG("Closing editor tab");
-    Q_UNUSED(tab);
+    Q_UNUSED(textView);
   }
-  else if (ProcessTab* tab = qobject_cast<ProcessTab*>(page))
+  else if (ProcessTab* processView = qobject_cast<ProcessTab*>(page))
   {
-    tab->hide();
+    processView->hide();
   }
 
-  mCanvasPanel->removeTab(index);
-  page->deleteLater();
+  mEditorWorkspace->closeEditor(editorId);
 }
 
-void MainWindow::onOpenFlow(std::shared_ptr<FlowSaveInfo> flow, const QString& nodeId, const maki::FocusProperties& properties, int& createdIndex)
+void MainWindow::onOpenFlow(std::shared_ptr<FlowSaveInfo> flow, const QString& nodeId, const maki::FocusProperties& properties)
 {
   if (!flow)
   {
     if (!mPropertiesMenu)
     {
       LOG_WARNING("System not initialized");
-      createdIndex = -1;
       return;
     }
 
@@ -1902,7 +1891,6 @@ void MainWindow::onOpenFlow(std::shared_ptr<FlowSaveInfo> flow, const QString& n
     if (!node)
     {
       LOG_WARNING("Could not find task node with id: {}", nodeId);
-      createdIndex = -1;
       return;
     }
 
@@ -1910,7 +1898,6 @@ void MainWindow::onOpenFlow(std::shared_ptr<FlowSaveInfo> flow, const QString& n
     if (!ret.IsSuccess())
     {
       LOG_WARNING("Could not create flow for node {}: {}", nodeId, ret.ErrorMessage());
-      createdIndex = -1;
       return;
     }
 
@@ -1920,25 +1907,23 @@ void MainWindow::onOpenFlow(std::shared_ptr<FlowSaveInfo> flow, const QString& n
   if (!flow)
   {
     LOG_INFO("No name provided, skipping flow creation");
-    createdIndex = -1;
     return;
   }
 
   // Check if the flow is already open in some tab
   const QString tabId = QString::fromStdString(std::format("{}_{}", flow->getid(), nodeId));
-  for (int i = 1; i < mCanvasPanel->count(); ++i)
+  for (const auto* editor : mEditorWorkspace->editors())
   {
-    auto prop = mCanvasPanel->widget(i)->property(ConfigKeys::ID.toUtf8());
-    LOG_DEBUG("Trying to open: {} vs {}", prop.toString(), tabId);
-    if (!prop.isValid() || prop.toString() != tabId)
+    auto editorId = mEditorWorkspace->editorId(editor);
+    LOG_DEBUG("Trying to open: {} vs {}", editorId, tabId);
+    if (editorId != tabId)
       continue;
 
-    mCanvasPanel->setCurrentIndex(i);
-    createdIndex = i;
+    mEditorWorkspace->activateEditor(editorId);
     return;
   }
 
-  CanvasView* newView = new CanvasView(mCanvasPanel);
+  CanvasView* newView = new CanvasView(mEditorWorkspace);
   BehaviourCanvas* behaviourCanvas = new BehaviourCanvas(flow, nodeId, mRouter, newView);
   bindCanvas(behaviourCanvas);
   behaviourCanvas->setupInitialNodes();
@@ -1948,10 +1933,8 @@ void MainWindow::onOpenFlow(std::shared_ptr<FlowSaveInfo> flow, const QString& n
   auto index = libraryTypeToIndex(behaviourCanvas->type());
   mPalette->setCurrentIndex(index);
 
-  LOG_DEBUG("Set tab property to {}", tabId);
-  newView->setProperty(ConfigKeys::ID.toUtf8(), tabId);
-  createdIndex = mCanvasPanel->addTab(newView, QIcon(":/icons/behaviour.svg"), flow->getname());
-  mCanvasPanel->setCurrentWidget(newView);
+  mEditorWorkspace->addEditor(tabId, newView, flow->getname(), QIcon(":/icons/behaviour.svg"), true);
+  mEditorWorkspace->activateEditor(tabId);
 
   // Populate after creation
   behaviourCanvas->populate(*flow);
@@ -1970,15 +1953,10 @@ void MainWindow::focusOn(const QString& nodeId, const QString& flowId, const mak
       return;
     }
 
-    int index = -1;
-    onOpenFlow(flow->config(), node->id(), properties, index);
-    if (index < 0)
-    {
-      LOG_WARNING("Could not open flow with id: {}", flowId);
-      return;
-    }
+    onOpenFlow(flow->config(), node->id(), properties);
 
-    if (auto view = qobject_cast<CanvasView*>(mCanvasPanel->widget(index)); view)
+    const QString tabId = QString::fromStdString(std::format("{}_{}", flowId, nodeId));
+    if (const auto* view = qobject_cast<CanvasView*>(mEditorWorkspace->findEditor(tabId)))
       qobject_cast<Canvas*>(view->scene())->focusOnNode(nodeId, properties);
   }
   // If we are focusing on a structural node
@@ -1990,17 +1968,16 @@ void MainWindow::focusOn(const QString& nodeId, const QString& flowId, const mak
       if (!flow)
         return;
 
-      int index = -1;
-      onOpenFlow(flow->config(), nodeId, properties, index);
-      if (index < 0)
-        return;
+      onOpenFlow(flow->config(), nodeId, properties);
 
-      if (auto* view = qobject_cast<CanvasView*>(mCanvasPanel->widget(index)); view)
+      const QString tabId = QString::fromStdString(std::format("{}_{}", flow->id(), nodeId));
+      if (const auto* view = qobject_cast<CanvasView*>(mEditorWorkspace->findEditor(tabId)))
         qobject_cast<Canvas*>(view->scene())->focusOnNode(nodeId, properties);
     }
     else
     {
-      mCanvasPanel->setCurrentIndex(0);
+      // mCanvasPanel->setCurrentIndex(0);
+      mEditorWorkspace->activateEditor(Config::MAIN_CANVAS);
       rootCanvas()->focusOnNode(nodeId, properties);
     }
   }
@@ -2011,44 +1988,41 @@ void MainWindow::focusOn(const QString& nodeId, const QString& flowId, const mak
     if (!flow)
       return;
 
-    int index = -1;
-    onOpenFlow(flow->config(), node->id(), properties, index);
-    if (index < 0 || index >= mCanvasPanel->count())
-      return;
+    onOpenFlow(flow->config(), node->id(), properties);
 
-    if (auto view = qobject_cast<CanvasView*>(mCanvasPanel->widget(index)); view)
-      qobject_cast<Canvas*>(view->scene())->centerOnNodes();
+    const QString tabId = QString::fromStdString(std::format("{}_{}", flow->id(), node->id()));
+    if (const auto* view = qobject_cast<CanvasView*>(mEditorWorkspace->findEditor(tabId)))
+      qobject_cast<Canvas*>(view->scene())->focusOnNode(nodeId, properties);
   }
 }
 
 void MainWindow::addPluginTab(const QString& name, PluginView* view)
 {
-  mCanvasPanel->addTab(view, QIcon(":/icons/plugin.svg"), name);
-  mCanvasPanel->setCurrentWidget(view);
+  mEditorWorkspace->addEditor(name, view, name, QIcon(":/icons/plugin.svg"), true);
+  mEditorWorkspace->activateEditor(name);
 }
 
 void MainWindow::removePluginTab(PluginView* view)
 {
-  int index = mCanvasPanel->indexOf(view);
-  if (index >= 0)
-    mCanvasPanel->removeTab(index);
+  closeCanvasTab(view);
 }
 
 void MainWindow::addEditorTab(QPlainTextEdit* editorTab)
 {
-  for (int i = 0; i < mCanvasPanel->count(); ++i)
+  for (auto* editor : mEditorWorkspace->editors())
   {
-    if (auto* editor = qobject_cast<QPlainTextEdit*>(mCanvasPanel->widget(i)))
+    if (auto* textEditor = qobject_cast<QPlainTextEdit*>(editor))
     {
-      editor->setPlainText(editorTab->toPlainText());
-      mCanvasPanel->setTabText(i, editorTab->accessibleName());
-      mCanvasPanel->setCurrentWidget(editor);
+      const auto editorId = mEditorWorkspace->editorId(editor);
+      textEditor->setPlainText(editorTab->toPlainText());
+      mEditorWorkspace->setEditorTitle(editorId, editorTab->accessibleName());
+      mEditorWorkspace->activateEditor(editorId);
       return;
     }
   }
 
-  mCanvasPanel->addTab(editorTab, QIcon(":/icons/file.svg"), editorTab->accessibleName());
-  mCanvasPanel->setCurrentWidget(editorTab);
+  mEditorWorkspace->addEditor("text_editor", editorTab, editorTab->accessibleName(), QIcon(":/icons/file.svg"));
+  mEditorWorkspace->activateEditor("text_editor");
 }
 
 void MainWindow::onFlowAdded(PFlow flow, NodeItem* node)
@@ -2059,24 +2033,8 @@ void MainWindow::onFlowAdded(PFlow flow, NodeItem* node)
 
 void MainWindow::onFlowRemoved(const QString& flowId, NodeItem* node)
 {
-  if (canvas()->id() == flowId)
-  {
-    int oldTab = mCanvasPanel->currentIndex();
-    mCanvasPanel->setCurrentIndex(oldTab - 1);
-    mCanvasPanel->removeTab(oldTab);
-  }
-  else
-  {
-    const QString tabId = QString::fromStdString(std::format("{}_{}", flowId, node ? node->id() : ""));
-    for (int i = 0; i < mCanvasPanel->count(); ++i)
-    {
-      auto prop = mCanvasPanel->widget(i)->property(ConfigKeys::ID.toUtf8());
-      if (!prop.isValid() || prop.toString() != tabId)
-        continue;
-
-      mCanvasPanel->removeTab(i);
-    }
-  }
+  const QString tabId = QString::fromStdString(std::format("{}_{}", flowId, node ? node->id() : ""));
+  mEditorWorkspace->closeEditor(tabId);
 
   LOG_WARN_ON_FAILURE(mSystemMenu->onFlowRemoved(flowId, node->id()));
   LOG_WARN_ON_FAILURE(mPropertiesMenu->onFlowRemoved(flowId, node));

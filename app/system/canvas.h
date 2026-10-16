@@ -23,6 +23,11 @@ class TransitionItem;
 class ConfigurationTable;
 class EdgeRouter;
 
+namespace maki
+{
+class EditorWorkspace;
+}
+
 /**
  * @brief The Canvas class represents the main drawing area for nodes and transitions.
  */
@@ -276,7 +281,7 @@ public:
 
   PFlow getFlowWithNode(const QString& nodeId) const;
 
-  QTabWidget* canvasTabWidget() const;
+  maki::EditorWorkspace* canvasTabWidget() const;
   Canvas* requestNewFlow(const QString& nodeId);
 
   /**
@@ -342,7 +347,7 @@ signals:
    * @param flow Pointer to the opened flow.
    * @param node Pointer to the node associated with the flow.
    */
-  void openFlow(std::shared_ptr<FlowSaveInfo> flow, const QString& nodeId, const maki::FocusProperties& properties, int& createdIndex);
+  void openFlow(std::shared_ptr<FlowSaveInfo> flow, const QString& nodeId, const maki::FocusProperties& properties);
 
   /**
    * @brief Emitted when the user requests to focus on a node from the Canvas.

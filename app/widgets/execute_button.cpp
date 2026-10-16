@@ -35,6 +35,9 @@ ExecuteButton::ExecuteButton(QWidget* parent)
 
 void ExecuteButton::reset()
 {
+  for (const auto& option : getPipelineNames())
+    emit deleteOptionRequested(option.id);
+
   DropDownButton::reset();
   setupDone();
 }

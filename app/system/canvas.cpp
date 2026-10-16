@@ -43,6 +43,7 @@
 #include "widgets/controls/capability_selector.h"
 #include "widgets/controls/suggestion_menu.h"
 #include "widgets/controls/task_node_menu.h"
+#include "widgets/editor/editor_workspace.h"
 
 static constexpr auto MAKI_CLIPBOARD_MIME = "application/x-maki-copied-nodes";
 
@@ -1918,10 +1919,7 @@ void Canvas::onNodeHovered(NodeItem* node, bool entered)
       const auto& flows = node->flows();
       auto option = std::find_if(flows.cbegin(), flows.cend(), [](const auto& opt) { return opt->name() == Constants::MAIN_FLOW; });
       if (option != flows.end())
-      {
-        int placeholder;
-        emit openFlow((*option)->config(), node->id(), maki::FocusProperties::internal(), placeholder);
-      }
+        emit openFlow((*option)->config(), node->id(), maki::FocusProperties::internal());
     });
     connect(control, &maki::ControlWidget::activated, this, [this, control] { emit controlCreated(control); });
     connect(control, &maki::ControlWidget::dismissed, this, [this, control] { emit controlDismissed(control); });
@@ -2079,10 +2077,7 @@ void Canvas::onFlowSelected(const QString& flowId, const QString& nodeId)
 
   auto flow = node->getFlow(flowId);
   if (flow)
-  {
-    int placeholder;
-    emit openFlow(flow->config(), node->id(), maki::FocusProperties::internal(), placeholder);
-  }
+    emit openFlow(flow->config(), node->id(), maki::FocusProperties::internal());
 }
 
 void Canvas::onFlowRemoved(const QString& flowId, const QString& nodeId)
@@ -2253,8 +2248,7 @@ void Canvas::createSuggestedNode(const QString& nodeType, NodeItem* sourceNode)
   }
 
   NodeSaveInfo info(*config);
-  constexpr qreal HorizontalOffset = 20.0;
-  QPointF position = sourceNode->sceneBoundingRect().topRight() + QPointF(HorizontalOffset, 0.0);
+  QPointF position = sourceNode->sceneBoundingRect().topRight();
 
   // If the source is inside another structural node, the suggested node
   // should normally be inserted into that same parent.
@@ -2282,8 +2276,6 @@ std::pair<NodeItem*, PFlow> Canvas::getFlow(const QString& flowId) const
   return std::make_pair(nullptr, nullptr);
 }
 
-#include <algorithm>
-
 PFlow Canvas::getFlowWithNode(const QString& nodeId) const
 {
   for (auto* item : items())
@@ -2304,35 +2296,23 @@ PFlow Canvas::getFlowWithNode(const QString& nodeId) const
   return nullptr;
 }
 
-QTabWidget* Canvas::canvasTabWidget() const
+maki::EditorWorkspace* Canvas::canvasTabWidget() const
 {
-  QObject* current = parentView();
-  while (current)
-  {
-    if (auto* tabWidget = qobject_cast<QTabWidget*>(current))
+  for (QObject* current = parentView(); current; current = current->parent())
+    if (auto* tabWidget = qobject_cast<maki::EditorWorkspace*>(current))
       return tabWidget;
-
-    current = current->parent();
-  }
 
   return nullptr;
 }
 
 Canvas* Canvas::requestNewFlow(const QString& nodeId)
 {
-  int index = -1;
-  emit openFlow(nullptr, nodeId, maki::FocusProperties::internal(), index);
-  if (index < 0)
-  {
-    LOG_WARNING("Could not create the new flow");
-    return nullptr;
-  }
+  emit openFlow(nullptr, nodeId, maki::FocusProperties::internal());
 
   // Get the new flow
   if (auto* tabWidget = canvasTabWidget(); tabWidget)
   {
-    tabWidget->setCurrentIndex(index);
-    if (auto* newView = qobject_cast<CanvasView*>(tabWidget->widget(index)); newView)
+    if (auto* newView = qobject_cast<CanvasView*>(tabWidget->activeEditor()); newView)
       if (auto* canvas = qobject_cast<BehaviourCanvas*>(newView->scene()); canvas)
         return canvas;
   }

@@ -28,9 +28,7 @@
 #include "logging.h"
 #include "process_tab.h"
 #include "style_helpers.h"
-#include "system/canvas_view.h"
-#include "type_registry.h"
-#include "widgets/dropdown_button.h"
+#include "widgets/editor/editor_workspace.h"
 #include "widgets/frame.h"
 #include "widgets/log_table_widget.h"
 #include "widgets/properties/mission_parameter_widget.h"
@@ -72,6 +70,10 @@ void MainWindowLayout::buildMainWindow()
   buildCentralPanel();
   buildRightPanel();
 
+  mMainSplitter->setStretchFactor(0, 1);
+  mMainSplitter->setStretchFactor(1, 10);  // Stretch the canvas as much as possible initially
+  mMainSplitter->setStretchFactor(2, 1);
+
   mainLayout->addWidget(mMainSplitter);
   mCentralWidget->setLayout(mainLayout);
   setCentralWidget(mCentralWidget);
@@ -84,6 +86,9 @@ void MainWindowLayout::buildMainWindow()
 void MainWindowLayout::buildLeftPanel()
 {
   mLeftPanel = new QSplitter(Qt::Vertical, mMainSplitter);
+  mLeftPanel->setMinimumWidth(MINIMUM_MENU_WIDTH);
+  mLeftPanel->setMaximumWidth(MAXIMUM_MENU_WIDTH);
+
   mPalette = new QTabWidget(mLeftPanel);
 
   auto* qlementineStyle = oclero::qlementine::appStyle();
@@ -204,12 +209,12 @@ void MainWindowLayout::buildLeftPanel()
 
 void MainWindowLayout::buildCentralPanel()
 {
-  mCentralSplitter = new QSplitter(Qt::Vertical);
+  mCentralSplitter = new QSplitter(Qt::Vertical, mMainSplitter);
 
   auto* qlementineStyle = oclero::qlementine::appStyle();
   const auto theme = qlementineStyle->theme();
 
-  QWidget* header = new QWidget();
+  QWidget* header = new QWidget(mCentralSplitter);
   QHBoxLayout* headerLayout = new QHBoxLayout(header);
   headerLayout->setContentsMargins(0, 8, 0, 8);  // top/bottom spacing
   headerLayout->setSpacing(5);
@@ -221,6 +226,7 @@ void MainWindowLayout::buildCentralPanel()
   mPipelineRun->setIcon(iconFromTheme("exaile-play"));
   mPipelineRun->setToolTip(tr("Run pipeline"));
 
+  headerLayout->addStretch();
   headerLayout->addWidget(mPipelineRun);
 
   // ---------------------------------------------
@@ -236,16 +242,8 @@ void MainWindowLayout::buildCentralPanel()
   spinnerLayout->addWidget(mGenerationSpinner);
   headerLayout->addWidget(spinnerContainer);
 
-  // ---------------------------------------------
-  mCanvasPanel = new QTabWidget(mCentralSplitter);
-
-  CanvasView* canvasView = new CanvasView(mCanvasPanel);
-
-  mCanvasPanel->addTab(canvasView, QIcon(":/icons/structure.svg"), tr("System"));
-  mCanvasPanel->setCurrentWidget(canvasView);
-
   // Top right buttons
-  QWidget* corner = new QWidget();
+  QWidget* corner = new QWidget(header);
   auto* layout = new QHBoxLayout(corner);
 
   layout->setContentsMargins(0, 0, 0, 0);
@@ -257,10 +255,12 @@ void MainWindowLayout::buildCentralPanel()
   mBrowserTabButton->setToolTip(tr("Show simulation tab"));
   mTranslatable.push_back({mBrowserTabButton, "Show simulation tab", 0, true});
 
-  layout->addWidget(mBrowserTabButton);
+  headerLayout->addStretch();
+  headerLayout->addWidget(mBrowserTabButton);
+  headerLayout->addSpacing(theme.spacing);
 
-  // Add the whole widget to the corner
-  mCanvasPanel->setCornerWidget(corner, Qt::TopRightCorner);
+  // ---------------------------------------------
+  mEditorWorkspace = new maki::EditorWorkspace(mCentralSplitter);
 
   QWidget* canvasContainer = new QWidget(mCentralSplitter);
   QVBoxLayout* canvasLayout = new QVBoxLayout(canvasContainer);
@@ -269,7 +269,7 @@ void MainWindowLayout::buildCentralPanel()
 
   // Add header + tabs
   canvasLayout->addWidget(header);
-  canvasLayout->addWidget(mCanvasPanel);
+  canvasLayout->addWidget(mEditorWorkspace);
 
   // Now add the container to the splitter
   mCentralSplitter->addWidget(canvasContainer);
@@ -420,14 +420,15 @@ void MainWindowLayout::buildCentralPanel()
   mBottomPanel->setCurrentIndex(0);
 
   mCentralSplitter->addWidget(mBottomContainer);
-  mCentralSplitter->setCollapsible(0, false);
+  mCentralSplitter->setStretchFactor(0, 6);  // Stretch the canvas as much as possible initially
+  mCentralSplitter->setStretchFactor(1, 1);
 
   mMainSplitter->addWidget(mCentralSplitter);
 }
 
 void MainWindowLayout::buildRightPanel()
 {
-  mRightPanel = new QSplitter(Qt::Vertical);
+  mRightPanel = new QSplitter(Qt::Vertical, mMainSplitter);
   mRightPanel->setMinimumWidth(MINIMUM_MENU_WIDTH);
   mRightPanel->setMaximumWidth(MAXIMUM_MENU_WIDTH);
 
@@ -785,37 +786,12 @@ void MainWindowLayout::applyTheme()
     mPalette->tabBar()->setChangeCurrentOnDrag(true);
   }
 
-  if (mCanvasPanel)
-  {
-    mCanvasPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-
-    mCanvasPanel->setTabsClosable(true);
-    mCanvasPanel->tabBar()->setExpanding(false);
-    mCanvasPanel->tabBar()->setDocumentMode(true);
-    mCanvasPanel->tabBar()->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    mCanvasPanel->tabBar()->setFocusPolicy(Qt::NoFocus);
-    mCanvasPanel->tabBar()->setTabsClosable(true);
-    mCanvasPanel->tabBar()->setMovable(true);
-    mCanvasPanel->tabBar()->setChangeCurrentOnDrag(false);
-    mCanvasPanel->tabBar()->setUsesScrollButtons(false);
-
-    // Remove the close button from the system tab
-    mCanvasPanel->tabBar()->setTabButton(0, QTabBar::RightSide, nullptr);
-    mCanvasPanel->tabBar()->setIconSize(QSize(16, 16));
-
-    // Qlementine causes a weird issue where the text disappears when a tab is moved
-    connect(mCanvasPanel->tabBar(), &QTabBar::tabMoved, this, [this](int /* from */, int /* to */) {
-      for (int i = 0; i < mCanvasPanel->count(); ++i)
-        mCanvasPanel->setTabText(i, mCanvasPanel->tabText(i));
-    });
-  }
-
   if (mInfoText)
   {
     // Update the info text so the welcome message fits
     QTimer::singleShot(0, this, [this, theme] {
       int documentHeight = int(std::ceil(mInfoText->document()->documentLayout()->documentSize().height()));
-      int height = documentHeight + mInfoText->contentsMargins().top() + mInfoText->contentsMargins().bottom() + theme.spacing;
+      int height = documentHeight + mInfoText->contentsMargins().top() + mInfoText->contentsMargins().bottom() + 5 * theme.spacing;
       mInfoText->resize(mInfoText->width(), height);
     });
   }

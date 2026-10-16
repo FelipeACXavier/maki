@@ -52,11 +52,18 @@ QString ToLabel(const QString& str)
 
 QPixmap applyColorToIcon(const QString& path, const QColor& color)
 {
-  QPixmap pixmap(path);
+  return applyColorToIcon(QPixmap(path), color);
+}
+
+QPixmap applyColorToIcon(QPixmap pixmap, const QColor& color)
+{
+  if (pixmap.isNull())
+    return pixmap;
+
   QPainter painter(&pixmap);
   painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
   painter.fillRect(pixmap.rect(), color);
-  painter.end();
+
   return pixmap;
 }
 
@@ -276,7 +283,7 @@ QString referenceHtml(const QString& text, const QString& foreground, const QStr
   return QString("<span style='font-family: monospace; color: %1; background-color: %2; padding: 1px 4px;'>"
                  "  %3"
                  "</span>")
-      .arg(foreground, blendColors(QColor(background), QColor(browserBackground), 0.3).name(), htmlEscape(text));
+    .arg(foreground, blendColors(QColor(background), QColor(browserBackground), 0.3).name(), htmlEscape(text));
 }
 
 QString formatDescriptionHtml(const QString& description, const FlowConfig& event)
@@ -324,7 +331,7 @@ QString textHtml(const QString& text, const QString& color, maki::Styles styles)
   return QString("<p style='color: %1; margin: 4px 0; %2'>"
                  "%3"
                  "</p>")
-      .arg(color, maki::textStyleCss(styles), text);
+    .arg(color, maki::textStyleCss(styles), text);
 }
 
 QString fieldHtml(const QString& title, const QString& field, const QString& titleColor, const QString& fieldColor, maki::Styles styles)
@@ -334,7 +341,7 @@ QString fieldHtml(const QString& title, const QString& field, const QString& tit
                  "  &nbsp;&nbsp;"
                  "  <span style='color: %3; %5'>%4</span>"
                  "</p>")
-      .arg(titleColor, title, fieldColor, field, maki::textStyleCss(styles));
+    .arg(titleColor, title, fieldColor, field, maki::textStyleCss(styles));
 }
 
 QString hlineHtml(const QString& foreground, const QString& background, qreal opacity)
@@ -357,8 +364,8 @@ QString indentHtml(const QString& content, int indentation)
                  "    <td style='border: none;'>%2</td>"
                  "  </tr>"
                  "</table>")
-      .arg(indentation)
-      .arg(content);
+    .arg(indentation)
+    .arg(content);
 }
 
 QString typeLinkHtml(const QString& typeName, bool clickable)
@@ -370,7 +377,7 @@ QString typeLinkHtml(const QString& typeName, bool clickable)
   const QString url = QString("%1://%2/").arg(ConfigKeys::MAKI, ConfigKeys::TYPE) + QString::fromLatin1(QUrl::toPercentEncoding(typeName));
   return QString("<a href='%1' title='Open type definition'; font-family: monospace;"
                  "font-weight: 600; text-decoration: none;'>%3</a>")
-      .arg(htmlEscape(url), label);
+    .arg(htmlEscape(url), label);
 }
 
 QString typeFromLink(const QUrl& url)
@@ -396,7 +403,7 @@ QString createInformationMessage(const NodeConfig& node)
 
   QString out = QString("<html>"
                         "<body style='font-family: sans-serif; font-size: 10pt; color: %1;'>")
-                    .arg(textColor);
+                  .arg(textColor);
 
   // Title / message
   out += textHtml("Description", textColor, maki::Bold);
@@ -462,7 +469,7 @@ QString createInformationMessage(const FlowConfig& event, bool defineBody)
   if (defineBody)
     out += QString("<html>"
                    "<body style='font-family: sans-serif; font-size: 10pt; color: %1;'>")
-               .arg(textColor);
+             .arg(textColor);
 
   out += fieldHtml("Name", event.name, textColor, mutedColor, maki::Bold);
   out += fieldHtml("Type", type, textColor, accentColor, maki::Bold);

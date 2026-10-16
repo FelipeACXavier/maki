@@ -105,7 +105,7 @@ private slots:
    * @param flow Pointer to the opened Flow.
    * @param node Pointer to the associated NodeItem.
    */
-  void onOpenFlow(std::shared_ptr<FlowSaveInfo> flow, const QString& nodeId, const maki::FocusProperties& properties, int& createdIndex);
+  void onOpenFlow(std::shared_ptr<FlowSaveInfo> flow, const QString& nodeId, const maki::FocusProperties& properties);
 
   /**
    * @brief Handles flow addition events.
@@ -220,14 +220,14 @@ private:
    *
    * @param index Index of the changed tab.
    */
-  void onCanvasTabChanged(int index);
+  void onCanvasTabChanged(QWidget* widget);
 
   /**
    * @brief Closes a canvas tab at the specified index.
    *
    * @param index Index of the tab to close.
    */
-  void closeCanvasTab(int index);
+  void closeCanvasTab(QWidget* widget);
 
   /**
    * @brief Converts a library type to its corresponding index.
