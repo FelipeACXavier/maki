@@ -216,8 +216,8 @@ void MainWindowLayout::buildCentralPanel()
 
   QWidget* header = new QWidget(mCentralSplitter);
   QHBoxLayout* headerLayout = new QHBoxLayout(header);
-  headerLayout->setContentsMargins(0, 8, 0, 8);  // top/bottom spacing
-  headerLayout->setSpacing(5);
+  headerLayout->setContentsMargins(0, theme.spacing, 0, theme.spacing);  // top/bottom spacing
+  headerLayout->setSpacing(theme.spacing);
   headerLayout->setAlignment(Qt::AlignCenter);
   headerLayout->addSpacing(24);
 
@@ -231,7 +231,7 @@ void MainWindowLayout::buildCentralPanel()
 
   // ---------------------------------------------
   auto* spinnerContainer = new QWidget(header);
-  spinnerContainer->setFixedSize(24, 24);
+  spinnerContainer->setFixedSize(Config::MEDIUM_SMALL_BUTTON, Config::MEDIUM_SMALL_BUTTON);
 
   auto* spinnerLayout = new QHBoxLayout(spinnerContainer);
   spinnerLayout->setContentsMargins(0, 0, 0, 0);
@@ -244,20 +244,21 @@ void MainWindowLayout::buildCentralPanel()
 
   // Top right buttons
   QWidget* corner = new QWidget(header);
-  auto* layout = new QHBoxLayout(corner);
+  auto* cornerLayout = new QHBoxLayout(corner);
 
-  layout->setContentsMargins(0, 0, 0, 0);
-  layout->setSpacing(4);
+  cornerLayout->setContentsMargins(0, 0, 0, 0);
+  cornerLayout->setSpacing(4);
 
   // First button
   mBrowserTabButton = new QPushButton(corner);
   mBrowserTabButton->setIcon(QIcon(":/icons/display.svg"));
   mBrowserTabButton->setToolTip(tr("Show simulation tab"));
   mTranslatable.push_back({mBrowserTabButton, "Show simulation tab", 0, true});
+  cornerLayout->addWidget(mBrowserTabButton);
 
   headerLayout->addStretch();
-  headerLayout->addWidget(mBrowserTabButton);
-  headerLayout->addSpacing(theme.spacing);
+  headerLayout->addWidget(corner);
+  corner->hide();
 
   // ---------------------------------------------
   mEditorWorkspace = new maki::EditorWorkspace(mCentralSplitter);
@@ -420,7 +421,7 @@ void MainWindowLayout::buildCentralPanel()
   mBottomPanel->setCurrentIndex(0);
 
   mCentralSplitter->addWidget(mBottomContainer);
-  mCentralSplitter->setStretchFactor(0, 6);  // Stretch the canvas as much as possible initially
+  mCentralSplitter->setStretchFactor(0, 7);  // Stretch the canvas as much as possible initially
   mCentralSplitter->setStretchFactor(1, 1);
 
   mMainSplitter->addWidget(mCentralSplitter);
