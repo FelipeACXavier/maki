@@ -55,6 +55,12 @@ void FlowCallNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
     return;
   }
 
+  if (labelBoundingRect().contains(event->pos()) && isLabelVisible())
+  {
+    NodeItem::mouseDoubleClickEvent(event);
+    return;
+  }
+
   const auto [componentId, flowId] = calledFlowId();
   if (componentId.isEmpty() || flowId.isEmpty())
   {

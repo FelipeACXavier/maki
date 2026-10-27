@@ -16,7 +16,6 @@ public:
 
   VoidResult start() override;
 
-  QPainterPath shape() const override;
   void paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget) override;
 
   void addChild(NodeItem* node, std::shared_ptr<NodeSaveInfo> info) override;

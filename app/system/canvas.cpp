@@ -1312,6 +1312,16 @@ void Canvas::deleteSelectedItems()
   mUndoStack->push(new BatchRemoveCommand(this, nodesToDelete, transitionsToDelete));
 }
 
+void Canvas::renameSelectedNode()
+{
+  if (selectedNodes().isEmpty())
+    return;
+
+  auto* firstNode = selectedNodes().at(0);
+  if (firstNode)
+    firstNode->renameNode();
+}
+
 QVector<TransitionSaveInfo> Canvas::transitionsOfNode(const QString& nodeId)
 {
   return {};

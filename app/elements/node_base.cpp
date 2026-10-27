@@ -82,7 +82,7 @@ QRectF NodeBase::labelBoundingRect() const
     return QRectF();
 
   const auto bounds = drawingRect(nodeRect());
-  return QRectF(bounds.left() - LABEL_H_SPACING, bounds.bottom(), bounds.width() + 2 * LABEL_H_SPACING, mLabelFont.pointSizeF() * 3);
+  return QRectF(bounds.left() - LABEL_H_SPACING, bounds.bottom(), bounds.width() + 2 * LABEL_H_SPACING, labelFont().pointSizeF() * 3);
 }
 
 QRectF NodeBase::scaledRect() const
@@ -334,7 +334,7 @@ void NodeBase::paintLabel(QPainter* painter, const QRectF& drawingBounds, const 
   if (mLabelText.isEmpty() || !mPaintLabel)
     return;
 
-  painter->setFont(mLabelFont);
+  painter->setFont(labelFont());
   painter->setPen(pen);
 
   QString text = mLabelText;
@@ -346,15 +346,26 @@ void NodeBase::paintLabel(QPainter* painter, const QRectF& drawingBounds, const 
   }
   else
   {
-    const QFontMetricsF metrics(mLabelFont);
+    const QFontMetricsF metrics(labelFont());
     const qreal availableWidth = drawingBounds.width();
     text = metrics.elidedText(mLabelText, Qt::ElideRight, static_cast<int>(availableWidth));
   }
+  // painter->drawRect(drawingBounds);
   painter->drawText(drawingBounds, text, textOption);
 }
 
 void NodeBase::initializeNodeSize()
 {
+}
+
+QFont NodeBase::labelFont() const
+{
+  return mLabelFont;
+}
+
+bool NodeBase::isLabelVisible() const
+{
+  return mPaintLabel;
 }
 
 void NodeBase::setLabel(const QString& name, qreal fontSize)
@@ -377,9 +388,9 @@ void NodeBase::setLabelSize(qreal fontSize, const QSizeF& boundingSize)
   update();
 }
 
-void NodeBase::toggleLabelVisibility()
+void NodeBase::toggleLabelVisibility(bool forceVisible)
 {
-  mPaintLabel = !mPaintLabel;
+  mPaintLabel = !mPaintLabel || forceVisible;
   update();
 }
 

@@ -182,10 +182,8 @@ public:
 
   /**
    * @brief Renames the node to a new name.
-   *
-   * @param name The new name for the node.
    */
-  void renameNode(const QString& name);
+  void renameNode();
 
   PortItem* getPort(Types::Port type, const QString& subFlowId = Constants::MAIN_SUB_FLOW) const;
 
@@ -462,6 +460,8 @@ protected:
 
   void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
   void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
+
+  void mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event) override;
 
   /**
    * @brief Handles changes to the item's properties.

@@ -471,6 +471,12 @@ void WithinNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
     return;
   }
 
+  if (labelBoundingRect().contains(event->pos()) && isLabelVisible())
+  {
+    NodeItem::mouseDoubleClickEvent(event);
+    return;
+  }
+
   auto doFlow = subFlow(DO_FLOW_ID);
   auto elseFlow = subFlow(ELSE_FLOW_ID);
   if (!doFlow || !elseFlow)

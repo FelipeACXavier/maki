@@ -101,6 +101,8 @@ public:
    */
   void deleteSelectedItems();
 
+  void renameSelectedNode();
+
   void autoRoute(const QList<TransitionItem*>& transitions = {});
 
   /**

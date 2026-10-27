@@ -572,7 +572,15 @@ StringWidget::StringWidget(const QString& label, const QString& placeholder, Wid
         QToolTip::showText(globalPos, edit->toolTip(), edit);
       }
     });
-    connect(edit, &QLineEdit::textChanged, this, [this]() { mUpdateTimer->start(); });
+    connect(edit, &QLineEdit::textChanged, this, [this, edit]() {
+      if (edit->hasAcceptableInput())
+      {
+        edit->setStatus(oclero::qlementine::Status::Default);
+        QToolTip::hideText();
+      }
+
+      mUpdateTimer->start();
+    });
 
     connect(mUpdateTimer, &QTimer::timeout, this, [this, edit]() {
       mValue.data = edit->text();

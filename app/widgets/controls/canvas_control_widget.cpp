@@ -16,11 +16,8 @@ CanvasControlWidget::CanvasControlWidget(std::function<void()> dismissed, QGraph
     , mDismissed(std::move(dismissed))
 {
   mFrame = new StyledFrame();
-
-  mFrame->setAttribute(Qt::WA_TranslucentBackground);
-  mFrame->setAutoFillBackground(false);
-
-  mFrame->setBackgroundRole(StyledFrame::BackgroundRole::Midlight);
+  mFrame->setBackgroundRole(StyledFrame::BackgroundRole::Custom);
+  mFrame->setCustomBackgroundColor(Qt::transparent);
   mFrame->setBorderRole(StyledFrame::BorderRole::Highlight);
 
   mFrameLayout = new QHBoxLayout(mFrame);
@@ -107,6 +104,7 @@ void CanvasControlWidget::setControlWidget(maki::ControlWidget* controls, const 
   // Force the QWidget layout to calculate its contents.
   mFrameLayout->invalidate();
   mFrameLayout->activate();
+  setFocus(Qt::OtherFocusReason);
 
   const QSize size = mFrameLayout->sizeHint();
   mFrame->setFixedSize(size);

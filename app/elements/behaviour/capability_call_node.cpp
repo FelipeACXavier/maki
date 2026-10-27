@@ -113,6 +113,12 @@ void CapabilityCallNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
     return;
   }
 
+  if (labelBoundingRect().contains(event->pos()) && isLabelVisible())
+  {
+    NodeItem::mouseDoubleClickEvent(event);
+    return;
+  }
+
   if (nodeControlRequested)
     nodeControlRequested(this, event->scenePos(), CapabilityCallSelector::create(this));
 

@@ -135,7 +135,7 @@ public:
   /**
    * @brief Toggles the visibility of the label.
    */
-  virtual void toggleLabelVisibility();
+  virtual void toggleLabelVisibility(bool forceVisible = false);
 
   /**
    * @brief Update the node on setting change
@@ -156,6 +156,9 @@ protected:
   QPainterPath svgSilhouetteOutlinePath(QSvgRenderer* renderer, const QRectF& drawingBounds) const;
 
   void paintSelectionOutline(QPainter* painter, const QPen& text, const QRectF& bounds) const;
+
+  QFont labelFont() const;
+  bool isLabelVisible() const;
 
   /**
    * @brief Sets the icon for the node.

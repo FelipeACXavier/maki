@@ -312,6 +312,12 @@ void RepeatNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
     return;
   }
 
+  if (labelBoundingRect().contains(event->pos()) && isLabelVisible())
+  {
+    NodeItem::mouseDoubleClickEvent(event);
+    return;
+  }
+
   auto flow = subFlow();
   if (!flow)
   {

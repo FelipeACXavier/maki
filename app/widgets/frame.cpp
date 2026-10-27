@@ -58,7 +58,6 @@ void StyledFrame::paintEvent(QPaintEvent* event)
 
   QPainterPath path;
   path.addRoundedRect(r, mRadius, mRadius);
-
   painter.fillPath(path, backgroundColor());
 
   if (mBorderRole != BorderRole::None && mBorderWidth > 0)

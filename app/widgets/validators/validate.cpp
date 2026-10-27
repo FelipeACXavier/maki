@@ -1,5 +1,7 @@
 #include "validate.h"
 
+static const QRegularExpression VARIABLE_REGEX(R"(^[A-Za-z_][A-Za-z0-9_]*$)");
+
 QValidator::State Validate::variable(QString& input)
 {
   if (input.isEmpty())
@@ -8,8 +10,7 @@ QValidator::State Validate::variable(QString& input)
   if (input.front().isLetter() || input.front() == '_')
     return QValidator::State::Intermediate;
 
-  static const QRegularExpression variableRe(R"(^[A-Za-z_][A-Za-z0-9_]*$)");
-  if (variableRe.match(input).hasMatch())
+  if (VARIABLE_REGEX.match(input).hasMatch())
     return QValidator::State::Acceptable;
 
   return QValidator::State::Invalid;

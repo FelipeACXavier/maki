@@ -16,12 +16,15 @@
 #include "app_configs.h"
 #include "app_paths.h"
 #include "canvas_message.h"
+#include "keys.h"
 #include "logging.h"
 #include "macros.h"
 #include "style_helpers.h"
 #include "system/canvas.h"
 #include "system/undo_commands/move_node.h"
+#include "system/undo_commands/rename_node.h"
 #include "system/undo_commands/resize_node.h"
+#include "widgets/controls/label_editor.h"
 
 NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig,
                    QGraphicsItem* parent)
@@ -69,7 +72,7 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
     setIcon(AppPaths::icon(config()->body.iconPath), config()->body.iconColor);
 
   qreal labelSize = qMax(Fonts::BaseSize, mSize.width() / Fonts::BaseFactor);
-  if (const auto* name = getProperty("name"))
+  if (const auto* name = getProperty(ConfigKeys::NAME))
     setLabel(name->getvalue()->toStringValue(), labelSize);
 
   updatePosition(snapToGrid(initialPosition - boundingRect().center(), Config::GRID_SIZE), Config::NodeMove::Start);
@@ -105,7 +108,7 @@ void NodeItem::createPorts()
 
 QString NodeItem::nodeName() const
 {
-  if (const auto* name = getProperty("name"))
+  if (const auto* name = getProperty(ConfigKeys::NAME))
     return name->getvalue()->toStringValue();
 
   return QString();
@@ -277,7 +280,7 @@ void NodeItem::showControls(maki::ControlWidget* controls, const ControlProperti
   mControlActive = true;
   mControlWidget->setControlWidget(controls, properties);
 
-  QTimer::singleShot(0, [this, position = properties.position]() {
+  QTimer::singleShot(0, [this, position = properties.position, fixedPosition = properties.fixedPosition]() {
     if (!mControlWidget)
       return;
 
@@ -293,16 +296,15 @@ void NodeItem::showControls(maki::ControlWidget* controls, const ControlProperti
       case Config::ControlPosition::Top:
         pos = {node.center().x() - control.width() / 2.0, node.top() - control.height() - spacing};
         break;
-
       case Config::ControlPosition::Bottom:
         pos = {node.center().x() - control.width() / 2.0, node.bottom() + spacing};
         break;
-
       case Config::ControlPosition::Left:
         pos = {node.left() - control.width() - spacing, node.center().y() - control.height() / 2.0};
         break;
-
       case Config::ControlPosition::Fixed:
+        pos = fixedPosition - control.center();
+        break;
       case Config::ControlPosition::Right:
         pos = {node.right() + spacing, node.center().y() - control.height() / 2.0};
         break;
@@ -317,6 +319,9 @@ void NodeItem::dismissControl()
 {
   if (mControlWidget)
   {
+    if (auto control = qobject_cast<LabelEditor*>(mControlWidget->controlWidget()); control)
+      toggleLabelVisibility(true);
+
     mControlWidget->hide();
     mControlWidget->deleteLater();
     mControlWidget = nullptr;
@@ -363,7 +368,12 @@ void NodeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
 
 QPainterPath NodeItem::shape() const
 {
-  return NodeBase::nodeShape(boundingRect());
+  QPainterPath path = NodeBase::nodeShape(nodeRect());
+
+  if (!labelBoundingRect().isEmpty())
+    path.addRect(labelBoundingRect());
+
+  return path;
 }
 
 QVector<PropertyConfig> NodeItem::configurationProperties() const
@@ -417,13 +427,39 @@ void NodeItem::setProperty(const QString& key, const maki::Value& value)
   LOG_TRACE("Setting property {} of node: {} to {}", key, nodeId(), value.toReadable());
   mStorage->setProperty(key, value);
 
-  if (key == "name")
+  if (key == ConfigKeys::NAME)
     setLabelName(value.toString());
 
   if (nodeModified)
     nodeModified(this);
 
   update();
+}
+
+void NodeItem::renameNode()
+{
+  const QRectF bounds = labelBoundingRect();
+  if (bounds.isEmpty())
+    return;
+
+  auto* editor = LabelEditor::create(nodeName(), labelFont());
+  editor->setFixedWidth(bounds.width());
+  editor->finished = [this](const QString& name) {
+    if (name.isEmpty())
+      return;
+
+    if (auto canvas = qobject_cast<Canvas*>(scene()))
+      canvas->undoStack()->push(new RenameNodeCommand(canvas, id(), nodeName(), name));
+  };
+
+  constexpr QPointF labelOffset{0.5, -0.5};
+  showControls(editor, ControlProperties{
+                         .fixedPosition = bounds.center() + labelOffset,
+                         .position = Config::ControlPosition::Fixed,
+                       });
+
+  toggleLabelVisibility();
+  editor->setFocus(Qt::MouseFocusReason);
 }
 
 void NodeItem::setEvent(int index, const FlowConfig& event)
@@ -697,14 +733,12 @@ void NodeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     mIsResizing = false;
     dynamic_cast<QGraphicsView*>(scene()->parent())->setCursor(Qt::ArrowCursor);
 
-    auto canvas = static_cast<Canvas*>(scene());
-    if (canvas)
+    if (auto canvas = qobject_cast<Canvas*>(scene()))
       canvas->undoStack()->push(new ResizeNodeCommand(canvas, id(), mResizeStartSize, mSize));
   }
   else if (pos() != mDragStartPos)
   {
-    auto canvas = static_cast<Canvas*>(scene());
-    if (canvas)
+    if (auto canvas = qobject_cast<Canvas*>(scene()))
       canvas->undoStack()->push(new MoveNodeCommand(canvas, id(), mDragStartPos, pos()));
 
     if (nodeMoved)
@@ -712,6 +746,18 @@ void NodeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
   }
 
   QGraphicsItem::mouseReleaseEvent(event);
+}
+
+void NodeItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
+{
+  if (event->button() == Qt::LeftButton && labelBoundingRect().contains(event->pos()) && isLabelVisible())
+  {
+    renameNode();
+    event->accept();
+    return;
+  }
+
+  QGraphicsItem::mouseDoubleClickEvent(event);
 }
 
 void NodeItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)

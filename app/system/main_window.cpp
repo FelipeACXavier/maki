@@ -992,20 +992,15 @@ void MainWindow::unbindCanvas(Canvas* canvas)
 void MainWindow::bindShortcuts()
 {
   // Copy
-  new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_C), this, [] {
+  new QShortcut(QKeySequence::Copy, this, [] {
     QWidget* fw = QApplication::focusWidget();
     if (!fw)
       return;
 
-    LOG_TRACE("Copy, focused on: {}", fw->metaObject()->className());
+    LOG_DEBUG("Copy, focused on: {}", fw->metaObject()->className());
     if (auto* textEdit = IN_TYPE(fw, QTextEdit))
     {
       textEdit->copy();
-      return;
-    }
-    else if (auto* browser = IN_TYPE(fw, QTextBrowser))
-    {
-      browser->copy();
       return;
     }
     else if (auto* canvasView = IN_TYPE(fw, CanvasView))
@@ -1015,27 +1010,23 @@ void MainWindow::bindShortcuts()
 
       return;
     }
+    else if (auto* lineEdit = IN_TYPE(fw, QLineEdit))
+    {
+      lineEdit->copy();
+    }
   });
   // Paste
-  new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_V), this, [this] {
+  new QShortcut(QKeySequence::Paste, this, [] {
     QWidget* fw = QApplication::focusWidget();
     if (!fw)
       return;
 
-    LOG_TRACE("Copy, focused on: {}", fw->metaObject()->className());
-
+    LOG_DEBUG("Paste, focused on: {}", fw->metaObject()->className());
     // 1) If focus is in the node library panel -> search there
     if (auto* textEdit = IN_TYPE(fw, QTextEdit))
     {
       if (!textEdit->isReadOnly())
         textEdit->paste();
-
-      return;
-    }
-    else if (auto* browser = IN_TYPE(fw, QTextBrowser))
-    {
-      if (!browser->isReadOnly())
-        browser->paste();
 
       return;
     }
@@ -1045,6 +1036,22 @@ void MainWindow::bindShortcuts()
         scene->pasteCopiedItems();
 
       return;
+    }
+    else if (auto* lineEdit = IN_TYPE(fw, QLineEdit))
+    {
+      lineEdit->paste();
+    }
+  });
+  new QShortcut(QKeySequence(Qt::Key_F2), this, [] {
+    QWidget* fw = QApplication::focusWidget();
+    if (!fw)
+      return;
+
+    LOG_DEBUG("Rename, focused on: {}", fw->metaObject()->className());
+    if (auto* canvasView = IN_TYPE(fw, CanvasView))
+    {
+      if (auto* scene = qobject_cast<Canvas*>(canvasView->scene()); !scene->selectedItems().isEmpty())
+        scene->renameSelectedNode();
     }
   });
   // Focus shift backward

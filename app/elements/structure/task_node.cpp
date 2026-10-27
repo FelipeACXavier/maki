@@ -90,11 +90,6 @@ void TaskNode::paint(QPainter* painter, const QStyleOptionGraphicsItem* style, Q
   NodeBase::paintLabel(painter, labelBoundingRect(), pen);
 }
 
-QPainterPath TaskNode::shape() const
-{
-  return NodeBase::nodeShape(nodeRect());
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Parent / child management
 // ─────────────────────────────────────────────────────────────────────────────
