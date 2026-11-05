@@ -199,6 +199,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitStratRetry(KodaParser::StratRetryContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitStratSeq(KodaParser::StratSeqContext *ctx) override {
     return visitChildren(ctx);
   }

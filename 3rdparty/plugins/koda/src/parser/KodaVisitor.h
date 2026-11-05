@@ -111,6 +111,8 @@ public:
 
     virtual std::any visitDataBlock(KodaParser::DataBlockContext *context) = 0;
 
+    virtual std::any visitStratRetry(KodaParser::StratRetryContext *context) = 0;
+
     virtual std::any visitStratSeq(KodaParser::StratSeqContext *context) = 0;
 
     virtual std::any visitStratTask(KodaParser::StratTaskContext *context) = 0;

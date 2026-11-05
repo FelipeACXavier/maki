@@ -166,15 +166,15 @@ propertyConditionAnd
   ;
 
 propertyConditionUntil
-  : propertyConditionUnary (UNTIL propertyConditionUnary)?
+  : propertyConditionUnary ((UNTIL | UNLESS) propertyConditionUnary)?
   ;
 
 propertyConditionUnary
-  : NEGATION propertyExpr
-  | ALWAYS propertyExpr
-  | EVENTUALLY propertyExpr
-  | NEVER propertyExpr
-  | NEXT propertyExpr
+  : NEGATION propertyConditionUnary
+  | ALWAYS propertyConditionUnary
+  | EVENTUALLY propertyConditionUnary
+  | NEVER propertyConditionUnary
+  | NEXT propertyConditionUnary
   | propertyObservation
   | LPAREN propertyExpr RPAREN
   ;
@@ -193,6 +193,8 @@ propertyObservation
   | propertyReference STARTED
   | propertyReference WAS REJECTED
   | propertyReference STOPPED
+  | propertyReference SUCCEEDED
+  | propertyReference FAILED
   | propertyReference WAS ABORTED
   ;
 
@@ -238,6 +240,7 @@ strategy
   | EITHER LPAREN strategy (PIPE strategy)+ RPAREN                 # stratEither
   | WITHIN NATURAL DO strategy ELSE strategy                       # stratWithin
   | REPEAT NATURAL NATURAL LPAREN strategy RPAREN strategyHandler* # stratRepeat
+  | RETRY NATURAL LPAREN strategy RPAREN strategyHandler*          # stratRetry
   | SUCCESS                                                        # stratSuccess
   | FAILURE                                                        # stratFailure
   | CONTINUE                                                       # stratContinue
@@ -251,9 +254,9 @@ chooseWhenStatement
   ;
 
 strategyHandler
-  : ON ERROR strategy                                            # handlerOnError
-  | ON ABORT strategy                                            # handlerOnAbort
-  | ON eventStatement strategy                                   # handlerOnEmitter
+  : ON ERROR LPAREN strategy RPAREN                              # handlerOnError
+  | ON ABORT LPAREN strategy RPAREN                              # handlerOnAbort
+  | ON eventStatement LPAREN strategy RPAREN                     # handlerOnEmitter
   ;
 
 eventStatement
@@ -394,10 +397,13 @@ NEGATION   : 'not';
 IF         : 'if';
 BETWEEN    : 'between';
 UNTIL      : 'until';
+UNLESS     : 'unless';
 IS         : 'is';
 WAS        : 'was';
 RUNNING    : 'running';
 STARTED    : 'started';
+SUCCEEDED  : 'succeeded';
+FAILED     : 'failed';
 REJECTED   : 'rejected';
 STOPPED    : 'stopped';
 ABORTED    : 'aborted';
@@ -420,6 +426,7 @@ SUCCESS    : 'success';
 FAILURE    : 'failure';
 CONTINUE   : 'continue';
 REPEAT     : 'repeat';
+RETRY      : 'retry';
 JOIN       : 'join';
 EITHER     : 'either';
 WHEN       : 'when';
