@@ -80,6 +80,7 @@ static const QString CAPABILITY_CALL_NODE = KODA_NAMESPACE + "Call capability";
 static const QString FLOW_CALL_NODE = KODA_NAMESPACE + "Flow call";
 static const QString WITHIN_NODE = KODA_NAMESPACE + "Within";
 static const QString REPEAT_NODE = KODA_NAMESPACE + "Repeat";
+static const QString RETRY_NODE = KODA_NAMESPACE + "Retry";
 static const QString JOIN_NODE = KODA_NAMESPACE + "Join";
 static const QString LINK_IN_NODE = KODA_NAMESPACE + "Link in";
 static const QString LINK_OUT_NODE = KODA_NAMESPACE + "Link out";
