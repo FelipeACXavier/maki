@@ -494,6 +494,25 @@ std::any CST2AST::visitStratRepeat(KodaParser::StratRepeatContext* ctx)
   return node;
 }
 
+std::any CST2AST::visitStratRetry(KodaParser::StratRetryContext* ctx)
+{
+  // LOG_DEBUG("Visiting Repeat");
+  auto value = std::make_shared<koda::Strategy::Retry>();
+  value->a = std::any_cast<koda::PStrategy>(visit(ctx->strategy()));
+
+  if (!ctx->NATURAL())
+    throw std::runtime_error("Missing arguments for retry block. Expects <iterations>");
+
+  value->iterations = std::stoi(ctx->NATURAL()->getText());
+  for (auto h : ctx->strategyHandler())
+    value->handlers.push_back(std::any_cast<koda::PStrategyHandler>(visit(h)));
+
+  auto node = std::make_shared<koda::Strategy>();
+  node->span = spanOf(ctx);
+  node->v = value;
+  return node;
+}
+
 std::any CST2AST::visitStratSuccess(KodaParser::StratSuccessContext* ctx)
 {
   // LOG_DEBUG("Visiting End");
@@ -1160,17 +1179,39 @@ std::any CST2AST::visitPropertyConditionUntil(KodaParser::PropertyConditionUntil
   if (ctx->propertyConditionUnary().size() == 1)
     return visit(ctx->propertyConditionUnary().at(0));
 
+  auto lhs = std::any_cast<koda::PPropertyExpr>(visit(ctx->propertyConditionUnary().at(0)));
+  auto rhs = std::any_cast<koda::PPropertyExpr>(visit(ctx->propertyConditionUnary().at(1)));
+
+  // P until Q
+  auto untilExpr = std::make_shared<PropertyExpr::Binary>();
+  untilExpr->operation = PropertyExpr::BinOp::UNTIL;
+  untilExpr->lhs = lhs;
+  untilExpr->rhs = rhs;
+
+  auto until = std::make_shared<PropertyExpr>();
+  until->span = spanOf(ctx);
+  until->value = untilExpr;
+
+  if (ctx->UNTIL())
+    return until;
+
+  // P unless Q = (P until Q) or always(P)
+  auto alwaysExpr = std::make_shared<PropertyExpr::Unary>();
+  alwaysExpr->operation = PropertyExpr::UnaryOp::ALWAYS;
+  alwaysExpr->lhs = lhs;
+
+  auto always = std::make_shared<PropertyExpr>();
+  always->span = spanOf(ctx);
+  always->value = alwaysExpr;
+
+  auto orExpr = std::make_shared<PropertyExpr::Binary>();
+  orExpr->operation = PropertyExpr::BinOp::DISJUNCTION;
+  orExpr->lhs = until;
+  orExpr->rhs = always;
+
   auto property = std::make_shared<PropertyExpr>();
   property->span = spanOf(ctx);
-
-  if (ctx->propertyConditionUnary().size() == 2)
-  {
-    auto statement = std::make_shared<PropertyExpr::Binary>();
-    statement->operation = PropertyExpr::BinOp::UNTIL;
-    statement->lhs = std::any_cast<koda::PPropertyExpr>(visit(ctx->propertyConditionUnary().at(0)));
-    statement->rhs = std::any_cast<koda::PPropertyExpr>(visit(ctx->propertyConditionUnary().at(1)));
-    property->value = statement;
-  }
+  property->value = orExpr;
 
   return property;
 }
@@ -1203,7 +1244,7 @@ std::any CST2AST::visitPropertyConditionUnary(KodaParser::PropertyConditionUnary
   else if (ctx->NEGATION())
     statement->operation = PropertyExpr::UnaryOp::NEGATION;
 
-  statement->lhs = std::any_cast<koda::PPropertyExpr>(visit(ctx->propertyExpr()));
+  statement->lhs = std::any_cast<koda::PPropertyExpr>(visit(ctx->propertyConditionUnary()));
 
   auto property = std::make_shared<PropertyExpr>();
   property->span = spanOf(ctx);
@@ -1258,6 +1299,10 @@ std::any CST2AST::visitPropertyObservation(KodaParser::PropertyObservationContex
     statement->operation = PropertyExpr::ObservationOp::WAS_REJECTED;
   else if (ctx->STOPPED())
     statement->operation = PropertyExpr::ObservationOp::STOPPED;
+  else if (ctx->SUCCEEDED())
+    statement->operation = PropertyExpr::ObservationOp::SUCCEEDED;
+  else if (ctx->FAILED())
+    statement->operation = PropertyExpr::ObservationOp::FAILED;
   else if (ctx->WAS() && ctx->ABORTED())
     statement->operation = PropertyExpr::ObservationOp::WAS_ABORTED;
 
@@ -1336,67 +1381,82 @@ bool CST2AST::containsContinue(koda::PStrategy s)
     return false;
 
   return std::visit(
-      [&](auto&& node) -> bool {
-        using T = std::decay_t<decltype(node)>;
+    [&](auto&& node) -> bool {
+      using T = std::decay_t<decltype(node)>;
 
-        if constexpr (std::is_same_v<T, koda::PContinue>)
-        {
-          return true;
-        }
-        // Seq / Join / Either
-        else if constexpr (std::is_same_v<T, koda::PSeq> || std::is_same_v<T, koda::PJoin> || std::is_same_v<T, koda::PEither>)
-        {
-          if (!node)
-            return false;
-
-          for (const auto& child : node->alts)
-            if (child && containsContinue(child))
-              return true;
-
+      if constexpr (std::is_same_v<T, koda::PContinue>)
+      {
+        return true;
+      }
+      // Seq / Join / Either
+      else if constexpr (std::is_same_v<T, koda::PSeq> || std::is_same_v<T, koda::PJoin> || std::is_same_v<T, koda::PEither>)
+      {
+        if (!node)
           return false;
-        }
-        // Unary wrappers
-        else if constexpr (std::is_same_v<T, std::shared_ptr<koda::Strategy::Paren>>)
-        {
-          return node && node->a && containsContinue(node->a);
-        }
-        // Binary
-        else if constexpr (std::is_same_v<T, koda::PWithin>)
-        {
-          return node && ((node->a && containsContinue(node->a)) || (node->b && containsContinue(node->b)));
-        }
-        // Repeat
-        else if constexpr (std::is_same_v<T, std::shared_ptr<koda::Strategy::Repeat>>)
-        {
-          if (!node)
-            return false;
 
-          if (node->a && containsContinue(node->a))
+        for (const auto& child : node->alts)
+          if (child && containsContinue(child))
             return true;
 
-          for (const auto& h : node->handlers)
-            if (h && h->body && containsContinue(h->body))
-              return true;
+        return false;
+      }
+      // Unary wrappers
+      else if constexpr (std::is_same_v<T, std::shared_ptr<koda::Strategy::Paren>>)
+      {
+        return node && node->a && containsContinue(node->a);
+      }
+      // Binary
+      else if constexpr (std::is_same_v<T, koda::PWithin>)
+      {
+        return node && ((node->a && containsContinue(node->a)) || (node->b && containsContinue(node->b)));
+      }
+      // Repeat
+      else if constexpr (std::is_same_v<T, std::shared_ptr<koda::Strategy::Repeat>>)
+      {
+        if (!node)
           return false;
-        }
-        // TaskCall
-        else if constexpr (std::is_same_v<T, std::shared_ptr<koda::Strategy::TaskCall>>)
-        {
-          if (!node)
-            return false;
 
-          for (const auto& h : node->handlers)
-            if (h && h->body && containsContinue(h->body))
-              return true;
+        if (node->a && containsContinue(node->a))
+          return true;
+
+        for (const auto& h : node->handlers)
+          if (h && h->body && containsContinue(h->body))
+            return true;
+        return false;
+      }
+      // Repeat
+      else if constexpr (std::is_same_v<T, std::shared_ptr<koda::Strategy::Retry>>)
+      {
+        if (!node)
           return false;
-        }
-        // End
-        else
-        {
+
+        if (node->a && containsContinue(node->a))
+          return true;
+
+        for (const auto& h : node->handlers)
+          if (h && h->body && containsContinue(h->body))
+            return true;
+
+        return false;
+      }
+      // TaskCall
+      else if constexpr (std::is_same_v<T, std::shared_ptr<koda::Strategy::TaskCall>>)
+      {
+        if (!node)
           return false;
-        }
-      },
-      s->v);
+
+        for (const auto& h : node->handlers)
+          if (h && h->body && containsContinue(h->body))
+            return true;
+        return false;
+      }
+      // End
+      else
+      {
+        return false;
+      }
+    },
+    s->v);
 }
 
 types::TypeDefinition CST2AST::convertTypeDeclaration(KodaParser::TypeDeclarationContext* ctx)
@@ -1422,8 +1482,8 @@ types::TypeDefinition CST2AST::convertTypeDeclaration(KodaParser::TypeDeclaratio
       else
       {
         fields.push_back(types::FieldDefinition{
-            .name = field->IDENT()->getText(),
-            .type = convertTypeReference(field->typeReference()),
+          .name = field->IDENT()->getText(),
+          .type = convertTypeReference(field->typeReference()),
         });
       }
     }
@@ -1464,8 +1524,8 @@ types::TypeDefinition CST2AST::convertEnumDeclaration(KodaParser::EnumDeclaratio
     }
 
     values.push_back(types::EnumValueDefinition{
-        .name = value->IDENT()->getText(),
-        .value = std::move(enumValue),
+      .name = value->IDENT()->getText(),
+      .value = std::move(enumValue),
     });
   }
 

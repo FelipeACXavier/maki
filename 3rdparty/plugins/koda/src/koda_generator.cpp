@@ -210,9 +210,9 @@ void KodaGenerator::setAssetDir(const QDir& dir)
 QList<std::shared_ptr<maki::IPipelineAction>> KodaGenerator::pipelineActions()
 {
   return {
-      std::make_shared<GenerateKodaAction>(this), std::make_shared<GenerateDezyneAction>(this), std::make_shared<GenerateCppAction>(this),
-      std::make_shared<KodaVerifyAction>(this),   std::make_shared<KodaSimulateAction>(this),   std::make_shared<KodaRosCopySources>(),
-      std::make_shared<KodaRosBuild>(this),       std::make_shared<KodaRosLaunch>(this),
+    std::make_shared<GenerateKodaAction>(this), std::make_shared<GenerateDezyneAction>(this), std::make_shared<GenerateCppAction>(this),
+    std::make_shared<KodaVerifyAction>(this),   std::make_shared<KodaSimulateAction>(this),   std::make_shared<KodaRosCopySources>(),
+    std::make_shared<KodaRosBuild>(this),       std::make_shared<KodaRosLaunch>(this),
   };
 }
 
@@ -262,7 +262,7 @@ Result<maki::PipelineArtifact> KodaGenerator::generateKoda(const maki::PipelineA
 
   maki::PipelineArtifact output;
   output.metadata = {
-      {"sources", {fileName}},
+    {"sources", {fileName}},
   };
 
   return output;
@@ -330,11 +330,11 @@ Result<maki::PipelineArtifact> KodaGenerator::generateDezyne(const maki::Pipelin
 
   maki::PipelineArtifact output;
   output.paths = {
-      {"modelDir", modelsOutputFolder.absolutePath()},
+    {"modelDir", modelsOutputFolder.absolutePath()},
   };
   output.metadata = {
-      {"sources", outputFiles},
-      {"includes", includeFolders},
+    {"sources", outputFiles},
+    {"includes", includeFolders},
   };
 
   mDezyneOutputFolder = modelsOutputFolder;
@@ -373,7 +373,7 @@ Result<maki::PipelineArtifact> KodaGenerator::generateCpp(const maki::PipelineAr
     LOG_INFO("Will generate file: {}", fullPath);
     const QString command = "dzn";
     QStringList arguments = {
-        "code", "-l", "c++", "-o", cppOutputFolder.absolutePath(), fullPath,
+      "code", "-l", "c++", "-o", cppOutputFolder.absolutePath(), fullPath,
     };
 
     if (fullPath.contains("_task"))
@@ -402,12 +402,12 @@ Result<maki::PipelineArtifact> KodaGenerator::generateCpp(const maki::PipelineAr
   LOG_DEBUG("Using asset dir: {}", mAssetDir->absolutePath());
   maki::PipelineArtifact output;
   output.paths = {
-      {"includeDir", mAssetDir->absoluteFilePath("dzn_files/include")},
-      {"sourceDir", {mAssetDir->absoluteFilePath("dzn_files/src")}},
+    {"includeDir", mAssetDir->absoluteFilePath("dzn_files/include")},
+    {"sourceDir", {mAssetDir->absoluteFilePath("dzn_files/src")}},
   };
   output.metadata = {
-      {"sources", outputSourceFiles},
-      {"includes", outputHeaderFiles},
+    {"sources", outputSourceFiles},
+    {"includes", outputHeaderFiles},
   };
 
   return output;
@@ -571,8 +571,10 @@ Result<maki::PipelineArtifact> KodaGenerator::launchRosProject(const maki::Pipel
     "-e", "QT_X11_NO_MITSHM=1",
     "-e", "TURTLEBOT3_MODEL=waffle_pi",
     "-e", "GAZEBO_MODEL_PATH=/usr/share/gazebo-11/models:/home/felaze/ros2_ws/world/",
-    "--device", "/dev/dri/card1:/dev/dri/card1",
-    "--device", "/dev/dri/renderD128:/dev/dri/renderD128",
+    "--gpus", "all",
+    "-e", "NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics,display",
+    "-e", "__NV_PRIME_RENDER_OFFLOAD=1",
+    "-e", "__GLX_VENDOR_LIBRARY_NAME=nvidia",
     "-v", "/tmp/.X11-unix:/tmp/.X11-unix:rw",
     "-v", "/home/felaze/ros2_ws:/home/felaze/ros2_ws:rw",
     "-v", projectDir + ":/home/felaze/ros2_ws/src/koda_ros:rw",
@@ -843,8 +845,8 @@ void KodaGenerator::highlightActiveNode(const QJsonObject& json, QGraphicsScene*
     LOG_DEBUG("Sending simulateOnNode: {} {}", candidate.source.id, candidate.source.flowId);
     mServices->simulateOnNode(QString::fromStdString(candidate.source.id), QString::fromStdString(candidate.source.flowId),
                               maki::SimulationProperties{
-                                  .widget = container,
-                                  .highlight = highlight,
+                                .widget = container,
+                                .highlight = highlight,
                               });
   }
 
@@ -853,7 +855,7 @@ void KodaGenerator::highlightActiveNode(const QJsonObject& json, QGraphicsScene*
     for (const auto& candidate : mPreviousCandidates)
       mServices->simulateOnNode(QString::fromStdString(candidate.source.id), QString::fromStdString(candidate.source.flowId),
                                 maki::SimulationProperties{
-                                    .widget = nullptr,
+                                  .widget = nullptr,
                                 });
 
   mPreviousCandidates = candidates;
@@ -893,11 +895,11 @@ std::optional<KodaGenerator::SimulationControlConfig> KodaGenerator::getConfigFr
   if (label.contains("Result:Failure"))
   {
     return SimulationControlConfig{
-        .text = REJECT_TEXT,
-        .iconPath = ":/icons/reject.svg",
-        .requiresAbort = false,
-        .buttonColor = theme.statusColorError,
-        .highlightColor = QColor(),
+      .text = REJECT_TEXT,
+      .iconPath = ":/icons/reject.svg",
+      .requiresAbort = false,
+      .buttonColor = theme.statusColorError,
+      .highlightColor = QColor(),
     };
   }
   else if (label.contains("Result:Success"))
@@ -906,11 +908,11 @@ std::optional<KodaGenerator::SimulationControlConfig> KodaGenerator::getConfigFr
       return std::nullopt;
 
     return SimulationControlConfig{
-        .text = ACCEPT_TEXT,
-        .iconPath = ":/icons/accept.svg",
-        .requiresAbort = false,
-        .buttonColor = theme.statusColorInfo,
-        .highlightColor = QColor(),
+      .text = ACCEPT_TEXT,
+      .iconPath = ":/icons/accept.svg",
+      .requiresAbort = false,
+      .buttonColor = theme.statusColorInfo,
+      .highlightColor = QColor(),
     };
   }
   else if (label.contains("Result:Done"))
@@ -919,48 +921,48 @@ std::optional<KodaGenerator::SimulationControlConfig> KodaGenerator::getConfigFr
       return std::nullopt;
 
     return SimulationControlConfig{
-        .text = ACCEPT_TEXT,
-        .iconPath = ":/icons/accept.svg",
-        .requiresAbort = false,
-        .buttonColor = theme.statusColorInfo,
-        .highlightColor = QColor(),
+      .text = ACCEPT_TEXT,
+      .iconPath = ":/icons/accept.svg",
+      .requiresAbort = false,
+      .buttonColor = theme.statusColorInfo,
+      .highlightColor = QColor(),
     };
   }
   else if (label.contains(".failure"))
   {
     return SimulationControlConfig{
-        .text = "Failure",
-        .iconPath = ":/icons/reject.svg",
-        .buttonColor = theme.statusColorError,
-        .highlightColor = theme.primaryColor,
+      .text = "Failure",
+      .iconPath = ":/icons/reject.svg",
+      .buttonColor = theme.statusColorError,
+      .highlightColor = theme.primaryColor,
     };
   }
   else if (label.contains(".success"))
   {
     return SimulationControlConfig{
-        .text = "Success",
-        .iconPath = ":/icons/accept.svg",
-        .buttonColor = theme.statusColorInfo,
-        .highlightColor = theme.primaryColor,
+      .text = "Success",
+      .iconPath = ":/icons/accept.svg",
+      .buttonColor = theme.statusColorInfo,
+      .highlightColor = theme.primaryColor,
     };
   }
   else if (label.contains("api.trigger"))
   {
     return SimulationControlConfig{
-        .text = "Start simulation",
-        .iconPath = ":/icons/accept.svg",
-        .requiresAbort = false,
-        .buttonColor = theme.primaryColor,
-        .highlightColor = theme.primaryColor,
+      .text = "Start simulation",
+      .iconPath = ":/icons/accept.svg",
+      .requiresAbort = false,
+      .buttonColor = theme.primaryColor,
+      .highlightColor = theme.primaryColor,
     };
   }
   else if (label.contains("api.reset"))
   {
     return SimulationControlConfig{
-        .text = "Reset task",
-        .iconPath = ":/icons/reset.svg",
-        .buttonColor = theme.primaryColor,
-        .highlightColor = theme.primaryColor,
+      .text = "Reset task",
+      .iconPath = ":/icons/reset.svg",
+      .buttonColor = theme.primaryColor,
+      .highlightColor = theme.primaryColor,
     };
   }
 

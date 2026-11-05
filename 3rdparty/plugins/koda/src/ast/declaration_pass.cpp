@@ -111,8 +111,8 @@ VoidResult DeclarationPass::declareStatement(const PStatement& statement, Symbol
       for (const auto& arg : flow->args)  // This is an awful name, by the way...
       {
         // No need for arg->a since we dont use types in flow arguments
-        auto argId =
-            mSymbolRegistry.declare(SymbolKind::Argument, arg->b, types::TypeReference::primitive(types::PrimitiveKind::String), arg->span, symbolId.Value());
+        auto argId = mSymbolRegistry.declare(SymbolKind::Argument, arg->b, types::TypeReference::primitive(types::PrimitiveKind::String), arg->span,
+                                             symbolId.Value());
         if (!argId.IsSuccess())
           return VoidResult::Failed(argId.ErrorMessage());
       }
@@ -184,6 +184,11 @@ VoidResult DeclarationPass::declareInsideStrategy(const PStrategy& strategy, Sym
     return VoidResult();
   }
   else if (auto value = std::get_if<PRepeat>(&strategy->v); value && *value)
+  {
+    RETURN_ON_FAILURE(declareInsideStrategy((*value)->a, owner));
+    return VoidResult();
+  }
+  else if (auto value = std::get_if<PRetry>(&strategy->v); value && *value)
   {
     RETURN_ON_FAILURE(declareInsideStrategy((*value)->a, owner));
     return VoidResult();

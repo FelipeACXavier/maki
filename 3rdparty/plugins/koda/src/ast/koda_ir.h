@@ -213,6 +213,13 @@ struct Strategy
     std::vector<PHandler> handlers;
   };
 
+  struct Retry
+  {
+    int iterations = 0;
+    PStrategy body;
+    std::vector<PHandler> handlers;
+  };
+
   struct End
   {
   };
@@ -245,7 +252,7 @@ struct Strategy
   std::string id;
   std::string name;
   SymbolId owner = InvalidSymbol;
-  std::variant<Sequence, Join, Either, Within, Repeat, End, Failure, Continue, Call, Choose> value;
+  std::variant<Sequence, Join, Either, Within, Repeat, End, Failure, Continue, Call, Choose, Retry> value;
   Span span;
 };
 

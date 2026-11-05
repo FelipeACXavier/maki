@@ -43,6 +43,7 @@ private:
   VoidResult emitJoin(const koda::Strategy::Join& node, std::stringstream& ss, const std::string& format);
   VoidResult emitWithin(const koda::Strategy::Within& node, std::stringstream& ss, const std::string& format);
   VoidResult emitRepeat(const koda::Strategy::Repeat& node, std::stringstream& ss, const std::string& format);
+  VoidResult emitRetry(const koda::Strategy::Retry& node, std::stringstream& ss, const std::string& format);
   VoidResult emitSuccess(const koda::Strategy::Success& node, std::stringstream& ss, const std::string& format);
   VoidResult emitFailure(const koda::Strategy::Failure& node, std::stringstream& ss, const std::string& format);
   VoidResult emitContinue(const koda::Strategy::Continue& node, std::stringstream& ss, const std::string& format);

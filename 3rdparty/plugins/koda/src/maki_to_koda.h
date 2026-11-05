@@ -71,6 +71,7 @@ private:
   std::any buildWithinExpr(const IFlow& flow, const INode& node);
   std::any buildEveryExpr(const IFlow& flow, const INode& node);
   std::any buildRepeatExpr(const IFlow& flow, const INode& node);
+  std::any buildRetryExpr(const IFlow& flow, const INode& node);
   std::any buildContinueExpr(const IFlow& flow, const INode& node);
   std::any buildSuccessExpr(const IFlow& flow, const INode& node);
   std::any buildTerminateExpr(const IFlow& flow, const INode& node);

@@ -359,9 +359,9 @@ Result<koda::PFlow> MakiToKoda::buildFlowAst(const IFlow& flow)
   pflow->strategy = std::any_cast<koda::PStrategy>(seq);
   if (mTraceMap)
     mTraceMap->mapAst(pflow->id, MakiSource{
-                                     .id = pflow->id,
-                                     .flowId = pflow->id,
-                                     .kind = MakiElementKind::Flow,
+                                   .id = pflow->id,
+                                   .flowId = pflow->id,
+                                   .kind = MakiElementKind::Flow,
                                  });
 
   return pflow;
@@ -463,6 +463,8 @@ std::any MakiToKoda::buildNodeExpr(const IFlow& flow, const INode& node)
     result = buildWithinExpr(flow, node);
   else if (node.getnodeId() == ConfigKeys::REPEAT_NODE)
     result = buildRepeatExpr(flow, node);
+  else if (node.getnodeId() == ConfigKeys::RETRY_NODE)
+    result = buildRetryExpr(flow, node);
   else if (node.getnodeId() == ConfigKeys::CONTINUE_NODE)
     result = buildContinueExpr(flow, node);
   else if (node.getnodeId() == ConfigKeys::SUCCESS_NODE)
@@ -691,6 +693,41 @@ std::any MakiToKoda::buildRepeatExpr(const IFlow& flow, const INode& node)
   // Handlers on the Repeat construct itself.
   // --------------------------------------------------------------------------
 
+  auto handlers = buildHandlers(flow, node);
+  if (handlers.IsSuccess())
+    for (const auto& handler : handlers.Value())
+      expr->handlers.push_back(handler);
+
+  auto strat = std::make_shared<koda::Strategy>();
+  strat->v = expr;
+
+  return strat;
+}
+
+std::any MakiToKoda::buildRetryExpr(const IFlow& flow, const INode& node)
+{
+  const auto* iterations = maki::getProperty("iterations", node);
+
+  if (!iterations)
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Retry iterations property is missing");
+  if (!iterations->isInt() && !iterations->isString())
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Retry iterations property should be an integer");
+
+  auto expr = std::make_shared<koda::Strategy::Retry>();
+  expr->iterations = iterations->toInt();
+
+  // --------------------------------------------------------------------------
+  // Build the Repeat body from the nodes contained in its "body" subflow.
+  // --------------------------------------------------------------------------
+  auto body = buildSubFlow(flow, node, "body");
+  if (!body.has_value())
+    LOG_AND_FAIL(node.getid(), flow.getid(), "Retry body is empty");
+
+  expr->a = std::any_cast<koda::PStrategy>(body);
+
+  // --------------------------------------------------------------------------
+  // Handlers on the Repeat construct itself.
+  // -------------------------------------------------------------------------
   auto handlers = buildHandlers(flow, node);
   if (handlers.IsSuccess())
     for (const auto& handler : handlers.Value())

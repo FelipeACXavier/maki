@@ -86,12 +86,12 @@ Result<ir::Component> IRBuilder::buildComponent(const PComponent& component) con
           return Result<ir::Component>::Failed("Parameter '{}' at {} has no declared slot", var->name, var->span.toString());
 
         out.variables.push_back(ir::Variable{
-            .symbol = id.value_or(InvalidSymbol),
-            .name = var->name,
-            .type = symbol->type,
-            .initial = initial.Value(),
-            .span = var->span,
-            .slot = mSemantics.variableSlots.at(*id),
+          .symbol = id.value_or(InvalidSymbol),
+          .name = var->name,
+          .type = symbol->type,
+          .initial = initial.Value(),
+          .span = var->span,
+          .slot = mSemantics.variableSlots.at(*id),
         });
       }
     }
@@ -102,11 +102,11 @@ Result<ir::Component> IRBuilder::buildComponent(const PComponent& component) con
         const auto id = mSymbols.lookupChild(owner, var->name);
         const auto* symbol = id ? mSymbols.get(*id) : nullptr;
         out.variables.push_back(ir::Variable{
-            .symbol = id.value_or(InvalidSymbol),
-            .name = var->name,
-            .type = symbol ? symbol->type : types::TypeReference{},
-            .initial = nullptr,
-            .span = var->span,
+          .symbol = id.value_or(InvalidSymbol),
+          .name = var->name,
+          .type = symbol ? symbol->type : types::TypeReference{},
+          .initial = nullptr,
+          .span = var->span,
         });
       }
     }
@@ -325,6 +325,24 @@ Result<ir::PStrategy> IRBuilder::buildStrategy(const PStrategy& strategy, Symbol
     out->name = "repeat";
     out->value = std::move(x);
   }
+  else if (auto p = std::get_if<PRetry>(&strategy->v); p && *p)
+  {
+    auto body = buildStrategy((*p)->a, owner);
+    if (!body.IsSuccess())
+      return body;
+
+    ir::Strategy::Retry x{(*p)->iterations, body.Value(), {}};
+    for (const auto& h : (*p)->handlers)
+    {
+      auto bh = buildHandler(h, owner);
+      if (!bh.IsSuccess())
+        return Result<ir::PStrategy>::Failed(bh.ErrorMessage());
+
+      x.handlers.push_back(bh.Value());
+    }
+    out->name = "retry";
+    out->value = std::move(x);
+  }
   else if (std::holds_alternative<PSuccess>(strategy->v))
   {
     out->name = "end";
@@ -347,8 +365,8 @@ Result<ir::PStrategy> IRBuilder::buildStrategy(const PStrategy& strategy, Symbol
       return Result<ir::PStrategy>::Failed(call.ErrorMessage());
 
     ir::Strategy::Call x{
-        .call = call.Value(),
-        .handlers = {},
+      .call = call.Value(),
+      .handlers = {},
     };
 
     for (const auto& h : (*p)->handlers)
@@ -631,8 +649,8 @@ Result<ir::PExpression> IRBuilder::buildExpr(const PExpr& expr, SymbolId owner) 
         return Result<ir::PExpression>::Failed(value.ErrorMessage());
 
       record.fields.push_back({
-          .name = field->name,
-          .value = value.Value(),
+        .name = field->name,
+        .value = value.Value(),
       });
     }
 
@@ -666,8 +684,8 @@ Result<ir::PExpression> IRBuilder::buildExpr(const PExpr& expr, SymbolId owner) 
         return Result<ir::PExpression>::Failed(value.ErrorMessage());
 
       map.fields.push_back({
-          .key = key.Value(),
-          .value = value.Value(),
+        .key = key.Value(),
+        .value = value.Value(),
       });
     }
 
@@ -816,8 +834,8 @@ Result<ir::PPropertyExpr> IRBuilder::buildPropertyExpr(const PPropertyExpr& expr
     auto implication = std::make_shared<ir::PropertyExpr>();
     implication->span = expr->span;
     implication->value = ir::PropertyExpr::Implies{
-        condition.Value(),
-        consequence.Value(),
+      condition.Value(),
+      consequence.Value(),
     };
 
     out->value = ir::PropertyExpr::Always{implication};
@@ -838,15 +856,15 @@ Result<ir::PPropertyExpr> IRBuilder::buildPropertyExpr(const PPropertyExpr& expr
     auto until = std::make_shared<ir::PropertyExpr>();
     until->span = expr->span;
     until->value = ir::PropertyExpr::WeakUntil{
-        consequence.Value(),
-        end.Value(),
+      consequence.Value(),
+      end.Value(),
     };
 
     auto implication = std::make_shared<ir::PropertyExpr>();
     implication->span = expr->span;
     implication->value = ir::PropertyExpr::Implies{
-        start.Value(),
-        until,
+      start.Value(),
+      until,
     };
 
     out->value = ir::PropertyExpr::Always{implication};

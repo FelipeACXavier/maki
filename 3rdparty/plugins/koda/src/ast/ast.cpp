@@ -280,6 +280,7 @@ void Strategy::print(const std::string& prefix, const bool last) const
   ELSE_IF_ALT(PEither, v, print(prefix, last, span))
   ELSE_IF_ALT(PWithin, v, print(prefix, last, span))
   ELSE_IF_ALT(PRepeat, v, print(prefix, last, span))
+  ELSE_IF_ALT(PRetry, v, print(prefix, last, span))
   ELSE_IF_ALT(PSuccess, v, print(prefix, last, span))
   ELSE_IF_ALT(PFailure, v, print(prefix, last, span))
   ELSE_IF_ALT(PContinue, v, print(prefix, last, span))
@@ -328,6 +329,17 @@ void Strategy::Repeat::print(const std::string& prefix, const bool last, const S
 {
   LOG_TREE("Repeat");
   const std::string childPrefix = prefix + tree::carry(last);
+  printString(childPrefix, false, Format("Iterations: {}", iterations));
+  printString(childPrefix, a == nullptr, Format("Rate: {}", seconds));
+  if (a)
+    a->print(childPrefix, true);
+}
+
+void Strategy::Retry::print(const std::string& prefix, const bool last, const Span& span) const
+{
+  LOG_TREE("Retry");
+  const std::string childPrefix = prefix + tree::carry(last);
+  printString(childPrefix, a == nullptr, Format("Iterations: {}", iterations));
   if (a)
     a->print(childPrefix, true);
 }

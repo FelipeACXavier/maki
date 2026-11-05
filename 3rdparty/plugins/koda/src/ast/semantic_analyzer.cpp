@@ -297,7 +297,24 @@ VoidResult SemanticAnalyzer::analyzePropertyExpression(const std::string& name, 
 
       auto cEventId = mSymbols.lookupChild(component.Value(), event);
       if (!cEventId)
-        return VoidResult::Failed("Could not find event {} for capability {}", event, capability);
+      {
+        std::string availableEvents = "";
+        bool first = true;
+        for (const auto& ev : mSymbols.children(component.Value(), SymbolKind::Event))
+        {
+          const auto evSymbol = mSymbols.get(ev);
+          if (evSymbol)
+          {
+            if (!first)
+              availableEvents += ", ";
+
+            availableEvents += evSymbol->name;
+          }
+
+          first = false;
+        }
+        return VoidResult::Failed("Could not find event {} for capability {}. Available events: {}", event, capability, availableEvents);
+      }
 
       const auto eSymbol = mSymbols.get(cEventId.value());
       if (eSymbol->type.toString() == "Return")
@@ -397,6 +414,19 @@ VoidResult SemanticAnalyzer::analyzeStrategy(const PStrategy& strategy, SymbolId
     }
   }
   else if (auto p = std::get_if<PRepeat>(&strategy->v); p && *p)
+  {
+    auto a = analyzeStrategy((*p)->a, owner);
+    if (!a.IsSuccess())
+      return a;
+
+    for (const auto& h : (*p)->handlers)
+    {
+      auto r = analyzeHandler(h, owner);
+      if (!r.IsSuccess())
+        return r;
+    }
+  }
+  else if (auto p = std::get_if<PRetry>(&strategy->v); p && *p)
   {
     auto a = analyzeStrategy((*p)->a, owner);
     if (!a.IsSuccess())
