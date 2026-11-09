@@ -6,6 +6,7 @@
 #include "declaration_pass.h"
 #include "emitters/dezyne/dezyne_emitter.h"
 #include "emitters/nuxmv/nuxmv_emitter.h"
+#include "emitters/tracer/tracer_emitter.h"
 #include "ir_builder.h"
 #include "logging.h"
 #include "parser/KodaLexer.h"
@@ -21,6 +22,7 @@ Compiler::Compiler()
 
   mEmitters.push_back(std::make_shared<DezyneEmitter>());
   mEmitters.push_back(std::make_shared<NuXmvEmitter>());
+  mEmitters.push_back(std::make_shared<TracerEmitter>());
 }
 
 std::vector<Error> Compiler::getErrors() const
@@ -186,7 +188,19 @@ VoidResult Compiler::runEmitters()
     if (std::count(mOptions.emitters.begin(), mOptions.emitters.end(), emitter->id()) <= 0)
       continue;
 
-    auto result = emitter->generate(mIR, mSymbols, *mTypeRegistry, mOptions);
+    // We create a subfolder per emitter to avoid name clashes
+    CompilerOptions emitterOptions = mOptions;
+    emitterOptions.outputDir += "/" + emitter->id();
+
+    std::error_code ec;
+    std::filesystem::create_directories(emitterOptions.outputDir, ec);
+    if (ec)
+    {
+      LOG_ERROR("Failed to run emitter '{}'. Could not create output directory: {}", emitter->id(), ec.message());
+      continue;
+    }
+
+    auto result = emitter->generate(mIR, mSymbols, *mTypeRegistry, emitterOptions);
     if (!result.IsSuccess())
       return result;
 
