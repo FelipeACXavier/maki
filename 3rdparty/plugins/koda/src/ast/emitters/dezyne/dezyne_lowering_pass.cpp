@@ -166,9 +166,9 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
     auto it = std::find_if(task.flows.begin(), task.flows.end(), [](const ir::Flow& flow) { return flow.name == "main"; });
     const auto& entry = it == task.flows.end() ? task.flows.front() : *it;
     connections.push_back({
-        .lhs = "api",
-        .rhs = "f_" + lower(entry.name) + ".api",
-        .span = entry.span,
+      .lhs = "api",
+      .rhs = "f_" + lower(entry.name) + ".api",
+      .span = entry.span,
     });
   }
 
@@ -190,10 +190,10 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
 
     // The armour owns the actual generated flow.
     connections.push_back({
-        .lhs = armourInstance + ".resource",
-        .rhs = flowInstance + ".api",
-        .span = flow.span,
-        .kind = PortProtocol::Action,
+      .lhs = armourInstance + ".resource",
+      .rhs = flowInstance + ".api",
+      .span = flow.span,
+      .kind = PortProtocol::Action,
     });
   }
 
@@ -211,29 +211,29 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
       if (call.kind == CallUse::Kind::Flow)
       {
         connections.push_back({
-            .lhs = flowInstance + "." + call.localPort,
-            .rhs = flowApi(call.target),
-            .span = call.span,
-            .kind = PortProtocol::Action,
+          .lhs = flowInstance + "." + call.localPort,
+          .rhs = flowApi(call.target),
+          .span = call.span,
+          .kind = PortProtocol::Action,
         });
 
         mModel.declareCallSite({
-            .kind = CallSiteKind::Flow,
-            .flow = call.flow,
-            .receiver = koda::InvalidSymbol,
-            .target = call.target,
+          .kind = CallSiteKind::Flow,
+          .flow = call.flow,
+          .receiver = koda::InvalidSymbol,
+          .target = call.target,
 
-            .localPort = call.localPort,
-            .targetPort = {},
+          .localPort = call.localPort,
+          .targetPort = {},
 
-            .localOrdinal = call.localOrdinal,
-            .targetOrdinal = call.targetOrdinal,
+          .localOrdinal = call.localOrdinal,
+          .targetOrdinal = call.targetOrdinal,
 
-            .arguments = call.arguments,
-            .inputSlots = call.inputSlots,
-            .outputSlots = call.outputSlots,
+          .arguments = call.arguments,
+          .inputSlots = call.inputSlots,
+          .outputSlots = call.outputSlots,
 
-            .origin = {.sourceSymbol = call.target, .sourceSpan = call.span},
+          .origin = {.sourceSymbol = call.target, .sourceSpan = call.span},
         });
 
         continue;
@@ -242,10 +242,10 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
       if (call.kind == CallUse::Kind::FlowAbort)
       {
         connections.push_back({
-            .lhs = flowInstance + "." + call.localPort,
-            .rhs = flowAbort(call.receiver),
-            .span = call.span,
-            .kind = PortProtocol::Abort,
+          .lhs = flowInstance + "." + call.localPort,
+          .rhs = flowAbort(call.receiver),
+          .span = call.span,
+          .kind = PortProtocol::Abort,
         });
 
         continue;
@@ -266,10 +266,10 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
         resourcePort = "abort";
 
       connections.push_back({
-          .lhs = flowInstance + "." + call.localPort,
-          .rhs = armourName + "." + resourcePort,
-          .span = call.span,
-          .kind = CallUse::toPortProtocol(call.kind),
+        .lhs = flowInstance + "." + call.localPort,
+        .rhs = armourName + "." + resourcePort,
+        .span = call.span,
+        .kind = CallUse::toPortProtocol(call.kind),
       });
 
       CallSiteKind kind = call.toCallSiteKind();
@@ -302,22 +302,22 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
       }
 
       mModel.declareCallSite({
-          .kind = kind,
-          .flow = call.flow,
-          .receiver = receiverComponent->id,
-          .target = call.target,
+        .kind = kind,
+        .flow = call.flow,
+        .receiver = receiverComponent->id,
+        .target = call.target,
 
-          .localPort = call.localPort,
-          .targetPort = targetPort,
+        .localPort = call.localPort,
+        .targetPort = targetPort,
 
-          .localOrdinal = call.localOrdinal,
-          .targetOrdinal = call.targetOrdinal,
+        .localOrdinal = call.localOrdinal,
+        .targetOrdinal = call.targetOrdinal,
 
-          .arguments = call.arguments,
-          .inputSlots = call.inputSlots,
-          .outputSlots = call.outputSlots,
+        .arguments = call.arguments,
+        .inputSlots = call.inputSlots,
+        .outputSlots = call.outputSlots,
 
-          .origin = {.sourceSymbol = call.target, .sourceSpan = call.span},
+        .origin = {.sourceSymbol = call.target, .sourceSpan = call.span},
       });
     }
 
@@ -326,9 +326,9 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
       auto alarmName = std::format("alarm{}", alarmId++);
       mModel.declareInstance(componentId, alarmName, "calarm", {componentId, flow.span});
       connections.push_back({
-          .lhs = flowInstance + "." + alarm,  // The port remains the same since that is set based on the
-          .rhs = alarmName + ".api",
-          .span = flow.span,
+        .lhs = flowInstance + "." + alarm,  // The port remains the same since that is set based on the
+        .rhs = alarmName + ".api",
+        .span = flow.span,
       });
     }
   }
@@ -351,25 +351,26 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
     const auto& capability = *found->second;
     const auto externalInstance = lower(arg.name);
     const auto armourInstance = externalInstance + "_armour";
-    std::vector<std::string> ports;
+    std::vector<std::pair<std::string, bool>> ports;
     for (const auto& action : capability.actions)
       for (const auto& event : action.events)
       {
         if (!isActionEvent(event.kind))
           continue;
 
+        bool isAsync = (event.kind == ir::EventKind::Trigger);
         const auto count = std::max<std::uint32_t>(0, mCallCounts[event.symbol]);
         for (std::uint32_t i = 0; i < count; ++i)
         {
           const auto port = count == 1 ? event.name : std::format("{}_{}", event.name, i + 1);
 
           connections.push_back({
-              .lhs = std::format("{}.r_{}", armourInstance, port),
-              .rhs = std::format("{}.{}", externalInstance, port),
-              .span = arg.span,
+            .lhs = std::format("{}.ext_{}", armourInstance, port),
+            .rhs = std::format("{}.{}", externalInstance, port),
+            .span = arg.span,
           });
 
-          ports.push_back(port);
+          ports.push_back(std::make_pair(port, isAsync));
         }
       }
 
@@ -421,10 +422,10 @@ VoidResult LoweringPass::lowerTask(const ir::Component& task)
       mModel.declareInstance(componentId, conditionName, conditionType, {componentId, condition.span});
 
       connections.push_back({
-          .lhs = std::format("{}.{}", flowInstance, condition.localPort),
-          .rhs = conditionName + ".api",
-          .span = condition.span,
-          .kind = PortProtocol::Condition,
+        .lhs = std::format("{}.{}", flowInstance, condition.localPort),
+        .rhs = conditionName + ".api",
+        .span = condition.span,
+        .kind = PortProtocol::Condition,
       });
     }
   }
@@ -657,30 +658,31 @@ Result<std::string> LoweringPass::lowerStrategy(const ir::Flow& flow, const ir::
   if (!strategy)
     return Result<std::string>::Failed("Invalid Dezyne strategy");
 
+  LOG_DEBUG("Lowering strategy: {} {} {}", strategy->id, strategy->name, strategy->span.toString());
   if (auto p = std::get_if<ir::Strategy::Sequence>(&strategy->value))
   {
-    std::vector<ir::PStrategy> items;
-    for (const auto& item : p->items)
-      if (!std::holds_alternative<ir::Strategy::Continue>(item->value))
-        items.push_back(item);
+    // std::vector<ir::PStrategy> items;
+    // for (const auto& item : p->items)
+    //   if (!std::holds_alternative<ir::Strategy::Continue>(item->value))
+    // items.push_back(item);
 
-    if (items.size() == 1)
-      return lowerStrategy(flow, items.front(), state);
+    if (p->items.empty())
+      return Result<std::string>::Failed("Received a sequence with no items");
 
-    if (items.empty())
-      return std::string("continue");
+    if (p->items.size() == 1)
+      return lowerStrategy(flow, p->items.front(), state);
 
     LibraryComponent libComponent;
-    ASSIGN_OR_RETURN_ON_FAILURE_AS(libComponent, createSequenceComponent(mModel, mOptions.outputDir, items.size(), flow.symbol), std::string);
+    ASSIGN_OR_RETURN_ON_FAILURE_AS(libComponent, createSequenceComponent(mModel, mOptions.outputDir, p->items.size(), flow.symbol), std::string);
 
     const auto id = state.sequence++;
     const auto instance = std::format("s{}", id);
     state.imports.insert(libComponent.filename);
     state.definitions.push_back(std::format("{} {}", libComponent.name, instance));
     mModel.declareInstance(state.component, instance, libComponent.name, {std::nullopt, strategy->span});
-    for (size_t i = 0; i < items.size(); ++i)
+    for (size_t i = 0; i < p->items.size(); ++i)
     {
-      auto child = lowerStrategy(flow, items[i], state);
+      auto child = lowerStrategy(flow, p->items[i], state);
       if (!child.IsSuccess())
         return child;
 
@@ -767,7 +769,7 @@ Result<std::string> LoweringPass::lowerStrategy(const ir::Flow& flow, const ir::
       current = wrapped.Value();
     }
 
-    const bool every = p->iterations > 0;
+    const bool every = p->seconds > 0;
     const auto count = every ? state.every++ : state.repeat++;
     const auto instance = std::format("{}{}", every ? "e" : "r", count);
     const auto type = every ? "cevery" : "crepeat";
@@ -789,13 +791,52 @@ Result<std::string> LoweringPass::lowerStrategy(const ir::Flow& flow, const ir::
     }
     else
     {
-      RETURN_ON_FAILURE_AS(createRepeatComponent(mModel, mOptions.outputDir, flow.symbol), std::string);
+      RETURN_ON_FAILURE_AS(createRepeatComponent(mModel, mOptions.outputDir, flow.symbol, p->iterations, p->seconds), std::string);
     }
+    return instance + ".api";
+  }
+  else if (auto p = std::get_if<ir::Strategy::Retry>(&strategy->value))
+  {
+    auto endpoint = lowerStrategy(flow, p->body, state);
+    if (!endpoint.IsSuccess())
+      return endpoint;
+
+    std::string current = endpoint.Value();
+    for (const auto& handler : p->handlers)
+    {
+      state.previous = current;
+      auto wrapped = lowerHandler(flow, handler, state);
+      if (!wrapped.IsSuccess())
+        return wrapped;
+
+      if (handler->kind == ir::HandlerKind::Error)
+        RETURN_ON_FAILURE_AS(createErrorHandlerComponent(mModel, mOptions.outputDir, flow.symbol), std::string);
+      else if (handler->kind == ir::HandlerKind::Abort)
+        RETURN_ON_FAILURE_AS(createAbortHandlerComponent(mModel, mOptions.outputDir, flow.symbol), std::string);
+
+      current = wrapped.Value();
+    }
+
+    const auto count = state.retry++;
+    const auto instance = std::format("rt{}", count);
+    const auto type = "cretry";
+    state.imports.insert("retry.dzn");
+    state.definitions.push_back(std::string(type) + " " + instance);
+    mModel.declareInstance(state.component, instance, type, {std::nullopt, strategy->span});
+    state.connections.push_back({.lhs = instance + ".action", .rhs = current});
+    RETURN_ON_FAILURE_AS(createRetryComponent(mModel, mOptions.outputDir, flow.symbol, p->iterations), std::string);
     return instance + ".api";
   }
   else if (std::holds_alternative<ir::Strategy::End>(strategy->value))
   {
-    return std::string("end");
+    LibraryComponent libTerminate;
+    ASSIGN_OR_RETURN_ON_FAILURE_AS(libTerminate, createTerminateComponent(mModel, mOptions.outputDir, flow.symbol), std::string);
+
+    const auto instance = std::format("term{}", state.terminate++);
+    state.imports.insert(libTerminate.filename);
+    state.definitions.push_back(libTerminate.name + instance);
+    mModel.declareInstance(state.component, instance, libTerminate.name, {std::nullopt, strategy->span});
+    return instance + ".api";
   }
   else if (std::holds_alternative<ir::Strategy::Failure>(strategy->value))
   {
@@ -810,7 +851,14 @@ Result<std::string> LoweringPass::lowerStrategy(const ir::Flow& flow, const ir::
   }
   else if (std::holds_alternative<ir::Strategy::Continue>(strategy->value))
   {
-    return std::string("continue");
+    LibraryComponent libContinue;
+    ASSIGN_OR_RETURN_ON_FAILURE_AS(libContinue, createContinueComponent(mModel, mOptions.outputDir, flow.symbol), std::string);
+
+    const auto instance = std::format("cnt{}", state.continued++);
+    state.imports.insert(libContinue.filename);
+    state.definitions.push_back(libContinue.name + instance);
+    mModel.declareInstance(state.component, instance, libContinue.name, {std::nullopt, strategy->span});
+    return instance + ".api";
   }
   else if (auto p = std::get_if<ir::Strategy::Call>(&strategy->value))
   {
@@ -858,7 +906,6 @@ Result<std::string> LoweringPass::lowerStrategy(const ir::Flow& flow, const ir::
       // ------------------------------------------------------------
       // Lower the branch body.
       auto child = lowerStrategy(flow, branch.strategy, state);
-
       if (!child.IsSuccess())
         return child;
 
@@ -883,16 +930,16 @@ Result<std::string> LoweringPass::lowerStrategy(const ir::Flow& flow, const ir::
         const auto conditionName = std::format("condition{}", flowConditionIndex);
 
         state.conditions.push_back({
-            .localPort = conditionName,
-            .expression = *branch.condition,
-            .span = branch.condition->span,
+          .localPort = conditionName,
+          .expression = *branch.condition,
+          .span = branch.condition->span,
         });
 
         state.connections.push_back({
-            .lhs = std::format("{}.condition{}", instance, selectorConditionIndex),
-            .rhs = conditionName,
-            .span = branch.condition->span,
-            .kind = PortProtocol::Condition,
+          .lhs = std::format("{}.condition{}", instance, selectorConditionIndex),
+          .rhs = conditionName,
+          .span = branch.condition->span,
+          .kind = PortProtocol::Condition,
         });
       }
       else
@@ -927,10 +974,10 @@ Result<std::string> LoweringPass::lowerStrategy(const ir::Flow& flow, const ir::
     for (std::size_t i = 0; i < endpoints.size(); ++i)
     {
       state.connections.push_back({
-          .lhs = std::format("{}.flow{}", instance, i),
-          .rhs = endpoints[i],
-          .span = strategy->span,
-          .kind = PortProtocol::Action,
+        .lhs = std::format("{}.flow{}", instance, i),
+        .rhs = endpoints[i],
+        .span = strategy->span,
+        .kind = PortProtocol::Action,
       });
     }
 
@@ -1088,18 +1135,18 @@ Result<std::string> LoweringPass::lowerCall(const ir::Call& call, FlowState& sta
     const auto local = sourceName(call.target);
 
     state.calls.push_back({
-        .kind = CallUse::Kind::Flow,
-        .flow = state.flow,
-        .localPort = local,
-        .receiver = InvalidSymbol,
-        .target = call.target,
-        .localOrdinal = 0,
-        .targetOrdinal = 0,
-        .arguments = call.arguments,
-        .inputSlots = call.inputSlots,
-        .outputSlots = call.outputSlots,
-        .traceId = traceId,
-        .span = call.span,
+      .kind = CallUse::Kind::Flow,
+      .flow = state.flow,
+      .localPort = local,
+      .receiver = InvalidSymbol,
+      .target = call.target,
+      .localOrdinal = 0,
+      .targetOrdinal = 0,
+      .arguments = call.arguments,
+      .inputSlots = call.inputSlots,
+      .outputSlots = call.outputSlots,
+      .traceId = traceId,
+      .span = call.span,
     });
 
     return local;
@@ -1136,22 +1183,22 @@ Result<std::string> LoweringPass::lowerCall(const ir::Call& call, FlowState& sta
     const auto local = count == 1 ? base : std::format("{}_{}", base, localOrdinal);
 
     state.calls.push_back({
-        .kind = call.kind == ir::CallKind::CapabilityTrigger ? CallUse::Kind::Trigger : CallUse::Kind::Action,
+      .kind = call.kind == ir::CallKind::CapabilityTrigger ? CallUse::Kind::Trigger : CallUse::Kind::Action,
 
-        .flow = state.flow,
-        .localPort = local,
-        .receiver = call.receiver,
-        .target = call.target,
+      .flow = state.flow,
+      .localPort = local,
+      .receiver = call.receiver,
+      .target = call.target,
 
-        .localOrdinal = localOrdinal,
-        .targetOrdinal = targetOrdinal,
+      .localOrdinal = localOrdinal,
+      .targetOrdinal = targetOrdinal,
 
-        .arguments = call.arguments,
-        .inputSlots = call.inputSlots,
-        .outputSlots = call.outputSlots,
+      .arguments = call.arguments,
+      .inputSlots = call.inputSlots,
+      .outputSlots = call.outputSlots,
 
-        .traceId = traceId,
-        .span = call.span,
+      .traceId = traceId,
+      .span = call.span,
     });
 
     return local;
@@ -1174,10 +1221,10 @@ Result<std::string> LoweringPass::lowerCall(const ir::Call& call, FlowState& sta
 
     // Internal orchestration uses iaction. cabort_call converts that to the capability-level iabort.
     state.connections.push_back({
-        .lhs = abortCall + ".action",
-        .rhs = abortPort,
-        .span = call.span,
-        .kind = PortProtocol::Abort,
+      .lhs = abortCall + ".action",
+      .rhs = abortPort,
+      .span = call.span,
+      .kind = PortProtocol::Abort,
     });
 
     auto receiver = mSymbols.get(call.receiver);
@@ -1186,27 +1233,9 @@ Result<std::string> LoweringPass::lowerCall(const ir::Call& call, FlowState& sta
       abortKind = CallUse::Kind::FlowAbort;
 
     state.calls.push_back({
-        .kind = abortKind,
-        .flow = state.flow,
-        .localPort = abortPort,
-        .receiver = call.receiver,
-        .target = call.target,
-        .localOrdinal = 0,
-        .targetOrdinal = 0,
-        .arguments = call.arguments,
-        .inputSlots = call.inputSlots,
-        .outputSlots = call.outputSlots,
-        .traceId = traceId,
-        .span = call.span,
-    });
-
-    return abortCall + ".api";
-  }
-
-  state.calls.push_back({
-      .kind = signal ? CallUse::Kind::Signal : CallUse::Kind::Action,
+      .kind = abortKind,
       .flow = state.flow,
-      .localPort = local,
+      .localPort = abortPort,
       .receiver = call.receiver,
       .target = call.target,
       .localOrdinal = 0,
@@ -1216,6 +1245,24 @@ Result<std::string> LoweringPass::lowerCall(const ir::Call& call, FlowState& sta
       .outputSlots = call.outputSlots,
       .traceId = traceId,
       .span = call.span,
+    });
+
+    return abortCall + ".api";
+  }
+
+  state.calls.push_back({
+    .kind = signal ? CallUse::Kind::Signal : CallUse::Kind::Action,
+    .flow = state.flow,
+    .localPort = local,
+    .receiver = call.receiver,
+    .target = call.target,
+    .localOrdinal = 0,
+    .targetOrdinal = 0,
+    .arguments = call.arguments,
+    .inputSlots = call.inputSlots,
+    .outputSlots = call.outputSlots,
+    .traceId = traceId,
+    .span = call.span,
   });
 
   return local;
@@ -1255,10 +1302,10 @@ VoidResult LoweringPass::createNecessaryArbiter(SymbolId componentId, std::vecto
         connections[uses[i].size].rhs = std::format("{}.client{}", name, i);
 
       connections.push_back({
-          .lhs = name + ".resource",
-          .rhs = resource,
-          .span = connections[uses.front().size].span,
-          .kind = PortProtocol::Abort,
+        .lhs = name + ".resource",
+        .rhs = resource,
+        .span = connections[uses.front().size].span,
+        .kind = PortProtocol::Abort,
       });
     }
     else
@@ -1272,9 +1319,9 @@ VoidResult LoweringPass::createNecessaryArbiter(SymbolId componentId, std::vecto
         connections[uses[i].size].rhs = std::format("{}.client{}", name, i);
 
       connections.push_back({
-          .lhs = name + ".resource",
-          .rhs = resource,
-          .span = connections[uses.front().size].span,
+        .lhs = name + ".resource",
+        .rhs = resource,
+        .span = connections[uses.front().size].span,
       });
     }
   }
@@ -1360,6 +1407,12 @@ void LoweringPass::countTriggers(const ir::PStrategy& strategy)
     for (const auto& h : p->handlers)
       countHandlerTriggers(h);
   }
+  else if (auto p = std::get_if<ir::Strategy::Retry>(&strategy->value))
+  {
+    countTriggers(p->body);
+    for (const auto& h : p->handlers)
+      countHandlerTriggers(h);
+  }
   else if (auto p = std::get_if<ir::Strategy::Call>(&strategy->value))
   {
     if (p->call.kind != ir::CallKind::Flow && mActionEvents.contains(p->call.target))
@@ -1367,6 +1420,11 @@ void LoweringPass::countTriggers(const ir::PStrategy& strategy)
 
     for (const auto& h : p->handlers)
       countHandlerTriggers(h);
+  }
+  else if (auto p = std::get_if<ir::Strategy::Choose>(&strategy->value))
+  {
+    for (const auto& when : p->options)
+      countTriggers(when.strategy);
   }
 }
 

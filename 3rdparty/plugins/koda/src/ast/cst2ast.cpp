@@ -635,8 +635,8 @@ std::any CST2AST::visitHandlerOnEmitter(KodaParser::HandlerOnEmitterContext* ctx
   value->kind = koda::StrategyHandler::Kind::OnEmitter;
   value->emitter = std::any_cast<koda::PEventCall>(visit(ctx->eventStatement()));
   value->body = std::any_cast<koda::PStrategy>(visit(ctx->strategy()));
-  if (containsContinue(value->body))
-    value->kind = koda::StrategyHandler::Kind::OnEmitterContinue;
+  // if (containsContinue(value->body))
+  //   value->kind = koda::StrategyHandler::Kind::OnEmitterContinue;
 
   value->span = spanOf(ctx);
 

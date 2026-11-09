@@ -39,7 +39,8 @@ VoidResult createTypes(Model& model, const std::string& outdir)
   out << "    Unknown,\n";
   out << "    Success,\n";
   out << "    Failure,\n";
-  out << "    Running,\n";
+  out << "    Handling,\n";
+  out << "    Terminated,\n";
   out << "    Done,\n";
   out << "    Error\n";
   out << "  };\n\n";
@@ -65,7 +66,8 @@ VoidResult createActionInterface(Model& model, const std::string& outdir)
 
   out << "  out void success();\n";
   out << "  out void failure();\n";
-  out << "  out void aborted();\n\n";
+  out << "  out void aborted();\n";
+  out << "  out void terminated();\n\n";
 
   out << "  behavior {\n";
   out << "    enum State { Idle, Running, Error };\n";
@@ -75,14 +77,16 @@ VoidResult createActionInterface(Model& model, const std::string& outdir)
   out << "      on trigger: { state = State.Running; reply(Result.Success); }\n";
   out << "      on trigger: { state = State.Error; reply(Result.Failure); }\n";
   out << "      on trigger: { reply(Result.Done); }\n";
+  out << "      on trigger: { reply(Result.Terminated); }\n";
   out << "    }\n\n";
 
   out << "    [state.Running] {\n";
   out << "      on abort: { state = State.Idle; aborted; reply(Result.Success); }\n";
   out << "      on abort: { state = State.Error; reply(Result.Failure); }\n";
-  out << "      on abort: { reply(Result.Running); }\n";
+  out << "      on abort: { reply(Result.Handling); }\n";
   out << "      on optional: { state = State.Idle; success; }\n";
   out << "      on optional: { state = State.Idle; aborted; }\n";
+  out << "      on optional: { state = State.Idle; terminated; }\n";
   out << "      on optional: { state = State.Error; failure; }\n";
   out << "    }\n\n";
 
@@ -148,7 +152,6 @@ VoidResult createExternalInterface(Model& model, const std::string& outdir)
   out << "    [state.Running] {\n";
   out << "      on abort: { state = State.Idle; reply(Result.Success); }\n";
   out << "      on abort: { state = State.Error; reply(Result.Failure); }\n";
-  out << "      on abort: { reply(Result.Running); }\n";
   out << "\n";
   out << "      on optional: { state = State.Idle; success; }\n";
   out << "      on optional: { state = State.Error; failure; }\n";
@@ -179,7 +182,6 @@ VoidResult createAbortInterface(Model& model, const std::string& outdir)
   out << "\n";
   out << "  behavior {\n";
   out << "    on abort: { reply(Result.Success); }\n";
-  out << "    on abort: { reply(Result.Running); }\n";
   out << "    on abort: { reply(Result.Failure); }\n";
   out << "  }\n";
   out << "}\n";
@@ -246,7 +248,7 @@ Result<LibraryComponent> createSequenceComponent(Model& model, const std::string
     out << "          state = State.Action0;\n";
     out << "        } else if (ret.Done) {\n";
     createSequenceDoneRecursion(true, 1, instances, out, "          ");
-    out << "        } else {\n";
+    out << "        } else if (!ret.Terminated) {\n";
     out << "          state = State.Error;\n";
     out << "        }\n";
     out << "        reply(ret);\n";
@@ -269,6 +271,9 @@ Result<LibraryComponent> createSequenceComponent(Model& model, const std::string
         out << std::format("          state = State.Action{};\n", i + 1);
         out << "        } else if (ret.Done) {\n";
         createSequenceDoneRecursion(false, i + 2, instances, out, "          ");
+        out << "        } else if (ret.Terminated) {\n";
+        out << "          api.terminated();\n";
+        out << "          state = State.Idle;\n";
         out << "        } else {\n";
         out << "          api.failure();\n";
         out << "          state = State.Error;\n";
@@ -283,6 +288,11 @@ Result<LibraryComponent> createSequenceComponent(Model& model, const std::string
 
       out << std::format("      on action{}.aborted(): {{\n", i);
       out << "        api.aborted();\n";
+      out << "        state = State.Idle;\n";
+      out << "      }\n\n";
+
+      out << std::format("      on action{}.terminated(): {{\n", i);
+      out << "        api.terminated();\n";
       out << "        state = State.Idle;\n";
       out << "      }\n\n";
 
@@ -367,17 +377,69 @@ Result<LibraryComponent> createParallelComponent(Model& model, const std::string
     out << "    [state.Idle] {\n";
     out << "      on api.trigger(): {\n";
     out << "        completed = 0;\n";
-    out << "        Result ret = action0.trigger();\n";
-    out << "        if (ret.Success) {\n";
-    createParallelDoneRecursion(true, false, 1, instances, out, "          ");
-    out << "        } else if (ret.Done) {\n";
-    out << "          completed = completed + 1;\n";
-    createParallelDoneRecursion(true, true, 1, instances, out, "          ");
-    out << "        } else {\n";
-    out << "          state = State.Error;\n";
+    for (uint32_t i = 0; i < instances; ++i)
+      out << std::format("        Result ret{} = action{}.trigger();\n", i, i);
+
+    out << "        // Check for failures\n";
+    for (uint32_t i = 0; i < instances; ++i)
+    {
+      out << "        " << std::format("if (ret{}.Failure || ret{}.Terminated) ", i, i) << "{\n";
+      for (uint32_t j = 0; j < instances; ++j)
+      {
+        if (i == j)
+          continue;
+
+        out << "          " << std::format("if (ret{}.Success) {{", j) << "\n";
+        out << "            " << std::format("Result abrt{} = action{}.abort();\n", j, j);
+        out << "            " << std::format("if (!abrt{}.Success) ret{} = Result.Failure;", j, j) << "\n";
+        out << "          }\n";
+      }
+      out << "        }\n";
+    }
+
+    out << "        // Check for DONE\n";
+    bool first = true;
+    std::string allDone = "";
+    std::string anyFailures = "";
+    std::string anyFinishes = "";
+    for (uint32_t i = 0; i < instances; ++i)
+    {
+      if (!first)
+      {
+        allDone += " && ";
+        anyFailures += " || ";
+        anyFinishes += " || ";
+      }
+
+      allDone += std::format("ret{}.Done", i);
+      anyFailures += std::format("ret{}.Failure", i);
+      anyFinishes += std::format("ret{}.Terminated", i);
+      out << "        " << std::format("if (ret{}.Done) {{ completed = completed + 1; }}", i) << ";\n";
+      first = false;
+    }
+
+    out << "        // Set reply\n";
+    out << "        " << std::format("if ({})\n", allDone);
+    out << "        {\n";
+    out << "          reply(Result.Done);\n";
     out << "        }\n";
-    out << "        reply(ret);\n";
+    out << "        " << std::format("else if ({})\n", anyFailures);
+    out << "        {\n";
+    out << "          // Failures have precedence over Terminated, naturally\n";
+    out << "          state = State.Error;\n";
+    out << "          reply(Result.Failure);\n";
+    out << "        }\n";
+    out << "        " << std::format("else if ({})\n", anyFinishes);
+    out << "        {\n";
+    out << "          reply(Result.Terminated);\n";
+    out << "        }\n";
+    out << "        else\n";
+    out << "        {\n";
+    out << "          state = State.Running;\n";
+    out << "          reply(Result.Success);\n";
+    out << "        }\n";
     out << "      }\n";
+
     for (uint32_t i = 0; i < instances; ++i)
       out << std::format("      on action{}.aborted(): {{}}\n", i);
 
@@ -417,6 +479,28 @@ Result<LibraryComponent> createParallelComponent(Model& model, const std::string
       out << "        api.failure();\n";
       out << "        state = State.Error;\n";
       out << "      }\n";
+
+      out << std::format("      on action{}.terminated(): {{\n", i);
+      out << "        Result allAborted = Result.Success;\n";
+      for (uint32_t j = 0; j < instances; ++j)
+      {
+        if (i == j)
+          continue;
+
+        out << std::format("        if (action{}.state.Running){{\n", j);
+        out << std::format("          Result abrt = action{}.abort();\n", j, j);
+        out << std::format("          if (!abrt.Success && allAborted.Success)\n");
+        out << std::format("            allAborted = abrt;\n");
+        out << std::format("        }}\n");
+      }
+      out << "        if (allAborted.Success) {\n";
+      out << "          api.terminated();\n";
+      out << "          state = State.Idle;\n";
+      out << "        } else {\n";
+      out << "          api.failure();\n";
+      out << "          state = State.Error;\n";
+      out << "        }\n";
+      out << "      }\n";
     }
 
     out << "      on api.abort(): {\n";
@@ -440,10 +524,10 @@ Result<LibraryComponent> createParallelComponent(Model& model, const std::string
     out << "          state = State.Error;\n";
     out << "          reply(Result.Failure);\n";
     out << "        } else {\n";
-    out << "          reply(Result.Running);\n";
+    out << "          reply(Result.Handling);\n";
     out << "        }\n";
     out << "      }\n";
-    out << "    }\n";  // Running state
+    out << "    }\n";
 
     // ------------------------------------------------------------------
     // Aborting state
@@ -457,8 +541,7 @@ Result<LibraryComponent> createParallelComponent(Model& model, const std::string
                          "        }}\n"
                          "      }}\n",
                          i, instances);
-    out << "}\n";
-
+    out << "    }";
     // ------------------------------------------------------------------
     // Error state
     out << "    [state.Error] {\n";
@@ -491,6 +574,7 @@ Result<LibraryComponent> createParallelComponent(Model& model, const std::string
       out << std::format("      on action{}.success(): {{}}\n", i);
       out << std::format("      on action{}.failure(): {{}}\n", i);
       out << std::format("      on action{}.aborted(): {{}}\n", i);
+      out << std::format("      on action{}.terminated(): {{}}\n", i);
     }
     out << "    }\n";  // Error state
     out << "  }\n";    // Behaviour
@@ -630,11 +714,14 @@ Result<LibraryComponent> createWithinComponent(Model& model, const std::string& 
     out << "          } else if (handled.Failure) {\n";
     out << "            api.failure();\n";
     out << "            state = State.Error;\n";
+    out << "          } else if (handled.Terminated) {\n";
+    out << "            api.terminated();\n";
+    out << "            state = State.Idle;\n";
     out << "          } else {\n";
     out << "            api.success();\n";
     out << "            state = State.Idle;\n";
     out << "          }\n";
-    out << "        } else if (aborted.Running) {\n";
+    out << "        } else if (aborted.Handling) {\n";
     out << "          state = State.Waiting;\n";
     out << "        } else {\n";
     out << "          api.failure();\n";
@@ -654,6 +741,11 @@ Result<LibraryComponent> createWithinComponent(Model& model, const std::string& 
     out << "      on actionDo.aborted(): {\n";
     out << "        alarm.reset();\n";
     out << "        api.aborted();\n";
+    out << "        state = State.Idle;\n";
+    out << "      }\n";
+    out << "      on actionDo.terminated(): {\n";
+    out << "        alarm.reset();\n";
+    out << "        api.terminated();\n";
     out << "        state = State.Idle;\n";
     out << "      }\n";
     out << "      on api.abort(): {\n";
@@ -682,6 +774,9 @@ Result<LibraryComponent> createWithinComponent(Model& model, const std::string& 
     out << "        } else if (handled.Failure) {\n";
     out << "          api.failure();\n";
     out << "          state = State.Error;\n";
+    out << "        } else if (handled.Terminated) {\n";
+    out << "          api.terminated();\n";
+    out << "          state = State.Idle;\n";
     out << "        } else {\n";
     out << "          api.success();\n";
     out << "          state = State.Idle;\n";
@@ -698,10 +793,17 @@ Result<LibraryComponent> createWithinComponent(Model& model, const std::string& 
     out << "        } else if (handled.Failure) {\n";
     out << "          api.failure();\n";
     out << "          state = State.Error;\n";
+    out << "        } else if (handled.Terminated) {\n";
+    out << "          api.terminated();\n";
+    out << "          state = State.Idle;\n";
     out << "        } else {\n";
     out << "          api.success();\n";
     out << "          state = State.Idle;\n";
     out << "        }\n";
+    out << "      }\n";
+    out << "      on actionDo.terminated(): {\n";
+    out << "        api.terminated();\n";
+    out << "        state = State.Idle;\n";
     out << "      }\n";
     out << "      on api.abort(): {\n";
     out << "        Result res = actionDo.abort();\n";
@@ -725,6 +827,10 @@ Result<LibraryComponent> createWithinComponent(Model& model, const std::string& 
     out << "      on actionDo.aborted(): {}\n";
     out << "      on actionElse.aborted(): {\n";
     out << "        api.aborted();\n";
+    out << "        state = State.Idle;\n";
+    out << "      }\n";
+    out << "      on actionElse.terminated(): {\n";
+    out << "        api.terminated();\n";
     out << "        state = State.Idle;\n";
     out << "      }\n";
     out << "      on api.abort(): {\n";
@@ -765,13 +871,14 @@ Result<LibraryComponent> createWithinComponent(Model& model, const std::string& 
     out << "      on actionDo.success(): {}\n";
     out << "      on actionDo.failure(): {}\n";
     out << "      on actionDo.aborted(): {}\n";
+    out << "      on actionDo.terminated(): {}\n";
     out << "    }\n";
     out << "  }\n";
     out << "}\n";
   });
 }
 
-Result<LibraryComponent> createRepeatComponent(Model& model, const std::string& outdir, SymbolId componentId)
+Result<LibraryComponent> createRepeatComponent(Model& model, const std::string& outdir, SymbolId componentId, int iterations, int /* rate */)
 {
   return createComponent(model, outdir, "repeat", componentId, [&](LibraryComponent& component, std::ostringstream& out) {
     component.providesPorts.push_back({"api", PortProtocol::Action});
@@ -784,31 +891,65 @@ Result<LibraryComponent> createRepeatComponent(Model& model, const std::string& 
     out << "    requires iaction action;\n\n";
 
     out << "    behaviour {\n";
-    out << "      enum State { Idle, Running, Aborting, Error };\n";
+    out << "      enum State { Idle, Running, TriggerScheduled, Aborting, Error };\n";
     out << "      State state = State.Idle;\n";
-    out << "  \n";
+    if (iterations != 0)
+    {
+      out << std::format("      subint Attempts {{0..{}}};\n", iterations);
+      out << "      Attempts attempts = 0;\n\n";
+    }
+
+    out << "      void prepareTrigger() {\n";
+    if (iterations != 0)
+    {
+      out << std::format("        if (attempts >= {}) {{\n", iterations);
+      out << "          api.success();\n";
+      out << "          state = State.Idle;\n";
+      out << "        } else {\n";
+      out << "          state = State.TriggerScheduled;\n";
+      out << "          defer (state) repeatDeferred();\n";
+      out << "        }\n";
+    }
+    else
+    {
+      out << "        state = State.TriggerScheduled;\n";
+      out << "        defer (state) repeatDeferred();\n";
+    }
+    out << "      }\n\n";
+
+    out << "      Result callTrigger() {\n";
+    if (iterations != 0)
+      out << "        attempts = attempts + 1;\n";
+    out << "        return action.trigger();\n";
+    out << "      }\n\n";
+
+    out << "      void repeatDeferred() {\n";
+    out << "        Result result = callTrigger();\n";
+    out << "        if (result.Failure) {\n";
+    out << "          api.failure();\n";
+    out << "          state = State.Error;\n";
+    out << "        } else if (result.Terminated) {\n";
+    out << "          api.terminated();\n";
+    out << "          state = State.Idle;\n";
+    out << "        } else if (result.Done) {\n";
+    out << "          prepareTrigger();\n";
+    out << "        } else {\n";
+    out << "          state = State.Running;\n";
+    out << "        }\n";
+    out << "      }\n\n";
+
     out << "      [state.Idle] {\n";
     out << "        on api.trigger(): {\n";
-    out << "          Result ret = action.trigger();\n";
-    out << "          if (ret.Success)\n";
-    out << "            state = State.Running;\n";
-    out << "          else if (ret.Failure)\n";
-    out << "            state = State.Error;\n";
-    out << "  \n";
-    out << "          reply(ret);\n";
-    out << "        }  \n";
-    out << "      }\n";
-    out << "  \n";
+    if (iterations != 0)
+      out << "          attempts = 0;\n";
+    out << "          prepareTrigger();\n";
+    out << "          reply(Result.Success);\n";
+    out << "        }\n";
+    out << "      }\n\n";
+
     out << "      [state.Running] {\n";
     out << "        on action.success(): {\n";
-    out << "          Result res1 = action.trigger();\n";
-    out << "          if (res1.Failure) {\n";
-    out << "            api.failure();\n";
-    out << "            state = State.Error;\n";
-    out << "          } else if (res1.Done) { // This should never happen\n";
-    out << "            api.success();\n";
-    out << "            state = State.Idle;\n";
-    out << "          }\n";
+    out << "          prepareTrigger();\n";
     out << "        }\n\n";
 
     out << "        on action.failure(): {\n";
@@ -821,6 +962,155 @@ Result<LibraryComponent> createRepeatComponent(Model& model, const std::string& 
     out << "          state = State.Idle;\n";
     out << "        }\n\n";
 
+    out << "        on action.terminated(): {\n";
+    out << "          api.terminated();\n";
+    out << "          state = State.Idle;\n";
+    out << "        }\n\n";
+
+    out << "        on api.abort(): {\n";
+    out << "          if (action.state.Running) {\n";
+    out << "            Result res = action.abort();\n";
+    out << "            if (res.Success)\n";
+    out << "              state = State.Aborting;\n";
+    out << "            else if (res.Failure)\n";
+    out << "              state = State.Error;\n";
+    out << "            reply(res);\n";
+    out << "          } else {\n";
+    out << "            api.aborted();\n";
+    out << "            state = State.Idle;\n";
+    out << "            reply(Result.Success);\n";
+    out << "          }\n";
+    out << "        }\n";
+    out << "      }\n\n";
+
+    out << "      [state.TriggerScheduled] {\n";
+    out << "        on api.abort(): {\n";
+    out << "          state = State.Idle;\n";
+    out << "          api.aborted();\n";
+    out << "          reply(Result.Success);\n";
+    out << "        }\n";
+    out << "      }\n\n";
+
+    out << "      [state.Aborting] {\n";
+    out << "        on action.aborted(): {\n";
+    out << "          api.aborted();\n";
+    out << "          state = State.Idle;\n";
+    out << "        }\n";
+    out << "      }\n\n";
+
+    out << "      [state.Error] {\n";
+    out << "        on api.reset(): {\n";
+    out << "          Result reset = action.reset();\n";
+    out << "          if (reset.Success)\n";
+    out << "            state = State.Idle;\n\n";
+
+    out << "          reply(reset);\n";
+    out << "        }\n\n";
+
+    out << "        on api.abort(): { reply(Result.Error); }\n";
+    out << "      }\n";
+    out << "    }\n";
+    out << "  }\n";
+  });
+}
+
+Result<LibraryComponent> createRetryComponent(Model& model, const std::string& outdir, SymbolId componentId, int iterations)
+{
+  return createComponent(model, outdir, "retry", componentId, [&](LibraryComponent& component, std::ostringstream& out) {
+    component.providesPorts.push_back({"api", PortProtocol::Action});
+    component.requiresPorts.push_back({"action", PortProtocol::Action});
+
+    out << "  import types.dzn;\n";
+    out << "  import iaction.dzn;\n";
+    out << "  component cretry {\n";
+    out << "    provides iaction api;\n";
+    out << "    requires iaction action;\n\n";
+
+    out << "    behaviour {\n";
+    out << "      enum State { Idle, Running, RetryScheduled, Aborting, Error };\n";
+    out << "      State state = State.Idle;\n";
+    out << std::format("      subint Attempts {{0..{}}};\n", iterations);
+    out << "      Attempts attempts = 0;\n";
+    out << "\n";
+    out << "      bool prepareRetry() {\n";
+    out << std::format("        if (attempts >= {})\n", iterations);
+    out << "          return false;\n\n";
+
+    out << "        Result resetResult = action.reset();\n";
+    out << "        if (!resetResult.Success)\n";
+    out << "          return false;\n\n";
+
+    out << "        state = State.RetryScheduled;\n";
+    out << "        return true;\n";
+    out << "      }\n\n";
+
+    out << "      Result callRetry() {\n";
+    out << "        attempts = attempts + 1;\n";
+    out << "        return action.trigger();\n";
+    out << "      }\n\n";
+
+    out << "      void retryDeferred() {\n";
+    out << "        Result result = callRetry();\n";
+    out << "        if (result.Failure) {\n";
+    out << "          if (prepareRetry()) {\n";
+    out << "            defer (state) retryDeferred();\n";
+    out << "          } else {\n";
+    out << "            api.failure();\n";
+    out << "            state = State.Error;\n";
+    out << "          }\n";
+    out << "        } else if (result.Done) {\n";
+    out << "          api.success();\n";
+    out << "          state = State.Idle;\n";
+    out << "        } else if (result.Terminated) {\n";
+    out << "          api.terminated();\n";
+    out << "          state = State.Idle;\n";
+    out << "        } else if (result.Success) {\n";
+    out << "          state = State.Running;\n";
+    out << "        }\n";
+    out << "      }\n\n";
+
+    out << "      [state.Idle] {\n";
+    out << "        on api.trigger(): {\n";
+    out << "          Result result = callRetry();\n";
+    out << "          if (result.Success) {\n";
+    out << "            state = State.Running;\n";
+    out << "          } else if (result.Failure) {\n";
+    out << "            if (prepareRetry()) {\n";
+    out << "              defer (state) retryDeferred();\n";
+    out << "              result = Result.Success;\n";
+    out << "            } else {\n";
+    out << "              state = State.Error;\n";
+    out << "            }\n";
+    out << "          }\n";
+    out << "          reply(result);\n";
+    out << "        }\n";
+    out << "      }\n\n";
+
+    out << "      [state.Running] {\n";
+    out << "        on action.success(): {\n";
+    out << "          api.success();\n";
+    out << "          state = State.Idle;\n";
+    out << "        }\n\n";
+
+    out << "        on action.failure(): {\n";
+    out << "          if (prepareRetry()) {\n";
+    out << "            defer (state) retryDeferred();\n";
+    out << "          } else {\n";
+    out << "            api.failure();\n";
+    out << "            state = State.Error;\n";
+    out << "          }\n";
+    out << "        }\n\n";
+
+    out << "        on action.aborted(): {\n";
+    out << "          api.aborted();\n";
+    out << "          state = State.Idle;\n";
+    out << "        }\n\n";
+
+    out << "        on action.terminated(): {\n";
+    out << "          api.terminated();\n";
+    out << "          state = State.Idle;\n";
+    out << "        }\n\n";
+
     out << "        on api.abort(): {\n";
     out << "          Result res = action.abort();\n";
     out << "          if (res.Success)\n";
@@ -829,6 +1119,14 @@ Result<LibraryComponent> createRepeatComponent(Model& model, const std::string& 
     out << "            state = State.Error;\n";
     out << "  \n";
     out << "          reply(res);\n";
+    out << "        }\n";
+    out << "      }\n\n";
+
+    out << "      [state.RetryScheduled] {\n";
+    out << "        on api.abort(): {\n";
+    out << "          state = State.Idle;\n";
+    out << "          api.aborted();\n";
+    out << "          reply(Result.Success);\n";
     out << "        }\n";
     out << "      }\n\n";
 
@@ -911,6 +1209,11 @@ Result<LibraryComponent> createAbortHandlerComponent(Model& model, const std::st
     out << "        state = State.Idle;\n";
     out << "      }\n\n";
 
+    out << "      on action.terminated(): {\n";
+    out << "        api.terminated();\n";
+    out << "        state = State.Idle;\n";
+    out << "      }\n\n";
+
     out << "      on action.aborted(): {\n";
     out << "        Result handled = handler.trigger();\n";
     out << "        if (handled.Success) {\n";
@@ -918,6 +1221,9 @@ Result<LibraryComponent> createAbortHandlerComponent(Model& model, const std::st
     out << "        } else if (handled.Failure) {\n";
     out << "          api.failure();\n";
     out << "          state = State.Error;\n";
+    out << "        } else if (handled.Terminated) {\n";
+    out << "          api.terminated();\n";
+    out << "          state = State.Idle;\n";
     out << "        } else {\n";
     out << "          api.success();\n";
     out << "          state = State.Idle;\n";
@@ -930,10 +1236,14 @@ Result<LibraryComponent> createAbortHandlerComponent(Model& model, const std::st
     out << "          Result handled = handler.trigger();\n";
     out << "          if (handled.Success) {\n";
     out << "            state = State.Handling;\n";
-    out << "            reply(Result.Running);\n";
+    out << "            reply(Result.Handling);\n";
     out << "          } else if (handled.Failure) {\n";
     out << "            state = State.Error;\n";
     out << "            reply(handled);\n";
+    out << "          } else if (handled.Terminated) {\n";
+    out << "            api.aborted();\n";
+    out << "            state = State.Idle;\n";
+    out << "            reply(Result.Success);\n";
     out << "          } else {\n";
     out << "            api.aborted();\n";
     out << "            state = State.Idle;\n";
@@ -961,20 +1271,24 @@ Result<LibraryComponent> createAbortHandlerComponent(Model& model, const std::st
     out << "        api.aborted();\n";
     out << "        state = State.Idle;\n";
     out << "      }\n";
+    out << "      on handler.terminated(): {\n";
+    out << "        api.terminated();\n";
+    out << "        state = State.Idle;\n";
+    out << "      }\n";
     out << "      on api.abort(): {\n";
     out << "        Result res = handler.abort();\n";
-    out << "        if (res.Success)\n";
-    out << "        {\n";
+    out << "        if (res.Success) {\n";
     out << "          api.aborted();\n";
     out << "          state = State.Idle;\n";
-    out << "        }\n";
-    out << "        else if (res.Failure)\n";
+    out << "        } else if (res.Failure) {\n";
     out << "          state = State.Error;\n";
+    out << "        }\n";
     out << "        reply(res);\n";
     out << "      }\n";
     out << "      on action.success(): {}\n";
     out << "      on action.failure(): {}\n";
     out << "      on action.aborted(): {}\n";
+    out << "      on action.terminated(): {}\n";
     out << "    }\n\n";
 
     out << "    [state.Error] {\n";
@@ -1000,9 +1314,11 @@ Result<LibraryComponent> createAbortHandlerComponent(Model& model, const std::st
     out << "      on action.success(): {}\n";
     out << "      on action.failure(): {}\n";
     out << "      on action.aborted(): {}\n";
+    out << "      on action.terminated(): {}\n";
     out << "      on handler.success(): {}\n";
     out << "      on handler.failure(): {}\n";
     out << "      on handler.aborted(): {}\n";
+    out << "      on handler.terminated(): {}\n";
     out << "    }\n";
     out << "  }\n";
     out << "}\n";
@@ -1049,6 +1365,9 @@ Result<LibraryComponent> createErrorHandlerComponent(Model& model, const std::st
     out << "          } else if (res.Done) {\n";
     out << "            api.success();\n";
     out << "            state = State.Idle;\n";
+    out << "          } else if (res.Terminated) {\n";
+    out << "            api.terminated();\n";
+    out << "            state = State.Idle;\n";
     out << "          } else {\n";
     out << "            api.failure();\n";
     out << "            state = State.Error;\n";
@@ -1064,6 +1383,10 @@ Result<LibraryComponent> createErrorHandlerComponent(Model& model, const std::st
     out << "      }\n";
     out << "      on action.aborted(): {\n";
     out << "        api.aborted();\n";
+    out << "        state = State.Idle;\n";
+    out << "      }\n";
+    out << "      on action.terminated(): {\n";
+    out << "        api.terminated();\n";
     out << "        state = State.Idle;\n";
     out << "      }\n";
     out << "      on api.abort(): {\n";
@@ -1094,6 +1417,10 @@ Result<LibraryComponent> createErrorHandlerComponent(Model& model, const std::st
     out << "      }\n";
     out << "      on handler.aborted(): {\n";
     out << "        api.aborted();\n";
+    out << "        state = State.Idle;\n";
+    out << "      }\n";
+    out << "      on handler.terminated(): {\n";
+    out << "        api.terminated();\n";
     out << "        state = State.Idle;\n";
     out << "      }\n";
     out << "      on api.abort(): {\n";
@@ -1132,6 +1459,46 @@ Result<LibraryComponent> createErrorHandlerComponent(Model& model, const std::st
     out << "      }\n\n";
 
     out << "      on api.abort(): { reply(Result.Error); }\n";
+    out << "    }\n";
+    out << "  }\n";
+    out << "}\n";
+  });
+}
+
+Result<LibraryComponent> createTerminateComponent(Model& model, const std::string& outdir, SymbolId componentId)
+{
+  return createComponent(model, outdir, "terminate", componentId, [&](LibraryComponent& component, std::ostringstream& out) {
+    component.providesPorts.push_back({"api", PortProtocol::Action});
+
+    out << "import types.dzn;\n";
+    out << "import iaction.dzn;\n\n";
+
+    out << std::format("component {} {{\n", component.name);
+    out << "  provides iaction api;\n\n";
+
+    out << "  behaviour {\n";
+    out << "    on api.trigger(): {\n";
+    out << "      reply(Result.Terminated);\n";
+    out << "    }\n";
+    out << "  }\n";
+    out << "}\n";
+  });
+}
+
+Result<LibraryComponent> createContinueComponent(Model& model, const std::string& outdir, SymbolId componentId)
+{
+  return createComponent(model, outdir, "continue", componentId, [&](LibraryComponent& component, std::ostringstream& out) {
+    component.providesPorts.push_back({"api", PortProtocol::Action});
+
+    out << "import types.dzn;\n";
+    out << "import iaction.dzn;\n\n";
+
+    out << std::format("component {} {{\n", component.name);
+    out << "  provides iaction api;\n\n";
+
+    out << "  behaviour {\n";
+    out << "    on api.trigger(): {\n";
+    out << "      reply(Result.Done);\n";
     out << "    }\n";
     out << "  }\n";
     out << "}\n";
@@ -1249,6 +1616,12 @@ Result<LibraryComponent> createSelectorComponent(Model& model, const std::string
                          "\n"
                          "        reply(ret);\n"
                          "      }}\n",
+                         i);
+
+      out << std::format("      on flow{}.terminated(): {{\n"
+                         "        api.terminated();\n"
+                         "        state = State.Idle;\n"
+                         "      }}\n\n",
                          i);
 
       out << "    }\n\n";
@@ -1413,7 +1786,7 @@ Result<LibraryComponent> createActionArbiterComponent(Model& model, const std::s
       out << "          reply(Result.Failure);\n";
       out << "        } else {\n";
       out << "          Result ret = resource.trigger();\n";
-      out << "          if (!ret.Done)\n";
+      out << "          if (!ret.Done && !ret.Terminated)\n";
       out << std::format("            owner = Owner.C{};\n", i);
       out << "          reply(ret);\n";
       out << "        }\n";
@@ -1457,6 +1830,21 @@ Result<LibraryComponent> createActionArbiterComponent(Model& model, const std::s
     out << "      }\n";
     out << "    }\n\n";
 
+    out << "    on resource.terminated(): {\n";
+    out << "      succeeding = true;\n";
+    out << "      defer () {\n";
+    for (uint32_t i = 0; i < instances; ++i)
+    {
+      out << std::format("        if (owner.C{} || pending.C{})\n", i, i);
+      out << std::format("          client{}.terminated();\n", i);
+    }
+    out << "\n";
+    out << "        owner = Owner.None;\n";
+    out << "        pending = Owner.None;\n";
+    out << "        succeeding = false;\n";
+    out << "      }\n";
+    out << "    }\n\n";
+
     for (uint32_t i = 0; i < instances; ++i)
     {
       out << std::format("    [owner.C{}] {{\n", i);
@@ -1484,13 +1872,14 @@ Result<LibraryComponent> createActionArbiterComponent(Model& model, const std::s
         if (j == i)
           continue;
 
+        // TODO: Abort fix
         out << std::format("      on client{}.abort(): {{\n", j);
         out << std::format("        if (client{}.state.Error)\n", j);
         out << "          reply(Result.Error);\n";
         out << std::format("        else if (client{}.state.Idle)\n", j);
         out << "          reply(Result.Success);\n";
         out << "        else\n";
-        out << "          reply(Result.Running);\n";
+        out << "          reply(Result.Handling);\n";
         out << "      }\n\n";
 
         out << std::format("      on client{}.reset(): {{ reply(Result.Failure); }}\n\n", j);
@@ -1525,14 +1914,14 @@ Result<LibraryComponent> createConditionComponent(Model& model, const std::strin
 }
 
 Result<LibraryComponent> createCapabilityArmour(Model& model, const std::string& outdir, const std::string& capabilityName, bool hasAbort,
-                                                const std::vector<std::string>& ports, SymbolId componentId)
+                                                const std::vector<std::pair<std::string, bool>>& ports, SymbolId componentId)
 {
   const auto componentName = std::format("{}_armour", capabilityName);
   return createComponent(model, outdir, componentName, componentId, [&](LibraryComponent& component, std::ostringstream& out) {
-    for (const auto& port : ports)
+    for (const auto& [port, isAsync] : ports)
     {
       component.providesPorts.push_back({std::format("{}", port), PortProtocol::Action});
-      component.providesPorts.push_back({std::format("r_{}", port), PortProtocol::External});
+      component.providesPorts.push_back({std::format("ext_{}", port), PortProtocol::External});
     }
 
     out << "import types.dzn;\n";
@@ -1541,10 +1930,11 @@ Result<LibraryComponent> createCapabilityArmour(Model& model, const std::string&
     out << "import iexternal.dzn;\n";
     out << "\n";
     out << std::format("component {} {{\n", component.name);
-    for (const auto& port : ports)
+    for (const auto& [port, isAsync] : ports)
     {
       out << std::format("  provides iaction {};\n", port);
-      out << std::format("  requires iexternal r_{};\n", port);
+      // We should have an external sync and external async
+      out << std::format("  requires iexternal ext_{};\n", port);
     }
 
     out << "\n";
@@ -1557,7 +1947,7 @@ Result<LibraryComponent> createCapabilityArmour(Model& model, const std::string&
     out << "  behavior {\n";
     out << "    enum State { Idle";
     for (size_t i = 0; i < ports.size(); ++i)
-      out << std::format(", Action{}, Aborting{}", i, i);
+      out << std::format(", Action{}", i) << (hasAbort ? std::format(", Aborting{}", i) : "");
 
     out << ", Error };\n";
     out << "    State state = State.Idle;\n";
@@ -1565,9 +1955,9 @@ Result<LibraryComponent> createCapabilityArmour(Model& model, const std::string&
     out << "    [state.Idle] {\n";
     for (size_t i = 0; i < ports.size(); ++i)
     {
-      const auto port = ports.at(i);
+      const auto [port, isAsync] = ports.at(i);
       out << std::format("      on {}.trigger(): {{\n", port);
-      out << std::format("        Result ret = r_{}.trigger();\n", port);
+      out << std::format("        Result ret = ext_{}.trigger();\n", port);
       out << "\n";
       out << "        if (ret.Success)\n";
       out << std::format("          state = State.Action{};\n", i);
@@ -1588,21 +1978,32 @@ Result<LibraryComponent> createCapabilityArmour(Model& model, const std::string&
     out << "\n";
     for (size_t i = 0; i < ports.size(); ++i)
     {
-      const auto port = ports.at(i);
+      const auto [port, isAsync] = ports.at(i);
       out << std::format("    [state.Action{}] {{\n", i);
-      out << std::format("      on r_{}.success(): {{\n", port);
+      out << std::format("      on ext_{}.success(): {{\n", port);
       out << "        state = State.Idle;\n";
       out << std::format("        {}.success();\n", port);
       out << "      }\n";
       out << "\n";
-      out << std::format("      on r_{}.failure(): {{\n", port);
+      out << std::format("      on ext_{}.failure(): {{\n", port);
       out << "        state = State.Error;\n";
       out << std::format("        {}.failure();\n", port);
       out << "      }\n";
       out << "\n";
 
+      // We need to deal with possible overlaying actions when dealing with multiple capability actions
+      for (size_t j = 0; j < ports.size(); ++j)
+      {
+        if (j == i)
+          continue;
+
+        const auto [otherPort, isAsync] = ports.at(j);
+        out << std::format("      on {}.trigger(): {{ reply(Result.Success); }}\n", otherPort);
+        out << "\n";
+      }
+
       out << std::format("      on {}.abort(): {{\n", port);
-      out << std::format("        Result ret = r_{}.abort();\n", port);
+      out << std::format("        Result ret = ext_{}.abort();\n", port);
       out << "        if (ret.Failure)\n";
       out << "          state = State.Error;\n";
       out << "        else if (ret.Success)\n";
@@ -1617,13 +2018,8 @@ Result<LibraryComponent> createCapabilityArmour(Model& model, const std::string&
       if (hasAbort)
       {
         out << "      on abort.abort(): {\n";
-        out << std::format("        Result ret = r_{}.abort();\n", port);
-        out << "        if (ret.Failure)\n";
-        out << "        {\n";
-        out << "          state = State.Error;\n";
-        out << "          reply(Result.Failure);\n";
-        out << "        }\n";
-        out << "        else if (ret.Success)\n";
+        out << std::format("        Result ret = ext_{}.abort();\n", port);
+        out << "        if (ret.Success)\n";
         out << "        {\n";
         out << std::format("          state = State.Aborting{};\n", i);
         out << std::format("          defer(state) {{ state = State.Idle; {}.aborted(); }}\n", port);
@@ -1631,27 +2027,28 @@ Result<LibraryComponent> createCapabilityArmour(Model& model, const std::string&
         out << "        }\n";
         out << "        else\n";
         out << "        {\n";
-        out << "          reply(Result.Running);\n";
+        out << "          state = State.Error;\n";
+        out << "          reply(Result.Failure);\n";
         out << "        }\n";
         out << "      }\n";
+        out << "    }\n";
+        out << "\n";
+        out << std::format("    [state.Aborting{}] {{\n", i);
+        out << std::format("      on {}.abort(): {{\n"
+                           "        {}.aborted();\n"
+                           "        state = State.Idle;\n"
+                           "        reply(Result.Success);\n"
+                           "      }}\n",
+                           port, port);
       }
-      out << "    }\n";
-      out << "\n";
-      out << std::format("    [state.Aborting{}] {{\n", i);
-      out << std::format("      on {}.abort(): {{\n"
-                         "        {}.aborted();\n"
-                         "        state = State.Idle;\n"
-                         "        reply(Result.Success);\n"
-                         "      }}\n",
-                         port, port);
       out << "    }\n";
     }
 
     out << "    [state.Error] {\n";
-    for (const auto& port : ports)
+    for (const auto& [port, isAsync] : ports)
     {
       out << std::format("      on {}.reset(): {{\n", port);
-      out << std::format("        Result ret = r_{}.reset();\n", port);
+      out << std::format("        Result ret = ext_{}.reset();\n", port);
       out << "\n";
       out << "        if (ret.Success)\n";
       out << "          state = State.Idle;\n";
@@ -1704,6 +2101,7 @@ Result<LibraryComponent> createFlowArmour(Model& model, const std::string& outdi
     out << "    on resource.success(): api.success();\n";
     out << "    on resource.failure(): api.failure();\n";
     out << "    on resource.aborted(): api.aborted();\n";
+    out << "    on resource.terminated(): api.terminated();\n";
     out << "  }\n";
     out << "}\n";
   });
@@ -1781,6 +2179,10 @@ void createSequenceDoneRecursion(bool fromIdle, uint32_t start, uint32_t instanc
     out << std::format("{}  state = State.Action{};\n", indent, start);
     out << std::format("{}}} else if (ret.Done) {{\n", indent);
     createSequenceDoneRecursion(fromIdle, start + 1, instances, out, indent + "  ");
+    out << std::format("{}}} else if (ret.Terminated) {{\n", indent);
+    if (!fromIdle)
+      out << std::format("{}  api.terminated();\n", indent);
+    out << std::format("{}  state = State.Idle;\n", indent);
     out << std::format("{}}} else if (ret.Failure) {{\n", indent);
     if (!fromIdle)
       out << std::format("{}  api.failure();\n", indent);

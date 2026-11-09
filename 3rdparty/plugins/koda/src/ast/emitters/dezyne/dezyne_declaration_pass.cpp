@@ -123,6 +123,12 @@ VoidResult DeclarationPass::declareStrategy(const ir::PStrategy& strategy, FlowS
     for (const auto& handler : p->handlers)
       RETURN_ON_FAILURE(declareHandler(handler, state));
   }
+  else if (auto p = std::get_if<ir::Strategy::Retry>(&strategy->value))
+  {
+    RETURN_ON_FAILURE(declareStrategy(p->body, state));
+    for (const auto& handler : p->handlers)
+      RETURN_ON_FAILURE(declareHandler(handler, state));
+  }
   else if (auto p = std::get_if<ir::Strategy::Call>(&strategy->value))
   {
     RETURN_ON_FAILURE(declareCall(p->call, state, false));

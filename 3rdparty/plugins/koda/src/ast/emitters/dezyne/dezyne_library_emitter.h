@@ -41,19 +41,22 @@ VoidResult createConditionInterface(Model& model, const std::string& outdir);
 Result<LibraryComponent> createSequenceComponent(Model& model, const std::string& outdir, uint32_t instances, SymbolId componentId);
 Result<LibraryComponent> createParallelComponent(Model& model, const std::string& outdir, uint32_t instances, SymbolId componentId);
 Result<LibraryComponent> createWithinComponent(Model& model, const std::string& outdir, int timeout, SymbolId componentId);
-Result<LibraryComponent> createRepeatComponent(Model& model, const std::string& outdir, SymbolId componentId);
+Result<LibraryComponent> createRepeatComponent(Model& model, const std::string& outdir, SymbolId componentId, int iterations, int rate);
 Result<LibraryComponent> createEveryComponent(Model& model, const std::string& outdir, SymbolId componentId);
+Result<LibraryComponent> createRetryComponent(Model& model, const std::string& outdir, SymbolId componentId, int iterations);
 Result<LibraryComponent> createSignalHandlerComponent(Model& model, const std::string& outdir, uint32_t instances, SymbolId componentId);
 Result<LibraryComponent> createSignalContinueComponent(Model& model, const std::string& outdir, uint32_t instances, SymbolId componentId);
 Result<LibraryComponent> createAbortHandlerComponent(Model& model, const std::string& outdir, SymbolId componentId);
 Result<LibraryComponent> createErrorHandlerComponent(Model& model, const std::string& outdir, SymbolId componentId);
 
+Result<LibraryComponent> createContinueComponent(Model& model, const std::string& outdir, SymbolId componentId);
+Result<LibraryComponent> createTerminateComponent(Model& model, const std::string& outdir, SymbolId componentId);
 Result<LibraryComponent> createFailureComponent(Model& model, const std::string& outdir, SymbolId componentId);
 Result<LibraryComponent> createSelectorComponent(Model& model, const std::string& outdir, uint32_t conditionCount, uint32_t branchCount, SymbolId componentId);
 Result<LibraryComponent> createAbortCallComponent(Model& model, const std::string& outdir, SymbolId componentId);
 Result<LibraryComponent> createFlowArmour(Model& model, const std::string& outdir, SymbolId componentId);
 Result<LibraryComponent> createCapabilityArmour(Model& model, const std::string& outdir, const std::string& capabilityName, bool hasAbort,
-                                                const std::vector<std::string>& ports, SymbolId componentId);
+                                                const std::vector<std::pair<std::string, bool>>& ports, SymbolId componentId);
 
 // Helpers
 VoidResult createAlarmComponent(Model& model, const std::string& outdir);

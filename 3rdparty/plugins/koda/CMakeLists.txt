@@ -9,6 +9,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+option(KODA_GENERATE_CONTRACTS "Enable the contract expectations for the difference KODA constructs" OFF)
 
 # If we are building with MAKI (with BUILD_PLUGINS), then just use MAKI's settings
 if (NOT BUILD_PLUGINS)
@@ -105,6 +106,11 @@ set(KODA_COMPILER_FILES
   src/ast/emitters/nuxmv/nuxmv_composite_semantics.cpp
   src/ast/emitters/nuxmv/nuxmv_handler_semantics.cpp
 
+  src/ast/emitters/tracer/tracer_writer.cpp
+  src/ast/emitters/tracer/tracer_emitter.cpp
+  src/ast/emitters/tracer/tracer_serializer.cpp
+  src/ast/emitters/tracer/tracer_json.cpp
+
   src/parser/KodaParser.cpp
   src/parser/KodaLexer.cpp
   src/parser/KodaVisitor.cpp
@@ -133,6 +139,10 @@ else()
     NAMES antlr4-runtime
     PATHS /usr/lib /usr/lib/x86_64-linux-gnu /usr/local/lib
   )
+endif()
+
+if (KODA_GENERATE_CONTRACTS)
+  target_compile_definitions(${COMPILER_NAME} PRIVATE GENERATE_CONTRACTS=1)
 endif()
 
 target_link_libraries(${COMPILER_NAME} PRIVATE
