@@ -84,6 +84,7 @@ static QWidget* findAncestor(QWidget* w, const QMetaObject* type)
     // LOG_TRACE("Finding: {} vs {}", type->className(), w->metaObject(->className()));
     if (w->metaObject()->inherits(type))
       return w;
+
     w = w->parentWidget();
   }
   return nullptr;

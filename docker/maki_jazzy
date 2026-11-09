@@ -96,7 +96,7 @@ RUN mkdir -p ${HOME}/Qt && \
       desktop \
       "${QT_VERSION}" \
       linux_gcc_64 \
-      -m qtwebengine qtpdf qtwebchannel qtpositioning qtwebsockets \
+      -m qtwebengine qtpdf qtwebchannel qtpositioning qtwebsockets qt5compat \
       -O ${HOME}/Qt
 
 # -----------------------------------------------------------------------------------------------------------\

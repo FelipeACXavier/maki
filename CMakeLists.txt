@@ -8,6 +8,7 @@ option(BUILD_DOC "Build documentation" ON)
 option(BUILD_PLUGINS "Build plugins as part of the application" ON)
 option(MAKI_PEDANTIC "Enable all warnings" OFF)
 option(MAKI_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
+option(MAKI_VERBOSE_DIAGNOSTICS "Enable detailed compiler diagnostics" OFF)
 
 # Paths as configurable cache variables
 set(LOCAL_QT_PATH "" CACHE PATH "Qt path on this machine")
@@ -46,6 +47,26 @@ set(QT_REQUIRED_PACKAGES
   SvgWidgets
   LinguistTools
 )
+
+if(MAKI_VERBOSE_DIAGNOSTICS)
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    add_compile_options(
+      -fno-immediate-escalation
+      -fdiagnostics-color=always
+      -fdiagnostics-show-caret
+      -fdiagnostics-show-template-tree
+      -ftemplate-backtrace-limit=5
+      -fmax-errors=3
+      -fmessage-length=0
+  )
+  elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    add_compile_options(
+      -fcolor-diagnostics
+      -ferror-limit=3
+      -ftemplate-backtrace-limit=5
+  )
+  endif()
+endif()
 
 # Comment out to allow casting from literal string to QString
 # add_compile_definitions(QT_NO_CAST_FROM_ASCII)
