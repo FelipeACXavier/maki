@@ -1,0 +1,159 @@
+type lunar::Image {
+  id: string;
+  timestamp: string;
+  width: int;
+  height: int;
+  encoding: string;
+  dataContent: list<int>;
+}
+
+type lunar::Spectrum {
+  id: string;
+  timestamp: string;
+  wavelengths: list<real>;
+  intensities: list<real>;
+}
+
+capability Camera() {
+  action "/camera/initialize" "" {
+    trigger: void initialize();
+    return:  void initialized();
+    abort:   void abort_initialization();
+    error:   void initialization_failed();
+  }
+  action "/camera/process" "" {
+    trigger: void process();
+    return:  void processed(lunar::Image imageData);
+    abort:   void abort_process();
+    error:   void process_failed();
+  }
+}
+
+capability Spectrometer() {
+  action "/spectrometer/initialize" "" {
+    trigger: void initialize();
+    return:  void initialized();
+    abort:   void abort_initialization();
+    error:   void initialization_failed();
+  }
+  action "/spectrometer/process" "" {
+    trigger: void process();
+    return:  void processed(lunar::Spectrum spectrumData);
+    abort:   void abort_process();
+    error:   void process_failed();
+  }
+}
+
+capability InformationStorage(){
+  service "/store" "" {
+    in: void store(lunar::Image image, lunar::Spectrum spectrum);
+  }
+}
+
+capability SafetyHandler() {
+  action "/safety" "" {
+    trigger: void enter();
+    return: void done();
+    abort: void reset();
+    error: void safety_error();
+  }
+}
+
+task within_moon_test(camera req Camera, spectrometer req Spectrometer, recorder req InformationStorage, safety req SafetyHandler) {
+  trigger: void start();
+  return:  void done();
+  abort:   void abort();
+  error:   void errored();
+
+  properties {
+    // 0
+    recovery_attempts_safety:
+        always (
+            recovery started
+            implies eventually (
+                safety.enter started or safety.enter failed
+            )
+        );
+    // 1
+    safety_after_successful_cleanup:
+        always (
+            stop_all succeeded
+            implies eventually (
+                safety.enter started or safety.enter failed
+            )
+        );
+    // 2
+    safety_after_failed_cleanup:
+        always (
+            stop_all failed
+            implies eventually (
+                safety.enter started or safety.enter failed
+            )
+        );
+    // 3
+    safe_state_excludes_camera:
+        never (safety is running and camera is running);
+    // 4
+    safe_state_excludes_spectrometer:
+        never (safety is running and spectrometer is running);
+    // 5
+    no_storage_during_recovery:
+        never (recorder.store started and recovery is running);
+    // 6
+    no_overlapping_camera_actions:
+        never (
+            camera.initialize is running
+            and camera.process is running
+        );
+    // 7
+    tries_to_start:
+        always (
+            if main started
+            (initialize started or initialize failed)
+        );
+    // 8
+    recovery_does_not_fail_before_safety:
+        (not recovery failed)
+        unless (safety.enter started or safety.enter failed);
+    // 9
+    failed_acquisition_requests_recovery:
+        always (
+            acquire failed implies eventually (
+                recovery started or recovery failed
+            )
+        );
+    // 10
+    no_storage_during_safety:
+        never (
+            recorder.store started and safety is running
+        );
+  }
+
+  strategy {
+    initialize: join(
+        retry 3 (camera.initialize())
+        |
+        retry 3 (spectrometer.initialize())
+    );
+
+    acquire: repeat 0 0 (
+        within 250 do (
+          join(camera.process() | spectrometer.process())
+        ) else (
+           recovery()
+        ) --> recorder.store(_, _)
+    );
+
+    recovery: stop_all() on error (enter_safety()) --> enter_safety();
+
+    stop_all: camera.abort_initialization()
+      --> camera.abort_process()
+      --> spectrometer.abort_initialization()
+      --> spectrometer.abort_process();
+
+    enter_safety: safety.enter() --> failure;
+
+    main: initialize() on error (recovery())
+          --> acquire() on error (recovery());
+  }
+}

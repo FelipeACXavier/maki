@@ -1,0 +1,60 @@
+type lunar::Image {
+  id: string;
+  timestamp: string;
+  width: int;
+  height: int;
+  encoding: string;
+  dataContent: list<int>;
+}
+
+type lunar::Spectrum {
+  id: string;
+  timestamp: string;
+  wavelengths: list<real>;
+  intensities: list<real>;
+}
+
+capability Camera() {
+  action "/camera/initialize" "" {
+    trigger: void initialize();
+    return:  void initialized();
+    abort:   void abort_initialization();
+    error:   void initialization_failed();
+  }
+  action "/camera/process" "" {
+    trigger: void process();
+    return:  void processed(lunar::Image imageData);
+    abort:   void abort_process();
+    error:   void process_failed();
+  }
+}
+
+capability InformationStorage(){
+  service "/store" "" {
+    in: void store(lunar::Image image);
+  }
+}
+
+capability SafetyHandler() {
+  action "/safety" "" {
+    trigger: void enter();
+    return: void done();
+    abort: void reset();
+    error: void safety_error();
+  }
+}
+
+task sequence_test(camera req Camera, storage req InformationStorage) {
+  trigger: void start();
+  return:  void done();
+  abort:   void abort();
+  error:   void errored();
+
+  properties {
+    initialize_before_process: camera.process started implies camera.initialize succeeded;
+  }
+
+  strategy {
+    main: camera.initialize() --> camera.process() --> storage.store(_);
+  }
+}

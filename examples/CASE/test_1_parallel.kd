@@ -1,0 +1,66 @@
+type lunar::Image {
+  id: string;
+  timestamp: string;
+  width: int;
+  height: int;
+  encoding: string;
+  dataContent: list<int>;
+}
+
+type lunar::Spectrum {
+  id: string;
+  timestamp: string;
+  wavelengths: list<real>;
+  intensities: list<real>;
+}
+
+capability Spectrometer() {
+  action "/spectrometer/initialize" "" {
+    trigger: void initialize();
+    return:  void initialized();
+    abort:   void abort_initialization();
+    error:   void initialization_failed();
+  }
+  action "/spectrometer/process" "" {
+    trigger: void process();
+    return:  void processed(lunar::Spectrum spectrumData);
+    abort:   void abort_process();
+    error:   void process_failed();
+  }
+}
+
+capability Camera() {
+  action "/camera/initialize" "" {
+    trigger: void initialize();
+    return:  void initialized();
+    abort:   void abort_initialization();
+    error:   void initialization_failed();
+  }
+  action "/camera/process" "" {
+    trigger: void process();
+    return:  void processed(lunar::Image imageData);
+    abort:   void abort_process();
+    error:   void process_failed();
+  }
+}
+
+capability Storage(){
+  service "/store" "" {
+    in: void store(lunar::Image image);
+  }
+}
+
+task parallel_test(camera req Camera, storage req Storage, spectrometer req Spectrometer) {
+  trigger: void start();
+  return:  void done();
+  abort:   void abort();
+  error:   void errored();
+
+  properties {
+    initialize_before_process: camera.process started implies camera.initialize succeeded;
+  }
+
+  strategy {
+      main: camera.initialize() --> join(camera.process() | spectrometer.process()) --> storage.store(_);
+  }
+}

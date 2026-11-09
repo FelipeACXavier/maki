@@ -1,0 +1,69 @@
+type lunar::Image {
+  id: string;
+  timestamp: string;
+  width: int;
+  height: int;
+  encoding: string;
+  dataContent: list<int>;
+}
+
+type lunar::Spectrum {
+  id: string;
+  timestamp: string;
+  wavelengths: list<real>;
+  intensities: list<real>;
+}
+
+capability Camera() {
+  action "/camera/initialize" "" {
+    trigger: void initialize();
+    return:  void initialized();
+    abort:   void abort_initialization();
+    error:   void initialization_failed();
+  }
+  action "/camera/process" "" {
+    trigger: void process();
+    return:  void processed(lunar::Image imageData);
+    abort:   void abort_process();
+    error:   void process_failed();
+  }
+}
+
+capability Spectrometer() {
+  action "/spectrometer/initialize" "" {
+    trigger: void initialize();
+    return:  void initialized();
+    abort:   void abort_initialization();
+    error:   void initialization_failed();
+  }
+  action "/spectrometer/process" "" {
+    trigger: void process();
+    return:  void processed(lunar::Spectrum spectrumData);
+    abort:   void abort_process();
+    error:   void process_failed();
+  }
+}
+
+capability InformationStorage(){
+  service "/store" "" {
+    in: void store(lunar::Image image, lunar::Spectrum spectrum);
+  }
+}
+
+task within_test(camera req Camera, spectrometer req Spectrometer, recorder req InformationStorage) {
+  trigger: void start();
+  return:  void done();
+  abort:   void abort();
+  error:   void errored();
+
+  strategy {
+      initialize: join(camera.initialize() | spectrometer.initialize());
+      acquire: join(camera.process() | spectrometer.process());
+      main: initialize()
+          --> within 1000 do (
+                  acquire() --> recorder.store(_, _)
+              ) else (
+                failure
+              );
+  }
+}

@@ -19,6 +19,7 @@ BUILD_TESTING="ON"
 CPPCHECK="OFF"
 MAKI_PEDANTIC="OFF"
 MAKI_WARNINGS_AS_ERRORS="OFF"
+MAKI_VERBOSE_DIAGNOSTICS="OFF"
 MAKI_ROS_DISTRO="humble"
 
 # Helpers and arg parsing
@@ -39,14 +40,16 @@ function printHelp()
   echo ""
   echo " Compilation warnings and errors:"
   echo ""
+  echo "    --clang             | Use clang compiler"
   echo "    --check             | Enable cppcheck"
   echo "    --pedantic          | Enable all warnings. It also enables cppcheck"
   echo "    --picky             | Makes compile warnings into errors"
+  echo "    --verbose            | Makes compiler messages a bit cleaner"
   echo ""
   echo " Docker related flags:"
   echo ""
   echo "    --docker            | Build in the docker folder"
-  echo "    --ros               | Set the ROS distro: humble, jazzy, etc"
+  echo "    --ros               | Set the ROS distro: humble, jazzy, etc. Default: ${MAKI_ROS_DISTRO}"
   echo ""
   echo " Niceties for local development:"
   echo ""
@@ -92,6 +95,16 @@ while [[ $# -gt 0 ]]; do
       MAKI_WARNINGS_AS_ERRORS="ON"
       shift
       ;;
+      --verbose)
+      MAKI_VERBOSE_DIAGNOSTICS="ON"
+      shift
+      ;;
+      --clang)
+      CC=clang
+      CXX=clang++
+      TARGET_BUILD="clang"
+      shift
+      ;;
       --ros)
       MAKI_ROS_DISTRO="$2"
       shift
@@ -134,7 +147,12 @@ done
 
 BUILD_PATH="$SOURCE_DIR/build/$TARGET_BUILD/$BUILD_TYPE_DIR"
 INSTALL_PREFIX="$SOURCE_DIR/release/$TARGET_BUILD"
-EXTRA_ARGS="${EXTRA_ARGS} -DBUILD_TESTING=${BUILD_TESTING} -DMAKI_ENABLE_CPPCHECK=${CPPCHECK} -DMAKI_PEDANTIC=${MAKI_PEDANTIC} -DMAKI_WARNINGS_AS_ERRORS=${MAKI_WARNINGS_AS_ERRORS}"
+EXTRA_ARGS="${EXTRA_ARGS} \
+           -DBUILD_TESTING=${BUILD_TESTING} \
+           -DMAKI_ENABLE_CPPCHECK=${CPPCHECK} \
+           -DMAKI_PEDANTIC=${MAKI_PEDANTIC} \
+           -DMAKI_WARNINGS_AS_ERRORS=${MAKI_WARNINGS_AS_ERRORS} \
+           -DMAKI_VERBOSE_DIAGNOSTICS=${MAKI_VERBOSE_DIAGNOSTICS}"
 
 # Run the check command
 if [[ "$CPPCHECK" == "ON" ]]; then
@@ -155,6 +173,8 @@ if [ $DOCKER -eq 1 ]; then
   # We need to explictly set the compiler when building in the docker container
   EXTRA_ARGS="${EXTRA_ARGS} -DCMAKE_C_COMPILER=gcc-13 -DCMAKE_CXX_COMPILER=g++-13"
 fi
+
+# EXTRA_ARGS="${EXTRA_ARGS} -DCMAKE_CXX_FLAGS=-fno-immediate-escalation"
 
 echo "--------------------------------------"
 echo "Running with:"
@@ -186,6 +206,7 @@ else
     -DLOCAL_QT_PATH="$LOCAL_QT_PATH" \
     -DLOCAL_PROJECT_PATH="$LOCAL_PROJECT_PATH" \
     -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
+    -DVTK_DIR="$HOME/Programs/vtk/release/lib/cmake/vtk-9.7" \
     $EXTRA_ARGS
 
   if [ $DOCS -eq 1 ]; then
