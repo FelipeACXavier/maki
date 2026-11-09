@@ -1,176 +1,118 @@
-<#
-.SYNOPSIS
-    Build MAKI on Windows.
-
-.DESCRIPTION
-    Configures and builds MAKI using CMake and MSVC.
-    Supports Debug and Release builds, and cleaning build directories.
-
-.PARAMETER Clean
-    Remove the selected build directory without building.
-
-.PARAMETER Release
-    Build MAKI in Release mode instead of Debug.
-
-.PARAMETER NoTest
-    Disable building tests.
-
-.PARAMETER Prefix
-    Override the Qt installation prefix.
-
-.PARAMETER Docs
-    Build documentation.
-
-.PARAMETER List
-    List available CMake targets.
-
-.PARAMETER Target
-    Build a specific CMake target.
-
-.EXAMPLE
-    .\build.ps1 -Release -Target kodagen
-
-.EXAMPLE
-    .\build.ps1 -NoTest -Docs
-
-.EXAMPLE
-    .\build.ps1 -List
-
-.EXAMPLE
-    .\build.ps1
-    Build MAKI in Debug mode.
-
-.EXAMPLE
-    .\build.ps1 -Release
-    Build MAKI in Release mode.
-
-.EXAMPLE
-    .\build.ps1 -Clean
-    Remove the Debug build directory.
-
-.EXAMPLE
-    .\build.ps1 -Clean -Release
-    Remove the Release build directory.
-
-.NOTES
-    Requires MSVC, CMake, Qt, and vcpkg.
-#>
-
 param(
-  [switch]$Clean,
-  [switch]$Release,
-  [switch]$NoTest,
-  [switch]$Docs,
-  [switch]$List,
-  [switch]$Help,
-
-  [string]$Prefix = "",
-  [string]$Target = "",
-
-  [Parameter(ValueFromRemainingArguments = $true)]
-  [string[]]$ExtraArgs
+    [switch]$Clean,
+    [switch]$Release,
+    [switch]$NoTest,
+    [switch]$Docs,
+    [switch]$List,
+    [switch]$Help,
+    [string]$Prefix = '',
+    [string]$Target = '',
+    [Parameter(ValueFromRemainingArguments = $true)]
+    [string[]]$ExtraArgs
 )
 
 if ($Help) {
-  Get-Help $PSCommandPath -Detailed
-  exit 0
+    Get-Help $PSCommandPath -Detailed
+    exit 0
 }
 
-if ($Docs) {
-  Fail "Docs are currently not supported on Windows"
-}
-
-# ------------------------------------------------------
-# Load shared settings
-# ------------------------------------------------------
-$RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
-$SettingsPath = Join-Path $RepoRoot "scripts\windows\settings.ps1"
+# Load the shared settings (including logging and MSVC setup).
+$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+$SettingsPath = Join-Path $RepoRoot 'scripts\windows\settings.ps1'
 . $SettingsPath
 
-$BuildType = if ($Release) { "Release" } else { "Debug" }
-$BuildPath = Join-Path $BuildPath "$BuildType"
+if ($Docs) {
+    Fail 'Docs are currently not supported on Windows.'
+}
+
+$BuildType = if ($Release) { 'Release' } else { 'Debug' }
+$BuildPath = Join-Path $BuildPath $BuildType
+$BuildTesting = if ($NoTest) { 'OFF' } else { 'ON' }
 
 if ($Prefix) {
-  $QtBase = $Prefix
+    $QtBase = $Prefix
+    $QtBin = Join-Path $QtBase 'bin'
+    $WindeployqtPath = Join-Path $QtBin 'windeployqt.exe'
+    $env:PATH = "$QtBin;$env:PATH"
 }
-
-$BuildTesting = if ($NoTest) { "OFF" } else { "ON" }
 
 if ($Clean) {
-  Write-Host "Cleaning build directory: $BuildPath"
-  if (Test-Path $BuildPath) {
-    Remove-Item -Recurse -Force $BuildPath
-  }
-  exit 0
+    LogInfo "Cleaning build directory: $BuildPath"
+    if (Test-Path -LiteralPath $BuildPath) {
+        Remove-Item -LiteralPath $BuildPath -Recurse -Force -ErrorAction Stop
+    }
+    # Deliberately leave build/.venv-tools intact.
+    exit 0
 }
 
-LogInfo "==> Windows build script starting..."
-
-# ------------------------------------------------------
-# Configuration
-# ------------------------------------------------------
-LogInfo "Using Qt version: $QtVersion"
+LogInfo '==> Windows build script starting...'
+LogDebug "Qt version: $QtVersion"
 LogDebug "Repo root: $RepoRoot"
+LogDebug "Build path: $BuildPath"
+LogDebug "Qt prefix: $QtBase"
+LogDebug "Install path: $InstallPath"
 
-# ------------------------------------------------------
-# List targets
-# ------------------------------------------------------
+if (-not (Get-Command cmake.exe -ErrorAction SilentlyContinue)) {
+    Fail 'CMake not found. Run setup.ps1 before building.'
+}
+
 if ($List) {
-  cmake --build "$BuildPath" --config $BuildType --target help
-  exit $LASTEXITCODE
+    if (-not (Test-Path -LiteralPath $BuildPath)) {
+        Fail "Build directory does not exist: $BuildPath. Configure MAKI first."
+    }
+    & cmake --build $BuildPath --config $BuildType --target help
+    exit $LASTEXITCODE
 }
 
-$BuildArgs = ""
+$VcpkgToolchain = Join-Path $VcPkgPath 'scripts\buildsystems\vcpkg.cmake'
+if (-not (Test-Path -LiteralPath $VcpkgToolchain -PathType Leaf)) {
+    Fail "vcpkg toolchain file not found: $VcpkgToolchain"
+}
+if (-not (Test-Path -LiteralPath $QtBase -PathType Container)) {
+    Fail "Qt installation not found at $QtBase. Run setup.ps1 or specify -Prefix."
+}
 
+$BuildArgs = @()
 if ($Target) {
-  $BuildArgs += @("--target", $Target)
+    $BuildArgs += @('--target', $Target)
 } elseif ($Release) {
-  $BuildArgs += @("--target", "deploy-windows")
+    $BuildArgs += @('--target', 'deploy-windows')
 }
 
-LogDebug "RepoRoot: $RepoRoot"
-LogDebug "BuildPath: $BuildPath"
-LogDebug "QtBase: $QtBase"
-LogDebug "InstallPath: $InstallPath"
-LogDebug "ExtraArgs: $ExtraArgs"
-LogDebug "BuildArgs: $BuildArgs"
-
-# ------------------------------------------------------
-# Configure & build with CMake
-# ------------------------------------------------------
-if (-not (Test-Path $RepoRoot)) {
-    Fail "Repo root '$RepoRoot' does not exist."
+if (-not (Test-Path -LiteralPath $BuildPath)) {
+    New-Item -ItemType Directory -Path $BuildPath -Force | Out-Null
 }
 
-LogDebug "==> Configuring CMake..."
-if (-not (Test-Path $BuildPath)) {
-    New-Item -ItemType Directory -Path $BuildPath | Out-Null
+# Keep the generator explicit and consistent with the msvc2022_64 Qt package.
+# If you adopt VS 2026 as the required toolchain, update this setting together
+# with the rest of the Windows build configuration.
+$CmakeArgs = @(
+    '-S', $RepoRoot,
+    '-B', $BuildPath,
+    '-G', 'Visual Studio 17 2022',
+    '-A', 'x64',
+    '-DDEPLOY_TARGET=windows',
+    "-DCMAKE_PREFIX_PATH=$QtBase",
+    "-DCMAKE_INSTALL_PREFIX=$InstallPath",
+    "-DBUILD_TESTING=$BuildTesting",
+    "-DCMAKE_TOOLCHAIN_FILE=$VcpkgToolchain"
+)
+if ($ExtraArgs) {
+    $CmakeArgs += $ExtraArgs
 }
 
-cmake -S "$RepoRoot" -B "$BuildPath" `
-  -A x64 `
-  -DDEPLOY_TARGET="windows" `
-  -DCMAKE_PREFIX_PATH="$QtBase" `
-  -DCMAKE_INSTALL_PREFIX="$InstallPath" `
-  -DCMAKE_BUILD_TYPE="$BuildType" `
-  -DBUILD_TESTING="$BuildTesting" `
-  -DCMAKE_TOOLCHAIN_FILE="$VcPkgPath\scripts\buildsystems\vcpkg.cmake" `
-  $ExtraArgs
-
+LogDebug '==> Configuring CMake...'
+& cmake @CmakeArgs
 if ($LASTEXITCODE -ne 0) {
-  Fail "CMake configure failed."
+    Fail 'CMake configure failed.'
 }
 
 LogDebug "==> Building ($BuildType)..."
-cmake --build "$BuildPath" `
-      --config "$BuildType" `
-      --parallel 4 `
-      $BuildArgs
-
+& cmake --build $BuildPath --config $BuildType --parallel 4 @BuildArgs
 if ($LASTEXITCODE -ne 0) {
-  Fail "CMake configure failed."
+    Fail 'CMake build failed.'
 }
 
-LogInfo "==> build_windows.ps1 finished successfully." -ForegroundColor Green
+LogInfo '==> build.ps1 finished successfully.'
 LogInfo "Build directory: $BuildPath"
 exit 0

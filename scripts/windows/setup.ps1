@@ -1,84 +1,41 @@
 <#
-  scripts/windows/setup_windows.ps1
-
-  One-time (or occasional) setup script.
-  - Ensures Chocolatey is installed
-  - Installs Git, CMake, Ninja, Python 3
-  - Checks for a C++ compiler (MSVC) and warns if missing
-
-  Run this in an elevated PowerShell (Run as Administrator).
+  scripts/windows/setup.ps1
+  Windows setup orchestrator. Run in an elevated PowerShell.
 #>
+. (Join-Path $PSScriptRoot 'settings.ps1')
 
-# ------------------------------------------------------
-# Load shared settings
-# ------------------------------------------------------
-$RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
-$SettingsPath = Join-Path $RepoRoot "scripts\windows\settings.ps1"
-. $SettingsPath
+if ($env:OS -ne 'Windows_NT') { Fail 'This script must run on Windows.' }
 
-LogDebug "==> Windows setup script starting..."
+# Tool setup creates build/.venv-tools and installs aqtinstall into it.
+& (Join-Path $PSScriptRoot 'setup_tools.ps1')
+if ($LASTEXITCODE -ne 0) { Fail 'Tool setup failed.' }
 
-# ------------------------------------------------------
-# Ensure script is running on Windows
-# ------------------------------------------------------
-if ($PSVersionTable.PSEdition -ne "Desktop" -and $env:OS -notlike "*Windows*") {
-    Fail "This script must be run on Windows."
+if (-not (Test-ToolsVenv)) {
+    Fail "Python tools virtual environment is unavailable: $ToolsVenv"
 }
+LogInfo "Using isolated Python: $PythonExecutable"
 
-# ------------------------------------------------------
-# Install Qt via aqtinstall
-# ------------------------------------------------------
-LogDebug "Using Qt version: $QtVersion"
-$env:PATH = "$PythonHome;$PythonHome\Scripts;$env:PATH"
-
-LogDebug "==> Using aqt: $AQT"
-
-if (Test-Path $WindeployqtPath) {
-    LogDebug "==> Qt already installed at: $QtBase"
+if (Test-Path -LiteralPath $WindeployqtPath) {
+    LogInfo "Qt already installed: $QtBase"
 } else {
-    LogDebug "==> Installing Qt $QtVersion ($QtArch)..."
-
-    if (-not (Test-Path $QtRoot)) {
-        New-Item -ItemType Directory -Path $QtRoot | Out-Null
-    }
-
-    &  $AQT install-qt windows desktop $QtVersion $QtArch `
-        -m qtpdf qtwebchannel qtpositioning qtwebsockets `
-        -O $QtRoot `
-
-    if ($LASTEXITCODE -ne 0) {
-      Fail "Qt installation failed."
-    }
-
-    if (-not (Test-Path $WindeployqtPath)) {
-        Fail "Qt installation completed but windeployqt.exe not found. Something went wrong."
+    LogDebug "Installing Qt $QtVersion ($QtArch)..."
+    New-Item -ItemType Directory -Path $QtRoot -Force | Out-Null
+    & $PythonExecutable -m aqt install-qt windows desktop $QtVersion $QtArch `
+        -m qt5compat qtpdf qtwebchannel qtpositioning qtwebsockets `
+        -O $QtRoot
+    if ($LASTEXITCODE -ne 0) { Fail 'Qt installation failed.' }
+    if (-not (Test-Path -LiteralPath $WindeployqtPath)) {
+        Fail 'Qt installation completed but windeployqt.exe was not found.'
     }
 }
-
 $env:PATH = "$QtBin;$env:PATH"
-LogInfo "Qt successfully installed at: $QtBase"
+LogInfo "Qt ready: $QtBase"
 
-# ------------------------------------------------------
-# Check for C++ compiler (MSVC)
-# ------------------------------------------------------
-LogDebug "==> Checking for MSVC (cl.exe)..."
-$cl = Get-Command cl.exe -ErrorAction SilentlyContinue
-if (-not $cl) {
-    LogWarning @"
-WARNING: 'cl.exe' (MSVC) not found on PATH.
-You likely need to install:
-
-  - Visual Studio with "Desktop development with C++"
-    OR
-  - Microsoft Build Tools for Visual Studio (C++)
-
-This script does not install Visual Studio automatically.
-See: https://visualstudio.microsoft.com/downloads/
-"@
+$compiler = Get-Command cl.exe -ErrorAction SilentlyContinue
+if ($compiler) {
+    LogInfo "MSVC compiler detected: $($compiler.Source)"
 } else {
-    LogDebug "MSVC compiler detected: $($cl.Source)"
+    LogWarning 'MSVC not detected. Install Visual Studio Build Tools with Desktop development with C++.'
 }
-
-LogInfo "==> setup.ps1 finished."
-LogDebug "You can now run build.ps1 (from a developer shell and after ensuring MSVC is installed)."
+LogInfo 'Windows setup completed.'
 exit 0

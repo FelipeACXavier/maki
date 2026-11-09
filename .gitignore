@@ -10,6 +10,18 @@ aqtinstall.log
 compile_commands.json
 vcpkg_installed/
 
+# Examples
+examples/CASE/*/
+examples/CASE/*.html
+examples/**/*.log
+
+# MAKI files in the root folder
+*.maki
+
+# Compressed files
+**/*.zip
+**/*.tar
+
 # Helix editor stuff
 history
 bookmarks
@@ -22,3 +34,5 @@ tagged
 *.bak
 *.llm
 env
+
+**/__pycache__

@@ -1,89 +1,78 @@
-# ------------------------------------------------------
-# Load shared settings
-# ------------------------------------------------------
-$RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
-$SettingsPath = Join-Path $RepoRoot "scripts\windows\settings.ps1"
-. $SettingsPath
+<#
+  scripts/windows/setup_tools.ps1
+  Ensures native build tools and MAKI's isolated Python build tools.
+  Run from an elevated PowerShell.
+#>
+. (Join-Path $PSScriptRoot 'settings.ps1')
 
-LogDebug "==> Windows setup script starting..."
+if ($env:OS -ne 'Windows_NT') { Fail 'This script must run on Windows.' }
 
-# ------------------------------------------------------
-# Ensure script is running on Windows
-# ------------------------------------------------------
-if ($PSVersionTable.PSEdition -ne "Desktop" -and $env:OS -notlike "*Windows*") {
-    Fail "This script must be run on Windows."
-}
-
-# ------------------------------------------------------
-# Install / ensure Chocolatey
-# ------------------------------------------------------
-LogDebug "==> Checking for Chocolatey..."
-$choco = Get-Command choco -ErrorAction SilentlyContinue
-if (-not $choco) {
-    LogWarning "Chocolatey not found. Installing..."
+# Chocolatey is only for native dependencies and an absent system Python.
+if (-not (Get-Command choco.exe -ErrorAction SilentlyContinue)) {
+    LogWarning 'Chocolatey not found. Installing...'
     Set-ExecutionPolicy Bypass -Scope Process -Force
     [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
     try {
-      Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+        Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
     } catch {
-      Fail "Failed to install Chocolatey."
+        Fail "Failed to install Chocolatey: $_"
     }
+    $env:PATH = "$(Join-Path $env:ProgramData 'chocolatey\bin');$env:PATH"
+}
+if (-not (Get-Command choco.exe -ErrorAction SilentlyContinue)) {
+    Fail 'Chocolatey was not found after installation.'
+}
+
+foreach ($package in @('git', 'cmake', 'ninja')) {
+    LogDebug "Ensuring $package is installed..."
+    & choco.exe install $package -y --no-progress
+    if ($LASTEXITCODE -notin @(0, 3010, 1641)) {
+        Fail "Chocolatey failed to install $package (exit code $LASTEXITCODE)."
+    }
+}
+# An install can change the registry PATH without updating this shell.
+$env:PATH = "$(Join-Path $env:ProgramFiles 'Git\cmd');$env:PATH"
+
+# The already-created venv can be reused; otherwise find or install base Python.
+if (-not (Test-ToolsVenv)) {
+    $basePython = Get-CompatiblePython
+    if (-not $basePython) {
+        LogWarning "No Python >= $MinimumPythonVersion found; installing Python 3.12..."
+        & choco.exe install python312 -y --no-progress
+        if ($LASTEXITCODE -notin @(0, 3010, 1641)) {
+            Fail "Chocolatey failed to install Python 3.12 (exit code $LASTEXITCODE)."
+        }
+        $basePython = Get-CompatiblePython
+        if (-not $basePython) {
+            Fail 'Python installation completed, but no compatible interpreter was detected.'
+        }
+    }
+    Initialize-ToolsVenv $basePython
 } else {
-    LogInfo "Chocolatey found."
+    LogInfo "Reusing Python virtual environment: $ToolsVenv"
 }
 
-# ------------------------------------------------------
-# Install tools with Chocolatey
-# ------------------------------------------------------
-$packages = @(
-    "cmake",
-    "ninja",
-    "python"
-)
+# Avoid --user: pip is now targeting the isolated environment.
+LogDebug 'Installing aqtinstall into the MAKI tool environment...'
+& $PythonExecutable -m pip install --upgrade aqtinstall
+if ($LASTEXITCODE -ne 0) { Fail 'Unable to install aqtinstall into the virtual environment.' }
+& $PythonExecutable -m aqt --version
+if ($LASTEXITCODE -ne 0) { Fail 'aqtinstall could not be executed from the virtual environment.' }
 
-LogDebug "==> Ensuring base tools are installed: $($packages -join ', ')"
-foreach ($pkg in $packages) {
-    $installed = choco list --exact --limit-output $pkg | Select-String "^$([regex]::Escape($pkg))\|"
-    if ($installed) {
-        LogDebug "  - $pkg already installed, skipping."
-        continue
+$vcpkgExe = Join-Path $VcPkgPath 'vcpkg.exe'
+if (-not (Test-Path -LiteralPath $vcpkgExe)) {
+    if (-not (Test-Path -LiteralPath $VcPkgPath)) {
+        LogDebug "Cloning vcpkg into $VcPkgPath ..."
+        & git.exe clone https://github.com/microsoft/vcpkg.git $VcPkgPath
+        if ($LASTEXITCODE -ne 0) { Fail 'Failed to clone vcpkg.' }
     }
-
-    LogDebug "  - $pkg installing"
-    if ($pkg -eq "python") {
-      choco install python --version=$PythonVersion -y --no-progress | Out-Null
-    } else {
-      choco install $pkg -y --no-progress | Out-Null
+    $bootstrap = Join-Path $VcPkgPath 'bootstrap-vcpkg.bat'
+    if (-not (Test-Path -LiteralPath $bootstrap)) {
+        Fail "Missing vcpkg bootstrap script: $bootstrap"
     }
+    & $bootstrap
+    if ($LASTEXITCODE -ne 0) { Fail 'Failed to bootstrap vcpkg.' }
 }
 
-LogInfo "==> Base tools installed/updated."
-
-# ------------------------------------------------------
-# Ensure aqtinstall is installed
-# ------------------------------------------------------
-# Add both the binary dir and Scripts dir
-$env:PATH = "$PythonHome;$PythonHome\Scripts;$env:PATH"
-
-LogDebug "==> Running with $Python"
-LogDebug "==> Ensuring aqtinstall is installed..."
-try {
-  & $Python -m pip install --user aqtinstall
-} catch {
-  Fail "Failed to install aqtinstall."
-}
-
-# ------------------------------------------------------
-# Ensure vcpkg
-# ------------------------------------------------------
-$vcpkg = Get-Command vcpkg -ErrorAction SilentlyContinue
-if (-not $choco) {
-  LogWarning "VcPkg not found. Installing..."
-  git clone https://github.com/microsoft/vcpkg $VcPkgPath
-  & "$VcPkgPath\bootstrap-vcpkg.bat"
-  if ($LASTEXITCODE -ne 0) {
-    Fail "Failed to install vcpkg"
-  }
-}
-
+LogInfo "Build tools ready. Python environment: $ToolsVenv"
 exit 0
