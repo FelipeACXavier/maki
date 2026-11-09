@@ -31,11 +31,20 @@ struct Variable
   Provenance origin;
 };
 
+// Most definitions are aliases. Complex, input-dependent control guards can
+// instead be encoded as constrained Boolean inputs to avoid DEFINE expansion.
+enum class DefinitionEncoding
+{
+  Macro,
+  ConstrainedBooleanInput,
+};
+
 struct Definition
 {
   std::string name;
   PExpression expression;
   Provenance origin;
+  DefinitionEncoding encoding = DefinitionEncoding::Macro;
 };
 
 struct GuardedValue
@@ -58,11 +67,20 @@ struct TransitionConstraint
   Provenance origin;
 };
 
+enum class PropertyKind
+{
+  Ltl,
+  Ctl,
+  Invariant,
+};
+
+// Verification obligations: never inserted as transition constraints.
 struct Property
 {
   std::string name;
   PExpression expression;
   Provenance origin;
+  PropertyKind kind = PropertyKind::Ltl;
 };
 
 struct Behaviour
@@ -84,6 +102,18 @@ struct Behaviour
   std::vector<Definition> definitions;
   std::vector<NextAssignment> nextAssignments;
   std::vector<TransitionConstraint> constraints;
+  std::vector<Property> expectations;
+
+  // Conservative upper bounds on possible control-flow outcomes. Until a
+  // composite compiler has been annotated, TRUE means "not yet ruled out".
+  // Only a compiler that knows an outcome is impossible should set it FALSE.
+  // This prevents optimization from deleting legitimate execution paths.
+  bool mayReturnDone = true;   // existing synchronous RESULT_DONE capability
+  bool mayAccept = true;       // RESULT_SUCCESS (async trigger accepted)
+  bool mayReject = true;       // RESULT_FAILURE (trigger rejected)
+  bool mayEmitSuccess = true;  // EVENT_SUCCESS from an accepted invocation
+  bool mayEmitFailure = true;  // EVENT_FAILURE from an accepted invocation
+  bool mayEmitAborted = true;  // EVENT_ABORTED from an accepted invocation
 };
 
 class Model

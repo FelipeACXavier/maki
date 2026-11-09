@@ -1,10 +1,10 @@
 #pragma once
 
-#include "nuxmv_model.h"
-
 #include <cstddef>
 #include <string>
 #include <vector>
+
+#include "nuxmv_model.h"
 
 namespace koda::nuxmv
 {
@@ -15,8 +15,7 @@ namespace koda::nuxmv
 // The SemanticCompiler remains responsible for compiling AST children into Behaviour
 // fragments and merging those fragments into the final flat Model.
 
-PExpression synchronousReplyChain(const std::vector<Behaviour>& children,
-                                  std::size_t first);
+PExpression synchronousReplyChain(const std::vector<Behaviour>& children, std::size_t first);
 
 PExpression allChildrenCompleted(const std::vector<PExpression>& completed);
 

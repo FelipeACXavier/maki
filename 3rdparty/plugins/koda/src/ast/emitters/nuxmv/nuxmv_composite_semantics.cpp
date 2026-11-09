@@ -5,19 +5,14 @@
 namespace koda::nuxmv
 {
 
-PExpression synchronousReplyChain(const std::vector<Behaviour>& children,
-                                  std::size_t first)
+PExpression synchronousReplyChain(const std::vector<Behaviour>& children, std::size_t first)
 {
   if (first >= children.size())
     return constants::resultDone();
 
   auto reply = children.back().triggerReply;
   for (std::size_t n = children.size() - 1; n-- > first;)
-  {
-    reply = cases(
-        {{equal(children[n].triggerReply, constants::resultDone()), reply}},
-        children[n].triggerReply);
-  }
+    reply = cases({{equal(children[n].triggerReply, constants::resultDone()), reply}}, children[n].triggerReply);
   return reply;
 }
 
@@ -39,8 +34,7 @@ PExpression anyChildFailed(const std::vector<Behaviour>& children)
 
   auto result = equal(children.front().outcome, constants::eventFailure());
   for (std::size_t i = 1; i < children.size(); ++i)
-    result = logicalOr(result,
-                       equal(children[i].outcome, constants::eventFailure()));
+    result = logicalOr(result, equal(children[i].outcome, constants::eventFailure()));
   return result;
 }
 
@@ -53,10 +47,8 @@ PExpression exactlyOneEvent(const std::vector<Behaviour>& children)
   {
     for (std::size_t j = i + 1; j < children.size(); ++j)
     {
-      const auto both =
-          logicalAnd(
-              logicalNot(equal(children[i].outcome, constants::eventNone())),
-              logicalNot(equal(children[j].outcome, constants::eventNone())));
+      const auto both = logicalAnd(logicalNot(equal(children[i].outcome, constants::eventNone())),
+                                   logicalNot(equal(children[j].outcome, constants::eventNone())));
       result = logicalAnd(result, logicalNot(both));
     }
   }

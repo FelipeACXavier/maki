@@ -54,6 +54,14 @@ private:
   std::vector<std::string> mIdContext;
   std::unordered_map<std::string, std::size_t> mIdCounters;
 
+  struct CapabilityAbortSite
+  {
+    std::string id;
+    SymbolId targetTrigger = InvalidSymbol;
+    PExpression invoked;
+    Provenance origin;
+  };
+
   struct CapabilityCallSite
   {
     std::string id;
@@ -76,6 +84,7 @@ private:
     std::string id;
     ir::CapabilityKind kind = ir::CapabilityKind::Unknown;
     std::vector<CapabilityCallSite> calls;
+    std::vector<CapabilityAbortSite> abortCalls;
   };
 
   struct FlowCallSite
@@ -146,6 +155,9 @@ private:
                              const PExpression& reset, Behaviour& behaviour);
   VoidResult compileRepeat(const ir::PStrategy& strategy, const ir::Strategy::Repeat& repeat, const PExpression& trigger, const PExpression& abort,
                            const PExpression& reset, Behaviour& behaviour);
+  VoidResult compileRetry(const ir::PStrategy& strategy, const ir::Strategy::Retry& retry, const PExpression& trigger, const PExpression& abort,
+                          const PExpression& reset, Behaviour& behaviour);
+
   VoidResult compileJoin(const ir::PStrategy& strategy, const ir::Strategy::Join& join, const PExpression& trigger, const PExpression& abort,
                          const PExpression& reset, Behaviour& behaviour);
   VoidResult compileEither(const ir::PStrategy& strategy, const ir::Strategy::Either& either, const PExpression& trigger, const PExpression& abort,

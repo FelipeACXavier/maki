@@ -13,41 +13,41 @@ std::string render(const PExpression& expression)
     return "FALSE";
 
   return std::visit(
-      [](const auto& value) -> std::string {
-        using T = std::decay_t<decltype(value)>;
+    [](const auto& value) -> std::string {
+      using T = std::decay_t<decltype(value)>;
 
-        if constexpr (std::is_same_v<T, Expression::Literal>)
-        {
-          return value.value;
-        }
-        else if constexpr (std::is_same_v<T, Expression::Reference>)
-        {
-          return value.name;
-        }
-        else if constexpr (std::is_same_v<T, Expression::Unary>)
-        {
-          if (value.op == "X")
-            return "X (" + render(value.operand) + ")";
-          return value.op + "(" + render(value.operand) + ")";
-        }
-        else if constexpr (std::is_same_v<T, Expression::Binary>)
-        {
-          return "(" + render(value.lhs) + " " + value.op + " " + render(value.rhs) + ")";
-        }
-        else if constexpr (std::is_same_v<T, Expression::Case>)
-        {
-          std::ostringstream out;
-          out << "case\n";
-          for (const auto& branch : value.branches)
-            out << "    " << render(branch.condition) << " : " << render(branch.value) << ";\n";
-          out << "    TRUE : " << render(value.fallback) << ";\n";
-          out << "  esac";
-          return out.str();
-        }
+      if constexpr (std::is_same_v<T, Expression::Literal>)
+      {
+        return value.value;
+      }
+      else if constexpr (std::is_same_v<T, Expression::Reference>)
+      {
+        return value.name;
+      }
+      else if constexpr (std::is_same_v<T, Expression::Unary>)
+      {
+        if (value.op == "X")
+          return "X (" + render(value.operand) + ")";
+        return value.op + "(" + render(value.operand) + ")";
+      }
+      else if constexpr (std::is_same_v<T, Expression::Binary>)
+      {
+        return "(" + render(value.lhs) + " " + value.op + " " + render(value.rhs) + ")";
+      }
+      else if constexpr (std::is_same_v<T, Expression::Case>)
+      {
+        std::ostringstream out;
+        out << "case\n";
+        for (const auto& branch : value.branches)
+          out << "    " << render(branch.condition) << " : " << render(branch.value) << ";\n";
+        out << "    TRUE : " << render(value.fallback) << ";\n";
+        out << "  esac";
+        return out.str();
+      }
 
-        return {};
-      },
-      expression->value);
+      return {};
+    },
+    expression->value);
 }
 }  // namespace
 

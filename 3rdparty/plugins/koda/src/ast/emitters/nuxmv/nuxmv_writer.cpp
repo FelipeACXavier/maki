@@ -41,6 +41,8 @@ VoidResult Writer::write(const Model& model, std::ostream& stream) const
   bool hasInputs = false;
   for (const auto& variable : model.variables())
     hasInputs |= variable.kind == VariableKind::Input;
+  for (const auto& definition : model.definitions())
+    hasInputs |= definition.encoding == DefinitionEncoding::ConstrainedBooleanInput;
 
   if (hasInputs)
   {
@@ -48,6 +50,9 @@ VoidResult Writer::write(const Model& model, std::ostream& stream) const
     for (const auto& variable : model.variables())
       if (variable.kind == VariableKind::Input)
         writeVariable(stream, variable);
+    for (const auto& definition : model.definitions())
+      if (definition.encoding == DefinitionEncoding::ConstrainedBooleanInput)
+        stream << "  " << definition.name << " : boolean;\n";
     stream << "\n";
   }
 
@@ -67,7 +72,8 @@ VoidResult Writer::write(const Model& model, std::ostream& stream) const
   stream << "DEFINE\n";
   writeConstants(stream);
   for (const auto& definition : model.definitions())
-    stream << "  " << definition.name << " := " << toString(definition.expression) << ";\n";
+    if (definition.encoding == DefinitionEncoding::Macro)
+      stream << "  " << definition.name << " := " << toString(definition.expression) << ";\n";
   stream << "\n";
 
   if (hasState)
@@ -84,11 +90,37 @@ VoidResult Writer::write(const Model& model, std::ostream& stream) const
   for (const auto& constraint : model.constraints())
     stream << "TRANS " << toString(constraint.expression) << ";\n";
 
-  if (!model.constraints().empty())
+  // A constrained Boolean IVAR is *not* an unconstrained environment input.
+  // The equality ties its current-step value to the original guard, including
+  // current-step capability inputs. Current-state ASSIGN is invalid here.
+  bool hasConstrainedInputs = false;
+  for (const auto& definition : model.definitions())
+    if (definition.encoding == DefinitionEncoding::ConstrainedBooleanInput)
+    {
+      stream << "TRANS (" << definition.name << " = (" << toString(definition.expression) << "));\n";
+      hasConstrainedInputs = true;
+    }
+
+  if (!model.constraints().empty() || hasConstrainedInputs)
     stream << "\n";
 
   for (const auto& property : model.properties())
-    stream << "LTLSPEC NAME " << property.name << " := " << toString(property.expression) << ";\n";
+  {
+    const char* keyword = "LTLSPEC";
+    switch (property.kind)
+    {
+      case PropertyKind::Ltl:
+        keyword = "LTLSPEC";
+        break;
+      case PropertyKind::Ctl:
+        keyword = "CTLSPEC";
+        break;
+      case PropertyKind::Invariant:
+        keyword = "INVARSPEC";
+        break;
+    }
+    stream << keyword << " NAME " << property.name << " := " << toString(property.expression) << ";\n";
+  }
 
   return {};
 }
