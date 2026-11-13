@@ -1,5 +1,6 @@
 @page architecture_overview Architecture
 
+[TOC]
 
 The abstract software architecture of MAKI is shown below:
 

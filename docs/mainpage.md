@@ -1,6 +1,11 @@
 @mainpage MAKI
 
-<img align="right" src="./maki_icon_only.png" height="150">
+[TOC]
+
+\htmlonly
+    <img src="./maki_icon_only.png" alt="Maki, the cat, sleeping on top of a nigiri" class="main-page-logo">
+<!-- <img align="right" src="./maki_icon_only.png" width="150"> -->
+\endhtmlonly
 
 [![Build dev Docker image](https://github.com/FelipeACXavier/maki/actions/workflows/build-dev-image.yaml/badge.svg)](https://github.com/FelipeACXavier/maki/actions/workflows/build-dev-image.yaml)
 [![CI](https://github.com/FelipeACXavier/maki/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/FelipeACXavier/maki/actions/workflows/ci.yml)

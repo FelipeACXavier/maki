@@ -1,29 +1,9 @@
-html {
-  /* --primary-color: #c6002b;
-  --primary-dark-color: #8f001f;
-  --primary-light-color: #e04a5f;
-
-  --page-background-color: #ffffff;
-  --page-foreground-color: #2a2a2a;
-  --page-secondary-foreground-color: #6a6a6a; */
-}
-
-html.dark-mode {
-  /* --primary-color: #ff4b5c;
-  --primary-dark-color: #c6002b;
-  --primary-light-color: #ff7a86;
-
-  --page-background-color: #1b1b1d;
-  --page-foreground-color: #e6e6e6;
-  --page-secondary-foreground-color: #a0a0a0; */
-}
-
 .rounded-image {
     border-radius: 12px;
 }
 /* Display stuff */
 .d-block {
-  display: block;  
+  display: block;
 }
 
 /* Width stuff */
@@ -42,4 +22,107 @@ html.dark-mode {
   margin: 0 auto;
 }
 
+#projectbrief {
+  line-height: normal;
+}
 
+/* MAKI documentation palette — inspired by the cat/sushi icon.
+   Light: warm paper + charcoal text + salmon-orange links.
+   Dark: charcoal surfaces + brighter salmon-orange. */
+html {
+  --primary-color: #db643c;
+  --primary-dark-color: #b94627;
+  --primary-light-color: #ff865e;
+  --primary-lighter-color: #fff1ea;
+  --page-background-color: #fffdfa;
+  --page-foreground-color: #292d33;
+  --page-secondary-foreground-color: #656b73;
+  --separator-color: #e9e2db;
+  --code-background: #f6f2ef;
+  --side-nav-fixed-width: 315px;
+  --toc-width: 150px;
+}
+html.dark-mode {
+  --primary-color: #ff926c;
+  --primary-dark-color: #ec714a;
+  --primary-light-color: #ffb19a;
+  --primary-lighter-color: #3b302e;
+  --page-background-color: #202329;
+  --page-foreground-color: #f5f2ed;
+  --page-secondary-foreground-color: #b1b5bc;
+  --separator-color: #3b4149;
+  --code-background: #2a2e35;
+}
+
+/* Softer article layout. These enhancements do not replace theme structure. */
+html:not(.dark-mode) #side-nav, html:not(.dark-mode) #top {
+  background-color: #faf6f1;
+}
+html.dark-mode #side-nav, html.dark-mode #top {
+  background-color: #24272e;
+}
+#projectname { font-weight: 750; letter-spacing: -.025em; }
+#projectbrief { opacity: .8; }
+.contents h1, .contents h2, .contents h3 { letter-spacing: -.02em; }
+.contents h2 { margin-top: 2em; }
+.contents img { border-radius: 10px; max-width: 100%; height: auto; }
+.contents div.fragment { border-radius: 10px; overflow: hidden; }
+.contents table.markdownTable { border-radius: 8px; }
+
+/* Page-specific hint cards, suitable for Markdown <div class=...> blocks. */
+.maki-note {
+  margin: 1.1rem 0;
+  padding: .9rem 1.1rem;
+  border: 1px solid #e9d0c2;
+  border-left: 4px solid var(--primary-color);
+  border-radius: 9px;
+  background: #fff6f0;
+}
+html.dark-mode .maki-note {
+  background: #332d2d;
+  border-color: #654738;
+  border-left-color: var(--primary-color);
+}
+.maki-note > :first-child { margin-top: 0; }
+.maki-note > :last-child { margin-bottom: 0; }
+
+/* Rounded OS platform tabs. Actual switching is handled by Doxygen Awesome. */
+.tabbed { margin: 1.3rem 0; }
+.tabbed .tab-title { font-weight: 650; }
+
+.main-page-logo {
+  width: 25%;
+  height: auto;
+  max-width: 180px;
+  margin: 0 0 16px 24px;
+  float: right;
+}
+
+/* Keep layout comfortable for phone-sized screens. */
+@media screen and (max-width: 767px) {
+  .maki-note { padding: .75rem .85rem; }
+  .contents h2 { margin-top: 1.5em; }
+}
+
+@media screen and (min-width: 1400px) {
+  html {
+    --toc-width: 200px;
+    --toc-gap: 12px;
+    --toc-right-margin: 16px;
+    --article-width: 1000px;
+    --toc-space: calc(var(--toc-width) + var(--toc-gap) + var(--toc-right-margin));
+  }
+
+  div.contents:has(.toc) {
+    width: min(var(--article-width), calc(100% - var(--toc-space)));
+    margin-left: max(0px, calc((100% - var(--article-width) - var(--toc-space)) / 2));
+    margin-right: auto;
+  }
+
+  /* Place the TOC outside the article area */
+  div.contents .toc {
+    float: right;
+    width: var(--toc-width);
+    margin-right: calc(-1 * var(--toc-space) + var(--toc-right-margin));
+  }
+}

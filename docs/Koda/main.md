@@ -1,6 +1,6 @@
 @page koda KODA
 
-# KODA
+[TOC]
 
 KODA is a domain-specific language (DSL) for modelling the structure, behaviour, and
 data of robotic systems. It forms the underlying modelling language of MAKI and

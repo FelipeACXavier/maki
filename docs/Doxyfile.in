@@ -1,10 +1,10 @@
 OUTPUT_DIRECTORY       = @CMAKE_CURRENT_BINARY_DIR@/../docs
-INPUT                  = @CMAKE_SOURCE_DIR@/app @CMAKE_SOURCE_DIR@/docs 
+INPUT                  = @CMAKE_SOURCE_DIR@/app @CMAKE_SOURCE_DIR@/docs
 IMAGE_PATH             = @CMAKE_SOURCE_DIR@/docs/Figures
 RECURSIVE              = YES
 
 PROJECT_NAME           = Maki
-PROJECT_BRIEF          = Formally verfied low-code orchestration
+PROJECT_BRIEF          = Formally verified low-code orchestration
 PROJECT_LOGO           = @CMAKE_SOURCE_DIR@/app/assets/app_icon/maki_icon_only.png
 PROJECT_ICON           = @CMAKE_SOURCE_DIR@/app/assets/app_icon/maki_icon_only.png
 USE_MDFILE_AS_MAINPAGE = @CMAKE_SOURCE_DIR@/docs/mainpage.md
@@ -25,22 +25,31 @@ GENERATE_TREEVIEW      = YES
 DISABLE_INDEX          = NO
 FULL_SIDEBAR           = NO
 HTML_COPY_CLIPBOARD    = NO
+# Enable Markdown-generated tables of contents.
+PAGE_OUTLINE_PANEL     = NO
+# MARKDOWN_SUPPORT = YES
+TOC_INCLUDE_HEADINGS = 4
+
+TREEVIEW_WIDTH         = 315
 HTML_EXTRA_FILES       = \
   @CMAKE_SOURCE_DIR@/3rdparty/doxygen-awesome-css/doxygen-awesome-darkmode-toggle.js \
   @CMAKE_SOURCE_DIR@/3rdparty/doxygen-awesome-css/doxygen-awesome-fragment-copy-button.js \
+  @CMAKE_SOURCE_DIR@/3rdparty/doxygen-awesome-css/doxygen-awesome-interactive-toc.js \
+  @CMAKE_SOURCE_DIR@/3rdparty/doxygen-awesome-css/doxygen-awesome-tabs.js \
+  @CMAKE_SOURCE_DIR@/3rdparty/doxygen-awesome-css/doxygen-awesome-paragraph-link.js \
   @CMAKE_SOURCE_DIR@/docs/Figures/hospital_task/fcharge.svg \
   @CMAKE_SOURCE_DIR@/docs/Figures/hospital_task/fcheck.svg \
   @CMAKE_SOURCE_DIR@/docs/Figures/hospital_task/floop.svg \
   @CMAKE_SOURCE_DIR@/docs/Figures/hospital_task/fpick.svg \
   @CMAKE_SOURCE_DIR@/docs/Figures/hospital_task/fplace.svg \
   @CMAKE_SOURCE_DIR@/docs/Figures/hospital_task/fstop.svg \
-  @CMAKE_SOURCE_DIR@/docs/Figures/hospital_task/main.svg \ 
+  @CMAKE_SOURCE_DIR@/docs/Figures/hospital_task/main.svg \
   @CMAKE_SOURCE_DIR@/docs/Figures/Demos/maki-demo.webm
 
 HTML_EXTRA_STYLESHEET  = \
 	@CMAKE_SOURCE_DIR@/3rdparty/doxygen-awesome-css/doxygen-awesome.css \
 	@CMAKE_SOURCE_DIR@/3rdparty/doxygen-awesome-css/doxygen-awesome-sidebar-only.css \
-  @CMAKE_SOURCE_DIR@/3rdparty/doxygen-awesome-css/doxygen-awesome-sidebar-only-darkmode-toggle.css \ 
+  @CMAKE_SOURCE_DIR@/3rdparty/doxygen-awesome-css/doxygen-awesome-sidebar-only-darkmode-toggle.css \
   @CMAKE_SOURCE_DIR@/docs/custom.css
 HTML_HEADER            = @CMAKE_SOURCE_DIR@/docs/header.html
 HTML_FOOTER            = @CMAKE_SOURCE_DIR@/docs/footer.html

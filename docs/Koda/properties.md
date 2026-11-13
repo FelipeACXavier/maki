@@ -1,5 +1,7 @@
 @page koda_properties KODA Property Definitions
 
+[TOC]
+
 # Overview
 
 KODA property definitions allow temporal requirements to be specified directly
