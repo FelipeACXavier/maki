@@ -25,6 +25,14 @@ TransitionSaveInfo::TransitionSaveInfo()
 {
 }
 
+void TransitionSaveInfo::print(const QString& indent) const
+{
+  LOG_INFO("{}Transition id: {}", indent, getid());
+  LOG_INFO("{}Source: {}", indent, getsrcId());
+  LOG_INFO("{}Destination: {}", indent, getdstId());
+  LOG_INFO("{}Event: {}", indent, getevent());
+}
+
 QString TransitionSaveInfo::getid() const
 {
   return mId;

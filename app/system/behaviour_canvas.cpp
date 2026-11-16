@@ -52,7 +52,7 @@ void BehaviourCanvas::setupInitialNodes()
     initial->setSrcShift({0, 0});
     initial->setDstShift({0, 0});
 
-    mFlow->config()->addTransition(initial);
+    SaveInfo::instance().addTransitionToFlow(mFlow->id(), initial);
   }
 }
 
@@ -65,7 +65,7 @@ std::shared_ptr<const NodeSaveInfo> BehaviourCanvas::addInitialNode(const QStrin
   auto info = std::make_shared<NodeSaveInfo>(*config);
   info->setId(QUuid::createUuid().toString());
   info->setPosition(position);
-  mFlow->config()->addNode(info);
+  SaveInfo::instance().addNodeToFlow(mFlow->id(), info);
 
   return info;
 }
@@ -73,6 +73,46 @@ std::shared_ptr<const NodeSaveInfo> BehaviourCanvas::addInitialNode(const QStrin
 Types::LibraryTypes BehaviourCanvas::type() const
 {
   return Types::LibraryTypes::BEHAVIOUR;
+}
+
+QString BehaviourCanvas::requestCreateNode(NodeSaveInfo info, NodeCreation creation)
+{
+  LOG_DEBUG("BehaviourCanvas::requestCreateNode: {}", info.getnodeId());
+
+  // The model must know the ID before it is inserted.
+  if (info.getid().isEmpty())
+    info.setId(QUuid::createUuid().toString());
+
+  const QString id = info.getid();
+  mPendingCreations.insert(id, creation);
+  auto storage = std::make_shared<NodeSaveInfo>(info);
+
+  // TODO: We should actually update the document here, and the document should update the flow
+  SaveInfo::instance().addNodeToFlow(mFlow->id(), storage);
+  return id;
+}
+
+void BehaviourCanvas::requestRemoveNode(NodeSaveInfo info)
+{
+  if (auto flow = SaveInfo::instance().getFlowWithId(mFlow->id()))
+    flow->removeNode(info.getid());
+}
+
+void BehaviourCanvas::requestRemoveTransition(TransitionSaveInfo info)
+{
+  if (auto flow = SaveInfo::instance().getFlowWithId(mFlow->id()))
+    flow->removeTransition(info.getid());
+}
+
+void BehaviourCanvas::requestCreateTransition(TransitionSaveInfo info)
+{
+  LOG_DEBUG("BehaviourCanvas::requestCreateTransition: {}", info.getid());
+  // The model must know the ID before it is inserted.
+  if (info.getid().isEmpty())
+    info.setId(QUuid::createUuid().toString());
+
+  auto storage = std::make_shared<TransitionSaveInfo>(info);
+  SaveInfo::instance().addTransitionToFlow(mFlow->id(), storage);
 }
 
 PFlow BehaviourCanvas::flow() const
@@ -115,7 +155,7 @@ void BehaviourCanvas::nodeStarted(NodeItem* node)
     initial.setSrcShift({0, 0});
     initial.setDstShift({0, 0});
 
-    createTransition(initial);
+    requestCreateTransition(initial);
   }
   else if (node && node->nodeId() == ConfigKeys::WITHIN_NODE)
   {
@@ -139,7 +179,7 @@ void BehaviourCanvas::nodeStarted(NodeItem* node)
 
       initial.setSrcShift({0, 0});
       initial.setDstShift({0, 0});
-      createTransition(initial);
+      requestCreateTransition(initial);
     }
     {
       TransitionSaveInfo initial;
@@ -158,22 +198,11 @@ void BehaviourCanvas::nodeStarted(NodeItem* node)
 
       initial.setSrcShift({0, 0});
       initial.setDstShift({0, 0});
-      createTransition(initial);
+      requestCreateTransition(initial);
     }
   }
 
   Canvas::nodeStarted(node);
-}
-
-void BehaviourCanvas::updateParent(NodeItem* node, std::shared_ptr<NodeSaveInfo> storage, bool adding)
-{
-  if (mFlow == nullptr)
-    return;
-
-  if (adding)
-    mFlow->updateFlow(node, storage);
-  else
-    mFlow->removeNode(node);
 }
 
 bool BehaviourCanvas::canAddTransition(NodeItem* node, PortItem* port) const
@@ -249,16 +278,13 @@ void BehaviourCanvas::addTransition(TransitionItem* transition)
 
 void BehaviourCanvas::removeTransition(TransitionItem* transition)
 {
-  if (transition != nullptr)
+  if (transition)
   {
-    // LOG_TRACE("Removing transition: {}", transition->id());
-    mFlow->removeTransition(transition);
-  }
-}
+    if (mFlow)
+      mFlow->removeTransition(transition);
 
-void BehaviourCanvas::removeTransition(const TransitionSaveInfo& info)
-{
-  Canvas::removeTransition(info);
+    removeItem(transition);
+  }
 }
 
 void BehaviourCanvas::onSubFlowCollapsed(NodeItem* owner, const QString& subflowId, bool collapsed)

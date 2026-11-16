@@ -36,7 +36,7 @@ bool Flow::modifiable() const
 
 void Flow::removeNode(const NodeItem* node)
 {
-  mStorage->removeNode(std::make_shared<NodeSaveInfo>(node->saveInfo()));
+  mStorage->removeNode(node->id());
 }
 
 void Flow::updateFlow(NodeItem* /* node */, std::shared_ptr<NodeSaveInfo> storage)
@@ -71,8 +71,8 @@ void Flow::addTransition(TransitionItem* transition)
     return;
 
   const auto transitionId = transition->id();
-  if (!maki::anyOf(mStorage->gettransitions(), [&transitionId](const auto& t) { return t->getid() == transitionId; }))
-    mStorage->addTransition(transition->storage());
+  // if (!maki::anyOf(mStorage->gettransitions(), [&transitionId](const auto& t) { return t->getid() == transitionId; }))
+  //   mStorage->addTransition(transition->storage());
 
   if (!maki::anyOf(transitions(), [&transitionId](const auto& t) { return t->id() == transitionId; }))
     mTransitions.push_back(transition);
@@ -86,6 +86,5 @@ void Flow::removeTransition(TransitionItem* transition)
     return;
   }
 
-  mStorage->removeTransition(transition->storage());
   mTransitions.removeIf([transition](const TransitionItem* item) { return item->id() == transition->id(); });
 }

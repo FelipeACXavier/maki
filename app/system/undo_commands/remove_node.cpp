@@ -16,7 +16,7 @@ void RemoveNodeCommand::undo()
   if (!mCanvas)
     return;
 
-  mCanvas->createNode(mDesc, Canvas::NodeCreation::Populating);
+  mCanvas->requestCreateNode(mDesc, Canvas::NodeCreation::Populating);
   LOG_TRACE("Undo RemoveNodeCommand: {} {}", mDesc.getnodeId(), mDesc.getid());
 }
 
@@ -25,6 +25,6 @@ void RemoveNodeCommand::redo()
   if (!mCanvas)
     return;
 
-  mCanvas->removeNode(mDesc);
+  mCanvas->requestRemoveNode(mDesc);
   LOG_TRACE("Redo RemoveNodeCommand: {} {}", mDesc.getnodeId(), mDesc.getid());
 }

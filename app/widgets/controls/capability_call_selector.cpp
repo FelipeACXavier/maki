@@ -31,14 +31,14 @@
 // CapabilityCallSelector
 // ============================================================================
 
-CapabilityCallSelector* CapabilityCallSelector::create(NodeItem* node, QWidget* parent)
+CapabilityCallSelector* CapabilityCallSelector::create(const QString& nodeId, QWidget* parent)
 {
-  return new CapabilityCallSelector(node, parent);
+  return new CapabilityCallSelector(nodeId, parent);
 }
 
-CapabilityCallSelector::CapabilityCallSelector(NodeItem* node, QWidget* parent)
+CapabilityCallSelector::CapabilityCallSelector(const QString& nodeId, QWidget* parent)
     : maki::ControlWidget(parent)
-    , mNode(node)
+    , mNodeId(nodeId)
 {
   auto* vlayout = new QVBoxLayout(this);
   vlayout->setContentsMargins(Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING);
@@ -267,7 +267,8 @@ void CapabilityCallSelector::setTouring()
 
 void CapabilityCallSelector::confirmSelection()
 {
-  if (!mNode)
+  const auto nodeInfo = SaveInfo::instance().getNodeWithId(mNodeId);
+  if (!nodeInfo)
   {
     LOG_DEBUG("No node available");
     return;
@@ -287,7 +288,7 @@ void CapabilityCallSelector::confirmSelection()
     return;
   }
 
-  const auto* current = mNode->getProperty(ConfigKeys::CAPABILITY);
+  const auto* current = nodeInfo->getProperty(ConfigKeys::CAPABILITY);
   auto valueRecord = maki::parameterRecord(current);
   setRecordValue(valueRecord, ConfigKeys::COMPONENT, *maki::asValue(mSelectedCapability->getProperty(ConfigKeys::NAME)->getvalue()));
   setRecordValue(valueRecord, ConfigKeys::ARGUMENTS, maki::Value::createList({}));
@@ -295,7 +296,7 @@ void CapabilityCallSelector::confirmSelection()
   setRecordValue(valueRecord, ConfigKeys::COMPONENT_ID, maki::Value::createString(mSelectedCapability->getid()));
   setRecordValue(valueRecord, ConfigKeys::COMPONENT_TYPE, maki::Value::createString(mSelectedCapability->getnodeId()));
   setRecordValue(valueRecord, ConfigKeys::CALL_ID, maki::Value::createString(eventId));
-  mNode->setProperty(ConfigKeys::CAPABILITY, maki::Value::createRecord(valueRecord));
+  nodeInfo->setProperty(ConfigKeys::CAPABILITY, maki::Value::createRecord(valueRecord));
 
   emit accepted({});
   emit dismissed();

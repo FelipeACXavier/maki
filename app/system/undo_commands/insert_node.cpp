@@ -21,14 +21,14 @@ void InsertNodeCommand::undo()
     return;
 
   // Remove transitions while all their endpoints still exist.
-  mCanvas->removeTransition(mIncomingTransition);
-  mCanvas->removeTransition(mOutgoingTransition);
+  mCanvas->requestRemoveTransition(mIncomingTransition);
+  mCanvas->requestRemoveTransition(mOutgoingTransition);
 
   // Now the inserted node can safely disappear.
-  mCanvas->removeNode(mNode);
+  mCanvas->requestRemoveNode(mNode);
 
   // source and destination still exist, so the original edge can be restored.
-  mCanvas->createTransition(mOriginalTransition);
+  mCanvas->requestCreateTransition(mOriginalTransition);
 
   LOG_TRACE("Undo InsertNodeCommand");
 }
@@ -39,13 +39,13 @@ void InsertNodeCommand::redo()
     return;
 
   // The original edge must disappear before its replacement is created.
-  mCanvas->removeTransition(mOriginalTransition);
+  mCanvas->requestRemoveTransition(mOriginalTransition);
 
   // Both replacement transitions depend on the inserted node existing.
-  mCanvas->createNode(mNode, Canvas::NodeCreation::Inserting);
+  mCanvas->requestCreateNode(mNode, Canvas::NodeCreation::Inserting);
 
-  mCanvas->createTransition(mIncomingTransition);
-  mCanvas->createTransition(mOutgoingTransition);
+  mCanvas->requestCreateTransition(mIncomingTransition);
+  mCanvas->requestCreateTransition(mOutgoingTransition);
 
   mCanvas->ensureMinimumSpacing(mNode.getid());
   LOG_TRACE("Redo InsertNodeCommand");

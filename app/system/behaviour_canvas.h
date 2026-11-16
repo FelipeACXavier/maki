@@ -37,6 +37,12 @@ public:
 
   void nodeStarted(NodeItem* node) override;
 
+  QString requestCreateNode(NodeSaveInfo info, NodeCreation creation) override;
+  void requestRemoveNode(NodeSaveInfo info) override;
+
+  void requestCreateTransition(TransitionSaveInfo info) override;
+  void requestRemoveTransition(TransitionSaveInfo info) override;
+
   /**
    * @brief Checkes whether it is possible to add a new trasition to a node
    * @param node A pointer to the node of interest
@@ -71,8 +77,6 @@ public:
    */
   void removeTransition(TransitionItem* transition) override;
 
-  void removeTransition(const TransitionSaveInfo& info) override;
-
   /**
    * @brief Callback triggered whenever a node moves significantly
    */
@@ -105,17 +109,6 @@ private:
    */
   PFlow mFlow;
   const QString mOwner;
-
-  /**
-   * @brief Updates the parent node of a given node item.
-   *
-   * This method is used to update the parent-child relationship of nodes in the canvas.
-   *
-   * @param node A pointer to the NodeItem whose parent is being updated.
-   * @param storage A shared pointer to the NodeSaveInfo object for managing node storage.
-   * @param adding A boolean indicating whether the node is being added or removed.
-   */
-  void updateParent(NodeItem* node, std::shared_ptr<NodeSaveInfo> storage, bool adding) override;
 
   std::shared_ptr<const NodeSaveInfo> addInitialNode(const QString& nodeType, const QPointF& position);
 

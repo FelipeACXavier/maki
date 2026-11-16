@@ -185,12 +185,18 @@ public:
    */
   void createNode(const NodeSaveInfo& info, NodeCreation creation);
 
+  // Requests a change to the model.
+  // Returns an ID, not a NodeItem*.
+  virtual QString requestCreateNode(NodeSaveInfo info, NodeCreation creation);
+  virtual void requestCreateTransition(TransitionSaveInfo info);
+
   /**
    * @brief Removes a node based on save information.
    *
    * @param info The save information for the node.
    */
   void removeNode(const NodeSaveInfo& info);
+  virtual void requestRemoveNode(NodeSaveInfo info);
 
   /**
    * @brief Moves a node to a new position.
@@ -213,7 +219,7 @@ public:
    *
    * @param info The save information for the transition.
    */
-  void createTransition(const TransitionSaveInfo& info);
+  void createTransition(std::shared_ptr<TransitionSaveInfo> info);
 
   /**
    * @brief Removes a transition based on save information.
@@ -221,6 +227,7 @@ public:
    * @param info The save information for the transition.
    */
   virtual void removeTransition(const TransitionSaveInfo& info);
+  virtual void requestRemoveTransition(TransitionSaveInfo info);
 
   void reparentNode(const QString& nodeId, const QString& parentId, const QString& subflow);
 
@@ -305,7 +312,7 @@ signals:
    * @param node Pointer to the selected node.
    * @param selected Whether the node is selected or not.
    */
-  void nodeSelected(NodeItem* node, bool selected);
+  void nodeSelected(const QString& nodeId, bool selected);
 
   /**
    * @brief Emitted when a node is added.
@@ -327,7 +334,7 @@ signals:
    *
    * @param node Pointer to the modified node.
    */
-  void nodeModified(Canvas* canvas, NodeItem* node);
+  void nodeModified(Canvas* canvas, const QString& nodeId);
 
   /**
    * @brief Emitted when a transition is selected.
@@ -341,7 +348,7 @@ signals:
    *
    * @param node Pointer to the node where the event is created.
    */
-  void createEvent(NodeItem* node);
+  void createEvent(const QString& nodeId);
 
   /**
    * @brief Emitted when a flow is opened.
@@ -413,8 +420,19 @@ public slots:
 protected:
   std::shared_ptr<EdgeRouter> mRouter;  /// Pointer to the system edge router.
   QUndoStack* mUndoStack = nullptr;     /// Pointer to the undo stack.
+  EventDispatcher<DocumentEvent>::Subscription mDocumentSubscription;
+  std::optional<QString> mDraggedNodeType;
 
   QGraphicsItem* firstValidItemAt(const QPointF& scenePos, const std::function<bool(QGraphicsItem*)>& predicate) const;
+
+  // Creates graphics for a node already in the model.
+  // Never inserts into the document.
+  NodeItem* materializeNode(const std::shared_ptr<NodeSaveInfo>& info, NodeItem* parent = nullptr);
+
+  // Tracks which creations originated from this canvas.
+  QHash<QString, NodeCreation> mPendingCreations;
+
+  void onDocumentChanged(const DocumentEvent& event);
 
   void onNodeControlRequested(NodeItem* node, const QPointF& scenePos, maki::ControlWidget* control);
   /**
@@ -465,15 +483,6 @@ protected:
    * @param event Pointer to the QGraphicsSceneContextMenuEvent.
    */
   void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
-
-  /**
-   * @brief Updates the parent of a node.
-   *
-   * @param node Pointer to the node.
-   * @param storage Shared pointer to the save information.
-   * @param adding Whether this is an addition or removal.
-   */
-  virtual void updateParent(NodeItem* node, std::shared_ptr<NodeSaveInfo> storage, bool adding);
 
   std::shared_ptr<NodeConfig> getNodeConfig(const QString& key) const;
   virtual void addedItemNode(NodeItem* node, std::shared_ptr<NodeSaveInfo> info);

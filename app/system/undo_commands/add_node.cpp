@@ -17,7 +17,7 @@ void AddNodeCommand::undo()
   if (!mCanvas)
     return;
 
-  mCanvas->removeNode(mDesc);
+  mCanvas->requestRemoveNode(mDesc);
   LOG_TRACE("Undo AddNodeCommand: {} {}", mDesc.getnodeId(), mDesc.getid());
 }
 
@@ -26,6 +26,6 @@ void AddNodeCommand::redo()
   if (!mCanvas)
     return;
 
-  mCanvas->createNode(mDesc, mCreation);
+  mCanvas->requestCreateNode(mDesc, mCreation);
   LOG_TRACE("Redo AddNodeCommand: {} {}", mDesc.getnodeId(), mDesc.getid());
 }

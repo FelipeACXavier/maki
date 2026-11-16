@@ -23,6 +23,7 @@
 #include "oclero/qlementine/Common.hpp"
 #include "property_info.h"
 #include "style_helpers.h"
+#include "system/config_table.h"
 
 namespace
 {
@@ -95,11 +96,6 @@ VoidResult PropertiesMenu::start()
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::onNodeAdded(NodeItem* /* node */)
-{
-  return VoidResult();
-}
-
 VoidResult PropertiesMenu::onNodeRemoved(const QString& nodeId)
 {
   if (nodeId != mCurrentNode)
@@ -110,29 +106,33 @@ VoidResult PropertiesMenu::onNodeRemoved(const QString& nodeId)
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::onNodeModified(NodeItem* /* node */)
+VoidResult PropertiesMenu::onNodeModified(const QString& /* nodeId */)
 {
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::onNodeSelected(NodeItem* node, bool selected)
+VoidResult PropertiesMenu::onNodeSelected(const QString& nodeId, bool selected)
 {
   // If we are already showing this node, then there is nothing to do
-  if (node && node->id() == mCurrentNode)
-    return VoidResult();
-
-  clearLayout(layout());
-
-  if (!node)
+  if (!nodeId.isEmpty() && nodeId == mCurrentNode)
   {
-    mCurrentNode.clear();
+    LOG_DEBUG("Already showwing node: {}", nodeId);
     return VoidResult();
   }
 
-  mCurrentNode = node->id();
+  clearLayout(layout());
 
-  RETURN_ON_FAILURE(loadProperties(node));
-  RETURN_ON_FAILURE(loadControls(node));
+  if (nodeId.isEmpty())
+  {
+    mCurrentNode.clear();
+    LOG_DEBUG("No node was selected");
+    return VoidResult();
+  }
+
+  mCurrentNode = nodeId;
+
+  RETURN_ON_FAILURE(loadProperties(nodeId));
+  RETURN_ON_FAILURE(loadControls(nodeId));
 
   if (auto* vLayout = qobject_cast<QVBoxLayout*>(layout()))
     vLayout->addStretch();
@@ -141,65 +141,70 @@ VoidResult PropertiesMenu::onNodeSelected(NodeItem* node, bool selected)
   return VoidResult();
 }
 
-Result<std::shared_ptr<FlowSaveInfo>> PropertiesMenu::onCreateEvent(NodeItem* node, bool synchronousCreation)
+Result<std::shared_ptr<FlowSaveInfo>> PropertiesMenu::onCreateEvent(const QString& nodeId, bool synchronousCreation)
 {
-  onNodeSelected(node, true);
+  onNodeSelected(nodeId, true);
 
   auto table = findChild<QTableWidget*>("EventTable");
   if (table == nullptr)
     return Result<std::shared_ptr<FlowSaveInfo>>::Failed("Could not find the event table");
 
-  return openEventDialog(table, node, table->rowCount(), synchronousCreation);
+  return openEventDialog(table, nodeId, table->rowCount(), synchronousCreation);
 }
 
-VoidResult PropertiesMenu::onFlowAdded(PFlow /* flow */, NodeItem* node)
+VoidResult PropertiesMenu::onFlowAdded(PFlow /* flow */, const QString& nodeId)
 {
-  if (node->id() != mCurrentNode)
+  if (nodeId != mCurrentNode)
     return VoidResult();
 
-  return onNodeSelected(node, true);
+  return onNodeSelected(nodeId, true);
 }
 
-VoidResult PropertiesMenu::onFlowRemoved(const QString& /* flowId */, NodeItem* node)
+VoidResult PropertiesMenu::onFlowRemoved(const QString& /* flowId */, const QString& nodeId)
 {
-  if (node->id() != mCurrentNode)
+  if (nodeId != mCurrentNode)
     return VoidResult();
 
-  return onNodeSelected(node, true);
+  return onNodeSelected(nodeId, true);
 }
 
-VoidResult PropertiesMenu::loadProperties(NodeItem* node)
+VoidResult PropertiesMenu::loadProperties(const QString& nodeId)
 {
-  if (!node)
+  const auto nodeInfo = SaveInfo::instance().getNodeWithId(nodeId);
+  if (!nodeInfo)
     return VoidResult::Failed("Cannot load properties for a null node");
 
-  for (const auto& property : node->properties())
+  const auto nodeConfig = ConfigurationTable::instance().get(nodeInfo->getnodeId());
+  if (!nodeInfo)
+    return VoidResult::Failed("Could not create properties for unknown node with id: {}", nodeId);
+
+  for (const auto& property : nodeInfo->getproperties())
   {
     if (!property)
       continue;
 
-    LOG_TRACE("Loading property: {} {} {}", property->getname(), maki::asValue(property->getvalue())->toReadable(), (int)property->getcontrol());
+    LOG_DEBUG("Loading property: {} {} {}", property->getname(), maki::asValue(property->getvalue())->toReadable(), (int)property->getcontrol());
     switch (property->getcontrol())
     {
       case Types::ControlTypes::SELECT:
       case Types::ControlTypes::EVENT_SELECT:
-        LOG_WARN_ON_FAILURE(loadSelectProperty(property, node));
+        LOG_WARN_ON_FAILURE(loadSelectProperty(property, nodeId));
         break;
 
       case Types::ControlTypes::LINK:
-        LOG_WARN_ON_FAILURE(loadLinkProperty(property, node));
+        LOG_WARN_ON_FAILURE(loadLinkProperty(property, nodeId));
         break;
 
       case Types::ControlTypes::COLOR:
-        LOG_WARN_ON_FAILURE(loadColorProperty(property, node));
+        LOG_WARN_ON_FAILURE(loadColorProperty(property, nodeId));
         break;
 
       case Types::ControlTypes::COMPONENT_SELECT:
-        LOG_WARN_ON_FAILURE(loadComponentSelectProperty(property, node));
+        LOG_WARN_ON_FAILURE(loadComponentSelectProperty(property, nodeId));
         break;
 
       default:
-        LOG_WARN_ON_FAILURE(loadValueProperty(property, node));
+        LOG_WARN_ON_FAILURE(loadValueProperty(property, nodeId));
         break;
     }
   }
@@ -207,9 +212,9 @@ VoidResult PropertiesMenu::loadProperties(NodeItem* node)
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::loadValueProperty(const std::shared_ptr<IParameter>& property, NodeItem* node)
+VoidResult PropertiesMenu::loadValueProperty(const std::shared_ptr<IParameter>& property, const QString& nodeId)
 {
-  if (!property || !node)
+  if (!property || nodeId.isEmpty())
     return VoidResult::Failed("Cannot create property editor without a property and node");
 
   const auto* storedValue = maki::asValue(property->getvalue());
@@ -231,42 +236,38 @@ VoidResult PropertiesMenu::loadValueProperty(const std::shared_ptr<IParameter>& 
   if (!editor)
     return VoidResult::Failed("Could not create editor for property '{}' of type '{}'", property->getid(), property->gettype().toString());
 
-  addCompleter(editor, node->id(), property->gettype());
+  addCompleter(editor, nodeId, property->gettype());
 
-  connect(editor, &maki::InputWidget::valueChanged, this, [this, node, editor, id = property->getid()] {
-    if (!node)
+  connect(editor, &maki::InputWidget::valueChanged, this, [this, nodeId, editor, id = property->getid()] {
+    auto value = editor->getValue();
+    const auto nodeInfo = SaveInfo::instance().getNodeWithId(nodeId);
+    if (!nodeInfo)
       return;
 
-    auto value = editor->getValue();
     // Preserve the old automatic-name behaviour, but use Value throughout.
     if (id == ConfigKeys::NAME)
     {
       const auto text = value.toString();
       const bool automaticallyGenerated = text.isEmpty();
 
-      auto propertyValue = value;
       if (automaticallyGenerated)
-        propertyValue = maki::Value::createString(node->nodeType().replace(ConfigKeys::KODA_NAMESPACE, ""));
+        value = maki::Value::createString(nodeInfo->getnodeId().replace(ConfigKeys::KODA_NAMESPACE, ""));
 
-      if (node->getProperty("name_auto_generated"))
-        node->setProperty("name_auto_generated", maki::Value::createBool(automaticallyGenerated));
-
-      node->setProperty(id, propertyValue);
-      emit propertyUpdated(id, node->id(), propertyValue);
-      return;
+      if (nodeInfo->getProperty("name_auto_generated"))
+        nodeInfo->setProperty("name_auto_generated", maki::Value::createBool(automaticallyGenerated));
     }
 
-    node->setProperty(id, value);
-    emit propertyUpdated(id, node->id(), value);
+    nodeInfo->setProperty(id, value);
+    emit propertyUpdated(id, nodeId, value);
   });
 
   layout()->addWidget(editor);
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::loadColorProperty(const std::shared_ptr<IParameter>& property, NodeItem* node)
+VoidResult PropertiesMenu::loadColorProperty(const std::shared_ptr<IParameter>& property, const QString& nodeId)
 {
-  if (!property || !node)
+  if (!property || nodeId.isEmpty())
     return VoidResult::Failed("Cannot create color editor without a property and node");
 
   const auto value = maki::parameterValue(property.get());
@@ -277,24 +278,25 @@ VoidResult PropertiesMenu::loadColorProperty(const std::shared_ptr<IParameter>& 
   else if (value.isValid())
     editor->setValue(QColor::fromString(value.toString()));
 
-  connect(editor, &maki::ColorWidget::valueChanged, this, [this, node, id = property->getid()](const QColor& color) {
-    if (!node)
+  connect(editor, &maki::ColorWidget::valueChanged, this, [this, nodeId, id = property->getid()](const QColor& color) {
+    const auto nodeInfo = SaveInfo::instance().getNodeWithId(nodeId);
+    if (!nodeInfo)
       return;
 
     maki::Value value;
     value.data = color;
-    node->setProperty(id, value);
+    nodeInfo->setProperty(id, value);
 
-    emit propertyUpdated(id, node->id(), value);
+    emit propertyUpdated(id, nodeId, value);
   });
 
   layout()->addWidget(editor);
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::loadSelectProperty(const std::shared_ptr<IParameter>& property, NodeItem* node)
+VoidResult PropertiesMenu::loadSelectProperty(const std::shared_ptr<IParameter>& property, const QString& nodeId)
 {
-  if (!property || !node)
+  if (!property || nodeId.isEmpty())
     return VoidResult::Failed("Cannot create selector without a property and node");
 
   auto record = maki::parameterRecord(property.get());
@@ -311,25 +313,28 @@ VoidResult PropertiesMenu::loadSelectProperty(const std::shared_ptr<IParameter>&
   editor->setValue(selected.toString());
 
   connect(editor, &maki::SelectorWidget::dataChanged, this,
-          [node, id = property->getid(), record, items](const QString& /* text */, const QVariant& data) mutable {
-            if (!node || !data.isValid())
+          [nodeId, id = property->getid(), record, items](const QString& /* text */, const QVariant& data) mutable {
+            if (!data.isValid())
               return;
 
             const auto index = data.toULongLong();
             if (index >= items.size())
               return;
 
-            record[ConfigKeys::VALUE.toStdString()] = items[index];
-            node->setProperty(id, maki::Value::createRecord(record));
+            if (const auto nodeInfo = SaveInfo::instance().getNodeWithId(nodeId))
+            {
+              record[ConfigKeys::VALUE.toStdString()] = items[index];
+              nodeInfo->setProperty(id, maki::Value::createRecord(record));
+            }
           });
 
   layout()->addWidget(editor);
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::loadLinkProperty(const std::shared_ptr<IParameter>& property, NodeItem* node)
+VoidResult PropertiesMenu::loadLinkProperty(const std::shared_ptr<IParameter>& property, const QString& nodeId)
 {
-  if (!property || !node)
+  if (!property || nodeId.isEmpty())
     return VoidResult::Failed("Cannot create link control without a property and node");
 
   auto record = maki::parameterRecord(property.get());
@@ -346,8 +351,8 @@ VoidResult PropertiesMenu::loadLinkProperty(const std::shared_ptr<IParameter>& p
   editor->setValue(component);
 
   connect(editor, &maki::SelectorWidget::dataChanged, this,
-          [node, id = property->getid(), record, targetNodes](const QString& text, const QVariant& data) mutable {
-            if (!node || !data.isValid())
+          [nodeId, id = property->getid(), record, targetNodes](const QString& text, const QVariant& data) mutable {
+            if (!data.isValid())
               return;
 
             if (text == Constants::EMPTY_COMBO)
@@ -360,16 +365,18 @@ VoidResult PropertiesMenu::loadLinkProperty(const std::shared_ptr<IParameter>& p
               record["component"] = maki::Value::createString(text);
               record["id"] = maki::Value::createString(data.toString());
             }
-            node->setProperty(id, maki::Value::createRecord(record));
+
+            if (const auto nodeInfo = SaveInfo::instance().getNodeWithId(nodeId))
+              nodeInfo->setProperty(id, maki::Value::createRecord(record));
           });
 
   layout()->addWidget(editor);
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IParameter>& property, NodeItem* node)
+VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IParameter>& property, const QString& nodeId)
 {
-  if (!property || !node)
+  if (!property || nodeId.isEmpty())
     return VoidResult::Failed("Cannot create component selector without a property and node");
 
   auto record = maki::parameterRecord(property.get());
@@ -379,7 +386,7 @@ VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IPa
   const auto mode = callControl(record);
   auto* componentEditor = new maki::SelectorWidget(ToLabel(property->getid()), maki::WidgetAlignment::Vertical(), this);
 
-  const auto candidates = SaveInfo::instance().getPossibleCallers(node->id(), mode);
+  const auto candidates = SaveInfo::instance().getPossibleCallers(nodeId, mode);
   for (const auto& candidate : candidates)
   {
     if (!candidate)
@@ -453,75 +460,81 @@ VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IPa
   auto currentCall = findCall(currentComponentId, mode == Types::ControlTypes::FLOW_CALL      ? maki::recordString(record, ConfigKeys::FLOW)
                                                   : mode == Types::ControlTypes::EVENT_SELECT ? maki::recordString(record, ConfigKeys::EVENT)
                                                                                               : QString());
-  LOG_WARN_ON_FAILURE(loadCallArguments(currentCall, property->getid(), node, argumentsGroup));
+  LOG_WARN_ON_FAILURE(loadCallArguments(currentCall, property->getid(), nodeId, argumentsGroup));
 
   if (callEditor)
   {
     connect(callEditor, &maki::SelectorWidget::dataChanged, this,
-            [this, node, propertyId = property->getid(), componentEditor, argumentsGroup, findCall, mode](const QString& callName, const QVariant& callId) {
-              if (!node || callName.isEmpty())
+            [this, nodeId, propertyId = property->getid(), componentEditor, argumentsGroup, findCall, mode](const QString& callName, const QVariant& callId) {
+              if (callName.isEmpty())
                 return;
 
-              const auto* current = node->getProperty(propertyId);
-              auto valueRecord = maki::parameterRecord(current);
-              const auto key = mode == Types::ControlTypes::FLOW_CALL ? ConfigKeys::FLOW : ConfigKeys::EVENT;
-              setRecordValue(valueRecord, key, maki::Value::createString(callName));
-              setRecordValue(valueRecord, ConfigKeys::CALL_ID, maki::Value::createString(callId.toString()));
-              setRecordValue(valueRecord, ConfigKeys::ARGUMENTS, maki::Value::createList({}));
-              node->setProperty(propertyId, maki::Value::createRecord(valueRecord));
-              argumentsGroup->clear();
-              const auto call = findCall(componentEditor->getData().toString(), callName);
-              LOG_WARN_ON_FAILURE(loadCallArguments(call, propertyId, node, argumentsGroup));
+              if (const auto nodeInfo = SaveInfo::instance().getNodeWithId(nodeId))
+              {
+                const auto* current = nodeInfo->getProperty(propertyId);
+                auto valueRecord = maki::parameterRecord(current);
+                const auto key = mode == Types::ControlTypes::FLOW_CALL ? ConfigKeys::FLOW : ConfigKeys::EVENT;
+                setRecordValue(valueRecord, key, maki::Value::createString(callName));
+                setRecordValue(valueRecord, ConfigKeys::CALL_ID, maki::Value::createString(callId.toString()));
+                setRecordValue(valueRecord, ConfigKeys::ARGUMENTS, maki::Value::createList({}));
+                nodeInfo->setProperty(propertyId, maki::Value::createRecord(valueRecord));
+                argumentsGroup->clear();
+                const auto call = findCall(componentEditor->getData().toString(), callName);
+                LOG_WARN_ON_FAILURE(loadCallArguments(call, propertyId, nodeId, argumentsGroup));
 
-              updateBlockName(node, componentEditor->getValue(), callName);
+                updateBlockName(nodeInfo, componentEditor->getValue(), callName);
+              }
             });
   }
 
   connect(componentEditor, &maki::SelectorWidget::dataChanged, this,
-          [this, node, propertyId = property->getid(), callEditor, argumentsGroup, populateCalls, findCall, mode](const QString& componentName,
-                                                                                                                  const QVariant& componentInfo) {
-            if (!node || !componentInfo.isValid() || componentInfo.toStringList().size() != 2)
+          [this, nodeId, propertyId = property->getid(), callEditor, argumentsGroup, populateCalls, findCall, mode](const QString& componentName,
+                                                                                                                    const QVariant& componentInfo) {
+            if (!componentInfo.isValid() || componentInfo.toStringList().size() != 2)
               return;
 
-            const auto* current = node->getProperty(propertyId);
-            auto valueRecord = maki::parameterRecord(current);
-            setRecordValue(valueRecord, ConfigKeys::COMPONENT, maki::Value::createString(componentName));
-            setRecordValue(valueRecord, ConfigKeys::ARGUMENTS, maki::Value::createList({}));
-
-            if (mode == Types::ControlTypes::FLOW_CALL)
-              setRecordValue(valueRecord, ConfigKeys::FLOW, maki::Value::createString(""));
-            else if (mode == Types::ControlTypes::EVENT_SELECT)
-              setRecordValue(valueRecord, ConfigKeys::EVENT, maki::Value::createString(""));
-
-            const auto componentId = componentInfo.toStringList().at(0);
-            setRecordValue(valueRecord, ConfigKeys::COMPONENT_ID, maki::Value::createString(componentId));
-            setRecordValue(valueRecord, ConfigKeys::COMPONENT_TYPE, maki::Value::createString(componentInfo.toStringList().at(1)));
-            setRecordValue(valueRecord, ConfigKeys::CALL_ID, maki::Value::createString(""));
-
-            node->setProperty(propertyId, maki::Value::createRecord(valueRecord));
-
-            argumentsGroup->clear();
-
-            if (callEditor)
+            if (const auto nodeInfo = SaveInfo::instance().getNodeWithId(nodeId))
             {
-              populateCalls(componentId);
-              callEditor->setValue(Constants::EMPTY_COMBO);
-            }
-            else
-            {
-              const auto call = findCall(componentId, QString());
-              LOG_WARN_ON_FAILURE(loadCallArguments(call, propertyId, node, argumentsGroup));
-            }
+              const auto* current = nodeInfo->getProperty(propertyId);
+              auto valueRecord = maki::parameterRecord(current);
+              setRecordValue(valueRecord, ConfigKeys::COMPONENT, maki::Value::createString(componentName));
+              setRecordValue(valueRecord, ConfigKeys::ARGUMENTS, maki::Value::createList({}));
 
-            updateBlockName(node, componentName, "");
+              if (mode == Types::ControlTypes::FLOW_CALL)
+                setRecordValue(valueRecord, ConfigKeys::FLOW, maki::Value::createString(""));
+              else if (mode == Types::ControlTypes::EVENT_SELECT)
+                setRecordValue(valueRecord, ConfigKeys::EVENT, maki::Value::createString(""));
+
+              const auto componentId = componentInfo.toStringList().at(0);
+              setRecordValue(valueRecord, ConfigKeys::COMPONENT_ID, maki::Value::createString(componentId));
+              setRecordValue(valueRecord, ConfigKeys::COMPONENT_TYPE, maki::Value::createString(componentInfo.toStringList().at(1)));
+              setRecordValue(valueRecord, ConfigKeys::CALL_ID, maki::Value::createString(""));
+
+              nodeInfo->setProperty(propertyId, maki::Value::createRecord(valueRecord));
+              argumentsGroup->clear();
+
+              if (callEditor)
+              {
+                populateCalls(componentId);
+                callEditor->setValue(Constants::EMPTY_COMBO);
+              }
+              else
+              {
+                const auto call = findCall(componentId, QString());
+                LOG_WARN_ON_FAILURE(loadCallArguments(call, propertyId, nodeId, argumentsGroup));
+              }
+
+              updateBlockName(nodeInfo, componentName, "");
+            }
           });
 
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::loadCallArguments(const std::shared_ptr<FlowSaveInfo>& call, const QString& propertyId, NodeItem* node, maki::WidgetGroup* group)
+VoidResult PropertiesMenu::loadCallArguments(const std::shared_ptr<FlowSaveInfo>& call, const QString& propertyId, const QString& nodeId,
+                                             maki::WidgetGroup* group)
 {
-  if (!group || !node)
+  if (!group || nodeId.isEmpty())
     return VoidResult::Failed("Cannot load call arguments without a group and node");
 
   group->clear();
@@ -532,9 +545,13 @@ VoidResult PropertiesMenu::loadCallArguments(const std::shared_ptr<FlowSaveInfo>
     return VoidResult();
   }
 
+  const auto nodeInfo = SaveInfo::instance().getNodeWithId(nodeId);
+  if (!nodeInfo)
+    return VoidResult::Failed("Could not find node with id: {}", nodeId);
+
   group->show();
 
-  const auto* property = node->getProperty(propertyId);
+  const auto* property = nodeInfo->getProperty(propertyId);
   auto record = maki::parameterRecord(property);
   auto values = maki::recordList(record, ConfigKeys::ARGUMENTS);
 
@@ -568,13 +585,13 @@ VoidResult PropertiesMenu::loadCallArguments(const std::shared_ptr<FlowSaveInfo>
       continue;
     }
 
-    addCompleter(editor, node->id(), argument->gettype());
+    addCompleter(editor, nodeId, argument->gettype());
 
-    connect(editor, &maki::InputWidget::valueChanged, this, [this, node, propertyId, editor, index] {
-      if (!node || !editor)
+    connect(editor, &maki::InputWidget::valueChanged, this, [this, nodeInfo, propertyId, editor, index] {
+      if (!editor)
         return;
 
-      const auto* current = node->getProperty(propertyId);
+      const auto* current = nodeInfo->getProperty(propertyId);
       auto valueRecord = maki::parameterRecord(current);
       auto arguments = maki::recordList(valueRecord, ConfigKeys::ARGUMENTS);
 
@@ -584,9 +601,9 @@ VoidResult PropertiesMenu::loadCallArguments(const std::shared_ptr<FlowSaveInfo>
       arguments[static_cast<std::size_t>(index)] = editor->getValue();
       maki::setRecordValue(valueRecord, ConfigKeys::ARGUMENTS, maki::Value::createList(arguments));
       auto propertyValue = maki::Value::createRecord(valueRecord);
-      node->setProperty(propertyId, propertyValue);
+      nodeInfo->setProperty(propertyId, propertyValue);
 
-      emit propertyUpdated(propertyId, node->id(), propertyValue);
+      emit propertyUpdated(propertyId, nodeInfo->getid(), propertyValue);
     });
 
     connect(editor, &maki::InputWidget::openParameter, this, [this](const QString& parameterId) { emit openParameter(parameterId); });
@@ -597,7 +614,7 @@ VoidResult PropertiesMenu::loadCallArguments(const std::shared_ptr<FlowSaveInfo>
 
   // Store defaulted values immediately, so the record always matches the call signature.
   maki::setRecordValue(record, ConfigKeys::ARGUMENTS, maki::Value::createList(values));
-  node->setProperty(propertyId, maki::Value::createRecord(record));
+  nodeInfo->setProperty(propertyId, maki::Value::createRecord(record));
 
   return VoidResult();
 }
@@ -620,31 +637,32 @@ void PropertiesMenu::addCompleter(maki::InputWidget* editor, const QString& node
       variables.append(parameter);
     }
 
-  // variables.removeDuplicates();
-  // if (variables.isEmpty())
-  // return;
-
   editor->setSupportedReferences(variables);
-  // for (auto* widget : editor->focusWidgets())
-  //   if (widget)
-  //     maki::addCompleter(variables, widget);
 }
 
-VoidResult PropertiesMenu::loadControls(NodeItem* node)
+VoidResult PropertiesMenu::loadControls(const QString& nodeId)
 {
-  if (!node)
+  if (nodeId.isEmpty())
     return VoidResult();
 
-  auto eventsTable = loadEventTable(node);
+  const auto nodeInfo = SaveInfo::instance().getNodeWithId(nodeId);
+  if (!nodeInfo)
+    return VoidResult::Failed("Could not create controls for unknown node with id: {}", nodeId);
+
+  const auto nodeConfig = ConfigurationTable::instance().get(nodeInfo->getnodeId());
+  if (!nodeInfo)
+    return VoidResult::Failed("Could not create controls for unknown node with id: {}", nodeId);
+
+  auto eventsTable = loadEventTable(nodeId, nodeConfig);
   LOG_WARN_ON_FAILURE(eventsTable);
 
-  for (const auto& control : node->controls())
+  for (const auto& control : nodeConfig->controls)
   {
     switch (control.type)
     {
       case Types::ControlTypes::ADD_EVENT:
         if (eventsTable)
-          LOG_WARN_ON_FAILURE(loadControlAddEvent(eventsTable.Value(), node));
+          LOG_WARN_ON_FAILURE(loadControlAddEvent(eventsTable.Value(), nodeId));
         break;
 
       case Types::ControlTypes::LINK:
@@ -658,12 +676,19 @@ VoidResult PropertiesMenu::loadControls(NodeItem* node)
   return VoidResult();
 }
 
-Result<QTableWidget*> PropertiesMenu::loadEventTable(NodeItem* node)
+Result<QTableWidget*> PropertiesMenu::loadEventTable(const QString& nodeId, std::shared_ptr<NodeConfig> nodeConfig)
 {
-  if (node->function() != Types::LibraryTypes::STRUCTURAL)
+  if (nodeConfig->libraryType != Types::LibraryTypes::STRUCTURAL)
     return nullptr;
 
-  if (node->flowConfigs().isEmpty() && node->eventConfigs().isEmpty())
+  const auto nodeInfo = SaveInfo::instance().getNodeWithId(nodeId);
+  if (!nodeInfo)
+    return Result<QTableWidget*>::Failed("Could not create event table for unknown node with id: {}", nodeId);
+
+  const auto nodeFlows = nodeInfo->getflows();
+  const auto nodeEvents = nodeInfo->getevents();
+
+  if (nodeFlows.isEmpty() && nodeEvents.isEmpty())
     return nullptr;
 
   // Create it once
@@ -680,7 +705,7 @@ Result<QTableWidget*> PropertiesMenu::loadEventTable(NodeItem* node)
   eventsTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
   eventsTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
 
-  for (const auto& event : node->allEventFlowConfigs())
+  for (const auto& event : nodeFlows + nodeEvents)
   {
     const auto concrete = std::dynamic_pointer_cast<FlowSaveInfo>(event);
     if (concrete)
@@ -688,7 +713,7 @@ Result<QTableWidget*> PropertiesMenu::loadEventTable(NodeItem* node)
   }
 
   connect(eventsTable, &QTableWidget::doubleClicked, this,
-          [this, eventsTable, node](const QModelIndex& index) { (void)openEventDialog(eventsTable, node, index.row()); });
+          [this, eventsTable, nodeId](const QModelIndex& index) { (void)openEventDialog(eventsTable, nodeId, index.row()); });
 
   auto group = new maki::ContainerWidget(tr("Events/Flows"), eventsTable, maki::WidgetAlignment::Vertical(), this);
   // Set this after adding to the container so the container does not override it
@@ -699,7 +724,7 @@ Result<QTableWidget*> PropertiesMenu::loadEventTable(NodeItem* node)
   return eventsTable;
 }
 
-VoidResult PropertiesMenu::loadControlAddEvent(QTableWidget* table, NodeItem* node)
+VoidResult PropertiesMenu::loadControlAddEvent(QTableWidget* table, const QString& nodeId)
 {
   auto* browserButtons = new QHBoxLayout();
   auto* addButton = new QPushButton(this);
@@ -710,11 +735,11 @@ VoidResult PropertiesMenu::loadControlAddEvent(QTableWidget* table, NodeItem* no
   removeButton->setFixedSize(Config::MEDIUM_BUTTON_SIZE);
   removeButton->setIcon(iconFromTheme("minus"));
 
-  connect(addButton, &QPushButton::pressed, this, [this, table, node] {
+  connect(addButton, &QPushButton::pressed, this, [this, table, nodeId] {
     if (table)
-      (void)openEventDialog(table, node, table->rowCount());
+      (void)openEventDialog(table, nodeId, table->rowCount());
   });
-  connect(removeButton, &QPushButton::clicked, this, [this, table, node] { removeEventFromTable(table, node); });
+  connect(removeButton, &QPushButton::clicked, this, [this, table, nodeId] { removeEventFromTable(table, nodeId); });
 
   browserButtons->addWidget(addButton);
   browserButtons->addWidget(removeButton);
@@ -726,9 +751,9 @@ VoidResult PropertiesMenu::loadControlAddEvent(QTableWidget* table, NodeItem* no
   return VoidResult();
 }
 
-std::shared_ptr<IFlow> PropertiesMenu::getFlowConfigOfRow(const NodeItem* node, QTableWidget* table, int row) const
+std::shared_ptr<IFlow> PropertiesMenu::getFlowConfigOfRow(PNodeSaveInfo nodeInfo, QTableWidget* table, int row) const
 {
-  if (!table || !node || row >= table->rowCount())
+  if (!table || !nodeInfo || row >= table->rowCount())
     return nullptr;
 
   const auto item = table->item(row, 0);
@@ -740,21 +765,25 @@ std::shared_ptr<IFlow> PropertiesMenu::getFlowConfigOfRow(const NodeItem* node, 
     return nullptr;
 
   const auto flowId = data.toString();
-  auto existing = maki::findBy(node->allEventFlowConfigs(), &IFlow::getid, flowId);
+  auto existing = maki::findBy(nodeInfo->getflows() + nodeInfo->getevents(), &IFlow::getid, flowId);
   if (existing)
     return *existing;
 
   return nullptr;
 }
 
-std::shared_ptr<FlowSaveInfo> PropertiesMenu::openEventDialog(QTableWidget* table, NodeItem* node, int row, bool synchronousCreation)
+std::shared_ptr<FlowSaveInfo> PropertiesMenu::openEventDialog(QTableWidget* table, const QString& nodeId, int row, bool synchronousCreation)
 {
-  if (!table || !node)
+  if (!table)
+    return nullptr;
+
+  const auto nodeInfo = SaveInfo::instance().getNodeWithId(nodeId);
+  if (!nodeInfo)
     return nullptr;
 
   EventDialog dialog(tr("Edit event"), this);
 
-  auto flowConfig = getFlowConfigOfRow(node, table, row);
+  auto flowConfig = getFlowConfigOfRow(nodeInfo, table, row);
   auto config = flowConfig ? std::dynamic_pointer_cast<FlowSaveInfo>(flowConfig) : std::make_shared<FlowSaveInfo>();
   dialog.setup(config);
   if (dialog.exec() != QDialog::Accepted)
@@ -764,26 +793,28 @@ std::shared_ptr<FlowSaveInfo> PropertiesMenu::openEventDialog(QTableWidget* tabl
   if (!info)
     return nullptr;
 
-  auto existingFlow = maki::findIf(node->allEventFlowConfigs(),
+  auto existingFlow = maki::findIf(nodeInfo->getflows() + nodeInfo->getevents(),
                                    [&info](const auto& opt) { return opt->getname() == info->getname() && opt->getid() != info->getid(); });
   if (existingFlow)
   {
     if (maki::errorPrompt(tr("A flow with the same name already exists"), tr("Would you like to open it?")))
-      emit flowSelected((*existingFlow)->getid(), node->id());
+      emit flowSelected((*existingFlow)->getid(), nodeId);
 
     return nullptr;
   }
 
-  PFlow flow = node->createFlow(info->getname(), info);
-  if (!flow)
-    return nullptr;
+  SaveInfo::instance().addFlowToNode(nodeId, info);
+  return nullptr;
+  // PFlow flow = node->createFlow(info->getname(), info);
+  // if (!flow)
+  //   return nullptr;
 
-  addEventToTable(table, row, info);
+  // addEventToTable(table, row, info);
 
-  if (!synchronousCreation && info->getmodifiable())
-    emit flowSelected(flow->id(), node->id());
+  // if (!synchronousCreation && info->getmodifiable())
+  //   emit flowSelected(flow->id(), node->id());
 
-  return flow->config();
+  // return flow->config();
 }
 
 void PropertiesMenu::addEventToTable(QTableWidget* table, int row, const std::shared_ptr<FlowSaveInfo>& event)
@@ -810,12 +841,12 @@ void PropertiesMenu::addEventToTable(QTableWidget* table, int row, const std::sh
   table->adjustSize();
 }
 
-void PropertiesMenu::removeEventFromTable(QTableWidget* table, NodeItem* node)
+void PropertiesMenu::removeEventFromTable(QTableWidget* table, const QString& nodeId)
 {
-  if (!node)
+  if (nodeId.isEmpty())
     return;
 
-  maki::applyOnSortedTable(table, [this, table, nodeId = node->id()](const auto& row) {
+  maki::applyOnSortedTable(table, [this, table, nodeId](const auto& row) {
     auto flowId = table->item(row, 0)->data(TableRole::IdRole).toString();
     table->removeRow(row);
     emit flowRemoved(flowId, nodeId);
@@ -882,19 +913,19 @@ VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)
   return VoidResult();
 }
 
-void PropertiesMenu::updateBlockName(NodeItem* node, const QString& componentName, const QString& eventName) const
+void PropertiesMenu::updateBlockName(PNodeSaveInfo nodeInfo, const QString& componentName, const QString& eventName) const
 {
-  if (!node)
+  if (!nodeInfo)
     return;
 
-  const auto* name = node->getProperty(ConfigKeys::NAME);
+  const auto* name = nodeInfo->getProperty(ConfigKeys::NAME);
   if (!name || !name->getvalue() || !name->getvalue()->isValid())
     return;
 
-  const auto* autoGenerated = node->getProperty("name_auto_generated");
+  const auto* autoGenerated = nodeInfo->getProperty("name_auto_generated");
   if (autoGenerated && autoGenerated->getvalue() && autoGenerated->getvalue()->isValid() && !autoGenerated->getvalue()->toBoolValue())
     return;
 
   const auto newName = componentName + (eventName.isEmpty() ? "" : " " + eventName);
-  node->setProperty(ConfigKeys::NAME, maki::Value::createString(newName));
+  nodeInfo->setProperty(ConfigKeys::NAME, maki::Value::createString(newName));
 }

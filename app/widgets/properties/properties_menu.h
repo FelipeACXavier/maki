@@ -27,7 +27,7 @@ class PropertyInfo;
  * a specialised editor when the generic ValueEditorFactory is not sufficient.
  *
  */
-class PropertiesMenu : public QFrame, public MenuBase
+class PropertiesMenu : public QFrame
 {
   Q_OBJECT
 
@@ -36,15 +36,14 @@ public:
 
   VoidResult start();
 
-  VoidResult onNodeAdded(NodeItem* node) override;
-  VoidResult onNodeRemoved(const QString& nodeId) override;
-  VoidResult onNodeModified(NodeItem* node) override;
-  VoidResult onNodeSelected(NodeItem* node, bool selected) override;
+  VoidResult onNodeRemoved(const QString& nodeId);
+  VoidResult onNodeModified(const QString& nodeId);
+  VoidResult onNodeSelected(const QString& nodeId, bool selected);
 
   VoidResult onTransitionSelected(TransitionItem* transition);
-  VoidResult onFlowAdded(PFlow flow, NodeItem* node);
-  Result<std::shared_ptr<FlowSaveInfo>> onCreateEvent(NodeItem* node, bool synchronousCreation);
-  VoidResult onFlowRemoved(const QString& flowId, NodeItem* node);
+  VoidResult onFlowAdded(PFlow flow, const QString& nodeId);
+  Result<std::shared_ptr<FlowSaveInfo>> onCreateEvent(const QString& nodeId, bool synchronousCreation);
+  VoidResult onFlowRemoved(const QString& flowId, const QString& nodeId);
 
   QLayout* layout() const;
 
@@ -67,27 +66,27 @@ private:
   StyledFrame* mFrame = nullptr;
 
   // Property editors.
-  VoidResult loadProperties(NodeItem* node);
-  VoidResult loadValueProperty(const std::shared_ptr<IParameter>& property, NodeItem* node);
-  VoidResult loadColorProperty(const std::shared_ptr<IParameter>& property, NodeItem* node);
-  VoidResult loadSelectProperty(const std::shared_ptr<IParameter>& property, NodeItem* node);
-  VoidResult loadLinkProperty(const std::shared_ptr<IParameter>& property, NodeItem* node);
-  VoidResult loadComponentSelectProperty(const std::shared_ptr<IParameter>& property, NodeItem* node);
+  VoidResult loadProperties(const QString& nodeId);
+  VoidResult loadValueProperty(const std::shared_ptr<IParameter>& property, const QString& nodeId);
+  VoidResult loadColorProperty(const std::shared_ptr<IParameter>& property, const QString& nodeId);
+  VoidResult loadSelectProperty(const std::shared_ptr<IParameter>& property, const QString& nodeId);
+  VoidResult loadLinkProperty(const std::shared_ptr<IParameter>& property, const QString& nodeId);
+  VoidResult loadComponentSelectProperty(const std::shared_ptr<IParameter>& property, const QString& nodeId);
 
-  VoidResult loadCallArguments(const std::shared_ptr<FlowSaveInfo>& call, const QString& propertyId, NodeItem* node, maki::WidgetGroup* group);
+  VoidResult loadCallArguments(const std::shared_ptr<FlowSaveInfo>& call, const QString& propertyId, const QString& nodeId, maki::WidgetGroup* group);
 
   void addCompleter(maki::InputWidget* editor, const QString& nodeId, const koda::types::TypeReference& type);
 
   // Controls for dynamically defined fields/events.
-  VoidResult loadControls(NodeItem* node);
-  Result<QTableWidget*> loadEventTable(NodeItem* node);
-  VoidResult loadControlAddEvent(QTableWidget* table, NodeItem* node);
+  VoidResult loadControls(const QString& nodeId);
+  Result<QTableWidget*> loadEventTable(const QString& nodeId, std::shared_ptr<NodeConfig> nodeConfig);
+  VoidResult loadControlAddEvent(QTableWidget* table, const QString& nodeId);
 
-  std::shared_ptr<FlowSaveInfo> openEventDialog(QTableWidget* table, NodeItem* node, int row, bool synchronousCreation = false);
+  std::shared_ptr<FlowSaveInfo> openEventDialog(QTableWidget* table, const QString& nodeId, int row, bool synchronousCreation = false);
   void addEventToTable(QTableWidget* table, int row, const std::shared_ptr<FlowSaveInfo>& event);
-  void removeEventFromTable(QTableWidget* table, NodeItem* node);
+  void removeEventFromTable(QTableWidget* table, const QString& nodeId);
 
-  void updateBlockName(NodeItem* node, const QString& componentName, const QString& eventName) const;
+  void updateBlockName(PNodeSaveInfo nodeInfo, const QString& componentName, const QString& eventName) const;
 
-  std::shared_ptr<IFlow> getFlowConfigOfRow(const NodeItem* node, QTableWidget* table, int row) const;
+  std::shared_ptr<IFlow> getFlowConfigOfRow(PNodeSaveInfo nodeInfo, QTableWidget* table, int row) const;
 };

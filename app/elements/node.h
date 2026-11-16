@@ -308,7 +308,7 @@ public:
    * @param info The save information for the flow.
    * @return The created Flow object, if successful.
    */
-  PFlow createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo> info, bool resetId = false);
+  PFlow createFlow(std::shared_ptr<FlowSaveInfo> info);
 
   /**
    * @brief Gets a flow by its ID.
@@ -324,11 +324,6 @@ public:
    * @param flowId The ID of the flow to delete.
    */
   void deleteFlow(const QString& flowId);
-
-  /**
-   * @brief Updates all flows associated with this node.
-   */
-  void updateFlow();
 
   /**
    * @brief Returns the base scale for this node.

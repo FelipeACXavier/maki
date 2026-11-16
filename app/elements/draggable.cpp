@@ -91,10 +91,9 @@ Qt::DropAction DraggableItem::startDrag(QGraphicsSceneMouseEvent* event)
   opt.state = QStyle::State_Active;
   paint(&painter, &opt, nullptr);
 
-  NodeSaveInfo info;
+  NodeSaveInfo info(*config());
   info.setNodeId(nodeId());
   info.setIcon(nodeIcon());
-  info.setSize(QSize(config()->body.width, config()->body.height));
 
   QByteArray data;
   QDataStream stream(&data, QIODevice::WriteOnly);

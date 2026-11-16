@@ -19,19 +19,38 @@ Types::LibraryTypes StructureCanvas::type() const
   return Types::LibraryTypes::STRUCTURAL;
 }
 
-void StructureCanvas::updateParent(NodeItem* node, std::shared_ptr<NodeSaveInfo> storage, bool adding)
+QString StructureCanvas::requestCreateNode(NodeSaveInfo info, NodeCreation creation)
 {
-  if (!adding)
-    SaveInfo::instance().removeNode(node->id());
+  LOG_DEBUG("StructureCanvas::requestCreateNode: {}=={}", info.getnodeId(), ConfigKeys::TASK_NODE);
+  // The model must know the ID before it is inserted.
+  if (info.getid().isEmpty())
+    info.setId(QUuid::createUuid().toString());
+
+  const auto id = info.getid();
+  mPendingCreations.insert(id, creation);
+  auto storage = std::make_shared<NodeSaveInfo>(info);
+
+  auto exists = SaveInfo::instance().getNodeWithId(info.getid());
+  if (!exists)
+    SaveInfo::instance().addNode(storage);
+
+  return id;
+}
+
+void StructureCanvas::requestRemoveNode(NodeSaveInfo info)
+{
+  SaveInfo::instance().removeNode(info.getid());
 }
 
 void StructureCanvas::addedItemNode(NodeItem* node, std::shared_ptr<NodeSaveInfo> info)
 {
-  if (node->nodeId() == ConfigKeys::TASK_NODE)
-  {
-    // Adding task
-    SaveInfo::instance().addNode(info);
-  }
+  // if (node->nodeId() == ConfigKeys::TASK_NODE)
+  // {
+  //   // Adding task
+  //   const auto exists = SaveInfo::instance().getNodeWithId(info->getid());
+  //   if (!exists)
+  //     SaveInfo::instance().addNode(info);
+  // }
 
   Canvas::addedItemNode(node, info);
 }

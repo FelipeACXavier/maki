@@ -100,12 +100,12 @@ void FlowFromSelectionCommand::redo()
   // Remove any existing transitions
   auto toDelete = newFlow->transitions();
   for (const auto* transition : toDelete)
-    newCanvas->removeTransition(transition->saveInfo());
+    newCanvas->requestRemoveTransition(transition->saveInfo());
 
   // --------------------------------------------------------------------------
   // Remove the original boundary transitions first.
-  mCanvas->removeTransition(mStartTransition);
-  mCanvas->removeTransition(mEndTransition);
+  mCanvas->requestRemoveTransition(mStartTransition);
+  mCanvas->requestRemoveTransition(mEndTransition);
 
   // --------------------------------------------------------------------------
   // Remove internal transitions from the old flow.
@@ -115,7 +115,7 @@ void FlowFromSelectionCommand::redo()
     if (!transitionInfo)
       continue;
 
-    mCanvas->removeTransition(*transitionInfo);
+    mCanvas->requestRemoveTransition(*transitionInfo);
   }
 
   // --------------------------------------------------------------------------
@@ -128,7 +128,7 @@ void FlowFromSelectionCommand::redo()
       continue;
 
     oldCenter += node->getposition();
-    mCanvas->removeNode(*nodeInfo);
+    mCanvas->requestRemoveNode(*nodeInfo);
   }
   oldCenter /= mFlowInfo.getnodes().size();
 
@@ -144,7 +144,7 @@ void FlowFromSelectionCommand::redo()
   NodeSaveInfo flowCall(*configuration);
   flowCall.setId(QUuid::createUuid().toString());
   flowCall.setPosition(oldCenter);
-  mCanvas->createNode(flowCall, Canvas::NodeCreation::Inserting);
+  mCanvas->requestCreateNode(flowCall, Canvas::NodeCreation::Inserting);
   auto newNode = mCanvas->findNodeWithId(flowCall.getid());
   if (!newNode)
     return;
@@ -166,7 +166,7 @@ void FlowFromSelectionCommand::redo()
     transition.setDstId(flowCall.getid());
     transition.setDstPort(Types::Port::IN);
     transition.setDstShift({0, 0});
-    mCanvas->createTransition(transition);
+    mCanvas->requestCreateTransition(transition);
   }
   {
     TransitionSaveInfo transition = mEndTransition;
@@ -174,17 +174,17 @@ void FlowFromSelectionCommand::redo()
     transition.setSrcId(flowCall.getid());
     transition.setSrcPort(Types::Port::OUT);
     transition.setSrcShift({0, 0});
-    mCanvas->createTransition(transition);
+    mCanvas->requestCreateTransition(transition);
   }
 
   // Populate the newly created flow
   for (const auto& inode : updateInfo.getnodes())
     if (auto nodeInfo = std::dynamic_pointer_cast<NodeSaveInfo>(inode); nodeInfo)
-      newCanvas->createNode(*nodeInfo, Canvas::NodeCreation::Inserting);
+      newCanvas->requestCreateNode(*nodeInfo, Canvas::NodeCreation::Inserting);
 
   for (const auto& itransition : updateInfo.gettransitions())
     if (auto transitionInfo = std::dynamic_pointer_cast<TransitionSaveInfo>(itransition); transitionInfo)
-      newCanvas->createTransition(*transitionInfo);
+      newCanvas->requestCreateTransition(*transitionInfo);
 
   LOG_TRACE("Redo FlowFromSelectionCommand");
 }

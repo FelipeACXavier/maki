@@ -3,10 +3,12 @@
 #include <QJsonArray>
 #include <QJsonObject>
 
+#include "document_event.h"
 #include "keys.h"
 #include "logging.h"
 #include "node_info.h"
 #include "property_info.h"
+#include "save_info.h"
 #include "transition_info.h"
 #include "type_helpers.h"
 
@@ -35,6 +37,21 @@ FlowSaveInfo::FlowSaveInfo(const FlowConfig& config)
   setLinksTo(config.linksTo);
   for (const auto& arg : config.arguments)
     addArgument(std::make_shared<PropertyInfo>(arg));
+}
+
+void FlowSaveInfo::print(const QString& indent) const
+{
+  LOG_INFO("{}Flow id: {}", indent, getid());
+  LOG_INFO("{}Flow name: {}", indent, getname());
+  LOG_INFO("{}Flow owner: {}", indent, getowner());
+  LOG_INFO("{}Nodes: {}", indent, getnodes().size());
+  for (const auto& ichild : getnodes())
+    if (auto child = std::dynamic_pointer_cast<NodeSaveInfo>(ichild))
+      child->print(indent + "  ");
+  LOG_INFO("{}Transitions: {}", indent, gettransitions().size());
+  for (const auto& ichild : gettransitions())
+    if (auto child = std::dynamic_pointer_cast<TransitionSaveInfo>(ichild))
+      child->print(indent + "  ");
 }
 
 QString FlowSaveInfo::getid() const
@@ -100,11 +117,22 @@ QVector<std::shared_ptr<ITransition>> FlowSaveInfo::gettransitions(const QString
 void FlowSaveInfo::addTransition(std::shared_ptr<ITransition> transition)
 {
   mTransitions.push_back(transition);
+  SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::TransitionAdded,
+                                             .data = TransitionEvent{
+                                               .id = transition->getid(),
+                                               .ownerFlowId = getid(),
+                                             }});
 }
 
-void FlowSaveInfo::removeTransition(std::shared_ptr<ITransition> transition)
+void FlowSaveInfo::removeTransition(const QString& transitionId)
 {
-  mTransitions.removeIf([transition](std::shared_ptr<ITransition> info) { return info->getid() == transition->getid(); });
+  mTransitions.removeIf([transitionId](std::shared_ptr<ITransition> info) { return info->getid() == transitionId; });
+
+  SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::TransitionRemoved,
+                                             .data = TransitionEvent{
+                                               .id = transitionId,
+                                               .ownerFlowId = getid(),
+                                             }});
 }
 
 void FlowSaveInfo::setId(const QString& arg)
@@ -145,6 +173,10 @@ void FlowSaveInfo::setReturnType(const koda::types::TypeReference& arg)
 void FlowSaveInfo::setArgument(uint32_t index, std::shared_ptr<IParameter> arg)
 {
   mArguments[index] = arg;
+  SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::FlowModified,
+                                             .data = FlowEvent{
+                                               .id = getid(),
+                                             }});
 }
 
 std::shared_ptr<IParameter> FlowSaveInfo::getArgument(uint32_t index)
@@ -155,29 +187,48 @@ std::shared_ptr<IParameter> FlowSaveInfo::getArgument(uint32_t index)
 void FlowSaveInfo::addArgument(std::shared_ptr<IParameter> arg)
 {
   mArguments.push_back(arg);
+  SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::FlowModified,
+                                             .data = FlowEvent{
+                                               .id = getid(),
+                                             }});
 }
 
 void FlowSaveInfo::removeArgument(std::shared_ptr<IParameter> arg)
 {
   mArguments.removeIf([arg](std::shared_ptr<IParameter> info) { return info->getid() == arg->getid(); });
+  SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::FlowModified,
+                                             .data = FlowEvent{
+                                               .id = getid(),
+                                             }});
 }
 
-void FlowSaveInfo::addNode(std::shared_ptr<INode> arg)
+void FlowSaveInfo::addNode(std::shared_ptr<INode> inode)
 {
   // Do not add repeated nodes
-  if (!arg->getid().isEmpty())
+  if (!inode->getid().isEmpty())
   {
     for (const auto& node : mNodes)
-      if (node->getid() == arg->getid())
+      if (node->getid() == inode->getid())
         return;
   }
 
-  mNodes.push_back(arg);
+  LOG_DEBUG("Adding node {} to flow: {} {}", inode->getnodeId(), getname(), getowner());
+  mNodes.push_back(inode);
+  SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::NodeAdded,
+                                             .data = NodeEvent{
+                                               .id = inode->getid(),
+                                               .ownerFlowId = getid(),
+                                             }});
 }
 
-void FlowSaveInfo::removeNode(std::shared_ptr<INode> node)
+void FlowSaveInfo::removeNode(const QString& nodeId)
 {
-  mNodes.removeIf([node](std::shared_ptr<INode> info) { return info->getid() == node->getid(); });
+  mNodes.removeIf([nodeId](std::shared_ptr<INode> info) { return info->getid() == nodeId; });
+  SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::NodeRemoved,
+                                             .data = NodeEvent{
+                                               .id = nodeId,
+                                               .ownerFlowId = getid(),
+                                             }});
 }
 
 // ==========================================================================

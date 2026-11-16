@@ -14,13 +14,12 @@ public:
   /**
    * @brief Constructs a RenameNodeCommand object.
    *
-   * @param canvas Pointer to the canvas containing the node.
    * @param nodeId Unique identifier of the node.
    * @param oldName Original name of the node.
    * @param newName New name of the node.
    * @param parent Parent undo command.
    */
-  RenameNodeCommand(Canvas* canvas, const QString& nodeId, const QString& oldName, const QString& newName, QUndoCommand* parent = nullptr);
+  RenameNodeCommand(const QString& nodeId, const QString& oldName, const QString& newName, QUndoCommand* parent = nullptr);
 
   /**
    * @brief Restores the original node name.
@@ -33,7 +32,6 @@ public:
   void redo() override;
 
 private:
-  Canvas* mCanvas = nullptr;
   const QString mNodeId;
   const QString mOldName;
   const QString mNewName;

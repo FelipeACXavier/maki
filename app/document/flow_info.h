@@ -26,6 +26,8 @@ public:
    */
   explicit FlowSaveInfo(const FlowConfig& config);
 
+  void print(const QString& indent = "") const;
+
   /**
    * @brief Gets the ID of the flow.
    *
@@ -104,7 +106,7 @@ public:
 
   void addTransition(std::shared_ptr<ITransition> transition);
 
-  void removeTransition(std::shared_ptr<ITransition> transition);
+  void removeTransition(const QString& transitionId);
 
   /**
    * @brief Sets the ID of the flow.
@@ -197,7 +199,7 @@ public:
    *
    * @param arg A shared pointer to an INode object representing the node to remove.
    */
-  void removeNode(std::shared_ptr<INode> arg);
+  void removeNode(const QString& nodeId);
 
   /**
    * @brief Converts the flow save info to a JSON object.

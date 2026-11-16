@@ -36,7 +36,7 @@ public:
    * @param node The node that was added.
    * @return A result indicating whether the operation succeeded.
    */
-  VoidResult onNodeAdded(const QString& flowId, NodeItem* node, const Types::LibraryTypes canvasType);
+  VoidResult onNodeAdded(const QString& flowId, const QString& nodeId, const Types::LibraryTypes canvasType);
 
   /**
    * @brief Handles the removal of a node from a flow.
@@ -53,16 +53,7 @@ public:
    * @param node The modified node.
    * @return A result indicating whether the operation succeeded.
    */
-  VoidResult onNodeModified(const QString& flowId, NodeItem* node);
-
-  /**
-   * @brief Handles selection state changes for a node.
-   * @param flowId The identifier of the flow containing the node.
-   * @param node The node whose selection state changed.
-   * @param selected True if the node is selected, false otherwise.
-   * @return A result indicating whether the operation succeeded.
-   */
-  VoidResult onNodeSelected(const QString& flowId, NodeItem* node, bool selected);
+  VoidResult onNodeModified(const QString& flowId, const QString& nodeId);
 
   /**
    * @brief Handles the addition of a flow to the menu.
@@ -70,7 +61,7 @@ public:
    * @param node The node associated with the flow.
    * @return A result indicating whether the operation succeeded.
    */
-  VoidResult onFlowAdded(PFlow flow, NodeItem* node);
+  VoidResult onFlowAdded(PFlow flow, const QString& nodeId);
 
   /**
    * @brief Handles the removal of a flow from the menu.
@@ -168,14 +159,14 @@ private:
    * @param node The node to add.
    * @return A result indicating whether the operation succeeded.
    */
-  VoidResult addRootNode(NodeItem* node);
+  VoidResult addRootNode(PNodeSaveInfo nodeInfo);
 
   /**
    * @brief Adds a leaf node to the menu.
    * @param node The node to add.
    * @return A result indicating whether the operation succeeded.
    */
-  VoidResult addLeafNode(NodeItem* node);
+  VoidResult addLeafNode(PNodeSaveInfo nodeInfo);
 
   /**
    * @brief Populates a tree widget item using data from a node.
@@ -185,7 +176,7 @@ private:
   void populateItem(QTreeWidgetItem* item, const QIcon& icon, const QString& name, const QString& type, const QString& data, const Roles role,
                     const QString& canvas = "");
 
-  void populateTaskItem(QTreeWidgetItem* item, NodeItem* node);
+  void populateTaskItem(QTreeWidgetItem* item, const QString& nodeId);
 
   /**
    * @brief Finds a tree item by its identifier.

@@ -18,6 +18,7 @@ public:
    */
   TransitionSaveInfo();
 
+  void print(const QString& indent = "") const;
   /**
    * @brief Gets the ID of the transition.
    * @return QString The ID of the transition.

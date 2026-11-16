@@ -34,6 +34,10 @@ class EdgeRouter;
 class DraggableItem;
 class LibraryContainer;
 
+struct DocumentEvent;
+template <typename Event>
+class EventDispatcher;
+
 namespace maki
 {
 class PluginPipeline;
@@ -43,6 +47,7 @@ class PluginPipeline;
  * @brief The MainWindow class is the main window of the application.
  */
 class MainWindow : public MainWindowLayout
+
 {
   Q_OBJECT
 
@@ -75,10 +80,12 @@ private slots:
    * @param node Pointer to the selected NodeItem.
    * @param selected True if the node is selected, false otherwise.
    */
-  void onNodeSelected(NodeItem* node, bool selected);
+  void onNodeSelected(const QString& nodeId, bool selected);
 
   /**
    * @brief Handles node addition events.
+   * Contrary to the other slots, onNodeAdded is interested in the actual graphical node, not the underlying
+   * document. Thus, it uses NodeItem as argument
    *
    * @param node Pointer to the added NodeItem.
    */
@@ -97,7 +104,7 @@ private slots:
    *
    * @param node Pointer to the modified NodeItem.
    */
-  void onNodeModified(Canvas* canvas, NodeItem* node);
+  void onNodeModified(Canvas* canvas, const QString& nodeId);
 
   /**
    * @brief Handles open flow events.
@@ -131,11 +138,12 @@ private slots:
   void changeEvent(QEvent* event) override;
 
 private:
-  std::unique_ptr<SaveHandler> mSaveHandler;          /// Handler for saving data.
-  std::unique_ptr<PluginManager> mPluginManager;      /// Manager for plugins.
-  std::shared_ptr<SettingsManager> mSettingsManager;  /// Settings manager shared pointer.
-  std::shared_ptr<LanguageManager> mLanguageManager;  /// Language manager shared pointer.
-  std::shared_ptr<TourGuide> mTourGuide;              /// Language manager shared pointer.
+  std::unique_ptr<SaveHandler> mSaveHandler;                           /// Handler for saving data.
+  std::unique_ptr<PluginManager> mPluginManager;                       /// Manager for plugins.
+  std::shared_ptr<SettingsManager> mSettingsManager;                   /// Settings manager shared pointer.
+  std::shared_ptr<LanguageManager> mLanguageManager;                   /// Language manager shared pointer.
+  std::shared_ptr<TourGuide> mTourGuide;                               /// Language manager shared pointer.
+  std::shared_ptr<EventDispatcher<DocumentEvent>> mDocumentScheduler;  /// Language manager shared pointer.
 
   Pipeline* mPipeline = nullptr;                        /// Pointer to the pipeline.
   HostServices* mHostServices = nullptr;                /// Pointer to the host services.

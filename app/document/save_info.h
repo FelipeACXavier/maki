@@ -12,6 +12,8 @@
 
 // Single header for the document stuff
 #include "canvas_info.h"
+#include "document_event.h"
+#include "event_dispatcher.h"
 #include "flow_info.h"
 #include "mission_parameter.h"
 #include "node_info.h"
@@ -44,6 +46,8 @@ public:
    * @param info The new canvas save info.
    */
   void setCanvasInfo(const CanvasSaveInfo& info);
+
+  void print() const;
 
   /**
    * @brief Get all nodes.
@@ -179,12 +183,27 @@ public:
    */
   std::shared_ptr<FlowSaveInfo> getFlowWithId(const QString& flowId);
 
+  /**
+   * @brief Get a transition by ID.
+   * @param transitionId The ID of the transition.
+   * @return std::shared_ptr<TransitionSaveInfo> A shared pointer to TransitionSaveInfo object representing the transition.
+   */
+  std::shared_ptr<TransitionSaveInfo> getTransitionWithId(const QString& transitionId) const;
+
   QVector<std::shared_ptr<FlowSaveInfo>> pipelines() const;
 
   void addPipeline(std::shared_ptr<FlowSaveInfo> pipeline);
   void removePipeline(std::shared_ptr<FlowSaveInfo> pipeline);
 
   bool taskHasCapability(const QString& taskId, const QString& capabilityId) const;
+
+  void setScheduler(std::shared_ptr<EventDispatcher<DocumentEvent>> scheduler);
+  void publish(const DocumentEvent& event);
+  EventDispatcher<DocumentEvent>::Subscription subscribe(EventDispatcher<DocumentEvent>::Callback callback);
+
+  void addFlowToNode(const QString& nodeId, std::shared_ptr<IFlow> flow);
+  void addNodeToFlow(const QString& flowId, std::shared_ptr<INode> node);
+  void addTransitionToFlow(const QString& flowId, std::shared_ptr<ITransition> transition);
 
   QString name;
   QString version;
@@ -196,6 +215,8 @@ private:
   QVector<std::shared_ptr<INode>> mStructuralNodes;    /// A vector of shared pointers to INode objects representing structural nodes.
   QVector<std::shared_ptr<FlowSaveInfo>> mPipelines;   /// A vector of shared pointers to IFlow objects representing the available pipelines.
   QVector<maki::MissionParameter> mMissionParameters;  /// A vector to the available mission parameters
+
+  std::shared_ptr<EventDispatcher<DocumentEvent>> mScheduler;
 
   /**
    * @brief Find the family of a construct.
@@ -241,4 +262,12 @@ private:
    * @return std::shared_ptr<FlowSaveInfo> A shared pointer to FlowSaveInfo object representing the flow.
    */
   std::shared_ptr<FlowSaveInfo> getFlowWithId(const QString& flowId, const QVector<std::shared_ptr<INode>>& nodes);
+
+  /**
+   * @brief Get a transition by ID.
+   * @param transitionId The ID of the transition.
+   * @param nodes The vector of nodes to search.
+   * @return std::shared_ptr<TransitionSaveInfo> A shared pointer to TransitionSaveInfo object representing the transition.
+   */
+  std::shared_ptr<TransitionSaveInfo> getTransitionWithId(const QString& transitionId, const QVector<std::shared_ptr<INode>>& nodes) const;
 };

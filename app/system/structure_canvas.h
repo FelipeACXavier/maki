@@ -11,10 +11,9 @@ public:
 
   Types::LibraryTypes type() const override;
 
+  QString requestCreateNode(NodeSaveInfo info, NodeCreation creation) override;
+  void requestRemoveNode(NodeSaveInfo info) override;
+
   void addedItemNode(NodeItem* node, std::shared_ptr<NodeSaveInfo> info) override;
-
   void suggestCapability(NodeItem* node) override;
-
-private:
-  void updateParent(NodeItem* node, std::shared_ptr<NodeSaveInfo> storage, bool adding) override;
 };

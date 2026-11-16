@@ -30,6 +30,7 @@
 #include "flow_info.h"
 #include "keys.h"
 #include "logging.h"
+#include "macros.h"
 #include "node_info.h"
 #include "notifications.h"
 #include "result.h"
@@ -59,10 +60,12 @@ Canvas::Canvas(const QString& canvasId, std::shared_ptr<EdgeRouter> router, QObj
   mUndoStack->setUndoLimit(20);
 
   connect(this, &QGraphicsScene::selectionChanged, this, &Canvas::onSelectionChanged);
+  mDocumentSubscription = SaveInfo::instance().subscribe([this](const DocumentEvent& event) { onDocumentChanged(event); });
 }
 
 Canvas::~Canvas()
 {
+  mDocumentSubscription.reset();
   disconnect(this, &QGraphicsScene::selectionChanged, this, &Canvas::onSelectionChanged);
 }
 
@@ -96,6 +99,180 @@ QList<NodeItem*> Canvas::availableNodes()
   return nodes;
 }
 
+void Canvas::onDocumentChanged(const DocumentEvent& event)
+{
+  LOG_INFO(">>>> onDocumentChanged: {}", maki::toString(event.type));
+  SaveInfo::instance().print();
+  switch (event.type)
+  {
+    case DocumentEvent::Type::NodeAdded:
+    {
+      const auto* data = std::get_if<NodeEvent>(&event.data);
+      if (!data)
+        return;
+
+      if (type() != Types::LibraryTypes::STRUCTURAL && data->ownerFlowId != id())
+        return;
+
+      auto info = SaveInfo::instance().getNodeWithId(data->id);
+      if (!info)
+        return;
+
+      // The model contains the node, but this canvas might already have materialized it.
+      if (findNodeWithId(data->id))
+        return;
+
+      NodeItem* parent = nullptr;
+      if (!info->getparentId().isEmpty())
+      {
+        parent = findNodeWithId(info->getparentId());
+        if (!parent)
+        {
+          LOG_WARNING("Cannot render node {}: parent {} missing", data->id, info->getparentId());
+          return;
+        }
+      }
+
+      NodeItem* node = materializeNode(info, parent);
+      if (!node)
+        return;
+
+      // Only the canvas that requested the creation should
+      // apply creation-specific UI behavior.
+      auto it = mPendingCreations.find(data->id);
+      if (it != mPendingCreations.end())
+      {
+        const NodeCreation creation = it.value();
+        mPendingCreations.erase(it);
+
+        clearSelectedNodes();
+        selectNode(node, true);
+
+        if (creation == NodeCreation::Dropping)
+          suggestCapability(node);
+      }
+
+      break;
+    }
+    case DocumentEvent::Type::NodeRemoved:
+    {
+      const auto* data = std::get_if<NodeEvent>(&event.data);
+      if (!data)
+        return;
+
+      auto node = findNodeWithId(data->id);
+      if (!node)
+      {
+        LOG_DEBUG("Could not find node with id: {}", data->id);
+        return;
+      }
+
+      auto toRemove = removeNode(node);
+      // Delete children before parents (important if parent owns child QGraphicsItems)
+      for (int i = toRemove.size() - 1; i >= 0; --i)
+      {
+        if (const auto* removedNode = qgraphicsitem_cast<NodeItem*>(toRemove[i]))
+          LOG_DEBUG("Deleting: {}, has parent: {}", removedNode->id(), removedNode->parentNode() != nullptr);
+
+        delete toRemove[i];
+      }
+      break;
+    }
+    case DocumentEvent::Type::NodeModified:
+    {
+      const auto* data = std::get_if<NodeEvent>(&event.data);
+      if (!data)
+        return;
+
+      if (auto* node = findNodeWithId(data->id))
+        node->setProperty(data->propertyId, data->propertyValue);
+
+      break;
+    }
+    case DocumentEvent::Type::FlowAdded:
+    {
+      const auto* data = std::get_if<FlowEvent>(&event.data);
+      if (!data)
+        return;
+
+      auto* node = findNodeWithId(data->ownerNodeId);
+      if (!node)
+        return;
+
+      if (auto flow = SaveInfo::instance().getFlowWithId(data->id))
+      {
+        node->createFlow(flow);
+        if (flow->getname() != Constants::MAIN_FLOW)
+          emit openFlow(flow, node->id(), maki::FocusProperties::internal());
+      }
+      break;
+    }
+    case DocumentEvent::Type::FlowRemoved:
+    {
+      const auto* data = std::get_if<FlowEvent>(&event.data);
+      if (!data)
+        return;
+
+      auto* node = findNodeWithId(data->ownerNodeId);
+      if (!node)
+        return;
+
+      if (auto flow = SaveInfo::instance().getFlowWithId(data->id))
+        node->deleteFlow(flow->getid());
+
+      break;
+    }
+    case DocumentEvent::Type::FlowModified:
+    {
+    }
+    case DocumentEvent::Type::TransitionAdded:
+    {
+      const auto* data = std::get_if<TransitionEvent>(&event.data);
+      if (!data)
+        return;
+
+      LOG_DEBUG("This id: {} vs Flow id: {}", id(), data->ownerFlowId);
+      if (data->ownerFlowId != id())
+        return;
+
+      LOG_DEBUG("TransitionAdded 1");
+      auto& document = SaveInfo::instance();
+      auto info = document.getTransitionWithId(data->id);
+      if (!info)
+        return;
+
+      LOG_DEBUG("TransitionAdded 2");
+      createTransition(info);
+      break;
+    }
+    case DocumentEvent::Type::TransitionRemoved:
+    {
+      const auto* data = std::get_if<TransitionEvent>(&event.data);
+      if (!data)
+        return;
+
+      if (data->ownerFlowId != id())
+        return;
+
+      auto transition = findTransitionWithId(data->id);
+      if (!transition)
+      {
+        LOG_DEBUG("Could not find transition with id: {}", data->id);
+        return;
+      }
+
+      removeTransition(transition);
+      delete transition;
+      break;
+    }
+    case DocumentEvent::Type::TransitionModified:
+    {
+    }
+    default:
+      break;
+  }
+}
+
 void Canvas::onSelectionChanged()
 {
   const auto selected = selectedItems();
@@ -112,6 +289,12 @@ void Canvas::dragEnterEvent(QGraphicsSceneDragDropEvent* event)
 {
   if (event->mimeData()->hasFormat(Constants::TYPE_NODE))
   {
+    QByteArray data = event->mimeData()->data(Constants::TYPE_NODE);
+    QDataStream stream(&data, QIODevice::ReadOnly);
+    NodeSaveInfo info;
+    stream >> info;
+    mDraggedNodeType = info.getnodeId();
+
     event->acceptProposedAction();
     return;
   }
@@ -121,14 +304,9 @@ void Canvas::dragEnterEvent(QGraphicsSceneDragDropEvent* event)
 
 void Canvas::dragMoveEvent(QGraphicsSceneDragDropEvent* event)
 {
-  if (event->mimeData()->hasFormat(Constants::TYPE_NODE))
+  if (event->mimeData()->hasFormat(Constants::TYPE_NODE) && mDraggedNodeType)
   {
-    QByteArray data = event->mimeData()->data(Constants::TYPE_NODE);
-    QDataStream stream(&data, QIODevice::ReadOnly);
-    NodeSaveInfo info;
-    stream >> info;
-
-    const auto config = getNodeConfig(info.getnodeId());
+    const auto config = getNodeConfig(mDraggedNodeType.value());
     const QSize size = config ? QSize{config->body.width, config->body.height} : QSize{100, 100};
     const QPointF center = event->scenePos();
     const QRectF dragRect(center.x() - size.width() / 2.0, center.y() - size.height() / 2.0, size.width(), size.height());
@@ -154,6 +332,7 @@ void Canvas::dropEvent(QGraphicsSceneDragDropEvent* event)
     view->setFocus(Qt::MouseFocusReason);
   }
 
+  mDraggedNodeType.reset();
   QByteArray data = event->mimeData()->data(Constants::TYPE_NODE);
   QDataStream stream(&data, QIODevice::ReadOnly);
 
@@ -1193,7 +1372,7 @@ void Canvas::createNodeContextMenu(QMenu* menu, NodeItem* node, const QList<Node
 
     QAction* newEventAction = menu->addAction(QIcon(":/icons/flow.svg"), tr("New flow"));
     newEventAction->setEnabled(node != nullptr || items.size() > 0);
-    connect(newEventAction, &QAction::triggered, this, [this, node]() { emit createEvent(node); });
+    connect(newEventAction, &QAction::triggered, this, [this, node]() { emit createEvent(node->id()); });
     menu->addAction(newEventAction);
   }
 }
@@ -1400,7 +1579,6 @@ QVector<QGraphicsItem*> Canvas::removeNode(NodeItem* node)
   LOG_DEBUG("Removing node: {}", node->id());
 
   QVector<QGraphicsItem*> itemsToRemove = {node};
-  updateParent(node, nullptr, false);
 
   for (const auto& flow : node->flows())
   {
@@ -1596,9 +1774,13 @@ void Canvas::selectNode(NodeItem* node, bool select)
     node->setSelected(select);
     if (select)
       node->dismissHighlight();
-  }
 
-  emit nodeSelected(node, select);
+    emit nodeSelected(node->id(), select);
+  }
+  else
+  {
+    emit nodeSelected("", select);
+  }
 }
 
 void Canvas::clearNodeControls()
@@ -1621,19 +1803,32 @@ void Canvas::clearSelectedNodes()
 
 VoidResult Canvas::loadFromSave(const QVector<std::shared_ptr<INode>>& nodes, NodeItem* parent)
 {
-  for (std::shared_ptr<INode> inodeInfo : nodes)
+  // Since the nodes are now directly available in the document, we only need to materialize them
+  auto& document = SaveInfo::instance();
+  for (const auto& inode : nodes)
   {
     // TODO(felaze): This is necessary because the save info is using shared ptr when it shouldn't...
     // I need to make a proper distinction between save and run-time store structures.
-    auto nodeInfo = std::dynamic_pointer_cast<NodeSaveInfo>(inodeInfo);
-    if (!nodeInfo)
+    auto info = document.getNodeWithId(inode->getid());
+    if (!info)
+      return VoidResult::Failed("Could not load node: {}. It is not known", inode->getid());
+
+    // The model contains the node, but this canvas might already have materialized it.
+    if (findNodeWithId(inode->getid()))
       continue;
 
-    auto node = std::make_shared<NodeSaveInfo>(*nodeInfo);
+    NodeItem* parent = nullptr;
+    if (!info->getparentId().isEmpty())
+    {
+      parent = findNodeWithId(info->getparentId());
+      if (!parent)
+        return VoidResult::Failed("Cannot render node {}: parent {} missing", inode->getid(), inode->getparentId());
+    }
 
-    LOG_DEBUG("Creating node {} with parent {} and {} children", node->getid(), node->getparentId(), node->getchildren().size());
-    auto createdNode = createNode(NodeCreation::Loading, node, node->getposition(), parent);
-    selectNode(createdNode, false);  // Remove selection
+    LOG_DEBUG("Creating node {} with parent {} and {} children", info->getid(), info->getparentId(), info->getchildren().size());
+    NodeItem* node = materializeNode(info, parent);
+    if (!node)
+      continue;
   }
 
   return VoidResult();
@@ -1681,31 +1876,33 @@ void Canvas::setNodeSize(const QString& nodeId, const QSizeF& size)
 
 // ====================================================================================
 // Undo commands
-void Canvas::createTransition(const TransitionSaveInfo& info)
+void Canvas::createTransition(std::shared_ptr<TransitionSaveInfo> info)
 {
-  const auto* exists = findTransitionWithId(info.getid());
+  LOG_DEBUG("createTransition 1");
+  const auto* exists = findTransitionWithId(info->getid());
   if (exists)
     return;
 
-  auto source = findNodeWithId(info.getsrcId());
+  LOG_DEBUG("createTransition 2");
+  auto source = findNodeWithId(info->getsrcId());
   if (!source)
   {
-    LOG_WARNING("Source {} does not exist", info.getsrcId());
+    LOG_WARNING("Source {} does not exist", info->getsrcId());
     return;
   }
 
-  auto destination = findNodeWithId(info.getdstId());
+  LOG_DEBUG("createTransition 3");
+  auto destination = findNodeWithId(info->getdstId());
   if (!destination)
   {
-    LOG_WARNING("Destination {} does not exist", info.getdstId());
+    LOG_WARNING("Destination {} does not exist", info->getdstId());
     return;
   }
 
-  auto infoPtr = std::make_shared<TransitionSaveInfo>(info);
-
-  auto transition = new TransitionItem(infoPtr);
-  transition->setStart(infoPtr->getsrcId(), infoPtr->srcPoint(), infoPtr->srcShift(), infoPtr->srcPort(), infoPtr->srcPortSubFlow());
-  transition->setEnd(infoPtr->getdstId(), infoPtr->dstPoint(), infoPtr->dstShift(), infoPtr->dstPort(), infoPtr->dstPortSubFlow());
+  LOG_DEBUG("createTransition 4");
+  auto transition = new TransitionItem(info);
+  transition->setStart(info->getsrcId(), info->srcPoint(), info->srcShift(), info->srcPort(), info->srcPortSubFlow());
+  transition->setEnd(info->getdstId(), info->dstPoint(), info->dstShift(), info->dstPort(), info->dstPortSubFlow());
 
   addTransition(transition);
   addItem(transition);
@@ -1766,6 +1963,10 @@ void Canvas::reparentNode(const QString& nodeId, const QString& parentId, const 
   onNodeMoved(node, true);
 }
 
+void Canvas::requestRemoveTransition(TransitionSaveInfo info)
+{
+}
+
 void Canvas::removeTransition(const TransitionSaveInfo& info)
 {
   auto transition = findTransitionWithId(info.getid());
@@ -1785,6 +1986,94 @@ void Canvas::createNode(const NodeSaveInfo& info, NodeCreation creation)
   auto parent = findNodeWithId(info.getparentId());
   auto infoPtr = std::make_shared<NodeSaveInfo>(info);
   (void)createNode(creation, infoPtr, info.getposition(), parent);
+}
+
+QString Canvas::requestCreateNode(NodeSaveInfo info, NodeCreation creation)
+{
+  return QString();
+}
+
+void Canvas::requestCreateTransition(TransitionSaveInfo info)
+{
+}
+
+NodeItem* Canvas::materializeNode(const std::shared_ptr<NodeSaveInfo>& modelInfo, NodeItem* parent)
+{
+  if (!modelInfo)
+    return nullptr;
+
+  // Different events may refer to the same node.
+  if (auto* existing = findNodeWithId(modelInfo->getid()))
+    return existing;
+
+  auto config = getNodeConfig(modelInfo->getnodeId());
+
+  if (!config || config->libraryType != type())
+    return nullptr;
+
+  // Transitional safety measure:
+  // NodeItem still mutates its NodeSaveInfo in its constructor.
+  // Therefore, do not give it the document-owned pointer yet.
+  auto visualInfo = std::make_shared<NodeSaveInfo>(*modelInfo);
+
+  NodeItem* node = NodeFactory::create(modelInfo->getid(), visualInfo, modelInfo->getposition(), config);
+
+  if (!node)
+    return nullptr;
+
+  // Establish graphical relationships only.
+  if (parent)
+  {
+    node->addParent(parent, modelInfo->getParentSubFlow());
+    parent->addChild(node, visualInfo);
+  }
+
+  // Preserve the existing canvas callbacks.
+  node->nodeModified = [this](NodeItem* item) { emit nodeModified(this, item->id()); };
+  node->flowAdded = [this](PFlow flow, NodeItem* owner) { addedItemFlow(flow, owner); };
+  node->nodeMoved = [this](NodeItem* item, bool done) { onNodeMoved(item, done); };
+  node->geometryChanged = [this](NodeItem* item, const QRectF& oldRect) { onNodeGeometryChanged(item, oldRect); };
+  node->nodeHovered = [this](NodeItem* item, bool entered) { onNodeHovered(item, entered); };
+  node->focusOn = [this](NodeItem* item, const QString& nodeId, const QString& flowId, int type) { onNodeFocusOn(item, nodeId, flowId, type); };
+  node->subflowCollapsed = [this](NodeItem* item, const QString& subflowId, bool collapsed) { onSubFlowCollapsed(item, subflowId, collapsed); };
+  node->nodeControlRequested = [this](NodeItem* item, const QPointF& scenePos, maki::ControlWidget* control) {
+    onNodeControlRequested(item, scenePos, control);
+  };
+
+  addItem(node);
+
+  // The model already contains the parent-child relationship.
+  addedItemNode(node, visualInfo);
+
+  // Recreate the visual subtree from document-owned data.
+  for (const auto& child : modelInfo->getchildren())
+  {
+    auto childInfo = std::dynamic_pointer_cast<NodeSaveInfo>(child);
+
+    if (childInfo)
+      materializeNode(childInfo, node);
+  }
+
+  // Recreate visual flow objects.
+  for (const auto& flow : modelInfo->getflows())
+  {
+    auto flowInfo = std::dynamic_pointer_cast<FlowSaveInfo>(flow);
+
+    if (flowInfo)
+      node->createFlow(flowInfo);
+  }
+
+  node->start();
+  nodeStarted(node);
+
+  // No automatic selection here.
+  // Every canvas showing this node will call this function.
+
+  return node;
+}
+
+void Canvas::requestRemoveNode(NodeSaveInfo info)
+{
 }
 
 void Canvas::removeNode(const NodeSaveInfo& info)
@@ -1837,7 +2126,7 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
   }
 
   // TODO(felaze): Move these to a function or so
-  node->nodeModified = [this](NodeItem* item) { emit nodeModified(this, item); };
+  node->nodeModified = [this](NodeItem* item) { emit nodeModified(this, item->id()); };
   node->flowAdded = [this](PFlow flow, NodeItem* node) { addedItemFlow(flow, node); };
   node->nodeMoved = [this](NodeItem* node, bool done) { onNodeMoved(node, done); };
   node->geometryChanged = [this](NodeItem* node, const QRectF& oldRect) { onNodeGeometryChanged(node, oldRect); };
@@ -1850,9 +2139,6 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
 
   // All nodes are children of the canvas
   addItem(node);
-
-  if (creation != NodeCreation::Populating)
-    updateParent(node, info, true);
 
   addedItemNode(node, info);
 
@@ -1874,8 +2160,7 @@ NodeItem* Canvas::createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo
 
   // And its flows
   for (const auto& flow : originalInfo.getflows())
-    (void)node->createFlow(flow->getname(), std::dynamic_pointer_cast<FlowSaveInfo>(flow),
-                           (flow->getname() == Constants::MAIN_FLOW && creation == NodeCreation::Pasting));
+    (void)node->createFlow(std::dynamic_pointer_cast<FlowSaveInfo>(flow));
 
   // Call start after the setup is done
   node->start();
@@ -1926,14 +2211,13 @@ void Canvas::onNodeHovered(NodeItem* node, bool entered)
 
     auto* control = TaskNodeMenu::create(parentView());
     connect(control, &TaskNodeMenu::openMainFlowRequested, this, [this, node] {
-      const auto& flows = node->flows();
-      auto option = std::find_if(flows.cbegin(), flows.cend(), [](const auto& opt) { return opt->name() == Constants::MAIN_FLOW; });
-      if (option != flows.end())
-        emit openFlow((*option)->config(), node->id(), maki::FocusProperties::internal());
+      auto mainFlow = maki::findIf(node->flows(), [](const auto& flow) { return flow->name() == Constants::MAIN_FLOW; });
+      if (mainFlow)
+        emit openFlow((*mainFlow)->config(), node->id(), maki::FocusProperties::internal());
     });
     connect(control, &maki::ControlWidget::activated, this, [this, control] { emit controlCreated(control); });
     connect(control, &maki::ControlWidget::dismissed, this, [this, control] { emit controlDismissed(control); });
-    connect(control, &TaskNodeMenu::addFlowRequested, this, [this, node] { emit createEvent(node); });
+    connect(control, &TaskNodeMenu::addFlowRequested, this, [this, node] { emit createEvent(node->id()); });
 
     node->showControls(control, ControlProperties{.isFading = true, .position = Config::ControlPosition::Right});
   }
@@ -2070,10 +2354,8 @@ void Canvas::populate(const FlowSaveInfo& flow)
 
   // Then create the transitions between the nodes
   for (std::shared_ptr<ITransition> itransition : flow.gettransitions())
-  {
-    auto transition = std::dynamic_pointer_cast<TransitionSaveInfo>(itransition);
-    createTransition(*transition);
-  }
+    if (auto transition = std::dynamic_pointer_cast<TransitionSaveInfo>(itransition); transition)
+      createTransition(transition);
 }
 
 void Canvas::onFlowSelected(const QString& flowId, const QString& nodeId)
@@ -2107,10 +2389,6 @@ void Canvas::onFlowRemoved(const QString& flowId, const QString& nodeId)
   }
   node->deleteFlow(flowId);
   emit flowRemoved(flowId, node);
-}
-
-void Canvas::updateParent(NodeItem* /* node */, std::shared_ptr<NodeSaveInfo> /* storage */, bool /* adding */)
-{
 }
 
 void Canvas::themeChanged()

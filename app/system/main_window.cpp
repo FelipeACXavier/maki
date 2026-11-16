@@ -136,6 +136,8 @@ VoidResult MainWindow::start()
   // mStorage = std::make_shared<SaveInfo>();
 
   LOG_DEBUG("Starting the main window");
+  mDocumentScheduler = std::make_shared<EventDispatcher<DocumentEvent>>();
+  SaveInfo::instance().setScheduler(mDocumentScheduler);
 
   LOG_INFO("Using application path: {}", QCoreApplication::applicationDirPath());
   mSaveHandler = std::make_unique<SaveHandler>(this);
@@ -971,9 +973,9 @@ void MainWindow::bindCanvas(Canvas* canvas)
   connect(canvas, &Canvas::nodeRemoved, this, &MainWindow::onNodeRemoved);
   connect(canvas, &Canvas::nodeModified, this, &MainWindow::onNodeModified);
   connect(canvas, &Canvas::focusOn, this, &MainWindow::focusOn);
-  connect(canvas, &Canvas::createEvent, this, [this](NodeItem* node) {
+  connect(canvas, &Canvas::createEvent, this, [this](const QString& nodeId) {
     if (mPropertiesMenu)
-      LOG_WARN_ON_FAILURE(mPropertiesMenu->onCreateEvent(node, false));
+      LOG_WARN_ON_FAILURE(mPropertiesMenu->onCreateEvent(nodeId, false));
   });
   connect(canvas, &Canvas::transitionSelected, mPropertiesMenu, &PropertiesMenu::onTransitionSelected);
 }
@@ -1711,6 +1713,7 @@ void MainWindow::onFileLoaded(const QString& file, const SaveInfo& info, const Q
   // Clear the storage so it can be populated by the canvas
   SaveInfo::instance() = info;
   SaveInfo::instance().clearNodes();
+  SaveInfo::instance().setScheduler(mDocumentScheduler);
 
   // Repopulate the canvas (and the storage)
   rootCanvas()->loadFromSave(info);
@@ -1749,12 +1752,13 @@ void MainWindow::onFileLoaded(const QString& file, const SaveInfo& info, const Q
   NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Loaded project: {}", SaveInfo::instance().name.toStdString());
 }
 
-void MainWindow::onNodeSelected(NodeItem* node, bool selected)
+void MainWindow::onNodeSelected(const QString& nodeId, bool selected)
 {
-  if (node)
+  if (!nodeId.isEmpty())
   {
-    if (auto info = ConfigurationTable::instance().get(node->nodeType()))
-      mInfoText->setHtml(createInformationMessage(*info));
+    if (const auto node = SaveInfo::instance().getNodeWithId(nodeId))
+      if (auto info = ConfigurationTable::instance().get(node->getnodeId()))
+        mInfoText->setHtml(createInformationMessage(*info));
   }
   else
   {
@@ -1764,7 +1768,7 @@ void MainWindow::onNodeSelected(NodeItem* node, bool selected)
       mInfoText->clear();
   }
 
-  LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeSelected(node, selected));
+  LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeSelected(nodeId, selected));
 }
 
 void MainWindow::onNodeAdded(Canvas* canvas, NodeItem* node)
@@ -1781,8 +1785,7 @@ void MainWindow::onNodeAdded(Canvas* canvas, NodeItem* node)
     return;
   }
 
-  LOG_WARN_ON_FAILURE(mSystemMenu->onNodeAdded(canvas->id(), node, canvas->type()));
-  LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeAdded(node));
+  LOG_WARN_ON_FAILURE(mSystemMenu->onNodeAdded(canvas->id(), node->id(), canvas->type()));
 }
 
 void MainWindow::onNodeRemoved(Canvas* canvas, const QString& nodeId, const QString& parentId)
@@ -1797,7 +1800,7 @@ void MainWindow::onNodeRemoved(Canvas* canvas, const QString& nodeId, const QStr
   LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeRemoved(nodeId));
 }
 
-void MainWindow::onNodeModified(Canvas* canvas, NodeItem* node)
+void MainWindow::onNodeModified(Canvas* canvas, const QString& nodeId)
 {
   if (!canvas)
   {
@@ -1805,13 +1808,13 @@ void MainWindow::onNodeModified(Canvas* canvas, NodeItem* node)
     return;
   }
 
-  if (!node)
+  if (nodeId.isEmpty())
   {
     LOG_WARNING("A node was removed but no node was provided");
     return;
   }
 
-  LOG_WARN_ON_FAILURE(mSystemMenu->onNodeModified(canvas->id(), node));
+  LOG_WARN_ON_FAILURE(mSystemMenu->onNodeModified(canvas->id(), nodeId));
 }
 
 void MainWindow::onCanvasTabChanged(QWidget* widget)
@@ -1850,7 +1853,7 @@ void MainWindow::onCanvasTabChanged(QWidget* widget)
   // Select the first available node
   auto existing = maki::findIfPtr(canvas()->selectedItems(), [](const auto& opt) { return opt->type() == NodeItem::Type; });
   if (auto* nodeItem = qgraphicsitem_cast<NodeItem*>(existing))
-    onNodeSelected(nodeItem, true);
+    onNodeSelected(nodeItem->id(), true);
 }
 
 void MainWindow::closeCanvasTab(QWidget* page)
@@ -1902,7 +1905,7 @@ void MainWindow::onOpenFlow(std::shared_ptr<FlowSaveInfo> flow, const QString& n
       return;
     }
 
-    const auto ret = mPropertiesMenu->onCreateEvent(node, true);
+    const auto ret = mPropertiesMenu->onCreateEvent(nodeId, true);
     if (!ret.IsSuccess())
     {
       LOG_WARNING("Could not create flow for node {}: {}", nodeId, ret.ErrorMessage());
@@ -2035,8 +2038,8 @@ void MainWindow::addEditorTab(QPlainTextEdit* editorTab)
 
 void MainWindow::onFlowAdded(PFlow flow, NodeItem* node)
 {
-  LOG_WARN_ON_FAILURE(mSystemMenu->onFlowAdded(flow, node));
-  LOG_WARN_ON_FAILURE(mPropertiesMenu->onFlowAdded(flow, node));
+  LOG_WARN_ON_FAILURE(mSystemMenu->onFlowAdded(flow, node->id()));
+  LOG_WARN_ON_FAILURE(mPropertiesMenu->onFlowAdded(flow, node->id()));
 }
 
 void MainWindow::onFlowRemoved(const QString& flowId, NodeItem* node)
@@ -2045,7 +2048,7 @@ void MainWindow::onFlowRemoved(const QString& flowId, NodeItem* node)
   mEditorWorkspace->closeEditor(tabId);
 
   LOG_WARN_ON_FAILURE(mSystemMenu->onFlowRemoved(flowId, node->id()));
-  LOG_WARN_ON_FAILURE(mPropertiesMenu->onFlowRemoved(flowId, node));
+  LOG_WARN_ON_FAILURE(mPropertiesMenu->onFlowRemoved(flowId, node->id()));
 }
 
 int MainWindow::libraryTypeToIndex(Types::LibraryTypes type) const

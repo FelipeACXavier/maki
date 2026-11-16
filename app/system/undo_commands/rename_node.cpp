@@ -4,9 +4,8 @@
 #include "elements/node.h"
 #include "keys.h"
 
-RenameNodeCommand::RenameNodeCommand(Canvas* canvas, const QString& nodeId, const QString& oldName, const QString& newName, QUndoCommand* parent)
+RenameNodeCommand::RenameNodeCommand(const QString& nodeId, const QString& oldName, const QString& newName, QUndoCommand* parent)
     : QUndoCommand(parent)
-    , mCanvas(canvas)
     , mNodeId(nodeId)
     , mOldName(oldName)
     , mNewName(newName)
@@ -16,10 +15,7 @@ RenameNodeCommand::RenameNodeCommand(Canvas* canvas, const QString& nodeId, cons
 
 void RenameNodeCommand::undo()
 {
-  if (!mCanvas)
-    return;
-
-  auto* node = mCanvas->findNodeWithId(mNodeId);
+  const auto node = SaveInfo::instance().getNodeWithId(mNodeId);
   if (!node)
     return;
 
@@ -28,10 +24,7 @@ void RenameNodeCommand::undo()
 
 void RenameNodeCommand::redo()
 {
-  if (!mCanvas)
-    return;
-
-  auto* node = mCanvas->findNodeWithId(mNodeId);
+  const auto node = SaveInfo::instance().getNodeWithId(mNodeId);
   if (!node)
     return;
 

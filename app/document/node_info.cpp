@@ -8,6 +8,7 @@
 #include "flow_info.h"
 #include "json.h"
 #include "keys.h"
+#include "save_info.h"
 #include "transition_info.h"
 
 Q_DECLARE_METATYPE(NodeSaveInfo)
@@ -51,7 +52,34 @@ NodeSaveInfo::NodeSaveInfo(const NodeConfig& config)
   for (const auto& event : config.events)
     addEvent(std::make_shared<FlowSaveInfo>(event));
 
+  LOG_INFO("CREATED FROM CONFIG:");
+  print();
+
   mPorts = config.ports;
+}
+
+void NodeSaveInfo::print(const QString& indent) const
+{
+  LOG_INFO("{}Node id: {}", indent, getid());
+  LOG_INFO("{}Node type: {}", indent, getnodeId());
+  LOG_INFO("{}Children: {}", indent, getchildren().size());
+  for (const auto& ichild : getchildren())
+    if (auto child = std::dynamic_pointer_cast<NodeSaveInfo>(ichild))
+      child->print(indent + "  ");
+
+  LOG_INFO("{}Flows: {}", indent, getflows().size());
+  for (const auto& iflow : getflows())
+    if (auto flow = std::dynamic_pointer_cast<FlowSaveInfo>(iflow))
+      flow->print(indent + "  ");
+
+  LOG_INFO("{}Properties: {}", indent, getproperties().size());
+  for (const auto& iprop : getproperties())
+    if (auto prop = std::dynamic_pointer_cast<PropertyInfo>(iprop); prop)
+    {
+      LOG_INFO("{}  Id: {}", indent, prop->getid());
+      LOG_INFO("{}  Name: {}", indent, prop->getname());
+      LOG_INFO("{}  Value: {}", indent, maki::asValue(prop->getvalue())->toReadable());
+    }
 }
 
 QString NodeSaveInfo::getid() const
@@ -62,6 +90,14 @@ QString NodeSaveInfo::getid() const
 QString NodeSaveInfo::getnodeId() const
 {
   return mNodeId;
+}
+
+QString NodeSaveInfo::getNodeName() const
+{
+  if (const auto* name = getProperty(ConfigKeys::NAME))
+    return name->getvalue()->toStringValue();
+
+  return QString();
 }
 
 QString NodeSaveInfo::getparentId() const
@@ -164,6 +200,10 @@ void NodeSaveInfo::addProperty(std::shared_ptr<PropertyInfo> parameter)
     return;
 
   mProperties.push_back(parameter);
+  SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::NodeModified,
+                                             .data = NodeEvent{
+                                               .id = getid(),
+                                             }});
 }
 
 void NodeSaveInfo::setProperty(const QString& key, const maki::Value& parameter)
@@ -173,7 +213,14 @@ void NodeSaveInfo::setProperty(const QString& key, const maki::Value& parameter)
     if (property->getid() != key)
       continue;
 
+    LOG_DEBUG("{} -> {} {}", getid(), key, parameter.toReadable());
     dynamic_cast<PropertyInfo*>(property.get())->setDefaultValue(parameter);
+    SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::NodeModified,
+                                               .data = NodeEvent{
+                                                 .id = getid(),
+                                                 .propertyId = key,
+                                                 .propertyValue = parameter,
+                                               }});
     return;
   }
 }
@@ -181,6 +228,10 @@ void NodeSaveInfo::setProperty(const QString& key, const maki::Value& parameter)
 void NodeSaveInfo::removeProperty(const QString& key)
 {
   mProperties.erase(std::remove_if(mProperties.begin(), mProperties.end(), [key](std::shared_ptr<IParameter> param) { return param->getid() == key; }));
+  SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::NodeModified,
+                                             .data = NodeEvent{
+                                               .id = getid(),
+                                             }});
 }
 
 PropertyInfo NodeSaveInfo::getField(const QString& key) const
@@ -220,17 +271,33 @@ void NodeSaveInfo::removeField(const QString& key)
 
 void NodeSaveInfo::addFlow(std::shared_ptr<IFlow> flow)
 {
+  LOG_DEBUG("Adding flow: {} to {}", flow->getname(), getid());
   mFlows.push_back(flow);
+  SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::FlowAdded,
+                                             .data = FlowEvent{
+                                               .id = flow->getid(),
+                                               .ownerNodeId = getid(),
+                                             }});
 }
 
 void NodeSaveInfo::removeFlow(std::shared_ptr<IFlow> flow)
 {
   mFlows.removeIf([flow](std::shared_ptr<IFlow> info) { return info->getid() == flow->getid(); });
+  SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::FlowRemoved,
+                                             .data = FlowEvent{
+                                               .id = flow->getid(),
+                                               .ownerNodeId = getid(),
+                                             }});
 }
 
 void NodeSaveInfo::removeFlow(const QString& flowId)
 {
   mFlows.removeIf([flowId](std::shared_ptr<IFlow> info) { return info->getid() == flowId; });
+  SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::FlowRemoved,
+                                             .data = FlowEvent{
+                                               .id = flowId,
+                                               .ownerNodeId = getid(),
+                                             }});
 }
 
 void NodeSaveInfo::addEvent(std::shared_ptr<IFlow> event)

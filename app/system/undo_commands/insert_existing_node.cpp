@@ -31,12 +31,12 @@ void InsertExistingNodeCommand::redo()
   if (!node)
     return;
 
-  mCanvas->removeTransition(mOriginalTransition);
+  mCanvas->requestRemoveTransition(mOriginalTransition);
 
   node->setCenterPosition(mNewCenter);
 
-  mCanvas->createTransition(mIncomingTransition);
-  mCanvas->createTransition(mOutgoingTransition);
+  mCanvas->requestCreateTransition(mIncomingTransition);
+  mCanvas->requestCreateTransition(mOutgoingTransition);
   mCanvas->reparentNode(mNodeId, mOldParentId, mOriginalTransition.srcPortSubFlow());
 }
 
@@ -46,9 +46,9 @@ void InsertExistingNodeCommand::undo()
     return;
 
   mCanvas->reparentNode(mNodeId, mNewParentId, mOriginalSubflow);
-  mCanvas->removeTransition(mIncomingTransition);
-  mCanvas->removeTransition(mOutgoingTransition);
-  mCanvas->createTransition(mOriginalTransition);
+  mCanvas->requestRemoveTransition(mIncomingTransition);
+  mCanvas->requestRemoveTransition(mOutgoingTransition);
+  mCanvas->requestCreateTransition(mOriginalTransition);
 
   auto* node = mCanvas->findNodeWithId(mNodeId);
   if (node)

@@ -1977,37 +1977,6 @@
               "info": "Display name used to identify this node in the editor."
             },
             {
-              "id": "task",
-              "type": "void",
-              "control": "component_select",
-              "default": {
-                "kind": "record",
-                "value": {
-                  "component": {
-                    "kind": "string",
-                    "value": "-"
-                  },
-                  "flow": {
-                    "kind": "string",
-                    "value": "-"
-                  },
-                  "control": {
-                    "kind": "string",
-                    "value": "user_call"
-                  },
-                  "componentId": {
-                    "kind": "string",
-                    "value": ""
-                  },
-                  "callId": {
-                    "kind": "string",
-                    "value": ""
-                  }
-                }
-              },
-              "info": "Select the flow associated with this repeat operation."
-            },
-            {
               "id": "iterations",
               "type": "int",
               "default": {

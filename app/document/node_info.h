@@ -21,6 +21,8 @@ public:
   explicit NodeSaveInfo();
   explicit NodeSaveInfo(const NodeConfig& config);
 
+  void print(const QString& indent = "") const;
+
   /**
    * @brief Gets the ID of the node.
    * @return The ID as a QString.
@@ -32,6 +34,12 @@ public:
    * @return The node ID as a QString.
    */
   QString getnodeId() const override;
+
+  /**
+   * @brief Gets the node name.
+   * @return The node name as a QString.
+   */
+  QString getNodeName() const;
 
   /**
    * @brief Gets the position of the node.
@@ -308,3 +316,5 @@ QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<NodeSave
  * @return The modified QDataStream.
  */
 QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<NodeSaveInfo>>& nodes);
+
+typedef std::shared_ptr<NodeSaveInfo> PNodeSaveInfo;

@@ -18,10 +18,10 @@ void BatchRemoveCommand::undo()
     return;
 
   for (const auto& node : mNodes)
-    mCanvas->createNode(node, Canvas::NodeCreation::Populating);
+    mCanvas->requestCreateNode(node, Canvas::NodeCreation::Populating);
 
   for (const auto& transition : mTransitions)
-    mCanvas->createTransition(transition);
+    mCanvas->requestCreateTransition(transition);
 
   LOG_TRACE("Undo BatchRemoveCommand");
 }
@@ -32,10 +32,10 @@ void BatchRemoveCommand::redo()
     return;
 
   for (const auto& transition : mTransitions)
-    mCanvas->removeTransition(transition);
+    mCanvas->requestRemoveTransition(transition);
 
   for (const auto& node : mNodes)
-    mCanvas->removeNode(node);
+    mCanvas->requestRemoveNode(node);
 
   LOG_TRACE("Redo BatchRemoveCommand");
 }

@@ -6,6 +6,7 @@
 #include "json.h"
 #include "keys.h"
 #include "logging.h"
+#include "macros.h"
 #include "type_registry.h"
 
 Q_DECLARE_METATYPE(SaveInfo)
@@ -22,6 +23,8 @@ void SaveInfo::reset()
   mStructuralNodes.clear();
   mPipelines.clear();
   mMissionParameters.clear();
+
+  // Do not destroy the scheduler
 }
 
 CanvasSaveInfo SaveInfo::canvasInfo() const
@@ -34,14 +37,99 @@ void SaveInfo::setCanvasInfo(const CanvasSaveInfo& info)
   mCanvasInfo = info;
 }
 
+void SaveInfo::print() const
+{
+  LOG_INFO("Document: {} {}", name, version);
+  for (const auto& inode : getnodes())
+    if (auto node = std::dynamic_pointer_cast<NodeSaveInfo>(inode))
+      node->print("  ");
+}
+
+void SaveInfo::addFlowToNode(const QString& nodeId, std::shared_ptr<IFlow> flow)
+{
+  if (auto node = getNodeWithId(nodeId))
+  {
+    // Do not add the flow if it already exists
+    if (maki::anyOf(node->getflows(), [flow](const auto& f) { return f->getid() == flow->getid(); }))
+      return;
+
+    node->addFlow(flow);
+  }
+}
+
+void SaveInfo::addNodeToFlow(const QString& flowId, std::shared_ptr<INode> node)
+{
+  if (auto flow = getFlowWithId(flowId))
+  {
+    // Do not add the node if it already exists
+    if (maki::anyOf(flow->getnodes(), [node](const auto& n) { return n->getid() == node->getid(); }))
+      return;
+
+    flow->addNode(node);
+  }
+}
+
+void SaveInfo::addTransitionToFlow(const QString& flowId, std::shared_ptr<ITransition> transition)
+{
+  if (auto flow = getFlowWithId(flowId))
+  {
+    if (maki::anyOf(flow->getnodes(), [transition](const auto& t) { return t->getid() == transition->getid(); }))
+      return;
+
+    flow->addTransition(transition);
+  }
+}
+
 void SaveInfo::addNode(std::shared_ptr<NodeSaveInfo> node)
 {
-  mStructuralNodes.push_back(node);
+  // If this is a child, we must add it to the parent
+  if (const auto parent = getNodeWithId(node->getparentId()); parent)
+    parent->addChild(node);
+  else
+    mStructuralNodes.push_back(node);
+
+  if (!node->getid().isEmpty())
+    publish(DocumentEvent{.type = DocumentEvent::Type::NodeAdded,
+                          .data = NodeEvent{
+                            .id = node->getid(),
+                          }});
 }
 
 void SaveInfo::removeNode(const QString& nodeId)
 {
-  mStructuralNodes.removeIf([nodeId](std::shared_ptr<INode> info) { return info->getid() == nodeId; });
+  auto node = getNodeWithId(nodeId);
+  if (!node)
+    return;
+
+  const QString parentId = node->getparentId();
+  if (!parentId.isEmpty())
+  {
+    // The node belongs to another structural node.
+    auto parent = getNodeWithId(parentId);
+    if (!parent)
+      return;
+
+    // Verify the immediate parent actually contains it.
+    const auto children = parent->getchildren();
+    const bool found = std::any_of(children.cbegin(), children.cend(), [&nodeId](const auto& child) { return child && child->getid() == nodeId; });
+    if (!found)
+      return;
+
+    // Removes the root of the requested subtree.
+    parent->removeChild(nodeId);
+  }
+  else
+  {
+    // Root structural node.
+    mStructuralNodes.removeIf([nodeId](std::shared_ptr<INode> info) { return info->getid() == nodeId; });
+  }
+
+  // The model has already been updated.
+  // The graphical representation may still exist.
+  publish(DocumentEvent{.type = DocumentEvent::Type::NodeRemoved,
+                        .data = NodeEvent{
+                          .id = nodeId,
+                        }});
 }
 
 QVector<std::shared_ptr<INode>> SaveInfo::getnodes() const
@@ -97,7 +185,7 @@ void SaveInfo::setParameter(int index, const maki::MissionParameter& parameter)
 void SaveInfo::removeParameter(const maki::MissionParameter& parameter)
 {
   mMissionParameters.erase(
-      std::remove_if(mMissionParameters.begin(), mMissionParameters.end(), [parameter](const maki::MissionParameter& p) { return p.name == parameter.name; }));
+    std::remove_if(mMissionParameters.begin(), mMissionParameters.end(), [parameter](const maki::MissionParameter& p) { return p.name == parameter.name; }));
 }
 
 void SaveInfo::clearNodes()
@@ -299,6 +387,7 @@ std::shared_ptr<NodeSaveInfo> SaveInfo::getNodeWithId(const QString& nodeId, con
 {
   for (const auto& node : nodes)
   {
+    // LOG_DEBUG("Trying to find node: {} vs {}. Children={} Flows={}", nodeId, node->getid(), node->getchildren().size(), node->getflows().size());
     if (node->getid() == nodeId)
       return std::static_pointer_cast<NodeSaveInfo>(node);
 
@@ -308,6 +397,7 @@ std::shared_ptr<NodeSaveInfo> SaveInfo::getNodeWithId(const QString& nodeId, con
 
     for (const auto& flow : node->getflows())
     {
+      // LOG_DEBUG("Trying to find node: {} in flow: {}", nodeId, flow->getname());
       found = getNodeWithId(nodeId, flow->getnodes());
       if (found != nullptr)
         return found;
@@ -334,6 +424,22 @@ std::shared_ptr<FlowSaveInfo> SaveInfo::getFlowWithId(const QString& flowId, con
     if (found != nullptr)
       return found;
   }
+
+  return nullptr;
+}
+
+std::shared_ptr<TransitionSaveInfo> SaveInfo::getTransitionWithId(const QString& transitionId) const
+{
+  return getTransitionWithId(transitionId, getnodes());
+}
+
+std::shared_ptr<TransitionSaveInfo> SaveInfo::getTransitionWithId(const QString& transitionId, const QVector<std::shared_ptr<INode>>& nodes) const
+{
+  for (const auto& node : nodes)
+    for (const auto& flow : node->getflows())
+      for (const auto& transition : flow->gettransitions())
+        if (transition->getid() == transitionId)
+          return std::static_pointer_cast<TransitionSaveInfo>(transition);
 
   return nullptr;
 }
@@ -366,6 +472,25 @@ bool SaveInfo::taskHasCapability(const QString& taskId, const QString& capabilit
   }
 
   return false;
+}
+
+void SaveInfo::setScheduler(std::shared_ptr<EventDispatcher<DocumentEvent>> scheduler)
+{
+  mScheduler = std::move(scheduler);
+}
+
+EventDispatcher<DocumentEvent>::Subscription SaveInfo::subscribe(EventDispatcher<DocumentEvent>::Callback callback)
+{
+  if (mScheduler)
+    return mScheduler->subscribe(callback);
+  else
+    return EventDispatcher<DocumentEvent>::Subscription();
+}
+
+void SaveInfo::publish(const DocumentEvent& event)
+{
+  if (mScheduler)
+    mScheduler->publish(event);
 }
 
 // ==========================================================================

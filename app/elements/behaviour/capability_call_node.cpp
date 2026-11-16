@@ -18,7 +18,7 @@ CapabilityCallNode::CapabilityCallNode(const QString& id, std::shared_ptr<NodeSa
     mEmptySlot = new EmptySlot(0, this);
     mEmptySlot->clicked = [this](const QPointF& scenePos) {
       if (nodeControlRequested)
-        nodeControlRequested(this, scenePos, CapabilityCallSelector::create(this));
+        nodeControlRequested(this, scenePos, CapabilityCallSelector::create(this->id()));
     };
   }
 }
@@ -120,7 +120,7 @@ void CapabilityCallNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
   }
 
   if (nodeControlRequested)
-    nodeControlRequested(this, event->scenePos(), CapabilityCallSelector::create(this));
+    nodeControlRequested(this, event->scenePos(), CapabilityCallSelector::create(id()));
 
   event->accept();
   return;

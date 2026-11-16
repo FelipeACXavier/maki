@@ -46,26 +46,26 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
   // Children are created by the canvas, so we must make sure that there is no trailing children information
   mStorage->clearChildren();
 
-  for (const auto& property : config()->properties)
-    mStorage->addProperty(std::make_shared<PropertyInfo>(property));
+  // for (const auto& property : config()->properties)
+  //   mStorage->addProperty(std::make_shared<PropertyInfo>(property));
 
-  for (const auto& event : config()->events)
-  {
-    bool found = false;
-    for (const auto& flow : mStorage->getevents())
-    {
-      if (flow->getname() != event.name)
-        continue;
+  // for (const auto& event : config()->events)
+  // {
+  //   bool found = false;
+  //   for (const auto& flow : mStorage->getevents())
+  //   {
+  //     if (flow->getname() != event.name)
+  //       continue;
 
-      found = true;
-      break;
-    }
+  //     found = true;
+  //     break;
+  //   }
 
-    if (found)
-      continue;
+  //   if (found)
+  //     continue;
 
-    mStorage->addEvent(std::make_shared<FlowSaveInfo>(event));
-  }
+  //   mStorage->addEvent(std::make_shared<FlowSaveInfo>(event));
+  // }
 
   // Add icon if it exists
   if (!mStorage->getIcon().isEmpty())
@@ -425,8 +425,6 @@ void NodeItem::setProperty(const QString& key, const maki::Value& value)
     return;
 
   LOG_TRACE("Setting property {} of node: {} to {}", key, nodeId(), value.toReadable());
-  mStorage->setProperty(key, value);
-
   if (key == ConfigKeys::NAME)
     setLabelName(value.toString());
 
@@ -449,7 +447,7 @@ void NodeItem::renameNode()
       return;
 
     if (auto canvas = qobject_cast<Canvas*>(scene()))
-      canvas->undoStack()->push(new RenameNodeCommand(canvas, id(), nodeName(), name));
+      canvas->undoStack()->push(new RenameNodeCommand(id(), nodeName(), name));
   };
 
   constexpr QPointF labelOffset{0.5, -0.5};
@@ -478,7 +476,7 @@ VoidResult NodeItem::setField(const QString& key, const QJsonObject& property)
   if (!mStorage)
     return VoidResult::Failed("Storage is not set");
 
-  mStorage->setField(key, std::dynamic_pointer_cast<IParameter>(std::make_shared<PropertyInfo>(PropertyConfig(property))));
+  // mStorage->setField(key, std::dynamic_pointer_cast<IParameter>(std::make_shared<PropertyInfo>(PropertyConfig(property))));
 
   return VoidResult();
 }
@@ -488,7 +486,7 @@ VoidResult NodeItem::setField(const QString& key, std::shared_ptr<PropertyInfo> 
   if (!mStorage)
     return VoidResult::Failed("Storage is not set");
 
-  mStorage->setField(key, std::dynamic_pointer_cast<IParameter>(property));
+  // mStorage->setField(key, std::dynamic_pointer_cast<IParameter>(property));
 
   return VoidResult();
 }
@@ -545,13 +543,13 @@ void NodeItem::addChild(NodeItem* node, std::shared_ptr<NodeSaveInfo> info)
   if (!info)
     return;
 
-  mStorage->addChild(info);
+  // mStorage->addChild(info);
   mChildrenNodes.push_back(node);
 }
 
 void NodeItem::childRemoved(NodeItem* child)
 {
-  mStorage->removeChild(child->id());
+  // mStorage->removeChild(child->id());
   mChildrenNodes.removeAll(child);
 }
 
@@ -601,15 +599,15 @@ void NodeItem::applySize(const QSizeF& size)
 
   prepareGeometryChange();
   mSize = size;
-  mStorage->setSize(mSize);
+  // mStorage->setSize(mSize);
 
   qreal newFontSize = qMax(Fonts::BaseSize, mSize.width() / Fonts::BaseFactor);
   setLabelSize(newFontSize, mSize);
 
   // The saved position represents the center of the node. Since changing the
   // size changes the center while pos() remains fixed, keep storage in sync.
-  mStorage->setPosition(pos() + boundingRect().center());
-  mStorage->setScale(qMax(config()->body.width / mSize.width(), config()->body.height / mSize.height()));
+  // mStorage->setPosition(pos() + boundingRect().center());
+  // mStorage->setScale(qMax(config()->body.width / mSize.width(), config()->body.height / mSize.height()));
 
   update();
 }
@@ -809,7 +807,7 @@ void NodeItem::updatePosition(const QPointF& newPosition, Config::NodeMove reaso
   if (reason != Config::NodeMove::Start)
     updateExtrasPosition(reason);
 
-  mStorage->setPosition(pos() + boundingRect().center());
+  // mStorage->setPosition(pos() + boundingRect().center());
 }
 
 QPointF NodeItem::centerPosition() const
@@ -824,8 +822,8 @@ void NodeItem::setCenterPosition(const QPointF& center)
   mLastPosition = pos();
   updateExtrasPosition(Config::NodeMove::Relayout);
 
-  if (mStorage)
-    mStorage->setPosition(center);
+  // if (mStorage)
+  //   mStorage->setPosition(center);
 }
 
 void NodeItem::childPositionUpdated(NodeItem* /* child */)
@@ -910,39 +908,13 @@ std::vector<std::shared_ptr<Flow>> NodeItem::flows() const
   return mFlows;
 }
 
-PFlow NodeItem::createFlow(const QString& flowName, std::shared_ptr<FlowSaveInfo> info, bool resetId)
+PFlow NodeItem::createFlow(std::shared_ptr<FlowSaveInfo> info)
 {
-  std::shared_ptr<FlowSaveInfo> flowConfig = info;
-  bool found = false;
-  if (info != nullptr)
-  {
-    // Clean up
-    for (const auto& f : allEventFlowConfigs())
-    {
-      if (f->getid() != info->getid())
-        continue;
+  auto exists = maki::findIf(mFlows, [id = info->getid()](const auto& f) { return f->id() == id; });
+  if (exists)
+    return *exists;
 
-      flowConfig = std::dynamic_pointer_cast<FlowSaveInfo>(f);
-      found = true;
-      break;
-    }
-  }
-  else
-  {
-    flowConfig = std::make_shared<FlowSaveInfo>();
-  }
-
-  if (resetId)
-    flowConfig->setId(QUuid::createUuid().toString());
-
-  if (!found)
-  {
-    // Set this as owner of the flow
-    flowConfig->setOwner(id());
-    mStorage->addFlow(flowConfig);
-  }
-
-  auto flow = std::make_shared<Flow>(flowName, flowConfig);
+  auto flow = std::make_shared<Flow>(info->getname(), info);
   mFlows.push_back(flow);
 
   if (flowAdded)
@@ -962,10 +934,5 @@ PFlow NodeItem::getFlow(const QString& flowId) const
 
 void NodeItem::deleteFlow(const QString& flowId)
 {
-  mStorage->removeFlow(flowId);
   std::erase_if(mFlows, [&flowId](const std::shared_ptr<Flow>& flow) { return flow->id() == flowId; });
-}
-
-void NodeItem::updateFlow()
-{
 }
