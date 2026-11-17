@@ -39,7 +39,6 @@ public:
 
   VoidResult onTransitionSelected(TransitionItem* transition);
   VoidResult onFlowAdded(const QString& flowId, const QString& nodeId);
-  Result<std::shared_ptr<FlowSaveInfo>> onCreateEvent(const QString& nodeId, bool synchronousCreation);
   VoidResult onFlowRemoved(const QString& flowId, const QString& nodeId);
 
   QLayout* layout() const;
@@ -49,7 +48,7 @@ signals:
   void openParameter(const QString& parameterId);
   void nodeFocused(const QString& nodeId);
   void flowSelected(const QString& flowId, const QString& nodeId);
-  void flowRemoved(const QString& flowId, const QString& nodeId);
+  void flowCreationRequested(const QString& ownerNodeId);
 
 private:
   enum TableRole
@@ -82,11 +81,11 @@ private:
   Result<QTableWidget*> loadEventTable(const QString& nodeId, std::shared_ptr<NodeConfig> nodeConfig);
   VoidResult loadControlAddEvent(QTableWidget* table, const QString& nodeId);
 
-  std::shared_ptr<FlowSaveInfo> openEventDialog(QTableWidget* table, const QString& nodeId, int row, bool synchronousCreation = false);
+  void openEventDialog(QTableWidget* table, const QString& nodeId, int row, bool synchronousCreation = false);
   void addEventToTable(QTableWidget* table, int row, const std::shared_ptr<FlowSaveInfo>& event);
   void removeEventFromTable(QTableWidget* table, const QString& nodeId);
 
   void updateBlockName(PNodeSaveInfo nodeInfo, const QString& componentName, const QString& eventName) const;
 
-  std::shared_ptr<IFlow> getFlowConfigOfRow(PNodeSaveInfo nodeInfo, QTableWidget* table, int row) const;
+  std::shared_ptr<FlowSaveInfo> getFlowConfigOfRow(PNodeSaveInfo nodeInfo, QTableWidget* table, int row) const;
 };

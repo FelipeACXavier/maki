@@ -35,7 +35,7 @@ public:
    *
    * @param event Shared pointer to the FlowSaveInfo object containing event data.
    */
-  void setup(std::shared_ptr<FlowSaveInfo> event);
+  void setup(std::shared_ptr<FlowSaveInfo> event, const QString& buttonText);
 
   /**
    * @brief Retrieves the stored FlowSaveInfo object.

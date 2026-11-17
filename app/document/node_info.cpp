@@ -8,6 +8,8 @@
 #include "flow_info.h"
 #include "json.h"
 #include "keys.h"
+#include "macros.h"
+#include "notifications.h"
 #include "save_info.h"
 #include "transition_info.h"
 
@@ -215,21 +217,23 @@ void NodeSaveInfo::setProperty(const QString& key, const maki::Value& parameter)
     if (property->getid() != key)
       continue;
 
-    LOG_DEBUG("{} -> {} {}", getid(), key, parameter.toReadable());
-    dynamic_cast<PropertyInfo*>(property.get())->setDefaultValue(parameter);
-    SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::NodeModified,
-                                               .data = NodeEvent{
-                                                 .id = getid(),
-                                                 .propertyId = key,
-                                                 .propertyValue = parameter,
-                                               }});
+    if (auto* prop = dynamic_cast<PropertyInfo*>(property.get()); prop)
+    {
+      prop->setDefaultValue(parameter);
+      SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::NodeModified,
+                                                 .data = NodeEvent{
+                                                   .id = getid(),
+                                                   .propertyId = key,
+                                                   .propertyValue = parameter,
+                                                 }});
+    }
     return;
   }
 }
 
 void NodeSaveInfo::removeProperty(const QString& key)
 {
-  mProperties.erase(std::remove_if(mProperties.begin(), mProperties.end(), [key](std::shared_ptr<IParameter> param) { return param->getid() == key; }));
+  maki::removeIf(mProperties, [key](std::shared_ptr<IParameter> param) { return param->getid() == key; });
   SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::NodeModified,
                                              .data = NodeEvent{
                                                .id = getid(),
@@ -274,7 +278,6 @@ void NodeSaveInfo::removeField(const QString& key)
 
 void NodeSaveInfo::addFlow(std::shared_ptr<IFlow> flow)
 {
-  LOG_DEBUG("Adding flow: {} to {}", flow->getname(), getid());
   mFlows.push_back(flow);
   SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::FlowAdded,
                                              .data = FlowEvent{
@@ -283,24 +286,25 @@ void NodeSaveInfo::addFlow(std::shared_ptr<IFlow> flow)
                                              }});
 }
 
-void NodeSaveInfo::removeFlow(std::shared_ptr<IFlow> flow)
-{
-  mFlows.removeIf([flow](std::shared_ptr<IFlow> info) { return info->getid() == flow->getid(); });
-  SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::FlowRemoved,
-                                             .data = FlowEvent{
-                                               .id = flow->getid(),
-                                               .ownerNodeId = getid(),
-                                             }});
-}
-
 void NodeSaveInfo::removeFlow(const QString& flowId)
 {
-  mFlows.removeIf([flowId](std::shared_ptr<IFlow> info) { return info->getid() == flowId; });
-  SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::FlowRemoved,
-                                             .data = FlowEvent{
-                                               .id = flowId,
-                                               .ownerNodeId = getid(),
-                                             }});
+  auto flow = maki::findIf(mFlows, [flowId](const auto& info) { return info->getid() == flowId; });
+  if (!flow)
+    return;
+
+  if ((*flow)->getname() == Constants::MAIN_FLOW)
+  {
+    NOTIFY_WARNING(Config::APPLICATION_NAME.toStdString(), "Cannot remove the main flow");
+    return;
+  }
+
+  auto oldFlow = maki::takeIf(mFlows, [flowId](const auto& info) { return info->getid() == flowId; });
+  if (oldFlow)
+    SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::FlowRemoved,
+                                               .data = FlowEvent{
+                                                 .id = flowId,
+                                                 .ownerNodeId = getid(),
+                                               }});
 }
 
 void NodeSaveInfo::addEvent(std::shared_ptr<IFlow> event)

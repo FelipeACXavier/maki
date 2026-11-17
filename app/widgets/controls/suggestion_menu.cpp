@@ -16,9 +16,9 @@
 #include <oclero/qlementine.hpp>
 #include <oclero/qlementine/widgets/Label.hpp>
 
-#include "../widget_factory.h"
-#include "elements/node.h"
-#include "system/canvas_view.h"
+#include "app_configs.h"
+#include "widgets/frame.h"
+#include "widgets/widget_factory.h"
 
 SuggestionRow::SuggestionRow(const QString& svgPath, const QString& labelText, QWidget* parent)
     : QWidget(parent)

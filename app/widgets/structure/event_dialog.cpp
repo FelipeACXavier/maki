@@ -23,7 +23,7 @@
 #include "widgets/widget_factory.h"
 
 EventDialog::EventDialog(const QString& title, QWidget* parent)
-    : BaseDialog(title, 0.8, 0.4, parent)
+    : BaseDialog(title, 0.1, 0.2, parent)
     , mEnterCount(0)
 {
 }
@@ -33,7 +33,7 @@ std::shared_ptr<FlowSaveInfo> EventDialog::getInfo() const
   return mStorage;
 }
 
-void EventDialog::setup(std::shared_ptr<FlowSaveInfo> event)
+void EventDialog::setup(std::shared_ptr<FlowSaveInfo> event, const QString& buttonText)
 {
   layout()->setAlignment(Qt::AlignCenter);
   layout()->setContentsMargins(10, 5, 10, 5);
@@ -46,11 +46,11 @@ void EventDialog::setup(std::shared_ptr<FlowSaveInfo> event)
 
   qobject_cast<QVBoxLayout*>(layout())->addStretch();
 
-  const auto* buttonBox = createButtons("Apply", "Cancel");
+  const auto* buttonBox = createButtons(buttonText, tr("Cancel"));
   connect(buttonBox, &QDialogButtonBox::accepted, this, &EventDialog::accept);
   connect(buttonBox, &QDialogButtonBox::rejected, this, &EventDialog::reject);
 
-  limitWidth(400);
+  limitWidth(200);
 }
 
 void EventDialog::createNameInput()

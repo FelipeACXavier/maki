@@ -6,9 +6,9 @@
 #include <oclero/qlementine.hpp>
 
 #include "app_configs.h"
+#include "config_table.h"
 #include "keys.h"
 #include "macros.h"
-#include "system/config_table.h"
 #include "system/library_container.h"
 #include "system/library_scene.h"
 #include "widgets/frame.h"

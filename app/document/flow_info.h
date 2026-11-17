@@ -285,3 +285,5 @@ QDataStream& operator<<(QDataStream& out, const QVector<std::shared_ptr<IFlow>>&
  * @return QDataStream& A reference to the modified QDataStream.
  */
 QDataStream& operator>>(QDataStream& in, QVector<std::shared_ptr<IFlow>>& nodes);
+
+typedef std::shared_ptr<FlowSaveInfo> PFlowSaveInfo;

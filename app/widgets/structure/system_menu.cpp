@@ -5,8 +5,7 @@
 #include <QMenu>
 
 #include "app_configs.h"
-#include "elements/flow.h"
-#include "elements/node.h"
+#include "config_table.h"
 #include "keys.h"
 #include "logging.h"
 #include "style_helpers.h"
@@ -56,13 +55,73 @@ SystemMenu::SystemMenu(QWidget* parent)
   });
 }
 
+VoidResult SystemMenu::start()
+{
+  mDocumentSubscription = SaveInfo::instance().subscribe([this](const DocumentEvent& event) {
+    LOG_DEBUG("Document event: {}", maki::toString(event.type));
+    switch (event.type)
+    {
+      case DocumentEvent::Type::NodeAdded:
+      {
+        const auto* data = std::get_if<NodeEvent>(&event.data);
+        if (!data)
+          return;
+
+        if (const auto config = ConfigurationTable::instance().get(data->nodeType))
+          LOG_WARN_ON_FAILURE(onNodeAdded(data->ownerFlowId, data->id, config->libraryType));
+
+        break;
+      }
+      case DocumentEvent::Type::NodeRemoved:
+      {
+        const auto* data = std::get_if<NodeEvent>(&event.data);
+        if (!data)
+          return;
+
+        onNodeRemoved(data->ownerFlowId, data->id, data->parentId);
+        break;
+      }
+      case DocumentEvent::Type::NodeModified:
+      {
+        const auto* data = std::get_if<NodeEvent>(&event.data);
+        if (!data)
+          return;
+
+        onNodeModified(data->ownerFlowId, data->id);
+        break;
+      }
+      case DocumentEvent::Type::FlowAdded:
+      {
+        const auto* data = std::get_if<FlowEvent>(&event.data);
+        if (!data)
+          return;
+
+        LOG_WARN_ON_FAILURE(onFlowAdded(data->id, data->ownerNodeId));
+        break;
+      }
+      case DocumentEvent::Type::FlowRemoved:
+      {
+        const auto* data = std::get_if<FlowEvent>(&event.data);
+        if (!data)
+          return;
+
+        LOG_WARN_ON_FAILURE(onFlowRemoved(data->id, data->ownerNodeId));
+        break;
+      }
+      default:
+        break;
+    }
+  });
+  return VoidResult();
+}
+
 VoidResult SystemMenu::onNodeAdded(const QString& flowId, const QString& nodeId, const Types::LibraryTypes canvasType)
 {
   const auto nodeInfo = SaveInfo::instance().getNodeWithId(nodeId);
   if (!nodeInfo)
     return VoidResult::Failed("Could not find node with id: {}", nodeId);
 
-  LOG_DEBUG("Node added to system menu: {} ({})", nodeInfo->getid(), nodeInfo->getnodeId(), flowId);
+  LOG_DEBUG("Node added to system menu: {} ({}) - Flow: {}", nodeInfo->getid(), nodeInfo->getnodeId(), flowId);
   const auto* exists = getItemById(nodeInfo->getid());
   if (exists)
     return VoidResult();
@@ -96,7 +155,6 @@ VoidResult SystemMenu::onNodeAdded(const QString& flowId, const QString& nodeId,
 VoidResult SystemMenu::onNodeRemoved(const QString& flowId, const QString& nodeId, const QString& parentId)
 {
   LOG_DEBUG("Node removed: {} ({})", nodeId, flowId);
-
   if (flowId == Config::MAIN_CANVAS)
   {
     auto* item = getItemById(nodeId);
@@ -180,15 +238,11 @@ VoidResult SystemMenu::onFlowAdded(const QString& flowId, const QString& nodeId)
 
   for (const auto& component : flow->getnodes())
   {
-    for (const auto& prop : component->getproperties())
+    if (const auto& node = std::dynamic_pointer_cast<NodeSaveInfo>(component); node)
     {
-      if (prop->getid() != ConfigKeys::NAME)
-        continue;
-
-      const auto nodeName = prop->getvalue()->toStringValue();
+      auto nodeName = node->getNodeName();
       QTreeWidgetItem* newComponent = new QTreeWidgetItem(newFlow);
       populateItem(newComponent, QIcon(":/icons/flow_block.svg"), nodeName, component->getnodeId(), component->getid(), Roles::NodeRole, flow->getid());
-      break;
     }
   }
 
@@ -462,10 +516,11 @@ void SystemMenu::showContextMenu(const QPoint& pos)
     contextMenu.addAction(iconFromTheme("search"), tr("Focus"), this, [this, selectedItem]() {
       emit nodeFocused(selectedItem->data(CANVAS_DATA, Qt::UserRole).toString(), selectedItem->data(ID_DATA, Qt::UserRole).toString());
     });
-    auto deleteAction = contextMenu.addAction(iconFromTheme("edit-delete"), tr("Delete"), this, [this, selectedItem]() {
-      emit nodeRemoved(selectedItem->data(CANVAS_DATA, Qt::UserRole).toString(), selectedItem->data(ID_DATA, Qt::UserRole).toString());
+    contextMenu.addAction(iconFromTheme("edit-delete"), tr("Delete"), this, [selectedItem]() {
+      // Update the model and let the events handle the rest
+      const auto nodeId = selectedItem->data(ID_DATA, Qt::UserRole).toString();
+      SaveInfo::instance().removeNode(nodeId);
     });
-    deleteAction->setEnabled(false);
   }
   else if (selectedItem->data(TYPE_DATA, Qt::UserRole) == Roles::FlowRole)
   {
@@ -497,7 +552,7 @@ void SystemMenu::onItemClicked(QTreeWidgetItem* item, int /* column */)
   else if (item->data(TYPE_DATA, Qt::UserRole) == Roles::NodeRole)
     emit nodeFocused(item->data(CANVAS_DATA, Qt::UserRole).toString(), item->data(ID_DATA, Qt::UserRole).toString());
   else if (item->data(TYPE_DATA, Qt::UserRole) == Roles::Pipeline)
-    emit editPipeline(item->data(ID_DATA, Qt::UserRole).toString());
+    emit editPipeline(cleanId(item, ID_DATA));
 }
 
 void SystemMenu::editFlow(QTreeWidgetItem* item)
@@ -516,8 +571,8 @@ void SystemMenu::editFlow(QTreeWidgetItem* item)
     return;
   }
 
-  auto nodeId = node->data(ID_DATA, Qt::UserRole).toString();
-  auto flowId = item->data(ID_DATA, Qt::UserRole).toString();
+  auto nodeId = cleanId(node, ID_DATA);
+  auto flowId = cleanId(item, ID_DATA);
   emit flowSelected(flowId, nodeId);
 }
 
@@ -530,10 +585,18 @@ void SystemMenu::removeFlow(QTreeWidgetItem* item)
     return;
   }
 
-  auto nodeId = node->data(ID_DATA, Qt::UserRole).toString();
-  auto flowId = item->data(ID_DATA, Qt::UserRole).toString();
-  LOG_DEBUG("Removing flow");
-  emit flowRemoved(flowId, nodeId);
+  auto nodeId = cleanId(node, ID_DATA);
+  auto flowId = cleanId(item, ID_DATA);
+
+  // Update the model and let the events handle the rest
+  SaveInfo::instance().removeFlowFromNode(flowId, nodeId);
+}
+
+QString SystemMenu::cleanId(const QTreeWidgetItem* item, const int id, const Qt::ItemDataRole role) const
+{
+  auto data = item->data(id, role).toString();
+  LOG_DEBUG("Cleaning: {} -> {}", data, data.section("::", 0, 0));
+  return data.section("::", 0, 0);
 }
 
 void SystemMenu::resizeEvent(QResizeEvent* event)

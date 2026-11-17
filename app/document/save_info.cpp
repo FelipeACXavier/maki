@@ -2,8 +2,8 @@
 
 #include <QJsonArray>
 
-#include "config.h"
-#include "json.h"
+#include "app_configs.h"
+#include "config_table.h"
 #include "keys.h"
 #include "logging.h"
 #include "macros.h"
@@ -45,7 +45,37 @@ void SaveInfo::print() const
       node->print("  ");
 }
 
-void SaveInfo::addFlowToNode(const QString& nodeId, std::shared_ptr<IFlow> flow)
+std::shared_ptr<NodeSaveInfo> createNode(const QString& nodeType, const QPointF& position)
+{
+  auto config = ConfigurationTable::instance().get(nodeType);
+  if (config == nullptr)
+    return nullptr;
+
+  auto info = std::make_shared<NodeSaveInfo>(*config);
+  info->setId(QUuid::createUuid().toString());
+  info->setPosition(position);
+  return info;
+}
+
+std::shared_ptr<TransitionSaveInfo> createTransition(PNodeSaveInfo src, PNodeSaveInfo dst)
+{
+  auto transition = std::make_shared<TransitionSaveInfo>();
+  transition->setId(QUuid::createUuid().toString());
+
+  transition->setSrcId(src->getid());
+  transition->setDstId(dst->getid());
+
+  transition->setSrcPoint(src->getposition());
+  transition->setDstPoint(dst->getposition());
+  transition->setSrcShift({0, 0});
+  transition->setDstShift({0, 0});
+  transition->setSrcPort(Types::Port::OUT);
+  transition->setDstPort(Types::Port::IN);
+
+  return transition;
+}
+
+void SaveInfo::addFlowToNode(const QString& nodeId, std::shared_ptr<FlowSaveInfo> flow, const QList<QPointF>& initialNodePositions)
 {
   if (auto node = getNodeWithId(nodeId))
   {
@@ -53,8 +83,32 @@ void SaveInfo::addFlowToNode(const QString& nodeId, std::shared_ptr<IFlow> flow)
     if (maki::anyOf(node->getflows(), [flow](const auto& f) { return f->getid() == flow->getid(); }))
       return;
 
+    flow->setId(QUuid::createUuid().toString());
+    flow->setOwner(nodeId);
+    flow->setType(Types::CallType::USER);
+    flow->setModifiable(true);
+    flow->setReturnType(koda::types::TypeReference::createVoid());
+
     node->addFlow(flow);
+
+    if (flow->getnodes().isEmpty() && initialNodePositions.size() >= 2)
+    {
+      auto src = createNode(ConfigKeys::START_NODE, initialNodePositions.at(0));
+      auto dst = createNode(ConfigKeys::SUCCESS_NODE, initialNodePositions.at(1));
+      if (!src || !dst)
+        return;
+
+      flow->addNode(src);
+      flow->addNode(dst);
+      flow->addTransition(createTransition(src, dst));
+    }
   }
+}
+
+void SaveInfo::removeFlowFromNode(const QString& flowId, const QString& nodeId)
+{
+  if (auto node = getNodeWithId(nodeId))
+    node->removeFlow(flowId);
 }
 
 void SaveInfo::addNodeToFlow(const QString& flowId, std::shared_ptr<INode> node)
@@ -92,6 +146,9 @@ void SaveInfo::addNode(std::shared_ptr<NodeSaveInfo> node)
     publish(DocumentEvent{.type = DocumentEvent::Type::NodeAdded,
                           .data = NodeEvent{
                             .id = node->getid(),
+                            .nodeType = node->getnodeId(),
+                            .parentId = node->getparentId(),
+                            .ownerFlowId = Config::MAIN_CANVAS,
                           }});
 }
 
@@ -111,7 +168,7 @@ void SaveInfo::removeNode(const QString& nodeId)
 
     // Verify the immediate parent actually contains it.
     const auto children = parent->getchildren();
-    const bool found = std::any_of(children.cbegin(), children.cend(), [&nodeId](const auto& child) { return child && child->getid() == nodeId; });
+    const bool found = maki::anyOf(children, [&nodeId](const auto& child) { return child && child->getid() == nodeId; });
     if (!found)
       return;
 
@@ -129,6 +186,8 @@ void SaveInfo::removeNode(const QString& nodeId)
   publish(DocumentEvent{.type = DocumentEvent::Type::NodeRemoved,
                         .data = NodeEvent{
                           .id = nodeId,
+                          .parentId = parentId,
+                          .ownerFlowId = Config::MAIN_CANVAS,
                         }});
 }
 

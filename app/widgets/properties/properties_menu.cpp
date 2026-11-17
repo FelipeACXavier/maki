@@ -14,6 +14,7 @@
 #include "../scroll_area.h"
 #include "../structure/event_dialog.h"
 #include "app_configs.h"
+#include "config_table.h"
 #include "elements/flow.h"
 #include "elements/node.h"
 #include "keys.h"
@@ -23,7 +24,6 @@
 #include "oclero/qlementine/Common.hpp"
 #include "property_info.h"
 #include "style_helpers.h"
-#include "system/config_table.h"
 
 namespace
 {
@@ -128,6 +128,22 @@ VoidResult PropertiesMenu::start()
 
         break;
       }
+      case DocumentEvent::Type::FlowAdded:
+      {
+        const auto* data = std::get_if<FlowEvent>(&event.data);
+        if (!data)
+          return;
+
+        onFlowAdded(data->id, data->ownerNodeId);
+      }
+      case DocumentEvent::Type::FlowRemoved:
+      {
+        const auto* data = std::get_if<FlowEvent>(&event.data);
+        if (!data)
+          return;
+
+        onFlowRemoved(data->id, data->ownerNodeId);
+      }
       default:
         break;
     }
@@ -173,17 +189,6 @@ VoidResult PropertiesMenu::onNodeSelected(const QString& nodeId, bool selected)
   emit nodeFocused(mCurrentNode);
 
   return onNodeModified(nodeId);
-}
-
-Result<std::shared_ptr<FlowSaveInfo>> PropertiesMenu::onCreateEvent(const QString& nodeId, bool synchronousCreation)
-{
-  onNodeSelected(nodeId, true);
-
-  auto table = findChild<QTableWidget*>("EventTable");
-  if (table == nullptr)
-    return Result<std::shared_ptr<FlowSaveInfo>>::Failed("Could not find the event table");
-
-  return openEventDialog(table, nodeId, table->rowCount(), synchronousCreation);
 }
 
 VoidResult PropertiesMenu::onFlowAdded(const QString& /* flowId */, const QString& nodeId)
@@ -769,10 +774,7 @@ VoidResult PropertiesMenu::loadControlAddEvent(QTableWidget* table, const QStrin
   removeButton->setFixedSize(Config::MEDIUM_BUTTON_SIZE);
   removeButton->setIcon(iconFromTheme("minus"));
 
-  connect(addButton, &QPushButton::pressed, this, [this, table, nodeId] {
-    if (table)
-      (void)openEventDialog(table, nodeId, table->rowCount());
-  });
+  connect(addButton, &QPushButton::pressed, this, [this, nodeId] { emit flowCreationRequested(nodeId); });
   connect(removeButton, &QPushButton::clicked, this, [this, table, nodeId] { removeEventFromTable(table, nodeId); });
 
   browserButtons->addWidget(addButton);
@@ -785,7 +787,7 @@ VoidResult PropertiesMenu::loadControlAddEvent(QTableWidget* table, const QStrin
   return VoidResult();
 }
 
-std::shared_ptr<IFlow> PropertiesMenu::getFlowConfigOfRow(PNodeSaveInfo nodeInfo, QTableWidget* table, int row) const
+std::shared_ptr<FlowSaveInfo> PropertiesMenu::getFlowConfigOfRow(PNodeSaveInfo nodeInfo, QTableWidget* table, int row) const
 {
   if (!table || !nodeInfo || row >= table->rowCount())
     return nullptr;
@@ -801,54 +803,37 @@ std::shared_ptr<IFlow> PropertiesMenu::getFlowConfigOfRow(PNodeSaveInfo nodeInfo
   const auto flowId = data.toString();
   auto existing = maki::findBy(nodeInfo->getflows() + nodeInfo->getevents(), &IFlow::getid, flowId);
   if (existing)
-    return *existing;
+    return std::dynamic_pointer_cast<FlowSaveInfo>(*existing);
 
   return nullptr;
 }
 
-std::shared_ptr<FlowSaveInfo> PropertiesMenu::openEventDialog(QTableWidget* table, const QString& nodeId, int row, bool synchronousCreation)
+void PropertiesMenu::openEventDialog(QTableWidget* table, const QString& nodeId, int row, bool synchronousCreation)
 {
   if (!table)
-    return nullptr;
+    return;
 
   const auto nodeInfo = SaveInfo::instance().getNodeWithId(nodeId);
   if (!nodeInfo)
-    return nullptr;
+    return;
 
-  EventDialog dialog(tr("Edit event"), this);
+  auto* dialog = new EventDialog(tr("Edit event"), this);
+  dialog->setAttribute(Qt::WA_DeleteOnClose);
 
   auto flowConfig = getFlowConfigOfRow(nodeInfo, table, row);
-  auto config = flowConfig ? std::dynamic_pointer_cast<FlowSaveInfo>(flowConfig) : std::make_shared<FlowSaveInfo>();
-  dialog.setup(config);
-  if (dialog.exec() != QDialog::Accepted)
-    return nullptr;
+  if (!flowConfig)
+    return;
 
-  auto info = dialog.getInfo();
-  if (!info)
-    return nullptr;
+  dialog->setup(flowConfig, tr("Open"));
+  connect(dialog, &QDialog::accepted, this, [this, dialog, nodeId] {
+    auto info = dialog->getInfo();
+    if (!info)
+      return;
 
-  auto existingFlow = maki::findIf(nodeInfo->getflows() + nodeInfo->getevents(),
-                                   [&info](const auto& opt) { return opt->getname() == info->getname() && opt->getid() != info->getid(); });
-  if (existingFlow)
-  {
-    if (maki::errorPrompt(tr("A flow with the same name already exists"), tr("Would you like to open it?")))
-      emit flowSelected((*existingFlow)->getid(), nodeId);
+    emit flowSelected(info->getid(), nodeId);
+  });
 
-    return nullptr;
-  }
-
-  SaveInfo::instance().addFlowToNode(nodeId, info);
-  return nullptr;
-  // PFlow flow = node->createFlow(info->getname(), info);
-  // if (!flow)
-  //   return nullptr;
-
-  // addEventToTable(table, row, info);
-
-  // if (!synchronousCreation && info->getmodifiable())
-  //   emit flowSelected(flow->id(), node->id());
-
-  // return flow->config();
+  dialog->open();
 }
 
 void PropertiesMenu::addEventToTable(QTableWidget* table, int row, const std::shared_ptr<FlowSaveInfo>& event)
@@ -880,10 +865,10 @@ void PropertiesMenu::removeEventFromTable(QTableWidget* table, const QString& no
   if (nodeId.isEmpty())
     return;
 
-  maki::applyOnSortedTable(table, [this, table, nodeId](const auto& row) {
+  maki::applyOnSortedTable(table, [table, nodeId](const auto& row) {
     auto flowId = table->item(row, 0)->data(TableRole::IdRole).toString();
     table->removeRow(row);
-    emit flowRemoved(flowId, nodeId);
+    SaveInfo::instance().removeFlowFromNode(flowId, nodeId);
   });
 }
 

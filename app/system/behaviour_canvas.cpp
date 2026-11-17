@@ -26,50 +26,6 @@ BehaviourCanvas::~BehaviourCanvas()
   cleanFlow();
 }
 
-void BehaviourCanvas::setupInitialNodes()
-{
-  // Add start and end nodes on creation
-  if (mFlow && mFlow->getNodes().isEmpty())
-  {
-    const QRectF visible = parentView()->mapToScene(parentView()->viewport()->rect()).boundingRect();
-    const qreal y = visible.center().y();
-    const QPointF startPos{visible.left(), y};
-    const QPointF endPos{visible.left() + visible.width(), y};
-    auto src = addInitialNode(ConfigKeys::START_NODE, startPos);
-    auto dst = addInitialNode(ConfigKeys::SUCCESS_NODE, endPos);
-
-    if (!(src && dst))
-      return;
-
-    auto initial = std::make_shared<TransitionSaveInfo>();
-    initial->setId(QUuid::createUuid().toString());
-
-    initial->setSrcId(src->getid());
-    initial->setDstId(dst->getid());
-
-    initial->setSrcPoint(src->getposition());
-    initial->setDstPoint(dst->getposition());
-    initial->setSrcShift({0, 0});
-    initial->setDstShift({0, 0});
-
-    SaveInfo::instance().addTransitionToFlow(mFlow->id(), initial);
-  }
-}
-
-std::shared_ptr<const NodeSaveInfo> BehaviourCanvas::addInitialNode(const QString& nodeType, const QPointF& position)
-{
-  auto config = getNodeConfig(nodeType);
-  if (config == nullptr)
-    return nullptr;
-
-  auto info = std::make_shared<NodeSaveInfo>(*config);
-  info->setId(QUuid::createUuid().toString());
-  info->setPosition(position);
-  SaveInfo::instance().addNodeToFlow(mFlow->id(), info);
-
-  return info;
-}
-
 Types::LibraryTypes BehaviourCanvas::type() const
 {
   return Types::LibraryTypes::BEHAVIOUR;

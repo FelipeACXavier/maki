@@ -2,8 +2,8 @@
 
 #include <QSvgRenderer>
 
+#include "config_table.h"
 #include "keys.h"
-#include "system/config_table.h"
 #include "widgets/controls/capability_call_selector.h"
 
 CapabilityCallNode::CapabilityCallNode(const QString& id, std::shared_ptr<NodeSaveInfo> info, const QPointF& initialPosition,

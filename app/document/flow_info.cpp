@@ -6,6 +6,7 @@
 #include "document_event.h"
 #include "keys.h"
 #include "logging.h"
+#include "macros.h"
 #include "node_info.h"
 #include "property_info.h"
 #include "save_info.h"
@@ -212,21 +213,24 @@ void FlowSaveInfo::addNode(std::shared_ptr<INode> inode)
         return;
   }
 
-  LOG_DEBUG("Adding node {} to flow: {} {}", inode->getnodeId(), getname(), getowner());
   mNodes.push_back(inode);
   SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::NodeAdded,
                                              .data = NodeEvent{
                                                .id = inode->getid(),
+                                               .nodeType = inode->getnodeId(),
+                                               .parentId = inode->getparentId(),
                                                .ownerFlowId = getid(),
                                              }});
 }
 
 void FlowSaveInfo::removeNode(const QString& nodeId)
 {
-  mNodes.removeIf([nodeId](std::shared_ptr<INode> info) { return info->getid() == nodeId; });
+  // The node is removed from the list if it exists, and this copy is destroyed at the end of the scope
+  auto node = maki::takeIf(mNodes, [nodeId](const auto& info) { return info->getid() == nodeId; });
   SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::NodeRemoved,
                                              .data = NodeEvent{
                                                .id = nodeId,
+                                               .parentId = node ? node->getparentId() : "",
                                                .ownerFlowId = getid(),
                                              }});
 }

@@ -210,12 +210,6 @@ public:
   void addFlow(std::shared_ptr<IFlow> flow);
 
   /**
-   * @brief Removes a flow from the node by reference.
-   * @param flow The flow to be removed.
-   */
-  void removeFlow(std::shared_ptr<IFlow> flow);
-
-  /**
    * @brief Removes a flow from the node by ID.
    * @param flowId The ID of the flow to remove as a QString.
    */

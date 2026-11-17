@@ -29,6 +29,8 @@ public:
    */
   explicit SystemMenu(QWidget* parent);
 
+  VoidResult start();
+
   /**
    * @brief Handles the addition of a node to a flow.
    * @param flowId The identifier of the flow to which the node belongs.
@@ -96,13 +98,6 @@ signals:
   void flowSelected(const QString& flowId, const QString& nodeId);
 
   /**
-   * @brief Emitted when a flow should be removed.
-   * @param flowId The identifier of the flow to remove.
-   * @param nodeId The identifier of the node associated with the flow.
-   */
-  void flowRemoved(const QString& flowId, const QString& nodeId);
-
-  /**
    * @brief Emitted when a flow should be renamed.
    * @param flowId The identifier of the flow to rename.
    * @param nodeId The identifier of the node associated with the flow.
@@ -150,6 +145,7 @@ private:
 
   qreal mNameColumnRatio = 0.7;
   TestAndSet<bool> mAdjustingColumns = false;
+  EventDispatcher<DocumentEvent>::Subscription mDocumentSubscription;
 
   void resizeColumns(int changedColumn = -1, int requestedWidth = -1);
 
@@ -213,4 +209,10 @@ private:
    * @param item The flow item to remove.
    */
   void removeFlow(QTreeWidgetItem* item);
+
+  /**
+   * @brief Cleans the widget data from any trailing specifier, e.g., ::flows or ::capability
+   * @param item The cleaned Id.
+   */
+  inline QString cleanId(const QTreeWidgetItem* item, const int id, const Qt::ItemDataRole role = Qt::UserRole) const;
 };

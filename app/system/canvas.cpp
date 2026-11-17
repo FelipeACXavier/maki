@@ -218,8 +218,7 @@ void Canvas::onDocumentChanged(const DocumentEvent& event)
       if (!node)
         return;
 
-      if (auto flow = SaveInfo::instance().getFlowWithId(data->id))
-        node->deleteFlow(flow->getid());
+      onFlowRemoved(data->id, data->ownerNodeId);
 
       break;
     }
@@ -1849,7 +1848,7 @@ VoidResult Canvas::loadFromSave(const QVector<std::shared_ptr<INode>>& nodes, No
 
 CanvasView* Canvas::parentView() const
 {
-  return static_cast<CanvasView*>(parent());
+  return qobject_cast<CanvasView*>(parent());
 }
 
 void Canvas::moveNodeTo(const QString& nodeId, const QPointF& position)
@@ -2205,14 +2204,17 @@ QPointF Canvas::getCenter() const
 
 void Canvas::focusOnNode(const QString& nodeId, const maki::FocusProperties& properties)
 {
+  LOG_DEBUG("1 - Focus on node: {}", nodeId);
   // If no flow id was provided, then we are already in the right canvas, or in the structural canvas
   if (nodeId.isEmpty())
     return;
 
+  LOG_DEBUG("2 - Focus on node: {}", nodeId);
   auto node = findNodeWithId(nodeId);
   if (!node)
     return;
 
+  LOG_DEBUG("3 - Focus on node: {}", nodeId);
   parentView()->zoom(2 * node->baseScale() / parentView()->getScale());
 
   // Center the node in the view

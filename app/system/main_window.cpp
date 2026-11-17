@@ -73,6 +73,7 @@
 #include "widgets/section.h"
 #include "widgets/settings_dialog.h"
 #include "widgets/settings_manager.h"
+#include "widgets/structure/event_dialog.h"
 #include "widgets/structure/file_menu.h"
 #include "widgets/structure/system_menu.h"
 #include "widgets/type_editor.h"
@@ -166,8 +167,6 @@ VoidResult MainWindow::start()
   startUI();
   bind();
   bindShortcuts();
-
-  // mPropertiesMenu->start(mStorage);
 
   if (mPipelineRun)
     for (const auto& pipeline : SaveInfo::instance().pipelines())
@@ -708,6 +707,7 @@ void MainWindow::startUI()
 
   // Start all the different menus
   mPropertiesMenu->start();
+  mSystemMenu->start();
 }
 
 void MainWindow::bind()
@@ -847,23 +847,20 @@ void MainWindow::bind()
   connect(mEditorWorkspace, &maki::EditorWorkspace::editorCloseRequested, this, &MainWindow::closeCanvasTab);
 
   connect(rootCanvas(), &Canvas::openFlow, this, &MainWindow::onOpenFlow);
-  connect(rootCanvas(), &Canvas::flowAdded, this, &MainWindow::onFlowAdded);
-  connect(rootCanvas(), &Canvas::flowRemoved, this, &MainWindow::onFlowRemoved);
 
   connect(mPropertiesMenu, &PropertiesMenu::flowSelected, this,
           [this](const QString& flowId, const QString& nodeId) { focusOn(nodeId, flowId, maki::FocusProperties::internal()); });
+  connect(mPropertiesMenu, &PropertiesMenu::flowCreationRequested, this, &MainWindow::createFlow);
   connect(mHostServices, &HostServices::onFocusOnNode, this, &MainWindow::focusOn);
 
   connect(mSystemMenu, &SystemMenu::editPipeline, this, &MainWindow::onActionEditPipeline);
   connect(mSystemMenu, &SystemMenu::removePipeline, this, &MainWindow::onActionDeletePipeline);
   connect(mSystemMenu, &SystemMenu::flowSelected, this,
           [this](const QString& flowId, const QString& nodeId) { focusOn(nodeId, flowId, maki::FocusProperties::internal()); });
-  connect(mSystemMenu, &SystemMenu::flowRemoved, rootCanvas(), &Canvas::onFlowRemoved);
   connect(mSystemMenu, &SystemMenu::nodeRemoved, rootCanvas(), &Canvas::onRemoveNode);
   connect(mSystemMenu, &SystemMenu::nodeFocused, this,
           [this](const QString& flowId, const QString& nodeId) { focusOn(nodeId, flowId, maki::FocusProperties::internal()); });
 
-  connect(mPropertiesMenu, &PropertiesMenu::flowRemoved, rootCanvas(), &Canvas::onFlowRemoved);
   connect(mPropertiesMenu, &PropertiesMenu::openParameter, this, [this](const QString& parameterId) {
     if (mBottomNavigation)
       mBottomNavigation->setCurrentIndex(MISSION_PARAMETER_INDEX);
@@ -972,13 +969,12 @@ void MainWindow::bindCanvas(Canvas* canvas)
 {
   connect(canvas, &Canvas::openFlow, this, &MainWindow::onOpenFlow);
   connect(canvas, &Canvas::nodeSelected, this, &MainWindow::onNodeSelected);
-  connect(canvas, &Canvas::nodeAdded, this, &MainWindow::onNodeAdded);
-  connect(canvas, &Canvas::nodeRemoved, this, &MainWindow::onNodeRemoved);
-  connect(canvas, &Canvas::nodeModified, this, &MainWindow::onNodeModified);
   connect(canvas, &Canvas::focusOn, this, &MainWindow::focusOn);
-  connect(canvas, &Canvas::createEvent, this, [this](const QString& nodeId) {
-    if (mPropertiesMenu)
-      LOG_WARN_ON_FAILURE(mPropertiesMenu->onCreateEvent(nodeId, false));
+  connect(canvas, &Canvas::createEvent, this, &MainWindow::createFlow);
+  connect(canvas, &Canvas::flowRemoved, this, [this](const QString& flowId, const QString& ownerNodeId) {
+    const QString tabId = QString::fromStdString(std::format("{}_{}", flowId, ownerNodeId));
+    if (mEditorWorkspace)
+      mEditorWorkspace->closeEditor(tabId);
   });
   connect(canvas, &Canvas::transitionSelected, mPropertiesMenu, &PropertiesMenu::onTransitionSelected);
 }
@@ -987,11 +983,8 @@ void MainWindow::unbindCanvas(Canvas* canvas)
 {
   disconnect(canvas, &Canvas::openFlow, this, &MainWindow::onOpenFlow);
   disconnect(canvas, &Canvas::nodeSelected, this, &MainWindow::onNodeSelected);
-  disconnect(canvas, &Canvas::nodeAdded, this, &MainWindow::onNodeAdded);
-  disconnect(canvas, &Canvas::nodeRemoved, this, &MainWindow::onNodeRemoved);
-  disconnect(canvas, &Canvas::nodeModified, this, &MainWindow::onNodeModified);
   disconnect(canvas, &Canvas::focusOn, this, &MainWindow::focusOn);
-  disconnect(canvas, &Canvas::createEvent, this, nullptr);
+  disconnect(canvas, &Canvas::createEvent, this, &MainWindow::createFlow);
   disconnect(canvas, &Canvas::transitionSelected, mPropertiesMenu, &PropertiesMenu::onTransitionSelected);
 }
 
@@ -1773,52 +1766,6 @@ void MainWindow::onNodeSelected(const QString& nodeId, bool selected)
   LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeSelected(nodeId, selected));
 }
 
-void MainWindow::onNodeAdded(Canvas* canvas, NodeItem* node)
-{
-  if (!canvas)
-  {
-    LOG_WARNING("A node was added but no canvas was provided");
-    return;
-  }
-
-  if (!node)
-  {
-    LOG_WARNING("A node was added but no node was provided");
-    return;
-  }
-
-  LOG_WARN_ON_FAILURE(mSystemMenu->onNodeAdded(canvas->id(), node->id(), canvas->type()));
-}
-
-void MainWindow::onNodeRemoved(Canvas* canvas, const QString& nodeId, const QString& parentId)
-{
-  if (!canvas)
-  {
-    LOG_WARNING("A node was added but no canvas was provided");
-    return;
-  }
-
-  LOG_WARN_ON_FAILURE(mSystemMenu->onNodeRemoved(canvas->id(), nodeId, parentId));
-  LOG_WARN_ON_FAILURE(mPropertiesMenu->onNodeRemoved(nodeId));
-}
-
-void MainWindow::onNodeModified(Canvas* canvas, const QString& nodeId)
-{
-  if (!canvas)
-  {
-    LOG_WARNING("A node was added but no canvas was provided");
-    return;
-  }
-
-  if (nodeId.isEmpty())
-  {
-    LOG_WARNING("A node was removed but no node was provided");
-    return;
-  }
-
-  LOG_WARN_ON_FAILURE(mSystemMenu->onNodeModified(canvas->id(), nodeId));
-}
-
 void MainWindow::onCanvasTabChanged(QWidget* widget)
 {
   CanvasView* newCanvas = qobject_cast<CanvasView*>(widget);
@@ -1894,38 +1841,13 @@ void MainWindow::onOpenFlow(std::shared_ptr<FlowSaveInfo> flow, const QString& n
 {
   if (!flow)
   {
-    if (!mPropertiesMenu)
-    {
-      LOG_WARNING("System not initialized");
-      return;
-    }
-
-    auto node = rootCanvas()->findNodeWithId(nodeId);
-    if (!node)
-    {
-      LOG_WARNING("Could not find task node with id: {}", nodeId);
-      return;
-    }
-
-    const auto ret = mPropertiesMenu->onCreateEvent(nodeId, true);
-    if (!ret.IsSuccess())
-    {
-      LOG_WARNING("Could not create flow for node {}: {}", nodeId, ret.ErrorMessage());
-      return;
-    }
-
-    flow = ret.Value();
-  }
-
-  if (!flow)
-  {
-    LOG_INFO("No name provided, skipping flow creation");
+    LOG_INFO("No information provided, cannot open the flow");
     return;
   }
 
   // Check if the flow is already open in some tab
   const QString tabId = QString::fromStdString(std::format("{}_{}", flow->getid(), nodeId));
-  for (const auto* editor : mEditorWorkspace->editors())
+  for (auto* editor : mEditorWorkspace->editors())
   {
     auto editorId = mEditorWorkspace->editorId(editor);
     LOG_DEBUG("Trying to open: {} vs {}", editorId, tabId);
@@ -1939,7 +1861,6 @@ void MainWindow::onOpenFlow(std::shared_ptr<FlowSaveInfo> flow, const QString& n
   CanvasView* newView = new CanvasView(mEditorWorkspace);
   BehaviourCanvas* behaviourCanvas = new BehaviourCanvas(flow, nodeId, mRouter, newView);
   bindCanvas(behaviourCanvas);
-  behaviourCanvas->setupInitialNodes();
   newView->setScene(behaviourCanvas);
 
   // Change to respective tabs
@@ -1959,51 +1880,37 @@ void MainWindow::focusOn(const QString& nodeId, const QString& flowId, const mak
   // If we are focusing on a behaviour node
   if (!nodeId.isEmpty() && !flowId.isEmpty())
   {
-    auto [node, flow] = rootCanvas()->getFlow(flowId);
+    auto flow = SaveInfo::instance().getFlowWithId(flowId);
     if (!flow)
     {
       LOG_WARNING("Could not find flow with id: {}", flowId);
       return;
     }
 
-    onOpenFlow(flow->config(), node->id(), properties);
+    // Open flow expects the node id of the flow owner but we want to focus on a flow child.
+    // These events (open and focus) must thus be separated
+    onOpenFlow(flow, flow->getowner(), properties);
 
-    const QString tabId = QString::fromStdString(std::format("{}_{}", flowId, nodeId));
+    const QString tabId = QString::fromStdString(std::format("{}_{}", flowId, flow->getowner()));
     if (const auto* view = qobject_cast<CanvasView*>(mEditorWorkspace->findEditor(tabId)))
       qobject_cast<Canvas*>(view->scene())->focusOnNode(nodeId, properties);
   }
   // If we are focusing on a structural node
   else if (flowId.isEmpty() && !nodeId.isEmpty())
   {
-    if (properties.reason == maki::FocusReason::SIMULATION)
-    {
-      const auto flow = rootCanvas()->getFlowWithNode(nodeId);
-      if (!flow)
-        return;
-
-      onOpenFlow(flow->config(), nodeId, properties);
-
-      const QString tabId = QString::fromStdString(std::format("{}_{}", flow->id(), nodeId));
-      if (const auto* view = qobject_cast<CanvasView*>(mEditorWorkspace->findEditor(tabId)))
-        qobject_cast<Canvas*>(view->scene())->focusOnNode(nodeId, properties);
-    }
-    else
-    {
-      // mCanvasPanel->setCurrentIndex(0);
-      mEditorWorkspace->activateEditor(Config::MAIN_CANVAS);
-      rootCanvas()->focusOnNode(nodeId, properties);
-    }
+    mEditorWorkspace->activateEditor(Config::MAIN_CANVAS);
+    rootCanvas()->focusOnNode(nodeId, properties);
   }
   // If we are focusing on a flow
   else if (!flowId.isEmpty() && nodeId.isEmpty())
   {
-    auto [node, flow] = rootCanvas()->getFlow(flowId);
+    auto flow = SaveInfo::instance().getFlowWithId(flowId);
     if (!flow)
       return;
 
-    onOpenFlow(flow->config(), node->id(), properties);
+    onOpenFlow(flow, flow->getowner(), properties);
 
-    const QString tabId = QString::fromStdString(std::format("{}_{}", flow->id(), node->id()));
+    const QString tabId = QString::fromStdString(std::format("{}_{}", flowId, flow->getowner()));
     if (const auto* view = qobject_cast<CanvasView*>(mEditorWorkspace->findEditor(tabId)))
       qobject_cast<Canvas*>(view->scene())->focusOnNode(nodeId, properties);
   }
@@ -2036,21 +1943,6 @@ void MainWindow::addEditorTab(QPlainTextEdit* editorTab)
 
   mEditorWorkspace->addEditor("text_editor", editorTab, editorTab->accessibleName(), QIcon(":/icons/file.svg"));
   mEditorWorkspace->activateEditor("text_editor");
-}
-
-void MainWindow::onFlowAdded(const QString& flowId, const QString& nodeId)
-{
-  LOG_WARN_ON_FAILURE(mSystemMenu->onFlowAdded(flowId, nodeId));
-  LOG_WARN_ON_FAILURE(mPropertiesMenu->onFlowAdded(flowId, nodeId));
-}
-
-void MainWindow::onFlowRemoved(const QString& flowId, const QString& nodeId)
-{
-  const QString tabId = QString::fromStdString(std::format("{}_{}", flowId, nodeId));
-  mEditorWorkspace->closeEditor(tabId);
-
-  LOG_WARN_ON_FAILURE(mSystemMenu->onFlowRemoved(flowId, nodeId));
-  LOG_WARN_ON_FAILURE(mPropertiesMenu->onFlowRemoved(flowId, nodeId));
 }
 
 int MainWindow::libraryTypeToIndex(Types::LibraryTypes type) const
@@ -2107,4 +1999,45 @@ VoidResult MainWindow::loadLastSession()
   onActionLoad(toLoad);
 
   return VoidResult();
+}
+
+void MainWindow::createFlow(const QString& ownerNodeId)
+{
+  const auto nodeInfo = SaveInfo::instance().getNodeWithId(ownerNodeId);
+  if (!nodeInfo)
+    return;
+
+  auto* dialog = new EventDialog(tr("Create flow"), this);
+  dialog->setAttribute(Qt::WA_DeleteOnClose);
+
+  auto flowConfig = std::make_shared<FlowSaveInfo>();
+  dialog->setup(flowConfig, tr("Create"));
+  connect(dialog, &QDialog::accepted, this, [this, dialog, nodeInfo] {
+    auto info = dialog->getInfo();
+    if (!info)
+      return;
+
+    auto existingFlow = maki::findIf(nodeInfo->getflows() + nodeInfo->getevents(),
+                                     [&info](const auto& opt) { return opt->getname() == info->getname() && opt->getid() != info->getid(); });
+    if (existingFlow)
+    {
+      if (maki::errorPrompt(tr("A flow with the same name already exists"), tr("Would you like to open it?")))
+        if (auto flowInfo = std::dynamic_pointer_cast<FlowSaveInfo>(*existingFlow); flowInfo)
+          onOpenFlow(flowInfo, nodeInfo->getid(), maki::FocusProperties::internal());
+
+      return;
+    }
+
+    QList<QPointF> initialPos = {};
+    if (auto canvas = qobject_cast<CanvasView*>(rootCanvas()->parent()))
+    {
+      const QRectF visible = canvas->mapToScene(canvas->viewport()->rect()).boundingRect();
+      initialPos << QPointF{visible.left() + 75, 0};
+      initialPos << QPointF{visible.left() + visible.width() - 75, 0};
+    }
+
+    SaveInfo::instance().addFlowToNode(nodeInfo->getid(), info, initialPos);
+  });
+
+  dialog->open();
 }

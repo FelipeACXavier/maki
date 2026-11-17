@@ -8,6 +8,8 @@ struct NodeEvent
 {
   // The id of this node
   QString id;
+  QString nodeType;
+  QString parentId;
 
   // Empty for structural nodes.
   // Otherwise identifies the owning FlowSaveInfo.

@@ -83,10 +83,6 @@ public:
   void onNodeMoved(NodeItem* node, bool done) override;
 
   void onNodeGeometryChanged(NodeItem* node, const QRectF& oldRect) override;
-  /**
-   * @brief Used to create the start and end nodes of a flow
-   */
-  void setupInitialNodes();
 
   void ensureMinimumSpacing(const QString& nodeId) override;
 
@@ -109,8 +105,6 @@ private:
    */
   PFlow mFlow;
   const QString mOwner;
-
-  std::shared_ptr<const NodeSaveInfo> addInitialNode(const QString& nodeType, const QPointF& position);
 
   TransitionSaveInfo makeTransitionInfo(const QString& sourceId, const QString& destinationId, const QString& event, const QString& label) const;
 

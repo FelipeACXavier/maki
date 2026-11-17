@@ -119,6 +119,40 @@ void transform(const Container1& source, Container2& destination, Func&& predica
   std::transform(cbegin(source), cend(source), std::back_inserter(destination), std::forward<Func>(predicate));
 }
 
+template <typename T>
+struct IsSharedPtr : std::false_type
+{
+};
+
+template <typename T>
+struct IsSharedPtr<std::shared_ptr<T>> : std::true_type
+{
+};
+
+template <typename Container, typename Func>
+auto takeIf(Container& container, Func&& predicate) -> typename Container::value_type
+{
+  using Value = typename Container::value_type;
+  static_assert(IsSharedPtr<Value>::value, "takeIf requires a container of shared_ptrs");
+  auto it = std::find_if(container.begin(), container.end(), std::forward<Func>(predicate));
+  if (it == container.end())
+    return nullptr;
+
+  // Transfer ownership from the container into the result.
+  auto result = std::move(*it);
+
+  // Remove the empty entry.
+  container.erase(it);
+
+  return result;
+}
+
+template <typename Container, typename Func>
+void removeIf(Container& container, Func&& predicate)
+{
+  container.erase(std::remove_if(container.begin(), container.end(), std::forward<Func>(predicate)));
+}
+
 inline bool isInt(const QString& value)
 {
   bool ok = false;

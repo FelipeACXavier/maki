@@ -82,52 +82,12 @@ private slots:
   void onNodeSelected(const QString& nodeId, bool selected);
 
   /**
-   * @brief Handles node addition events.
-   * Contrary to the other slots, onNodeAdded is interested in the actual graphical node, not the underlying
-   * document. Thus, it uses NodeItem as argument
-   *
-   * @param node Pointer to the added NodeItem.
-   */
-  void onNodeAdded(Canvas* canvas, NodeItem* node);
-
-  /**
-   * @brief Handles node removal events.
-   *
-   * @param nodeId ID of the removed node.
-   * @param parentId ID of the parent node.
-   */
-  void onNodeRemoved(Canvas* canvas, const QString& nodeId, const QString& parentId);
-
-  /**
-   * @brief Handles node modification events.
-   *
-   * @param node Pointer to the modified NodeItem.
-   */
-  void onNodeModified(Canvas* canvas, const QString& nodeId);
-
-  /**
    * @brief Handles open flow events.
    *
    * @param flow Pointer to the opened Flow.
    * @param node Pointer to the associated NodeItem.
    */
   void onOpenFlow(std::shared_ptr<FlowSaveInfo> flow, const QString& nodeId, const maki::FocusProperties& properties);
-
-  /**
-   * @brief Handles flow addition events.
-   *
-   * @param flow Pointer to the added Flow.
-   * @param node Pointer to the associated NodeItem.
-   */
-  void onFlowAdded(const QString& flowId, const QString& nodeId);
-
-  /**
-   * @brief Handles flow removal events.
-   *
-   * @param flowId ID of the removed flow.
-   * @param nodeId ID of the parent node.
-   */
-  void onFlowRemoved(const QString& flowId, const QString& nodeId);
 
   /**
    * @brief Handles change events.
@@ -309,6 +269,8 @@ private:
   void onActionLogLevelChanged();                                         /// Handles log level change action.
   void onFileLoaded(const QString& file, const SaveInfo& info, const QString& error, bool fromTemplate);
   VoidResult loadLastSession();
+
+  void createFlow(const QString& ownerNodeId);
 };  // namespace qlementclassMainWindow:public MainWindowLayout
 
 #endif  // MAINWINDOW_H

@@ -199,7 +199,8 @@ public:
   void blockEvents();
   void unblockEvents();
 
-  void addFlowToNode(const QString& nodeId, std::shared_ptr<IFlow> flow);
+  void addFlowToNode(const QString& nodeId, std::shared_ptr<FlowSaveInfo> flow, const QList<QPointF>& initialNodePositions);
+  void removeFlowFromNode(const QString& flowId, const QString& nodeId);
   void addNodeToFlow(const QString& flowId, std::shared_ptr<INode> node);
   void addTransitionToFlow(const QString& flowId, std::shared_ptr<ITransition> transition);
 

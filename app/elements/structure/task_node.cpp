@@ -11,10 +11,13 @@
 
 #include "app_configs.h"
 #include "capability_node.h"
+#include "config_table.h"
 #include "document/node_info.h"
 #include "elements/flow.h"
+#include "keys.h"
 #include "logging.h"
 #include "macros.h"
+#include "system/canvas_view.h"
 #include "widgets/controls/capability_selector.h"
 
 static constexpr qreal TASK_WIDTH = 324.0;
@@ -272,10 +275,15 @@ void TaskNode::ensureMainFlowExists()
     return;
 
   auto info = std::make_shared<FlowSaveInfo>();
-  info->setId(QUuid::createUuid().toString());
   info->setName(Constants::MAIN_FLOW);
-  info->setType(Types::CallType::USER);
-  info->setModifiable(true);
-  info->setReturnType(koda::types::TypeReference::createVoid());
-  SaveInfo::instance().addFlowToNode(id(), info);
+
+  QList<QPointF> initialPos = {};
+  if (auto canvas = qobject_cast<CanvasView*>(scene()->parent()))
+  {
+    const QRectF visible = canvas->mapToScene(canvas->viewport()->rect()).boundingRect();
+    initialPos << QPointF{visible.left() + 75, 0};
+    initialPos << QPointF{visible.left() + visible.width() - 75, 0};
+  }
+
+  SaveInfo::instance().addFlowToNode(id(), info, initialPos);
 }

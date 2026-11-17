@@ -4,7 +4,6 @@
 #include <QWidget>
 #include <vector>
 
-#include "../frame.h"
 #include "control_widget.h"
 
 class QEnterEvent;
