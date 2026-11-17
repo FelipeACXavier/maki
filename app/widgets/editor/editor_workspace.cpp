@@ -18,6 +18,7 @@
 
 #include "editor_drop_overlay.h"
 #include "editor_tab_group.h"
+#include "logging.h"
 #include "macros.h"
 
 namespace maki
@@ -132,7 +133,10 @@ void EditorWorkspace::setActiveGroup(EditorTabGroup* group)
 QWidget* EditorWorkspace::addEditor(const QString& id, QWidget* editor, const QString& title, const QIcon& icon, bool closable)
 {
   if (id.isEmpty() || !editor)
+  {
+    LOG_DEBUG("Not adding editor, {} {}", id.isEmpty(), editor == nullptr);
     return nullptr;
+  }
 
   if (QWidget* existing = findEditor(id))
   {
@@ -142,7 +146,10 @@ QWidget* EditorWorkspace::addEditor(const QString& id, QWidget* editor, const QS
 
   EditorTabGroup* group = mActiveGroup ? mActiveGroup.data() : qobject_cast<EditorTabGroup*>(mRoot);
   if (!group)
+  {
+    LOG_DEBUG("Not adding editor, could not find group");
     return nullptr;
+  }
 
   mEntries.insert(id, {editor, title, icon, closable});
   const int index = group->addTab(editor, icon, title);

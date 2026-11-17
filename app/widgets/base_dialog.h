@@ -20,7 +20,8 @@ public:
    * @param screenFraction The fraction of the screen to use for the dialog.
    * @param parent The parent widget.
    */
-  BaseDialog(const QString& title, double ratio, double screenFraction, QWidget* parent = nullptr);
+  BaseDialog(const QString& title, double widthRatio, double heightRatio, QWidget* parent = nullptr, int maxWidth = 300, int minWidth = 150,
+             int maxHeight = 400, int minHeight = 150);
 
 protected:
   /**
@@ -29,16 +30,7 @@ protected:
    * @param ratio The size ratio for the dialog.
    * @param screenFraction The fraction of the screen to use for the dialog.
    */
-  void setSize(double ratio, double screenFraction);
-
-  /**
-   * @brief Sets the size of the dialog based on the given ratio, screen fraction, and height fraction.
-   *
-   * @param ratio The size ratio for the dialog.
-   * @param screenFraction The fraction of the screen to use for the dialog.
-   * @param heightFraction The fraction of the height to use for the dialog.
-   */
-  void setSize(double ratio, double screenFraction, qreal heightFraction);
+  void setSize(double widthRatio, double heightRatio);
 
   void keyPressEvent(QKeyEvent* event) override;
 
@@ -57,22 +49,4 @@ protected:
    * @return QDialogButtonBox* Pointer to the created button box.
    */
   QDialogButtonBox* createButtons(const QString& ok, const QString& cancel);
-
-  /**
-   * @brief Defines the width limits for the dialog
-   *
-   * @param minWidth The minimum width allowed
-   */
-  void limitWidth(int minWidth);
-
-  /**
-   * @brief Defines the heigth limits for the dialog
-   *
-   * @param minHeight The minimum height allowed
-   */
-  void limitHeight(int minHeight);
-
-private:
-  int mMinimunWidth;
-  int mMinimunHeight;
 };

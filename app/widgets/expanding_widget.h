@@ -114,6 +114,7 @@ private:
   QWidget* mSearchArea;            /// Pointer to the collapsible area widget.
   QWidget* mContentWidget;         /// Pointer to the actual content inside the mCollapsibleArea
   QPropertyAnimation* mAnimation;  /// Pointer to the property animation for expanding/collapsing.
+  bool mTargetExpanded;            /// Whether we are expanding or collapsing
 
   Direction mDirection;
   int mExpandedSize;  /// The width of the expanded state.

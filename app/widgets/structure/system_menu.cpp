@@ -120,7 +120,7 @@ VoidResult SystemMenu::onNodeAdded(const QString& flowId, const QString& nodeId,
 {
   const auto nodeInfo = SaveInfo::instance().getNodeWithId(nodeId);
   if (!nodeInfo)
-    return VoidResult::Failed("Could not find node with id: {}", nodeId);
+    return VoidResult::Failed("Could not find node: {}", nodeId);
 
   LOG_DEBUG("Node added to system menu: {} ({}) - Flow: {}", nodeInfo->getid(), nodeInfo->getnodeId(), flowId);
   const auto* exists = getItemById(nodeInfo->getid());
@@ -144,7 +144,7 @@ VoidResult SystemMenu::onNodeAdded(const QString& flowId, const QString& nodeId,
 
   auto parent = getItemById(flowId);
   if (parent == nullptr)
-    return VoidResult::Failed("Could not add node: {}. Could not find parent flow", nodeId);
+    return VoidResult::Failed("Could not add node: {}. Could not find parent flow", nodeInfo->getid());
 
   QTreeWidgetItem* newNode = new QTreeWidgetItem(parent);
   populateItem(newNode, QIcon(":/icons/flow_block.svg"), nodeInfo->getNodeName(), nodeInfo->getnodeId(), nodeInfo->getid(),

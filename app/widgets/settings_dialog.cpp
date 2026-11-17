@@ -35,7 +35,7 @@
 
 SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsManager> manager, std::shared_ptr<LanguageManager> languageManager,
                                QWidget* parent)
-    : BaseDialog(title, 1.4, 0.7, parent)
+    : BaseDialog(title, 0.5, 0.6, parent)
     , mSettingsManager(manager)
     , mLanguageManager(languageManager)
 {
@@ -46,7 +46,7 @@ SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsMan
   mPageSelector = new QTreeWidget(this);
   mPageSelector->setObjectName("SettingsList");
   mPageSelector->setHeaderHidden(true);
-  mPageSelector->setIconSize(QSize(16, 16));
+  mPageSelector->setIconSize(Config::SMALL_BUTTON_SIZE);
   mPageSelector->setIndentation(14);
   mPageSelector->setRootIsDecorated(true);
   mPageSelector->setItemsExpandable(true);

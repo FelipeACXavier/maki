@@ -10,6 +10,7 @@ ExpandingWidget::ExpandingWidget(Direction direction, QWidget* parent)
     , mButton(nullptr)
     , mSearchArea(nullptr)
     , mAnimation(nullptr)
+    , mTargetExpanded(false)
     , mDirection(direction)
     , mExpandedSize(250)
 {
@@ -26,6 +27,15 @@ ExpandingWidget::ExpandingWidget(Direction direction, QWidget* parent)
 
   mAnimation->setDuration(250);
   mAnimation->setEasingCurve(QEasingCurve::InOutQuad);
+  connect(mAnimation, &QPropertyAnimation::finished, this, [this] {
+    if (!mButton)
+      return;
+
+    if (mTargetExpanded)
+      emit areaExpanded(mButton);
+    else
+      emit areaCollapsed(mButton);
+  });
 }
 
 void ExpandingWidget::setupVerticalWidget()
@@ -94,18 +104,45 @@ void ExpandingWidget::setupHorizontalWidget()
 
 void ExpandingWidget::expandArea()
 {
-  if (mButton)
-    mButton->setChecked(true);
-
   setExpanded(true);
 }
 
 void ExpandingWidget::collapseArea()
 {
-  if (mButton)
-    mButton->setChecked(false);
-
   setExpanded(false);
+}
+
+void ExpandingWidget::setExpanded(bool expanded)
+{
+  if (!mAnimation || !mSearchArea)
+    return;
+
+  mTargetExpanded = expanded;
+
+  // Keep the button synchronized without triggering setExpanded again.
+  if (mButton)
+  {
+    const QSignalBlocker blocker(mButton);
+    mButton->setChecked(expanded);
+  }
+
+  mAnimation->stop();
+  updateContentGeometry();
+
+  if (mDirection == Direction::Up)
+  {
+    auto* area = qobject_cast<CollapsibleAreaHeight*>(mSearchArea);
+    mAnimation->setStartValue(area->contentHeight());
+    mAnimation->setEndValue(expanded ? mExpandedSize : 0);
+  }
+  else
+  {
+    auto* area = qobject_cast<CollapsibleAreaWidth*>(mSearchArea);
+    mAnimation->setStartValue(area->contentWidth());
+    mAnimation->setEndValue(expanded ? mExpandedSize : 0);
+  }
+
+  mAnimation->start();
 }
 
 void ExpandingWidget::setExpandedSize(int size)
@@ -168,37 +205,6 @@ void ExpandingWidget::addCollapsableWidget(QWidget* widget, const QString& label
 
   updateCrossAxisSize();
   updateContentGeometry();
-}
-
-void ExpandingWidget::setExpanded(bool expanded)
-{
-  if (!mAnimation || !mSearchArea)
-    return;
-
-  mAnimation->stop();
-  updateContentGeometry();
-
-  if (mDirection == Direction::Up)
-  {
-    auto* area = qobject_cast<CollapsibleAreaHeight*>(mSearchArea);
-    mAnimation->setStartValue(area->contentHeight());
-    mAnimation->setEndValue(expanded ? mExpandedSize : 0);
-  }
-  else
-  {
-    auto* area = qobject_cast<CollapsibleAreaWidth*>(mSearchArea);
-    mAnimation->setStartValue(area->contentWidth());
-    mAnimation->setEndValue(expanded ? mExpandedSize : 0);
-  }
-
-  connect(mAnimation, &QPropertyAnimation::finished, this, [this, expanded] {
-    if (expanded)
-      emit areaExpanded(mButton);
-    else
-      emit areaCollapsed(mButton);
-  });
-
-  mAnimation->start();
 }
 
 QVBoxLayout* ExpandingWidget::getContent() const

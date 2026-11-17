@@ -11,13 +11,10 @@
 #include <QWidget>
 #include <oclero/qlementine.hpp>
 
-constexpr double MinScreenFraction = 0.10;
-constexpr double TargetScreenFraction = 0.50;
+#include "logging.h"
 
-BaseDialog::BaseDialog(const QString& title, double ratio, double screenFraction, QWidget* parent)
+BaseDialog::BaseDialog(const QString& title, double widthRatio, double heightRatio, QWidget* parent, int maxWidth, int minWidth, int maxHeight, int minHeight)
     : QDialog(parent)
-    , mMinimunWidth(-1)
-    , mMinimunHeight(-1)
 {
   setWindowTitle(title);
 
@@ -25,42 +22,29 @@ BaseDialog::BaseDialog(const QString& title, double ratio, double screenFraction
   QVBoxLayout* vlayout = new QVBoxLayout();
   setLayout(vlayout);
 
-  setSize(ratio, screenFraction);
+  setMinimumSize(minWidth, minHeight);
+  setMaximumSize(maxWidth, maxHeight);
+
+  setSize(widthRatio, heightRatio);
 }
 
-void BaseDialog::setSize(double ratio, double screenFraction)
-{
-  setSize(ratio, screenFraction, TargetScreenFraction);
-}
-
-void BaseDialog::setSize(double ratio, double screenFraction, qreal heightFraction)
+void BaseDialog::setSize(double widthRatio, double heightRatio)
 {
   // Set the dialog size dynamically
   QScreen* screen = this->screen();
   if (!screen)
     screen = QGuiApplication::primaryScreen();
 
+  // Make sure we stay within 0 and 1
+  double limWidthRatio = qBound<double>(0.0, widthRatio, 1.0);
+  double limHeightRatio = qBound<double>(0.0, heightRatio, 1.0);
+
   QRect avail = screen->availableGeometry();
-  int screenW = avail.width();
-  int screenH = avail.height();
+  const auto targetW = avail.width() * limWidthRatio;
+  const auto targetH = avail.height() * limHeightRatio;
+  LOG_DEBUG("Setting size: {}, {} -> {}, {}", avail.width(), avail.height(), targetW, targetH);
 
-  int targetH = int(screenH * heightFraction);
-
-  const qreal fraction = qMax<qreal>(MinScreenFraction, screenFraction);
-  targetH = qBound(int(screenH * MinScreenFraction), targetH, int(screenH * fraction));
-
-  int targetW = int(targetH * ratio);
-  if (mMinimunWidth > 0)
-    targetW = qMax<int>(mMinimunWidth, targetW);
-
-  if (targetW > int(screenW * fraction) && mMinimunWidth < 0)
-  {
-    targetW = int(screenW * screenFraction);
-    targetH = int(targetW / ratio);
-  }
-
-  resize(targetW, targetH);
-  setMinimumSize(targetW, targetH);
+  setFixedSize(targetW, targetH);
 }
 
 QVBoxLayout* BaseDialog::layout()
@@ -105,20 +89,6 @@ QDialogButtonBox* BaseDialog::createButtons(const QString& ok, const QString& ca
 
   layout()->addWidget(buttonBox);
   return buttonBox;
-}
-
-void BaseDialog::limitWidth(int minWidth)
-{
-  setFixedWidth(minWidth);
-  layout()->setSizeConstraint(QLayout::SetMinimumSize);
-  adjustSize();
-}
-
-void BaseDialog::limitHeight(int minHeight)
-{
-  setFixedHeight(minHeight);
-  layout()->setSizeConstraint(QLayout::SetMinimumSize);
-  adjustSize();
 }
 
 void BaseDialog::keyPressEvent(QKeyEvent* event)

@@ -21,7 +21,7 @@ namespace maki
 {
 
 TypeValueDialog::TypeValueDialog(const QString& title, const MissionParameter& parameter, QWidget* parent)
-    : BaseDialog(title, 0.8, 0.6, parent)
+    : BaseDialog(title, 0.3, 0.5, parent)
     , mParameter(parameter)
 {
   setModal(true);

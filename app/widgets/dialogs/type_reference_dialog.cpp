@@ -16,15 +16,12 @@ namespace maki
 {
 
 TypeReferenceDialog::TypeReferenceDialog(const QString& title, QWidget* parent)
-    : BaseDialog(title, 1.6, 0.2, parent)
+    : BaseDialog(title, 0.3, 0.5, parent)
 {
   setModal(true);
 
   buildUi();
   setTypeRef(defaultNamedType());
-
-  limitWidth(300);
-  limitHeight(200);
 }
 
 void TypeReferenceDialog::buildUi()

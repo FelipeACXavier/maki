@@ -9,7 +9,7 @@
 namespace maki
 {
 TextDialog::TextDialog(const QString& title, const QString& prompt, QWidget* parent)
-    : BaseDialog(title, 4, 0.15, parent)
+    : BaseDialog(title, 0.2, 0.1, parent)
 {
   auto* qlementineStyle = oclero::qlementine::appStyle();
   const auto theme = qlementineStyle->theme();
@@ -48,8 +48,6 @@ TextDialog::TextDialog(const QString& title, const QString& prompt, QWidget* par
   const auto* buttonBox = createButtons(tr("Accept"), tr("Cancel"));
   connect(buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
   connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
-
-  limitWidth(400);
 
   mNameEdit->setFocus();
 }

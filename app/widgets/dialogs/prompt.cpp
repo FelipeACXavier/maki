@@ -15,7 +15,7 @@ namespace maki
 {
 
 PromptDialog::PromptDialog(const QString& title, const QString& accept, const QString& reject, const QString& message, QWidget* parent)
-    : BaseDialog(title, 4, 0.15, parent)
+    : BaseDialog(title, 0.2, 0.1, parent)
 {
   auto* qlementineStyle = oclero::qlementine::appStyle();
   const auto theme = qlementineStyle->theme();
@@ -38,13 +38,13 @@ PromptDialog::PromptDialog(const QString& title, const QString& accept, const QS
   mBadge->setBadgeSize(oclero::qlementine::StatusBadgeSize::Medium);
 
   auto* label = new oclero::qlementine::Label(message, this);
+  label->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
   label->setRole(oclero::qlementine::TextRole::H5);
   label->setWordWrap(true);
-  label->setAlignment(Qt::AlignVCenter | Qt::AlignCenter);
+  label->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
 
   row->addWidget(mBadge);
   row->addWidget(label);
-  row->addStretch();
 
   layout()->addWidget(header);
 
@@ -52,8 +52,6 @@ PromptDialog::PromptDialog(const QString& title, const QString& accept, const QS
   const auto* buttonBox = createButtons(accept, reject);
   connect(buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
   connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
-
-  limitWidth(400);
 }
 
 void PromptDialog::setType(oclero::qlementine::StatusBadge type)
