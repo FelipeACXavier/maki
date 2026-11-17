@@ -3,13 +3,11 @@
 #include <QFrame>
 #include <memory>
 
-#include "../menu_base.h"
 #include "elements/flow.h"
 #include "result.h"
 #include "widgets/frame.h"
 #include "widgets/widget_factory.h"
 
-class NodeItem;
 class QDialog;
 class QLayout;
 class QStandardItemModel;

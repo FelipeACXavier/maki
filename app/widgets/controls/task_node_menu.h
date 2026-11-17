@@ -6,7 +6,6 @@
 #include "control_widget.h"
 
 class CanvasView;
-class NodeItem;
 class QTreeWidget;
 class QGraphicsOpacityEffect;
 class QPropertyAnimation;

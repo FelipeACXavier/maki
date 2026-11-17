@@ -13,7 +13,6 @@ class QMouseEvent;
 class QPropertyAnimation;
 class QTimer;
 class QVBoxLayout;
-class NodeItem;
 class CanvasView;
 class QCheckBox;
 class QLabel;

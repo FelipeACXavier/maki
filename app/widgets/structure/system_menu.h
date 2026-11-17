@@ -8,7 +8,6 @@
 #include "test_and_set.h"
 #include "types.h"
 
-class NodeItem;
 class QTreeWidgetItem;
 class FlowSaveInfo;
 

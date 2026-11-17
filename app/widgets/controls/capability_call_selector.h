@@ -18,7 +18,6 @@ class QTextBrowser;
 class StyledFrame;
 class LibraryContainer;
 class NodeSaveInfo;
-class NodeItem;
 
 namespace oclero::qlementine
 {
