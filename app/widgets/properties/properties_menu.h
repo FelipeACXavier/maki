@@ -37,11 +37,10 @@ public:
   VoidResult start();
 
   VoidResult onNodeRemoved(const QString& nodeId);
-  VoidResult onNodeModified(const QString& nodeId);
   VoidResult onNodeSelected(const QString& nodeId, bool selected);
 
   VoidResult onTransitionSelected(TransitionItem* transition);
-  VoidResult onFlowAdded(PFlow flow, const QString& nodeId);
+  VoidResult onFlowAdded(const QString& flowId, const QString& nodeId);
   Result<std::shared_ptr<FlowSaveInfo>> onCreateEvent(const QString& nodeId, bool synchronousCreation);
   VoidResult onFlowRemoved(const QString& flowId, const QString& nodeId);
 
@@ -64,6 +63,9 @@ private:
   QString mCurrentNode;
   QDialog* mCurrentDialog = nullptr;
   StyledFrame* mFrame = nullptr;
+  EventDispatcher<DocumentEvent>::Subscription mDocumentSubscription;
+
+  VoidResult onNodeModified(const QString& nodeId);
 
   // Property editors.
   VoidResult loadProperties(const QString& nodeId);

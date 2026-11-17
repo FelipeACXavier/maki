@@ -52,9 +52,6 @@ NodeSaveInfo::NodeSaveInfo(const NodeConfig& config)
   for (const auto& event : config.events)
     addEvent(std::make_shared<FlowSaveInfo>(event));
 
-  LOG_INFO("CREATED FROM CONFIG:");
-  print();
-
   mPorts = config.ports;
 }
 
@@ -135,6 +132,15 @@ QVector<std::shared_ptr<IParameter>> NodeSaveInfo::getproperties() const
   return mProperties;
 }
 
+std::shared_ptr<IParameter> NodeSaveInfo::getproperty(const QString& key) const
+{
+  for (const auto& prop : mProperties)
+    if (prop->getid() == key)
+      return prop;
+
+  return nullptr;
+}
+
 QVector<std::shared_ptr<IFlow>> NodeSaveInfo::getflows() const
 {
   return mFlows;
@@ -200,10 +206,6 @@ void NodeSaveInfo::addProperty(std::shared_ptr<PropertyInfo> parameter)
     return;
 
   mProperties.push_back(parameter);
-  SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::NodeModified,
-                                             .data = NodeEvent{
-                                               .id = getid(),
-                                             }});
 }
 
 void NodeSaveInfo::setProperty(const QString& key, const maki::Value& parameter)
@@ -231,6 +233,7 @@ void NodeSaveInfo::removeProperty(const QString& key)
   SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::NodeModified,
                                              .data = NodeEvent{
                                                .id = getid(),
+                                               .propertyId = key,
                                              }});
 }
 
@@ -518,62 +521,58 @@ QDataStream& operator<<(QDataStream& out, const NodeSaveInfo& info)
 
 QDataStream& operator>>(QDataStream& in, NodeSaveInfo& info)
 {
+  // We don't use the setters so that we don't update the event dispatcher
   QString id;
   in >> id;
-  info.setId(id);
+  info.mId = id;
 
   QString nodeId;
   in >> nodeId;
-  info.setNodeId(nodeId);
+  info.mNodeId = nodeId;
 
   QString parentId;
   in >> parentId;
-  info.setParentId(parentId);
+  info.mParentId = parentId;
 
   QString parentSubFlowId;
   in >> parentSubFlowId;
-  info.setParentSubFlow(parentSubFlowId);
+  info.mParentSubFlow = parentSubFlowId;
 
   QPointF position;
   in >> position;
-  info.setPosition(position);
+  info.mPosition = position;
 
   QSizeF size;
   in >> size;
-  info.setSize(size);
+  info.mSize = size;
 
   qreal scale;
   in >> scale;
-  info.setScale(scale);
+  info.mScale = scale;
 
-  QVector<std::shared_ptr<PropertyInfo>> properties;
+  QVector<std::shared_ptr<IParameter>> properties;
   in >> properties;
-  for (const auto& property : properties)
-    info.addProperty(property);
+  info.mProperties = properties;
 
-  QVector<std::shared_ptr<NodeSaveInfo>> children;
+  QVector<std::shared_ptr<INode>> children;
   in >> children;
-  for (const auto& child : children)
-    info.addChild(std::dynamic_pointer_cast<INode>(child));
+  info.mChildren = children;
 
-  QVector<std::shared_ptr<FlowSaveInfo>> flows;
+  QVector<std::shared_ptr<IFlow>> flows;
   in >> flows;
-  for (const auto& flow : flows)
-    info.addFlow(std::dynamic_pointer_cast<IFlow>(flow));
+  info.mFlows = flows;
 
-  QVector<std::shared_ptr<FlowSaveInfo>> events;
+  QVector<std::shared_ptr<IFlow>> events;
   in >> events;
-  for (const auto& event : events)
-    info.addEvent(std::dynamic_pointer_cast<IFlow>(event));
+  info.mEvents = events;
 
-  QVector<std::shared_ptr<PropertyInfo>> fields;
+  QVector<std::shared_ptr<IParameter>> fields;
   in >> fields;
-  for (const auto& field : fields)
-    info.addField(std::dynamic_pointer_cast<IParameter>(field));
+  info.mFields = fields;
 
   QString iconPath;
   in >> iconPath;
-  info.setIcon(iconPath);
+  info.mIconPath = iconPath;
 
   return in;
 }

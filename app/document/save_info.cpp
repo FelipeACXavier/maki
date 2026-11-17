@@ -188,11 +188,6 @@ void SaveInfo::removeParameter(const maki::MissionParameter& parameter)
     std::remove_if(mMissionParameters.begin(), mMissionParameters.end(), [parameter](const maki::MissionParameter& p) { return p.name == parameter.name; }));
 }
 
-void SaveInfo::clearNodes()
-{
-  mStructuralNodes.clear();
-}
-
 QVector<std::pair<QString, QString>> SaveInfo::getLinkNodes() const
 {
   QVector<std::pair<QString, QString>> result;
@@ -491,6 +486,18 @@ void SaveInfo::publish(const DocumentEvent& event)
 {
   if (mScheduler)
     mScheduler->publish(event);
+}
+
+void SaveInfo::blockEvents()
+{
+  if (mScheduler)
+    mScheduler->blockEvents();
+}
+
+void SaveInfo::unblockEvents()
+{
+  if (mScheduler)
+    mScheduler->unblockEvents();
 }
 
 // ==========================================================================

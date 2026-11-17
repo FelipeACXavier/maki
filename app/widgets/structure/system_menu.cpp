@@ -154,19 +154,20 @@ VoidResult SystemMenu::onNodeModified(const QString& flowId, const QString& node
   return VoidResult();
 }
 
-VoidResult SystemMenu::onFlowAdded(PFlow flow, const QString& nodeId)
+VoidResult SystemMenu::onFlowAdded(const QString& flowId, const QString& nodeId)
 {
+  const auto flow = SaveInfo::instance().getFlowWithId(flowId);
   if (!flow)
     return VoidResult();
 
-  if (!flow->modifiable())
+  if (!flow->getmodifiable())
     return VoidResult();
 
-  const auto* exists = getItemById(flow->id());
+  const auto* exists = getItemById(flow->getid());
   if (exists)
     return VoidResult();
 
-  LOG_INFO("Adding flow: {} ({}) to {}", flow->name(), flow->id(), nodeId);
+  LOG_INFO("Adding flow: {} ({}) to {}", flow->getname(), flow->getid(), nodeId);
 
   auto parent = getOrCreateChildGroup(nodeId, Roles::Flows);
   if (!parent)
@@ -175,15 +176,19 @@ VoidResult SystemMenu::onFlowAdded(PFlow flow, const QString& nodeId)
   QTreeWidgetItem* newFlow = new QTreeWidgetItem(parent);
 
   // Assign the tree information
-  populateItem(newFlow, QIcon(":/icons/flow.svg"), flow->name(), tr("Flow"), flow->id(), Roles::FlowRole, flow->id());
+  populateItem(newFlow, QIcon(":/icons/flow.svg"), flow->getname(), tr("Flow"), flow->getid(), Roles::FlowRole, flow->getid());
 
-  for (const auto& component : flow->getNodes())
+  for (const auto& component : flow->getnodes())
   {
-    if (const auto* name = component->getProperty("name"))
+    for (const auto& prop : component->getproperties())
     {
+      if (prop->getid() != ConfigKeys::NAME)
+        continue;
+
+      const auto nodeName = prop->getvalue()->toStringValue();
       QTreeWidgetItem* newComponent = new QTreeWidgetItem(newFlow);
-      populateItem(newComponent, QIcon(":/icons/flow_block.svg"), name->getvalue()->toStringValue(), component->getnodeId(), component->getid(),
-                   Roles::NodeRole, flow->id());
+      populateItem(newComponent, QIcon(":/icons/flow_block.svg"), nodeName, component->getnodeId(), component->getid(), Roles::NodeRole, flow->getid());
+      break;
     }
   }
 

@@ -235,6 +235,8 @@ public:
   friend QDataStream& operator>>(QDataStream& in, FlowSaveInfo& info);
 
 private:
+  friend class DocumentCloner;
+
   QString mId;       /// The ID of the flow.
   QString mName;     /// The name of the flow.
   QString mOwner;    /// The owner of the flow.

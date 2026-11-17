@@ -56,9 +56,11 @@ static const int TOOLTIP_HEIGHT = 55;
     InputWidget::setValue(val); \
   } while (false);
 
+// Do not send any signals on creation
 #define SET_REF_OR_VALUE(WIDGET, VALUE, CONVERSION) \
   do                                                \
   {                                                 \
+    const QSignalBlocker blocker(WIDGET);           \
     if (VALUE.isReference())                        \
       WIDGET->setReference(VALUE.toString());       \
     else                                            \
@@ -511,6 +513,8 @@ void InputWidget::clearReference()
 BooleanWidget::BooleanWidget(const QString& label, bool value, WidgetAlignment alignment, QWidget* parent)
     : TypedInputWidget<QCheckBox>(label, new QCheckBox(), alignment, parent)
 {
+  setValue(value);
+
   if (auto* combo = qobject_cast<QCheckBox*>(mInputField))
   {
     combo->setMaximumWidth(20);
@@ -521,9 +525,6 @@ BooleanWidget::BooleanWidget(const QString& label, bool value, WidgetAlignment a
       emit InputWidget::valueChanged();
     });
   }
-
-  setValue(value);
-  ;
 }
 
 bool BooleanWidget::getValue() const
@@ -559,6 +560,8 @@ StringWidget::StringWidget(const QString& label, const QString& placeholder, Wid
   mUpdateTimer->setSingleShot(true);
   mUpdateTimer->setInterval(300);
 
+  setValue(placeholder);
+
   if (auto* edit = qobject_cast<oclero::qlementine::LineEdit*>(mInputField))
   {
     if (!tooltip.isEmpty())
@@ -583,6 +586,9 @@ StringWidget::StringWidget(const QString& label, const QString& placeholder, Wid
     });
 
     connect(mUpdateTimer, &QTimer::timeout, this, [this, edit]() {
+      if (edit->text() == mValue.toString())
+        return;
+
       mValue.data = edit->text();
       emit valueChanged(getValue());
       emit InputWidget::valueChanged();
@@ -590,14 +596,14 @@ StringWidget::StringWidget(const QString& label, const QString& placeholder, Wid
 
     connect(edit, &QLineEdit::editingFinished, this, [this, edit]() {
       mUpdateTimer->stop();
+      if (edit->text() == mValue.toString())
+        return;
+
       mValue.data = edit->text();
       emit valueChanged(getValue());
       emit InputWidget::valueChanged();
     });
   }
-
-  setValue(placeholder);
-  ;
 }
 
 QString StringWidget::getValue() const
@@ -633,6 +639,8 @@ IntegerWidget::IntegerWidget(const QString& label, const QString& placeholder, W
     mValidator = new IntegerOrVariableValidator(min, max, this);
     edit->setValidator(mValidator);
 
+    setValue(placeholder);
+
     // Connect the signals
     connect(edit, &QLineEdit::inputRejected, this, [edit]() {
       edit->setStatus(oclero::qlementine::Status::Warning);
@@ -652,9 +660,6 @@ IntegerWidget::IntegerWidget(const QString& label, const QString& placeholder, W
       emit InputWidget::valueChanged();
     });
   }
-
-  setValue(placeholder);
-  ;
 }
 
 void IntegerWidget::setAcceptVariable(bool accept)
@@ -726,6 +731,8 @@ FloatWidget::FloatWidget(const QString& label, const QString& placeholder, Widge
     mValidator->setLocale(QLocale::C);  // Use dot instead of comma
     edit->setValidator(mValidator);
 
+    setValue(placeholder);
+
     // Connect the signals
     connect(edit, &QLineEdit::inputRejected, this, [edit]() {
       edit->setStatus(oclero::qlementine::Status::Warning);
@@ -745,9 +752,6 @@ FloatWidget::FloatWidget(const QString& label, const QString& placeholder, Widge
       emit InputWidget::valueChanged();
     });
   }
-
-  setValue(placeholder);
-  ;
 }
 
 void FloatWidget::setAcceptVariable(bool accept)
@@ -812,14 +816,14 @@ SpinWidget::SpinWidget(const QString& label, int placeholder, QWidget* parent, W
     edit->setAlignment(Qt::AlignRight);
     edit->setValue(placeholder);
 
+    setValue(placeholder);
+
     connect(edit, &QSpinBox::valueChanged, this, [this](int value) {
       mValue.data = value;
       emit valueChanged(getValue());
       emit InputWidget::valueChanged();
     });
   }
-
-  setValue(placeholder);
 }
 
 void SpinWidget::setSuffix(const QString& suffix)
@@ -986,6 +990,8 @@ void ButtonWidget::addDescription(const QString& label)
 ColorWidget::ColorWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent)
     : TypedInputWidget<oclero::qlementine::ColorEditor>(label, new oclero::qlementine::ColorEditor(), alignment, parent)
 {
+  setValue(QColor::fromString(placeholder));
+
   if (auto* edit = qobject_cast<oclero::qlementine::ColorEditor*>(mInputField))
   {
     edit->setColor(QColor::fromString(placeholder));
@@ -995,8 +1001,6 @@ ColorWidget::ColorWidget(const QString& label, const QString& placeholder, Widge
       emit InputWidget::valueChanged();
     });
   }
-
-  setValue(QColor::fromString(placeholder));
 }
 
 void ColorWidget::writeValueToWidget(const Value& value)
@@ -1138,8 +1142,6 @@ ListWidget::ListWidget(const QString& label, const koda::types::TypeReference& e
     group->addStretch();
     group->addLayout(browserButtons);
   }
-
-  ;
 }
 
 ListValue ListWidget::getValue() const
@@ -1360,7 +1362,7 @@ QList<QWidget*> MapWidget::focusWidgets() const
 // =========================================================================================================
 RecordWidget::RecordWidget(const QString& containerLabel, const QString& label, const koda::types::TypeDefinition& definition, WidgetAlignment alignment,
                            QWidget* parent)
-    : TypedInputWidget<WidgetGroup>(containerLabel, new maki::WidgetGroup(label, oclero::qlementine::TextRole::H5, nullptr), alignment, parent)
+    : TypedInputWidget<WidgetGroup>(containerLabel, new maki::WidgetGroup(label, oclero::qlementine::TextRole::Default, nullptr), alignment, parent)
     , mDefinition(definition)
 {
 }

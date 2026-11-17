@@ -4,10 +4,10 @@
 #include <QHeaderView>
 #include <QMenu>
 #include <QPushButton>
+#include <QScopedValueRollback>
 #include <QStandardItemModel>
 #include <QTableWidget>
 #include <QVBoxLayout>
-#include <algorithm>
 #include <oclero/qlementine/widgets/Label.hpp>
 
 #include "../dialogs/prompt.h"
@@ -38,6 +38,13 @@ Types::ControlTypes callControl(const maki::RecordValue& record)
   return Types::ControlTypes::TRIGGER_CALL;
 }
 }  // namespace
+
+#define BLOCK_AND_SET(EDITOR, VALUE)      \
+  do                                      \
+  {                                       \
+    const QSignalBlocker blocker(EDITOR); \
+    EDITOR->setValue(VALUE);              \
+  } while (false);
 
 PropertiesMenu::PropertiesMenu(QWidget* parent)
     : QFrame(parent)
@@ -93,6 +100,39 @@ QLayout* PropertiesMenu::layout() const
 
 VoidResult PropertiesMenu::start()
 {
+  mDocumentSubscription = SaveInfo::instance().subscribe([this](const DocumentEvent& event) {
+    switch (event.type)
+    {
+      case DocumentEvent::Type::NodeModified:
+      {
+        const auto* data = std::get_if<NodeEvent>(&event.data);
+        if (!data)
+          return;
+
+        const auto nodeId = data->id;
+        const auto propertyId = data->propertyId;
+        if (nodeId != mCurrentNode)
+          return;
+
+        LOG_DEBUG("Property {} of current node changed: {}", propertyId, mCurrentNode);
+
+        const auto node = SaveInfo::instance().getNodeWithId(nodeId);
+        if (!node)
+          return;
+
+        // For compound values, it is easier to just rebuild the menu
+        if (data->propertyValue.isRecord())
+          onNodeModified(nodeId);
+        else if (auto* editor = findChild<maki::InputWidget*>(propertyId))
+          BLOCK_AND_SET(editor, data->propertyValue);
+
+        break;
+      }
+      default:
+        break;
+    }
+  });
+
   return VoidResult();
 }
 
@@ -106,8 +146,17 @@ VoidResult PropertiesMenu::onNodeRemoved(const QString& nodeId)
   return VoidResult();
 }
 
-VoidResult PropertiesMenu::onNodeModified(const QString& /* nodeId */)
+VoidResult PropertiesMenu::onNodeModified(const QString& nodeId)
 {
+  clearLayout(layout());
+
+  // Make sure no events are sent on creation
+  LOG_WARN_ON_FAILURE(loadProperties(nodeId));
+  LOG_WARN_ON_FAILURE(loadControls(nodeId));
+
+  if (auto* vLayout = qobject_cast<QVBoxLayout*>(layout()))
+    vLayout->addStretch();
+
   return VoidResult();
 }
 
@@ -115,30 +164,15 @@ VoidResult PropertiesMenu::onNodeSelected(const QString& nodeId, bool selected)
 {
   // If we are already showing this node, then there is nothing to do
   if (!nodeId.isEmpty() && nodeId == mCurrentNode)
-  {
-    LOG_DEBUG("Already showwing node: {}", nodeId);
     return VoidResult();
-  }
 
-  clearLayout(layout());
-
-  if (nodeId.isEmpty())
-  {
-    mCurrentNode.clear();
-    LOG_DEBUG("No node was selected");
-    return VoidResult();
-  }
+  if (nodeId.isEmpty() || !selected)
+    return onNodeRemoved(mCurrentNode);
 
   mCurrentNode = nodeId;
-
-  RETURN_ON_FAILURE(loadProperties(nodeId));
-  RETURN_ON_FAILURE(loadControls(nodeId));
-
-  if (auto* vLayout = qobject_cast<QVBoxLayout*>(layout()))
-    vLayout->addStretch();
-
   emit nodeFocused(mCurrentNode);
-  return VoidResult();
+
+  return onNodeModified(nodeId);
 }
 
 Result<std::shared_ptr<FlowSaveInfo>> PropertiesMenu::onCreateEvent(const QString& nodeId, bool synchronousCreation)
@@ -152,12 +186,12 @@ Result<std::shared_ptr<FlowSaveInfo>> PropertiesMenu::onCreateEvent(const QStrin
   return openEventDialog(table, nodeId, table->rowCount(), synchronousCreation);
 }
 
-VoidResult PropertiesMenu::onFlowAdded(PFlow /* flow */, const QString& nodeId)
+VoidResult PropertiesMenu::onFlowAdded(const QString& /* flowId */, const QString& nodeId)
 {
   if (nodeId != mCurrentNode)
     return VoidResult();
 
-  return onNodeSelected(nodeId, true);
+  return onNodeModified(nodeId);
 }
 
 VoidResult PropertiesMenu::onFlowRemoved(const QString& /* flowId */, const QString& nodeId)
@@ -165,7 +199,7 @@ VoidResult PropertiesMenu::onFlowRemoved(const QString& /* flowId */, const QStr
   if (nodeId != mCurrentNode)
     return VoidResult();
 
-  return onNodeSelected(nodeId, true);
+  return onNodeModified(nodeId);
 }
 
 VoidResult PropertiesMenu::loadProperties(const QString& nodeId)
@@ -236,6 +270,7 @@ VoidResult PropertiesMenu::loadValueProperty(const std::shared_ptr<IParameter>& 
   if (!editor)
     return VoidResult::Failed("Could not create editor for property '{}' of type '{}'", property->getid(), property->gettype().toString());
 
+  editor->setObjectName(property->getid());
   addCompleter(editor, nodeId, property->gettype());
 
   connect(editor, &maki::InputWidget::valueChanged, this, [this, nodeId, editor, id = property->getid()] {
@@ -272,11 +307,12 @@ VoidResult PropertiesMenu::loadColorProperty(const std::shared_ptr<IParameter>& 
 
   const auto value = maki::parameterValue(property.get());
   auto* editor = new maki::ColorWidget(ToLabel(property->getid()), "", maki::WidgetAlignment::Vertical(), this);
+  editor->setObjectName(property->getid());
 
   if (value.kind() == IValue::Kind::Color)
-    editor->setValue(std::get<QColor>(value.data));
+    BLOCK_AND_SET(editor, std::get<QColor>(value.data))
   else if (value.isValid())
-    editor->setValue(QColor::fromString(value.toString()));
+    BLOCK_AND_SET(editor, QColor::fromString(value.toString()))
 
   connect(editor, &maki::ColorWidget::valueChanged, this, [this, nodeId, id = property->getid()](const QColor& color) {
     const auto nodeInfo = SaveInfo::instance().getNodeWithId(nodeId);
@@ -307,11 +343,11 @@ VoidResult PropertiesMenu::loadSelectProperty(const std::shared_ptr<IParameter>&
   const auto selected = record.at(ConfigKeys::VALUE.toStdString());
 
   auto* editor = new maki::SelectorWidget(ToLabel(property->getid()), maki::WidgetAlignment::Vertical(), this);
-  for (std::size_t i = 0; i < items.size(); ++i)
+  editor->setObjectName(property->getid());
+  for (size_t i = 0; i < items.size(); ++i)
     editor->addItem(items[i].toString(), static_cast<qulonglong>(i));
 
-  editor->setValue(selected.toString());
-
+  BLOCK_AND_SET(editor, selected.toString());
   connect(editor, &maki::SelectorWidget::dataChanged, this,
           [nodeId, id = property->getid(), record, items](const QString& /* text */, const QVariant& data) mutable {
             if (!data.isValid())
@@ -343,12 +379,14 @@ VoidResult PropertiesMenu::loadLinkProperty(const std::shared_ptr<IParameter>& p
 
   const auto component = maki::recordString(record, ConfigKeys::COMPONENT);
   auto* editor = new maki::SelectorWidget(ToLabel(property->getid()), maki::WidgetAlignment::Vertical(), this);
+  editor->setObjectName(property->getid());
+
   const auto targetNodes = SaveInfo::instance().getLinkNodes();
   for (int i = 0; i < targetNodes.size(); ++i)
     editor->addItem(targetNodes[i].second, targetNodes[i].first);  // Add name and id of node
 
   editor->addItem(Constants::EMPTY_COMBO, Constants::EMPTY_COMBO);
-  editor->setValue(component);
+  BLOCK_AND_SET(editor, component)
 
   connect(editor, &maki::SelectorWidget::dataChanged, this,
           [nodeId, id = property->getid(), record, targetNodes](const QString& text, const QVariant& data) mutable {
@@ -357,13 +395,13 @@ VoidResult PropertiesMenu::loadLinkProperty(const std::shared_ptr<IParameter>& p
 
             if (text == Constants::EMPTY_COMBO)
             {
-              record["component"] = maki::Value::createString("");
-              record["id"] = maki::Value::createString("");
+              record[ConfigKeys::COMPONENT.toStdString()] = maki::Value::createString("");
+              record[ConfigKeys::ID.toStdString()] = maki::Value::createString("");
             }
             else
             {
-              record["component"] = maki::Value::createString(text);
-              record["id"] = maki::Value::createString(data.toString());
+              record[ConfigKeys::COMPONENT.toStdString()] = maki::Value::createString(text);
+              record[ConfigKeys::ID.toStdString()] = maki::Value::createString(data.toString());
             }
 
             if (const auto nodeInfo = SaveInfo::instance().getNodeWithId(nodeId))
@@ -385,6 +423,7 @@ VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IPa
 
   const auto mode = callControl(record);
   auto* componentEditor = new maki::SelectorWidget(ToLabel(property->getid()), maki::WidgetAlignment::Vertical(), this);
+  componentEditor->setObjectName(property->getid());
 
   const auto candidates = SaveInfo::instance().getPossibleCallers(nodeId, mode);
   for (const auto& candidate : candidates)
@@ -399,7 +438,7 @@ VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IPa
     componentEditor->addItem(name->getvalue()->toStringValue(), QStringList{candidate->getid(), candidate->getnodeId()});
   }
 
-  componentEditor->setValue(maki::recordString(record, ConfigKeys::COMPONENT));
+  BLOCK_AND_SET(componentEditor, maki::recordString(record, ConfigKeys::COMPONENT))
   layout()->addWidget(componentEditor);
 
   auto* callEditor = static_cast<maki::SelectorWidget*>(nullptr);
@@ -410,6 +449,7 @@ VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IPa
   {
     const QString label = mode == Types::ControlTypes::FLOW_CALL ? tr("Flow") : tr("Event");
     callEditor = new maki::SelectorWidget(label, maki::WidgetAlignment::Vertical(), this);
+    callEditor->setObjectName(property->getid() + "::event");
     layout()->addWidget(callEditor);
   }
 
@@ -454,7 +494,7 @@ VoidResult PropertiesMenu::loadComponentSelectProperty(const std::shared_ptr<IPa
   if (callEditor)
   {
     populateCalls(currentComponentId);
-    callEditor->setValue(maki::recordString(record, mode == Types::ControlTypes::FLOW_CALL ? ConfigKeys::FLOW : ConfigKeys::EVENT));
+    BLOCK_AND_SET(callEditor, maki::recordString(record, mode == Types::ControlTypes::FLOW_CALL ? ConfigKeys::FLOW : ConfigKeys::EVENT))
   }
 
   auto currentCall = findCall(currentComponentId, mode == Types::ControlTypes::FLOW_CALL      ? maki::recordString(record, ConfigKeys::FLOW)
@@ -556,7 +596,7 @@ VoidResult PropertiesMenu::loadCallArguments(const std::shared_ptr<FlowSaveInfo>
   auto values = maki::recordList(record, ConfigKeys::ARGUMENTS);
 
   const auto arguments = call->getarguments();
-  if (values.size() < static_cast<std::size_t>(arguments.size()))
+  if (values.size() < static_cast<size_t>(arguments.size()))
     values.resize(arguments.size());
 
   for (int index = 0; index < arguments.size(); ++index)
@@ -565,7 +605,7 @@ VoidResult PropertiesMenu::loadCallArguments(const std::shared_ptr<FlowSaveInfo>
     if (!argument)
       continue;
 
-    maki::Value value = values[static_cast<std::size_t>(index)];
+    maki::Value value = values[static_cast<size_t>(index)];
     if (!value.isValid())
     {
       const auto* defaultValue = maki::asValue(argument->getvalue());
@@ -574,11 +614,13 @@ VoidResult PropertiesMenu::loadCallArguments(const std::shared_ptr<FlowSaveInfo>
       else
         value = maki::Value::defaultValue(argument->gettype());
 
-      values[static_cast<std::size_t>(index)] = value;
+      values[static_cast<size_t>(index)] = value;
     }
 
     auto alignment = !argument->gettype().isPrimitive() ? maki::WidgetAlignment::Direction::ABOVE : maki::WidgetAlignment::Direction::SPREAD;
     auto* editor = maki::ValueEditorFactory::create(argument->getid(), argument->gettype(), value, maki::WidgetAlignment::Form(group, 70, alignment), this);
+    editor->setObjectName(propertyId + QString("::arg:%1").arg(index));
+
     if (!editor)
     {
       LOG_WARNING("Could not create argument editor '{}' of type '{}'", argument->getid(), argument->gettype().toString());
@@ -595,26 +637,18 @@ VoidResult PropertiesMenu::loadCallArguments(const std::shared_ptr<FlowSaveInfo>
       auto valueRecord = maki::parameterRecord(current);
       auto arguments = maki::recordList(valueRecord, ConfigKeys::ARGUMENTS);
 
-      if (arguments.size() <= static_cast<std::size_t>(index))
-        arguments.resize(static_cast<std::size_t>(index) + 1);
+      if (arguments.size() <= static_cast<size_t>(index))
+        arguments.resize(static_cast<size_t>(index) + 1);
 
-      arguments[static_cast<std::size_t>(index)] = editor->getValue();
+      arguments[static_cast<size_t>(index)] = editor->getValue();
       maki::setRecordValue(valueRecord, ConfigKeys::ARGUMENTS, maki::Value::createList(arguments));
       auto propertyValue = maki::Value::createRecord(valueRecord);
       nodeInfo->setProperty(propertyId, propertyValue);
 
       emit propertyUpdated(propertyId, nodeInfo->getid(), propertyValue);
     });
-
     connect(editor, &maki::InputWidget::openParameter, this, [this](const QString& parameterId) { emit openParameter(parameterId); });
-
-    // Make sure there is an inital value there
-    editor->setValue(value);
   }
-
-  // Store defaulted values immediately, so the record always matches the call signature.
-  maki::setRecordValue(record, ConfigKeys::ARGUMENTS, maki::Value::createList(values));
-  nodeInfo->setProperty(propertyId, maki::Value::createRecord(record));
 
   return VoidResult();
 }
@@ -890,7 +924,7 @@ VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)
   }
 
   const auto currentEvent = transition->getEvent();
-  eventWidget->setValue(currentEvent.isEmpty() ? Constants::EMPTY_COMBO : currentEvent);
+  BLOCK_AND_SET(eventWidget, currentEvent.isEmpty() ? Constants::EMPTY_COMBO : currentEvent);
 
   connect(eventWidget, &maki::SelectorWidget::dataChanged, this, [transition](const QString& text, const QVariant& data) {
     transition->setEvent(text);
@@ -918,6 +952,7 @@ void PropertiesMenu::updateBlockName(PNodeSaveInfo nodeInfo, const QString& comp
   if (!nodeInfo)
     return;
 
+  LOG_DEBUG("AAAAAA");
   const auto* name = nodeInfo->getProperty(ConfigKeys::NAME);
   if (!name || !name->getvalue() || !name->getvalue()->isValid())
     return;

@@ -367,48 +367,46 @@ QDataStream& operator<<(QDataStream& out, const FlowSaveInfo& info)
 
 QDataStream& operator>>(QDataStream& in, FlowSaveInfo& info)
 {
+  // We don't use the setters so that we don't update the event dispatcher
   QString id;
   in >> id;
-  info.setId(id);
+  info.mId = id;
 
   QString name;
   in >> name;
-  info.setName(name);
+  info.mName = name;
 
   QVector<std::shared_ptr<INode>> nodes;
   in >> nodes;
-  for (const auto& node : nodes)
-    info.addNode(std::dynamic_pointer_cast<NodeSaveInfo>(node));
+  info.mNodes = nodes;
 
   bool modifiable;
   in >> modifiable;
-  info.setModifiable(modifiable);
+  info.mModifiable = modifiable;
 
   Types::CallType type;
   in >> type;
-  info.setType(type);
+  info.mType = type;
 
   koda::types::TypeReference returnType;
   in >> returnType;
-  info.setReturnType(returnType);
+  info.mReturnType = returnType;
 
   QString owner;
   in >> owner;
-  info.setOwner(owner);
+  info.mOwner = owner;
 
   int linksTo;
   in >> linksTo;
-  info.setLinksTo(linksTo);
+  info.mLinksTo = linksTo;
 
   QVector<std::shared_ptr<IParameter>> arguments;
   in >> arguments;
-  for (const auto& argument : arguments)
-    info.addArgument(std::dynamic_pointer_cast<PropertyInfo>(argument));
+  info.mArguments = arguments;
 
-  QVector<std::shared_ptr<TransitionSaveInfo>> transitions;
+  QVector<std::shared_ptr<ITransition>> transitions;
   in >> transitions;
-  for (const auto& transition : transitions)
-    info.addTransition(std::dynamic_pointer_cast<ITransition>(transition));
+  info.mTransitions = transitions;
 
   return in;
 }

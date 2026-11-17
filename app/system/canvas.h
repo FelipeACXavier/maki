@@ -178,13 +178,6 @@ public:
   void settingsChanged(const AppearanceSettings& appearance);
 
   // Used for undo commands
-  /**
-   * @brief Creates a node based on save information.
-   *
-   * @param info The save information for the node.
-   */
-  void createNode(const NodeSaveInfo& info, NodeCreation creation);
-
   // Requests a change to the model.
   // Returns an ID, not a NodeItem*.
   virtual QString requestCreateNode(NodeSaveInfo info, NodeCreation creation);
@@ -219,7 +212,7 @@ public:
    *
    * @param info The save information for the transition.
    */
-  void createTransition(std::shared_ptr<TransitionSaveInfo> info);
+  void materializeTransition(std::shared_ptr<TransitionSaveInfo> info);
 
   /**
    * @brief Removes a transition based on save information.
@@ -373,7 +366,7 @@ signals:
    * @param flow Pointer to the added flow.
    * @param node Pointer to the node associated with the flow.
    */
-  void flowAdded(PFlow flow, NodeItem* node);
+  void flowAdded(const QString& flowId, const QString& nodeId);
 
   /**
    * @brief Emitted when a flow is removed.
@@ -381,7 +374,7 @@ signals:
    * @param flowId The ID of the removed flow.
    * @param nodeId The ID of the node associated with the flow.
    */
-  void flowRemoved(const QString& flowId, NodeItem* node);
+  void flowRemoved(const QString& flowId, const QString& nodeId);
 
   void controlCreated(maki::ControlWidget* control);
   void controlDismissed(maki::ControlWidget* control);
@@ -503,17 +496,6 @@ protected:
 
   virtual bool insertDroppedNodeOnTransition(TransitionItem* transition, NodeSaveInfo info);
   virtual bool insertNodeOnTransition(TransitionItem* transition, NodeItem* node);
-
-  /**
-   * @brief Creates a new node based on save information and other parameters.
-   *
-   * @param creation The type of node creation (e.g., dropping, pasting).
-   * @param info Shared pointer to the save information for the node.
-   * @param position The initial position of the node.
-   * @param parent Pointer to the parent node.
-   * @return Pointer to the created NodeItem.
-   */
-  NodeItem* createNode(NodeCreation creation, std::shared_ptr<NodeSaveInfo> info, const QPointF& position, NodeItem* parent);
 
   /**
    * @brief Returns the parent view of this canvas.

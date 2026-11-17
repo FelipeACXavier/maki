@@ -81,11 +81,6 @@ public:
   void removeParameter(const maki::MissionParameter& parameter);
 
   /**
-   * @brief Removed all nodes from the storage.
-   */
-  void clearNodes();
-
-  /**
    * @brief Add a node.
    * @param node The node to add.
    */
@@ -200,6 +195,9 @@ public:
   void setScheduler(std::shared_ptr<EventDispatcher<DocumentEvent>> scheduler);
   void publish(const DocumentEvent& event);
   EventDispatcher<DocumentEvent>::Subscription subscribe(EventDispatcher<DocumentEvent>::Callback callback);
+
+  void blockEvents();
+  void unblockEvents();
 
   void addFlowToNode(const QString& nodeId, std::shared_ptr<IFlow> flow);
   void addNodeToFlow(const QString& flowId, std::shared_ptr<INode> node);

@@ -5,13 +5,11 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
-#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
-#include "document_event.h"
-#include "logging.h"
+#include "test_and_set.h"
 
 template <typename Event>
 class EventDispatcher : public QObject
@@ -92,32 +90,36 @@ public:
     const Id id = ++mState->nextId;
     mState->listeners.emplace(id, std::move(callback));
 
-    LOG_DEBUG("New client subscribed: {}", id);
     return Subscription(mState, id);
   }
 
   void publish(const Event& event)
   {
-    mPending.push_back(std::move(event));
-
-    if constexpr (std::is_same_v<Event, DocumentEvent>)
-    {
-      LOG_DEBUG("Document event: type={}, , Listeners {}, Scheduled: {}", static_cast<int>(event.type), mState->listeners.size(), mScheduled);
-      if (const auto* node = std::get_if<NodeEvent>(&event.data))
-        LOG_DEBUG("  Node event: id={}, ownerFlowId={}", node->id, node->ownerFlowId);
-    }
-
-    if (mScheduled)
+    // Do not publish anything if the dispatcher is blocked
+    if (mBlocked.Value())
       return;
 
-    mScheduled = true;
+    mPending.push_back(std::move(event));
+    if (!mScheduled.SetAndFailOnDifferent(false, true))
+      return;
 
     QMetaObject::invokeMethod(this, [this]() { flush(); }, Qt::QueuedConnection);
   }
 
+  void blockEvents()
+  {
+    mBlocked.SetUnconditionally(true);
+    mPending.clear();
+  }
+
+  void unblockEvents()
+  {
+    mBlocked.SetUnconditionally(false);
+  }
+
   void flush()
   {
-    mScheduled = false;
+    mScheduled.SetUnconditionally(false);
 
     auto events = std::move(mPending);
     mPending.clear();
@@ -135,13 +137,9 @@ public:
       {
         auto it = mState->listeners.find(id);
         if (it == mState->listeners.end())
-        {
-          LOG_DEBUG("No client with id: {}", id);
           continue;
-        }
 
         // Copy callback: invoking it may modify the listener map.
-        LOG_DEBUG("Publishing to client: {}", id);
         auto callback = it->second;
         callback(event);
       }
@@ -152,5 +150,6 @@ private:
   std::shared_ptr<State> mState;
 
   std::vector<Event> mPending;
-  bool mScheduled = false;
+  TestAndSet<bool> mScheduled = false;
+  TestAndSet<bool> mBlocked = false;
 };

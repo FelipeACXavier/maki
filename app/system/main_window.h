@@ -120,7 +120,7 @@ private slots:
    * @param flow Pointer to the added Flow.
    * @param node Pointer to the associated NodeItem.
    */
-  void onFlowAdded(PFlow flow, NodeItem* node);
+  void onFlowAdded(const QString& flowId, const QString& nodeId);
 
   /**
    * @brief Handles flow removal events.
@@ -128,7 +128,7 @@ private slots:
    * @param flowId ID of the removed flow.
    * @param nodeId ID of the parent node.
    */
-  void onFlowRemoved(const QString& flowId, NodeItem* node);
+  void onFlowRemoved(const QString& flowId, const QString& nodeId);
 
   /**
    * @brief Handles change events.

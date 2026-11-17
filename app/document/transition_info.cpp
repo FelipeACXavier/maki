@@ -286,57 +286,58 @@ QDataStream& operator<<(QDataStream& out, const TransitionSaveInfo& info)
 
 QDataStream& operator>>(QDataStream& in, TransitionSaveInfo& info)
 {
+  // We don't use the setters so that we don't update the event dispatcher
   QString id;
   in >> id;
-  info.setId(id);
+  info.mId = id;
 
   QString label;
   in >> label;
-  info.setLabel(label);
+  info.mLabel = label;
 
   QString event;
   in >> event;
-  info.setEvent(event);
+  info.mEvent = event;
 
   QString srcId;
   in >> srcId;
-  info.setSrcId(srcId);
+  info.mSrcId = srcId;
 
   QPointF srcPoint;
   in >> srcPoint;
-  info.setSrcPoint(srcPoint);
+  info.mSrcPoint = srcPoint;
 
   QPointF srcShift;
   in >> srcShift;
-  info.setSrcShift(srcShift);
+  info.mSrcShift = srcShift;
 
   Types::Port srcPort;
   in >> srcPort;
-  info.setSrcPort(srcPort);
+  info.mSrcPort = srcPort;
 
   QString srcSubFlow;
   in >> srcSubFlow;
-  info.setSrcPortSubFlow(srcSubFlow);
+  info.mSrcSubFlow = srcSubFlow;
 
   QString dstId;
   in >> dstId;
-  info.setDstId(dstId);
+  info.mDstId = dstId;
 
   QPointF dstPoint;
   in >> dstPoint;
-  info.setDstPoint(dstPoint);
+  info.mDstPoint = dstPoint;
 
   QPointF dstShift;
   in >> dstShift;
-  info.setDstShift(dstShift);
+  info.mDstShift = dstShift;
 
   Types::Port dstPort;
   in >> dstPort;
-  info.setDstPort(dstPort);
+  info.mDstPort = dstPort;
 
   QString dstSubFlow;
   in >> dstSubFlow;
-  info.setDstPortSubFlow(dstSubFlow);
+  info.mDstSubFlow = dstSubFlow;
 
   return in;
 }

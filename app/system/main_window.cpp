@@ -705,6 +705,9 @@ void MainWindow::startUI()
 
   mUndoGroup->addStack(structureCanvas->undoStack());
   mUndoGroup->setActiveStack(structureCanvas->undoStack());
+
+  // Start all the different menus
+  mPropertiesMenu->start();
 }
 
 void MainWindow::bind()
@@ -1712,7 +1715,6 @@ void MainWindow::onFileLoaded(const QString& file, const SaveInfo& info, const Q
 
   // Clear the storage so it can be populated by the canvas
   SaveInfo::instance() = info;
-  SaveInfo::instance().clearNodes();
   SaveInfo::instance().setScheduler(mDocumentScheduler);
 
   // Repopulate the canvas (and the storage)
@@ -2036,19 +2038,19 @@ void MainWindow::addEditorTab(QPlainTextEdit* editorTab)
   mEditorWorkspace->activateEditor("text_editor");
 }
 
-void MainWindow::onFlowAdded(PFlow flow, NodeItem* node)
+void MainWindow::onFlowAdded(const QString& flowId, const QString& nodeId)
 {
-  LOG_WARN_ON_FAILURE(mSystemMenu->onFlowAdded(flow, node->id()));
-  LOG_WARN_ON_FAILURE(mPropertiesMenu->onFlowAdded(flow, node->id()));
+  LOG_WARN_ON_FAILURE(mSystemMenu->onFlowAdded(flowId, nodeId));
+  LOG_WARN_ON_FAILURE(mPropertiesMenu->onFlowAdded(flowId, nodeId));
 }
 
-void MainWindow::onFlowRemoved(const QString& flowId, NodeItem* node)
+void MainWindow::onFlowRemoved(const QString& flowId, const QString& nodeId)
 {
-  const QString tabId = QString::fromStdString(std::format("{}_{}", flowId, node ? node->id() : ""));
+  const QString tabId = QString::fromStdString(std::format("{}_{}", flowId, nodeId));
   mEditorWorkspace->closeEditor(tabId);
 
-  LOG_WARN_ON_FAILURE(mSystemMenu->onFlowRemoved(flowId, node->id()));
-  LOG_WARN_ON_FAILURE(mPropertiesMenu->onFlowRemoved(flowId, node->id()));
+  LOG_WARN_ON_FAILURE(mSystemMenu->onFlowRemoved(flowId, nodeId));
+  LOG_WARN_ON_FAILURE(mPropertiesMenu->onFlowRemoved(flowId, nodeId));
 }
 
 int MainWindow::libraryTypeToIndex(Types::LibraryTypes type) const

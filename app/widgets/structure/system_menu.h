@@ -61,7 +61,7 @@ public:
    * @param node The node associated with the flow.
    * @return A result indicating whether the operation succeeded.
    */
-  VoidResult onFlowAdded(PFlow flow, const QString& nodeId);
+  VoidResult onFlowAdded(const QString& flowId, const QString& nodeId);
 
   /**
    * @brief Handles the removal of a flow from the menu.

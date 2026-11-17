@@ -59,6 +59,8 @@ public:
    */
   QVector<std::shared_ptr<IParameter>> getproperties() const override;
 
+  std::shared_ptr<IParameter> getproperty(const QString& key) const;
+
   /**
    * @brief Gets the flows of the node.
    * @return A QVector of shared pointers to IFlow objects.
@@ -265,6 +267,8 @@ public:
   friend QDataStream& operator>>(QDataStream& in, NodeSaveInfo& info);
 
 private:
+  friend class DocumentCloner;
+
   QString mId;             /// The ID of the node.
   QString mNodeId;         /// The node ID.
   QString mParentId;       /// The parent ID of the node.
