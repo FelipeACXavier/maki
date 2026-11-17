@@ -145,7 +145,7 @@ VoidResult MainWindow::start()
   mSaveHandler = std::make_unique<SaveHandler>(this);
   mSettingsManager = std::make_shared<SettingsManager>(mThemeManager, this);
   mLanguageManager = std::make_shared<LanguageManager>(this);
-  mRouter = std::make_shared<EdgeRouter>(this);
+  mRouter = std::make_shared<EdgeRouter>();
 
   auto processPipeline = new Pipeline(this);
   mPipeline = new Pipeline(this);
@@ -1570,7 +1570,10 @@ void MainWindow::onActionEditPipeline(const QString& pipelineId)
     FlowSaveInfo info;
     auto name = maki::textPrompt(tr("Pipeline name"), tr("Choose a pipeline name"), this);
     if (name.isEmpty())
+    {
+      NOTIFY_WARNING(Config::APPLICATION_NAME.toStdString(), "{}", tr("No name provided"));
       return;
+    }
 
     auto exists = maki::anyOf(SaveInfo::instance().pipelines(), [&name](const auto& opt) { return opt->getname() == name; });
     if (exists)
@@ -1611,7 +1614,7 @@ void MainWindow::onActionEditPipeline(const QString& pipelineId)
   mPalette->setTabVisible(libraryTypeToIndex(Types::LibraryTypes::PIPELINE), true);
   mPalette->setCurrentIndex(libraryTypeToIndex(Types::LibraryTypes::PIPELINE));
 
-  mEditorWorkspace->addEditor(pipelineId, newView, pipeline->getname(), QIcon(":/icons/pipeline.svg"), true);
+  mEditorWorkspace->addEditor(pipeline->getid(), newView, pipeline->getname(), QIcon(":/icons/pipeline.svg"), true);
   mEditorWorkspace->activateEditor(pipelineId);
 }
 
@@ -1769,6 +1772,7 @@ void MainWindow::onNodeSelected(const QString& nodeId, bool selected)
 
 void MainWindow::onCanvasTabChanged(QWidget* widget)
 {
+  LOG_DEBUG("Canvas tab changed: {}", widget->metaObject()->className());
   CanvasView* newCanvas = qobject_cast<CanvasView*>(widget);
   if (!newCanvas)
     return;

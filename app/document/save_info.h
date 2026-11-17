@@ -204,6 +204,10 @@ public:
   void addNodeToFlow(const QString& flowId, std::shared_ptr<INode> node);
   void addTransitionToFlow(const QString& flowId, std::shared_ptr<ITransition> transition);
 
+  std::shared_ptr<FlowSaveInfo> getPipelineWithId(const QString& pipelineId) const;
+  std::shared_ptr<NodeSaveInfo> getPipelineNodeWithId(const QString& nodeId) const;
+  std::shared_ptr<TransitionSaveInfo> getPipelineTransitionWithId(const QString& transitionId) const;
+
   QString name;
   QString version;
   QString rootPath;

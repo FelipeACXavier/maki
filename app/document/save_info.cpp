@@ -121,6 +121,30 @@ void SaveInfo::addNodeToFlow(const QString& flowId, std::shared_ptr<INode> node)
 
     flow->addNode(node);
   }
+  else if (auto pipeline = getPipelineWithId(flowId))
+  {
+    if (maki::anyOf(pipeline->getnodes(), [node](const auto& n) { return n->getid() == node->getid(); }))
+      return;
+
+    pipeline->addNode(node);
+  }
+}
+
+std::shared_ptr<NodeSaveInfo> SaveInfo::getPipelineNodeWithId(const QString& nodeId) const
+{
+  for (const auto& pipeline : mPipelines)
+  {
+    auto node = maki::findIf(pipeline->getnodes(), [nodeId](const auto& info) { return info->getid() == nodeId; });
+    if (node.has_value())
+      return std::dynamic_pointer_cast<NodeSaveInfo>(*node);
+  }
+  return nullptr;
+}
+
+std::shared_ptr<FlowSaveInfo> SaveInfo::getPipelineWithId(const QString& pipelineId) const
+{
+  auto pipeline = maki::findIf(mPipelines, [pipelineId](const auto& info) { return info->getid() == pipelineId; });
+  return pipeline.value_or(nullptr);
 }
 
 void SaveInfo::addTransitionToFlow(const QString& flowId, std::shared_ptr<ITransition> transition)
@@ -131,6 +155,13 @@ void SaveInfo::addTransitionToFlow(const QString& flowId, std::shared_ptr<ITrans
       return;
 
     flow->addTransition(transition);
+  }
+  else if (auto pipeline = getPipelineWithId(flowId))
+  {
+    if (maki::anyOf(pipeline->getnodes(), [transition](const auto& t) { return t->getid() == transition->getid(); }))
+      return;
+
+    pipeline->addTransition(transition);
   }
 }
 
@@ -434,7 +465,11 @@ std::shared_ptr<FlowSaveInfo> SaveInfo::getFlowFromNode(const QString& nodeId, c
 
 std::shared_ptr<NodeSaveInfo> SaveInfo::getNodeWithId(const QString& nodeId)
 {
-  return getNodeWithId(nodeId, getnodes());
+  auto node = getNodeWithId(nodeId, getnodes());
+  if (node)
+    return node;
+
+  return getPipelineNodeWithId(nodeId);
 }
 
 std::shared_ptr<NodeSaveInfo> SaveInfo::getNodeWithId(const QString& nodeId, const QVector<std::shared_ptr<INode>>& nodes)
@@ -484,7 +519,11 @@ std::shared_ptr<FlowSaveInfo> SaveInfo::getFlowWithId(const QString& flowId, con
 
 std::shared_ptr<TransitionSaveInfo> SaveInfo::getTransitionWithId(const QString& transitionId) const
 {
-  return getTransitionWithId(transitionId, getnodes());
+  auto transition = getTransitionWithId(transitionId, getnodes());
+  if (transition)
+    return transition;
+
+  return getPipelineTransitionWithId(transitionId);
 }
 
 std::shared_ptr<TransitionSaveInfo> SaveInfo::getTransitionWithId(const QString& transitionId, const QVector<std::shared_ptr<INode>>& nodes) const
@@ -494,6 +533,16 @@ std::shared_ptr<TransitionSaveInfo> SaveInfo::getTransitionWithId(const QString&
       for (const auto& transition : flow->gettransitions())
         if (transition->getid() == transitionId)
           return std::static_pointer_cast<TransitionSaveInfo>(transition);
+
+  return nullptr;
+}
+
+std::shared_ptr<TransitionSaveInfo> SaveInfo::getPipelineTransitionWithId(const QString& transitionId) const
+{
+  for (const auto& flow : mPipelines)
+    for (const auto& transition : flow->gettransitions())
+      if (transition->getid() == transitionId)
+        return std::static_pointer_cast<TransitionSaveInfo>(transition);
 
   return nullptr;
 }

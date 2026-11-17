@@ -44,7 +44,6 @@ QString BehaviourCanvas::requestCreateNode(NodeSaveInfo info, NodeCreation creat
   mPendingCreations.insert(id, creation);
   auto storage = std::make_shared<NodeSaveInfo>(info);
 
-  // TODO: We should actually update the document here, and the document should update the flow
   SaveInfo::instance().addNodeToFlow(mFlow->id(), storage);
   return id;
 }

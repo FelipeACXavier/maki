@@ -161,6 +161,9 @@ void Canvas::onDocumentChanged(const DocumentEvent& event)
       if (!data)
         return;
 
+      if (type() != Types::LibraryTypes::STRUCTURAL && data->ownerFlowId != id())
+        return;
+
       auto node = findNodeWithId(data->id);
       if (!node)
       {
@@ -183,6 +186,9 @@ void Canvas::onDocumentChanged(const DocumentEvent& event)
     {
       const auto* data = std::get_if<NodeEvent>(&event.data);
       if (!data)
+        return;
+
+      if (type() != Types::LibraryTypes::STRUCTURAL && data->ownerFlowId != id())
         return;
 
       if (auto* node = findNodeWithId(data->id))
@@ -234,8 +240,7 @@ void Canvas::onDocumentChanged(const DocumentEvent& event)
       if (data->ownerFlowId != id())
         return;
 
-      auto& document = SaveInfo::instance();
-      auto info = document.getTransitionWithId(data->id);
+      auto info = SaveInfo::instance().getTransitionWithId(data->id);
       if (!info)
         return;
 

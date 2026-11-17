@@ -20,6 +20,7 @@ FlowSaveInfo::FlowSaveInfo()
     , mName("")
     , mOwner("")
     , mModifiable(true)
+    , mLinksTo(0)
     , mType(Types::CallType::UNKNOWN)
     , mReturnType(koda::types::TypeReference::createVoid())
     , mNodes({})
@@ -187,6 +188,10 @@ std::shared_ptr<IParameter> FlowSaveInfo::getArgument(uint32_t index)
 
 void FlowSaveInfo::addArgument(std::shared_ptr<IParameter> arg)
 {
+  // Thou shall not add repeated arguments
+  if (maki::anyOf(mArguments, [name = arg->getname()](const auto& info) { return info->getname() == name; }))
+    return;
+
   mArguments.push_back(arg);
   SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::FlowModified,
                                              .data = FlowEvent{
@@ -206,12 +211,8 @@ void FlowSaveInfo::removeArgument(std::shared_ptr<IParameter> arg)
 void FlowSaveInfo::addNode(std::shared_ptr<INode> inode)
 {
   // Do not add repeated nodes
-  if (!inode->getid().isEmpty())
-  {
-    for (const auto& node : mNodes)
-      if (node->getid() == inode->getid())
-        return;
-  }
+  if (maki::anyOf(mNodes, [nodeId = inode->getid()](const auto& info) { return info->getid() == nodeId; }))
+    return;
 
   mNodes.push_back(inode);
   SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::NodeAdded,

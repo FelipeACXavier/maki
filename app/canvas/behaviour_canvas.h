@@ -87,6 +87,8 @@ public:
   void ensureMinimumSpacing(const QString& nodeId) override;
 
 protected:
+  PFlow mFlow;
+
   /**
    * @brief Deletes the Flow managed by this Canvas. This should not be called if the Flow is created by a NodeItem.
    */
@@ -103,7 +105,6 @@ private:
   /**
    * @brief A pointer to the Flow object associated with this canvas.
    */
-  PFlow mFlow;
   const QString mOwner;
 
   TransitionSaveInfo makeTransitionInfo(const QString& sourceId, const QString& destinationId, const QString& event, const QString& label) const;
