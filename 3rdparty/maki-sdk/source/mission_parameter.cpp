@@ -355,6 +355,64 @@ bool Value::operator<(const Value& other) const
   }
 }
 
+bool Value::operator==(const Value& other) const
+{
+  // Different types are ordered according to their position in the variant.
+  if (data.index() != other.data.index())
+    return data.index() == other.data.index();
+
+  switch (data.index())
+  {
+    case 0:  // monostate
+      return false;
+
+    case 1:  // bool
+      return std::get<bool>(data) == std::get<bool>(other.data);
+
+    case 2:  // int
+      return std::get<int>(data) == std::get<int>(other.data);
+
+    case 3:  // double
+    {
+      const double lhs = std::get<double>(data);
+      const double rhs = std::get<double>(other.data);
+
+      // NaN needs special treatment to preserve strict weak ordering.
+      const bool lhsNan = std::isnan(lhs);
+      const bool rhsNan = std::isnan(rhs);
+
+      if (lhsNan != rhsNan)
+        return lhsNan;
+
+      if (lhsNan)
+        return false;
+
+      return lhs == rhs;
+    }
+
+    case 4:  // std::string
+      return std::get<std::string>(data) == std::get<std::string>(other.data);
+
+    case 5:  // RecordValue
+      return std::get<RecordValue>(data) == std::get<RecordValue>(other.data);
+
+    case 6:  // ListValue
+      return std::get<ListValue>(data) == std::get<ListValue>(other.data);
+
+    case 7:  // MapValue
+      return std::get<MapValue>(data) == std::get<MapValue>(other.data);
+
+    case 8:  // QColor
+      return std::get<QColor>(data).rgba() == std::get<QColor>(other.data).rgba();
+
+    case 9:  // QString
+      return std::get<QString>(data) == std::get<QString>(other.data);
+
+    default:
+      return false;
+  }
+}
+
 // ===================================================================
 // All the stuff for the interface
 IValue::Kind Value::kind() const

@@ -63,6 +63,7 @@ public:
 
   // So Value can be used in sets and maps
   bool operator<(const Value& other) const;
+  bool operator==(const Value& other) const;
 
   QJsonObject toJson() const;
   static Value fromJson(const QJsonObject& json);
