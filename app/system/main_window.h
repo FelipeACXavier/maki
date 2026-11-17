@@ -6,10 +6,10 @@
 #include <QStringLiteral>
 #include <oclero/qlementine.hpp>
 
-#include "compiler/pipeline_graph.h"
 #include "focus_properties.h"
 #include "json.h"
 #include "main_window_layout.h"
+#include "pipeline/pipeline_graph.h"
 #include "result.h"
 #include "widgets/notification_manager.h"
 #include "widgets/settings_manager.h"

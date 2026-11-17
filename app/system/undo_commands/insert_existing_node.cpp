@@ -1,7 +1,6 @@
 #include "insert_existing_node.h"
 
-#include "../canvas.h"
-#include "elements/node.h"
+#include "canvas/canvas.h"
 
 InsertExistingNodeCommand::InsertExistingNodeCommand(Canvas* canvas, const QString& nodeId, const QPointF& oldCenter, const QPointF& newCenter,
                                                      const QString& oldParent, const QString& newParent, const TransitionSaveInfo& originalTransition,

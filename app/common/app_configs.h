@@ -64,6 +64,8 @@ static const QString TYPE_CONFIG = QStringLiteral("application/x-configuration")
 static const QString TYPE_NODE_ID = QStringLiteral("application/x-node-id");       /// MIME type for node IDs.
 static const QString MAIN_FLOW = "main";
 static const QString MAIN_SUB_FLOW = "body";
+static const QString EXECUTABLE_BUTTON_DEFAULT_TEXT = "No pipeline";
+static const QString EXECUTABLE_BUTTON_ADD_TEXT = "Add new...";
 
 static const qreal CONTROL_POINT_SHIFT = 100;  /// Shift value for control points.
 

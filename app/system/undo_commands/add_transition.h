@@ -2,10 +2,10 @@
 
 #include <QUndoCommand>
 
-#include "save_info.h"
+#include "document/save_info.h"
 
-class Canvas; /// Forward declaration of Canvas class.
-class QPointF; /// Forward declaration of QPointF class.
+class Canvas;   /// Forward declaration of Canvas class.
+class QPointF;  /// Forward declaration of QPointF class.
 
 /**
  * @brief Command to add a transition in the canvas.
@@ -33,6 +33,6 @@ public:
   void redo() override;
 
 private:
-  Canvas* mCanvas = nullptr; /// Pointer to the canvas where the transition is added.
-  const TransitionSaveInfo mDesc; /// Description of the transition to be added.
+  Canvas* mCanvas = nullptr;       /// Pointer to the canvas where the transition is added.
+  const TransitionSaveInfo mDesc;  /// Description of the transition to be added.
 };

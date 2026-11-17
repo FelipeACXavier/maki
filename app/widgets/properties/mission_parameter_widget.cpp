@@ -11,8 +11,8 @@
 
 #include "../dialogs/type_value_dialog.h"
 #include "app_configs.h"
+#include "document/save_info.h"
 #include "macros.h"
-#include "save_info.h"
 #include "style_helpers.h"
 #include "typing/helpers.h"
 

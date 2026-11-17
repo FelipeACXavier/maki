@@ -15,11 +15,11 @@
 #include <oclero/qlementine/widgets/LineEdit.hpp>
 
 #include "../dialogs/prompt.h"
-#include "../properties/type_selector.h"
 #include "app_configs.h"
-#include "flow_info.h"
+#include "document/flow_info.h"
 #include "macros.h"
 #include "style_helpers.h"
+#include "widgets/properties/type_selector.h"
 #include "widgets/widget_factory.h"
 
 EventDialog::EventDialog(const QString& title, QWidget* parent)

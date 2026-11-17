@@ -13,17 +13,17 @@
 #include <oclero/qlementine/widgets/Label.hpp>
 
 #include "app_configs.h"
+#include "canvas/elements/node.h"
 #include "config_table.h"
 #include "document/node_info.h"
 #include "document/save_info.h"
-#include "elements/node.h"
 #include "keys.h"
 #include "macros.h"
-#include "system/library_container.h"
-#include "system/library_scene.h"
 #include "type_registry.h"
 #include "widgets/controls/canvas_control_widget.h"
 #include "widgets/frame.h"
+#include "widgets/library_container.h"
+#include "widgets/library_scene.h"
 #include "widgets/section.h"
 #include "widgets/widget_factory.h"
 

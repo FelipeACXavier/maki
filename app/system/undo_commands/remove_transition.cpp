@@ -1,7 +1,7 @@
 #include "remove_transition.h"
 
+#include "canvas/canvas.h"
 #include "logging.h"
-#include "system/canvas.h"
 
 RemoveTransitionCommand::RemoveTransitionCommand(Canvas* canvas, const TransitionSaveInfo& desc, QUndoCommand* parent)
     : QUndoCommand(parent)

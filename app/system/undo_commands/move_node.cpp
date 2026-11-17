@@ -2,8 +2,8 @@
 
 #include <QString>
 
+#include "canvas/canvas.h"
 #include "logging.h"
-#include "system/canvas.h"
 
 MoveNodeCommand::MoveNodeCommand(Canvas* canvas, const QString& nodeId, const QPointF& previousPosition, const QPointF& currentPosition, QUndoCommand* parent)
     : QUndoCommand(parent)

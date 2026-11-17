@@ -1,7 +1,6 @@
 #include "add_node.h"
 
 #include "logging.h"
-#include "system/canvas.h"
 
 AddNodeCommand::AddNodeCommand(Canvas* canvas, const NodeSaveInfo& desc, Canvas::NodeCreation creation, QUndoCommand* parent)
     : QUndoCommand(parent)

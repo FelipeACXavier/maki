@@ -8,17 +8,16 @@
 #include <QProcess>
 #include <QProgressBar>
 #include <QTimer>
+#include <QVBoxLayout>
 #include <oclero/qlementine/widgets/Label.hpp>
 
 #include "app_paths.h"
-#include "compiler/plugin_action_registry.h"
 #include "host_services.h"
 #include "logging.h"
 #include "macros.h"
 #include "notifications.h"
-#include "pipeline_action.h"
+#include "pipeline/plugin_action_registry.h"
 #include "result.h"
-#include "widgets/settings_manager.h"
 
 // Include after the rest to avoid conflicts
 #ifdef Q_OS_WIN
@@ -285,25 +284,25 @@ VoidResult PluginManager::loadPluginLibraryDir(const maki::Manifest& manifest)
   if (!cookie)
     return VoidResult::Failed("Failed to add DLL directory: {}", pluginDir.toStdString());
 
-    // const QString pluginDir = QFileInfo(manifest.path).absolutePath();
-    // LOG_DEBUG("Adding DLL path to PATH: {}", pluginDir);
+  // const QString pluginDir = QFileInfo(manifest.path).absolutePath();
+  // LOG_DEBUG("Adding DLL path to PATH: {}", pluginDir);
 
-    // QString path = qEnvironmentVariable("PATH");
-    // const QString normalisedPluginDir = QDir(pluginDir).absolutePath();
+  // QString path = qEnvironmentVariable("PATH");
+  // const QString normalisedPluginDir = QDir(pluginDir).absolutePath();
 
-    // const QStringList parts = path.split(';', Qt::SkipEmptyParts);
-    // bool alreadyPresent = false;
-    // for (const QString& part : parts)
-    // {
-    //   if (QDir(part).absolutePath().compare(normalisedPluginDir, Qt::CaseInsensitive) == 0)
-    //   {
-    //     alreadyPresent = true;
-    //     break;
-    //   }
-    // }
+  // const QStringList parts = path.split(';', Qt::SkipEmptyParts);
+  // bool alreadyPresent = false;
+  // for (const QString& part : parts)
+  // {
+  //   if (QDir(part).absolutePath().compare(normalisedPluginDir, Qt::CaseInsensitive) == 0)
+  //   {
+  //     alreadyPresent = true;
+  //     break;
+  //   }
+  // }
 
-    // if (!alreadyPresent)
-    //   qputenv("PATH", (normalisedPluginDir + ";" + path).toLocal8Bit());
+  // if (!alreadyPresent)
+  //   qputenv("PATH", (normalisedPluginDir + ";" + path).toLocal8Bit());
 
 #endif
   return VoidResult();

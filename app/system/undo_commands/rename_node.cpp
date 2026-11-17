@@ -1,5 +1,6 @@
 #include "rename_node.h"
 
+#include "canvas/canvas.h"
 #include "keys.h"
 
 RenameNodeCommand::RenameNodeCommand(const QString& nodeId, const QString& oldName, const QString& newName, QUndoCommand* parent)

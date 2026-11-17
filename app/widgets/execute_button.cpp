@@ -17,8 +17,8 @@ static const bool CLEAR_CACHE = true;
 ExecuteButton::ExecuteButton(QWidget* parent)
     : DropDownButton(parent)
     , mCurrentOption("")
-    , DEFAULT_TEXT(tr("No pipeline"))
-    , ADD_NEW_TEXT(tr("Add new..."))
+    , DEFAULT_TEXT(tr(qPrintable(Constants::EXECUTABLE_BUTTON_DEFAULT_TEXT)))
+    , ADD_NEW_TEXT(tr(qPrintable(Constants::EXECUTABLE_BUTTON_ADD_TEXT)))
 {
   setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
   connect(this, &QWidget::customContextMenuRequested, this, &ExecuteButton::showContextMenu);
@@ -61,7 +61,7 @@ void ExecuteButton::addOption(const QString& name, const QString& id)
 void ExecuteButton::removeOption(const QString& id)
 {
   auto opts = getPipelineNames();
-  opts.erase(std::remove_if(opts.begin(), opts.end(), [id](const OptionInfo& opt) { return opt.id == id; }));
+  std::erase_if(opts, [&id](const OptionInfo& opt) { return opt.id == id; });
   rebuildMenu(opts);
 }
 

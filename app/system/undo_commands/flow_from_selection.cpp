@@ -2,11 +2,11 @@
 
 #include <QTabWidget>
 
+#include "canvas/behaviour_canvas.h"
+#include "canvas/canvas.h"
+#include "canvas/canvas_view.h"
 #include "config_table.h"
 #include "keys.h"
-#include "system/behaviour_canvas.h"
-#include "system/canvas.h"
-#include "system/canvas_view.h"
 
 FlowFromSelectionCommand::FlowFromSelectionCommand(Canvas* canvas, const QString& flowId, const QString& flowOwner, const FlowSaveInfo& flowInfo,
                                                    const NodeSaveInfo& startNode, const NodeSaveInfo& endNode, const TransitionSaveInfo& startTransition,

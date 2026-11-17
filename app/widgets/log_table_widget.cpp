@@ -52,11 +52,13 @@ LogTableWidget::LogTableWidget(QWidget* parent)
   mHighlightDelegate = new LogHighlightDelegate(this);
 
   mLevelFilter = new DropDownButton(this);
+  mLevelFilter->setObjectName("LogLevelFilter");
   mLevelFilter->setFixedWidth(100 + Config::CONTENT_PADDING);
 
   onSettingsChanged(GeneralSettings{});
 
   mSourceFilter = new DropDownButton(this);
+  mSourceFilter->setObjectName("SourceFilter");
   mSourceFilter->setFixedWidth(110 + Config::CONTENT_PADDING);
 
   mTable = new QTableView(this);
@@ -108,6 +110,7 @@ LogTableWidget::LogTableWidget(QWidget* parent)
   mSearchCounterLabel->setMinimumWidth(60);
 
   mSearchField = new QLineEdit(mSearchBox);
+  mSearchField->setObjectName("SearchField");
   mSearchField->setPlaceholderText(tr("Find"));
   mSearchField->installEventFilter(this);
 

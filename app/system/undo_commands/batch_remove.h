@@ -2,7 +2,7 @@
 
 #include <QUndoCommand>
 
-#include "save_info.h"
+#include "document/save_info.h"
 
 class Canvas;   /// Forward declaration of Canvas class.
 class QPointF;  /// Forward declaration of QPointF class.
@@ -20,8 +20,7 @@ public:
    * @param desc Description of the node to be removed.
    * @param parent Parent command for undo/redo functionality.
    */
-  BatchRemoveCommand(Canvas* canvas, const QVector<NodeSaveInfo>& nodes, const QVector<TransitionSaveInfo>& transitions,
-                     QUndoCommand* parent = nullptr);
+  BatchRemoveCommand(Canvas* canvas, const QVector<NodeSaveInfo>& nodes, const QVector<TransitionSaveInfo>& transitions, QUndoCommand* parent = nullptr);
 
   /**
    * @brief Undoes the removal of a node from the canvas.

@@ -5,16 +5,17 @@
 #include <QPluginLoader>
 #include <QWidget>
 
-#include "compiler/pipeline.h"
 #include "iplugin.h"
 #include "json.h"
 #include "keys.h"
 #include "logging.h"
+#include "pipeline/pipeline.h"
 #include "result.h"
 #include "widgets/settings_manager.h"
 
 class QComboBox;
 class HostServices;
+
 namespace maki
 {
 class PipelineActionRegistry;

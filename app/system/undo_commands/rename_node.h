@@ -3,7 +3,7 @@
 #include <QString>
 #include <QUndoCommand>
 
-#include "../canvas.h"
+class Canvas;
 
 /**
  * @brief Command to rename a node on the canvas.

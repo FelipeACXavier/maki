@@ -1,7 +1,7 @@
 #include "align.h"
 
+#include "canvas/canvas.h"
 #include "logging.h"
-#include "system/canvas.h"
 
 AlignCommand::AlignCommand(Canvas* canvas, const QList<Types::AlignmentNode>& items, Types::AlignmentMode mode, Types::AlignmentDirection direction,
                            QUndoCommand* parent)

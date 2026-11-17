@@ -1,7 +1,7 @@
 #include "remove_node.h"
 
+#include "canvas/canvas.h"
 #include "logging.h"
-#include "system/canvas.h"
 
 RemoveNodeCommand::RemoveNodeCommand(Canvas* canvas, const NodeSaveInfo& desc, QUndoCommand* parent)
     : QUndoCommand(parent)

@@ -1,7 +1,7 @@
 #include "insert_node.h"
 
+#include "canvas/canvas.h"
 #include "logging.h"
-#include "system/canvas.h"
 
 InsertNodeCommand::InsertNodeCommand(Canvas* canvas, const NodeSaveInfo& node, const TransitionSaveInfo& originalTransition,
                                      const TransitionSaveInfo& incomingTransition, const TransitionSaveInfo& outgoingTransition, QUndoCommand* parent)

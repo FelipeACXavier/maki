@@ -2,10 +2,10 @@
 
 #include <QUndoCommand>
 
-#include "save_info.h"
+#include "document/save_info.h"
 
-class Canvas; /// Forward declaration of Canvas class.
-class QPointF; /// Forward declaration of QPointF class.
+class Canvas;   /// Forward declaration of Canvas class.
+class QPointF;  /// Forward declaration of QPointF class.
 
 /**
  * @brief Command to remove a node from the canvas.
@@ -33,6 +33,6 @@ public:
   void redo() override;
 
 private:
-  Canvas* mCanvas = nullptr; /// Pointer to the canvas where the node is located.
-  const NodeSaveInfo mDesc; /// Description of the node to be removed.
+  Canvas* mCanvas = nullptr;  /// Pointer to the canvas where the node is located.
+  const NodeSaveInfo mDesc;   /// Description of the node to be removed.
 };

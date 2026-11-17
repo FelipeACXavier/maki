@@ -10,20 +10,17 @@
 #include <QVBoxLayout>
 #include <oclero/qlementine/widgets/Label.hpp>
 
-#include "../dialogs/prompt.h"
-#include "../scroll_area.h"
-#include "../structure/event_dialog.h"
 #include "app_configs.h"
+#include "canvas/elements/flow.h"
 #include "config_table.h"
-#include "elements/flow.h"
-#include "elements/node.h"
+#include "document/save_info.h"
 #include "keys.h"
 #include "logging.h"
 #include "macros.h"
 #include "mission_parameter.h"
-#include "oclero/qlementine/Common.hpp"
-#include "property_info.h"
 #include "style_helpers.h"
+#include "widgets/scroll_area.h"
+#include "widgets/structure/event_dialog.h"
 
 namespace
 {
@@ -872,28 +869,35 @@ void PropertiesMenu::removeEventFromTable(QTableWidget* table, const QString& no
   });
 }
 
-VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)
+VoidResult PropertiesMenu::onTransitionSelected(const QString& transitionId)
 {
   clearLayout(layout());
 
-  if (!transition)
+  if (transitionId.isEmpty())
     return VoidResult();
 
-  mCurrentNode = transition->id();
+  auto transitionInfo = SaveInfo::instance().getTransitionWithId(transitionId);
+  if (!transitionInfo)
+    return VoidResult();
 
-  auto source = transition->source();
-  if (!source)
+  mCurrentNode = transitionInfo->getid();
+
+  const auto srcInfo = SaveInfo::instance().getNodeWithId(transitionInfo->getsrcId());
+  if (!srcInfo)
     return VoidResult::Failed("Transition with no source");
 
-  auto* eventWidget = new maki::SelectorWidget(tr("Transition event"), maki::WidgetAlignment::Vertical(), this);
+  const auto srcConfig = ConfigurationTable::instance().get(srcInfo->getnodeId());
+  if (!srcConfig)
+    return VoidResult::Failed("Transition with unknown source type: {}", srcInfo->getnodeId());
 
-  for (const auto& configured : source->configTransitions())
+  auto* eventWidget = new maki::SelectorWidget(tr("Transition event"), maki::WidgetAlignment::Vertical(), this);
+  for (const auto& configured : srcConfig->transitions)
     eventWidget->addItem(configured.event, configured.event);
 
   eventWidget->addItem("on error", "on error");
   eventWidget->addItem("on abort", "on abort");
 
-  for (const auto& caller : SaveInfo::instance().getPossibleCallers(source->id(), Types::ControlTypes::AUTO))
+  for (const auto& caller : SaveInfo::instance().getPossibleCallers(srcInfo->getid(), Types::ControlTypes::AUTO))
   {
     if (!caller)
       continue;
@@ -908,18 +912,18 @@ VoidResult PropertiesMenu::onTransitionSelected(TransitionItem* transition)
         eventWidget->addItem(componentName + "." + event->getname(), "on");
   }
 
-  const auto currentEvent = transition->getEvent();
+  const auto currentEvent = transitionInfo->getevent();
   BLOCK_AND_SET(eventWidget, currentEvent.isEmpty() ? Constants::EMPTY_COMBO : currentEvent);
 
-  connect(eventWidget, &maki::SelectorWidget::dataChanged, this, [transition](const QString& text, const QVariant& data) {
-    transition->setEvent(text);
-    transition->setName(data.toString());
+  connect(eventWidget, &maki::SelectorWidget::dataChanged, this, [transitionInfo](const QString& text, const QVariant& data) {
+    transitionInfo->setEvent(text);
+    transitionInfo->setLabel(data.toString());
   });
 
   auto* resetButton = new QPushButton(tr("Reset"), this);
-  connect(resetButton, &QPushButton::pressed, this, [transition, eventWidget] {
-    transition->setEvent("");
-    transition->setName("");
+  connect(resetButton, &QPushButton::pressed, this, [transitionInfo, eventWidget] {
+    transitionInfo->setEvent("");
+    transitionInfo->setLabel("");
     eventWidget->setValue(Constants::EMPTY_COMBO);
   });
 

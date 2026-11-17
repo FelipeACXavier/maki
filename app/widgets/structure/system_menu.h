@@ -3,13 +3,15 @@
 #include <QList>
 #include <QTreeWidget>
 
-#include "elements/flow.h"
+#include "document/document_event.h"
+#include "document/event_dispatcher.h"
 #include "result.h"
 #include "test_and_set.h"
 #include "types.h"
 
 class QTreeWidgetItem;
 class FlowSaveInfo;
+class NodeSaveInfo;
 
 /**
  * @class SystemMenu
@@ -154,14 +156,14 @@ private:
    * @param node The node to add.
    * @return A result indicating whether the operation succeeded.
    */
-  VoidResult addRootNode(PNodeSaveInfo nodeInfo);
+  VoidResult addRootNode(std::shared_ptr<NodeSaveInfo> nodeInfo);
 
   /**
    * @brief Adds a leaf node to the menu.
    * @param node The node to add.
    * @return A result indicating whether the operation succeeded.
    */
-  VoidResult addLeafNode(PNodeSaveInfo nodeInfo);
+  VoidResult addLeafNode(std::shared_ptr<NodeSaveInfo> nodeInfo);
 
   /**
    * @brief Populates a tree widget item using data from a node.

@@ -3,7 +3,8 @@
 #include <QFrame>
 #include <memory>
 
-#include "elements/flow.h"
+#include "document/document_event.h"
+#include "document/event_dispatcher.h"
 #include "result.h"
 #include "widgets/frame.h"
 #include "widgets/widget_factory.h"
@@ -15,6 +16,7 @@ class QTableView;
 class TransitionItem;
 
 class FlowSaveInfo;
+class NodeSaveInfo;
 class PropertyInfo;
 
 /**
@@ -37,7 +39,7 @@ public:
   VoidResult onNodeRemoved(const QString& nodeId);
   VoidResult onNodeSelected(const QString& nodeId, bool selected);
 
-  VoidResult onTransitionSelected(TransitionItem* transition);
+  VoidResult onTransitionSelected(const QString& transitionId);
   VoidResult onFlowAdded(const QString& flowId, const QString& nodeId);
   VoidResult onFlowRemoved(const QString& flowId, const QString& nodeId);
 
@@ -85,7 +87,7 @@ private:
   void addEventToTable(QTableWidget* table, int row, const std::shared_ptr<FlowSaveInfo>& event);
   void removeEventFromTable(QTableWidget* table, const QString& nodeId);
 
-  void updateBlockName(PNodeSaveInfo nodeInfo, const QString& componentName, const QString& eventName) const;
+  void updateBlockName(std::shared_ptr<NodeSaveInfo> nodeInfo, const QString& componentName, const QString& eventName) const;
 
-  std::shared_ptr<FlowSaveInfo> getFlowConfigOfRow(PNodeSaveInfo nodeInfo, QTableWidget* table, int row) const;
+  std::shared_ptr<FlowSaveInfo> getFlowConfigOfRow(std::shared_ptr<NodeSaveInfo> nodeInfo, QTableWidget* table, int row) const;
 };

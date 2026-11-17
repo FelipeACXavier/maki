@@ -1,5 +1,6 @@
 #include "host_services.h"
 
+#include "document/save_info.h"
 #include "idocument.h"
 #include "ilogging.h"
 #include "ipipeline.h"

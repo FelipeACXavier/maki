@@ -2,8 +2,8 @@
 
 #include <QUndoCommand>
 
-#include "../canvas.h"
-#include "save_info.h"
+#include "canvas/canvas.h"
+#include "document/save_info.h"
 
 class QPointF;  /// Forward declaration of QPointF class.
 

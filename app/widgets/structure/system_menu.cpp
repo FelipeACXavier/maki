@@ -6,6 +6,7 @@
 
 #include "app_configs.h"
 #include "config_table.h"
+#include "document/save_info.h"
 #include "keys.h"
 #include "logging.h"
 #include "style_helpers.h"

@@ -2,8 +2,8 @@
 
 #include <QString>
 
+#include "canvas/canvas.h"
 #include "logging.h"
-#include "system/canvas.h"
 
 ResizeNodeCommand::ResizeNodeCommand(Canvas* canvas, const QString& nodeId, const QSizeF& previousSize, const QSizeF& currentSize, QUndoCommand* parent)
     : QUndoCommand(parent)

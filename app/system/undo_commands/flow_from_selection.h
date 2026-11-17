@@ -2,9 +2,9 @@
 
 #include <QUndoCommand>
 
-#include "flow_info.h"
-#include "node_info.h"
-#include "transition_info.h"
+#include "document/flow_info.h"
+#include "document/node_info.h"
+#include "document/transition_info.h"
 
 class Canvas;
 

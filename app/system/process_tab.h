@@ -4,7 +4,7 @@
 #include <QTextCharFormat>
 #include <QWidget>
 
-#include "compiler/pipeline.h"
+#include "pipeline/pipeline.h"
 #include "widgets/settings_manager.h"
 
 class QTextBrowser;

@@ -9,6 +9,7 @@ option(BUILD_PLUGINS "Build plugins as part of the application" ON)
 option(MAKI_PEDANTIC "Enable all warnings" OFF)
 option(MAKI_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 option(MAKI_VERBOSE_DIAGNOSTICS "Enable detailed compiler diagnostics" OFF)
+option(MAKI_BUILD_TESTS "Build MAKI tests" ON)
 
 # Paths as configurable cache variables
 set(LOCAL_QT_PATH "" CACHE PATH "Qt path on this machine")
@@ -43,10 +44,30 @@ set(QT_REQUIRED_PACKAGES
   Gui
   Svg
   Widgets
+  Test
   Core5Compat
   SvgWidgets
   LinguistTools
 )
+
+if(MAKI_BUILD_TESTS)
+  enable_testing()
+  include(FetchContent)
+
+  FetchContent_Declare(
+    googletest
+    URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+  )
+  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+
+  # GoogleTest does not need Qt resource processing.
+  set(CMAKE_AUTORCC OFF)
+  FetchContent_MakeAvailable(googletest)
+  # Restore Qt resource processing for subsequent targets.
+  set(CMAKE_AUTORCC ON)
+  include(GoogleTest)
+endif()
 
 if(MAKI_VERBOSE_DIAGNOSTICS)
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")

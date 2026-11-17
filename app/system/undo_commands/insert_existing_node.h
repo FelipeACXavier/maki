@@ -2,7 +2,7 @@
 
 #include <QUndoCommand>
 
-#include "transition_info.h"
+#include "document/transition_info.h"
 
 class Canvas;
 

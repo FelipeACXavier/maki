@@ -7,8 +7,8 @@
 #include <QTimer>
 #include <QVBoxLayout>
 
-#include "compiler/pipeline.h"
 #include "logging.h"
+#include "pipeline/pipeline.h"
 
 ProcessTab::ProcessTab(QWidget* parent)
     : QWidget(parent)

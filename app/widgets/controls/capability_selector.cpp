@@ -9,9 +9,9 @@
 #include "config_table.h"
 #include "keys.h"
 #include "macros.h"
-#include "system/library_container.h"
-#include "system/library_scene.h"
 #include "widgets/frame.h"
+#include "widgets/library_container.h"
+#include "widgets/library_scene.h"
 #include "widgets/section.h"
 #include "widgets/widget_factory.h"
 

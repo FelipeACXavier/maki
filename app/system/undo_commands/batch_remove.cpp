@@ -1,7 +1,7 @@
 #include "batch_remove.h"
 
+#include "canvas/canvas.h"
 #include "logging.h"
-#include "system/canvas.h"
 
 BatchRemoveCommand::BatchRemoveCommand(Canvas* canvas, const QVector<NodeSaveInfo>& nodes, const QVector<TransitionSaveInfo>& transitions, QUndoCommand* parent)
     : QUndoCommand(parent)

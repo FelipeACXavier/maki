@@ -7,10 +7,18 @@ class ExecuteButton : public DropDownButton
   Q_OBJECT
 
 public:
+  struct OptionInfo
+  {
+    QString id;
+    QString name;
+  };
+
   explicit ExecuteButton(QWidget* parent = nullptr);
 
   void addOption(const QString& name, const QString& id);
   void removeOption(const QString& id);
+
+  OptionInfo currentOption();
 
   void setRunning(bool running);
 
@@ -29,25 +37,17 @@ protected:
   void paintLeadingContent(QPainter& painter, const QRect& rect, const oclero::qlementine::Theme& theme) override;
 
 private:
-  struct OptionInfo
-  {
-    QString id;
-    QString name;
-  };
-
   OptionInfo mCurrentOption;
   bool mRunning = false;
   const QString DEFAULT_TEXT;
   const QString ADD_NEW_TEXT;
-
-  void setCurrentOption(const OptionInfo& option);
-  OptionInfo currentOption();
 
   void buildMenu(QMenu* menu, const OptionInfo& option, bool addSelect);
 
   void rebuildMenu(const std::vector<OptionInfo>& pipelines);
   void setupDone();
 
+  void setCurrentOption(const OptionInfo& option);
   void updateButtonText();
   void showContextMenu(const QPoint& point);
 

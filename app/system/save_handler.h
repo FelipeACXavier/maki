@@ -4,9 +4,8 @@
 #include <QString>
 #include <QWidget>
 
-#include "node_info.h"
+#include "document/save_info.h"
 #include "result.h"
-#include "save_info.h"
 
 class QGraphicsItem;
 class Canvas;

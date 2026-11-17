@@ -1,11 +1,15 @@
 cmake_minimum_required(VERSION 3.16)
 project(${APPLICATION_NAME} LANGUAGES CXX)
 
+# This must be called before we build any QT targets
+qt_standard_project_setup()
+
 # Compile libraries
 add_subdirectory(common)
 add_subdirectory(document)
-
-qt_standard_project_setup()
+add_subdirectory(canvas)
+add_subdirectory(pipeline)
+add_subdirectory(widgets)
 
 # ------------------------------------------------------------------------------------------------------------
 include(GNUInstallDirs)
@@ -28,29 +32,11 @@ file(GLOB SYSTEM_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/system/undo_commands/*.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/system/tutorials/*.cpp
 )
-file(GLOB ELEMENT_FILES
-  ${CMAKE_CURRENT_SOURCE_DIR}/elements/*.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/elements/behaviour/*.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/elements/structure/*.cpp
-)
-file(GLOB WIDGET_FILES
-  ${CMAKE_CURRENT_SOURCE_DIR}/widgets/*.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/widgets/structure/*.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/widgets/properties/*.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/widgets/dialogs/*.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/widgets/validators/*.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/widgets/controls/*.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/widgets/editor/*.cpp
-)
-file(GLOB COMPILER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/compiler/*.cpp)
 
 qt_add_executable(${APPLICATION_NAME}
     main.cpp
     assets.qrc
     ${SYSTEM_FILES}
-    ${WIDGET_FILES}
-    ${ELEMENT_FILES}
-    ${COMPILER_FILES}
 )
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug" AND BUILD_PLUGINS)
@@ -107,9 +93,11 @@ target_link_libraries(${APPLICATION_NAME} PRIVATE
     Qt6::Core5Compat
     QuaZip::QuaZip
     qlementine
-    libavoid
     libcommon
     libdocument
+    libcanvas
+    libwidgets
+    libpipeline
     libcpphelpers
     libkoda
     libmaki
@@ -140,6 +128,12 @@ maki_add_cppcheck_target(${APPLICATION_NAME}
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}
 )
+
+# ------------------------------------------------------------------------------------------------------------
+# Tests
+if(MAKI_BUILD_TESTS)
+  add_subdirectory(tests)
+endif()
 
 # ------------------------------------------------------------------------------------------------------------
 # Linux deployment

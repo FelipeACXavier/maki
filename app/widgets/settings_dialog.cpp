@@ -26,13 +26,11 @@
 
 #include "app_configs.h"
 #include "app_paths.h"
+#include "canvas/edge_router.h"
 #include "frame.h"
 #include "logging.h"
 #include "macros.h"
-#include "scroll_area.h"
-#include "section.h"
 #include "style_helpers.h"
-#include "system/edge_router.h"
 #include "widget_factory.h"
 
 SettingsDialog::SettingsDialog(const QString& title, std::shared_ptr<SettingsManager> manager, std::shared_ptr<LanguageManager> languageManager,

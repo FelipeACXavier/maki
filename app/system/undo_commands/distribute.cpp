@@ -1,7 +1,7 @@
 #include "distribute.h"
 
+#include "canvas/canvas.h"
 #include "logging.h"
-#include "system/canvas.h"
 
 DistributeCommand::DistributeCommand(Canvas* canvas, const QList<Types::AlignmentNode>& items, QUndoCommand* parent)
     : QUndoCommand(parent)
