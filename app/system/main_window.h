@@ -14,7 +14,6 @@
 #include "widgets/notification_manager.h"
 #include "widgets/settings_manager.h"
 
-class Flow;
 class Canvas;
 class NodeItem;
 class Pipeline;
