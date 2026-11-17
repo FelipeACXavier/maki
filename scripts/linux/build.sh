@@ -21,6 +21,8 @@ MAKI_PEDANTIC="OFF"
 MAKI_WARNINGS_AS_ERRORS="OFF"
 MAKI_VERBOSE_DIAGNOSTICS="OFF"
 MAKI_ROS_DISTRO="humble"
+MAKI_TEST=0
+MAKI_TEST_FILTER=""
 
 # Helpers and arg parsing
 function printHelp()
@@ -51,6 +53,11 @@ function printHelp()
   echo "    --docker            | Build in the docker folder"
   echo "    --ros               | Set the ROS distro: humble, jazzy, etc. Default: ${MAKI_ROS_DISTRO}"
   echo ""
+  echo " Testing:"
+  echo "    --test              | Enable the test mode"
+  echo "    --list              | List the available tests"
+  echo "    -f --filter         | Filter the tests to run"
+  echo ""
   echo " Niceties for local development:"
   echo ""
   echo "    --local-qt          | Path to the local Qt installation"
@@ -73,6 +80,15 @@ while [[ $# -gt 0 ]]; do
       ;;
       --clean)
       CLEAN=1
+      shift
+      ;;
+      --test)
+      MAKI_TEST=1
+      shift
+      ;;
+      --filter|-f)
+      MAKI_TEST_FILTER="$2"
+      shift
       shift
       ;;
       --docs)
@@ -171,11 +187,10 @@ if [ $DOCKER -eq 1 ]; then
     exit 1
   fi
 
+  
   # We need to explictly set the compiler when building in the docker container
   EXTRA_ARGS="${EXTRA_ARGS} -DCMAKE_C_COMPILER=gcc-13 -DCMAKE_CXX_COMPILER=g++-13"
 fi
-
-# EXTRA_ARGS="${EXTRA_ARGS} -DCMAKE_CXX_FLAGS=-fno-immediate-escalation"
 
 echo "--------------------------------------"
 echo "Running with:"
@@ -196,6 +211,15 @@ if [ $CLEAN -eq 1 ]; then
   echo "Cleaning $INSTALL_PREFIX"
   rm -rf $BUILD_PATH
   rm -rf $INSTALL_PREFIX
+elif [ $MAKI_TEST -eq 1 ]; then
+  echo "Running tests with filter: $MAKI_TEST_FILTER"
+  TEST_COMMAND="QT_QPA_PLATFORM=offscreen $BUILD_PATH/app/tests/unit_tests/maki_unit_tests"
+  
+  if [ $LIST_TARGETS -eq 1 ]; then
+    eval $TEST_COMMAND --gtest_list_tests
+  else
+    eval $TEST_COMMAND --gtest_filter="$MAKI_TEST_FILTER"
+  fi
 elif [ $LIST_TARGETS -eq 1 ]; then
   echo "Listing targets"
   cmake --build "$BUILD_PATH" -j 4 --target help
