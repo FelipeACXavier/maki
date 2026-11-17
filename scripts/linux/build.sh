@@ -79,7 +79,7 @@ while [[ $# -gt 0 ]]; do
       DOCS=1
       shift
       ;;
-      --no-test)
+      --no-test|--no-tests)
       BUILD_TESTING="OFF"
       shift
       ;;
@@ -149,6 +149,7 @@ BUILD_PATH="$SOURCE_DIR/build/$TARGET_BUILD/$BUILD_TYPE_DIR"
 INSTALL_PREFIX="$SOURCE_DIR/release/$TARGET_BUILD"
 EXTRA_ARGS="${EXTRA_ARGS} \
            -DBUILD_TESTING=${BUILD_TESTING} \
+           -DMAKI_BUILD_TESTS=${BUILD_TESTING} \
            -DMAKI_ENABLE_CPPCHECK=${CPPCHECK} \
            -DMAKI_PEDANTIC=${MAKI_PEDANTIC} \
            -DMAKI_WARNINGS_AS_ERRORS=${MAKI_WARNINGS_AS_ERRORS} \
