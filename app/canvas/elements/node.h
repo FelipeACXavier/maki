@@ -81,7 +81,7 @@ public:
     if (!mControlActive)
       return;
 
-    if (auto control = qobject_cast<T*>(mControlWidget->controlWidget()); control && !mControlWidget->permanent())
+    if (auto control = qobject_cast<T*>(mControlWidget->controlWidget()); control)
       hideControl();
   }
 

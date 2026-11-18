@@ -23,7 +23,15 @@ class ControlWidget;
 
 struct ControlProperties
 {
-  bool isFading = false;
+  enum class FadingMode
+  {
+    NoFade = 0,
+    NoFadeOnHover,
+    Fading,
+    FadesWithDelay
+  };
+
+  FadingMode fadingMode = FadingMode::NoFade;
   int fadeDurationMs = 150;
   int fadeDelayMs = 1000;
   QPointF fixedPosition = {};
@@ -41,6 +49,7 @@ public:
   void setControlWidget(maki::ControlWidget* controls, const ControlProperties& properties);
 
   bool hideControl();
+
   void activate();
   void setPermanent();
   bool permanent() const;

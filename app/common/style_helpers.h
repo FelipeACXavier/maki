@@ -9,6 +9,7 @@
 #include <QWidget>
 #include <oclero/qlementine/utils/BadgeUtils.hpp>
 
+#include "app_configs.h"
 #include "config.h"
 #include "logging.h"
 
@@ -79,18 +80,10 @@ QString ToLabel(const std::string& str);
  *
  * @param path The path to the icon.
  * @param color The color to apply.
+ * @param size The size of the icon.
  * @return QPixmap The colored icon.
  */
-QPixmap applyColorToIcon(const QString& path, const QColor& color);
-
-/**
- * @brief Applies a color to an icon.
- *
- * @param pixmap The pixmap of the icon.
- * @param color The color to apply.
- * @return QPixmap The colored icon.
- */
-QPixmap applyColorToIcon(QPixmap pixmap, const QColor& color);
+QPixmap applyColorToIcon(const QString& path, const QColor& color, const QSize& size = Config::SMALL_BUTTON_SIZE, qreal scale = 1.0);
 
 /**
  * @brief Adds a colored icon to a QIcon.

@@ -156,17 +156,15 @@ QJsonObject PipelineGraph::toJson() const
 Result<PipelineGraph> PipelineGraph::fromFlow(const FlowSaveInfo& info)
 {
   PipelineGraph graph;
-  auto toAction = [](const QString& n) {
-    auto index = n.lastIndexOf(':') + 1;
-    return n.mid(index, n.size() - index);
-  };
-
   for (const auto& inode : info.getnodes())
   {
     auto node = std::dynamic_pointer_cast<NodeSaveInfo>(inode);
     PipelineNode pnode;
     pnode.id = node->getid();
-    pnode.actionId = toAction(node->getnodeId());
+    // Node Type is like PluginId::ActionId, so we need to split by :: and get the second part "ActionId"
+    pnode.actionId = node->getnodeId().section("::", 1, 1);
+
+    LOG_INFO("Getting action: {}", pnode.actionId);
     if (const auto* name = node->getProperty("name"))
       pnode.displayName = name->getvalue()->toStringValue();
 

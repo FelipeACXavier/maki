@@ -15,9 +15,6 @@ public:
 protected:
   void paint(QPainter* painter, const QStyleOptionGraphicsItem* style, QWidget* widget) override;
 
-  void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
-  void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
-
 private:
   QSvgRenderer* mIconRenderer = nullptr;
 

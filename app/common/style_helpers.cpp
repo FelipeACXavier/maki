@@ -50,19 +50,28 @@ QString ToLabel(const QString& str)
   return QString::fromStdString(ToUpperCase(str.toStdString(), 0, 1));
 }
 
-QPixmap applyColorToIcon(const QString& path, const QColor& color)
+QPixmap applyColorToIcon(const QString& path, const QColor& color, const QSize& size, qreal scale)
 {
-  return applyColorToIcon(QPixmap(path), color);
-}
+  QSvgRenderer renderer(path);
+  if (!renderer.isValid())
+    return {};
 
-QPixmap applyColorToIcon(QPixmap pixmap, const QColor& color)
-{
-  if (pixmap.isNull())
-    return pixmap;
+  // Scale for high-DPI displays and potential scene zoom.
+  const qreal pixelRatio = scale;
+  QPixmap pixmap(qCeil(size.width() * pixelRatio), qCeil(size.height() * pixelRatio));
+
+  pixmap.setDevicePixelRatio(pixelRatio);
+  pixmap.fill(Qt::transparent);
 
   QPainter painter(&pixmap);
+  painter.setRenderHint(QPainter::Antialiasing);
+
+  // Render the vector at the requested resolution.
+  renderer.render(&painter, QRectF(QPointF(0, 0), QSizeF(size)));
+
+  // Replace the SVG color while preserving transparency.
   painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
-  painter.fillRect(pixmap.rect(), color);
+  painter.fillRect(QRectF(QPointF(0, 0), QSizeF(size)), color);
 
   return pixmap;
 }

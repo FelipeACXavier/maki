@@ -230,7 +230,7 @@ void NodeItem::showSimulationControls(maki::ControlWidget* controls, const QColo
 
   mControlActive = true;
   mControlWidget->setControlWidget(controls, ControlProperties{
-                                               .isFading = false,
+                                               .fadingMode = ControlProperties::FadingMode::NoFade,
                                                .highlightColor = highlightColor,
                                                .position = Config::ControlPosition::Top,
                                              });

@@ -76,13 +76,3 @@ bool PipelineNode::ensureRenderer()
 
   return false;
 }
-
-void PipelineNode::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
-{
-  NodeItem::hoverEnterEvent(event);
-}
-
-void PipelineNode::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
-{
-  NodeItem::hoverLeaveEvent(event);
-}

@@ -3,7 +3,9 @@
 #include <memory>
 
 #include "canvas/behaviour_canvas.h"
+#include "canvas/canvas_view.h"
 #include "document/flow_info.h"
+#include "widgets/controls/pipeline_data_widget.h"
 
 PipelineCanvas::PipelineCanvas(std::shared_ptr<FlowSaveInfo> storage, std::shared_ptr<EdgeRouter> router, QObject* parent)
     : BehaviourCanvas(storage, "", router, parent)
@@ -57,4 +59,29 @@ void PipelineCanvas::requestRemoveTransition(TransitionSaveInfo info)
 {
   if (auto flow = SaveInfo::instance().getPipelineWithId(mFlow->id()))
     flow->removeTransition(info.getid());
+}
+
+void PipelineCanvas::onNodeHovered(NodeItem* node, bool entered)
+{
+  if (!node)
+    return;
+
+  if (entered)
+  {
+    if (!node || node->hasControl())
+      return;
+
+    auto* control = maki::PipelineDataWidget::create(node->id(), mFlow->config(), parentView());
+    connect(control, &maki::ControlWidget::activated, this, [this, control] { emit controlCreated(control); });
+    connect(control, &maki::ControlWidget::dismissed, this, [this, control] { emit controlDismissed(control); });
+
+    node->showControls(control, ControlProperties{
+                                  .fadingMode = ControlProperties::FadingMode::NoFadeOnHover,
+                                  .position = Config::ControlPosition::Top,
+                                });
+  }
+  else
+  {
+    node->hideControlOfType<maki::PipelineDataWidget>();
+  }
 }
