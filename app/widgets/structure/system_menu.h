@@ -217,4 +217,6 @@ private:
    * @param item The cleaned Id.
    */
   inline QString cleanId(const QTreeWidgetItem* item, const int id, const Qt::ItemDataRole role = Qt::UserRole) const;
+
+  void setSubtreeExpanded(QTreeWidgetItem* item, bool expanded);
 };

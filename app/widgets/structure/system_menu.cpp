@@ -398,12 +398,7 @@ void SystemMenu::populateTaskItem(QTreeWidgetItem* item, const QString& nodeId)
 VoidResult SystemMenu::addRootNode(PNodeSaveInfo nodeInfo)
 {
   auto* item = new QTreeWidgetItem();
-  populateItem(item,
-               QIcon(":/icons/task.svg"),
-               nodeInfo->getNodeName(),
-               nodeInfo->getnodeId(),
-               nodeInfo->getid(),
-               Roles::NodeRole);
+  populateItem(item, QIcon(":/icons/task.svg"), nodeInfo->getNodeName(), nodeInfo->getnodeId(), nodeInfo->getid(), Roles::NodeRole);
 
   // Always insert root nodes before the Pipelines group.
   int index = topLevelItemCount();
@@ -564,6 +559,17 @@ void SystemMenu::removeGroupIfEmpty(QTreeWidgetItem* group)
   }
 }
 
+void SystemMenu::setSubtreeExpanded(QTreeWidgetItem* item, bool expanded)
+{
+  if (!item)
+    return;
+
+  item->setExpanded(expanded);
+
+  for (int i = 0; i < item->childCount(); ++i)
+    setSubtreeExpanded(item->child(i), expanded);
+}
+
 void SystemMenu::showContextMenu(const QPoint& pos)
 {
   QTreeWidgetItem* selectedItem = itemAt(pos);
@@ -572,33 +578,51 @@ void SystemMenu::showContextMenu(const QPoint& pos)
 
   QMenu contextMenu(this);
   contextMenu.setFixedWidth(Config::MENU_WIDTH);
-  if (selectedItem->data(TYPE_DATA, Qt::UserRole) == Roles::NodeRole)
+
+  if (selectedItem)
   {
-    contextMenu.addAction(iconFromTheme("search"), tr("Focus"), this, [this, selectedItem]() {
-      emit nodeFocused(selectedItem->data(CANVAS_DATA, Qt::UserRole).toString(), selectedItem->data(ID_DATA, Qt::UserRole).toString());
-    });
-    contextMenu.addAction(iconFromTheme("edit-delete"), tr("Delete"), this, [selectedItem]() {
-      // Update the model and let the events handle the rest
-      const auto nodeId = selectedItem->data(ID_DATA, Qt::UserRole).toString();
-      SaveInfo::instance().removeNode(nodeId);
-    });
+    const auto role = selectedItem->data(TYPE_DATA, Qt::UserRole);
+    if (role == Roles::NodeRole)
+    {
+      contextMenu.addAction(iconFromTheme("search"), tr("Focus"), this, [this, selectedItem]() {
+        emit nodeFocused(selectedItem->data(CANVAS_DATA, Qt::UserRole).toString(), selectedItem->data(ID_DATA, Qt::UserRole).toString());
+      });
+
+      contextMenu.addAction(iconFromTheme("edit-delete"), tr("Delete"), this, [selectedItem]() {
+        const auto nodeId = selectedItem->data(ID_DATA, Qt::UserRole).toString();
+        SaveInfo::instance().removeNode(selectedItem->data(ID_DATA, Qt::UserRole).toString());
+      });
+    }
+    else if (role == Roles::FlowRole)
+    {
+      contextMenu.addAction(iconFromTheme("document-edit"), tr("Edit"), this, [this, selectedItem]() { editFlow(selectedItem); });
+      contextMenu.addAction(iconFromTheme("edit-delete"), tr("Delete"), this, [this, selectedItem]() { removeFlow(selectedItem); });
+    }
+    else if (role == Roles::Pipeline)
+    {
+      contextMenu.addAction(iconFromTheme("document-edit"), tr("Edit"), this,
+                            [this, selectedItem]() { emit editPipeline(selectedItem->data(ID_DATA, Qt::UserRole).toString()); });
+
+      contextMenu.addAction(iconFromTheme("edit-delete"), tr("Delete"), this,
+                            [this, selectedItem]() { emit removePipeline(selectedItem->data(ID_DATA, Qt::UserRole).toString()); });
+    }
+
+    // Subtree operations are available on any item with children.
+    if (selectedItem->childCount() > 0)
+    {
+      if (!contextMenu.actions().isEmpty())
+        contextMenu.addSeparator();
+
+      contextMenu.addAction(iconFromTheme("arrow-down"), tr("Expand all from here"), this, [this, selectedItem]() { setSubtreeExpanded(selectedItem, true); });
+      contextMenu.addAction(iconFromTheme("arrow-up"), tr("Collapse all from here"), this, [this, selectedItem]() { setSubtreeExpanded(selectedItem, false); });
+    }
   }
-  else if (selectedItem->data(TYPE_DATA, Qt::UserRole) == Roles::FlowRole)
-  {
-    contextMenu.addAction(iconFromTheme("document-edit"), tr("Edit"), this, [this, selectedItem]() { editFlow(selectedItem); });
-    contextMenu.addAction(iconFromTheme("edit-delete"), tr("Delete"), this, [this, selectedItem]() { removeFlow(selectedItem); });
-  }
-  else if (selectedItem->data(TYPE_DATA, Qt::UserRole) == Roles::Pipeline)
-  {
-    contextMenu.addAction(iconFromTheme("document-edit"), tr("Edit"), this,
-                          [this, selectedItem]() { emit editPipeline(selectedItem->data(ID_DATA, Qt::UserRole).toString()); });
-    contextMenu.addAction(iconFromTheme("edit-delete"), tr("Delete"), this,
-                          [this, selectedItem]() { emit removePipeline(selectedItem->data(ID_DATA, Qt::UserRole).toString()); });
-  }
-  else
-  {
-    return;
-  }
+
+  if (!contextMenu.actions().isEmpty())
+    contextMenu.addSeparator();
+
+  contextMenu.addAction(iconFromTheme("expand-all"), tr("Expand all"), this, [this]() { expandAll(); });
+  contextMenu.addAction(iconFromTheme("collapse-all"), tr("Collapse all"), this, [this]() { collapseAll(); });
 
   contextMenu.exec(viewport()->mapToGlobal(pos));
 }

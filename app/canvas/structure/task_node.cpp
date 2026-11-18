@@ -271,8 +271,17 @@ QVector<QPointF> TaskNode::capabilitySlotCenters(const SlotLayout& layout, int s
 
 void TaskNode::ensureMainFlowExists()
 {
-  if (maki::anyOf(flowConfigs(), [](const auto& flow) { return flow->getname() == Constants::MAIN_FLOW; }))
+  auto existingMain = maki::findIf(flowConfigs(), [](const auto& flow) { return flow->getname() == Constants::MAIN_FLOW; });
+  if (existingMain)
+  {
+    // During copy, the main flow was already created, so we must emit the signal here
+    SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::FlowAdded,
+                                               .data = FlowEvent{
+                                                 .id = (*existingMain)->getid(),
+                                                 .ownerNodeId = id(),
+                                               }});
     return;
+  }
 
   auto info = std::make_shared<FlowSaveInfo>();
   info->setName(Constants::MAIN_FLOW);
