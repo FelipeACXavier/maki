@@ -18,4 +18,10 @@ public:
   ~PipelineCanvas();
 
   Types::LibraryTypes type() const override;
+
+  QString requestCreateNode(NodeSaveInfo info, NodeCreation creation) override;
+  void requestRemoveNode(NodeSaveInfo info) override;
+
+  void requestCreateTransition(TransitionSaveInfo info) override;
+  void requestRemoveTransition(TransitionSaveInfo info) override;
 };

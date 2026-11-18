@@ -121,13 +121,6 @@ void SaveInfo::addNodeToFlow(const QString& flowId, std::shared_ptr<INode> node)
 
     flow->addNode(node);
   }
-  else if (auto pipeline = getPipelineWithId(flowId))
-  {
-    if (maki::anyOf(pipeline->getnodes(), [node](const auto& n) { return n->getid() == node->getid(); }))
-      return;
-
-    pipeline->addNode(node);
-  }
 }
 
 std::shared_ptr<NodeSaveInfo> SaveInfo::getPipelineNodeWithId(const QString& nodeId) const
@@ -156,7 +149,22 @@ void SaveInfo::addTransitionToFlow(const QString& flowId, std::shared_ptr<ITrans
 
     flow->addTransition(transition);
   }
-  else if (auto pipeline = getPipelineWithId(flowId))
+}
+
+void SaveInfo::addNodeToPipeline(const QString& flowId, std::shared_ptr<INode> node)
+{
+  if (auto pipeline = getPipelineWithId(flowId))
+  {
+    if (maki::anyOf(pipeline->getnodes(), [node](const auto& n) { return n->getid() == node->getid(); }))
+      return;
+
+    pipeline->addNode(node);
+  }
+}
+
+void SaveInfo::addTransitionToPipeline(const QString& flowId, std::shared_ptr<ITransition> transition)
+{
+  if (auto pipeline = getPipelineWithId(flowId))
   {
     if (maki::anyOf(pipeline->getnodes(), [transition](const auto& t) { return t->getid() == transition->getid(); }))
       return;
@@ -198,8 +206,8 @@ void SaveInfo::removeNode(const QString& nodeId)
       return;
 
     // Verify the immediate parent actually contains it.
-    const auto children = parent->getchildren();
-    const bool found = maki::anyOf(children, [&nodeId](const auto& child) { return child && child->getid() == nodeId; });
+    // We don't want to emit the signal in a fluke
+    const bool found = maki::anyOf(parent->getchildren(), [&nodeId](const auto& child) { return child && child->getid() == nodeId; });
     if (!found)
       return;
 
@@ -554,12 +562,28 @@ QVector<std::shared_ptr<FlowSaveInfo>> SaveInfo::pipelines() const
 
 void SaveInfo::addPipeline(std::shared_ptr<FlowSaveInfo> pipeline)
 {
+  if (maki::anyOf(mPipelines, [pipeline](const auto& info) { return info->getid() == pipeline->getid() || info->getname() == pipeline->getname(); }))
+    return;
+
+  LOG_INFO("Adding pipeline:");
+  pipeline->print("  ");
   mPipelines.push_back(pipeline);
+  publish(DocumentEvent{.type = DocumentEvent::Type::PipelineAdded,
+                        .data = PipelineEvent{
+                          .id = pipeline->getid(),
+                          .name = pipeline->getname(),
+                        }});
 }
 
 void SaveInfo::removePipeline(std::shared_ptr<FlowSaveInfo> pipeline)
 {
-  mPipelines.removeIf([pipeline](std::shared_ptr<FlowSaveInfo> info) { return info->getid() == pipeline->getid(); });
+  auto removed = maki::takeIf(mPipelines, [pipeline](std::shared_ptr<FlowSaveInfo> info) { return info->getid() == pipeline->getid(); });
+  if (removed)
+    publish(DocumentEvent{.type = DocumentEvent::Type::PipelineRemoved,
+                          .data = PipelineEvent{
+                            .id = removed->getid(),
+                            .name = removed->getname(),
+                          }});
 }
 
 bool SaveInfo::taskHasCapability(const QString& taskId, const QString& capabilityId) const

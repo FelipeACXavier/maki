@@ -339,11 +339,9 @@ Result<QString> SaveHandler::saveNodeTree(const SaveInfo& project, const NodeSav
 {
   QDir root(project.rootPath);
 
-  QString nodeName;
-  if (const auto* name = node.getProperty("name"))
-    nodeName = sanitizeFileName(name->getvalue()->toStringValue());
-  else
-    return Result<QString>::Failed("Node has no name");
+  QString nodeName = node.getNodeName();
+  if (nodeName.isEmpty())
+    return Result<QString>::Failed("Node {} in has no name", node.getnodeId());
 
   const QString nodeFolder = QDir(folder).filePath(nodeName);
 

@@ -200,9 +200,13 @@ public:
   void unblockEvents();
 
   void addFlowToNode(const QString& nodeId, std::shared_ptr<FlowSaveInfo> flow, const QList<QPointF>& initialNodePositions);
-  void removeFlowFromNode(const QString& flowId, const QString& nodeId);
   void addNodeToFlow(const QString& flowId, std::shared_ptr<INode> node);
   void addTransitionToFlow(const QString& flowId, std::shared_ptr<ITransition> transition);
+
+  void addNodeToPipeline(const QString& flowId, std::shared_ptr<INode> node);
+  void addTransitionToPipeline(const QString& flowId, std::shared_ptr<ITransition> transition);
+
+  void removeFlowFromNode(const QString& flowId, const QString& nodeId);
 
   std::shared_ptr<FlowSaveInfo> getPipelineWithId(const QString& pipelineId) const;
   std::shared_ptr<NodeSaveInfo> getPipelineNodeWithId(const QString& nodeId) const;

@@ -193,10 +193,6 @@ void FlowSaveInfo::addArgument(std::shared_ptr<IParameter> arg)
     return;
 
   mArguments.push_back(arg);
-  SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::FlowModified,
-                                             .data = FlowEvent{
-                                               .id = getid(),
-                                             }});
 }
 
 void FlowSaveInfo::removeArgument(std::shared_ptr<IParameter> arg)
@@ -211,8 +207,13 @@ void FlowSaveInfo::removeArgument(std::shared_ptr<IParameter> arg)
 void FlowSaveInfo::addNode(std::shared_ptr<INode> inode)
 {
   // Do not add repeated nodes
-  if (maki::anyOf(mNodes, [nodeId = inode->getid()](const auto& info) { return info->getid() == nodeId; }))
+  if (maki::anyOf(getnodes(), [nodeId = inode->getid()](const auto& info) { return info->getid() == nodeId; }))
     return;
+
+  // Connect the node to the parent on creation
+  if (!inode->getparentId().isEmpty())
+    if (auto parent = getNode(inode->getparentId()); parent)
+      parent->addChild(inode);
 
   mNodes.push_back(inode);
   SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::NodeAdded,
@@ -228,12 +229,40 @@ void FlowSaveInfo::removeNode(const QString& nodeId)
 {
   // The node is removed from the list if it exists, and this copy is destroyed at the end of the scope
   auto node = maki::takeIf(mNodes, [nodeId](const auto& info) { return info->getid() == nodeId; });
+  if (!node)
+    return;
+
+  if (!node->getparentId().isEmpty())
+  {
+    auto parent = getNode(node->getparentId());
+    if (!parent)
+      return;
+
+    // Verify the immediate parent actually contains it.
+    // We don't want to emit the signal in a fluke
+    const bool found = maki::anyOf(parent->getchildren(), [&nodeId](const auto& child) { return child && child->getid() == nodeId; });
+    if (!found)
+      return;
+
+    // Removes the root of the requested subtree.
+    parent->removeChild(nodeId);
+  }
+
   SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::NodeRemoved,
                                              .data = NodeEvent{
                                                .id = nodeId,
                                                .parentId = node ? node->getparentId() : "",
                                                .ownerFlowId = getid(),
                                              }});
+}
+
+std::shared_ptr<NodeSaveInfo> FlowSaveInfo::getNode(const QString& nodeId) const
+{
+  auto node = maki::findIf(getnodes(), [nodeId](const auto& node) { return node->getid() == nodeId; });
+  if (node)
+    return std::dynamic_pointer_cast<NodeSaveInfo>(*node);
+
+  return nullptr;
 }
 
 // ==========================================================================
@@ -247,7 +276,7 @@ QJsonObject FlowSaveInfo::toJson() const
   data[ConfigKeys::TYPE] = Types::CallTypeToString(gettype());
   data[ConfigKeys::RETURN_TYPE] = maki::typeReferenceToJson(getreturnType());
   data[ConfigKeys::OWNER] = getowner();
-  data["linksTo"] = getlinksTo();
+  data[ConfigKeys::LINKS_TO] = getlinksTo();
 
   QJsonArray optionArray;
   for (const auto& arg : getarguments())
@@ -278,8 +307,8 @@ FlowSaveInfo FlowSaveInfo::fromJson(const QJsonObject& data)
   info.setName(data[ConfigKeys::NAME].toString());
   info.setModifiable(data[ConfigKeys::MODIFIABLE].toBool());
 
-  if (data.contains("linksTo"))
-    info.setLinksTo(data["linksTo"].toInt());
+  if (data.contains(ConfigKeys::LINKS_TO))
+    info.setLinksTo(data[ConfigKeys::LINKS_TO].toInt());
 
   info.setType(Types::StringToCallType(data[ConfigKeys::TYPE].toString()));
   auto ref = maki::typeReferenceFromJson(data[ConfigKeys::TYPE].toObject());

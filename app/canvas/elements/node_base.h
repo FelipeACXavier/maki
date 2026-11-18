@@ -159,6 +159,7 @@ protected:
 
   QFont labelFont() const;
   bool isLabelVisible() const;
+  void setRenderer(const QString& iconPath);
 
   /**
    * @brief Sets the icon for the node.

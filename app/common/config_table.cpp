@@ -23,6 +23,9 @@ VoidResult ConfigurationTable::add(const QString& key, std::shared_ptr<NodeConfi
 
 std::shared_ptr<NodeConfig> ConfigurationTable::get(const QString& key) const
 {
+  if (key.isEmpty())
+    return nullptr;
+
   if (mMap.find(key) == mMap.end())
     return nullptr;
 

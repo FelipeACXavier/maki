@@ -1,6 +1,8 @@
 #pragma once
 
 #include "dropdown_button.h"
+#include "document/document_event.h"
+#include "document/event_dispatcher.h"
 
 class ExecuteButton : public DropDownButton
 {
@@ -15,6 +17,7 @@ public:
 
   explicit ExecuteButton(QWidget* parent = nullptr);
 
+  void start();
   void addOption(const QString& name, const QString& id);
   void removeOption(const QString& id);
 
@@ -39,6 +42,7 @@ protected:
 private:
   OptionInfo mCurrentOption;
   bool mRunning = false;
+  EventDispatcher<DocumentEvent>::Subscription mDocumentSubscription;
   const QString DEFAULT_TEXT;
   const QString ADD_NEW_TEXT;
 

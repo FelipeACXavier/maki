@@ -201,6 +201,8 @@ public:
    */
   void removeNode(const QString& nodeId);
 
+  std::shared_ptr<NodeSaveInfo> getNode(const QString& nodeId) const;
+
   /**
    * @brief Converts the flow save info to a JSON object.
    *

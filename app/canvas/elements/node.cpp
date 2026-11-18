@@ -101,12 +101,6 @@ void NodeItem::createPorts()
 {
   for (const auto& port : config()->ports)
     mPorts[{Constants::MAIN_SUB_FLOW, port.type}] = new PortItem(port.type, this);
-
-  if (config()->ports.isEmpty() && config()->libraryType == Types::LibraryTypes::PIPELINE)
-  {
-    mPorts[{Constants::MAIN_SUB_FLOW, Types::Port::IN}] = new PortItem(Types::Port::IN, this);
-    mPorts[{Constants::MAIN_SUB_FLOW, Types::Port::OUT}] = new PortItem(Types::Port::OUT, this);
-  }
 }
 
 QString NodeItem::nodeName() const

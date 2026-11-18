@@ -26,15 +26,24 @@ NodeBase::NodeBase(const QString& id, const QString& nodeId, std::shared_ptr<Nod
   qreal scaleFactor = computeScaleFactor();
   mScaledBounds = QRectF(0, 0, config()->body.width * scaleFactor, config()->body.height * scaleFactor);
 
-  if (!config()->body.iconPath.isEmpty())
-    if (auto icon = iconPathFromTheme(config()->body.iconPath); !icon.isEmpty())
-      mRenderer = new QSvgRenderer(icon);
+  setRenderer(config()->body.iconPath);
 }
 
 NodeBase::~NodeBase()
 {
   if (mRenderer)
     delete mRenderer;
+}
+
+void NodeBase::setRenderer(const QString& iconPath)
+{
+  if (auto icon = iconPathFromTheme(iconPath); !icon.isEmpty())
+  {
+    if (mRenderer)
+      mRenderer->load(icon);
+    else
+      mRenderer = new QSvgRenderer(icon);
+  }
 }
 
 QString NodeBase::id() const

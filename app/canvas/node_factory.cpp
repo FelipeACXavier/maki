@@ -12,6 +12,7 @@
 #include "canvas/behaviour/success_node.h"
 #include "canvas/behaviour/terminate_node.h"
 #include "canvas/behaviour/within_node.h"
+#include "canvas/pipeline/pipeline_node.h"
 #include "canvas/structure/capability_node.h"
 #include "canvas/structure/task_node.h"
 #include "document/node_info.h"
@@ -19,12 +20,14 @@
 #include "logging.h"
 
 NodeItem* NodeFactory::create(const QString& id, std::shared_ptr<NodeSaveInfo> info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig,
-                              QGraphicsItem* parent)
+                              Types::LibraryTypes canvasType, QGraphicsItem* parent)
 {
   if (!info)
     return nullptr;
 
   LOG_DEBUG("Creating: {}", info->getnodeId());
+  if (canvasType == Types::LibraryTypes::PIPELINE)
+    return new PipelineNode(id, info, initialPosition, nodeConfig, parent);
 
   if (info->getnodeId() == ConfigKeys::CAPABILITY_CALL_NODE)
     return new CapabilityCallNode(id, info, initialPosition, nodeConfig, parent);

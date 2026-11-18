@@ -19,3 +19,42 @@ Types::LibraryTypes PipelineCanvas::type() const
 {
   return Types::LibraryTypes::PIPELINE;
 }
+
+QString PipelineCanvas::requestCreateNode(NodeSaveInfo info, NodeCreation creation)
+{
+  LOG_DEBUG("PipelineCanvas::requestCreateNode: {}", info.getnodeId());
+
+  // The model must know the ID before it is inserted.
+  if (info.getid().isEmpty())
+    info.setId(QUuid::createUuid().toString());
+
+  const QString id = info.getid();
+  mPendingCreations.insert(id, creation);
+  auto storage = std::make_shared<NodeSaveInfo>(info);
+
+  SaveInfo::instance().addNodeToPipeline(mFlow->id(), storage);
+  return id;
+}
+
+void PipelineCanvas::requestRemoveNode(NodeSaveInfo info)
+{
+  if (auto flow = SaveInfo::instance().getPipelineWithId(mFlow->id()))
+    flow->removeNode(info.getid());
+}
+
+void PipelineCanvas::requestCreateTransition(TransitionSaveInfo info)
+{
+  LOG_DEBUG("PipelineCanvas::requestCreateTransition: {}", info.getid());
+  // The model must know the ID before it is inserted.
+  if (info.getid().isEmpty())
+    info.setId(QUuid::createUuid().toString());
+
+  auto storage = std::make_shared<TransitionSaveInfo>(info);
+  SaveInfo::instance().addTransitionToPipeline(mFlow->id(), storage);
+}
+
+void PipelineCanvas::requestRemoveTransition(TransitionSaveInfo info)
+{
+  if (auto flow = SaveInfo::instance().getPipelineWithId(mFlow->id()))
+    flow->removeTransition(info.getid());
+}

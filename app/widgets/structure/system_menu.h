@@ -74,7 +74,7 @@ public:
    */
   VoidResult onFlowRemoved(const QString& flowId, const QString& nodeId);
 
-  VoidResult onPipelineAdded(std::shared_ptr<const FlowSaveInfo> info);
+  VoidResult onPipelineAdded(const QString& pipelineId, const QString& pipelineName);
   VoidResult onPipelineRemoved(const QString& id);
 
 signals:

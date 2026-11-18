@@ -7,6 +7,7 @@ file(GLOB SOURCES CONFIGURE_DEPENDS
   ${CMAKE_CURRENT_SOURCE_DIR}/elements/*.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/structure/*.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/behaviour/*.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/pipeline/*.cpp
 )
 
 add_library(${PROJECT_NAME}

@@ -32,6 +32,14 @@ QString toString(const DocumentEvent::Type type)
       return "ChildAdded";
     case DocumentEvent::Type::ChildRemoved:
       return "ChildRemoved";
+    case DocumentEvent::Type::PipelineAdded:
+      return "PipelineAdded";
+    case DocumentEvent::Type::PipelineRemoved:
+      return "PipelineRemoved";
+    case DocumentEvent::Type::PipelineModified:
+      return "PipelineModified";
+    case DocumentEvent::Type::DocumentReplaced:
+      return "DocumentReplaced";
     case DocumentEvent::Type::DocumentReset:
       return "DocumentReset";
   }

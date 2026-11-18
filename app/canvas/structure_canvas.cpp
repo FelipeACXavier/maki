@@ -32,6 +32,8 @@ QString StructureCanvas::requestCreateNode(NodeSaveInfo info, NodeCreation creat
   auto exists = SaveInfo::instance().getNodeWithId(info.getid());
   if (!exists)
     SaveInfo::instance().addNode(storage);
+  else
+    LOG_ERROR("Node {} already exists", storage->getid());
 
   return id;
 }

@@ -61,6 +61,8 @@ void NodeSaveInfo::print(const QString& indent) const
 {
   LOG_INFO("{}Node id: {}", indent, getid());
   LOG_INFO("{}Node type: {}", indent, getnodeId());
+  LOG_INFO("{}Parent: {}", indent, getparentId());
+  LOG_INFO("{}SubFlow: {}", indent, getParentSubFlow());
   LOG_INFO("{}Children: {}", indent, getchildren().size());
   for (const auto& ichild : getchildren())
     if (auto child = std::dynamic_pointer_cast<NodeSaveInfo>(ichild))
@@ -319,6 +321,9 @@ void NodeSaveInfo::removeEvent(std::shared_ptr<IFlow> event)
 
 void NodeSaveInfo::addChild(std::shared_ptr<INode> child)
 {
+  if (maki::anyOf(mChildren, [childId = child->getid()](const auto& info) { return info->getid() == childId; }))
+    return;
+
   mChildren.push_back(child);
 }
 
@@ -428,23 +433,28 @@ NodeSaveInfo NodeSaveInfo::fromJson(const QJsonObject& data)
 
   if (data.contains(ConfigKeys::FIELDS))
     for (const auto& node : data[ConfigKeys::FIELDS].toArray())
-      info.addField(std::make_shared<PropertyInfo>(PropertyInfo::fromJson(node.toObject())));
+      if (node.isObject())
+        info.addField(std::make_shared<PropertyInfo>(PropertyInfo::fromJson(node.toObject())));
 
   if (data.contains(ConfigKeys::EVENTS))
     for (const auto& node : data[ConfigKeys::EVENTS].toArray())
-      info.addEvent(std::make_shared<FlowSaveInfo>(FlowSaveInfo::fromJson(node.toObject())));
+      if (node.isObject())
+        info.addEvent(std::make_shared<FlowSaveInfo>(FlowSaveInfo::fromJson(node.toObject())));
 
   if (data.contains(ConfigKeys::CHILDREN))
     for (const auto& child : data[ConfigKeys::CHILDREN].toArray())
-      info.addChild(std::make_shared<NodeSaveInfo>(NodeSaveInfo::fromJson(child.toObject())));
+      if (child.isObject())
+        info.addChild(std::make_shared<NodeSaveInfo>(NodeSaveInfo::fromJson(child.toObject())));
 
   if (data.contains(ConfigKeys::PROPERTIES))
     for (const auto& node : data[ConfigKeys::PROPERTIES].toArray())
-      info.addProperty(std::make_shared<PropertyInfo>(PropertyInfo::fromJson(node.toObject())));
+      if (node.isObject())
+        info.addProperty(std::make_shared<PropertyInfo>(PropertyInfo::fromJson(node.toObject())));
 
   if (data.contains(ConfigKeys::CONNECTORS))
     for (const auto& node : data[ConfigKeys::CONNECTORS].toArray())
-      info.addPort(PortConfig(node.toObject()));
+      if (node.isObject())
+        info.addPort(PortConfig(node.toObject()));
 
   info.setIcon(data[ConfigKeys::ICON_PATH].toString());
 

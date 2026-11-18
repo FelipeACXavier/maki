@@ -10,6 +10,7 @@
 #include "app_configs.h"
 #include "notifications.h"
 #include "style_helpers.h"
+#include "document/save_info.h"
 
 static const QString CREATE_NEW = "";
 static const bool CLEAR_CACHE = true;
@@ -31,6 +32,57 @@ ExecuteButton::ExecuteButton(QWidget* parent)
   });
 
   setupDone();
+}
+
+void ExecuteButton::start()
+{
+  mDocumentSubscription = SaveInfo::instance().subscribe([this](const DocumentEvent& event) {
+    LOG_DEBUG("Document event: {}", maki::toString(event.type));
+    const QSignalBlocker blocker(this);
+    switch (event.type)
+    {
+      case DocumentEvent::Type::DocumentReset:
+      {
+        reset();
+      }
+      case DocumentEvent::Type::DocumentReplaced:
+      {
+        // First clear
+        reset();
+        for (const auto& pipeline : SaveInfo::instance().pipelines())
+          addOption(pipeline->getname(), pipeline->getid());
+      }
+      case DocumentEvent::Type::PipelineAdded:
+      {
+        const auto* data = std::get_if<PipelineEvent>(&event.data);
+        if (!data)
+          return;
+
+        addOption(data->name, data->id);
+        break;
+      }
+      case DocumentEvent::Type::PipelineRemoved:
+      {
+        const auto* data = std::get_if<PipelineEvent>(&event.data);
+        if (!data)
+          return;
+
+        removeOption(data->id);
+        break;
+      }
+      case DocumentEvent::Type::PipelineModified:
+      {
+        const auto* data = std::get_if<PipelineEvent>(&event.data);
+        if (!data)
+          return;
+
+        addOption(data->name, data->id);
+        break;
+      }
+      default:
+        break;
+    }
+  });
 }
 
 void ExecuteButton::reset()

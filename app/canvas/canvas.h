@@ -161,13 +161,6 @@ public:
   void nodeClicked(NodeItem* node);
 
   /**
-   * @brief Populates the canvas with a given flow.
-   *
-   * @param flow Pointer to the flow to populate.
-   */
-  void populate(const FlowSaveInfo& flow);
-
-  /**
    * @brief Handles theme change events.
    */
   void themeChanged();
@@ -567,7 +560,7 @@ private:
   void pasteCopiedItems(const QPointF& mousePosition, NodeItem* parentNode, const QList<CopiedNode>& nodes,
                         bool relative);  /// Pastes copied items at a specified position.
 
-  VoidResult loadFromSave(const QVector<std::shared_ptr<INode>>& nodes, NodeItem* parent);  /// Loads nodes and their children from save information.
+  VoidResult loadFromSave(const QVector<std::shared_ptr<INode>>& nodes);  /// Loads nodes and their children from save information.
 
   void onSelectionChanged();
 

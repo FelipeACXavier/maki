@@ -169,14 +169,6 @@ VoidResult MainWindow::start()
   bind();
   bindShortcuts();
 
-  if (mPipelineRun)
-    for (const auto& pipeline : SaveInfo::instance().pipelines())
-    {
-      mPipelineRun->addOption(pipeline->getname(), pipeline->getid());
-      if (mSystemMenu)
-        mSystemMenu->onPipelineAdded(pipeline);
-    }
-
   // Set initial tabs
   mPalette->setCurrentIndex(0);
   mNavigationTab->setCurrentIndex(0);
@@ -677,14 +669,6 @@ void MainWindow::onSettingsChanged(bool initialSetup)
     mProcessTab->onSettingsChanged(mSettingsManager->general());
   }
 
-  // Clean and repopulate the recent files
-  mActionOpenRecent->clear();
-  for (const auto& file : mSettingsManager->general().recentFiles)
-  {
-    const QAction* action = mActionOpenRecent->addAction(elideLeft(file, mActionOpenRecent));
-    connect(action, &QAction::triggered, [this, file] { onActionLoad(file); });
-  }
-
   // Update node palette
   for (const auto& section : mPalette->findChildren<SectionWidget*>())
     if (auto* library = qobject_cast<LibraryContainer*>(section->content()))
@@ -709,6 +693,7 @@ void MainWindow::startUI()
   // Start all the different menus
   mPropertiesMenu->start();
   mSystemMenu->start();
+  mPipelineRun->start();
 }
 
 void MainWindow::bind()
@@ -760,7 +745,7 @@ void MainWindow::bind()
   });
 
   // File actions =============================================================
-  connect(mActionNew, &QAction::triggered, this, [this] { onActionNew(""); });
+  connect(mActionNew, &QAction::triggered, this, [this] { onActionNew(DEFAULT_TEMPLATE); });
   mActionNew->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_N));
 
   connect(mActionOpen, &QAction::triggered, [this] { onActionLoad(""); });
@@ -779,6 +764,15 @@ void MainWindow::bind()
   connect(mPipelineRun, &ExecuteButton::renameOptionRequested, this, &MainWindow::onActionRenamePipeline);
   connect(mPipelineRun, &ExecuteButton::deleteOptionRequested, this, &MainWindow::onActionDeletePipeline);
 
+  connect(mActionOpenRecent, &QMenu::aboutToShow, this, [this] {
+    mActionOpenRecent->clear();
+    const auto recentFiles = mSettingsManager->general().recentFiles;
+    for (const auto& file : recentFiles)
+    {
+      auto* action = mActionOpenRecent->addAction(elideLeft(file, mActionOpenRecent));
+      connect(action, &QAction::triggered, this, [this, file] { onActionLoad(file); });
+    }
+  });
   // View actions =============================================================
   mOpenComponentsPanel->setShortcut(QKeySequence(Qt::Key_F7));
   mOpenInfoPanel->setShortcut(QKeySequence(Qt::Key_F8));
@@ -1346,66 +1340,6 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
   return VoidResult();
 }
 
-void MainWindow::onActionNew(const QString& templateName)
-{
-  if (!mSaveHandler)
-  {
-    LOG_WARNING("System not initialized");
-    return;
-  }
-
-  // Repopulate the canvas
-  SaveInfo emptySave;
-  SaveInfo::instance().reset();
-
-  // Gotta make sure we don't save over an old file
-  mSaveHandler->newFileCreated();
-
-  for (auto* editor : mEditorWorkspace->editors())
-  {
-    if (auto view = qobject_cast<CanvasView*>(editor))
-      if (auto* scene = qobject_cast<Canvas*>(view->scene()))
-        scene->loadFromSave(emptySave);
-
-    const auto tabId = mEditorWorkspace->editorId(editor);
-    if (tabId != Config::MAIN_CANVAS)
-      closeCanvasTab(editor);
-  }
-
-  maki::TypeRegistry::instance().removeUserTypes();
-  if (mMissionParameters)
-    mMissionParameters->documentUpdated();
-  if (mPipelineRun)
-    mPipelineRun->reset();
-  if (mSystemMenu)
-    mSystemMenu->clear();
-
-  if (!templateName.isEmpty())
-    onActionLoad(templateName, true);
-
-  NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Created new project");
-}
-
-void MainWindow::onActionExit()
-{
-  QCoreApplication::quit();
-}
-
-void MainWindow::onActionRestart()
-{
-  LOG_DEBUG("Restart requested");
-  // Prepare to start a new instance of MAKI
-  QObject::connect(qApp, &QCoreApplication::aboutToQuit, [] {
-    const QString program = QCoreApplication::applicationFilePath();
-    const QStringList args = QCoreApplication::arguments().mid(1);
-
-    QProcess::startDetached(program, args);
-  });
-
-  // Quit from the running instance
-  onActionExit();
-}
-
 void MainWindow::onActionGenerate(const QString& pipelineId, bool fromScratch)
 {
   if (!mPluginPipeline)
@@ -1473,16 +1407,7 @@ void MainWindow::onActionDeletePipeline(const QString& pipelineId)
     return;
   }
 
-  std::shared_ptr<FlowSaveInfo> pipeline;
-  for (const auto& p : SaveInfo::instance().pipelines())
-  {
-    if (p->getid() != pipelineId)
-      continue;
-
-    pipeline = p;
-    break;
-  }
-
+  auto pipeline = SaveInfo::instance().getPipelineWithId(pipelineId);
   if (!pipeline)
   {
     LOG_WARNING("Could not find pipeline: {}", pipelineId);
@@ -1502,22 +1427,13 @@ void MainWindow::onActionDeletePipeline(const QString& pipelineId)
   }
 
   SaveInfo::instance().removePipeline(pipeline);
-  mPipelineRun->removeOption(pipeline->getid());  // Update the UI as well
-  mSystemMenu->onPipelineRemoved(pipelineId);
+  // mPipelineRun->removeOption(pipeline->getid());  // Update the UI as well
+  // mSystemMenu->onPipelineRemoved(pipelineId);
 }
 
 void MainWindow::onActionRenamePipeline(const QString& pipelineId)
 {
-  std::shared_ptr<FlowSaveInfo> pipeline;
-  for (const auto& p : SaveInfo::instance().pipelines())
-  {
-    if (p->getid() != pipelineId)
-      continue;
-
-    pipeline = p;
-    break;
-  }
-
+  auto pipeline = SaveInfo::instance().getPipelineWithId(pipelineId);
   if (!pipeline)
   {
     LOG_WARNING("No pipeline with id {}", pipelineId);
@@ -1536,8 +1452,13 @@ void MainWindow::onActionRenamePipeline(const QString& pipelineId)
   }
 
   pipeline->setName(name);
-  mPipelineRun->addOption(pipeline->getname(), pipeline->getid());
-  mSystemMenu->onPipelineAdded(pipeline);
+  SaveInfo::instance().publish(DocumentEvent{
+    .type = DocumentEvent::Type::PipelineModified,
+    .data  = PipelineEvent{
+      .id = pipeline->getid(),
+      .name = pipeline->getname(),
+    }
+  });
 
   for (const auto* editor : mEditorWorkspace->editors())
   {
@@ -1587,8 +1508,7 @@ void MainWindow::onActionEditPipeline(const QString& pipelineId)
     pipeline->setName(name);
 
     SaveInfo::instance().addPipeline(pipeline);
-    mPipelineRun->addOption(pipeline->getname(), pipeline->getid());  // Update the UI as well
-    mSystemMenu->onPipelineAdded(pipeline);
+    // mPipelineRun->addOption(pipeline->getname(), pipeline->getid());  // Update the UI as well
   }
 
   // Check if the pipeline is already open
@@ -1616,6 +1536,64 @@ void MainWindow::onActionEditPipeline(const QString& pipelineId)
 
   mEditorWorkspace->addEditor(pipeline->getid(), newView, pipeline->getname(), QIcon(":/icons/pipeline.svg"), true);
   mEditorWorkspace->activateEditor(pipelineId);
+}
+
+void MainWindow::onActionNew(const QString& templateName)
+{
+  if (!mSaveHandler)
+  {
+    LOG_WARNING("System not initialized");
+    return;
+  }
+
+  // Repopulate the canvas
+  SaveInfo emptySave;
+  SaveInfo::instance().reset();
+  SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::DocumentReset});
+
+  // Gotta make sure we don't save over an old file
+  mSaveHandler->newFileCreated();
+
+  for (auto* editor : mEditorWorkspace->editors())
+  {
+    if (auto view = qobject_cast<CanvasView*>(editor))
+      if (auto* scene = qobject_cast<Canvas*>(view->scene()))
+        scene->loadFromSave(emptySave);
+
+    const auto tabId = mEditorWorkspace->editorId(editor);
+    if (tabId != Config::MAIN_CANVAS)
+      closeCanvasTab(editor);
+  }
+
+  maki::TypeRegistry::instance().removeUserTypes();
+  if (mMissionParameters)
+    mMissionParameters->documentUpdated();
+
+  if (!templateName.isEmpty())
+    onActionLoad(templateName, true);
+  else
+    NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Created new project");
+
+}
+
+void MainWindow::onActionExit()
+{
+  QCoreApplication::quit();
+}
+
+void MainWindow::onActionRestart()
+{
+  LOG_DEBUG("Restart requested");
+  // Prepare to start a new instance of MAKI
+  QObject::connect(qApp, &QCoreApplication::aboutToQuit, [] {
+    const QString program = QCoreApplication::applicationFilePath();
+    const QStringList args = QCoreApplication::arguments().mid(1);
+
+    QProcess::startDetached(program, args);
+  });
+
+  // Quit from the running instance
+  onActionExit();
 }
 
 VoidResult MainWindow::onActionSave()
@@ -1715,7 +1693,7 @@ void MainWindow::onFileLoaded(const QString& file, const SaveInfo& info, const Q
   SaveInfo::instance().setScheduler(mDocumentScheduler);
 
   // Repopulate the canvas (and the storage)
-  rootCanvas()->loadFromSave(info);
+  rootCanvas()->loadFromSave(SaveInfo::instance());
 
   if (mMissionParameters)
     mMissionParameters->documentUpdated();
@@ -1725,19 +1703,11 @@ void MainWindow::onFileLoaded(const QString& file, const SaveInfo& info, const Q
   mSettingsManager->setGeneral(general);
   mSettingsManager->applySettings();
 
-  if (mPipelineRun)
-  {
-    mPipelineRun->reset();
-    for (const auto& pipeline : SaveInfo::instance().pipelines())
-    {
-      mPipelineRun->addOption(pipeline->getname(), pipeline->getid());
-      if (mSystemMenu)
-        mSystemMenu->onPipelineAdded(pipeline);
-    }
-  }
+  // Make sure the menus are updated
+  SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::DocumentReplaced});
 
   if (mSystemMenu)
-    mSystemMenu->expandToDepth(0);
+    mSystemMenu->collapseAll();
 
   if (fromTemplate)
   {
@@ -1746,9 +1716,12 @@ void MainWindow::onFileLoaded(const QString& file, const SaveInfo& info, const Q
     SaveInfo::instance().version.clear();
     SaveInfo::instance().saveFile.clear();
   }
+  else
+  {
+    NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Loaded project: {}", SaveInfo::instance().name.toStdString());
+  }
 
   LOG_INFO("Project with {} nodes after", SaveInfo::instance().getnodes().size());
-  NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Loaded project: {}", SaveInfo::instance().name.toStdString());
 }
 
 void MainWindow::onNodeSelected(const QString& nodeId, bool selected)

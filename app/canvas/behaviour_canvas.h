@@ -44,6 +44,13 @@ public:
   void requestRemoveTransition(TransitionSaveInfo info) override;
 
   /**
+   * @brief Populates the canvas with a given flow.
+   *
+   * @param flow Pointer to the flow to populate.
+   */
+  void populate(const FlowSaveInfo& flow);
+
+  /**
    * @brief Checkes whether it is possible to add a new trasition to a node
    * @param node A pointer to the node of interest
    * @return True if the node allows more transitions, and false otherwise.

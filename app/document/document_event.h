@@ -37,6 +37,12 @@ struct TransitionEvent
   QString ownerFlowId;
 };
 
+struct PipelineEvent
+{
+  QString id;
+  QString name;
+};
+
 struct ParentEvent
 {
 };
@@ -62,11 +68,15 @@ struct DocumentEvent
     ParentRemoved,
     ChildAdded,
     ChildRemoved,
+    PipelineAdded,
+    PipelineRemoved,
+    PipelineModified,
+    DocumentReplaced,
     DocumentReset,
   };
 
   Type type;
-  std::variant<NodeEvent, FlowEvent, TransitionEvent, ParentEvent, ChildEvent> data;
+  std::variant<NodeEvent, FlowEvent, TransitionEvent, ParentEvent, ChildEvent, PipelineEvent> data;
 };
 
 namespace maki

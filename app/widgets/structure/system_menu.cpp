@@ -62,6 +62,36 @@ VoidResult SystemMenu::start()
     LOG_DEBUG("Document event: {}", maki::toString(event.type));
     switch (event.type)
     {
+      case DocumentEvent::Type::DocumentReset:
+      {
+        clear();
+      }
+      case DocumentEvent::Type::DocumentReplaced:
+      {
+        // First clear
+        clear();
+        const auto& document = SaveInfo::instance();
+        for (const auto& node : document.getnodes())
+        {
+          onNodeAdded(Config::MAIN_CANVAS, node->getid(), Types::LibraryTypes::STRUCTURAL);
+          for (const auto& child : node->getchildren())
+            onNodeAdded(Config::MAIN_CANVAS, child->getid(), Types::LibraryTypes::STRUCTURAL);
+
+          for (const auto& flow : node->getflows())
+          {
+            onFlowAdded(flow->getid(), node->getid());
+            for (const auto& child : flow->getnodes())
+              onNodeAdded(flow->getid(), child->getid(), Types::LibraryTypes::BEHAVIOUR);
+          }
+        }
+
+        for (const auto& pipeline : document.pipelines())
+        {
+          onPipelineAdded(pipeline->getid(), pipeline->getname());
+          for (const auto& node : pipeline->getnodes())
+            onNodeAdded(pipeline->getid(), node->getid(), Types::LibraryTypes::PIPELINE);
+        }
+      }
       case DocumentEvent::Type::NodeAdded:
       {
         const auto* data = std::get_if<NodeEvent>(&event.data);
@@ -107,6 +137,24 @@ VoidResult SystemMenu::start()
           return;
 
         LOG_WARN_ON_FAILURE(onFlowRemoved(data->id, data->ownerNodeId));
+        break;
+      }
+      case DocumentEvent::Type::PipelineAdded:
+      {
+        const auto* data = std::get_if<PipelineEvent>(&event.data);
+        if (!data)
+          return;
+
+        LOG_WARN_ON_FAILURE(onPipelineAdded(data->id, data->name));
+        break;
+      }
+      case DocumentEvent::Type::PipelineRemoved:
+      {
+        const auto* data = std::get_if<PipelineEvent>(&event.data);
+        if (!data)
+          return;
+
+        LOG_WARN_ON_FAILURE(onPipelineRemoved(data->id));
         break;
       }
       default:
@@ -280,26 +328,26 @@ VoidResult SystemMenu::onFlowRemoved(const QString& flowId, const QString& nodeI
   return VoidResult();
 }
 
-VoidResult SystemMenu::onPipelineAdded(std::shared_ptr<const FlowSaveInfo> info)
+VoidResult SystemMenu::onPipelineAdded(const QString& pipelineId, const QString& pipelineName)
 {
-  if (!info)
+  if (pipelineId.isEmpty() || pipelineName.isEmpty())
     return VoidResult::Failed("No pipeline info provided");
 
-  auto existing = getItemById(info->getid());
+  auto existing = getItemById(pipelineId);
   if (existing)
   {
-    existing->setText(NAME_COLUMN, info->getname());
+    existing->setText(NAME_COLUMN, pipelineName);
     return VoidResult();
   }
 
-  LOG_DEBUG("Pipeline added to system menu: {} - {}", info->getid(), info->getname());
+  LOG_DEBUG("Pipeline added to system menu: {} - {}", pipelineId, pipelineName);
 
   auto* pipelineRoot = getOrCreateGroup(PIPELINE_ROOT, Roles::PipelineRoot, nullptr);
   if (!pipelineRoot)
     return VoidResult::Failed("Could not create pipeline root");
 
   auto* item = new QTreeWidgetItem(pipelineRoot);
-  populateItem(item, QIcon(":/icons/pipeline_item.svg"), info->getname(), "Pipeline", info->getid(), Roles::Pipeline);
+  populateItem(item, QIcon(":/icons/pipeline_item.svg"), pipelineName, "Pipeline", pipelineId, Roles::Pipeline);
 
   return VoidResult();
 }
@@ -349,12 +397,24 @@ void SystemMenu::populateTaskItem(QTreeWidgetItem* item, const QString& nodeId)
 
 VoidResult SystemMenu::addRootNode(PNodeSaveInfo nodeInfo)
 {
-  // Root nodes are composed of two subnodes, Capabilities and Flows
-  QTreeWidgetItem* item = new QTreeWidgetItem(this);
-  populateItem(item, QIcon(":/icons/task.svg"), nodeInfo->getNodeName(), nodeInfo->getnodeId(), nodeInfo->getid(), Roles::NodeRole);
-  addTopLevelItem(item);
+  auto* item = new QTreeWidgetItem();
+  populateItem(item,
+               QIcon(":/icons/task.svg"),
+               nodeInfo->getNodeName(),
+               nodeInfo->getnodeId(),
+               nodeInfo->getid(),
+               Roles::NodeRole);
 
-  // populateTaskItem(item, node);
+  // Always insert root nodes before the Pipelines group.
+  int index = topLevelItemCount();
+  if (auto* pipelineRoot = getItemById(PIPELINE_ROOT))
+  {
+    const int pipelineIndex = indexOfTopLevelItem(pipelineRoot);
+    if (pipelineIndex >= 0)
+      index = pipelineIndex;
+  }
+
+  insertTopLevelItem(index, item);
 
   return VoidResult();
 }

@@ -161,6 +161,30 @@ void BehaviourCanvas::nodeStarted(NodeItem* node)
   Canvas::nodeStarted(node);
 }
 
+void BehaviourCanvas::populate(const FlowSaveInfo& flow)
+{
+  // Only materialize; never mutate the model.
+
+  // First, create root nodes.
+  // materializeNode() recursively creates their children.
+  for (const auto& inode : flow.getnodes())
+  {
+    auto info = std::dynamic_pointer_cast<NodeSaveInfo>(inode);
+    if (!info)
+      continue;
+
+    materializeNode(info, findNodeWithId(info->getparentId()));
+  }
+
+  // Then materialize transitions, once every node exists.
+  for (const auto& itransition : flow.gettransitions())
+  {
+    auto info = std::dynamic_pointer_cast<TransitionSaveInfo>(itransition);
+    if (info)
+      materializeTransition(info);
+  }
+}
+
 bool BehaviourCanvas::canAddTransition(NodeItem* node, PortItem* port) const
 {
   if (!node || !port)

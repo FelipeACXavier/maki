@@ -23,7 +23,6 @@ private:
   /** True while the pointer is over the Task empty-slot (add-capability) control. */
   EmptySlot* mEmptySlot = nullptr;
   QSvgRenderer* mCapabilityRenderer = nullptr;
-  QString mCapabilityIconPath = "";
 
   bool ensureRenderer();
 };
