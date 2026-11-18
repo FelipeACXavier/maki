@@ -8,9 +8,9 @@
 #include <oclero/qlementine.hpp>
 
 #include "app_configs.h"
+#include "document/save_info.h"
 #include "notifications.h"
 #include "style_helpers.h"
-#include "document/save_info.h"
 
 static const QString CREATE_NEW = "";
 static const bool CLEAR_CACHE = true;
@@ -87,9 +87,6 @@ void ExecuteButton::start()
 
 void ExecuteButton::reset()
 {
-  for (const auto& option : getPipelineNames())
-    emit deleteOptionRequested(option.id);
-
   DropDownButton::reset();
   setupDone();
 }

@@ -1343,7 +1343,10 @@ VoidResult MainWindow::loadElementLibrary(const QString& name, const JSON& confi
 void MainWindow::onActionGenerate(const QString& pipelineId, bool fromScratch)
 {
   if (!mPluginPipeline)
+  {
     LOG_WARNING("No pipeline available");
+    return;
+  }
 
   // If we are running, then we should cancel
   if (mPluginPipeline->isRunning())
@@ -1361,8 +1364,9 @@ void MainWindow::onActionGenerate(const QString& pipelineId, bool fromScratch)
     return;
 
   maki::PipelineContext context;
-  context.buildDir = QDir(mSettingsManager->generation().generationDir + "/" + SaveInfo::instance().name);
-  context.projectDir = QDir(mSettingsManager->generation().generationDir + "/" + SaveInfo::instance().name);
+  const auto dir = QDir(mSettingsManager->generation().generationDir + "/" + SaveInfo::instance().name);
+  context.buildDir = dir;
+  context.projectDir = dir;
   context.addArtifact({
     .id = "maki.nodes",
     .type = "maki",
@@ -1377,36 +1381,27 @@ void MainWindow::onActionGenerate(const QString& pipelineId, bool fromScratch)
   if (!context.buildDir.exists())
     context.buildDir.mkpath(".");
 
-  for (const auto& pipeline : SaveInfo::instance().pipelines())
+  auto pipeline = SaveInfo::instance().getPipelineWithId(pipelineId);
+  if (!pipeline)
   {
-    if (pipeline->getid() != pipelineId)
-      continue;
-
-    auto graph = maki::PipelineGraph::fromFlow(*pipeline);
-    if (!graph.IsSuccess())
-    {
-      LOG_ERROR(graph.ErrorMessage());
-      return;
-    }
-
-    graph.Value().print();
-
-    LOG_ERROR_ON_FAILURE(mPluginPipeline->run(graph.Value(), context, fromScratch));
+    LOG_DEBUG("Could not find pipeline: {}", pipelineId);
     return;
   }
 
-  // We tried running an unknown pipeline, so we can create it
-  onActionEditPipeline(pipelineId);
+  auto graph = maki::PipelineGraph::fromFlow(*pipeline);
+  if (!graph.IsSuccess())
+  {
+    LOG_ERROR(graph.ErrorMessage());
+    return;
+  }
+
+  graph.Value().print();
+
+  LOG_ERROR_ON_FAILURE(mPluginPipeline->run(graph.Value(), context, fromScratch));
 }
 
 void MainWindow::onActionDeletePipeline(const QString& pipelineId)
 {
-  if (!mPluginPipeline)
-  {
-    LOG_WARNING("No pipeline available");
-    return;
-  }
-
   auto pipeline = SaveInfo::instance().getPipelineWithId(pipelineId);
   if (!pipeline)
   {
@@ -1427,8 +1422,6 @@ void MainWindow::onActionDeletePipeline(const QString& pipelineId)
   }
 
   SaveInfo::instance().removePipeline(pipeline);
-  // mPipelineRun->removeOption(pipeline->getid());  // Update the UI as well
-  // mSystemMenu->onPipelineRemoved(pipelineId);
 }
 
 void MainWindow::onActionRenamePipeline(const QString& pipelineId)
@@ -1452,23 +1445,13 @@ void MainWindow::onActionRenamePipeline(const QString& pipelineId)
   }
 
   pipeline->setName(name);
-  SaveInfo::instance().publish(DocumentEvent{
-    .type = DocumentEvent::Type::PipelineModified,
-    .data  = PipelineEvent{
-      .id = pipeline->getid(),
-      .name = pipeline->getname(),
-    }
-  });
-
-  for (const auto* editor : mEditorWorkspace->editors())
-  {
-    auto editorId = mEditorWorkspace->editorId(editor);
-    if (editorId != pipeline->getid())
-      continue;
-
-    mEditorWorkspace->setEditorTitle(editorId, pipeline->getname());
-    break;
-  }
+  SaveInfo::instance().publish(DocumentEvent{.type = DocumentEvent::Type::PipelineModified,
+                                             .data = PipelineEvent{
+                                               .id = pipeline->getid(),
+                                               .name = pipeline->getname(),
+                                             }});
+  if (mEditorWorkspace)
+    mEditorWorkspace->setEditorTitle(pipeline->getid(), pipeline->getname());
 
   NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "{}", tr("Pipeline renamed successfully"));
 }
@@ -1508,7 +1491,6 @@ void MainWindow::onActionEditPipeline(const QString& pipelineId)
     pipeline->setName(name);
 
     SaveInfo::instance().addPipeline(pipeline);
-    // mPipelineRun->addOption(pipeline->getname(), pipeline->getid());  // Update the UI as well
   }
 
   // Check if the pipeline is already open
@@ -1573,7 +1555,6 @@ void MainWindow::onActionNew(const QString& templateName)
     onActionLoad(templateName, true);
   else
     NOTIFY_INFO(Config::APPLICATION_NAME.toStdString(), "Created new project");
-
 }
 
 void MainWindow::onActionExit()

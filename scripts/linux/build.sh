@@ -22,7 +22,7 @@ MAKI_WARNINGS_AS_ERRORS="OFF"
 MAKI_VERBOSE_DIAGNOSTICS="OFF"
 MAKI_ROS_DISTRO="humble"
 MAKI_TEST=0
-MAKI_TEST_FILTER=""
+MAKI_TEST_FILTER="*"
 
 # Helpers and arg parsing
 function printHelp()

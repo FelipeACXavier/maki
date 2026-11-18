@@ -34,6 +34,7 @@ static const QString ITEMS = "items";
 static const QString FLOW = "flow";
 static const QString CALL = "call";
 static const QString CALL_ID = "callId";
+static const QString LINKS_TO = "linksTo";
 
 static const QString FIELDS = "fields";
 static const QString EVENTS = "events";
