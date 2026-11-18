@@ -12,6 +12,8 @@ class IPipelineAction;
 class PipelineActionRegistry
 {
 public:
+  static PipelineActionRegistry& instance();
+
   VoidResult registerAction(const QString& pluginId, std::shared_ptr<IPipelineAction> action);
   std::shared_ptr<IPipelineAction> action(const QString& id) const;
   QVector<std::shared_ptr<IPipelineAction>> actionsOfPlugin(const QString& pluginId) const;

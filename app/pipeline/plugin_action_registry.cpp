@@ -5,6 +5,13 @@
 
 namespace maki
 {
+
+PipelineActionRegistry& PipelineActionRegistry::instance()
+{
+  static PipelineActionRegistry actionRegistry;
+  return actionRegistry;
+}
+
 VoidResult PipelineActionRegistry::registerAction(const QString& pluginId, std::shared_ptr<IPipelineAction> action)
 {
   if (mActions.contains(action->id()))

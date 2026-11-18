@@ -119,8 +119,6 @@ QPixmap EditorTabBar::createDragPreview(int index) const
 
   // Editor icon.
   const QIcon icon = tabIcon(index);
-  if (!icon.isNull())
-    painter.drawPixmap(theme.spacing, (headerHeight - Config::SMALL_BUTTON) / 2, applyColorToIcon(icon.pixmap(Config::SMALL_BUTTON_SIZE), foreground));
 
   // Editor title.
   // We need to account for the space around the icon as well

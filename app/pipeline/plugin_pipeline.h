@@ -14,8 +14,6 @@ class Pipeline;
 
 namespace maki
 {
-class PipelineActionRegistry;
-
 class PluginPipeline : public QObject
 {
   Q_OBJECT
@@ -25,7 +23,6 @@ public:
 
   VoidResult run(const PipelineGraph& graph, const PipelineContext& context, bool clearCache);
 
-  PipelineActionRegistry* registry() const;
   bool isRunning() const;
   VoidResult abort();
 
@@ -37,7 +34,6 @@ signals:
   void pipelineFinished(const QString& generationDir);
 
 private:
-  PipelineActionRegistry* mRegistry = nullptr;
   Pipeline* mPipeline;
   QStringList mExecutionOrder;
   int mCurrentIndex;

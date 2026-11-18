@@ -152,7 +152,7 @@ VoidResult MainWindow::start()
   mPluginPipeline = new maki::PluginPipeline(processPipeline, this);
   mLogger = new Logger(this);
   mNotificationManager = new NotificationManager(mEditorWorkspace, this);
-  mPluginManager = std::make_unique<PluginManager>(mPluginPipeline->registry(), mPipeline, this);
+  mPluginManager = std::make_unique<PluginManager>(mPipeline, this);
 
   mPluginTab = new PluginTab(mSpecialTabsMenu, this);
 
@@ -883,7 +883,7 @@ void MainWindow::bind()
     library[ConfigKeys::TYPE] = ConfigKeys::PIPELINE;
 
     QJsonArray nodes;
-    for (const auto& action : mPluginPipeline->registry()->actionsOfPlugin(plugin.plugin->languageName()))
+    for (const auto& action : maki::PipelineActionRegistry::instance().actionsOfPlugin(plugin.plugin->languageName()))
     {
       QJsonObject node;
       node[ConfigKeys::TYPE] = action->id();

@@ -99,25 +99,27 @@ void addCompleter(const QStringList& items, QWidget* parent)
 }
 
 // =========================================================================================================
-GridGroup::GridGroup(const QString& label, int rows, int cols, QWidget* parent)
+GridGroup::GridGroup(const QString& label, int rows, int cols, oclero::qlementine::TextRole role, QWidget* parent)
     : QWidget(parent)
     , mRows(rows)
     , mCols(cols)
     , mCurrentRow(0)
     , mCurrentCol(0)
 {
+  setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+  setMinimumWidth(0);
+
   auto* vLayout = new QVBoxLayout(this);
   vLayout->setContentsMargins(0, 0, 0, 0);
   vLayout->setSpacing(WIDGET_SPACING);
-  vLayout->setAlignment(Qt::AlignLeft);
+  vLayout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
 
   auto* title = new oclero::qlementine::Label(label, this);
-  title->setRole(oclero::qlementine::TextRole::Default);
+  title->setRole(role);
   title->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
 
   auto* line = new QFrame(this);
   line->setFrameShape(QFrame::HLine);
-  // line->setFrameShadow(QFrame::Sunken);
 
   mContent = new QWidget(this);
   auto* gridLayout = new QGridLayout(mContent);

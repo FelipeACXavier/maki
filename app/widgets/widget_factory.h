@@ -109,7 +109,7 @@ public:
    * @param cols The number of columns in the grid.
    * @param parent The parent widget.
    */
-  GridGroup(const QString& label, int rows, int cols, QWidget* parent);
+  GridGroup(const QString& label, int rows, int cols, oclero::qlementine::TextRole role, QWidget* parent);
 
   /**
    * @brief Adds a widget to the next available cell in the grid.

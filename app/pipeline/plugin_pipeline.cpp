@@ -20,7 +20,6 @@ namespace maki
 {
 PluginPipeline::PluginPipeline(Pipeline* pipeline, QObject* parent)
     : QObject(parent)
-    , mRegistry(new PipelineActionRegistry())
     , mPipeline(pipeline)
 {
   connect(mPipeline, &Pipeline::finishedLast, this, [this](const Pipeline::Info& info, int exitCode, const QString& message) {
@@ -70,12 +69,6 @@ PluginPipeline::PluginPipeline(Pipeline* pipeline, QObject* parent)
 
 PluginPipeline::~PluginPipeline()
 {
-  delete mRegistry;
-}
-
-PipelineActionRegistry* PluginPipeline::registry() const
-{
-  return mRegistry;
 }
 
 bool PluginPipeline::isRunning() const
@@ -122,7 +115,7 @@ VoidResult PluginPipeline::runNextNode()
   if (!node)
     return VoidResult::Failed("Pipeline node does not exist: {}", nodeId);
 
-  auto action = mRegistry->action(node->actionId);
+  auto action = PipelineActionRegistry::instance().action(node->actionId);
   if (!action)
     return VoidResult::Failed("Pipeline action is not registered: {}", node->actionId);
 

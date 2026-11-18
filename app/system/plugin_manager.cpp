@@ -24,10 +24,9 @@
 #include <windows.h>
 #endif
 
-PluginManager::PluginManager(maki::PipelineActionRegistry* registry, Pipeline* pipeline, QObject* parent)
+PluginManager::PluginManager(Pipeline* pipeline, QObject* parent)
     : QObject(parent)
     , mPlugin{nullptr}
-    , mRegistry(registry)
     , mPipeline(pipeline)
     , mIsRunning(false)
 {
@@ -202,7 +201,7 @@ VoidResult PluginManager::loadPlugin(const QDir& pluginDir, const maki::Manifest
   for (const auto& action : codeGen->pipelineActions())
   {
     LOG_DEBUG("Registering action: {}", action->id());
-    LOG_WARN_ON_FAILURE(mRegistry->registerAction(codeGen->languageName(), action));
+    LOG_WARN_ON_FAILURE(maki::PipelineActionRegistry::instance().registerAction(codeGen->languageName(), action));
   }
 
   mPlugins.append({loader, codeGen});

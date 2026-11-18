@@ -16,11 +16,6 @@
 class QComboBox;
 class HostServices;
 
-namespace maki
-{
-class PipelineActionRegistry;
-}
-
 /**
  * @brief Manages plugins and their associated functionality.
  */
@@ -40,7 +35,7 @@ public:
    *
    * @param parent The parent QObject.
    */
-  PluginManager(maki::PipelineActionRegistry* registry, Pipeline* pipeline, QObject* parent = nullptr);
+  PluginManager(Pipeline* pipeline, QObject* parent = nullptr);
 
   /**
    * @brief Destructs the PluginManager object.
@@ -95,7 +90,6 @@ signals:
 private:
   maki::IPlugin* mPlugin;    /// Pointer to the currently selected plugin.
   QVector<Plugin> mPlugins;  /// List of all plugins managed by this manager.
-  maki::PipelineActionRegistry* mRegistry;
 
   Pipeline::Info mInfo;  /// Holds information regarding the current generation pipeline
   Pipeline* mPipeline;   /// Pipeline responsible for installation processes
