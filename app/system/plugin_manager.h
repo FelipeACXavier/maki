@@ -84,8 +84,8 @@ public:
   VoidResult reloadPlugin(const QString& pluginName, HostServices* services);
 
 signals:
-
   void pluginAdded(const Plugin& plugin) const;
+  void cleanStalePlugins(const QStringList& availablePlugin);
 
 private:
   maki::IPlugin* mPlugin;    /// Pointer to the currently selected plugin.

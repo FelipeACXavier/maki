@@ -104,7 +104,7 @@ T countIf(const Container& container, Func&& predicate)
 template <class T, typename Container, typename Func>
 T accumulate(const Container& container, Func&& predicate)
 {
-  return std::accumulate(std::cbegin(container), std::cend(container), T{0}, std::forward<Func>(predicate));
+  return std::accumulate(std::cbegin(container), std::cend(container), T{}, std::forward<Func>(predicate));
 }
 
 template <typename Container, typename Func>

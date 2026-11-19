@@ -348,6 +348,11 @@ QVector<maki::SettingField> SettingsManager::getPluginSettings(const QString& id
   return {};
 }
 
+void SettingsManager::cleanPluginSetting(const QString& id)
+{
+  maki::removeIf(mPluginSettings.plugins, [&id](const auto& plugin) { return plugin.name == id; });
+}
+
 VoidResult SettingsManager::registerSettings(const QString& id, const maki::PluginVersion version, const QString& iconPath,
                                              const QVector<maki::SettingField>& settings)
 {
@@ -405,6 +410,9 @@ VoidResult SettingsManager::registerSettings(const QString& id, const maki::Plug
       .icon = fixedIconPath,
       .registered = true,
     });
+
+    // Make sure the settings are updated with the new plugins
+    save();
   }
   else
   {

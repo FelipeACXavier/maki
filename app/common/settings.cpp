@@ -1,5 +1,8 @@
 #include "settings.h"
 
+#include "logging.h"
+#include "macros.h"
+
 bool GeneralSettings::operator!=(const GeneralSettings& s) const
 {
   return restoreLastSession != s.restoreLastSession || autosaveEnabled != s.autosaveEnabled || autosaveIntervalMinutes != s.autosaveIntervalMinutes ||
@@ -37,9 +40,17 @@ bool PluginSettings::operator!=(const PluginSettings& s) const
 
 PluginSettings::Status PluginSettings::pluginStatus(const QString& pluginName) const
 {
-  const auto it = std::find_if(plugins.cbegin(), plugins.cend(), [&pluginName](const auto& plugin) { return plugin.name == pluginName; });
-  if (it == plugins.cend())
-    return Status::Unknown;
+  const auto plugin = maki::findIf(plugins, [&pluginName](const auto& plugin) { return plugin.name == pluginName; });
+  if (plugin)
+  {
+    LOG_DEBUG("Could not find plugin: {}. Available: {}", pluginName, maki::accumulate<QString>(plugins, [](QString total, const auto& opt) {
+                if (total.isEmpty())
+                  return opt.name;
 
-  return it->enabled ? Status::Enabled : Status::Disabled;
+                return total + ", " + opt.name;
+              }));
+    return Status::Unknown;
+  }
+
+  return plugin->enabled ? Status::Enabled : Status::Disabled;
 }

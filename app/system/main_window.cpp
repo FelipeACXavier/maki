@@ -876,6 +876,26 @@ void MainWindow::bind()
   connect(mSaveHandler.get(), &SaveHandler::fileLoaded, this, &MainWindow::onFileLoaded);
   connect(mSaveHandler.get(), &SaveHandler::fileSaved, mSettingsManager.get(), &SettingsManager::addRecentFile);
 
+  connect(mPluginManager.get(), &PluginManager::cleanStalePlugins, [this](const QStringList& availablePlugins) {
+    if (!mSettingsManager)
+      return;
+
+    auto toClean = mSettingsManager->plugins();
+    bool changed = false;
+    for (const auto& plugin : toClean.plugins)
+    {
+      LOG_DEBUG("Checking if {} is available: {}", plugin.name, availablePlugins.join(","));
+      if (!availablePlugins.contains(plugin.name))
+      {
+        LOG_INFO("Stale plugin: {}, removing from the settings", plugin.name);
+        mSettingsManager->cleanPluginSetting(plugin.name);
+        changed = true;
+      }
+    }
+
+    if (changed)
+      mSettingsManager->save();
+  });
   connect(mPluginManager.get(), &PluginManager::pluginAdded, [this](const PluginManager::Plugin& plugin) {
     LOG_INFO("====== Plugin added ======");
     QJsonObject library;

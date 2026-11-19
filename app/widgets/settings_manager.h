@@ -104,6 +104,13 @@ public:
   QVector<maki::SettingField> getPluginSettings(const QString& id) const override;
 
   /**
+   * @brief Handles a theme creation event.
+   *
+   * @param id ID of the plugin.
+   */
+  void cleanPluginSetting(const QString& id);
+
+  /**
    * @brief Registers settings for a plugin.
    *
    * @param id ID of the plugin.

@@ -124,6 +124,13 @@ VoidResult PluginManager::start(const PluginSettings& settings, HostServices* se
     }
   }
 
+  // Clean plugins from the settings
+  QStringList availablePlugins = {};
+  for (const auto& plugin : mPlugins)
+    availablePlugins << plugin.plugin->languageName();
+
+  emit cleanStalePlugins(availablePlugins);
+
   if (mPlugins.isEmpty())
   {
     LOG_DEBUG("No plugins to load");
