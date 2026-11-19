@@ -59,7 +59,6 @@ SystemMenu::SystemMenu(QWidget* parent)
 VoidResult SystemMenu::start()
 {
   mDocumentSubscription = SaveInfo::instance().subscribe([this](const DocumentEvent& event) {
-    LOG_DEBUG("Document event: {}", maki::toString(event.type));
     switch (event.type)
     {
       case DocumentEvent::Type::DocumentReset:

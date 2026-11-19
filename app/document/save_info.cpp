@@ -565,8 +565,6 @@ void SaveInfo::addPipeline(std::shared_ptr<FlowSaveInfo> pipeline)
   if (maki::anyOf(mPipelines, [pipeline](const auto& info) { return info->getid() == pipeline->getid() || info->getname() == pipeline->getname(); }))
     return;
 
-  LOG_INFO("Adding pipeline:");
-  pipeline->print("  ");
   mPipelines.push_back(pipeline);
   publish(DocumentEvent{.type = DocumentEvent::Type::PipelineAdded,
                         .data = PipelineEvent{

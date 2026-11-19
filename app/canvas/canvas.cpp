@@ -102,8 +102,6 @@ QList<NodeItem*> Canvas::availableNodes()
 
 void Canvas::onDocumentChanged(const DocumentEvent& event)
 {
-  LOG_INFO(">>>> onDocumentChanged: {}", maki::toString(event.type));
-  // SaveInfo::instance().print();
   switch (event.type)
   {
     case DocumentEvent::Type::NodeAdded:

@@ -117,7 +117,10 @@ VoidResult PluginManager::start(const PluginSettings& settings, HostServices* se
 
       auto loaded = loadPlugin(pluginsDir, manifest, services, status);
       if (!loaded)
+      {
         NOTIFY_WARNING("Plugin system", loaded.ErrorMessage());
+        LOG_WARNING(loaded.ErrorMessage());
+      }
     }
   }
 

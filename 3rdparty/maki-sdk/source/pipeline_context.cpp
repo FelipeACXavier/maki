@@ -1,10 +1,16 @@
 #include "pipeline_context.h"
 
+// I had to add and remove these so many times that I decided to leave them here
+// #include <QJsonDocument>
+// #include "logging.h"
+
 namespace maki
 {
 
 void PipelineContext::addArtifact(const PipelineArtifact& artifact)
 {
+  // const auto json = QJsonDocument(artifact.toJson()).toJson(QJsonDocument::Indented);
+  // LOG_DEBUG("Adding artifact:\n{}", QString(json));
   mArtifacts.insert(artifact.id, artifact);
 }
 
