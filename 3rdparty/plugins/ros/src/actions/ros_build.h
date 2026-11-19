@@ -1,0 +1,31 @@
+#pragma once
+
+#include <QString>
+#include <QStringList>
+#include <QVariantMap>
+
+#include "ipipeline.h"
+#include "koda_generator.h"
+#include "pipeline_action.h"
+#include "pipeline_artifact.h"
+#include "pipeline_context.h"
+
+namespace maki
+{
+class ROSPlugin;
+
+class RosBuild : public maki::IPipelineAction
+{
+public:
+  RosBuild(ROSPlugin* generator);
+  QString id() const override;
+  QString displayName() const override;
+  QStringList consumes() const override;
+  QStringList produces() const override;
+  maki::ResultArtifacts run(const maki::PipelineContext& context, const maki::ValueMap& parameters, maki::IPipeline* pipeline) override;
+  QVector<maki::ActionParameter> parameters() const override;
+
+private:
+  ROSPlugin* mGenerator;
+};
+}  // namespace maki

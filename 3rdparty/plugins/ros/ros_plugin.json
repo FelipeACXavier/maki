@@ -1,0 +1,9 @@
+{
+  "id": "com.maki.ros",
+  "name": "ROS 2",
+  "version": "0.0.1",
+  "author": "Felipe Xavier",
+  "entryPointDLL": "bin/ros_plugin.dll",
+  "entryPointSO": "bin/libros_plugin.so",
+  "icon": "assets/icon.svg"
+}
