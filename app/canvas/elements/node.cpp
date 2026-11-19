@@ -184,54 +184,11 @@ void NodeItem::dismissHighlight()
 
 void NodeItem::showSimulationControls(maki::ControlWidget* controls, const QColor& highlightColor)
 {
-  if (!controls)
-  {
-    dismissControl();
-    return;
-  }
-
-  if (highlightColor.isValid())
-  {
-    auto* glow = new QGraphicsDropShadowEffect();
-    glow->setOffset(0, 0);
-    glow->setBlurRadius(16);
-    glow->setColor(highlightColor);
-
-    setGraphicsEffect(glow);
-  }
-  else
-  {
-    setGraphicsEffect(nullptr);
-  }
-
-  if (!mControlWidget)
-  {
-    mControlWidget = new CanvasControlWidget([this] { QMetaObject::invokeMethod(mControlWidget, [this] { dismissControl(); }, Qt::QueuedConnection); });
-    scene()->addItem(mControlWidget);
-    mControlWidget->setZValue(10'000);
-  }
-  else
-  {
-    mControlWidget->show();
-  }
-
-  mControlActive = true;
-  mControlWidget->setControlWidget(controls, ControlProperties{
-                                               .fadingMode = ControlProperties::FadingMode::NoFade,
-                                               .highlightColor = highlightColor,
-                                               .position = Config::ControlPosition::Top,
-                                             });
-
-  QTimer::singleShot(0, [this]() {
-    if (!mControlWidget)
-      return;
-
-    constexpr qreal spacing = 10.0;
-    const QRectF controlRect = mControlWidget->boundingRect();
-    const qreal x = nodeRect().center().x() - controlRect.width() / 2.0;
-    const qreal y = nodeRect().top() - controlRect.height() - spacing;
-    mControlWidget->setPos(x, y);
-  });
+  showControls(controls, ControlProperties{
+                           .fadingMode = ControlProperties::FadingMode::NoFade,
+                           .highlightColor = highlightColor,
+                           .position = Config::ControlPosition::Top,
+                         });
 }
 
 void NodeItem::placeControl(const QPointF& localPos)
