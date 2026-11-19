@@ -593,6 +593,42 @@
               }
             }
           ]
+        },
+        {
+            "documentation": "",
+            "id": "{ee201982-3b53-4ee2-b56d-fee3f13c8d61}",
+            "kind": "Alias",
+            "name": {
+                "name": "Image",
+                "namespace": [
+                    "robotics"
+                ]
+            },
+            "target": {
+                "elementType": {
+                    "kind": "Primitive",
+                    "primitiveKind": "bytes"
+                },
+                "kind": "List"
+            }
+        },
+        {
+            "documentation": "",
+            "id": "{efaab2d9-deaa-4be2-b3aa-e9d8a9ea4dd6}",
+            "kind": "Alias",
+            "name": {
+                "name": "Spectrum",
+                "namespace": [
+                    "robotics"
+                ]
+            },
+            "target": {
+                "elementType": {
+                    "kind": "Primitive",
+                    "primitiveKind": "bool"
+                },
+                "kind": "List"
+            }
         }
       ]
     }

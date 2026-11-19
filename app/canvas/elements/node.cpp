@@ -46,30 +46,6 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
   mStorage->setId(this->id());
   mStorage->setNodeId(this->nodeId());
 
-  // Children are created by the canvas, so we must make sure that there is no trailing children information
-  mStorage->clearChildren();
-
-  // for (const auto& property : config()->properties)
-  //   mStorage->addProperty(std::make_shared<PropertyInfo>(property));
-
-  // for (const auto& event : config()->events)
-  // {
-  //   bool found = false;
-  //   for (const auto& flow : mStorage->getevents())
-  //   {
-  //     if (flow->getname() != event.name)
-  //       continue;
-
-  //     found = true;
-  //     break;
-  //   }
-
-  //   if (found)
-  //     continue;
-
-  //   mStorage->addEvent(std::make_shared<FlowSaveInfo>(event));
-  // }
-
   // Add icon if it exists
   if (!mStorage->getIcon().isEmpty())
     setIcon(AppPaths::icon(config()->body.iconPath), config()->body.iconColor);
@@ -85,6 +61,11 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
 
 NodeItem::~NodeItem()
 {
+  if (mControlWidget)
+  {
+    delete mControlWidget.data();
+    mControlWidget = nullptr;
+  }
 }
 
 int NodeItem::type() const
@@ -224,9 +205,15 @@ void NodeItem::showSimulationControls(maki::ControlWidget* controls, const QColo
   }
 
   if (!mControlWidget)
-    mControlWidget = new CanvasControlWidget([this]() { dismissControl(); }, this);
+  {
+    mControlWidget = new CanvasControlWidget([this] { QMetaObject::invokeMethod(mControlWidget, [this] { dismissControl(); }, Qt::QueuedConnection); });
+    scene()->addItem(mControlWidget);
+    mControlWidget->setZValue(10'000);
+  }
   else
+  {
     mControlWidget->show();
+  }
 
   mControlActive = true;
   mControlWidget->setControlWidget(controls, ControlProperties{
@@ -247,6 +234,21 @@ void NodeItem::showSimulationControls(maki::ControlWidget* controls, const QColo
   });
 }
 
+void NodeItem::placeControl(const QPointF& localPos)
+{
+  mControlLocalPos = localPos;
+  updateControlPosition();
+}
+
+void NodeItem::updateControlPosition()
+{
+  if (!mControlWidget || mControlWidget->scene() != scene())
+    return;
+
+  // Convert from NodeItem coordinates into scene coordinates.
+  mControlWidget->setPos(mapToScene(mControlLocalPos));
+}
+
 void NodeItem::showControls(maki::ControlWidget* controls, const ControlProperties& properties)
 {
   if (!controls)
@@ -254,6 +256,9 @@ void NodeItem::showControls(maki::ControlWidget* controls, const ControlProperti
     dismissControl();
     return;
   }
+
+  if (!scene())
+    return;
 
   if (properties.highlightColor.isValid())
   {
@@ -270,44 +275,61 @@ void NodeItem::showControls(maki::ControlWidget* controls, const ControlProperti
   }
 
   if (!mControlWidget)
-    mControlWidget = new CanvasControlWidget([this] { QMetaObject::invokeMethod(mControlWidget, [this] { dismissControl(); }, Qt::QueuedConnection); }, this);
-  else
-    mControlWidget->show();
+  {
+    mControlWidget = new CanvasControlWidget([this]() {
+      if (mControlWidget)
+        QMetaObject::invokeMethod(mControlWidget.data(), [this]() { dismissControl(); }, Qt::QueuedConnection);
+    });
+
+    // Add directly to the same scene as the NodeItem.
+    scene()->addItem(mControlWidget);
+
+    // Above normal canvas items.
+    mControlWidget->setZValue(10000);
+    mControlWidget->hide();
+  }
 
   mControlActive = true;
   mControlWidget->setControlWidget(controls, properties);
 
-  QTimer::singleShot(0, [this, position = properties.position, fixedPosition = properties.fixedPosition]() {
+  // Use the proxy as the timer context so the callback is cancelled
+  // automatically if the proxy is destroyed.
+  QTimer::singleShot(0, mControlWidget.data(), [this, position = properties.position, fixedPosition = properties.fixedPosition]() {
     if (!mControlWidget)
       return;
 
     constexpr qreal spacing = 10.0;
-
     const QRectF node = nodeRect();
     const QRectF control = mControlWidget->boundingRect();
 
     QPointF pos;
-
     switch (position)
     {
       case Config::ControlPosition::Top:
         pos = {node.center().x() - control.width() / 2.0, node.top() - control.height() - spacing};
         break;
+
       case Config::ControlPosition::Bottom:
         pos = {node.center().x() - control.width() / 2.0, node.bottom() + spacing};
         break;
+
       case Config::ControlPosition::Left:
         pos = {node.left() - control.width() - spacing, node.center().y() - control.height() / 2.0};
         break;
-      case Config::ControlPosition::Fixed:
-        pos = fixedPosition - control.center();
-        break;
+
       case Config::ControlPosition::Right:
         pos = {node.right() + spacing, node.center().y() - control.height() / 2.0};
         break;
+
+      case Config::ControlPosition::Fixed:
+        pos = fixedPosition - control.center();
+        break;
     }
 
-    mControlWidget->setPos(pos);
+    // Store the local anchor and convert to scene coordinates.
+    placeControl(pos);
+
+    mControlWidget->show();
     mControlWidget->activate();
   });
 }
@@ -865,6 +887,8 @@ void NodeItem::updateExtrasPosition(Config::NodeMove reason)
 {
   if (auto* parent = parentNode())
     parent->childPositionUpdated(this);
+
+  updateControlPosition();
 
   if (nodeMoved && reason == Config::NodeMove::User)
     nodeMoved(this, false);

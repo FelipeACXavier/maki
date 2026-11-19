@@ -482,7 +482,7 @@ private:
   NodeItem* mParentNode;                      /// Parent node of this item, if any.
   QVector<NodeItem*> mChildrenNodes;          /// List of child nodes.
   CanvasMessage* mHighlightMessage = nullptr;
-  CanvasControlWidget* mControlWidget = nullptr;
+  QPointer<CanvasControlWidget> mControlWidget = nullptr;
   bool mControlActive = false;
   bool mHovered = false;
 
@@ -493,6 +493,7 @@ private:
   bool mIsResizing{false};             /// Flag indicating if the node is being resized.
   QPointF mResizeStartMousePos{0, 0};  /// Mouse position when resizing started.
   QSizeF mResizeStartSize{0, 0};       /// Size of the node when resizing started.
+  QPointF mControlLocalPos{0, 0};
 
   /**
    * @brief Clamps a size within valid limits.
@@ -526,4 +527,7 @@ private:
    * @return The QRectF representing the inner scene rectangle.
    */
   QRectF parentInnerSceneRect(qreal padding) const;
+
+  void placeControl(const QPointF& localPos);
+  void updateControlPosition();
 };

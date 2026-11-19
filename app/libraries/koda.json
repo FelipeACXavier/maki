@@ -759,6 +759,314 @@
           "help": {
             "message": "Monitors the robot’s battery level and controls charging. Start monitoring with a threshold, or request charging using the charger and robot poses."
           }
+        },
+        {
+          "type": "ImageCapture",
+          "body": {
+            "shape": "Rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#e6c994",
+            "borderColor": "#FFFFFF",
+            "width": 500,
+            "height": 500,
+            "z-index": -2,
+            "icon": "capability_image_capture.svg"
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": {
+                "kind": "string",
+                "value": "ImageCapture"
+              },
+              "info": "Display name used to identify this node in the editor."
+            },
+            {
+              "id": "color",
+              "type": "void",
+              "control": "color",
+              "default": {
+                "kind": "string",
+                "value": "#e6c994"
+              },
+              "info": "Display color of this node in the editor."
+            },
+            {
+              "id": "calldef",
+              "type": "void",
+              "default": {
+                "kind": "list",
+                "value": [
+                  {
+                    "kind": "record",
+                    "value": {
+                      "type": {
+                        "kind": "string",
+                        "value": "action"
+                      },
+                      "route": {
+                        "kind": "string",
+                        "value": "/camera/initialize"
+                      },
+                      "message": {
+                        "kind": "string",
+                        "value": "std_msgs::String"
+                      }
+                    }
+                  },
+                  {
+                    "kind": "record",
+                    "value": {
+                      "type": {
+                        "kind": "string",
+                        "value": "action"
+                      },
+                      "route": {
+                        "kind": "string",
+                        "value": "/camera/process"
+                      },
+                      "message": {
+                        "kind": "string",
+                        "value": "std_msgs::String"
+                      }
+                    }
+                  }
+                ]
+              },
+              "info": "Communication bindings for this capability, including the underlying route and message type."
+            }
+          ],
+          "events": [
+            {
+              "id": "initialize",
+              "type": "trigger",
+              "returnType": "void",
+              "modifiable": false,
+              "linksTo": 0,
+              "info": "Starts the image capturing."
+            },
+            {
+              "id": "abort_initialization",
+              "type": "abort",
+              "returnType": "void",
+              "modifiable": false,
+              "linksTo": 0,
+              "info": "Stops the initialization operation."
+            },
+            {
+              "id": "initialized",
+              "type": "return",
+              "returnType": "void",
+              "modifiable": false,
+              "linksTo": 0,
+              "info": "Emitted when the capability is ready to start processing."
+            },
+            {
+              "id": "initialization_failed",
+              "type": "error",
+              "returnType": "void",
+              "modifiable": false,
+              "linksTo": 0,
+              "info": "Emitted when the capability initialization failed."
+            },
+            {
+              "id": "process",
+              "type": "trigger",
+              "returnType": "void",
+              "modifiable": false,
+              "linksTo": 1,
+              "info": "Starts processing a single image. The operation can report success or failure."
+            },
+            {
+              "id": "abort_process",
+              "type": "abort",
+              "returnType": "void",
+              "modifiable": false,
+              "linksTo": 1,
+              "info": "Stops or cancels the current process operation."
+            },
+            {
+              "id": "processed",
+              "type": "return",
+              "returnType": "void",
+              "modifiable": false,
+              "linksTo": 1,
+              "info": "Emitted when the process completes successfully.",
+              "arguments": [
+                {
+                  "id": "imageData",
+                  "type": "robotics::Image",
+                  "info": "The processed image."
+                }
+              ]
+            },
+            {
+              "id": "process_failed",
+              "type": "error",
+              "returnType": "void",
+              "modifiable": false,
+              "linksTo": 1,
+              "info": "Emitted if the process operation cannot be completed."
+            }
+          ],
+          "help": {
+            "message": "Captures and processes images from an attached hardware and provides them for further use."
+          }
+        },
+        {
+          "type": "SpectralAnalysis",
+          "body": {
+            "shape": "Rectangle",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#e6c994",
+            "borderColor": "#FFFFFF",
+            "width": 500,
+            "height": 500,
+            "z-index": -2,
+            "icon": "capability_spectrum.svg"
+          },
+          "properties": [
+            {
+              "id": "name",
+              "type": "string",
+              "default": {
+                "kind": "string",
+                "value": "SpectralAnalysis"
+              },
+              "info": "Display name used to identify this node in the editor."
+            },
+            {
+              "id": "color",
+              "type": "void",
+              "control": "color",
+              "default": {
+                "kind": "string",
+                "value": "#e6c994"
+              },
+              "info": "Display color of this node in the editor."
+            },
+            {
+              "id": "calldef",
+              "type": "void",
+              "default": {
+                "kind": "list",
+                "value": [
+                  {
+                    "kind": "record",
+                    "value": {
+                      "type": {
+                        "kind": "string",
+                        "value": "action"
+                      },
+                      "route": {
+                        "kind": "string",
+                        "value": "/spectrometer/initialize"
+                      },
+                      "message": {
+                        "kind": "string",
+                        "value": "std_msgs::String"
+                      }
+                    }
+                  },
+                  {
+                    "kind": "record",
+                    "value": {
+                      "type": {
+                        "kind": "string",
+                        "value": "action"
+                      },
+                      "route": {
+                        "kind": "string",
+                        "value": "/spectrometer/process"
+                      },
+                      "message": {
+                        "kind": "string",
+                        "value": "std_msgs::String"
+                      }
+                    }
+                  }
+                ]
+              },
+              "info": "Communication bindings for this capability, including the underlying route and message type."
+            }
+          ],
+          "events": [
+            {
+              "id": "initialize",
+              "type": "trigger",
+              "returnType": "void",
+              "modifiable": false,
+              "linksTo": 0,
+              "info": "Starts the spectral analysis capability."
+            },
+            {
+              "id": "abort_initialization",
+              "type": "abort",
+              "returnType": "void",
+              "modifiable": false,
+              "linksTo": 0,
+              "info": "Stops the initialization operation."
+            },
+            {
+              "id": "initialized",
+              "type": "return",
+              "returnType": "void",
+              "modifiable": false,
+              "linksTo": 0,
+              "info": "Emitted when the capability is ready to start processing."
+            },
+            {
+              "id": "initialization_failed",
+              "type": "error",
+              "returnType": "void",
+              "modifiable": false,
+              "linksTo": 0,
+              "info": "Emitted when the capability initialization failed."
+            },
+            {
+              "id": "process",
+              "type": "trigger",
+              "returnType": "void",
+              "modifiable": false,
+              "linksTo": 1,
+              "info": "Starts processing a single sample. The operation can report success or failure."
+            },
+            {
+              "id": "abort_process",
+              "type": "abort",
+              "returnType": "void",
+              "modifiable": false,
+              "linksTo": 1,
+              "info": "Stops or cancels the current process operation."
+            },
+            {
+              "id": "processed",
+              "type": "return",
+              "returnType": "void",
+              "modifiable": false,
+              "linksTo": 1,
+              "info": "Emitted when the process completes successfully.",
+              "arguments": [
+                {
+                  "id": "spectralData",
+                  "type": "robotics::Spectrum",
+                  "info": "The processed spectral data."
+                }
+              ]
+            },
+            {
+              "id": "process_failed",
+              "type": "error",
+              "returnType": "void",
+              "modifiable": false,
+              "linksTo": 1,
+              "info": "Emitted if the process operation cannot be completed."
+            }
+          ],
+          "help": {
+            "message": "Captures and processes data from an spectrometer and provides it for further use."
+          }
         }
       ]
     },

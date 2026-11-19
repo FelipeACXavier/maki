@@ -80,10 +80,6 @@
     <file alias="filled_slot.svg">assets/icons/mission/filled_slot.svg</file>
     <file alias="empty_slot.svg">assets/icons/mission/empty_slot.svg</file>
   </qresource>
-  <qresource prefix="/ros">
-    <file alias="siren.svg">assets/icons/mission/capability_siren.svg</file>
-    <file alias="grip.svg">assets/icons/mission/capability_grip.svg</file>
-  </qresource>
   <qresource prefix="/app_icons">
     <file alias="maki.png">assets/app_icon/maki_icon_only.png</file>
   </qresource>
