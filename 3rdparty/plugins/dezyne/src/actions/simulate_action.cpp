@@ -3,37 +3,39 @@
 #include <QString>
 #include <QVector>
 
-#include "../koda_generator.h"
+#include "dezyne_plugin.h"
 #include "logging.h"
 #include "pipeline_artifact.h"
 #include "result.h"
 
-KodaSimulateAction::KodaSimulateAction(KodaGenerator* generator)
+namespace maki
+{
+DezyneSimulateAction::DezyneSimulateAction(DezynePlugin* generator)
     : mGenerator(generator)
 {
 }
 
-QString KodaSimulateAction::id() const
+QString DezyneSimulateAction::id() const
 {
   return "koda.simulate";
 }
 
-QString KodaSimulateAction::displayName() const
+QString DezyneSimulateAction::displayName() const
 {
   return "Simulate Dezyne";
 }
 
-QStringList KodaSimulateAction::consumes() const
+QStringList DezyneSimulateAction::consumes() const
 {
-  return {"dezyne"};
+  return {"dezyne.source"};
 }
 
-QStringList KodaSimulateAction::produces() const
+QStringList DezyneSimulateAction::produces() const
 {
   return {};
 }
 
-maki::ResultArtifacts KodaSimulateAction::run(const maki::PipelineContext& context, const maki::ValueMap& parameters, maki::IPipeline* pipeline)
+maki::ResultArtifacts DezyneSimulateAction::run(const maki::PipelineContext& context, const maki::ValueMap& parameters, maki::IPipeline* pipeline)
 {
   LOG_INFO("Running {}", id());
 
@@ -50,3 +52,4 @@ maki::ResultArtifacts KodaSimulateAction::run(const maki::PipelineContext& conte
 
   return maki::Artifacts{};
 }
+}  // namespace maki

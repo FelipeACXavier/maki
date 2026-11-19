@@ -19,9 +19,7 @@ void PipelineContext::commitPendingArtifact()
     return;
 
   for (const auto& artifact : mPending)
-  {
     addArtifact(artifact);
-  }
 
   mPending.clear();
 }
@@ -39,10 +37,8 @@ QList<PipelineArtifact> PipelineContext::artifactsOfType(const QString& type) co
   QList<PipelineArtifact> result;
 
   for (const auto& artifact : mArtifacts)
-  {
     if (artifact.type == type)
       result.append(artifact);
-  }
 
   return result;
 }

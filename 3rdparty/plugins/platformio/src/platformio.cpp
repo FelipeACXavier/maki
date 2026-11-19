@@ -138,17 +138,12 @@ void PlatformIOPlugin::setHostServices(maki::IHostServices* services)
   }
 }
 
-void PlatformIOPlugin::setAssetDir(const QDir& dir)
-{
-  mAssetDir = dir;
-}
-
 QList<std::shared_ptr<maki::IPipelineAction>> PlatformIOPlugin::pipelineActions()
 {
   return {
-      std::make_shared<PlatformIOCreateProject>(this),
-      std::make_shared<PlatformIOBuildAction>(this),
-      std::make_shared<PlatformIOCopySources>(this),
+    std::make_shared<PlatformIOCreateProject>(this),
+    std::make_shared<PlatformIOBuildAction>(this),
+    std::make_shared<PlatformIOCopySources>(this),
   };
 }
 
@@ -188,13 +183,13 @@ Result<maki::PipelineArtifact> PlatformIOPlugin::initialiseProject(const QDir& o
 
   maki::PipelineArtifact artifact;
   artifact.paths = {
-      {"includeDir", projectFolder.absolutePath() + "/include"},
-      {"sourceDir", projectFolder.absolutePath() + "/src"},
-      {"libraryDir", projectFolder.absolutePath() + "/lib"},
-      {"rootDir", projectFolder.absolutePath()},
+    {"includeDir", projectFolder.absolutePath() + "/include"},
+    {"sourceDir", projectFolder.absolutePath() + "/src"},
+    {"libraryDir", projectFolder.absolutePath() + "/lib"},
+    {"rootDir", projectFolder.absolutePath()},
   };
   artifact.metadata = {
-      {"ini", projectFolder.absolutePath() + "/platform.ini"},
+    {"ini", projectFolder.absolutePath() + "/platform.ini"},
   };
 
   return artifact;
@@ -223,10 +218,10 @@ Result<maki::PipelineArtifact> PlatformIOPlugin::buildProject(const maki::Pipeli
 
   maki::PipelineArtifact firmware;
   firmware.paths = {
-      {"buildDir", projectDir + "/build"},
+    {"buildDir", projectDir + "/build"},
   };
   firmware.metadata = {
-      {"firmware", projectDir + "/build/myexecutable"},
+    {"firmware", projectDir + "/build/myexecutable"},
   };
 
   return firmware;
@@ -302,13 +297,9 @@ VoidResult PlatformIOPlugin::runPio(const QString& workingDir, const QStringList
   process->setWorkingDirectory(workingDir);
   process->setProcessChannelMode(QProcess::MergedChannels);
 
-  connect(process, &QProcess::readyReadStandardOutput, this, [this, process] {
-    appendOutput(QString::fromUtf8(process->readAllStandardOutput()));
-  });
+  connect(process, &QProcess::readyReadStandardOutput, this, [this, process] { appendOutput(QString::fromUtf8(process->readAllStandardOutput())); });
 
-  connect(process, &QProcess::readyReadStandardError, this, [this, process] {
-    appendOutput(QString::fromUtf8(process->readAllStandardError()));
-  });
+  connect(process, &QProcess::readyReadStandardError, this, [this, process] { appendOutput(QString::fromUtf8(process->readAllStandardError())); });
 
   connect(process, &QProcess::finished, this, [this, process](int exitCode, QProcess::ExitStatus status) {
     appendOutput(QString("PlatformIO finished with exit code %1").arg(exitCode));
@@ -400,10 +391,6 @@ void PlatformIOPlugin::appendOutput(const QString& text)
 
   if (mServices)
     LOG_INFO("{}", text.trimmed());
-}
-
-void PlatformIOPlugin::settingsChanged(const QVector<maki::SettingField>& /* settings */)
-{
 }
 
 }  // namespace maki

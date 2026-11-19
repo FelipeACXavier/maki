@@ -24,7 +24,7 @@ ir::CallKind callKindFromResolvedKind(ResolvedCallKind kind)
   return ir::CallKind::Unknown;
 }
 
-IRBuilder::IRBuilder(const SymbolRegistry& symbols, const SemanticModel& semantics, std::shared_ptr<TraceabilityMap> traceability)
+IRBuilder::IRBuilder(const SymbolRegistry& symbols, const SemanticModel& semantics, std::shared_ptr<maki::TraceabilityMap> traceability)
     : mSymbols(symbols)
     , mSemantics(semantics)
     , mTraceMap(traceability)

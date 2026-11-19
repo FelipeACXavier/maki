@@ -30,7 +30,7 @@ struct CompilerOptions
   bool showVersion = false;
   bool simulation = false;
   double startWait = 0.0;
-  std::shared_ptr<TraceabilityMap> traceability;
+  std::shared_ptr<maki::TraceabilityMap> traceability;
   std::shared_ptr<koda::System> ast;
   std::shared_ptr<types::TypeRegistry> typeRegistry;
   bool checkAll = false;

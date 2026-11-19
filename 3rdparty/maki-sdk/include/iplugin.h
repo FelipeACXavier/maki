@@ -125,38 +125,81 @@ class IPlugin
 public:
   virtual ~IPlugin() = default;
 
+  // =================================================================
+  // Purely virtual methods, must be implemented by every plugin
   virtual bool setup() = 0;
   virtual bool tearDown() = 0;
   virtual void setHostServices(maki::IHostServices* services) = 0;
-  virtual void setAssetDir(const QDir& dir) = 0;
-
-  virtual void settingsChanged(const QVector<maki::SettingField>& settings) = 0;
-
   virtual QList<std::shared_ptr<maki::IPipelineAction>> pipelineActions() = 0;
 
-  virtual void setManifest(const maki::Manifest& manifest)
+  // =================================================================
+  // Generic setters and getters, shall not be overloaded
+  void setManifest(const maki::Manifest& manifest)
   {
     mManifest = manifest;
   }
 
-  virtual maki::Manifest manifest() const
+  maki::Manifest manifest() const
   {
     return mManifest;
   }
 
-  virtual QString languageName() const
+  void setAssetDir(const QDir& dir)
+  {
+    mAssetDir = dir;
+  }
+
+  QString languageName() const
   {
     return mManifest.name;
   }
 
-  virtual PluginVersion version() const
+  PluginVersion version() const
   {
     return maki::PluginVersion::fromString(mManifest.version);
   }
 
+  void settingsChanged(const QVector<maki::SettingField>& settings)
+  {
+    for (auto& setting : mSettings)
+      for (const auto& incoming : settings)
+      {
+        if (setting.getKey() != incoming.getKey())
+          continue;
+
+        setting.setValue(incoming.getValue());
+        return;
+      }
+  }
+
 protected:
-  maki::Manifest mManifest;
+  maki::Manifest mManifest = {};               // Plugin manifest, generic
+  maki::IHostServices* mServices = nullptr;    // Pointer to the MAKI services
+  QVector<maki::SettingField> mSettings = {};  // Collection of plugin settings if they exist
+  std::optional<QDir> mAssetDir;               // If the plugin contains assets, they can be found here
+
+  /**
+   * @brief Gets the setting via its key
+   *
+   * @param key QString containing the key of the desired setting
+   * @return std::optional<maki::SettingField> with the setting field if available and nullopt of failure
+   */
+  std::optional<maki::SettingField> getSetting(const QString& key) const
+  {
+    for (const auto& s : mSettings)
+      if (s.getKey() == key)
+        return s;
+
+    return std::nullopt;
+  }
+
+  // =================================================================
+  // Optional methods, may be overloaded if needed
+  virtual void buildSettings()
+  {
+  }
 };
+
 }  // namespace maki
 
 Q_DECLARE_METATYPE(maki::PluginVersion);

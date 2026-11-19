@@ -37,7 +37,7 @@
 namespace koda
 {
 
-MakiToKoda::MakiToKoda(const koda::types::TypeRegistry* registry, std::shared_ptr<koda::TraceabilityMap> traceMap)
+MakiToKoda::MakiToKoda(const koda::types::TypeRegistry* registry, std::shared_ptr<maki::TraceabilityMap> traceMap)
     : mTypeRegistry(registry)
     , mTraceMap(traceMap)
 {
@@ -332,7 +332,8 @@ Result<koda::PFlow> MakiToKoda::buildFlowAst(const IFlow& flow)
     const std::string mainStartId = "main_start_id";
     if (mTraceMap)
     {
-      mTraceMap->mapAst(mainStartId, MakiSource{.id = start->getid().toStdString(), .flowId = flow.getid().toStdString(), .kind = MakiElementKind::Node});
+      mTraceMap->mapAst(mainStartId,
+                        maki::MakiSource{.id = start->getid().toStdString(), .flowId = flow.getid().toStdString(), .kind = maki::MakiElementKind::Node});
       mTraceMap->mapIr(mainStartId, mainStartId);
       mTraceMap->mapEmitter("api", mainStartId);
     }
@@ -358,10 +359,10 @@ Result<koda::PFlow> MakiToKoda::buildFlowAst(const IFlow& flow)
   pflow->name = flowName;
   pflow->strategy = std::any_cast<koda::PStrategy>(seq);
   if (mTraceMap)
-    mTraceMap->mapAst(pflow->id, MakiSource{
+    mTraceMap->mapAst(pflow->id, maki::MakiSource{
                                    .id = pflow->id,
                                    .flowId = pflow->id,
-                                   .kind = MakiElementKind::Flow,
+                                   .kind = maki::MakiElementKind::Flow,
                                  });
 
   return pflow;
@@ -489,13 +490,13 @@ void MakiToKoda::traceNode(const IFlow& flow, const INode& node, const koda::PSt
     return;
 
   // TODO: Fix this, it should be based on the capability being called
-  MakiElementKind kind = MakiElementKind::Node;
+  maki::MakiElementKind kind = maki::MakiElementKind::Node;
   if (node.getnodeId() == "Koda::Async task")
-    kind = MakiElementKind::Async;
+    kind = maki::MakiElementKind::Async;
   else if (node.getnodeId() == "Koda::Sync task")
-    kind = MakiElementKind::Sync;
+    kind = maki::MakiElementKind::Sync;
 
-  mTraceMap->mapAst(strategy->id, MakiSource{.id = node.getid().toStdString(), .flowId = flow.getid().toStdString(), .kind = kind});
+  mTraceMap->mapAst(strategy->id, maki::MakiSource{.id = node.getid().toStdString(), .flowId = flow.getid().toStdString(), .kind = kind});
 }
 
 std::any MakiToKoda::buildAsyncExpr(const IFlow& flow, const INode& node)

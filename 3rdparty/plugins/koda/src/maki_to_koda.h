@@ -42,7 +42,7 @@ struct NodeTransition
 class MakiToKoda
 {
 public:
-  MakiToKoda(const koda::types::TypeRegistry* registry, std::shared_ptr<koda::TraceabilityMap> traceMap);
+  MakiToKoda(const koda::types::TypeRegistry* registry, std::shared_ptr<maki::TraceabilityMap> traceMap);
 
   koda::System getAST() const;
   std::vector<koda::Error> getErrors() const;
@@ -51,7 +51,7 @@ public:
 private:
   const koda::types::TypeRegistry* mTypeRegistry;
   std::shared_ptr<koda::CollectingErrorListener> mErrorListener;
-  std::shared_ptr<koda::TraceabilityMap> mTraceMap;
+  std::shared_ptr<maki::TraceabilityMap> mTraceMap;
   koda::System mAST;
 
   void traceNode(const IFlow& flow, const INode& node, const koda::PStrategy& strategy);

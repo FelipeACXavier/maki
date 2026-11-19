@@ -35,19 +35,10 @@ void ArduinoPlugin::setHostServices(maki::IHostServices* services)
   buildSettings();
 }
 
-void ArduinoPlugin::setAssetDir(const QDir& dir)
-{
-  mAssetDir = dir;
-}
-
-void ArduinoPlugin::settingsChanged(const QVector<maki::SettingField>& settings)
-{
-}
-
 QList<std::shared_ptr<maki::IPipelineAction>> ArduinoPlugin::pipelineActions()
 {
   return {
-      std::make_shared<ArduinoGenerateCpp>(this),
+    std::make_shared<ArduinoGenerateCpp>(this),
   };
 }
 
@@ -91,10 +82,6 @@ Result<maki::PipelineArtifact> ArduinoPlugin::generateCpp(const maki::PipelineAr
   }
 
   return maki::PipelineArtifact{};
-}
-
-void ArduinoPlugin::buildSettings()
-{
 }
 
 }  // namespace maki

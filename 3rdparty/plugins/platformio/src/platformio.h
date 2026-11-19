@@ -27,19 +27,12 @@ public:
   bool setup() override;
   bool tearDown() override;
   void setHostServices(maki::IHostServices* services) override;
-  void setAssetDir(const QDir& dir) override;
-
-  void settingsChanged(const QVector<maki::SettingField>& settings) override;
 
   QList<std::shared_ptr<maki::IPipelineAction>> pipelineActions() override;
   Result<maki::PipelineArtifact> initialiseProject(const QDir& outputFolder, maki::IPipeline* pipeline);
   Result<maki::PipelineArtifact> buildProject(const maki::PipelineArtifact& artifact, const QDir& outputFolder, maki::IPipeline* pipeline);
 
 private:
-  std::optional<QDir> mAssetDir;
-
-  maki::IHostServices* mServices = nullptr;
-
   QString mPioExecutable;
   QString mCurrentOutputFolder;
 
@@ -47,8 +40,6 @@ private:
   QPlainTextEdit* mOutputPanel = nullptr;
 
   QProcess* mMonitorProcess = nullptr;
-
-  QVector<maki::SettingField> mSettings = {};
   QList<QString> mGeneratedFiles = {};
 
   VoidResult writePlatformIni(const QDir& outputFolder);
@@ -59,7 +50,7 @@ private:
 
   VoidResult runPio(const QString& workingDir, const QStringList& arguments, bool waitForFinished = true);
 
-  void buildSettings();
+  void buildSettings() override;
 };
 
 }  // namespace maki

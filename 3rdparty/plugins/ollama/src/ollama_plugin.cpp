@@ -35,24 +35,15 @@ void OllamaPlugin::setHostServices(maki::IHostServices* services)
   buildSettings();
 }
 
-void OllamaPlugin::setAssetDir(const QDir& dir)
-{
-  mAssetDir = dir;
-}
-
-void OllamaPlugin::settingsChanged(const QVector<maki::SettingField>& settings)
-{
-}
-
 Result<maki::PipelineArtifact> OllamaPlugin::sendRequest(const QString& request, maki::IPipeline* pipeline)
 {
   pipeline->startGroup("Ollama request");
 
   const QString command = "ollama";
   QStringList arguments = {
-      "run",
-      "qwen2.5-coder:7b-instruct",
-      request,
+    "run",
+    "qwen2.5-coder:7b-instruct",
+    request,
   };
 
   LOG_DEBUG("Sending prompt: {}", arguments.join("\n"));
@@ -70,12 +61,8 @@ Result<maki::PipelineArtifact> OllamaPlugin::sendRequest(const QString& request,
 QList<std::shared_ptr<maki::IPipelineAction>> OllamaPlugin::pipelineActions()
 {
   return {
-      std::make_shared<OllamaExplainAction>(this),
+    std::make_shared<OllamaExplainAction>(this),
   };
-}
-
-void OllamaPlugin::buildSettings()
-{
 }
 
 }  // namespace maki

@@ -3,12 +3,14 @@
 #include "pipeline_action.h"
 #include "pipeline_artifact.h"
 
-class KodaGenerator;
+namespace maki
+{
+class DezynePlugin;
 
 class GenerateCppAction : public maki::IPipelineAction
 {
 public:
-  GenerateCppAction(KodaGenerator* generator);
+  GenerateCppAction(DezynePlugin* generator);
   QString id() const override;
   QString displayName() const override;
   QStringList consumes() const override;
@@ -16,5 +18,6 @@ public:
   maki::ResultArtifacts run(const maki::PipelineContext& context, const maki::ValueMap& parameters, maki::IPipeline* pipeline) override;
 
 private:
-  KodaGenerator* mGenerator;
+  DezynePlugin* mGenerator;
 };
+}  // namespace maki

@@ -2,7 +2,7 @@
 
 #include <QString>
 
-#include "../koda_generator.h"
+#include "dezyne_plugin.h"
 #include "logging.h"
 #include "pipeline_artifact.h"
 #include "types.h"
@@ -10,14 +10,16 @@
 static const QString SIMULATE_KEY = "Simulate";
 static const QString START_WAIT = "Start wait";
 
-GenerateDezyneAction::GenerateDezyneAction(KodaGenerator* generator)
+namespace maki
+{
+GenerateDezyneAction::GenerateDezyneAction(DezynePlugin* generator)
     : mGenerator(generator)
 {
 }
 
 QString GenerateDezyneAction::id() const
 {
-  return "koda.generate_dezyne";
+  return "dezyne.generate";
 }
 
 QString GenerateDezyneAction::displayName() const
@@ -27,22 +29,22 @@ QString GenerateDezyneAction::displayName() const
 
 QStringList GenerateDezyneAction::consumes() const
 {
-  return {"koda"};  // Diagram information
+  return {"koda.source"};  // Diagram information
 }
 
 QStringList GenerateDezyneAction::produces() const
 {
-  return {"dezyne", "ros-project"};
+  return {"dezyne.source", "ros-project"};
 }
 
 QVector<maki::ActionParameter> GenerateDezyneAction::parameters() const
 {
   return {
-      maki::ActionParameter("Debug", koda::types::TypeReference::createBool(), maki::Value::createBool(false)),
-      maki::ActionParameter("From file", koda::types::TypeReference::createBool(), maki::Value::createBool(true)),
-      maki::ActionParameter("Verbose", koda::types::TypeReference::createBool(), maki::Value::createBool(false)),
-      maki::ActionParameter(SIMULATE_KEY, koda::types::TypeReference::createBool(), maki::Value::createBool(true)),
-      maki::ActionParameter(START_WAIT, koda::types::TypeReference::createReal(), maki::Value::createReal(10)),
+    maki::ActionParameter("Debug", koda::types::TypeReference::createBool(), maki::Value::createBool(false)),
+    maki::ActionParameter("From file", koda::types::TypeReference::createBool(), maki::Value::createBool(true)),
+    maki::ActionParameter("Verbose", koda::types::TypeReference::createBool(), maki::Value::createBool(false)),
+    maki::ActionParameter(SIMULATE_KEY, koda::types::TypeReference::createBool(), maki::Value::createBool(true)),
+    maki::ActionParameter(START_WAIT, koda::types::TypeReference::createReal(), maki::Value::createReal(10)),
   };
 }
 
@@ -50,7 +52,7 @@ maki::ResultArtifacts GenerateDezyneAction::run(const maki::PipelineContext& con
 {
   LOG_INFO("Running {}", id());
 
-  const auto artifacts = context.artifactsOfType("koda");
+  const auto artifacts = context.artifactsOfType("koda.source");
   if (artifacts.isEmpty())
     return maki::ResultArtifacts::Failed("No artifacts available, requires \"koda\"");
 
@@ -61,7 +63,7 @@ maki::ResultArtifacts GenerateDezyneAction::run(const maki::PipelineContext& con
 
   maki::PipelineArtifact artifact = result.Value();
   artifact.id = "dezyne.generated";
-  artifact.type = "dezyne";
+  artifact.type = "dezyne.source";
   artifact.producer = id();
 
   auto modelsOutputFolder = QDir(context.buildDir.absolutePath() + "/ros");
@@ -71,18 +73,19 @@ maki::ResultArtifacts GenerateDezyneAction::run(const maki::PipelineContext& con
   rosArtifact.type = "ros-project";
   rosArtifact.producer = id();
   rosArtifact.paths = {
-      {"rootDir", modelsOutputFolder.absolutePath()},
-      {"includeDir", modelsOutputFolder.absolutePath() + "/include"},
-      {"sourceDir", modelsOutputFolder.absolutePath() + "/src"},
-      {"launchDir", modelsOutputFolder.absolutePath() + "/launch"},
-      {"configDir", modelsOutputFolder.absolutePath() + "/config"},
+    {"rootDir", modelsOutputFolder.absolutePath()},
+    {"includeDir", modelsOutputFolder.absolutePath() + "/include"},
+    {"sourceDir", modelsOutputFolder.absolutePath() + "/src"},
+    {"launchDir", modelsOutputFolder.absolutePath() + "/launch"},
+    {"configDir", modelsOutputFolder.absolutePath() + "/config"},
   };
   rosArtifact.metadata = {
-      {"package", modelsOutputFolder.absolutePath() + "/package.xml"},
-      {"cmake", modelsOutputFolder.absolutePath() + "/CMakeLists.txt"},
-      {"packageName", QString::fromStdString("koda_ros")},
-      {"launchFile", QString::fromStdString("koda.launch.py")},
+    {"package", modelsOutputFolder.absolutePath() + "/package.xml"},
+    {"cmake", modelsOutputFolder.absolutePath() + "/CMakeLists.txt"},
+    {"packageName", QString::fromStdString("koda_ros")},
+    {"launchFile", QString::fromStdString("koda.launch.py")},
   };
 
   return maki::Artifacts{artifact, rosArtifact};
 }
+}  // namespace maki

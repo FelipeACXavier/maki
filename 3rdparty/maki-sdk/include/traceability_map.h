@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace koda
+namespace maki
 {
 
 enum class MakiElementKind
@@ -57,4 +57,4 @@ private:
   std::unordered_map<std::string, std::string> mEventMap;
 };
 
-}  // namespace koda
+}  // namespace maki

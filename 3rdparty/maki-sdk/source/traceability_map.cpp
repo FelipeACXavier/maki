@@ -2,7 +2,7 @@
 
 #include "logging.h"
 
-namespace koda
+namespace maki
 {
 
 void TraceabilityMap::clear()
@@ -107,4 +107,4 @@ std::optional<std::string> TraceabilityMap::eventForEmitterEvent(const std::stri
   return event->second;
 }
 
-}  // namespace koda
+}  // namespace maki

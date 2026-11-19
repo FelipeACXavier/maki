@@ -22,21 +22,9 @@ public:
   bool setup() override;
   bool tearDown() override;
   void setHostServices(maki::IHostServices* services) override;
-  void setAssetDir(const QDir& dir) override;
-
-  void settingsChanged(const QVector<maki::SettingField>& settings) override;
 
   QList<std::shared_ptr<maki::IPipelineAction>> pipelineActions() override;
   Result<maki::PipelineArtifact> generateCpp(const maki::PipelineArtifact& artifact, const QDir& outputFolder, maki::IPipeline* pipeline);
-
-private:
-  std::optional<QDir> mAssetDir;
-
-  maki::IHostServices* mServices = nullptr;
-
-  QVector<maki::SettingField> mSettings = {};
-
-  void buildSettings();
 };
 
 }  // namespace maki

@@ -1,0 +1,9 @@
+{
+  "id": "com.maki.dezyne",
+  "name": "dezyne",
+  "version": "0.0.1",
+  "author": "Felipe Xavier",
+  "entryPointDLL": "bin/dezyne_plugin.dll",
+  "entryPointSO": "bin/libdezyne_plugin.so",
+  "icon": "assets/icon.svg"
+}

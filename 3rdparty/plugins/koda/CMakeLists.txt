@@ -67,18 +67,8 @@ if (NOT antlr4-runtime_FOUND)
 endif()
 
 get_property(imported_targets DIRECTORY PROPERTY IMPORTED_TARGETS)
-message(STATUS "Imported targets: ${imported_targets}")
-message(STATUS "Required QT packages: ${QT_REQUIRED_PACKAGES}")
 
 # Sources
-set(KODA_DZN_CLIENT_FILES
-  src/dzn_client/dezyne_client.cpp
-  src/dzn_client/dezyne_simulator.cpp
-  src/dzn_client/simulation_scene.cpp
-  src/dzn_client/simulation_label_item.cpp
-  src/dzn_client/component_model.cpp
-)
-
 set(KODA_COMPILER_FILES
   src/ast/ast.cpp
   src/ast/cst2ast.cpp
@@ -115,8 +105,6 @@ set(KODA_COMPILER_FILES
   src/parser/KodaLexer.cpp
   src/parser/KodaVisitor.cpp
   src/parser/KodaBaseVisitor.cpp
-
-  src/traceability_map.cpp
 )
 # ==================================================================
 # Koda language
@@ -190,9 +178,6 @@ install(TARGETS ${LIB_NAME}
 find_package(Qt6 REQUIRED COMPONENTS
   Core
   Gui
-  Svg
-  Widgets
-  WebSockets
 )
 
 # set(DEZYNE_LIB_DIR "${CMAKE_BINARY_DIR}/share/plugins/KODA_ANTLR/lib")
@@ -201,8 +186,7 @@ file(GLOB DEZYNE_LIB_FILES
 )
 
 function(add_koda_plugin TARGET_NAME USE_ANTLR_ENABLED)
-  # if(USE_ANTLR_ENABLED)
-    set(JSON_FILE ${CMAKE_CURRENT_SOURCE_DIR}/src/koda_generator.json)
+    set(JSON_FILE ${CMAKE_CURRENT_SOURCE_DIR}/src/koda.json)
     set(PLUGIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/koda_plugin.json)
     set(COMPILER_FILES
       ${KODA_COMPILER_FILES}
@@ -210,7 +194,6 @@ function(add_koda_plugin TARGET_NAME USE_ANTLR_ENABLED)
     set(KODA_TO_MAKI
       src/maki_to_koda.cpp
       src/koda_emitter.cpp
-      # src/ros_emitter.cpp
     )
     set(COMPILER_INCLUDES
       ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -223,18 +206,13 @@ function(add_koda_plugin TARGET_NAME USE_ANTLR_ENABLED)
     )
 
   add_library(${TARGET_NAME} SHARED
-    ${KODA_DZN_CLIENT_FILES}
     ${COMPILER_FILES}
     src/koda_generator.cpp
     src/koda_generator.h
-    src/svg_tool_button.cpp
 
     ${KODA_TO_MAKI}
     src/actions/koda_action.cpp
-    src/actions/dezyne_action.cpp
-    src/actions/cpp_action.cpp
-    src/actions/verify_action.cpp
-    src/actions/simulate_action.cpp
+    # TODO: These need to move to a ROS plugin
     src/actions/ros_copy.cpp
     src/actions/ros_build.cpp
     src/actions/ros_launch.cpp
@@ -247,8 +225,6 @@ function(add_koda_plugin TARGET_NAME USE_ANTLR_ENABLED)
     Qt6::Core
     Qt6::Gui
     Qt6::Widgets
-    Qt6::WebSockets
-    Qt6::Svg
     ${COMPILER_LIBS}
     libcpphelpers
     libmaki

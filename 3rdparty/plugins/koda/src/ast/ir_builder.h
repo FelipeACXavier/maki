@@ -12,7 +12,7 @@ namespace koda
 class IRBuilder
 {
 public:
-  IRBuilder(const SymbolRegistry& symbols, const SemanticModel& semantics, std::shared_ptr<TraceabilityMap> traceability);
+  IRBuilder(const SymbolRegistry& symbols, const SemanticModel& semantics, std::shared_ptr<maki::TraceabilityMap> traceability);
   Result<ir::Program> build(const System& system) const;
 
 private:
@@ -32,7 +32,7 @@ private:
 
   const SymbolRegistry& mSymbols;
   const SemanticModel& mSemantics;
-  std::shared_ptr<TraceabilityMap> mTraceMap;
+  std::shared_ptr<maki::TraceabilityMap> mTraceMap;
 };
 
 }  // namespace koda

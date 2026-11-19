@@ -139,7 +139,7 @@ int main(int argc, const char* argv[])
     return 0;
   }
 
-  auto traceMap = std::make_shared<koda::TraceabilityMap>();
+  auto traceMap = std::make_shared<maki::TraceabilityMap>();
   options.traceability = traceMap;
 
   std::error_code ec;

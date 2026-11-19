@@ -1,17 +1,19 @@
 #include "cpp_action.h"
 
-#include "../koda_generator.h"
+#include "dezyne_plugin.h"
 #include "logging.h"
 #include "pipeline_artifact.h"
 
-GenerateCppAction::GenerateCppAction(KodaGenerator* generator)
+namespace maki
+{
+GenerateCppAction::GenerateCppAction(DezynePlugin* generator)
     : mGenerator(generator)
 {
 }
 
 QString GenerateCppAction::id() const
 {
-  return "koda.generate_dezyne_cpp";
+  return "dezyne.generate_cpp";
 }
 
 QString GenerateCppAction::displayName() const
@@ -21,19 +23,19 @@ QString GenerateCppAction::displayName() const
 
 QStringList GenerateCppAction::consumes() const
 {
-  return {"dezyne"};  // Diagram information
+  return {"dezyne.source"};  // Diagram information
 }
 
 QStringList GenerateCppAction::produces() const
 {
-  return {"cpp"};
+  return {"cpp.source"};
 }
 
 maki::ResultArtifacts GenerateCppAction::run(const maki::PipelineContext& context, const maki::ValueMap& parameters, maki::IPipeline* pipeline)
 {
   LOG_INFO("Running {}", id());
   // Get the canvas from the context
-  const auto artifacts = context.artifactsOfType("dezyne");
+  const auto artifacts = context.artifactsOfType("dezyne.source");
   if (artifacts.isEmpty())
     return maki::ResultArtifacts::Failed("No artifacts available, requires \"dezyne\"");
 
@@ -50,3 +52,4 @@ maki::ResultArtifacts GenerateCppAction::run(const maki::PipelineContext& contex
 
   return maki::Artifacts{artifact};
 }
+}  // namespace maki

@@ -3,38 +3,39 @@
 #include <QString>
 #include <QVector>
 
-#include "../koda_generator.h"
-#include "koda_action.h"
+#include "dezyne_plugin.h"
 #include "logging.h"
 #include "pipeline_artifact.h"
 #include "result.h"
 
-KodaVerifyAction::KodaVerifyAction(KodaGenerator* generator)
+namespace maki
+{
+DezyneVerifyAction::DezyneVerifyAction(DezynePlugin* generator)
     : mGenerator(generator)
 {
 }
 
-QString KodaVerifyAction::id() const
+QString DezyneVerifyAction::id() const
 {
-  return "koda.verify_dezyne";
+  return "dezyne.verify";
 }
 
-QString KodaVerifyAction::displayName() const
+QString DezyneVerifyAction::displayName() const
 {
   return "Verify Dezyne";
 }
 
-QStringList KodaVerifyAction::consumes() const
+QStringList DezyneVerifyAction::consumes() const
 {
   return {"dezyne"};
 }
 
-QStringList KodaVerifyAction::produces() const
+QStringList DezyneVerifyAction::produces() const
 {
-  return {"verified_dezyne"};
+  return {"dezyne.verified"};
 }
 
-maki::ResultArtifacts KodaVerifyAction::run(const maki::PipelineContext& context, const maki::ValueMap& parameters, maki::IPipeline* pipeline)
+maki::ResultArtifacts DezyneVerifyAction::run(const maki::PipelineContext& context, const maki::ValueMap& parameters, maki::IPipeline* pipeline)
 {
   LOG_INFO("Running {}", id());
   // Get the canvas from the context
@@ -50,3 +51,4 @@ maki::ResultArtifacts KodaVerifyAction::run(const maki::PipelineContext& context
 
   return maki::Artifacts();
 }
+}  // namespace maki
