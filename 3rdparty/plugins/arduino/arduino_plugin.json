@@ -1,6 +1,6 @@
 {
   "id": "com.maki.arduino",
-  "name": "arduino",
+  "name": "Arduino",
   "version": "0.0.1",
   "author": "Felipe Xavier",
   "entryPointDLL": "bin/arduino_plugin.dll",

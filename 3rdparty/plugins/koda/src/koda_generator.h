@@ -31,18 +31,12 @@ public:
   bool setup() override;
   bool tearDown() override;
   void setHostServices(maki::IHostServices* services) override;
+  QList<std::shared_ptr<maki::IPipelineAction>> pipelineActions() override;
 
   Result<maki::PipelineArtifact> generateKoda(const maki::PipelineArtifact& artifact, const QDir& outputFolder);
-  Result<maki::PipelineArtifact> buildRosProject(const maki::PipelineArtifact& artifact, const QDir& outputFolder, const QString& rosFolder,
-                                                 maki::IPipeline* pipeline);
-  Result<maki::PipelineArtifact> launchRosProject(const maki::PipelineArtifact& artifact, const QDir& outputFolder, const QString& rosFolder,
-                                                  maki::IPipeline* pipeline);
-
-  QList<std::shared_ptr<maki::IPipelineAction>> pipelineActions() override;
 
 private:
   std::shared_ptr<maki::TraceabilityMap> mTraceMap;
-  std::shared_ptr<koda::System> mAST;
 
   void publishErrors(const std::vector<koda::Error>& errors) const;
 };

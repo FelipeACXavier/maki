@@ -1,6 +1,6 @@
 {
   "id": "com.maki.dezyne",
-  "name": "dezyne",
+  "name": "Dezyne",
   "version": "0.0.1",
   "author": "Felipe Xavier",
   "entryPointDLL": "bin/dezyne_plugin.dll",

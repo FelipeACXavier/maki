@@ -82,6 +82,7 @@ target_link_libraries(${PLUGIN_NAME} PRIVATE
   Qt6::WebSockets
   libcpphelpers
   libmaki
+  libkoda
 )
 
 target_include_directories(${PLUGIN_NAME}

@@ -1,9 +1,6 @@
 #pragma once
 
-#include <QDir>
-#include <QJsonObject>
 #include <QObject>
-#include <QProcess>
 
 #include "client/dezyne_simulator.h"
 #include "client/simulation_scene.h"

@@ -10,6 +10,9 @@
 #include "actions/dezyne_action.h"
 #include "actions/simulate_action.h"
 #include "actions/verify_action.h"
+#include "ast/emitters/dezyne/dezyne_emitter.h"
+#include "ast/ir_json.h"
+#include "ast/koda_compiler.h"
 #include "client/dezyne_simulator.h"
 #include "client/simulation_scene.h"
 #include "client/svg_tool_button.h"
@@ -198,6 +201,12 @@ VoidResult DezynePlugin::verify(const maki::PipelineArtifact& artifact, const QD
   const QStringList inputFiles = artifact.metadata["sources"].toStringList();
   const QStringList includeFolders = artifact.metadata["includes"].toStringList();
 
+  if (inputFiles.isEmpty())
+  {
+    LOG_INFO("Not verifying, no files provided");
+    return VoidResult();
+  }
+
   auto taskOnly = getSetting("taskOnly");
   pipeline->startGroup("Verification");
   for (const QString& f : inputFiles)
@@ -270,46 +279,36 @@ VoidResult DezynePlugin::simulate(const maki::PipelineArtifact& artifact)
 Result<maki::PipelineArtifact> DezynePlugin::generateDezyne(const maki::PipelineArtifact& artifact, const QDir& outputFolder, const maki::ValueMap& parameters,
                                                             maki::IPipeline* pipeline)
 {
-  if (!artifact.metadata.contains("sources"))
-    return Result<maki::PipelineArtifact>::Failed("generateDezyne, missing input sources");
+  if (mServices->document() == nullptr)
+    return Result<maki::PipelineArtifact>::Failed("Cannot proceed with generation, no document provided");
 
-  const QStringList inputFiles = artifact.metadata["sources"].toStringList();
-  if (!outputFolder.exists())
-    outputFolder.mkpath(".");
+  if (!artifact.metadata.contains("koda.ir"))
+    return Result<maki::PipelineArtifact>::Failed("generateDezyne, missing input IR");
+
+  const auto jsonIR = artifact.metadata["koda.ir"].toJsonObject();
+  koda::IrArchive archive;
+  ASSIGN_OR_RETURN_ON_FAILURE_AS(archive, koda::IrJson::fromJson(jsonIR), maki::PipelineArtifact);
 
   // Make sure the output is clean before the generation
-  auto modelsOutputFolder = QDir(outputFolder.absolutePath() + "/models");
-  auto libOutputFolder = QDir(outputFolder.absolutePath() + "/models/lib");
+  auto modelsOutputFolder = QDir(outputFolder.absolutePath() + "/dezyne");
+  auto libOutputFolder = QDir(outputFolder.absolutePath() + "/dezyne/lib");
   if (modelsOutputFolder.exists())
     modelsOutputFolder.removeRecursively();
 
   modelsOutputFolder.mkpath(".");
 
-  // koda::Compiler compiler;
-  // for (const auto& file : inputFiles)
-  // {
-  //   koda::CompilerOptions options;
-  //   if (parameters.contains("Simulate"))
-  //     options.simulation = parameters.at("Simulate").toBool();
-  //   if (parameters.contains("Start wait"))
-  //     options.startWait = parameters.at("Start wait").toDouble();
-  //   if (parameters.contains("Verbose"))
-  //     options.verbose = 1;
-  //
-  //   if (mAST && !(parameters.contains("From file") && parameters.at("From file").toBool()))
-  //   {
-  //     options.ast = mAST;
-  //     options.typeRegistry = std::make_shared<koda::types::TypeRegistry>(*mServices->document()->getTypesRegistry());
-  //   }
-  //   options.emitters.push_back("dezyne");
-  //
-  //   options.traceability = mTraceMap;
-  //   options.inputFile = file.toStdString();
-  //   options.outputDir = modelsOutputFolder.absolutePath().toStdString();
-  //   LOG_DEBUG("Generating from file: {} to {}", file, outputFolder.absolutePath());
-  //   RETURN_ON_FAILURE_AS(compiler.parse(options), maki::PipelineArtifact);
-  //   RETURN_ON_FAILURE_AS(compiler.generate(), maki::PipelineArtifact);
-  // }
+  koda::DezyneEmitter emitter;
+  koda::CompilerOptions options;
+  if (parameters.contains("Simulate"))
+    options.simulation = parameters.at("Simulate").toBool();
+  if (parameters.contains("Start wait"))
+    options.startWait = parameters.at("Start wait").toDouble();
+  if (parameters.contains("Verbose"))
+    options.verbose = 1;
+
+  options.outputDir = modelsOutputFolder.absolutePath().toStdString();
+
+  RETURN_ON_FAILURE_AS(emitter.generate(archive.program, archive.symbols, *mServices->document()->getTypesRegistry(), options), maki::PipelineArtifact);
 
   QStringList includeFolders = {};
   includeFolders << modelsOutputFolder.absolutePath();

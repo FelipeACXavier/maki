@@ -76,6 +76,7 @@ set(KODA_COMPILER_FILES
   src/ast/declaration_pass.cpp
   src/ast/ir_builder.cpp
   src/ast/koda_compiler.cpp
+  src/ast/ir_json.cpp
 
   src/ast/semantic_analyzer.cpp
   src/ast/symbol_registry.cpp
@@ -212,10 +213,6 @@ function(add_koda_plugin TARGET_NAME USE_ANTLR_ENABLED)
 
     ${KODA_TO_MAKI}
     src/actions/koda_action.cpp
-    # TODO: These need to move to a ROS plugin
-    src/actions/ros_copy.cpp
-    src/actions/ros_build.cpp
-    src/actions/ros_launch.cpp
     ${JSON_FILE}
 
     assets/assets.qrc

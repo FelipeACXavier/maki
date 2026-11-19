@@ -3,6 +3,7 @@
 #include <QString>
 #include <QVector>
 
+#include "constants.h"
 #include "dezyne_plugin.h"
 #include "logging.h"
 #include "pipeline_artifact.h"
@@ -17,7 +18,7 @@ DezyneVerifyAction::DezyneVerifyAction(DezynePlugin* generator)
 
 QString DezyneVerifyAction::id() const
 {
-  return "dezyne.verify";
+  return dezyne::VERIFY_ACTION_ID;
 }
 
 QString DezyneVerifyAction::displayName() const
@@ -27,21 +28,22 @@ QString DezyneVerifyAction::displayName() const
 
 QStringList DezyneVerifyAction::consumes() const
 {
-  return {"dezyne"};
+  return {dezyne::SOURCE_ARTIFACT_ID};
 }
 
 QStringList DezyneVerifyAction::produces() const
 {
-  return {"dezyne.verified"};
+  // return {dezyne::VERIFICATION_ARTIFACT_ID};
+  return {};
 }
 
 maki::ResultArtifacts DezyneVerifyAction::run(const maki::PipelineContext& context, const maki::ValueMap& parameters, maki::IPipeline* pipeline)
 {
   LOG_INFO("Running {}", id());
   // Get the canvas from the context
-  const auto artifacts = context.artifactsOfType("dezyne");
+  const auto artifacts = context.artifactsOfType(dezyne::SOURCE_ARTIFACT_ID);
   if (artifacts.isEmpty())
-    return maki::ResultArtifacts::Failed("No artifacts available, requires \"dezyne\"");
+    return maki::ResultArtifacts::Failed("No artifacts available, requires \"{}\"", dezyne::SOURCE_ARTIFACT_ID);
 
   // Generate files
   const auto dezyne = artifacts.at(0);

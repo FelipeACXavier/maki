@@ -52,27 +52,12 @@ public:
   VoidResult parse(const CompilerOptions& options);
   VoidResult generate();
 
-  const System& getAST() const
-  {
-    return mAST;
-  }
-
   std::vector<Error> getErrors() const;
 
-  const SymbolRegistry& getSymbols() const
-  {
-    return mSymbols;
-  }
-
-  const SemanticModel& getSemantics() const
-  {
-    return mSemantics;
-  }
-
-  const ir::Program& getIR() const
-  {
-    return mIR;
-  }
+  const System& getAST() const;
+  const SymbolRegistry& getSymbols() const;
+  const SemanticModel& getSemantics() const;
+  const ir::Program& getIR() const;
 
   void printAST() const;
 

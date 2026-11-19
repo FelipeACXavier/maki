@@ -30,7 +30,7 @@ QStringList GenerateKodaAction::consumes() const
 
 QStringList GenerateKodaAction::produces() const
 {
-  return {"koda"};
+  return {"koda.ir"};
 }
 
 maki::ResultArtifacts GenerateKodaAction::run(const maki::PipelineContext& context, const maki::ValueMap& parameters, maki::IPipeline* pipeline)
@@ -55,7 +55,7 @@ maki::ResultArtifacts GenerateKodaAction::run(const maki::PipelineContext& conte
   // Add artefacts
   maki::PipelineArtifact artifact = output.Value();
   artifact.id = "koda.generated";
-  artifact.type = "koda";
+  artifact.type = "koda.ir";
   artifact.producer = id();
 
   return maki::Artifacts{artifact};

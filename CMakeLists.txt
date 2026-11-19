@@ -72,20 +72,24 @@ endif()
 if(MAKI_VERBOSE_DIAGNOSTICS)
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     add_compile_options(
-      -fno-immediate-escalation
+      # Valid for both C and C++
       -fdiagnostics-color=always
       -fdiagnostics-show-caret
-      -fdiagnostics-show-template-tree
-      -ftemplate-backtrace-limit=5
       -fmax-errors=3
       -fmessage-length=0
-  )
+
+      # C++ only
+      $<$<COMPILE_LANGUAGE:CXX>:-fno-immediate-escalation>
+      $<$<COMPILE_LANGUAGE:CXX>:-fdiagnostics-show-template-tree>
+      $<$<COMPILE_LANGUAGE:CXX>:-ftemplate-backtrace-limit=5>
+    )
+
   elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     add_compile_options(
       -fcolor-diagnostics
       -ferror-limit=3
-      -ftemplate-backtrace-limit=5
-  )
+      $<$<COMPILE_LANGUAGE:CXX>:-ftemplate-backtrace-limit=5>
+    )
   endif()
 endif()
 

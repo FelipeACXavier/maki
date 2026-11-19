@@ -3,6 +3,7 @@
 #include <QString>
 #include <QVector>
 
+#include "constants.h"
 #include "dezyne_plugin.h"
 #include "logging.h"
 #include "pipeline_artifact.h"
@@ -17,7 +18,7 @@ DezyneSimulateAction::DezyneSimulateAction(DezynePlugin* generator)
 
 QString DezyneSimulateAction::id() const
 {
-  return "koda.simulate";
+  return dezyne::SIMULATE_ACTION_ID;
 }
 
 QString DezyneSimulateAction::displayName() const
@@ -27,7 +28,7 @@ QString DezyneSimulateAction::displayName() const
 
 QStringList DezyneSimulateAction::consumes() const
 {
-  return {"dezyne.source"};
+  return {dezyne::SOURCE_ARTIFACT_ID};
 }
 
 QStringList DezyneSimulateAction::produces() const
@@ -40,9 +41,9 @@ maki::ResultArtifacts DezyneSimulateAction::run(const maki::PipelineContext& con
   LOG_INFO("Running {}", id());
 
   // Get the canvas from the context
-  const auto artifacts = context.artifactsOfType("dezyne");
+  const auto artifacts = context.artifactsOfType(dezyne::SOURCE_ARTIFACT_ID);
   if (artifacts.isEmpty())
-    return maki::ResultArtifacts::Failed("No artifacts available, requires \"dezyne\"");
+    return maki::ResultArtifacts::Failed("No artifacts available, requires \"{}\"", dezyne::SOURCE_ARTIFACT_ID);
 
   // Generate files
   const auto dezyne = artifacts.at(0);

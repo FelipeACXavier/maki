@@ -1,6 +1,6 @@
 {
   "id": "com.maki.platformIO",
-  "name": "platformIO",
+  "name": "Platform IO",
   "version": "0.0.1",
   "author": "Felipe Xavier",
   "entryPointDLL": "bin/platformio_plugin.dll",

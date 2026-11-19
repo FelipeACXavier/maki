@@ -33,6 +33,26 @@ std::vector<Error> Compiler::getErrors() const
   return mErrorListener->mErrors;
 }
 
+const System& Compiler::getAST() const
+{
+  return mAST;
+}
+
+const SymbolRegistry& Compiler::getSymbols() const
+{
+  return mSymbols;
+}
+
+const SemanticModel& Compiler::getSemantics() const
+{
+  return mSemantics;
+}
+
+const ir::Program& Compiler::getIR() const
+{
+  return mIR;
+}
+
 VoidResult Compiler::parse(const CompilerOptions& options)
 {
   mOptions = options;
@@ -109,22 +129,6 @@ VoidResult Compiler::parse(const CompilerOptions& options)
 
 VoidResult Compiler::generate()
 {
-  if (mOptions.emitters.empty())
-  {
-    std::string options;
-    bool first = true;
-    for (const auto& e : mEmitters)
-    {
-      if (!first)
-        options += ", ";
-
-      options += e->id();
-      first = false;
-    }
-
-    return VoidResult::Failed("No emitter selected. Options available: {}", options);
-  }
-
   mGeneratedFiles.clear();
 
   auto frontend = runFrontend();
@@ -133,6 +137,9 @@ VoidResult Compiler::generate()
 
   if (mOptions.pluginRule == CompilerOptions::PluginOption::PluginsOnly)
     return runPlugins();
+
+  if (mOptions.emitters.empty())
+    LOG_INFO("No emitter selected, running only the frontend");
 
   auto emitted = runEmitters();
   if (!emitted.IsSuccess())
@@ -207,7 +214,8 @@ VoidResult Compiler::runEmitters()
     const auto& files = emitter->generatedFiles();
     mGeneratedFiles.insert(mGeneratedFiles.end(), files.begin(), files.end());
   }
-  return VoidResult{};
+
+  return VoidResult();
 }
 
 VoidResult Compiler::addEmitter(std::shared_ptr<Emitter> emitter)

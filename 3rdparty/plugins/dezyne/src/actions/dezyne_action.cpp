@@ -2,6 +2,7 @@
 
 #include <QString>
 
+#include "constants.h"
 #include "dezyne_plugin.h"
 #include "logging.h"
 #include "pipeline_artifact.h"
@@ -19,7 +20,7 @@ GenerateDezyneAction::GenerateDezyneAction(DezynePlugin* generator)
 
 QString GenerateDezyneAction::id() const
 {
-  return "dezyne.generate";
+  return dezyne::GENERATE_ACTION_ID;
 }
 
 QString GenerateDezyneAction::displayName() const
@@ -29,12 +30,12 @@ QString GenerateDezyneAction::displayName() const
 
 QStringList GenerateDezyneAction::consumes() const
 {
-  return {"koda.source"};  // Diagram information
+  return {dezyne::KODA_IR_ARTIFACT_ID};  // Diagram information
 }
 
 QStringList GenerateDezyneAction::produces() const
 {
-  return {"dezyne.source", "ros-project"};
+  return {dezyne::SOURCE_ARTIFACT_ID, "ros-project"};
 }
 
 QVector<maki::ActionParameter> GenerateDezyneAction::parameters() const
@@ -52,7 +53,7 @@ maki::ResultArtifacts GenerateDezyneAction::run(const maki::PipelineContext& con
 {
   LOG_INFO("Running {}", id());
 
-  const auto artifacts = context.artifactsOfType("koda.source");
+  const auto artifacts = context.artifactsOfType(dezyne::KODA_IR_ARTIFACT_ID);
   if (artifacts.isEmpty())
     return maki::ResultArtifacts::Failed("No artifacts available, requires \"koda\"");
 
@@ -62,8 +63,8 @@ maki::ResultArtifacts GenerateDezyneAction::run(const maki::PipelineContext& con
     return maki::ResultArtifacts::Failed(result.ErrorMessage());
 
   maki::PipelineArtifact artifact = result.Value();
-  artifact.id = "dezyne.generated";
-  artifact.type = "dezyne.source";
+  artifact.id = dezyne::GENERATE_ACTION_ID;
+  artifact.type = dezyne::SOURCE_ARTIFACT_ID;
   artifact.producer = id();
 
   auto modelsOutputFolder = QDir(context.buildDir.absolutePath() + "/ros");

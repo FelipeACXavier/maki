@@ -1,7 +1,6 @@
 #pragma once
 
 #include <QDir>
-#include <QGraphicsItem>
 #include <QJsonArray>
 #include <QList>
 #include <QMetaType>
