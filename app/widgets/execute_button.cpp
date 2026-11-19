@@ -37,7 +37,6 @@ ExecuteButton::ExecuteButton(QWidget* parent)
 void ExecuteButton::start()
 {
   mDocumentSubscription = SaveInfo::instance().subscribe([this](const DocumentEvent& event) {
-    LOG_DEBUG("Document event: {}", maki::toString(event.type));
     const QSignalBlocker blocker(this);
     switch (event.type)
     {
