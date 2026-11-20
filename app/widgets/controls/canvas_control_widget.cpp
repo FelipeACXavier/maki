@@ -66,9 +66,10 @@ bool CanvasControlWidget::permanent() const
   return mProperties.fadingMode != ControlProperties::FadingMode::Fading && mProperties.fadingMode != ControlProperties::FadingMode::FadesWithDelay;
 }
 
-void CanvasControlWidget::setPermanent()
+void CanvasControlWidget::setTouring()
 {
-  mProperties.fadingMode = ControlProperties::FadingMode::NoFade;
+  LOG_DEBUG("TOURING");
+  mTouring = true;
 }
 
 maki::ControlWidget* CanvasControlWidget::controlWidget() const
@@ -196,6 +197,9 @@ void CanvasControlWidget::cancelFadeOut()
 
 bool CanvasControlWidget::hideControl()
 {
+  if (mTouring)
+    return true;
+
   startFadeOut();
   return !permanent();
 }

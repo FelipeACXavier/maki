@@ -333,7 +333,7 @@ QPainterPath NodeBase::geometricBodyOutlinePath(const QRectF& drawingBounds) con
 
 QPainterPath NodeBase::nodeShape(const QRectF& bounds) const
 {
-  if (mRenderer && config()->libraryType != Types::LibraryTypes::STRUCTURAL)
+  if (mRenderer && config()->libraryType == Types::LibraryTypes::BEHAVIOUR)
     return svgSilhouetteOutlinePath(mRenderer, drawingRect(bounds));
 
   return geometricBodyOutlinePath(drawingRect(bounds));

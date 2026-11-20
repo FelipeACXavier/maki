@@ -51,7 +51,7 @@ public:
   bool hideControl();
 
   void activate();
-  void setPermanent();
+  void setTouring();
   bool permanent() const;
 
 protected:
@@ -73,6 +73,7 @@ private:
   bool mMouseInside = false;
   QTimer* mFadeTimer = nullptr;
   QPropertyAnimation* mFadeAnimation = nullptr;
+  bool mTouring = false;
 
   void startFadeOut();
   void cancelFadeOut();

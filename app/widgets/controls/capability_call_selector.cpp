@@ -259,7 +259,7 @@ void CapabilityCallSelector::setTouring()
   {
     if (auto* canvasWidget = dynamic_cast<CanvasControlWidget*>(widget->graphicsProxyWidget()))
     {
-      canvasWidget->setPermanent();
+      canvasWidget->setTouring();
       return;
     }
   }

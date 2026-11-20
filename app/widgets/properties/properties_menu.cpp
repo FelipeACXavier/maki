@@ -170,6 +170,9 @@ VoidResult PropertiesMenu::onNodeModified(const QString& nodeId)
   if (auto* vLayout = qobject_cast<QVBoxLayout*>(layout()))
     vLayout->addStretch();
 
+  if (!nodeId.isEmpty())
+    emit nodeFocused(nodeId);
+
   return VoidResult();
 }
 
@@ -177,13 +180,13 @@ VoidResult PropertiesMenu::onNodeSelected(const QString& nodeId, bool selected)
 {
   // If we are already showing this node, then there is nothing to do
   if (!nodeId.isEmpty() && nodeId == mCurrentNode)
+  {
+    emit nodeFocused(nodeId);
     return VoidResult();
+  }
 
   if (nodeId.isEmpty() || !selected)
     return onNodeRemoved(mCurrentNode);
-
-  mCurrentNode = nodeId;
-  emit nodeFocused(mCurrentNode);
 
   return onNodeModified(nodeId);
 }

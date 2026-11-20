@@ -28,10 +28,10 @@ class PluginView;
 class QPlainTextEdit;
 class Logger;
 class LanguageManager;
-class TourGuide;
 class EdgeRouter;
 class DraggableItem;
 class LibraryContainer;
+class ITour;
 
 struct DocumentEvent;
 template <typename Event>
@@ -97,11 +97,11 @@ private slots:
   void changeEvent(QEvent* event) override;
 
 private:
+  bool mStarted;
   std::unique_ptr<SaveHandler> mSaveHandler;                           /// Handler for saving data.
   std::unique_ptr<PluginManager> mPluginManager;                       /// Manager for plugins.
   std::shared_ptr<SettingsManager> mSettingsManager;                   /// Settings manager shared pointer.
   std::shared_ptr<LanguageManager> mLanguageManager;                   /// Language manager shared pointer.
-  std::shared_ptr<TourGuide> mTourGuide;                               /// Language manager shared pointer.
   std::shared_ptr<EventDispatcher<DocumentEvent>> mDocumentScheduler;  /// Language manager shared pointer.
 
   Pipeline* mPipeline = nullptr;                        /// Pointer to the pipeline.
@@ -114,10 +114,12 @@ private:
 
   oclero::qlementine::ThemeManager* mThemeManager;  /// Pointer to the theme manager.
 
-  // std::shared_ptr<SaveInfo> mStorage;  /// Shared pointer to save information.
   std::shared_ptr<EdgeRouter> mRouter;
 
   QApplication* mApp;  /// Pointer to the QApplication instance.
+
+  friend class ITour;
+  std::shared_ptr<ITour> mTourGuide;  /// Language manager shared pointer.
 
   /**
    * @brief Returns the active canvas.
@@ -210,12 +212,12 @@ private:
    * @param t Name of the new theme.
    * @param at List of theme information.
    */
-  void onThemeChanged(const AppearanceSettings& themeName, bool intialConfig);
+  void onThemeChanged(const AppearanceSettings& themeName);
 
   /**
    * @brief Handles settings change events.
    */
-  void onSettingsChanged(bool initialSetup);
+  void onSettingsChanged();
 
   /**
    * @brief Shows the about dialog.
@@ -251,9 +253,6 @@ private:
 
   void focusOn(const QString& nodeId, const QString& flowId, const maki::FocusProperties& properties);
 
-  void startTourGuide(bool runningOnStartUp);
-  std::pair<LibraryContainer*, DraggableItem*> findDraggableInPalette(const QString& nodeType) const;
-
   // ================================================
   // Actions
   void onActionNew(const QString& templatePath) override;                 /// Handles new action.
@@ -271,6 +270,7 @@ private:
   VoidResult loadLastSession();
 
   void createFlow(const QString& ownerNodeId);
+  void startFirstTour(bool onStartUp);
 };  // namespace qlementclassMainWindow:public MainWindowLayout
 
 #endif  // MAINWINDOW_H

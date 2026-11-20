@@ -314,9 +314,12 @@ void NodeItem::hideControl()
   if (!hasControl())
     return;
 
-  if (mControlWidget && mControlWidget->hideControl())
+  const auto hiding = (mControlWidget && mControlWidget->hideControl());
+  // If we are already hiding, i.e., the control has started to fade, we don't need to dismiss the control
+  if (hiding)
     return;
 
+  // Controls that do not fade must be forcefully dismissed
   dismissControl();
 }
 

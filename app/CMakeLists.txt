@@ -31,6 +31,7 @@ file(GLOB SYSTEM_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/system/*.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/system/undo_commands/*.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/system/tutorials/*.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/system/tutorials/tours/*.cpp
 )
 
 qt_add_executable(${APPLICATION_NAME}
