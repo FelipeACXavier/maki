@@ -43,9 +43,6 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
   setAcceptDrops(config()->libraryType == Types::LibraryTypes::STRUCTURAL);
   setAcceptHoverEvents(config()->libraryType == Types::LibraryTypes::STRUCTURAL);
 
-  mStorage->setId(this->id());
-  mStorage->setNodeId(this->nodeId());
-
   // Add icon if it exists
   if (!mStorage->getIcon().isEmpty())
     setIcon(AppPaths::icon(config()->body.iconPath), config()->body.iconColor);
@@ -441,21 +438,12 @@ void NodeItem::renameNode()
 
 void NodeItem::setEvent(int index, const FlowConfig& event)
 {
-  // if (!mStorage)
-  //   return;
-
-  // if (index < mStorage->events.size())
-  //   mStorage->events[index] = event;
-  // else
-  //   mStorage->events.push_back(event);
 }
 
 VoidResult NodeItem::setField(const QString& key, const QJsonObject& property)
 {
   if (!mStorage)
     return VoidResult::Failed("Storage is not set");
-
-  // mStorage->setField(key, std::dynamic_pointer_cast<IParameter>(std::make_shared<PropertyInfo>(PropertyConfig(property))));
 
   return VoidResult();
 }
@@ -464,8 +452,6 @@ VoidResult NodeItem::setField(const QString& key, std::shared_ptr<PropertyInfo> 
 {
   if (!mStorage)
     return VoidResult::Failed("Storage is not set");
-
-  // mStorage->setField(key, std::dynamic_pointer_cast<IParameter>(property));
 
   return VoidResult();
 }
@@ -498,8 +484,6 @@ void NodeItem::addParent(NodeItem* parent, const QString& subflow)
 
   LOG_DEBUG("Setting parent {} of node {}", parent->nodeId(), nodeId());
   mParentNode = parent;
-  mStorage->setParentId(parent->id());
-  mStorage->setParentSubFlow(subflow);
   setZValue(parent->zValue() + 2);
 
   fitInsideParent(20);
@@ -512,8 +496,6 @@ void NodeItem::removeParent()
 
   LOG_DEBUG("Removing parent {} of node {}", parentNode()->nodeId(), nodeId());
   mParentNode = nullptr;
-  mStorage->setParentId("");
-  mStorage->setParentSubFlow(Constants::MAIN_SUB_FLOW);
   setZValue(config()->body.zIndex);
 }
 
@@ -522,13 +504,11 @@ void NodeItem::addChild(NodeItem* node, std::shared_ptr<NodeSaveInfo> info)
   if (!info)
     return;
 
-  // mStorage->addChild(info);
   mChildrenNodes.push_back(node);
 }
 
 void NodeItem::childRemoved(NodeItem* child)
 {
-  // mStorage->removeChild(child->id());
   mChildrenNodes.removeAll(child);
 }
 
@@ -578,15 +558,9 @@ void NodeItem::applySize(const QSizeF& size)
 
   prepareGeometryChange();
   mSize = size;
-  // mStorage->setSize(mSize);
 
   qreal newFontSize = qMax(Fonts::BaseSize, mSize.width() / Fonts::BaseFactor);
   setLabelSize(newFontSize, mSize);
-
-  // The saved position represents the center of the node. Since changing the
-  // size changes the center while pos() remains fixed, keep storage in sync.
-  // mStorage->setPosition(pos() + boundingRect().center());
-  // mStorage->setScale(qMax(config()->body.width / mSize.width(), config()->body.height / mSize.height()));
 
   update();
 }
@@ -785,8 +759,6 @@ void NodeItem::updatePosition(const QPointF& newPosition, Config::NodeMove reaso
   mLastPosition = newPosition;
   if (reason != Config::NodeMove::Start)
     updateExtrasPosition(reason);
-
-  // mStorage->setPosition(pos() + boundingRect().center());
 }
 
 QPointF NodeItem::centerPosition() const
@@ -800,9 +772,6 @@ void NodeItem::setCenterPosition(const QPointF& center)
 
   mLastPosition = pos();
   updateExtrasPosition(Config::NodeMove::Relayout);
-
-  // if (mStorage)
-  //   mStorage->setPosition(center);
 }
 
 void NodeItem::childPositionUpdated(NodeItem* /* child */)
