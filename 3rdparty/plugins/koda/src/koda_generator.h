@@ -38,5 +38,6 @@ public:
 private:
   std::shared_ptr<maki::TraceabilityMap> mTraceMap;
 
+  void buildSettings() override;
   void publishErrors(const std::vector<koda::Error>& errors) const;
 };

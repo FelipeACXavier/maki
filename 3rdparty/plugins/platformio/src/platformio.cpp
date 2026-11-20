@@ -126,16 +126,6 @@ void PlatformIOPlugin::setHostServices(maki::IHostServices* services)
   }
 
   buildSettings();
-
-  // Setup settings
-  if (auto service = mServices->settings())
-  {
-    service->registerSettings(languageName(), version(), manifest().iconPath(), mSettings);
-
-    auto settings = service->getPluginSettings(languageName());
-    if (!settings.isEmpty())
-      mSettings = settings;
-  }
 }
 
 QList<std::shared_ptr<maki::IPipelineAction>> PlatformIOPlugin::pipelineActions()

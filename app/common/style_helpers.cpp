@@ -83,10 +83,11 @@ QIcon addIconWithColor(const QString& path, const QColor& color)
 
 QIcon iconFromTheme(const QString& name, bool fallback)
 {
+  const auto path = QString(name).replace(".svg", "") + ".svg";
   if (fallback)
-    return QIcon(AppPaths::icon(name + ".svg"));
+    return QIcon(AppPaths::icon(path));
 
-  return QIcon::fromTheme(name, QIcon(AppPaths::icon(name + ".svg")));
+  return QIcon::fromTheme(name, QIcon(AppPaths::icon(path)));
 }
 
 QString iconPathFromTheme(const QString& name, bool useLocal)
@@ -96,9 +97,6 @@ QString iconPathFromTheme(const QString& name, bool useLocal)
   if (!useLocal)
     return AppPaths::icon(iconName);
 #endif
-  if (name.contains("plugin"))
-    return AppPaths::icon(iconName);
-
   return AppPaths::icon(iconName);
 }
 

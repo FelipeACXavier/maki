@@ -16,7 +16,7 @@
 #include <QStackedWidget>
 #include <QStandardItemModel>
 #include <QSvgWidget>
-#include <QTableView>
+#include <QTableWidget>
 #include <QToolButton>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
@@ -101,7 +101,7 @@ SettingsDialog::SelectorPage SettingsDialog::addPage(const QString& pageName, co
   headerRow->setContentsMargins(10, 0, 10, 0);
 
   auto icon = iconFromTheme(iconName, true);
-  auto iconPath = AppPaths::icon(iconName + ".svg");
+  auto iconPath = iconPathFromTheme(iconName);
 
   // We use an svg widget here so we can show the icon colours
   auto* titleIcon = new QSvgWidget(iconPath, page);
@@ -404,60 +404,45 @@ VoidResult SettingsDialog::createPluginPages()
   LOG_DEBUG("Loaded from settings with {} plugins", mPluginSettings.plugins.size());
 
   // Add top level plugin page
-  auto [topSelector, topPage] = addPage(tr("Plugins"), "plugins", [] {
-    // mSettingsManager->setGeneration(GenerationSettings());
+  auto [topSelector, topPage] = addPage(tr("Plugins"), "plugins", [this] {
+    mSettingsManager->setPlugins(PluginSettings());
+    mSettingsManager->applySettings();
   });
 
   // -------------------------------------------------------------------------
   // Plugins table
   auto tableLayout = new maki::WidgetGroup(tr("Installed plugins"), topPage);
 
-  QTableView* table = new QTableView(tableLayout);
-  QStandardItemModel* model = new QStandardItemModel(0, 3);
+  auto* table = new QTableWidget(tableLayout);
+  table->setColumnCount(4);
+  table->setSelectionBehavior(QAbstractItemView::SelectRows);
+  table->setSelectionMode(QAbstractItemView::ExtendedSelection);
+  table->setHorizontalHeaderLabels({"", "Name", "Version", "Enabled"});
+  table->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-  model->setHorizontalHeaderItem(0, new QStandardItem("Name"));
-  model->setHorizontalHeaderItem(1, new QStandardItem("Version"));
-  model->setHorizontalHeaderItem(2, new QStandardItem("Enabled"));
-
-  table->setModel(model);
-
+  table->setAlternatingRowColors(false);
   table->verticalHeader()->setVisible(false);
   table->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft);
-  table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+  table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
   table->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
-  table->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
-  table->setSelectionMode(QAbstractItemView::ExtendedSelection);
-  table->setSelectionBehavior(QAbstractItemView::SelectRows);
-  table->setAlternatingRowColors(false);
+  table->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
+  table->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
 
   // -------------------------------------------------------------------------
   // Add new plugin
   auto* buttonRow = new QHBoxLayout();
 
   auto* addBtn = new maki::ButtonWidget("Add", tableLayout);
-  addBtn->setFixedWidth(200);
+  addBtn->setFixedWidth(100);
   addBtn->setIcon(QIcon(":/icons/plus.svg"));
 
   auto* removeBtn = new maki::ButtonWidget("Remove", tableLayout);
   removeBtn->setIcon(QIcon(":/icons/clear.svg"));
-  removeBtn->setMaximumWidth(200);
+  removeBtn->setFixedWidth(100);
   removeBtn->setEnabled(false);
 
   connect(table->selectionModel(), &QItemSelectionModel::selectionChanged, topPage,
           [removeBtn, table]() { removeBtn->setEnabled(table->selectionModel()->hasSelection()); });
-
-  connect(model, &QStandardItemModel::itemChanged, this, [this, model](QStandardItem* item) {
-    if (item->column() != 2)
-      return;
-
-    QStandardItem* nameItem = model->item(item->row(), 0);
-    if (!nameItem)
-      return;
-
-    auto* plugin = maki::findByRef(mPluginSettings.plugins, &PluginInfo::name, nameItem->text());
-    if (plugin)
-      plugin->enabled = item->checkState() == Qt::Checked;
-  });
 
   buttonRow->addStretch();
   buttonRow->addWidget(addBtn);
@@ -476,7 +461,10 @@ VoidResult SettingsDialog::createPluginPages()
   for (const auto& plugin : mPluginSettings.plugins)
   {
     if (!plugin.registered)
+    {
+      LOG_DEBUG("Plugin {} is not registered", plugin.name);
       continue;
+    }
 
     auto pluginId = plugin.name;
     auto settings = plugin.settings;
@@ -485,23 +473,47 @@ VoidResult SettingsDialog::createPluginPages()
     if (plugin.enabled)
       mDefaultPlugin->addItem(pluginId, pluginId);
 
-    int newRow = model->rowCount();
-    model->insertRow(newRow);
+    int newRow = table->rowCount();
+    table->insertRow(newRow);
 
-    QStandardItem* nameItem = new QStandardItem(pluginId);
-    nameItem->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
-    model->setItem(newRow, 0, nameItem);
+    {
+      auto* container = new QWidget(table);
+      auto* layout = new QHBoxLayout(container);
+      layout->setContentsMargins(0, 0, 0, 0);
+      layout->setAlignment(Qt::AlignCenter);
 
-    QStandardItem* versionItem = new QStandardItem(plugin.version.toString());
-    versionItem->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
-    model->setItem(newRow, 1, versionItem);
+      auto* pluginIcon = new QSvgWidget(plugin.icon, table);
+      pluginIcon->setFixedSize(Config::MEDIUM_BUTTON_SIZE);
 
-    QStandardItem* item = new QStandardItem(true);
-    item->setCheckable(true);
-    item->setCheckState(plugin.enabled ? Qt::Checked : Qt::Unchecked);
-    item->setTextAlignment(Qt::AlignCenter);
-    item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled | Qt::ItemIsUserCheckable);
-    model->setItem(newRow, 2, item);
+      layout->addWidget(pluginIcon);
+      table->setCellWidget(newRow, 0, container);
+    }
+
+    table->setItem(newRow, 1, new QTableWidgetItem(pluginId));
+    table->setItem(newRow, 2, new QTableWidgetItem(plugin.version.toString()));
+
+    {
+      auto* container = new QWidget(table);
+      auto* layout = new QHBoxLayout(container);
+      layout->setContentsMargins(0, 0, 0, 0);
+      layout->setAlignment(Qt::AlignCenter);
+
+      auto* pluginEnabled = new QCheckBox(container);
+      pluginEnabled->setChecked(plugin.enabled);
+      connect(pluginEnabled, &QCheckBox::checkStateChanged, this, [this, pluginId](Qt::CheckState state) {
+        if (mPluginSettings.plugins.contains(pluginId))
+          mPluginSettings.plugins[pluginId].enabled = state;
+      });
+
+      layout->addWidget(pluginEnabled);
+      table->setCellWidget(newRow, 3, container);
+    }
+
+    if (plugin.settings.isEmpty())
+    {
+      LOG_DEBUG("Plugin {} does not have any setting", plugin.name);
+      continue;
+    }
 
     auto [selector, page] = addPage(pluginId, plugin.icon, nullptr, topSelector);
 

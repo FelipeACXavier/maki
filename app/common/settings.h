@@ -81,9 +81,9 @@ struct PluginInfo
  */
 struct PluginSettings
 {
-  QString defaultPlugin = "";        /// The default plugin to be used
-  bool showCombinedLogs = false;     /// Whether the plugin logs should be printed with the normal logs
-  QVector<PluginInfo> plugins = {};  /// The list of plugin settings
+  QString defaultPlugin = "";              /// The default plugin to be used
+  bool showCombinedLogs = false;           /// Whether the plugin logs should be printed with the normal logs
+  QMap<QString, PluginInfo> plugins = {};  /// The list of plugin settings
 
   enum class Status
   {

@@ -207,13 +207,6 @@ VoidResult PluginManager::loadPlugin(const QDir& pluginDir, const maki::Manifest
   if (!codeGen->setup())
     return VoidResult::Failed("Could not setup plugin");
 
-  // Register plugin actions in
-  for (const auto& action : codeGen->pipelineActions())
-  {
-    LOG_DEBUG("Registering action: {}", action->id());
-    LOG_WARN_ON_FAILURE(maki::PipelineActionRegistry::instance().registerAction(codeGen->languageName(), action));
-  }
-
   mPlugins.append({loader, codeGen});
   LOG_DEBUG("Loaded plugin for language: {}", pluginName);
 
@@ -232,11 +225,11 @@ Result<maki::Manifest> PluginManager::getPluginManifest(const QDir& path) const
     return Result<maki::Manifest>::Failed("Plugin folder has more than one manifest");
 
   auto fileName = path.absoluteFilePath(manifestFiles.at(0));
-  auto manifest = JSON::fromFile(fileName);
-  if (!manifest.IsSuccess())
-    return Result<maki::Manifest>::Failed("Failed to parse manifest: {}", manifest.ErrorMessage());
+  auto manifestJSON = JSON::fromFile(fileName);
+  if (!manifestJSON.IsSuccess())
+    return Result<maki::Manifest>::Failed("Failed to parse manifest: {}", manifestJSON.ErrorMessage());
 
-  auto data = manifest.Value();
+  auto data = manifestJSON.Value();
   return maki::Manifest::fromJson(path.absolutePath(), data);
 }
 
@@ -323,7 +316,7 @@ VoidResult PluginManager::installPlugin(const maki::Manifest& manifest)
   for (const auto& step : manifest.installationSteps)
   {
     QProcess* install = new QProcess(this);
-    install->setWorkingDirectory(manifest.path);
+    install->setWorkingDirectory(manifest.pluginRoot);
     install->setProgram(step.command);
     install->setArguments(step.args);
     mPipeline->add(install, maki::OnFail::STOP);
@@ -431,7 +424,7 @@ VoidResult PluginManager::reloadPlugin(const QString& pluginName, HostServices* 
     return VoidResult::Failed("Plugin not loaded: {}", pluginName.toStdString());
 
   const auto old = mPlugins.at(index);
-  const QDir pluginDir = QDir(old.plugin->manifest().path);
+  const QDir pluginDir = QDir(old.plugin->manifest().pluginRoot);
 
   RETURN_ON_FAILURE(deregisterPlugin(old));
 

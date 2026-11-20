@@ -191,4 +191,7 @@ private:
    * @return maki::SettingField A copy of the found setting field, or an empty field if not found.
    */
   maki::SettingField settingFromName(const QVector<maki::SettingField>& settings, const QString& fieldName) const;
+
+  void addPlugin(const PluginInfo& info);
+  std::optional<PluginInfo> getPlugin(const QString& id) const;
 };

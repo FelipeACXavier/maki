@@ -129,3 +129,14 @@ Result<maki::PipelineArtifact> KodaGenerator::generateKoda(const maki::PipelineA
 
   return output;
 }
+
+void KodaGenerator::buildSettings()
+{
+  // maki::SettingField testSetting;
+  // testSetting.setKey("testSetting");
+  // testSetting.setLabel("HTTP Port");
+  // testSetting.setDescription("Web server HTTP port");
+  // testSetting.setDefaultValue(3000);
+  // testSetting.setType(Types::PropertyTypes::INTEGER);
+  // mSettings.push_back(testSetting);
+}

@@ -40,17 +40,17 @@ bool PluginSettings::operator!=(const PluginSettings& s) const
 
 PluginSettings::Status PluginSettings::pluginStatus(const QString& pluginName) const
 {
-  const auto plugin = maki::findIf(plugins, [&pluginName](const auto& plugin) { return plugin.name == pluginName; });
-  if (plugin)
+  if (!plugins.contains(pluginName))
   {
-    LOG_DEBUG("Could not find plugin: {}. Available: {}", pluginName, maki::accumulate<QString>(plugins, [](QString total, const auto& opt) {
+    LOG_DEBUG("Could not find plugin: {}. Available: {}", pluginName, maki::accumulate<QString>(plugins, [](QString total, const auto& plugin) {
                 if (total.isEmpty())
-                  return opt.name;
+                  return plugin.name;
 
-                return total + ", " + opt.name;
+                return total + ", " + plugin.name;
               }));
+
     return Status::Unknown;
   }
 
-  return plugin->enabled ? Status::Enabled : Status::Disabled;
+  return plugins[pluginName].enabled ? Status::Enabled : Status::Disabled;
 }

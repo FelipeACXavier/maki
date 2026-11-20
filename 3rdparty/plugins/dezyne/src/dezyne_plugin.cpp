@@ -61,16 +61,6 @@ void DezynePlugin::setHostServices(maki::IHostServices* services)
 
   if (auto pluginTab = mServices->ui())
     pluginTab->registerPlugin(languageName(), [this](QGraphicsScene* scene) { return createSimulationScene(scene, mLastUpdate); });
-
-  // Setup settings
-  if (auto service = mServices->settings())
-  {
-    service->registerSettings(languageName(), version(), manifest().iconPath(), mSettings);
-
-    auto settings = service->getPluginSettings(languageName());
-    if (!settings.isEmpty())
-      mSettings = settings;
-  }
 }
 
 QList<std::shared_ptr<maki::IPipelineAction>> DezynePlugin::pipelineActions()

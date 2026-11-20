@@ -183,7 +183,7 @@ void SettingsManager::load()
       info.settings[index] = setting;
       mSettings.endGroup();  // setting.name
     }
-    mPluginSettings.plugins.push_back(info);
+    mPluginSettings.plugins[info.name] = info;
     mSettings.endGroup();  // plugin.name
   }
   mSettings.endGroup();
@@ -339,9 +339,22 @@ void SettingsManager::addRecentFile(const QString& s)
   applySettings();
 }
 
+void SettingsManager::addPlugin(const PluginInfo& info)
+{
+  mTmpPluginSettings.plugins[info.name] = info;
+}
+
+std::optional<PluginInfo> SettingsManager::getPlugin(const QString& id) const
+{
+  if (plugins().plugins.contains(id))
+    return plugins().plugins[id];
+
+  return std::nullopt;
+}
+
 QVector<maki::SettingField> SettingsManager::getPluginSettings(const QString& id) const
 {
-  auto plugin = maki::findBy(plugins().plugins, &PluginInfo::name, id);
+  auto plugin = getPlugin(id);
   if (plugin)
     return plugin->settings;
 
@@ -356,68 +369,91 @@ void SettingsManager::cleanPluginSetting(const QString& id)
 VoidResult SettingsManager::registerSettings(const QString& id, const maki::PluginVersion version, const QString& iconPath,
                                              const QVector<maki::SettingField>& settings)
 {
-  QFileInfo info(iconPath);
-  auto fixedIconPath = info.dir().filePath(info.completeBaseName());
+  auto getSetting = [](const QString& key, const QVector<maki::SettingField>& existingSettings) {
+    for (const auto& s : existingSettings)
+      if (s.getKey() == key)
+        return std::optional<maki::SettingField>(s);
 
-  // Since the plugin is registered, we try to load the save settings
-  bool exists = false;
-  for (auto& plugin : mPluginSettings.plugins)
+    return std::optional<maki::SettingField>();
+  };
+
+  QVector<maki::SettingField> incomingSettings = {};
+  auto existingPlugin = getPlugin(id);
+  if (existingPlugin)
   {
-    // Lets look for the plugin in the settings
-    if (plugin.name != id)
-      continue;
+    LOG_INFO("Registering known plugin settings: {}", existingPlugin->name);
 
-    exists = true;
-    plugin.registered = true;  // Make sure the settings are loaded since the plugin registered
-
-    if (plugin.version != version)
+    // Make sure the versions are the same
+    if (existingPlugin->version != version)
     {
-      const auto message = QString(tr("Current: %1 Incoming: %2")).arg(plugin.version.toString(), version.toString());
-      if (maki::warningPrompt(tr("Plugin version mismatch. Replace?"), message))
-        // The user confirmed that the version should be replaced
-        LOG_WARNING("Versions are different: {}", message);
+      const auto message = QString(tr("Current: %1 Incoming: %2")).arg(existingPlugin->version.toString(), version.toString());
+      if (!maki::warningPrompt(tr("Plugin version mismatch. Replace?"), message))
+        return VoidResult();
+
+      // The user confirmed that the version should be replaced
+      LOG_WARNING("Versions are different: {}", message);
+      existingPlugin->version = version;
+    }
+    else
+    {
+      LOG_INFO("Plugin {} versions match: {}", existingPlugin->name, existingPlugin->version.toString());
+    }
+
+    // We need to make sure settings that do not exist are removed
+    auto existingSettings = existingPlugin->settings;
+    for (auto iter = existingSettings.cbegin(); iter != existingSettings.cend();)
+    {
+      auto current = getSetting(iter->getKey(), settings);
+      if (current)
+      {
+        LOG_DEBUG("Setting {} of {} exists, keeping it", iter->getKey(), id);
+        ++iter;
+      }
       else
-        continue;
+      {
+        LOG_DEBUG("Setting {} from {} was removed", iter->getKey(), id);
+        iter = existingSettings.erase(iter);
+      }
     }
 
-    // We need to make sure all the settings are available
-    // This should only happen with a version change
-    for (const auto& incoming : settings)
+    // Make sure all incoming settings are present in the manager
+    for (const auto& setting : settings)
     {
-      auto current = settingFromName(plugin.settings, incoming.getKey());
-
-      // Check if it is a new setting
-      if (!current.getKey().isEmpty())
-        continue;
-
-      LOG_DEBUG("New setting ({}) added to plugin {}", incoming.getKey(), id);
-      plugin.settings.append(incoming);
+      auto current = getSetting(setting.getKey(), existingSettings);
+      if (current)
+      {
+        LOG_DEBUG("Using existing setting {} from {}", current->getKey(), id);
+        incomingSettings << (*current);
+      }
+      else
+      {
+        LOG_DEBUG("Setting {} from {} was added", setting.getKey(), id);
+        incomingSettings << setting;
+      }
     }
 
-    // If icon is empty, try adding it
-    plugin.icon = fixedIconPath;
+    // Update the information
+    existingPlugin->version = version;
+    existingPlugin->registered = true;
+    existingPlugin->settings = incomingSettings;
+    existingPlugin->icon = iconPath;
   }
-
-  // If it is a new plugin, then we must register it
-  if (!exists)
+  else
   {
-    LOG_DEBUG("Registering plugin \"{}\" settings", id);
-    mPluginSettings.plugins.append({
+    existingPlugin = PluginInfo{
       .name = id,
       .enabled = true,
       .version = version,
       .settings = settings,
-      .icon = fixedIconPath,
+      .icon = iconPath,
       .registered = true,
-    });
+    };
+  }
 
-    // Make sure the settings are updated with the new plugins
-    save();
-  }
-  else
-  {
-    LOG_DEBUG("Settings for plugin \"{}\" are already registered", id);
-  }
+  // If it is a new plugin, then we must register it
+  LOG_DEBUG("Registering plugin \"{}\" settings", id);
+  LOG_DEBUG("{}", iconPath);
+  addPlugin(*existingPlugin);
 
   return VoidResult();
 }

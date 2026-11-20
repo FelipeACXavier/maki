@@ -37,20 +37,51 @@ public:
   QString name;        /// Name of the plugin.
   QString version;     /// Version of the plugin.
   QString entryPoint;  /// Entry point of the plugin.
-  QString icon;        /// Icon associated with the plugin.
-  QString path;        /// Path to the plugin.
+  QString iconPath;    /// Icon associated with the plugin.
+  QString pluginRoot;  /// Path to the plugin.
   QStringList libs;    /// List of libraries required by the plugin.
   Environment env;
   QVector<InstallStep> installationSteps;
 
+  QString pluginPath() const
+  {
+    return pluginRoot + "/" + entryPoint;
+  }
+
+  static QString resolveAssetPath(const QDir& assetDir, const QString& path)
+  {
+    if (path.isEmpty())
+      return QString();
+
+    if (QDir::isAbsolutePath(path))
+      return QFileInfo(path).isFile() ? QDir::cleanPath(path) : QString{};
+
+    QDir pluginDir = assetDir;
+    pluginDir.cdUp();
+
+    QDir pluginsDir = pluginDir;
+    pluginsDir.cdUp();
+
+    const QStringList candidates = {pluginDir.filePath(path), pluginsDir.filePath(path), assetDir.filePath(path)};
+    for (const auto& candidate : candidates)
+    {
+      const QString resolved = QDir::cleanPath(candidate);
+
+      if (QFileInfo(resolved).isFile())
+        return resolved;
+    }
+
+    return QString();
+  }
+
   /**
    * @brief Creates a Manifest object from JSON data.
    *
-   * @param path The path to the manifest file.
+   * @param rootPath The path to the manifest file.
    * @param data The JSON data containing the manifest information.
    * @return A Manifest object populated with the data.
    */
-  static Manifest fromJson(const QString& path, const QJsonObject& data)
+  static Manifest fromJson(const QString& rootPath, const QJsonObject& data)
   {
     Manifest manifest;
 
@@ -68,7 +99,7 @@ public:
       manifest.entryPoint = data["entryPointSO"].toString();
 #endif
     if (data.contains("icon"))
-      manifest.icon = data["icon"].toString();
+      manifest.iconPath = Manifest::resolveAssetPath(rootPath, data["icon"].toString());
 
     for (const auto& argument : data["libraries"].toArray())
       manifest.libs.push_back(argument.toString());
@@ -103,19 +134,9 @@ public:
       manifest.env = env;
     }
 
-    manifest.path = path;
+    manifest.pluginRoot = rootPath;
 
     return manifest;
-  }
-
-  QString pluginPath() const
-  {
-    return path + "/" + entryPoint;
-  }
-
-  QString iconPath() const
-  {
-    return QDir(path).dirName() + "/" + icon;
   }
 };
 
@@ -141,6 +162,16 @@ public:
   maki::Manifest manifest() const
   {
     return mManifest;
+  }
+
+  QVector<maki::SettingField> settings() const
+  {
+    return mSettings;
+  }
+
+  QDir assetDir() const
+  {
+    return mAssetDir.value_or(QDir());
   }
 
   void setAssetDir(const QDir& dir)
