@@ -207,7 +207,6 @@ void RepeatNode::layoutSubFlow()
   }
 
   const QRectF localRect = mapRectFromScene(sceneRect);
-
   const bool changed = previousRect != sceneRect;
   if (changed)
   {
@@ -216,6 +215,8 @@ void RepeatNode::layoutSubFlow()
 
     if (auto parent = parentNode())
       parent->childPositionUpdated(this);
+
+    applySize(localRect.size());
   }
 
   layoutSubFlowMarkers();

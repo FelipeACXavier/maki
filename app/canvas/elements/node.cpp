@@ -23,7 +23,6 @@
 #include "keys.h"
 #include "logging.h"
 #include "macros.h"
-#include "style_helpers.h"
 #include "system/undo_commands/move_node.h"
 #include "system/undo_commands/rename_node.h"
 #include "system/undo_commands/resize_node.h"
@@ -51,7 +50,7 @@ NodeItem::NodeItem(const QString& nodeId, std::shared_ptr<NodeSaveInfo> info, co
   if (const auto* name = getProperty(ConfigKeys::NAME))
     setLabel(name->getvalue()->toStringValue(), labelSize);
 
-  updatePosition(snapToGrid(initialPosition - boundingRect().center(), Config::GRID_SIZE), Config::NodeMove::Start);
+  updatePosition(initialPosition - nodeRect().center(), Config::NodeMove::Start);
   LOG_DEBUG("{} created at: ({}, {}) with size ({}, {}), scale {} and {} ports", id(), pos().x(), pos().y(), mSize.width(), mSize.height(), baseScale(),
             config()->ports.size());
 }
@@ -504,6 +503,7 @@ void NodeItem::addChild(NodeItem* node, std::shared_ptr<NodeSaveInfo> info)
   if (!info)
     return;
 
+  LOG_INFO("{} adding child: {}", id(), info->getid());
   mChildrenNodes.push_back(node);
 }
 
@@ -558,6 +558,7 @@ void NodeItem::applySize(const QSizeF& size)
 
   prepareGeometryChange();
   mSize = size;
+  SaveInfo::instance().setSizeOfNode(id(), size);
 
   qreal newFontSize = qMax(Fonts::BaseSize, mSize.width() / Fonts::BaseFactor);
   setLabelSize(newFontSize, mSize);
@@ -814,6 +815,8 @@ QPointF NodeItem::constrainChildPosition(const NodeItem* child, const QPointF& p
 
 void NodeItem::updateExtrasPosition(Config::NodeMove reason)
 {
+  SaveInfo::instance().setPositionOfNode(id(), mLastPosition + boundingRect().center());
+
   if (auto* parent = parentNode())
     parent->childPositionUpdated(this);
 

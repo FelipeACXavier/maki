@@ -154,7 +154,6 @@ QRectF WithinNode::sceneAlignRect() const
   QRectF rect = expandedSubFlowsSceneRect().united(sceneNodeRect());
 
   const qreal centerY = sceneNodeRect().center().y();
-
   const qreal extent = qMax(centerY - rect.top(), rect.bottom() - centerY);
 
   rect.setTop(centerY - extent);

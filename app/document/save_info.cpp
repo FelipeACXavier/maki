@@ -75,6 +75,18 @@ std::shared_ptr<TransitionSaveInfo> createTransition(PNodeSaveInfo src, PNodeSav
   return transition;
 }
 
+void SaveInfo::setPositionOfNode(const QString& nodeId, const QPointF& position)
+{
+  if (auto node = getNodeWithId(nodeId))
+    node->setPosition(position);
+}
+
+void SaveInfo::setSizeOfNode(const QString& nodeId, const QSizeF& size)
+{
+  if (auto node = getNodeWithId(nodeId))
+    node->setSize(size);
+}
+
 void SaveInfo::addFlowToNode(const QString& nodeId, std::shared_ptr<FlowSaveInfo> flow, const QList<QPointF>& initialNodePositions)
 {
   if (auto node = getNodeWithId(nodeId))

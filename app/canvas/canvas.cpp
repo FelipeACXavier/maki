@@ -862,9 +862,7 @@ void Canvas::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     if (parentView()->dragMode() == QGraphicsView::RubberBandDrag && !isModifierSet(event, Qt::ControlModifier))
     {
       const bool draggingFromRight = mStartDragPosition.x() > event->scenePos().x();
-
       const QPainterPath selectionPath = selectionArea();
-
       for (QGraphicsItem* selectedItem : selectedItems())
       {
         const QRectF itemBounds = selectedItem->sceneBoundingRect();
@@ -1992,8 +1990,8 @@ NodeItem* Canvas::materializeNode(const std::shared_ptr<NodeSaveInfo>& modelInfo
   // Establish graphical relationships only.
   if (parent)
   {
-    node->addParent(parent, modelInfo->getParentSubFlow());
     parent->addChild(node, visualInfo);
+    node->addParent(parent, modelInfo->getParentSubFlow());
   }
 
   // Preserve the existing canvas callbacks.
