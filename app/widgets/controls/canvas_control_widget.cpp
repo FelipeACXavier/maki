@@ -68,7 +68,6 @@ bool CanvasControlWidget::permanent() const
 
 void CanvasControlWidget::setTouring()
 {
-  LOG_DEBUG("TOURING");
   mTouring = true;
 }
 
@@ -89,6 +88,7 @@ void CanvasControlWidget::setControlWidget(maki::ControlWidget* controls, const 
     mFrameLayout->removeWidget(mControls);
     mControls->removeEventFilter(this);
     mControls->setParent(nullptr);
+    mControls = nullptr;
   }
 
   if (mFadeTimer)

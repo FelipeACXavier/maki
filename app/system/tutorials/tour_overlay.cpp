@@ -177,14 +177,14 @@ void TourOverlay::paintEvent(QPaintEvent*)
     QPainterPath outside;
     outside.addRect(rect());
     outside.addRoundedRect(hole, theme.borderRadius, theme.borderRadius);
-    p.fillPath(outside, theme.shadowColor3);
+    p.fillPath(outside, theme.shadowColor1);
     p.setPen(QPen(theme.primaryColor, theme.borderWidth));
     p.drawRoundedRect(hole, theme.borderRadius, theme.borderRadius);
   }
   else
   {
     clearMask();
-    p.fillRect(rect(), theme.shadowColor3);
+    p.fillRect(rect(), theme.shadowColor1);
   }
 }
 
