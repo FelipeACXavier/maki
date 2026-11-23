@@ -67,6 +67,16 @@ auto findIf(const Container& container, Func&& predicate) -> std::optional<typen
 }
 
 template <typename Container, typename Func>
+auto findDistanceIf(const Container& container, Func&& predicate) -> int
+{
+  const auto it = std::find_if(std::cbegin(container), std::cend(container), std::forward<Func>(predicate));
+  if (it == std::cend(container))
+    return -1;
+
+  return std::distance(std::cbegin(container), it);
+}
+
+template <typename Container, typename Func>
 auto findIfRef(Container& container, Func&& predicate) -> typename Container::value_type*
 {
   const auto it = std::find_if(std::begin(container), std::end(container), std::forward<Func>(predicate));

@@ -35,7 +35,7 @@ public:
    *
    * @param parent The parent QObject.
    */
-  PluginManager(Pipeline* pipeline, QObject* parent = nullptr);
+  explicit PluginManager(Pipeline* pipeline, QObject* parent = nullptr);
 
   /**
    * @brief Destructs the PluginManager object.

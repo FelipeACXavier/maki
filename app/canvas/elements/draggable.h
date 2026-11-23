@@ -37,7 +37,7 @@ public:
   /**
    * @brief Destroys the DraggableItem.
    */
-  virtual ~DraggableItem();
+  virtual ~DraggableItem() override;
 
   /**
    * @brief Returns the type of this item.

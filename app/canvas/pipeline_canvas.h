@@ -25,5 +25,5 @@ public:
   void requestCreateTransition(TransitionSaveInfo info) override;
   void requestRemoveTransition(TransitionSaveInfo info) override;
 
-  void onNodeHovered(NodeItem* node, bool entered);
+  void onNodeHovered(NodeItem* node, bool entered) override;
 };

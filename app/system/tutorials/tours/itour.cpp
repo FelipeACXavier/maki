@@ -64,8 +64,8 @@ std::pair<LibraryContainer*, DraggableItem*> ITour::findDraggableInPalette(const
 {
   for (const auto* section : mWindow->mPalette->findChildren<SectionWidget*>())
     if (auto* library = qobject_cast<LibraryContainer*>(section->content()))
-      if (auto palette = qobject_cast<LibraryScene*>(library->scene()))
-        for (const auto& item : palette->items())
+      if (auto* nodePalette = qobject_cast<LibraryScene*>(library->scene()))
+        for (const auto& item : nodePalette->items())
           if (auto draggable = qgraphicsitem_cast<DraggableItem*>(item); draggable->nodeId() == nodeType)
             return std::make_pair(library, draggable);
 

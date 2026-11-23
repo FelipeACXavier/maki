@@ -48,7 +48,7 @@ public:
   /**
    * @brief Destructor for the NodeItem.
    */
-  virtual ~NodeItem();
+  virtual ~NodeItem() override;
 
   /**
    * @brief Returns the type of this item.

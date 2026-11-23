@@ -1457,7 +1457,7 @@ void MainWindow::onOpenFlow(std::shared_ptr<FlowSaveInfo> flow, const QString& n
 
   // Check if the flow is already open in some tab
   const QString tabId = QString::fromStdString(std::format("{}_{}", flow->getid(), nodeId));
-  for (auto* editor : mEditorWorkspace->editors())
+  for (const auto* editor : mEditorWorkspace->editors())
   {
     auto editorId = mEditorWorkspace->editorId(editor);
     LOG_DEBUG("Trying to open: {} vs {}", editorId, tabId);

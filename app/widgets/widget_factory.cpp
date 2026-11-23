@@ -275,7 +275,7 @@ WidgetScrollGroup::WidgetScrollGroup(const QString& label, oclero::qlementine::T
 }
 
 // =========================================================================================================
-InputWidget::InputWidget(const QString& label, QWidget* inputField, WidgetAlignment alignment, QWidget* parent)
+InputWidget::InputWidget(const QString& label, QWidget* inputField, const WidgetAlignment& alignment, QWidget* parent)
     : QWidget(parent)
     , mInputField(inputField)
 {
@@ -356,7 +356,7 @@ void InputWidget::addDescription(const QString& text)
     vLayout->addWidget(description);
 }
 
-QWidget* InputWidget::createLayout(oclero::qlementine::Label* labelWidget, WidgetAlignment alignment)
+QWidget* InputWidget::createLayout(oclero::qlementine::Label* labelWidget, const WidgetAlignment& alignment)
 {
   if (alignment.direction == WidgetAlignment::Direction::ABOVE)
   {
@@ -512,7 +512,7 @@ void InputWidget::clearReference()
 }
 
 // =========================================================================================================
-BooleanWidget::BooleanWidget(const QString& label, bool value, WidgetAlignment alignment, QWidget* parent)
+BooleanWidget::BooleanWidget(const QString& label, bool value, const WidgetAlignment& alignment, QWidget* parent)
     : TypedInputWidget<QCheckBox>(label, new QCheckBox(), alignment, parent)
 {
   setValue(value);
@@ -550,12 +550,12 @@ void maki::BooleanWidget::writeValueToWidget(const Value& value)
 }
 
 // =========================================================================================================
-StringWidget::StringWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent)
+StringWidget::StringWidget(const QString& label, const QString& placeholder, const WidgetAlignment& alignment, QWidget* parent)
     : StringWidget(label, placeholder, alignment, "", parent)
 {
 }
 
-StringWidget::StringWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, const QString& tooltip, QWidget* parent)
+StringWidget::StringWidget(const QString& label, const QString& placeholder, const WidgetAlignment& alignment, const QString& tooltip, QWidget* parent)
     : TypedInputWidget<oclero::qlementine::LineEdit>(label, new oclero::qlementine::LineEdit(), alignment, parent)
 {
   mUpdateTimer = new QTimer(this);
@@ -630,7 +630,7 @@ void maki::StringWidget::writeValueToWidget(const Value& value)
 }
 
 // ========================================================================================================================================
-IntegerWidget::IntegerWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent, int min, int max)
+IntegerWidget::IntegerWidget(const QString& label, const QString& placeholder, const WidgetAlignment& alignment, QWidget* parent, int min, int max)
     : TypedInputWidget<oclero::qlementine::LineEdit>(label, new oclero::qlementine::LineEdit(), alignment, parent)
 {
   if (auto* edit = qobject_cast<oclero::qlementine::LineEdit*>(mInputField))
@@ -720,7 +720,7 @@ void IntegerWidget::writeValueToWidget(const Value& value)
 }
 
 // ========================================================================================================================================
-FloatWidget::FloatWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent, qreal min, qreal max)
+FloatWidget::FloatWidget(const QString& label, const QString& placeholder, const WidgetAlignment& alignment, QWidget* parent, qreal min, qreal max)
     : TypedInputWidget<oclero::qlementine::LineEdit>(label, new oclero::qlementine::LineEdit(), alignment, parent)
 {
   if (auto* edit = qobject_cast<oclero::qlementine::LineEdit*>(mInputField))
@@ -809,7 +809,7 @@ void FloatWidget::writeValueToWidget(const Value& value)
 }
 
 // ========================================================================================================================================
-SpinWidget::SpinWidget(const QString& label, int placeholder, QWidget* parent, WidgetAlignment alignment, int min, int max)
+SpinWidget::SpinWidget(const QString& label, int placeholder, QWidget* parent, const WidgetAlignment& alignment, int min, int max)
     : TypedInputWidget<QSpinBox>(label, new QSpinBox(), alignment, parent)
 {
   if (auto* edit = qobject_cast<QSpinBox*>(mInputField))
@@ -855,12 +855,12 @@ void SpinWidget::writeValueToWidget(const Value& value)
 }
 
 // ========================================================================================================================================
-SelectorWidget::SelectorWidget(const QString& label, WidgetAlignment alignment, QWidget* parent)
+SelectorWidget::SelectorWidget(const QString& label, const WidgetAlignment& alignment, QWidget* parent)
     : SelectorWidget(label, new QComboBox(), alignment, parent)
 {
 }
 
-SelectorWidget::SelectorWidget(const QString& label, QComboBox* comboBox, WidgetAlignment alignment, QWidget* parent)
+SelectorWidget::SelectorWidget(const QString& label, QComboBox* comboBox, const WidgetAlignment& alignment, QWidget* parent)
     : TypedInputWidget<QComboBox>(label, comboBox, alignment, parent)
 {
   if (auto* combo = qobject_cast<QComboBox*>(mInputField))
@@ -989,7 +989,7 @@ void ButtonWidget::addDescription(const QString& label)
 }
 
 // =========================================================================================================
-ColorWidget::ColorWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent)
+ColorWidget::ColorWidget(const QString& label, const QString& placeholder, const WidgetAlignment& alignment, QWidget* parent)
     : TypedInputWidget<oclero::qlementine::ColorEditor>(label, new oclero::qlementine::ColorEditor(), alignment, parent)
 {
   setValue(QColor::fromString(placeholder));
@@ -1056,7 +1056,7 @@ TypeSelectionWidget::TypeSelectionWidget(const QString& initial, Types::Property
     setCurrentIndex(index);
 }
 
-ContainerWidget::ContainerWidget(const QString& label, QWidget* widget, WidgetAlignment alignment, QWidget* parent)
+ContainerWidget::ContainerWidget(const QString& label, QWidget* widget, const WidgetAlignment& alignment, QWidget* parent)
     : TypedInputWidget<QWidget>(label, widget, alignment, parent)
 {
 }
@@ -1119,7 +1119,7 @@ void SearchWidget::setValue(const QString& value)
 }
 
 // =========================================================================================================
-ListWidget::ListWidget(const QString& label, const koda::types::TypeReference& elementType, WidgetAlignment alignment, QWidget* parent)
+ListWidget::ListWidget(const QString& label, const koda::types::TypeReference& elementType, const WidgetAlignment& alignment, QWidget* parent)
     : TypedInputWidget<WidgetGroup>("", new maki::WidgetGroup(label, oclero::qlementine::TextRole::H5, nullptr), alignment, parent)
     , mElementType(elementType)
 {
@@ -1231,8 +1231,8 @@ QList<QWidget*> ListWidget::focusWidgets() const
 }
 
 // =========================================================================================================
-MapWidget::MapWidget(const QString& label, const koda::types::TypeReference& keyType, const koda::types::TypeReference& valueType, WidgetAlignment alignment,
-                     QWidget* parent)
+MapWidget::MapWidget(const QString& label, const koda::types::TypeReference& keyType, const koda::types::TypeReference& valueType,
+                     const WidgetAlignment& alignment, QWidget* parent)
     : TypedInputWidget<WidgetGroup>("", new maki::WidgetGroup(label, oclero::qlementine::TextRole::H5, nullptr), alignment, parent)
     , mKeyType(keyType)
     , mValueType(valueType)
@@ -1362,7 +1362,7 @@ QList<QWidget*> MapWidget::focusWidgets() const
 }
 
 // =========================================================================================================
-RecordWidget::RecordWidget(const QString& containerLabel, const QString& label, const koda::types::TypeDefinition& definition, WidgetAlignment alignment,
+RecordWidget::RecordWidget(const QString& containerLabel, const QString& label, const koda::types::TypeDefinition& definition, const WidgetAlignment& alignment,
                            QWidget* parent)
     : TypedInputWidget<WidgetGroup>(containerLabel, new maki::WidgetGroup(label, oclero::qlementine::TextRole::Default, nullptr), alignment, parent)
     , mDefinition(definition)
@@ -1436,7 +1436,7 @@ QList<QWidget*> RecordWidget::focusWidgets() const
 }
 
 // =========================================================================================================
-EnumWidget::EnumWidget(const QString& label, const koda::types::TypeDefinition& definition, WidgetAlignment alignment, QWidget* parent)
+EnumWidget::EnumWidget(const QString& label, const koda::types::TypeDefinition& definition, const WidgetAlignment& alignment, QWidget* parent)
     : SelectorWidget(label, alignment, parent)
     , mDefinition(definition)
 {
@@ -1445,7 +1445,7 @@ EnumWidget::EnumWidget(const QString& label, const koda::types::TypeDefinition& 
 }
 
 // =========================================================================================================
-InputWidget* ValueEditorFactory::create(const QString& label, const koda::types::TypeReference& type, const Value& value, WidgetAlignment alignment,
+InputWidget* ValueEditorFactory::create(const QString& label, const koda::types::TypeReference& type, const Value& value, const WidgetAlignment& alignment,
                                         QWidget* parent)
 {
   if (type.kind() == koda::types::TypeReferenceKind::List)

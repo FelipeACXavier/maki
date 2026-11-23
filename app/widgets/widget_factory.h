@@ -203,7 +203,7 @@ class InputWidget : public QWidget
 {
   Q_OBJECT
 public:
-  InputWidget(const QString& label, QWidget* inputField, WidgetAlignment alignment, QWidget* parent = nullptr);
+  InputWidget(const QString& label, QWidget* inputField, const WidgetAlignment& alignment, QWidget* parent = nullptr);
   virtual ~InputWidget() = default;
 
   void addDescription(const QString& text);
@@ -239,14 +239,14 @@ protected:
   QHBoxLayout* mContainerLayout = nullptr;
 
   void createReferenceWidgets();
-  QWidget* createLayout(oclero::qlementine::Label* label, WidgetAlignment alignment);
+  QWidget* createLayout(oclero::qlementine::Label* label, const WidgetAlignment& alignment);
 };
 
 template <typename W>
 class TypedInputWidget : public InputWidget
 {
 public:
-  TypedInputWidget(const QString& label, W* inputField, WidgetAlignment alignment, QWidget* parent = nullptr)
+  TypedInputWidget(const QString& label, W* inputField, const WidgetAlignment& alignment, QWidget* parent = nullptr)
       : InputWidget(label, inputField, alignment, parent)
   {
   }
@@ -272,7 +272,7 @@ public:
    * @param alignment The alignment/layout behaviour to use.
    * @param parent The parent widget.
    */
-  BooleanWidget(const QString& label, bool value, WidgetAlignment alignment, QWidget* parent);
+  BooleanWidget(const QString& label, bool value, const WidgetAlignment& alignment, QWidget* parent);
 
   bool getValue() const;
   void setValue(bool value);
@@ -302,8 +302,8 @@ public:
    * @param alignment The alignment/layout behaviour to use.
    * @param parent The parent widget.
    */
-  StringWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent);
-  StringWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, const QString& tooltip, QWidget* parent);
+  StringWidget(const QString& label, const QString& placeholder, const WidgetAlignment& alignment, QWidget* parent);
+  StringWidget(const QString& label, const QString& placeholder, const WidgetAlignment& alignment, const QString& tooltip, QWidget* parent);
 
   QString getValue() const;
   void setValue(const QString& value);
@@ -338,7 +338,7 @@ public:
    * @param min The minimum allowed value.
    * @param max The maximum allowed value.
    */
-  IntegerWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent, int min = INT32_MIN, int max = INT32_MAX);
+  IntegerWidget(const QString& label, const QString& placeholder, const WidgetAlignment& alignment, QWidget* parent, int min = INT32_MIN, int max = INT32_MAX);
 
   /**
    * @brief Sets the widget to accept variables
@@ -380,8 +380,8 @@ public:
    * @param min The minimum allowed value.
    * @param max The maximum allowed value.
    */
-  FloatWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent, qreal min = std::numeric_limits<qreal>::min(),
-              qreal max = std::numeric_limits<qreal>::max());
+  FloatWidget(const QString& label, const QString& placeholder, const WidgetAlignment& alignment, QWidget* parent,
+              qreal min = std::numeric_limits<qreal>::min(), qreal max = std::numeric_limits<qreal>::max());
 
   /**
    * @brief Sets the widget to accept variables
@@ -422,7 +422,7 @@ public:
    * @param min The minimum allowed value.
    * @param max The maximum allowed value.
    */
-  SpinWidget(const QString& label, int placeholder, QWidget* parent, WidgetAlignment alignment, int min = INT32_MIN, int max = INT32_MAX);
+  SpinWidget(const QString& label, int placeholder, QWidget* parent, const WidgetAlignment& alignment, int min = INT32_MIN, int max = INT32_MAX);
 
   int getValue() const;
   void setValue(int value);
@@ -456,7 +456,7 @@ public:
    * @param label The label shown next to the widget.
    * @param parent The parent widget.
    */
-  SelectorWidget(const QString& label, WidgetAlignment alignment, QWidget* parent);
+  SelectorWidget(const QString& label, const WidgetAlignment& alignment, QWidget* parent);
 
   /**
    * @brief Constructs a selector widget using an existing combo box.
@@ -464,7 +464,7 @@ public:
    * @param comboBox The combo box to use as the selector.
    * @param parent The parent widget.
    */
-  SelectorWidget(const QString& label, QComboBox* comboBox, WidgetAlignment alignment, QWidget* parent);
+  SelectorWidget(const QString& label, QComboBox* comboBox, const WidgetAlignment& alignment, QWidget* parent);
 
   QVariant getData() const;
   void setData(const QString& value);
@@ -556,7 +556,7 @@ public:
    * @param placeholder Additional placeholder or button text.
    * @param parent The parent widget.
    */
-  ColorWidget(const QString& label, const QString& placeholder, WidgetAlignment alignment, QWidget* parent);
+  ColorWidget(const QString& label, const QString& placeholder, const WidgetAlignment& alignment, QWidget* parent);
 
   QColor getValue() const;
   void setValue(const QColor& value);
@@ -614,7 +614,7 @@ public:
    * @param comboBox The combo box to use as the selector.
    * @param parent The parent widget.
    */
-  ContainerWidget(const QString& label, QWidget* widget, WidgetAlignment alignment, QWidget* parent);
+  ContainerWidget(const QString& label, QWidget* widget, const WidgetAlignment& alignment, QWidget* parent);
 
   void writeValueToWidget(const Value& value) override;
 };
@@ -680,7 +680,7 @@ class ListWidget : public TypedInputWidget<WidgetGroup>
 {
   Q_OBJECT
 public:
-  ListWidget(const QString& label, const koda::types::TypeReference& elementType, WidgetAlignment alignment, QWidget* parent = nullptr);
+  ListWidget(const QString& label, const koda::types::TypeReference& elementType, const WidgetAlignment& alignment, QWidget* parent = nullptr);
 
   ListValue getValue() const;
   void setValue(const ListValue& value);
@@ -705,7 +705,7 @@ class MapWidget : public TypedInputWidget<WidgetGroup>
 {
   Q_OBJECT
 public:
-  MapWidget(const QString& label, const koda::types::TypeReference& keyType, const koda::types::TypeReference& valueType, WidgetAlignment alignment,
+  MapWidget(const QString& label, const koda::types::TypeReference& keyType, const koda::types::TypeReference& valueType, const WidgetAlignment& alignment,
             QWidget* parent = nullptr);
 
   MapValue getValue() const;
@@ -738,7 +738,7 @@ class RecordWidget : public TypedInputWidget<WidgetGroup>
 {
   Q_OBJECT
 public:
-  RecordWidget(const QString& containerLabel, const QString& label, const koda::types::TypeDefinition& definition, WidgetAlignment alignment,
+  RecordWidget(const QString& containerLabel, const QString& label, const koda::types::TypeDefinition& definition, const WidgetAlignment& alignment,
                QWidget* parent = nullptr);
 
   RecordValue getValue() const;
@@ -766,7 +766,7 @@ class EnumWidget : public SelectorWidget
 {
   Q_OBJECT
 public:
-  EnumWidget(const QString& label, const koda::types::TypeDefinition& definition, WidgetAlignment alignment, QWidget* parent = nullptr);
+  EnumWidget(const QString& label, const koda::types::TypeDefinition& definition, const WidgetAlignment& alignment, QWidget* parent = nullptr);
 
 private:
   const koda::types::TypeDefinition mDefinition;
@@ -775,7 +775,8 @@ private:
 class ValueEditorFactory
 {
 public:
-  static InputWidget* create(const QString& label, const koda::types::TypeReference& type, const Value& value, WidgetAlignment alignment, QWidget* parent);
+  static InputWidget* create(const QString& label, const koda::types::TypeReference& type, const Value& value, const WidgetAlignment& alignment,
+                             QWidget* parent);
 };
 
 }  // namespace maki

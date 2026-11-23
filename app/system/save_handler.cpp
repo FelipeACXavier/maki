@@ -145,7 +145,7 @@ void SaveHandler::newFileCreated()
   mCurrentFile.clear();
 }
 
-QString SaveHandler::lastDir() const
+const QString& SaveHandler::lastDir() const
 {
   return mLastDir;
 }

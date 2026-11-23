@@ -36,7 +36,7 @@ public:
    *
    * @return QString The last directory.
    */
-  QString lastDir() const;
+  const QString& lastDir() const;
 
   /**
    * @brief Sets the last directory used for saving or loading files.

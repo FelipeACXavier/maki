@@ -277,10 +277,7 @@ int TourGuide::insertStep(int beforeId, QGraphicsView* view, QGraphicsItem* item
 
 int TourGuide::indexOf(int stepId) const
 {
-  for (int i = 0; i < m_steps.size(); ++i)
-    if (m_steps[i].id == stepId)
-      return i;
-  return -1;
+  return maki::findDistanceIf(m_steps, [stepId](const auto& step) { return step.id == stepId; });
 }
 
 void TourGuide::showStep(const TourStep& step)
