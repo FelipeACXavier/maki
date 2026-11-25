@@ -26,6 +26,11 @@ static constexpr qreal TASK_ASPECT_RATIO = TASK_WIDTH / TASK_HEIGHT;
 static constexpr qreal SLOT_DIAMETER_FACTOR = 0.25;
 static constexpr qreal MARGIN = 16;
 
+static constexpr qreal defaultSlotDiameter()
+{
+  return (qMin(TASK_WIDTH, TASK_HEIGHT) - 2.0 * MARGIN) * SLOT_DIAMETER_FACTOR;
+}
+
 TaskNode::TaskNode(const QString& id, std::shared_ptr<NodeSaveInfo> info, const QPointF& initialPosition, std::shared_ptr<NodeConfig> nodeConfig,
                    QGraphicsItem* parent)
     : NodeItem(id, info, initialPosition, nodeConfig, parent)
@@ -54,14 +59,6 @@ VoidResult TaskNode::start()
   RETURN_ON_FAILURE(NodeItem::start());
 
   ensureMainFlowExists();
-
-  if (mEmptySlot)
-  {
-    const qreal bbW = nodeRect().width();
-    const qreal bbH = nodeRect().height();
-    mEmptySlot->setDiameter(qMin(bbW, bbH) * SLOT_DIAMETER_FACTOR);
-  }
-
   relayoutCapabilitySlots();
 
   return VoidResult();
@@ -135,27 +132,41 @@ void TaskNode::swapCapabilityOrder(NodeItem* a, NodeItem* b)
   // relayoutCapabilitySlots();
 }
 
-TaskNode::SlotLayout TaskNode::slotLayout(const QSizeF& size, int slotCount) const
+TaskNode::SlotLayout TaskNode::slotLayout(const QSizeF& size, const QList<CapabilityNode*>& capabilities) const
 {
   SlotLayout layout;
 
-  if (slotCount <= 0)
-    return layout;
+  const int slotCount = capabilities.size() + 1;
 
-  layout.columnCount = mColumnCount;
+  layout.columnCount = qMax(1, mColumnCount);
   layout.rowCount = (slotCount + layout.columnCount - 1) / layout.columnCount;
-
   layout.contentRect = QRectF(QPointF(0.0, 0.0), size).adjusted(MARGIN, MARGIN, -MARGIN, -MARGIN);
-  layout.diameter = qMin(layout.contentRect.width(), layout.contentRect.height()) * SLOT_DIAMETER_FACTOR;
-  layout.labelHeight = capabilityLabelHeight(layout.diameter);
+  layout.diameter = defaultSlotDiameter();
 
-  const qreal cellHeight = layout.diameter + layout.labelHeight;
+  // Every row contains at least one circle.
+  layout.rowHeights.fill(layout.diameter, layout.rowCount);
+
+  // Account for the actual space occupied by each capability.
+  for (qsizetype i = 0; i < capabilities.size(); ++i)
+  {
+    const auto* capability = capabilities[i];
+    const int row = i / layout.columnCount;
+
+    const qreal height = capability->nodeRect().united(capability->labelBoundingRect()).height();
+
+    layout.rowHeights[row] = qMax(layout.rowHeights[row], height);
+  }
+
   const int usedColumns = qMin(slotCount, layout.columnCount);
 
   const qreal horizontalFreeSpace = layout.contentRect.width() - usedColumns * layout.diameter;
+
   layout.horizontalGap = qMax<qreal>(0.0, horizontalFreeSpace / (usedColumns + 1));
 
-  const qreal verticalFreeSpace = layout.contentRect.height() - layout.rowCount * cellHeight;
+  const qreal totalRowHeight = std::accumulate(layout.rowHeights.cbegin(), layout.rowHeights.cend(), 0.0);
+
+  const qreal verticalFreeSpace = layout.contentRect.height() - totalRowHeight;
+
   layout.verticalGap = qMax<qreal>(0.0, verticalFreeSpace / (layout.rowCount + 1));
 
   return layout;
@@ -176,31 +187,28 @@ void TaskNode::relayoutCapabilitySlots()
       capabilities.append(capability);
 
   const int slotCount = capabilities.size() + 1;
+  const qreal diameter = defaultSlotDiameter();
 
-  const auto initialLayout = slotLayout(nodeRect().size(), slotCount);
+  // Resize before measuring the labels.
+  for (auto* capability : capabilities)
+    capability->applySize(QSizeF(diameter, diameter));
+
+  const auto initialLayout = slotLayout(nodeRect().size(), capabilities);
   const QSizeF requiredSize = minimumSizeForCapabilitySlots(initialLayout, slotCount);
-  const QSizeF currentSize = nodeRect().size();
-  const QSizeF newSize(qMax(currentSize.width(), requiredSize.width()), qMax(currentSize.height(), requiredSize.height()));
-  if (newSize != currentSize)
-    applySize(newSize);
 
-  const auto layout = slotLayout(nodeRect().size(), slotCount);
+  // Allow the task to both grow and shrink.
+  if (requiredSize != nodeRect().size())
+    applySize(requiredSize);
+
+  const auto layout = slotLayout(nodeRect().size(), capabilities);
   const auto centers = capabilitySlotCenters(layout, slotCount);
+
   if (centers.size() != slotCount)
     return;
 
   for (qsizetype i = 0; i < capabilities.size(); ++i)
-  {
-    LOG_DEBUG("Setting position {}: {} {}", nodeId(), centers[i].x(), centers[i].y());
-    auto* capability = capabilities[i];
-    capability->applySize(QSizeF(layout.diameter, layout.diameter));
-    const QPointF expected = mapToScene(centers[i]);
-    capability->setCenterPosition(expected);
-    const QPointF actual = capability->centerPosition();
-    LOG_DEBUG("Capability {}: expected ({}, {}), actual ({}, {})", capability->nodeName(), expected.x(), expected.y(), actual.x(), actual.y());
-  }
+    capabilities[i]->setCenterPosition(mapToScene(centers[i]));
 
-  LOG_DEBUG("Setting empty slot at {} {}", centers.back().x(), centers.back().y());
   mEmptySlot->setDiameter(layout.diameter);
   mEmptySlot->setPos(centers.back());
 }
@@ -210,26 +218,17 @@ QSizeF TaskNode::minimumSizeForCapabilitySlots(const SlotLayout& layout, int slo
   if (slotCount <= 0)
     return QSizeF(TASK_WIDTH, TASK_HEIGHT);
 
-  const qreal diameter = qMin(TASK_WIDTH, TASK_HEIGHT) * SLOT_DIAMETER_FACTOR;
-  const qreal labelHeight = capabilityLabelHeight(diameter);
-  const qreal cellHeight = diameter + labelHeight;
-  const qreal requiredWidth = 2.0 * MARGIN + layout.columnCount * diameter + (layout.columnCount - 1) * MARGIN;
-  const qreal requiredHeight = 2.0 * MARGIN + layout.rowCount * cellHeight + (layout.rowCount - 1) * MARGIN;
+  const int usedColumns = qMin(slotCount, layout.columnCount);
+  const qreal requiredWidth = 2.0 * MARGIN + usedColumns * layout.diameter + (usedColumns - 1) * MARGIN;
+  const qreal totalRowHeight = std::accumulate(layout.rowHeights.cbegin(), layout.rowHeights.cend(), 0.0);
+  const qreal requiredHeight = 2.0 * MARGIN + totalRowHeight + (layout.rowCount - 1) * MARGIN;
 
   return QSizeF(qMax(requiredWidth, TASK_WIDTH), qMax(requiredHeight, TASK_HEIGHT));
 }
 
 qreal TaskNode::capabilityLabelHeight(qreal slotDiameter) const
 {
-  const qreal requestedPointSize = qMax(Fonts::BaseSize, slotDiameter / Fonts::BaseFactor);
-
-  QFont font;
-  font.setPointSizeF(qMin(Fonts::MaxSize, requestedPointSize));
-
-  const QFontMetricsF metrics(font);
-  constexpr qreal labelSpacing = 2.0;
-
-  return labelSpacing + metrics.height();
+  return NodeBase::maximumLabelHeight(NodeBase::labelFontForSize(slotDiameter));
 }
 
 QVector<QPointF> TaskNode::capabilitySlotCenters(const SlotLayout& layout, int slotCount) const
@@ -241,8 +240,9 @@ QVector<QPointF> TaskNode::capabilitySlotCenters(const SlotLayout& layout, int s
 
   centers.reserve(slotCount);
 
-  const qreal radius = layout.diameter * 0.5;
-  const qreal cellHeight = layout.diameter + layout.labelHeight;
+  const qreal radius = layout.diameter / 2.0;
+
+  qreal rowY = layout.contentRect.top() + layout.verticalGap;
 
   for (int row = 0; row < layout.rowCount; ++row)
   {
@@ -250,20 +250,17 @@ QVector<QPointF> TaskNode::capabilitySlotCenters(const SlotLayout& layout, int s
     const int remaining = slotCount - firstIndex;
     const int itemsInRow = qMin(layout.columnCount, remaining);
 
-    const qreal centerY = layout.contentRect.top() + layout.verticalGap + radius + row * (cellHeight + layout.verticalGap);
-    if (itemsInRow == 1)
-    {
-      centers.emplaceBack(layout.contentRect.center().x(), centerY);
-      continue;
-    }
-
+    const qreal centerY = rowY + radius;
     const qreal horizontalFreeSpace = layout.contentRect.width() - itemsInRow * layout.diameter;
     const qreal gap = horizontalFreeSpace / (itemsInRow + 1);
     for (int column = 0; column < itemsInRow; ++column)
     {
       const qreal centerX = layout.contentRect.left() + gap + radius + column * (layout.diameter + gap);
+
       centers.emplaceBack(centerX, centerY);
     }
+
+    rowY += layout.rowHeights[row] + layout.verticalGap;
   }
 
   return centers;

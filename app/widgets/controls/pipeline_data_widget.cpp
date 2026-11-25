@@ -27,6 +27,8 @@ PipelineDataWidget* PipelineDataWidget::create(const QString& nodeId, std::share
 PipelineDataWidget::PipelineDataWidget(const QString& nodeId, std::shared_ptr<FlowSaveInfo> graph, QWidget* parent)
     : maki::ControlWidget(parent)
 {
+  setFocusPolicy(Qt::NoFocus);
+
   const auto* qlementineStyle = oclero::qlementine::appStyle();
   if (!qlementineStyle)
     return;

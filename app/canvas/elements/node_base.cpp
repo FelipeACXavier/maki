@@ -12,7 +12,7 @@
 
 const qreal MAX_WIDTH = 60.0;
 const qreal MAX_HEIGHT = 60.0;
-const qreal LABEL_H_SPACING = 8;
+const qreal LABEL_H_SPACING = 16;
 
 NodeBase::NodeBase(const QString& id, const QString& nodeId, std::shared_ptr<NodeConfig> nodeConfig, QGraphicsItem* parent)
     : QGraphicsItem(parent)
@@ -20,6 +20,8 @@ NodeBase::NodeBase(const QString& id, const QString& nodeId, std::shared_ptr<Nod
     , mRenderer(nullptr)
     , mId(id)
     , mBounds(0, 0, config()->body.width, config()->body.height)
+    , mLabelFont(Fonts::Main)
+    , mLabelMetrics(mLabelFont)
 {
   setZValue(config()->body.zIndex);
 
@@ -88,11 +90,41 @@ QRectF NodeBase::extraBoundingRect() const
 
 QRectF NodeBase::labelBoundingRect() const
 {
-  if (mLabelText.isEmpty())
+  if (labelText().isEmpty())
     return QRectF();
 
   const auto bounds = drawingRect(nodeRect());
-  return QRectF(bounds.left() - LABEL_H_SPACING, bounds.bottom(), bounds.width() + 2 * LABEL_H_SPACING, labelFont().pointSizeF() * 3);
+  const qreal availableWidth = bounds.width() + 2 * LABEL_H_SPACING;
+  const qreal maxHeight = maximumLabelHeight();
+  const auto textBounds = mLabelMetrics.boundingRect(QRectF(0, 0, availableWidth, maxHeight), Qt::TextWordWrap | Qt::TextWrapAnywhere, labelText());
+  const qreal textHeight = qMin(textBounds.height() + Config::CONTENT_PADDING, maxHeight);
+
+  return QRectF(bounds.left() - LABEL_H_SPACING, bounds.bottom(), availableWidth, textHeight);
+}
+
+qreal NodeBase::maximumLabelHeight(const QFontMetricsF& metrics)
+{
+  return metrics.height() + (Constants::MAXIMUM_LABEL_LINES - 1) * metrics.lineSpacing();
+}
+
+qreal NodeBase::maximumLabelHeight(const QFont& font)
+{
+  return maximumLabelHeight(QFontMetricsF(font));
+}
+
+qreal NodeBase::maximumLabelHeight() const
+{
+  return maximumLabelHeight(mLabelMetrics);
+}
+
+QFont NodeBase::labelFontForSize(qreal nodeSize)
+{
+  const qreal requestedPointSize = qMax(Fonts::BaseSize, nodeSize / Fonts::BaseFactor);
+
+  QFont font = Fonts::Main;
+  font.setPointSizeF(qMin(Fonts::MaxSize, requestedPointSize));
+
+  return font;
 }
 
 QRectF NodeBase::scaledRect() const
@@ -339,26 +371,30 @@ QPainterPath NodeBase::nodeShape(const QRectF& bounds) const
   return geometricBodyOutlinePath(drawingRect(bounds));
 }
 
+QString NodeBase::labelText() const
+{
+  return mLabelText;
+}
+
 void NodeBase::paintLabel(QPainter* painter, const QRectF& drawingBounds, const QPen& pen, bool elide) const
 {
-  if (mLabelText.isEmpty() || !mPaintLabel)
+  if (labelText().isEmpty() || !mPaintLabel)
     return;
 
   painter->setFont(labelFont());
   painter->setPen(pen);
 
-  QString text = mLabelText;
+  QString text = labelText();
   QTextOption textOption;
-  textOption.setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
+  textOption.setAlignment(Qt::AlignHCenter | Qt::AlignTop);
   if (!elide)
   {
     textOption.setWrapMode(QTextOption::WrapAtWordBoundaryOrAnywhere);
   }
   else
   {
-    const QFontMetricsF metrics(labelFont());
     const qreal availableWidth = drawingBounds.width();
-    text = metrics.elidedText(mLabelText, Qt::ElideRight, static_cast<int>(availableWidth));
+    text = mLabelMetrics.elidedText(text, Qt::ElideRight, static_cast<int>(availableWidth));
   }
   // painter->drawRect(drawingBounds);
   painter->drawText(drawingBounds, text, textOption);
@@ -380,21 +416,32 @@ bool NodeBase::isLabelVisible() const
 
 void NodeBase::setLabel(const QString& name, qreal fontSize)
 {
+  prepareGeometryChange();
   setLabelName(name);
-
-  mLabelFont.setPointSizeF(qMin(Fonts::MaxSize, fontSize));
+  setLabelSize(fontSize);
   update();
 }
 
 void NodeBase::setLabelName(const QString& name)
 {
-  mLabelText = name;
+  const QString text = makeWrappable(name);
+  if (mLabelText == text)
+    return;
+
+  prepareGeometryChange();
+  mLabelText = text;
   update();
 }
 
-void NodeBase::setLabelSize(qreal fontSize, const QSizeF& boundingSize)
+void NodeBase::setLabelSize(qreal fontSize)
 {
-  mLabelFont.setPointSizeF(qMin(Fonts::MaxSize, fontSize));
+  const qreal pointSize = qMin(Fonts::MaxSize, fontSize);
+  if (mLabelFont.pointSizeF() == pointSize)
+    return;
+
+  prepareGeometryChange();
+  mLabelFont.setPointSizeF(pointSize);
+  mLabelMetrics = QFontMetricsF(mLabelFont);
   update();
 }
 

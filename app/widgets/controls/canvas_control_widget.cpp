@@ -1,7 +1,9 @@
 #include "canvas_control_widget.h"
 
+#include <QApplication>
 #include <QGraphicsOpacityEffect>
 #include <QGraphicsScene>
+#include <QGraphicsView>
 #include <QHBoxLayout>
 #include <QPropertyAnimation>
 #include <QTimer>
@@ -15,6 +17,9 @@ CanvasControlWidget::CanvasControlWidget(std::function<void()> dismissed, QGraph
     : QGraphicsProxyWidget(parent)
     , mDismissed(std::move(dismissed))
 {
+  setFlag(QGraphicsItem::ItemIsFocusable, true);
+  setFocusPolicy(Qt::StrongFocus);
+
   mFrame = new StyledFrame();
   mFrame->setBackgroundRole(StyledFrame::BackgroundRole::Custom);
   mFrame->setCustomBackgroundColor(Qt::transparent);
@@ -103,7 +108,6 @@ void CanvasControlWidget::setControlWidget(maki::ControlWidget* controls, const 
   // Force the QWidget layout to calculate its contents.
   mFrameLayout->invalidate();
   mFrameLayout->activate();
-  setFocus(Qt::OtherFocusReason);
 
   const QSize size = mFrameLayout->sizeHint();
   mFrame->setFixedSize(size);
@@ -206,6 +210,28 @@ bool CanvasControlWidget::hideControl()
 
 void CanvasControlWidget::activate()
 {
-  if (mControls)
-    mControls->activate();
+  if (!mControls)
+    return;
+
+  mControls->activate();
+
+  if (mControls->focusPolicy() == Qt::NoFocus)
+    return;
+
+  if (auto* s = scene())
+  {
+    for (auto* view : s->views())
+    {
+      if (view->isVisible())
+      {
+        view->setFocus(Qt::OtherFocusReason);
+        break;
+      }
+    }
+
+    s->setFocus(Qt::OtherFocusReason);
+    s->setFocusItem(this, Qt::OtherFocusReason);
+  }
+
+  mControls->setFocus(Qt::OtherFocusReason);
 }

@@ -40,6 +40,8 @@ CapabilityCallSelector::CapabilityCallSelector(const QString& nodeId, QWidget* p
     : maki::ControlWidget(parent)
     , mNodeId(nodeId)
 {
+  setFocusPolicy(Qt::StrongFocus);
+
   auto* vlayout = new QVBoxLayout(this);
   vlayout->setContentsMargins(Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING);
   vlayout->setSpacing(0);
@@ -92,6 +94,7 @@ CapabilityCallSelector::CapabilityCallSelector(const QString& nodeId, QWidget* p
     capabilityLayout->addWidget(scrollArea);
 
     mStack->addWidget(capabilityPage);
+    setFocusProxy(search);
   }
   // --------------------------------------------------------------------------
   // Page 1: Event selection

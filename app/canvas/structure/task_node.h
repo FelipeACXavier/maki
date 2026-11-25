@@ -3,6 +3,8 @@
 #include "canvas/elements/node.h"
 #include "empty_slot.h"
 
+class CapabilityNode;
+
 /**
  * @brief Structural system-view node (Tasks, capabilities, timers, etc.).
  */
@@ -37,13 +39,15 @@ private:
     qreal diameter = 0.0;
     qreal horizontalGap = 0.0;
     qreal verticalGap = 0.0;
-    qreal labelHeight = 0.0;
+
     int columnCount = 0;
     int rowCount = 0;
+
     QRectF contentRect = {};
+    QVector<qreal> rowHeights;
   };
 
-  SlotLayout slotLayout(const QSizeF& size, int slotCount) const;
+  SlotLayout slotLayout(const QSizeF& size, const QList<CapabilityNode*>& capabilities) const;
   QVector<QPointF> capabilitySlotCenters(const SlotLayout& layout, int slotCount) const;
   qreal capabilityLabelHeight(qreal slotDiameter) const;
 

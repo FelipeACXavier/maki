@@ -285,3 +285,12 @@ void paintSvg(QSvgRenderer* renderer, QPainter* painter, const QPointF& center, 
  * @return QString The name of the node
  */
 QString nameFromNodeId(const QString& id);
+
+/**
+ * @brief Returns a wrapped text taking into consideration work boundaries as well as camel casing
+ *
+ * @param text The text to be wrapped
+ *
+ * @return QString The wrappable text
+ */
+QString makeWrappable(QString text);

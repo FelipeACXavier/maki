@@ -68,6 +68,7 @@ static const QString EXECUTABLE_BUTTON_DEFAULT_TEXT = "No pipeline";
 static const QString EXECUTABLE_BUTTON_ADD_TEXT = "Add new...";
 
 static const qreal CONTROL_POINT_SHIFT = 100;  /// Shift value for control points.
+static const int MAXIMUM_LABEL_LINES = 3;
 
 static const QString EMPTY_COMBO = "-";
 static const int TOOLTIP_DURATION = 2;

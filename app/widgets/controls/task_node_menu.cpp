@@ -114,6 +114,8 @@ TaskNodeMenu* TaskNodeMenu::create(QWidget* parent)
 TaskNodeMenu::TaskNodeMenu(QWidget* parent)
     : maki::ControlWidget(parent)
 {
+  setFocusPolicy(Qt::NoFocus);
+
   const auto* qlementineStyle = oclero::qlementine::appStyle();
   if (!qlementineStyle)
     return;

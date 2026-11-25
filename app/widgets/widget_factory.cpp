@@ -1067,6 +1067,7 @@ void ContainerWidget::writeValueToWidget(const Value& /* value */)
 
 // =========================================================================================================
 SearchWidget::SearchWidget(const QString& placeholder, QWidget* parent)
+    : QWidget(parent)
 {
   setMaximumHeight(40);
 
@@ -1079,7 +1080,7 @@ SearchWidget::SearchWidget(const QString& placeholder, QWidget* parent)
 
   mInputField = new QLineEdit(this);
   mInputField->setPlaceholderText(placeholder);
-  mInputField->setFocusPolicy(Qt::FocusPolicy::ClickFocus);
+  mInputField->setFocusPolicy(Qt::FocusPolicy::StrongFocus);
   mInputField->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
   mValue = placeholder;
 
@@ -1093,6 +1094,8 @@ SearchWidget::SearchWidget(const QString& placeholder, QWidget* parent)
 
   layout()->addWidget(icon);
   layout()->addWidget(mInputField);
+  setFocusProxy(mInputField);
+  setFocusPolicy(Qt::StrongFocus);
 }
 
 QLineEdit* SearchWidget::widget() const

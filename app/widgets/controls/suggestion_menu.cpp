@@ -127,6 +127,8 @@ SuggestionMenu* SuggestionMenu::create(QWidget* parent)
 SuggestionMenu::SuggestionMenu(QWidget* parent)
     : maki::ControlWidget(parent)
 {
+  setFocusPolicy(Qt::NoFocus);
+
   const auto* qlementineStyle = oclero::qlementine::appStyle();
   if (!qlementineStyle)
     return;

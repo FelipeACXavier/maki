@@ -19,7 +19,16 @@ DraggableItem::DraggableItem(const QString& instanceId, const QString& nodeId, s
 {
   setAcceptHoverEvents(true);
   setFlag(QGraphicsItem::ItemIsSelectable, true);
-  setLabel(nameFromNodeId(config()->type), Fonts::BaseSize);
+  QString nodeName = config()->type;
+  if (config()->libraryType == Types::LibraryTypes::PIPELINE)
+    for (const auto& prop : nodeConfig->properties)
+      if (prop.id == ConfigKeys::NAME)
+      {
+        nodeName = prop.defaultValue.toStringValue();
+        break;
+      }
+
+  setLabel(nameFromNodeId(nodeName), Fonts::BaseSize);
 }
 
 DraggableItem::~DraggableItem()
@@ -75,8 +84,10 @@ QPainterPath DraggableItem::shape() const
 
 void DraggableItem::adjustWidth(int width)
 {
+  prepareGeometryChange();
   int centerX = (width - boundingRect().width()) / 2;
   setPos(centerX, pos().y());
+  update();
 }
 
 Qt::DropAction DraggableItem::startDrag(QGraphicsSceneMouseEvent* event)

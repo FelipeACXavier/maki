@@ -3,6 +3,7 @@
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsSvgItem>
 
+#include "app_configs.h"
 #include "canvas/elements/draggable.h"
 #include "logging.h"
 

@@ -6,6 +6,7 @@
 
 #include "canvas/elements/draggable.h"
 #include "config.h"
+#include "logging.h"
 #include "widgets/library_scene.h"
 #include "widgets/section.h"
 
@@ -54,13 +55,16 @@ void LibraryContainer::updateSceneSize()
     return;
 
   const QRectF bounds = qobject_cast<LibraryScene*>(scene())->visibleItemsBounds();
-  const int contentHeight = qCeil(bounds.height()) + PADDING;
+
+  const int contentHeight = qCeil(bounds.bottom()) + PADDING;
+  const int widgetHeight = contentHeight + frameWidth() * 2;
 
   scene()->setSceneRect(0, 0, viewport()->width(), contentHeight);
-  setFixedHeight(contentHeight + frameWidth() * 2);
 
-  if (SectionWidget* parent = qobject_cast<SectionWidget*>(this->parent()->parent()))
-    parent->updateContentHeight(contentHeight + frameWidth() * 2);
+  setFixedHeight(widgetHeight);
+
+  if (auto* parent = qobject_cast<SectionWidget*>(this->parent()->parent()))
+    parent->updateContentHeight(widgetHeight);
 }
 
 VoidResult LibraryContainer::addNode(const QString& nodeId, std::shared_ptr<NodeConfig> config, const QString& instanceId)
@@ -142,11 +146,12 @@ void LibraryContainer::relayoutItems()
     const int column = i % columnCount;
     const int row = i / columnCount;
     const QRectF itemBounds = items[i]->boundingRect();
-    const qreal x = (column * columnWidth + columnWidth / 2.0) - (itemBounds.width() / 2);
-    const qreal y = (PADDING + row * (cellHeight + PADDING)) + qMax<int>(0, cellHeight - itemBounds.height());
+
+    const qreal x = column * columnWidth + columnWidth / 2.0 - itemBounds.center().x();
+    const qreal y = PADDING + row * (cellHeight + PADDING) - itemBounds.top();
+
     items[i]->setPos(x, y);
   }
-
   updateSceneSize();
 }
 

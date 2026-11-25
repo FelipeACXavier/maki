@@ -75,30 +75,32 @@ void CanvasView::setMaxSize()
 
 void CanvasView::keyPressEvent(QKeyEvent* event)
 {
-  qint32 key = event->key();
-
-  if (key == mZoomKey)
-    mDoKeyZoom = true;
-
-  if (mDoKeyZoom)
+  // Give embedded widgets priority over canvas shortcuts.
+  if (scene() && dynamic_cast<QGraphicsProxyWidget*>(scene()->focusItem()))
   {
-    switch (key)
+    QGraphicsView::keyPressEvent(event);
+    return;
+  }
+
+  if (event->modifiers().testFlag(Qt::ControlModifier))
+  {
+    switch (event->key())
     {
       case Qt::Key_Plus:
         zoomIn();
-        break;
+        return;
+
       case Qt::Key_Minus:
         zoomOut();
-        break;
+        return;
+
       case Qt::Key_Equal:
         resetZoom();
-        break;
+        return;
     }
   }
-  else
-  {
-    QGraphicsView::keyPressEvent(event);
-  }
+
+  QGraphicsView::keyPressEvent(event);
 }
 
 void CanvasView::keyReleaseEvent(QKeyEvent* event)

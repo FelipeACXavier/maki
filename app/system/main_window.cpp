@@ -567,7 +567,7 @@ void MainWindow::bind()
         QJsonObject prop;
         prop[ConfigKeys::ID] = p.getid();
         prop[ConfigKeys::TYPE] = QString::fromStdString(p.gettype().toString());
-        if (const auto* val = dynamic_cast<const maki::Value*>(p.getvalue()))
+        if (const auto* val = maki::asValue(p.getvalue()))
           name[ConfigKeys::DEFAULT] = val->toJson();
         properties.append(prop);
       }

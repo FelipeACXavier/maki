@@ -19,6 +19,7 @@ LabelEditor::LabelEditor(const QString& placeholder, const QFont& font, QWidget*
     : maki::ControlWidget(parent)
     , mFinished(false)
 {
+  setFocusPolicy(Qt::StrongFocus);
   setAttribute(Qt::WA_TranslucentBackground);
   setAutoFillBackground(false);
 
@@ -57,7 +58,6 @@ LabelEditor::LabelEditor(const QString& placeholder, const QFont& font, QWidget*
   vlayout->addWidget(mEditor);
 
   setFocusProxy(mEditor);
-  setFocusPolicy(Qt::StrongFocus);
 }
 
 void LabelEditor::showWarning(const QString& message)

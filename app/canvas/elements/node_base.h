@@ -1,15 +1,14 @@
 #pragma once
 
 #include <QFont>
+#include <QFontMetrics>
 #include <QGraphicsItem>
 #include <QGraphicsSvgItem>
 #include <QString>
 
-#include "app_configs.h"
 #include "config.h"
 #include "ids.h"
-#include "result.h"
-#include "widgets/settings_manager.h"
+#include "settings.h"
 
 /**
  * @brief Base class for all graphical nodes.
@@ -142,6 +141,11 @@ public:
    */
   virtual void settingsChanged(const AppearanceSettings& appearance);
 
+  qreal maximumLabelHeight() const;
+  static qreal maximumLabelHeight(const QFontMetricsF& metrics);
+  static qreal maximumLabelHeight(const QFont& font);
+  static QFont labelFontForSize(qreal nodeSize);
+
 protected:
   std::shared_ptr<NodeConfig> mConfig;  /// Configuration settings for the node.
 
@@ -190,7 +194,7 @@ protected:
    * @param fontSize Font size for the label.
    * @param boundingSize Bounding size for the label.
    */
-  virtual void setLabelSize(qreal fontSize, const QSizeF& boundingSize);
+  virtual void setLabelSize(qreal fontSize);
 
   /**
    * @brief Paints the label using the provided painter.
@@ -210,7 +214,8 @@ private:
   const QRectF mBounds;  /// Bounding rectangle of the node.
 
   QString mLabelText;
-  QFont mLabelFont = Fonts::Main;
+  QFont mLabelFont;
+  QFontMetricsF mLabelMetrics;
   bool mPaintLabel = true;
   QRectF mScaledBounds;  /// Scaled bounding rectangle of the node.
 
@@ -220,4 +225,6 @@ private:
    * @return The computed scale factor.
    */
   qreal computeScaleFactor() const;
+
+  QString labelText() const;
 };

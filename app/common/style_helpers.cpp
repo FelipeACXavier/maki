@@ -601,3 +601,9 @@ QString nameFromNodeId(const QString& id)
 
   return id.right(id.size() - (index + 2));
 }
+
+QString makeWrappable(QString text)
+{
+  static const QRegularExpression boundaries(R"((?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|(?<=[._:/-]))");
+  return text.replace(boundaries, QStringLiteral("\u200B"));
+}

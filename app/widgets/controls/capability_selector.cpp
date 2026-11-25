@@ -27,6 +27,8 @@ CapabilitySelector* CapabilitySelector::create(QWidget* parent)
 CapabilitySelector::CapabilitySelector(QWidget* parent)
     : maki::ControlWidget(parent)
 {
+  setFocusPolicy(Qt::StrongFocus);
+
   QVBoxLayout* vlayout = new QVBoxLayout(this);
   vlayout->setContentsMargins(Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING, Config::CONTENT_PADDING);
   vlayout->setSpacing(0);
@@ -71,6 +73,7 @@ CapabilitySelector::CapabilitySelector(QWidget* parent)
 
   buildLibraries();
   contentLayout->addStretch();
+  setFocusProxy(search);
 }
 
 void CapabilitySelector::start()

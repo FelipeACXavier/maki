@@ -561,7 +561,7 @@ void NodeItem::applySize(const QSizeF& size)
   SaveInfo::instance().setSizeOfNode(id(), size);
 
   qreal newFontSize = qMax(Fonts::BaseSize, mSize.width() / Fonts::BaseFactor);
-  setLabelSize(newFontSize, mSize);
+  setLabelSize(newFontSize);
 
   update();
 }
@@ -663,19 +663,12 @@ void NodeItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 
 void NodeItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
-  // if (config()->libraryType == Types::LibraryTypes::STRUCTURAL && event->modifiers() & Qt::ShiftModifier)
-  // {
-  //   mIsResizing = true;
-  //   mResizeStartMousePos = event->pos();
-  //   mResizeStartSize = mSize;
-  //   dynamic_cast<QGraphicsView*>(scene()->parent())->setCursor(Qt::SizeFDiagCursor);
-  //   event->accept();
-  // }
-  // else
-  // {
   mDragStartPos = pos();
+
+  if (event->button() == Qt::LeftButton && flags().testFlag(ItemIsMovable))
+    setCursor(Qt::ClosedHandCursor);
+
   QGraphicsItem::mousePressEvent(event);
-  // }
 }
 
 void NodeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
@@ -694,6 +687,9 @@ void NodeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     if (nodeMoved)
       nodeMoved(this, true);
   }
+
+  if (event->button() == Qt::LeftButton && flags().testFlag(ItemIsMovable))
+    setCursor(Qt::OpenHandCursor);
 
   QGraphicsItem::mouseReleaseEvent(event);
 }
@@ -815,7 +811,7 @@ QPointF NodeItem::constrainChildPosition(const NodeItem* child, const QPointF& p
 
 void NodeItem::updateExtrasPosition(Config::NodeMove reason)
 {
-  SaveInfo::instance().setPositionOfNode(id(), mLastPosition + boundingRect().center());
+  SaveInfo::instance().setPositionOfNode(id(), centerPosition());
 
   if (auto* parent = parentNode())
     parent->childPositionUpdated(this);
